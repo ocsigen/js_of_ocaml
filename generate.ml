@@ -1,14 +1,14 @@
 (*XXXX
+- CLEAN UP!!!
+
+- Throw ???
+  need to pass an argument!
+
 - Inline internal functions
-  ===> keep track of loops + function used only once
-       inline if not loop and used once
   ===> move branches upwards in conditional
                if (e) { i1; return f() } else { i2; return f() }
                               ===>
                if (e) { i1 } else { i2 }; return f()
-
-- Throw ???
-  need to pass an argument!
 
 - CPS style
 
@@ -90,12 +90,12 @@ Printf.fprintf ch "subgraph %s {\n" nm;
 Printf.fprintf ch "%d\n" pc;
         Format.eprintf "@[<2>%d (%d <= %d <= %d <= %d < %d) {@," pc min start num (IntMap.find pc last_visit) max;
         let (queue, child_info) =
-          build_rec queue last_visit start num [] in
+          build_rec queue last_visit start (num + 1) [] in
         Format.eprintf "}@]";
 Printf.fprintf ch "}\n";
         build_rec queue last_visit min max (Node (pc, child_info) :: prev)
     | _ ->
-        (queue, List.rev prev)
+        (queue, prev)
   in
   Format.eprintf "@[";
   let (queue, accu) = build_rec queue last_visit 0 max prev in
@@ -103,7 +103,13 @@ Printf.fprintf ch "}\n";
   Format.eprintf "@]@.";
   accu
 
+let rec tree_to_map (Node (pc, ch)) map =
+  map >> IntMap.add pc (List.map (fun (Node (pc, _)) -> pc) ch)
+      >> forest_to_map ch
 
+and forest_to_map f map = List.fold_right tree_to_map f map
+
+(*
 let build blocks pc enter_block leave_block prev =
   let (queue, last_visit, max) = traverse blocks pc in
   let rec build_rec queue last_visit min max prev =
@@ -129,6 +135,17 @@ Printf.fprintf ch "}\n";
   assert (queue = []);
   Format.eprintf "@]@.";
   accu
+*)
+
+let count_preds blocks pc =
+  let rec count_rec pc count =
+    if not (IntMap.mem pc count) then begin
+      let count = IntMap.add pc 1 count in
+      fold_children blocks pc count_rec count
+    end else
+      IntMap.add pc (IntMap.find pc count + 1) count
+  in
+  count_rec pc IntMap.empty
 
 (****)
 
@@ -224,6 +241,8 @@ let flush_queue expr_queue all l =
   in
   (List.rev_append instrs l, expr_queue)
 
+let flush_all expr_queue l = fst (flush_queue expr_queue true l)
+
 let enqueue expr_queue prop x ce =
   let (instrs, expr_queue) =
     if is_mutator prop then begin
@@ -233,72 +252,22 @@ let enqueue expr_queue prop x ce =
   in
   (instrs, (x, (prop, ce)) :: expr_queue)
 
-let branch ctx queue (pc, arg) =
-  let br = [J.Return_statement (Some (J.ECall (J.EVar (addr pc), [])))] in
-  match arg with
-    None ->
-      flush_queue queue true br
-  | Some x ->
-      match IntMap.find pc ctx.Ctx.blocks with
-        (Some y, _, _) ->
-          let ((px, cx), queue) = access_queue queue x in
-          flush_queue queue true
-            (J.Expression_statement (J.EBin (J.Eq, var y, cx)) :: br)
-      | _ ->
-          assert false
-
 let block l = match l with [s] -> s | _ -> J.Block l
 
 let prim_kinds = ["caml_int64_float_of_bits", const_p]
 
-let translate_last ctx queue last =
-  match last with
-    Return x ->
-      let ((px, cx), queue) = access_queue queue x in
-      flush_queue queue true [J.Return_statement (Some cx)]
-  | Raise x ->
-(*XXXXXXXXXXXXXX*)
-      let ((px, cx), queue) = access_queue queue x in
-      flush_queue queue true [J.Throw_statement cx]
-  | Stop ->
-      flush_queue queue true []
-  | Branch cont ->
-      branch ctx queue cont
-  | Cond (c, x, cont1, cont2) ->
-      let ((px, cx), queue) = access_queue queue x in
-      let e =
-        match c with
-          IsTrue         -> cx
-        | CEq n          -> J.EBin (J.EqEqEq, cx, int n)
-        | CLt n | CUlt n -> J.EBin (J.Lt, cx, int n)
-        | CLe n          -> J.EBin (J.Le, cx, int n)
-      in
-      flush_queue queue true
-      [J.If_statement (e,
-                       block (fst (branch ctx [] cont1)),
-                       Some (block (fst (branch ctx [] cont2))))]
-  | Switch (x, a1, a2) ->
-      flush_queue queue true
-      [J.Expression_statement (J.EQuote "swtch")]
-  | Pushtrap (cont, pc) ->
-      let invoke_handler =
-        [J.Statement (J.Return_statement
-                        (Some (J.ECall (J.EVar (addr pc), []))))]
-      in
-      let body =
-        match IntMap.find pc ctx.Ctx.blocks with
-          (Some y, _, _) ->
-            J.Statement (J.Expression_statement
-                           (J.EBin (J.Eq, var y, J.EVar "x"))) ::
-            invoke_handler
-        | _ ->
-            invoke_handler
-      in
-      flush_queue queue true
-        (J.Expression_statement
-           (J.ECall (J.EVar "caml_push_trap",
-                     [J.EFun (None, ["x"], body)])) ::
-           fst (branch ctx [] cont))
+let source_elements l =
+  List.fold_right
+    (fun st rem ->
+       match st, rem with
+         J.Variable_statement [addr, Some (J.EFun (None, params, body))], _ ->
+           J.Function_declaration (addr, params, body) :: rem
+       | J.Variable_statement l1,
+         J.Statement (J.Variable_statement l2) :: rem' ->
+           J.Statement (J.Variable_statement (l1 @ l2)) :: rem'
+       | _ ->
+           J.Statement st :: rem)
+    l []
 
 let rec translate_expr ctx queue e =
   match e with
@@ -489,32 +458,134 @@ and translate_instr ctx expr_queue instr =
       let (instrs, expr_queue) = translate_instr ctx expr_queue rem in
       (st @ instrs, expr_queue)
 
-and translate_body ctx pc toplevel =
-  let source_elem seq = List.map (fun s -> J.Statement s) seq in
-  let enter_block pc prev =
-    ((prev, pc), [])
+and translate_last ctx tree count queue last =
+  match last with
+    Return x ->
+      let ((px, cx), queue) = access_queue queue x in
+      flush_all queue [J.Return_statement (Some cx)]
+  | Raise x ->
+(*XXXXXXXXXXXXXX*)
+      let ((px, cx), queue) = access_queue queue x in
+      flush_all queue [J.Throw_statement cx]
+  | Stop ->
+      flush_all queue []
+  | Branch cont ->
+      branch ctx tree count queue cont
+  | Cond (c, x, cont1, cont2) ->
+      let ((px, cx), queue) = access_queue queue x in
+      let e =
+        match c with
+          IsTrue         -> cx
+        | CEq n          -> J.EBin (J.EqEqEq, cx, int n)
+        | CLt n | CUlt n -> J.EBin (J.Lt, cx, int n)
+        | CLe n          -> J.EBin (J.Le, cx, int n)
+      in
+      flush_all queue
+      [J.If_statement (e,
+                       block (branch ctx tree count [] cont1),
+                       Some (block (branch ctx tree count [] cont2)))]
+  | Switch (x, a1, a2) ->
+      flush_all queue
+      [J.Expression_statement (J.EQuote "swtch")]
+  | Pushtrap (cont, pc) ->
+      let invoke_handler =
+        [J.Statement (J.Return_statement
+                        (Some (J.ECall (J.EVar (addr pc), []))))]
+      in
+      let body =
+        match IntMap.find pc ctx.Ctx.blocks with
+          (Some y, _, _) ->
+            J.Statement (J.Expression_statement
+                           (J.EBin (J.Eq, var y, J.EVar "x"))) ::
+            invoke_handler
+        | _ ->
+            invoke_handler
+      in
+      flush_all queue
+        (J.Expression_statement
+           (J.ECall (J.EVar "caml_push_trap",
+                     [J.EFun (None, ["x"], body)])) ::
+           branch ctx tree count [] cont)
+
+and translate_block_contents ctx tree count pc expr_queue =
+  let ch = IntMap.find pc tree in
+  let ch =
+    List.fold_right
+      (fun pc prev ->
+Format.eprintf "AAAA %d ==> %d@." pc (IntMap.find pc count);
+         if IntMap.find pc count > 1 then
+           translate_block ctx tree count prev pc
+         else
+           prev)
+      ch []
   in
-  let leave_block (prev, pc) ch =
-    let (param, instr, last) = IntMap.find pc ctx.Ctx.blocks in
-    let (seq, expr_queue) = translate_instr ctx [] instr in
-    let (seq'', expr_queue) = translate_last ctx expr_queue last in
-    let (seq', expr_queue) = flush_queue expr_queue true [] in
-    let prev =
-      J.Function_declaration
-        (addr pc, [],
-         source_elem seq  @ source_elem seq' @ ch @ source_elem seq'') :: prev
-    in
-    match param with
+  let (param, instr, last) = IntMap.find pc ctx.Ctx.blocks in
+  let (seq, expr_queue) = translate_instr ctx expr_queue instr in
+  let seq' = translate_last ctx tree count expr_queue last in
+  seq  @ ch @ seq'
+
+and translate_block ctx tree count prev pc =
+  let (param, instr, last) = IntMap.find pc ctx.Ctx.blocks in
+  let body = source_elements (translate_block_contents ctx tree count pc []) in
+  let prev =
+    J.Variable_statement [addr pc, Some (J.EFun (None, [], body))] :: prev in
+  match param with
+    None ->
+      prev
+  | Some x ->
+      J.Variable_statement [Var.to_string x, None] :: prev
+
+and branch ctx tree count queue (pc, arg) =
+Format.eprintf "ZZZ %d: %d@." pc (IntMap.find pc count);
+  if IntMap.find pc count > 1 then begin
+    let br = [J.Return_statement (Some (J.ECall (J.EVar (addr pc), [])))] in
+    match arg with
       None ->
-        prev
+        flush_all queue br
     | Some x ->
-        J.Statement (J.Variable_statement [Var.to_string x, None]) :: prev
-  in
-  build ctx.Ctx.blocks pc enter_block leave_block [] @
+        match IntMap.find pc ctx.Ctx.blocks with
+          (Some y, _, _) ->
+            let ((px, cx), queue) = access_queue queue x in
+            flush_all queue
+              (J.Expression_statement (J.EBin (J.Eq, var y, cx)) :: br)
+        | _ ->
+            assert false
+  end else
+    match arg with
+      None ->
+        let cont = translate_block_contents ctx tree count pc [] in
+        flush_all queue cont
+    | Some x ->
+        match IntMap.find pc ctx.Ctx.blocks with
+          (Some y, _, _) ->
+            let ((px, cx), queue) = access_queue queue x in
+            let (st, queue) =
+              match ctx.Ctx.live.(Var.idx y) with
+                0 -> assert false
+(*
+                  flush_queue expr_queue (px >= flush_p)
+                        [J.Expression_statement cx]
+*)
+              | 1 -> enqueue queue px y cx
+              | _ -> flush_queue queue (px >= flush_p)
+                       [J.Variable_statement [Var.to_string y, Some cx]]
+            in
+            st @ translate_block_contents ctx tree count pc queue
+        | _ ->
+            assert false
+
+and translate_body ctx pc toplevel =
+Format.eprintf "FUN %d@." pc;
+  let tree = build ctx.Ctx.blocks pc [] in
+  let count = count_preds ctx.Ctx.blocks pc in
+  let tree = forest_to_map tree IntMap.empty in
+  (*build ctx.Ctx.blocks pc enter_block leave_block [] @*)
+(*
   if toplevel then
     [J.Statement (J.Expression_statement (J.ECall (J.EVar (addr pc), [])))]
   else
-    [J.Statement (block (fst (branch ctx [] (pc, None))))]
+*)
+    source_elements (branch ctx tree count [] (pc, None))
 
 let f (pc, blocks, _) live_vars =
   let ctx = Ctx.initial blocks live_vars in
