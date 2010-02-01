@@ -18,18 +18,20 @@ end = struct
 
   type t = int * int
 
-  let last_var = ref (-1)
+  let last_var = ref 0
 
   type stream = int
 
+  let c = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
+
   let rec format_var x =
-    let char x = String.make 1 (Char.chr (Char.code 'a' + x)) in
-    if x < 27 then
+    let char x = String.make 1 (c.[x]) in
+    if x < 65 then
        char (x - 1)
     else
-      format_var (x / 26) ^ char (x mod 26)
+      format_var (x / 64) ^ char (x mod 64)
 
-  let to_string (x, i) = format_var x ^ Format.sprintf "%d" i
+  let to_string (x, i) = "o$" ^ format_var i(*format_var x ^ Format.sprintf "%d" i*)
   let print f x = Format.fprintf f "%s" (to_string x)
 
   let make_stream () = 1

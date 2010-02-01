@@ -1,15 +1,4 @@
 (*XXX
-Compile to CPS + trampoline
-Store exception continuation in a global datastructure
-
-
-Semantics of loops???
-   (of functions defined in a loop)
-  ==> the loops should have their own contexts
-====> nest blocks???
-
-
-Generate actual code (!)
 
 Approximation of variable contents:
   - function with arity
@@ -21,32 +10,10 @@ Approximation of variable contents:
 Can we use the debugger information to generate specialized code?
 (Use objects rather than arrays for tuples, ...)
 
-(start with void; make it grow)
-==> use this to get rid of global blocks
-==> should be useful for optimizing function calls
-
 Optimizations:
-==> unused variables (dead call elimination)
 ==> coloring (eliminate (most) phi functions)
-==> global access shortcut (shape propagation)
-==> variables used only once (to build big expressions)
-==> Shape analyze?  ==> specialized representations
-
 ==> call shape analyse??? is that possible?
     for avoiding cps transformation + trampoline when possible
-
-- Build the control graph
-- Compile each block
-  ==> use fresh variables at each start of a block
-      + add mapping from old to new variables
-
-
-- Analyse du flot de contrôle...
-  ==> or use CPS / extra functions???
-- Implementation de l'appel de fonction???
-
-NOTE: cheap trampoline:
-   return fun () {...}
 *)
 
 (****)
@@ -1395,13 +1362,13 @@ Format.eprintf "@.";
 (*
   print_program (fun _ _ -> "") p;
 *)
-Format.eprintf "Data flow@.";
+Format.eprintf "Data flow...@.";
   let (p, approx) = Flow.f p in
-Format.eprintf "Dead-code@.";
+Format.eprintf "Dead-code...@.";
   let (p, _) = Deadcode.f p in
-Format.eprintf "Control flow simplifications@.";
+Format.eprintf "Control flow simplifications...@.";
   let p = Control.simpl p in
-Format.eprintf "Dead-code@.";
+Format.eprintf "Dead-code...@.";
   let (p, live_vars) = Deadcode.f p in
 
 

@@ -19,6 +19,15 @@
        on booleans directly
 
 - compact identifier names
+
+- scalable generation of caml_apply functions
+  ==> use curry functions as the ocaml compilers does
+  ==> we could generate explit closures in the code
+
+- Variables
+  ==> use fresh variables at each start of a block
+      + add mapping from old to new variables
+  ==> should we use short variables for innermost functions?
 *)
 
 open Util
@@ -88,19 +97,15 @@ let build blocks pc prev =
 incr i; let nm = Format.sprintf "cluster_%d" !i in
 Printf.fprintf ch "subgraph %s {\n" nm;
 Printf.fprintf ch "%d\n" pc;
-        Format.eprintf "@[<2>%d (%d <= %d <= %d <= %d < %d) {@," pc min start num (IntMap.find pc last_visit) max;
         let (queue, child_info) =
           build_rec queue last_visit start (num + 1) [] in
-        Format.eprintf "}@]";
 Printf.fprintf ch "}\n";
         build_rec queue last_visit min max (Node (pc, child_info) :: prev)
     | _ ->
         (queue, prev)
   in
-  Format.eprintf "@[";
   let (queue, accu) = build_rec queue last_visit 0 max prev in
   assert (queue = []);
-  Format.eprintf "@]@.";
   accu
 
 let rec tree_to_map (Node (pc, ch)) map =
@@ -512,7 +517,6 @@ and translate_block_contents ctx tree count pc expr_queue =
   let ch =
     List.fold_right
       (fun pc prev ->
-Format.eprintf "AAAA %d ==> %d@." pc (IntMap.find pc count);
          if IntMap.find pc count > 1 then
            translate_block ctx tree count prev pc
          else
@@ -536,7 +540,6 @@ and translate_block ctx tree count prev pc =
       J.Variable_statement [Var.to_string x, None] :: prev
 
 and branch ctx tree count queue (pc, arg) =
-Format.eprintf "ZZZ %d: %d@." pc (IntMap.find pc count);
   if IntMap.find pc count > 1 then begin
     let br = [J.Return_statement (Some (J.ECall (J.EVar (addr pc), [])))] in
     match arg with
@@ -575,7 +578,6 @@ Format.eprintf "ZZZ %d: %d@." pc (IntMap.find pc count);
             assert false
 
 and translate_body ctx pc toplevel =
-Format.eprintf "FUN %d@." pc;
   let tree = build ctx.Ctx.blocks pc [] in
   let count = count_preds ctx.Ctx.blocks pc in
   let tree = forest_to_map tree IntMap.empty in
@@ -590,13 +592,8 @@ Format.eprintf "FUN %d@." pc;
 let f (pc, blocks, _) live_vars =
   let ctx = Ctx.initial blocks live_vars in
   let p = translate_body ctx pc true in
+(*Format.set_margin 999999998;*)
   Format.printf "\
-<html>
-<head>
-</head>
-<body id =\"body\">
-</body>
-<script>
 function jsoo_inject(x) {
 switch (typeof x){
 case \"object\":
@@ -711,6 +708,6 @@ document.write (url);
 }
 
 @.\
-%a</script></html>@." Js_output.program p
+%a@." Js_output.program p
 ;Printf.fprintf ch "}\n"
 ; close_out ch

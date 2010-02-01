@@ -127,7 +127,8 @@ let fully_live_instr st i =
 let live_instr st i = req_instr i || fully_live_instr st i
 
 let filter_cont blocks st (pc, arg) =
-  let (param, _, _) = try IntMap.find pc blocks with Not_found -> Format.eprintf "%d!!!@." pc; exit 1 in
+  let (param, _, _) =
+    try IntMap.find pc blocks with Not_found -> assert false in
   match param with
     Some x when st.live.(Var.idx x) > 0 ->
       (pc, arg)
@@ -220,12 +221,7 @@ let f (pc, blocks, free_pc) =
          if not (IntSet.mem pc st.live_block) then blocks else
          IntMap.add pc
            (opt_filter (fun x -> st.live.(Var.idx x) > 0) param,
-            List.filter (fun i ->
-                           begin match i with
-                               Let(_, Direct_apply (f, _)) -> Format.eprintf "XXX%d@." st.live.(Var.idx f)
-                             |_ -> ()
-                           end;
- live_instr st i) instr,
+            List.filter (fun i -> live_instr st i) instr,
             filter_live_last all_blocks st last)
            blocks)
       blocks IntMap.empty
