@@ -1,0 +1,6 @@
+syntax:glob
+*.cm[iox]
+*.o
+*~
+compile{,.opt}
+private
