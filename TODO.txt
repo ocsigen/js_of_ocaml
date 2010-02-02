@@ -1,0 +1,35 @@
+
+BUGS
+====
+- check BLEINT, BGTINT, ...
+- string access should return an integer!!!
+
+IMPROVEMENTS
+============
+
+- We only have to make sure we do not use a
+  reserved word not a function used outside for naming variables
+  ===> very short variable names
+  ===> Bloom filter???
+
+- Compile to CPS + trampoline
+  ==> Store exception continuation in a global datastructure
+  ==> cheap trampoline: return fun () {...}
+
+
+- Improved inlining of local functions
+  ==> while loops when possible
+
+- Map Caml objects to Javascript objects
+- Dynamic loading
+
+DATA REPRESENTATION
+===================
+- correct implementation of strings
+- should probably wrap Ocaml exceptions...
+
+DATA ANALYSIS
+=============
+- correct analysis (side-effects...)
+- faster algorithm
+- interprocedural analysis

@@ -1,6 +1,50 @@
 
 open Util
 
+(*FIX: this should probably be somewhere else... *)
+module VarPrinter = struct
+  let reserved = Hashtbl.create 107
+
+  let add_reserved s =
+    if String.length s <= 5 then Hashtbl.replace reserved s ()
+
+  let _ =
+    List.iter add_reserved
+      ["break"; "case"; "catch"; "do"; "else"; "for"; "if"; "in"; "new";
+       "this"; "throw"; "try"; "var"; "void"; "while"; "with"; "class";
+       "enum"; "super"; "const"; "yield"; "let"]
+
+  let known = Hashtbl.create 1001
+
+  let last = ref (-1)
+
+  let c1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
+  let c2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
+
+  let rec format_var x =
+    let char c x = String.make 1 (c.[x]) in
+    if x < 54 then
+       char c1 x
+    else
+      format_var ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
+
+  let rec to_string i =
+    try
+      Hashtbl.find known i
+    with Not_found ->
+      incr last;
+      let j = !last in
+      let s = format_var j in
+      if Hashtbl.mem reserved s then
+        to_string i
+      else begin
+        Hashtbl.add known i s;
+        s
+      end
+end
+
+let add_reserved_name = VarPrinter.add_reserved
+
 module Var : sig
   type t
   val print : Format.formatter -> t -> unit
@@ -31,7 +75,11 @@ end = struct
     else
       format_var (x / 64) ^ char (x mod 64)
 
+(*
   let to_string (x, i) = "o$" ^ format_var i(*format_var x ^ Format.sprintf "%d" i*)
+*)
+  let to_string (x, i) = VarPrinter.to_string i
+
   let print f x = Format.fprintf f "%s" (to_string x)
 
   let make_stream () = 1
@@ -97,6 +145,8 @@ type program = addr * block IntMap.t * addr
 (****)
 
 let dummy_cont = (-1, None)
+
+let is_dummy_cont (pc, _) = pc < 0
 
 (****)
 
@@ -227,3 +277,31 @@ let print_block annot pc (param, instr, last) =
 let print_program annot (pc, blocks, _) =
   Format.eprintf "Entry point: %d@.@." pc;
   IntMap.iter (print_block annot) blocks
+
+(****)
+
+let fold_closures blocks f accu =
+  IntMap.fold
+    (fun _ (_, instrs, _) accu ->
+       List.fold_left
+         (fun accu i ->
+            match i with Let (_, Closure (_, pc)) -> f pc accu | _ -> accu)
+         accu instrs)
+    blocks accu
+
+(****)
+
+let (>>) x f = f x
+
+let fold_children blocks pc f accu =
+  let (_, _, last) = IntMap.find pc blocks in
+  match last with
+    Return _ | Raise _ | Stop ->
+      accu
+  | Branch (pc', _) | Poptrap (pc', _) ->
+      f pc' accu
+  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), pc2, _) ->
+      accu >> f pc1 >> f pc2
+  | Switch (_, a1, a2) ->
+      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
+           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2

@@ -72,8 +72,7 @@ and mark_instr st i =
   | Offset_ref _ ->
       assert false
 
-and mark_cont st (pc, param) =
-  mark_req st pc (*; opt_iter (mark_var st) param*)
+and mark_cont st (pc, param) = mark_req st pc
 
 and mark_req st pc =
   if not (IntSet.mem pc st.live_block) then begin
@@ -105,7 +104,6 @@ and mark_req st pc =
         mark_cont st cont; mark_req st pc
     | Poptrap cont ->
         mark_cont st cont
-
   end
 
 (****)

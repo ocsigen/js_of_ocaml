@@ -30,7 +30,7 @@
   ==> should we use short variables for innermost functions?
 *)
 
-let single_line = true
+let compact = false
 
 (****)
 
@@ -63,8 +63,10 @@ Printf.fprintf ch "%d -> %d\n" pc pc2;
   | Switch (_, a1, a2) ->
 Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') a1;
 Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') a2;
-      accu >> Array.fold_right (fun (pc, _) -> f pc) a1
-           >> Array.fold_right (fun (pc, _) -> f pc) a2
+      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
+           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+
+(****)
 
 let traverse blocks pc =
   let rec traverse_rec pc (last_visit, next, queue) =
@@ -87,6 +89,7 @@ let build blocks pc prev =
     match queue with
       (pc, start, num) :: queue
           when min <= start && IntMap.find pc last_visit < max ->
+(*Format.eprintf "%d (%d/%d/%d/%d/%d) {@." pc min start num (IntMap.find pc last_visit) max;*)
 incr i; let nm = Format.sprintf "cluster_%d" !i in
 Printf.fprintf ch "subgraph %s {\n" nm;
 Printf.fprintf ch "%d\n" pc;
@@ -95,6 +98,13 @@ Printf.fprintf ch "%d\n" pc;
 Printf.fprintf ch "}\n";
         build_rec queue last_visit min max (Node (pc, child_info) :: prev)
     | _ ->
+(*
+begin match queue with
+(pc, start, num) :: queue ->
+Format.eprintf "[%d (%d/%d/%d/%d/%d)]@." pc min start num (IntMap.find pc last_visit) max
+  | _ -> ()
+end;
+*)
         (queue, prev)
   in
   let (queue, accu) = build_rec queue last_visit 0 max prev in
@@ -250,9 +260,7 @@ let enqueue expr_queue prop x ce =
   in
   (instrs, (x, (prop, ce)) :: expr_queue)
 
-let block l = match l with [s] -> s | _ -> J.Block l
-
-let prim_kinds = ["caml_int64_float_of_bits", const_p]
+(****)
 
 let source_elements l =
   List.fold_right
@@ -266,6 +274,20 @@ let source_elements l =
        | _ ->
            J.Statement st :: rem)
     l []
+
+let statement_list l =
+  List.fold_right
+    (fun st rem ->
+       match st, rem with
+         J.Variable_statement l1, J.Variable_statement l2 :: rem' ->
+           J.Variable_statement (l1 @ l2) :: rem'
+       | _ ->
+           st :: rem)
+    l []
+
+let block l = match l with [s] -> s | _ -> J.Block (statement_list l)
+
+let prim_kinds = ["caml_int64_float_of_bits", const_p]
 
 let rec translate_expr ctx queue e =
   match e with
@@ -334,6 +356,7 @@ let rec translate_expr ctx queue e =
           let ((px, cx), queue) = access_queue queue x in
           (J.EDot (cx, "length"), px, queue)
       | C_call name, l ->
+Code.add_reserved_name name;  (*XXX HACK *)
 (*XXX Tail call *)
           let prim_kind =
             try List.assoc name prim_kinds with Not_found -> mutator_p in
@@ -434,20 +457,28 @@ and translate_instr ctx expr_queue instr =
                      [J.Variable_statement [Var.to_string x, Some ce]]
             end
         | Assign (x, y) ->
+            let ((px, cx), expr_queue) = access_queue expr_queue x in
+            let ((py, cy), expr_queue) = access_queue expr_queue y in
             flush_queue expr_queue false
-              [J.Expression_statement (J.EBin (J.Eq, var x, var y))]
+              [J.Expression_statement (J.EBin (J.Eq, cx, cy))]
         | Set_field (x, n, y) ->
+            let ((px, cx), expr_queue) = access_queue expr_queue x in
+            let ((py, cy), expr_queue) = access_queue expr_queue y in
             flush_queue expr_queue false
               [J.Expression_statement
-                 (J.EBin (J.Eq, J.EAccess (var x, int (n + 1)), var y))]
+                 (J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy))]
         | Offset_ref (x, n) ->
+            let ((px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue false
-            [J.Expression_statement (J.EBin (J.PlusEq, var x, int n))]
+              [J.Expression_statement (J.EBin (J.PlusEq, cx, int n))]
         | Array_set (x, y, z) ->
+            let ((px, cx), expr_queue) = access_queue expr_queue x in
+            let ((py, cy), expr_queue) = access_queue expr_queue y in
+            let ((pz, cz), expr_queue) = access_queue expr_queue z in
             flush_queue expr_queue false
               [J.Expression_statement
-                 (J.EBin (J.Eq, J.EAccess (var x, J.EBin(J.Plus, var y, one)),
-                          var z))]
+                 (J.EBin (J.Eq, J.EAccess (cx, J.EBin(J.Plus, cy, one)),
+                          cz))]
       in
       let (instrs, expr_queue) = translate_instr ctx expr_queue rem in
       (st @ instrs, expr_queue)
@@ -481,14 +512,26 @@ and translate_last ctx tree count queue last =
   | Switch (x, a1, a2) ->
       flush_all queue
       [J.Expression_statement (J.EQuote "swtch")]
-  | Pushtrap (cont, pc, _) ->
+  | Pushtrap (cont1, pc, cont2) ->
+      let var =
+        match IntMap.find pc ctx.Ctx.blocks with
+          (Some y, _, _) -> Var.to_string y
+              (* FIX: make sure this is *always* a fresh variable *)
+        | _              -> "_"
+      in
+      let handler_body = translate_block_contents ctx tree count pc [] in
+      flush_all queue
+        (J.Try_statement (branch ctx tree count [] cont1,
+                          Some (var, handler_body), None) ::
+         branch ctx tree count [] cont2)
+(*
       let invoke_handler =
         [J.Statement (J.Return_statement
                         (Some (J.ECall (J.EVar (addr pc), []))))]
       in
-      let body =
-        match IntMap.find pc ctx.Ctx.blocks with
-          (Some y, _, _) ->
+
+        match param with
+          Some y -> 
             J.Statement (J.Expression_statement
                            (J.EBin (J.Eq, var y, J.EVar "x"))) ::
             invoke_handler
@@ -499,9 +542,10 @@ and translate_last ctx tree count queue last =
         (J.Expression_statement
            (J.ECall (J.EVar "caml_push_trap",
                      [J.EFun (None, ["x"], body)])) ::
-           branch ctx tree count [] cont)
+           branch ctx tree count [] cont1)
+*)
   | Poptrap _ ->
-      flush_all queue []
+      flush_all queue [(*J.Expression_statement (J.EVar "poptrap")*)]
 
 and translate_block_contents ctx tree count pc expr_queue =
   let ch = IntMap.find pc tree in
@@ -583,7 +627,7 @@ and translate_body ctx pc toplevel =
 let f (pc, blocks, _) live_vars =
   let ctx = Ctx.initial blocks live_vars in
   let p = translate_body ctx pc true in
-if single_line then Format.set_margin 999999998;
+if compact then Format.set_margin 999999998;
   Format.printf "\
 function jsoo_inject(x) {
 switch (typeof x){
@@ -596,6 +640,11 @@ var init_time = (new Date ()).getTime () * 0.001;
 function caml_sys_time () {
   return ((new Date ()).getTime () * 0.001 - init_time);
 }
+function caml_string_notequal(s1,s2) {
+document.write (\"(\",s1,\")\");
+document.write (\"(\",s2,\")\");
+document.write (\"(\",s1!=s2,\")\");
+return (s1!=s2)?1:0;}
 function caml_int64_float_of_bits(x) {return x;}
 function caml_register_named_value(dz,dx) { return ;}
 function caml_sys_get_argv(xx) { return [0, \"foo\", [0, \"foo\", \"bar\"]]; }
@@ -620,7 +669,7 @@ case \"string\":
 for (var p = 0;p < obj.length - 1; p++) hash_accu = hash_accu*19+obj[p];
 return hash_accu;
 default:
-document.write(\"hash:\", typeof obj);
+//document.write(\"hash:\", typeof obj);
 }
 }
 function caml_string_get (s, i) {
@@ -634,16 +683,16 @@ function caml_array_set_addr (array, index, newval) {
 return 0;
 }
 function jsoo_get (f, o){
-document.write(\"{\", o, \"|\", f, \"}\");
+//document.write(\"{\", o, \"|\", f, \"}\");
 res = o[f];
-document.write(\"==>\", res, \".\");
+//document.write(\"==>\", res, \".\");
 return res;
 //return o[f];
 }
 function jsoo_call (d, args, o){
-document.write(\"call{\", d, \"|\", args.slice(1), \"|\", o, \"}\");
+//document.write(\"call{\", d, \"|\", args.slice(1), \"|\", o, \"}\");
 res = o.apply (d, args.slice(1));
-document.write(\"==>\", res, \".\");
+//document.write(\"==>\", res, \".\");
 return res;
 //return o.apply (d, args.slice(1));
 }
@@ -682,7 +731,7 @@ default:
 }
 function thread_new (clos, arg) { }
 function caml_js_http_get_with_status (url) {
-document.write (url);
+//document.write (url);
     var xmlhttp = false;
     var vm = this;
     /* get request object */

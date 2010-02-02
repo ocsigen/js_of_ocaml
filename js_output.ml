@@ -251,7 +251,7 @@ and statement f s =
       else
         Format.fprintf f "@[%a;@]" (expression 0) e
   | If_statement (e, s1, Some s2) ->
-      Format.fprintf f "@[<1>if@ @[(%a)@]@ @[%a@]@ else@ @[%a@]@]"
+      Format.fprintf f "@[<1>if@,@[(%a)@]@,@[%a@]@;<0 -1>else@ @[<1>%a@]@]"
         (expression 0) e statement s1 statement s2
   | If_statement (e, s1, None) ->
       Format.fprintf f "@[<1>if@ @[(%a)@]@ @[%a@]@]"
@@ -283,7 +283,7 @@ and statement f s =
       Format.fprintf f "@[<1>try@ %a" block b;
       begin match ctch with
         None        -> ()
-      | Some (i, b) -> Format.fprintf f "catch@ %s %a" i block b
+      | Some (i, b) -> Format.fprintf f "@;<0 -1>@[<1>catch(%s)@,%a@]" i block b
       end;
       begin match fin with
         None   -> ()
