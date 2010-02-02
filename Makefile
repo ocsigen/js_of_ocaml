@@ -2,7 +2,7 @@ all: compile
 
 OBJS=javascript.cmx js_output.cmx \
      util.cmx instr.cmx code.cmx deadcode.cmx flow.cmx control.cmx \
-     generate.cmx main.cmx
+     generate.cmx parse.cmx main.cmx
 
 compile: $(OBJS:cmx=cmo)
 	ocamlc -o $@ $^
@@ -23,7 +23,7 @@ clean:
 	rm -f *.cm[ix] *.o
 
 depend:
-	find . -regex ".*\\.mli?" | xargs \
+	find . -name private -prune -o -regex ".*\\.mli?" | xargs \
 	ocamldep > .depend
 
 include .depend

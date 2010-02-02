@@ -156,6 +156,7 @@ type kind =
   | KClosurerec
   | KClosure
   | KStop of int
+  | KSplitPoint
 
 type desc = { code : t; kind : kind; name : string; opcode : int }
 

@@ -30,6 +30,10 @@
   ==> should we use short variables for innermost functions?
 *)
 
+let single_line = true
+
+(****)
+
 open Util
 open Code
 module J = Javascript
@@ -42,17 +46,6 @@ let i = ref 0
 
 (****)
 
-(*
-let number_nodes pc i =
-  if IntSet.mem visited pc then
-    let last_branch = 
-  let last = visite_children ... i in
-  
-queue of nodes to visit
-pair of numbers for each node : branch they belong in DF tree
-number: last other branch they belong to
-*)
-
 let (>>) x f = f x
 
 let fold_children blocks pc f accu =
@@ -60,10 +53,10 @@ let fold_children blocks pc f accu =
   match last with
     Return _ | Raise _ | Stop ->
       accu
-  | Branch (pc', _) ->
+  | Branch (pc', _) | Poptrap (pc', _) ->
 Printf.fprintf ch "%d -> %d\n" pc pc';
       f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), pc2) ->
+  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), pc2, _) ->
 Printf.fprintf ch "%d -> %d\n" pc pc1;
 Printf.fprintf ch "%d -> %d\n" pc pc2;
       accu >> f pc1 >> f pc2
@@ -455,10 +448,6 @@ and translate_instr ctx expr_queue instr =
               [J.Expression_statement
                  (J.EBin (J.Eq, J.EAccess (var x, J.EBin(J.Plus, var y, one)),
                           var z))]
-        | Poptrap ->
-            (*XXX*)
-            flush_queue expr_queue false
-              [J.Expression_statement (J.EQuote ("poptrap"))]
       in
       let (instrs, expr_queue) = translate_instr ctx expr_queue rem in
       (st @ instrs, expr_queue)
@@ -492,7 +481,7 @@ and translate_last ctx tree count queue last =
   | Switch (x, a1, a2) ->
       flush_all queue
       [J.Expression_statement (J.EQuote "swtch")]
-  | Pushtrap (cont, pc) ->
+  | Pushtrap (cont, pc, _) ->
       let invoke_handler =
         [J.Statement (J.Return_statement
                         (Some (J.ECall (J.EVar (addr pc), []))))]
@@ -511,6 +500,8 @@ and translate_last ctx tree count queue last =
            (J.ECall (J.EVar "caml_push_trap",
                      [J.EFun (None, ["x"], body)])) ::
            branch ctx tree count [] cont)
+  | Poptrap _ ->
+      flush_all queue []
 
 and translate_block_contents ctx tree count pc expr_queue =
   let ch = IntMap.find pc tree in
@@ -592,7 +583,7 @@ and translate_body ctx pc toplevel =
 let f (pc, blocks, _) live_vars =
   let ctx = Ctx.initial blocks live_vars in
   let p = translate_body ctx pc true in
-(*Format.set_margin 999999998;*)
+if single_line then Format.set_margin 999999998;
   Format.printf "\
 function jsoo_inject(x) {
 switch (typeof x){
@@ -708,6 +699,6 @@ document.write (url);
 }
 
 @.\
-%a@." Js_output.program p
+%a" Js_output.program p
 ;Printf.fprintf ch "}\n"
 ; close_out ch

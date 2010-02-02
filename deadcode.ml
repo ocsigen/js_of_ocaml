@@ -34,8 +34,6 @@ let req_instr i =
       req_expr e
   | Assign _ | Set_field _ | Offset_ref _ | Array_set _ ->
       false
-  | Poptrap ->
-      true
 
 (****)
 
@@ -71,7 +69,7 @@ and mark_instr st i =
       mark_var st x
   | Array_set (_, x, y) ->
       mark_var st x; mark_var st y
-  | Offset_ref _ | Poptrap ->
+  | Offset_ref _ ->
       assert false
 
 and mark_cont st (pc, param) =
@@ -88,9 +86,7 @@ and mark_req st pc =
              if req_expr e then mark_expr st e
          | Assign (x, _) | Set_field (x, _, _) | Offset_ref (x, _)
          | Array_set (x, _, _) ->
-             mark_var st x
-         | Poptrap ->
-             ())
+             mark_var st x)
       instr;
     match last with
       Return x | Raise x ->
@@ -105,8 +101,11 @@ and mark_req st pc =
         mark_var st x;
         Array.iter (fun cont -> mark_cont st cont) a1;
         Array.iter (fun cont -> mark_cont st cont) a2
-    | Pushtrap (cont, pc) ->
+    | Pushtrap (cont, pc, _) ->
         mark_cont st cont; mark_req st pc
+    | Poptrap cont ->
+        mark_cont st cont
+
   end
 
 (****)
@@ -121,14 +120,16 @@ let fully_live_instr st i =
     Let (x, _) | Assign (x, _)
   | Set_field (x, _, _) | Offset_ref (x, _) | Array_set (x, _, _) ->
       st.live.(Var.idx x) > 0
-  | Poptrap ->
-      true
 
 let live_instr st i = req_instr i || fully_live_instr st i
 
 let filter_cont blocks st (pc, arg) =
   let (param, _, _) =
-    try IntMap.find pc blocks with Not_found -> assert false in
+    try
+      IntMap.find pc blocks
+    with Not_found ->
+      assert (pc = -1); (None, [], Stop)
+  in
   match param with
     Some x when st.live.(Var.idx x) > 0 ->
       (pc, arg)
@@ -147,8 +148,10 @@ let filter_live_last blocks st l =
       Switch (x,
               Array.map (fun cont -> filter_cont blocks st cont) a1,
               Array.map (fun cont -> filter_cont blocks st cont) a2)
-  | Pushtrap (cont, pc) ->
-      Pushtrap (filter_cont blocks st cont, pc)
+  | Pushtrap (cont1, pc, cont2) ->
+      Pushtrap (filter_cont blocks st cont1, pc, filter_cont blocks st cont2)
+  | Poptrap cont ->
+      Poptrap (filter_cont blocks st cont)
 
 let annot st pc xi =
   if not (IntSet.mem pc st.live_block) then "x" else
@@ -189,7 +192,7 @@ let f (pc, blocks, free_pc) =
               Let (x, _) | Assign (x, _)
             | Set_field (x, _, _) | Array_set (x, _, _) ->
                 add_dep deps x i
-            | Offset_ref _ | Poptrap ->
+            | Offset_ref _  ->
                 ())
          instr;
        match last with
@@ -203,7 +206,9 @@ let f (pc, blocks, free_pc) =
        | Switch (_, a1, a2) ->
            Array.iter (fun cont -> add_cont_dep blocks deps cont) a1;
            Array.iter (fun cont -> add_cont_dep blocks deps cont) a2
-       | Pushtrap (cont, _) ->
+       | Pushtrap (cont, _, _) ->
+           add_cont_dep blocks deps cont
+       | Poptrap cont ->
            add_cont_dep blocks deps cont)
     blocks;
   let st =

@@ -42,7 +42,6 @@ type instr =
   | Set_field of Var.t * int * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
-  | Poptrap
 
 type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
 
@@ -55,7 +54,8 @@ type last =
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * addr
+  | Pushtrap of cont * addr * cont
+  | Poptrap of cont
 
 type block = Var.t option * instr list * last
 
@@ -65,3 +65,5 @@ type xinstr = Instr of instr | Last of last
 
 val print_instr : Format.formatter -> instr -> unit
 val print_program : (Util.IntMap.key -> xinstr -> string) -> program -> unit
+
+val dummy_cont : cont

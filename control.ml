@@ -45,9 +45,11 @@ let traverse blocks pc f accu =
                 (fun (visited, accu) (pc, _) -> traverse_rec visited pc accu)
                 (visited, accu) a2 in
             (visited, accu)
-        | Pushtrap ((pc1, _), pc2) ->
+        | Pushtrap ((pc1, _), pc2, _) ->
             let (visited, accu) = traverse_rec visited pc1 accu in
             traverse_rec visited pc2 accu
+        | Poptrap (pc, _) ->
+            traverse_rec visited pc accu
       in
       (visited, f pc accu)
     end
@@ -63,8 +65,9 @@ let is_trivial instr last =
   end
     &&
   begin match last with
-    Return _ | Raise _ | Stop | Branch _ | Cond _ -> true
-  | Switch _ | Pushtrap _                         -> false
+    Return _ | Raise _ | Stop
+  | Branch _ | Cond _ | Poptrap _ -> true
+  | Switch _ | Pushtrap _         -> false
   end
 
 let resolve_branch blocks (pc, arg) =
@@ -81,7 +84,7 @@ let concat_blocks instr arg param instr' =
 let rec block_simpl pc (preds, blocks) =
   let (param, instr, last) = IntMap.find pc blocks in
   match last with
-    Return _ | Raise _ | Stop ->
+    Return _ | Raise _ | Stop | Poptrap _ ->
       (preds, blocks)
   | Branch (pc', arg) ->
       let (param', instr', last') = IntMap.find pc' blocks in
@@ -213,11 +216,11 @@ let simpl (pc, blocks, free_pc) =
          match last with
            Return _ | Raise _ | Stop ->
              preds
-         | Branch cont ->
+         | Branch cont | Poptrap cont ->
              add_pred pc cont preds
          | Cond (_, _, cont1, cont2) ->
              add_pred pc cont1 (add_pred pc cont2 preds)
-         | Pushtrap (cont, _) ->
+         | Pushtrap (cont, _, _) ->
              add_pred pc cont preds
          | Switch (_, a1, a2) ->
              let preds =

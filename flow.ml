@@ -176,8 +176,6 @@ and propagate st i =
   | Assign (x, _) | Set_field (x, _, _)
   | Array_set (x, _, _) | Offset_ref (x, _) ->
       update_var st x unknown
-  | Poptrap ->
-      ()
 
 (****)
 
@@ -229,8 +227,6 @@ let subst_instr s a i =
       Offset_ref (subst_var s x, n)
   | Array_set (x, y, z) ->
       Array_set (subst_var s x, subst_var s y, subst_var s z)
-  | Poptrap ->
-      Poptrap
 
 let subst_cont s (pc, arg) = (pc, opt_map (fun x -> subst_var s x) arg)
 
@@ -240,8 +236,8 @@ let subst_last s l =
       l
   | Branch cont ->
       Branch (subst_cont s cont)
-  | Pushtrap (cont, pc) ->
-      Pushtrap (subst_cont s cont, pc)
+  | Pushtrap (cont1, pc, cont2) ->
+      Pushtrap (subst_cont s cont1, pc, subst_cont s cont2)
   | Return x ->
       Return (subst_var s x)
   | Raise x ->
@@ -252,6 +248,8 @@ let subst_last s l =
       Switch (subst_var s x,
               Array.map (fun cont -> subst_cont s cont) a1,
               Array.map (fun cont -> subst_cont s cont) a2)
+  | Poptrap cont ->
+      Poptrap (subst_cont s cont)
 
 let subst s a (pc, blocks, free_pc) =
   let blocks =
@@ -276,8 +274,7 @@ let f (pc, blocks, free_pc) =
             match i with
               Let (_, e) ->
                 add_expr_deps deps e i
-            | Assign _ | Set_field _ | Array_set _ | Offset_ref _
-            | Poptrap ->
+            | Assign _ | Set_field _ | Array_set _ | Offset_ref _ ->
                 ())
          instr;
        match last with
@@ -291,7 +288,9 @@ let f (pc, blocks, free_pc) =
        | Switch (_, a1, a2) ->
            Array.iter (fun cont -> add_cont_dep blocks deps cont) a1;
            Array.iter (fun cont -> add_cont_dep blocks deps cont) a2
-       | Pushtrap (cont, _) ->
+       | Pushtrap (cont, _, _) ->
+           add_cont_dep blocks deps cont
+       | Poptrap cont ->
            add_cont_dep blocks deps cont)
     blocks;
   let st = { approx = approx; deps = deps } in
@@ -300,7 +299,7 @@ let f (pc, blocks, free_pc) =
        opt_iter (fun x -> update_var st x unknown) param;
        List.iter (fun i -> propagate st i) instr;
        match last with
-         Pushtrap (_, pc) ->
+         Pushtrap (_, pc, _) ->
            begin match IntMap.find pc blocks with
              (Some x, _, _) -> update_var st x unknown
            | _              -> ()

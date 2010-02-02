@@ -155,6 +155,7 @@ type kind =
   | KClosurerec
   | KClosure
   | KStop of int
+  | KSplitPoint
 
 type desc = { code : t; kind : kind; name : string; opcode : int }
 
@@ -250,7 +251,7 @@ let ops =
        SWITCH, KSwitch, "SWITCH";
        BOOLNOT, KNullary, "BOOLNOT";
        PUSHTRAP, KCond_jump, "PUSHTRAP";
-       POPTRAP, KNullary, "POPTRAP";
+       POPTRAP, KSplitPoint, "POPTRAP";
        RAISE, KStop 0, "RAISE";
        CHECK_SIGNALS, KNullary, "CHECK_SIGNALS";
        C_CALL1, KUnary, "C_CALL1";

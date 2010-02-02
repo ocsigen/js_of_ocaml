@@ -75,7 +75,6 @@ type instr =
   | Set_field of Var.t * int * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
-  | Poptrap
 
 type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
 
@@ -88,11 +87,16 @@ type last =
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * addr
+  | Pushtrap of cont * addr * cont
+  | Poptrap of cont
 
 type block = Var.t option * instr list * last
 
 type program = addr * block IntMap.t * addr
+
+(****)
+
+let dummy_cont = (-1, None)
 
 (****)
 
@@ -166,8 +170,6 @@ let print_instr f i =
       Format.fprintf f "%a += %d" Var.print x i
   | Array_set (x, y, z) ->
       Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
-  | Poptrap ->
-      Format.fprintf f "poptrap"
 
 let print_cond f (c, x) =
   match c with
@@ -178,6 +180,7 @@ let print_cond f (c, x) =
   | CUlt n -> Format.fprintf f "%a < %d" Var.print x n
 
 let print_cont f (pc, arg) =
+  if pc < 0 then Format.fprintf f "<dummy>" else
   match arg with
     None   -> Format.fprintf f "%d" pc
   | Some x -> Format.fprintf f "%d (%a)" pc Var.print x
@@ -202,8 +205,11 @@ let print_last f l =
       Array.iteri
         (fun i cont -> Format.fprintf f "tag %d -> %a; " i print_cont cont) a2;
       Format.fprintf f "}"
-  | Pushtrap (cont, pc) ->
-      Format.fprintf f "pushtrap %a handler %d" print_cont cont pc
+  | Pushtrap (cont1, pc, cont2) ->
+      Format.fprintf f "pushtrap %a handler %d continuation %a"
+        print_cont cont1 pc print_cont cont2
+  | Poptrap cont ->
+      Format.fprintf f "poptrap %a" print_cont cont
 
 type xinstr = Instr of instr | Last of last
 
