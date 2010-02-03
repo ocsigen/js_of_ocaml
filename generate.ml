@@ -188,7 +188,7 @@ let rec constant x =
   if Obj.is_block x then begin
     let tag = Obj.tag x in
     if tag = Obj.string_tag then
-      J.EStr (Obj.magic x : string)
+      J.ENew (J.EVar ("MlString"), Some [J.EStr (Obj.magic x : string)])
     else if tag = Obj.double_tag then
       J.ENum (Obj.magic x : float)
     else if tag = Obj.double_array_tag then begin
@@ -351,7 +351,8 @@ let rec translate_expr ctx queue e =
       | C_call "caml_string_get", [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
-          (J.EAccess (cx, cy), or_p (or_p px py) mutable_p, queue)
+          (J.ECall (J.EDot (cx, "charAt"), [cy]),
+           or_p (or_p px py) mutable_p, queue)
       | C_call "caml_ml_string_length", [x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EDot (cx, "length"), px, queue)
@@ -630,9 +631,12 @@ let f (pc, blocks, _) live_vars =
 if compact then Format.set_margin 999999998;
   Format.printf "\
 function jsoo_inject(x) {
+//document.write (\"<<\", x, \">>\");
 switch (typeof x){
 case \"object\":
-  return x[1];
+//document.write (\"[\", typeof (x[1]), \"]\");
+//document.write (\"[\", x[1].toString(), \"]\");
+  return x[1].toString();
 default:
   return null;
 }}
@@ -641,18 +645,17 @@ function caml_sys_time () {
   return ((new Date ()).getTime () * 0.001 - init_time);
 }
 function caml_string_notequal(s1,s2) {
-document.write (\"(\",s1,\")\");
-document.write (\"(\",s2,\")\");
-document.write (\"(\",s1!=s2,\")\");
-return (s1!=s2)?1:0;}
+//document.write (\"(\",s1.toString(),\")\");
+//document.write (\"(\",s2.toString(),\")\");
+//document.write (\"(\",s1.notEqual(s2),\")\");
+return (s1.notEqual(s2))?1:0;}
 function caml_int64_float_of_bits(x) {return x;}
 function caml_register_named_value(dz,dx) { return ;}
 function caml_sys_get_argv(xx) { return [0, \"foo\", [0, \"foo\", \"bar\"]]; }
 function caml_sys_get_config (e) { return [0, \"Unix\", 32]; }
 function caml_js_params (e) { return [0]; }
-function jsoo_eval(s) { return eval(s); }
+function jsoo_eval(s) { return eval(s.toString()); }
 function caml_format_int(fmt, i) { return String(i); }
-function caml_ml_string_length (s) { return s.length; }
 function caml_greaterequal (x, y) {return (x >= y);}
 function caml_lessequal (x, y) {return (x <= y);}
 function caml_make_vect (len, init){
@@ -672,9 +675,6 @@ default:
 //document.write(\"hash:\", typeof obj);
 }
 }
-function caml_string_get (s, i) {
-return s[i];
-}
 function caml_array_get_addr (array, index) {
 return array[index];
 }
@@ -684,17 +684,16 @@ return 0;
 }
 function jsoo_get (f, o){
 //document.write(\"{\", o, \"|\", f, \"}\");
-res = o[f];
+res = o[f.toString()];
 //document.write(\"==>\", res, \".\");
 return res;
-//return o[f];
 }
 function jsoo_call (d, args, o){
 //document.write(\"call{\", d, \"|\", args.slice(1), \"|\", o, \"}\");
 res = o.apply (d, args.slice(1));
 //document.write(\"==>\", res, \".\");
 return res;
-//return o.apply (d, args.slice(1));
+return o.apply (d, args.slice(1));
 }
 function caml_call_1 (f, v1) {
 switch (f[2]) {
@@ -742,7 +741,7 @@ function caml_js_http_get_with_status (url) {
 //        }
         xmlhttp.open(\"GET\", url, false);
         xmlhttp.send(null);
-        var b = [0, xmlhttp.status, xmlhttp.responseText];
+        var b = [0, xmlhttp.status, new MlString (xmlhttp.responseText)];
         return b;
 //        vm.thread_wait (xmlhttp, cont);
 }

@@ -43,6 +43,7 @@ and expression =
   | ECall of expression * arguments
   | EAccess of expression * expression
   | EDot of expression * identifier
+  | ENew of expression * arguments option
   | EVar of identifier
   | EFun of function_expression
   | EStr of string

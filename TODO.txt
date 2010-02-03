@@ -1,8 +1,7 @@
 
 BUGS
 ====
-- check BLEINT, BGTINT, ...
-- string access should return an integer!!!
+- check BGTINT, BLEINT, ...
 
 IMPROVEMENTS
 ============
@@ -33,3 +32,15 @@ DATA ANALYSIS
 - correct analysis (side-effects...)
 - faster algorithm
 - interprocedural analysis
+
+================================
+
+function encode_utf8( s )
+{
+  return unescape( encodeURIComponent( s ) );
+}
+
+function decode_utf8( s )
+{
+  return decodeURIComponent( escape( s ) );
+}

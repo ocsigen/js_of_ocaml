@@ -45,7 +45,6 @@ let rec formal_parameter_list f l =
 16 MemberExpression
    FunctionExpression
    PrimaryExpression
-XXX not sure we need level 16
 *)
 
 let op_prec op =
@@ -106,7 +105,7 @@ let rec need_paren l e =
       l <= out && need_paren lft e
   | ECall (e, _) | EAccess (e, _) | EDot (e, _) ->
       l <= 15 && need_paren 15 e
-  | EVar _ | EStr _ | EArr _ | ENum _ | EQuote _ | EUn _ ->
+  | EVar _ | EStr _ | EArr _ | ENum _ | EQuote _ | EUn _ | ENew _ ->
       false
   | EFun _ | EObj _ ->
       true
@@ -166,6 +165,15 @@ let rec expression l f e =
   | EDot (e, nm) ->
       if l > 15 then Format.fprintf f "@[<1>(";
       Format.fprintf f "%a.%s" (expression 15) e nm;
+      if l > 15 then Format.fprintf f ")@]"
+  | ENew (e, None) ->
+      if l > 15 then Format.fprintf f "@[<1>(";
+      Format.fprintf f "@[<2>new %a@]" (expression 15) e;
+      if l > 15 then Format.fprintf f ")@]"
+  | ENew (e, Some el) ->
+      if l > 15 then Format.fprintf f "@[<1>(";
+      Format.fprintf f "@[<2>new %a@,@[<1>(%a)@]@]"
+        (expression 16) e arguments el;
       if l > 15 then Format.fprintf f ")@]"
   | ECond (e, e1, e2) ->
       if l > 2 then Format.fprintf f "@[<1>(";
