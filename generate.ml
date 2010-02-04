@@ -1,8 +1,6 @@
 (*XXXX
 - CLEAN UP!!!
 
-- generate better code for switches
-
 - Throw ???
   need to pass an argument!
 
@@ -86,10 +84,17 @@ Printf.fprintf ch "%d -> %d\n" pc pc2;
 Printf.fprintf ch "%d -> %d\n" pc pc3;
       accu >> f pc1 >> f pc2 >> f pc3
   | Switch (_, a1, a2) ->
+      let normalize a =
+        a >> Array.to_list
+          >> List.sort compare
+          >> list_group (fun x -> x)
+          >> List.map fst
+          >> Array.of_list
+      in
 Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') a1;
 Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') a2;
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a1)
+           >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a2)
 
 (****)
 

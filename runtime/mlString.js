@@ -31,9 +31,9 @@ MlString.prototype.setCharAt = function (i, c) {
 
 MlString.prototype.replace = function (i, s, j, l) {
     this.contents =
-    String.concat (String.substring (this.contents, 0, i),
-                   String.substring (s, j, j + l),
-                   String.substring (this.contents, i + l, this.length));
+    String.concat (this.contents.substring (0, i),
+                   s.substring (j, j + l),
+                   this.contents.substring (i + l, this.length));
 }
 
 MlString.prototype.fill = function (i, len, c) {

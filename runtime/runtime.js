@@ -37,7 +37,7 @@ function caml_create_string(len) {
 return new MlString(len);
 }
 function caml_blit_string(s1, i1, s2, i2, len) {
-s2.replace (i2, s1, i1, len);
+s2.replace (i2, s1.contents, i1, len);
 return 0
 }
 var event_args;

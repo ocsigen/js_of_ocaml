@@ -1,10 +1,10 @@
 
+- switch inside a try ... with: should use break!
+- do arithmetic modulo for integers
 - generate caml_call_N functions... (with short names when possible...)
-- compilation of "try ... with ..."
 - problem with tail calls (too deep)
-- more compact switches
-  ==> group cases by continuation
-  ==> the case with most continuations is the default
+  ===> improved implementation of loops
+  ===> 'if then else' that yield to the same continuation...
 
 IMPROVEMENTS
 ============
