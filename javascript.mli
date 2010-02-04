@@ -18,7 +18,7 @@ and binop =
     Eq | StarEq | SlashEq | ModEq | PlusEq | MinusEq (*... XXX*)
   | Or | And | Bor | Bxor | Band
   | EqEq | NotEq | EqEqEq | NotEqEq
-  | Lt | Le
+  | Lt | Le | InstanceOf
   | Lsl | Lsr | Asr
   | Plus | Minus
   | Mul | Div | Mod

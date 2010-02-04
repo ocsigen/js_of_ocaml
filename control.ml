@@ -65,9 +65,8 @@ let is_trivial instr last =
   end
     &&
   begin match last with
-    Return _ | Raise _ | Stop
-  | Branch _ | Cond _ | Poptrap _ -> true
-  | Switch _ | Pushtrap _         -> false
+    Return _ | Raise _ | Stop | Branch _       -> true
+  | Cond _ | Poptrap _ | Switch _ | Pushtrap _ -> false
   end
 
 let resolve_branch blocks (pc, arg) =

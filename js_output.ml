@@ -56,7 +56,7 @@ let op_prec op =
   | Bxor -> 6, 6, 7
   | Band -> 7, 7, 8
   | EqEq | NotEq | EqEqEq | NotEqEq -> 8, 8, 9
-  | Lt | Le -> 9, 9, 10
+  | Lt | Le | InstanceOf -> 9, 9, 10
   | Lsl | Lsr | Asr -> 10, 10, 11
   | Plus | Minus -> 11, 11, 12
   | Mul | Div | Mod -> 12, 12, 13
@@ -88,6 +88,7 @@ let op_str op =
   | Mul     -> "*"
   | Div     -> "/"
   | Mod     -> "%"
+  | InstanceOf -> assert false
 
 let unop_str op =
   match op with
@@ -149,6 +150,12 @@ let rec expression l f e =
       if l > 13 then Format.fprintf f "@[<1>(";
       Format.fprintf f "%s%a" (unop_str op) (expression 13) e;
       if l > 13 then Format.fprintf f ")@]"
+  | EBin (InstanceOf, e1, e2) ->
+      let (out, lft, rght) = op_prec InstanceOf in
+      if l > out then Format.fprintf f "@[<1>(";
+      Format.fprintf f "@[%a@ instanceof@ %a@]"
+        (expression lft) e1 (expression rght) e2;
+      if l > out then Format.fprintf f ")@]"
   | EBin (op, e1, e2) ->
       let (out, lft, rght) = op_prec op in
       if l > out then Format.fprintf f "@[<1>(";
@@ -275,7 +282,7 @@ and statement f s =
       Format.fprintf f "@[<1>switch@ (%a)@ {@," (expression 0) e;
       List.iter
         (fun (e, sl) ->
-           Format.fprintf f "@[<1>@[<2>case@ %a:@]@ %a@]@,"
+           Format.fprintf f "@[<1>@[<2>case@ %a:@]@,%a@]@,"
              (expression 0) e statement_list sl)
         cc;
       begin match def with

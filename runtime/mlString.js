@@ -18,6 +18,12 @@ MlString.prototype.notEqual = function (s) {
     return (this.contents != s.contents);
 }
 
+MlString.prototype.compare = function (s) {
+    if (this.contents < s.contents) return -1;
+    else if (this.contents > s.contents) return 1;
+    else return 0;
+}
+
 MlString.prototype.setCharAt = function (i, c) {
     var s = String.fromCharCode (c & 0xff);
     this.replace(i, s, 0, 1);

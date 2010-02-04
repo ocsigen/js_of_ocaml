@@ -9,6 +9,8 @@ module Var : sig
   val make_stream : unit -> stream
   val next : stream -> t * stream
 
+  val fresh : unit -> t
+
   val count : unit -> int
 
   val compare : t -> t -> int

@@ -196,6 +196,18 @@ module State = struct
 
   let grab n st = (List.map elt_to_var (list_start n st.stack), pop n st)
 
+  let rec st_unalias s x n y =
+    match s with
+      [] ->
+        []
+    | z :: rem ->
+        (if n <> 0 && z = Var x then Var y else z) ::
+        st_unalias rem x (n - 1) y
+
+  let unalias st x n y =
+    assert (List.nth st.stack n = Var x);
+    {st with stack = st_unalias st.stack x n y }
+
   let start_function state env offset =
     {state with accu = Dummy; stack = []; env = env; env_offset = offset}
 
@@ -318,11 +330,13 @@ and compile code limit pc state instrs =
       let n = getu code (pc + 1) in
       let y = State.peek n state in
       let z = State.accu state in
-      if debug then Format.printf "%a = %a@." Var.print y Var.print z;
+      let (t, state) = State.fresh_var state in
+      let state = State.unalias state y n t in
+      if debug then Format.printf "%a := %a@." Var.print y Var.print z;
       let (x, state) = State.fresh_var state in
       if debug then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 2) state
-        (Let (x, Const 0) :: Assign (y, z) :: instrs)
+        (Let (x, Const 0) :: Assign (y, z) :: Let (t, Variable y) :: instrs)
   | ENVACC1 ->
       compile code limit (pc + 1) (State.env_acc 1 state) instrs
   | ENVACC2 ->
@@ -823,15 +837,17 @@ and compile code limit pc state instrs =
       if debug then Format.printf "%a = %a[%a]@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Array_get, [y; z])) :: instrs)
+        (Let (x, Prim (C_call "caml_string_get", [y; z])) :: instrs)
   | SETSTRINGCHAR ->
       if debug then Format.printf "%a[%a] = %a@." Var.print (State.accu state)
         Var.print (State.peek 0 state)
         Var.print (State.peek 1 state);
+      let x = State.accu state in
+      let y = State.peek 0 state in
+      let z = State.peek 1 state in
+      let (t, state) = State.fresh_var state in
       let instrs =
-        Array_set (State.accu state, State.peek 0 state, State.peek 1 state)
-        :: instrs
-      in
+        Let (t, Prim (C_call "caml_string_set", [x; y; z])) :: instrs in
       let (x, state) = State.fresh_var state in
       if debug then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) (State.pop 2 state)
@@ -1131,7 +1147,7 @@ if debug then Format.printf "switch ...@.";
       if debug then Format.printf "%a = mk_bool(%a > %a)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Le, [z; y])) :: instrs)
+        (Let (x, Prim (Lt, [z; y])) :: instrs)
   | GEINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1139,7 +1155,7 @@ if debug then Format.printf "switch ...@.";
       if debug then Format.printf "%a = mk_bool(%a >= %a)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Lt, [z; y])) :: instrs)
+        (Let (x, Prim (Le, [z; y])) :: instrs)
   | OFFSETINT ->
       let n = gets code (pc + 1) in
       let y = State.accu state in

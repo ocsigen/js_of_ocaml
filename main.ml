@@ -23,7 +23,7 @@ Format.eprintf "Dead-code...@.";
 
   let p = Control.simpl p in
 *)
-
   Code.print_program (fun _ _ -> "") p;
+
 
 Generate.f p live_vars

@@ -55,6 +55,8 @@ module Var : sig
   val make_stream : unit -> stream
   val next : stream -> t * stream
 
+  val fresh : unit -> t
+
   val count : unit -> int
 
   val compare : t -> t -> int
@@ -87,6 +89,8 @@ end = struct
   let next current =
     incr last_var;
     ((current, !last_var), current + 1)
+
+  let fresh () = incr last_var; (0, !last_var)
 
   let count () = !last_var + 1
 
@@ -217,17 +221,17 @@ let print_instr f i =
   | Set_field (x, i, y) ->
       Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
   | Offset_ref (x, i) ->
-      Format.fprintf f "%a += %d" Var.print x i
+      Format.fprintf f "%a[0] += %d" Var.print x i
   | Array_set (x, y, z) ->
       Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
 
 let print_cond f (c, x) =
   match c with
     IsTrue -> Var.print f x
-  | CEq n  -> Format.fprintf f "%a = %d" Var.print x n
-  | CLt n  -> Format.fprintf f "%a < %d" Var.print x n
-  | CLe n  -> Format.fprintf f "%a <= %d" Var.print x n
-  | CUlt n -> Format.fprintf f "%a < %d" Var.print x n
+  | CEq n  -> Format.fprintf f "%d = %a" n Var.print x
+  | CLt n  -> Format.fprintf f "%d < %a" n Var.print x
+  | CLe n  -> Format.fprintf f "%d <= %a" n Var.print x
+  | CUlt n -> Format.fprintf f "%d < %a" n Var.print x
 
 let print_cont f (pc, arg) =
   if pc < 0 then Format.fprintf f "<dummy>" else

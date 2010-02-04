@@ -1,7 +1,10 @@
 
-BUGS
-====
-- check BGTINT, BLEINT, ...
+- generate caml_call_N functions... (with short names when possible...)
+- compilation of "try ... with ..."
+- problem with tail calls (too deep)
+- more compact switches
+  ==> group cases by continuation
+  ==> the case with most continuations is the default
 
 IMPROVEMENTS
 ============
@@ -32,6 +35,15 @@ DATA ANALYSIS
 - correct analysis (side-effects...)
 - faster algorithm
 - interprocedural analysis
+
+COMPRESSION OPTIMIZATION
+========================
+- http://timepedia.blogspot.com/2009/08/on-reducing-size-of-compressed.html
+  http://timepedia.blogspot.com/2009/11/traveling-salesman-problem-and.html
+  ==> order functions by similarity
+  ==> try to always use the same arguments for functions
+  ==> 7-zip is better at compressing than gzip, with the same algorithm...
+- we can remove some whitespaces but we have to look at the context...
 
 ================================
 
