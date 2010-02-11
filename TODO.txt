@@ -1,10 +1,86 @@
 
-- switch inside a try ... with: should use break!
+Conditionals compilation
+========================
+
+1. get parent branch continuation points
+
+2. find continuation points of each branch
+   if more than one overall, abort
+   ===> map them all to a same node (for the sake of counting them)
+        + set selection variable to implement jump to these nodes when
+          compiling
+
+3. recursively compile children (passing them existing continuation points)
+
+4. if continuation point is not the same as the parent one compile the
+   continuation point (step 2)
+   ==> if several continuation points, add a switch to select between them
+
+   otherwise, we are done
+
+when compiling a switch, add a "break" at the tail of each branch with
+a continuation point
+
+"poptrap" are termination points when compiling a pushtrap node
+
+if (e) {...; return} else {b} ===> if e {...; return}; b
+      grey is empty for this block...
+
+======
+
+Loops: wrap closures inside functions.
+Function arguments: any variable which occur inside the closure and is
+   defined in the loop
+
+   examples:
+       x = !y; let f = fun () -> x in ...
+
+       for i = ... to ... do let f = fun () -> i in ... done
+
+=======
+
+Special case for shortcut boolean operations...
+
+     1
+     |\
+     | \2
+     | /\
+     |/  \
+     3    4
+
+==========================
+
+- bug with ASSIGN and closures in for loops: it is incorrect to modify
+  the variable in place
+
+- bug with ULT comparison: check within a range: *both* negative and
+  above some value!!!
+
 - do arithmetic modulo for integers
-- generate caml_call_N functions... (with short names when possible...)
+
+
+- define an alias for MlString function...
+
 - problem with tail calls (too deep)
   ===> improved implementation of loops
   ===> 'if then else' that yield to the same continuation...
+- switch inside a try ... with: should use break!
+- generate caml_call_N functions... (with short names when possible...)
+
+
+- store meta-information in functions themselves, rather than using a
+  block  ===> f.length ???
+
+
+- convert boolean to integer: (x)+0
+  (is that faster than x?1:0 ?)
+
+- dynamic linking? (code generation from cmo files)
+
+VARIABLE NAMING
+===============
+Start with function parameters.  Then, variables that are used most.
+Interference mechanism...
 
 IMPROVEMENTS
 ============
@@ -27,7 +103,6 @@ IMPROVEMENTS
 
 DATA REPRESENTATION
 ===================
-- correct implementation of strings
 - should probably wrap Ocaml exceptions...
 
 DATA ANALYSIS
@@ -45,14 +120,39 @@ COMPRESSION OPTIMIZATION
   ==> 7-zip is better at compressing than gzip, with the same algorithm...
 - we can remove some whitespaces but we have to look at the context...
 
+TYPES
+=====
+
+type 'a nullable
+
+  null : 'a nullable
+  the : 'a -> 'a nullable
+  maybe : 'a nullable -> 'a option
+  (flatten : 'a nullable nullable -> 'a nullable)
+
+Use 32 bit signed integer (following the spec!)
+===> bitwise operator are ok; the result of arithmeric operations must
+     be truncated back to 32 bits
+     (x|0 !)
+===> we do not have enough bits for multiplication/division :-(
+
 ================================
 
-function encode_utf8( s )
-{
-  return unescape( encodeURIComponent( s ) );
-}
+tail-call version of functions:
 
-function decode_utf8( s )
-{
-  return decodeURIComponent( escape( s ) );
-}
+   function f(n, x1, ..., xn)
+      { if (n >100) return new Trampoline(f, arguments); ...}
+
+entry points:
+  from non-tail call
+  from tail position without trampoline
+    - if function without tail calls, direct call
+    - if function with tail calls, install trampoline and call
+  from tail position with trampoline
+    - if function without tail calls, call the function without 'n'
+    - otherwise call function with counter
+
+
+==========================
+
+http://blog.higher-order.net/2009/09/08/understanding-clojures-persistenthashmap-deftwice/

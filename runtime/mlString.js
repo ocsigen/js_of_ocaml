@@ -1,3 +1,8 @@
+// FIX: should use unusual method names so that any error like using a
+// string rather than a mlstring is immediately visible
+
+// catch URIError exceptions in conversion from/to UTF-8
+
 function MlString(param) {
     switch (typeof param) {
     case "number":

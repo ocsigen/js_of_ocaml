@@ -265,11 +265,14 @@ and statement f s =
         Format.fprintf f "@[<1>(%a);@]" (expression 0) e
       else
         Format.fprintf f "@[%a;@]" (expression 0) e
+  | If_statement (e, s1, Some (Block _ as s2)) ->
+      Format.fprintf f "@[<1>if@,@[(%a)@]@,@[%a@]@;<0 -1>else@,@[<1>%a@]@]"
+        (expression 0) e statement s1 statement s2
   | If_statement (e, s1, Some s2) ->
       Format.fprintf f "@[<1>if@,@[(%a)@]@,@[%a@]@;<0 -1>else@ @[<1>%a@]@]"
         (expression 0) e statement s1 statement s2
   | If_statement (e, s1, None) ->
-      Format.fprintf f "@[<1>if@ @[(%a)@]@ @[%a@]@]"
+      Format.fprintf f "@[<1>if@,@[(%a)@]@,@[%a@]@]"
         (expression 0) e statement s1
   | Return_statement e ->
       begin match e with
@@ -279,7 +282,7 @@ and statement f s =
                      argument. A line return would not work *)
       end
   | Switch_statement (e, cc, def) ->
-      Format.fprintf f "@[<1>switch@ (%a)@ {@," (expression 0) e;
+      Format.fprintf f "@[<1>switch@,(%a)@,{@," (expression 0) e;
       List.iter
         (fun (e, sl) ->
            Format.fprintf f "@[<1>@[<2>case@ %a:@]@,%a@]@,"

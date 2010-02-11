@@ -284,14 +284,14 @@ let print_program annot (pc, blocks, _) =
 
 (****)
 
-let fold_closures blocks f accu =
+let fold_closures (pc, blocks, _) f accu =
   IntMap.fold
     (fun _ (_, instrs, _) accu ->
        List.fold_left
          (fun accu i ->
             match i with Let (_, Closure (_, pc)) -> f pc accu | _ -> accu)
          accu instrs)
-    blocks accu
+    blocks (f pc accu)
 
 (****)
 

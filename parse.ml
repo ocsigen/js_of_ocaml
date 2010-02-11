@@ -1289,8 +1289,8 @@ let rec traverse blocks pc visited blocks' =
   end else
     (visited, blocks', [])
 
-let match_exn_traps blocks pc =
-  fold_closures blocks
+let match_exn_traps ((_, blocks, _) as p) =
+  fold_closures p
     (fun pc blocks' ->
        let (_, blocks', path) = traverse blocks pc IntSet.empty blocks' in
        assert (path = []);
@@ -1334,7 +1334,7 @@ ignore cont;
   let last = Branch (0, None) in
   let pc = String.length code / 4 in
   let compiled_block = IntMap.add pc (None, !l, last) compiled_block in
-  let compiled_block = match_exn_traps compiled_block pc in
+  let compiled_block = match_exn_traps (pc, compiled_block, pc + 1) in
   (pc, compiled_block, pc + 1)
 
 (****)

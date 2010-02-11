@@ -25,5 +25,6 @@ Format.eprintf "Dead-code...@.";
 *)
   Code.print_program (fun _ _ -> "") p;
 
+Struct.f p;
 
 Generate.f p live_vars

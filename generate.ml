@@ -30,7 +30,7 @@
   ==> should we use short variables for innermost functions?
 *)
 
-let compact = true
+let compact = false
 
 (****)
 
@@ -91,8 +91,8 @@ Printf.fprintf ch "%d -> %d\n" pc pc3;
           >> List.map fst
           >> Array.of_list
       in
-Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') a1;
-Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') a2;
+Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') (normalize a1);
+Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') (normalize a2);
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a1)
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a2)
 
@@ -174,6 +174,28 @@ Printf.fprintf ch "}\n";
   Format.eprintf "@]@.";
   accu
 *)
+
+let fold_children blocks pc f accu =
+  let (_, _, last) = IntMap.find pc blocks in
+  match last with
+    Return _ | Raise _ | Stop | Poptrap _ ->
+      accu
+  | Branch (pc', _) ->
+      f pc' accu
+  | Cond (_, _, (pc1, _), (pc2, _)) ->
+      accu >> f pc1 >> f pc2
+  | Pushtrap ((pc1, _), pc2, (pc3, _)) ->
+      accu >> f pc1 >> f pc2 >> f pc3
+  | Switch (_, a1, a2) ->
+      let normalize a =
+        a >> Array.to_list
+          >> List.sort compare
+          >> list_group (fun x -> x)
+          >> List.map fst
+          >> Array.of_list
+      in
+      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a1)
+           >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a2)
 
 let count_preds blocks pc =
   let rec count_rec pc count =
@@ -303,31 +325,6 @@ let enqueue expr_queue prop x ce =
   (instrs, (x, (prop, ce)) :: expr_queue)
 
 (****)
-
-let source_elements l =
-  List.fold_right
-    (fun st rem ->
-       match st, rem with
-         J.Variable_statement [addr, Some (J.EFun (None, params, body))], _ ->
-           J.Function_declaration (addr, params, body) :: rem
-       | J.Variable_statement l1,
-         J.Statement (J.Variable_statement l2) :: rem' ->
-           J.Statement (J.Variable_statement (l1 @ l2)) :: rem'
-       | _ ->
-           J.Statement st :: rem)
-    l []
-
-let statement_list l =
-  List.fold_right
-    (fun st rem ->
-       match st, rem with
-         J.Variable_statement l1, J.Variable_statement l2 :: rem' ->
-           J.Variable_statement (l1 @ l2) :: rem'
-       | _ ->
-           st :: rem)
-    l []
-
-let block l = match l with [s] -> s | _ -> J.Block (statement_list l)
 
 let prim_kinds = ["caml_int64_float_of_bits", const_p]
 
@@ -551,9 +548,11 @@ and translate_last ctx tree count doReturn queue last =
         | CLe n          -> J.EBin (J.Le, int n, cx)
       in
       flush_all queue
-      [J.If_statement (e,
-                       block (branch ctx tree count doReturn [] cont1),
-                       Some (block (branch ctx tree count doReturn [] cont2)))]
+      [Js_simpl.if_statement
+         e
+         (Js_simpl.block (branch ctx tree count doReturn [] cont1))
+         (Some (Js_simpl.block
+                  (branch ctx tree count doReturn [] cont2)))]
   | Switch (x, a1, a2) ->
       let build_switch e a =
         let a = Array.mapi (fun i cont -> (i, cont)) a in
@@ -568,7 +567,7 @@ and translate_last ctx tree count doReturn queue last =
           [] ->
             assert false
         | [(cont, _)] ->
-            block (branch ctx tree count doReturn [] cont)
+            Js_simpl.block (branch ctx tree count doReturn [] cont)
         | (cont, l') :: rem ->
             let l =
               List.flatten
@@ -580,14 +579,16 @@ and translate_last ctx tree count doReturn queue last =
                       | (i, _) :: r ->
                           List.rev
                             ((J.ENum (float i),
-                              branch ctx tree count doReturn [] cont)
+                              Js_simpl.statement_list
+                                (branch ctx tree count doReturn [] cont))
                                ::
                              List.map
                              (fun (i, _) -> (J.ENum (float i), [])) r))
                    rem)
             in
             J.Switch_statement
-              (e, l, Some (branch ctx tree count doReturn [] cont))
+              (e, l, Some (Js_simpl.statement_list
+                             (branch ctx tree count doReturn [] cont)))
 (*
         let l =
               Array.to_list
@@ -599,15 +600,18 @@ and translate_last ctx tree count doReturn queue last =
             J.Switch_statement (e, l, None)
           *)
       in
-      let st =
+      let (st, queue) =
         if Array.length a1 = 0 then
-          [build_switch (J.EAccess(var x, J.ENum 0.)) a2]
+          let ((px, cx), queue) = access_queue queue x in
+          ([build_switch (J.EAccess(cx, J.ENum 0.)) a2], queue)
         else if Array.length a2 = 0 then
-          [build_switch (var x) a1]
+          let ((px, cx), queue) = access_queue queue x in
+          ([build_switch cx a1], queue)
         else
-          [J.If_statement (J.EBin(J.InstanceOf, var x, J.EVar ("Array")),
-                           build_switch (J.EAccess(var x, J.ENum 0.)) a2,
-                           Some (build_switch (var x) a1))]
+          ([J.If_statement (J.EBin(J.InstanceOf, var x, J.EVar ("Array")),
+                            build_switch (J.EAccess(var x, J.ENum 0.)) a2,
+                            Some (build_switch (var x) a1))],
+           queue)
       in
       flush_all queue st
   | Pushtrap (cont1, pc, cont2) ->
@@ -618,9 +622,11 @@ and translate_last ctx tree count doReturn queue last =
         | _              -> "_"
       in
       let handler_body =
-         translate_block_contents ctx tree count doReturn pc [] in
+        Js_simpl.statement_list
+          (translate_block_contents ctx tree count doReturn pc []) in
       flush_all queue
-        (J.Try_statement (branch ctx tree count false [] cont1,
+        (J.Try_statement (Js_simpl.statement_list
+                            (branch ctx tree count false [] cont1),
                           Some (var, handler_body), None) ::
          branch ctx tree count doReturn [] cont2)
 (*
@@ -665,7 +671,8 @@ and translate_block_contents ctx tree count doReturn pc expr_queue =
 and translate_block ctx tree count prev pc =
   let (param, instr, last) = IntMap.find pc ctx.Ctx.blocks in
   let body =
-    source_elements (translate_block_contents ctx tree count true pc []) in
+    Js_simpl.source_elements
+      (translate_block_contents ctx tree count true pc []) in
   let prev =
     J.Variable_statement [addr pc, Some (J.EFun (None, [], body))] :: prev in
   match param with
@@ -727,7 +734,7 @@ and translate_body ctx pc toplevel =
     [J.Statement (J.Expression_statement (J.ECall (J.EVar (addr pc), [])))]
   else
 *)
-    source_elements (branch ctx tree count true [] (pc, None))
+    Js_simpl.source_elements (branch ctx tree count true [] (pc, None))
 
 let f (pc, blocks, _) live_vars =
   let ctx = Ctx.initial blocks live_vars in

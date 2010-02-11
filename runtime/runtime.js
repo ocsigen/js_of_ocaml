@@ -185,7 +185,7 @@ return res;
 return o.apply (d, args.slice(1));
 }
 function caml_call_1 (f, v1) {
-switch (f[2]) {
+switch (f[1].length) {
 case 1:
   return f[1](v1);
 case 2:
@@ -193,12 +193,12 @@ case 2:
 case 3:
   return [247, function(v2,v3){return f[1](v1,v2,v3);}, 2]
 default:
-  document.write(f[2]);
+  document.write(f[1].length);
   document.write("(1)");
 }
 }
 function caml_call_2 (f, v1, v2) {
-switch (f[2]) {
+switch (f[1].length) {
 case 1:
 //document.write(f);
 res = f[1](v1);
@@ -211,12 +211,12 @@ case 3:
 case 4:
   return [247, function(v3,v4){return f[1](v1,v2,v3,v4);}, 2]
 default:
-  document.write(f[2]);
+  document.write(f[1].length);
   document.write("(2)");
 }
 }
 function caml_call_3 (f, v1, v2, v3) {
-switch (f[2]) {
+switch (f[1].length) {
 case 3:
   return f[1](v1, v2,v3);
 default:
@@ -225,7 +225,7 @@ default:
 }
 }
 function caml_call_4 (f, v1, v2, v3, v4) {
-switch (f[2]) {
+switch (f[1].length) {
 case 4:
   return f[1](v1, v2,v3, v4);
 default:
@@ -234,7 +234,7 @@ default:
 }
 }
 function caml_call_5 (f, v1, v2, v3, v4, v5) {
-switch (f[2]) {
+switch (f[1].length) {
 case 5:
   return f[1](v1, v2,v3, v4,v5);
 default:
@@ -243,7 +243,7 @@ default:
 }
 }
 function caml_call_6 (f, v1, v2, v3, v4, v5, v6) {
-switch (f[2]) {
+switch (f[1].length) {
 case 6:
   return f[1](v1, v2, v3, v4, v5, v6);
 case 7:
@@ -254,7 +254,7 @@ default:
 }
 }
 function caml_call_7 (f, v1, v2, v3, v4, v5, v6, v7) {
-switch (f[2]) {
+switch (f[1].length) {
 case 7:
   return f[1](v1, v2,v3, v4,v5,v6,v7);
 default:
@@ -263,7 +263,7 @@ default:
 }
 }
 function caml_call_8 (f, v1, v2, v3, v4, v5,v6,v7,v8) {
-switch (f[2]) {
+switch (f[1].length) {
 case 8:
   return f[1](v1, v2,v3, v4,v5,v6,v7,v8);
 default:
@@ -272,7 +272,7 @@ default:
 }
 }
 function caml_call_9 (f, v1, v2, v3, v4, v5,v6,v7,v8,v9) {
-switch (f[2]) {
+switch (f[1].length) {
 case 9:
   return f[1](v1, v2,v3, v4,v5,v6,v7,v8,v9);
 default:
