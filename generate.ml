@@ -78,6 +78,10 @@ Printf.fprintf ch "%d -> %d\n" pc pc';
 Printf.fprintf ch "%d -> %d\n" pc pc1;
 Printf.fprintf ch "%d -> %d\n" pc pc2;
       accu >> f pc1 >> f pc2
+  | Pushtrap ((pc1, _), pc2, cont) when Code.is_dummy_cont cont ->
+Printf.fprintf ch "%d -> %d\n" pc pc1;
+Printf.fprintf ch "%d -> %d\n" pc pc2;
+      accu >> f pc1 >> f pc2
   | Pushtrap ((pc1, _), pc2, (pc3, _)) ->
 Printf.fprintf ch "%d -> %d\n" pc pc1;
 Printf.fprintf ch "%d -> %d\n" pc pc2;
@@ -183,6 +187,8 @@ let fold_children blocks pc f accu =
   | Branch (pc', _) ->
       f pc' accu
   | Cond (_, _, (pc1, _), (pc2, _)) ->
+      accu >> f pc1 >> f pc2
+  | Pushtrap ((pc1, _), pc2, cont) when Code.is_dummy_cont cont ->
       accu >> f pc1 >> f pc2
   | Pushtrap ((pc1, _), pc2, (pc3, _)) ->
       accu >> f pc1 >> f pc2 >> f pc3
@@ -628,7 +634,7 @@ and translate_last ctx tree count doReturn queue last =
         (J.Try_statement (Js_simpl.statement_list
                             (branch ctx tree count false [] cont1),
                           Some (var, handler_body), None) ::
-         branch ctx tree count doReturn [] cont2)
+         if Code.is_dummy_cont cont2 then [] else branch ctx tree count doReturn [] cont2)
 (*
       let invoke_handler =
         [J.Statement (J.Return_statement

@@ -1265,7 +1265,7 @@ let rec traverse blocks pc visited blocks' =
   if not (IntSet.mem pc visited) then begin
     let visited = IntSet.add pc visited in
     let (visited, blocks', path) =
-      fold_children blocks pc
+      Code.fold_children blocks pc
         (fun pc (visited, blocks', path) ->
            let (visited, blocks', path') =
              traverse blocks pc visited blocks' in
