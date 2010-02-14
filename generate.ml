@@ -474,13 +474,30 @@ Code.add_reserved_name name;  (*XXX HACK *)
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
-      |_ ->
-         (J.EQuote "prim", const_p, queue)
-(*
- | IsInt
-  |  | Mul | Div | Mod | And | Or | Xor
- | Ult
-*)
+      | IsInt, [x] ->
+(*XXX*)
+Format.eprintf "Primitive [ISINT] not implemented!!!@.";
+         (J.EQuote "isInt", const_p, queue)
+      | And, [x; y] ->
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          (J.EBin (J.Band, cx, cy), or_p px py, queue)
+      | Or, [x; y] ->
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          (J.EBin (J.Bor, cx, cy), or_p px py, queue)
+      | Xor, [x; y] ->
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          (J.EBin (J.Bxor, cx, cy), or_p px py, queue)
+      | Ult, [x; y] ->
+(*XXX*)
+Format.eprintf "Primitive [ULT] not implemented!!!@.";
+         (J.EQuote "ult", const_p, queue)
+      | (Vectlength | Array_get | Not | Neg | IsInt | Add | Sub |
+         Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr | Eq |
+         Neq | Lt | Le | Ult | Offset _), _ ->
+          assert false
       end
   | Variable x ->
       let ((px, cx), queue) = access_queue queue x in

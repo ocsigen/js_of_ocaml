@@ -1,3 +1,12 @@
+Priorities
+==========
+- production of branches/loops
+- faster flow analysis
+- fix compilation of closures within loops
+- fix small bugs
+- self tail recursion
+
+===========
 
 Conditionals compilation
 ========================
@@ -50,60 +59,66 @@ Special case for shortcut boolean operations...
 
 ==========================
 
-- bug with ASSIGN and closures in for loops: it is incorrect to modify
-  the variable in place
+BUGS
+====
 
 - bug with ULT comparison: check within a range: *both* negative and
   above some value!!!
 
+- compile ISINT to "not a block" and document this deviation
+  (or document that we should not rely on the Obj module)
+
 - do arithmetic modulo for integers
 
+- bug with ASSIGN and closures in for loops: it is incorrect to modify
+  the variable in place
+  (not just assign, actually: any variable that may change)
 
-- define an alias for MlString function...
-
-- problem with tail calls (too deep)
-  ===> improved implementation of loops
-  ===> 'if then else' that yield to the same continuation...
-- switch inside a try ... with: should use break!
 - generate caml_call_N functions... (with short names when possible...)
-
 
 - store meta-information in functions themselves, rather than using a
   block  ===> f.length ???
 
+- define an alias for MlString function? (on the other hand, gzip
+  should be quite effective...)
 
-- convert boolean to integer: (x)+0
-  (is that faster than x?1:0 ?)
-
-- dynamic linking? (code generation from cmo files)
-
-VARIABLE NAMING
-===============
-Start with function parameters.  Then, variables that are used most.
-Interference mechanism...
+COMPACT MODE
+============
+- We need to insert newlines from time to time to avoid problems with
+  some routers...
+- Code for variable renaming in Javascript code
+- Start with function parameters.  Then, variables that are used most.
+- Use interference mechanism...
 
 IMPROVEMENTS
 ============
 
 - We only have to make sure we do not use a
   reserved word not a function used outside for naming variables
-  ===> very short variable names
   ===> Bloom filter???
 
-- Compile to CPS + trampoline
-  ==> Store exception continuation in a global datastructure
-  ==> cheap trampoline: return fun () {...}
+- convert boolean to integer: (x)+0
+  (is that faster than x?1:0 ?)
 
+- explicit conversion from int to boolean
 
-- Improved inlining of local functions
-  ==> while loops when possible
+- simplify conditional definition
+  should be:
+     Cond of Var.t * cont * cont
+  (we need to eliminate unnecessary conversions from bool to integer
+   for that)
+
+NEW FEATURES
+============
 
 - Map Caml objects to Javascript objects
-- Dynamic loading
+
+- dynamic linking? (code generation from cmo files)
 
 DATA REPRESENTATION
 ===================
-- should probably wrap Ocaml exceptions...
+- should wrap Ocaml exceptions (more robust code)...
+- should perform array bound-checks
 
 DATA ANALYSIS
 =============
@@ -134,7 +149,8 @@ Use 32 bit signed integer (following the spec!)
 ===> bitwise operator are ok; the result of arithmeric operations must
      be truncated back to 32 bits
      (x|0 !)
-===> we do not have enough bits for multiplication/division :-(
+===> we do not have enough bits for multiplication :-(
+===> should probably also have 31 bit as an option, for compatibility...
 
 ================================
 
@@ -155,4 +171,11 @@ entry points:
 
 ==========================
 
+REFERENCES
+==========
+
 http://blog.higher-order.net/2009/09/08/understanding-clojures-persistenthashmap-deftwice/
+
+http://code.google.com/closure/compiler/
+
+http://code.google.com/p/ocamljs/source/browse/#svn/trunk/src
