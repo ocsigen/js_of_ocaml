@@ -62,9 +62,6 @@ Special case for shortcut boolean operations...
 BUGS
 ====
 
-- bug with ULT comparison: check within a range: *both* negative and
-  above some value!!!
-
 - compile ISINT to "not a block" and document this deviation
   (or document that we should not rely on the Obj module)
 
@@ -81,6 +78,8 @@ BUGS
 
 - define an alias for MlString function? (on the other hand, gzip
   should be quite effective...)
+
+- fix definitions of max_int and min_int in pervasive...
 
 COMPACT MODE
 ============
@@ -151,6 +150,16 @@ Use 32 bit signed integer (following the spec!)
      (x|0 !)
 ===> we do not have enough bits for multiplication :-(
 ===> should probably also have 31 bit as an option, for compatibility...
+
+DOCUMENTATION
+=============
+document as much as we can:
+* the representation of datas, closures, ...
+* the assumption we make regarding the bytecode
+  ==> ISINT
+  ==> special case for ASSIGN
+  ==> loops and junctions ==> only the accu may changes (same stack)
+      when two paths merge, not even that for loops
 
 ================================
 

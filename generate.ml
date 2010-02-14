@@ -248,6 +248,7 @@ let addr pc =
       x
   end
 let bool e = J.ECond (e, one, zero)
+let boolnot e = J.ECond (e, zero, one)
 
 (****)
 
@@ -475,9 +476,8 @@ Code.add_reserved_name name;  (*XXX HACK *)
           let ((py, cy), queue) = access_queue queue y in
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [x] ->
-(*XXX*)
-Format.eprintf "Primitive [ISINT] not implemented!!!@.";
-         (J.EQuote "isInt", const_p, queue)
+          let ((px, cx), queue) = access_queue queue x in
+          (boolnot (J.EBin(J.InstanceOf, var x, J.EVar ("Array"))), px, queue)
       | And, [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
@@ -567,7 +567,9 @@ and translate_last ctx tree count doReturn queue last =
         match c with
           IsTrue         -> cx
         | CEq n          -> J.EBin (J.EqEqEq, int n, cx)
-        | CLt n | CUlt n -> J.EBin (J.Lt, int n, cx)
+        | CLt n          -> J.EBin (J.Lt, int n, cx)
+        | CUlt n         -> J.EBin (J.Or, J.EBin (J.Lt, cx, int 0),
+                                          J.EBin (J.Lt, int n, cx))
         | CLe n          -> J.EBin (J.Le, int n, cx)
       in
       flush_all queue
