@@ -66,9 +66,9 @@ and statement =
   | If_statement of expression * statement * statement option
 (*
   | Iteration_statement
-  | Continue_statement
-  | Break_statement
 *)
+  | Continue_statement of string option
+  | Break_statement of string option
   | Return_statement of expression option
 (*
   | With_statement

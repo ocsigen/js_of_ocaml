@@ -274,6 +274,14 @@ and statement f s =
   | If_statement (e, s1, None) ->
       Format.fprintf f "@[<1>if@,@[(%a)@]@,@[%a@]@]"
         (expression 0) e statement s1
+  | Continue_statement None ->
+      Format.fprintf f "continue;"
+  | Continue_statement (Some s) ->
+      Format.fprintf f "continue %s;" s
+  | Break_statement None ->
+      Format.fprintf f "break;"
+  | Break_statement (Some s) ->
+      Format.fprintf f "break %s;" s
   | Return_statement e ->
       begin match e with
         None   -> Format.fprintf f "return;"

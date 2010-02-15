@@ -1,4 +1,8 @@
 (*XXXX
+- generate loops
+- insert breaks in switches!
+
+
 - CLEAN UP!!!
 
 - Throw ???
@@ -218,7 +222,7 @@ let count_preds blocks pc =
 module Ctx = struct
   type t =
     { var_stream : Var.stream;
-      blocks : Code.block Util.IntMap.t;
+      mutable blocks : Code.block Util.IntMap.t;
       live : int array }
 
   let fresh_var ctx =
@@ -333,6 +337,91 @@ let enqueue expr_queue prop x ce =
 
 (****)
 
+type state =
+  { all_succs : (int, IntSet.t) Hashtbl.t;
+    succs : (int, int list) Hashtbl.t;
+    backs : (int, IntSet.t) Hashtbl.t;
+    preds : (int, int) Hashtbl.t;
+    mutable loops : IntSet.t;
+    mutable visited_blocks : IntSet.t;
+    mutable interm_idx : int;
+    ctx : Ctx.t; mutable blocks : Code.block Util.IntMap.t }
+
+let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
+let incr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1)
+let decr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 1)
+
+let fold_children blocks pc f accu =
+  let (_, _, last) = IntMap.find pc blocks in
+  match last with
+    Return _ | Raise _ | Stop ->
+      accu
+  | Branch (pc', _) | Poptrap (pc', _) ->
+      f pc' accu
+  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), pc2, _) ->
+      accu >> f pc1 >> f pc2
+  | Switch (_, a1, a2) ->
+      let normalize a =
+        a >> Array.to_list
+          >> List.sort compare
+          >> list_group (fun x -> x)
+          >> List.map fst
+          >> Array.of_list
+      in
+      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a1)
+           >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a2)
+
+let rec build_graph st pc anc =
+  if not (IntSet.mem pc st.visited_blocks) then begin
+    st.visited_blocks <- IntSet.add pc st.visited_blocks;
+    let anc = IntSet.add pc anc in
+    let s = Code.fold_children st.blocks pc IntSet.add IntSet.empty in
+    Hashtbl.add st.all_succs pc s;
+    let backs = IntSet.inter s anc in
+    Hashtbl.add st.backs pc backs;
+
+    let s = fold_children st.blocks pc (fun x l -> x :: l) [] in
+    let succs = List.filter (fun pc -> not (IntSet.mem pc anc)) s in
+    Hashtbl.add st.succs pc succs;
+    IntSet.iter (fun pc' -> st.loops <- IntSet.add pc' st.loops) backs;
+    List.iter (fun pc' -> build_graph st pc' anc) succs;
+    List.iter (fun pc' -> incr_preds st pc') succs
+  end
+
+let rec dominance_frontier_rec st pc visited grey =
+  let n = get_preds st pc in
+  let v = try IntMap.find pc visited with Not_found -> 0 in
+  if v < n then begin
+    let v = v + 1 in
+    let visited = IntMap.add pc v visited in
+    if v = n then begin
+      let grey = IntSet.remove pc grey in
+      let s = Hashtbl.find st.succs pc in
+      List.fold_right
+        (fun pc' (visited, grey) ->
+           dominance_frontier_rec st pc' visited grey)
+        s (visited, grey)
+    end else begin
+      (visited, if v = 1 then IntSet.add pc grey else grey)
+    end
+  end else
+    (visited, grey)
+
+let dominance_frontier st pc =
+  snd (dominance_frontier_rec st pc IntMap.empty IntSet.empty)
+
+let rec resolve_node interm pc =
+  try
+    resolve_node interm (fst (IntMap.find pc interm))
+  with Not_found ->
+    pc
+
+let resolve_nodes interm s =
+  IntSet.fold (fun pc s' -> IntSet.add (resolve_node interm pc) s')
+    s IntSet.empty
+
+(****)
+
 let prim_kinds = ["caml_int64_float_of_bits", const_p]
 
 let rec translate_expr ctx queue e =
@@ -373,7 +462,8 @@ let rec translate_expr ctx queue e =
       let ((px, cx), queue) = access_queue queue x in
       (J.EAccess (cx, int (n + 1)), or_p px mutable_p, queue)
   | Closure (args, pc) ->
-      (J.EFun (None, List.map Var.to_string args, translate_body ctx pc false),
+      (J.EFun (None, List.map Var.to_string args,
+               compile_closure ctx pc),
        flush_p, queue)
   | Constant c ->
       (constant c, const_p, queue)
@@ -761,335 +851,273 @@ and translate_body ctx pc toplevel =
 *)
     Js_simpl.source_elements (branch ctx tree count true [] (pc, None))
 
+(**********************)
+
+and compile_block st queue pc frontier interm =
+  if pc >= 0 then begin
+    if IntSet.mem pc st.visited_blocks then begin
+      Format.eprintf "!!!! %d@." pc; assert false
+    end;
+    st.visited_blocks <- IntSet.add pc st.visited_blocks
+  end;
+  if IntSet.mem pc st.loops then Format.eprintf "@[<2>while (1) {@,";
+  Format.eprintf "block %d;" pc;
+  let succs = Hashtbl.find st.succs pc in
+  let backs = Hashtbl.find st.backs pc in
+  let grey =
+    List.fold_right
+      (fun pc grey -> IntSet.union (dominance_frontier st pc) grey)
+      succs IntSet.empty
+  in
+  let new_frontier = resolve_nodes interm grey in
+  let (_, instr, last) = IntMap.find pc st.blocks in
+  let (seq, queue) = translate_instr st.ctx queue instr in
+  let body =
+    seq @
+    match last with
+      Code.Pushtrap ((pc1, _), pc2, ((pc3, _) as cont)) ->
+  (* FIX: document this *)
+        let grey =  dominance_frontier st pc2 in
+        let grey' = resolve_nodes interm grey in
+        let inner_frontier =
+          if IntSet.is_empty grey'&& not (Code.is_dummy_cont cont) then
+            IntSet.add pc3 grey'
+          else grey'
+        in
+        if not (Code.is_dummy_cont cont) then incr_preds st pc3;
+        assert (IntSet.cardinal inner_frontier <= 1);
+        let var =
+          match IntMap.find pc2 st.ctx.Ctx.blocks with
+            (Some y, _, _) -> Var.to_string y
+                (* FIX: make sure this is *always* a fresh variable *)
+          | _              -> "_"
+        in
+        Format.eprintf "@[<2>try {@,";
+        let body = compile_block st [] pc1 inner_frontier interm in
+        Format.eprintf "} catch {@,";
+        let handler = compile_block st [] pc2 inner_frontier interm in
+        Format.eprintf "}@]";
+        if not (Code.is_dummy_cont cont) then decr_preds st pc3;
+        flush_all queue
+          (J.Try_statement (Js_simpl.statement_list body,
+                            Some (var, Js_simpl.statement_list handler),
+                            None) ::
+           if IntSet.is_empty inner_frontier then [] else begin
+             let pc = IntSet.choose inner_frontier in
+             if IntSet.mem pc frontier then [] else
+               compile_block st [] pc frontier interm
+           end)
+    | _ ->
+        let (new_frontier, new_interm) =
+          if IntSet.cardinal new_frontier > 1 then begin
+            let x = Code.Var.fresh () in
+            let a = Array.of_list (IntSet.elements new_frontier) in
+            Format.eprintf "@ var %a;" Code.Var.print x;
+            let idx = st.interm_idx in
+            st.interm_idx <- idx - 1;
+            let cases = Array.map (fun pc -> (pc, None)) a in
+            st.blocks <-
+              IntMap.add idx (None, [], Code.Switch (x, cases, [||]))
+                st.blocks;
+            IntSet.iter (fun pc -> incr_preds st pc) new_frontier;
+            Hashtbl.add st.succs idx (IntSet.elements new_frontier);
+            Hashtbl.add st.all_succs idx new_frontier;
+            Hashtbl.add st.backs idx IntSet.empty;
+            (IntSet.singleton idx,
+             Array.fold_right
+               (fun (pc, i) interm -> (IntMap.add pc (idx, (x, i)) interm))
+               (Array.mapi (fun i pc -> (pc, i)) a) interm)
+          end else
+            (new_frontier, interm)
+        in
+        assert (IntSet.cardinal new_frontier <= 1);
+        (* Beware evaluation order! *)
+        let sw =
+          compile_switch st queue pc last backs new_frontier new_interm in
+        sw @
+        if IntSet.cardinal new_frontier = 0 then [] else begin
+          let pc = IntSet.choose new_frontier in
+          if IntSet.mem pc frontier then [] else
+          compile_block st [] pc frontier interm
+        end
+  in
+(*XXXXX *)
+  if IntSet.mem pc st.loops then begin
+    if IntSet.cardinal new_frontier > 0 then
+      Format.eprintf "@ break; }@]"
+    else
+      Format.eprintf "}@]";
+    body
+  end else
+    body
+
+and compile_switch st queue pc last backs frontier interm =
+  let succs = Hashtbl.find st.succs pc in
+  List.iter (fun pc -> if IntMap.mem pc interm then decr_preds st pc) succs;
+  Format.eprintf "@[<2>switch{";
+  let res =
+  match last with
+    Return x ->
+      let ((px, cx), queue) = access_queue queue x in
+      flush_all queue [J.Return_statement (Some cx)]
+  | Raise x ->
+      let ((px, cx), queue) = access_queue queue x in
+      flush_all queue [J.Throw_statement cx]
+  | Stop ->
+      flush_all queue []
+  | Branch cont ->
+      compile_branch st queue cont backs frontier interm
+  | Cond (c, x, cont1, cont2) ->
+      let ((px, cx), queue) = access_queue queue x in
+      let e =
+        match c with
+          IsTrue         -> cx
+        | CEq n          -> J.EBin (J.EqEqEq, int n, cx)
+        | CLt n          -> J.EBin (J.Lt, int n, cx)
+        | CUlt n         -> J.EBin (J.Or, J.EBin (J.Lt, cx, int 0),
+                                          J.EBin (J.Lt, int n, cx))
+        | CLe n          -> J.EBin (J.Le, int n, cx)
+      in
+      flush_all queue
+      [Js_simpl.if_statement
+         e
+         (Js_simpl.block (compile_branch st [] cont1 backs frontier interm))
+         (Some (Js_simpl.block
+                  (compile_branch st [] cont2 backs frontier interm)))]
+  | Switch (x, a1, a2) ->
+      let build_switch e a =
+        let a = Array.mapi (fun i cont -> (i, cont)) a in
+        Array.stable_sort (fun (_, cont1) (_, cont2) -> compare cont1 cont2) a;
+        let l = Array.to_list a in
+        let l = list_group snd l in
+        let l =
+          List.sort
+            (fun (_, l1) (_, l2) ->
+               - compare (List.length l1) (List.length l2)) l in
+        match l with
+          [] ->
+            assert false
+        | [(cont, _)] ->
+            Js_simpl.block (compile_branch st [] cont backs frontier interm)
+        | (cont, l') :: rem ->
+            let l =
+              List.flatten
+                (List.map
+                   (fun (cont, l) ->
+                      match List.rev l with
+                        [] ->
+                          assert false
+                      | (i, _) :: r ->
+                          List.rev
+                            ((J.ENum (float i),
+                              Js_simpl.statement_list
+                                (compile_branch st [] cont backs frontier interm))
+                               ::
+                             List.map
+                             (fun (i, _) -> (J.ENum (float i), [])) r))
+                   rem)
+            in
+            J.Switch_statement
+              (e, l, Some (Js_simpl.statement_list
+                             (compile_branch st [] cont backs frontier interm)))
+      in
+      let (st, queue) =
+        if Array.length a1 = 0 then
+          let ((px, cx), queue) = access_queue queue x in
+          ([build_switch (J.EAccess(cx, J.ENum 0.)) a2], queue)
+        else if Array.length a2 = 0 then
+          let ((px, cx), queue) = access_queue queue x in
+          ([build_switch cx a1], queue)
+        else
+          ([J.If_statement (J.EBin(J.InstanceOf, var x, J.EVar ("Array")),
+                            build_switch (J.EAccess(var x, J.ENum 0.)) a2,
+                            Some (build_switch (var x) a1))],
+           queue)
+      in
+      flush_all queue st
+  | Pushtrap _ ->
+      assert false
+  | Poptrap _ ->
+      flush_all queue []
+  in
+  Format.eprintf "}@.";
+  res
+
+and compile_argument_passing ctx queue (pc, arg) continuation =
+  match arg with
+    None ->
+      continuation queue
+  | Some x ->
+      match IntMap.find pc ctx.Ctx.blocks with
+        (Some y, _, _) ->
+          let ((px, cx), queue) = access_queue queue x in
+          let (st, queue) =
+            match ctx.Ctx.live.(Var.idx y) with
+              0 -> assert false
+            | 1 -> enqueue queue px y cx
+            | _ -> flush_queue queue (px >= flush_p)
+                     [J.Variable_statement [Var.to_string y, Some cx]]
+          in
+          st @ continuation queue
+      | _ ->
+          assert false
+
+and compile_branch st queue ((pc, arg) as cont) backs grey interm =
+  compile_argument_passing st.ctx queue cont
+    (fun queue ->
+       if IntSet.mem pc backs then begin
+         Format.eprintf "@ continue;";
+         flush_all queue [J.Continue_statement None]
+       end else if IntSet.mem pc grey || IntMap.mem pc interm then begin
+         Format.eprintf "@ (br %d)" pc;
+         flush_all queue (compile_branch_selection pc interm)
+       end else
+         compile_block st queue pc grey interm)
+
+and compile_branch_selection pc interm =
+  try
+    let (pc, (x, i)) = IntMap.find pc interm in
+    Format.eprintf "@ %a=%d;" Code.Var.print x i;
+    J.Expression_statement (J.EBin (J.Eq, var x, int i)) ::
+    compile_branch_selection pc interm
+  with Not_found ->
+    []
+
+and compile_closure ctx pc =
+  let st =
+    { visited_blocks = IntSet.empty; loops = IntSet.empty;
+      all_succs = Hashtbl.create 17; succs = Hashtbl.create 17;
+      backs = Hashtbl.create 17; preds = Hashtbl.create 17;
+      interm_idx = -1; ctx = ctx; blocks = ctx.Ctx.blocks }
+  in
+  build_graph st pc IntSet.empty;
+  let current_blocks = st.visited_blocks in
+  st.visited_blocks <- IntSet.empty;
+  Format.eprintf "@[<2>closure{";
+  let res = compile_block st [] pc IntSet.empty IntMap.empty in
+  if
+    IntSet.cardinal st.visited_blocks <> IntSet.cardinal current_blocks
+  then begin
+    Format.eprintf "Some blocks not compiled!@."; assert false
+  end;
+  Format.eprintf "}@]";
+  Js_simpl.source_elements res
+
+let compile_program ctx pc =
+  let res = compile_closure ctx pc in Format.eprintf "@.@."; res
+
+(**********************)
+
 let f (pc, blocks, _) live_vars =
   let ctx = Ctx.initial blocks live_vars in
+(*
   let p = translate_body ctx pc true in
   let p = [J.Function_declaration ("start", [], p);
            J.Statement (J.Expression_statement
                           (J.ECall (J.EVar "start", [])))] in
-if compact then Format.set_margin 999999998;
-(*
-  Format.printf "\
-function jsoo_inject(x) {
-try{
-switch (typeof x){
-case \"object\":
-//document.write (\"[\", typeof (x[1]), \"]\");
-//document.write (\"[\", x[1].toString(), \"]\");
-  return x[1].toString();
-default:
-  return null;
-}}
-catch(e) {
-document.write (\"<<\", x, \">>\"); throw(e);
-}
-}
-function jsoo_extract (o) {
-    //   | Obj of obj        0
-    //   | Num of float      1
-    //   | String of string  2
-    //   | Block of Obj.t    3
-    //   | Nil
-    if (o == null)
-        return 0;
-    if (typeof o == 'string') {
-        return [2, new MlString (o)];
-    }
-    if (typeof o == 'number') {
-        return [1, o];
-    }
-    return [0, o];
-}
-var init_time = (new Date ()).getTime () * 0.001;
-function caml_sys_time (unit) {
-  return ((new Date ()).getTime () * 0.001 - init_time);
-}
-function caml_create_string(len) {
-return new MlString(len);
-}
-function caml_blit_string(s1, i1, s2, i2, len) {
-s2.replace (i2, s1, i1, len);
-return 0
-}
-var event_args;
-function jsoo_wrap_event (clos) {
-return function(evt) { event_args = evt; caml_call_1(clos, 0); }
-}
-function jsoo_get_event_args (unit) {
-return event_args;
-}
-
-function caml_string_notequal(s1,s2) {
-//document.write (\"(\",s1.toString(),\")\");
-//document.write (\"(\",s2.toString(),\")\");
-//document.write (\"(\",s1.notEqual(s2),\")\");
-return (s1.notEqual(s2))?1:0;}
-function caml_string_set(s, i, v) {
-s.setCharAt(i, v);
-return 0;
-}
-function caml_int64_float_of_bits(x) {return x;}
-function caml_ge_float(x, y) {return (x >= y);}
-function caml_sub_float(x, y) {return (x - y);}
-function caml_register_named_value(dz,dx) { return ;}
-function caml_sys_get_argv(xx) { return [0, \"foo\", [0, \"foo\", \"bar\"]]; }
-function caml_sys_get_config (e) { return [0, \"Unix\", 32]; }
-function caml_js_params (e) { return [0]; }
-function jsoo_eval(s) { return eval(s.toString()); }
-function caml_format_int(fmt, i) { return new MlString(String(i)); }
-function caml_greaterequal (x, y) {return (x >= y);}
-function caml_lessequal (x, y) {return (x <= y);}
-function caml_compare (a, b) {
-  if (a === b) return 0;
-  if (a instanceof MlString) {
-    if (b instanceof MlString)
-      return a.compare(b)
-    else
-      return (-1);
-  } else if (a instanceof Array) {
-    if (b instanceof Array) {
-      if (a.length != b.length)
-        return (a.length - b.length);
-      for (var i = 0;i < a.length;i++) {
-        var t = caml_compare (a[i], b[i]);
-        if (t != 0) return t;
-      }
-      return 0;
-    } else
-      return (-1);
-  } else if (b instanceof MlString || b instanceof Array)
-      return 1;
-  else if (a < b) return (-1); else if (a == b) return 0; else return 1;
-}
-function caml_equal (x, y) {
-return (caml_compare(x,y) == 0)?1:0;
-}
-function caml_format_float (fmt, x) {
-return new MlString(x.toString(10));
-}
-function caml_js_node_children (n) {
-    var node = n;
-    try {
-        var res = 0;
-        var cur = 0;
-        var children = node.childNodes;
-        for (c = 0;c < children.length;c++) {
-            if (res == 0) {
-                res = [0, children[c],0];
-                cur = res;
-            } else {
-                cur[2]=[0, children[c],0];
-                cur = cur[2];
-            }
-        }
-        return res;
-    } catch (e) {
-        throw (\"caml_js_node_children: \" + e.message);
-    }
-}
-function caml_js_mutex_create (unit){
-return [0];
-}
-function caml_js_mutex_lock (m){
-m[0]=1;
-return 0;
-}
-function caml_js_mutex_unlock (m){
-m[0]=0;
-return 0;
-}
-function caml_js_mutex_try_lock (m){
-if (m[0] == 0) {
-m[0] = 1;
-return 1;
-} else
-return 0;
-}
-function caml_make_vect (len, init){
-var b = new Array();
- b[0]= 0;
- for (i = 1; i <= len; i++) b[i]=init;
-return b;
-}
-function caml_make_array (a) { return a; }
-function caml_hash_univ_param (count, limit, obj) {
-var hash_accu = 0;
-if (obj instanceof MlString) {
-var s = obj.contents;
-for (var p = 0;p < s.length - 1; p++) hash_accu = (hash_accu*19+s.charCodeAt(p)) & 0x3FFFFFFF;
-//document.write(\"hash:\", hash_accu);
-return (hash_accu& 0x3FFFFFFF);
-} else {
-document.write(\"hash(\", obj, \"):\", typeof obj);
-}
-}
-function caml_array_get_addr (array, index) {
-return array[index+1];
-}
-function caml_array_set_addr (array, index, newval) {
- array[index+1]=newval;
-return 0;
-}
-function caml_array_set (array, index, newval) {
- array[index+1]=newval;
-return 0;
-}
-function caml_array_unsafe_set (array, index, newval) {
- array[index+1]=newval;
-return 0;
-}
-function jsoo_get (f, o){
-//document.write(\"{\", o, \"|\", f, \"}\");
-res = o[f.toString()];
-//document.write(\"==>\", res, \".\");
-return res;
-}
-function jsoo_set(f, v, o) {
-o[f.toString()] = v;
-return 0;
-}
-function jsoo_call (d, args, o){
-//document.write(\"call{\", d, \"|\", args.slice(1), \"|\", o, \"}\");
-res = o.apply (d, args.slice(1));
-//document.write(\"==>\", res, \".\");
-return res;
-return o.apply (d, args.slice(1));
-}
-function caml_call_1 (f, v1) {
-switch (f[2]) {
-case 1:
-  return f[1](v1);
-case 2:
-  return [247, function(v2){return f[1](v1,v2);}, 1]
-case 3:
-  return [247, function(v2,v3){return f[1](v1,v2,v3);}, 2]
-default:
-  document.write(f[2]);
-  document.write(\"(1)\");
-}
-}
-function caml_call_2 (f, v1, v2) {
-switch (f[2]) {
-case 1:
-//document.write(f);
-res = f[1](v1);
-//document.write (\"<\", res, \">\");
-    return caml_call_1(res, v2);
-case 2:
-  return f[1](v1, v2);
-case 3:
-  return [247, function(v3){return f[1](v1,v2,v3);}, 1]
-case 4:
-  return [247, function(v3,v4){return f[1](v1,v2,v3,v4);}, 2]
-default:
-  document.write(f[2]);
-  document.write(\"(2)\");
-}
-}
-function caml_call_3 (f, v1, v2, v3) {
-switch (f[2]) {
-case 3:
-  return f[1](v1, v2,v3);
-default:
-  document.write(f);
-  document.write(\"(3)\");
-}
-}
-function caml_call_4 (f, v1, v2, v3, v4) {
-switch (f[2]) {
-case 4:
-  return f[1](v1, v2,v3, v4);
-default:
-  document.write(f);
-  document.write(\"(4)\");
-}
-}
-function caml_call_5 (f, v1, v2, v3, v4, v5) {
-switch (f[2]) {
-case 5:
-  return f[1](v1, v2,v3, v4,v5);
-default:
-  document.write(f);
-  document.write(\"(5)\");
-}
-}
-function caml_call_6 (f, v1, v2, v3, v4, v5, v6) {
-switch (f[2]) {
-case 6:
-  return f[1](v1, v2, v3, v4, v5, v6);
-case 7:
-    return [247, function(v7){return f[1](v1,v2,v3,v4,v5,v6,v7);}, 1]
-default:
-  document.write(f);
-  document.write(\"(6)\");
-}
-}
-function caml_call_7 (f, v1, v2, v3, v4, v5, v6, v7) {
-switch (f[2]) {
-case 7:
-  return f[1](v1, v2,v3, v4,v5,v6,v7);
-default:
-  document.write(f);
-  document.write(\"(7)\");
-}
-}
-function caml_call_8 (f, v1, v2, v3, v4, v5,v6,v7,v8) {
-switch (f[2]) {
-case 8:
-  return f[1](v1, v2,v3, v4,v5,v6,v7,v8);
-default:
-  document.write(f);
-  document.write(\"(8)\");
-}
-}
-function caml_call_9 (f, v1, v2, v3, v4, v5,v6,v7,v8,v9) {
-switch (f[2]) {
-case 9:
-  return f[1](v1, v2,v3, v4,v5,v6,v7,v8,v9);
-default:
-  document.write(f);
-  document.write(\"(9)\");
-}
-}
-function thread_kill (unit) {
-return 0;
-}
-function thread_delay (unit) {
-return 0;
-}
-function thread_self (unit) {
-return 0;
-}
-function thread_uncaught_exception(e){
-document.write (e);
-}
-function thread_new (clos, arg) { }
-function caml_js_http_get_with_status (url) {
-//document.write (url);
-    var xmlhttp = false;
-    var vm = this;
-    /* get request object */
-    xmlhttp = new XMLHttpRequest();
-    /* do request */
-//        xmlhttp.onreadystatechange = function () {
-//            vm.thread_notify_all (xmlhttp);
-//        }
-        xmlhttp.open(\"GET\", url, false);
-        xmlhttp.send(null);
-        var b = [0, xmlhttp.status, new MlString (xmlhttp.responseText)];
-        return b;
-//        vm.thread_wait (xmlhttp, cont);
-}
-function caml_js_alert(msg) {
-window.alert(msg.toString());
-return 0;
-}
-
-@.\
-%a" Js_output.program p
-;Printf.fprintf ch "}\n"
-; close_out ch
 *)
+  let p = compile_program ctx pc in
+if compact then Format.set_margin 999999998;
 Format.printf "%a" Js_output.program p
 ;Printf.fprintf ch "}\n"
 ; close_out ch

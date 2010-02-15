@@ -92,6 +92,7 @@ COMPACT MODE
 - We need to insert newlines from time to time to avoid problems with
   some routers...
 - Code for variable renaming in Javascript code
+  ==> also eliminate redundant "var"?
 - Start with function parameters.  Then, variables that are used most.
 - Use interference mechanism...
 
@@ -196,3 +197,7 @@ http://code.google.com/closure/compiler/
 http://code.google.com/p/ocamljs/source/browse/#svn/trunk/src
 
 Inlining: see Manuel Serrano's paper
+
+Resolving and Exploiting the k-CFA Paradox
+Illuminating Functional vs. Object-Oriented Program Analysis
+Matthew Might               Yannis Smaragdakis             David Van Horn
