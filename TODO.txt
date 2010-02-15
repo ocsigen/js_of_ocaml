@@ -62,6 +62,12 @@ Special case for shortcut boolean operations...
 BUGS
 ====
 
+- "let x = !y in if e then incr y; (use x now)"
+  ==> not sure how to fix this.  should we pass the whole stack at
+      each block? (optimized away by coloring)? this make analysis
+      more complex, but they will have to deal with self tail
+      recursion anyway...
+
 - compile ISINT to "not a block" and document this deviation
   (or document that we should not rely on the Obj module)
 
@@ -188,3 +194,5 @@ http://blog.higher-order.net/2009/09/08/understanding-clojures-persistenthashmap
 http://code.google.com/closure/compiler/
 
 http://code.google.com/p/ocamljs/source/browse/#svn/trunk/src
+
+Inlining: see Manuel Serrano's paper
