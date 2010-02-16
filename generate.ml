@@ -6,6 +6,8 @@ Patterns:
   => while (true) {.... if (e) continue; break; }
   => should generate conditionnals when single switch inserted
      during compilation
+  => should have special code for switches that include the preceding
+     if statement when possible
 
 - CLEAN UP!!!
 
@@ -25,7 +27,7 @@ Patterns:
   ==> should we use short variables for innermost functions?
 *)
 
-let compact = true
+let compact = false
 
 (****)
 
@@ -50,163 +52,6 @@ let list_group f l =
   match l with
     []     -> []
   | a :: r -> list_group_rec f r (f a) [a] []
-
-(****)
-
-let ch = open_out "/tmp/graph.dot"
-let _ = Printf.fprintf ch "digraph G {\n"
-let i = ref 0
-
-(****)
-
-let (>>) x f = f x
-
-let fold_children blocks pc f accu =
-  let (_, _, last) = IntMap.find pc blocks in
-  match last with
-    Return _ | Raise _ | Stop | Poptrap _ ->
-      accu
-  | Branch (pc', _) ->
-Printf.fprintf ch "%d -> %d\n" pc pc';
-      f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) ->
-Printf.fprintf ch "%d -> %d\n" pc pc1;
-Printf.fprintf ch "%d -> %d\n" pc pc2;
-      accu >> f pc1 >> f pc2
-  | Pushtrap ((pc1, _), pc2, cont) when Code.is_dummy_cont cont ->
-Printf.fprintf ch "%d -> %d\n" pc pc1;
-Printf.fprintf ch "%d -> %d\n" pc pc2;
-      accu >> f pc1 >> f pc2
-  | Pushtrap ((pc1, _), pc2, (pc3, _)) ->
-Printf.fprintf ch "%d -> %d\n" pc pc1;
-Printf.fprintf ch "%d -> %d\n" pc pc2;
-Printf.fprintf ch "%d -> %d\n" pc pc3;
-      accu >> f pc1 >> f pc2 >> f pc3
-  | Switch (_, a1, a2) ->
-      let normalize a =
-        a >> Array.to_list
-          >> List.sort compare
-          >> list_group (fun x -> x)
-          >> List.map fst
-          >> Array.of_list
-      in
-Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') (normalize a1);
-Array.iter (fun (pc', _) -> Printf.fprintf ch "%d -> %d\n" pc pc') (normalize a2);
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a1)
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a2)
-
-(****)
-
-let traverse blocks pc =
-  let rec traverse_rec pc (last_visit, next, queue) =
-    let last_visit' = IntMap.add pc next last_visit in
-    if not (IntMap.mem pc last_visit) then begin
-      let (last_visit, next', queue) =
-        fold_children blocks pc traverse_rec (last_visit', next, queue) in
-      (last_visit, next' + 1, (pc, next, next') :: queue)
-    end else
-      (last_visit', next, queue)
-  in
-  let (last_visit, next, queue) = traverse_rec pc (IntMap.empty, 0, []) in
-  (queue, last_visit, next)
-
-type tree = Node of (Code.addr * tree list)
-
-let build blocks pc prev =
-  let (queue, last_visit, max) = traverse blocks pc in
-  let rec build_rec queue last_visit min max prev =
-    match queue with
-      (pc, start, num) :: queue
-          when min <= start && IntMap.find pc last_visit < max ->
-(*Format.eprintf "%d (%d/%d/%d/%d/%d) {@." pc min start num (IntMap.find pc last_visit) max;*)
-incr i; let nm = Format.sprintf "cluster_%d" !i in
-Printf.fprintf ch "subgraph %s {\n" nm;
-Printf.fprintf ch "%d\n" pc;
-        let (queue, child_info) =
-          build_rec queue last_visit start (num + 1) [] in
-Printf.fprintf ch "}\n";
-        build_rec queue last_visit min max (Node (pc, child_info) :: prev)
-    | _ ->
-(*
-begin match queue with
-(pc, start, num) :: queue ->
-Format.eprintf "[%d (%d/%d/%d/%d/%d)]@." pc min start num (IntMap.find pc last_visit) max
-  | _ -> ()
-end;
-*)
-        (queue, prev)
-  in
-  let (queue, accu) = build_rec queue last_visit 0 max prev in
-  assert (queue = []);
-  accu
-
-let rec tree_to_map (Node (pc, ch)) map =
-  map >> IntMap.add pc (List.map (fun (Node (pc, _)) -> pc) ch)
-      >> forest_to_map ch
-
-and forest_to_map f map = List.fold_right tree_to_map f map
-
-(*
-let build blocks pc enter_block leave_block prev =
-  let (queue, last_visit, max) = traverse blocks pc in
-  let rec build_rec queue last_visit min max prev =
-    match queue with
-      (pc, start, num) :: queue
-          when min <= start && IntMap.find pc last_visit < max ->
-        let (prev, child_prev) = enter_block pc prev in
-incr i; let nm = Format.sprintf "cluster_%d" !i in
-Printf.fprintf ch "subgraph %s {\n" nm;
-Printf.fprintf ch "%d\n" pc;
-        Format.eprintf "@[<2>%d (%d <= %d <= %d <= %d < %d) {@," pc min start num (IntMap.find pc last_visit) max;
-        let (queue, child_info) =
-          build_rec queue last_visit start num child_prev in
-        Format.eprintf "}@]";
-Printf.fprintf ch "}\n";
-        let prev = leave_block prev child_info in
-        build_rec queue last_visit min max prev
-    | _ ->
-        (queue, prev)
-  in
-  Format.eprintf "@[";
-  let (queue, accu) = build_rec queue last_visit 0 max prev in
-  assert (queue = []);
-  Format.eprintf "@]@.";
-  accu
-*)
-
-let fold_children blocks pc f accu =
-  let (_, _, last) = IntMap.find pc blocks in
-  match last with
-    Return _ | Raise _ | Stop | Poptrap _ ->
-      accu
-  | Branch (pc', _) ->
-      f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) ->
-      accu >> f pc1 >> f pc2
-  | Pushtrap ((pc1, _), pc2, cont) when Code.is_dummy_cont cont ->
-      accu >> f pc1 >> f pc2
-  | Pushtrap ((pc1, _), pc2, (pc3, _)) ->
-      accu >> f pc1 >> f pc2 >> f pc3
-  | Switch (_, a1, a2) ->
-      let normalize a =
-        a >> Array.to_list
-          >> List.sort compare
-          >> list_group (fun x -> x)
-          >> List.map fst
-          >> Array.of_list
-      in
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a1)
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a2)
-
-let count_preds blocks pc =
-  let rec count_rec pc count =
-    if not (IntMap.mem pc count) then begin
-      let count = IntMap.add pc 1 count in
-      fold_children blocks pc count_rec count
-    end else
-      IntMap.add pc (IntMap.find pc count + 1) count
-  in
-  count_rec pc IntMap.empty
 
 (****)
 
@@ -341,6 +186,8 @@ type state =
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
 let incr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1)
 let decr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 1)
+
+let (>>) x f = f x
 
 (* This as to be kept in sync with the way we build conditionals
    and switches! *)
@@ -638,222 +485,6 @@ and translate_instr ctx expr_queue instr =
       let (instrs, expr_queue) = translate_instr ctx expr_queue rem in
       (st @ instrs, expr_queue)
 
-and translate_last ctx tree count doReturn queue last =
-  match last with
-    Return x ->
-      assert doReturn;
-      let ((px, cx), queue) = access_queue queue x in
-      flush_all queue [J.Return_statement (Some cx)]
-  | Raise x ->
-      let ((px, cx), queue) = access_queue queue x in
-      flush_all queue [J.Throw_statement cx]
-  | Stop ->
-      flush_all queue []
-  | Branch cont ->
-      branch ctx tree count doReturn queue cont
-  | Cond (c, x, cont1, cont2) ->
-      let ((px, cx), queue) = access_queue queue x in
-      let e =
-        match c with
-          IsTrue         -> cx
-        | CEq n          -> J.EBin (J.EqEqEq, int n, cx)
-        | CLt n          -> J.EBin (J.Lt, int n, cx)
-        | CUlt n         -> J.EBin (J.Or, J.EBin (J.Lt, cx, int 0),
-                                          J.EBin (J.Lt, int n, cx))
-        | CLe n          -> J.EBin (J.Le, int n, cx)
-      in
-      flush_all queue
-      [Js_simpl.if_statement
-         e
-         (Js_simpl.block (branch ctx tree count doReturn [] cont1))
-         (Some (Js_simpl.block
-                  (branch ctx tree count doReturn [] cont2)))]
-  | Switch (x, a1, a2) ->
-      let build_switch e a =
-        let a = Array.mapi (fun i cont -> (i, cont)) a in
-        Array.stable_sort (fun (_, cont1) (_, cont2) -> compare cont1 cont2) a;
-        let l = Array.to_list a in
-        let l = list_group snd l in
-        let l =
-          List.sort
-            (fun (_, l1) (_, l2) ->
-               - compare (List.length l1) (List.length l2)) l in
-        match l with
-          [] ->
-            assert false
-        | [(cont, _)] ->
-            Js_simpl.block (branch ctx tree count doReturn [] cont)
-        | (cont, l') :: rem ->
-            let l =
-              List.flatten
-                (List.map
-                   (fun (cont, l) ->
-                      match List.rev l with
-                        [] ->
-                          assert false
-                      | (i, _) :: r ->
-                          List.rev
-                            ((J.ENum (float i),
-                              Js_simpl.statement_list
-                                (branch ctx tree count doReturn [] cont))
-                               ::
-                             List.map
-                             (fun (i, _) -> (J.ENum (float i), [])) r))
-                   rem)
-            in
-            J.Switch_statement
-              (e, l, Some (Js_simpl.statement_list
-                             (branch ctx tree count doReturn [] cont)))
-(*
-        let l =
-              Array.to_list
-                (Array.mapi
-                   (fun i cont ->
-                      (J.ENum (float i), branch ctx tree count [] cont))
-                   a)
-            in
-            J.Switch_statement (e, l, None)
-          *)
-      in
-      let (st, queue) =
-        if Array.length a1 = 0 then
-          let ((px, cx), queue) = access_queue queue x in
-          ([build_switch (J.EAccess(cx, J.ENum 0.)) a2], queue)
-        else if Array.length a2 = 0 then
-          let ((px, cx), queue) = access_queue queue x in
-          ([build_switch cx a1], queue)
-        else
-          ([Js_simpl.if_statement
-              (J.EBin (J.InstanceOf, var x, J.EVar ("Array")))
-              (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
-              (Some (build_switch (var x) a1))],
-           queue)
-      in
-      flush_all queue st
-  | Pushtrap (cont1, pc, cont2) ->
-      let var =
-        match IntMap.find pc ctx.Ctx.blocks with
-          (Some y, _, _) -> Var.to_string y
-              (* FIX: make sure this is *always* a fresh variable *)
-        | _              -> "_"
-      in
-      let handler_body =
-        Js_simpl.statement_list
-          (translate_block_contents ctx tree count doReturn pc []) in
-      flush_all queue
-        (J.Try_statement (Js_simpl.statement_list
-                            (branch ctx tree count false [] cont1),
-                          Some (var, handler_body), None) ::
-         if Code.is_dummy_cont cont2 then [] else branch ctx tree count doReturn [] cont2)
-(*
-      let invoke_handler =
-        [J.Statement (J.Return_statement
-                        (Some (J.ECall (J.EVar (addr pc), []))))]
-      in
-
-        match param with
-          Some y -> 
-            J.Statement (J.Expression_statement
-                           (J.EBin (J.Eq, var y, J.EVar "x"))) ::
-            invoke_handler
-        | _ ->
-            invoke_handler
-      in
-      flush_all queue
-        (J.Expression_statement
-           (J.ECall (J.EVar "caml_push_trap",
-                     [J.EFun (None, ["x"], body)])) ::
-           branch ctx tree count [] cont1)
-*)
-  | Poptrap _ ->
-      flush_all queue [(*J.Expression_statement (J.EVar "poptrap")*)]
-
-and translate_block_contents ctx tree count doReturn pc expr_queue =
-  let ch = IntMap.find pc tree in
-  let ch =
-    List.fold_right
-      (fun pc prev ->
-         if IntMap.find pc count > 1 then
-           translate_block ctx tree count prev pc
-         else
-           prev)
-      ch []
-  in
-  let (param, instr, last) = IntMap.find pc ctx.Ctx.blocks in
-  let (seq, expr_queue) = translate_instr ctx expr_queue instr in
-  let seq' = translate_last ctx tree count doReturn expr_queue last in
-  seq  @ ch @ seq'
-
-and translate_block ctx tree count prev pc =
-  let (param, instr, last) = IntMap.find pc ctx.Ctx.blocks in
-  let body =
-    Js_simpl.source_elements
-      (translate_block_contents ctx tree count true pc []) in
-  let prev =
-    J.Variable_statement [addr pc, Some (J.EFun (None, [], body))] :: prev in
-  match param with
-    None ->
-      prev
-  | Some x ->
-      J.Variable_statement [Var.to_string x, None] :: prev
-
-and branch ctx tree count doReturn queue (pc, arg) =
-  if IntMap.find pc count > 1 then begin
-    let br =
-      if doReturn then
-        [J.Return_statement (Some (J.ECall (J.EVar (addr pc), [])))]
-      else
-        [J.Expression_statement (J.ECall (J.EVar (addr pc), []))]
-    in
-    match arg with
-      None ->
-        flush_all queue br
-    | Some x ->
-        match IntMap.find pc ctx.Ctx.blocks with
-          (Some y, _, _) ->
-            let ((px, cx), queue) = access_queue queue x in
-            flush_all queue
-              (J.Expression_statement (J.EBin (J.Eq, var y, cx)) :: br)
-        | _ ->
-            assert false
-  end else
-    match arg with
-      None ->
-        let cont = translate_block_contents ctx tree count doReturn pc [] in
-        flush_all queue cont
-    | Some x ->
-        match IntMap.find pc ctx.Ctx.blocks with
-          (Some y, _, _) ->
-            let ((px, cx), queue) = access_queue queue x in
-            let (st, queue) =
-              match ctx.Ctx.live.(Var.idx y) with
-                0 -> assert false
-(*
-                  flush_queue expr_queue (px >= flush_p)
-                        [J.Expression_statement cx]
-*)
-              | 1 -> enqueue queue px y cx
-              | _ -> flush_queue queue (px >= flush_p)
-                       [J.Variable_statement [Var.to_string y, Some cx]]
-            in
-            st @ translate_block_contents ctx tree count doReturn pc queue
-        | _ ->
-            assert false
-
-and translate_body ctx pc toplevel =
-  let tree = build ctx.Ctx.blocks pc [] in
-  let count = count_preds ctx.Ctx.blocks pc in
-  let tree = forest_to_map tree IntMap.empty in
-  (*build ctx.Ctx.blocks pc enter_block leave_block [] @*)
-(*
-  if toplevel then
-    [J.Statement (J.Expression_statement (J.ECall (J.EVar (addr pc), [])))]
-  else
-*)
-    Js_simpl.source_elements (branch ctx tree count true [] (pc, None))
-
-(**********************)
-
 and compile_block st queue pc frontier interm =
   if pc >= 0 then begin
     if IntSet.mem pc st.visited_blocks then begin
@@ -1137,14 +768,6 @@ let compile_program ctx pc =
 
 let f (pc, blocks, _) live_vars =
   let ctx = Ctx.initial blocks live_vars in
-(*
-  let p = translate_body ctx pc true in
-  let p = [J.Function_declaration ("start", [], p);
-           J.Statement (J.Expression_statement
-                          (J.ECall (J.EVar "start", [])))] in
-*)
   let p = compile_program ctx pc in
-if compact then Format.set_margin 999999998;
-Format.printf "%a" Js_output.program p
-;Printf.fprintf ch "}\n"
-; close_out ch
+  if compact then Format.set_margin 999999998;
+  Format.printf "%a" Js_output.program p
