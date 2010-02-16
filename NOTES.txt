@@ -1,0 +1,5 @@
+
+Deviation from standard implementations:
+- Integers are 32 bits
+- Integer multiplication is incorrect when the result overflows
+- Tail recursion is not optimized (except for self recursive functions)

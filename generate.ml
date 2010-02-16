@@ -1,4 +1,12 @@
 (*XXXX
+Patterns:
+  => if e1 then {if e2 then P else Q} else {if e3 then P else Q}
+  => if e then return e1; return e2
+  => if e then var x = e1; else var x = e2;
+  => while (true) {.... if (e) continue; break; }
+  => should generate conditionnals when single switch inserted
+     during compilation
+
 - CLEAN UP!!!
 
 - Inlining? (Especially of functions that are used only once!)
@@ -395,6 +403,13 @@ let rec dominance_frontier_rec st pc visited grey =
 let dominance_frontier st pc =
   snd (dominance_frontier_rec st pc IntMap.empty IntSet.empty)
 
+(* Block of code that never continues (either returns, throws an exception
+   or loops back) *)
+let never_continue st (pc, _) frontier interm =
+  not (IntSet.mem pc frontier || IntMap.mem pc interm)
+    &&
+  IntSet.is_empty (dominance_frontier st pc)
+
 let rec resolve_node interm pc =
   try
     resolve_node interm (fst (IntMap.find pc interm))
@@ -708,9 +723,10 @@ and translate_last ctx tree count doReturn queue last =
           let ((px, cx), queue) = access_queue queue x in
           ([build_switch cx a1], queue)
         else
-          ([J.If_statement (J.EBin(J.InstanceOf, var x, J.EVar ("Array")),
-                            build_switch (J.EAccess(var x, J.ENum 0.)) a2,
-                            Some (build_switch (var x) a1))],
+          ([Js_simpl.if_statement
+              (J.EBin (J.InstanceOf, var x, J.EVar ("Array")))
+              (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
+              (Some (build_switch (var x) a1))],
            queue)
       in
       flush_all queue st
@@ -901,9 +917,13 @@ and compile_block st queue pc frontier interm =
             let idx = st.interm_idx in
             st.interm_idx <- idx - 1;
             let cases = Array.map (fun pc -> (pc, None)) a in
-            st.blocks <-
-              IntMap.add idx (None, [], Code.Switch (x, cases, [||]))
-                st.blocks;
+            let switch =
+              if Array.length cases > 2 then
+                Code.Switch (x, cases, [||])
+              else
+                Code.Cond (IsTrue, x, cases.(1), cases.(0))
+            in
+            st.blocks <- IntMap.add idx (None, [], switch) st.blocks;
             IntSet.iter (fun pc -> incr_preds st pc) new_frontier;
             Hashtbl.add st.succs idx (IntSet.elements new_frontier);
             Hashtbl.add st.all_succs idx new_frontier;
@@ -968,14 +988,21 @@ and compile_conditional st queue pc last backs frontier interm =
                                           J.EBin (J.Lt, int n, cx))
         | CLe n          -> J.EBin (J.Le, int n, cx)
       in
-      flush_all queue
       (* Some changes here may require corresponding changes
          in function [fold_children] above. *)
-      [Js_simpl.if_statement
-         e
-         (Js_simpl.block (compile_branch st [] cont1 backs frontier interm))
-         (Some (Js_simpl.block
-                  (compile_branch st [] cont2 backs frontier interm)))]
+      let iftrue = compile_branch st [] cont1 backs frontier interm in
+      let iffalse = compile_branch st [] cont2 backs frontier interm in
+      flush_all queue
+        (if never_continue st cont1 frontier interm then
+           Js_simpl.if_statement e (Js_simpl.block iftrue) None ::
+           iffalse
+         else if never_continue st cont2 frontier interm then
+           Js_simpl.if_statement
+             (Js_simpl.enot e) (Js_simpl.block iffalse) None ::
+           iftrue
+         else
+           [Js_simpl.if_statement e (Js_simpl.block iftrue)
+              (Some (Js_simpl.block iffalse))])
   | Switch (x, a1, a2) ->
       (* Some changes here may require corresponding changes
          in function [fold_children] above. *)
@@ -1007,7 +1034,10 @@ and compile_conditional st queue pc last backs frontier interm =
                               Js_simpl.statement_list
                                 (compile_branch
                                    st [] cont backs frontier interm @
-                                 [J.Break_statement None]))
+                                 if never_continue st cont frontier interm then
+                                   []
+                                 else
+                                   [J.Break_statement None]))
                                ::
                              List.map
                              (fun (i, _) -> (J.ENum (float i), [])) r))
@@ -1025,9 +1055,10 @@ and compile_conditional st queue pc last backs frontier interm =
           let ((px, cx), queue) = access_queue queue x in
           ([build_switch cx a1], queue)
         else
-          ([J.If_statement (J.EBin(J.InstanceOf, var x, J.EVar ("Array")),
-                            build_switch (J.EAccess(var x, J.ENum 0.)) a2,
-                            Some (build_switch (var x) a1))],
+          ([Js_simpl.if_statement
+              (J.EBin(J.InstanceOf, var x, J.EVar ("Array")))
+              (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
+              (Some (build_switch (var x) a1))],
            queue)
       in
       flush_all queue st
@@ -1058,23 +1089,23 @@ and compile_argument_passing ctx queue (pc, arg) continuation =
       | _ ->
           assert false
 
-and compile_branch st queue ((pc, arg) as cont) backs grey interm =
+and compile_branch st queue ((pc, arg) as cont) backs frontier interm =
   compile_argument_passing st.ctx queue cont
     (fun queue ->
        if IntSet.mem pc backs then begin
          Format.eprintf "@ continue;";
          flush_all queue [J.Continue_statement None]
-       end else if IntSet.mem pc grey || IntMap.mem pc interm then begin
+       end else if IntSet.mem pc frontier || IntMap.mem pc interm then begin
          Format.eprintf "@ (br %d)" pc;
          flush_all queue (compile_branch_selection pc interm)
        end else
-         compile_block st queue pc grey interm)
+         compile_block st queue pc frontier interm)
 
 and compile_branch_selection pc interm =
   try
     let (pc, (x, i)) = IntMap.find pc interm in
     Format.eprintf "@ %a=%d;" Code.Var.print x i;
-    J.Expression_statement (J.EBin (J.Eq, var x, int i)) ::
+    J.Variable_statement [Var.to_string x, Some (int i)] ::
     compile_branch_selection pc interm
   with Not_found ->
     []

@@ -1,9 +1,12 @@
 Priorities
 ==========
+- how to parse "if (e) (if (e') st) else st'"???
 - faster flow analysis
 - fix compilation of closures within loops
 - fix small bugs
 - self tail recursion
+
+- options on command line
 
 ===========
 
