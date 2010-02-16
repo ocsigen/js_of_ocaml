@@ -106,7 +106,7 @@ let rec need_paren l e =
       l <= out && need_paren lft e
   | ECall (e, _) | EAccess (e, _) | EDot (e, _) ->
       l <= 15 && need_paren 15 e
-  | EVar _ | EStr _ | EArr _ | ENum _ | EQuote _ | EUn _ | ENew _ ->
+  | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | EUn _ | ENew _ ->
       false
   | EFun _ | EObj _ ->
       true
@@ -121,15 +121,17 @@ let rec expression l f e =
       else
         Format.fprintf f "%a,@,%a" (expression 0) e1 (expression 1) e2
   | EFun (i, l, b) ->
-      Format.fprintf f "@[<2>function%a@,@[<1>(%a)@]@,@[<1>{%a}@]@]"
+      Format.fprintf f "@[<1>function%a@,@[<1>(%a)@]@,@[<1>{%a}@]@]"
         opt_identifier i formal_parameter_list l function_body b
   | ECall (e, el) ->
       if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<2>%a@,@[<1>(%a)@]@]" (expression 15) e arguments el;
+      Format.fprintf f "@[<1>%a@,@[<1>(%a)@]@]" (expression 15) e arguments el;
       if l > 15 then Format.fprintf f ")@]"
   | EStr s ->
       (* XXX Properly quote the string *)
       Format.fprintf f "\"%s\"" (String.escaped s)
+  | EBool b ->
+      if b then Format.fprintf f "true" else Format.fprintf f "false"
   | ENum v ->
       if v = infinity then
         Format.fprintf f "Infinity"
@@ -166,7 +168,7 @@ let rec expression l f e =
       Format.fprintf f "@[<1>[%a]@]" element_list el
   | EAccess (e, e') ->
       if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<2>%a@,@[<1>[%a]@]@]"
+      Format.fprintf f "@[<1>%a@,@[<1>[%a]@]@]"
         (expression 15) e (expression 0) e';
       if l > 15 then Format.fprintf f ")@]"
   | EDot (e, nm) ->
@@ -175,11 +177,11 @@ let rec expression l f e =
       if l > 15 then Format.fprintf f ")@]"
   | ENew (e, None) ->
       if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<2>new %a@]" (expression 15) e;
+      Format.fprintf f "@[<1>new %a@]" (expression 15) e;
       if l > 15 then Format.fprintf f ")@]"
   | ENew (e, Some el) ->
       if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<2>new %a@,@[<1>(%a)@]@]"
+      Format.fprintf f "@[<1>new %a@,@[<1>(%a)@]@]"
         (expression 16) e arguments el;
       if l > 15 then Format.fprintf f ")@]"
   | ECond (e, e1, e2) ->
@@ -234,7 +236,7 @@ and arguments f l =
 and variable_declaration f (i, init) =
   match init with
     None   -> Format.fprintf f "%s" i
-  | Some e -> Format.fprintf f "@[<2>%s=@,%a@]" i (expression 1) e
+  | Some e -> Format.fprintf f "@[<1>%s=@,%a@]" i (expression 1) e
 
 and variable_declaration_list f l =
   match l with
@@ -252,11 +254,11 @@ and statement f s =
         []  ->
           ()
       | [(i, None)] ->
-          Format.fprintf f "@[<2>var@ %s;@]" i
+          Format.fprintf f "@[<1>var@ %s;@]" i
       | [(i, Some e)] ->
-          Format.fprintf f "@[<2>var %s=@,%a;@]" i (expression 1) e
+          Format.fprintf f "@[<1>var %s=@,%a;@]" i (expression 1) e
       | l ->
-          Format.fprintf f "@[<2>var@ %a;@]" variable_declaration_list l
+          Format.fprintf f "@[<1>var@ %a;@]" variable_declaration_list l
       end
   | Expression_statement e ->
       (* Parentheses are required when the expression
@@ -274,6 +276,15 @@ and statement f s =
   | If_statement (e, s1, None) ->
       Format.fprintf f "@[<1>if@,@[(%a)@]@,@[%a@]@]"
         (expression 0) e statement s1
+  | While_statement (e, s) ->
+      Format.fprintf f "@[<1>while@,@[(%a)@]@,@[%a@]@]"
+        (expression 0) e statement s
+  | Do_while_statement (Block _ as s, e) ->
+      Format.fprintf f "@[<1>do@,@[%a@]@;<0 -1>while@,@[(%a)@]"
+        statement s (expression 0) e
+  | Do_while_statement (s, e) ->
+      Format.fprintf f "@[<1>do@ @[%a@]@;<0 -1>while@,@[(%a)@]"
+        statement s (expression 0) e
   | Continue_statement None ->
       Format.fprintf f "continue;"
   | Continue_statement (Some s) ->
@@ -293,7 +304,7 @@ and statement f s =
       Format.fprintf f "@[<1>switch@,(%a)@,{@," (expression 0) e;
       List.iter
         (fun (e, sl) ->
-           Format.fprintf f "@[<1>@[<2>case@ %a:@]@,%a@]@,"
+           Format.fprintf f "@[<1>@[<1>case@ %a:@]@,%a@]@,"
              (expression 0) e statement_list sl)
         cc;
       begin match def with
@@ -331,7 +342,7 @@ and source_element f se =
     Statement s ->
       statement f s
   | Function_declaration (i, l, b) ->
-      Format.fprintf f "@[<2>function@ %s@,@[<1>(%a)@]@,@[<1>{%a}@]@]"
+      Format.fprintf f "@[<1>function@ %s@,@[<1>(%a)@]@,@[<1>{%a}@]@]"
         i formal_parameter_list l function_body b
 
 and source_elements f se =

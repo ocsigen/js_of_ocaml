@@ -48,6 +48,7 @@ and expression =
   | EFun of function_expression
   | EStr of string
   | EArr of array_litteral
+  | EBool of bool
   | ENum of float
   | EObj of property_name_and_value_list
   | EQuote of string
@@ -64,6 +65,8 @@ and statement =
 *)
   | Expression_statement of expression
   | If_statement of expression * statement * statement option
+  | Do_while_statement of statement * expression
+  | While_statement of expression * statement
 (*
   | Iteration_statement
 *)

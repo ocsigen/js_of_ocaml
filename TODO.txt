@@ -1,6 +1,5 @@
 Priorities
 ==========
-- production of branches/loops
 - faster flow analysis
 - fix compilation of closures within loops
 - fix small bugs

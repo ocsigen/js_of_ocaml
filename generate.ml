@@ -1,28 +1,11 @@
 (*XXXX
-- generate loops
-- insert breaks in switches!
-
-
 - CLEAN UP!!!
-
-- Throw ???
-  need to pass an argument!
-
-- Inline internal functions
-  ===> move branches upwards in conditional
-               if (e) { i1; return f() } else { i2; return f() }
-                              ===>
-               if (e) { i1 } else { i2 }; return f()
-
-- CPS style
 
 - Inlining? (Especially of functions that are used only once!)
 
 - Can we avoid spurious conversions from boolean to integers???
   ===> explicit conversion to boolean; specialized "if" that operates
        on booleans directly
-
-- compact identifier names
 
 - scalable generation of caml_apply functions
   ==> use curry functions as the ocaml compilers does
@@ -34,7 +17,7 @@
   ==> should we use short variables for innermost functions?
 *)
 
-let compact = false
+let compact = true
 
 (****)
 
@@ -351,6 +334,8 @@ let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
 let incr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1)
 let decr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 1)
 
+(* This as to be kept in sync with the way we build conditionals
+   and switches! *)
 let fold_children blocks pc f accu =
   let (_, _, last) = IntMap.find pc blocks in
   match last with
@@ -879,12 +864,12 @@ and compile_block st queue pc frontier interm =
   (* FIX: document this *)
         let grey =  dominance_frontier st pc2 in
         let grey' = resolve_nodes interm grey in
+        let limit_body =
+          IntSet.is_empty grey'&& not (Code.is_dummy_cont cont) in
         let inner_frontier =
-          if IntSet.is_empty grey'&& not (Code.is_dummy_cont cont) then
-            IntSet.add pc3 grey'
-          else grey'
+          if limit_body then IntSet.add pc3 grey' else grey'
         in
-        if not (Code.is_dummy_cont cont) then incr_preds st pc3;
+        if limit_body then incr_preds st pc3;
         assert (IntSet.cardinal inner_frontier <= 1);
         let var =
           match IntMap.find pc2 st.ctx.Ctx.blocks with
@@ -897,7 +882,7 @@ and compile_block st queue pc frontier interm =
         Format.eprintf "} catch {@,";
         let handler = compile_block st [] pc2 inner_frontier interm in
         Format.eprintf "}@]";
-        if not (Code.is_dummy_cont cont) then decr_preds st pc3;
+        if limit_body then decr_preds st pc3;
         flush_all queue
           (J.Try_statement (Js_simpl.statement_list body,
                             Some (var, Js_simpl.statement_list handler),
@@ -932,9 +917,9 @@ and compile_block st queue pc frontier interm =
         in
         assert (IntSet.cardinal new_frontier <= 1);
         (* Beware evaluation order! *)
-        let sw =
-          compile_switch st queue pc last backs new_frontier new_interm in
-        sw @
+        let cond =
+          compile_conditional st queue pc last backs new_frontier new_interm in
+        cond @
         if IntSet.cardinal new_frontier = 0 then [] else begin
           let pc = IntSet.choose new_frontier in
           if IntSet.mem pc frontier then [] else
@@ -943,15 +928,20 @@ and compile_block st queue pc frontier interm =
   in
 (*XXXXX *)
   if IntSet.mem pc st.loops then begin
-    if IntSet.cardinal new_frontier > 0 then
-      Format.eprintf "@ break; }@]"
-    else
-      Format.eprintf "}@]";
-    body
+    [J.While_statement
+       (J.EBool true,
+        Js_simpl.block
+          (if IntSet.cardinal new_frontier > 0 then begin
+             Format.eprintf "@ break; }@]";
+             body @ [J.Break_statement None]
+           end else begin
+             Format.eprintf "}@]";
+             body
+           end))]
   end else
     body
 
-and compile_switch st queue pc last backs frontier interm =
+and compile_conditional st queue pc last backs frontier interm =
   let succs = Hashtbl.find st.succs pc in
   List.iter (fun pc -> if IntMap.mem pc interm then decr_preds st pc) succs;
   Format.eprintf "@[<2>switch{";
@@ -979,12 +969,16 @@ and compile_switch st queue pc last backs frontier interm =
         | CLe n          -> J.EBin (J.Le, int n, cx)
       in
       flush_all queue
+      (* Some changes here may require corresponding changes
+         in function [fold_children] above. *)
       [Js_simpl.if_statement
          e
          (Js_simpl.block (compile_branch st [] cont1 backs frontier interm))
          (Some (Js_simpl.block
                   (compile_branch st [] cont2 backs frontier interm)))]
   | Switch (x, a1, a2) ->
+      (* Some changes here may require corresponding changes
+         in function [fold_children] above. *)
       let build_switch e a =
         let a = Array.mapi (fun i cont -> (i, cont)) a in
         Array.stable_sort (fun (_, cont1) (_, cont2) -> compare cont1 cont2) a;
@@ -1011,7 +1005,9 @@ and compile_switch st queue pc last backs frontier interm =
                           List.rev
                             ((J.ENum (float i),
                               Js_simpl.statement_list
-                                (compile_branch st [] cont backs frontier interm))
+                                (compile_branch
+                                   st [] cont backs frontier interm @
+                                 [J.Break_statement None]))
                                ::
                              List.map
                              (fun (i, _) -> (J.ENum (float i), [])) r))
@@ -1037,8 +1033,8 @@ and compile_switch st queue pc last backs frontier interm =
       flush_all queue st
   | Pushtrap _ ->
       assert false
-  | Poptrap _ ->
-      flush_all queue []
+  | Poptrap cont ->
+      flush_all queue (compile_branch st [] cont backs frontier interm)
   in
   Format.eprintf "}@.";
   res
