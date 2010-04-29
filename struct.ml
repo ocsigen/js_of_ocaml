@@ -234,6 +234,6 @@ let analyze (_, blocks, _) ch pc =
 let f p =
   let ch = open_out "/tmp/p.dot" in
   Printf.fprintf ch "digraph G {\n";
-  Code.fold_closures p (fun pc () -> analyze p ch pc) ();
+  Code.fold_closures p (fun _ _ (pc, _) () -> analyze p ch pc) ();
   Printf.fprintf ch "}";
   close_out ch

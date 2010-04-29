@@ -149,12 +149,10 @@ let access_queue queue x =
   with Not_found ->
     ((const_p, var x), queue)
 
-let flush_queue expr_queue all x l =
+let flush_queue expr_queue all l =
   let (instrs, expr_queue) =
     if all then (expr_queue, []) else
-    let same_var y =
-      match x with Some x -> Var.compare x y = 0 | None -> false in
-    List.partition (fun (y, (p, _)) -> same_var y || is_mutable p) expr_queue
+    List.partition (fun (y, (p, _)) -> is_mutable p) expr_queue
   in
   let instrs =
     List.map (fun (x, (_, ce)) ->
@@ -163,12 +161,12 @@ let flush_queue expr_queue all x l =
   in
   (List.rev_append instrs l, expr_queue)
 
-let flush_all expr_queue l = fst (flush_queue expr_queue true None l)
+let flush_all expr_queue l = fst (flush_queue expr_queue true l)
 
 let enqueue expr_queue prop x ce =
   let (instrs, expr_queue) =
     if is_mutator prop then begin
-      flush_queue expr_queue (prop >= flush_p) (Some x) []
+      flush_queue expr_queue (prop >= flush_p) []
     end else
       [], expr_queue
   in
@@ -281,15 +279,13 @@ let rec visit visited prev s m x l =
     if Code.Var.compare x y = 0 then
       (visited, None, l)
     else if VarSet.mem y prev then begin
-Format.eprintf "XXXXXXXXXXXXXXXXXX %a@." Var.print y;
       let t = Code.Var.fresh () in
       (visited, Some (y, t), (x, t) :: l)
     end else if VarSet.mem y s then begin
-Format.eprintf "XXXXXXXXXXXXXXXXXX %a --> %a@." Var.print x Var.print y;
       let (visited, aliases, l) = visit visited (VarSet.add x prev) s m y l in
       match aliases with
         Some (a, b) when Code.Var.compare a x = 0 ->
-          (visited, None, (a, x) :: (x, y) :: l)
+          (visited, None, (b, a) :: (x, y) :: l)
       | _ ->
           (visited, aliases, (x, y) :: l)
     end else
@@ -310,16 +306,18 @@ let visit_all params args =
   l
 
 let parallel_renaming ctx params args continuation queue =
-  let l = visit_all params args in
+  let l = List.rev (visit_all params args) in
   List.fold_left
     (fun continuation (y, x) ->
        fun queue ->
        let ((px, cx), queue) = access_queue queue x in
        let (st, queue) =
-         match ctx.Ctx.live.(Var.idx y) with
+         let idx = Var.idx y in
+         let len = Array.length ctx.Ctx.live in
+         match if idx >= len then 2 else ctx.Ctx.live.(Var.idx y) with
            0 -> assert false
          | 1 -> enqueue queue px y cx
-         | _ -> flush_queue queue (px >= flush_p) (Some y)
+         | _ -> flush_queue queue (px >= flush_p)
                   [J.Variable_statement [Var.to_string y, Some cx]]
        in
        st @ continuation queue)
@@ -507,28 +505,28 @@ and translate_instr ctx expr_queue instr =
           Let (x, e) ->
             let (ce, prop, expr_queue) = translate_expr ctx expr_queue e in
             begin match ctx.Ctx.live.(Var.idx x) with
-              0 -> flush_queue expr_queue (prop >= flush_p) None
+              0 -> flush_queue expr_queue (prop >= flush_p)
                      [J.Expression_statement ce]
             | 1 -> enqueue expr_queue prop x ce
-            | _ -> flush_queue expr_queue (prop >= flush_p) (Some x)
+            | _ -> flush_queue expr_queue (prop >= flush_p)
                      [J.Variable_statement [Var.to_string x, Some ce]]
             end
         | Set_field (x, n, y) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
-            flush_queue expr_queue false None
+            flush_queue expr_queue false
               [J.Expression_statement
                  (J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy))]
         | Offset_ref (x, n) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
-            flush_queue expr_queue false None
+            flush_queue expr_queue false
               [J.Expression_statement
                  (J.EBin (J.PlusEq, (J.EAccess (cx, J.ENum 1.)), int n))]
         | Array_set (x, y, z) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
             let ((pz, cz), expr_queue) = access_queue expr_queue z in
-            flush_queue expr_queue false None
+            flush_queue expr_queue false
               [J.Expression_statement
                  (J.EBin (J.Eq, J.EAccess (cx, J.EBin(J.Plus, cy, one)),
                           cz))]
@@ -537,6 +535,9 @@ and translate_instr ctx expr_queue instr =
       (st @ instrs, expr_queue)
 
 and compile_block st queue pc frontier interm =
+if queue <> [] && IntSet.mem pc st.loops then
+flush_all queue (compile_block st [] pc frontier interm)
+else begin
   if pc >= 0 then begin
     if IntSet.mem pc st.visited_blocks then begin
       Format.eprintf "!!!! %d@." pc; assert false
@@ -645,6 +646,7 @@ and compile_block st queue pc frontier interm =
            end))]
   end else
     body
+end
 
 and compile_conditional st queue pc last backs frontier interm =
   let succs = Hashtbl.find st.succs pc in

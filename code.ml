@@ -282,12 +282,12 @@ let fold_closures (pc, blocks, _) f accu =
        List.fold_left
          (fun accu i ->
             match i with
-              Let (_, Closure (_, (pc, _))) ->
-                f pc accu
+              Let (x, Closure (params, cont)) ->
+                f (Some x) params cont accu
             | _ ->
                 accu)
          accu instrs)
-    blocks (f pc accu)
+    blocks (f None [] (pc, []) accu)
 
 (****)
 

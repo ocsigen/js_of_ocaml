@@ -2,6 +2,9 @@ let _ =
   let p = Parse.f stdin in
 
 (*
+  Code.print_program (fun _ _ -> "") p;
+*)
+(*
   print_program (fun _ _ -> "") p;
 *)
 Format.eprintf "Data flow...@.";
@@ -12,7 +15,9 @@ Format.eprintf "Control flow simplifications...@.";
   let p = Control.simpl p in
 Format.eprintf "Dead-code...@.";
   let (p, live_vars) = Deadcode.f p in
+Format.eprintf "Tail-call optimization...@.";
 
+  let p = Tailcall.f p in
 
 (*
 

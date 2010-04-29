@@ -71,7 +71,8 @@ val print_program : (Util.IntMap.key -> xinstr -> string) -> program -> unit
 val dummy_cont : cont
 val is_dummy_cont : cont -> bool
 
-val fold_closures : program -> (addr -> 'd -> 'd) -> 'd -> 'd
+val fold_closures :
+  program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 val fold_children :
   block Util.IntMap.t -> addr  -> (addr -> 'c -> 'c) -> 'c -> 'c
 

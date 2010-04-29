@@ -1,15 +1,15 @@
 Priorities
 ==========
-- use continuation with multiples arguments
+- fix compilation of closures within loops
+- faster and sound flow analysis
+- fix small bugs
+  ==> integer arithmetic
+
+- using continuation with multiples arguments
   ==> graph coloring + variable coalescing
-  ==> self tail recursion
   ==> we should check stack compatibility when parsing:
       when jumping somewhere, the stack should keep the same shape
 - more aggressive variable renaming? (in particular, for Control.block_simpl)
-- faster and sound flow analysis
-- fix compilation of closures within loops
-- fix small bugs
-  ==> integer arithmetic
 
 - options on command line
   ==> compact mode
@@ -49,12 +49,6 @@ Special case for shortcut boolean operations...
 BUGS
 ====
 
-- "let x = !y in if e then incr y; (use x now)"
-  ==> not sure how to fix this.  should we pass the whole stack at
-      each block? (optimized away by coloring)? this make analyses
-      more complex, but they will have to deal with self tail
-      recursion anyway...
-
 - compile ISINT to "not a block" and document this deviation
   (or document that we should not rely on the Obj module)
 
@@ -63,7 +57,7 @@ BUGS
 - generate caml_call_N functions... (with short names when possible...)
 
 - store meta-information in functions themselves, rather than using a
-  block  ===> f.length ???
+  block  ===> f.length
 
 - define an alias for MlString function? (on the other hand, gzip
   should be quite effective...)
@@ -169,23 +163,6 @@ document as much as we can:
       when two paths merge, not even that for loops
 
 ================================
-
-tail-call version of functions:
-
-   function f(n, x1, ..., xn)
-      { if (n >100) return new Trampoline(f, arguments); ...}
-
-entry points:
-  from non-tail call
-  from tail position without trampoline
-    - if function without tail calls, direct call
-    - if function with tail calls, install trampoline and call
-  from tail position with trampoline
-    - if function without tail calls, call the function without 'n'
-    - otherwise call function with counter
-
-
-==========================
 
 REFERENCES
 ==========

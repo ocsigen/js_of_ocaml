@@ -1340,7 +1340,7 @@ let rec traverse blocks pc visited blocks' =
 
 let match_exn_traps ((_, blocks, _) as p) =
   fold_closures p
-    (fun pc blocks' ->
+    (fun _ _ (pc, _) blocks' ->
        let (_, blocks', path) = traverse blocks pc IntSet.empty blocks' in
        assert (path = []);
        blocks')
