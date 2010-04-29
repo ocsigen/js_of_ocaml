@@ -80,7 +80,7 @@ let rec compile_block st blocks pc frontier interm =
   let new_frontier = resolve_nodes interm grey in
   let (_, _, last) = IntMap.find pc blocks in
   begin match last with
-    Code.Pushtrap ((pc1, _), pc2, ((pc3, _) as cont)) ->
+    Code.Pushtrap ((pc1, _), _, (pc2, _), ((pc3, _) as cont)) ->
 (* FIX: document *)
       let grey =  dominance_frontier st blocks pc2 in
       let grey' = resolve_nodes interm grey in
@@ -107,7 +107,7 @@ let rec compile_block st blocks pc frontier interm =
         if IntSet.cardinal new_frontier > 1 then begin
           let idx = st.interm_idx in
           st.interm_idx <- idx - 1;
-          let blocks = IntMap.add idx (None, [], Code.Stop) blocks in
+          let blocks = IntMap.add idx ([], [], Code.Stop) blocks in
           IntSet.iter (fun pc -> incr_preds st pc) new_frontier;
           Hashtbl.add st.succs idx new_frontier;
           Hashtbl.add st.all_succs idx new_frontier;

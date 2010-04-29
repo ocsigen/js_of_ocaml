@@ -313,3 +313,23 @@ function caml_js_alert(msg) {
 window.alert(msg.toString());
 return 0;
 }
+
+/*
+function apply(f, args) {
+  var n = f.length;
+   var l = args.length;
+  if (n == l)
+    return f.apply(this, args);
+  else if (n < l)
+    return apply(f.apply(this, Array.prototype.slice.call(args,0,n)),
+                 Array.prototype.slice.call(args,n));
+  else if (n > l)
+    partial[n-l].call(this,f,args);
+    // function that expects n - l arguments,
+    // concatenate them with previous arguments and apply f
+}
+
+function partial_n(f, args) {
+  return function (x1, ..., xn) { return f(args.concat(arguments)); }
+}
+*/

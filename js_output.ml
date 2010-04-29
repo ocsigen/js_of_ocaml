@@ -95,6 +95,14 @@ let unop_str op =
     Not -> "!"
   | Neg -> "-"
 
+(*XXX May need to be updated... *)
+let rec ends_with_if_without_else st =
+  match st with
+    If_statement (_, _, Some st) -> ends_with_if_without_else st
+  | If_statement (_, _, None)    -> true
+  | While_statement (_, st)      -> ends_with_if_without_else st
+  | _                            -> false
+
 let rec need_paren l e =
   match e with
     ESeq (e, _) ->
@@ -267,7 +275,7 @@ and statement f s =
         Format.fprintf f "@[<1>(%a);@]" (expression 0) e
       else
         Format.fprintf f "@[%a;@]" (expression 0) e
-  | If_statement (e, (If_statement (e', _, None) as s1), s2) ->
+  | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
       (* Dangling else issue... *)
       statement f (If_statement (e, Block [s1], s2))
   | If_statement (e, s1, Some (Block _ as s2)) ->

@@ -1,13 +1,14 @@
-(*XXXX
+(*XXX
 Patterns:
+  => loops should avoid absorbing the whole continuation...
+     (detect when the continuation does not loop anymore and close
+      the loop at this point)
+  => should have special code for switches that include the preceding
+     if statement when possible
   => if e1 then {if e2 then P else Q} else {if e3 then P else Q}
   => if e then return e1; return e2
   => if e then var x = e1; else var x = e2;
   => while (true) {.... if (e) continue; break; }
-  => should generate conditionnals when single switch inserted
-     during compilation
-  => should have special code for switches that include the preceding
-     if statement when possible
 
 - CLEAN UP!!!
 
@@ -148,10 +149,12 @@ let access_queue queue x =
   with Not_found ->
     ((const_p, var x), queue)
 
-let flush_queue expr_queue all l =
+let flush_queue expr_queue all x l =
   let (instrs, expr_queue) =
     if all then (expr_queue, []) else
-    List.partition (fun (_, (p, _)) -> is_mutable p) expr_queue
+    let same_var y =
+      match x with Some x -> Var.compare x y = 0 | None -> false in
+    List.partition (fun (y, (p, _)) -> same_var y || is_mutable p) expr_queue
   in
   let instrs =
     List.map (fun (x, (_, ce)) ->
@@ -160,12 +163,12 @@ let flush_queue expr_queue all l =
   in
   (List.rev_append instrs l, expr_queue)
 
-let flush_all expr_queue l = fst (flush_queue expr_queue true l)
+let flush_all expr_queue l = fst (flush_queue expr_queue true None l)
 
 let enqueue expr_queue prop x ce =
   let (instrs, expr_queue) =
     if is_mutator prop then begin
-      flush_queue expr_queue (prop >= flush_p) []
+      flush_queue expr_queue (prop >= flush_p) (Some x) []
     end else
       [], expr_queue
   in
@@ -198,7 +201,7 @@ let fold_children blocks pc f accu =
       accu
   | Branch (pc', _) | Poptrap (pc', _) ->
       f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), pc2, _) ->
+  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
       accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
       let normalize a =
@@ -269,6 +272,61 @@ let resolve_nodes interm s =
 
 (****)
 
+module VarSet = Set.Make (Code.Var)
+
+let rec visit visited prev s m x l =
+  if not (VarSet.mem x visited) then begin
+    let visited = VarSet.add x visited in
+    let y = Subst.VarMap.find x m in
+    if Code.Var.compare x y = 0 then
+      (visited, None, l)
+    else if VarSet.mem y prev then begin
+Format.eprintf "XXXXXXXXXXXXXXXXXX %a@." Var.print y;
+      let t = Code.Var.fresh () in
+      (visited, Some (y, t), (x, t) :: l)
+    end else if VarSet.mem y s then begin
+Format.eprintf "XXXXXXXXXXXXXXXXXX %a --> %a@." Var.print x Var.print y;
+      let (visited, aliases, l) = visit visited (VarSet.add x prev) s m y l in
+      match aliases with
+        Some (a, b) when Code.Var.compare a x = 0 ->
+          (visited, None, (a, x) :: (x, y) :: l)
+      | _ ->
+          (visited, aliases, (x, y) :: l)
+    end else
+      (visited, None, (x, y) :: l)
+  end else
+    (visited, None, l)
+
+let visit_all params args =
+  let m = Subst.build_mapping params args in
+  let s = List.fold_left (fun s x -> VarSet.add x s) VarSet.empty params in
+  let (_, l) =
+    VarSet.fold
+      (fun x (visited, l) ->
+         let (visited, _, l) = visit visited VarSet.empty s m x l in
+         (visited, l))
+      s (VarSet.empty, [])
+  in
+  l
+
+let parallel_renaming ctx params args continuation queue =
+  let l = visit_all params args in
+  List.fold_left
+    (fun continuation (y, x) ->
+       fun queue ->
+       let ((px, cx), queue) = access_queue queue x in
+       let (st, queue) =
+         match ctx.Ctx.live.(Var.idx y) with
+           0 -> assert false
+         | 1 -> enqueue queue px y cx
+         | _ -> flush_queue queue (px >= flush_p) (Some y)
+                  [J.Variable_statement [Var.to_string y, Some cx]]
+       in
+       st @ continuation queue)
+    continuation l queue
+
+(****)
+
 let prim_kinds = ["caml_int64_float_of_bits", const_p]
 
 let rec translate_expr ctx queue e =
@@ -276,7 +334,6 @@ let rec translate_expr ctx queue e =
     Const i ->
       (int i, const_p, queue)
   | Apply (x, l) ->
-(*XXX Continuation...*)
       let (args, prop, queue) =
         List.fold_right
           (fun x (args, prop, queue) ->
@@ -341,7 +398,6 @@ let rec translate_expr ctx queue e =
           (J.EDot (cx, "length"), px, queue)
       | C_call name, l ->
 Code.add_reserved_name name;  (*XXX HACK *)
-(*XXX Tail call *)
           let prim_kind =
             try List.assoc name prim_kinds with Not_found -> mutator_p in
           let (args, prop, queue) =
@@ -451,33 +507,28 @@ and translate_instr ctx expr_queue instr =
           Let (x, e) ->
             let (ce, prop, expr_queue) = translate_expr ctx expr_queue e in
             begin match ctx.Ctx.live.(Var.idx x) with
-              0 -> flush_queue expr_queue (prop >= flush_p)
+              0 -> flush_queue expr_queue (prop >= flush_p) None
                      [J.Expression_statement ce]
             | 1 -> enqueue expr_queue prop x ce
-            | _ -> flush_queue expr_queue (prop >= flush_p)
+            | _ -> flush_queue expr_queue (prop >= flush_p) (Some x)
                      [J.Variable_statement [Var.to_string x, Some ce]]
             end
-        | Assign (x, y) ->
-            let ((px, cx), expr_queue) = access_queue expr_queue x in
-            let ((py, cy), expr_queue) = access_queue expr_queue y in
-            flush_queue expr_queue false
-              [J.Expression_statement (J.EBin (J.Eq, cx, cy))]
         | Set_field (x, n, y) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
-            flush_queue expr_queue false
+            flush_queue expr_queue false None
               [J.Expression_statement
                  (J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy))]
         | Offset_ref (x, n) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
-            flush_queue expr_queue false
+            flush_queue expr_queue false None
               [J.Expression_statement
                  (J.EBin (J.PlusEq, (J.EAccess (cx, J.ENum 1.)), int n))]
         | Array_set (x, y, z) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
             let ((pz, cz), expr_queue) = access_queue expr_queue z in
-            flush_queue expr_queue false
+            flush_queue expr_queue false None
               [J.Expression_statement
                  (J.EBin (J.Eq, J.EAccess (cx, J.EBin(J.Plus, cy, one)),
                           cz))]
@@ -507,7 +558,7 @@ and compile_block st queue pc frontier interm =
   let body =
     seq @
     match last with
-      Code.Pushtrap ((pc1, _), pc2, ((pc3, _) as cont)) ->
+      Code.Pushtrap ((pc1, args1), x, (pc2, args2), ((pc3, _) as cont)) ->
   (* FIX: document this *)
         let grey =  dominance_frontier st pc2 in
         let grey' = resolve_nodes interm grey in
@@ -518,21 +569,25 @@ and compile_block st queue pc frontier interm =
         in
         if limit_body then incr_preds st pc3;
         assert (IntSet.cardinal inner_frontier <= 1);
-        let var =
-          match IntMap.find pc2 st.ctx.Ctx.blocks with
-            (Some y, _, _) -> Var.to_string y
-                (* FIX: make sure this is *always* a fresh variable *)
-          | _              -> "_"
-        in
         Format.eprintf "@[<2>try {@,";
-        let body = compile_block st [] pc1 inner_frontier interm in
+        let (params1, _, _) = IntMap.find pc1 st.ctx.Ctx.blocks in
+        let body =
+          parallel_renaming st.ctx params1 args1
+            (fun queue -> compile_block st queue pc1 inner_frontier interm) []
+        in
         Format.eprintf "} catch {@,";
-        let handler = compile_block st [] pc2 inner_frontier interm in
+        let (params2, _, _) = IntMap.find pc2 st.ctx.Ctx.blocks in
+        let handler =
+          parallel_renaming st.ctx params2 args2
+            (fun queue -> compile_block st queue pc2 inner_frontier interm)
+            []
+        in
         Format.eprintf "}@]";
         if limit_body then decr_preds st pc3;
         flush_all queue
           (J.Try_statement (Js_simpl.statement_list body,
-                            Some (var, Js_simpl.statement_list handler),
+                            Some (Var.to_string x,
+                                  Js_simpl.statement_list handler),
                             None) ::
            if IntSet.is_empty inner_frontier then [] else begin
              let pc = IntSet.choose inner_frontier in
@@ -547,14 +602,14 @@ and compile_block st queue pc frontier interm =
             Format.eprintf "@ var %a;" Code.Var.print x;
             let idx = st.interm_idx in
             st.interm_idx <- idx - 1;
-            let cases = Array.map (fun pc -> (pc, None)) a in
+            let cases = Array.map (fun pc -> (pc, [])) a in
             let switch =
               if Array.length cases > 2 then
                 Code.Switch (x, cases, [||])
               else
                 Code.Cond (IsTrue, x, cases.(1), cases.(0))
             in
-            st.blocks <- IntMap.add idx (None, [], switch) st.blocks;
+            st.blocks <- IntMap.add idx ([], [], switch) st.blocks;
             IntSet.iter (fun pc -> incr_preds st pc) new_frontier;
             Hashtbl.add st.succs idx (IntSet.elements new_frontier);
             Hashtbl.add st.all_succs idx new_frontier;
@@ -577,7 +632,6 @@ and compile_block st queue pc frontier interm =
           compile_block st [] pc frontier interm
         end
   in
-(*XXXXX *)
   if IntSet.mem pc st.loops then begin
     [J.While_statement
        (J.EBool true,
@@ -701,24 +755,38 @@ and compile_conditional st queue pc last backs frontier interm =
   Format.eprintf "}@.";
   res
 
-and compile_argument_passing ctx queue (pc, arg) continuation =
-  match arg with
-    None ->
+and compile_argument_passing ctx queue (pc, args) continuation =
+  if args = [] then
+    continuation queue
+  else begin
+    let (params, _, _) = IntMap.find pc ctx.Ctx.blocks in
+Format.eprintf "%d -> %d/%d@." pc (List.length args) (List.length params);
+    parallel_renaming ctx params args continuation queue
+  end
+(*
+  match args with
+    [] ->
       continuation queue
-  | Some x ->
+  | xl ->
+(*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+XXXX Make sure that we do not miscompile x = y; y = e
       match IntMap.find pc ctx.Ctx.blocks with
         (Some y, _, _) ->
+
+
           let ((px, cx), queue) = access_queue queue x in
           let (st, queue) =
             match ctx.Ctx.live.(Var.idx y) with
               0 -> assert false
             | 1 -> enqueue queue px y cx
-            | _ -> flush_queue queue (px >= flush_p)
+            | _ -> flush_queue queue (px >= flush_p) (Some y)
                      [J.Variable_statement [Var.to_string y, Some cx]]
           in
           st @ continuation queue
       | _ ->
+*)
           assert false
+*)
 
 and compile_branch st queue ((pc, arg) as cont) backs frontier interm =
   compile_argument_passing st.ctx queue cont
@@ -741,7 +809,7 @@ and compile_branch_selection pc interm =
   with Not_found ->
     []
 
-and compile_closure ctx pc =
+and compile_closure ctx (pc, args) =
   let st =
     { visited_blocks = IntSet.empty; loops = IntSet.empty;
       all_succs = Hashtbl.create 17; succs = Hashtbl.create 17;
@@ -752,7 +820,10 @@ and compile_closure ctx pc =
   let current_blocks = st.visited_blocks in
   st.visited_blocks <- IntSet.empty;
   Format.eprintf "@[<2>closure{";
-  let res = compile_block st [] pc IntSet.empty IntMap.empty in
+  let (params, _, _) = IntMap.find pc st.ctx.Ctx.blocks in
+  let res =
+    parallel_renaming st.ctx params args
+      (fun queue -> compile_block st queue pc IntSet.empty IntMap.empty) [] in
   if
     IntSet.cardinal st.visited_blocks <> IntSet.cardinal current_blocks
   then begin
@@ -762,7 +833,7 @@ and compile_closure ctx pc =
   Js_simpl.source_elements res
 
 let compile_program ctx pc =
-  let res = compile_closure ctx pc in Format.eprintf "@.@."; res
+  let res = compile_closure ctx (pc, []) in Format.eprintf "@.@."; res
 
 (**********************)
 

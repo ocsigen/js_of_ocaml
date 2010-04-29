@@ -139,7 +139,7 @@ type globals =
 
 module State = struct
 
-  type elt = Var of Var.t (*| Addr of int*) | Dummy
+  type elt = Var of Var.t | Dummy
 
   let elt_to_var e = match e with Var x -> x | _ -> assert false
   let opt_elt_to_var e = match e with Var x -> Some x | _ -> None
@@ -188,6 +188,11 @@ module State = struct
 
   let opt_accu st = opt_elt_to_var st.accu
 
+  let stack_vars st =
+    List.fold_left
+      (fun l e -> match e with Var x -> x :: l | Dummy -> l)
+      [] (st.accu :: st.stack)
+
   let set_accu st x = {st with accu = Var x}
 
   let clear_accu st = {st with accu = Dummy}
@@ -208,10 +213,32 @@ module State = struct
     assert (List.nth st.stack n = Var x);
     {st with stack = st_unalias st.stack x n y }
 
+  let rec st_assign s n x =
+    match s with
+      [] ->
+        assert false
+    | y :: rem ->
+        if n = 0 then x :: rem else y :: st_assign rem (n - 1) x
+
+  let assign st n =
+    {st with stack = st_assign st.stack n st.accu }
+
   let start_function state env offset =
     {state with accu = Dummy; stack = []; env = env; env_offset = offset}
 
   let start_block state =
+    let (stack, stream) =
+      List.fold_right
+        (fun e (stack, stream) ->
+           match e with
+             Dummy ->
+               (Dummy :: stack, stream)
+           | Var _ ->
+               let (x, stream) = Var.next stream in
+               (Var x :: stack, stream))
+        state.stack ([], state.var_stream)
+    in
+    let state = { state with stack = stack; var_stream = stream } in
     match state.accu with
       Dummy -> state
     | Var _ -> snd (fresh_var state)
@@ -245,7 +272,7 @@ let compiled_block = ref IntMap.empty
 
 let debug = false
 
-let rec compile_block code orig pc state =
+let rec compile_block code pc state =
   if not (IntMap.mem pc !compiled_block) then begin
     let len = String.length code  / 4 in
     let limit = next_block len pc in
@@ -256,13 +283,13 @@ let rec compile_block code orig pc state =
       IntMap.add pc (state, List.rev instr, last) !compiled_block;
     begin match last with
       Branch (pc', _) | Poptrap (pc', _) ->
-        compile_block code pc pc' state'
+        compile_block code pc' state'
     | Cond (_, _, (pc1, _), (pc2, _)) ->
-        compile_block code pc pc1 state';
-        compile_block code pc pc2 state'
+        compile_block code pc1 state';
+        compile_block code pc2 state'
     | Switch (_, l1, l2) ->
-        Array.iter (fun (pc', _) -> compile_block code pc pc' state') l1;
-        Array.iter (fun (pc', _) -> compile_block code pc pc' state') l2
+        Array.iter (fun (pc', _) -> compile_block code pc' state') l1;
+        Array.iter (fun (pc', _) -> compile_block code pc' state') l2
     | Pushtrap _ | Raise _ | Return _ | Stop ->
         ()
     end
@@ -271,7 +298,7 @@ let rec compile_block code orig pc state =
 and compile code limit pc state instrs =
   if debug then State.print state;
   if pc = limit then
-    (instrs, Branch (pc, State.opt_accu state), state)
+    (instrs, Branch (pc, State.stack_vars state), state)
   else begin
   if debug then Format.eprintf "%4d " pc;
   let instr =
@@ -328,6 +355,12 @@ and compile code limit pc state instrs =
       compile code limit (pc + 2) (State.pop n state) instrs
   | ASSIGN ->
       let n = getu code (pc + 1) in
+      let state = State.assign state n in
+      let (x, state) = State.fresh_var state in
+      if debug then Format.printf "%a = 0@." Var.print x;
+      compile code limit (pc + 2) state (Let (x, Const 0) :: instrs)
+(*
+      let n = getu code (pc + 1) in
       let y = State.peek n state in
       let z = State.accu state in
       let (t, state) = State.fresh_var state in
@@ -337,6 +370,7 @@ and compile code limit pc state instrs =
       if debug then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 2) state
         (Let (x, Const 0) :: Assign (y, z) :: Let (t, Variable y) :: instrs)
+*)
   | ENVACC1 ->
       compile code limit (pc + 1) (State.env_acc 1 state) instrs
   | ENVACC2 ->
@@ -482,12 +516,13 @@ and compile code limit pc state instrs =
       let (params, state') = make_stack 0 state' in
       if debug then Format.printf ") {@.";
       let state' = State.clear_accu state' in
-      compile_block code (-1) addr state';
+      compile_block code addr state';
       if debug then Format.printf "}@.";
       compile code limit (pc + 3) state
         (Let (y, Block (Obj.closure_tag, [|x; s|])) ::
          Let (s, Const (List.length params)) ::
-         Let (x, Closure (List.rev params, addr)) :: instrs)
+         Let (x, Closure (List.rev params, (addr, State.stack_vars state'))) ::
+         instrs)
   | CLOSUREREC ->
       let nfuncs = getu code (pc + 1) in
       let nvars = getu code (pc + 2) in
@@ -534,11 +569,12 @@ and compile code limit pc state instrs =
              let (params, state') = make_stack 0 state' in
              if debug then Format.printf ") {@.";
              let state' = State.clear_accu state' in
-             compile_block code (-1) addr state';
+             compile_block code addr state';
              if debug then Format.printf "}@.";
              Let (y, Block (Obj.closure_tag, [|x; s|])) ::
              Let (s, Const (List.length params)) ::
-             Let (x, Closure (List.rev params, addr)) ::
+             Let (x, Closure (List.rev params,
+                              (addr, State.stack_vars state'))) ::
              instr)
          instrs (List.rev !vars)
       in
@@ -855,29 +891,32 @@ and compile code limit pc state instrs =
   | BRANCH ->
       let offset = gets code (pc + 1) in
       if debug then Format.printf "... (branch)@.";
-      (instrs, Branch (pc + offset + 1, State.opt_accu state), state)
+      (instrs, Branch (pc + offset + 1, State.stack_vars state), state)
   | BRANCHIF ->
       let offset = gets code (pc + 1) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (IsTrue, x, (pc + offset + 1, Some x), (pc + 2, Some x)), state)
+       Cond (IsTrue, x, (pc + offset + 1, args), (pc + 2, args)), state)
   | BRANCHIFNOT ->
       let offset = gets code (pc + 1) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (IsTrue, x, (pc + 2, Some x), (pc + offset + 1, Some x)), state)
+       Cond (IsTrue, x, (pc + 2, args), (pc + offset + 1, args)), state)
   | SWITCH ->
 if debug then Format.printf "switch ...@.";
       let sz = getu code (pc + 1) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       let l = sz land 0xFFFF in
       let it =
         Array.init (sz land 0XFFFF)
-          (fun i -> (pc + 2 + gets code (pc + 2 + i), Some x))
+          (fun i -> (pc + 2 + gets code (pc + 2 + i), args))
       in
       let bt =
         Array.init (sz lsr 16)
-          (fun i -> (pc + 2 + gets code (pc + 2 + l + i), Some x))
+          (fun i -> (pc + 2 + gets code (pc + 2 + l + i), args))
       in
       (instrs, Switch (x, it, bt), state)
   | BOOLNOT ->
@@ -887,17 +926,18 @@ if debug then Format.printf "switch ...@.";
       compile code limit (pc + 1) state (Let (x, Prim (Not, [y])) :: instrs)
   | PUSHTRAP ->
       let addr = pc + 1 + gets code (pc + 1) in
-      let (_, state') = State.fresh_var state in
-      compile_block code (-1) addr state';
-      compile_block code (-1) (pc + 2)
+      let (x, state') = State.fresh_var state in
+      compile_block code addr state';
+      compile_block code (pc + 2)
         {state with State.stack =
             State.Dummy :: State.Dummy :: State.Dummy :: State.Dummy ::
             state.State.stack};
       (instrs,
-       Pushtrap ((pc + 2, State.opt_accu state), addr, dummy_cont), state)
+       Pushtrap ((pc + 2, State.stack_vars state), x,
+                 (addr, State.stack_vars state'), dummy_cont), state)
   | POPTRAP ->
-      compile_block code (-1) (pc + 1) (State.pop 4 state);
-      (instrs, Poptrap (pc + 1, State.opt_accu state), state)
+      compile_block code (pc + 1) (State.pop 4 state);
+      (instrs, Poptrap (pc + 1, State.stack_vars state), state)
   | RAISE ->
       if debug then Format.printf "throw(%a)@." Var.print (State.accu state);
       (instrs, Raise (State.accu state), state)
@@ -1180,50 +1220,58 @@ if debug then Format.printf "switch ...@.";
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (CEq n, x, (pc + offset + 2, Some x), (pc + 3, Some x)), state)
+       Cond (CEq n, x, (pc + offset + 2, args), (pc + 3, args)), state)
   | BNEQ ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (CEq n, x, (pc + 3, Some x), (pc + offset + 2, Some x)), state)
+       Cond (CEq n, x, (pc + 3, args), (pc + offset + 2, args)), state)
   | BLTINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (CLt n, x, (pc + offset + 2, Some x), (pc + 3, Some x)), state)
+       Cond (CLt n, x, (pc + offset + 2, args), (pc + 3, args)), state)
   | BLEINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (CLe n, x, (pc + offset + 2, Some x), (pc + 3, Some x)), state)
+       Cond (CLe n, x, (pc + offset + 2, args), (pc + 3, args)), state)
   | BGTINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (CLe n, x, (pc + 3, Some x), (pc + offset + 2, Some x)), state)
+       Cond (CLe n, x, (pc + 3, args), (pc + offset + 2, args)), state)
   | BGEINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (CLt n, x, (pc + 3, Some x), (pc + offset + 2, Some x)), state)
+       Cond (CLt n, x, (pc + 3, args), (pc + offset + 2, args)), state)
   | BULTINT ->
       let n = getu code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (CUlt n, x, (pc + offset + 2, Some x), (pc + 3, Some x)), state)
+       Cond (CUlt n, x, (pc + offset + 2, args), (pc + 3, args)), state)
   | BUGEINT ->
       let n = getu code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
+      let args = State.stack_vars state in
       (instrs,
-       Cond (CUlt n, x, (pc + 3, Some x), (pc + offset + 2, Some x)), state)
+       Cond (CUlt n, x, (pc + 3, args), (pc + offset + 2, args)), state)
   | ULTINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1277,8 +1325,9 @@ let rec traverse blocks pc visited blocks' =
       (* Note that there is no matching poptrap when an exception is alway
          raised in the [try ... with ...] body. *)
       match last, path with
-        Pushtrap (cont1, pc', _), cont2 :: rem ->
-          (IntMap.add pc (param, instr, Pushtrap (cont1, pc', cont2)) blocks',
+        Pushtrap (cont1, x, cont2, _), cont3 :: rem ->
+          (IntMap.add
+             pc (param, instr, Pushtrap (cont1, x, cont2, cont3)) blocks',
            rem)
       | Poptrap cont, _ ->
           (blocks', cont :: path)
@@ -1302,12 +1351,12 @@ let match_exn_traps ((_, blocks, _) as p) =
 let parse_bytecode code state =
   let cont = analyse_blocks code in
 ignore cont;
-  compile_block code (-1) 0 state;
+  compile_block code 0 state;
 
   let compiled_block =
     IntMap.mapi
       (fun pc (state, instr, last) ->
-         (State.opt_accu state, instr, last))
+         (State.stack_vars state, instr, last))
       !compiled_block
   in
 (*
@@ -1331,9 +1380,9 @@ ignore cont;
     | _ ->
         ()
   done;
-  let last = Branch (0, None) in
+  let last = Branch (0, []) in
   let pc = String.length code / 4 in
-  let compiled_block = IntMap.add pc (None, !l, last) compiled_block in
+  let compiled_block = IntMap.add pc ([], !l, last) compiled_block in
   let compiled_block = match_exn_traps (pc, compiled_block, pc + 1) in
   (pc, compiled_block, pc + 1)
 

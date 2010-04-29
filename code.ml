@@ -101,6 +101,8 @@ end
 
 type addr = int
 
+type cont = addr * Var.t list
+
 type prim =
     Vectlength
   | Array_get
@@ -116,21 +118,18 @@ type expr =
   | Direct_apply of Var.t * Var.t list
   | Block of int * Var.t array
   | Field of Var.t * int
-  | Closure of Var.t list * addr
+  | Closure of Var.t list * cont
   | Constant of Obj.t
   | Prim of prim * Var.t list
   | Variable of Var.t
 
 type instr =
     Let of Var.t * expr
-  | Assign of Var.t * Var.t
   | Set_field of Var.t * int * Var.t
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
 
 type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
-
-type cont = addr * Var.t option
 
 type last =
     Return of Var.t
@@ -139,16 +138,16 @@ type last =
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * addr * cont
+  | Pushtrap of cont * Var.t * cont * cont
   | Poptrap of cont
 
-type block = Var.t option * instr list * last
+type block = Var.t list * instr list * last
 
 type program = addr * block IntMap.t * addr
 
 (****)
 
-let dummy_cont = (-1, None)
+let dummy_cont = (-1, [])
 
 let is_dummy_cont (pc, _) = pc < 0
 
@@ -159,6 +158,10 @@ let rec print_var_list f l =
     []     -> ()
   | [x]    -> Var.print f x
   | x :: r -> Format.fprintf f "%a, %a" Var.print x print_var_list r
+
+let print_cont f ((pc, args) as cont) =
+  if is_dummy_cont cont then Format.fprintf f "<dummy>" else
+  Format.fprintf f "%d (%a)" pc print_var_list args
 
 let print_prim f p l =
   match p, l with
@@ -203,8 +206,8 @@ let print_expr f e =
       Format.fprintf f "}"
   | Field (x, i) ->
       Format.fprintf f "%a[%d]" Var.print x i
-  | Closure (l, pc) ->
-      Format.fprintf f "fun(%a){%d}" print_var_list l pc
+  | Closure (l, cont) ->
+      Format.fprintf f "fun(%a){%a}" print_var_list l print_cont cont
   | Constant c ->
       Format.fprintf f "CONST{%a}" Instr.print_obj c
   | Prim (p, l) ->
@@ -216,8 +219,6 @@ let print_instr f i =
   match i with
     Let (x, e)    ->
       Format.fprintf f "%a = %a" Var.print x print_expr e
-  | Assign (x, y) ->
-      Format.fprintf f "%a := %a" Var.print x Var.print y
   | Set_field (x, i, y) ->
       Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
   | Offset_ref (x, i) ->
@@ -232,12 +233,6 @@ let print_cond f (c, x) =
   | CLt n  -> Format.fprintf f "%d < %a" n Var.print x
   | CLe n  -> Format.fprintf f "%d <= %a" n Var.print x
   | CUlt n -> Format.fprintf f "%d < %a" n Var.print x
-
-let print_cont f (pc, arg) =
-  if pc < 0 then Format.fprintf f "<dummy>" else
-  match arg with
-    None   -> Format.fprintf f "%d" pc
-  | Some x -> Format.fprintf f "%d (%a)" pc Var.print x
 
 let print_last f l =
   match l with
@@ -259,19 +254,16 @@ let print_last f l =
       Array.iteri
         (fun i cont -> Format.fprintf f "tag %d -> %a; " i print_cont cont) a2;
       Format.fprintf f "}"
-  | Pushtrap (cont1, pc, cont2) ->
-      Format.fprintf f "pushtrap %a handler %d continuation %a"
-        print_cont cont1 pc print_cont cont2
+  | Pushtrap (cont1, x, cont2, cont3) ->
+      Format.fprintf f "pushtrap %a handler %a => %a continuation %a"
+        print_cont cont1 Var.print x print_cont cont2 print_cont cont3
   | Poptrap cont ->
       Format.fprintf f "poptrap %a" print_cont cont
 
 type xinstr = Instr of instr | Last of last
 
-let print_block annot pc (param, instr, last) =
-  begin match param with
-    None   -> Format.eprintf "==== %d ====@." pc
-  | Some x -> Format.eprintf "==== %d (%a) ====@." pc Var.print x
-  end;
+let print_block annot pc (params, instr, last) =
+  Format.eprintf "==== %d (%a) ====@." pc print_var_list params;
   List.iter
     (fun i -> Format.eprintf " %s %a@." (annot pc (Instr i)) print_instr i)
     instr;
@@ -289,7 +281,11 @@ let fold_closures (pc, blocks, _) f accu =
     (fun _ (_, instrs, _) accu ->
        List.fold_left
          (fun accu i ->
-            match i with Let (_, Closure (_, pc)) -> f pc accu | _ -> accu)
+            match i with
+              Let (_, Closure (_, (pc, _))) ->
+                f pc accu
+            | _ ->
+                accu)
          accu instrs)
     blocks (f pc accu)
 
@@ -304,7 +300,7 @@ let fold_children blocks pc f accu =
       accu
   | Branch (pc', _) | Poptrap (pc', _) ->
       f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), pc2, _) ->
+  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
       accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1

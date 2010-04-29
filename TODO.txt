@@ -1,43 +1,25 @@
 Priorities
 ==========
-- how to parse "if (e) (if (e') st) else st'"???
-- faster flow analysis
+- use continuation with multiples arguments
+  ==> graph coloring + variable coalescing
+  ==> self tail recursion
+  ==> we should check stack compatibility when parsing:
+      when jumping somewhere, the stack should keep the same shape
+- more aggressive variable renaming? (in particular, for Control.block_simpl)
+- faster and sound flow analysis
 - fix compilation of closures within loops
 - fix small bugs
-- self tail recursion
+  ==> integer arithmetic
 
 - options on command line
+  ==> compact mode
+  ==> debugging options
 
 ===========
 
-Conditionals compilation
-========================
+Use fresh variables at each blocks with more than one antecedent
 
-1. get parent branch continuation points
-
-2. find continuation points of each branch
-   if more than one overall, abort
-   ===> map them all to a same node (for the sake of counting them)
-        + set selection variable to implement jump to these nodes when
-          compiling
-
-3. recursively compile children (passing them existing continuation points)
-
-4. if continuation point is not the same as the parent one compile the
-   continuation point (step 2)
-   ==> if several continuation points, add a switch to select between them
-
-   otherwise, we are done
-
-when compiling a switch, add a "break" at the tail of each branch with
-a continuation point
-
-"poptrap" are termination points when compiling a pushtrap node
-
-if (e) {...; return} else {b} ===> if e {...; return}; b
-      grey is empty for this block...
-
-======
+===========
 
 Loops: wrap closures inside functions.
 Function arguments: any variable which occur inside the closure and is
@@ -47,6 +29,9 @@ Function arguments: any variable which occur inside the closure and is
        x = !y; let f = fun () -> x in ...
 
        for i = ... to ... do let f = fun () -> i in ... done
+
+===> move backwards from the backwards jumps to get all variables
+     defined in the loop + the closure that are defined in the loop
 
 =======
 
@@ -66,7 +51,7 @@ BUGS
 
 - "let x = !y in if e then incr y; (use x now)"
   ==> not sure how to fix this.  should we pass the whole stack at
-      each block? (optimized away by coloring)? this make analysis
+      each block? (optimized away by coloring)? this make analyses
       more complex, but they will have to deal with self tail
       recursion anyway...
 
@@ -74,10 +59,6 @@ BUGS
   (or document that we should not rely on the Obj module)
 
 - do arithmetic modulo for integers
-
-- bug with ASSIGN and closures in for loops: it is incorrect to modify
-  the variable in place
-  (not just assign, actually: any variable that may change)
 
 - generate caml_call_N functions... (with short names when possible...)
 
@@ -88,6 +69,18 @@ BUGS
   should be quite effective...)
 
 - fix definitions of max_int and min_int in pervasive...
+  (not sure how...)
+
+PERFORMANCE
+===========
+- should we rebind variables from a deeper level ?
+  (only if used more than once...)
+
+     var x = ...
+     function () {
+        var y = x;
+        ... y .... y ... y ....
+     }
 
 COMPACT MODE
 ============
@@ -100,6 +93,11 @@ COMPACT MODE
 
 IMPROVEMENTS
 ============
+
+- be more cautious regarding how we print floats...
+  (is it accurate?)
+  ==> gdtoa
+    http://caml.inria.fr/pub/ml-archives/caml-list/2002/12/2813f8e8be115b0bad1bc16b1e41b744.en.html
 
 - We only have to make sure we do not use a
   reserved word not a function used outside for naming variables
@@ -203,3 +201,9 @@ Inlining: see Manuel Serrano's paper
 Resolving and Exploiting the k-CFA Paradox
 Illuminating Functional vs. Object-Oriented Program Analysis
 Matthew Might               Yannis Smaragdakis             David Van Horn
+
+==================================
+
+Use window.postMessage instead of setTimeout for yield (setTimeout
+always waits a bit!)
+

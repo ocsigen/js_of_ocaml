@@ -1,7 +1,7 @@
 all: compile
 
 OBJS=javascript.cmx js_output.cmx js_simpl.cmx \
-     util.cmx instr.cmx code.cmx deadcode.cmx flow.cmx control.cmx \
+     util.cmx instr.cmx code.cmx subst.cmx deadcode.cmx flow.cmx control.cmx \
      struct.cmx \
      generate.cmx parse.cmx main.cmx
 

@@ -32,7 +32,7 @@ let req_instr i =
   match i with
     Let (_, e) ->
       req_expr e
-  | Assign _ | Set_field _ | Offset_ref _ | Array_set _ ->
+  | Set_field _ | Offset_ref _ | Array_set _ ->
       false
 
 (****)
@@ -53,7 +53,7 @@ and mark_expr st e =
       Array.iter (fun x -> mark_var st x) a
   | Field (x, _) ->
       mark_var st x
-  | Closure (_, pc) ->
+  | Closure (_, (pc, _)) ->
       mark_req st pc
   | Prim (_, l) ->
       List.iter (fun x -> mark_var st x) l
@@ -64,7 +64,6 @@ and mark_instr st i =
   match i with
     Let (_, e) ->
       mark_expr st e
-  | Assign (_, x)
   | Set_field (_, _, x) ->
       mark_var st x
   | Array_set (_, x, y) ->
@@ -83,7 +82,7 @@ and mark_req st pc =
          match i with
            Let (_, e) ->
              if req_expr e then mark_expr st e
-         | Assign (x, _) | Set_field (x, _, _) | Offset_ref (x, _)
+         | Set_field (x, _, _) | Offset_ref (x, _)
          | Array_set (x, _, _) ->
              mark_var st x)
       instr;
@@ -100,8 +99,8 @@ and mark_req st pc =
         mark_var st x;
         Array.iter (fun cont -> mark_cont st cont) a1;
         Array.iter (fun cont -> mark_cont st cont) a2
-    | Pushtrap (cont, pc, _) ->
-        mark_cont st cont; mark_req st pc
+    | Pushtrap (cont1, _, cont2, _) ->
+        mark_cont st cont1; mark_cont st cont2
     | Poptrap cont ->
         mark_cont st cont
   end
@@ -115,24 +114,40 @@ let ref_count st i =
 
 let fully_live_instr st i =
   match i with
-    Let (x, _) | Assign (x, _)
+    Let (x, _)
   | Set_field (x, _, _) | Offset_ref (x, _) | Array_set (x, _, _) ->
       st.live.(Var.idx x) > 0
 
 let live_instr st i = req_instr i || fully_live_instr st i
 
-let filter_cont blocks st (pc, arg) =
-  let (param, _, _) =
+let rec filter_args st pl al =
+  match pl, al with
+    x :: pl, y :: al ->
+      if st.live.(Var.idx x) > 0 then
+        y :: filter_args st pl al
+      else
+        filter_args st pl al
+  | [], _ ->
+      []
+  | _ ->
+      assert false
+
+let filter_cont blocks st ((pc, args) as cont) =
+  let (params, _, _) =
     try
       IntMap.find pc blocks
     with Not_found ->
-      assert (pc = -1); (None, [], Stop)
+      assert (Code.is_dummy_cont cont);
+      ([], [], Stop)
   in
-  match param with
-    Some x when st.live.(Var.idx x) > 0 ->
-      (pc, arg)
+  (pc, filter_args st params args)
+
+let filter_closure blocks st i =
+  match i with
+    Let (x, Closure (l, cont)) ->
+      Let (x, Closure (l, filter_cont blocks st cont))
   | _ ->
-      (pc, None)
+      i
 
 let filter_live_last blocks st l =
   match l with
@@ -146,8 +161,10 @@ let filter_live_last blocks st l =
       Switch (x,
               Array.map (fun cont -> filter_cont blocks st cont) a1,
               Array.map (fun cont -> filter_cont blocks st cont) a2)
-  | Pushtrap (cont1, pc, cont2) ->
-      Pushtrap (filter_cont blocks st cont1, pc, filter_cont blocks st cont2)
+  | Pushtrap (cont1, x, cont2, cont3) ->
+      Pushtrap (filter_cont blocks st cont1,
+                x, filter_cont blocks st cont2,
+                filter_cont blocks st cont3)
   | Poptrap cont ->
       Poptrap (filter_cont blocks st cont)
 
@@ -167,16 +184,17 @@ let add_dep deps x i =
   let idx = Var.idx x in
   deps.(idx) <- i :: deps.(idx)
 
-let add_cont_dep blocks deps (pc, arg) =
-  match arg with
-    None ->
+let rec add_arg_dep deps params args =
+  match params, args with
+    x :: params, y :: args ->
+      add_dep deps x (Let (x, Variable y));
+      add_arg_dep deps params args
+  | _ ->
       ()
-  | Some x ->
-      let e = Variable x in
-      match IntMap.find pc blocks with
-        (Some y, _, _) -> add_dep deps y (Let (y, e))
-      | _              -> ()  (* We can have a value in the accumulator
-                                 which is not used afterwards... *)
+
+let add_cont_dep blocks deps (pc, args) =
+  let (params, _, _) = IntMap.find pc blocks in
+  add_arg_dep deps params args
 
 let f (pc, blocks, free_pc) =
   let nv = Var.count () in
@@ -187,8 +205,7 @@ let f (pc, blocks, free_pc) =
        List.iter
          (fun i ->
             match i with
-              Let (x, _) | Assign (x, _)
-            | Set_field (x, _, _) | Array_set (x, _, _) ->
+              Let (x, _) | Set_field (x, _, _) | Array_set (x, _, _) ->
                 add_dep deps x i
             | Offset_ref _  ->
                 ())
@@ -204,7 +221,7 @@ let f (pc, blocks, free_pc) =
        | Switch (_, a1, a2) ->
            Array.iter (fun cont -> add_cont_dep blocks deps cont) a1;
            Array.iter (fun cont -> add_cont_dep blocks deps cont) a2
-       | Pushtrap (cont, _, _) ->
+       | Pushtrap (cont, _, _, _) ->
            add_cont_dep blocks deps cont
        | Poptrap cont ->
            add_cont_dep blocks deps cont)
@@ -220,11 +237,12 @@ let f (pc, blocks, free_pc) =
   let all_blocks = blocks in
   let blocks =
     IntMap.fold
-      (fun pc (param, instr, last) blocks ->
+      (fun pc (params, instr, last) blocks ->
          if not (IntSet.mem pc st.live_block) then blocks else
          IntMap.add pc
-           (opt_filter (fun x -> st.live.(Var.idx x) > 0) param,
-            List.filter (fun i -> live_instr st i) instr,
+           (List.filter (fun x -> st.live.(Var.idx x) > 0) params,
+            List.map (fun i -> filter_closure all_blocks st i)
+              (List.filter (fun i -> live_instr st i) instr),
             filter_live_last all_blocks st last)
            blocks)
       blocks IntMap.empty

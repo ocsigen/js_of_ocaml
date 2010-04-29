@@ -89,11 +89,29 @@ let rec expression_of_statement_list l =
   | _ ->
       raise Not_expression
 
-and expression_of_statement st =
+let expression_of_statement st =
   match st with
     J.Return_statement (Some e) -> e
   | J.Block l                   -> expression_of_statement_list l
   | _                           -> raise Not_expression
+
+exception Not_assignment
+
+let rec assignment_of_statement_list l =
+  match l with
+    [J.Variable_statement [x, Some e]] ->
+      (x, e)
+  | J.Expression_statement e :: rem ->
+      let (x, e') = assignment_of_statement_list rem in
+      (x, J.ESeq (e, e'))
+  | _ ->
+      raise Not_assignment
+
+let assignment_of_statement st =
+  match st with
+    J.Variable_statement [x, Some e] -> (x, e)
+  | J.Block l                        -> assignment_of_statement_list l
+  | _                                -> raise Not_assignment
 
 let rec if_statement e iftrue iffalse =
   let e =
@@ -103,6 +121,7 @@ let rec if_statement e iftrue iffalse =
     | _                                 -> e
   in
   match iftrue, iffalse with
+    (* Empty blocks *)
     J.Block [], Some (J.Block []) ->
       (* Should not happen *)
       J.Expression_statement e
@@ -110,6 +129,7 @@ let rec if_statement e iftrue iffalse =
       if_statement (enot e) iffalse None
   | _, Some (J.Block []) ->
       if_statement e iftrue None
+    (* Shared statements *)
   | J.If_statement (e', iftrue', iffalse'), _
         when iffalse = iffalse' ->
       J.If_statement (J.EBin (J.And, e, e'), iftrue', iffalse)
@@ -125,11 +145,21 @@ let rec if_statement e iftrue iffalse =
                       iftrue, Some iftrue')
   | _, Some iffalse ->
       begin try
+        let (x1, e1) = assignment_of_statement iftrue in
+        let (x2, e2) = assignment_of_statement iffalse in
+        if x1 <> x2 then raise Not_assignment;
+        J.Variable_statement [x1, Some (J.ECond (e, e1, e2))]
+      with Not_assignment ->
+        J.If_statement (e, iftrue, Some iffalse)
+      end
+(*
+      begin try
         let e1 = expression_of_statement iftrue in
         let e2 = expression_of_statement iffalse in
         J.Return_statement (Some (J.ECond (e, e1, e2)))
       with Not_expression ->
         J.If_statement (e, iftrue, Some iffalse)
       end
+*)
   | _ ->
       J.If_statement (e, iftrue, iffalse)
