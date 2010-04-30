@@ -10,14 +10,11 @@ Priorities
   ==> we should check stack compatibility when parsing:
       when jumping somewhere, the stack should keep the same shape
 - more aggressive variable renaming? (in particular, for Control.block_simpl)
+- remove "Variable x" instruction
 
 - options on command line
   ==> compact mode
   ==> debugging options
-
-===========
-
-Use fresh variables at each blocks with more than one antecedent
 
 ===========
 
