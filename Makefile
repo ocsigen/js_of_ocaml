@@ -2,7 +2,7 @@ all: compile
 
 OBJS=javascript.cmx js_output.cmx js_simpl.cmx \
      util.cmx instr.cmx code.cmx subst.cmx deadcode.cmx flow.cmx control.cmx \
-     struct.cmx tailcall.cmx \
+     tailcall.cmx freevars.cmx \
      generate.cmx parse.cmx main.cmx
 
 compile: $(OBJS:cmx=cmo)

@@ -64,6 +64,7 @@ type program = addr * block Util.IntMap.t * addr
 
 type xinstr = Instr of instr | Last of last
 
+val print_var_list : Format.formatter -> Var.t list -> unit
 val print_instr : Format.formatter -> instr -> unit
 val print_block : (Util.IntMap.key -> xinstr -> string) -> int -> block -> unit
 val print_program : (Util.IntMap.key -> xinstr -> string) -> program -> unit

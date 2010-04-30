@@ -4,6 +4,7 @@ Priorities
 - faster and sound flow analysis
 - fix small bugs
   ==> integer arithmetic
+- function representation/call (see runtime/runtime.js)
 
 - using continuation with multiples arguments
   ==> graph coloring + variable coalescing
@@ -11,6 +12,7 @@ Priorities
       when jumping somewhere, the stack should keep the same shape
 - more aggressive variable renaming? (in particular, for Control.block_simpl)
 - remove "Variable x" instruction
+- tail rec should be moved to a much earlier stage
 
 - options on command line
   ==> compact mode

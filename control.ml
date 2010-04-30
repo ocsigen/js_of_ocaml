@@ -90,6 +90,8 @@ let rec block_simpl pc (preds, blocks) =
           let (params', instr', last') = IntMap.find pc' blocks in
 (*XXX We can always rename variables so that params' = []... *)
             if
+(*FIX: is that correct? in particular, function entry points
+  may have only one predecessor... *)
               IntSet.cardinal (IntMap.find pc' preds) = 1 && params' = []
             then begin
               (preds,
