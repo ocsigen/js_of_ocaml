@@ -1,6 +1,5 @@
 Priorities
 ==========
-- fix compilation of closures within loops
 - faster and sound flow analysis
 - fix small bugs
   ==> integer arithmetic
@@ -18,21 +17,10 @@ Priorities
   ==> compact mode
   ==> debugging options
 
+- inlining
+- constant hoisting (including functions, out of loops and functions)
+
 ===========
-
-Loops: wrap closures inside functions.
-Function arguments: any variable which occur inside the closure and is
-   defined in the loop
-
-   examples:
-       x = !y; let f = fun () -> x in ...
-
-       for i = ... to ... do let f = fun () -> i in ... done
-
-===> move backwards from the backwards jumps to get all variables
-     defined in the loop + the closure that are defined in the loop
-
-=======
 
 Special case for shortcut boolean operations...
 
@@ -47,6 +35,10 @@ Special case for shortcut boolean operations...
 
 BUGS
 ====
+- compilation of functions in loops going through exception handlers
+     while true do
+        try ... fun () -> ...; raise Exit with e -> ()
+     done
 
 - compile ISINT to "not a block" and document this deviation
   (or document that we should not rely on the Obj module)
@@ -93,8 +85,7 @@ IMPROVEMENTS
     http://caml.inria.fr/pub/ml-archives/caml-list/2002/12/2813f8e8be115b0bad1bc16b1e41b744.en.html
 
 - We only have to make sure we do not use a
-  reserved word not a function used outside for naming variables
-  ===> Bloom filter???
+  reserved word nor a function used outside for naming variables
 
 - convert boolean to integer: (x)+0
   (is that faster than x?1:0 ?)

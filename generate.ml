@@ -60,13 +60,15 @@ module Ctx = struct
   type t =
     { var_stream : Var.stream;
       mutable blocks : Code.block Util.IntMap.t;
-      live : int array }
+      live : int array;
+      mutated_vars : Freevars.VarSet.t Util.IntMap.t }
 
   let fresh_var ctx =
     let (x, stream) = Var.next ctx.var_stream in
     (x, {ctx with var_stream = stream})
 
-  let initial b l = { var_stream = Var.make_stream (); blocks = b; live = l }
+  let initial b l v =
+    { var_stream = Var.make_stream (); blocks = b; live = l; mutated_vars = v }
 
   let used_once ctx x = ctx.live.(Var.idx x) <= 1
 end
@@ -363,10 +365,23 @@ let rec translate_expr ctx queue e =
   | Field (x, n) ->
       let ((px, cx), queue) = access_queue queue x in
       (J.EAccess (cx, int (n + 1)), or_p px mutable_p, queue)
-  | Closure (args, pc) ->
-      (J.EFun (None, List.map Var.to_string args,
-               compile_closure ctx pc),
-       flush_p, queue)
+  | Closure (args, ((pc, _) as cont)) ->
+      let vars =
+        Util.IntMap.find pc ctx.Ctx.mutated_vars
+        >> Freevars.VarSet.elements
+        >> List.map Var.to_string
+      in
+      let cl =
+        J.EFun (None, List.map Var.to_string args,
+                compile_closure ctx cont)
+      in
+      let cl =
+        if vars = [] then cl else
+        J.ECall (J.EFun (None, vars,
+                         [J.Statement (J.Return_statement (Some cl))]),
+                 List.map (fun x -> J.EVar x) vars)
+      in
+      (cl, flush_p, queue)
   | Constant c ->
       (constant c, const_p, queue)
   | Prim (p, l) ->
@@ -839,8 +854,9 @@ let compile_program ctx pc =
 
 (**********************)
 
-let f (pc, blocks, _) live_vars =
-  let ctx = Ctx.initial blocks live_vars in
+let f ((pc, blocks, _) as p) live_vars =
+  let mutated_vars = Freevars.f p in
+  let ctx = Ctx.initial blocks live_vars mutated_vars in
   let p = compile_program ctx pc in
   if compact then Format.set_margin 999999998;
   Format.printf "%a" Js_output.program p

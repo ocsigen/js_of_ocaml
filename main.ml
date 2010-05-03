@@ -30,8 +30,6 @@ Format.eprintf "Tail-call optimization...@.";
 *)
 (*
 *)
-ignore (Freevars.f p);
-
   Code.print_program (fun _ _ -> "") p;
 
 (*
