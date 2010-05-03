@@ -138,7 +138,7 @@ type last =
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * Var.t * cont * cont
+  | Pushtrap of cont * Var.t * cont * addr
   | Poptrap of cont
 
 type block = Var.t list * instr list * last
@@ -254,9 +254,9 @@ let print_last f l =
       Array.iteri
         (fun i cont -> Format.fprintf f "tag %d -> %a; " i print_cont cont) a2;
       Format.fprintf f "}"
-  | Pushtrap (cont1, x, cont2, cont3) ->
-      Format.fprintf f "pushtrap %a handler %a => %a continuation %a"
-        print_cont cont1 Var.print x print_cont cont2 print_cont cont3
+  | Pushtrap (cont1, x, cont2, pc) ->
+      Format.fprintf f "pushtrap %a handler %a => %a continuation %d"
+        print_cont cont1 Var.print x print_cont cont2 pc
   | Poptrap cont ->
       Format.fprintf f "poptrap %a" print_cont cont
 

@@ -21,11 +21,6 @@ Patterns:
 - scalable generation of caml_apply functions
   ==> use curry functions as the ocaml compilers does
   ==> we could generate explit closures in the code
-
-- Variables
-  ==> use fresh variables at each start of a block
-      + add mapping from old to new variables
-  ==> should we use short variables for innermost functions?
 *)
 
 let compact = false
@@ -574,12 +569,12 @@ else begin
   let body =
     seq @
     match last with
-      Code.Pushtrap ((pc1, args1), x, (pc2, args2), ((pc3, _) as cont)) ->
+      Code.Pushtrap ((pc1, args1), x, (pc2, args2), pc3) ->
   (* FIX: document this *)
         let grey =  dominance_frontier st pc2 in
         let grey' = resolve_nodes interm grey in
         let limit_body =
-          IntSet.is_empty grey'&& not (Code.is_dummy_cont cont) in
+          IntSet.is_empty grey' && pc3 >= 0 in
         let inner_frontier =
           if limit_body then IntSet.add pc3 grey' else grey'
         in

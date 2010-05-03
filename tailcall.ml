@@ -45,7 +45,7 @@ let fold_children blocks pc f accu =
   match last with
     Code.Return _ | Code.Raise _ | Code.Stop ->
       accu
-  | Code.Pushtrap (_, _, _, (pc', _))
+  | Code.Pushtrap (_, _, _, pc')
   | Code.Branch (pc', _) | Code.Poptrap (pc', _) ->
       f pc' accu
   | Code.Cond (_, _, (pc1, _), (pc2, _)) ->

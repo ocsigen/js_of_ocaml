@@ -934,7 +934,7 @@ if debug then Format.printf "switch ...@.";
             state.State.stack};
       (instrs,
        Pushtrap ((pc + 2, State.stack_vars state), x,
-                 (addr, State.stack_vars state'), dummy_cont), state)
+                 (addr, State.stack_vars state'), -1), state)
   | POPTRAP ->
       compile_block code (pc + 1) (State.pop 4 state);
       (instrs, Poptrap (pc + 1, State.stack_vars state), state)
@@ -1325,12 +1325,12 @@ let rec traverse blocks pc visited blocks' =
       (* Note that there is no matching poptrap when an exception is alway
          raised in the [try ... with ...] body. *)
       match last, path with
-        Pushtrap (cont1, x, cont2, _), cont3 :: rem ->
+        Pushtrap (cont1, x, cont2, _), pc3 :: rem ->
           (IntMap.add
-             pc (param, instr, Pushtrap (cont1, x, cont2, cont3)) blocks',
+             pc (param, instr, Pushtrap (cont1, x, cont2, pc3)) blocks',
            rem)
-      | Poptrap cont, _ ->
-          (blocks', cont :: path)
+      | Poptrap (pc, _), _ ->
+          (blocks', pc :: path)
       | _ ->
           (blocks', path)
     in

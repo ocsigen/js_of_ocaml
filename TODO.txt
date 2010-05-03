@@ -1,6 +1,7 @@
 Priorities
 ==========
 - faster and sound flow analysis
+- tail rec should be moved to a much earlier stage
 - fix small bugs
   ==> integer arithmetic
 - function representation/call (see runtime/runtime.js)
@@ -11,7 +12,6 @@ Priorities
       when jumping somewhere, the stack should keep the same shape
 - more aggressive variable renaming? (in particular, for Control.block_simpl)
 - remove "Variable x" instruction
-- tail rec should be moved to a much earlier stage
 
 - options on command line
   ==> compact mode
@@ -35,10 +35,14 @@ Special case for shortcut boolean operations...
 
 BUGS
 ====
+- compilation of raise
 - compilation of functions in loops going through exception handlers
-     while true do
-        try ... fun () -> ...; raise Exit with e -> ()
-     done
+      let f () =
+        let l = ref [] in
+        for i = 1 to 100 do
+          try l := (fun () -> i) :: !l; raise Exit with _ -> ()
+        done;
+        !l
 
 - compile ISINT to "not a block" and document this deviation
   (or document that we should not rely on the Obj module)

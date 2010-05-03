@@ -55,7 +55,7 @@ type last =
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * Var.t * cont * cont
+  | Pushtrap of cont * Var.t * cont * addr
   | Poptrap of cont
 
 type block = Var.t list * instr list * last

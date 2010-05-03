@@ -263,8 +263,8 @@ let subst_last s l =
       l
   | Branch cont ->
       Branch (subst_cont s cont)
-  | Pushtrap (cont1, x, cont2, cont3) ->
-      Pushtrap (subst_cont s cont1, x, subst_cont s cont2, subst_cont s cont3)
+  | Pushtrap (cont1, x, cont2, pc) ->
+      Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pc)
   | Return x ->
       Return (subst_var s x)
   | Raise x ->

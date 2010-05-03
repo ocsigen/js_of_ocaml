@@ -161,10 +161,10 @@ let filter_live_last blocks st l =
       Switch (x,
               Array.map (fun cont -> filter_cont blocks st cont) a1,
               Array.map (fun cont -> filter_cont blocks st cont) a2)
-  | Pushtrap (cont1, x, cont2, cont3) ->
+  | Pushtrap (cont1, x, cont2, pc) ->
       Pushtrap (filter_cont blocks st cont1,
                 x, filter_cont blocks st cont2,
-                filter_cont blocks st cont3)
+                pc)
   | Poptrap cont ->
       Poptrap (filter_cont blocks st cont)
 
