@@ -190,8 +190,8 @@ let (>>) x f = f x
 (* This as to be kept in sync with the way we build conditionals
    and switches! *)
 let fold_children blocks pc f accu =
-  let (_, _, last) = IntMap.find pc blocks in
-  match last with
+  let block = IntMap.find pc blocks in
+  match block.branch with
     Return _ | Raise _ | Stop ->
       accu
   | Branch (pc', _) | Poptrap (pc', _) ->
@@ -564,11 +564,11 @@ else begin
       succs IntSet.empty
   in
   let new_frontier = resolve_nodes interm grey in
-  let (_, instr, last) = IntMap.find pc st.blocks in
-  let (seq, queue) = translate_instr st.ctx queue instr in
+  let block = IntMap.find pc st.blocks in
+  let (seq, queue) = translate_instr st.ctx queue block.body in
   let body =
     seq @
-    match last with
+    match block.branch with
       Code.Pushtrap ((pc1, args1), x, (pc2, args2), pc3) ->
   (* FIX: document this *)
         let grey =  dominance_frontier st pc2 in
@@ -581,17 +581,12 @@ else begin
         if limit_body then incr_preds st pc3;
         assert (IntSet.cardinal inner_frontier <= 1);
         Format.eprintf "@[<2>try {@,";
-        let (params1, _, _) = IntMap.find pc1 st.ctx.Ctx.blocks in
         let body =
-          parallel_renaming st.ctx params1 args1
-            (fun queue -> compile_block st queue pc1 inner_frontier interm) []
+          compile_branch st [] (pc1, args1) IntSet.empty inner_frontier interm
         in
         Format.eprintf "} catch {@,";
-        let (params2, _, _) = IntMap.find pc2 st.ctx.Ctx.blocks in
         let handler =
-          parallel_renaming st.ctx params2 args2
-            (fun queue -> compile_block st queue pc2 inner_frontier interm)
-            []
+          compile_branch st [] (pc2, args2) IntSet.empty inner_frontier interm
         in
         Format.eprintf "}@]";
         if limit_body then decr_preds st pc3;
@@ -620,7 +615,10 @@ else begin
               else
                 Code.Cond (IsTrue, x, cases.(1), cases.(0))
             in
-            st.blocks <- IntMap.add idx ([], [], switch) st.blocks;
+            st.blocks <-
+              IntMap.add idx
+                { params = []; handler = None; body = []; branch = switch }
+              st.blocks;
             IntSet.iter (fun pc -> incr_preds st pc) new_frontier;
             Hashtbl.add st.succs idx (IntSet.elements new_frontier);
             Hashtbl.add st.all_succs idx new_frontier;
@@ -635,7 +633,8 @@ else begin
         assert (IntSet.cardinal new_frontier <= 1);
         (* Beware evaluation order! *)
         let cond =
-          compile_conditional st queue pc last backs new_frontier new_interm in
+          compile_conditional
+            st queue pc block.branch backs new_frontier new_interm in
         cond @
         if IntSet.cardinal new_frontier = 0 then [] else begin
           let pc = IntSet.choose new_frontier in
@@ -771,9 +770,9 @@ and compile_argument_passing ctx queue (pc, args) continuation =
   if args = [] then
     continuation queue
   else begin
-    let (params, _, _) = IntMap.find pc ctx.Ctx.blocks in
-Format.eprintf "%d -> %d/%d@." pc (List.length args) (List.length params);
-    parallel_renaming ctx params args continuation queue
+    let block = IntMap.find pc ctx.Ctx.blocks in
+Format.eprintf "%d -> %d/%d@." pc (List.length args) (List.length block.params);
+    parallel_renaming ctx block.params args continuation queue
   end
 (*
   match args with
@@ -832,10 +831,9 @@ and compile_closure ctx (pc, args) =
   let current_blocks = st.visited_blocks in
   st.visited_blocks <- IntSet.empty;
   Format.eprintf "@[<2>closure{";
-  let (params, _, _) = IntMap.find pc st.ctx.Ctx.blocks in
   let res =
-    parallel_renaming st.ctx params args
-      (fun queue -> compile_block st queue pc IntSet.empty IntMap.empty) [] in
+    compile_branch st [] (pc, args) IntSet.empty IntSet.empty IntMap.empty
+  in
   if
     IntSet.cardinal st.visited_blocks <> IntSet.cardinal current_blocks
   then begin

@@ -13,7 +13,7 @@ let traverse blocks pc f accu =
   let rec traverse_rec visited pc accu =
     if IntSet.mem pc visited then (visited, accu) else begin
       let visited = IntSet.add pc visited in
-      let (_, instr, last) = IntMap.find pc blocks in
+      let block = IntMap.find pc blocks in
       let (visited, accu) =
         List.fold_left
           (fun ((visited, accu) as p) i ->
@@ -22,10 +22,10 @@ let traverse blocks pc f accu =
                  traverse_rec visited pc accu
              | _ ->
                  p)
-          (visited, accu) instr
+          (visited, accu) block.body
       in
       let (visited, accu) =
-        match last with
+        match block.branch with
           Return _ | Raise _ | Stop ->
             (visited, accu)
         | Branch (pc, _) ->
@@ -66,7 +66,9 @@ let is_trivial instr last =
 
 let resolve_branch blocks (pc, args) =
   match IntMap.find pc blocks with
-    (params, [], Branch (pc', args')) ->
+(* FIX: handler? *)
+    {params = params; handler = None; body = [];
+     branch = Branch (pc', args')} ->
       let m = Subst.build_mapping params args in
       let args'' =
         List.map (Subst.from_map m) args' in
@@ -74,72 +76,84 @@ let resolve_branch blocks (pc, args) =
   | _ ->
       None
 
-let concat_blocks pc instr params args params' instr' last' =
+let concat_blocks pc instr params handler args params' instr' last' =
   (* This is only valid because we know that the params only occur in
      the block *)
   let m = Subst.build_mapping params' args in
   let s = Subst.from_map m in
-    (params, instr @ Subst.instrs s instr', Subst.last s last')
+    { params = params;
+      handler = handler;
+      body = instr @ Subst.instrs s instr';
+      branch = Subst.last s last' }
 
 let rec block_simpl pc (preds, blocks) =
-  let (params, instr, last) = IntMap.find pc blocks in
-    match last with
+  let block = IntMap.find pc blocks in
+    match block.branch with
         Return _ | Raise _ | Stop | Poptrap _ ->
           (preds, blocks)
       | Branch (pc', args) ->
-          let (params', instr', last') = IntMap.find pc' blocks in
+          let block' = IntMap.find pc' blocks in
 (*XXX We can always rename variables so that params' = []... *)
             if
 (*FIX: is that correct? in particular, function entry points
   may have only one predecessor... *)
-              IntSet.cardinal (IntMap.find pc' preds) = 1 && params' = []
+              IntSet.cardinal (IntMap.find pc' preds) = 1
+                &&
+              block'.params = [] && block'.handler = None
             then begin
               (preds,
                IntMap.add pc
-                 (concat_blocks pc instr params args params' instr' last')
+                 (concat_blocks pc block.body block.params block.handler args
+                    block'.params block'.body block'.branch)
                  blocks)
-            end else if is_trivial instr' last' then begin
+            end else if is_trivial block'.body block'.branch then begin
               (IntMap.add pc' (IntSet.remove pc (IntMap.find pc' preds))
                  preds,
                IntMap.add
-                 pc (concat_blocks pc instr params args params' instr' last')
+                 pc (concat_blocks
+                       pc block.body block.params block.handler args
+                       block'.params block'.body block'.branch)
                  blocks)
             end else
               (preds, blocks)
       | Cond (c, x, cont1, cont2) ->
           if cont1 = cont2 then begin
-            let blocks = IntMap.add pc (params, instr, Branch cont1) blocks in
-              block_simpl pc (preds, blocks)
+            let blocks =
+              IntMap.add pc {block with branch = Branch cont1 } blocks in
+            block_simpl pc (preds, blocks)
           end else begin
             match resolve_branch blocks cont1 with
-                Some cont1' ->
-                  let pc1 = fst cont1 in let pc1' = fst cont1' in
-                  let preds =
-                    IntMap.add pc1'
-                      (IntSet.add pc (IntSet.remove pc1 (IntMap.find pc1' preds)))
-                      preds
-                  in
-                  let blocks =
-                    IntMap.add pc (params, instr, Cond (c, x, cont1', cont2)) blocks
-                  in
+              Some cont1' ->
+                let pc1 = fst cont1 in let pc1' = fst cont1' in
+                let preds =
+                  IntMap.add pc1'
+                    (IntSet.add pc
+                       (IntSet.remove pc1 (IntMap.find pc1' preds)))
+                    preds
+                in
+                let blocks =
+                  IntMap.add pc
+                    { block with branch = Cond (c, x, cont1', cont2) } blocks
+                in
+                block_simpl pc (preds, blocks)
+            | None ->
+                match resolve_branch blocks cont2 with
+                  Some cont2' ->
+                    let pc2 = fst cont2 in let pc2' = fst cont2' in
+                    let preds =
+                      IntMap.add pc2'
+                        (IntSet.add pc
+                           (IntSet.remove pc2 (IntMap.find pc2' preds)))
+                        preds
+                    in
+                    let blocks =
+                      IntMap.add pc
+                        { block with branch = Cond (c, x, cont1, cont2') }
+                        blocks
+                    in
                     block_simpl pc (preds, blocks)
-              | None ->
-                  match resolve_branch blocks cont2 with
-                      Some cont2' ->
-                        let pc2 = fst cont2 in let pc2' = fst cont2' in
-                        let preds =
-                          IntMap.add pc2'
-                            (IntSet.add pc
-                               (IntSet.remove pc2 (IntMap.find pc2' preds)))
-                            preds
-                        in
-                        let blocks =
-                          IntMap.add pc
-                            (params, instr, Cond (c, x, cont1, cont2')) blocks
-                        in
-                          block_simpl pc (preds, blocks)
-                    | None ->
-                        (preds, blocks)
+                | None ->
+                    (preds, blocks)
           end
       | Switch (x, a1, a2) ->
           let a1 =
@@ -153,7 +167,7 @@ let rec block_simpl pc (preds, blocks) =
                  match resolve_branch blocks pc with Some pc -> pc | None -> pc)
               a2 in
             (preds,
-             IntMap.add pc (params, instr, Switch (x, a1, a2)) blocks)
+             IntMap.add pc { block with branch = Switch (x, a1, a2) } blocks)
       | Pushtrap _ ->
           (preds, blocks)
 
@@ -219,8 +233,8 @@ let simpl (pc, blocks, free_pc) =
     IntMap.add pc' (IntSet.add pc (IntMap.find pc' preds)) preds in
   let preds =
     IntMap.fold
-      (fun pc (_, _, last) preds ->
-         match last with
+      (fun pc block preds ->
+         match block.branch with
            Return _ | Raise _ | Stop ->
              preds
          | Branch cont | Poptrap cont ->

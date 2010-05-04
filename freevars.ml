@@ -75,8 +75,10 @@ let last_free_var b l s =
   | Code.Poptrap cont ->
       cont_free_vars b cont s
 
-let block_free_vars pc b (params, instr, last) s =
-  s >> list_fold (instr_free_vars pc) b instr >> last_free_var b last
+let block_free_vars pc b block s =
+  s
+  >> list_fold (instr_free_vars pc) b block.Code.body
+  >> last_free_var b block.Code.branch
 
 let instr_bound_vars b i s =
   match i with
@@ -93,12 +95,12 @@ let last_bound_vars b l s =
   | Code.Pushtrap (_, x, _, _) ->
       add_var b x s
 
-let block_bound_vars (params, instr, last) s =
+let block_bound_vars block s =
   let b = VarSet.empty in
   s
-  >> list_fold add_var b params
-  >> list_fold instr_bound_vars b instr
-  >> last_bound_vars b last
+  >> list_fold add_var b block.Code.params
+  >> list_fold instr_bound_vars b block.Code.body
+  >> last_bound_vars b block.Code.branch
 
 (****)
 

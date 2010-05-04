@@ -74,9 +74,11 @@ and mark_instr st i =
 and mark_cont st (pc, param) = mark_req st pc
 
 and mark_req st pc =
+Format.eprintf "-- %d@." pc;
   if not (IntSet.mem pc st.live_block) then begin
     st.live_block <- IntSet.add pc st.live_block;
-    let (_, instr, last) = IntMap.find pc st.blocks in
+    let block = IntMap.find pc st.blocks in
+    opt_iter (mark_cont st) block.handler;
     List.iter
       (fun i ->
          match i with
@@ -85,8 +87,8 @@ and mark_req st pc =
          | Set_field (x, _, _) | Offset_ref (x, _)
          | Array_set (x, _, _) ->
              mark_var st x)
-      instr;
-    match last with
+      block.body;
+    match block.branch with
       Return x | Raise x ->
         mark_var st x
     | Stop ->
@@ -133,13 +135,11 @@ let rec filter_args st pl al =
       assert false
 
 let filter_cont blocks st ((pc, args) as cont) =
-  let (params, _, _) =
-    try
-      IntMap.find pc blocks
-    with Not_found ->
-      assert (Code.is_dummy_cont cont);
-      ([], [], Stop)
-  in
+Format.eprintf "%d@." pc;
+  let params =
+    if Code.is_dummy_cont cont then [] else (IntMap.find pc blocks).params in
+Format.eprintf "%a@." Code.print_var_list params;
+Format.eprintf "%a@." Code.print_var_list args;
   (pc, filter_args st params args)
 
 let filter_closure blocks st i =
@@ -193,15 +193,15 @@ let rec add_arg_dep deps params args =
       ()
 
 let add_cont_dep blocks deps (pc, args) =
-  let (params, _, _) = IntMap.find pc blocks in
-  add_arg_dep deps params args
+  let block = IntMap.find pc blocks in
+  add_arg_dep deps block.params args
 
 let f (pc, blocks, free_pc) =
   let nv = Var.count () in
   let deps = Array.make nv [] in
   let live = Array.make nv 0 in
   IntMap.iter
-    (fun _ (_, instr, last) ->
+    (fun _ block ->
        List.iter
          (fun i ->
             match i with
@@ -209,8 +209,9 @@ let f (pc, blocks, free_pc) =
                 add_dep deps x i
             | Offset_ref _  ->
                 ())
-         instr;
-       match last with
+         block.body;
+       opt_iter (add_cont_dep blocks deps) block.handler;
+       match block.branch with
          Return _ | Raise _ | Stop ->
            ()
        | Branch cont ->
@@ -237,13 +238,18 @@ let f (pc, blocks, free_pc) =
   let all_blocks = blocks in
   let blocks =
     IntMap.fold
-      (fun pc (params, instr, last) blocks ->
+      (fun pc block blocks ->
          if not (IntSet.mem pc st.live_block) then blocks else
          IntMap.add pc
-           (List.filter (fun x -> st.live.(Var.idx x) > 0) params,
-            List.map (fun i -> filter_closure all_blocks st i)
-              (List.filter (fun i -> live_instr st i) instr),
-            filter_live_last all_blocks st last)
+           { params =
+               List.filter (fun x -> st.live.(Var.idx x) > 0) block.params;
+             handler =
+               opt_map (filter_cont all_blocks st) block.handler;
+             body =
+               List.map (fun i -> filter_closure all_blocks st i)
+                 (List.filter (fun i -> live_instr st i) block.body);
+             branch =
+               filter_live_last all_blocks st block.branch }
            blocks)
       blocks IntMap.empty
   in

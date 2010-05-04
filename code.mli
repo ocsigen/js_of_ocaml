@@ -58,7 +58,11 @@ type last =
   | Pushtrap of cont * Var.t * cont * addr
   | Poptrap of cont
 
-type block = Var.t list * instr list * last
+type block =
+  { params : Var.t list;
+    handler : cont option;
+    body : instr list;
+    branch : last }
 
 type program = addr * block Util.IntMap.t * addr
 

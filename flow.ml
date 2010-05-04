@@ -132,8 +132,8 @@ let rec add_arg_dep deps params args =
       ()
 
 let add_cont_dep blocks deps (pc, args) =
-  let (params, _, _) = IntMap.find pc blocks in
-  add_arg_dep deps params args
+  let block = IntMap.find pc blocks in
+  add_arg_dep deps block.params args
 
 let name v x =
   match v with
@@ -281,9 +281,11 @@ let subst_last s l =
 let subst s a (pc, blocks, free_pc) =
   let blocks =
     IntMap.map
-      (fun (param, instr, last) ->
-         (param, List.map (fun i -> subst_instr s a i) instr,
-          subst_last s last))
+      (fun block ->
+         { params = block.params;
+           handler = opt_map (subst_cont s) block.handler;
+           body = List.map (fun i -> subst_instr s a i) block.body;
+           branch = subst_last s block.branch })
       blocks
   in
   (pc, blocks, free_pc)
@@ -295,7 +297,7 @@ let f (pc, blocks, free_pc) =
   let deps = Array.make nv [] in
   let approx = Array.make nv void in
   IntMap.iter
-    (fun pc (_, instr, last) ->
+    (fun pc block ->
        List.iter
          (fun i ->
             match i with
@@ -303,8 +305,8 @@ let f (pc, blocks, free_pc) =
                 add_expr_deps deps e i
             | Set_field _ | Array_set _ | Offset_ref _ ->
                 ())
-         instr;
-       match last with
+         block.body;
+       match block.branch with
          Return _ | Raise _ | Stop ->
            ()
        | Branch cont ->
@@ -322,13 +324,13 @@ let f (pc, blocks, free_pc) =
     blocks;
   let st = { approx = approx; deps = deps } in
   IntMap.iter
-    (fun _ (params, instr, last) ->
-       List.iter (fun x -> update_var st x unknown) params;
-       List.iter (fun i -> propagate st i) instr;
-       match last with
+    (fun _ block ->
+       List.iter (fun x -> update_var st x unknown) block.params;
+       List.iter (fun i -> propagate st i) block.body;
+       match block.branch with
          Pushtrap (_, _, (pc, _), _) ->
-           let (params, _, _) = IntMap.find pc blocks in
-           List.iter (fun x -> update_var st x unknown) params
+           let block = IntMap.find pc blocks in
+           List.iter (fun x -> update_var st x unknown) block.params
        | _ ->
            ())
     blocks;

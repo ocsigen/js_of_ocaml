@@ -1,8 +1,8 @@
 let _ =
   let p = Parse.f stdin in
 
-(*
   Code.print_program (fun _ _ -> "") p;
+(*
 *)
 (*
   print_program (fun _ _ -> "") p;

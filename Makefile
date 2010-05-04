@@ -7,7 +7,7 @@ OBJS=javascript.cmx js_output.cmx js_simpl.cmx \
      generate.cmx parse.cmx main.cmx
 
 compile: $(OBJS:cmx=cmo)
-	ocamlc -o $@ $^
+	ocamlc -g -o $@ $^
 
 compile.opt: $(OBJS)
 	ocamlopt -o $@ $^
@@ -16,10 +16,10 @@ compile.opt: $(OBJS)
 	ocamlopt -c $<
 
 %.cmo: %.ml
-	ocamlc -c $<
+	ocamlc -g -c $<
 
 %.cmi: %.mli
-	ocamlc -c $<
+	ocamlc -g -c $<
 
 clean:
 	rm -f *.cm[ix] *.o

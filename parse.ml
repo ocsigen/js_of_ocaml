@@ -152,6 +152,7 @@ module State = struct
 
   type t =
     { accu : elt; stack : elt list; env : elt array; env_offset : int;
+      handlers : (Var.t * addr * int) list;
       var_stream : Var.stream; globals : globals }
 
   let fresh_var state =
@@ -224,7 +225,8 @@ module State = struct
     {st with stack = st_assign st.stack n st.accu }
 
   let start_function state env offset =
-    {state with accu = Dummy; stack = []; env = env; env_offset = offset}
+    {state with accu = Dummy; stack = []; env = env; env_offset = offset;
+                handlers = []}
 
   let start_block state =
     let (stack, stream) =
@@ -243,8 +245,27 @@ module State = struct
       Dummy -> state
     | Var _ -> snd (fresh_var state)
 
+  let push_handler state x addr =
+    { state
+      with handlers = (x, addr, List.length state.stack) :: state.handlers }
+
+  let pop_handler state =
+    { state with handlers = List.tl state.handlers }
+
+  let current_handler state =
+    match state.handlers with
+      [] ->
+        None
+    | (x, addr, len) :: _ ->
+        let state =
+          { state
+            with accu = Var x;
+                 stack = st_pop (List.length state.stack - len) state.stack}
+        in
+        Some (addr, stack_vars state)
+
   let initial g =
-    { accu = Dummy; stack = []; env = [||]; env_offset = 0;
+    { accu = Dummy; stack = []; env = [||]; env_offset = 0; handlers = [];
       var_stream = Var.make_stream (); globals = g }
 
   let rec print_stack f l =
@@ -358,7 +379,14 @@ and compile code limit pc state instrs =
       let state = State.assign state n in
       let (x, state) = State.fresh_var state in
       if debug then Format.printf "%a = 0@." Var.print x;
+(*
       compile code limit (pc + 2) state (Let (x, Const 0) :: instrs)
+*)
+      compile_block code (pc + 2) state;
+      (Let (x, Const 0) :: instrs,
+       Branch (pc + 2, State.stack_vars state),
+       state)
+
 (*
       let n = getu code (pc + 1) in
       let y = State.peek n state in
@@ -929,14 +957,15 @@ if debug then Format.printf "switch ...@.";
       let (x, state') = State.fresh_var state in
       compile_block code addr state';
       compile_block code (pc + 2)
-        {state with State.stack =
+        {(State.push_handler state x addr)
+         with State.stack =
             State.Dummy :: State.Dummy :: State.Dummy :: State.Dummy ::
             state.State.stack};
       (instrs,
        Pushtrap ((pc + 2, State.stack_vars state), x,
                  (addr, State.stack_vars state'), -1), state)
   | POPTRAP ->
-      compile_block code (pc + 1) (State.pop 4 state);
+      compile_block code (pc + 1) (State.pop 4 (State.pop_handler state));
       (instrs, Poptrap (pc + 1, State.stack_vars state), state)
   | RAISE ->
       if debug then Format.printf "throw(%a)@." Var.print (State.accu state);
@@ -1320,14 +1349,15 @@ let rec traverse blocks pc visited blocks' =
            (visited, blocks', merge_path path path'))
         (visited, blocks', [])
     in
-    let (param, instr, last) = IntMap.find pc blocks in
+    let block = IntMap.find pc blocks in
     let (blocks', path) =
       (* Note that there is no matching poptrap when an exception is alway
          raised in the [try ... with ...] body. *)
-      match last, path with
+      match block.branch, path with
         Pushtrap (cont1, x, cont2, _), pc3 :: rem ->
           (IntMap.add
-             pc (param, instr, Pushtrap (cont1, x, cont2, pc3)) blocks',
+             pc { block with branch = Pushtrap (cont1, x, cont2, pc3) }
+             blocks',
            rem)
       | Poptrap (pc, _), _ ->
           (blocks', pc :: path)
@@ -1356,7 +1386,10 @@ ignore cont;
   let compiled_block =
     IntMap.mapi
       (fun pc (state, instr, last) ->
-         (State.stack_vars state, instr, last))
+(*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX handler*)
+         { params = State.stack_vars state;
+           handler = State.current_handler state;
+           body = instr; branch = last })
       !compiled_block
   in
 (*
@@ -1382,7 +1415,10 @@ ignore cont;
   done;
   let last = Branch (0, []) in
   let pc = String.length code / 4 in
-  let compiled_block = IntMap.add pc ([], !l, last) compiled_block in
+  let compiled_block =
+    IntMap.add pc { params = []; handler = None; body = !l; branch = last }
+      compiled_block
+  in
   let compiled_block = match_exn_traps (pc, compiled_block, pc + 1) in
   (pc, compiled_block, pc + 1)
 

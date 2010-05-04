@@ -19,17 +19,19 @@ let rec tail_call x f l =
       tail_call x f rem
 
 let rewrite_block (f, f_params, f_pc, args) pc blocks =
-  let (params, instr, last) = IntMap.find pc blocks in
-  match last with
+  let block = IntMap.find pc blocks in
+  match block.Code.branch with
     Code.Return x ->
-      begin match tail_call x f instr with
+      begin match tail_call x f block.Code.body with
         Some f_args ->
           let m = Subst.build_mapping f_params f_args in
           IntMap.add pc
-            (params,
-             remove_last instr,
-             Code.Branch
-               (f_pc, List.map (fun x -> Subst.VarMap.find x m) args))
+            { Code.params = block.Code.params;
+              handler = block.Code.handler;
+              body = remove_last block.Code.body;
+              branch =
+                Code.Branch
+                  (f_pc, List.map (fun x -> Subst.VarMap.find x m) args) }
             blocks
       | _ ->
           blocks

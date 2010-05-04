@@ -141,7 +141,11 @@ type last =
   | Pushtrap of cont * Var.t * cont * addr
   | Poptrap of cont
 
-type block = Var.t list * instr list * last
+type block =
+  { params : Var.t list;
+    handler : cont option;
+    body : instr list;
+    branch : last }
 
 type program = addr * block IntMap.t * addr
 
@@ -262,12 +266,17 @@ let print_last f l =
 
 type xinstr = Instr of instr | Last of last
 
-let print_block annot pc (params, instr, last) =
-  Format.eprintf "==== %d (%a) ====@." pc print_var_list params;
+let print_block annot pc block =
+  Format.eprintf "==== %d (%a) ====@." pc print_var_list block.params;
+  begin match block.handler with
+    Some cont -> Format.eprintf "    handler %a@." print_cont cont
+  | None      -> ()
+  end;
   List.iter
     (fun i -> Format.eprintf " %s %a@." (annot pc (Instr i)) print_instr i)
-    instr;
-  Format.eprintf " %s %a@." (annot pc (Last last)) print_last last;
+    block.body;
+  Format.eprintf " %s %a@." (annot pc (Last block.branch))
+    print_last block.branch;
   Format.eprintf "@."
 
 let print_program annot (pc, blocks, _) =
@@ -278,7 +287,7 @@ let print_program annot (pc, blocks, _) =
 
 let fold_closures (pc, blocks, _) f accu =
   IntMap.fold
-    (fun _ (_, instrs, _) accu ->
+    (fun _ block accu ->
        List.fold_left
          (fun accu i ->
             match i with
@@ -286,7 +295,7 @@ let fold_closures (pc, blocks, _) f accu =
                 f (Some x) params cont accu
             | _ ->
                 accu)
-         accu instrs)
+         accu block.body)
     blocks (f None [] (pc, []) accu)
 
 (****)
@@ -294,14 +303,19 @@ let fold_closures (pc, blocks, _) f accu =
 let (>>) x f = f x
 
 let fold_children blocks pc f accu =
-  let (_, _, last) = IntMap.find pc blocks in
-  match last with
+  let block = IntMap.find pc blocks in
+  let accu =
+    match block.handler with
+      Some (pc, _) -> f pc accu
+    | None         -> accu
+  in
+  match block.branch with
     Return _ | Raise _ | Stop ->
       accu
-  | Branch (pc', _) | Poptrap (pc', _) ->
+  | Branch (pc', _) | Poptrap (pc', _) | Pushtrap ((pc', _), _, _, _) ->
       f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
-      accu >> f pc1 >> f pc2
+  | Cond (_, _, (pc1, _), (pc2, _)) ->
+      f pc1 accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2

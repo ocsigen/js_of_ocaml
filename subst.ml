@@ -58,7 +58,11 @@ let last s l =
 let program s (pc, blocks, free_pc) =
   let blocks =
     Util.IntMap.map
-      (fun (params, istrs, lst) -> params, instrs s istrs, last s lst) blocks
+      (fun block ->
+         { params = block.params;
+           handler = Util.opt_map (subst_cont s) block.handler;
+           body = instrs s block.body;
+           branch = last s block.branch }) blocks
   in
   (pc, blocks, free_pc)
 

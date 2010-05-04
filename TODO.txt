@@ -1,5 +1,6 @@
 Priorities
 ==========
+- exception handling
 - faster and sound flow analysis
 - tail rec should be moved to a much earlier stage
 - fix small bugs
