@@ -1,12 +1,10 @@
 let _ =
   let p = Parse.f stdin in
 
+(*
   Code.print_program (fun _ _ -> "") p;
-(*
 *)
-(*
-  print_program (fun _ _ -> "") p;
-*)
+
 Format.eprintf "Data flow...@.";
   let (p, approx) = Flow.f p in
 Format.eprintf "Dead-code...@.";

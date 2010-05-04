@@ -74,7 +74,6 @@ and mark_instr st i =
 and mark_cont st (pc, param) = mark_req st pc
 
 and mark_req st pc =
-Format.eprintf "-- %d@." pc;
   if not (IntSet.mem pc st.live_block) then begin
     st.live_block <- IntSet.add pc st.live_block;
     let block = IntMap.find pc st.blocks in
@@ -135,11 +134,8 @@ let rec filter_args st pl al =
       assert false
 
 let filter_cont blocks st ((pc, args) as cont) =
-Format.eprintf "%d@." pc;
   let params =
     if Code.is_dummy_cont cont then [] else (IntMap.find pc blocks).params in
-Format.eprintf "%a@." Code.print_var_list params;
-Format.eprintf "%a@." Code.print_var_list args;
   (pc, filter_args st params args)
 
 let filter_closure blocks st i =
