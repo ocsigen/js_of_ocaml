@@ -283,7 +283,8 @@ let subst s a (pc, blocks, free_pc) =
     IntMap.map
       (fun block ->
          { params = block.params;
-           handler = opt_map (subst_cont s) block.handler;
+           handler =
+             opt_map (fun (x, cont) -> (x, subst_cont s cont)) block.handler;
            body = List.map (fun i -> subst_instr s a i) block.body;
            branch = subst_last s block.branch })
       blocks

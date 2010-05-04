@@ -262,7 +262,7 @@ module State = struct
             with accu = Var x;
                  stack = st_pop (List.length state.stack - len) state.stack}
         in
-        Some (addr, stack_vars state)
+        Some (x, (addr, stack_vars state))
 
   let initial g =
     { accu = Dummy; stack = []; env = [||]; env_offset = 0; handlers = [];

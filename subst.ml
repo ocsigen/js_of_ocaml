@@ -60,7 +60,8 @@ let program s (pc, blocks, free_pc) =
     Util.IntMap.map
       (fun block ->
          { params = block.params;
-           handler = Util.opt_map (subst_cont s) block.handler;
+           handler = Util.opt_map
+                       (fun (x, cont) -> (x, subst_cont s cont)) block.handler;
            body = instrs s block.body;
            branch = last s block.branch }) blocks
   in

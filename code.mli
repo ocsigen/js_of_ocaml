@@ -60,7 +60,7 @@ type last =
 
 type block =
   { params : Var.t list;
-    handler : cont option;
+    handler : (Var.t * cont) option;
     body : instr list;
     branch : last }
 

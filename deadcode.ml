@@ -77,7 +77,7 @@ and mark_req st pc =
   if not (IntSet.mem pc st.live_block) then begin
     st.live_block <- IntSet.add pc st.live_block;
     let block = IntMap.find pc st.blocks in
-    opt_iter (mark_cont st) block.handler;
+    opt_iter (fun (_, cont) -> mark_cont st cont) block.handler;
     List.iter
       (fun i ->
          match i with
@@ -206,7 +206,7 @@ let f (pc, blocks, free_pc) =
             | Offset_ref _  ->
                 ())
          block.body;
-       opt_iter (add_cont_dep blocks deps) block.handler;
+       opt_iter (fun (_, cont) -> add_cont_dep blocks deps cont) block.handler;
        match block.branch with
          Return _ | Raise _ | Stop ->
            ()
@@ -240,7 +240,8 @@ let f (pc, blocks, free_pc) =
            { params =
                List.filter (fun x -> st.live.(Var.idx x) > 0) block.params;
              handler =
-               opt_map (filter_cont all_blocks st) block.handler;
+               opt_map (fun (x, cont) -> (x, filter_cont all_blocks st cont))
+                 block.handler;
              body =
                List.map (fun i -> filter_closure all_blocks st i)
                  (List.filter (fun i -> live_instr st i) block.body);

@@ -143,7 +143,7 @@ type last =
 
 type block =
   { params : Var.t list;
-    handler : cont option;
+    handler : (Var.t * cont) option;
     body : instr list;
     branch : last }
 
@@ -269,8 +269,10 @@ type xinstr = Instr of instr | Last of last
 let print_block annot pc block =
   Format.eprintf "==== %d (%a) ====@." pc print_var_list block.params;
   begin match block.handler with
-    Some cont -> Format.eprintf "    handler %a@." print_cont cont
-  | None      -> ()
+    Some (x, cont) ->
+      Format.eprintf "    handler %a => %a@." Var.print x print_cont cont
+  | None ->
+      ()
   end;
   List.iter
     (fun i -> Format.eprintf " %s %a@." (annot pc (Instr i)) print_instr i)
@@ -306,8 +308,8 @@ let fold_children blocks pc f accu =
   let block = IntMap.find pc blocks in
   let accu =
     match block.handler with
-      Some (pc, _) -> f pc accu
-    | None         -> accu
+      Some (_, (pc, _)) -> f pc accu
+    | None              -> accu
   in
   match block.branch with
     Return _ | Raise _ | Stop ->

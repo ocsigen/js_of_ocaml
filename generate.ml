@@ -546,7 +546,7 @@ and translate_instr ctx expr_queue instr =
 
 and compile_block st queue pc frontier interm =
 if queue <> [] && IntSet.mem pc st.loops then
-flush_all queue (compile_block st [] pc frontier interm)
+  flush_all queue (compile_block st [] pc frontier interm)
 else begin
   if pc >= 0 then begin
     if IntSet.mem pc st.visited_blocks then begin
@@ -582,11 +582,22 @@ else begin
         assert (IntSet.cardinal inner_frontier <= 1);
         Format.eprintf "@[<2>try {@,";
         let body =
-          compile_branch st [] (pc1, args1) IntSet.empty inner_frontier interm
+          compile_branch st [] (pc1, args1)
+            None IntSet.empty inner_frontier interm
         in
         Format.eprintf "} catch {@,";
         let handler =
-          compile_branch st [] (pc2, args2) IntSet.empty inner_frontier interm
+(*XXXXXXXXXX This is wrong (argument passing already done) *)
+          compile_block st [] pc2 inner_frontier interm
+(*
+  compile_branch
+            st [] (pc2, args2) None IntSet.empty inner_frontier interm
+*)
+        in
+        let x =
+          let block2 = IntMap.find pc2 st.blocks in
+          let m = Subst.build_mapping args2 block2.params in
+          try Subst.VarMap.find x m with Not_found -> x
         in
         Format.eprintf "}@]";
         if limit_body then decr_preds st pc3;
@@ -634,7 +645,8 @@ else begin
         (* Beware evaluation order! *)
         let cond =
           compile_conditional
-            st queue pc block.branch backs new_frontier new_interm in
+            st queue pc block.branch block.handler
+            backs new_frontier new_interm in
         cond @
         if IntSet.cardinal new_frontier = 0 then [] else begin
           let pc = IntSet.choose new_frontier in
@@ -657,7 +669,7 @@ else begin
     body
 end
 
-and compile_conditional st queue pc last backs frontier interm =
+and compile_conditional st queue pc last handler backs frontier interm =
   let succs = Hashtbl.find st.succs pc in
   List.iter (fun pc -> if IntMap.mem pc interm then decr_preds st pc) succs;
   Format.eprintf "@[<2>switch{";
@@ -672,7 +684,7 @@ and compile_conditional st queue pc last backs frontier interm =
   | Stop ->
       flush_all queue []
   | Branch cont ->
-      compile_branch st queue cont backs frontier interm
+      compile_branch st queue cont handler backs frontier interm
   | Cond (c, x, cont1, cont2) ->
       let ((px, cx), queue) = access_queue queue x in
       let e =
@@ -686,8 +698,8 @@ and compile_conditional st queue pc last backs frontier interm =
       in
       (* Some changes here may require corresponding changes
          in function [fold_children] above. *)
-      let iftrue = compile_branch st [] cont1 backs frontier interm in
-      let iffalse = compile_branch st [] cont2 backs frontier interm in
+      let iftrue = compile_branch st [] cont1 handler backs frontier interm in
+      let iffalse = compile_branch st [] cont2 handler backs frontier interm in
       flush_all queue
         (if never_continue st cont1 frontier interm then
            Js_simpl.if_statement e (Js_simpl.block iftrue) None ::
@@ -715,7 +727,8 @@ and compile_conditional st queue pc last backs frontier interm =
           [] ->
             assert false
         | [(cont, _)] ->
-            Js_simpl.block (compile_branch st [] cont backs frontier interm)
+            Js_simpl.block
+              (compile_branch st [] cont handler backs frontier interm)
         | (cont, l') :: rem ->
             let l =
               List.flatten
@@ -729,7 +742,7 @@ and compile_conditional st queue pc last backs frontier interm =
                             ((J.ENum (float i),
                               Js_simpl.statement_list
                                 (compile_branch
-                                   st [] cont backs frontier interm @
+                                   st [] cont handler backs frontier interm @
                                  if never_continue st cont frontier interm then
                                    []
                                  else
@@ -740,8 +753,10 @@ and compile_conditional st queue pc last backs frontier interm =
                    rem)
             in
             J.Switch_statement
-              (e, l, Some (Js_simpl.statement_list
-                             (compile_branch st [] cont backs frontier interm)))
+              (e, l,
+               Some (Js_simpl.statement_list
+                       (compile_branch
+                          st [] cont handler backs frontier interm)))
       in
       let (st, queue) =
         if Array.length a1 = 0 then
@@ -761,7 +776,7 @@ and compile_conditional st queue pc last backs frontier interm =
   | Pushtrap _ ->
       assert false
   | Poptrap cont ->
-      flush_all queue (compile_branch st [] cont backs frontier interm)
+      flush_all queue (compile_branch st [] cont None backs frontier interm)
   in
   Format.eprintf "}@.";
   res
@@ -771,7 +786,6 @@ and compile_argument_passing ctx queue (pc, args) continuation =
     continuation queue
   else begin
     let block = IntMap.find pc ctx.Ctx.blocks in
-Format.eprintf "%d -> %d/%d@." pc (List.length args) (List.length block.params);
     parallel_renaming ctx block.params args continuation queue
   end
 (*
@@ -798,18 +812,70 @@ XXXX Make sure that we do not miscompile x = y; y = e
 *)
           assert false
 *)
+and compile_exn_handling ctx queue (pc, args) handler continuation =
+  if pc < 0 then
+    continuation queue
+  else
+    let block = IntMap.find pc ctx.Ctx.blocks in
+    match block.handler with
+      None ->
+        continuation queue
+    | Some (x0, (h_pc, h_args)) ->
+        let old_args =
+          match handler with
+            Some (y, (old_pc, old_args)) ->
+              assert (Var.compare x0 y = 0 && old_pc = h_pc &&
+                      List.length old_args = List.length h_args);
+              old_args
+          | None ->
+              []
+        in
+        let m = Subst.build_mapping block.params args in
+        let h_block = IntMap.find h_pc ctx.Ctx.blocks in
+        let rec loop continuation old args params queue =
+          match args, params with
+            [], [] ->
+              continuation queue
+          | x :: args, y :: params ->
+(*Format.eprintf "ZZZ@.";*)
+              let (z, old) =
+                match old with [] -> (None, []) | z :: old -> (Some z, old)
+              in
+              let x' =
+                try Some (Subst.VarMap.find x m) with Not_found -> Some x in
+              if Var.compare x x0 = 0 || x' = z then
+                loop continuation old args params queue
+              else begin
+               let ((px, cx), queue) = access_queue queue x in
+(*Format.eprintf "%a := %a@." Var.print y Var.print x;*)
+               let (st, queue) =
+                 match 2 (*ctx.Ctx.live.(Var.idx y)*) with
+                   0 -> assert false
+                 | 1 -> enqueue queue px y cx
+                 | _ -> flush_queue queue (px >= flush_p)
+                          [J.Variable_statement [Var.to_string y, Some cx]]
+               in
+               st @ loop continuation old args params queue
+              end
+          | _ ->
+              assert false
+        in
+(*
+Format.eprintf "%d ==> %d/%d/%d@." pc (List.length h_args) (List.length h_block.params) (List.length old_args);
+*)
+        loop continuation old_args h_args h_block.params queue
 
-and compile_branch st queue ((pc, arg) as cont) backs frontier interm =
-  compile_argument_passing st.ctx queue cont
-    (fun queue ->
-       if IntSet.mem pc backs then begin
-         Format.eprintf "@ continue;";
-         flush_all queue [J.Continue_statement None]
-       end else if IntSet.mem pc frontier || IntMap.mem pc interm then begin
-         Format.eprintf "@ (br %d)" pc;
-         flush_all queue (compile_branch_selection pc interm)
-       end else
-         compile_block st queue pc frontier interm)
+and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
+  compile_argument_passing st.ctx queue cont (fun queue ->
+  compile_exn_handling st.ctx queue cont handler (fun queue ->
+  if IntSet.mem pc backs then begin
+    Format.eprintf "@ continue;";
+    flush_all queue [J.Continue_statement None]
+  end else if IntSet.mem pc frontier || IntMap.mem pc interm then begin
+    Format.eprintf "@ (br %d)" pc;
+    flush_all queue (compile_branch_selection pc interm)
+  end else
+    compile_block st queue pc frontier interm))
 
 and compile_branch_selection pc interm =
   try
@@ -832,7 +898,7 @@ and compile_closure ctx (pc, args) =
   st.visited_blocks <- IntSet.empty;
   Format.eprintf "@[<2>closure{";
   let res =
-    compile_branch st [] (pc, args) IntSet.empty IntSet.empty IntMap.empty
+    compile_branch st [] (pc, args) None IntSet.empty IntSet.empty IntMap.empty
   in
   if
     IntSet.cardinal st.visited_blocks <> IntSet.cardinal current_blocks
