@@ -1,12 +1,12 @@
 
-val program : (Code.Var.t -> Code.Var.t) -> Code.program -> Code.program
-val instrs : (Code.Var.t -> Code.Var.t) -> Code.instr list -> Code.instr list
-val last : (Code.Var.t -> Code.Var.t) -> Code.last -> Code.last
+open Code
 
-val from_array : Code.Var.t option array -> Code.Var.t -> Code.Var.t
+val program : (Var.t -> Var.t) -> program -> program
+val instrs : (Var.t -> Var.t) -> instr list -> instr list
+val last : (Var.t -> Var.t) -> last -> last
 
-module VarMap : Map.S with type key = Code.Var.t
+val from_array : Var.t option array -> Var.t -> Var.t
 
-val build_mapping : Code.Var.t list -> Code.Var.t list -> Code.Var.t VarMap.t
+val build_mapping : Var.t list -> Var.t list -> Var.t VarMap.t
 
-val from_map : Code.Var.t VarMap.t -> Code.Var.t -> Code.Var.t
+val from_map : Var.t VarMap.t -> Var.t -> Var.t

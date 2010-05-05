@@ -27,8 +27,8 @@ let compact = false
 
 (****)
 
-open Util
 open Code
+
 module J = Javascript
 
 (****)
@@ -54,9 +54,9 @@ let list_group f l =
 module Ctx = struct
   type t =
     { var_stream : Var.stream;
-      mutable blocks : Code.block Util.IntMap.t;
+      mutable blocks : block AddrMap.t;
       live : int array;
-      mutated_vars : Freevars.VarSet.t Util.IntMap.t }
+      mutated_vars : VarSet.t AddrMap.t }
 
   let fresh_var ctx =
     let (x, stream) = Var.next ctx.var_stream in
@@ -172,14 +172,14 @@ let enqueue expr_queue prop x ce =
 (****)
 
 type state =
-  { all_succs : (int, IntSet.t) Hashtbl.t;
+  { all_succs : (int, AddrSet.t) Hashtbl.t;
     succs : (int, int list) Hashtbl.t;
-    backs : (int, IntSet.t) Hashtbl.t;
+    backs : (int, AddrSet.t) Hashtbl.t;
     preds : (int, int) Hashtbl.t;
-    mutable loops : IntSet.t;
-    mutable visited_blocks : IntSet.t;
+    mutable loops : AddrSet.t;
+    mutable visited_blocks : AddrSet.t;
     mutable interm_idx : int;
-    ctx : Ctx.t; mutable blocks : Code.block Util.IntMap.t }
+    ctx : Ctx.t; mutable blocks : Code.block AddrMap.t }
 
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
 let incr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1)
@@ -190,7 +190,7 @@ let (>>) x f = f x
 (* This as to be kept in sync with the way we build conditionals
    and switches! *)
 let fold_children blocks pc f accu =
-  let block = IntMap.find pc blocks in
+  let block = AddrMap.find pc blocks in
   match block.branch with
     Return _ | Raise _ | Stop ->
       accu
@@ -210,69 +210,67 @@ let fold_children blocks pc f accu =
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a2)
 
 let rec build_graph st pc anc =
-  if not (IntSet.mem pc st.visited_blocks) then begin
-    st.visited_blocks <- IntSet.add pc st.visited_blocks;
-    let anc = IntSet.add pc anc in
-    let s = Code.fold_children st.blocks pc IntSet.add IntSet.empty in
+  if not (AddrSet.mem pc st.visited_blocks) then begin
+    st.visited_blocks <- AddrSet.add pc st.visited_blocks;
+    let anc = AddrSet.add pc anc in
+    let s = Code.fold_children st.blocks pc AddrSet.add AddrSet.empty in
     Hashtbl.add st.all_succs pc s;
-    let backs = IntSet.inter s anc in
+    let backs = AddrSet.inter s anc in
     Hashtbl.add st.backs pc backs;
 
     let s = fold_children st.blocks pc (fun x l -> x :: l) [] in
-    let succs = List.filter (fun pc -> not (IntSet.mem pc anc)) s in
+    let succs = List.filter (fun pc -> not (AddrSet.mem pc anc)) s in
     Hashtbl.add st.succs pc succs;
-    IntSet.iter (fun pc' -> st.loops <- IntSet.add pc' st.loops) backs;
+    AddrSet.iter (fun pc' -> st.loops <- AddrSet.add pc' st.loops) backs;
     List.iter (fun pc' -> build_graph st pc' anc) succs;
     List.iter (fun pc' -> incr_preds st pc') succs
   end
 
 let rec dominance_frontier_rec st pc visited grey =
   let n = get_preds st pc in
-  let v = try IntMap.find pc visited with Not_found -> 0 in
+  let v = try AddrMap.find pc visited with Not_found -> 0 in
   if v < n then begin
     let v = v + 1 in
-    let visited = IntMap.add pc v visited in
+    let visited = AddrMap.add pc v visited in
     if v = n then begin
-      let grey = IntSet.remove pc grey in
+      let grey = AddrSet.remove pc grey in
       let s = Hashtbl.find st.succs pc in
       List.fold_right
         (fun pc' (visited, grey) ->
            dominance_frontier_rec st pc' visited grey)
         s (visited, grey)
     end else begin
-      (visited, if v = 1 then IntSet.add pc grey else grey)
+      (visited, if v = 1 then AddrSet.add pc grey else grey)
     end
   end else
     (visited, grey)
 
 let dominance_frontier st pc =
-  snd (dominance_frontier_rec st pc IntMap.empty IntSet.empty)
+  snd (dominance_frontier_rec st pc AddrMap.empty AddrSet.empty)
 
 (* Block of code that never continues (either returns, throws an exception
    or loops back) *)
 let never_continue st (pc, _) frontier interm =
-  not (IntSet.mem pc frontier || IntMap.mem pc interm)
+  not (AddrSet.mem pc frontier || AddrMap.mem pc interm)
     &&
-  IntSet.is_empty (dominance_frontier st pc)
+  AddrSet.is_empty (dominance_frontier st pc)
 
 let rec resolve_node interm pc =
   try
-    resolve_node interm (fst (IntMap.find pc interm))
+    resolve_node interm (fst (AddrMap.find pc interm))
   with Not_found ->
     pc
 
 let resolve_nodes interm s =
-  IntSet.fold (fun pc s' -> IntSet.add (resolve_node interm pc) s')
-    s IntSet.empty
+  AddrSet.fold (fun pc s' -> AddrSet.add (resolve_node interm pc) s')
+    s AddrSet.empty
 
 (****)
-
-module VarSet = Set.Make (Code.Var)
 
 let rec visit visited prev s m x l =
   if not (VarSet.mem x visited) then begin
     let visited = VarSet.add x visited in
-    let y = Subst.VarMap.find x m in
+    let y = VarMap.find x m in
     if Code.Var.compare x y = 0 then
       (visited, None, l)
     else if VarSet.mem y prev then begin
@@ -362,8 +360,8 @@ let rec translate_expr ctx queue e =
       (J.EAccess (cx, int (n + 1)), or_p px mutable_p, queue)
   | Closure (args, ((pc, _) as cont)) ->
       let vars =
-        Util.IntMap.find pc ctx.Ctx.mutated_vars
-        >> Freevars.VarSet.elements
+        AddrMap.find pc ctx.Ctx.mutated_vars
+        >> VarSet.elements
         >> List.map Var.to_string
       in
       let cl =
@@ -545,26 +543,26 @@ and translate_instr ctx expr_queue instr =
       (st @ instrs, expr_queue)
 
 and compile_block st queue pc frontier interm =
-if queue <> [] && IntSet.mem pc st.loops then
+if queue <> [] && AddrSet.mem pc st.loops then
   flush_all queue (compile_block st [] pc frontier interm)
 else begin
   if pc >= 0 then begin
-    if IntSet.mem pc st.visited_blocks then begin
+    if AddrSet.mem pc st.visited_blocks then begin
       Format.eprintf "!!!! %d@." pc; assert false
     end;
-    st.visited_blocks <- IntSet.add pc st.visited_blocks
+    st.visited_blocks <- AddrSet.add pc st.visited_blocks
   end;
-  if IntSet.mem pc st.loops then Format.eprintf "@[<2>while (1) {@,";
+  if AddrSet.mem pc st.loops then Format.eprintf "@[<2>while (1) {@,";
   Format.eprintf "block %d;" pc;
   let succs = Hashtbl.find st.succs pc in
   let backs = Hashtbl.find st.backs pc in
   let grey =
     List.fold_right
-      (fun pc grey -> IntSet.union (dominance_frontier st pc) grey)
-      succs IntSet.empty
+      (fun pc grey -> AddrSet.union (dominance_frontier st pc) grey)
+      succs AddrSet.empty
   in
   let new_frontier = resolve_nodes interm grey in
-  let block = IntMap.find pc st.blocks in
+  let block = AddrMap.find pc st.blocks in
   let (seq, queue) = translate_instr st.ctx queue block.body in
   let body =
     seq @
@@ -574,16 +572,16 @@ else begin
         let grey =  dominance_frontier st pc2 in
         let grey' = resolve_nodes interm grey in
         let limit_body =
-          IntSet.is_empty grey' && pc3 >= 0 in
+          AddrSet.is_empty grey' && pc3 >= 0 in
         let inner_frontier =
-          if limit_body then IntSet.add pc3 grey' else grey'
+          if limit_body then AddrSet.add pc3 grey' else grey'
         in
         if limit_body then incr_preds st pc3;
-        assert (IntSet.cardinal inner_frontier <= 1);
+        assert (AddrSet.cardinal inner_frontier <= 1);
         Format.eprintf "@[<2>try {@,";
         let body =
           compile_branch st [] (pc1, args1)
-            None IntSet.empty inner_frontier interm
+            None AddrSet.empty inner_frontier interm
         in
         Format.eprintf "} catch {@,";
         let handler =
@@ -591,13 +589,13 @@ else begin
           compile_block st [] pc2 inner_frontier interm
 (*
   compile_branch
-            st [] (pc2, args2) None IntSet.empty inner_frontier interm
+            st [] (pc2, args2) None AddrSet.empty inner_frontier interm
 *)
         in
         let x =
-          let block2 = IntMap.find pc2 st.blocks in
+          let block2 = AddrMap.find pc2 st.blocks in
           let m = Subst.build_mapping args2 block2.params in
-          try Subst.VarMap.find x m with Not_found -> x
+          try VarMap.find x m with Not_found -> x
         in
         Format.eprintf "}@]";
         if limit_body then decr_preds st pc3;
@@ -606,16 +604,16 @@ else begin
                             Some (Var.to_string x,
                                   Js_simpl.statement_list handler),
                             None) ::
-           if IntSet.is_empty inner_frontier then [] else begin
-             let pc = IntSet.choose inner_frontier in
-             if IntSet.mem pc frontier then [] else
+           if AddrSet.is_empty inner_frontier then [] else begin
+             let pc = AddrSet.choose inner_frontier in
+             if AddrSet.mem pc frontier then [] else
                compile_block st [] pc frontier interm
            end)
     | _ ->
         let (new_frontier, new_interm) =
-          if IntSet.cardinal new_frontier > 1 then begin
+          if AddrSet.cardinal new_frontier > 1 then begin
             let x = Code.Var.fresh () in
-            let a = Array.of_list (IntSet.elements new_frontier) in
+            let a = Array.of_list (AddrSet.elements new_frontier) in
             Format.eprintf "@ var %a;" Code.Var.print x;
             let idx = st.interm_idx in
             st.interm_idx <- idx - 1;
@@ -627,38 +625,38 @@ else begin
                 Code.Cond (IsTrue, x, cases.(1), cases.(0))
             in
             st.blocks <-
-              IntMap.add idx
+              AddrMap.add idx
                 { params = []; handler = None; body = []; branch = switch }
               st.blocks;
-            IntSet.iter (fun pc -> incr_preds st pc) new_frontier;
-            Hashtbl.add st.succs idx (IntSet.elements new_frontier);
+            AddrSet.iter (fun pc -> incr_preds st pc) new_frontier;
+            Hashtbl.add st.succs idx (AddrSet.elements new_frontier);
             Hashtbl.add st.all_succs idx new_frontier;
-            Hashtbl.add st.backs idx IntSet.empty;
-            (IntSet.singleton idx,
+            Hashtbl.add st.backs idx AddrSet.empty;
+            (AddrSet.singleton idx,
              Array.fold_right
-               (fun (pc, i) interm -> (IntMap.add pc (idx, (x, i)) interm))
+               (fun (pc, i) interm -> (AddrMap.add pc (idx, (x, i)) interm))
                (Array.mapi (fun i pc -> (pc, i)) a) interm)
           end else
             (new_frontier, interm)
         in
-        assert (IntSet.cardinal new_frontier <= 1);
+        assert (AddrSet.cardinal new_frontier <= 1);
         (* Beware evaluation order! *)
         let cond =
           compile_conditional
             st queue pc block.branch block.handler
             backs new_frontier new_interm in
         cond @
-        if IntSet.cardinal new_frontier = 0 then [] else begin
-          let pc = IntSet.choose new_frontier in
-          if IntSet.mem pc frontier then [] else
+        if AddrSet.cardinal new_frontier = 0 then [] else begin
+          let pc = AddrSet.choose new_frontier in
+          if AddrSet.mem pc frontier then [] else
           compile_block st [] pc frontier interm
         end
   in
-  if IntSet.mem pc st.loops then begin
+  if AddrSet.mem pc st.loops then begin
     [J.For_statement
        (None, None, None,
         Js_simpl.block
-          (if IntSet.cardinal new_frontier > 0 then begin
+          (if AddrSet.cardinal new_frontier > 0 then begin
              Format.eprintf "@ break; }@]";
              body @ [J.Break_statement None]
            end else begin
@@ -671,7 +669,7 @@ end
 
 and compile_conditional st queue pc last handler backs frontier interm =
   let succs = Hashtbl.find st.succs pc in
-  List.iter (fun pc -> if IntMap.mem pc interm then decr_preds st pc) succs;
+  List.iter (fun pc -> if AddrMap.mem pc interm then decr_preds st pc) succs;
   Format.eprintf "@[<2>switch{";
   let res =
   match last with
@@ -785,7 +783,7 @@ and compile_argument_passing ctx queue (pc, args) continuation =
   if args = [] then
     continuation queue
   else begin
-    let block = IntMap.find pc ctx.Ctx.blocks in
+    let block = AddrMap.find pc ctx.Ctx.blocks in
     parallel_renaming ctx block.params args continuation queue
   end
 (*
@@ -795,7 +793,7 @@ and compile_argument_passing ctx queue (pc, args) continuation =
   | xl ->
 (*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 XXXX Make sure that we do not miscompile x = y; y = e
-      match IntMap.find pc ctx.Ctx.blocks with
+      match AddrMap.find pc ctx.Ctx.blocks with
         (Some y, _, _) ->
 
 
@@ -816,7 +814,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
   if pc < 0 then
     continuation queue
   else
-    let block = IntMap.find pc ctx.Ctx.blocks in
+    let block = AddrMap.find pc ctx.Ctx.blocks in
     match block.handler with
       None ->
         continuation queue
@@ -831,7 +829,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
               []
         in
         let m = Subst.build_mapping block.params args in
-        let h_block = IntMap.find h_pc ctx.Ctx.blocks in
+        let h_block = AddrMap.find h_pc ctx.Ctx.blocks in
         let rec loop continuation old args params queue =
           match args, params with
             [], [] ->
@@ -842,13 +840,15 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
                 match old with [] -> (None, []) | z :: old -> (Some z, old)
               in
               let x' =
-                try Some (Subst.VarMap.find x m) with Not_found -> Some x in
+                try Some (VarMap.find x m) with Not_found -> Some x in
               if Var.compare x x0 = 0 || x' = z then
                 loop continuation old args params queue
               else begin
                let ((px, cx), queue) = access_queue queue x in
 (*Format.eprintf "%a := %a@." Var.print y Var.print x;*)
                let (st, queue) =
+(*FIX: we should flush all the variables we need rather than doing this;
+       do the same for closure free variables *)
                  match 2 (*ctx.Ctx.live.(Var.idx y)*) with
                    0 -> assert false
                  | 1 -> enqueue queue px y cx
@@ -868,10 +868,10 @@ Format.eprintf "%d ==> %d/%d/%d@." pc (List.length h_args) (List.length h_block.
 and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
   compile_argument_passing st.ctx queue cont (fun queue ->
   compile_exn_handling st.ctx queue cont handler (fun queue ->
-  if IntSet.mem pc backs then begin
+  if AddrSet.mem pc backs then begin
     Format.eprintf "@ continue;";
     flush_all queue [J.Continue_statement None]
-  end else if IntSet.mem pc frontier || IntMap.mem pc interm then begin
+  end else if AddrSet.mem pc frontier || AddrMap.mem pc interm then begin
     Format.eprintf "@ (br %d)" pc;
     flush_all queue (compile_branch_selection pc interm)
   end else
@@ -879,7 +879,7 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
 
 and compile_branch_selection pc interm =
   try
-    let (pc, (x, i)) = IntMap.find pc interm in
+    let (pc, (x, i)) = AddrMap.find pc interm in
     Format.eprintf "@ %a=%d;" Code.Var.print x i;
     J.Variable_statement [Var.to_string x, Some (int i)] ::
     compile_branch_selection pc interm
@@ -888,20 +888,21 @@ and compile_branch_selection pc interm =
 
 and compile_closure ctx (pc, args) =
   let st =
-    { visited_blocks = IntSet.empty; loops = IntSet.empty;
+    { visited_blocks = AddrSet.empty; loops = AddrSet.empty;
       all_succs = Hashtbl.create 17; succs = Hashtbl.create 17;
       backs = Hashtbl.create 17; preds = Hashtbl.create 17;
       interm_idx = -1; ctx = ctx; blocks = ctx.Ctx.blocks }
   in
-  build_graph st pc IntSet.empty;
+  build_graph st pc AddrSet.empty;
   let current_blocks = st.visited_blocks in
-  st.visited_blocks <- IntSet.empty;
+  st.visited_blocks <- AddrSet.empty;
   Format.eprintf "@[<2>closure{";
   let res =
-    compile_branch st [] (pc, args) None IntSet.empty IntSet.empty IntMap.empty
+    compile_branch st [] (pc, args) None
+      AddrSet.empty AddrSet.empty AddrMap.empty
   in
   if
-    IntSet.cardinal st.visited_blocks <> IntSet.cardinal current_blocks
+    AddrSet.cardinal st.visited_blocks <> AddrSet.cardinal current_blocks
   then begin
     Format.eprintf "Some blocks not compiled!@."; assert false
   end;

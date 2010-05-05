@@ -1,15 +1,13 @@
 
 let debug = false
 
-open Util
-
 open Code
 
 type t =
-  { blocks : block IntMap.t;
+  { blocks : block AddrMap.t;
     live : int array;
     deps : instr list array;
-    mutable live_block : IntSet.t }
+    mutable live_block : AddrSet.t }
 
 (****)
 
@@ -74,10 +72,10 @@ and mark_instr st i =
 and mark_cont st (pc, param) = mark_req st pc
 
 and mark_req st pc =
-  if not (IntSet.mem pc st.live_block) then begin
-    st.live_block <- IntSet.add pc st.live_block;
-    let block = IntMap.find pc st.blocks in
-    opt_iter (fun (_, cont) -> mark_cont st cont) block.handler;
+  if not (AddrSet.mem pc st.live_block) then begin
+    st.live_block <- AddrSet.add pc st.live_block;
+    let block = AddrMap.find pc st.blocks in
+    Util.opt_iter (fun (_, cont) -> mark_cont st cont) block.handler;
     List.iter
       (fun i ->
          match i with
@@ -135,7 +133,7 @@ let rec filter_args st pl al =
 
 let filter_cont blocks st ((pc, args) as cont) =
   let params =
-    if Code.is_dummy_cont cont then [] else (IntMap.find pc blocks).params in
+    if Code.is_dummy_cont cont then [] else (AddrMap.find pc blocks).params in
   (pc, filter_args st params args)
 
 let filter_closure blocks st i =
@@ -165,7 +163,7 @@ let filter_live_last blocks st l =
       Poptrap (filter_cont blocks st cont)
 
 let annot st pc xi =
-  if not (IntSet.mem pc st.live_block) then "x" else
+  if not (AddrSet.mem pc st.live_block) then "x" else
   match xi with
     Last _ ->
       " "
@@ -189,14 +187,14 @@ let rec add_arg_dep deps params args =
       ()
 
 let add_cont_dep blocks deps (pc, args) =
-  let block = IntMap.find pc blocks in
+  let block = AddrMap.find pc blocks in
   add_arg_dep deps block.params args
 
 let f (pc, blocks, free_pc) =
   let nv = Var.count () in
   let deps = Array.make nv [] in
   let live = Array.make nv 0 in
-  IntMap.iter
+  AddrMap.iter
     (fun _ block ->
        List.iter
          (fun i ->
@@ -206,7 +204,8 @@ let f (pc, blocks, free_pc) =
             | Offset_ref _  ->
                 ())
          block.body;
-       opt_iter (fun (_, cont) -> add_cont_dep blocks deps cont) block.handler;
+       Util.opt_iter
+         (fun (_, cont) -> add_cont_dep blocks deps cont) block.handler;
        match block.branch with
          Return _ | Raise _ | Stop ->
            ()
@@ -224,7 +223,7 @@ let f (pc, blocks, free_pc) =
            add_cont_dep blocks deps cont)
     blocks;
   let st =
-    { live = live; deps = deps; blocks = blocks; live_block = IntSet.empty }
+    { live = live; deps = deps; blocks = blocks; live_block = AddrSet.empty }
   in
   mark_req st pc;
 
@@ -233,14 +232,15 @@ let f (pc, blocks, free_pc) =
 
   let all_blocks = blocks in
   let blocks =
-    IntMap.fold
+    AddrMap.fold
       (fun pc block blocks ->
-         if not (IntSet.mem pc st.live_block) then blocks else
-         IntMap.add pc
+         if not (AddrSet.mem pc st.live_block) then blocks else
+         AddrMap.add pc
            { params =
                List.filter (fun x -> st.live.(Var.idx x) > 0) block.params;
              handler =
-               opt_map (fun (x, cont) -> (x, filter_cont all_blocks st cont))
+               Util.opt_map
+                 (fun (x, cont) -> (x, filter_cont all_blocks st cont))
                  block.handler;
              body =
                List.map (fun i -> filter_closure all_blocks st i)
@@ -248,6 +248,6 @@ let f (pc, blocks, free_pc) =
              branch =
                filter_live_last all_blocks st block.branch }
            blocks)
-      blocks IntMap.empty
+      blocks AddrMap.empty
   in
   (pc, blocks, free_pc), st.live

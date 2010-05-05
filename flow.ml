@@ -11,7 +11,6 @@ Backward propagation for mutable tables ==> unification?
 
 let debug = false
 
-open Util
 open Code
 
 type 'a flat = Void | Known of 'a | Unknown
@@ -132,7 +131,7 @@ let rec add_arg_dep deps params args =
       ()
 
 let add_cont_dep blocks deps (pc, args) =
-  let block = IntMap.find pc blocks in
+  let block = AddrMap.find pc blocks in
   add_arg_dep deps block.params args
 
 let name v x =
@@ -197,7 +196,7 @@ let specialize_call a i =
 
 let specialize_calls a (pc, blocks, free_pc) =
   let blocks =
-    IntMap.map
+    AddrMap.map
       (fun (param, instr, last) ->
          (param, List.map (fun i -> specialize_call a i) instr, last))
       blocks
@@ -280,11 +279,12 @@ let subst_last s l =
 
 let subst s a (pc, blocks, free_pc) =
   let blocks =
-    IntMap.map
+    AddrMap.map
       (fun block ->
          { params = block.params;
            handler =
-             opt_map (fun (x, cont) -> (x, subst_cont s cont)) block.handler;
+             Util.opt_map
+               (fun (x, cont) -> (x, subst_cont s cont)) block.handler;
            body = List.map (fun i -> subst_instr s a i) block.body;
            branch = subst_last s block.branch })
       blocks
@@ -293,11 +293,25 @@ let subst s a (pc, blocks, free_pc) =
 
 (****)
 
+type def = Phi of VarSet.t | Instr of Code.instr
+
+let undefined = Phi VarSet.empty
+
+(*XXXXX
+let f (pc, blocks, free_pc) =
+  let nv = Var.count () in
+  let deps = Array.make nv VarSet.empty in
+  let defs = Array.make nv undefined in
+  ()
+*)
+
+(****)
+
 let f (pc, blocks, free_pc) =
   let nv = Var.count () in
   let deps = Array.make nv [] in
   let approx = Array.make nv void in
-  IntMap.iter
+  AddrMap.iter
     (fun pc block ->
        List.iter
          (fun i ->
@@ -324,13 +338,13 @@ let f (pc, blocks, free_pc) =
            add_cont_dep blocks deps cont)
     blocks;
   let st = { approx = approx; deps = deps } in
-  IntMap.iter
+  AddrMap.iter
     (fun _ block ->
        List.iter (fun x -> update_var st x unknown) block.params;
        List.iter (fun i -> propagate st i) block.body;
        match block.branch with
          Pushtrap (_, _, (pc, _), _) ->
-           let block = IntMap.find pc blocks in
+           let block = AddrMap.find pc blocks in
            List.iter (fun x -> update_var st x unknown) block.params
        | _ ->
            ())

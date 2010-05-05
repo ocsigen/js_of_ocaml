@@ -2,7 +2,6 @@
 FIX: is there a way to merge this with dead code elimination?
 *)
 
-open Util
 open Code
 
 (****)
@@ -11,9 +10,9 @@ open Code
 
 let traverse blocks pc f accu =
   let rec traverse_rec visited pc accu =
-    if IntSet.mem pc visited then (visited, accu) else begin
-      let visited = IntSet.add pc visited in
-      let block = IntMap.find pc blocks in
+    if AddrSet.mem pc visited then (visited, accu) else begin
+      let visited = AddrSet.add pc visited in
+      let block = AddrMap.find pc blocks in
       let (visited, accu) =
         List.fold_left
           (fun ((visited, accu) as p) i ->
@@ -52,7 +51,7 @@ let traverse blocks pc f accu =
       (visited, f pc accu)
     end
   in
-  snd (traverse_rec IntSet.empty pc accu)
+  snd (traverse_rec AddrSet.empty pc accu)
 
 (****)
 
@@ -65,7 +64,7 @@ let is_trivial instr last =
   end
 
 let resolve_branch blocks (pc, args) =
-  match IntMap.find pc blocks with
+  match AddrMap.find pc blocks with
 (* FIX: handler? *)
     {params = params; handler = None; body = [];
      branch = Branch (pc', args')} ->
@@ -87,29 +86,29 @@ let concat_blocks pc instr params handler args params' instr' last' =
       branch = Subst.last s last' }
 
 let rec block_simpl pc (preds, blocks) =
-  let block = IntMap.find pc blocks in
+  let block = AddrMap.find pc blocks in
     match block.branch with
         Return _ | Raise _ | Stop | Poptrap _ ->
           (preds, blocks)
       | Branch (pc', args) ->
-          let block' = IntMap.find pc' blocks in
+          let block' = AddrMap.find pc' blocks in
 (*XXX We can always rename variables so that params' = []... *)
             if
 (*FIX: is that correct? in particular, function entry points
   may have only one predecessor... *)
-              IntSet.cardinal (IntMap.find pc' preds) = 1
+              AddrSet.cardinal (AddrMap.find pc' preds) = 1
                 &&
               block'.params = [] && block'.handler = None
             then begin
               (preds,
-               IntMap.add pc
+               AddrMap.add pc
                  (concat_blocks pc block.body block.params block.handler args
                     block'.params block'.body block'.branch)
                  blocks)
             end else if is_trivial block'.body block'.branch then begin
-              (IntMap.add pc' (IntSet.remove pc (IntMap.find pc' preds))
+              (AddrMap.add pc' (AddrSet.remove pc (AddrMap.find pc' preds))
                  preds,
-               IntMap.add
+               AddrMap.add
                  pc (concat_blocks
                        pc block.body block.params block.handler args
                        block'.params block'.body block'.branch)
@@ -119,20 +118,20 @@ let rec block_simpl pc (preds, blocks) =
       | Cond (c, x, cont1, cont2) ->
           if cont1 = cont2 then begin
             let blocks =
-              IntMap.add pc {block with branch = Branch cont1 } blocks in
+              AddrMap.add pc {block with branch = Branch cont1 } blocks in
             block_simpl pc (preds, blocks)
           end else begin
             match resolve_branch blocks cont1 with
               Some cont1' ->
                 let pc1 = fst cont1 in let pc1' = fst cont1' in
                 let preds =
-                  IntMap.add pc1'
-                    (IntSet.add pc
-                       (IntSet.remove pc1 (IntMap.find pc1' preds)))
+                  AddrMap.add pc1'
+                    (AddrSet.add pc
+                       (AddrSet.remove pc1 (AddrMap.find pc1' preds)))
                     preds
                 in
                 let blocks =
-                  IntMap.add pc
+                  AddrMap.add pc
                     { block with branch = Cond (c, x, cont1', cont2) } blocks
                 in
                 block_simpl pc (preds, blocks)
@@ -141,13 +140,13 @@ let rec block_simpl pc (preds, blocks) =
                   Some cont2' ->
                     let pc2 = fst cont2 in let pc2' = fst cont2' in
                     let preds =
-                      IntMap.add pc2'
-                        (IntSet.add pc
-                           (IntSet.remove pc2 (IntMap.find pc2' preds)))
+                      AddrMap.add pc2'
+                        (AddrSet.add pc
+                           (AddrSet.remove pc2 (AddrMap.find pc2' preds)))
                         preds
                     in
                     let blocks =
-                      IntMap.add pc
+                      AddrMap.add pc
                         { block with branch = Cond (c, x, cont1, cont2') }
                         blocks
                     in
@@ -167,14 +166,14 @@ let rec block_simpl pc (preds, blocks) =
                  match resolve_branch blocks pc with Some pc -> pc | None -> pc)
               a2 in
             (preds,
-             IntMap.add pc { block with branch = Switch (x, a1, a2) } blocks)
+             AddrMap.add pc { block with branch = Switch (x, a1, a2) } blocks)
       | Pushtrap _ ->
           (preds, blocks)
 
 let simpl (pc, blocks, free_pc) =
   (*
     let redirect blocks orig pc pc' =
-    let (instr, last) = IntMap.find orig blocks in
+    let (instr, last) = AddrMap.find orig blocks in
     let last =
     match last with
     Return _ | Raise _ | Stop ->
@@ -196,20 +195,20 @@ let simpl (pc, blocks, free_pc) =
     Pushtrap ((if pc1 = pc then pc' else pc1), x,
     (if pc2 = pc then pc' else pc2))
     in
-    IntMap.add orig (instr, last) blocks
+    AddrMap.add orig (instr, last) blocks
     in
     let (blocks, free_pc) =
-    IntMap.fold
+    AddrMap.fold
     (fun pc _ (blocks, free_pc) ->
-    let (instr, last) = IntMap.find pc blocks in
+    let (instr, last) = AddrMap.find pc blocks in
     match instr with
     Let (x, Variable y) :: rem ->
     let s =
     List.fold_left
-    (fun s (x, _) -> IntSet.add (Var.idx x) s) IntSet.empty l in
-    if IntSet.cardinal s > 1 then begin
-    let blocks = IntMap.add pc (rem, last) blocks in
-    IntSet.fold
+    (fun s (x, _) -> AddrSet.add (Var.idx x) s) AddrSet.empty l in
+    if AddrSet.cardinal s > 1 then begin
+    let blocks = AddrMap.add pc (rem, last) blocks in
+    AddrSet.fold
     (fun idx (blocks, free_pc) ->
     let l = List.filter (fun (x, _) -> Var.idx x = idx) l in
     let blocks =
@@ -218,7 +217,7 @@ let simpl (pc, blocks, free_pc) =
     redirect blocks orig pc free_pc)
     blocks l
     in
-    (IntMap.add free_pc ([Let (x, Phi l)], Branch pc) blocks,
+    (AddrMap.add free_pc ([Let (x, Phi l)], Branch pc) blocks,
     free_pc + 1))
     s (blocks, free_pc)
     end else
@@ -228,11 +227,11 @@ let simpl (pc, blocks, free_pc) =
     blocks (blocks, free_pc)
     in
   *)
-  let preds = IntMap.map (fun _ -> IntSet.empty) blocks in
+  let preds = AddrMap.map (fun _ -> AddrSet.empty) blocks in
   let add_pred pc (pc', _) preds =
-    IntMap.add pc' (IntSet.add pc (IntMap.find pc' preds)) preds in
+    AddrMap.add pc' (AddrSet.add pc (AddrMap.find pc' preds)) preds in
   let preds =
-    IntMap.fold
+    AddrMap.fold
       (fun pc block preds ->
          match block.branch with
            Return _ | Raise _ | Stop ->

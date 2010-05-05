@@ -1,4 +1,4 @@
-open Util
+open Code
 
 (* FIX: it should be possible to deal with tail-recursion in exception
    handlers, but we have to adapt the code generator for that *)
@@ -12,26 +12,26 @@ let rec remove_last l =
 let rec tail_call x f l =
   match l with
     [] -> None
-  | [Code.Let (y, Code.Direct_apply (g, args))]
-        when Code.Var.compare x y = 0 && Code.Var.compare f g = 0 ->
+  | [Let (y, Direct_apply (g, args))]
+        when Var.compare x y = 0 && Var.compare f g = 0 ->
       Some args
   | i :: rem ->
       tail_call x f rem
 
 let rewrite_block (f, f_params, f_pc, args) pc blocks =
-  let block = IntMap.find pc blocks in
-  match block.Code.branch with
-    Code.Return x ->
-      begin match tail_call x f block.Code.body with
+  let block = AddrMap.find pc blocks in
+  match block.branch with
+    Return x ->
+      begin match tail_call x f block.body with
         Some f_args ->
           let m = Subst.build_mapping f_params f_args in
-          IntMap.add pc
-            { Code.params = block.Code.params;
-              handler = block.Code.handler;
-              body = remove_last block.Code.body;
+          AddrMap.add pc
+            { params = block.params;
+              handler = block.handler;
+              body = remove_last block.body;
               branch =
-                Code.Branch
-                  (f_pc, List.map (fun x -> Subst.VarMap.find x m) args) }
+                Branch
+                  (f_pc, List.map (fun x -> VarMap.find x m) args) }
             blocks
       | _ ->
           blocks
@@ -43,25 +43,25 @@ let (>>) x f = f x
 
 (* Skip try body and exception handler *)
 let fold_children blocks pc f accu =
-  let (_, _, last) = IntMap.find pc blocks in
-  match last with
-    Code.Return _ | Code.Raise _ | Code.Stop ->
+  let block = AddrMap.find pc blocks in
+  match block.branch with
+    Return _ | Raise _ | Stop ->
       accu
-  | Code.Pushtrap (_, _, _, pc')
-  | Code.Branch (pc', _) | Code.Poptrap (pc', _) ->
+  | Pushtrap (_, _, _, pc')
+  | Branch (pc', _) | Poptrap (pc', _) ->
       f pc' accu
-  | Code.Cond (_, _, (pc1, _), (pc2, _)) ->
+  | Cond (_, _, (pc1, _), (pc2, _)) ->
       accu >> f pc1 >> f pc2
-  | Code.Switch (_, a1, a2) ->
+  | Switch (_, a1, a2) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
 let rec traverse f pc visited blocks =
-  if not (IntSet.mem pc visited) then begin
-    let visited = IntSet.add pc visited in
+  if not (AddrSet.mem pc visited) then begin
+    let visited = AddrSet.add pc visited in
     let blocks = rewrite_block f pc blocks in
     let (visited, blocks) =
-      Code.fold_children blocks pc
+      fold_children blocks pc
         (fun pc (visited, blocks) ->
            let (visited, blocks) =
              traverse f pc visited blocks in
@@ -74,12 +74,12 @@ let rec traverse f pc visited blocks =
 
 let f ((pc, blocks, free_pc) as p) =
   let blocks =
-    Code.fold_closures p
+    fold_closures p
       (fun f params (pc, args) blocks ->
          match f with
            Some f ->
              let (_, blocks) =
-               traverse (f, params, pc, args) pc IntSet.empty blocks in
+               traverse (f, params, pc, args) pc AddrSet.empty blocks in
              blocks
          | None ->
              blocks)

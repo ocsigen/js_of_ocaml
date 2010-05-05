@@ -16,7 +16,13 @@ module Var : sig
   val compare : t -> t -> int
 end
 
+module VarSet : Set.S with type elt = Var.t
+module VarMap : Map.S with type key = Var.t
+
 type addr = int
+
+module AddrSet : Set.S with type elt = int and type t = Util.IntSet.t
+module AddrMap : Map.S with type key = int and type 'a t = 'a Util.IntMap.t
 
 type cont = addr * Var.t list
 
@@ -64,14 +70,14 @@ type block =
     body : instr list;
     branch : last }
 
-type program = addr * block Util.IntMap.t * addr
+type program = addr * block AddrMap.t * addr
 
 type xinstr = Instr of instr | Last of last
 
 val print_var_list : Format.formatter -> Var.t list -> unit
 val print_instr : Format.formatter -> instr -> unit
-val print_block : (Util.IntMap.key -> xinstr -> string) -> int -> block -> unit
-val print_program : (Util.IntMap.key -> xinstr -> string) -> program -> unit
+val print_block : (AddrMap.key -> xinstr -> string) -> int -> block -> unit
+val print_program : (AddrMap.key -> xinstr -> string) -> program -> unit
 
 val dummy_cont : cont
 val is_dummy_cont : cont -> bool
@@ -79,6 +85,6 @@ val is_dummy_cont : cont -> bool
 val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 val fold_children :
-  block Util.IntMap.t -> addr  -> (addr -> 'c -> 'c) -> 'c -> 'c
+  block AddrMap.t -> addr  -> (addr -> 'c -> 'c) -> 'c -> 'c
 
 val add_reserved_name : string -> unit

@@ -57,7 +57,7 @@ let last s l =
 
 let program s (pc, blocks, free_pc) =
   let blocks =
-    Util.IntMap.map
+    AddrMap.map
       (fun block ->
          { params = block.params;
            handler = Util.opt_map
@@ -73,8 +73,6 @@ let from_array s =
   fun x -> match s.(Var.idx x) with Some y -> y | None -> x
 
 (****)
-
-module VarMap = Map.Make (Code.Var)
 
 let rec build_mapping params args =
   match params, args with

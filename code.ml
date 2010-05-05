@@ -1,6 +1,4 @@
 
-open Util
-
 (*FIX: this should probably be somewhere else... *)
 module VarPrinter = struct
   let reserved = Hashtbl.create 107
@@ -99,7 +97,13 @@ end = struct
   let compare v1 v2 = compare (idx v1) (idx v2)
 end
 
+module VarSet = Set.Make (Var)
+module VarMap = Map.Make (Var)
+
 type addr = int
+
+module AddrSet = Util.IntSet
+module AddrMap = Util.IntMap
 
 type cont = addr * Var.t list
 
@@ -147,7 +151,7 @@ type block =
     body : instr list;
     branch : last }
 
-type program = addr * block IntMap.t * addr
+type program = addr * block AddrMap.t * addr
 
 (****)
 
@@ -283,12 +287,12 @@ let print_block annot pc block =
 
 let print_program annot (pc, blocks, _) =
   Format.eprintf "Entry point: %d@.@." pc;
-  IntMap.iter (print_block annot) blocks
+  AddrMap.iter (print_block annot) blocks
 
 (****)
 
 let fold_closures (pc, blocks, _) f accu =
-  IntMap.fold
+  AddrMap.fold
     (fun _ block accu ->
        List.fold_left
          (fun accu i ->
@@ -305,7 +309,7 @@ let fold_closures (pc, blocks, _) f accu =
 let (>>) x f = f x
 
 let fold_children blocks pc f accu =
-  let block = IntMap.find pc blocks in
+  let block = AddrMap.find pc blocks in
   let accu =
     match block.handler with
       Some (_, (pc, _)) -> f pc accu

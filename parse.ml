@@ -18,31 +18,30 @@ Optimizations:
 
 (****)
 
-open Util
-
+open Code
 open Instr
 
-let blocks = ref IntSet.empty
-let stops = ref IntSet.empty
-let entries = ref IntSet.empty
+let blocks = ref AddrSet.empty
+let stops = ref AddrSet.empty
+let entries = ref AddrSet.empty
 let jumps = ref []
 
 let add_start info pc =
 (*  Format.eprintf "==> %d@." pc;*)
-  blocks := IntSet.add pc !blocks
+  blocks := AddrSet.add pc !blocks
 
 let add_stop info pc =
 (*  Format.eprintf "==| %d@." pc;*)
-  stops := IntSet.add pc !stops
+  stops := AddrSet.add pc !stops
 
 let add_jump info pc pc' =
 (*  Format.eprintf "==> %d --> %d@." pc pc';*)
-  blocks := IntSet.add pc' !blocks;
+  blocks := AddrSet.add pc' !blocks;
   jumps := (pc, pc') :: !jumps
 
 let add_entry info pc =
   add_start info pc;
-  entries := IntSet.add pc !entries
+  entries := AddrSet.add pc !entries
 
 let rec scan info code pc len =
   if pc < len then begin
@@ -96,40 +95,38 @@ let rec scan info code pc len =
   end
 
 let rec find_block pc =
-  if IntSet.mem pc !blocks then pc else find_block (pc - 1)
+  if AddrSet.mem pc !blocks then pc else find_block (pc - 1)
 
 let rec next_block len pc =
   let pc = pc + 1 in
-  if pc = len || IntSet.mem pc !blocks then pc else next_block len pc
+  if pc = len || AddrSet.mem pc !blocks then pc else next_block len pc
 
 let map_of_set f s =
-  IntSet.fold (fun pc m -> IntMap.add pc (f pc) m) s IntMap.empty
+  AddrSet.fold (fun pc m -> AddrMap.add pc (f pc) m) s AddrMap.empty
 
 let analyse_blocks code =
   let len = String.length code  / 4 in
   add_entry () 0;
   scan () code 0 len;
   let has_stop =
-    IntSet.fold (fun pc hs -> IntSet.add (find_block pc) hs)
-      !stops IntSet.empty
+    AddrSet.fold (fun pc hs -> AddrSet.add (find_block pc) hs)
+      !stops AddrSet.empty
   in
-  IntSet.iter
+  AddrSet.iter
     (fun pc ->
-       if not (IntSet.mem pc has_stop) then add_jump () pc (next_block len pc))
+       if not (AddrSet.mem pc has_stop) then add_jump () pc (next_block len pc))
     !blocks;
-  let cont = map_of_set (fun _ -> IntSet.empty) !blocks in
+  let cont = map_of_set (fun _ -> AddrSet.empty) !blocks in
   let cont =
     List.fold_left
       (fun cont (pc, pc') ->
          let pc = find_block pc in
-         IntMap.add pc (IntSet.add pc' (IntMap.find pc cont)) cont)
+         AddrMap.add pc (AddrSet.add pc' (AddrMap.find pc cont)) cont)
       cont !jumps
   in
   cont
 
 (****)
-
-open Code
 
 type globals =
   { vars : Var.t option array;
@@ -289,19 +286,19 @@ let primitive_name state i =
   assert (i >= 0 && i <= Array.length g.primitives);
   g.primitives.(i)
 
-let compiled_block = ref IntMap.empty
+let compiled_block = ref AddrMap.empty
 
 let debug = false
 
 let rec compile_block code pc state =
-  if not (IntMap.mem pc !compiled_block) then begin
+  if not (AddrMap.mem pc !compiled_block) then begin
     let len = String.length code  / 4 in
     let limit = next_block len pc in
     if debug then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
     let state = State.start_block state in
     let (instr, last, state') = compile code limit pc state [] in
     compiled_block :=
-      IntMap.add pc (state, List.rev instr, last) !compiled_block;
+      AddrMap.add pc (state, List.rev instr, last) !compiled_block;
     begin match last with
       Branch (pc', _) | Poptrap (pc', _) ->
         compile_block code pc' state'
@@ -1339,8 +1336,8 @@ let merge_path p1 p2 =
   | _     -> assert (p1 = p2); p1
 
 let rec traverse blocks pc visited blocks' =
-  if not (IntSet.mem pc visited) then begin
-    let visited = IntSet.add pc visited in
+  if not (AddrSet.mem pc visited) then begin
+    let visited = AddrSet.add pc visited in
     let (visited, blocks', path) =
       Code.fold_children blocks pc
         (fun pc (visited, blocks', path) ->
@@ -1349,13 +1346,13 @@ let rec traverse blocks pc visited blocks' =
            (visited, blocks', merge_path path path'))
         (visited, blocks', [])
     in
-    let block = IntMap.find pc blocks in
+    let block = AddrMap.find pc blocks in
     let (blocks', path) =
       (* Note that there is no matching poptrap when an exception is alway
          raised in the [try ... with ...] body. *)
       match block.branch, path with
         Pushtrap (cont1, x, cont2, _), pc3 :: rem ->
-          (IntMap.add
+          (AddrMap.add
              pc { block with branch = Pushtrap (cont1, x, cont2, pc3) }
              blocks',
            rem)
@@ -1371,7 +1368,7 @@ let rec traverse blocks pc visited blocks' =
 let match_exn_traps ((_, blocks, _) as p) =
   fold_closures p
     (fun _ _ (pc, _) blocks' ->
-       let (_, blocks', path) = traverse blocks pc IntSet.empty blocks' in
+       let (_, blocks', path) = traverse blocks pc AddrSet.empty blocks' in
        assert (path = []);
        blocks')
     blocks
@@ -1384,7 +1381,7 @@ ignore cont;
   compile_block code 0 state;
 
   let compiled_block =
-    IntMap.mapi
+    AddrMap.mapi
       (fun pc (state, instr, last) ->
 (*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX handler*)
          { params = State.stack_vars state;
@@ -1393,10 +1390,10 @@ ignore cont;
       !compiled_block
   in
 (*
-  IntMap.iter
+  AddrMap.iter
     (fun pc _ ->
        Format.eprintf "==== %d ====@." pc;
-       let l = try IntMap.find pc !start_state with Not_found -> [] in
+       let l = try AddrMap.find pc !start_state with Not_found -> [] in
        List.iter State.print l;
        match l with
          s :: r -> assert (List.for_all (fun s' -> s.State.stack = s'.State.stack) r)
@@ -1416,7 +1413,7 @@ ignore cont;
   let last = Branch (0, []) in
   let pc = String.length code / 4 in
   let compiled_block =
-    IntMap.add pc { params = []; handler = None; body = !l; branch = last }
+    AddrMap.add pc { params = []; handler = None; body = !l; branch = last }
       compiled_block
   in
   let compiled_block = match_exn_traps (pc, compiled_block, pc + 1) in
