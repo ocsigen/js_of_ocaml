@@ -253,6 +253,11 @@ and variable_declaration_list f l =
   | d :: r -> Format.fprintf f "%a,@,%a"
                 variable_declaration d variable_declaration_list r
 
+and opt_expression l f e =
+  match e with
+    None   -> ()
+  | Some e -> expression l f e
+
 and statement f s =
   match s with
     Block b ->
@@ -296,6 +301,10 @@ and statement f s =
   | Do_while_statement (s, e) ->
       Format.fprintf f "@[<1>do@ @[%a@]@;<0 -1>while@,@[(%a)@]"
         statement s (expression 0) e
+  | For_statement (e1, e2, e3, s) ->
+      Format.fprintf f "@[<1>for@,@[(%a;%a;%a)@]@,@[%a@]@]"
+        (opt_expression 0) e1 (opt_expression 0) e2 (opt_expression 0) e3
+        statement s
   | Continue_statement None ->
       Format.fprintf f "continue;"
   | Continue_statement (Some s) ->

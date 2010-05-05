@@ -67,6 +67,8 @@ and statement =
   | If_statement of expression * statement * statement option
   | Do_while_statement of statement * expression
   | While_statement of expression * statement
+  | For_statement of
+      expression option * expression option * expression option * statement
 (*
   | Iteration_statement
 *)

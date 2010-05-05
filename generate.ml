@@ -655,8 +655,8 @@ else begin
         end
   in
   if IntSet.mem pc st.loops then begin
-    [J.While_statement
-       (J.EBool true,
+    [J.For_statement
+       (None, None, None,
         Js_simpl.block
           (if IntSet.cardinal new_frontier > 0 then begin
              Format.eprintf "@ break; }@]";

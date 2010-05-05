@@ -1,11 +1,15 @@
 Priorities
 ==========
-- exception handling
 - faster and sound flow analysis
+  ==> first step: propagate known values
+      second step: propagate unknowns
+
 - tail rec should be moved to a much earlier stage
 - fix small bugs
   ==> integer arithmetic
 - function representation/call (see runtime/runtime.js)
+
+- while(true)... ===> for(;;)...
 
 - using continuation with multiples arguments
   ==> graph coloring + variable coalescing
@@ -36,15 +40,6 @@ Special case for shortcut boolean operations...
 
 BUGS
 ====
-- compilation of raise
-- compilation of functions in loops going through exception handlers
-      let f () =
-        let l = ref [] in
-        for i = 1 to 100 do
-          try l := (fun () -> i) :: !l; raise Exit with _ -> ()
-        done;
-        !l
-
 - compile ISINT to "not a block" and document this deviation
   (or document that we should not rely on the Obj module)
 
