@@ -1335,11 +1335,27 @@ let merge_path p1 p2 =
   | _, [] -> p1
   | _     -> assert (p1 = p2); p1
 
+let (>>) x f = f x
+
+(*XXX FIX: we should visit exception handlers as well...*)
+let fold_children blocks pc f accu =
+  let block = AddrMap.find pc blocks in
+  match block.branch with
+    Return _ | Raise _ | Stop ->
+      accu
+  | Branch (pc', _) | Poptrap (pc', _) | Pushtrap ((pc', _), _, _, _) ->
+      f pc' accu
+  | Cond (_, _, (pc1, _), (pc2, _)) ->
+      f pc1 accu >> f pc1 >> f pc2
+  | Switch (_, a1, a2) ->
+      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
+           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+
 let rec traverse blocks pc visited blocks' =
   if not (AddrSet.mem pc visited) then begin
     let visited = AddrSet.add pc visited in
     let (visited, blocks', path) =
-      Code.fold_children blocks pc
+      fold_children blocks pc
         (fun pc (visited, blocks', path) ->
            let (visited, blocks', path') =
              traverse blocks pc visited blocks' in
@@ -1348,7 +1364,7 @@ let rec traverse blocks pc visited blocks' =
     in
     let block = AddrMap.find pc blocks in
     let (blocks', path) =
-      (* Note that there is no matching poptrap when an exception is alway
+      (* Note that there is no matching poptrap when an exception is always
          raised in the [try ... with ...] body. *)
       match block.branch, path with
         Pushtrap (cont1, x, cont2, _), pc3 :: rem ->
@@ -1383,7 +1399,6 @@ ignore cont;
   let compiled_block =
     AddrMap.mapi
       (fun pc (state, instr, last) ->
-(*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX handler*)
          { params = State.stack_vars state;
            handler = State.current_handler state;
            body = instr; branch = last })

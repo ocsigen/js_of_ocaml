@@ -1,7 +1,7 @@
 
-module Make (N : Set.OrderedType) = struct
-  module NSet = Set.Make (N)
-  module NMap = Map.Make (N)
+module Make (N : sig type t end)
+            (NSet : Set.S with type elt = N.t)
+            (NMap : Map.S with type key = N.t) = struct
 
   type t =
     { domain : NSet.t;

@@ -4,6 +4,8 @@ Priorities
   ==> first step: propagate known values
       second step: propagate unknowns
 
+- fix matching of exception handlers
+
 - tail rec should be moved to a much earlier stage
 - fix small bugs
   ==> integer arithmetic
@@ -24,6 +26,9 @@ Priorities
 
 - inlining
 - constant hoisting (including functions, out of loops and functions)
+
+- if we known that some fields are not used in a block, we could
+  remove them...
 
 ===========
 

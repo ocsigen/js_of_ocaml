@@ -1,8 +1,7 @@
 
-module Make (N : Set.OrderedType) : sig
-
-  module NSet : Set.S with type elt = N.t
-  module NMap : Map.S with type key = N.t
+module Make (N : sig type t end)
+            (NSet : Set.S with type elt = N.t)
+            (NMap : Map.S with type key = N.t) : sig
 
   type t =
     { domain : NSet.t;

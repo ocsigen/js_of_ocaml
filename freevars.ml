@@ -97,15 +97,12 @@ let block_bound_vars block s =
 
 (****)
 
-
-module G =
-  Dgraph.Make
-    (struct type t = int let compare (x : int) y = compare x y end)
+module G = Dgraph.Make (struct type t = int end) (AddrSet) (AddrMap)
 
 let forward_graph (_, blocks, _) =
   let d =
-    AddrMap.fold (fun x _ s -> G.NSet.add x s)
-      blocks G.NSet.empty in
+    AddrMap.fold (fun x _ s -> AddrSet.add x s)
+      blocks AddrSet.empty in
   { G.domain = d;
     G.fold_children = fun f x a -> fold_children blocks x f a }
 
@@ -118,7 +115,7 @@ end
 let propagate g bound_vars s x =
   let a =
     g.G.fold_children
-      (fun y a -> VarSet.union (snd (G.NMap.find y s)) a) x VarSet.empty
+      (fun y a -> VarSet.union (snd (AddrMap.find y s)) a) x VarSet.empty
   in
   (a, VarSet.union (AddrMap.find x bound_vars) a)
 
@@ -128,7 +125,7 @@ let solver ((_, blocks, _) as p) =
   let g = forward_graph p in
   let bound_vars =
     AddrMap.map (fun b -> block_bound_vars b VarSet.empty) blocks in
-  G.NMap.map fst (Solver.f (G.invert g) (propagate g bound_vars))
+  AddrMap.map fst (Solver.f (G.invert g) (propagate g bound_vars))
 
 (****)
 
@@ -158,14 +155,14 @@ let f ((pc, blocks, free_pc) as p) =
        let bound_vars = list_fold add_var VarSet.empty params VarSet.empty in
        let (_, free_vars) =
          traverse pc' AddrSet.empty blocks bound_vars VarSet.empty in
-       let cvars = VarSet.inter (G.NMap.find pc cont_bound_vars) free_vars in
+       let cvars = VarSet.inter (AddrMap.find pc cont_bound_vars) free_vars in
 (*
 if not (VarSet.is_empty cvars) then begin
 Format.eprintf "@[<2>Should protect at %d:@ %a@]@."
 pc print_var_list (VarSet.elements cvars);
 (*
 Format.eprintf "@[<2>%a@]@."
-print_var_list (VarSet.elements (G.NMap.find pc cont_bound_vars));
+print_var_list (VarSet.elements (AddrMap.find pc cont_bound_vars));
 Format.eprintf "@[<2>%a@]@."
 print_var_list (VarSet.elements free_vars);
 *)
