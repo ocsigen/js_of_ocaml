@@ -1,4 +1,4 @@
-
+(*
 type 'a flat = Void | Known of 'a | Unknown
 
 type v =
@@ -15,6 +15,6 @@ val get_const : t -> int option
 
 val get_label : t -> Code.Var.t option
 
-(****)
+*)
 
-val f : Code.program -> Code.program * t array
+val f : Code.program -> Code.program (* * t array*)

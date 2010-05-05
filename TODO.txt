@@ -1,17 +1,10 @@
 Priorities
 ==========
-- faster and sound flow analysis
-  ==> first step: propagate known values
-      second step: propagate unknowns
-
 - fix matching of exception handlers
 
-- tail rec should be moved to a much earlier stage
 - fix small bugs
   ==> integer arithmetic
 - function representation/call (see runtime/runtime.js)
-
-- while(true)... ===> for(;;)...
 
 - using continuation with multiples arguments
   ==> graph coloring + variable coalescing

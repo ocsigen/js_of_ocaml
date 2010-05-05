@@ -1,13 +1,3 @@
-(*
-FIX: should take into account block mutation
-
-FIX: use constraint-based algorithm for better performances
-     (and dealing with cycles)?
-     See Aiken
-==> post-order traversal rather than propagation
-
-Backward propagation for mutable tables ==> unification?
-*)
 
 let debug = false
 
@@ -131,12 +121,14 @@ let propagate1 deps defs st x =
           let s = VarMap.find y st in
           VarSet.fold
             (fun z s ->
-               match defs.(Var.idx x) with
+               match defs.(Var.idx z) with
                  Phi _ | Param ->
                    assert false
                | Expr (Block (_, a)) ->
-                   if Array.length a >= n then s else begin
+(*Format.eprintf "%d/%d@." n (Array.length a);*)
+                   if n >= Array.length a then s else begin
                      let t = a.(n) in
+(*Format.eprintf "%a --> %a@." Var.print t Var.print x;*)
                      add_dep deps x t;
                      VarSet.union (VarMap.find t st) s
                    end
@@ -269,11 +261,80 @@ let solver2 vars deps defs def_approx approx =
 
 (****)
 
+let the_def_of defs def_approx known_approx x =
+  let s = VarMap.find x def_approx in
+  if VarSet.cardinal s = 1 && VarMap.find x known_approx <> Any then
+    match defs.(Var.idx (VarSet.choose s)) with
+      Expr e -> Some e
+    | _      -> None
+  else
+    None
+
+let specialize_call defs def_approx known_approx i =
+  match i with
+    Let (x, Apply (f, l)) ->
+(*Format.eprintf "==> %a@." Var.print f;*)
+      begin match the_def_of defs def_approx known_approx f with
+        Some (Block (_, a)) when Array.length a > 0 ->
+(*Format.eprintf "block@.";*)
+          let f = a.(0) in
+          begin match the_def_of defs def_approx known_approx f with
+            Some (Closure (l', _)) when List.length l = List.length l' ->
+(*Format.eprintf "OK@.";*)
+              Let (x, Direct_apply (f, l))
+          | _ ->
+              i
+          end
+      | _ ->
+          i
+      end
+(*
+      begin match the_def_of defs def_approx known_approx f with
+        Some (Closure (l', _)) when List.length l = List.length l' ->
+Format.eprintf "OK@.";
+          Let (x, Direct_apply (f, l))
+      | _ ->
+          i
+      end
+*)
+  | _ ->
+      i
+
+let specialize_calls defs def_approx known_approx (pc, blocks, free_pc) =
+  let blocks =
+    AddrMap.map
+      (fun block ->
+         { block with Code.body =
+             List.map
+               (fun i -> specialize_call defs def_approx known_approx i)
+               block.body })
+      blocks
+  in
+  (pc, blocks, free_pc)
+
+(****)
+
+let build_subst def_approx known_approx =
+  let nv = Var.count () in
+  let subst = Array.make nv None in
+  VarMap.fold
+    (fun x u () ->
+       if u <> Any then begin
+         let s = VarMap.find x def_approx in
+         if VarSet.cardinal s = 1 then
+           subst.(Var.idx x) <- Some (VarSet.choose s)
+       end)
+    known_approx ();
+  subst
+
+(****)
+
 let f ((pc, blocks, free_pc) as p) =
   let (vars, deps, defs) = program_deps p in
   let def_approx = solver1 !vars deps defs in
   let approx = program_approx defs def_approx p in
   let known_approx = solver2 !vars deps defs def_approx approx in
+(*
   VarMap.iter
     (fun x s ->
        if not (VarSet.is_empty s) (*&& VarSet.choose s <> x*) then begin
@@ -284,10 +345,17 @@ Var.print x Code.print_var_list (VarSet.elements s)
  | AnyBlock -> "anyblock"
  | Any -> "any")
        end)
-    def_approx
+    def_approx;
+*)
 
-(****)
+  let p = specialize_calls defs def_approx known_approx p in
+  let s = build_subst def_approx known_approx in
+  let p = Subst.program (Subst.from_array s) p in
+  p
 
+(***********************************************************************)
+
+(*
 type 'a flat = Void | Known of 'a | Unknown
 
 type v =
@@ -497,8 +565,9 @@ let subst_expr s a e =
       let n = get_const (get_field v 1) in
       let lab = get_label (get_field v 0) in
       begin match lab, n with
-        Some f, Some n when List.length l = n ->
-          Direct_apply (f, List.map (fun x -> subst_var s x) l)
+        Some f', Some n when List.length l = n ->
+(*Format.eprintf "!!! %a@." Var.print f;*)
+          Direct_apply (f', List.map (fun x -> subst_var s x) l)
       | _ ->
 (*
 opt_iter (fun n -> Format.eprintf "===>%a : %d / %d (%b)@." Var.print (subst_var s f) n (List.length l) (n = List.length l)) n;
@@ -568,8 +637,8 @@ let subst s a (pc, blocks, free_pc) =
 
 (****)
 
-let f (pc, blocks, free_pc) =
-f (pc, blocks, free_pc);
+let f p =
+  let (pc, blocks, free_pc) = f p in
   let nv = Var.count () in
   let deps = Array.make nv [] in
   let approx = Array.make nv void in
@@ -619,3 +688,4 @@ f (pc, blocks, free_pc);
     print_program (fun pc xi -> annot st pc xi) (pc, blocks, free_pc);
 
   ((pc, blocks, free_pc), st.approx)
+    *)

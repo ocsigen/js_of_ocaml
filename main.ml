@@ -5,8 +5,10 @@ let _ =
   Code.print_program (fun _ _ -> "") p;
 *)
 
+  let p = Tailcall.f p in
+
 Format.eprintf "Data flow...@.";
-  let (p, approx) = Flow.f p in
+  let p = Flow.f p in
 Format.eprintf "Dead-code...@.";
   let (p, _) = Deadcode.f p in
 Format.eprintf "Control flow simplifications...@.";
@@ -14,8 +16,6 @@ Format.eprintf "Control flow simplifications...@.";
 Format.eprintf "Dead-code...@.";
   let (p, live_vars) = Deadcode.f p in
 Format.eprintf "Tail-call optimization...@.";
-
-  let p = Tailcall.f p in
 
 (*
 

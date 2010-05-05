@@ -584,14 +584,7 @@ else begin
             None AddrSet.empty inner_frontier interm
         in
         Format.eprintf "} catch {@,";
-        let handler =
-(*XXXXXXXXXX This is wrong (argument passing already done) *)
-          compile_block st [] pc2 inner_frontier interm
-(*
-  compile_branch
-            st [] (pc2, args2) None AddrSet.empty inner_frontier interm
-*)
-        in
+        let handler = compile_block st [] pc2 inner_frontier interm in
         let x =
           let block2 = AddrMap.find pc2 st.blocks in
           let m = Subst.build_mapping args2 block2.params in
