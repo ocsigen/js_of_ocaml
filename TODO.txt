@@ -18,9 +18,6 @@ Priorities
 - inlining
 - constant hoisting (including functions, out of loops and functions)
 
-- if we known that some fields are not used in a block, we could
-  remove them...
-
 ===========
 
 Special case for shortcut boolean operations...
