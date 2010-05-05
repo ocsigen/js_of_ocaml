@@ -1337,15 +1337,14 @@ let merge_path p1 p2 =
 
 let (>>) x f = f x
 
-(*XXX FIX: we should visit exception handlers as well...*)
 let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
     Return _ | Raise _ | Stop ->
       accu
-  | Branch (pc', _) | Poptrap (pc', _) | Pushtrap ((pc', _), _, _, _) ->
+  | Branch (pc', _) | Poptrap (pc', _) ->
       f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) ->
+  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
       f pc1 accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1

@@ -821,7 +821,10 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
           | None ->
               []
         in
-        let m = Subst.build_mapping block.params args in
+        (* When an extra block is inserted during code generation,
+           args is [] *)
+        let m =
+          Subst.build_mapping (if args = [] then [] else block.params) args in
         let h_block = AddrMap.find h_pc ctx.Ctx.blocks in
         let rec loop continuation old args params queue =
           match args, params with

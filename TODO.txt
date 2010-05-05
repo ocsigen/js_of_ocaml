@@ -1,7 +1,5 @@
 Priorities
 ==========
-- fix matching of exception handlers
-
 - fix small bugs
   ==> integer arithmetic
 - function representation/call (see runtime/runtime.js)

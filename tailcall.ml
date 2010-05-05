@@ -19,7 +19,7 @@ let rec tail_call x f l =
       tail_call x f rem
 
 let rewrite_block (f, f_params, f_pc, args) pc blocks =
-Format.eprintf "%d@." pc;
+(*Format.eprintf "%d@." pc;*)
   let block = AddrMap.find pc blocks in
   match block.branch with
     Return x ->
