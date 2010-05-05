@@ -19,6 +19,7 @@ let rec tail_call x f l =
       tail_call x f rem
 
 let rewrite_block (f, f_params, f_pc, args) pc blocks =
+Format.eprintf "%d@." pc;
   let block = AddrMap.find pc blocks in
   match block.branch with
     Return x ->
@@ -49,7 +50,7 @@ let fold_children blocks pc f accu =
       accu
   | Pushtrap (_, _, _, pc')
   | Branch (pc', _) | Poptrap (pc', _) ->
-      f pc' accu
+      if pc' >= 0 then f pc' accu else accu
   | Cond (_, _, (pc1, _), (pc2, _)) ->
       accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
