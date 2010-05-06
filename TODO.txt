@@ -1,10 +1,15 @@
 Priorities
 ==========
-- function representation/call (see runtime/runtime.js)
 - integer arithmetic
 
 - primitive [ULT] not implemented
 - method calls
+
+- check Control.block_simpl
+
+- Can we avoid spurious conversions from boolean to integers???
+  ===> explicit conversion to boolean; specialized "if" that operates
+       on booleans directly
 
 - print missing primitives
 
@@ -12,7 +17,7 @@ Priorities
   ==> compact mode
   ==> debugging options
 
-- inlining
+- inlining (especially of functions that are used only once!)
 - constant hoisting (including functions, out of loops and functions)
 
 - using continuation with multiples arguments
@@ -97,6 +102,9 @@ NEW FEATURES
 - Map Caml objects to Javascript objects
 
 - dynamic linking? (code generation from cmo files)
+
+- Can we use the debugger information to generate specialized code?
+  (Use objects rather than arrays for tuples, ...)
 
 DATA REPRESENTATION
 ===================

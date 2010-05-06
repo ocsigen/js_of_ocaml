@@ -1,8 +1,9 @@
 
-module IntSet =
-  Set.Make (struct type t = int let compare (x : int) y = compare x y end)
-module IntMap =
-  Map.Make (struct type t = int let compare (x : int) y = compare x y end)
+module Int = struct type t = int let compare (x : int) y = compare x y end
+module IntSet = Set.Make (Int)
+module IntMap = Map.Make (Int)
+
+module StringSet = Set.Make (String)
 
 let opt_map f x = match x with None -> None | Some v -> Some (f v)
 let opt_iter f x = match x with None -> () | Some v -> f v

@@ -11,20 +11,9 @@ Patterns:
   => while (true) {.... if (e) continue; break; }
 
 - CLEAN UP!!!
-
-- Inlining? (Especially of functions that are used only once!)
-
-- Can we avoid spurious conversions from boolean to integers???
-  ===> explicit conversion to boolean; specialized "if" that operates
-       on booleans directly
-
-- scalable generation of caml_apply functions
-  ==> use curry functions as the ocaml compilers does
-  ==> we could generate explit closures in the code
 *)
 
-let compact = true
-
+let compact = false
 let debug = false
 
 (****)
@@ -32,6 +21,14 @@ let debug = false
 open Code
 
 module J = Javascript
+
+(****)
+
+let primitives = ref Util.StringSet.empty
+let add_primitive nm = primitives := Util.StringSet.add nm !primitives
+let show_primitives () =
+  Format.eprintf "Primitives:@.";
+  Util.StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) !primitives
 
 (****)
 
@@ -322,6 +319,41 @@ let parallel_renaming ctx params args continuation queue =
 
 (****)
 
+let apply_funs = ref Util.IntMap.empty
+
+let get_apply_fun n =
+  try
+    Util.IntMap.find n !apply_funs
+  with Not_found ->
+    let x = Var.fresh () in
+    apply_funs := Util.IntMap.add n x !apply_funs;
+    x
+
+let generate_apply_funs cont =
+  Util.IntMap.fold
+    (fun n x cont ->
+       let f = Var.to_string (Var.fresh ()) in
+       let params =
+         Array.to_list (Array.init n (fun _ -> Var.to_string (Var.fresh ())))
+       in
+       let f' = J.EVar f in
+       let params' = List.map (fun x -> J.EVar x) params in
+       J.Function_declaration
+         (Var.to_string x, f :: params,
+          [J.Statement
+             (J.Return_statement
+                (Some
+                   (J.ECond (J.EBin (J.EqEq, J.EDot (f', "length"),
+                                     J.ENum (float n)),
+                             J.ECall (f', params'),
+                             J.ECall (J.EVar "caml_call_gen",
+                                      [f'; J.EArr (List.map (fun x -> Some x) params')])))))]) ::
+       cont)
+    !apply_funs cont
+
+(****)
+
+(* FIX: should be extensible... *)
 let prim_kinds = ["caml_int64_float_of_bits", const_p]
 
 let rec translate_expr ctx queue e =
@@ -336,7 +368,8 @@ let rec translate_expr ctx queue e =
                access_queue queue x in (cx :: args, or_p prop prop', queue))
           (x :: l) ([], mutator_p, queue)
       in
-      (J.ECall (J.EVar (Format.sprintf "caml_call_%d" (List.length l)), args),
+      let y = get_apply_fun (List.length l) in
+      (J.ECall (J.EVar (Var.to_string y), args),
        prop, queue)
   | Direct_apply (x, l) ->
       let ((px, cx), queue) = access_queue queue x in
@@ -389,13 +422,18 @@ let rec translate_expr ctx queue e =
           let ((py, cy), queue) = access_queue queue y in
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
-      | C_call
-            ("caml_array_get_addr"|"caml_array_get"|"caml_array_unsafe_get"),
-            [x; y] ->
+      | C_call "caml_array_unsafe_get", [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
                       or_p (or_p px py) mutable_p, queue)
+      | C_call "caml_array_unsafe_set", [x; y; z] ->
+            let ((px, cx), queue) = access_queue queue x in
+            let ((py, cy), queue) = access_queue queue y in
+            let ((pz, cz), queue) = access_queue queue z in
+            (J.EBin (J.Eq, J.EAccess (cx, J.EBin (J.Plus, cy, one)),
+                     cz),
+             or_p mutator_p (or_p px (or_p py pz)), queue)
       | C_call "caml_string_get", [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
@@ -404,8 +442,17 @@ let rec translate_expr ctx queue e =
       | C_call "caml_ml_string_length", [x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EDot (cx, "length"), px, queue)
+      | C_call "caml_ge_float", [x; y] ->
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          (bool (J.EBin (J.Le, cy, cx)), or_p px py, queue)
+      | C_call "caml_sub_float", [x; y] ->
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          (bool (J.EBin (J.Minus, cy, cx)), or_p px py, queue)
       | C_call name, l ->
-Code.add_reserved_name name;  (*XXX HACK *)
+          add_primitive name;
+          Code.add_reserved_name name;  (*XXX HACK *)
           let prim_kind =
             try List.assoc name prim_kinds with Not_found -> mutator_p in
           let (args, prop, queue) =
@@ -781,30 +828,7 @@ and compile_argument_passing ctx queue (pc, args) continuation =
     let block = AddrMap.find pc ctx.Ctx.blocks in
     parallel_renaming ctx block.params args continuation queue
   end
-(*
-  match args with
-    [] ->
-      continuation queue
-  | xl ->
-(*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-XXXX Make sure that we do not miscompile x = y; y = e
-      match AddrMap.find pc ctx.Ctx.blocks with
-        (Some y, _, _) ->
 
-
-          let ((px, cx), queue) = access_queue queue x in
-          let (st, queue) =
-            match ctx.Ctx.live.(Var.idx y) with
-              0 -> assert false
-            | 1 -> enqueue queue px y cx
-            | _ -> flush_queue queue (px >= flush_p) (Some y)
-                     [J.Variable_statement [Var.to_string y, Some cx]]
-          in
-          st @ continuation queue
-      | _ ->
-*)
-          assert false
-*)
 and compile_exn_handling ctx queue (pc, args) handler continuation =
   if pc < 0 then
     continuation queue
@@ -910,7 +934,8 @@ and compile_closure ctx (pc, args) =
 let compile_program ctx pc =
   let res = compile_closure ctx (pc, []) in
   if debug then Format.eprintf "@.@.";
-  res
+  show_primitives ();
+  generate_apply_funs res
 
 (**********************)
 

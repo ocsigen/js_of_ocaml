@@ -1,22 +1,3 @@
-(*XXX
-
-Approximation of variable contents:
-  - function with arity
-  - single variable
-  - block with known values
-  - array or fixed-size block + do we need the tag
-    (block of this size (any size) with this tag (any tag))
-
-Can we use the debugger information to generate specialized code?
-(Use objects rather than arrays for tuples, ...)
-
-Optimizations:
-==> coloring (eliminate (most) phi functions)
-==> call shape analyse??? is that possible?
-    for avoiding cps transformation + trampoline when possible
-*)
-
-(****)
 
 open Code
 open Instr
@@ -379,6 +360,8 @@ and compile code limit pc state instrs =
 (*
       compile code limit (pc + 2) state (Let (x, Const 0) :: instrs)
 *)
+      (* We switch to a different block as this may have
+         changed the exception handler continuation *)
       compile_block code (pc + 2) state;
       (Let (x, Const 0) :: instrs,
        Branch (pc + 2, State.stack_vars state),
@@ -1309,13 +1292,13 @@ if debug then Format.printf "switch ...@.";
 (* GETPUBMET GETDYNMET GETMETHOD *)
   | GETPUBMET ->
 (*XXXXXXXXXXXXXXXXXXXXXXXXXXXX*)
-if debug then prerr_endline "XXX";
+prerr_endline "XXX";
       let state = State.push state in
       compile code limit (pc + 3) state instrs
   | STOP ->
       (instrs, Stop, state)
   | _ ->
-if debug then prerr_endline "XXX";
+prerr_endline "XXX";
       compile code limit (pc + 1) state instrs
   end
 

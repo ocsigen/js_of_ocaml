@@ -65,9 +65,7 @@ let is_trivial instr last =
 
 let resolve_branch blocks (pc, args) =
   match AddrMap.find pc blocks with
-(* FIX: handler? *)
-    {params = params; handler = None; body = [];
-     branch = Branch (pc', args')} ->
+    {params = params; body = []; branch = Branch (pc', args')} ->
       let m = Subst.build_mapping params args in
       let args'' =
         List.map (Subst.from_map m) args' in
