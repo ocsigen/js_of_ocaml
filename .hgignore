@@ -4,3 +4,4 @@ syntax:glob
 *~
 compile{,.opt}
 private
+examples/boulderdash/boulderdash{,.js}
