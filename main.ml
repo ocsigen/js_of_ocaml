@@ -8,6 +8,9 @@ let _ =
 Format.eprintf "Tail-call optimization...@.";
   let p = Tailcall.f p in
 
+Format.eprintf "Variable passing simplification...@.";
+  let p = Phisimpl.f p in
+
 Format.eprintf "Data flow...@.";
   let p = Flow.f p in
 Format.eprintf "Dead-code...@.";

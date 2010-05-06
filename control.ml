@@ -92,29 +92,28 @@ let rec block_simpl pc (preds, blocks) =
           (preds, blocks)
       | Branch (pc', args) ->
           let block' = AddrMap.find pc' blocks in
-(*XXX We can always rename variables so that params' = []... *)
-            if
+          if
 (*FIX: is that correct? in particular, function entry points
   may have only one predecessor... *)
-              AddrSet.cardinal (AddrMap.find pc' preds) = 1
-                &&
-              block'.params = [] && block'.handler = None
-            then begin
-              (preds,
-               AddrMap.add pc
-                 (concat_blocks pc block.body block.params block.handler args
-                    block'.params block'.body block'.branch)
-                 blocks)
-            end else if is_trivial block'.body block'.branch then begin
-              (AddrMap.add pc' (AddrSet.remove pc (AddrMap.find pc' preds))
-                 preds,
-               AddrMap.add
-                 pc (concat_blocks
-                       pc block.body block.params block.handler args
-                       block'.params block'.body block'.branch)
-                 blocks)
-            end else
-              (preds, blocks)
+            AddrSet.cardinal (AddrMap.find pc' preds) = 1
+              &&
+            block'.params = [] && block'.handler = block.handler
+          then begin
+            (preds,
+             AddrMap.add pc
+               (concat_blocks pc block.body block.params block.handler args
+                  block'.params block'.body block'.branch)
+               blocks)
+          end else if is_trivial block'.body block'.branch then begin
+            (AddrMap.add pc' (AddrSet.remove pc (AddrMap.find pc' preds))
+               preds,
+             AddrMap.add
+               pc (concat_blocks
+                     pc block.body block.params block.handler args
+                     block'.params block'.body block'.branch)
+               blocks)
+          end else
+            (preds, blocks)
       | Cond (c, x, cont1, cont2) ->
           if cont1 = cont2 then begin
             let blocks =

@@ -8,7 +8,6 @@ Priorities
   ==> graph coloring + variable coalescing
   ==> we should check stack compatibility when parsing:
       when jumping somewhere, the stack should keep the same shape
-- more aggressive variable renaming? (in particular, for Control.block_simpl)
 - remove "Variable x" instruction
 
 - options on command line
@@ -166,4 +165,22 @@ Matthew Might               Yannis Smaragdakis             David Van Horn
 
 Use window.postMessage instead of setTimeout for yield (setTimeout
 always waits a bit!)
+
+==================================
+
+http://www.pps.jussieu.fr/~montela/ocamil/
+Note that the OCamIL compilers and tools are currently based on OCaml
+v3.06. An upgrade to the latest OCaml version is scheduled for the
+next release.
+[Never happened...]
+
+ocamldefun (on ocaml_beginners)
+I'd really like to play around ocamldefun, but it seems to only work
+with ocaml 3.06. Has anyone had luck setting this up in more recent
+versions of ocaml?
+
+OCamlexc (on caml list)
+So I was wondering if there is any current or recent projects (or interests) 
+to resume OCamlExc development and complete the set of handled constructs,
+as I'm afraid I'll have neither the time nor the skills to do the job. 
 

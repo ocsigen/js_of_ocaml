@@ -23,7 +23,7 @@ Patterns:
   ==> we could generate explit closures in the code
 *)
 
-let compact = false
+let compact = true
 
 (****)
 
