@@ -1277,7 +1277,7 @@ if debug then Format.printf "switch ...@.";
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
-      if debug then Format.printf "%a = mk_bool(%a < %a)@."
+      if debug then Format.printf "%a = mk_bool(%a <= %a) (unsigned)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Ult, [y; z])) :: instrs)

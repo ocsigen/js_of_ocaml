@@ -2,7 +2,6 @@ Priorities
 ==========
 - integer arithmetic
 
-- primitive [ULT] not implemented
 - method calls
 
 - check Control.block_simpl

@@ -539,9 +539,11 @@ let rec translate_expr ctx queue e =
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Bxor, cx, cy), or_p px py, queue)
       | Ult, [x; y] ->
-(*XXX*)
-Format.eprintf "Primitive [ULT] not implemented!!!@.";
-         (J.EQuote "ult", const_p, queue)
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          (bool (J.EBin (J.Or, J.EBin (J.Lt, cx, int 0),
+                         J.EBin (J.Lt, cy, cx))),
+           or_p px py, queue)
       | (Vectlength | Array_get | Not | Neg | IsInt | Add | Sub |
          Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr | Eq |
          Neq | Lt | Le | Ult | Offset _), _ ->
