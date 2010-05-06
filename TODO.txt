@@ -2,8 +2,6 @@ Priorities
 ==========
 - integer arithmetic
 
-- method calls
-
 - check Control.block_simpl
 
 - Can we avoid spurious conversions from boolean to integers???

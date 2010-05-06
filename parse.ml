@@ -1289,17 +1289,39 @@ if debug then Format.printf "switch ...@.";
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Ult, [z; y])) :: instrs)
-(* GETPUBMET GETDYNMET GETMETHOD *)
   | GETPUBMET ->
-(*XXXXXXXXXXXXXXXXXXXXXXXXXXXX*)
-prerr_endline "XXX";
+(*FIX: should cache*)
+      let n = getu code (pc + 1) in
+      let obj = State.accu state in
       let state = State.push state in
-      compile code limit (pc + 3) state instrs
+      let (tag, state) = State.fresh_var state in
+      let (m, state) = State.fresh_var state in
+if debug then Format.printf "%a = %d@." Var.print tag n;
+if debug then Format.printf "%a = caml_get_public_method(%a, %a)@."
+        Var.print m Var.print obj Var.print tag;
+      compile code limit (pc + 3) state
+        (Let (m, Prim (C_call "caml_get_public_method", [obj; tag])) ::
+         Let (tag, Const n) :: instrs)
+  | GETDYNMET ->
+      let tag = State.accu state in
+      let obj = State.peek 0 state in
+      let (m, state) = State.fresh_var state in
+if debug then Format.printf "%a = caml_get_public_method(%a, %a)@."
+        Var.print m Var.print obj Var.print tag;
+      compile code limit (pc + 1) state
+        (Let (m, Prim (C_call "caml_get_public_method", [obj; tag])) :: instrs)
+  | GETMETHOD ->
+      let lab = State.accu state in
+      let obj = State.peek 0 state in
+      let (meths, state) = State.fresh_var state in
+      let (m, state) = State.fresh_var state in
+if debug then Format.printf "%a = lookup(%a, %a)@."
+  Var.print m Var.print obj Var.print lab;
+      compile code limit (pc + 1) state
+        (Let (m, Prim (Array_get, [meths; lab])) ::
+         Let (meths, Field (obj, 0)) :: instrs)
   | STOP ->
       (instrs, Stop, state)
-  | _ ->
-prerr_endline "XXX";
-      compile code limit (pc + 1) state instrs
   end
 
 (****)

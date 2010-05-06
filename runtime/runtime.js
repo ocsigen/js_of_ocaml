@@ -25,8 +25,15 @@ var caml_array_get_addr = caml_array_get;
 
 function caml_make_vect (len, init) {
   var b = new Array();
-  b[0]= 0;
-  for (i = 1; i <= len; i++) b[i]=init;
+  b[0] = 0;
+  for (i = 1; i <= len; i++) b[i] = init;
+  return b;
+}
+
+function caml_obj_block (tag, size) {
+  var b = new Array();
+  b[0] = tag;
+  for (i = 1; i <= size; i++) b[i] = 0;
   return b;
 }
 
@@ -62,6 +69,12 @@ function caml_int_of_string(x) { return x|0; };
 
 // FIX: implement?
 function caml_register_named_value(dz,dx) { return 0;}
+
+// FIX: dummy function
+function caml_ml_open_descriptor_in (c) { return 0; }
+function caml_ml_open_descriptor_out (c) { return 0; }
+function caml_ml_out_channels_list (c) { return 0; }
+function caml_ml_flush (c) { return 0; }
 
 ///////////// String
 function caml_create_string(len) { return new MlString(len); }
@@ -101,3 +114,16 @@ function caml_sys_time (unit) {
   return ((new Date ()).getTime () * 0.001 - caml_initial_time);
 }
 function caml_sys_get_config (e) { return [0, "Unix", 32]; }
+
+///////////// CamlinternalOO
+function caml_get_public_method (obj, tag) {
+  var meths = obj[1];
+  var li = 3, hi = meths[1] * 2 + 1, mi;
+  while (li < hi) {
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < meths[mi+1]) hi = mi-2;
+    else li = mi;
+  }
+  /* return 0 if tag is not there */
+  return (tag == meths[li+1] ? meths[li] : 0);
+}
