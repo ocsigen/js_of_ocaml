@@ -1,14 +1,9 @@
 Priorities
 ==========
-- fix small bugs
-  ==> integer arithmetic
 - function representation/call (see runtime/runtime.js)
+- integer arithmetic
 
-- using continuation with multiples arguments
-  ==> graph coloring + variable coalescing
-  ==> we should check stack compatibility when parsing:
-      when jumping somewhere, the stack should keep the same shape
-- remove "Variable x" instruction
+- method calls
 
 - options on command line
   ==> compact mode
@@ -16,6 +11,12 @@ Priorities
 
 - inlining
 - constant hoisting (including functions, out of loops and functions)
+
+- using continuation with multiples arguments
+  ==> graph coloring + variable coalescing
+  ==> we should check stack compatibility when parsing:
+      when jumping somewhere, the stack should keep the same shape
+- remove "Variable x" instruction
 
 ===========
 
@@ -32,18 +33,15 @@ Special case for shortcut boolean operations...
 
 BUGS
 ====
-- compile ISINT to "not a block" and document this deviation
-  (or document that we should not rely on the Obj module)
-
 - do arithmetic modulo for integers
+
+- ISINT is compiled to "not a block"; document this deviation
+  (or document that we should not rely on the Obj module)
 
 - generate caml_call_N functions... (with short names when possible...)
 
 - store meta-information in functions themselves, rather than using a
   block  ===> f.length
-
-- define an alias for MlString function? (on the other hand, gzip
-  should be quite effective...)
 
 - fix definitions of max_int and min_int in pervasive...
   (not sure how...)

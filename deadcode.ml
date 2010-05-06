@@ -11,6 +11,7 @@ type t =
 
 (****)
 
+(*XXX Should be extensible... *)
 let pure_prims = ["caml_int64_float_of_bits"; "caml_sys_get_argv"]
 
 (****)
@@ -187,8 +188,9 @@ let rec add_arg_dep deps params args =
       ()
 
 let add_cont_dep blocks deps (pc, args) =
-  let block = AddrMap.find pc blocks in
-  add_arg_dep deps block.params args
+  match try Some (AddrMap.find pc blocks) with Not_found -> None with
+    Some block -> add_arg_dep deps block.params args
+  | None       -> () (* Dead continuation *)
 
 let f (pc, blocks, free_pc) =
   let nv = Var.count () in

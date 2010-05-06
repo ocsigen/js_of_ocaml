@@ -103,7 +103,7 @@ let rec block_simpl pc (preds, blocks) =
              AddrMap.add pc
                (concat_blocks pc block.body block.params block.handler args
                   block'.params block'.body block'.branch)
-               blocks)
+               (AddrMap.remove pc' blocks))
           end else if is_trivial block'.body block'.branch then begin
             (AddrMap.add pc' (AddrSet.remove pc (AddrMap.find pc' preds))
                preds,
