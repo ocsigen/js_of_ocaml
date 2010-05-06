@@ -130,7 +130,11 @@ let propagate1 deps defs st x =
                      let t = a.(n) in
 (*Format.eprintf "%a --> %a@." Var.print t Var.print x;*)
                      add_dep deps x t;
-                     VarSet.union (VarMap.find t st) s
+                     let s' = VarMap.find t st in
+                     if VarSet.is_empty s' then
+                       VarSet.add t s'
+                     else
+                       VarSet.union s' s
                    end
                | Expr _ ->
                    s)
