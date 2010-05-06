@@ -12,7 +12,8 @@ type t =
 (****)
 
 (*XXX Should be extensible... *)
-let pure_prims = ["caml_int64_float_of_bits"; "caml_sys_get_argv"]
+let pure_prims =
+  ["caml_int64_float_of_bits"; "caml_sys_get_argv"; "caml_sys_get_config"]
 
 (****)
 

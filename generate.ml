@@ -13,7 +13,7 @@ Patterns:
 - CLEAN UP!!!
 *)
 
-let compact = false
+let compact = true
 let debug = false
 
 (****)
