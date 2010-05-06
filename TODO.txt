@@ -3,7 +3,10 @@ Priorities
 - function representation/call (see runtime/runtime.js)
 - integer arithmetic
 
+- primitive [ULT] not implemented
 - method calls
+
+- print missing primitives
 
 - options on command line
   ==> compact mode

@@ -25,6 +25,8 @@ Patterns:
 
 let compact = true
 
+let debug = false
+
 (****)
 
 open Code
@@ -499,9 +501,7 @@ Format.eprintf "Primitive [ULT] not implemented!!!@.";
           assert false
       end
   | Variable x ->
-      let ((px, cx), queue) = access_queue queue x in
-(*XXXX??? mutable? *)
-      (cx, or_p mutator_p px, queue)
+      assert false
 
 and translate_instr ctx expr_queue instr =
   match instr with
@@ -552,8 +552,10 @@ else begin
     end;
     st.visited_blocks <- AddrSet.add pc st.visited_blocks
   end;
-  if AddrSet.mem pc st.loops then Format.eprintf "@[<2>while (1) {@,";
-  Format.eprintf "block %d;" pc;
+  if debug then begin
+    if AddrSet.mem pc st.loops then Format.eprintf "@[<2>while (1) {@,";
+    Format.eprintf "block %d;" pc
+  end;
   let succs = Hashtbl.find st.succs pc in
   let backs = Hashtbl.find st.backs pc in
   let grey =
@@ -578,19 +580,19 @@ else begin
         in
         if limit_body then incr_preds st pc3;
         assert (AddrSet.cardinal inner_frontier <= 1);
-        Format.eprintf "@[<2>try {@,";
+        if debug then Format.eprintf "@[<2>try {@,";
         let body =
           compile_branch st [] (pc1, args1)
             None AddrSet.empty inner_frontier interm
         in
-        Format.eprintf "} catch {@,";
+        if debug then Format.eprintf "} catch {@,";
         let handler = compile_block st [] pc2 inner_frontier interm in
         let x =
           let block2 = AddrMap.find pc2 st.blocks in
           let m = Subst.build_mapping args2 block2.params in
           try VarMap.find x m with Not_found -> x
         in
-        Format.eprintf "}@]";
+        if debug then Format.eprintf "}@]";
         if limit_body then decr_preds st pc3;
         flush_all queue
           (J.Try_statement (Js_simpl.statement_list body,
@@ -607,7 +609,7 @@ else begin
           if AddrSet.cardinal new_frontier > 1 then begin
             let x = Code.Var.fresh () in
             let a = Array.of_list (AddrSet.elements new_frontier) in
-            Format.eprintf "@ var %a;" Code.Var.print x;
+            if debug then Format.eprintf "@ var %a;" Code.Var.print x;
             let idx = st.interm_idx in
             st.interm_idx <- idx - 1;
             let cases = Array.map (fun pc -> (pc, [])) a in
@@ -650,10 +652,10 @@ else begin
        (None, None, None,
         Js_simpl.block
           (if AddrSet.cardinal new_frontier > 0 then begin
-             Format.eprintf "@ break; }@]";
+             if debug then Format.eprintf "@ break; }@]";
              body @ [J.Break_statement None]
            end else begin
-             Format.eprintf "}@]";
+             if debug then Format.eprintf "}@]";
              body
            end))]
   end else
@@ -663,7 +665,7 @@ end
 and compile_conditional st queue pc last handler backs frontier interm =
   let succs = Hashtbl.find st.succs pc in
   List.iter (fun pc -> if AddrMap.mem pc interm then decr_preds st pc) succs;
-  Format.eprintf "@[<2>switch{";
+  if debug then Format.eprintf "@[<2>switch{";
   let res =
   match last with
     Return x ->
@@ -769,7 +771,7 @@ and compile_conditional st queue pc last handler backs frontier interm =
   | Poptrap cont ->
       flush_all queue (compile_branch st [] cont None backs frontier interm)
   in
-  Format.eprintf "}@.";
+  if debug then Format.eprintf "}@.";
   res
 
 and compile_argument_passing ctx queue (pc, args) continuation =
@@ -865,10 +867,10 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
   compile_argument_passing st.ctx queue cont (fun queue ->
   compile_exn_handling st.ctx queue cont handler (fun queue ->
   if AddrSet.mem pc backs then begin
-    Format.eprintf "@ continue;";
+    if debug then Format.eprintf "@ continue;";
     flush_all queue [J.Continue_statement None]
   end else if AddrSet.mem pc frontier || AddrMap.mem pc interm then begin
-    Format.eprintf "@ (br %d)" pc;
+    if debug then Format.eprintf "@ (br %d)" pc;
     flush_all queue (compile_branch_selection pc interm)
   end else
     compile_block st queue pc frontier interm))
@@ -876,7 +878,7 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
 and compile_branch_selection pc interm =
   try
     let (pc, (x, i)) = AddrMap.find pc interm in
-    Format.eprintf "@ %a=%d;" Code.Var.print x i;
+    if debug then Format.eprintf "@ %a=%d;" Code.Var.print x i;
     J.Variable_statement [Var.to_string x, Some (int i)] ::
     compile_branch_selection pc interm
   with Not_found ->
@@ -892,7 +894,7 @@ and compile_closure ctx (pc, args) =
   build_graph st pc AddrSet.empty;
   let current_blocks = st.visited_blocks in
   st.visited_blocks <- AddrSet.empty;
-  Format.eprintf "@[<2>closure{";
+  if debug then Format.eprintf "@[<2>closure{";
   let res =
     compile_branch st [] (pc, args) None
       AddrSet.empty AddrSet.empty AddrMap.empty
@@ -902,11 +904,13 @@ and compile_closure ctx (pc, args) =
   then begin
     Format.eprintf "Some blocks not compiled!@."; assert false
   end;
-  Format.eprintf "}@]";
+  if debug then Format.eprintf "}@]";
   Js_simpl.source_elements res
 
 let compile_program ctx pc =
-  let res = compile_closure ctx (pc, []) in Format.eprintf "@.@."; res
+  let res = compile_closure ctx (pc, []) in
+  if debug then Format.eprintf "@.@.";
+  res
 
 (**********************)
 
