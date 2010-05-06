@@ -517,8 +517,6 @@ and compile code limit pc state instrs =
       let state = if nvars > 0 then State.push state else state in
       let (vals, state) = State.grab nvars state in
       let (x, state) = State.fresh_var state in
-      let (s, state) = State.fresh_var state in
-      let (y, state) = State.fresh_var state in
       let env =
         Array.of_list (State.Dummy :: List.map (fun x -> State.Var x) vals) in
       if debug then Format.printf "fun %a (" Var.print x;
@@ -544,9 +542,7 @@ and compile code limit pc state instrs =
       compile_block code addr state';
       if debug then Format.printf "}@.";
       compile code limit (pc + 3) state
-        (Let (y, Block (Obj.closure_tag, [|x; s|])) ::
-         Let (s, Const (List.length params)) ::
-         Let (x, Closure (List.rev params, (addr, State.stack_vars state'))) ::
+        (Let (x, Closure (List.rev params, (addr, State.stack_vars state'))) ::
          instrs)
   | CLOSUREREC ->
       let nfuncs = getu code (pc + 1) in
@@ -557,24 +553,22 @@ and compile code limit pc state instrs =
       let vars = ref [] in
       for i = 0 to nfuncs - 1 do
         let (x, st) = State.fresh_var !state in
-        let (s, st) = State.fresh_var st in
-        let (y, st) = State.fresh_var st in
-        vars := (i, (x, s, y)) :: !vars;
+        vars := (i, x) :: !vars;
         state := State.push st
       done;
       let env = ref (List.map (fun x -> State.Var x) vals) in
       List.iter
-        (fun (i, (_, _, y)) ->
-           env := State.Var y :: !env;
+        (fun (i, x) ->
+           env := State.Var x :: !env;
            if i > 0 then env := State.Dummy :: !env)
         !vars;
       let env = Array.of_list !env in
       let state = !state in
       let instrs =
         List.fold_left
-          (fun instr (i, (x, s, y)) ->
+          (fun instr (i, x) ->
              let addr = pc + 3 + gets code (pc + 3 + i) in
-             if debug then Format.printf "fun %a (" Var.print y;
+             if debug then Format.printf "fun %a (" Var.print x;
              let nparams =
                match (get_instr code addr).code with
                  GRAB -> getu code (addr + 1) + 1
@@ -596,8 +590,6 @@ and compile code limit pc state instrs =
              let state' = State.clear_accu state' in
              compile_block code addr state';
              if debug then Format.printf "}@.";
-             Let (y, Block (Obj.closure_tag, [|x; s|])) ::
-             Let (s, Const (List.length params)) ::
              Let (x, Closure (List.rev params,
                               (addr, State.stack_vars state'))) ::
              instr)

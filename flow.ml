@@ -114,7 +114,7 @@ let propagate1 deps defs st x =
   | Expr e ->
       match e with
         Const _ | Constant _  | Apply _ | Direct_apply _ | Prim _ ->
-          VarSet.empty
+          VarSet.singleton x
       | Closure _ | Block _ ->
           VarSet.singleton x
       | Field (y, n) ->
@@ -273,6 +273,7 @@ let the_def_of defs def_approx known_approx x =
 let specialize_call defs def_approx known_approx i =
   match i with
     Let (x, Apply (f, l)) ->
+(*
 (*Format.eprintf "==> %a@." Var.print f;*)
       begin match the_def_of defs def_approx known_approx f with
         Some (Block (_, a)) when Array.length a > 0 ->
@@ -288,15 +289,14 @@ let specialize_call defs def_approx known_approx i =
       | _ ->
           i
       end
-(*
+      *)
       begin match the_def_of defs def_approx known_approx f with
         Some (Closure (l', _)) when List.length l = List.length l' ->
-Format.eprintf "OK@.";
+(*Format.eprintf "OK@.";*)
           Let (x, Direct_apply (f, l))
       | _ ->
           i
       end
-*)
   | _ ->
       i
 
@@ -334,7 +334,8 @@ let f ((pc, blocks, free_pc) as p) =
   let def_approx = solver1 !vars deps defs in
   let approx = program_approx defs def_approx p in
   let known_approx = solver2 !vars deps defs def_approx approx in
-(*
+
+if debug then begin
   VarMap.iter
     (fun x s ->
        if not (VarSet.is_empty s) (*&& VarSet.choose s <> x*) then begin
@@ -346,7 +347,7 @@ Var.print x Code.print_var_list (VarSet.elements s)
  | Any -> "any")
        end)
     def_approx;
-*)
+end;
 
   let p = specialize_calls defs def_approx known_approx p in
   let s = build_subst def_approx known_approx in
