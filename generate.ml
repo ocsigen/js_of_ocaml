@@ -14,7 +14,7 @@ Patterns:
 *)
 
 let compact = true
-let debug = false
+let debug = true
 
 (****)
 
@@ -601,6 +601,11 @@ and compile_block st queue pc frontier interm =
 if queue <> [] && AddrSet.mem pc st.loops then
   flush_all queue (compile_block st [] pc frontier interm)
 else begin
+(*
+Format.eprintf "(frontier: ";
+AddrSet.iter (fun pc -> Format.eprintf "%d " pc) frontier;
+Format.eprintf ")@.";
+*)
   if pc >= 0 then begin
     if AddrSet.mem pc st.visited_blocks then begin
       Format.eprintf "!!!! %d@." pc; assert false
@@ -636,6 +641,9 @@ else begin
         if limit_body then incr_preds st pc3;
         assert (AddrSet.cardinal inner_frontier <= 1);
         if debug then Format.eprintf "@[<2>try {@,";
+(*
+Format.eprintf "===== %d ===== (%b)@." pc3 limit_body;
+*)
         let body =
           compile_branch st [] (pc1, args1)
             None AddrSet.empty inner_frontier interm
@@ -656,10 +664,18 @@ else begin
                             None) ::
            if AddrSet.is_empty inner_frontier then [] else begin
              let pc = AddrSet.choose inner_frontier in
+(*
+Format.eprintf ">>Frontier: ";
+AddrSet.iter (fun pc -> Format.eprintf "%d " pc) frontier;
+Format.eprintf "@.";
+*)
              if AddrSet.mem pc frontier then [] else
                compile_block st [] pc frontier interm
            end)
     | _ ->
+(*
+Format.eprintf "[[@.";
+*)
         let (new_frontier, new_interm) =
           if AddrSet.cardinal new_frontier > 1 then begin
             let x = Code.Var.fresh () in
@@ -695,12 +711,20 @@ else begin
           compile_conditional
             st queue pc block.branch block.handler
             backs new_frontier new_interm in
+(*
+let res =
+*)
         cond @
         if AddrSet.cardinal new_frontier = 0 then [] else begin
           let pc = AddrSet.choose new_frontier in
           if AddrSet.mem pc frontier then [] else
           compile_block st [] pc frontier interm
         end
+(*
+in
+Format.eprintf "]]@.";
+res
+*)
   in
   if AddrSet.mem pc st.loops then begin
     [J.For_statement

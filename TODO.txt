@@ -1,14 +1,15 @@
 Priorities
 ==========
-- Can we avoid spurious conversions from boolean to integers???
-  ===> explicit conversion to boolean; specialized "if" that operates
-       on booleans directly
-
-- print missing primitives
-
 - options on command line
   ==> compact mode
   ==> debugging options
+
+- bug when compiling ocaml
+
+
+- Can we avoid spurious conversions from boolean to integers???
+  ===> explicit conversion to boolean; specialized "if" that operates
+       on booleans directly
 
 - inlining (especially of functions that are used only once!)
 - constant hoisting (including functions, out of loops and functions)
@@ -86,6 +87,7 @@ NEW FEATURES
 ============
 
 - Map Caml objects to Javascript objects
+  ==> remap CamlinternalOO module
 
 - dynamic linking? (code generation from cmo files)
 
@@ -95,12 +97,9 @@ NEW FEATURES
 DATA REPRESENTATION
 ===================
 - should wrap Ocaml exceptions (more robust code)...
-- should perform array bound-checks
 
 DATA ANALYSIS
 =============
-- correct analysis (side-effects...)
-- faster algorithm
 - interprocedural analysis
 
 COMPRESSION OPTIMIZATION
