@@ -15,7 +15,12 @@ function MlString(param) {
     this.contents = s;
 }
 
-MlString.prototype.charAt = function (i) {
+MlString.prototype.safeGet = function (i) {
+    if ((i < 0) || (i >= this.length)) caml_array_bound_error ();
+    return this.contents.charCodeAt(i);
+}
+
+MlString.prototype.get = function (i) {
     return this.contents.charCodeAt(i);
 }
 
@@ -29,7 +34,13 @@ MlString.prototype.compare = function (s) {
     else return 0;
 }
 
-MlString.prototype.setCharAt = function (i, c) {
+MlString.prototype.set = function (i, c) {
+    var s = String.fromCharCode (c & 0xff);
+    this.replace(i, s, 0, 1);
+}
+
+MlString.prototype.safeSet = function (i, c) {
+    if ((i < 0) || (i >= this.length)) caml_array_bound_error ();
     var s = String.fromCharCode (c & 0xff);
     this.replace(i, s, 0, 1);
 }

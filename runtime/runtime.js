@@ -1,24 +1,44 @@
-///////////// Pervasive
+///////////// Core
 function caml_call_gen(f, args) {
   var n = f.length;
   var d = n - args.length;
   if (d == 0)
-      return f.apply(this, args);
+    return f.apply(this, args);
   else if (d < 0)
     return caml_call_gen(f.apply(this, args.slice(0,n)), args.slice(n));
   else
     return function (x){ return caml_call_gen(f, args.concat([x])); };
 }
 
+var caml_global_data = [];
+
+function caml_register_global (n, v) { caml_global_data[n] = v; }
+
+function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
+
+function caml_raise_with_string (tag, msg) {
+  caml_raise_with_arg (tag, new MlString (msg));
+}
+
+function caml_invalid_argument (msg) {
+  caml_raise_with_string(caml_global_data[3], msg);
+}
+
+function caml_array_bound_error () {
+  caml_invalid_argument("index out of bounds");
+}
+
+///////////// Pervasive
 function caml_make_array (a) { return a.slice(); }
 
 function caml_array_set (array, index, newval) {
-  // FIX: array bound check
+  if ((index < 0) || (index >= array.length)) caml_array_bound_error();
   array[index+1]=newval; return 0;
 }
 function caml_array_get (array, index) {
-  // FIX: array bound check
-  return array[index+1];
+  res = array[index+1];
+  if (res == undefined) caml_array_bound_error();
+  return res;
 }
 var caml_array_set_addr = caml_array_set;
 var caml_array_get_addr = caml_array_get;
@@ -82,7 +102,6 @@ function caml_blit_string(s1, i1, s2, i2, len) {
   s2.replace (i2, s1.contents, i1, len); return 0;
 }
 function caml_fill_string(s, i, l, c) { s.fill (i, l, c); return 0; }
-function caml_string_set(s, i, v) { s.setCharAt(i, v); return 0; }
 function caml_string_notequal(s1, s2) { return s1.notEqual(s2)+0; }
 function caml_is_printable(c) { return (c > 31 && c < 127)+0; }
 

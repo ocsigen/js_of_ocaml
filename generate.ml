@@ -437,8 +437,14 @@ let rec translate_expr ctx queue e =
       | C_call "caml_string_get", [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
-          (J.ECall (J.EDot (cx, "charAt"), [cy]),
+          (J.ECall (J.EDot (cx, "safeGet"), [cy]),
            or_p (or_p px py) mutable_p, queue)
+      | C_call "caml_string_set", [x; y;z] ->
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          let ((pz, cz), queue) = access_queue queue z in
+          (J.ECall (J.EDot (cx, "safeSet"), [cy]),
+           or_p (or_p px (or_p py pz)) mutator_p, queue)
       | C_call "caml_ml_string_length", [x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EDot (cx, "length"), px, queue)

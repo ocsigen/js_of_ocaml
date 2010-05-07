@@ -2,6 +2,10 @@
 open Code
 open Instr
 
+let debug = false
+
+(****)
+
 let blocks = ref AddrSet.empty
 let stops = ref AddrSet.empty
 let entries = ref AddrSet.empty
@@ -267,9 +271,30 @@ let primitive_name state i =
   assert (i >= 0 && i <= Array.length g.primitives);
   g.primitives.(i)
 
-let compiled_block = ref AddrMap.empty
+let access_global g i =
+  match g.vars.(i) with
+    Some x ->
+      x
+  | None ->
+      g.is_const.(i) <- true;
+      let x = Var.fresh () in
+      g.vars.(i) <- Some x;
+      x
 
-let debug = false
+let get_global state i =
+  let g = State.globals state in
+  match g.vars.(i) with
+    Some x ->
+      if debug then Format.printf "(global access %a)@." Var.print x;
+      (x, State.set_accu state x)
+  | None ->
+      g.is_const.(i) <- true;
+      let (x, state) = State.fresh_var state in
+      if debug then Format.printf "%a = CONST(%d)@." Var.print x i;
+      g.vars.(i) <- Some x;
+      (x, state)
+
+let compiled_block = ref AddrMap.empty
 
 let rec compile_block code pc state =
   if not (AddrMap.mem pc !compiled_block) then begin
@@ -603,52 +628,16 @@ and compile code limit pc state instrs =
       compile code limit (pc + 2) (State.env_acc n state) instrs
   | GETGLOBAL ->
       let i = getu code (pc + 1) in
-      let state =
-        let g = State.globals state in
-        match g.vars.(i) with
-          Some x ->
-            if debug then Format.printf "(global access %a)@." Var.print x;
-            State.set_accu state x
-        | None ->
-            g.is_const.(i) <- true;
-            let (x, state) = State.fresh_var state in
-            if debug then Format.printf "%a = CONST(%d)@." Var.print x i;
-            g.vars.(i) <- Some x;
-            state
-      in
+      let (_, state) = get_global state i in
       compile code limit (pc + 2) state instrs
   | PUSHGETGLOBAL ->
       let state = State.push state in
       let i = getu code (pc + 1) in
-      let state =
-        let g = State.globals state in
-        match g.vars.(i) with
-          Some x ->
-            if debug then Format.printf "(global access %a)@." Var.print x;
-            State.set_accu state x
-        | None ->
-            g.is_const.(i) <- true;
-            let (x, state) = State.fresh_var state in
-            if debug then Format.printf "%a = CONST(%d)@." Var.print x i;
-            g.vars.(i) <- Some x;
-            state
-      in
+      let (_, state) = get_global state i in
       compile code limit (pc + 2) state instrs
   | GETGLOBALFIELD ->
       let i = getu code (pc + 1) in
-      let (x, state) =
-        let g = State.globals state in
-        match g.vars.(i) with
-          Some x ->
-            if debug then Format.printf "(global access %a)@." Var.print x;
-            (x, State.set_accu state x)
-        | None ->
-            g.is_const.(i) <- true;
-            let (x, state) = State.fresh_var state in
-            if debug then Format.printf "%a = CONST(%d)@." Var.print x i;
-            g.vars.(i) <- Some x;
-            (x, state)
-      in
+      let (x, state) = get_global state i in
       let j = getu code (pc + 2) in
       let (y, state) = State.fresh_var state in
       if debug then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
@@ -656,19 +645,7 @@ and compile code limit pc state instrs =
   | PUSHGETGLOBALFIELD ->
       let state = State.push state in
       let i = getu code (pc + 1) in
-      let (x, state) =
-        let g = State.globals state in
-        match g.vars.(i) with
-          Some x ->
-            if debug then Format.printf "(global access %a)@." Var.print x;
-            (x, State.set_accu state x)
-        | None ->
-            g.is_const.(i) <- true;
-            let (x, state) = State.fresh_var state in
-            if debug then Format.printf "%a = CONST(%d)@." Var.print x i;
-            g.vars.(i) <- Some x;
-            (x, state)
-      in
+      let (x, state) = get_global state i in
       let j = getu code (pc + 2) in
       let (y, state) = State.fresh_var state in
       if debug then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
@@ -1414,6 +1391,16 @@ ignore cont;
 
   let g = State.globals state in
   let l = ref [] in
+
+  let register_global n =
+    l :=
+      let x = Var.fresh () in
+      Let (x, Const n) ::
+      Let (Var.fresh (),
+           Prim (C_call "caml_register_global", [x ; access_global g n])) ::
+      !l
+  in
+  register_global 3;
   for i = Array.length g.constants - 1  downto 0 do
     match g.vars.(i) with
       Some x when g.is_const.(i) ->
