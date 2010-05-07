@@ -47,9 +47,9 @@ MlString.prototype.safeSet = function (i, c) {
 
 MlString.prototype.replace = function (i, s, j, l) {
     this.contents =
-    String.concat (this.contents.substring (0, i),
-                   s.substring (j, j + l),
-                   this.contents.substring (i + l, this.length));
+      this.contents.substring (0, i) +
+      s.substring (j, j + l) +
+      this.contents.substring (i + l, this.length);
 }
 
 MlString.prototype.fill = function (i, len, c) {

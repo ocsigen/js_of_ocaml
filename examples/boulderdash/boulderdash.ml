@@ -260,7 +260,7 @@ let _ =
 	 let gx = ref 0 and gy = ref 0 and ex = ref 0 and ey = ref 0 and rem = ref 0 in
 	 let table =
 	   Html.map_table
-	     ~style:"border-collapse:collapse;line-height: 0; opacity: 1." ~attrs:["align", "center"]
+	     ~style:"border-collapse:collapse;line-height: 0; opacity: 1" ~attrs:["align", "center"]
 	     ~td_style:"padding: 0; width: 20px; height: 20px;"
 	     (fun y x cell ->
 		(match map.(y).(x) with

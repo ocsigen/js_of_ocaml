@@ -4,7 +4,7 @@ Priorities
   ==> compact mode
   ==> debugging options
 
-- bug when compiling ocaml
+- bug when compiling ocamlc
 
 
 - Can we avoid spurious conversions from boolean to integers???
