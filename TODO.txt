@@ -34,8 +34,6 @@ Special case for shortcut boolean operations...
 
 BUGS
 ====
-- do arithmetic modulo for integers
-
 - ISINT is compiled to "not a block"; document this deviation
   (or document that we should not rely on the Obj module)
 

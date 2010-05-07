@@ -122,9 +122,7 @@ let propagate1 deps defs st x =
           VarSet.fold
             (fun z s ->
                match defs.(Var.idx z) with
-                 Phi _ | Param ->
-                   assert false
-               | Expr (Block (_, a)) ->
+                 Expr (Block (_, a)) ->
 (*Format.eprintf "%d/%d@." n (Array.length a);*)
                    if n >= Array.length a then s else begin
                      let t = a.(n) in
@@ -136,7 +134,7 @@ let propagate1 deps defs st x =
                      else
                        VarSet.union s' s
                    end
-               | Expr _ ->
+               | Phi _ | Param | Expr _ ->
                    s)
             s VarSet.empty
       | Variable _ ->
@@ -233,16 +231,11 @@ let propagate2 defs def_approx approx st x =
             let s = VarMap.find y def_approx in
             VarSet.fold
               (fun z u ->
-                 match defs.(Var.idx x) with
-                   Phi _ | Param ->
-                     assert false
-                 | Expr (Block (_, a)) ->
-                     if Array.length a >= n then Any else begin
-                       let t = a.(n) in
-                       a_max (VarMap.find t st) u
-                   end
-               | Expr _ ->
-                   u)
+                 match defs.(Var.idx z) with
+                   Expr (Block (_, a)) ->
+                     if n >= Array.length a then Any else u
+                 | Phi _ | Param | Expr _ ->
+                     Any)
               s Known
           end
       | Variable _ ->
