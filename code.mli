@@ -33,7 +33,7 @@ type prim =
   | Not | Neg | IsInt
   | Add | Sub | Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr
   | Eq | Neq | Lt | Le | Ult
-  | Offset of int
+  | WrapInt
 
 type expr =
     Const of int

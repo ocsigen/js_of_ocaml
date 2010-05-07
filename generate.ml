@@ -356,6 +356,8 @@ let generate_apply_funs cont =
 (* FIX: should be extensible... *)
 let prim_kinds = ["caml_int64_float_of_bits", const_p]
 
+let to_int cx = J.EBin(J.Bor, cx, J.ENum 0.) (* 32 bit ints *)
+
 let rec translate_expr ctx queue e =
   match e with
     Const i ->
@@ -478,7 +480,7 @@ let rec translate_expr ctx queue e =
       | Add, [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Plus, cx, cy), or_p px py, queue)
+          (Js_simpl.eplus_int cx cy, or_p px py, queue)
       | Sub, [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
@@ -495,12 +497,6 @@ let rec translate_expr ctx queue e =
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Mod, cx, cy), or_p px py, queue)
-      | Offset n, [x] ->
-          let ((px, cx), queue) = access_queue queue x in
-          if n > 0 then
-            (J.EBin (J.Plus, cx, int n), px, queue)
-          else
-            (J.EBin (J.Minus, cx, int (-n)), px, queue)
       | Lsl, [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
@@ -550,9 +546,12 @@ let rec translate_expr ctx queue e =
           (bool (J.EBin (J.Or, J.EBin (J.Lt, cx, int 0),
                          J.EBin (J.Lt, cy, cx))),
            or_p px py, queue)
+      | WrapInt, [x] ->
+          let ((px, cx), queue) = access_queue queue x in
+          (to_int cx, px, queue)
       | (Vectlength | Array_get | Not | Neg | IsInt | Add | Sub |
          Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr | Eq |
-         Neq | Lt | Le | Ult | Offset _), _ ->
+         Neq | Lt | Le | Ult | WrapInt), _ ->
           assert false
       end
   | Variable x ->
@@ -581,6 +580,7 @@ and translate_instr ctx expr_queue instr =
               [J.Expression_statement
                  (J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy))]
         | Offset_ref (x, n) ->
+(* FIX: may overflow.. *)
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue false
               [J.Expression_statement

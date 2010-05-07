@@ -1,5 +1,12 @@
 module J = Javascript
 
+let eplus_int e1 e2 =
+  match e2 with
+    J.ENum n when n < 0. ->
+      J.EBin (J.Minus, e1, J.ENum (-. n))
+  | _ ->
+      J.EBin (J.Plus, e1, e2)
+
 let rec enot_rec e =
   let (e, cost) as res =
     match e with

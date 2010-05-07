@@ -114,7 +114,7 @@ type prim =
   | Not | Neg | IsInt
   | Add | Sub | Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr
   | Eq | Neq | Lt | Le | Ult
-  | Offset of int
+  | WrapInt
 
 type expr =
     Const of int
@@ -195,7 +195,7 @@ let print_prim f p l =
   | Lt,  [x; y]       -> Format.fprintf f "%a < %a" Var.print x Var.print y
   | Le,  [x; y]       -> Format.fprintf f "%a <= %a" Var.print x Var.print y
   | Ult, [x; y]       -> Format.fprintf f "%a <= %a" Var.print x Var.print y
-  | Offset i, [x]     -> Format.fprintf f "%a + %i" Var.print x i
+  | WrapInt, [x]      -> Format.fprintf f "to_int(%a)" Var.print x
   | _                 -> assert false
 
 let print_expr f e =

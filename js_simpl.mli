@@ -1,6 +1,8 @@
 
 open Javascript
 
+val eplus_int : expression -> expression -> expression
+
 val enot : expression -> expression
 
 val source_elements : statement_list -> source_elements
