@@ -118,9 +118,6 @@ type 'a nullable
   (flatten : 'a nullable nullable -> 'a nullable)
 
 Use 32 bit signed integer (following the spec!)
-===> bitwise operator are ok; the result of arithmeric operations must
-     be truncated back to 32 bits
-     (x|0 !)
 ===> we do not have enough bits for multiplication :-(
 ===> should probably also have 31 bit as an option, for compatibility...
 
@@ -155,6 +152,8 @@ Matthew Might               Yannis Smaragdakis             David Van Horn
 
 Use window.postMessage instead of setTimeout for yield (setTimeout
 always waits a bit!)
+==> but window.postMessage is synchronous in IE8
+    + does not cooperate well with other users of message events
 
 ==================================
 
