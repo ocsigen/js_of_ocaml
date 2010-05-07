@@ -971,9 +971,9 @@ let compile_program ctx pc =
 
 (**********************)
 
-let f ((pc, blocks, _) as p) live_vars =
+let f ch ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let ctx = Ctx.initial blocks live_vars mutated_vars in
   let p = compile_program ctx pc in
   if compact then Format.set_margin 999999998;
-  Format.printf "%a" Js_output.program p
+  Js_output.program ch p

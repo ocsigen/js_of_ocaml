@@ -1,2 +1,2 @@
 
-val f : Code.program -> int array -> unit
+val f : Format.formatter -> Code.program -> int array -> unit

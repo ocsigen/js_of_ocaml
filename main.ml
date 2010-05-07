@@ -32,4 +32,4 @@ Format.eprintf "Dead-code...@.";
 
 if debug then Code.print_program (fun _ _ -> "") p;
 
-  Generate.f p live_vars
+  Format.printf "%a" (fun ch -> Generate.f ch p) live_vars
