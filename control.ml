@@ -83,21 +83,22 @@ let concat_blocks pc instr params handler args params' instr' last' =
       body = instr @ Subst.instrs s instr';
       branch = Subst.last s last' }
 
-let rec block_simpl pc (preds, blocks) =
+let rec block_simpl pc (preds, entries, blocks) =
   let block = AddrMap.find pc blocks in
     match block.branch with
         Return _ | Raise _ | Stop | Poptrap _ ->
-          (preds, blocks)
+          (preds, entries, blocks)
       | Branch (pc', args) ->
           let block' = AddrMap.find pc' blocks in
           if
-(*FIX: is that correct? in particular, function entry points
-  may have only one predecessor... *)
+            not (AddrSet.mem pc' entries)
+              &&
             AddrSet.cardinal (AddrMap.find pc' preds) = 1
               &&
             block'.params = [] && block'.handler = block.handler
           then begin
             (preds,
+             entries,
              AddrMap.add pc
                (concat_blocks pc block.body block.params block.handler args
                   block'.params block'.body block'.branch)
@@ -105,18 +106,19 @@ let rec block_simpl pc (preds, blocks) =
           end else if is_trivial block'.body block'.branch then begin
             (AddrMap.add pc' (AddrSet.remove pc (AddrMap.find pc' preds))
                preds,
+             entries,
              AddrMap.add
                pc (concat_blocks
                      pc block.body block.params block.handler args
                      block'.params block'.body block'.branch)
                blocks)
           end else
-            (preds, blocks)
+            (preds, entries, blocks)
       | Cond (c, x, cont1, cont2) ->
           if cont1 = cont2 then begin
             let blocks =
               AddrMap.add pc {block with branch = Branch cont1 } blocks in
-            block_simpl pc (preds, blocks)
+            block_simpl pc (preds, entries, blocks)
           end else begin
             match resolve_branch blocks cont1 with
               Some cont1' ->
@@ -131,7 +133,7 @@ let rec block_simpl pc (preds, blocks) =
                   AddrMap.add pc
                     { block with branch = Cond (c, x, cont1', cont2) } blocks
                 in
-                block_simpl pc (preds, blocks)
+                block_simpl pc (preds, entries, blocks)
             | None ->
                 match resolve_branch blocks cont2 with
                   Some cont2' ->
@@ -147,9 +149,9 @@ let rec block_simpl pc (preds, blocks) =
                         { block with branch = Cond (c, x, cont1, cont2') }
                         blocks
                     in
-                    block_simpl pc (preds, blocks)
+                    block_simpl pc (preds, entries, blocks)
                 | None ->
-                    (preds, blocks)
+                    (preds, entries, blocks)
           end
       | Switch (x, a1, a2) ->
           let a1 =
@@ -162,92 +164,50 @@ let rec block_simpl pc (preds, blocks) =
               (fun pc ->
                  match resolve_branch blocks pc with Some pc -> pc | None -> pc)
               a2 in
-            (preds,
+            (preds, entries,
              AddrMap.add pc { block with branch = Switch (x, a1, a2) } blocks)
       | Pushtrap _ ->
-          (preds, blocks)
+          (preds, entries, blocks)
 
 let simpl (pc, blocks, free_pc) =
-  (*
-    let redirect blocks orig pc pc' =
-    let (instr, last) = AddrMap.find orig blocks in
-    let last =
-    match last with
-    Return _ | Raise _ | Stop ->
-    assert false
-    | Branch (pc'', x) ->
-    assert (pc'' = pc);
-    Branch (pc', x)
-    | Cond (c, x, pc1, pc2) ->
-    assert (pc1 = pc || pc2 = pc);
-    Cond (c, x,
-    (if pc1 = pc then pc' else pc1),
-    (if pc2 = pc then pc' else pc2))
-    | Switch (x, a1, a2) ->
-    Switch (x,
-    Array.map (fun pc'' -> if pc'' = pc then pc' else pc'') a1,
-    Array.map (fun pc'' -> if pc'' = pc then pc' else pc'') a2)
-    | Pushtrap (pc1, x, pc2) ->
-    assert (pc1 = pc || pc2 = pc);
-    Pushtrap ((if pc1 = pc then pc' else pc1), x,
-    (if pc2 = pc then pc' else pc2))
-    in
-    AddrMap.add orig (instr, last) blocks
-    in
-    let (blocks, free_pc) =
-    AddrMap.fold
-    (fun pc _ (blocks, free_pc) ->
-    let (instr, last) = AddrMap.find pc blocks in
-    match instr with
-    Let (x, Variable y) :: rem ->
-    let s =
-    List.fold_left
-    (fun s (x, _) -> AddrSet.add (Var.idx x) s) AddrSet.empty l in
-    if AddrSet.cardinal s > 1 then begin
-    let blocks = AddrMap.add pc (rem, last) blocks in
-    AddrSet.fold
-    (fun idx (blocks, free_pc) ->
-    let l = List.filter (fun (x, _) -> Var.idx x = idx) l in
-    let blocks =
-    List.fold_left
-    (fun blocks (_, orig) ->
-    redirect blocks orig pc free_pc)
-    blocks l
-    in
-    (AddrMap.add free_pc ([Let (x, Phi l)], Branch pc) blocks,
-    free_pc + 1))
-    s (blocks, free_pc)
-    end else
-    (blocks, free_pc)
-    | _ ->
-    (blocks, free_pc))
-    blocks (blocks, free_pc)
-    in
-  *)
   let preds = AddrMap.map (fun _ -> AddrSet.empty) blocks in
+  let entries = AddrSet.empty in
   let add_pred pc (pc', _) preds =
     AddrMap.add pc' (AddrSet.add pc (AddrMap.find pc' preds)) preds in
-  let preds =
+  let (preds, entries) =
     AddrMap.fold
-      (fun pc block preds ->
-         match block.branch with
-           Return _ | Raise _ | Stop ->
-             preds
-         | Branch cont | Poptrap cont ->
-             add_pred pc cont preds
-         | Cond (_, _, cont1, cont2) ->
-             add_pred pc cont1 (add_pred pc cont2 preds)
-         | Pushtrap (cont, _, _, _) ->
-             add_pred pc cont preds
-         | Switch (_, a1, a2) ->
-             let preds =
-               Array.fold_left
-                 (fun preds cont -> add_pred pc cont preds) preds a1 in
-             let preds =
-               Array.fold_left
-                 (fun preds cont -> add_pred pc cont preds) preds a2 in
-             preds)
-      blocks preds
+      (fun pc block (preds, entries) ->
+         let entries =
+           List.fold_left
+             (fun entries i ->
+                match i with
+                  Let (_, Closure (_, (pc, _))) ->
+                    AddrSet.add pc entries
+                | _ ->
+                    entries)
+             entries block.body
+         in
+         let preds =
+           match block.branch with
+             Return _ | Raise _ | Stop ->
+               preds
+           | Branch cont | Poptrap cont ->
+               add_pred pc cont preds
+           | Cond (_, _, cont1, cont2)
+           | Pushtrap (cont1, _, cont2, _) ->
+               add_pred pc cont1 (add_pred pc cont2 preds)
+           | Switch (_, a1, a2) ->
+               let preds =
+                 Array.fold_left
+                   (fun preds cont -> add_pred pc cont preds) preds a1 in
+               let preds =
+                 Array.fold_left
+                   (fun preds cont -> add_pred pc cont preds) preds a2 in
+               preds
+         in
+         (preds, entries))
+      blocks (preds, entries)
   in
-  let (_, blocks) = traverse blocks pc block_simpl (preds, blocks) in
+  let (_, _, blocks) =
+    traverse blocks pc block_simpl (preds, entries, blocks) in
   (pc, blocks, free_pc)
