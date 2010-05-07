@@ -1,9 +1,5 @@
 Priorities
 ==========
-- options on command line
-  ==> compact mode
-  ==> debugging options
-
 - bug when compiling ocamlc
 
 

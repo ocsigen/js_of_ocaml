@@ -1,5 +1,5 @@
 
-let debug = false
+let debug = Util.debug "dead"
 
 open Code
 
@@ -230,7 +230,7 @@ let f (pc, blocks, free_pc) =
   in
   mark_req st pc;
 
-  if debug then
+  if debug () then
     print_program (fun pc xi -> annot st pc xi) (pc, blocks, free_pc);
 
   let all_blocks = blocks in

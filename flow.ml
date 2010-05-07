@@ -1,5 +1,5 @@
 
-let debug = false
+let debug = Util.debug "flow"
 
 open Code
 
@@ -332,7 +332,7 @@ let f ((pc, blocks, free_pc) as p) =
   let approx = program_approx defs def_approx p in
   let known_approx = solver2 !vars deps defs def_approx approx in
 
-  if debug then begin
+  if debug () then begin
     VarMap.iter
       (fun x s ->
          if not (VarSet.is_empty s) (*&& VarSet.choose s <> x*) then begin
