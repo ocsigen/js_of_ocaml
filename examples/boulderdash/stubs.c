@@ -1,14 +1,17 @@
-void jsoo_extract () { }
-void jsoo_get_event_args () {}
-void jsoo_wrap_event () {}
-void jsoo_call () {}
-void jsoo_get () {}
-void jsoo_set () {}
-void jsoo_inject () {}
-void caml_js_node_children () {}
-void caml_js_node_child () {}
-void caml_js_node_n_children () {}
-void caml_js_http_get_with_status () {}
-void caml_js_params () {}
-void jsoo_eval () {}
-void caml_js_alert () {}
+#include <stdlib.h>
+#define D(f) void f () { exit(1); }
+
+D(jsoo_extract)
+D(jsoo_get_event_args)
+D(jsoo_wrap_event)
+D(jsoo_call)
+D(jsoo_get)
+D(jsoo_set)
+D(jsoo_inject)
+D(caml_js_node_children)
+D(caml_js_node_child)
+D(caml_js_node_n_children)
+D(caml_js_http_get_with_status)
+D(caml_js_params)
+D(jsoo_eval)
+D(caml_js_alert)
