@@ -46,14 +46,14 @@ var caml_array_get_addr = caml_array_get;
 function caml_make_vect (len, init) {
   var b = new Array();
   b[0] = 0;
-  for (i = 1; i <= len; i++) b[i] = init;
+  for (var i = 1; i <= len; i++) b[i] = init;
   return b;
 }
 
 function caml_obj_block (tag, size) {
   var b = new Array();
   b[0] = tag;
-  for (i = 1; i <= size; i++) b[i] = 0;
+  for (var i = 1; i <= size; i++) b[i] = 0;
   return b;
 }
 
@@ -68,7 +68,7 @@ function caml_compare (a, b) {
     if (b instanceof Array) {
       if (a.length != b.length)
         return (a.length - b.length);
-      for (var i = 0;i < a.length;i++) {
+      for (var i = 0; i < a.length; i++) {
         var t = caml_compare (a[i], b[i]);
         if (t != 0) return t;
       }
@@ -118,7 +118,7 @@ function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
   if (obj instanceof MlString) {
     var s = obj.contents;
-    for (var p = 0;p < s.length - 1; p++)
+    for (var p = 0; p < s.length - 1; p++)
       hash_accu = (hash_accu * 19 + s.charCodeAt(p)) & 0x3FFFFFFF;
     return (hash_accu & 0x3FFFFFFF);
   } else {
@@ -146,3 +146,17 @@ function caml_get_public_method (obj, tag) {
   /* return 0 if tag is not there */
   return (tag == meths[li+1] ? meths[li] : 0);
 }
+
+///////////
+function caml_int64_float_of_bits () { return 012345678; }
+function caml_nativeint_sub (x, y) { return x - y; }
+function caml_nativeint_shift_left (x, y) { return x << y; }
+function caml_obj_dup (x) { return x.slice(); }
+function caml_weak_create () { return 45345345; }
+function caml_alloc_dummy () { return []; }
+function caml_update_dummy (x, y) {
+  var l = y.length;
+  for (var i = 0; i < l; i++) x[i] = y[i];
+  return 0;
+}
+function caml_mul_float (x, y) {return x * y; }

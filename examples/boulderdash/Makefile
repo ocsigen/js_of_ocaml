@@ -2,10 +2,22 @@
 boulderdash.js: boulderdash
 	../../compile boulderdash
 
-boulderdash: jSOO.ml js.ml boulderdash.ml stubs.c
-	ocamlfind ocamlc -verbose -package lwt -linkpkg -custom -o boulderdash \
+boulderdash: obrowser.cma boulderdash.ml
+	ocamlfind ocamlc -verbose -package lwt -linkpkg -o boulderdash \
 		-I ../../lib lwt_js.cmo \
-		jSOO.ml js.ml boulderdash.ml stubs.c
+		obrowser.cma boulderdash.ml
+
+obrowser.cma: jSOO.cmo js.cmo stubs.o
+	ocamlmklib -o obrowser jSOO.cmo js.cmo stubs.o
+
+%.cmo: %.ml
+	ocamlc -g -c $<
+
+%.cmi: %.mli
+	ocamlc -g -c $<
+
+%.o: %.c
+	ocamlc -g -c $<
 
 clean:
-	rm -f *.cm[io] *.o boulderdash boulderdash.js
+	rm -f *.cm[aio] *.[oa] *.so boulderdash boulderdash.js
