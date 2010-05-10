@@ -4,6 +4,10 @@ Priorities
 
 - we should use only local variables in order to be more robust...
 
+- there should be a way to pass a list of know primitives (and there
+  properties: pure, ...) to the compiler and get a warning for missing
+  primitives
+
 - rebind module Js with our own module
   ==> include pieces of javascript
   function: Js.const : string -> 'a

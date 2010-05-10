@@ -1,4 +1,6 @@
-all: compile
+NAME=ocaml2js
+
+all: ${NAME}
 
 OBJS=util.cmx dgraph.cmx \
      javascript.cmx js_output.cmx js_simpl.cmx js_rename.cmx \
@@ -9,7 +11,7 @@ OBJS=util.cmx dgraph.cmx \
 compile: $(OBJS:cmx=cmo)
 	ocamlc -g -o $@ $^
 
-compile.opt: $(OBJS)
+${NAME}: $(OBJS)
 	ocamlopt -o $@ $^
 
 %.cmx: %.ml
