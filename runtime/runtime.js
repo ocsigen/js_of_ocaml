@@ -28,6 +28,13 @@ function caml_array_bound_error () {
   caml_invalid_argument("index out of bounds");
 }
 
+function caml_alloc_dummy () { return []; }
+function caml_update_dummy (x, y) {
+  var l = y.length;
+  for (var i = 0; i < l; i++) x[i] = y[i];
+  return 0;
+}
+
 ///////////// Pervasive
 function caml_make_array (a) { return a.slice(); }
 
@@ -91,8 +98,6 @@ function caml_int_of_string(x) { return x|0; };
 function caml_register_named_value(dz,dx) { return 0;}
 
 // FIX: dummy function
-function caml_ml_open_descriptor_in (c) { return 0; }
-function caml_ml_open_descriptor_out (c) { return 0; }
 function caml_ml_out_channels_list (c) { return 0; }
 function caml_ml_flush (c) { return 0; }
 
@@ -111,7 +116,8 @@ function caml_format_float (fmt, x) {
   return new MlString(x.toString(10));
 }
 function caml_format_int(fmt, i) { return new MlString(String(i)); }
-// FIX: caml_int32_format, caml_int64_format, caml_nativeint_format
+// FIX: caml_int32_format, caml_int64_format, caml_nativeint_format,
+// caml_classify_float
 
 ///////////// Hashtbl
 function caml_hash_univ_param (count, limit, obj) {
@@ -146,17 +152,3 @@ function caml_get_public_method (obj, tag) {
   /* return 0 if tag is not there */
   return (tag == meths[li+1] ? meths[li] : 0);
 }
-
-///////////
-function caml_int64_float_of_bits () { return 012345678; }
-function caml_nativeint_sub (x, y) { return x - y; }
-function caml_nativeint_shift_left (x, y) { return x << y; }
-function caml_obj_dup (x) { return x.slice(); }
-function caml_weak_create () { return 45345345; }
-function caml_alloc_dummy () { return []; }
-function caml_update_dummy (x, y) {
-  var l = y.length;
-  for (var i = 0; i < l; i++) x[i] = y[i];
-  return 0;
-}
-function caml_mul_float (x, y) {return x * y; }

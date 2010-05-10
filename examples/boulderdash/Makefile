@@ -3,7 +3,7 @@ boulderdash.js: boulderdash
 	../../compile boulderdash
 
 boulderdash: obrowser.cma boulderdash.ml
-	ocamlfind ocamlc -verbose -package lwt -linkpkg -o boulderdash \
+	ocamlfind ocamlc -package lwt -linkpkg -o boulderdash \
 		-I ../../lib lwt_js.cmo \
 		obrowser.cma boulderdash.ml
 

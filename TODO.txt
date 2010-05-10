@@ -2,6 +2,8 @@ Priorities
 ==========
 - bug when compiling ocamlc
 
+- we should use only local variables in order to be more robust...
+
 - rebind module Js with our own module
   ==> include pieces of javascript
   function: Js.const : string -> 'a

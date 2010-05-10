@@ -460,6 +460,10 @@ let rec translate_expr ctx queue e =
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Minus, cx, cy), or_p px py, queue)
+      | C_call "caml_mul_float", [x; y] ->
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          (J.EBin (J.Mul, cx, cy), or_p px py, queue)
       | C_call name, l ->
           add_primitive name;
           Code.add_reserved_name name;  (*XXX HACK *)
