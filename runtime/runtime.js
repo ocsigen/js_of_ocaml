@@ -115,7 +115,52 @@ function caml_is_printable(c) { return (c > 31 && c < 127)+0; }
 function caml_format_float (fmt, x) {
   return new MlString(x.toString(10));
 }
-function caml_format_int(fmt, i) { return new MlString(String(i)); }
+function caml_format_int(fmtV, i) {
+  var fmt = fmtV.toString();
+  var t = fmt.charCodeAt(fmt.length - 1);
+  var b = 10;
+  switch (t) {
+    case 117:
+      i &= 0x7fffffff; break;
+    case 88: case 120:
+      i &= 0x7fffffff; b = 16; break;
+    case 111:
+      i &= 0x7fffffff; b = 8;
+  }
+  var pad = ' ';
+  var p = 1;
+  loop:
+  for (;p < fmt.length; p++)
+      switch (fmt.charCodeAt(p)) {
+        case 45:
+            //FIX: left align
+          break;
+        case 48:
+          pad = '0';
+          break;
+        case 43:
+          // FIX: '+' character if positive
+          break;
+        case 32:
+          pad = ' ';
+          break;
+        case 35:
+          // FIX: alternate formatting style
+          break;
+        default:
+          break loop;
+      }
+  var l = 0, c;
+  for (;p < fmt.length; p++) {
+    c = fmt.charCodeAt(p) - 48;
+    if ((c < 0) || (c > 9)) break;
+    l = l * 10 + c;
+  }
+  var s = i.toString(b);
+  l -= s.length;
+  if (l > 0) s = new Array(l + 1).join(pad) + s;
+  return new MlString(t==88?s.toUpperCase():s);
+}
 // FIX: caml_int32_format, caml_int64_format, caml_nativeint_format,
 // caml_classify_float
 
