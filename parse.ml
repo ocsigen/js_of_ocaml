@@ -1068,11 +1068,13 @@ and compile code limit pc state instrs =
   | DIVINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
+      let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
       if debug () then
         Format.printf "%a = %a / %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Div, [y; z])) :: instrs)
+        (Let (x, Prim (WrapInt, [x'])) ::
+         Let (x', Prim (Div, [y; z])) :: instrs)
   | MODINT ->
       let y = State.accu state in
       let z = State.peek 0 state in

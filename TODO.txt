@@ -5,7 +5,8 @@ Priorities
 - rebind module Js with our own module
   ==> include pieces of javascript
   function: Js.const : string -> 'a
-
+  ==> use debugger information to print location information in case
+      of error?
 
 - Can we avoid spurious conversions from boolean to integers???
   ===> explicit conversion to boolean; specialized "if" that operates

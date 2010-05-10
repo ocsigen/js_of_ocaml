@@ -447,7 +447,7 @@ let rec translate_expr ctx queue e =
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           let ((pz, cz), queue) = access_queue queue z in
-          (J.ECall (J.EDot (cx, "safeSet"), [cy]),
+          (J.ECall (J.EDot (cx, "safeSet"), [cy; cz]),
            or_p (or_p px (or_p py pz)) mutator_p, queue)
       | C_call "caml_ml_string_length", [x] ->
           let ((px, cx), queue) = access_queue queue x in
@@ -459,7 +459,7 @@ let rec translate_expr ctx queue e =
       | C_call "caml_sub_float", [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
-          (bool (J.EBin (J.Minus, cy, cx)), or_p px py, queue)
+          (J.EBin (J.Minus, cx, cy), or_p px py, queue)
       | C_call name, l ->
           add_primitive name;
           Code.add_reserved_name name;  (*XXX HACK *)
@@ -529,7 +529,7 @@ let rec translate_expr ctx queue e =
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [x] ->
           let ((px, cx), queue) = access_queue queue x in
-          (boolnot (J.EBin(J.InstanceOf, var x, J.EVar ("Array"))), px, queue)
+          (boolnot (J.EBin(J.InstanceOf, cx, J.EVar ("Array"))), px, queue)
       | And, [x; y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
