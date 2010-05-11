@@ -36,7 +36,7 @@ function caml_update_dummy (x, y) {
 }
 
 ///////////// Pervasive
-function caml_make_array (a) { return a.slice(); }
+function caml_make_array (a) { return a; }
 
 function caml_array_set (array, index, newval) {
   if ((index < 0) || (index >= array.length)) caml_array_bound_error();
@@ -199,5 +199,8 @@ function caml_get_public_method (obj, tag) {
 }
 
 ///////////// Jslib
-function caml_string_to_js(s) { return s.toString; }
+function caml_string_to_js(s) { return s.toString(); }
 function caml_string_from_js(s) { return new MlString(s); }
+
+function caml_js_set(o,f,v) { o[f.toString()]=v; return 0; }
+function caml_js_get(o,f) { return o[f.toString()]; }

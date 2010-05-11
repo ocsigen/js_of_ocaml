@@ -110,7 +110,7 @@ type cont = addr * Var.t list
 type prim =
     Vectlength
   | Array_get
-  | C_call of string
+  | Extern of string
   | Not | Neg | IsInt
   | Add | Sub | Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr
   | Eq | Neq | Lt | Le | Ult
@@ -126,6 +126,10 @@ type constant =
   | Tuple of int * constant array
   | Int of int
 
+type prim_arg =
+    Pv of Var.t
+  | Pc of constant
+
 type expr =
     Const of int
   | Apply of Var.t * Var.t list
@@ -134,7 +138,7 @@ type expr =
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant
-  | Prim of prim * Var.t list
+  | Prim of prim * prim_arg list
   | Variable of Var.t
 
 type instr =
@@ -171,42 +175,17 @@ let is_dummy_cont (pc, _) = pc < 0
 
 (****)
 
-let rec print_var_list f l =
+let rec print_list pr f l =
   match l with
     []     -> ()
-  | [x]    -> Var.print f x
-  | x :: r -> Format.fprintf f "%a, %a" Var.print x print_var_list r
+  | [x]    -> pr f x
+  | x :: r -> Format.fprintf f "%a, %a" pr x (print_list pr) r
+
+let print_var_list = print_list Var.print
 
 let print_cont f ((pc, args) as cont) =
   if is_dummy_cont cont then Format.fprintf f "<dummy>" else
   Format.fprintf f "%d (%a)" pc print_var_list args
-
-let print_prim f p l =
-  match p, l with
-    Vectlength, [x]   -> Format.fprintf f "%a.length" Var.print x
-  | Array_get, [x; y] -> Format.fprintf f "%a[%a]" Var.print x Var.print y
-  | C_call s, l       -> Format.fprintf f "\"%s\"(%a)" s print_var_list l
-  | Not, [x]          -> Format.fprintf f "!%a" Var.print x
-  | Neg, [x]          -> Format.fprintf f "-%a" Var.print x
-  | IsInt, [x]        -> Format.fprintf f "is_int(%a)" Var.print x
-  | Add, [x; y]       -> Format.fprintf f "%a + %a" Var.print x Var.print y
-  | Sub, [x; y]       -> Format.fprintf f "%a - %a" Var.print x Var.print y
-  | Mul, [x; y]       -> Format.fprintf f "%a * %a" Var.print x Var.print y
-  | Div, [x; y]       -> Format.fprintf f "%a / %a" Var.print x Var.print y
-  | Mod, [x; y]       -> Format.fprintf f "%a %% %a" Var.print x Var.print y
-  | And, [x; y]       -> Format.fprintf f "%a & %a" Var.print x Var.print y
-  | Or,  [x; y]       -> Format.fprintf f "%a | %a" Var.print x Var.print y
-  | Xor, [x; y]       -> Format.fprintf f "%a ^ %a" Var.print x Var.print y
-  | Lsl, [x; y]       -> Format.fprintf f "%a << %a" Var.print x Var.print y
-  | Lsr, [x; y]       -> Format.fprintf f "%a >>> %a" Var.print x Var.print y
-  | Asr, [x; y]       -> Format.fprintf f "%a >> %a" Var.print x Var.print y
-  | Eq,  [x; y]       -> Format.fprintf f "%a === %a" Var.print x Var.print y
-  | Neq, [x; y]       -> Format.fprintf f "!(%a === %a)" Var.print x Var.print y
-  | Lt,  [x; y]       -> Format.fprintf f "%a < %a" Var.print x Var.print y
-  | Le,  [x; y]       -> Format.fprintf f "%a <= %a" Var.print x Var.print y
-  | Ult, [x; y]       -> Format.fprintf f "%a <= %a" Var.print x Var.print y
-  | WrapInt, [x]      -> Format.fprintf f "to_int(%a)" Var.print x
-  | _                 -> assert false
 
 let rec print_constant f x =
   match x with
@@ -242,6 +221,39 @@ let rec print_constant f x =
       end
    | Int i ->
        Format.fprintf f "%d" i
+
+let print_arg f a =
+  match a with
+    Pv x -> Var.print f x
+  | Pc c -> print_constant f c
+
+let print_prim f p l =
+  match p, l with
+    Vectlength, [x]   -> Format.fprintf f "%a.length" print_arg x
+  | Array_get, [x; y] -> Format.fprintf f "%a[%a]" print_arg x print_arg y
+  | Extern s, l       -> Format.fprintf f "\"%s\"(%a)"
+                           s (print_list print_arg) l
+  | Not, [x]          -> Format.fprintf f "!%a" print_arg x
+  | Neg, [x]          -> Format.fprintf f "-%a" print_arg x
+  | IsInt, [x]        -> Format.fprintf f "is_int(%a)" print_arg x
+  | Add, [x; y]       -> Format.fprintf f "%a + %a" print_arg x print_arg y
+  | Sub, [x; y]       -> Format.fprintf f "%a - %a" print_arg x print_arg y
+  | Mul, [x; y]       -> Format.fprintf f "%a * %a" print_arg x print_arg y
+  | Div, [x; y]       -> Format.fprintf f "%a / %a" print_arg x print_arg y
+  | Mod, [x; y]       -> Format.fprintf f "%a %% %a" print_arg x print_arg y
+  | And, [x; y]       -> Format.fprintf f "%a & %a" print_arg x print_arg y
+  | Or,  [x; y]       -> Format.fprintf f "%a | %a" print_arg x print_arg y
+  | Xor, [x; y]       -> Format.fprintf f "%a ^ %a" print_arg x print_arg y
+  | Lsl, [x; y]       -> Format.fprintf f "%a << %a" print_arg x print_arg y
+  | Lsr, [x; y]       -> Format.fprintf f "%a >>> %a" print_arg x print_arg y
+  | Asr, [x; y]       -> Format.fprintf f "%a >> %a" print_arg x print_arg y
+  | Eq,  [x; y]       -> Format.fprintf f "%a === %a" print_arg x print_arg y
+  | Neq, [x; y]       -> Format.fprintf f "!(%a === %a)" print_arg x print_arg y
+  | Lt,  [x; y]       -> Format.fprintf f "%a < %a" print_arg x print_arg y
+  | Le,  [x; y]       -> Format.fprintf f "%a <= %a" print_arg x print_arg y
+  | Ult, [x; y]       -> Format.fprintf f "%a <= %a" print_arg x print_arg y
+  | WrapInt, [x]      -> Format.fprintf f "to_int(%a)" print_arg x
+  | _                 -> assert false
 
 let print_expr f e =
   match e with

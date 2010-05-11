@@ -1,5 +1,5 @@
 
-OBJS=js.cmo nullable.cmo jsString.cmo lwt_js.cmo
+OBJS=js.cmo nullable.cmo jsString.cmo jsArray.cmo lwt_js.cmo stubs.o dom.cmo
 LIB=ocaml2js
 
 all: $(LIB).cma
@@ -12,6 +12,9 @@ $(LIB).cma: $(OBJS)
 
 %.cmi: %.mli
 	ocamlc -c $<
+
+%.o: %.c
+	ocamlfind ocamlc -package lwt -c $<
 
 depend:
 	find . -maxdepth 1 -name private -prune -o -regex ".*\\.mli?" | \

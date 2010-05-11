@@ -1,5 +1,5 @@
 
-type 'a t
+type +'a t
 
 val null : 'a t
 val some : 'a -> 'a t

@@ -808,7 +808,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = %a.length@."
         Var.print x Var.print y;
       compile code limit (pc + 1) state
-        (Let (x, Prim (Vectlength, [y])) :: instrs)
+        (Let (x, Prim (Vectlength, [Pv y])) :: instrs)
   | GETVECTITEM ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -816,7 +816,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = %a[%a]@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Array_get, [y; z])) :: instrs)
+        (Let (x, Prim (Array_get, [Pv y; Pv z])) :: instrs)
   | SETVECTITEM ->
       if debug () then Format.printf "%a[%a] = %a@." Var.print (State.accu state)
         Var.print (State.peek 0 state)
@@ -836,7 +836,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = %a[%a]@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (C_call "caml_string_get", [y; z])) :: instrs)
+        (Let (x, Prim (Extern "caml_string_get", [Pv y; Pv z])) :: instrs)
   | SETSTRINGCHAR ->
       if debug () then Format.printf "%a[%a] = %a@." Var.print (State.accu state)
         Var.print (State.peek 0 state)
@@ -846,7 +846,8 @@ and compile code limit pc state instrs =
       let z = State.peek 1 state in
       let (t, state) = State.fresh_var state in
       let instrs =
-        Let (t, Prim (C_call "caml_string_set", [x; y; z])) :: instrs in
+        Let (t, Prim (Extern "caml_string_set", [Pv x; Pv y; Pv z])) ::
+        instrs in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) (State.pop 2 state)
@@ -886,7 +887,7 @@ and compile code limit pc state instrs =
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = !%a@." Var.print x Var.print y;
-      compile code limit (pc + 1) state (Let (x, Prim (Not, [y])) :: instrs)
+      compile code limit (pc + 1) state (Let (x, Prim (Not, [Pv y])) :: instrs)
   | PUSHTRAP ->
       let addr = pc + 1 + gets code (pc + 1) in
       let (x, state') = State.fresh_var state in
@@ -909,12 +910,16 @@ and compile code limit pc state instrs =
       compile code limit (pc + 1) state instrs
   | C_CALL1 ->
       let prim = primitive_name state (getu code (pc + 1)) in
-      let y = State.accu state in
-      let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = ccall \"%s\" (%a)@."
-        Var.print x prim Var.print y;
-      compile code limit (pc + 2) state
-        (Let (x, Prim (C_call prim, [y])) :: instrs)
+      if prim = "caml_make_array" then (* This is a no-op *)
+        compile code limit (pc + 2) state instrs
+      else begin
+        let y = State.accu state in
+        let (x, state) = State.fresh_var state in
+        if debug () then Format.printf "%a = ccall \"%s\" (%a)@."
+          Var.print x prim Var.print y;
+        compile code limit (pc + 2) state
+          (Let (x, Prim (Extern prim, [Pv y])) :: instrs)
+      end
   | C_CALL2 ->
       let prim = primitive_name state (getu code (pc + 1)) in
       let y = State.accu state in
@@ -923,7 +928,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = ccall \"%s\" (%a, %a)@."
         Var.print x prim Var.print y Var.print z;
       compile code limit (pc + 2) (State.pop 1 state)
-        (Let (x, Prim (C_call prim, [y; z])) :: instrs)
+        (Let (x, Prim (Extern prim, [Pv y; Pv z])) :: instrs)
   | C_CALL3 ->
       let prim = primitive_name state (getu code (pc + 1)) in
       let y = State.accu state in
@@ -933,7 +938,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = ccall \"%s\" (%a, %a, %a)@."
         Var.print x prim Var.print y Var.print z Var.print t;
       compile code limit (pc + 2) (State.pop 2 state)
-        (Let (x, Prim (C_call prim, [y; z; t])) :: instrs)
+        (Let (x, Prim (Extern prim, [Pv y; Pv z; Pv t])) :: instrs)
   | C_CALL4 ->
       let nargs = 4 in
       let prim = primitive_name state (getu code (pc + 1)) in
@@ -949,7 +954,7 @@ and compile code limit pc state instrs =
         Format.printf ")@."
       end;
       compile code limit (pc + 2) state
-        (Let (x, Prim (C_call prim, args)) :: instrs)
+        (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
   | C_CALL5 ->
       let nargs = 5 in
       let prim = primitive_name state (getu code (pc + 1)) in
@@ -965,7 +970,7 @@ and compile code limit pc state instrs =
         Format.printf ")@."
       end;
       compile code limit (pc + 2) state
-        (Let (x, Prim (C_call prim, args)) :: instrs)
+        (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
   | C_CALLN ->
       let nargs = getu code (pc + 1) in
       let prim = primitive_name state (getu code (pc + 2)) in
@@ -981,7 +986,7 @@ and compile code limit pc state instrs =
         Format.printf ")@."
       end;
       compile code limit (pc + 3) state
-        (Let (x, Prim (C_call prim, args)) :: instrs)
+        (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
   | CONST0 ->
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 0@." Var.print x;
@@ -1035,7 +1040,8 @@ and compile code limit pc state instrs =
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = -%a@." Var.print x Var.print y;
       compile code limit (pc + 1) state
-        (Let (x, Prim (WrapInt, [x'])) :: Let (x', Prim (Neg, [y])) :: instrs)
+        (Let (x, Prim (WrapInt, [Pv x'])) ::
+         Let (x', Prim (Neg, [Pv y])) :: instrs)
   | ADDINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1044,8 +1050,8 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = %a + %a@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (WrapInt, [x'])) ::
-         Let (x', Prim (Add, [y; z])) :: instrs)
+        (Let (x, Prim (WrapInt, [Pv x'])) ::
+         Let (x', Prim (Add, [Pv y; Pv z])) :: instrs)
   | SUBINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1053,8 +1059,8 @@ and compile code limit pc state instrs =
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a - %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (WrapInt, [x'])) ::
-         Let (x', Prim (Sub, [y; z])) :: instrs)
+        (Let (x, Prim (WrapInt, [Pv x'])) ::
+         Let (x', Prim (Sub, [Pv y; Pv z])) :: instrs)
   | MULINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1063,8 +1069,8 @@ and compile code limit pc state instrs =
       if debug () then
         Format.printf "%a = %a * %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (WrapInt, [x'])) ::
-         Let (x', Prim (Mul, [y; z])) :: instrs)
+        (Let (x, Prim (WrapInt, [Pv x'])) ::
+         Let (x', Prim (Mul, [Pv y; Pv z])) :: instrs)
   | DIVINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1073,8 +1079,8 @@ and compile code limit pc state instrs =
       if debug () then
         Format.printf "%a = %a / %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (WrapInt, [x'])) ::
-         Let (x', Prim (Div, [y; z])) :: instrs)
+        (Let (x, Prim (WrapInt, [Pv x'])) ::
+         Let (x', Prim (Div, [Pv y; Pv z])) :: instrs)
   | MODINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1082,7 +1088,7 @@ and compile code limit pc state instrs =
       if debug () then
         Format.printf "%a = %a %% %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Mod, [y; z])) :: instrs)
+        (Let (x, Prim (Mod, [Pv y; Pv z])) :: instrs)
   | ANDINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1090,7 +1096,7 @@ and compile code limit pc state instrs =
       if debug () then
         Format.printf "%a = %a & %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (And, [y; z])) :: instrs)
+        (Let (x, Prim (And, [Pv y; Pv z])) :: instrs)
   | ORINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1098,7 +1104,7 @@ and compile code limit pc state instrs =
       if debug () then
         Format.printf "%a = %a | %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Or, [y; z])) :: instrs)
+        (Let (x, Prim (Or, [Pv y; Pv z])) :: instrs)
   | XORINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1106,7 +1112,7 @@ and compile code limit pc state instrs =
       if debug () then
         Format.printf "%a = %a ^ %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Xor, [y; z])) :: instrs)
+        (Let (x, Prim (Xor, [Pv y; Pv z])) :: instrs)
   | LSLINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1114,7 +1120,7 @@ and compile code limit pc state instrs =
       if debug () then
         Format.printf "%a = %a << %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Lsl, [y; z])) :: instrs)
+        (Let (x, Prim (Lsl, [Pv y; Pv z])) :: instrs)
   | LSRINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1122,7 +1128,7 @@ and compile code limit pc state instrs =
       if debug () then
         Format.printf "%a = %a >>> %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Lsr, [y; z])) :: instrs)
+        (Let (x, Prim (Lsr, [Pv y; Pv z])) :: instrs)
   | ASRINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1130,7 +1136,7 @@ and compile code limit pc state instrs =
       if debug () then
         Format.printf "%a = %a >> %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Asr, [y; z])) :: instrs)
+        (Let (x, Prim (Asr, [Pv y; Pv z])) :: instrs)
   | EQ ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1138,7 +1144,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = mk_bool(%a == %a)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Eq, [y; z])) :: instrs)
+        (Let (x, Prim (Eq, [Pv y; Pv z])) :: instrs)
   | NEQ ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1146,7 +1152,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = mk_bool(%a != %a)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Neq, [y; z])) :: instrs)
+        (Let (x, Prim (Neq, [Pv y; Pv z])) :: instrs)
   | LTINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1154,7 +1160,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = mk_bool(%a < %a)@." Var.print x
         Var.print y Var.print (State.peek 0 state);
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Lt, [y; z])) :: instrs)
+        (Let (x, Prim (Lt, [Pv y; Pv z])) :: instrs)
   | LEINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1162,7 +1168,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = mk_bool(%a <= %a)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Le, [y; z])) :: instrs)
+        (Let (x, Prim (Le, [Pv y; Pv z])) :: instrs)
   | GTINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1170,7 +1176,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = mk_bool(%a > %a)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Lt, [z; y])) :: instrs)
+        (Let (x, Prim (Lt, [Pv z; Pv y])) :: instrs)
   | GEINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1178,7 +1184,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = mk_bool(%a >= %a)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Le, [z; y])) :: instrs)
+        (Let (x, Prim (Le, [Pv z; Pv y])) :: instrs)
   | OFFSETINT ->
       let n = gets code (pc + 1) in
       let y = State.accu state in
@@ -1187,7 +1193,8 @@ and compile code limit pc state instrs =
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a + %d@." Var.print x Var.print y n;
       compile code limit (pc + 2) state
-        (Let (x, Prim (WrapInt, [x'])) :: Let (x', Prim (Add, [y; z])) ::
+        (Let (x, Prim (WrapInt, [Pv x'])) ::
+         Let (x', Prim (Add, [Pv y; Pv z])) ::
          Let (z, Const n) :: instrs)
   | OFFSETREF ->
       let n = gets code (pc + 1) in
@@ -1201,7 +1208,7 @@ and compile code limit pc state instrs =
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = !%a@." Var.print x Var.print y;
-      compile code limit (pc + 1) state (Let (x, Prim (IsInt, [y])) :: instrs)
+      compile code limit (pc + 1) state (Let (x, Prim (IsInt, [Pv y])) :: instrs)
   | BEQ ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
@@ -1265,7 +1272,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = mk_bool(%a <= %a) (unsigned)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Ult, [y; z])) :: instrs)
+        (Let (x, Prim (Ult, [Pv y; Pv z])) :: instrs)
   | UGEINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1273,7 +1280,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = mk_bool(%a >= %a)@."
         Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Ult, [z; y])) :: instrs)
+        (Let (x, Prim (Ult, [Pv z; Pv y])) :: instrs)
   | GETPUBMET ->
 (*FIX: should cache*)
       let n = getu code (pc + 1) in
@@ -1285,7 +1292,7 @@ if debug () then Format.printf "%a = %d@." Var.print tag n;
 if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
         Var.print m Var.print obj Var.print tag;
       compile code limit (pc + 3) state
-        (Let (m, Prim (C_call "caml_get_public_method", [obj; tag])) ::
+        (Let (m, Prim (Extern "caml_get_public_method", [Pv obj; Pv tag])) ::
          Let (tag, Const n) :: instrs)
   | GETDYNMET ->
       let tag = State.accu state in
@@ -1294,7 +1301,8 @@ if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
 if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
         Var.print m Var.print obj Var.print tag;
       compile code limit (pc + 1) state
-        (Let (m, Prim (C_call "caml_get_public_method", [obj; tag])) :: instrs)
+        (Let (m, Prim (Extern "caml_get_public_method", [Pv obj; Pv tag])) ::
+         instrs)
   | GETMETHOD ->
       let lab = State.accu state in
       let obj = State.peek 0 state in
@@ -1303,7 +1311,7 @@ if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
 if debug () then Format.printf "%a = lookup(%a, %a)@."
   Var.print m Var.print obj Var.print lab;
       compile code limit (pc + 1) state
-        (Let (m, Prim (Array_get, [meths; lab])) ::
+        (Let (m, Prim (Array_get, [Pv meths; Pv lab])) ::
          Let (meths, Field (obj, 0)) :: instrs)
   | STOP ->
       (instrs, Stop, state)
@@ -1422,7 +1430,8 @@ ignore cont;
       let x = Var.fresh () in
       Let (x, Const n) ::
       Let (Var.fresh (),
-           Prim (C_call "caml_register_global", [x ; access_global g n])) ::
+           Prim (Extern "caml_register_global",
+                 [Pv x ; Pv (access_global g n)])) ::
       !l
   in
   register_global 3;

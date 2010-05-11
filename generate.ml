@@ -382,6 +382,7 @@ let rec translate_expr ctx queue e =
       let ((px, cx), queue) = access_queue queue x in
       (J.EAccess (cx, int (n + 1)), or_p px mutable_p, queue)
   | Closure (args, ((pc, _) as cont)) ->
+      (*FIX: should flush only the closure free variables...*)
       let vars =
         AddrMap.find pc ctx.Ctx.mutated_vars
         >> VarSet.elements
@@ -402,140 +403,166 @@ let rec translate_expr ctx queue e =
       (constant c, const_p, queue)
   | Prim (p, l) ->
       begin match p, l with
-        Vectlength, [x] ->
+        Vectlength, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EBin (J.Minus, J.EDot (cx, "length"), one), px, queue)
-      | Array_get, [x; y] ->
+      | Array_get, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
-      | C_call "caml_array_unsafe_get", [x; y] ->
+      | Extern "caml_array_unsafe_get", [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
                       or_p (or_p px py) mutable_p, queue)
-      | C_call "caml_array_unsafe_set", [x; y; z] ->
+      | Extern "caml_array_unsafe_set", [Pv x; Pv y; Pv z] ->
             let ((px, cx), queue) = access_queue queue x in
             let ((py, cy), queue) = access_queue queue y in
             let ((pz, cz), queue) = access_queue queue z in
             (J.EBin (J.Eq, J.EAccess (cx, J.EBin (J.Plus, cy, one)),
                      cz),
              or_p mutator_p (or_p px (or_p py pz)), queue)
-      | C_call "caml_string_get", [x; y] ->
+      | Extern "caml_string_get", [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.ECall (J.EDot (cx, "safeGet"), [cy]),
            or_p (or_p px py) mutable_p, queue)
-      | C_call "caml_string_set", [x; y;z] ->
+      | Extern "caml_string_set", [Pv x; Pv y; Pv z] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           let ((pz, cz), queue) = access_queue queue z in
           (J.ECall (J.EDot (cx, "safeSet"), [cy; cz]),
            or_p (or_p px (or_p py pz)) mutator_p, queue)
-      | C_call "caml_ml_string_length", [x] ->
+      | Extern "caml_ml_string_length", [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EDot (cx, "length"), px, queue)
-      | C_call "caml_ge_float", [x; y] ->
+      | Extern "caml_ge_float", [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (bool (J.EBin (J.Le, cy, cx)), or_p px py, queue)
-      | C_call "caml_sub_float", [x; y] ->
+      | Extern "caml_sub_float", [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Minus, cx, cy), or_p px py, queue)
-      | C_call "caml_mul_float", [x; y] ->
+      | Extern "caml_mul_float", [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Mul, cx, cy), or_p px py, queue)
-      | C_call name, l ->
+
+      | Extern "caml_js_var", [Pc (String nm)] ->
+          Code.add_reserved_name nm;  (*XXX HACK *)
+          (J.EVar nm, const_p, queue)
+      | Extern "caml_js_opt_meth_call", Pv o :: Pc (String m) :: l ->
+          let ((po, co), queue) = access_queue queue o in
+          let (args, prop, queue) =
+            List.fold_right
+              (fun x (args, prop, queue) ->
+                 let x = match x with Pv x -> x | _ -> assert false in
+                 let ((prop', cx), queue) = access_queue queue x in
+                 (cx :: args, or_p prop prop', queue))
+              l ([], mutator_p, queue)
+          in
+          (J.ECall (J.EDot (co, m), args), or_p po prop, queue)
+      | Extern "caml_js_get", [Pv o; Pc (String f)] ->
+          let ((po, co), queue) = access_queue queue o in
+          (J.EDot (co, f), or_p po mutator_p, queue)
+      | Extern "caml_js_set", [Pv o; Pc (String f); Pv v] ->
+          let ((po, co), queue) = access_queue queue o in
+          let ((pv, cv), queue) = access_queue queue v in
+          (J.EBin (J.Eq, J.EDot (co, f), cv),
+           or_p (or_p po pv) mutator_p, queue)
+      | Extern name, l ->
           Primitive.mark_used name;
+          Code.add_reserved_name name;  (*XXX HACK *)
+                           (* FIX: this is done at the wrong time... *)
           let prim_kind =
             if Primitive.is_pure name then const_p else mutator_p in
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
+                 let x = match x with Pv x -> x | _ -> assert false in
                  let ((prop', cx), queue) = access_queue queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], prim_kind, queue)
           in
           (J.ECall (J.EVar name, args), prop, queue)
-      | Not, [x] ->
+      | Not, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EBin (J.Minus, one, cx), px, queue)
-      | Neg, [x] ->
+      | Neg, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EUn (J.Neg, cx), px, queue)
-      | Add, [x; y] ->
+      | Add, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (Js_simpl.eplus_int cx cy, or_p px py, queue)
-      | Sub, [x; y] ->
+      | Sub, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Minus, cx, cy), or_p px py, queue)
-      | Mul, [x; y] ->
+      | Mul, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Mul, cx, cy), or_p px py, queue)
-      | Div, [x; y] ->
+      | Div, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Div, cx, cy), or_p px py, queue)
-      | Mod, [x; y] ->
+      | Mod, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Mod, cx, cy), or_p px py, queue)
-      | Lsl, [x; y] ->
+      | Lsl, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Lsl, cx, cy), or_p px py, queue)
-      | Lsr, [x; y] ->
+      | Lsr, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Lsr, cx, cy), or_p px py, queue)
-      | Asr, [x; y] ->
+      | Asr, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Asr, cx, cy), or_p px py, queue)
-      | Lt, [x; y] ->
+      | Lt, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (bool (J.EBin (J.Lt, cx, cy)), or_p px py, queue)
-      | Le, [x; y] ->
+      | Le, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (bool (J.EBin (J.Le, cx, cy)), or_p px py, queue)
-      | Eq, [x; y] ->
+      | Eq, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (bool (J.EBin (J.EqEqEq, cx, cy)), or_p px py, queue)
-      | Neq, [x; y] ->
+      | Neq, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
-      | IsInt, [x] ->
+      | IsInt, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (boolnot (J.EBin(J.InstanceOf, cx, J.EVar ("Array"))), px, queue)
-      | And, [x; y] ->
+      | And, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Band, cx, cy), or_p px py, queue)
-      | Or, [x; y] ->
+      | Or, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Bor, cx, cy), or_p px py, queue)
-      | Xor, [x; y] ->
+      | Xor, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Bxor, cx, cy), or_p px py, queue)
-      | Ult, [x; y] ->
+      | Ult, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (bool (J.EBin (J.Or, J.EBin (J.Lt, cx, int 0),
                          J.EBin (J.Lt, cy, cx))),
            or_p px py, queue)
-      | WrapInt, [x] ->
+      | WrapInt, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (to_int cx, px, queue)
       | (Vectlength | Array_get | Not | Neg | IsInt | Add | Sub |

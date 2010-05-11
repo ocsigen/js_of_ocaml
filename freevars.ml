@@ -30,7 +30,8 @@ print_var_list (VarSet.elements s');
 *)
       VarSet.union s (VarSet.diff s' b)
   | Prim (_, l) ->
-      list_fold add_var b l s
+      list_fold
+        (fun b x s -> match x with Pv x -> add_var b x s | Pc _ -> s) b l s
   | Variable x ->
       add_var b x s
 

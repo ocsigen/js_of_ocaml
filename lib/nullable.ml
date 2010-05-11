@@ -1,9 +1,7 @@
 
 type 'a t = 'a
 
-external get_null : unit -> 'a t = "caml_null_value"
-
-let null = get_null ()
+let null : 'a t = Js.extract Js.null
 
 let some x = x
 

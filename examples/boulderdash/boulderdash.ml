@@ -1,19 +1,28 @@
-open Js
+
+open Dom
 
 let (>>=) = Lwt.bind
 
-let box_style = "border: 1px black solid; background-color: white ;
-                 display: inline ; padding-right: .5em; padding-left: .5em;"
-let loading_style = "background-color: red; color: white; display:inline;
-                     position: absolute; top:0; right:0;"
+let js = JsString.of_string
+
+let box_style =
+  js"border: 1px black solid; background-color: white ; \
+     display: inline ; padding-right: .5em; padding-left: .5em;"
+let loading_style =
+  js"background-color: red; color: white; display:inline; \
+     position: absolute; top:0; right:0;"
+
 let loading parent =
-  let div = Html.div ~style:loading_style [Html.string "LOADING..."] in
+  let div =
+    Html.div ~style:loading_style
+      [Html.string (js"LOADING...")] in
     Node.append parent div ;
     (fun () -> Node.remove parent div)
 
 let clock_div () =
   let t0 = ref (Sys.time ()) in
-  let div = Html.div ~style:box_style [Html.string "--:--:--"] in
+  let div =
+    Html.div ~style:box_style [Html.string (js"--:--:--")] in
   let stopped = ref true in
   let rec update_cb () =
     let dt = Sys.time () -. !t0 in
@@ -21,7 +30,8 @@ let clock_div () =
 	let txt =
 	  Node.text
 	    (let secs = int_of_float dt in
-	       Printf.sprintf "%02d:%02d:%02d" (secs / 3600) ((secs / 60) mod 60) (secs mod 60)
+             js (Printf.sprintf "%02d:%02d:%02d"
+                   (secs / 3600) ((secs / 60) mod 60) (secs mod 60))
 	    ) in
 	  Node.empty div ; Node.append div txt ) ;
       Lwt_js.sleep 1. >>= fun () -> update_cb ()
@@ -41,13 +51,18 @@ and state = {
 }
 exception Death
 
-let img_assoc = 
-  [ (Empty, "sprites/empty.png"); (Bam, "sprites/bam.png"); (Grass, "sprites/grass.png"); (Diamond, "sprites/diamond.png");
-    (Boulder, "sprites/boulder.png"); (End, "sprites/end.png"); (Door, "sprites/door.png"); (Guy, "sprites/guy.png"); (Wall, "sprites/wall.png")]
+let img_assoc =
+  [ (Empty, js"sprites/empty.png"); (Bam, js"sprites/bam.png");
+    (Grass, js"sprites/grass.png"); (Diamond, js"sprites/diamond.png");
+    (Boulder, js"sprites/boulder.png"); (End, js"sprites/end.png");
+    (Door, js"sprites/door.png"); (Guy, js"sprites/guy.png");
+    (Wall, js"sprites/wall.png")]
 
-let set_cell state x y v = 
+let src = js"src"
+
+let set_cell state x y v =
   state.map.(y).(x) <- v ;
-  Node.set_attribute state.imgs.(y).(x) "src" (List.assoc v img_assoc)
+  Node.set_attribute state.imgs.(y).(x) src (List.assoc v img_assoc)
 
 let walkable = function | Empty | Grass | Diamond | End -> true | _-> false
 
@@ -100,14 +115,14 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 	Node.clear_event state.imgs.(y).(x) "onclick"
       done
     done ;
-    let inhibit f () =
-      if not state.events_mutex then begin
-        state.events_mutex <- true;
-        f () >>= fun () ->
-        state.events_mutex <- false;
-        Lwt.return ()
-      end else
-        Lwt.return ()
+    let inhibit f _x =
+      if not state.events_mutex then
+        ignore
+          (state.events_mutex <- true;
+           f () >>= fun () ->
+           state.events_mutex <- false;
+           Lwt.return ());
+      Js._false
     in
     let set_pending_out f out () =
       f () >>= fun () -> state.pending_out_cb := Some out; Lwt.return ()
@@ -120,8 +135,12 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
     let rec update (x, y) next img over_cont out_cont click_cont =
       if walkable state.map.(y).(x) then (
 	let cur_img = Node.get_attribute state.imgs.(y).(x) "src" in
-	let over () = Node.set_attribute state.imgs.(y).(x) "src" img ; over_cont ()
-	and out () = Node.set_attribute state.imgs.(y).(x) "src" cur_img ; out_cont ()
+	let over () =
+          Node.set_attribute state.imgs.(y).(x) src img ;
+          over_cont ()
+	and out () =
+          Node.set_attribute state.imgs.(y).(x) src cur_img ;
+          out_cont ()
 	and click' () =
 	  click_cont () >>= fun () ->
 	  if state.map.(y).(x) = Diamond then state.rem <- state.rem - 1 ;
@@ -147,11 +166,11 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 	    build_interaction state show_rem clock
 	in
 	  Node.register_event state.imgs.(y).(x) "onmouseover"
-	    (inhibit (set_pending_out (with_pending_out over) out)) () ;
+	    (inhibit (set_pending_out (with_pending_out over) out)) ;
 	  Node.register_event state.imgs.(y).(x) "onmouseout"
-	    (inhibit (with_pending_out (fun () -> Lwt.return ()))) () ;
+	    (inhibit (with_pending_out (fun () -> Lwt.return ()))) ;
 	  Node.register_event state.imgs.(y).(x) "onclick"
-	    (inhibit (with_pending_out click)) () ;
+	    (inhibit (with_pending_out click)) ;
 	  if state.map.(y).(x) <> End then
 	    update (next (x,y)) next img over out click'
       )
@@ -163,13 +182,14 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 	      state.map.(y').(x') = Boulder && state.map.(y'').(x'') = Empty
 	    with Invalid_argument "index out of bounds" -> false) then (
 	  let over () =
-	    Node.set_attribute state.imgs.(y).(x) "src" img_guy ;
-	    Node.set_attribute state.imgs.(y').(x') "src" img;
+	    Node.set_attribute state.imgs.(y).(x) src img_guy ;
+	    Node.set_attribute state.imgs.(y').(x') src img;
             Lwt.return ()
 	  in
 	  let out () =
-	    Node.set_attribute state.imgs.(y).(x) "src" "sprites/guy.png" ;
-	    Node.set_attribute state.imgs.(y').(x') "src" "sprites/boulder.png"
+	    Node.set_attribute state.imgs.(y).(x) src (js"sprites/guy.png") ;
+	    Node.set_attribute state.imgs.(y').(x') src
+              (js"sprites/boulder.png")
 	  in
 	  let click () =
 	    set_cell state x y Empty ;
@@ -185,34 +205,40 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 	    build_interaction state show_rem clock
 	  in
 	    Node.register_event state.imgs.(y').(x') "onmouseover"
-	      (inhibit (set_pending_out (with_pending_out over) out)) () ;
+	      (inhibit (set_pending_out (with_pending_out over) out)) ;
 	    Node.register_event state.imgs.(y').(x') "onmouseout"
-	      (inhibit (with_pending_out (fun () -> Lwt.return ()))) () ;
+	      (inhibit (with_pending_out (fun () -> Lwt.return ()))) ;
 	    Node.register_event state.imgs.(y').(x') "onclick"
-	      (inhibit (with_pending_out click)) () ;
+	      (inhibit (with_pending_out click)) ;
 	)
     in
       if state.pos = state.endpos then (
-	clock_stop () ; alert "YOU WIN !"
+	clock_stop () ; alert (js"YOU WIN !")
       ) else
 	if state.dead then (
-	  clock_stop () ; alert "YOU LOSE !"
+	  clock_stop () ; alert (js"YOU LOSE !")
 	) else ( 
 	  if state.rem = 0 then (
 	    let x,y = state.endpos in
-	      Node.set_attribute state.imgs.(y).(x) "src" "sprites/end.png" ;
+	      Node.set_attribute state.imgs.(y).(x) src (js"sprites/end.png") ;
 	      state.map.(y).(x) <- End  	
 	  ) ;
 	  let r (x, y) = succ x, y and l (x, y) = pred x, y in
 	  let u (x, y) = x, pred y and d (x, y) = x, succ y in
 	  let nil_cont () = () in
 	  let nil_cont_async () = Lwt.return () in
-	    update (r state.pos) r "sprites/R.png" nil_cont_async nil_cont nil_cont_async ;
-	    update (l state.pos) l "sprites/L.png" nil_cont_async nil_cont nil_cont_async ;
-	    update (u state.pos) u "sprites/U.png" nil_cont_async nil_cont nil_cont_async ;
-	    update (d state.pos) d "sprites/D.png" nil_cont_async nil_cont nil_cont_async ;
-	    update_push state.pos r "sprites/bR.png" "sprites/push_r.png" ;
-	    update_push state.pos l "sprites/bL.png" "sprites/push_l.png" ;
+	    update (r state.pos) r (js"sprites/R.png")
+              nil_cont_async nil_cont nil_cont_async ;
+	    update (l state.pos) l (js"sprites/L.png")
+              nil_cont_async nil_cont nil_cont_async ;
+	    update (u state.pos) u (js"sprites/U.png")
+              nil_cont_async nil_cont nil_cont_async ;
+	    update (d state.pos) d (js"sprites/D.png")
+              nil_cont_async nil_cont nil_cont_async ;
+	    update_push state.pos r
+              (js"sprites/bR.png") (js"sprites/push_r.png") ;
+	    update_push state.pos l
+              (js"sprites/bL.png") (js"sprites/push_l.png") ;
 	    show_rem state.rem
 	) ;
       Lwt_mutex.unlock state.map_mutex;
@@ -220,7 +246,7 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 
 
 let _ =
-  let body = Js.get_element_by_id "body" in
+  let body = Node.get_element_by_id Node.document (js"body") in
   let board_div = Html.div [] in
   let (clock_div,clock_start,_) as clock = clock_div () in
   let load_data name process=
@@ -231,7 +257,7 @@ let _ =
       res
   in
   let rem_div, show_rem =
-    let div = Html.div ~style:box_style [Html.string "--"] in
+    let div = Html.div ~style:box_style [Html.string (js"--")] in
       (div, (fun v -> Node.replace_all div (Html.int v)))
   in
   let levels =
@@ -294,8 +320,9 @@ let _ =
 	 let gx = ref 0 and gy = ref 0 and ex = ref 0 and ey = ref 0 and rem = ref 0 in
 	 let table =
 	   Html.map_table
-	     ~style:"border-collapse:collapse;line-height: 0; opacity: 0" ~attrs:["align", "center"]
-	     ~td_style:"padding: 0; width: 20px; height: 20px;"
+	     ~style:(js"border-collapse:collapse;line-height: 0; opacity: 0")
+             ~attrs:[js"align", js"center"]
+	     ~td_style:(js"padding: 0; width: 20px; height: 20px;")
 	     (fun y x cell ->
 		(match map.(y).(x) with
 		   | Guy -> gx := x ; gy := y
@@ -314,27 +341,33 @@ let _ =
 	   let rec fade () =
 	     let t = Sys.time () in
 	       if t -. t0 >= 1. then (
-		 Node.set_attribute table "style"
-		   "border-collapse:collapse;line-height: 0; opacity:1";
+		 Node.set_attribute table (js"style")
+		   (js"border-collapse:collapse;line-height: 0; opacity:1");
                  Lwt.return ()
 	       ) else (
 		 Lwt_js.sleep 0.05 >>= fun () ->
-		 Node.set_attribute table "style"
-		   (Printf.sprintf "border-collapse:collapse;line-height: 0; opacity:%g" (t -. t0)) ;
+		 Node.set_attribute table (js"style")
+		   (js (Printf.sprintf
+                          "border-collapse:collapse;line-height: 0; opacity:%g"
+                          (t -. t0))) ;
 		 fade ()
 	       )
 	   in fade () >>= fun () -> clock_start (); Lwt.return ()
       )
   in
-    Node.set_attribute body "style"
-      "font-family: sans-serif; text-align: center; background-color: #e8e8e8;" ;
-    Node.append body (Html.h1 [Html.string "Boulder Dash in Ocaml "]) ;
+    Node.set_attribute body (js"style")
+      (js"font-family: sans-serif; text-align: center; \
+          background-color: #e8e8e8;") ;
+    Node.append body (Html.h1 [Html.string (js"Boulder Dash in Ocaml")]) ;
     Node.append body
       (Html.div
-	 [Html.string "Elapsed time: " ; clock_div ; Html.string " Remaining diamonds: " ; rem_div ;
-	  Html.string " " ;
+	 [Html.string (js"Elapsed time: ") ; clock_div ;
+          Html.string (js" Remaining diamonds: ") ; rem_div ;
+	  Html.string (js" ") ;
 	  Html.select
-	    (Html.option [Html.string "Choose a level"]
-	     :: (List.map (fun (f, n) -> Html.option ~onclick:(fun () -> load_level f) [Html.string n]) levels)) ;
+	    (Html.option [Html.string (js"Choose a level")]
+	     :: (List.map (fun (f, n) ->
+                             Html.option ~onclick:(fun _ -> ignore (load_level f); Js._false)
+                               [Html.string (js n)]) levels)) ;
 	  Html.br () ; Html.br () ; board_div ])
       

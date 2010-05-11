@@ -1,21 +1,26 @@
 
 type t
 
-val inject : 'a -> t
-val extract : t -> 'a
+(*FIX: use 'val' rather than 'external' when inlining is implemented... *)
 
-val get : t -> string -> t
-val set : t -> string -> t -> unit
+external inject : 'a -> t = "%identity"
+external extract : t -> 'a = "%identity"
 
-val call : t -> t -> t array -> t
-val fun_call : t -> t array -> t
-val meth_call : t -> string -> t array -> t
+val null : t
+
+external get : t -> string -> t = "caml_js_get"
+external set : t -> string -> t -> unit = "caml_js_set"
+
+external call : t -> t -> t array -> t = "caml_js_call"
+external fun_call : t -> t array -> t = "caml_js_fun_call"
+external meth_call : t -> string -> t array -> t = "caml_js_meth_call"
+external new_obj : t -> t array -> t = "caml_js_new"
 
 (* Object and array literals *)
-val obj : (string * t) array -> t
-val array : t array -> t
+external obj : (string * t) array -> t = "caml_js_obj"
+external array_lit : t array -> t = "caml_js_array"
 
-val variable : string -> t
+external variable : string -> t = "caml_js_var"
 
 (*
 XXX Could we build a camlp4 parser on top of this?
@@ -24,3 +29,12 @@ XXX Could we build a camlp4 parser on top of this?
 ==> explicitly provides the arity
 ==> typed
 *)
+
+type string
+type 'a array
+type bool
+
+external string : string -> t = "%identity"
+external array : 'a array -> t = "%identity"
+val _true : bool
+val _false : bool

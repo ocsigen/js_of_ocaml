@@ -4,9 +4,13 @@ Priorities
 
 - we should use only local variables in order to be more robust...
 
+- caml_make_array is a no-op...
+
 - there should be a way to pass a list of know primitives (and there
   properties: pure, ...) to the compiler and get a warning for missing
   primitives
+
+- merge all source files (including javascript) into a single file
 
 - rebind module Js with our own module
   ==> include pieces of javascript

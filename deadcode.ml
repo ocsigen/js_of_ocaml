@@ -19,7 +19,7 @@ let req_expr e =
       true
   | Prim (p, l) ->
       match p with
-        C_call f -> not (Primitive.is_pure f)
+        Extern f -> not (Primitive.is_pure f)
       | _        -> false
 
 let req_instr i =
@@ -50,7 +50,7 @@ and mark_expr st e =
   | Closure (_, (pc, _)) ->
       mark_req st pc
   | Prim (_, l) ->
-      List.iter (fun x -> mark_var st x) l
+      List.iter (fun x -> match x with Pv x -> mark_var st x | _ -> ()) l
   | Variable x ->
       mark_var st x
 

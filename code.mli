@@ -29,7 +29,7 @@ type cont = addr * Var.t list
 type prim =
     Vectlength
   | Array_get
-  | C_call of string
+  | Extern of string
   | Not | Neg | IsInt
   | Add | Sub | Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr
   | Eq | Neq | Lt | Le | Ult
@@ -45,6 +45,10 @@ type constant =
   | Tuple of int * constant array
   | Int of int
 
+type prim_arg =
+    Pv of Var.t
+  | Pc of constant
+
 type expr =
     Const of int
   | Apply of Var.t * Var.t list
@@ -53,7 +57,7 @@ type expr =
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant
-  | Prim of prim * Var.t list
+  | Prim of prim * prim_arg list
   | Variable of Var.t
 
 type instr =

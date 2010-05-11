@@ -113,8 +113,7 @@ let propagate1 deps defs st x =
       VarSet.fold (fun y s -> VarSet.union (VarMap.find y st) s) s VarSet.empty
   | Expr e ->
       match e with
-        Const _ | Constant _  | Apply _ | Direct_apply _ | Prim _ ->
-          VarSet.singleton x
+        Const _ | Constant _  | Apply _ | Direct_apply _ | Prim _
       | Closure _ | Block _ ->
           VarSet.singleton x
       | Field (y, n) ->
@@ -186,8 +185,15 @@ let expr_approx defs def_approx approx x e =
   match e with
     Const _ | Constant _ | Closure _ | Block _ | Field _ ->
       ()
-  | Apply (_, l) | Direct_apply (_, l) | Prim (_, l) ->
+  | Apply (_, l) | Direct_apply (_, l) ->
       List.iter (fun x -> block_approx defs def_approx approx x) l
+  | Prim (_, l) ->
+      List.iter
+        (fun x ->
+           match x with
+             Pv x -> block_approx defs def_approx approx x
+           | Pc _ -> ())
+        l
   | Variable y ->
       assert false
 
@@ -220,10 +226,10 @@ let propagate2 defs def_approx approx st x =
       VarSet.fold (fun y u -> a_max (VarMap.find y st) u) s Known
   | Expr e ->
       match e with
-        Const _ | Constant _  | Apply _ | Direct_apply _ | Prim _ ->
-          Any
-      | Closure _ ->
+        Const _ | Constant _ | Closure _ ->
           Known
+      | Apply _ | Direct_apply _ | Prim _ ->
+          Any
       | Block _ ->
           if approx.(Var.idx x) then AnyBlock else Known
       | Field (y, n) ->
@@ -258,7 +264,7 @@ let solver2 vars deps defs def_approx approx =
 
 (****)
 
-let the_def_of defs def_approx known_approx x =
+let the_def_of (defs, def_approx, known_approx) x =
   let s = VarMap.find x def_approx in
   if VarSet.cardinal s = 1 && VarMap.find x known_approx <> Any then
     match defs.(Var.idx (VarSet.choose s)) with
@@ -267,16 +273,16 @@ let the_def_of defs def_approx known_approx x =
   else
     None
 
-let specialize_call defs def_approx known_approx i =
+let specialize_instr info i =
   match i with
     Let (x, Apply (f, l)) ->
 (*
 (*Format.eprintf "==> %a@." Var.print f;*)
-      begin match the_def_of defs def_approx known_approx f with
+      begin match the_def_of info f with
         Some (Block (_, a)) when Array.length a > 0 ->
 (*Format.eprintf "block@.";*)
           let f = a.(0) in
-          begin match the_def_of defs def_approx known_approx f with
+          begin match the_def_of info f with
             Some (Closure (l', _)) when List.length l = List.length l' ->
 (*Format.eprintf "OK@.";*)
               Let (x, Direct_apply (f, l))
@@ -287,23 +293,60 @@ let specialize_call defs def_approx known_approx i =
           i
       end
       *)
-      begin match the_def_of defs def_approx known_approx f with
+      begin match the_def_of info f with
         Some (Closure (l', _)) when List.length l = List.length l' ->
 (*Format.eprintf "OK@.";*)
           Let (x, Direct_apply (f, l))
       | _ ->
           i
       end
+
+(*FIX this should be moved to a different file (javascript specific) *)
+  | Let (x, Prim (Extern "caml_js_var", [Pv y])) ->
+      begin match the_def_of info y with
+        Some (Constant (String _ as c)) ->
+          Let (x, Prim (Extern "caml_js_var", [Pc c]))
+      | _ ->
+          i
+      end
+  | Let (x, Prim (Extern "caml_js_meth_call", [Pv o; Pv m; Pv a])) ->
+      begin match the_def_of info m with
+        Some (Constant (String _ as m)) ->
+          begin match the_def_of info a with
+            Some (Block (_, a)) ->
+              let a = Array.map (fun x -> Pv x) a in
+              Let (x, Prim (Extern "caml_js_opt_meth_call",
+                            Pv o :: Pc m :: Array.to_list a))
+          | _ ->
+              i
+          end
+      | _ ->
+          i
+      end
+  | Let (x, Prim (Extern "caml_js_get", [Pv o; Pv f])) ->
+      begin match the_def_of info f with
+        Some (Constant (String _ as c)) ->
+          Let (x, Prim (Extern "caml_js_get", [Pv o; Pc c]))
+      | _ ->
+          i
+      end
+  | Let (x, Prim (Extern "caml_js_set", [Pv o; Pv f; Pv v])) ->
+      begin match the_def_of info f with
+        Some (Constant (String _ as c)) ->
+          Let (x, Prim (Extern "caml_js_set", [Pv o; Pc c; Pv v]))
+      | _ ->
+          i
+      end
   | _ ->
       i
 
-let specialize_calls defs def_approx known_approx (pc, blocks, free_pc) =
+let specialize_instrs info (pc, blocks, free_pc) =
   let blocks =
     AddrMap.map
       (fun block ->
          { block with Code.body =
              List.map
-               (fun i -> specialize_call defs def_approx known_approx i)
+               (fun i -> specialize_instr info i)
                block.body })
       blocks
   in
@@ -346,7 +389,7 @@ let f ((pc, blocks, free_pc) as p) =
         def_approx;
   end;
 
-  let p = specialize_calls defs def_approx known_approx p in
+  let p = specialize_instrs (defs, def_approx, known_approx) p in
   let s = build_subst def_approx known_approx in
   let p = Subst.program (Subst.from_array s) p in
   p
