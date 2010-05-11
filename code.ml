@@ -116,6 +116,16 @@ type prim =
   | Eq | Neq | Lt | Le | Ult
   | WrapInt
 
+type constant =
+    String of string
+  | Float of float
+  | Float_array of float array
+  | Int32 of int32
+  | Nativeint of nativeint
+  | Int64 of int64
+  | Tuple of int * constant array
+  | Int of int
+
 type expr =
     Const of int
   | Apply of Var.t * Var.t list
@@ -123,7 +133,7 @@ type expr =
   | Block of int * Var.t array
   | Field of Var.t * int
   | Closure of Var.t list * cont
-  | Constant of Obj.t
+  | Constant of constant
   | Prim of prim * Var.t list
   | Variable of Var.t
 
@@ -198,6 +208,41 @@ let print_prim f p l =
   | WrapInt, [x]      -> Format.fprintf f "to_int(%a)" Var.print x
   | _                 -> assert false
 
+let rec print_constant f x =
+  match x with
+    String s ->
+      Format.fprintf f "%S" s
+  | Float fl ->
+      Format.fprintf f "%.12g" fl
+  | Float_array a ->
+      Format.fprintf f "[|";
+      for i = 0 to Array.length a - 1 do
+        if i > 0 then Format.fprintf f ", ";
+        Format.fprintf f "%.12g" a.(i)
+      done;
+      Format.fprintf f "|]"
+  | Int32 i ->
+      Format.fprintf f "%ldl" i
+  | Nativeint i ->
+      Format.fprintf f "%ndn" i
+  | Int64 i ->
+      Format.fprintf f "%LdL" i
+  | Tuple (tag, a) ->
+      Format.fprintf f "<%d>" tag;
+      begin match Array.length a with
+        0 -> ()
+      | 1 ->
+          Format.fprintf f "("; print_constant f a.(0); Format.fprintf f ")"
+      | n ->
+          Format.fprintf f "("; print_constant f a.(0);
+          for i = 1 to n - 1 do
+            Format.fprintf f ", "; print_constant f a.(i)
+          done;
+          Format.fprintf f ")"
+      end
+   | Int i ->
+       Format.fprintf f "%d" i
+
 let print_expr f e =
   match e with
     Const i ->
@@ -217,7 +262,7 @@ let print_expr f e =
   | Closure (l, cont) ->
       Format.fprintf f "fun(%a){%a}" print_var_list l print_cont cont
   | Constant c ->
-      Format.fprintf f "CONST{%a}" Instr.print_obj c
+      Format.fprintf f "CONST{%a}" print_constant c
   | Prim (p, l) ->
       print_prim f p l
   | Variable x ->

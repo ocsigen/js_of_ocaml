@@ -1,6 +1,8 @@
 
-boulderdash.js: boulderdash
-	../../ocaml2js boulderdash
+OCAML2JS=../../ocaml2js
+
+boulderdash.js: boulderdash $(OCAML2JS)
+	$(OCAML2JS) boulderdash
 
 boulderdash: obrowser.cma boulderdash.ml
 	ocamlfind ocamlc -package lwt -linkpkg -o boulderdash \

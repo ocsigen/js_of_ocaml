@@ -1372,6 +1372,34 @@ let match_exn_traps ((_, blocks, _) as p) =
 
 (****)
 
+let same_custom x y =
+  Obj.field x 0 = Obj.field (Obj.repr y) 0
+
+let rec parse_const x =
+  if Obj.is_block x then begin
+    let tag = Obj.tag x in
+    if tag = Obj.string_tag then
+      String (Obj.magic x : string)
+    else if tag = Obj.double_tag then
+      Float (Obj.magic x : float)
+    else if tag = Obj.double_array_tag then
+      Float_array (Obj.magic x : float array)
+    else if tag = Obj.custom_tag && same_custom x 0l then
+      Int32 (Obj.magic x : int32)
+    else if tag = Obj.custom_tag && same_custom x 0n then
+      Nativeint (Obj.magic x : nativeint)
+    else if tag = Obj.custom_tag && same_custom x 0L then
+      Int64 (Obj.magic x : int64)
+    else if tag < Obj.no_scan_tag then
+      Tuple (tag,
+             Array.init (Obj.size x) (fun i -> parse_const (Obj.field x i)))
+    else
+      assert false
+  end else
+    Int (Obj.magic x : int)
+
+(****)
+
 let parse_bytecode code state =
   let cont = analyse_blocks code in
 ignore cont;
@@ -1401,7 +1429,7 @@ ignore cont;
   for i = Array.length g.constants - 1  downto 0 do
     match g.vars.(i) with
       Some x when g.is_const.(i) ->
-        l := Let (x, Constant g.constants.(i)) :: !l
+        l := Let (x, Constant (parse_const g.constants.(i))) :: !l
     | _ ->
         ()
   done;

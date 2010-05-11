@@ -35,6 +35,16 @@ type prim =
   | Eq | Neq | Lt | Le | Ult
   | WrapInt
 
+type constant =
+    String of string
+  | Float of float
+  | Float_array of float array
+  | Int32 of int32
+  | Nativeint of nativeint
+  | Int64 of int64
+  | Tuple of int * constant array
+  | Int of int
+
 type expr =
     Const of int
   | Apply of Var.t * Var.t list
@@ -42,7 +52,7 @@ type expr =
   | Block of int * Var.t array
   | Field of Var.t * int
   | Closure of Var.t list * cont
-  | Constant of Obj.t
+  | Constant of constant
   | Prim of prim * Var.t list
   | Variable of Var.t
 

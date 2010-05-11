@@ -83,34 +83,26 @@ let boolnot e = J.ECond (e, zero, one)
 
 (****)
 
-let same_custom x y =
-  Obj.field x 0 = Obj.field (Obj.repr y) 0
-
 let rec constant x =
-  if Obj.is_block x then begin
-    let tag = Obj.tag x in
-    if tag = Obj.string_tag then
-      J.ENew (J.EVar ("MlString"), Some [J.EStr (Obj.magic x : string)])
-    else if tag = Obj.double_tag then
-      J.ENum (Obj.magic x : float)
-    else if tag = Obj.double_array_tag then begin
-      let a = (Obj.magic x : float array) in
+  match x with
+    String s ->
+      J.ENew (J.EVar ("MlString"), Some [J.EStr s])
+  | Float f ->
+      J.ENum f
+  | Float_array a ->
       J.EArr (Some (int Obj.double_array_tag) ::
               Array.to_list (Array.map (fun f -> Some (J.ENum f)) a))
-    end else if tag = Obj.custom_tag && same_custom x 0l then
-      J.ENum (Int32.to_float (Obj.magic x : int32))
-    else if tag = Obj.custom_tag && same_custom x 0n then
-      J.ENum (Nativeint.to_float (Obj.magic x : nativeint))
-    else if tag = Obj.custom_tag && same_custom x 0L then
-      J.ENum (Int64.to_float (Obj.magic x : int64))
-    else if tag < Obj.no_scan_tag then begin
-      let a = Array.init (Obj.size x) (fun i -> Obj.field x i) in
+  | Int32 i ->
+      J.ENum (Int32.to_float i)
+  | Nativeint i ->
+      J.ENum (Nativeint.to_float i)
+  | Int64 i ->
+      J.ENum (Int64.to_float i)  (* FIX: we can lose information here...*)
+  | Tuple (tag, a) ->
       J.EArr (Some (int tag) ::
               Array.to_list (Array.map (fun x -> Some (constant x)) a))
-    end else
-      assert false
-  end else
-    int (Obj.magic x : int)
+  | Int i ->
+      int i
 
 (****)
 

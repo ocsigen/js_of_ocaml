@@ -13,9 +13,6 @@ external extract : t -> 'a = "%identity"
 external get : t -> string -> t = "caml_js_get"
 external set : t -> string -> t -> unit = "caml_js_set"
 
-external get : t -> string -> t = "caml_js_get"
-external set : t -> string -> t -> unit = "caml_js_set"
-
 external call : t -> t -> t array -> t = "caml_js_call"
 external fun_call : t -> t array -> t = "caml_js_fun_call"
 external meth_call : t -> string -> t array -> t = "caml_js_fun_call"
@@ -28,6 +25,5 @@ external variable : string -> t = "caml_js_var"
 
 (*
 XXX
-array/hash creation and access
-object creation
+array/hash access
 *)
