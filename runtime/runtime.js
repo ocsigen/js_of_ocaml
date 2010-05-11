@@ -49,8 +49,6 @@ function caml_array_get (array, index) {
   if (res == undefined) caml_array_bound_error();
   return res;
 }
-var caml_array_set_addr = caml_array_set;
-var caml_array_get_addr = caml_array_get;
 
 function caml_make_vect (len, init) {
   var b = [];
@@ -96,10 +94,8 @@ function caml_lessequal (x, y) { return (caml_compare(x,y) <= 0)+0; }
 function caml_int_of_float(x) { return x|0; };
 function caml_int_of_string(x) { return x|0; };
 
-// FIX: implement?
+// FIX: dummy functions
 function caml_register_named_value(dz,dx) { return 0;}
-
-// FIX: dummy function
 function caml_ml_out_channels_list (c) { return 0; }
 function caml_ml_flush (c) { return 0; }
 
