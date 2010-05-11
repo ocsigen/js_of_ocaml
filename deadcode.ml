@@ -11,14 +11,6 @@ type t =
 
 (****)
 
-(*XXX Should be extensible... *)
-let pure_prims =
-  ["caml_int64_float_of_bits"; "caml_sys_get_argv"; "caml_sys_get_config";
-   "caml_obj_dup"; "caml_ml_open_descriptor_in"; "caml_ml_open_descriptor_out";
-   "caml_nativeint_sub"; "caml_nativeint_shift_left"]
-
-(****)
-
 let req_expr e =
   match e with
     Const _  | Block _ | Field _ | Closure _ | Constant _ | Variable _ ->
@@ -27,7 +19,7 @@ let req_expr e =
       true
   | Prim (p, l) ->
       match p with
-        C_call f -> not (List.mem f pure_prims)
+        C_call f -> not (Primitive.is_pure f)
       | _        -> false
 
 let req_instr i =

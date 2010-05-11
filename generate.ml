@@ -26,14 +26,6 @@ module J = Javascript
 
 (****)
 
-let primitives = ref Util.StringSet.empty
-let add_primitive nm = primitives := Util.StringSet.add nm !primitives
-let show_primitives () =
-  Format.eprintf "Primitives:@.";
-  Util.StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) !primitives
-
-(****)
-
 let rec list_group_rec f l b m n =
   match l with
     [] ->
@@ -465,10 +457,9 @@ let rec translate_expr ctx queue e =
           let ((py, cy), queue) = access_queue queue y in
           (J.EBin (J.Mul, cx, cy), or_p px py, queue)
       | C_call name, l ->
-          add_primitive name;
-          Code.add_reserved_name name;  (*XXX HACK *)
+          Primitive.mark_used name;
           let prim_kind =
-            try List.assoc name prim_kinds with Not_found -> mutator_p in
+            if Primitive.is_pure name then const_p else mutator_p in
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
@@ -972,7 +963,7 @@ and compile_closure ctx (pc, args) =
 let compile_program ctx pc =
   let res = compile_closure ctx (pc, []) in
   if debug () then Format.eprintf "@.@.";
-  show_primitives ();
+  Primitive.list_used ();
   generate_apply_funs res
 
 (**********************)

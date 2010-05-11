@@ -30,8 +30,8 @@ function caml_array_bound_error () {
 
 function caml_alloc_dummy () { return []; }
 function caml_update_dummy (x, y) {
-  var l = y.length;
-  for (var i = 0; i < l; i++) x[i] = y[i];
+  var i = y.length;
+  while (i--) x[i] = y[i];
   return 0;
 }
 
@@ -51,14 +51,14 @@ var caml_array_set_addr = caml_array_set;
 var caml_array_get_addr = caml_array_get;
 
 function caml_make_vect (len, init) {
-  var b = new Array();
+  var b = [];
   b[0] = 0;
   for (var i = 1; i <= len; i++) b[i] = init;
   return b;
 }
 
 function caml_obj_block (tag, size) {
-  var b = new Array();
+  var b = [];
   b[0] = tag;
   for (var i = 1; i <= size; i++) b[i] = 0;
   return b;
@@ -197,3 +197,7 @@ function caml_get_public_method (obj, tag) {
   /* return 0 if tag is not there */
   return (tag == meths[li+1] ? meths[li] : 0);
 }
+
+///////////// Jslib
+function caml_string_to_js(s) { return s.toString; }
+function caml_string_from_js(s) { return new MlString(s); }

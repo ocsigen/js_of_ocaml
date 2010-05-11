@@ -104,6 +104,7 @@ NEW FEATURES
 DATA REPRESENTATION
 ===================
 - should wrap Ocaml exceptions (more robust code)...
+  ==> use Error object as base object, special "message" method
 
 DATA ANALYSIS
 =============
