@@ -35,6 +35,8 @@ function caml_update_dummy (x, y) {
   return 0;
 }
 
+function caml_obj_dup (x) { return x.slice(); }
+
 ///////////// Pervasive
 function caml_make_array (a) { return a; }
 
@@ -204,3 +206,16 @@ function caml_string_from_js(s) { return new MlString(s); }
 
 function caml_js_set(o,f,v) { o[f.toString()]=v; return 0; }
 function caml_js_get(o,f) { return o[f.toString()]; }
+
+///////////// Digest
+
+function caml_md5_string (v, ofs, len) {
+    var s = [];
+    for (var i = 0;i < len;i++)
+	s[i] = v.get (ofs + i);
+    var h = md5(s);
+    var res = new MlString(16);
+    for (var j = 0;j < 16;j++)
+	res.set(j, h[j]);
+    return res;
+}
