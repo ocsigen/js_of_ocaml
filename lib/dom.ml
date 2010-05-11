@@ -50,6 +50,12 @@ module Node = struct
   let replace_all n c = empty n ; append n c
 end
 
+module Fragment = struct
+  let create () = Js.meth_call Node.document "createDocumentFragment" [||]
+  let append fr n = ignore (Js.meth_call fr "appendChild" [| n |])
+  let flush n fr = ignore (Js.meth_call n "appendChild" [| fr |])
+end
+
 module Html = struct
   let rec set_attrs m attrs =
     match attrs with 

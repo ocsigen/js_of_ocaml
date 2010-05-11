@@ -151,11 +151,11 @@ let rec expression l f e =
       end else if v <> v then
         Format.fprintf f "NaN"
       else if v > 0. || (v = 0. && 1. /. v > 0.) then
-        Format.fprintf f "%g" v
+        Format.fprintf f "%.12g" v
       else if l > 13 then
-        Format.fprintf f "(%g)" v
+        Format.fprintf f "(%.12g)" v
       else
-        Format.fprintf f "%g" v
+        Format.fprintf f "%.12g" v
   | EUn (op, e) ->
       if l > 13 then Format.fprintf f "@[<1>(";
       Format.fprintf f "%s%a" (unop_str op) (expression 13) e;
