@@ -106,15 +106,16 @@ let h6 = l5 + 2*b0
 
 type demin_cf =
     { bd : cell array array;
-      dom : Node.t array array;
+      dom : Dom.element Js.Obj.t array array;
       cf : config ;
       mutable nb_marked_cells : int;
       mutable nb_hidden_cells : int;
       mutable flag_switch_on : bool }
 
 let draw_cell dom bd =
-  Node.set_attribute dom src
-    (js (if bd.flag then "sprites/flag.png"
+  dom##setAttribute
+    (src,
+     js (if bd.flag then "sprites/flag.png"
          else if bd.mined then "sprites/bomb.png"
          else if bd.seen then (
            if bd.nbm = 0 then "sprites/empty.png"
@@ -132,8 +133,8 @@ let draw_board d =
 let disable_events d =
   for y = 0 to d.cf.nbrows - 1 do
     for x = 0 to d.cf.nbcols - 1 do
-      Node.register_event d.dom.(y).(x)
-        "onclick" (fun _ -> alert (js"GAME OVER"); Js._false)
+      d.dom.(y).(x)##onclick
+        <- (fun _ -> alert (js"GAME OVER"); Js._false)
     done
   done
 
@@ -174,33 +175,37 @@ let create_demin nb_c nb_r nb_m =
 type mode = Normal | Flag
 
 let init_table d div =
-  let board_div = Node.get_element_by_id Node.document div in
+  let board_div =
+    match Nullable.maybe Dom.document##getElementById(div) with
+      Some div -> div
+    | None     -> assert false
+  in
   let mode = ref Normal in
-  let buf = Fragment.create () in
-  Fragment.append buf (Node.text (js"Mode : "));
-  let img = Node.element (js"img") in
-  Fragment.append buf img ;
-  Node.set_attribute img src (js"sprites/bomb.png") ;
-  Node.register_event
-    img "onclick"
+  let buf = Dom.document##createDocumentFragment() in
+  ignore
+    (buf##appendChild(Dom.node Dom.document##createTextNode(js"Mode : ")));
+  let img = Dom.document##createElement(js"img") in
+  ignore (buf##appendChild(Dom.node img));
+  img##setAttribute(src, js"sprites/bomb.png") ;
+  img##onclick <-
     (fun _ ->
        begin match !mode with
          | Normal ->
-             mode := Flag ; Node.set_attribute img src (js"sprites/flag.png")
+             mode := Flag ; img##setAttribute(src, js"sprites/flag.png")
          | Flag ->
-             mode := Normal ; Node.set_attribute img src (js"sprites/bomb.png")
+             mode := Normal ; img##setAttribute(src, js"sprites/bomb.png")
        end;
        Js._false
     ) ;
-  Fragment.append buf (Node.element (js"br")) ;
+  ignore (buf##appendChild(Dom.node Dom.document##createElement(js"br")));
 
   for y = 0 to d.cf.nbrows - 1 do
     let imgs = ref [] in
     for x = 0 to d.cf.nbcols - 1 do
-      let img = Node.element (js"img") in
+      let img = Dom.document##createElement(js"img") in
       imgs := img :: !imgs ;
-      Node.set_attribute img src (js"sprites/normal.png");
-      Node.register_event img "onclick"
+      img##setAttribute(src, js"sprites/normal.png");
+      img##onclick <-
         (fun _ ->
           (match !mode with
             | Normal ->
@@ -216,13 +221,13 @@ let init_table d div =
                 d.bd.(x).(y).flag <- not d.bd.(x).(y).flag ;
                 draw_cell img d.bd.(x).(y));
           Js._false);
-      Fragment.append buf img;
+      ignore (buf##appendChild(Dom.node img));
     done ;
-    Fragment.append buf (Node.element (js "br"));
+    ignore (buf##appendChild(Dom.node Dom.document##createElement(js"br")));
     d.dom.(y) <- Array.of_list (List.rev !imgs)
   done ;
-  Node.set_attribute board_div (js"style") (js"line-height: 0;") ;
-  Fragment.flush board_div buf
+  board_div##setAttribute(js"style", js"line-height: 0;") ;
+  ignore (board_div##appendChild(buf))
 
 let run div nbc nbr nbm =
   let div, nbc, nbr, nbm =

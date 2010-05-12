@@ -4,10 +4,10 @@ all: compiler library examples
 
 compiler: $(NAME)
 
-library: compiler
+library:
 	make -C lib
 
-examples: library
+examples: compiler library
 	make -C examples
 
 OBJS=util.cmx dgraph.cmx \

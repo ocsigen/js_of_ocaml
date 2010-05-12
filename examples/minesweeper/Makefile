@@ -12,7 +12,7 @@ minesweeper: $(OBJS) ../../lib/ocaml2js.cma
 		$(OBJS)
 
 %.cmo: %.ml
-	ocamlc -I ../../lib -g -c $<
+	ocamlc -pp "camlp4o ../../lib/pa_js.cmo" -I ../../lib -g -c $<
 
 main.cmo: minesweeper.cmo
 

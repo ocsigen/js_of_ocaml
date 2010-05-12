@@ -161,3 +161,60 @@ module Html = struct
   let int i = Node.text (JsString.of_int i)
 
 end
+
+module Dom = struct
+  open Js.Obj
+
+  class type node_list = object
+  end
+
+  class type node = object
+    method childNodes : node_list t prop
+    method parentNode : node t Nullable.t prop
+    method firstChild : node t Nullable.t prop
+    method lastChild : node t Nullable.t prop
+    method nextSibling : node t Nullable.t prop
+    method previousSibling : node t Nullable.t prop
+    method nodeName : Js.string prop
+    method nodeType : int prop
+    method nodeValue : Js.string prop
+
+    method appendChild : node t -> node t meth
+  end
+
+  let node n = (n : #node t :> node t)
+
+  class type mouseEvent = object
+  end
+
+  class type element = object
+    inherit node
+    method setAttribute : Js.string -> Js.string -> unit meth
+    method onclick : (mouseEvent t -> Js.bool) prop
+  end
+
+  class type characterData =
+  object
+    inherit node
+
+    method data : Js.string prop
+  end
+
+  class type text = object
+    inherit characterData
+  end
+
+  class type documentFragment = object
+    inherit node
+  end
+
+  class type document = object
+    inherit element
+    method createDocumentFragment : documentFragment t meth
+    method createElement : Js.string -> element t meth
+    method createTextNode : Js.string -> text t meth
+    method getElementById : Js.string -> element t Nullable.t meth
+  end
+
+  let document : document t = Js.extract (Js.variable "document")
+end
