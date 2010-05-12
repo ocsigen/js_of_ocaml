@@ -29,6 +29,15 @@ XXX
 array/hash access
 *)
 
+(****)
+
+type 'a o
+
+external unsafe_get : 'a o -> string -> 'b = "caml_js_get"
+external unsafe_set : 'a o -> string -> 'b -> unit = "caml_js_set"
+
+(****)
+
 type string
 type 'a array
 type bool
@@ -39,4 +48,3 @@ let null = variable "null"
 
 let _true : bool = extract (variable "true")
 let _false : bool = extract (variable "false")
-
