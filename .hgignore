@@ -7,3 +7,4 @@ compile{,.opt}
 ocaml2js
 private
 examples/boulderdash/boulderdash{,.js}
+examples/minesweeper/minesweeper{,.js}

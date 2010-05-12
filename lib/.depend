@@ -1,14 +1,14 @@
 ./jsString.cmo: js.cmi ./jsString.cmi 
 ./jsString.cmx: js.cmx ./jsString.cmi 
 ./js.cmi: 
-./dom.cmo: jsString.cmi jsArray.cmi js.cmi 
-./dom.cmx: jsString.cmx jsArray.cmx js.cmx 
+./dom.cmo: nullable.cmi jsString.cmi js.cmi 
+./dom.cmx: nullable.cmx jsString.cmx js.cmx 
 ./js.cmo: ./js.cmi 
 ./js.cmx: ./js.cmi 
 ./lwt_js.cmo: ./lwt_js.cmi 
 ./lwt_js.cmx: ./lwt_js.cmi 
-./nullable.cmo: ./nullable.cmi 
-./nullable.cmx: ./nullable.cmi 
+./nullable.cmo: js.cmi ./nullable.cmi 
+./nullable.cmx: js.cmx ./nullable.cmi 
 ./jsArray.cmi: js.cmi 
 ./lwt_js.cmi: 
 ./nullable.cmi: 
