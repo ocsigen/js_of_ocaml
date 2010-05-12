@@ -14,5 +14,7 @@ minesweeper: $(OBJS) ../../lib/ocaml2js.cma
 %.cmo: %.ml
 	ocamlc -I ../../lib -g -c $<
 
+main.cmo: minesweeper.cmo
+
 clean:
 	rm -f *.cm[io] minesweeper minesweeper.js

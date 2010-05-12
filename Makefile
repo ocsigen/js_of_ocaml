@@ -1,6 +1,14 @@
 NAME=ocaml2js
 
-all: $(NAME)
+all: compiler library examples
+
+compiler: $(NAME)
+
+library: compiler
+	make -C lib
+
+examples: library
+	make -C examples
 
 OBJS=util.cmx dgraph.cmx \
      javascript.cmx js_output.cmx js_simpl.cmx js_rename.cmx \
@@ -26,6 +34,8 @@ $(NAME): $(OBJS)
 
 clean:
 	rm -f *.cm[ix] *.o
+	make -C lib clean
+	make -C examples clean
 
 depend:
 	find . -maxdepth 1 -name private -prune -o -regex ".*\\.mli?" | \
