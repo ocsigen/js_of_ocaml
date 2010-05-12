@@ -1,20 +1,17 @@
 Priorities
 ==========
-- bug when compiling ocamlc
+- syntactic sugar for method calls and field access
 
-- we should use only local variables in order to be more robust...
-
-- there should be a way to pass a list of know primitives (and there
+- merge all source files (including javascript) into a single file
+- there should be a way to pass a list of know primitives (and their
   properties: pure, ...) to the compiler and get a warning for missing
   primitives
 
-- merge all source files (including javascript) into a single file
+- we should use only local variables in order to be more robust...
 
-- rebind module Js with our own module
-  ==> include pieces of javascript
-  function: Js.const : string -> 'a
-  ==> use debugger information to print location information in case
-      of error?
+- bug when compiling ocamlc
+
+==
 
 - Can we avoid spurious conversions from boolean to integers???
   ===> explicit conversion to boolean; specialized "if" that operates
