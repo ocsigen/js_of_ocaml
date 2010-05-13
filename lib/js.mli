@@ -34,7 +34,8 @@ XXX Could we build a camlp4 parser on top of this?
 
 module Obj : sig
 type +'a t
-type +'a prop
+type +'a readonly_prop
+type 'a prop = private 'a readonly_prop
 type +'a meth
 (*type 'a nullable_prop = 'a Nullable.t prop*)
 

@@ -13,8 +13,8 @@ $(LIB).cma: $(OBJS)
 pa_js.cmo: pa_js.ml
 	ocamlfind ocamlc -package camlp4.extend,camlp4.quotations -syntax camlp4o -c pa_js.ml
 
-%.cmo: %.ml
-	ocamlfind ocamlc -package lwt -c $<
+%.cmo: %.ml pa_js.cmo
+	ocamlfind ocamlc -pp "camlp4o pa_js.cmo" -package lwt -c $<
 
 %.cmi: %.mli
 	ocamlfind ocamlc -package lwt -c $<

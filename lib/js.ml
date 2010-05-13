@@ -33,7 +33,8 @@ array/hash access
 
 module Obj = struct
 type +'a t
-type +'a prop
+type +'a readonly_prop
+type 'a prop = private 'a readonly_prop
 type +'a meth
 
 external unsafe_get : 'a t -> string -> 'b = "caml_js_get"

@@ -1,6 +1,13 @@
 Priorities
 ==========
-- syntactic sugar for method calls and field access
+- how do we deal with possibly undefined properties?
+
+- we have to make sure that functions passed to javascript have the
+  right arity!
+
+- syntactic sugar for Javascript literal strings
+  + optimization to avoid going through Caml strings
+- operators ##'foo'
 
 - merge all source files (including javascript) into a single file
 - there should be a way to pass a list of know primitives (and their

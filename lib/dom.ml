@@ -165,39 +165,53 @@ end
 module Dom = struct
   open Js.Obj
 
-  class type node_list = object
+  class type ['node] nodeList = object
+    method item : int -> 'node t meth
+    method length : int readonly_prop
   end
 
   class type node = object
-    method childNodes : node_list t prop
+    method nodeName : Js.string readonly_prop
+    method nodeValue : Js.string Nullable.t readonly_prop
+    method nodeType : int readonly_prop
     method parentNode : node t Nullable.t prop
+    method childNodes : node nodeList t prop
     method firstChild : node t Nullable.t prop
     method lastChild : node t Nullable.t prop
-    method nextSibling : node t Nullable.t prop
     method previousSibling : node t Nullable.t prop
-    method nodeName : Js.string prop
-    method nodeType : int prop
-    method nodeValue : Js.string prop
+    method nextSibling : node t Nullable.t prop
 
+    method insertBefore : node t -> node t Nullable.t -> node t meth
+    method replaceChild : node t -> node t -> node t meth
+    method removeChild : node t -> node t meth
     method appendChild : node t -> node t meth
+    method hasChildNodes : Js.bool meth
+    method cloneNode : Js.bool -> node t meth
   end
 
-  let node n = (n : #node t :> node t)
+  let appendChild (p : #node t) (n : #node t) =
+    ignore (p##appendChild ((n :> node t)))
 
-  class type mouseEvent = object
-  end
-
-  class type element = object
+  class type ['element] element = object
     inherit node
+    method tagName : Js.string readonly_prop
+    method getAttribute : Js.string -> Js.string meth
     method setAttribute : Js.string -> Js.string -> unit meth
-    method onclick : (mouseEvent t -> Js.bool) prop
+    method removeAttribute : Js.string -> unit meth
+    method hasAttribyte : Js.string -> Js.bool meth
+    method getElementsByTagName : Js.string -> 'element nodeList t meth
   end
 
   class type characterData =
   object
     inherit node
-
     method data : Js.string prop
+    method length : int readonly_prop
+    method substringData : int -> int -> Js.string meth
+    method appendData : Js.string -> unit meth
+    method insertData : int -> Js.string -> unit meth
+    method deleteData : int -> int -> unit meth
+    method replaceData : int -> int -> Js.string meth
   end
 
   class type text = object
@@ -208,13 +222,80 @@ module Dom = struct
     inherit node
   end
 
-  class type document = object
-    inherit element
+  class type ['element] document = object
+    inherit ['element] element
+    method documentElement : 'element t readonly_prop
     method createDocumentFragment : documentFragment t meth
-    method createElement : Js.string -> element t meth
+    method createElement : Js.string -> 'element t meth
     method createTextNode : Js.string -> text t meth
-    method getElementById : Js.string -> element t Nullable.t meth
+    method getElementById : Js.string -> 'element t Nullable.t meth
+    method getElementsByTagName : Js.string -> 'element nodeList t meth
+  end
+end
+
+module HTML = struct
+  open Js.Obj
+
+  class type mouseEvent = object
   end
 
+  class type element = object
+    inherit [element] Dom.element
+    method id : Js.string prop
+    method title : Js.string prop
+    method lang : Js.string prop
+    method dir : Js.string prop
+    method className : Js.string prop
+
+    (* FIX: not portable! *)
+    method onclick : (mouseEvent t Nullable.t -> Js.bool) prop
+    (* FIX: should be on some specific elements *)
+    method onchange : (unit -> Js.bool) prop
+  end
+
+  class type document = object
+    inherit [element] Dom.document
+    method title : Js.string prop
+    method referrer : Js.string readonly_prop
+    method domain : Js.string readonly_prop
+(*URL?*)
+    method body : element prop
+    method cookie : Js.string prop
+  end
+
+  type interval_id
+  type timeout_id
+
+  class type location = object
+    method hash : Js.string prop
+    method host : Js.string prop
+    method hostname : Js.string prop
+    method href : Js.string prop
+    method pathname : Js.string prop
+    method protocol : Js.string prop
+    method search : Js.string prop
+
+    method reload : Js.bool -> unit meth
+    method replace : Js.string -> unit meth
+  end
+
+  class type window = object
+    method onload : (unit -> unit) prop
+    method onbeforeunload : (unit -> Js.string) prop
+    method location : location t prop
+
+    method alert : Js.string -> unit meth
+    method confirm : Js.string -> Js.bool meth
+
+    method setInterval : (unit -> unit) -> float -> interval_id meth
+    method clearInterval : interval_id -> unit meth
+
+    method setTimeout : (unit -> unit) -> float -> timeout_id meth
+    method clearTimeout : timeout_id -> unit meth
+  end
+(*XXX Creation functions a la lablgtk... *)
+
+  let window : window t = Js.extract (Js.variable "window")
   let document : document t = Js.extract (Js.variable "document")
+
 end

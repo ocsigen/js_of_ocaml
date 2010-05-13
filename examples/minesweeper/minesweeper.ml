@@ -106,7 +106,7 @@ let h6 = l5 + 2*b0
 
 type demin_cf =
     { bd : cell array array;
-      dom : Dom.element Js.Obj.t array array;
+      dom : HTML.element Js.Obj.t array array;
       cf : config ;
       mutable nb_marked_cells : int;
       mutable nb_hidden_cells : int;
@@ -176,16 +176,15 @@ type mode = Normal | Flag
 
 let init_table d div =
   let board_div =
-    match Nullable.maybe Dom.document##getElementById(div) with
+    match Nullable.maybe HTML.document##getElementById(div) with
       Some div -> div
     | None     -> assert false
   in
   let mode = ref Normal in
-  let buf = Dom.document##createDocumentFragment() in
-  ignore
-    (buf##appendChild(Dom.node Dom.document##createTextNode(js"Mode : ")));
-  let img = Dom.document##createElement(js"img") in
-  ignore (buf##appendChild(Dom.node img));
+  let buf = HTML.document##createDocumentFragment() in
+  Dom.appendChild buf (HTML.document##createTextNode(js"Mode : "));
+  let img = HTML.document##createElement(js"img") in
+  Dom.appendChild buf img;
   img##setAttribute(src, js"sprites/bomb.png") ;
   img##onclick <-
     (fun _ ->
@@ -197,12 +196,11 @@ let init_table d div =
        end;
        Js._false
     ) ;
-  ignore (buf##appendChild(Dom.node Dom.document##createElement(js"br")));
-
+  Dom.appendChild buf (HTML.document##createElement(js"br"));
   for y = 0 to d.cf.nbrows - 1 do
     let imgs = ref [] in
     for x = 0 to d.cf.nbcols - 1 do
-      let img = Dom.document##createElement(js"img") in
+      let img = HTML.document##createElement(js"img") in
       imgs := img :: !imgs ;
       img##setAttribute(src, js"sprites/normal.png");
       img##onclick <-
@@ -221,13 +219,13 @@ let init_table d div =
                 d.bd.(x).(y).flag <- not d.bd.(x).(y).flag ;
                 draw_cell img d.bd.(x).(y));
           Js._false);
-      ignore (buf##appendChild(Dom.node img));
+      Dom.appendChild buf img;
     done ;
-    ignore (buf##appendChild(Dom.node Dom.document##createElement(js"br")));
+    Dom.appendChild buf (HTML.document##createElement(js"br"));
     d.dom.(y) <- Array.of_list (List.rev !imgs)
   done ;
   board_div##setAttribute(js"style", js"line-height: 0;") ;
-  ignore (board_div##appendChild(buf))
+  Dom.appendChild board_div buf
 
 let run div nbc nbr nbm =
   let div, nbc, nbr, nbm =

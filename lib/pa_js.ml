@@ -73,8 +73,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
      [ e = SELF; "##"; lab = label ->
          let t = random_var () in
          let typ =
-           <:ctyp< Js.Obj.t < $lid:lab$ : Js.Obj.prop '$t$; .. > -> _ -> '$t$ >> in
-         <:expr< (Js.Obj.unsafe_get : $typ$) $e$ $str:lab$ >>
+           <:ctyp< Js.Obj.t < $lid:lab$ : Js.Obj.readonly_prop '$t$; .. > -> _ -> '$t$ >> in
+         <:expr< (Js.Obj.unsafe_get :> $typ$) $e$ $str:lab$ >>
      | e1 = SELF; "##"; lab = label; "<-"; e2 = SELF ->
          let t = random_var () in
          let typ =
@@ -104,6 +104,9 @@ use variant types instead of object types?
 XXXX
 module WEIRDMODULENAME = struct type 'a o = 'a Js.Obj.t val unsafe_get = Js.Obj.unsafe_get ... end
 (let module M = WEIRDMODULENAME in (M.unsafe_get : <x : 'a M.meth> -> 'a))
+
+XXXX be more careful with error messages:
+  put coercions against arguments or whole expression
 *)
 
 end
