@@ -224,7 +224,7 @@ let init_table d div =
     Dom.appendChild buf (HTML.document##createElement(js"br"));
     d.dom.(y) <- Array.of_list (List.rev !imgs)
   done ;
-  board_div##setAttribute(js"style", js"line-height: 0;") ;
+  board_div##style##lineHeight <- js"0";
   Dom.appendChild board_div buf
 
 let run div nbc nbr nbm =

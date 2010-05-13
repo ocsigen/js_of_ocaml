@@ -199,7 +199,6 @@ module Dom = struct
     method setAttribute : Js.string -> Js.string -> unit meth
     method removeAttribute : Js.string -> unit meth
     method hasAttribyte : Js.string -> Js.bool meth
-    method getElementsByTagName : Js.string -> 'element nodeList t meth
   end
 
   class type characterData =
@@ -229,7 +228,6 @@ module Dom = struct
     method createElement : Js.string -> 'element t meth
     method createTextNode : Js.string -> text t meth
     method getElementById : Js.string -> 'element t Nullable.t meth
-    method getElementsByTagName : Js.string -> 'element nodeList t meth
   end
 end
 
@@ -239,6 +237,102 @@ module HTML = struct
   class type mouseEvent = object
   end
 
+  class type cssStyleDeclaration = object
+    method background : Js.string prop
+    method backgroundAttachment : Js.string prop
+    method backgroundColor : Js.string prop
+    method backgroundImage : Js.string prop
+    method backgroundPosition : Js.string prop
+    method backgroundRepeat : Js.string prop
+    method border : Js.string prop
+    method borderBottom : Js.string prop
+    method borderBottomColor : Js.string prop
+    method borderBottomStyle : Js.string prop
+    method borderBottomWidth : Js.string prop
+    method borderCollapse : Js.string prop
+    method borderColor : Js.string prop
+    method borderLeft : Js.string prop
+    method borderLeftColor : Js.string prop
+    method borderLeftStyle : Js.string prop
+    method borderLeftWidth : Js.string prop
+    method borderRight : Js.string prop
+    method borderRightColor : Js.string prop
+    method borderRightStyle : Js.string prop
+    method borderRightWidth : Js.string prop
+    method borderSpacing : Js.string prop
+    method borderStyle : Js.string prop
+    method borderTop : Js.string prop
+    method borderTopColor : Js.string prop
+    method borderTopStyle : Js.string prop
+    method borderTopWidth : Js.string prop
+    method borderWidth : Js.string prop
+    method bottom : Js.string prop
+    method captionSide : Js.string prop
+    method clear : Js.string prop
+    method clip : Js.string prop
+    method color : Js.string prop
+    method content : Js.string prop
+    method counterIncrement : Js.string prop
+    method counterReset : Js.string prop
+    method cssText : Js.string prop
+    method cursor : Js.string prop
+    method direction : Js.string prop
+    method display : Js.string prop
+    method emptyCells : Js.string prop
+    method font : Js.string prop
+    method fontFamily : Js.string prop
+    method fontSize : Js.string prop
+    method fontStyle : Js.string prop
+    method fontVariant : Js.string prop
+    method fontWeight : Js.string prop
+    method height : Js.string prop
+    method left : Js.string prop
+    method letterSpacing : Js.string prop
+    method lineHeight : Js.string prop
+    method listStyle : Js.string prop
+    method listStyleImage : Js.string prop
+    method listStylePosition : Js.string prop
+    method listStyleType : Js.string prop
+    method margin : Js.string prop
+    method marginBottom : Js.string prop
+    method marginLeft : Js.string prop
+    method marginRight : Js.string prop
+    method marginTop : Js.string prop
+    method maxHeight : Js.string prop
+    method maxWidth : Js.string prop
+    method minHeight : Js.string prop
+    method minWidth : Js.string prop
+    method outline : Js.string prop
+    method outlineColor : Js.string prop
+    method outlineOffset : Js.string prop
+    method outlineStyle : Js.string prop
+    method outlineWidth : Js.string prop
+    method overflow : Js.string prop
+    method overflowX : Js.string prop
+    method overflowY : Js.string prop
+    method padding : Js.string prop
+    method paddingBottom : Js.string prop
+    method paddingLeft : Js.string prop
+    method paddingRight : Js.string prop
+    method paddingTop : Js.string prop
+    method pageBreakAfter : Js.string prop
+    method pageBreakBefore : Js.string prop
+    method position : Js.string prop
+    method right : Js.string prop
+    method tableLayout : Js.string prop
+    method textAlign : Js.string prop
+    method textDecoration : Js.string prop
+    method textIndent : Js.string prop
+    method textTransform : Js.string prop
+    method top : Js.string prop
+    method verticalAlign : Js.string prop
+    method visibility : Js.string prop
+    method whiteSpace : Js.string prop
+    method width : Js.string prop
+    method wordSpacing : Js.string prop
+    method zIndex : Js.string prop
+  end
+
   class type element = object
     inherit [element] Dom.element
     method id : Js.string prop
@@ -246,11 +340,10 @@ module HTML = struct
     method lang : Js.string prop
     method dir : Js.string prop
     method className : Js.string prop
+    method style : cssStyleDeclaration t prop
 
     (* FIX: not portable! *)
     method onclick : (mouseEvent t Nullable.t -> Js.bool) prop
-    (* FIX: should be on some specific elements *)
-    method onchange : (unit -> Js.bool) prop
   end
 
   class type document = object
@@ -258,10 +351,112 @@ module HTML = struct
     method title : Js.string prop
     method referrer : Js.string readonly_prop
     method domain : Js.string readonly_prop
-(*URL?*)
+    method _URL : Js.string readonly_prop
     method body : element prop
     method cookie : Js.string prop
   end
+
+  let unsafeCreateElement (doc : document t) name =
+    Js.Obj.unsafe_coerce (doc##createElement(JsString.of_string name))
+
+  class type collection = object
+  end
+
+  class type formElement = object
+    inherit element
+    method elements : collection t readonly_prop
+    method length : int readonly_prop
+    method name : Js.string prop
+    method acceptCharset : Js.string prop
+    method action : Js.string prop
+    method enctype : Js.string prop
+    method _method : Js.string prop
+    method target : Js.string prop
+    method submit : unit meth
+    method reset : unit meth
+  end
+
+  let createFormElement doc : formElement t = unsafeCreateElement doc "form"
+
+  class type optGroupElement = object
+    inherit element
+    method disabled : Js.bool prop
+    method label : Js.string prop
+  end
+
+  class type optionElement = object
+    inherit element
+    method form : formElement t readonly_prop
+    method defaultSelected : Js.bool prop
+    method text : Js.string readonly_prop
+    method index : int readonly_prop
+    method disabled : bool prop
+    method label : Js.string prop
+    method selected : bool prop
+    method value : Js.string prop
+  end
+
+  class type optionsCollection = object
+    method item : int -> optionElement t Nullable.t meth
+    method namedItem : Js.string -> optionElement t Nullable.t meth
+  end
+
+  class type selectElement = object
+    inherit element
+    method _type : Js.string readonly_prop
+    method selectedIndex : int prop
+    method value : Js.string prop
+    method length : int prop
+    method form : formElement readonly_prop
+    method options : optionsCollection readonly_prop
+    method disabled : Js.bool prop
+    method multiple : Js.bool prop
+    method name : Js.string prop
+    method size : int prop
+    method tabIndex : int prop
+    method add : #element -> #element Nullable.t -> unit meth
+    method remove : int -> unit meth
+    method blur : unit meth
+    method focus : unit meth
+  end
+
+  class type inputElement = object
+    inherit element
+    method defaultValue : Js.string prop
+    method defaultChecked : Js.string prop
+    method form : formElement readonly_prop
+    method accept : Js.string prop
+    method accessKey : Js.string prop
+    method align : Js.string prop
+    method alt : Js.string prop
+    method checked : Js.bool prop
+    method disabled : Js.bool prop
+    method maxLength : int prop
+    method name : Js.string prop
+    method readOnly : Js.bool prop
+    method size : int prop
+    method src : Js.string prop
+    method tabIndex : int prop
+    method _type : Js.string prop
+    method useMap : Js.string prop
+    method value : Js.string prop
+    method blur : unit meth
+    method focus : unit meth
+    method select : unit meth
+    method click : unit meth
+
+    method onchange : (unit -> Js.bool) prop
+  end
+
+  let createInputElement doc : inputElement t = unsafeCreateElement doc "input"
+
+
+  class type divElement = object
+    inherit element
+    method align : Js.string prop
+  end
+
+  let createDivElement doc : divElement t = unsafeCreateElement doc "div"
 
   type interval_id
   type timeout_id

@@ -34,8 +34,11 @@ XXX Could we build a camlp4 parser on top of this?
 
 module Obj : sig
 type +'a t
-type +'a readonly_prop
-type 'a prop = private 'a readonly_prop
+type readonly
+type readwrite
+type (+'a, +'b) gen_prop
+type 'a readonly_prop = ('a, readonly) gen_prop
+type 'a prop = ('a, readwrite) gen_prop
 type +'a meth
 (*type 'a nullable_prop = 'a Nullable.t prop*)
 
@@ -43,6 +46,7 @@ external unsafe_get : 'a t -> string -> 'b = "caml_js_get"
 external unsafe_set : 'a t -> string -> 'b -> unit = "caml_js_set"
 external unsafe_meth_call : 'a t -> string -> 'b array -> 'c = "caml_js_meth_call"
 external unsafe_inject : 'a -> unit = "%identity"
+external unsafe_coerce : 'a t -> 'b t = "%identity"
 end
 
 (****)

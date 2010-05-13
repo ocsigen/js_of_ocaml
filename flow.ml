@@ -239,7 +239,12 @@ let propagate2 defs def_approx approx st x =
               (fun z u ->
                  match defs.(Var.idx z) with
                    Expr (Block (_, a)) ->
-                     if n >= Array.length a then Any else u
+                     if n >= Array.length a then
+                       Any
+                     else if VarMap.find z st <> Known then
+                       Any
+                     else
+                       u
                  | Phi _ | Param | Expr _ ->
                      Any)
               s Known

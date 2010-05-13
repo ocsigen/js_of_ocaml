@@ -47,6 +47,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | [e]       -> e
     | e1 :: rem -> <:expr< $e1$; $to_sem_expr _loc rem$ >>
 
+  let unescape lab =
+    assert (lab <> "");
+    if lab.[0] = '_' then String.sub lab 1 (String.length lab - 1) else lab
+
   let method_call _loc e lab l =
     let t = random_var () in
     let l = List.map (fun e -> (e, random_var ())) l in
@@ -65,22 +69,24 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         [] -> <:expr< [| |] >>
       | _  -> <:expr< [| $to_sem_expr _loc l$ |] >>
     in
-    <:expr< (Js.Obj.unsafe_meth_call : $typ$) $e$ $str:lab$ $a$ >>
+    <:expr< (Js.Obj.unsafe_meth_call : $typ$) $e$ $str:unescape lab$ $a$ >>
 
   EXTEND Gram
     expr: BEFORE "."
     ["##" RIGHTA
      [ e = SELF; "##"; lab = label ->
          let t = random_var () in
-         let typ =
-           <:ctyp< Js.Obj.t < $lid:lab$ : Js.Obj.readonly_prop '$t$; .. > -> _ -> '$t$ >> in
-         <:expr< (Js.Obj.unsafe_get :> $typ$) $e$ $str:lab$ >>
-     | e1 = SELF; "##"; lab = label; "<-"; e2 = SELF ->
+         let obj_typ =
+           <:ctyp< Js.Obj.t < $lid:lab$ : Js.Obj.gen_prop '$t$ _; .. > >>
+         in
+         <:expr< (Js.Obj.unsafe_get ($e$ : $obj_typ$)
+                    $str:unescape lab$ : '$t$) >>
+     | e1 = SELF; "##"; lab = label; "<-"; e2 = expr LEVEL "top" ->
          let t = random_var () in
          let typ =
            <:ctyp< Js.Obj.t < $lid:lab$ : Js.Obj.prop '$t$; .. > -> _ -> '$t$ -> _ >>
          in
-         <:expr< (Js.Obj.unsafe_set : $typ$) $e1$ $str:lab$ $e2$ >>
+         <:expr< (Js.Obj.unsafe_set : $typ$) $e1$ $str:unescape lab$ $e2$ >>
      | e = SELF; "##"; lab = label; "("; ")" ->
          method_call _loc e lab []
      | e = SELF; "##"; lab = label; "("; l = comma_expr; ")" ->

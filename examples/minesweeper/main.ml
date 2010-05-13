@@ -1,37 +1,37 @@
 open Dom
 let js = JsString.of_string
+let document = HTML.document
 
 let int_input name value =
-  let res = HTML.document##createDocumentFragment() in
+  let res = document##createDocumentFragment() in
   Dom.appendChild res (HTML.document##createTextNode(js name));
-  let input = HTML.document##createElement(js"input") in
-  input##setAttribute(js"type", js"text") ;
-  input##setAttribute(js"value", JsString.of_int !value) ;
+  let input = HTML.createInputElement document in
+  input##_type <- js"text";
+  input##value <- JsString.of_int !value;
   input##onchange <-
     (fun _ ->
-      (value :=
-         try
-           int_of_string
-             (JsString.to_string (input##getAttribute(js"value")))
-         with Invalid_argument _ ->
-           !value);
-      input##setAttribute(js"value", JsString.of_int !value);
-      Js._false);
+       begin try
+         value := int_of_string (JsString.to_string (input##value))
+       with Invalid_argument _ ->
+         ()
+       end;
+       input##value <- JsString.of_int !value;
+       Js._false);
   Dom.appendChild res input;
   res
 
 let button name callback =
   let res = HTML.document##createDocumentFragment() in
-  let input = HTML.document##createElement(js"input") in
-  input##setAttribute(js"type", js"submit");
-  input##setAttribute(js"value", js name);
+  let input = HTML.createInputElement document in
+  input##_type <- js"submit";
+  input##value <- js name;
   input##onclick <- callback;
   Dom.appendChild res input;
   res
 
 let div id =
-  let div = HTML.document##createElement(js"div") in
-  div##setAttribute(js"id", js id);
+  let div = HTML.createDivElement HTML.document in
+  div##id <- js id;
   div
 
 let uid = let uid = ref 0 in fun () -> incr uid ; "caml__" ^ string_of_int  !uid

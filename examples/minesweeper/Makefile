@@ -6,12 +6,12 @@ OBJS=minesweeper.cmo main.cmo
 minesweeper.js: minesweeper $(OCAML2JS)
 	$(OCAML2JS) minesweeper
 
-minesweeper: $(OBJS) ../../lib/ocaml2js.cma
+minesweeper: $(OBJS)
 	ocamlfind ocamlc -package lwt -linkpkg -o minesweeper \
 		-I ../../lib ocaml2js.cma \
 		$(OBJS)
 
-%.cmo: %.ml
+%.cmo: %.ml ../../lib/ocaml2js.cma
 	ocamlc -pp "camlp4o ../../lib/pa_js.cmo" -I ../../lib -g -c $<
 
 main.cmo: minesweeper.cmo
