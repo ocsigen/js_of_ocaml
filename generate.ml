@@ -770,7 +770,7 @@ and compile_conditional st queue pc last handler backs frontier interm =
       let ((px, cx), queue) = access_queue queue x in
       flush_all queue [J.Throw_statement cx]
   | Stop ->
-      flush_all queue []
+      flush_all queue [J.Return_statement None]
   | Branch cont ->
       compile_branch st queue cont handler backs frontier interm
   | Cond (c, x, cont1, cont2) ->
@@ -983,7 +983,8 @@ let compile_program ctx pc =
   let res = compile_closure ctx (pc, []) in
   if debug () then Format.eprintf "@.@.";
   Primitive.list_used ();
-  generate_apply_funs res
+  [J.Statement (J.Expression_statement
+                  (J.ECall (J.EFun (None, [], generate_apply_funs res), [])))]
 
 (**********************)
 

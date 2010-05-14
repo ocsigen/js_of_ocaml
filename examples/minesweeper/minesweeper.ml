@@ -133,8 +133,8 @@ let draw_board d =
 let disable_events d =
   for y = 0 to d.cf.nbrows - 1 do
     for x = 0 to d.cf.nbcols - 1 do
-      d.dom.(y).(x)##onclick
-        <- (fun _ -> alert (js"GAME OVER"); Js._false)
+      d.dom.(y).(x)##onclick <- Nullable.some
+        (fun _ -> HTML.window##alert (js"GAME OVER"); Js._false)
     done
   done
 
@@ -156,7 +156,7 @@ let reveal d i j =
   if d.nb_hidden_cells = 0 then (
     draw_board d ;
     disable_events d ;
-    alert (js"YOU WIN")
+    HTML.window##alert (js"YOU WIN")
   )
 
 let create_demin nb_c nb_r nb_m =
@@ -174,25 +174,18 @@ let create_demin nb_c nb_r nb_m =
 
 type mode = Normal | Flag
 
-let init_table d div =
-  let board_div =
-    match Nullable.maybe HTML.document##getElementById(div) with
-      Some div -> div
-    | None     -> assert false
-  in
+let init_table d board_div =
   let mode = ref Normal in
   let buf = HTML.document##createDocumentFragment() in
   Dom.appendChild buf (HTML.document##createTextNode(js"Mode : "));
   let img = HTML.createImageElement document in
   Dom.appendChild buf img;
   img##src <- js"sprites/bomb.png" ;
-  img##onclick <-
+  img##onclick <- Nullable.some
     (fun _ ->
        begin match !mode with
-         | Normal ->
-             mode := Flag ; img##src <- js"sprites/flag.png"
-         | Flag ->
-             mode := Normal ; img##src <- js"sprites/bomb.png"
+         | Normal -> mode := Flag ; img##src <- js"sprites/flag.png"
+         | Flag   -> mode := Normal ; img##src <- js"sprites/bomb.png"
        end;
        Js._false
     ) ;
@@ -203,7 +196,7 @@ let init_table d div =
       let img = HTML.createImageElement document in
       imgs := img :: !imgs ;
       img##src <- js"sprites/normal.png";
-      img##onclick <-
+      img##onclick <- Nullable.some
         (fun _ ->
           (match !mode with
             | Normal ->
@@ -213,7 +206,7 @@ let init_table d div =
                 else if d.bd.(x).(y).mined then (
                   draw_board d ;
                   disable_events d ;
-                  alert (js"YOU LOSE")
+                  HTML.window##alert (js"YOU LOSE")
                 ) else reveal d x y
             | Flag ->
                 d.bd.(x).(y).flag <- not d.bd.(x).(y).flag ;
@@ -228,13 +221,5 @@ let init_table d div =
   Dom.appendChild board_div buf
 
 let run div nbc nbr nbm =
-  let div, nbc, nbr, nbm =
-    try
-      div,
-      int_of_string nbc,
-      int_of_string nbr,
-      int_of_string nbm
-    with _ -> "board", 10, 10, 20
-  in
   let d = create_demin nbc nbr nbm in
-  init_table d (js div)
+  init_table d div

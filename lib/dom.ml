@@ -1,10 +1,10 @@
+external http_get_with_status : string -> (int * string) = "caml_js_http_get_with_status"
+let http_get url = snd (http_get_with_status url)
 
+(*
 let window = Js.variable "window"
 
 let alert msg = ignore (Js.meth_call window "alert" [| Js.string msg |])
-
-external http_get_with_status : string -> (int * string) = "caml_js_http_get_with_status"
-let http_get url = snd (http_get_with_status url)
 
 module Node = struct
   type t = Js.t
@@ -161,6 +161,7 @@ module Html = struct
   let int i = Node.text (JsString.of_int i)
 
 end
+*)
 
 module Dom = struct
   open Js.Obj
@@ -191,6 +192,12 @@ module Dom = struct
 
   let appendChild (p : #node t) (n : #node t) =
     ignore (p##appendChild ((n :> node t)))
+
+  let removeChild (p : #node t) (n : #node t) =
+    ignore (p##removeChild ((n :> node t)))
+
+  let replaceChild (p : #node t) (n : #node t) (o : #node t) =
+    ignore (p##replaceChild ((n :> node t), (o :> node t)))
 
   class type ['element] element = object
     inherit node
@@ -229,9 +236,6 @@ end
 
 module HTML = struct
   open Js.Obj
-
-  class type mouseEvent = object
-  end
 
   class type cssStyleDeclaration = object
     method background : Js.string prop
@@ -298,6 +302,7 @@ module HTML = struct
     method maxWidth : Js.string prop
     method minHeight : Js.string prop
     method minWidth : Js.string prop
+    method opacity : Js.string prop (*FIX: may be absent*)
     method outline : Js.string prop
     method outlineColor : Js.string prop
     method outlineOffset : Js.string prop
@@ -329,7 +334,16 @@ module HTML = struct
     method zIndex : Js.string prop
   end
 
-  class type element = object
+  class type event = object
+    method _type : Js.string readonly_prop
+    method target : element t Nullable.t readonly_prop
+    method srcElement : element t Nullable.t readonly_prop
+  end
+
+  and mouseEvent = object
+  end
+
+  and element = object
     inherit [element] Dom.element
     method id : Js.string prop
     method title : Js.string prop
@@ -340,9 +354,25 @@ module HTML = struct
 
     method innerHTML : Js.string prop
 
-    (* FIX: not portable! *)
-    method onclick : (mouseEvent t Nullable.t -> Js.bool) prop
+    (* FIX: event? / might be undefined! *)
+    method onclick : (unit -> Js.bool) Nullable.t prop
+    method onmouseover : (unit -> Js.bool) Nullable.t prop
+    method onmouseout : (unit -> Js.bool) Nullable.t prop
   end
+
+(*XXX
+  let event_target (e : #event t) =
+    let targ =
+      match Nullable.maybe e##target with
+        Some t ->
+          t
+      | None ->
+          match Nullable.maybe e##srcElement with
+            Some t -> t
+           | None  -> assert false
+    in
+    if targ##nodeType = 3 then targ##parentNode else targ
+*)
 
   class type document = object
     inherit [element] Dom.document
@@ -392,6 +422,9 @@ module HTML = struct
     method label : Js.string prop
   end
 
+  let createOptGroupElement doc : optGroupElement t =
+    unsafeCreateElement doc "optgroup"
+
   class type optionElement = object
     inherit element
     method form : formElement t Nullable.t readonly_prop
@@ -403,6 +436,9 @@ module HTML = struct
     method selected : bool prop
     method value : Js.string prop
   end
+
+  let createOptionElement doc : optionElement t =
+    unsafeCreateElement doc "option"
 
   class type selectElement = object
     inherit element
@@ -421,7 +457,12 @@ module HTML = struct
     method remove : int -> unit meth
     method blur : unit meth
     method focus : unit meth
+
+    method onchange : (unit -> Js.bool) Nullable.t prop
   end
+
+  let createSelectElement doc : selectElement t =
+    unsafeCreateElement doc "select"
 
   class type inputElement = object
     inherit element
@@ -448,7 +489,7 @@ module HTML = struct
     method select : unit meth
     method click : unit meth
 
-    method onchange : (unit -> Js.bool) prop
+    method onchange : (unit -> Js.bool) Nullable.t prop
   end
 
   let createInputElement doc : inputElement t = unsafeCreateElement doc "input"
@@ -466,12 +507,87 @@ module HTML = struct
 
   let createImageElement doc : imageElement t = unsafeCreateElement doc "img"
 
+  class type tableCellElement = object
+    inherit element
+    method cellIndex : int readonly_prop
+    method abbr : Js.string prop
+    method align : Js.string prop
+    method axis : Js.string prop
+    method ch : Js.string prop
+    method chOff : Js.string prop
+    method colSpan : int prop
+    method headers : Js.string prop
+    method rowSpan : int prop
+    method scope : Js.string prop
+    method vAlign : Js.string prop
+  end
+
+  class type tableRowElement = object
+    inherit element
+    method rowIndex : int readonly_prop
+    method sectionRowIndex : int readonly_prop
+    method cells : tableCellElement collection t readonly_prop
+    method align : Js.string prop
+    method ch : Js.string prop
+    method chOff : Js.string prop
+    method vAlign : Js.string prop
+    method insertCell : int -> tableCellElement t meth
+    method deleteCell : int -> unit meth
+  end
+
+  class type tableSectionElement = object
+    inherit element
+    method align : Js.string prop
+    method ch : Js.string prop
+    method chOff : Js.string prop
+    method vAlign : Js.string prop
+    method rows : tableRowElement collection t readonly_prop
+    method insertRow : int -> tableRowElement t meth
+    method deleteRow : int -> unit meth
+  end
+
+  class type tableCaptionElement = element
+
+  class type tableElement = object
+    inherit element
+    method caption : tableCaptionElement t prop
+    method tHead : tableSectionElement t prop
+    method tFood : tableSectionElement t prop
+    method rows : tableRowElement collection t readonly_prop
+    method tbodies : tableSectionElement collection t readonly_prop
+    method align : Js.string prop
+    method border : Js.string prop
+    method cellPadding : Js.string prop
+    method cellSpacing : Js.string prop
+    method frame : Js.string prop
+    method rules : Js.string prop
+    method summary : Js.string prop
+    method width : Js.string prop
+    method createTHead : tableSectionElement t meth
+    method deleteTHead : unit meth
+    method createTFoot : tableSectionElement t meth
+    method deleteTFoot : unit meth
+    method createCaption : tableCaptionElement t meth
+    method deleteCaption : unit meth
+    method insertRow : int -> tableRowElement t meth
+    method deleteRow : int -> unit meth
+  end
+
+  let createTableElement doc : tableElement t = unsafeCreateElement doc "table"
+
   class type divElement = object
     inherit element
     method align : Js.string prop
   end
 
   let createDivElement doc : divElement t = unsafeCreateElement doc "div"
+
+  let createH1Element doc : element t = unsafeCreateElement doc "h1"
+  let createH2Element doc : element t = unsafeCreateElement doc "h2"
+  let createH3Element doc : element t = unsafeCreateElement doc "h3"
+  let createH4Element doc : element t = unsafeCreateElement doc "h4"
+  let createH5Element doc : element t = unsafeCreateElement doc "h5"
+  let createH6Element doc : element t = unsafeCreateElement doc "h6"
 
   let createBrElement doc : element t = unsafeCreateElement doc "br"
 

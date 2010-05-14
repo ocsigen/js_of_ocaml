@@ -4,6 +4,14 @@ open Dom
 let (>>=) = Lwt.bind
 
 let js = JsString.of_string
+let document = HTML.document
+let append_text e s = Dom.appendChild e (document##createTextNode (js s))
+let replace_child p n =
+  begin match Nullable.maybe p##firstChild with
+    Some c -> Dom.removeChild p c
+  | None   -> ()
+  end;
+  Dom.appendChild p n
 
 let box_style =
   js"border: 1px black solid; background-color: white ; \
@@ -13,28 +21,31 @@ let loading_style =
      position: absolute; top:0; right:0;"
 
 let loading parent =
-  let div =
-    Html.div ~style:loading_style
-      [Html.string (js"LOADING...")] in
-    Node.append parent div ;
-    (fun () -> Node.remove parent div)
+  let div = HTML.createDivElement document in
+  div##style##cssText <- loading_style;
+  append_text div "LOADING...";
+  Dom.appendChild parent div;
+  (fun () -> Dom.removeChild parent div)
 
 let clock_div () =
   let t0 = ref (Sys.time ()) in
-  let div =
-    Html.div ~style:box_style [Html.string (js"--:--:--")] in
+  let div = HTML.createDivElement document in
+  div##style##cssText <- box_style;
+  append_text div "--:--:--";
   let stopped = ref true in
   let rec update_cb () =
     let dt = Sys.time () -. !t0 in
-      if not !stopped then (
-	let txt =
-	  Node.text
-	    (let secs = int_of_float dt in
+    if not !stopped then begin
+      let txt =
+	document##createTextNode
+	  (let secs = int_of_float dt in
              js (Printf.sprintf "%02d:%02d:%02d"
-                   (secs / 3600) ((secs / 60) mod 60) (secs mod 60))
-	    ) in
-	  Node.empty div ; Node.append div txt ) ;
-      Lwt_js.sleep 1. >>= fun () -> update_cb ()
+                   (secs / 3600) ((secs / 60) mod 60) (secs mod 60)))
+      in
+      replace_child div txt
+    end;
+    Lwt_js.sleep 1. >>= fun () ->
+    update_cb ()
   in
     ignore (update_cb ()) ;
     (div,
@@ -43,7 +54,7 @@ let clock_div () =
 
 type cell = Empty | Grass | Diamond | Boulder | Door | End | Guy | Wall | Bam
 and state = {
-  map : cell array array ;      imgs : Node.t array array ;
+  map : cell array array ;      imgs : HTML.imageElement Js.Obj.t array array ;
   mutable pos : int * int ;     mutable endpos : int * int ;
   mutable rem : int ;            mutable dead : bool ;
   mutable map_mutex : Lwt_mutex.t ; mutable events_mutex : bool ;
@@ -51,18 +62,21 @@ and state = {
 }
 exception Death
 
-let img_assoc =
-  [ (Empty, js"sprites/empty.png"); (Bam, js"sprites/bam.png");
-    (Grass, js"sprites/grass.png"); (Diamond, js"sprites/diamond.png");
-    (Boulder, js"sprites/boulder.png"); (End, js"sprites/end.png");
-    (Door, js"sprites/door.png"); (Guy, js"sprites/guy.png");
-    (Wall, js"sprites/wall.png")]
-
-let src = js"src"
+let img_assoc v =
+  match v with
+  | Empty   -> js"sprites/empty.png"
+  | Bam     -> js"sprites/bam.png"
+  | Grass   -> js"sprites/grass.png"
+  | Diamond -> js"sprites/diamond.png"
+  | Boulder -> js"sprites/boulder.png"
+  | End     -> js"sprites/end.png"
+  | Door    -> js"sprites/door.png"
+  | Guy     -> js"sprites/guy.png"
+  | Wall    -> js"sprites/wall.png"
 
 let set_cell state x y v =
   state.map.(y).(x) <- v ;
-  Node.set_attribute state.imgs.(y).(x) src (List.assoc v img_assoc)
+  state.imgs.(y).(x)##src <- img_assoc v
 
 let walkable = function | Empty | Grass | Diamond | End -> true | _-> false
 
@@ -110,9 +124,9 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
   Lwt_mutex.lock state.map_mutex >>= fun () ->
     for y = 0 to Array.length state.map - 1 do
       for x = 0 to Array.length state.map.(y) - 1 do
-	Node.clear_event state.imgs.(y).(x) "onmouseover" ;
-	Node.clear_event state.imgs.(y).(x) "onmouseout" ;
-	Node.clear_event state.imgs.(y).(x) "onclick"
+	state.imgs.(y).(x)##onmouseover <- Nullable.null ;
+	state.imgs.(y).(x)##onmouseout <- Nullable.null ;
+	state.imgs.(y).(x)##onclick <- Nullable.null
       done
     done ;
     let inhibit f _x =
@@ -134,12 +148,12 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
     in
     let rec update (x, y) next img over_cont out_cont click_cont =
       if walkable state.map.(y).(x) then (
-	let cur_img = Node.get_attribute state.imgs.(y).(x) "src" in
+	let cur_img = state.imgs.(y).(x)##src in
 	let over () =
-          Node.set_attribute state.imgs.(y).(x) src img ;
+          state.imgs.(y).(x)##src <- img;
           over_cont ()
 	and out () =
-          Node.set_attribute state.imgs.(y).(x) src cur_img ;
+          state.imgs.(y).(x)##src <- cur_img;
           out_cont ()
 	and click' () =
 	  click_cont () >>= fun () ->
@@ -165,11 +179,11 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
                   | _     -> Lwt.fail e)) >>= fun () ->
 	    build_interaction state show_rem clock
 	in
-	  Node.register_event state.imgs.(y).(x) "onmouseover"
+	  state.imgs.(y).(x)##onmouseover <- Nullable.some
 	    (inhibit (set_pending_out (with_pending_out over) out)) ;
-	  Node.register_event state.imgs.(y).(x) "onmouseout"
+	  state.imgs.(y).(x)##onmouseout <- Nullable.some
 	    (inhibit (with_pending_out (fun () -> Lwt.return ()))) ;
-	  Node.register_event state.imgs.(y).(x) "onclick"
+	  state.imgs.(y).(x)##onclick <- Nullable.some
 	    (inhibit (with_pending_out click)) ;
 	  if state.map.(y).(x) <> End then
 	    update (next (x,y)) next img over out click'
@@ -182,14 +196,13 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 	      state.map.(y').(x') = Boulder && state.map.(y'').(x'') = Empty
 	    with Invalid_argument "index out of bounds" -> false) then (
 	  let over () =
-	    Node.set_attribute state.imgs.(y).(x) src img_guy ;
-	    Node.set_attribute state.imgs.(y').(x') src img;
+	    state.imgs.(y).(x)##src <- img_guy;
+	    state.imgs.(y').(x')##src <- img;
             Lwt.return ()
 	  in
 	  let out () =
-	    Node.set_attribute state.imgs.(y).(x) src (js"sprites/guy.png") ;
-	    Node.set_attribute state.imgs.(y').(x') src
-              (js"sprites/boulder.png")
+	    state.imgs.(y).(x)##src <- js"sprites/guy.png";
+	    state.imgs.(y').(x')##src <- js"sprites/boulder.png"
 	  in
 	  let click () =
 	    set_cell state x y Empty ;
@@ -204,24 +217,24 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
                  | e     -> Lwt.fail e) >>= fun () ->
 	    build_interaction state show_rem clock
 	  in
-	    Node.register_event state.imgs.(y').(x') "onmouseover"
-	      (inhibit (set_pending_out (with_pending_out over) out)) ;
-	    Node.register_event state.imgs.(y').(x') "onmouseout"
-	      (inhibit (with_pending_out (fun () -> Lwt.return ()))) ;
-	    Node.register_event state.imgs.(y').(x') "onclick"
-	      (inhibit (with_pending_out click)) ;
+	    state.imgs.(y').(x')##onmouseover <- Nullable.some
+	      (inhibit (set_pending_out (with_pending_out over) out));
+	    state.imgs.(y').(x')##onmouseout <- Nullable.some
+	      (inhibit (with_pending_out (fun () -> Lwt.return ())));
+	    state.imgs.(y').(x')##onclick <- Nullable.some
+	      (inhibit (with_pending_out click))
 	)
     in
       if state.pos = state.endpos then (
-	clock_stop () ; alert (js"YOU WIN !")
+	clock_stop () ; HTML.window##alert (js"YOU WIN !")
       ) else
 	if state.dead then (
-	  clock_stop () ; alert (js"YOU LOSE !")
-	) else ( 
+	  clock_stop () ; HTML.window##alert (js"YOU LOSE !")
+	) else (
 	  if state.rem = 0 then (
 	    let x,y = state.endpos in
-	      Node.set_attribute state.imgs.(y).(x) src (js"sprites/end.png") ;
-	      state.map.(y).(x) <- End  	
+	      state.imgs.(y).(x)##src <- js"sprites/end.png";
+	      state.map.(y).(x) <- End
 	  ) ;
 	  let r (x, y) = succ x, y and l (x, y) = pred x, y in
 	  let u (x, y) = x, pred y and d (x, y) = x, succ y in
@@ -244,58 +257,84 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
       Lwt_mutex.unlock state.map_mutex;
       Lwt.return ()
 
+let opt_style e style =
+  match style with Some s -> e##style##cssText <- s | None -> ()
+
+
+let build_table ?style ?tr_style ?td_style f t =
+  let m = HTML.createTableElement document in
+  opt_style m style;
+  for y = 0 to Array.length t - 1 do
+    let tr = m##insertRow (-1) in
+    opt_style tr tr_style;
+    for x = 0 to Array.length t.(y) - 1 do
+      let td = tr##insertCell (-1) in
+      opt_style td td_style;
+      Dom.appendChild td (f y x t.(y).(x));
+      Dom.appendChild tr td
+    done ;
+    Dom.appendChild m tr
+  done;
+  m
 
 let _ =
-  let body = Node.get_element_by_id Node.document (js"body") in
-  let board_div = Html.div [] in
+  let body =
+    match Nullable.maybe document##getElementById(js"body") with
+      Some b -> b
+    | None   -> assert false
+  in
+  let board_div = HTML.createDivElement document in
   let (clock_div,clock_start,_) as clock = clock_div () in
   let load_data name process=
     let loading_end = loading body in
     let data = http_get name in
-    let res = process data in
-      loading_end () ;
-      res
+    process data >>= fun res ->
+    loading_end ();
+    Lwt.return res
   in
   let rem_div, show_rem =
-    let div = Html.div ~style:box_style [Html.string (js"--")] in
-      (div, (fun v -> Node.replace_all div (Html.int v)))
+    let div = HTML.createDivElement document in
+    div##style##cssText <- box_style;
+    append_text div "--";
+    (div,
+     fun v ->
+       replace_child div (document##createTextNode (JsString.of_int v)))
   in
-  let levels =
-    load_data
-      "maps.txt" 
-      (fun txt ->
-	 let find_string st =
-	   let sz = String.length txt in
-	   let rec find_string_start s =
-	     if s >= sz then
-	       failwith "eos"
-	     else
-	       if txt.[s] == '"' then
-		 find_string_end (s + 1) (s + 2)
-	       else
-		 find_string_start (s + 1)
-	   and find_string_end s e =
-	     if s >= sz then
-	       failwith "eos"
-	     else
-	       if txt.[e] == '"' then
-		 (String.sub txt s (e - s), e + 1)
-	       else
-		 find_string_end s (e + 1)
-	   in find_string_start st
-	 in
-	 let rec scan_pairs st acc =
-	   match
-	     try
-	       let fst, st = find_string st in
-	       let snd, st = find_string st in
-		 Some ((fst, snd), st)
-	     with Failure "eos" -> None
-	   with
-	     | Some (elt, st) -> scan_pairs st (elt :: acc)
-	     | None -> acc
-	 in List.rev (scan_pairs 0 []))
-  in
+  load_data
+    "maps.txt"
+    (fun txt ->
+       let find_string st =
+         let sz = String.length txt in
+         let rec find_string_start s =
+           if s >= sz then
+             failwith "eos"
+           else
+             if txt.[s] == '"' then
+      	 find_string_end (s + 1) (s + 2)
+             else
+      	 find_string_start (s + 1)
+         and find_string_end s e =
+           if s >= sz then
+             failwith "eos"
+           else
+             if txt.[e] == '"' then
+      	 (String.sub txt s (e - s), e + 1)
+             else
+      	 find_string_end s (e + 1)
+         in find_string_start st
+       in
+       let rec scan_pairs st acc =
+         match
+           try
+             let fst, st = find_string st in
+             let snd, st = find_string st in
+      	 Some ((fst, snd), st)
+           with Failure "eos" -> None
+         with
+           | Some (elt, st) -> scan_pairs st (elt :: acc)
+           | None -> acc
+       in
+       Lwt.return (List.rev (scan_pairs 0 []))) >>= fun levels ->
   let load_level file =
     load_data file
       (fun data ->
@@ -315,23 +354,30 @@ let _ =
 	     done ;
 	     let map = Array.of_list (List.map Array.of_list (List.rev !res)) in
 	       map, Array.map (Array.map
-				 (fun c -> Html.img ~src:(List.assoc c img_assoc) ())) map
+				 (fun c ->
+                                    let img = HTML.createImageElement document in
+                                    img##src <- img_assoc c;
+                                    img)) map
 	 in 
 	 let gx = ref 0 and gy = ref 0 and ex = ref 0 and ey = ref 0 and rem = ref 0 in
+         let style =
+           js"border-collapse:collapse;line-height: 0; opacity: 0; \
+              margin-left:auto; margin-right:auto"
+         in
+	 let td_style = js"padding: 0; width: 20px; height: 20px;" in
 	 let table =
-	   Html.map_table
-	     ~style:(js"border-collapse:collapse;line-height: 0; opacity: 0")
-             ~attrs:[js"align", js"center"]
-	     ~td_style:(js"padding: 0; width: 20px; height: 20px;")
+	   build_table ~style ~td_style
 	     (fun y x cell ->
-		(match map.(y).(x) with
-		   | Guy -> gx := x ; gy := y
-		   | Diamond -> incr rem
-		   | Door -> ex := x ; ey := y
-		   | _ -> ()) ; cell)
+		begin match map.(y).(x) with
+		| Guy     -> gx := x ; gy := y
+	        | Diamond -> incr rem
+		| Door    -> ex := x ; ey := y
+		| _       -> ()
+                end;
+                cell)
 	     cells
 	 in
-	   Node.replace_all board_div table ;
+           replace_child board_div table;
 	   build_interaction
 	     { map = map; imgs = cells ; pos = (!gx, !gy) ; endpos = (!ex, !ey) ;
 	       map_mutex = Lwt_mutex.create () ; events_mutex = false ;
@@ -341,33 +387,52 @@ let _ =
 	   let rec fade () =
 	     let t = Sys.time () in
 	       if t -. t0 >= 1. then (
-		 Node.set_attribute table (js"style")
-		   (js"border-collapse:collapse;line-height: 0; opacity:1");
+		 table##style##opacity <- js"1";
                  Lwt.return ()
 	       ) else (
 		 Lwt_js.sleep 0.05 >>= fun () ->
-		 Node.set_attribute table (js"style")
-		   (js (Printf.sprintf
-                          "border-collapse:collapse;line-height: 0; opacity:%g"
-                          (t -. t0))) ;
+		 table##style##opacity <-
+		   (js (Printf.sprintf "%g" (t -. t0))) ;
 		 fade ()
 	       )
 	   in fade () >>= fun () -> clock_start (); Lwt.return ()
       )
   in
-    Node.set_attribute body (js"style")
-      (js"font-family: sans-serif; text-align: center; \
-          background-color: #e8e8e8;") ;
-    Node.append body (Html.h1 [Html.string (js"Boulder Dash in Ocaml")]) ;
-    Node.append body
-      (Html.div
-	 [Html.string (js"Elapsed time: ") ; clock_div ;
-          Html.string (js" Remaining diamonds: ") ; rem_div ;
-	  Html.string (js" ") ;
-	  Html.select
-	    (Html.option [Html.string (js"Choose a level")]
-	     :: (List.map (fun (f, n) ->
-                             Html.option ~onclick:(fun _ -> ignore (load_level f); Js._false)
-                               [Html.string (js n)]) levels)) ;
-	  Html.br () ; Html.br () ; board_div ])
-      
+    body##style##cssText <-
+      js"font-family: sans-serif; text-align: center; \
+         background-color: #e8e8e8;" ;
+    let h1 = HTML.createH1Element document in
+    append_text h1 "Boulder Dash in Ocaml";
+    Dom.appendChild body h1;
+    let div = HTML.createDivElement document in
+    append_text div "Elapsed time: ";
+    Dom.appendChild div clock_div;
+    append_text div " Remaining diamonds: ";
+    Dom.appendChild div rem_div;
+    append_text div " ";
+    let select = HTML.createSelectElement document in
+    let option = HTML.createOptionElement document in
+    append_text option "Choose a level";
+    Dom.appendChild select option;
+    List.iter
+      (fun (f, n) ->
+         let option = HTML.createOptionElement document in
+         append_text option n;
+(*
+         option##onclick <-
+           Nullable.some (fun _ -> ignore (load_level f); Js._false);
+*)
+         Dom.appendChild select option)
+      levels;
+    select##onchange <- Nullable.some
+      (fun _ ->
+         let i = select##selectedIndex - 1 in
+         if i >= 0 && i < List.length levels then
+           ignore (load_level (fst (List.nth levels i)));
+         Js._false);
+    Dom.appendChild div select;
+    Dom.appendChild div (HTML.createBrElement document);
+    Dom.appendChild div (HTML.createBrElement document);
+    Dom.appendChild div board_div;
+    Dom.appendChild body div;
+    Lwt.return ()

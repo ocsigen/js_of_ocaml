@@ -8,7 +8,7 @@ let int_input name value =
   let input = HTML.createInputElement document in
   input##_type <- js"text";
   input##value <- JsString.of_int !value;
-  input##onchange <-
+  input##onchange <- Nullable.some
     (fun _ ->
        begin try
          value := int_of_string (JsString.to_string (input##value))
@@ -25,16 +25,9 @@ let button name callback =
   let input = HTML.createInputElement document in
   input##_type <- js"submit";
   input##value <- js name;
-  input##onclick <- callback;
+  input##onclick <- Nullable.some callback;
   Dom.appendChild res input;
   res
-
-let div id =
-  let div = HTML.createDivElement HTML.document in
-  div##id <- js id;
-  div
-
-let uid = let uid = ref 0 in fun () -> incr uid ; "caml__" ^ string_of_int  !uid
 
 let onload _ =
   let main =
@@ -50,16 +43,11 @@ let onload _ =
   Dom.appendChild main (int_input "Number of mines" nbm);
   Dom.appendChild main (HTML.createBrElement document);
   Dom.appendChild main
-             (button "nouvelle partie"
-                 (fun _ ->
-                   let id = uid () in
-                   ignore (Dom.appendChild main (div id));
-                   Minesweeper.run
-                     id
-                     (string_of_int !nbc)
-                     (string_of_int !nbr)
-                     (string_of_int !nbm);
-                   Js._false))
-;;
+    (button "nouvelle partie"
+       (fun _ ->
+          let div = HTML.createDivElement HTML.document in
+          Dom.appendChild main div;
+          Minesweeper.run div !nbc !nbr !nbm;
+          Js._false))
 
-HTML.window##onload <- onload
+let _ = HTML.window##onload <- onload
