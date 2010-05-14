@@ -44,11 +44,11 @@ let onload _ =
   in
   let nbr, nbc, nbm = ref 10, ref 12, ref 15 in
   Dom.appendChild main (int_input "Number of columns" nbr);
-  Dom.appendChild main (HTML.document##createElement(js"br"));
+  Dom.appendChild main (HTML.createBrElement document);
   Dom.appendChild main (int_input "Number of rows" nbc);
-  Dom.appendChild main (HTML.document##createElement(js"br"));
+  Dom.appendChild main (HTML.createBrElement document);
   Dom.appendChild main (int_input "Number of mines" nbm);
-  Dom.appendChild main (HTML.document##createElement(js"br"));
+  Dom.appendChild main (HTML.createBrElement document);
   Dom.appendChild main
              (button "nouvelle partie"
                  (fun _ ->

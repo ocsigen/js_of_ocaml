@@ -213,13 +213,9 @@ module Dom = struct
     method replaceData : int -> int -> Js.string meth
   end
 
-  class type text = object
-    inherit characterData
-  end
+  class type text = characterData
 
-  class type documentFragment = object
-    inherit node
-  end
+  class type documentFragment = node
 
   class type ['element] document = object
     inherit ['element] element
@@ -342,6 +338,8 @@ module HTML = struct
     method className : Js.string prop
     method style : cssStyleDeclaration t prop
 
+    method innerHTML : Js.string prop
+
     (* FIX: not portable! *)
     method onclick : (mouseEvent t Nullable.t -> Js.bool) prop
   end
@@ -353,18 +351,28 @@ module HTML = struct
     method domain : Js.string readonly_prop
     method _URL : Js.string readonly_prop
     method body : element prop
+(*XXX
+ readonly attribute HTMLCollection  images;
+ readonly attribute HTMLCollection  applets;
+ readonly attribute HTMLCollection  links;
+ readonly attribute HTMLCollection  forms;
+ readonly attribute HTMLCollection  anchors;
+*)
     method cookie : Js.string prop
   end
 
   let unsafeCreateElement (doc : document t) name =
     Js.Obj.unsafe_coerce (doc##createElement(JsString.of_string name))
 
-  class type collection = object
+  class type ['node] collection = object
+    method length : int readonly_prop
+    method item : int -> 'node t Nullable.t meth
+    method namedItem : Js.string -> 'node t Nullable.t meth
   end
 
   class type formElement = object
     inherit element
-    method elements : collection t readonly_prop
+    method elements : element collection t readonly_prop
     method length : int readonly_prop
     method name : Js.string prop
     method acceptCharset : Js.string prop
@@ -386,7 +394,7 @@ module HTML = struct
 
   class type optionElement = object
     inherit element
-    method form : formElement t readonly_prop
+    method form : formElement t Nullable.t readonly_prop
     method defaultSelected : Js.bool prop
     method text : Js.string readonly_prop
     method index : int readonly_prop
@@ -396,19 +404,14 @@ module HTML = struct
     method value : Js.string prop
   end
 
-  class type optionsCollection = object
-    method item : int -> optionElement t Nullable.t meth
-    method namedItem : Js.string -> optionElement t Nullable.t meth
-  end
-
   class type selectElement = object
     inherit element
     method _type : Js.string readonly_prop
     method selectedIndex : int prop
     method value : Js.string prop
     method length : int prop
-    method form : formElement readonly_prop
-    method options : optionsCollection readonly_prop
+    method form : formElement t Nullable.t readonly_prop
+    method options : optionElement collection t readonly_prop
     method disabled : Js.bool prop
     method multiple : Js.bool prop
     method name : Js.string prop
@@ -424,7 +427,7 @@ module HTML = struct
     inherit element
     method defaultValue : Js.string prop
     method defaultChecked : Js.string prop
-    method form : formElement readonly_prop
+    method form : formElement Nullable.t readonly_prop
     method accept : Js.string prop
     method accessKey : Js.string prop
     method align : Js.string prop
@@ -450,6 +453,18 @@ module HTML = struct
 
   let createInputElement doc : inputElement t = unsafeCreateElement doc "input"
 
+  class type imageElement = object
+    inherit element
+    method alt : Js.string prop
+    method height : int prop
+    method isMap : Js.bool prop
+    method longDesc : Js.string prop
+    method src : Js.string prop
+    method useMap : Js.string prop
+    method width : int prop
+  end
+
+  let createImageElement doc : imageElement t = unsafeCreateElement doc "img"
 
   class type divElement = object
     inherit element
@@ -457,6 +472,8 @@ module HTML = struct
   end
 
   let createDivElement doc : divElement t = unsafeCreateElement doc "div"
+
+  let createBrElement doc : element t = unsafeCreateElement doc "br"
 
   type interval_id
   type timeout_id

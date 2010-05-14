@@ -1,7 +1,8 @@
 
 open Dom
-
 let js = JsString.of_string
+let document = HTML.document
+
 let src = js"src"
 
 type config = {
@@ -106,22 +107,21 @@ let h6 = l5 + 2*b0
 
 type demin_cf =
     { bd : cell array array;
-      dom : HTML.element Js.Obj.t array array;
+      dom : HTML.imageElement Js.Obj.t array array;
       cf : config ;
       mutable nb_marked_cells : int;
       mutable nb_hidden_cells : int;
       mutable flag_switch_on : bool }
 
 let draw_cell dom bd =
-  dom##setAttribute
-    (src,
-     js (if bd.flag then "sprites/flag.png"
-         else if bd.mined then "sprites/bomb.png"
-         else if bd.seen then (
-           if bd.nbm = 0 then "sprites/empty.png"
-           else "sprites/" ^ string_of_int bd.nbm ^ ".png"
-         )
-         else "sprites/normal.png"))
+  dom##src <-
+    js (if bd.flag then "sprites/flag.png"
+        else if bd.mined then "sprites/bomb.png"
+        else if bd.seen then (
+          if bd.nbm = 0 then "sprites/empty.png"
+          else "sprites/" ^ string_of_int bd.nbm ^ ".png"
+        )
+        else "sprites/normal.png")
 
 let draw_board d =
   for y = 0 to d.cf.nbrows - 1 do
@@ -183,26 +183,26 @@ let init_table d div =
   let mode = ref Normal in
   let buf = HTML.document##createDocumentFragment() in
   Dom.appendChild buf (HTML.document##createTextNode(js"Mode : "));
-  let img = HTML.document##createElement(js"img") in
+  let img = HTML.createImageElement document in
   Dom.appendChild buf img;
-  img##setAttribute(src, js"sprites/bomb.png") ;
+  img##src <- js"sprites/bomb.png" ;
   img##onclick <-
     (fun _ ->
        begin match !mode with
          | Normal ->
-             mode := Flag ; img##setAttribute(src, js"sprites/flag.png")
+             mode := Flag ; img##src <- js"sprites/flag.png"
          | Flag ->
-             mode := Normal ; img##setAttribute(src, js"sprites/bomb.png")
+             mode := Normal ; img##src <- js"sprites/bomb.png"
        end;
        Js._false
     ) ;
-  Dom.appendChild buf (HTML.document##createElement(js"br"));
+  Dom.appendChild buf (HTML.createBrElement document);
   for y = 0 to d.cf.nbrows - 1 do
     let imgs = ref [] in
     for x = 0 to d.cf.nbcols - 1 do
-      let img = HTML.document##createElement(js"img") in
+      let img = HTML.createImageElement document in
       imgs := img :: !imgs ;
-      img##setAttribute(src, js"sprites/normal.png");
+      img##src <- js"sprites/normal.png";
       img##onclick <-
         (fun _ ->
           (match !mode with
@@ -221,7 +221,7 @@ let init_table d div =
           Js._false);
       Dom.appendChild buf img;
     done ;
-    Dom.appendChild buf (HTML.document##createElement(js"br"));
+    Dom.appendChild buf (HTML.createBrElement document);
     d.dom.(y) <- Array.of_list (List.rev !imgs)
   done ;
   board_div##style##lineHeight <- js"0";
