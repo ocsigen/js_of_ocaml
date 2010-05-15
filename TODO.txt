@@ -1,5 +1,7 @@
 Priorities
 ==========
+- Nullable.t ==> opt
+
 - asynchronous + portable http_get API
 
 - overloading mechanism: send_1 / send_2 / ...

@@ -7,7 +7,7 @@ class type disposable = object
   method isDisposed : bool meth
 end
 
-module Event = struct
+module Events = struct
   class type event = object
     inherit disposable
     method preventDefault : unit meth
@@ -71,6 +71,54 @@ module Event = struct
   end
 end
 
-module Ui = struct
-  
+module Uri = struct
+  class type uri = object
+    method clone : uri t meth
+    method getDecodedQuery : Js.string meth
+    method getDomain : Js.string meth
+    method getEncodedQuery : Js.string meth
+    method getFragment : Js.string meth
+    method getIgnoreCase : Js.bool meth
+(*
+    method getParameterValue : Js.string -> unit meth (*XXX*)
+    method getParameterValues
+*)
+    method getPath : Js.string meth
+    method getPort : int Nullable.t meth
+    method getQuery : Js.string meth
+(*
+    method getQueryData : querydata t meth
+*)
+    method getScheme : Js.string meth
+    method getUserInfo : Js.string meth
+    method hasDomain : Js.bool meth
+    method hasFragment : Js.bool meth
+    method hasPath : Js.bool meth
+    method hasPort : Js.bool meth
+    method hasQuery : Js.bool meth
+    method hasSameDomainAs : uri t -> Js.bool meth
+    method hasScheme : Js.bool meth
+    method hasUserInfo : Js.bool meth
+    method isReadOnly : Js.bool meth
+    method makeUnique : uri t meth
+    method removeParameter : Js.string -> uri t meth
+    method resolve : uri t -> uri t meth
+    method setDomain : Js.string -> bool -> uri t meth
+    method setFragment : Js.string -> bool -> uri t meth
+    method setIgnoreCase : Js.bool -> unit meth
+(*
+    method setParameterValue : 
+    method setParameterValues : 
+*)
+    method setPath : Js.string -> Js.bool -> uri t meth
+    method setPort : int -> uri t meth
+    method setQuery : Js.string -> Js.bool -> uri t meth
+(*
+    method setQueryData : 
+*)
+    method setReadOnly : Js.bool -> unit meth
+    method setScheme : Js.string -> bool -> uri t meth
+    method setUserInfo : Js.string -> bool -> uri t meth
+    method toString : Js.string meth
+  end
 end
