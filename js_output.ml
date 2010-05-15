@@ -169,7 +169,7 @@ let rec expression l f e =
   | EBin (op, e1, e2) ->
       let (out, lft, rght) = op_prec op in
       if l > out then Format.fprintf f "@[<1>(";
-      Format.fprintf f "%a%s%a"
+      Format.fprintf f "%a%s@,%a"
         (expression lft) e1 (op_str op) (expression rght) e2;
       if l > out then Format.fprintf f ")@]"
   | EArr el ->
@@ -284,25 +284,25 @@ and statement f s =
       (* Dangling else issue... *)
       statement f (If_statement (e, Block [s1], s2))
   | If_statement (e, s1, Some (Block _ as s2)) ->
-      Format.fprintf f "@[<1>if@,@[(%a)@]@,@[%a@]@;<0 -1>else@,@[<1>%a@]@]"
+      Format.fprintf f "@[<1>if@,@[<1>(%a)@]@,@[%a@]@;<0 -1>else@,@[<1>%a@]@]"
         (expression 0) e statement s1 statement s2
   | If_statement (e, s1, Some s2) ->
-      Format.fprintf f "@[<1>if@,@[(%a)@]@,@[%a@]@;<0 -1>else@ @[<1>%a@]@]"
+      Format.fprintf f "@[<1>if@,@[<1>(%a)@]@,@[%a@]@;<0 -1>else@ @[<1>%a@]@]"
         (expression 0) e statement s1 statement s2
   | If_statement (e, s1, None) ->
-      Format.fprintf f "@[<1>if@,@[(%a)@]@,@[%a@]@]"
+      Format.fprintf f "@[<1>if@,@[<1>(%a)@]@,@[%a@]@]"
         (expression 0) e statement s1
   | While_statement (e, s) ->
-      Format.fprintf f "@[<1>while@,@[(%a)@]@,@[%a@]@]"
+      Format.fprintf f "@[<1>while@,@[<1>(%a)@]@,@[%a@]@]"
         (expression 0) e statement s
   | Do_while_statement (Block _ as s, e) ->
-      Format.fprintf f "@[<1>do@,@[%a@]@;<0 -1>while@,@[(%a)@]"
+      Format.fprintf f "@[<1>do@,@[%a@]@;<0 -1>while@,@[<1>(%a)@]"
         statement s (expression 0) e
   | Do_while_statement (s, e) ->
-      Format.fprintf f "@[<1>do@ @[%a@]@;<0 -1>while@,@[(%a)@]"
+      Format.fprintf f "@[<1>do@ @[%a@]@;<0 -1>while@,@[<1>(%a)@]"
         statement s (expression 0) e
   | For_statement (e1, e2, e3, s) ->
-      Format.fprintf f "@[<1>for@,@[(%a;%a;%a)@]@,@[%a@]@]"
+      Format.fprintf f "@[<1>for@,@[<1>(%a;%a;%a)@]@,@[%a@]@]"
         (opt_expression 0) e1 (opt_expression 0) e2 (opt_expression 0) e3
         statement s
   | Continue_statement None ->

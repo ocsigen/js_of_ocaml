@@ -1,5 +1,5 @@
 
-MLOBJS=js.cmo nullable.cmo jsString.cmo jsArray.cmo lwt_js.cmo dom.cmo
+MLOBJS=js.cmo nullable.cmo jsString.cmo jsArray.cmo dom.cmo lwt_js.cmo goog.cmo
 COBJS= stubs.o
 OBJS=$(MLOBJS) $(COBJS)
 
@@ -35,6 +35,6 @@ clean:
 
 depend:
 	find . -maxdepth 1 -name private -prune -o -regex ".*\\.mli?" | \
-	xargs ocamldep > .depend
+	xargs ocamldep -pp "camlp4o pa_js.cmo" > .depend
 
 include .depend

@@ -2,15 +2,22 @@ Priorities
 ==========
 - asynchronous + portable http_get API
 
+- overloading mechanism: send_1 / send_2 / ...
+
 - event handlers:
-  use a wrapper:
-	if (!e) e = window.event;
-        ....
+  ==> use a wrapper:
+	  if (!e) e = window.event;
+          ....
+  ==> we want to be able to access this
+      (avoid memory leaks...)
 
 - how do we deal with possibly undefined properties?
+  ===> onevent stuff
+  ===> opacity
 
 - we have to make sure that functions passed to javascript have the
   right arity!
+  ==> always the case with event handlers
 
 - syntactic sugar for Javascript literal strings
   + optimization to avoid going through Caml strings

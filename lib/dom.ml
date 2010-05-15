@@ -1,168 +1,6 @@
 external http_get_with_status : string -> (int * string) = "caml_js_http_get_with_status"
 let http_get url = snd (http_get_with_status url)
 
-(*
-let window = Js.variable "window"
-
-let alert msg = ignore (Js.meth_call window "alert" [| Js.string msg |])
-
-module Node = struct
-  type t = Js.t
-  type nodeList
-
-  let document = Js.variable "document"
-
-  let get_element_by_id root id =
-    Js.meth_call root "getElementById" [| Js.string id |]
-
-  let text content =
-    Js.meth_call document "createTextNode" [| Js.string content |]
-
-  let element tag =
-    Js.meth_call document "createElement" [| Js.string tag |]
-
-  let get_attribute node name : JsString.t =
-    Js.extract (Js.get node name)
-
-  let set_attribute node name value =
-    ignore (Js.meth_call node "setAttribute"
-              [| Js.string name ; Js.string value |])
-
-  let register_event node name fn =
-    ignore (Js.set node name (Js.inject (fn : Js.t -> Js.bool)))
-
-  let clear_event node name =
-    Js.set node name Js.null
-
-  let append node child =
-    ignore (Js.meth_call node "appendChild" [| child |])
-  let remove node child =
-    ignore (Js.meth_call node "removeChild" [| child |])
-
-  let children node : nodeList = Js.extract (Js.get node "childNodes")
-  let first_child node : Js.t Nullable.t = Js.extract (Js.get node "firstChild")
-
-  let rec empty n =
-    match Nullable.maybe (first_child n) with
-      Some c -> remove n c; empty n
-    | None   -> ()
-
-  let replace_all n c = empty n ; append n c
-end
-
-module Fragment = struct
-  let create () = Js.meth_call Node.document "createDocumentFragment" [||]
-  let append fr n = ignore (Js.meth_call fr "appendChild" [| n |])
-  let flush n fr = ignore (Js.meth_call n "appendChild" [| fr |])
-end
-
-module Html = struct
-  let rec set_attrs m attrs =
-    match attrs with 
-      | [] -> ()
-      | (n, v) :: attrs -> Node.set_attribute m n v ; set_attrs m attrs
-
-  let set_attr_opt m n v =
-    match v with 
-      | None -> ()
-      | Some v -> Node.set_attribute m n v
-
-  let register_event_opt m n v =
-    match v with 
-      | None -> ()
-      | Some f -> Node.register_event m n f
-	  
-  let create n ?(attrs = []) () =
-    let m = Node.element n in
-      set_attrs m attrs ;
-      m
-
-  let div_s = JsString.of_string "div"
-  let style_s = JsString.of_string "style"
-  let img_s = JsString.of_string "img"
-  let src_s = JsString.of_string "src"
-  let alt_s = JsString.of_string "alt"
-  let table_s = JsString.of_string "table"
-  let tr_s = JsString.of_string "tr"
-  let td_s = JsString.of_string "td"
-  let h1_s = JsString.of_string "h1"
-  let select_s = JsString.of_string "select"
-  let option_s = JsString.of_string "option"
-  let br_s = JsString.of_string "br"
-
-  let img ?src ?alt ?style ?(attrs = []) () =
-    let m = create img_s ~attrs:attrs () in
-      set_attr_opt m src_s src ;
-      set_attr_opt m alt_s alt ;
-      set_attr_opt m style_s style ;
-      m
-
-  let div ?style ?(attrs = []) children =
-    let m = create div_s ~attrs:attrs () in
-      set_attr_opt m style_s style ;
-      List.iter (Node.append m) children ;
-      m
-
-  let table ?style ?(attrs = []) children =
-    let m = create table_s ~attrs:attrs () in
-      set_attr_opt m style_s style ;
-      List.iter (Node.append m) children ;
-      m
-
-  let tr ?style ?(attrs = []) children =
-    let m = create tr_s ~attrs:attrs () in
-      set_attr_opt m style_s style ;
-      List.iter (Node.append m) children ;
-      m
-
-  let td ?style ?(attrs = []) children =
-    let m = create td_s ~attrs:attrs () in
-      set_attr_opt m style_s style ;
-      List.iter (Node.append m) children ;
-      m
-
-  let map_table ?style ?(attrs = []) ?tr_style ?(tr_attrs = []) ?td_style ?(td_attrs = []) f t =
-    let m = table ?style ~attrs:attrs [] in
-      set_attr_opt m style_s style ;
-      for y = 0 to Array.length t - 1 do
-	let tr = tr ?style:tr_style ~attrs:tr_attrs [] in
-	  for x = 0 to Array.length t.(y) - 1 do
-	    let td = td ?style:td_style ~attrs:td_attrs [f y x t.(y).(x)]in
-	      Node.append tr td ;
-	  done ;
-	  Node.append m tr ;
-      done ;
-      m
-
-  let h1 ?style ?(attrs = []) children =
-    let m = create h1_s ~attrs:attrs () in
-      set_attr_opt m style_s style ;
-      List.iter (Node.append m) children ;
-      m
-
-  let select ?style ?onchange ?(attrs = []) children =
-    let m = create select_s ~attrs:attrs () in
-      set_attr_opt m style_s style ;
-      register_event_opt m "onchange" onchange ;
-      List.iter (Node.append m) children ;
-      m
-
-  let option ?style ?onclick ?(attrs = []) children =
-    let m = create option_s ~attrs:attrs () in
-      set_attr_opt m style_s style ;
-      register_event_opt m "onclick" onclick ;
-      List.iter (Node.append m) children ;
-      m
-
-  let br = create br_s
-
-  let string = Node.text
-
-  let int i = Node.text (JsString.of_int i)
-
-end
-*)
-
 module Dom = struct
   open Js.Obj
 
@@ -199,7 +37,7 @@ module Dom = struct
   let replaceChild (p : #node t) (n : #node t) (o : #node t) =
     ignore (p##replaceChild ((n :> node t), (o :> node t)))
 
-  class type ['element] element = object
+  class type element = object
     inherit node
     method tagName : Js.string readonly_prop
     method getAttribute : Js.string -> Js.string meth
@@ -225,7 +63,7 @@ module Dom = struct
   class type documentFragment = node
 
   class type ['element] document = object
-    inherit ['element] element
+    inherit element
     method documentElement : 'element t readonly_prop
     method createDocumentFragment : documentFragment t meth
     method createElement : Js.string -> 'element t meth
@@ -344,7 +182,7 @@ module HTML = struct
   end
 
   and element = object
-    inherit [element] Dom.element
+    inherit Dom.element
     method id : Js.string prop
     method title : Js.string prop
     method lang : Js.string prop
@@ -625,5 +463,56 @@ module HTML = struct
 
   let window : window t = Js.extract (Js.variable "window")
   let document : document t = Js.extract (Js.variable "document")
+
+end
+
+module XMLHttpRequest = struct
+  open Js.Obj
+
+  type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
+
+  class type xmlHttpRequest = object
+    method onreadystatechange : (unit -> unit) prop
+    method readyState : readyState readonly_prop
+    method _open :
+      Js.string -> Js.string -> Js.bool ->
+      Js.string Nullable.t -> Js.string Nullable.t -> unit meth
+    method setRequestHeader : Js.string -> Js.string -> unit meth
+    method send : Js.string Nullable.t -> unit meth
+    method _send : #Dom.element #Dom.document -> unit meth (* overloading! *)
+(*
+  void send(Document data);
+  void send([AllowAny] DOMString? data);
+*)
+    method abort : unit meth
+    method status : int readonly_prop
+    method statusText : Js.string readonly_prop
+    method getResponseHeader : Js.string -> Js.string meth
+    method getAllResponseHeaders : Js.string meth
+    method responseText : Js.string readonly_prop
+    method responseXML : Dom.element Dom.document t readonly_prop
+  end
+
+  external create : unit -> xmlHttpRequest t = "createXMLHTTPObject"
+
+  let js = JsString.of_string
+
+  let send_request url callback postData =
+    let req = create () in
+    let meth = js (if postData = Nullable.null then "GET" else "POST") in
+    req##_open (meth, url, Js._true, Nullable.null, Nullable.null);
+    req##setRequestHeader (js"User-Agent", js"XMLHTTP/1.0");
+    begin match Nullable.maybe postData with
+      None   -> ()
+    | Some d -> req##setRequestHeader
+                  (js"Content-type",js"application/x-www-form-urlencoded")
+    end;
+    req##onreadystatechange <-
+      (fun () ->
+         if
+           req##readyState = DONE && (req##status = 200 || req##status = 304)
+         then
+           callback req);
+    if req##readyState <> DONE then req##send (postData)
 
 end

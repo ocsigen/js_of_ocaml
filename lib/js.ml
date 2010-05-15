@@ -39,6 +39,12 @@ type (+'a, +'b) gen_prop
 type 'a readonly_prop = ('a, readonly) gen_prop
 type 'a prop = ('a, readwrite) gen_prop
 type +'a meth
+(*
+type +'a gen_prop
+type 'a readonly_prop = <read : 'a> gen_prop
+type 'a prop = <read : 'a; write : 'a> gen_prop
+type 'a writeonly_prop = <write : 'a> gen_prop
+*)
 
 external unsafe_get : 'a t -> string -> 'b = "caml_js_get"
 external unsafe_set : 'a t -> string -> 'b -> unit = "caml_js_set"

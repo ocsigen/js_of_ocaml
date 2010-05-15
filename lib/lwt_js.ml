@@ -1,9 +1,9 @@
 
-external set_timeout : (unit -> unit) -> float -> unit = "setTimeout"
-
+(*FIX: cancel? *)
 let sleep d =
   let (t, w) = Lwt.task () in
-  set_timeout (fun () -> Lwt.wakeup w ()) (d *. 1000.);
+  ignore
+    (Dom.HTML.window##setTimeout ((fun () -> Lwt.wakeup w ()), d *. 1000.));
   t
 
 let yield () = sleep 0.

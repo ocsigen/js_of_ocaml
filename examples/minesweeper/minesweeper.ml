@@ -3,8 +3,6 @@ open Dom
 let js = JsString.of_string
 let document = HTML.document
 
-let src = js"src"
-
 type config = {
   nbcols  : int ;
   nbrows : int ;

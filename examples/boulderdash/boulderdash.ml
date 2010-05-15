@@ -260,7 +260,6 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 let opt_style e style =
   match style with Some s -> e##style##cssText <- s | None -> ()
 
-
 let build_table ?style ?tr_style ?td_style f t =
   let m = HTML.createTableElement document in
   opt_style m style;
@@ -277,6 +276,13 @@ let build_table ?style ?tr_style ?td_style f t =
   done;
   m
 
+let http_get url =
+  let (res, w) = Lwt.wait () in
+  XMLHttpRequest.send_request (js url)
+    (fun r -> Lwt.wakeup w (JsString.to_string r##responseText))
+    Nullable.null;
+  res
+
 let _ =
   let body =
     match Nullable.maybe document##getElementById(js"body") with
@@ -285,9 +291,9 @@ let _ =
   in
   let board_div = HTML.createDivElement document in
   let (clock_div,clock_start,_) as clock = clock_div () in
-  let load_data name process=
+  let load_data name process =
     let loading_end = loading body in
-    let data = http_get name in
+    http_get name >>= fun data ->
     process data >>= fun res ->
     loading_end ();
     Lwt.return res
