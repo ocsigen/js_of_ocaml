@@ -7,10 +7,7 @@ let js = JsString.of_string
 let document = HTML.document
 let append_text e s = Dom.appendChild e (document##createTextNode (js s))
 let replace_child p n =
-  begin match Nullable.maybe p##firstChild with
-    Some c -> Dom.removeChild p c
-  | None   -> ()
-  end;
+  Js.Opt.iter (p##firstChild) (fun c -> Dom.removeChild p c);
   Dom.appendChild p n
 
 let box_style =
@@ -54,7 +51,7 @@ let clock_div () =
 
 type cell = Empty | Grass | Diamond | Boulder | Door | End | Guy | Wall | Bam
 and state = {
-  map : cell array array ;      imgs : HTML.imageElement Js.Obj.t array array ;
+  map : cell array array ;      imgs : HTML.imageElement Js.t array array ;
   mutable pos : int * int ;     mutable endpos : int * int ;
   mutable rem : int ;            mutable dead : bool ;
   mutable map_mutex : Lwt_mutex.t ; mutable events_mutex : bool ;
@@ -124,9 +121,9 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
   Lwt_mutex.lock state.map_mutex >>= fun () ->
     for y = 0 to Array.length state.map - 1 do
       for x = 0 to Array.length state.map.(y) - 1 do
-	state.imgs.(y).(x)##onmouseover <- Nullable.null ;
-	state.imgs.(y).(x)##onmouseout <- Nullable.null ;
-	state.imgs.(y).(x)##onclick <- Nullable.null
+	state.imgs.(y).(x)##onmouseover <- Js.null ;
+	state.imgs.(y).(x)##onmouseout <- Js.null ;
+	state.imgs.(y).(x)##onclick <- Js.null
       done
     done ;
     let inhibit f _x =
@@ -179,11 +176,11 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
                   | _     -> Lwt.fail e)) >>= fun () ->
 	    build_interaction state show_rem clock
 	in
-	  state.imgs.(y).(x)##onmouseover <- Nullable.some
+	  state.imgs.(y).(x)##onmouseover <- Js.some
 	    (inhibit (set_pending_out (with_pending_out over) out)) ;
-	  state.imgs.(y).(x)##onmouseout <- Nullable.some
+	  state.imgs.(y).(x)##onmouseout <- Js.some
 	    (inhibit (with_pending_out (fun () -> Lwt.return ()))) ;
-	  state.imgs.(y).(x)##onclick <- Nullable.some
+	  state.imgs.(y).(x)##onclick <- Js.some
 	    (inhibit (with_pending_out click)) ;
 	  if state.map.(y).(x) <> End then
 	    update (next (x,y)) next img over out click'
@@ -217,11 +214,11 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
                  | e     -> Lwt.fail e) >>= fun () ->
 	    build_interaction state show_rem clock
 	  in
-	    state.imgs.(y').(x')##onmouseover <- Nullable.some
+	    state.imgs.(y').(x')##onmouseover <- Js.some
 	      (inhibit (set_pending_out (with_pending_out over) out));
-	    state.imgs.(y').(x')##onmouseout <- Nullable.some
+	    state.imgs.(y').(x')##onmouseout <- Js.some
 	      (inhibit (with_pending_out (fun () -> Lwt.return ())));
-	    state.imgs.(y').(x')##onclick <- Nullable.some
+	    state.imgs.(y').(x')##onclick <- Js.some
 	      (inhibit (with_pending_out click))
 	)
     in
@@ -280,14 +277,13 @@ let http_get url =
   let (res, w) = Lwt.wait () in
   XMLHttpRequest.send_request (js url)
     (fun r -> Lwt.wakeup w (JsString.to_string r##responseText))
-    Nullable.null;
+    Js.null;
   res
 
 let _ =
   let body =
-    match Nullable.maybe document##getElementById(js"body") with
-      Some b -> b
-    | None   -> assert false
+    Js.Opt.get (HTML.document##getElementById(js"body"))
+      (fun () -> assert false)
   in
   let board_div = HTML.createDivElement document in
   let (clock_div,clock_start,_) as clock = clock_div () in
@@ -393,11 +389,11 @@ let _ =
 	   let rec fade () =
 	     let t = Sys.time () in
 	       if t -. t0 >= 1. then (
-		 table##style##opacity <- js"1";
+		 table##style##opacity <- Js.def (js"1");
                  Lwt.return ()
 	       ) else (
 		 Lwt_js.sleep 0.05 >>= fun () ->
-		 table##style##opacity <-
+		 table##style##opacity <- Js.def
 		   (js (Printf.sprintf "%g" (t -. t0))) ;
 		 fade ()
 	       )
@@ -426,11 +422,11 @@ let _ =
          append_text option n;
 (*
          option##onclick <-
-           Nullable.some (fun _ -> ignore (load_level f); Js._false);
+           some (fun _ -> ignore (load_level f); Js._false);
 *)
          Dom.appendChild select option)
       levels;
-    select##onchange <- Nullable.some
+    select##onchange <- Js.some
       (fun _ ->
          let i = select##selectedIndex - 1 in
          if i >= 0 && i < List.length levels then

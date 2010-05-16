@@ -1,5 +1,5 @@
 
-MLOBJS=js.cmo nullable.cmo jsString.cmo jsArray.cmo dom.cmo lwt_js.cmo \
+MLOBJS=js.cmo jsString.cmo jsArray.cmo dom.cmo lwt_js.cmo \
 	goog.cmo goog_net.cmo
 COBJS= stubs.o
 OBJS=$(MLOBJS) $(COBJS)
@@ -26,7 +26,7 @@ pa_js.cmo: pa_js.ml
 stubs.c: $(MLOBJS:cmo=ml)
 	(echo "#include <stdlib.h>"; \
 	 echo "#define D(f) void f () { exit(1); }"; \
-	 (sed -n -e 's/external.*"\([^"%]*\)"/D(\1)/p' $(MLOBJS:cmo=ml) | \
+	 (sed -n -e 's/.*external.*"\([^"%]*\)".*/D(\1)/p' $(MLOBJS:cmo=ml) | \
 	  sort | uniq)) \
         > stubs.c
 

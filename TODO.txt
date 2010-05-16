@@ -1,5 +1,7 @@
 Priorities
 ==========
+- Use ~~x instead of x|0? (more parentheses, but maybe faster?)
+
 - Nullable.t ==> opt
 
 - asynchronous + portable http_get API

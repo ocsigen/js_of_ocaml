@@ -56,20 +56,20 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let l = List.map (fun e -> (e, random_var ())) l in
     let mtyp =
       List.fold_right (fun (_, t) ty -> <:ctyp< '$t$ -> $ty$ >>)
-        l <:ctyp< Js.Obj.meth '$t$ >>
+        l <:ctyp< Js.meth '$t$ >>
     in
     let typ =
-      <:ctyp< Js.Obj.t < $lid:lab$ : $mtyp$; .. > -> _ -> _ -> '$t$ >>
+      <:ctyp< Js.t < $lid:lab$ : $mtyp$; .. > -> _ -> _ -> '$t$ >>
     in
     let l =
-      List.map (fun (e, t) -> <:expr< Js.Obj.unsafe_inject ($e$ : '$t$) >>) l
+      List.map (fun (e, t) -> <:expr< Js.Unsafe.inject ($e$ : '$t$) >>) l
     in
     let a =
       match l with
         [] -> <:expr< [| |] >>
       | _  -> <:expr< [| $to_sem_expr _loc l$ |] >>
     in
-    <:expr< (Js.Obj.unsafe_meth_call : $typ$) $e$ $str:unescape lab$ $a$ >>
+    <:expr< (Js.Unsafe.meth_call : $typ$) $e$ $str:unescape lab$ $a$ >>
 
   EXTEND Gram
     expr: BEFORE "."
@@ -77,16 +77,16 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
      [ e = SELF; "##"; lab = label ->
          let t = random_var () in
          let obj_typ =
-           <:ctyp< Js.Obj.t < $lid:lab$ : Js.Obj.gen_prop '$t$ _; .. > >>
+           <:ctyp< Js.t < $lid:lab$ : Js.gen_prop '$t$ _; .. > >>
          in
-         <:expr< (Js.Obj.unsafe_get ($e$ : $obj_typ$)
+         <:expr< (Js.Unsafe.get ($e$ : $obj_typ$)
                     $str:unescape lab$ : '$t$) >>
      | e1 = SELF; "##"; lab = label; "<-"; e2 = expr LEVEL "top" ->
          let t = random_var () in
          let typ =
-           <:ctyp< Js.Obj.t < $lid:lab$ : Js.Obj.prop '$t$; .. > -> _ -> '$t$ -> _ >>
+           <:ctyp< Js.t < $lid:lab$ : Js.prop '$t$; .. > -> _ -> '$t$ -> _ >>
          in
-         <:expr< (Js.Obj.unsafe_set : $typ$) $e1$ $str:unescape lab$ $e2$ >>
+         <:expr< (Js.Unsafe.set : $typ$) $e1$ $str:unescape lab$ $e2$ >>
      | e = SELF; "##"; lab = label; "("; ")" ->
          method_call _loc e lab []
      | e = SELF; "##"; lab = label; "("; l = comma_expr; ")" ->
@@ -108,7 +108,7 @@ use variant types instead of object types?
 
 
 XXXX
-module WEIRDMODULENAME = struct type 'a o = 'a Js.Obj.t val unsafe_get = Js.Obj.unsafe_get ... end
+module WEIRDMODULENAME = struct type 'a o = 'a Js.t val unsafe_get = Js.Unsafe.get ... end
 (let module M = WEIRDMODULENAME in (M.unsafe_get : <x : 'a M.meth> -> 'a))
 
 XXXX be more careful with error messages:

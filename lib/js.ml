@@ -1,67 +1,65 @@
-(*
-XXX
-optimize the code whenever possible:
-   generate direct operations when the arguments are known well enough
-   ===> need to be able to express this in intermediate code...
-*)
 
-type t
-
-external inject : 'a -> t = "%identity"
-external extract : t -> 'a = "%identity"
-
-external get : t -> string -> t = "caml_js_get"
-external set : t -> string -> t -> unit = "caml_js_set"
-
-external call : t -> t -> t array -> t = "caml_js_call"
-external fun_call : t -> t array -> t = "caml_js_fun_call"
-external meth_call : t -> string -> t array -> t = "caml_js_meth_call"
-external new_obj : t -> t array -> t = "caml_js_new"
-
-(* Object and array literals *)
-external obj : (string * t) array -> t = "caml_js_obj"
-external array_lit : t array -> t = "caml_js_array"
-
-external variable : string -> t = "caml_js_var"
-
-(*
-XXX
-array/hash access
-*)
-
-(****)
-
-module Obj = struct
 type +'a t
+
+module Unsafe = struct
+  external variable : string -> 'a = "caml_js_var"
+
+  type any
+  external inject : 'a -> any = "%identity"
+  external extract : any -> 'a = "%identity"
+  external coerce : < .. > t -> < ..> t = "%identity"
+
+  external get : 'a -> string -> 'b = "caml_js_get"
+  external set : 'a -> string -> 'b -> unit = "caml_js_set"
+  external meth_call : 'a -> string -> any array -> 'c = "caml_js_meth_call"
+end
+
+type 'a opt = 'a
+type 'a optdef = 'a
+
+let null = Unsafe.variable "null"
+external some : 'a -> 'a opt = "%identity"
+
+(*FIX: undefined is not a reserved keyword! *)
+let undefined = Unsafe.variable "undefined"
+external def : 'a -> 'a optdef = "%identity"
+
+module type OPT = sig
+  type 'a t
+  val ret : 'a -> 'a t
+  val map : 'a t -> ('a -> 'b) -> 'b t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val case : 'a t -> 'b -> ('a -> 'b) -> 'b
+  val get : 'a t -> (unit -> 'a) -> 'a
+  val iter : 'a t -> ('a -> unit) -> unit
+end
+
+module Opt : OPT with type 'a t = 'a opt = struct
+  type 'a t = 'a opt
+  let ret = some
+  let map x f = if x == null then null else some (f x)
+  let bind x f = if x == null then null else f x
+  let case x y f = if x == null then y else f x
+  let get x f = if x == null then f () else x
+  let iter x f = if x != null then f x
+end
+
+module Optdef : OPT with type 'a t = 'a optdef = struct
+  type 'a t = 'a opt
+  let ret = undefined
+  let map x f = if x == undefined then undefined else some (f x)
+  let bind x f = if x == undefined then undefined else f x
+  let case x y f = if x == undefined then y else f x
+  let get x f = if x == undefined then f () else x
+  let iter x f = if x != undefined then f x
+end
+
+let _true = Unsafe.variable "true"
+let _false = Unsafe.variable "false"
+
 type readonly
 type readwrite
 type (+'a, +'b) gen_prop
 type 'a readonly_prop = ('a, readonly) gen_prop
 type 'a prop = ('a, readwrite) gen_prop
 type +'a meth
-(*
-type +'a gen_prop
-type 'a readonly_prop = <read : 'a> gen_prop
-type 'a prop = <read : 'a; write : 'a> gen_prop
-type 'a writeonly_prop = <write : 'a> gen_prop
-*)
-
-external unsafe_get : 'a t -> string -> 'b = "caml_js_get"
-external unsafe_set : 'a t -> string -> 'b -> unit = "caml_js_set"
-external unsafe_meth_call : 'a t -> string -> 'b array -> 'c = "caml_js_meth_call"
-external unsafe_inject : 'a -> unit = "%identity"
-external unsafe_coerce : 'a t -> 'b t = "%identity"
-end
-
-(****)
-
-type string
-type 'a array
-type bool
-external string : string -> t = "%identity"
-external array : 'a array -> t = "%identity"
-
-let null = variable "null"
-
-let _true : bool = extract (variable "true")
-let _false : bool = extract (variable "false")

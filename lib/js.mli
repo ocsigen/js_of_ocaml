@@ -1,61 +1,61 @@
 
-type t
-
-(*FIX: use 'val' rather than 'external' when inlining is implemented... *)
-
-external inject : 'a -> t = "%identity"
-external extract : t -> 'a = "%identity"
-
-val null : t
-
-external get : t -> string -> t = "caml_js_get"
-external set : t -> string -> t -> unit = "caml_js_set"
-
-external call : t -> t -> t array -> t = "caml_js_call"
-external fun_call : t -> t array -> t = "caml_js_fun_call"
-external meth_call : t -> string -> t array -> t = "caml_js_meth_call"
-external new_obj : t -> t array -> t = "caml_js_new"
-
-(* Object and array literals *)
-external obj : (string * t) array -> t = "caml_js_obj"
-external array_lit : t array -> t = "caml_js_array"
-
-external variable : string -> t = "caml_js_var"
-
-(*
-XXX Could we build a camlp4 parser on top of this?
-
-##m(e1,...,en) : <m : 'a1 * ... * 'an -> 'b> t -> 'b
-==> explicitly provides the arity
-==> typed
-*)
-
-(****)
-
-module Obj : sig
 type +'a t
+
+(* Javascript booleans *)
+val _true : bool t
+val _false : bool t
+
+(* Null and undefined *)
+
+type +'a opt
+type +'a optdef
+
+val null : 'a opt
+val some : 'a -> 'a opt
+val def : 'a -> 'a optdef
+val undefined : 'a optdef
+
+module type OPT = sig
+  type 'a t
+  val ret : 'a -> 'a t
+  val map : 'a t -> ('a -> 'b) -> 'b t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val case : 'a t -> 'b -> ('a -> 'b) -> 'b
+  val get : 'a t -> (unit -> 'a) -> 'a
+  val iter : 'a t -> ('a -> unit) -> unit
+end
+
+module Opt : OPT with type 'a t = 'a opt
+module Optdef : OPT with type 'a t = 'a optdef
+
+(* Method and object properties specification *)
+
 type readonly
 type readwrite
 type (+'a, +'b) gen_prop
 type 'a readonly_prop = ('a, readonly) gen_prop
 type 'a prop = ('a, readwrite) gen_prop
 type +'a meth
-(*type 'a nullable_prop = 'a Nullable.t prop*)
 
-external unsafe_get : 'a t -> string -> 'b = "caml_js_get"
-external unsafe_set : 'a t -> string -> 'b -> unit = "caml_js_set"
-external unsafe_meth_call : 'a t -> string -> 'b array -> 'c = "caml_js_meth_call"
-external unsafe_inject : 'a -> unit = "%identity"
-external unsafe_coerce : 'a t -> 'b t = "%identity"
+(* Unsafe operations.  Use with care! *)
+
+module Unsafe : sig
+(*FIX: use 'val' rather than 'external' when inlining is implemented... *)
+  external variable : string -> 'a = "caml_js_var"
+
+  type any
+  external inject : 'a -> any = "%identity"
+  external extract : any -> 'a = "%identity"
+  external coerce : < .. > t -> < ..> t = "%identity"
+
+  external get : 'a -> string -> 'b = "caml_js_get"
+  external set : 'a -> string -> 'b -> unit = "caml_js_set"
+  external meth_call : 'a -> string -> any array -> 'c = "caml_js_meth_call"
+
+(*FIX also, object/array literals; array/hash access
+  external call : t -> t -> t array -> t = "caml_js_call"
+  external fun_call : t -> t array -> t = "caml_js_fun_call"
+  external new_obj : t -> t array -> t = "caml_js_new"
+*)
+
 end
-
-(****)
-
-type string
-type 'a array
-type bool
-
-external string : string -> t = "%identity"
-external array : 'a array -> t = "%identity"
-val _true : bool
-val _false : bool

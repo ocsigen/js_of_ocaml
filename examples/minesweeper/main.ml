@@ -8,7 +8,7 @@ let int_input name value =
   let input = HTML.createInputElement document in
   input##_type <- js"text";
   input##value <- JsString.of_int !value;
-  input##onchange <- Nullable.some
+  input##onchange <- Js.some
     (fun _ ->
        begin try
          value := int_of_string (JsString.to_string (input##value))
@@ -25,15 +25,14 @@ let button name callback =
   let input = HTML.createInputElement document in
   input##_type <- js"submit";
   input##value <- js name;
-  input##onclick <- Nullable.some callback;
+  input##onclick <- Js.some callback;
   Dom.appendChild res input;
   res
 
 let onload _ =
   let main =
-    match Nullable.maybe HTML.document##getElementById(js"main") with
-      Some div -> div
-    | None     -> assert false
+    Js.Opt.get (HTML.document##getElementById(js"main"))
+      (fun () -> assert false)
   in
   let nbr, nbc, nbm = ref 10, ref 12, ref 15 in
   Dom.appendChild main (int_input "Number of columns" nbr);

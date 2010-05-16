@@ -105,7 +105,7 @@ let h6 = l5 + 2*b0
 
 type demin_cf =
     { bd : cell array array;
-      dom : HTML.imageElement Js.Obj.t array array;
+      dom : HTML.imageElement Js.t array array;
       cf : config ;
       mutable nb_marked_cells : int;
       mutable nb_hidden_cells : int;
@@ -131,7 +131,7 @@ let draw_board d =
 let disable_events d =
   for y = 0 to d.cf.nbrows - 1 do
     for x = 0 to d.cf.nbcols - 1 do
-      d.dom.(y).(x)##onclick <- Nullable.some
+      d.dom.(y).(x)##onclick <- Js.some
         (fun _ -> HTML.window##alert (js"GAME OVER"); Js._false)
     done
   done
@@ -179,7 +179,7 @@ let init_table d board_div =
   let img = HTML.createImageElement document in
   Dom.appendChild buf img;
   img##src <- js"sprites/bomb.png" ;
-  img##onclick <- Nullable.some
+  img##onclick <- Js.some
     (fun _ ->
        begin match !mode with
          | Normal -> mode := Flag ; img##src <- js"sprites/flag.png"
@@ -194,7 +194,7 @@ let init_table d board_div =
       let img = HTML.createImageElement document in
       imgs := img :: !imgs ;
       img##src <- js"sprites/normal.png";
-      img##onclick <- Nullable.some
+      img##onclick <- Js.some
         (fun _ ->
           (match !mode with
             | Normal ->

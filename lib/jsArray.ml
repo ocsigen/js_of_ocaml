@@ -1,7 +1,8 @@
 
-type 'a t = 'a Js.array
+type 'a t = 'a array Js.t
 
-let array_header = [| |]
+let array_header = Js.Unsafe.inject [| |]
 
 let to_array (a : 'a t) : 'a array =
-  Js.extract (Js.meth_call (Js.inject array_header) "concat" [|Js.inject a|])
+  Js.Unsafe.extract
+    (Js.Unsafe.meth_call array_header "concat" [|Js.Unsafe.inject a|])

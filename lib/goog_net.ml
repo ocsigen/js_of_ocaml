@@ -1,3 +1,4 @@
+open Js
 
 type errorCode =
     NO_ERROR
@@ -12,31 +13,30 @@ type errorCode =
   | OFFLINE
 
 module XhrIO = struct
-  open Js.Obj
 
-  class type t = object
+  class type c = object
     inherit Goog.Events.eventTarget
-    method abort : errorCode Nullable.t -> unit meth
-    method getLastError : Js.string meth
-    method getLastUri : Js.string meth
+    method abort : errorCode opt -> unit meth
+    method getLastError : string t meth
+    method getLastUri : string t meth
 (*
     method getReadyState : XmlHttp.readyState meth
 FIX:can return undefined!
-    method getResponseHeader : Js.string -> Js.string meth
+    method getResponseHeader : string t -> string t meth
 FIX:which type?
-    method getResponseJson : Js.string Nullable.t -> < > t meth
+    method getResponseJson : string t opt -> < > t meth
 *)
-    method getResponseText : Js.string meth
-    method getResponseXml : Dom.Dom.element Dom.Dom.document Nullable.t meth
+    method getResponseText : string t meth
+    method getResponseXml : Dom.Dom.element Dom.Dom.document opt meth
     method getStatus : int meth
     method getStatusText : string meth
     method getTimeoutInterval : float meth
-    method isActive : Js.bool meth
-    method isComplete : Js.bool meth
-    method isSuccess : Js.bool meth
+    method isActive : bool t meth
+    method isComplete : bool t meth
+    method isSuccess : bool t meth
 (*collections?
     method send :
-      Js.string -> Js.string Nullable.t -> Js.string -> ... -> unit meth
+      string t -> string t opt -> string t -> ... -> unit meth
 *)
     method setTimeoutInterval : float -> unit meth
   end
@@ -46,9 +46,9 @@ FIX:which type?
 (*
     method protectEntryPoints : ... -> bool -> unit meth
     method send :
-      Js.string -> (Goog.Events.event -> unit) Nullable.t ->
-      Js.string Nullable.t -> Js.string Nullable.t -> ... ->
-      float Nullable.t ->
+      string t -> (Goog.Events.event -> unit) opt ->
+      string t opt -> string t opt -> ... ->
+      float opt ->
       unit meth
 *)
     method _CONTENT_TYPE_HEADER : string readonly_prop
