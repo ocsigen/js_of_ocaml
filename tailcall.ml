@@ -48,9 +48,10 @@ let fold_children blocks pc f accu =
   match block.branch with
     Return _ | Raise _ | Stop ->
       accu
-  | Pushtrap (_, _, _, pc')
   | Branch (pc', _) | Poptrap (pc', _) ->
-      if pc' >= 0 then f pc' accu else accu
+      f pc' accu
+  | Pushtrap (_, _, (pc1, _), pc2) ->
+      f pc1 (if pc2 >= 0 then f pc2 accu else accu)
   | Cond (_, _, (pc1, _), (pc2, _)) ->
       accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->

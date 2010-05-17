@@ -37,6 +37,8 @@ function caml_update_dummy (x, y) {
 
 function caml_obj_dup (x) { return x.slice(); }
 
+function caml_ensure_stack_capacity () { return 0; }
+
 ///////////// Pervasive
 function caml_make_array (a) { return a; }
 

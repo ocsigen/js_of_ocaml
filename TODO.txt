@@ -1,10 +1,9 @@
 Priorities
 ==========
-- Use ~~x instead of x|0? (more parentheses, but maybe faster?)
-
-- Nullable.t ==> opt
-
-- asynchronous + portable http_get API
+- optimize switches with only two cases:
+      SWITCH
+        tag 0 -> 26300
+        tag 1 -> 26303
 
 - overloading mechanism: send_1 / send_2 / ...
 
@@ -14,10 +13,7 @@ Priorities
           ....
   ==> we want to be able to access this
       (avoid memory leaks...)
-
-- how do we deal with possibly undefined properties?
-  ===> onevent stuff
-  ===> opacity
+  ==> either a function, undefined or null
 
 - we have to make sure that functions passed to javascript have the
   right arity!
@@ -35,12 +31,16 @@ Priorities
 
 ==
 
+- optimize away partially applied functions when we do not care of the
+  result
+
 - Can we avoid spurious conversions from boolean to integers???
   ===> explicit conversion to boolean; specialized "if" that operates
        on booleans directly
 
 - inlining (especially of functions that are used only once!)
 - constant hoisting (including functions, out of loops and functions)
+- inline also partially applied functions
 
 - using continuation with multiples arguments
   ==> graph coloring + variable coalescing
@@ -58,6 +58,36 @@ Special case for shortcut boolean operations...
      | /\
      |/  \
      3    4
+
+==========================
+
+MD5
+===
+http://www.myersdaily.org/joseph/javascript/md5-speed-test.html
+http://code.google.com/p/crypto-js/source/browse/trunk/src/Crypto.js
+
+Float <-> hex
+=============
+http://babbage.cs.qc.edu/IEEE-754/js/IEEE-754.js
+http://snippets.dzone.com/posts/show/685
+http://jsfromhell.com/classes/binary-parser
+
+Filling a string
+================
+  function stringFill3(x, n) {
+    var s = '';
+    for (;;) {
+      if (n & 1) s += x;
+      n >>= 1;
+      if (n) x += x;
+      else break;
+    }
+    return s;
+  }
+
+Conversion string <-> array
+===========================
+  http://code.google.com/p/crypto-js/source/browse/trunk/src/Crypto.js
 
 ==========================
 

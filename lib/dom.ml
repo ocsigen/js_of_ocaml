@@ -314,12 +314,12 @@ module HTML = struct
     method checked : bool t prop
     method disabled : bool t prop
     method maxLength : int prop
-    method name : string t prop
+    method name : string t readonly_prop (* Cannot be changed under IE *)
     method readOnly : bool t prop
     method size : int prop
     method src : string t prop
     method tabIndex : int prop
-    method _type : string t prop
+    method _type : string t prop (* FIX: Cannot be changed under IE *)
     method useMap : string t prop
     method value : string t prop
     method blur : unit meth
