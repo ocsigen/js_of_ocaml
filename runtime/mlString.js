@@ -28,6 +28,10 @@ MlString.prototype.notEqual = function (s) {
     return (this.contents != s.contents);
 }
 
+MlString.prototype.equal = function (s) {
+    return (this.contents == s.contents);
+}
+
 MlString.prototype.compare = function (s) {
     if (this.contents < s.contents) return -1;
     else if (this.contents > s.contents) return 1;

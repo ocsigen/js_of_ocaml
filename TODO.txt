@@ -1,5 +1,13 @@
 Priorities
 ==========
+- optimize away partially applied functions when we do not care of the
+  result
+  ===> when doing flow control, we annotate function calls with the
+       number of parameters expected or unknown
+  ===> turn partial application in closure?
+         x = app(f, x) ====>
+               x = fun(x1,...,xn) {return f(x, x1, ...,xn);}
+
 - optimize switches with only two cases:
       SWITCH
         tag 0 -> 26300
@@ -31,9 +39,6 @@ Priorities
 
 ==
 
-- optimize away partially applied functions when we do not care of the
-  result
-
 - Can we avoid spurious conversions from boolean to integers???
   ===> explicit conversion to boolean; specialized "if" that operates
        on booleans directly
@@ -41,6 +46,10 @@ Priorities
 - inlining (especially of functions that are used only once!)
 - constant hoisting (including functions, out of loops and functions)
 - inline also partially applied functions
+
+- keep track of pure function so that if the result of a pure function
+  is ignored, the whole function can be deleted
+  ===> some functor applications, for instance
 
 - using continuation with multiples arguments
   ==> graph coloring + variable coalescing

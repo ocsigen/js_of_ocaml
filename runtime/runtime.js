@@ -36,6 +36,9 @@ function caml_update_dummy (x, y) {
 }
 
 function caml_obj_dup (x) { return x.slice(); }
+function caml_obj_is_block (x) { return (x instanceof Array)+0; }
+function caml_obj_set_tag (x, t) { x[0] = t; return 0; }
+function caml_obj_tag (x) { return x[0]; }
 
 function caml_ensure_stack_capacity () { return 0; }
 
@@ -88,13 +91,18 @@ function caml_compare (a, b) {
       return 1;
   else if (a < b) return (-1); else if (a == b) return 0; else return 1;
 }
+function caml_int_compare (a, b) {
+  if (a < b) return (-1); else if (a == b) return 0; else return 1;
+}
 function caml_equal (x, y) { return (caml_compare(x,y) == 0)+0; }
+function caml_notequal (x, y) { return (caml_compare(x,y) != 0)+0; }
 function caml_greaterequal (x, y) { return (caml_compare(x,y) >= 0)+0; }
 function caml_lessequal (x, y) { return (caml_compare(x,y) <= 0)+0; }
 
 // FIX: Assumes 32 bit arithmetic...
 function caml_int_of_float(x) { return x|0; };
 function caml_int_of_string(x) { return x|0; };
+function caml_float_of_int(x) { return x; };
 
 // FIX: dummy functions
 function caml_register_named_value(dz,dx) { return 0;}
@@ -107,6 +115,7 @@ function caml_blit_string(s1, i1, s2, i2, len) {
   s2.replace (i2, s1.contents, i1, len); return 0;
 }
 function caml_fill_string(s, i, l, c) { s.fill (i, l, c); return 0; }
+function caml_string_equal(s1, s2) { return s1.equal(s2)+0; }
 function caml_string_notequal(s1, s2) { return s1.notEqual(s2)+0; }
 function caml_is_printable(c) { return (c > 31 && c < 127)+0; }
 
