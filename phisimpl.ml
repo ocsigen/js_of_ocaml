@@ -28,7 +28,7 @@ let cont_deps blocks vars deps defs (pc, args) =
 
 let expr_deps blocks vars deps defs x e =
   match e with
-    Const _ | Constant _ | Apply _ | Direct_apply _ | Prim _ ->
+    Const _ | Constant _ | Apply _ | Prim _ ->
       ()
   | Closure (l, cont) ->
       cont_deps blocks vars deps defs cont

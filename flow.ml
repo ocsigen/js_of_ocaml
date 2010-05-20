@@ -53,7 +53,7 @@ let cont_deps blocks vars deps defs (pc, args) =
 
 let expr_deps blocks vars deps defs x e =
   match e with
-    Const _ | Constant _ | Apply _ | Direct_apply _ | Prim _ ->
+    Const _ | Constant _ | Apply _ | Prim _ ->
       ()
   | Closure (l, cont) ->
       List.iter (fun x -> add_param_def vars defs x) l;
@@ -113,7 +113,7 @@ let propagate1 deps defs st x =
       VarSet.fold (fun y s -> VarSet.union (VarMap.find y st) s) s VarSet.empty
   | Expr e ->
       match e with
-        Const _ | Constant _  | Apply _ | Direct_apply _ | Prim _
+        Const _ | Constant _  | Apply _ | Prim _
       | Closure _ | Block _ ->
           VarSet.singleton x
       | Field (y, n) ->
@@ -185,7 +185,7 @@ let expr_approx defs def_approx approx x e =
   match e with
     Const _ | Constant _ | Closure _ | Block _ | Field _ ->
       ()
-  | Apply (_, l) | Direct_apply (_, l) ->
+  | Apply (_, l, _) ->
       List.iter (fun x -> block_approx defs def_approx approx x) l
   | Prim (_, l) ->
       List.iter
@@ -228,7 +228,7 @@ let propagate2 defs def_approx approx st x =
       match e with
         Const _ | Constant _ | Closure _ ->
           Known
-      | Apply _ | Direct_apply _ | Prim _ ->
+      | Apply _ | Prim _ ->
           Any
       | Block _ ->
           if approx.(Var.idx x) then AnyBlock else Known
@@ -280,28 +280,10 @@ let the_def_of (defs, def_approx, known_approx) x =
 
 let specialize_instr info i =
   match i with
-    Let (x, Apply (f, l)) ->
-(*
-(*Format.eprintf "==> %a@." Var.print f;*)
+    Let (x, Apply (f, l, _)) ->
       begin match the_def_of info f with
-        Some (Block (_, a)) when Array.length a > 0 ->
-(*Format.eprintf "block@.";*)
-          let f = a.(0) in
-          begin match the_def_of info f with
-            Some (Closure (l', _)) when List.length l = List.length l' ->
-(*Format.eprintf "OK@.";*)
-              Let (x, Direct_apply (f, l))
-          | _ ->
-              i
-          end
-      | _ ->
-          i
-      end
-      *)
-      begin match the_def_of info f with
-        Some (Closure (l', _)) when List.length l = List.length l' ->
-(*Format.eprintf "OK@.";*)
-          Let (x, Direct_apply (f, l))
+        Some (Closure (l', _)) ->
+          Let (x, Apply (f, l, Some (List.length l')))
       | _ ->
           i
       end

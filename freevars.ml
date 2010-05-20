@@ -15,7 +15,7 @@ let expr_free_vars pc b x e s =
   match e with
     Const _ | Constant _ ->
       s
-  | Apply (x, l) | Direct_apply (x, l) ->
+  | Apply (x, l, _) ->
       s >> add_var b x >> list_fold add_var b l
   | Block (_, a) ->
       Array.fold_right (fun x s -> add_var b x s) a s

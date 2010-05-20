@@ -4,10 +4,8 @@ let expr s e =
   match e with
     Const _ | Constant _ ->
       e
-  | Apply (f, l) ->
-      Apply (s f, List.map (fun x -> s x) l)
-  | Direct_apply (f, l) ->
-      Direct_apply (s f, List.map (fun x -> s x) l)
+  | Apply (f, l, n) ->
+      Apply (s f, List.map (fun x -> s x) l, n)
   | Block (n, a) ->
       Block (n, Array.map (fun x -> s x) a)
   | Field (x, n) ->

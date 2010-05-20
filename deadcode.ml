@@ -15,7 +15,7 @@ let req_expr e =
   match e with
     Const _  | Block _ | Field _ | Closure _ | Constant _ | Variable _ ->
       false
-  | Apply _ | Direct_apply _ ->
+  | Apply _ ->
       true
   | Prim (p, l) ->
       match p with
@@ -41,7 +41,7 @@ and mark_expr st e =
   match e with
     Const _ | Constant _ ->
       ()
-  | Apply (f, l) | Direct_apply (f, l) ->
+  | Apply (f, l, _) ->
       mark_var st f; List.iter (fun x -> mark_var st x) l
   | Block (_, a) ->
       Array.iter (fun x -> mark_var st x) a

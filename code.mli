@@ -51,8 +51,7 @@ type prim_arg =
 
 type expr =
     Const of int
-  | Apply of Var.t * Var.t list
-  | Direct_apply of Var.t * Var.t list
+  | Apply of Var.t * Var.t list * int option
   | Block of int * Var.t array
   | Field of Var.t * int
   | Closure of Var.t list * cont

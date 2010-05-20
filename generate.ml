@@ -348,7 +348,17 @@ let rec translate_expr ctx queue e =
   match e with
     Const i ->
       (int i, const_p, queue)
-  | Apply (x, l) ->
+  | Apply (x, l, Some n) when n = List.length l ->
+      let ((px, cx), queue) = access_queue queue x in
+      let (args, prop, queue) =
+        List.fold_right
+          (fun x (args, prop, queue) ->
+             let ((prop', cx), queue) =
+               access_queue queue x in (cx :: args, or_p prop prop', queue))
+          l ([], or_p px mutator_p, queue)
+      in
+      (J.ECall (cx, args), prop, queue)
+  | Apply (x, l, _) ->
       let (args, prop, queue) =
         List.fold_right
           (fun x (args, prop, queue) ->
@@ -359,16 +369,6 @@ let rec translate_expr ctx queue e =
       let y = get_apply_fun (List.length l) in
       (J.ECall (J.EVar (Var.to_string y), args),
        prop, queue)
-  | Direct_apply (x, l) ->
-      let ((px, cx), queue) = access_queue queue x in
-      let (args, prop, queue) =
-        List.fold_right
-          (fun x (args, prop, queue) ->
-             let ((prop', cx), queue) =
-               access_queue queue x in (cx :: args, or_p prop prop', queue))
-          l ([], or_p px mutator_p, queue)
-      in
-      (J.ECall (cx, args), prop, queue)
   | Block (tag, a) ->
       let (contents, prop, queue) =
         List.fold_right

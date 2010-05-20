@@ -12,7 +12,7 @@ let rec remove_last l =
 let rec tail_call x f l =
   match l with
     [] -> None
-  | [Let (y, (Direct_apply (g, args) | Apply (g, args)))]
+  | [Let (y, Apply (g, args, _))]
         when Var.compare x y = 0 && Var.compare f g = 0 ->
       Some args
   | i :: rem ->

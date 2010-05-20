@@ -1,5 +1,9 @@
 Priorities
 ==========
+- improved string implementation
+  ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
+      byte array
+
 - optimize away partially applied functions when we do not care of the
   result
   ===> when doing flow control, we annotate function calls with the
@@ -15,18 +19,6 @@ Priorities
 
 - overloading mechanism: send_1 / send_2 / ...
 
-- event handlers:
-  ==> use a wrapper:
-	  if (!e) e = window.event;
-          ....
-  ==> we want to be able to access this
-      (avoid memory leaks...)
-  ==> either a function, undefined or null
-
-- we have to make sure that functions passed to javascript have the
-  right arity!
-  ==> always the case with event handlers
-
 - syntactic sugar for Javascript literal strings
   + optimization to avoid going through Caml strings
 
@@ -35,10 +27,15 @@ Priorities
   properties: pure, ...) to the compiler and get a warning for missing
   primitives
 
+Known bugs
+==========
 - bug when compiling ocamlc
 
-==
+- bug when compiling mutually recursive functions in a loop:
+  should build a shared closure
 
+Compiler optimizations
+======================
 - Can we avoid spurious conversions from boolean to integers???
   ===> explicit conversion to boolean; specialized "if" that operates
        on booleans directly
@@ -57,7 +54,19 @@ Priorities
       when jumping somewhere, the stack should keep the same shape
 - remove "Variable x" instruction
 
-===========
+DOM
+===
+- event handlers:
+  ==> use a wrapper:
+	  if (!e) e = window.event;
+          ....
+  ==> we want to be able to access this
+      (avoid memory leaks...)
+  ==> either a function, undefined or null
+
+
+==========================
+==========================
 
 Special case for shortcut boolean operations...
 
@@ -97,6 +106,12 @@ Filling a string
 Conversion string <-> array
 ===========================
   http://code.google.com/p/crypto-js/source/browse/trunk/src/Crypto.js
+
+
+Byte array ==> string
+=====================
+int array --map--> string array --join--> string
+   b[i] = toString[a[i]]  where toString is a precomputed array of strings
 
 ==========================
 
@@ -226,6 +241,13 @@ Use window.postMessage instead of setTimeout for yield (setTimeout
 always waits a bit!)
 ==> but window.postMessage is synchronous in IE8
     + does not cooperate well with other users of message events
+
+==================================
+
+Could we generate ocaml bytecode as well? (bytecode optimizer)
+LLVM code?
+
+Targeting JAVA / .net seem harder: not type information...
 
 ==================================
 
