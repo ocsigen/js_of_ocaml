@@ -278,15 +278,21 @@ let the_def_of (defs, def_approx, known_approx) x =
   else
     None
 
+let function_cardinality (defs, def_approx, known_approx) x =
+  let card x =
+    match defs.(Var.idx x) with
+      Expr (Closure (l, _)) -> Some (List.length l)
+    | _                     -> None
+  in
+  let s = VarMap.find x def_approx in
+  if VarMap.find x known_approx = Any || VarSet.cardinal s = 0 then None else
+  let n = card (VarSet.choose s) in
+  if VarSet.for_all (fun x -> card x = n) s then n else None
+
 let specialize_instr info i =
   match i with
     Let (x, Apply (f, l, _)) ->
-      begin match the_def_of info f with
-        Some (Closure (l', _)) ->
-          Let (x, Apply (f, l, Some (List.length l')))
-      | _ ->
-          i
-      end
+      Let (x, Apply (f, l, function_cardinality info f))
 
 (*FIX this should be moved to a different file (javascript specific) *)
   | Let (x, Prim (Extern "caml_js_var", [Pv y])) ->

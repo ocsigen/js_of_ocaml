@@ -15,8 +15,11 @@ let req_expr e =
   match e with
     Const _  | Block _ | Field _ | Closure _ | Constant _ | Variable _ ->
       false
-  | Apply _ ->
-      true
+  | Apply (_, l, n) ->
+      begin match n with
+        Some n -> List.length l >= n
+      | None   -> true
+      end
   | Prim (p, l) ->
       match p with
         Extern f -> not (Primitive.is_pure f)
