@@ -757,6 +757,20 @@ res
     body
 end
 
+and compile_if st e cont1 cont2 handler backs frontier interm =
+  let iftrue = compile_branch st [] cont1 handler backs frontier interm in
+  let iffalse = compile_branch st [] cont2 handler backs frontier interm in
+  if never_continue st cont1 frontier interm then
+    Js_simpl.if_statement e (Js_simpl.block iftrue) None ::
+    iffalse
+  else if never_continue st cont2 frontier interm then
+    Js_simpl.if_statement
+      (Js_simpl.enot e) (Js_simpl.block iffalse) None ::
+    iftrue
+  else
+    [Js_simpl.if_statement e (Js_simpl.block iftrue)
+       (Some (Js_simpl.block iffalse))]
+
 and compile_conditional st queue pc last handler backs frontier interm =
   let succs = Hashtbl.find st.succs pc in
   List.iter (fun pc -> if AddrMap.mem pc interm then decr_preds st pc) succs;
@@ -786,19 +800,9 @@ and compile_conditional st queue pc last handler backs frontier interm =
       in
       (* Some changes here may require corresponding changes
          in function [fold_children] above. *)
-      let iftrue = compile_branch st [] cont1 handler backs frontier interm in
-      let iffalse = compile_branch st [] cont2 handler backs frontier interm in
       flush_all queue
-        (if never_continue st cont1 frontier interm then
-           Js_simpl.if_statement e (Js_simpl.block iftrue) None ::
-           iffalse
-         else if never_continue st cont2 frontier interm then
-           Js_simpl.if_statement
-             (Js_simpl.enot e) (Js_simpl.block iffalse) None ::
-           iftrue
-         else
-           [Js_simpl.if_statement e (Js_simpl.block iftrue)
-              (Some (Js_simpl.block iffalse))])
+        (compile_if st e cont1 cont2 handler backs frontier interm)
+
   | Switch (x, a1, a2) ->
       (* Some changes here may require corresponding changes
          in function [fold_children] above. *)
@@ -817,6 +821,9 @@ and compile_conditional st queue pc last handler backs frontier interm =
         | [(cont, _)] ->
             Js_simpl.block
               (compile_branch st [] cont handler backs frontier interm)
+        | [cont1, [(n, _)]; cont2, _] | [cont2, _; cont1, [(n, _)]] ->
+            Js_simpl.block (compile_if st (J.EBin (J.EqEqEq, int n, e))
+                              cont1 cont2 handler backs frontier interm)
         | (cont, l') :: rem ->
             let l =
               List.flatten
@@ -854,6 +861,8 @@ and compile_conditional st queue pc last handler backs frontier interm =
           let ((px, cx), queue) = access_queue queue x in
           ([build_switch cx a1], queue)
         else
+          (* The variable x is accessed several times,
+             so we can directly refer to it *)
           ([Js_simpl.if_statement
               (J.EBin(J.InstanceOf, var x, J.EVar ("Array")))
               (build_switch (J.EAccess(var x, J.ENum 0.)) a2)

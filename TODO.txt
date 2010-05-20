@@ -4,18 +4,9 @@ Priorities
   ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
       byte array
 
-- optimize away partially applied functions when we do not care of the
-  result
-  ===> when doing flow control, we annotate function calls with the
-       number of parameters expected or unknown
-  ===> turn partial application in closure?
-         x = app(f, x) ====>
-               x = fun(x1,...,xn) {return f(x, x1, ...,xn);}
-
-- optimize switches with only two cases:
-      SWITCH
-        tag 0 -> 26300
-        tag 1 -> 26303
+- turn partial application in closure?
+    x = app(f, x) ====>
+    x = fun(x1,...,xn) {return f(x, x1, ...,xn);}
 
 - overloading mechanism: send_1 / send_2 / ...
 
