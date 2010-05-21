@@ -7,6 +7,14 @@
 /*                                                                     */
 /***********************************************************************/
 
+function INT32(v) {return v|0;}
+function mk_block(size, tag) { return [tag]; }
+function set(x, i, v) { x[i+1]=v; }
+function float_of_bytes (x) { return 1.2345; }
+var STRING_TAG = 0;
+
+////////////////////
+
 var INTEXT_MAGIC_NUMBER = 0x8495A6BE, PREFIX_SMALL_BLOCK =  0x80,
     PREFIX_SMALL_INT =    0x40,       PREFIX_SMALL_STRING = 0x20;
 
@@ -113,7 +121,7 @@ function input_val (chunk, error) {
 		var v = mk_block (size, tag);
 		intern_obj_table[obj_counter++] = v;
 		for(var d = 0; d < size; d++)
-		    v.set (d, intern_rec ());
+		    set (v, d, intern_rec ());
 		return v;
 	    } else {
 		return (code & 0x3F);
@@ -121,12 +129,11 @@ function input_val (chunk, error) {
 	} else {
 	    if (code >= PREFIX_SMALL_STRING) {
 		var len = (code & 0x1F);
-		var v = mk_block (len + 1, STRING_TAG);
+		var v = new MlString (len);
 		intern_obj_table[obj_counter++] = v;
 		for (var d = 0;d < len;d++) {
 		    v.set (d, reader.read8u ());
 		}
-		v.set (len, 0);
 		return v;
 	    } else {
 		switch(code) {
@@ -160,7 +167,7 @@ function input_val (chunk, error) {
 		    var v = mk_block (size, tag);
 		    intern_obj_table[obj_counter++] = v;
 		    for(var d = 0; d < size; d++)
-			v.set (d, intern_rec ());
+			set (v, d, intern_rec ());
 		    return v;
 		}
 		case CODE_BLOCK64:
@@ -168,22 +175,20 @@ function input_val (chunk, error) {
 		    break;
 		case CODE_STRING8: {
 		    var len = reader.read8u();
-		    var v = mk_block (len + 1, STRING_TAG);
+		    var v = new MlString (len);
 		    intern_obj_table[obj_counter++] = v;
 		    for (var d = 0;d < len;d++) {
 			v.set (d, reader.read8u ());
 		    }
-		    v.set (len, 0);
 		    return v;
 		}
 		case CODE_STRING32: {
 		    var len = reader.read32u();
-		    var v = mk_block (len + 1, STRING_TAG);
+		    var v = new MlString (len);
 		    intern_obj_table[obj_counter++] = v;
 		    for (var d = 0;d < len;d++) {
 			v.set (d, reader.read8u ());
 		    }
-		    v.set (len, 0);
 		    return v;
 		}
 		case CODE_DOUBLE_LITTLE: {
@@ -206,7 +211,7 @@ function input_val (chunk, error) {
 			var t = [];
 			for (var j = 0;j < 8;j++)
 			    t[7 - j] = reader.read8u();
-			v.set (i, unbox_float (float_of_bytes (t)));
+			set (v, i, unbox_float (float_of_bytes (t)));
 		    }
 		    return v;
 		}
@@ -217,7 +222,7 @@ function input_val (chunk, error) {
 			var t = [];
 			for (var j = 0;j < 8;j++)
 			    t[j] = reader.read8u();
-			v.set (i, unbox_float (float_of_bytes (t)));
+			set (v, i, unbox_float (float_of_bytes (t)));
 		    }
 		    return v;
 		}
@@ -228,7 +233,7 @@ function input_val (chunk, error) {
 			var t = [];
 			for (var j = 0;j < 8;j++)
 			    t[7 - j] = reader.read8u();
-			v.set (i, unbox_float (float_of_bytes (t)));
+			set (v, i, unbox_float (float_of_bytes (t)));
 		    }
 		    return v;
 		}
@@ -239,7 +244,7 @@ function input_val (chunk, error) {
 			var t = [];
 			for (var j = 0;j < 8;j++)
 			    t[j] = reader.read8u();
-			v.set (i, unbox_float (float_of_bytes (t)));
+			set (v, i, unbox_float (float_of_bytes (t)));
 		    }
 		    return v;
 		}
@@ -320,7 +325,7 @@ Writer.prototype.finalize = function () {
     return this.chunk;
 }
 
-#define HD(v) (((v).size << 10) | (v).tag)
+function HD(v) {return (((v).size << 10) | (v).tag);}
 
 function output_val (v, error) {
     var writer = new Writer ()

@@ -42,6 +42,8 @@ function jsoo_extract (o) {
     return [2, new MlString (o)];
   if (typeof o == 'number')
     return [1, o];
+  if (o instanceof Array)
+    return [3, o];
   return [0, o];
 }
 function jsoo_inject(x) {

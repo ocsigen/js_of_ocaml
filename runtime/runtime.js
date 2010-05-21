@@ -38,7 +38,7 @@ function caml_update_dummy (x, y) {
 function caml_obj_dup (x) { return x.slice(); }
 function caml_obj_is_block (x) { return (x instanceof Array)+0; }
 function caml_obj_set_tag (x, t) { x[0] = t; return 0; }
-function caml_obj_tag (x) { return x[0]; }
+function caml_obj_tag (x) { return (x instanceof Array)?x[0]:1000; }
 
 function caml_ensure_stack_capacity () { return 0; }
 
@@ -183,7 +183,8 @@ function caml_hash_univ_param (count, limit, obj) {
     return (hash_accu & 0x3FFFFFFF);
   } else {
       // FIX not implemented!
-      document.write("hash(", obj, "):", typeof obj);
+      //      document.write("hash(", obj, "):", typeof obj);
+      return 1;
   }
 }
 
@@ -249,3 +250,7 @@ function createXMLHTTPObject() {
 	}
 	return xmlhttp;
 }
+
+/////////////////////////////
+
+function caml_int64_float_of_bits () { return 0; }

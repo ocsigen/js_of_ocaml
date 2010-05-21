@@ -8,7 +8,7 @@ let eplus_int e1 e2 =
       J.EBin (J.Plus, e1, e2)
 
 let rec enot_rec e =
-  let (e, cost) as res =
+  let (_, cost) as res =
     match e with
       J.ESeq (e1, e2) ->
         let (e2', cost) = enot_rec e2 in
@@ -16,6 +16,8 @@ let rec enot_rec e =
     (*FIX: should be done at an earlier stage*)
     | J.ECond (e, J.ENum 1., J.ENum 0.) ->
         (J.ECond (e, J.ENum 0., J.ENum 1.), 0)
+    | J.ECond (e, J.ENum 0., J.ENum 1.) ->
+        (J.ECond (e, J.ENum 1., J.ENum 0.), 0)
     | J.ECond (e1, e2, e3) ->
         let (e2', cost2) = enot_rec e2 in
         let (e3', cost3) = enot_rec e3 in
