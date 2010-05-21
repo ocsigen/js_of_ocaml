@@ -50,7 +50,7 @@ function caml_array_set (array, index, newval) {
   array[index+1]=newval; return 0;
 }
 function caml_array_get (array, index) {
-  res = array[index+1];
+  var res = array[index+1];
   if (res == undefined) caml_array_bound_error();
   return res;
 }

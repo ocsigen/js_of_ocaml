@@ -1,7 +1,10 @@
+open Jslib
+
+external magic : 'a -> 'b = "%identity"
 
 let sleep = Lwt_js.sleep
 let yield = Lwt_js.yield
-let run _ = Obj.magic ()
+let run _ = magic ()
 
 let js = JsString.of_string
 

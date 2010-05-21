@@ -45,6 +45,12 @@ Compiler optimizations
       when jumping somewhere, the stack should keep the same shape
 - remove "Variable x" instruction
 
+- Improved optimizations
+  ==> cross-function optimizations
+  ==> deadcode elimination inside blocks
+  (for instance, elimination of function which are defined in a
+   functor but are not used)
+
 DOM
 ===
 - event handlers:
