@@ -18,11 +18,9 @@ Priorities
   properties: pure, ...) to the compiler and get a warning for missing
   primitives
 
-Known bugs
-==========
-- bug when compiling ocamlc
-
-- bug when compiling mutually recursive functions in a loop:
+Known issues
+============
+- mutually recursive functions in a loop are not correctly compiled:
   should build a shared closure
 
 Compiler optimizations

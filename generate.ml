@@ -214,6 +214,9 @@ let rec build_graph st pc anc =
 let rec dominance_frontier_rec st pc visited grey =
   let n = get_preds st pc in
   let v = try AddrMap.find pc visited with Not_found -> 0 in
+(*
+Format.eprintf "%d %d %d@." pc n v;
+*)
   if v < n then begin
     let v = v + 1 in
     let visited = AddrMap.add pc v visited in
@@ -236,9 +239,25 @@ let dominance_frontier st pc =
 (* Block of code that never continues (either returns, throws an exception
    or loops back) *)
 let never_continue st (pc, _) frontier interm =
+(*
+let d =dominance_frontier st pc in
+Format.eprintf "never_continue@.";
+Format.eprintf "  %d /" pc;
+AddrSet.iter (fun i -> Format.eprintf " %d" i) frontier;
+Format.eprintf " /";
+AddrMap.iter (fun i _ -> Format.eprintf " %d" i) interm;
+Format.eprintf " /";
+AddrSet.iter (fun i -> Format.eprintf " %d" i) d;
+let res =
+*)
   not (AddrSet.mem pc frontier || AddrMap.mem pc interm)
     &&
   AddrSet.is_empty (dominance_frontier st pc)
+(*
+in
+Format.eprintf " ==> %b@." res;
+res
+*)
 
 let rec resolve_node interm pc =
   try
@@ -621,6 +640,9 @@ else begin
 Format.eprintf "(frontier: ";
 AddrSet.iter (fun pc -> Format.eprintf "%d " pc) frontier;
 Format.eprintf ")@.";
+Format.eprintf "(interm: ";
+AddrMap.iter (fun pc (pc', _) -> Format.eprintf " %d->%d " pc pc') interm;
+Format.eprintf ")@.";
 *)
   if pc >= 0 then begin
     if AddrSet.mem pc st.visited_blocks then begin
@@ -634,6 +656,8 @@ Format.eprintf ")@.";
   end;
   let succs = Hashtbl.find st.succs pc in
   let backs = Hashtbl.find st.backs pc in
+  (* Remove limit *)
+  if pc < 0 then List.iter (fun pc -> decr_preds st pc) succs;
   let grey =
     List.fold_right
       (fun pc grey -> AddrSet.union (dominance_frontier st pc) grey)
@@ -699,6 +723,11 @@ Format.eprintf "[[@.";
             if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
             let idx = st.interm_idx in
             st.interm_idx <- idx - 1;
+(*
+Format.eprintf "%d ====> " idx;
+AddrSet.iter (fun pc -> Format.eprintf "%d " pc) new_frontier;
+Format.eprintf "@.";
+*)
             let cases = Array.map (fun pc -> (pc, [])) a in
             let switch =
               if Array.length cases > 2 then
@@ -710,6 +739,12 @@ Format.eprintf "[[@.";
               AddrMap.add idx
                 { params = []; handler = None; body = []; branch = switch }
               st.blocks;
+            (* There is a branch from this switch to the members
+               of the frontier. *)
+            AddrSet.iter (fun pc -> incr_preds st pc) new_frontier;
+            (* Put a limit: we are going to remove other branches
+               to the members of the frontier (in compile_conditional),
+               but they should remain in the frontier. *)
             AddrSet.iter (fun pc -> incr_preds st pc) new_frontier;
             Hashtbl.add st.succs idx (AddrSet.elements new_frontier);
             Hashtbl.add st.all_succs idx new_frontier;
@@ -760,6 +795,9 @@ end
 and compile_if st e cont1 cont2 handler backs frontier interm =
   let iftrue = compile_branch st [] cont1 handler backs frontier interm in
   let iffalse = compile_branch st [] cont2 handler backs frontier interm in
+(*
+Format.eprintf "====@.";
+*)
   if never_continue st cont1 frontier interm then
     Js_simpl.if_statement e (Js_simpl.block iftrue) None ::
     iffalse
