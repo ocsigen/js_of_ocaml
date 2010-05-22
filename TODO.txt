@@ -6,6 +6,8 @@ Priorities
 
 ====
 
+- finish js API ===> creating new objects
+
 - improved string implementation
   ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
       byte array

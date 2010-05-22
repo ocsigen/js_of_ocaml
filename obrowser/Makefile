@@ -1,4 +1,6 @@
-all: lwt_obrowser.cma
+JS= startup.js marshall.js obrowser.js ../runtime/mlString.js ../runtime/runtime.js
+
+all: lwt_obrowser.cma vm.js
 
 jslib.cmo:
 	ocamlc -pack -o $@ ../lib/js.cmo ../lib/jsString.cmo ../lib/dom.cmo ../lib/lwt_js.cmo
@@ -11,3 +13,5 @@ lwt_obrowser.cma: lwt_obrowser.mli lwt_obrowser.ml jslib.cmo stubs.o
 stubs.o: stubs.c
 	ocamlc -c stubs.c
 
+vm.js: $(JS)
+	cat $(JS) > vm.js
