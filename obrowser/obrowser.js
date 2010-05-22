@@ -92,6 +92,9 @@ function caml_js_node_children (node) {
   return res;
 }
 
+///////////////////////////////////////////////////////////////
+// FIX: should be in the core runtime...
+
 // Regexp
 
 function caml_regexp_make (vs, vf) {

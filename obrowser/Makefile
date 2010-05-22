@@ -15,3 +15,7 @@ stubs.o: stubs.c
 
 vm.js: $(JS)
 	cat $(JS) > vm.js
+
+clean:
+	rm -f *.cm[aio] *.[ao] *.so
+	rm -f vm.js

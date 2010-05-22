@@ -9,3 +9,4 @@ private
 examples/boulderdash/boulderdash{,.js}
 examples/minesweeper/minesweeper{,.js}
 lib/stubs.c
+obrowser/vm.js
