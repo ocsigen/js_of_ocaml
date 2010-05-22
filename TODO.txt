@@ -1,10 +1,16 @@
 Priorities
 ==========
+
+- fix marshall.js
+  ===> conversion of strings from/to byte arrays
+
+====
+
 - improved string implementation
   ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
       byte array
 
-- turn partial application in closure?
+- turn partial applications into closures?
     x = app(f, x) ====>
     x = fun(x1,...,xn) {return f(x, x1, ...,xn);}
 

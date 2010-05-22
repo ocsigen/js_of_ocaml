@@ -64,3 +64,12 @@ MlString.prototype.fill = function (i, len, c) {
 MlString.prototype.toString = function () {
     return decodeURIComponent (escape(this.contents));
 }
+
+MlString.prototype.getByteArray = function () {
+    var res = [];
+    var i = this.length;
+    var c = this.contents;
+    res[0] = 0;
+    while (i--) res[i+1] = c.charCodeAt(i);
+    return res;
+}

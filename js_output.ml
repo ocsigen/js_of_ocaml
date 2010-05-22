@@ -50,11 +50,18 @@ let rec formal_parameter_list f l =
 let op_prec op =
   match op with
     Eq | StarEq | SlashEq | ModEq | PlusEq | MinusEq -> 1, 13, 1
+(*
   | Or -> 3, 3, 4
   | And -> 4, 4, 5
   | Bor -> 5, 5, 6
   | Bxor -> 6, 6, 7
   | Band -> 7, 7, 8
+*)
+  | Or -> 3, 3, 3
+  | And -> 4, 4, 4
+  | Bor -> 5, 5, 5
+  | Bxor -> 6, 6, 6
+  | Band -> 7, 7, 7
   | EqEq | NotEq | EqEqEq | NotEqEq -> 8, 8, 9
   | Lt | Le | InstanceOf -> 9, 9, 10
   | Lsl | Lsr | Asr -> 10, 10, 11

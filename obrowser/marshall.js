@@ -1,3 +1,6 @@
+//FIX: namespace pollution
+//FIX: exception handling...
+
 /***********************************************************************/
 /*                              O'Browser                              */
 /*                                                                     */

@@ -113,24 +113,6 @@ function caml_regexp_split (vr, vs) {
 
 //////////////////
 
-var caml_closure_table = [] ;
-var caml_closure_arg;
-
-function caml_run_from_table (vm, id, marg) {
-    if (!caml_closure_table [id]) throw ("unbound closure");
-    caml_closure_arg = input_val (marg);
-    caml_closure_table [id] ();
-}
-
-function caml_register_closure(id, clos) {
-    caml_closure_table[id] = clos;
-    return 0;
-}
-
-function caml_get_closure_arg(unit) {
-    return caml_closure_arg;
-}
-
 // input_val
 //XXX caml_input_value_from_string
 //XXX caml_marshal_data_size
