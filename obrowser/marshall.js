@@ -343,8 +343,9 @@ function output_val (v, error) {
             }
             for (var i = 0;i < len;i++)
                 writer.write (8, v.get(i));
-            writer.size_32 += 1 + (len + 4) / 4;
-            writer.size_64 += 1 + (len + 8) / 8;
+            writer.size_32 += 1 + (((len + 4) / 4)|0);
+            writer.size_64 += 1 + (((len + 8) / 8)|0);
+            writer.obj_counter++;
         } else if (v instanceof Array) {
 	    if (v.length == 1) {
 		if (v[0] < 16)
@@ -360,12 +361,12 @@ function output_val (v, error) {
             }
             writer.size_32 += v.length ;
             writer.size_64 += v.length ;
-            v.dejavu = true;
-            v.dejavu_location = writer.obj_counter++;
+            writer.obj_counter++;
             for (i = 1; i < v.length; i++) {
                 extern_rec (v[i]);
             }
-        } else
+        } else {
+            v |= 0;
 	    if (v >= 0 && v < 0x40) {
 		writer.write (8, PREFIX_SMALL_INT + v);
 	    } else {
@@ -379,7 +380,8 @@ function output_val (v, error) {
 		    }
 		}
 	    }
-	}
+        }
+    }
     extern_rec (v);
     writer.finalize ();
     return writer.chunk;
