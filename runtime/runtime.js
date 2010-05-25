@@ -24,6 +24,10 @@ function caml_invalid_argument (msg) {
   caml_raise_with_string(caml_global_data[3], msg);
 }
 
+function caml_failwith (msg) {
+  caml_raise_with_string(caml_global_data[2], msg);
+}
+
 function caml_array_bound_error () {
   caml_invalid_argument("index out of bounds");
 }
@@ -140,25 +144,25 @@ function caml_format_int(fmtV, i) {
   var p = 1;
   loop:
   for (;p < fmt.length; p++)
-      switch (fmt.charCodeAt(p)) {
-        case 45:
-            //FIX: left align
-          break;
-        case 48:
-          pad = '0';
-          break;
-        case 43:
-          // FIX: '+' character if positive
-          break;
-        case 32:
-          pad = ' ';
-          break;
-        case 35:
-          // FIX: alternate formatting style
-          break;
-        default:
-          break loop;
-      }
+    switch (fmt.charCodeAt(p)) {
+      case 45:
+          //FIX: left align
+        break;
+      case 48:
+        pad = '0';
+        break;
+      case 43:
+        // FIX: '+' character if positive
+        break;
+      case 32:
+        pad = ' ';
+        break;
+      case 35:
+        // FIX: alternate formatting style
+        break;
+      default:
+        break loop;
+    }
   var l = 0, c;
   for (;p < fmt.length; p++) {
     c = fmt.charCodeAt(p) - 48;
@@ -182,9 +186,9 @@ function caml_hash_univ_param (count, limit, obj) {
       hash_accu = (hash_accu * 19 + s.charCodeAt(p)) & 0x3FFFFFFF;
     return (hash_accu & 0x3FFFFFFF);
   } else {
-      // FIX not implemented!
-      //      document.write("hash(", obj, "):", typeof obj);
-      return 1;
+    // FIX not implemented!
+    //      document.write("hash(", obj, "):", typeof obj);
+    return 1;
   }
 }
 
@@ -230,27 +234,25 @@ function caml_md5_string (v, ofs, len) {
 
 //////////// XMLHttpRequest
 
-var XMLHttpFactories = [
-	function () {return new XMLHttpRequest()},
-	function () {return new ActiveXObject("Msxml2.XMLHTTP")},
-	function () {return new ActiveXObject("Msxml3.XMLHTTP")},
-	function () {return new ActiveXObject("Microsoft.XMLHTTP")}
-];
+var XMLHttpFactories =
+  [ function () {return new XMLHttpRequest()},
+    function () {return new ActiveXObject("Msxml2.XMLHTTP")},
+    function () {return new ActiveXObject("Msxml3.XMLHTTP")},
+    function () {return new ActiveXObject("Microsoft.XMLHTTP")} ];
 
 function createXMLHTTPObject() {
-	var xmlhttp = false;
-	for (var i=0;i<XMLHttpFactories.length;i++) {
-		try {
-			xmlhttp = XMLHttpFactories[i]();
-		}
-		catch (e) {
-			continue;
-		}
-		break;
-	}
-	return xmlhttp;
+  for (var i = 0; i < XMLHttpFactories.length; i++) {
+    try {
+      var xmlhttp = XMLHttpFactories[i]();
+    } catch (e) {
+      continue;
+    }
+    break;
+  }
+  return xmlhttp;
 }
 
 /////////////////////////////
 
+//FIX: real implementation...
 function caml_int64_float_of_bits () { return 0; }

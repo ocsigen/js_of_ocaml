@@ -65,7 +65,7 @@ MlString.prototype.toString = function () {
     return decodeURIComponent (escape(this.contents));
 }
 
-MlString.prototype.getByteArray = function () {
+MlString.prototype.toByteArray = function () {
     var res = [];
     var i = this.length;
     var c = this.contents;

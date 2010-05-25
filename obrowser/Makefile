@@ -6,8 +6,8 @@ jslib.cmo:
 	ocamlc -pack -o $@ ../lib/js.cmo ../lib/jsString.cmo ../lib/dom.cmo ../lib/lwt_js.cmo
 
 lwt_obrowser.cma: lwt_obrowser.mli lwt_obrowser.ml jslib.cmo stubs.o
-	ocamlfind ocamlc -package lwt -c lwt_obrowser.mli
-	ocamlfind ocamlc  -pp "camlp4o ../lib/pa_js.cmo" -package lwt -c lwt_obrowser.ml
+	ocamlfind ocamlc -package lwt,obrowser -c lwt_obrowser.mli
+	ocamlfind ocamlc  -pp "camlp4o ../lib/pa_js.cmo" -package lwt,obrowser -c lwt_obrowser.ml
 	ocamlmklib -o lwt_obrowser jslib.cmo lwt_obrowser.cmo ../lib/stubs.o stubs.o
 
 stubs.o: stubs.c

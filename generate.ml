@@ -80,18 +80,22 @@ let addr pc =
   end
 let bool e = J.ECond (e, one, zero)
 let boolnot e = J.ECond (e, zero, one)
+let val_float f = f (*J.EArr [Some (J.ENum 253.); Some f]*)
+let float_val e = e (*J.EAccess (e, one)*)
 
 (****)
+
+let float_const f = val_float (J.ENum f)
 
 let rec constant x =
   match x with
     String s ->
       J.ENew (J.EVar ("MlString"), Some [J.EStr s])
   | Float f ->
-      J.ENum f
+      float_const f
   | Float_array a ->
       J.EArr (Some (int Obj.double_array_tag) ::
-              Array.to_list (Array.map (fun f -> Some (J.ENum f)) a))
+              Array.to_list (Array.map (fun f -> Some (float_const f)) a))
   | Int32 i ->
       J.ENum (Int32.to_float i)
   | Nativeint i ->
@@ -459,16 +463,17 @@ let rec translate_expr ctx queue e =
       | Extern "caml_ge_float", [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
-          (bool (J.EBin (J.Le, cy, cx)), or_p px py, queue)
+          (bool (J.EBin (J.Le, float_val cy, float_val cx)), or_p px py, queue)
       | Extern "caml_sub_float", [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Minus, cx, cy), or_p px py, queue)
+          (val_float (J.EBin (J.Minus, float_val cx, float_val cy)),
+           or_p px py, queue)
       | Extern "caml_mul_float", [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Mul, cx, cy), or_p px py, queue)
-
+          (val_float (J.EBin (J.Mul, float_val cx, float_val cy)),
+           or_p px py, queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
           Code.add_reserved_name nm;  (*XXX HACK *)
           (J.EVar nm, const_p, queue)

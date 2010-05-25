@@ -76,3 +76,6 @@ val http_get_post :
   (string * string) list -> 
   (string * string) list -> 
   (int * string) Lwt.t
+
+(** Register a Lwt thread on a DOM event. *)
+val register_event : JSOO.obj -> string -> ('a -> unit Lwt.t) -> 'a -> unit

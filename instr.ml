@@ -335,7 +335,7 @@ let get_instr code pc =
 (****)
 
 let same_custom x y =
-  Obj.field x 0 = Obj.field (Obj.repr y) 0
+  Obj.field x 0 == Obj.field (Obj.repr y) 0
 
 let rec print_obj f x =
   if Obj.is_block x then begin

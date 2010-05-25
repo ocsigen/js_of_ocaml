@@ -1,6 +1,3 @@
-//FIX: namespace pollution
-//FIX: exception handling...
-
 /***********************************************************************/
 /*                              O'Browser                              */
 /*                                                                     */
@@ -286,15 +283,17 @@ function input_val (chunk, error) {
 // Caml name: unmarshal
 // Type:      string -> int -> 'a
 caml_input_value_from_string = function (s, ofs) {
+    var s = s.toByteArray();
     function caml_failwith (s) {throw (s);};
-    return input_val (s.content.slice (s.offset + ofs, s.size),caml_failwith);
+    return input_val (s.slice (ofs + 1),caml_failwith);
 }
 
 // Caml name: marshal_data_size
 // Type:      string -> int -> int
 caml_marshal_data_size = function (s, ofs) {
+    var s = s.toByteArray();
     function caml_failwith (s) {throw (s);};
-    return input_size (s.content.slice (s.offset + ofs, s.size),caml_failwith);
+    return input_size (s.slice (ofs + 1), caml_failwith);
 }
 
 function Writer () {
@@ -328,12 +327,45 @@ Writer.prototype.finalize = function () {
     return this.chunk;
 }
 
-function HD(v) {return (((v).size << 10) | (v).tag);}
+function HD(v) {return (v.length << 10) | v[0];}
 
 function output_val (v, error) {
-    var writer = new Writer ()
+    var writer = new Writer ();
     function extern_rec (v) {
-	if (is_long (v)) {
+        if (v instanceof MlString) {
+            var len = v.length;
+            if (len < 0x20) {
+                writer.write (8, PREFIX_SMALL_STRING + len);
+            } else if (len < 0x100) {
+                writer.write_code (8, CODE_STRING8, len);
+            } else {
+                writer.write_code (32, CODE_STRING32, len);
+            }
+            for (var i = 0;i < len;i++)
+                writer.write (8, v.get(i));
+            writer.size_32 += 1 + (len + 4) / 4;
+            writer.size_64 += 1 + (len + 8) / 8;
+        } else if (v instanceof Array) {
+	    if (v.length == 1) {
+		if (v[0] < 16)
+		    writer.write (8, PREFIX_SMALL_BLOCK + v[0]);
+		else
+		    writer.write_code (32, CODE_BLOCK32, HD(v));
+		return;
+	    }
+            if (v[0] < 16 && v.length - 1 < 8) {
+                writer.write (8, PREFIX_SMALL_BLOCK + v[0] + ((v.length - 1)<<4));
+            } else {
+                writer.write_code(32, CODE_BLOCK32, HD(v));
+            }
+            writer.size_32 += v.length ;
+            writer.size_64 += v.length ;
+            v.dejavu = true;
+            v.dejavu_location = writer.obj_counter++;
+            for (i = 1; i < v.length; i++) {
+                extern_rec (v[i]);
+            }
+        } else
 	    if (v >= 0 && v < 0x40) {
 		writer.write (8, PREFIX_SMALL_INT + v);
 	    } else {
@@ -347,124 +379,7 @@ function output_val (v, error) {
 		    }
 		}
 	    }
-	} else {
-	    /* manque un truc space avec les forward val */
-	    if (v.size == 0) {
-		if (v.tag < 16)
-		    writer.write (8, PREFIX_SMALL_BLOCK + v.tag);
-		else
-		    writer.write_code (32, CODE_BLOCK32, HD(v));
-		return;
-	    }
-	    if (v.dejavu) {
-		var d = writer.obj_counter - v.dejavu_location;
-		if (d < 0x100) {
-		    writer.write_code (8, CODE_SHARED8, d);
-		} else {
-		    if (d < 0x10000) {
-			writer.write_code (16, CODE_SHARED16, d);
-		    } else {
-			writer.write_code (32, CODE_SHARED32, d);
-		    }
-		}
-		return;
-	    }
-	    switch(v.tag) {
-	    case STRING_TAG: {
-		var len = v.size - 1;
-		if (len < 0x20) {
-		    writer.write (8, PREFIX_SMALL_STRING + len);
-		} else if (len < 0x100) {
-		    writer.write_code (8, CODE_STRING8, len);
-		} else {
-		    writer.write_code (32, CODE_STRING32, len);
-		}
-		for (var i = 0;i < len;i++)
-		    writer.write (8, v.get (i));
-		writer.size_32 += 1 + (len + 4) / 4;
-		writer.size_64 += 1 + (len + 8) / 8;
-		v.dejavu = true;
-		v.dejavu_location = writer.obj_counter++;
-		break;
-	    }
-	    case DOUBLE_TAG: {
-		writer.write (8, CODE_DOUBLE_BIG);
-		var bytes = bytes_of_float (v);
-		for (var i = 0;i < 8;i++)
-		    writer.write (8, bytes[i]);
-		writer.size_32 += 1 + 2;
-		writer.size_64 += 1 + 1;
-		v.dejavu = true;
-		v.dejavu_location = writer.obj_counter++;
-		break;
-	    }
-	    case DOUBLE_ARRAY_TAG: {
-		if (v.size < 0x100)
-		    writer.write_code (8, CODE_DOUBLE_ARRAY8_BIG, v.size);
-		else
-		    writer.write_code (32, CODE_DOUBLE_ARRAY8_BIG, v.size);
-		for (var j = 0;j < v.size;j++) {
-		    var bytes = bytes_of_float (v.get (j));
-		    for (var i = 0;i < 8;i++)
-			writer.write (8, bytes[i]);
-		}
-		writer.size_32 += 1 + nfloats * 2;
-		writer.size_64 += 1 + nfloats;
-		v.dejavu = true;
-		v.dejavu_location = writer.obj_counter++;
-		break;
-	    }
-	    case ABSTRACT_TAG:
-		caml_invalid_arg("output_value: abstract value (Abstract)");
-		break;
-	    case INFIX_TAG:
-		//	caml_invalid_arg("output_value: on verra plus tard");
-		writer.write_code (32, CODE_INFIXPOINTER, v.offset);
-		extern_rec(v.shift (- v.offset));
-		break;
-	    case CUSTOM_TAG: {
-		var sz_32, sz_64;
-		if (v.get (0).serialize == null)
-		    invalid_arg ("output_value: abstract value (Custom)");
-		writer.write(8, CODE_CUSTOM);
-		for (var i = 0;i < v.get (0).id.length;i++)
-		    writer.write(8, v.get (0).id.charCodeAt (i));
-		writer.write(8, 0);
-		
-		v.get (0).serialize(v, writer);
-		v.dejavu = true;
-		v.dejavu_location = writer.obj_counter++;
-		break;
-	    }
-	    default: {
-		if (v.tag < 16 && v.size < 8) {
-		    writer.write (8, PREFIX_SMALL_BLOCK + v.tag + (v.size<<4));
-		} else {
-		    writer.write_code(32, CODE_BLOCK32, HD(v));
-		}
-		writer.size_32 += 1 + v.size ;
-		writer.size_64 += 1 + v.size ;
-		v.dejavu = true;
-		v.dejavu_location = writer.obj_counter++;
-		for (i = 0; i < v.size; i++) {
-		    extern_rec (v.get (i));
-		}
-	    }
-	    }
 	}
-	
-    }
-    /* BOUZIN :
-  else if ((char *) v >= caml_code_area_start &&
-           (char *) v < caml_code_area_end) {
-    if (!extern_closures)
-      extern_invalid_argument("output_value: functional value");
-    writecode32(CODE_CODEPOINTER, (char *) v - caml_code_area_start);
-    writeblock((char *) caml_code_checksum(), 16);
-  } else {
-    extern_invalid_argument("output_value: abstract value (outside heap)");
-  }
-*/
     extern_rec (v);
     writer.finalize ();
     return writer.chunk;
@@ -478,11 +393,10 @@ function caml_output_value_to_string (v, fl) {
     var vm = this;
     function caml_failwith (s) {throw (s);};
     var t = output_val (v, caml_failwith);
-    var b = mk_block (t.length + 1, STRING_TAG);
+    var b = new MlString (t.length);
     for (var i = 0;i < t.length;i++) {
-	store_field (b, i, t[i]);
+	b.set(i, t[i]);
     }
-    store_field (b, t.length, 0);
     return b;
 }
 

@@ -1381,7 +1381,7 @@ let match_exn_traps ((_, blocks, _) as p) =
 (****)
 
 let same_custom x y =
-  Obj.field x 0 = Obj.field (Obj.repr y) 0
+  Obj.field x 0 == Obj.field (Obj.repr y) 0
 
 let rec parse_const x =
   if Obj.is_block x then begin
@@ -1434,6 +1434,7 @@ ignore cont;
                  [Pv x ; Pv (access_global g n)])) ::
       !l
   in
+  register_global 2;
   register_global 3;
   for i = Array.length g.constants - 1  downto 0 do
     match g.vars.(i) with

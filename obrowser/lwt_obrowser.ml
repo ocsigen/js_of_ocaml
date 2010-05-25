@@ -1,3 +1,7 @@
+let register_event node name (f : 'a -> unit Lwt.t) =
+  Js.Node.register_event node name
+    (fun a -> f a)
+
 open Jslib
 
 external magic : 'a -> 'b = "%identity"

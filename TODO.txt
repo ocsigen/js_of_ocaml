@@ -6,20 +6,18 @@ Priorities
 
 ====
 
-- finish js API ===> creating new objects
+- finish js API
+  ===> creating new objects
+  ===> dom object creation (especially, INPUT)
+  ===> implement at least an interesting subset of the google closure API
 
 - improved string implementation
   ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
       byte array
-
-- turn partial applications into closures?
-    x = app(f, x) ====>
-    x = fun(x1,...,xn) {return f(x, x1, ...,xn);}
+  ==> should not use toString as the default conversion function
+      (toString should escape the string)
 
 - overloading mechanism: send_1 / send_2 / ...
-
-- syntactic sugar for Javascript literal strings
-  + optimization to avoid going through Caml strings
 
 - merge all source files (including javascript) into a single file
 - there should be a way to pass a list of know primitives (and their
@@ -33,6 +31,13 @@ Known issues
 
 Compiler optimizations
 ======================
+- syntactic sugar for Javascript literal strings
+  + optimization to avoid going through Caml strings
+
+- turn partial applications into closures?
+    x = app(f, x) ====>
+    x = fun(x1,...,xn) {return f(x, x1, ...,xn);}
+
 - Can we avoid spurious conversions from boolean to integers???
   ===> explicit conversion to boolean; specialized "if" that operates
        on booleans directly
