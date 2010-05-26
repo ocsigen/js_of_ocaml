@@ -1,10 +1,7 @@
 Priorities
 ==========
 
-- fix marshall.js
-  ===> conversion of strings from/to byte arrays
-
-====
+- fix control.ml
 
 - finish js API
   ===> creating new objects
@@ -45,10 +42,6 @@ Compiler optimizations
 - inlining (especially of functions that are used only once!)
 - constant hoisting (including functions, out of loops and functions)
 - inline also partially applied functions
-
-- keep track of pure function so that if the result of a pure function
-  is ignored, the whole function can be deleted
-  ===> some functor applications, for instance
 
 - using continuation with multiples arguments
   ==> graph coloring + variable coalescing

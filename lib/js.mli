@@ -5,6 +5,12 @@ type +'a t
 val _true : bool t
 val _false : bool t
 
+val float : float -> float t
+val to_float : float t -> float
+
+val string : string -> string t
+val to_string : string t -> string
+
 (* Null and undefined *)
 
 type +'a opt
@@ -12,8 +18,8 @@ type +'a optdef
 
 val null : 'a opt
 val some : 'a -> 'a opt
-val def : 'a -> 'a optdef
 val undefined : 'a optdef
+val def : 'a -> 'a optdef
 
 module type OPT = sig
   type 'a t

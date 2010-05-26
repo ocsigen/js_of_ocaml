@@ -12,8 +12,8 @@ examples: compiler library
 
 OBJS=util.cmx dgraph.cmx \
      javascript.cmx js_output.cmx js_simpl.cmx js_rename.cmx \
-     instr.cmx code.cmx primitive.cmx subst.cmx deadcode.cmx \
-     flow.cmx control.cmx \
+     instr.cmx code.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
+     flow.cmx control.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
      generate.cmx parse.cmx main.cmx
 

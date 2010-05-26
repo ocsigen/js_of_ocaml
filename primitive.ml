@@ -4,7 +4,7 @@ let pure_prims =
   ["caml_int64_float_of_bits"; "caml_sys_get_argv"; "caml_sys_get_config";
    "caml_obj_dup"; "caml_ml_open_descriptor_in"; "caml_ml_open_descriptor_out";
    "caml_nativeint_sub"; "caml_nativeint_shift_left";
-   "caml_js_var"]
+   "caml_js_var"; "caml_ensure_stack_capacity"]
 
 let is_pure f = List.mem f pure_prims
 

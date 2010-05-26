@@ -65,11 +65,8 @@ let is_trivial instr last =
 
 let resolve_branch blocks (pc, args) =
   match AddrMap.find pc blocks with
-    {params = params; body = []; branch = Branch (pc', args')} ->
-      let m = Subst.build_mapping params args in
-      let args'' =
-        List.map (Subst.from_map m) args' in
-      Some (pc', args'')
+    {params = []; body = []; branch = Branch (pc', args')} ->
+      Some (pc', args')
   | _ ->
       None
 
@@ -84,6 +81,10 @@ let concat_blocks pc instr params handler args params' instr' last' =
       branch = Subst.last s last' }
 
 let rec block_simpl pc (preds, entries, blocks) =
+Format.eprintf "VV %d@." pc;
+(*
+Format.eprintf "RRRRRRRRRRRRRRR %d@." (AddrSet.cardinal (AddrMap.find 12644 preds));
+*)
   let block = AddrMap.find pc blocks in
     match block.branch with
         Return _ | Raise _ | Stop | Poptrap _ ->
@@ -91,19 +92,23 @@ let rec block_simpl pc (preds, entries, blocks) =
       | Branch (pc', args) ->
           let block' = AddrMap.find pc' blocks in
           if
+false
+(*XXX FIX!
             not (AddrSet.mem pc' entries)
               &&
             AddrSet.cardinal (AddrMap.find pc' preds) = 1
               &&
             block'.params = [] && block'.handler = block.handler
+*)
           then begin
+Format.eprintf "UU %d ==> %d@." pc pc';
             (preds,
              entries,
              AddrMap.add pc
                (concat_blocks pc block.body block.params block.handler args
                   block'.params block'.body block'.branch)
                (AddrMap.remove pc' blocks))
-          end else if is_trivial block'.body block'.branch then begin
+          end else if false(*XXX args = [] && is_trivial block'.body block'.branch *)then begin
             (AddrMap.add pc' (AddrSet.remove pc (AddrMap.find pc' preds))
                preds,
              entries,
@@ -173,6 +178,7 @@ let simpl (pc, blocks, free_pc) =
   let preds = AddrMap.map (fun _ -> AddrSet.empty) blocks in
   let entries = AddrSet.empty in
   let add_pred pc (pc', _) preds =
+Format.eprintf "%d ==> %d@." pc pc';
     AddrMap.add pc' (AddrSet.add pc (AddrMap.find pc' preds)) preds in
   let (preds, entries) =
     AddrMap.fold
@@ -208,6 +214,8 @@ let simpl (pc, blocks, free_pc) =
          (preds, entries))
       blocks (preds, entries)
   in
+(*
+Format.eprintf "RRRRRRRRRRRRRRR %d@." (AddrSet.cardinal (AddrMap.find 12644 preds));*)
   let (_, _, blocks) =
     traverse blocks pc block_simpl (preds, entries, blocks) in
   (pc, blocks, free_pc)

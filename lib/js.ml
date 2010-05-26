@@ -57,6 +57,11 @@ end
 let _true = Unsafe.variable "true"
 let _false = Unsafe.variable "false"
 
+external string : string -> string t = "caml_string_to_js"
+external to_string : string t -> string = "caml_string_from_js"
+external float : float -> float t = "%identity"
+external to_float : float t -> float = "%identity"
+
 type readonly
 type readwrite
 type (+'a, +'b) gen_prop

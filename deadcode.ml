@@ -7,15 +7,17 @@ type t =
   { blocks : block AddrMap.t;
     live : int array;
     deps : instr list array;
-    mutable live_block : AddrSet.t }
+    mutable live_block : AddrSet.t;
+    pure_funs : VarSet.t }
 
 (****)
 
-let req_expr e =
+let req_expr pure_funs e =
   match e with
     Const _  | Block _ | Field _ | Closure _ | Constant _ | Variable _ ->
       false
-  | Apply (_, l, n) ->
+  | Apply (f, l, n) ->
+      not (VarSet.mem f pure_funs) &&
       begin match n with
         Some n -> List.length l >= n
       | None   -> true
@@ -25,10 +27,10 @@ let req_expr e =
         Extern f -> not (Primitive.is_pure f)
       | _        -> false
 
-let req_instr i =
+let req_instr pure_funs i =
   match i with
     Let (_, e) ->
-      req_expr e
+      req_expr pure_funs e
   | Set_field _ | Offset_ref _ | Array_set _ ->
       false
 
@@ -38,7 +40,9 @@ let rec mark_var st x =
   let x = Var.idx x in
   st.live.(x) <- st.live.(x) + 1;
   if st.live.(x) = 1 then
-    List.iter (fun i -> if not (req_instr i) then mark_instr st i) st.deps.(x)
+    List.iter
+      (fun i -> if not (req_instr st.pure_funs i) then mark_instr st i)
+      st.deps.(x)
 
 and mark_expr st e =
   match e with
@@ -79,7 +83,7 @@ and mark_req st pc =
       (fun i ->
          match i with
            Let (_, e) ->
-             if req_expr e then mark_expr st e
+             if req_expr st.pure_funs e then mark_expr st e
          | Set_field (x, _, _) | Offset_ref (x, _)
          | Array_set (x, _, _) ->
              mark_var st x)
@@ -116,7 +120,7 @@ let fully_live_instr st i =
   | Set_field (x, _, _) | Offset_ref (x, _) | Array_set (x, _, _) ->
       st.live.(Var.idx x) > 0
 
-let live_instr st i = req_instr i || fully_live_instr st i
+let live_instr st i = req_instr st.pure_funs i || fully_live_instr st i
 
 let rec filter_args st pl al =
   match pl, al with
@@ -171,7 +175,7 @@ let annot st pc xi =
         let c = ref_count st i in
         if c = 0 then " " else Format.sprintf "%d" c
       end else
-        if req_instr i then "*" else "x"
+        if req_instr st.pure_funs i then "*" else "x"
 
 let add_dep deps x i =
   let idx = Var.idx x in
@@ -190,7 +194,7 @@ let add_cont_dep blocks deps (pc, args) =
     Some block -> add_arg_dep deps block.params args
   | None       -> () (* Dead continuation *)
 
-let f (pc, blocks, free_pc) =
+let f ((pc, blocks, free_pc) as program) =
   let nv = Var.count () in
   let deps = Array.make nv [] in
   let live = Array.make nv 0 in
@@ -223,7 +227,8 @@ let f (pc, blocks, free_pc) =
            add_cont_dep blocks deps cont)
     blocks;
   let st =
-    { live = live; deps = deps; blocks = blocks; live_block = AddrSet.empty }
+    { live = live; deps = deps; blocks = blocks;
+      live_block = AddrSet.empty; pure_funs = Pure_fun.f program }
   in
   mark_req st pc;
 

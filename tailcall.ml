@@ -42,7 +42,7 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
 
 let (>>) x f = f x
 
-(* Skip try body and exception handler *)
+(* Skip try body *)
 let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
@@ -79,12 +79,12 @@ let f ((pc, blocks, free_pc) as p) =
     fold_closures p
       (fun f params (pc, args) blocks ->
          match f with
-           Some f ->
-             let (_, blocks) =
-               traverse (f, params, pc, args) pc AddrSet.empty blocks in
-             blocks
-         | None ->
-             blocks)
-    blocks
+             Some f ->
+               let (_, blocks) =
+                 traverse (f, params, pc, args) pc AddrSet.empty blocks in
+                 blocks
+           | None ->
+               blocks)
+      blocks
   in
-  (pc, blocks, free_pc)
+    (pc, blocks, free_pc)
