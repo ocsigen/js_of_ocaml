@@ -8,5 +8,6 @@ ocaml2js
 private
 examples/boulderdash/boulderdash{,.js}
 examples/minesweeper/minesweeper{,.js}
+examples/cubes/cubes{,.js}
 lib/stubs.c
 obrowser/vm.js
