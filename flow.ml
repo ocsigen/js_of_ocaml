@@ -208,7 +208,8 @@ let program_approx defs def_approx (_, blocks, _) =
               Let (x, e) ->
                 expr_approx defs def_approx approx x e
             | Set_field (x, _, _) | Array_set (x, _, _) | Offset_ref (x, _) ->
-                approx.(Var.idx x) <- true)
+                let s = VarMap.find x def_approx in
+                VarSet.iter (fun y -> approx.(Var.idx y) <- true) s)
          block.body;
        match block.branch with
          Return x | Raise x ->

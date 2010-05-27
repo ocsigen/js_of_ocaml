@@ -218,7 +218,7 @@ module HTML = struct
     method referrer : string t readonly_prop
     method domain : string t readonly_prop
     method _URL : string t readonly_prop
-    method body : element prop
+    method body : element t prop
 (*XXX
  readonly attribute HTMLCollection  images;
  readonly attribute HTMLCollection  applets;
@@ -428,6 +428,119 @@ module HTML = struct
   let createH6Element doc : element t = unsafeCreateElement doc "h6"
 
   let createBrElement doc : element t = unsafeCreateElement doc "br"
+
+  let _2d_ = Js.string "2d"  (*FIX: use singleton type*)
+
+  type canvasPattern
+
+  class type canvasElement = object
+    inherit element
+    method width : int prop
+    method height : int prop
+    method toDataURL : string t meth
+    method getContext : string t -> canvasRenderingContext2D t meth
+  end
+
+  and canvasRenderingContext2D = object
+    method canvas : canvasElement t readonly_prop
+    method save : unit meth
+    method restore : unit meth
+    method scale : float -> float -> unit meth
+    method rotate : float -> unit meth
+    method translate : float -> float -> unit meth
+    method transform :
+      float -> float -> float -> float -> float -> float -> unit meth
+    method setTransform :
+      float -> float -> float -> float -> float -> float -> unit meth
+    method globalAlpha : float prop
+    method globalCompositeOperation : string t prop
+    method strokeStyle : string t prop (*FIX*)
+    method fillStyle : string t prop (*FIX*)
+    method createLinearGradient :
+      float -> float -> float -> float -> canvasGradient t meth
+    method createRadialGradient :
+      float -> float -> float -> float -> float -> float ->
+      canvasGradient t meth
+(*
+  CanvasPattern createPattern(in HTMLImageElement image, in DOMString repetition);
+  CanvasPattern createPattern(in HTMLCanvasElement image, in DOMString repetition);
+  CanvasPattern createPattern(in HTMLVideoElement image, in DOMString repetition);
+*)
+    method lineWidth : float prop
+    method lineCap : string t prop (*FIX: enum? *)
+    method lineJoin : string t prop (*FIX: enum? *)
+    method miterLimit : float prop
+
+    method shadowOffsetX : float prop
+    method shadowOffsetY : float prop
+    method shadowBlur : float prop
+    method shadowColor : string t prop
+
+    method clearRect : float -> float -> float -> float -> unit meth
+    method fillRect : float -> float -> float -> float -> unit meth
+    method strokeRect : float -> float -> float -> float -> unit meth
+
+    method beginPath : unit meth
+    method closePath : unit meth
+    method moveTo : float -> float -> unit meth
+    method lineTo : float -> float -> unit meth
+    method quadraticCurveTo : float -> float -> float -> float -> unit meth
+    method bezierCurveTo :
+      float -> float -> float -> float -> float -> float -> unit meth
+    method arcTo : float -> float -> float -> float -> float -> unit meth
+    method rect : float -> float -> float -> float -> unit meth
+    method arc :
+      float -> float -> float -> float -> float -> bool t -> unit meth
+    method fill : unit meth
+    method stroke : unit meth
+    method clip : unit meth
+    method isPointInPath : float -> float -> bool t meth
+
+    method drawFocusRing : element t -> float -> float -> bool t -> bool t meth
+
+    method font : string t prop
+    method textAlign : string t prop
+    method textBaseline : string t prop
+    method fillText : string t -> float -> float -> float opt -> unit meth
+    method strokeText : string t -> float -> float -> float opt -> unit meth
+    method measureText : string t -> textMetrics t meth
+
+    method drawImage : canvasElement t -> float -> float -> unit meth
+(*XXX
+
+  void drawImage(in HTMLImageElement image, in float sx, in float sy, in float sw, in float sh, in float dx, in float dy, in float dw, in float dh);
+  void drawImage(in HTMLCanvasElement image, in float dx, in float dy, in optional float dw, in float dh);
+  void drawImage(in HTMLCanvasElement image, in float sx, in float sy, in float sw, in float sh, in float dx, in float dy, in float dw, in float dh);
+  void drawImage(in HTMLVideoElement image, in float dx, in float dy, in optional float dw, in float dh);
+  void drawImage(in HTMLVideoElement image, in float sx, in float sy, in float sw, in float sh, in float dx, in float dy, in float dw, in float dh);
+*)
+
+    method createImageData : int -> int -> imageData t meth
+    method getImageData : float -> float -> float -> float -> imageData t meth
+    method putImageData : imageData t -> float -> float -> unit meth
+  end
+
+  and canvasGradient = object
+    method addColorStop : float -> string t -> unit meth
+  end
+
+  and textMetrics = object
+    method width : float readonly_prop
+  end
+
+  and imageData = object
+    method width : int readonly_prop
+    method height : int readonly_prop
+    method data : canvasPixelArray t prop
+  end
+
+  and canvasPixelArray = object
+    method length : int readonly_prop
+    (*XXX Fix: getter/setter *)
+  end
+
+  let createCanvasElement doc : canvasElement t =
+    unsafeCreateElement doc "canvas"
 
   type interval_id
   type timeout_id

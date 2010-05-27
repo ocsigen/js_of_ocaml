@@ -469,10 +469,20 @@ let rec translate_expr ctx queue e =
           let ((py, cy), queue) = access_queue queue y in
           (val_float (J.EBin (J.Minus, float_val cx, float_val cy)),
            or_p px py, queue)
+      | Extern "caml_add_float", [Pv x; Pv y] ->
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          (val_float (J.EBin (J.Plus, float_val cx, float_val cy)),
+           or_p px py, queue)
       | Extern "caml_mul_float", [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
           (val_float (J.EBin (J.Mul, float_val cx, float_val cy)),
+           or_p px py, queue)
+      | Extern "caml_div_float", [Pv x; Pv y] ->
+          let ((px, cx), queue) = access_queue queue x in
+          let ((py, cy), queue) = access_queue queue y in
+          (val_float (J.EBin (J.Div, float_val cx, float_val cy)),
            or_p px py, queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
           Code.add_reserved_name nm;  (*XXX HACK *)

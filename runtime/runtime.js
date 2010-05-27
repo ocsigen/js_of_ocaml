@@ -254,5 +254,11 @@ function createXMLHTTPObject() {
 
 /////////////////////////////
 
+//FIX: should be known by the compiler (with many others...)
+function caml_sqrt_float (x) { return Math.sqrt(x); }
+function caml_floor_float (x) { return Math.floor(x); }
+
+/////////////////////////////
+
 //FIX: real implementation...
 function caml_int64_float_of_bits () { return 0; }

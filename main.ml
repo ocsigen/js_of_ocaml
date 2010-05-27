@@ -30,6 +30,7 @@ if debug () then Format.eprintf "Dead-code...@.";
   let (p, live_vars) = Deadcode.f p in
 
 
+if debug () then Code.print_program (fun _ _ -> "") p;
 if debug () then Format.eprintf "Data flow...@.";
   let p = Flow.f p in
 if debug () then Format.eprintf "Dead-code...@.";

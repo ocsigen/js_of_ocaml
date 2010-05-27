@@ -1,6 +1,11 @@
 Priorities
 ==========
 
+- Format.sprintf "%d" is miscompiled (nested loop...)
+
+- should we rely on automatic conversions for float/string/bool?
+  ==> valueOf/toString
+
 - fix control.ml
 
 - finish js API
