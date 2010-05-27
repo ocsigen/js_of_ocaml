@@ -62,17 +62,9 @@ external to_string : string t -> string = "caml_string_from_js"
 external float : float -> float t = "%identity"
 external to_float : float t -> float = "%identity"
 
-type readonly
-type readwrite
-type (+'a, +'b) gen_prop
-type 'a readonly_prop = ('a, readonly) gen_prop
-type 'a prop = ('a, readwrite) gen_prop
 type +'a meth
-
-(* More general types
 type +'a gen_prop
 type 'a readonly_prop = <read : 'a> gen_prop
+type 'a writeonly_prop = <write : 'a> gen_prop
 type 'a prop = <read: 'a; write : 'a> gen_prop
-
 type 'a optdef_prop = <read: 'a optdef; write : 'a> gen_prop
-*)

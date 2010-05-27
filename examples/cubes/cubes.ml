@@ -146,7 +146,7 @@ let redraw ctx canvas a =
   c##globalCompositeOperation <- Js.string "source-over";
   tile c a (top_edges, right_edges, left_edges);
   remaining_edges c;
-  ctx##drawImage (canvas, 0., 0.)
+  ctx##drawImage_fromCanvas (canvas, 0., 0.)
 
 let (>>=) = Lwt.bind
 

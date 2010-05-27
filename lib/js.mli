@@ -36,12 +36,12 @@ module Optdef : OPT with type 'a t = 'a optdef
 
 (* Method and object properties specification *)
 
-type readonly
-type readwrite
-type (+'a, +'b) gen_prop
-type 'a readonly_prop = ('a, readonly) gen_prop
-type 'a prop = ('a, readwrite) gen_prop
 type +'a meth
+type +'a gen_prop
+type 'a readonly_prop = <read : 'a> gen_prop
+type 'a writeonly_prop = <write : 'a> gen_prop
+type 'a prop = <read: 'a; write : 'a> gen_prop
+type 'a optdef_prop = <read: 'a optdef; write : 'a> gen_prop
 
 (* Unsafe operations.  Use with care! *)
 

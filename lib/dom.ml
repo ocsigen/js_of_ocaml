@@ -212,31 +212,59 @@ module HTML = struct
     if targ##nodeType = 3 then targ##parentNode else targ
 *)
 
-  class type document = object
-    inherit [element] Dom.document
-    method title : string t prop
-    method referrer : string t readonly_prop
-    method domain : string t readonly_prop
-    method _URL : string t readonly_prop
-    method body : element t prop
-(*XXX
- readonly attribute HTMLCollection  images;
- readonly attribute HTMLCollection  applets;
- readonly attribute HTMLCollection  links;
- readonly attribute HTMLCollection  forms;
- readonly attribute HTMLCollection  anchors;
-*)
-    method cookie : string t prop
-  end
-
-  let unsafeCreateElement (doc : document t) name =
-    Js.Unsafe.coerce (doc##createElement(JsString.of_string name))
-
   class type ['node] collection = object
     method length : int readonly_prop
     method item : int -> 'node t opt meth
     method namedItem : string t -> 'node t opt meth
   end
+
+  class type htmlElement = element
+
+  class type headElement = object
+    inherit element
+    method profile : string t prop
+  end
+
+  class type linkElement = object
+    inherit element
+    method disabled : bool t prop
+    method charset : string t prop
+    method href : string t prop
+    method hreflang : string t prop
+    method media : string t prop
+    method rel : string t prop
+    method rev : string t prop
+    method target : string t prop
+    method _type : string t prop
+  end
+
+  class type titleElement = object
+    inherit element
+    method text : string t prop
+  end
+
+  class type metaElement = object
+    inherit element
+    method content : string t prop
+    method httpEquiv : string t prop
+    method name : string t prop
+    method scheme : string t prop
+  end
+
+  class type baseElement = object
+    inherit element
+    method href : string t prop
+    method target : string t prop
+  end
+
+  class type styleElement = object
+    inherit element
+    method disabled : bool t prop
+    method media : string t prop
+    method _type : string t prop
+  end
+
+  class type bodyElement = element
 
   class type formElement = object
     inherit element
@@ -252,16 +280,11 @@ module HTML = struct
     method reset : unit meth
   end
 
-  let createFormElement doc : formElement t = unsafeCreateElement doc "form"
-
   class type optGroupElement = object
     inherit element
     method disabled : bool t prop
     method label : string t prop
   end
-
-  let createOptGroupElement doc : optGroupElement t =
-    unsafeCreateElement doc "optgroup"
 
   class type optionElement = object
     inherit element
@@ -274,9 +297,6 @@ module HTML = struct
     method selected : bool prop
     method value : string t prop
   end
-
-  let createOptionElement doc : optionElement t =
-    unsafeCreateElement doc "option"
 
   class type selectElement = object
     inherit element
@@ -298,9 +318,6 @@ module HTML = struct
 
     method onchange : (unit -> bool t) opt prop
   end
-
-  let createSelectElement doc : selectElement t =
-    unsafeCreateElement doc "select"
 
   class type inputElement = object
     inherit element
@@ -330,7 +347,101 @@ module HTML = struct
     method onchange : (unit -> bool t) opt prop
   end
 
-  let createInputElement doc : inputElement t = unsafeCreateElement doc "input"
+  class type textAreaElement = object
+    inherit element
+    method defaultValue : string t prop
+    method form : formElement t opt readonly_prop
+    method accessKey : string t prop
+    method cols : int prop
+    method disabled : bool t prop
+    method name : string t prop
+    method readOnly : bool t prop
+    method rows : int prop
+    method tabIndex : int prop
+    method _type : string t readonly_prop
+    method value : string t prop
+    method blur : unit meth
+    method focus : unit meth
+    method select : unit meth
+  end
+
+  class type buttonElement = object
+    inherit element
+    method form : formElement opt readonly_prop
+    method accessKey : string t prop
+    method disabled : bool t prop
+    method name : string t prop
+    method tabIndex : int prop
+    method _type : string t readonly_prop
+    method value : string t prop
+  end
+
+  class type labelElement = object
+    inherit element
+    method form : formElement t opt readonly_prop
+    method accessKey : string t prop
+    method htmlFor : string t prop
+  end
+
+  class type fieldSetElement = object
+    inherit element
+    method form : formElement t opt readonly_prop
+  end
+
+  class type legendElement = object
+    inherit element
+    method form : formElement t opt readonly_prop
+    method accessKey : string t prop
+  end
+
+  class type uListElement = element
+
+  class type oListElement = element
+
+  class type dListElement = element
+
+  class type liElement = element
+
+  class type divElement = element
+
+  class type paragraphElement = element
+
+  class type headingElement = element
+
+  class type quoteElement = object
+    inherit element
+    method cite : string t prop
+  end
+
+  class type preElement = element
+
+  class type brElement = element
+
+  class type hrElement = element
+
+  class type modElement = object
+    inherit element
+    method cite : string t prop
+    method dateTime : string t prop
+  end
+
+  class type anchorElement = object
+    inherit element
+    method accessKey : string t prop
+    method charset : string t prop
+    method coords : string t prop
+    method href : string t prop
+    method hreflang : string t prop
+    method name : string t prop
+    method rel : string t prop
+    method rev : string t prop
+    method shape : string t prop
+    method tabIndex : int prop
+    method target : string t prop
+    method _type : string t prop
+    method blur : unit meth
+    method focus : unit meth
+  end
 
   class type imageElement = object
     inherit element
@@ -343,7 +454,59 @@ module HTML = struct
     method width : int prop
   end
 
-  let createImageElement doc : imageElement t = unsafeCreateElement doc "img"
+  class type objectElement = object
+    inherit element
+    method form : formElement t opt readonly_prop
+    method code : string t prop
+    method archive : string t prop
+    method codeBase : string t prop
+    method codeType : string t prop
+    method data : string t prop
+    method declare : bool t prop
+    method height : string t prop
+    method name : string t prop
+    method standby : string t prop
+    method tabIndex : int prop
+    method _type : string t prop
+    method useMap : string t prop
+    method width : string t prop
+    method document : Dom.element Dom.document t opt readonly_prop
+  end
+
+  class type paramElement = object
+    inherit element
+    method name : string t prop
+    method _type : string t prop
+    method value : string t prop
+    method valueType : string t prop
+  end
+
+  class type areaElement = object
+    inherit element
+    method accessKey : string t prop
+    method alt : string t prop
+    method coords : string t prop
+    method href : string t prop
+    method noHref : bool t prop
+    method shape : string t prop
+    method tabIndex : int prop
+    method target : string t prop
+  end
+
+  class type mapElement = object
+    inherit element
+    method areas : areaElement collection t readonly_prop
+    method name : string t prop
+  end
+
+  class type scriptElement = object
+    inherit element
+    method text : string t prop
+    method charset : string t prop
+    method defer : bool t prop
+    method src : string t prop
+    method _type : string t prop
+  end
 
   class type tableCellElement = object
     inherit element
@@ -371,6 +534,16 @@ module HTML = struct
     method vAlign : string t prop
     method insertCell : int -> tableCellElement t meth
     method deleteCell : int -> unit meth
+  end
+
+  class type tableColElement = object
+    inherit element
+    method align : string t prop
+    method ch : string t prop
+    method chOff : string t prop
+    method span : int prop
+    method vAlign : string t prop
+    method width : string t prop
   end
 
   class type tableSectionElement = object
@@ -411,24 +584,6 @@ module HTML = struct
     method deleteRow : int -> unit meth
   end
 
-  let createTableElement doc : tableElement t = unsafeCreateElement doc "table"
-
-  class type divElement = object
-    inherit element
-    method align : string t prop
-  end
-
-  let createDivElement doc : divElement t = unsafeCreateElement doc "div"
-
-  let createH1Element doc : element t = unsafeCreateElement doc "h1"
-  let createH2Element doc : element t = unsafeCreateElement doc "h2"
-  let createH3Element doc : element t = unsafeCreateElement doc "h3"
-  let createH4Element doc : element t = unsafeCreateElement doc "h4"
-  let createH5Element doc : element t = unsafeCreateElement doc "h5"
-  let createH6Element doc : element t = unsafeCreateElement doc "h6"
-
-  let createBrElement doc : element t = unsafeCreateElement doc "br"
-
   let _2d_ = Js.string "2d"  (*FIX: use singleton type*)
 
   type canvasPattern
@@ -454,21 +609,26 @@ module HTML = struct
       float -> float -> float -> float -> float -> float -> unit meth
     method globalAlpha : float prop
     method globalCompositeOperation : string t prop
-    method strokeStyle : string t prop (*FIX*)
-    method fillStyle : string t prop (*FIX*)
+    method strokeStyle : string t writeonly_prop
+    method strokeStyle_gradient : canvasGradient t writeonly_prop
+    method strokeStyle_pattern : canvasPattern t writeonly_prop
+    method fillStyle : string t writeonly_prop
+    method fillStyle_gradient : canvasGradient t writeonly_prop
+    method fillStyle_pattern : canvasPattern t writeonly_prop
     method createLinearGradient :
       float -> float -> float -> float -> canvasGradient t meth
     method createRadialGradient :
       float -> float -> float -> float -> float -> float ->
       canvasGradient t meth
+    method createPattern : imageElement t -> string t -> canvasPattern t meth
+    method createPattern_fromCanvas :
+      canvasElement t -> string t -> canvasPattern t meth
 (*
-  CanvasPattern createPattern(in HTMLImageElement image, in DOMString repetition);
-  CanvasPattern createPattern(in HTMLCanvasElement image, in DOMString repetition);
   CanvasPattern createPattern(in HTMLVideoElement image, in DOMString repetition);
 *)
     method lineWidth : float prop
-    method lineCap : string t prop (*FIX: enum? *)
-    method lineJoin : string t prop (*FIX: enum? *)
+    method lineCap : string t prop
+    method lineJoin : string t prop
     method miterLimit : float prop
 
     method shadowOffsetX : float prop
@@ -505,12 +665,19 @@ module HTML = struct
     method strokeText : string t -> float -> float -> float opt -> unit meth
     method measureText : string t -> textMetrics t meth
 
-    method drawImage : canvasElement t -> float -> float -> unit meth
-(*XXX
-
-  void drawImage(in HTMLImageElement image, in float sx, in float sy, in float sw, in float sh, in float dx, in float dy, in float dw, in float dh);
-  void drawImage(in HTMLCanvasElement image, in float dx, in float dy, in optional float dw, in float dh);
-  void drawImage(in HTMLCanvasElement image, in float sx, in float sy, in float sw, in float sh, in float dx, in float dy, in float dw, in float dh);
+    method drawImage :
+      imageElement t -> float -> float -> unit meth
+    method drawImage_scale :
+      imageElement t -> float -> float -> float -> float -> unit meth
+    method drawImage_full :
+      imageElement t -> float -> float -> float -> float -> unit meth
+    method drawImage_fromCanvas :
+      canvasElement t -> float -> float -> unit meth
+    method drawImage_scaleFromCanvas :
+      canvasElement t -> float -> float -> float -> float -> unit meth
+    method drawImage_fullFromCanvas :
+      canvasElement t -> float -> float -> float -> float -> unit meth
+(*
   void drawImage(in HTMLVideoElement image, in float dx, in float dy, in optional float dw, in float dh);
   void drawImage(in HTMLVideoElement image, in float sx, in float sy, in float sw, in float sh, in float dx, in float dy, in float dw, in float dh);
 *)
@@ -538,6 +705,101 @@ module HTML = struct
     method length : int readonly_prop
     (*XXX Fix: getter/setter *)
   end
+
+  class type document = object
+    inherit [element] Dom.document
+    method title : string t prop
+    method referrer : string t readonly_prop
+    method domain : string t readonly_prop
+    method _URL : string t readonly_prop
+    method body : element t prop
+    method images : imageElement collection t readonly_prop
+    method applets : element collection t readonly_prop
+    method links : element collection t readonly_prop
+    method forms : formElement collection t readonly_prop
+    method anchors : element collection t readonly_prop
+    method cookie : string t prop
+  end
+
+(*XXX Creation functions a la lablgtk... *)
+  let unsafeCreateElement (doc : document t) name =
+    Js.Unsafe.coerce (doc##createElement(JsString.of_string name))
+
+  let createHtmlElement doc : htmlElement t = unsafeCreateElement doc "html"
+  let createHeadElement doc : headElement t = unsafeCreateElement doc "head"
+  let createLinkElement doc : linkElement t = unsafeCreateElement doc "link"
+  let createTitleElement doc : titleElement t = unsafeCreateElement doc "title"
+  let createMetaElement doc : metaElement t = unsafeCreateElement doc "meta"
+  let createBaseElement doc : baseElement t = unsafeCreateElement doc "base"
+  let createStyleElement doc : styleElement t = unsafeCreateElement doc "style"
+  let createBodyElement doc : bodyElement t = unsafeCreateElement doc "body"
+  let createFormElement doc : formElement t = unsafeCreateElement doc "form"
+  let createOptGroupElement doc : optGroupElement t =
+    unsafeCreateElement doc "optgroup"
+  let createOptionElement doc : optionElement t =
+    unsafeCreateElement doc "option"
+  let createSelectElement doc : selectElement t =
+    unsafeCreateElement doc "select"
+(*XXX should set name and type here... *)
+  let createInputElement doc : inputElement t = unsafeCreateElement doc "input"
+  let createTextAreaElement doc : textAreaElement t =
+    unsafeCreateElement doc "textArea"
+  let createButtonElement doc : buttonElement t =
+    unsafeCreateElement doc "button"
+  let createLabelElement doc : labelElement t = unsafeCreateElement doc "label"
+  let createFieldSetElement doc : fieldSetElement t =
+    unsafeCreateElement doc "fieldSet"
+  let createLegendElement doc : legendElement t =
+    unsafeCreateElement doc "legend"
+  let createUlElement doc : uListElement t = unsafeCreateElement doc "ul"
+  let createOlElement doc : oListElement t = unsafeCreateElement doc "ol"
+  let createDlElement doc : dListElement t = unsafeCreateElement doc "dl"
+  let createLiElement doc : liElement t = unsafeCreateElement doc "li"
+  let createDivElement doc : divElement t = unsafeCreateElement doc "div"
+  let createParagraphElement doc : paragraphElement t =
+    unsafeCreateElement doc "p"
+  let createH1Element doc : headingElement t = unsafeCreateElement doc "h1"
+  let createH2Element doc : headingElement t = unsafeCreateElement doc "h2"
+  let createH3Element doc : headingElement t = unsafeCreateElement doc "h3"
+  let createH4Element doc : headingElement t = unsafeCreateElement doc "h4"
+  let createH5Element doc : headingElement t = unsafeCreateElement doc "h5"
+  let createH6Element doc : headingElement t = unsafeCreateElement doc "h6"
+  let createQElement doc : quoteElement t = unsafeCreateElement doc "q"
+  let createBlockquoteElement doc : quoteElement t =
+    unsafeCreateElement doc "blockquote"
+  let createPreElement doc : preElement t = unsafeCreateElement doc "pre"
+  let createBrElement doc : brElement t = unsafeCreateElement doc "br"
+  let createHrElement doc : hrElement t = unsafeCreateElement doc "hr"
+  let createInsElement doc : modElement t = unsafeCreateElement doc "ins"
+  let createDelElement doc : modElement t = unsafeCreateElement doc "del"
+  let createAnchorElement doc : anchorElement t = unsafeCreateElement doc "a"
+  let createImageElement doc : imageElement t = unsafeCreateElement doc "img"
+  let createObjectElement doc : objectElement t =
+    unsafeCreateElement doc "object"
+  let createParamElement doc : paramElement t = unsafeCreateElement doc "param"
+  let createMapElement doc : mapElement t = unsafeCreateElement doc "map"
+  let createAreaElement doc : areaElement t = unsafeCreateElement doc "area"
+  let createScriptElement doc : scriptElement t =
+    unsafeCreateElement doc "script"
+  let createTableElement doc : tableElement t = unsafeCreateElement doc "table"
+  let createTableCaptionElement doc : tableCaptionElement t =
+    unsafeCreateElement doc "caption"
+  let createTableColElement doc : tableColElement t =
+    unsafeCreateElement doc "col"
+  let createTableColgroupElement doc : tableColElement t =
+    unsafeCreateElement doc "colgroup"
+  let createTHeadElement doc : tableSectionElement t =
+    unsafeCreateElement doc "thead"
+  let createTFootElement doc : tableSectionElement t =
+    unsafeCreateElement doc "tfoot"
+  let createTBodyElement doc : tableSectionElement t =
+    unsafeCreateElement doc "tbody"
+  let createTableRowElement doc : tableRowElement t =
+    unsafeCreateElement doc "tr"
+  let createThElement doc : tableCellElement t =
+    unsafeCreateElement doc "th"
+  let createTdElement doc : tableCellElement t =
+    unsafeCreateElement doc "td"
 
   let createCanvasElement doc : canvasElement t =
     unsafeCreateElement doc "canvas"
@@ -572,7 +834,6 @@ module HTML = struct
     method setTimeout : (unit -> unit) -> float -> timeout_id meth
     method clearTimeout : timeout_id -> unit meth
   end
-(*XXX Creation functions a la lablgtk... *)
 
   let window : window t = Js.Unsafe.variable "window"
   let document : document t = Js.Unsafe.variable "document"

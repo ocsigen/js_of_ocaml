@@ -8,20 +8,21 @@ Priorities
 
 - fix control.ml
 
+- improved type-checking in pa_js.ml
+
 - finish js API
   ===> creating new objects
   ===> dom object creation (especially, INPUT)
   ===> implement at least an interesting subset of the google closure API
 - should we rely on automatic conversions for float/string/bool?
   ==> valueOf/toString
+  ==> does not always work (for instance, strokeStyle method for canvas)
 
 - improved string implementation
   ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
       byte array
   ==> should not use toString as the default conversion function
       (toString should escape the string)
-
-- overloading mechanism: send_1 / send_2 / ...
 
 - merge all source files (including javascript) into a single file
 - there should be a way to pass a list of know primitives (and their
