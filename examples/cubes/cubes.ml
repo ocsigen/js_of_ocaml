@@ -136,10 +136,11 @@ let create_canvas () =
   c##height <- n * 2 * truncate h + 1;
   c
 
-let redraw ctx a =
-  let canvas = create_canvas () in
+let redraw ctx canvas a =
   let c = canvas##getContext (HTML._2d_) in
-  c##translate (0.5, 0.5);
+  c##setTransform (1., 0., 0., 1., 0., 0.);
+  c##clearRect (0., 0., float canvas##width, float canvas##height);
+  c##setTransform (1., 0., 0., 1., 0.5, 0.5);
   c##globalCompositeOperation <- Js.string "lighter";
   tile c a (draw_top, draw_right, draw_left);
   c##globalCompositeOperation <- Js.string "source-over";
@@ -149,20 +150,21 @@ let redraw ctx a =
 
 let (>>=) = Lwt.bind
 
-let rec loop c a =
+let rec loop c c' a =
   Lwt_js.sleep 0.2 >>= fun () ->
   let need_redraw = ref false in
   for i = 0 to 99 do
     need_redraw := update a || !need_redraw
   done;
-  if !need_redraw then redraw c a;
-  loop c a
+  if !need_redraw then redraw c c' a;
+  loop c c' a
 
 let _ =
   let c = create_canvas () in
+  let c' = create_canvas () in
   Dom.appendChild HTML.document##body c;
   let c = c##getContext (HTML._2d_) in
   c##globalCompositeOperation <- Js.string "copy";
   let a = create_cubes true in
-  redraw c a;
-  loop c a
+  redraw c c' a;
+  loop c c' a

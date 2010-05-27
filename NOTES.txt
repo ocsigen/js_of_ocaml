@@ -1,3 +1,4 @@
+Requires Lwt 2.1 or more recent
 
 Deviation from standard implementations:
 - Integers are 32 bits
