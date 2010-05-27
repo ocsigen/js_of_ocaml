@@ -1,10 +1,10 @@
 Priorities
 ==========
 
-- Format.sprintf "%d" is miscompiled (nested loop...)
+- reorganize source tree
+- license
 
-- should we rely on automatic conversions for float/string/bool?
-  ==> valueOf/toString
+- Format.sprintf "%d" is miscompiled (nested loop...)
 
 - fix control.ml
 
@@ -12,6 +12,8 @@ Priorities
   ===> creating new objects
   ===> dom object creation (especially, INPUT)
   ===> implement at least an interesting subset of the google closure API
+- should we rely on automatic conversions for float/string/bool?
+  ==> valueOf/toString
 
 - improved string implementation
   ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
