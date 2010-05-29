@@ -1,5 +1,13 @@
 Priorities
 ==========
+- exact 32bit multiplication + optimization when one argument is known
+  to be small (< 20 bits)
+- check for division by zero
+
+- add a comment at the beginning of the generated code: produced by
+  ocaml2js...
+
+- inline float constants
 
 - reorganize source tree
 - license
@@ -8,7 +16,7 @@ Priorities
 
 - fix control.ml
 
-- improved type-checking in pa_js.ml
+- improve type-checking in pa_js.ml
 
 - finish js API
   ===> creating new objects
@@ -121,6 +129,10 @@ Byte array ==> string
 =====================
 int array --map--> string array --join--> string
    b[i] = toString[a[i]]  where toString is a precomputed array of strings
+
+Bigint
+======
+http://www.leemon.com/crypto/BigInt.js
 
 ==========================
 

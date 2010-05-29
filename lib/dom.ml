@@ -1,5 +1,7 @@
-external http_get_with_status : string -> (int * string) = "caml_js_http_get_with_status"
-let http_get url = snd (http_get_with_status url)
+(*
+XXXX events
+XXXX creation (input)
+*)
 
 open Js
 
@@ -816,17 +818,44 @@ module HTML = struct
     method protocol : string t prop
     method search : string t prop
 
-    method reload : bool t -> unit meth
+    method reload : unit meth
+    method assign : string t -> unit meth
     method replace : string t -> unit meth
+    method toString : string t meth
+  end
+
+  class type history = object
+  end
+
+  class type undoManager = object
+  end
+
+  class type selection = object
   end
 
   class type window = object
+    method document : document t readonly_prop
+    method name : string t prop
+    method location : location t readonly_prop
+    method history : history t readonly_prop
+    method undoManager : undoManager t readonly_prop
+    method getSelection : selection t meth
+    method close : unit meth
+    method stop : unit meth
+    method focus : unit meth
+    method blur : unit meth
+
+    method top : window t readonly_prop
+    method parent : window t readonly_prop
+    method frameElement : element t opt readonly_prop
+
     method onload : (unit -> unit) prop
     method onbeforeunload : (unit -> string t) prop
-    method location : location t prop
 
     method alert : string t -> unit meth
     method confirm : string t -> bool t meth
+    method prompt : string t -> string t -> string t meth
+    method print : unit meth
 
     method setInterval : (unit -> unit) -> float -> interval_id meth
     method clearInterval : interval_id -> unit meth

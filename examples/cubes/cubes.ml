@@ -6,6 +6,8 @@ let w = floor (h *. sqrt 3. /. 2. +. 0.5)
 
 (****)
 
+let _ = Random.self_init ()
+
 let create_cubes v =
   Array.init n (fun _ -> Array.init n (fun _ -> Array.make n v))
 

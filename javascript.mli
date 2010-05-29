@@ -23,7 +23,7 @@ and binop =
   | Plus | Minus
   | Mul | Div | Mod
 
-and unop = Not | Neg
+and unop = Not | Neg | Pl
 (*XXX*)
 
 and arguments = expression list

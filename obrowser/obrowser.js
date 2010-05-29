@@ -120,7 +120,3 @@ function caml_regexp_split (vr, vs) {
 //XXX caml_input_value_from_string
 //XXX caml_marshal_data_size
 //XXX caml_output_value_to_string
-
-////////////////////////
-
-function caml_int64_float_of_bits() { return 0; }

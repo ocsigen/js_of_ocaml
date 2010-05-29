@@ -14,6 +14,8 @@ var caml_global_data = [];
 
 function caml_register_global (n, v) { caml_global_data[n] = v; }
 
+function caml_raise_constant (tag) { throw [0, tag]; }
+
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 
 function caml_raise_with_string (tag, msg) {
@@ -32,23 +34,35 @@ function caml_array_bound_error () {
   caml_invalid_argument("index out of bounds");
 }
 
-function caml_alloc_dummy () { return []; }
+function caml_raise_zero_divide () {
+  caml_raise_constant(caml_global_data[5]);
+}
+
 function caml_update_dummy (x, y) {
   var i = y.length;
   while (i--) x[i] = y[i];
   return 0;
 }
 
-function caml_obj_dup (x) { return x.slice(); }
-function caml_obj_is_block (x) { return (x instanceof Array)+0; }
-function caml_obj_set_tag (x, t) { x[0] = t; return 0; }
 function caml_obj_tag (x) { return (x instanceof Array)?x[0]:1000; }
 
-function caml_ensure_stack_capacity () { return 0; }
+function caml_mul(x,y) {
+  return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0;
+}
+
+function caml_div(x,y) {
+    if (y == 0) caml_raise_zero_divide ();
+    return (x/y)|0;
+}
+
+//slightly slower
+// function mul32(x,y) {
+//   var xlo = x & 0xffff;
+//   var xhi = x - xlo;
+//   return (((xhi * y) |0) + xlo * y)|0;
+// }
 
 ///////////// Pervasive
-function caml_make_array (a) { return a; }
-
 function caml_array_set (array, index, newval) {
   if ((index < 0) || (index >= array.length)) caml_array_bound_error();
   array[index+1]=newval; return 0;
@@ -66,13 +80,7 @@ function caml_make_vect (len, init) {
   return b;
 }
 
-function caml_obj_block (tag, size) {
-  var b = [];
-  b[0] = tag;
-  for (var i = 1; i <= size; i++) b[i] = 0;
-  return b;
-}
-
+// FIX: extra parameter (total?)
 function caml_compare (a, b) {
   if (a === b) return 0;
   if (a instanceof MlString) {
@@ -98,30 +106,23 @@ function caml_compare (a, b) {
 function caml_int_compare (a, b) {
   if (a < b) return (-1); else if (a == b) return 0; else return 1;
 }
-function caml_equal (x, y) { return (caml_compare(x,y) == 0)+0; }
-function caml_notequal (x, y) { return (caml_compare(x,y) != 0)+0; }
-function caml_greaterequal (x, y) { return (caml_compare(x,y) >= 0)+0; }
-function caml_lessequal (x, y) { return (caml_compare(x,y) <= 0)+0; }
-
-// FIX: Assumes 32 bit arithmetic...
-function caml_int_of_float(x) { return x|0; };
-function caml_int_of_string(x) { return x|0; };
-function caml_float_of_int(x) { return x; };
-
-// FIX: dummy functions
-function caml_register_named_value(dz,dx) { return 0;}
-function caml_ml_out_channels_list (c) { return 0; }
-function caml_ml_flush (c) { return 0; }
+function caml_equal (x, y) { return +(caml_compare(x,y) == 0); }
+function caml_notequal (x, y) { return +(caml_compare(x,y) != 0); }
+function caml_greaterequal (x, y) { return +(caml_compare(x,y) >= 0); }
+function caml_greaterthan (x, y) { return +(caml_compare(x,y) > 0); }
+function caml_lessequal (x, y) { return +(caml_compare(x,y) <= 0); }
+function caml_lessthan (x, y) { return +(caml_compare(x,y) < 0); }
 
 ///////////// String
+// FIX: caml_string_compare...
 function caml_create_string(len) { return new MlString(len); }
+function caml_fill_string(s, i, l, c) { s.fill (i, l, c); return 0; }
+function caml_string_equal(s1, s2) { return +s1.equal(s2); }
+function caml_string_notequal(s1, s2) { return +s1.notEqual(s2); }
+function caml_is_printable(c) { return +(c > 31 && c < 127); }
 function caml_blit_string(s1, i1, s2, i2, len) {
   s2.replace (i2, s1.contents, i1, len); return 0;
 }
-function caml_fill_string(s, i, l, c) { s.fill (i, l, c); return 0; }
-function caml_string_equal(s1, s2) { return s1.equal(s2)+0; }
-function caml_string_notequal(s1, s2) { return s1.notEqual(s2)+0; }
-function caml_is_printable(c) { return (c > 31 && c < 127)+0; }
 
 ///////////// Format
 // FIX: use format string
@@ -174,8 +175,6 @@ function caml_format_int(fmtV, i) {
   if (l > 0) s = new Array(l + 1).join(pad) + s;
   return new MlString(t==88?s.toUpperCase():s);
 }
-// FIX: caml_int32_format, caml_int64_format, caml_nativeint_format,
-// caml_classify_float
 
 ///////////// Hashtbl
 function caml_hash_univ_param (count, limit, obj) {
@@ -194,10 +193,13 @@ function caml_hash_univ_param (count, limit, obj) {
 
 ///////////// Sys
 var caml_initial_time = (new Date ()).getTime () * 0.001;
-function caml_sys_time (unit) {
-  return ((new Date ()).getTime () * 0.001 - caml_initial_time);
+function caml_sys_time () {
+  return (new Date ()).getTime () * 0.001 - caml_initial_time;
 }
 function caml_sys_get_config (e) { return [0, "Unix", 32]; }
+function caml_sys_random_seed () {
+  return (new Date()).getTime()^(Math.pow(2,32)*Math.random());
+}
 
 ///////////// CamlinternalOO
 function caml_get_public_method (obj, tag) {
@@ -216,8 +218,8 @@ function caml_get_public_method (obj, tag) {
 function caml_string_to_js(s) { return s.toString(); }
 function caml_string_from_js(s) { return new MlString(s); }
 
-function caml_js_set(o,f,v) { o[f.toString()]=v; return 0; }
-function caml_js_get(o,f) { return o[f.toString()]; }
+function caml_js_set(o,f,v) { o[f]=v; return 0; }
+function caml_js_get(o,f) { return o[f]; }
 
 ///////////// Digest
 
@@ -254,11 +256,41 @@ function createXMLHTTPObject() {
 
 /////////////////////////////
 
-//FIX: should be known by the compiler (with many others...)
-function caml_sqrt_float (x) { return Math.sqrt(x); }
-function caml_floor_float (x) { return Math.floor(x); }
+//FIX: should use this function (and also in generic compare)
+function caml_float_compare (x, y) {
+  if (x === y) return 0;
+  if (x < y) return -1;
+  if (x > y) return 1;
+  if (x === x) return 1;
+  if (y === y) return -1;
+  return 0;
+}
+function caml_cosh_float (x) { return (Math.exp(x) + Math.exp(-x)) / 2; }
+function caml_sinh_float (x) { return (Math.exp(x) - Math.exp(-x)) / 2; }
+function caml_log10_float (x) { return Math.LOG10E * Math.log(x); }
+function caml_tanh (x) {
+  var y = Math.exp(x), z = Math.exp(-x);
+  return (y + z) / (y - z);
+}
+function caml_classify_float (x) {
+  if (isFinite (x)) {
+    if (Math.abs(x) >= 2.2250738585072014e-308) return 0;
+    if (x != 0) return 1;
+    return 2;
+  }
+  return isNaN(x)?4:3;
+}
+// FIX: caml_frexp_float, caml_ldexp_float, caml_modf_float
 
 /////////////////////////////
 
 //FIX: real implementation...
 function caml_int64_float_of_bits () { return 0; }
+
+/////////////////////////////
+
+// FIX: dummy functions
+function caml_register_named_value(dz,dx) { return 0;}
+function caml_ml_out_channels_list (c) { return 0; }
+function caml_ml_flush (c) { return 0; }
+function caml_ml_open_descriptor_out (n) { return 0; }

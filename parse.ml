@@ -910,7 +910,8 @@ and compile code limit pc state instrs =
       compile code limit (pc + 1) state instrs
   | C_CALL1 ->
       let prim = primitive_name state (getu code (pc + 1)) in
-      if prim = "caml_make_array" then (* This is a no-op *)
+      if prim = "caml_make_array" || prim = "caml_ensure_stack_capacity" then
+        (* This is a no-op *)
         compile code limit (pc + 2) state instrs
       else begin
         let y = State.accu state in
@@ -1436,6 +1437,7 @@ ignore cont;
   in
   register_global 2;
   register_global 3;
+  register_global 5;
   for i = Array.length g.constants - 1  downto 0 do
     match g.vars.(i) with
       Some x when g.is_const.(i) ->

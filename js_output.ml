@@ -101,6 +101,7 @@ let unop_str op =
   match op with
     Not -> "!"
   | Neg -> "-"
+  | Pl  -> "+"
 
 (*XXX May need to be updated... *)
 let rec ends_with_if_without_else st =

@@ -331,10 +331,6 @@ let specialize_instr info i =
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "caml_array_get_addr", l)) ->
-      Let (x, Prim (Extern "caml_array_get", l))
-  | Let (x, Prim (Extern "caml_array_set_addr", l)) ->
-      Let (x, Prim (Extern "caml_array_set", l))
 
   | _ ->
       i

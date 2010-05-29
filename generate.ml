@@ -127,6 +127,9 @@ let flush_p = 3
 let or_p p q = max p q
 let is_mutable p = p >= mutable_p
 let is_mutator p = p >= mutator_p
+let kind k =
+  match k with
+    `Const -> const_p | `Mutable -> mutable_p | `Mutator -> mutator_p
 
 let access_queue queue x =
   try
@@ -362,10 +365,130 @@ let generate_apply_funs cont =
 
 (****)
 
-(* FIX: should be extensible... *)
-let prim_kinds = ["caml_int64_float_of_bits", const_p]
-
 let to_int cx = J.EBin(J.Bor, cx, J.ENum 0.) (* 32 bit ints *)
+
+let _ =
+  List.iter (fun (nm, nm') -> Primitive.alias nm nm')
+    ["caml_array_get_float", "caml_array_get";
+     "caml_array_get_addr", "caml_array_get";
+     "caml_array_set_float", "caml_array_set";
+     "caml_array_set_addr", "caml_array_set";
+     "caml_array_unsafe_get_float", "caml_array_unsafe_get";
+     "caml_array_unsafe_set_float", "caml_array_unsafe_set";
+     "caml_alloc_dummy_float", "caml_alloc_dummy"]
+
+let internal_primitives = Hashtbl.create 31
+
+let internal_prim name =
+  try Hashtbl.find internal_primitives name with Not_found -> None
+
+let register_prim name k f =
+  Primitive.register name k;
+  Hashtbl.add internal_primitives name (Some f)
+
+let register_un_prim name k f =
+  register_prim name k
+    (fun l queue ->
+       match l with
+         [Pv x] ->
+           let ((px, cx), queue) = access_queue queue x in
+           (f cx, or_p (kind k) px, queue)
+       | _ ->
+           assert false)
+
+let register_bin_prim name k f =
+  register_prim name k
+    (fun l queue ->
+       match l with
+         [Pv x; Pv y] ->
+           let ((px, cx), queue) = access_queue queue x in
+           let ((py, cy), queue) = access_queue queue y in
+           (f cx cy, or_p (kind k) (or_p px py), queue)
+       | _ ->
+           assert false)
+
+let register_tern_prim name f =
+  register_prim name `Mutator
+    (fun l queue ->
+       match l with
+         [Pv x; Pv y; Pv z] ->
+           let ((px, cx), queue) = access_queue queue x in
+           let ((py, cy), queue) = access_queue queue y in
+           let ((pz, cz), queue) = access_queue queue z in
+           (f cx cy cz, or_p mutator_p (or_p px (or_p py pz)), queue)
+       | _ ->
+           assert false)
+
+let register_un_math_prim name prim =
+  register_un_prim name `Const
+    (fun cx -> J.ECall (J.EDot (J.EVar "Math", prim), [cx]))
+
+let register_bin_math_prim name prim =
+  register_bin_prim name `Const
+    (fun cx cy -> J.ECall (J.EDot (J.EVar "Math", prim), [cx; cy]))
+
+let _ =
+  Code.add_reserved_name "Math";
+  register_bin_prim "caml_array_unsafe_get" `Mutable
+    (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
+  register_bin_prim "caml_string_get" `Mutable
+    (fun cx cy -> J.ECall (J.EDot (cx, "safeGet"), [cy]));
+  register_bin_prim "caml_eq_float" `Const
+    (fun cx cy -> bool (J.EBin (J.EqEq, float_val cx, float_val cy)));
+  register_bin_prim "caml_neq_float" `Const
+    (fun cx cy -> bool (J.EBin (J.NotEq, float_val cx, float_val cy)));
+  register_bin_prim "caml_ge_float" `Const
+    (fun cx cy -> bool (J.EBin (J.Le, float_val cy, float_val cx)));
+  register_bin_prim "caml_le_float" `Const
+    (fun cx cy -> bool (J.EBin (J.Le, float_val cx, float_val cy)));
+  register_bin_prim "caml_gt_float" `Const
+    (fun cx cy -> bool (J.EBin (J.Lt, float_val cy, float_val cx)));
+  register_bin_prim "caml_lt_float" `Const
+    (fun cx cy -> bool (J.EBin (J.Lt, float_val cx, float_val cy)));
+  register_bin_prim "caml_add_float" `Const
+    (fun cx cy -> val_float (J.EBin (J.Plus, float_val cx, float_val cy)));
+  register_bin_prim "caml_sub_float" `Const
+    (fun cx cy -> val_float (J.EBin (J.Minus, float_val cx, float_val cy)));
+  register_bin_prim "caml_mul_float" `Const
+    (fun cx cy -> val_float (J.EBin (J.Mul, float_val cx, float_val cy)));
+  register_bin_prim "caml_div_float" `Const
+    (fun cx cy -> val_float (J.EBin (J.Div, float_val cx, float_val cy)));
+  register_un_prim "caml_neg_float" `Const
+    (fun cx -> val_float (J.EUn (J.Neg, float_val cx)));
+  register_bin_prim "caml_fmod_float" `Const
+    (fun cx cy -> val_float (J.EBin (J.Mod, float_val cx, float_val cy)));
+  register_un_prim "caml_ml_string_length" `Const
+    (fun cx -> J.EDot (cx, "length"));
+  register_tern_prim "caml_array_unsafe_set"
+    (fun cx cy cz ->
+       J.EBin (J.Eq, J.EAccess (cx, J.EBin (J.Plus, cy, one)), cz));
+  register_tern_prim "caml_string_set"
+    (fun cx cy cz -> J.ECall (J.EDot (cx, "safeSet"), [cy; cz]));
+  register_un_prim "caml_alloc_dummy" `Const (fun cx -> J.EArr []);
+  register_un_prim "caml_obj_dup" `Mutable
+    (fun cx -> J.ECall (J.EDot (cx, "slice"), []));
+  register_un_prim "caml_int_of_float" `Const to_int;
+  register_un_prim "caml_float_of_int" `Const (fun cx -> cx);
+  (* FIX: the conversions from string should validate the string... *)
+  register_un_prim "caml_int_of_string" `Const to_int;
+  register_un_prim "caml_float_of_string" `Const
+    (fun cx -> J.EUn (J.Pl, cx));
+  register_un_math_prim "caml_abs_float" "abs";
+  register_un_math_prim "caml_acos_float" "acos";
+  register_un_math_prim "caml_asin_float" "asin";
+  register_un_math_prim "caml_atan_float" "atan";
+  register_bin_math_prim "caml_atan2_float" "atan2";
+  register_un_math_prim "caml_ceil_float" "ceil";
+  register_un_math_prim "caml_cos_float" "cos";
+  register_un_math_prim "caml_exp_float" "exp";
+  register_un_math_prim "caml_floor_float" "floor";
+  register_un_math_prim "caml_log_float" "log";
+  register_bin_math_prim "caml_power_float" "pow";
+  register_un_math_prim "caml_sin_float" "sin";
+  register_un_math_prim "caml_sqrt_float" "sqrt";
+  register_un_math_prim "caml_tan_float" "tan"
+
+(****)
 
 let rec translate_expr ctx queue e =
   match e with
@@ -434,56 +557,6 @@ let rec translate_expr ctx queue e =
           let ((py, cy), queue) = access_queue queue y in
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
-      | Extern "caml_array_unsafe_get", [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
-                      or_p (or_p px py) mutable_p, queue)
-      | Extern "caml_array_unsafe_set", [Pv x; Pv y; Pv z] ->
-            let ((px, cx), queue) = access_queue queue x in
-            let ((py, cy), queue) = access_queue queue y in
-            let ((pz, cz), queue) = access_queue queue z in
-            (J.EBin (J.Eq, J.EAccess (cx, J.EBin (J.Plus, cy, one)),
-                     cz),
-             or_p mutator_p (or_p px (or_p py pz)), queue)
-      | Extern "caml_string_get", [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.ECall (J.EDot (cx, "safeGet"), [cy]),
-           or_p (or_p px py) mutable_p, queue)
-      | Extern "caml_string_set", [Pv x; Pv y; Pv z] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          let ((pz, cz), queue) = access_queue queue z in
-          (J.ECall (J.EDot (cx, "safeSet"), [cy; cz]),
-           or_p (or_p px (or_p py pz)) mutator_p, queue)
-      | Extern "caml_ml_string_length", [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
-          (J.EDot (cx, "length"), px, queue)
-      | Extern "caml_ge_float", [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (bool (J.EBin (J.Le, float_val cy, float_val cx)), or_p px py, queue)
-      | Extern "caml_sub_float", [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (val_float (J.EBin (J.Minus, float_val cx, float_val cy)),
-           or_p px py, queue)
-      | Extern "caml_add_float", [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (val_float (J.EBin (J.Plus, float_val cx, float_val cy)),
-           or_p px py, queue)
-      | Extern "caml_mul_float", [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (val_float (J.EBin (J.Mul, float_val cx, float_val cy)),
-           or_p px py, queue)
-      | Extern "caml_div_float", [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (val_float (J.EBin (J.Div, float_val cx, float_val cy)),
-           or_p px py, queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
           Code.add_reserved_name nm;  (*XXX HACK *)
           (J.EVar nm, const_p, queue)
@@ -507,20 +580,25 @@ let rec translate_expr ctx queue e =
           (J.EBin (J.Eq, J.EDot (co, f), cv),
            or_p (or_p po pv) mutator_p, queue)
       | Extern name, l ->
-          Primitive.mark_used name;
-          Code.add_reserved_name name;  (*XXX HACK *)
-                           (* FIX: this is done at the wrong time... *)
-          let prim_kind =
-            if Primitive.is_pure name then const_p else mutator_p in
-          let (args, prop, queue) =
-            List.fold_right
-              (fun x (args, prop, queue) ->
-                 let x = match x with Pv x -> x | _ -> assert false in
-                 let ((prop', cx), queue) = access_queue queue x in
-                 (cx :: args, or_p prop prop', queue))
-              l ([], prim_kind, queue)
-          in
-          (J.ECall (J.EVar name, args), prop, queue)
+          let name = Primitive.resolve name in
+          begin match internal_prim name with
+            Some f ->
+              f l queue
+          | None ->
+              Primitive.mark_used name;
+              Code.add_reserved_name name;  (*XXX HACK *)
+                               (* FIX: this is done at the wrong time... *)
+              let prim_kind = kind (Primitive.kind name) in
+              let (args, prop, queue) =
+                List.fold_right
+                  (fun x (args, prop, queue) ->
+                     let x = match x with Pv x -> x | _ -> assert false in
+                     let ((prop', cx), queue) = access_queue queue x in
+                     (cx :: args, or_p prop prop', queue))
+                  l ([], prim_kind, queue)
+              in
+              (J.ECall (J.EVar name, args), prop, queue)
+          end
       | Not, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EBin (J.Minus, one, cx), px, queue)
