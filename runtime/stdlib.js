@@ -10,6 +10,12 @@ function caml_call_gen(f, args) {
     return function (x){ return caml_call_gen(f, args.concat([x])); };
 }
 
+var caml_named_value = [];
+
+function caml_register_named_value(nm,v) {
+  caml_named_values[nm] = v; return 0;
+}
+
 var caml_global_data = [];
 
 function caml_register_global (n, v) { caml_global_data[n] = v; }
@@ -50,17 +56,22 @@ function caml_mul(x,y) {
   return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0;
 }
 
-function caml_div(x,y) {
-    if (y == 0) caml_raise_zero_divide ();
-    return (x/y)|0;
-}
-
 //slightly slower
 // function mul32(x,y) {
 //   var xlo = x & 0xffff;
 //   var xhi = x - xlo;
 //   return (((xhi * y) |0) + xlo * y)|0;
 // }
+
+function caml_div(x,y) {
+    if (y == 0) caml_raise_zero_divide ();
+    return (x/y)|0;
+}
+
+function caml_mod(x,y) {
+    if (y == 0) caml_raise_zero_divide ();
+    return x%y;
+}
 
 ///////////// Pervasive
 function caml_array_set (array, index, newval) {
@@ -214,13 +225,6 @@ function caml_get_public_method (obj, tag) {
   return (tag == meths[li+1] ? meths[li] : 0);
 }
 
-///////////// Jslib
-function caml_string_to_js(s) { return s.toString(); }
-function caml_string_from_js(s) { return new MlString(s); }
-
-function caml_js_set(o,f,v) { o[f]=v; return 0; }
-function caml_js_get(o,f) { return o[f]; }
-
 ///////////// Digest
 
 function caml_md5_string (v, ofs, len) {
@@ -234,27 +238,7 @@ function caml_md5_string (v, ofs, len) {
     return res;
 }
 
-//////////// XMLHttpRequest
-
-var XMLHttpFactories =
-  [ function () {return new XMLHttpRequest()},
-    function () {return new ActiveXObject("Msxml2.XMLHTTP")},
-    function () {return new ActiveXObject("Msxml3.XMLHTTP")},
-    function () {return new ActiveXObject("Microsoft.XMLHTTP")} ];
-
-function createXMLHTTPObject() {
-  for (var i = 0; i < XMLHttpFactories.length; i++) {
-    try {
-      var xmlhttp = XMLHttpFactories[i]();
-    } catch (e) {
-      continue;
-    }
-    break;
-  }
-  return xmlhttp;
-}
-
-/////////////////////////////
+////////////// Floats
 
 //FIX: should use this function (and also in generic compare)
 function caml_float_compare (x, y) {
@@ -265,32 +249,57 @@ function caml_float_compare (x, y) {
   if (y === y) return -1;
   return 0;
 }
+// These four functions only give approximate results.
+function caml_log10_float (x) { return Math.LOG10E * Math.log(x); }
 function caml_cosh_float (x) { return (Math.exp(x) + Math.exp(-x)) / 2; }
 function caml_sinh_float (x) { return (Math.exp(x) - Math.exp(-x)) / 2; }
-function caml_log10_float (x) { return Math.LOG10E * Math.log(x); }
 function caml_tanh (x) {
   var y = Math.exp(x), z = Math.exp(-x);
   return (y + z) / (y - z);
 }
-function caml_classify_float (x) {
-  if (isFinite (x)) {
-    if (Math.abs(x) >= 2.2250738585072014e-308) return 0;
-    if (x != 0) return 1;
-    return 2;
-  }
-  return isNaN(x)?4:3;
-}
-// FIX: caml_frexp_float, caml_ldexp_float, caml_modf_float
-
-/////////////////////////////
 
 //FIX: real implementation...
 function caml_int64_float_of_bits () { return 0; }
 
+///////////// Jslib
+//FIX: other functions from jslib...
+function caml_string_to_js(s) { return s.toString(); }
+function caml_string_from_js(s) { return new MlString(s); }
+
+function caml_js_set(o,f,v) { o[f]=v; return 0; }
+function caml_js_get(o,f) { return o[f]; }
+function caml_js_constant(x} {
+  switch (x) {
+    case "null":  return null;
+    case "true":  return true;
+    case "false": return false;
+ // default:      return 'undefined'
+  }
+}
+function caml_js_variable(x} { return window[x]; }
+
+//////////// XMLHttpRequest
+
+// FIX: should be on the caml side (using code for invoking new)
+function createXMLHTTPObject() {
+  var XMLHttpFactories =
+    [ function () {return new XMLHttpRequest()},
+      function () {return new ActiveXObject("Msxml2.XMLHTTP")},
+      function () {return new ActiveXObject("Msxml3.XMLHTTP")},
+      function () {return new ActiveXObject("Microsoft.XMLHTTP")} ];
+
+  for (var i = 0; i < XMLHttpFactories.length; i++) {
+    try {
+      var xmlhttp = XMLHttpFactories[i]();
+      break;
+    } catch (e) { }
+  }
+  return xmlhttp;
+}
+
 /////////////////////////////
 
-// FIX: dummy functions
-function caml_register_named_value(dz,dx) { return 0;}
-function caml_ml_out_channels_list (c) { return 0; }
-function caml_ml_flush (c) { return 0; }
-function caml_ml_open_descriptor_out (n) { return 0; }
+// Dummy functions
+function caml_ml_out_channels_list () { return 0; }
+function caml_ml_flush () { return 0; }
+function caml_ml_open_descriptor_out () { return 0; }

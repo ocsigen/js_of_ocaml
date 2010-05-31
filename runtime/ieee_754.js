@@ -48,3 +48,51 @@ function ofHex(x) {
   if (x[0] & 0x80) res = - res;
   return res;
 }
+
+function caml_classify_float (x) {
+  if (isFinite (x)) {
+    if (Math.abs(x) >= 2.2250738585072014e-308) return 0;
+    if (x != 0) return 1;
+    return 2;
+  }
+  return isNaN(x)?4:3;
+}
+function caml_modf_float (x) {
+  if (isFinite (x)) {
+    var neg = (1/x) < 0;
+    x = Math.abs(x);
+    var i = Math.floor (x);
+    var f = x - i;
+    if (neg) { i = -i; f = -f; }
+    return [0, f, i];
+  }
+  if (isNaN (x)) return [0, NaN, NaN];
+  return [0, 1/x, x];
+}
+function caml_ldexp_float (x,exp) {
+  exp |= 0;
+  if (exp > 1023) {
+    exp -= 1023;
+    x *= Math.pow(2, 1023);
+    if (exp > 1023) {  // in case x is subnormal
+      exp -= 1023;
+      x *= Math.pow(2, 1023);
+    }
+  }
+  if (exp < -1023) {
+    exp += 1023;
+    x *= Math.pow(2, -1023);
+  }
+  x *= Math.pow(2, exp);
+  return x;
+}
+function caml_frexp_float (x) {
+  if ((x == 0) || !isFinite(x)) return [0, x, 0];
+  var neg = x < 0;
+  if (neg) x = - x;
+  var exp = exponent(x) + 1;
+  x *= Math.pow(2,-exp);
+  if (x < 0.5) { x *= 2; exp -= 1; }
+  if (neg) x = - x;
+  return [0, x, exp];
+}

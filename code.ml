@@ -112,7 +112,6 @@ type prim =
   | Array_get
   | Extern of string
   | Not | Neg | IsInt
-  | Add | Sub | Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr
   | Eq | Neq | Lt | Le | Ult
   | WrapInt
 
@@ -226,26 +225,37 @@ let print_arg f a =
     Pv x -> Var.print f x
   | Pc c -> print_constant f c
 
+let binop s =
+  match s with
+    "%int_add" -> "+"
+  | "%int_sub" -> "-"
+  | "%int_mul" -> "*"
+  | "%int_div" -> "/"
+  | "%int_mod" -> "%"
+  | "%int_and" -> "&"
+  | "%int_or"  -> "|"
+  | "%int_xor" -> "^"
+  | "%int_lsl" -> "<<"
+  | "%int_lsr" -> ">>>"
+  | "%int_asr" -> ">>"
+  | _              -> raise Not_found
+
+
 let print_prim f p l =
   match p, l with
     Vectlength, [x]   -> Format.fprintf f "%a.length" print_arg x
   | Array_get, [x; y] -> Format.fprintf f "%a[%a]" print_arg x print_arg y
-  | Extern s, l       -> Format.fprintf f "\"%s\"(%a)"
+  | Extern s, [x; y]  ->
+      begin try
+        Format.fprintf f "%a %s %a" print_arg x (binop s) print_arg y
+      with Not_found ->
+        Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l
+      end
+  | Extern s, _       -> Format.fprintf f "\"%s\"(%a)"
                            s (print_list print_arg) l
   | Not, [x]          -> Format.fprintf f "!%a" print_arg x
   | Neg, [x]          -> Format.fprintf f "-%a" print_arg x
   | IsInt, [x]        -> Format.fprintf f "is_int(%a)" print_arg x
-  | Add, [x; y]       -> Format.fprintf f "%a + %a" print_arg x print_arg y
-  | Sub, [x; y]       -> Format.fprintf f "%a - %a" print_arg x print_arg y
-  | Mul, [x; y]       -> Format.fprintf f "%a * %a" print_arg x print_arg y
-  | Div, [x; y]       -> Format.fprintf f "%a / %a" print_arg x print_arg y
-  | Mod, [x; y]       -> Format.fprintf f "%a %% %a" print_arg x print_arg y
-  | And, [x; y]       -> Format.fprintf f "%a & %a" print_arg x print_arg y
-  | Or,  [x; y]       -> Format.fprintf f "%a | %a" print_arg x print_arg y
-  | Xor, [x; y]       -> Format.fprintf f "%a ^ %a" print_arg x print_arg y
-  | Lsl, [x; y]       -> Format.fprintf f "%a << %a" print_arg x print_arg y
-  | Lsr, [x; y]       -> Format.fprintf f "%a >>> %a" print_arg x print_arg y
-  | Asr, [x; y]       -> Format.fprintf f "%a >> %a" print_arg x print_arg y
   | Eq,  [x; y]       -> Format.fprintf f "%a === %a" print_arg x print_arg y
   | Neq, [x; y]       -> Format.fprintf f "!(%a === %a)" print_arg x print_arg y
   | Lt,  [x; y]       -> Format.fprintf f "%a < %a" print_arg x print_arg y

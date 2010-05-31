@@ -68,3 +68,5 @@ type 'a readonly_prop = <read : 'a> gen_prop
 type 'a writeonly_prop = <write : 'a> gen_prop
 type 'a prop = <read: 'a; write : 'a> gen_prop
 type 'a optdef_prop = <read: 'a optdef; write : 'a> gen_prop
+
+type +'a constr

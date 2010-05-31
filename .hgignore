@@ -11,3 +11,4 @@ examples/minesweeper/minesweeper{,.js}
 examples/cubes/cubes{,.js}
 lib/stubs.c
 obrowser/vm.js
+runtime/runtime.js

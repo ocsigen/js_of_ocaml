@@ -369,7 +369,55 @@ let to_int cx = J.EBin(J.Bor, cx, J.ENum 0.) (* 32 bit ints *)
 
 let _ =
   List.iter (fun (nm, nm') -> Primitive.alias nm nm')
-    ["caml_array_get_float", "caml_array_get";
+    ["%int_mul", "caml_mul";
+     "%int_div", "caml_div";
+     "%int_mod", "caml_mod";
+     "caml_int32_neg", "%int_neg";
+     "caml_int32_add", "%int_add";
+     "caml_int32_sub", "%int_sub";
+     "caml_int32_mul", "%int_mul";
+     "caml_int32_div", "%int_div";
+     "caml_int32_mod", "%int_mod";
+     "caml_int32_and", "%int_and";
+     "caml_int32_or", "%int_or";
+     "caml_int32_xor", "%int_xor";
+     "caml_int32_lsl", "%int_lsl";
+     "caml_int32_asr", "%int_asr";
+     "caml_int32_lsr", "%int_lsr";
+     "caml_int32_of_int", "%identity";
+     "caml_int32_to_int", "%identity";
+     "caml_int32_of_float", "caml_int_of_float";
+     "caml_int32_to_float", "%identity";
+     "caml_int32_format", "caml_format_int";
+     "caml_int32_of_string", "caml_int_of_string";
+     "caml_int32_compare", "caml_int_compare";
+     "caml_nativeint_neg", "%int_neg";
+     "caml_nativeint_add", "%int_add";
+     "caml_nativeint_sub", "%int_sub";
+     "caml_nativeint_mul", "%int_mul";
+     "caml_nativeint_div", "%int_div";
+     "caml_nativeint_mod", "%int_mod";
+     "caml_nativeint_and", "%int_and";
+     "caml_nativeint_or", "%int_or";
+     "caml_nativeint_xor", "%int_xor";
+     "caml_nativeint_lsl", "%int_lsl";
+     "caml_nativeint_asr", "%int_asr";
+     "caml_nativeint_lsr", "%int_lsr";
+     "caml_nativeint_of_int", "%identity";
+     "caml_nativeint_to_int", "%identity";
+     "caml_nativeint_of_float", "caml_int_of_float";
+     "caml_nativeint_to_float", "%identity";
+     "caml_nativeint_of_int32", "%identity";
+     "caml_nativeint_to_int32", "%identity";
+     "caml_nativeint_format", "caml_format_int";
+     "caml_nativeint_of_string", "caml_int_of_string";
+     "caml_nativeint_compare", "caml_int_compare";
+     "caml_int64_of_int32", "caml_int64_of_int";
+     "caml_int64_to_int32", "caml_int64_to_int";
+     "caml_int64_of_nativeint", "caml_int64_of_int";
+     "caml_int64_to_nativeint", "caml_int64_to_int";
+     "caml_float_of_int", "%identity";
+     "caml_array_get_float", "caml_array_get";
      "caml_array_get_addr", "caml_array_get";
      "caml_array_set_float", "caml_array_set";
      "caml_array_set_addr", "caml_array_set";
@@ -429,10 +477,27 @@ let register_bin_math_prim name prim =
 
 let _ =
   Code.add_reserved_name "Math";
+  register_un_prim "%identity" `Const (fun cx -> cx);
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
   register_bin_prim "caml_string_get" `Mutable
     (fun cx cy -> J.ECall (J.EDot (cx, "safeGet"), [cy]));
+  register_bin_prim "%int_add" `Const
+    (fun cx cy -> Js_simpl.eplus_int cx cy);
+  register_bin_prim "%int_sub" `Const
+    (fun cx cy -> J.EBin (J.Minus, cx, cy));
+  register_bin_prim "%int_and" `Const
+    (fun cx cy -> J.EBin (J.Band, cx, cy));
+  register_bin_prim "%int_or" `Const
+    (fun cx cy -> J.EBin (J.Bor, cx, cy));
+  register_bin_prim "%int_xor" `Const
+    (fun cx cy -> J.EBin (J.Bxor, cx, cy));
+  register_bin_prim "%int_lsl" `Const
+    (fun cx cy -> J.EBin (J.Lsl, cx, cy));
+  register_bin_prim "%int_lsr" `Const
+    (fun cx cy -> J.EBin (J.Lsr, cx, cy));
+  register_bin_prim "%int_asr" `Const
+    (fun cx cy -> J.EBin (J.Asr, cx, cy));
   register_bin_prim "caml_eq_float" `Const
     (fun cx cy -> bool (J.EBin (J.EqEq, float_val cx, float_val cy)));
   register_bin_prim "caml_neq_float" `Const
@@ -468,8 +533,7 @@ let _ =
   register_un_prim "caml_obj_dup" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "slice"), []));
   register_un_prim "caml_int_of_float" `Const to_int;
-  register_un_prim "caml_float_of_int" `Const (fun cx -> cx);
-  (* FIX: the conversions from string should validate the string... *)
+  (* FIX: these two conversions from string should validate the string... *)
   register_un_prim "caml_int_of_string" `Const to_int;
   register_un_prim "caml_float_of_string" `Const
     (fun cx -> J.EUn (J.Pl, cx));
@@ -605,38 +669,6 @@ let rec translate_expr ctx queue e =
       | Neg, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EUn (J.Neg, cx), px, queue)
-      | Add, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (Js_simpl.eplus_int cx cy, or_p px py, queue)
-      | Sub, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Minus, cx, cy), or_p px py, queue)
-      | Mul, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Mul, cx, cy), or_p px py, queue)
-      | Div, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Div, cx, cy), or_p px py, queue)
-      | Mod, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Mod, cx, cy), or_p px py, queue)
-      | Lsl, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Lsl, cx, cy), or_p px py, queue)
-      | Lsr, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Lsr, cx, cy), or_p px py, queue)
-      | Asr, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Asr, cx, cy), or_p px py, queue)
       | Lt, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
@@ -656,18 +688,6 @@ let rec translate_expr ctx queue e =
       | IsInt, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (boolnot (J.EBin(J.InstanceOf, cx, J.EVar ("Array"))), px, queue)
-      | And, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Band, cx, cy), or_p px py, queue)
-      | Or, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Bor, cx, cy), or_p px py, queue)
-      | Xor, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
-          (J.EBin (J.Bxor, cx, cy), or_p px py, queue)
       | Ult, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
@@ -677,8 +697,7 @@ let rec translate_expr ctx queue e =
       | WrapInt, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (to_int cx, px, queue)
-      | (Vectlength | Array_get | Not | Neg | IsInt | Add | Sub |
-         Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr | Eq |
+      | (Vectlength | Array_get | Not | Neg | IsInt | Eq |
          Neq | Lt | Le | Ult | WrapInt), _ ->
           assert false
       end

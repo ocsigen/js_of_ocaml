@@ -31,7 +31,6 @@ type prim =
   | Array_get
   | Extern of string
   | Not | Neg | IsInt
-  | Add | Sub | Mul | Div | Mod | And | Or | Xor | Lsl | Lsr | Asr
   | Eq | Neq | Lt | Le | Ult
   | WrapInt
 
@@ -55,9 +54,9 @@ type expr =
   | Block of int * Var.t array
   | Field of Var.t * int
   | Closure of Var.t list * cont
-  | Constant of constant
+  | Constant of constant          (*XXX REMOVE *)
   | Prim of prim * prim_arg list
-  | Variable of Var.t
+  | Variable of Var.t             (*XXX REMOVE *)
 
 type instr =
     Let of Var.t * expr
@@ -65,6 +64,7 @@ type instr =
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
 
+(*XXX REMOVE *)
 type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
 
 type last =
