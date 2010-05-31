@@ -1,7 +1,7 @@
 
 function caml_int64_bits_of_float (x) {
   if (!isFinite(x)) {
-    if isNaN(x) return [255, 1, 0, 0xfff0];
+    if (isNaN(x)) return [255, 1, 0, 0xfff0];
     return (x > 0)?[255,0,0,0x7ff0]:[255,0,0,0xfff0];
   }
   var sign = (x>=0)?0:0x8000;
@@ -17,17 +17,17 @@ function caml_int64_bits_of_float (x) {
     if (exp == 0) { x /= 2; }
   }
   var k = Math.pow(2,24);
-  var r3 = (x|0) & 0xf;
+  var r3 = x|0;
   x = (x - r3) * k;
   var r2 = x|0;
   x = (x - r2) * k;
   var r1 = x|0;
-  r3 |= sign | exp << 4;
+  r3 = (r3 &0xf) | sign | exp << 4;
   return [255, r1, r2, r3];
 }
 function caml_int64_float_of_bits (x) {
   var exp = (x[3] & 0x7fff) >> 4;
-  if (exp == 1023) {
+  if (exp == 2047) {
       if ((x[1]|x[2]|(x[3]&0xf)) == 0)
         return (x[3] & 0x8000)?(-Infinity):Infinity;
       else
