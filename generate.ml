@@ -101,7 +101,10 @@ let rec constant x =
   | Nativeint i ->
       J.ENum (Nativeint.to_float i)
   | Int64 i ->
-      J.ENum (Int64.to_float i)  (* FIX: we can lose information here...*)
+      J.EArr [Some (int 255);
+              Some (int (Int64.to_int i land 0xffffff));
+              Some (int (Int64.to_int (Int64.shift_right i 24) land 0xffffff));
+              Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))]
   | Tuple (tag, a) ->
       J.EArr (Some (int tag) ::
               Array.to_list (Array.map (fun x -> Some (constant x)) a))

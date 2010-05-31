@@ -140,3 +140,17 @@ function md5 (message) {
 
 // Caml name: unsafe_string
 // Type:      string -> int -> int -> t
+
+///////////// Digest
+
+function caml_md5_string (v, ofs, len) {
+    var s = [];
+    for (var i = 0;i < len;i++)
+	s[i] = v.get (ofs + i);
+    var h = md5(s);
+    var res = new MlString(16);
+    for (var j = 0;j < 16;j++)
+	res.set(j, h[j]);
+    return res;
+}
+
