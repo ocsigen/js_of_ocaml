@@ -13,8 +13,17 @@ let _ =
      ("caml_ml_open_descriptor_out", `Mutable);
      ("caml_nativeint_sub", `Const);
      ("caml_nativeint_shift_left", `Const);
+     ("caml_ensure_stack_capacity", `Const);
      ("caml_js_var", `Mutable);
-     ("caml_ensure_stack_capacity", `Const)]
+     ("caml_js_get", `Mutable);
+     ("caml_bool_to_js", `Const);
+     ("caml_bool_from_js", `Const);
+     ("caml_string_to_js", `Const);
+     ("caml_string_from_js", `Const);
+     ("caml_float_to_js", `Const);
+     ("caml_float_from_js", `Const);
+     ("caml_array_to_js", `Const);
+     ("caml_array_from_js", `Const)]
 
 let register p k = Hashtbl.add kinds p k
 

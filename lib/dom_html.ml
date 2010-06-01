@@ -515,7 +515,7 @@ class type tableElement = object
 end
 
 type context = js_string t
-let _2d_ = Js.string "2d"  (*FIX: use singleton type*)
+let _2d_ = Js.string "2d"
 
 type canvasPattern
 
@@ -538,7 +538,7 @@ and canvasRenderingContext2D = object
     float -> float -> float -> float -> float -> float -> unit meth
   method setTransform :
     float -> float -> float -> float -> float -> float -> unit meth
-  method globalAlpha : float prop
+  method globalAlpha : float_prop
   method globalCompositeOperation : js_string t prop
   method strokeStyle : js_string t writeonly_prop
   method strokeStyle_gradient : canvasGradient t writeonly_prop
@@ -557,14 +557,14 @@ and canvasRenderingContext2D = object
 (*
   CanvasPattern createPattern(in HTMLVideoElement image, in DOMJs_String repetition);
 *)
-  method lineWidth : float prop
+  method lineWidth : float_prop
   method lineCap : js_string t prop
   method lineJoin : js_string t prop
-  method miterLimit : float prop
+  method miterLimit : float_prop
 
-  method shadowOffsetX : float prop
-  method shadowOffsetY : float prop
-  method shadowBlur : float prop
+  method shadowOffsetX : float_prop
+  method shadowOffsetY : float_prop
+  method shadowBlur : float_prop
   method shadowColor : js_string t prop
 
   method clearRect : float -> float -> float -> float -> unit meth
@@ -634,8 +634,10 @@ end
 
 and canvasPixelArray = object
   method length : int readonly_prop
-  (*XXX Fix: getter/setter *)
 end
+
+let pixel_get = Js.Unsafe.get
+let pixel_set = Js.Unsafe.set
 
 class type document = object
   inherit [element] Dom.document
@@ -652,7 +654,7 @@ class type document = object
   method cookie : js_string t prop
 end
 
-(*XXX Creation functions a la lablgtk... *)
+(*XXX Should provide creation functions a la lablgtk... *)
 let unsafeCreateElement (doc : document t) name =
   Js.Unsafe.coerce (doc##createElement(Js.string name))
 

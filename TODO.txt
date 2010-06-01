@@ -13,11 +13,6 @@ Priorities
 
 - value hash and comparison
 
-- jslib : just need access to global object
-  ===> and true/false/null...  (caml_js_const ...)
-  ===> caml_js_global + caml_js_constant
-  ===> specific file
-
 - constructor typing :
     ei : ti
     c : (t1 -> ... -> tn -> u t) constr

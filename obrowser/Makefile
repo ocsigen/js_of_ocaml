@@ -3,7 +3,7 @@ JS= startup.js marshall.js obrowser.js ../runtime/mlString.js ../runtime/runtime
 all: lwt_obrowser.cma vm.js
 
 jslib.cmo:
-	ocamlc -pack -o $@ ../lib/js.cmo ../lib/jsString.cmo ../lib/dom.cmo ../lib/lwt_js.cmo
+	ocamlc -pack -o $@ ../lib/js.cmo ../lib/dom.cmo ../lib/xmlHttpRequest.cmo ../lib/lwt_js.cmo
 
 lwt_obrowser.cma: lwt_obrowser.mli lwt_obrowser.ml jslib.cmo stubs.o
 	ocamlfind ocamlc -package lwt,obrowser -c lwt_obrowser.mli

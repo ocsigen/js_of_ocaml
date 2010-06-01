@@ -10,12 +10,11 @@ let sleep = Lwt_js.sleep
 let yield = Lwt_js.yield
 let run _ = magic ()
 
-let js = JsString.of_string
+let js = Js.string
 
-external escape : string Js.t -> string Js.t = "escape"
+external escape : Js.js_string Js.t -> Js.js_string Js.t = "escape"
 
-let urlencode_string s =
-  JsString.to_string (escape (js s))
+let urlencode_string s = Js.to_string (escape (js s))
 
 let urlencode args =
   String.concat "&"
@@ -49,25 +48,25 @@ let urlencode_ args =
 let http_get url args =
   let (res, w) = Lwt.wait () in
   let url = if args = [] then url else url ^ urlencode args in
-  let req = Dom.XMLHttpRequest.create () in
+  let req = XmlHttpRequest.create () in
   req##_open (js "GET", js url, Js._true, Js.null, Js.null);
   req##onreadystatechange <-
     (fun () ->
-       if req##readyState = Dom.XMLHttpRequest.DONE then
-         Lwt.wakeup w (req##status, JsString.to_string req##responseText));
+       if req##readyState = XmlHttpRequest.DONE then
+         Lwt.wakeup w (req##status, Js.to_string req##responseText));
   req##send (Js.null);
   res
 
 let http_post url post_args =
   let (res, w) = Lwt.wait () in
-  let req = Dom.XMLHttpRequest.create () in
+  let req = XmlHttpRequest.create () in
   req##_open (js "POST", js url, Js._true, Js.null, Js.null);
   req##setRequestHeader
     (js"Content-type",js"application/x-www-form-urlencoded");
   req##onreadystatechange <-
     (fun () ->
-       if req##readyState = Dom.XMLHttpRequest.DONE then
-         Lwt.wakeup w (req##status, JsString.to_string req##responseText));
+       if req##readyState = XmlHttpRequest.DONE then
+         Lwt.wakeup w (req##status, Js.to_string req##responseText));
   req##send (Js.some (js (urlencode_ post_args)));
   res
 

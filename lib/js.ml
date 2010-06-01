@@ -9,9 +9,10 @@ module Unsafe = struct
   external extract : any -> 'a = "%identity"
   external coerce : _ t -> _ t = "%identity"
 
-  external get : 'a -> string -> 'b = "caml_js_get"
-  external set : 'a -> string -> 'b -> unit = "caml_js_set"
-  external meth_call : 'a -> string -> any array -> 'c = "caml_js_meth_call"
+  external get : 'a -> 'b -> 'c = "caml_js_get"
+  external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
+  external meth_call : 'a -> string -> any array -> 'b = "caml_js_meth_call"
+  external new_obj : 'a -> any array -> 'b = "caml_js_new"
 end
 
 (****)
@@ -61,8 +62,9 @@ type +'a meth
 type +'a gen_prop
 type 'a readonly_prop = <get : 'a> gen_prop
 type 'a writeonly_prop = <set : 'a> gen_prop
-type 'a prop = <get: 'a; set : 'a> gen_prop
-type 'a optdef_prop = <get: 'a optdef; set : 'a> gen_prop
+type 'a prop = <get : 'a; set : 'a> gen_prop
+type 'a optdef_prop = <get : 'a optdef; set : 'a> gen_prop
+type float_prop = <get : float t; set : float> gen_prop
 
 type +'a constr
 
@@ -93,10 +95,10 @@ class type js_string = object
   method lastIndexOf : js_string t -> int meth
   method lastIndexOf_from : js_string t -> int -> int meth
   method localeCompare : js_string t -> float meth
-  method _match : js_regexp t -> js_match_result_handle t opt meth
-  method replace : js_regexp t -> js_string t -> js_string t
+  method _match : regExp t -> js_match_result_handle t opt meth
+  method replace : regExp t -> js_string t -> js_string t
   method replace_string : js_string t -> js_string t -> js_string t
-  method search : js_regexp t -> js_match_result_handle t opt meth
+  method search : regExp t -> js_match_result_handle t opt meth
   method slice : int -> int -> js_string t meth
   method slice_end : int -> js_string t meth
   method split : js_string t -> js_string_array t meth
@@ -109,7 +111,7 @@ class type js_string = object
   method toLocaleUpperCase : js_string meth
 end
 
-and js_regexp = object
+and regExp = object
   method exec : js_string t -> js_match_result_handle t opt meth
   method test : js_string t -> bool t meth
   method toString : js_string t meth
@@ -119,6 +121,10 @@ and js_regexp = object
   method multiline : bool t readonly_prop
   method lastIndex : int prop
 end
+
+let regExp = Unsafe.variable "RegExp"
+let regExp_copy = regExp
+let regExp_withFlags = regExp
 
 class type ['a] js_array = object
   method toString : js_string t meth
@@ -147,6 +153,12 @@ class type ['a] js_array = object
   method unshift_4 : 'a -> 'a -> 'a -> 'a -> int meth
   method length : int prop
 end
+
+let array_empty = Unsafe.variable "Array"
+let array_ofLength = array_empty
+
+let array_get : 'a #js_array t -> int -> 'a optdef = Unsafe.get
+let array_set : 'a #js_array t -> int -> 'a -> unit = Unsafe.set
 
 class type js_match_result = object
   inherit [js_string t] js_array

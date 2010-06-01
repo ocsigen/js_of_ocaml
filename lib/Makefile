@@ -1,6 +1,5 @@
 
-MLOBJS= js.cmo jsString.cmo jsArray.cmo \
-	dom.cmo dom_html.cmo xmlHttpRequest.cmo lwt_js.cmo \
+MLOBJS= js.cmo dom.cmo dom_html.cmo xmlHttpRequest.cmo lwt_js.cmo \
 	goog.cmo goog_net.cmo
 COBJS= stubs.o
 OBJS=$(MLOBJS) $(COBJS)

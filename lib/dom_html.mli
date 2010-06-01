@@ -520,7 +520,7 @@ and canvasRenderingContext2D = object
     float -> float -> float -> float -> float -> float -> unit meth
   method setTransform :
     float -> float -> float -> float -> float -> float -> unit meth
-  method globalAlpha : float prop
+  method globalAlpha : float_prop
   method globalCompositeOperation : js_string t prop
   method strokeStyle : js_string t writeonly_prop
   method strokeStyle_gradient : canvasGradient t writeonly_prop
@@ -539,14 +539,14 @@ and canvasRenderingContext2D = object
 (*
   CanvasPattern createPattern(in HTMLVideoElement image, in DOMJs_String repetition);
 *)
-  method lineWidth : float prop
+  method lineWidth : float_prop
   method lineCap : js_string t prop
   method lineJoin : js_string t prop
-  method miterLimit : float prop
+  method miterLimit : float_prop
 
-  method shadowOffsetX : float prop
-  method shadowOffsetY : float prop
-  method shadowBlur : float prop
+  method shadowOffsetX : float_prop
+  method shadowOffsetY : float_prop
+  method shadowBlur : float_prop
   method shadowColor : js_string t prop
 
   method clearRect : float -> float -> float -> float -> unit meth
@@ -616,8 +616,10 @@ end
 
 and canvasPixelArray = object
   method length : int readonly_prop
-  (*XXX Fix: getter/setter *)
 end
+
+val pixel_get : canvasPixelArray -> int -> int
+val pixel_set : canvasPixelArray -> int -> int -> unit
 
 class type document = object
   inherit [element] Dom.document
