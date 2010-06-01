@@ -94,6 +94,7 @@ and js_regexp = object
   method multiline : bool t readonly_prop
   method lastIndex : int prop
 end
+(* FIX: creating regexps *)
 
 class type ['a] js_array = object
   method toString : js_string t meth
@@ -122,6 +123,11 @@ class type ['a] js_array = object
   method unshift_4 : 'a -> 'a -> 'a -> 'a -> int meth
   method length : int prop
 end
+
+(*FIX: array access :
+val array_set : 'a #js_array t -> int -> 'a optdef
+val array_get : 'a #js_array t -> int -> 'a -> unit
+*)
 
 class type js_match_result = object
   inherit [js_string t] js_array
