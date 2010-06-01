@@ -27,7 +27,7 @@ FIX:which type?
     method getResponseJson : string t opt -> < > t meth
 *)
     method getResponseText : string t meth
-    method getResponseXml : Dom.Dom.element Dom.Dom.document opt meth
+    method getResponseXml : Dom.element Dom.document opt meth
     method getStatus : int meth
     method getStatusText : string meth
     method getTimeoutInterval : float meth

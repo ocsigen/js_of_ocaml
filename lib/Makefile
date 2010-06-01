@@ -1,5 +1,6 @@
 
-MLOBJS=js.cmo jsString.cmo jsArray.cmo dom.cmo lwt_js.cmo \
+MLOBJS= js.cmo jsString.cmo jsArray.cmo \
+	dom.cmo dom_html.cmo xmlHttpRequest.cmo lwt_js.cmo \
 	goog.cmo goog_net.cmo
 COBJS= stubs.o
 OBJS=$(MLOBJS) $(COBJS)
@@ -35,7 +36,7 @@ clean:
 	rm -f stubs.c
 
 depend:
-	find . -maxdepth 1 -name private -prune -o -regex ".*\\.mli?" | \
+	find . -maxdepth 1 \! -name pa_js.ml -regex ".*\\.mli?" | \
 	xargs ocamldep -pp "camlp4o pa_js.cmo" > .depend
 
 include .depend

@@ -1,5 +1,18 @@
 Priorities
 ==========
+-  Object.create (Foo.prototype).Foo(...) ???
+    if (typeof Object.create !== 'function') {
+    Object.create = function (o) {
+    function F() {}
+    F.prototype = o;
+    return new F();
+    };
+    };
+    // example:
+    var newobject = Object.create(oldobject);
+
+- value hash and comparison
+
 - jslib : just need access to global object
   ===> and true/false/null...  (caml_js_const ...)
   ===> caml_js_global + caml_js_constant

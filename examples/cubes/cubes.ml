@@ -37,7 +37,7 @@ let update a =
 
 (****)
 
-open Dom
+module Html = Dom_html
 
 let top = Js.string "#a8a8f6"
 let left = Js.string "#d9d9d9"
@@ -132,14 +132,14 @@ let tile c a (top, right, left) =
   done
 
 let create_canvas () =
-  let d = HTML.document in
-  let c = HTML.createCanvasElement d in
+  let d = Html.window##document in
+  let c = Html.createCanvasElement d in
   c##width <- n * 2 * truncate w + 1;
   c##height <- n * 2 * truncate h + 1;
   c
 
 let redraw ctx canvas a =
-  let c = canvas##getContext (HTML._2d_) in
+  let c = canvas##getContext (Html._2d_) in
   c##setTransform (1., 0., 0., 1., 0., 0.);
   c##clearRect (0., 0., float canvas##width, float canvas##height);
   c##setTransform (1., 0., 0., 1., 0.5, 0.5);
@@ -164,8 +164,8 @@ let rec loop c c' a =
 let _ =
   let c = create_canvas () in
   let c' = create_canvas () in
-  Dom.appendChild HTML.document##body c;
-  let c = c##getContext (HTML._2d_) in
+  Dom.appendChild Html.window##document##body c;
+  let c = c##getContext (Html._2d_) in
   c##globalCompositeOperation <- Js.string "copy";
   let a = create_cubes true in
   redraw c c' a;

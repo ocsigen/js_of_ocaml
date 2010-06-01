@@ -85,14 +85,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
      [ e = SELF; "##"; lab = label ->
          let t = random_var () in
          let obj_typ =
-           <:ctyp< Js.t < $lid:lab$ : Js.gen_prop <read:'$t$; ..>; .. > >>
+           <:ctyp< Js.t < $lid:lab$ : Js.gen_prop <get:'$t$; ..>; .. > >>
          in
          <:expr< (Js.Unsafe.get ($e$ : $obj_typ$)
                     $str:unescape lab$ : '$t$) >>
      | e1 = SELF; "##"; lab = label; "<-"; e2 = expr LEVEL "top" ->
          let t = random_var () in
          let typ =
-           <:ctyp< Js.t < $lid:lab$ : Js.gen_prop <write:'$t$; ..>; .. > -> _ -> '$t$ -> _ >>
+           <:ctyp< Js.t < $lid:lab$ : Js.gen_prop <set:'$t$; ..>; .. > -> _ -> '$t$ -> _ >>
          in
          <:expr< (Js.Unsafe.set : $typ$) $e1$ $str:unescape lab$ $e2$ >>
      | e = SELF; "##"; lab = label; "("; ")" ->

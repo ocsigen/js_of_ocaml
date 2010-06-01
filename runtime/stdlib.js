@@ -92,6 +92,54 @@ function caml_make_vect (len, init) {
 }
 
 // FIX: extra parameter (total?)
+//function compare_val(v1, v2, total) {
+//  var sp = [];
+//  loop:for (;;) {
+//    var c = 0;
+//    if (v1 !== v2 || not total) {
+//      if (v1 instanceof MlString) {
+//        if (v2 instanceof MlString) {
+//          c = v1===v2?0:v1.compare(v2);
+//      } else
+//          return (-1); // should not happen
+//      } else if (v1 instanceof Array) {
+//        if (v2 instanceof Array) {
+//          if (v1[0] == 255 && v2[0] == 255) // 64 bit integer
+//            c = caml_int64_compare(v1, v2);
+//          else if (v1[0] == 248 && v2[0] == 248) // object
+//            c = v1[2] - v2[2];
+//          else {
+//            // Object...
+//            if (v1.length != v2.length)
+//              return (v1.length - v2.length);
+//            else {
+//        // check 
+//              sp.push(v1, v2, 1, v1.length - 1)
+//            }
+//          }
+//        } else
+//          return 1; // block > long
+//      } else if (v2 instanceof Array)
+//          return -1; // long < block
+//      else {
+//        if (v1 < v2) return -1;
+//        if (v1 > v2) return 1;
+//        if (v1 !== v2) {
+//          if (not total) return null;
+//          if (v1 === v1) return 1;
+//          if (v2 === v2) return -1;
+//        }
+//      }
+//      if (c || sp.length == 0) return c;
+//      var i = sp.length - 1;
+//      var l = sp[i];
+//      var n = sp[i - 1]++;
+//      v1 = sp[i-3][n];
+//      v2 = sp[i-2][n];
+//      if (n == l) { sp.pop();sp.pop();sp.pop();sp.pop(); }
+//    }
+//  }
+//}
 function caml_compare (a, b) {
   if (a === b) return 0;
   if (a instanceof MlString) {
@@ -103,6 +151,7 @@ function caml_compare (a, b) {
     if (b instanceof Array) {
       if (a.length != b.length)
         return (a.length - b.length);
+      if (a[0] == 255) return caml_int64_compare(a, b); // 64 bit integer
       for (var i = 0; i < a.length; i++) {
         var t = caml_compare (a[i], b[i]);
         if (t != 0) return t;
@@ -125,9 +174,9 @@ function caml_lessequal (x, y) { return +(caml_compare(x,y) <= 0); }
 function caml_lessthan (x, y) { return +(caml_compare(x,y) < 0); }
 
 ///////////// String
-// FIX: caml_string_compare...
 function caml_create_string(len) { return new MlString(len); }
 function caml_fill_string(s, i, l, c) { s.fill (i, l, c); return 0; }
+function caml_string_compare(s1, s2) { return s1.compare(s2); }
 function caml_string_equal(s1, s2) { return +s1.equal(s2); }
 function caml_string_notequal(s1, s2) { return +s1.notEqual(s2); }
 function caml_is_printable(c) { return +(c > 31 && c < 127); }

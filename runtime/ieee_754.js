@@ -92,7 +92,6 @@ function caml_frexp_float (x) {
   return [0, x, exp];
 }
 
-//FIX: should use this function (and also in generic compare)
 function caml_float_compare (x, y) {
   if (x === y) return 0;
   if (x < y) return -1;

@@ -1,7 +1,8 @@
 
-open Dom
-let js = JsString.of_string
-let document = HTML.document
+module Html = Dom_html
+
+let js = Js.string
+let document = Html.window##document
 
 type config = {
   nbcols  : int ;
@@ -105,7 +106,7 @@ let h6 = l5 + 2*b0
 
 type demin_cf =
     { bd : cell array array;
-      dom : HTML.imageElement Js.t array array;
+      dom : Html.imageElement Js.t array array;
       cf : config ;
       mutable nb_marked_cells : int;
       mutable nb_hidden_cells : int;
@@ -132,7 +133,7 @@ let disable_events d =
   for y = 0 to d.cf.nbrows - 1 do
     for x = 0 to d.cf.nbcols - 1 do
       d.dom.(y).(x)##onclick <- Js.some
-        (fun _ -> HTML.window##alert (js"GAME OVER"); Js._false)
+        (fun _ -> Html.window##alert (js"GAME OVER"); Js._false)
     done
   done
 
@@ -154,7 +155,7 @@ let reveal d i j =
   if d.nb_hidden_cells = 0 then (
     draw_board d ;
     disable_events d ;
-    HTML.window##alert (js"YOU WIN")
+    Html.window##alert (js"YOU WIN")
   )
 
 let create_demin nb_c nb_r nb_m =
@@ -174,9 +175,9 @@ type mode = Normal | Flag
 
 let init_table d board_div =
   let mode = ref Normal in
-  let buf = HTML.document##createDocumentFragment() in
-  Dom.appendChild buf (HTML.document##createTextNode(js"Mode : "));
-  let img = HTML.createImageElement document in
+  let buf = document##createDocumentFragment() in
+  Dom.appendChild buf (document##createTextNode(js"Mode : "));
+  let img = Html.createImageElement document in
   Dom.appendChild buf img;
   img##src <- js"sprites/bomb.png" ;
   img##onclick <- Js.some
@@ -187,11 +188,11 @@ let init_table d board_div =
        end;
        Js._false
     ) ;
-  Dom.appendChild buf (HTML.createBrElement document);
+  Dom.appendChild buf (Html.createBrElement document);
   for y = 0 to d.cf.nbrows - 1 do
     let imgs = ref [] in
     for x = 0 to d.cf.nbcols - 1 do
-      let img = HTML.createImageElement document in
+      let img = Html.createImageElement document in
       imgs := img :: !imgs ;
       img##src <- js"sprites/normal.png";
       img##onclick <- Js.some
@@ -204,7 +205,7 @@ let init_table d board_div =
                 else if d.bd.(x).(y).mined then (
                   draw_board d ;
                   disable_events d ;
-                  HTML.window##alert (js"YOU LOSE")
+                  Html.window##alert (js"YOU LOSE")
                 ) else reveal d x y
             | Flag ->
                 d.bd.(x).(y).flag <- not d.bd.(x).(y).flag ;
@@ -212,7 +213,7 @@ let init_table d board_div =
           Js._false);
       Dom.appendChild buf img;
     done ;
-    Dom.appendChild buf (HTML.createBrElement document);
+    Dom.appendChild buf (Html.createBrElement document);
     d.dom.(y) <- Array.of_list (List.rev !imgs)
   done ;
   board_div##style##lineHeight <- js"0";

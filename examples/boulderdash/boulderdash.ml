@@ -1,10 +1,9 @@
 
-open Dom
-
 let (>>=) = Lwt.bind
+module Html = Dom_html
+let js = Js.string
+let document = Html.window##document
 
-let js = JsString.of_string
-let document = HTML.document
 let append_text e s = Dom.appendChild e (document##createTextNode (js s))
 let replace_child p n =
   Js.Opt.iter (p##firstChild) (fun c -> Dom.removeChild p c);
@@ -18,7 +17,7 @@ let loading_style =
      position: absolute; top:0; right:0;"
 
 let loading parent =
-  let div = HTML.createDivElement document in
+  let div = Html.createDivElement document in
   div##style##cssText <- loading_style;
   append_text div "LOADING...";
   Dom.appendChild parent div;
@@ -26,7 +25,7 @@ let loading parent =
 
 let clock_div () =
   let t0 = ref (Sys.time ()) in
-  let div = HTML.createDivElement document in
+  let div = Html.createDivElement document in
   div##style##cssText <- box_style;
   append_text div "--:--:--";
   let stopped = ref true in
@@ -51,7 +50,7 @@ let clock_div () =
 
 type cell = Empty | Grass | Diamond | Boulder | Door | End | Guy | Wall | Bam
 and state = {
-  map : cell array array ;      imgs : HTML.imageElement Js.t array array ;
+  map : cell array array ;      imgs : Html.imageElement Js.t array array ;
   mutable pos : int * int ;     mutable endpos : int * int ;
   mutable rem : int ;            mutable dead : bool ;
   mutable map_mutex : Lwt_mutex.t ; mutable events_mutex : bool ;
@@ -223,10 +222,10 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 	)
     in
       if state.pos = state.endpos then (
-	clock_stop () ; HTML.window##alert (js"YOU WIN !")
+	clock_stop () ; Html.window##alert (js"YOU WIN !")
       ) else
 	if state.dead then (
-	  clock_stop () ; HTML.window##alert (js"YOU LOSE !")
+	  clock_stop () ; Html.window##alert (js"YOU LOSE !")
 	) else (
 	  if state.rem = 0 then (
 	    let x,y = state.endpos in
@@ -258,7 +257,7 @@ let opt_style e style =
   match style with Some s -> e##style##cssText <- s | None -> ()
 
 let build_table ?style ?tr_style ?td_style f t =
-  let m = HTML.createTableElement document in
+  let m = Html.createTableElement document in
   opt_style m style;
   for y = 0 to Array.length t - 1 do
     let tr = m##insertRow (-1) in
@@ -275,17 +274,17 @@ let build_table ?style ?tr_style ?td_style f t =
 
 let http_get url =
   let (res, w) = Lwt.wait () in
-  XMLHttpRequest.send_request (js url)
-    (fun r -> Lwt.wakeup w (JsString.to_string r##responseText))
+  XmlHttpRequest.send_request (js url)
+    (fun r -> Lwt.wakeup w (Js.to_string r##responseText))
     Js.null;
   res
 
 let _ =
   let body =
-    Js.Opt.get (HTML.document##getElementById(js"body"))
+    Js.Opt.get (document##getElementById(js"body"))
       (fun () -> assert false)
   in
-  let board_div = HTML.createDivElement document in
+  let board_div = Html.createDivElement document in
   let (clock_div,clock_start,_) as clock = clock_div () in
   let load_data name process =
     let loading_end = loading body in
@@ -295,12 +294,13 @@ let _ =
     Lwt.return res
   in
   let rem_div, show_rem =
-    let div = HTML.createDivElement document in
+    let div = Html.createDivElement document in
     div##style##cssText <- box_style;
     append_text div "--";
     (div,
      fun v ->
-       replace_child div (document##createTextNode (JsString.of_int v)))
+       replace_child div
+         (document##createTextNode (Js.string (string_of_int v))))
   in
   load_data
     "maps.txt"
@@ -357,7 +357,7 @@ let _ =
 	     let map = Array.of_list (List.map Array.of_list (List.rev !res)) in
 	       map, Array.map (Array.map
 				 (fun c ->
-                                    let img = HTML.createImageElement document in
+                                    let img = Html.createImageElement document in
                                     img##src <- img_assoc c;
                                     img)) map
 	 in 
@@ -403,22 +403,22 @@ let _ =
     body##style##cssText <-
       js"font-family: sans-serif; text-align: center; \
          background-color: #e8e8e8;" ;
-    let h1 = HTML.createH1Element document in
+    let h1 = Html.createH1Element document in
     append_text h1 "Boulder Dash in Ocaml";
     Dom.appendChild body h1;
-    let div = HTML.createDivElement document in
+    let div = Html.createDivElement document in
     append_text div "Elapsed time: ";
     Dom.appendChild div clock_div;
     append_text div " Remaining diamonds: ";
     Dom.appendChild div rem_div;
     append_text div " ";
-    let select = HTML.createSelectElement document in
-    let option = HTML.createOptionElement document in
+    let select = Html.createSelectElement document in
+    let option = Html.createOptionElement document in
     append_text option "Choose a level";
     Dom.appendChild select option;
     List.iter
       (fun (f, n) ->
-         let option = HTML.createOptionElement document in
+         let option = Html.createOptionElement document in
          append_text option n;
 (*
          option##onclick <-
@@ -433,8 +433,8 @@ let _ =
            ignore (load_level (fst (List.nth levels i)));
          Js._false);
     Dom.appendChild div select;
-    Dom.appendChild div (HTML.createBrElement document);
-    Dom.appendChild div (HTML.createBrElement document);
+    Dom.appendChild div (Html.createBrElement document);
+    Dom.appendChild div (Html.createBrElement document);
     Dom.appendChild div board_div;
     Dom.appendChild body div;
     Lwt.return ()

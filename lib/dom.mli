@@ -25,17 +25,10 @@ class type node = object
   method cloneNode : bool t -> node t meth
 end
 
-let appendChild (p : #node t) (n : #node t) =
-  ignore (p##appendChild ((n :> node t)))
-
-let removeChild (p : #node t) (n : #node t) =
-  ignore (p##removeChild ((n :> node t)))
-
-let replaceChild (p : #node t) (n : #node t) (o : #node t) =
-  ignore (p##replaceChild ((n :> node t), (o :> node t)))
-
-let insertBefore (p : #node t) (n : #node t) (o : #node t opt) =
-  ignore (p##insertBefore ((n :> node t), (o :> node t opt)))
+val insertBefore : #node t -> #node t -> #node t opt -> unit
+val replaceChild : #node t -> #node t -> #node t -> unit
+val removeChild : #node t -> #node t -> unit
+val appendChild : #node t -> #node t -> unit
 
 class type element = object
   inherit node
