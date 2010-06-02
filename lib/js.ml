@@ -255,7 +255,7 @@ end
 let date_constr = Unsafe.variable "Date"
 let date : date_constr t = date_constr
 let date_now : date t constr = date_constr
-let date_copy : (date t -> date t) constr = date_constr
+let date_fromTimeValue : (float -> date t) constr = date_constr
 let date_month : (int -> int -> date t) constr = date_constr
 let date_day : (int -> int -> int -> date t) constr = date_constr
 let date_hour : (int -> int -> int -> int -> date t) constr = date_constr

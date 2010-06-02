@@ -206,7 +206,7 @@ class type date = object
 end
 
 val date_now : date t constr
-val date_copy : (date t -> date t) constr
+val date_fromTimeValue : (float -> date t) constr
 val date_month : (int -> int -> date t) constr
 val date_day : (int -> int -> int -> date t) constr
 val date_hour : (int -> int -> int -> int -> date t) constr
