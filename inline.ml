@@ -110,6 +110,10 @@ let inline closures live_vars blocks free_pc pc =
 
 let do_inline = ref true
 
+(*FIX: this is unefficient, as we still perform the other
+  optimizations phases repeatedly *)
+let disable_inlining () = do_inline := false
+
 let f ((pc, blocks, free_pc) as p) live_vars =
   if !do_inline then begin
     let closures = get_closures p in

@@ -23,20 +23,18 @@ class type xmlHttpRequest = object
   method responseXML : Dom.element Dom.document t opt readonly_prop
 end
 
-let xmlHttpRequest : xmlHttpRequest t constr opt =
+let xmlHttpRequest () : xmlHttpRequest t constr =
   Js.Unsafe.variable "XMLHttpRequest"
 
-let activeXObject : (js_string t -> xmlHttpRequest t) constr opt =
+let activeXObject () : (js_string t -> xmlHttpRequest t) constr =
   Js.Unsafe.variable "ActiveXObject"
 
 let create () =
-  Opt.get (Opt.map xmlHttpRequest (fun x -> jsnew x ()))
-     (fun () ->
-        let x = Opt.get activeXObject (fun () -> assert false) in
-        try jsnew x (Js.string "Msxml2.XMLHTTP") with _ ->
-        try jsnew x (Js.string "Msxml3.XMLHTTP") with _ ->
-        try jsnew x (Js.string "Microsoft.XMLHTTP") with _ ->
-        assert false)
+  try jsnew (xmlHttpRequest ()) () with _ ->
+  try jsnew (activeXObject ()) (Js.string "Msxml2.XMLHTTP") with _ ->
+  try jsnew (activeXObject ()) (Js.string "Msxml3.XMLHTTP") with _ ->
+  try jsnew (activeXObject ()) (Js.string "Microsoft.XMLHTTP") with _ ->
+  assert false
 
 let send_request url callback postData =
   let req = create () in

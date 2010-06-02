@@ -1,27 +1,10 @@
 Priorities
 ==========
-- implement object creation
-  implement all jslib primitives
+- Format.sprintf "%d" is miscompiled (nested loop...)
 
--  Object.create (Foo.prototype).Foo(...) ???
-    if (typeof Object.create !== 'function') {
-    Object.create = function (o) {
-    function F() {}
-    F.prototype = o;
-    return new F();
-    };
-    };
-    // example:
-    var newobject = Object.create(oldobject);
+- implement caml_js_new
 
 - value hash and comparison
-
-- constructor typing :
-    ei : ti
-    c : (t1 -> ... -> tn -> u t) constr
-    -----------------------------------
-         new c (e1, ... en) : u t
-  syntax???
 
 - callbacks, with and without grabbing self
     'a callback
@@ -37,18 +20,12 @@ Priorities
 - reorganize source tree
 - license
 
-- Format.sprintf "%d" is miscompiled (nested loop...)
-
 - fix control.ml
 
-- improve type-checking in pa_js.ml
-
 - finish js API
-  ===> creating new objects
   ===> dom object creation (especially, INPUT)
   ===> implement at least an interesting subset of the google closure API
 - should we rely on automatic conversions for float/string/bool?
-  ==> valueOf/toString
   ==> does not always work (for instance, strokeStyle method for canvas)
 
 - improved string implementation

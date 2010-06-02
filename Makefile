@@ -1,11 +1,15 @@
 NAME=ocaml2js
 
-all: compiler library examples
+all: compiler library runtime examples
 
 compiler: $(NAME)
 
 library:
 	make -C lib
+
+.PHONY: runtime
+runtime:
+	make -C runtime
 
 examples: compiler library
 	make -C examples

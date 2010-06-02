@@ -64,7 +64,8 @@ let _ =
   let file = ref None in
   Arg.parse
     [("-debug", Arg.String Util.set_debug, "debug module xxx");
-     ("-pretty", Arg.Unit Generate.set_pretty, "pretty print the output")]
+     ("-pretty", Arg.Unit Generate.set_pretty, "pretty print the output");
+     ("-noinline", Arg.Unit Inline.disable_inlining, "disable inlining")]
     (fun s -> file := Some s)
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
   f !file

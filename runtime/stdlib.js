@@ -10,7 +10,7 @@ function caml_call_gen(f, args) {
     return function (x){ return caml_call_gen(f, args.concat([x])); };
 }
 
-var caml_named_value = [];
+var caml_named_values = [];
 
 function caml_register_named_value(nm,v) {
   caml_named_values[nm] = v; return 0;
