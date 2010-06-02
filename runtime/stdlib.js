@@ -252,13 +252,11 @@ function caml_hash_univ_param (count, limit, obj) {
 }
 
 ///////////// Sys
-var caml_initial_time = (new Date ()).getTime () * 0.001;
-function caml_sys_time () {
-  return (new Date ()).getTime () * 0.001 - caml_initial_time;
-}
+var caml_initial_time = Date.now() * 0.001;
+function caml_sys_time () { return Date.now() * 0.001 - caml_initial_time; }
 function caml_sys_get_config (e) { return [0, "Unix", 32]; }
 function caml_sys_random_seed () {
-  return (new Date()).getTime()^(Math.pow(2,32)*Math.random());
+  return Date.now()^0xffffffff*Math.random();
 }
 
 ///////////// CamlinternalOO

@@ -665,7 +665,8 @@ let rec translate_expr ctx queue e =
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
-          (J.ENew (cc, Some args), or_p pc prop, queue)
+          (J.ENew (cc, if args = [] then None else Some args),
+           or_p pc prop, queue)
       | Extern "caml_js_get", [Pv o; Pc (String f)] ->
           let ((po, co), queue) = access_queue queue o in
           (J.EDot (co, f), or_p po mutator_p, queue)

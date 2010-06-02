@@ -24,7 +24,7 @@ function caml_js_const(x) {
 function caml_js_meth_call(o, f, args) { return f.apply(o, args); }
 function caml_js_new(c, a) {
   switch (a.length) {
-  case 0: return new c ();
+  case 0: return new c;
   case 1: return new c (a[0]);
   case 2: return new c (a[0],a[1]);
   case 3: return new c (a[0],a[1],a[2]);
@@ -33,7 +33,7 @@ function caml_js_new(c, a) {
   }
   function F() { return c.apply(this, args); }
   F.prototype = c.prototype;
-  return new F();
+  return new F;
 }
 function caml_js_wrap_callback(f) {
   var toArray = Array.prototype.slice;

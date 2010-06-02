@@ -49,14 +49,14 @@ external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback =
 val _true : bool t
 val _false : bool t
 
-type js_match_result_handle (* Used to resolved the mutual dependency *)
-type js_string_array        (* between strings and arrays *)
+type match_result_handle (* Used to resolved the mutual dependency *)
+type string_array        (* between strings and arrays *)
 
 class type js_string = object
   method toString : js_string t meth
   method valueOf : js_string t meth
   method charAt : int -> js_string t meth
-  method charCodeAt : int -> float meth        (* This may return NaN... *)
+  method charCodeAt : int -> float t meth        (* This may return NaN... *)
   method concat : js_string t -> js_string t meth
   method concat_2 : js_string t -> js_string t -> js_string t meth
   method concat_3 :
@@ -68,16 +68,16 @@ class type js_string = object
   method indexOf_from : js_string t -> int -> int meth
   method lastIndexOf : js_string t -> int meth
   method lastIndexOf_from : js_string t -> int -> int meth
-  method localeCompare : js_string t -> float meth
-  method _match : regExp t -> js_match_result_handle t opt meth
+  method localeCompare : js_string t -> float t meth
+  method _match : regExp t -> match_result_handle t opt meth
   method replace : regExp t -> js_string t -> js_string t
   (* FIX: version of replace taking a function... *)
   method replace_string : js_string t -> js_string t -> js_string t
-  method search : regExp t -> js_match_result_handle t opt meth
+  method search : regExp t -> match_result_handle t opt meth
   method slice : int -> int -> js_string t meth
   method slice_end : int -> js_string t meth
-  method split : js_string t -> js_string_array t meth
-  method split_limited : js_string t -> int -> js_string_array t meth
+  method split : js_string t -> string_array t meth
+  method split_limited : js_string t -> int -> string_array t meth
   method substring : int -> int -> js_string t meth
   method substring_to_end : int -> js_string t meth
   method toLowerCase : js_string meth
@@ -87,7 +87,7 @@ class type js_string = object
 end
 
 and regExp = object
-  method exec : js_string t -> js_match_result_handle t opt meth
+  method exec : js_string t -> match_result_handle t opt meth
   method test : js_string t -> bool t meth
   method toString : js_string t meth
   method source : js_string t readonly_prop
@@ -130,19 +130,103 @@ class type ['a] js_array = object
 end
 
 val array_empty : 'a js_array t constr
-val array_ofLength : (int -> 'a js_array t) constr
+val array_length : (int -> 'a js_array t) constr
 
 val array_get : 'a #js_array t -> int -> 'a optdef
 val array_set : 'a #js_array t -> int -> 'a -> unit
 
-class type js_match_result = object
+class type match_result = object
   inherit [js_string t] js_array
   method index : int
   method input : js_string t
 end
 
-val str_array : js_string_array t -> js_string t js_array t
-val match_result : js_match_result_handle t -> js_match_result t
+val str_array : string_array t -> js_string t js_array t
+val match_result : match_result_handle t -> match_result t
+
+class type number = object
+  method toString : js_string t meth
+  method toString_radix : int -> js_string t meth
+  method toLocaleString : js_string t meth
+  method toFixed : int -> js_string t meth
+  method toExponential : js_string t meth
+  method toExponential_digits : int -> js_string t meth
+  method toPrecision : int -> js_string meth t
+end
+
+external number_of_float : float -> number t = "caml_js_from_float"
+external float_of_number : number t -> float = "caml_js_to_float"
+
+class type date = object
+  method toString : js_string t meth
+  method toDateString : js_string t meth
+  method toTimeString : js_string t meth
+  method toLocaleString : js_string t meth
+  method toLocaleDateString : js_string t meth
+  method toLocaleTimeString : js_string t meth
+  method valueOf : float t meth
+  method getTime : float t meth
+  method getFullYear : int meth
+  method getUTCFullYear : int meth
+  method getMonth : int meth
+  method getUTCMonth : int meth
+  method getDate : int meth
+  method getUTCDate : int meth
+  method getDay : int meth
+  method getUTCDay : int meth
+  method getHours : int meth
+  method getUTCHours : int meth
+  method getMinutes : int meth
+  method getUTCMinutes : int meth
+  method getSeconds : int meth
+  method getUTCSeconds : int meth
+  method getMilliseconds : int meth
+  method getUTCMilliseconds : int meth
+  method getTimezoneOffset : int meth
+  method setTime : float -> float t meth
+  method setFullYear : int -> float t meth
+  method setUTCFullYear : int -> float t meth
+  method setMonth : int -> float t meth
+  method setUTCMonth : int -> float t meth
+  method setDate : int -> float t meth
+  method setUTCDate : int -> float t meth
+  method setDay : int -> float t meth
+  method setUTCDay : int -> float t meth
+  method setHours : int -> float t meth
+  method setUTCHours : int -> float t meth
+  method setMinutes : int -> float t meth
+  method setUTCMinutes : int -> float t meth
+  method setSeconds : int -> float t meth
+  method setUTCSeconds : int -> float t meth
+  method setMilliseconds : int -> float t meth
+  method setUTCMilliseconds : int -> float t meth
+  method toUTCString : js_string t meth
+  method toISOString : js_string t meth
+  method toJSON : 'a -> js_string t meth
+end
+
+val date_now : date t constr
+val date_copy : (date t -> date t) constr
+val date_month : (int -> int -> date t) constr
+val date_day : (int -> int -> int -> date t) constr
+val date_hour : (int -> int -> int -> int -> date t) constr
+val date_min : (int -> int -> int -> int -> int -> date t) constr
+val date_sec : (int -> int -> int -> int -> int -> int -> date t) constr
+val date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr
+
+class type date_constr = object
+  method parse : js_string t -> float t meth
+  method _UTC_month : int -> int -> float t meth
+  method _UTC_day : int -> int -> float t meth
+  method _UTC_hour : int -> int -> int -> int -> float t meth
+  method _UTC_min : int -> int -> int -> int -> int -> float t meth
+  method _UTC_sec : int -> int -> int -> int -> int -> int -> float t meth
+  method _UTC_ms :
+    int -> int -> int -> int -> int -> int -> int -> float t meth
+  method now : float t meth
+end
+
+val date : date_constr t
 
 (* Conversion functions *)
 

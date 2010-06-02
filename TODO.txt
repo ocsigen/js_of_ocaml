@@ -2,9 +2,8 @@ Priorities
 ==========
 - Format.sprintf "%d" is miscompiled (nested loop...)
 
-- implement caml_js_new
-
 - value hash and comparison
+- md5 computation (cleanup)
 
 - callbacks, with and without grabbing self
     'a callback

@@ -84,14 +84,14 @@ external wrap_meth_callback :
 let _true = Unsafe.constant "true"
 let _false = Unsafe.constant "false"
 
-type js_match_result_handle
-type js_string_array
+type match_result_handle
+type string_array
 
 class type js_string = object
   method toString : js_string t meth
   method valueOf : js_string t meth
   method charAt : int -> js_string t meth
-  method charCodeAt : int -> float meth (* This may return NaN... *)
+  method charCodeAt : int -> float t meth (* This may return NaN... *)
   method concat : js_string t -> js_string t meth
   method concat_2 : js_string t -> js_string t -> js_string t meth
   method concat_3 :
@@ -103,15 +103,15 @@ class type js_string = object
   method indexOf_from : js_string t -> int -> int meth
   method lastIndexOf : js_string t -> int meth
   method lastIndexOf_from : js_string t -> int -> int meth
-  method localeCompare : js_string t -> float meth
-  method _match : regExp t -> js_match_result_handle t opt meth
+  method localeCompare : js_string t -> float t meth
+  method _match : regExp t -> match_result_handle t opt meth
   method replace : regExp t -> js_string t -> js_string t
   method replace_string : js_string t -> js_string t -> js_string t
-  method search : regExp t -> js_match_result_handle t opt meth
+  method search : regExp t -> match_result_handle t opt meth
   method slice : int -> int -> js_string t meth
   method slice_end : int -> js_string t meth
-  method split : js_string t -> js_string_array t meth
-  method split_limited : js_string t -> int -> js_string_array t meth
+  method split : js_string t -> string_array t meth
+  method split_limited : js_string t -> int -> string_array t meth
   method substring : int -> int -> js_string t meth
   method substring_to_end : int -> js_string t meth
   method toLowerCase : js_string meth
@@ -121,7 +121,7 @@ class type js_string = object
 end
 
 and regExp = object
-  method exec : js_string t -> js_match_result_handle t opt meth
+  method exec : js_string t -> match_result_handle t opt meth
   method test : js_string t -> bool t meth
   method toString : js_string t meth
   method source : js_string t readonly_prop
@@ -164,20 +164,107 @@ class type ['a] js_array = object
 end
 
 let array_empty = Unsafe.variable "Array"
-let array_ofLength = array_empty
+let array_length = array_empty
 
 let array_get : 'a #js_array t -> int -> 'a optdef = Unsafe.get
 let array_set : 'a #js_array t -> int -> 'a -> unit = Unsafe.set
 
-class type js_match_result = object
+class type match_result = object
   inherit [js_string t] js_array
   method index : int
   method input : js_string t
 end
 
-let str_array : js_string_array t -> js_string t js_array t = Unsafe.coerce
-let match_result : js_match_result_handle t -> js_match_result t =
+let str_array : string_array t -> js_string t js_array t = Unsafe.coerce
+let match_result : match_result_handle t -> match_result t =
   Unsafe.coerce
+
+class type number = object
+  method toString : js_string t meth
+  method toString_radix : int -> js_string t meth
+  method toLocaleString : js_string t meth
+  method toFixed : int -> js_string t meth
+  method toExponential : js_string t meth
+  method toExponential_digits : int -> js_string t meth
+  method toPrecision : int -> js_string meth t
+end
+
+external number_of_float : float -> number t = "caml_js_from_float"
+external float_of_number : number t -> float = "caml_js_to_float"
+
+class type date = object
+  method toString : js_string t meth
+  method toDateString : js_string t meth
+  method toTimeString : js_string t meth
+  method toLocaleString : js_string t meth
+  method toLocaleDateString : js_string t meth
+  method toLocaleTimeString : js_string t meth
+  method valueOf : float t meth
+  method getTime : float t meth
+  method getFullYear : int meth
+  method getUTCFullYear : int meth
+  method getMonth : int meth
+  method getUTCMonth : int meth
+  method getDate : int meth
+  method getUTCDate : int meth
+  method getDay : int meth
+  method getUTCDay : int meth
+  method getHours : int meth
+  method getUTCHours : int meth
+  method getMinutes : int meth
+  method getUTCMinutes : int meth
+  method getSeconds : int meth
+  method getUTCSeconds : int meth
+  method getMilliseconds : int meth
+  method getUTCMilliseconds : int meth
+  method getTimezoneOffset : int meth
+  method setTime : float -> float t meth
+  method setFullYear : int -> float t meth
+  method setUTCFullYear : int -> float t meth
+  method setMonth : int -> float t meth
+  method setUTCMonth : int -> float t meth
+  method setDate : int -> float t meth
+  method setUTCDate : int -> float t meth
+  method setDay : int -> float t meth
+  method setUTCDay : int -> float t meth
+  method setHours : int -> float t meth
+  method setUTCHours : int -> float t meth
+  method setMinutes : int -> float t meth
+  method setUTCMinutes : int -> float t meth
+  method setSeconds : int -> float t meth
+  method setUTCSeconds : int -> float t meth
+  method setMilliseconds : int -> float t meth
+  method setUTCMilliseconds : int -> float t meth
+  method toUTCString : js_string t meth
+  method toISOString : js_string t meth
+  method toJSON : 'a -> js_string t meth
+end
+
+class type date_constr = object
+  method parse : js_string t -> float t meth
+  method _UTC_month : int -> int -> float t meth
+  method _UTC_day : int -> int -> float t meth
+  method _UTC_hour : int -> int -> int -> int -> float t meth
+  method _UTC_min : int -> int -> int -> int -> int -> float t meth
+  method _UTC_sec : int -> int -> int -> int -> int -> int -> float t meth
+  method _UTC_ms :
+    int -> int -> int -> int -> int -> int -> int -> float t meth
+  method now : float t meth
+end
+
+let date_constr = Unsafe.variable "Date"
+let date : date_constr t = date_constr
+let date_now : date t constr = date_constr
+let date_copy : (date t -> date t) constr = date_constr
+let date_month : (int -> int -> date t) constr = date_constr
+let date_day : (int -> int -> int -> date t) constr = date_constr
+let date_hour : (int -> int -> int -> int -> date t) constr = date_constr
+let date_min : (int -> int -> int -> int -> int -> date t) constr = date_constr
+let date_sec : (int -> int -> int -> int -> int -> int -> date t) constr =
+  date_constr
+let date_ms :
+  (int -> int -> int -> int -> int -> int -> int -> date t) constr =
+  date_constr
 
 external bool : bool -> bool t = "caml_js_from_bool"
 external to_bool : bool t -> bool = "caml_js_to_bool"
