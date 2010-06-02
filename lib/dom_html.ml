@@ -102,6 +102,8 @@ class type cssStyleDeclaration = object
   method zIndex : js_string t prop
 end
 
+type ('a, 'b) event_handler = ('a, 'b -> bool t) meth_callback opt optdef
+
 class type event = object
   method _type : js_string t readonly_prop
   method target : element t opt readonly_prop

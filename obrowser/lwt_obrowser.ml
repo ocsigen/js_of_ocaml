@@ -49,8 +49,8 @@ let http_get url args =
   let (res, w) = Lwt.wait () in
   let url = if args = [] then url else url ^ urlencode args in
   let req = XmlHttpRequest.create () in
-  req##_open (js "GET", js url, Js._true, Js.null, Js.null);
-  req##onreadystatechange <-
+  req##_open (js "GET", js url, Js._true);
+  req##onreadystatechange <- Js.some
     (fun () ->
        if req##readyState = XmlHttpRequest.DONE then
          Lwt.wakeup w (req##status, Js.to_string req##responseText));
@@ -60,10 +60,10 @@ let http_get url args =
 let http_post url post_args =
   let (res, w) = Lwt.wait () in
   let req = XmlHttpRequest.create () in
-  req##_open (js "POST", js url, Js._true, Js.null, Js.null);
+  req##_open (js "POST", js url, Js._true);
   req##setRequestHeader
     (js"Content-type",js"application/x-www-form-urlencoded");
-  req##onreadystatechange <-
+  req##onreadystatechange <- Js.some
     (fun () ->
        if req##readyState = XmlHttpRequest.DONE then
          Lwt.wakeup w (req##status, Js.to_string req##responseText));

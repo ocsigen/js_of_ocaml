@@ -38,7 +38,11 @@ type +'a constr
 
 (* Callbacks *)
 
-type +'a callback
+type (+'a, +'b) meth_callback
+type 'a callback = (unit, 'a) meth_callback
+
+external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback =
+  "caml_js_wrap_callback"
 
 (* Javascript objects *)
 
@@ -158,7 +162,6 @@ module Unsafe : sig
 
   type any
   external inject : 'a -> any = "%identity"
-  external extract : any -> 'a = "%identity"
   external coerce : < .. > t -> < ..> t = "%identity"
 
   external get : 'a -> 'b -> 'c = "caml_js_get"

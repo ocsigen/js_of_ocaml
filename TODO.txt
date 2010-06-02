@@ -1,5 +1,8 @@
 Priorities
 ==========
+- implement object creation
+  implement all jslib primitives
+
 -  Object.create (Foo.prototype).Foo(...) ???
     if (typeof Object.create !== 'function') {
     Object.create = function (o) {
