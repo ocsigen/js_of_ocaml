@@ -1,4 +1,11 @@
 
+let aliases = Hashtbl.create 17
+
+let alias nm nm' = Hashtbl.add aliases nm nm'
+let resolve nm = try Hashtbl.find aliases nm with Not_found -> nm
+
+(****)
+
 type kind = [ `Const | `Mutable | `Mutator ]
 
 let kinds = Hashtbl.create 37
@@ -8,26 +15,24 @@ let _ =
     [("caml_int64_float_of_bits", `Const);
      ("caml_sys_get_argv", `Const);
      ("caml_sys_get_config", `Const);
-     ("caml_obj_dup", `Mutable);
      ("caml_ml_open_descriptor_in", `Mutable);
      ("caml_ml_open_descriptor_out", `Mutable);
-     ("caml_nativeint_sub", `Const);
-     ("caml_nativeint_shift_left", `Const);
-     ("caml_ensure_stack_capacity", `Const);
+
      ("caml_js_var", `Mutable);
+     ("caml_js_const", `Const);
      ("caml_js_get", `Mutable);
-     ("caml_bool_to_js", `Const);
-     ("caml_bool_from_js", `Const);
-     ("caml_string_to_js", `Const);
-     ("caml_string_from_js", `Const);
-     ("caml_float_to_js", `Const);
-     ("caml_float_from_js", `Const);
-     ("caml_array_to_js", `Const);
-     ("caml_array_from_js", `Const)]
+     ("caml_js_from_bool", `Const);
+     ("caml_js_to_bool", `Const);
+     ("caml_js_from_string", `Const);
+     ("caml_js_to_string", `Const);
+     ("caml_js_from_float", `Const);
+     ("caml_js_to_float", `Const);
+     ("caml_js_from_array", `Const);
+     ("caml_js_to_array", `Const)]
 
 let register p k = Hashtbl.add kinds p k
 
-let kind nm = try Hashtbl.find kinds nm with Not_found -> `Mutator
+let kind nm = try Hashtbl.find kinds (resolve nm) with Not_found -> `Mutator
 
 let is_pure nm = kind nm <> `Mutator
 
@@ -41,10 +46,3 @@ let mark_used nm =
 let list_used () =
   Format.eprintf "Primitives:@.";
   Util.StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) !primitives
-
-(****)
-
-let aliases = Hashtbl.create 17
-
-let alias nm nm' = Hashtbl.add aliases nm nm'
-let resolve nm = try Hashtbl.find aliases nm with Not_found -> nm

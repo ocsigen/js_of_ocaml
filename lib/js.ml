@@ -3,6 +3,7 @@ type +'a t
 
 module Unsafe = struct
   external variable : string -> 'a = "caml_js_var"
+  external constant : string -> 'a = "caml_js_const"
 
   type any
   external inject : 'a -> any = "%identity"
@@ -19,10 +20,10 @@ end
 type 'a opt = 'a
 type 'a optdef = 'a
 
-let null = Unsafe.variable "null"
+let null = Unsafe.constant "null"
 external some : 'a -> 'a opt = "%identity"
 
-let undefined = Unsafe.variable "undefined"
+let undefined = Unsafe.constant "undefined"
 external def : 'a -> 'a optdef = "%identity"
 
 module type OPT = sig
@@ -80,8 +81,8 @@ external wrap_meth_callback :
 
 (****)
 
-let _true = Unsafe.variable "true"
-let _false = Unsafe.variable "false"
+let _true = Unsafe.constant "true"
+let _false = Unsafe.constant "false"
 
 type js_match_result_handle
 type js_string_array
@@ -178,11 +179,11 @@ let str_array : js_string_array t -> js_string t js_array t = Unsafe.coerce
 let match_result : js_match_result_handle t -> js_match_result t =
   Unsafe.coerce
 
-external bool : bool -> bool t = "caml_bool_to_js"
-external to_bool : bool t -> bool = "caml_bool_from_js"
-external string : string -> js_string t = "caml_string_to_js"
-external to_string : js_string t -> string = "caml_string_from_js"
-external float : float -> float t = "caml_float_to_js"
-external to_float : float t -> float = "caml_float_from_js"
-external array : 'a array -> 'a js_array t = "caml_array_to_js"
-external to_array : 'a js_array t -> 'a array = "caml_array_from_js"
+external bool : bool -> bool t = "caml_js_from_bool"
+external to_bool : bool t -> bool = "caml_js_to_bool"
+external string : string -> js_string t = "caml_js_from_string"
+external to_string : js_string t -> string = "caml_js_to_string"
+external float : float -> float t = "caml_js_from_float"
+external to_float : float t -> float = "caml_js_to_float"
+external array : 'a array -> 'a js_array t = "caml_js_from_array"
+external to_array : 'a js_array t -> 'a array = "caml_js_to_array"

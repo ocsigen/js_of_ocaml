@@ -384,9 +384,9 @@ let _ =
      "caml_int32_and", "%int_and";
      "caml_int32_or", "%int_or";
      "caml_int32_xor", "%int_xor";
-     "caml_int32_lsl", "%int_lsl";
-     "caml_int32_asr", "%int_asr";
-     "caml_int32_lsr", "%int_lsr";
+     "caml_int32_shift_left", "%int_lsl";
+     "caml_int32_shift_right", "%int_asr";
+     "caml_int32_shift_right_unsigned", "%int_lsr";
      "caml_int32_of_int", "%identity";
      "caml_int32_to_int", "%identity";
      "caml_int32_of_float", "caml_int_of_float";
@@ -403,9 +403,9 @@ let _ =
      "caml_nativeint_and", "%int_and";
      "caml_nativeint_or", "%int_or";
      "caml_nativeint_xor", "%int_xor";
-     "caml_nativeint_lsl", "%int_lsl";
-     "caml_nativeint_asr", "%int_asr";
-     "caml_nativeint_lsr", "%int_lsr";
+     "caml_nativeint_shift_left", "%int_lsl";
+     "caml_nativeint_shift_right", "%int_asr";
+     "caml_nativeint_shift_right_unsigned", "%int_lsr";
      "caml_nativeint_of_int", "%identity";
      "caml_nativeint_to_int", "%identity";
      "caml_nativeint_of_float", "caml_int_of_float";
@@ -426,7 +426,11 @@ let _ =
      "caml_array_set_addr", "caml_array_set";
      "caml_array_unsafe_get_float", "caml_array_unsafe_get";
      "caml_array_unsafe_set_float", "caml_array_unsafe_set";
-     "caml_alloc_dummy_float", "caml_alloc_dummy"]
+     "caml_alloc_dummy_float", "caml_alloc_dummy";
+     "caml_make_array", "%identity";
+     "caml_ensure_stack_capacity", "%identity";
+     "caml_js_from_float", "%identity";
+     "caml_js_to_float", "%identity"]
 
 let internal_primitives = Hashtbl.create 31
 
@@ -480,7 +484,6 @@ let register_bin_math_prim name prim =
 
 let _ =
   Code.add_reserved_name "Math";
-  register_un_prim "%identity" `Const (fun cx -> cx);
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
   register_bin_prim "caml_string_get" `Mutable
@@ -553,7 +556,18 @@ let _ =
   register_bin_math_prim "caml_power_float" "pow";
   register_un_math_prim "caml_sin_float" "sin";
   register_un_math_prim "caml_sqrt_float" "sqrt";
-  register_un_math_prim "caml_tan_float" "tan"
+  register_un_math_prim "caml_tan_float" "tan";
+  register_un_prim "caml_js_from_bool" `Const
+    (fun cx -> J.EUn (J.Not, J.EUn (J.Not, cx)));
+  register_un_prim "caml_js_to_bool" `Const to_int;
+  register_un_prim "caml_js_from_string" `Mutable
+    (fun cx -> J.ECall (J.EDot (cx, "toString"), []));
+  register_un_prim "caml_js_to_string" `Mutable
+    (fun cx -> J.ENew (J.EVar "MlString", Some [cx]));
+  register_tern_prim "caml_js_set"
+    (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
+  register_bin_prim "caml_js_get" `Mutable
+    (fun cx cy -> J.EAccess (cx, cy))
 
 (****)
 
@@ -627,6 +641,9 @@ let rec translate_expr ctx queue e =
       | Extern "caml_js_var", [Pc (String nm)] ->
           Code.add_reserved_name nm;  (*XXX HACK *)
           (J.EVar nm, const_p, queue)
+      | Extern "caml_js_const", [Pc (String nm)] ->
+          Code.add_reserved_name nm;  (*XXX HACK *)
+          (J.EVar nm, const_p, queue)
       | Extern "caml_js_opt_meth_call", Pv o :: Pc (String m) :: l ->
           let ((po, co), queue) = access_queue queue o in
           let (args, prop, queue) =
@@ -638,6 +655,17 @@ let rec translate_expr ctx queue e =
               l ([], mutator_p, queue)
           in
           (J.ECall (J.EDot (co, m), args), or_p po prop, queue)
+      | Extern "caml_js_opt_new", Pv c :: l ->
+          let ((pc, cc), queue) = access_queue queue c in
+          let (args, prop, queue) =
+            List.fold_right
+              (fun x (args, prop, queue) ->
+                 let x = match x with Pv x -> x | _ -> assert false in
+                 let ((prop', cx), queue) = access_queue queue x in
+                 (cx :: args, or_p prop prop', queue))
+              l ([], mutator_p, queue)
+          in
+          (J.ENew (cc, Some args), or_p pc prop, queue)
       | Extern "caml_js_get", [Pv o; Pc (String f)] ->
           let ((po, co), queue) = access_queue queue o in
           (J.EDot (co, f), or_p po mutator_p, queue)

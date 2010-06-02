@@ -303,6 +303,13 @@ let specialize_instr info i =
       | _ ->
           i
       end
+  | Let (x, Prim (Extern "caml_js_const", [Pv y])) ->
+      begin match the_def_of info y with
+        Some (Constant (String _ as c)) ->
+          Let (x, Prim (Extern "caml_js_const", [Pc c]))
+      | _ ->
+          i
+      end
   | Let (x, Prim (Extern "caml_js_meth_call", [Pv o; Pv m; Pv a])) ->
       begin match the_def_of info m with
         Some (Constant (String _ as m)) ->
@@ -314,6 +321,15 @@ let specialize_instr info i =
           | _ ->
               i
           end
+      | _ ->
+          i
+      end
+  | Let (x, Prim (Extern "caml_js_new", [Pv c; Pv a])) ->
+      begin match the_def_of info a with
+        Some (Block (_, a)) ->
+          let a = Array.map (fun x -> Pv x) a in
+          Let (x, Prim (Extern "caml_js_opt_new",
+                        Pv c :: Array.to_list a))
       | _ ->
           i
       end

@@ -81,7 +81,7 @@ function caml_int64_xor (x, y) {
   return [255, x[1]^y[1], x[2]^y[2], x[3]^y[3]];
 }
 
-function caml_int64_lsl (x, s) {
+function caml_int64_shift_left (x, s) {
   s = s & 63;
   if (s == 0) return x;
   if (s < 24)
@@ -96,7 +96,7 @@ function caml_int64_lsl (x, s) {
   return [255, 0, 0, (x[1] << (s - 48)) & 0xffff];
 }
 
-function caml_int64_lsr (x, s) {
+function caml_int64_shift_right_unsigned (x, s) {
   s = s & 63;
   if (s == 0) return x;
   if (s < 24)
@@ -112,7 +112,7 @@ function caml_int64_lsr (x, s) {
   return [255, (x[3] >> (s - 48)), 0, 0];
 }
 
-function caml_int64_asr (x, s) {
+function caml_int64_shift_right (x, s) {
   s = s & 63;
   if (s == 0) return x;
   var h = (x[3] << 16) >> 16;

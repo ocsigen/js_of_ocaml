@@ -951,7 +951,7 @@ and compile code limit pc state instrs =
       compile code limit (pc + 1) state instrs
   | C_CALL1 ->
       let prim = primitive_name state (getu code (pc + 1)) in
-      if prim = "caml_make_array" || prim = "caml_ensure_stack_capacity" then
+      if Primitive.resolve prim = "%identity" then
         (* This is a no-op *)
         compile code limit (pc + 2) state instrs
       else begin

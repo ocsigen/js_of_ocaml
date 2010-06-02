@@ -146,14 +146,14 @@ val match_result : js_match_result_handle t -> js_match_result t
 
 (* Conversion functions *)
 
-external bool : bool -> bool t = "caml_bool_to_js"
-external to_bool : bool t -> bool = "caml_bool_from_js"
-external string : string -> js_string t = "caml_string_to_js"
-external to_string : js_string t -> string = "caml_string_from_js"
-external float : float -> float t = "caml_float_to_js"
-external to_float : float t -> float = "caml_float_from_js"
-external array : 'a array -> 'a js_array t = "caml_array_to_js"
-external to_array : 'a js_array t -> 'a array = "caml_array_from_js"
+external bool : bool -> bool t = "caml_js_from_bool"
+external to_bool : bool t -> bool = "caml_js_to_bool"
+external string : string -> js_string t = "caml_js_from_string"
+external to_string : js_string t -> string = "caml_js_to_string"
+external float : float -> float t = "caml_js_from_float"
+external to_float : float t -> float = "caml_js_to_float"
+external array : 'a array -> 'a js_array t = "caml_js_from_array"
+external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
 
 (* Unsafe operations.  Use with care! *)
 
@@ -173,5 +173,4 @@ module Unsafe : sig
   external call : t -> t -> t array -> t = "caml_js_call"
   external fun_call : t -> t array -> t = "caml_js_fun_call"
 *)
-
 end
