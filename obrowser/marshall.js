@@ -7,6 +7,7 @@
 /*                                                                     */
 /***********************************************************************/
 
+//Provides: marshalling
 function INT32(v) {return v|0;}
 function mk_block(size, tag) { return [tag]; }
 function set(x, i, v) { x[i+1]=v; }
@@ -36,6 +37,8 @@ var CODE_INT8 =      0x00, CODE_INT16 =      0x01,
 //    CODE_DOUBLE_ARRAY32_NATIVE = CODE_DOUBLE_ARRAY32_LITTLE,
 //    ENTRIES_PER_TRAIL_BLOCK =  1025, SIZE_EXTERN_OUTPUT_BLOCK = 8100;
 
+//Provides: input_val
+//Requires: marshalling
 function Reader (chunk) {
     this.chunk = chunk;
     this.chunk_idx = 0;
@@ -280,22 +283,24 @@ function input_val (chunk, error) {
     return v;
 }
 
-// Caml name: unmarshal
-// Type:      string -> int -> 'a
+//Provides: caml_input_value_from_string mutable
+//Requires: input_val
 caml_input_value_from_string = function (s, ofs) {
     var s = s.toByteArray();
     function caml_failwith (s) {throw (s);};
     return input_val (s.slice (ofs + 1),caml_failwith);
 }
 
-// Caml name: marshal_data_size
-// Type:      string -> int -> int
+//Provides: caml_marshal_data_size mutable
+//Requires: input_val
 caml_marshal_data_size = function (s, ofs) {
     var s = s.toByteArray();
     function caml_failwith (s) {throw (s);};
     return input_size (s.slice (ofs + 1), caml_failwith);
 }
 
+//Provides: ouput_val
+//Requires: marshalling
 function Writer () {
     this.chunk = [];
     this.chunk_idx = 20;
@@ -388,6 +393,8 @@ function output_val (v, error) {
 }
 
 
+//Provides: caml_output_value_to_string mutable
+//Requires: output_val
 // Caml name: to_string
 // Type:      'a -> extern_flags list -> string
 function caml_output_value_to_string (v, fl) {
@@ -402,11 +409,8 @@ function caml_output_value_to_string (v, fl) {
     return b;
 }
 
-// Caml name: to_channel
-// Type:      out_channel -> 'a -> extern_flags list -> unit
-//function caml_output_value (chan, v, fl) {
-//}
-
+//Provides: caml_output_value_to_buffer
+//Requires: output_val
 // Caml name: to_buffer_unsafe
 // Type:      string -> int -> int -> 'a -> extern_flags list -> int
 function caml_output_value_to_buffer (s, ofs, len, v, fl) {
