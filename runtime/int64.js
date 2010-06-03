@@ -1,6 +1,8 @@
 
+//Provides: caml_int64_offset
 var caml_int64_offset = Math.pow(2, -24);
 
+//Provides: caml_int64_ucompare const
 function caml_int64_ucompare(x,y) {
   if (x[3] > y[3]) return 1;
   if (x[3] < y[3]) return -1;
@@ -11,8 +13,11 @@ function caml_int64_ucompare(x,y) {
   return 0;
 }
 
+//Provides: caml_int64_ult const
+//Requires: caml_int64_ucompare
 function caml_int64_ult(x,y) { return caml_int64_ucompare(x,y) < 0; }
 
+//Provides: caml_int64_compare const
 function caml_int64_compare(x,y) {
   x3 = x[3] << 16;
   y3 = y[3] << 16;
@@ -25,6 +30,7 @@ function caml_int64_compare(x,y) {
   return 0;
 }
 
+//Provides: caml_int64_neg const
 function caml_int64_neg (x) {
   y1 = - x[1];
   y2 = - x[2] + (y1 >> 24);
@@ -32,6 +38,7 @@ function caml_int64_neg (x) {
   return [255, y1 & 0xffffff, y2 & 0xffffff, y3 & 0xffff];
 }
 
+//Provides: caml_int64_add const
 function caml_int64_add (x, y) {
   z1 = x[1] + y[1];
   z2 = x[2] + y[2] + (z1 >> 24);
@@ -39,6 +46,7 @@ function caml_int64_add (x, y) {
   return [255, z1 & 0xffffff, z2 & 0xffffff, z3 & 0xffff];
 }
 
+//Provides: caml_int64_sub const
 function caml_int64_sub (x, y) {
   z1 = x[1] - y[1];
   z2 = x[2] - y[2] + (z1 >> 24);
@@ -46,6 +54,8 @@ function caml_int64_sub (x, y) {
   return [255, z1 & 0xffffff, z2 & 0xffffff, z3 & 0xffff];
 }
 
+//Provides: caml_int64_mul const
+//Requires: caml_int64_offset
 function caml_int64_mul(x,y) {
   z1 = x[1] * y[1];
   z2 = ((z1 * caml_int64_offset) | 0) + x[2] * y[1] + x[1] * y[2];
@@ -53,34 +63,42 @@ function caml_int64_mul(x,y) {
   return [255, z1 & 0xffffff, z2 & 0xffffff, z3 & 0xffff];
 }
 
+//Provides: caml_int64_is_zero const
 function caml_int64_is_zero(x) {
   return (x[3]|x[2]|x[1]) == 0;
 }
 
+//Provides: caml_int64_is_negative const
 function caml_int64_is_negative(x) {
   return (x[3] << 16) < 0;
 }
 
+//Provides: caml_int64_is_min_int const
 function caml_int64_is_min_int(x) {
   return x[3] == 0x8000 && (x[1]|x[2]) == 0;
 }
 
+//Provides: caml_int64_is_minus_one const
 function caml_int64_is_minus_one(x) {
   return x[3] == 0xffff && (x[1]&x[2]) == 0xffffff;
 }
 
+//Provides: caml_int64_and const
 function caml_int64_and (x, y) {
   return [255, x[1]&y[1], x[2]&y[2], x[3]&y[3]];
 }
 
+//Provides: caml_int64_or const
 function caml_int64_or (x, y) {
   return [255, x[1]|y[1], x[2]|y[2], x[3]|y[3]];
 }
 
+//Provides: caml_int64_xor const
 function caml_int64_xor (x, y) {
   return [255, x[1]^y[1], x[2]^y[2], x[3]^y[3]];
 }
 
+//Provides: caml_int64_shift_left const
 function caml_int64_shift_left (x, s) {
   s = s & 63;
   if (s == 0) return x;
@@ -96,6 +114,7 @@ function caml_int64_shift_left (x, s) {
   return [255, 0, 0, (x[1] << (s - 48)) & 0xffff];
 }
 
+//Provides: caml_int64_shift_right_unsigned const
 function caml_int64_shift_right_unsigned (x, s) {
   s = s & 63;
   if (s == 0) return x;
@@ -112,6 +131,7 @@ function caml_int64_shift_right_unsigned (x, s) {
   return [255, (x[3] >> (s - 48)), 0, 0];
 }
 
+//Provides: caml_int64_shift_right const
 function caml_int64_shift_right (x, s) {
   s = s & 63;
   if (s == 0) return x;
@@ -132,18 +152,23 @@ function caml_int64_shift_right (x, s) {
           sign & 0xffffff, sign & 0xffff];
 }
 
+//Provides: caml_int64_lsl1 const
 function caml_int64_lsl1 (x) {
   x[3] = (x[3] << 1) | (x[2] >> 23);
   x[2] = ((x[2] << 1) | (x[1] >> 23)) & 0xffffff;
   x[1] = x[1] << 1;
 }
 
+//Provides: caml_int64_lsr1 const
 function caml_int64_lsr1 (x) {
   x[1] = ((x[1] >>> 1) | (x[2] << 23)) & 0xffffff;
   x[2] = ((x[2] >>> 1) | (x[3] << 23)) & 0xffffff;
   x[3] = x[3] >>> 1;
 }
 
+//Provides: caml_int64_udivmod const
+//Requires: caml_int64_ucompare, caml_int64_lsl1, caml_int64_lsr1
+//Requires: caml_int64_sub
 function caml_int64_udivmod (x, y) {
   var offset = 0;
   var modulus = x.slice ();
@@ -165,6 +190,8 @@ function caml_int64_udivmod (x, y) {
   return [0,quotient, modulus];
 }
 
+//Provides: caml_int64_div const
+//Requires: caml_raise_zero_divide
 function caml_int64_div (x, y)
 {
   if (caml_int64_is_zero (y)) caml_raise_zero_divide ();
@@ -176,6 +203,8 @@ function caml_int64_div (x, y)
   return q;
 }
 
+//Provides: caml_int64_mod const
+//Requires: caml_raise_zero_divide
 function caml_int64_mod (x, y)
 {
   if (caml_int64_is_zero (y)) caml_raise_zero_divide ();
@@ -187,18 +216,23 @@ function caml_int64_mod (x, y)
   return r;
 }
 
+//Provides: caml_int64_of_int32 const
 function caml_int64_of_int32 (x) {
   return [255, x & 0xffffff, (x >> 24) & 0xffffff, (x >> 31) & 0xffff]
 }
 
+//Provides: caml_int64_to_int32 const
 function caml_int64_to_int32 (x) {
   return x[1] | (x[2] << 24);
 }
 
+//Provides: caml_int64_to_double const
 function caml_int64_to_double (x) {
   return ((x[3] << 16) * Math.pow(2, 32) + x[2] * Math.pow(2, 24)) + x[1];
 }
 
+//Provides: caml_int64_of_double const
+//Requires: caml_int64_offset
 function caml_int64_of_double (x) {
   if (x < 0) x = Math.ceil(x);
   return [255,

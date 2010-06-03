@@ -1,4 +1,5 @@
 ///////////// Core
+//Provides: caml_call_gen
 function caml_call_gen(f, args) {
   var n = f.length;
   var d = n - args.length;
@@ -10,48 +11,69 @@ function caml_call_gen(f, args) {
     return function (x){ return caml_call_gen(f, args.concat([x])); };
 }
 
+//Provides: caml_named_values
 var caml_named_values = [];
 
+//Provides: caml_register_named_value
+//Requires: caml_named_values
 function caml_register_named_value(nm,v) {
   caml_named_values[nm] = v; return 0;
 }
 
+//Provides: caml_global_data
 var caml_global_data = [];
 
+//Provides: caml_register_global
+//Requires: caml_global_data
 function caml_register_global (n, v) { caml_global_data[n] = v; }
 
+//Provides: caml_raise_constant
 function caml_raise_constant (tag) { throw [0, tag]; }
 
+//Provides: caml_raise_with_arg
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 
+//Provides: caml_raise_with_string
+//Requires: caml_raise_with_arg, MlString
 function caml_raise_with_string (tag, msg) {
   caml_raise_with_arg (tag, new MlString (msg));
 }
 
+//Provides: caml_invalid_argument
+//Requires: caml_raise_with_string
 function caml_invalid_argument (msg) {
   caml_raise_with_string(caml_global_data[3], msg);
 }
 
+//Provides: caml_failwith
+//Requires: caml_raise_with_string, caml_global_data
 function caml_failwith (msg) {
   caml_raise_with_string(caml_global_data[2], msg);
 }
 
+//Provides: caml_array_bound_error
+//Requires: caml_invalid_argument
 function caml_array_bound_error () {
   caml_invalid_argument("index out of bounds");
 }
 
+//Provides: caml_raise_zero_divide
+//Requires: caml_raise_constant, caml_global_data
 function caml_raise_zero_divide () {
   caml_raise_constant(caml_global_data[5]);
 }
 
+//Provides: caml_update_dummy
 function caml_update_dummy (x, y) {
   var i = y.length;
   while (i--) x[i] = y[i];
   return 0;
 }
 
+//Provides: caml_obj_tag const
 function caml_obj_tag (x) { return (x instanceof Array)?x[0]:1000; }
 
+//Provides: caml_mul const
 function caml_mul(x,y) {
   return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0;
 }
@@ -63,27 +85,37 @@ function caml_mul(x,y) {
 //   return (((xhi * y) |0) + xlo * y)|0;
 // }
 
+//Provides: caml_div const
+//Requires: caml_raise_zero_divide
 function caml_div(x,y) {
     if (y == 0) caml_raise_zero_divide ();
     return (x/y)|0;
 }
 
+//Provides: caml_mod const
+//Requires: caml_raise_zero_divide
 function caml_mod(x,y) {
     if (y == 0) caml_raise_zero_divide ();
     return x%y;
 }
 
 ///////////// Pervasive
+//Provides: caml_array_set
+//Requires: caml_array_bound_error
 function caml_array_set (array, index, newval) {
   if ((index < 0) || (index >= array.length)) caml_array_bound_error();
   array[index+1]=newval; return 0;
 }
+
+//Provides: caml_array_get mutable
+//Requires: caml_array_bound_error
 function caml_array_get (array, index) {
   var res = array[index+1];
   if (res == undefined) caml_array_bound_error();
   return res;
 }
 
+//Provides: caml_make_vect const
 function caml_make_vect (len, init) {
   var b = [];
   b[0] = 0;
@@ -140,6 +172,8 @@ function caml_make_vect (len, init) {
 //    }
 //  }
 //}
+//Provides: caml_compare mutable
+//Requires: MlString, caml_int64_compare
 function caml_compare (a, b) {
   if (a === b) return 0;
   if (a instanceof MlString) {
@@ -163,32 +197,57 @@ function caml_compare (a, b) {
       return 1;
   else if (a < b) return (-1); else if (a == b) return 0; else return 1;
 }
+//Provides: caml_int_compare mutable
 function caml_int_compare (a, b) {
   if (a < b) return (-1); else if (a == b) return 0; else return 1;
 }
+//Provides: caml_equal mutable
+//Requires: caml_compare
 function caml_equal (x, y) { return +(caml_compare(x,y) == 0); }
+//Provides: caml_notequal mutable
+//Requires: caml_compare
 function caml_notequal (x, y) { return +(caml_compare(x,y) != 0); }
+//Provides: caml_greaterequal mutable
+//Requires: caml_compare
 function caml_greaterequal (x, y) { return +(caml_compare(x,y) >= 0); }
+//Provides: caml_greaterthan mutable
+//Requires: caml_compare
 function caml_greaterthan (x, y) { return +(caml_compare(x,y) > 0); }
+//Provides: caml_lessequal mutable
+//Requires: caml_compare
 function caml_lessequal (x, y) { return +(caml_compare(x,y) <= 0); }
+//Provides: caml_lessthan mutable
+//Requires: caml_compare
 function caml_lessthan (x, y) { return +(caml_compare(x,y) < 0); }
 
 ///////////// String
+//Provides: caml_create_string const
+//Requires: MlString
 function caml_create_string(len) { return new MlString(len); }
+//Provides: caml_fill_string mutable
 function caml_fill_string(s, i, l, c) { s.fill (i, l, c); return 0; }
+//Provides: caml_string_compare mutable
 function caml_string_compare(s1, s2) { return s1.compare(s2); }
+//Provides: caml_string_equal mutable
 function caml_string_equal(s1, s2) { return +s1.equal(s2); }
+//Provides: caml_string_notequal mutable
 function caml_string_notequal(s1, s2) { return +s1.notEqual(s2); }
+//Provides: caml_is_printable const
 function caml_is_printable(c) { return +(c > 31 && c < 127); }
+//Provides: caml_blit_string mutable
 function caml_blit_string(s1, i1, s2, i2, len) {
   s2.replace (i2, s1.contents, i1, len); return 0;
 }
 
 ///////////// Format
 // FIX: use format string
+//Provides: caml_format_float const
+//Requires: MlString
 function caml_format_float (fmt, x) {
   return new MlString(x.toString(10));
 }
+//Provides: caml_format_int const
+//Requires: MlString
 function caml_format_int(fmtV, i) {
   var fmt = fmtV.toString();
   var t = fmt.charCodeAt(fmt.length - 1);
@@ -237,6 +296,8 @@ function caml_format_int(fmtV, i) {
 }
 
 ///////////// Hashtbl
+//Provides: caml_hash_univ_param mutable
+//Requires: MlString
 function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
   if (obj instanceof MlString) {
@@ -252,14 +313,18 @@ function caml_hash_univ_param (count, limit, obj) {
 }
 
 ///////////// Sys
+//Provides: caml_sys_time mutable
 var caml_initial_time = Date.now() * 0.001;
 function caml_sys_time () { return Date.now() * 0.001 - caml_initial_time; }
+//Provides: caml_sys_get_config const
 function caml_sys_get_config (e) { return [0, "Unix", 32]; }
+//Provides: caml_sys_random_seed mutable
 function caml_sys_random_seed () {
   return Date.now()^0xffffffff*Math.random();
 }
 
 ///////////// CamlinternalOO
+//Provides: caml_get_public_method const
 function caml_get_public_method (obj, tag) {
   var meths = obj[1];
   var li = 3, hi = meths[1] * 2 + 1, mi;
@@ -275,6 +340,13 @@ function caml_get_public_method (obj, tag) {
 /////////////////////////////
 
 // Dummy functions
+//Provides: caml_ml_out_channels_list const
 function caml_ml_out_channels_list () { return 0; }
+//Provides: caml_ml_flush const
 function caml_ml_flush () { return 0; }
+//Provides: caml_ml_open_descriptor_out const
 function caml_ml_open_descriptor_out () { return 0; }
+//Provides: caml_ml_open_descriptor_in const
+function caml_ml_open_descriptor_in () { return 0; }
+//Provides: caml_sys_get_argv const
+function caml_sys_get_argv () { return ["a.out"]; }

@@ -2,6 +2,9 @@
 let debug = Util.debug "main"
 
 let f file =
+
+Linker.add_file "/home/vouillon/misc/ocaml2js/runtime/runtime.js";
+
   let p =
     match file with
       None ->

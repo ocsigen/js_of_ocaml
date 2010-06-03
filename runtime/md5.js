@@ -7,6 +7,7 @@
 /*                                                                     */
 /***********************************************************************/
 
+//Provides: caml_md5_string
 function md5 (message) {
     
     function add (x, y) {

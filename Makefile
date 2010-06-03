@@ -19,13 +19,16 @@ OBJS=util.cmx dgraph.cmx \
      instr.cmx code.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx control.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
-     generate.cmx parse.cmx main.cmx
+     linker.cmx generate.cmx parse.cmx main.cmx
+
+tst: util.cmo linker.cmo
+	ocamlc str.cma -o $@ $^
 
 compile: $(OBJS:cmx=cmo)
-	ocamlc -g -o $@ $^
+	ocamlc -g str.cma -o $@ $^
 
 $(NAME): $(OBJS)
-	ocamlopt -o $@ $^
+	ocamlopt str.cmxa -o $@ $^
 
 %.cmx: %.ml
 	ocamlopt -c $<

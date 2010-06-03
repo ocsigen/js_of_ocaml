@@ -90,6 +90,7 @@ let float_const f = val_float (J.ENum f)
 let rec constant x =
   match x with
     String s ->
+      Primitive.mark_used "MlString";
       J.ENew (J.EVar ("MlString"), Some [J.EStr s])
   | Float f ->
       float_const f
@@ -340,6 +341,7 @@ let get_apply_fun n =
   try
     Util.IntMap.find n !apply_funs
   with Not_found ->
+    Primitive.mark_used "caml_call_gen";
     let x = Var.fresh () in
     apply_funs := Util.IntMap.add n x !apply_funs;
     x
@@ -563,7 +565,8 @@ let _ =
   register_un_prim "caml_js_from_string" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "toString"), []));
   register_un_prim "caml_js_to_string" `Mutable
-    (fun cx -> J.ENew (J.EVar "MlString", Some [cx]));
+    (fun cx ->
+       Primitive.mark_used "MlString"; J.ENew (J.EVar "MlString", Some [cx]));
   register_tern_prim "caml_js_set"
     (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable
@@ -1173,15 +1176,25 @@ and compile_closure ctx (pc, args) =
 let compile_program ctx pc =
   let res = compile_closure ctx (pc, []) in
   if debug () then Format.eprintf "@.@.";
+(*
   Primitive.list_used ();
+*)
   [J.Statement (J.Expression_statement
                   (J.ECall (J.EFun (None, [], generate_apply_funs res), [])))]
 
 (**********************)
+
+let list_missing l =
+  if l <> [] then begin
+    Format.eprintf "Missing primitives:@.";
+    List.iter (fun nm -> Format.eprintf "  %s@." nm) l
+  end
 
 let f ch ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let ctx = Ctx.initial blocks live_vars mutated_vars in
   let p = compile_program ctx pc in
   if !compact then Format.pp_set_margin ch 999999998;
+  let missing = Linker.resolve_deps !compact ch (Primitive.get_used ()) in
+  list_missing missing;
   Js_output.program ch p

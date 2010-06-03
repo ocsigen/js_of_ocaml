@@ -1,4 +1,4 @@
-
+//Provides: caml_int64_bits_of_float const
 function caml_int64_bits_of_float (x) {
   if (!isFinite(x)) {
     if (isNaN(x)) return [255, 1, 0, 0xfff0];
@@ -25,6 +25,7 @@ function caml_int64_bits_of_float (x) {
   r3 = (r3 &0xf) | sign | exp << 4;
   return [255, r1, r2, r3];
 }
+//Provides: caml_int64_float_of_bits const
 function caml_int64_float_of_bits (x) {
   var exp = (x[3] & 0x7fff) >> 4;
   if (exp == 2047) {
@@ -43,7 +44,7 @@ function caml_int64_float_of_bits (x) {
   if (x[3] & 0x8000) res = - res;
   return res;
 }
-
+//Provides: caml_classify_float const
 function caml_classify_float (x) {
   if (isFinite (x)) {
     if (Math.abs(x) >= 2.2250738585072014e-308) return 0;
@@ -52,6 +53,7 @@ function caml_classify_float (x) {
   }
   return isNaN(x)?4:3;
 }
+//Provides: caml_modf_float const
 function caml_modf_float (x) {
   if (isFinite (x)) {
     var neg = (1/x) < 0;
@@ -64,6 +66,7 @@ function caml_modf_float (x) {
   if (isNaN (x)) return [0, NaN, NaN];
   return [0, 1/x, x];
 }
+//Provides: caml_ldexp_float const
 function caml_ldexp_float (x,exp) {
   exp |= 0;
   if (exp > 1023) {
@@ -81,6 +84,7 @@ function caml_ldexp_float (x,exp) {
   x *= Math.pow(2, exp);
   return x;
 }
+//Provides: caml_frexp_float const
 function caml_frexp_float (x) {
   if ((x == 0) || !isFinite(x)) return [0, x, 0];
   var neg = x < 0;
@@ -92,6 +96,7 @@ function caml_frexp_float (x) {
   return [0, x, exp];
 }
 
+//Provides: caml_float_compare const
 function caml_float_compare (x, y) {
   if (x === y) return 0;
   if (x < y) return -1;
@@ -102,10 +107,14 @@ function caml_float_compare (x, y) {
 }
 
 // These four functions only give approximate results.
+//Provides: caml_log10_float const
 function caml_log10_float (x) { return Math.LOG10E * Math.log(x); }
+//Provides: caml_cosh_float const
 function caml_cosh_float (x) { return (Math.exp(x) + Math.exp(-x)) / 2; }
+//Provides: caml_sinh_float const
 function caml_sinh_float (x) { return (Math.exp(x) - Math.exp(-x)) / 2; }
-function caml_tanh (x) {
+//Provides: caml_tanh_float const
+function caml_tanh_float (x) {
   var y = Math.exp(x), z = Math.exp(-x);
   return (y + z) / (y - z);
 }
