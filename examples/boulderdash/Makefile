@@ -1,16 +1,17 @@
 
 OCAML2JS=../../ocaml2js
+JSFILES=../../runtime/runtime.js
+OCAMLC=ocamlfind ocamlc -package lwt -pp "camlp4o ../../lib/pa_js.cmo" -I ../../lib
+STDLIB=ocaml2js.cma
 
-boulderdash.js: boulderdash $(OCAML2JS)
-	$(OCAML2JS) boulderdash
+boulderdash.js: boulderdash $(OCAML2JS) $(JSFILES)
+	$(OCAML2JS) $(JSFILES) boulderdash
 
 boulderdash: boulderdash.cmo
-	ocamlfind ocamlc -package lwt -linkpkg -o boulderdash \
-		-I ../../lib ocaml2js.cma \
-		boulderdash.cmo
+	$(OCAMLC) -linkpkg -o $@ $(STDLIB) $^
 
 %.cmo: %.ml ../../lib/ocaml2js.cma
-	ocamlfind ocamlc -package lwt -pp "camlp4o ../../lib/pa_js.cmo" -I ../../lib -g -c $<
+	$(OCAMLC) -g -c $<
 
 %.cmi: %.mli
 	ocamlc -g -c $<

@@ -1,5 +1,7 @@
 Priorities
 ==========
+- linker: get javascript files from the command line + standard library
+
 - Format.sprintf "%d" is miscompiled (nested loop...)
 
 - value hash and comparison
@@ -30,11 +32,6 @@ Priorities
 - improved string implementation
   ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
       byte array
-
-- merge all source files (including javascript) into a single file
-- there should be a way to pass a list of know primitives (and their
-  properties: pure, ...) to the compiler and get a warning for missing
-  primitives
 
 - take examples from http://shootout.alioth.debian.org/?
 

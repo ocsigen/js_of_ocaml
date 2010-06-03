@@ -224,7 +224,7 @@ function caml_lessthan (x, y) { return +(caml_compare(x,y) < 0); }
 //Provides: caml_create_string const
 //Requires: MlString
 function caml_create_string(len) { return new MlString(len); }
-//Provides: caml_fill_string mutable
+//Provides: caml_fill_string
 function caml_fill_string(s, i, l, c) { s.fill (i, l, c); return 0; }
 //Provides: caml_string_compare mutable
 function caml_string_compare(s1, s2) { return s1.compare(s2); }
@@ -234,7 +234,7 @@ function caml_string_equal(s1, s2) { return +s1.equal(s2); }
 function caml_string_notequal(s1, s2) { return +s1.notEqual(s2); }
 //Provides: caml_is_printable const
 function caml_is_printable(c) { return +(c > 31 && c < 127); }
-//Provides: caml_blit_string mutable
+//Provides: caml_blit_string
 function caml_blit_string(s1, i1, s2, i2, len) {
   s2.replace (i2, s1.contents, i1, len); return 0;
 }

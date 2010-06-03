@@ -1,18 +1,19 @@
 
 OCAML2JS=../../ocaml2js
+JSFILES=../../runtime/runtime.js
+OCAMLC=ocamlfind ocamlc -package lwt -pp "camlp4o ../../lib/pa_js.cmo" -I ../../lib
+STDLIB=ocaml2js.cma
 
 OBJS=minesweeper.cmo main.cmo
 
-minesweeper.js: minesweeper $(OCAML2JS)
-	$(OCAML2JS) minesweeper
+minesweeper.js: minesweeper $(OCAML2JS) $(JSFILES)
+	$(OCAML2JS) $(JSFILES) minesweeper
 
 minesweeper: $(OBJS)
-	ocamlfind ocamlc -package lwt -linkpkg -o minesweeper \
-		-I ../../lib ocaml2js.cma \
-		$(OBJS)
+	$(OCAMLC) -linkpkg -o $@ $(STDLIB) $^
 
 %.cmo: %.ml ../../lib/ocaml2js.cma
-	ocamlc -pp "camlp4o ../../lib/pa_js.cmo" -I ../../lib -g -c $<
+	$(OCAMLC) -g -c $<
 
 main.cmo: minesweeper.cmo
 

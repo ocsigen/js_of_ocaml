@@ -1,9 +1,8 @@
 
 let debug = Util.debug "main"
 
-let f file =
-
-Linker.add_file "/home/vouillon/misc/ocaml2js/runtime/runtime.js";
+let f js_files file =
+  List.iter Linker.add_file js_files;
 
   let p =
     match file with
@@ -64,11 +63,16 @@ if debug () then Code.print_program (fun _ _ -> "") p;
       close_out ch
 
 let _ =
+  let js_files = ref [] in
   let file = ref None in
   Arg.parse
     [("-debug", Arg.String Util.set_debug, "debug module xxx");
      ("-pretty", Arg.Unit Generate.set_pretty, "pretty print the output");
      ("-noinline", Arg.Unit Inline.disable_inlining, "disable inlining")]
-    (fun s -> file := Some s)
+    (fun s ->
+       if Filename.check_suffix s ".js" then
+         js_files := s :: !js_files
+       else
+         file := Some s)
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  f !file
+  f (List.rev !js_files) !file

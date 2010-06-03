@@ -193,7 +193,7 @@ let rec expression l f e =
       if l > 15 then Format.fprintf f ")@]"
   | ENew (e, None) ->
       if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<1>new %a@]" (expression 15) e;
+      Format.fprintf f "@[<1>new %a@]" (expression 16) e;
       if l > 15 then Format.fprintf f ")@]"
   | ENew (e, Some el) ->
       if l > 15 then Format.fprintf f "@[<1>(";

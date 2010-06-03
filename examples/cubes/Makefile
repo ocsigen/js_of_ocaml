@@ -1,16 +1,17 @@
 
 OCAML2JS=../../ocaml2js
+JSFILES=../../runtime/runtime.js
+OCAMLC=ocamlfind ocamlc -package lwt -pp "camlp4o ../../lib/pa_js.cmo" -I ../../lib
+STDLIB=ocaml2js.cma
 
-cubes.js: cubes $(OCAML2JS)
-	$(OCAML2JS) cubes -pretty
+cubes.js: cubes $(OCAML2JS) $(JSFILES)
+	$(OCAML2JS) $(JSFILES) cubes
 
 cubes: cubes.cmo
-	ocamlfind ocamlc -package lwt -linkpkg -o cubes \
-		-I ../../lib ocaml2js.cma \
-		cubes.cmo
+	$(OCAMLC) -linkpkg -o $@ $(STDLIB) $^
 
 %.cmo: %.ml ../../lib/ocaml2js.cma
-	ocamlfind ocamlc -package lwt -pp "camlp4o ../../lib/pa_js.cmo" -I ../../lib -g -c $<
+	$(OCAMLC) -g -c $<
 
 %.cmi: %.mli
 	ocamlc -g -c $<
