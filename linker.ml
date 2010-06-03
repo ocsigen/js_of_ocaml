@@ -3,7 +3,12 @@ let ws_opt = "[ \t]*"
 let ws = "[ \t]+"
 let ident = "[a-zA-Z$_][a-zA-Z$_0-9]*"
 
-let comment_rx = Str.regexp (Format.sprintf "^$\\|^%s//" ws_opt)
+let comment_rx =
+  Str.regexp
+    (String.concat "\\|"
+       [Format.sprintf "^%s$" ws_opt;
+        Format.sprintf "^%s//" ws_opt;
+        Format.sprintf "^%s/[*]\\([^*]\\|[*][^/]\\)*[*]/%s$" ws_opt ws_opt])
 
 let provides_start_rx =
   Str.regexp (Format.sprintf "^//%sProvides:" ws_opt)
@@ -154,7 +159,7 @@ let rec resolve_dep f visited path loc nm =
       error loc (Format.sprintf "missing dependency '%s'@." nm)
   in
   if Util.IntSet.mem id visited then begin
-    if List.mem_assoc id path then error loc "circular dependency";
+(*    if List.mem_assoc id path then error loc "circular dependency";*)
     visited
   end else begin
     let visited = Util.IntSet.add id visited in

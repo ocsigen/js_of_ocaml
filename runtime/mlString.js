@@ -4,6 +4,7 @@
 // catch URIError exceptions in conversion from/to UTF-8 (?)
 
 //Provides: MlString
+//Requires: caml_array_bound_error
 function MlString(param) {
     switch (typeof param) {
     case "number":
