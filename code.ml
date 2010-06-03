@@ -20,6 +20,7 @@ module VarPrinter = struct
   let c2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
 
   let rec format_var x =
+    assert (x >= 0);
     let char c x = String.make 1 (c.[x]) in
     if x < 54 then
        char c1 x
@@ -40,6 +41,8 @@ module VarPrinter = struct
         s
       end
 end
+
+let string_of_ident = VarPrinter.format_var
 
 let add_reserved_name = VarPrinter.add_reserved
 

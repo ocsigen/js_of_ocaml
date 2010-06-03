@@ -77,8 +77,8 @@ and statement =
   | Return_statement of expression option
 (*
   | With_statement
-  | Labelled_statement
 *)
+  | Labelled_statement of identifier * statement
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
   | Try_statement of block * (identifier * block) option * block option

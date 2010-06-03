@@ -1,6 +1,5 @@
 Priorities
 ==========
-- Format.sprintf "%d" is miscompiled (nested loop...)
 
 Runtime
 -------

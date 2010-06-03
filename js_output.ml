@@ -328,6 +328,8 @@ and statement f s =
                   (* There must be a space between the return and its
                      argument. A line return would not work *)
       end
+  | Labelled_statement (i, s) ->
+      Format.fprintf f "%s:@,%a" i statement s
   | Switch_statement (e, cc, def) ->
       Format.fprintf f "@[<1>switch@,(%a)@,{@," (expression 0) e;
       List.iter

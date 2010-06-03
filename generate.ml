@@ -173,6 +173,7 @@ type state =
     backs : (int, AddrSet.t) Hashtbl.t;
     preds : (int, int) Hashtbl.t;
     mutable loops : AddrSet.t;
+    mutable loop_stack : (addr * (int ref * int)) list;
     mutable visited_blocks : AddrSet.t;
     mutable interm_idx : int;
     ctx : Ctx.t; mutable blocks : Code.block AddrMap.t }
@@ -798,9 +799,11 @@ Format.eprintf ")@.";
     st.visited_blocks <- AddrSet.add pc st.visited_blocks
   end;
   if debug () then begin
-    if AddrSet.mem pc st.loops then Format.eprintf "@[<2>while (1) {@,";
-    Format.eprintf "block %d;" pc
+    if AddrSet.mem pc st.loops then Format.eprintf "@[<2>for(;;){@,";
+    Format.eprintf "block %d;@ " pc
   end;
+  if AddrSet.mem pc st.loops then
+    st.loop_stack <- (pc, (ref (-1), 0)) :: st.loop_stack;
   let succs = Hashtbl.find st.succs pc in
   let backs = Hashtbl.find st.backs pc in
   (* Remove limit *)
@@ -811,6 +814,11 @@ Format.eprintf ")@.";
       succs AddrSet.empty
   in
   let new_frontier = resolve_nodes interm grey in
+(*
+Format.eprintf "<<%d:" pc;
+AddrSet.iter (fun pc -> Format.eprintf " %d" pc) frontier;
+Format.eprintf ">>@ ";
+*)
   let block = AddrMap.find pc st.blocks in
   let (seq, queue) = translate_instr st.ctx queue block.body in
   let body =
@@ -842,7 +850,7 @@ Format.eprintf "===== %d ===== (%b)@." pc3 limit_body;
           let m = Subst.build_mapping args2 block2.params in
           try VarMap.find x m with Not_found -> x
         in
-        if debug () then Format.eprintf "}@]";
+        if debug () then Format.eprintf "}@]@ ";
         if limit_body then decr_preds st pc3;
         flush_all queue
           (J.Try_statement (Js_simpl.statement_list body,
@@ -925,16 +933,29 @@ res
 *)
   in
   if AddrSet.mem pc st.loops then begin
-    [J.For_statement
-       (None, None, None,
-        Js_simpl.block
-          (if AddrSet.cardinal new_frontier > 0 then begin
-             if debug () then Format.eprintf "@ break; }@]";
-             body @ [J.Break_statement None]
-           end else begin
-             if debug () then Format.eprintf "}@]";
-             body
-           end))]
+    let label =
+      match st.loop_stack with
+        (_, (l, _)) :: r -> st.loop_stack <- r; !l
+      | []               -> assert false
+    in
+    let st =
+      J.For_statement
+        (None, None, None,
+         Js_simpl.block
+           (if AddrSet.cardinal frontier > 0 then begin
+              if debug () then
+                Format.eprintf "@ break (%d); }@]"
+                  (AddrSet.choose new_frontier);
+              body @ [J.Break_statement None]
+            end else begin
+              if debug () then Format.eprintf "}@]";
+              body
+            end))
+    in
+    if label = -1 then
+      [st]
+    else
+      [J.Labelled_statement (Code.string_of_ident label, st)]
   end else
     body
 end
@@ -959,7 +980,15 @@ Format.eprintf "====@.";
 and compile_conditional st queue pc last handler backs frontier interm =
   let succs = Hashtbl.find st.succs pc in
   List.iter (fun pc -> if AddrMap.mem pc interm then decr_preds st pc) succs;
-  if debug () then Format.eprintf "@[<2>switch{";
+  if debug () then begin
+    match last with
+      Branch _ | Poptrap _ | Pushtrap _ -> ()
+    | Return _ -> Format.eprintf "ret"
+    | Raise _ -> Format.eprintf "raise"
+    | Stop -> Format.eprintf "stop"
+    | Cond _ -> Format.eprintf "@[<hv 2>cond{@,"
+    | Switch _ -> Format.eprintf "@[<hv 2>switch{@,"
+  end;
   let res =
   match last with
     Return x ->
@@ -1060,7 +1089,11 @@ and compile_conditional st queue pc last handler backs frontier interm =
   | Poptrap cont ->
       flush_all queue (compile_branch st [] cont None backs frontier interm)
   in
-  if debug () then Format.eprintf "}@.";
+  if debug () then begin
+    match last with
+      Branch _ | Poptrap _ | Pushtrap _ | Return _ | Raise _ | Stop -> ()
+    | Switch _ | Cond _ -> Format.eprintf "}@]@ "
+  end;
   res
 
 and compile_argument_passing ctx queue (pc, args) continuation =
@@ -1133,10 +1166,33 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
   compile_argument_passing st.ctx queue cont (fun queue ->
   compile_exn_handling st.ctx queue cont handler (fun queue ->
   if AddrSet.mem pc backs then begin
-    if debug () then Format.eprintf "@ continue;";
-    flush_all queue [J.Continue_statement None]
+    let label =
+      match st.loop_stack with
+        [] ->
+          assert false
+      | (pc', _) :: rem ->
+          if pc = pc' then
+            None
+          else begin
+            let (lab, min) = List.assoc pc rem in
+            if !lab = -1 then begin
+              lab := min;
+              st.loop_stack <-
+                List.map (fun (pc, (lab, min)) -> (pc, (lab, min + 1)))
+                  st.loop_stack
+            end;
+            Some (Code.string_of_ident !lab)
+          end
+    in
+    if debug () then begin
+      if label = None then
+        Format.eprintf "continue;@ "
+      else
+        Format.eprintf "continue (%d);@ " pc
+    end;
+    flush_all queue [J.Continue_statement label]
   end else if AddrSet.mem pc frontier || AddrMap.mem pc interm then begin
-    if debug () then Format.eprintf "@ (br %d)" pc;
+    if debug () then Format.eprintf "(br %d)@ " pc;
     flush_all queue (compile_branch_selection pc interm)
   end else
     compile_block st queue pc frontier interm))
@@ -1152,7 +1208,7 @@ and compile_branch_selection pc interm =
 
 and compile_closure ctx (pc, args) =
   let st =
-    { visited_blocks = AddrSet.empty; loops = AddrSet.empty;
+    { visited_blocks = AddrSet.empty; loops = AddrSet.empty; loop_stack = [];
       all_succs = Hashtbl.create 17; succs = Hashtbl.create 17;
       backs = Hashtbl.create 17; preds = Hashtbl.create 17;
       interm_idx = -1; ctx = ctx; blocks = ctx.Ctx.blocks }
@@ -1160,7 +1216,7 @@ and compile_closure ctx (pc, args) =
   build_graph st pc AddrSet.empty;
   let current_blocks = st.visited_blocks in
   st.visited_blocks <- AddrSet.empty;
-  if debug () then Format.eprintf "@[<2>closure{";
+  if debug () then Format.eprintf "@[<hov 2>closure{@,";
   let res =
     compile_branch st [] (pc, args) None
       AddrSet.empty AddrSet.empty AddrMap.empty
@@ -1170,7 +1226,7 @@ and compile_closure ctx (pc, args) =
   then begin
     Format.eprintf "Some blocks not compiled!@."; assert false
   end;
-  if debug () then Format.eprintf "}@]";
+  if debug () then Format.eprintf "}@]@ ";
   Js_simpl.source_elements res
 
 let compile_program ctx pc =

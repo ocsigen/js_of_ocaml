@@ -16,6 +16,8 @@ module Var : sig
   val compare : t -> t -> int
 end
 
+val string_of_ident : int -> string
+
 module VarSet : Set.S with type elt = Var.t
 module VarMap : Map.S with type key = Var.t
 
