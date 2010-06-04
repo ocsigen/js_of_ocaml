@@ -1,12 +1,8 @@
 Priorities
 ==========
-- fix the way we generate loop label...
-
 Runtime
 -------
 - value hash and comparison
-- formatting functions (caml_format_int, caml_int64_format,
-  caml_format_float...)
 - marshalling
 - md5 computation (cleanup)
 - improved string implementation

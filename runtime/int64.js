@@ -156,7 +156,7 @@ function caml_int64_shift_right (x, s) {
 function caml_int64_lsl1 (x) {
   x[3] = (x[3] << 1) | (x[2] >> 23);
   x[2] = ((x[2] << 1) | (x[1] >> 23)) & 0xffffff;
-  x[1] = x[1] << 1;
+  x[1] = (x[1] << 1) & 0xffffff;
 }
 
 //Provides: caml_int64_lsr1 const
@@ -240,4 +240,25 @@ function caml_int64_of_double (x) {
           Math.floor(x * caml_int64_offset) & 0xffffff,
           Math.floor(x * caml_int64_offset * caml_int64_offset) & 0xffff];
 }
-//FIX: caml_int64_format
+
+//Provides: caml_int64_format const
+//Requires: caml_parse_format, caml_finish_formatting
+//Requires: caml_int64_is_negative, caml_int64_neg
+//Requires: caml_int64_of_int32, caml_int64_udivmod, caml_int64_to_int32
+//Requires: caml_int64_is_zero
+function caml_int64_format (fmt, x) {
+  var f = caml_parse_format(fmt);
+  if (f.signedconv && caml_int64_is_negative(x)) {
+    f.sign = -1; x = caml_int64_neg(x);
+  }
+  var buffer = "";
+  var wbase = caml_int64_of_int32(f.base);
+  var cvtbl = "0123456789abcdef";
+  do {
+    var p = caml_int64_udivmod(x, wbase);
+    x = p[1];
+    buffer = f.cvtbl.charAt(caml_int64_to_int32(p[2])) + buffer;
+  } while (! caml_int64_is_zero(x));
+  return caml_finish_formatting(f, buffer);
+}
+

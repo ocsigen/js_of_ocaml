@@ -8,7 +8,7 @@ let comment_rx =
     (String.concat "\\|"
        [Format.sprintf "^%s$" ws_opt;
         Format.sprintf "^%s//" ws_opt;
-        Format.sprintf "^%s/[*]\\([^*]\\|[*][^/]\\)*[*]/%s$" ws_opt ws_opt])
+        Format.sprintf "^%s/[*]\\([^*]\\|[*]+[^/]\\)*[*]/%s$" ws_opt ws_opt])
 
 let provides_start_rx =
   Str.regexp (Format.sprintf "^//%sProvides:" ws_opt)
