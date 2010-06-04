@@ -47,8 +47,10 @@ let send_request url callback postData =
                  Js.string "application/x-www-form-urlencoded"));
   req##onreadystatechange <- Js.some
     (fun () ->
+       (* For local files, req##status is 0 on success... *)
        if
-         req##readyState = DONE && (req##status = 200 || req##status = 304)
+         req##readyState = DONE &&
+         (req##status = 0 || req##status = 200 || req##status = 304)
        then
          callback req);
   if req##readyState <> DONE then req##send (postData)

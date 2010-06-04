@@ -173,7 +173,7 @@ type state =
     backs : (int, AddrSet.t) Hashtbl.t;
     preds : (int, int) Hashtbl.t;
     mutable loops : AddrSet.t;
-    mutable loop_stack : (addr * (int ref * int)) list;
+    mutable loop_stack : (addr * (int * bool ref)) list;
     mutable visited_blocks : AddrSet.t;
     mutable interm_idx : int;
     ctx : Ctx.t; mutable blocks : Code.block AddrMap.t }
@@ -802,8 +802,11 @@ Format.eprintf ")@.";
     if AddrSet.mem pc st.loops then Format.eprintf "@[<2>for(;;){@,";
     Format.eprintf "block %d;@ " pc
   end;
-  if AddrSet.mem pc st.loops then
-    st.loop_stack <- (pc, (ref (-1), 0)) :: st.loop_stack;
+  if AddrSet.mem pc st.loops then begin
+    let lab =
+      match st.loop_stack with (_, (l, _)) :: _ -> l + 1 | [] -> 0 in
+    st.loop_stack <- (pc, (lab, ref false)) :: st.loop_stack
+  end;
   let succs = Hashtbl.find st.succs pc in
   let backs = Hashtbl.find st.backs pc in
   (* Remove limit *)
@@ -935,8 +938,8 @@ res
   if AddrSet.mem pc st.loops then begin
     let label =
       match st.loop_stack with
-        (_, (l, _)) :: r -> st.loop_stack <- r; !l
-      | []               -> assert false
+        (_, (l, used)) :: r -> st.loop_stack <- r; if !used then l else -1
+      | []                  -> assert false
     in
     let st =
       J.For_statement
@@ -1174,14 +1177,9 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
           if pc = pc' then
             None
           else begin
-            let (lab, min) = List.assoc pc rem in
-            if !lab = -1 then begin
-              lab := min;
-              st.loop_stack <-
-                List.map (fun (pc, (lab, min)) -> (pc, (lab, min + 1)))
-                  st.loop_stack
-            end;
-            Some (Code.string_of_ident !lab)
+            let (lab, used) = List.assoc pc rem in
+            used := true;
+            Some (Code.string_of_ident lab)
           end
     in
     if debug () then begin

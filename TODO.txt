@@ -1,16 +1,22 @@
 Priorities
 ==========
+- fix the way we generate loop label...
 
 Runtime
 -------
 - value hash and comparison
+- formatting functions (caml_format_int, caml_int64_format,
+  caml_format_float...)
 - marshalling
 - md5 computation (cleanup)
+- improved string implementation
+  ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
+      byte array
 
 Packaging
 ---------
 - ocamlfind packages
-- linker: standard library
+- linker: standard library (through ocamlfind...)
 
 - add a comment at the beginning of the generated code:
   "Compiled from OCaml using ocaml2js 0.1"
@@ -26,10 +32,6 @@ Libraries
   ===> implement at least an interesting subset of the google closure API
 - should we rely on automatic conversions for float/string/bool?
   ==> does not always work (for instance, strokeStyle method for canvas)
-
-- improved string implementation
-  ==> three possible representation : UTF-16 encoding, UTF-8 encoding,
-      byte array
 
 Examples
 --------
