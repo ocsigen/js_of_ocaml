@@ -136,8 +136,7 @@ function caml_array_get (array, index) {
 
 //Provides: caml_make_vect const
 function caml_make_vect (len, init) {
-  var b = [];
-  b[0] = 0;
+  var b = [0];
   for (var i = 1; i <= len; i++) b[i] = init;
   return b;
 }
@@ -347,7 +346,7 @@ function caml_finish_formatting(f, rawbuffer) {
 //Provides: caml_format_int const
 //Requires: caml_parse_format, caml_finish_formatting
 function caml_format_int(fmt, i) {
-  if (fmt.toString() == "%d") return ""+i;
+  if (fmt.toString() == "%d") return new MlString(""+i);
   var f = caml_parse_format(fmt);
   if (i < 0) { if (f.signedconv) { f.sign = -1; i = -i; } else i >>>= 0; }
   var s = i.toString(f.base);

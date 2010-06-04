@@ -10,9 +10,6 @@ Runtime
 - marshalling
 - caml_int64_of_string/caml_int_of_string
 
-- caml_lex_engine/caml_new_lex_engine
-- caml_parse_engine/caml_set_parser_trace
-
 Packaging
 ---------
 - ocamlfind packages
@@ -46,6 +43,8 @@ Compiler optimizations
 ======================
 - fix control.ml
 
+- detect caml_format_int("%d", ...)
+
 - multiplication:
     optimization when one argument is known to be small (< 20 bits)
   similarly for div/sub when argument not zero and no overflow
@@ -77,6 +76,11 @@ Compiler optimizations
   ==> deadcode elimination inside blocks
   (for instance, elimination of function which are defined in a
    functor but are not used)
+
+RUNTIME
+=======
+- caml_lex_engine/caml_new_lex_engine
+- caml_parse_engine/caml_set_parser_trace
 
 DOM
 ===
