@@ -43,7 +43,9 @@ Compiler optimizations
 ======================
 - fix control.ml
 
-- detect caml_format_int("%d", ...)
+- no need to convert to integer after multiplication or division
+
+- detect caml_format_int("%d", x) and generate ""+x
 
 - multiplication:
     optimization when one argument is known to be small (< 20 bits)
