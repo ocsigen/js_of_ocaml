@@ -70,8 +70,27 @@ function caml_update_dummy (x, y) {
   return 0;
 }
 
+//Provides: caml_obj_is_block const
+function caml_obj_is_block (x) { return +(x instanceof Array); }
 //Provides: caml_obj_tag const
 function caml_obj_tag (x) { return (x instanceof Array)?x[0]:1000; }
+//Provides: caml_obj_set_tag
+function caml_obj_tag (x, tag) { x[0] = tag; return 0; }
+//Provides: caml_obj_block const
+function caml_obj_block (tag, size) {
+  var o = [tag];
+  for (var i = 1; i <= size; i++) o[i] = 0;
+  return o;
+}
+//Provides: caml_obj_dup mutable
+function caml_obj_dup (x) { return x.slice(); }
+//Provides: caml_obj_truncate
+function caml_obj_truncate (x, s) { x.length = s + 1; return 0; }
+
+//Provides: caml_lazy_make_forward
+function caml_lazy_make_forward (v) {
+  return [250, v];
+}
 
 //Provides: caml_mul const
 function caml_mul(x,y) {
@@ -328,11 +347,9 @@ function caml_finish_formatting(f, rawbuffer) {
 //Provides: caml_format_int const
 //Requires: caml_parse_format, caml_finish_formatting
 function caml_format_int(fmt, i) {
+  if (fmt.toString() == "%d") return ""+i;
   var f = caml_parse_format(fmt);
-  if (i < 0) {
-    if (f.signedconv) { f.sign = -1; i = -i; }
-    else i >>>= 0;
-  }
+  if (i < 0) { if (f.signedconv) { f.sign = -1; i = -i; } else i >>>= 0; }
   var s = i.toString(f.base);
   return caml_finish_formatting(f, s);
 }
@@ -342,11 +359,9 @@ function caml_format_int(fmt, i) {
 function caml_format_float (fmt, x) {
   var s, f = caml_parse_format(fmt);
   if (x < 0) { f.sign = -1; x = -x; }
-  if (isNaN(x)) {
-    s = "nan"; f.filler = ' ';
-  } else if (!isFinite(x)) {
-    s = "inf"; f.filler = ' ';
-  } else
+  if (isNaN(x)) { s = "nan"; f.filler = ' '; }
+  else if (!isFinite(x)) { s = "inf"; f.filler = ' '; }
+  else
     switch (f.conv) {
     case 'e':
       var s = x.toExponential(f.prec);
