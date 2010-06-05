@@ -12,7 +12,7 @@ function caml_call_gen(f, args) {
 }
 
 //Provides: caml_named_values
-var caml_named_values = [];
+var caml_named_values = {};
 
 //Provides: caml_register_named_value
 //Requires: caml_named_values

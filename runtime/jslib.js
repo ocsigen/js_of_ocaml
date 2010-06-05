@@ -27,12 +27,12 @@ function caml_js_get(o,f) { return o[f]; }
 function caml_js_var(x) { eval(x); }
 //Provides: caml_js_const const
 function caml_js_const(x) {
-    switch (caml_string_to_js(x)) {
-    case "null": return null;
-    case "true": return true;
-    case "false": return false;
-    }
-    // return undefined;
+  switch (caml_string_to_js(x)) {
+  case "null": return null;
+  case "true": return true;
+  case "false": return false;
+  // case "undefined: return undefined;
+  }
 }
 //Provides: caml_js_meth_call
 function caml_js_meth_call(o, f, args) { return f.apply(o, args.slice(1)); }

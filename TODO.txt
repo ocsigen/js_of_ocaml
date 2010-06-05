@@ -12,6 +12,7 @@ Runtime
 
 Packaging
 ---------
+- share makefile contents in examples
 - ocamlfind packages
 - linker: standard library (through ocamlfind...)
 
@@ -19,6 +20,7 @@ Packaging
   "Compiled from OCaml using ocaml2js 0.1"
 
 - reorganize source tree
+  ==> move compiler to a subtree
 - licenses
 
 Libraries

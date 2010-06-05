@@ -1099,30 +1099,27 @@ and compile code limit pc state instrs =
       let z = State.peek 0 state in
       let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = %a - %a@." Var.print x Var.print y Var.print z;
+      if debug () then
+        Format.printf "%a = %a - %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (WrapInt, [Pv x'])) ::
          Let (x', Prim (Extern "%int_sub", [Pv y; Pv z])) :: instrs)
   | MULINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
-      let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
       if debug () then
         Format.printf "%a = %a * %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (WrapInt, [Pv x'])) ::
-         Let (x', Prim (Extern "%int_mul", [Pv y; Pv z])) :: instrs)
+        (Let (x, Prim (Extern "%int_mul", [Pv y; Pv z])) :: instrs)
   | DIVINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
-      let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
       if debug () then
         Format.printf "%a = %a / %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (WrapInt, [Pv x'])) ::
-         Let (x', Prim (Extern "%int_div", [Pv y; Pv z])) :: instrs)
+        (Let (x, Prim (Extern "%int_div", [Pv y; Pv z])) :: instrs)
   | MODINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
