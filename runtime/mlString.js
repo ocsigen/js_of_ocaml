@@ -1,3 +1,12 @@
+// Invariants
+// ==========
+// At any time, at least one property of "string", "bytes" or "array"
+// is set; if several are set, then their values must correspond.
+// If "bytes" is set, then properties "len" and "last" are also set.
+// If "array" is set, properties "len" and "last" are also set.
+// Properties "len" and "last" may have different values only when
+// "string" and "array" are both null.
+
 //Provides: MlString
 function caml_str_repeat(n, s) {
   if (!n) { return ""; }
@@ -16,17 +25,17 @@ function MlString(param) {
 MlString.prototype = {
   string:null, // JS string
   bytes:null,  // byte string
+  array:null,  // byte array
   len:null,    // length
   last:0,      // last initialized byte
-  array:null,  // byte array
 
   toJsString:function() {
-    // assumes !this.string
+    // assumes this.string == null
     return this.string = decodeURIComponent (escape(this.toFullBytes()));
   },
 
   toBytes:function() {
-    // assumes !this.bytes
+    // assumes this.bytes == null
     if (this.string != null)
       var b = unescape (encodeURIComponent (this.string));
     else {
@@ -50,7 +59,7 @@ MlString.prototype = {
   },
 
   toArray:function() {
-    // assumes !this.array
+    // assumes this.array == null
     var b = this.bytes;
     if (b == null) b = this.toBytes ();
     var a = [], l = this.last;
@@ -76,15 +85,9 @@ MlString.prototype = {
     return this.bytes;
   },
 
-  toString:function() {
-    var s = this.string;
-    return s?s:this.toJsString();
-  },
+  toString:function() { var s = this.string; return s?s:this.toJsString(); },
 
-  valueOf:function() {
-    var s = this.string;
-    return s?s:this.toJsString();
-  },
+  valueOf:function() { var s = this.string; return s?s:this.toJsString(); },
 
   blit:function(i1, s2, i2, l) {
     if (l == 0) return 0;
@@ -189,14 +192,9 @@ MlString.prototype = {
 }
 
 // Conversion Javascript -> Caml
-function MlWrappedString (s) {
-  this.string = s;
-}
+function MlWrappedString (s) { this.string = s; }
 MlWrappedString.prototype = new MlString();
 
 // Uninitialized Caml string
-function MlMakeString (l) {
-  this.bytes = "";
-  this.len = l;
-}
+function MlMakeString (l) { this.bytes = ""; this.len = l; }
 MlMakeString.prototype = new MlString ();

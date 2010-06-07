@@ -238,6 +238,63 @@ function caml_lessequal (x, y) { return +(caml_compare(x,y) <= 0); }
 //Requires: caml_compare
 function caml_lessthan (x, y) { return +(caml_compare(x,y) < 0); }
 
+//Provides: caml_parse_sign_and_base
+//Requires: MlString
+function caml_parse_sign_and_base (s) {
+  var i = 0;
+  var sign = s.get(0) == 45?(i++,-1):1;
+  var base = 10;
+  if (s.get(i) == 48) {
+    switch (s.get(i + 1)) {
+    case 120: case 88:
+      base = 16; i += 2; break;
+    case 111: case 79:
+      base = 8; i += 2; break;
+    case 98: case 66:
+      base = 2; i += 2; break;
+    }
+  }
+  return [i, sign, base];
+}
+
+//Provides: caml_parse_digit
+function caml_parse_digit(c)
+{
+  if (c >= 48 && c <= 57)
+    return c - 48;
+  else if (c >= 65 && c <= 90)
+    return c - 55;
+  else if (c >= 97 && c <= 122)
+    return c - 87;
+  else
+    return -1;
+}
+
+//Provides: caml_int_of_string
+//Requires: caml_parse_sign_and_base, caml_parse_digit, MlString, caml_failwith
+function caml_int_of_string (s) {
+  var r = caml_parse_sign_and_base (s);
+  var i = r[0], sign = r[1], base = r[2];
+  var threshold = -1 >>> 0;
+  var c = s.get(i);
+  var d = caml_parse_digit(c);
+  if (d < 0 || d >= base) caml_failwith("int_of_string");
+  var res = d;
+  for (;;) {
+    i++;
+    c = s.get(i);
+    if (c == 95) continue;
+    d = caml_parse_digit(c);
+    if (d < 0 || d >= base) break;
+    res = base * res + d;
+    if (res > threshold) caml_failwith("int_of_string");
+  }
+  if (i != s.getLen()) caml_failwith("int_of_string");
+  res = sign * res;
+  if ((res | 0) != res) caml_failwith("int_of_string");
+  return sign * res;
+}
+
 ///////////// String
 //Provides: caml_create_string const
 //Requires: MlString

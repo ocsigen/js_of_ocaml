@@ -1,16 +1,28 @@
 Priorities
 ==========
-Runtime
+Runtime                                                  <======
 -------
-- document mlString.js a bit (tricky invariants)
 - md5 computation (cleanup)
 - value hash and comparison
 - marshalling
-- caml_int64_of_string/caml_int_of_string
+- caml_int64_of_string
+
+Libraries
+---------
+- finish js API
+  ===> event callbacks                                   <======
+       ==> how can we invoke a previous callback?
+  ===> dom object creation (especially, INPUT)
+- event handlers:                                        <======
+  ==> use a wrapper:
+	  if (!e) e = window.event;
+          ....
+  ==> we want to be able to access this
+      (avoid memory leaks...)
+  ==> either a function, undefined or null
 
 Packaging
 ---------
-- share makefile contents in examples
 - ocamlfind packages
 - linker: standard library (through ocamlfind...)
 
@@ -21,21 +33,15 @@ Packaging
   ==> move compiler to a subtree
 - licenses
 
-Libraries
----------
-- finish js API
-  ===> dom object creation (especially, INPUT)
-  ===> event callbacks
-
-Benchmarks
-==========
+Benchmarks/examples
+===================
 - take examples from http://shootout.alioth.debian.org/?
+- planets (+satellites?) ===> Runge-Kutta
 
 Design notes
 ============
 - should we rely on automatic conversions for float/string/bool?
   ==> does not always work (for instance, strokeStyle method for canvas)
-
 
 Known issues
 ============
@@ -86,17 +92,6 @@ RUNTIME
 =======
 - caml_lex_engine/caml_new_lex_engine
 - caml_parse_engine/caml_set_parser_trace
-
-DOM
-===
-- event handlers:
-  ==> use a wrapper:
-	  if (!e) e = window.event;
-          ....
-  ==> we want to be able to access this
-      (avoid memory leaks...)
-  ==> either a function, undefined or null
-
 
 ==========================
 ==========================
