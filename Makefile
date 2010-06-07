@@ -1,6 +1,6 @@
 NAME=ocaml2js
 
-all: compiler library runtime obrowser examples
+all: compiler library runtime examples
 
 compiler: $(NAME)
 

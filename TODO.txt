@@ -3,10 +3,6 @@ Priorities
 Runtime
 -------
 - document mlString.js a bit (tricky invariants)
-- improved string implementation
-  ==> ML strings are *byte* strings, so string constants should be
-      encoded properly and only turned into UTF-8 when necessary
-      ==> specific constructor
 - md5 computation (cleanup)
 - value hash and comparison
 - marshalling
@@ -30,10 +26,9 @@ Libraries
 - finish js API
   ===> dom object creation (especially, INPUT)
   ===> event callbacks
-  ===> implement at least an interesting subset of the google closure API
 
-Examples
---------
+Benchmarks
+==========
 - take examples from http://shootout.alioth.debian.org/?
 
 Design notes
