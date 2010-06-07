@@ -141,7 +141,7 @@ function caml_md5_string (v, ofs, len) {
     for (var i = 0;i < len;i++)
       s[i] = v.get (ofs + i);
     var h = md5(s);
-    var res = new MlString(16);
+    var res = new MlMakeString(16);
     for (var j = 0;j < 16;j++)
       res.set(j, h[j]);
     return res;

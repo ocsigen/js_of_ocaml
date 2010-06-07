@@ -2,9 +2,11 @@ Priorities
 ==========
 Runtime
 -------
+- document mlString.js a bit (tricky invariants)
 - improved string implementation
-  ==> three possible representation : UTF-16 encoding, byte string,
-      byte array
+  ==> ML strings are *byte* strings, so string constants should be
+      encoded properly and only turned into UTF-8 when necessary
+      ==> specific constructor
 - md5 computation (cleanup)
 - value hash and comparison
 - marshalling
@@ -29,12 +31,16 @@ Libraries
   ===> dom object creation (especially, INPUT)
   ===> event callbacks
   ===> implement at least an interesting subset of the google closure API
-- should we rely on automatic conversions for float/string/bool?
-  ==> does not always work (for instance, strokeStyle method for canvas)
 
 Examples
 --------
 - take examples from http://shootout.alioth.debian.org/?
+
+Design notes
+============
+- should we rely on automatic conversions for float/string/bool?
+  ==> does not always work (for instance, strokeStyle method for canvas)
+
 
 Known issues
 ============

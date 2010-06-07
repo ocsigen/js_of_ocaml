@@ -1,6 +1,6 @@
 NAME=ocaml2js
 
-all: compiler library runtime examples
+all: compiler library runtime obrowser examples
 
 compiler: $(NAME)
 
@@ -10,6 +10,9 @@ library:
 .PHONY: runtime
 runtime:
 	make -C runtime
+
+obrowser: library
+	make -C obrowser
 
 examples: compiler library
 	make -C examples
@@ -40,8 +43,10 @@ $(NAME): $(OBJS)
 	ocamlc -c $<
 
 clean:
-	rm -f *.cm[ix] *.o
+	rm -f *.cm[iox] *.o
 	make -C lib clean
+	make -C runtime clean
+	make -C obrowser clean
 	make -C examples clean
 
 depend:

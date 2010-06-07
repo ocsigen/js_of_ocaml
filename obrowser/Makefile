@@ -1,4 +1,4 @@
-JS= startup.js marshall.js obrowser.js ../runtime/mlString.js ../runtime/runtime.js
+JS= startup.js marshall.js obrowser.js ../runtime/runtime.js
 
 all: lwt_obrowser.cma vm.js
 

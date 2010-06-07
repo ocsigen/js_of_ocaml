@@ -87,11 +87,38 @@ let float_val e = e (*J.EAccess (e, one)*)
 
 let float_const f = val_float (J.ENum f)
 
+let string_escape s =
+  let l = String.length s in
+  let n = ref 0 in
+  for i = 0 to l - 1 do
+    let c = Char.code s.[i] in
+    if c < 32 || c > 127 then incr n
+  done;
+  if !n = 0 then s else begin
+    let conv = "0123456789abcdef" in
+    let t = String.create (l + 3 * !n) in
+    let j = ref 0 in
+    for i = 0 to l - 1 do
+      let c = Char.code s.[i] in
+      if c < 32 || c > 127 then begin
+        t.[!j] <- '\\';
+        t.[!j + 1] <- 'x';
+        t.[!j + 2] <- conv.[c lsr 4];
+        t.[!j + 3] <- conv.[c land 0xf];
+        j := !j + 4
+      end else begin
+        t.[!j] <- s.[i];
+        incr j
+      end
+    done;
+    t
+  end
+
 let rec constant x =
   match x with
     String s ->
       Primitive.mark_used "MlString";
-      J.ENew (J.EVar ("MlString"), Some [J.EStr s])
+      J.ENew (J.EVar ("MlString"), Some [J.EStr (string_escape s)])
   | Float f ->
       float_const f
   | Float_array a ->
@@ -532,7 +559,7 @@ let _ =
   register_bin_prim "caml_fmod_float" `Const
     (fun cx cy -> val_float (J.EBin (J.Mod, float_val cx, float_val cy)));
   register_un_prim "caml_ml_string_length" `Const
-    (fun cx -> J.EDot (cx, "length"));
+    (fun cx -> J.ECall (J.EDot (cx, "getLen"), []));
   register_tern_prim "caml_array_unsafe_set"
     (fun cx cy cz ->
        J.EBin (J.Eq, J.EAccess (cx, J.EBin (J.Plus, cy, one)), cz));
@@ -567,7 +594,8 @@ let _ =
     (fun cx -> J.ECall (J.EDot (cx, "toString"), []));
   register_un_prim "caml_js_to_string" `Mutable
     (fun cx ->
-       Primitive.mark_used "MlString"; J.ENew (J.EVar "MlString", Some [cx]));
+       Primitive.mark_used "MlString";
+       J.ENew (J.EVar "MlWrappedString", Some [cx]));
   register_tern_prim "caml_js_set"
     (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable

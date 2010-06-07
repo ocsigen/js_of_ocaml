@@ -12,7 +12,7 @@ function caml_js_to_float(x) { return x; }
 function caml_js_from_string(s) { return s.toString(); }
 //Provides: caml_js_to_string const
 //Requires: MlString
-function caml_js_to_string(s) { return new MlString(s); }
+function caml_js_to_string(s) { return new MlWrappedString(s); }
 //Provides: caml_js_from_array mutable
 function caml_js_from_array(a) { return a.slice(1); }
 //Provides: caml_js_to_array mutable

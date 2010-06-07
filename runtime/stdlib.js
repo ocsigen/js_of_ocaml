@@ -36,7 +36,7 @@ function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 //Provides: caml_raise_with_string
 //Requires: caml_raise_with_arg, MlString
 function caml_raise_with_string (tag, msg) {
-  caml_raise_with_arg (tag, new MlString (msg));
+  caml_raise_with_arg (tag, new MlWrappedString (msg));
 }
 
 //Provides: caml_invalid_argument
@@ -241,20 +241,25 @@ function caml_lessthan (x, y) { return +(caml_compare(x,y) < 0); }
 ///////////// String
 //Provides: caml_create_string const
 //Requires: MlString
-function caml_create_string(len) { return new MlString(len); }
+function caml_create_string(len) { return new MlMakeString(len); }
 //Provides: caml_fill_string
-function caml_fill_string(s, i, l, c) { s.fill (i, l, c); return 0; }
+//Requires: MlString
+function caml_fill_string(s, i, l, c) { s.fill (i, l, c); }
 //Provides: caml_string_compare mutable
+//Requires: MlString
 function caml_string_compare(s1, s2) { return s1.compare(s2); }
 //Provides: caml_string_equal mutable
+//Requires: MlString
 function caml_string_equal(s1, s2) { return +s1.equal(s2); }
 //Provides: caml_string_notequal mutable
+//Requires: MlString
 function caml_string_notequal(s1, s2) { return +s1.notEqual(s2); }
 //Provides: caml_is_printable const
 function caml_is_printable(c) { return +(c > 31 && c < 127); }
 //Provides: caml_blit_string
+//Requires: MlString
 function caml_blit_string(s1, i1, s2, i2, len) {
-  s2.replace (i2, s1.contents, i1, len); return 0;
+  s1.blit (i1, s2, i2, len);
 }
 
 ///////////// Format
@@ -340,13 +345,13 @@ function caml_finish_formatting(f, rawbuffer) {
   buffer += rawbuffer;
   if (f.justify == '-')
     for (i = len; i < f.width; i++) buffer += ' ';
-  return new MlString (buffer);
+  return new MlWrappedString (buffer);
 }
 
 //Provides: caml_format_int const
 //Requires: caml_parse_format, caml_finish_formatting
 function caml_format_int(fmt, i) {
-  if (fmt.toString() == "%d") return new MlString(""+i);
+  if (fmt.toString() == "%d") return new MlWrappedString(""+i);
   var f = caml_parse_format(fmt);
   if (i < 0) { if (f.signedconv) { f.sign = -1; i = -i; } else i >>>= 0; }
   var s = i.toString(f.base);
