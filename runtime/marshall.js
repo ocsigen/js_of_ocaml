@@ -275,44 +275,46 @@ var caml_output_val = function (){
   return function (v) {
     var writer = new Writer ();
     function extern_rec (v) {
+      var cst = caml_marshal_constants;
       if (v instanceof MlString) {
-        var len = v.length;
+        var len = v.getLen();
         if (len < 0x20)
-          writer.write (8, PREFIX_SMALL_STRING + len);
+          writer.write (8, cst.PREFIX_SMALL_STRING + len);
         else if (len < 0x100)
-          writer.write_code (8, CODE_STRING8, len);
+          writer.write_code (8, cst.CODE_STRING8, len);
         else
-          writer.write_code (32, CODE_STRING32, len);
+          writer.write_code (32, cst.CODE_STRING32, len);
         for (var i = 0;i < len;i++) writer.write (8, v.get(i));
         writer.size_32 += 1 + (((len + 4) / 4)|0);
         writer.size_64 += 1 + (((len + 8) / 8)|0);
       } else if (v instanceof Array) {
         if (v[0] == 255) {
-          writer.write (8, CODE_CUSTOM);
-          for (var i = 0; i < 3; i++) write.write (8, "_j\0".charCodeAt(i));
+          writer.write (8, cst.CODE_CUSTOM);
+          for (var i = 0; i < 3; i++) writer.write (8, "_j\0".charCodeAt(i));
           var b = caml_int64_to_bytes (v);
-          for (var i = 0; i < 8; i++) write.write (8, b[i]);
+          for (var i = 0; i < 8; i++) writer.write (8, b[i]);
           writer.size_32 += 4;
           writer.size_64 += 3;
+          return;
         }
         if (v[0] < 16 && v.length - 1 < 8)
-          writer.write (8, PREFIX_SMALL_BLOCK + v[0] + ((v.length - 1)<<4));
+          writer.write (8, cst.PREFIX_SMALL_BLOCK + v[0] + ((v.length - 1)<<4));
         else
-          writer.write_code(32, CODE_BLOCK32, (v.length << 10) | v[0]);
+          writer.write_code(32, cst.CODE_BLOCK32, (v.length << 10) | v[0]);
         writer.size_32 += v.length;
         writer.size_64 += v.length;
         for (i = 1; i < v.length; i++) extern_rec (v[i]);
       } else {
-        if (v != (v|0)) caml_failwith("output_value: float value");
+        if (v != (v|0)) caml_failwith("output_value: non-serializable value");
         if (v >= 0 && v < 0x40) {
-          writer.write (8, PREFIX_SMALL_INT + v);
+          writer.write (8, cst.PREFIX_SMALL_INT + v);
         } else {
           if (v >= -(1 << 7) && v < (1 << 7))
-            writer.write_code(8, CODE_INT8, v);
+            writer.write_code(8, cst.CODE_INT8, v);
           else if (v >= -(1 << 15) && v < (1 << 15))
-            writer.write_code(16, CODE_INT16, v);
+            writer.write_code(16, cst.CODE_INT16, v);
           else
-            writer.write_code(32, CODE_INT32, v);
+            writer.write_code(32, cst.CODE_INT32, v);
         }
       }
     }
@@ -337,3 +339,7 @@ function caml_output_value_to_buffer (s, ofs, len, v, fl) {
   if (t.length > len) caml_failwith ("Marshal.to_buffer: buffer overflow");
   new MlStringFromArray (t).blit(0, s, ofs, t.length)
 }
+
+var s = caml_output_value_to_string([0, [255,1,1,1], new MlString("abcd")]);
+s.toArray();
+alert (s.array);
