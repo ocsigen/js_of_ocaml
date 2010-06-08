@@ -246,126 +246,94 @@ function caml_marshal_data_size (s, ofs) {
   return (get32(s, ofs + 4));
 }
 
-//Provides: ouput_val
-//Requires: marshalling
-function Writer () {
-    this.chunk = [];
-    this.chunk_idx = 20;
-    this.block_len = 0;
-    this.obj_counter = 0;
-    this.size_32 = 0;
-    this.size_64 = 0;
-}
-
-Writer.prototype.write = function (size, value) {
-    for (var i = size - 8;i >= 0;i -= 8)
-	this.chunk[this.chunk_idx++] = (value >> i) & 0xFF;
-}
-
-Writer.prototype.write_code = function (size, code, value) {
-    this.chunk[this.chunk_idx++] = code;
-    for (var i = size - 8;i >= 0;i -= 8)
-	this.chunk[this.chunk_idx++] = (value >> i) & 0xFF;
-}
-
-Writer.prototype.finalize = function () {
-    this.block_len = this.chunk_idx - 20;
-    this.chunk_idx = 0;
-    this.write (32, 0x8495A6BE);
-    this.write (32, this.block_len);
-    this.write (32, this.obj_counter);
-    this.write (32, this.size_32);
-    this.write (32, this.size_64);
-    return this.chunk;
-}
-
-function HD(v) {return (v.length << 10) | v[0];}
-
-function output_val (v, error) {
+//Provides: caml_output_val
+//Requires: caml_marshal_constants, caml_int64_to_bytes, caml_failwith
+var caml_output_val = function (){
+  function Writer () { this.chunk = []; }
+  Writer.prototype = {
+    chunk_idx:20, block_len:0, obj_counter:0, size_32:0, size_64:0,
+    write:function (size, value) {
+      for (var i = size - 8;i >= 0;i -= 8)
+        this.chunk[this.chunk_idx++] = (value >> i) & 0xFF;
+    },
+    write_code:function (size, code, value) {
+      this.chunk[this.chunk_idx++] = code;
+      for (var i = size - 8;i >= 0;i -= 8)
+        this.chunk[this.chunk_idx++] = (value >> i) & 0xFF;
+    },
+    finalize:function () {
+      this.block_len = this.chunk_idx - 20;
+      this.chunk_idx = 0;
+      this.write (32, 0x8495A6BE);
+      this.write (32, this.block_len);
+      this.write (32, this.obj_counter);
+      this.write (32, this.size_32);
+      this.write (32, this.size_64);
+      return this.chunk;
+    }
+  }
+  return function (v) {
     var writer = new Writer ();
     function extern_rec (v) {
-        if (v instanceof MlString) {
-            var len = v.length;
-            if (len < 0x20) {
-                writer.write (8, PREFIX_SMALL_STRING + len);
-            } else if (len < 0x100) {
-                writer.write_code (8, CODE_STRING8, len);
-            } else {
-                writer.write_code (32, CODE_STRING32, len);
-            }
-            for (var i = 0;i < len;i++)
-                writer.write (8, v.get(i));
-            writer.size_32 += 1 + (((len + 4) / 4)|0);
-            writer.size_64 += 1 + (((len + 8) / 8)|0);
-            writer.obj_counter++;
-        } else if (v instanceof Array) {
-	    if (v.length == 1) {
-		if (v[0] < 16)
-		    writer.write (8, PREFIX_SMALL_BLOCK + v[0]);
-		else
-		    writer.write_code (32, CODE_BLOCK32, HD(v));
-		return;
-	    }
-            if (v[0] < 16 && v.length - 1 < 8) {
-                writer.write (8, PREFIX_SMALL_BLOCK + v[0] + ((v.length - 1)<<4));
-            } else {
-                writer.write_code(32, CODE_BLOCK32, HD(v));
-            }
-            writer.size_32 += v.length ;
-            writer.size_64 += v.length ;
-            writer.obj_counter++;
-            for (i = 1; i < v.length; i++) {
-                extern_rec (v[i]);
-            }
-        } else {
-            v |= 0;
-	    if (v >= 0 && v < 0x40) {
-		writer.write (8, PREFIX_SMALL_INT + v);
-	    } else {
-		if (v >= -(1 << 7) && v < (1 << 7)) {
-		    writer.write_code(8, CODE_INT8, v);
-		} else {
-		    if (v >= -(1 << 15) && v < (1 << 15)) {
-			writer.write_code(16, CODE_INT16, v);
-		    } else {
-			writer.write_code(32, CODE_INT32, v);
-		    }
-		}
-	    }
+      if (v instanceof MlString) {
+        var len = v.length;
+        if (len < 0x20)
+          writer.write (8, PREFIX_SMALL_STRING + len);
+        else if (len < 0x100)
+          writer.write_code (8, CODE_STRING8, len);
+        else
+          writer.write_code (32, CODE_STRING32, len);
+        for (var i = 0;i < len;i++) writer.write (8, v.get(i));
+        writer.size_32 += 1 + (((len + 4) / 4)|0);
+        writer.size_64 += 1 + (((len + 8) / 8)|0);
+      } else if (v instanceof Array) {
+        if (v[0] == 255) {
+          writer.write (8, CODE_CUSTOM);
+          for (var i = 0; i < 3; i++) write.write (8, "_j\0".charCodeAt(i));
+          var b = caml_int64_to_bytes (v);
+          for (var i = 0; i < 8; i++) write.write (8, b[i]);
+          writer.size_32 += 4;
+          writer.size_64 += 3;
         }
+        if (v[0] < 16 && v.length - 1 < 8)
+          writer.write (8, PREFIX_SMALL_BLOCK + v[0] + ((v.length - 1)<<4));
+        else
+          writer.write_code(32, CODE_BLOCK32, (v.length << 10) | v[0]);
+        writer.size_32 += v.length;
+        writer.size_64 += v.length;
+        for (i = 1; i < v.length; i++) extern_rec (v[i]);
+      } else {
+        if (v != (v|0)) caml_failwith("output_value: float value");
+        if (v >= 0 && v < 0x40) {
+          writer.write (8, PREFIX_SMALL_INT + v);
+        } else {
+          if (v >= -(1 << 7) && v < (1 << 7))
+            writer.write_code(8, CODE_INT8, v);
+          else if (v >= -(1 << 15) && v < (1 << 15))
+            writer.write_code(16, CODE_INT16, v);
+          else
+            writer.write_code(32, CODE_INT32, v);
+        }
+      }
     }
     extern_rec (v);
     writer.finalize ();
     return writer.chunk;
-}
-
+  }
+} ();
 
 //Provides: caml_output_value_to_string mutable
-//Requires: output_val
-// Caml name: to_string
-// Type:      'a -> extern_flags list -> string
+//Requires: caml_output_val
 function caml_output_value_to_string (v, fl) {
-    /* ignores flags... */
-    var vm = this;
-    function caml_failwith (s) {throw (s);};
-    var t = output_val (v, caml_failwith);
-    var b = new MlString (t.length);
-    for (var i = 0;i < t.length;i++) {
-	b.set(i, t[i]);
-    }
-    return b;
+  /* ignores flags... */
+  return new MlStringFromArray (caml_output_val (v));
 }
 
 //Provides: caml_output_value_to_buffer
-//Requires: output_val
-// Caml name: to_buffer_unsafe
-// Type:      string -> int -> int -> 'a -> extern_flags list -> int
+//Requires: caml_output_val, caml_failwith
 function caml_output_value_to_buffer (s, ofs, len, v, fl) {
-    var vm = this;
-    function caml_failwith (s) {throw (s);};
-    var t = output_val (v, caml_failwith);
-    for (var i = 0;i < t.length;i++) {
-	s.set (ofs + i, t[i]);
-    }
-    return t.length;
+  /* ignores flags... */
+  var t = caml_output_val (v);
+  if (t.length > len) caml_failwith ("Marshal.to_buffer: buffer overflow");
+  new MlStringFromArray (t).blit(0, s, ofs, t.length)
 }

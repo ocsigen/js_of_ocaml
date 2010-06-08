@@ -300,3 +300,8 @@ function caml_int64_of_bytes(a) {
   return [255, a[7] | (a[6] << 8) | (a[5] << 16),
           a[4] | (a[3] << 8) | (a[2] << 16), a[1] | (a[0] << 8)];
 }
+//Provides: caml_int64_to_bytes
+function caml_int64_to_bytes(x) {
+  return [x[3] >> 8, x[3] & 0xff, x[2] >> 16, (x[2] >> 8) & 0xff, x[2] & 0xff,
+          x[1] >> 16, (x[1] >> 8) & 0xff, x[1] & 0xff];
+}
