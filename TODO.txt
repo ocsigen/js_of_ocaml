@@ -2,8 +2,7 @@ Priorities
 ==========
 Runtime                                                  <======
 -------
-- value hash and comparison
-- unmarshalling
+- value comparison
 
 Libraries
 ---------

@@ -468,16 +468,52 @@ function caml_format_float (fmt, x) {
 //Requires: MlString
 function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
-  if (obj instanceof MlString) {
-    var s = obj.contents;
-    for (var p = 0; p < s.length - 1; p++)
-      hash_accu = (hash_accu * 19 + s.charCodeAt(p)) & 0x3FFFFFFF;
-    return (hash_accu & 0x3FFFFFFF);
-  } else {
-    // FIX not implemented!
-    //      document.write("hash(", obj, "):", typeof obj);
-    return 1;
+  function hash_aux (obj) {
+    limit --;
+    if (count < 0 || limit < 0) return;
+    if (obj instanceof Array && obj[0] == (obj[0]|0)) {
+      switch (obj[0]) {
+      case 248:
+        // Object
+        count --;
+        hash_accu = (hash_accu * 65599 + obj[2]) | 0;
+        break
+      case 250:
+        // Forward
+        limit++; hash_aux(obj); break;
+      case 255:
+        // Int64
+        count --;
+        hash_accu = (hash_accu * 65599 + obj[1] + (obj[2] << 24)) | 0;
+        break;
+      default:
+        count --;
+        hash_accu = (hash_accu * 19 + obj[0]) | 0;
+        for (var i = obj.length - 1; i > 0; i--) hash_aux (obj[i]);
+      }
+    } else if (obj instanceof MlString) {
+      count --;
+      var a = obj.array, l = obj.getLen ();
+      if (a) {
+        for (var i = 0; i < l; i++) hash_accu = (hash_accu * 19 + a[i]) | 0;
+      } else {
+        var b = obj.toFullBytes ();
+        for (var i = 0; i < l; i++)
+          hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
+      }
+    } else if (obj == (obj|0)) {
+      // Integer
+      count --;
+      hash_accu = (hash_accu * 65599 + obj) | 0;
+    } else if (obj == +obj) {
+      // Float
+      count--;
+      var p = caml_int64_to_bytes (caml_int64_bits_of_float (obj));
+      for (var i = 7; i >= 0; i--) hash_accu = (hash_accu * 19 + p[i]) | 0;
+    }
   }
+  hash_aux (obj);
+  return hash_accu & 0x3FFFFFFF;
 }
 
 ///////////// Sys
@@ -520,3 +556,9 @@ function caml_ml_open_descriptor_in () { return 0; }
 function caml_sys_get_argv () { return ["a.out"]; }
 //Provides: caml_ml_output const
 function caml_ml_output () { return 0; }
+
+
+alert (caml_hash_univ_param(10,100, [0,1,2]));
+alert (caml_hash_univ_param(10,100, 12.34));
+alert (caml_hash_univ_param(10,100, new MlString("abcd")));
+alert (caml_hash_univ_param(10,100, [255, 0xabcdef, 0x456789, 0x123]));

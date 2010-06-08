@@ -219,6 +219,7 @@ var caml_input_value_from_string = function (){
             while ((c = reader.read8u ()) != 0) s += String.fromCharCode (c);
             if (s != "_j")
               caml_failwith("input_value: unknown custom block identifier");
+            // Int64
             var t = [];
             for (var j = 0;j < 8;j++) t[j] = reader.read8u();
             var v = caml_int64_of_bytes (t);
@@ -276,19 +277,9 @@ var caml_output_val = function (){
     var writer = new Writer ();
     function extern_rec (v) {
       var cst = caml_marshal_constants;
-      if (v instanceof MlString) {
-        var len = v.getLen();
-        if (len < 0x20)
-          writer.write (8, cst.PREFIX_SMALL_STRING + len);
-        else if (len < 0x100)
-          writer.write_code (8, cst.CODE_STRING8, len);
-        else
-          writer.write_code (32, cst.CODE_STRING32, len);
-        for (var i = 0;i < len;i++) writer.write (8, v.get(i));
-        writer.size_32 += 1 + (((len + 4) / 4)|0);
-        writer.size_64 += 1 + (((len + 8) / 8)|0);
-      } else if (v instanceof Array) {
+      if (v instanceof Array && v[0] == (v[0]|0)) {
         if (v[0] == 255) {
+          // Int64
           writer.write (8, cst.CODE_CUSTOM);
           for (var i = 0; i < 3; i++) writer.write (8, "_j\0".charCodeAt(i));
           var b = caml_int64_to_bytes (v);
@@ -304,6 +295,17 @@ var caml_output_val = function (){
         writer.size_32 += v.length;
         writer.size_64 += v.length;
         for (i = 1; i < v.length; i++) extern_rec (v[i]);
+      } else if (v instanceof MlString) {
+        var len = v.getLen();
+        if (len < 0x20)
+          writer.write (8, cst.PREFIX_SMALL_STRING + len);
+        else if (len < 0x100)
+          writer.write_code (8, cst.CODE_STRING8, len);
+        else
+          writer.write_code (32, cst.CODE_STRING32, len);
+        for (var i = 0;i < len;i++) writer.write (8, v.get(i));
+        writer.size_32 += 1 + (((len + 4) / 4)|0);
+        writer.size_64 += 1 + (((len + 8) / 8)|0);
       } else {
         if (v != (v|0)) caml_failwith("output_value: non-serializable value");
         if (v >= 0 && v < 0x40) {
@@ -339,7 +341,3 @@ function caml_output_value_to_buffer (s, ofs, len, v, fl) {
   if (t.length > len) caml_failwith ("Marshal.to_buffer: buffer overflow");
   new MlStringFromArray (t).blit(0, s, ofs, t.length)
 }
-
-var s = caml_output_value_to_string([0, [255,1,1,1], new MlString("abcd")]);
-s.toArray();
-alert (s.array);
