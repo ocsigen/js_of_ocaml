@@ -106,7 +106,7 @@ function caml_float_compare (x, y) {
   return 0;
 }
 
-// These four functions only give approximate results.
+// FIX: these four functions only give approximate results.
 //Provides: caml_log10_float const
 function caml_log10_float (x) { return Math.LOG10E * Math.log(x); }
 //Provides: caml_cosh_float const

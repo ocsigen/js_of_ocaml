@@ -88,9 +88,7 @@ function caml_obj_dup (x) { return x.slice(); }
 function caml_obj_truncate (x, s) { x.length = s + 1; return 0; }
 
 //Provides: caml_lazy_make_forward
-function caml_lazy_make_forward (v) {
-  return [250, v];
-}
+function caml_lazy_make_forward (v) { return [250, v]; }
 
 //Provides: caml_mul const
 function caml_mul(x,y) {
@@ -107,15 +105,15 @@ function caml_mul(x,y) {
 //Provides: caml_div const
 //Requires: caml_raise_zero_divide
 function caml_div(x,y) {
-    if (y == 0) caml_raise_zero_divide ();
-    return (x/y)|0;
+  if (y == 0) caml_raise_zero_divide ();
+  return (x/y)|0;
 }
 
 //Provides: caml_mod const
 //Requires: caml_raise_zero_divide
 function caml_mod(x,y) {
-    if (y == 0) caml_raise_zero_divide ();
-    return x%y;
+  if (y == 0) caml_raise_zero_divide ();
+  return x%y;
 }
 
 ///////////// Pervasive
@@ -217,7 +215,7 @@ function caml_compare (a, b) {
 }
 //Provides: caml_int_compare mutable
 function caml_int_compare (a, b) {
-  if (a < b) return (-1); else if (a == b) return 0; else return 1;
+  if (a < b) return (-1); if (a == b) return 0; return 1;
 }
 //Provides: caml_equal mutable
 //Requires: caml_compare
@@ -241,33 +239,22 @@ function caml_lessthan (x, y) { return +(caml_compare(x,y) < 0); }
 //Provides: caml_parse_sign_and_base
 //Requires: MlString
 function caml_parse_sign_and_base (s) {
-  var i = 0;
-  var sign = s.get(0) == 45?(i++,-1):1;
-  var base = 10;
-  if (s.get(i) == 48) {
+  var i = 0, base = 10, sign = s.get(0) == 45?(i++,-1):1;
+  if (s.get(i) == 48)
     switch (s.get(i + 1)) {
-    case 120: case 88:
-      base = 16; i += 2; break;
-    case 111: case 79:
-      base = 8; i += 2; break;
-    case 98: case 66:
-      base = 2; i += 2; break;
+    case 120: case 88: base = 16; i += 2; break;
+    case 111: case 79: base =  8; i += 2; break;
+    case  98: case 66: base =  2; i += 2; break;
     }
-  }
   return [i, sign, base];
 }
 
 //Provides: caml_parse_digit
-function caml_parse_digit(c)
-{
-  if (c >= 48 && c <= 57)
-    return c - 48;
-  else if (c >= 65 && c <= 90)
-    return c - 55;
-  else if (c >= 97 && c <= 122)
-    return c - 87;
-  else
-    return -1;
+function caml_parse_digit(c) {
+  if (c >= 48 && c <= 57)  return c - 48;
+  if (c >= 65 && c <= 90)  return c - 55;
+  if (c >= 97 && c <= 122) return c - 87;
+  return -1;
 }
 
 //Provides: caml_int_of_string
@@ -556,9 +543,3 @@ function caml_ml_open_descriptor_in () { return 0; }
 function caml_sys_get_argv () { return ["a.out"]; }
 //Provides: caml_ml_output const
 function caml_ml_output () { return 0; }
-
-
-alert (caml_hash_univ_param(10,100, [0,1,2]));
-alert (caml_hash_univ_param(10,100, 12.34));
-alert (caml_hash_univ_param(10,100, new MlString("abcd")));
-alert (caml_hash_univ_param(10,100, [255, 0xabcdef, 0x456789, 0x123]));

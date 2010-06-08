@@ -1,5 +1,11 @@
 Priorities
 ==========
+Documentation
+-------------
+==> what is supported
+    ==> standard library, but not channels, lexing, parsing
+==> what differs: marshalling, comparison, hashing
+
 Runtime                                                  <======
 -------
 - value comparison
