@@ -6,6 +6,10 @@
 // If "array" is set, properties "len" and "last" are also set.
 // Properties "len" and "last" may have different values only when
 // "string" and "array" are both null.
+//
+// We use unusual accessors (getLen/get/set) so that this
+// implementation of string differs significantly from Javascript.
+// This way, using the wrong object is detected early.
 
 //Provides: MlString
 function caml_str_repeat(n, s) {

@@ -3,8 +3,7 @@ Priorities
 Runtime                                                  <======
 -------
 - value hash and comparison
-- marshalling
-- caml_int64_of_string
+- unmarshalling
 
 Libraries
 ---------
