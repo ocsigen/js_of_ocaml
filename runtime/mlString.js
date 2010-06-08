@@ -198,3 +198,11 @@ MlWrappedString.prototype = new MlString();
 // Uninitialized Caml string
 function MlMakeString (l) { this.bytes = ""; this.len = l; }
 MlMakeString.prototype = new MlString ();
+
+// Caml string initialized form an array of bytes
+//Provides: MlStringFromArray
+//Requires: MlString
+function MlStringFromArray (a) {
+  var len = a.length; this.array = a; this.len = this.last = len;
+}
+MlStringFromArray.prototype = new MlString ();

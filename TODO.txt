@@ -2,7 +2,6 @@ Priorities
 ==========
 Runtime                                                  <======
 -------
-- md5 computation (cleanup)
 - value hash and comparison
 - marshalling
 - caml_int64_of_string
@@ -37,6 +36,8 @@ Benchmarks/examples
 ===================
 - take examples from http://shootout.alioth.debian.org/?
 - planets (+satellites?) ===> Runge-Kutta
+- 3D effects: http://gyu.que.jp/jscloth/
+              http://stackoverflow.com/questions/1584854/how-to-draw-3d-sphere
 
 Design notes
 ============

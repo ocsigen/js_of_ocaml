@@ -8,7 +8,9 @@
 /***********************************************************************/
 
 //Provides: caml_md5_string
-function md5 (message) {
+//Requires: MlString, MlStringFromArray
+var caml_md5_string =
+function () {
   function add (x, y) { return (x + y) | 0; }
   function rol (x, y) { return (x << y) | (x >>> (32 - y)); }
   function xx(q,a,b,x,s,t) {
@@ -21,30 +23,22 @@ function md5 (message) {
   function gg(a,b,c,d,x,s,t) {
     return xx((b & d) | (c & (~d)), a, b, x, s, t);
   }
-  function hh(a,b,c,d,x,s,t) {
-    return xx(b ^ c ^ d, a, b, x, s, t);
-  }
-  function ii(a,b,c,d,x,s,t) {
-    return xx(c ^ (b | (~d)), a, b, x, s, t);
-  }
+  function hh(a,b,c,d,x,s,t) { return xx(b ^ c ^ d, a, b, x, s, t); }
+  function ii(a,b,c,d,x,s,t) { return xx(c ^ (b | (~d)), a, b, x, s, t); }
 
-  var buffer = [];
-  for(var i = 0; i < message.length;i++)
-      buffer[i >> 2] |= message[i] << (8 * (i & 3));
-  buffer[i >> 2] |= 0x80 << (8 * (i & 3));
-  for (i = (i & ~0x3) + 4;(i & 0x3F) < 56 ;i += 4)
+  function md5(buffer, length) {
+    var i = length;
+    buffer[i >> 2] |= 0x80 << (8 * (i & 3));
+    for (i = (i & ~0x3) + 4;(i & 0x3F) < 56 ;i += 4)
       buffer[i >> 2] = 0;
-  buffer[i >> 2] = message.length << 3;
-  i += 4;
-  buffer[i >> 2] = (message.length >> 29) & 0x1FFFFFFF;
+    buffer[i >> 2] = length << 3;
+    i += 4;
+    buffer[i >> 2] = (length >> 29) & 0x1FFFFFFF;
 
-  var a = 0x67452301, b = 0xEFCDAB89, c = 0x98BADCFE, d = 0x10325476;
+    var w = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476];
 
-  for(i = 0; i < buffer.length; i += 16) {
-      var temp_a = a;
-      var temp_b = b;
-      var temp_c = c;
-      var temp_d = d;
+    for(i = 0; i < buffer.length; i += 16) {
+      var a = w[0], b = w[1], c = w[2], d = w[3];
 
       a = ff(a, b, c, d, buffer[i+ 0], 7, 0xD76AA478);
       d = ff(d, a, b, c, buffer[i+ 1], 12, 0xE8C7B756);
@@ -114,36 +108,36 @@ function md5 (message) {
       c = ii(c, d, a, b, buffer[i+ 2], 15, 0x2AD7D2BB);
       b = ii(b, c, d, a, buffer[i+ 9], 21, 0xEB86D391);
 
-      a = add(a, temp_a);
-      b = add(b, temp_b);
-      c = add(c, temp_c);
-      d = add(d, temp_d);
+      w[0] = add(a, w[0]);
+      w[1] = add(b, w[1]);
+      w[2] = add(c, w[2]);
+      w[3] = add(d, w[3]);
+    }
+
+    var t = [];
+    for (var i = 0; i < 4; i++)
+      for (var j = 0; j < 4; j++)
+        t[i * 4 + j] = (w[i] >> (8 * j)) & 0xFF;
+    return t;
   }
 
-  var w = [a, b, c, d];
-  var t = [];
-  for (var i = 0; i < 4; i++)
-      for (var j = 0; j < 32; j += 8)
-          t[i * 4 + j / 8] = (w[i] >> j) & 0xFF;
-  return t;
-}
-
-//alert (md5 ([]) + "== d41d8cd98f00b204e9800998ecf8427e");
-//alert (md5 ([65]) + " == 7fc56270e7a70fa81a5935b72eacbe29");
-
-// Caml name: unsafe_string
-// Type:      string -> int -> int -> t
-
-///////////// Digest
-
-function caml_md5_string (v, ofs, len) {
-    var s = [];
-    for (var i = 0;i < len;i++)
-      s[i] = v.get (ofs + i);
-    var h = md5(s);
-    var res = new MlMakeString(16);
-    for (var j = 0;j < 16;j++)
-      res.set(j, h[j]);
-    return res;
-}
-
+  return function (s, ofs, len) {
+    // FIX: maybe we should perform the computation by chunk of 64 bytes
+    // as in http://www.myersdaily.org/joseph/javascript/md5.js
+    var buf = [];
+    if (s.array) {
+      var a = s.array;
+      for (var i = 0; i < len; i+=4)
+        buf[i>>2] = a[i] | (a[i+1] << 8) | (a[i+2] << 16) | (a[i+3] << 24);
+      for (; i < len; i++) buf[i>>2] |= a[i] << (8 * (i & 3));
+    } else {
+      var b = s.toFullBytes();
+      for (var i = 0; i < len; i+=4)
+        buf[i>>2] =
+          b.charCodeAt(i) | (b.charCodeAt(i+1) << 8) |
+          (b.charCodeAt(i+2) << 16) | (b.charCodeAt(i+3) << 24);
+      for (; i < len; i++) buf[i>>2] |= b.charCodeAt(i) << (8 * (i & 3));
+    }
+    return new MlStringFromArray(md5(buf, len));
+  }
+} ();
