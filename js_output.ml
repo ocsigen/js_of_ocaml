@@ -338,8 +338,10 @@ and statement f s =
              (expression 0) e statement_list sl)
         cc;
       begin match def with
-        None     -> ()
-      | Some def -> Format.fprintf f "@[<1>default:@ %a@]" statement_list def
+        None ->
+          ()
+      | Some def ->
+          Format.fprintf f "default:@;<0 1>@[%a@]@," statement_list def
       end;
       Format.fprintf f "}@]"
   | Throw_statement e ->

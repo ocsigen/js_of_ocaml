@@ -65,9 +65,7 @@ function caml_raise_zero_divide () {
 
 //Provides: caml_update_dummy
 function caml_update_dummy (x, y) {
-  var i = y.length;
-  while (i--) x[i] = y[i];
-  return 0;
+  var i = y.length; while (i--) x[i] = y[i]; return 0;
 }
 
 //Provides: caml_obj_is_block const
@@ -134,9 +132,7 @@ function caml_array_get (array, index) {
 
 //Provides: caml_make_vect const
 function caml_make_vect (len, init) {
-  var b = [0];
-  for (var i = 1; i <= len; i++) b[i] = init;
-  return b;
+  var b = [0]; for (var i = 1; i <= len; i++) b[i] = init; return b;
 }
 
 // FIX: extra parameter (total?)

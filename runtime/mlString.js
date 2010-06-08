@@ -27,11 +27,16 @@ function MlString(param) {
 }
 
 MlString.prototype = {
-  string:null, // JS string
-  bytes:null,  // byte string
-  array:null,  // byte array
-  len:null,    // length
-  last:0,      // last initialized byte
+  // JS string
+  string:null,
+  // byte string
+  bytes:null,
+  // byte array
+  array:null,
+  // length
+  len:null,
+  // last initialized byte
+  last:0,
 
   toJsString:function() {
     // assumes this.string == null
