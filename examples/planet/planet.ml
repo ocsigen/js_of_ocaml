@@ -6,6 +6,7 @@ IDEAS
   ==> trajectoire + mouvement du satellite
 - can we have antialiased edges?
 - affiche l'axe de rotation de la terre, la direction du soleil
+- autres planétes
 
 Stop animation when not visible!
 
@@ -96,7 +97,7 @@ let render (ctx, img, tw, th, texture) offset =
   let cst1 = (tw /. 2. -. 0.99) /. pi in
   let cst2 = th /. 2. in
   let cst3 = (th -. 0.99) /. pi in
-  let cst4 = (th /. 2. /. rf -. 0.99) in
+  let cst4 = (th -. 0.99) /. 2. /. rf in
   let offset = float (truncate (mod_float (-. tw *. offset) tw)) in
   let offset = tw +. if offset < 0. then offset +. tw else offset in
   for i = x0 - r to x0 + r do
