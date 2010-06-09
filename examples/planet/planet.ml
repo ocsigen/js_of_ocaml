@@ -3,7 +3,9 @@ IDEAS
 =====
 - saisons
 - satellites: geostationnaires, différentes altitudes
+  ==> trajectoire + mouvement du satellite
 - can we have antialiased edges?
+- affiche l'axe de rotation de la terre, la direction du soleil
 
 Stop animation when not visible!
 
@@ -124,14 +126,9 @@ assert (0. <= j);
 assert (j < th);
 *)
         let tk = truncate (4. *. (i +. (j *. tw))) in
-(*
         Html.pixel_set data k (Html.pixel_get tdata tk);
         Html.pixel_set data (k + 1) (Html.pixel_get tdata (tk + 1));
         Html.pixel_set data (k + 2) (Html.pixel_get tdata (tk + 2));
-*)
-        Html.pixel_set data k 255;
-        Html.pixel_set data (k + 1) 255;
-        Html.pixel_set data (k + 2) 255
       end
     done
   done;
