@@ -23,9 +23,12 @@ Libraries
   ==> we want to be able to access this
       (avoid memory leaks...)
   ==> either a function, undefined or null
+- canvas: should check whether it is available...
+- firebug.ml ==> debugging code
 
 Packaging
 ---------
+- name: JsCaml / ML2JS /mljs
 - ocamlfind packages
 - linker: standard library (through ocamlfind...)
 
@@ -93,6 +96,8 @@ Compiler optimizations
   (for instance, elimination of function which are defined in a
    functor but are not used)
 
+- string escape: use \0 instead of \x00
+
 RUNTIME
 =======
 - caml_lex_engine/caml_new_lex_engine
@@ -116,6 +121,7 @@ MD5
 ===
 http://www.myersdaily.org/joseph/javascript/md5-speed-test.html
 http://code.google.com/p/crypto-js/source/browse/trunk/src/Crypto.js
+http://bitwiseshiftleft.github.com/sjcl/
 
 Float <-> hex
 =============

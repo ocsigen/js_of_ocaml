@@ -5,7 +5,7 @@ OCAMLC=ocamlfind ocamlc -package lwt -pp "camlp4o ../../lib/pa_js.cmo" -I ../../
 STDLIB=ocaml2js.cma
 
 $(NAME).js: $(NAME) $(OCAML2JS) $(JSFILES)
-	$(OCAML2JS) $(JSFILES) $(NAME)
+	$(OCAML2JS) $(JSFILES) $(NAME) $(OPTIONS)
 
 $(NAME): $(OBJS)
 	$(OCAMLC) -linkpkg -o $@ $(STDLIB) $^

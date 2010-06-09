@@ -358,12 +358,17 @@ end
 class type imageElement = object
   inherit element
   method alt : js_string t prop
-  method height : int prop
-  method isMap : bool t prop
-  method longDesc : js_string t prop
   method src : js_string t prop
   method useMap : js_string t prop
+  method isMap : bool t prop
   method width : int prop
+  method height : int prop
+  method naturalWidth : int readonly_prop
+  method naturalHeight : int readonly_prop
+  method complete : bool t prop
+
+  (* FIX...*)
+  method onload : (unit -> unit) prop
 end
 
 class type objectElement = object
@@ -611,15 +616,15 @@ end
 and imageData = object
   method width : int readonly_prop
   method height : int readonly_prop
-  method data : canvasPixelArray t prop
+  method data : canvasPixelArray t readonly_prop
 end
 
 and canvasPixelArray = object
   method length : int readonly_prop
 end
 
-val pixel_get : canvasPixelArray -> int -> int
-val pixel_set : canvasPixelArray -> int -> int -> unit
+external pixel_get : canvasPixelArray t -> int -> int = "caml_js_get"
+external pixel_set : canvasPixelArray t -> int -> int -> unit = "caml_js_set"
 
 class type document = object
   inherit [element] Dom.document
@@ -739,6 +744,7 @@ class type window = object
   method parent : window t readonly_prop
   method frameElement : element t opt readonly_prop
 
+  (*FIX...*)
   method onload : (unit -> unit) prop
   method onbeforeunload : (unit -> js_string t) prop
 

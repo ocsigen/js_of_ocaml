@@ -11,6 +11,7 @@ examples/minesweeper/minesweeper{,.js}
 examples/cubes/cubes{,.js}
 examples/canvas/canvas{,.js}
 examples/sudoku/sudoku{,.js}
+examples/planet/planet{,.js}
 lib/stubs.c
 obrowser/vm.js
 runtime/runtime.js
