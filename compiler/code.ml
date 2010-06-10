@@ -114,7 +114,7 @@ type prim =
     Vectlength
   | Array_get
   | Extern of string
-  | Not | Neg | IsInt
+  | Not | IsInt
   | Eq | Neq | Lt | Le | Ult
   | WrapInt
 
@@ -241,8 +241,13 @@ let binop s =
   | "%int_lsl" -> "<<"
   | "%int_lsr" -> ">>>"
   | "%int_asr" -> ">>"
-  | _              -> raise Not_found
+  | _          -> raise Not_found
 
+
+let unop s =
+  match s with
+    "%int_neg" -> "-"
+  | _          -> raise Not_found
 
 let print_prim f p l =
   match p, l with
@@ -254,10 +259,15 @@ let print_prim f p l =
       with Not_found ->
         Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l
       end
+  | Extern s, [x]  ->
+      begin try
+        Format.fprintf f "%s %a" (unop s) print_arg x
+      with Not_found ->
+        Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l
+      end
   | Extern s, _       -> Format.fprintf f "\"%s\"(%a)"
                            s (print_list print_arg) l
   | Not, [x]          -> Format.fprintf f "!%a" print_arg x
-  | Neg, [x]          -> Format.fprintf f "-%a" print_arg x
   | IsInt, [x]        -> Format.fprintf f "is_int(%a)" print_arg x
   | Eq,  [x; y]       -> Format.fprintf f "%a === %a" print_arg x print_arg y
   | Neq, [x; y]       -> Format.fprintf f "!(%a === %a)" print_arg x print_arg y

@@ -32,7 +32,7 @@ type prim =
     Vectlength
   | Array_get
   | Extern of string
-  | Not | Neg | IsInt
+  | Not | IsInt
   | Eq | Neq | Lt | Le | Ult
   | WrapInt
 

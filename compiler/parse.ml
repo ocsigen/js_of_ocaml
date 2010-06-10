@@ -1083,7 +1083,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = -%a@." Var.print x Var.print y;
       compile code limit (pc + 1) state
         (Let (x, Prim (WrapInt, [Pv x'])) ::
-         Let (x', Prim (Neg, [Pv y])) :: instrs)
+         Let (x', Prim (Extern "%int_neg", [Pv y])) :: instrs)
   | ADDINT ->
       let y = State.accu state in
       let z = State.peek 0 state in

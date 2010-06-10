@@ -534,6 +534,8 @@ let _ =
     (fun cx cy -> J.EBin (J.Lsr, cx, cy));
   register_bin_prim "%int_asr" `Const
     (fun cx cy -> J.EBin (J.Asr, cx, cy));
+  register_un_prim "%int_neg" `Const
+    (fun cx -> J.EUn (J.Neg, cx));
   register_bin_prim "caml_eq_float" `Const
     (fun cx cy -> bool (J.EBin (J.EqEq, float_val cx, float_val cy)));
   register_bin_prim "caml_neq_float" `Const
@@ -729,9 +731,6 @@ let rec translate_expr ctx queue e =
       | Not, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (J.EBin (J.Minus, one, cx), px, queue)
-      | Neg, [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
-          (J.EUn (J.Neg, cx), px, queue)
       | Lt, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
@@ -760,7 +759,7 @@ let rec translate_expr ctx queue e =
       | WrapInt, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
           (to_int cx, px, queue)
-      | (Vectlength | Array_get | Not | Neg | IsInt | Eq |
+      | (Vectlength | Array_get | Not | IsInt | Eq |
          Neq | Lt | Le | Ult | WrapInt), _ ->
           assert false
       end
@@ -859,7 +858,9 @@ Format.eprintf ">>@ ";
         let grey =  dominance_frontier st pc2 in
         let grey' = resolve_nodes interm grey in
         let limit_body =
-          AddrSet.is_empty grey' && pc3 >= 0 in
+          (* We need to make sure that pc3 is live (indeed, the
+             continuation may have been optimized away by inlining) *)
+          AddrSet.is_empty grey' && pc3 >= 0 && Hashtbl.mem st.succs pc3 in
         let inner_frontier =
           if limit_body then AddrSet.add pc3 grey' else grey'
         in
