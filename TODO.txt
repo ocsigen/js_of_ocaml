@@ -1,9 +1,5 @@
 Priorities
 ==========
-Compiler
---------
-- '-include' option: include whole file
-
 Documentation
 -------------
 ==> what is supported

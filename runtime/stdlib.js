@@ -270,19 +270,19 @@ function caml_string_compare(s1, s2) { return s1.compare(s2); }
 function caml_string_equal(s1, s2) { return +s1.equal(s2); }
 //Provides: caml_string_notequal mutable
 //Requires: MlString
-function caml_string_notequal(s1, s2) { return +s1.notEqual(s2); }
+function caml_string_notequal(s1, s2) { return +!s1.equal(s2); }
 //Provides: caml_string_lessequal
 //Requires: MlString
-function caml_string_lessequal(s1, s2) { return s1.compare(s2) <= 0: }
+function caml_string_lessequal(s1, s2) { return s1.lessEqual(s2); }
 //Provides: caml_string_lessthan
 //Requires: MlString
-function caml_string_lessthan(s1, s2) { return s1.compare(s2) < 0: }
+function caml_string_lessthan(s1, s2) { return s1.lessThan(s2); }
 //Provides: caml_string_greaterthan
 //Requires: MlString
-function caml_string_greaterthan(s1, s2) { return s1.compare(s2) > 0: }
+function caml_string_greaterthan(s1, s2) { return s2.lessThan(s1); }
 //Provides: caml_string_greaterequal
 //Requires: MlString
-function caml_string_greaterequal(s1, s2) { return s1.compare(s2) >= 0: }
+function caml_string_greaterequal(s1, s2) { return s2.lessThan(s1); }
 
 //Provides: caml_is_printable const
 function caml_is_printable(c) { return +(c > 31 && c < 127); }

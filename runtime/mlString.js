@@ -193,11 +193,16 @@ MlString.prototype = {
       return this.string == s2.string;
     return this.toFullBytes () == s2.toFullBytes ();
   },
-  notEqual:function (s2) {
+  lessThan:function (s2) {
     if (this.string != null && s2.string != null)
-      return this.string != s2.string;
-    return this.toFullBytes () != s2.toFullBytes ();
+      return this.string < s2.string;
+    return this.toFullBytes () < s2.toFullBytes ();
   },
+  lessEqual:function (s2) {
+    if (this.string != null && s2.string != null)
+      return this.string <= s2.string;
+    return this.toFullBytes () <= s2.toFullBytes ();
+  }
 }
 
 // Conversion Javascript -> Caml

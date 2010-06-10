@@ -14,13 +14,12 @@ let f js_files input_file output_file =
         close_in ch;
         p
   in
+
 if debug () then Format.eprintf "Tail-call optimization...@.";
   let p = Tailcall.f p in
 
 if debug () then Format.eprintf "Variable passing simplification...@.";
   let p = Phisimpl.f p in
-
-if debug () then Code.print_program (fun _ _ -> "") p;
 
 if debug () then Format.eprintf "Data flow...@.";
   let p = Flow.f p in
