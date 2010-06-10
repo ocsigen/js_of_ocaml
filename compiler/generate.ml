@@ -827,7 +827,7 @@ Format.eprintf ")@.";
   end;
   if debug () then begin
     if AddrSet.mem pc st.loops then Format.eprintf "@[<2>for(;;){@,";
-    Format.eprintf "block %d;@ " pc
+    Format.eprintf "block %d;@ @?" pc
   end;
   if AddrSet.mem pc st.loops then begin
     let lab =

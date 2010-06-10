@@ -1,21 +1,20 @@
 
-MLOBJS= js.cmo dom.cmo dom_html.cmo xmlHttpRequest.cmo lwt_js.cmo \
-	goog.cmo goog_net.cmo
+MLOBJS= js.cmo dom.cmo dom_html.cmo xmlHttpRequest.cmo lwt_js.cmo
 COBJS= stubs.o
 OBJS=$(MLOBJS) $(COBJS)
 
-LIB=ocaml2js
+include ../Makefile.conf
 
-all: $(LIB).cma pa_js.cmo
+all: $(LIBNAME).cma syntax/pa_js.cmo
 
-$(LIB).cma: $(OBJS)
-	ocamlmklib -o $(LIB) $(OBJS)
+$(LIBNAME).cma: $(OBJS)
+	ocamlmklib -o $(LIBNAME) $(OBJS)
 
-pa_js.cmo: pa_js.ml
-	ocamlfind ocamlc -package camlp4.extend,camlp4.quotations -syntax camlp4o -c pa_js.ml
+syntax/pa_js.cmo: syntax/pa_js.ml
+	ocamlfind ocamlc -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
 
-%.cmo: %.ml pa_js.cmo
-	ocamlfind ocamlc -pp "camlp4o pa_js.cmo" -package lwt -c $<
+%.cmo: %.ml syntax/pa_js.cmo
+	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c $<
 
 %.cmi: %.mli
 	ocamlfind ocamlc -package lwt -c $<
@@ -34,8 +33,8 @@ clean:
 	rm -f *.cm[ioa] *.[ao] *.so
 	rm -f stubs.c
 
-depend:
+depend: syntax/pa_js.cmo
 	find . -maxdepth 1 \! -name pa_js.ml -regex ".*\\.mli?" | \
-	xargs ocamldep -pp "camlp4o pa_js.cmo" > .depend
+	xargs ocamldep -pp "camlp4o syntax/pa_js.cmo" > .depend
 
 include .depend

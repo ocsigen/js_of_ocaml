@@ -1,0 +1,21 @@
+
+Requirements
+------------
+  * findlib
+  * Lwt (version 2.1 at least)
+
+Installation
+------------
+  * run "make" to compile everything
+  * run "make install" as root to install the compiler
+    and its libraries
+  * run "make uninstall" as root to uninstall them
+
+Usage
+-----
+  Your program must first be compiled using the OCaml bytecode
+  compiler 'ocamlc'.  Javascript bindings, as well as a syntax
+  extension, are provided by the 'js' package.
+     ocamlfind ocamlc -o cubes -package js -syntax camlp4o -linkpkg cubes.ml
+  Then, run the 'ocaml2jsFIX' compiler to produce Javascript code:
+     ocaml2jsFIX cubes

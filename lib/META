@@ -1,0 +1,5 @@
+description = "FIXME"
+version = "0.1"
+archive(byte) = "ocaml2js.cma"
+requires = "lwt,camlp4"
+archive(syntax,preprocessor) = "pa_js.cmo"

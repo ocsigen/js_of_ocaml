@@ -226,14 +226,14 @@ function caml_int64_to_int32 (x) {
   return x[1] | (x[2] << 24);
 }
 
-//Provides: caml_int64_to_double const
-function caml_int64_to_double (x) {
+//Provides: caml_int64_to_float const
+function caml_int64_to_float (x) {
   return ((x[3] << 16) * Math.pow(2, 32) + x[2] * Math.pow(2, 24)) + x[1];
 }
 
-//Provides: caml_int64_of_double const
+//Provides: caml_int64_of_float const
 //Requires: caml_int64_offset
-function caml_int64_of_double (x) {
+function caml_int64_of_float (x) {
   if (x < 0) x = Math.ceil(x);
   return [255,
           x & 0xffffff,
