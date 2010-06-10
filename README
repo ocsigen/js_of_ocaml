@@ -1,3 +1,16 @@
+Overview
+--------
+This program compiles OCaml bytecode programs to Javascript.  We hope
+that this option will prove easier to use and to maintain than a
+retargeted OCaml compiler.  In particular, the user does not have to
+perform a distinct installation of OCaml with a specific compiler and
+specially compiled libraries.  For instance, he can use an already
+installed instance of the Lwt library.  Of course, the drawback is that
+the compiler has less freedom.  For instance, OCaml booleans and
+objects cannot be mapped to Javascript booleans and objects.
+
+hide mismatches between OCaml
+to produce code that match perform optimizations.
 
 Requirements
 ------------
@@ -14,8 +27,46 @@ Installation
 Usage
 -----
   Your program must first be compiled using the OCaml bytecode
-  compiler 'ocamlc'.  Javascript bindings, as well as a syntax
-  extension, are provided by the 'js' package.
+  compiler 'ocamlc'.  Javascript bindings, as well as a corresponding
+  syntax extension, are provided by the 'js' package.
      ocamlfind ocamlc -o cubes -package js -syntax camlp4o -linkpkg cubes.ml
   Then, run the 'ocaml2jsFIX' compiler to produce Javascript code:
      ocaml2jsFIX cubes
+
+Features
+--------
+The whole OCaml standard library should be supported, except for
+input/ouput channels, lexing, parsing, weak references, and a few
+functions from the Sys module.  Extra libraries such as Bigarray,
+Unix, Thread or Str are not supported.
+
+Tail call is not optimized in general.  However, self recursive
+functions (when the tail calls are to the function itself) are
+compiled using a loop.
+
+Data representation differs from the usual one, for performance
+reasons.  Most notably, integers are 32 bits (rather than 31 bits or
+63 bits) and float are not boxed.  As a consequence, marshalling,
+polymorphic comparison, and hashing functions can yield results
+different from usual:
+  - marshalling of floats is not supported (unmarshalling works);
+  - the polymorphic hash function will not give the same results on
+    datastructures containing floats;
+  - these functions may be more prone to stack overflow, as the
+    Javascript stack is small.
+
+For best performance, computations should be made using floats rather
+than integers, as this is the native number format in Javascript.
+Conversion from integer to float and back is cheap.  Accurate 32 bit
+integer multiplication is slow.
+
+Contents
+--------
+    LICENSE       license and copyright notice
+    README        this file
+    compiler/     compiler
+    examples/     small examples
+    lib/          library for interfacing with Javascript APIs
+    obrowser/     code for partial compatibility with O'Browser
+                  (not up to date)
+    runtime/      runtime system

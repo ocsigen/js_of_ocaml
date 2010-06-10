@@ -29,12 +29,6 @@ Libraries
 Packaging
 ---------
 - name: JsCaml / ML2JS /mljs
-- ocamlfind packages
-- linker: standard library (through ocamlfind...)
-
-- add a comment at the beginning of the generated code:
-  "Compiled from OCaml using ocaml2js 0.1"
-
 - licenses
 
 Benchmarks/examples
