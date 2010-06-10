@@ -135,102 +135,79 @@ function caml_make_vect (len, init) {
   var b = [0]; for (var i = 1; i <= len; i++) b[i] = init; return b;
 }
 
-// FIX: extra parameter (total?)
-//function compare_val(v1, v2, total) {
-//  var sp = [];
-//  loop:for (;;) {
-//    var c = 0;
-//    if (v1 !== v2 || not total) {
-//      if (v1 instanceof MlString) {
-//        if (v2 instanceof MlString) {
-//          c = v1===v2?0:v1.compare(v2);
-//      } else
-//          return (-1); // should not happen
-//      } else if (v1 instanceof Array) {
-//        if (v2 instanceof Array) {
-//          if (v1[0] == 255 && v2[0] == 255) // 64 bit integer
-//            c = caml_int64_compare(v1, v2);
-//          else if (v1[0] == 248 && v2[0] == 248) // object
-//            c = v1[2] - v2[2];
-//          else {
-//            // Object...
-//            if (v1.length != v2.length)
-//              return (v1.length - v2.length);
-//            else {
-//        // check 
-//              sp.push(v1, v2, 1, v1.length - 1)
-//            }
-//          }
-//        } else
-//          return 1; // block > long
-//      } else if (v2 instanceof Array)
-//          return -1; // long < block
-//      else {
-//        if (v1 < v2) return -1;
-//        if (v1 > v2) return 1;
-//        if (v1 !== v2) {
-//          if (not total) return null;
-//          if (v1 === v1) return 1;
-//          if (v2 === v2) return -1;
-//        }
-//      }
-//      if (c || sp.length == 0) return c;
-//      var i = sp.length - 1;
-//      var l = sp[i];
-//      var n = sp[i - 1]++;
-//      v1 = sp[i-3][n];
-//      v2 = sp[i-2][n];
-//      if (n == l) { sp.pop();sp.pop();sp.pop();sp.pop(); }
-//    }
-//  }
-//}
-//Provides: caml_compare mutable
-//Requires: MlString, caml_int64_compare
-function caml_compare (a, b) {
-  if (a === b) return 0;
+//Provides: caml_compare_val
+//Requires: MlString, caml_int64_compare, caml_int_compare
+function caml_compare_val (a, b, total) {
+  if (a === b && total) return 0;
   if (a instanceof MlString) {
     if (b instanceof MlString)
-      return a.compare(b)
+      return (a == b)?0:a.compare(b)
     else
-      return (-1);
-  } else if (a instanceof Array) {
-    if (b instanceof Array) {
-      if (a.length != b.length)
-        return (a.length - b.length);
-      if (a[0] == 255) return caml_int64_compare(a, b); // 64 bit integer
-      for (var i = 0; i < a.length; i++) {
-        var t = caml_compare (a[i], b[i]);
-        if (t != 0) return t;
-      }
-      return 0;
-    } else
-      return (-1);
-  } else if (b instanceof MlString || b instanceof Array)
+      // Should not happen
       return 1;
-  else if (a < b) return (-1); else if (a == b) return 0; else return 1;
+  } else if (a instanceof Array && a[0] == (a[0]|0)) {
+    // Forward object
+    var ta = a[0];
+    if (ta === 250) return caml_compare_val (a[1], b, total);
+    if (b instanceof Array && b[0] == (b[0]|0)) {
+      // Forward object
+      var tb = b[0];
+      if (tb === 250) return caml_compare_val (a, b[1], total);
+      if (ta != tb) return (ta < tb)?-1:1;
+      switch (ta) {
+      case 248:
+        // Object
+        return caml_int_compare(a[2], b[2]);
+      case 255:
+        // Int64
+        return caml_int64_compare(a, b);
+      default:
+        if (a.length != b.length) return (a.length < b.length)?-1:1;
+        for (var i = 0; i < a.length; i++) {
+          var t = caml_compare_val (a[i], b[i], total);
+          if (t != 0) return t;
+        }
+        return 0;
+      }
+    } else
+      return 1;
+  } else if (b instanceof MlString || (b instanceof Array && b[0] == (b[0]|0)))
+    return -1;
+  else {
+    if (a < b) return -1;
+    if (a > b) return 1;
+    if (a != b) {
+      if (!total) return null;
+      if (a == a) return 1;
+      if (b == b) return -1;
+    }
+  }
 }
+//Provides: caml_compare
+//Requires: caml_compare_val
+function caml_compare (a, b) { return caml_compare_val (a, b, true); }
 //Provides: caml_int_compare mutable
 function caml_int_compare (a, b) {
   if (a < b) return (-1); if (a == b) return 0; return 1;
 }
 //Provides: caml_equal mutable
-//Requires: caml_compare
-function caml_equal (x, y) { return +(caml_compare(x,y) == 0); }
+//Requires: caml_compare_val
+function caml_equal (x, y) { return +(caml_compare_val(x,y,false) == 0); }
 //Provides: caml_notequal mutable
 //Requires: caml_compare
-function caml_notequal (x, y) { return +(caml_compare(x,y) != 0); }
+function caml_notequal (x, y) { return +(caml_compare_val(x,y,false) != 0); }
 //Provides: caml_greaterequal mutable
 //Requires: caml_compare
-function caml_greaterequal (x, y) { return +(caml_compare(x,y) >= 0); }
+function caml_greaterequal (x, y) { return +(caml_compare(x,y,false) >= 0); }
 //Provides: caml_greaterthan mutable
 //Requires: caml_compare
-function caml_greaterthan (x, y) { return +(caml_compare(x,y) > 0); }
+function caml_greaterthan (x, y) { return +(caml_compare(x,y,false) > 0); }
 //Provides: caml_lessequal mutable
 //Requires: caml_compare
-function caml_lessequal (x, y) { return +(caml_compare(x,y) <= 0); }
+function caml_lessequal (x, y) { return +(caml_compare(x,y,false) <= 0); }
 //Provides: caml_lessthan mutable
 //Requires: caml_compare
-function caml_lessthan (x, y) { return +(caml_compare(x,y) < 0); }
+function caml_lessthan (x, y) { return +(caml_compare(x,y,false) < 0); }
 
 //Provides: caml_parse_sign_and_base
 //Requires: MlString
@@ -298,9 +275,7 @@ function caml_string_notequal(s1, s2) { return +s1.notEqual(s2); }
 function caml_is_printable(c) { return +(c > 31 && c < 127); }
 //Provides: caml_blit_string
 //Requires: MlString
-function caml_blit_string(s1, i1, s2, i2, len) {
-  s1.blit (i1, s2, i2, len);
-}
+function caml_blit_string(s1, i1, s2, i2, len) { s1.blit (i1, s2, i2, len); }
 
 ///////////// Format
 //Provides: caml_parse_format

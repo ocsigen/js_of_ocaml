@@ -9,10 +9,10 @@ IDEAS
 - autres planétes
 
 Stop animation when not visible!
-
-
+===> use window.onfocus/onblur
 
 http://visibleearth.nasa.gov/view_rec.php?id=2431
+http://maps.jpl.nasa.gov/
 *)
 
 let texture = Js.string "texture.jpg"

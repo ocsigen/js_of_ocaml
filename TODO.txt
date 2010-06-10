@@ -7,6 +7,8 @@ Documentation
 ==> what differs: marshalling, comparison, hashing
     ==> different data representation
     ==> stack overflow
+==> Performance tips: make computations using float; conversion to and
+    from int is cheap; int multiplication and division can be slow
 
 Runtime                                                  <======
 -------
