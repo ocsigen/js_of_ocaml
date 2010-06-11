@@ -1,4 +1,6 @@
-FILES=mlString.js ieee_754.js int64.js md5.js marshall.js stdlib.js jslib.js
+FILES= 	mlString.js ieee_754.js int64.js md5.js marshall.js \
+	lexing.js parsing.js \
+	stdlib.js jslib.js
 
 runtime.js: $(FILES)
 	cat $(FILES) > runtime.js
