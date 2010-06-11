@@ -6,12 +6,7 @@ syntax:glob
 compile{,.opt}
 ocaml2js
 private
-examples/boulderdash/boulderdash{.byte,.js}
-examples/minesweeper/minesweeper{.byte,.js}
-examples/cubes/cubes{.byte,.js}
-examples/canvas/canvas{.byte,.js}
-examples/sudoku/sudoku{.byte,.js}
-examples/planet/planet{.byte,.js}
+examples/*/*{.byte,.js}
 lib/stubs.c
 obrowser/vm.js
 runtime/runtime.js
