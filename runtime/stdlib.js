@@ -468,7 +468,7 @@ function caml_hash_univ_param (count, limit, obj) {
       if (a) {
         for (var i = 0; i < l; i++) hash_accu = (hash_accu * 19 + a[i]) | 0;
       } else {
-        var b = obj.toFullBytes ();
+        var b = obj.getFullBytes ();
         for (var i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
       }

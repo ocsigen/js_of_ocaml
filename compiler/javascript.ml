@@ -46,7 +46,7 @@ and expression =
   | ENew of expression * arguments option
   | EVar of identifier
   | EFun of function_expression
-  | EStr of string
+  | EStr of string * [`Bytes (*| `Utf8*)]
   | EArr of array_litteral
   | EBool of bool
   | ENum of float

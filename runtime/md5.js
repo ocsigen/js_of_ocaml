@@ -131,7 +131,7 @@ function () {
         buf[i>>2] = a[i] | (a[i+1] << 8) | (a[i+2] << 16) | (a[i+3] << 24);
       for (; i < len; i++) buf[i>>2] |= a[i] << (8 * (i & 3));
     } else {
-      var b = s.toFullBytes();
+      var b = s.getFullBytes();
       for (var i = 0; i < len; i+=4)
         buf[i>>2] =
           b.charCodeAt(i) | (b.charCodeAt(i+1) << 8) |

@@ -83,7 +83,7 @@ var caml_input_value_from_string = function (){
   }
   return function (s, ofs) {
     var reader = s.array?new ArrayReader (s.array, ofs):
-                         new StringReader (s.toFullBytes(), ofs);
+                         new StringReader (s.getFullBytes(), ofs);
     var magic = reader.read32u ();
     var block_len = reader.read32u ();
     var num_objects = reader.read32u ();

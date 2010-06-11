@@ -40,7 +40,7 @@ MlString.prototype = {
 
   toJsString:function() {
     // assumes this.string == null
-    return this.string = decodeURIComponent (escape(this.toFullBytes()));
+    return this.string = decodeURIComponent (escape(this.getFullBytes()));
   },
 
   toBytes:function() {
@@ -57,7 +57,13 @@ MlString.prototype = {
     return b;
   },
 
-  toFullBytes:function() {
+  getBytes:function() {
+    var b = this.bytes;
+    if (b == null) b = this.toBytes();
+    return b;
+  },
+
+  getFullBytes:function() {
     var b = this.bytes;
     if (b == null) b = this.toBytes ();
     if (this.last < this.len) {
@@ -80,18 +86,17 @@ MlString.prototype = {
     return a;
   },
 
+  getArray:function() {
+    var a = this.array;
+    if (!a) a = this.toArray();
+    return a;
+  },
+
   getLen:function() {
     var len = this.len;
     if (len) return len;
     this.toBytes();
     return this.len;
-  },
-
-  getBytes:function() {
-    var b = this.bytes;
-    if (b != null) return b;
-    this.toBytes();
-    return this.bytes;
   },
 
   toString:function() { var s = this.string; return s?s:this.toJsString(); },
@@ -181,8 +186,8 @@ MlString.prototype = {
       if (this.string > s2.string) return 1;
       return 0;
     }
-    var b1 = this.toFullBytes ();
-    var b2 = s2.toFullBytes ();
+    var b1 = this.getFullBytes ();
+    var b2 = s2.getFullBytes ();
     if (b1 < b2) return -1;
     if (b1 > b2) return 1;
     return 0;
@@ -191,17 +196,17 @@ MlString.prototype = {
   equal:function (s2) {
     if (this.string != null && s2.string != null)
       return this.string == s2.string;
-    return this.toFullBytes () == s2.toFullBytes ();
+    return this.getFullBytes () == s2.getFullBytes ();
   },
   lessThan:function (s2) {
     if (this.string != null && s2.string != null)
       return this.string < s2.string;
-    return this.toFullBytes () < s2.toFullBytes ();
+    return this.getFullBytes () < s2.getFullBytes ();
   },
   lessEqual:function (s2) {
     if (this.string != null && s2.string != null)
       return this.string <= s2.string;
-    return this.toFullBytes () <= s2.toFullBytes ();
+    return this.getFullBytes () <= s2.getFullBytes ();
   }
 }
 

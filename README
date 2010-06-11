@@ -6,11 +6,9 @@ retargeted OCaml compiler.  In particular, the user does not have to
 perform a distinct installation of OCaml with a specific compiler and
 specially compiled libraries.  For instance, he can use an already
 installed instance of the Lwt library.  Of course, the drawback is that
-the compiler has less freedom.  For instance, OCaml booleans and
+we have less freedom in mapping smoothly OCaml to Javascript and
+optimizating the generated code.  For instance, OCaml booleans and
 objects cannot be mapped to Javascript booleans and objects.
-
-hide mismatches between OCaml
-to produce code that match perform optimizations.
 
 Requirements
 ------------
