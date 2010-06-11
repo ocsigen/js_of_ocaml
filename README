@@ -26,10 +26,14 @@ Usage
 -----
   Your program must first be compiled using the OCaml bytecode
   compiler 'ocamlc'.  Javascript bindings, as well as a corresponding
-  syntax extension, are provided by the 'js' package.
-     ocamlfind ocamlc -o cubes -package js -syntax camlp4o -linkpkg cubes.ml
-  Then, run the 'ocaml2jsFIX' compiler to produce Javascript code:
-     ocaml2jsFIX cubes
+  syntax extension, are provided by the 'js_of_ocaml' package.
+
+      ocamlfind ocamlc -package js_of_ocaml -syntax camlp4o -linkpkg \
+          -o cubes.byte cubes.ml
+
+  Then, run the 'js_of_ocaml' compiler to produce Javascript code:
+
+      js_of_ocaml cubes.byte
 
 Features
 --------

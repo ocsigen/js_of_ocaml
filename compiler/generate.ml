@@ -1247,7 +1247,7 @@ let list_missing l =
 
 let f ch ((pc, blocks, _) as p) live_vars =
   Format.fprintf ch
-    "// This program was compiled from OCaml by ocaml2js 0.1@.";
+    "// This program was compiled from OCaml by js_of_ocaml 0.1@.";
   let mutated_vars = Freevars.f p in
   let ctx = Ctx.initial blocks live_vars mutated_vars in
   let p = compile_program ctx pc in
