@@ -94,7 +94,7 @@ MlString.prototype = {
 
   getLen:function() {
     var len = this.len;
-    if (len) return len;
+    if (len != null) return len;
     this.toBytes();
     return this.len;
   },
@@ -164,7 +164,7 @@ MlString.prototype = {
   },
 
   safeSet:function (i, c) {
-    if (!this.len) this.toBytes ();
+    if (this.len == null) this.toBytes ();
     if ((i < 0) || (i >= this.len)) caml_array_bound_error ();
     this.set(i, c);
   },

@@ -181,6 +181,7 @@ function caml_compare_val (a, b, total) {
       if (a == a) return 1;
       if (b == b) return -1;
     }
+    return 0;
   }
 }
 //Provides: caml_compare

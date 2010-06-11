@@ -661,8 +661,9 @@ class type document = object
 end
 
 (*XXX Should provide creation functions a la lablgtk... *)
-let unsafeCreateElement (doc : document t) name =
-  Js.Unsafe.coerce (doc##createElement(Js.string name))
+
+let createElement (doc : document t) name = doc##createElement(Js.string name)
+let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 
 let createHtmlElement doc : htmlElement t = unsafeCreateElement doc "html"
 let createHeadElement doc : headElement t = unsafeCreateElement doc "head"
@@ -735,10 +736,29 @@ let createTBodyElement doc : tableSectionElement t =
   unsafeCreateElement doc "tbody"
 let createTableRowElement doc : tableRowElement t =
   unsafeCreateElement doc "tr"
-let createThElement doc : tableCellElement t =
-  unsafeCreateElement doc "th"
-let createTdElement doc : tableCellElement t =
-  unsafeCreateElement doc "td"
+let createThElement doc : tableCellElement t = unsafeCreateElement doc "th"
+let createTdElement doc : tableCellElement t = unsafeCreateElement doc "td"
+let createSubElement doc = createElement doc "sub"
+let createSupElement doc = createElement doc "sup"
+let createSpanElement doc = createElement doc "span"
+let createTtElement doc = createElement doc "tt"
+let createIElement doc = createElement doc "i"
+let createBElement doc = createElement doc "b"
+let createBigElement doc = createElement doc "big"
+let createSmallElement doc = createElement doc "small"
+let createEmElement doc = createElement doc "em"
+let createStrongElement doc = createElement doc "strong"
+let createCiteElement doc = createElement doc "cite"
+let createDfnElement doc = createElement doc "dfn"
+let createCodeElement doc = createElement doc "code"
+let createSampElement doc = createElement doc "samp"
+let createKbdElement doc = createElement doc "kbd"
+let createVarElement doc = createElement doc "var"
+let createAbbrElement doc = createElement doc "abbr"
+let createDdElement doc = createElement doc "dd"
+let createDtElement doc = createElement doc "dt"
+let createNoscriptElement doc = createElement doc "noscript"
+let createAddressElement doc = createElement doc "address"
 
 let createCanvasElement doc : canvasElement t =
   unsafeCreateElement doc "canvas"

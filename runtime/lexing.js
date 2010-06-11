@@ -98,7 +98,7 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
       /* Erase the EOF condition only if the EOF pseudo-character was
          consumed by the automaton (i.e. there was no backtrack above)
        */
-      if (c == 256) lexbuf[lex_eof_reached] = Val_bool (0);
+      if (c == 256) lexbuf[lex_eof_reached] = 0;
     }
   }
 }

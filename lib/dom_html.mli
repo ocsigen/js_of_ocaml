@@ -698,6 +698,27 @@ val createTableRowElement : document t -> tableRowElement t
 val createThElement : document t -> tableCellElement t
 val createTdElement : document t -> tableCellElement t
 val createCanvasElement : document t -> canvasElement t
+val createSubElement : document t -> element t
+val createSupElement : document t -> element t
+val createSpanElement : document t -> element t
+val createTtElement : document t -> element t
+val createIElement : document t -> element t
+val createBElement : document t -> element t
+val createBigElement : document t -> element t
+val createSmallElement : document t -> element t
+val createEmElement : document t -> element t
+val createStrongElement : document t -> element t
+val createCiteElement : document t -> element t
+val createDfnElement : document t -> element t
+val createCodeElement : document t -> element t
+val createSampElement : document t -> element t
+val createKbdElement : document t -> element t
+val createVarElement : document t -> element t
+val createAbbrElement : document t -> element t
+val createDdElement : document t -> element t
+val createDtElement : document t -> element t
+val createNoscriptElement : document t -> element t
+val createAddressElement : document t -> element t
 
 (****)
 
