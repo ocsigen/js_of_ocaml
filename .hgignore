@@ -4,9 +4,10 @@ syntax:glob
 *.so
 *~
 compile{,.opt}
-ocaml2js
+js_of_ocaml
 private
 examples/*/*{.byte,.js}
 lib/stubs.c
 obrowser/vm.js
 runtime/runtime.js
+examples/wiki/wikicreole.ml

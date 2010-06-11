@@ -64,7 +64,7 @@ let builder =
     W.pre_elem =
       (fun s ->
          let p = d##createElement (Js.string "pre") in
-         Dom.appendChild d
+         Dom.appendChild p
            (d##createTextNode (Js.string (String.concat "" s)));
          node p);
     W.h1_elem = (fun s -> d##createElement (Js.string "h1") <| s);

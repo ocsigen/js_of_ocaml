@@ -1,12 +1,13 @@
 Priorities
 ==========
+What name for the library?
+
 Documentation
 -------------
 - js library (mostly, syntax extension)                  <=====
 
 Libraries
 ---------
-- lexing/parsing
 - finish js API
   ===> event callbacks                                   <======
        ==> how can we invoke a previous callback?
@@ -20,10 +21,10 @@ Libraries
   ==> either a function, undefined or null
 - canvas: should check whether it is available...
 - firebug.ml ==> debugging code
+- "createFooElement" a bit heavy
 
 Packaging
 ---------
-- name: JsCaml / ML2JS /mljs
 - licenses
 
 Benchmarks/examples

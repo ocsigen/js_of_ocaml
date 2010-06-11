@@ -1,3 +1,8 @@
+(*
+FIX:
+- catch exceptions
+- example at first
+*)
 module Html = Dom_html
 
 let (>>=) = Lwt.bind
@@ -21,8 +26,10 @@ let onload () =
     let text = Js.to_string (textbox##value) in
     let n =
       if text <> old_text then begin
-        let rendered = Wiki_syntax.xml_of_wiki text in
-        replace_child preview rendered;
+        begin try
+          let rendered = Wiki_syntax.xml_of_wiki text in
+          replace_child preview rendered;
+        with _ -> () end;
         20
       end else
         max 0 (n - 1)

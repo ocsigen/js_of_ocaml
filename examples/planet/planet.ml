@@ -8,6 +8,10 @@ IDEAS
 - affiche l'axe de rotation de la terre, la direction du soleil
 - autres planétes
 
+Should experiment with sphere tessellation...
+   http://sol.gfxile.net/sphere/index.html
+   http://www.nihilogic.dk/labs/canvas3dtexture_0.2/
+
 Stop animation when not visible!
 ===> use window.onfocus/onblur
 
