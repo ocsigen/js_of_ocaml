@@ -181,6 +181,10 @@ type state =
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
 let incr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1)
 let decr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 1)
+let protect_preds st pc =
+  Hashtbl.replace st.preds pc (get_preds st pc + 1000000)
+let unprotect_preds st pc =
+  Hashtbl.replace st.preds pc (get_preds st pc - 1000000)
 
 let (>>) x f = f x
 
@@ -809,7 +813,7 @@ Format.eprintf ")@.";
   let succs = Hashtbl.find st.succs pc in
   let backs = Hashtbl.find st.backs pc in
   (* Remove limit *)
-  if pc < 0 then List.iter (fun pc -> decr_preds st pc) succs;
+  if pc < 0 then List.iter (fun pc -> unprotect_preds st pc) succs;
   let grey =
     List.fold_right
       (fun pc grey -> AddrSet.union (dominance_frontier st pc) grey)
@@ -904,7 +908,7 @@ Format.eprintf "@.";
             (* Put a limit: we are going to remove other branches
                to the members of the frontier (in compile_conditional),
                but they should remain in the frontier. *)
-            AddrSet.iter (fun pc -> incr_preds st pc) new_frontier;
+            AddrSet.iter (fun pc -> protect_preds st pc) new_frontier;
             Hashtbl.add st.succs idx (AddrSet.elements new_frontier);
             Hashtbl.add st.all_succs idx new_frontier;
             Hashtbl.add st.backs idx AddrSet.empty;

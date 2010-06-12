@@ -2,6 +2,12 @@ Priorities
 ==========
 What name for the library?
 
+Examples
+--------
+- check canvas availability
+- polishing
+- catch error in planet when loading from file
+
 Documentation
 -------------
 - js library (mostly, syntax extension)                  <=====
