@@ -310,6 +310,24 @@ let specialize_instr info i =
       | _ ->
           i
       end
+  | Let (x, Prim (Extern "caml_js_call", [Pv f; Pv o; Pv a])) ->
+      begin match the_def_of info a with
+        Some (Block (_, a)) ->
+          let a = Array.map (fun x -> Pv x) a in
+          Let (x, Prim (Extern "caml_js_opt_call",
+                        Pv f :: Pv o :: Array.to_list a))
+      | _ ->
+          i
+      end
+  | Let (x, Prim (Extern "caml_js_fun_call", [Pv f; Pv a])) ->
+      begin match the_def_of info a with
+        Some (Block (_, a)) ->
+          let a = Array.map (fun x -> Pv x) a in
+          Let (x, Prim (Extern "caml_js_opt_fun_call",
+                        Pv f :: Array.to_list a))
+      | _ ->
+          i
+      end
   | Let (x, Prim (Extern "caml_js_meth_call", [Pv o; Pv m; Pv a])) ->
       begin match the_def_of info m with
         Some (Constant (String _ as m)) ->

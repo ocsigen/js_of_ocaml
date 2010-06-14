@@ -588,13 +588,15 @@ and canvasRenderingContext2D = object
   method drawImage_scale :
     imageElement t -> float -> float -> float -> float -> unit meth
   method drawImage_full :
-    imageElement t -> float -> float -> float -> float -> unit meth
+    imageElement t -> float -> float -> float -> float ->
+    float -> float -> float -> float -> unit meth
   method drawImage_fromCanvas :
     canvasElement t -> float -> float -> unit meth
   method drawImage_scaleFromCanvas :
     canvasElement t -> float -> float -> float -> float -> unit meth
   method drawImage_fullFromCanvas :
-    canvasElement t -> float -> float -> float -> float -> unit meth
+    canvasElement t -> float -> float -> float -> float ->
+    float -> float -> float -> float -> unit meth
 (*
   void drawImage(in HTMLVideoElement image, in float dx, in float dy, in optional float dw, in float dh);
   void drawImage(in HTMLVideoElement image, in float sx, in float sy, in float sw, in float sh, in float dx, in float dy, in float dw, in float dh);

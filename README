@@ -38,9 +38,9 @@ Usage
 Features
 --------
 The whole OCaml standard library should be supported, except for
-input/ouput channels, weak references, and a few functions from the
-Sys module.  Extra libraries such as Bigarray, Unix, Thread or Str are
-not supported.
+input/ouput channels, weak references, and most functions of the
+Sys module.  Extra libraries such as Bigarray, Unix, Thread or Str
+are not supported.
 
 Tail call is not optimized in general.  However, self recursive
 functions (when the tail calls are to the function itself) are

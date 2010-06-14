@@ -4,9 +4,9 @@ function caml_call_gen(f, args) {
   var n = f.length;
   var d = n - args.length;
   if (d == 0)
-    return f.apply(this, args);
+    return f.apply(null, args);
   else if (d < 0)
-    return caml_call_gen(f.apply(this, args.slice(0,n)), args.slice(n));
+    return caml_call_gen(f.apply(null, args.slice(0,n)), args.slice(n));
   else
     return function (x){ return caml_call_gen(f, args.concat([x])); };
 }

@@ -7,6 +7,8 @@ Examples
 - check canvas availability
 - polishing
 - catch error in planet when loading from file
+- use window.onload
+- credits
 
 Documentation
 -------------

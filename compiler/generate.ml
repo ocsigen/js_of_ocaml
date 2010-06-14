@@ -654,6 +654,30 @@ let rec translate_expr ctx queue e =
       | Extern "caml_js_const", [Pc (String nm)] ->
           Code.add_reserved_name nm;  (*XXX HACK *)
           (J.EVar nm, const_p, queue)
+      | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
+          let ((pf, cf), queue) = access_queue queue f in
+          let ((po, co), queue) = access_queue queue o in
+          let (args, prop, queue) =
+            List.fold_right
+              (fun x (args, prop, queue) ->
+                 let x = match x with Pv x -> x | _ -> assert false in
+                 let ((prop', cx), queue) = access_queue queue x in
+                 (cx :: args, or_p prop prop', queue))
+              l ([], mutator_p, queue)
+          in
+          (J.ECall (J.EDot (cf, "call"), co :: args),
+           or_p (or_p pf po) prop, queue)
+      | Extern "caml_js_opt_fun_call", Pv f :: l ->
+          let ((pf, cf), queue) = access_queue queue f in
+          let (args, prop, queue) =
+            List.fold_right
+              (fun x (args, prop, queue) ->
+                 let x = match x with Pv x -> x | _ -> assert false in
+                 let ((prop', cx), queue) = access_queue queue x in
+                 (cx :: args, or_p prop prop', queue))
+              l ([], mutator_p, queue)
+          in
+          (J.ECall (cf, args), or_p pf prop, queue)
       | Extern "caml_js_opt_meth_call", Pv o :: Pc (String m) :: l ->
           let ((po, co), queue) = access_queue queue o in
           let (args, prop, queue) =

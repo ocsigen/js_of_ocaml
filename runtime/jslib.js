@@ -34,8 +34,12 @@ function caml_js_const(x) {
   // case "undefined: return undefined;
   }
 }
+//Provides: caml_js_call
+function caml_js_call(f, o, args) { return f.apply(o, args.slice(1)); }
+//Provides: caml_js_fun_call
+function caml_js_fun_call(f, args) { return f.apply(null, args.slice(1)); }
 //Provides: caml_js_meth_call
-function caml_js_meth_call(o, f, args) { return f.apply(o, args.slice(1)); }
+function caml_js_meth_call(o, f, args) { return o.f.apply(o, args.slice(1)); }
 //Provides: caml_js_new
 function caml_js_new(c, a) {
   switch (a.length) {
