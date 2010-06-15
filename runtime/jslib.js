@@ -70,6 +70,8 @@ function caml_js_wrap_meth_callback(f) {
     return caml_call_gen(f, args);
   }
 }
+//Provides: caml_js_equals mutable
+function caml_js_equals (x, y) { return +(x == y); }
 
 /////////// Debugging console
 //Provides: caml_get_console const

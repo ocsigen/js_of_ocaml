@@ -17,19 +17,8 @@ Documentation
 Libraries
 ---------
 - finish js API
-  ===> event callbacks                                   <======
-       ==> how can we invoke a previous callback?
   ===> dom object creation (especially, INPUT)
-- event handlers:                                        <======
-  ==> use a wrapper:
-	  if (!e) e = window.event;
-          ....
-  ==> we want to be able to access this
-      (avoid memory leaks...)
-  ==> either a function, undefined or null
 - canvas: should check whether it is available...
-- firebug.ml ==> debugging code
-- "createFooElement" a bit heavy
 
 Packaging
 ---------

@@ -1,6 +1,5 @@
 (*
 FIX:
-- catch exceptions
 - example at first
 *)
 module Html = Dom_html
@@ -11,7 +10,7 @@ let replace_child p n =
   Js.Opt.iter (p##firstChild) (fun c -> Dom.removeChild p c);
   Dom.appendChild p n
 
-let onload () =
+let onload _ =
   let d = Html.document in
   let body = d##body in
   let textbox = Html.createTextarea d in
@@ -37,7 +36,8 @@ let onload () =
     Lwt_js.sleep (if n = 0 then 0.5 else 0.1) >>= fun () ->
     dyn_preview text n
   in
-  ignore (dyn_preview "" 0)
+  ignore (dyn_preview "" 0);
+  Js._false
 
 let _ =
-Html.window##onload <- onload
+Html.window##onload <- Html.handler onload

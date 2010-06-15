@@ -10,12 +10,12 @@ let make_board () =
     let style = input##style in
     style##border <- Js.string "none";
     style##padding <- Js.string "0px";
-    let enforce_digit () =
+    let enforce_digit _ =
       match Js.to_string input##value with
         | "1" | "2" | "3" | "4" | "5"
         | "6" | "7" | "8" | "9" -> Js._false
         | _ -> input##value <- Js.string ""; Js._false in
-    input##onchange <- Js.some enforce_digit;
+    input##onchange <- D.handler enforce_digit;
     input in
 
   let make_td i j input =
@@ -100,17 +100,16 @@ let check_board rows _ =
   done;
   Js._false
 
-let onload () =
+let onload _ =
   let (rows, table) = make_board () in
   let check =
     Js.Opt.get (d##getElementById (Js.string "check"))
       (fun () -> assert false) in
-  check##onclick <- Js.some (check_board rows);
+  check##onclick <- D.handler (check_board rows);
   let board =
     Js.Opt.get (d##getElementById (Js.string "board"))
       (fun () -> assert false) in
-  ignore (Dom.appendChild board table)
+  ignore (Dom.appendChild board table);
+  Js._false
 
-;;
-
-D.window##onload <- onload
+let _ = D.window##onload <- D.handler onload

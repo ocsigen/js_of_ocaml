@@ -98,16 +98,30 @@ class type cssStyleDeclaration = object
   method zIndex : js_string t prop
 end
 
+type ('a, 'b) event_handler
+
 class type event = object
   method _type : js_string t readonly_prop
-  method target : element t opt readonly_prop
-  method srcElement : element t opt readonly_prop
+  method target : element t optdef readonly_prop
+
+  (* Legacy methods *)
+  method srcElement : element t optdef readonly_prop
 end
 
 and mouseEvent = object
+  inherit event
+  method relatedTarget : element t opt optdef readonly_prop
+
+  (* Legacy methods *)
+  method fromElement : element t opt optdef readonly_prop
+  method toElement : element t opt optdef readonly_prop
 end
 
-and element = object
+and keyboardEvent = object
+  inherit event
+end
+
+and element = object ('self)
   inherit Dom.element
   method id : js_string t prop
   method title : js_string t prop
@@ -118,11 +132,25 @@ and element = object
 
   method innerHTML : js_string t prop
 
-  (* FIX: event? / might be undefined! *)
-  method onclick : (unit -> bool t) opt prop
-  method onmouseover : (unit -> bool t) opt prop
-  method onmouseout : (unit -> bool t) opt prop
+  method onclick : ('self t, mouseEvent t) event_handler prop
+  method ondblclick : ('self t, mouseEvent t) event_handler prop
+  method onmousedown : ('self t, mouseEvent t) event_handler prop
+  method onmouseup : ('self t, mouseEvent t) event_handler prop
+  method onmouseover : ('self t, mouseEvent t) event_handler prop
+  method onmousemove : ('self t, mouseEvent t) event_handler prop
+  method onmouseout : ('self t, mouseEvent t) event_handler prop
+  method onkeypress : ('self t, keyboardEvent t) event_handler prop
+  method onkeydown : ('self t, keyboardEvent t) event_handler prop
+  method onkeyup : ('self t, keyboardEvent t) event_handler prop
 end
+
+val no_handler : ('a, 'b) event_handler
+val handler : ((#event t as 'b) -> bool t) -> ('a, 'b) event_handler
+val full_handler : ('a -> (#event t as 'b) -> bool t) -> ('a, 'b) event_handler
+val invoke_handler : ('a, 'b) event_handler -> 'a -> 'b -> bool t
+
+val eventTarget : #event t -> element t
+val eventRelatedTarget : #mouseEvent t -> element t opt
 
 class type ['node] collection = object
   method length : int readonly_prop
@@ -210,7 +238,7 @@ class type optionElement = object
   method value : js_string t prop
 end
 
-class type selectElement = object
+class type selectElement = object ('self)
   inherit element
   method _type : js_string t readonly_prop
   method selectedIndex : int prop
@@ -228,10 +256,10 @@ class type selectElement = object
   method blur : unit meth
   method focus : unit meth
 
-  method onchange : (unit -> bool t) opt prop
+  method onchange : ('self t, event t) event_handler prop
 end
 
-class type inputElement = object
+class type inputElement = object ('self)
   inherit element
   method defaultValue : js_string t prop
   method defaultChecked : js_string t prop
@@ -256,10 +284,11 @@ class type inputElement = object
   method select : unit meth
   method click : unit meth
 
-  method onchange : (unit -> bool t) opt prop
+  method onselect : ('self t, event t) event_handler prop
+  method onchange : ('self t, event t) event_handler prop
 end
 
-class type textAreaElement = object
+class type textAreaElement = object ('self)
   inherit element
   method defaultValue : js_string t prop
   method form : formElement t opt readonly_prop
@@ -275,6 +304,9 @@ class type textAreaElement = object
   method blur : unit meth
   method focus : unit meth
   method select : unit meth
+
+  method onselect : ('self t, event t) event_handler prop
+  method onchange : ('self t, event t) event_handler prop
 end
 
 class type buttonElement = object
@@ -355,7 +387,7 @@ class type anchorElement = object
   method focus : unit meth
 end
 
-class type imageElement = object
+class type imageElement = object ('self)
   inherit element
   method alt : js_string t prop
   method src : js_string t prop
@@ -367,8 +399,7 @@ class type imageElement = object
   method naturalHeight : int readonly_prop
   method complete : bool t prop
 
-  (* FIX...*)
-  method onload : (unit -> unit) prop
+  method onload : ('self t, event t) event_handler prop
 end
 
 class type objectElement = object
@@ -768,10 +799,6 @@ class type window = object
   method parent : window t readonly_prop
   method frameElement : element t opt readonly_prop
 
-  (*FIX...*)
-  method onload : (unit -> unit) prop
-  method onbeforeunload : (unit -> js_string t) prop
-
   method alert : js_string t -> unit meth
   method confirm : js_string t -> bool t meth
   method prompt : js_string t -> js_string t -> js_string t meth
@@ -782,6 +809,11 @@ class type window = object
 
   method setTimeout : (unit -> unit) -> float -> timeout_id meth
   method clearTimeout : timeout_id -> unit meth
+
+  method onload : (window t, event t) event_handler prop
+  method onbeforeunload : (window t, event t) event_handler prop
+  method onblur : (window t, event t) event_handler prop
+  method onfocus : (window t, event t) event_handler prop
 end
 
 val window : window t

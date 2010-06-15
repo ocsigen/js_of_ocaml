@@ -577,7 +577,9 @@ let _ =
   register_tern_prim "caml_js_set"
     (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable
-    (fun cx cy -> J.EAccess (cx, cy))
+    (fun cx cy -> J.EAccess (cx, cy));
+  register_bin_prim "caml_js_equals" `Mutable
+    (fun cx cy -> bool (J.EBin (J.EqEq, cx, cy)))
 
 (****)
 

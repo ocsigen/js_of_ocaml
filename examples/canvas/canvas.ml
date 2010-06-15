@@ -1,6 +1,6 @@
 module D = Dom_html
 
-let onload () =
+let onload _ =
   let c = D.createCanvas D.document in
   c##width <- 150; c##height <- 150;
   Dom.appendChild D.document##body c;
@@ -21,8 +21,7 @@ let onload () =
   ctx##quadraticCurveTo (60., 120., 65., 100.);
   ctx##quadraticCurveTo (125., 100., 125., 62.5);
   ctx##quadraticCurveTo (125., 25., 75., 25.);
-  ctx##stroke ()
+  ctx##stroke ();
+  Js._false
 
-;;
-
-D.window##onload <- onload
+let _ = D.window##onload <- D.handler onload

@@ -37,7 +37,10 @@ let (>>=) = Lwt.bind
 
 let load_image src =
   let img = Html.createImg Html.document in
-  lwt_wrap (fun c -> img##onload <- c; img##src <- src) >>= fun () ->
+  lwt_wrap
+    (fun c ->
+       img##onload <- Html.handler (fun _ -> c (); Js._false); img##src <- src)
+    >>= fun () ->
   let w = img##naturalWidth in
   let h = img##naturalHeight in
   let canvas = create_canvas w h in

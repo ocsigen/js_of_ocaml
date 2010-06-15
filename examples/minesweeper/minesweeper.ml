@@ -132,7 +132,7 @@ let draw_board d =
 let disable_events d =
   for y = 0 to d.cf.nbrows - 1 do
     for x = 0 to d.cf.nbcols - 1 do
-      d.dom.(y).(x)##onclick <- Js.some
+      d.dom.(y).(x)##onclick <- Html.handler
         (fun _ -> Html.window##alert (js"GAME OVER"); Js._false)
     done
   done
@@ -180,7 +180,7 @@ let init_table d board_div =
   let img = Html.createImg document in
   Dom.appendChild buf img;
   img##src <- js"sprites/bomb.png" ;
-  img##onclick <- Js.some
+  img##onclick <- Html.handler
     (fun _ ->
        begin match !mode with
          | Normal -> mode := Flag ; img##src <- js"sprites/flag.png"
@@ -195,7 +195,7 @@ let init_table d board_div =
       let img = Html.createImg document in
       imgs := img :: !imgs ;
       img##src <- js"sprites/normal.png";
-      img##onclick <- Js.some
+      img##onclick <- Html.handler
         (fun _ ->
           (match !mode with
             | Normal ->

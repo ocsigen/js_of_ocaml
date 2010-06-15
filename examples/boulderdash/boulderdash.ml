@@ -120,9 +120,9 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
   Lwt_mutex.lock state.map_mutex >>= fun () ->
     for y = 0 to Array.length state.map - 1 do
       for x = 0 to Array.length state.map.(y) - 1 do
-	state.imgs.(y).(x)##onmouseover <- Js.null ;
-	state.imgs.(y).(x)##onmouseout <- Js.null ;
-	state.imgs.(y).(x)##onclick <- Js.null
+	state.imgs.(y).(x)##onmouseover <- Html.no_handler;
+	state.imgs.(y).(x)##onmouseout <- Html.no_handler;
+	state.imgs.(y).(x)##onclick <- Html.no_handler
       done
     done ;
     let inhibit f _x =
@@ -175,11 +175,11 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
                   | _     -> Lwt.fail e)) >>= fun () ->
 	    build_interaction state show_rem clock
 	in
-	  state.imgs.(y).(x)##onmouseover <- Js.some
+	  state.imgs.(y).(x)##onmouseover <- Html.handler
 	    (inhibit (set_pending_out (with_pending_out over) out)) ;
-	  state.imgs.(y).(x)##onmouseout <- Js.some
+	  state.imgs.(y).(x)##onmouseout <- Html.handler
 	    (inhibit (with_pending_out (fun () -> Lwt.return ()))) ;
-	  state.imgs.(y).(x)##onclick <- Js.some
+	  state.imgs.(y).(x)##onclick <- Html.handler
 	    (inhibit (with_pending_out click)) ;
 	  if state.map.(y).(x) <> End then
 	    update (next (x,y)) next img over out click'
@@ -213,11 +213,11 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
                  | e     -> Lwt.fail e) >>= fun () ->
 	    build_interaction state show_rem clock
 	  in
-	    state.imgs.(y').(x')##onmouseover <- Js.some
+	    state.imgs.(y').(x')##onmouseover <- Html.handler
 	      (inhibit (set_pending_out (with_pending_out over) out));
-	    state.imgs.(y').(x')##onmouseout <- Js.some
+	    state.imgs.(y').(x')##onmouseout <- Html.handler
 	      (inhibit (with_pending_out (fun () -> Lwt.return ())));
-	    state.imgs.(y').(x')##onclick <- Js.some
+	    state.imgs.(y').(x')##onclick <- Html.handler
 	      (inhibit (with_pending_out click))
 	)
     in
@@ -426,7 +426,7 @@ let _ =
 *)
          Dom.appendChild select option)
       levels;
-    select##onchange <- Js.some
+    select##onchange <- Html.handler
       (fun _ ->
          let i = select##selectedIndex - 1 in
          if i >= 0 && i < List.length levels then

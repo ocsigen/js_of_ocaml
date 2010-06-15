@@ -102,18 +102,26 @@ class type cssStyleDeclaration = object
   method zIndex : js_string t prop
 end
 
-type ('a, 'b) event_handler = ('a, 'b -> bool t) meth_callback opt optdef
+type ('a, 'b) event_handler = ('a, 'b optdef -> bool t) meth_callback opt
 
 class type event = object
   method _type : js_string t readonly_prop
-  method target : element t opt readonly_prop
-  method srcElement : element t opt readonly_prop
+  method target : element t optdef readonly_prop
+  method srcElement : element t optdef readonly_prop
 end
 
 and mouseEvent = object
+  inherit event
+  method relatedTarget : element t opt optdef readonly_prop
+  method fromElement : element t opt optdef readonly_prop
+  method toElement : element t opt optdef readonly_prop
 end
 
-and element = object
+and keyboardEvent = object
+  inherit event
+end
+
+and element = object ('self)
   inherit Dom.element
   method id : js_string t prop
   method title : js_string t prop
@@ -124,25 +132,46 @@ and element = object
 
   method innerHTML : js_string t prop
 
-  (* FIX: event? / might be undefined! *)
-  method onclick : (unit -> bool t) opt prop
-  method onmouseover : (unit -> bool t) opt prop
-  method onmouseout : (unit -> bool t) opt prop
+  method onclick : ('self t, mouseEvent t) event_handler prop
+  method ondblclick : ('self t, mouseEvent t) event_handler prop
+  method onmousedown : ('self t, mouseEvent t) event_handler prop
+  method onmouseup : ('self t, mouseEvent t) event_handler prop
+  method onmouseover : ('self t, mouseEvent t) event_handler prop
+  method onmousemove : ('self t, mouseEvent t) event_handler prop
+  method onmouseout : ('self t, mouseEvent t) event_handler prop
+  method onkeypress : ('self t, keyboardEvent t) event_handler prop
+  method onkeydown : ('self t, keyboardEvent t) event_handler prop
+  method onkeyup : ('self t, keyboardEvent t) event_handler prop
 end
 
-(*XXX
-  let event_target (e : #event t) =
-    let targ =
-      match Nullable.maybe e##target with
-        Some t ->
-          t
-      | None ->
-          match Nullable.maybe e##srcElement with
-            Some t -> t
-           | None  -> assert false
-    in
-    if targ##nodeType = 3 then targ##parentNode else targ
-*)
+let no_handler : ('a, 'b) event_handler = Js.null
+let window_event () : #event t = Js.Unsafe.variable "event"
+let handler f =
+  Js.some (Js.wrap_callback (fun e -> f (Optdef.get e window_event)))
+let full_handler f =
+  Js.some (Js.wrap_meth_callback
+             (fun this e -> f this (Optdef.get e window_event)))
+let invoke_handler
+  (f : ('a, 'b) event_handler) (this : 'a) (event : 'b) : bool t =
+  Js.Unsafe.call f this [|Js.Unsafe.inject event|]
+
+let eventTarget (e : #event t) =
+  let target =
+    Optdef.get (e##target) (fun () ->
+    Optdef.get (e##srcElement) (fun () -> assert false))
+  in
+  (* Workaround for Safari bug *)
+  if target##nodeType = 3 then
+    Js.Unsafe.coerce (Opt.get (target##parentNode) (fun () -> assert false))
+  else
+    target
+
+let eventRelatedTarget (e : #mouseEvent t) =
+  Optdef.get (e##relatedTarget) (fun () ->
+  match Js.to_string (e##_type) with
+    "mouseover" -> Optdef.get (e##fromElement) (fun () -> assert false)
+  | "mouseout"  -> Optdef.get (e##toElement) (fun () -> assert false)
+  | _           -> Js.null)
 
 class type ['node] collection = object
   method length : int readonly_prop
@@ -230,7 +259,7 @@ class type optionElement = object
   method value : js_string t prop
 end
 
-class type selectElement = object
+class type selectElement = object ('self)
   inherit element
   method _type : js_string t readonly_prop
   method selectedIndex : int prop
@@ -248,10 +277,10 @@ class type selectElement = object
   method blur : unit meth
   method focus : unit meth
 
-  method onchange : (unit -> bool t) opt prop
+  method onchange : ('self t, event t) event_handler prop
 end
 
-class type inputElement = object
+class type inputElement = object ('self)
   inherit element
   method defaultValue : js_string t prop
   method defaultChecked : js_string t prop
@@ -276,10 +305,11 @@ class type inputElement = object
   method select : unit meth
   method click : unit meth
 
-  method onchange : (unit -> bool t) opt prop
+  method onselect : ('self t, event t) event_handler prop
+  method onchange : ('self t, event t) event_handler prop
 end
 
-class type textAreaElement = object
+class type textAreaElement = object ('self)
   inherit element
   method defaultValue : js_string t prop
   method form : formElement t opt readonly_prop
@@ -295,6 +325,9 @@ class type textAreaElement = object
   method blur : unit meth
   method focus : unit meth
   method select : unit meth
+
+  method onselect : ('self t, event t) event_handler prop
+  method onchange : ('self t, event t) event_handler prop
 end
 
 class type buttonElement = object
@@ -375,7 +408,7 @@ class type anchorElement = object
   method focus : unit meth
 end
 
-class type imageElement = object
+class type imageElement = object ('self)
   inherit element
   method alt : js_string t prop
   method src : js_string t prop
@@ -387,7 +420,7 @@ class type imageElement = object
   method naturalHeight : int readonly_prop
   method complete : bool t prop
 
-  method onload : (unit -> unit) prop
+  method onload : ('self t, event t) event_handler prop
 end
 
 class type objectElement = object
@@ -791,9 +824,6 @@ class type window = object
   method parent : window t readonly_prop
   method frameElement : element t opt readonly_prop
 
-  method onload : (unit -> unit) prop
-  method onbeforeunload : (unit -> js_string t) prop
-
   method alert : js_string t -> unit meth
   method confirm : js_string t -> bool t meth
   method prompt : js_string t -> js_string t -> js_string t meth
@@ -804,6 +834,11 @@ class type window = object
 
   method setTimeout : (unit -> unit) -> float -> timeout_id meth
   method clearTimeout : timeout_id -> unit meth
+
+  method onload : (window t, event t) event_handler prop
+  method onbeforeunload : (window t, event t) event_handler prop
+  method onblur : (window t, event t) event_handler prop
+  method onfocus : (window t, event t) event_handler prop
 end
 
 let window : window t = Js.Unsafe.variable "window"

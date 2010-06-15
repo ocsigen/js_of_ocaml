@@ -15,6 +15,8 @@ module Unsafe = struct
   external fun_call : 'a -> any array -> 'b = "caml_js_fun_call"
   external meth_call : 'a -> string -> any array -> 'b = "caml_js_meth_call"
   external new_obj : 'a -> any array -> 'b = "caml_js_new"
+
+  external equals : 'a -> 'b -> bool = "caml_js_equals"
 end
 
 (****)
@@ -41,11 +43,11 @@ end
 module Opt : OPT with type 'a t = 'a opt = struct
   type 'a t = 'a opt
   let ret = some
-  let map x f = if x == null then null else some (f x)
-  let bind x f = if x == null then null else f x
-  let case x y f = if x == null then y else f x
-  let get x f = if x == null then f () else x
-  let iter x f = if x != null then f x
+  let map x f = if Unsafe.equals x null then null else some (f x)
+  let bind x f = if Unsafe.equals x null then null else f x
+  let case x y f = if Unsafe.equals x null then y else f x
+  let get x f = if Unsafe.equals x null then f () else x
+  let iter x f = if not (Unsafe.equals x null) then f x
 end
 
 module Optdef : OPT with type 'a t = 'a optdef = struct
@@ -75,11 +77,8 @@ type +'a constr
 type (+'a, +'b) meth_callback
 type 'a callback = (unit, 'a) meth_callback
 
-external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback =
-  "caml_js_wrap_callback"
-external wrap_meth_callback :
-  ('a -> 'b -> 'c) -> ('a, 'b -> 'c) meth_callback =
-  "caml_js_wrap_meth_callback"
+external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "caml_js_wrap_callback"
+external wrap_meth_callback : ('a -> 'b -> 'c) -> ('a, 'b -> 'c) meth_callback = "caml_js_wrap_meth_callback"
 
 (****)
 

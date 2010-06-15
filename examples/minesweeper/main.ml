@@ -9,7 +9,7 @@ let int_input name value =
   let input = Html.createInput document in
   input##_type <- js"text";
   input##value <- js (string_of_int !value);
-  input##onchange <- Js.some
+  input##onchange <- Html.handler
     (fun _ ->
        begin try
          value := int_of_string (Js.to_string (input##value))
@@ -26,7 +26,7 @@ let button name callback =
   let input = Html.createInput document in
   input##_type <- js"submit";
   input##value <- js name;
-  input##onclick <- Js.some callback;
+  input##onclick <- Html.handler callback;
   Dom.appendChild res input;
   res
 
@@ -48,6 +48,7 @@ let onload _ =
           let div = Html.createDiv document in
           Dom.appendChild main div;
           Minesweeper.run div !nbc !nbr !nbm;
-          Js._false))
+          Js._false));
+  Js._false
 
-let _ = Html.window##onload <- onload
+let _ = Html.window##onload <- Html.handler onload

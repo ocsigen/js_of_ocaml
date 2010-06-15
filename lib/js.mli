@@ -42,7 +42,10 @@ type (+'a, +'b) meth_callback
 type 'a callback = (unit, 'a) meth_callback
 
 external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback =
-  "caml_js_wrap_callback"
+    "caml_js_wrap_callback"
+external wrap_meth_callback :
+  ('c -> 'a -> 'b) -> ('c, 'a -> 'b) meth_callback =
+  "caml_js_wrap_meth_callback"
 
 (* Javascript objects *)
 
