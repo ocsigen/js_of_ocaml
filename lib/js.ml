@@ -62,6 +62,11 @@ end
 
 (****)
 
+let coerce x f g = Opt.get (f x) g
+let coerce_opt x f g = Opt.get (Opt.bind x f) g
+
+(****)
+
 type +'a meth
 type +'a gen_prop
 type 'a readonly_prop = <get : 'a> gen_prop

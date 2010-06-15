@@ -73,8 +73,25 @@ function caml_js_wrap_meth_callback(f) {
 //Provides: caml_js_equals mutable
 function caml_js_equals (x, y) { return +(x == y); }
 
+/////////////////////////////////////////////////////////////////////
+
+//Provides: caml_js_on_ie const
+function caml_js_on_ie () {
+  var ua = window.navigator?window.navigator.userAgent:"";
+  return ua.indexOf("MSIE") != -1 && ua.indexOf("Opera") != 0;
+}
+
+//Provides: caml_js_html_escape const
+var caml_js_regexps = { amp:/&/g, lt:/</g, quot:/\"/g, all:/[&<\"]/ };
+function caml_js_html_escape (s) {
+  if (!caml_js_regexps.all.test(s)) return s;
+  return s.replace(caml_js_regexps.amp, "&amp;")
+          .replace(caml_js_regexps.lt, "&lt;")
+          .replace(caml_js_regexps.quot, "&quot;");
+}
+
 /////////// Debugging console
-//Provides: caml_get_console const
+//Provides: caml_js_get_console const
 function caml_get_console () {
   var c = window.console?window.console:{};
   var m = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",

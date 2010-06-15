@@ -16,8 +16,6 @@ Documentation
 
 Libraries
 ---------
-- finish js API
-  ===> dom object creation (especially, INPUT)
 - canvas: should check whether it is available...
 
 Packaging

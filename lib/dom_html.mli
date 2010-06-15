@@ -245,7 +245,7 @@ end
 
 class type selectElement = object ('self)
   inherit element
-  method _type : js_string t readonly_prop
+  method _type : js_string t readonly_prop (* Cannot be changed under IE *)
   method selectedIndex : int prop
   method value : js_string t prop
   method length : int prop
@@ -253,7 +253,7 @@ class type selectElement = object ('self)
   method options : optionElement collection t readonly_prop
   method disabled : bool t prop
   method multiple : bool t prop
-  method name : js_string t prop
+  method name : js_string t readonly_prop (* Cannot be changed under IE *)
   method size : int prop
   method tabIndex : int prop
   method add : #element -> #element opt -> unit meth
@@ -281,7 +281,7 @@ class type inputElement = object ('self)
   method size : int prop
   method src : js_string t prop
   method tabIndex : int prop
-  method _type : js_string t prop (* FIX: Cannot be changed under IE *)
+  method _type : js_string t readonly_prop (* Cannot be changed under IE *)
   method useMap : js_string t prop
   method value : js_string t prop
   method blur : unit meth
@@ -300,11 +300,11 @@ class type textAreaElement = object ('self)
   method accessKey : js_string t prop
   method cols : int prop
   method disabled : bool t prop
-  method name : js_string t prop
+  method name : js_string t readonly_prop (* Cannot be changed under IE *)
   method readOnly : bool t prop
   method rows : int prop
   method tabIndex : int prop
-  method _type : js_string t readonly_prop
+  method _type : js_string t readonly_prop (* Cannot be changed under IE *)
   method value : js_string t prop
   method blur : unit meth
   method focus : unit meth
@@ -319,9 +319,9 @@ class type buttonElement = object
   method form : formElement opt readonly_prop
   method accessKey : js_string t prop
   method disabled : bool t prop
-  method name : js_string t prop
+  method name : js_string t readonly_prop (* Cannot be changed under IE *)
   method tabIndex : int prop
-  method _type : js_string t readonly_prop
+  method _type : js_string t readonly_prop (* Cannot be changed under IE *)
   method value : js_string t prop
 end
 
@@ -692,11 +692,14 @@ val createBody : document t -> bodyElement t
 val createForm : document t -> formElement t
 val createOptgroup : document t -> optGroupElement t
 val createOption : document t -> optionElement t
-val createSelect : document t -> selectElement t
-(*XXX should set name and type here... *)
-val createInput : document t -> inputElement t
-val createTextarea : document t -> textAreaElement t
-val createButton : document t -> buttonElement t
+val createSelect :
+  ?_type:js_string t -> ?name:js_string t -> document t -> selectElement t
+val createInput :
+  ?_type:js_string t -> ?name:js_string t -> document t -> inputElement t
+val createTextarea :
+  ?_type:js_string t -> ?name:js_string t -> document t -> textAreaElement t
+val createButton :
+  ?_type:js_string t -> ?name:js_string t -> document t -> buttonElement t
 val createLabel : document t -> labelElement t
 val createFieldset : document t -> fieldSetElement t
 val createLegend : document t -> legendElement t
@@ -819,6 +822,64 @@ type taggedElement =
 
 val access : #element t -> taggedElement
 val opt_access : #element t opt -> taggedElement option
+
+module CoerceTo : sig
+  val a : #element t -> anchorElement t opt
+  val area : #element t -> areaElement t opt
+  val base : #element t -> baseElement t opt
+  val blockquote : #element t -> quoteElement t opt
+  val body : #element t -> bodyElement t opt
+  val br : #element t -> brElement t opt
+  val button : #element t -> buttonElement t opt
+  val canvas : #element t -> canvasElement t opt
+  val caption : #element t -> tableCaptionElement t opt
+  val col : #element t -> tableColElement t opt
+  val colgroup : #element t -> tableColElement t opt
+  val del : #element t -> modElement t opt
+  val div : #element t -> divElement t opt
+  val dl : #element t -> dListElement t opt
+  val fieldset : #element t -> fieldSetElement t opt
+  val form : #element t -> formElement t opt
+  val h1 : #element t -> headingElement t opt
+  val h2 : #element t -> headingElement t opt
+  val h3 : #element t -> headingElement t opt
+  val h4 : #element t -> headingElement t opt
+  val h5 : #element t -> headingElement t opt
+  val h6 : #element t -> headingElement t opt
+  val head : #element t -> headElement t opt
+  val hr : #element t -> hrElement t opt
+  val html : #element t -> htmlElement t opt
+  val img : #element t -> imageElement t opt
+  val input : #element t -> inputElement t opt
+  val ins : #element t -> modElement t opt
+  val label : #element t -> labelElement t opt
+  val legend : #element t -> legendElement t opt
+  val li : #element t -> liElement t opt
+  val link : #element t -> linkElement t opt
+  val map : #element t -> mapElement t opt
+  val meta : #element t -> metaElement t opt
+  val _object : #element t -> objectElement t opt
+  val ol : #element t -> oListElement t opt
+  val optgroup : #element t -> optGroupElement t opt
+  val option : #element t -> optionElement t opt
+  val p : #element t -> paramElement t opt
+  val param : #element t -> paramElement t opt
+  val pre : #element t -> preElement t opt
+  val q : #element t -> quoteElement t opt
+  val script : #element t -> scriptElement t opt
+  val select : #element t -> selectElement t opt
+  val style : #element t -> styleElement t opt
+  val table : #element t -> tableElement t opt
+  val tbody : #element t -> tableSectionElement t opt
+  val td : #element t -> tableColElement t opt
+  val textarea : #element t -> textAreaElement t opt
+  val tfoot : #element t -> tableSectionElement t opt
+  val th : #element t -> tableColElement t opt
+  val thead : #element t -> tableSectionElement t opt
+  val title : #element t -> titleElement t opt
+  val tr : #element t -> tableRowElement t opt
+  val ul : #element t -> uListElement t opt
+end
 
 (****)
 

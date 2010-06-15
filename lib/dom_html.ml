@@ -1,24 +1,17 @@
 (*
-XXXX events
 XXXX creation (input)
+XXX coercions + convient getelementbyid function(s)
+module Coercion : sig
+  val a : #element t -> anchorElement t opt
 *)
 
 open Js
 
-let onIE =
-  let navigator : <userAgent : js_string t readonly_prop> t optdef =
-    Js.Unsafe.variable "navigator" in
-  let ua = Optdef.case navigator (Js.string "") (fun n -> n##userAgent) in
-  ua##indexOf (Js.string "Opera") != 0 &&
-  ua##indexOf (Js.string "MSIE") != -1
+external caml_js_on_ie : unit -> bool t = "caml_js_on_ie"
 
-let escape_re = jsnew Js.regExp(Js.string "[&<>\"]")
+let onIE  = Js.to_bool (caml_js_on_ie ())
 
-let escape s =
-  if Js.to_bool (escape_re##test(s)) then begin
-    s
-  end else
-    s
+external html_escape : js_string t -> js_string t = "caml_js_html_escape"
 
 class type cssStyleDeclaration = object
   method background : js_string t prop
@@ -289,7 +282,7 @@ class type selectElement = object ('self)
   method options : optionElement collection t readonly_prop
   method disabled : bool t prop
   method multiple : bool t prop
-  method name : js_string t prop
+  method name : js_string t readonly_prop
   method size : int prop
   method tabIndex : int prop
   method add : #element -> #element opt -> unit meth
@@ -312,12 +305,12 @@ class type inputElement = object ('self)
   method checked : bool t prop
   method disabled : bool t prop
   method maxLength : int prop
-  method name : js_string t readonly_prop (* Cannot be changed under IE *)
+  method name : js_string t readonly_prop
   method readOnly : bool t prop
   method size : int prop
   method src : js_string t prop
   method tabIndex : int prop
-  method _type : js_string t prop (* FIX: Cannot be changed under IE *)
+  method _type : js_string t readonly_prop
   method useMap : js_string t prop
   method value : js_string t prop
   method blur : unit meth
@@ -336,7 +329,7 @@ class type textAreaElement = object ('self)
   method accessKey : js_string t prop
   method cols : int prop
   method disabled : bool t prop
-  method name : js_string t prop
+  method name : js_string t readonly_prop
   method readOnly : bool t prop
   method rows : int prop
   method tabIndex : int prop
@@ -355,7 +348,7 @@ class type buttonElement = object
   method form : formElement opt readonly_prop
   method accessKey : js_string t prop
   method disabled : bool t prop
-  method name : js_string t prop
+  method name : js_string t readonly_prop
   method tabIndex : int prop
   method _type : js_string t readonly_prop
   method value : js_string t prop
@@ -717,8 +710,28 @@ end
 
 (*XXX Should provide creation functions a la lablgtk... *)
 
+let opt_iter x f = match x with None -> () | Some v -> f v
+
 let createElement (doc : document t) name = doc##createElement(Js.string name)
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
+let unsafeCreateElementEx ?_type ?name doc elt =
+  if _type = None && name = None then
+    Js.Unsafe.coerce (createElement doc elt)
+  else if not onIE then begin
+    let res = Js.Unsafe.coerce (createElement doc elt) in
+    opt_iter _type (fun t -> res##_type <- t);
+    opt_iter name (fun n -> res##name <- n);
+    res
+  end else begin
+    let a = jsnew Js.array_empty () in
+    ignore (a##push_2(Js.string "<", Js.string elt));
+    opt_iter _type (fun t ->
+      ignore (a##push_3(Js.string " type=\"", html_escape t, Js.string "\"")));
+    opt_iter name (fun n ->
+      ignore (a##push_3(Js.string " name=\"", html_escape n, Js.string "\"")));
+    ignore (a##push(Js.string ">"));
+    Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
+  end
 
 let createHtml doc : htmlElement t = unsafeCreateElement doc "html"
 let createHead doc : headElement t = unsafeCreateElement doc "head"
@@ -731,11 +744,14 @@ let createBody doc : bodyElement t = unsafeCreateElement doc "body"
 let createForm doc : formElement t = unsafeCreateElement doc "form"
 let createOptgroup doc : optGroupElement t = unsafeCreateElement doc "optgroup"
 let createOption doc : optionElement t = unsafeCreateElement doc "option"
-let createSelect doc : selectElement t = unsafeCreateElement doc "select"
-(*XXX should set name and type here... *)
-let createInput doc : inputElement t = unsafeCreateElement doc "input"
-let createTextarea doc : textAreaElement t = unsafeCreateElement doc "textarea"
-let createButton doc : buttonElement t = unsafeCreateElement doc "button"
+let createSelect ?_type ?name doc : selectElement t =
+  unsafeCreateElementEx ?_type ?name doc "select"
+let createInput ?_type ?name doc : inputElement t =
+  unsafeCreateElementEx ?_type ?name doc "input"
+let createTextarea ?_type ?name doc : textAreaElement t =
+  unsafeCreateElementEx ?_type ?name doc "textarea"
+let createButton ?_type ?name doc : buttonElement t =
+  unsafeCreateElementEx ?_type ?name doc "button"
 let createLabel doc : labelElement t = unsafeCreateElement doc "label"
 let createFieldset doc : fieldSetElement t = unsafeCreateElement doc "fieldset"
 let createLegend doc : legendElement t = unsafeCreateElement doc "legend"
@@ -919,6 +935,69 @@ let access (e : #element t) =
   | _   -> Other (e :> element t)
 
 let opt_access e = Opt.case e None (fun e -> Some (access e))
+
+module CoerceTo = struct
+  let unsafeCoerce tag (e : #element t) =
+    if e##tagName##toLowerCase() == Js.string tag then
+      Js.some (Js.Unsafe.coerce e)
+    else
+      Js.null
+  let a e =  unsafeCoerce "a" e
+  let area e =  unsafeCoerce "area" e
+  let base e =  unsafeCoerce "base" e
+  let blockquote e =  unsafeCoerce "blockquote" e
+  let body e =  unsafeCoerce "body" e
+  let br e =  unsafeCoerce "br" e
+  let button e =  unsafeCoerce "button" e
+  let canvas e =  unsafeCoerce "canvas" e
+  let caption e =  unsafeCoerce "caption" e
+  let col e =  unsafeCoerce "col" e
+  let colgroup e = unsafeCoerce "colgroup" e
+  let del e = unsafeCoerce "del" e
+  let div e = unsafeCoerce "div" e
+  let dl e = unsafeCoerce "dl" e
+  let fieldset e = unsafeCoerce "fieldset" e
+  let form e = unsafeCoerce "form" e
+  let h1 e = unsafeCoerce "h1" e
+  let h2 e = unsafeCoerce "h2" e
+  let h3 e = unsafeCoerce "h3" e
+  let h4 e = unsafeCoerce "h4" e
+  let h5 e = unsafeCoerce "h5" e
+  let h6 e = unsafeCoerce "h6" e
+  let head e = unsafeCoerce "head" e
+  let hr e = unsafeCoerce "hr" e
+  let html e = unsafeCoerce "html" e
+  let img e = unsafeCoerce "img" e
+  let input e = unsafeCoerce "input" e
+  let ins e = unsafeCoerce "ins" e
+  let label e = unsafeCoerce "label" e
+  let legend e = unsafeCoerce "legend" e
+  let li e = unsafeCoerce "li" e
+  let link e = unsafeCoerce "link" e
+  let map e = unsafeCoerce "map" e
+  let meta e = unsafeCoerce "meta" e
+  let _object e = unsafeCoerce "object" e
+  let ol e = unsafeCoerce "ol" e
+  let optgroup e = unsafeCoerce "optgroup" e
+  let option e = unsafeCoerce "option" e
+  let p e = unsafeCoerce "p" e
+  let param e = unsafeCoerce "param" e
+  let pre e = unsafeCoerce "pre" e
+  let q e = unsafeCoerce "q" e
+  let script e = unsafeCoerce "script" e
+  let select e = unsafeCoerce "select" e
+  let style e = unsafeCoerce "style" e
+  let table e = unsafeCoerce "table" e
+  let tbody e = unsafeCoerce "tbody" e
+  let td e = unsafeCoerce "td" e
+  let textarea e = unsafeCoerce "textarea" e
+  let tfoot e = unsafeCoerce "tfoot" e
+  let th e = unsafeCoerce "th" e
+  let thead e = unsafeCoerce "thead" e
+  let title e = unsafeCoerce "title" e
+  let tr e = unsafeCoerce "tr" e
+  let ul e = unsafeCoerce "ul" e
+end
 
 type interval_id
 type timeout_id

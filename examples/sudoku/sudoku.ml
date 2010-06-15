@@ -3,8 +3,7 @@ let d = D.document
 
 let make_board () =
   let make_input () =
-    let input = D.createInput d in
-    input##_type <- Js.string "text";
+    let input = D.createInput ~_type:(Js.string "text") d in
     input##size <- 1;
     input##maxLength <- 1;
     let style = input##style in

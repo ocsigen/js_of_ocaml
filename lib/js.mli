@@ -21,6 +21,11 @@ end
 module Opt : OPT with type 'a t = 'a opt
 module Optdef : OPT with type 'a t = 'a optdef
 
+(* Coercion functions *)
+
+val coerce : 'a -> ('a -> 'b Opt.t) -> (unit -> 'b) -> 'b
+val coerce_opt : 'a Opt.t -> ('a -> 'b Opt.t) -> (unit -> 'b) -> 'b
+
 (* Method and object properties specification *)
 
 type +'a t
