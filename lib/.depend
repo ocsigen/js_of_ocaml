@@ -5,15 +5,14 @@
 ./dom.cmx: js.cmx ./dom.cmi 
 ./xmlHttpRequest.cmo: js.cmi dom.cmi ./xmlHttpRequest.cmi 
 ./xmlHttpRequest.cmx: js.cmx dom.cmx ./xmlHttpRequest.cmi 
-./goog_net.cmo: js.cmi goog.cmo dom.cmi 
-./goog_net.cmx: js.cmx goog.cmx dom.cmx 
 ./js.cmo: ./js.cmi 
 ./js.cmx: ./js.cmi 
 ./dom_html.cmi: js.cmi dom.cmi 
 ./lwt_js.cmo: js.cmi dom_html.cmi ./lwt_js.cmi 
 ./lwt_js.cmx: js.cmx dom_html.cmx ./lwt_js.cmi 
 ./xmlHttpRequest.cmi: js.cmi dom.cmi 
+./console.cmi: js.cmi dom.cmi 
 ./dom.cmi: js.cmi 
 ./lwt_js.cmi: 
-./goog.cmo: js.cmi dom.cmi 
-./goog.cmx: js.cmx dom.cmx 
+./console.cmo: js.cmi ./console.cmi 
+./console.cmx: js.cmx ./console.cmi 

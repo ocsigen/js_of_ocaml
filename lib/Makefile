@@ -1,5 +1,5 @@
 
-MLOBJS= js.cmo dom.cmo dom_html.cmo xmlHttpRequest.cmo lwt_js.cmo
+MLOBJS= js.cmo dom.cmo dom_html.cmo xmlHttpRequest.cmo lwt_js.cmo console.cmo
 COBJS= stubs.o
 OBJS=$(MLOBJS) $(COBJS)
 

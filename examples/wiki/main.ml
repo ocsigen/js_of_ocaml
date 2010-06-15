@@ -14,13 +14,13 @@ let replace_child p n =
 let onload () =
   let d = Html.document in
   let body = d##body in
-  let textbox = Html.createTextAreaElement d in
+  let textbox = Html.createTextarea d in
   textbox##rows <- 20; textbox##cols <- 80;
-  let preview = Html.createDivElement d in
+  let preview = Html.createDiv d in
   preview##style##border <- Js.string "1px black dashed";
   preview##style##padding <- Js.string "5px";
   Dom.appendChild body textbox;
-  Dom.appendChild body (Html.createBrElement d);
+  Dom.appendChild body (Html.createBr d);
   Dom.appendChild body preview;
   let rec dyn_preview old_text n =
     let text = Js.to_string (textbox##value) in

@@ -50,13 +50,11 @@ let builder =
     W.em_elem = (fun s -> d##createElement (Js.string "em") <| s);
     W.a_elem =
       (fun addr s ->
-         let a = Html.createAnchorElement d in
-         a##href <- Js.string addr;
-         a <| s);
+         let a = Html.createA d in a##href <- Js.string addr; a <| s);
     W.br_elem = (fun () -> node (d##createElement (Js.string "br")));
     W.img_elem =
       (fun addr alt ->
-         let i = Html.createImageElement d in
+         let i = Html.createImg d in
          i##src <- Js.string addr; i##alt <- Js.string alt;
          node i);
     W.tt_elem = (fun s -> d##createElement (Js.string "tt") <| s);
@@ -94,5 +92,4 @@ let builder =
     W.inline = (fun x -> x)
   }
 
-let xml_of_wiki s =
-  Html.createDivElement Html.document <| W.from_string builder s
+let xml_of_wiki s = Html.createDiv Html.document <| W.from_string builder s

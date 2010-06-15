@@ -133,7 +133,7 @@ let tile c a (top, right, left) =
 
 let create_canvas () =
   let d = Html.window##document in
-  let c = Html.createCanvasElement d in
+  let c = Html.createCanvas d in
   c##width <- n * 2 * truncate w + 1;
   c##height <- n * 2 * truncate h + 1;
   c

@@ -17,7 +17,7 @@ let loading_style =
      position: absolute; top:0; right:0;"
 
 let loading parent =
-  let div = Html.createDivElement document in
+  let div = Html.createDiv document in
   div##style##cssText <- loading_style;
   append_text div "LOADING...";
   Dom.appendChild parent div;
@@ -25,7 +25,7 @@ let loading parent =
 
 let clock_div () =
   let t0 = ref (Sys.time ()) in
-  let div = Html.createDivElement document in
+  let div = Html.createDiv document in
   div##style##cssText <- box_style;
   append_text div "--:--:--";
   let stopped = ref true in
@@ -257,7 +257,7 @@ let opt_style e style =
   match style with Some s -> e##style##cssText <- s | None -> ()
 
 let build_table ?style ?tr_style ?td_style f t =
-  let m = Html.createTableElement document in
+  let m = Html.createTable document in
   opt_style m style;
   for y = 0 to Array.length t - 1 do
     let tr = m##insertRow (-1) in
@@ -284,7 +284,7 @@ let _ =
     Js.Opt.get (document##getElementById(js"body"))
       (fun () -> assert false)
   in
-  let board_div = Html.createDivElement document in
+  let board_div = Html.createDiv document in
   let (clock_div,clock_start,_) as clock = clock_div () in
   let load_data name process =
     let loading_end = loading body in
@@ -294,7 +294,7 @@ let _ =
     Lwt.return res
   in
   let rem_div, show_rem =
-    let div = Html.createDivElement document in
+    let div = Html.createDiv document in
     div##style##cssText <- box_style;
     append_text div "--";
     (div,
@@ -357,7 +357,7 @@ let _ =
 	     let map = Array.of_list (List.map Array.of_list (List.rev !res)) in
 	       map, Array.map (Array.map
 				 (fun c ->
-                                    let img = Html.createImageElement document in
+                                    let img = Html.createImg document in
                                     img##src <- img_assoc c;
                                     img)) map
 	 in 
@@ -403,22 +403,22 @@ let _ =
     body##style##cssText <-
       js"font-family: sans-serif; text-align: center; \
          background-color: #e8e8e8;" ;
-    let h1 = Html.createH1Element document in
+    let h1 = Html.createH1 document in
     append_text h1 "Boulder Dash in Ocaml";
     Dom.appendChild body h1;
-    let div = Html.createDivElement document in
+    let div = Html.createDiv document in
     append_text div "Elapsed time: ";
     Dom.appendChild div clock_div;
     append_text div " Remaining diamonds: ";
     Dom.appendChild div rem_div;
     append_text div " ";
-    let select = Html.createSelectElement document in
-    let option = Html.createOptionElement document in
+    let select = Html.createSelect document in
+    let option = Html.createOption document in
     append_text option "Choose a level";
     Dom.appendChild select option;
     List.iter
       (fun (f, n) ->
-         let option = Html.createOptionElement document in
+         let option = Html.createOption document in
          append_text option n;
 (*
          option##onclick <-
@@ -433,8 +433,8 @@ let _ =
            ignore (load_level (fst (List.nth levels i)));
          Js._false);
     Dom.appendChild div select;
-    Dom.appendChild div (Html.createBrElement document);
-    Dom.appendChild div (Html.createBrElement document);
+    Dom.appendChild div (Html.createBr document);
+    Dom.appendChild div (Html.createBr document);
     Dom.appendChild div board_div;
     Dom.appendChild body div;
     Lwt.return ()

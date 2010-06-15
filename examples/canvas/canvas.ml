@@ -1,7 +1,7 @@
 module D = Dom_html
 
 let onload () =
-  let c = D.createCanvasElement D.document in
+  let c = D.createCanvas D.document in
   c##width <- 150; c##height <- 150;
   Dom.appendChild D.document##body c;
 

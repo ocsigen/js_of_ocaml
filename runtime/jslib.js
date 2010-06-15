@@ -70,3 +70,14 @@ function caml_js_wrap_meth_callback(f) {
     return caml_call_gen(f, args);
   }
 }
+
+/////////// Debugging console
+//Provides: caml_get_console const
+function caml_get_console () {
+  var c = window.console?window.console:{};
+  var m = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
+           "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd"];
+  function f () {}
+  for (i = 0; i < m.length; i++) if (!c[m[i]]) c[m[i]]=f;
+  return c;
+}

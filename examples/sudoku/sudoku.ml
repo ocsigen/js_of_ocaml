@@ -3,7 +3,7 @@ let d = D.document
 
 let make_board () =
   let make_input () =
-    let input = D.createInputElement d in
+    let input = D.createInput d in
     input##_type <- Js.string "text";
     input##size <- 1;
     input##maxLength <- 1;
@@ -19,7 +19,7 @@ let make_board () =
     input in
 
   let make_td i j input =
-    let td = D.createTdElement d in
+    let td = D.createTd d in
     let style = td##style in
     style##borderStyle <- Js.string "solid";
     style##borderColor <- Js.string "#000000";
@@ -42,13 +42,13 @@ let make_board () =
       Array.init 9 (fun j ->
         make_input ())) in
 
-  let table = D.createTableElement d in
+  let table = D.createTable d in
   table##cellPadding <- Js.string "0px";
   table##cellSpacing <- Js.string "0px";
-  let tbody = D.createTBodyElement d in
+  let tbody = D.createTbody d in
   Dom.appendChild table tbody;
   ArrayLabels.iteri rows ~f:(fun i row ->
-    let tr = D.createTableRowElement d in
+    let tr = D.createTr d in
     ArrayLabels.iteri row ~f:(fun j cell ->
       let td = make_td i j cell in
       Dom.appendChild tr td);

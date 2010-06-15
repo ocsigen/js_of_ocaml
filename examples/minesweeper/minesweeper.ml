@@ -177,7 +177,7 @@ let init_table d board_div =
   let mode = ref Normal in
   let buf = document##createDocumentFragment() in
   Dom.appendChild buf (document##createTextNode(js"Mode : "));
-  let img = Html.createImageElement document in
+  let img = Html.createImg document in
   Dom.appendChild buf img;
   img##src <- js"sprites/bomb.png" ;
   img##onclick <- Js.some
@@ -188,11 +188,11 @@ let init_table d board_div =
        end;
        Js._false
     ) ;
-  Dom.appendChild buf (Html.createBrElement document);
+  Dom.appendChild buf (Html.createBr document);
   for y = 0 to d.cf.nbrows - 1 do
     let imgs = ref [] in
     for x = 0 to d.cf.nbcols - 1 do
-      let img = Html.createImageElement document in
+      let img = Html.createImg document in
       imgs := img :: !imgs ;
       img##src <- js"sprites/normal.png";
       img##onclick <- Js.some
@@ -213,7 +213,7 @@ let init_table d board_div =
           Js._false);
       Dom.appendChild buf img;
     done ;
-    Dom.appendChild buf (Html.createBrElement document);
+    Dom.appendChild buf (Html.createBr document);
     d.dom.(y) <- Array.of_list (List.rev !imgs)
   done ;
   board_div##style##lineHeight <- js"0";
