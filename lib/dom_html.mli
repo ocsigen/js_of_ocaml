@@ -111,6 +111,10 @@ end
 and mouseEvent = object
   inherit event
   method relatedTarget : element t opt optdef readonly_prop
+  method clientX : int readonly_prop
+  method clientY : int readonly_prop
+  method screenX : int readonly_prop
+  method screenY : int readonly_prop
 
   (* Legacy methods *)
   method fromElement : element t opt optdef readonly_prop
@@ -119,6 +123,8 @@ end
 
 and keyboardEvent = object
   inherit event
+  method charCode : int readonly_prop
+  method keyCode : int readonly_prop
 end
 
 and element = object ('self)
@@ -210,7 +216,6 @@ class type formElement = object
   inherit element
   method elements : element collection t readonly_prop
   method length : int readonly_prop
-  method name : js_string t prop
   method acceptCharset : js_string t prop
   method action : js_string t prop
   method enctype : js_string t prop
@@ -753,6 +758,67 @@ val createDd : document t -> element t
 val createDt : document t -> element t
 val createNoscript : document t -> element t
 val createAddress : document t -> element t
+
+type taggedElement =
+  | A of anchorElement t
+  | Area of areaElement t
+  | Base of baseElement t
+  | Blockquote of quoteElement t
+  | Body of bodyElement t
+  | Br of brElement t
+  | Button of buttonElement t
+  | Canvas of canvasElement t
+  | Caption of tableCaptionElement t
+  | Col of tableColElement t
+  | Colgroup of tableColElement t
+  | Del of modElement t
+  | Div of divElement t
+  | Dl of dListElement t
+  | Fieldset of fieldSetElement t
+  | Form of formElement t
+  | H1 of headingElement t
+  | H2 of headingElement t
+  | H3 of headingElement t
+  | H4 of headingElement t
+  | H5 of headingElement t
+  | H6 of headingElement t
+  | Head of headElement t
+  | Hr of hrElement t
+  | Html of htmlElement t
+  | Img of imageElement t
+  | Input of inputElement t
+  | Ins of modElement t
+  | Label of labelElement t
+  | Legend of legendElement t
+  | Li of liElement t
+  | Link of linkElement t
+  | Map of mapElement t
+  | Meta of metaElement t
+  | Object of objectElement t
+  | Ol of oListElement t
+  | Optgroup of optGroupElement t
+  | Option of optionElement t
+  | P of paramElement t
+  | Param of paramElement t
+  | Pre of preElement t
+  | Q of quoteElement t
+  | Script of scriptElement t
+  | Select of selectElement t
+  | Style of styleElement t
+  | Table of tableElement t
+  | Tbody of tableSectionElement t
+  | Td of tableColElement t
+  | Textarea of textAreaElement t
+  | Tfoot of tableSectionElement t
+  | Th of tableColElement t
+  | Thead of tableSectionElement t
+  | Title of titleElement t
+  | Tr of tableRowElement t
+  | Ul of uListElement t
+  | Other of element t
+
+val access : #element t -> taggedElement
+val opt_access : #element t opt -> taggedElement option
 
 (****)
 

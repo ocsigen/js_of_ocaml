@@ -83,10 +83,10 @@ class type js_string = object
   method split_limited : js_string t -> int -> string_array t meth
   method substring : int -> int -> js_string t meth
   method substring_to_end : int -> js_string t meth
-  method toLowerCase : js_string meth
-  method toLocaleLowerCase : js_string meth
-  method toUpperCase : js_string meth
-  method toLocaleUpperCase : js_string meth
+  method toLowerCase : js_string t meth
+  method toLocaleLowerCase : js_string t meth
+  method toUpperCase : js_string t meth
+  method toLocaleUpperCase : js_string t meth
 end
 
 and regExp = object

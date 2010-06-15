@@ -5,6 +5,21 @@ XXXX creation (input)
 
 open Js
 
+let onIE =
+  let navigator : <userAgent : js_string t readonly_prop> t optdef =
+    Js.Unsafe.variable "navigator" in
+  let ua = Optdef.case navigator (Js.string "") (fun n -> n##userAgent) in
+  ua##indexOf (Js.string "Opera") != 0 &&
+  ua##indexOf (Js.string "MSIE") != -1
+
+let escape_re = jsnew Js.regExp(Js.string "[&<>\"]")
+
+let escape s =
+  if Js.to_bool (escape_re##test(s)) then begin
+    s
+  end else
+    s
+
 class type cssStyleDeclaration = object
   method background : js_string t prop
   method backgroundAttachment : js_string t prop
@@ -115,10 +130,16 @@ and mouseEvent = object
   method relatedTarget : element t opt optdef readonly_prop
   method fromElement : element t opt optdef readonly_prop
   method toElement : element t opt optdef readonly_prop
+  method clientX : int readonly_prop
+  method clientY : int readonly_prop
+  method screenX : int readonly_prop
+  method screenY : int readonly_prop
 end
 
 and keyboardEvent = object
   inherit event
+  method charCode : int readonly_prop
+  method keyCode : int readonly_prop
 end
 
 and element = object ('self)
@@ -231,7 +252,6 @@ class type formElement = object
   inherit element
   method elements : element collection t readonly_prop
   method length : int readonly_prop
-  method name : js_string t prop
   method acceptCharset : js_string t prop
   method action : js_string t prop
   method enctype : js_string t prop
@@ -780,6 +800,125 @@ let createNoscript doc = createElement doc "noscript"
 let createAddress doc = createElement doc "address"
 
 let createCanvas doc : canvasElement t = unsafeCreateElement doc "canvas"
+
+type taggedElement =
+  | A of anchorElement t
+  | Area of areaElement t
+  | Base of baseElement t
+  | Blockquote of quoteElement t
+  | Body of bodyElement t
+  | Br of brElement t
+  | Button of buttonElement t
+  | Canvas of canvasElement t
+  | Caption of tableCaptionElement t
+  | Col of tableColElement t
+  | Colgroup of tableColElement t
+  | Del of modElement t
+  | Div of divElement t
+  | Dl of dListElement t
+  | Fieldset of fieldSetElement t
+  | Form of formElement t
+  | H1 of headingElement t
+  | H2 of headingElement t
+  | H3 of headingElement t
+  | H4 of headingElement t
+  | H5 of headingElement t
+  | H6 of headingElement t
+  | Head of headElement t
+  | Hr of hrElement t
+  | Html of htmlElement t
+  | Img of imageElement t
+  | Input of inputElement t
+  | Ins of modElement t
+  | Label of labelElement t
+  | Legend of legendElement t
+  | Li of liElement t
+  | Link of linkElement t
+  | Map of mapElement t
+  | Meta of metaElement t
+  | Object of objectElement t
+  | Ol of oListElement t
+  | Optgroup of optGroupElement t
+  | Option of optionElement t
+  | P of paramElement t
+  | Param of paramElement t
+  | Pre of preElement t
+  | Q of quoteElement t
+  | Script of scriptElement t
+  | Select of selectElement t
+  | Style of styleElement t
+  | Table of tableElement t
+  | Tbody of tableSectionElement t
+  | Td of tableColElement t
+  | Textarea of textAreaElement t
+  | Tfoot of tableSectionElement t
+  | Th of tableColElement t
+  | Thead of tableSectionElement t
+  | Title of titleElement t
+  | Tr of tableRowElement t
+  | Ul of uListElement t
+  | Other of element t
+
+let access (e : #element t) =
+  match Js.to_string (e##tagName##toLowerCase()) with
+  | "a" -> A (Js.Unsafe.coerce e)
+  | "area" -> Area (Js.Unsafe.coerce e)
+  | "base" -> Base (Js.Unsafe.coerce e)
+  | "blockquote" -> Blockquote (Js.Unsafe.coerce e)
+  | "body" -> Body (Js.Unsafe.coerce e)
+  | "br" -> Br (Js.Unsafe.coerce e)
+  | "button" -> Button (Js.Unsafe.coerce e)
+  | "canvas" -> Canvas (Js.Unsafe.coerce e)
+  | "caption" -> Caption (Js.Unsafe.coerce e)
+  | "col" -> Col (Js.Unsafe.coerce e)
+  | "colgroup" -> Colgroup (Js.Unsafe.coerce e)
+  | "del" -> Del (Js.Unsafe.coerce e)
+  | "div" -> Div (Js.Unsafe.coerce e)
+  | "dl" -> Dl (Js.Unsafe.coerce e)
+  | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
+  | "form" -> Form (Js.Unsafe.coerce e)
+  | "h1" -> H1 (Js.Unsafe.coerce e)
+  | "h2" -> H2 (Js.Unsafe.coerce e)
+  | "h3" -> H3 (Js.Unsafe.coerce e)
+  | "h4" -> H4 (Js.Unsafe.coerce e)
+  | "h5" -> H5 (Js.Unsafe.coerce e)
+  | "h6" -> H6 (Js.Unsafe.coerce e)
+  | "head" -> Head (Js.Unsafe.coerce e)
+  | "hr" -> Hr (Js.Unsafe.coerce e)
+  | "html" -> Html (Js.Unsafe.coerce e)
+  | "img" -> Img (Js.Unsafe.coerce e)
+  | "input" -> Input (Js.Unsafe.coerce e)
+  | "ins" -> Ins (Js.Unsafe.coerce e)
+  | "label" -> Label (Js.Unsafe.coerce e)
+  | "legend" -> Legend (Js.Unsafe.coerce e)
+  | "li" -> Li (Js.Unsafe.coerce e)
+  | "link" -> Link (Js.Unsafe.coerce e)
+  | "map" -> Map (Js.Unsafe.coerce e)
+  | "meta" -> Meta (Js.Unsafe.coerce e)
+  | "object" -> Object (Js.Unsafe.coerce e)
+  | "ol" -> Ol (Js.Unsafe.coerce e)
+  | "optgroup" -> Optgroup (Js.Unsafe.coerce e)
+  | "option" -> Option (Js.Unsafe.coerce e)
+  | "p" -> P (Js.Unsafe.coerce e)
+  | "param" -> Param (Js.Unsafe.coerce e)
+  | "pre" -> Pre (Js.Unsafe.coerce e)
+  | "q" -> Q (Js.Unsafe.coerce e)
+  | "script" -> Script (Js.Unsafe.coerce e)
+  | "select" -> Select (Js.Unsafe.coerce e)
+  | "style" -> Style (Js.Unsafe.coerce e)
+  | "table" -> Table (Js.Unsafe.coerce e)
+  | "tbody" -> Tbody (Js.Unsafe.coerce e)
+  | "td" -> Td (Js.Unsafe.coerce e)
+  | "textarea" -> Textarea (Js.Unsafe.coerce e)
+  | "tfoot" -> Tfoot (Js.Unsafe.coerce e)
+  | "th" -> Th (Js.Unsafe.coerce e)
+  | "thead" -> Thead (Js.Unsafe.coerce e)
+  | "title" -> Title (Js.Unsafe.coerce e)
+  | "tr" -> Tr (Js.Unsafe.coerce e)
+  | "ul" -> Ul (Js.Unsafe.coerce e)
+  | _   -> Other (e :> element t)
+
+let opt_access e = Opt.case e None (fun e -> Some (access e))
 
 type interval_id
 type timeout_id
