@@ -31,6 +31,7 @@ stubs.c: $(MLOBJS:cmo=ml)
 
 clean:
 	rm -f *.cm[ioa] *.[ao] *.so
+	rm -f syntax/*.cm[io]
 	rm -f stubs.c
 
 depend: syntax/pa_js.cmo

@@ -24,6 +24,10 @@ uninstall:
 	ocamlfind remove $(LIBRARY)
 	rm -f $(BINDIR)/$(COMPILER)
 
+depend:
+	make -C compiler depend
+	make -C lib depend
+
 clean:
 	make -C compiler clean
 	make -C lib clean

@@ -1,3 +1,5 @@
+(* Copyright (C) 2009 Jake Donham *)
+
 module D = Dom_html
 let d = D.document
 

@@ -41,9 +41,11 @@ Known issues
 
 Compiler optimizations
 ======================
-- fix control.ml
+- "unsafe" option: no check for division by zero / array access
+- per module options: we could apply "unsafe" and "inline" options
+  selectively
 
-- no need to convert to integer after multiplication or division
+- fix control.ml
 
 - detect caml_format_int("%d", x) and generate ""+x
 
@@ -78,8 +80,6 @@ Compiler optimizations
   ==> deadcode elimination inside blocks
   (for instance, elimination of function which are defined in a
    functor but are not used)
-
-- string escape: use \0 instead of \x00
 
 RUNTIME
 =======

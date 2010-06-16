@@ -27,6 +27,7 @@ $(COMPILER): $(OBJS)
 
 clean:
 	rm -f *.cm[iox] *.o
+	rm -f js_of_ocaml compile
 
 depend:
 	find . -maxdepth 1 -name private -prune -o -regex ".*\\.mli?" | \

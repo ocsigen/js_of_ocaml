@@ -1,4 +1,4 @@
-description = "FIXME"
+description = "Js_of_ocaml library"
 version = "0.1"
 archive(byte) = "js_of_ocaml.cma"
 requires = "lwt,camlp4"
