@@ -180,7 +180,7 @@ let rec loop c c' a =
   if !need_redraw then redraw c c' a;
   loop c c' a
 
-let _ =
+let start _ =
   let c = create_canvas () in
   let c' = create_canvas () in
   Dom.appendChild Html.window##document##body c;
@@ -188,4 +188,8 @@ let _ =
   c##globalCompositeOperation <- Js.string "copy";
   let a = create_cubes true in
   redraw c c' a;
-  loop c c' a
+  ignore (loop c c' a);
+  Js._false
+
+let _ =
+Html.window##onload <- Html.handler start

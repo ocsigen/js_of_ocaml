@@ -76,11 +76,13 @@ function caml_js_new(c, a) {
   return new F;
 }
 //Provides: caml_js_wrap_callback const
+//Requires: caml_call_gen
 function caml_js_wrap_callback(f) {
   var toArray = Array.prototype.slice;
   return function () { return caml_call_gen(f, toArray.call (arguments)); }
 }
 //Provides: caml_js_wrap_meth_callback const
+//Requires: caml_call_gen
 function caml_js_wrap_meth_callback(f) {
   var toArray = Array.prototype.slice;
   return function () {
@@ -111,7 +113,7 @@ function caml_js_html_escape (s) {
 
 /////////// Debugging console
 //Provides: caml_js_get_console const
-function caml_get_console () {
+function caml_js_get_console () {
   var c = window.console?window.console:{};
   var m = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
            "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd"];

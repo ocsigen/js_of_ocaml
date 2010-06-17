@@ -2,13 +2,14 @@ Priorities
 ==========
 What name for the library?
 
+Conversion to Darcs:
+    cd /tmp && rm -rf ocaml2js.darcs && mkdir ocaml2js.darcs && cd ocaml2js.darcs && darcs initialize
+    /tmp/bzr-fastimport/exporters/hg-fast-export.py -r /tmp/ocaml2js | /tmp/bzr-fastimport/exporters/darcs/darcs-fast-import
+
 Examples
 --------
 - check canvas availability
 - polishing
-- catch error in planet when loading from file
-- use window.onload
-- credits
 
 Documentation
 -------------
@@ -17,10 +18,6 @@ Documentation
 Libraries
 ---------
 - canvas: should check whether it is available...
-
-Packaging
----------
-- licenses
 
 Benchmarks/examples
 ===================

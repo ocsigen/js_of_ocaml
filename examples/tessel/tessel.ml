@@ -21,6 +21,7 @@
 (*
 - Use mouse events to rotate the sphere
   ==> put lightnings on the texture
+- Options: shadows / clipped / rotating / summer or winter or equinox
 *)
 
 type vertex = { x : float; y : float; z : float }
@@ -31,8 +32,7 @@ type face = { v1 : int; v2 : int; v3 : int }
 
 let face v1 v2 v3 = { v1 = v1; v2 = v2; v3 = v3 };
 
-type t =
-  { vertices : vertex array; faces : face array }
+type t = { vertices : vertex array; faces : face array }
 
 let octahedron =
   { vertices =
@@ -51,14 +51,6 @@ let octahedron =
          face 1 4 5;
          face 3 5 4;
          face 3 2 5 |] }
-(*
-      { x = [| 0.; 1.; 0.; -1.;  0.;  0. |];
-        y = [| 0.; 0.; 1.;  0.; -1.;  0. |];
-        z = [| 1.; 0.; 0.;  0.;  0.; -1. |] };
-      { v1 = [| 0; 0; 0; 0; 1; 1; 3; 3 |];
-        v2 = [| 1; 3; 3; 1; 2; 4; 4; 2 |];
-        v3 = [| 2; 2; 4; 4; 5; 5; 5; 5 |] } }
-*)
 
 let vect {x = x1; y = y1; z = z1} {x = x2; y = y2; z = z2} =
   {x = x2 -. x1; y = y2 -. y1; z = z2 -. z1}
@@ -190,6 +182,61 @@ let shade () =
   ctx##putImageData (img, 0., 0.);
   canvas
 
+let shadow texture =
+Firebug.console##time (Js.string "foo");
+  let w = texture##naturalWidth in
+  let h = texture##naturalHeight in
+  let canvas = create_canvas w h in
+  let ctx = canvas##getContext (Html._2d_) in
+  let (w, h) = (w / 8, h / 8) in
+  let img = ctx##createImageData (w, h) in
+  let data = img##data in
+  let inv_gamma  = 1. /. gamma in
+  let cos_obl = cos obliquity in
+  let sin_obl = -. sin obliquity in
+  for j = 0 to h - 1 do
+    for i = 0 to w / 2 - 1 do
+      let k = truncate (4. *. (float i +. float j *. float w)) in
+      let k' =
+        truncate (4. *. (float w -. float i +. float j *. float w -. 1.)) in
+      let theta = (float j /. float h -. 0.5) *. pi in
+      let phi = (float i /. float w) *. 2. *. pi in
+      let x = cos phi *. cos theta in
+      let y = sin theta in
+      let (x, y) =
+        (x *. cos_obl +. y *. sin_obl,
+         -. x *. sin_obl +. y *. cos_obl)
+      in
+(*
+      let z = sin phi *. cos theta in
+*)
+      let c =
+        if x > 0. then
+          (255 - truncate (255.99 *. dark ** inv_gamma))
+        else
+          (255 - truncate (255.99 *. (dark -. x *. (1. -. dark)) ** inv_gamma))
+      in
+      Html.pixel_set data (k + 3) c;
+      Html.pixel_set data (k' + 3) c
+    done
+  done;
+  ctx##putImageData (img, 0., 0.);
+  ctx##globalCompositeOperation <- Js.string "copy";
+  ctx##save ();
+  ctx##scale (8., 8.);
+  ctx##drawImage_fromCanvas (canvas, 0., 0.);
+
+ctx##restore ();
+(*FIX: does not yield the right alpha... *)
+  ctx##globalCompositeOperation <- Js.string "destination-over";
+  ctx##drawImage (texture, 0., 0.);
+
+Firebug.console##timeEnd (Js.string "foo");
+(*
+  Dom.appendChild (Html.document##body) canvas
+*)
+  canvas
+
 (****)
 
 let to_uv tw th {x = x; y = y; z = z} =
@@ -299,9 +346,11 @@ let rotate a o v =
    y = y;
    z = x *. sin_a +. z *. cos_a}
 
-let _ =
+let start _ =
   Lwt.ignore_result
     (load_image texture >>= fun texture ->
+  let sh = shadow texture in
+
   let canvas = create_canvas width height in
   let canvas' = create_canvas width height in
   Dom.appendChild Html.document##body canvas;
@@ -345,9 +394,11 @@ let _ =
     draw ctx' texture o uv normals v;
     ctx'##restore ();
 
+    ctx'##globalCompositeOperation <- Js.string "copy";
+(*
     ctx'##globalCompositeOperation <- Js.string "over";
-
     ctx'##drawImage_fromCanvas (sh, 0., 0.);
+*)
     ctx##drawImage_fromCanvas (canvas', 0., 0.);
 
 (*
@@ -363,8 +414,11 @@ let _ =
 (*
 Dom.appendChild (Html.document##body) (Html.document##createTextNode (Js.string (Printf.sprintf "(%f/%f/%f)" v.x v.y v.z)));
 *)
-(*incr n; if !n = 10 then Lwt.return () else*)
+if true then Lwt.return () else
     loop o v t'
   in
   loop o {x = 0.; y = 0.; z = 1.} (Js.to_float (Js.date##now ()))
-)
+); Js._false
+
+let _ =
+Html.window##onload <- Html.handler start

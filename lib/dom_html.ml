@@ -663,14 +663,14 @@ and canvasRenderingContext2D = object
 
   method drawImage :
     imageElement t -> float -> float -> unit meth
-  method drawImage_scale :
+  method drawImage_withSize :
     imageElement t -> float -> float -> float -> float -> unit meth
   method drawImage_full :
     imageElement t -> float -> float -> float -> float ->
     float -> float -> float -> float -> unit meth
   method drawImage_fromCanvas :
     canvasElement t -> float -> float -> unit meth
-  method drawImage_scaleFromCanvas :
+  method drawImage_fromCanvasWithSize :
     canvasElement t -> float -> float -> float -> float -> unit meth
   method drawImage_fullFromCanvas :
     canvasElement t -> float -> float -> float -> float ->
@@ -1060,10 +1060,10 @@ class type window = object
   method prompt : js_string t -> js_string t -> js_string t meth
   method print : unit meth
 
-  method setInterval : (unit -> unit) -> float -> interval_id meth
+  method setInterval : (unit -> unit) Js.callback -> float -> interval_id meth
   method clearInterval : interval_id -> unit meth
 
-  method setTimeout : (unit -> unit) -> float -> timeout_id meth
+  method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
   method clearTimeout : timeout_id -> unit meth
 
   method onload : (window t, event t) event_handler prop

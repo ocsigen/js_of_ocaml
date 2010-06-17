@@ -172,8 +172,19 @@ let rec loop state offset =
   Lwt_js.sleep 0.05 >>= fun () ->
   loop state (offset +. 1. /. 200.)
 
+let fail msg =
+  Dom.appendChild (Html.document##body)
+    (Html.document##createTextNode (Js.string msg))
+
+let start _ =
+  Lwt.try_bind
+    (fun () -> load_image texture)
+    (fun texture ->
+       let state = prepare_rendering texture in
+       loop state 0.)
+    (fun _ ->
+       fail "Security error: cannot access texture data from a file.";
+       Lwt.return ())
+
 let _ =
-  Lwt.ignore_result
-    (load_image texture >>= fun texture ->
-     let state = prepare_rendering texture in
-     loop state 0.)
+Html.window##onload <- Html.handler (fun _ -> ignore (start ()); Js._false)

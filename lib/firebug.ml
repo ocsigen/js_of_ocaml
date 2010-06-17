@@ -70,5 +70,6 @@ class type console = object
   method timeEnd : js_string t -> unit meth
 end
 
-let console : console t =
-  Js.Unsafe.fun_call (Js.Unsafe.variable "caml_get_console") [||]
+external get_console : unit -> console t = "caml_js_get_console"
+
+let console = get_console ()

@@ -1,5 +1,5 @@
 
-MLOBJS= js.cmo dom.cmo dom_html.cmo xmlHttpRequest.cmo lwt_js.cmo console.cmo
+MLOBJS= js.cmo dom.cmo dom_html.cmo xmlHttpRequest.cmo lwt_js.cmo firebug.cmo
 COBJS= stubs.o
 OBJS=$(MLOBJS) $(COBJS)
 
@@ -24,7 +24,8 @@ syntax/pa_js.cmo: syntax/pa_js.ml
 
 stubs.c: $(MLOBJS:cmo=ml)
 	(echo "#include <stdlib.h>"; \
-	 echo "#define D(f) void f () { exit(1); }"; \
+	 echo "#include <stdio.h>"; \
+	 echo "#define D(f) void f () { fprintf(stderr, \"Unimplemented Javascript primitive %s!\\\\n\", #f); exit(1); }"; \
 	 (sed -n -e 's/.*external.*"\([^"%]*\)".*/D(\1)/p' $(MLOBJS:cmo=ml) | \
 	  sort | uniq)) \
         > stubs.c

@@ -279,7 +279,7 @@ let http_get url =
     Js.null;
   res
 
-let _ =
+let start _ =
   let body =
     Js.Opt.get (document##getElementById(js"body"))
       (fun () -> assert false)
@@ -438,3 +438,7 @@ let _ =
     Dom.appendChild div board_div;
     Dom.appendChild body div;
     Lwt.return ()
+
+let _ =
+Html.window##onload <- Html.handler (fun _ -> ignore (start ()); Js._false)
+
