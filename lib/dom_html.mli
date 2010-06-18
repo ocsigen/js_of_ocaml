@@ -251,13 +251,11 @@ class type optGroupElement = object
 end
 
 class type optionElement = object
-  inherit element
+  inherit optGroupElement
   method form : formElement t opt readonly_prop
   method defaultSelected : bool t prop
   method text : js_string t readonly_prop
   method index : int readonly_prop
-  method disabled : bool prop
-  method label : js_string t prop
   method selected : bool prop
   method value : js_string t prop
 end
@@ -275,7 +273,7 @@ class type selectElement = object ('self)
   method name : js_string t readonly_prop (* Cannot be changed under IE *)
   method size : int prop
   method tabIndex : int prop
-  method add : #element -> #element opt -> unit meth
+  method add : optGroupElement -> optGroupElement opt -> unit meth
   method remove : int -> unit meth
   method blur : unit meth
   method focus : unit meth

@@ -203,13 +203,13 @@ Firebug.console##time (Js.string "foo");
       let phi = (float i /. float w) *. 2. *. pi in
       let x = cos phi *. cos theta in
       let y = sin theta in
+(*
+      let z = sin phi *. cos theta in
+*)
       let (x, y) =
         (x *. cos_obl +. y *. sin_obl,
          -. x *. sin_obl +. y *. cos_obl)
       in
-(*
-      let z = sin phi *. cos theta in
-*)
       let c =
         if x > 0. then
           (255 - truncate (255.99 *. dark ** inv_gamma))
@@ -223,19 +223,29 @@ Firebug.console##time (Js.string "foo");
   ctx##putImageData (img, 0., 0.);
   ctx##globalCompositeOperation <- Js.string "copy";
   ctx##save ();
-  ctx##scale (8., 8.);
+  ctx##scale (8. *. float (w + 2) /. float w, 8. *. float (h + 2) /. float h);
+  ctx##translate (-1., -1.);
   ctx##drawImage_fromCanvas (canvas, 0., 0.);
+  ctx##restore ();
 
-ctx##restore ();
-(*FIX: does not yield the right alpha... *)
-  ctx##globalCompositeOperation <- Js.string "destination-over";
-  ctx##drawImage (texture, 0., 0.);
+  let w = texture##naturalWidth in
+  let h = texture##naturalHeight in
+  let canvas' = create_canvas w h in
+  let ctx' = canvas'##getContext (Html._2d_) in
 
+  let update_texture phi =
+    let phi = mod_float phi (2. *. pi) in
+
+    ctx'##drawImage (texture, 0., 0.);
+    let i = truncate (mod_float ((2. *. pi -. phi) *. float w /. 2. /. pi) (float w)) in
+    ctx'##drawImage_fromCanvas (canvas, float i, 0.);
+    ctx'##drawImage_fromCanvas (canvas, float i -. float w, 0.)
+  in
 Firebug.console##timeEnd (Js.string "foo");
 (*
-  Dom.appendChild (Html.document##body) canvas
+  Dom.appendChild Html.document##body canvas';
 *)
-  canvas
+  (canvas', update_texture)
 
 (****)
 
@@ -255,9 +265,10 @@ assert (v < th);
 let min (u : float) v = if u < v then u else v
 let max (u : float) v = if u < v then v else u
 
-let draw (ctx : Html.canvasRenderingContext2D Js.t) img o uv normals dir =
+let draw (ctx : Html.canvasRenderingContext2D Js.t) img shd o uv normals dir =
   ctx##clearRect(-100., -100., 10000., 10000.);
   let tw = float img##naturalWidth in
+  let th = float img##naturalHeight in
   let cos_obl = cos obliquity in
   let sin_obl = -. sin obliquity in
   Array.iteri
@@ -293,9 +304,14 @@ let (u1, v1) = uv.(v1) in
 let (u2, v2) = uv.(v2) in
 let (u3, v3) = uv.(v3) in
 let mid = tw /. 2. in
-let u1 = if u1 = 0. && (u2 > mid || u3 > mid) then tw -. 1. else u1 in
-let u2 = if u2 = 0. && (u1 > mid || u3 > mid) then tw -. 1. else u2 in
-let u3 = if u3 = 0. && (u2 > mid || u1 > mid) then tw -. 1. else u3 in
+let u1 = if u1 = 0. && (u2 > mid || u3 > mid) then tw -. 2. else u1 in
+let u2 = if u2 = 0. && (u1 > mid || u3 > mid) then tw -. 2. else u2 in
+let u3 = if u3 = 0. && (u2 > mid || u1 > mid) then tw -. 2. else u3 in
+
+let u1 = max 1. u1 in
+let u2 = max 1. u2 in
+let u3 = max 1. u3 in
+
 let du2 = u2 -. u1 in
 let du3 = u3 -. u1 in
 let dv2 = v2 -. v1 in
@@ -312,13 +328,20 @@ let e = (dy2*.du3-.dy3*.du2) /. (dv2*.du3-.dv3*.du2) in
 let f = y1 -. d *. u1 -. e *. v1 in
 
 ctx##transform (a, d, b, e, c, f);
-let u = max 0. (min u1 (min u2 u3) -. 1.) in
-let v = max 0. (min v1 (min v2 v3) -. 1.) in
-let u' = max u1 (max u2 u3) +. 1. in
-let v' = max v1 (max v2 v3) +. 1. in
+let u = max 0. (min u1 (min u2 u3) -. 4.) in
+let v = max 0. (min v1 (min v2 v3) -. 4.) in
+(*
+let u' = max u1 (max u2 u3) +. 4. in
+let v' = max v1 (max v2 v3) +. 4. in
+*)
+let u' = min tw (max u1 (max u2 u3) +. 4.) in
+let v' = min th (max v1 (max v2 v3) +. 4.) in
 let du = u' -. u in
 let dv = v' -. v in
+(*
 ctx##drawImage_full (img, u, v, du, dv, u, v, du, dv);
+*)
+ctx##drawImage_fullFromCanvas (shd, u, v, du, dv, u, v, du, dv);
 ctx##restore()
        end
     )
@@ -328,8 +351,9 @@ let (>>) x f = f x
 
 let o = octahedron >> divide >> divide
 
-let texture = Js.string "../planet/texture.jpg"
+let texture = Js.string "black.jpg"
 let texture = Js.string "../planet/land_ocean_ice_cloud_2048.jpg"
+let texture = Js.string "../planet/texture.jpg"
 
 let rotate a o v =
   let cos_a = cos a in
@@ -349,7 +373,7 @@ let rotate a o v =
 let start _ =
   Lwt.ignore_result
     (load_image texture >>= fun texture ->
-  let sh = shadow texture in
+  let (shd, update_texture) = shadow texture in
 
   let canvas = create_canvas width height in
   let canvas' = create_canvas width height in
@@ -381,20 +405,33 @@ let start _ =
       o.faces
   in
 
-  let sh = shade () in
+  let _ = shade () in
 
-  let rec loop o v t =
+  let rec loop o v t phi =
 (*
     let t1 = Js.to_float (Js.date##now()) in
 *)
+    update_texture phi;
+
     ctx'##clearRect (0., 0., float width, float height);
     ctx'##save ();
+ctx'##beginPath();
+  ctx'##arc(r, r, r *. 0.95, 0., -. 2. *. pi, Js._true);
+ctx'##clip();
+
     ctx'##setTransform (r -. 2., 0., 0., r -. 2., r, r);
     ctx'##globalCompositeOperation <- Js.string "lighter";
-    draw ctx' texture o uv normals v;
+    draw ctx' texture shd o uv normals v;
     ctx'##restore ();
 
-    ctx'##globalCompositeOperation <- Js.string "copy";
+(*
+  ctx'##save ();
+  ctx'##rect(0., 0., float width, float height);
+  ctx'##arc(r, r, r *. 0.95, 0., -. 2. *. pi, Js._true);
+  ctx'##fill();
+*)
+
+    ctx##globalCompositeOperation <- Js.string "copy";
 (*
     ctx'##globalCompositeOperation <- Js.string "over";
     ctx'##drawImage_fromCanvas (sh, 0., 0.);
@@ -403,7 +440,7 @@ let start _ =
 
 (*
     let t2 = Js.to_float (Js.date##now()) in
-    Dom.appendChild (Html.document##body) (Html.document##createTextNode (Js.string (Printf.sprintf "%d / %d ==> (%f / %f)       " (Array.length o.vertices) (Array.length o.faces) t2 t1)));
+    Dom.appendChild (Html.document##body) (Html.document##createTextNode (Js.string (Printf.sprintf "%d / %d ==> (%f / %f)       " (Aprray.length o.vertices) (Array.length o.faces) t2 t1)));
 *)
     Lwt_js.sleep 0.05 >>= fun () ->
     let t' = Js.to_float (Js.date##now ()) in
@@ -414,10 +451,12 @@ let start _ =
 (*
 Dom.appendChild (Html.document##body) (Html.document##createTextNode (Js.string (Printf.sprintf "(%f/%f/%f)" v.x v.y v.z)));
 *)
+(*
 if true then Lwt.return () else
-    loop o v t'
+*)
+    loop o v t' (phi +. angle)
   in
-  loop o {x = 0.; y = 0.; z = 1.} (Js.to_float (Js.date##now ()))
+  loop o {x = 0.; y = 0.; z = 1.} (Js.to_float (Js.date##now ())) 0.
 ); Js._false
 
 let _ =

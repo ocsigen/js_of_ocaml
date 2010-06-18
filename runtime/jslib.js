@@ -79,14 +79,17 @@ function caml_js_new(c, a) {
 //Requires: caml_call_gen
 function caml_js_wrap_callback(f) {
   var toArray = Array.prototype.slice;
-  return function () { return caml_call_gen(f, toArray.call (arguments)); }
+  return function () {
+    var args = (arguments.length > 0)?toArray.call (arguments):[0];
+    return caml_call_gen(f, args);
+  }
 }
 //Provides: caml_js_wrap_meth_callback const
 //Requires: caml_call_gen
 function caml_js_wrap_meth_callback(f) {
   var toArray = Array.prototype.slice;
   return function () {
-    var args = toArray.call(arguments);
+    var args = (arguments.length > 0)?toArray.call (arguments):[0];
     args.unshift (this);
     return caml_call_gen(f, args);
   }

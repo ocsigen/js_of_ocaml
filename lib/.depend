@@ -1,3 +1,6 @@
+./firebug.cmi: js.cmi dom.cmi 
+./firebug.cmo: js.cmi dom.cmi ./firebug.cmi 
+./firebug.cmx: js.cmx dom.cmx ./firebug.cmi 
 ./dom_html.cmo: js.cmi dom.cmi ./dom_html.cmi 
 ./dom_html.cmx: js.cmx dom.cmx ./dom_html.cmi 
 ./js.cmi: 
@@ -14,5 +17,3 @@
 ./console.cmi: js.cmi dom.cmi 
 ./dom.cmi: js.cmi 
 ./lwt_js.cmi: 
-./console.cmo: js.cmi dom.cmi ./console.cmi 
-./console.cmx: js.cmx dom.cmx ./console.cmi 

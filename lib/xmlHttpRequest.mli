@@ -32,7 +32,7 @@ class type xmlHttpRequest = object
     js_string t opt -> js_string t opt -> unit meth
   method setRequestHeader : js_string t -> js_string t -> unit meth
   method send : js_string t opt -> unit meth
-  method send_document : #Dom.element #Dom.document -> unit meth
+  method send_document : Dom.element Dom.document -> unit meth
   method abort : unit meth
   method status : int readonly_prop
   method statusText : js_string t readonly_prop
