@@ -1150,12 +1150,20 @@ and compile_conditional st queue pc last handler backs frontier interm =
   end;
   res
 
-and compile_argument_passing ctx queue (pc, args) continuation =
+and compile_argument_passing ctx queue (pc, args) backs continuation =
   if args = [] then
     continuation queue
   else begin
     let block = AddrMap.find pc ctx.Ctx.blocks in
-    parallel_renaming ctx block.params args continuation queue
+    (*FIX: this is overly aggressive: we should instead keep track of
+      dependencies between queued variables and take this into account
+      to perform parallel renaming. *)
+    let cont queue =
+      parallel_renaming ctx block.params args continuation queue in
+    if AddrSet.mem pc backs then
+      flush_all queue (cont [])
+    else
+      cont queue
   end
 
 and compile_exn_handling ctx queue (pc, args) handler continuation =
@@ -1164,16 +1172,16 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
   else
     let block = AddrMap.find pc ctx.Ctx.blocks in
     match block.handler with
-      None ->
-        continuation queue
-    | Some (x0, (h_pc, h_args)) ->
+        None ->
+          continuation queue
+      | Some (x0, (h_pc, h_args)) ->
         let old_args =
           match handler with
-            Some (y, (old_pc, old_args)) ->
-              assert (Var.compare x0 y = 0 && old_pc = h_pc &&
-                      List.length old_args = List.length h_args);
-              old_args
-          | None ->
+              Some (y, (old_pc, old_args)) ->
+                assert (Var.compare x0 y = 0 && old_pc = h_pc &&
+                    List.length old_args = List.length h_args);
+                old_args
+            | None ->
               []
         in
         (* When an extra block is inserted during code generation,
@@ -1217,7 +1225,7 @@ Format.eprintf "%d ==> %d/%d/%d@." pc (List.length h_args) (List.length h_block.
         loop continuation old_args h_args h_block.params queue
 
 and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
-  compile_argument_passing st.ctx queue cont (fun queue ->
+  compile_argument_passing st.ctx queue cont backs (fun queue ->
   compile_exn_handling st.ctx queue cont handler (fun queue ->
   if AddrSet.mem pc backs then begin
     let label =
