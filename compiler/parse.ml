@@ -1540,6 +1540,35 @@ let read_primitive_table toc ic =
 
 (****)
 
+let orig_code = Str.regexp_string
+  ("\x6c\x00\x00\x00\x1f\x00\x00\x00" ^ (* pushconstint 31 *)
+   "\x69\x00\x00\x00" ^                 (* pushconst1 *)
+   "\x76\x00\x00\x00" ^                 (* lslint *)
+   "\x84\x00\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00" ^
+                                        (* bneq +5    (overwrite from here) *)
+   "\x67\x00\x00\x00\x1e\x00\x00\x00" ^ (* constint 30 *)
+   "\x54\x00\x00\x00\x03\x00\x00\x00" ^ (* branch +3 *)
+   "\x67\x00\x00\x00\x3e\x00\x00\x00" ^ (* constint 62 *)
+   "\x69\x00\x00\x00" ^                 (* pushconst1 *)
+   "\x76\x00\x00\x00")                  (* lslint *)
+
+let fixed_code =
+  "\x67\x00\x00\x00\x1f\x00\x00\x00" ^ (* constint 31 *)
+  "\x54\x00\x00\x00\x06\x00\x00\x00" ^ (* branch   +6 *)
+  "\x69\x00\x00\x00"                   (* pushconst1  *)
+
+let fix_min_max_int code =
+  begin try
+    let i = Str.search_forward orig_code code 0 in
+    String.blit fixed_code 0 code (i + 16) (String.length fixed_code)
+  with Not_found ->
+    Format.eprintf
+      "Warning: could not fix min_int/max_int definition \
+       (bytecode not found).@."
+  end
+
+(****)
+
 let f ic =
   let toc = read_toc ic in
   let primitives = read_primitive_table toc ic in
@@ -1555,6 +1584,8 @@ let f ic =
       is_const = Array.create (Array.length init_data) false;
       constants = init_data;
       primitives = primitives } in
+
+  fix_min_max_int code;
 
   let state = State.initial globals in
   parse_bytecode code state
