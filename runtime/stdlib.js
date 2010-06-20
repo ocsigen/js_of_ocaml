@@ -92,7 +92,7 @@ function caml_obj_is_block (x) { return +(x instanceof Array); }
 //Provides: caml_obj_tag const
 function caml_obj_tag (x) { return (x instanceof Array)?x[0]:1000; }
 //Provides: caml_obj_set_tag
-function caml_obj_tag (x, tag) { x[0] = tag; return 0; }
+function caml_obj_set_tag (x, tag) { x[0] = tag; return 0; }
 //Provides: caml_obj_block const
 function caml_obj_block (tag, size) {
   var o = [tag];
