@@ -182,7 +182,7 @@ function caml_compare_val (a, b, total) {
         return caml_int64_compare(a, b);
       default:
         if (a.length != b.length) return (a.length < b.length)?-1:1;
-        for (var i = 0; i < a.length; i++) {
+        for (var i = 1; i < a.length; i++) {
           var t = caml_compare_val (a[i], b[i], total);
           if (t != 0) return t;
         }
