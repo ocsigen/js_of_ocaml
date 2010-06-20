@@ -43,7 +43,7 @@ function caml_js_set(o,f,v) { o[f]=v; }
 function caml_js_get(o,f) { return o[f]; }
 
 //Provides: caml_js_var mutable
-function caml_js_var(x) { eval(x); }
+function caml_js_var(x) { return eval(x.toString()); }
 //Provides: caml_js_const const
 function caml_js_const(x) {
   switch (caml_string_to_js(x)) {

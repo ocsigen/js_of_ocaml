@@ -901,18 +901,18 @@ end
 (****)
 
 class type location = object
-  method hash : js_string t prop
+  method href : js_string t prop
+  method protocol : js_string t prop
   method host : js_string t prop
   method hostname : js_string t prop
-  method href : js_string t prop
+  method port : js_string t prop
   method pathname : js_string t prop
-  method protocol : js_string t prop
   method search : js_string t prop
+  method hash : js_string t prop
 
-  method reload : unit meth
   method assign : js_string t -> unit meth
   method replace : js_string t -> unit meth
-  method toJs_String : js_string t meth
+  method reload : unit meth
 end
 
 class type history = object
