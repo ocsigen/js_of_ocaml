@@ -296,7 +296,7 @@ class type selectElement = object ('self)
   method name : js_string t readonly_prop
   method size : int prop
   method tabIndex : int prop
-  method add : optGroupElement -> optGroupElement opt -> unit meth
+  method add : #optGroupElement -> #optGroupElement opt -> unit meth
   method remove : int -> unit meth
   method blur : unit meth
   method focus : unit meth
@@ -650,7 +650,7 @@ and canvasRenderingContext2D = object
   method clip : unit meth
   method isPointInPath : float -> float -> bool t meth
 
-  method drawFocusRing : element t -> float -> float -> bool t -> bool t meth
+  method drawFocusRing : #element t -> float -> float -> bool t -> bool t meth
 
   method font : js_string t prop
   method textAlign : js_string t prop

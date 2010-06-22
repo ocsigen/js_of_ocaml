@@ -81,7 +81,24 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   let fresh_type _loc = <:ctyp< '$random_var ()$ >>
 
-  let method_call _loc obj lab args =
+  let access_object e m m_loc m_typ f =
+    let _loc = Ast.loc_of_expr e in
+    let x = random_var () in
+    let obj_type = fresh_type _loc in
+    let obj = <:expr< ($e$ : Js.t (< .. > as $obj_type$)) >> in
+    let constr =
+      let y = random_var () in
+      let body =
+        let o = <:expr< $lid:y$ >> in
+        let _loc = m_loc in <:expr< ($o$#$m$ : $m_typ$) >>
+      in
+      <:expr< fun ($lid:y$ : $obj_type$) -> $body$ >>
+    in
+    <:expr< let $lid:x$ = $obj$ in
+            let _ = $constr$ in
+            $f x$ >>
+
+  let method_call _loc obj lab lab_loc args =
     let args = List.map (fun e -> (e, fresh_type _loc)) args in
     let ret_type = fresh_type _loc in
     let method_type =
@@ -89,18 +106,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         (fun (_, arg_ty) rem_ty -> <:ctyp< $arg_ty$ -> $rem_ty$ >>)
         args <:ctyp< Js.meth $ret_type$ >>
     in
-    let simple_object_type = <:ctyp< Js.t < $lid:lab$ : _; .. > >> in
-    let object_type = <:ctyp< Js.t < $lid:lab$ : $method_type$; .. > >> in
-    let obj = with_type (with_type obj simple_object_type) object_type in
+    access_object obj lab lab_loc method_type (fun x ->
     let args =
       List.map (fun (e, t) -> <:expr< Js.Unsafe.inject $with_type e t$ >>) args
     in
     let args = make_array _loc args in
-    let x = random_var () in
-    with_type
-      <:expr< let $lid:x$ = $obj$ in
-              Js.Unsafe.meth_call $lid:x$ $str:unescape lab$ $args$ >>
-      <:ctyp< $ret_type$ >>
+    <:expr<
+       (Js.Unsafe.meth_call $lid:x$ $str:unescape lab$ $args$ : $ret_type$)
+    >>)
 
   let new_object _loc constructor args =
     let args = List.map (fun e -> (e, fresh_type _loc)) args in
@@ -122,26 +135,28 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
               Js.Unsafe.new_obj $lid:x$ $args$ >>
       <:ctyp< $obj_type$ >>
 
+  let jsmeth = Gram.Entry.mk "jsmeth"
+
   EXTEND Gram
+    jsmeth: [["##"; lab = label -> (_loc, lab) ]];
     expr: BEFORE "."
     ["##" RIGHTA
-     [ e = SELF; "##"; lab = label ->
-         let t = fresh_type _loc in
-         let obj_typ =
-           <:ctyp< Js.t < $lid:lab$ : Js.gen_prop <get:$t$; ..>; .. > >>
-         in
-         <:expr< (Js.Unsafe.get ($e$ : $obj_typ$)
-                    $str:unescape lab$ : $t$) >>
-     | e1 = SELF; "##"; lab = label; "<-"; e2 = expr LEVEL "top" ->
-         let t = fresh_type _loc in
-         let typ =
-           <:ctyp< Js.t < $lid:lab$ : Js.gen_prop <set:$t$; ..>; .. > -> _ -> $t$ -> _ >>
-         in
-         <:expr< (Js.Unsafe.set : $typ$) $e1$ $str:unescape lab$ $e2$ >>
-     | e = SELF; "##"; lab = label; "("; ")" ->
-         method_call _loc e lab []
-     | e = SELF; "##"; lab = label; "("; l = comma_expr; ")" ->
-         method_call _loc e lab (parse_comma_list l)
+     [ e = SELF; (lab_loc, lab) = jsmeth ->
+         let prop_type = fresh_type _loc in
+         let meth_type = <:ctyp< Js.gen_prop <get:$prop_type$; ..> >> in
+         access_object e lab lab_loc meth_type (fun x ->
+         <:expr< (Js.Unsafe.get $lid:x$ $str:unescape lab$ : $prop_type$) >>)
+     | e1 = SELF; (lab_loc, lab) = jsmeth; "<-"; e2 = expr LEVEL "top" ->
+         let prop_type = fresh_type _loc in
+         let meth_type = <:ctyp< Js.gen_prop <set:$prop_type$; ..> >> in
+         access_object e1 lab lab_loc meth_type (fun x ->
+         <:expr<
+           Js.Unsafe.set $lid:x$ $str:unescape lab$ ($e2$ : $prop_type$)
+         >>)
+     | e = SELF; (lab_loc, lab) = jsmeth; "("; ")" ->
+         method_call _loc e lab lab_loc []
+     | e = SELF; (lab_loc, lab) = jsmeth; "("; l = comma_expr; ")" ->
+         method_call _loc e lab lab_loc (parse_comma_list l)
      ]];
     expr: LEVEL "simple"
     [[ "jsnew"; e = expr LEVEL "label"; "("; ")" ->
