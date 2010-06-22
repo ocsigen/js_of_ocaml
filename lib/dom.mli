@@ -56,6 +56,7 @@ class type element = object
   method setAttribute : js_string t -> js_string t -> unit meth
   method removeAttribute : js_string t -> unit meth
   method hasAttribyte : js_string t -> bool t meth
+  method getElementsByTagName : js_string t -> 'element nodeList t meth
 end
 
 class type characterData = object
@@ -74,10 +75,11 @@ class type text = characterData
 class type documentFragment = node
 
 class type ['element] document = object
-  inherit element
+  inherit node
   method documentElement : 'element t readonly_prop
   method createDocumentFragment : documentFragment t meth
   method createElement : js_string t -> 'element t meth
   method createTextNode : js_string t -> text t meth
   method getElementById : js_string t -> 'element t opt meth
+  method getElementsByTagName : js_string t -> 'element nodeList t meth
 end
