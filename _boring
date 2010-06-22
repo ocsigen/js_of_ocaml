@@ -16,3 +16,4 @@
 ^examples/wiki/wikicreole\.ml$
 ^examples/.*/.*\.js$
 ^compiler/js_of_ocaml$
+^lib/doc$
