@@ -146,17 +146,7 @@ and keyboardEvent = object
   method keyCode : int readonly_prop
 end
 
-and element = object ('self)
-  inherit Dom.element
-  method id : js_string t prop
-  method title : js_string t prop
-  method lang : js_string t prop
-  method dir : js_string t prop
-  method className : js_string t prop
-  method style : cssStyleDeclaration t prop
-
-  method innerHTML : js_string t prop
-
+and eventTarget = object ('self)
   method onclick : ('self t, mouseEvent t) event_handler prop
   method ondblclick : ('self t, mouseEvent t) event_handler prop
   method onmousedown : ('self t, mouseEvent t) event_handler prop
@@ -169,6 +159,20 @@ and element = object ('self)
   method onkeyup : ('self t, keyboardEvent t) event_handler prop
 end
 
+and element = object
+  inherit Dom.element
+  method id : js_string t prop
+  method title : js_string t prop
+  method lang : js_string t prop
+  method dir : js_string t prop
+  method className : js_string t prop
+  method style : cssStyleDeclaration t prop
+
+  method innerHTML : js_string t prop
+
+  inherit eventTarget
+end
+
 val no_handler : ('a, 'b) event_handler
 val handler : ((#event t as 'b) -> bool t) -> ('a, 'b) event_handler
 val full_handler : ('a -> (#event t as 'b) -> bool t) -> ('a, 'b) event_handler
@@ -176,6 +180,25 @@ val invoke_handler : ('a, 'b) event_handler -> 'a -> 'b -> bool t
 
 val eventTarget : #event t -> element t
 val eventRelatedTarget : #mouseEvent t -> element t opt
+
+module Event : sig
+  type 'a sel
+  val click : mouseEvent t sel
+  val dblclick : mouseEvent t sel
+  val mousedown : mouseEvent t sel
+  val mouseup : mouseEvent t sel
+  val mouseover : mouseEvent t sel
+  val mousemove : mouseEvent t sel
+  val mouseout : mouseEvent t sel
+  val keypress : keyboardEvent t sel
+  val keydown : keyboardEvent t sel
+  val keyup : keyboardEvent t sel
+end
+
+(* Returns a thunk that removes the listener *)
+val addEventListener :
+  (#eventTarget t as 'a) -> 'b Event.sel -> ('a, 'b) event_handler ->
+  bool t -> (unit -> unit)
 
 class type ['node] collection = object
   method length : int readonly_prop
@@ -694,6 +717,8 @@ class type document = object
   method forms : formElement collection t readonly_prop
   method anchors : element collection t readonly_prop
   method cookie : js_string t prop
+
+  inherit eventTarget
 end
 
 val document : document t

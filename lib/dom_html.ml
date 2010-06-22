@@ -148,17 +148,7 @@ and keyboardEvent = object
   method keyCode : int readonly_prop
 end
 
-and element = object ('self)
-  inherit Dom.element
-  method id : js_string t prop
-  method title : js_string t prop
-  method lang : js_string t prop
-  method dir : js_string t prop
-  method className : js_string t prop
-  method style : cssStyleDeclaration t prop
-
-  method innerHTML : js_string t prop
-
+and eventTarget = object ('self)
   method onclick : ('self t, mouseEvent t) event_handler prop
   method ondblclick : ('self t, mouseEvent t) event_handler prop
   method onmousedown : ('self t, mouseEvent t) event_handler prop
@@ -169,6 +159,20 @@ and element = object ('self)
   method onkeypress : ('self t, keyboardEvent t) event_handler prop
   method onkeydown : ('self t, keyboardEvent t) event_handler prop
   method onkeyup : ('self t, keyboardEvent t) event_handler prop
+end
+
+and element = object
+  inherit Dom.element
+  method id : js_string t prop
+  method title : js_string t prop
+  method lang : js_string t prop
+  method dir : js_string t prop
+  method className : js_string t prop
+  method style : cssStyleDeclaration t prop
+
+  method innerHTML : js_string t prop
+
+  inherit eventTarget
 end
 
 let no_handler : ('a, 'b) event_handler = Js.null
@@ -199,6 +203,31 @@ let eventRelatedTarget (e : #mouseEvent t) =
     "mouseover" -> Optdef.get (e##fromElement) (fun () -> assert false)
   | "mouseout"  -> Optdef.get (e##toElement) (fun () -> assert false)
   | _           -> Js.null)
+
+module Event = struct
+  type 'a sel = js_string t
+  let click = Js.string "click"
+  let dblclick = Js.string "dblclick"
+  let mousedown = Js.string "mousedown"
+  let mouseup = Js.string "mouseup"
+  let mouseover = Js.string "mouseover"
+  let mousemove = Js.string "mousemove"
+  let mouseout = Js.string "mouseout"
+  let keypress = Js.string "keypress"
+  let keydown = Js.string "keydown"
+  let keyup = Js.string "keyup"
+end
+
+let addEventListener (e : #eventTarget t) sel h capt =
+  if (Js.Unsafe.coerce e)##addEventListener == Js.undefined then begin
+    let ev = (Js.string "on")##concat(sel) in
+    let callback = fun e -> Js.Unsafe.call (h, e, [||]) in
+    (Js.Unsafe.coerce e)##attachEvent(ev, callback);
+    fun () -> (Js.Unsafe.coerce e)##detachEvent(ev, callback)
+  end else begin
+    (Js.Unsafe.coerce e)##addEventListener(sel, h, capt);
+    fun () -> (Js.Unsafe.coerce e)##removeEventListener (sel, h, capt)
+  end
 
 class type ['node] collection = object
   method length : int readonly_prop
@@ -717,6 +746,8 @@ class type document = object
   method forms : formElement collection t readonly_prop
   method anchors : element collection t readonly_prop
   method cookie : js_string t prop
+
+  inherit eventTarget
 end
 
 (*XXX Should provide creation functions a la lablgtk... *)
