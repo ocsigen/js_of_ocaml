@@ -54,7 +54,7 @@ module type OPT = sig
   val ret : 'a -> 'a t
   val map : 'a t -> ('a -> 'b) -> 'b t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val case : 'a t -> 'b -> ('a -> 'b) -> 'b
+  val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
   val get : 'a t -> (unit -> 'a) -> 'a
   val iter : 'a t -> ('a -> unit) -> unit
 end
@@ -64,7 +64,7 @@ module Opt : OPT with type 'a t = 'a opt = struct
   let ret = some
   let map x f = if Unsafe.equals x null then null else some (f x)
   let bind x f = if Unsafe.equals x null then null else f x
-  let case x y f = if Unsafe.equals x null then y else f x
+  let case x f g = if Unsafe.equals x null then f () else g x
   let get x f = if Unsafe.equals x null then f () else x
   let iter x f = if not (Unsafe.equals x null) then f x
 end
@@ -74,7 +74,7 @@ module Optdef : OPT with type 'a t = 'a optdef = struct
   let ret = undefined
   let map x f = if x == undefined then undefined else some (f x)
   let bind x f = if x == undefined then undefined else f x
-  let case x y f = if x == undefined then y else f x
+  let case x f g = if x == undefined then f () else g x
   let get x f = if x == undefined then f () else x
   let iter x f = if x != undefined then f x
 end

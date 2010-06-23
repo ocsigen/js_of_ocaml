@@ -138,6 +138,8 @@ and mouseEvent = object
   (* Legacy methods *)
   method fromElement : element t opt optdef readonly_prop
   method toElement : element t opt optdef readonly_prop
+  method pageX : int optdef readonly_prop
+  method pageY : int optdef readonly_prop
 end
 
 and keyboardEvent = object
@@ -170,6 +172,18 @@ and element = object
 
   method innerHTML : js_string t prop
 
+  method clientLeft : int readonly_prop
+  method clientTop : int readonly_prop
+  method clientWidth : int readonly_prop
+  method clientHeight : int readonly_prop
+  method offsetLeft : int readonly_prop
+  method offsetTop : int readonly_prop (* Incorrect in IE until IE7 included *)
+  method offsetParent : element t opt readonly_prop
+  method offsetWidth : int readonly_prop
+  method offsetHeight : int readonly_prop
+  method scrollLeft : int prop
+  method scrollTop : int prop
+
   inherit eventTarget
 end
 
@@ -180,6 +194,7 @@ val invoke_handler : ('a, 'b) event_handler -> 'a -> 'b -> bool t
 
 val eventTarget : #event t -> element t
 val eventRelatedTarget : #mouseEvent t -> element t opt
+val eventAbsolutePosition : #mouseEvent t -> int * int
 
 module Event : sig
   type 'a sel
@@ -710,7 +725,8 @@ class type document = object
   method referrer : js_string t readonly_prop
   method domain : js_string t readonly_prop
   method _URL : js_string t readonly_prop
-  method body : element t prop
+  method body : bodyElement t prop
+  method documentElement : htmlElement t readonly_prop
   method images : imageElement collection t readonly_prop
   method applets : element collection t readonly_prop
   method links : element collection t readonly_prop
@@ -941,12 +957,15 @@ class type location = object
 end
 
 class type history = object
+(*...*)
 end
 
 class type undoManager = object
+(*...*)
 end
 
 class type selection = object
+(*...*)
 end
 
 type interval_id

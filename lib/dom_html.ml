@@ -134,12 +134,15 @@ end
 and mouseEvent = object
   inherit event
   method relatedTarget : element t opt optdef readonly_prop
-  method fromElement : element t opt optdef readonly_prop
-  method toElement : element t opt optdef readonly_prop
   method clientX : int readonly_prop
   method clientY : int readonly_prop
   method screenX : int readonly_prop
   method screenY : int readonly_prop
+
+  method fromElement : element t opt optdef readonly_prop
+  method toElement : element t opt optdef readonly_prop
+  method pageX : int optdef readonly_prop
+  method pageY : int optdef readonly_prop
 end
 
 and keyboardEvent = object
@@ -172,6 +175,18 @@ and element = object
 
   method innerHTML : js_string t prop
 
+  method clientLeft : int readonly_prop
+  method clientTop : int readonly_prop
+  method clientWidth : int readonly_prop
+  method clientHeight : int readonly_prop
+  method offsetLeft : int readonly_prop
+  method offsetTop : int readonly_prop
+  method offsetParent : element t opt readonly_prop
+  method offsetWidth : int readonly_prop
+  method offsetHeight : int readonly_prop
+  method scrollLeft : int prop
+  method scrollTop : int prop
+
   inherit eventTarget
 end
 
@@ -185,24 +200,6 @@ let full_handler f =
 let invoke_handler
   (f : ('a, 'b) event_handler) (this : 'a) (event : 'b) : bool t =
   Js.Unsafe.call f this [|Js.Unsafe.inject event|]
-
-let eventTarget (e : #event t) =
-  let target =
-    Optdef.get (e##target) (fun () ->
-    Optdef.get (e##srcElement) (fun () -> assert false))
-  in
-  (* Workaround for Safari bug *)
-  if target##nodeType = 3 then
-    Js.Unsafe.coerce (Opt.get (target##parentNode) (fun () -> assert false))
-  else
-    target
-
-let eventRelatedTarget (e : #mouseEvent t) =
-  Optdef.get (e##relatedTarget) (fun () ->
-  match Js.to_string (e##_type) with
-    "mouseover" -> Optdef.get (e##fromElement) (fun () -> assert false)
-  | "mouseout"  -> Optdef.get (e##toElement) (fun () -> assert false)
-  | _           -> Js.null)
 
 module Event = struct
   type 'a sel = js_string t
@@ -739,7 +736,8 @@ class type document = object
   method referrer : js_string t readonly_prop
   method domain : js_string t readonly_prop
   method _URL : js_string t readonly_prop
-  method body : element t prop
+  method body : bodyElement t prop
+  method documentElement : htmlElement t readonly_prop
   method images : imageElement collection t readonly_prop
   method applets : element collection t readonly_prop
   method links : element collection t readonly_prop
@@ -976,7 +974,7 @@ let access (e : #element t) =
   | "ul" -> Ul (Js.Unsafe.coerce e)
   | _   -> Other (e :> element t)
 
-let opt_access e = Opt.case e None (fun e -> Some (access e))
+let opt_access e = Opt.case e (fun () -> None) (fun e -> Some (access e))
 
 module CoerceTo = struct
   let unsafeCoerce tag (e : #element t) =
@@ -1104,3 +1102,34 @@ end
 let window : window t = Js.Unsafe.variable "window"
 
 let document = window##document
+
+(****)
+
+let eventTarget (e : #event t) =
+  let target =
+    Optdef.get (e##target) (fun () ->
+    Optdef.get (e##srcElement) (fun () -> assert false))
+  in
+  (* Workaround for Safari bug *)
+  if target##nodeType = 3 then
+    Js.Unsafe.coerce (Opt.get (target##parentNode) (fun () -> assert false))
+  else
+    target
+
+let eventRelatedTarget (e : #mouseEvent t) =
+  Optdef.get (e##relatedTarget) (fun () ->
+  match Js.to_string (e##_type) with
+    "mouseover" -> Optdef.get (e##fromElement) (fun () -> assert false)
+  | "mouseout"  -> Optdef.get (e##toElement) (fun () -> assert false)
+  | _           -> Js.null)
+
+let eventAbsolutePosition' (e : #mouseEvent t) =
+  let body = document##body in
+  let html = document##documentElement in
+  (e##clientX + body##scrollLeft + html##scrollLeft,
+   e##clientY + body##scrollTop + html##scrollTop)
+
+let eventAbsolutePosition (e : #mouseEvent t) =
+  Optdef.case (e##pageX) (fun () -> eventAbsolutePosition' e) (fun x ->
+  Optdef.case (e##pageY) (fun () -> eventAbsolutePosition' e) (fun y ->
+  (x, y)))

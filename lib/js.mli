@@ -33,7 +33,7 @@ module type OPT = sig
   val ret : 'a -> 'a t
   val map : 'a t -> ('a -> 'b) -> 'b t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val case : 'a t -> 'b -> ('a -> 'b) -> 'b
+  val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
   val get : 'a t -> (unit -> 'a) -> 'a
   val iter : 'a t -> ('a -> unit) -> unit
 end
