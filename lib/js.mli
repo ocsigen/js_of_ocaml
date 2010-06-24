@@ -35,22 +35,34 @@ type +'a optdef
 val null : 'a opt
   (** The [null] value. *)
 val some : 'a -> 'a opt
-  (** Turns a value into a possibly null value. *)
+  (** Consider a value into a possibly null value. *)
 val undefined : 'a optdef
   (** The [undefined] value *)
 val def : 'a -> 'a optdef
-  (** Turns a value into a possibly undefined value. *)
+  (** Consider a value into a possibly undefined value. *)
 
 (** Signatures of a set of standard functions for manipulating
     optional values. *)
 module type OPT = sig
   type 'a t
-  val ret : 'a -> 'a t
+  val empty : 'a t
+    (** No value. *)
+  val return : 'a -> 'a t
+    (** Consider a value as an optional value. *)
   val map : 'a t -> ('a -> 'b) -> 'b t
+    (** Apply a function to an optional value if it is available.
+        Returns the result of the application. *)
   val bind : 'a t -> ('a -> 'b t) -> 'b t
-  val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
-  val get : 'a t -> (unit -> 'a) -> 'a
+    (** Apply a function returning an optional value to an optional value *)
+  val test : 'a t -> bool
+    (** Returns [true] if a value is available, [false] otherwise. *)
   val iter : 'a t -> ('a -> unit) -> unit
+    (** Apply a function to an optional value if it is available. *)
+  val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
+    (** Pattern matching on optional values. *)
+  val get : 'a t -> (unit -> 'a) -> 'a
+    (** Get the value.  If no value available, an alternative function
+        is called to get a default value. *)
 end
 
 module Opt : OPT with type 'a t = 'a opt

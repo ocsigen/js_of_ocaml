@@ -43,40 +43,46 @@ end
 type 'a opt = 'a
 type 'a optdef = 'a
 
-let null = Unsafe.constant "null"
+let null : 'a opt = Unsafe.constant "null"
 external some : 'a -> 'a opt = "%identity"
 
-let undefined = Unsafe.constant "undefined"
+let undefined : 'a optdef = Unsafe.constant "undefined"
 external def : 'a -> 'a optdef = "%identity"
 
 module type OPT = sig
   type 'a t
-  val ret : 'a -> 'a t
+  val empty : 'a t
+  val return : 'a -> 'a t
   val map : 'a t -> ('a -> 'b) -> 'b t
   val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val test : 'a t -> bool
+  val iter : 'a t -> ('a -> unit) -> unit
   val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
   val get : 'a t -> (unit -> 'a) -> 'a
-  val iter : 'a t -> ('a -> unit) -> unit
 end
 
 module Opt : OPT with type 'a t = 'a opt = struct
   type 'a t = 'a opt
-  let ret = some
+  let empty = null
+  let return = some
   let map x f = if Unsafe.equals x null then null else some (f x)
   let bind x f = if Unsafe.equals x null then null else f x
+  let test x = not (Unsafe.equals x null)
+  let iter x f = if not (Unsafe.equals x null) then f x
   let case x f g = if Unsafe.equals x null then f () else g x
   let get x f = if Unsafe.equals x null then f () else x
-  let iter x f = if not (Unsafe.equals x null) then f x
 end
 
 module Optdef : OPT with type 'a t = 'a optdef = struct
   type 'a t = 'a opt
-  let ret = undefined
+  let empty = undefined
+  let return = def
   let map x f = if x == undefined then undefined else some (f x)
   let bind x f = if x == undefined then undefined else f x
+  let test x = x != undefined
+  let iter x f = if x != undefined then f x
   let case x f g = if x == undefined then f () else g x
   let get x f = if x == undefined then f () else x
-  let iter x f = if x != undefined then f x
 end
 
 (****)
