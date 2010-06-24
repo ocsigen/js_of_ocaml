@@ -59,7 +59,6 @@ let send_request url callback postData =
   let req = create () in
   let meth = Js.string (if postData == null then "GET" else "POST") in
   req##_open (meth, url, Js._true);
-  req##setRequestHeader (Js.string "User-Agent", Js.string "XMLHTTP/1.0");
   Opt.iter postData
     (fun d -> req##setRequestHeader
                 (Js.string "Content-type",
@@ -72,4 +71,4 @@ let send_request url callback postData =
          (req##status = 0 || req##status = 200 || req##status = 304)
        then
          callback req);
-  if req##readyState <> DONE then req##send (postData)
+  req##send (postData)

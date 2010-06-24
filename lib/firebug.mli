@@ -18,9 +18,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*
-FIX: we should either modify pa_js.ml to support polymorphic methods or
-provides polymorphic functions rather than methods.
+(** Firebug API (debugging console).
+
+@see <http://getfirebug.com/wiki/index.php/Console_API>
+the Firebug console API
 *)
 
 open Js

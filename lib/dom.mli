@@ -18,13 +18,22 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** DOM binding
+
+This is a partial binding to the DOM Core API.
+*)
+
 open Js
 
+(** {2 DOM objects} *)
+
+(** Specification of [NodeList] objects. *)
 class type ['node] nodeList = object
   method item : int -> 'node t meth
   method length : int readonly_prop
 end
 
+(** Specification of [Node] objects. *)
 class type node = object
   method nodeName : js_string t readonly_prop
   method nodeValue : js_string t opt readonly_prop
@@ -44,11 +53,7 @@ class type node = object
   method cloneNode : bool t -> node t meth
 end
 
-val insertBefore : #node t -> #node t -> #node t opt -> unit
-val replaceChild : #node t -> #node t -> #node t -> unit
-val removeChild : #node t -> #node t -> unit
-val appendChild : #node t -> #node t -> unit
-
+(** Specification of [Element] objects. *)
 class type element = object
   inherit node
   method tagName : js_string t readonly_prop
@@ -59,6 +64,7 @@ class type element = object
   method getElementsByTagName : js_string t -> 'element nodeList t meth
 end
 
+(** Specification of [CharacterData] objects. *)
 class type characterData = object
   inherit node
   method data : js_string t prop
@@ -70,10 +76,13 @@ class type characterData = object
   method replaceData : int -> int -> js_string t meth
 end
 
+(** Specification of [Text] objects. *)
 class type text = characterData
 
+(** Specification of [DocumentFragment] objects. *)
 class type documentFragment = node
 
+(** Specification of [Document] objects. *)
 class type ['element] document = object
   inherit node
   method documentElement : 'element t readonly_prop
@@ -83,3 +92,22 @@ class type ['element] document = object
   method getElementById : js_string t -> 'element t opt meth
   method getElementsByTagName : js_string t -> 'element nodeList t meth
 end
+
+(** {2 Helper functions} *)
+
+val insertBefore : #node t -> #node t -> #node t opt -> unit
+  (** The expression [insertBefore n c p] behave the same as
+      [n##insertBefore(c, p)] but avoid the need of coercing the
+      different objects to [node t]. *)
+val replaceChild : #node t -> #node t -> #node t -> unit
+  (** The expression [replaceChild n c p] behave the same as
+      [n##replaceChild(c, p)] but avoid the need of coercing the
+      different objects to [node t]. *)
+val removeChild : #node t -> #node t -> unit
+  (** The expression [removeChild n c] behave the same as
+      [n##removeChild(c)] but avoid the need of coercing the
+      different objects to [node t]. *)
+val appendChild : #node t -> #node t -> unit
+  (** The expression [appendChild n c] behave the same as
+      [n##appendChild(c)] but avoid the need of coercing the
+      different objects to [node t]. *)

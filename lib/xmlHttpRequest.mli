@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** XmlHttpRequest object. *)
+
 open Js
 
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
@@ -46,3 +48,7 @@ val create : unit -> xmlHttpRequest t
 
 val send_request :
   js_string t -> (xmlHttpRequest t -> unit) -> js_string t opt -> unit
+  (** Helper function: [send_request url callback post_data] performs a
+      request at location [url].  If [post_data] is not null, a POST
+      request is performed.  On success, the function [callback] is
+      invoked. *)

@@ -123,7 +123,7 @@ class type cssStyleDeclaration = object
   method zIndex : js_string t prop
 end
 
-type ('a, 'b) event_handler = ('a, 'b optdef -> bool t) meth_callback opt
+type ('a, 'b) event_listener = ('a, 'b optdef -> bool t) meth_callback opt
 
 class type event = object
   method _type : js_string t readonly_prop
@@ -152,16 +152,16 @@ and keyboardEvent = object
 end
 
 and eventTarget = object ('self)
-  method onclick : ('self t, mouseEvent t) event_handler prop
-  method ondblclick : ('self t, mouseEvent t) event_handler prop
-  method onmousedown : ('self t, mouseEvent t) event_handler prop
-  method onmouseup : ('self t, mouseEvent t) event_handler prop
-  method onmouseover : ('self t, mouseEvent t) event_handler prop
-  method onmousemove : ('self t, mouseEvent t) event_handler prop
-  method onmouseout : ('self t, mouseEvent t) event_handler prop
-  method onkeypress : ('self t, keyboardEvent t) event_handler prop
-  method onkeydown : ('self t, keyboardEvent t) event_handler prop
-  method onkeyup : ('self t, keyboardEvent t) event_handler prop
+  method onclick : ('self t, mouseEvent t) event_listener prop
+  method ondblclick : ('self t, mouseEvent t) event_listener prop
+  method onmousedown : ('self t, mouseEvent t) event_listener prop
+  method onmouseup : ('self t, mouseEvent t) event_listener prop
+  method onmouseover : ('self t, mouseEvent t) event_listener prop
+  method onmousemove : ('self t, mouseEvent t) event_listener prop
+  method onmouseout : ('self t, mouseEvent t) event_listener prop
+  method onkeypress : ('self t, keyboardEvent t) event_listener prop
+  method onkeydown : ('self t, keyboardEvent t) event_listener prop
+  method onkeyup : ('self t, keyboardEvent t) event_listener prop
 end
 
 and element = object
@@ -190,7 +190,7 @@ and element = object
   inherit eventTarget
 end
 
-let no_handler : ('a, 'b) event_handler = Js.null
+let no_handler : ('a, 'b) event_listener = Js.null
 let window_event () : #event t = Js.Unsafe.variable "event"
 let handler f =
   Js.some (Js.wrap_callback (fun e -> f (Optdef.get e window_event)))
@@ -198,11 +198,11 @@ let full_handler f =
   Js.some (Js.wrap_meth_callback
              (fun this e -> f this (Optdef.get e window_event)))
 let invoke_handler
-  (f : ('a, 'b) event_handler) (this : 'a) (event : 'b) : bool t =
+  (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
   Js.Unsafe.call f this [|Js.Unsafe.inject event|]
 
 module Event = struct
-  type 'a sel = js_string t
+  type 'a typ = js_string t
   let click = Js.string "click"
   let dblclick = Js.string "dblclick"
   let mousedown = Js.string "mousedown"
@@ -215,16 +215,20 @@ module Event = struct
   let keyup = Js.string "keyup"
 end
 
-let addEventListener (e : #eventTarget t) sel h capt =
+type event_listener_id = unit -> unit
+
+let addEventListener (e : #eventTarget t) typ h capt =
   if (Js.Unsafe.coerce e)##addEventListener == Js.undefined then begin
-    let ev = (Js.string "on")##concat(sel) in
+    let ev = (Js.string "on")##concat(typ) in
     let callback = fun e -> Js.Unsafe.call (h, e, [||]) in
     (Js.Unsafe.coerce e)##attachEvent(ev, callback);
     fun () -> (Js.Unsafe.coerce e)##detachEvent(ev, callback)
   end else begin
-    (Js.Unsafe.coerce e)##addEventListener(sel, h, capt);
-    fun () -> (Js.Unsafe.coerce e)##removeEventListener (sel, h, capt)
+    (Js.Unsafe.coerce e)##addEventListener(typ, h, capt);
+    fun () -> (Js.Unsafe.coerce e)##removeEventListener (typ, h, capt)
   end
+
+let removeEventListener id = id ()
 
 class type ['node] collection = object
   method length : int readonly_prop
@@ -327,7 +331,7 @@ class type selectElement = object ('self)
   method blur : unit meth
   method focus : unit meth
 
-  method onchange : ('self t, event t) event_handler prop
+  method onchange : ('self t, event t) event_listener prop
 end
 
 class type inputElement = object ('self)
@@ -355,8 +359,8 @@ class type inputElement = object ('self)
   method select : unit meth
   method click : unit meth
 
-  method onselect : ('self t, event t) event_handler prop
-  method onchange : ('self t, event t) event_handler prop
+  method onselect : ('self t, event t) event_listener prop
+  method onchange : ('self t, event t) event_listener prop
 end
 
 class type textAreaElement = object ('self)
@@ -376,8 +380,8 @@ class type textAreaElement = object ('self)
   method focus : unit meth
   method select : unit meth
 
-  method onselect : ('self t, event t) event_handler prop
-  method onchange : ('self t, event t) event_handler prop
+  method onselect : ('self t, event t) event_listener prop
+  method onchange : ('self t, event t) event_listener prop
 end
 
 class type buttonElement = object
@@ -470,7 +474,7 @@ class type imageElement = object ('self)
   method naturalHeight : int readonly_prop
   method complete : bool t prop
 
-  method onload : ('self t, event t) event_handler prop
+  method onload : ('self t, event t) event_listener prop
 end
 
 class type objectElement = object
@@ -915,7 +919,7 @@ type taggedElement =
   | Ul of uListElement t
   | Other of element t
 
-let access (e : #element t) =
+let tagged (e : #element t) =
   match Js.to_string (e##tagName##toLowerCase()) with
   | "a" -> A (Js.Unsafe.coerce e)
   | "area" -> Area (Js.Unsafe.coerce e)
@@ -974,7 +978,7 @@ let access (e : #element t) =
   | "ul" -> Ul (Js.Unsafe.coerce e)
   | _   -> Other (e :> element t)
 
-let opt_access e = Opt.case e (fun () -> None) (fun e -> Some (access e))
+let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
 
 module CoerceTo = struct
   let unsafeCoerce tag (e : #element t) =
@@ -1093,10 +1097,10 @@ class type window = object
   method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
   method clearTimeout : timeout_id -> unit meth
 
-  method onload : (window t, event t) event_handler prop
-  method onbeforeunload : (window t, event t) event_handler prop
-  method onblur : (window t, event t) event_handler prop
-  method onfocus : (window t, event t) event_handler prop
+  method onload : (window t, event t) event_listener prop
+  method onbeforeunload : (window t, event t) event_listener prop
+  method onblur : (window t, event t) event_listener prop
+  method onfocus : (window t, event t) event_listener prop
 end
 
 let window : window t = Js.Unsafe.variable "window"

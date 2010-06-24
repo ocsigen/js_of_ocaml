@@ -18,16 +18,31 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* Null and undefined *)
+(** Javascript binding
+
+    This module provides types and functions to interoperate with
+    Javascript values, and gives access to Javascript standard
+    objects.
+*)
+
+(** {2 Dealing with [null] and [undefined] values.} *)
 
 type +'a opt
+  (** Type of possibly null values. *)
 type +'a optdef
+  (** Type of possibly undefined values. *)
 
 val null : 'a opt
+  (** The [null] value. *)
 val some : 'a -> 'a opt
+  (** Turns a value into a possibly null value. *)
 val undefined : 'a optdef
+  (** The [undefined] value *)
 val def : 'a -> 'a optdef
+  (** Turns a value into a possibly undefined value. *)
 
+(** Signatures of a set of standard functions for manipulating
+    optional values. *)
 module type OPT = sig
   type 'a t
   val ret : 'a -> 'a t
@@ -39,47 +54,105 @@ module type OPT = sig
 end
 
 module Opt : OPT with type 'a t = 'a opt
+  (** Standard functions for manipulating possibly null values. *)
 module Optdef : OPT with type 'a t = 'a optdef
+  (** Standard functions for manipulating possibly undefined values. *)
 
-(* Coercion functions *)
-
-val coerce : 'a -> ('a -> 'b Opt.t) -> (unit -> 'b) -> 'b
-val coerce_opt : 'a Opt.t -> ('a -> 'b Opt.t) -> (unit -> 'b) -> 'b
-
-(* Method and object properties specification *)
+(** {2 Types for specifying method and properties of Javascript objects} *)
 
 type +'a t
+  (** Type of Javascript objects.  The type parameter is used to
+      specify more precisely an object.  *)
 type +'a meth
+  (** Type used to specify method types:
+      a Javascript object
+        [<m : t1 -> t2 -> ... -> tn -> t Js.meth> Js.t]
+      has a Javascript method [m] expecting {i n} arguments
+      of types [t1] to [tn] and returns a value of type [t]. *)
 type +'a gen_prop
+  (** Type used to specify the properties of Javascript
+      objects.  In practice you should rarely need this type directly,
+      but should rather use the type abbreviations below instead. *)
 type 'a readonly_prop = <get : 'a> gen_prop
+  (** Type of read-only properties:
+      a Javascript object
+        [<p : t Js.readonly_prop> Js.t]
+      has a read-only property [p] of type [t]. *)
 type 'a writeonly_prop = <set : 'a> gen_prop
+  (** Type of write-only properties:
+      a Javascript object
+        [<p : t Js.writeonly_prop> Js.t]
+      has a write-only property [p] of type [t]. *)
 type 'a prop = <get : 'a; set : 'a> gen_prop
+  (** Type of read/write properties:
+      a Javascript object
+        [<p : t Js.writeonly_prop> Js.t]
+      has a read/write property [p] of type [t]. *)
 type 'a optdef_prop = <get : 'a optdef; set : 'a> gen_prop
+  (** Type of read/write properties that may be undefined:
+      you can set them to a value of some type [t], but if you read
+      them, you will get a value of type [t optdef] (that may be
+      [undefined]). *)
 type float_prop = <get : float t; set : float> gen_prop
+  (** Type of float properties:
+      you can set them to an OCaml [float], but you will get back a
+      native Javascript number of type [float t]. *)
 
-(* Constructors *)
+(** {2 Object constructors} *)
 
 type +'a constr
+  (** A value of type [(t1 -> ... -> tn -> t Js.t) Js.constr] is a
+      Javascript constructor expecting {i n} arguments of types [t1]
+      to [tn] and returning a Javascript object of type [t Js.t].  Use
+      the syntax extension [jsnew c (e1, ..., en)] to build an object
+      using constructor [c] and arguments [e1] to [en]. *)
 
-(* Callbacks *)
+(** {2 Callbacks to OCaml} *)
 
 type (+'a, +'b) meth_callback
+   (** Type of callback functions.  A function of type
+       [(u, t1 -> ... -> tn -> t) meth_callback] can be called
+       from Javascript with [this] bound to a value of type [u]
+       and up to {i n} arguments of types [t1] to [tn].  The system
+       takes care of currification, so less than {i n} arguments can
+       be provided.  As a special case, a callback of type
+       [(t, unit -> t) meth_callback] can be called from Javascript
+       with no argument.  It will behave as if it was called with a
+       single argument of type [unit]. *)
 type 'a callback = (unit, 'a) meth_callback
+  (** Type of callback functions intended to be called without a
+      meaningful [this] implicit parameter. *)
 
 external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback =
     "caml_js_wrap_callback"
+  (** Wrap an OCaml function so that it can be invoked from
+      Javascript. *)
 external wrap_meth_callback :
   ('c -> 'a -> 'b) -> ('c, 'a -> 'b) meth_callback =
-  "caml_js_wrap_meth_callback"
+    "caml_js_wrap_meth_callback"
+  (** Wrap an OCaml function so that it can be invoked from
+      Javascript.  The first parameter of the function will be bound
+      to the value of the [this] implicit parameter. *)
 
-(* Javascript objects *)
+(** {2 Javascript standard objects} *)
 
 val _true : bool t
+  (** Javascript [true] boolean. *)
 val _false : bool t
+  (** Javascript [false] boolean. *)
 
-type match_result_handle (* Used to resolved the mutual dependency *)
-type string_array        (* between strings and arrays *)
+type match_result_handle
+  (** A handle to a match result.  Use function [Js.match_result]
+      to get the corresponding [MatchResult] object.
+      (This type is used to resolved the mutual dependency between
+       string and array type definitions.) *)
+type string_array
+  (** Opaque type for string arrays.  You can get the actual [Array]
+      object using function [Js.str_array].
+      (This type is used to resolved the mutual dependency between
+       string and array type definitions.) *)
 
+(** Specification of Javascript string objects. *)
 class type js_string = object
   method toString : js_string t meth
   method valueOf : js_string t meth
@@ -114,6 +187,7 @@ class type js_string = object
   method toLocaleUpperCase : js_string t meth
 end
 
+(** Specification of Javascript regular expression objects. *)
 and regExp = object
   method exec : js_string t -> match_result_handle t opt meth
   method test : js_string t -> bool t meth
@@ -126,9 +200,17 @@ and regExp = object
 end
 
 val regExp : (js_string t -> regExp t) constr
+  (** Constructor of [RegExp] objects.  The expression [jsnew regExp (s)]
+      builds the regular expression specified by string [s]. *)
 val regExp_withFlags : (js_string t -> js_string t -> regExp t) constr
+  (** Constructor of [RegExp] objects.  The expression
+      [jsnew regExp (s, f)] builds the regular expression specified by
+      string [s] using flags [f]. *)
 val regExp_copy : (regExp t -> regExp t) constr
+  (** Constructor of [RegExp] objects.  The expression
+      [jsnew regExp (r)] builds a copy of regular expression [r]. *)
 
+(** Specification of Javascript regular arrays. *)
 class type ['a] js_array = object
   method toString : js_string t meth
   method toLocaleString : js_string t meth
@@ -158,11 +240,21 @@ class type ['a] js_array = object
 end
 
 val array_empty : 'a js_array t constr
+  (** Constructor of [Array] objects.  The expression
+      [jsnew array_empty ()] returns an empty array. *)
 val array_length : (int -> 'a js_array t) constr
+  (** Constructor of [Array] objects.  The expression
+      [jsnew array_empty (l)] returns an array of length [l]. *)
 
 val array_get : 'a #js_array t -> int -> 'a optdef
+  (** Array access: [array_get a i] returns the element at index [i]
+      of array [a].  Returns [undefined] if there is no element at
+      this index. *)
 val array_set : 'a #js_array t -> int -> 'a -> unit
+  (** Array update: [array_set a i v] puts [v] at index [i] in
+      array [a]. *)
 
+(** Specification of match result objects *)
 class type match_result = object
   inherit [js_string t] js_array
   method index : int
@@ -170,8 +262,15 @@ class type match_result = object
 end
 
 val str_array : string_array t -> js_string t js_array t
+  (** Convert an opaque [string_array t] object into an array of
+      string.  (Used to resolved the mutual dependency between string
+      and array type definitions.) *)
 val match_result : match_result_handle t -> match_result t
+  (** Convert a match result handle into a [MatchResult] object.
+      (Used to resolved the mutual dependency between string
+      and array type definitions.) *)
 
+(** Specification of Javascript number objects. *)
 class type number = object
   method toString : js_string t meth
   method toString_radix : int -> js_string t meth
@@ -183,8 +282,11 @@ class type number = object
 end
 
 external number_of_float : float -> number t = "caml_js_from_float"
+  (** Conversion of OCaml floats to Javascript number objects. *)
 external float_of_number : number t -> float = "caml_js_to_float"
+  (** Conversion of Javascript number objects to OCaml floats. *)
 
+(** Specification of Javascript date objects. *)
 class type date = object
   method toString : js_string t meth
   method toDateString : js_string t meth
@@ -234,14 +336,35 @@ class type date = object
 end
 
 val date_now : date t constr
+  (** Constructor of [Date] objects: [new date_now ()] returns a
+      [Date] object initialized with the current date. *)
 val date_fromTimeValue : (float -> date t) constr
+  (** Constructor of [Date] objects: [new date_fromTimeValue (t)] returns a
+      [Date] object initialized with the time value [t]. *)
 val date_month : (int -> int -> date t) constr
+  (** Constructor of [Date] objects: [new date_fromTimeValue (y, m)]
+      returns a [Date] object corresponding to year [y] and month [m]. *)
 val date_day : (int -> int -> int -> date t) constr
+  (** Constructor of [Date] objects: [new date_fromTimeValue (y, m, d)]
+      returns a [Date] object corresponding to year [y], month [m] and
+      day [d]. *)
 val date_hour : (int -> int -> int -> int -> date t) constr
+  (** Constructor of [Date] objects: [new date_fromTimeValue (y, m, d, h)]
+      returns a [Date] object corresponding to year [y] to hour [h]. *)
 val date_min : (int -> int -> int -> int -> int -> date t) constr
+  (** Constructor of [Date] objects: [new date_fromTimeValue (y, m, d, h, m')]
+      returns a [Date] object corresponding to year [y] to minute [m']. *)
 val date_sec : (int -> int -> int -> int -> int -> int -> date t) constr
+  (** Constructor of [Date] objects:
+      [new date_fromTimeValue (y, m, d, h, m', s)]
+      returns a [Date] object corresponding to year [y] to second [s]. *)
 val date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr
+  (** Constructor of [Date] objects:
+      [new date_fromTimeValue (y, m, d, h, m', s, ms)]
+      returns a [Date] object corresponding to year [y]
+      to millisecond [ms]. *)
 
+(** Specification of the date constructor, considered as an object. *)
 class type date_constr = object
   method parse : js_string t -> float t meth
   method _UTC_month : int -> int -> float t meth
@@ -255,33 +378,81 @@ class type date_constr = object
 end
 
 val date : date_constr t
+  (** The date constructor, as an object. *)
 
-(* Conversion functions *)
+(** {2 Conversion functions between Javascript and OCaml types} *)
 
 external bool : bool -> bool t = "caml_js_from_bool"
+  (** Conversion of booleans from OCaml to Javascript. *)
 external to_bool : bool t -> bool = "caml_js_to_bool"
+  (** Conversion of booleans from Javascript to OCaml. *)
 external string : string -> js_string t = "caml_js_from_string"
+  (** Conversion of strings from OCaml to Javascript. *)
 external to_string : js_string t -> string = "caml_js_to_string"
+  (** Conversion of strings from Javascript to OCaml. *)
 external float : float -> float t = "caml_js_from_float"
+  (** Conversion of OCaml floats to Javascript numbers. *)
 external to_float : float t -> float = "caml_js_to_float"
+  (** Conversion of Javascript numbers to OCaml floats. *)
 external array : 'a array -> 'a js_array t = "caml_js_from_array"
+  (** Conversion of arrays from OCaml to Javascript. *)
 external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
+  (** Conversion of arrays from Javascript to OCaml. *)
 
-(* Unsafe operations.  Use with care! *)
+(** {2 Convenience coercion functions} *)
 
+val coerce : 'a -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
+  (** Apply a possibly failing coercion function.
+      [coerce v c f] attempts to apply coercion [c] to value [v].
+      If the coercion returns [null], function [f] is called. *)
+val coerce_opt : 'a Opt.t -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
+  (** Apply a possibly failing coercion function.
+      [coerce_opt v c f] attempts to apply coercion [c] to value [v].
+      If [v] is [null] or the coercion returns [null], function [f] is
+      called.
+      Typical usage is the following:
+      {[Js.coerce_opt (Dom_html.getElementById id)
+      Dom_html.CoerceTo.div (fun _ -> assert false)]} *)
+
+(** {2 Unsafe operations.} *)
+
+(** Unsafe Javascript operations *)
 module Unsafe : sig
   external variable : string -> 'a = "caml_js_var"
+    (** Access a Javascript variable.  [variable "foo"] will
+        return the current value of variable [foo]. *)
 
   type any
+    (** Top type.  Used for putting values of different types
+        in a same array. *)
   external inject : 'a -> any = "%identity"
+    (** Coercion to top type. *)
+
   external coerce : < .. > t -> < ..> t = "%identity"
+    (** Unsafe coercion between to Javascript objects. *)
 
   external get : 'a -> 'b -> 'c = "caml_js_get"
+    (** Get the value of an object property.  The expression [get o s]
+        returns the value of property [s] of object [o]. *)
   external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
+    (** Set an object property.  The expression [set o s v]
+        set the property [s] of object [o] to value [v]. *)
   external call : 'a -> 'b -> any array -> 'c = "caml_js_call"
+    (** Performs a Javascript function call.  The expression
+        [call f o a] calls the Javascript function [f] with the
+        arguments given by the array [o], and binding [this] to [o]. *)
   external fun_call : 'a -> any array -> 'b = "caml_js_fun_call"
+    (** Performs a Javascript function call.  The expression
+        [fun_call f a] calls the Javascript function [f] with the
+        arguments given by the array [o]. *)
   external meth_call : 'a -> string -> any array -> 'b = "caml_js_meth_call"
+    (** Performs a Javascript method call.  The expression
+        [meth_call o m a] calls the Javascript method [m] of object [o]
+        with the arguments given by the array [a]. *)
   external new_obj : 'a -> any array -> 'b = "caml_js_new"
+    (** Create a Javascript object.  The expression
+        [new_obj c a] creates a Javascript object with constructor [c] using the
+        arguments given by the array [a]. *)
 
 (*FIX also, object/array literals *)
 end

@@ -18,7 +18,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** DOM HTML binding
+
+This is a partial binding to the DOM HTML API.
+*)
+
 open Js
+
+(** {2 CSS style declaration} *)
 
 class type cssStyleDeclaration = object
   method background : js_string t prop
@@ -117,7 +124,12 @@ class type cssStyleDeclaration = object
   method zIndex : js_string t prop
 end
 
-type ('a, 'b) event_handler
+(** {2 Events} *)
+
+type ('a, 'b) event_listener
+  (** The type of event handler functions.  The first type parameter
+      ['a] is the type of the target object; the second parameter
+      ['b] is the type of the event object. *)
 
 class type event = object
   method _type : js_string t readonly_prop
@@ -148,19 +160,24 @@ and keyboardEvent = object
   method keyCode : int readonly_prop
 end
 
+(** Common properties of event target objects (HTML elements and
+    documents). *)
 and eventTarget = object ('self)
-  method onclick : ('self t, mouseEvent t) event_handler prop
-  method ondblclick : ('self t, mouseEvent t) event_handler prop
-  method onmousedown : ('self t, mouseEvent t) event_handler prop
-  method onmouseup : ('self t, mouseEvent t) event_handler prop
-  method onmouseover : ('self t, mouseEvent t) event_handler prop
-  method onmousemove : ('self t, mouseEvent t) event_handler prop
-  method onmouseout : ('self t, mouseEvent t) event_handler prop
-  method onkeypress : ('self t, keyboardEvent t) event_handler prop
-  method onkeydown : ('self t, keyboardEvent t) event_handler prop
-  method onkeyup : ('self t, keyboardEvent t) event_handler prop
+  method onclick : ('self t, mouseEvent t) event_listener prop
+  method ondblclick : ('self t, mouseEvent t) event_listener prop
+  method onmousedown : ('self t, mouseEvent t) event_listener prop
+  method onmouseup : ('self t, mouseEvent t) event_listener prop
+  method onmouseover : ('self t, mouseEvent t) event_listener prop
+  method onmousemove : ('self t, mouseEvent t) event_listener prop
+  method onmouseout : ('self t, mouseEvent t) event_listener prop
+  method onkeypress : ('self t, keyboardEvent t) event_listener prop
+  method onkeydown : ('self t, keyboardEvent t) event_listener prop
+  method onkeyup : ('self t, keyboardEvent t) event_listener prop
 end
 
+(** {2 HTML elements} *)
+
+(** Properties common to all HTML elements *)
 and element = object
   inherit Dom.element
   method id : js_string t prop
@@ -187,34 +204,7 @@ and element = object
   inherit eventTarget
 end
 
-val no_handler : ('a, 'b) event_handler
-val handler : ((#event t as 'b) -> bool t) -> ('a, 'b) event_handler
-val full_handler : ('a -> (#event t as 'b) -> bool t) -> ('a, 'b) event_handler
-val invoke_handler : ('a, 'b) event_handler -> 'a -> 'b -> bool t
-
-val eventTarget : #event t -> element t
-val eventRelatedTarget : #mouseEvent t -> element t opt
-val eventAbsolutePosition : #mouseEvent t -> int * int
-
-module Event : sig
-  type 'a sel
-  val click : mouseEvent t sel
-  val dblclick : mouseEvent t sel
-  val mousedown : mouseEvent t sel
-  val mouseup : mouseEvent t sel
-  val mouseover : mouseEvent t sel
-  val mousemove : mouseEvent t sel
-  val mouseout : mouseEvent t sel
-  val keypress : keyboardEvent t sel
-  val keydown : keyboardEvent t sel
-  val keyup : keyboardEvent t sel
-end
-
-(* Returns a thunk that removes the listener *)
-val addEventListener :
-  (#eventTarget t as 'a) -> 'b Event.sel -> ('a, 'b) event_handler ->
-  bool t -> (unit -> unit)
-
+(** Collection of HTML elements *)
 class type ['node] collection = object
   method length : int readonly_prop
   method item : int -> 'node t opt meth
@@ -316,7 +306,7 @@ class type selectElement = object ('self)
   method blur : unit meth
   method focus : unit meth
 
-  method onchange : ('self t, event t) event_handler prop
+  method onchange : ('self t, event t) event_listener prop
 end
 
 class type inputElement = object ('self)
@@ -344,8 +334,8 @@ class type inputElement = object ('self)
   method select : unit meth
   method click : unit meth
 
-  method onselect : ('self t, event t) event_handler prop
-  method onchange : ('self t, event t) event_handler prop
+  method onselect : ('self t, event t) event_listener prop
+  method onchange : ('self t, event t) event_listener prop
 end
 
 class type textAreaElement = object ('self)
@@ -365,8 +355,8 @@ class type textAreaElement = object ('self)
   method focus : unit meth
   method select : unit meth
 
-  method onselect : ('self t, event t) event_handler prop
-  method onchange : ('self t, event t) event_handler prop
+  method onselect : ('self t, event t) event_listener prop
+  method onchange : ('self t, event t) event_listener prop
 end
 
 class type buttonElement = object
@@ -459,7 +449,7 @@ class type imageElement = object ('self)
   method naturalHeight : int readonly_prop
   method complete : bool t prop
 
-  method onload : ('self t, event t) event_handler prop
+  method onload : ('self t, event t) event_listener prop
 end
 
 class type objectElement = object
@@ -592,6 +582,8 @@ class type tableElement = object
   method deleteRow : int -> unit meth
 end
 
+(** {2 Canvas object} *)
+
 type context
 val _2d_ : context
 
@@ -719,6 +711,8 @@ end
 external pixel_get : canvasPixelArray t -> int -> int = "caml_js_get"
 external pixel_set : canvasPixelArray t -> int -> int -> unit = "caml_js_set"
 
+(** {2 Document objects} *)
+
 class type document = object
   inherit [element] Dom.document
   method title : js_string t prop
@@ -738,6 +732,135 @@ class type document = object
 end
 
 val document : document t
+  (** The current document *)
+
+(****)
+
+(** {2 Window objects} *)
+
+(** Location information *)
+class type location = object
+  method href : js_string t prop
+  method protocol : js_string t prop
+  method host : js_string t prop
+  method hostname : js_string t prop
+  method port : js_string t prop
+  method pathname : js_string t prop
+  method search : js_string t prop
+  method hash : js_string t prop
+
+  method assign : js_string t -> unit meth
+  method replace : js_string t -> unit meth
+  method reload : unit meth
+end
+
+(** Browser history information *)
+class type history = object
+(*...*)
+end
+
+(** Undo manager *)
+class type undoManager = object
+(*...*)
+end
+
+(** Information on current selection *)
+class type selection = object
+(*...*)
+end
+
+type interval_id
+type timeout_id
+
+(** Specification of window objects *)
+class type window = object
+  method document : document t readonly_prop
+  method name : js_string t prop
+  method location : location t readonly_prop
+  method history : history t readonly_prop
+  method undoManager : undoManager t readonly_prop
+  method getSelection : selection t meth
+  method close : unit meth
+  method stop : unit meth
+  method focus : unit meth
+  method blur : unit meth
+
+  method top : window t readonly_prop
+  method parent : window t readonly_prop
+  method frameElement : element t opt readonly_prop
+
+  method alert : js_string t -> unit meth
+  method confirm : js_string t -> bool t meth
+  method prompt : js_string t -> js_string t -> js_string t meth
+  method print : unit meth
+
+  method setInterval : (unit -> unit) Js.callback -> float -> interval_id meth
+  method clearInterval : interval_id -> unit meth
+
+  method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
+  method clearTimeout : timeout_id -> unit meth
+
+  method onload : (window t, event t) event_listener prop
+  method onbeforeunload : (window t, event t) event_listener prop
+  method onblur : (window t, event t) event_listener prop
+  method onfocus : (window t, event t) event_listener prop
+end
+
+val window : window t
+  (** The current window *)
+
+(****)
+
+(** {2 Event handlers} *)
+
+val no_handler : ('a, 'b) event_listener
+  (** Void event handler (Javascript [null] value). *)
+val handler : ((#event t as 'b) -> bool t) -> ('a, 'b) event_listener
+  (** Create an event handler that invokes the provided function. *)
+val full_handler : ('a -> (#event t as 'b) -> bool t) -> ('a, 'b) event_listener
+  (** Create an event handler that invokes the provided function.
+      The event target (implicit parameter [this]) is also passed as
+      argument to the function.  *)
+val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
+  (** Invoke an existing handler.  Useful to chain event handlers. *)
+
+val eventTarget : #event t -> element t
+  (** Returns which HTML element is the target of this event. *)
+val eventRelatedTarget : #mouseEvent t -> element t opt
+  (** Returns this event related target. *)
+val eventAbsolutePosition : #mouseEvent t -> int * int
+  (** Returns the absolute position of the mouse pointer. *)
+
+(** Event types: [mousedown], [keypress], ... *)
+module Event : sig
+  type 'a typ
+  val click : mouseEvent t typ
+  val dblclick : mouseEvent t typ
+  val mousedown : mouseEvent t typ
+  val mouseup : mouseEvent t typ
+  val mouseover : mouseEvent t typ
+  val mousemove : mouseEvent t typ
+  val mouseout : mouseEvent t typ
+  val keypress : keyboardEvent t typ
+  val keydown : keyboardEvent t typ
+  val keyup : keyboardEvent t typ
+end
+
+type event_listener_id
+
+val addEventListener :
+  (#eventTarget t as 'a) -> 'b Event.typ ->
+  ('a, 'b) event_listener -> bool t -> event_listener_id
+  (** Add an event listener.  This function matches the
+      [addEventListener] DOM method, except that it returns
+      an id for remove the listener. *)
+
+val removeEventListener : event_listener_id -> unit
+  (** Remove the given event listener. *)
+
+(****)
+
+(** {2 Helper functions for creating HTML elements} *)
 
 val createHtml : document t -> htmlElement t
 val createHead : document t -> headElement t
@@ -820,6 +943,10 @@ val createDt : document t -> element t
 val createNoscript : document t -> element t
 val createAddress : document t -> element t
 
+(****)
+
+(** {2 Coercion functions} *)
+
 type taggedElement =
   | A of anchorElement t
   | Area of areaElement t
@@ -878,8 +1005,8 @@ type taggedElement =
   | Ul of uListElement t
   | Other of element t
 
-val access : #element t -> taggedElement
-val opt_access : #element t opt -> taggedElement option
+val tagged : #element t -> taggedElement
+val opt_tagged : #element t opt -> taggedElement option
 
 module CoerceTo : sig
   val a : #element t -> anchorElement t opt
@@ -938,70 +1065,3 @@ module CoerceTo : sig
   val tr : #element t -> tableRowElement t opt
   val ul : #element t -> uListElement t opt
 end
-
-(****)
-
-class type location = object
-  method href : js_string t prop
-  method protocol : js_string t prop
-  method host : js_string t prop
-  method hostname : js_string t prop
-  method port : js_string t prop
-  method pathname : js_string t prop
-  method search : js_string t prop
-  method hash : js_string t prop
-
-  method assign : js_string t -> unit meth
-  method replace : js_string t -> unit meth
-  method reload : unit meth
-end
-
-class type history = object
-(*...*)
-end
-
-class type undoManager = object
-(*...*)
-end
-
-class type selection = object
-(*...*)
-end
-
-type interval_id
-type timeout_id
-
-class type window = object
-  method document : document t readonly_prop
-  method name : js_string t prop
-  method location : location t readonly_prop
-  method history : history t readonly_prop
-  method undoManager : undoManager t readonly_prop
-  method getSelection : selection t meth
-  method close : unit meth
-  method stop : unit meth
-  method focus : unit meth
-  method blur : unit meth
-
-  method top : window t readonly_prop
-  method parent : window t readonly_prop
-  method frameElement : element t opt readonly_prop
-
-  method alert : js_string t -> unit meth
-  method confirm : js_string t -> bool t meth
-  method prompt : js_string t -> js_string t -> js_string t meth
-  method print : unit meth
-
-  method setInterval : (unit -> unit) Js.callback -> float -> interval_id meth
-  method clearInterval : interval_id -> unit meth
-
-  method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
-  method clearTimeout : timeout_id -> unit meth
-
-  method onload : (window t, event t) event_handler prop
-  method onbeforeunload : (window t, event t) event_handler prop
-  method onblur : (window t, event t) event_handler prop
-  method onfocus : (window t, event t) event_handler prop
-end
-
-val window : window t

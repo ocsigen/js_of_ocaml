@@ -81,8 +81,8 @@ end
 
 (****)
 
-let coerce x f g = Opt.get (f x) g
-let coerce_opt x f g = Opt.get (Opt.bind x f) g
+let coerce x f g = Opt.get (f x) (fun () -> g x)
+let coerce_opt x f g = Opt.get (Opt.bind x f) (fun () -> g x)
 
 (****)
 
