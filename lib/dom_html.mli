@@ -920,7 +920,6 @@ val createTbody : document t -> tableSectionElement t
 val createTr : document t -> tableRowElement t
 val createTh : document t -> tableCellElement t
 val createTd : document t -> tableCellElement t
-val createCanvas : document t -> canvasElement t
 val createSub : document t -> element t
 val createSup : document t -> element t
 val createSpan : document t -> element t
@@ -942,6 +941,11 @@ val createDd : document t -> element t
 val createDt : document t -> element t
 val createNoscript : document t -> element t
 val createAddress : document t -> element t
+
+exception Canvas_not_available
+val createCanvas : document t -> canvasElement t
+  (** @raise Canvas_not_available when canvas elements are not
+      supported by the browser. *)
 
 (****)
 

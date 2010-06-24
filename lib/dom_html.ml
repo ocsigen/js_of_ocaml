@@ -859,7 +859,12 @@ let createDt doc = createElement doc "dt"
 let createNoscript doc = createElement doc "noscript"
 let createAddress doc = createElement doc "address"
 
-let createCanvas doc : canvasElement t = unsafeCreateElement doc "canvas"
+exception Canvas_not_available
+
+let createCanvas doc : canvasElement t =
+  let c = unsafeCreateElement doc "canvas" in
+  if not (Opt.test c##getContext) then raise Canvas_not_available;
+  c
 
 type taggedElement =
   | A of anchorElement t
