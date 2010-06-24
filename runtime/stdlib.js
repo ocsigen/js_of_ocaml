@@ -547,3 +547,7 @@ function caml_ml_open_descriptor_in () { return 0; }
 function caml_sys_get_argv () { return ["a.out"]; }
 //Provides: caml_ml_output const
 function caml_ml_output () { return 0; }
+//Provides: caml_final_register const
+function caml_final_register () { return 0; }
+//Provides: caml_final_release const
+function caml_final_release () { return 0; }
