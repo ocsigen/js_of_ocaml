@@ -126,7 +126,7 @@ end
 
 (** {2 Events} *)
 
-type ('a, 'b) event_listener
+type (-'a, -'b) event_listener
   (** The type of event handler functions.  The first type parameter
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
@@ -160,19 +160,19 @@ and keyboardEvent = object
   method keyCode : int readonly_prop
 end
 
-(** Common properties of event target objects (HTML elements and
-    documents). *)
+(** Common properties of event target objects: [onclick],
+    [onkeypress], ... *)
 and eventTarget = object ('self)
-  method onclick : ('self t, mouseEvent t) event_listener prop
-  method ondblclick : ('self t, mouseEvent t) event_listener prop
-  method onmousedown : ('self t, mouseEvent t) event_listener prop
-  method onmouseup : ('self t, mouseEvent t) event_listener prop
-  method onmouseover : ('self t, mouseEvent t) event_listener prop
-  method onmousemove : ('self t, mouseEvent t) event_listener prop
-  method onmouseout : ('self t, mouseEvent t) event_listener prop
-  method onkeypress : ('self t, keyboardEvent t) event_listener prop
-  method onkeydown : ('self t, keyboardEvent t) event_listener prop
-  method onkeyup : ('self t, keyboardEvent t) event_listener prop
+  method onclick : ('self t, mouseEvent t) event_listener writeonly_prop
+  method ondblclick : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmousedown : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmouseup : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmouseover : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmousemove : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmouseout : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onkeypress : ('self t, keyboardEvent t) event_listener writeonly_prop
+  method onkeydown : ('self t, keyboardEvent t) event_listener writeonly_prop
+  method onkeyup : ('self t, keyboardEvent t) event_listener writeonly_prop
 end
 
 (** {2 HTML elements} *)

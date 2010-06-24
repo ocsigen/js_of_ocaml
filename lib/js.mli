@@ -90,22 +90,22 @@ type 'a readonly_prop = <get : 'a> gen_prop
       a Javascript object
         [<p : t Js.readonly_prop> Js.t]
       has a read-only property [p] of type [t]. *)
-type 'a writeonly_prop = <set : 'a> gen_prop
+type 'a writeonly_prop = <set : 'a -> unit> gen_prop
   (** Type of write-only properties:
       a Javascript object
         [<p : t Js.writeonly_prop> Js.t]
       has a write-only property [p] of type [t]. *)
-type 'a prop = <get : 'a; set : 'a> gen_prop
+type 'a prop = <get : 'a; set : 'a -> unit> gen_prop
   (** Type of read/write properties:
       a Javascript object
         [<p : t Js.writeonly_prop> Js.t]
       has a read/write property [p] of type [t]. *)
-type 'a optdef_prop = <get : 'a optdef; set : 'a> gen_prop
+type 'a optdef_prop = <get : 'a optdef; set : 'a -> unit> gen_prop
   (** Type of read/write properties that may be undefined:
       you can set them to a value of some type [t], but if you read
       them, you will get a value of type [t optdef] (that may be
       [undefined]). *)
-type float_prop = <get : float t; set : float> gen_prop
+type float_prop = <get : float t; set : float -> unit> gen_prop
   (** Type of float properties:
       you can set them to an OCaml [float], but you will get back a
       native Javascript number of type [float t]. *)
@@ -121,7 +121,7 @@ type +'a constr
 
 (** {2 Callbacks to OCaml} *)
 
-type (+'a, +'b) meth_callback
+type (-'a, +'b) meth_callback
    (** Type of callback functions.  A function of type
        [(u, t1 -> ... -> tn -> t) meth_callback] can be called
        from Javascript with [this] bound to a value of type [u]

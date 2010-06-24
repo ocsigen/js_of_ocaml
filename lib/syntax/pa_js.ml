@@ -148,7 +148,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
          <:expr< (Js.Unsafe.get $lid:x$ $str:unescape lab$ : $prop_type$) >>)
      | e1 = SELF; (lab_loc, lab) = jsmeth; "<-"; e2 = expr LEVEL "top" ->
          let prop_type = fresh_type _loc in
-         let meth_type = <:ctyp< Js.gen_prop <set:$prop_type$; ..> >> in
+         let meth_type = <:ctyp< Js.gen_prop <set:$prop_type$->unit; ..> >> in
          access_object e1 lab lab_loc meth_type (fun x ->
          <:expr<
            Js.Unsafe.set $lid:x$ $str:unescape lab$ ($e2$ : $prop_type$)

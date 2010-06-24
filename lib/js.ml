@@ -95,16 +95,16 @@ let coerce_opt x f g = Opt.get (Opt.bind x f) (fun () -> g x)
 type +'a meth
 type +'a gen_prop
 type 'a readonly_prop = <get : 'a> gen_prop
-type 'a writeonly_prop = <set : 'a> gen_prop
-type 'a prop = <get : 'a; set : 'a> gen_prop
-type 'a optdef_prop = <get : 'a optdef; set : 'a> gen_prop
-type float_prop = <get : float t; set : float> gen_prop
+type 'a writeonly_prop = <set : 'a -> unit> gen_prop
+type 'a prop = <get : 'a; set : 'a -> unit> gen_prop
+type 'a optdef_prop = <get : 'a optdef; set : 'a -> unit> gen_prop
+type float_prop = <get : float t; set : float -> unit> gen_prop
 
 type +'a constr
 
 (****)
 
-type (+'a, +'b) meth_callback
+type (-'a, +'b) meth_callback
 type 'a callback = (unit, 'a) meth_callback
 
 external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "caml_js_wrap_callback"

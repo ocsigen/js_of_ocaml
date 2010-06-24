@@ -152,16 +152,16 @@ and keyboardEvent = object
 end
 
 and eventTarget = object ('self)
-  method onclick : ('self t, mouseEvent t) event_listener prop
-  method ondblclick : ('self t, mouseEvent t) event_listener prop
-  method onmousedown : ('self t, mouseEvent t) event_listener prop
-  method onmouseup : ('self t, mouseEvent t) event_listener prop
-  method onmouseover : ('self t, mouseEvent t) event_listener prop
-  method onmousemove : ('self t, mouseEvent t) event_listener prop
-  method onmouseout : ('self t, mouseEvent t) event_listener prop
-  method onkeypress : ('self t, keyboardEvent t) event_listener prop
-  method onkeydown : ('self t, keyboardEvent t) event_listener prop
-  method onkeyup : ('self t, keyboardEvent t) event_listener prop
+  method onclick : ('self t, mouseEvent t) event_listener writeonly_prop
+  method ondblclick : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmousedown : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmouseup : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmouseover : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmousemove : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onmouseout : ('self t, mouseEvent t) event_listener writeonly_prop
+  method onkeypress : ('self t, keyboardEvent t) event_listener writeonly_prop
+  method onkeydown : ('self t, keyboardEvent t) event_listener writeonly_prop
+  method onkeyup : ('self t, keyboardEvent t) event_listener writeonly_prop
 end
 
 and element = object
@@ -981,7 +981,7 @@ let tagged (e : #element t) =
   | "title" -> Title (Js.Unsafe.coerce e)
   | "tr" -> Tr (Js.Unsafe.coerce e)
   | "ul" -> Ul (Js.Unsafe.coerce e)
-  | _   -> Other (e :> element t)
+  | _   -> Other (e : #element t :> element t)
 
 let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
 
