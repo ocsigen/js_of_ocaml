@@ -127,7 +127,7 @@ end
 (** {2 Events} *)
 
 type (-'a, -'b) event_listener
-  (** The type of event handler functions.  The first type parameter
+  (** The type of event listener functions.  The first type parameter
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
 
@@ -301,7 +301,7 @@ class type selectElement = object ('self)
   method name : js_string t readonly_prop (* Cannot be changed under IE *)
   method size : int prop
   method tabIndex : int prop
-  method add : #optGroupElement -> #optGroupElement opt -> unit meth
+  method add : #optGroupElement t -> #optGroupElement t opt -> unit meth
   method remove : int -> unit meth
   method blur : unit meth
   method focus : unit meth
@@ -853,7 +853,7 @@ val addEventListener :
   ('a, 'b) event_listener -> bool t -> event_listener_id
   (** Add an event listener.  This function matches the
       [addEventListener] DOM method, except that it returns
-      an id for remove the listener. *)
+      an id for removing the listener. *)
 
 val removeEventListener : event_listener_id -> unit
   (** Remove the given event listener. *)

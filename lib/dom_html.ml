@@ -326,7 +326,7 @@ class type selectElement = object ('self)
   method name : js_string t readonly_prop
   method size : int prop
   method tabIndex : int prop
-  method add : #optGroupElement -> #optGroupElement opt -> unit meth
+  method add : #optGroupElement t -> #optGroupElement t opt -> unit meth
   method remove : int -> unit meth
   method blur : unit meth
   method focus : unit meth
