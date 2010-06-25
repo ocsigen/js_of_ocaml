@@ -19,10 +19,11 @@
  *)
 
 (*
-- Options: shadows / clipped / rotating / summer or winter or equinox
-    reset rotation
-  ==> pause (no rotation, no light move) / follow rotation
-  ==> larger/smaller
+- stop animation when not needed
+  ==> not visible
+  ==> no change (paused, follow rotation and no lighting)
+- Options:
+     ==> larger/smaller
 - adaptative size
   ==> time 3 frames and take min
   ==> if fast, try larger image
@@ -37,6 +38,50 @@ let pi = 4. *. atan 1.
 let obliquity = 23.5 *. pi /. 180.
 let gamma = 2.
 let dark = 0.2 ** gamma
+
+(****)
+
+let doc = Dom_html.document
+let button_type = Js.string "button"
+let button txt action =
+  let b = Dom_html.createInput ~_type:button_type doc in
+  b##value <- Js.string txt;
+  b##onclick <- Dom_html.handler (fun _ -> action (); Js._true);
+  b
+let toggle_button txt1 txt2 action =
+  let state = ref false in
+  let txt1 = Js.string txt1 in
+  let txt2 = Js.string txt2 in
+  let b = Dom_html.createInput ~_type:button_type doc in
+  b##value <- txt1;
+  b##onclick <- Dom_html.handler
+    (fun _ ->
+       state := not !state;
+       b##value <- if !state then txt2 else txt1;
+       action !state;
+       Js._true);
+  b
+let checkbox txt checked action =
+  let b = Dom_html.createInput ~_type:(Js.string "checkbox") doc in
+  b##checked <- Js.bool checked;
+  b##onclick <-
+    Dom_html.handler (fun _ -> action (Js.to_bool b##checked); Js._true);
+  let lab = Dom_html.createLabel doc in
+  Dom.appendChild lab b;
+  Dom.appendChild lab (doc##createTextNode (Js.string txt));
+  lab
+
+let radio txt name checked action =
+  let b =
+    Dom_html.createInput
+      ~name:(Js.string name) ~_type:(Js.string "radio") doc in
+  b##checked <- Js.bool checked;
+  b##onclick <-
+    Dom_html.handler (fun _ -> action (); Js._true);
+  let lab = Dom_html.createLabel doc in
+  Dom.appendChild lab b;
+  Dom.appendChild lab (doc##createTextNode (Js.string txt));
+  lab
 
 (****)
 
@@ -101,6 +146,8 @@ let yz_rotation phi =
   { r1 = vertex 1. 0. 0.;
     r2 = vertex 0. cos_phi sin_phi;
     r3 = vertex 0. (-. sin_phi) cos_phi }
+
+let matrix_identity = xz_rotation 0.
 
 (* Assumes that m is orthogonal *)
 let rotate_normal m v = matrix_vect_mul (matrix_transp m) v
@@ -263,43 +310,7 @@ let load_image src =
 
 (****)
 
-let shade () =
-  let r = float width /. 2. *. 0.95 in
-  let x0 = float width /. 2. in
-  let y0 = float height /. 2. in
-
-  let canvas = create_canvas width height in
-  let ctx = canvas##getContext (Html._2d_) in
-  let img = ctx##createImageData (width, height) in
-
-  let data = img##data in
-  let r2 = r *. r in
-  let cst = (1. -. dark) /. r in
-  let inv_gamma  = 1. /. gamma in
-  for i = 0 to width - 1 do
-    for j = 0 to height - 1 do
-      let i = float i in
-      let j = float j in
-      let k = truncate (4. *. (i +. j *. float width)) in
-      let x = i -. x0 in
-      let y = j -. y0 in
-      let z2 = r2 -. x *. x -. y *. y in
-      if z2 >= 0. then begin
-        if x > 0. then
-          Html.pixel_set data (k + 3)
-            (255 - truncate (255.99 *. dark ** inv_gamma))
-        else
-          Html.pixel_set data (k + 3)
-            (255 - truncate (255.99 *. (dark -. x *. cst) ** inv_gamma))
-      end else
-        Html.pixel_set data (k + 3) 255
-    done
-  done;
-  ctx##putImageData (img, 0., 0.);
-  canvas
-
 let shadow texture =
-Firebug.console##time (Js.string "foo");
   let w = texture##naturalWidth in
   let h = texture##naturalHeight in
   let canvas = create_canvas w h in
@@ -308,60 +319,72 @@ Firebug.console##time (Js.string "foo");
   let img = ctx##createImageData (w, h) in
   let data = img##data in
   let inv_gamma  = 1. /. gamma in
-  let cos_obl = cos obliquity in
-  let sin_obl = -. sin obliquity in
-  for j = 0 to h - 1 do
-    for i = 0 to w / 2 - 1 do
-      let k = truncate (4. *. (float i +. float j *. float w)) in
-      let k' =
-        truncate (4. *. (float w -. float i +. float j *. float w -. 1.)) in
-      let theta = (float j /. float h -. 0.5) *. pi in
-      let phi = (float i /. float w) *. 2. *. pi in
-      let x = cos phi *. cos theta in
-      let y = sin theta in
-(*
-      let z = sin phi *. cos theta in
-*)
-      let (x, y) =
-        (x *. cos_obl +. y *. sin_obl,
-         -. x *. sin_obl +. y *. cos_obl)
-      in
-      let c =
-        if x > 0. then
-          (255 - truncate (255.99 *. dark ** inv_gamma))
-        else
-          (255 - truncate (255.99 *. (dark -. x *. (1. -. dark)) ** inv_gamma))
-      in
-      Html.pixel_set data (k + 3) c;
-      Html.pixel_set data (k' + 3) c
-    done
-  done;
-  ctx##putImageData (img, 0., 0.);
-  ctx##globalCompositeOperation <- Js.string "copy";
-  ctx##save ();
-  ctx##scale (8. *. float (w + 2) /. float w, 8. *. float (h + 2) /. float h);
-  ctx##translate (-1., -1.);
-  ctx##drawImage_fromCanvas (canvas, 0., 0.);
-  ctx##restore ();
+  let update_shadow obliquity =
+    let cos_obl = cos obliquity in
+    let sin_obl = -. sin obliquity in
+    for j = 0 to h - 1 do
+      for i = 0 to w / 2 - 1 do
+        let k = truncate (4. *. (float i +. float j *. float w)) in
+        let k' =
+          truncate (4. *. (float w -. float i +. float j *. float w -. 1.)) in
+        let theta = (float j /. float h -. 0.5) *. pi in
+        let phi = (float i /. float w) *. 2. *. pi in
+        let x = cos phi *. cos theta in
+        let y = sin theta in
+  (*
+        let z = sin phi *. cos theta in
+  *)
+        let (x, y) =
+          (x *. cos_obl +. y *. sin_obl,
+           -. x *. sin_obl +. y *. cos_obl)
+        in
+        let c =
+          if x > 0. then
+            dark
+          else
+            dark -. x *. (1. -. dark) *. 1.2
+        in
+        let c = if c <= 1. then c else 1. in
+        let c = 255 - truncate (255.99 *. c ** inv_gamma) in
+        Html.pixel_set data (k + 3) c;
+        Html.pixel_set data (k' + 3) c
+      done
+    done;
+    ctx##putImageData (img, 0., 0.);
+    ctx##globalCompositeOperation <- Js.string "copy";
+    ctx##save ();
+    ctx##scale (8. *. float (w + 2) /. float w, 8. *. float (h + 2) /. float h);
+    ctx##translate (-1., -1.);
+    ctx##drawImage_fromCanvas (canvas, 0., 0.);
+    ctx##restore ()
+  in
+  update_shadow obliquity;
 
   let w = texture##naturalWidth in
   let h = texture##naturalHeight in
   let canvas' = create_canvas w h in
   let ctx' = canvas'##getContext (Html._2d_) in
 
-  let update_texture phi =
-    let phi = mod_float phi (2. *. pi) in
+  let no_lighting = ref false in
 
-    ctx'##drawImage (texture, 0., 0.);
-    let i = truncate (mod_float ((2. *. pi -. phi) *. float w /. 2. /. pi) (float w)) in
-    ctx'##drawImage_fromCanvas (canvas, float i, 0.);
-    ctx'##drawImage_fromCanvas (canvas, float i -. float w, 0.)
+  let update_texture lighting phi =
+    if lighting then begin
+      no_lighting := false;
+      let phi = mod_float phi (2. *. pi) in
+      ctx'##drawImage (texture, 0., 0.);
+      let i = truncate (mod_float ((2. *. pi -. phi) *. float w /. 2. /. pi)
+                          (float w)) in
+      ctx'##drawImage_fromCanvas (canvas, float i, 0.);
+      ctx'##drawImage_fromCanvas (canvas, float i -. float w, 0.)
+    end else if not !no_lighting then begin
+      ctx'##drawImage (texture, 0., 0.);
+      no_lighting := true
+    end
   in
-Firebug.console##timeEnd (Js.string "foo");
 (*
   Dom.appendChild Html.document##body canvas';
 *)
-  (canvas', update_texture)
+  (canvas', update_shadow, update_texture)
 
 (****)
 
@@ -381,7 +404,7 @@ assert (v < th);
 let min (u : float) v = if u < v then u else v
 let max (u : float) v = if u < v then v else u
 
-let draw (ctx : Html.canvasRenderingContext2D Js.t) img shd o uv normals dir =
+let draw ctx img shd o uv normals dir =
   let tw = float img##naturalWidth in
   let th = float img##naturalHeight in
 (*
@@ -437,6 +460,10 @@ let u1 = max 1. u1 in
 let u2 = max 1. u2 in
 let u3 = max 1. u3 in
 
+let v1 = max 1. v1 in
+let v2 = max 1. v2 in
+let v3 = max 1. v3 in
+
 let du2 = u2 -. u1 in
 let du3 = u3 -. u1 in
 let dv2 = v2 -. v1 in
@@ -478,17 +505,16 @@ let (>>) x f = f x
 let o = octahedron >> divide true >> divide true >> divide false
 *)
 let o = tesselate_sphere 12 8
+let v = {x = 0.; y = 0.; z = 1.}
 
 let texture = Js.string "black.jpg"
 let texture = Js.string "../planet/land_ocean_ice_cloud_2048.jpg"
 let texture = Js.string "../planet/texture.jpg"
 
-let _ = Firebug.console##log (Array.length o.faces)
-
 let start _ =
   Lwt.ignore_result
     (load_image texture >>= fun texture ->
-  let (shd, update_texture) = shadow texture in
+  let (shd, update_shadow, update_texture) = shadow texture in
 
   let canvas = create_canvas width height in
   let canvas' = create_canvas width height in
@@ -520,16 +546,84 @@ let start _ =
       o.faces
   in
 
-  let _ = shade () in
+  let paused = ref false in
+  let follow = ref false in
+  let lighting = ref true in
+  let clipped = ref true in
 
-  let m_obliq = xy_rotation (-.obliquity) in
-  let m = ref m_obliq in
+  let obl = ref obliquity in
+  let m_obliq = ref (xy_rotation (-.obliquity)) in
+  let m = ref matrix_identity in
+  let phi_rot = ref 0. in
+
+  let rateText = doc##createTextNode (Js.string "") in
+  let add = Dom.appendChild in
+  let ctrl = Html.createDiv doc in
+  ctrl##className <- Js.string "controls";
+  let d = Html.createDiv doc in
+  add d (doc##createTextNode (Js.string "Click and drag mouse to rotate."));
+  add ctrl d;
+  let form = Html.createDiv doc in
+  let br () = Html.createBr doc in
+  begin
+    add form (toggle_button "Pause" "Resume" (fun p -> paused := p));
+    add form (br ());
+    add form (toggle_button "Follow rotation" "Fixed position"
+                (fun f -> follow := f));
+    add form (br ());
+    add form (button "Reset orientation"
+                (fun () -> m := matrix_identity; phi_rot := 0.;
+                           m_obliq := xy_rotation (-. !obl)));
+    add form (br ());
+
+(*
+    let d = Html.createFieldset doc in
+    add d (radio "December solstice" "time" true (fun () -> ()));
+    add d (radio "Equinox" "time" false (fun () -> ()));
+    add d (radio "June solstice" "time" false (fun () -> ()));
+    add form d;
+*)
+    let lab = Html.createLabel doc in
+    add lab (doc##createTextNode (Js.string "Date:"));
+    let s = Html.createSelect doc in
+    List.iter
+      (fun txt ->
+         let o = Html.createOption doc in
+         add o (doc##createTextNode (Js.string txt));
+         s##add (o, Js.null))
+      ["December solstice"; "Equinox"; "June solstice"];
+    s##onchange <-
+      Html.handler
+      (fun _ ->
+         let o =
+           match s##selectedIndex with
+               0 -> obliquity
+             | 1 -> 0.
+             | _ -> -. obliquity
+         in
+         update_shadow o; obl := o; (*m_obliq := xy_rotation (-. o);*)
+         Js._true);
+    add lab s;
+    add form lab;
+  end;
+  Dom.appendChild ctrl form;
+
+  let form = Html.createDiv doc in
+  begin
+    add form (checkbox "Lighting" true (fun l -> lighting := l));
+    add form (br ());
+    add form (checkbox "Clipped" true (fun l -> clipped := l));
+    add form (br ());
+    add form (doc##createTextNode (Js.string "Frames per second: "));
+    add form rateText
+  end;
+  Dom.appendChild ctrl form;
+  Dom.appendChild (doc##body) ctrl;
 
   let mx = ref 0 in
   let my = ref 0 in
   canvas##onmousedown <- Dom_html.handler
     (fun ev ->
-       Firebug.console##log ("mousedown");
        mx := ev##clientX; my := ev##clientY;
        let c1 =
          Html.addEventListener Html.document Html.Event.mousemove
@@ -537,7 +631,6 @@ let start _ =
               (fun ev ->
                  let x = ev##clientX and y = ev##clientY in
                  let dx = x - !mx and dy = y - !my in
-                 Firebug.console##log_3 ("mousemove", dx, dy);
                  if dy != 0 then
                    m := matrix_mul (yz_rotation (2. *. float dy /. float width)) !m;
                  if dx != 0 then
@@ -551,28 +644,28 @@ let start _ =
          (Html.addEventListener Html.document Html.Event.mouseup
             (Dom_html.handler
                (fun _ ->
-                  Firebug.console##log ("mouseup");
                   Html.removeEventListener c1;
                   Js.Opt.iter !c2 Html.removeEventListener;
                   Js._true))
             Js._true);
        Js._false);
   let ti = ref (Js.to_float (Js.date##now ())) in
+  let fps = ref 0. in
 
-  let rec loop o v t phi =
-    let rotation = xz_rotation phi in
-    update_texture phi;
-    let m = matrix_mul !m rotation in
+  let rec loop t phi =
+    let rotation = xz_rotation (phi -. !phi_rot) in
+    update_texture !lighting phi;
+    let m = matrix_mul !m (matrix_mul !m_obliq rotation) in
     let o' = rotate_object m o in
     let v' = rotate_normal m v in
 
     ctx'##clearRect (0., 0., float width, float height);
     ctx'##save ();
-    ctx'##beginPath();
-    ctx'##arc(r, r, r *. 0.95, 0., -. 2. *. pi, Js._true);
-    ctx'##clip();
-(*CLIP
-*)
+    if !clipped then begin
+      ctx'##beginPath();
+      ctx'##arc(r, r, r *. 0.95, 0., -. 2. *. pi, Js._true);
+      ctx'##clip()
+    end;
 
     ctx'##setTransform (r -. 2., 0., 0., r -. 2., r, r);
     ctx'##globalCompositeOperation <- Js.string "lighter";
@@ -583,7 +676,10 @@ let start _ =
     ctx##drawImage_fromCanvas (canvas', 0., 0.);
     begin try ignore (ctx##getImageData (0., 0., 1., 1.)) with _ -> () end;
     let t' = Js.to_float (Js.date##now ()) in
-    Firebug.console##log (t' -. !ti);
+    fps :=
+      (let hz = 1000. /. (t' -. !ti) in
+       if !fps = 0. then hz else 0.9 *. !fps +. 0.1 *. hz);
+    rateText##data <- Js.string (Printf.sprintf "% 2.f" !fps);
     ti := t';
     Lwt_js.sleep 0.01 >>= fun () ->
     let t' = Js.to_float (Js.date##now ()) in
@@ -593,9 +689,11 @@ let start _ =
 (*
 if true then Lwt.return () else
 *)
-    loop o v t' (phi +. angle)
+    if not !paused && !follow then phi_rot := !phi_rot +. angle;
+    loop t'
+      (if !paused then phi else phi +. angle)
   in
-  loop o {x = 0.; y = 0.; z = 1.} (Js.to_float (Js.date##now ())) 0.
+  loop (Js.to_float (Js.date##now ())) 0.
 ); Js._false
 
 let _ =
