@@ -297,6 +297,19 @@ let date_ms :
   (int -> int -> int -> int -> int -> int -> int -> date t) constr =
   date_constr
 
+let decodeURI (s : js_string t) : js_string t =
+  Unsafe.fun_call (Unsafe.variable "decodeURI") [|Unsafe.inject s|]
+let decodeURIComponent (s : js_string t) : js_string t =
+  Unsafe.fun_call (Unsafe.variable "decodeURIComponent") [|Unsafe.inject s|]
+let encodeURI (s : js_string t) : js_string t =
+  Unsafe.fun_call (Unsafe.variable "encodeURI") [|Unsafe.inject s|]
+let encodeURIComponent (s : js_string t) : js_string t =
+  Unsafe.fun_call (Unsafe.variable "encodeURIComponent") [|Unsafe.inject s|]
+let escape (s : js_string t) : js_string t =
+  Unsafe.fun_call (Unsafe.variable "escape") [|Unsafe.inject s|]
+let unescape (s : js_string t) : js_string t =
+  Unsafe.fun_call (Unsafe.variable "unescape") [|Unsafe.inject s|]
+
 external bool : bool -> bool t = "caml_js_from_bool"
 external to_bool : bool t -> bool = "caml_js_to_bool"
 external string : string -> js_string t = "caml_js_from_string"

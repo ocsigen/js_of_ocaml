@@ -392,6 +392,28 @@ end
 val date : date_constr t
   (** The date constructor, as an object. *)
 
+(** {2 Standard Javascript functions} *)
+
+val decodeURI : js_string t -> js_string t
+  (** Decode a URI: replace by the corresponding byte all escape
+      sequences but the ones corresponding to a URI reserved character
+      and convert the string from UTF-8 to UTF-16. *)
+val decodeURIComponent : js_string t -> js_string t
+  (** Decode a URIComponent: replace all escape sequences by the
+      corresponding byte and convert the string from UTF-8 to
+      UTF-16. *)
+val encodeURI : js_string t -> js_string t
+  (** Encode a URI: convert the string to UTF-8 and replace all unsafe
+      bytes by the corresponding escape sequence. *)
+val encodeURIComponent : js_string t -> js_string t
+  (** Same as [encodeURI], but also encode URI reserved characters. *)
+val escape : js_string t -> js_string t
+  (** Escape a string: unsafe UTF-16 words are replaced by 2-digit and
+      4-digit escape sequences. *)
+val unescape : js_string t -> js_string t
+  (** Unescape a string: 2-digit and 4-digit escape sequences are
+      replaced by the corresponding UTF-16 word. *)
+
 (** {2 Conversion functions between Javascript and OCaml types} *)
 
 external bool : bool -> bool t = "caml_js_from_bool"
