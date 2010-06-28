@@ -18,12 +18,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*FIX: cancel? *)
 let sleep d =
   let (t, w) = Lwt.task () in
-  ignore
-    (Dom_html.window##setTimeout (Js.wrap_callback (fun () -> Lwt.wakeup w ()),
-                                  d *. 1000.));
+  let id =
+    Dom_html.window##setTimeout (Js.wrap_callback (fun () -> Lwt.wakeup w ()),
+                                 d *. 1000.)
+  in
+  Lwt.on_cancel t (fun () -> Dom_html.window##clearTimeout(id)) ;
   t
 
 let yield () = sleep 0.
