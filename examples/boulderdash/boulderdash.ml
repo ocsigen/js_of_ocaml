@@ -281,7 +281,7 @@ let http_get url =
 
 let start _ =
   let body =
-    Js.Opt.get (document##getElementById(js"body"))
+    Js.Opt.get (document##getElementById(js"boulderdash"))
       (fun () -> assert false)
   in
   let board_div = Html.createDiv document in
