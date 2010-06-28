@@ -69,6 +69,4 @@ Contents
     compiler/     compiler
     examples/     small examples
     lib/          library for interfacing with Javascript APIs
-    obrowser/     code for partial compatibility with O'Browser
-                  (not up to date)
     runtime/      runtime system
