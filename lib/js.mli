@@ -408,11 +408,11 @@ val encodeURI : js_string t -> js_string t
 val encodeURIComponent : js_string t -> js_string t
   (** Same as [encodeURI], but also encode URI reserved characters. *)
 val escape : js_string t -> js_string t
-  (** Escape a string: unsafe UTF-16 words are replaced by 2-digit and
-      4-digit escape sequences. *)
+  (** Escape a string: unsafe UTF-16 code points are replaced by
+      2-digit and 4-digit escape sequences. *)
 val unescape : js_string t -> js_string t
   (** Unescape a string: 2-digit and 4-digit escape sequences are
-      replaced by the corresponding UTF-16 word. *)
+      replaced by the corresponding UTF-16 code point. *)
 
 (** {2 Conversion functions between Javascript and OCaml types} *)
 
@@ -421,7 +421,9 @@ external bool : bool -> bool t = "caml_js_from_bool"
 external to_bool : bool t -> bool = "caml_js_to_bool"
   (** Conversion of booleans from Javascript to OCaml. *)
 external string : string -> js_string t = "caml_js_from_string"
-  (** Conversion of strings from OCaml to Javascript. *)
+  (** Conversion of strings from OCaml to Javascript.  (The OCaml
+      string is considered to be encoded in UTF-8 and is converted to
+      UTF-16.) *)
 external to_string : js_string t -> string = "caml_js_to_string"
   (** Conversion of strings from Javascript to OCaml. *)
 external float : float -> float t = "caml_js_from_float"
@@ -432,6 +434,13 @@ external array : 'a array -> 'a js_array t = "caml_js_from_array"
   (** Conversion of arrays from OCaml to Javascript. *)
 external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
   (** Conversion of arrays from Javascript to OCaml. *)
+external bytestring : string -> js_string t = "caml_js_from_byte_string"
+  (** Conversion of strings of bytes from OCaml to Javascript.
+      (Each byte will be converted in an UTF-16 code point.) *)
+external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
+  (** Conversion of strings of bytes from Javascript to OCaml.  (The
+      Javascript string should only contain UTF-16 code points below
+      255.) *)
 
 (** {2 Convenience coercion functions} *)
 
