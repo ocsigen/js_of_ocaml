@@ -72,3 +72,38 @@ let send_request url callback postData =
        then
          callback req);
   req##send (postData)
+
+
+
+let escape_string s = Js.to_bytestring (Js.escape (Js.bytestring s))
+let encode args = (*TODO: use buffers instead of strings *)
+  String.concat "&"
+    (List.map (fun (n,v) -> escape_string n ^ "=" ^ escape_string v) args)
+
+let send_asynchronous_request
+      ?(content_type="application/x-www-form-urlencoded")
+      ?(post_args=[])
+      ?(get_args=[])
+      url =
+  (* infer method *)
+  let method_ = match post_args with | [] -> "GET" | _::_ -> "POST" in
+  (* create Lwt task *)
+  let (res, w) = Lwt.task () in
+  (* create req *)
+  let req = create () in
+  (* set req properties *)
+  req##_open (Js.string method_, Js.string url, Js._true);
+  req##setRequestHeader (Js.string "Content-type", Js.string content_type);
+  req##onreadystatechange <- Js.some
+    (fun () ->
+       if req##readyState = DONE then
+         Lwt.wakeup w (req##status, Js.to_string req##responseText));
+  (* send *)
+  (match post_args with
+     | [] -> req##send (Js.null)
+     | _::_ as l -> req##send (Js.some (Js.string (encode l)))
+  );
+  (* abort on cancel *)
+  Lwt.on_cancel res (fun () -> req##abort ()) ;
+  res
+
