@@ -27,7 +27,6 @@
 - adaptative size
   ==> time 3 frames and take min
   ==> if fast, try larger image
-- precompute as much as possible ==> du/dv/...
 *)
 
 let width = 600
@@ -404,34 +403,56 @@ assert (v < th);
 let min (u : float) v = if u < v then u else v
 let max (u : float) v = if u < v then v else u
 
-let draw ctx img shd o uv normals dir =
-  let tw = float img##naturalWidth in
-  let th = float img##naturalHeight in
-(*
-  let cos_obl = cos obliquity in
-  let sin_obl = -. sin obliquity in
-*)
+let precompute_mapping_info tw th uv f =
+  let { v1 = v1; v2 = v2; v3 = v3 } = f in
+let (u1, v1) = uv.(v1) in
+let (u2, v2) = uv.(v2) in
+let (u3, v3) = uv.(v3) in
+let mid = tw /. 2. in
+
+let u1 = if u1 = 0. && (u2 > mid || u3 > mid) then tw -. 2. else u1 in
+let u2 = if u2 = 0. && (u1 > mid || u3 > mid) then tw -. 2. else u2 in
+let u3 = if u3 = 0. && (u2 > mid || u1 > mid) then tw -. 2. else u3 in
+
+let mth = th -. 2. in
+let u1 = if v1 = 0. || v1 >= mth then (u2 +. u3) /. 2. else u1 in
+let u2 = if v2 = 0. || v2 >= mth then (u1 +. u3) /. 2. else u2 in
+let u3 = if v3 = 0. || v3 >= mth then (u2 +. u1) /. 2. else u3 in
+
+let u1 = max 1. u1 in
+let u2 = max 1. u2 in
+let u3 = max 1. u3 in
+
+let v1 = max 1. v1 in
+let v2 = max 1. v2 in
+let v3 = max 1. v3 in
+
+let du2 = u2 -. u1 in
+let du3 = u3 -. u1 in
+let dv2 = v2 -. v1 in
+let dv3 = v3 -. v1 in
+
+let su = dv2*.du3-.dv3*.du2 in
+let sv = du2*.dv3-.du3*.dv2 in
+let dv3 = dv3 /. sv in
+let dv2 = dv2 /. sv in
+let du3 = du3 /. su in
+let du2 = du2 /. su in
+
+let u = max 0. (min u1 (min u2 u3) -. 4.) in
+let v = max 0. (min v1 (min v2 v3) -. 4.) in
+let u' = min tw (max u1 (max u2 u3) +. 4.) in
+let v' = min th (max v1 (max v2 v3) +. 4.) in
+let du = u' -. u in
+let dv = v' -. v in
+(u1, v1, du2, dv2, du3, dv3, u, v, du, dv)
+
+let draw ctx img shd o uv normals face_info dir =
   Array.iteri
     (fun i { v1 = v1; v2 = v2; v3 = v3 } ->
        let {x = x1; y = y1; z = z1} = o.vertices.(v1) in
        let {x = x2; y = y2; z = z2} = o.vertices.(v2) in
        let {x = x3; y = y3; z = z3} = o.vertices.(v3) in
-(*
-       (* We could do the rotation once and for all for each visible
-          point... *)
-       let (x1, y1) =
-         (x1 *. cos_obl +. y1 *. sin_obl,
-          -. x1 *. sin_obl +. y1 *. cos_obl)
-       in
-       let (x2, y2) =
-         (x2 *. cos_obl +. y2 *. sin_obl,
-          -. x2 *. sin_obl +. y2 *. cos_obl)
-       in
-       let (x3, y3) =
-         (x3 *. cos_obl +. y3 *. sin_obl,
-          -. x3 *. sin_obl +. y3 *. cos_obl)
-       in
-*)
 
        if dot_product normals.(i) dir >= 0. then begin
          ctx##beginPath ();
@@ -442,6 +463,19 @@ let draw ctx img shd o uv normals dir =
          ctx##save();
          ctx##clip ();
 
+let (u1, v1, du2, dv2, du3, dv3, u, v, du, dv) = face_info.(i) in
+let dx2 = x2 -. x1 in
+let dx3 = x3 -. x1 in
+let dy2 = y2 -. y1 in
+let dy3 = y3 -. y1 in
+let a = dx2*.dv3-.dx3*.dv2 in
+let b = dx2*.du3-.dx3*.du2 in
+let c = x1 -. a *. u1 -. b *. v1 in
+let d = dy2*.dv3-.dy3*.dv2 in
+let e = dy2*.du3-.dy3*.du2 in
+let f = y1 -. d *. u1 -. e *. v1 in
+ctx##transform (a, d, b, e, c, f);
+(*
 let (u1, v1) = uv.(v1) in
 let (u2, v2) = uv.(v2) in
 let (u3, v3) = uv.(v3) in
@@ -482,16 +516,11 @@ let f = y1 -. d *. u1 -. e *. v1 in
 ctx##transform (a, d, b, e, c, f);
 let u = max 0. (min u1 (min u2 u3) -. 4.) in
 let v = max 0. (min v1 (min v2 v3) -. 4.) in
-(*
-let u' = max u1 (max u2 u3) +. 4. in
-let v' = max v1 (max v2 v3) +. 4. in
-*)
+
 let u' = min tw (max u1 (max u2 u3) +. 4.) in
 let v' = min th (max v1 (max v2 v3) +. 4.) in
 let du = u' -. u in
 let dv = v' -. v in
-(*
-ctx##drawImage_full (img, u, v, du, dv, u, v, du, dv);
 *)
 ctx##drawImage_fullFromCanvas (shd, u, v, du, dv, u, v, du, dv);
 ctx##restore()
@@ -501,10 +530,15 @@ ctx##restore()
 
 let (>>) x f = f x
 
+
 (*
+let o = tesselate_sphere 8 6
 let o = octahedron >> divide true >> divide true >> divide false
 *)
 let o = tesselate_sphere 12 8
+(*
+let o = octahedron >> divide true >> divide true >> divide true
+*)
 let v = {x = 0.; y = 0.; z = 1.}
 
 let texture = Js.string "black.jpg"
@@ -521,18 +555,7 @@ let start _ =
   Dom.appendChild Html.document##body canvas;
   let ctx = canvas##getContext (Html._2d_) in
   let ctx' = canvas'##getContext (Html._2d_) in
-(*
-  ctx##globalCompositeOperation <- Js.string "copy";
-*)
-(*
-  ctx##lineWidth <- (1. /. 200.);
-*)
   let r = float width /. 2. in
-(*
-  ctx##beginPath ();
-  ctx##arc(r, r, r *. 0.95, 0., 2. *. pi, Js._true);
-  ctx##clip();
-*)
   let tw = float texture##naturalWidth in
   let th = float texture##naturalHeight in
   let uv = Array.map (fun v -> to_uv tw th v) o.vertices in
@@ -545,6 +568,8 @@ let start _ =
          cross_product (vect v1 v2) (vect v1 v3))
       o.faces
   in
+  let face_info =
+    Array.map (fun f -> precompute_mapping_info tw th uv f) o.faces in
 
   let paused = ref false in
   let follow = ref false in
@@ -575,14 +600,6 @@ let start _ =
                 (fun () -> m := matrix_identity; phi_rot := 0.;
                            m_obliq := xy_rotation (-. !obl)));
     add form (br ());
-
-(*
-    let d = Html.createFieldset doc in
-    add d (radio "December solstice" "time" true (fun () -> ()));
-    add d (radio "Equinox" "time" false (fun () -> ()));
-    add d (radio "June solstice" "time" false (fun () -> ()));
-    add form d;
-*)
     let lab = Html.createLabel doc in
     add lab (doc##createTextNode (Js.string "Date:"));
     let s = Html.createSelect doc in
@@ -612,13 +629,17 @@ let start _ =
   begin
     add form (checkbox "Lighting" true (fun l -> lighting := l));
     add form (br ());
-    add form (checkbox "Clipped" true (fun l -> clipped := l));
+    add form (checkbox "Clip" true (fun l -> clipped := l));
     add form (br ());
     add form (doc##createTextNode (Js.string "Frames per second: "));
     add form rateText
   end;
-  Dom.appendChild ctrl form;
-  Dom.appendChild (doc##body) ctrl;
+  add ctrl form;
+  add (doc##body) ctrl;
+  let p = Html.createP doc in
+  p##innerHTML <- Js.string
+    "Credit: <a href='http://visibleearth.nasa.gov/'>Visual Earth</a>, Nasa";
+  add (doc##body) p;
 
   let mx = ref 0 in
   let my = ref 0 in
@@ -632,9 +653,11 @@ let start _ =
                  let x = ev##clientX and y = ev##clientY in
                  let dx = x - !mx and dy = y - !my in
                  if dy != 0 then
-                   m := matrix_mul (yz_rotation (2. *. float dy /. float width)) !m;
+                   m := matrix_mul
+                          (yz_rotation (2. *. float dy /. float width)) !m;
                  if dx != 0 then
-                   m := matrix_mul (xz_rotation (2. *. float dx /. float width)) !m;
+                   m := matrix_mul
+                          (xz_rotation (2. *. float dx /. float width)) !m;
                  mx := x; my := y;
                  Js._true))
            Js._true
@@ -669,7 +692,7 @@ let start _ =
 
     ctx'##setTransform (r -. 2., 0., 0., r -. 2., r, r);
     ctx'##globalCompositeOperation <- Js.string "lighter";
-    draw ctx' texture shd o' uv normals v';
+    draw ctx' texture shd o' uv normals face_info v';
     ctx'##restore ();
 
     ctx##globalCompositeOperation <- Js.string "copy";
