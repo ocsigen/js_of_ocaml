@@ -134,11 +134,7 @@ let close_entry c =
       c.stack <- Row ((heading, List.rev c.inline_mix) :: entries, stack);
       c.inline_mix <- [];
       true
-  | Row _ ->
-      true
-  | Table _ ->
-      c.stack <- Row ([(false, List.rev c.inline_mix)], c.stack);
-      c.inline_mix <- [];
+  | Row _ | Table _ ->
       true
   | _ ->
       false
@@ -166,7 +162,8 @@ let rec end_paragraph c lev =
       if c.inline_mix <> [] then begin
         c.flow <- c.build.p_elem (List.rev c.inline_mix) :: c.flow;
         c.inline_mix <- []
-      end
+      end;
+      c.stack <- Paragraph
   | Heading l ->
       let f =
         match l with
@@ -308,6 +305,7 @@ rule parse_bol c =
       parse_bol c lexbuf
     }
   | white_space * "{{{" (line_break | eof) {
+      end_paragraph c 0;
       parse_nowiki c lexbuf
     }
   | white_space * "|" {
