@@ -46,16 +46,10 @@ end
 
 val create : unit -> xmlHttpRequest t
 
-val send_request :
-  js_string t -> (xmlHttpRequest t -> unit) -> js_string t opt -> unit
-  (** Helper function: [send_request url callback post_data] performs a
-      request at location [url].  If [post_data] is not null, a POST
-      request is performed.  On success, the function [callback] is
-      invoked. *)
 
-val send_asynchronous_request :
+val send_request :
      ?content_type:string                (* application/x-www-form-urlencoded *)
-  -> ?post_args:((string * string) list) (* [] *)
+  -> ?post_args:((string * string) list) (* *)
   -> ?get_args:((string * string) list)  (* [] *)
   -> string
   -> (int * string) Lwt.t

@@ -273,11 +273,10 @@ let build_table ?style ?tr_style ?td_style f t =
   m
 
 let http_get url =
-  let (res, w) = Lwt.wait () in
-  XmlHttpRequest.send_request (js url)
-    (fun r -> Lwt.wakeup w (Js.to_string r##responseText))
-    Js.null;
-  res
+  XmlHttpRequest.send_request url >>= fun (cod, msg) ->
+  if cod = 0 || cod = 200
+  then Lwt.return msg
+  else fst (Lwt.wait ())
 
 let start _ =
   let body =
