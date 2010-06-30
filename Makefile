@@ -11,8 +11,6 @@ library:
 	make -C lib
 runtime:
 	make -C runtime
-obrowser: library
-	make -C obrowser
 examples: compiler library
 	make -C examples
 
@@ -32,5 +30,4 @@ clean:
 	make -C compiler clean
 	make -C lib clean
 	make -C runtime clean
-	make -C obrowser clean
 	make -C examples clean
