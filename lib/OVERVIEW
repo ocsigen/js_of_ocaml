@@ -1,0 +1,133 @@
+== The Js_of_ocaml library
+
+=== Base types ===
+
+Base values are not represented the same way in OCaml and Javascript.
+In particular, OCaml strings are mutable arrays of bytes, while
+Javascript strings are constant arrays of UTF-16 code points.  We list
+here the correspondance between base types.  Conversion functions are
+provided.
+
+|= OCaml values |= Ocaml type of Javascript values |= Actual Javascript type |
+| {{{int}}}     | {{{int}}}                        | Number                  |
+| {{{float}}}   | {{{float}}} or {{{float Js.t}}}  | Number                  |
+| {{{bool}}}    | {{{bool Js.t}}}                  | Boolean                 |
+| {{{string}}}  | {{{Js.js_string Js.t}}}          | String                  |
+| {{{array}}}   | {{{Js.js_array Js.t}}}           | Array                   |
+
+Integers are implemented as Javascript numbers.  They can thus be
+directly passed to and from Javascript.  To allow a possible
+compatibility with Obrowser, where floats are boxed, we use to types
+for floats.  Numbers of type {{{float}}} can be passed to Javascript
+functions.  We rely in implicit coercion to perform unboxing when
+needed.  On the other hand, Javascript will return unboxed float, of
+type {{{float Js.t}}}.
+
+=== Typing Javascript objects ===
+
+Javascript objects are given types of the shape
+  {{{<m_1 : t_1; ...; m_n : t_n> Js.t}}},
+using a phantom object type.  The methods {{{m_i}}} stands for the
+field of the Javascript object.  For instance, a Javascript object of
+type:
+{{{
+   < data : js_string t Js.prop;
+     appendData : js_string t -> unit Js.meth> Js.t
+}}}
+has a property {{{data}}} containing a Javascript string, and a method
+{{{appendData}}} taking a Javascript string as argument and returning
+no value.
+
+Some overloading is possible using a syntactic trick: names
+{{{_foo}}}, {{{foo_abcd}}} and {{{foo}}} are all mapped to a same
+Javascript field name {{{foo}}}: when accessing a field of an object,
+the name given in the OCaml code is transformed by removing a leading
+underscore and then removing all characters starting from the last
+underscore; this yields the corresponding Javascript name.  For
+instance, these for types correspond to the same Javascript method
+{{{drawImage}}}:
+{{{
+    drawImage :
+        imageElement t -> float -> float -> unit meth
+    drawImage_withSize :
+        imageElement t -> float -> float -> float -> float -> unit meth
+    drawImage_fromCanvas :
+        canvasElement t -> float -> float -> unit meth
+}}}
+This trick can also be used to refer to Javascript fields {{{type}}} or
+{{{URL}}}, for instance as {{{_type}}} and {{{_URL}}}.
+
+
+=== Syntax extension ===
+
+A syntax extension is available for manipulating object properties,
+invoking methods and creating objects.  The syntax and typing rules
+are as follows:
+
+        * Getting a property
+{{{
+            obj : <m : u prop> Js.t
+            -----------------------
+                 obj##m : u
+}}}
+        * Setting a property
+{{{
+            obj : <m : u prop> Js.t
+              e : u
+            -----------------------
+               obj##m <- e : unit
+}}}
+        * Invoking a method
+{{{
+            obj : <m : t_1 -> ... -> t_n -> u meth; ..> Js.t
+                e_i : t_i               (1 <= i <= n)
+            -------------------------------------------------
+                      obj##m(e_1, ..., e_n) : u
+}}}
+        * Creating an object
+{{{
+            constr : (t_1 -> ... -> t_n -> u Js.t) Js.constr
+            e_i : t_i               (1 <= i <= n)
+            ------------------------------------------------
+                    jsnew constr (e1, ..., en) : u
+}}}
+
+=== OCaml and Javascript functions ===
+
+OCaml and Javascript do not follow the same calling convention.  In
+OCaml, functions can be partially applied, returning a function
+closure.  In Javascript, when only some of the parameters are passed,
+the others are set to the {{{undefined}}} value.  As a consequence, it
+is not possible to call a Javascript function from OCaml as if it was
+an OCaml function, and conversely.
+
+
+==== Calling Javascript functions ====
+
+At the moment, there is no syntactic sugar for calling Javascript
+functions.  You should use either {{{Js.Unsafe.call}}} or
+{{{Js.Unsafe.fun_call}}}, depending whether you want {{{this}}} to be
+bound to some particular object in the function body or not.
+
+You can also refer to a Javascript function using an OCaml external
+declaration.  Then, you need to write stub functions in C so that the
+OCaml compiler accept the external declaration:
+
+{{{
+   Ocaml file:
+      external foo : t1 -> t2 = "foo"
+   C file:
+      #include <stdlib.h>
+      #define D(f) void f () { exit(1); }
+      D(foo)
+}}}
+
+You can call this function as if it was an OCaml function, as the
+Javascript function is appropriately wrapped by the system.
+
+
+==== Passing OCaml function to Javascript function ====
+
+You should use function {{{Js.wrap_callback}}} or function
+{{{Js.wrap_meth_callback}}} to wrap an OCaml function so that
+it can be called from Javascript.
