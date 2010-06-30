@@ -148,7 +148,7 @@ let propagate1 deps defs st x =
                      add_dep deps x t;
                      let s' = VarMap.find t st in
                      if VarSet.is_empty s' then
-                       VarSet.add t s'
+                       VarSet.add t s
                      else
                        VarSet.union s' s
                    end
