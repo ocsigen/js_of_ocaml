@@ -273,7 +273,7 @@ let build_table ?style ?tr_style ?td_style f t =
   m
 
 let http_get url =
-  XmlHttpRequest.send_request url >>= fun (cod, msg) ->
+  XmlHttpRequest.send url >>= fun (cod, msg) ->
   if cod = 0 || cod = 200
   then Lwt.return msg
   else fst (Lwt.wait ())

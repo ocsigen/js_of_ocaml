@@ -47,7 +47,7 @@ end
 val create : unit -> xmlHttpRequest t
 
 
-val send_request :
+val send :
      ?content_type:string                (* application/x-www-form-urlencoded *)
   -> ?post_args:((string * string) list) (* *)
   -> ?get_args:((string * string) list)  (* [] *)

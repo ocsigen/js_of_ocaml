@@ -61,7 +61,7 @@ let encode args = (*TODO: use buffers instead of strings *)
   String.concat "&"
     (List.map (fun (n,v) -> escape_string n ^ "=" ^ escape_string v) args)
 
-let send_request
+let send
       ?(content_type="application/x-www-form-urlencoded")
       ?post_args
       ?(get_args=[])
