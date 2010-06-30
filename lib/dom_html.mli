@@ -445,8 +445,9 @@ class type imageElement = object ('self)
   method isMap : bool t prop
   method width : int prop
   method height : int prop
-  method naturalWidth : int readonly_prop
-  method naturalHeight : int readonly_prop
+  (* Properties naturalWidth/Height not available in all browsers. *)
+  method naturalWidth : int optdef readonly_prop
+  method naturalHeight : int optdef readonly_prop
   method complete : bool t prop
 
   method onload : ('self t, event t) event_listener prop
@@ -684,7 +685,7 @@ and canvasRenderingContext2D = object
   void drawImage(in HTMLVideoElement image, in float dx, in float dy, in optional float dw, in float dh);
   void drawImage(in HTMLVideoElement image, in float sx, in float sy, in float sw, in float sh, in float dx, in float dy, in float dw, in float dh);
 *)
-
+  (* Method createImageData not available in Opera *)
   method createImageData : int -> int -> imageData t meth
   method getImageData : float -> float -> float -> float -> imageData t meth
   method putImageData : imageData t -> float -> float -> unit meth

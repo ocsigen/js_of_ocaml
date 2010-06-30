@@ -328,12 +328,12 @@ let load_image src =
 (****)
 
 let shadow texture =
-  let w = texture##naturalWidth in
-  let h = texture##naturalHeight in
+  let w = texture##width in
+  let h = texture##height in
   let canvas = create_canvas w h in
   let ctx = canvas##getContext (Html._2d_) in
   let (w, h) = (w / 8, h / 8) in
-  let img = ctx##createImageData (w, h) in
+  let img = ctx##getImageData (0., 0., float w, float h) in
   let data = img##data in
   let inv_gamma  = 1. /. gamma in
   let update_shadow obliquity =
@@ -377,8 +377,8 @@ let shadow texture =
   in
   update_shadow obliquity;
 
-  let w = texture##naturalWidth in
-  let h = texture##naturalHeight in
+  let w = texture##width in
+  let h = texture##height in
   let canvas' = create_canvas w h in
   let ctx' = canvas'##getContext (Html._2d_) in
 
@@ -574,8 +574,8 @@ let start _ =
   let ctx = canvas##getContext (Html._2d_) in
   let ctx' = canvas'##getContext (Html._2d_) in
   let r = float width /. 2. in
-  let tw = float texture##naturalWidth in
-  let th = float texture##naturalHeight in
+  let tw = float texture##width in
+  let th = float texture##height in
   let uv = Array.map (fun v -> to_uv tw th v) o.vertices in
   let normals =
     Array.map

@@ -470,8 +470,8 @@ class type imageElement = object ('self)
   method isMap : bool t prop
   method width : int prop
   method height : int prop
-  method naturalWidth : int readonly_prop
-  method naturalHeight : int readonly_prop
+  method naturalWidth : int optdef readonly_prop
+  method naturalHeight : int optdef readonly_prop
   method complete : bool t prop
 
   method onload : ('self t, event t) event_listener prop
