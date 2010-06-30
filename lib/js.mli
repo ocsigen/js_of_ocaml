@@ -197,6 +197,7 @@ class type js_string = object
   method toLocaleLowerCase : js_string t meth
   method toUpperCase : js_string t meth
   method toLocaleUpperCase : js_string t meth
+  method length : int readonly_prop
 end
 
 (** Specification of Javascript regular expression objects. *)
