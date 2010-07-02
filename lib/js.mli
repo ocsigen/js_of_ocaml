@@ -494,9 +494,12 @@ module Unsafe : sig
         [meth_call o m a] calls the Javascript method [m] of object [o]
         with the arguments given by the array [a]. *)
   external new_obj : 'a -> any array -> 'b = "caml_js_new"
-    (** Create a Javascript object.  The expression
-        [new_obj c a] creates a Javascript object with constructor [c] using the
+    (** Create a Javascript object.  The expression [new_obj c a]
+        creates a Javascript object with constructor [c] using the
         arguments given by the array [a]. *)
+
+  external instanceof : < .. > t -> _ constr -> bool t = "caml_js_instanceof"
+    (** Tests whether a Javascript object is an instance of a given class. *)
 
 (*FIX also, object/array literals *)
 end

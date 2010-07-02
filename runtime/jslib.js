@@ -24,6 +24,9 @@ function caml_js_set(o,f,v) { o[f]=v; }
 //Provides: caml_js_get mutable
 function caml_js_get(o,f) { return o[f]; }
 
+//Provides: caml_js_instanceof
+function caml_js_instanceof(o,c) { return o instanceof c; }
+
 //Provides: caml_js_on_ie const
 function caml_js_on_ie () {
   var ua = window.navigator?window.navigator.userAgent:"";
