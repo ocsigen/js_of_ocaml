@@ -68,7 +68,10 @@ let send
       url =
 
   let method_ = match post_args with | None -> "GET" | Some _ -> "POST" in
-  let url = url ^ "?" ^ encode get_args in
+  let url = match get_args with
+    | [] -> url
+    | _::_ as l -> url ^ "?" ^ encode l
+  in
 
   let (res, w) = Lwt.task () in
   let req = create () in
