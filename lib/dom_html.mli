@@ -753,7 +753,7 @@ class type frameElement = object
   method noResize : bool t prop
   method scrolling : js_string t prop
   method src : js_string t prop
-  method contentDocument : document t prop
+  method contentDocument : document t readonly_prop
 end
 
 class type iFrameElement = object
@@ -766,7 +766,7 @@ class type iFrameElement = object
   method name : js_string t prop
   method scrolling : js_string t prop
   method src : js_string t prop
-  method contentDocument : document t prop
+  method contentDocument : document t readonly_prop
 end
 
 (****)
