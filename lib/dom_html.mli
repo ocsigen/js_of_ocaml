@@ -735,6 +735,40 @@ end
 val document : document t
   (** The current document *)
 
+(* {2 Frames } *)
+
+class type frameSetElement = object
+  inherit element
+  method cols : js_string t prop
+  method rows : js_string t prop
+end
+
+class type frameElement = object
+  inherit element
+  method frameBorder : js_string t prop
+  method longDesc : js_string t prop
+  method marginHeight : js_string t prop
+  method marginWidth : js_string t prop
+  method name : js_string t prop
+  method noResize : bool t prop
+  method scrolling : js_string t prop
+  method src : js_string t prop
+  method contentDocument : document t prop
+end
+
+class type iFrameElement = object
+  inherit element
+  method frameBorder : js_string t prop
+  method height : js_string t prop
+  method longDesc : js_string t prop
+  method marginHeight : js_string t prop
+  method marginWidth : js_string t prop
+  method name : js_string t prop
+  method scrolling : js_string t prop
+  method src : js_string t prop
+  method contentDocument : document t prop
+end
+
 (****)
 
 (** {2 Window objects} *)
@@ -969,6 +1003,8 @@ type taggedElement =
   | Dl of dListElement t
   | Fieldset of fieldSetElement t
   | Form of formElement t
+  | Frameset of frameSetElement t
+  | Frame of frameElement t
   | H1 of headingElement t
   | H2 of headingElement t
   | H3 of headingElement t
@@ -978,6 +1014,7 @@ type taggedElement =
   | Head of headElement t
   | Hr of hrElement t
   | Html of htmlElement t
+  | Iframe of iFrameElement t
   | Img of imageElement t
   | Input of inputElement t
   | Ins of modElement t
@@ -1030,6 +1067,8 @@ module CoerceTo : sig
   val dl : #element t -> dListElement t opt
   val fieldset : #element t -> fieldSetElement t opt
   val form : #element t -> formElement t opt
+  val frameset : #element t -> frameSetElement t opt
+  val frame : #element t -> frameElement t opt
   val h1 : #element t -> headingElement t opt
   val h2 : #element t -> headingElement t opt
   val h3 : #element t -> headingElement t opt
@@ -1039,6 +1078,7 @@ module CoerceTo : sig
   val head : #element t -> headElement t opt
   val hr : #element t -> hrElement t opt
   val html : #element t -> htmlElement t opt
+  val iframe : #element t -> iFrameElement t opt
   val img : #element t -> imageElement t opt
   val input : #element t -> inputElement t opt
   val ins : #element t -> modElement t opt

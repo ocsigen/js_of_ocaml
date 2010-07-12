@@ -752,6 +752,38 @@ class type document = object
   inherit eventTarget
 end
 
+class type frameSetElement = object
+  inherit element
+  method cols : js_string t prop
+  method rows : js_string t prop
+end
+
+class type frameElement = object
+  inherit element
+  method frameBorder : js_string t prop
+  method longDesc : js_string t prop
+  method marginHeight : js_string t prop
+  method marginWidth : js_string t prop
+  method name : js_string t prop
+  method noResize : bool t prop
+  method scrolling : js_string t prop
+  method src : js_string t prop
+  method contentDocument : document t prop
+end
+
+class type iFrameElement = object
+  inherit element
+  method frameBorder : js_string t prop
+  method height : js_string t prop
+  method longDesc : js_string t prop
+  method marginHeight : js_string t prop
+  method marginWidth : js_string t prop
+  method name : js_string t prop
+  method scrolling : js_string t prop
+  method src : js_string t prop
+  method contentDocument : document t prop
+end
+
 (*XXX Should provide creation functions a la lablgtk... *)
 
 let opt_iter x f = match x with None -> () | Some v -> f v
@@ -858,6 +890,9 @@ let createDd doc = createElement doc "dd"
 let createDt doc = createElement doc "dt"
 let createNoscript doc = createElement doc "noscript"
 let createAddress doc = createElement doc "address"
+let createFrameset doc = createElement doc "frameset"
+let createFrame doc = createElement doc "frame"
+let createIframe doc = createElement doc "iframe"
 
 exception Canvas_not_available
 
@@ -883,6 +918,8 @@ type taggedElement =
   | Dl of dListElement t
   | Fieldset of fieldSetElement t
   | Form of formElement t
+  | Frameset of frameSetElement t
+  | Frame of frameElement t
   | H1 of headingElement t
   | H2 of headingElement t
   | H3 of headingElement t
@@ -892,6 +929,7 @@ type taggedElement =
   | Head of headElement t
   | Hr of hrElement t
   | Html of htmlElement t
+  | Iframe of iFrameElement t
   | Img of imageElement t
   | Input of inputElement t
   | Ins of modElement t
@@ -942,6 +980,8 @@ let tagged (e : #element t) =
   | "dl" -> Dl (Js.Unsafe.coerce e)
   | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
   | "form" -> Form (Js.Unsafe.coerce e)
+  | "frameset" -> Frameset (Js.Unsafe.coerce e)
+  | "frame" -> Frame (Js.Unsafe.coerce e)
   | "h1" -> H1 (Js.Unsafe.coerce e)
   | "h2" -> H2 (Js.Unsafe.coerce e)
   | "h3" -> H3 (Js.Unsafe.coerce e)
@@ -951,6 +991,7 @@ let tagged (e : #element t) =
   | "head" -> Head (Js.Unsafe.coerce e)
   | "hr" -> Hr (Js.Unsafe.coerce e)
   | "html" -> Html (Js.Unsafe.coerce e)
+  | "iframe" -> Iframe (Js.Unsafe.coerce e)
   | "img" -> Img (Js.Unsafe.coerce e)
   | "input" -> Input (Js.Unsafe.coerce e)
   | "ins" -> Ins (Js.Unsafe.coerce e)
@@ -1007,6 +1048,8 @@ module CoerceTo = struct
   let dl e = unsafeCoerce "dl" e
   let fieldset e = unsafeCoerce "fieldset" e
   let form e = unsafeCoerce "form" e
+  let frameset e = unsafeCoerce "frameset" e
+  let frame e = unsafeCoerce "frame" e
   let h1 e = unsafeCoerce "h1" e
   let h2 e = unsafeCoerce "h2" e
   let h3 e = unsafeCoerce "h3" e
@@ -1016,6 +1059,7 @@ module CoerceTo = struct
   let head e = unsafeCoerce "head" e
   let hr e = unsafeCoerce "hr" e
   let html e = unsafeCoerce "html" e
+  let iframe e = unsafeCoerce "iframe" e
   let img e = unsafeCoerce "img" e
   let input e = unsafeCoerce "input" e
   let ins e = unsafeCoerce "ins" e
