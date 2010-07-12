@@ -5,6 +5,7 @@
 \.so$
 # Ocaml object files
 \.cm[ioxa]$
+\.cmxs$
 
 # backup files
 ~$
@@ -17,3 +18,4 @@
 ^examples/.*/.*\.js$
 ^compiler/js_of_ocaml$
 ^lib/doc$
+^lib/docdiv$

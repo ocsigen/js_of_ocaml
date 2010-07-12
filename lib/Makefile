@@ -37,6 +37,12 @@ doc/index.html: $(MLINTFS)
 	mkdir -p doc
 	ocamlfind ocamldoc -d doc -package lwt -html $^
 
+ocsi_doc:
+	mkdir -p docdiv
+	ocamlopt -shared -I /usr/lib/ocaml/ocamldoc -o ../tools/odoc_ocsigen.cmxs ../tools/odoc_ocsigen.ml
+	ocamlfind ocamldoc -package lwt -d docdiv -g ../tools/odoc_ocsigen.cmxs $(MLINTFS) -t "Js_of_ocaml - API Reference"
+
+
 clean:
 	rm -f *.cm[ioa] *.[ao] *.so
 	rm -f syntax/*.cm[io]
