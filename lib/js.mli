@@ -183,9 +183,9 @@ class type js_string = object
   method lastIndexOf_from : js_string t -> int -> int meth
   method localeCompare : js_string t -> float t meth
   method _match : regExp t -> match_result_handle t opt meth
-  method replace : regExp t -> js_string t -> js_string t
+  method replace : regExp t -> js_string t -> js_string t meth
   (* FIX: version of replace taking a function... *)
-  method replace_string : js_string t -> js_string t -> js_string t
+  method replace_string : js_string t -> js_string t -> js_string t meth
   method search : regExp t -> match_result_handle t opt meth
   method slice : int -> int -> js_string t meth
   method slice_end : int -> js_string t meth
