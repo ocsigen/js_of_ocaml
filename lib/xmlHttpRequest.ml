@@ -61,13 +61,32 @@ let encode args = (*TODO: use buffers instead of strings *)
   String.concat "&"
     (List.map (fun (n,v) -> escape_string n ^ "=" ^ escape_string v) args)
 
-let send
-      ?(content_type="application/x-www-form-urlencoded")
-      ?post_args
-      ?(get_args=[])
-      url =
 
-  let method_ = match post_args with | None -> "GET" | Some _ -> "POST" in
+
+
+(* Higher level interface: *)
+
+(** type of the http headers *)
+type http_frame =
+    {
+      code: int;
+      headers: string -> string option;
+      content: string;
+    }
+
+let send
+    ?(headers = [])
+    ?content_type
+    ?post_args
+    ?(get_args=[])
+    url =
+
+  let method_, content_type =
+    match post_args, content_type with
+      | None, ct -> "GET", ct
+      | Some _, None -> "POST", (Some "application/x-www-form-urlencoded")
+      | Some _, ct -> "POST", ct
+  in
   let url = match get_args with
     | [] -> url
     | _::_ as l -> url ^ "?" ^ encode l
@@ -77,11 +96,26 @@ let send
   let req = create () in
 
   req##_open (Js.string method_, Js.string url, Js._true);
-  req##setRequestHeader (Js.string "Content-type", Js.string content_type);
+  (match content_type with
+    | Some content_type ->
+      req##setRequestHeader (Js.string "Content-type", Js.string content_type)
+    | _ -> ());
+  List.iter (fun (n, v) -> req##setRequestHeader (Js.string n, Js.string v))
+    headers;
   req##onreadystatechange <- Js.some
     (fun () ->
-       if req##readyState = DONE then
-         Lwt.wakeup w (req##status, Js.to_string req##responseText));
+      if req##readyState = DONE then
+        Lwt.wakeup w 
+          {code = req##status;
+           content = Js.to_string req##responseText;
+           headers =
+              (fun s ->
+                Opt.case
+                  (req##getResponseHeader (Js.bytestring s))
+                  (fun () -> None)
+                  (fun v -> Some (Js.to_string v))
+              )
+              });
 
   (match post_args with
      | None -> req##send (Js.null)

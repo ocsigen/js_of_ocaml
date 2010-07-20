@@ -46,13 +46,20 @@ end
 
 val create : unit -> xmlHttpRequest t
 
+type http_frame =
+    {
+      code: int;
+      headers: string -> string option;
+      content: string;
+    }
 
 val send :
-     ?content_type:string                (* application/x-www-form-urlencoded *)
+     ?headers:(string * string) list
+  -> ?content_type:string
   -> ?post_args:((string * string) list) (* *)
   -> ?get_args:((string * string) list)  (* [] *)
   -> string
-  -> (int * string) Lwt.t
+  -> http_frame Lwt.t
   (** [send_asynchronous_request url] makes an asynchronous request to the
       specified [url] with specified options. The result is a cancelable thread
-      returning the HTTP code and the message content. *)
+      returning the HTTP frame. *)
