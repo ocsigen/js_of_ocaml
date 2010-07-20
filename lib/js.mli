@@ -442,6 +442,12 @@ external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
   (** Conversion of strings of bytes from Javascript to OCaml.  (The
       Javascript string should only contain UTF-16 code points below
       255.) *)
+val option : 'a option -> 'a opt
+  (** Conversion of option types from OCaml to Javascript. *)
+val to_option : 'a opt -> 'a option
+  (** Conversion of option types from Javascript to OCaml. *)
+
+
 
 (** {2 Convenience coercion functions} *)
 

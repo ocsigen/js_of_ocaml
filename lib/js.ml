@@ -323,3 +323,10 @@ external array : 'a array -> 'a js_array t = "caml_js_from_array"
 external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
 external bytestring : string -> js_string t = "caml_js_from_byte_string"
 external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
+
+let option : 'a option -> 'a opt = function
+  | None -> null
+  | Some a -> some a
+
+let to_option : 'a opt -> 'a option =
+  (fun a -> Opt.case a (fun () -> None) (fun v -> Some v))
