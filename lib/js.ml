@@ -61,6 +61,8 @@ module type OPT = sig
   val iter : 'a t -> ('a -> unit) -> unit
   val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
   val get : 'a t -> (unit -> 'a) -> 'a
+  val option : 'a option -> 'a t
+  val to_option : 'a t -> 'a option
 end
 
 module Opt : OPT with type 'a t = 'a opt = struct
@@ -73,6 +75,8 @@ module Opt : OPT with type 'a t = 'a opt = struct
   let iter x f = if not (Unsafe.equals x null) then f x
   let case x f g = if Unsafe.equals x null then f () else g x
   let get x f = if Unsafe.equals x null then f () else x
+  let option x = match x with None -> empty | Some x -> return x
+  let to_option x = case x (fun () -> None) (fun x -> Some x)
 end
 
 module Optdef : OPT with type 'a t = 'a optdef = struct
@@ -85,6 +89,8 @@ module Optdef : OPT with type 'a t = 'a optdef = struct
   let iter x f = if x != undefined then f x
   let case x f g = if x == undefined then f () else g x
   let get x f = if x == undefined then f () else x
+  let option x = match x with None -> empty | Some x -> return x
+  let to_option x = case x (fun () -> None) (fun x -> Some x)
 end
 
 (****)
@@ -323,10 +329,3 @@ external array : 'a array -> 'a js_array t = "caml_js_from_array"
 external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
 external bytestring : string -> js_string t = "caml_js_from_byte_string"
 external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
-
-let option : 'a option -> 'a opt = function
-  | None -> null
-  | Some a -> some a
-
-let to_option : 'a opt -> 'a option =
-  (fun a -> Opt.case a (fun () -> None) (fun v -> Some v))

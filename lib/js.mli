@@ -63,6 +63,10 @@ module type OPT = sig
   val get : 'a t -> (unit -> 'a) -> 'a
     (** Get the value.  If no value available, an alternative function
         is called to get a default value. *)
+  val option : 'a option -> 'a t
+    (** Convert option type. *)
+  val to_option : 'a t -> 'a option
+    (** Convert to option type. *)
 end
 
 module Opt : OPT with type 'a t = 'a opt
@@ -442,12 +446,6 @@ external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
   (** Conversion of strings of bytes from Javascript to OCaml.  (The
       Javascript string should only contain UTF-16 code points below
       255.) *)
-val option : 'a option -> 'a opt
-  (** Conversion of option types from OCaml to Javascript. *)
-val to_option : 'a opt -> 'a option
-  (** Conversion of option types from Javascript to OCaml. *)
-
-
 
 (** {2 Convenience coercion functions} *)
 
@@ -477,10 +475,8 @@ module Unsafe : sig
         in a same array. *)
   external inject : 'a -> any = "%identity"
     (** Coercion to top type. *)
-
   external coerce : < .. > t -> < ..> t = "%identity"
     (** Unsafe coercion between to Javascript objects. *)
-
   external get : 'a -> 'b -> 'c = "caml_js_get"
     (** Get the value of an object property.  The expression [get o s]
         returns the value of property [s] of object [o]. *)
