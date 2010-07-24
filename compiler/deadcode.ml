@@ -36,9 +36,9 @@ let req_expr pure_funs e =
     Const _  | Block _ | Field _ | Closure _ | Constant _ | Variable _ ->
       false
   | Apply (f, l, n) ->
-      not (VarSet.mem f pure_funs) &&
       begin match n with
-        Some n -> List.length l >= n
+        Some n -> let m = List.length l in
+                  m > n || (m = n && not (VarSet.mem f pure_funs))
       | None   -> true
       end
   | Prim (p, l) ->
