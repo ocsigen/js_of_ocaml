@@ -151,6 +151,21 @@ and keyboardEvent = object
   method keyCode : int readonly_prop
 end
 
+and mousewheelEvent = object (* All browsers but Firefox *)
+  inherit mouseEvent
+  method wheelDelta : int readonly_prop
+  method wheelDeltaX : int optdef readonly_prop
+  method wheelDeltaY : int optdef readonly_prop
+end
+
+and mouseScrollEvent = object (* Firefox *)
+  inherit mouseEvent
+  method detail : int readonly_prop
+  method axis : int optdef readonly_prop
+  method _HORIZONTAL_AXIS : int optdef readonly_prop
+  method _VERTICAL_AXIS : int optdef readonly_prop
+end
+
 and eventTarget = object ('self)
   method onclick : ('self t, mouseEvent t) event_listener writeonly_prop
   method ondblclick : ('self t, mouseEvent t) event_listener writeonly_prop
@@ -213,6 +228,8 @@ module Event = struct
   let keypress = Js.string "keypress"
   let keydown = Js.string "keydown"
   let keyup = Js.string "keyup"
+  let mousewheel = Js.string "mousewheel"
+  let _DOMMouseScroll = Js.string "DOMMouseScroll"
 end
 
 type event_listener_id = unit -> unit
@@ -1186,3 +1203,30 @@ let eventAbsolutePosition (e : #mouseEvent t) =
   Optdef.case (e##pageX) (fun () -> eventAbsolutePosition' e) (fun x ->
   Optdef.case (e##pageY) (fun () -> eventAbsolutePosition' e) (fun y ->
   (x, y)))
+
+let hasMousewheelEvents () =
+  let d = createDiv document in
+  d##setAttribute(Js.string "onmousewheel", Js.string "return;");
+  Js.typeof (Js.Unsafe.get d (Js.string "onmousewheel")) ==
+  Js.string "function"
+
+let addMousewheelEventListener e h capt =
+  if hasMousewheelEvents () then
+    addEventListener e Event.mousewheel
+      (handler
+         (fun (e : mousewheelEvent t) ->
+            let dx = - Optdef.get (e##wheelDeltaX) (fun () -> 0) / 40 in
+            let dy =
+              - Optdef.get (e##wheelDeltaY) (fun () -> e##wheelDelta) / 40 in
+            h (e :> mouseEvent t) ~dx ~dy))
+      capt
+  else
+    addEventListener e Event._DOMMouseScroll
+      (handler
+         (fun (e : mouseScrollEvent t) ->
+            let d = e##detail in
+            if e##axis == e##_HORIZONTAL_AXIS then
+              h (e :> mouseEvent t) ~dx:d ~dy:0
+            else
+              h (e :> mouseEvent t) ~dx:0 ~dy:d))
+      capt

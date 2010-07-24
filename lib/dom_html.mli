@@ -160,6 +160,21 @@ and keyboardEvent = object
   method keyCode : int readonly_prop
 end
 
+and mousewheelEvent = object (* All browsers but Firefox *)
+  inherit mouseEvent
+  method wheelDelta : int readonly_prop
+  method wheelDeltaX : int optdef readonly_prop
+  method wheelDeltaY : int optdef readonly_prop
+end
+
+and mouseScrollEvent = object (* Firefox *)
+  inherit mouseEvent
+  method detail : int readonly_prop
+  method axis : int optdef readonly_prop
+  method _HORIZONTAL_AXIS : int optdef readonly_prop
+  method _VERTICAL_AXIS : int optdef readonly_prop
+end
+
 (** Common properties of event target objects: [onclick],
     [onkeypress], ... *)
 and eventTarget = object ('self)
@@ -879,6 +894,9 @@ module Event : sig
   val keypress : keyboardEvent t typ
   val keydown : keyboardEvent t typ
   val keyup : keyboardEvent t typ
+
+  val mousewheel : mousewheelEvent t typ
+  val _DOMMouseScroll : mouseScrollEvent t typ
 end
 
 type event_listener_id
@@ -892,6 +910,14 @@ val addEventListener :
 
 val removeEventListener : event_listener_id -> unit
   (** Remove the given event listener. *)
+
+val addMousewheelEventListener :
+  (#eventTarget t as 'a) ->
+  (mouseEvent t -> dx:int -> dy:int -> bool t) ->
+  bool t -> event_listener_id
+  (** Add a mousewheel event listener.  The callback is provided the
+      event and the numbers of ticks the mouse wheel moved.  Positive
+      means down / right. *)
 
 (****)
 
