@@ -33,11 +33,26 @@ class type ['node] nodeList = object
   method length : int readonly_prop
 end
 
+type nodeType =
+    OTHER (* Will not happen *)
+  | ELEMENT
+  | ATTRIBUTE
+  | TEXT
+  | CDATA_SECTION
+  | ENTITY_REFERENCE
+  | ENTITY
+  | PROCESSING_INSTRUCTION
+  | COMMENT
+  | DOCUMENT
+  | DOCUMENT_TYPE
+  | DOCUMENT_FRAGMENT
+  | NOTATION
+
 (** Specification of [Node] objects. *)
 class type node = object
   method nodeName : js_string t readonly_prop
   method nodeValue : js_string t opt readonly_prop
-  method nodeType : int readonly_prop
+  method nodeType : nodeType readonly_prop
   method parentNode : node t opt prop
   method childNodes : node nodeList t prop
   method firstChild : node t opt prop

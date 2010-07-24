@@ -1223,7 +1223,7 @@ let eventTarget (e : #event t) =
     Optdef.get (e##srcElement) (fun () -> assert false))
   in
   (* Workaround for Safari bug *)
-  if target##nodeType = 3 then
+  if target##nodeType == Dom.TEXT then
     Js.Unsafe.coerce (Opt.get (target##parentNode) (fun () -> assert false))
   else
     target
