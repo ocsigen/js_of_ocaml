@@ -776,7 +776,11 @@ let rec translate_expr ctx queue e =
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
+          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), J.EStr ("number", `Bytes)),
+           px, queue)
+(*
           (boolnot (J.EBin(J.InstanceOf, cx, J.EVar ("Array"))), px, queue)
+*)
       | Ult, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
@@ -1135,10 +1139,18 @@ and compile_conditional st queue pc last handler backs frontier interm =
         else
           (* The variable x is accessed several times,
              so we can directly refer to it *)
+(*
           ([Js_simpl.if_statement
               (J.EBin(J.InstanceOf, var x, J.EVar ("Array")))
               (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
               (Some (build_switch (var x) a1))],
+           queue)
+*)
+          ([Js_simpl.if_statement
+              (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
+                      J.EStr ("number", `Bytes)))
+              (build_switch (var x) a1)
+              (Some (build_switch (J.EAccess(var x, J.ENum 0.)) a2))],
            queue)
       in
       flush_all queue st

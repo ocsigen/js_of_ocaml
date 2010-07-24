@@ -1341,7 +1341,7 @@ and compile code limit pc state instrs =
         (Let (x, Prim (Ult, [Pv z; Pv y])) :: instrs)
   | GETPUBMET ->
 (*FIX: should cache*)
-      let n = getu code (pc + 1) in
+      let n = gets code (pc + 1) in
       let obj = State.accu state in
       let state = State.push state in
       let (tag, state) = State.fresh_var state in
