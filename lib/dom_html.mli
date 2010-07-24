@@ -142,9 +142,9 @@ end
 and mouseEvent = object
   inherit event
   method relatedTarget : element t opt optdef readonly_prop
-  method clientX : int readonly_prop
+  method clientX : int readonly_prop (* Relative to viewport *)
   method clientY : int readonly_prop
-  method screenX : int readonly_prop
+  method screenX : int readonly_prop (* Relative to the edge of the screen *)
   method screenY : int readonly_prop
 
   (* Legacy methods *)
@@ -216,7 +216,25 @@ and element = object
   method scrollLeft : int prop
   method scrollTop : int prop
 
+  method getClientRects : clientRectList t meth
+  method getBoundingClientRect : clientRect t meth
+
   inherit eventTarget
+end
+
+(** Rectangular box (used for element bounding boxes) *)
+and clientRect = object
+  method top : float t readonly_prop
+  method right : float t readonly_prop
+  method bottom : float t readonly_prop
+  method left : float t readonly_prop
+  method width : float t optdef readonly_prop
+  method height : float t optdef readonly_prop
+end
+
+and clientRectList = object
+  method length : int readonly_prop
+  method item : int -> clientRect t optdef meth
 end
 
 (** Collection of HTML elements *)
@@ -878,8 +896,6 @@ val eventTarget : #event t -> element t
   (** Returns which HTML element is the target of this event. *)
 val eventRelatedTarget : #mouseEvent t -> element t opt
   (** Returns this event related target. *)
-val eventAbsolutePosition : #mouseEvent t -> int * int
-  (** Returns the absolute position of the mouse pointer. *)
 
 (** Event types: [mousedown], [keypress], ... *)
 module Event : sig
@@ -918,6 +934,17 @@ val addMousewheelEventListener :
   (** Add a mousewheel event listener.  The callback is provided the
       event and the numbers of ticks the mouse wheel moved.  Positive
       means down / right. *)
+
+(****)
+
+(** {2 Position helper functions} *)
+
+val eventAbsolutePosition : #mouseEvent t -> int * int
+  (** Returns the absolute position of the mouse pointer. *)
+val elementClientPosition : #element t -> int * int
+  (** Position of an element relative to the viewport *)
+val getDocumentScroll : unit -> int * int
+  (** Viewport top/left position *)
 
 (****)
 

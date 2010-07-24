@@ -202,7 +202,24 @@ and element = object
   method scrollLeft : int prop
   method scrollTop : int prop
 
+  method getClientRects : clientRectList t meth
+  method getBoundingClientRect : clientRect t meth
+
   inherit eventTarget
+end
+
+and clientRect = object
+  method top : float t readonly_prop
+  method right : float t readonly_prop
+  method bottom : float t readonly_prop
+  method left : float t readonly_prop
+  method width : float t optdef readonly_prop
+  method height : float t optdef readonly_prop
+end
+
+and clientRectList = object
+  method length : int readonly_prop
+  method item : int -> clientRect t optdef meth
 end
 
 let no_handler : ('a, 'b) event_listener = Js.null
@@ -1203,6 +1220,18 @@ let eventAbsolutePosition (e : #mouseEvent t) =
   Optdef.case (e##pageX) (fun () -> eventAbsolutePosition' e) (fun x ->
   Optdef.case (e##pageY) (fun () -> eventAbsolutePosition' e) (fun y ->
   (x, y)))
+
+let elementClientPosition (e : #element t) =
+  let r = e##getBoundingClientRect () in
+  let body = document##body in
+  let html = document##documentElement in
+  (truncate (Js.to_float r##left) - body##clientLeft - html##clientLeft,
+   truncate (Js.to_float r##top) - body##clientTop - html##clientTop)
+
+let getDocumentScroll () =
+  let body = document##body in
+  let html = document##documentElement in
+  (body##scrollLeft + html##scrollLeft, body##scrollTop + html##scrollTop)
 
 let hasMousewheelEvents () =
   let d = createDiv document in
