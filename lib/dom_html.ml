@@ -1209,6 +1209,7 @@ class type window = object
   method onbeforeunload : (window t, event t) event_listener prop
   method onblur : (window t, event t) event_listener prop
   method onfocus : (window t, event t) event_listener prop
+  method onresize : (window t, event t) event_listener prop
 end
 
 let window : window t = Js.Unsafe.variable "window"
