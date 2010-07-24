@@ -884,7 +884,8 @@ val window : window t
 val no_handler : ('a, 'b) event_listener
   (** Void event handler (Javascript [null] value). *)
 val handler : ((#event t as 'b) -> bool t) -> ('a, 'b) event_listener
-  (** Create an event handler that invokes the provided function. *)
+  (** Create an event handler that invokes the provided function.
+      If the handler returns false, the default action is prevented. *)
 val full_handler : ('a -> (#event t as 'b) -> bool t) -> ('a, 'b) event_listener
   (** Create an event handler that invokes the provided function.
       The event target (implicit parameter [this]) is also passed as
