@@ -599,7 +599,11 @@ let _ =
   register_bin_prim "caml_js_get" `Mutable
     (fun cx cy -> J.EAccess (cx, cy));
   register_bin_prim "caml_js_equals" `Mutable
-    (fun cx cy -> bool (J.EBin (J.EqEq, cx, cy)))
+    (fun cx cy -> bool (J.EBin (J.EqEq, cx, cy)));
+  register_bin_prim "caml_js_instanceof" `Const
+    (fun cx cy -> bool (J.EBin(J.InstanceOf, cx, cy)));
+  register_un_prim "caml_js_typeof" `Const
+    (fun cx -> J.EUn(J.Typeof, cx))
 
 (****)
 

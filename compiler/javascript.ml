@@ -43,7 +43,7 @@ and binop =
   | Plus | Minus
   | Mul | Div | Mod
 
-and unop = Not | Neg | Pl
+and unop = Not | Neg | Pl | Typeof
 (*XXX*)
 
 and arguments = expression list

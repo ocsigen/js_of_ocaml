@@ -462,6 +462,14 @@ val coerce_opt : 'a Opt.t -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
       {[Js.coerce_opt (Dom_html.getElementById id)
       Dom_html.CoerceTo.div (fun _ -> assert false)]} *)
 
+(** {2 Type checking operators.} *)
+
+external typeof : < .. > t -> js_string t = "caml_js_typeof"
+  (** Returns the type of a Javascript object. *)
+
+external instanceof : < .. > t -> _ constr -> bool t = "caml_js_instanceof"
+  (** Tests whether a Javascript object is an instance of a given class. *)
+
 (** {2 Unsafe operations.} *)
 
 (** Unsafe Javascript operations *)
@@ -500,8 +508,5 @@ module Unsafe : sig
         creates a Javascript object with constructor [c] using the
         arguments given by the array [a]. *)
 
-  external instanceof : < .. > t -> _ constr -> bool t = "caml_js_instanceof"
-    (** Tests whether a Javascript object is an instance of a given class. *)
-
-(*FIX also, object/array literals *)
+  (*FIX also, object/array literals *)
 end

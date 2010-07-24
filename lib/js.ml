@@ -36,8 +36,6 @@ module Unsafe = struct
   external new_obj : 'a -> any array -> 'b = "caml_js_new"
 
   external equals : 'a -> 'b -> bool = "caml_js_equals"
-
-  external instanceof : 'a -> 'b -> 'c = "caml_js_instanceof"
 end
 
 (****)
@@ -329,3 +327,6 @@ external array : 'a array -> 'a js_array t = "caml_js_from_array"
 external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
 external bytestring : string -> js_string t = "caml_js_from_byte_string"
 external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
+
+external typeof : < .. > t -> js_string t = "caml_js_typeof"
+external instanceof : 'a -> 'b -> 'c = "caml_js_instanceof"

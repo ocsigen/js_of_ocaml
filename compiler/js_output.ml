@@ -121,6 +121,7 @@ let unop_str op =
     Not -> "!"
   | Neg -> "-"
   | Pl  -> "+"
+  | Typeof -> assert false
 
 (*XXX May need to be updated... *)
 let rec ends_with_if_without_else st =
@@ -217,6 +218,10 @@ let rec expression l f e =
         Format.fprintf f "(%.12g)" v
       else
         Format.fprintf f "%.12g" v
+  | EUn (Typeof, e) ->
+      if l > 13 then Format.fprintf f "@[<1>(";
+      Format.fprintf f "@[typeof@ %a@]" (expression 13) e;
+      if l > 13 then Format.fprintf f ")@]"
   | EUn (op, e) ->
       if l > 13 then Format.fprintf f "@[<1>(";
       Format.fprintf f "%s%a" (unop_str op) (expression 13) e;
@@ -376,10 +381,16 @@ and statement f s =
       Format.fprintf f "break %s;" s
   | Return_statement e ->
       begin match e with
-        None   -> Format.fprintf f "return;"
-      | Some e -> Format.fprintf f "@[<1>return @[%a;@]@]" (expression 0) e
-                  (* There must be a space between the return and its
-                     argument. A line return would not work *)
+        None   ->
+          Format.fprintf f "return;"
+      | Some (EFun (i, l, b)) ->
+          Format.fprintf f
+            "@[<1>return function%a@,@[<1>(%a)@]@,@[<1>{%a};@]@]"
+            opt_identifier i formal_parameter_list l function_body b
+      | Some e ->
+          Format.fprintf f "@[<1>return @[%a;@]@]" (expression 0) e
+          (* There MUST be a space between the return and its
+             argument. A line return will not work *)
       end
   | Labelled_statement (i, s) ->
       Format.fprintf f "%s:@,%a" i statement s
