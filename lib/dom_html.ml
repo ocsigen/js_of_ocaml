@@ -740,8 +740,12 @@ and canvasRenderingContext2D = object
   method font : js_string t prop
   method textAlign : js_string t prop
   method textBaseline : js_string t prop
-  method fillText : js_string t -> float -> float -> float opt -> unit meth
-  method strokeText : js_string t -> float -> float -> float opt -> unit meth
+  method fillText : js_string t -> float -> float -> unit meth
+  method fillText_withWidth :
+    js_string t -> float -> float -> float -> unit meth
+  method strokeText : js_string t -> float -> float -> unit meth
+  method strokeText_withWidth :
+    js_string t -> float -> float -> float -> unit meth
   method measureText : js_string t -> textMetrics t meth
 
   method drawImage :
