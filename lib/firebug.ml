@@ -26,6 +26,9 @@ class type console = object
   method log_3 : _ -> _ -> _ -> unit meth
   method log_4 : _ -> _ -> _ -> _ -> unit meth
   method log_5 : _ -> _ -> _ -> _ -> _ -> unit meth
+  method log_6 : _ -> _ -> _ -> _ -> _ -> _ -> unit meth
+  method log_7 : _ -> _ -> _ -> _ -> _ -> _ -> _ -> unit meth
+  method log_8 : _ -> _ -> _ -> _ -> _ -> _ -> _ -> _ -> unit meth
   method debug : _ -> unit meth
   method debug_2 : _ -> _ -> unit meth
   method debug_3 : _ -> _ -> _ -> unit meth
