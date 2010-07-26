@@ -36,6 +36,8 @@ module Unsafe = struct
   external new_obj : 'a -> any array -> 'b = "caml_js_new"
 
   external equals : 'a -> 'b -> bool = "caml_js_equals"
+
+  external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
 end
 
 (****)

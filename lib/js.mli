@@ -508,5 +508,9 @@ module Unsafe : sig
         creates a Javascript object with constructor [c] using the
         arguments given by the array [a]. *)
 
-  (*FIX also, object/array literals *)
+  external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
+    (** Asserts that an expression is pure, and can therefore be
+        optimized away by the compiler if unused. *)
+
+(*FIX also, object/array literals *)
 end

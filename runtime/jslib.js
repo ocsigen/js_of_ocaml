@@ -19,6 +19,9 @@
 
 ///////////// Jslib
 
+//Provides: caml_js_pure_expr const
+function caml_js_pure_expr (f) { return f(); }
+
 //Provides: caml_js_set
 function caml_js_set(o,f,v) { o[f]=v; }
 //Provides: caml_js_get mutable
