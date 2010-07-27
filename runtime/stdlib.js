@@ -512,7 +512,10 @@ function caml_hash_univ_param (count, limit, obj) {
 var caml_initial_time = Date.now() * 0.001;
 function caml_sys_time () { return Date.now() * 0.001 - caml_initial_time; }
 //Provides: caml_sys_get_config const
-function caml_sys_get_config (e) { return [0, "Unix", 32]; }
+//Requires: MlString
+function caml_sys_get_config (e) {
+  return [0, new MlWrappedString("Unix"), 32];
+}
 //Provides: caml_sys_random_seed mutable
 function caml_sys_random_seed () {
   return Date.now()^0xffffffff*Math.random();
@@ -544,7 +547,10 @@ function caml_ml_open_descriptor_out () { return 0; }
 //Provides: caml_ml_open_descriptor_in const
 function caml_ml_open_descriptor_in () { return 0; }
 //Provides: caml_sys_get_argv const
-function caml_sys_get_argv () { return ["a.out"]; }
+//Requires: MlString
+function caml_sys_get_argv () {
+  var p = new MlWrappedString("a.out"); return [0, p, [0, p]];
+}
 //Provides: caml_ml_output const
 function caml_ml_output () { return 0; }
 //Provides: caml_final_register const
