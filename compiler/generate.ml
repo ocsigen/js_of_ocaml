@@ -274,9 +274,12 @@ let dominance_frontier st pc =
 
 (* Block of code that never continues (either returns, throws an exception
    or loops back) *)
-let never_continue st (pc, _) frontier interm =
+let never_continue st (pc, _) frontier interm succs =
+  (* If not found in successors, this is a backward edge *)
+  let d = try List.assoc pc succs with Not_found -> AddrSet.empty in
 (*
-let d =dominance_frontier st pc in
+Format.eprintf "pc: %d@." pc;
+List.iter (fun (pc, _) ->Format.eprintf "pc: %d@." pc) succs;
 Format.eprintf "never_continue@.";
 Format.eprintf "  %d /" pc;
 AddrSet.iter (fun i -> Format.eprintf " %d" i) frontier;
@@ -288,7 +291,7 @@ let res =
 *)
   not (AddrSet.mem pc frontier || AddrMap.mem pc interm)
     &&
-  AddrSet.is_empty (dominance_frontier st pc)
+  AddrSet.is_empty d
 (*
 in
 Format.eprintf " ==> %b@." res;
@@ -868,9 +871,10 @@ Format.eprintf ")@.";
   let backs = Hashtbl.find st.backs pc in
   (* Remove limit *)
   if pc < 0 then List.iter (fun pc -> unprotect_preds st pc) succs;
+  let succs = List.map (fun pc -> (pc, dominance_frontier st pc)) succs in
   let grey =
     List.fold_right
-      (fun pc grey -> AddrSet.union (dominance_frontier st pc) grey)
+      (fun (_, frontier) grey -> AddrSet.union frontier grey)
       succs AddrSet.empty
   in
   let new_frontier = resolve_nodes interm grey in
@@ -978,7 +982,7 @@ Format.eprintf "@.";
         let cond =
           compile_conditional
             st queue pc block.branch block.handler
-            backs new_frontier new_interm in
+            backs new_frontier new_interm succs in
 (*
 let res =
 *)
@@ -1022,16 +1026,16 @@ res
     body
 end
 
-and compile_if st e cont1 cont2 handler backs frontier interm =
+and compile_if st e cont1 cont2 handler backs frontier interm succs =
   let iftrue = compile_branch st [] cont1 handler backs frontier interm in
   let iffalse = compile_branch st [] cont2 handler backs frontier interm in
 (*
 Format.eprintf "====@.";
 *)
-  if never_continue st cont1 frontier interm then
+  if never_continue st cont1 frontier interm succs then
     Js_simpl.if_statement e (Js_simpl.block iftrue) None ::
     iffalse
-  else if never_continue st cont2 frontier interm then
+  else if never_continue st cont2 frontier interm succs then
     Js_simpl.if_statement
       (Js_simpl.enot e) (Js_simpl.block iffalse) None ::
     iftrue
@@ -1039,9 +1043,9 @@ Format.eprintf "====@.";
     [Js_simpl.if_statement e (Js_simpl.block iftrue)
        (Some (Js_simpl.block iffalse))]
 
-and compile_conditional st queue pc last handler backs frontier interm =
-  let succs = Hashtbl.find st.succs pc in
-  List.iter (fun pc -> if AddrMap.mem pc interm then decr_preds st pc) succs;
+and compile_conditional st queue pc last handler backs frontier interm succs =
+  List.iter
+    (fun (pc, _) -> if AddrMap.mem pc interm then decr_preds st pc) succs;
   if debug () then begin
     match last with
       Branch _ | Poptrap _ | Pushtrap _ -> ()
@@ -1077,7 +1081,7 @@ and compile_conditional st queue pc last handler backs frontier interm =
       (* Some changes here may require corresponding changes
          in function [fold_children] above. *)
       flush_all queue
-        (compile_if st e cont1 cont2 handler backs frontier interm)
+        (compile_if st e cont1 cont2 handler backs frontier interm succs)
 
   | Switch (x, a1, a2) ->
       (* Some changes here may require corresponding changes
@@ -1099,7 +1103,7 @@ and compile_conditional st queue pc last handler backs frontier interm =
               (compile_branch st [] cont handler backs frontier interm)
         | [cont1, [(n, _)]; cont2, _] | [cont2, _; cont1, [(n, _)]] ->
             Js_simpl.block (compile_if st (J.EBin (J.EqEqEq, int n, e))
-                              cont1 cont2 handler backs frontier interm)
+                              cont1 cont2 handler backs frontier interm succs)
         | (cont, l') :: rem ->
             let l =
               List.flatten
@@ -1114,7 +1118,9 @@ and compile_conditional st queue pc last handler backs frontier interm =
                               Js_simpl.statement_list
                                 (compile_branch
                                    st [] cont handler backs frontier interm @
-                                 if never_continue st cont frontier interm then
+                                 if
+                                   never_continue st cont frontier interm succs
+                                 then
                                    []
                                  else
                                    [J.Break_statement None]))
