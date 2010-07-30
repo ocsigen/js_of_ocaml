@@ -142,8 +142,8 @@ module Current :
         state of the current Url. *)
 
     val set : url -> unit
-    (** [set u] replaces the current Url for [u]. {b /!\\} Causes the document
-        to change {b /!\\}.*)
+    (** [set u] replaces the current Url for [u]. {b WARNING:} Causes the document
+        to change. *)
 
     val as_string : string
     (** [as_string] is the original string representation of the current Url. It

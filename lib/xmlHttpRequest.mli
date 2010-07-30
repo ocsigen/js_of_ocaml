@@ -46,12 +46,18 @@ end
 
 val create : unit -> xmlHttpRequest t
 
+(** The next part of this module allow one to use Ocaml with no need for
+     Javascript documentation. *)
+
 type http_frame =
     {
       code: int;
       headers: string -> string option;
       content: string;
     }
+(** The type for XHR results. The code field is the http status code of the
+    answer. The headers field is a function associating values to any header
+    name. *)
 
 val send :
      ?headers:(string * string) list
@@ -60,6 +66,8 @@ val send :
   -> ?get_args:((string * string) list)  (* [] *)
   -> string
   -> http_frame Lwt.t
-  (** [send_asynchronous_request url] makes an asynchronous request to the
-      specified [url] with specified options. The result is a cancelable thread
-      returning the HTTP frame. *)
+  (** [send ?headers ?content_type ?post_args ?get_args url] makes an
+      asynchronous request to the specified [url] with specified options. The
+      result is a cancelable thread returning an HTTP frame. If [post_args] is
+      [None], a GET request is used. If [post_args] is [Some _] (even [Some []])
+      then a POST request is made. *)
