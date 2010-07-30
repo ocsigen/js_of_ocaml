@@ -1,18 +1,21 @@
-./firebug.cmi: js.cmi dom.cmi 
-./firebug.cmo: js.cmi dom.cmi ./firebug.cmi 
-./firebug.cmx: js.cmx dom.cmx ./firebug.cmi 
-./dom_html.cmo: js.cmi dom.cmi ./dom_html.cmi 
-./dom_html.cmx: js.cmx dom.cmx ./dom_html.cmi 
-./js.cmi: 
-./dom.cmo: js.cmi ./dom.cmi 
-./dom.cmx: js.cmx ./dom.cmi 
-./xmlHttpRequest.cmo: js.cmi dom.cmi ./xmlHttpRequest.cmi 
-./xmlHttpRequest.cmx: js.cmx dom.cmx ./xmlHttpRequest.cmi 
-./js.cmo: ./js.cmi 
-./js.cmx: ./js.cmi 
-./dom_html.cmi: js.cmi dom.cmi 
+./xmlHttpRequest.cmi: js.cmi dom_html.cmi dom.cmi 
 ./lwt_js.cmo: js.cmi dom_html.cmi ./lwt_js.cmi 
 ./lwt_js.cmx: js.cmx dom_html.cmx ./lwt_js.cmi 
-./xmlHttpRequest.cmi: js.cmi dom.cmi 
-./dom.cmi: js.cmi 
+./url.cmi: 
+./url.cmo: js.cmi dom_html.cmi ./url.cmi 
+./url.cmx: js.cmx dom_html.cmx ./url.cmi 
+./xmlHttpRequest.cmo: js.cmi dom_html.cmi dom.cmi ./xmlHttpRequest.cmi 
+./xmlHttpRequest.cmx: js.cmx dom_html.cmx dom.cmx ./xmlHttpRequest.cmi 
+./firebug.cmo: js.cmi dom.cmi ./firebug.cmi 
+./firebug.cmx: js.cmx dom.cmx ./firebug.cmi 
+./dom.cmo: js.cmi ./dom.cmi 
+./dom.cmx: js.cmx ./dom.cmi 
+./js.cmi: 
+./dom_html.cmi: js.cmi dom.cmi 
 ./lwt_js.cmi: 
+./js.cmo: ./js.cmi 
+./js.cmx: ./js.cmi 
+./dom.cmi: js.cmi 
+./firebug.cmi: js.cmi dom.cmi 
+./dom_html.cmo: js.cmi dom.cmi ./dom_html.cmi 
+./dom_html.cmx: js.cmx dom.cmx ./dom_html.cmi 
