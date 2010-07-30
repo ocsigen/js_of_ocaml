@@ -246,7 +246,7 @@ let url_of_js_string s =
   with Local_exn -> None
 
 let url_of_string s = url_of_js_string (Js.bytestring s)
-let string_of_url ?(encode=true) u =
+let string_of_url u =
   (string_of_protocol u.protocol)
   ^ "://"
   ^ (match u.host with
@@ -260,7 +260,7 @@ let string_of_url ?(encode=true) u =
        | None, _ -> "" (*TODO: change url type *)
        | Some n, _ -> ":" ^ string_of_int n
     )
-  ^ String.concat "/" (if encode then List.map urlencode u.path else u.path)
+  ^ String.concat "/" (List.map urlencode u.path)
   ^ (match u.arguments with
        | [] -> ""
        | l -> "?" ^ encode_arguments l
@@ -279,13 +279,7 @@ struct
 
   let port = port_of_string protocol (Js.to_bytestring l##port)
 
-  let path_string =
-    let rec aux s =
-      if String.length s > 0 && s.[0] = '/'
-      then aux (String.sub s 1 (String.length s - 1))
-      else s
-    in
-    aux (Js.to_bytestring (Js.unescape l##pathname))
+  let path_string = urldecode_js_string_string l##pathname
 
   let path = path_of_path_string path_string
 

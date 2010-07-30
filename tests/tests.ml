@@ -28,6 +28,10 @@ let log_start s =
 let log_stop s =
   Firebug.console##log_2 (Js.string "STOP: ", Js.string s)
 
+let raw_log x =
+  Firebug.console##log_2 (Js.string "\t\t", x)
+let log s = raw_log (Js.string s)
+
 
 (* TEST Url *)
 
@@ -38,14 +42,22 @@ let url_string_url u = Url.url_of_string (Url.string_of_url u)
 let run_url_tests () =
   match url_string_url (Url.Current.get ()) with
     | None ->
-        log_failure "can't parse once"
+        log_failure "can't parse once";
+        log Url.Current.as_string
     | Some u -> match url_string_url u with
         | Some v ->
           if u = v
-          then log_success "fixpoint acheived"
-          else log_failure "no fixpoint"
+          then (log_success "fixpoint acheived";
+                log (Url.string_of_url u)
+               )
+          else (log_failure "no fixpoint";
+                log (Url.string_of_url u);
+                log (Url.string_of_url v)
+               )
         | None ->
-          log_failure "can't parse twice"
+          log_failure "can't parse twice";
+          log (Url.string_of_url u)
+          
 
 let _ = run_url_tests ()
 
