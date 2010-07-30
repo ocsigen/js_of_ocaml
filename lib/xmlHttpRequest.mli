@@ -59,15 +59,25 @@ type http_frame =
     answer. The headers field is a function associating values to any header
     name. *)
 
-val send :
+val send_string :
      ?headers:(string * string) list
   -> ?content_type:string
   -> ?post_args:((string * string) list) (* *)
   -> ?get_args:((string * string) list)  (* [] *)
   -> string
   -> http_frame Lwt.t
-  (** [send ?headers ?content_type ?post_args ?get_args url] makes an
+  (** [send_string ?headers ?content_type ?post_args ?get_args url] makes an
       asynchronous request to the specified [url] with specified options. The
       result is a cancelable thread returning an HTTP frame. If [post_args] is
       [None], a GET request is used. If [post_args] is [Some _] (even [Some []])
       then a POST request is made. *)
+
+val send :
+     ?headers:(string * string) list
+  -> ?content_type:string
+  -> ?post_args:((string * string) list) (* *)
+  -> ?get_args:((string * string) list)  (* [] *)
+  -> Url.url
+  -> http_frame Lwt.t
+  (** [send] is the same as {!send_string} except that the Url argument has type
+      {!Url.url}. *)

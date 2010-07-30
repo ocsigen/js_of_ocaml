@@ -74,7 +74,7 @@ type http_frame =
       content: string;
     }
 
-let send
+let send_string
     ?(headers = [])
     ?content_type
     ?post_args
@@ -126,4 +126,13 @@ let send
 
   Lwt.on_cancel res (fun () -> req##abort ()) ;
   res
+
+let send
+    ?(headers = [])
+    ?content_type
+    ?post_args
+    ?(get_args=[])
+    url =
+  send_string ~headers ?content_type ?post_args ~get_args
+    (Url.string_of_url url)
 
