@@ -1,3 +1,4 @@
+./events.cmi: js.cmi dom_html.cmi 
 ./xmlHttpRequest.cmi: url.cmi js.cmi dom_html.cmi dom.cmi 
 ./lwt_js.cmo: js.cmi dom_html.cmi ./lwt_js.cmi 
 ./lwt_js.cmx: js.cmx dom_html.cmx ./lwt_js.cmi 
@@ -10,6 +11,8 @@
     ./xmlHttpRequest.cmi 
 ./firebug.cmo: js.cmi dom.cmi ./firebug.cmi 
 ./firebug.cmx: js.cmx dom.cmx ./firebug.cmi 
+./events.cmo: js.cmi dom_html.cmi ./events.cmi 
+./events.cmx: js.cmx dom_html.cmx ./events.cmi 
 ./dom.cmo: js.cmi ./dom.cmi 
 ./dom.cmx: js.cmx ./dom.cmi 
 ./js.cmi: 

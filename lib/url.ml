@@ -18,8 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* This module aims to provide basic and complex  operation over both the
-   current locaton and any string representing a URL. *)
+(* Url tampering. *)
 
 (*TODO: move (*TEST*)s to a separate file *)
 

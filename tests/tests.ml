@@ -39,7 +39,7 @@ let log s = raw_log (Js.string s)
 let _ = log_start "Url test suite"
 
 let url_string_url u = Url.url_of_string (Url.string_of_url u)
-let run_url_tests () =
+let _ =
   match url_string_url (Url.Current.get ()) with
     | None ->
         log_failure "can't parse once";
@@ -57,9 +57,7 @@ let run_url_tests () =
         | None ->
           log_failure "can't parse twice";
           log (Url.string_of_url u)
-          
 
-let _ = run_url_tests ()
 
 let _ = log_stop "Url test suite"
 
