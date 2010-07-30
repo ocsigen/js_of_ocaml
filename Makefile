@@ -1,5 +1,5 @@
 
-all: check_lwt compiler library runtime examples
+all: check_lwt compiler library runtime examples tests
 
 include Makefile.conf
 
@@ -13,6 +13,8 @@ runtime:
 	make -C runtime
 examples: compiler library
 	make -C examples
+tests: compiler library
+	make -C tests
 
 LWTERROR="Js_of_ocaml requires Lwt version 2.1 at least.  Please upgrade."
 check_lwt:
@@ -37,3 +39,4 @@ clean:
 	make -C lib clean
 	make -C runtime clean
 	make -C examples clean
+	make -C tests clean
