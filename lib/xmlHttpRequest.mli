@@ -24,8 +24,8 @@ open Js
 
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
-class type xmlHttpRequest = object
-  method onreadystatechange : (unit -> unit) opt prop
+class type xmlHttpRequest = object ('self)
+  method onreadystatechange : ('self Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
   method readyState : readyState readonly_prop
   method _open :
     js_string t -> js_string t -> bool t -> unit meth

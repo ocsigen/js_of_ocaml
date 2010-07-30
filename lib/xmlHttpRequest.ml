@@ -22,8 +22,8 @@ open Js
 
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
-class type xmlHttpRequest = object
-  method onreadystatechange : (unit -> unit) opt prop
+class type xmlHttpRequest = object ('self)
+  method onreadystatechange : ('self Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
   method readyState : readyState readonly_prop
   method _open :
     js_string t -> js_string t -> bool t -> unit meth
@@ -102,10 +102,10 @@ let send
     | _ -> ());
   List.iter (fun (n, v) -> req##setRequestHeader (Js.string n, Js.string v))
     headers;
-  req##onreadystatechange <- Js.some
-    (fun () ->
+  req##onreadystatechange <- Dom_html.handler
+    (fun _ ->
       if req##readyState = DONE then
-        Lwt.wakeup w 
+        Lwt.wakeup w
           {code = req##status;
            content = Js.to_string req##responseText;
            headers =
@@ -115,7 +115,9 @@ let send
                   (fun () -> None)
                   (fun v -> Some (Js.to_string v))
               )
-              });
+              }
+      else ();
+      Js._false);
 
   (match post_args with
      | None -> req##send (Js.null)
