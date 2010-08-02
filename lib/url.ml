@@ -20,8 +20,6 @@
 
 (* Url tampering. *)
 
-(*TODO: move (*TEST*)s to a separate file *)
-
 let l = Dom_html.window##location
 
 let split c s =
@@ -30,18 +28,30 @@ let split c s =
 exception Local_exn
 let interrupt () = raise Local_exn
 
+
 (* url (AKA percent) encoding/decoding *)
+
+let plus_re = jsnew Js.regExp_withFlags (Js.string "\\+", Js.string "g")
+let escape_plus_js s = s##replace (plus_re, Js.string "%2B")
+
 let urldecode_js_string_string s =
   Js.to_bytestring (Js.unescape s)
 let urldecode s =
   Js.to_bytestring (Js.unescape (Js.bytestring s))
 
-let urlencode_string_js_string s =
-  Js.escape (Js.bytestring s)
+let urlencode_string_js_string ?(with_plus=true) s =
+  let pre = Js.escape (Js.bytestring s) in
+  if with_plus
+  then escape_plus_js pre
+  else pre
 let urlencode_js_string_string s =
   Js.to_bytestring (Js.escape s)
-let urlencode s =
-  Js.to_bytestring (Js.escape (Js.bytestring s))
+let urlencode ?(with_plus=true) s =
+  Js.to_bytestring (
+    if with_plus
+    then escape_plus_js (Js.escape (Js.bytestring s))
+    else Js.escape (Js.bytestring s)
+  )
 
 
 (* protocol *)

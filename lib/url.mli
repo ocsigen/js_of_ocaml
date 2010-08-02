@@ -30,9 +30,11 @@ val urldecode : string -> string
 (** [urldecode s] swaps percent encoding characters for their usual
     representation. *)
 
-val urlencode : string -> string
-(** [urlencode s] replace characters for their percent encoding representation
-  *)
+val urlencode : ?with_plus:bool -> string -> string
+(** [urlencode ?with_plus s] replace characters for their percent encoding
+    representation. Note that the '/' (slash) character is escaped as well. If
+    [with_plus] is [true] (default) then ['+']'s are escaped as ["%2B"]. If not,
+    ['+']'s are left as is. *)
 
 type protocol = Http | Https | File | Exotic of string
 (** The type for protocols. [File] is for local files and [Exotic s] is for

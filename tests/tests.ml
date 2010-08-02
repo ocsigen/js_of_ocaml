@@ -57,6 +57,14 @@ let _ =
         | None ->
           log_failure "can't parse twice";
           log (Url.string_of_url u)
+let _ =
+  let t1 = Url.urlencode "/toto+ blah&tutu" in
+  let t2 = Url.urlencode ~with_plus:false "/toto+ blah&tutu" in
+  if t1 = "/toto%2B%20blah%26tutu" && t2 = "/toto+%20blah%26tutu"
+  then (log_success "escaping works";
+        log t2)
+  else (log_failure "escaping error";
+        log t1; log t2)
 
 
 let _ = log_stop "Url test suite"
