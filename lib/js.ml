@@ -151,6 +151,8 @@ class type js_string = object
   method slice_end : int -> js_string t meth
   method split : js_string t -> string_array t meth
   method split_limited : js_string t -> int -> string_array t meth
+  method split_regExp : regExp t -> string_array t meth
+  method split_regExpLimited : regExp t -> int -> string_array t meth
   method substring : int -> int -> js_string t meth
   method substring_to_end : int -> js_string t meth
   method toLowerCase : js_string t meth
