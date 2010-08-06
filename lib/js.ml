@@ -213,8 +213,8 @@ let array_set : 'a #js_array t -> int -> 'a -> unit = Unsafe.set
 
 class type match_result = object
   inherit [js_string t] js_array
-  method index : int
-  method input : js_string t
+  method index : int readonly_prop
+  method input : js_string t readonly_prop
 end
 
 let str_array : string_array t -> js_string t js_array t = Unsafe.coerce
