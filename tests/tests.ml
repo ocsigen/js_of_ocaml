@@ -69,3 +69,51 @@ let _ =
 
 let _ = log_stop "Url test suite"
 
+
+(* Tests Regexp *)
+
+
+let _ = log_start "Regexp test suite"
+
+let _ =
+  let re1 = Regexp.regexp "ab?" in
+  let re2 = Regexp.regexp "\\." in
+  let re3 = Regexp.regexp_string "(.)\\(.)" in
+  let s1 = "totobtutua" in
+  let s2 = "rr.ee.ab.a.b.bb.a.ee." in
+  begin match Regexp.string_match re1 s1 0 with
+    | None -> log_failure "Can't match 1 1"
+    | Some r ->
+        let x = Regexp.matched_string r in
+        if x = "a"
+        then log_success "Match 1 1"
+        else log_failure ("Wrong match 1 1: " ^ x)
+  end;
+  begin match Regexp.string_match re1 s2 0 with
+    | None -> log_failure "Can't match 1 2"
+    | Some r ->
+        let x = Regexp.matched_string r in
+        if x = "ab"
+        then log_success "Match 1 2"
+        else log_failure ("Wrong match 1 2: " ^ x)
+  end;
+  begin
+    if Regexp.split re2 s2 = ["rr";"ee";"ab";"a";"b";"bb";"a";"ee";""]
+    then log_success "Split 2 2"
+    else log_failure "Wrong split 2 2"
+  end ;
+  begin
+    let x = Regexp.global_replace re2 s2 "" in
+    if x = "rreeababbbaee"
+    then log_success "Replace 2 2"
+    else log_failure ("Wrong replacement 2 2: " ^ x)
+  end ;
+  begin
+    match Regexp.string_match re3 "(.)\\(.)" 0 with
+      | None -> log_failure "Quote 3 3"
+      | Some x -> log_success "Quote 3 3"
+  end
+
+
+let _ = log_stop "Regexp test suite"
+
