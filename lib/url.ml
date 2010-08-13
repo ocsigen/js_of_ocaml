@@ -222,7 +222,7 @@ let url_of_js_string s =
        in
        let path_str =
          urldecode_js_string_string
-           (Js.Optdef.get (Js.array_get res 4) interrupt)
+           (Js.Optdef.get (Js.array_get res 5) interrupt)
        in
        Some {
          protocol    = prot ;
@@ -232,7 +232,7 @@ let url_of_js_string s =
          port        = port_of_string prot
                         (Js.to_bytestring
                            (Js.Optdef.get
-                              (Js.array_get res 3)
+                              (Js.array_get res 4)
                               (fun () -> Js.bytestring "")
                            )
                         ) ;
