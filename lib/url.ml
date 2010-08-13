@@ -31,27 +31,20 @@ let interrupt () = raise Local_exn
 
 (* url (AKA percent) encoding/decoding *)
 
-let plus_re = jsnew Js.regExp_withFlags (Js.string "\\+", Js.string "g")
-let escape_plus_js s = s##replace (plus_re, Js.string "%2B")
+let plus_re = Regexp.regexp_string "+"
+let escape_plus s = Regexp.global_replace plus_re s "%2B"
 
 let urldecode_js_string_string s =
   Js.to_bytestring (Js.unescape s)
 let urldecode s =
   Js.to_bytestring (Js.unescape (Js.bytestring s))
 
-let urlencode_string_js_string ?(with_plus=true) s =
-  let pre = Js.escape (Js.bytestring s) in
-  if with_plus
-  then escape_plus_js pre
-  else pre
 let urlencode_js_string_string s =
   Js.to_bytestring (Js.escape s)
 let urlencode ?(with_plus=true) s =
-  Js.to_bytestring (
-    if with_plus
-    then escape_plus_js (Js.escape (Js.bytestring s))
-    else Js.escape (Js.bytestring s)
-  )
+  if with_plus
+  then escape_plus (Js.to_bytestring (Js.escape (Js.bytestring s)))
+  else Js.to_bytestring (Js.escape (Js.bytestring s))
 
 
 (* protocol *)
@@ -301,7 +294,7 @@ struct
     else s
     (*TODO: switch behavior depending on the browser (Firefox bug : https://bugzilla.mozilla.org/show_bug.cgi?id=483304 )*)
 
-  let set_fragment s = l##hash <- urlencode_string_js_string s
+  let set_fragment s = l##hash <- Js.bytestring (urlencode s)
 
   let get () = {
     protocol    = protocol ;

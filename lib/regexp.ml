@@ -92,6 +92,6 @@ let quote s =
   List.fold_left
     (fun s c -> global_replace (regexp c) s c)
     s
-    ["\\\\"; "\\."; "\\("; "\\)"] (*TODO: complete*)
+    ["\\\\"; "\\."; "\\("; "\\)"; "\\+"] (*TODO: complete*)
 let regexp_string s = regexp (quote s)
 let regexp_string_case_fold s = regexp_case_fold (quote s)

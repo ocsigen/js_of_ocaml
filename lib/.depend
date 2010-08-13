@@ -3,8 +3,8 @@
 ./xmlHttpRequest.cmx: url.cmx js.cmx dom_html.cmx dom.cmx \
     ./xmlHttpRequest.cmi 
 ./dom_html.cmi: js.cmi dom.cmi 
-./url.cmo: js.cmi dom_html.cmi ./url.cmi 
-./url.cmx: js.cmx dom_html.cmx ./url.cmi 
+./url.cmo: regexp.cmi js.cmi dom_html.cmi ./url.cmi 
+./url.cmx: regexp.cmx js.cmx dom_html.cmx ./url.cmi 
 ./js.cmo: ./js.cmi 
 ./js.cmx: ./js.cmi 
 ./lwt_js.cmi: 
