@@ -248,6 +248,7 @@ let url_of_js_string s =
   with Local_exn -> None
 
 let url_of_string s = url_of_js_string (Js.bytestring s)
+
 let string_of_url u =
   (string_of_protocol u.protocol)
   ^ "://"

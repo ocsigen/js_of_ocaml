@@ -56,10 +56,7 @@ let create () =
   assert false
 
 
-let escape_string s = Js.to_bytestring (Js.escape (Js.bytestring s))
-let encode args = (*TODO: use buffers instead of strings *)
-  String.concat "&"
-    (List.map (fun (n,v) -> escape_string n ^ "=" ^ escape_string v) args)
+let encode = Url.encode_arguments
 
 
 
