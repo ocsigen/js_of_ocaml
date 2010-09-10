@@ -1,6 +1,6 @@
 (* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
+ * Copyright (C) 2010 Raphaël Proust, Jérôme Vouillon
  * Laboratoire PPS - CNRS Université Paris Diderot
  *
  * This program is free software; you can redistribute it and/or modify
@@ -18,85 +18,81 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* Types *)
 type regexp =
-    {
-      simple : Js.regExp Js.t Lazy.t;
-      global : Js.regExp Js.t Lazy.t;
-    }
+  { str : Js.js_string Js.t;
+    mutable simple : Js.regExp Js.t Js.opt;
+    mutable global : Js.regExp Js.t Js.opt }
+
 type result = Js.match_result Js.t
 
-
-(* Constructors *)
-let regexp s =
-  {
-    simple = lazy (jsnew Js.regExp (Js.string s));
-    global = lazy (jsnew Js.regExp_withFlags (Js.string s, Js.string "g"));
-  }
-let regexp_case_fold s =
-  {
-    simple = lazy (jsnew Js.regExp_withFlags (Js.string s, Js.string "i"));
-    global = lazy (jsnew Js.regExp_withFlags (Js.string s, Js.string "ig"));
-  }
-
-
-(* Helpers (not exported) *)
-let string_from s i = String.sub s i (String.length s - i)
-let string_to s i = String.sub s 0 i
-let app_opt f = function
-  | None -> None
-  | Some x -> Some (f x)
+let regexp s = { str = Js.bytestring s; simple = Js.null; global = Js.null }
+let simple re =
+  Js.Opt.get re.simple
+    (fun () ->
+       let r = jsnew Js.regExp (re.str) in
+       re.simple <- Js.some r;
+       r)
+let global re =
+  Js.Opt.get re.global
+    (fun () ->
+       let r = jsnew Js.regExp_withFlags (re.str, Js.string "g") in
+       re.global <- Js.some r;
+       r)
 let blunt_str_array_get a i =
-  Js.to_string (Js.Optdef.get (Js.array_get a i) (fun () -> (assert false)))
-let (!!) = Lazy.force
+  Js.to_bytestring (Js.Optdef.get (Js.array_get a i) (fun () -> assert false))
 
 let string_match re s i =
-  app_opt
-    Js.match_result
-    (Js.Opt.to_option !!(re.simple)##exec(Js.string (string_from s i)))
+  let r = simple re in
+  r##lastIndex <- i;
+  Js.Opt.to_option (Js.Opt.map (r##exec(Js.bytestring s)) Js.match_result)
 
 let search re s i =
-  app_opt
-    (fun res_pre -> let res = Js.match_result res_pre in (res##index, res))
-    (Js.Opt.to_option !!(re.simple)##exec(Js.string (string_from s i)))
+  let r = simple re in
+  r##lastIndex <- i;
+  Js.Opt.to_option
+    (Js.Opt.map (r##exec(Js.bytestring s))
+       (fun res_pre -> let res = Js.match_result res_pre in (res##index, res)))
 
 let matched_string r = blunt_str_array_get r 0
 
 let matched_group r i =
-  app_opt Js.to_string (Js.Optdef.to_option (Js.array_get r i))
+  Js.Optdef.to_option (Js.Optdef.map (Js.array_get r i) Js.to_bytestring)
+
+let quote_repl_re = jsnew Js.regExp_withFlags (Js.string "[$]", Js.string "g")
+let quote_repl s =
+  (Js.bytestring s)##replace (quote_repl_re, Js.string "$$$$")
 
 let global_replace re s s_by =
-  Js.to_string (Js.string s)##replace(!!(re.global), Js.string s_by)
+  let r = global re in
+  r##lastIndex <- 0;
+  Js.to_bytestring (Js.bytestring s)##replace(r, quote_repl s_by)
 let replace_first re s s_by =
-  Js.to_string (Js.string s)##replace(!!(re.simple), Js.string s_by)
+  let r = global re in
+  r##lastIndex <- 0;
+  Js.to_bytestring (Js.bytestring s)##replace(r, quote_repl s_by)
 
 let list_of_js_array a =
   let rec aux accu idx =
-    if idx < 0
-    then accu
-    else aux (blunt_str_array_get a idx :: accu) (pred idx)
+    if idx < 0 then accu else
+    aux (blunt_str_array_get a idx :: accu) (idx - 1)
   in
-  aux [] (pred a##length)
+  aux [] (a##length - 1)
 
 let split re s =
-  list_of_js_array
-    (Js.str_array (Js.string s)##split_regExp( !!(re.simple) ))
+  let r = simple re in
+  r##lastIndex <- 0;
+  list_of_js_array (Js.str_array (Js.bytestring s)##split_regExp(r))
 let bounded_split re s i =
-  list_of_js_array
-    (Js.str_array (Js.string s)##split_regExpLimited( !!(re.simple), i ))
-
+  let r = simple re in
+  r##lastIndex <- 0;
+  list_of_js_array (Js.str_array (Js.bytestring s)##split_regExpLimited(r, i))
 
 (* More constructors *)
 
-let quote s = 
-  List.fold_left
-    (fun s c -> global_replace (regexp c) s c)
-    s
-    ["\\\\"; (* Must be first *)
-     "\\("; "\\)"; "\\|";
-     "\\+"; "\\*" ;"\\."; "\\?"; "\\{"; "\\}";
-     "\\^"; "\\$";
-     "\\["; "\\]";
-    ]
+let quote_re =
+  jsnew Js.regExp_withFlags (Js.string "[][()\\|+*.?{}^$]", Js.string "g")
+
+let quote s =
+  Js.to_bytestring (Js.bytestring s)##replace (quote_re, Js.string "\\$&")
+
 let regexp_string s = regexp (quote s)
-let regexp_string_case_fold s = regexp_case_fold (quote s)

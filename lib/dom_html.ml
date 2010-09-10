@@ -224,6 +224,8 @@ end
 
 let no_handler : ('a, 'b) event_listener = Js.null
 let window_event () : #event t = Js.Unsafe.variable "event"
+(* The function preventDefault must be called explicitely when
+   using addEventListener... *)
 let handler f =
   Js.some (Js.wrap_callback
     (fun e ->

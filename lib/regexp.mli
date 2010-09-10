@@ -1,6 +1,6 @@
 (* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
+ * Copyright (C) 2010 Raphaël Proust, Jérôme Vouillon
  * Laboratoire PPS - CNRS Université Paris Diderot
  *
  * This program is free software; you can redistribute it and/or modify
@@ -31,18 +31,11 @@ type result
 val regexp: string -> regexp
 (** Simple regexp constructor. *)
 
-val regexp_case_fold: string -> regexp
-(** Case insensitive regexp constructor. *)
-
 val quote: string -> string
 (** Escapes characters with special meaning in the regexp context. *)
 
 val regexp_string: string -> regexp
 (** [regexp_string s] creates a regexp matching the exact string [s]. *)
-
-val regexp_string_case_fold: string -> regexp
-(** [regexp_string_case_fold s] creates a case insensitive regexp matching the
-    exact string (modulo case). *)
 
 (** Functions *)
 
