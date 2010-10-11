@@ -254,7 +254,7 @@ let string_of_url u =
   ^ "://"
   ^ (match u.host with
        | "" -> "" (* When protocol is File *)
-       | s -> "[" ^ urlencode s ^ "]"
+       | s -> urlencode s
     )
   ^ (match u.port, u.protocol with
      (*| Some 80, Http | Some 443, Https -> ""*)
