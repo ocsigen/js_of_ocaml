@@ -263,8 +263,10 @@ let propagate2 defs def_approx approx st x =
                        Any
                      else if VarMap.find z st <> Known then
                        Any
-                     else
-                       u
+                     else begin
+                       let t = a.(n) in
+                       a_max (VarMap.find t st) u
+                     end
                  | Phi _ | Param | Expr _ ->
                      Any)
               s Known
