@@ -249,7 +249,7 @@ let propagate2 defs def_approx approx st x =
         Const _ | Constant _ | Closure _ ->
           Known
       | Apply _ | Prim _ ->
-          Any
+          AnyBlock
       | Block _ ->
           if approx.(Var.idx x) then AnyBlock else Known
       | Field (y, n) ->
