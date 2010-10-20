@@ -90,7 +90,7 @@ let bounded_split re s i =
 (* More constructors *)
 
 let quote_re =
-  jsnew Js.regExp_withFlags (Js.string "[][()\\|+*.?{}^$]", Js.string "g")
+  jsnew Js.regExp_withFlags (Js.string "[\\][()\\\\|+*.?{}^$]", Js.string "g")
 
 let quote s =
   Js.to_bytestring (Js.bytestring s)##replace (quote_re, Js.string "\\$&")
