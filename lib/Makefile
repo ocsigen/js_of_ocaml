@@ -1,5 +1,4 @@
-
-MLOBJS= js.cmo dom.cmo dom_html.cmo dom_events.cmo lwt_js.cmo firebug.cmo regexp.cmo url.cmo xmlHttpRequest.cmo
+MLOBJS= js.cmo dom.cmo dom_html.cmo dom_events.cmo lwt_js.cmo firebug.cmo regexp.cmo url.cmo xmlHttpRequest.cmo event_arrows.cmo
 MLINTFS= $(MLOBJS:.cmo=.mli)
 COBJS= stubs.o
 OBJS=$(MLOBJS) $(COBJS)
