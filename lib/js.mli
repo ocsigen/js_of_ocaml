@@ -469,7 +469,7 @@ val coerce_opt : 'a Opt.t -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
 external typeof : < .. > t -> js_string t = "caml_js_typeof"
   (** Returns the type of a Javascript object. *)
 
-external instanceof : < .. > t -> _ constr -> bool t = "caml_js_instanceof"
+external instanceof : < .. > t -> _ constr -> bool = "caml_js_instanceof"
   (** Tests whether a Javascript object is an instance of a given class. *)
 
 (** {2 Unsafe operations.} *)

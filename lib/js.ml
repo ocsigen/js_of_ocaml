@@ -205,8 +205,9 @@ class type ['a] js_array = object
   method length : int prop
 end
 
-let array_empty = Unsafe.variable "Array"
-let array_length = array_empty
+let array_constructor = Unsafe.variable "Array"
+let array_empty = array_constructor
+let array_length = array_constructor
 
 let array_get : 'a #js_array t -> int -> 'a optdef = Unsafe.get
 let array_set : 'a #js_array t -> int -> 'a -> unit = Unsafe.set
@@ -333,4 +334,10 @@ external bytestring : string -> js_string t = "caml_js_from_byte_string"
 external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
 
 external typeof : < .. > t -> js_string t = "caml_js_typeof"
-external instanceof : 'a -> 'b -> 'c = "caml_js_instanceof"
+external instanceof : 'a -> 'b -> bool = "caml_js_instanceof"
+
+let _ =
+  Printexc.register_printer
+    (fun e ->
+       if instanceof e array_constructor then None
+       else Some (to_string (Unsafe.meth_call (Obj.magic e) "toString" [||])))
