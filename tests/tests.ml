@@ -39,24 +39,19 @@ let log s = raw_log (Js.string s)
 let _ = log_start "Url test suite"
 
 let url_string_url u = Url.url_of_string (Url.string_of_url u)
-let _ =
-  match url_string_url (Url.Current.get ()) with
-    | None ->
-        log_failure "can't parse once";
-        log Url.Current.as_string
-    | Some u -> match url_string_url u with
-        | Some v ->
-          if u = v
-          then (log_success "fixpoint acheived";
-                log (Url.string_of_url u)
-               )
-          else (log_failure "no fixpoint";
-                log (Url.string_of_url u);
-                log (Url.string_of_url v)
-               )
-        | None ->
-          log_failure "can't parse twice";
-          log (Url.string_of_url u)
+let _ = match Url.Current.get () with
+  | None -> log_failure "can't parse current url"
+  | Some u -> match url_string_url u with
+    | None -> log_failure "can't parse pretty-printed url"
+    | Some v ->
+       if u = v
+       then (log_success "fixpoint acheived";
+             log (Url.string_of_url u)
+       )
+       else (log_failure "no fixpoint";
+             log (Url.string_of_url u);
+             log (Url.string_of_url v)
+       )
 let _ =
   let t1 = Url.urlencode "/toto+ blah&tutu" in
   let t2 = Url.urlencode ~with_plus:false "/toto+ blah&tutu" in

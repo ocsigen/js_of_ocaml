@@ -47,47 +47,42 @@ let urlencode ?(with_plus=true) s =
   else Js.to_bytestring (Js.escape (Js.bytestring s))
 
 
-(* protocol *)
-type protocol =
-  | Http
-  | Https
-  | File
-  | Exotic of string
+type http_url = {
+  hu_host : string; (** The host part of the url. *)
+  hu_port : int; (** The port for the connection if any. *)
+  hu_path : string list; (** The path splitted on ['/'] characters. *)
+  hu_path_string : string; (** The original entire path. *)
+  hu_arguments : (string * string) list; (** Arguments as a field-value
+                                             association list.*)
+  hu_fragment : string; (** The fragment part (after the ['#'] character). *)
+}
+(** The type for HTTP url. *)
 
-let protocol_of_string s = match String.lowercase s with
-  | "http:"  | "http"  -> Http
-  | "https:" | "https" -> Https
-  | "file:"  | "file"  -> File
-  | s -> Exotic s
-let string_of_protocol ?(comma=false) p = match p with
-  | Http  -> if comma then "http:" else "http"
-  | Https -> if comma then "https:" else "https"
-  | File  -> if comma then "file:" else "file"
-  | Exotic s -> s
+type file_url = {
+  fu_path : string list;
+  fu_path_string : string;
+  fu_arguments : (string * string) list;
+  fu_fragment : string;
+}
+(** The type for local file urls. *)
 
+type url =
+  | Http of http_url
+  | Https of http_url
+  | File of file_url
+(** The type for urls. [File] is for local files and [Exotic s] is for
+    unknown/unsupported protocols. *)
 
+exception Not_an_http_protocol
+let is_secure prot_string = match String.lowercase prot_string with
+  | "https:" | "https" -> true
+  | "http:"  | "http"  -> false
+  | "file:"  | "file"
+  | _ -> raise Not_an_http_protocol
 
 (* port number *)
 let default_http_port = 80
 let default_https_port = 443
-let port_of_string prot = function
-  | "" -> begin
-      match prot with
-      | Http  -> Some default_http_port
-      | Https -> Some default_https_port
-      | File | Exotic _ -> None
-    end
-  | s ->
-     try Some (int_of_string s)
-     with Invalid_argument _ -> None
-let string_of_port = string_of_int
-let string_of_port_option prot = function
-  | Some i -> Some (string_of_port i)
-  | None -> match prot with
-      | Http -> Some (string_of_port default_http_port)
-      | Https -> Some (string_of_port default_https_port)
-      | File | Exotic _ -> None
-
 
 
 (* path *)
@@ -150,19 +145,11 @@ let decode_arguments_js_string s =
 let decode_arguments s =
   decode_arguments_js_string (Js.bytestring s)
 
-type url = {
-  protocol    : protocol ;
-  host        : string ;
-  port        : int option ;
-  path        : string list ;
-  path_string : string ;
-  arguments   : (string * string) list ;
-  fragment    : string
-}
-
 let url_re =
   jsnew Js.regExp (Js.bytestring "^([Hh][Tt][Tt][Pp][Ss]?)://\
-                                   ([0-9a-zA-Z.-]+|\\[[0-9A-Fa-f:.]+\\])?\
+                                   ([0-9a-zA-Z.-]+\
+                                    |\[[0-9a-zA-Z.-]+\]\
+                                    |\\[[0-9A-Fa-f:.]+\\])?\
                                    (:([0-9]+))?\
                                    /([^\\?#]*)\
                                    (\\?([^#])*)?\
@@ -176,111 +163,153 @@ let file_re =
                   )
 
 let url_of_js_string s =
-  try
   Js.Opt.case (url_re##exec (s))
     (fun () -> Js.Opt.case (file_re##exec (s))
-       interrupt
+       (fun () -> None)
        (fun handle ->
           let res = Js.match_result handle in
           let path_str =
             urldecode_js_string_string
               (Js.Optdef.get (Js.array_get res 2) interrupt)
           in
-          Some {
-            protocol    = File ;
-            host        = "" ;
-            port        = None ;
-            path        = path_of_path_string path_str ;
-            path_string = path_str ;
-            arguments   = decode_arguments_js_string
-                            (Js.Optdef.get
-                               (Js.array_get res 4)
-                               (fun () -> Js.bytestring "")
-                            );
-            fragment    = Js.to_bytestring
-                            (Js.Optdef.get
-                              (Js.array_get res 6)
-                              (fun () -> Js.bytestring "")
-                            );
-          }
+          Some (File {
+            fu_path        = path_of_path_string path_str ;
+            fu_path_string = path_str ;
+            fu_arguments   = decode_arguments_js_string
+                              (Js.Optdef.get
+                                 (Js.array_get res 4)
+                                 (fun () -> Js.bytestring "")
+                              );
+            fu_fragment    = Js.to_bytestring
+                              (Js.Optdef.get
+                                (Js.array_get res 6)
+                                (fun () -> Js.bytestring "")
+                              );
+          })
        )
     )
     (fun handle ->
        let res = Js.match_result handle in
-       let prot =
-         protocol_of_string
+       let ssl =
+         is_secure
            (Js.to_bytestring
               (Js.Optdef.get (Js.array_get res 1) interrupt)
            )
        in
+       let port_of_string = function
+         | "" -> if ssl then 443 else 80
+         | s -> int_of_string s
+       in
+
        let path_str =
          urldecode_js_string_string
            (Js.Optdef.get (Js.array_get res 5) interrupt)
        in
-       Some {
-         protocol    = prot ;
-         host        = urldecode_js_string_string
-                         (Js.Optdef.get (Js.array_get res 2) interrupt)
-                         ;
-         port        = port_of_string prot
-                        (Js.to_bytestring
-                           (Js.Optdef.get
-                              (Js.array_get res 4)
-                              (fun () -> Js.bytestring "")
-                           )
-                        ) ;
-         path        = path_of_path_string path_str ;
-         path_string = path_str ;
-         arguments   = decode_arguments_js_string
-                         (Js.Optdef.get
-                            (Js.array_get res 7)
-                            (fun () -> Js.bytestring "")
-                         )
-                         ;
-         fragment    = urldecode_js_string_string
-                         (Js.Optdef.get
-                            (Js.array_get res 9)
-                            (fun () -> Js.bytestring "")
-                         )
-    ;
-       }
+       let url = {
+         hu_host        = urldecode_js_string_string
+                            (Js.Optdef.get (Js.array_get res 2) interrupt)
+                          ;
+         hu_port        = port_of_string
+                            (Js.to_bytestring
+                               (Js.Optdef.get
+                                  (Js.array_get res 4)
+                                  (fun () -> Js.bytestring "")
+                               )
+                            ) ;
+         hu_path        = path_of_path_string path_str ;
+         hu_path_string = path_str ;
+         hu_arguments   = decode_arguments_js_string
+                            (Js.Optdef.get
+                               (Js.array_get res 7)
+                               (fun () -> Js.bytestring "")
+                            )
+                            ;
+         hu_fragment    = urldecode_js_string_string
+                            (Js.Optdef.get
+                               (Js.array_get res 9)
+                               (fun () -> Js.bytestring "")
+                            )
+                            ;
+         }
+       in
+       Some (if ssl then Https url else Http url)
     )
-  with Local_exn -> None
 
 let url_of_string s = url_of_js_string (Js.bytestring s)
 
-let string_of_url u =
-  (string_of_protocol u.protocol)
-  ^ "://"
-  ^ (match u.host with
-       | "" -> "" (* When protocol is File *)
-       | s -> urlencode s
-    )
-  ^ (match u.port, u.protocol with
-     (*| Some 80, Http | Some 443, Https -> ""*)
-       | Some _, File -> "" (*TODO: change url type *)
-       | None, File -> ""
-       | None, _ -> "" (*TODO: change url type *)
-       | Some n, _ -> ":" ^ string_of_int n
-    )
-  ^ String.concat "/" (List.map urlencode u.path)
-  ^ (match u.arguments with
-       | [] -> ""
-       | l -> "?" ^ encode_arguments l
-    )
-  ^ (match u.fragment with
-       | "" -> ""
-       | s -> "#" ^ (urlencode s)
-    )
+let string_of_url = function
+  | File
+      {
+        fu_path = path;
+        fu_arguments = args;
+        fu_fragment = frag;
+      } ->  "file://"
+          ^ String.concat "/" (List.map urlencode path)
+          ^ (match args with
+               | [] -> ""
+               | l -> "?" ^ encode_arguments l
+            )
+          ^ (match frag with
+               | "" -> ""
+               | s -> "#" ^ (urlencode s)
+            )
+
+  | Http
+      {
+        hu_host = host;
+        hu_port = port;
+        hu_path = path;
+        hu_arguments = args;
+        hu_fragment = frag;
+      } ->  "http://"
+          ^ urlencode host
+          ^ (match port with
+               | 80 -> ""
+               | n -> ":" ^ string_of_int n
+            )
+          ^ "/"
+          ^ String.concat "/" (List.map urlencode path)
+          ^ (match args with
+               | [] -> ""
+               | l -> "?" ^ encode_arguments l
+            )
+          ^ (match frag with
+               | "" -> ""
+               | s -> "#" ^ (urlencode s)
+            )
+
+  | Https
+      {
+        hu_host = host;
+        hu_port = port;
+        hu_path = path;
+        hu_arguments = args;
+        hu_fragment = frag;
+      } ->  "https://"
+          ^ urlencode host
+          ^ (match port with
+               | 443 -> ""
+               | n -> ":" ^ string_of_int n
+            )
+          ^ "/"
+          ^ String.concat "/" (List.map urlencode path)
+          ^ (match args with
+               | [] -> ""
+               | l -> "?" ^ encode_arguments l
+            )
+          ^ (match frag with
+               | "" -> ""
+               | s -> "#" ^ (urlencode s)
+            )
 
 module Current =
 struct
 
-  let protocol = protocol_of_string (Js.to_bytestring l##protocol)
-
   let host = urldecode_js_string_string l##hostname
 
-  let port = port_of_string protocol (Js.to_bytestring l##port)
+  let port =
+    try Some (int_of_string (Js.to_bytestring l##port))
+    with Failure _ -> None
 
   let path_string = urldecode_js_string_string l##pathname
 
@@ -288,7 +317,7 @@ struct
 
   let arguments = decode_arguments_js_string l##search
 
-  let fragment () =
+  let get_fragment () =
     let s = Js.to_bytestring l##hash in
     if String.length s > 0 && s.[0] = '#'
     then String.sub s 1 (String.length s - 1)
@@ -297,15 +326,7 @@ struct
 
   let set_fragment s = l##hash <- Js.bytestring (urlencode s)
 
-  let get () = {
-    protocol    = protocol ;
-    host        = host ;
-    port        = port ;
-    path        = path ;
-    path_string = path_string ;
-    arguments   = arguments ;
-    fragment    = fragment () ;
-  }
+  let get () = url_of_js_string l##href
 
   let set u = l##href <- (Js.bytestring (string_of_url u))
 

@@ -36,38 +36,38 @@ val urlencode : ?with_plus:bool -> string -> string
     [with_plus] is [true] (default) then ['+']'s are escaped as ["%2B"]. If not,
     ['+']'s are left as is. *)
 
-type protocol = Http | Https | File | Exotic of string
-(** The type for protocols. [File] is for local files and [Exotic s] is for
+
+type http_url = {
+  hu_host : string; (** The host part of the url. *)
+  hu_port : int; (** The port for the connection if any. *)
+  hu_path : string list; (** The path splitted on ['/'] characters. *)
+  hu_path_string : string; (** The original entire path. *)
+  hu_arguments : (string * string) list; (** Arguments as a field-value
+                                             association list.*)
+  hu_fragment : string; (** The fragment part (after the ['#'] character). *)
+}
+(** The type for HTTP url. *)
+
+type file_url = {
+  fu_path : string list;
+  fu_path_string : string;
+  fu_arguments : (string * string) list;
+  fu_fragment : string;
+}
+(** The type for local file urls. *)
+
+type url =
+  | Http of http_url
+  | Https of http_url
+  | File of file_url
+(** The type for urls. [File] is for local files and [Exotic s] is for
     unknown/unsupported protocols. *)
-
-val protocol_of_string : string -> protocol
-(** [protocol_of_string s] parses [s] and tries to figure out what protocol [s]
-    represents. If no match is found, it returns [Exotic s]. *)
-
-val string_of_protocol : ?comma:bool -> protocol -> string
-(** [string_of_protocol ?comma p] return a string representing the protocol [p].
-    If [comma] is true then the [':'] character is appended. [comma] defaults to
-    false. *)
 
 val default_http_port : int
 (** The default port for [Http] communications (80). *)
 
 val default_https_port : int
 (** The default port for [Https] communications (443). *)
-
-val port_of_string : protocol -> string -> int option
-(** [port_of_string p s] parses [s] trying to figure out what port it
-    represents. If [s] is empty then the default port for [p] is used (if any
-    exists). If [s] is not a valid port number, or if [s] is the empty string
-    and [p] is either [Exotic _] or [File], then [None] is returned. *)
-
-val string_of_port : int -> string
-(** [string_of_port i] gives a string representative of [i]. *)
-
-val string_of_port_option : protocol -> int option -> string option
-(** [string_of_port_option p (Some i)] is [Some (string_of_port i)].
-    [string_of_port_option p None] is the default port for [p] or [None] if [p]
-    has no default port. *)
 
 val path_of_path_string : string -> string list
 (** [path_of_path_string s] splits [s] on each ["/"] character. *)
@@ -85,25 +85,6 @@ val decode_arguments : string -> (string * string) list
     than what a string provides. *)
 
 
-type url = {
-  protocol : protocol;
-  host : string;
-  port : int option;
-  path : string list;
-  path_string : string;
-  arguments : (string * string) list;
-  fragment : string;
-}
-(** The type of urls. The generic forms are:
-    protocol://host/list/of/path/components
-    protocol://host:port/list/of/path/components
-    protocol://host/list/of/path/components?arguments
-    protocol://host/list/of/path/components#fragment
-    protocol://[host]:port/list/of/path/components
-
-    Note that for [File] protocol there is no [host] component:
-    file:///list/of/path/components/
-  *)
 
 val url_of_string : string -> url option
 (** [url_of_string s] parses [s] and builds a value of type [url] if [s] is not
@@ -120,26 +101,24 @@ module Current :
 
   sig
 
-    val protocol : protocol
     val host : string
+
     val port : int option
+
     val path_string : string
-    (** [path_string] is the concatenation of all the path components of the
-        current Url. *)
 
     val path : string list
-    (** [path] is the ["/"] split version of the [path_string] value. *)
 
     val arguments : (string * string) list
 
-    val fragment : unit -> string
+    val get_fragment : unit -> string
     (** Because the [fragment] of the Url for the current document can change
         dynamically, we use a functional value here. *)
 
     val set_fragment : string -> unit
     (** [set_fragment s] replaces the current fragment by [s]. *)
 
-    val get : unit -> url
+    val get : unit -> url option
     (** [get ()] returns a value of type {!url} with fields reflecting the
         state of the current Url. *)
 
