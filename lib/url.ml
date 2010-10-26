@@ -148,7 +148,7 @@ let decode_arguments s =
 let url_re =
   jsnew Js.regExp (Js.bytestring "^([Hh][Tt][Tt][Pp][Ss]?)://\
                                    ([0-9a-zA-Z.-]+\
-                                    |\[[0-9a-zA-Z.-]+\]\
+                                    |\\[[0-9a-zA-Z.-]+\\]\
                                     |\\[[0-9A-Fa-f:.]+\\])?\
                                    (:([0-9]+))?\
                                    /([^\\?#]*)\
