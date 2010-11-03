@@ -22,21 +22,20 @@ open Code
 
 (****)
 
-(* FIX: more or less duplicated from deadcode.ml *)
 let pure_expr pure_funs e =
   match e with
-    Const _  | Block _ | Field _ | Closure _ | Constant _ | Variable _ ->
+    Const _  | Block _ | Field _ | Closure _ | Constant _ ->
       true
   | Apply (f, l, n) ->
-      VarSet.mem f pure_funs ||
       begin match n with
-        Some n -> List.length l < n
+        Some n -> let m = List.length l in
+                  m < n || (m = n && VarSet.mem f pure_funs)
       | None   -> false
       end
   | Prim (p, l) ->
       match p with
         Extern f -> Primitive.is_pure f
-      | _        -> false
+      | _        -> true
 
 let pure_instr pure_funs i =
   match i with

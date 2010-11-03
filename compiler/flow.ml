@@ -81,8 +81,6 @@ let expr_deps blocks vars deps defs x e =
       Array.iter (fun y -> add_dep deps x y) a
   | Field (y, _) ->
       add_dep deps x y
-  | Variable y ->
-      assert false
 
 let program_deps (_, blocks, _) =
   let nv = Var.count () in
@@ -147,8 +145,6 @@ let propagate1 deps defs st x =
                | Phi _ | Param | Expr _ ->
                    VarSet.empty)
             (VarMap.find y st)
-      | Variable _ ->
-          assert false
 
 module G = Dgraph.Make (Var) (VarSet) (VarMap)
 
@@ -201,8 +197,6 @@ let expr_escape st x e =
              Pv x -> block_escape st x
            | Pc _ -> ())
         l
-  | Variable y ->
-      assert false
 
 let program_escape defs known_origins (_, blocks, _) =
   let nv = Var.count () in
@@ -269,8 +263,6 @@ let propagate2 defs known_origins possibly_mutable st x =
                | Phi _ | Param | Expr _ ->
                    true)
               (VarMap.find y known_origins)
-      | Variable _ ->
-          assert false
 
 module Domain2 = struct
   type t = bool

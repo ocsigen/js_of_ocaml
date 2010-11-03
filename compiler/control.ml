@@ -47,7 +47,7 @@ let traverse blocks pc f accu =
         match block.branch with
           Return _ | Raise _ | Stop ->
             (visited, accu)
-        | Branch (pc, _) ->
+        | Branch (pc, _) | Poptrap (pc, _) ->
             traverse_rec visited pc accu
         | Cond (_, _, (pc1, _), (pc2, _)) ->
             let (visited, accu) = traverse_rec visited pc1 accu in
@@ -65,8 +65,6 @@ let traverse blocks pc f accu =
         | Pushtrap ((pc1, _), _, (pc2, _), _) ->
             let (visited, accu) = traverse_rec visited pc1 accu in
             traverse_rec visited pc2 accu
-        | Poptrap (pc, _) ->
-            traverse_rec visited pc accu
       in
       (visited, f pc accu)
     end

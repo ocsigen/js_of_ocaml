@@ -56,8 +56,6 @@ let expr_deps blocks vars deps defs x e =
       Array.iter (fun y -> add_dep deps x y) a
   | Field (y, _) ->
       add_dep deps x y
-  | Variable y ->
-      assert false
 
 let program_deps (_, blocks, _) =
   let nv = Var.count () in

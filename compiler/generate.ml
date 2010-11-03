@@ -649,6 +649,8 @@ let rec translate_expr ctx queue e =
       (J.EAccess (cx, int (n + 1)), or_p px mutable_p, queue)
   | Closure (args, ((pc, _) as cont)) ->
       (*FIX: should flush only the closure free variables...*)
+      (*FIX: if there are several closures in a row, we should process them
+        simultaneously (possibly recursive functions)*)
       let vars =
         AddrMap.find pc ctx.Ctx.mutated_vars
         >> VarSet.elements
@@ -797,8 +799,6 @@ let rec translate_expr ctx queue e =
          Neq | Lt | Le | Ult | WrapInt), _ ->
           assert false
       end
-  | Variable x ->
-      assert false
 
 and translate_instr ctx expr_queue instr =
   match instr with

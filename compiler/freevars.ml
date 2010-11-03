@@ -51,8 +51,6 @@ print_var_list (VarSet.elements s');
   | Prim (_, l) ->
       list_fold
         (fun b x s -> match x with Pv x -> add_var b x s | Pc _ -> s) b l s
-  | Variable x ->
-      add_var b x s
 
 let instr_free_vars pc b i s =
   match i with
@@ -72,7 +70,7 @@ let last_free_var b l s =
       add_var b x s
   | Stop ->
       s
-  | Branch cont ->
+  | Branch cont | Poptrap cont ->
       cont_free_vars b cont s
   | Cond (_, x, cont1, cont2) ->
       s >> add_var b x >> cont_free_vars b cont1 >> cont_free_vars b cont2
@@ -85,8 +83,6 @@ let last_free_var b l s =
       s
       >> cont_free_vars b cont1
       >> cont_free_vars b cont2
-  | Poptrap cont ->
-      cont_free_vars b cont s
 
 let block_free_vars pc b block s =
   s

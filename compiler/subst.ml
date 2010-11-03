@@ -34,8 +34,6 @@ let expr s e =
       Closure (l, pc)
   | Prim (p, l) ->
       Prim (p, List.map (fun x -> match x with Pv x -> Pv (s x) | Pc _ -> x) l)
-  | Variable x ->
-      Variable (s x)
 
 let instr s i =
   match i with

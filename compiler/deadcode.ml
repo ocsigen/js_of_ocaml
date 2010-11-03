@@ -58,8 +58,6 @@ and mark_expr st e =
       mark_reachable st pc
   | Prim (_, l) ->
       List.iter (fun x -> match x with Pv x -> mark_var st x | _ -> ()) l
-  | Variable x ->
-      assert false
 
 and mark_cont_reachable st (pc, param) = mark_reachable st pc
 
@@ -118,9 +116,8 @@ let rec filter_args st pl al =
   | _ ->
       assert false
 
-let filter_cont blocks st ((pc, args) as cont) =
-  let params =
-    if Code.is_dummy_cont cont then [] else (AddrMap.find pc blocks).params in
+let filter_cont blocks st (pc, args) =
+  let params = (AddrMap.find pc blocks).params in
   (pc, filter_args st params args)
 
 let filter_closure blocks st i =

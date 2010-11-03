@@ -159,7 +159,6 @@ type expr =
   | Closure of Var.t list * cont
   | Constant of constant
   | Prim of prim * prim_arg list
-  | Variable of Var.t
 
 type instr =
     Let of Var.t * expr
@@ -189,12 +188,6 @@ type program = addr * block AddrMap.t * addr
 
 (****)
 
-let dummy_cont = (-1, [])
-
-let is_dummy_cont (pc, _) = pc < 0
-
-(****)
-
 let rec print_list pr f l =
   match l with
     []     -> ()
@@ -203,8 +196,7 @@ let rec print_list pr f l =
 
 let print_var_list = print_list Var.print
 
-let print_cont f ((pc, args) as cont) =
-  if is_dummy_cont cont then Format.fprintf f "<dummy>" else
+let print_cont f (pc, args) =
   Format.fprintf f "%d (%a)" pc print_var_list args
 
 let rec print_constant f x =
@@ -319,8 +311,6 @@ let print_expr f e =
       Format.fprintf f "CONST{%a}" print_constant c
   | Prim (p, l) ->
       print_prim f p l
-  | Variable x ->
-      Format.fprintf f "%a" Var.print x
 
 let print_instr f i =
   match i with

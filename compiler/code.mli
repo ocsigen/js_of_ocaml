@@ -76,8 +76,7 @@ type expr =
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant          (*XXX REMOVE *)
-  | Prim of prim * prim_arg list
-  | Variable of Var.t             (*XXX REMOVE *)
+  | Prim of prim * prim_arg list  (*XXX prim * Var.t list * constant list *)
 
 type instr =
     Let of Var.t * expr
@@ -112,9 +111,6 @@ val print_var_list : Format.formatter -> Var.t list -> unit
 val print_instr : Format.formatter -> instr -> unit
 val print_block : (AddrMap.key -> xinstr -> string) -> int -> block -> unit
 val print_program : (AddrMap.key -> xinstr -> string) -> program -> unit
-
-val dummy_cont : cont
-val is_dummy_cont : cont -> bool
 
 val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
