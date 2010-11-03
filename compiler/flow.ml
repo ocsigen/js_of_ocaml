@@ -294,6 +294,13 @@ let the_def_of ((defs, _, _) as info) x =
     (fun x -> match defs.(Var.idx x) with Expr e -> Some e | _ -> None)
     None (fun u v -> None) x
 
+let the_int ((defs, _, _) as info) x =
+  get_approx info
+    (fun x -> match defs.(Var.idx x) with Expr (Const i) -> Some i | _ -> None)
+    None
+    (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
+    x
+
 let function_cardinality ((defs, _, _) as info) x =
   get_approx info
     (fun x ->
@@ -376,6 +383,20 @@ let specialize_instr info i =
       begin match the_def_of info f with
         Some (Constant (String _ as c)) ->
           Let (x, Prim (Extern "caml_js_set", [Pv o; Pc c; Pv v]))
+      | _ ->
+          i
+      end
+  | Let (x, Prim (Extern "%int_mul", [Pv y; Pv z])) ->
+      begin match the_int info y, the_int info z with
+        Some j, _ | _, Some j when abs j < 0x200000 ->
+          Let (x, Prim (Extern "%direct_int_mul", [Pv y; Pv z]))
+      | _ ->
+          i
+      end
+  | Let (x, Prim (Extern "%int_div", [Pv y; Pv z])) ->
+      begin match the_int info z with
+        Some j when j <> 0 ->
+          Let (x, Prim (Extern "%direct_int_div", [Pv y; Pv z]))
       | _ ->
           i
       end

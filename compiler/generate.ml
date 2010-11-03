@@ -522,6 +522,10 @@ let _ =
     (fun cx cy -> Js_simpl.eplus_int cx cy);
   register_bin_prim "%int_sub" `Const
     (fun cx cy -> J.EBin (J.Minus, cx, cy));
+  register_bin_prim "%direct_int_mul" `Const
+    (fun cx cy -> to_int (J.EBin (J.Mul, cx, cy)));
+  register_bin_prim "%direct_int_div" `Const
+    (fun cx cy -> to_int (J.EBin (J.Div, cx, cy)));
   register_bin_prim "%int_and" `Const
     (fun cx cy -> J.EBin (J.Band, cx, cy));
   register_bin_prim "%int_or" `Const
