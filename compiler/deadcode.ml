@@ -42,26 +42,24 @@ let rec mark_var st x =
 and mark_def st d =
   match d with
     Var x  -> mark_var st x
-  | Expr e -> mark_expr st e
+  | Expr e -> if Pure_fun.pure_expr st.pure_funs e then mark_expr st e
 
 and mark_expr st e =
-  if Pure_fun.pure_expr st.pure_funs e then begin
-    match e with
-      Const _ | Constant _ ->
-        ()
-    | Apply (f, l, _) ->
-        mark_var st f; List.iter (fun x -> mark_var st x) l
-    | Block (_, a) ->
-        Array.iter (fun x -> mark_var st x) a
-    | Field (x, _) ->
-        mark_var st x
-    | Closure (_, (pc, _)) ->
-        mark_reachable st pc
-    | Prim (_, l) ->
-        List.iter (fun x -> match x with Pv x -> mark_var st x | _ -> ()) l
-    | Variable x ->
-        assert false
-  end
+  match e with
+    Const _ | Constant _ ->
+      ()
+  | Apply (f, l, _) ->
+      mark_var st f; List.iter (fun x -> mark_var st x) l
+  | Block (_, a) ->
+      Array.iter (fun x -> mark_var st x) a
+  | Field (x, _) ->
+      mark_var st x
+  | Closure (_, (pc, _)) ->
+      mark_reachable st pc
+  | Prim (_, l) ->
+      List.iter (fun x -> match x with Pv x -> mark_var st x | _ -> ()) l
+  | Variable x ->
+      assert false
 
 and mark_cont_reachable st (pc, param) = mark_reachable st pc
 
