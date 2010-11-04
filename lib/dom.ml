@@ -21,7 +21,7 @@
 open Js
 
 class type ['node] nodeList = object
-  method item : int -> 'node t meth
+  method item : int -> 'node t optdef meth
   method length : int readonly_prop
 end
 

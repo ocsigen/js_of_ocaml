@@ -156,8 +156,9 @@ end
 
 and keyboardEvent = object
   inherit event
-  method charCode : int readonly_prop
+  method charCode : int optdef readonly_prop
   method keyCode : int readonly_prop
+  method keyIdentifier : js_string t optdef readonly_prop
 end
 
 and mousewheelEvent = object (* All browsers but Firefox *)
@@ -240,7 +241,7 @@ end
 (** Collection of HTML elements *)
 class type ['node] collection = object
   method length : int readonly_prop
-  method item : int -> 'node t opt meth
+  method item : int -> 'node t optdef meth
   method namedItem : js_string t -> 'node t opt meth
 end
 
