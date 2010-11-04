@@ -1038,16 +1038,9 @@ and compile_if st e cont1 cont2 handler backs frontier interm succs =
 (*
 Format.eprintf "====@.";
 *)
-  if never_continue st cont1 frontier interm succs then
-    Js_simpl.if_statement e (Js_simpl.block iftrue) None ::
-    iffalse
-  else if never_continue st cont2 frontier interm succs then
-    Js_simpl.if_statement
-      (Js_simpl.enot e) (Js_simpl.block iffalse) None ::
-    iftrue
-  else
-    [Js_simpl.if_statement e (Js_simpl.block iftrue)
-       (Some (Js_simpl.block iffalse))]
+  Js_simpl.if_statement e
+    (Js_simpl.block iftrue) (never_continue st cont1 frontier interm succs)
+    (Js_simpl.block iffalse) (never_continue st cont2 frontier interm succs)
 
 and compile_conditional st queue pc last handler backs frontier interm succs =
   List.iter
@@ -1151,18 +1144,13 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
         else
           (* The variable x is accessed several times,
              so we can directly refer to it *)
-(*
-          ([Js_simpl.if_statement
-              (J.EBin(J.InstanceOf, var x, J.EVar ("Array")))
-              (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
-              (Some (build_switch (var x) a1))],
-           queue)
-*)
-          ([Js_simpl.if_statement
+          (Js_simpl.if_statement
               (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
                       J.EStr ("number", `Bytes)))
               (build_switch (var x) a1)
-              (Some (build_switch (J.EAccess(var x, J.ENum 0.)) a2))],
+              false
+              (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
+              false,
            queue)
       in
       flush_all queue st
