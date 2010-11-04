@@ -400,6 +400,13 @@ let specialize_instr info i =
       | _ ->
           i
       end
+  | Let (x, Prim (Extern "%int_mod", [Pv y; Pv z])) ->
+      begin match the_int info z with
+        Some j when j <> 0 ->
+          Let (x, Prim (Extern "%direct_int_mod", [Pv y; Pv z]))
+      | _ ->
+          i
+      end
 
   | _ ->
       i
