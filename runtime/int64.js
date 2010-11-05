@@ -209,7 +209,8 @@ function caml_int64_udivmod (x, y) {
 }
 
 //Provides: caml_int64_div const
-//Requires: caml_raise_zero_divide
+//Requires: caml_int64_is_zero, caml_raise_zero_divide
+//Requires: caml_int64_neg, caml_int64_udivmod
 function caml_int64_div (x, y)
 {
   if (caml_int64_is_zero (y)) caml_raise_zero_divide ();
@@ -222,7 +223,8 @@ function caml_int64_div (x, y)
 }
 
 //Provides: caml_int64_mod const
-//Requires: caml_raise_zero_divide
+//Requires: caml_int64_is_zero, caml_raise_zero_divide
+//Requires: caml_int64_neg, caml_int64_udivmod
 function caml_int64_mod (x, y)
 {
   if (caml_int64_is_zero (y)) caml_raise_zero_divide ();
