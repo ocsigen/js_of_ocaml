@@ -19,6 +19,7 @@
  *)
 
 let debug = Util.debug "flow"
+let disable_optcall = Util.disabled "optcall"
 
 open Code
 
@@ -313,7 +314,7 @@ let function_cardinality ((defs, _, _) as info) x =
 
 let specialize_instr info i =
   match i with
-    Let (x, Apply (f, l, _)) ->
+    Let (x, Apply (f, l, _)) when not (disable_optcall ()) ->
       Let (x, Apply (f, l, function_cardinality info f))
 
 (*FIX this should be moved to a different file (javascript specific) *)

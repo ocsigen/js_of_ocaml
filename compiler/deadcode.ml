@@ -33,6 +33,13 @@ type t =
 
 (****)
 
+let disabled = Util.disabled "deadcode"
+
+let pure_expr pure_funs e =
+  Pure_fun.pure_expr pure_funs e && not (disabled ())
+
+(****)
+
 let rec mark_var st x =
   let x = Var.idx x in
   st.live.(x) <- st.live.(x) + 1;
@@ -42,7 +49,7 @@ let rec mark_var st x =
 and mark_def st d =
   match d with
     Var x  -> mark_var st x
-  | Expr e -> if Pure_fun.pure_expr st.pure_funs e then mark_expr st e
+  | Expr e -> if pure_expr st.pure_funs e then mark_expr st e
 
 and mark_expr st e =
   match e with
@@ -69,7 +76,7 @@ and mark_reachable st pc =
       (fun i ->
          match i with
            Let (_, e) ->
-             if not (Pure_fun.pure_expr st.pure_funs e) then mark_expr st e
+             if not (pure_expr st.pure_funs e) then mark_expr st e
          | Set_field (x, _, y) ->
              mark_var st x; mark_var st y
          | Array_set (x, y, z) ->
@@ -100,7 +107,7 @@ and mark_reachable st pc =
 let live_instr st i =
   match i with
     Let (x, e) ->
-      st.live.(Var.idx x) > 0 || not (Pure_fun.pure_expr st.pure_funs e)
+      st.live.(Var.idx x) > 0 || not (pure_expr st.pure_funs e)
   | Set_field _ | Offset_ref _ | Array_set _ ->
       true
 

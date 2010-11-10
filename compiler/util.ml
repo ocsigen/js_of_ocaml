@@ -41,3 +41,16 @@ let debug s =
 
 let set_debug s =
   try List.assoc s !debugs := true with Not_found -> ()
+
+(****)
+
+let disabled_lst = ref []
+
+let disabled s =
+  let state = ref false in
+  disabled_lst := (s, state) :: !disabled_lst;
+  fun () -> !state
+
+let set_disabled s =
+  try List.assoc s !disabled_lst := true with Not_found ->
+   Format.eprintf "%s: no disable option named '%s'@." Sys.argv.(0) s; exit 1

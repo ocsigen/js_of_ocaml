@@ -29,3 +29,6 @@ val opt_iter : ('a -> unit) -> 'a option -> unit
 
 val debug : string -> unit -> bool
 val set_debug : string -> unit
+
+val disabled : string -> unit -> bool
+val set_disabled : string -> unit

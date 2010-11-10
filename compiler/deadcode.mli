@@ -18,4 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *)
 
+val disabled : unit -> bool
+
 val f : Code.program -> Code.program * int array

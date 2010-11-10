@@ -35,6 +35,7 @@ Patterns:
 
 let compact = ref true
 let debug = Util.debug "gen"
+let disable_compact_expr = Util.disabled "compactexpr"
 
 let set_pretty () = compact := false
 
@@ -178,9 +179,11 @@ let flush_all expr_queue l = fst (flush_queue expr_queue true l)
 
 let enqueue expr_queue prop x ce =
   let (instrs, expr_queue) =
-    if is_mutator prop then begin
+    if disable_compact_expr () then
+      flush_queue expr_queue true []
+    else if is_mutator prop then
       flush_queue expr_queue (prop >= flush_p) []
-    end else
+    else
       [], expr_queue
   in
   (instrs, (x, (prop, ce)) :: expr_queue)

@@ -47,8 +47,8 @@
 ./subst.cmx: util.cmx code.cmx ./subst.cmi 
 ./linker.cmo: util.cmi primitive.cmi ./linker.cmi 
 ./linker.cmx: util.cmx primitive.cmx ./linker.cmi 
-./inline.cmo: code.cmi ./inline.cmi 
-./inline.cmx: code.cmx ./inline.cmi 
+./inline.cmo: deadcode.cmi code.cmi ./inline.cmi 
+./inline.cmx: deadcode.cmx code.cmx ./inline.cmi 
 ./linker.cmi: 
 ./code.cmi: util.cmi 
 ./control.cmo: subst.cmi code.cmi ./control.cmi 

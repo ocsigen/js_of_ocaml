@@ -134,7 +134,7 @@ let do_inline = ref true
 let disable_inlining () = do_inline := false
 
 let f ((pc, blocks, free_pc) as p) live_vars =
-  if !do_inline then begin
+  if !do_inline && not (Deadcode.disabled ()) then begin
     let closures = get_closures p in
     let (blocks, free_pc) =
       AddrMap.fold
