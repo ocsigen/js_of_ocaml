@@ -212,12 +212,20 @@ let rec expression l f e =
           Format.fprintf f "-Infinity"
       end else if v <> v then
         Format.fprintf f "NaN"
-      else if v > 0. || (v = 0. && 1. /. v > 0.) then
-        Format.fprintf f "%.12g" v
-      else if l > 13 then
-        Format.fprintf f "(%.12g)" v
-      else
-        Format.fprintf f "%.12g" v
+      else begin
+        let s =
+          let s1 = Printf.sprintf "%.12g" v in
+          if v = float_of_string s1 then s1 else
+          let s2 = Printf.sprintf "%.15g" v in
+          if v = float_of_string s2 then s2 else
+          Printf.sprintf "%.18g" v
+        in
+        if l > 13 && (v < 0. || (v = 0. && 1. /. v < 0.)) then
+          (* Negative numbers may need to be parenthesized. *)
+          Format.fprintf f "(%s)" s
+        else
+          Format.fprintf f "%s" s
+      end
   | EUn (Typeof, e) ->
       if l > 13 then Format.fprintf f "@[<1>(";
       Format.fprintf f "@[typeof@ %a@]" (expression 13) e;
