@@ -216,7 +216,11 @@ let program_escape defs known_origins (_, blocks, _) =
             match i with
               Let (x, e) ->
                 expr_escape st x e
-            | Set_field (x, _, _) | Array_set (x, _, _) | Offset_ref (x, _) ->
+            | Set_field (x, _, y) | Array_set (x, _, y) ->
+                VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
+                  (VarMap.find x known_origins);
+                block_escape st y
+            | Offset_ref (x, _) ->
                 VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
                   (VarMap.find x known_origins))
          block.body;
