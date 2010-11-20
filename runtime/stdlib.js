@@ -144,9 +144,8 @@ function caml_array_set (array, index, newval) {
 //Provides: caml_array_get mutable
 //Requires: caml_array_bound_error
 function caml_array_get (array, index) {
-  var res = array[index+1];
-  if (res == undefined) caml_array_bound_error();
-  return res;
+  if ((index < 0) || (index >= array.length)) caml_array_bound_error();
+  return array[index+1];
 }
 
 //Provides: caml_make_vect const
