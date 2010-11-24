@@ -13,10 +13,10 @@ $(NAME).byte: $(OBJS)
 	$(OCAMLC) -linkpkg -o $@ $(STDLIB) $^
 
 %.cmo: %.ml ../../lib/$(STDLIB)
-	$(OCAMLC) -g -c $<
+	$(OCAMLC) -c $<
 
 %.cmi: %.mli ../../lib/$(STDLIB)
-	$(OCAMLC) -g -c $<
+	$(OCAMLC) -c $<
 
 clean::
 	rm -f *.cm[io] $(NAME).byte $(NAME).js
