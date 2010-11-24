@@ -154,7 +154,7 @@ let is_mutable p = p >= mutable_p
 let is_mutator p = p >= mutator_p
 let kind k =
   match k with
-    `Const -> const_p | `Mutable -> mutable_p | `Mutator -> mutator_p
+    `Pure -> const_p | `Mutable -> mutable_p | `Mutator -> mutator_p
 
 let access_queue queue x =
   try
@@ -508,11 +508,11 @@ let register_tern_prim name f =
            assert false)
 
 let register_un_math_prim name prim =
-  register_un_prim name `Const
+  register_un_prim name `Pure
     (fun cx -> J.ECall (J.EDot (J.EVar "Math", prim), [cx]))
 
 let register_bin_math_prim name prim =
-  register_bin_prim name `Const
+  register_bin_prim name `Pure
     (fun cx cy -> J.ECall (J.EDot (J.EVar "Math", prim), [cx; cy]))
 
 let _ =
@@ -521,67 +521,67 @@ let _ =
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
   register_bin_prim "caml_string_get" `Mutable
     (fun cx cy -> J.ECall (J.EDot (cx, "safeGet"), [cy]));
-  register_bin_prim "%int_add" `Const
+  register_bin_prim "%int_add" `Pure
     (fun cx cy -> Js_simpl.eplus_int cx cy);
-  register_bin_prim "%int_sub" `Const
+  register_bin_prim "%int_sub" `Pure
     (fun cx cy -> J.EBin (J.Minus, cx, cy));
-  register_bin_prim "%direct_int_mul" `Const
+  register_bin_prim "%direct_int_mul" `Pure
     (fun cx cy -> to_int (J.EBin (J.Mul, cx, cy)));
-  register_bin_prim "%direct_int_div" `Const
+  register_bin_prim "%direct_int_div" `Pure
     (fun cx cy -> to_int (J.EBin (J.Div, cx, cy)));
-  register_bin_prim "%direct_int_mod" `Const
+  register_bin_prim "%direct_int_mod" `Pure
     (fun cx cy -> to_int (J.EBin (J.Mod, cx, cy)));
-  register_bin_prim "%int_and" `Const
+  register_bin_prim "%int_and" `Pure
     (fun cx cy -> J.EBin (J.Band, cx, cy));
-  register_bin_prim "%int_or" `Const
+  register_bin_prim "%int_or" `Pure
     (fun cx cy -> J.EBin (J.Bor, cx, cy));
-  register_bin_prim "%int_xor" `Const
+  register_bin_prim "%int_xor" `Pure
     (fun cx cy -> J.EBin (J.Bxor, cx, cy));
-  register_bin_prim "%int_lsl" `Const
+  register_bin_prim "%int_lsl" `Pure
     (fun cx cy -> J.EBin (J.Lsl, cx, cy));
-  register_bin_prim "%int_lsr" `Const
+  register_bin_prim "%int_lsr" `Pure
     (fun cx cy -> J.EBin (J.Lsr, cx, cy));
-  register_bin_prim "%int_asr" `Const
+  register_bin_prim "%int_asr" `Pure
     (fun cx cy -> J.EBin (J.Asr, cx, cy));
-  register_un_prim "%int_neg" `Const
+  register_un_prim "%int_neg" `Pure
     (fun cx -> J.EUn (J.Neg, cx));
-  register_bin_prim "caml_eq_float" `Const
+  register_bin_prim "caml_eq_float" `Pure
     (fun cx cy -> bool (J.EBin (J.EqEq, float_val cx, float_val cy)));
-  register_bin_prim "caml_neq_float" `Const
+  register_bin_prim "caml_neq_float" `Pure
     (fun cx cy -> bool (J.EBin (J.NotEq, float_val cx, float_val cy)));
-  register_bin_prim "caml_ge_float" `Const
+  register_bin_prim "caml_ge_float" `Pure
     (fun cx cy -> bool (J.EBin (J.Le, float_val cy, float_val cx)));
-  register_bin_prim "caml_le_float" `Const
+  register_bin_prim "caml_le_float" `Pure
     (fun cx cy -> bool (J.EBin (J.Le, float_val cx, float_val cy)));
-  register_bin_prim "caml_gt_float" `Const
+  register_bin_prim "caml_gt_float" `Pure
     (fun cx cy -> bool (J.EBin (J.Lt, float_val cy, float_val cx)));
-  register_bin_prim "caml_lt_float" `Const
+  register_bin_prim "caml_lt_float" `Pure
     (fun cx cy -> bool (J.EBin (J.Lt, float_val cx, float_val cy)));
-  register_bin_prim "caml_add_float" `Const
+  register_bin_prim "caml_add_float" `Pure
     (fun cx cy -> val_float (J.EBin (J.Plus, float_val cx, float_val cy)));
-  register_bin_prim "caml_sub_float" `Const
+  register_bin_prim "caml_sub_float" `Pure
     (fun cx cy -> val_float (J.EBin (J.Minus, float_val cx, float_val cy)));
-  register_bin_prim "caml_mul_float" `Const
+  register_bin_prim "caml_mul_float" `Pure
     (fun cx cy -> val_float (J.EBin (J.Mul, float_val cx, float_val cy)));
-  register_bin_prim "caml_div_float" `Const
+  register_bin_prim "caml_div_float" `Pure
     (fun cx cy -> val_float (J.EBin (J.Div, float_val cx, float_val cy)));
-  register_un_prim "caml_neg_float" `Const
+  register_un_prim "caml_neg_float" `Pure
     (fun cx -> val_float (J.EUn (J.Neg, float_val cx)));
-  register_bin_prim "caml_fmod_float" `Const
+  register_bin_prim "caml_fmod_float" `Pure
     (fun cx cy -> val_float (J.EBin (J.Mod, float_val cx, float_val cy)));
-  register_un_prim "caml_ml_string_length" `Const
+  register_un_prim "caml_ml_string_length" `Pure
     (fun cx -> J.ECall (J.EDot (cx, "getLen"), []));
   register_tern_prim "caml_array_unsafe_set"
     (fun cx cy cz ->
        J.EBin (J.Eq, J.EAccess (cx, J.EBin (J.Plus, cy, one)), cz));
   register_tern_prim "caml_string_set"
     (fun cx cy cz -> J.ECall (J.EDot (cx, "safeSet"), [cy; cz]));
-  register_un_prim "caml_alloc_dummy" `Const (fun cx -> J.EArr []);
+  register_un_prim "caml_alloc_dummy" `Pure (fun cx -> J.EArr []);
   register_un_prim "caml_obj_dup" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "slice"), []));
-  register_un_prim "caml_int_of_float" `Const to_int;
+  register_un_prim "caml_int_of_float" `Pure to_int;
   (* FIX: this conversion from string should validate the string... *)
-  register_un_prim "caml_float_of_string" `Const
+  register_un_prim "caml_float_of_string" `Pure
     (fun cx -> J.EUn (J.Pl, cx));
   register_un_math_prim "caml_abs_float" "abs";
   register_un_math_prim "caml_acos_float" "acos";
@@ -597,9 +597,9 @@ let _ =
   register_un_math_prim "caml_sin_float" "sin";
   register_un_math_prim "caml_sqrt_float" "sqrt";
   register_un_math_prim "caml_tan_float" "tan";
-  register_un_prim "caml_js_from_bool" `Const
+  register_un_prim "caml_js_from_bool" `Pure
     (fun cx -> J.EUn (J.Not, J.EUn (J.Not, cx)));
-  register_un_prim "caml_js_to_bool" `Const to_int;
+  register_un_prim "caml_js_to_bool" `Pure to_int;
   register_un_prim "caml_js_from_string" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "toString"), []));
   register_un_prim "caml_js_to_string" `Mutable
@@ -612,9 +612,9 @@ let _ =
     (fun cx cy -> J.EAccess (cx, cy));
   register_bin_prim "caml_js_equals" `Mutable
     (fun cx cy -> bool (J.EBin (J.EqEq, cx, cy)));
-  register_bin_prim "caml_js_instanceof" `Const
+  register_bin_prim "caml_js_instanceof" `Pure
     (fun cx cy -> bool (J.EBin(J.InstanceOf, cx, cy)));
-  register_un_prim "caml_js_typeof" `Const
+  register_un_prim "caml_js_typeof" `Pure
     (fun cx -> J.EUn(J.Typeof, cx))
 
 (****)
@@ -1174,6 +1174,8 @@ and compile_argument_passing ctx queue (pc, args) backs continuation =
     continuation queue
   else begin
     let block = AddrMap.find pc ctx.Ctx.blocks in
+    (* We flush on backward edged.  We do not need to flush on forward
+       edges, as the block parameter variables are fresh. *)
     (*FIX: this is overly aggressive: we should instead keep track of
       dependencies between queued variables and take this into account
       to perform parallel renaming. *)
@@ -1225,7 +1227,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
                let ((px, cx), queue) = access_queue queue x in
 (*Format.eprintf "%a := %a@." Var.print y Var.print x;*)
                let (st, queue) =
-(*FIX: we should flush all the variables we need rather than doing this;
+(*FIX: we should flush only the variables we need rather than doing this;
        do the same for closure free variables *)
                  match 2 (*ctx.Ctx.live.(Var.idx y)*) with
                    0 -> assert false

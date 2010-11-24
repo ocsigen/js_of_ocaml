@@ -113,6 +113,9 @@ let inline closures live_vars blocks free_pc pc =
              in
              let blocks =
                rewrite_closure blocks free_pc clos_pc block.handler in
+             (* We do not really need this intermediate block.  It
+                just avoid the need to find which function parameters
+                are used in the function body. *)
              let blocks =
                AddrMap.add (free_pc + 1)
                  { params = params; handler = block.handler;

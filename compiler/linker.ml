@@ -158,7 +158,7 @@ let add_file f =
          (fun (loc, nm, kind) ->
             let kind =
               match kind with
-                "const" -> `Const
+                "pure" | "const" -> `Pure
               | "mutable" -> `Mutable
               | "mutator" -> `Mutator
               | _ ->

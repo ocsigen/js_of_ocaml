@@ -25,7 +25,7 @@ let resolve nm = try Hashtbl.find aliases nm with Not_found -> nm
 
 (****)
 
-type kind = [ `Const | `Mutable | `Mutator ]
+type kind = [ `Pure | `Mutable | `Mutator ]
 
 let kinds = Hashtbl.create 37
 
