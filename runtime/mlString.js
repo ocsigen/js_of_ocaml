@@ -31,6 +31,7 @@
 // This way, using the wrong object is detected early.
 
 //Provides: MlString
+//Requires: caml_array_bound_error
 function caml_str_repeat(n, s) {
   if (!n) { return ""; }
   if (n & 1) { return caml_str_repeat(n - 1, s) + s; }

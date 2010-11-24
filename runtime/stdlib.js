@@ -195,7 +195,7 @@ function caml_compare_val (a, b, total) {
     if (a < b) return -1;
     if (a > b) return 1;
     if (a != b) {
-      if (!total) return null;
+      if (!total) return 0;
       if (a == a) return 1;
       if (b == b) return -1;
     }
