@@ -41,7 +41,7 @@ function caml_str_repeat(n, s) {
 
 function MlString(param) {
   if (param != null) {
-    this.bytes = param;
+    this.bytes = this.fullBytes = param;
     this.last = this.len = param.length;
   }
 }
@@ -51,6 +51,7 @@ MlString.prototype = {
   string:null,
   // byte string
   bytes:null,
+  fullBytes:null,
   // byte array
   array:null,
   // length
@@ -72,7 +73,7 @@ MlString.prototype = {
       // FIX should benchmark different conversion functions
       for (var i = 0; i < l; i ++) b += String.fromCharCode (a[i]);
     }
-    this.bytes = b;
+    this.bytes = this.fullBytes = b;
     this.last = this.len = b.length;
     return b;
   },
@@ -84,12 +85,15 @@ MlString.prototype = {
   },
 
   getFullBytes:function() {
-    var b = this.bytes;
+    var b = this.fullBytes;
+    if (b !== null) return b;
+    b = this.bytes;
     if (b == null) b = this.toBytes ();
     if (this.last < this.len) {
       this.bytes = (b += caml_str_repeat(this.len - this.last, '\0'));
       this.last = this.len;
     }
+    this.fullBytes = b;
     return b;
   },
 
@@ -100,7 +104,7 @@ MlString.prototype = {
     var a = [], l = this.last;
     for (var i = 0; i < l; i++) a[i] = b.charCodeAt(i);
     for (l = this.len; i < l; i++) a[i] = 0;
-    this.string = this.bytes = null;
+    this.string = this.bytes = this.fullBytes = null;
     this.last = this.len;
     this.array = a;
     return a;
@@ -114,7 +118,7 @@ MlString.prototype = {
 
   getLen:function() {
     var len = this.len;
-    if (len != null) return len;
+    if (len !== null) return len;
     this.toBytes();
     return this.len;
   },
@@ -122,19 +126,6 @@ MlString.prototype = {
   toString:function() { var s = this.string; return s?s:this.toJsString(); },
 
   valueOf:function() { var s = this.string; return s?s:this.toJsString(); },
-
-  blit:function(i1, s2, i2, l) {
-    if (l == 0) return 0;
-    if (s2.bytes != null && i2 == s2.last && this.len == l && this.last == l) {
-      // s2.string and s2.array are null
-      s2.bytes += this.getBytes();
-      s2.last += l;
-      return 0;
-    }
-    var a = s2.array;
-    if (!a) a = s2.toArray(); else { s2.bytes = s2.string = null; }
-    this.blitToArray (i1, a, i2, l);
-  },
 
   blitToArray:function(i1, a2, i2, l) {
     var a1 = this.array;
@@ -177,7 +168,7 @@ MlString.prototype = {
       }
       a = this.toArray();
     } else if (this.bytes != null) {
-      this.bytes = this.string = null;
+      this.bytes = this.fullBytes = this.string = null;
     }
     a[i] = c & 0xff;
     return 0;
@@ -194,7 +185,7 @@ MlString.prototype = {
     var a = this.array;
     if (!a) a = this.toArray();
     else if (this.bytes != null) {
-      this.bytes = this.string = null;
+      this.bytes = this.fullBytes = this.string = null;
     }
     var l = ofs + len;
     for (i = ofs; i < l; i++) a[i] = c;
@@ -245,3 +236,54 @@ function MlStringFromArray (a) {
   var len = a.length; this.array = a; this.len = this.last = len;
 }
 MlStringFromArray.prototype = new MlString ();
+
+//Provides: caml_create_string const
+//Requires: MlString
+function caml_create_string(len) { return new MlMakeString(len); }
+//Provides: caml_fill_string
+//Requires: MlString
+function caml_fill_string(s, i, l, c) { s.fill (i, l, c); }
+//Provides: caml_string_compare mutable
+//Requires: MlString
+function caml_string_compare(s1, s2) { return s1.compare(s2); }
+//Provides: caml_string_equal mutable
+//Requires: MlString
+function caml_string_equal(s1, s2) {
+  var b1 = s1.fullBytes;
+  var b2 = s2.fullBytes;
+  if (b1 != null && b2 != null) return (b1 == b2)?1:0;
+  return (s1.getFullBytes () == s2.getFullBytes ())?1:0;
+}
+//Provides: caml_string_notequal mutable
+//Requires: caml_string_equal
+function caml_string_notequal(s1, s2) { return 1-caml_string_equal(s1, s2); }
+//Provides: caml_string_lessequal
+//Requires: MlString
+function caml_string_lessequal(s1, s2) { return s1.lessEqual(s2); }
+//Provides: caml_string_lessthan
+//Requires: MlString
+function caml_string_lessthan(s1, s2) { return s1.lessThan(s2); }
+//Provides: caml_string_greaterthan
+//Requires: MlString
+function caml_string_greaterthan(s1, s2) { return s2.lessThan(s1); }
+//Provides: caml_string_greaterequal
+//Requires: MlString
+function caml_string_greaterequal(s1, s2) { return s2.lessThan(s1); }
+//Provides: caml_blit_string
+//Requires: MlString
+function caml_blit_string(s1, i1, s2, i2, len) {
+  if (len === 0) return;
+  if (i2 === s2.last && i1 === 0 && s1.last == len) {
+    // s2.string and s2.array are null
+    var s = s1.bytes;
+    if (s !== null)
+      s2.bytes += s1.bytes;
+    else
+      s2.bytes += s1.getBytes();
+    s2.last += len;
+    return;
+  }
+  var a = s2.array;
+  if (!a) a = s2.toArray(); else { s2.bytes = s2.string = null; }
+  s1.blitToArray (i1, a, i2, len);
+}

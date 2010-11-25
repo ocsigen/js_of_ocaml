@@ -349,5 +349,5 @@ function caml_output_value_to_buffer (s, ofs, len, v, fl) {
   /* ignores flags... */
   var t = caml_output_val (v);
   if (t.length > len) caml_failwith ("Marshal.to_buffer: buffer overflow");
-  new MlStringFromArray (t).blit(0, s, ofs, t.length)
+  caml_blit_string(t, 0, s, ofs, t.length);
 }
