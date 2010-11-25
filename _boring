@@ -6,6 +6,7 @@
 # Ocaml object files
 \.cm[ioxa]$
 \.cmxs$
+\.cmjs$
 
 # backup files
 ~$
@@ -19,3 +20,5 @@
 ^compiler/js_of_ocaml$
 ^lib/doc$
 ^lib/docdiv$
+^benchmarks/build$
+^benchmarks/results$
