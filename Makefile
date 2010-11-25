@@ -6,15 +6,15 @@ include Makefile.conf
 .PHONY: compiler library runtime examples check_lwt
 
 compiler:
-	make -C compiler
+	$(MAKE) -C compiler
 library:
-	make -C lib
+	$(MAKE) -C lib
 runtime:
-	make -C runtime
+	$(MAKE) -C runtime
 examples: compiler library
-	make -C examples
+	$(MAKE) -C examples
 tests: compiler library
-	make -C tests
+	$(MAKE) -C tests
 
 LWTERROR="Js_of_ocaml requires Lwt version 2.1 at least.  Please upgrade."
 check_lwt:
@@ -31,12 +31,12 @@ uninstall:
 	rm -f $(BINDIR)/$(COMPILER)
 
 depend:
-	make -C compiler depend
-	make -C lib depend
+	$(MAKE) -C compiler depend
+	$(MAKE) -C lib depend
 
 clean:
-	make -C compiler clean
-	make -C lib clean
-	make -C runtime clean
-	make -C examples clean
-	make -C tests clean
+	$(MAKE) -C compiler clean
+	$(MAKE) -C lib clean
+	$(MAKE) -C runtime clean
+	$(MAKE) -C examples clean
+	$(MAKE) -C tests clean

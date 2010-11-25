@@ -48,7 +48,7 @@ clean:
 	rm -f stubs.c
 
 depend: syntax/pa_js.cmo
-	find . -maxdepth 1 \! -name pa_js.ml -regex ".*\\.mli?" | \
+	ls *.ml *.mli | grep -v pa_js.ml | \
 	xargs ocamldep -pp "camlp4o syntax/pa_js.cmo" > .depend
 
 include .depend

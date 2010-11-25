@@ -6,7 +6,7 @@ TARGETS=*/
 all: $(TARGETS)
 
 $(TARGETS):
-	make -C $@
+	$(MAKE) -C $@
 
 clean:
-	for i in $(TARGETS); do make -C $$i clean; done
+	for i in $(TARGETS); do $(MAKE) -C $$i clean; done

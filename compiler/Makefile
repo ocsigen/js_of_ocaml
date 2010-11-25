@@ -30,7 +30,6 @@ clean:
 	rm -f js_of_ocaml compile
 
 depend:
-	find . -maxdepth 1 -name private -prune -o -regex ".*\\.mli?" | \
-	xargs ocamldep > .depend
+	ocamldep *.ml *.mli > .depend
 
 include .depend
