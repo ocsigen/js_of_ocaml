@@ -76,11 +76,8 @@ let mean_with_confidence a =
 
 let src = "sources"
 let code = "build"
-let meas = "results/measures"
-
-let v8 = "/home/vouillon/Js_of_ocaml_benchs/v8-read-only/d8 "
-let tm = "/home/vouillon/Js_of_ocaml_benchs/tracemonkey/js/src/js -j -m "
-let nitro = "/home/vouillon/Js_of_ocaml_benchs/WebKit/WebKitBuild/Release/Programs/jsc "
+let times = Filename.concat "results/times" (Unix.gethostname ())
+let sizes = "results/sizes"
 
 let ml = ("ml", ".ml")
 let js = ("js", ".js")
@@ -91,6 +88,10 @@ let ocamljs = ("ocamljs", ".js")
 let byte_unsafe = ("unsafe/byte", "")
 let opt_unsafe = ("unsafe/opt", "")
 let js_of_ocaml_unsafe = ("unsafe/js_of_ocaml", ".js")
+let js_of_ocaml_inline = ("noinline", ".js")
+let js_of_ocaml_deadcode = ("nodeadcode", ".js")
+let js_of_ocaml_compact = ("notcompact", ".js")
+let js_of_ocaml_call = ("nooptcall", ".js")
 let ocamljs_unsafe = ("unsafe/ocamljs", ".js")
 
 (****)
@@ -98,6 +99,7 @@ let ocamljs_unsafe = ("unsafe/ocamljs", ".js")
 let no_ext (dir, _) = (dir, "")
 let file dir1 (dir2, ext) nm = Format.sprintf "%s/%s/%s%s" dir1 dir2 nm ext
 let dir dir1 (dir2, ext) = Format.sprintf "%s/%s" dir1 dir2
+let sub_spec (dir, ext) loc = (Format.sprintf "%s/%s" dir loc, ext)
 
 (****)
 
@@ -156,12 +158,3 @@ let benchs loc ((_, ext) as spec) =
   List.filter (fun nm -> ext = "" || Filename.check_suffix nm ext) >>
   (if ext = "" then fun x -> x else List.map Filename.chop_extension) >>
   List.sort compare
-
-(*
-let benchs =
-  Sys.readdir (dir src ml) >>
-  Array.to_list >>
-  List.filter (fun nm -> Filename.check_suffix nm ".ml") >>
-  List.map Filename.chop_extension >>
-  List.sort compare
-*)

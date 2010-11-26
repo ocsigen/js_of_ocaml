@@ -1,0 +1,3 @@
+interpreter v8 /home/vouillon/Js_of_ocaml_benchs/v8-read-only/d8
+interpreter tm /home/vouillon/Js_of_ocaml_benchs/tracemonkey/js/src/js -j -m
+interpreter nitro /home/vouillon/Js_of_ocaml_benchs/WebKit/WebKitBuild/Release/Programs/jsc
