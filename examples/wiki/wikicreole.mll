@@ -114,7 +114,9 @@ let style_change c style =
       Style (s, inline, stack) when s = style ->
         pop_style c style inline stack
     | _ ->
-        push_string c "**"
+        match style with
+          Italic -> push_string c "//"
+        | Bold   -> push_string c "**"
   end else begin
     c.stack <- Style (style, c.inline_mix, c.stack);
     c.inline_mix <- [];
