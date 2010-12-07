@@ -150,7 +150,7 @@ let read_config () =
 let _ =
   let options =
     [("-compile", Arg.Set compile_only, " only compiles");
-     ("-full", Arg.Set full, " run all benchmarks");
+     ("-all", Arg.Set full, " run all benchmarks");
      ("-config", Arg.Set_string conf, "<file> use <file> as a config file");
      ("-fast", Arg.Unit fast_run, " perform less iterations")]
   in
