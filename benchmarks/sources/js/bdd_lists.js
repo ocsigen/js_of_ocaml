@@ -21,12 +21,6 @@ function arr(size,v) {
     return t;
 }
 
-function arr2(size) {
-    var t = [];
-    for (var i=0; i < size; i++) t[i] = [];
-    return t;
-}
-
 function eval(bdd, vars) {
     switch (bdd.id) {
     case 0:
@@ -43,35 +37,40 @@ function getId(bdd) { return bdd.id; };
 var initSize_1 = 8*1024 - 1;
 var nodeC      = 1;
 var sz_1       = initSize_1;
-var htab       = arr2(sz_1+1);
+var htab       = new Array(sz_1+1);
 var n_items    = 0;
 
 function hashVal(x,y,v) { return ((x << 1) + y + (v << 2)); };
 
 function resize(newSize) {
+    var arr     = htab;
     var newSz_1 = newSize-1;
-    var newArr  = arr2(newSize);
-    for (var i = 0; i <= sz_1; i++) {
-        var b = htab[i];
-        for (var j = 0; j < b.length; j++) {
-            var n = b[j];
+    var newArr  = [];
+    function copyBucket(bucket) {
+        if (bucket) {
+            var n = bucket.head;
             var ind = hashVal(getId(n.l), getId(n.h), n.v) & newSz_1;
-            newArr[ind].push(n);
-        }
+            newArr[ind] = {head: n, tail: newArr[ind]};
+            copyBucket(bucket.tail);
+        };
+    };
+    for (var n = 0; n <= sz_1; n++) {
+        copyBucket(arr[n]);
     }
     htab = newArr;
     sz_1 = newSz_1;
 }
 
+
 function insert(idl,idh,v,ind,bucket,newNode) {
     if (n_items <= sz_1) {
-        htab[ind].push(newNode);
+        htab[ind] = {head: newNode, tail: bucket};
         n_items ++;
     }
     else {
         resize(sz_1 + sz_1 + 2);
         ind = hashVal(idl,idh,v) & sz_1;
-        htab[ind].push(newNode);
+        htab[ind] = {head: newNode, tail: htab[ind]};
     };
 };
 
@@ -82,15 +81,23 @@ function mkNode(low,v,high) {
     if (idl == idh) return low; else {
         var ind      = hashVal(idl,idh,v) & sz_1;
         var bucket   = htab[ind];
-        for (i = 0; i < bucket.length; i++) {
-            var n = bucket[i];
-            if ((v == n.v) && (idl == getId(n.l)) && (idh == getId(n.h)))
-                return n;
-        }
-        nodeC ++;
-        var nn = {l:low, v:v, id:nodeC, h:high};
-        insert(getId(low),getId(high),v,ind,bucket,nn);
-        return nn;
+        function lookup(b) {
+            if (!b) {
+                nodeC ++;
+                var nn = {l:low, v:v, id:nodeC, h:high};
+                insert(getId(low),getId(high),v,ind,bucket,nn);
+                return nn;
+            }
+            else {
+                var n = b.head;
+                if ((v == n.v) && (idl == getId(n.l)) && (idh == getId(n.h))) {
+                    return n;
+                } else {
+                    return lookup(b.tail);
+                };
+            };
+        };
+        return lookup(bucket);
     };
 };
 
