@@ -277,7 +277,7 @@ function caml_int64_format (fmt, x) {
   do {
     var p = caml_int64_udivmod(x, wbase);
     x = p[1];
-    buffer = f.cvtbl.charAt(caml_int64_to_int32(p[2])) + buffer;
+    buffer = cvtbl.charAt(caml_int64_to_int32(p[2])) + buffer;
   } while (! caml_int64_is_zero(x));
   return caml_finish_formatting(f, buffer);
 }
