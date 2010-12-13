@@ -1,5 +1,5 @@
 description = "Js_of_ocaml library"
-version = "0.1"
+version = "1.0"
 archive(byte) = "js_of_ocaml.cma"
 requires = "lwt,camlp4"
 archive(syntax,preprocessor) = "pa_js.cmo"

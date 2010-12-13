@@ -22,3 +22,4 @@
 ^lib/docdiv$
 ^benchmarks/build$
 ^benchmarks/results$
+^benchmarks/config$

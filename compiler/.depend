@@ -1,68 +1,68 @@
-./code.cmi: util.cmi 
-./js_simpl.cmi: javascript.cmi 
-./linker.cmi: 
-./parse.cmo: util.cmi primitive.cmi instr.cmi code.cmi ./parse.cmi 
-./parse.cmx: util.cmx primitive.cmx instr.cmx code.cmx ./parse.cmi 
-./control.cmi: code.cmi 
-./dgraph.cmi: 
-./pure_fun.cmo: primitive.cmi code.cmi ./pure_fun.cmi 
-./pure_fun.cmx: primitive.cmx code.cmx ./pure_fun.cmi 
-./freevars.cmo: dgraph.cmi code.cmi ./freevars.cmi 
-./freevars.cmx: dgraph.cmx code.cmx ./freevars.cmi 
-./inline.cmo: deadcode.cmi code.cmi ./inline.cmi 
-./inline.cmx: deadcode.cmx code.cmx ./inline.cmi 
-./subst.cmo: util.cmi code.cmi ./subst.cmi 
-./subst.cmx: util.cmx code.cmx ./subst.cmi 
-./instr.cmi: 
-./util.cmo: ./util.cmi 
-./util.cmx: ./util.cmi 
-./control.cmo: subst.cmi code.cmi ./control.cmi 
-./control.cmx: subst.cmx code.cmx ./control.cmi 
-./pure_fun.cmi: code.cmi 
-./phisimpl.cmo: util.cmi subst.cmi dgraph.cmi code.cmi ./phisimpl.cmi 
-./phisimpl.cmx: util.cmx subst.cmx dgraph.cmx code.cmx ./phisimpl.cmi 
-./parse.cmi: code.cmi 
-./js_rename.cmo: util.cmi javascript.cmi 
-./js_rename.cmx: util.cmx javascript.cmx 
-./flow.cmo: util.cmi subst.cmi dgraph.cmi code.cmi ./flow.cmi 
-./flow.cmx: util.cmx subst.cmx dgraph.cmx code.cmx ./flow.cmi 
-./deadcode.cmo: util.cmi pure_fun.cmi code.cmi ./deadcode.cmi 
-./deadcode.cmx: util.cmx pure_fun.cmx code.cmx ./deadcode.cmi 
-./tailcall.cmi: code.cmi 
-./main.cmo: util.cmi tailcall.cmi phisimpl.cmi parse.cmi linker.cmi \
-    inline.cmi generate.cmi flow.cmi deadcode.cmi code.cmi 
-./main.cmx: util.cmx tailcall.cmx phisimpl.cmx parse.cmx linker.cmx \
-    inline.cmx generate.cmx flow.cmx deadcode.cmx code.cmx 
-./generate.cmo: util.cmi subst.cmi primitive.cmi linker.cmi js_simpl.cmi \
-    js_output.cmi javascript.cmi freevars.cmi code.cmi ./generate.cmi 
-./generate.cmx: util.cmx subst.cmx primitive.cmx linker.cmx js_simpl.cmx \
-    js_output.cmx javascript.cmx freevars.cmx code.cmx ./generate.cmi 
-./linker.cmo: util.cmi primitive.cmi ./linker.cmi 
-./linker.cmx: util.cmx primitive.cmx ./linker.cmi 
-./code.cmo: util.cmi ./code.cmi 
-./code.cmx: util.cmx ./code.cmi 
-./util.cmi: 
-./tailcall.cmo: subst.cmi code.cmi ./tailcall.cmi 
-./tailcall.cmx: subst.cmx code.cmx ./tailcall.cmi 
-./javascript.cmo: ./javascript.cmi 
-./javascript.cmx: ./javascript.cmi 
-./freevars.cmi: util.cmi code.cmi 
-./javascript.cmi: 
-./deadcode.cmi: code.cmi 
-./dgraph.cmo: ./dgraph.cmi 
-./dgraph.cmx: ./dgraph.cmi 
-./js_output.cmi: javascript.cmi 
-./instr.cmo: ./instr.cmi 
-./instr.cmx: ./instr.cmi 
-./js_output.cmo: javascript.cmi ./js_output.cmi 
-./js_output.cmx: javascript.cmx ./js_output.cmi 
-./inline.cmi: code.cmi 
-./flow.cmi: code.cmi 
-./phisimpl.cmi: code.cmi 
-./js_simpl.cmo: javascript.cmi ./js_simpl.cmi 
-./js_simpl.cmx: javascript.cmx ./js_simpl.cmi 
-./primitive.cmi: 
-./generate.cmi: code.cmi 
-./subst.cmi: code.cmi 
-./primitive.cmo: util.cmi ./primitive.cmi 
-./primitive.cmx: util.cmx ./primitive.cmi 
+code.cmo: util.cmi code.cmi 
+code.cmx: util.cmx code.cmi 
+control.cmo: subst.cmi code.cmi control.cmi 
+control.cmx: subst.cmx code.cmx control.cmi 
+deadcode.cmo: util.cmi pure_fun.cmi code.cmi deadcode.cmi 
+deadcode.cmx: util.cmx pure_fun.cmx code.cmx deadcode.cmi 
+dgraph.cmo: dgraph.cmi 
+dgraph.cmx: dgraph.cmi 
+flow.cmo: util.cmi subst.cmi dgraph.cmi code.cmi flow.cmi 
+flow.cmx: util.cmx subst.cmx dgraph.cmx code.cmx flow.cmi 
+freevars.cmo: dgraph.cmi code.cmi freevars.cmi 
+freevars.cmx: dgraph.cmx code.cmx freevars.cmi 
+generate.cmo: util.cmi subst.cmi primitive.cmi linker.cmi js_simpl.cmi \
+    js_output.cmi javascript.cmi freevars.cmi code.cmi generate.cmi 
+generate.cmx: util.cmx subst.cmx primitive.cmx linker.cmx js_simpl.cmx \
+    js_output.cmx javascript.cmx freevars.cmx code.cmx generate.cmi 
+inline.cmo: deadcode.cmi code.cmi inline.cmi 
+inline.cmx: deadcode.cmx code.cmx inline.cmi 
+instr.cmo: instr.cmi 
+instr.cmx: instr.cmi 
+javascript.cmo: javascript.cmi 
+javascript.cmx: javascript.cmi 
+js_output.cmo: javascript.cmi js_output.cmi 
+js_output.cmx: javascript.cmx js_output.cmi 
+js_rename.cmo: util.cmi javascript.cmi 
+js_rename.cmx: util.cmx javascript.cmx 
+js_simpl.cmo: javascript.cmi js_simpl.cmi 
+js_simpl.cmx: javascript.cmx js_simpl.cmi 
+linker.cmo: util.cmi primitive.cmi linker.cmi 
+linker.cmx: util.cmx primitive.cmx linker.cmi 
+main.cmo: util.cmi tailcall.cmi phisimpl.cmi parse.cmi linker.cmi inline.cmi \
+    generate.cmi flow.cmi deadcode.cmi code.cmi 
+main.cmx: util.cmx tailcall.cmx phisimpl.cmx parse.cmx linker.cmx inline.cmx \
+    generate.cmx flow.cmx deadcode.cmx code.cmx 
+parse.cmo: util.cmi primitive.cmi instr.cmi code.cmi parse.cmi 
+parse.cmx: util.cmx primitive.cmx instr.cmx code.cmx parse.cmi 
+phisimpl.cmo: util.cmi subst.cmi dgraph.cmi code.cmi phisimpl.cmi 
+phisimpl.cmx: util.cmx subst.cmx dgraph.cmx code.cmx phisimpl.cmi 
+primitive.cmo: util.cmi primitive.cmi 
+primitive.cmx: util.cmx primitive.cmi 
+pure_fun.cmo: primitive.cmi code.cmi pure_fun.cmi 
+pure_fun.cmx: primitive.cmx code.cmx pure_fun.cmi 
+subst.cmo: util.cmi code.cmi subst.cmi 
+subst.cmx: util.cmx code.cmx subst.cmi 
+tailcall.cmo: subst.cmi code.cmi tailcall.cmi 
+tailcall.cmx: subst.cmx code.cmx tailcall.cmi 
+util.cmo: util.cmi 
+util.cmx: util.cmi 
+code.cmi: util.cmi 
+control.cmi: code.cmi 
+deadcode.cmi: code.cmi 
+dgraph.cmi: 
+flow.cmi: code.cmi 
+freevars.cmi: util.cmi code.cmi 
+generate.cmi: code.cmi 
+inline.cmi: code.cmi 
+instr.cmi: 
+javascript.cmi: 
+js_output.cmi: javascript.cmi 
+js_simpl.cmi: javascript.cmi 
+linker.cmi: 
+parse.cmi: code.cmi 
+phisimpl.cmi: code.cmi 
+primitive.cmi: 
+pure_fun.cmi: code.cmi 
+subst.cmi: code.cmi 
+tailcall.cmi: code.cmi 
+util.cmi: 

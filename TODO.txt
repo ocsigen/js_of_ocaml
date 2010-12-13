@@ -1,26 +1,64 @@
 Priorities
 ==========
-darcs send --sign --to "nobody@ocsigen.org" --sendmail-command='curl -o webdarcs.log -F patch=@- -F repo=js_of_ocaml http://ocsigen.org/webdarcs/ %<' http://ocsigen.org/darcs/js_of_ocaml/
 
-Add gc externals, expm1, log1p
-===> log(1+x) == (log(1+x) * x) / ((1-x) - 1)
+- use short names for primitives
+- share string constants
+  =====> generic mechanism for sharing constants?
 
-Conversion to Darcs:
-    cd /tmp && rm -rf ocaml2js.darcs && mkdir ocaml2js.darcs && cd ocaml2js.darcs && darcs initialize
-    /tmp/bzr-fastimport/exporters/hg-fast-export.py -r /tmp/ocaml2js | /tmp/bzr-fastimport/exporters/darcs/darcs-fast-import
+- optimize pattern (new Mlstring("foo").toString())
+                 ===> "foo" converted to UTF-8
+- new MlString(x) replaced by primitive
+
+- unhoist functions when possible
+
+---------
+
+-  stopPropagation: function(){
+         if (this.event.stopPropagation) this.event.stopPropagation();
+         else this.event.cancelBubble = true;
+         return this; }
+- check canvas availability in examples
+- website: menus + doc
+- finish planet (no cpu when not moving / not visible)
 
 Examples
 --------
-- check canvas availability
 - polishing
-
-Documentation
--------------
-- js library (mostly, syntax extension)                  <=====
 
 Libraries
 ---------
-- canvas: should check whether it is available...
+- object literals
+    {:m = 1; n = "abcd":} : [> `m of int; `n of string] Js.record Js.t
+  ==> usual rule for mapping field names; check for no duplicate.
+- array literals
+  in particular, heterogeneous arrays...
+        ('a, 'b, 'c) t ???
+
+    module Tuple : sig
+      type 'a tuple
+      val e : unit tuple
+      val a : 'a tuple -> 'b -> ('a * 'b) tuple
+
+      type ('a, 'b) acc
+      val first : ('a * 'b, 'b) acc
+      val next : ('a, 'b) acc -> ('c * 'a, 'b) acc
+      val get : 'a tuple -> ('a, 'b) acc -> 'b
+      val set : 'a tuple -> ('a, 'b) acc -> 'b -> unit
+    end = struct
+      type 'a tuple = 'a
+      let e = ()
+      let a x y = (x, y)
+    end
+
+   <_0: t0; _1: t1; _n: tn> t
+
+Libraries
+=========
+- DOMContentLoaded (+workarounds for legacy browsers)
+  ===> see jquery
+- Add expm1, log1p
+  ===> log(1+x) == (log(1+x) * x) / ((1-x) - 1)
+       (may be misoptimized...)
 
 Benchmarks/examples
 ===================
@@ -28,11 +66,6 @@ Benchmarks/examples
 - planets (+satellites?) ===> Runge-Kutta
 - 3D effects: http://gyu.que.jp/jscloth/
               http://stackoverflow.com/questions/1584854/how-to-draw-3d-sphere
-
-Design notes
-============
-- should we rely on automatic conversions for float/string/bool?
-  ==> does not always work (for instance, strokeStyle method for canvas)
 
 Known issues
 ============
@@ -48,11 +81,6 @@ Compiler optimizations
 - fix control.ml
 
 - detect caml_format_int("%d", x) and generate ""+x
-
-- multiplication:
-    optimization when one argument is known to be small (< 20 bits)
-  similarly for div/sub when argument not zero and no overflow
-    (not dividing by -1)
 
 - syntactic sugar for Javascript literal strings
   + optimization to avoid going through Caml strings
@@ -74,8 +102,6 @@ Compiler optimizations
 
 - we should check stack compatibility when parsing:
   when jumping somewhere, the stack should keep the same shape
-
-- remove "Variable x" instruction
 
 - Improved optimizations
   ==> cross-function optimizations

@@ -26,7 +26,7 @@ open Camlp4
 
 module Id : Sig.Id = struct
   let name = "Javascript"
-  let version = "0.1"
+  let version = "1.0"
 end
 
 module Make (Syntax : Sig.Camlp4Syntax) = struct

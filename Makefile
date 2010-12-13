@@ -40,3 +40,12 @@ clean:
 	$(MAKE) -C runtime clean
 	$(MAKE) -C examples clean
 	$(MAKE) -C tests clean
+
+realclean: clean
+	find . -name "*~" -print | xargs rm -f
+
+dist:
+	rm -r /tmp/js_of_ocaml &&\
+        cd /tmp &&\
+	darcs get http://ocsigen.org/darcs/js_of_ocaml/ &&\
+	tar zcvf js_of_ocaml.tar.gz js_of_ocaml --exclude benchmarks --exclude _darcs --exclude tests
