@@ -75,7 +75,7 @@ class type element = object
   method getAttribute : js_string t -> js_string t meth
   method setAttribute : js_string t -> js_string t -> unit meth
   method removeAttribute : js_string t -> unit meth
-  method hasAttribyte : js_string t -> bool t meth
+  method hasAttribute : js_string t -> bool t meth
   method getElementsByTagName : js_string t -> 'element nodeList t meth
 end
 
