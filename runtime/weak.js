@@ -39,7 +39,7 @@ function caml_weak_copy(x, i) {
   return y;
 }
 //Provides: caml_weak_check mutable
-function caml_weak_check(x, i) { return x[i]!==undefined && x[i] !===0; }
+function caml_weak_check(x, i) { return x[i]!==undefined && x[i] !==0; }
 //Provides: caml_weak_blit
 function caml_weak_blit(s, i, d, j, l) {
   for (var k = 0; k < l; k++) d[j + k] = s[i + k];
