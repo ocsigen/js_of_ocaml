@@ -20,6 +20,8 @@
 ///////////// Core
 //Provides: caml_call_gen
 function caml_call_gen(f, args) {
+  if(f.fun)
+    return caml_call_gen(f.fun, args);
   var n = f.length;
   var d = n - args.length;
   if (d == 0)
@@ -84,6 +86,8 @@ function caml_raise_zero_divide () {
 
 //Provides: caml_update_dummy
 function caml_update_dummy (x, y) {
+  if( typeof y==="function" ) { x.fun = y; return 0; }
+  if( y.fun ) { x.fun = y.fun; return 0; }
   var i = y.length; while (i--) x[i] = y[i]; return 0;
 }
 
