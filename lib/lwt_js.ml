@@ -29,17 +29,9 @@ let sleep d =
 
 let yield () = sleep 0.
 
-let need_wakeup = ref false
-let wakeup () =
-  if not !need_wakeup
-  then
-    begin
-      need_wakeup := true;
-      ignore (Dom_html.window##setTimeout
-		(Js.wrap_callback
-		   (fun () -> need_wakeup := false;
-                     Lwt.wakeup_paused ()),
-		 0.))
-    end
+let wakeup = function
+  | 0 -> ()
+  | _ -> ignore (Dom_html.window##setTimeout
+		  (Js.wrap_callback Lwt.wakeup_paused , 0.))
 
 let () = Lwt.register_pause_notifier wakeup
