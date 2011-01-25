@@ -30,8 +30,8 @@ let sleep d =
 let yield () = sleep 0.
 
 let wakeup = function
-  | 0 -> ()
-  | _ -> ignore (Dom_html.window##setTimeout
+  | 1 -> ignore (Dom_html.window##setTimeout
 		  (Js.wrap_callback Lwt.wakeup_paused , 0.))
+  | _ -> ()
 
 let () = Lwt.register_pause_notifier wakeup
