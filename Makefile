@@ -16,9 +16,9 @@ examples: compiler library
 tests: compiler library
 	$(MAKE) -C tests
 
-LWTERROR="Js_of_ocaml requires Lwt version 2.1 at least.  Please upgrade."
+LWTERROR="Js_of_ocaml requires Lwt version 2.2.1 at least.  Please upgrade."
 check_lwt:
-	@if ocamlfind query lwt -l | grep -q "version:.*2\\.0\\."; then \
+	@if ocamlfind query lwt -l | ocaml tools/check_version.ml 2.2.1; then \
 	  echo $(LWTERROR); exit 1; \
 	fi
 

@@ -13,7 +13,7 @@ very stable API.
 === Requirements ===
 
   * Findlib
-  * Lwt (**version 2.1** at least)
+  * Lwt (**version 2.2.1** at least)
 
 === Installation ===
   * run {{{make}}} to compile everything
