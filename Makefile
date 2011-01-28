@@ -14,7 +14,9 @@ runtime:
 examples: compiler library
 	$(MAKE) -C examples
 tests: compiler library
+ifeq ($(wildcard tests),tests)
 	$(MAKE) -C tests
+endif
 
 LWTERROR="Js_of_ocaml requires Lwt version 2.2.1 at least.  Please upgrade."
 check_lwt:
@@ -39,7 +41,9 @@ clean:
 	$(MAKE) -C lib clean
 	$(MAKE) -C runtime clean
 	$(MAKE) -C examples clean
+ifeq ($(wildcard tests),tests)
 	$(MAKE) -C tests clean
+endif
 
 realclean: clean
 	find . -name "*~" -print | xargs rm -f
