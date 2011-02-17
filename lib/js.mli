@@ -514,5 +514,8 @@ module Unsafe : sig
     (** Asserts that an expression is pure, and can therefore be
         optimized away by the compiler if unused. *)
 
+  external eval_string : string -> 'a = "caml_js_eval_string"
+    (** Evaluate Javascript code *)
+
 (*FIX also, object/array literals *)
 end

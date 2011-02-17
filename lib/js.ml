@@ -38,6 +38,8 @@ module Unsafe = struct
   external equals : 'a -> 'b -> bool = "caml_js_equals"
 
   external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
+
+  external eval_string : string -> 'a = "caml_js_eval_string"
 end
 
 (****)
