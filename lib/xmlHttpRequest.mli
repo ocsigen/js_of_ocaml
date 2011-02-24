@@ -35,6 +35,7 @@ class type xmlHttpRequest = object ('self)
   method setRequestHeader : js_string t -> js_string t -> unit meth
   method send : js_string t opt -> unit meth
   method send_document : Dom.element Dom.document -> unit meth
+  method send_formData : Form.formData t -> unit meth
   method abort : unit meth
   method status : int readonly_prop
   method statusText : js_string t readonly_prop
@@ -81,3 +82,39 @@ val send :
   -> http_frame Lwt.t
   (** [send] is the same as {!send_string} except that the Url argument has type
       {!Url.url}. *)
+
+val send_get_form_string :
+     ?headers:(string * string) list
+  -> ?content_type:string
+  -> ?post_args:((string * string) list) (* *)
+  -> ?get_args:((string * string) list)  (* [] *)
+  -> Dom_html.formElement t
+  -> string
+  -> http_frame Lwt.t
+
+val send_get_form :
+     ?headers:(string * string) list
+  -> ?content_type:string
+  -> ?post_args:((string * string) list) (* *)
+  -> ?get_args:((string * string) list)  (* [] *)
+  -> Dom_html.formElement t
+  -> Url.url
+  -> http_frame Lwt.t
+
+val send_post_form_string :
+     ?headers:(string * string) list
+  -> ?content_type:string
+  -> ?post_args:((string * string) list) (* *)
+  -> ?get_args:((string * string) list)  (* [] *)
+  -> Dom_html.formElement t
+  -> string
+  -> http_frame Lwt.t
+
+val send_post_form :
+     ?headers:(string * string) list
+  -> ?content_type:string
+  -> ?post_args:((string * string) list) (* *)
+  -> ?get_args:((string * string) list)  (* [] *)
+  -> Dom_html.formElement t
+  -> Url.url
+  -> http_frame Lwt.t
