@@ -11,6 +11,7 @@ let table = ref false
 let omitted = ref []
 let errors = ref false
 let script = ref false
+let conf = ref "report.config"
 
 (****)
 
@@ -173,21 +174,23 @@ let f _ =
   output_table 1 [c1; c2]
 
 let f _ =
-  let o = read_column ~color:"#729fcf" times opt in
-  let b = read_column ~color:"#204a87" times byte in
-  let c1 = read_column ~color:"#d98e2d" (times ^ "/v8") js_of_ocaml in
-  let c2 = read_column ~color:"#a75f0c" (times ^ "/nitro") js_of_ocaml in
-  let c3 = read_column ~color:"#a40000" (times ^ "/tm") js_of_ocaml in
-  output_table 2 [o; b; c1; c2; c3]
+  let o = read_column ~title:"ocamlopt" ~color:"#729fcf" times opt in
+  let b = read_column ~title:"ocamlc" ~color:"#204a87" times byte in
+  let c0 = read_column ~title:"old V8 (august?)" ~color:"#fbaf4f" (times ^ "/oldv8") js_of_ocaml in
+  let c1 = read_column ~title:"V8" ~color:"#d98e2d" (times ^ "/v8") js_of_ocaml in
+  let c2 = read_column ~title:"Nitro" ~color:"#a75f0c" (times ^ "/nitro") js_of_ocaml in
+  let c3 = read_column ~title:"TraceMonkey" ~color:"#a40000" (times ^ "/tm") js_of_ocaml in
+  output_table 2 [o; b; c0; c1; c2; c3]
+
 (*
-*)
+
 let f _ =
   let o = read_column ~title:"ocamlopt" ~color:"#729fcf" times opt in
   let b = read_column ~title:"ocamlc" ~color:"#326bbe" times byte in
   let c1 = read_column ~title:"V8" ~color:"#d98e2d" (times ^ "/v8") js_of_ocaml in
   let c2 = read_column ~title:"Nitro" ~color:"#a75f0c" (times ^ "/nitro") js_of_ocaml in
   output_table 2 [o; b; c1; c2]
-
+*)
 
 (*
 let f _ =
@@ -225,6 +228,48 @@ let f _ =
 
 (****)
 
+let read_config () =
+  let f = !conf in
+  if not (Sys.file_exists f) then begin
+    Format.eprintf "Configuration file '%s' not found!@." f;
+    exit 1
+  end;
+  let info = ref [] in
+  let i = ref 0 in
+  let reference = ref 1 in
+  let ch = open_in f in
+  let split_at_space l =
+    let i = String.index l ' ' in
+    (String.sub l 0 i, String.sub l (i + 1) (String.length l - i - 1))
+  in
+  let get_info dir0 rem =
+    let (dir1, rem) = split_at_space rem in
+    let (dir2, rem) = split_at_space rem in
+    let (color, title) = split_at_space rem in
+    let dir1 = if dir1 = "\"\"" then dir0 else dir0^"/"^dir1 in
+    info := (dir1, dir2, color, title) :: !info
+  in
+  begin try
+    while true do
+      let l = input_line ch in
+      incr i;
+      try
+        let (kind, rem) = split_at_space l in
+        let (kind2, rem) = split_at_space rem in
+        match kind, kind2 with
+            "histogram", "times" -> get_info times rem
+          | "histogramref", "times" -> reference := !i; get_info times rem
+          | _ ->
+            Format.eprintf "Unknown config options '%s %s'@." kind kind2;
+            exit 1
+      with Not_found ->
+        Format.eprintf "Bad config line '%s'@." l;
+        exit 1
+    done
+  with End_of_file -> () end;
+  close_in ch;
+  (!reference, List.rev !info)
+
 let _ =
   let options =
     [("-ref", Arg.Set_int reference, "<col> use column <col> as the baseline");
@@ -233,12 +278,22 @@ let _ =
      ("-omit", Arg.String (fun s -> omitted := str_split s ',' @ !omitted),
       " omit the given benchmarks");
      ("-errors", Arg.Set errors, " display error bars");
+     ("-config", Arg.Set_string conf, "<file> use <file> as a config file");
      ("-script", Arg.Set script, " output gnuplot script")]
   in
   Arg.parse (Arg.align options)
     (fun s -> raise (Arg.Bad (Format.sprintf "unknown option `%s'" s)))
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  f ()
+
+  let r, conf = read_config () in
+
+  output_table r
+    (List.map
+       (fun (dir1, dir2, color, title) -> 
+         read_column ~title ~color dir1 (dir2, ""))
+       conf)
+
+(* f () *)
 
 (*
 http://hacks.mozilla.org/2009/07/tracemonkey-overview/

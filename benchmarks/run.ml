@@ -111,7 +111,7 @@ let has_ocamljs = Sys.command "ocamljs 2> /dev/null" = 0
 
 let compile_only = ref false
 let full = ref false
-let conf = ref "config"
+let conf = ref "run.config"
 
 let interpreters = ref []
 
