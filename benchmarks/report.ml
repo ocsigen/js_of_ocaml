@@ -157,6 +157,7 @@ let text_output _no_header (h, t) =
     t
 
 let gnuplot_output ch no_header (h, t) =
+  let labels = ref [] in
   let n = List.length (snd (List.hd t)) in
   if not no_header
   then begin
@@ -173,6 +174,21 @@ let gnuplot_output ch no_header (h, t) =
     else
       Printf.fprintf ch "set yrange [0:]\n";
   end;
+
+  (* labels *)
+  for i = 0 to n - 1 do
+    let nn = ref 0. in
+    List.iter
+      (fun (nm, l) ->
+         let (v, ii) = List.nth l i in
+         if !maximum > 0. && v > !maximum
+         then Printf.fprintf ch "set label \"%.2f\" at %f,%f center\n"
+           v (!nn +. float i /. float n -. 0.5 (* why? *))
+           (!maximum *. 1.03);
+         nn := !nn +. 1.)
+      t;
+  done;
+
   Printf.fprintf ch "plot";
   for i = 0 to n - 1 do
     match List.nth h i with
@@ -197,8 +213,8 @@ let gnuplot_output ch no_header (h, t) =
     Printf.fprintf ch "- - \"%s\"\n" nm;
     List.iter
       (fun (nm, l) ->
-         let (v, i) = List.nth l i in
-         Printf.fprintf ch "\"%s\" %f %f\n" nm v (if i <> i then 0. else i))
+         let (v, ii) = List.nth l i in
+         Printf.fprintf ch "\"%s\" %f %f\n" nm v (if ii <> ii then 0. else ii))
       t;
     Printf.fprintf ch "e\n"
   done
