@@ -130,18 +130,21 @@ let read_config () =
   begin try
     while true do
       let l = input_line ch in
-      try
-        let (kind, rem) = split_at_space l in
-        match kind with
-          "interpreter" ->
-            let (nm, cmd) = split_at_space rem in
-            i := (cmd ^ " ", nm) :: !i
-        | _ ->
-            Format.eprintf "Unknown config option '%s'@." kind;
-            exit 1
-      with Not_found ->
-        Format.eprintf "Bad config line '%s'@." l;
-        exit 1
+      if l.[0] <> '#'
+      then begin
+        try
+          let (kind, rem) = split_at_space l in
+          match kind with
+              "interpreter" ->
+                let (nm, cmd) = split_at_space rem in
+                i := (cmd ^ " ", nm) :: !i
+            | _ ->
+              Format.eprintf "Unknown config option '%s'@." kind;
+              exit 1
+        with Not_found ->
+          Format.eprintf "Bad config line '%s'@." l;
+          exit 1
+      end
     done
   with End_of_file -> () end;
   close_in ch;
@@ -191,7 +194,14 @@ let _ =
   let (compilers, suites) =
     if !full then
       (!interpreters,
-       [js_of_ocaml; (*js_of_ocaml_unsafe; ocamljs; ocamljs_unsafe*)])
+       [js_of_ocaml; 
+        js_of_ocaml_unsafe; 
+        js_of_ocaml_inline; 
+        js_of_ocaml_deadcode; 
+        js_of_ocaml_compact; 
+        js_of_ocaml_call; 
+        ocamljs; 
+        ocamljs_unsafe; ])
     else
       (begin match !interpreters with i :: r -> [i] | [] -> [] end,
        [js_of_ocaml])
