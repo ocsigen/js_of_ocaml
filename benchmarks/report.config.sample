@@ -1,0 +1,6 @@
+histogram times "" opt #729fcf ocamlopt
+histogramref times "" byte #204a87 ocamlc
+histogram times oldv8 js_of_ocaml #fbaf4f old V8
+histogram times v8 js_of_ocaml #d98e2d V8
+histogram times nitro js_of_ocaml #a75f0c Nitro
+histogram times tm js_of_ocaml #a40000 TraceMonkey
