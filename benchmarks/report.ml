@@ -157,7 +157,6 @@ let text_output _no_header (h, t) =
     t
 
 let gnuplot_output ch no_header (h, t) =
-  let labels = ref [] in
   let n = List.length (snd (List.hd t)) in
   if not no_header
   then begin
@@ -197,12 +196,12 @@ let gnuplot_output ch no_header (h, t) =
         then Printf.fprintf ch ", \"-\" using 2:3 title columnhead lw 0"
         else Printf.fprintf ch " \"-\" using 2:3:xtic(1) title columnhead lw 0";
         (match col with
-          | Some c -> Printf.fprintf ch "lc rgb '%s'" c
+          | Some c -> Printf.fprintf ch " lc rgb '%s'" c
           | None   -> ());
       | None ->
         if i > 0
-        then Printf.fprintf ch ", \"-\" using 2:3 notitle lw 0"
-        else Printf.fprintf ch " \"-\" using 2:3:xtic(1) notitle lw 0";
+        then Printf.fprintf ch ", \"-\" using 2:3 title columnhead lw 0"
+        else Printf.fprintf ch " \"-\" using 2:3:xtic(1) title columnhead lw 0";
   done;
   Printf.fprintf ch "\n";
   for i = 0 to n - 1 do
