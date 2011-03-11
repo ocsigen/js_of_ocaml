@@ -830,7 +830,7 @@ class type frameElement = object
   method noResize : bool t prop
   method scrolling : js_string t prop
   method src : js_string t prop
-  method contentDocument : document t readonly_prop
+  method contentDocument : document t opt readonly_prop
 end
 
 class type iFrameElement = object
@@ -843,7 +843,7 @@ class type iFrameElement = object
   method name : js_string t prop
   method scrolling : js_string t prop
   method src : js_string t prop
-  method contentDocument : document t readonly_prop
+  method contentDocument : document t opt readonly_prop
 end
 
 (*XXX Should provide creation functions a la lablgtk... *)
@@ -952,9 +952,9 @@ let createDd doc = createElement doc "dd"
 let createDt doc = createElement doc "dt"
 let createNoscript doc = createElement doc "noscript"
 let createAddress doc = createElement doc "address"
-let createFrameset doc = createElement doc "frameset"
-let createFrame doc = createElement doc "frame"
-let createIframe doc = createElement doc "iframe"
+let createFrameset doc : frameSetElement t = unsafeCreateElement doc "frameset"
+let createFrame doc : frameElement t = unsafeCreateElement doc "frame"
+let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
 
 exception Canvas_not_available
 

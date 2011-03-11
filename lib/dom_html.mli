@@ -791,7 +791,7 @@ class type frameElement = object
   method noResize : bool t prop
   method scrolling : js_string t prop
   method src : js_string t prop
-  method contentDocument : document t readonly_prop
+  method contentDocument : document t opt readonly_prop
 end
 
 class type iFrameElement = object
@@ -804,7 +804,7 @@ class type iFrameElement = object
   method name : js_string t prop
   method scrolling : js_string t prop
   method src : js_string t prop
-  method contentDocument : document t readonly_prop
+  method contentDocument : document t opt readonly_prop
 end
 
 (****)
@@ -1036,6 +1036,9 @@ val createDd : document t -> element t
 val createDt : document t -> element t
 val createNoscript : document t -> element t
 val createAddress : document t -> element t
+val createFrameset : document t -> frameSetElement t
+val createFrame : document t -> frameElement t
+val createIframe : document t -> iFrameElement t
 
 exception Canvas_not_available
 val createCanvas : document t -> canvasElement t
