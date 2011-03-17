@@ -766,6 +766,11 @@ class type document = object
   method forms : formElement collection t readonly_prop
   method anchors : element collection t readonly_prop
   method cookie : js_string t prop
+  method designMode : js_string t prop
+  method open_ : unit meth
+  method close : unit meth
+  method write : js_string t -> unit meth
+  method execCommand_ : js_string t -> unit meth
 
   inherit eventTarget
 end
@@ -789,19 +794,6 @@ class type frameElement = object
   method marginWidth : js_string t prop
   method name : js_string t prop
   method noResize : bool t prop
-  method scrolling : js_string t prop
-  method src : js_string t prop
-  method contentDocument : document t opt readonly_prop
-end
-
-class type iFrameElement = object
-  inherit element
-  method frameBorder : js_string t prop
-  method height : js_string t prop
-  method longDesc : js_string t prop
-  method marginHeight : js_string t prop
-  method marginWidth : js_string t prop
-  method name : js_string t prop
   method scrolling : js_string t prop
   method src : js_string t prop
   method contentDocument : document t opt readonly_prop
@@ -1038,7 +1030,6 @@ val createNoscript : document t -> element t
 val createAddress : document t -> element t
 val createFrameset : document t -> frameSetElement t
 val createFrame : document t -> frameElement t
-val createIframe : document t -> iFrameElement t
 
 exception Canvas_not_available
 val createCanvas : document t -> canvasElement t
@@ -1046,6 +1037,22 @@ val createCanvas : document t -> canvasElement t
       supported by the browser. *)
 
 (****)
+
+class type iFrameElement = object
+  inherit element
+  method frameBorder : js_string t prop
+  method height : js_string t prop
+  method longDesc : js_string t prop
+  method marginHeight : js_string t prop
+  method marginWidth : js_string t prop
+  method name : js_string t prop
+  method scrolling : js_string t prop
+  method src : js_string t prop
+  method contentDocument : document t opt readonly_prop
+  method contentWindow  : window t readonly_prop
+end
+
+val createIframe : document t -> iFrameElement t
 
 (** {2 Coercion functions} *)
 

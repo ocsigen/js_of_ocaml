@@ -810,6 +810,11 @@ class type document = object
   method forms : formElement collection t readonly_prop
   method anchors : element collection t readonly_prop
   method cookie : js_string t prop
+  method designMode : js_string t prop
+  method open_ : unit meth
+  method close : unit meth
+  method write : js_string t -> unit meth
+  method execCommand_ : js_string t -> unit meth
 
   inherit eventTarget
 end
@@ -828,19 +833,6 @@ class type frameElement = object
   method marginWidth : js_string t prop
   method name : js_string t prop
   method noResize : bool t prop
-  method scrolling : js_string t prop
-  method src : js_string t prop
-  method contentDocument : document t opt readonly_prop
-end
-
-class type iFrameElement = object
-  inherit element
-  method frameBorder : js_string t prop
-  method height : js_string t prop
-  method longDesc : js_string t prop
-  method marginHeight : js_string t prop
-  method marginWidth : js_string t prop
-  method name : js_string t prop
   method scrolling : js_string t prop
   method src : js_string t prop
   method contentDocument : document t opt readonly_prop
@@ -954,7 +946,6 @@ let createNoscript doc = createElement doc "noscript"
 let createAddress doc = createElement doc "address"
 let createFrameset doc : frameSetElement t = unsafeCreateElement doc "frameset"
 let createFrame doc : frameElement t = unsafeCreateElement doc "frame"
-let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
 
 exception Canvas_not_available
 
@@ -962,131 +953,6 @@ let createCanvas doc : canvasElement t =
   let c = unsafeCreateElement doc "canvas" in
   if not (Opt.test c##getContext) then raise Canvas_not_available;
   c
-
-type taggedElement =
-  | A of anchorElement t
-  | Area of areaElement t
-  | Base of baseElement t
-  | Blockquote of quoteElement t
-  | Body of bodyElement t
-  | Br of brElement t
-  | Button of buttonElement t
-  | Canvas of canvasElement t
-  | Caption of tableCaptionElement t
-  | Col of tableColElement t
-  | Colgroup of tableColElement t
-  | Del of modElement t
-  | Div of divElement t
-  | Dl of dListElement t
-  | Fieldset of fieldSetElement t
-  | Form of formElement t
-  | Frameset of frameSetElement t
-  | Frame of frameElement t
-  | H1 of headingElement t
-  | H2 of headingElement t
-  | H3 of headingElement t
-  | H4 of headingElement t
-  | H5 of headingElement t
-  | H6 of headingElement t
-  | Head of headElement t
-  | Hr of hrElement t
-  | Html of htmlElement t
-  | Iframe of iFrameElement t
-  | Img of imageElement t
-  | Input of inputElement t
-  | Ins of modElement t
-  | Label of labelElement t
-  | Legend of legendElement t
-  | Li of liElement t
-  | Link of linkElement t
-  | Map of mapElement t
-  | Meta of metaElement t
-  | Object of objectElement t
-  | Ol of oListElement t
-  | Optgroup of optGroupElement t
-  | Option of optionElement t
-  | P of paramElement t
-  | Param of paramElement t
-  | Pre of preElement t
-  | Q of quoteElement t
-  | Script of scriptElement t
-  | Select of selectElement t
-  | Style of styleElement t
-  | Table of tableElement t
-  | Tbody of tableSectionElement t
-  | Td of tableColElement t
-  | Textarea of textAreaElement t
-  | Tfoot of tableSectionElement t
-  | Th of tableColElement t
-  | Thead of tableSectionElement t
-  | Title of titleElement t
-  | Tr of tableRowElement t
-  | Ul of uListElement t
-  | Other of element t
-
-let tagged (e : #element t) =
-  match Js.to_string (e##tagName##toLowerCase()) with
-  | "a" -> A (Js.Unsafe.coerce e)
-  | "area" -> Area (Js.Unsafe.coerce e)
-  | "base" -> Base (Js.Unsafe.coerce e)
-  | "blockquote" -> Blockquote (Js.Unsafe.coerce e)
-  | "body" -> Body (Js.Unsafe.coerce e)
-  | "br" -> Br (Js.Unsafe.coerce e)
-  | "button" -> Button (Js.Unsafe.coerce e)
-  | "canvas" -> Canvas (Js.Unsafe.coerce e)
-  | "caption" -> Caption (Js.Unsafe.coerce e)
-  | "col" -> Col (Js.Unsafe.coerce e)
-  | "colgroup" -> Colgroup (Js.Unsafe.coerce e)
-  | "del" -> Del (Js.Unsafe.coerce e)
-  | "div" -> Div (Js.Unsafe.coerce e)
-  | "dl" -> Dl (Js.Unsafe.coerce e)
-  | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
-  | "form" -> Form (Js.Unsafe.coerce e)
-  | "frameset" -> Frameset (Js.Unsafe.coerce e)
-  | "frame" -> Frame (Js.Unsafe.coerce e)
-  | "h1" -> H1 (Js.Unsafe.coerce e)
-  | "h2" -> H2 (Js.Unsafe.coerce e)
-  | "h3" -> H3 (Js.Unsafe.coerce e)
-  | "h4" -> H4 (Js.Unsafe.coerce e)
-  | "h5" -> H5 (Js.Unsafe.coerce e)
-  | "h6" -> H6 (Js.Unsafe.coerce e)
-  | "head" -> Head (Js.Unsafe.coerce e)
-  | "hr" -> Hr (Js.Unsafe.coerce e)
-  | "html" -> Html (Js.Unsafe.coerce e)
-  | "iframe" -> Iframe (Js.Unsafe.coerce e)
-  | "img" -> Img (Js.Unsafe.coerce e)
-  | "input" -> Input (Js.Unsafe.coerce e)
-  | "ins" -> Ins (Js.Unsafe.coerce e)
-  | "label" -> Label (Js.Unsafe.coerce e)
-  | "legend" -> Legend (Js.Unsafe.coerce e)
-  | "li" -> Li (Js.Unsafe.coerce e)
-  | "link" -> Link (Js.Unsafe.coerce e)
-  | "map" -> Map (Js.Unsafe.coerce e)
-  | "meta" -> Meta (Js.Unsafe.coerce e)
-  | "object" -> Object (Js.Unsafe.coerce e)
-  | "ol" -> Ol (Js.Unsafe.coerce e)
-  | "optgroup" -> Optgroup (Js.Unsafe.coerce e)
-  | "option" -> Option (Js.Unsafe.coerce e)
-  | "p" -> P (Js.Unsafe.coerce e)
-  | "param" -> Param (Js.Unsafe.coerce e)
-  | "pre" -> Pre (Js.Unsafe.coerce e)
-  | "q" -> Q (Js.Unsafe.coerce e)
-  | "script" -> Script (Js.Unsafe.coerce e)
-  | "select" -> Select (Js.Unsafe.coerce e)
-  | "style" -> Style (Js.Unsafe.coerce e)
-  | "table" -> Table (Js.Unsafe.coerce e)
-  | "tbody" -> Tbody (Js.Unsafe.coerce e)
-  | "td" -> Td (Js.Unsafe.coerce e)
-  | "textarea" -> Textarea (Js.Unsafe.coerce e)
-  | "tfoot" -> Tfoot (Js.Unsafe.coerce e)
-  | "th" -> Th (Js.Unsafe.coerce e)
-  | "thead" -> Thead (Js.Unsafe.coerce e)
-  | "title" -> Title (Js.Unsafe.coerce e)
-  | "tr" -> Tr (Js.Unsafe.coerce e)
-  | "ul" -> Ul (Js.Unsafe.coerce e)
-  | _   -> Other (e : #element t :> element t)
-
-let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
 
 module CoerceTo = struct
   let unsafeCoerce tag (e : #element t) =
@@ -1221,6 +1087,24 @@ let document = window##document
 
 (****)
 
+class type iFrameElement = object
+  inherit element
+  method frameBorder : js_string t prop
+  method height : js_string t prop
+  method longDesc : js_string t prop
+  method marginHeight : js_string t prop
+  method marginWidth : js_string t prop
+  method name : js_string t prop
+  method scrolling : js_string t prop
+  method src : js_string t prop
+  method contentDocument : document t opt readonly_prop
+  method contentWindow  : window t readonly_prop
+end
+
+let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
+
+(****)
+
 let eventTarget (e : #event t) =
   let target =
     Optdef.get (e##target) (fun () ->
@@ -1288,3 +1172,128 @@ let addMousewheelEventListener e h capt =
             else
               h (e :> mouseEvent t) ~dx:0 ~dy:d))
       capt
+
+type taggedElement =
+  | A of anchorElement t
+  | Area of areaElement t
+  | Base of baseElement t
+  | Blockquote of quoteElement t
+  | Body of bodyElement t
+  | Br of brElement t
+  | Button of buttonElement t
+  | Canvas of canvasElement t
+  | Caption of tableCaptionElement t
+  | Col of tableColElement t
+  | Colgroup of tableColElement t
+  | Del of modElement t
+  | Div of divElement t
+  | Dl of dListElement t
+  | Fieldset of fieldSetElement t
+  | Form of formElement t
+  | Frameset of frameSetElement t
+  | Frame of frameElement t
+  | H1 of headingElement t
+  | H2 of headingElement t
+  | H3 of headingElement t
+  | H4 of headingElement t
+  | H5 of headingElement t
+  | H6 of headingElement t
+  | Head of headElement t
+  | Hr of hrElement t
+  | Html of htmlElement t
+  | Iframe of iFrameElement t
+  | Img of imageElement t
+  | Input of inputElement t
+  | Ins of modElement t
+  | Label of labelElement t
+  | Legend of legendElement t
+  | Li of liElement t
+  | Link of linkElement t
+  | Map of mapElement t
+  | Meta of metaElement t
+  | Object of objectElement t
+  | Ol of oListElement t
+  | Optgroup of optGroupElement t
+  | Option of optionElement t
+  | P of paramElement t
+  | Param of paramElement t
+  | Pre of preElement t
+  | Q of quoteElement t
+  | Script of scriptElement t
+  | Select of selectElement t
+  | Style of styleElement t
+  | Table of tableElement t
+  | Tbody of tableSectionElement t
+  | Td of tableColElement t
+  | Textarea of textAreaElement t
+  | Tfoot of tableSectionElement t
+  | Th of tableColElement t
+  | Thead of tableSectionElement t
+  | Title of titleElement t
+  | Tr of tableRowElement t
+  | Ul of uListElement t
+  | Other of element t
+
+let tagged (e : #element t) =
+  match Js.to_string (e##tagName##toLowerCase()) with
+  | "a" -> A (Js.Unsafe.coerce e)
+  | "area" -> Area (Js.Unsafe.coerce e)
+  | "base" -> Base (Js.Unsafe.coerce e)
+  | "blockquote" -> Blockquote (Js.Unsafe.coerce e)
+  | "body" -> Body (Js.Unsafe.coerce e)
+  | "br" -> Br (Js.Unsafe.coerce e)
+  | "button" -> Button (Js.Unsafe.coerce e)
+  | "canvas" -> Canvas (Js.Unsafe.coerce e)
+  | "caption" -> Caption (Js.Unsafe.coerce e)
+  | "col" -> Col (Js.Unsafe.coerce e)
+  | "colgroup" -> Colgroup (Js.Unsafe.coerce e)
+  | "del" -> Del (Js.Unsafe.coerce e)
+  | "div" -> Div (Js.Unsafe.coerce e)
+  | "dl" -> Dl (Js.Unsafe.coerce e)
+  | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
+  | "form" -> Form (Js.Unsafe.coerce e)
+  | "frameset" -> Frameset (Js.Unsafe.coerce e)
+  | "frame" -> Frame (Js.Unsafe.coerce e)
+  | "h1" -> H1 (Js.Unsafe.coerce e)
+  | "h2" -> H2 (Js.Unsafe.coerce e)
+  | "h3" -> H3 (Js.Unsafe.coerce e)
+  | "h4" -> H4 (Js.Unsafe.coerce e)
+  | "h5" -> H5 (Js.Unsafe.coerce e)
+  | "h6" -> H6 (Js.Unsafe.coerce e)
+  | "head" -> Head (Js.Unsafe.coerce e)
+  | "hr" -> Hr (Js.Unsafe.coerce e)
+  | "html" -> Html (Js.Unsafe.coerce e)
+  | "iframe" -> Iframe (Js.Unsafe.coerce e)
+  | "img" -> Img (Js.Unsafe.coerce e)
+  | "input" -> Input (Js.Unsafe.coerce e)
+  | "ins" -> Ins (Js.Unsafe.coerce e)
+  | "label" -> Label (Js.Unsafe.coerce e)
+  | "legend" -> Legend (Js.Unsafe.coerce e)
+  | "li" -> Li (Js.Unsafe.coerce e)
+  | "link" -> Link (Js.Unsafe.coerce e)
+  | "map" -> Map (Js.Unsafe.coerce e)
+  | "meta" -> Meta (Js.Unsafe.coerce e)
+  | "object" -> Object (Js.Unsafe.coerce e)
+  | "ol" -> Ol (Js.Unsafe.coerce e)
+  | "optgroup" -> Optgroup (Js.Unsafe.coerce e)
+  | "option" -> Option (Js.Unsafe.coerce e)
+  | "p" -> P (Js.Unsafe.coerce e)
+  | "param" -> Param (Js.Unsafe.coerce e)
+  | "pre" -> Pre (Js.Unsafe.coerce e)
+  | "q" -> Q (Js.Unsafe.coerce e)
+  | "script" -> Script (Js.Unsafe.coerce e)
+  | "select" -> Select (Js.Unsafe.coerce e)
+  | "style" -> Style (Js.Unsafe.coerce e)
+  | "table" -> Table (Js.Unsafe.coerce e)
+  | "tbody" -> Tbody (Js.Unsafe.coerce e)
+  | "td" -> Td (Js.Unsafe.coerce e)
+  | "textarea" -> Textarea (Js.Unsafe.coerce e)
+  | "tfoot" -> Tfoot (Js.Unsafe.coerce e)
+  | "th" -> Th (Js.Unsafe.coerce e)
+  | "thead" -> Thead (Js.Unsafe.coerce e)
+  | "title" -> Title (Js.Unsafe.coerce e)
+  | "tr" -> Tr (Js.Unsafe.coerce e)
+  | "ul" -> Ul (Js.Unsafe.coerce e)
+  | _   -> Other (e : #element t :> element t)
+
+let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))

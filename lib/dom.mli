@@ -77,6 +77,7 @@ class type element = object
   method removeAttribute : js_string t -> unit meth
   method hasAttribute : js_string t -> bool t meth
   method getElementsByTagName : js_string t -> 'element nodeList t meth
+  method focus : unit meth
 end
 
 (** Specification of [CharacterData] objects. *)
