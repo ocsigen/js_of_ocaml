@@ -13,6 +13,12 @@ let omitted = ref []
 let errors = ref false
 let script = ref false
 let conf = ref "report.config"
+let svg = ref false
+let svgfontsize = ref 7
+let svgwidth = ref 500
+let svgheight = ref 150
+let edgecaption = ref false
+let ylabel = ref ""
 
 (****)
 
@@ -160,6 +166,10 @@ let gnuplot_output ch no_header (h, t) =
   let n = List.length (snd (List.hd t)) in
   if not no_header
   then begin
+    if !svg
+    then Printf.fprintf ch "set terminal svg fsize %d size %d %d\n" !svgfontsize !svgwidth !svgheight;
+    if !edgecaption
+    then Printf.fprintf ch "set key tmargin horizontal Left left reverse\n";
     Printf.fprintf ch "\
       set multiplot\n\
       set style data histograms\n\
@@ -168,6 +178,7 @@ let gnuplot_output ch no_header (h, t) =
       set xtics border in scale 0,0 nomirror rotate by -30  \
                 offset character 0, 0, 0\n"
       (if !errors then " lw 1" else "");
+    if !ylabel <> "" then Printf.fprintf ch "set ylabel \"%s\"\n" !ylabel;
     if !maximum > 0. then
       Printf.fprintf ch "set yrange [0:%f]\n" !maximum
     else
@@ -183,7 +194,7 @@ let gnuplot_output ch no_header (h, t) =
          if !maximum > 0. && v > !maximum
          then Printf.fprintf ch "set label \"%.2f\" at %f,%f center\n"
            v (!nn +. float i /. float n -. 0.5 (* why? *))
-           (!maximum *. 1.03);
+           (!maximum *. 1.04);
          nn := !nn +. 1.)
       t;
   done;
@@ -202,6 +213,7 @@ let gnuplot_output ch no_header (h, t) =
         if i > 0
         then Printf.fprintf ch ", \"-\" using 2:3 title columnhead lw 0"
         else Printf.fprintf ch " \"-\" using 2:3:xtic(1) title columnhead lw 0";
+(* notitle does not work ... I don't know why ... *)
   done;
   Printf.fprintf ch "\n";
   for i = 0 to n - 1 do
@@ -405,7 +417,15 @@ let _ =
       " omit the given benchmarks");
      ("-errors", Arg.Set errors, " display error bars");
      ("-config", Arg.Set_string conf, "<file> use <file> as a config file");
-     ("-script", Arg.Set script, " output gnuplot script")]
+     ("-script", Arg.Set script, " output gnuplot script");
+     ("-svg", Arg.Tuple [Arg.Set svg;
+                         Arg.Set_int svgfontsize;
+                         Arg.Set_int svgwidth;
+                         Arg.Set_int svgheight],
+      "<fontsize> <width> <height> svg output");
+     ("-edgecaption", Arg.Set edgecaption, " display caption outside the diagram");
+     ("-ylabel", Arg.Set_string ylabel, " Y axis label");
+    ]
   in
   Arg.parse (Arg.align options)
     (fun s -> raise (Arg.Bad (Format.sprintf "unknown option `%s'" s)))
