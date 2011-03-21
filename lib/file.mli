@@ -18,7 +18,8 @@ type file_any
 
 module CoerceTo : sig
   val string : file_any -> js_string t Opt.t
-  (* CCC need to be able to coerce to array buffer *)
+  (* CCC needed to be able to coerce to array buffer:
+     array buffer are not yet available *)
 end
 
 class type fileList = object
@@ -55,6 +56,11 @@ class type fileReader = object ('self)
 
   inherit Dom_html.eventTarget
 end
+
+val filename : file t -> js_string t
+(** [filename] handles old firefox without name property *)
+
+val fileReader : fileReader t constr optdef
 
 val readAsBinaryString : blob t -> js_string t Lwt.t
 val readAsText : blob t -> js_string t Lwt.t

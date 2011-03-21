@@ -50,38 +50,44 @@ end
 
 let get_input_val ?(get=false) (elt:inputElement t) =
   let name = to_string (elt##name) in
-  let value = elt##value in
-  match String.lowercase (to_string (elt##_type)) with
-    | "checkbox"
-    | "radio" ->
-      if to_bool (elt##checked)
-      then [name,`String value]
-      else []
-    | "submit"
-    | "reset" -> []
-    | "text"
-    | "password" -> [name,`String value]
-    | "file" ->
-      if get
-      then [name,`String value]
-      else
-	let elt = (Unsafe.coerce elt:file_input t) in
-	(match Optdef.to_option (elt##files) with
-	  | None -> []
-	  | Some list ->
-	    match Optdef.to_option (elt##multiple) with
-	      | None
-	      | Some false ->
-		(match Optdef.to_option (list##item(0)) with
-		  | None -> []
-		  | Some file -> [name,`File file])
-	      | Some true ->
-		filter_map (fun f ->
-		  match Optdef.to_option f with
-		    | None -> None
-		    | Some file -> Some (name,`File file))
-		  (Array.to_list (Array.init (list##length) (fun i -> list##item(i)))))
-    | _ -> [name,`String value]
+  match name with
+    | "" -> []
+    | _ ->
+      let value = elt##value in
+      match String.lowercase (to_string (elt##_type)) with
+	| "checkbox"
+	| "radio" ->
+	  if to_bool (elt##checked)
+	  then [name,`String value]
+	  else []
+	| "submit"
+	| "reset" -> []
+	| "text"
+	| "password" -> [name,`String value]
+	| "file" ->
+	  if get
+	  then [name,`String value]
+	  else
+	    let elt = (Unsafe.coerce elt:file_input t) in
+	    (match Optdef.to_option (elt##files) with
+	      | None -> []
+	      | Some list ->
+		if list##length = 0
+		then [name,`String (Js.string "")]
+		else
+		  match Optdef.to_option (elt##multiple) with
+		    | None
+		    | Some false ->
+		      (match Optdef.to_option (list##item(0)) with
+			| None -> []
+			| Some file -> [name,`File file])
+		    | Some true ->
+		      filter_map (fun f ->
+			match Optdef.to_option f with
+			  | None -> None
+			  | Some file -> Some (name,`File file))
+			(Array.to_list (Array.init (list##length) (fun i -> list##item(i)))))
+	| _ -> [name,`String value]
 
 let form_contents ?get (form:formElement t) =
   let length = form##elements##length in

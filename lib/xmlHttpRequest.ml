@@ -47,7 +47,7 @@ end
 class type xmlHttpRequest_binary = object
   inherit xmlHttpRequest
   method sendAsBinary : js_string t opt -> unit meth
-  method sendAsBinary_test : unit optdef readonly_prop
+  method sendAsBinary_presence : unit optdef readonly_prop
 end
 
 let xmlHttpRequest () : xmlHttpRequest t constr =
@@ -74,39 +74,32 @@ let generateBoundary () =
   in
   "js_of_ocaml-------------------" ^ nine_digits () ^ nine_digits ()
 
-(* TODO: do it entirely with js_string t: more efficient *)
 (* TODO: test with elements = [] *)
 let encode_multipart boundary elements =
-  let b = Buffer.create 0 in
+  let b = jsnew array_empty () in
   (Lwt_list.iter_s
      (fun v ->
-       Buffer.add_string b ("--"^boundary^"\r\n");
+       ignore(b##push(Js.string ("--"^boundary^"\r\n")));
        match v with
 	 | name,`String value ->
-	   Buffer.add_string b "Content-Disposition: form-data; name=\"";
-	   Buffer.add_string b name;
-	   Buffer.add_string b "\"\r\n\r\n";
-	   Buffer.add_string b (to_string value);
-	   Buffer.add_string b "\r\n";
+	   ignore(b##push_3(Js.string ("Content-Disposition: form-data; name=\"" ^ name ^ "\"\r\n\r\n"),
+			    value,
+			    Js.string "\r\n"));
 	   return ()
 	 | name,`File value ->
 	   File.readAsBinaryString (value :> File.blob Js.t)
 	   >>= (fun file ->
-	     Buffer.add_string b "Content-Disposition: form-data; name=\"";
-	     Buffer.add_string b name;
-	     Buffer.add_string b "\"; filename=\"";
-	     Buffer.add_string b (to_string (value##name));
-	     Buffer.add_string b "\"\r\n";
-	     Buffer.add_string b "Content-Type: application/octet-stream\r\n";
-	     Buffer.add_string b "\r\n";
-	     Buffer.add_string b (to_string file);
-	     Buffer.add_string b "\r\n";
-	     return ()
-	   ))
+	     ignore(b##push_4(Js.string ("Content-Disposition: form-data; name=\"" ^ name ^ "\"; filename=\""),
+			      File.filename value,
+			      Js.string "\"\r\n",
+			      Js.string "Content-Type: application/octet-stream\r\n"));
+	     ignore(b##push_3(Js.string "\r\n",
+			      file,
+			      Js.string "\r\n"));
+	     return ())
+     )
      elements)
-  >|=
-      (fun () -> Buffer.add_string b ("--"^boundary^"--\r\n");
-	(Buffer.contents b))
+  >|= ( fun () -> ignore(b##push(Js.string ("--"^boundary^"--\r\n"))); b )
 
 let encode_url l =
   String.concat "&"
@@ -193,11 +186,11 @@ let send_field_string
 	   | `Form_data boundary ->
 	     (encode_multipart boundary !l >|=
 		 (fun data ->
-		   let data = Js.some (string data) in
+		   let data = Js.some (data##join(Js.string "")) in
 		   (* Firefox specific interface:
 		      Chrome can use FormData: don't need this *)
 		   let req = (Js.Unsafe.coerce req:xmlHttpRequest_binary t) in
-		   if Optdef.test req##sendAsBinary_test
+		   if Optdef.test req##sendAsBinary_presence
 		   then req##sendAsBinary(data)
 		   else req##send(data))))
      | Some (`FormData f) -> req##send_formData(f));
