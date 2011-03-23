@@ -10,9 +10,15 @@ dom.cmi: js.cmi
 event_arrows.cmo: js.cmi dom_html.cmi event_arrows.cmi 
 event_arrows.cmx: js.cmx dom_html.cmx event_arrows.cmi 
 event_arrows.cmi: js.cmi dom_html.cmi 
+file.cmo: js.cmi dom_html.cmi dom.cmi file.cmi 
+file.cmx: js.cmx dom_html.cmx dom.cmx file.cmi 
+file.cmi: js.cmi dom_html.cmi dom.cmi 
 firebug.cmo: js.cmi dom.cmi firebug.cmi 
 firebug.cmx: js.cmx dom.cmx firebug.cmi 
 firebug.cmi: js.cmi dom.cmi 
+form.cmo: js.cmi file.cmi dom_html.cmi form.cmi 
+form.cmx: js.cmx file.cmx dom_html.cmx form.cmi 
+form.cmi: js.cmi file.cmi dom_html.cmi 
 js.cmo: js.cmi 
 js.cmx: js.cmi 
 js.cmi: 
@@ -25,6 +31,8 @@ regexp.cmi:
 url.cmo: regexp.cmi js.cmi dom_html.cmi url.cmi 
 url.cmx: regexp.cmx js.cmx dom_html.cmx url.cmi 
 url.cmi: 
-xmlHttpRequest.cmo: url.cmi js.cmi dom_html.cmi dom.cmi xmlHttpRequest.cmi 
-xmlHttpRequest.cmx: url.cmx js.cmx dom_html.cmx dom.cmx xmlHttpRequest.cmi 
-xmlHttpRequest.cmi: url.cmi js.cmi dom_html.cmi dom.cmi 
+xmlHttpRequest.cmo: url.cmi js.cmi form.cmi file.cmi dom_html.cmi dom.cmi \
+    xmlHttpRequest.cmi 
+xmlHttpRequest.cmx: url.cmx js.cmx form.cmx file.cmx dom_html.cmx dom.cmx \
+    xmlHttpRequest.cmi 
+xmlHttpRequest.cmi: url.cmi js.cmi form.cmi dom_html.cmi dom.cmi 

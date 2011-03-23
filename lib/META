@@ -8,3 +8,19 @@ package "syntax" (
   requires = "camlp4"
   archive(syntax,preprocessor) = "pa_js.cmo"
 )
+
+package "deriving" (
+
+  if_exists = "deriving_json.cma"
+  description = "Runtime library for the class Json."
+  archive(byte) = "deriving_json.cma"
+  archive(opt) = "deriving_json.cma"
+
+  package "syntax" (
+    requires  = "deriving-ocsigen.syntax"
+    description = "Safe \"IO in JSON\" class for deriving-ocsigen."
+    archive(syntax, preprocessor) = "pa_deriving_Json.cmo"
+    archive(syntax, toploop) = "pa_deriving_Json.cmo"
+  )
+
+)
