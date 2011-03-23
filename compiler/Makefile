@@ -11,7 +11,7 @@ OBJS=util.cmx dgraph.cmx \
      linker.cmx generate.cmx parse.cmx main.cmx
 
 compile: $(OBJS:cmx=cmo)
-	ocamlfind ocamlc -package findlib,str -linkpkg -g str.cma -o $@ $^
+	ocamlfind ocamlc -package findlib,str -linkpkg str.cma -o $@ $^
 
 $(COMPILER): $(OBJS)
 	ocamlfind ocamlopt -package findlib,str -linkpkg -o $@ $^

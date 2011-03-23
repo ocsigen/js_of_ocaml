@@ -10,6 +10,7 @@ let maximum = ref (-1.)
 let gnuplot = ref true
 let table = ref false
 let omitted = ref []
+let appended = ref []
 let errors = ref false
 let script = ref false
 let conf = ref "report.config"
@@ -231,7 +232,15 @@ let gnuplot_output ch no_header (h, t) =
   done
 
 let filter (h, t) =
-  (h, List.filter (fun (nm, _) -> not (List.mem nm !omitted)) t)
+  let app = ref [] in
+  let l1 = List.filter
+    (fun ((nm, _) as v) -> 
+      if List.mem nm !appended
+      then (app := v::!app; false)
+      else not (List.mem nm !omitted)) 
+    t
+  in
+  (h, l1 @ List.rev !app)
 
 let output_table =
   let old_table = ref None in
@@ -397,6 +406,7 @@ let read_config () =
           (match kind2 with
             | "blank" -> info := None :: !info
             | "times" -> get_info times rem !reference
+            | "compiletimes" -> get_info compiletimes rem !reference
             | "sizes" -> get_info sizes rem !reference
             | _ ->
               Format.eprintf "Unknown config options '%s'@." kind2;
@@ -414,7 +424,9 @@ let _ =
      ("-max", Arg.Set_float maximum, "<m> truncate graph at level <max>");
      ("-table", Arg.Set table, " output a text table");
      ("-omit", Arg.String (fun s -> omitted := str_split s ',' @ !omitted),
-      " omit the given benchmarks");
+      " omit the given benchmark");
+     ("-append", Arg.String (fun s -> appended := str_split s ',' @ !appended),
+      " append the given benchmark at the end");
      ("-errors", Arg.Set errors, " display error bars");
      ("-config", Arg.Set_string conf, "<file> use <file> as a config file");
      ("-script", Arg.Set script, " output gnuplot script");

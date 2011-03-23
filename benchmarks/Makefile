@@ -1,24 +1,177 @@
+# graphs without precompiled programs:
+GRAPHSNOPR = time.pdf time-optim.pdf time-ocamljs.pdf nativejs.pdf
 
-all: time.pdf size.pdf
+# graphs with precompiled programs:
+GRAPHSPR = size.pdf size-ocamljs.pdf size-optim.pdf compiletime.pdf
 
-.PHONY: time.svg size.svg size.gpl
+# For full benchs:
+all: _perf graphsnopr graphspr _noperf
 
-time.svg:
-	./report.ml -config report-times.config \
+graphsnopr: _noprecomp $(GRAPHSNOPR)
+
+graphspr: __precomp $(GRAPHSPR)
+
+# For fast benchs:
+test: _perf fastrun $(GRAPHS) _noperf
+
+exes= $(wildcard programs/*)
+
+exesnames = $(exes:programs/%=%)
+
+missingml = $(exesnames:%=results/sizes/ml/%)
+missingocamljs = $(exesnames:%=results/sizes/ocamljs/%)
+missingcompiletime = $(exesnames:%=results/compiletimes/`hostname`/byte/%)
+othermissing = results/times/`hostname`/nitro/kb results/times/`hostname`/tm/hamming results/times/`hostname`/tm/splay
+
+missingfiles=$(missingml) $(missingocamljs) $(missingcompiletime) $(othermissing)
+
+.PHONY: $(GRAPHSNOPR:.pdf=.svg) $(GRAPHSPR:.pdf=.svg) size.gpl _noprecomp _missingfiles
+
+# compile with precompiled programs for creating benchs
+__precomp:
+	make _missingfiles
+	mkdir -p build/byte
+	ln -sf $(exes:%=../../%) build/byte
+	if [ ! -d precomptmp ] ; then ./run.ml -compile ; else cd precomptmp ; find . -type f -exec mv {} ../{} \; ; fi
+	rm -rf precomptmp
+	touch __precomp
+
+# for running the test we do not want precompiled programs
+__run:
+	make _noprecomp
+	./run.ml -all
+	touch __run
+
+fastrun:
+	make _noprecomp
+	echo "======================== WARNING: fast benchs!"
+	./run.ml -ffast -all
+	touch __run
+
+_noprecomp:
+	rm -f __precomp
+	mkdir -p precomptmp/build/byte
+	mkdir -p build
+	mkdir -p results
+	find build -type d -exec mkdir -p precomptmp/{} \;
+	find results -type d -exec mkdir -p precomptmp/{} \;
+	for i in $(exesnames) ; do if [ -f build/byte/$$i ] ; then mv -f build/byte/$$i precomptmp/build/byte/ ; fi ; done
+	for i in $(exesnames) ; do for j in build/*/$$i.js ; do if [ -f $$j ] ; then mv $$j precomptmp/$$j ; fi ; done ; done
+	for i in $(exesnames) ; do for j in results/sizes/js_of_ocaml/*/$$i ; do if [ -f $$j ] ; then mv $$j precomptmp/$$j ; fi ; done ; done
+	for i in $(exesnames) ; do for j in results/sizes/*/$$i ; do if [ -f $$j ] ; then mv $$j precomptmp/$$j ; fi ;done ; done
+
+_missingfiles:
+	mkdir -p results/compiletimes/`hostname`/byte/
+	for i in $(missingfiles) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
+	if [ -f results/sizes/ml/unison ] ; then echo 828471 > results/sizes/ml/unison ; fi
+	if [ -f results/sizes/ml/ocamlc ] ; then echo 800771 > results/sizes/ml/ocamlc ; fi
+	if [ -f results/sizes/ml/ocsigen_server ] ; then echo 0 > results/sizes/ml/ocsigen_server ; fi
+	if [ -f results/sizes/ml/js_of_ocaml ] ; then echo 171361 > results/sizes/ml/js_of_ocaml ; fi
+	if [ -f results/sizes/ml/boulderdash ] ; then echo 12920 > results/sizes/ml/boulderdash ; fi
+	if [ -f results/sizes/ml/canvas ] ; then echo 740 > results/sizes/ml/canvas ; fi
+	if [ -f results/sizes/ml/cubes ] ; then echo 3773 > results/sizes/ml/cubes ; fi
+	if [ -f results/sizes/ml/minesweeper ] ; then echo 7106 > results/sizes/ml/minesweeper ; fi
+	if [ -f results/sizes/ml/planet ] ; then echo 16488 > results/sizes/ml/planet ; fi
+	if [ -f results/sizes/ml/sudoku ] ; then echo 2837 > results/sizes/ml/sudoku ; fi
+# file sizes (without comments and spaces)
+# find ../examples/sudoku/ -name "*.ml" -exec cat {} \; | perl /home/balat/kroko/js_of_ocaml/benchmarks/lib/remove_comments.pl | sed 's/^ *//g' | wc -c
+
+# To generate SVG, we first need to run the benchs,
+# then to add data for precompiled programs
+time.svg: __run
+	./report.ml -config report-time.config \
 	 -omit binary_trees -omit fannkuch_redux \
-	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel Time \
+	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size.svg: size.gpl
 	gnuplot < $^ > $@
 
-size.gpl:
-	./report.ml -config report-sizes.config \
-	 -omit binary_trees -omit fannkuch_redux \
-	 -max 4.5 -ylabel Size -script \
+size.gpl: __run __precomp
+	./report.ml -config report-size.config \
+	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -append boulderdash \
+	 -append canvas \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append sudoku \
+	 -append js_of_ocaml \
+	 -append ocsigen_server \
+	 -append ocamlc \
+	 -append unison \
+	 -max 3 -ylabel Size -script \
 	 -svg 7 500 150 \
-	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 16,3.25\nplot/smg' \
+	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 22.75,1.80\nplot/smg' \
 	 > $@
+
+time-optim.svg: __run
+	./report.ml -config report-time-optim.config \
+	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -max 4 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
+	 > $@
+
+size-optim.svg: __run __precomp
+	./report.ml -config report-size-optim.config \
+	 -omit binary_trees -omit fannkuch_redux -omit loop  \
+	 -omit fannkuch_redux_2 \
+	 -append boulderdash \
+	 -append canvas \
+	 -append cubes \
+	 -append minesweeper \
+	 -append planet \
+	 -append sudoku \
+	 -append js_of_ocaml \
+	 -append ocsigen_server \
+	 -append ocamlc \
+	 -append unison \
+	 -max 2.5 -svg 7 500 150 -edgecaption -ylabel Size \
+	 > $@
+
+time-ocamljs.svg: __run
+	./report.ml -config report-time-ocamljs.config \
+	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
+	 > $@
+
+size-ocamljs.svg: __run __precomp
+	./report.ml -config report-size-ocamljs.config -omit loop \
+	 -omit binary_trees -omit fannkuch_redux \
+	 -omit boulderdash \
+	 -omit canvas \
+	 -omit cubes \
+	 -omit minesweeper \
+	 -omit planet \
+	 -omit sudoku \
+	 -omit js_of_ocaml \
+	 -omit ocsigen_server \
+	 -omit ocamlc \
+	 -omit unison \
+	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel Size \
+	 > $@
+
+compiletime.svg: __run __precomp
+	./report.ml -config report-compiletime.config \
+	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -max 1.1 -svg 7 500 150 -edgecaption -ylabel "Compile time" \
+	 > $@
+
+nativejs.svg: __run
+	./report.ml -config report-nativejs.config \
+	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -max 2.5 -svg 7 200 150 -edgecaption -ylabel "Execution time" \
+	 > $@
+
 
 %.pdf: %.svg
 	inkscape -D --export-pdf="$@" -w 210 -h 297 $<
+
+_perf:
+	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo performance > $$i/cpufreq/scaling_governor" ; fi ;done
+
+_noperf:
+	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo ondemand > $$i/cpufreq/scaling_governor" ; fi ; done
+
+
+clean: _noperf
+	rm -rf results build __precomp __run *.svg *.pdf *~ precomptmp

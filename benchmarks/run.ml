@@ -16,7 +16,7 @@ let run_command cmd =
       Format.eprintf "Command '%s' killed with signal %d.@." cmd s;
       raise Exit
   | _ ->
-      ()
+    ()
 
 let time cmd =
   let t1 = (Unix.times ()).Unix.tms_cutime in
@@ -35,7 +35,7 @@ let compile_gen prog src_dir src_spec dst_dir dst_spec =
        if need_update src dst then begin
          let cmd = prog src dst in
          try
-           run_command cmd
+           write_measures compiletimes dst_spec nm [time cmd]
          with Exit -> ()
        end)
     (benchs src_dir src_spec)
@@ -49,6 +49,9 @@ let max_duration = ref 1200.
 
 let fast_run () =
   min_measures := 5; max_confidence := 0.15; max_duration := 30.
+
+let ffast_run () =
+  min_measures := 2; max_confidence := 42.; max_duration := 30.
 
 (****)
 
@@ -98,20 +101,31 @@ let measure code meas spec cmd =
 
 let compile_no_ext prog src_dir src_spec dst_dir dst_spec =
   compile_gen prog src_dir src_spec dst_dir (no_ext dst_spec)
+
 let ml_size =
   compile_no_ext
-    (Format.sprintf "perl ./lib/remove_comments.pl %s | wc -c > %s")
+    (Format.sprintf "perl ./lib/remove_comments.pl %s | sed 's/^ *//g' | wc -c > %s")
+
 let file_size = compile_no_ext (Format.sprintf "wc -c < %s > %s")
+
+let compr_file_size =
+  compile_no_ext (Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s")
+
 let runtime_size = compile_no_ext (Format.sprintf "head -n -1 %s | wc -c > %s")
+
 let gen_size = compile_no_ext (Format.sprintf "tail -1 %s | wc -c > %s")
 
 (****)
 
-let has_ocamljs = Sys.command "ocamljs 2> /dev/null" = 0
-
 let compile_only = ref false
 let full = ref false
 let conf = ref "run.config"
+let do_ocamljs = ref true
+let nobyteopt = ref false
+
+let has_ocamljs = Sys.command "ocamljs 2> /dev/null" = 0
+let run_ocamljs () = !do_ocamljs && has_ocamljs
+
 
 let interpreters = ref []
 
@@ -155,7 +169,10 @@ let _ =
     [("-compile", Arg.Set compile_only, " only compiles");
      ("-all", Arg.Set full, " run all benchmarks");
      ("-config", Arg.Set_string conf, "<file> use <file> as a config file");
-     ("-fast", Arg.Unit fast_run, " perform less iterations")]
+     ("-fast", Arg.Unit fast_run, " perform less iterations");
+     ("-ffast", Arg.Unit ffast_run, " perform very few iterations");
+     ("-noocamljs", Arg.Clear do_ocamljs, " do not run ocamljs");
+     ("-nobyteopt", Arg.Set nobyteopt, " do not run benchs on bytecode and native programs")]
   in
   Arg.parse (Arg.align options)
     (fun s -> raise (Arg.Bad (Format.sprintf "unknown option `%s'" s)))
@@ -170,27 +187,31 @@ let _ =
   compile "js_of_ocaml -disable deadcode" code byte code js_of_ocaml_deadcode;
   compile "js_of_ocaml -disable compactexpr" code byte code js_of_ocaml_compact;
   compile "js_of_ocaml -disable optcall" code byte code js_of_ocaml_call;
-  if has_ocamljs then compile "ocamljs" src ml code ocamljs;
+  if run_ocamljs () then compile "ocamljs" src ml code ocamljs;
   compile "ocamlc -unsafe" src ml code byte_unsafe;
   compile "ocamlopt" src ml code opt_unsafe;
   compile "js_of_ocaml" code byte_unsafe code js_of_ocaml_unsafe;
-  if has_ocamljs then compile "ocamljs -unsafe" src ml code ocamljs_unsafe;
+  if run_ocamljs () then compile "ocamljs -unsafe" src ml code ocamljs_unsafe;
 
   ml_size src ml sizes ml;
   file_size code byte sizes byte;
   file_size code js_of_ocaml sizes (sub_spec js_of_ocaml "full");
+  compr_file_size code js_of_ocaml sizes (sub_spec js_of_ocaml "gzipped");
   runtime_size code js_of_ocaml sizes (sub_spec js_of_ocaml "runtime");
   gen_size code js_of_ocaml sizes (sub_spec js_of_ocaml "generated");
   gen_size code js_of_ocaml_inline sizes js_of_ocaml_inline;
   gen_size code js_of_ocaml_deadcode sizes js_of_ocaml_deadcode;
   gen_size code js_of_ocaml_compact sizes js_of_ocaml_compact;
   gen_size code js_of_ocaml_call sizes js_of_ocaml_call;
-  if has_ocamljs then file_size code ocamljs sizes ocamljs;
+  if run_ocamljs () then compr_file_size code ocamljs sizes ocamljs;
 
   if !compile_only then exit 0;
 
-  measure code times opt "";
-  measure code times byte "";
+  if not !nobyteopt then begin
+    measure code times opt "";
+    measure code times byte "";
+  end;
+
   let (compilers, suites) =
     if !full then
       (!interpreters,
@@ -200,7 +221,7 @@ let _ =
         js_of_ocaml_deadcode; 
         js_of_ocaml_compact; 
         js_of_ocaml_call; 
-        ocamljs; 
+        ocamljs;
         ocamljs_unsafe; ])
     else
       (begin match !interpreters with i :: r -> [i] | [] -> [] end,

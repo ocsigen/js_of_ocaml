@@ -78,6 +78,7 @@ let src = "sources"
 let code = "build"
 let times = Filename.concat "results/times" (Unix.gethostname ())
 let sizes = "results/sizes"
+let compiletimes = Filename.concat "results/compiletimes" (Unix.gethostname ())
 
 let ml = ("ml", ".ml")
 let js = ("js", ".js")
@@ -153,8 +154,11 @@ let write_measures meas spec nm l =
 (****)
 
 let benchs loc ((_, ext) as spec) =
-  Sys.readdir (dir loc spec) >>
+  let dir = dir loc spec in
+  Sys.readdir dir >>
   Array.to_list >>
+  List.filter (fun nm -> let k = (Unix.stat (dir^"/"^nm)).Unix.st_kind in
+                         k = Unix.S_REG || k = Unix.S_LNK) >>
   List.filter (fun nm -> ext = "" || Filename.check_suffix nm ext) >>
   (if ext = "" then fun x -> x else List.map Filename.chop_extension) >>
   List.sort compare
