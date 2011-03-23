@@ -9,7 +9,7 @@ include ../Makefile.conf
 
 ifneq "${DERIVING}" ""
 PA_DERIVING=syntax/pa_deriving_Json.cmo
-DERIVING_JSON=deriving_json.cma deriving_json.cmxa
+DERIVING_JSON=deriving_json.cma deriving_json.cmxs
 endif
 
 all: $(LIBNAME).cma syntax/pa_js.cmo ${PA_DERIVING} ${DERIVING_JSON} doc
@@ -22,6 +22,8 @@ deriving_json.cma: $(JSON_OBJS)
 
 deriving_json.cmxa: $(JSON_OBJS:.cmo=.cmx)
 	ocamlfind ocamlopt -a -o $@ $^
+deriving_json.cmxs: deriving_json.cmxa
+	ocamlfind ocamlopt -shared -linkall -o $@ $^
 
 syntax/pa_js.cmo: syntax/pa_js.ml
 	ocamlfind ocamlc -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<

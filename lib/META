@@ -11,10 +11,10 @@ package "syntax" (
 
 package "deriving" (
 
-  if_exists = "deriving_json.cma"
+  exists_if = "deriving_json.cma deriving_json.cmxa"
   description = "Runtime library for the class Json."
   archive(byte) = "deriving_json.cma"
-  archive(opt) = "deriving_json.cmxa"
+  archive(native) = "deriving_json.cmxa"
 
   package "syntax" (
     requires  = "deriving-ocsigen.syntax"

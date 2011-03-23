@@ -25,7 +25,7 @@ check_lwt:
 	fi
 
 ifneq "${DERIVING}" ""
-JSON_DERIVING=lib/syntax/pa_deriving_Json.cmo lib/deriving_json.cma lib/deriving_json.cmxa lib/deriving_json/deriving_Json.cmi lib/deriving_json/deriving_Json.cmi lib/deriving_json/deriving_Json_lexer.cmi  lib/deriving_json/deriving_bi_outbuf.cmi
+JSON_DERIVING=lib/syntax/pa_deriving_Json.cmo lib/deriving_json.cma lib/deriving_json.cmxa lib/deriving_json.cmxs lib/deriving_json.a lib/deriving_json/deriving_Json.cmi lib/deriving_json/deriving_Json.cmi lib/deriving_json/deriving_Json_lexer.cmi  lib/deriving_json/deriving_bi_outbuf.cmi
 endif
 
 install:
