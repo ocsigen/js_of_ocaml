@@ -14,7 +14,7 @@ package "deriving" (
   if_exists = "deriving_json.cma"
   description = "Runtime library for the class Json."
   archive(byte) = "deriving_json.cma"
-  archive(opt) = "deriving_json.cma"
+  archive(opt) = "deriving_json.cmxa"
 
   package "syntax" (
     requires  = "deriving-ocsigen.syntax"
