@@ -25,7 +25,7 @@ compiler.cma: $(OBJS:cmx=cmo)
 	ocamlfind ocamlopt -package findlib,str -c $<
 
 %.cmo: %.ml
-	ocamlfind ocamlc -package findlib,str -g -c $<
+	ocamlfind ocamlc -package findlib,str -c $<
 
 %.cmi: %.mli
 	ocamlfind ocamlc -package findlib,str -c $<

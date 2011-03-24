@@ -212,9 +212,9 @@ let gnuplot_output ch no_header (h, t) =
       (fun (nm, l) ->
          let (v, ii) = List.nth l i in
          if !maximum > 0. && v > !maximum
-         then Printf.fprintf ch "set label \"%.2f\" at %f,%f center\n"
+         then Printf.fprintf ch "set label font \",5\" \"%.2f\" at %f,%f center\n"
            v (!nn +. float i /. float n -. 0.5 (* why? *))
-           (!maximum *. 1.04);
+           (!maximum *. 1.04 +. 0.1);
          nn := !nn +. 1.)
       t;
   done;
@@ -251,15 +251,17 @@ let gnuplot_output ch no_header (h, t) =
   done
 
 let filter (h, t) =
-  let app = ref [] in
   let l1 = List.filter
-    (fun ((nm, _) as v) -> 
-      if List.mem nm !appended
-      then (app := v::!app; false)
-      else not (List.mem nm !omitted)) 
+    (fun (nm, _) -> 
+      not ((List.mem nm !appended) || (List.mem nm !omitted)))
     t
   in
-  (h, l1 @ List.rev !app)
+  let app =
+    List.fold_left 
+      (fun beg nm -> try (nm, List.assoc nm t)::beg with Not_found -> beg)
+      [] !appended
+  in 
+  (h, l1 @ app)
 
 let output_table =
   let old_table = ref None in

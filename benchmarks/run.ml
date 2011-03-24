@@ -45,7 +45,7 @@ let time cmd =
 
 (****)
 
-let compile_gen prog src_dir src_spec dst_dir dst_spec =
+let compile_gen ~comptime prog src_dir src_spec dst_dir dst_spec =
   mkdir (dir dst_dir dst_spec);
   List.iter
     (fun nm ->
@@ -54,12 +54,16 @@ let compile_gen prog src_dir src_spec dst_dir dst_spec =
        if need_update src dst then begin
          let cmd = prog src dst in
          try
-           write_measures compiletimes dst_spec nm [time cmd]
+           if comptime
+           then write_measures compiletimes dst_spec nm [time cmd]
+           else run_command cmd
          with Exit -> ()
+
        end)
     (benchs src_dir src_spec)
 
-let compile prog = compile_gen (Format.sprintf "%s %s -o %s" prog)
+let compile ~comptime prog =
+  compile_gen ~comptime (Format.sprintf "%s %s -o %s" prog)
 
 let warm_up_time = 1.0
 let min_measures = ref 10
@@ -118,21 +122,27 @@ let measure code meas spec cmd =
 
 (****)
 
-let compile_no_ext prog src_dir src_spec dst_dir dst_spec =
-  compile_gen prog src_dir src_spec dst_dir (no_ext dst_spec)
+let compile_no_ext ~comptime prog src_dir src_spec dst_dir dst_spec =
+  compile_gen ~comptime prog src_dir src_spec dst_dir (no_ext dst_spec)
 
 let ml_size =
   compile_no_ext
+    ~comptime:false
     (Format.sprintf "perl ./lib/remove_comments.pl %s | sed 's/^ *//g' | wc -c > %s")
 
-let file_size = compile_no_ext (Format.sprintf "wc -c < %s > %s")
+let file_size =
+  compile_no_ext ~comptime:false (Format.sprintf "wc -c < %s > %s")
 
 let compr_file_size =
-  compile_no_ext (Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s")
+  compile_no_ext
+    ~comptime:false
+    (Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s")
 
-let runtime_size = compile_no_ext (Format.sprintf "head -n -1 %s | wc -c > %s")
+let runtime_size = 
+  compile_no_ext ~comptime:false (Format.sprintf "head -n -1 %s | wc -c > %s")
 
-let gen_size = compile_no_ext (Format.sprintf "tail -1 %s | wc -c > %s")
+let gen_size =
+  compile_no_ext ~comptime:false (Format.sprintf "tail -1 %s | wc -c > %s")
 
 (****)
 
@@ -199,18 +209,18 @@ let _ =
 
   read_config ();
 
-  compile "ocamlc" src ml code byte;
-  compile "ocamlopt" src ml code opt;
-  compile "js_of_ocaml" code byte code js_of_ocaml;
-  compile "js_of_ocaml -noinline" code byte code js_of_ocaml_inline;
-  compile "js_of_ocaml -disable deadcode" code byte code js_of_ocaml_deadcode;
-  compile "js_of_ocaml -disable compactexpr" code byte code js_of_ocaml_compact;
-  compile "js_of_ocaml -disable optcall" code byte code js_of_ocaml_call;
-  if run_ocamljs () then compile "ocamljs" src ml code ocamljs;
-  compile "ocamlc -unsafe" src ml code byte_unsafe;
-  compile "ocamlopt" src ml code opt_unsafe;
-  compile "js_of_ocaml" code byte_unsafe code js_of_ocaml_unsafe;
-  if run_ocamljs () then compile "ocamljs -unsafe" src ml code ocamljs_unsafe;
+  compile ~comptime:true "ocamlc" src ml code byte;
+  compile ~comptime:true "ocamlopt" src ml code opt;
+  compile ~comptime:true "js_of_ocaml" code byte code js_of_ocaml;
+  compile ~comptime:true "js_of_ocaml -noinline" code byte code js_of_ocaml_inline;
+  compile ~comptime:true "js_of_ocaml -disable deadcode" code byte code js_of_ocaml_deadcode;
+  compile ~comptime:true "js_of_ocaml -disable compactexpr" code byte code js_of_ocaml_compact;
+  compile ~comptime:true "js_of_ocaml -disable optcall" code byte code js_of_ocaml_call;
+  if run_ocamljs () then compile ~comptime:true "ocamljs" src ml code ocamljs;
+  compile ~comptime:true "ocamlc -unsafe" src ml code byte_unsafe;
+  compile ~comptime:true "ocamlopt" src ml code opt_unsafe;
+  compile ~comptime:true "js_of_ocaml" code byte_unsafe code js_of_ocaml_unsafe;
+  if run_ocamljs () then compile ~comptime:true "ocamljs -unsafe" src ml code ocamljs_unsafe;
 
   ml_size src ml sizes ml;
   file_size code byte sizes byte;

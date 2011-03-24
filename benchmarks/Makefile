@@ -20,8 +20,8 @@ exesnames = $(exes:programs/%=%)
 
 missingml = $(exesnames:%=results/sizes/ml/%)
 missingocamljs = $(exesnames:%=results/sizes/ocamljs/%)
-missingcompiletime = $(exesnames:%=results/compiletimes/`hostname`/byte/%)
-othermissing = results/times/`hostname`/nitro/kb results/times/`hostname`/tm/hamming results/times/`hostname`/tm/splay
+missingcompiletime = $(exesnames:%=results/compiletimes/`hostname`/byte/%) $(exesnames:%=results/compiletimes/`hostname`/opt/%)
+othermissing = results/times/`hostname`/nitro/js_of_ocaml/kb results/times/`hostname`/tm/js_of_ocaml/hamming results/times/`hostname`/tm/js_of_ocaml/splay
 
 missingfiles=$(missingml) $(missingocamljs) $(missingcompiletime) $(othermissing)
 
@@ -29,20 +29,22 @@ missingfiles=$(missingml) $(missingocamljs) $(missingcompiletime) $(othermissing
 
 # compile with precompiled programs for creating benchs
 __precomp:
-	make _missingfiles
 	mkdir -p build/byte
 	ln -sf $(exes:%=../../%) build/byte
 	if [ ! -d precomptmp ] ; then ./run.ml -compile ; else cd precomptmp ; find . -type f -exec mv {} ../{} \; ; fi
 	rm -rf precomptmp
+	make _missingfiles
 	touch __precomp
 
 # for running the test we do not want precompiled programs
 __run:
+	make _missingfiles
 	make _noprecomp
 	./run.ml -all
 	touch __run
 
 fastrun:
+	make _missingfiles
 	make _noprecomp
 	echo "======================== WARNING: fast benchs!"
 	./run.ml -ffast -all
@@ -80,7 +82,7 @@ _missingfiles:
 # then to add data for precompiled programs
 time.svg: __run
 	./report.ml -config report-time.config \
-	 -omit binary_trees -omit fannkuch_redux \
+	 -omit binary_trees -omit fannkuch_redux -omit loop \
 	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
@@ -90,6 +92,8 @@ size.svg: size.gpl
 size.gpl: __run __precomp
 	./report.ml -config report-size.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc -omit kb_no_exc \
 	 -append boulderdash \
 	 -append canvas \
 	 -append cubes \
@@ -101,20 +105,21 @@ size.gpl: __run __precomp
 	 -append ocamlc \
 	 -append unison \
 	 -max 3 -ylabel Size -script \
-	 -svg 7 500 150 \
-	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 22.75,1.80\nplot/smg' \
+	 -svg 7 650 150 \
+	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 24.75,1.80\nplot/smg' \
 	 > $@
 
 time-optim.svg: __run
 	./report.ml -config report-time-optim.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
-	 -max 4 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
+	 -max 4 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size-optim.svg: __run __precomp
 	./report.ml -config report-size-optim.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop  \
 	 -omit fannkuch_redux_2 \
+	 -omit boyer_no_exc -omit kb_no_exc \
 	 -append boulderdash \
 	 -append canvas \
 	 -append cubes \
@@ -125,7 +130,7 @@ size-optim.svg: __run __precomp
 	 -append ocsigen_server \
 	 -append ocamlc \
 	 -append unison \
-	 -max 2.5 -svg 7 500 150 -edgecaption -ylabel Size \
+	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
 	 > $@
 
 time-ocamljs.svg: __run
@@ -137,6 +142,9 @@ time-ocamljs.svg: __run
 size-ocamljs.svg: __run __precomp
 	./report.ml -config report-size-ocamljs.config -omit loop \
 	 -omit binary_trees -omit fannkuch_redux \
+	 -omit fannkuch_redux_2 \
+	 -omit spectral_norm \
+	 -omit boyer_no_exc -omit kb_no_exc \
 	 -omit boulderdash \
 	 -omit canvas \
 	 -omit cubes \
@@ -153,13 +161,13 @@ size-ocamljs.svg: __run __precomp
 compiletime.svg: __run __precomp
 	./report.ml -config report-compiletime.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
-	 -max 1.1 -svg 7 500 150 -edgecaption -ylabel "Compile time" \
+	 -max 2 -svg 7 500 150 -edgecaption -ylabel "Compile time" \
 	 > $@
 
 nativejs.svg: __run
 	./report.ml -config report-nativejs.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
-	 -max 2.5 -svg 7 200 150 -edgecaption -ylabel "Execution time" \
+	 -max 2.8 -svg 7 200 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 
@@ -170,7 +178,7 @@ _perf:
 	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo performance > $$i/cpufreq/scaling_governor" ; fi ;done
 
 _noperf:
-	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo ondemand > $$i/cpufreq/scaling_governor" ; fi ; done
+#	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo ondemand > $$i/cpufreq/scaling_governor" ; fi ; done
 
 
 clean: _noperf
