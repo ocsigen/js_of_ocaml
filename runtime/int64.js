@@ -37,8 +37,8 @@ function caml_int64_ult(x,y) { return caml_int64_ucompare(x,y) < 0; }
 
 //Provides: caml_int64_compare const
 function caml_int64_compare(x,y) {
-  x3 = x[3] << 16;
-  y3 = y[3] << 16;
+  var x3 = x[3] << 16;
+  var y3 = y[3] << 16;
   if (x3 > y3) return 1;
   if (x3 < y3) return -1;
   if (x[2] > y[2]) return 1;
@@ -50,34 +50,34 @@ function caml_int64_compare(x,y) {
 
 //Provides: caml_int64_neg const
 function caml_int64_neg (x) {
-  y1 = - x[1];
-  y2 = - x[2] + (y1 >> 24);
-  y3 = - x[3] + (y2 >> 24);
+  var y1 = - x[1];
+  var y2 = - x[2] + (y1 >> 24);
+  var y3 = - x[3] + (y2 >> 24);
   return [255, y1 & 0xffffff, y2 & 0xffffff, y3 & 0xffff];
 }
 
 //Provides: caml_int64_add const
 function caml_int64_add (x, y) {
-  z1 = x[1] + y[1];
-  z2 = x[2] + y[2] + (z1 >> 24);
-  z3 = x[3] + y[3] + (z2 >> 24);
+  var z1 = x[1] + y[1];
+  var z2 = x[2] + y[2] + (z1 >> 24);
+  var z3 = x[3] + y[3] + (z2 >> 24);
   return [255, z1 & 0xffffff, z2 & 0xffffff, z3 & 0xffff];
 }
 
 //Provides: caml_int64_sub const
 function caml_int64_sub (x, y) {
-  z1 = x[1] - y[1];
-  z2 = x[2] - y[2] + (z1 >> 24);
-  z3 = x[3] - y[3] + (z2 >> 24);
+  var z1 = x[1] - y[1];
+  var z2 = x[2] - y[2] + (z1 >> 24);
+  var z3 = x[3] - y[3] + (z2 >> 24);
   return [255, z1 & 0xffffff, z2 & 0xffffff, z3 & 0xffff];
 }
 
 //Provides: caml_int64_mul const
 //Requires: caml_int64_offset
 function caml_int64_mul(x,y) {
-  z1 = x[1] * y[1];
-  z2 = ((z1 * caml_int64_offset) | 0) + x[2] * y[1] + x[1] * y[2];
-  z3 = ((z2 * caml_int64_offset) | 0) + x[3] * y[1] + x[2] * y[2] + x[1] * y[3];
+  var z1 = x[1] * y[1];
+  var z2 = ((z1 * caml_int64_offset) | 0) + x[2] * y[1] + x[1] * y[2];
+  var z3 = ((z2 * caml_int64_offset) | 0) + x[3] * y[1] + x[2] * y[2] + x[1] * y[3];
   return [255, z1 & 0xffffff, z2 & 0xffffff, z3 & 0xffff];
 }
 

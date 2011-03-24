@@ -352,7 +352,7 @@ function caml_finish_formatting(f, rawbuffer) {
   /* Do the formatting */
   var buffer = "";
   if (f.justify == '+' && f.filler == ' ')
-    for (i = len; i < f.width; i++) buffer += ' ';
+    for (var i = len; i < f.width; i++) buffer += ' ';
   if (f.signedconv) {
     if (f.sign < 0) buffer += '-';
     else if (f.signstyle != '-') buffer += f.signstyle;
@@ -360,10 +360,10 @@ function caml_finish_formatting(f, rawbuffer) {
   if (f.alternate && f.base == 8) buffer += '0';
   if (f.alternate && f.base == 16) buffer += "0x";
   if (f.justify == '+' && f.filler == '0')
-    for (i = len; i < f.width; i++) buffer += '0';
+    for (var i = len; i < f.width; i++) buffer += '0';
   buffer += rawbuffer;
   if (f.justify == '-')
-    for (i = len; i < f.width; i++) buffer += ' ';
+    for (var i = len; i < f.width; i++) buffer += ' ';
   return new MlWrappedString (buffer);
 }
 

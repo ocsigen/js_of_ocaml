@@ -304,7 +304,7 @@ var caml_output_val = function (){
           writer.write_code(32, cst.CODE_BLOCK32, (v.length << 10) | v[0]);
         writer.size_32 += v.length;
         writer.size_64 += v.length;
-        for (i = 1; i < v.length; i++) extern_rec (v[i]);
+        for (var i = 1; i < v.length; i++) extern_rec (v[i]);
       } else if (v instanceof MlString) {
         var len = v.getLen();
         if (len < 0x20)

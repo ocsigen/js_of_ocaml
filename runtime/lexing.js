@@ -20,7 +20,7 @@
 function caml_lex_array(s) {
   s = s.getFullBytes();
   var a = [], l = s.length / 2;
-  for (i = 0; i < l; i++)
+  for (var i = 0; i < l; i++)
     a[i] = (s.charCodeAt(2 * i) | (s.charCodeAt(2 * i + 1) << 8)) << 16 >> 16;
   return a;
 }

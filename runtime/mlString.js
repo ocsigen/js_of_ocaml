@@ -188,7 +188,7 @@ MlString.prototype = {
       this.bytes = this.fullBytes = this.string = null;
     }
     var l = ofs + len;
-    for (i = ofs; i < l; i++) a[i] = c;
+    for (var i = ofs; i < l; i++) a[i] = c;
   },
 
   compare:function (s2) {
