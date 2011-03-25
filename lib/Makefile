@@ -14,7 +14,7 @@ syntax/pa_js.cmo: syntax/pa_js.ml
 	ocamlfind ocamlc -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
 
 %.cmo: %.ml syntax/pa_js.cmo
-	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c $<
+	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c -g $<
 
 %.cmi: %.mli
 	ocamlfind ocamlc -package lwt -c $<

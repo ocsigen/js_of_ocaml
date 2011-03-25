@@ -33,6 +33,10 @@ module Var : sig
   val count : unit -> int
 
   val compare : t -> t -> int
+
+  val name : t -> string -> unit
+  val propagate_name : t -> t -> unit
+  val set_pretty : unit -> unit
 end
 
 val string_of_ident : int -> string

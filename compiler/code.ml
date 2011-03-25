@@ -20,6 +20,26 @@
 
 (*FIX: this should probably be somewhere else... *)
 module VarPrinter = struct
+  let names = Hashtbl.create 107
+  let name v nm = Hashtbl.add names v nm
+  let propagate_name v v' =
+    try name v' (Hashtbl.find names v) with Not_found -> ()
+  let name v nm =
+    let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') in
+    let is_num c = (c >= '0' && c <= '9') in
+    if String.length nm > 0 then begin
+      let nm = String.copy nm in
+      if not (is_alpha nm.[0]) then nm.[0] <- '_';
+      for i = 1 to String.length nm - 1 do
+        if not (is_alpha nm.[i] || is_num nm.[i]) then nm.[i] <- '_';
+      done;
+      let c = ref 0 in
+      for i = 0 to String.length nm - 1 do
+        if nm.[i] = '_' then incr c
+       done;
+       if !c < String.length nm then name v nm
+    end
+
   let reserved = Hashtbl.create 107
 
   let add_reserved s =
@@ -45,6 +65,19 @@ module VarPrinter = struct
        char c1 x
     else
       format_var ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
+
+  let pretty = ref false
+
+  let format_var i =
+    let s = format_var i in
+    if !pretty then begin
+      try
+        let nm = Hashtbl.find names i in
+        Format.sprintf "%s_%s_" nm s
+      with Not_found ->
+        Format.sprintf "_%s_" s
+    end else
+      s
 
   let rec to_string i =
     try
@@ -80,6 +113,10 @@ module Var : sig
   val count : unit -> int
 
   val compare : t -> t -> int
+
+  val name : t -> string -> unit
+  val propagate_name : t -> t -> unit
+  val set_pretty : unit -> unit
 end = struct
 
   type t = int * int
@@ -117,6 +154,10 @@ end = struct
   let idx v = snd v
 
   let compare v1 v2 = compare (idx v1) (idx v2)
+
+  let name (_, i) nm = VarPrinter.name i nm
+  let propagate_name (_, i) (_, j) = VarPrinter.propagate_name i j
+  let set_pretty () = VarPrinter.pretty := true
 end
 
 module VarSet = Set.Make (Var)

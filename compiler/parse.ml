@@ -170,6 +170,84 @@ let inlined_const x =
 
 (****)
 
+module Debug = struct
+  module Ident = struct
+    type t = { stamp: int; name: string; mutable flags: int }
+    type 'a tbl =
+        Empty
+      | Node of 'a tbl * 'a data * 'a tbl * int
+    and 'a data =
+      { ident: t;
+        data: 'a;
+        previous: 'a data option }
+
+    let rec table_contents_rec sz t rem =
+      match t with
+        Empty ->
+          rem
+      | Node (l, v, r, _) ->
+          table_contents_rec sz l
+            ((sz - v.data, v.ident.name) :: table_contents_rec sz r rem)
+
+    let table_contents sz t =
+      List.sort (fun (i, _) (j, _) -> compare i j)
+        (table_contents_rec sz t [])
+
+  end
+
+  type compilation_env =
+    { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
+      ce_heap: int Ident.tbl;  (* Structure of the heap-allocated env *)
+      ce_rec: int Ident.tbl }  (* Functions bound by the same let rec *)
+
+  type debug_event =
+    { mutable ev_pos: int;                (* Position in bytecode *)
+      ev_module: string;                  (* Name of defining module *)
+      ev_loc: unit;                       (* Location in source file *)
+      ev_kind: unit;                      (* Before/after event *)
+      ev_info: unit;                      (* Extra information *)
+      ev_typenv: unit;                    (* Typing environment *)
+      ev_typsubst: unit;                  (* Substitution over types *)
+      ev_compenv: compilation_env;        (* Compilation environment *)
+      ev_stacksize: int;                  (* Size of stack frame *)
+      ev_repr: unit }                     (* Position of the representative *)
+
+  let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
+
+  let events_by_pc =
+    (Hashtbl.create 257 : (int, debug_event) Hashtbl.t)
+
+  let read ic =
+    let len = input_binary_int ic in
+    for i = 0 to len - 1 do
+      let orig = input_binary_int ic in
+      let evl : debug_event list = input_value ic in
+      List.iter
+        (fun ev ->
+           relocate_event orig ev; Hashtbl.add events_by_pc ev.ev_pos ev)
+        evl
+    done
+
+  let find pc =
+    try
+      let ev = Hashtbl.find events_by_pc pc in
+      Ident.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
+    with Not_found ->
+      []
+
+  let rec propagate l1 l2 =
+    match l1, l2 with
+      v1 :: r1, v2 :: r2 -> Var.propagate_name v1 v2; propagate r1 r2
+    | _                  -> ()
+
+end
+
+let keep_variable_names = ref false
+
+let set_pretty () = keep_variable_names := true; Code.Var.set_pretty ()
+
+(****)
+
 type globals =
   { vars : Var.t option array;
     is_const : bool array;
@@ -322,6 +400,18 @@ module State = struct
     Format.eprintf "{ %a | %a | (%d) %a }@."
       print_elt st.accu print_stack st.stack st.env_offset print_env st.env
 
+  let rec name_rec i l s =
+    match l, s with
+      [], _ ->
+        ()
+    | (j, nm) :: lrem, Var v :: srem when i = j ->
+        Var.name v nm; name_rec (i + 1) lrem srem
+    | (j, _) :: _, _ :: srem when i < j ->
+        name_rec (i + 1) l srem
+    | _ ->
+        assert false
+
+  let name_vars st l = name_rec 0 l st.stack
 end
 
 let primitive_name state i =
@@ -388,6 +478,9 @@ and compile code limit pc state instrs =
     (instrs, Branch (pc, State.stack_vars state), state)
   else begin
   if debug () then Format.eprintf "%4d " pc;
+
+  State.name_vars state (Debug.find pc);
+
   let instr =
     try
       get_instr code pc
@@ -596,9 +689,13 @@ and compile code limit pc state instrs =
       let state' = State.clear_accu state' in
       compile_block code addr state';
       if debug () then Format.printf "}@.";
+      let args = State.stack_vars state' in
+
+      let (state'', _, _) = AddrMap.find addr !compiled_block in
+      Debug.propagate (State.stack_vars state'') args;
+
       compile code limit (pc + 3) state
-        (Let (x, Closure (List.rev params, (addr, State.stack_vars state'))) ::
-         instrs)
+        (Let (x, Closure (List.rev params, (addr, args))) :: instrs)
   | CLOSUREREC ->
       let nfuncs = getu code (pc + 1) in
       let nvars = getu code (pc + 2) in
@@ -645,9 +742,12 @@ and compile code limit pc state instrs =
              let state' = State.clear_accu state' in
              compile_block code addr state';
              if debug () then Format.printf "}@.";
-             Let (x, Closure (List.rev params,
-                              (addr, State.stack_vars state'))) ::
-             instr)
+             let args = State.stack_vars state' in
+
+             let (state'', _, _) = AddrMap.find addr !compiled_block in
+             Debug.propagate (State.stack_vars state'') args;
+
+             Let (x, Closure (List.rev params, (addr, args))) :: instr)
          instrs (List.rev !vars)
       in
       compile
@@ -1580,6 +1680,13 @@ let f ic =
 
   ignore(seek_section toc ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
+
+  if !keep_variable_names then begin
+    try
+      ignore(seek_section toc ic "DBUG");
+      Debug.read ic;
+    with Not_found -> ()
+  end;
 
   let globals =
     { vars = Array.create (Array.length init_data) None;

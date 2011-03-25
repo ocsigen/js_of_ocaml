@@ -88,11 +88,12 @@ let _ =
   let output_file = ref None in
   let input_file = ref None in
   let no_runtime = ref false in
+  let set_pretty () = Generate.set_pretty (); Parse.set_pretty () in
   let options =
     [("-debug", Arg.String Util.set_debug, "<name> debug module <name>");
      ("-disable",
       Arg.String Util.set_disabled, "<name> disable optimization <name>");
-     ("-pretty", Arg.Unit Generate.set_pretty, " pretty print the output");
+     ("-pretty", Arg.Unit set_pretty, " pretty print the output");
      ("-noinline", Arg.Unit Inline.disable_inlining, " disable inlining");
      ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
       " do not include the standard runtime");
