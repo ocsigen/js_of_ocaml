@@ -36,8 +36,8 @@ module VarPrinter = struct
       let c = ref 0 in
       for i = 0 to String.length nm - 1 do
         if nm.[i] = '_' then incr c
-       done;
-       if !c < String.length nm then name v nm
+      done;
+      if !c < String.length nm then name v nm
     end
 
   let reserved = Hashtbl.create 107
@@ -58,18 +58,18 @@ module VarPrinter = struct
   let c1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
   let c2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
 
-  let rec format_var x =
+  let rec format_ident x =
     assert (x >= 0);
     let char c x = String.make 1 (c.[x]) in
     if x < 54 then
        char c1 x
     else
-      format_var ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
+      format_ident ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
 
   let pretty = ref false
 
-  let format_var i =
-    let s = format_var i in
+  let format_var i x =
+    let s = format_ident x in
     if !pretty then begin
       try
         let nm = Hashtbl.find names i in
@@ -85,7 +85,7 @@ module VarPrinter = struct
     with Not_found ->
       incr last;
       let j = !last in
-      let s = format_var j in
+      let s = format_var i j in
       if Hashtbl.mem reserved s then
         to_string i
       else begin
@@ -94,7 +94,7 @@ module VarPrinter = struct
       end
 end
 
-let string_of_ident = VarPrinter.format_var
+let string_of_ident = VarPrinter.format_ident
 
 let add_reserved_name = VarPrinter.add_reserved
 
