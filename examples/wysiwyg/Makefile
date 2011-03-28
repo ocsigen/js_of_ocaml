@@ -4,6 +4,5 @@ OPTIONS=-pretty
 
 include ../Makefile.common
 
-wikicreole.ml: wikicreole.mll
-	ocamllex $<
+main.cmo: 
 

@@ -770,7 +770,7 @@ class type document = object
   method open_ : unit meth
   method close : unit meth
   method write : js_string t -> unit meth
-  method execCommand_ : js_string t -> unit meth
+  method execCommand_ : js_string t -> bool t opt -> js_string t opt -> unit meth
 
   inherit eventTarget
 end
