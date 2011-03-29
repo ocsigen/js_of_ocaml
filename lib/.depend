@@ -1,30 +1,54 @@
-dom_events.cmo: js.cmi dom_html.cmi dom_events.cmi 
-dom_events.cmx: js.cmx dom_html.cmx dom_events.cmi 
-dom_events.cmi: js.cmi dom_html.cmi 
-dom_html.cmo: js.cmi dom.cmi dom_html.cmi 
-dom_html.cmx: js.cmx dom.cmx dom_html.cmi 
-dom_html.cmi: js.cmi dom.cmi 
-dom.cmo: js.cmi dom.cmi 
-dom.cmx: js.cmx dom.cmi 
-dom.cmi: js.cmi 
-event_arrows.cmo: js.cmi dom_html.cmi event_arrows.cmi 
-event_arrows.cmx: js.cmx dom_html.cmx event_arrows.cmi 
-event_arrows.cmi: js.cmi dom_html.cmi 
-firebug.cmo: js.cmi dom.cmi firebug.cmi 
-firebug.cmx: js.cmx dom.cmx firebug.cmi 
-firebug.cmi: js.cmi dom.cmi 
-js.cmo: js.cmi 
-js.cmx: js.cmi 
-js.cmi: 
-lwt_js.cmo: js.cmi dom_html.cmi lwt_js.cmi 
-lwt_js.cmx: js.cmx dom_html.cmx lwt_js.cmi 
-lwt_js.cmi: 
-regexp.cmo: js.cmi regexp.cmi 
-regexp.cmx: js.cmx regexp.cmi 
-regexp.cmi: 
-url.cmo: regexp.cmi js.cmi dom_html.cmi url.cmi 
-url.cmx: regexp.cmx js.cmx dom_html.cmx url.cmi 
-url.cmi: 
-xmlHttpRequest.cmo: url.cmi js.cmi dom_html.cmi dom.cmi xmlHttpRequest.cmi 
-xmlHttpRequest.cmx: url.cmx js.cmx dom_html.cmx dom.cmx xmlHttpRequest.cmi 
-xmlHttpRequest.cmi: url.cmi js.cmi dom_html.cmi dom.cmi 
+dom.cmo: js.cmi dom.cmi
+dom.cmx: js.cmx dom.cmi
+dom_events.cmo: js.cmi dom_html.cmi dom_events.cmi
+dom_events.cmx: js.cmx dom_html.cmx dom_events.cmi
+dom_html.cmo: js.cmi dom.cmi dom_html.cmi
+dom_html.cmx: js.cmx dom.cmx dom_html.cmi
+event_arrows.cmo: js.cmi dom_html.cmi event_arrows.cmi
+event_arrows.cmx: js.cmx dom_html.cmx event_arrows.cmi
+file.cmo: js.cmi dom_html.cmi dom.cmi file.cmi
+file.cmx: js.cmx dom_html.cmx dom.cmx file.cmi
+firebug.cmo: js.cmi dom.cmi firebug.cmi
+firebug.cmx: js.cmx dom.cmx firebug.cmi
+form.cmo: js.cmi file.cmi dom_html.cmi form.cmi
+form.cmx: js.cmx file.cmx dom_html.cmx form.cmi
+js.cmo: js.cmi
+js.cmx: js.cmi
+json.cmo: js.cmi json.cmi
+json.cmx: js.cmx json.cmi
+lwt_js.cmo: js.cmi dom_html.cmi lwt_js.cmi
+lwt_js.cmx: js.cmx dom_html.cmx lwt_js.cmi
+regexp.cmo: js.cmi regexp.cmi
+regexp.cmx: js.cmx regexp.cmi
+url.cmo: regexp.cmi js.cmi dom_html.cmi url.cmi
+url.cmx: regexp.cmx js.cmx dom_html.cmx url.cmi
+xmlHttpRequest.cmo: url.cmi js.cmi form.cmi file.cmi dom_html.cmi dom.cmi \
+    xmlHttpRequest.cmi
+xmlHttpRequest.cmx: url.cmx js.cmx form.cmx file.cmx dom_html.cmx dom.cmx \
+    xmlHttpRequest.cmi
+dom.cmi: js.cmi
+dom_events.cmi: js.cmi dom_html.cmi
+dom_html.cmi: js.cmi dom.cmi
+event_arrows.cmi: js.cmi dom_html.cmi
+file.cmi: js.cmi dom_html.cmi dom.cmi
+firebug.cmi: js.cmi dom.cmi
+form.cmi: js.cmi file.cmi dom_html.cmi
+js.cmi:
+json.cmi: js.cmi
+lwt_js.cmi:
+regexp.cmi:
+url.cmi:
+xmlHttpRequest.cmi: url.cmi js.cmi form.cmi dom_html.cmi dom.cmi
+deriving_json/deriving_bi_outbuf.cmo: deriving_json/deriving_bi_outbuf.cmi
+deriving_json/deriving_bi_outbuf.cmx: deriving_json/deriving_bi_outbuf.cmi
+deriving_json/deriving_bi_outbuf.cmi:
+deriving_json/deriving_Json_lexer.cmo: deriving_json/deriving_bi_outbuf.cmi \
+    deriving_json/deriving_Json_lexer.cmi
+deriving_json/deriving_Json_lexer.cmx: deriving_json/deriving_bi_outbuf.cmx \
+    deriving_json/deriving_Json_lexer.cmi
+deriving_json/deriving_Json_lexer.cmi: deriving_json/deriving_bi_outbuf.cmi
+deriving_json/deriving_Json.cmo: deriving_json/deriving_Json_lexer.cmi \
+    deriving_json/deriving_Json.cmi
+deriving_json/deriving_Json.cmx: deriving_json/deriving_Json_lexer.cmx \
+    deriving_json/deriving_Json.cmi
+deriving_json/deriving_Json.cmi: deriving_json/deriving_Json_lexer.cmi
