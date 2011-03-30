@@ -76,16 +76,16 @@ function caml_parse_engine(tables, env, cmd, arg)
   var tbl_names_const = 15;
   var tbl_names_block = 16;
 
-  if (!table.dgoto) {
-    table.defred = caml_lex_array (table[tbl_defred]);
-    table.sindex = caml_lex_array (table[tbl_sindex]);
-    table.check  = caml_lex_array (table[tbl_check]);
-    table.rindex = caml_lex_array (table[tbl_rindex]);
-    table.table  = caml_lex_array (table[tbl_table]);
-    table.len    = caml_lex_array (table[tbl_len]);
-    table.lhs    = caml_lex_array (table[tbl_lhs]);
-    table.gindex = caml_lex_array (table[tbl_gindex]);
-    table.dgoto  = caml_lex_array (table[tbl_dgoto]);
+  if (!tables.dgoto) {
+    tables.defred = caml_lex_array (tables[tbl_defred]);
+    tables.sindex = caml_lex_array (tables[tbl_sindex]);
+    tables.check  = caml_lex_array (tables[tbl_check]);
+    tables.rindex = caml_lex_array (tables[tbl_rindex]);
+    tables.table  = caml_lex_array (tables[tbl_table]);
+    tables.len    = caml_lex_array (tables[tbl_len]);
+    tables.lhs    = caml_lex_array (tables[tbl_lhs]);
+    tables.gindex = caml_lex_array (tables[tbl_gindex]);
+    tables.dgoto  = caml_lex_array (tables[tbl_dgoto]);
   }
 
   var cmd, res, n, n1, n2, state1;
