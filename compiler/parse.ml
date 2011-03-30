@@ -173,30 +173,42 @@ let inlined_const x =
 
 (****)
 
+module Ident = struct
+  type t = { stamp: int; name: string; mutable flags: int }
+  type 'a tbl =
+      Empty
+    | Node of 'a tbl * 'a data * 'a tbl * int
+  and 'a data =
+    { ident: t;
+      data: 'a;
+      previous: 'a data option }
+
+  let rec table_contents_rec sz t rem =
+    match t with
+      Empty ->
+        rem
+    | Node (l, v, r, _) ->
+        table_contents_rec sz l
+          ((sz - v.data, v.ident.name) :: table_contents_rec sz r rem)
+
+  let table_contents sz t =
+    List.sort (fun (i, _) (j, _) -> compare i j)
+      (table_contents_rec sz t [])
+
+end
+
+module Tbl = struct
+  type ('a, 'b) t =
+      Empty
+    | Node of ('a, 'b) t * 'a * 'b * ('a, 'b) t * int
+
+  let rec iter f = function
+      Empty -> ()
+    | Node(l, v, d, r, _) ->
+        iter f l; f v d; iter f r
+end
+
 module Debug = struct
-  module Ident = struct
-    type t = { stamp: int; name: string; mutable flags: int }
-    type 'a tbl =
-        Empty
-      | Node of 'a tbl * 'a data * 'a tbl * int
-    and 'a data =
-      { ident: t;
-        data: 'a;
-        previous: 'a data option }
-
-    let rec table_contents_rec sz t rem =
-      match t with
-        Empty ->
-          rem
-      | Node (l, v, r, _) ->
-          table_contents_rec sz l
-            ((sz - v.data, v.ident.name) :: table_contents_rec sz r rem)
-
-    let table_contents sz t =
-      List.sort (fun (i, _) (j, _) -> compare i j)
-        (table_contents_rec sz t [])
-
-  end
 
   type compilation_env =
     { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
@@ -256,6 +268,11 @@ type globals =
     is_const : bool array;
     constants : Obj.t array;
     primitives : string array }
+
+let make_globals size constants primitives =
+  { vars = Array.create size None;
+    is_const = Array.create size false;
+    constants = constants; primitives = primitives }
 
 module State = struct
 
@@ -1596,17 +1613,6 @@ exception Bad_magic_number
 
 let exec_magic_number = "Caml1999X008"
 
-module Tbl = struct
-  type ('a, 'b) t =
-      Empty
-    | Node of ('a, 'b) t * 'a * 'b * ('a, 'b) t * int
-
-  let rec iter f = function
-      Empty -> ()
-    | Node(l, v, d, r, _) ->
-        iter f l; f v d; iter f r
-end
-
 let seek_section toc ic name =
   let rec seek_sec curr_ofs = function
     [] -> raise Not_found
@@ -1693,11 +1699,7 @@ let f ic =
     with Not_found -> ()
   end;
 
-  let globals =
-    { vars = Array.create (Array.length init_data) None;
-      is_const = Array.create (Array.length init_data) false;
-      constants = init_data;
-      primitives = primitives } in
+  let globals = make_globals (Array.length init_data) init_data primitives in
 
   fix_min_max_int code;
 
