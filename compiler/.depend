@@ -6,6 +6,10 @@ deadcode.cmo: util.cmi pure_fun.cmi code.cmi deadcode.cmi
 deadcode.cmx: util.cmx pure_fun.cmx code.cmx deadcode.cmi 
 dgraph.cmo: dgraph.cmi 
 dgraph.cmx: dgraph.cmi 
+driver.cmo: util.cmi tailcall.cmi phisimpl.cmi parse.cmi inline.cmi \
+    generate.cmi flow.cmi deadcode.cmi code.cmi driver.cmi 
+driver.cmx: util.cmx tailcall.cmx phisimpl.cmx parse.cmx inline.cmx \
+    generate.cmx flow.cmx deadcode.cmx code.cmx driver.cmi 
 flow.cmo: util.cmi subst.cmi dgraph.cmi code.cmi flow.cmi 
 flow.cmx: util.cmx subst.cmx dgraph.cmx code.cmx flow.cmi 
 freevars.cmo: dgraph.cmi code.cmi freevars.cmi 
@@ -28,10 +32,8 @@ js_simpl.cmo: javascript.cmi js_simpl.cmi
 js_simpl.cmx: javascript.cmx js_simpl.cmi 
 linker.cmo: util.cmi primitive.cmi linker.cmi 
 linker.cmx: util.cmx primitive.cmx linker.cmi 
-main.cmo: util.cmi tailcall.cmi phisimpl.cmi parse.cmi linker.cmi inline.cmi \
-    generate.cmi flow.cmi deadcode.cmi code.cmi 
-main.cmx: util.cmx tailcall.cmx phisimpl.cmx parse.cmx linker.cmx inline.cmx \
-    generate.cmx flow.cmx deadcode.cmx code.cmx 
+main.cmo: util.cmi parse.cmi linker.cmi inline.cmi driver.cmi 
+main.cmx: util.cmx parse.cmx linker.cmx inline.cmx driver.cmx 
 parse.cmo: util.cmi primitive.cmi instr.cmi code.cmi parse.cmi 
 parse.cmx: util.cmx primitive.cmx instr.cmx code.cmx parse.cmi 
 phisimpl.cmo: util.cmi subst.cmi dgraph.cmi code.cmi phisimpl.cmi 
@@ -50,6 +52,7 @@ code.cmi: util.cmi
 control.cmi: code.cmi 
 deadcode.cmi: code.cmi 
 dgraph.cmi: 
+driver.cmi: code.cmi 
 flow.cmi: code.cmi 
 freevars.cmi: util.cmi code.cmi 
 generate.cmi: code.cmi 

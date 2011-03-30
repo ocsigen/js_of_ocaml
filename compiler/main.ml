@@ -33,53 +33,13 @@ let f js_files input_file output_file =
         close_in ch;
         p
   in
-if debug () then Code.print_program (fun _ _ -> "") p;
-
-if debug () then Format.eprintf "Tail-call optimization...@.";
-  let p = Tailcall.f p in
-
-if debug () then Format.eprintf "Variable passing simplification...@.";
-  let p = Phisimpl.f p in
-
-if debug () then Format.eprintf "Data flow...@.";
-  let p = Flow.f p in
-if debug () then Format.eprintf "Dead-code...@.";
-  let (p, live_vars) = Deadcode.f p in
-
-if debug () then Format.eprintf "Inlining...@.";
-  let p = Inline.f p live_vars in
-if debug () then Format.eprintf "Dead-code...@.";
-  let (p, live_vars) = Deadcode.f p in
-
-
-if debug () then Code.print_program (fun _ _ -> "") p;
-if debug () then Format.eprintf "Data flow...@.";
-  let p = Flow.f p in
-if debug () then Format.eprintf "Dead-code...@.";
-  let (p, live_vars) = Deadcode.f p in
-
-if debug () then Format.eprintf "Inlining...@.";
-  let p = Inline.f p live_vars in
-if debug () then Format.eprintf "Dead-code...@.";
-  let (p, live_vars) = Deadcode.f p in
-
-
-if debug () then Format.eprintf "Variable passing simplification...@.";
-  let p = Phisimpl.f p in
-
-if debug () then Format.eprintf "Data flow...@.";
-  let p = Flow.f p in
-if debug () then Format.eprintf "Dead-code...@.";
-  let (p, live_vars) = Deadcode.f p in
-
-if debug () then Code.print_program (fun _ _ -> "") p;
+  let output_program = Driver.f p in
   match output_file with
     None ->
-      Format.printf "%a" (fun ch -> Generate.f ch p) live_vars
+      output_program Format.std_formatter
   | Some f ->
       let ch = open_out f in
-      Format.fprintf (Format.formatter_of_out_channel ch)
-        "%a" (fun ch -> Generate.f ch p) live_vars;
+      output_program (Format.formatter_of_out_channel ch);
       close_out ch
 
 let _ =
@@ -88,12 +48,11 @@ let _ =
   let output_file = ref None in
   let input_file = ref None in
   let no_runtime = ref false in
-  let set_pretty () = Generate.set_pretty (); Parse.set_pretty () in
   let options =
     [("-debug", Arg.String Util.set_debug, "<name> debug module <name>");
      ("-disable",
       Arg.String Util.set_disabled, "<name> disable optimization <name>");
-     ("-pretty", Arg.Unit set_pretty, " pretty print the output");
+     ("-pretty", Arg.Unit Driver.set_pretty, " pretty print the output");
      ("-noinline", Arg.Unit Inline.disable_inlining, " disable inlining");
      ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
       " do not include the standard runtime");
