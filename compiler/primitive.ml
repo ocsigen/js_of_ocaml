@@ -21,7 +21,7 @@
 let aliases = Hashtbl.create 17
 
 let alias nm nm' = Hashtbl.add aliases nm nm'
-let resolve nm = try Hashtbl.find aliases nm with Not_found -> nm
+let rec resolve nm = try resolve (Hashtbl.find aliases nm) with Not_found -> nm
 
 (****)
 
