@@ -378,6 +378,8 @@ let get_apply_fun n =
     x
 
 let generate_apply_funs cont =
+  let funs = !apply_funs in
+  apply_funs := Util.IntMap.empty;
   Util.IntMap.fold
     (fun n x cont ->
        let f = Var.to_string (Var.fresh ()) in
@@ -397,7 +399,7 @@ let generate_apply_funs cont =
                              J.ECall (J.EVar "caml_call_gen",
                                       [f'; J.EArr (List.map (fun x -> Some x) params')])))))]) ::
        cont)
-    !apply_funs cont
+    funs cont
 
 (****)
 
@@ -1333,4 +1335,5 @@ let f ch ((pc, blocks, _) as p) live_vars =
   if !compact then Format.pp_set_margin ch 999999998;
   let missing = Linker.resolve_deps !compact ch (Primitive.get_used ()) in
   list_missing missing;
+  Hashtbl.clear add_names;
   Js_output.program ch p

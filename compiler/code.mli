@@ -37,6 +37,8 @@ module Var : sig
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
   val set_pretty : unit -> unit
+
+  val reset : unit -> unit
 end
 
 val string_of_ident : int -> string

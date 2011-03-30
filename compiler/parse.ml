@@ -19,6 +19,7 @@
  *)
 
 (*XXX FIX: in scan, we just have to find implicit block end *)
+(*XXX FIX: avoid the need of global datastructures for analyse_blocks *)
 
 open Code
 open Instr
@@ -111,6 +112,7 @@ let map_of_set f s =
   AddrSet.fold (fun pc m -> AddrMap.add pc (f pc) m) s AddrMap.empty
 
 let analyse_blocks code =
+  blocks := AddrSet.empty;
   let len = String.length code  / 4 in
   add_entry () 0;
   scan () code 0 len;
@@ -130,6 +132,7 @@ let analyse_blocks code =
          AddrMap.add pc (AddrSet.add pc' (AddrMap.find pc cont)) cont)
       cont !jumps
   in
+  stops := AddrSet.empty; entries := AddrSet.empty; jumps := [];
   cont
 
 (****)
@@ -447,17 +450,17 @@ let get_global state instrs i =
           (x, state, instrs)
       end
 
-let compiled_block = ref AddrMap.empty
+let compiled_blocks = ref AddrMap.empty
 
 let rec compile_block code pc state =
-  if not (AddrMap.mem pc !compiled_block) then begin
+  if not (AddrMap.mem pc !compiled_blocks) then begin
     let len = String.length code  / 4 in
     let limit = next_block len pc in
     if debug () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
     let state = State.start_block state in
     let (instr, last, state') = compile code limit pc state [] in
-    compiled_block :=
-      AddrMap.add pc (state, List.rev instr, last) !compiled_block;
+    compiled_blocks :=
+      AddrMap.add pc (state, List.rev instr, last) !compiled_blocks;
     begin match last with
       Branch (pc', _) | Poptrap (pc', _) ->
         compile_block code pc' state'
@@ -691,7 +694,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "}@.";
       let args = State.stack_vars state' in
 
-      let (state'', _, _) = AddrMap.find addr !compiled_block in
+      let (state'', _, _) = AddrMap.find addr !compiled_blocks in
       Debug.propagate (State.stack_vars state'') args;
 
       compile code limit (pc + 3) state
@@ -744,7 +747,7 @@ and compile code limit pc state instrs =
              if debug () then Format.printf "}@.";
              let args = State.stack_vars state' in
 
-             let (state'', _, _) = AddrMap.find addr !compiled_block in
+             let (state'', _, _) = AddrMap.find addr !compiled_blocks in
              Debug.propagate (State.stack_vars state'') args;
 
              Let (x, Closure (List.rev params, (addr, args))) :: instr)
@@ -1541,18 +1544,20 @@ let match_exn_traps ((_, blocks, _) as p) =
 (****)
 
 let parse_bytecode code state =
+  Code.Var.reset ();
   let cont = analyse_blocks code in
 ignore cont;
   compile_block code 0 state;
 
-  let compiled_block =
+  let blocks =
     AddrMap.mapi
       (fun pc (state, instr, last) ->
          { params = State.stack_vars state;
            handler = State.current_handler state;
            body = instr; branch = last })
-      !compiled_block
+      !compiled_blocks
   in
+  compiled_blocks := AddrMap.empty;
 
   let g = State.globals state in
   let l = ref [] in
@@ -1578,12 +1583,12 @@ ignore cont;
   done;
   let last = Branch (0, []) in
   let pc = String.length code / 4 in
-  let compiled_block =
+  let blocks =
     AddrMap.add pc { params = []; handler = None; body = !l; branch = last }
-      compiled_block
+      blocks
   in
-  let compiled_block = match_exn_traps (pc, compiled_block, pc + 1) in
-  (pc, compiled_block, pc + 1)
+  let blocks = match_exn_traps (pc, blocks, pc + 1) in
+  (pc, blocks, pc + 1)
 
 (****)
 

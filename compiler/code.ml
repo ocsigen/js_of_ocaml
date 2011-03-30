@@ -92,6 +92,11 @@ module VarPrinter = struct
         Hashtbl.add known i s;
         s
       end
+
+  let reset () =
+    Hashtbl.clear names; Hashtbl.clear known; last := -1
+
+  let _ = reset ()
 end
 
 let string_of_ident = VarPrinter.format_ident
@@ -117,11 +122,15 @@ module Var : sig
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
   val set_pretty : unit -> unit
+
+  val reset : unit -> unit
 end = struct
 
   type t = int * int
 
   let last_var = ref 0
+
+  let reset () = last_var := 0; VarPrinter.reset ()
 
   type stream = int
 
