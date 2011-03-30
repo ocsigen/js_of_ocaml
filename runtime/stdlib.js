@@ -42,11 +42,11 @@ function caml_register_named_value(nm,v) {
 }
 
 //Provides: caml_global_data
-var caml_global_data = [];
+var caml_global_data = [0];
 
 //Provides: caml_register_global
 //Requires: caml_global_data
-function caml_register_global (n, v) { caml_global_data[n] = v; }
+function caml_register_global (n, v) { caml_global_data[n + 1] = v; }
 
 //Provides: caml_raise_constant
 function caml_raise_constant (tag) { throw [0, tag]; }
@@ -63,13 +63,13 @@ function caml_raise_with_string (tag, msg) {
 //Provides: caml_invalid_argument
 //Requires: caml_raise_with_string
 function caml_invalid_argument (msg) {
-  caml_raise_with_string(caml_global_data[3], msg);
+  caml_raise_with_string(caml_global_data[4], msg);
 }
 
 //Provides: caml_failwith
 //Requires: caml_raise_with_string, caml_global_data
 function caml_failwith (msg) {
-  caml_raise_with_string(caml_global_data[2], msg);
+  caml_raise_with_string(caml_global_data[3], msg);
 }
 
 //Provides: caml_array_bound_error
@@ -81,7 +81,7 @@ function caml_array_bound_error () {
 //Provides: caml_raise_zero_divide
 //Requires: caml_raise_constant, caml_global_data
 function caml_raise_zero_divide () {
-  caml_raise_constant(caml_global_data[5]);
+  caml_raise_constant(caml_global_data[6]);
 }
 
 //Provides: caml_update_dummy
