@@ -241,7 +241,9 @@ var caml_input_value_from_string = function (){
         }
       }
     }
-    return intern_rec ();
+    var res = intern_rec ();
+    s.offset = reader.i;
+    return res;
   }
 }();
 
