@@ -27,6 +27,8 @@ val opt_filter : ('a -> bool) -> 'a option -> 'a option
 val opt_map : ('a -> 'b) -> 'a option -> 'b option
 val opt_iter : ('a -> unit) -> 'a option -> unit
 
+val read_file : string -> string
+
 val debug : string -> unit -> bool
 val set_debug : string -> unit
 
