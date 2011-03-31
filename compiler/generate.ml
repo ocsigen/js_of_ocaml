@@ -621,7 +621,7 @@ let _ =
 
 (****)
 
-let rec translate_expr ctx queue e =
+let rec translate_expr ctx queue x e =
   match e with
     Const i ->
       (int i, const_p, queue)
@@ -662,13 +662,21 @@ let rec translate_expr ctx queue e =
       (*FIX: should flush only the closure free variables...*)
       (*FIX: if there are several closures in a row, we should process them
         simultaneously (possibly recursive functions)*)
+      let all_vars = AddrMap.find pc ctx.Ctx.mutated_vars in
       let vars =
-        AddrMap.find pc ctx.Ctx.mutated_vars
+        all_vars
+        >> VarSet.remove x
         >> VarSet.elements
         >> List.map Var.to_string
       in
+      let fun_name =
+        if vars <> [] && VarSet.mem x all_vars then
+          Some (Var.to_string x)
+        else
+          None
+      in
       let cl =
-        J.EFun (None, List.map Var.to_string args,
+        J.EFun (fun_name, List.map Var.to_string args,
                 compile_closure ctx cont)
       in
       let cl =
@@ -819,7 +827,7 @@ and translate_instr ctx expr_queue instr =
       let (st, expr_queue) =
         match i with
           Let (x, e) ->
-            let (ce, prop, expr_queue) = translate_expr ctx expr_queue e in
+            let (ce, prop, expr_queue) = translate_expr ctx expr_queue x e in
             begin match ctx.Ctx.live.(Var.idx x) with
               0 -> flush_queue expr_queue (prop >= flush_p)
                      [J.Expression_statement ce]
