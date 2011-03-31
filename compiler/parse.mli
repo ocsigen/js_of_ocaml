@@ -20,7 +20,7 @@
 
 val from_channel : paths:string list -> in_channel -> Code.program
 
-val from_string : string array -> int -> string -> Code.program
+val from_string : string array -> string -> Code.program
 
 val set_pretty : unit -> unit
 

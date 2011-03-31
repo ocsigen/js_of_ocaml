@@ -18,6 +18,9 @@ compile: $(COMPOBJS:cmx=cmo)
 $(COMPILER): $(COMPOBJS)
 	ocamlfind ocamlopt -package findlib,str -linkpkg -o $@ $^
 
+compiler.cma: $(OBJS:cmx=cmo)
+	ocamlfind ocamlc -a -o $@ $^
+
 %.cmx: %.ml
 	ocamlfind ocamlopt -package findlib,str -c $<
 
@@ -28,7 +31,7 @@ $(COMPILER): $(COMPOBJS)
 	ocamlfind ocamlc -package findlib,str -c $<
 
 clean:
-	rm -f *.cm[iox] *.o
+	rm -f *.cm[aiox] *.o
 	rm -f js_of_ocaml compile
 
 depend:

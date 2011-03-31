@@ -2,7 +2,7 @@ In the following, "the Compiler and Library" refers to all files
 marked "Copyright CNRS Université Paris Diderot" in the following
 directories and their sub-directories:
 
-  compiler, lib, runtime, tools
+  compiler, lib, runtime, toplevel, tools
 
 and "the Examples" refers to all files marked "Copyright CNRS
 Université Paris Diderot" in directory "examples" and its

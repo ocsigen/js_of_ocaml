@@ -11,7 +11,9 @@ library:
 	$(MAKE) -C lib
 runtime:
 	$(MAKE) -C runtime
-examples: compiler library
+toplevel: compiler library runtime
+	$(MAKE) -C toplevel
+examples: compiler library runtime
 	$(MAKE) -C examples
 tests: compiler library
 	$(MAKE) -C tests

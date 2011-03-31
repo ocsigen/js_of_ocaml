@@ -1820,7 +1820,7 @@ let from_channel ~paths ic =
   parse_bytecode code state (Some (symbols, crcs, prim, paths))
 
 (* As input: list of primitives + size of global table *)
-let from_string primitives global_count code =
-  let globals = make_globals global_count [||] primitives in
+let from_string primitives code =
+  let globals = make_globals 0 [||] primitives in
   let state = State.initial globals in
   parse_bytecode code state None
