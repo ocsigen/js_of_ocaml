@@ -27,6 +27,7 @@ val opt_filter : ('a -> bool) -> 'a option -> 'a option
 val opt_map : ('a -> 'b) -> 'a option -> 'b option
 val opt_iter : ('a -> unit) -> 'a option -> unit
 
+val find_in_paths : string list -> string -> string
 val read_file : string -> string
 
 val debug : string -> unit -> bool

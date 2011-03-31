@@ -22,14 +22,15 @@ let debug = Util.debug "main"
 
 let f js_files input_file output_file =
   List.iter Linker.add_file js_files;
+  let paths = [Findlib.package_directory "stdlib"] in
 
   let p =
     match input_file with
       None ->
-        Parse.f stdin
+        Parse.from_channel ~paths stdin
     | Some f ->
         let ch = open_in f in
-        let p = Parse.f ch in
+        let p = Parse.from_channel ~paths ch in
         close_in ch;
         p
   in
@@ -56,6 +57,8 @@ let _ =
      ("-noinline", Arg.Unit Inline.disable_inlining, " disable inlining");
      ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
       " do not include the standard runtime");
+     ("-toplevel", Arg.Unit Parse.build_toplevel,
+      " compile a toplevel");
      ("-o", Arg.String (fun s -> output_file := Some s),
       "<file> set output file name to <file>")]
   in

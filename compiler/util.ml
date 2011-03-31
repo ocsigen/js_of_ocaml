@@ -32,6 +32,14 @@ let opt_filter p x =
 
 (****)
 
+let rec find_in_paths paths name =
+  match paths with
+    [] ->
+      raise Not_found
+  | path :: rem ->
+      let file = Filename.concat path name in
+      if Sys.file_exists file then file else find_in_paths rem name
+
 let read_file f =
   let ch = open_in f in
   let b = Buffer.create 4096 in

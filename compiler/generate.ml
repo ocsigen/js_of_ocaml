@@ -759,6 +759,17 @@ let rec translate_expr ctx queue x e =
           let ((pv, cv), queue) = access_queue queue v in
           (J.EBin (J.Eq, J.EDot (co, f), cv),
            or_p (or_p po pv) mutator_p, queue)
+      | Extern "%object_literal", fields ->
+          let rec build_fields l =
+            match l with
+              [] ->
+                []
+            | Pc (String nm) :: Pc (String v) :: r ->
+                (J.PNS nm, J.EStr (v, `Bytes)) :: build_fields r
+            | _ ->
+                assert false
+          in
+          (J.EObj (build_fields fields), const_p, queue)
       | Extern name, l ->
           let name = Primitive.resolve name in
           begin match internal_prim name with

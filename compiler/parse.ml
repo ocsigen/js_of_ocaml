@@ -208,6 +208,10 @@ module Tbl = struct
         iter f l; f v d; iter f r
 end
 
+type 'a numtable =
+  { num_cnt: int;
+    num_tbl: ('a, int) Tbl.t }
+
 module Debug = struct
 
   type compilation_env =
@@ -264,15 +268,27 @@ let set_pretty () = keep_variable_names := true; Code.Var.set_pretty ()
 (****)
 
 type globals =
-  { vars : Var.t option array;
-    is_const : bool array;
+  { mutable vars : Var.t option array;
+    mutable is_const : bool array;
+    mutable is_exported : bool array;
     constants : Obj.t array;
     primitives : string array }
 
 let make_globals size constants primitives =
   { vars = Array.create size None;
     is_const = Array.create size false;
+    is_exported = Array.create size false;
     constants = constants; primitives = primitives }
+
+let resize_array a len def =
+  let b = Array.make len def in
+  Array.blit a 0 b 0 (Array.length a);
+  b
+
+let resize_globals g size =
+  g.vars <- resize_array g.vars size None;
+  g.is_const <- resize_array g.is_const size false;
+  g.is_exported <- resize_array g.is_exported size false
 
 module State = struct
 
@@ -297,6 +313,9 @@ module State = struct
     (x, {state with var_stream = stream; accu = Var x})
 
   let globals st = st.globals
+
+  let size_globals st size =
+    if size > Array.length st.globals.vars then resize_globals st.globals size
 
   let rec list_start n l =
     if n = 0 then [] else
@@ -450,13 +469,16 @@ let access_global g i =
       x
 
 let get_global state instrs i =
+  State.size_globals state (i + 1);
   let g = State.globals state in
   match g.vars.(i) with
     Some x ->
       if debug () then Format.printf "(global access %a)@." Var.print x;
       (x, State.set_accu state x, instrs)
   | None ->
-      if inlined_const g.constants.(i) then begin
+      if
+        i < Array.length g.constants && inlined_const g.constants.(i)
+      then begin
         let (x, state) = State.fresh_var state in
         (x, state, Let (x, Constant (parse_const g.constants.(i))) :: instrs)
       end else begin
@@ -827,6 +849,17 @@ and compile code limit pc state instrs =
       g.vars.(i) <- Some y;
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 0@." Var.print x;
+      let instrs =
+        if g.is_exported.(i) then begin
+          let x = Var.fresh () in
+          Let (Var.fresh (),
+               Prim (Extern "caml_register_global",
+                     [Pv x ; Pv (access_global g i)])) ::
+          Let (x, Const i) ::
+          instrs
+        end else
+          instrs
+      in
       compile code limit (pc + 2) state (Let (x, Const 0) :: instrs)
   | ATOM0 ->
       let (x, state) = State.fresh_var state in
@@ -1560,7 +1593,11 @@ let match_exn_traps ((_, blocks, _) as p) =
 
 (****)
 
-let parse_bytecode code state =
+let is_toplevel = ref false
+
+let build_toplevel () = is_toplevel := true
+
+let parse_bytecode code state standalone_info =
   Code.Var.reset ();
   let cont = analyse_blocks code in
 ignore cont;
@@ -1576,36 +1613,100 @@ ignore cont;
   in
   compiled_blocks := AddrMap.empty;
 
+  let free_pc = String.length code / 4 in
   let g = State.globals state in
-  let l = ref [] in
+  let body =
+    match standalone_info with
+      Some (symb, crcs, prim, paths) ->
+        let l = ref [] in
 
-  let register_global n =
-    l :=
-      let x = Var.fresh () in
-      Let (x, Const n) ::
-      Let (Var.fresh (),
-           Prim (Extern "caml_register_global",
-                 [Pv x ; Pv (access_global g n)])) ::
-      !l
+        let register_global n =
+          l :=
+            let x = Var.fresh () in
+            Let (x, Const n) ::
+            Let (Var.fresh (),
+                 Prim (Extern "caml_register_global",
+                       [Pv x ; Pv (access_global g n)])) ::
+            !l
+        in
+        register_global 2; (* Failure *)
+        register_global 3; (* Invalid_argument *)
+        register_global 5; (* Division_by_zero *)
+        for i = Array.length g.constants - 1  downto 0 do
+          match g.vars.(i) with
+            Some x when g.is_const.(i) ->
+              if g.is_exported.(i) then register_global i;
+              l := Let (x, Constant (parse_const g.constants.(i))) :: !l
+          | _ ->
+              ()
+        done;
+        if !is_toplevel then begin
+          (* Include linking information *)
+          let toc =
+            [("SYMB", Obj.repr symb); ("CRCS", crcs); ("PRIM", Obj.repr prim)]
+          in
+          l :=
+            (let x = Var.fresh () in
+             let y = Var.fresh () in
+             Let (x, Constant (parse_const (Obj.repr toc))) ::
+             Let (y, Const (-2)) ::
+             Let (Var.fresh (),
+                  Prim (Extern "caml_register_global",
+                        [Pv y ; Pv x])) :: !l);
+          (* Include interface files *)
+          let fields = ref [] in
+          Tbl.iter
+            (fun id num ->
+               if id.Ident.flags = 1 then begin
+                 let name = String.uncapitalize id.Ident.name ^ ".cmi" in
+                 let file =
+                   try
+                     Util.find_in_paths paths name
+                   with Not_found ->
+                     Format.eprintf "%s: interface file '%s' not found@."
+                       Sys.argv.(0) name;
+                     exit 1
+                 in
+                 let s = Util.read_file file in
+                 fields := Pc (String name) :: Pc (String s) :: !fields
+               end) symb.num_tbl;
+          l :=
+            (let x = Var.fresh () in
+             let y = Var.fresh () in
+             Let (x, Prim (Extern "%object_literal", !fields)) ::
+             Let (y, Const (-4)) ::
+             Let (Var.fresh (),
+                  Prim (Extern "caml_register_global",
+                        [Pv y ; Pv x])) :: !l)
+        end;
+
+        !l
+    | None ->
+        let globals = Var.fresh () in
+        let l =
+          ref [Let (globals,
+                    Prim (Extern "caml_js_var",
+                          [Pc (String "caml_global_data")]))]
+        in
+        for i = 0 to Array.length g.vars - 1 do
+          match g.vars.(i) with
+            Some x when g.is_const.(i) ->
+              l := Let (x, Field (globals, i)) :: !l
+          | _ ->
+              ()
+        done;
+        List.rev !l
   in
-  register_global 2;
-  register_global 3;
-  register_global 5;
-  for i = Array.length g.constants - 1  downto 0 do
-    match g.vars.(i) with
-      Some x when g.is_const.(i) ->
-        l := Let (x, Constant (parse_const g.constants.(i))) :: !l
-    | _ ->
-        ()
-  done;
   let last = Branch (0, []) in
-  let pc = String.length code / 4 in
+  let pc = free_pc in
   let blocks =
-    AddrMap.add pc { params = []; handler = None; body = !l; branch = last }
+    AddrMap.add free_pc
+      { params = []; handler = None; body = body; branch = last }
       blocks
   in
-  let blocks = match_exn_traps (pc, blocks, pc + 1) in
-  (pc, blocks, pc + 1)
+  let free_pc = free_pc + 1 in
+  let blocks = match_exn_traps (pc, blocks, free_pc) in
+  (pc, blocks, free_pc)
 
 (****)
 
@@ -1682,7 +1783,7 @@ let fix_min_max_int code =
 
 (****)
 
-let f ic =
+let from_channel ~paths ic =
   let toc = read_toc ic in
   let primitives = read_primitive_table toc ic in
   let code_size = seek_section toc ic "CODE" in
@@ -1692,6 +1793,9 @@ let f ic =
   ignore(seek_section toc ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
 
+  ignore(seek_section toc ic "SYMB");
+  let symbols = (input_value ic : Ident.t numtable) in
+
   if !keep_variable_names then begin
     try
       ignore(seek_section toc ic "DBUG");
@@ -1700,8 +1804,23 @@ let f ic =
   end;
 
   let globals = make_globals (Array.length init_data) init_data primitives in
+  if !is_toplevel then
+    Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
 
   fix_min_max_int code;
 
   let state = State.initial globals in
-  parse_bytecode code state
+
+  ignore(seek_section toc ic "CRCS");
+  let crcs = (input_value ic : Obj.t) in
+  let len = seek_section toc ic "PRIM" in
+  let prim = String.create len in
+  really_input ic prim 0 len;
+
+  parse_bytecode code state (Some (symbols, crcs, prim, paths))
+
+(* As input: list of primitives + size of global table *)
+let from_string primitives global_count code =
+  let globals = make_globals global_count [||] primitives in
+  let state = State.initial globals in
+  parse_bytecode code state None
