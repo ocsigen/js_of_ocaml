@@ -58,10 +58,10 @@ class type fileReader = object ('self)
   inherit Dom_html.eventTarget
 end
 
-let fileReader : fileReader t constr = Unsafe.variable "FileReader"
+let fileReader () : fileReader t constr = Unsafe.variable "FileReader"
 
 let reader kind file =
-  let reader = jsnew fileReader () in
+  let reader = jsnew (fileReader ()) () in
   let (res, w) = Lwt.task () in
   reader##onloadend <- handler
     (fun _ ->
