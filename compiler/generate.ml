@@ -1317,14 +1317,19 @@ and compile_closure ctx (pc, args) =
   if debug () then Format.eprintf "}@]@ ";
   Js_simpl.source_elements res
 
-let compile_program ctx pc =
+let compile_program standalone ctx pc =
   let res = compile_closure ctx (pc, []) in
   if debug () then Format.eprintf "@.@.";
 (*
   Primitive.list_used ();
 *)
-  [J.Statement (J.Expression_statement
-                  (J.ECall (J.EFun (None, [], generate_apply_funs res), [])))]
+  if standalone then
+    let f = J.EFun (None, [], generate_apply_funs res) in
+    [J.Statement (J.Expression_statement (J.ECall (f, [])))]
+  else
+    let f = J.EFun (None, [Var.to_string (Var.fresh ())],
+                    generate_apply_funs res) in
+    [J.Statement (J.Expression_statement f)]
 
 (**********************)
 
@@ -1334,14 +1339,16 @@ let list_missing l =
     List.iter (fun nm -> Format.eprintf "  %s@." nm) l
   end
 
-let f ch ((pc, blocks, _) as p) live_vars =
-  Format.fprintf ch
-    "// This program was compiled from OCaml by js_of_ocaml 1.0@.";
+let f ch ?(standalone=true) ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let ctx = Ctx.initial blocks live_vars mutated_vars in
-  let p = compile_program ctx pc in
+  let p = compile_program standalone ctx pc in
   if !compact then Format.pp_set_margin ch 999999998;
-  let missing = Linker.resolve_deps !compact ch (Primitive.get_used ()) in
-  list_missing missing;
+  if standalone then begin
+    Format.fprintf ch
+      "// This program was compiled from OCaml by js_of_ocaml 1.0@.";
+    let missing = Linker.resolve_deps !compact ch (Primitive.get_used ()) in
+    list_missing missing
+  end;
   Hashtbl.clear add_names;
   Js_output.program ch p
