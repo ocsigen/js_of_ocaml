@@ -814,10 +814,77 @@ class type document = object
   method open_ : unit meth
   method close : unit meth
   method write : js_string t -> unit meth
-  method execCommand_ : js_string t -> bool t opt -> js_string t opt -> unit meth
+  method execCommand : js_string t -> bool t -> js_string t opt -> unit meth
 
   inherit eventTarget
 end
+
+type interval_id
+type timeout_id
+
+class type location = object
+  method href : js_string t prop
+  method protocol : js_string t prop
+  method host : js_string t prop
+  method hostname : js_string t prop
+  method port : js_string t prop
+  method pathname : js_string t prop
+  method search : js_string t prop
+  method hash : js_string t prop
+
+  method assign : js_string t -> unit meth
+  method replace : js_string t -> unit meth
+  method reload : unit meth
+end
+
+class type history = object
+end
+
+class type undoManager = object
+end
+
+class type selection = object
+end
+
+class type window = object
+  method document : document t readonly_prop
+  method name : js_string t prop
+  method location : location t readonly_prop
+  method history : history t readonly_prop
+  method undoManager : undoManager t readonly_prop
+  method getSelection : selection t meth
+  method close : unit meth
+  method stop : unit meth
+  method focus : unit meth
+  method blur : unit meth
+
+  method top : window t readonly_prop
+  method parent : window t readonly_prop
+  method frameElement : element t opt readonly_prop
+
+  method alert : js_string t -> unit meth
+  method confirm : js_string t -> bool t meth
+  method prompt : js_string t -> js_string t -> js_string t meth
+  method print : unit meth
+
+  method setInterval : (unit -> unit) Js.callback -> float -> interval_id meth
+  method clearInterval : interval_id -> unit meth
+
+  method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
+  method clearTimeout : timeout_id -> unit meth
+
+  method onload : (window t, event t) event_listener prop
+  method onbeforeunload : (window t, event t) event_listener prop
+  method onblur : (window t, event t) event_listener prop
+  method onfocus : (window t, event t) event_listener prop
+  method onresize : (window t, event t) event_listener prop
+end
+
+let window : window t = Js.Unsafe.variable "window"
+
+let document = window##document
+
+(****)
 
 class type frameSetElement = object
   inherit element
@@ -837,6 +904,22 @@ class type frameElement = object
   method src : js_string t prop
   method contentDocument : document t opt readonly_prop
 end
+
+class type iFrameElement = object
+  inherit element
+  method frameBorder : js_string t prop
+  method height : js_string t prop
+  method longDesc : js_string t prop
+  method marginHeight : js_string t prop
+  method marginWidth : js_string t prop
+  method name : js_string t prop
+  method scrolling : js_string t prop
+  method src : js_string t prop
+  method contentDocument : document t opt readonly_prop
+  method contentWindow  : window t readonly_prop
+end
+
+(****)
 
 (*XXX Should provide creation functions a la lablgtk... *)
 
@@ -946,6 +1029,7 @@ let createNoscript doc = createElement doc "noscript"
 let createAddress doc = createElement doc "address"
 let createFrameset doc : frameSetElement t = unsafeCreateElement doc "frameset"
 let createFrame doc : frameElement t = unsafeCreateElement doc "frame"
+let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
 
 exception Canvas_not_available
 
@@ -1019,89 +1103,6 @@ module CoerceTo = struct
   let tr e = unsafeCoerce "tr" e
   let ul e = unsafeCoerce "ul" e
 end
-
-type interval_id
-type timeout_id
-
-class type location = object
-  method href : js_string t prop
-  method protocol : js_string t prop
-  method host : js_string t prop
-  method hostname : js_string t prop
-  method port : js_string t prop
-  method pathname : js_string t prop
-  method search : js_string t prop
-  method hash : js_string t prop
-
-  method assign : js_string t -> unit meth
-  method replace : js_string t -> unit meth
-  method reload : unit meth
-end
-
-class type history = object
-end
-
-class type undoManager = object
-end
-
-class type selection = object
-end
-
-class type window = object
-  method document : document t readonly_prop
-  method name : js_string t prop
-  method location : location t readonly_prop
-  method history : history t readonly_prop
-  method undoManager : undoManager t readonly_prop
-  method getSelection : selection t meth
-  method close : unit meth
-  method stop : unit meth
-  method focus : unit meth
-  method blur : unit meth
-
-  method top : window t readonly_prop
-  method parent : window t readonly_prop
-  method frameElement : element t opt readonly_prop
-
-  method alert : js_string t -> unit meth
-  method confirm : js_string t -> bool t meth
-  method prompt : js_string t -> js_string t -> js_string t meth
-  method print : unit meth
-
-  method setInterval : (unit -> unit) Js.callback -> float -> interval_id meth
-  method clearInterval : interval_id -> unit meth
-
-  method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
-  method clearTimeout : timeout_id -> unit meth
-
-  method onload : (window t, event t) event_listener prop
-  method onbeforeunload : (window t, event t) event_listener prop
-  method onblur : (window t, event t) event_listener prop
-  method onfocus : (window t, event t) event_listener prop
-  method onresize : (window t, event t) event_listener prop
-end
-
-let window : window t = Js.Unsafe.variable "window"
-
-let document = window##document
-
-(****)
-
-class type iFrameElement = object
-  inherit element
-  method frameBorder : js_string t prop
-  method height : js_string t prop
-  method longDesc : js_string t prop
-  method marginHeight : js_string t prop
-  method marginWidth : js_string t prop
-  method name : js_string t prop
-  method scrolling : js_string t prop
-  method src : js_string t prop
-  method contentDocument : document t opt readonly_prop
-  method contentWindow  : window t readonly_prop
-end
-
-let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
 
 (****)
 

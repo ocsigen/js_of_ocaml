@@ -38,8 +38,9 @@ let is_visible_text s =
     false
   with Break b -> b
 
+open Dom
+
 let rec html2wiki ?inH:(inH=false) body = 
-  let open Dom in
   let ans = Buffer.create 10 in
   let add_str ?surr:(surr="") s = 
     if is_visible_text s then Buffer.add_string ans (surr^s^surr)
@@ -110,7 +111,7 @@ let onload _ =
       but##onclick <- Html.handler 
 	(fun _ -> 
 	  iWin##focus ();
-	  iDoc##execCommand_ (Js.string action, Js.some show, wrap value); 
+	  iDoc##execCommand (Js.string action, show, wrap value); 
 	  Js._true);
       Dom.appendChild body but
     in

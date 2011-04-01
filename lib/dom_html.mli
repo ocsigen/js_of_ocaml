@@ -770,36 +770,13 @@ class type document = object
   method open_ : unit meth
   method close : unit meth
   method write : js_string t -> unit meth
-  method execCommand_ : js_string t -> bool t opt -> js_string t opt -> unit meth
+  method execCommand : js_string t -> bool t -> js_string t opt -> unit meth
 
   inherit eventTarget
 end
 
 val document : document t
   (** The current document *)
-
-(* {2 Frames } *)
-
-class type frameSetElement = object
-  inherit element
-  method cols : js_string t prop
-  method rows : js_string t prop
-end
-
-class type frameElement = object
-  inherit element
-  method frameBorder : js_string t prop
-  method longDesc : js_string t prop
-  method marginHeight : js_string t prop
-  method marginWidth : js_string t prop
-  method name : js_string t prop
-  method noResize : bool t prop
-  method scrolling : js_string t prop
-  method src : js_string t prop
-  method contentDocument : document t opt readonly_prop
-end
-
-(****)
 
 (** {2 Window objects} *)
 
@@ -874,6 +851,41 @@ end
 
 val window : window t
   (** The current window *)
+
+(* {2 Frames } *)
+
+class type frameSetElement = object
+  inherit element
+  method cols : js_string t prop
+  method rows : js_string t prop
+end
+
+class type frameElement = object
+  inherit element
+  method frameBorder : js_string t prop
+  method longDesc : js_string t prop
+  method marginHeight : js_string t prop
+  method marginWidth : js_string t prop
+  method name : js_string t prop
+  method noResize : bool t prop
+  method scrolling : js_string t prop
+  method src : js_string t prop
+  method contentDocument : document t opt readonly_prop
+end
+
+class type iFrameElement = object
+  inherit element
+  method frameBorder : js_string t prop
+  method height : js_string t prop
+  method longDesc : js_string t prop
+  method marginHeight : js_string t prop
+  method marginWidth : js_string t prop
+  method name : js_string t prop
+  method scrolling : js_string t prop
+  method src : js_string t prop
+  method contentDocument : document t opt readonly_prop
+  method contentWindow  : window t readonly_prop
+end
 
 (****)
 
@@ -1030,6 +1042,7 @@ val createNoscript : document t -> element t
 val createAddress : document t -> element t
 val createFrameset : document t -> frameSetElement t
 val createFrame : document t -> frameElement t
+val createIframe : document t -> iFrameElement t
 
 exception Canvas_not_available
 val createCanvas : document t -> canvasElement t
@@ -1037,22 +1050,6 @@ val createCanvas : document t -> canvasElement t
       supported by the browser. *)
 
 (****)
-
-class type iFrameElement = object
-  inherit element
-  method frameBorder : js_string t prop
-  method height : js_string t prop
-  method longDesc : js_string t prop
-  method marginHeight : js_string t prop
-  method marginWidth : js_string t prop
-  method name : js_string t prop
-  method scrolling : js_string t prop
-  method src : js_string t prop
-  method contentDocument : document t opt readonly_prop
-  method contentWindow  : window t readonly_prop
-end
-
-val createIframe : document t -> iFrameElement t
 
 (** {2 Coercion functions} *)
 
