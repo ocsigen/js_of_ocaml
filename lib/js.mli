@@ -399,6 +399,14 @@ end
 val date : date_constr t
   (** The date constructor, as an object. *)
 
+(** Specification of Javascript math object. *)
+class type math = object
+  method random : float t meth
+end
+
+val math : math t
+  (** The Math object *)
+
 (** {2 Standard Javascript functions} *)
 
 val decodeURI : js_string t -> js_string t

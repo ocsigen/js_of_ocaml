@@ -311,6 +311,12 @@ let date_ms :
   (int -> int -> int -> int -> int -> int -> int -> date t) constr =
   date_constr
 
+class type math = object
+  method random : float t meth
+end
+
+let math = Unsafe.variable "Math"
+
 let decodeURI (s : js_string t) : js_string t =
   Unsafe.fun_call (Unsafe.variable "decodeURI") [|Unsafe.inject s|]
 let decodeURIComponent (s : js_string t) : js_string t =
