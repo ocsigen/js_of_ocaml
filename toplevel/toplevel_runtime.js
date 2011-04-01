@@ -87,25 +87,16 @@ function caml_ml_close_channel () { return 0;}
 //////////////////////////////////////////////////////////////////////
 
 //Provides: caml_ml_output
-function caml_ml_output (x, y) {
+function caml_ml_output (x, s, p, l) {
   var o = document.getElementById("output");
-  var s = y.toString();
-  var i = 0;
-  for (j = 0; j < s.length; j++) {
-    if (s.charCodeAt(j) == 10) {
-      o.appendChild (document.createTextNode(s.slice(i,j)));
-      o.appendChild (document.createElement("br"));
-      i = j + 1;
-    }
-  }
-  o.appendChild (document.createTextNode(s.slice(i,j)));
+  o.appendChild (document.createTextNode(s.toString().slice(p,p+l)));
   return 0;
 }
 
 //Provides: caml_ml_output_char
 //Requires: caml_ml_output
 function caml_ml_output_char (x, c) {
-  return caml_ml_output (x, String.fromCharCode (c));
+    return caml_ml_output (x, String.fromCharCode (c), 0, 1);
 }
 
 //Provides: caml_ml_input_char

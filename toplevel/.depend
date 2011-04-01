@@ -1,2 +1,3 @@
-toplevel.cmo: ../compiler/parse.cmi ../compiler/driver.cmi 
-toplevel.cmx: ../compiler/parse.cmx ../compiler/driver.cmx 
+toplevel.cmo: errors.cmi ../compiler/driver.cmi 
+toplevel.cmx: errors.cmi ../compiler/driver.cmx 
+errors.cmi: 

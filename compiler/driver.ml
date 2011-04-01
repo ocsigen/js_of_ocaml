@@ -63,4 +63,8 @@ if debug () then Format.eprintf "Dead-code...@.";
 if debug () then Code.print_program (fun _ _ -> "") p;
   fun formatter -> Generate.f formatter ?standalone p live_vars
 
+let from_string prims s =
+  let p = Parse.from_string prims s in
+  f ~standalone:false p
+
 let set_pretty () = Generate.set_pretty (); Parse.set_pretty ()

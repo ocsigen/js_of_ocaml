@@ -18,35 +18,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-exception Bad_magic_number
-
-let exec_magic_number = "Caml1999X008"
-
-let seek_section toc ic name =
-  let rec seek_sec curr_ofs = function
-    [] -> raise Not_found
-  | (n, len) :: rem ->
-      if n = name
-      then begin seek_in ic (curr_ofs - len); len end
-      else seek_sec (curr_ofs - len) rem in
-  seek_sec (in_channel_length ic - 16 - 8 * List.length toc) toc
-
-let read_toc ic =
-  let pos_trailer = in_channel_length ic - 16 in
-  seek_in ic pos_trailer;
-  let num_sections = input_binary_int ic in
-  let header = String.create(String.length exec_magic_number) in
-  really_input ic header 0 (String.length exec_magic_number);
-  if header <> exec_magic_number then raise Bad_magic_number;
-  seek_in ic (pos_trailer - 8 * num_sections);
-  let section_table = ref [] in
-  for i = 1 to num_sections do
-    let name = String.create 4 in
-    really_input ic name 0 4;
-    let len = input_binary_int ic in
-    section_table := (name, len) :: !section_table
-  done;
-  !section_table
+(*
+TODO
+- different style for toplevel input, output and errors
+  in particular, the prompt should not be part of the text
+  (CSS generated content)
+- syntax highlighting?
+*)
 
 let split_primitives p =
   let len = String.length p in
@@ -57,12 +35,6 @@ let split_primitives p =
     else
       split beg (cur + 1) in
   Array.of_list(split 0 0)
-
-let read_primitive_table toc ic =
-  let len = seek_section toc ic "PRIM" in
-  let p = String.create len in
-  really_input ic p 0 len;
-  split_primitives p
 
 (****)
 
@@ -79,10 +51,8 @@ let _ =
   let toc = Obj.magic (Array.unsafe_get g (-2)) in
   let prims = split_primitives (List.assoc "PRIM" toc) in
 
-(*XXX Integer not needed... *)
   let compile s =
-    let p = Parse.from_string prims s in
-    let output_program = Driver.f ~standalone:false p in
+    let output_program = Driver.from_string prims s in
     let b = Buffer.create 100 in
     output_program (Format.formatter_of_buffer b);
     Buffer.contents b
@@ -107,30 +77,81 @@ let button txt action =
   b##onclick <- Dom_html.handler (fun _ -> action (); Js._true);
   b
 
+let start ppf =
+  Format.fprintf ppf "        Objective Caml version %s@.@." Sys.ocaml_version;
+  Toploop.initialize_toplevel_env ();
+  Toploop.input_name := ""
+
+let at_bol = ref true
+let consume_nl = ref false
+
+let rec refill_lexbuf buffer len =
+  try
+    let c = input_char Pervasives.stdin in
+    if !consume_nl && c = '\n' then begin
+      consume_nl := false;
+      refill_lexbuf buffer len
+    end else begin
+      consume_nl := false;
+      buffer.[0] <- c;
+      if !at_bol then output_string stdout "# ";
+      at_bol := (c = '\n');
+      output_char stdout c;
+      1
+    end
+  with End_of_file ->
+    0
+
+let ensure_at_bol () =
+  if not !at_bol then begin
+    output_string stdout "\n";
+    consume_nl := true; at_bol := true
+  end
+
+let loop ppf =
+  let lb = Lexing.from_function refill_lexbuf in
+  while true do
+    try
+      let phr = !Toploop.parse_toplevel_phrase lb in
+      ensure_at_bol ();
+      ignore(Toploop.execute_phrase true ppf phr)
+    with
+    | End_of_file ->
+        exit 0
+    | x ->
+        ensure_at_bol ();
+        Errors.report_error ppf x
+  done
+
 let run _ =
-  let body =
-    Js.Opt.get (doc##getElementById(Js.string "output"))
+  let top =
+    Js.Opt.get (doc##getElementById(Js.string "toplevel"))
       (fun () -> assert false) in
+  let output = Html.createDiv doc in
+  output##id <- Js.string "output";
+  output##style##whiteSpace <- Js.string "pre";
+  Dom.appendChild top output;
 
   let textbox = Html.createTextarea doc in
-  textbox##rows <- 20; textbox##cols <- 80;
+  textbox##rows <- 10; textbox##cols <- 80;
   textbox##value <- Js.string s;
-  Dom.appendChild body textbox;
-  Dom.appendChild body (Html.createBr doc);
-  let disable = ref (fun () -> ()) in
+  Dom.appendChild top textbox;
+  Dom.appendChild top (Html.createBr doc);
+
+  textbox##focus(); textbox##select();
   let b =
-    button "Run"
+    button "Send"
       (fun () ->
-         !disable();
-   Array.unsafe_set g (-5) (Obj.repr (textbox##value)); (*XXX HACK!*)
+        Array.unsafe_set g (-5) (Obj.repr (textbox##value)); (*XXX HACK!*)
         ignore
            (((*Lwt.bind (Lwt_js.yield ()) (fun () ->*)
-            begin try Topmain.main() with Not_found -> () end;
+            begin try loop Format.std_formatter with Not_found -> () end;
+            textbox##focus(); textbox##select();
+            doc##documentElement##scrollTop <- doc##body##scrollHeight;
             Lwt.return ())))
   in
-  disable := (fun () -> b##disabled <- Js._true);
-  Dom.appendChild body b;
-  Dom.appendChild body (Html.createBr doc);
+  Dom.appendChild top b;
+  start Format.std_formatter;
 
   Js._false
 
