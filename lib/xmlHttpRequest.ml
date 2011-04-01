@@ -69,8 +69,10 @@ let encode_url args =
     string (Url.encode_arguments args)
 
 let generateBoundary () =
-  Random.self_init ();
-  "js_of_ocaml-------------------" ^ (string_of_int (Random.bits ())) ^ (string_of_int (Random.bits ()))
+  let nine_digits () =
+    string_of_int (truncate (Js.to_float (Js.math##random()) *. 1000000000.))
+  in
+  "js_of_ocaml-------------------" ^ nine_digits () ^ nine_digits ()
 
 (* TODO: do it entirely with js_string t: more efficient *)
 (* TODO: test with elements = [] *)
