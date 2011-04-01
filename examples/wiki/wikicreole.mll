@@ -136,7 +136,11 @@ let close_entry c =
       c.stack <- Row ((heading, List.rev c.inline_mix) :: entries, stack);
       c.inline_mix <- [];
       true
-  | Row _ | Table _ ->
+  | Row _ ->
+      true
+  | Table _ ->
+      c.stack <- Row ([(false, List.rev c.inline_mix)], c.stack);
+      c.inline_mix <- [];
       true
   | _ ->
       false
