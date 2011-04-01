@@ -216,6 +216,8 @@ and element = object
   method offsetHeight : int readonly_prop
   method scrollLeft : int prop
   method scrollTop : int prop
+  method scrollWidth : int prop
+  method scrollHeight : int prop
 
   method getClientRects : clientRectList t meth
   method getBoundingClientRect : clientRect t meth
