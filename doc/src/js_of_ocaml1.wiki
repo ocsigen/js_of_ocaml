@@ -8,7 +8,7 @@ Js_of_ocaml is a compiler of OCaml bytecode to Javascript.  It makes it possible
 You just have to link your program with a specific library to interface with the browser APIs.
 
 A few small demos are available on-line:
-* [[toplevel|An OCaml toplevel running in the browser]
+* [[toplevel|An OCaml toplevel running in the browser]]
 * [[planet|An animated 3D view of the Earth]]
 * [[graph|A graph viewer]]
 * [[boulderdash|A Boulder Dash game]]
