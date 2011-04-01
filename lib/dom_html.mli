@@ -349,7 +349,7 @@ class type inputElement = object ('self)
   inherit element
   method defaultValue : js_string t prop
   method defaultChecked : js_string t prop
-  method form : formElement opt readonly_prop
+  method form : formElement t opt readonly_prop
   method accept : js_string t prop
   method accessKey : js_string t prop
   method align : js_string t prop
@@ -397,7 +397,7 @@ end
 
 class type buttonElement = object
   inherit element
-  method form : formElement opt readonly_prop
+  method form : formElement t opt readonly_prop
   method accessKey : js_string t prop
   method disabled : bool t prop
   method name : js_string t readonly_prop (* Cannot be changed under IE *)

@@ -75,15 +75,16 @@ class type fileReader = object ('self)
   inherit Dom_html.eventTarget
 end
 
-let fileReader : fileReader t constr = Unsafe.variable "FileReader"
+let fileReader : fileReader t constr optdef =
+  Unsafe.variable "window.FileReader"
 
 let read_with_filereader fileReader kind file =
-  let reader = jsnew (fileReader ()) () in
+  let reader = jsnew fileReader () in
   let (res, w) = Lwt.task () in
   reader##onloadend <- handler
     (fun _ ->
       if reader##readyState = DONE then
-        Lwt.wakeup w 
+        Lwt.wakeup w
 	  (match Opt.to_option (CoerceTo.string (reader##result)) with
 	    | None -> assert false (* can't happen: called with good readAs_ *)
 	    | Some s -> s)

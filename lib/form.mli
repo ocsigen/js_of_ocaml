@@ -6,7 +6,7 @@ class type formData = object
 end
 
 val formData : formData t constr Optdef.t
-val formData_form : (Dom_html.formElement t -> formData t) constr Optdef.t 
+val formData_form : (Dom_html.formElement t -> formData t) constr Optdef.t
 
 type form_elt =
   [ `String of js_string t
