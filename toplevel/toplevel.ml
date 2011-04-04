@@ -85,43 +85,54 @@ let start ppf =
 let at_bol = ref true
 let consume_nl = ref false
 
-let rec refill_lexbuf buffer len =
-  try
-    let c = input_char Pervasives.stdin in
-    if !consume_nl && c = '\n' then begin
-      consume_nl := false;
-      refill_lexbuf buffer len
-    end else begin
-      consume_nl := false;
-      buffer.[0] <- c;
-      if !at_bol then output_string stdout "# ";
-      at_bol := (c = '\n');
-      output_char stdout c;
-      1
-    end
-  with End_of_file ->
+let refill_lexbuf s p ppf buffer len =
+  if !consume_nl then begin
+    let l = String.length s in
+    if (!p < l && s.[!p] = '\n') then
+      incr p
+    else if (!p + 1 < l && s.[!p] = '\r' && s.[!p + 1] = '\n') then
+      p := !p + 2;
+    consume_nl := false
+  end;
+  if !p = String.length s then
     0
+  else begin
+    let c = s.[!p] in
+    incr p;
+    buffer.[0] <- c;
+    if !at_bol then Format.fprintf ppf "# ";
+    at_bol := (c = '\n');
+    if c = '\n' then
+      Format.fprintf ppf "@."
+    else
+      Format.fprintf ppf "%c" c;
+    1
+  end
 
-let ensure_at_bol () =
+let ensure_at_bol ppf =
   if not !at_bol then begin
-    output_string stdout "\n";
+    Format.fprintf ppf "@.";
     consume_nl := true; at_bol := true
   end
 
-let loop ppf =
-  let lb = Lexing.from_function refill_lexbuf in
-  while true do
-    try
-      let phr = !Toploop.parse_toplevel_phrase lb in
-      ensure_at_bol ();
-      ignore(Toploop.execute_phrase true ppf phr)
-    with
-    | End_of_file ->
-        exit 0
-    | x ->
-        ensure_at_bol ();
-        Errors.report_error ppf x
-  done
+let loop s ppf =
+  let lb = Lexing.from_function (refill_lexbuf s (ref 0) ppf) in
+  begin try
+    while true do
+      try
+        let phr = !Toploop.parse_toplevel_phrase lb in
+        ensure_at_bol ppf;
+        ignore(Toploop.execute_phrase true ppf phr)
+      with
+        End_of_file ->
+          raise End_of_file
+      | x ->
+          ensure_at_bol ppf;
+          Errors.report_error ppf x
+    done
+  with End_of_file ->
+    ()
+  end
 
 let run _ =
   let top =
@@ -131,6 +142,14 @@ let run _ =
   output##id <- Js.string "output";
   output##style##whiteSpace <- Js.string "pre";
   Dom.appendChild top output;
+
+  let ppf =
+    Format.make_formatter
+      (fun s i l ->
+         Dom.appendChild output
+           (doc##createTextNode(Js.string (String.sub s i l))))
+      (fun _ -> ())
+  in
 
   let textbox = Html.createTextarea doc in
   textbox##rows <- 10; textbox##cols <- 80;
@@ -142,16 +161,12 @@ let run _ =
   let b =
     button "Send"
       (fun () ->
-        Array.unsafe_set g (-5) (Obj.repr (textbox##value)); (*XXX HACK!*)
-        ignore
-           (((*Lwt.bind (Lwt_js.yield ()) (fun () ->*)
-            begin try loop Format.std_formatter with Not_found -> () end;
-            textbox##focus(); textbox##select();
-            doc##documentElement##scrollTop <- doc##body##scrollHeight;
-            Lwt.return ())))
+         loop (Js.to_string textbox##value) ppf;
+         textbox##focus(); textbox##select();
+         doc##documentElement##scrollTop <- doc##body##scrollHeight)
   in
   Dom.appendChild top b;
-  start Format.std_formatter;
+  start ppf;
 
   Js._false
 

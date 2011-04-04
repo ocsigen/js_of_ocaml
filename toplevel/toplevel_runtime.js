@@ -17,33 +17,26 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-//Provides: caml_sys_getenv
-//Requires: caml_raise_not_found
-function caml_sys_getenv () { caml_raise_not_found (); }
-
-//Provides: caml_raise_not_found
-//Requires: caml_raise_constant, caml_global_data
-function caml_raise_not_found () { caml_raise_constant(caml_global_data[7]); }
-
-//Provides: caml_raise_end_of_file
-//Requires: caml_raise_constant, caml_global_data
-function caml_raise_end_of_file () {
-  caml_raise_constant(caml_global_data[5]);
-}
-
 //Provides: caml_raise_sys_error
 //Requires: caml_raise_with_string, caml_global_data
 function caml_raise_sys_error (msg) {
   caml_raise_with_string(caml_global_data[2], msg);
 }
 
-//Provides: caml_install_signal_handler
-function caml_install_signal_handler () { return 0; }
+//Provides: caml_raise_not_found
+//Requires: caml_raise_constant, caml_global_data
+function caml_raise_not_found () { caml_raise_constant(caml_global_data[7]); }
+
+//Provides: caml_sys_getenv
+//Requires: caml_raise_not_found
+function caml_sys_getenv () { caml_raise_not_found (); }
 
 //Provides: caml_terminfo_setup
 function caml_terminfo_setup () { return 1; } // Bad_term
 
 //////////////////////////////////////////////////////////////////////
+
+// This is to read cmi files, included in the Javascript code
 
 //Provides: caml_sys_file_exists
 //Requires: caml_global_data
@@ -86,34 +79,6 @@ function caml_ml_close_channel () { return 0;}
 
 //////////////////////////////////////////////////////////////////////
 
-//Provides: caml_ml_output
-function caml_ml_output (x, s, p, l) {
-  var o = document.getElementById("output");
-  o.appendChild (document.createTextNode(s.toString().slice(p,p+l)));
-  return 0;
-}
-
-//Provides: caml_ml_output_char
-//Requires: caml_ml_output
-function caml_ml_output_char (x, c) {
-    return caml_ml_output (x, String.fromCharCode (c), 0, 1);
-}
-
-//Provides: caml_ml_input_char
-//Requires: caml_raise_end_of_file, caml_global_data
-var caml_iinput, caml_ipos = 0;
-function caml_ml_input_char (f) {
-  if (caml_global_data[-4]) {
-    caml_iinput = caml_global_data[-4];
-    caml_ipos = 0;
-    caml_global_data[-4] = null;
-  }
-  if (caml_ipos == caml_iinput.length) caml_raise_end_of_file ();
-  return caml_iinput.charCodeAt(caml_ipos++);
-}
-
-//////////////////////////////////////////////////////////////////////
-
 //Provides: caml_get_global_data
 //Requires: caml_global_data
 function caml_get_global_data () { return caml_global_data; }
@@ -138,6 +103,9 @@ function caml_static_release_bytecode () { return 0; }
 //Requires: MlString
 function caml_static_alloc (len) { return new MlMakeString (len); }
 
+//Provides: caml_static_free
+function caml_static_free () { return 0; }
+
 //Provides: caml_realloc_global
 //Requires: caml_global_data
 function caml_realloc_global (len) {
@@ -145,9 +113,34 @@ function caml_realloc_global (len) {
   return 0;
 }
 
-//Provides: caml_static_free
-function caml_static_free () { return 0; }
+/////////////////////////////////////////////////////////////////////////
+
+/// In case the user tries to perform some I/Os...
 
 //Provides: caml_sys_exit
-//Requires: caml_raise_not_found
-function caml_sys_exit () { caml_raise_not_found (); }
+function caml_sys_exit () { return 0; }
+
+//Provides: caml_ml_output
+function caml_ml_output (x, s, p, l) {
+  var o = document.getElementById("output");
+  o.appendChild (document.createTextNode(s.toString().slice(p,p+l)));
+  return 0;
+}
+
+//Provides: caml_ml_output_char
+//Requires: caml_ml_output
+function caml_ml_output_char (x, c) {
+    return caml_ml_output (x, String.fromCharCode (c), 0, 1);
+}
+
+//Provides: caml_raise_end_of_file
+//Requires: caml_raise_constant, caml_global_data
+function caml_raise_end_of_file () {
+  caml_raise_constant(caml_global_data[5]);
+}
+
+//Provides: caml_ml_input_char
+//Requires: caml_raise_end_of_file
+function caml_ml_input_char (f) {
+  caml_raise_end_of_file ();
+}
