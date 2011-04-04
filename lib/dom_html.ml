@@ -1041,6 +1041,12 @@ let createCanvas doc : canvasElement t =
   c
 
 module CoerceTo = struct
+  let element e : element Js.t Js.opt =
+    if Js.instanceof e (Js.Unsafe.variable "HTMLElement") then
+      Js.some (Js.Unsafe.coerce e)
+    else
+      Js.null
+
   let unsafeCoerce tag (e : #element t) =
     if e##tagName##toLowerCase() == Js.string tag then
       Js.some (Js.Unsafe.coerce e)

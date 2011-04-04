@@ -1120,6 +1120,8 @@ val tagged : #element t -> taggedElement
 val opt_tagged : #element t opt -> taggedElement option
 
 module CoerceTo : sig
+  val element : #Dom.node t -> element t opt
+
   val a : #element t -> anchorElement t opt
   val area : #element t -> areaElement t opt
   val base : #element t -> baseElement t opt
