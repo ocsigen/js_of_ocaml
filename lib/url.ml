@@ -90,7 +90,7 @@ let rec path_of_path_string s = (* inspired from: Ocsigen_lib *)
   try
     let length = String.length s in
     if length = 0
-    then []
+    then [""]
     else
       let pos_slash = String.index s '/' in
       if pos_slash = 0
