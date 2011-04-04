@@ -16,10 +16,13 @@ very stable API.
   * Lwt (**version 2.2.1** at least)
 
 === Installation ===
-  * run {{{make}}} to compile everything
+  * run {{{make}}} to compile
   * run {{{make install}}} as root to install the compiler
     and its libraries
   * run {{{make uninstall}}} as root to uninstall them
+
+You can run {{{make toplevel}}} if you want to build a Web-based OCaml
+toplevel as well.
 
 === Usage ===
 
