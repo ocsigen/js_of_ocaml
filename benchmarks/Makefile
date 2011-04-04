@@ -18,14 +18,14 @@ exes= $(wildcard programs/*)
 
 exesnames = $(exes:programs/%=%)
 
-missingml = $(exesnames:%=results/sizes/ml/%)
-missingocamljs = $(exesnames:%=results/sizes/ocamljs/%)
-missingcompiletime = $(exesnames:%=results/compiletimes/`hostname`/byte/%) $(exesnames:%=results/compiletimes/`hostname`/opt/%)
-othermissing = results/times/`hostname`/nitro/js_of_ocaml/kb results/times/`hostname`/tm/js_of_ocaml/hamming results/times/`hostname`/tm/js_of_ocaml/splay
+missingsizesml = $(exesnames:%=results/sizes/ml/%)
+missingsizesocamljs = $(exesnames:%=results/sizes/ocamljs/%)
+missingsizes=$(missingsizesml) $(missingsizesocamljs)
 
-missingfiles=$(missingml) $(missingocamljs) $(missingcompiletime) $(othermissing)
+missingcompiletimes = $(exesnames:%=results/compiletimes/`hostname`/byte/%) $(exesnames:%=results/compiletimes/`hostname`/opt/%)
+possiblymissingbenchs = results/times/`hostname`/nitro/js_of_ocaml/kb results/times/`hostname`/tm/js_of_ocaml/hamming results/times/`hostname`/tm/js_of_ocaml/splay
 
-.PHONY: $(GRAPHSNOPR:.pdf=.svg) $(GRAPHSPR:.pdf=.svg) size.gpl _noprecomp _missingfiles
+.PHONY: $(GRAPHSNOPR:.pdf=.svg) $(GRAPHSPR:.pdf=.svg) size.gpl _noprecomp
 
 # compile with precompiled programs for creating benchs
 __precomp:
@@ -33,38 +33,48 @@ __precomp:
 	ln -sf $(exes:%=../../%) build/byte
 	if [ ! -d precomptmp ] ; then ./run.ml -compile ; else cd precomptmp ; find . -type f -exec mv {} ../{} \; ; fi
 	rm -rf precomptmp
-	make _missingfiles
 	touch __precomp
 
 # for running the test we do not want precompiled programs
 __run:
-	make _missingfiles
 	make _noprecomp
 	./run.ml -all
+	make __possiblymissingbenchs
 	touch __run
 
 fastrun:
-	make _missingfiles
 	make _noprecomp
 	echo "======================== WARNING: fast benchs!"
 	./run.ml -ffast -all
+	make __possiblymissingbenchs
 	touch __run
 
 _noprecomp:
-	rm -f __precomp
-	mkdir -p precomptmp/build/byte
-	mkdir -p build
-	mkdir -p results
-	find build -type d -exec mkdir -p precomptmp/{} \;
-	find results -type d -exec mkdir -p precomptmp/{} \;
-	for i in $(exesnames) ; do if [ -f build/byte/$$i ] ; then mv -f build/byte/$$i precomptmp/build/byte/ ; fi ; done
-	for i in $(exesnames) ; do for j in build/*/$$i.js ; do if [ -f $$j ] ; then mv $$j precomptmp/$$j ; fi ; done ; done
-	for i in $(exesnames) ; do for j in results/sizes/js_of_ocaml/*/$$i ; do if [ -f $$j ] ; then mv $$j precomptmp/$$j ; fi ; done ; done
-	for i in $(exesnames) ; do for j in results/sizes/*/$$i ; do if [ -f $$j ] ; then mv $$j precomptmp/$$j ; fi ;done ; done
+	if [ -f __precomp ] ; \
+	then \
+	  rm -f __precomp ;\
+	  mkdir -p precomptmp/build/byte ;\
+	  mkdir -p build ;\
+	  mkdir -p results ;\
+	  find build -type d -exec mkdir -p precomptmp/{} \; ;\
+	  find results -type d -exec mkdir -p precomptmp/{} \; ;\
+	  for i in $(exesnames) ; do if [ -f build/byte/$$i ] ; then mv -f build/byte/$$i precomptmp/build/byte/ ; fi ; done ;\
+	  for i in $(exesnames) ; do for j in build/*/$$i.js ; do if [ -f $$j ] ; then mv $$j precomptmp/$$j ; fi ; done ; done ;\
+	  for i in $(exesnames) ; do for j in results/sizes/js_of_ocaml/*/$$i ; do if [ -f $$j ] ; then mv $$j precomptmp/$$j ; fi ; done ; done ;\
+	  for i in $(exesnames) ; do for j in results/sizes/*/$$i ; do if [ -f $$j ] ; then mv $$j precomptmp/$$j ; fi ;done ; done ;\
+	fi
 
-_missingfiles:
+__missingcompiletimes:
 	mkdir -p results/compiletimes/`hostname`/byte/
-	for i in $(missingfiles) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
+	for i in $(missingcompiletimes) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
+	touch __missingcompiletimes
+
+__possiblymissingbenchs:
+	for i in $(possiblymissingbenchs) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
+	touch __possiblymissingbenchs
+
+__missingsizes: __precomp
+	for i in $(missingsizes) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
 	if [ -f results/sizes/ml/unison ] ; then echo 828471 > results/sizes/ml/unison ; fi
 	if [ -f results/sizes/ml/ocamlc ] ; then echo 800771 > results/sizes/ml/ocamlc ; fi
 	if [ -f results/sizes/ml/ocsigen_server ] ; then echo 0 > results/sizes/ml/ocsigen_server ; fi
@@ -75,6 +85,7 @@ _missingfiles:
 	if [ -f results/sizes/ml/minesweeper ] ; then echo 7106 > results/sizes/ml/minesweeper ; fi
 	if [ -f results/sizes/ml/planet ] ; then echo 16488 > results/sizes/ml/planet ; fi
 	if [ -f results/sizes/ml/sudoku ] ; then echo 2837 > results/sizes/ml/sudoku ; fi
+	touch __missingsizes
 # file sizes (without comments and spaces)
 # find ../examples/sudoku/ -name "*.ml" -exec cat {} \; | perl /home/balat/kroko/js_of_ocaml/benchmarks/lib/remove_comments.pl | sed 's/^ *//g' | wc -c
 
@@ -89,7 +100,7 @@ time.svg: __run
 size.svg: size.gpl
 	gnuplot < $^ > $@
 
-size.gpl: __run __precomp
+size.gpl: __run __missingsizes
 	./report.ml -config report-size.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
 	 -omit fannkuch_redux_2 \
@@ -112,10 +123,11 @@ size.gpl: __run __precomp
 time-optim.svg: __run
 	./report.ml -config report-time-optim.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -omit fannkuch_redux_2 \
 	 -max 4 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
-size-optim.svg: __run __precomp
+size-optim.svg: __run __missingsizes
 	./report.ml -config report-size-optim.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop  \
 	 -omit fannkuch_redux_2 \
@@ -136,6 +148,7 @@ size-optim.svg: __run __precomp
 time-ocamljs.svg: __run
 	./report.ml -config report-time-ocamljs.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
+	 -omit fannkuch_redux_2 \
 	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
@@ -158,7 +171,7 @@ size-ocamljs.svg: __run __precomp
 	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel Size \
 	 > $@
 
-compiletime.svg: __run __precomp
+compiletime.svg: __run __precomp __missingcompiletimes
 	./report.ml -config report-compiletime.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
 	 -max 2 -svg 7 500 150 -edgecaption -ylabel "Compile time" \
@@ -178,8 +191,8 @@ _perf:
 	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo performance > $$i/cpufreq/scaling_governor" ; fi ;done
 
 _noperf:
-#	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo ondemand > $$i/cpufreq/scaling_governor" ; fi ; done
+	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo ondemand > $$i/cpufreq/scaling_governor" ; fi ; done
 
 
 clean: _noperf
-	rm -rf results build __precomp __run *.svg *.pdf *~ precomptmp
+	rm -rf results build __precomp __run *.svg *.pdf *~ precomptmp __missingsizes __missingcompiletimes __possiblymissingbenchs
