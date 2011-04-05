@@ -6,10 +6,10 @@ class type formData = object
   method append_blob : js_string t -> File.blob t -> unit meth
 end
 
-let formData : formData t constr Optdef.t =
+let formData : formData t constr =
   Js.Unsafe.variable "window.FormData"
 
-let formData_form : (formElement t -> formData t) constr Optdef.t =
+let formData_form : (formElement t -> formData t) constr =
   Js.Unsafe.variable "window.FormData"
 
 type form_elt =
@@ -116,13 +116,15 @@ let append (form_contents:form_contents) (form_elt:string * form_elt) =
 	| name, `String s -> f##append(string name, s)
 	| name, `File file -> f##append_blob(string name, (file :> File.blob t))
 
+let empty_form_contents () =
+  match Optdef.to_option (Js.def formData) with
+    | None -> `Fields (ref [])
+    | Some constr -> `FormData ( jsnew constr() )
+
 let post_form_contents form =
-  match Optdef.to_option formData with
-    | None -> `Fields (ref (form_contents form))
-    | Some constr ->
-      let formdata = jsnew constr() in
-      List.iter (append (`FormData formdata)) (form_contents form);
-      `FormData formdata
+  let contents = empty_form_contents () in
+  List.iter (append contents) (form_contents form);
+  contents
 
 let get_form_contents form =
   List.map (function

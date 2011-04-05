@@ -60,7 +60,9 @@ end
 val filename : file t -> js_string t
 (** [filename] handles old firefox without name property *)
 
-val fileReader : fileReader t constr optdef
+val fileReader : fileReader t constr
+(* be carefull, this might not be implemented in all browser.
+   To check availability, use [Js.Optdef.to_option (Js.def fileReader)] *)
 
 val readAsBinaryString : blob t -> js_string t Lwt.t
 val readAsText : blob t -> js_string t Lwt.t

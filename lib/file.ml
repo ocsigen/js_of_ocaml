@@ -75,7 +75,7 @@ class type fileReader = object ('self)
   inherit Dom_html.eventTarget
 end
 
-let fileReader : fileReader t constr optdef =
+let fileReader : fileReader t constr =
   Unsafe.variable "window.FileReader"
 
 let read_with_filereader fileReader kind file =
@@ -133,7 +133,7 @@ let old_firefox_reader kind file =
 (* end of old firefox specific part *)
 
 let reader kind file =
-  match Js.Optdef.to_option fileReader with
+  match Js.Optdef.to_option (Js.def fileReader) with
     | None -> Lwt.return (old_firefox_reader kind file)
     | Some fileReader -> read_with_filereader fileReader kind file
 
