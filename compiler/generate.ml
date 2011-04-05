@@ -353,12 +353,14 @@ let parallel_renaming ctx params args continuation queue =
        fun queue ->
        let ((px, cx), queue) = access_queue queue x in
        let (st, queue) =
+(*
          let idx = Var.idx y in
          let len = Array.length ctx.Ctx.live in
          match if idx >= len then 2 else ctx.Ctx.live.(Var.idx y) with
            0 -> assert false
          | 1 -> enqueue queue px y cx
-         | _ -> flush_queue queue (px >= flush_p)
+         | _ -> *)
+         flush_queue queue (px >= flush_p)
                   [J.Variable_statement [Var.to_string y, Some cx]]
        in
        st @ continuation queue)
