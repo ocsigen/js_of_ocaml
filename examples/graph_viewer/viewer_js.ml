@@ -105,7 +105,7 @@ let redraw st s h v (canvas : Html.canvasElement Js.t) =
 let (>>=) = Lwt.bind
 
 let http_get url =
-  XmlHttpRequest.send_string url
+  XmlHttpRequest.get url
     >>= fun {XmlHttpRequest.code = cod; content = msg} ->
   if cod = 0 || cod = 200
   then Lwt.return msg

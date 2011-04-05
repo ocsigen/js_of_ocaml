@@ -273,7 +273,7 @@ let build_table ?style ?tr_style ?td_style f t =
   m
 
 let http_get url =
-  XmlHttpRequest.send_string url >>= fun r ->
+  XmlHttpRequest.get url >>= fun r ->
   let cod = r.XmlHttpRequest.code in
   let msg = r.XmlHttpRequest.content in
   if cod = 0 || cod = 200

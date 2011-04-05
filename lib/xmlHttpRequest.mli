@@ -60,61 +60,31 @@ type http_frame =
     answer. The headers field is a function associating values to any header
     name. *)
 
-val send_string :
-     ?headers:(string * string) list
+val perform_raw_url :
+    ?headers:(string * string) list
   -> ?content_type:string
-  -> ?post_args:((string * string) list) (* *)
+  -> ?post_args:((string * string) list)
   -> ?get_args:((string * string) list)  (* [] *)
+  -> ?form_arg:Form.form_contents
   -> string
   -> http_frame Lwt.t
-  (** [send_string ?headers ?content_type ?post_args ?get_args url] makes an
-      asynchronous request to the specified [url] with specified options. The
-      result is a cancelable thread returning an HTTP frame. If [post_args] is
-      [None], a GET request is used. If [post_args] is [Some _] (even [Some []])
-      then a POST request is made. *)
+  (** [perform_raw_url ?headers ?content_type ?post_args ?get_args ?form_arg url]
+      makes an asynchronous request to the specified [url] with
+      specified options. The result is a cancelable thread returning
+      an HTTP frame. If [post_args] and [form_arg] are [None], a GET request is
+      used. If [post_args] or [form_arg] is [Some _] (even [Some []]) then a POST
+      request is made. *)
 
-val send :
-     ?headers:(string * string) list
+val perform :
+    ?headers:(string * string) list
   -> ?content_type:string
-  -> ?post_args:((string * string) list) (* *)
+  -> ?post_args:((string * string) list)
   -> ?get_args:((string * string) list)  (* [] *)
+  -> ?form_arg:Form.form_contents
   -> Url.url
   -> http_frame Lwt.t
-  (** [send] is the same as {!send_string} except that the Url argument has type
+  (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
       {!Url.url}. *)
 
-val send_get_form_string :
-     ?headers:(string * string) list
-  -> ?content_type:string
-  -> ?post_args:((string * string) list) (* *)
-  -> ?get_args:((string * string) list)  (* [] *)
-  -> Dom_html.formElement t
-  -> string
-  -> http_frame Lwt.t
-
-val send_get_form :
-     ?headers:(string * string) list
-  -> ?content_type:string
-  -> ?post_args:((string * string) list) (* *)
-  -> ?get_args:((string * string) list)  (* [] *)
-  -> Dom_html.formElement t
-  -> Url.url
-  -> http_frame Lwt.t
-
-val send_post_form_string :
-     ?headers:(string * string) list
-  -> ?content_type:string
-  -> ?post_args:((string * string) list) (* *)
-  -> ?get_args:((string * string) list)  (* [] *)
-  -> Dom_html.formElement t
-  -> string
-  -> http_frame Lwt.t
-
-val send_post_form :
-     ?headers:(string * string) list
-  -> ?content_type:string
-  -> ?post_args:((string * string) list) (* *)
-  -> ?get_args:((string * string) list)  (* [] *)
-  -> Dom_html.formElement t
-  -> Url.url
-  -> http_frame Lwt.t
+val get : string -> http_frame Lwt.t
+  (** [get url] makes an asynchronous request to the specified [url] *)

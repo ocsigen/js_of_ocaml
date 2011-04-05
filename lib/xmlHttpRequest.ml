@@ -123,18 +123,36 @@ type http_frame =
       content: string;
     }
 
-let send_field_string
+let perform_raw_url
     ?(headers = [])
     ?content_type
-    ?(post_args:Form.form_contents option)
+    ?(post_args:(string * string) list option)
     ?(get_args=[])
+    ?(form_arg:Form.form_contents option)
     url =
 
+  let form_arg =
+    match form_arg with
+      | None ->
+	( match post_args with
+	  | None -> None
+	  | Some post_args ->
+	    let contents = Form.empty_form_contents () in
+	    List.iter (fun (name,value) -> Form.append contents (name,`String (string value))) post_args;
+	    Some contents )
+      | Some form_arg ->
+	( match post_args with
+	  | None -> ()
+	  | Some post_args ->
+	    List.iter (fun (name,value) -> Form.append form_arg (name,`String (string value))) post_args; );
+	Some form_arg
+  in
+
   let method_, content_type, post_encode =
-    match post_args, content_type with
+    match form_arg, content_type with
       | None, ct -> "GET", ct, `Urlencode
-      | Some post_args, None ->
-	(match post_args with
+      | Some form_args, None ->
+	(match form_args with
 	  | `Fields l ->
 	    let strings,files = partition_string_file !l in
 	    (match files with
@@ -177,7 +195,7 @@ let send_field_string
       else ();
       Js._false);
 
-  (match post_args with
+  (match form_arg with
      | None -> req##send (Js.null)
      | Some (`Fields l) ->
        ignore (
@@ -198,67 +216,15 @@ let send_field_string
   Lwt.on_cancel res (fun () -> req##abort ()) ;
   res
 
-let send_string
+let perform
     ?(headers = [])
     ?content_type
     ?post_args
     ?(get_args=[])
+    ?form_arg
     url =
-  let post_args =
-    match post_args with
-      | None -> None
-      | Some l -> Some (`Fields (ref (List.map (fun (n,v) -> n,`String (string v)) l)))
-  in
-  send_field_string ~headers ?content_type ?post_args ~get_args url
-
-let send
-    ?(headers = [])
-    ?content_type
-    ?post_args
-    ?(get_args=[])
-    url =
-  send_string ~headers ?content_type ?post_args ~get_args
+  perform_raw_url ~headers ?content_type ?post_args ~get_args ?form_arg
     (Url.string_of_url url)
 
-let send_get_form_string
-    ?(headers = [])
-    ?content_type
-    ?post_args
-    ?(get_args=[])
-    form
-    url =
-  let get_args = (Form.get_form_contents form)@get_args in
-  send_string ~headers ?content_type ?post_args ~get_args url
-
-let send_get_form
-    ?(headers = [])
-    ?content_type
-    ?post_args
-    ?(get_args=[])
-    form
-    url =
-  send_get_form_string ~headers ?content_type ?post_args ~get_args form
-    (Url.string_of_url url)
-
-let send_post_form_string
-    ?(headers = [])
-    ?content_type
-    ?(post_args=[])
-    ?(get_args=[])
-    form
-    url =
-  let contents = Form.post_form_contents form in
-  List.iter (fun (name,value) -> Form.append contents (name,`String (string value))) post_args;
-  send_field_string ~headers ?content_type ~post_args:contents ~get_args url
-
-
-let send_post_form
-    ?(headers = [])
-    ?content_type
-    ?(post_args=[])
-    ?(get_args=[])
-    form
-    url =
-  send_post_form_string ~headers ?content_type ~post_args ~get_args form
-    (Url.string_of_url url)
+let get s = perform_raw_url s
 
