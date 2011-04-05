@@ -31,8 +31,8 @@ Your program must first be compiled using the OCaml bytecode compiler
 extension, are provided by the {{{js_of_ocaml}}} package.
 
 {{{
-      ocamlfind ocamlc -package js_of_ocaml -syntax camlp4o -linkpkg \
-          -o cubes.byte cubes.ml
+      ocamlfind ocamlc -package js_of_ocaml,js_of_ocaml.syntax \
+          -syntax camlp4o -linkpkg -o cubes.byte cubes.ml
 }}}
 
 Then, run the {{{js_of_ocaml}}} compiler to produce Javascript code:
