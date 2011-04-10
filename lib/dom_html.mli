@@ -306,6 +306,8 @@ class type formElement = object
   method target : js_string t prop
   method submit : unit meth
   method reset : unit meth
+
+  method onsubmit : ('self t, event t) event_listener writeonly_prop
 end
 
 class type optGroupElement = object
