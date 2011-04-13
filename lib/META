@@ -1,10 +1,11 @@
 description = "Js_of_ocaml library"
-version = "1.0.1"
+version = "dev"
 archive(byte) = "js_of_ocaml.cma"
 requires = "lwt"
 
 package "syntax" (
   description = "Js_of_ocaml syntax extension"
+  version = "[distributed with js_of_ocaml]"
   requires(syntax) = "camlp4"
   archive(syntax,preprocessor) = "pa_js.cmo"
 )
@@ -13,12 +14,14 @@ package "deriving" (
 
   exists_if = "deriving_json.cma deriving_json.cmxa"
   description = "Runtime library for the class Json."
+  version = "[distributed with js_of_ocaml]"
   archive(byte) = "deriving_json.cma"
   archive(native) = "deriving_json.cmxa"
 
   package "syntax" (
-    requires  = "deriving-ocsigen.syntax"
     description = "Safe \"IO in JSON\" class for deriving-ocsigen."
+    version = "[distributed with js_of_ocaml]"
+    requires(syntax) = "deriving-ocsigen.syntax"
     archive(syntax, preprocessor) = "pa_deriving_Json.cmo"
     archive(syntax, toploop) = "pa_deriving_Json.cmo"
   )

@@ -28,8 +28,9 @@ check_lwt:
 
 include Makefile.filelist
 
+VERSION := $(shell head -n 1 VERSION)
 install:
-	ocamlfind install $(LIBRARY) lib/META $(INTF) $(IMPL) $(NATIMPL) $(OTHERS)
+	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(NATIMPL) $(OTHERS)
 	install $(BIN) $(BINDIR)
 
 uninstall:
@@ -56,7 +57,7 @@ realclean: clean
 	find . -name "*~" -print | xargs rm -f
 
 dist:
-	rm -r /tmp/js_of_ocaml &&\
+	rm -rf /tmp/js_of_ocaml-${VERSION} &&\
         cd /tmp &&\
-	darcs get http://ocsigen.org/darcs/js_of_ocaml/ &&\
-	tar zcvf js_of_ocaml.tar.gz js_of_ocaml --exclude benchmarks --exclude _darcs --exclude tests
+	darcs get http://ocsigen.org/darcs/js_of_ocaml/ js_of_ocaml-${VERSION} &&\
+	tar zcvf js_of_ocaml-${VERSION}.tar.gz js_of_ocaml-${VERSION} --exclude benchmarks --exclude _darcs --exclude tests
