@@ -1,0 +1,27 @@
+BIN := compiler/${COMPILER}
+
+INTF := lib/*.cmi
+
+IMPL := lib/$(LIBNAME).cma   \
+        lib/syntax/pa_js.cmo \
+	lib/dll$(LIBNAME).so \
+        lib/lib$(LIBNAME).a
+
+OTHERS := runtime/runtime.js
+
+ifneq "${DERIVING}" ""
+
+INTF += lib/deriving_json/deriving_Json.cmi       \
+        lib/deriving_json/deriving_Json_lexer.cmi \
+        lib/deriving_json/deriving_bi_outbuf.cmi  \
+
+IMPL += lib/syntax/pa_deriving_Json.cmo \
+        lib/deriving_json.cma           \
+
+NATIMPL += lib/deriving_json.cmxa \
+	   lib/deriving_json.cmxs \
+	   lib/deriving_json.a    \
+
+endif
+
+DOC := ${INTF:.cmi=.mli}
