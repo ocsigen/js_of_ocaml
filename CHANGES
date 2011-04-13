@@ -1,3 +1,23 @@
+===== 1.0.2 (2011-04-13) =====
+
+ * Bugfixes:
+   ** fix compilation of Int32/Nativeint
+   ** fix compilation of self-recursive functions in loops
+   ** fix to File module for when there is no FileReader class in the host browser
+   ** fixed big in weak support
+ * Compiler:
+   ** Switch licence to LGPL
+   ** API to generate a function instead of a standalone program
+   ** option to compile an OCaml toplevel
+ * Libraries:
+   ** Add an optionnal JSON deriving class
+   ** Add Math.random binding
+   ** Add scrollWidth/scrollHeight element methods to the DOM
+   ** Add coercion function Dom_html.CoerceTo.element
+   ** Renaming functions in XmlHttpRequest:
+      *** send -> perform
+      *** send_string -> perform_raw_url
+
 ===== 1.0.1 (2011-01-26) =====
 
  * Bugfixes:

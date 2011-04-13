@@ -7,15 +7,15 @@ It makes it possible to write OCaml programs that run on Web browsers.
 It is easy to install as it works with an existing installation of
 OCaml, with no need to recompile any library.  It comes with bindings
 for a large part of the browser APIs.  According to our benchmarks,
-the generated programs [[performances|runs typically faster]] than with the OCaml
-bytecode interpreter.  We believe this compiler will prove much easier
-to maintain than a retargeted OCaml compiler, as the bytecode provides
-a very stable API.
+the generated programs <<a_manual chapter="performances" |runs
+typically faster>> than with the OCaml bytecode interpreter.  We
+believe this compiler will prove much easier to maintain than a
+retargeted OCaml compiler, as the bytecode provides a very stable API.
 
 == Requirements ==
 
   * Findlib
-  * Lwt (**version 2.1** at least)
+  * Lwt (**version 2.3.0** at least)
 
 == Installation ==
   * run {{{make}}} to compile everything

@@ -13,7 +13,7 @@ very stable API.
 === Requirements ===
 
   * Findlib
-  * Lwt (**version 2.2.1** at least)
+  * Lwt (**version 2.3.0** at least)
 
   [optionnal]
   * deriving-ocsigen (see: https://github.com/hnrgrgr/deriving)
@@ -31,7 +31,8 @@ toplevel as well.
 
 Your program must first be compiled using the OCaml bytecode compiler
 {{{ocamlc}}}.  Javascript bindings, as well as a corresponding syntax
-extension, are provided by the {{{js_of_ocaml}}} package.
+extension, are provided by the {{{js_of_ocaml}}} and
+{{{js_of_ocaml.syntax}}} packages.
 
 {{{
       ocamlfind ocamlc -package js_of_ocaml,js_of_ocaml.syntax \
