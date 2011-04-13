@@ -31,6 +31,7 @@ include Makefile.filelist
 VERSION := $(shell head -n 1 VERSION)
 install:
 	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(NATIMPL) $(OTHERS)
+	install -d -m 755 $(BINDIR)
 	install $(BIN) $(BINDIR)
 
 uninstall:
