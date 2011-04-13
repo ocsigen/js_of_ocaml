@@ -11,6 +11,8 @@ Regexp
 Url
 XmlHttpRequest
 Event_arrows
+Json
+Deriving_Json
 }
 
 {1 Indexes}

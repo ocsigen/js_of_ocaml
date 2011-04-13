@@ -130,3 +130,17 @@ Javascript function is appropriately wrapped by the system.
 You should use function {{{Js.wrap_callback}}} or function
 {{{Js.wrap_meth_callback}}} to wrap an OCaml function so that
 it can be called from Javascript.
+
+== IO ==
+
+The <<a_api | module Json >> allows to marshall and unmarshall the
+javascript representation of OCaml values into the corresponding JSON
+string. The unmarshalling is unsafe in the same way the OCaml
+{{{Marshall.from_string}}} function is.
+
+Type-safe unmarshalling may be achieved with the
+{{{deriving-ocsigen}}} library and the optionnal {{{Json}}} class. See
+<<a_api | module Deriving_Json >> for more information. Currently, the
+{{{deriving-ocsigen}}} library relies on recursives modules that are
+not handled yet by {{{js_of_ocaml}}} and the
+<<a_api | module Deriving_Json >> module may only be used on a server side.

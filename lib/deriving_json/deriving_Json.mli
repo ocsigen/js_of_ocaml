@@ -17,12 +17,36 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Json **)
+(** Typesafe IO (based on the {i deriving-ocsigen} library).
+    @see <https://github.com/hnrgrgr/deriving> the source code of {i deriving-ocsigen}
+    @see <http://code.google.com/p/deriving/> the documentation of the original {i deriving} library by Jeremy Yallop.
+*)
 
+(** The type of JSON parser/printer for value of type ['a]. *)
 type 'a t
 
+(** [to_string Json.t<ty> v] marshall the [v] of type [ty] to a JSON string.*)
 val to_string: 'a t -> 'a -> string
+
+(** [from_string Json.t<ty> s] safely unmarshall the JSON [s] into an
+    OCaml value of type [ty]. Throws [Failure] if the received value
+    isn't the javascript representation of a value of type [ty]. *)
 val from_string: 'a t -> string -> 'a
+
+(** The signature of the JSON class. *)
+module type Json = sig
+  type a
+  val t: a t
+  val write: Buffer.t -> a -> unit
+  val read: Deriving_Json_lexer.lexbuf -> a
+  val to_string: a -> string
+  val from_string: string -> a
+  (**/**)
+  val match_variant: [`Cst of int | `NCst of int] -> bool
+  val read_variant: Deriving_Json_lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
+end
+
+(**/**)
 
 (** Deriver *)
 
@@ -43,19 +67,6 @@ end
 module type Json_min'' = sig
   type a
   val t: a t
-end
-
-module type Json = sig
-  type a
-  val t: a t
-  val write: Buffer.t -> a -> unit
-  val read: Deriving_Json_lexer.lexbuf -> a
-  val to_string: a -> string
-  (* val to_channel: out_channel -> a -> unit *)
-  val from_string: string -> a
-  (* val from_channel: in_channel -> a *)
-  val match_variant: [`Cst of int | `NCst of int] -> bool
-  val read_variant: Deriving_Json_lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
 end
 
 module Defaults(J:Json_min) : Json with type a = J.a

@@ -17,6 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val unsafe_input: ?encoding:[ `Byte | `Unicode ] -> Js.js_string Js.t -> 'a
+(** Unsafe IO. (See {!Deriving_Json} for typesafe IO) *)
+
+(** Mashall any OCaml value into this JSON representation. *)
 val output: ?encoding:[ `Byte | `Unicode ] -> 'a -> Js.js_string Js.t
+
+(** Unmarshall a string in JSON format as a OCaml value (unsafe but
+    fast !). *)
+val unsafe_input: ?encoding:[ `Byte | `Unicode ] -> Js.js_string Js.t -> 'a
 

@@ -1,5 +1,6 @@
 =[[intro|Introduction]]
 =[[overview|Overview]]
+=[[library|Library overview]]
 =[[performances|Performances]]
 =Examples
 ==<<a_file src="toplevel/index.html"|An OCaml toplevel running in the browser>>
