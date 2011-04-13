@@ -5,7 +5,7 @@ requires = "lwt"
 
 package "syntax" (
   description = "Js_of_ocaml syntax extension"
-  requires = "camlp4"
+  requires(syntax) = "camlp4"
   archive(syntax,preprocessor) = "pa_js.cmo"
 )
 
