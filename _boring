@@ -5,6 +5,7 @@
 \.so$
 # Ocaml object files
 \.cm[ioxa]$
+\.cmxa$
 \.cmxs$
 \.cmjs$
 
@@ -19,8 +20,8 @@
 ^examples/wiki/wikicreole\.ml$
 ^examples/.*/.*\.js$
 ^compiler/js_of_ocaml$
-^lib/doc$
-^lib/docdiv$
+^doc/api-html$
 ^benchmarks/build$
 ^benchmarks/results$
 ^benchmarks/config$
+^lib/deriving_json/deriving_Json_lexer.ml$

@@ -12,7 +12,7 @@ PA_DERIVING=syntax/pa_deriving_Json.cmo
 DERIVING_JSON=deriving_json.cma deriving_json.cmxs
 endif
 
-all: $(LIBNAME).cma syntax/pa_js.cmo ${PA_DERIVING} ${DERIVING_JSON} doc
+all: $(LIBNAME).cma syntax/pa_js.cmo ${PA_DERIVING} ${DERIVING_JSON}
 
 $(LIBNAME).cma: $(OBJS)
 	ocamlmklib -o $(LIBNAME) $(OBJS)
@@ -57,18 +57,6 @@ stubs.c: $(MLOBJS:cmo=ml)
 	 (sed -n -e 's/.*external.*"\([^"%]*\)".*/D(\1)/p' $(MLOBJS:cmo=ml) | \
 	  sort | uniq)) \
         > stubs.c
-
-.PHONY: doc
-doc: doc/index.html
-doc/index.html: $(MLINTFS)
-	mkdir -p doc
-	ocamlfind ocamldoc -d doc -package lwt -html $^
-
-ocsi_doc:
-	mkdir -p docdiv
-	ocamlopt -shared -I /usr/lib/ocaml/ocamldoc -o ../tools/odoc_ocsigen.cmxs ../tools/odoc_ocsigen.ml
-	ocamlfind ocamldoc -package lwt -d docdiv -g ../tools/odoc_ocsigen.cmxs $(MLINTFS) -t "Js_of_ocaml - API Reference"
-
 
 clean:
 	rm -f *.cm[ioa] *.[ao] *.so

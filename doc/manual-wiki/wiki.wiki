@@ -1,0 +1,5 @@
+== Realtime wiki syntax parsing ==
+
+<<a_script src="wiki/wiki.js">>
+Type you text here:
+<<div id="wiki_demo"|>>

@@ -125,7 +125,6 @@ OCaml compiler accept the external declaration:
 You can call this function as if it was an OCaml function, as the
 Javascript function is appropriately wrapped by the system.
 
-
 === Passing OCaml function to Javascript function ===
 
 You should use function {{{Js.wrap_callback}}} or function

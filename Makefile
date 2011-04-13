@@ -1,9 +1,9 @@
 
-all: check_lwt compiler library runtime examples
+all: check_lwt compiler library doc runtime examples
 
 include Makefile.conf
 
-.PHONY: compiler library runtime examples check_lwt
+.PHONY: compiler library runtime examples check_lwt doc
 
 compiler:
 	$(MAKE) -C compiler
@@ -17,24 +17,26 @@ examples: compiler library runtime
 	$(MAKE) -C examples
 tests: compiler library
 	$(MAKE) -C tests
+doc: library
+	$(MAKE) -C doc
 
-LWTERROR="Js_of_ocaml requires Lwt version 2.2.1 at least.  Please upgrade."
+LWTERROR="Js_of_ocaml requires Lwt version 2.3.0 at least.  Please upgrade."
 check_lwt:
-	@if ocamlfind query lwt -l | ocaml tools/check_version.ml 2.2.1; then \
+	@if ocamlfind query lwt -l | ocaml tools/check_version.ml 2.3.0; then \
 	  echo $(LWTERROR); exit 1; \
 	fi
 
-ifneq "${DERIVING}" ""
-JSON_DERIVING=lib/syntax/pa_deriving_Json.cmo lib/deriving_json.cma lib/deriving_json.cmxa lib/deriving_json.cmxs lib/deriving_json.a lib/deriving_json/deriving_Json.cmi lib/deriving_json/deriving_Json.cmi lib/deriving_json/deriving_Json_lexer.cmi  lib/deriving_json/deriving_bi_outbuf.cmi
-endif
+include Makefile.filelist
 
 install:
-	ocamlfind install $(LIBRARY) lib/META lib/$(LIBNAME).cma lib/dll$(LIBNAME).so lib/lib$(LIBNAME).a lib/*.cmi lib/*.mli lib/syntax/pa_js.cmo ${JSON_DERIVING} runtime/runtime.js
-	install compiler/$(COMPILER) $(BINDIR)
+	ocamlfind install $(LIBRARY) lib/META $(INTF) $(IMPL) $(NATIMPL) $(OTHERS)
+	install $(BIN) $(BINDIR)
 
 uninstall:
 	ocamlfind remove $(LIBRARY)
 	rm -f $(BINDIR)/$(COMPILER)
+
+reinstall: uninstall install
 
 depend:
 	$(MAKE) -C compiler depend
@@ -47,6 +49,7 @@ clean:
 	$(MAKE) -C examples clean
 ifeq ($(wildcard tests),tests)
 	$(MAKE) -C tests clean
+	$(MAKE) -C doc clean
 endif
 
 realclean: clean
