@@ -20,7 +20,7 @@
 module Html = Dom_html
 
 let (>>=) = Lwt.bind
-
+let ( |> ) x f = f x
 exception Break of bool
 
 let is_visible_text s = 
@@ -45,11 +45,9 @@ let rec html2wiki ?inH:(inH=false) body =
   let add_str ?surr:(surr="") s = 
     if is_visible_text s then Buffer.add_string ans (surr^s^surr)
     else () in
-  let chNodes = body##childNodes in
-  
-  for i=0 to chNodes##length - 1 do
-    let node = chNodes##item (i) in 
-    Js.Optdef.iter node (fun node ->
+  let childNodes = body##childNodes in
+  for i=0 to childNodes##length-1 do
+    Js.Optdef.iter (childNodes##item (i)) (fun node ->
       match Js.to_string node##nodeName with
 	| "B" -> let inner = html2wiki node in
 		 add_str inner ~surr:"**"
@@ -63,8 +61,23 @@ let rec html2wiki ?inH:(inH=false) body =
 	| "BR"  -> Buffer.add_string ans "\\\\"
 	| "HR"  -> Buffer.add_string ans "----"
 	| "DIV" -> let inner = html2wiki node in
-		   Buffer.add_string ans inner
+		   Buffer.add_string ans inner		     
+	| "A"   ->
+	  let x  : element Js.t Js.opt = Js.some (Js.Unsafe.coerce node) in
+	  let el = Js.Opt.get x (fun _ -> assert false)  in
 
+	  Js.Opt.case (el##getAttribute (Js.string "wysitype"))
+	    (fun () -> Buffer.add_string ans "^error_in_anchor^")
+	    (fun s -> 
+	      let url = Js.Opt.get (el##getAttribute (Js.string "href")) (fun _ -> assert false) 
+		|> Js.to_string in
+	      match Js.to_string s with
+	      | "global" -> 
+		let desc = html2wiki node in
+		Buffer.add_string ans (String.concat "" ["[[";url;"|";desc;"]]"]) 
+	      | "wiki"   -> String.concat "" ["[[";url;"]]"] |> Buffer.add_string ans 
+	      | _        -> Buffer.add_string ans "^error2_in_anchor^"
+	    )
 	| ("H1" | "H2" | "H3") as hh ->
 	  let n = int_of_char hh.[1] - (int_of_char '0') + 1 in
 	  let prefix = String.make n '=' in
@@ -72,8 +85,6 @@ let rec html2wiki ?inH:(inH=false) body =
 	  Buffer.add_string ans (prefix^inner^"\n\n")
 	| _ as name -> 
 	  Buffer.add_string ans ("^"^ name^"^")
-(*	  let ans2 = html2wiki node in
-	  Buffer.add_string ans (" |"^ans2^"| ") *)
     )
   done;
   Buffer.contents ans
@@ -113,19 +124,39 @@ let onload _ =
 	  iWin##focus ();
 	  iDoc##execCommand (Js.string action, show, wrap value); 
 	  Js._true);
-      Dom.appendChild body but
+      Dom.appendChild body but;
+      but
     in
 
-    createButton "hr" "inserthorizontalrule";
-    createButton "remove format" "removeformat";
-    createButton "B" "bold";
-    createButton "I" "italic";
+    ignore (createButton "hr" "inserthorizontalrule");
+    ignore (createButton "remove format" "removeformat");
+    ignore (createButton "B" "bold");
+    ignore (createButton "I" "italic");
     Dom.appendChild body (Html.createBr d);
-    createButton "p" "formatblock" ~value:(Some "p");
-    createButton "h1" "formatblock" ~value:(Some "h1");
-    createButton "h2" "formatblock" ~value:(Some "h2");
-    createButton "h3" "formatblock" ~value:(Some "h3");
+    ignore (createButton "p" "formatblock" ~value:(Some "p"));
+    ignore (createButton "h1" "formatblock" ~value:(Some "h1"));
+    ignore (createButton "h2" "formatblock" ~value:(Some "h2"));
+    ignore (createButton "h3" "formatblock" ~value:(Some "h3"));
 
+    (createButton "link" "inserthtml")##onclick <- Html.handler (fun _ ->
+      let link = iWin##prompt (Js.string "Enter a link", Js.string "http://google.ru") 
+		 |>  Js.to_string in
+      let desc = iWin##prompt (Js.string "Enter description", Js.string "desc") 
+		 |>  Js.to_string in
+      let link = String.concat "" ["<a href=\""; link; "\" wysitype=\"global\">"; desc; "</a>"] in
+      iWin##alert (Js.string link); 
+      iDoc##execCommand (Js.string "inserthtml", Js._false, Js.some (Js.string link) );
+      Js._true
+     );
+    (createButton "link2wiki" "inserthtml")##onclick <- Html.handler (fun _ ->
+      let link = iWin##prompt (Js.string "Enter a wikipage", Js.string "lololo") 
+		 |>  Js.to_string in
+      let link = ["<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>"] 
+		 |> String.concat "" in
+      iWin##alert (Js.string link); 
+      iDoc##execCommand (Js.string "inserthtml", Js._false, Js.some (Js.string link) );
+      Js._true
+     );
     Dom.appendChild body (Html.createBr d);
 
     let preview = Html.createTextarea d in

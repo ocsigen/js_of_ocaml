@@ -72,7 +72,7 @@ end
 class type element = object
   inherit node
   method tagName : js_string t readonly_prop
-  method getAttribute : js_string t -> js_string t meth
+  method getAttribute : js_string t -> js_string t opt meth
   method setAttribute : js_string t -> js_string t -> unit meth
   method removeAttribute : js_string t -> unit meth
   method hasAttribute : js_string t -> bool t meth
