@@ -19,6 +19,8 @@ very stable API.
   * deriving-ocsigen (see: https://github.com/hnrgrgr/deriving)
 
 === Installation ===
+
+  * edit {{{Makefile.local}}} to change the default configuration
   * run {{{make}}} to compile
   * run {{{make install}}} as root to install the compiler
     and its libraries
