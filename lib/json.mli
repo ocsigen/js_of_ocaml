@@ -19,10 +19,10 @@
 
 (** Unsafe IO. (See {!Deriving_Json} for typesafe IO) *)
 
-(** Mashall any OCaml value into this JSON representation. *)
+(** Marshall any OCaml value into this JSON representation. *)
 val output: ?encoding:[ `Byte | `Unicode ] -> 'a -> Js.js_string Js.t
 
-(** Unmarshall a string in JSON format as a OCaml value (unsafe but
+(** Unmarshall a string in JSON format as an OCaml value (unsafe but
     fast !). *)
 val unsafe_input: ?encoding:[ `Byte | `Unicode ] -> Js.js_string Js.t -> 'a
 
