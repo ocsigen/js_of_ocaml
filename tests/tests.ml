@@ -36,10 +36,10 @@ let log s = raw_log (Js.string s)
 (* TEST Url *)
 
 
-let _ = log_start "Url test suite"
+let () = log_start "Url test suite"
 
 let url_string_url u = Url.url_of_string (Url.string_of_url u)
-let _ = match Url.Current.get () with
+let () = match Url.Current.get () with
   | None -> log_failure "can't parse current url"
   | Some u -> match url_string_url u with
     | None -> log_failure "can't parse pretty-printed url"
@@ -52,7 +52,7 @@ let _ = match Url.Current.get () with
              log (Url.string_of_url u);
              log (Url.string_of_url v)
        )
-let _ =
+let () =
   let t1 = Url.urlencode "/toto+ blah&tutu" in
   let t2 = Url.urlencode ~with_plus:false "/toto+ blah&tutu" in
   if t1 = "/toto%2B%20blah%26tutu" && t2 = "/toto+%20blah%26tutu"
@@ -62,15 +62,15 @@ let _ =
         log t1; log t2)
 
 
-let _ = log_stop "Url test suite"
+let () = log_stop "Url test suite"
 
 
 (* Tests Regexp *)
 
 
-let _ = log_start "Regexp test suite"
+let () = log_start "Regexp test suite"
 
-let _ =
+let () =
   let re1 = Regexp.regexp "ab?" in
   let re2 = Regexp.regexp "\\." in
   let re3 = Regexp.regexp_string "(.)\\(.)" in
@@ -110,5 +110,38 @@ let _ =
   end
 
 
-let _ = log_stop "Regexp test suite"
+let () = log_stop "Regexp test suite"
+
+
+(* Tests Colors *)
+
+let () = log_start "Colors test suite"
+
+let () =
+  let cols = [
+    CSS.RGB(120,  3, 56);
+    CSS.RGBA(120,  3, 56,1.);
+    CSS.RGB_percent( 10, 3,60);
+    CSS.RGBA_percent(100,53,60, 0.45);
+    CSS.HSL(120,75,56);
+    CSS.HSLA(180, 3,56,0.2);
+    CSS.RGB (CSS.rgb_of_color_name CSS.Dodgerblue);
+    CSS.RGB (CSS.rgb_of_color_name CSS.Pink);
+    CSS.Color_name CSS.Hotpink;
+    CSS.Color_name CSS.Cornsilk;
+  ]
+  in
+  List.iter
+    (fun c ->
+      try
+        let c = CSS.string_of_color c in
+        let (_: CSS.js_color) = CSS.js_color_of_js_string (Js.string c) in
+        log_success c
+      with
+        | Invalid_argument s -> log_failure s
+    )
+    cols
+
+let () = log_stop "Colors test suite"
+
 
