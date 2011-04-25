@@ -1,9 +1,11 @@
-dom.cmo: js.cmi dom.cmi
-dom.cmx: js.cmx dom.cmi
+CSS.cmo: js.cmi CSS.cmi
+CSS.cmx: js.cmx CSS.cmi
 dom_events.cmo: js.cmi dom_html.cmi dom_events.cmi
 dom_events.cmx: js.cmx dom_html.cmx dom_events.cmi
 dom_html.cmo: js.cmi dom.cmi dom_html.cmi
 dom_html.cmx: js.cmx dom.cmx dom_html.cmi
+dom.cmo: js.cmi dom.cmi
+dom.cmx: js.cmx dom.cmi
 event_arrows.cmo: js.cmi dom_html.cmi event_arrows.cmi
 event_arrows.cmx: js.cmx dom_html.cmx event_arrows.cmi
 file.cmo: js.cmi dom_html.cmi dom.cmi file.cmi
@@ -26,9 +28,10 @@ xmlHttpRequest.cmo: url.cmi js.cmi form.cmi file.cmi dom_html.cmi dom.cmi \
     xmlHttpRequest.cmi
 xmlHttpRequest.cmx: url.cmx js.cmx form.cmx file.cmx dom_html.cmx dom.cmx \
     xmlHttpRequest.cmi
-dom.cmi: js.cmi
+CSS.cmi: js.cmi
 dom_events.cmi: js.cmi dom_html.cmi
 dom_html.cmi: js.cmi dom.cmi
+dom.cmi: js.cmi
 event_arrows.cmi: js.cmi dom_html.cmi
 file.cmi: js.cmi dom_html.cmi dom.cmi
 firebug.cmi: js.cmi dom.cmi
