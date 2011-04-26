@@ -25,3 +25,4 @@
 ^benchmarks/results$
 ^benchmarks/config$
 ^lib/deriving_json/deriving_Json_lexer.ml$
+^Makefile.local$
