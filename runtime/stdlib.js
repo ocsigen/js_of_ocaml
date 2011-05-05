@@ -275,7 +275,7 @@ function caml_int_of_string (s) {
   if (i != s.getLen()) caml_failwith("int_of_string");
   res = sign * res;
   if ((res | 0) != res) caml_failwith("int_of_string");
-  return sign * res;
+  return res;
 }
 
 //Provides: caml_is_printable const
