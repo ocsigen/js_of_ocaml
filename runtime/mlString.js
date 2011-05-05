@@ -239,7 +239,11 @@ MlStringFromArray.prototype = new MlString ();
 
 //Provides: caml_create_string const
 //Requires: MlString
-function caml_create_string(len) { return new MlMakeString(len); }
+//Requires: caml_invalid_argument
+function caml_create_string(len) {
+  if (len < 0) caml_invalid_argument("String.create");
+  return new MlMakeString(len);
+}
 //Provides: caml_fill_string
 //Requires: MlString
 function caml_fill_string(s, i, l, c) { s.fill (i, l, c); }
