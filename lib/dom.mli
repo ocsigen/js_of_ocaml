@@ -126,3 +126,5 @@ val appendChild : #node t -> #node t -> unit
   (** The expression [appendChild n c] behave the same as
       [n##appendChild(c)] but avoid the need of coercing the
       different objects to [node t]. *)
+
+val list_of_nodeList : 'a nodeList t -> 'a t list
