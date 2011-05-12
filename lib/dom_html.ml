@@ -804,6 +804,7 @@ class type document = object
   method referrer : js_string t readonly_prop
   method domain : js_string t readonly_prop
   method _URL : js_string t readonly_prop
+  method head : headElement t prop
   method body : bodyElement t prop
   method documentElement : htmlElement t readonly_prop
   method images : imageElement collection t readonly_prop
