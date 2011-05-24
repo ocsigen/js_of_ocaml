@@ -27,20 +27,42 @@ let rec filter_map f = function
       | None -> filter_map f q
       | Some v' -> v' :: (filter_map f q)
 
-let get_select_val (elt:selectElement t) =
+class type submittableElement = object
+  method disabled : bool t prop
+  method name : js_string t readonly_prop
+  method value : js_string t prop
+end
+
+let have_content (elt:submittableElement t) =
   let name = to_string (elt##name) in
-  if to_bool (elt##multiple)
+  match name with
+    | "" -> false
+    | _ -> not (Js.to_bool (elt##disabled))
+
+let get_textarea_val ?(get=false) (elt:textAreaElement t) =
+  if have_content (elt:>submittableElement t)
   then
-    let options = Array.init ( elt##options##length )
-      (fun i -> Optdef.to_option elt##options##item(i)) in
-    filter_map (function
-      | None -> None
-      | Some e ->
-	if e##selected
-	then Some (name,`String (e##value))
-	else None)
-      (Array.to_list options)
-  else [name,`String (elt##value)]
+    let name = to_string (elt##name) in
+    [name,`String (elt##value)]
+  else []
+
+let get_select_val (elt:selectElement t) =
+  if have_content (elt:>submittableElement t)
+  then
+    let name = to_string (elt##name) in
+    if to_bool (elt##multiple)
+    then
+      let options = Array.init ( elt##options##length )
+	(fun i -> Optdef.to_option elt##options##item(i)) in
+      filter_map (function
+	| None -> None
+	| Some e ->
+	  if e##selected
+	  then Some (name,`String (e##value))
+	  else None)
+	(Array.to_list options)
+    else [name,`String (elt##value)]
+  else []
 
 class type file_input = object
   inherit inputElement
@@ -49,45 +71,46 @@ class type file_input = object
 end
 
 let get_input_val ?(get=false) (elt:inputElement t) =
-  let name = to_string (elt##name) in
-  match name with
-    | "" -> []
-    | _ ->
-      let value = elt##value in
-      match String.lowercase (to_string (elt##_type)) with
-	| "checkbox"
-	| "radio" ->
-	  if to_bool (elt##checked)
-	  then [name,`String value]
-	  else []
-	| "submit"
-	| "reset" -> []
-	| "text"
-	| "password" -> [name,`String value]
-	| "file" ->
-	  if get
-	  then [name,`String value]
-	  else
-	    let elt = (Unsafe.coerce elt:file_input t) in
-	    (match Optdef.to_option (elt##files) with
-	      | None -> []
-	      | Some list ->
-		if list##length = 0
-		then [name,`String (Js.string "")]
-		else
-		  match Optdef.to_option (elt##multiple) with
-		    | None
-		    | Some false ->
-		      (match Optdef.to_option (list##item(0)) with
-			| None -> []
-			| Some file -> [name,`File file])
-		    | Some true ->
-		      filter_map (fun f ->
-			match Optdef.to_option f with
-			  | None -> None
-			  | Some file -> Some (name,`File file))
-			(Array.to_list (Array.init (list##length) (fun i -> list##item(i)))))
-	| _ -> [name,`String value]
+  if have_content (elt:>submittableElement t)
+  then
+    let name = to_string (elt##name) in
+    let value = elt##value in
+    match String.lowercase (to_string (elt##_type)) with
+      | "checkbox"
+      | "radio" ->
+	if to_bool (elt##checked)
+	then [name,`String value]
+	else []
+      | "submit"
+      | "reset" -> []
+      | "text"
+      | "password" -> [name,`String value]
+      | "file" ->
+	if get
+	then [name,`String value]
+	else
+	  let elt = (Unsafe.coerce elt:file_input t) in
+	  (match Optdef.to_option (elt##files) with
+	    | None -> []
+	    | Some list ->
+	      if list##length = 0
+	      then [name,`String (Js.string "")]
+	      else
+		match Optdef.to_option (elt##multiple) with
+		  | None
+		  | Some false ->
+		    (match Optdef.to_option (list##item(0)) with
+		      | None -> []
+		      | Some file -> [name,`File file])
+		  | Some true ->
+		    filter_map (fun f ->
+		      match Optdef.to_option f with
+			| None -> None
+			| Some file -> Some (name,`File file))
+		      (Array.to_list (Array.init (list##length)
+					(fun i -> list##item(i)))))
+      | _ -> [name,`String value]
+  else []
 
 let form_contents ?get (form:formElement t) =
   let length = form##elements##length in
@@ -103,7 +126,8 @@ let form_contents ?get (form:formElement t) =
 	     match tagged v with
 	       | Select v -> get_select_val v
 	       | Input v -> get_input_val ?get v
-	       | _ -> [] (* shouldn't happen *) )
+	       | Textarea v -> get_textarea_val v
+	       | _ -> [] )
 	 elements)
   in
   contents
