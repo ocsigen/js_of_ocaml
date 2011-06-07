@@ -25,3 +25,5 @@ val post_form_contents : Dom_html.formElement t -> form_contents
 val get_form_contents : Dom_html.formElement t -> (string * string) list
 
 val empty_form_contents : unit -> form_contents
+
+val form_elements : ?get:bool -> Dom_html.formElement t -> (string * form_elt) list

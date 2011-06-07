@@ -112,7 +112,7 @@ let get_input_val ?(get=false) (elt:inputElement t) =
       | _ -> [name,`String value]
   else []
 
-let form_contents ?get (form:formElement t) =
+let form_elements ?get (form:formElement t) =
   let length = form##elements##length in
   let elements = Array.to_list
     (Array.init length
@@ -147,10 +147,10 @@ let empty_form_contents () =
 
 let post_form_contents form =
   let contents = empty_form_contents () in
-  List.iter (append contents) (form_contents form);
+  List.iter (append contents) (form_elements form);
   contents
 
 let get_form_contents form =
   List.map (function
   | name, `String s -> name, to_string s
-  | _ -> assert false) (form_contents ~get:true form)
+  | _ -> assert false) (form_elements ~get:true form)
