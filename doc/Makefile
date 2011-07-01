@@ -12,4 +12,4 @@ api-html/index.html: ${MLIS} api-index
 	   -d api-html -I ../lib -I ../lib/deriving_json ${MLIS}
 
 clean:
-	rm -r api-html/*
+	-rm -rf api-html/*
