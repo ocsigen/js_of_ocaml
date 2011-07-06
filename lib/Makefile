@@ -6,6 +6,7 @@ OBJS=$(MLOBJS) $(COBJS)
 JSON_OBJS=$(addprefix deriving_json/,deriving_bi_outbuf.cmo deriving_Json_lexer.cmo deriving_Json.cmo)
 
 include ../Makefile.conf
+-include ../Makefile.local
 
 ifneq "${DERIVING}" ""
 PA_DERIVING=syntax/pa_deriving_Json.cmo

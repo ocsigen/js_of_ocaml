@@ -1,5 +1,6 @@
 
 include ../../Makefile.conf
+-include ../../Makefile.local
 
 COMP=../../compiler/$(COMPILER)
 JSFILES=../../runtime/runtime.js

@@ -5,6 +5,8 @@ OBJS=toplevel.cmo
 all: $(NAME).js
 
 include ../Makefile.conf
+-include ../Makefile.local
+
 COMP=../compiler/$(COMPILER)
 JSFILES=../runtime/runtime.js ../runtime/weak.js toplevel_runtime.js
 OCAMLC=ocamlfind ocamlc -package lwt,str -pp "camlp4o ../lib/syntax/pa_js.cmo" -I ../lib -I ../compiler

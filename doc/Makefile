@@ -1,5 +1,6 @@
 
 include ../Makefile.conf
+-include ../Makefile.local
 include ../Makefile.filelist
 
 MLIS := ${addprefix ../, ${DOC}}

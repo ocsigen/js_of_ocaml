@@ -2,6 +2,7 @@
 all: check_lwt compiler library doc runtime examples
 
 include Makefile.conf
+-include Makefile.local
 
 .PHONY: compiler library runtime examples check_lwt doc
 
