@@ -100,7 +100,7 @@ class type element = object
   method setAttribute : js_string t -> js_string t -> unit meth
   method removeAttribute : js_string t -> unit meth
   method hasAttribute : js_string t -> bool t meth
-  method getElementsByTagName : js_string t -> 'element nodeList t meth
+  method getElementsByTagName : js_string t -> element nodeList t meth
   method classList : tokenList t readonly_prop
 end
 
