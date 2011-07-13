@@ -75,7 +75,7 @@ function caml_js_new(c, a) {
 function caml_js_wrap_callback(f) {
   var toArray = Array.prototype.slice;
   return function () {
-    var args = (arguments.length > 0)?toArray.call (arguments):[0];
+    var args = (arguments.length > 0)?toArray.call (arguments):[undefined];
     return caml_call_gen(f, args);
   }
 }
