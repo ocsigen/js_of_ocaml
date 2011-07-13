@@ -1,5 +1,3 @@
-(*pp $CAMLP4OF *)
-
 (* Js_of_ocaml
  * http://www.ocsigen.org
  * Copyright Grégoire Henry 2010.
