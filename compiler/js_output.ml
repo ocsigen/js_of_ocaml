@@ -257,9 +257,9 @@ let rec expression l f e =
       if l > 15 then Format.fprintf f "@[<1>(";
       Format.fprintf f "%a.%s" (expression 15) e nm;
       if l > 15 then Format.fprintf f ")@]"
-  | ENew (e, None) ->
+  | ENew (e, None) -> (*FIX: should omit parentheses when possible*)
       if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<1>new %a@]" (expression 16) e;
+      Format.fprintf f "@[<1>new %a()@]" (expression 16) e;
       if l > 15 then Format.fprintf f ")@]"
   | ENew (e, Some el) ->
       if l > 15 then Format.fprintf f "@[<1>(";
