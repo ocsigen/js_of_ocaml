@@ -1,3 +1,14 @@
+===== 1.0.3 (2011-17-13) =====
+
+ * Bugfixes:
+   ** 'caml_int_of_string' was incorrect for negative number
+   ** Fixed misparenthesized Javascript 'new' expressions
+ * Libraries:
+   ** Add a CSS module
+   ** export Form.form_elements
+   ** add onsubmit method to Dom_html.formElement
+   ** add classList property to dom elements
+
 ===== 1.0.2 (2011-04-13) =====
 
  * Bugfixes:
