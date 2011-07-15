@@ -1,3 +1,11 @@
+(* Js_of_ocaml examples
+ * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2008 Benjamin Canou
+ *
+ *           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
+ *  TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
+ *
+ *)
 
 module Html = Dom_html
 let js = Js.string
