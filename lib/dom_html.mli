@@ -191,6 +191,11 @@ and eventTarget = object ('self)
   method onkeyup : ('self t, keyboardEvent t) event_listener writeonly_prop
 end
 
+and popStateEvent = object
+  inherit event
+  method state : Js.Unsafe.any readonly_prop
+end
+
 (** {2 HTML elements} *)
 
 (** Properties common to all HTML elements *)
@@ -803,7 +808,13 @@ end
 
 (** Browser history information *)
 class type history = object
-(*...*)
+  method length : int readonly_prop
+  method state : Js.Unsafe.any readonly_prop
+  method go : int opt -> unit meth
+  method back : unit meth
+  method forward : unit meth
+  method pushState : Js.Unsafe.any -> js_string t -> js_string t opt -> unit meth
+  method replaceState : Js.Unsafe.any -> js_string t -> js_string t opt -> unit meth
 end
 
 (** Undo manager *)
@@ -852,6 +863,7 @@ class type window = object
   method onblur : (window t, event t) event_listener prop
   method onfocus : (window t, event t) event_listener prop
   method onresize : (window t, event t) event_listener prop
+  method onpopstate : (window t, popStateEvent t) event_listener prop
 end
 
 val window : window t
