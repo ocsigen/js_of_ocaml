@@ -118,6 +118,7 @@ let partition_string_file l = List.partition (function
 (** type of the http headers *)
 type http_frame =
     {
+      url: string;
       code: int;
       headers: string -> string option;
       content: string;
@@ -182,7 +183,8 @@ let perform_raw_url
     (fun _ ->
       if req##readyState = DONE then
         Lwt.wakeup w
-          {code = req##status;
+          {url = url;
+	   code = req##status;
            content = Js.to_string req##responseText;
            headers =
               (fun s ->

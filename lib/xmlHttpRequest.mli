@@ -52,6 +52,7 @@ val create : unit -> xmlHttpRequest t
 
 type http_frame =
     {
+      url: string;
       code: int;
       headers: string -> string option;
       content: string;
