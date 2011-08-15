@@ -272,7 +272,7 @@ function caml_string_lessthan(s1, s2) { return s1.lessThan(s2); }
 function caml_string_greaterthan(s1, s2) { return s2.lessThan(s1); }
 //Provides: caml_string_greaterequal
 //Requires: MlString
-function caml_string_greaterequal(s1, s2) { return s2.lessThan(s1); }
+function caml_string_greaterequal(s1, s2) { return s2.lessEqual(s1); }
 //Provides: caml_blit_string
 //Requires: MlString
 function caml_blit_string(s1, i1, s2, i2, len) {
