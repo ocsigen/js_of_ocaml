@@ -707,3 +707,91 @@ let ml c =
 end
 
 
+module Length = struct
+  (* http://www.w3.org/TR/css3-values/#lengths *)
+
+  (*TODO:
+  type js_t = private Js.string Js.t
+  val js_t_of_t
+  val t_of_js_t
+  val t_of_string
+  *)
+
+  type t =
+    | Zero
+    (*relative*)
+    | Em  of float
+    | Ex  of float
+    | Px  of float
+    | Gd  of float
+    | Rem of float
+    | Vw  of float
+    | Vh  of float
+    | Vm  of float
+    | Ch  of float
+    (*absolute*)
+    | Mm of float
+    | Cm of float
+    | In of float
+    | Pt of float
+    | Pc of float
+
+  let string_of_t = function
+    | Zero  -> "0"
+    | Em  f -> Printf.sprintf "%f%s" f "em"
+    | Ex  f -> Printf.sprintf "%f%s" f "ex"
+    | Px  f -> Printf.sprintf "%f%s" f "px"
+    | Gd  f -> Printf.sprintf "%f%s" f "gd"
+    | Rem f -> Printf.sprintf "%f%s" f "rem"
+    | Vw  f -> Printf.sprintf "%f%s" f "vw"
+    | Vh  f -> Printf.sprintf "%f%s" f "vh"
+    | Vm  f -> Printf.sprintf "%f%s" f "vm"
+    | Ch  f -> Printf.sprintf "%f%s" f "ch"
+    | Mm  f -> Printf.sprintf "%f%s" f "mm"
+    | Cm  f -> Printf.sprintf "%f%s" f "cm"
+    | In  f -> Printf.sprintf "%f%s" f "in"
+    | Pt  f -> Printf.sprintf "%f%s" f "pt"
+    | Pc  f -> Printf.sprintf "%f%s" f "pc"
+
+  type js_t = Js.js_string Js.t
+
+  let js t = Js.string (string_of_t t)
+
+  let ml t =
+    let s = Js.to_string t in
+    if s = "0" then
+      Zero
+    else
+      let fail () = raise (Invalid_argument (s ^ " is not a valid length")) in
+      let re = Regexp.regexp "^(\\d*(?:\\.\\d*)?)\\s*(\\S*)$" in
+      match Regexp.string_match re s 0 with
+      | None -> fail ()
+      | Some r ->
+        let f = match Regexp.matched_group r 1 with
+          | None -> fail ()
+          | Some f ->
+            try float_of_string f
+            with Invalid_argument s ->
+              raise (Invalid_argument ("length conversion error: " ^ s))
+        in
+        match Regexp.matched_group r 2 with
+        | None -> fail ()
+        | Some "em"  -> Em  f
+        | Some "ex"  -> Ex  f
+        | Some "px"  -> Px  f
+        | Some "gd"  -> Gd  f
+        | Some "rem" -> Rem f
+        | Some "vw"  -> Vw  f
+        | Some "vh"  -> Vh  f
+        | Some "vm"  -> Vm  f
+        | Some "ch"  -> Ch  f
+        | Some "mm"  -> Mm  f
+        | Some "cm"  -> Cm  f
+        | Some "in"  -> In  f
+        | Some "pt"  -> Pt  f
+        | Some "pc"  -> Pc  f
+        | Some _     -> fail ()
+
+
+
+end
