@@ -21,14 +21,27 @@
 (**This module contains a few types and values to ease the use of CSS properties
    and such. If you think a feature is missing, consider sending a patch or an
    RFE to the mailing list.
+
+   This module contain submodules each with a signature similar to:
+     type t            (*type the module is focused on*)
+     type js_t         (*valid js representation of values of type t*)
+     val js: t -> js_t (*conversion*)
+     val ml: js_t -> t (*conversion*)
+
+    Additional functions (string conversion, standard operation, etc.) are
+    sometime available. Some module have several different types instead of just
+    one.
+
 *)
+
+module Color : sig
 
 (**All about CSS colors. MDC documentation here:
   https://developer.mozilla.org/en/CSS/color_value . Specifications here:
   http://www.w3.org/TR/css3-color/#svg-color .*)
 
 (**The colors by name.*)
-type color_name =
+type name =
   | Aliceblue | Antiquewhite | Aqua | Aquamarine | Azure
   | Beige | Bisque | Black | Blanchedalmond | Blue | Blueviolet | Brown
   | Burlywood
@@ -66,18 +79,18 @@ type color_name =
   | Yellow | Yellowgreen
 
 (**Gives the string equivalent of the argument.*)
-val string_of_color_name : color_name -> string
+val string_of_name : name -> string
 
 (**Converts a color name into three integers representing the Red, Green and
   Blue channels. Channel values are in between [0] and [255].*)
-val rgb_of_color_name : color_name -> (int * int * int)
+val rgb_of_name : name -> (int * int * int)
 
 
 (**The type of colors, either by name, by Red-Green-Blue constructor or by
    Hue-Saturation-Lightness constructors.*)
-type color =
+type t =
 
-  | Color_name of color_name
+  | Name of name
   (**A color by name*)
 
   | RGB of (int * int * int)
@@ -107,23 +120,28 @@ type color =
 
 (**build a color from the values of red, green, and blue channels. optional [a]
    argument can be used to specify alpha channel (aka opacity).*)
-val rgb : ?a:float -> int -> int -> int -> color
+val rgb : ?a:float -> int -> int -> int -> t
 
 (**build a color from the values of hue, saturation, and lightness channels.
    optional [a] argument can be used to specify alpha channel (aka opacity).*)
-val hsl : ?a:float -> int -> int -> int -> color
+val hsl : ?a:float -> int -> int -> int -> t
 
-(**Return a string representation of a color.*)
-val string_of_color : color -> string
-
-(**A [js_color] is a valid string representation of a CSS color*)
-type js_color = private Js.js_string Js.t
+(**A [js_t] is a valid string representation of a CSS color*)
+type js_t = private Js.js_string Js.t
 
 (**A few conversion functions*)
 
-(**Projection from OCam to Js. [color c] is equivalent
+val string_of_t: t -> string
+
+(**Projection from OCaml to Js. [js c] is equivalent
    to [Js.string (string_of_color c)].*)
-val color : color -> js_color
+val js : t -> js_t
+
+(**Projection from Js to OCaml.*)
+val ml: js_t -> t
 
 (**Checks the well-formedness of a string or fails with [Invalid_argument]*)
-val js_color_of_js_string : Js.js_string Js.t -> js_color
+val js_t_of_js_string : Js.js_string Js.t -> js_t
+
+end
+

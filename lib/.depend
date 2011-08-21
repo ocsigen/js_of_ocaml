@@ -1,5 +1,5 @@
-CSS.cmo: js.cmi CSS.cmi
-CSS.cmx: js.cmx CSS.cmi
+CSS.cmo: regexp.cmi js.cmi CSS.cmi
+CSS.cmx: regexp.cmx js.cmx CSS.cmi
 dom_events.cmo: js.cmi dom_html.cmi dom_events.cmi
 dom_events.cmx: js.cmx dom_html.cmx dom_events.cmi
 dom_html.cmo: js.cmi dom.cmi dom_html.cmi

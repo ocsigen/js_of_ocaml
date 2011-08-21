@@ -119,26 +119,33 @@ let () = log_start "Colors test suite"
 
 let () =
   let cols = [
-    CSS.RGB(120,  3, 56);
-    CSS.RGBA(120,  3, 56,1.);
-    CSS.RGB_percent( 10, 3,60);
-    CSS.RGBA_percent(100,53,60, 0.45);
-    CSS.HSL(120,75,56);
-    CSS.HSLA(180, 3,56,0.2);
-    CSS.RGB (CSS.rgb_of_color_name CSS.Dodgerblue);
-    CSS.RGB (CSS.rgb_of_color_name CSS.Pink);
-    CSS.Color_name CSS.Hotpink;
-    CSS.Color_name CSS.Cornsilk;
+    CSS.Color.RGB(120, 3, 56);
+    CSS.Color.RGBA(120, 3, 56,1.);
+    CSS.Color.RGB_percent(10, 3,60);
+    CSS.Color.RGBA_percent(100,53,60,0.45);
+    CSS.Color.HSL(120,75,56);
+    CSS.Color.HSLA(180, 3,56,0.2);
+    CSS.Color.RGB (CSS.Color.rgb_of_name CSS.Color.Dodgerblue);
+    CSS.Color.RGB (CSS.Color.rgb_of_name CSS.Color.Pink);
+    CSS.Color.Name CSS.Color.Hotpink;
+    CSS.Color.Name CSS.Color.Cornsilk;
   ]
   in
   List.iter
     (fun c ->
       try
-        let c = CSS.string_of_color c in
-        let (_: CSS.js_color) = CSS.js_color_of_js_string (Js.string c) in
-        log_success c
+        let js = CSS.Color.js c  in
+        let ml = CSS.Color.ml js in
+        if c = ml then
+          log_success (CSS.Color.string_of_t c)
+        else
+          log_failure (Printf.sprintf "%s   %s"
+            (CSS.Color.string_of_t c)
+            (CSS.Color.string_of_t ml)
+            )
       with
         | Invalid_argument s -> log_failure s
+        | Failure s -> log_failure s
     )
     cols
 
