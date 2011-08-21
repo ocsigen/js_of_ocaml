@@ -131,13 +131,14 @@ type js_t = private Js.js_string Js.t
 
 (**A few conversion functions*)
 
+(**Convert to a string representation (for debugging purpose mainly).*)
 val string_of_t: t -> string
 
 (**Projection from OCaml to Js. [js c] is equivalent
-   to [Js.string (string_of_color c)].*)
+to [Js.string (string_of_t c)] but with a [js_t] return type.*)
 val js : t -> js_t
 
-(**Projection from Js to OCaml.*)
+(**Projection from Js to OCaml. The function is the dual of [js].*)
 val ml: js_t -> t
 
 (**Checks the well-formedness of a string or fails with [Invalid_argument]*)
