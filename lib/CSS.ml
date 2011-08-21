@@ -363,7 +363,7 @@ type color =
        browsers.*)
 
   | RGB_percent of (int * int * int)
-    (**RBG channels are specified as a percentage of their maximal value.*)
+    (**RGB channels are specified as a percentage of their maximal value.*)
 
   | RGBA of (int * int * int * float)
     (**Same as RGB with additionnal transparency argument. Opacity should be in
