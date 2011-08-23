@@ -99,7 +99,7 @@ var caml_input_value_from_string = function (){
     var num_objects = reader.read32u ();
     var size_32 = reader.read32u ();
     var size_64 = reader.read32u ();
-
+    var stack = [];
     var intern_obj_table = (num_objects > 0)?[]:null;
     var obj_counter = 0;
     function intern_rec () {
@@ -112,7 +112,7 @@ var caml_input_value_from_string = function (){
           var v = [tag];
           if (size == 0) return v;
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-          for(var d = 1; d <= size; d++) v [d] = intern_rec ();
+          stack.push(v, size);
           return v;
         } else
           return (code & 0x3F);
@@ -149,8 +149,9 @@ var caml_input_value_from_string = function (){
             var tag = header & 0xFF;
             var size = header >> 10;
             var v = [tag];
+            if (size == 0) return v;
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            for (var d = 1; d <= size; d++) v[d] = intern_rec ();
+            stack.push(v, size);
             return v;
           case cst.CODE_BLOCK64:
             caml_failwith ("input_value: data block too large");
@@ -242,6 +243,13 @@ var caml_input_value_from_string = function (){
       }
     }
     var res = intern_rec ();
+    while (stack.length > 0) {
+      var size = stack.pop();
+      var v = stack.pop();
+      var d = v.length;
+      if (d < size) stack.push(v, size);
+      v[d] = intern_rec ();
+    }
     s.offset = reader.i;
     return res;
   }
@@ -287,6 +295,7 @@ var caml_output_val = function (){
   }
   return function (v) {
     var writer = new Writer ();
+    var stack = [];
     function extern_rec (v) {
       var cst = caml_marshal_constants;
       if (v instanceof Array && v[0] == (v[0]|0)) {
@@ -306,7 +315,7 @@ var caml_output_val = function (){
           writer.write_code(32, cst.CODE_BLOCK32, (v.length << 10) | v[0]);
         writer.size_32 += v.length;
         writer.size_64 += v.length;
-        for (var i = 1; i < v.length; i++) extern_rec (v[i]);
+        if (v.length > 1) stack.push (v, 1);
       } else if (v instanceof MlString) {
         var len = v.getLen();
         if (len < 0x20)
@@ -333,6 +342,12 @@ var caml_output_val = function (){
       }
     }
     extern_rec (v);
+    while (stack.length > 0) {
+      var i = stack.pop ();
+      var v = stack.pop ();
+      if (i + 1 < v.length) stack.push (v, i + 1);
+      extern_rec (v[i]);
+    }
     writer.finalize ();
     return writer.chunk;
   }
