@@ -160,50 +160,63 @@ function caml_make_vect (len, init) {
 //Provides: caml_compare_val
 //Requires: MlString, caml_int64_compare, caml_int_compare
 function caml_compare_val (a, b, total) {
-  if (a === b && total) return 0;
-  if (a instanceof MlString) {
-    if (b instanceof MlString)
-      return (a == b)?0:a.compare(b)
-    else
-      // Should not happen
-      return 1;
-  } else if (a instanceof Array && a[0] == (a[0]|0)) {
-    // Forward object
-    var ta = a[0];
-    if (ta === 250) return caml_compare_val (a[1], b, total);
-    if (b instanceof Array && b[0] == (b[0]|0)) {
-      // Forward object
-      var tb = b[0];
-      if (tb === 250) return caml_compare_val (a, b[1], total);
-      if (ta != tb) return (ta < tb)?-1:1;
-      switch (ta) {
-      case 248:
-        // Object
-        return caml_int_compare(a[2], b[2]);
-      case 255:
-        // Int64
-        return caml_int64_compare(a, b);
-      default:
-        if (a.length != b.length) return (a.length < b.length)?-1:1;
-        for (var i = 1; i < a.length; i++) {
-          var t = caml_compare_val (a[i], b[i], total);
-          if (t != 0) return t;
+  var stack = [];
+  for(;;) {
+    if (!(total && a === b)) {
+      if (a instanceof MlString) {
+        if (b instanceof MlString) {
+          if (a != b) return a.compare(b);
+        } else
+          // Should not happen
+          return 1;
+      } else if (a instanceof Array && a[0] == (a[0]|0)) {
+        // Forward object
+        var ta = a[0];
+        if (ta === 250) {
+          a = a[1];
+          continue;
+        } else if (b instanceof Array && b[0] == (b[0]|0)) {
+          // Forward object
+          var tb = b[0];
+          if (tb === 250) {
+            b = b[1];
+            continue;
+          } else if (ta != tb) {
+            return (ta < tb)?-1:1;
+          } else {
+            switch (ta) {
+            case 248:
+              // Object
+              return caml_int_compare(a[2], b[2]);
+            case 255:
+              // Int64
+              return caml_int64_compare(a, b);
+            default:
+              if (a.length != b.length) return (a.length < b.length)?-1:1;
+              if (a.length > 1) stack.push(a, b, 1);
+            }
+          }
+        } else
+          return 1;
+      } else if (b instanceof MlString ||
+                 (b instanceof Array && b[0] == (b[0]|0))) {
+        return -1;
+      } else {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        if (total && a != b) {
+          if (a == a) return 1;
+          if (b == b) return -1;
         }
-        return 0;
       }
-    } else
-      return 1;
-  } else if (b instanceof MlString || (b instanceof Array && b[0] == (b[0]|0)))
-    return -1;
-  else {
-    if (a < b) return -1;
-    if (a > b) return 1;
-    if (a != b) {
-      if (!total) return 0;
-      if (a == a) return 1;
-      if (b == b) return -1;
     }
-    return 0;
+    if (stack.length == 0) return 0;
+    var i = stack.pop();
+    b = stack.pop();
+    a = stack.pop();
+    if (i + 1 < a.length) stack.push(a, b, i + 1);
+    a = a[i];
+    b = b[i];
   }
 }
 //Provides: caml_compare
