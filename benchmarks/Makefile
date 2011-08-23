@@ -117,7 +117,7 @@ size.gpl: __run __missingsizes
 	 -append unison \
 	 -max 3 -ylabel Size -script \
 	 -svg 7 650 150 \
-	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 24.75,1.80\nplot/smg' \
+	| perl -pe 'BEGIN{undef $$/;} s/e\nplot/e\nset key at 23.75,1.80\nplot/smg' \
 	 > $@
 
 time-optim.svg: __run
