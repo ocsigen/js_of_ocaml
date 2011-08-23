@@ -354,14 +354,14 @@ var caml_output_val = function (){
 } ();
 
 //Provides: caml_output_value_to_string mutable
-//Requires: caml_output_val
+//Requires: caml_output_val, MlStringFromArray
 function caml_output_value_to_string (v, fl) {
   /* ignores flags... */
   return new MlStringFromArray (caml_output_val (v));
 }
 
 //Provides: caml_output_value_to_buffer
-//Requires: caml_output_val, caml_failwith
+//Requires: caml_output_val, caml_failwith, caml_blit_string
 function caml_output_value_to_buffer (s, ofs, len, v, fl) {
   /* ignores flags... */
   var t = caml_output_val (v);
