@@ -18,9 +18,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let log_success s =
-  Firebug.console##log_2 (Js.string "\tSUCCESS: ", Js.string s)
+let success_count = ref 0
+let test_count = ref 0
+
+let log_success () = incr success_count; incr test_count
 let log_failure s =
+  incr test_count;
   Firebug.console##log_2 (Js.string "\tFAILURE: ", Js.string s)
 
 let log_start s =
@@ -44,22 +47,17 @@ let () = match Url.Current.get () with
   | Some u -> match url_string_url u with
     | None -> log_failure "can't parse pretty-printed url"
     | Some v ->
-       if u = v
-       then (log_success "fixpoint acheived";
-             log (Url.string_of_url u)
-       )
-       else (log_failure "no fixpoint";
-             log (Url.string_of_url u);
-             log (Url.string_of_url v)
-       )
+       if u = v then
+         log_success ()
+       else
+         log_failure "no fixpoint"
 let () =
   let t1 = Url.urlencode "/toto+ blah&tutu" in
   let t2 = Url.urlencode ~with_plus:false "/toto+ blah&tutu" in
-  if t1 = "/toto%2B%20blah%26tutu" && t2 = "/toto+%20blah%26tutu"
-  then (log_success "escaping works";
-        log t2)
-  else (log_failure "escaping error";
-        log t1; log t2)
+  if t1 = "/toto%2B%20blah%26tutu" && t2 = "/toto+%20blah%26tutu" then
+    log_success ()
+  else
+    log_failure "escaping error"
 
 
 let () = log_stop "Url test suite"
@@ -80,33 +78,37 @@ let () =
     | None -> log_failure "Can't match 1 1"
     | Some r ->
         let x = Regexp.matched_string r in
-        if x = "a"
-        then log_success "Match 1 1"
-        else log_failure ("Wrong match 1 1: " ^ x)
+        if x = "a" then
+          log_success ()
+        else
+          log_failure ("Wrong match 1 1: " ^ x)
   end;
   begin match Regexp.string_match re1 s2 0 with
     | None -> log_failure "Can't match 1 2"
     | Some r ->
         let x = Regexp.matched_string r in
-        if x = "ab"
-        then log_success "Match 1 2"
-        else log_failure ("Wrong match 1 2: " ^ x)
+        if x = "ab" then
+          log_success ()
+        else
+          log_failure ("Wrong match 1 2: " ^ x)
   end;
   begin
-    if Regexp.split re2 s2 = ["rr";"ee";"ab";"a";"b";"bb";"a";"ee";""]
-    then log_success "Split 2 2"
-    else log_failure "Wrong split 2 2"
+    let l = Regexp.split re2 s2 in
+    if l = ["rr";"ee";"ab";"a";"b";"bb";"a";"ee";""] then
+      log_success ()
+    else
+      log_failure "Wrong split 2 2"
   end ;
   begin
     let x = Regexp.global_replace re2 s2 "" in
-    if x = "rreeababbbaee"
-    then log_success "Replace 2 2"
-    else log_failure ("Wrong replacement 2 2: " ^ x)
+    if x = "rreeababbbaee" then
+      log_success ()
+    else
+      log_failure ("Wrong replacement 2 2: " ^ x)
   end ;
-  begin
-    match Regexp.string_match re3 "(.)\\(.)" 0 with
-      | None -> log_failure "Quote 3 3"
-      | Some x -> log_success "Quote 3 3"
+  begin match Regexp.string_match re3 "(.)\\(.)" 0 with
+    | None -> log_failure "Quote 3 3"
+    | Some x -> log_success ()
   end
 
 
@@ -115,7 +117,7 @@ let () = log_stop "Regexp test suite"
 
 (* Tests Colors *)
 
-let () = log_start "Colors test suite"
+let () = log_start "CSS.Colors test suite"
 
 let () =
   let cols = [
@@ -137,7 +139,7 @@ let () =
         let js = CSS.Color.js c  in
         let ml = CSS.Color.ml js in
         if c = ml then
-          log_success (CSS.Color.string_of_t c)
+          log_success ()
         else
           log_failure (Printf.sprintf "%s   %s"
             (CSS.Color.string_of_t c)
@@ -149,7 +151,7 @@ let () =
     )
     cols
 
-let () = log_stop "Colors test suite"
+let () = log_stop "CSS.Colors test suite"
 
 
 (* CSS.Length testing *)
@@ -181,7 +183,7 @@ let () =
         let js = CSS.Length.js c  in
         let ml = CSS.Length.ml js in
         if c = ml then
-          log_success (CSS.Length.string_of_t c)
+          log_success ()
         else
           log_failure (Printf.sprintf "%s   %s"
             (CSS.Length.string_of_t c)
@@ -196,4 +198,13 @@ let () =
 
 let () = log_stop "CSS.Length test suite"
 
+
+
+let () =
+  Firebug.console##log(
+    Js.string (
+      Printf.sprintf "Test results: %d sucesses out of %d tests"
+        !success_count !test_count
+      )
+    )
 
