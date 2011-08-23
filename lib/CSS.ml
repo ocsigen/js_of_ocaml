@@ -795,3 +795,45 @@ module Length = struct
 
 
 end
+
+module Angle = struct
+
+  type t =
+    | Deg   of float
+    | Grad  of float
+    | Rad   of float
+    | Turns of float
+
+  let string_of_t = function
+    | Deg   f -> Printf.sprintf "%f%s" f "deg"
+    | Grad  f -> Printf.sprintf "%f%s" f "grad"
+    | Rad   f -> Printf.sprintf "%f%s" f "rad"
+    | Turns f -> Printf.sprintf "%f%s" f "turns"
+
+  type js_t = Js.js_string Js.t
+
+  let js t = Js.string (string_of_t t)
+
+  let ml j =
+    let s = Js.to_string j in
+    let re = Regexp.regexp "^(\\d*(?:\\.\\d*))(deg|grad|rad|turns)$" in
+    let fail () = raise (Invalid_argument (s ^ " is not a valid length")) in
+    match Regexp.string_match re s 0 with
+    | None -> fail ()
+    | Some r ->
+      let f = match Regexp.matched_group r 1 with
+        | None -> fail ()
+        | Some f ->
+          try float_of_string f
+          with Invalid_argument s ->
+            raise (Invalid_argument ("length conversion error: " ^ s))
+      in
+      match Regexp.matched_group r 2 with
+      | Some "deg"    -> Deg f
+      | Some "grad"   -> Grad f
+      | Some "rad"    -> Rad f
+      | Some "turns"  -> Turns f
+      | Some _ | None -> fail ()
+
+
+end
