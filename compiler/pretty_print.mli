@@ -18,6 +18,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val statement : Pretty_print.t -> Javascript.statement -> unit
+type t
 
-val program : Pretty_print.t -> Javascript.function_body -> unit
+val string : t -> string -> unit
+
+val genbreak : t -> string -> int -> unit
+val break : t -> unit
+val space : t -> unit
+
+val start_group : t -> int -> unit
+val end_group : t -> unit
+
+val newline : t -> unit
+
+val to_out_channel : out_channel -> t
+val to_buffer : Buffer.t -> t
+
+val set_compact : t -> bool -> unit

@@ -1356,10 +1356,11 @@ let f ch ?(standalone=true) ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let ctx = Ctx.initial blocks live_vars mutated_vars in
   let p = compile_program standalone ctx pc in
-  if !compact then Format.pp_set_margin ch 999999998;
+  if !compact then Pretty_print.set_compact ch true;
   if standalone then begin
-    Format.fprintf ch
-      "// This program was compiled from OCaml by js_of_ocaml 1.0@.";
+    Pretty_print.string ch
+      "// This program was compiled from OCaml by js_of_ocaml 1.0";
+    Pretty_print.newline ch;
     let missing = Linker.resolve_deps !compact ch (Primitive.get_used ()) in
     list_missing missing
   end;

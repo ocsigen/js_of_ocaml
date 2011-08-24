@@ -37,10 +37,10 @@ let f js_files input_file output_file =
   let output_program = Driver.f p in
   match output_file with
     None ->
-      output_program Format.std_formatter
+      output_program (Pretty_print.to_out_channel stdout)
   | Some f ->
       let ch = open_out f in
-      output_program (Format.formatter_of_out_channel ch);
+      output_program (Pretty_print.to_out_channel ch);
       close_out ch
 
 let _ =

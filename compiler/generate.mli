@@ -20,5 +20,5 @@
 
 val set_pretty : unit -> unit
 
-val f : Format.formatter -> ?standalone:bool ->
+val f : Pretty_print.t -> ?standalone:bool ->
         Code.program -> int array -> unit

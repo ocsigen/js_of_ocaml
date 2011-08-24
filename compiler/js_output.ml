@@ -31,16 +31,19 @@ XXX Beware automatic semi-colon insertion...
 
 open Javascript
 
+module PP = Pretty_print
+
 let opt_identifier f i =
   match i with
     None   -> ()
-  | Some i -> Format.fprintf f "@ %s" i
+  | Some i -> PP.space f; PP.string f i
 
 let rec formal_parameter_list f l =
   match l with
     []     -> ()
-  | [i]    -> Format.fprintf f "%s" i
-  | i :: r -> Format.fprintf f "%s,@,%a" i formal_parameter_list r
+  | [i]    -> PP.string f i
+  | i :: r -> PP.string f i; PP.string f ","; PP.break f;
+              formal_parameter_list f r
 
 (*
  0 Expression
@@ -185,33 +188,63 @@ let string_escape s =
 let rec expression l f e =
   match e with
     EVar v ->
-      Format.fprintf f "%s" v
+      PP.string f v
   | ESeq (e1, e2) ->
-      if l > 0 then
-        Format.fprintf f "@[<1>(%a,@,%a)@]" (expression 0) e1 (expression 1) e2
-      else
-        Format.fprintf f "%a,@,%a" (expression 0) e1 (expression 1) e2
+      if l > 0 then begin PP.start_group f 1; PP.string f "(" end;
+      expression 0 f e1;
+      PP.string f ",";
+      PP.break f;
+      expression 0 f e2;
+      if l > 0 then begin PP.string f ")"; PP.end_group f end
   | EFun (i, l, b) ->
-      Format.fprintf f "@[<1>function%a@,@[<1>(%a)@]@,@[<1>{%a}@]@]"
-        opt_identifier i formal_parameter_list l function_body b
+      PP.start_group f 1;
+      PP.start_group f 0;
+      PP.start_group f 0;
+      PP.string f "function";
+      opt_identifier f i;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      formal_parameter_list f l;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "{";
+      function_body f b;
+      PP.string f "}";
+      PP.end_group f;
+      PP.end_group f
   | ECall (e, el) ->
-      if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<1>%a@,@[<1>(%a)@]@]" (expression 15) e arguments el;
-      if l > 15 then Format.fprintf f ")@]"
+      if l > 15 then begin PP.start_group f 1; PP.string f "(" end;
+      PP.start_group f 1;
+      expression 15 f e;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      arguments f el;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      if l > 15 then begin PP.string f ")"; PP.end_group f end
   | EStr (s, `Bytes) ->
-      Format.fprintf f "\"%s\"" (string_escape s)
+      PP.string f "\"";
+      PP.string f (string_escape s);
+      PP.string f "\""
   | EBool b ->
-      if b then Format.fprintf f "true" else Format.fprintf f "false"
+      PP.string f (if b then "true" else "false")
   | ENum v ->
       if v = infinity then
-        Format.fprintf f "Infinity"
+        PP.string f "Infinity"
       else if v = neg_infinity then begin
         if l > 13 then
-          Format.fprintf f "(-Infinity)"
+          PP.string f "(-Infinity)"
         else
-          Format.fprintf f "-Infinity"
+          PP.string f "-Infinity"
       end else if v <> v then
-        Format.fprintf f "NaN"
+        PP.string f "NaN"
       else begin
         let s =
           let s1 = Printf.sprintf "%.12g" v in
@@ -220,66 +253,125 @@ let rec expression l f e =
           if v = float_of_string s2 then s2 else
           Printf.sprintf "%.18g" v
         in
-        if l > 13 && (v < 0. || (v = 0. && 1. /. v < 0.)) then
+        if l > 13 && (v < 0. || (v = 0. && 1. /. v < 0.)) then begin
           (* Negative numbers may need to be parenthesized. *)
-          Format.fprintf f "(%s)" s
-        else
-          Format.fprintf f "%s" s
+          PP.string f "("; PP.string f s; PP.string f ")"
+        end else
+          PP.string f s
       end
   | EUn (Typeof, e) ->
-      if l > 13 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[typeof@ %a@]" (expression 13) e;
-      if l > 13 then Format.fprintf f ")@]"
+      if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
+      PP.start_group f 0;
+      PP.string f "typeof";
+      PP.space f;
+      expression 13 f e;
+      PP.end_group f;
+      if l > 13 then begin PP.string f ")"; PP.end_group f end
   | EUn (op, e) ->
-      if l > 13 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "%s%a" (unop_str op) (expression 13) e;
-      if l > 13 then Format.fprintf f ")@]"
+      if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
+      PP.string f (unop_str op);
+      expression 13 f e;
+      if l > 13 then begin PP.string f ")"; PP.end_group f end
   | EBin (InstanceOf, e1, e2) ->
       let (out, lft, rght) = op_prec InstanceOf in
-      if l > out then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[%a@ instanceof@ %a@]"
-        (expression lft) e1 (expression rght) e2;
-      if l > out then Format.fprintf f ")@]"
+      if l > out then begin PP.start_group f 1; PP.string f "(" end;
+      PP.start_group f 0;
+      expression lft f e1;
+      PP.space f;
+      PP.string f "instanceof";
+      PP.space f;
+      expression rght f e2;
+      PP.end_group f;
+      if l > out then begin PP.string f ")"; PP.end_group f end
   | EBin (op, e1, e2) ->
       let (out, lft, rght) = op_prec op in
-      if l > out then Format.fprintf f "@[<1>(";
-      Format.fprintf f "%a%s@,%a"
-        (expression lft) e1 (op_str op) (expression rght) e2;
-      if l > out then Format.fprintf f ")@]"
+      if l > out then begin PP.start_group f 1; PP.string f "(" end;
+      expression lft f e1;
+      PP.string f (op_str op);
+      PP.break f;
+      expression rght f e2;
+      if l > out then begin PP.string f ")"; PP.end_group f end
   | EArr el ->
-      Format.fprintf f "@[<1>[%a]@]" element_list el
+      PP.start_group f 1;
+      PP.string f "[";
+      element_list f el;
+      PP.string f "]";
+      PP.end_group f
   | EAccess (e, e') ->
-      if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<1>%a@,@[<1>[%a]@]@]"
-        (expression 15) e (expression 0) e';
-      if l > 15 then Format.fprintf f ")@]"
+      if l > 15 then begin PP.start_group f 1; PP.string f "(" end;
+      PP.start_group f 1;
+      expression 15 f e;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "[";
+      expression 0 f e';
+      PP.string f "]";
+      PP.end_group f;
+      PP.end_group f;
+      if l > 15 then begin PP.string f ")"; PP.end_group f end
   | EDot (e, nm) ->
-      if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "%a.%s" (expression 15) e nm;
-      if l > 15 then Format.fprintf f ")@]"
+      if l > 15 then begin PP.start_group f 1; PP.string f "(" end;
+      expression 15 f e;
+      PP.string f ".";
+      PP.string f nm;
+      if l > 15 then begin PP.string f ")"; PP.end_group f end
   | ENew (e, None) -> (*FIX: should omit parentheses when possible*)
-      if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<1>new %a()@]" (expression 16) e;
-      if l > 15 then Format.fprintf f ")@]"
+      if l > 15 then begin PP.start_group f 1; PP.string f "(" end;
+      PP.start_group f 1;
+      PP.string f "new";
+      PP.space f;
+      expression 16 f e;
+      PP.break f;
+      PP.string f "()";
+      PP.end_group f;
+      if l > 15 then begin PP.string f ")"; PP.end_group f end
   | ENew (e, Some el) ->
-      if l > 15 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "@[<1>new %a@,@[<1>(%a)@]@]"
-        (expression 16) e arguments el;
-      if l > 15 then Format.fprintf f ")@]"
+      if l > 15 then begin PP.start_group f 1; PP.string f "(" end;
+      PP.start_group f 1;
+      PP.string f "new";
+      PP.space f;
+      expression 16 f e;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      arguments f el;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      if l > 15 then begin PP.string f ")"; PP.end_group f end
   | ECond (e, e1, e2) ->
-      if l > 2 then Format.fprintf f "@[<1>(";
-      Format.fprintf f "%a?%a:%a"
-        (expression 3) e (expression 1) e1 (expression 1) e2;
-      if l > 2 then Format.fprintf f ")@]"
+      if l > 2 then begin PP.start_group f 1; PP.string f "(" end;
+      PP.start_group f 1;
+      PP.start_group f 0;
+      expression 3 f e;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "?";
+      expression 1 f e1;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f ":";
+      expression 1 f e2;
+      PP.end_group f;
+      PP.end_group f;
+      if l > 2 then begin PP.string f ")"; PP.end_group f end
   | EObj lst ->
-      Format.fprintf f "@[<1>{%a}@]" property_name_and_value_list lst
+      PP.start_group f 1;
+      PP.string f "{";
+      property_name_and_value_list f lst;
+      PP.string f "}";
+      PP.end_group f
   | EQuote s ->
-      Format.fprintf f "(%s)" s
+      PP.string f "(";
+      PP.string f s;
+      PP.string f ")"
 
 and property_name f n =
   match n with
-    PNI s -> Format.fprintf f "%s" s
-  | PNS s -> Format.fprintf f "\"%s\"" s
+    PNI s -> PP.string f s
+  | PNS s -> PP.string f "\""; PP.string f s; PP.string f "\""
   | PNN v -> expression 0 f (ENum v)
 
 and property_name_and_value_list f l =
@@ -287,10 +379,22 @@ and property_name_and_value_list f l =
     [] ->
       ()
   | [(pn, e)] ->
-      Format.fprintf f "@[%a:@,%a@]" property_name pn (expression 1) e
+      PP.start_group f 0;
+      property_name f pn;
+      PP.string f ":";
+      PP.break f;
+      expression 1 f e;
+      PP.end_group f
   | (pn, e) :: r ->
-      Format.fprintf f "@[%a:@,%a@],@,%a"
-        property_name pn (expression 1) e property_name_and_value_list r
+      PP.start_group f 0;
+      property_name f pn;
+      PP.string f ":";
+      PP.break f;
+      expression 1 f e;
+      PP.end_group f;
+      PP.string f ",";
+      PP.break f;
+      property_name_and_value_list f r
 
 and element_list f el =
   match el with
@@ -298,34 +402,40 @@ and element_list f el =
       ()
   | [e]    ->
       begin match e with
-        None   -> Format.fprintf f ","
-      | Some e -> expression 1 f e
+        None   -> PP.string f ","
+      | Some e -> PP.start_group f 0; expression 1 f e; PP.end_group f
       end
   | e :: r ->
       begin match e with
-        None   -> Format.fprintf f ",@,%a" element_list r
-      | Some e -> Format.fprintf f "%a,@,%a" (expression 1) e element_list r
-      end
+        None   -> ()
+      | Some e -> PP.start_group f 0; expression 1 f e; PP.end_group f
+      end;
+      PP.string f ","; PP.break f; element_list f r
 
 and function_body f b = source_elements f b
 
 and arguments f l =
   match l with
     []     -> ()
-  | [e]    -> Format.fprintf f "%a" (expression 1) e
-  | e :: r -> Format.fprintf f "%a,@,%a"  (expression 1) e arguments r
+  | [e]    -> PP.start_group f 0; expression 1 f e; PP.end_group f
+  | e :: r -> PP.start_group f 0; expression 1 f e; PP.end_group f;
+              PP.string f ","; PP.break f; arguments f r
 
 and variable_declaration f (i, init) =
   match init with
-    None   -> Format.fprintf f "%s" i
-  | Some e -> Format.fprintf f "@[<1>%s=@,%a@]" i (expression 1) e
+    None   ->
+      PP.string f i
+  | Some e ->
+      PP.start_group f 1;
+      PP.string f i; PP.string f "="; PP.break f; expression 1 f e;
+      PP.end_group f
 
 and variable_declaration_list f l =
   match l with
     []     -> assert false
-  | [d]    -> Format.fprintf f "%a" variable_declaration d
-  | d :: r -> Format.fprintf f "%a,@,%a"
-                variable_declaration d variable_declaration_list r
+  | [d]    -> variable_declaration f d
+  | d :: r -> variable_declaration f d; PP.string f ","; PP.break f;
+              variable_declaration_list f r
 
 and opt_expression l f e =
   match e with
@@ -341,118 +451,362 @@ and statement f s =
         []  ->
           ()
       | [(i, None)] ->
-          Format.fprintf f "@[<1>var@ %s;@]" i
+          PP.start_group f 1;
+          PP.string f "var";
+          PP.space f;
+          PP.string f i;
+          PP.string f ";";
+          PP.end_group f
       | [(i, Some e)] ->
-          Format.fprintf f "@[<1>var %s=@,%a;@]" i (expression 1) e
+          PP.start_group f 1;
+          PP.string f "var";
+          PP.space f;
+          PP.string f i;
+          PP.string f "=";
+          PP.genbreak f "" 1;
+          PP.start_group f 0;
+          expression 1 f e;
+          PP.string f ";";
+          PP.end_group f;
+          PP.end_group f
       | l ->
-          Format.fprintf f "@[<1>var@ %a;@]" variable_declaration_list l
+          PP.start_group f 1;
+          PP.string f "var";
+          PP.space f;
+          variable_declaration_list f l;
+          PP.string f ";";
+          PP.end_group f
       end
   | Expression_statement e ->
       (* Parentheses are required when the expression
          starts syntactically with "{" or "function" *)
-      if need_paren 0 e then
-        Format.fprintf f "@[<1>(%a);@]" (expression 0) e
-      else
-        Format.fprintf f "@[%a;@]" (expression 0) e
+      if need_paren 0 e then begin
+        PP.start_group f 1;
+        PP.string f "(";
+        expression 0 f e;
+        PP.string f ");";
+        PP.end_group f
+      end else begin
+        PP.start_group f 0;
+        expression 0 f e;
+        PP.string f ";";
+        PP.end_group f
+      end
   | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
       (* Dangling else issue... *)
       statement f (If_statement (e, Block [s1], s2))
   | If_statement (e, s1, Some (Block _ as s2)) ->
-      Format.fprintf f "@[<1>if@,@[<1>(%a)@]@,@[%a@]@;<0 -1>else@,@[<1>%a@]@]"
-        (expression 0) e statement s1 statement s2
+      PP.start_group f 0;
+      PP.start_group f 1;
+      PP.string f "if";
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      expression 0 f e;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      PP.genbreak f "" 1;
+      PP.start_group f 0;
+      statement f s1;
+      PP.end_group f;
+      PP.break f;
+      PP.string f "else";
+      PP.genbreak f "" 1;
+      PP.start_group f 0;
+      statement f s2;
+      PP.end_group f;
+      PP.end_group f
   | If_statement (e, s1, Some s2) ->
-      Format.fprintf f "@[<1>if@,@[<1>(%a)@]@,@[%a@]@;<0 -1>else@ @[<1>%a@]@]"
-        (expression 0) e statement s1 statement s2
+      PP.start_group f 0;
+      PP.start_group f 1;
+      PP.string f "if";
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      expression 0 f e;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      PP.genbreak f "" 1;
+      PP.start_group f 0;
+      statement f s1;
+      PP.end_group f;
+      PP.break f;
+      PP.string f "else";
+      PP.genbreak f " " 1;
+      PP.start_group f 0;
+      statement f s2;
+      PP.end_group f;
+      PP.end_group f
   | If_statement (e, s1, None) ->
-      Format.fprintf f "@[<1>if@,@[<1>(%a)@]@,@[%a@]@]"
-        (expression 0) e statement s1
+      PP.start_group f 1;
+      PP.start_group f 0;
+      PP.string f "if";
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      expression 0 f e;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 0;
+      statement f s1;
+      PP.end_group f;
+      PP.end_group f
   | While_statement (e, s) ->
-      Format.fprintf f "@[<1>while@,@[<1>(%a)@]@,@[%a@]@]"
-        (expression 0) e statement s
+      PP.start_group f 1;
+      PP.start_group f 0;
+      PP.string f "while";
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      expression 0 f e;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 0;
+      statement f s;
+      PP.end_group f;
+      PP.end_group f
   | Do_while_statement (Block _ as s, e) ->
-      Format.fprintf f "@[<1>do@,@[%a@]@;<0 -1>while@,@[<1>(%a)@]"
-        statement s (expression 0) e
+      PP.start_group f 0;
+      PP.string f "do";
+      PP.genbreak f "" 1;
+      PP.start_group f 0;
+      statement f s;
+      PP.end_group f;
+      PP.break f;
+      PP.string f "while";
+      PP.genbreak f "" 1;
+      PP.start_group f 1;
+      PP.string f "(";
+      expression 0 f e;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f
   | Do_while_statement (s, e) ->
-      Format.fprintf f "@[<1>do@ @[%a@]@;<0 -1>while@,@[<1>(%a)@]"
-        statement s (expression 0) e
+      PP.start_group f 0;
+      PP.string f "do";
+      PP.genbreak f " " 1;
+      PP.start_group f 0;
+      statement f s;
+      PP.end_group f;
+      PP.break f;
+      PP.string f "while";
+      PP.genbreak f "" 1;
+      PP.start_group f 1;
+      PP.string f "(";
+      expression 0 f e;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f
   | For_statement (e1, e2, e3, s) ->
-      Format.fprintf f "@[<1>for@,@[<1>(%a;%a;%a)@]@,@[%a@]@]"
-        (opt_expression 0) e1 (opt_expression 0) e2 (opt_expression 0) e3
-        statement s
+      PP.start_group f 1;
+      PP.start_group f 0;
+      PP.string f "for";
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      opt_expression 0 f e1;
+      PP.string f ";"; PP.break f;
+      opt_expression 0 f e2;
+      PP.string f ";"; PP.break f;
+      opt_expression 0 f e3;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 0;
+      statement f s;
+      PP.end_group f;
+      PP.end_group f
   | Continue_statement None ->
-      Format.fprintf f "continue;"
+      PP.string f "continue;"
   | Continue_statement (Some s) ->
-      Format.fprintf f "continue %s;" s
+      PP.string f "continue ";
+      PP.string f s;
+      PP.string f ";"
   | Break_statement None ->
-      Format.fprintf f "break;"
+      PP.string f "break;"
   | Break_statement (Some s) ->
-      Format.fprintf f "break %s;" s
+      PP.string f "break ";
+      PP.string f s;
+      PP.string f ";"
   | Return_statement e ->
       begin match e with
         None   ->
-          Format.fprintf f "return;"
+          PP.string f "return;"
       | Some (EFun (i, l, b)) ->
-          Format.fprintf f
-            "@[<1>return function%a@,@[<1>(%a)@]@,@[<1>{%a};@]@]"
-            opt_identifier i formal_parameter_list l function_body b
+          PP.start_group f 1;
+          PP.start_group f 0;
+          PP.start_group f 0;
+          PP.string f "return function";
+          opt_identifier f i;
+          PP.end_group f;
+          PP.break f;
+          PP.start_group f 1;
+          PP.string f "(";
+          formal_parameter_list f l;
+          PP.string f ")";
+          PP.end_group f;
+          PP.end_group f;
+          PP.break f;
+          PP.start_group f 1;
+          PP.string f "{";
+          function_body f b;
+          PP.string f "};";
+          PP.end_group f;
+          PP.end_group f
       | Some e ->
-          Format.fprintf f "@[<1>return @[%a;@]@]" (expression 0) e
+          PP.start_group f 7;
+          PP.string f "return ";
+          PP.start_group f 0;
+          expression 0 f e;
+          PP.string f ";";
+          PP.end_group f;
+          PP.end_group f
           (* There MUST be a space between the return and its
              argument. A line return will not work *)
       end
   | Labelled_statement (i, s) ->
-      Format.fprintf f "%s:@,%a" i statement s
+      PP.string f i;
+      PP.string f ":";
+      PP.break f;
+      statement f s
   | Switch_statement (e, cc, def) ->
-      Format.fprintf f "@[<1>switch@,(%a)@,{@," (expression 0) e;
+      PP.start_group f 1;
+      PP.start_group f 0;
+      PP.string f "switch";
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      expression 0 f e;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "{";
       List.iter
         (fun (e, sl) ->
-           Format.fprintf f "@[<1>case@ %a:@]@;<0 1>@[%a@]@,"
-             (expression 0) e statement_list sl)
+           PP.start_group f 1;
+           PP.start_group f 1;
+           PP.string f "case";
+           PP.space f;
+           expression 0 f e;
+           PP.string f ":";
+           PP.end_group f;
+           PP.break f;
+           PP.start_group f 0;
+           statement_list f sl;
+           PP.end_group f;
+           PP.end_group f;
+           PP.break f)
         cc;
       begin match def with
         None ->
           ()
       | Some def ->
-          Format.fprintf f "default:@;<0 1>@[%a@]@," statement_list def
+          PP.start_group f 1;
+          PP.string f "default:";
+          PP.break f;
+          PP.start_group f 0;
+          statement_list f def;
+          PP.end_group f;
+          PP.end_group f
       end;
-      Format.fprintf f "}@]"
+      PP.string f "}";
+      PP.end_group f;
+      PP.end_group f
   | Throw_statement e ->
-      Format.fprintf f "@[<1>throw @[%a;@]@]" (expression 0) e
+      PP.start_group f 6;
+      PP.string f "throw ";
+      PP.start_group f 0;
+      expression 0 f e;
+      PP.string f ";";
+      PP.end_group f;
+      PP.end_group f
       (* There must be a space between the return and its
          argument. A line return would not work *)
   | Try_statement (b, ctch, fin) ->
-      Format.fprintf f "@[<1>try@ %a" block b;
+      PP.start_group f 0;
+      PP.string f "try";
+      PP.genbreak f " " 1;
+      block f b;
       begin match ctch with
-        None        -> ()
-      | Some (i, b) -> Format.fprintf f "@;<0 -1>@[<1>catch(%s)@,%a@]" i block b
+        None ->
+          ()
+      | Some (i, b) ->
+          PP.break f;
+          PP.start_group f 1;
+          PP.string f "catch(";
+          PP.string f i;
+          PP.string f ")";
+          PP.break f;
+          block f b;
+          PP.end_group f
       end;
       begin match fin with
-        None   -> ()
-      | Some b -> Format.fprintf f "finally@ %a" block b
+        None ->
+          ()
+      | Some b ->
+          PP.break f;
+          PP.start_group f 1;
+          PP.string f "finally";
+          PP.space f;
+          block f b;
+          PP.end_group f
       end;
-      Format.fprintf f "@]"
+      PP.end_group f
 
 and statement_list f b =
   match b with
     []     -> ()
   | [s]    -> statement f s
-  | s :: r -> Format.fprintf f "%a@,%a" statement s statement_list r
+  | s :: r -> statement f s; PP.break f; statement_list f r
 
 and block f b =
-  Format.fprintf f "@[<1>{%a}@]" statement_list b
+  PP.start_group f 1;
+  PP.string f "{";
+  statement_list f b;
+  PP.string f "}";
+  PP.end_group f
 
 and source_element f se =
   match se with
     Statement s ->
       statement f s
   | Function_declaration (i, l, b) ->
-      Format.fprintf f "@[<1>function@ %s@,@[<1>(%a)@]@,@[<1>{%a}@]@]"
-        i formal_parameter_list l function_body b
+      PP.start_group f 1;
+      PP.start_group f 0;
+      PP.start_group f 0;
+      PP.string f "function";
+      PP.space f;
+      PP.string f i;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "(";
+      formal_parameter_list f l;
+      PP.string f ")";
+      PP.end_group f;
+      PP.end_group f;
+      PP.break f;
+      PP.start_group f 1;
+      PP.string f "{";
+      function_body f b;
+      PP.string f "}";
+      PP.end_group f;
+      PP.end_group f
 
 and source_elements f se =
   match se with
     []     -> ()
   | [s]    -> source_element f s
-  | s :: r -> Format.fprintf f "%a@,%a" source_element s source_elements r
+  | s :: r -> source_element f s; PP.break f; source_elements f r
 
-let program f se = Format.fprintf f "@[%a@]@." source_elements se
+let program f se =
+  PP.start_group f 0; source_elements f se; PP.end_group f; PP.newline f

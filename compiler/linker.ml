@@ -189,7 +189,7 @@ let rec resolve_dep f visited path loc nm =
         (fun visited (loc, nm) -> resolve_dep f visited path loc nm)
         visited req
     in
-    List.iter (fun s -> Format.fprintf f "%s@." s) code;
+    List.iter (fun s -> Pretty_print.string f s; Pretty_print.newline f) code;
     visited
   end
 

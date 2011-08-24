@@ -54,7 +54,7 @@ let _ =
   let compile s =
     let output_program = Driver.from_string prims s in
     let b = Buffer.create 100 in
-    output_program (Format.formatter_of_buffer b);
+    output_program (Pretty_print.to_buffer b);
     Buffer.contents b
   in
   Array.unsafe_set g (-3) (Obj.repr compile); (*XXX HACK!*)

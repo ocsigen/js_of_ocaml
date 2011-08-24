@@ -3,7 +3,7 @@ include ../Makefile.conf
 
 all: $(COMPILER)
 
-OBJS=util.cmx dgraph.cmx \
+OBJS=pretty_print.cmx util.cmx dgraph.cmx \
      javascript.cmx js_output.cmx js_simpl.cmx \
      instr.cmx code.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx inline.cmx \
