@@ -18,7 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*XXX FIX: in scan, we just have to find implicit block end *)
 (*XXX FIX: avoid the need of global datastructures for analyse_blocks *)
 
 open Code
@@ -29,26 +28,8 @@ let debug = Util.debug "parser"
 (****)
 
 let blocks = ref AddrSet.empty
-let stops = ref AddrSet.empty
-let entries = ref AddrSet.empty
-let jumps = ref []
 
-let add_start info pc =
-(*  Format.eprintf "==> %d@." pc;*)
-  blocks := AddrSet.add pc !blocks
-
-let add_stop info pc =
-(*  Format.eprintf "==| %d@." pc;*)
-  stops := AddrSet.add pc !stops
-
-let add_jump info pc pc' =
-(*  Format.eprintf "==> %d --> %d@." pc pc';*)
-  blocks := AddrSet.add pc' !blocks;
-  jumps := (pc, pc') :: !jumps
-
-let add_entry info pc =
-  add_start info pc;
-  entries := AddrSet.add pc !entries
+let add_jump info pc = blocks := AddrSet.add pc !blocks
 
 let rec scan info code pc len =
   if pc < len then begin
@@ -61,79 +42,40 @@ let rec scan info code pc len =
         scan info code (pc + 3) len
     | KJump ->
         let offset = gets code (pc + 1) in
-        add_jump info pc (pc + offset + 1);
-        add_stop info pc;
+        add_jump info (pc + offset + 1);
         scan info code (pc + 2) len
     | KCond_jump ->
         let offset = gets code (pc + 1) in
-        add_jump info pc (pc + offset + 1);
-        add_start info (pc + 2);
+        add_jump info (pc + offset + 1);
         scan info code (pc + 2) len
     | KCmp_jump ->
         let offset = gets code (pc + 2) in
-        add_jump info pc (pc + offset + 2);
-        add_start info (pc + 3);
+        add_jump info (pc + offset + 2);
         scan info code (pc + 3) len
     | KSwitch ->
         let sz = getu code (pc + 1) in
         for i = 0 to sz land 0xffff + sz lsr 16 - 1 do
           let offset = gets code (pc + 2 + i) in
-          add_jump info pc (pc + offset + 2)
+          add_jump info (pc + offset + 2)
         done;
-        add_stop info pc;
         scan info code (pc + 2 + sz land 0xffff + sz lsr 16) len
     | KClosurerec ->
         let nfuncs = getu code (pc + 1) in
-        for i = 0 to nfuncs - 1 do
-          let addr = pc + gets code (pc + 3 + i) + 3 in
-          add_entry info addr
-        done;
         scan info code (pc + nfuncs + 3) len
     | KClosure ->
-        let addr = pc + gets code (pc + 2) + 2 in
-        add_entry info addr;
         scan info code (pc + 3) len
     | KStop n ->
-        add_stop info pc;
         scan info code (pc + n + 1) len
-    | KSplitPoint ->
-        add_start info (pc + 1);
-        scan info code (pc + 1) len
   end
-
-let rec find_block pc =
-  if AddrSet.mem pc !blocks then pc else find_block (pc - 1)
 
 let rec next_block len pc =
   let pc = pc + 1 in
   if pc = len || AddrSet.mem pc !blocks then pc else next_block len pc
 
-let map_of_set f s =
-  AddrSet.fold (fun pc m -> AddrMap.add pc (f pc) m) s AddrMap.empty
-
 let analyse_blocks code =
   blocks := AddrSet.empty;
   let len = String.length code  / 4 in
-  add_entry () 0;
-  scan () code 0 len;
-  let has_stop =
-    AddrSet.fold (fun pc hs -> AddrSet.add (find_block pc) hs)
-      !stops AddrSet.empty
-  in
-  AddrSet.iter
-    (fun pc ->
-       if not (AddrSet.mem pc has_stop) then add_jump () pc (next_block len pc))
-    !blocks;
-  let cont = map_of_set (fun _ -> AddrSet.empty) !blocks in
-  let cont =
-    List.fold_left
-      (fun cont (pc, pc') ->
-         let pc = find_block pc in
-         AddrMap.add pc (AddrSet.add pc' (AddrMap.find pc cont)) cont)
-      cont !jumps
-  in
-  stops := AddrSet.empty; entries := AddrSet.empty; jumps := [];
-  cont
+  scan () code 0 len
 
 (****)
 
@@ -1599,8 +1541,7 @@ let build_toplevel () = is_toplevel := true
 
 let parse_bytecode code state standalone_info =
   Code.Var.reset ();
-  let cont = analyse_blocks code in
-ignore cont;
+  analyse_blocks code;
   compile_block code 0 state;
 
   let blocks =
