@@ -128,3 +128,17 @@ class type ['element] document = object
   method getElementById : js_string t -> 'element t opt meth
   method getElementsByTagName : js_string t -> 'element nodeList t meth
 end
+
+module CoerceTo = struct
+  let element e : element Js.t Js.opt =
+    if Js.instanceof e (Js.Unsafe.variable "Element") then
+      Js.some (Js.Unsafe.coerce e)
+    else
+      Js.null
+
+  let text e : text Js.t Js.opt =
+    if Js.instanceof e (Js.Unsafe.variable "Text") then
+      Js.some (Js.Unsafe.coerce e)
+    else
+      Js.null
+end

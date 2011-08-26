@@ -139,3 +139,8 @@ val appendChild : #node t -> #node t -> unit
       different objects to [node t]. *)
 
 val list_of_nodeList : 'a nodeList t -> 'a t list
+
+module CoerceTo : sig
+  val element : #node t -> element t opt
+  val text : #node t -> text t opt
+end
