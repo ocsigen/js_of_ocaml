@@ -122,6 +122,7 @@ type http_frame =
       code: int;
       headers: string -> string option;
       content: string;
+      content_xml: unit -> Dom.element Dom.document t option;
     }
 
 let perform_raw_url
@@ -186,6 +187,7 @@ let perform_raw_url
           {url = url;
 	   code = req##status;
            content = Js.to_string req##responseText;
+	   content_xml = (fun () -> Js.Opt.to_option (req##responseXML));
            headers =
               (fun s ->
                 Opt.case

@@ -56,6 +56,7 @@ type http_frame =
       code: int;
       headers: string -> string option;
       content: string;
+      content_xml: unit -> Dom.element Dom.document t option;
     }
 (** The type for XHR results. The code field is the http status code of the
     answer. The headers field is a function associating values to any header
