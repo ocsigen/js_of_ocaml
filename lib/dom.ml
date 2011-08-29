@@ -150,23 +150,34 @@ class type ['element] document = object
   method getElementsByTagName : js_string t -> 'element nodeList t meth
 end
 
+type node_type =
+  | Element of element t
+  | Attr of attr t
+  | Text of text t
+  | Other of node t
+
+let nodeType e =
+  match e##nodeType with
+    | ELEMENT -> Element (Js.Unsafe.coerce e)
+    | ATTRIBUTE -> Attr (Js.Unsafe.coerce e)
+    | CDATA_SECTION
+    | TEXT -> Text (Js.Unsafe.coerce e)
+    | _ -> Other (e:>node t)
+
 module CoerceTo = struct
-  let element e : element Js.t Js.opt =
-    if Js.instanceof e (Js.Unsafe.variable "Element") then
-      Js.some (Js.Unsafe.coerce e)
-    else
-      Js.null
+
+  let cast (e:#node Js.t) t =
+    if e##nodeType = t
+    then Js.some (Js.Unsafe.coerce e)
+    else Js.null
+
+  let element e : element Js.t Js.opt = cast e ELEMENT
 
   let text e : text Js.t Js.opt =
-    if Js.instanceof e (Js.Unsafe.variable "Text") then
-      Js.some (Js.Unsafe.coerce e)
-    else
-      Js.null
+    if e##nodeType = TEXT || e##nodeType = CDATA_SECTION
+    then Js.some (Js.Unsafe.coerce e)
+    else Js.null
 
-  let attr e : attr Js.t Js.opt =
-    if Js.instanceof e (Js.Unsafe.variable "Attr") then
-      Js.some (Js.Unsafe.coerce e)
-    else
-      Js.null
+  let attr e : attr Js.t Js.opt = cast e ATTRIBUTE
 
 end

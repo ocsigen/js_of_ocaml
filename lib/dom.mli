@@ -161,6 +161,15 @@ val appendChild : #node t -> #node t -> unit
 
 val list_of_nodeList : 'a nodeList t -> 'a t list
 
+
+type node_type =
+  | Element of element t
+  | Attr of attr t
+  | Text of text t
+  | Other of node t
+
+val nodeType : #node t -> node_type
+
 module CoerceTo : sig
   val element : #node t -> element t opt
   val text : #node t -> text t opt
