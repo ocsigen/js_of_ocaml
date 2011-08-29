@@ -68,6 +68,7 @@ class type node = object
   method cloneNode : bool t -> node t meth
 end
 
+(** Specification of [TokenList] objects. *)
 class type tokenList = object
   method length : int readonly_prop
   method item : int -> js_string t optdef meth
@@ -78,8 +79,26 @@ class type tokenList = object
   method stringifier : js_string t prop
 end
 
+(** Specification of [Attr] objects. *)
+class type attr = object
+  inherit node
+  method name : js_string t readonly_prop
+  method specified : bool t readonly_prop
+  method value : js_string t prop
+  method ownerElement : element t prop
+end
+
+(** Specification of [NamedNodeMap] objects. *)
+and namedNodeMap = object
+  method getNamedItem : js_string t -> node t opt meth
+  method setNamedItem : node t -> node t opt meth
+  method removeNamedItem : js_string t -> node t opt meth
+  method item : int -> node t opt meth
+  method length : int readonly_prop
+end
+
 (** Specification of [Element] objects. *)
-class type element = object
+and element = object
   inherit node
   method tagName : js_string t readonly_prop
   method getAttribute : js_string t -> js_string t opt meth
@@ -88,6 +107,7 @@ class type element = object
   method hasAttribute : js_string t -> bool t meth
   method getElementsByTagName : js_string t -> element nodeList t meth
   method classList : tokenList t readonly_prop
+  method attributes : namedNodeMap t readonly_prop
 end
 
 (** Specification of [CharacterData] objects. *)
@@ -115,6 +135,7 @@ class type ['element] document = object
   method createDocumentFragment : documentFragment t meth
   method createElement : js_string t -> 'element t meth
   method createTextNode : js_string t -> text t meth
+  method createAttribute : js_string t -> attr t meth
   method getElementById : js_string t -> 'element t opt meth
   method getElementsByTagName : js_string t -> 'element nodeList t meth
 end
@@ -143,4 +164,5 @@ val list_of_nodeList : 'a nodeList t -> 'a t list
 module CoerceTo : sig
   val element : #node t -> element t opt
   val text : #node t -> text t opt
+  val attr : #node t -> attr t opt
 end

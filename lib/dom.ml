@@ -93,7 +93,26 @@ let replaceChild (p : #node t) (n : #node t) (o : #node t) =
 let insertBefore (p : #node t) (n : #node t) (o : #node t opt) =
   ignore (p##insertBefore ((n :> node t), (o :> node t opt)))
 
-class type element = object
+(** Specification of [Attr] objects. *)
+class type attr = object
+  inherit node
+  method name : js_string t readonly_prop
+  method specified : bool t readonly_prop
+  method value : js_string t prop
+  method ownerElement : element t prop
+end
+
+(** Specification of [NamedNodeMap] objects. *)
+and namedNodeMap = object
+  method getNamedItem : js_string t -> node t opt meth
+  method setNamedItem : node t -> node t opt meth
+  method removeNamedItem : js_string t -> node t opt meth
+  method item : int -> node t opt meth
+  method length : int readonly_prop
+end
+
+(** Specification of [Element] objects. *)
+and element = object
   inherit node
   method tagName : js_string t readonly_prop
   method getAttribute : js_string t -> js_string t opt meth
@@ -102,6 +121,7 @@ class type element = object
   method hasAttribute : js_string t -> bool t meth
   method getElementsByTagName : js_string t -> element nodeList t meth
   method classList : tokenList t readonly_prop
+  method attributes : namedNodeMap t readonly_prop
 end
 
 class type characterData = object
@@ -125,6 +145,7 @@ class type ['element] document = object
   method createDocumentFragment : documentFragment t meth
   method createElement : js_string t -> 'element t meth
   method createTextNode : js_string t -> text t meth
+  method createAttribute : js_string t -> attr t meth
   method getElementById : js_string t -> 'element t opt meth
   method getElementsByTagName : js_string t -> 'element nodeList t meth
 end
@@ -141,4 +162,11 @@ module CoerceTo = struct
       Js.some (Js.Unsafe.coerce e)
     else
       Js.null
+
+  let attr e : attr Js.t Js.opt =
+    if Js.instanceof e (Js.Unsafe.variable "Attr") then
+      Js.some (Js.Unsafe.coerce e)
+    else
+      Js.null
+
 end
