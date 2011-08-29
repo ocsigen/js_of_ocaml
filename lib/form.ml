@@ -119,12 +119,12 @@ let get_input_val ?(get=false) (elt:inputElement t) =
 		match Optdef.to_option (elt##multiple) with
 		  | None
 		  | Some false ->
-		    (match Optdef.to_option (list##item(0)) with
+		    (match Opt.to_option (list##item(0)) with
 		      | None -> []
 		      | Some file -> [name,`File file])
 		  | Some true ->
 		    filter_map (fun f ->
-		      match Optdef.to_option f with
+		      match Opt.to_option f with
 			| None -> None
 			| Some file -> Some (name,`File file))
 		      (Array.to_list (Array.init (list##length)

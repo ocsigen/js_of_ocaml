@@ -47,7 +47,7 @@ let rec html2wiki ?inH:(inH=false) body =
     else () in
   let childNodes = body##childNodes in
   for i=0 to childNodes##length-1 do
-    Js.Optdef.iter (childNodes##item (i)) (fun node ->
+    Js.Opt.iter (childNodes##item (i)) (fun node ->
       match Js.to_string node##nodeName with
 	| "B" -> let inner = html2wiki node in
 		 add_str inner ~surr:"**"

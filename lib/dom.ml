@@ -31,7 +31,7 @@ class type tokenList = object
 end
 
 class type ['node] nodeList = object
-  method item : int -> 'node t optdef meth
+  method item : int -> 'node t opt meth
   method length : int readonly_prop
 end
 
@@ -40,7 +40,7 @@ let list_of_nodeList (nodeList:'a nodeList t) =
   let rec add_item acc i =
     if i < length
     then
-      match Optdef.to_option (nodeList##item(i)) with
+      match Opt.to_option (nodeList##item(i)) with
 	| None -> add_item acc (i+1)
 	| Some e -> add_item (e::acc) (i+1)
     else List.rev acc
