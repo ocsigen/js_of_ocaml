@@ -30,8 +30,9 @@ class type json = object
 	  ('b t, js_string t -> 'c -> 'd) meth_callback -> js_string t meth
 end
 
-let json_constr = Unsafe.variable "window.JSON"
-let json : json t = json_constr
+external get_json : unit -> json t = "caml_json"
+
+let json = get_json ()
 
 external unsafe_equals: 'a -> 'b -> bool = "caml_js_equals"
 
