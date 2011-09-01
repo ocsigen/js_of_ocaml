@@ -493,8 +493,8 @@ function caml_hash_univ_param (count, limit, obj) {
 
 ///////////// Sys
 //Provides: caml_sys_time mutable
-var caml_initial_time = Date.now() * 0.001;
-function caml_sys_time () { return Date.now() * 0.001 - caml_initial_time; }
+var caml_initial_time = (new Date()).getTime() * 0.001;
+function caml_sys_time () { return (new Date()).getTime() * 0.001 - caml_initial_time; }
 //Provides: caml_sys_get_config const
 //Requires: MlString
 function caml_sys_get_config (e) {
