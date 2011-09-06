@@ -55,6 +55,6 @@ function caml_js_get_console () {
   var m = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
            "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd"];
   function f () {}
-  for (i = 0; i < m.length; i++) if (!c[m[i]]) c[m[i]]=f;
+  for (var i = 0; i < m.length; i++) if (!c[m[i]]) c[m[i]]=f;
   return c;
 }

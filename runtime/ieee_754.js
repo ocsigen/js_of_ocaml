@@ -26,7 +26,6 @@ function caml_int64_bits_of_float (x) {
   var sign = (x>=0)?0:0x8000;
   if (sign) x = -x;
   var exp = Math.floor(Math.LOG2E*Math.log(x)) + 1023;
-  var res = [];
   if (exp <= 0) {
     exp = 0;
     x /= Math.pow(2,-1026);

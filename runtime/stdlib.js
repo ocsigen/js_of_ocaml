@@ -428,7 +428,7 @@ function caml_format_float (fmt, x) {
         else while (s = x.toFixed(p), s.length > prec + 1) p--;
         if (p) {
           // remove trailing zeroes
-          i = s.length - 1; while (s.charAt(i) == '0') i--;
+          var i = s.length - 1; while (s.charAt(i) == '0') i--;
           if (s.charAt(i) == '.') i--;
           s = s.slice(0, i + 1);
         }
@@ -497,7 +497,7 @@ var caml_initial_time = (new Date()).getTime() * 0.001;
 function caml_sys_time () { return (new Date()).getTime() * 0.001 - caml_initial_time; }
 //Provides: caml_sys_get_config const
 //Requires: MlString
-function caml_sys_get_config (e) {
+function caml_sys_get_config () {
   return [0, new MlWrappedString("Unix"), 32];
 }
 //Provides: caml_sys_random_seed mutable

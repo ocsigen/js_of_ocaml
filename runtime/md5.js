@@ -22,7 +22,6 @@
 var caml_md5_string =
 function () {
   function add (x, y) { return (x + y) | 0; }
-  function rol (x, y) { return (x << y) | (x >>> (32 - y)); }
   function xx(q,a,b,x,s,t) {
     a = add(add(a, q), add(x, t));
     return add((a << s) | (a >>> (32 - s)), b);
@@ -137,16 +136,20 @@ function () {
     var buf = [];
     if (s.array) {
       var a = s.array;
-      for (var i = 0; i < len; i+=4)
-        buf[i>>2] = a[i] | (a[i+1] << 8) | (a[i+2] << 16) | (a[i+3] << 24);
-      for (; i < len; i++) buf[i>>2] |= a[i] << (8 * (i & 3));
+      for (var i = 0; i < len; i+=4) {
+        var j = i + ofs;
+        buf[i>>2] = a[j] | (a[j+1] << 8) | (a[j+2] << 16) | (a[j+3] << 24);
+      }
+      for (; i < len; i++) buf[i>>2] |= a[i + ofs] << (8 * (i & 3));
     } else {
       var b = s.getFullBytes();
-      for (var i = 0; i < len; i+=4)
+      for (var i = 0; i < len; i+=4) {
+        var j = i + ofs;
         buf[i>>2] =
-          b.charCodeAt(i) | (b.charCodeAt(i+1) << 8) |
-          (b.charCodeAt(i+2) << 16) | (b.charCodeAt(i+3) << 24);
-      for (; i < len; i++) buf[i>>2] |= b.charCodeAt(i) << (8 * (i & 3));
+          b.charCodeAt(j) | (b.charCodeAt(j+1) << 8) |
+          (b.charCodeAt(j+2) << 16) | (b.charCodeAt(j+3) << 24);
+      }
+      for (; i < len; i++) buf[i>>2] |= b.charCodeAt(i + ofs) << (8 * (i & 3));
     }
     return new MlStringFromArray(md5(buf, len));
   }

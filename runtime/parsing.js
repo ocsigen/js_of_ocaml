@@ -88,7 +88,7 @@ function caml_parse_engine(tables, env, cmd, arg)
     tables.dgoto  = caml_lex_array (tables[tbl_dgoto]);
   }
 
-  var cmd, res, n, n1, n2, state1;
+  var res = 0, n, n1, n2, state1;
 
   // RESTORE
   var sp = env[env_sp];
