@@ -174,7 +174,7 @@ module CoerceTo = struct
   let element e : element Js.t Js.opt = cast e ELEMENT
 
   let text e : text Js.t Js.opt =
-    if e##nodeType = TEXT || e##nodeType = CDATA_SECTION
+    if e##nodeType == TEXT || e##nodeType == CDATA_SECTION
     then Js.some (Js.Unsafe.coerce e)
     else Js.null
 

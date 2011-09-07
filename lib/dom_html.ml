@@ -1056,12 +1056,22 @@ let createCanvas doc : canvasElement t =
   if not (Opt.test c##getContext) then raise Canvas_not_available;
   c
 
+let html_element : htmlElement t constr = Js.Unsafe.variable "window.HTMLElement"
+
 module CoerceTo = struct
-  let element e : element Js.t Js.opt =
-    if Js.instanceof e (Js.Unsafe.variable "HTMLElement") then
-      Js.some (Js.Unsafe.coerce e)
+  let element : #Dom.node Js.t -> element Js.t Js.opt =
+    if def html_element == undefined then
+      (* ie < 9 does not have HTMLElement: we have to cheat to check
+	 that something is an html element *)
+      (fun e ->
+	if def ((Js.Unsafe.coerce e)##innerHTML) == undefined then
+	  Js.null
+	else Js.some (Js.Unsafe.coerce e))
     else
-      Js.null
+      (fun e ->
+	if Js.instanceof e html_element then
+	  Js.some (Js.Unsafe.coerce e)
+	else Js.null)
 
   let unsafeCoerce tag (e : #element t) =
     if e##tagName##toLowerCase() == Js.string tag then
