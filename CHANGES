@@ -1,4 +1,20 @@
-===== 1.0.3 (2011-17-13) =====
+===== 1.0.4 (2011-09-07) =====
+
+ * Bugfixes:
+   ** fix typo in 'greater than or equal to'
+   ** marshalling, unmarshalling and comparison
+      are not recursive anymore: avoid stack overflow
+   ** use custom formatter to pretty print Javascript
+      code to avoid newlines where it is forbidden.
+   ** fix type of Dom.nodeList.item (was optdef, is now opt)
+   ** fixes for internet explorer.
+   ** fixes for bug exposed by Berke Durak's tool jsure.
+ * Libraries:
+   ** History API
+   ** improvements of CSS module
+   ** Add coercion and attribute manipulation functions in Dom module
+
+===== 1.0.3 (2011-07-13) =====
 
  * Bugfixes:
    ** 'caml_int_of_string' was incorrect for negative number
