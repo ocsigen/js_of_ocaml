@@ -62,12 +62,18 @@ type http_frame =
     answer. The headers field is a function associating values to any header
     name. *)
 
+exception Wrong_headers of (int * (string -> string option))
+(** The exception raise by perform functions when the check_headers
+    parameter returned false. The parameter of the exception is a
+    function is like the [headers] function of [http_frame] *)
+
 val perform_raw_url :
     ?headers:(string * string) list
   -> ?content_type:string
   -> ?post_args:((string * string) list)
   -> ?get_args:((string * string) list)  (* [] *)
   -> ?form_arg:Form.form_contents
+  -> ?check_headers:(int -> (string -> string option) -> bool)
   -> string
   -> http_frame Lwt.t
   (** [perform_raw_url ?headers ?content_type ?post_args ?get_args ?form_arg url]
@@ -75,7 +81,9 @@ val perform_raw_url :
       specified options. The result is a cancelable thread returning
       an HTTP frame. If [post_args] and [form_arg] are [None], a GET request is
       used. If [post_args] or [form_arg] is [Some _] (even [Some []]) then a POST
-      request is made. *)
+      request is made. The [check_headers] argument is run as soon as the answer
+      code and headers are available. If it returns false, the request is canceled
+      and the functions raise the [Wrong_headers] exception *)
 
 val perform :
     ?headers:(string * string) list
@@ -83,6 +91,7 @@ val perform :
   -> ?post_args:((string * string) list)
   -> ?get_args:((string * string) list)  (* [] *)
   -> ?form_arg:Form.form_contents
+  -> ?check_headers:(int -> (string -> string option) -> bool)
   -> Url.url
   -> http_frame Lwt.t
   (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
