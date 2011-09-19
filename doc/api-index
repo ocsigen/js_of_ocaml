@@ -5,6 +5,7 @@ Js
 Dom
 Dom_html
 Dom_events
+CSS
 Lwt_js
 Firebug
 Regexp
