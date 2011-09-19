@@ -141,14 +141,14 @@ function caml_mod(x,y) {
 //Provides: caml_array_set
 //Requires: caml_array_bound_error
 function caml_array_set (array, index, newval) {
-  if ((index < 0) || (index >= array.length)) caml_array_bound_error();
+  if ((index < 0) || (index >= array.length - 1)) caml_array_bound_error();
   array[index+1]=newval; return 0;
 }
 
 //Provides: caml_array_get mutable
 //Requires: caml_array_bound_error
 function caml_array_get (array, index) {
-  if ((index < 0) || (index >= array.length)) caml_array_bound_error();
+  if ((index < 0) || (index >= array.length - 1)) caml_array_bound_error();
   return array[index+1];
 }
 
