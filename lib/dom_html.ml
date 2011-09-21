@@ -874,6 +874,7 @@ class type window = object
   method stop : unit meth
   method focus : unit meth
   method blur : unit meth
+  method scroll : int -> int -> unit meth
 
   method top : window t readonly_prop
   method parent : window t readonly_prop
