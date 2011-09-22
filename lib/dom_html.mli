@@ -227,6 +227,8 @@ and element = object
   method getClientRects : clientRectList t meth
   method getBoundingClientRect : clientRect t meth
 
+  method scrollIntoView: bool t -> unit meth
+
   inherit eventTarget
 end
 
