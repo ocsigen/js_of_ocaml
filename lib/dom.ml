@@ -148,6 +148,7 @@ class type ['element] document = object
   method createAttribute : js_string t -> attr t meth
   method getElementById : js_string t -> 'element t opt meth
   method getElementsByTagName : js_string t -> 'element nodeList t meth
+  method importNode : element t -> bool t -> 'element t meth
 end
 
 type node_type =
