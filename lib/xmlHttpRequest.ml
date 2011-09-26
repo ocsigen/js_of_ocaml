@@ -189,18 +189,26 @@ let perform_raw_url
       (fun () -> None)
       (fun v -> Some (Js.to_string v))
   in
+  let do_check_headers =
+    let checked = ref false in
+    fun () ->
+      if not (!checked) && not (check_headers (req##status) headers)
+      then begin
+        Lwt.wakeup_exn w (Wrong_headers ((req##status),headers));
+        req##abort ();
+      end;
+      checked := true
+  in
   req##onreadystatechange <- Dom_html.handler
     (fun _ ->
-      (match req##readyState with
-	| HEADERS_RECEIVED ->
-	  if not (check_headers (req##status) headers)
-	  then
-	    begin
-	      Lwt.wakeup_exn w (Wrong_headers ((req##status),headers));
-	      req##abort ();
-	    end;
-	  ()
+       (match req##readyState with
+          (* IE doesn't have the same semantics for HEADERS_AVAILABLE.
+             so we wait til LOADING to check headers. See:
+             http://msdn.microsoft.com/en-us/library/ms534361(v=vs.85).aspx *)
+        | LOADING -> do_check_headers ()
 	| DONE ->
+          (* If we didn't catch the "LOADING" event, we check the header. *)
+          do_check_headers ();
 	  Lwt.wakeup w
             {url = url;
 	     code = req##status;
