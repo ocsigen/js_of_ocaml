@@ -190,7 +190,7 @@ class type js_string = object
   method replace : regExp t -> js_string t -> js_string t meth
   (* FIX: version of replace taking a function... *)
   method replace_string : js_string t -> js_string t -> js_string t meth
-  method search : regExp t -> match_result_handle t opt meth
+  method search : regExp t -> int meth
   method slice : int -> int -> js_string t meth
   method slice_end : int -> js_string t meth
   method split : js_string t -> string_array t meth

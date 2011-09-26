@@ -48,10 +48,12 @@ let string_match re s i =
 
 let search re s i =
   let r = simple re in
-  r##lastIndex <- i;
+  let s = String.sub s i (String.length s - i) in
+  let idx = (Js.string s)##search(r) in
   Js.Opt.to_option
     (Js.Opt.map (r##exec(Js.bytestring s))
-       (fun res_pre -> let res = Js.match_result res_pre in (res##index, res)))
+       (fun res_pre -> let res = Js.match_result res_pre in
+	(i + idx, res)))
 
 let matched_string r = blunt_str_array_get r 0
 
