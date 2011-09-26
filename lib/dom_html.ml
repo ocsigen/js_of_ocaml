@@ -930,6 +930,7 @@ class type iFrameElement = object
   inherit element
   method frameBorder : js_string t prop
   method height : js_string t prop
+  method width : js_string t prop
   method longDesc : js_string t prop
   method marginHeight : js_string t prop
   method marginWidth : js_string t prop
