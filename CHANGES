@@ -1,3 +1,12 @@
+===== 1.0.6 (2011-09-28) =====
+
+ * Bugfixes:
+   ** browser compatility for Regexp.search and check_headers (XmlHttpRequest.send).
+ * Libraries:
+   ** add Dom_html.iFrameEliom##width
+   ** add Dom_html.window##scroll
+   ** add Dom.document##importNode
+
 ===== 1.0.5 (2011-09-21) =====
 
  * Bugfixes:
