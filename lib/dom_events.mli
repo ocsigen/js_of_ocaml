@@ -33,7 +33,7 @@ module Typ :
     val keypress : Dom_html.keyboardEvent Js.t typ
     val keydown : Dom_html.keyboardEvent Js.t typ
     val keyup : Dom_html.keyboardEvent Js.t typ
-    val mousewheel : Dom_html.mousewheelEvent Js.t typ
+    val mousewheel : Dom_html.wheelEvent Js.t typ
     val _DOMMouseScroll : Dom_html.mouseScrollEvent Js.t typ
   end
 

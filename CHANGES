@@ -2,6 +2,7 @@
 
  * Libraries:
    ** Add Dom_html.buttonPressed
+   ** Add functions to downcast Dom_html.event into mouseEvent, keyboardEvent, ...
 
 ===== 1.0.6 (2011-09-28) =====
 

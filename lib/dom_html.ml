@@ -164,11 +164,11 @@ and keyboardEvent = object
   method keyIdentifier : js_string t optdef readonly_prop
 end
 
-and mousewheelEvent = object (* All browsers but Firefox *)
+and wheelEvent = object (* All browsers but Firefox *)
   inherit mouseEvent
-  method wheelDelta : int readonly_prop
-  method wheelDeltaX : int optdef readonly_prop
-  method wheelDeltaY : int optdef readonly_prop
+  method delta : int readonly_prop
+  method deltaX : int optdef readonly_prop
+  method deltaY : int optdef readonly_prop
 end
 
 and mouseScrollEvent = object (* Firefox *)
@@ -1173,6 +1173,19 @@ module CoerceTo = struct
   let title e = unsafeCoerce "title" e
   let tr e = unsafeCoerce "tr" e
   let ul e = unsafeCoerce "ul" e
+
+  let unsafeCoerceEvent name (ev : #event t) =
+    let constr = Js.Unsafe.variable name in
+    if def constr != undefined && Js.instanceof ev constr then
+      Js.some (Js.Unsafe.coerce ev)
+    else Js.null
+
+  let mouseEvent ev = unsafeCoerceEvent "window.MouseEvent" ev
+  let keyboardEvent ev = unsafeCoerceEvent "window.KeyboardEvent" ev
+  let wheelEvent ev = unsafeCoerceEvent "window.WheelEvent" ev
+  let mouseScrollEvent ev = unsafeCoerceEvent "window.MouseScrollEvent" ev
+  let popStateEvent ev = unsafeCoerceEvent "window.PopStateEvent" ev
+
 end
 
 (****)
@@ -1238,10 +1251,10 @@ let addMousewheelEventListener e h capt =
   if hasMousewheelEvents () then
     addEventListener e Event.mousewheel
       (handler
-         (fun (e : mousewheelEvent t) ->
-            let dx = - Optdef.get (e##wheelDeltaX) (fun () -> 0) / 40 in
+         (fun (e : wheelEvent t) ->
+            let dx = - Optdef.get (e##deltaX) (fun () -> 0) / 40 in
             let dy =
-              - Optdef.get (e##wheelDeltaY) (fun () -> e##wheelDelta) / 40 in
+              - Optdef.get (e##deltaY) (fun () -> e##delta) / 40 in
             h (e :> mouseEvent t) ~dx ~dy))
       capt
   else
@@ -1379,3 +1392,27 @@ let tagged (e : #element t) =
   | _   -> Other (e : #element t :> element t)
 
 let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
+
+type taggedEvent =
+  | MouseEvent of mouseEvent t
+  | KeyboardEvent of keyboardEvent t
+  | WheelEvent of wheelEvent t
+  | MouseScrollEvent of mouseScrollEvent t
+  | PopStateEvent of popStateEvent t
+  | OtherEvent of event t
+
+let taggedEvent (ev : #event Js.t) =
+  Js.Opt.case (CoerceTo.mouseEvent ev)
+    (fun () -> Js.Opt.case (CoerceTo.keyboardEvent ev)
+      (fun () -> Js.Opt.case (CoerceTo.wheelEvent ev)
+	(fun () -> Js.Opt.case (CoerceTo.mouseScrollEvent ev)
+	  (fun () -> Js.Opt.case (CoerceTo.popStateEvent ev)
+	    (fun () -> OtherEvent (ev :> event t))
+	    (fun ev -> PopStateEvent ev))
+	  (fun ev -> MouseScrollEvent ev))
+	(fun ev -> WheelEvent ev))
+      (fun ev -> KeyboardEvent ev))
+    (fun ev -> MouseEvent ev)
+
+let opt_taggedEvent ev = Opt.case ev (fun () -> None) (fun ev -> Some (taggedEvent ev))
+
