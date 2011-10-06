@@ -125,6 +125,12 @@ end
 
 type ('a, 'b) event_listener = ('a, 'b optdef -> bool t) meth_callback opt
 
+type mouse_button =
+  | No_button
+  | Left_button
+  | Middle_button
+  | Right_button
+
 class type event = object
   method _type : js_string t readonly_prop
   method target : element t optdef readonly_prop
@@ -138,6 +144,12 @@ and mouseEvent = object
   method clientY : int readonly_prop
   method screenX : int readonly_prop
   method screenY : int readonly_prop
+  method ctrlKey : bool t readonly_prop
+  method shiftKey : bool t readonly_prop
+  method altKey : bool t readonly_prop
+  method metaKey : bool t readonly_prop
+  method button : int readonly_prop
+  method which : mouse_button optdef readonly_prop
 
   method fromElement : element t opt optdef readonly_prop
   method toElement : element t opt optdef readonly_prop
@@ -1205,6 +1217,16 @@ let getDocumentScroll () =
   let body = document##body in
   let html = document##documentElement in
   (body##scrollLeft + html##scrollLeft, body##scrollTop + html##scrollTop)
+
+let buttonPressed (ev : #mouseEvent Js.t) =
+  Js.Optdef.case (ev##which)
+    (fun () ->
+      match ev##button with
+	| 1 -> Left_button
+	| 2 -> Right_button
+	| 4 -> Middle_button
+	| _ -> No_button)
+    (fun x -> x)
 
 let hasMousewheelEvents () =
   let d = createDiv document in

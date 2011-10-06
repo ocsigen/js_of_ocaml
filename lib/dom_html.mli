@@ -131,6 +131,12 @@ type (-'a, -'b) event_listener
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
 
+type mouse_button =
+  | No_button
+  | Left_button
+  | Middle_button
+  | Right_button
+
 class type event = object
   method _type : js_string t readonly_prop
   method target : element t optdef readonly_prop
@@ -146,8 +152,14 @@ and mouseEvent = object
   method clientY : int readonly_prop
   method screenX : int readonly_prop (* Relative to the edge of the screen *)
   method screenY : int readonly_prop
+  method ctrlKey : bool t readonly_prop
+  method shiftKey : bool t readonly_prop
+  method altKey : bool t readonly_prop
+  method metaKey : bool t readonly_prop
+  method which : mouse_button optdef readonly_prop
 
   (* Legacy methods *)
+  method button : int readonly_prop
   method fromElement : element t opt optdef readonly_prop
   method toElement : element t opt optdef readonly_prop
   method pageX : int optdef readonly_prop
@@ -990,6 +1002,10 @@ val addMousewheelEventListener :
       means down / right. *)
 
 (****)
+
+(** {2 Mouse event helper functions} *)
+
+val buttonPressed : #mouseEvent Js.t -> mouse_button
 
 (** {2 Position helper functions} *)
 
