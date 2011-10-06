@@ -1222,3 +1222,7 @@ module CoerceTo : sig
   val tr : #element t -> tableRowElement t opt
   val ul : #element t -> uListElement t opt
 end
+
+(**/**)
+
+val onIE : bool

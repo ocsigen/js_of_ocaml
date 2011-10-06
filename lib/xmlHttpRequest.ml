@@ -202,12 +202,13 @@ let perform_raw_url
   req##onreadystatechange <- Dom_html.handler
     (fun _ ->
        (match req##readyState with
-          (* IE doesn't have the same semantics for HEADERS_AVAILABLE.
+          (* IE doesn't have the same semantics for HEADERS_RECEIVED.
              so we wait til LOADING to check headers. See:
              http://msdn.microsoft.com/en-us/library/ms534361(v=vs.85).aspx *)
-        | LOADING -> do_check_headers ()
+        | HEADERS_RECEIVED when not Dom_html.onIE -> do_check_headers ()
+	| LOADING when Dom_html.onIE -> do_check_headers ()
 	| DONE ->
-          (* If we didn't catch the "LOADING" event, we check the header. *)
+          (* If we didn't catch a previous event, we check the header. *)
           do_check_headers ();
 	  Lwt.wakeup w
             {url = url;
