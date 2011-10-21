@@ -139,6 +139,7 @@ class type ['element] document = object
   method getElementById : js_string t -> 'element t opt meth
   method getElementsByTagName : js_string t -> 'element nodeList t meth
   method importNode : element t -> bool t -> 'element t meth
+  method adoptNode : element t -> 'element t meth
 end
 
 (** {2 Helper functions} *)
