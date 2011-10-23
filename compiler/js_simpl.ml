@@ -55,10 +55,12 @@ let rec enot_rec e =
             (J.EBin (J.NotEqEq, e1, e2), 0)
         | J.NotEqEq ->
             (J.EBin (J.EqEqEq, e1, e2), 0)
+(*Disabled: this is not correct!
         | J.Lt ->
             (J.EBin (J.Le, e2, e1), 0)
         | J.Le ->
             (J.EBin (J.Lt, e2, e1), 0)
+*)
         | _ ->
             (J.EUn (J.Not, e), 1)
         end
