@@ -294,7 +294,9 @@ class type date_constr = object
   method _UTC_sec : int -> int -> int -> int -> int -> int -> float t meth
   method _UTC_ms :
     int -> int -> int -> int -> int -> int -> int -> float t meth
+(*
   method now : float t meth
+*)
 end
 
 let date_constr = Unsafe.variable "Date"
