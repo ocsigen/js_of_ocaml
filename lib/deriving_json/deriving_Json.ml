@@ -19,26 +19,28 @@
 
 (** Json **)
 
-type 'a t = {
+type 'a json = {
     write: Buffer.t -> 'a -> unit;
     read: Deriving_Json_lexer.lexbuf -> 'a
   }
 
+type 'a t = unit -> 'a json
+
 let to_string t v =
   let buf = Buffer.create 50 in
-  t.write buf v;
+  (t ()).write buf v;
   Buffer.contents buf
 
 let to_channel t oc v =
   let buf = Buffer.create 50 in
-  t.write buf v;
+  (t ()).write buf v;
   Buffer.output_buffer oc buf
 
 let from_string t s =
-  t.read (Deriving_Json_lexer.init_lexer (Lexing.from_string s))
+  (t ()).read (Deriving_Json_lexer.init_lexer (Lexing.from_string s))
 
 let from_channel t ic =
-  t.read (Deriving_Json_lexer.init_lexer (Lexing.from_channel ic))
+  (t ()).read (Deriving_Json_lexer.init_lexer (Lexing.from_channel ic))
 
 (** Deriver **)
 
@@ -76,7 +78,7 @@ end
 
 module Defaults(J : Json_min) : Json with type a = J.a = struct
   include J
-  let t = { write; read }
+  let t () = { write; read }
   let to_string v = to_string t v
   (* let to_channel oc v = to_channel t oc v *)
   let from_string s = from_string t s
@@ -87,7 +89,7 @@ end
 
 module Defaults'(J : Json_min') : Json with type a = J.a = struct
   include J
-  let t = { write; read }
+  let t () = { write; read }
   let to_string v = to_string t v
   (* let to_channel oc v = to_channel t oc v *)
   let from_string s = from_string t s
@@ -96,8 +98,8 @@ end
 
 module Defaults''(J : Json_min'') : Json with type a = J.a = struct
   include J
-  let read = t.read
-  let write = t.write
+  let read = (t ()).read
+  let write = (t ()).write
   let to_string v = to_string t v
   (* let to_channel oc v = to_channel t oc v *)
   let from_string s = from_string t s

@@ -23,7 +23,8 @@
 *)
 
 (** The type of JSON parser/printer for value of type ['a]. *)
-type 'a t
+type 'a json
+type 'a t = unit -> 'a json
 
 (** [to_string Json.t<ty> v] marshall the [v] of type [ty] to a JSON string.*)
 val to_string: 'a t -> 'a -> string
