@@ -690,7 +690,7 @@ let start _ =
                   Js._true))
             Js._true);
        Js._false);
-  let ti = ref (Js.to_float (Js.date##now ())) in
+  let ti = ref (Js.to_float ((jsnew Js.date_now ())##getTime())) in
   let fps = ref 0. in
 
   let rec loop t phi =
@@ -716,14 +716,14 @@ let start _ =
     ctx##globalCompositeOperation <- Js.string "copy";
     ctx##drawImage_fromCanvas (canvas', 0., 0.);
     begin try ignore (ctx##getImageData (0., 0., 1., 1.)) with _ -> () end;
-    let t' = Js.to_float (Js.date##now ()) in
+    let t' = Js.to_float ((jsnew Js.date_now ())##getTime()) in
     fps :=
       (let hz = 1000. /. (t' -. !ti) in
        if !fps = 0. then hz else 0.9 *. !fps +. 0.1 *. hz);
     rateText##data <- Js.string (Printf.sprintf "% 2.f" !fps);
     ti := t';
     Lwt_js.sleep 0.01 >>= fun () ->
-    let t' = Js.to_float (Js.date##now ()) in
+    let t' = Js.to_float ((jsnew Js.date_now ())##getTime()) in
     let dt = t' -. t in
     let dt = if dt < 0. then 0. else if dt > 1000. then 0. else dt in
     let angle = 2. *. pi *. dt /. 1000. /. 10. in
@@ -734,7 +734,7 @@ if true then Lwt.return () else
     loop t'
       (if !paused then phi else phi +. angle)
   in
-  loop (Js.to_float (Js.date##now ())) 0.
+  loop (Js.to_float ((jsnew Js.date_now ())##getTime())) 0.
 ); Js._false
 
 let _ =
