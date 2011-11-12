@@ -165,8 +165,10 @@ let string_escape s =
         Buffer.add_string b "\\t"
     | '\n' ->
         Buffer.add_string b "\\n"
+(* This escape sequence is not supported by IE < 9
     | '\011' ->
         Buffer.add_string b "\\v"
+*)
     | '\012' ->
         Buffer.add_string b "\\f"
     | '\r' ->
