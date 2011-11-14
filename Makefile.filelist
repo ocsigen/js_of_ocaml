@@ -13,7 +13,6 @@ ifneq "${DERIVING}" ""
 
 INTF += lib/deriving_json/deriving_Json.cmi       \
         lib/deriving_json/deriving_Json_lexer.cmi \
-        lib/deriving_json/deriving_bi_outbuf.cmi  \
 
 IMPL += lib/syntax/pa_deriving_Json.cmo \
         lib/deriving_json.cma           \

@@ -3,7 +3,7 @@ MLINTFS= $(MLOBJS:.cmo=.mli)
 COBJS= stubs.o
 OBJS=$(MLOBJS) $(COBJS)
 
-JSON_OBJS=$(addprefix deriving_json/,deriving_bi_outbuf.cmo deriving_Json_lexer.cmo deriving_Json.cmo)
+JSON_OBJS=$(addprefix deriving_json/,deriving_Json_lexer.cmo deriving_Json.cmo)
 
 include ../Makefile.conf
 -include ../Makefile.local

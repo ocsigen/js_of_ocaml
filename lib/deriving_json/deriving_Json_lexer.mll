@@ -54,7 +54,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   open Lexing
 
   type lexbuf = {
-    buf : Deriving_bi_outbuf.t;
+    buf : Buffer.t;
       (* Buffer used to accumulate substrings *)
 
     mutable lnum : int;
@@ -77,19 +77,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       | 'a'..'f' -> int_of_char c - int_of_char 'a' + 10
       | 'A'..'F' -> int_of_char c - int_of_char 'A' + 10
       | _ -> assert false
-
-   let utf8_of_bytes buf a b c d =
-     let i = (a lsl 12) lor (b lsl 8) lor (c lsl 4) lor d in
-     if i < 0x80 then
-       Deriving_bi_outbuf.add_char buf (Char.chr i)
-     else if i < 0x800 then begin
-       Deriving_bi_outbuf.add_char buf (Char.chr (0xc0 lor ((i lsr 6) land 0x1f)));
-       Deriving_bi_outbuf.add_char buf (Char.chr (0x80 lor (i land 0x3f)))
-     end else (* i < 0x10000 *) begin
-       Deriving_bi_outbuf.add_char buf (Char.chr (0xe0 lor ((i lsr 12) land 0xf)));
-       Deriving_bi_outbuf.add_char buf (Char.chr (0x80 lor ((i lsr 6) land 0x3f)));
-       Deriving_bi_outbuf.add_char buf (Char.chr (0x80 lor (i land 0x3f)))
-     end
 
   let json_error msg = failwith ("Deriving.Json: " ^ msg)
 
@@ -164,14 +151,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     v.lnum <- v.lnum + 1;
     v.bol <- lexbuf.lex_abs_pos + lexbuf.lex_curr_pos
 
-  let add_lexeme buf lexbuf =
-    let len = lexbuf.lex_curr_pos - lexbuf.lex_start_pos in
-    Deriving_bi_outbuf.add_substring buf lexbuf.lex_buffer lexbuf.lex_start_pos len
-
-  let map_lexeme f lexbuf =
-    let len = lexbuf.lex_curr_pos - lexbuf.lex_start_pos in
-    f lexbuf.lex_buffer lexbuf.lex_start_pos len
-
   type variant_kind = [ `Edgy_bracket | `Square_bracket | `Double_quote ]
   type tuple_kind = [ `Parenthesis | `Square_bracket ]
 }
@@ -194,24 +173,42 @@ let hex = [ '0'-'9' 'a'-'f' 'A'-'F' ]
 let ident = ['a'-'z' 'A'-'Z' '_']['a'-'z' 'A'-'Z' '_' '0'-'9']*
 
 rule finish_string v = parse
-    '"'           { Deriving_bi_outbuf.contents v.buf }
-  | '\\'          { finish_escaped_char v lexbuf;
-		    finish_string v lexbuf }
-  | [^ '"' '\\']+ { add_lexeme v.buf lexbuf;
-		    finish_string v lexbuf }
-  | eof           { custom_error "Unexpected end of input" v lexbuf }
+    '"'    { Buffer.contents v.buf }
+  | '\\'   { finish_escaped_char v lexbuf;
+	     finish_string v lexbuf }
+  | _ as c { if c < '\xc0' then
+               Buffer.add_char v.buf c
+             else
+               finish_utf8_encoded_byte v c lexbuf;
+             finish_string v lexbuf }
+  | eof    { custom_error "Unexpected end of input" v lexbuf }
+
+and finish_utf8_encoded_byte v c1 = parse
+  | _ as c2 { (* Even if encoded in UTF-8, a byte could not be greater than 255 ! *)
+              if '\xC2' <= c1 && c1 < '\xC4' && '\x80' <= c2 && c2 < '\xC0' then
+                let c = ((Char.code c1 lsl 6) lor Char.code c2) land 0xFF in
+                Buffer.add_char v.buf (Char.chr c)
+              else
+                custom_error "Unexpected byte in string" v lexbuf }
+  | eof     { custom_error "Unexpected end of input" v lexbuf }
 
 and finish_escaped_char v = parse
     '"'
   | '\\'
-  | '/' as c { Deriving_bi_outbuf.add_char v.buf c }
-  | 'b'  { Deriving_bi_outbuf.add_char v.buf '\b' }
-  | 'f'  { Deriving_bi_outbuf.add_char v.buf '\012' }
-  | 'n'  { Deriving_bi_outbuf.add_char v.buf '\n' }
-  | 'r'  { Deriving_bi_outbuf.add_char v.buf '\r' }
-  | 't'  { Deriving_bi_outbuf.add_char v.buf '\t' }
+  | '/' as c { Buffer.add_char v.buf c }
+  | 'b'  { Buffer.add_char v.buf '\b' }
+  | 'f'  { Buffer.add_char v.buf '\012' }
+  | 'n'  { Buffer.add_char v.buf '\n' }
+  | 'r'  { Buffer.add_char v.buf '\r' }
+  | 't'  { Buffer.add_char v.buf '\t' }
   | 'u' (hex as a) (hex as b) (hex as c) (hex as d)
-         { utf8_of_bytes v.buf (hex a) (hex b) (hex c) (hex d) }
+         { (* Even if encoded in UTF-8, a byte could not be greater than 255 ! *)
+            if hex a = 0 && hex b = 0 then
+	     let c = (hex c lsl 4) lor hex d in
+             Buffer.add_char v.buf (Char.chr c)
+           else
+	     custom_error "Unexpected byte in string" v lexbuf
+	 }
   | _    { lexer_error "Invalid escape sequence" v lexbuf }
   | eof  { custom_error "Unexpected end of input" v lexbuf }
 
@@ -296,7 +293,7 @@ and read_number v = parse
   | eof         { custom_error "Unexpected end of input" v lexbuf }
 
 and read_string v = parse
-    '"'      { Deriving_bi_outbuf.clear v.buf;
+    '"'      { Buffer.clear v.buf;
 	       finish_string v lexbuf }
   | _        { lexer_error "Expected '\"' but found" v lexbuf }
   | eof      { custom_error "Unexpected end of input" v lexbuf }
@@ -339,7 +336,7 @@ and read_vcase v = parse
   let init_lexer ?buf lexbuf =
     let buf =
       match buf with
-	  None -> Deriving_bi_outbuf.create 256
+	  None -> Buffer.create 256
 	| Some buf -> buf
     in
     {

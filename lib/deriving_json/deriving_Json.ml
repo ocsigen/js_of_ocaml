@@ -172,21 +172,30 @@ module Json_float = Defaults(struct
     let read buf = Deriving_Json_lexer.read_number buf
 end)
 module Json_string = Defaults(struct
+  (* Given that JSON must be valid UTF-8 and that OCaml string are
+     just a sequence of byte we need to "embed" byte string in an
+     UTF-8 sequence. Each byte af an OCaml string is considered as
+     Unicode code point (< 256) and then encoded in UTF-8. Hence,
+     bytes greater than 127 are "wrapped" in two bytes.  *)
   type a = string
   let write buffer s =
     Buffer.add_char buffer '\"';
     for i = 0 to String.length s - 1 do
       match s.[i] with
-      | '\"' -> Buffer.add_string buffer "\\\""
-      | '\\' -> Buffer.add_string buffer "\\\\"
-      | '\b' -> Buffer.add_string buffer "\\b"
-      | '\x0C' -> Buffer.add_string buffer "\\f"
-      | '\n' -> Buffer.add_string buffer "\\n"
-      | '\r' -> Buffer.add_string buffer "\\r"
-      | '\t' -> Buffer.add_string buffer "\\t"
-      | c when c <= '\x1f' ->
+	| '\"' -> Buffer.add_string buffer "\\\""
+	| '\\' -> Buffer.add_string buffer "\\\\"
+	| '\b' -> Buffer.add_string buffer "\\b"
+	| '\x0C' -> Buffer.add_string buffer "\\f"
+	| '\n' -> Buffer.add_string buffer "\\n"
+	| '\r' -> Buffer.add_string buffer "\\r"
+	| '\t' -> Buffer.add_string buffer "\\t"
+	| c when c <= '\x1F' -> (* Other control characters are escaped. *)
 	  Printf.bprintf buffer "\\u%04X" (int_of_char c)
-      | c -> Buffer.add_char buffer s.[i]
+      | c when c < '\xC0' ->
+	  Buffer.add_char buffer s.[i]
+      | c (* >= '\xC0' *) -> (* Bytes greater than 127 are embeded in a UTF-8 sequence. *)
+	  Buffer.add_char buffer (Char.chr (0xC2 lor (Char.code s.[i] lsr 6)));
+	  Buffer.add_char buffer (Char.chr (0x80 lor (Char.code s.[i] land 0x3F)))
     done;
     Buffer.add_char buffer '\"'
   let read buf = Deriving_Json_lexer.read_string buf

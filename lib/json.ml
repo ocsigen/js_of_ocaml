@@ -42,31 +42,21 @@ external to_jsstring: 'a t -> js_string t = "caml_js_from_string"
 external to_byte_MlString: js_string t -> 'a t = "caml_js_to_byte_string"
 external to_byte_jsstring: 'a t -> js_string t = "caml_js_from_byte_string"
 
-let input_reviver to_string =
+let input_reviver =
   let reviver this key value =
     if unsafe_equals (typeof value) (typeof (string "foo")) then
-      to_string (Unsafe.coerce value)
+      to_byte_MlString (Unsafe.coerce value)
     else
       value in
   wrap_meth_callback reviver
-let unsafe_input ?(encoding = `Unicode) s =
-  let reviver =
-    match encoding with
-    | `Unicode -> input_reviver to_MlString
-    | `Byte -> input_reviver to_byte_MlString in
-  json##parse_ (s, reviver)
+let unsafe_input s = json##parse_ (s, input_reviver)
 
 let mlString_constr = Unsafe.variable "MlString"
-let output_reviver to_jsstring =
+let output_reviver =
   let reviver this key value =
     if instanceof value mlString_constr then
-      to_jsstring (Unsafe.coerce value)
+      to_byte_jsstring (Unsafe.coerce value)
     else
       value in
   wrap_meth_callback reviver
-let output ?(encoding = `Unicode) obj =
-  let reviver =
-    match encoding with
-    | `Unicode -> output_reviver to_jsstring
-    | `Byte -> output_reviver to_byte_jsstring in
-  json##stringify_ (obj, reviver)
+let output obj = json##stringify_ (obj, output_reviver)

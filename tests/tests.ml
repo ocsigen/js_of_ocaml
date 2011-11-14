@@ -234,6 +234,27 @@ let () =
 let () = log_stop "CSS.Angle test suite"
 
 
+(* Json conversion *)
+
+let () = log_start "Json"
+
+let str = String.create 256
+
+let () =
+  for i = 0 to 255 do
+    str.[i] <- Char.chr i
+  done
+
+type t = int list * float option * string deriving (Json)
+
+let v = ([1;2;3], Some 1.3, str)
+
+let v' = Json.unsafe_input (Json.output v)
+
+let () = if v = v' then log_success () else log_failure "Not equal"
+
+let () = log_stop "Json"
+
 
 let () =
   Firebug.console##log(

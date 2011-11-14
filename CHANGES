@@ -1,5 +1,7 @@
 ===== Dev =====
 
+ * Bugfixes:
+   ** Deriving_json: fix string (un)marshalling (was broken for byte > 127)
  * Libraries:
    ** Add Dom_html.buttonPressed
    ** Add functions to downcast Dom_html.event into mouseEvent, keyboardEvent, ...

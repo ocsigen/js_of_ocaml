@@ -30,7 +30,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 type lexbuf
 
 val init_lexer:
-    ?buf: Deriving_bi_outbuf.t ->
+    ?buf: Buffer.t ->
     Lexing.lexbuf -> lexbuf
 	(** Create a fresh lexbuf record. *)
 
