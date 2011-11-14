@@ -1,6 +1,6 @@
 MLOBJS= js.cmo dom.cmo dom_html.cmo dom_events.cmo lwt_js.cmo firebug.cmo regexp.cmo CSS.cmo url.cmo file.cmo form.cmo xmlHttpRequest.cmo event_arrows.cmo json.cmo
 MLINTFS= $(MLOBJS:.cmo=.mli)
-COBJS= stubs.o
+COBJS= stubs$(OBJEXT)
 OBJS=$(MLOBJS) $(COBJS)
 
 JSON_OBJS=$(addprefix deriving_json/,deriving_Json_lexer.cmo deriving_Json.cmo)
@@ -48,7 +48,7 @@ ${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml ${PA_DERIVING}
 	ocamlfind ocamlopt -package deriving-ocsigen.syntax -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
 
 
-%.o: %.c
+%$(OBJEXT): %.c
 	ocamlfind ocamlc -package lwt -c $<
 
 stubs.c: $(MLOBJS:cmo=ml)

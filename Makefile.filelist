@@ -4,8 +4,8 @@ INTF := lib/*.cmi
 
 IMPL := lib/$(LIBNAME).cma   \
         lib/syntax/pa_js.cmo \
-	lib/dll$(LIBNAME).so \
-        lib/lib$(LIBNAME).a
+	lib/dll$(LIBNAME)$(DLLEXT) \
+        lib/lib$(LIBNAME)$(LIBEXT)
 
 OTHERS := runtime/runtime.js
 
@@ -17,9 +17,9 @@ INTF += lib/deriving_json/deriving_Json.cmi       \
 IMPL += lib/syntax/pa_deriving_Json.cmo \
         lib/deriving_json.cma           \
 
-NATIMPL += lib/deriving_json.cmxa \
-	   lib/deriving_json.cmxs \
-	   lib/deriving_json.a    \
+NATIMPL += lib/deriving_json.cmxa     \
+	   lib/deriving_json.cmxs     \
+	   lib/deriving_json$(LIBEXT) \
 
 endif
 
