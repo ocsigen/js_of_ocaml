@@ -41,7 +41,7 @@ let rec find_in_paths paths name =
       if Sys.file_exists file then file else find_in_paths rem name
 
 let read_file f =
-  let ch = open_in f in
+  let ch = open_in_bin f in
   let b = Buffer.create 4096 in
   let s = String.create 4096 in
   while

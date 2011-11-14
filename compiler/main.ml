@@ -29,7 +29,7 @@ let f js_files input_file output_file =
       None ->
         Parse.from_channel ~paths stdin
     | Some f ->
-        let ch = open_in f in
+        let ch = open_in_bin f in
         let p = Parse.from_channel ~paths ch in
         close_in ch;
         p
@@ -39,7 +39,7 @@ let f js_files input_file output_file =
     None ->
       output_program (Pretty_print.to_out_channel stdout)
   | Some f ->
-      let ch = open_out f in
+      let ch = open_out_bin f in
       output_program (Pretty_print.to_out_channel ch);
       close_out ch
 
