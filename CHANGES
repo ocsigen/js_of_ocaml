@@ -2,9 +2,17 @@
 
  * Bugfixes:
    ** Deriving_json: fix string (un)marshalling (was broken for byte > 127)
+   ** Do not emit string escape sequence \\v (not supported by IE8)
+   ** Removed incorrect optimization of !(x < y) into (x >= y)
+   ** Allow compilation on win32/msvc
+   ** Open all files in binary mode
  * Libraries:
    ** Add Dom_html.buttonPressed
    ** Add functions to downcast Dom_html.event into mouseEvent, keyboardEvent, ...
+   ** Add Dom.document.adoptNode
+   ** removed Date.now() function, not supported by all browsers
+   ** Allow to test the button associated to a Dom_html.mouseEvent
+   ** Add localStorage and sessionStorage api
 
 ===== 1.0.6 (2011-09-28) =====
 
