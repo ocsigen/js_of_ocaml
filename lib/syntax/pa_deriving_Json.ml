@@ -17,7 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Pa_deriving_common.Defs
+open Pa_deriving_common
+open Utils
 
 module Description = struct
   let classname = "Json"
@@ -45,16 +46,13 @@ module Description = struct
   let depends = []
 end
 
-module InContext (L : Loc) : Class = struct
+module Builder(Loc : Defs.Loc) = struct
 
-  open Pa_deriving_common.Base
-  open Pa_deriving_common.Utils
-  open Pa_deriving_common.Type
+  module Helpers = Base.AstHelpers(Loc)
+  module Generator = Base.Generator(Loc)(Description)
+
+  open Loc
   open Camlp4.PreCast
-
-  open L
-  module Helpers = Pa_deriving_common.Base.InContext(L)(Description)
-  open Helpers
   open Description
 
   let wrap
@@ -67,9 +65,18 @@ module InContext (L : Loc) : Class = struct
 	let read_variant buf hash = match hash with $list:read_variant$	>>;
       <:str_item< let read buf = $read$ >> ]
 
-  let instance = object (self)
+  let generator = (object (self)
 
-    inherit make_module_expr
+    inherit Generator.generator
+
+    method proxy unit =
+      None, [ <:ident< t >>;
+	      <:ident< write >>;
+	      <:ident< read >>;
+	      <:ident< to_string >>;
+	      <:ident< from_string >>;
+	      <:ident< match_variant >>;
+	      <:ident< read_variant >>; ]
 
     (* Generate code that write a block with [tag].*)
     method do_dump_blk ctxt tag contents =
@@ -81,13 +88,13 @@ module InContext (L : Loc) : Class = struct
 	   contents in
       <:expr<
         Buffer.add_string buffer $str:"["^string_of_int tag$;
-        $seq_list args_dumpers$;
+        $Helpers.seq_list args_dumpers$;
         Buffer.add_string buffer "]"
       >>
 
     method tuple ctxt tys =
       let size = List.length tys in
-      let vars, patt, expr = tuple size in
+      let vars, patt, expr = Helpers.tuple size in
       let contents = List.map2 (fun var ty -> (var, ty)) vars tys in
       let dumper =
 	<:match_case< $patt$ -> $self#do_dump_blk ctxt 0 contents$ >> in
@@ -115,7 +122,7 @@ module InContext (L : Loc) : Class = struct
 	  (succ cst_tag, ncst_tag, dumper::dumpers, reader::readers)
       | tys ->
 	  let size = List.length tys in
-	  let vars, patt, expr = tuple size in
+	  let vars, patt, expr = Helpers.tuple size in
 	  let contents = List.map2 (fun var ty -> (var, ty)) vars tys in
 	  let dumper =
 	    <:match_case< $uid:ctor$ $patt$ ->
@@ -148,7 +155,7 @@ module InContext (L : Loc) : Class = struct
 	failwith "Can't derive Json serializer for mutable records.";
       if List.exists (fun (_, (vars, _), _) -> vars <> []) fields then
 	failwith "Can't derive Json serializer with polymorphic records.";
-      let patt = record_pattern fields in
+      let patt = Helpers.record_pattern fields in
       let contents = List.map (fun (name, (_,ty), _) -> name, ty) fields in
       let dumper =
 	<:match_case< $patt$ -> $self#do_dump_blk ctxt 0 contents$ >> in
@@ -161,7 +168,7 @@ module InContext (L : Loc) : Class = struct
 	  fields
 	  <:expr<
             Deriving_Json_lexer.read_rbracket buf;
-	    $record_expression fields$ >> in
+	    $Helpers.record_expression fields$ >> in
       let read = <:expr<
 	Deriving_Json_lexer.read_lbracket buf;
         ignore(Deriving_Json_lexer.read_bounded_int buf ~min:0 ~max:0);
@@ -170,13 +177,13 @@ module InContext (L : Loc) : Class = struct
 
     method polycase ctxt tagspec =
       match tagspec with
-      | Tag (name, []) ->
+      | Type.Tag (name, []) ->
 	  let hash = Pa_deriving_common.Utils.tag_hash name in
 	  <:match_case< `$uid:name$ ->
 	    Buffer.add_string buffer $str:string_of_int hash$ >>,
 	  <:match_case< `Cst $int:string_of_int hash$ -> `$name$ >>,
 	  <:expr< hash = `Cst $int:string_of_int hash$ >>
-      | Tag (name, [ty]) ->
+      | Type.Tag (name, [ty]) ->
 	  let hash = Pa_deriving_common.Utils.tag_hash name in
 	  let contents = ["tag", `Constr(["int"],[]) ; "x", ty ] in
 	  <:match_case< `$uid:name$ x ->
@@ -188,7 +195,7 @@ module InContext (L : Loc) : Class = struct
 	    Deriving_Json_lexer.read_rbracket buf;
 	    `$name$ c >>,
 	    <:expr< hash = `NCst $int:string_of_int hash$ >>
-      | Tag (name, tys) ->
+      | Type.Tag (name, tys) ->
 	  let hash = Pa_deriving_common.Utils.tag_hash name in
 	  let ty = `Tuple tys in
 	  let contents = ["tag", `Constr(["int"],[]) ; "x", ty ] in
@@ -201,8 +208,8 @@ module InContext (L : Loc) : Class = struct
 	    Deriving_Json_lexer.read_rbracket buf;
 	    `$name$ c >>,
 	    <:expr< hash = `NCst $int:string_of_int hash$ >>
-      | Extends t ->
-          let patt, guard, cast = cast_pattern ctxt.argmap t in
+      | Type.Extends t ->
+          let patt, guard, cast = Generator.cast_pattern ctxt t in
           <:match_case< $patt$ when $guard$ ->
             $self#call_expr ctxt t "write"$ buffer $cast$ >>,
           <:match_case< hash when $self#call_expr ctxt t "match_variant"$ hash ->
@@ -222,13 +229,16 @@ module InContext (L : Loc) : Class = struct
 	~read_variant:(readers @ [failover]) ~hashes
 	~write:(dumpers@[failover]) ~read ()
 
-  end
+  end :> Generator.generator)
 
-  let make_module_expr = instance#rhs
-  let generate = default_generate ~make_module_expr ~make_module_type
-  let generate_sigs = default_generate_sigs ~make_module_sig
-  let generate_expr = instance#expr
+  let classname = Description.classname
+  let runtimename = Description.runtimename
+  let generate = Generator.generate generator
+  let generate_sigs = Generator.generate_sigs generator
+  let generate_expr = Generator.generate_expr generator
 
 end
 
-module Json = Pa_deriving_common.Base.Register(Description)(InContext)
+module Json = Base.Register(Description)(Builder)
+
+let depends = (module Builder : Defs.FullClassBuilder)
