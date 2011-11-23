@@ -1416,3 +1416,9 @@ let taggedEvent (ev : #event Js.t) =
 
 let opt_taggedEvent ev = Opt.case ev (fun () -> None) (fun ev -> Some (taggedEvent ev))
 
+let stopPropagation ev =
+  let e = Js.Unsafe.coerce ev in
+  Optdef.case
+    (e##stopPropagation)
+    (fun () -> e##cancelBubble <- Js._true)
+    (fun _ -> e##_stopPropagation())

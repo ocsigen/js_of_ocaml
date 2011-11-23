@@ -145,7 +145,9 @@ end
 (** {2 Helper functions} *)
 
 val insertBefore : #node t -> #node t -> #node t opt -> unit
-  (** The expression [insertBefore n c p] behave the same as
+  (** [insertBefore n c p] inserts node [c] as child of node [n],
+      just before node [p], or as last child if [p] is empty.
+      The expression [insertBefore n c p] behave the same as
       [n##insertBefore(c, p)] but avoid the need of coercing the
       different objects to [node t]. *)
 val replaceChild : #node t -> #node t -> #node t -> unit

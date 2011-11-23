@@ -1187,6 +1187,9 @@ type taggedEvent =
 val taggedEvent : #event t -> taggedEvent
 val opt_taggedEvent : #event t opt -> taggedEvent option
 
+val stopPropagation : #event t -> unit
+
+
 module CoerceTo : sig
 
   (** HTMLElement *)

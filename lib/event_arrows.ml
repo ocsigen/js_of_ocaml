@@ -38,7 +38,7 @@ let cancel c = match !c with
   | Some f -> f ()
 
 let make_event eventkind
-    ?(use_capture = false) ?(keep_default = false) 
+    ?(use_capture = false) ?(keep_default = false) ?(propagate = false)
     (target : #Dom_html.eventTarget Js.t) _ c =
   let el = ref Js.null in
   let t, w = Lwt.wait () in
@@ -49,6 +49,8 @@ let make_event eventkind
        target eventkind
        (Dom_html.handler
           (fun (ev : #Dom_html.event Js.t) ->
+            if not propagate
+            then Dom_html.stopPropagation ev;
             cancel ();
             Lwt.wakeup w (ev, c);
             Js.bool keep_default))
@@ -56,14 +58,15 @@ let make_event eventkind
     );
   t
 
-let rec loop_event f ?use_capture ?keep_default target handler x c =
-  (f ?use_capture ?keep_default target >>> handler) () c >>= fun (y, c) ->
-  loop_event f ?use_capture ?keep_default target handler x c
+let rec loop_event f ?use_capture ?keep_default ?propagate target handler x c =
+  (f ?use_capture ?keep_default ?propagate target >>> handler) () c
+  >>= fun (y, c) ->
+  loop_event f ?use_capture ?keep_default ?propagate target handler x c
 
 (*  let rec loop f handler = f >>> handler >>> loop f handler *)
 
 let make_state eventkind
-    ?(use_capture = false) ?(keep_default = false) 
+    ?(use_capture = false) ?(keep_default = false) ?(propagate = false)
     (target : #Dom_html.eventTarget Js.t) handler _ c =
   let el = ref Js.null in
   let c1 = ref None in
@@ -86,7 +89,11 @@ let make_state eventkind
   el := Js.some
     (Dom_html.addEventListener
        target eventkind
-       (Dom_html.handler (fun ev -> f ev; Js.bool keep_default))
+       (Dom_html.handler (fun ev -> 
+         if not propagate
+         then Dom_html.stopPropagation ev;
+         f ev;
+         Js.bool keep_default))
        (Js.bool use_capture)
     );
   fst (Lwt.wait ())
@@ -104,57 +111,58 @@ let first l x c =
   cancellers := List.map (fun e -> run (e >>> f) x) l;
   t
 
-let click ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.click ?use_capture ?keep_default t a c
-let dblclick ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.dblclick ?use_capture ?keep_default t a c
-let mousedown ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.mousedown ?use_capture ?keep_default t a c
-let mouseup ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.mouseup ?use_capture ?keep_default t a c
-let mouseover ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.mouseover ?use_capture ?keep_default t a c
-let mousemove ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.mousemove ?use_capture ?keep_default t a c
-let mouseout ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.mouseout ?use_capture ?keep_default t a c
 
-let keypress ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.keypress ?use_capture ?keep_default t a c
-let keydown ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.keydown ?use_capture ?keep_default t a c
-let keyup ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.keyup ?use_capture ?keep_default t a c
+let click ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.click ?use_capture ?keep_default ?propagate t a c
+let dblclick ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.dblclick ?use_capture ?keep_default ?propagate t a c
+let mousedown ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.mousedown ?use_capture ?keep_default ?propagate t a c
+let mouseup ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.mouseup ?use_capture ?keep_default ?propagate t a c
+let mouseover ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.mouseover ?use_capture ?keep_default ?propagate t a c
+let mousemove ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.mousemove ?use_capture ?keep_default ?propagate t a c
+let mouseout ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.mouseout ?use_capture ?keep_default ?propagate t a c
+
+let keypress ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.keypress ?use_capture ?keep_default ?propagate t a c
+let keydown ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.keydown ?use_capture ?keep_default ?propagate t a c
+let keyup ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.keyup ?use_capture ?keep_default ?propagate t a c
 
 (* TODO: implement with Dom_html.addMousewheelEventListener
-let mousewheel ?use_capture ?keep_default t a c =
-  make_event Dom_html.Event.mousewheel ?use_capture ?keep_default t a c
+let mousewheel ?use_capture ?keep_default ?propagate t a c =
+  make_event Dom_html.Event.mousewheel ?use_capture ?keep_default ?propagate t a c
 *)
 
-let clicks ?use_capture ?keep_default t =
-  loop_event click ?use_capture ?keep_default t
-let dblclicks ?use_capture ?keep_default t =
-  loop_event dblclick ?use_capture ?keep_default t
-let mousedowns ?use_capture ?keep_default t =
-  make_state Dom_html.Event.mousedown ?use_capture ?keep_default t
-let mouseups ?use_capture ?keep_default t =
-  make_state Dom_html.Event.mouseup ?use_capture ?keep_default t
-let mouseovers ?use_capture ?keep_default t =
-  loop_event mouseover ?use_capture ?keep_default t
-let mousemoves ?use_capture ?keep_default t =
-  make_state Dom_html.Event.mousemove ?use_capture ?keep_default t
-let mouseouts ?use_capture ?keep_default t =
-  loop_event mouseout ?use_capture ?keep_default t
+let clicks ?use_capture ?keep_default ?propagate t =
+  loop_event click ?use_capture ?keep_default ?propagate t
+let dblclicks ?use_capture ?keep_default ?propagate t =
+  loop_event dblclick ?use_capture ?keep_default ?propagate t
+let mousedowns ?use_capture ?keep_default ?propagate t =
+  make_state Dom_html.Event.mousedown ?use_capture ?keep_default ?propagate t
+let mouseups ?use_capture ?keep_default ?propagate t =
+  make_state Dom_html.Event.mouseup ?use_capture ?keep_default ?propagate t
+let mouseovers ?use_capture ?keep_default ?propagate t =
+  loop_event mouseover ?use_capture ?keep_default ?propagate t
+let mousemoves ?use_capture ?keep_default ?propagate t =
+  make_state Dom_html.Event.mousemove ?use_capture ?keep_default ?propagate t
+let mouseouts ?use_capture ?keep_default ?propagate t =
+  loop_event mouseout ?use_capture ?keep_default ?propagate t
 (*VVV make_state? *)
 
-let keypresses ?use_capture ?keep_default t =
-  loop_event keypress ?use_capture ?keep_default t
-let keydowns ?use_capture ?keep_default t =
-  make_state Dom_html.Event.keydown ?use_capture ?keep_default t
-let keyups ?use_capture ?keep_default t =
-  make_state Dom_html.Event.keyup ?use_capture ?keep_default t
+let keypresses ?use_capture ?keep_default ?propagate t =
+  loop_event keypress ?use_capture ?keep_default ?propagate t
+let keydowns ?use_capture ?keep_default ?propagate t =
+  make_state Dom_html.Event.keydown ?use_capture ?keep_default ?propagate t
+let keyups ?use_capture ?keep_default ?propagate t =
+  make_state Dom_html.Event.keyup ?use_capture ?keep_default ?propagate t
 
 (* TODO: implement with Dom_html.addMousewheelEventListener
-let mousewheels ?use_capture ?keep_default t =
-  loop_event mousewheel ?use_capture ?keep_default t
+let mousewheels ?use_capture ?keep_default ?propagate t =
+  loop_event mousewheel ?use_capture ?keep_default ?propagate t
 *)

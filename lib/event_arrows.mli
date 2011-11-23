@@ -34,49 +34,84 @@ val first : ('a, 'b) t list -> ('a, 'b) t
 
 (*  val loop : ('a, 'b) t -> ('b, 'a) t -> ('a, 'c) t *)
 
+(**
+   Browsers propagate events from external boxes to internal (capture phase),
+   then from internal to external (bubble phase).
+
+   If [use_capture] is set to [true], the event will be caught during the
+   capture phase (default: bubble phase).
+ 
+   If [keep_default] is set to [true], the default event will not be removed.
+
+   If [propagate] is set to [true], the event will continue to propagate
+   after the handler.
+
+*)
+
 val click : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.mouseEvent Js.t) t
 val dblclick : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.mouseEvent Js.t) t
 val mousedown : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.mouseEvent Js.t) t
 val mouseup : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.mouseEvent Js.t) t
 val mouseover : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.mouseEvent Js.t) t
 val mousemove : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.mouseEvent Js.t) t
 val mouseout : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.mouseEvent Js.t) t
 val keypress : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.keyboardEvent Js.t) t
 val keydown : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.keyboardEvent Js.t) t
 val keyup : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.keyboardEvent Js.t) t
 (* val mousewheel : ?use_capture : bool ->  ?keep_default : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.mousewheelEvent Js.t) t *)
 
 val clicks : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.mouseEvent Js.t, 'a) t -> ('b, 'c) t
 val dblclicks : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.mouseEvent Js.t, 'a) t -> ('b, 'c) t
 val mousedowns : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.mouseEvent Js.t, 'a) t -> ('b, 'c) t
 val mouseups : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.mouseEvent Js.t, 'a) t -> ('b, 'c) t
 val mouseovers : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.mouseEvent Js.t, 'a) t -> ('b, 'c) t
 val mousemoves : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.mouseEvent Js.t, 'a) t -> ('b, 'c) t
 val mouseouts : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.mouseEvent Js.t, 'a) t -> ('b, 'c) t
 val keypresses : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.keyboardEvent Js.t, 'a) t -> ('b, 'c) t
 val keydowns : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.keyboardEvent Js.t, 'a) t -> ('b, 'c) t
 val keyups : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.keyboardEvent Js.t, 'a) t -> ('b, 'c) t
 (* val mousewheels : ?use_capture : bool ->  ?keep_default : bool ->
+  ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.mousewheelEvent Js.t, 'a) t -> ('b, 'c) t
 *)
