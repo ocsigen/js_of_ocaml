@@ -111,6 +111,10 @@ let first l x c =
   cancellers := List.map (fun e -> run (e >>> f) x) l;
   t
 
+let rec iter l x c =
+  first l x c >>= fun (y, c) ->
+  iter l x c
+
 
 let click ?use_capture ?keep_default ?propagate t a c =
   make_event Dom_html.Event.click ?use_capture ?keep_default ?propagate t a c

@@ -32,6 +32,13 @@ val cancel : canceller -> unit
 (** Behaves as the first element of the list to terminate *)
 val first : ('a, 'b) t list -> ('a, 'b) t
 
+(** Behaves as one element of the list, then another one, etc.
+    If you launch several run in parallel, event handler will be parallelized,
+    that is: one will not be desactivated while another is running.
+    To sequentialize them, use iter.
+*)
+val iter : ('a, 'b) t list -> ('a, 'b) t
+
 (*  val loop : ('a, 'b) t -> ('b, 'a) t -> ('a, 'c) t *)
 
 (**
