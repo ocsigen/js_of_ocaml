@@ -11,15 +11,19 @@ OTHERS := runtime/runtime.js
 
 ifneq "${DERIVING}" ""
 
-INTF += lib/deriving_json/deriving_Json.cmi       \
+JSON := lib/deriving_json/deriving_Json.cmi       \
         lib/deriving_json/deriving_Json_lexer.cmi \
+
+INTF += $(JSON)
 
 IMPL += lib/syntax/pa_deriving_Json.cmo \
         lib/deriving_json.cma           \
 
-NATIMPL += lib/deriving_json.cmxa     \
+NATIMPL := lib/deriving_json.cmxa     \
 	   lib/deriving_json.cmxs     \
 	   lib/deriving_json$(LIBEXT) \
+
+NATIMPL += $(JSON:.cmi=.cmx)
 
 endif
 
