@@ -3,7 +3,7 @@ include ../Makefile.conf
 
 COMP=../compiler/$(COMPILER)
 JSFILES=../runtime/runtime.js
-OCAMLC=ocamlfind ocamlc -package lwt -pp "camlp4o ../lib/syntax/pa_js.cmo" -I ../lib
+OCAMLC=ocamlfind ocamlc -package lwt,deriving-ocsigen.syntax -ppopt ../lib/syntax/pa_js.cmo -ppopt ../lib/syntax/pa_deriving_Json.cmo -I ../lib -I ../lib/deriving_json
 STDLIB=$(LIBNAME).cma
 
 $(NAME).js: $(NAME).byte $(COMP) $(JSFILES)
@@ -13,7 +13,7 @@ $(NAME).byte: $(OBJS)
 	$(OCAMLC) -linkpkg -o $@ $(STDLIB) $^
 
 %.cmo: %.ml ../lib/$(STDLIB)
-	$(OCAMLC) -g -c $<
+	$(OCAMLC) -syntax camlp4o -g -c $<
 
 clean::
 	rm -f *.cm[io] $(NAME).byte $(NAME).js

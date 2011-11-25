@@ -191,9 +191,9 @@ module Json_string = Defaults(struct
 	| '\t' -> Buffer.add_string buffer "\\t"
 	| c when c <= '\x1F' -> (* Other control characters are escaped. *)
 	  Printf.bprintf buffer "\\u%04X" (int_of_char c)
-      | c when c < '\xC0' ->
+      | c when c < '\x80' ->
 	  Buffer.add_char buffer s.[i]
-      | c (* >= '\xC0' *) -> (* Bytes greater than 127 are embeded in a UTF-8 sequence. *)
+      | c (* >= '\x80' *) -> (* Bytes greater than 127 are embeded in a UTF-8 sequence. *)
 	  Buffer.add_char buffer (Char.chr (0xC2 lor (Char.code s.[i] lsr 6)));
 	  Buffer.add_char buffer (Char.chr (0x80 lor (Char.code s.[i] land 0x3F)))
     done;

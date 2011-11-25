@@ -247,11 +247,29 @@ let () =
 
 type t = int list * float option * string deriving (Json)
 
-let v = ([1;2;3], Some 1.3, str)
+let test t v =
+  if v = Json.unsafe_input (Json.output v)
+  then log_success ()
+  else log_failure "Not equal";
+  if v = Deriving_Json.from_string t (Js.to_string (Json.output v))
+  then log_success ()
+  else log_failure "Not equal";
+  if v = Json.unsafe_input (Js.string (Deriving_Json.to_string t v))
+  then log_success ()
+  else log_failure "Not equal";
+  if v = Deriving_Json.from_string t (Deriving_Json.to_string t v)
+  then log_success ()
+  else log_failure "Not equal"
 
-let v' = Json.unsafe_input (Json.output v)
+let _ = test Json.t<t> ([1;2;3], Some 1., str)
 
-let () = if v = v' then log_success () else log_failure "Not equal"
+type intseq = Z | S of int * intseq deriving (Json)
+
+let _ = test Json.t<intseq> (S (1, S (2, S (3, Z))))
+
+type 'a seq = ZZ | SS of 'a * 'a seq deriving (Json)
+
+let _ = test Json.t<int seq> (SS (1, SS (2, SS (3, ZZ))))
 
 let () = log_stop "Json"
 

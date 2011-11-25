@@ -176,7 +176,7 @@ rule finish_string v = parse
     '"'    { Buffer.contents v.buf }
   | '\\'   { finish_escaped_char v lexbuf;
 	     finish_string v lexbuf }
-  | _ as c { if c < '\xc0' then
+  | _ as c { if c < '\x80' then
                Buffer.add_char v.buf c
              else
                finish_utf8_encoded_byte v c lexbuf;
