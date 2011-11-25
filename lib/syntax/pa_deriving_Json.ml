@@ -27,22 +27,21 @@ module Description = struct
   let alpha = None
   let allow_private = false
   let predefs = [
-    ["int"      ], "int";
-    ["bool"     ], "bool";
-    ["unit"     ], "unit";
-    ["char"     ], "char";
-    ["int32"    ], "int32";
-    ["Int32";"t"], "int32";
-    ["int64"    ], "int64";
-    ["Int64";"t"], "int64";
-    ["nativeint"], "nativeint";
-    ["float"    ], "float";
-    (* ["num"], "num"; *)
-    ["string"   ], "string";
-    ["list"     ], "list";
-    ["ref"      ], "ref";
-    ["option"   ], "option";
-    ["array"    ], "array";
+    ["int"      ], ["Deriving_Json";"int"];
+    ["bool"     ], ["Deriving_Json";"bool"];
+    ["unit"     ], ["Deriving_Json";"unit"];
+    ["char"     ], ["Deriving_Json";"char"];
+    ["int32"    ], ["Deriving_Json";"int32"];
+    ["Int32";"t"], ["Deriving_Json";"int32"];
+    ["int64"    ], ["Deriving_Json";"int64"];
+    ["Int64";"t"], ["Deriving_Json";"int64"];
+    ["nativeint"], ["Deriving_Json";"nativeint"];
+    ["float"    ], ["Deriving_Json";"float"];
+    ["string"   ], ["Deriving_Json";"string"];
+    ["list"     ], ["Deriving_Json";"list"];
+    ["ref"      ], ["Deriving_Json";"ref"];
+    ["option"   ], ["Deriving_Json";"option"];
+    ["array"    ], ["Deriving_Json";"array"];
   ]
   let depends = []
 end

@@ -273,7 +273,6 @@ let _ = test Json.t<int seq> (SS (1, SS (2, SS (3, ZZ))))
 
 let () = log_stop "Json"
 
-
 let () =
   Firebug.console##log(
     Js.string (
