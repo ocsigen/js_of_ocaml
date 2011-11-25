@@ -24,6 +24,7 @@ module Description = struct
   let classname = "Json"
   let runtimename = "Deriving_Json"
   let default_module = Some "Defaults"
+  let alpha = None
   let allow_private = false
   let predefs = [
     ["int"      ], "int";
@@ -161,10 +162,10 @@ module Builder(Loc : Defs.Loc) = struct
 	<:match_case< $patt$ -> $self#do_dump_blk ctxt 0 contents$ >> in
       let readers =
 	List.fold_right
-	  (fun (var, (_, ty), _) expr ->
+	  (fun (var, ty, _) expr ->
 	    <:expr<
 	      Deriving_Json_lexer.read_comma buf;
-	      let $lid:var$ = $self#call_expr ctxt ty "read"$ buf in $expr$ >>)
+	      let $lid:var$ = $self#call_poly_expr ctxt ty "read"$ buf in $expr$ >>)
 	  fields
 	  <:expr<
             Deriving_Json_lexer.read_rbracket buf;
