@@ -1,4 +1,9 @@
-===== Dev =====
+===== 1.0.8 (2011-11-25) =====
+
+ * Compatibility with deriving-0.3
+ * Libraries:
+   ** Adding Event_arrows.iter
+   ** Events: adding Dom_html.stopPropagation and ?propagate parameter in Event_arrows
 
 ===== 1.0.7 (2011-11-18) =====
 
