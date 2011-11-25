@@ -139,8 +139,11 @@ string. The unmarshalling is unsafe in the same way the OCaml
 {{{Marshall.from_string}}} function is.
 
 Type-safe unmarshalling may be achieved with the
-{{{deriving-ocsigen}}} library and the optionnal {{{Json}}} class. See
-<<a_api | module Deriving_Json >> for more information. Currently, the
-{{{deriving-ocsigen}}} library relies on recursives modules that are
-not handled yet by {{{js_of_ocaml}}} and the
-<<a_api | module Deriving_Json >> module may only be used on a server side.
+{{{deriving-ocsigen}}} library using either the optionnal {{{Json}}}
+class or the {{{Pickle}}} class.
+
+* The {{{Json}}} class use a Json as external representation and do
+  not preserve potential sharings in the data representation. See
+  <<a_api | module Deriving_Json >> for more information.
+* The {{{Pickle}}} class use a binary format as external
+  representation and preserve sharings in the data representation.
