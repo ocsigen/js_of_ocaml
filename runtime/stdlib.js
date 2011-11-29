@@ -165,7 +165,10 @@ function caml_compare_val (a, b, total) {
     if (!(total && a === b)) {
       if (a instanceof MlString) {
         if (b instanceof MlString) {
-          if (a != b) return a.compare(b);
+            if (a != b) {
+		var x = a.compare(b);
+		if (x != 0) return x;
+	    }
         } else
           // Should not happen
           return 1;
@@ -185,12 +188,16 @@ function caml_compare_val (a, b, total) {
             return (ta < tb)?-1:1;
           } else {
             switch (ta) {
-            case 248:
-              // Object
-              return caml_int_compare(a[2], b[2]);
-            case 255:
-              // Int64
-              return caml_int64_compare(a, b);
+            case 248: {
+		// Object
+		var x = caml_int_compare(a[2], b[2]);
+		if (x != 0) return x;
+	    }
+            case 255: {
+		// Int64
+		var x = caml_int64_compare(a, b);
+		if (x != 0) return x;
+	    }
             default:
               if (a.length != b.length) return (a.length < b.length)?-1:1;
               if (a.length > 1) stack.push(a, b, 1);
