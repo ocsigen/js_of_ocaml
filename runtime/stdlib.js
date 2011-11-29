@@ -192,11 +192,13 @@ function caml_compare_val (a, b, total) {
 		// Object
 		var x = caml_int_compare(a[2], b[2]);
 		if (x != 0) return x;
+		break;
 	    }
             case 255: {
 		// Int64
 		var x = caml_int64_compare(a, b);
 		if (x != 0) return x;
+		break;
 	    }
             default:
               if (a.length != b.length) return (a.length < b.length)?-1:1;
