@@ -16,7 +16,7 @@ very stable API.
   * Lwt (**version 2.3.0** at least)
 
   [optionnal]
-  * deriving-ocsigen (**version 0.3.0** at least
+  * deriving-ocsigen (**version 0.3** at least
                       see: https://github.com/hnrgrgr/deriving)
 
 === Installation ===

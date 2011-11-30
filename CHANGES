@@ -1,3 +1,7 @@
+===== 1.0.9 (2011-11-30) =====
+
+ * Bugfixe in polymorphic comparison.
+
 ===== 1.0.8 (2011-11-25) =====
 
  * Compatibility with deriving-0.3
