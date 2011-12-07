@@ -59,7 +59,7 @@ var caml_input_value_from_string = function (){
       var a = this.a, i = this.i;
       this.i = i + 4;
       return (a[i] << 24) | (a[i+1] << 16) | (a[i+2] << 8) | a[i+3];
-    }
+    },
     readstr:function (len) {
       var i = this.i;
       this.i = i + len;
@@ -91,7 +91,7 @@ var caml_input_value_from_string = function (){
       this.i = i + 4;
       return (s.charCodeAt(i) << 24) | (s.charCodeAt(i+1) << 16) |
              (s.charCodeAt(i+2) << 8) | s.charCodeAt(i+3);
-    }
+    },
     readstr:function (len) {
       var i = this.i;
       this.i = i + len;
