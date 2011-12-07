@@ -33,7 +33,7 @@ var caml_marshal_constants = {
 }
 
 //Provides: caml_input_value_from_string mutable
-//Requires: caml_failwith, MlStringFromArray, caml_marshal_constants
+//Requires: caml_failwith, MlStringFromArray, MlString, caml_marshal_constants
 //Requires: caml_int64_float_of_bits, caml_int64_of_bytes
 var caml_input_value_from_string = function (){
   function ArrayReader (a, i) { this.a = a; this.i = i; }
@@ -59,6 +59,11 @@ var caml_input_value_from_string = function (){
       var a = this.a, i = this.i;
       this.i = i + 4;
       return (a[i] << 24) | (a[i+1] << 16) | (a[i+2] << 8) | a[i+3];
+    }
+    readstr:function (len) {
+      var i = this.i;
+      this.i = i + len;
+      return new MlStringFromArray(this.a.slice(i, i + len));
     }
   }
   function StringReader (s, i) { this.s = s; this.i = i; }
@@ -86,6 +91,11 @@ var caml_input_value_from_string = function (){
       this.i = i + 4;
       return (s.charCodeAt(i) << 24) | (s.charCodeAt(i+1) << 16) |
              (s.charCodeAt(i+2) << 8) | s.charCodeAt(i+3);
+    }
+    readstr:function (len) {
+      var i = this.i;
+      this.i = i + len;
+      return new MlString(this.s.substring(i, i + len));
     }
   }
   function caml_float_of_bytes (a) {
@@ -119,9 +129,7 @@ var caml_input_value_from_string = function (){
       } else {
         if (code >= cst.PREFIX_SMALL_STRING) {
           var len = code & 0x1F;
-          var a = [];
-          for (var d = 0;d < len;d++) a[d] = reader.read8u ();
-          var v = new MlStringFromArray (a);
+          var v = reader.readstr (len);
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           return v;
         } else {
@@ -158,16 +166,12 @@ var caml_input_value_from_string = function (){
             break;
           case cst.CODE_STRING8:
             var len = reader.read8u();
-            var a = [];
-            for (var d = 0;d < len;d++) a[d] = reader.read8u ();
-            var v = new MlStringFromArray (a);
+            var v = reader.readstr (len);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
           case cst.CODE_STRING32:
             var len = reader.read32u();
-            var a = [];
-            for (var d = 0;d < len;d++) a[d] = reader.read8u ();
-            var v = new MlStringFromArray (a);
+            var v = reader.readstr (len);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             return v;
           case cst.CODE_DOUBLE_LITTLE:
