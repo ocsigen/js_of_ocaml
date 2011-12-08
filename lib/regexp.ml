@@ -18,42 +18,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type regexp =
-  { str : Js.js_string Js.t;
-    mutable simple : Js.regExp Js.t Js.opt;
-    mutable global : Js.regExp Js.t Js.opt }
+type regexp = Js.regExp Js.t
 
 type result = Js.match_result Js.t
 
-let regexp s = { str = Js.bytestring s; simple = Js.null; global = Js.null }
-let simple re =
-  Js.Opt.get re.simple
-    (fun () ->
-       let r = jsnew Js.regExp (re.str) in
-       re.simple <- Js.some r;
-       r)
-let global re =
-  Js.Opt.get re.global
-    (fun () ->
-       let r = jsnew Js.regExp_withFlags (re.str, Js.string "g") in
-       re.global <- Js.some r;
-       r)
+let regexp s = jsnew Js.regExp_withFlags (Js.bytestring s, Js.string "g")
+
 let blunt_str_array_get a i =
   Js.to_bytestring (Js.Optdef.get (Js.array_get a i) (fun () -> assert false))
 
-let string_match re s i =
-  let r = simple re in
+let string_match r s i =
   r##lastIndex <- i;
   Js.Opt.to_option (Js.Opt.map (r##exec(Js.bytestring s)) Js.match_result)
 
-let search re s i =
-  let r = simple re in
-  let s = String.sub s i (String.length s - i) in
-  let idx = (Js.string s)##search(r) in
+let search r s i =
+  r##lastIndex <- i;
   Js.Opt.to_option
     (Js.Opt.map (r##exec(Js.bytestring s))
-       (fun res_pre -> let res = Js.match_result res_pre in
-	(i + idx, res)))
+       (fun res_pre -> let res = Js.match_result res_pre in (res##index, res)))
 
 let matched_string r = blunt_str_array_get r 0
 
@@ -64,12 +46,10 @@ let quote_repl_re = jsnew Js.regExp_withFlags (Js.string "[$]", Js.string "g")
 let quote_repl s =
   (Js.bytestring s)##replace (quote_repl_re, Js.string "$$$$")
 
-let global_replace re s s_by =
-  let r = global re in
+let global_replace r s s_by =
   r##lastIndex <- 0;
   Js.to_bytestring (Js.bytestring s)##replace(r, quote_repl s_by)
-let replace_first re s s_by =
-  let r = global re in
+let replace_first r s s_by =
   r##lastIndex <- 0;
   Js.to_bytestring (Js.bytestring s)##replace(r, quote_repl s_by)
 
@@ -80,19 +60,16 @@ let list_of_js_array a =
   in
   aux [] (a##length - 1)
 
-let split re s =
-  let r = simple re in
+let split r s =
   r##lastIndex <- 0;
   list_of_js_array (Js.str_array (Js.bytestring s)##split_regExp(r))
-let bounded_split re s i =
-  let r = simple re in
+let bounded_split r s i =
   r##lastIndex <- 0;
   list_of_js_array (Js.str_array (Js.bytestring s)##split_regExpLimited(r, i))
 
 (* More constructors *)
 
-let quote_re =
-  jsnew Js.regExp_withFlags (Js.string "[\\][()\\\\|+*.?{}^$]", Js.string "g")
+let quote_re = regexp "[\\][()\\\\|+*.?{}^$]"
 
 let quote s =
   Js.to_bytestring (Js.bytestring s)##replace (quote_re, Js.string "\\$&")

@@ -1,3 +1,8 @@
+===== dev =====
+
+ * Libraries:
+ ** Regexp: Fix efficacity problem
+
 ===== 1.0.9 (2011-11-30) =====
 
  * Bugfixe in polymorphic comparison.
