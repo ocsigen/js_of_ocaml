@@ -277,14 +277,13 @@ function caml_string_greaterequal(s1, s2) { return s2.lessEqual(s1); }
 //Requires: MlString
 function caml_blit_string(s1, i1, s2, i2, len) {
   if (len === 0) return;
-  if (i2 === s2.last && i1 === 0 && s1.last == len) {
-    // s2.string and s2.array are null
-    var s = s1.bytes;
-    if (s !== null)
-      s2.bytes += s1.bytes;
-    else
-      s2.bytes += s1.getBytes();
-    s2.last += len;
+  if (i2 === s2.last && s2.bytes != null) {
+    // s2.last < s2.len; hence, s2.string and s2.array are null
+    var b = s1.bytes;
+    if (b == null) b = s1.toBytes ();
+    if (i1 > 0 || s1.last > len) b = b.slice(i1, i1 + len);
+    s2.bytes += b;
+    s2.last += b.length;
     return;
   }
   var a = s2.array;
