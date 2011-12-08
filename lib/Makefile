@@ -30,7 +30,7 @@ syntax/pa_js.cmo: syntax/pa_js.ml
 	ocamlfind ocamlc -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
 
 syntax/pa_deriving_Json.cmo: syntax/pa_deriving_Json.ml
-	ocamlfind ocamlc -package deriving-ocsigen,camlp4.quotations.o -syntax camlp4o -c $<
+	ocamlfind ocamlc -package deriving-ocsigen.syntax,camlp4.quotations.o -syntax camlp4o -c $<
 
 %.cmo: %.ml syntax/pa_js.cmo
 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c -g $<
