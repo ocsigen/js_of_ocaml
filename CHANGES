@@ -3,6 +3,7 @@
  * Libraries:
  ** Regexp: Fix efficacity problem
  ** Dom_html: Add querySelector
+ ** Dom: Add compareDocumentPosition
 
 ===== 1.0.9 (2011-11-30) =====
 

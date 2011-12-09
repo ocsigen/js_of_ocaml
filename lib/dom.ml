@@ -62,6 +62,13 @@ type nodeType =
   | DOCUMENT_FRAGMENT
   | NOTATION
 
+let document_position_disconnected = 0x01
+let document_position_preceding    = 0x02
+let document_position_following    = 0x04
+let document_position_contains     = 0x08
+let document_position_contained_by = 0x10
+let document_position_implementation_specific = 0x20
+
 class type node = object
   method nodeName : js_string t readonly_prop
   method nodeValue : js_string t opt readonly_prop
@@ -79,6 +86,7 @@ class type node = object
   method appendChild : node t -> node t meth
   method hasChildNodes : bool t meth
   method cloneNode : bool t -> node t meth
+  method compareDocumentPosition : node t -> int meth
 end
 
 let appendChild (p : #node t) (n : #node t) =

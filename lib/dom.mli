@@ -48,6 +48,13 @@ type nodeType =
   | DOCUMENT_FRAGMENT
   | NOTATION
 
+val document_position_disconnected : int
+val document_position_preceding : int
+val document_position_following : int
+val document_position_contains : int
+val document_position_contained_by : int
+val document_position_implementation_specific : int
+
 (** Specification of [Node] objects. *)
 class type node = object
   method nodeName : js_string t readonly_prop
@@ -66,6 +73,7 @@ class type node = object
   method appendChild : node t -> node t meth
   method hasChildNodes : bool t meth
   method cloneNode : bool t -> node t meth
+  method compareDocumentPosition : node t -> int meth
 end
 
 (** Specification of [TokenList] objects. *)
