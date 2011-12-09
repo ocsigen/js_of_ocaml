@@ -302,7 +302,7 @@ var caml_output_val = function (){
     var stack = [];
     function extern_rec (v) {
       var cst = caml_marshal_constants;
-      if (v instanceof Array && v[0] == (v[0]|0)) {
+      if (v instanceof Array && v[0] === (v[0]|0)) {
         if (v[0] == 255) {
           // Int64
           writer.write (8, cst.CODE_CUSTOM);

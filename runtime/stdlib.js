@@ -172,13 +172,13 @@ function caml_compare_val (a, b, total) {
         } else
           // Should not happen
           return 1;
-      } else if (a instanceof Array && a[0] == (a[0]|0)) {
+      } else if (a instanceof Array && a[0] === (a[0]|0)) {
         // Forward object
         var ta = a[0];
         if (ta === 250) {
           a = a[1];
           continue;
-        } else if (b instanceof Array && b[0] == (b[0]|0)) {
+        } else if (b instanceof Array && b[0] === (b[0]|0)) {
           // Forward object
           var tb = b[0];
           if (tb === 250) {
@@ -208,7 +208,7 @@ function caml_compare_val (a, b, total) {
         } else
           return 1;
       } else if (b instanceof MlString ||
-                 (b instanceof Array && b[0] == (b[0]|0))) {
+                 (b instanceof Array && b[0] === (b[0]|0))) {
         return -1;
       } else {
         if (a < b) return -1;
@@ -455,7 +455,7 @@ function caml_hash_univ_param (count, limit, obj) {
   function hash_aux (obj) {
     limit --;
     if (count < 0 || limit < 0) return;
-    if (obj instanceof Array && obj[0] == (obj[0]|0)) {
+    if (obj instanceof Array && obj[0] === (obj[0]|0)) {
       switch (obj[0]) {
       case 248:
         // Object
@@ -485,11 +485,11 @@ function caml_hash_univ_param (count, limit, obj) {
         for (var i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
       }
-    } else if (obj == (obj|0)) {
+    } else if (obj === (obj|0)) {
       // Integer
       count --;
       hash_accu = (hash_accu * 65599 + obj) | 0;
-    } else if (obj == +obj) {
+    } else if (obj === +obj) {
       // Float
       count--;
       var p = caml_int64_to_bytes (caml_int64_bits_of_float (obj));
