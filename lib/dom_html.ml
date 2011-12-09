@@ -134,6 +134,7 @@ type mouse_button =
 class type event = object
   method _type : js_string t readonly_prop
   method target : element t optdef readonly_prop
+  method currentTarget : element t optdef readonly_prop
   method srcElement : element t optdef readonly_prop
 end
 
@@ -215,8 +216,14 @@ and storage = object
   method clear : unit meth
 end
 
+and nodeSelector = object
+  method querySelector : js_string t -> element t opt meth
+  method querySelectorAll : js_string t -> element Dom.nodeList t meth
+end
+
 and element = object
   inherit Dom.element
+  inherit nodeSelector
   method id : js_string t prop
   method title : js_string t prop
   method lang : js_string t prop
@@ -839,6 +846,7 @@ external pixel_set : canvasPixelArray t -> int -> int -> unit = "caml_js_set"
 
 class type document = object
   inherit [element] Dom.document
+  inherit nodeSelector
   method title : js_string t prop
   method referrer : js_string t readonly_prop
   method domain : js_string t readonly_prop
