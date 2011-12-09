@@ -74,7 +74,8 @@ type url =
     unknown/unsupported protocols. *)
 
 exception Not_an_http_protocol
-let is_secure prot_string = match String.lowercase prot_string with
+let is_secure prot_string =
+  match Js.to_bytestring (prot_string##toLowerCase ()) with
   | "https:" | "https" -> true
   | "http:"  | "http"  -> false
   | "file:"  | "file"
@@ -191,11 +192,7 @@ let url_of_js_string s =
     (fun handle ->
        let res = Js.match_result handle in
        let ssl =
-         is_secure
-           (Js.to_bytestring
-              (Js.Optdef.get (Js.array_get res 1) interrupt)
-           )
-       in
+         is_secure (Js.Optdef.get (Js.array_get res 1) interrupt) in
        let port_of_string = function
          | "" -> if ssl then 443 else 80
          | s -> int_of_string s

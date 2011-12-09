@@ -54,10 +54,7 @@ class type submittableElement = object
 end
 
 let have_content (elt:submittableElement t) =
-  let name = to_string (elt##name) in
-  match name with
-    | "" -> false
-    | _ -> not (Js.to_bool (elt##disabled))
+  elt##name##length > 0 && not (Js.to_bool (elt##disabled))
 
 let get_textarea_val ?(get=false) (elt:textAreaElement t) =
   if have_content (elt:>submittableElement t)
@@ -95,7 +92,7 @@ let get_input_val ?(get=false) (elt:inputElement t) =
   then
     let name = to_string (elt##name) in
     let value = elt##value in
-    match String.lowercase (to_string (elt##_type)) with
+    match to_bytestring (elt##_type##toLowerCase ()) with
       | "checkbox"
       | "radio" ->
 	if to_bool (elt##checked)
