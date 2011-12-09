@@ -175,6 +175,12 @@ and regExp = object
   method lastIndex : int prop
 end
 
+class type string_constr = object
+  method fromCharCode : int -> js_string t
+end
+
+let string = Unsafe.variable "String"
+
 let regExp = Unsafe.variable "RegExp"
 let regExp_copy = regExp
 let regExp_withFlags = regExp

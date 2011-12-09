@@ -218,6 +218,14 @@ and regExp = object
   method lastIndex : int prop
 end
 
+(** Specification of the string constructor, considered as an object. *)
+class type string_constr = object
+  method fromCharCode : int -> js_string t
+end
+
+val string : string_constr t
+  (** The string constructor, as an object. *)
+
 val regExp : (js_string t -> regExp t) constr
   (** Constructor of [RegExp] objects.  The expression [jsnew regExp (s)]
       builds the regular expression specified by string [s]. *)
