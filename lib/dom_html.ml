@@ -1331,67 +1331,134 @@ type taggedElement =
   | Ul of uListElement t
   | Other of element t
 
+let other e = Other (e : #element t :> element t)
+
 let tagged (e : #element t) =
-  match Js.to_string (e##tagName##toLowerCase()) with
-  | "a" -> A (Js.Unsafe.coerce e)
-  | "area" -> Area (Js.Unsafe.coerce e)
-  | "base" -> Base (Js.Unsafe.coerce e)
-  | "blockquote" -> Blockquote (Js.Unsafe.coerce e)
-  | "body" -> Body (Js.Unsafe.coerce e)
-  | "br" -> Br (Js.Unsafe.coerce e)
-  | "button" -> Button (Js.Unsafe.coerce e)
-  | "canvas" -> Canvas (Js.Unsafe.coerce e)
-  | "caption" -> Caption (Js.Unsafe.coerce e)
-  | "col" -> Col (Js.Unsafe.coerce e)
-  | "colgroup" -> Colgroup (Js.Unsafe.coerce e)
-  | "del" -> Del (Js.Unsafe.coerce e)
-  | "div" -> Div (Js.Unsafe.coerce e)
-  | "dl" -> Dl (Js.Unsafe.coerce e)
-  | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
-  | "form" -> Form (Js.Unsafe.coerce e)
-  | "frameset" -> Frameset (Js.Unsafe.coerce e)
-  | "frame" -> Frame (Js.Unsafe.coerce e)
-  | "h1" -> H1 (Js.Unsafe.coerce e)
-  | "h2" -> H2 (Js.Unsafe.coerce e)
-  | "h3" -> H3 (Js.Unsafe.coerce e)
-  | "h4" -> H4 (Js.Unsafe.coerce e)
-  | "h5" -> H5 (Js.Unsafe.coerce e)
-  | "h6" -> H6 (Js.Unsafe.coerce e)
-  | "head" -> Head (Js.Unsafe.coerce e)
-  | "hr" -> Hr (Js.Unsafe.coerce e)
-  | "html" -> Html (Js.Unsafe.coerce e)
-  | "iframe" -> Iframe (Js.Unsafe.coerce e)
-  | "img" -> Img (Js.Unsafe.coerce e)
-  | "input" -> Input (Js.Unsafe.coerce e)
-  | "ins" -> Ins (Js.Unsafe.coerce e)
-  | "label" -> Label (Js.Unsafe.coerce e)
-  | "legend" -> Legend (Js.Unsafe.coerce e)
-  | "li" -> Li (Js.Unsafe.coerce e)
-  | "link" -> Link (Js.Unsafe.coerce e)
-  | "map" -> Map (Js.Unsafe.coerce e)
-  | "meta" -> Meta (Js.Unsafe.coerce e)
-  | "object" -> Object (Js.Unsafe.coerce e)
-  | "ol" -> Ol (Js.Unsafe.coerce e)
-  | "optgroup" -> Optgroup (Js.Unsafe.coerce e)
-  | "option" -> Option (Js.Unsafe.coerce e)
-  | "p" -> P (Js.Unsafe.coerce e)
-  | "param" -> Param (Js.Unsafe.coerce e)
-  | "pre" -> Pre (Js.Unsafe.coerce e)
-  | "q" -> Q (Js.Unsafe.coerce e)
-  | "script" -> Script (Js.Unsafe.coerce e)
-  | "select" -> Select (Js.Unsafe.coerce e)
-  | "style" -> Style (Js.Unsafe.coerce e)
-  | "table" -> Table (Js.Unsafe.coerce e)
-  | "tbody" -> Tbody (Js.Unsafe.coerce e)
-  | "td" -> Td (Js.Unsafe.coerce e)
-  | "textarea" -> Textarea (Js.Unsafe.coerce e)
-  | "tfoot" -> Tfoot (Js.Unsafe.coerce e)
-  | "th" -> Th (Js.Unsafe.coerce e)
-  | "thead" -> Thead (Js.Unsafe.coerce e)
-  | "title" -> Title (Js.Unsafe.coerce e)
-  | "tr" -> Tr (Js.Unsafe.coerce e)
-  | "ul" -> Ul (Js.Unsafe.coerce e)
-  | _   -> Other (e : #element t :> element t)
+  let tag = Js.to_bytestring (e##tagName##toLowerCase()) in
+  if String.length tag = 0 then
+    other e
+  else
+    match String.unsafe_get tag 0 with
+      'a' ->
+        begin match tag with
+        | "a" -> A (Js.Unsafe.coerce e)
+        | "area" -> Area (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'b' ->
+        begin match tag with
+        | "base" -> Base (Js.Unsafe.coerce e)
+        | "blockquote" -> Blockquote (Js.Unsafe.coerce e)
+        | "body" -> Body (Js.Unsafe.coerce e)
+        | "br" -> Br (Js.Unsafe.coerce e)
+        | "button" -> Button (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'c' ->
+        begin match tag with
+        | "canvas" -> Canvas (Js.Unsafe.coerce e)
+        | "caption" -> Caption (Js.Unsafe.coerce e)
+        | "col" -> Col (Js.Unsafe.coerce e)
+        | "colgroup" -> Colgroup (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'd' ->
+        begin match tag with
+        | "del" -> Del (Js.Unsafe.coerce e)
+        | "div" -> Div (Js.Unsafe.coerce e)
+        | "dl" -> Dl (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'f' ->
+        begin match tag with
+        | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
+        | "form" -> Form (Js.Unsafe.coerce e)
+        | "frameset" -> Frameset (Js.Unsafe.coerce e)
+        | "frame" -> Frame (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'h' ->
+        begin match tag with
+        | "h1" -> H1 (Js.Unsafe.coerce e)
+        | "h2" -> H2 (Js.Unsafe.coerce e)
+        | "h3" -> H3 (Js.Unsafe.coerce e)
+        | "h4" -> H4 (Js.Unsafe.coerce e)
+        | "h5" -> H5 (Js.Unsafe.coerce e)
+        | "h6" -> H6 (Js.Unsafe.coerce e)
+        | "head" -> Head (Js.Unsafe.coerce e)
+        | "hr" -> Hr (Js.Unsafe.coerce e)
+        | "html" -> Html (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'i' ->
+        begin match tag with
+        | "iframe" -> Iframe (Js.Unsafe.coerce e)
+        | "img" -> Img (Js.Unsafe.coerce e)
+        | "input" -> Input (Js.Unsafe.coerce e)
+        | "ins" -> Ins (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'l' ->
+        begin match tag with
+        | "label" -> Label (Js.Unsafe.coerce e)
+        | "legend" -> Legend (Js.Unsafe.coerce e)
+        | "li" -> Li (Js.Unsafe.coerce e)
+        | "link" -> Link (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'm' ->
+        begin match tag with
+        | "map" -> Map (Js.Unsafe.coerce e)
+        | "meta" -> Meta (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'o' ->
+        begin match tag with
+        | "object" -> Object (Js.Unsafe.coerce e)
+        | "ol" -> Ol (Js.Unsafe.coerce e)
+        | "optgroup" -> Optgroup (Js.Unsafe.coerce e)
+        | "option" -> Option (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'p' ->
+        begin match tag with
+        | "p" -> P (Js.Unsafe.coerce e)
+        | "param" -> Param (Js.Unsafe.coerce e)
+        | "pre" -> Pre (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'q' ->
+        begin match tag with
+        | "q" -> Q (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 's' ->
+        begin match tag with
+        | "script" -> Script (Js.Unsafe.coerce e)
+        | "select" -> Select (Js.Unsafe.coerce e)
+        | "style" -> Style (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 't' ->
+        begin match tag with
+        | "table" -> Table (Js.Unsafe.coerce e)
+        | "tbody" -> Tbody (Js.Unsafe.coerce e)
+        | "td" -> Td (Js.Unsafe.coerce e)
+        | "textarea" -> Textarea (Js.Unsafe.coerce e)
+        | "tfoot" -> Tfoot (Js.Unsafe.coerce e)
+        | "th" -> Th (Js.Unsafe.coerce e)
+        | "thead" -> Thead (Js.Unsafe.coerce e)
+        | "title" -> Title (Js.Unsafe.coerce e)
+        | "tr" -> Tr (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'u' ->
+        begin match tag with
+        | "ul" -> Ul (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | _ ->
+        other e
 
 let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
 
