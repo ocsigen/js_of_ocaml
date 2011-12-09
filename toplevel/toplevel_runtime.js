@@ -109,7 +109,7 @@ function caml_static_free () { return 0; }
 //Provides: caml_realloc_global
 //Requires: caml_global_data
 function caml_realloc_global (len) {
-  if (len > caml_global_data.length) caml_global_data.length = len + 1;
+  if (len + 1 > caml_global_data.length) caml_global_data.length = len + 1;
   return 0;
 }
 
