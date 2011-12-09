@@ -1268,6 +1268,8 @@ let addMousewheelEventListener e h capt =
               h (e :> mouseEvent t) ~dx:0 ~dy:d))
       capt
 
+let element : #Dom.element t -> element t = Js.Unsafe.coerce
+
 type taggedElement =
   | A of anchorElement t
   | Area of areaElement t

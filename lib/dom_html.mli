@@ -1112,6 +1112,10 @@ val createCanvas : document t -> canvasElement t
 
 (** {2 Coercion functions} *)
 
+val element : #Dom.element t -> element t
+  (** Coercion from a general DOM element to an HTML element.
+      (Unsafe in general.) *)
+
 type taggedElement =
   | A of anchorElement t
   | Area of areaElement t
