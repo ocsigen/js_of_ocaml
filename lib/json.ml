@@ -25,9 +25,11 @@ class type json = object
 	'a 'b 'c 'd. js_string t ->
 	  ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
     method stringify: 'a. 'a -> js_string t meth
+    (* Beware that this is only works when the function argument
+       expects exactly two arguments (no curryfication is performed). *)
     method stringify_:
 	'a 'b 'c 'd. 'a ->
-	  ('b t, js_string t -> 'c -> 'd) meth_callback -> js_string t meth
+	(js_string t -> 'c -> 'd) -> js_string t meth
 end
 
 external get_json : unit -> json t = "caml_json"
@@ -52,11 +54,9 @@ let input_reviver =
 let unsafe_input s = json##parse_ (s, input_reviver)
 
 let mlString_constr = Unsafe.variable "MlString"
-let output_reviver =
-  let reviver this key value =
-    if instanceof value mlString_constr then
-      to_byte_jsstring (Unsafe.coerce value)
-    else
-      value in
-  wrap_meth_callback reviver
+let output_reviver key value =
+  if instanceof value mlString_constr then
+    to_byte_jsstring (Unsafe.coerce value)
+  else
+    value
 let output obj = json##stringify_ (obj, output_reviver)
