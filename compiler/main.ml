@@ -20,9 +20,9 @@
 
 let debug = Util.debug "main"
 
-let f js_files input_file output_file =
+let f paths js_files input_file output_file =
   List.iter Linker.add_file js_files;
-  let paths = [Findlib.package_directory "stdlib"] in
+  let paths = List.rev_append paths [Findlib.package_directory "stdlib"] in
 
   let p =
     match input_file with
@@ -49,6 +49,7 @@ let _ =
   let output_file = ref None in
   let input_file = ref None in
   let no_runtime = ref false in
+  let paths = ref [] in
   let options =
     [("-debug", Arg.String Util.set_debug, "<name> debug module <name>");
      ("-disable",
@@ -59,6 +60,8 @@ let _ =
       " do not include the standard runtime");
      ("-toplevel", Arg.Unit Parse.build_toplevel,
       " compile a toplevel");
+     ("-I", Arg.String (fun s -> paths := s :: !paths),
+      "<dir> Add <dir> to the list of include directories");
      ("-o", Arg.String (fun s -> output_file := Some s),
       "<file> set output file name to <file>")]
   in
@@ -79,7 +82,7 @@ let _ =
   in
   let chop_extension s =
     try Filename.chop_extension s with Invalid_argument _ -> s in
-  f (runtime @ List.rev !js_files) !input_file
+  f !paths (runtime @ List.rev !js_files) !input_file
     (match !output_file with
        Some _ -> !output_file
      | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") !input_file)
