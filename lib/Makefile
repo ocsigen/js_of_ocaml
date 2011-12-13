@@ -10,7 +10,10 @@ include ../Makefile.conf
 
 ifneq "${DERIVING}" ""
 PA_DERIVING=syntax/pa_deriving_Json.cmo
-DERIVING_JSON=deriving_json.cma deriving_json.cmxs
+DERIVING_JSON=deriving_json.cma
+ifeq "$(BEST)" "opt"
+DERIVING_JSON += deriving_json.cmxs
+endif
 endif
 
 all: $(LIBNAME).cma syntax/pa_js.cmo ${PA_DERIVING} ${DERIVING_JSON}

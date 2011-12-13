@@ -25,6 +25,10 @@ NATIMPL := lib/deriving_json.cmxa     \
 
 NATIMPL += $(JSON:.cmi=.cmx)
 
+ifeq "$(BEST)" "opt"
+IMPL += $(NATIMPL)
+endif
+
 endif
 
 DOC := ${INTF:.cmi=.mli}

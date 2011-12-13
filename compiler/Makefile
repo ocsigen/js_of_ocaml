@@ -12,10 +12,14 @@ OBJS=pretty_print.cmx util.cmx dgraph.cmx \
 
 COMPOBJS=$(OBJS) main.cmx
 
-compile: $(COMPOBJS:cmx=cmo)
+$(COMPILER): compile.$(BEST)
+	mv -f $< $@
+
+.INTERMEDIATE: compile.byte compile.opt
+compile.byte: $(COMPOBJS:cmx=cmo)
 	ocamlfind ocamlc -package findlib,str -linkpkg -o $@ $^
 
-$(COMPILER): $(COMPOBJS)
+compile.opt: $(COMPOBJS)
 	ocamlfind ocamlopt -package findlib,str -linkpkg -o $@ $^
 
 compiler.cma: $(OBJS:cmx=cmo)
@@ -32,7 +36,7 @@ compiler.cma: $(OBJS:cmx=cmo)
 
 clean:
 	rm -f *.cm[aiox] *.o
-	rm -f js_of_ocaml compile
+	rm -f js_of_ocaml compile.opt compile.byte
 
 depend:
 	ocamldep *.ml *.mli > .depend
