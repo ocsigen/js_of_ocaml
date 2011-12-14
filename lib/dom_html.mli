@@ -235,6 +235,16 @@ and nodeSelector = object
   method querySelectorAll : js_string t -> element Dom.nodeList t meth
 end
 
+and tokenList = object
+  method length : int readonly_prop
+  method item : int -> js_string t optdef meth
+  method contains : js_string t -> bool t meth
+  method add : js_string t -> unit meth
+  method remove : js_string t -> unit meth
+  method toggle : js_string t -> bool t meth
+  method stringifier : js_string t prop
+end
+
 (** Properties common to all HTML elements *)
 and element = object
   inherit Dom.element
@@ -244,6 +254,7 @@ and element = object
   method lang : js_string t prop
   method dir : js_string t prop
   method className : js_string t prop
+  method classList : tokenList t readonly_prop
   method style : cssStyleDeclaration t prop
 
   method innerHTML : js_string t prop

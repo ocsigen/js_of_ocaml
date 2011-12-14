@@ -20,16 +20,6 @@
 
 open Js
 
-class type tokenList = object
-  method length : int readonly_prop
-  method item : int -> js_string t optdef meth
-  method contains : js_string t -> bool t meth
-  method add : js_string t -> unit meth
-  method remove : js_string t -> unit meth
-  method toggle : js_string t -> bool t meth
-  method stringifier : js_string t prop
-end
-
 class type ['node] nodeList = object
   method item : int -> 'node t opt meth
   method length : int readonly_prop
@@ -128,7 +118,6 @@ and element = object
   method removeAttribute : js_string t -> unit meth
   method hasAttribute : js_string t -> bool t meth
   method getElementsByTagName : js_string t -> element nodeList t meth
-  method classList : tokenList t readonly_prop
   method attributes : namedNodeMap t readonly_prop
 end
 
