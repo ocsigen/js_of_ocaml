@@ -2,6 +2,7 @@
 
  * Libraries:
  ** Regexp: Fix efficacity problem
+ ** Dom_html: Fix problems with IE8 event handling
  ** Dom_html: Add querySelector
  ** Dom: Add compareDocumentPosition
 

@@ -123,7 +123,7 @@ class type cssStyleDeclaration = object
   method zIndex : js_string t prop
 end
 
-type ('a, 'b) event_listener = ('a, 'b optdef -> bool t) meth_callback opt
+type ('a, 'b) event_listener = ('a, 'b -> bool t) meth_callback opt
 
 type mouse_button =
   | No_button
@@ -287,29 +287,34 @@ let window_event () : #event t = Js.Unsafe.variable "event"
 let handler f =
   Js.some (Js.wrap_callback
     (fun e ->
-       Optdef.case e
-         (fun () ->
-            let e = window_event () in
-            let res = f e in
-            e##returnValue <- res; res)
-         (fun e ->
-            let res = f e in
-            if not (Js.to_bool res) then
-              (Js.Unsafe.coerce e)##preventDefault ();
-            res)))
+      (* depending on the internet explorer version, e can be 0, null
+	 or undefined. This is the only way I know to test them all *)
+      if not (Obj.magic e)
+      then
+        let e = window_event () in
+        let res = f e in
+        e##returnValue <- res;
+	res
+      else
+	let res = f e in
+        if not (Js.to_bool res) then
+          (Js.Unsafe.coerce e)##preventDefault ();
+        res))
 let full_handler f =
   Js.some (Js.wrap_meth_callback
     (fun this e ->
-       Optdef.case e
-         (fun () ->
-            let e = window_event () in
-            let res = f this e in
-            e##returnValue <- res; res)
-         (fun e ->
-            let res = f this e in
-            if not (Js.to_bool res) then
-              (Js.Unsafe.coerce e)##preventDefault ();
-            res)))
+      (* depending on the internet explorer version, e can be 0, null
+	 or undefined. This is the only way I know to test them all *)
+      if not (Obj.magic e)
+      then
+        let e = window_event () in
+        let res = f this e in
+        e##returnValue <- res; res
+      else
+        let res = f this e in
+        if not (Js.to_bool res) then
+          (Js.Unsafe.coerce e)##preventDefault ();
+        res))
 let invoke_handler
   (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
   Js.Unsafe.call f this [|Js.Unsafe.inject event|]
