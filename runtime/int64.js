@@ -288,9 +288,10 @@ function caml_int64_format (fmt, x) {
 //Requires: caml_int64_add, caml_int64_mul, caml_int64_neg
 function caml_int64_of_string(s) {
   var r = caml_parse_sign_and_base (s);
-  var i = r[0], sign = r[1], base = caml_int64_of_int32(r[2]);
+  var i = r[0], sign = r[1], base = r[2];
+  var base64 = caml_int64_of_int32(base);
   var threshold =
-    caml_int64_udivmod([255, 0xffffff, 0xfffffff, 0xffff], base)[1];
+    caml_int64_udivmod([255, 0xffffff, 0xfffffff, 0xffff], base64)[1];
   var c = s.get(i);
   var d = caml_parse_digit(c);
   if (d < 0 || d >= base) caml_failwith("int_of_string");
@@ -304,7 +305,7 @@ function caml_int64_of_string(s) {
     /* Detect overflow in multiplication base * res */
     if (caml_int64_ult(threshold, res)) caml_failwith("int_of_string");
     d = caml_int64_of_int32(d);
-    res = caml_int64_add(caml_int64_mul(base, res), d);
+    res = caml_int64_add(caml_int64_mul(base64, res), d);
     /* Detect overflow in addition (base * res) + d */
     if (caml_int64_ult(res, d)) caml_failwith("int_of_string");
   }
