@@ -214,7 +214,14 @@ let perform_raw_url
             {url = url;
 	     code = req##status;
              content = Js.to_string req##responseText;
-	     content_xml = (fun () -> Js.Opt.to_option (req##responseXML));
+	     content_xml =
+		(fun () ->
+		  match Js.Opt.to_option (req##responseXML) with
+		    | None -> None
+		    | Some doc ->
+		      if (Js.some doc##documentElement) == Js.null
+		      then None
+		      else Some doc);
              headers = headers
             }
 	| _ -> ());
