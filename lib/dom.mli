@@ -86,11 +86,11 @@ class type attr = object
 end
 
 (** Specification of [NamedNodeMap] objects. *)
-and namedNodeMap = object
-  method getNamedItem : js_string t -> node t opt meth
-  method setNamedItem : node t -> node t opt meth
-  method removeNamedItem : js_string t -> node t opt meth
-  method item : int -> node t opt meth
+and ['node] namedNodeMap = object
+  method getNamedItem : js_string t -> 'node t opt meth
+  method setNamedItem : 'node t -> 'node t opt meth
+  method removeNamedItem : js_string t -> 'node t opt meth
+  method item : int -> 'node t opt meth
   method length : int readonly_prop
 end
 
@@ -103,7 +103,7 @@ and element = object
   method removeAttribute : js_string t -> unit meth
   method hasAttribute : js_string t -> bool t meth
   method getElementsByTagName : js_string t -> element nodeList t meth
-  method attributes : namedNodeMap t readonly_prop
+  method attributes : attr namedNodeMap t readonly_prop
 end
 
 (** Specification of [CharacterData] objects. *)
