@@ -1,2 +1,1 @@
-<<a_script src="boulderdash/boulderdash.js" >>
-<<div id="boulderdash"|>>
+<<a_iframe src="boulderdash/boulderdash.html" >>
