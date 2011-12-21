@@ -144,11 +144,13 @@ let run _ =
   Dom.appendChild top output;
 
   let ppf =
+    let b = Buffer.create 80 in
     Format.make_formatter
-      (fun s i l ->
+      (fun s i l -> Buffer.add_substring b s i l)
+      (fun _ ->
          Dom.appendChild output
-           (doc##createTextNode(Js.string (String.sub s i l))))
-      (fun _ -> ())
+           (doc##createTextNode(Js.string (Buffer.contents b)));
+         Buffer.clear b)
   in
 
   let textbox = Html.createTextarea doc in
