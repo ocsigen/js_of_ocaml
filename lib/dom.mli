@@ -115,7 +115,7 @@ class type characterData = object
   method appendData : js_string t -> unit meth
   method insertData : int -> js_string t -> unit meth
   method deleteData : int -> int -> unit meth
-  method replaceData : int -> int -> js_string t meth
+  method replaceData : int -> int -> js_string t -> unit meth
 end
 
 (** Specification of [Text] objects. *)

@@ -24,7 +24,7 @@ open Js
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
 class type xmlHttpRequest = object ('self)
-  method onreadystatechange : ('self Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
+  method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
   method readyState : readyState readonly_prop
   method _open :
     js_string t -> js_string t -> bool t -> unit meth
@@ -199,7 +199,7 @@ let perform_raw_url
       end;
       checked := true
   in
-  req##onreadystatechange <- Dom_html.handler
+  req##onreadystatechange <- Js.wrap_callback
     (fun _ ->
        (match req##readyState with
           (* IE doesn't have the same semantics for HEADERS_RECEIVED.
@@ -224,8 +224,7 @@ let perform_raw_url
 		      else Some doc);
              headers = headers
             }
-	| _ -> ());
-      Js._false);
+	| _ -> ()));
 
   (match form_arg with
      | None -> req##send (Js.null)
