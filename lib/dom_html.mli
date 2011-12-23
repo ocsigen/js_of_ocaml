@@ -189,6 +189,12 @@ and mouseScrollEvent = object (* Firefox *)
   method _VERTICAL_AXIS : int optdef readonly_prop
 end
 
+and touchEvent = object
+  inherit event
+  method clientX : int Js.readonly_prop (* Relative to viewport *)
+  method clientY : int Js.readonly_prop
+end
+
 (** Common properties of event target objects: [onclick],
     [onkeypress], ... *)
 and eventTarget = object ('self)
@@ -1003,9 +1009,12 @@ module Event : sig
   val keypress : keyboardEvent t typ
   val keydown : keyboardEvent t typ
   val keyup : keyboardEvent t typ
-
   val mousewheel : wheelEvent t typ
   val _DOMMouseScroll : mouseScrollEvent t typ
+  val touchstart : touchEvent t typ
+  val touchmove : touchEvent t typ
+  val touchend : touchEvent t typ
+  val touchcancel : touchEvent t typ
 end
 
 type event_listener_id

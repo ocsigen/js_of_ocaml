@@ -180,6 +180,12 @@ and mouseScrollEvent = object (* Firefox *)
   method _VERTICAL_AXIS : int optdef readonly_prop
 end
 
+and touchEvent = object
+  inherit event
+  method clientX : int Js.readonly_prop (* Relative to viewport *)
+  method clientY : int Js.readonly_prop
+end
+
 and eventTarget = object ('self)
   method onclick : ('self t, mouseEvent t) event_listener writeonly_prop
   method ondblclick : ('self t, mouseEvent t) event_listener writeonly_prop
@@ -333,6 +339,10 @@ module Event = struct
   let keyup = Js.string "keyup"
   let mousewheel = Js.string "mousewheel"
   let _DOMMouseScroll = Js.string "DOMMouseScroll"
+  let touchstart = Js.string "touchstart"
+  let touchmove = Js.string "touchmove"
+  let touchend = Js.string "touchend"
+  let touchcancel = Js.string "touchcancel"
 end
 
 type event_listener_id = unit -> unit
