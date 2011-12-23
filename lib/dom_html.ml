@@ -1515,3 +1515,26 @@ let stopPropagation ev =
     (e##stopPropagation)
     (fun () -> e##cancelBubble <- Js._true)
     (fun _ -> e##_stopPropagation())
+
+let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
+  Js.Unsafe.pure_expr
+    (fun _ ->
+       let w = Js.Unsafe.coerce window in
+       let l =
+         [w##requestAnimationFrame;
+          w##mozRequestAnimationFrame;
+          w##webkitRequestAnimationFrame;
+          w##oRequestAnimationFrame;
+          w##msRequestAnimationFrame]
+       in
+       try
+         let req = List.find (fun c -> Js.Optdef.test c) l in
+         fun callback -> Js.Unsafe.fun_call req [|Js.Unsafe.inject callback|]
+       with Not_found ->
+         let now () = Js.to_float (jsnew Js.date_now ()##getTime()) in
+         let last = ref (now ()) in
+         fun callback ->
+           let t = now () in
+           let dt = max 0. (!last +. 1000. /. 60. -. t) in
+           last := t;
+           ignore (window##setTimeout (callback, dt)))

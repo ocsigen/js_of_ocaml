@@ -925,6 +925,14 @@ end
 val window : window t
   (** The current window *)
 
+val _requestAnimationFrame : (unit -> unit) Js.callback -> unit
+  (** Call the appropriate [requestAnimationFrame] method variant
+      (depending on the navigator), or sleep for a short amount
+      of time when there no such method is provided. We currently
+      prefix the function name with as underscore as the interface of
+      this function is not completely standardized yet. Thus, we leave
+      the room to a function with a possibly refined type. *)
+
 (* {2 Frames } *)
 
 class type frameSetElement = object
