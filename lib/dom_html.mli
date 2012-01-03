@@ -191,8 +191,30 @@ end
 
 and touchEvent = object
   inherit event
-  method clientX : int Js.readonly_prop (* Relative to viewport *)
-  method clientY : int Js.readonly_prop
+  method touches : touchList t readonly_prop
+  method targetTouches : touchList t readonly_prop
+  method changedTouches : touchList t readonly_prop
+  method ctrlKey : bool t readonly_prop
+  method shiftKey : bool t readonly_prop
+  method altKey : bool t readonly_prop
+  method metaKey : bool t readonly_prop
+  method relatedTarget : element t opt optdef readonly_prop
+end
+
+and touchList = object
+  method length : int readonly_prop
+  method item : int -> touch t optdef meth
+end
+
+and touch = object
+  method identifier : int readonly_prop
+  method target : element t optdef readonly_prop
+  method screenX : int readonly_prop
+  method screenY : int readonly_prop
+  method clientX : int readonly_prop
+  method clientY : int readonly_prop
+  method pageX : int readonly_prop
+  method pageY : int readonly_prop
 end
 
 (** Common properties of event target objects: [onclick],
