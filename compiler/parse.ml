@@ -1745,8 +1745,10 @@ let from_channel ~paths ic =
   end;
 
   let globals = make_globals (Array.length init_data) init_data primitives in
-  if !is_toplevel then
+  if !is_toplevel then begin
     Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
+    Primitive.mark_used "caml_string_greaterthan"
+  end;
 
   fix_min_max_int code;
 
