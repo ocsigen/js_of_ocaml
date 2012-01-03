@@ -742,7 +742,7 @@ class type tableElement = object
   method tHead : tableSectionElement t prop
   method tFood : tableSectionElement t prop
   method rows : tableRowElement collection t readonly_prop
-  method tbodies : tableSectionElement collection t readonly_prop
+  method tBodies : tableSectionElement collection t readonly_prop
   method align : js_string t prop
   method border : js_string t prop
   method cellPadding : js_string t prop
