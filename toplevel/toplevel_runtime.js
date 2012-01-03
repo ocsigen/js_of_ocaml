@@ -118,7 +118,9 @@ function caml_realloc_global (len) {
 /// In case the user tries to perform some I/Os...
 
 //Provides: caml_sys_exit
-function caml_sys_exit () { return 0; }
+function caml_sys_exit () {
+  caml_invalid_argument("Function 'exit' not implemented");
+}
 
 //Provides: caml_ml_output
 function caml_ml_output (x, s, p, l) {
