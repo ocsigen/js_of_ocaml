@@ -163,6 +163,10 @@ and keyboardEvent = object
   method charCode : int optdef readonly_prop
   method keyCode : int readonly_prop
   method keyIdentifier : js_string t optdef readonly_prop
+  method altKey : bool t readonly_prop
+  method shiftKey : bool t readonly_prop
+  method ctrlKey : bool t readonly_prop
+  method metaKey : bool t readonly_prop
 end
 
 and wheelEvent = object (* All browsers but Firefox *)
