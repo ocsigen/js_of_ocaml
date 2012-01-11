@@ -18,7 +18,15 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Types for regexps *)
+(** Types for regexps. *)
+
+(** {i Warning:} the regexp syntax is the javascript one. It differs
+    from the syntax used by the {{Str}} module from the OCaml standard
+    library.
+
+    @see https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/RegExp#section_5
+
+ *)
 
 type regexp
 (** The type for regexps. *)
