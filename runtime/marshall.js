@@ -232,14 +232,22 @@ var caml_input_value_from_string = function (){
           case cst.CODE_CUSTOM:
             var c, s = "";
             while ((c = reader.read8u ()) != 0) s += String.fromCharCode (c);
-            if (s != "_j")
+            switch(s) {
+            case "_j":
+              // Int64
+              var t = [];
+              for (var j = 0;j < 8;j++) t[j] = reader.read8u();
+              var v = caml_int64_of_bytes (t);
+              if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+              return v;
+            case "_i":
+              // Int32
+              var v = reader.read32s ();
+              if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+              return v;
+            default:
               caml_failwith("input_value: unknown custom block identifier");
-            // Int64
-            var t = [];
-            for (var j = 0;j < 8;j++) t[j] = reader.read8u();
-            var v = caml_int64_of_bytes (t);
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            return v;
+            }
           default:
             caml_failwith ("input_value: ill-formed message");
           }
