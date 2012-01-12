@@ -573,6 +573,8 @@ class type imageElement = object ('self)
   method complete : bool t prop
 
   method onload : ('self t, event t) event_listener prop
+  method onerror : ('self t, event t) event_listener prop
+  method onabort : ('self t, event t) event_listener prop
 end
 
 class type objectElement = object
