@@ -243,7 +243,7 @@ and storage = object
   method length : int readonly_prop
   method key : int -> js_string t optdef meth
   method getItem : js_string t -> js_string t optdef meth
-  method setItem : js_string t -> unit meth
+  method setItem : js_string t -> js_string t -> unit meth
   method removeItem : js_string t -> unit meth
   method clear : unit meth
 end
