@@ -233,16 +233,16 @@ end
 and storageEvent = object
   inherit event
   method key : js_string t readonly_prop
-  method oldValue : js_string t optdef readonly_prop
-  method keynewValue : js_string t optdef readonly_prop
+  method oldValue : js_string t opt readonly_prop
+  method keynewValue : js_string t opt readonly_prop
   method url : js_string t readonly_prop
-  method storageArea : storage t optdef readonly_prop
+  method storageArea : storage t opt readonly_prop
 end
 
 and storage = object
   method length : int readonly_prop
-  method key : int -> js_string t optdef meth
-  method getItem : js_string t -> js_string t optdef meth
+  method key : int -> js_string t opt meth
+  method getItem : js_string t -> js_string t opt meth
   method setItem : js_string t -> js_string t -> unit meth
   method removeItem : js_string t -> unit meth
   method clear : unit meth
@@ -970,8 +970,8 @@ class type window = object
   method blur : unit meth
   method scroll : int -> int -> unit meth
 
-  method sessionStorage : storage t readonly_prop
-  method localStorage : storage t readonly_prop
+  method sessionStorage : storage t optdef readonly_prop
+  method localStorage : storage t optdef readonly_prop
 
   method top : window t readonly_prop
   method parent : window t readonly_prop
