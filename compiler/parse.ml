@@ -1539,6 +1539,14 @@ let is_toplevel = ref false
 
 let build_toplevel () = is_toplevel := true
 
+let set_global x v rem =
+  let globals = Var.fresh () in
+  Let (globals,
+       Prim (Extern "caml_js_var", [Pc (String "caml_global_data")])) ::
+  Let (Var.fresh (),
+       Prim (Extern "caml_js_set", [Pv globals; Pc (String x); Pv v])) ::
+  rem
+
 let parse_bytecode code state standalone_info =
   Code.Var.reset ();
   analyse_blocks code;
@@ -1588,12 +1596,8 @@ let parse_bytecode code state standalone_info =
           in
           l :=
             (let x = Var.fresh () in
-             let y = Var.fresh () in
              Let (x, Constant (parse_const (Obj.repr toc))) ::
-             Let (y, Const (-2)) ::
-             Let (Var.fresh (),
-                  Prim (Extern "caml_register_global",
-                        [Pv y ; Pv x])) :: !l);
+             set_global "toc" x !l);
           (* Include interface files *)
           let fields = ref [] in
           Tbl.iter
@@ -1613,12 +1617,8 @@ let parse_bytecode code state standalone_info =
                end) symb.num_tbl;
           l :=
             (let x = Var.fresh () in
-             let y = Var.fresh () in
              Let (x, Prim (Extern "%object_literal", !fields)) ::
-             Let (y, Const (-4)) ::
-             Let (Var.fresh (),
-                  Prim (Extern "caml_register_global",
-                        [Pv y ; Pv x])) :: !l)
+             set_global "interfaces" x !l)
         end;
 
         !l

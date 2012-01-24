@@ -40,12 +40,12 @@ function caml_terminfo_setup () { return 1; } // Bad_term
 
 //Provides: caml_sys_file_exists
 //Requires: caml_global_data
-function caml_sys_file_exists (x) { return (caml_global_data[-3][x])?1:0; }
+function caml_sys_file_exists (x) { return (caml_global_data.interfaces[x])?1:0; }
 
 //Provides: caml_sys_open
 //Requires: MlString, caml_raise_sys_error, caml_global_data
 function caml_sys_open (x) {
-  var v = caml_global_data[-3][x];
+  var v = caml_global_data.interfaces[x];
   if (v) {
     var s = new MlString (v);
     s.offset = 0;
@@ -85,7 +85,7 @@ function caml_get_global_data () { return caml_global_data; }
 
 //Provides: caml_get_section_table
 //Requires: caml_global_data
-function caml_get_section_table () { return caml_global_data[-1]; }
+function caml_get_section_table () { return caml_global_data.toc; }
 
 //Provides: caml_dynlink_get_current_libs
 function caml_dynlink_get_current_libs () { return [0]; }
@@ -93,7 +93,7 @@ function caml_dynlink_get_current_libs () { return [0]; }
 //Provides: caml_reify_bytecode
 //Requires: caml_global_data
 function caml_reify_bytecode (code, sz) {
-  return eval(caml_global_data[-2](code).toString());
+  return eval(caml_global_data.compile(code).toString());
 }
 
 //Provides: caml_static_release_bytecode

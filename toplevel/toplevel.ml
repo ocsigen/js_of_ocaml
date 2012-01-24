@@ -38,7 +38,12 @@ let split_primitives p =
 
 (****)
 
-external global_data : unit -> Obj.t array = "caml_get_global_data"
+class type global_data = object
+  method toc : (string * string) list Js.readonly_prop
+  method compile : (string -> string) Js.writeonly_prop
+end
+
+external global_data : unit -> global_data Js.t = "caml_get_global_data"
 
 let g = global_data ()
 
@@ -48,7 +53,7 @@ let _ =
   Util.set_debug "deadcode";
   Util.set_debug "main";
 *)
-  let toc = Obj.magic (Array.unsafe_get g (-2)) in
+  let toc = g##toc in
   let prims = split_primitives (List.assoc "PRIM" toc) in
 
   let compile s =
@@ -57,7 +62,7 @@ let _ =
     output_program (Pretty_print.to_buffer b);
     Buffer.contents b
   in
-  Array.unsafe_set g (-3) (Obj.repr compile); (*XXX HACK!*)
+  g##compile <- compile; (*XXX HACK!*)
 
 module Html = Dom_html
 
