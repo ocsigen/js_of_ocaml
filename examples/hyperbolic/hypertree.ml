@@ -1473,7 +1473,6 @@ let tree_info = load_tree ()
 let image_info = load_image_info ()
 
 let start _ =
-unsupported_messages ();
   Lwt.ignore_result
     (tree_info >>= fun ((vertices, edges, nodes, boxes), tree_i18n) ->
      all_messages >>= fun all_messages ->
@@ -1775,6 +1774,14 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
 
      Lwt.return ());
   Js._false
+
+let start _ =
+  try
+    ignore (Html.createCanvas (Html.window##document));
+    start ()
+  with Html.Canvas_not_available ->
+    unsupported_messages ();
+    Js._false
 
 let _ =
 Html.window##onload <- Html.handler start
