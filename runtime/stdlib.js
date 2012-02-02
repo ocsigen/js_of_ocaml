@@ -449,7 +449,7 @@ function caml_format_float (fmt, x) {
 
 ///////////// Hashtbl
 //Provides: caml_hash_univ_param mutable
-//Requires: MlString
+//Requires: MlString caml_int64_to_bytes caml_int64_bits_of_float
 function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
   function hash_aux (obj) {
