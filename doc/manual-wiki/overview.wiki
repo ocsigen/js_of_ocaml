@@ -71,3 +71,9 @@ different from usual:
 |    lib/        |   library for interfacing with Javascript APIs   |
 |    runtime/    |   runtime system                                 |
 
+
+== Debugging programs ==
+
+To help debugging your programs, use the "-pretty" and "-noinline"
+options of Js_of_ocaml. If the bytecode is build with ocaml "-g"
+option, Js_of_ocaml will attempt to preserve variable names as well.

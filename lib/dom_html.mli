@@ -1264,6 +1264,7 @@ module CoerceTo : sig
   (** HTMLElement *)
 
   val element : #Dom.node t -> element t opt
+  (* null if it is not an element *)
 
   val a : #element t -> anchorElement t opt
   val area : #element t -> areaElement t opt
