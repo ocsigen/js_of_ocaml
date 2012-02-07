@@ -149,7 +149,7 @@ let filter_live_last blocks st l =
   | Pushtrap (cont1, x, cont2, pc) ->
       Pushtrap (filter_cont blocks st cont1,
                 x, filter_cont blocks st cont2,
-                pc)
+                if AddrSet.mem pc st.reachable_blocks then pc else -1)
   | Poptrap cont ->
       Poptrap (filter_cont blocks st cont)
 
