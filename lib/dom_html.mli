@@ -64,6 +64,7 @@ class type cssStyleDeclaration = object
   method content : js_string t prop
   method counterIncrement : js_string t prop
   method counterReset : js_string t prop
+  method cssFloat : js_string t prop
   method cssText : js_string t prop
   method cursor : js_string t prop
   method direction : js_string t prop
@@ -913,6 +914,19 @@ class type selection = object
 (*...*)
 end
 
+(** Navigator information *)
+class type navigator = object
+  method appCodeName : js_string t readonly_prop
+  method appName : js_string t readonly_prop
+  method appVersion : js_string t readonly_prop
+  method cookieEnabled : bool t readonly_prop
+  method online : bool t readonly_prop
+  method platform : js_string t readonly_prop
+  method userAgent : js_string t readonly_prop
+  method language : js_string t optdef readonly_prop
+  method userLanguage : js_string t optdef readonly_prop
+end
+
 type interval_id
 type timeout_id
 
@@ -923,6 +937,7 @@ class type window = object
   method location : location t readonly_prop
   method history : history t readonly_prop
   method undoManager : undoManager t readonly_prop
+  method navigator : navigator t
   method getSelection : selection t meth
   method close : unit meth
   method stop : unit meth
