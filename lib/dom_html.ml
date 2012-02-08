@@ -370,6 +370,8 @@ module Event = struct
   let touchmove = Js.string "touchmove"
   let touchend = Js.string "touchend"
   let touchcancel = Js.string "touchcancel"
+
+  let make s = Js.string s
 end
 
 type event_listener_id = unit -> unit
@@ -768,6 +770,8 @@ class type tableElement = object
   method deleteRow : int -> unit meth
 end
 
+type videoElement
+
 type context = js_string t
 let _2d_ = Js.string "2d"
 
@@ -808,9 +812,8 @@ and canvasRenderingContext2D = object
   method createPattern : imageElement t -> js_string t -> canvasPattern t meth
   method createPattern_fromCanvas :
     canvasElement t -> js_string t -> canvasPattern t meth
-(*
-  CanvasPattern createPattern(in HTMLVideoElement image, in DOMJs_String repetition);
-*)
+  method createPattern_fromVideo :
+    videoElement t -> js_string t -> canvasPattern t meth
   method lineWidth : float_prop
   method lineCap : js_string t prop
   method lineJoin : js_string t prop
@@ -868,10 +871,13 @@ and canvasRenderingContext2D = object
   method drawImage_fullFromCanvas :
     canvasElement t -> float -> float -> float -> float ->
     float -> float -> float -> float -> unit meth
-(*
-  void drawImage(in HTMLVideoElement image, in float dx, in float dy, in optional float dw, in float dh);
-  void drawImage(in HTMLVideoElement image, in float sx, in float sy, in float sw, in float sh, in float dx, in float dy, in float dw, in float dh);
-*)
+  method drawImage_fromVideoWithVideo :
+    videoElement t -> float -> float -> unit meth
+  method drawImage_fromVideoWithSize :
+    videoElement t -> float -> float -> float -> float -> unit meth
+  method drawImage_fullFromVideo :
+    videoElement t -> float -> float -> float -> float ->
+    float -> float -> float -> float -> unit meth
 
   method createImageData : int -> int -> imageData t meth
   method getImageData : float -> float -> float -> float -> imageData t meth
@@ -1588,6 +1594,7 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
          let last = ref (now ()) in
          fun callback ->
            let t = now () in
-           let dt = max 0. (!last +. 1000. /. 60. -. t) in
+           let dt = !last +. 1000. /. 60. -. t in
+           let dt = if dt < 0. then 0. else dt in
            last := t;
            ignore (window##setTimeout (callback, dt)))

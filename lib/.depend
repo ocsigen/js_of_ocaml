@@ -1,11 +1,11 @@
 CSS.cmo: regexp.cmi js.cmi CSS.cmi
 CSS.cmx: regexp.cmx js.cmx CSS.cmi
+dom.cmo: js.cmi dom.cmi
+dom.cmx: js.cmx dom.cmi
 dom_events.cmo: js.cmi dom_html.cmi dom_events.cmi
 dom_events.cmx: js.cmx dom_html.cmx dom_events.cmi
 dom_html.cmo: js.cmi dom.cmi dom_html.cmi
 dom_html.cmx: js.cmx dom.cmx dom_html.cmi
-dom.cmo: js.cmi dom.cmi
-dom.cmx: js.cmx dom.cmi
 event_arrows.cmo: js.cmi dom_html.cmi event_arrows.cmi
 event_arrows.cmx: js.cmx dom_html.cmx event_arrows.cmi
 file.cmo: js.cmi dom_html.cmi dom.cmi file.cmi
@@ -22,16 +22,20 @@ lwt_js.cmo: js.cmi dom_html.cmi lwt_js.cmi
 lwt_js.cmx: js.cmx dom_html.cmx lwt_js.cmi
 regexp.cmo: js.cmi regexp.cmi
 regexp.cmx: js.cmx regexp.cmi
+typed_array.cmo: js.cmi typed_array.cmi
+typed_array.cmx: js.cmx typed_array.cmi
 url.cmo: regexp.cmi js.cmi dom_html.cmi url.cmi
 url.cmx: regexp.cmx js.cmx dom_html.cmx url.cmi
+webGL.cmo: typed_array.cmi js.cmi dom_html.cmi webGL.cmi
+webGL.cmx: typed_array.cmx js.cmx dom_html.cmx webGL.cmi
 xmlHttpRequest.cmo: url.cmi js.cmi form.cmi file.cmi dom_html.cmi dom.cmi \
     xmlHttpRequest.cmi
 xmlHttpRequest.cmx: url.cmx js.cmx form.cmx file.cmx dom_html.cmx dom.cmx \
     xmlHttpRequest.cmi
 CSS.cmi: js.cmi
+dom.cmi: js.cmi
 dom_events.cmi: js.cmi dom_html.cmi
 dom_html.cmi: js.cmi dom.cmi
-dom.cmi: js.cmi
 event_arrows.cmi: js.cmi dom_html.cmi
 file.cmi: js.cmi dom_html.cmi dom.cmi
 firebug.cmi: js.cmi dom.cmi
@@ -40,18 +44,7 @@ js.cmi:
 json.cmi: js.cmi
 lwt_js.cmi:
 regexp.cmi:
+typed_array.cmi: js.cmi
 url.cmi:
-xmlHttpRequest.cmi: url.cmi js.cmi form.cmi dom_html.cmi dom.cmi
-deriving_json/deriving_bi_outbuf.cmo: deriving_json/deriving_bi_outbuf.cmi
-deriving_json/deriving_bi_outbuf.cmx: deriving_json/deriving_bi_outbuf.cmi
-deriving_json/deriving_bi_outbuf.cmi:
-deriving_json/deriving_Json_lexer.cmo: deriving_json/deriving_bi_outbuf.cmi \
-    deriving_json/deriving_Json_lexer.cmi
-deriving_json/deriving_Json_lexer.cmx: deriving_json/deriving_bi_outbuf.cmx \
-    deriving_json/deriving_Json_lexer.cmi
-deriving_json/deriving_Json_lexer.cmi: deriving_json/deriving_bi_outbuf.cmi
-deriving_json/deriving_Json.cmo: deriving_json/deriving_Json_lexer.cmi \
-    deriving_json/deriving_Json.cmi
-deriving_json/deriving_Json.cmx: deriving_json/deriving_Json_lexer.cmx \
-    deriving_json/deriving_Json.cmi
-deriving_json/deriving_Json.cmi: deriving_json/deriving_Json_lexer.cmi
+webGL.cmi: typed_array.cmi js.cmi dom_html.cmi
+xmlHttpRequest.cmi: url.cmi js.cmi form.cmi dom.cmi
