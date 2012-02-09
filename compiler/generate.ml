@@ -163,10 +163,12 @@ let access_queue queue x =
   with Not_found ->
     ((const_p, var x), queue)
 
-let flush_queue expr_queue all l =
+let should_flush cond prop = cond <> const_p && cond + prop >= flush_p
+
+let flush_queue expr_queue prop l =
   let (instrs, expr_queue) =
-    if all then (expr_queue, []) else
-    List.partition (fun (y, (p, _)) -> is_mutable p) expr_queue
+    if prop >= flush_p then (expr_queue, []) else
+    List.partition (fun (y, (p, _)) -> should_flush prop p) expr_queue
   in
   let instrs =
     List.map (fun (x, (_, ce)) ->
@@ -175,14 +177,14 @@ let flush_queue expr_queue all l =
   in
   (List.rev_append instrs l, expr_queue)
 
-let flush_all expr_queue l = fst (flush_queue expr_queue true l)
+let flush_all expr_queue l = fst (flush_queue expr_queue flush_p l)
 
 let enqueue expr_queue prop x ce =
   let (instrs, expr_queue) =
     if disable_compact_expr () then
-      flush_queue expr_queue true []
-    else if is_mutator prop then
-      flush_queue expr_queue (prop >= flush_p) []
+      flush_queue expr_queue flush_p []
+    else if is_mutable prop then
+      flush_queue expr_queue prop []
     else
       [], expr_queue
   in
@@ -360,8 +362,7 @@ let parallel_renaming ctx params args continuation queue =
            0 -> assert false
          | 1 -> enqueue queue px y cx
          | _ -> *)
-         flush_queue queue (px >= flush_p)
-                  [J.Variable_statement [Var.to_string y, Some cx]]
+         flush_queue queue px [J.Variable_statement [Var.to_string y, Some cx]]
        in
        st @ continuation queue)
     continuation l queue
@@ -755,7 +756,7 @@ let rec translate_expr ctx queue x e =
            or_p pc prop, queue)
       | Extern "caml_js_get", [Pv o; Pc (String f)] ->
           let ((po, co), queue) = access_queue queue o in
-          (J.EDot (co, f), or_p po mutator_p, queue)
+          (J.EDot (co, f), or_p po mutable_p, queue)
       | Extern "caml_js_set", [Pv o; Pc (String f); Pv v] ->
           let ((po, co), queue) = access_queue queue o in
           let ((pv, cv), queue) = access_queue queue v in
@@ -842,29 +843,28 @@ and translate_instr ctx expr_queue instr =
           Let (x, e) ->
             let (ce, prop, expr_queue) = translate_expr ctx expr_queue x e in
             begin match ctx.Ctx.live.(Var.idx x) with
-              0 -> flush_queue expr_queue (prop >= flush_p)
-                     [J.Expression_statement ce]
+              0 -> flush_queue expr_queue prop [J.Expression_statement ce]
             | 1 -> enqueue expr_queue prop x ce
-            | _ -> flush_queue expr_queue (prop >= flush_p)
+            | _ -> flush_queue expr_queue prop
                      [J.Variable_statement [Var.to_string x, Some ce]]
             end
         | Set_field (x, n, y) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
-            flush_queue expr_queue false
+            flush_queue expr_queue mutator_p
               [J.Expression_statement
                  (J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy))]
         | Offset_ref (x, n) ->
 (* FIX: may overflow.. *)
             let ((px, cx), expr_queue) = access_queue expr_queue x in
-            flush_queue expr_queue false
+            flush_queue expr_queue mutator_p
               [J.Expression_statement
                  (J.EBin (J.PlusEq, (J.EAccess (cx, J.ENum 1.)), int n))]
         | Array_set (x, y, z) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
             let ((pz, cz), expr_queue) = access_queue expr_queue z in
-            flush_queue expr_queue false
+            flush_queue expr_queue mutator_p
               [J.Expression_statement
                  (J.EBin (J.Eq, J.EAccess (cx, J.EBin(J.Plus, cy, one)),
                           cz))]
@@ -1255,7 +1255,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
                  match 2 (*ctx.Ctx.live.(Var.idx y)*) with
                    0 -> assert false
                  | 1 -> enqueue queue px y cx
-                 | _ -> flush_queue queue (px >= flush_p)
+                 | _ -> flush_queue queue px
                           [J.Variable_statement [Var.to_string y, Some cx]]
                in
                st @ loop continuation old args params queue
