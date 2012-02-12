@@ -83,3 +83,8 @@ let float64Array_fromArray = float64Array
 let float64Array_fromTypedArray = float64Array
 let float64Array_fromBuffer = float64Array
 let float64Array_inBuffer = float64Array
+
+let set : ('a,'b) typedArray t -> int -> 'a -> unit =
+  fun a i v -> array_set (Unsafe.coerce a) i v
+let get : ('a,'b) typedArray t -> int -> 'a optdef =
+  fun a i -> array_get (Unsafe.coerce a) i

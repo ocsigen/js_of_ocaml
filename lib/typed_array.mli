@@ -71,16 +71,19 @@ val int32Array_fromTypedArray : (int32Array t -> int32Array t) constr
 val int32Array_fromBuffer : (arrayBuffer t -> int32Array t) constr
 val int32Array_inBuffer : (arrayBuffer t -> int -> int -> int32Array t) constr
 
-val float32Array : (float -> float32Array t) constr
+val float32Array : (int -> float32Array t) constr
 val float32Array_fromArray : (float js_array t -> float32Array t) constr
 val float32Array_fromTypedArray : (float32Array t -> float32Array t) constr
 val float32Array_fromBuffer : (arrayBuffer t -> float32Array t) constr
 val float32Array_inBuffer :
   (arrayBuffer t -> float -> float -> float32Array t) constr
 
-val float64Array : (float -> float64Array t) constr
+val float64Array : (int -> float64Array t) constr
 val float64Array_fromArray : (float js_array t -> float64Array t) constr
 val float64Array_fromTypedArray : (float64Array t -> float64Array t) constr
 val float64Array_fromBuffer : (arrayBuffer t -> float64Array t) constr
 val float64Array_inBuffer :
   (arrayBuffer t -> float -> float -> float64Array t) constr
+
+val set : ('a,'b) typedArray t -> int -> 'a -> unit
+val get : ('a,'b) typedArray t -> int -> 'a optdef
