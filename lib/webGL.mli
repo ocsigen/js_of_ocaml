@@ -303,17 +303,17 @@ class type renderingContext = object
   method uniform4iv_typed :
     [`ivec4] uniformLocation t -> Typed_array.int32Array t -> unit meth
   method uniformMatrix2fv :
-    [`mat2] uniformLocation -> bool t -> float js_array t -> unit
+    [`mat2] uniformLocation t -> bool t -> float js_array t -> unit meth
   method uniformMatrix2fv_typed :
-    [`mat2] uniformLocation -> bool t -> Typed_array.float32Array t -> unit
+    [`mat2] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
   method uniformMatrix3fv :
-    [`mat3] uniformLocation -> bool t -> float js_array t -> unit
+    [`mat3] uniformLocation t -> bool t -> float js_array t -> unit meth
   method uniformMatrix3fv_typed :
-    [`mat3] uniformLocation -> bool t -> Typed_array.float32Array t -> unit
+    [`mat3] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
   method uniformMatrix4fv :
-    [`mat4] uniformLocation -> bool t -> float js_array t -> unit
+    [`mat4] uniformLocation t -> bool t -> float js_array t -> unit meth
   method uniformMatrix4fv_typed :
-    [`mat4] uniformLocation -> bool t -> Typed_array.float32Array t -> unit
+    [`mat4] uniformLocation t -> bool t -> Typed_array.float32Array t -> unit meth
   method vertexAttrib1f : uint -> float -> unit meth
   method vertexAttrib1fv : uint -> float js_array t -> unit meth
   method vertexAttrib1fv_typed :
