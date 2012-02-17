@@ -41,9 +41,10 @@ class type ['a, 'b] typedArray = object
   method set : int -> 'a -> unit meth
   method set_fromArray : 'a js_array t -> int -> unit meth
   method set_fromTypedArray : ('a, 'b) typedArray t -> int -> unit meth
-  method subarray : int -> int -> ('a, 'b) typedArray t
-  method subarray_toEnd : int -> ('a, 'b) typedArray t
-end  
+  method subarray : int -> int -> ('a, 'b) typedArray t meth
+  method subarray_toEnd : int -> ('a, 'b) typedArray t meth
+  method _content_type_ : 'b
+end
 
 type int8Array = (int, [`Int8]) typedArray
 type uint8Array = (int, [`Uint8]) typedArray
