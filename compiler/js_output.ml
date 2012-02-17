@@ -255,8 +255,13 @@ let rec expression l f e =
           if v = float_of_string s2 then s2 else
           Printf.sprintf "%.18g" v
         in
-        if l > 13 && (v < 0. || (v = 0. && 1. /. v < 0.)) then begin
+        if
           (* Negative numbers may need to be parenthesized. *)
+          (l > 13 && (v < 0. || (v = 0. && 1. /. v < 0.)))
+            ||
+          (* Parenthesize as well when followed by a dot. *)
+          (l = 15)
+        then begin
           PP.string f "("; PP.string f s; PP.string f ")"
         end else
           PP.string f s
