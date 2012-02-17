@@ -624,7 +624,47 @@ let _ =
 
 (****)
 
-let rec translate_expr ctx queue x e =
+let varset_disjoint s s' = not (VarSet.exists (fun x -> VarSet.mem x s') s)
+
+let rec group_closures_rec closures req =
+  match closures with
+    [] ->
+      ([], VarSet.empty)
+  | ((var, vars, _) as elt) :: rem ->
+      let req = VarSet.union vars req in
+      let (closures', prov) = group_closures_rec rem req in
+      if varset_disjoint prov req then
+        ([elt] :: closures', VarSet.singleton var)
+      else
+        match closures' with
+          []     -> assert false
+        | l :: r -> ((elt :: l) :: r, VarSet.add var prov)
+
+let group_closures l = fst (group_closures_rec l VarSet.empty)
+
+let rec collect_closures ctx l =
+  match l with
+    Let (x, Closure (args, ((pc, _) as cont))) :: rem ->
+      let all_vars = AddrMap.find pc ctx.Ctx.mutated_vars in
+      let vars = VarSet.remove x all_vars in
+      let fun_name =
+        if not (VarSet.is_empty vars) && VarSet.mem x all_vars then
+          Some (Var.to_string x)
+        else
+          None
+      in
+      let cl =
+        J.EFun (fun_name, List.map Var.to_string args,
+                compile_closure ctx cont)
+      in
+      let (l', rem') = collect_closures ctx rem in
+      ((x, vars, cl) :: l', rem')
+  | _ ->
+    ([], l)
+
+(****)
+
+and translate_expr ctx queue x e =
   match e with
     Const i ->
       (int i, const_p, queue)
@@ -833,10 +873,86 @@ let rec translate_expr ctx queue x e =
           assert false
       end
 
+and translate_closures ctx expr_queue l =
+  match l with
+    [] ->
+      ([], expr_queue)
+  | [(x, vars, cl)] :: rem ->
+      let vars =
+        vars
+        >> VarSet.elements
+        >> List.map Var.to_string
+      in
+      let cl =
+        if vars = [] then cl else
+        J.ECall (J.EFun (None, vars,
+                         [J.Statement (J.Return_statement (Some cl))]),
+                 List.map (fun x -> J.EVar x) vars)
+      in
+      let (st, expr_queue) =
+        match ctx.Ctx.live.(Var.idx x) with
+          0 -> flush_queue expr_queue flush_p [J.Expression_statement cl]
+        | 1 -> enqueue expr_queue flush_p x cl
+        | _ -> flush_queue expr_queue flush_p
+                 [J.Variable_statement [Var.to_string x, Some cl]]
+      in
+      let (st', expr_queue) = translate_closures ctx expr_queue rem in
+      (st @ st', expr_queue)
+  | l :: rem ->
+      let names =
+        List.fold_left (fun s (x, _, _) -> VarSet.add x s) VarSet.empty l in
+      let vars =
+        List.fold_left (fun s (_, s', _) -> VarSet.union s s') VarSet.empty l
+      in
+      let vars =
+        VarSet.diff vars names
+        >> VarSet.elements
+        >> List.map Var.to_string
+      in
+      let defs =
+        List.map (fun (x, _, cl) -> (Var.to_string x, Some cl)) l in
+      let statement =
+        if vars = [] then
+          J.Variable_statement defs
+        else begin
+          let tbl = Var.fresh () in
+          let arr =
+            J.EArr
+              (List.map (fun (x, _, _) -> Some (J.EVar (Var.to_string x))) l)
+          in
+          let assgn =
+            List.fold_left
+              (fun (l, n) (x, _, _) ->
+                 ((Var.to_string x,
+                   Some (J.EAccess (J.EVar (Var.to_string tbl), int n))) :: l,
+                  n + 1))
+              ([], 0) l
+          in
+          J.Variable_statement
+            ((Var.to_string tbl,
+              Some
+                (J.ECall
+                   (J.EFun (None, vars,
+                            [J.Statement (J.Variable_statement defs);
+                             J.Statement (J.Return_statement (Some arr))]),
+                    List.map (fun x -> J.EVar x) vars))) ::
+             List.rev (fst assgn))
+        end
+      in
+      let (st, expr_queue) = flush_queue expr_queue flush_p [statement] in
+      let (st', expr_queue) = translate_closures ctx expr_queue rem in
+      (st @ st', expr_queue)
+
 and translate_instr ctx expr_queue instr =
   match instr with
     [] ->
       ([], expr_queue)
+  | Let (_, Closure _) :: _ ->
+      let (l, rem) = collect_closures ctx instr in
+      let l = group_closures l in
+      let (st, expr_queue) = translate_closures ctx expr_queue l in
+      let (instrs, expr_queue) = translate_instr ctx expr_queue rem in
+      (st @ instrs, expr_queue)
   | i :: rem ->
       let (st, expr_queue) =
         match i with
