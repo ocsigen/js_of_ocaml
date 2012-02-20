@@ -954,8 +954,8 @@ class type history = object
   method go : int opt -> unit meth
   method back : unit meth
   method forward : unit meth
-  method pushState : Js.Unsafe.any -> js_string t -> js_string t opt -> unit meth
-  method replaceState : Js.Unsafe.any -> js_string t -> js_string t opt -> unit meth
+  method pushState : 'a. 'a -> js_string t -> js_string t opt -> unit meth
+  method replaceState : 'a. 'a -> js_string t -> js_string t opt -> unit meth
 end
 
 class type undoManager = object
@@ -1015,6 +1015,9 @@ class type window = object
   method onfocus : (window t, event t) event_listener prop
   method onresize : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
+
+  method scrollX : int readonly_prop
+  method scrollY : int readonly_prop
 end
 
 let window : window t = Js.Unsafe.variable "window"
