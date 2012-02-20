@@ -313,7 +313,7 @@ function caml_parse_format (fmt) {
   var f =
     { justify:'+', signstyle:'-', filler:' ', alternate:false,
       base:0, signedconv:false, width:0, uppercase:false,
-      sign:1, prec:6, conv:'f' };
+      sign:1, prec:-1, conv:'f' };
   for (var i = 0; i < len; i++) {
     var c = fmt.charAt(i);
     switch (c) {
@@ -390,12 +390,17 @@ function caml_finish_formatting(f, rawbuffer) {
 }
 
 //Provides: caml_format_int const
-//Requires: caml_parse_format, caml_finish_formatting
+//Requires: caml_parse_format, caml_finish_formatting, MlString
 function caml_format_int(fmt, i) {
   if (fmt.toString() == "%d") return new MlWrappedString(""+i);
   var f = caml_parse_format(fmt);
   if (i < 0) { if (f.signedconv) { f.sign = -1; i = -i; } else i >>>= 0; }
   var s = i.toString(f.base);
+  if (f.prec >= 0) {
+    f.filler = ' ';
+    var n = f.prec - s.length;
+    if (n > 0) s = caml_str_repeat (n, '0') + s;
+  }
   return caml_finish_formatting(f, s);
 }
 
@@ -403,22 +408,23 @@ function caml_format_int(fmt, i) {
 //Requires: caml_parse_format, caml_finish_formatting
 function caml_format_float (fmt, x) {
   var s, f = caml_parse_format(fmt);
+  var prec = (f.prec < 0)?6:f.prec;
   if (x < 0) { f.sign = -1; x = -x; }
   if (isNaN(x)) { s = "nan"; f.filler = ' '; }
   else if (!isFinite(x)) { s = "inf"; f.filler = ' '; }
   else
     switch (f.conv) {
     case 'e':
-      var s = x.toExponential(f.prec);
+      var s = x.toExponential(prec);
       // exponent should be at least two digits
       var i = s.length;
       if (s.charAt(i - 3) == 'e')
         s = s.slice (0, i - 1) + '0' + s.slice (i - 1);
       break;
     case 'f':
-      s = x.toFixed(f.prec); break;
+      s = x.toFixed(prec); break;
     case 'g':
-      var prec = f.prec?f.prec:1;
+      prec = prec?prec:1;
       s = x.toExponential(prec - 1);
       var j = s.indexOf('e');
       var exp = +s.slice(j + 1);

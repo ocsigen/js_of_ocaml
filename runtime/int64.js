@@ -279,6 +279,11 @@ function caml_int64_format (fmt, x) {
     x = p[1];
     buffer = cvtbl.charAt(caml_int64_to_int32(p[2])) + buffer;
   } while (! caml_int64_is_zero(x));
+  if (f.prec >= 0) {
+    f.filler = ' ';
+    var n = f.prec - buffer.length;
+    if (n > 0) buffer = caml_str_repeat (n, '0') + buffer;
+  }
   return caml_finish_formatting(f, buffer);
 }
 
