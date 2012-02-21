@@ -175,3 +175,53 @@ module CoerceTo : sig
   val text : #node t -> text t opt
   val attr : #node t -> attr t opt
 end
+
+(** {2 Events} *)
+
+type (-'a, -'b) event_listener
+  (** The type of event listener functions.  The first type parameter
+      ['a] is the type of the target object; the second parameter
+      ['b] is the type of the event object. *)
+
+class type ['a] event = object
+  method _type : js_string t readonly_prop
+  method target : 'a t optdef readonly_prop
+  method currentTarget : 'a t optdef readonly_prop
+
+  (* Legacy methods *)
+  method srcElement : 'a t optdef readonly_prop
+end
+
+(** {2 Event handlers} *)
+
+val no_handler : ('a, 'b) event_listener
+  (** Void event handler (Javascript [null] value). *)
+val handler : (('e #event t as 'b) -> bool t) -> ('a, 'b) event_listener
+  (** Create an event handler that invokes the provided function.
+      If the handler returns false, the default action is prevented. *)
+val full_handler : ('a -> ('e #event t as 'b) -> bool t) -> ('a, 'b) event_listener
+  (** Create an event handler that invokes the provided function.
+      The event target (implicit parameter [this]) is also passed as
+      argument to the function.  *)
+val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
+  (** Invoke an existing handler.  Useful to chain event handlers. *)
+
+val eventTarget : (< .. > as 'a) #event t -> 'a t
+  (** Returns which object is the target of this event. *)
+
+type event_listener_id
+
+module Event : sig
+  type 'a typ
+  val make : string -> 'a typ
+end
+
+val addEventListener :
+  (< .. > t as 'a) -> 'b Event.typ ->
+  ('a, 'b) event_listener -> bool t -> event_listener_id
+  (** Add an event listener.  This function matches the
+      [addEventListener] DOM method, except that it returns
+      an id for removing the listener. *)
+
+val removeEventListener : event_listener_id -> unit
+  (** Remove the given event listener. *)

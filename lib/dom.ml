@@ -180,3 +180,93 @@ module CoerceTo = struct
   let attr e : attr Js.t Js.opt = cast e ATTRIBUTE
 
 end
+
+type ('a, 'b) event_listener = ('a, 'b -> bool t) meth_callback opt
+  (** The type of event listener functions.  The first type parameter
+      ['a] is the type of the target object; the second parameter
+      ['b] is the type of the event object. *)
+
+class type ['a] event = object
+  method _type : js_string t readonly_prop
+  method target : 'a t optdef readonly_prop
+  method currentTarget : 'a t optdef readonly_prop
+
+  (* Legacy methods *)
+  method srcElement : 'a t optdef readonly_prop
+end
+
+let no_handler : ('a, 'b) event_listener = Js.null
+let window_event () : 'a #event t = Js.Unsafe.variable "event"
+(* The function preventDefault must be called explicitely when
+   using addEventListener... *)
+let handler f =
+  Js.some (Js.wrap_callback
+    (fun e ->
+      (* depending on the internet explorer version, e can be 0, null
+	 or undefined. This is the only way I know to test them all *)
+      if not (Obj.magic e)
+      then
+        let e = window_event () in
+        let res = f e in
+        e##returnValue <- res;
+	res
+      else
+	let res = f e in
+        if not (Js.to_bool res) then
+          (Js.Unsafe.coerce e)##preventDefault ();
+        res))
+let full_handler f =
+  Js.some (Js.wrap_meth_callback
+    (fun this e ->
+      (* depending on the internet explorer version, e can be 0, null
+	 or undefined. This is the only way I know to test them all *)
+      if not (Obj.magic e)
+      then
+        let e = window_event () in
+        let res = f this e in
+        e##returnValue <- res; res
+      else
+        let res = f this e in
+        if not (Js.to_bool res) then
+          (Js.Unsafe.coerce e)##preventDefault ();
+        res))
+let invoke_handler
+  (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
+  Js.Unsafe.call f this [|Js.Unsafe.inject event|]
+
+let node_constr : node t constr = Js.Unsafe.variable "window.Node"
+
+let eventTarget (e: (< .. > as 'a) #event t) : 'a t =
+  let target =
+    Optdef.get (e##target) (fun () ->
+    Optdef.get (e##srcElement) (fun () -> assert false))
+  in
+  if Js.instanceof target node_constr
+  then
+    (* Workaround for Safari bug *)
+    let target' : node Js.t = Js.Unsafe.coerce target in
+    if target'##nodeType == TEXT then
+      Js.Unsafe.coerce (Opt.get (target'##parentNode) (fun () -> assert false))
+    else
+      target
+  else target
+
+module Event = struct
+  type 'a typ = Js.js_string Js.t
+  let make s = Js.string s
+end
+
+type event_listener_id = unit -> unit
+
+let addEventListener (e : (< .. > as 'a) t) typ h capt =
+  if (Js.Unsafe.coerce e)##addEventListener == Js.undefined then begin
+    let ev = (Js.string "on")##concat(typ) in
+    let callback = fun e -> Js.Unsafe.call (h, e, [||]) in
+    (Js.Unsafe.coerce e)##attachEvent(ev, callback);
+    fun () -> (Js.Unsafe.coerce e)##detachEvent(ev, callback)
+  end else begin
+    (Js.Unsafe.coerce e)##addEventListener(typ, h, capt);
+    fun () -> (Js.Unsafe.coerce e)##removeEventListener (typ, h, capt)
+  end
+
+let removeEventListener id = id ()

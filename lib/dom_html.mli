@@ -127,7 +127,7 @@ end
 
 (** {2 Events} *)
 
-type (-'a, -'b) event_listener
+type (-'a, -'b) event_listener = ('a, 'b) Dom.event_listener
   (** The type of event listener functions.  The first type parameter
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
@@ -139,12 +139,7 @@ type mouse_button =
   | Right_button
 
 class type event = object
-  method _type : js_string t readonly_prop
-  method target : element t optdef readonly_prop
-  method currentTarget : element t optdef readonly_prop
-
-  (* Legacy methods *)
-  method srcElement : element t optdef readonly_prop
+  inherit [element] Dom.event
 end
 
 and mouseEvent = object
@@ -1031,25 +1026,22 @@ end
 (** {2 Event handlers} *)
 
 val no_handler : ('a, 'b) event_listener
-  (** Void event handler (Javascript [null] value). *)
+  (** see [Dom.no_handler] *)
 val handler : ((#event t as 'b) -> bool t) -> ('a, 'b) event_listener
-  (** Create an event handler that invokes the provided function.
-      If the handler returns false, the default action is prevented. *)
+  (** see [Dom.handler] *)
 val full_handler : ('a -> (#event t as 'b) -> bool t) -> ('a, 'b) event_listener
-  (** Create an event handler that invokes the provided function.
-      The event target (implicit parameter [this]) is also passed as
-      argument to the function.  *)
+  (** see [Dom.full_handler] *)
 val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
-  (** Invoke an existing handler.  Useful to chain event handlers. *)
-
+  (** see [Dom.invoke_handler] *)
 val eventTarget : #event t -> element t
-  (** Returns which HTML element is the target of this event. *)
+  (** see [Dom.eventTarget] *)
+
 val eventRelatedTarget : #mouseEvent t -> element t opt
   (** Returns this event related target. *)
 
 (** Event types: [mousedown], [keypress], ... *)
 module Event : sig
-  type 'a typ
+  type 'a typ = 'a Dom.Event.typ
   val click : mouseEvent t typ
   val dblclick : mouseEvent t typ
   val mousedown : mouseEvent t typ
@@ -1070,7 +1062,7 @@ module Event : sig
   val make : string -> 'a typ
 end
 
-type event_listener_id
+type event_listener_id = Dom.event_listener_id
 
 val addEventListener :
   (#eventTarget t as 'a) -> 'b Event.typ ->
