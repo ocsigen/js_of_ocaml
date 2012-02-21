@@ -58,6 +58,10 @@ module CoerceTo = struct
     if typeof e = string "string"
     then Js.some (Unsafe.coerce e:js_string t)
     else Js.null
+  let arrayBuffer (e : file_any) =
+    if instanceof e Typed_array.arrayBuffer
+    then Js.some (Unsafe.coerce e:Typed_array.arrayBuffer t)
+    else Js.null
 end
 
 class type fileList = object

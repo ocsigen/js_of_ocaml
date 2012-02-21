@@ -38,8 +38,7 @@ type file_any
 
 module CoerceTo : sig
   val string : file_any -> js_string t Opt.t
-  (* CCC needed to be able to coerce to array buffer:
-     array buffer are not yet available *)
+  val arrayBuffer : file_any -> Typed_array.arrayBuffer t Opt.t
 end
 
 class type fileList = object
