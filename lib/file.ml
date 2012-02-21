@@ -19,7 +19,7 @@
  *)
 
 open Js
-open Dom_html
+open Dom
 
 class type blob = object
   method size : int readonly_prop
@@ -85,12 +85,12 @@ class type fileReader = object ('self)
   method result : file_any readonly_prop
   method error : fileError t readonly_prop
 
-  method onloadstart : ('self t, event t) event_listener writeonly_prop
-  method onprogress : ('self t, event t) event_listener writeonly_prop
-  method onload : ('self t, event t) event_listener writeonly_prop
-  method onabort : ('self t, event t) event_listener writeonly_prop
-  method onerror : ('self t, event t) event_listener writeonly_prop
-  method onloadend : ('self t, event t) event_listener writeonly_prop
+  method onloadstart : ('self t, 'self event t) event_listener writeonly_prop
+  method onprogress : ('self t, 'seltfevent t) event_listener writeonly_prop
+  method onload : ('self t, 'self event t) event_listener writeonly_prop
+  method onabort : ('self t, 'self event t) event_listener writeonly_prop
+  method onerror : ('self t, 'self event t) event_listener writeonly_prop
+  method onloadend : ('self t, 'self event t) event_listener writeonly_prop
 
   inherit Dom_html.eventTarget
 end
