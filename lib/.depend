@@ -8,8 +8,8 @@ dom_html.cmo: js.cmi dom.cmi dom_html.cmi
 dom_html.cmx: js.cmx dom.cmx dom_html.cmi
 event_arrows.cmo: js.cmi dom_html.cmi event_arrows.cmi
 event_arrows.cmx: js.cmx dom_html.cmx event_arrows.cmi
-file.cmo: js.cmi dom_html.cmi dom.cmi file.cmi
-file.cmx: js.cmx dom_html.cmx dom.cmx file.cmi
+file.cmo: typed_array.cmi js.cmi dom_html.cmi dom.cmi file.cmi
+file.cmx: typed_array.cmx js.cmx dom_html.cmx dom.cmx file.cmi
 firebug.cmo: js.cmi dom.cmi firebug.cmi
 firebug.cmx: js.cmx dom.cmx firebug.cmi
 form.cmo: js.cmi file.cmi dom_html.cmi form.cmi
@@ -37,7 +37,7 @@ dom.cmi: js.cmi
 dom_events.cmi: js.cmi dom_html.cmi
 dom_html.cmi: js.cmi dom.cmi
 event_arrows.cmi: js.cmi dom_html.cmi
-file.cmi: js.cmi dom_html.cmi dom.cmi
+file.cmi: typed_array.cmi js.cmi dom_html.cmi dom.cmi
 firebug.cmi: js.cmi dom.cmi
 form.cmi: js.cmi file.cmi dom_html.cmi
 js.cmi:

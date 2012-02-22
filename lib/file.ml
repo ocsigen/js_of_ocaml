@@ -72,6 +72,22 @@ class type fileError = object
   method code : int readonly_prop
 end
 
+class type ['a] progressEvent = object
+  inherit ['a] event
+  method lengthComputable : bool t readonly_prop
+  method loaded : int readonly_prop
+  method total : int readonly_prop
+end
+
+class type progressEventTarget = object ('self)
+  method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
+end
+
 type readyState = EMPTY | LOADING | DONE
 
 class type fileReader = object ('self)
@@ -89,14 +105,17 @@ class type fileReader = object ('self)
   method result : file_any readonly_prop
   method error : fileError t readonly_prop
 
-  method onloadstart : ('self t, 'self event t) event_listener writeonly_prop
-  method onprogress : ('self t, 'seltfevent t) event_listener writeonly_prop
-  method onload : ('self t, 'self event t) event_listener writeonly_prop
-  method onabort : ('self t, 'self event t) event_listener writeonly_prop
-  method onerror : ('self t, 'self event t) event_listener writeonly_prop
-  method onloadend : ('self t, 'self event t) event_listener writeonly_prop
+  inherit progressEventTarget
+end
 
-  inherit Dom_html.eventTarget
+module ReaderEvent = struct
+  type typ = fileReader progressEvent t Dom.Event.typ
+  let loadstart = Event.make "loadstart"
+  let progress = Event.make "progress"
+  let abort = Event.make "abort"
+  let error = Event.make "error"
+  let load = Event.make "load"
+  let loadend = Event.make "loadend"
 end
 
 let fileReader : fileReader t constr =
@@ -172,3 +191,5 @@ let readAsText_withEncoding file e =
 
 let readAsDataURL file =
   reader `DataURL file
+
+let addEventListener = Dom.addEventListener

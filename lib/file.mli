@@ -49,6 +49,23 @@ class type fileError = object
   method code : int readonly_prop
 end
 
+(* {2 Events} *)
+class type ['a] progressEvent = object
+  inherit ['a] event
+  method lengthComputable : bool t readonly_prop
+  method loaded : int readonly_prop
+  method total : int readonly_prop
+end
+
+class type progressEventTarget = object ('self)
+  method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
+end
+
 type readyState = EMPTY | LOADING | DONE
 
 class type fileReader = object ('self)
@@ -66,14 +83,24 @@ class type fileReader = object ('self)
   method result : file_any readonly_prop
   method error : fileError t readonly_prop
 
-  method onloadstart : ('self t, 'self event t) event_listener writeonly_prop
-  method onprogress : ('self t, 'seltfevent t) event_listener writeonly_prop
-  method onload : ('self t, 'self event t) event_listener writeonly_prop
-  method onabort : ('self t, 'self event t) event_listener writeonly_prop
-  method onerror : ('self t, 'self event t) event_listener writeonly_prop
-  method onloadend : ('self t, 'self event t) event_listener writeonly_prop
+  method onloadstart : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onprogress : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onload : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onabort : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onerror : ('self t, 'self progressEvent t) event_listener writeonly_prop
+  method onloadend : ('self t, 'self progressEvent t) event_listener writeonly_prop
 
-  inherit Dom_html.eventTarget
+  inherit progressEventTarget
+end
+
+module ReaderEvent : sig
+  type typ = fileReader progressEvent t Dom.Event.typ
+  val loadstart : typ
+  val progress : typ
+  val abort : typ
+  val error : typ
+  val load : typ
+  val loadend : typ
 end
 
 val filename : file t -> js_string t
@@ -87,3 +114,10 @@ val readAsBinaryString : blob t -> js_string t Lwt.t
 val readAsText : blob t -> js_string t Lwt.t
 val readAsText_withEncoding  : blob t -> js_string t -> js_string t Lwt.t
 val readAsDataURL : blob t -> js_string t Lwt.t
+
+val addEventListener :
+  (#progressEventTarget t as 'a) -> 'b Event.typ ->
+  ('a, 'b) event_listener -> bool t -> event_listener_id
+  (** Add an event listener.  This function matches the
+      [addEventListener] DOM method, except that it returns
+      an id for removing the listener. *)

@@ -43,12 +43,27 @@ class type xmlHttpRequest = object ('self)
   method getAllResponseHeaders : js_string t meth
   method responseText : js_string t readonly_prop
   method responseXML : Dom.element Dom.document t opt readonly_prop
+
+  inherit File.progressEventTarget
+  method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
 end
 
 val create : unit -> xmlHttpRequest t
 
 (** The next part of this module allow one to use Ocaml with no need for
      Javascript documentation. *)
+
+module Event : sig
+  type typ = xmlHttpRequest File.progressEvent t Dom.Event.typ
+  val readystatechange : xmlHttpRequest Dom.event t Dom.Event.typ
+  val loadstart : typ
+  val progress : typ
+  val abort : typ
+  val error : typ
+  val load : typ
+  val timeout : typ
+  val loadend : typ
+end
 
 type http_frame =
     {

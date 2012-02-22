@@ -42,6 +42,21 @@ class type xmlHttpRequest = object ('self)
   method getAllResponseHeaders : js_string t meth
   method responseText : js_string t readonly_prop
   method responseXML : Dom.element Dom.document t opt readonly_prop
+
+  inherit File.progressEventTarget
+  method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
+end
+
+module Event = struct
+  type typ = xmlHttpRequest File.progressEvent t Dom.Event.typ
+  let readystatechange = Dom.Event.make "readystatechange"
+  let loadstart = Dom.Event.make "loadstart"
+  let progress = Dom.Event.make "progress"
+  let abort = Dom.Event.make "abort"
+  let error = Dom.Event.make "error"
+  let load = Dom.Event.make "load"
+  let timeout = Dom.Event.make "timeout"
+  let loadend = Dom.Event.make "loadend"
 end
 
 class type xmlHttpRequest_binary = object
