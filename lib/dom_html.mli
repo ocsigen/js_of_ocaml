@@ -969,9 +969,6 @@ class type window = object
   method onfocus : (window t, event t) event_listener prop
   method onresize : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
-
-  method scrollX : int readonly_prop
-  method scrollY : int readonly_prop
 end
 
 val window : window t
