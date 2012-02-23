@@ -142,6 +142,17 @@ type http_frame =
 
 exception Wrong_headers of (int * (string -> string option))
 
+let extract_get_param url =
+  let open Url in
+  match url_of_string url with
+    | Some (Http url) ->
+      Url.string_of_url (Http { url with hu_arguments = [] }),
+      url.hu_arguments
+    | Some (Https url) ->
+      Url.string_of_url (Https { url with hu_arguments = [] }),
+      url.hu_arguments
+    | _ -> url, []
+
 let perform_raw_url
     ?(headers = [])
     ?content_type
@@ -183,7 +194,8 @@ let perform_raw_url
 	  | `FormData f -> "POST", None, `Urlencode)
       | Some _, ct -> "POST", ct, `Urlencode
   in
-  let url = match get_args with
+  let url, url_get = extract_get_param url in
+  let url = match url_get@get_args with
     | [] -> url
     | _::_ as l -> url ^ "?" ^ encode l
   in
