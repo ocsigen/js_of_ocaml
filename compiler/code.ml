@@ -162,7 +162,7 @@ end = struct
 
   let idx v = snd v
 
-  let compare v1 v2 = compare (idx v1) (idx v2)
+  let compare (_,v1) (_,v2) = v1 - v2
 
   let name (_, i) nm = VarPrinter.name i nm
   let propagate_name (_, i) (_, j) = VarPrinter.propagate_name i j
