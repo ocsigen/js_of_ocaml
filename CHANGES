@@ -1,10 +1,20 @@
-===== dev =====
+===== 1.1 (2012-02-24) =====
 
  * Libraries:
- ** Regexp: Fix efficacity problem
- ** Dom_html: Fix problems with IE8 event handling
- ** Dom_html: Add querySelector
- ** Dom: Add compareDocumentPosition
+ ** Lots of new dom bindings
+ ** WebGL
+ ** Typed arrays
+ ** Many speed improvement (marshall, strings, regexps)
+ ** Many bug fixed
+
+ * Compiler:
+ ** Add -I option to select directories containing cmi files
+ ** Fix compilation of mutually recursive functions occuring in loops
+ ** In Javascript output, parenthesize numbers when followed by a dot
+ ** Fix order of evaluation bug
+ ** Fix compilation of loops in 'try ... with' body (close #263)
+
+ * hyperbolic tree example
 
 ===== 1.0.9 (2011-11-30) =====
 
