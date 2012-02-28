@@ -113,16 +113,16 @@ let encode_arguments l =
     )
 
 let decode_arguments_js_string s =
-  let arr = split '&' l##search in
+  let arr = split '&' s in
   let len = arr##length in
   let name_value_split s =
     let arr_bis = split '=' s in
     match arr_bis##length with
-      | 3 -> Js.def (Js.array_get arr_bis 1, Js.array_get arr_bis 2)
+      | 2 -> Js.def (Js.array_get arr_bis 0, Js.array_get arr_bis 1)
       | _ -> Js.undefined
   in
   let rec aux acc idx =
-    if idx < 1
+    if idx < 0
     then acc
     else try aux (Js.Optdef.case
                     (Js.array_get arr idx)
@@ -141,7 +141,7 @@ let decode_arguments_js_string s =
                (pred idx)
          with Local_exn -> aux acc (pred idx)
   in
-    aux [] len
+    aux [] (len-1)
 
 let decode_arguments s =
   decode_arguments_js_string (Js.bytestring s)
@@ -153,7 +153,7 @@ let url_re =
                                     |\\[[0-9A-Fa-f:.]+\\])?\
                                    (:([0-9]+))?\
                                    /([^\\?#]*)\
-                                   (\\?([^#])*)?\
+                                   (\\?([^#]*))?\
                                    (#(.*))?$"
                   )
 let file_re =
