@@ -585,9 +585,6 @@ let _ =
   register_un_prim "caml_obj_dup" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "slice"), []));
   register_un_prim "caml_int_of_float" `Pure to_int;
-  (* FIX: this conversion from string should validate the string... *)
-  register_un_prim "caml_float_of_string" `Pure
-    (fun cx -> J.EUn (J.Pl, cx));
   register_un_math_prim "caml_abs_float" "abs";
   register_un_math_prim "caml_acos_float" "acos";
   register_un_math_prim "caml_asin_float" "asin";

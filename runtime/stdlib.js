@@ -300,6 +300,19 @@ function caml_int_of_string (s) {
   return res;
 }
 
+//Provides: caml_float_of_string mutable
+//Requires: caml_failwith
+function caml_float_of_string(s) {
+  var res;
+  s = s.getFullBytes();
+  res = +s;
+  if ((s.length > 0) && (res === res)) return res;
+  s = s.replace(/_/g,"");
+  res = +s;
+  if (((s.length > 0) && (res === res)) || /^[+-]?nan$/i.test(s)) return res;
+  caml_failwith("float_of_string");
+}
+
 //Provides: caml_is_printable const
 function caml_is_printable(c) { return +(c > 31 && c < 127); }
 
