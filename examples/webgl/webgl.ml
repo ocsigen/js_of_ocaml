@@ -199,6 +199,12 @@ let fetch_model s =
 let pi = 4. *. (atan 1.)
 
 let start (pos,norm) =
+  let fps_text = Dom_html.document##createTextNode (Js.string "loading") in
+  Opt.iter
+    (Opt.bind ( Dom_html.document##getElementById(string "fps") )
+       Dom_html.CoerceTo.element)
+    (fun span -> Dom.appendChild span fps_text);
+
   let canvas, gl = init_canvas "canvas" in
   let prog = create_program gl
     (get_source "vertex-shader")
@@ -248,26 +254,29 @@ let start (pos,norm) =
   check_error gl;
   debug "ready";
 
+  let get_time () = to_float ((jsnew date_now ())##getTime()) in
+  let last_draw = ref (get_time ()) in
+  let draw_times = Queue.create () in
   let rec f () =
     let t = to_float (jsnew date_now ())##getTime() /. 1000. in
     let mat' = Proj3D.mult mat (Proj3D.rotate_y (1. *. t)) in
     gl##uniformMatrix4fv_typed(proj_loc, _false, Proj3D.array mat');
 
     gl##drawArrays(gl##_TRIANGLES, 0, pos##length / 3);
-
     check_error gl;
 
+    let now = get_time () in
+    Queue.push (now -. !last_draw) draw_times;
+    last_draw := now;
+    if Queue.length draw_times > 50 then ignore (Queue.pop draw_times);
+    let fps = (1. /. ( Queue.fold (+.) 0. draw_times ))
+      *. (Pervasives.float (Queue.length draw_times))
+      *. 1000. in
+    fps_text##data <- string (Printf.sprintf "%.1f" fps);
     Lwt_js.sleep 0.02 >>= f
   in
   f ()
 
-let go _ =
-  ignore (
-    Firebug.console##time(Js.string "load");
-    fetch_model "monkey.model" >>=
-      (fun model ->
-        Firebug.console##timeEnd(Js.string "load");
-        start model));
-  _true
+let go _ = ignore (fetch_model "monkey.model" >>= start); _true
 
 let _ = Dom_html.window##onload <- Dom_html.handler go
