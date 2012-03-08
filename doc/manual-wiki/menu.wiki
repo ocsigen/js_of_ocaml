@@ -9,3 +9,4 @@
 ===<<a_file src="graph/index.html" |A graph viewer>>
 ===<<a_file src="boulderdash/index.html" |A Boulder Dash game>>
 ===<<a_file src="wiki/index.html" |A realtime wiki editor>>
+===<<a_file src="webgl/index.html" |A webgl demo>>
