@@ -262,8 +262,7 @@ let start (pos,norm) =
     let mat' = Proj3D.mult mat (Proj3D.rotate_y (1. *. t)) in
     gl##uniformMatrix4fv_typed(proj_loc, _false, Proj3D.array mat');
 
-    gl##clear(gl##_DEPTH_BUFFER_BIT_);
-    gl##clear(gl##_COLOR_BUFFER_BIT_);
+    gl##clear(gl##_DEPTH_BUFFER_BIT_ lor gl##_COLOR_BUFFER_BIT_);
     gl##drawArrays(gl##_TRIANGLES, 0, pos##length / 3);
     check_error gl;
 
@@ -279,6 +278,9 @@ let start (pos,norm) =
   in
   f ()
 
-let go _ = ignore (fetch_model "monkey.model" >>= start); _true
+let go _ = ignore (
+  catch (fun () -> fetch_model "monkey.model" >>= start)
+    (fun exn -> error "uncaught exception: %s" (Printexc.to_string exn)));
+  _true
 
 let _ = Dom_html.window##onload <- Dom_html.handler go
