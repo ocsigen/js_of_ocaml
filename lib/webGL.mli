@@ -144,6 +144,7 @@ class type renderingContext = object
 
   (** 5.13.5 Buffer objects *)
   method bindBuffer : bufferTarget -> buffer t -> unit meth
+  method bindBuffer_ : bufferTarget opt -> buffer t -> unit meth
   method bufferData_create :
     bufferTarget -> sizeiptr -> bufferUsage -> unit meth
   method bufferData :
@@ -161,6 +162,7 @@ class type renderingContext = object
 
   (** 5.13.6 Framebuffer objects *)
   method bindFramebuffer : fbTarget -> framebuffer t -> unit meth
+  method bindFramebuffer_ : fbTarget opt -> framebuffer t -> unit meth
   method checkFramebufferStatus : fbTarget -> framebufferStatus meth
   method createFramebuffer : framebuffer t meth
   method deleteFramebuffer : framebuffer t -> unit meth
@@ -174,6 +176,7 @@ class type renderingContext = object
 
   (** 5.13.7 Renderbuffer objects *)
   method bindRenderbuffer : rbTarget -> renderbuffer t -> unit meth
+  method bindRenderbuffer_ : rbTarget opt -> renderbuffer t -> unit meth
   method createRenderbuffer : renderbuffer t meth
   method deleteRenderbuffer : renderbuffer t -> unit meth
   method getRenderbufferParameter : rbTarget -> renderbufferParam -> int meth
@@ -183,6 +186,7 @@ class type renderingContext = object
 
   (** 5.13.8 Texture objects *)
   method bindTexture : texTarget -> texture t -> unit meth
+  method bindTexture_ : texTarget opt -> texture t -> unit meth
   method copyTexImage2D :
     texTarget -> int -> pixelFormat -> int -> int -> sizei -> sizei ->
     int -> unit meth
@@ -236,7 +240,7 @@ class type renderingContext = object
   method createShader : shaderType -> shader t meth
   method deleteProgram : program t -> unit meth
   method deleteShader : shader t -> unit meth
-  method detachShader : program t -> shader -> unit meth
+  method detachShader : program t -> shader t -> unit meth
   method getAttachedShaders : program t -> shader t js_array t meth
   method getProgramParameter : 'a . program t -> 'a programParam -> 'a meth
   method getProgramInfoLog : program t -> js_string t meth
@@ -248,6 +252,7 @@ class type renderingContext = object
   method linkProgram : program t -> unit meth
   method shaderSource : shader t -> js_string t -> unit meth
   method useProgram : program t -> unit meth
+  method useProgram_ : program t opt -> unit meth
   method validateProgram : program t -> unit meth
 
   (** 5.13.10 Uniforms and attributes *)
