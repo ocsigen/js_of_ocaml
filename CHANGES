@@ -1,3 +1,11 @@
+===== 1.1.1 (2012-03-08) =====
+
+ * Bugfixes:
+   * Url parsing.
+   * webgl binding types
+
+ * webgl example
+
 ===== 1.1 (2012-02-24) =====
 
  * Libraries:
