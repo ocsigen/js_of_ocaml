@@ -968,6 +968,7 @@ class type window = object
   method onblur : (window t, event t) event_listener prop
   method onfocus : (window t, event t) event_listener prop
   method onresize : (window t, event t) event_listener prop
+  method onscroll : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
 end
 
