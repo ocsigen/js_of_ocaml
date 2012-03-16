@@ -22,6 +22,7 @@ open Js
 
 let error f = Printf.ksprintf (fun s -> Firebug.console##error (Js.string s); failwith s) f
 let debug f = Printf.ksprintf (fun s -> Firebug.console##log(Js.string s)) f
+let alert f = Printf.ksprintf (fun s -> Dom_html.window##alert(Js.string s); failwith s) f
 
 let check_error gl =
   if gl##getError() <> gl##_NO_ERROR
@@ -34,8 +35,8 @@ let init_canvas canvas_id =
          Dom_html.CoerceTo.canvas)
       (fun () -> error "can't find canvas element %s" canvas_id) in
   let gl =
-    Opt.get ( WebGL.getContext canvas )
-      (fun () -> error "can't initialise webgl context") in
+    Opt.get (try WebGL.getContext canvas with e -> null)
+      (fun () -> alert "can't initialise webgl context") in
   canvas, gl
 
 let load_shader (gl:WebGL.renderingContext t) shader text =
@@ -151,10 +152,23 @@ let read_line l =
 
 let array_iter f a =
   let rec aux i =
-    Optdef.case (array_get a i)
-      (fun () -> ())
-      (fun s -> f s;aux (i+1)) in
+    match Optdef.to_option (array_get a i) with
+      | None -> ()
+      | Some s -> f s; aux (i+1) in
   aux 0
+
+let concat a =
+  let length =
+    Array.fold_left (fun len l -> len + List.length l) 0 a in
+  let next =
+    let pos = ref (-1) in
+    let l = ref [] in
+    let rec aux _ =
+      match !l with
+        | t::q -> l := q; t
+        | [] -> incr pos; l := a.(!pos); aux 0 in
+    aux in
+  Array.init length next
 
 let make_model vertex norm face =
   let vertex' =
@@ -171,8 +185,8 @@ let make_model vertex norm face =
       let (b1,b2,b3) = norm.(bn-1) in
       let (c1,c2,c3) = norm.(cn-1) in
       [a1;a2;a3;b1;b2;b3;c1;c2;c3]) in
-  let vertex = float32array (Array.of_list (List.flatten (Array.to_list vertex'))) in
-  let norm = float32array (Array.of_list (List.flatten (Array.to_list norm'))) in
+  let vertex = float32array (concat vertex') in
+  let norm = float32array (concat norm') in
   vertex, norm
 
 let read_model s =
