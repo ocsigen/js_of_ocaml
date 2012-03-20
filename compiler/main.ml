@@ -19,11 +19,15 @@
  *)
 
 let debug = Util.debug "main"
+let times = Util.debug "times"
 
 let f paths js_files input_file output_file =
+  let t = Util.Timer.make () in
   List.iter Linker.add_file js_files;
   let paths = List.rev_append paths [Findlib.package_directory "stdlib"] in
 
+  
+  let t1 = Util.Timer.make () in
   let p =
     match input_file with
       None ->
@@ -34,17 +38,21 @@ let f paths js_files input_file output_file =
         close_in ch;
         p
   in
+  if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
   let output_program = Driver.f p in
-  match output_file with
+  begin match output_file with
     None ->
       output_program (Pretty_print.to_out_channel stdout)
   | Some f ->
       let ch = open_out_bin f in
       output_program (Pretty_print.to_out_channel ch);
       close_out ch
-
+  end;
+  if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
+ 
 let _ =
   Findlib.init ();
+  Util.Timer.init Unix.gettimeofday;
   let js_files = ref [] in
   let output_file = ref None in
   let input_file = ref None in

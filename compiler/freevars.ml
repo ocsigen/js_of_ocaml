@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+
+let times = Util.debug "times"
+
 open Code
 
 let (>>) x f = f x
@@ -164,6 +167,7 @@ let rec traverse pc visited blocks bound_vars free_vars =
     (visited, free_vars)
 
 let f ((pc, blocks, free_pc) as p) =
+  let t = Util.Timer.make () in
   let ctx = ref AddrMap.empty in
   let cont_bound_vars = solver p in
   closure_free_vars :=
@@ -192,4 +196,5 @@ Format.eprintf "@[<2>Global free variables:@ %a@]@."
 print_var_list (VarSet.elements free_vars);
 *)
   ignore free_vars;
+  if times () then Format.eprintf "  free vars: %a@." Util.Timer.print t;
   !ctx

@@ -19,6 +19,7 @@
  *)
 
 let debug = Util.debug "deadcode"
+let times = Util.debug "times"
 
 open Code
 
@@ -190,6 +191,7 @@ let add_cont_dep blocks defs (pc, args) =
   | None       -> () (* Dead continuation *)
 
 let f ((pc, blocks, free_pc) as program) =
+  let t = Util.Timer.make () in
   let nv = Var.count () in
   let defs = Array.make nv [] in
   let live = Array.make nv 0 in
@@ -251,4 +253,5 @@ let f ((pc, blocks, free_pc) as program) =
            blocks)
       blocks AddrMap.empty
   in
+  if times () then Format.eprintf "  dead code elim.: %a@." Util.Timer.print t;
   (pc, blocks, free_pc), st.live

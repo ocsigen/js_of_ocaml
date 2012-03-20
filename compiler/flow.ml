@@ -20,6 +20,7 @@
 
 let debug = Util.debug "flow"
 let disable_optcall = Util.disabled "optcall"
+let times = Util.debug "times"
 
 open Code
 
@@ -468,10 +469,19 @@ let build_subst defs known_origins maybe_unknown possibly_mutable =
 (****)
 
 let f ((pc, blocks, free_pc) as p) =
+  let t = Util.Timer.make () in
+  let t1 = Util.Timer.make () in
   let (vars, deps, defs) = program_deps p in
+  if times () then Format.eprintf "    flow analysis 1: %a@." Util.Timer.print t1;
+  let t2 = Util.Timer.make () in
   let known_origins = solver1 !vars deps defs in
+  if times () then Format.eprintf "    flow analysis 2: %a@." Util.Timer.print t2;
+  let t3 = Util.Timer.make () in
   let possibly_mutable = program_escape defs known_origins p in
+  if times () then Format.eprintf "    flow analysis 3: %a@." Util.Timer.print t3;
+  let t4 = Util.Timer.make () in
   let maybe_unknown = solver2 !vars deps defs known_origins possibly_mutable in
+  if times () then Format.eprintf "    flow analysis 4: %a@." Util.Timer.print t4;
 
   if debug () then begin
     VarMap.iter
@@ -484,7 +494,10 @@ let f ((pc, blocks, free_pc) as p) =
         known_origins;
   end;
 
+  let t5 = Util.Timer.make () in
   let p = specialize_instrs (defs, known_origins, maybe_unknown) p in
   let s = build_subst defs known_origins maybe_unknown possibly_mutable in
   let p = Subst.program (Subst.from_array s) p in
+  if times () then Format.eprintf "    flow analysis 5: %a@." Util.Timer.print t5;
+  if times () then Format.eprintf "  flow analysis: %a@." Util.Timer.print t;
   p

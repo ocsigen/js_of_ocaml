@@ -35,6 +35,7 @@ Patterns:
 
 let compact = ref true
 let debug = Util.debug "gen"
+let times = Util.debug "times"
 let disable_compact_expr = Util.disabled "compactexpr"
 
 let set_pretty () = compact := false
@@ -1467,6 +1468,7 @@ let list_missing l =
 
 let f ch ?(standalone=true) ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
+  let t' = Util.Timer.make () in
   let ctx = Ctx.initial blocks live_vars mutated_vars in
   let p = compile_program standalone ctx pc in
   if !compact then Pretty_print.set_compact ch true;
@@ -1478,4 +1480,7 @@ let f ch ?(standalone=true) ((pc, blocks, _) as p) live_vars =
     list_missing missing
   end;
   Hashtbl.clear add_names;
-  Js_output.program ch p
+  let res = Js_output.program ch p in
+  if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
+  res
+

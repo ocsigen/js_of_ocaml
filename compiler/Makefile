@@ -3,6 +3,8 @@ include ../Makefile.conf
 
 all: $(COMPILER)
 
+PACKAGES=findlib,str,unix
+
 OBJS=pretty_print.cmx util.cmx dgraph.cmx \
      javascript.cmx js_output.cmx js_simpl.cmx \
      instr.cmx code.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
@@ -17,10 +19,10 @@ $(COMPILER): compile.$(BEST)
 
 .INTERMEDIATE: compile.byte compile.opt
 compile.byte: $(COMPOBJS:cmx=cmo)
-	ocamlfind ocamlc -package findlib,str -linkpkg -o $@ $^
+	ocamlfind ocamlc -package $(PACKAGES) -linkpkg -o $@ $^
 
 compile.opt: $(COMPOBJS)
-	ocamlfind ocamlopt -package findlib,str -linkpkg -o $@ $^
+	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -o $@ $^
 
 compiler.cma: $(OBJS:cmx=cmo)
 	ocamlfind ocamlc -a -o $@ $^

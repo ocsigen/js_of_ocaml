@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+let times = Util.debug "times"
+
 open Code
 
 (* FIX: it should be possible to deal with tail-recursion in exception
@@ -95,6 +97,7 @@ let rec traverse f pc visited blocks =
     (visited, blocks)
 
 let f ((pc, blocks, free_pc) as p) =
+  let t = Util.Timer.make () in
   let blocks =
     fold_closures p
       (fun f params (pc, args) blocks ->
@@ -107,4 +110,5 @@ let f ((pc, blocks, free_pc) as p) =
                blocks)
       blocks
   in
-    (pc, blocks, free_pc)
+  if times () then Format.eprintf "  tail calls: %a@." Util.Timer.print t;
+  (pc, blocks, free_pc)

@@ -35,3 +35,11 @@ val set_debug : string -> unit
 
 val disabled : string -> unit -> bool
 val set_disabled : string -> unit
+
+module Timer : sig
+  type t
+  val init : (unit -> float) -> unit
+  val make : unit -> t
+  val get : t -> float
+  val print : Format.formatter -> t -> unit
+end

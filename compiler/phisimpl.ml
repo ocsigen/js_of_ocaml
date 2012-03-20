@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+let times = Util.debug "times"
+
 open Code
 
 (****)
@@ -164,7 +166,13 @@ let solver1 vars deps defs =
     reprs
 
 let f p =
+  let t = Util.Timer.make () in
+  let t' = Util.Timer.make () in
   let (vars, deps, defs) = program_deps p in
+  if times () then Format.eprintf "    phi-simpl. 1: %a@." Util.Timer.print t';
+  let t' = Util.Timer.make () in
   let subst = solver1 !vars deps defs in
+  if times () then Format.eprintf "    phi-simpl. 2: %a@." Util.Timer.print t';
   let p = Subst.program (Subst.from_array subst) p in
+  if times () then Format.eprintf "  phi-simpl.: %a@." Util.Timer.print t;
   p

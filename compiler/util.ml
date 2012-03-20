@@ -57,8 +57,14 @@ let read_file f =
 let debugs = ref []
 
 let debug s =
-  let state = ref false in
-  debugs := (s, state) :: !debugs;
+  let state =
+    try
+      List.assoc s !debugs
+    with Not_found ->
+      let state = ref false in
+      debugs := (s, state) :: !debugs;
+      state
+  in
   fun () -> !state
 
 let set_debug s =
@@ -76,3 +82,14 @@ let disabled s =
 let set_disabled s =
   try List.assoc s !disabled_lst := true with Not_found ->
    Format.eprintf "%s: no disable option named '%s'@." Sys.argv.(0) s; exit 1
+
+(****)
+
+module Timer = struct
+  type t = float
+  let timer = ref (fun _ -> 0.)
+  let init f = timer := f
+  let make () = !timer ()
+  let get t = !timer () -. t
+  let print f t = Format.fprintf f "%.2f" (get t)
+end
