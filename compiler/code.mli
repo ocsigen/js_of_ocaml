@@ -45,6 +45,25 @@ val string_of_ident : int -> string
 
 module VarSet : Set.S with type elt = Var.t
 module VarMap : Map.S with type key = Var.t
+module VarTbl : sig
+  type 'a t
+  type key = Var.t
+  type size = unit
+  val get : 'a t -> key -> 'a
+  val set : 'a t -> key -> 'a -> unit
+  val make : size -> 'a -> 'a t
+end
+module VarISet : sig
+  type t
+  type elt = Var.t
+
+  val empty : unit -> t
+  val iter : (elt -> unit) -> t -> unit
+  val mem : t -> elt -> bool
+  val add : t -> elt -> unit
+  val remove : t -> elt -> unit
+  val copy : t -> t
+end
 
 type addr = int
 

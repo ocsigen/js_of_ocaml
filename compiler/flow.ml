@@ -26,7 +26,7 @@ open Code
 
 (****)
 
-let add_var vars x = vars := VarSet.add x !vars
+let add_var = VarISet.add
 
 type def = Phi of VarSet.t | Expr of Code.expr | Param
 
@@ -86,7 +86,7 @@ let expr_deps blocks vars deps defs x e =
 
 let program_deps (_, blocks, _) =
   let nv = Var.count () in
-  let vars = ref VarSet.empty in
+  let vars = VarISet.empty () in
   let deps = Array.make nv VarSet.empty in
   let defs = Array.make nv undefined in
   AddrMap.iter
@@ -130,7 +130,7 @@ let propagate1 deps defs st x =
     Param ->
       VarSet.singleton x
   | Phi s ->
-      var_set_lift (fun y -> VarMap.find y st) s
+      var_set_lift (fun y -> VarTbl.get st y) s
   | Expr e ->
       match e with
         Const _ | Constant _  | Apply _ | Prim _
@@ -143,12 +143,12 @@ let propagate1 deps defs st x =
                  Expr (Block (_, a)) when n < Array.length a ->
                    let t = a.(n) in
                    add_dep deps x t;
-                   VarMap.find t st
+                   VarTbl.get st t
                | Phi _ | Param | Expr _ ->
                    VarSet.empty)
-            (VarMap.find y st)
+            (VarTbl.get st y)
 
-module G = Dgraph.Make (Var) (VarSet) (VarMap)
+module G = Dgraph.Make_Imperative (Var) (VarISet) (VarTbl)
 
 module Domain1 = struct
   type t = VarSet.t
@@ -161,15 +161,15 @@ module Solver1 = G.Solver (Domain1)
 let solver1 vars deps defs =
   let g =
     { G.domain = vars;
-      G.fold_children = fun f x a -> VarSet.fold f (deps.(Var.idx x)) a }
+      G.iter_children = fun f x -> VarSet.iter f deps.(Var.idx x) }
   in
-  Solver1.f g (propagate1 deps defs)
+  Solver1.f () g (propagate1 deps defs)
 
 (****)
 
 type mutability_state =
   { defs : def array;
-    known_origins : Code.VarSet.t Code.VarMap.t;
+    known_origins : Code.VarSet.t Code.VarTbl.t;
     may_escape : bool array;
     possibly_mutable : bool array }
 
@@ -184,7 +184,7 @@ let rec block_escape st x =
            Expr (Block (_, l)) -> Array.iter (fun z -> block_escape st z) l
          | _                   -> ()
        end)
-    (VarMap.find x st.known_origins)
+    (VarTbl.get st.known_origins x)
 
 let expr_escape st x e =
   match e with
@@ -219,11 +219,11 @@ let program_escape defs known_origins (_, blocks, _) =
                 expr_escape st x e
             | Set_field (x, _, y) | Array_set (x, _, y) ->
                 VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
-                  (VarMap.find x known_origins);
+                  (VarTbl.get known_origins x);
                 block_escape st y
             | Offset_ref (x, _) ->
                 VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
-                  (VarMap.find x known_origins))
+                  (VarTbl.get known_origins x))
          block.body;
        match block.branch with
          Return x | Raise x ->
@@ -249,13 +249,13 @@ let propagate2 defs known_origins possibly_mutable st x =
     Param ->
       false
   | Phi s ->
-      VarSet.exists (fun y -> VarMap.find y st) s
+      VarSet.exists (fun y -> VarTbl.get st y) s
   | Expr e ->
       match e with
         Const _ | Constant _ | Closure _ | Apply _ | Prim _ | Block _ ->
           false
       | Field (y, n) ->
-          VarMap.find y st
+          VarTbl.get st y
             ||
           VarSet.exists
             (fun z ->
@@ -265,10 +265,10 @@ let propagate2 defs known_origins possibly_mutable st x =
                     ||
                    possibly_mutable.(Var.idx z)
                     ||
-                   VarMap.find (a.(n)) st
+                   VarTbl.get st a.(n)
                | Phi _ | Param | Expr _ ->
                    true)
-              (VarMap.find y known_origins)
+              (VarTbl.get known_origins y)
 
 module Domain2 = struct
   type t = bool
@@ -281,15 +281,15 @@ module Solver2 = G.Solver (Domain2)
 let solver2 vars deps defs known_origins possibly_mutable =
   let g =
     { G.domain = vars;
-      G.fold_children = fun f x a -> VarSet.fold f (deps.(Var.idx x)) a }
+      G.iter_children = fun f x -> VarSet.iter f deps.(Var.idx x) }
   in
-  Solver2.f g (propagate2 defs known_origins possibly_mutable)
+  Solver2.f () g (propagate2 defs known_origins possibly_mutable)
 
 (****)
 
 let get_approx (defs, known_origins, maybe_unknown) f top join x =
-  let s = VarMap.find x known_origins in
-  if VarMap.find x maybe_unknown then top else
+  let s = VarTbl.get known_origins x in
+  if VarTbl.get maybe_unknown x then top else
   match VarSet.cardinal s with
     0 -> top
   | 1 -> f (VarSet.choose s)
@@ -450,20 +450,21 @@ let direct_approx defs known_origins maybe_unknown possibly_mutable x =
   | _ ->
       None
 
-let build_subst defs known_origins maybe_unknown possibly_mutable =
+let build_subst defs vars known_origins maybe_unknown possibly_mutable =
   let nv = Var.count () in
   let subst = Array.make nv None in
-  VarMap.iter
-    (fun x u ->
+  VarISet.iter
+    (fun x ->
+       let u = VarTbl.get maybe_unknown x in
        if not u then begin
-         let s = VarMap.find x known_origins in
+         let s = VarTbl.get known_origins x in
          if VarSet.cardinal s = 1 then
            subst.(Var.idx x) <- Some (VarSet.choose s)
        end;
        if subst.(Var.idx x) = None then
          subst.(Var.idx x) <-
            direct_approx defs known_origins maybe_unknown possibly_mutable x)
-    maybe_unknown;
+    vars;
   subst
 
 (****)
@@ -474,29 +475,30 @@ let f ((pc, blocks, free_pc) as p) =
   let (vars, deps, defs) = program_deps p in
   if times () then Format.eprintf "    flow analysis 1: %a@." Util.Timer.print t1;
   let t2 = Util.Timer.make () in
-  let known_origins = solver1 !vars deps defs in
+  let known_origins = solver1 vars deps defs in
   if times () then Format.eprintf "    flow analysis 2: %a@." Util.Timer.print t2;
   let t3 = Util.Timer.make () in
   let possibly_mutable = program_escape defs known_origins p in
   if times () then Format.eprintf "    flow analysis 3: %a@." Util.Timer.print t3;
   let t4 = Util.Timer.make () in
-  let maybe_unknown = solver2 !vars deps defs known_origins possibly_mutable in
+  let maybe_unknown = solver2 vars deps defs known_origins possibly_mutable in
   if times () then Format.eprintf "    flow analysis 4: %a@." Util.Timer.print t4;
 
   if debug () then begin
-    VarMap.iter
-      (fun x s ->
+    VarISet.iter
+      (fun x ->
+         let s = VarTbl.get known_origins x in
          if not (VarSet.is_empty s) (*&& VarSet.choose s <> x*) then begin
-    Format.eprintf "%a: {%a} / %s@."
-    Var.print x Code.print_var_list (VarSet.elements s)
-    (if VarMap.find x maybe_unknown then "any" else "known")
-           end)
-        known_origins;
+           Format.eprintf "%a: {%a} / %s@."
+             Var.print x Code.print_var_list (VarSet.elements s)
+             (if VarTbl.get maybe_unknown x then "any" else "known")
+         end)
+      vars
   end;
 
   let t5 = Util.Timer.make () in
   let p = specialize_instrs (defs, known_origins, maybe_unknown) p in
-  let s = build_subst defs known_origins maybe_unknown possibly_mutable in
+  let s = build_subst defs vars known_origins maybe_unknown possibly_mutable in
   let p = Subst.program (Subst.from_array s) p in
   if times () then Format.eprintf "    flow analysis 5: %a@." Util.Timer.print t5;
   if times () then Format.eprintf "  flow analysis: %a@." Util.Timer.print t;

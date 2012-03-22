@@ -24,7 +24,7 @@ open Code
 
 (****)
 
-let add_var vars x = vars := VarSet.add x !vars
+let add_var = VarISet.add
 
 let add_def vars defs x y =
   add_var vars x;
@@ -61,7 +61,7 @@ let expr_deps blocks vars deps defs x e =
 
 let program_deps (_, blocks, _) =
   let nv = Var.count () in
-  let vars = ref VarSet.empty in
+  let vars = VarISet.empty () in
   let deps = Array.make nv VarSet.empty in
   let defs = Array.make nv VarSet.empty in
   AddrMap.iter
@@ -104,8 +104,7 @@ let rec repr reprs x =
       x
   | Some y ->
       let z = repr reprs y in
-      if Var.compare y z = 0 then
-        reprs.(idx) <- Some z;
+      if Var.compare y z <> 0 then reprs.(idx) <- Some z;
       z
 
 let replace deps reprs x y =
@@ -116,7 +115,7 @@ let replace deps reprs x y =
   true
 
 let propagate1 deps defs reprs st x =
-  let prev = VarMap.find x st in
+  let prev = VarTbl.get st x in
   if prev then prev else begin
     let idx = Var.idx x in
     let s =
@@ -137,7 +136,7 @@ let propagate1 deps defs reprs st x =
         false
   end
 
-module G = Dgraph.Make (Var) (VarSet) (VarMap)
+module G = Dgraph.Make_Imperative (Var) (VarISet) (VarTbl)
 
 module Domain1 = struct
   type t = bool
@@ -152,9 +151,9 @@ let solver1 vars deps defs =
   let reprs = Array.make nv None in
   let g =
     { G.domain = vars;
-      G.fold_children = fun f x a -> VarSet.fold f (deps.(Var.idx x)) a }
+      G.iter_children = fun f x -> VarSet.iter f deps.(Var.idx x) }
   in
-  ignore (Solver1.f g (propagate1 deps defs reprs));
+  ignore (Solver1.f () g (propagate1 deps defs reprs));
   Array.mapi
     (fun idx y ->
        match y with
@@ -171,7 +170,7 @@ let f p =
   let (vars, deps, defs) = program_deps p in
   if times () then Format.eprintf "    phi-simpl. 1: %a@." Util.Timer.print t';
   let t' = Util.Timer.make () in
-  let subst = solver1 !vars deps defs in
+  let subst = solver1 vars deps defs in
   if times () then Format.eprintf "    phi-simpl. 2: %a@." Util.Timer.print t';
   let p = Subst.program (Subst.from_array subst) p in
   if times () then Format.eprintf "  phi-simpl.: %a@." Util.Timer.print t;

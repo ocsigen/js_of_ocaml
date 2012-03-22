@@ -124,6 +124,8 @@ module Var : sig
   val set_pretty : unit -> unit
 
   val reset : unit -> unit
+
+  val dummy : t
 end = struct
 
   type t = int * int
@@ -167,10 +169,34 @@ end = struct
   let name (_, i) nm = VarPrinter.name i nm
   let propagate_name (_, i) (_, j) = VarPrinter.propagate_name i j
   let set_pretty () = VarPrinter.pretty := true
+
+  let dummy = (-1 , -1)
 end
 
 module VarSet = Set.Make (Var)
 module VarMap = Map.Make (Var)
+module VarTbl = struct
+  type 'a t = 'a array
+  type key = Var.t
+  type size = unit
+  let get t x = t.(Var.idx x)
+  let set t x v = t.(Var.idx x) <- v
+  let make () v = Array.make (Var.count ()) v
+end
+module VarISet = struct
+  type t = Var.t array
+  type elt = Var.t
+  let iter f t =
+    for i = 0 to Array.length t - 1 do
+      let x = t.(i) in
+      if Var.compare x Var.dummy <> 0 then f x
+    done
+  let mem t x = Var.compare t.(Var.idx x) Var.dummy <> 0
+  let add t x = t.(Var.idx x) <- x
+  let remove t x = t.(Var.idx x) <- Var.dummy
+  let copy = Array.copy
+  let empty v = Array.make (Var.count ()) Var.dummy
+end
 
 type addr = int
 
