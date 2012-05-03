@@ -569,3 +569,10 @@ function caml_ml_output () { return 0; }
 function caml_final_register () { return 0; }
 //Provides: caml_final_release const
 function caml_final_release () { return 0; }
+//Provides: caml_backtrace_status const
+function caml_backtrace_status () { return 0; }
+//Provides: caml_get_exception_backtrace const
+function caml_get_exception_backtrace () {
+  caml_invalid_argument
+    ("Primitive 'caml_get_exception_backtrace' not implemented");
+}
