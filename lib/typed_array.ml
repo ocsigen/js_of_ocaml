@@ -37,8 +37,6 @@ class type ['a, 'b] typedArray = object
   inherit arrayBufferView
   method _BYTES_PER_ELEMENT : int readonly_prop
   method length : int readonly_prop
-  method get : int -> 'a meth
-  method set : int -> 'a -> unit meth
   method set_fromArray : 'a js_array t -> int -> unit meth
   method set_fromTypedArray : ('a, 'b) typedArray t -> int -> unit meth
   method subarray : int -> int -> ('a, 'b) typedArray t meth
