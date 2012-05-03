@@ -210,6 +210,24 @@ and touch = object
   method pageY : int readonly_prop
 end
 
+and dragEvent = object
+  inherit event
+  method dataTransfer : dataTransfer t readonly_prop
+end
+
+and dataTransfer = object
+  method dropEffect : js_string t prop
+  method effectAllowed : js_string t prop
+  method files : File.fileList t readonly_prop
+  method types : Dom.stringList t readonly_prop
+  method addElement : element t -> unit meth
+  method clearData : js_string t -> unit meth
+  method clearData_all : unit meth
+  method getData : js_string t -> js_string t meth
+  method setData : js_string t -> js_string t -> unit meth
+  method setDragImage : element t -> int -> int -> unit meth
+end
+
 and eventTarget = object ('self)
   method onclick : ('self t, mouseEvent t) event_listener writeonly_prop
   method ondblclick : ('self t, mouseEvent t) event_listener writeonly_prop
@@ -221,6 +239,13 @@ and eventTarget = object ('self)
   method onkeypress : ('self t, keyboardEvent t) event_listener writeonly_prop
   method onkeydown : ('self t, keyboardEvent t) event_listener writeonly_prop
   method onkeyup : ('self t, keyboardEvent t) event_listener writeonly_prop
+  method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
+  method ondragend : ('self t, dragEvent t) event_listener writeonly_prop
+  method ondragenter : ('self t, dragEvent t) event_listener writeonly_prop
+  method ondragover : ('self t, dragEvent t) event_listener writeonly_prop
+  method ondragleave : ('self t, dragEvent t) event_listener writeonly_prop
+  method ondrag : ('self t, dragEvent t) event_listener writeonly_prop
+  method ondrop : ('self t, dragEvent t) event_listener writeonly_prop
 end
 
 and popStateEvent = object
@@ -333,6 +358,13 @@ module Event = struct
   let touchmove = Dom.Event.make "touchmove"
   let touchend = Dom.Event.make "touchend"
   let touchcancel = Dom.Event.make "touchcancel"
+  let dragstart = Dom.Event.make "dragstart"
+  let dragend = Dom.Event.make "dragend"
+  let dragenter = Dom.Event.make "dragenter"
+  let dragover = Dom.Event.make "dragover"
+  let dragleave = Dom.Event.make "dragleave"
+  let drag = Dom.Event.make "drag"
+  let drop = Dom.Event.make "drop"
 
   let make = Dom.Event.make
 end

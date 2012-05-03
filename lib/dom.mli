@@ -225,3 +225,11 @@ val addEventListener :
 
 val removeEventListener : event_listener_id -> unit
   (** Remove the given event listener. *)
+
+(** {2 Other DOM objects} *)
+
+class type stringList = object
+  method item : int -> js_string t opt meth
+  method length : int readonly_prop
+  method contains : js_string t -> bool t meth
+end

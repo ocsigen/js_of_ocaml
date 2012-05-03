@@ -270,3 +270,9 @@ let addEventListener (e : (< .. > as 'a) t) typ h capt =
   end
 
 let removeEventListener id = id ()
+
+class type stringList = object
+  method item : int -> js_string t opt meth
+  method length : int readonly_prop
+  method contains : js_string t -> bool t meth
+end
