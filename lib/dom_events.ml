@@ -26,7 +26,7 @@ type listener = Dom_html.event_listener_id
 
 let listen ?(capture=false) target typ cb =
   Dom_html.addEventListener target typ
-    (Dom_html.full_handler (fun n e -> cb n e; Js._false))
+    (Dom_html.full_handler (fun n e -> Js.bool (cb n e)))
     (Js.bool capture)
 
 let stop_listen = Dom_html.removeEventListener

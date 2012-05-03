@@ -45,7 +45,7 @@ val listen :
      ?capture:bool
   -> (#Dom_html.eventTarget as 'a) Js.t
   -> (#Dom_html.event as 'b) Js.t Typ.typ
-  -> ('a Js.t -> 'b Js.t -> unit)
+  -> ('a Js.t -> 'b Js.t -> bool)
   -> listener
 
 
