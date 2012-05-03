@@ -70,11 +70,11 @@ type readyState = EMPTY | LOADING | DONE
 
 class type fileReader = object ('self)
 
-  method readAsArrayBuffer : blob t -> unit meth
-  method readAsBinaryString : blob t -> unit meth
-  method readAsText : blob t -> unit meth
-  method readAsText_withEncoding : blob t -> js_string t -> unit meth
-  method readAsDataURL : blob t -> unit meth
+  method readAsArrayBuffer : #blob t -> unit meth
+  method readAsBinaryString : #blob t -> unit meth
+  method readAsText : #blob t -> unit meth
+  method readAsText_withEncoding : #blob t -> js_string t -> unit meth
+  method readAsDataURL : #blob t -> unit meth
 
   method abort : unit meth
 
@@ -110,10 +110,10 @@ val fileReader : fileReader t constr
 (* be carefull, this might not be implemented in all browser.
    To check availability, use [Js.Optdef.to_option (Js.def fileReader)] *)
 
-val readAsBinaryString : blob t -> js_string t Lwt.t
-val readAsText : blob t -> js_string t Lwt.t
-val readAsText_withEncoding  : blob t -> js_string t -> js_string t Lwt.t
-val readAsDataURL : blob t -> js_string t Lwt.t
+val readAsBinaryString : #blob t -> js_string t Lwt.t
+val readAsText : #blob t -> js_string t Lwt.t
+val readAsText_withEncoding  : #blob t -> js_string t -> js_string t Lwt.t
+val readAsDataURL : #blob t -> js_string t Lwt.t
 
 val addEventListener :
   (#progressEventTarget t as 'a) -> 'b Event.typ ->

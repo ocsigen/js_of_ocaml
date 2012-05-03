@@ -473,6 +473,7 @@ class type inputElement = object ('self)
   method focus : unit meth
   method select : unit meth
   method click : unit meth
+  method files : File.fileList t optdef readonly_prop
 
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop

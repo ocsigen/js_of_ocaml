@@ -92,11 +92,11 @@ type readyState = EMPTY | LOADING | DONE
 
 class type fileReader = object ('self)
 
-  method readAsArrayBuffer : blob t -> unit meth
-  method readAsBinaryString : blob t -> unit meth
-  method readAsText : blob t -> unit meth
-  method readAsText_withEncoding : blob t -> js_string t -> unit meth
-  method readAsDataURL : blob t -> unit meth
+  method readAsArrayBuffer : #blob t -> unit meth
+  method readAsBinaryString : #blob t -> unit meth
+  method readAsText : #blob t -> unit meth
+  method readAsText_withEncoding : #blob t -> js_string t -> unit meth
+  method readAsDataURL : #blob t -> unit meth
 
   method abort : unit meth
 
@@ -121,7 +121,7 @@ end
 let fileReader : fileReader t constr =
   Unsafe.variable "window.FileReader"
 
-let read_with_filereader fileReader kind file =
+let read_with_filereader (fileReader : fileReader t constr) kind file =
   let reader = jsnew fileReader () in
   let (res, w) = Lwt.task () in
   reader##onloadend <- handler
