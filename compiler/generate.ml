@@ -860,8 +860,8 @@ and translate_expr ctx queue x e =
       | Ult, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
-          (bool (J.EBin (J.Or, J.EBin (J.Lt, cx, int 0),
-                         J.EBin (J.Lt, cy, cx))),
+          (bool (J.EBin (J.Or, J.EBin (J.Lt, cy, int 0),
+                         J.EBin (J.Lt, cx, cy))),
            or_p px py, queue)
       | WrapInt, [Pv x] ->
           let ((px, cx), queue) = access_queue queue x in
