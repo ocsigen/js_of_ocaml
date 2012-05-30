@@ -1,3 +1,16 @@
+
+===== 1.2 (2012-06-02) =====
+
+ * Bugfixes
+ ** Fix #284
+ ** Fix return type of window##open_
+
+ * Features/Changes
+ ** Improvements in the data-flow solver
+ ** Add Dom_html.window##onscroll
+ ** Dom_events.listen: handler should return boolean
+ ** Add DOM drag/drop events
+
 ===== 1.1.1 (2012-03-15) =====
 
  * Bugfixes:
