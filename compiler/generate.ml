@@ -613,6 +613,8 @@ let _ =
     (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable
     (fun cx cy -> J.EAccess (cx, cy));
+  register_bin_prim "caml_js_delete" `Mutable
+    (fun cx cy -> J.EUn(J.Delete, J.EAccess (cx, cy)));
   register_bin_prim "caml_js_equals" `Mutable
     (fun cx cy -> bool (J.EBin (J.EqEq, cx, cy)));
   register_bin_prim "caml_js_instanceof" `Pure
@@ -800,6 +802,9 @@ and translate_expr ctx queue x e =
           let ((pv, cv), queue) = access_queue queue v in
           (J.EBin (J.Eq, J.EDot (co, f), cv),
            or_p (or_p po pv) mutator_p, queue)
+      | Extern "caml_js_delete", [Pv o; Pc (String f)] ->
+          let ((po, co), queue) = access_queue queue o in
+          (J.EUn(J.Delete, J.EDot (co, f)), or_p po mutator_p, queue)
       | Extern "%object_literal", fields ->
           let rec build_fields l =
             match l with

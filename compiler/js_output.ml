@@ -124,7 +124,7 @@ let unop_str op =
     Not -> "!"
   | Neg -> "-"
   | Pl  -> "+"
-  | Typeof -> assert false
+  | Typeof | Delete -> assert false
 
 (*XXX May need to be updated... *)
 let rec ends_with_if_without_else st =
@@ -270,6 +270,14 @@ let rec expression l f e =
       if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
       PP.start_group f 0;
       PP.string f "typeof";
+      PP.space f;
+      expression 13 f e;
+      PP.end_group f;
+      if l > 13 then begin PP.string f ")"; PP.end_group f end
+  | EUn (Delete, e) ->
+      if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
+      PP.start_group f 0;
+      PP.string f "delete";
       PP.space f;
       expression 13 f e;
       PP.end_group f;

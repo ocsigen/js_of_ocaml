@@ -392,6 +392,13 @@ let specialize_instr info i =
       | _ ->
           i
       end
+  | Let (x, Prim (Extern "caml_js_delete", [Pv o; Pv f])) ->
+      begin match the_def_of info f with
+        Some (Constant (String _ as c)) ->
+          Let (x, Prim (Extern "caml_js_delete", [Pv o; Pc c]))
+      | _ ->
+          i
+      end
   | Let (x, Prim (Extern "%int_mul", [Pv y; Pv z])) ->
       begin match the_int info y, the_int info z with
         Some j, _ | _, Some j when abs j < 0x200000 ->

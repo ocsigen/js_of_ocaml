@@ -511,6 +511,9 @@ module Unsafe : sig
   external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
     (** Set an object property.  The expression [set o s v]
         set the property [s] of object [o] to value [v]. *)
+  external delete : 'a -> 'b -> unit = "caml_js_delete"
+    (** Delete an object property.  The expression [delete o s]
+        deletes property [s] of object [o]. *)
   external call : 'a -> 'b -> any array -> 'c = "caml_js_call"
     (** Performs a Javascript function call.  The expression
         [call f o a] calls the Javascript function [f] with the
