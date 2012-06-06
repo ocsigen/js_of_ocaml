@@ -952,6 +952,13 @@ class type navigator = object
   method userLanguage : js_string t optdef readonly_prop
 end
 
+class type screen = object
+  method width : int readonly_prop
+  method height : int readonly_prop
+  method availWidth : int readonly_prop
+  method availHeight : int readonly_prop
+end
+
 type interval_id
 type timeout_id
 
@@ -965,10 +972,12 @@ class type window = object
   method navigator : navigator t
   method getSelection : selection t meth
   method close : unit meth
+  method closed : bool t readonly_prop
   method stop : unit meth
   method focus : unit meth
   method blur : unit meth
   method scroll : int -> int -> unit meth
+  method screen : screen t readonly_prop
 
   method sessionStorage : storage t optdef readonly_prop
   method localStorage : storage t optdef readonly_prop
