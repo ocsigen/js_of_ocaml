@@ -82,7 +82,7 @@
 (* List of icons to be prefetched *)
 let icons =
   ["commons-38.png"; "wikipedia-38.png"; "info-38.png";
-   "meeting-point-38.png"; "globe-38.png"]
+   "meeting-point-38.png"; "globe-38.png"; "ocsigen-powered.png"]
 
 let icon nm = Js.string ("icons/" ^ nm)
 
@@ -278,14 +278,18 @@ let handle_drag element move stop click =
   element##onmousedown <- Html.handler
     (fun ev ->
        let x0 = ev##clientX and y0 = ev##clientY in
+(*
 debug_msg (Format.sprintf "Mouse down %d %d" x0 y0);
+*)
        let started = ref false in
        let c1 =
          Html.addEventListener Html.document Html.Event.mousemove
            (Html.handler
               (fun ev ->
                  let x = ev##clientX and y = ev##clientY in
+(*
 debug_msg (Format.sprintf "Mouse move %d %d %d %d" x0 y0 x y);
+*)
                  if
                    not !started && (abs (x - x0) > fuzz || abs (y - y0) > fuzz)
                  then begin
@@ -302,7 +306,9 @@ debug_msg (Format.sprintf "Mouse move %d %d %d %d" x0 y0 x y);
          (Html.addEventListener Html.document Html.Event.mouseup
             (Html.handler
                (fun ev ->
+(*
 debug_msg (Format.sprintf "Mouse up %d %d %d %d" x0 y0 ev##clientX ev##clientY);
+*)
                   Html.removeEventListener c1;
                   Js.Opt.iter !c2 Html.removeEventListener;
                   if !started then begin
@@ -321,7 +327,9 @@ let handle_touch_events element move stop cancel click =
        Js.Optdef.iter (ev##changedTouches##item(0)) (fun touch ->
        let id = touch##identifier in
        let x0 = touch##clientX and y0 = touch##clientY in
+(*
 debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
+*)
        let started = ref false in
        let c1 =
          Html.addEventListener Html.document Html.Event.touchmove
@@ -331,7 +339,9 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
                    Js.Optdef.iter (ev##changedTouches##item(i)) (fun touch ->
                    if touch##identifier = id then begin
                      let x = touch##clientX and y = touch##clientY in
+(*
   debug_msg (Format.sprintf "Touch move %d %d %d %d" x0 y0 x y);
+*)
                      if
                        not !started &&
                        (abs (x - x0) > fuzz || abs (y - y0) > fuzz)
@@ -356,7 +366,9 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
                     Js.Optdef.iter (ev##changedTouches##item(i)) (fun touch ->
                     if touch##identifier = id then begin
                       let x = touch##clientX and y = touch##clientY in
+(*
 debug_msg (Format.sprintf "Touch end %d %d %d %d" x0 y0 x y);
+*)
                       Html.removeEventListener c1;
                       Js.Opt.iter !c2 Html.removeEventListener;
                       Js.Opt.iter !c3 Html.removeEventListener;
@@ -377,7 +389,9 @@ debug_msg (Format.sprintf "Touch end %d %d %d %d" x0 y0 x y);
                     Js.Optdef.iter (ev##changedTouches##item(i)) (fun touch ->
                     if touch##identifier = id then begin
                       let x = touch##clientX and y = touch##clientY in
+(*
 debug_msg (Format.sprintf "Touch cancel %d %d %d %d" x0 y0 x y);
+*)
                       Html.removeEventListener c1;
                       Js.Opt.iter !c2 Html.removeEventListener;
                       Js.Opt.iter !c3 Html.removeEventListener;
@@ -734,7 +748,7 @@ let rec randomize_tree n =
   let Node (info, ch) = n in
   for i = Array.length ch - 1 downto 0 do
     let v = ch.(i) in
-    let j = Random.int (i + 1) in
+    let j = truncate (Js.to_float (Js.math##random()) *. float (i + 1)) in
     ch.(i) <- ch.(j);
     ch.(j) <- v
   done;
@@ -1080,7 +1094,11 @@ let img_button ?href h src =
     (Js.Unsafe.coerce div##style)##borderRadius <- Js.string "2px";
     let extra = max 6 (44 - h) in
     div##style##padding <- Js.string
+(*
       (Format.sprintf "%dpx 3px %dpx 3px" (extra / 2) (extra - extra / 2));
+*)
+      (string_of_int (extra / 2) ^ "px 3px " ^
+       string_of_int (extra - extra / 2) ^ "px 3px");
     div##className <- Js.string
       ("filled_button " ^ if over then "on" else "off");
     Dom.appendChild div img;
@@ -1104,7 +1122,6 @@ let img_button ?href h src =
   Dom.appendChild container (decoration true);
   Dom.appendChild container (decoration false);
   button
-
 
 let tooltip txt =
   let tooltip = Html.createDiv Html.document in
@@ -1464,7 +1481,9 @@ let unsupported_messages () =
   Dom.appendChild (doc##body) overlay
 
 let _ =
+(*
 Random.self_init ();
+*)
 (* Prefetch icons. *)
 List.iter (fun src -> ignore (load_image (icon src))) icons
 
@@ -1517,7 +1536,9 @@ let start _ =
           let page = doc##documentElement in
           let w = page##clientWidth in
           let h = page##clientHeight in
+(*
 debug_msg (Format.sprintf "Resize %d %d" w h);
+*)
           if w <> canvas##width || h <> canvas##height then begin
 (*
             canvas##width <- w;
@@ -1771,6 +1792,19 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
        prev_buttons := Some buttons
      in
      make_buttons ();
+
+     let img = Html.createImg doc in
+     img##src <- icon "ocsigen-powered.png";
+     let a = Html.createA doc in
+     a##target <- Js.string "_blank";
+     a##href <- Js.string "http://ocsigen.org/";
+     Dom.appendChild a img;
+     let logo = Html.createDiv doc in
+     logo##style##position <- Js.string "absolute";
+     logo##style##left <- Js.string "0";
+     logo##style##bottom <- Js.string "0";
+     Dom.appendChild logo a;
+     Dom.appendChild doc##body logo;
 
      Lwt.return ());
   Js._false

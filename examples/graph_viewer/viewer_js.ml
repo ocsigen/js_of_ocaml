@@ -157,9 +157,7 @@ let handle_drag element f =
                (fun _ ->
                   Html.removeEventListener c1;
                   Js.Opt.iter !c2 Html.removeEventListener;
-                  (* "auto" would be better, but does not seem to work
-                     with Opera *)
-                  element##style##cursor <- Js.string "default";
+                  element##style##cursor <- Js.string "";
                   Js._true))
             Js._true);
        (* We do not want to disable the default action on mouse down
