@@ -36,6 +36,8 @@ module Unsafe = struct
   external meth_call : 'a -> string -> any array -> 'b = "caml_js_meth_call"
   external new_obj : 'a -> any array -> 'b = "caml_js_new"
 
+  external obj : (string * any) array -> 'a = "caml_js_object"
+
   external equals : 'a -> 'b -> bool = "caml_js_equals"
 
   external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"

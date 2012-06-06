@@ -378,6 +378,33 @@ let specialize_instr info i =
       | _ ->
           i
       end
+  | Let (x, Prim (Extern "caml_js_object", [Pv a])) ->
+      begin try
+        let a =
+          match the_def_of info a with
+            Some (Block (_, a)) -> a
+          | _                   -> raise Exit
+        in
+        let a =
+          Array.map
+            (fun x ->
+               match the_def_of info x with
+                 Some (Block (_, [|k; v|])) ->
+                   let k =
+                     match the_def_of info k with
+                       Some (Constant (String _ as s)) -> Pc s
+                     | _                               -> raise Exit
+                   in
+                   [k; Pv v]
+               | _ ->
+                   raise Exit)
+            a
+        in
+        Let (x, Prim (Extern "caml_js_opt_object",
+                      List.flatten (Array.to_list a)))
+      with Exit ->
+        i
+      end
   | Let (x, Prim (Extern "caml_js_get", [Pv o; Pv f])) ->
       begin match the_def_of info f with
         Some (Constant (String _ as c)) ->
