@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** Programming mouse or keyboard events handlers using Lwt *)
+
 (**
 
    Reminder:
@@ -37,7 +39,8 @@ val preventDefault : Dom_html.mouseEvent Js.t -> unit
 
 (** [make_event ev target] creates a Lwt thread that waits
     for the event [ev] to happen on [target] (once).
-    This thread is cancellable using {!Lwt.cancel}.
+    This thread is cancellable using
+    {% <<a_api project="lwt" | val Lwt.cancel>> %}.
     If you set the optional parameter [~use_capture:true],
     the event will be caught during the capture phase,
     otherwise it is caught during the bubbling phase
@@ -56,7 +59,8 @@ val make_event :
 
 [let clicks ?use_capture t = seq_loop click ?use_capture t]
 
-    The thread returned is cancellable using {!Lwt.cancel}.
+    The thread returned is cancellable using
+    {% <<a_api project="lwt" | val Lwt.cancel>> %}.
 
 *)
 val seq_loop :
