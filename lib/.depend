@@ -20,6 +20,8 @@ json.cmo: js.cmi json.cmi
 json.cmx: js.cmx json.cmi
 lwt_js.cmo: js.cmi dom_html.cmi lwt_js.cmi
 lwt_js.cmx: js.cmx dom_html.cmx lwt_js.cmi
+lwt_js_events.cmo: js.cmi dom_html.cmi lwt_js_events.cmi
+lwt_js_events.cmx: js.cmx dom_html.cmx lwt_js_events.cmi
 regexp.cmo: js.cmi regexp.cmi
 regexp.cmx: js.cmx regexp.cmi
 typed_array.cmo: js.cmi typed_array.cmi
@@ -43,6 +45,7 @@ form.cmi: js.cmi file.cmi dom_html.cmi
 js.cmi:
 json.cmi: js.cmi
 lwt_js.cmi:
+lwt_js_events.cmi: js.cmi dom_html.cmi
 regexp.cmi:
 typed_array.cmi: js.cmi
 url.cmi:

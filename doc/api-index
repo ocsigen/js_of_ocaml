@@ -7,6 +7,7 @@ Dom_html
 Dom_events
 CSS
 Lwt_js
+Lwt_js_events
 Firebug
 Regexp
 Url
