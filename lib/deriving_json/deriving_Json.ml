@@ -203,29 +203,40 @@ end)
 
 module Json_list(A : Json) = Defaults(struct
       type a = A.a list
-      let rec write buffer xs =
-	match xs with
-	| [] -> Buffer.add_char buffer '0'
-	| x :: xs ->
-	    Printf.bprintf buffer "[0,%a,%a]"
-	      A.write x
-	      write xs
-      let rec read buf =
-	match Deriving_Json_lexer.read_case buf with
-	| `Cst 0 -> []
-	| `NCst 0 ->
-	    Deriving_Json_lexer.read_comma buf;
-	    let x = A.read buf in
-	    Deriving_Json_lexer.read_comma buf;
-	    let xs = read buf in
-	    Deriving_Json_lexer.read_rbracket buf;
-	    x :: xs
-	| _ -> failwith "Json_list.read: unexpected constructor."
+      let write buffer xs =
+	let rec aux l c =
+	  match l with
+	    | [] ->
+		Buffer.add_char buffer '0';
+		for i = c downto 1 do
+		  Buffer.add_char buffer ']'
+		done
+	    | x::xs ->
+		Printf.bprintf buffer "[0,%a," A.write x;
+		aux xs (succ c)
+	in aux xs 0
+
+      let read buf =
+ 	let rec aux l c =
+	  match Deriving_Json_lexer.read_case buf with
+	    | `Cst 0 ->
+		for i = c downto 1 do
+		  Deriving_Json_lexer.read_rbracket buf
+		done;
+		List.rev l
+	    | `NCst 0 ->
+		Deriving_Json_lexer.read_comma buf;
+		let x = A.read buf in
+		Deriving_Json_lexer.read_comma buf;
+		aux (x::l) (succ c)
+	    | _ -> failwith "Json_list.read: unexpected constructor."
+	in
+	aux [] 0
     end)
 
 module Json_ref(A : Json) = Defaults(struct
       type a = A.a ref
-      let rec write buffer r =
+      let write buffer r =
 	Printf.bprintf buffer "[0,%a]"
 	  A.write !r
       let read buf =
@@ -240,7 +251,7 @@ module Json_ref(A : Json) = Defaults(struct
 
 module Json_option(A : Json) = Defaults(struct
       type a = A.a option
-      let rec write buffer o =
+      let write buffer o =
 	match o with
 	| None -> Buffer.add_char buffer '0'
 	| Some x ->
