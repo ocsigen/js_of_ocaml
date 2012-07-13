@@ -332,7 +332,7 @@ end
 
 and clientRectList = object
   method length : int readonly_prop
-  method item : int -> clientRect t optdef meth
+  method item : int -> clientRect t opt meth
 end
 
 let no_handler : ('a, 'b) event_listener = Dom.no_handler
@@ -377,7 +377,7 @@ let removeEventListener = Dom.removeEventListener
 
 class type ['node] collection = object
   method length : int readonly_prop
-  method item : int -> 'node t optdef meth
+  method item : int -> 'node t opt meth
   method namedItem : js_string t -> 'node t opt meth
 end
 

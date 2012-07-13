@@ -346,13 +346,13 @@ end
 
 and clientRectList = object
   method length : int readonly_prop
-  method item : int -> clientRect t optdef meth
+  method item : int -> clientRect t opt meth
 end
 
 (** Collection of HTML elements *)
 class type ['node] collection = object
   method length : int readonly_prop
-  method item : int -> 'node t optdef meth
+  method item : int -> 'node t opt meth
   method namedItem : js_string t -> 'node t opt meth
 end
 

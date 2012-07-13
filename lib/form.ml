@@ -70,7 +70,7 @@ let get_select_val (elt:selectElement t) =
     if to_bool (elt##multiple)
     then
       let options = Array.init ( elt##options##length )
-	(fun i -> Optdef.to_option elt##options##item(i)) in
+	(fun i -> Opt.to_option elt##options##item(i)) in
       filter_map (function
 	| None -> None
 	| Some e ->
@@ -133,7 +133,7 @@ let form_elements ?get (form:formElement t) =
   let length = form##elements##length in
   let elements = Array.to_list
     (Array.init length
-       (fun i -> Optdef.to_option (form##elements##item(i)))) in
+       (fun i -> Opt.to_option (form##elements##item(i)))) in
   let contents =
     List.flatten
       (List.map
