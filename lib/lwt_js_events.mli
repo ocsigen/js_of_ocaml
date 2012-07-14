@@ -26,7 +26,10 @@
    Event capturing starts with the outer most element in the DOM and
    works inwards to the HTML element the event took place on (capture phase)
    and then out again (bubbling phase).
+
 *)
+
+
 
 
 (** Call this to prevent the default handler for the event. 

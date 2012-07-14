@@ -184,5 +184,11 @@ Lwt.pick [Lwt_js_events.click t1 >>= handler1;
           Lwt_js_events.click t2 >>= handler2]
 }}}
 
+Warning: If you are using {{{Lwt.pick}}} and your handlers take time,
+be aware that other events listeners will not be cancelled
+before the handler has terminated. It is probably a better idea
+to return immediately after having launched the long handlers.
+
+
 Look at the <<a_api text="API documentation" | module Lwt_js_events>> 
 for more information.
