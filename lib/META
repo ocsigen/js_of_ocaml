@@ -1,7 +1,7 @@
 description = "Js_of_ocaml library"
 version = "dev"
 archive(byte) = "js_of_ocaml.cma"
-requires = "lwt"
+requires = "js_of_ocaml.syntax,lwt"
 
 package "syntax" (
   description = "Js_of_ocaml syntax extension"

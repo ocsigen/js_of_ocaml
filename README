@@ -34,11 +34,10 @@ toplevel as well.
 
 Your program must first be compiled using the OCaml bytecode compiler
 {{{ocamlc}}}.  Javascript bindings, as well as a corresponding syntax
-extension, are provided by the {{{js_of_ocaml}}} and
-{{{js_of_ocaml.syntax}}} packages.
+extension, are provided by the {{{js_of_ocaml}}} package.
 
 {{{
-      ocamlfind ocamlc -package js_of_ocaml,js_of_ocaml.syntax \
+      ocamlfind ocamlc -package js_of_ocaml \
           -syntax camlp4o -linkpkg -o cubes.byte cubes.ml
 }}}
 
