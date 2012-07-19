@@ -91,9 +91,9 @@ function caml_js_wrap_meth_callback(f) {
 }
 //Provides: caml_js_equals mutable
 function caml_js_equals (x, y) { return +(x == y); }
-//Provides: caml_js_from_byte_string
+//Provides: caml_js_from_byte_string mutable
 function caml_js_from_byte_string (s) {return s.getFullBytes();}
-//Provides: caml_js_to_byte_string
+//Provides: caml_js_to_byte_string const
 function caml_js_to_byte_string (s) {return new MlString (s);}
 
 //Provides: caml_js_eval
