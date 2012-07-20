@@ -131,6 +131,19 @@ You should use function {{{Js.wrap_callback}}} or function
 {{{Js.wrap_meth_callback}}} to wrap an OCaml function so that
 it can be called from Javascript.
 
+To call an OCaml function from Javascript, follow this example:
+{{{
+(Js.Unsafe.coerce Dom_html.window)##plop <- Js.wrap_callback f
+}}}
+
+Or, to create a JS object with OCaml methods:
+{{{
+(Js.Unsafe.coerce Dom_html.window)##plop <- 
+  Js.Unsafe.obj [| ("f", Js.wrap_meth_callback f);
+                   ("g", Js.wrap_meth_callback g) |]
+}}}
+
+
 == IO ==
 
 The <<a_api | module Json >> allows to marshall and unmarshall the
