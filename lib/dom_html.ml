@@ -167,11 +167,11 @@ and keyboardEvent = object
   method metaKey : bool t readonly_prop
 end
 
-and wheelEvent = object (* All browsers but Firefox *)
+and mousewheelEvent = object (* All browsers but Firefox *)
   inherit mouseEvent
-  method delta : int readonly_prop
-  method deltaX : int optdef readonly_prop
-  method deltaY : int optdef readonly_prop
+  method wheelDelta : int readonly_prop
+  method wheelDeltaX : int optdef readonly_prop
+  method wheelDeltaY : int optdef readonly_prop
 end
 
 and mouseScrollEvent = object (* Firefox *)
@@ -1322,10 +1322,10 @@ let addMousewheelEventListener e h capt =
   if hasMousewheelEvents () then
     addEventListener e Event.mousewheel
       (handler
-         (fun (e : wheelEvent t) ->
-            let dx = - Optdef.get (e##deltaX) (fun () -> 0) / 40 in
+         (fun (e : mousewheelEvent t) ->
+            let dx = - Optdef.get (e##wheelDeltaX) (fun () -> 0) / 40 in
             let dy =
-              - Optdef.get (e##deltaY) (fun () -> e##delta) / 40 in
+              - Optdef.get (e##wheelDeltaY) (fun () -> e##wheelDelta) / 40 in
             h (e :> mouseEvent t) ~dx ~dy))
       capt
   else
@@ -1536,7 +1536,7 @@ let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
 type taggedEvent =
   | MouseEvent of mouseEvent t
   | KeyboardEvent of keyboardEvent t
-  | WheelEvent of wheelEvent t
+  | MousewheelEvent of mousewheelEvent t
   | MouseScrollEvent of mouseScrollEvent t
   | PopStateEvent of popStateEvent t
   | OtherEvent of event t
@@ -1550,7 +1550,7 @@ let taggedEvent (ev : #event Js.t) =
 	    (fun () -> OtherEvent (ev :> event t))
 	    (fun ev -> PopStateEvent ev))
 	  (fun ev -> MouseScrollEvent ev))
-	(fun ev -> WheelEvent ev))
+	(fun ev -> MousewheelEvent ev))
       (fun ev -> KeyboardEvent ev))
     (fun ev -> MouseEvent ev)
 

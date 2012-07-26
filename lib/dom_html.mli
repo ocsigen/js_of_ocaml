@@ -174,11 +174,11 @@ and keyboardEvent = object
   method metaKey : bool t readonly_prop
 end
 
-and wheelEvent = object (* All browsers but Firefox *)
+and mousewheelEvent = object (* All browsers but Firefox *)
   inherit mouseEvent
-  method delta : int readonly_prop
-  method deltaX : int optdef readonly_prop
-  method deltaY : int optdef readonly_prop
+  method wheelDelta : int readonly_prop
+  method wheelDeltaX : int optdef readonly_prop
+  method wheelDeltaY : int optdef readonly_prop
 end
 
 and mouseScrollEvent = object (* Firefox *)
@@ -1085,7 +1085,7 @@ module Event : sig
   val keypress : keyboardEvent t typ
   val keydown : keyboardEvent t typ
   val keyup : keyboardEvent t typ
-  val mousewheel : wheelEvent t typ
+  val mousewheel : mousewheelEvent t typ
   val _DOMMouseScroll : mouseScrollEvent t typ
   val touchstart : touchEvent t typ
   val touchmove : touchEvent t typ
@@ -1304,7 +1304,7 @@ val opt_tagged : #element t opt -> taggedElement option
 type taggedEvent =
   | MouseEvent of mouseEvent t
   | KeyboardEvent of keyboardEvent t
-  | WheelEvent of wheelEvent t
+  | MousewheelEvent of mousewheelEvent t
   | MouseScrollEvent of mouseScrollEvent t
   | PopStateEvent of popStateEvent t
   | OtherEvent of event t
@@ -1385,7 +1385,7 @@ module CoerceTo : sig
 
   val mouseEvent : #event t -> mouseEvent t opt
   val keyboardEvent : #event t -> keyboardEvent t opt
-  val wheelEvent : #event t -> wheelEvent t opt
+  val wheelEvent : #event t -> mousewheelEvent t opt
   val mouseScrollEvent : #event t -> mouseScrollEvent t opt
   val popStateEvent : #event t -> popStateEvent t opt
 
