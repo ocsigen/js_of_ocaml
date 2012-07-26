@@ -71,6 +71,16 @@ val seq_loop :
   ?use_capture:'a -> 'b -> ('c -> unit Lwt.t) -> 'd Lwt.t
 
 
+(** [async t] records a thread to be executed later.
+    It is implemented by calling yield, then Lwt.async.
+    This is useful if you want to create a new event listener
+    when you are inside an event handler.
+    This avoids the current event to be catched by the new event handler
+    (if it propagates).
+*)
+val async : (unit -> 'a Lwt.t) -> unit
+
+
 (**  {2 Predefined functions for some types of events} *)
 
 val click :
