@@ -281,6 +281,13 @@ and storage = object
   method clear : unit meth
 end
 
+and hashChangeEvent = object
+  inherit event
+  method oldURL : js_string t readonly_prop
+  method newURL : js_string t readonly_prop
+end
+
+
 (** {2 HTML elements} *)
 
 and nodeSelector = object
@@ -1005,6 +1012,7 @@ class type window = object
   method onresize : (window t, event t) event_listener prop
   method onscroll : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
+  method onhashchange : (window t, hashChangeEvent t) event_listener prop
 end
 
 val window : window t
@@ -1098,6 +1106,7 @@ module Event : sig
   val dragleave : dragEvent t typ
   val drag : dragEvent t typ
   val drop : dragEvent t typ
+  val hashchange : hashChangeEvent t typ
 
   val make : string -> 'a typ
 end

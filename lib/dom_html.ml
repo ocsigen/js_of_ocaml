@@ -271,6 +271,12 @@ and storage = object
   method clear : unit meth
 end
 
+and hashChangeEvent = object
+  inherit event
+  method oldURL : js_string t readonly_prop
+  method newURL : js_string t readonly_prop
+end
+
 and nodeSelector = object
   method querySelector : js_string t -> element t opt meth
   method querySelectorAll : js_string t -> element Dom.nodeList t meth
@@ -365,6 +371,7 @@ module Event = struct
   let dragleave = Dom.Event.make "dragleave"
   let drag = Dom.Event.make "drag"
   let drop = Dom.Event.make "drop"
+  let hashchange = Dom.Event.make "hashchange"
 
   let make = Dom.Event.make
 end
@@ -1012,6 +1019,7 @@ class type window = object
   method onresize : (window t, event t) event_listener prop
   method onscroll : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
+  method onhashchange : (window t, hashChangeEvent t) event_listener prop
 end
 
 let window : window t = Js.Unsafe.variable "window"
