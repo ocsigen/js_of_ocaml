@@ -629,11 +629,11 @@ function () {
           break;
         }
       } else if (v instanceof MlString) {
-        var a = obj.array;
+        var a = v.array;
         if (a) {
           h = caml_hash_mix_string_arr(h, a);
         } else {
-          var b = obj.getFullBytes ();
+          var b = v.getFullBytes ();
           h = caml_hash_mix_string_str(h, b);
         }
         num--;
