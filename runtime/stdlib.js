@@ -84,6 +84,10 @@ function caml_raise_zero_divide () {
   caml_raise_constant(caml_global_data[6]);
 }
 
+//Provides: caml_raise_not_found
+//Requires: caml_raise_constant, caml_global_data
+function caml_raise_not_found () { caml_raise_constant(caml_global_data[7]); }
+
 //Provides: caml_update_dummy
 function caml_update_dummy (x, y) {
   if( typeof y==="function" ) { x.fun = y; return 0; }
@@ -740,3 +744,6 @@ function caml_get_exception_backtrace () {
   caml_invalid_argument
     ("Primitive 'caml_get_exception_backtrace' not implemented");
 }
+//Provides: caml_sys_getenv
+//Requires: caml_raise_not_found
+function caml_sys_getenv () { caml_raise_not_found (); }
