@@ -1583,6 +1583,7 @@ let parse_bytecode code state standalone_info =
         register_global 2; (* Failure *)
         register_global 3; (* Invalid_argument *)
         register_global 5; (* Division_by_zero *)
+        register_global 6; (* Not_found *)
         for i = Array.length g.constants - 1  downto 0 do
           match g.vars.(i) with
             Some x when g.is_const.(i) ->
