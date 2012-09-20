@@ -1070,24 +1070,46 @@ let opt_iter x f = match x with None -> () | Some v -> f v
 
 let createElement (doc : document t) name = doc##createElement(Js.string name)
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
-let unsafeCreateElementEx ?_type ?name doc elt =
+
+let createElementSyntax = ref `Unknown
+
+let rec unsafeCreateElementEx ?_type ?name doc elt =
   if _type = None && name = None then
     Js.Unsafe.coerce (createElement doc elt)
-  else if not onIE then begin
-    let res = Js.Unsafe.coerce (createElement doc elt) in
-    opt_iter _type (fun t -> res##_type <- t);
-    opt_iter name (fun n -> res##name <- n);
-    res
-  end else begin
-    let a = jsnew Js.array_empty () in
-    ignore (a##push_2(Js.string "<", Js.string elt));
-    opt_iter _type (fun t ->
-      ignore (a##push_3(Js.string " type=\"", html_escape t, Js.string "\"")));
-    opt_iter name (fun n ->
-      ignore (a##push_3(Js.string " name=\"", html_escape n, Js.string "\"")));
-    ignore (a##push(Js.string ">"));
-    Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
-  end
+  else
+    match !createElementSyntax with
+      `Standard ->
+        let res = Js.Unsafe.coerce (createElement doc elt) in
+        opt_iter _type (fun t -> res##_type <- t);
+        opt_iter name (fun n -> res##name <- n);
+        res
+    | `Extended ->
+        let a = jsnew Js.array_empty () in
+        ignore (a##push_2(Js.string "<", Js.string elt));
+        opt_iter _type (fun t ->
+          ignore
+            (a##push_3(Js.string " type=\"", html_escape t, Js.string "\"")));
+        opt_iter name (fun n ->
+          ignore
+            (a##push_3(Js.string " name=\"", html_escape n, Js.string "\"")));
+        ignore (a##push(Js.string ">"));
+        Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
+    | `Unknown ->
+        createElementSyntax :=
+          if
+            try
+              let el : inputElement Js.t =
+                Js.Unsafe.coerce
+                  (document##createElement(Js.string "<input name=\"x\">")) in
+              el##tagName##toLowerCase() == Js.string "input" &&
+              el##name == Js.string "x"
+            with _ ->
+              false
+          then
+            `Extended
+          else
+            `Standard;
+        unsafeCreateElementEx ?_type ?name doc elt
 
 let createHtml doc : htmlElement t = unsafeCreateElement doc "html"
 let createHead doc : headElement t = unsafeCreateElement doc "head"
