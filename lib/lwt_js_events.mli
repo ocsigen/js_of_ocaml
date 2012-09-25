@@ -159,6 +159,8 @@ val touchcancel :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t -> Dom_html.touchEvent Js.t Lwt.t
 
+(** Returns when a CSS transition terminates on the element. *)
+val transitionend : #Dom_html.eventTarget Js.t -> unit Lwt.t
 
 
 val clicks :
@@ -253,3 +255,7 @@ val touchcancels :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.touchEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+
+(** Returns when a repaint of the window by the browser starts.
+    (see JS method [window.requestAnimationFrame]) *)
+val request_animation_frame : unit -> unit Lwt.t

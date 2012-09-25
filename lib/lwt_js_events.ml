@@ -184,4 +184,33 @@ let touchends ?use_capture t =
 let touchcancels ?use_capture t =
   seq_loop touchcancel ?use_capture t
 
+let transition_evn =
+  let e = Dom_html.createDiv Dom_html.document in
+  try
+    snd (List.find
+           (fun (propname, evname) ->
+             Js.Unsafe.get (e##style) propname != Js.undefined)
+           [("WebkitTransition", [Dom.Event.make "webkitTransitionEnd"]);
+            ("MozTransition", [Dom.Event.make "transitionend"]);
+            ("OTransition", [Dom.Event.make "oTransitionEnd";
+                             Dom.Event.make "otransitionend"]);
+            ("transition", [Dom.Event.make "transitionend"])])
+  with Not_found -> []
 
+let transitionend elt =
+  match transition_evn with
+    | [] -> Lwt.return ()
+    | _ -> Lwt.pick
+      (List.map
+         (fun ev -> make_event ev elt)
+         transition_evn) >>= fun _ ->
+      Lwt.return ()
+
+let transitionends t =
+  seq_loop (fun ?use_capture e -> transitionend e) t
+
+let request_animation_frame () =
+  let t, s = Lwt.wait () in
+  Dom_html._requestAnimationFrame
+    (Js.wrap_callback (fun () -> Lwt.wakeup s ()));
+  t
