@@ -60,7 +60,7 @@ let seq_loop evh ?use_capture target handler =
       aux ()
     else Lwt.return ()
   in
-  ignore (aux ());
+  Lwt.async aux;
   t
 
 let click ?use_capture target =
