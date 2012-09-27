@@ -1563,6 +1563,7 @@ let parse_bytecode code state standalone_info =
       !compiled_blocks
   in
   compiled_blocks := AddrMap.empty;
+  tagged_blocks := AddrSet.empty;
 
   let free_pc = String.length code / 4 in
   let g = State.globals state in
