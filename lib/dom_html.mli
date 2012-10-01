@@ -461,6 +461,7 @@ class type selectElement = object ('self)
   method focus : unit meth
 
   method onchange : ('self t, event t) event_listener prop
+  method oninput : ('self t, event t) event_listener prop
 end
 
 class type inputElement = object ('self)
@@ -491,6 +492,7 @@ class type inputElement = object ('self)
 
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
+  method oninput : ('self t, event t) event_listener prop
 end
 
 class type textAreaElement = object ('self)
@@ -512,6 +514,7 @@ class type textAreaElement = object ('self)
 
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
+  method oninput : ('self t, event t) event_listener prop
 end
 
 class type buttonElement = object
@@ -1107,6 +1110,8 @@ module Event : sig
   val drag : dragEvent t typ
   val drop : dragEvent t typ
   val hashchange : hashChangeEvent t typ
+  val change : event t typ
+  val input : event t typ
 
   val make : string -> 'a typ
 end

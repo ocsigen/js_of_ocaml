@@ -372,6 +372,8 @@ module Event = struct
   let drag = Dom.Event.make "drag"
   let drop = Dom.Event.make "drop"
   let hashchange = Dom.Event.make "hashchange"
+  let change = Dom.Event.make "change"
+  let input = Dom.Event.make "input"
 
   let make = Dom.Event.make
 end
@@ -486,6 +488,7 @@ class type selectElement = object ('self)
   method focus : unit meth
 
   method onchange : ('self t, event t) event_listener prop
+  method oninput : ('self t, event t) event_listener prop
 end
 
 class type inputElement = object ('self)
@@ -516,6 +519,7 @@ class type inputElement = object ('self)
 
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
+  method oninput : ('self t, event t) event_listener prop
 end
 
 class type textAreaElement = object ('self)
@@ -537,6 +541,7 @@ class type textAreaElement = object ('self)
 
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
+  method oninput : ('self t, event t) event_listener prop
 end
 
 class type buttonElement = object

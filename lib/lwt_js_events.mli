@@ -114,6 +114,12 @@ val keydown :
 val keyup :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t -> Dom_html.keyboardEvent Js.t Lwt.t
+val input :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val change :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
 
 val dragstart :
   ?use_capture:bool ->
@@ -204,6 +210,14 @@ val keyups :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.keyboardEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+val inputs :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t) -> 'a Lwt.t
+val changes :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t) -> 'a Lwt.t
 
 val dragstarts :
   ?use_capture:bool ->
