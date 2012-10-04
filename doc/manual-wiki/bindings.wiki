@@ -14,6 +14,17 @@ val v : ... Js.t
 
 Be careful the function <<a_api | val Js.Unsafe.variable >> is not typed. Verify the library documentation before writing the type.
 
+
+==Binding a JS function
+
+Example from the Js module:
+<<code language="ocaml"|
+let decodeURI (s : js_string t) : js_string t =
+  Unsafe.fun_call (Unsafe.variable "decodeURI") [|Unsafe.inject s|]
+>>
+
+Have a look at the <<a_api | module Js.Unsafe >> module API.
+
 ==Using a JS constructor, ex: {{{F}}}:
 Write in .ml:
 
