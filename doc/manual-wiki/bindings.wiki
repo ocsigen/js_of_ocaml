@@ -1,0 +1,155 @@
+= How to bind a JS library for OCaml
+
+==Accessing a JS variable, ex: {{{document}}}:
+Write in .ml:
+
+<<code language="ocaml"|
+let v = Js.Unsafe.variable "window.document"
+>>
+and in .mli:
+
+<<code language="ocaml"|
+val v : ... Js.t
+>>
+
+Be careful the function <<a_api | val Js.Unsafe.variable >> is not typed. Verify the library documentation before writing the type.
+
+==Using a JS constructor, ex: {{{F}}}:
+Write in .ml:
+
+<<code language="ocaml"|
+let f = Js.Unsafe.variable "window.F"
+>>
+and in .mli:
+
+<<code language="ocaml"|
+val f : (... -> ... Js.t) Js.constr
+>>
+
+and if you want to use JS overloading, do, for example:
+<<code language="ocaml"|
+val f_fromInt : (int -> ... Js.t) Js.constr
+val f_fromString : (js_string t -> ... Js.t) Js.constr
+val f_blah : (#Dom_html.element t -> js_string t -> ... Js.t) Js.constr
+>>
+
+==Example binding of a JS object type {{{tt}}}:
+Write in .ml and in .mli:
+
+<<code language="ocaml"|
+class type tt = object
+  method mm : int readonly_prop
+  method nn : js_string t writeonly_prop
+  method oo : Dom_html.element t prop
+  method pp : int js_array t -> int -> js_string t opt meth
+  method qq : unit meth
+  method rr_fromInt : int -> float -> unit meth
+  method rr_fromString : js_string t -> float -> unit meth
+end
+>>
+
+===Example binding some constants:
+
+For example if the JS class is used to define three constants {{{thelib.Theclass.VALUEA}}}, {{{thelib.Theclass.VALUEA}}}, {{{thelib.Theclass.VALUEA}}},
+
+Since ocaml doesn't allows method name to start with capitalised letter, we can add an {{{_}}}
+
+write in .ml and .mli:
+
+<<code language="ocaml"|
+type thetype
+
+class type theclass = object
+  method _VALUEA : thetype readonly_prop
+  method _VALUEB : thetype readonly_prop
+  method _VALUEC : thetype readonly_prop
+end
+>>
+
+and in .ml:
+
+<<code language="ocaml"|
+let theclass = Js.Unsafe.variable "thelib.Theclass"
+>>
+
+and in .mli:
+
+<<code language="ocaml"|
+val theclass : theclass t
+>>
+
+==Constructing JS objects manually
+If you want to construct a JS object manually (without calling a function or a constructor), the best way for now is:
+* create the corresponding object type with writeonly properties
+* create an empty value of this type
+* set all fields manually using {{{o##prop <- ...}}}
+
+For example, write in .mli:
+
+<<code language="ocaml"|
+class type options = object
+  method propOne : int writeonly_prop
+  method propTwo : js_string t writeonly_prop
+end
+
+val empty_options : unit -> options t
+>>
+
+and in the .ml file of your library:
+
+<<code language="ocaml"|
+let empty_options () = Js.Unsafe.coerce (jsnew Js.array_empty ())
+>>
+
+== Set/get variables
+
+You can access every variable through the {{{window}}} Javascript object:
+
+If the variable {{{var}}} has type {{{t Js.t}}}
+
+<<code language="ocaml"|
+let set (x:t Js.t) = (Js.Unsafe.coerce Dom_html.window)##var <- x
+let get x : t Js.t = (Js.Unsafe.coerce Dom_html.window)##var
+>>
+
+== Object property with multiple types
+
+If you want to read a property of an object wich can have multiple types, you can define an intermediate type to do typesafe casting ex:
+
+Suppose the object obj has a property prop which can be either a string or a Dom node:
+
+<<code language="ocaml"|
+
+type dom_or_string
+
+class type obj = object
+  method prop : dom_or_string Js.t prop
+end
+
+let obj : obj Js.t = Js.Unsafe.variable "obj"
+
+let string_constr : Js.js_string Js.t Js.constr = Js.Unsafe.variable "window.String"
+
+let cast_string (x:dom_or_string Js.t) : Js.js_string Js.t Js.opt =
+  if instanceof x string_constr
+  then Js.Unsafe.coerce x
+  else Js.null
+
+let node_constr : Dom.node Js.t Js.constr = Js.Unsafe.variable "window.Node"
+
+let cast_string (x:dom_or_string Js.t) : Dom.node Js.t Js.opt =
+  if instanceof x node_constr
+  then Js.Unsafe.coerce x
+  else Js.null
+
+>>
+
+== Check availability of method
+
+It is frequent that some method are not to be implemented in some browser.
+
+To check the presence of method {{{met}}}:
+
+<<code language="ocaml"|
+let check_met obj = Js.Optdef.test ((Js.Unsafe.coerce obj)##met)
+>>
