@@ -901,7 +901,7 @@ and compile code limit pc state instrs =
         Format.printf "}@."
       end;
       compile code limit (pc + 2) state
-        (Let (x, Block (-1, Array.of_list contents)) :: instrs)
+        (Let (x, Block (254, Array.of_list contents)) :: instrs)
   | GETFIELD0 ->
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
