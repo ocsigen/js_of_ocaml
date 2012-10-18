@@ -6,20 +6,20 @@ deadcode.cmo: util.cmi pure_fun.cmi code.cmi deadcode.cmi
 deadcode.cmx: util.cmx pure_fun.cmx code.cmx deadcode.cmi
 dgraph.cmo: dgraph.cmi
 dgraph.cmx: dgraph.cmi
-driver.cmo: util.cmi tailcall.cmi phisimpl.cmi parse.cmi inline.cmi \
-    generate.cmi flow.cmi deadcode.cmi code.cmi driver.cmi
-driver.cmx: util.cmx tailcall.cmx phisimpl.cmx parse.cmx inline.cmx \
-    generate.cmx flow.cmx deadcode.cmx code.cmx driver.cmi
+driver.cmo: util.cmi tailcall.cmi phisimpl.cmi parse.cmi js_output.cmi \
+    inline.cmi generate.cmi flow.cmi deadcode.cmi code.cmi driver.cmi
+driver.cmx: util.cmx tailcall.cmx phisimpl.cmx parse.cmx js_output.cmx \
+    inline.cmx generate.cmx flow.cmx deadcode.cmx code.cmx driver.cmi
 flow.cmo: util.cmi subst.cmi dgraph.cmi code.cmi flow.cmi
 flow.cmx: util.cmx subst.cmx dgraph.cmx code.cmx flow.cmi
 freevars.cmo: util.cmi code.cmi freevars.cmi
 freevars.cmx: util.cmx code.cmx freevars.cmi
-generate.cmo: util.cmi subst.cmi primitive.cmi pretty_print.cmi parse.cmi \
-    linker.cmi js_simpl.cmi js_output.cmi javascript.cmi freevars.cmi \
-    code.cmi generate.cmi
-generate.cmx: util.cmx subst.cmx primitive.cmx pretty_print.cmx parse.cmx \
-    linker.cmx js_simpl.cmx js_output.cmx javascript.cmx freevars.cmx \
-    code.cmx generate.cmi
+generate.cmo: util.cmi subst.cmi primitive.cmi pretty_print.cmi linker.cmi \
+    js_simpl.cmi js_output.cmi javascript.cmi freevars.cmi code.cmi \
+    generate.cmi
+generate.cmx: util.cmx subst.cmx primitive.cmx pretty_print.cmx linker.cmx \
+    js_simpl.cmx js_output.cmx javascript.cmx freevars.cmx code.cmx \
+    generate.cmi
 inline.cmo: deadcode.cmi code.cmi inline.cmi
 inline.cmx: deadcode.cmx code.cmx inline.cmi
 instr.cmo: instr.cmi
@@ -64,8 +64,8 @@ freevars.cmi: util.cmi code.cmi
 generate.cmi: pretty_print.cmi parse.cmi code.cmi
 inline.cmi: code.cmi
 instr.cmi:
-javascript.cmi: parse.cmi
-js_output.cmi: pretty_print.cmi javascript.cmi
+javascript.cmi:
+js_output.cmi: pretty_print.cmi parse.cmi javascript.cmi
 js_simpl.cmi: javascript.cmi
 linker.cmi: pretty_print.cmi
 parse.cmi: code.cmi

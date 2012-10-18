@@ -53,3 +53,11 @@ typed_array.cmi: js.cmi
 url.cmi:
 webGL.cmi: typed_array.cmi js.cmi dom_html.cmi
 xmlHttpRequest.cmi: url.cmi js.cmi form.cmi file.cmi dom.cmi
+deriving_json/deriving_Json_lexer.cmo: deriving_json/deriving_Json_lexer.cmi
+deriving_json/deriving_Json_lexer.cmx: deriving_json/deriving_Json_lexer.cmi
+deriving_json/deriving_Json_lexer.cmi:
+deriving_json/deriving_Json.cmo: deriving_json/deriving_Json_lexer.cmi \
+    deriving_json/deriving_Json.cmi
+deriving_json/deriving_Json.cmx: deriving_json/deriving_Json_lexer.cmx \
+    deriving_json/deriving_Json.cmi
+deriving_json/deriving_Json.cmi: deriving_json/deriving_Json_lexer.cmi
