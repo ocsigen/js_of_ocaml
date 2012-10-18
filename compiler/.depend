@@ -12,14 +12,14 @@ driver.cmx: util.cmx tailcall.cmx phisimpl.cmx parse.cmx inline.cmx \
     generate.cmx flow.cmx deadcode.cmx code.cmx driver.cmi
 flow.cmo: util.cmi subst.cmi dgraph.cmi code.cmi flow.cmi
 flow.cmx: util.cmx subst.cmx dgraph.cmx code.cmx flow.cmi
-freevars.cmo: dgraph.cmi code.cmi freevars.cmi
-freevars.cmx: dgraph.cmx code.cmx freevars.cmi
-generate.cmo: util.cmi subst.cmi primitive.cmi pretty_print.cmi linker.cmi \
-    js_simpl.cmi js_output.cmi javascript.cmi freevars.cmi code.cmi \
-    generate.cmi
-generate.cmx: util.cmx subst.cmx primitive.cmx pretty_print.cmx linker.cmx \
-    js_simpl.cmx js_output.cmx javascript.cmx freevars.cmx code.cmx \
-    generate.cmi
+freevars.cmo: util.cmi code.cmi freevars.cmi
+freevars.cmx: util.cmx code.cmx freevars.cmi
+generate.cmo: util.cmi subst.cmi primitive.cmi pretty_print.cmi parse.cmi \
+    linker.cmi js_simpl.cmi js_output.cmi javascript.cmi freevars.cmi \
+    code.cmi generate.cmi
+generate.cmx: util.cmx subst.cmx primitive.cmx pretty_print.cmx parse.cmx \
+    linker.cmx js_simpl.cmx js_output.cmx javascript.cmx freevars.cmx \
+    code.cmx generate.cmi
 inline.cmo: deadcode.cmi code.cmi inline.cmi
 inline.cmx: deadcode.cmx code.cmx inline.cmi
 instr.cmo: instr.cmi
@@ -50,21 +50,21 @@ pure_fun.cmo: primitive.cmi code.cmi pure_fun.cmi
 pure_fun.cmx: primitive.cmx code.cmx pure_fun.cmi
 subst.cmo: util.cmi code.cmi subst.cmi
 subst.cmx: util.cmx code.cmx subst.cmi
-tailcall.cmo: subst.cmi code.cmi tailcall.cmi
-tailcall.cmx: subst.cmx code.cmx tailcall.cmi
+tailcall.cmo: util.cmi subst.cmi code.cmi tailcall.cmi
+tailcall.cmx: util.cmx subst.cmx code.cmx tailcall.cmi
 util.cmo: util.cmi
 util.cmx: util.cmi
 code.cmi: util.cmi
 control.cmi: code.cmi
 deadcode.cmi: code.cmi
 dgraph.cmi:
-driver.cmi: pretty_print.cmi code.cmi
+driver.cmi: pretty_print.cmi parse.cmi code.cmi
 flow.cmi: code.cmi
 freevars.cmi: util.cmi code.cmi
-generate.cmi: pretty_print.cmi code.cmi
+generate.cmi: pretty_print.cmi parse.cmi code.cmi
 inline.cmi: code.cmi
 instr.cmi:
-javascript.cmi:
+javascript.cmi: parse.cmi
 js_output.cmi: pretty_print.cmi javascript.cmi
 js_simpl.cmi: javascript.cmi
 linker.cmi: pretty_print.cmi

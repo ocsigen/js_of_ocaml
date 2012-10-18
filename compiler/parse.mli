@@ -18,9 +18,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val from_channel : paths:string list -> in_channel -> Code.program
+type debug_loc = int -> (string * int * int * int) option
 
-val from_string : string array -> string -> Code.program
+val from_channel : paths:string list -> in_channel -> Code.program * debug_loc
+
+val from_string : string array -> string -> Code.program * debug_loc
 
 val set_pretty : unit -> unit
 

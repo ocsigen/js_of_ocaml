@@ -28,6 +28,8 @@
 *)
 type foo = unit
 
+and node_pc = int option
+
 (* A.3 Expressions *)
 
 and array_litteral = element_list
@@ -65,7 +67,7 @@ and expression =
   | EDot of expression * identifier
   | ENew of expression * arguments option
   | EVar of identifier
-  | EFun of function_expression
+  | EFun of function_expression * node_pc
   | EStr of string * [`Bytes (*| `Utf8*)]
   | EArr of array_litteral
   | EBool of bool
@@ -83,12 +85,12 @@ and statement =
 (*
   | Empty_statement
 *)
-  | Expression_statement of expression
+  | Expression_statement of expression * node_pc
   | If_statement of expression * statement * statement option
   | Do_while_statement of statement * expression
   | While_statement of expression * statement
   | For_statement of
-      expression option * expression option * expression option * statement
+      expression option * expression option * expression option * statement * node_pc
 (*
   | Iteration_statement
 *)
@@ -101,7 +103,7 @@ and statement =
   | Labelled_statement of identifier * statement
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
-  | Try_statement of block * (identifier * block) option * block option
+  | Try_statement of block * (identifier * block) option * block option * node_pc
 (*
   | Debugger_statement
 *)
@@ -127,7 +129,7 @@ and initialiser = expression
 (* A.5 Functions and programs *)
 
 and function_declaration =
-  identifier * formal_parameter_list * function_body
+  identifier * formal_parameter_list * function_body * node_pc
 
 and function_expression =
   identifier option * formal_parameter_list * function_body

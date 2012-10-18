@@ -83,8 +83,8 @@ let source_elements l =
   List.fold_right
     (fun st rem ->
        match st, rem with
-         J.Variable_statement [addr, Some (J.EFun (None, params, body))], _ ->
-           J.Function_declaration (addr, params, body) :: rem
+         J.Variable_statement [addr, Some (J.EFun ((None, params, body), pc))], _ ->
+           J.Function_declaration (addr, params, body, pc) :: rem
        | J.Variable_statement l1,
          J.Statement (J.Variable_statement l2) :: rem' ->
            J.Statement (J.Variable_statement (l1 @ l2)) :: rem'
@@ -112,7 +112,7 @@ let rec expression_of_statement_list l =
   match l with
     J.Return_statement (Some e) :: _ ->
       e
-  | J.Expression_statement e :: rem ->
+  | J.Expression_statement (e, pc) :: rem ->
       J.ESeq (e, expression_of_statement_list rem)
   | _ ->
       raise Not_expression
@@ -129,7 +129,7 @@ let rec assignment_of_statement_list l =
   match l with
     [J.Variable_statement [x, Some e]] ->
       (x, e)
-  | J.Expression_statement e :: rem ->
+  | J.Expression_statement (e, pc) :: rem ->
       let (x, e') = assignment_of_statement_list rem in
       (x, J.ESeq (e, e'))
   | _ ->
@@ -145,7 +145,7 @@ let rec if_statement_2 e iftrue truestop iffalse falsestop =
   match iftrue, iffalse with
     (* Empty blocks *)
     J.Block [], J.Block [] ->
-      [J.Expression_statement e]
+      [J.Expression_statement (e, None)]
   | J.Block [], _ ->
       if_statement_2 (enot e) iffalse falsestop iftrue truestop
   | _, J.Block [] ->

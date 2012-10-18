@@ -63,6 +63,7 @@ let _ =
      ("-disable",
       Arg.String Util.set_disabled, "<name> disable optimization <name>");
      ("-pretty", Arg.Unit Driver.set_pretty, " pretty print the output");
+     ("-debuginfo", Arg.Unit Driver.set_debug_info, " output debug info");
      ("-noinline", Arg.Unit Inline.disable_inlining, " disable inlining");
      ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
       " do not include the standard runtime");
