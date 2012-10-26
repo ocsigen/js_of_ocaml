@@ -35,14 +35,15 @@ let plus_re = Regexp.regexp_string "+"
 let escape_plus s = Regexp.global_replace plus_re s "%2B"
 let unescape_plus s = Regexp.global_replace plus_re s " "
 
-let plus_re_js_string = jsnew Js.regExp_withFlags (Js.string "+", Js.string "g")
+let plus_re_js_string =
+  jsnew Js.regExp_withFlags (Js.string "\\+", Js.string "g")
 let unescape_plus_js_string s =
   plus_re_js_string##lastIndex <- 0;
   s##replace(plus_re_js_string, Js.string " ")
 
 
 let urldecode_js_string_string s =
-  unescape_plus (Js.to_bytestring (Js.unescape (unescape_plus_js_string s)))
+  Js.to_bytestring (Js.unescape (unescape_plus_js_string s))
 let urldecode s =
   Js.to_bytestring (Js.unescape (Js.bytestring (unescape_plus s)))
 
