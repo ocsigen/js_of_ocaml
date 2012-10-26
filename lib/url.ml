@@ -33,11 +33,12 @@ let interrupt () = raise Local_exn
 
 let plus_re = Regexp.regexp_string "+"
 let escape_plus s = Regexp.global_replace plus_re s "%2B"
+let unescape_plus s = Regexp.global_replace plus_re s " "
 
 let urldecode_js_string_string s =
-  Js.to_bytestring (Js.unescape s)
+  unescape_plus (Js.to_bytestring (Js.unescape s))
 let urldecode s =
-  Js.to_bytestring (Js.unescape (Js.bytestring s))
+  unescape_plus (Js.to_bytestring (Js.unescape (Js.bytestring s)))
 
 let urlencode_js_string_string s =
   Js.to_bytestring (Js.escape s)
@@ -141,7 +142,7 @@ let decode_arguments_js_string s =
                (pred idx)
          with Local_exn -> aux acc (pred idx)
   in
-    aux [] (len-1)
+  aux [] (len-1)
 
 let decode_arguments s =
   decode_arguments_js_string (Js.bytestring s)
@@ -330,4 +331,3 @@ struct
   let as_string = urldecode_js_string_string l##href
 
 end
-
