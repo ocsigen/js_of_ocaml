@@ -39,6 +39,10 @@ type result
 val regexp: string -> regexp
 (** Simple regexp constructor. *)
 
+val regexp_with_flag: string -> string -> regexp
+(** Regexp constructor with flag that allow for global or
+    case-insensitive search. *)
+
 val quote: string -> string
 (** Escapes characters with special meaning in the regexp context. *)
 

@@ -24,6 +24,10 @@ type result = Js.match_result Js.t
 
 let regexp s = jsnew Js.regExp_withFlags (Js.bytestring s, Js.string "g")
 
+let regexp_with_flag s f =
+  jsnew Js.regExp_withFlags (Js.bytestring s, Js.string f)
+
+
 let blunt_str_array_get a i =
   Js.to_bytestring (Js.Optdef.get (Js.array_get a i) (fun () -> assert false))
 
