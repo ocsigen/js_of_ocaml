@@ -25,7 +25,7 @@ class type arrayBuffer = object
 end
 
 let arrayBuffer : (int -> arrayBuffer t) constr =
-  Js.Unsafe.variable "window.ArrayBuffer"
+  Js.Unsafe.variable "this.ArrayBuffer"
 
 class type arrayBufferView = object
   method buffer : arrayBuffer t readonly_prop
@@ -53,31 +53,31 @@ type uint32Array = (int, [`Uint32]) typedArray
 type float32Array = (float, [`Float32]) typedArray
 type float64Array = (float, [`Float64]) typedArray
 
-let int8Array = Js.Unsafe.variable "window.Int8Array"
+let int8Array = Js.Unsafe.variable "this.Int8Array"
 let int8Array_fromArray = int8Array
 let int8Array_fromTypedArray = int8Array
 let int8Array_fromBuffer = int8Array
 let int8Array_inBuffer = int8Array
 
-let int16Array = Js.Unsafe.variable "window.Int16Array"
+let int16Array = Js.Unsafe.variable "this.Int16Array"
 let int16Array_fromArray = int16Array
 let int16Array_fromTypedArray = int16Array
 let int16Array_fromBuffer = int16Array
 let int16Array_inBuffer = int16Array
 
-let int32Array = Js.Unsafe.variable "window.Int32Array"
+let int32Array = Js.Unsafe.variable "this.Int32Array"
 let int32Array_fromArray = int32Array
 let int32Array_fromTypedArray = int32Array
 let int32Array_fromBuffer = int32Array
 let int32Array_inBuffer = int32Array
 
-let float32Array = Js.Unsafe.variable "window.Float32Array"
+let float32Array = Js.Unsafe.variable "this.Float32Array"
 let float32Array_fromArray = float32Array
 let float32Array_fromTypedArray = float32Array
 let float32Array_fromBuffer = float32Array
 let float32Array_inBuffer = float32Array
 
-let float64Array = Js.Unsafe.variable "window.Float64Array"
+let float64Array = Js.Unsafe.variable "this.Float64Array"
 let float64Array_fromArray = float64Array
 let float64Array_fromTypedArray = float64Array
 let float64Array_fromBuffer = float64Array

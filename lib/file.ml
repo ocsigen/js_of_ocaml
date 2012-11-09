@@ -119,7 +119,7 @@ module ReaderEvent = struct
 end
 
 let fileReader : fileReader t constr =
-  Unsafe.variable "window.FileReader"
+  Unsafe.variable "this.FileReader"
 
 let read_with_filereader (fileReader : fileReader t constr) kind file =
   let reader = jsnew fileReader () in

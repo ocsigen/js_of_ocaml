@@ -234,14 +234,12 @@ let invoke_handler
   (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
   Js.Unsafe.call f this [|Js.Unsafe.inject event|]
 
-let node_constr : node t constr = Js.Unsafe.variable "window.Node"
-
 let eventTarget (e: (< .. > as 'a) #event t) : 'a t =
   let target =
     Optdef.get (e##target) (fun () ->
     Optdef.get (e##srcElement) (fun () -> assert false))
   in
-  if Js.instanceof target node_constr
+  if Js.instanceof target (Js.Unsafe.variable "this.Node")
   then
     (* Workaround for Safari bug *)
     let target' : node Js.t = Js.Unsafe.coerce target in

@@ -27,10 +27,10 @@ class type formData = object
 end
 
 let formData : formData t constr =
-  Js.Unsafe.variable "window.FormData"
+  Js.Unsafe.variable "this.FormData"
 
 let formData_form : (formElement t -> formData t) constr =
-  Js.Unsafe.variable "window.FormData"
+  Js.Unsafe.variable "this.FormData"
 
 type form_elt =
   [ `String of js_string t
