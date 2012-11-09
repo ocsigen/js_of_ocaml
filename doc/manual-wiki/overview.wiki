@@ -30,8 +30,8 @@ retargeted OCaml compiler, as the bytecode provides a very stable API.
   corresponding syntax extension, are provided by the
   {{{js_of_ocaml}}} package.
 {{{
-      ocamlfind ocamlc -package js_of_ocaml -syntax camlp4o -linkpkg \
-          -o cubes.byte cubes.ml
+      ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml.syntax \
+          -syntax camlp4o -linkpkg -o cubes.byte cubes.ml
 }}}
   Then, run the {{{js_of_ocaml}}} compiler to produce Javascript code:
 {{{
