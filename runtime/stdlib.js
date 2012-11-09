@@ -698,7 +698,11 @@ function caml_array_concat(l) {
 
 //Provides: caml_array_blit
 function caml_array_blit(a1, i1, a2, i2, len) {
-  for (var j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
+  if (i2 <= i1) {
+    for (var j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
+  } else {
+    for (var j = len; j >= 1; j--) a2[i2 + j] = a1[i1 + j];
+  }
 }
 
 ///////////// CamlinternalOO

@@ -129,9 +129,13 @@ MlString.prototype = {
 
   blitToArray:function(i1, a2, i2, l) {
     var a1 = this.array;
-    if (a1)
-      for (var i = 0; i < l; i++) a2 [i2 + i] = a1 [i1 + i];
-    else {
+    if (a1) {
+      if (i2 <= i1) {
+        for (var i = 0; i < l; i++) a2[i2 + i] = a1[i1 + i];
+      } else {
+        for (var i = l - 1; i >= 0; i--) a2[i2 + i] = a1[i1 + i];
+      }
+    } else {
       var b = this.bytes;
       if (b == null) b = this.toBytes();
       var l1 = this.last - i1;
