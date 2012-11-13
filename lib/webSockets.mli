@@ -27,7 +27,7 @@ type readyState =
 class type ['a] closeEvent = object
   inherit ['a] Dom.event
 
-  method code : int Js.t Js.readonly_prop
+  method code : int Js.readonly_prop
   method reason : Js.js_string Js.t Js.readonly_prop
   method wasClean : bool Js.t Js.readonly_prop
 end
@@ -43,8 +43,8 @@ class type webSocket = object ('self)
 
   method url : Js.js_string Js.t Js.readonly_prop
 
-  method readyState : readyState Js.t Js.readonly_prop
-  method bufferedAmount : int Js.t Js.readonly_prop
+  method readyState : readyState Js.readonly_prop
+  method bufferedAmount : int Js.readonly_prop
 
   method onopen :
     ('self Js.t, 'self Dom.event Js.t) Dom.event_listener Js.writeonly_prop
@@ -56,18 +56,19 @@ class type webSocket = object ('self)
   method extensions : Js.js_string Js.t Js.readonly_prop
   method protocol : Js.js_string Js.t Js.readonly_prop
   method close : unit Js.meth
-  method close_withCode : int Js.t -> unit Js.meth
-  method close_withReason : Js.js_string Js.t -> unit Js.meth
+  method close_withCode : int -> unit Js.meth
   method close_withCodeAndReason :
-    int Js.t -> Js.js_string Js.t -> unit Js.meth
+    int -> Js.js_string Js.t -> unit Js.meth
 
   method onmessage :
     ('self Js.t, 'self messageEvent Js.t) Dom.event_listener Js.writeonly_prop
-  method binaryType : Js.js_string Js.t Js.meth
+  method binaryType : Js.js_string Js.t Js.prop
   method send : Js.js_string Js.t -> unit Js.meth
 end
 
 val webSocket :
-  (Js.js_string Js.t -> Js.js_string Js.t list -> webSocket Js.t) Js.constr
+  (Js.js_string Js.t -> webSocket Js.t) Js.constr
+val webSocket_withProtocol :
+  (Js.js_string Js.t -> Js.js_string Js.t -> webSocket Js.t) Js.constr
 
 val is_supported : unit -> bool
