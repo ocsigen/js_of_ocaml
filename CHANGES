@@ -6,7 +6,6 @@
  ** Added -debuginfo option to output source code location information
     (patch by Kensuke Matsuzaki)
  ** Dom_html: added change, input and hashChange event bindings
- ** Deriving_json: tail-recursive serialisation of lists (by Hugo Heuzard)
 
  * Bugfixes
  ** Fix array and string blitting with overlapping regions
@@ -18,6 +17,9 @@
     incorrect generated code
  ** Dom_html: fix mouse wheel event bindings
  ** Dom: fix the type of item methods
+ ** Deriving_json: tail-recursive serialisation of lists (by Hugo Heuzard)
+ ** Deriving_json: fix parsing of float arrays and polymorphic variants
+    (by Hugo Heuzard)
 
 ===== 1.2 (2012-06-02) =====
 

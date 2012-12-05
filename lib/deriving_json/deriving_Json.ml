@@ -125,12 +125,12 @@ module Json_bool =  Defaults(struct
   type a = bool
   let write buffer b =
     Buffer.add_char buffer (if b then '1' else '0')
-  let read buf = 1 = Deriving_Json_lexer.read_bounded_int ~max:1 buf
+  let read buf = 1 = Deriving_Json_lexer.read_tag_2 0 1 buf
 end)
 module Json_unit = Defaults(struct
   type a = unit
   let write buffer () = Buffer.add_char buffer '0'
-  let read buf = ignore(Deriving_Json_lexer.read_bounded_int ~max:0buf)
+  let read buf = ignore(Deriving_Json_lexer.read_tag_1 0 buf)
 end)
 module Json_int =  Defaults(struct
     type a = int
@@ -153,7 +153,7 @@ module Json_int64 =  Defaults(struct
       (Int64.logand (Int64.shift_right i 48) mask16)
   let read buf =
     Deriving_Json_lexer.read_lbracket buf;
-    ignore(Deriving_Json_lexer.read_bounded_int ~min:255 ~max:255 buf);
+    ignore(Deriving_Json_lexer.read_tag_1 255 buf);
     Deriving_Json_lexer.read_comma buf;
     let h1 = Deriving_Json_lexer.read_int64 buf in
     Deriving_Json_lexer.read_comma buf;
@@ -285,6 +285,7 @@ module Json_array(A : Json) = Defaults(struct
 	    read_list (x :: acc) buf
       let read buf =
 	match Deriving_Json_lexer.read_case buf with
-	| `NCst 0 -> Array.of_list (List.rev (read_list [] buf))
+	(* We allow the tag 254 in case of float array *)
+	| `NCst 0 | `NCst 254 -> Array.of_list (List.rev (read_list [] buf))
 	| _ -> failwith "Json_array.read: unexpected constructor."
     end)

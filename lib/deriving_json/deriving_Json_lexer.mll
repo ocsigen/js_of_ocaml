@@ -319,6 +319,8 @@ and read_case v = parse
 and read_vcase v = parse
   | positive_int { try `Cst (extract_positive_int lexbuf)
                        with Int_overflow -> lexer_error "Int overflow" v lexbuf }
+  | '-'? positive_int { try `Cst (extract_negative_int lexbuf)
+                       with Int_overflow -> lexer_error "Int overflow" v lexbuf }
   | '['          { read_space v lexbuf;
 		   let zero = read_positive_int v lexbuf in
 		   if (zero <> 0) then
@@ -353,10 +355,28 @@ and read_vcase v = parse
     else
       n
 
+  let read_tag_1 n v lexbuf =
+    if n = read_int v lexbuf
+    then n
+    else lexer_error "Int outside of bounds" v lexbuf
+
+  let read_tag_2 n1 n2 v lexbuf =
+    let n = read_int v lexbuf in
+    if n = n1 
+    then n1
+    else if n = n2
+    then n2
+    else lexer_error "Int outside of bounds" v lexbuf
+
+
   let read_bool v = read_space v v.lexbuf; read_bool v v.lexbuf
   let read_int v = read_space v v.lexbuf; read_int v v.lexbuf
   let read_bounded_int ?(min = 0) ~max v =
     read_space v v.lexbuf; read_bounded_int min max v v.lexbuf
+  let read_tag_1 n v =
+    read_space v v.lexbuf; read_tag_1 n v v.lexbuf
+  let read_tag_2 n1 n2 v =
+    read_space v v.lexbuf; read_tag_2 n1 n2 v v.lexbuf
   let read_int32 v = read_space v v.lexbuf; read_int32 v v.lexbuf
   let read_int64 v = read_space v v.lexbuf; read_int64 v v.lexbuf
   let read_number v = read_space v v.lexbuf; read_number v v.lexbuf

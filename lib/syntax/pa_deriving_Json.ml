@@ -109,7 +109,7 @@ module Builder(Loc : Defs.Loc) = struct
             $expr$ >> in
       let read = <:expr<
 	Deriving_Json_lexer.read_lbracket buf;
-        ignore(Deriving_Json_lexer.read_bounded_int buf ~min:0 ~max:0);
+        ignore(Deriving_Json_lexer.read_tag_1 0 buf);
 	$readers$ >> in
       wrap ~write:[dumper] ~read ()
 
@@ -171,7 +171,8 @@ module Builder(Loc : Defs.Loc) = struct
 	    $Helpers.record_expression fields$ >> in
       let read = <:expr<
 	Deriving_Json_lexer.read_lbracket buf;
-        ignore(Deriving_Json_lexer.read_bounded_int buf ~min:0 ~max:0);
+        (* We allow the tag 254 in case of float record *)
+        ignore(Deriving_Json_lexer.read_tag_2 0 254 buf);
 	$readers$ >> in
       wrap ~write:[dumper] ~read ()
 

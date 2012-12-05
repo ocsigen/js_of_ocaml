@@ -36,6 +36,8 @@ val init_lexer:
 
 val read_int: lexbuf  -> int
 val read_bounded_int: ?min:int -> max:int -> lexbuf  -> int
+val read_tag_1 : int -> lexbuf -> int
+val read_tag_2 : int -> int -> lexbuf -> int
 val read_int32: lexbuf -> int32
 val read_int64: lexbuf -> int64
 val read_number: lexbuf -> float
