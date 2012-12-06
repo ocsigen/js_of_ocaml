@@ -43,11 +43,11 @@ let make_event event_kind ?(use_capture = false) target =
     );
   t
 
-let seq_loop evh ?use_capture target handler =
+let seq_loop ?(cancel_handler = false) evh ?use_capture target handler =
   let cancelled = ref false in
   let cur = ref (fst (Lwt.task ())) in
-  let t, w = Lwt.task () in
-  Lwt.on_cancel t (fun () -> Lwt.cancel !cur; cancelled := true);
+  let lt, lw = Lwt.task () in
+  Lwt.on_cancel lt (fun () -> if cancel_handler then Lwt.cancel !cur; cancelled := true);
   let rec aux () =
     if not !cancelled (* In the case it has been cancelled
                          during the previous handler,
@@ -55,13 +55,59 @@ let seq_loop evh ?use_capture target handler =
     then
       let t = evh ?use_capture target in
       cur := t;
-      t >>=
-      handler >>= fun () ->
+      t >>= (fun e ->
+	handler e lt) >>= fun () ->
       aux ()
     else Lwt.return ()
   in
   Lwt.async aux;
-  t
+  lt
+
+let async_loop evh ?use_capture target handler =
+  let cancelled = ref false in
+  let lt, lw = Lwt.task () in
+  Lwt.on_cancel lt (fun () -> cancelled := true);
+  let rec aux () =
+    if not !cancelled then
+      evh ?use_capture target
+       >>= (fun e -> Lwt.async (fun () -> handler e lt) ; Lwt.return ())
+       >>= aux
+    else Lwt.return ()
+  in
+  Lwt.async aux;
+  lt
+
+let buffered_loop ?(cancel_handler = false) ?(cancel_queue = true) evh ?use_capture target handler =
+  let cancelled = ref false in
+  let queue = ref [] in
+  let cur = ref (fst (Lwt.task ())) in
+  let lt, lw = Lwt.task () in
+  let spawn = Lwt_condition.create () in
+  Lwt.on_cancel lt (fun () ->
+    if cancel_handler then Lwt.cancel !cur ;
+    if cancel_queue then queue := [] ;
+    cancelled := true);
+  let rec spawner () =
+    if not !cancelled then
+      evh ?use_capture target
+       >>= (fun e -> queue := e :: !queue ; Lwt_condition.signal spawn () ; Lwt.return ())
+       >>= spawner
+    else Lwt.return ()
+  in
+  let rec runner () =
+    if not !cancelled then
+      match !queue with
+      | [] -> Lwt_condition.wait spawn >>= runner
+      | e :: tl ->
+	queue := tl ;
+	cur := handler e lt ;
+	!cur >>= runner
+    else Lwt.return ()
+  in
+  Lwt.async spawner ;
+  Lwt.async runner ;
+  lt
+
 
 let click ?use_capture target =
   make_event Dom_html.Event.click ?use_capture target

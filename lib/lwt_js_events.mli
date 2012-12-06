@@ -53,22 +53,62 @@ val make_event :
   (#Dom_html.event as 'a) Js.t Dom_html.Event.typ ->
   ?use_capture:bool -> #Dom_html.eventTarget Js.t -> 'a Js.t Lwt.t
 
-(** [seq_loop (make_event ev) target handler]
-    creates a looping Lwt thread that waits
-    for the event [ev] to happen on [target], then execute handler,
-    and start again waiting for the event.
+(** [seq_loop (make_event ev) target handler] creates a looping Lwt
+    thread that waits for the event [ev] to happen on [target], then
+    execute handler, and start again waiting for the event. Events
+    happening during the execution of the handler are ignored. See
+    [async_loop] and [buffered_loop] for alternative semantics.
 
     For example, the [clicks] function below is defined by:
 
-[let clicks ?use_capture t = seq_loop click ?use_capture t]
+    [let clicks ?use_capture t = seq_loop click ?use_capture t]
 
     The thread returned is cancellable using
     {% <<a_api project="lwt" | val Lwt.cancel>> %}.
+    In order for the loop thread to be canceled from within the handler,
+    the later receives the former as its second parameter.
 
+    By default, cancelling the loop will not cancel the potential
+    currently running handler. This behaviour can be changed by
+    setting the [cancel_handler] parameter to true.
 *)
 val seq_loop :
-  (?use_capture:'a -> 'b -> 'c Lwt.t) ->
-  ?use_capture:'a -> 'b -> ('c -> unit Lwt.t) -> 'd Lwt.t
+  ?cancel_handler:bool ->
+  (?use_capture:bool -> 'target -> 'event Lwt.t) ->
+  ?use_capture:bool -> 'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+
+(** [async_loop] is similar to [seq_loop], but each handler runs
+    independently. No event is thus missed, but since several
+    instances of the handler can be run concurrently, it is up to the
+    programmer to ensure that they interact correctly.
+
+    Cancelling the loop will not cancel the potential currently running
+    handlers.
+*)
+val async_loop :
+  (?use_capture:bool -> 'target -> 'event Lwt.t) ->
+  ?use_capture:bool -> 'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+
+(** [buffered_loop] is similar to [seq_loop], but any event that
+    occurs during an execution of the handler is queued instead of
+    being ingnored.
+
+    No event is thus missed, but there can be a non predictible delay
+    between its trigger and its treatment. It is thus a good idea to
+    use this loop with handlers whose running time is short, so the
+    memorized event still makes sense when the handler is eventually
+    executed. It is also up to the programmer to ensure that event
+    handlers terminate so the queue will eventually be emptied.
+
+    By default, cancelling the loop will not cancel the potential
+    currently running handler, but any other queued event will be
+    dropped. This behaviour can be customized using the two optional
+    parameters [cancel_handler] and [cancel_queue].
+*)
+val buffered_loop :
+  ?cancel_handler:bool -> ?cancel_queue:bool ->
+  (?use_capture:bool -> 'target -> 'event Lwt.t) ->
+  ?use_capture:bool -> 'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 
 (** [async t] records a thread to be executed later.
@@ -172,103 +212,103 @@ val transitionend : #Dom_html.eventTarget Js.t -> unit Lwt.t
 val clicks :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.mouseEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dblclicks :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.mouseEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mousedowns :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.mouseEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mouseups :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.mouseEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mouseovers :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.mouseEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mousemoves :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.mouseEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mouseouts :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.mouseEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val keypresses :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.keyboardEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val keydowns :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.keyboardEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val keyups :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.keyboardEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val inputs :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.event Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val changes :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.event Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val dragstarts :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.dragEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dragends :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.dragEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dragenters :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.dragEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dragovers :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.dragEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dragleaves :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.dragEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val drags :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.dragEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val drops :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.dragEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val mousewheels :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  ((Dom_html.mouseEvent Js.t * (int * int)) -> unit Lwt.t) -> 'a Lwt.t
+  ((Dom_html.mouseEvent Js.t * (int * int)) -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val touchstarts :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.touchEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val touchmoves :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.touchEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val touchends :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.touchEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val touchcancels :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
-  (Dom_html.touchEvent Js.t -> unit Lwt.t) -> 'a Lwt.t
+  (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 (** Returns when a repaint of the window by the browser starts.
     (see JS method [window.requestAnimationFrame]) *)
