@@ -20,7 +20,7 @@
 
 let debug = Util.debug "main"
 
-let f ?standalone (p, d) =
+let f ?standalone ?linkall (p, d) =
 if debug () then Code.print_program (fun _ _ -> "") p;
 
 if debug () then Format.eprintf "Tail-call optimization...@.";
@@ -61,7 +61,7 @@ if debug () then Format.eprintf "Dead-code...@.";
   let (p, live_vars) = Deadcode.f p in
 
 if debug () then Code.print_program (fun _ _ -> "") p;
-  fun formatter -> Generate.f formatter ?standalone p d live_vars
+  fun formatter -> Generate.f formatter ?standalone ?linkall p d live_vars
 
 let from_string prims s =
   let p = Parse.from_string prims s in

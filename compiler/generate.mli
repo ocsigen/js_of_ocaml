@@ -20,5 +20,5 @@
 
 val set_pretty : unit -> unit
 
-val f : Pretty_print.t -> ?standalone:bool ->
+val f : Pretty_print.t -> ?standalone:bool -> ?linkall:bool ->
         Code.program -> Parse.debug_loc -> int array -> unit

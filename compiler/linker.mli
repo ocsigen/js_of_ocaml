@@ -19,4 +19,4 @@
  *)
 
 val add_file : string -> unit
-val resolve_deps : bool -> Pretty_print.t -> string list -> string list
+val resolve_deps : ?linkall:bool -> bool -> Pretty_print.t -> string list -> string list

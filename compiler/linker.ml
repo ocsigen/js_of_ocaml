@@ -193,8 +193,8 @@ let rec resolve_dep f visited path loc nm =
     visited
   end
 
-let resolve_deps compact f l =
-  let (missing, _) =
+let resolve_deps ?(linkall = false) compact f l =
+  let (missing, visited) =
     List.fold_left
       (fun (missing, visited) nm ->
          if Hashtbl.mem provided nm then
@@ -203,6 +203,12 @@ let resolve_deps compact f l =
            (nm :: missing, visited))
       ([], Util.IntSet.empty) l
   in
+  if linkall then begin
+    let visited = ref visited in
+    Hashtbl.iter (fun nm (id, loc) ->
+      visited := resolve_dep f !visited [] ("", -1) nm
+    ) provided;
+  end;
   List.rev missing
 
 (*
