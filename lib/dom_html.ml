@@ -374,6 +374,10 @@ module Event = struct
   let hashchange = Dom.Event.make "hashchange"
   let change = Dom.Event.make "change"
   let input = Dom.Event.make "input"
+  let submit = Dom.Event.make "submit"
+  let scroll = Dom.Event.make "scroll"
+  let focus = Dom.Event.make "focus"
+  let blur = Dom.Event.make "blur"
 
   let make = Dom.Event.make
 end
@@ -520,6 +524,8 @@ class type inputElement = object ('self)
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
   method oninput : ('self t, event t) event_listener prop
+  method onblur : ('self t, event t) event_listener prop
+  method onfocus : ('self t, event t) event_listener prop
 end
 
 class type textAreaElement = object ('self)
@@ -542,6 +548,8 @@ class type textAreaElement = object ('self)
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
   method oninput : ('self t, event t) event_listener prop
+  method onblur : ('self t, event t) event_listener prop
+  method onfocus : ('self t, event t) event_listener prop
 end
 
 class type buttonElement = object
@@ -691,6 +699,7 @@ class type scriptElement = object
   method defer : bool t prop
   method src : js_string t prop
   method _type : js_string t prop
+  method async : bool t prop
 end
 
 class type tableCellElement = object
@@ -909,7 +918,7 @@ class type document = object
   inherit nodeSelector
   method title : js_string t prop
   method referrer : js_string t readonly_prop
-  method domain : js_string t readonly_prop
+  method domain : js_string t prop
   method _URL : js_string t readonly_prop
   method head : headElement t prop
   method body : bodyElement t prop
@@ -988,7 +997,7 @@ class type window = object
   method location : location t readonly_prop
   method history : history t readonly_prop
   method undoManager : undoManager t readonly_prop
-  method navigator : navigator t
+  method navigator : navigator t readonly_prop
   method getSelection : selection t meth
   method close : unit meth
   method closed : bool t readonly_prop
@@ -996,7 +1005,6 @@ class type window = object
   method focus : unit meth
   method blur : unit meth
   method scroll : int -> int -> unit meth
-  method screen : screen t readonly_prop
 
   method sessionStorage : storage t optdef readonly_prop
   method localStorage : storage t optdef readonly_prop
@@ -1016,6 +1024,12 @@ class type window = object
 
   method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
   method clearTimeout : timeout_id -> unit meth
+
+  method screen : screen t readonly_prop
+  method innerWidth : int optdef readonly_prop
+  method innerHeight : int optdef readonly_prop
+  method outerWidth : int optdef readonly_prop
+  method outerHeight : int optdef readonly_prop
 
   method onload : (window t, event t) event_listener prop
   method onbeforeunload : (window t, event t) event_listener prop
@@ -1621,3 +1635,8 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
            let dt = if dt < 0. then 0. else dt in
            last := t;
            ignore (window##setTimeout (callback, dt)))
+
+(****)
+
+let hasPushState () =
+  Js.Optdef.test ((Js.Unsafe.coerce (window##history))##pushState)

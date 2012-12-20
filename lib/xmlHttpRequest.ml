@@ -32,6 +32,7 @@ class type xmlHttpRequest = object ('self)
     js_string t -> js_string t -> bool t ->
     js_string t opt -> js_string t opt -> unit meth
   method setRequestHeader : js_string t -> js_string t -> unit meth
+  method overrideMimeType : js_string t -> unit meth
   method send : js_string t opt -> unit meth
   method send_document : Dom.element Dom.document -> unit meth
   method send_formData : Form.formData t -> unit meth
@@ -160,6 +161,7 @@ let perform_raw_url
     ?(get_args=[])
     ?(form_arg:Form.form_contents option)
     ?(check_headers=(fun _ _ -> true))
+    ?override_mime_type
     url =
 
   let form_arg =
@@ -202,6 +204,11 @@ let perform_raw_url
 
   let (res, w) = Lwt.task () in
   let req = create () in
+
+  begin match override_mime_type with
+    None           -> ()
+  | Some mime_type -> req ## overrideMimeType (Js.string mime_type)
+  end;
 
   req##_open (Js.string method_, Js.string url, Js._true);
   (match content_type with
@@ -281,8 +288,10 @@ let perform
     ?(get_args=[])
     ?form_arg
     ?check_headers
+    ?override_mime_type
     url =
-  perform_raw_url ~headers ?content_type ?post_args ~get_args ?form_arg ?check_headers
+  perform_raw_url ~headers ?content_type ?post_args ~get_args ?form_arg
+    ?check_headers ?override_mime_type
     (Url.string_of_url url)
 
 let get s = perform_raw_url s

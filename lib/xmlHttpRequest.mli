@@ -33,6 +33,7 @@ class type xmlHttpRequest = object ('self)
     js_string t -> js_string t -> bool t ->
     js_string t opt -> js_string t opt -> unit meth
   method setRequestHeader : js_string t -> js_string t -> unit meth
+  method overrideMimeType : js_string t -> unit meth
   method send : js_string t opt -> unit meth
   method send_document : Dom.element Dom.document -> unit meth
   method send_formData : Form.formData t -> unit meth
@@ -89,6 +90,7 @@ val perform_raw_url :
   -> ?get_args:((string * string) list)  (* [] *)
   -> ?form_arg:Form.form_contents
   -> ?check_headers:(int -> (string -> string option) -> bool)
+  -> ?override_mime_type:string
   -> string
   -> http_frame Lwt.t
   (** [perform_raw_url ?headers ?content_type ?post_args ?get_args ?form_arg url]
@@ -107,6 +109,7 @@ val perform :
   -> ?get_args:((string * string) list)  (* [] *)
   -> ?form_arg:Form.form_contents
   -> ?check_headers:(int -> (string -> string option) -> bool)
+  -> ?override_mime_type:string
   -> Url.url
   -> http_frame Lwt.t
   (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
