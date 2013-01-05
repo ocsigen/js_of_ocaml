@@ -355,6 +355,21 @@ external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
 external typeof : < .. > t -> js_string t = "caml_js_typeof"
 external instanceof : 'a -> 'b -> bool = "caml_js_instanceof"
 
+let isNaN (i : 'a) : bool =
+  to_bool (Unsafe.fun_call (Unsafe.variable "isNaN") [|Unsafe.inject i|])
+
+let parseInt (s : js_string t) : int =
+  let s = Unsafe.fun_call (Unsafe.variable "parseInt") [|Unsafe.inject s|] in
+  if isNaN s
+  then failwith "parseInt"
+  else s
+
+let parseFloat (s : js_string t) : float t =
+  let s = Unsafe.fun_call (Unsafe.variable "parseFloat") [|Unsafe.inject s|] in
+  if isNaN s
+  then failwith "parseFloat"
+  else s
+
 let _ =
   Printexc.register_printer
     (fun e ->

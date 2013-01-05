@@ -439,6 +439,14 @@ val unescape : js_string t -> js_string t
   (** Unescape a string: 2-digit and 4-digit escape sequences are
       replaced by the corresponding UTF-16 code point. *)
 
+
+val isNaN : 'a -> bool
+
+val parseInt : js_string t -> int
+
+val parseFloat : js_string t -> float t
+
+
 (** {2 Conversion functions between Javascript and OCaml types} *)
 
 external bool : bool -> bool t = "caml_js_from_bool"
