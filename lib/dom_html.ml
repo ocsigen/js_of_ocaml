@@ -239,6 +239,7 @@ and eventTarget = object ('self)
   method onkeypress : ('self t, keyboardEvent t) event_listener writeonly_prop
   method onkeydown : ('self t, keyboardEvent t) event_listener writeonly_prop
   method onkeyup : ('self t, keyboardEvent t) event_listener writeonly_prop
+  method onscroll : ('self t, event t) event_listener writeonly_prop
   method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
   method ondragend : ('self t, dragEvent t) event_listener writeonly_prop
   method ondragenter : ('self t, dragEvent t) event_listener writeonly_prop
