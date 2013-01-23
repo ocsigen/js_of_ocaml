@@ -1,4 +1,5 @@
-MLOBJS= js.cmo dom.cmo typed_array.cmo dom_html.cmo file.cmo dom_events.cmo lwt_js.cmo firebug.cmo regexp.cmo CSS.cmo url.cmo form.cmo xmlHttpRequest.cmo event_arrows.cmo lwt_js_events.cmo json.cmo webGL.cmo webSockets.cmo
+MLOBJS= js.cmo dom.cmo typed_array.cmo dom_html.cmo file.cmo dom_events.cmo lwt_js.cmo firebug.cmo regexp.cmo CSS.cmo url.cmo form.cmo xmlHttpRequest.cmo event_arrows.cmo lwt_js_events.cmo json.cmo webGL.cmo webSockets.cmo keycode.cmo
+
 MLINTFS= $(MLOBJS:.cmo=.mli)
 COBJS= stubs$(OBJEXT)
 OBJS=$(MLOBJS) $(COBJS)
