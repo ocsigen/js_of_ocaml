@@ -86,7 +86,7 @@ exception Wrong_headers of (int * (string -> string option))
 val perform_raw_url :
     ?headers:(string * string) list
   -> ?content_type:string
-  -> ?post_args:((string * string) list)
+  -> ?post_args:((string * Form.form_elt) list)
   -> ?get_args:((string * string) list)  (* [] *)
   -> ?form_arg:Form.form_contents
   -> ?check_headers:(int -> (string -> string option) -> bool)
@@ -105,7 +105,7 @@ val perform_raw_url :
 val perform :
     ?headers:(string * string) list
   -> ?content_type:string
-  -> ?post_args:((string * string) list)
+  -> ?post_args:((string * Form.form_elt) list)
   -> ?get_args:((string * string) list)  (* [] *)
   -> ?form_arg:Form.form_contents
   -> ?check_headers:(int -> (string -> string option) -> bool)
