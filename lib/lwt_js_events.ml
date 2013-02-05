@@ -36,12 +36,18 @@ let make_event event_kind ?(use_capture = false) target =
           (fun (ev : #Dom_html.event Js.t) ->
             cancel ();
             Lwt.wakeup w ev;
-            Js.bool true)) (* true because we do not want to prevent default -> 
+            Js.bool true)) (* true because we do not want to prevent default ->
                               the user can use the preventDefault function
                               above. *)
        (Js.bool use_capture)
     );
   t
+
+let with_error_log f x =
+  Lwt.catch
+    (fun () -> f x)
+    (fun e -> (Firebug.console##log(Js.string (Printexc.to_string e)) ;
+               Lwt.return ()))
 
 let seq_loop ?(cancel_handler = false) evh ?use_capture target handler =
   let cancelled = ref false in
@@ -55,8 +61,8 @@ let seq_loop ?(cancel_handler = false) evh ?use_capture target handler =
     then
       let t = evh ?use_capture target in
       cur := t;
-      t >>= (fun e ->
-	handler e lt) >>= fun () ->
+      t >>= fun e ->
+      with_error_log (handler e) lt >>= fun () ->
       aux ()
     else Lwt.return ()
   in
@@ -69,9 +75,9 @@ let async_loop evh ?use_capture target handler =
   Lwt.on_cancel lt (fun () -> cancelled := true);
   let rec aux () =
     if not !cancelled then
-      evh ?use_capture target
-       >>= (fun e -> Lwt.async (fun () -> handler e lt) ; Lwt.return ())
-       >>= aux
+      (evh ?use_capture target >>= fun e ->
+       Lwt.async (fun () -> with_error_log (handler e) lt) ;
+       aux ())
     else Lwt.return ()
   in
   Lwt.async aux;
@@ -100,7 +106,7 @@ let buffered_loop ?(cancel_handler = false) ?(cancel_queue = true) evh ?use_capt
       | [] -> Lwt_condition.wait spawn >>= runner
       | e :: tl ->
 	queue := tl ;
-	cur := handler e lt ;
+	cur := with_error_log (handler e) lt ;
 	!cur >>= runner
     else Lwt.return ()
   in
@@ -163,7 +169,7 @@ let mousewheel ?(use_capture=false) target =
          Firebug.console##log(ev);
          cancel ();
          Lwt.wakeup w (ev, (dx, dy));
-         Js.bool true) (* true because we do not want to prevent default -> 
+         Js.bool true) (* true because we do not want to prevent default ->
                            the user can use the preventDefault function
                            above. *)
        (Js.bool use_capture)

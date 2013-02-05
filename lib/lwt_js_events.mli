@@ -32,7 +32,7 @@
 
 
 
-(** Call this to prevent the default handler for the event. 
+(** Call this to prevent the default handler for the event.
     To stop propagation of the event, call {!Dom_html.stopPropagation}.
 *)
 val preventDefault : #Dom_html.event Js.t -> unit
@@ -66,7 +66,7 @@ val make_event :
     The thread returned is cancellable using
     {% <<a_api project="lwt" | val Lwt.cancel>> %}.
     In order for the loop thread to be canceled from within the handler,
-    the later receives the former as its second parameter.
+    the latter receives the former as its second parameter.
 
     By default, cancelling the loop will not cancel the potential
     currently running handler. This behaviour can be changed by
@@ -189,7 +189,7 @@ val drop :
     This interface is compatible with all (recent) browsers. *)
 val mousewheel :
   ?use_capture:bool ->
-  #Dom_html.eventTarget Js.t -> 
+  #Dom_html.eventTarget Js.t ->
   (Dom_html.mouseEvent Js.t * (int * int)) Lwt.t
 
 val touchstart :
