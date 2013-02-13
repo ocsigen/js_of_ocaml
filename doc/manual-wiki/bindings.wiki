@@ -44,6 +44,27 @@ val f_fromString : (js_string t -> ... Js.t) Js.constr
 val f_blah : (#Dom_html.element t -> js_string t -> ... Js.t) Js.constr
 >>
 
+==Accessing or modifying a JS property to an element
+
+When a property is missing in the OCaml interface of an element (for example
+it has been dynamically added by a library), you can access using unsafe
+features:
+
+<<code language="ocaml"|
+(Js.Unsafe.coerce elt)##blah
+>>
+
+If you want to add yourself a new property:
+<<code language="ocaml"|
+(Js.Unsafe.coerce elt)##blah <- v
+>>
+
+Here, {{{v}}} may be a JS value or an OCaml value.
+
+If you want to do that in type safe manner, just define new types for the
+extended elements, or wrap the unsafe functions inside a getter and setter.
+
+
 ==Example binding of a JS object type {{{tt}}}:
 Write in .ml and in .mli:
 
