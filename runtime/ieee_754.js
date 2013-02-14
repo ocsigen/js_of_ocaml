@@ -146,8 +146,8 @@ function caml_log1p_float (x) {
 //Provides: caml_hypot_float const
 function caml_hypot_float (x, y) {
   var x = Math.abs(x), y = Math.abs(y);
-  var a = Math.max(x, y), b = Math.min(x,y) / (a?a:1)
-  return (a * Math.sqrt(1 + b*b);
+  var a = Math.max(x, y), b = Math.min(x,y) / (a?a:1);
+  return (a * Math.sqrt(1 + b*b));
 }
 
 // FIX: these five functions only give approximate results.
