@@ -3,7 +3,7 @@ BIN := compiler/${COMPILER}
 INTF := lib/*.cmi
 
 IMPL := lib/$(LIBNAME).cma   \
-        lib/syntax/pa_js.cmo \
+        lib/syntax/pa_js.cmo lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs \
 	lib/dll$(LIBNAME)$(DLLEXT) \
         lib/lib$(LIBNAME)$(LIBEXT)
 
@@ -17,6 +17,8 @@ JSON := lib/deriving_json/deriving_Json.cmi       \
 INTF += $(JSON)
 
 IMPL += lib/syntax/pa_deriving_Json.cmo \
+        lib/syntax/pa_deriving_Json.cmx \
+        lib/syntax/pa_deriving_Json.cmxs \
         lib/deriving_json.cma           \
 
 NATIMPL := lib/deriving_json.cmxa     \

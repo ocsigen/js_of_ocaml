@@ -16,7 +16,10 @@ DERIVING_JSON += deriving_json.cmxs
 endif
 endif
 
-all: $(LIBNAME).cma syntax/pa_js.cmo ${PA_DERIVING} ${DERIVING_JSON}
+all: $(LIBNAME).cma \
+	syntax/pa_js.cmo syntax/pa_js.cmx syntax/pa_js.cmxs \
+	${PA_DERIVING} syntax/pa_deriving_Json.cmx syntax/pa_deriving_Json.cmxs \
+	${DERIVING_JSON}
 
 $(LIBNAME).cma: $(OBJS)
 	ocamlmklib -o $(LIBNAME) $(OBJS)
@@ -32,11 +35,26 @@ deriving_json.cmxs: deriving_json.cmxa
 syntax/pa_js.cmo: syntax/pa_js.ml
 	ocamlfind ocamlc -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
 
+syntax/pa_js.cmx: syntax/pa_js.ml
+	ocamlfind ocamlopt -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
+
+syntax/pa_js.cmxs: syntax/pa_js.cmx
+	ocamlfind ocamlopt -shared -linkall -o $@ $<
+
 syntax/pa_deriving_Json.cmo: syntax/pa_deriving_Json.ml
 	ocamlfind ocamlc -package deriving-ocsigen.syntax,camlp4.quotations.o -syntax camlp4o -c $<
 
-%.cmo: %.ml syntax/pa_js.cmo
-	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c -g $<
+syntax/pa_deriving_Json.cmx: syntax/pa_deriving_Json.ml
+	ocamlfind ocamlopt -package deriving-ocsigen.syntax,camlp4.quotations.o -syntax camlp4o -c $<
+
+syntax/pa_deriving_Json.cmxs: syntax/pa_deriving_Json.cmx
+	ocamlfind ocamlopt -shared -linkall -o $@ $<
+
+# %.cmo: %.ml syntax/pa_js.cmo
+# 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c -g $<
+
+%.cmo: %.ml syntax/pa_js.cmxs
+	ocamlfind ocamlc -pp "camlp4o.opt syntax/pa_js.cmxs" -package lwt -c -g $<
 
 %.cmi: %.mli
 	ocamlfind ocamlc -package lwt -I deriving_json -c $<
