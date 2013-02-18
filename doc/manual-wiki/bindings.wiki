@@ -111,10 +111,13 @@ val theclass : theclass t
 >>
 
 ==Constructing JS objects manually
-If you want to construct a JS object manually (without calling a function or a constructor), the best way for now is:
-* create the corresponding object type with writeonly properties
-* create an empty value of this type
-* set all fields manually using {{{o##prop <- ...}}}
+If you want to construct a JS object manually
+   (without calling a function or a constructor), use
+function {{{Js.Unsafe.obj}}}
+and create the corresponding object type.
+
+You can also create an empty object of this type ({{{Js.Unsafe.obj [||]}}})
+and set all fields manually using {{{o##prop <- ...}}}.
 
 For example, write in .mli:
 
@@ -130,7 +133,7 @@ val empty_options : unit -> options t
 and in the .ml file of your library:
 
 <<code language="ocaml"|
-let empty_options () = Js.Unsafe.coerce (jsnew Js.array_empty ())
+let empty_options () = Js.Unsafe.obj [||]
 >>
 
 == Set/get variables
