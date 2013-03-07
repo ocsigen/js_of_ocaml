@@ -183,6 +183,20 @@ val drop :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t -> Dom_html.dragEvent Js.t Lwt.t
 
+val focus :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val blur :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val scroll :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val submit :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+
+
 (** This function returns the event,
     together with the numbers of ticks the mouse wheel moved.
     Positive means down or right.
@@ -309,6 +323,23 @@ val touchcancels :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+
+val focuses :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val blurs :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val scrolls :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val submits :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 (** Returns when a repaint of the window by the browser starts.
     (see JS method [window.requestAnimationFrame]) *)

@@ -156,6 +156,15 @@ let drag ?use_capture target =
 let drop ?use_capture target =
   make_event Dom_html.Event.drop ?use_capture target
 
+let focus ?use_capture target =
+  make_event Dom_html.Event.focus ?use_capture target
+let blur ?use_capture target =
+  make_event Dom_html.Event.blur ?use_capture target
+let scroll ?use_capture target =
+  make_event Dom_html.Event.scroll ?use_capture target
+let submit ?use_capture target =
+  make_event Dom_html.Event.submit ?use_capture target
+
 (* special case for mousewheel, because it depends on the browser *)
 let mousewheel ?(use_capture=false) target =
   let el = ref Js.null in
@@ -243,6 +252,15 @@ let touchends ?use_capture t =
   seq_loop touchend ?use_capture t
 let touchcancels ?use_capture t =
   seq_loop touchcancel ?use_capture t
+
+let focuses ?use_capture t =
+  seq_loop focus ?use_capture t
+let blurs ?use_capture t =
+  seq_loop blur ?use_capture t
+let scrolls ?use_capture t =
+  seq_loop scroll ?use_capture t
+let submits ?use_capture t =
+  seq_loop submit ?use_capture t
 
 let transition_evn =
   let e = Dom_html.createDiv Dom_html.document in
