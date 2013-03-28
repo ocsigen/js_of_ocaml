@@ -18,13 +18,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+let overflow_limit = 2147483.
+
 let sleep d =
   let (t, w) = Lwt.task () in
-  let id =
-    Dom_html.window##setTimeout (Js.wrap_callback (fun () -> Lwt.wakeup w ()),
-                                 d *. 1000.)
+  let id = ref None in
+  let rec wait d () =
+    let step,remain =
+      if d > overflow_limit
+      then overflow_limit, d -. overflow_limit
+      else d, 0. in
+    let cb =
+      if remain = 0.
+      then Lwt.wakeup w
+      else wait remain in
+    id := Some (Dom_html.window##setTimeout (Js.wrap_callback cb, step *. 1000.))
   in
-  Lwt.on_cancel t (fun () -> Dom_html.window##clearTimeout(id)) ;
+  wait d ();
+  Lwt.on_cancel t (fun () -> match !id with None -> () | Some id -> Dom_html.window##clearTimeout(id)) ;
   t
 
 let yield () = sleep 0.
