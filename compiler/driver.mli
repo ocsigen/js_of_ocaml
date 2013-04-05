@@ -18,7 +18,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f : ?standalone:bool -> Code.program * Parse.debug_loc -> Pretty_print.t -> unit
+val f :
+  ?standalone:bool -> ?linkall:bool ->
+  Code.program * Parse_bytecode.debug_loc -> Pretty_print.t -> unit
 
 val from_string : string array -> string -> Pretty_print.t -> unit
 
