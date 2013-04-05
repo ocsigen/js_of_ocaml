@@ -30,10 +30,10 @@ let f paths js_files input_file output_file =
   let p =
     match input_file with
       None ->
-        Parse.from_channel ~paths stdin
+        Parse_bytecode.from_channel ~paths stdin
     | Some f ->
         let ch = open_in_bin f in
-        let p = Parse.from_channel ~paths ch in
+        let p = Parse_bytecode.from_channel ~paths ch in
         close_in ch;
         p
   in
@@ -68,7 +68,7 @@ let _ =
      ("-linkall", Arg.Set linkall, " link all primitives");
      ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
       " do not include the standard runtime");
-     ("-toplevel", Arg.Unit Parse.build_toplevel,
+     ("-toplevel", Arg.Unit Parse_bytecode.build_toplevel,
       " compile a toplevel");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");

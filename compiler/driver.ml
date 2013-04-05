@@ -64,9 +64,9 @@ if debug () then Code.print_program (fun _ _ -> "") p;
   fun formatter -> Generate.f formatter ?standalone ?linkall p d live_vars
 
 let from_string prims s =
-  let p = Parse.from_string prims s in
+  let p = Parse_bytecode.from_string prims s in
   f ~standalone:false p
 
-let set_pretty () = Generate.set_pretty (); Parse.set_pretty ()
+let set_pretty () = Generate.set_pretty (); Parse_bytecode.set_pretty ()
 
 let set_debug_info () = Js_output.set_debug_info ()
