@@ -195,6 +195,9 @@ val scroll :
 val submit :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val select :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
 
 
 (** This function returns the event,
@@ -221,6 +224,13 @@ val touchcancel :
 
 (** Returns when a CSS transition terminates on the element. *)
 val transitionend : #Dom_html.eventTarget Js.t -> unit Lwt.t
+
+val load : ?use_capture:bool ->
+  #Dom_html.imageElement Js.t -> Dom_html.event Js.t Lwt.t
+val error : ?use_capture:bool ->
+  #Dom_html.imageElement Js.t -> Dom_html.event Js.t Lwt.t
+val abort : ?use_capture:bool ->
+  #Dom_html.imageElement Js.t -> Dom_html.event Js.t Lwt.t
 
 
 val clicks :
@@ -340,7 +350,26 @@ val submits :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val selects :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 (** Returns when a repaint of the window by the browser starts.
     (see JS method [window.requestAnimationFrame]) *)
 val request_animation_frame : unit -> unit Lwt.t
+
+(** Returns when the page is loaded *)
+val onload : unit -> Dom_html.event Js.t Lwt.t
+
+val onbeforeunload : unit -> Dom_html.event Js.t Lwt.t
+val onresize : unit -> Dom_html.event Js.t Lwt.t
+val onpopstate : unit -> Dom_html.event Js.t Lwt.t
+val onhashchange : unit -> Dom_html.event Js.t Lwt.t
+
+val onresizes :
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val onpopstates :
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val onhashchanges :
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t

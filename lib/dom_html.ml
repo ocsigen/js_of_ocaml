@@ -379,6 +379,14 @@ module Event = struct
   let scroll = Dom.Event.make "scroll"
   let focus = Dom.Event.make "focus"
   let blur = Dom.Event.make "blur"
+  let load = Dom.Event.make "load"
+  let beforeunload = Dom.Event.make "beforeunload"
+  let resize = Dom.Event.make "resize"
+  let popstate = Dom.Event.make "popstate"
+  let hashchange = Dom.Event.make "hashchange"
+  let error = Dom.Event.make "error"
+  let abort = Dom.Event.make "abort"
+  let select = Dom.Event.make "select"
 
   let make = Dom.Event.make
 end

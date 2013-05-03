@@ -30,7 +30,7 @@ let make_event event_kind ?(use_capture = false) target =
   let cancel () = Js.Opt.iter !el Dom_html.removeEventListener in
   Lwt.on_cancel t cancel;
   el := Js.some
-    (Dom_html.addEventListener
+    (Dom.addEventListener
        target event_kind
        (Dom_html.handler
           (fun (ev : #Dom_html.event Js.t) ->
@@ -164,6 +164,15 @@ let scroll ?use_capture target =
   make_event Dom_html.Event.scroll ?use_capture target
 let submit ?use_capture target =
   make_event Dom_html.Event.submit ?use_capture target
+let select ?use_capture target =
+  make_event Dom_html.Event.select ?use_capture target
+
+let abort ?use_capture target =
+  make_event Dom_html.Event.abort ?use_capture target
+let error ?use_capture target =
+  make_event Dom_html.Event.error ?use_capture target
+let load ?use_capture target =
+  make_event Dom_html.Event.load ?use_capture target
 
 (* special case for mousewheel, because it depends on the browser *)
 let mousewheel ?(use_capture=false) target =
@@ -261,6 +270,8 @@ let scrolls ?use_capture t =
   seq_loop scroll ?use_capture t
 let submits ?use_capture t =
   seq_loop submit ?use_capture t
+let selects ?use_capture t =
+  seq_loop select ?use_capture t
 
 let transition_evn =
   let e = Dom_html.createDiv Dom_html.document in
@@ -292,3 +303,13 @@ let request_animation_frame () =
   Dom_html._requestAnimationFrame
     (Js.wrap_callback (fun () -> Lwt.wakeup s ()));
   t
+
+let onload () = make_event Dom_html.Event.load Dom_html.window
+let onbeforeunload () = make_event Dom_html.Event.beforeunload Dom_html.window
+let onresize () = make_event Dom_html.Event.resize Dom_html.window
+let onpopstate () = make_event Dom_html.Event.popstate Dom_html.window
+let onhashchange () = make_event Dom_html.Event.hashchange Dom_html.window
+
+let onresizes t = seq_loop (fun ?use_capture () -> onresize ()) () t
+let onpopstates t = seq_loop (fun ?use_capture () -> onpopstate ()) () t
+let onhashchanges t = seq_loop (fun ?use_capture () -> onhashchange ()) () t

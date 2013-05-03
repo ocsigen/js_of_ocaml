@@ -1127,6 +1127,14 @@ module Event : sig
   val scroll : event t typ
   val focus : event t typ
   val blur : event t typ
+  val load : event t typ
+  val beforeunload : event t typ
+  val resize : event t typ
+  val popstate : event t typ
+  val hashchange : event t typ
+  val error : event t typ
+  val abort : event t typ
+  val select : event t typ
 
   val make : string -> 'a typ
 end
