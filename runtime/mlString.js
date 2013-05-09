@@ -157,7 +157,7 @@ MlString.prototype = {
   },
 
   safeGet:function (i) {
-    if (!this.len) this.toBytes();
+    if (this.len == null) this.toBytes();
     if ((i < 0) || (i >= this.len)) caml_array_bound_error ();
     return this.get(i);
   },
