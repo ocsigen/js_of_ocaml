@@ -102,12 +102,12 @@ let f ((pc, blocks, free_pc) as p) =
     fold_closures p
       (fun f params (pc, args) blocks ->
          match f with
-             Some f ->
-               let (_, blocks) =
-                 traverse (f, params, pc, args) pc AddrSet.empty blocks in
-                 blocks
-           | None ->
-               blocks)
+             Some f when List.length params = List.length args ->
+             let (_, blocks) =
+               traverse (f, params, pc, args) pc AddrSet.empty blocks in
+             blocks
+           | _ ->
+             blocks)
       blocks
   in
   if times () then Format.eprintf "  tail calls: %a@." Util.Timer.print t;
