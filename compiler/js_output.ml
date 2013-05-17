@@ -268,6 +268,19 @@ let rec expression l f e =
         PP.string f "NaN"
       else begin
         let s =
+          let vint = int_of_float v in
+          (* compiler 1000 into 1e3 *)
+          if float_of_int vint = v
+          then
+            let rec div n i =
+              if n <> 0 && n mod 10 = 0
+              then div (n/10) (succ i)
+              else
+              if i > 2
+              then Printf.sprintf "%de%d" n i
+              else string_of_int vint in
+            div vint 0
+          else
           let s1 = Printf.sprintf "%.12g" v in
           if v = float_of_string s1 then s1 else
           let s2 = Printf.sprintf "%.15g" v in
@@ -854,4 +867,3 @@ let statement f s dl =
 let program f se dl =
   debug_info := Some dl;
   PP.start_group f 0; source_elements f se; PP.end_group f; PP.newline f
-
