@@ -37,7 +37,8 @@ and array_litteral = element_list
 and element_list = expression option list
 
 and binop =
-    Eq | StarEq | SlashEq | ModEq | PlusEq | MinusEq (*... XXX*)
+    Eq | StarEq | SlashEq | ModEq | PlusEq | MinusEq
+  | LslEq | AsrEq | LsrEq | BandEq | BxorEq | BorEq
   | Or | And | Bor | Bxor | Band
   | EqEq | NotEq | EqEqEq | NotEqEq
   | Lt | Le | InstanceOf
@@ -45,7 +46,7 @@ and binop =
   | Plus | Minus
   | Mul | Div | Mod
 
-and unop = Not | Neg | Pl | Typeof | Delete
+and unop = Not | Neg | Pl | Typeof | Delete | Bnot | IncrA | DecrA | IncrB | DecrB
 (*XXX*)
 
 and arguments = expression list

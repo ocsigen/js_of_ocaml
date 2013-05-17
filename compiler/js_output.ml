@@ -89,7 +89,8 @@ let rec formal_parameter_list f l =
 
 let op_prec op =
   match op with
-    Eq | StarEq | SlashEq | ModEq | PlusEq | MinusEq -> 1, 13, 1
+    Eq | StarEq | SlashEq | ModEq | PlusEq | MinusEq
+  | LslEq | AsrEq | LsrEq | BandEq | BxorEq | BorEq -> 1, 13, 1
 (*
   | Or -> 3, 3, 4
   | And -> 4, 4, 5
@@ -125,6 +126,12 @@ let op_str op =
   | NotEq   -> "!="
   | EqEqEq  -> "==="
   | NotEqEq -> "!=="
+  | LslEq   -> "<<="
+  | AsrEq   -> ">>="
+  | LsrEq   -> ">>>="
+  | BandEq  -> "&="
+  | BxorEq  -> "^="
+  | BorEq   -> "|="
   | Lt      -> "<"
   | Le      -> "<="
   | Lsl     -> "<<"
@@ -142,6 +149,8 @@ let unop_str op =
     Not -> "!"
   | Neg -> "-"
   | Pl  -> "+"
+  | Bnot -> "~"
+  | IncrA | IncrB | DecrA | DecrB
   | Typeof | Delete -> assert false
 
 (*XXX May need to be updated... *)
@@ -314,6 +323,16 @@ let rec expression l f e =
       expression 13 f e;
       PP.end_group f;
       if l > 13 then begin PP.string f ")"; PP.end_group f end
+  | EUn ((IncrA | DecrA | IncrB | DecrB) as op,e) ->
+    if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
+    if op = IncrA || op = DecrA
+    then expression 13 f e;
+    if op = IncrA || op = IncrB
+    then PP.string f "++"
+    else PP.string f "--";
+    if op = IncrB || op = DecrB
+    then expression 13 f e;
+    if l > 13 then begin PP.string f ")"; PP.end_group f end
   | EUn (op, e) ->
       if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
       PP.string f (unop_str op);
