@@ -543,6 +543,7 @@ and statement f s =
           PP.string f ";";
           PP.end_group f
       end
+  | Expression_statement (EVar _, pc)-> ()
   | Expression_statement (e, pc) ->
       (* Parentheses are required when the expression
          starts syntactically with "{" or "function" *)
