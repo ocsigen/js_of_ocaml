@@ -22,8 +22,6 @@ let (>>=) = Lwt.bind
 
 let async f = Lwt.async (fun () -> Lwt_js.yield () >>= f)
 
-let preventDefault ev = (Js.Unsafe.coerce ev)##preventDefault()
-
 let make_event event_kind ?(use_capture = false) target =
   let el = ref Js.null in
   let t, w = Lwt.task () in

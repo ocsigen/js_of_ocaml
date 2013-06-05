@@ -229,6 +229,11 @@ val addEventListener :
 val removeEventListener : event_listener_id -> unit
   (** Remove the given event listener. *)
 
+val preventDefault : 'a #event Js.t -> unit
+(** Call this to prevent the default handler for the event.
+    To stop propagation of the event, call {!Dom_html.stopPropagation}. *)
+
+
 (** {2 Other DOM objects} *)
 
 class type stringList = object

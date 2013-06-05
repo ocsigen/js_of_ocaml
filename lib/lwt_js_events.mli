@@ -31,13 +31,6 @@
 
 
 
-
-(** Call this to prevent the default handler for the event.
-    To stop propagation of the event, call {!Dom_html.stopPropagation}.
-*)
-val preventDefault : #Dom_html.event Js.t -> unit
-
-
 (**  {2 Create Lwt threads for events} *)
 
 (** [make_event ev target] creates a Lwt thread that waits

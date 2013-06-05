@@ -208,7 +208,8 @@ let handler f =
       then
         let e = window_event () in
         let res = f e in
-        e##returnValue <- res;
+        if not (Js.to_bool res)
+        then e##returnValue <- res;
 	res
       else
 	let res = f e in
@@ -224,7 +225,9 @@ let full_handler f =
       then
         let e = window_event () in
         let res = f this e in
-        e##returnValue <- res; res
+        if not (Js.to_bool res)
+        then e##returnValue <- res;
+        res
       else
         let res = f this e in
         if not (Js.to_bool res) then
@@ -268,6 +271,11 @@ let addEventListener (e : (< .. > as 'a) t) typ h capt =
   end
 
 let removeEventListener id = id ()
+
+let preventDefault ev =
+  if Js.Optdef.test ((Js.Unsafe.coerce ev)##preventDefault) (* IE hack *)
+  then (Js.Unsafe.coerce ev)##preventDefault()
+  else (Js.Unsafe.coerce ev)##returnValue <- Js.bool false (* IE < 9 *)
 
 class type stringList = object
   method item : int -> js_string t opt meth
