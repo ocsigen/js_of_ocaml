@@ -154,6 +154,7 @@ end
 
 module VarSet = Set.Make (Var)
 module VarMap = Map.Make (Var)
+module StringMap = Map.Make(String)
 module VarTbl = struct
   type 'a t = 'a array
   type key = Var.t

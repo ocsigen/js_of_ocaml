@@ -66,10 +66,20 @@ module Ctx = struct
   type t =
     { mutable blocks : block AddrMap.t;
       live : int array;
-      mutated_vars : VarSet.t AddrMap.t }
+      mutated_vars : VarSet.t AddrMap.t;
+      strings : int StringMap.t }
 
-  let initial b l v =
-    { blocks = b; live = l; mutated_vars = v }
+  let initial b l v strings =
+    { blocks = b; live = l; mutated_vars = v; strings }
+
+  let string_used_once ctx x =
+    if String.length x <= 1
+    then true
+    else
+      try
+        let n = StringMap.find x ctx.strings in
+        n <= 1
+      with _ -> false
 end
 
 let var x = J.EVar (J.V x)
@@ -85,13 +95,36 @@ let float_val e = e (*J.EAccess (e, one)*)
 
 let float_const f = val_float (J.ENum f)
 
-let rec constant x =
+let strings_state = ref []
+let clear_string () = strings_state:=[]
+let get_strings () = !strings_state
+let get_string s =
+  try List.assoc s !strings_state with _ ->
+    let v = J.V (Var.fresh ()) in
+    strings_state := (s,v)::!strings_state;
+    v
+
+let rec constant ?ctx x =
   match x with
     String s ->
-      Primitive.mark_used "MlString";
-      J.ENew (J.EVar (J.S "MlString"), Some [J.EStr (s, `Bytes)])
+      let once = match ctx with
+        | None -> false
+        | Some ctx -> Ctx.string_used_once ctx s in
+      Primitive.mark_used "s";
+      if once
+      then J.ECall (J.EVar (J.S "s"), [J.EStr (s,`Bytes)])
+      else
+        let x = get_string s in
+        J.ECall (J.EVar (J.S "s"), [J.EVar x])
   | IString s ->
-    J.EStr (s, `Bytes)
+      let once = match ctx with
+        | None -> false
+        | Some ctx -> Ctx.string_used_once ctx s in
+      if once
+      then J.EStr (s,`Bytes)
+      else
+        let x = get_string s in
+        J.EVar x
   | Float f ->
       float_const f
   | Float_array a ->
@@ -108,7 +141,7 @@ let rec constant x =
               Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))]
   | Tuple (tag, a) ->
       J.EArr (Some (int tag) ::
-              Array.to_list (Array.map (fun x -> Some (constant x)) a))
+              Array.to_list (Array.map (fun x -> Some (constant ?ctx x)) a))
   | Int i ->
       int i
 
@@ -736,7 +769,7 @@ and translate_expr ctx queue x e =
       in
       (cl, flush_p, queue)
   | Constant c ->
-      (constant c, const_p, queue)
+      (constant ~ctx c, const_p, queue)
   | Prim (p, l) ->
       begin match p, l with
         Vectlength, [x] ->
@@ -873,7 +906,7 @@ and translate_expr ctx queue x e =
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [x] ->
           let ((px, cx), queue) = access_queue' queue x in
-          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), J.EStr ("number", `Bytes)),
+          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (J.EVar (get_string "number"))),
            px, queue)
       | Ult, [x; y] ->
           let ((px, cx), queue) = access_queue' queue x in
@@ -1277,7 +1310,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
              so we can directly refer to it *)
           (Js_simpl.if_statement
               (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
-                      J.EStr ("number", `Bytes)))
+                      (J.EVar (get_string "number"))))
               (build_switch (var x) a1)
               false
               (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
@@ -1420,20 +1453,37 @@ and compile_closure ctx (pc, args) =
   Js_simpl.source_elements res
 
 let compile_program standalone ctx pc =
+  clear_string ();
   let res = compile_closure ctx (pc, []) in
   let res = generate_apply_funs res in
+  let strings = J.Variable_statement (List.map (fun (s,v) -> v, Some (J.EStr(s,`Bytes))) (get_strings ())) in
   if debug () then Format.eprintf "@.@.";
   if standalone then
     let f = J.EFun ((None, [], res), None) in
-    [J.Statement (J.Expression_statement ((J.ECall (f, [])), Some pc))]
+    [J.Statement strings;J.Statement (J.Expression_statement ((J.ECall (f, [])), Some pc))]
   else
     let f = J.EFun ((None, [J.V (Var.fresh ())], res), None) in
-    [J.Statement (J.Expression_statement (f, Some pc))]
+    [J.Statement strings;J.Statement (J.Expression_statement (f, Some pc))]
+
+
+let get_all_strings (_, blocks, _) =
+  AddrMap.fold
+    (fun _ block constants ->
+      List.fold_left
+        (fun constants i ->
+          match i with
+            | Let (x, Constant (String s | IString s)) ->
+              let n = try StringMap.find s constants with _ -> 0 in
+              StringMap.add s (n+1) constants
+            | _ -> constants)
+        constants block.body)
+    blocks StringMap.empty
 
 let f ~standalone ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let t' = Util.Timer.make () in
-  let ctx = Ctx.initial blocks live_vars mutated_vars in
+  let strings = get_all_strings p in
+  let ctx = Ctx.initial blocks live_vars mutated_vars strings in
   let p = compile_program standalone ctx pc in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
   p

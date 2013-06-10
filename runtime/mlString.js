@@ -305,3 +305,6 @@ function caml_blit_string(s1, i1, s2, i2, len) {
   if (!a) a = s2.toArray(); else { s2.bytes = s2.string = null; }
   s1.blitToArray (i1, a, i2, len);
 }
+//Provides: s const
+//Requires: MlString
+function s(x){return new MlString(x);}
