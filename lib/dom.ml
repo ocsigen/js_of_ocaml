@@ -141,6 +141,7 @@ class type ['element] document = object
   method documentElement : 'element t readonly_prop
   method createDocumentFragment : documentFragment t meth
   method createElement : js_string t -> 'element t meth
+  method createElementNS : js_string t -> js_string t -> 'element t meth
   method createTextNode : js_string t -> text t meth
   method createAttribute : js_string t -> attr t meth
   method getElementById : js_string t -> 'element t opt meth
