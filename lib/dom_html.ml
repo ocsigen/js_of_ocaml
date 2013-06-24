@@ -1025,7 +1025,7 @@ class type window = object
   method open_ : js_string t -> js_string t -> js_string t opt -> window t meth
   method alert : js_string t -> unit meth
   method confirm : js_string t -> bool t meth
-  method prompt : js_string t -> js_string t -> js_string t meth
+  method prompt : js_string t -> js_string t -> js_string t opt meth
   method print : unit meth
 
   method setInterval : (unit -> unit) Js.callback -> float -> interval_id meth

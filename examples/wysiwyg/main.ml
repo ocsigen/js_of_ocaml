@@ -138,19 +138,21 @@ let onload _ =
     ignore (createButton "h2" "formatblock" ~value:(Some "h2"));
     ignore (createButton "h3" "formatblock" ~value:(Some "h3"));
 
+    let prompt query default =
+      Js.Opt.get (iWin##prompt (Js.string query, Js.string default))
+        (fun () -> Js.string default)
+      |> Js.to_string
+    in
     (createButton "link" "inserthtml")##onclick <- Html.handler (fun _ ->
-      let link = iWin##prompt (Js.string "Enter a link", Js.string "http://google.ru") 
-		 |>  Js.to_string in
-      let desc = iWin##prompt (Js.string "Enter description", Js.string "desc") 
-		 |>  Js.to_string in
+      let link = prompt "Enter a link" "http://google.ru" in 
+      let desc = prompt "Enter description" "desc" in
       let link = String.concat "" ["<a href=\""; link; "\" wysitype=\"global\">"; desc; "</a>"] in
       iWin##alert (Js.string link); 
       iDoc##execCommand (Js.string "inserthtml", Js._false, Js.some (Js.string link) );
       Js._true
      );
     (createButton "link2wiki" "inserthtml")##onclick <- Html.handler (fun _ ->
-      let link = iWin##prompt (Js.string "Enter a wikipage", Js.string "lololo") 
-		 |>  Js.to_string in
+      let link = prompt "Enter a wikipage" "lololo" in
       let link = ["<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>"] 
 		 |> String.concat "" in
       iWin##alert (Js.string link); 
