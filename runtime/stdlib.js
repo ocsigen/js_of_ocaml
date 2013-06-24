@@ -673,6 +673,16 @@ function caml_sys_random_seed () {
   var x = new Date()^0xffffffff*Math.random();
   return {valueOf:function(){return x;},0:0,1:x,length:2};
 }
+//Provides: caml_sys_const_big_endian const
+function caml_sys_const_big_endian () { return 0; }
+//Provides: caml_sys_const_word_size const
+function caml_sys_const_word_size () { return 32; }
+//Provides: caml_sys_const_ostype_cygwin const
+function caml_sys_const_ostype_cygwin () { return 0; }
+//Provides: caml_sys_const_ostype_unix const
+function caml_sys_const_ostype_unix () { return 1; }
+//Provides: caml_sys_const_ostype_win32 const
+function caml_sys_const_ostype_win32 () { return 0; }
 
 ///////////// Array
 //Provides: caml_array_sub mutable
@@ -747,6 +757,16 @@ function caml_backtrace_status () { return 0; }
 function caml_get_exception_backtrace () {
   caml_invalid_argument
     ("Primitive 'caml_get_exception_backtrace' not implemented");
+}
+//Provides: caml_get_exception_raw_backtrace const
+function caml_get_exception_raw_backtrace () {
+  caml_invalid_argument
+    ("Primitive 'caml_get_exception_raw_backtrace' not implemented");
+}
+//Provides: caml_convert_raw_backtrace const
+function caml_convert_raw_backtrace () {
+  caml_invalid_argument
+    ("Primitive 'caml_convert_raw_backtrace' not implemented");
 }
 //Provides: caml_sys_getenv
 //Requires: caml_raise_not_found
