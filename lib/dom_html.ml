@@ -986,7 +986,7 @@ class type navigator = object
   method appName : js_string t readonly_prop
   method appVersion : js_string t readonly_prop
   method cookieEnabled : bool t readonly_prop
-  method online : bool t readonly_prop
+  method onLine : bool t readonly_prop
   method platform : js_string t readonly_prop
   method userAgent : js_string t readonly_prop
   method language : js_string t optdef readonly_prop
