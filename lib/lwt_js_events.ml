@@ -44,44 +44,56 @@ let make_event event_kind ?(use_capture = false) target =
 let with_error_log f x =
   Lwt.catch
     (fun () -> f x)
-    (fun e -> (Firebug.console##log(Js.string (Printexc.to_string e)) ;
-               Lwt.return ()))
+    (function
+        | Lwt.Canceled -> Lwt.return ()
+        | e -> (Firebug.console##log(
+          Js.string "Lwt_js_events: error during event handler"
+          (*Printexc.to_string e*));
+                Lwt.return ()))
 
-let seq_loop ?(cancel_handler = false) evh ?use_capture target handler =
+let seq_loop evh ?(cancel_handler = true) ?use_capture target handler =
   let cancelled = ref false in
   let cur = ref (fst (Lwt.task ())) in
   let lt, lw = Lwt.task () in
-  Lwt.on_cancel lt (fun () -> if cancel_handler then Lwt.cancel !cur; cancelled := true);
+  Lwt.on_cancel lt
+    (fun () -> if cancel_handler then Lwt.cancel !cur; cancelled := true);
   let rec aux () =
     if not !cancelled (* In the case it has been cancelled
                          during the previous handler,
                          we do not reinstall the event handler *)
-    then
+    then begin
       let t = evh ?use_capture target in
       cur := t;
       t >>= fun e ->
       with_error_log (handler e) lt >>= fun () ->
       aux ()
+    end
     else Lwt.return ()
   in
   Lwt.async aux;
   lt
 
-let async_loop evh ?use_capture target handler =
+let async_loop evh ?(cancel_handler = true) ?use_capture target handler =
   let cancelled = ref false in
+  let cur = ref (fst (Lwt.task ())) in
   let lt, lw = Lwt.task () in
-  Lwt.on_cancel lt (fun () -> cancelled := true);
+  Lwt.on_cancel lt
+    (fun () -> if cancel_handler then Lwt.cancel !cur; cancelled := true);
   let rec aux () =
-    if not !cancelled then
-      (evh ?use_capture target >>= fun e ->
-       Lwt.async (fun () -> with_error_log (handler e) lt) ;
-       aux ())
+    if not !cancelled then begin
+      let t = evh ?use_capture target in
+      cur := t;
+      t >>= fun e ->
+      Lwt.async (fun () -> with_error_log (handler e) lt) ;
+      aux ()
+    end
     else Lwt.return ()
   in
   Lwt.async aux;
   lt
 
-let buffered_loop ?(cancel_handler = false) ?(cancel_queue = true) evh ?use_capture target handler =
+let buffered_loop evh ?(cancel_handler = true) ?(cancel_queue = true)
+    ?use_capture target handler =
   let cancelled = ref false in
   let queue = ref [] in
   let cur = ref (fst (Lwt.task ())) in
@@ -92,10 +104,11 @@ let buffered_loop ?(cancel_handler = false) ?(cancel_queue = true) evh ?use_capt
     if cancel_queue then queue := [] ;
     cancelled := true);
   let rec spawner () =
-    if not !cancelled then
-      evh ?use_capture target
-       >>= (fun e -> queue := e :: !queue ; Lwt_condition.signal spawn () ; Lwt.return ())
-       >>= spawner
+    if not !cancelled then begin
+      evh ?use_capture target >>= fun e ->
+      queue := e :: !queue ; Lwt_condition.signal spawn () ; Lwt.return () >>=
+      spawner
+    end
     else Lwt.return ()
   in
   let rec runner () =
@@ -207,69 +220,69 @@ let touchcancel ?use_capture target =
 
 
 
-let clicks ?use_capture t =
-  seq_loop click ?use_capture t
-let dblclicks ?use_capture t =
-  seq_loop dblclick ?use_capture t
-let mousedowns ?use_capture t =
-  seq_loop mousedown ?use_capture t
-let mouseups ?use_capture t =
-  seq_loop mouseup ?use_capture t
-let mouseovers ?use_capture t =
-  seq_loop mouseover ?use_capture t
-let mousemoves ?use_capture t =
-  seq_loop mousemove ?use_capture t
-let mouseouts ?use_capture t =
-  seq_loop mouseout ?use_capture t
+let clicks ?cancel_handler ?use_capture t =
+  seq_loop click ?cancel_handler ?use_capture t
+let dblclicks ?cancel_handler ?use_capture t =
+  seq_loop dblclick ?cancel_handler ?use_capture t
+let mousedowns ?cancel_handler ?use_capture t =
+  seq_loop mousedown ?cancel_handler ?use_capture t
+let mouseups ?cancel_handler ?use_capture t =
+  seq_loop mouseup ?cancel_handler ?use_capture t
+let mouseovers ?cancel_handler ?use_capture t =
+  seq_loop mouseover ?cancel_handler ?use_capture t
+let mousemoves ?cancel_handler ?use_capture t =
+  seq_loop mousemove ?cancel_handler ?use_capture t
+let mouseouts ?cancel_handler ?use_capture t =
+  seq_loop mouseout ?cancel_handler ?use_capture t
 
-let keypresses ?use_capture t =
-  seq_loop keypress ?use_capture t
-let keydowns ?use_capture t =
-  seq_loop keydown ?use_capture t
-let keyups ?use_capture t =
-  seq_loop keyup ?use_capture t
-let changes ?use_capture t =
-  seq_loop change ?use_capture t
-let inputs ?use_capture t =
-  seq_loop input ?use_capture t
+let keypresses ?cancel_handler ?use_capture t =
+  seq_loop keypress ?cancel_handler ?use_capture t
+let keydowns ?cancel_handler ?use_capture t =
+  seq_loop keydown ?cancel_handler ?use_capture t
+let keyups ?cancel_handler ?use_capture t =
+  seq_loop keyup ?cancel_handler ?use_capture t
+let changes ?cancel_handler ?use_capture t =
+  seq_loop change ?cancel_handler ?use_capture t
+let inputs ?cancel_handler ?use_capture t =
+  seq_loop input ?cancel_handler ?use_capture t
 
-let dragstarts ?use_capture t =
-  seq_loop dragstart ?use_capture t
-let dragends ?use_capture t =
-  seq_loop dragend ?use_capture t
-let dragenters ?use_capture t =
-  seq_loop dragenter ?use_capture t
-let dragovers ?use_capture t =
-  seq_loop dragover ?use_capture t
-let dragleaves ?use_capture t =
-  seq_loop dragleave ?use_capture t
-let drags ?use_capture t =
-  seq_loop drag ?use_capture t
-let drops ?use_capture t =
-  seq_loop drop ?use_capture t
+let dragstarts ?cancel_handler ?use_capture t =
+  seq_loop dragstart ?cancel_handler ?use_capture t
+let dragends ?cancel_handler ?use_capture t =
+  seq_loop dragend ?cancel_handler ?use_capture t
+let dragenters ?cancel_handler ?use_capture t =
+  seq_loop dragenter ?cancel_handler ?use_capture t
+let dragovers ?cancel_handler ?use_capture t =
+  seq_loop dragover ?cancel_handler ?use_capture t
+let dragleaves ?cancel_handler ?use_capture t =
+  seq_loop dragleave ?cancel_handler ?use_capture t
+let drags ?cancel_handler ?use_capture t =
+  seq_loop drag ?cancel_handler ?use_capture t
+let drops ?cancel_handler ?use_capture t =
+  seq_loop drop ?cancel_handler ?use_capture t
 
-let mousewheels ?use_capture t =
-  seq_loop mousewheel ?use_capture t
+let mousewheels ?cancel_handler ?use_capture t =
+  seq_loop mousewheel ?cancel_handler ?use_capture t
 
-let touchstarts ?use_capture t =
-  seq_loop touchstart ?use_capture t
-let touchmoves ?use_capture t =
-  seq_loop touchmove ?use_capture t
-let touchends ?use_capture t =
-  seq_loop touchend ?use_capture t
-let touchcancels ?use_capture t =
-  seq_loop touchcancel ?use_capture t
+let touchstarts ?cancel_handler ?use_capture t =
+  seq_loop touchstart ?cancel_handler ?use_capture t
+let touchmoves ?cancel_handler ?use_capture t =
+  seq_loop touchmove ?cancel_handler ?use_capture t
+let touchends ?cancel_handler ?use_capture t =
+  seq_loop touchend ?cancel_handler ?use_capture t
+let touchcancels ?cancel_handler ?use_capture t =
+  seq_loop touchcancel ?cancel_handler ?use_capture t
 
-let focuses ?use_capture t =
-  seq_loop focus ?use_capture t
-let blurs ?use_capture t =
-  seq_loop blur ?use_capture t
-let scrolls ?use_capture t =
-  seq_loop scroll ?use_capture t
-let submits ?use_capture t =
-  seq_loop submit ?use_capture t
-let selects ?use_capture t =
-  seq_loop select ?use_capture t
+let focuses ?cancel_handler ?use_capture t =
+  seq_loop focus ?cancel_handler ?use_capture t
+let blurs ?cancel_handler ?use_capture t =
+  seq_loop blur ?cancel_handler ?use_capture t
+let scrolls ?cancel_handler ?use_capture t =
+  seq_loop scroll ?cancel_handler ?use_capture t
+let submits ?cancel_handler ?use_capture t =
+  seq_loop submit ?cancel_handler ?use_capture t
+let selects ?cancel_handler ?use_capture t =
+  seq_loop select ?cancel_handler ?use_capture t
 
 let transition_evn =
   let e = Dom_html.createDiv Dom_html.document in

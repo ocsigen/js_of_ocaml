@@ -61,13 +61,13 @@ val make_event :
     In order for the loop thread to be canceled from within the handler,
     the latter receives the former as its second parameter.
 
-    By default, cancelling the loop will not cancel the potential
+    By default, cancelling the loop will cancel the (potential)
     currently running handler. This behaviour can be changed by
-    setting the [cancel_handler] parameter to true.
+    setting the [cancel_handler] parameter to false.
 *)
 val seq_loop :
-  ?cancel_handler:bool ->
   (?use_capture:bool -> 'target -> 'event Lwt.t) ->
+  ?cancel_handler:bool ->
   ?use_capture:bool -> 'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 (** [async_loop] is similar to [seq_loop], but each handler runs
@@ -75,11 +75,13 @@ val seq_loop :
     instances of the handler can be run concurrently, it is up to the
     programmer to ensure that they interact correctly.
 
-    Cancelling the loop will not cancel the potential currently running
-    handlers.
+    By default, cancelling the loop will cancel the (potential)
+    currently running handler. This behaviour can be changed by
+    setting the [cancel_handler] parameter to false.
 *)
 val async_loop :
   (?use_capture:bool -> 'target -> 'event Lwt.t) ->
+  ?cancel_handler:bool ->
   ?use_capture:bool -> 'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 (** [buffered_loop] is similar to [seq_loop], but any event that
@@ -93,14 +95,14 @@ val async_loop :
     executed. It is also up to the programmer to ensure that event
     handlers terminate so the queue will eventually be emptied.
 
-    By default, cancelling the loop will not cancel the potential
-    currently running handler, but any other queued event will be
+    By default, cancelling the loop will cancel the (potential)
+    currently running handler, and any other queued event will be
     dropped. This behaviour can be customized using the two optional
     parameters [cancel_handler] and [cancel_queue].
 *)
 val buffered_loop :
-  ?cancel_handler:bool -> ?cancel_queue:bool ->
   (?use_capture:bool -> 'target -> 'event Lwt.t) ->
+  ?cancel_handler:bool -> ?cancel_queue:bool ->
   ?use_capture:bool -> 'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 
@@ -227,123 +229,152 @@ val abort : ?use_capture:bool ->
 
 
 val clicks :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dblclicks :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mousedowns :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mouseups :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mouseovers :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mousemoves :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val mouseouts :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val keypresses :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val keydowns :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val keyups :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val inputs :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val changes :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val dragstarts :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dragends :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dragenters :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dragovers :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val dragleaves :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val drags :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val drops :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val mousewheels :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   ((Dom_html.mouseEvent Js.t * (int * int)) -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val touchstarts :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val touchmoves :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val touchends :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val touchcancels :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val focuses :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val blurs :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val scrolls :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val submits :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val selects :
+  ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
