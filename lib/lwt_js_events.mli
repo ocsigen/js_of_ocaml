@@ -61,9 +61,9 @@ val make_event :
     In order for the loop thread to be canceled from within the handler,
     the latter receives the former as its second parameter.
 
-    By default, cancelling the loop will cancel the (potential)
+    By default, cancelling the loop will not cancel the potential
     currently running handler. This behaviour can be changed by
-    setting the [cancel_handler] parameter to false.
+    setting the [cancel_handler] parameter to true.
 *)
 val seq_loop :
   (?use_capture:bool -> 'target -> 'event Lwt.t) ->
@@ -75,13 +75,11 @@ val seq_loop :
     instances of the handler can be run concurrently, it is up to the
     programmer to ensure that they interact correctly.
 
-    By default, cancelling the loop will cancel the (potential)
-    currently running handler. This behaviour can be changed by
-    setting the [cancel_handler] parameter to false.
+    Cancelling the loop will not cancel the potential currently running
+    handlers.
 *)
 val async_loop :
   (?use_capture:bool -> 'target -> 'event Lwt.t) ->
-  ?cancel_handler:bool ->
   ?use_capture:bool -> 'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 (** [buffered_loop] is similar to [seq_loop], but any event that
@@ -95,8 +93,8 @@ val async_loop :
     executed. It is also up to the programmer to ensure that event
     handlers terminate so the queue will eventually be emptied.
 
-    By default, cancelling the loop will cancel the (potential)
-    currently running handler, and any other queued event will be
+    By default, cancelling the loop will not cancel the (potential)
+    currently running handler, but any other queued event will be
     dropped. This behaviour can be customized using the two optional
     parameters [cancel_handler] and [cancel_queue].
 *)

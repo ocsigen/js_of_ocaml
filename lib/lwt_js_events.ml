@@ -41,22 +41,30 @@ let make_event event_kind ?(use_capture = false) target =
     );
   t
 
-let with_error_log f x =
+let catch_cancel f x =
   Lwt.catch
     (fun () -> f x)
     (function
-        | Lwt.Canceled -> Lwt.return ()
-        | e -> (Firebug.console##log(
-          Js.string "Lwt_js_events: error during event handler"
-          (*Printexc.to_string e*));
-                Lwt.return ()))
+    | Lwt.Canceled -> Lwt.return ()
+    | e -> Lwt.fail e)
 
-let seq_loop evh ?(cancel_handler = true) ?use_capture target handler =
+let with_error_log f x =
+  Lwt.catch
+    (fun () -> f x)
+    (fun e -> (Firebug.console##log(Js.string (Printexc.to_string e));
+               Lwt.return ()))
+
+let seq_loop evh ?(cancel_handler = false) ?use_capture target handler =
   let cancelled = ref false in
-  let cur = ref (fst (Lwt.task ())) in
+  let cur = ref (Lwt.fail (Failure "Lwt_js_event")) in
+  (* Using Lwt.fail as default, to be polymorphic *)
+  let cur_handler = ref (Lwt.return ()) in
   let lt, lw = Lwt.task () in
   Lwt.on_cancel lt
-    (fun () -> if cancel_handler then Lwt.cancel !cur; cancelled := true);
+    (fun () ->
+      Lwt.cancel !cur;
+      if cancel_handler then Lwt.cancel !cur_handler;
+      cancelled := true);
   let rec aux () =
     if not !cancelled (* In the case it has been cancelled
                          during the previous handler,
@@ -65,63 +73,68 @@ let seq_loop evh ?(cancel_handler = true) ?use_capture target handler =
       let t = evh ?use_capture target in
       cur := t;
       t >>= fun e ->
-      with_error_log (handler e) lt >>= fun () ->
-      aux ()
+      cur_handler := with_error_log (handler e) lt;
+      !cur_handler >>= aux
     end
     else Lwt.return ()
   in
-  Lwt.async aux;
+  Lwt.async (catch_cancel aux);
   lt
 
-let async_loop evh ?(cancel_handler = true) ?use_capture target handler =
+let async_loop evh ?use_capture target handler =
   let cancelled = ref false in
-  let cur = ref (fst (Lwt.task ())) in
+  let cur = ref (Lwt.fail (Failure "Lwt_js_event")) in
   let lt, lw = Lwt.task () in
-  Lwt.on_cancel lt
-    (fun () -> if cancel_handler then Lwt.cancel !cur; cancelled := true);
+  Lwt.on_cancel lt (fun () -> Lwt.cancel !cur; cancelled := true);
   let rec aux () =
     if not !cancelled then begin
       let t = evh ?use_capture target in
       cur := t;
       t >>= fun e ->
-      Lwt.async (fun () -> with_error_log (handler e) lt) ;
+      Lwt.async (fun () -> with_error_log (handler e) lt);
       aux ()
     end
     else Lwt.return ()
   in
-  Lwt.async aux;
+  Lwt.async (catch_cancel aux);
   lt
 
-let buffered_loop evh ?(cancel_handler = true) ?(cancel_queue = true)
+let buffered_loop evh ?(cancel_handler = false) ?(cancel_queue = true)
     ?use_capture target handler =
   let cancelled = ref false in
   let queue = ref [] in
-  let cur = ref (fst (Lwt.task ())) in
+  let cur = ref (Lwt.fail (Failure "Lwt_js_event")) in
+  let cur_handler = ref (Lwt.return ()) in
   let lt, lw = Lwt.task () in
   let spawn = Lwt_condition.create () in
   Lwt.on_cancel lt (fun () ->
-    if cancel_handler then Lwt.cancel !cur ;
+    Lwt.cancel !cur ;
+    if cancel_handler then Lwt.cancel !cur_handler ;
     if cancel_queue then queue := [] ;
-    cancelled := true);
+    cancelled := true) ;
   let rec spawner () =
     if not !cancelled then begin
-      evh ?use_capture target >>= fun e ->
-      queue := e :: !queue ; Lwt_condition.signal spawn () ; Lwt.return () >>=
-      spawner
+      let t = evh ?use_capture target in
+      cur := t;
+      t >>= fun e ->
+      queue := e :: !queue ;
+      Lwt_condition.signal spawn () ;
+      spawner ()
     end
     else Lwt.return ()
   in
   let rec runner () =
+    cur_handler := Lwt.return ();
     if not !cancelled then
       match !queue with
       | [] -> Lwt_condition.wait spawn >>= runner
       | e :: tl ->
 	queue := tl ;
-	cur := with_error_log (handler e) lt ;
-	!cur >>= runner
+        cur_handler := with_error_log (handler e) lt;
+        !cur_handler >>= runner
     else Lwt.return ()
   in
-  Lwt.async spawner ;
+  Lwt.async (catch_cancel spawner) ;
   Lwt.async runner ;
   lt
 
