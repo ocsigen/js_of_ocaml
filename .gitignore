@@ -1,0 +1,32 @@
+# Boring file regexps:
+
+# C object files
+*.o
+*.a
+*.so
+# Ocaml object files
+*.cmi
+*.cmo
+*.cmx
+*.cma
+*.cmxa
+*.cmxs
+*.cmjs
+
+# backup files
+*~
+
+# Specific to Js_of_ocaml
+*.byte
+lib/stubs.c
+runtime/runtime.js
+toplevel/toplevel.js
+examples/wiki/wikicreole.ml
+examples/*/*.js
+compiler/js_of_ocaml
+doc/api-html
+benchmarks/build
+benchmarks/results
+benchmarks/config
+lib/deriving_json/deriving_Json_lexer.ml
+Makefile.local
