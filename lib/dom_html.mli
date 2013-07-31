@@ -1177,7 +1177,7 @@ end
 type event_listener_id = Dom.event_listener_id
 
 val addEventListener :
-  (#eventTarget t as 'a) -> 'b Event.typ ->
+  (< .. > Js.t as 'a) -> 'b Event.typ ->
   ('a, 'b) event_listener -> bool t -> event_listener_id
   (** Add an event listener.  This function matches the
       [addEventListener] DOM method, except that it returns
