@@ -388,6 +388,18 @@ module Event = struct
   let abort = Dom.Event.make "abort"
   let select = Dom.Event.make "select"
 
+  let online = Dom.Event.make "online"
+  let offline = Dom.Event.make "offline"
+
+  let checking = Dom.Event.make "checking"
+  let error = Dom.Event.make "error"
+  let noupdate = Dom.Event.make "noupdate"
+  let downloading = Dom.Event.make "downloading"
+  let progress = Dom.Event.make "progress"
+  let updateready = Dom.Event.make "updateready"
+  let cached = Dom.Event.make "cached"
+  let obsolete = Dom.Event.make "obsolete"
+
   let make = Dom.Event.make
 end
 
@@ -1000,8 +1012,29 @@ class type screen = object
   method availHeight : int readonly_prop
 end
 
+class type applicationCache = object
+  method status : int readonly_prop
+
+  method update : unit meth
+  method abort : unit meth
+  method swapCache : unit meth
+
+  method onchecking : (applicationCache t, event t) event_listener prop
+  method onerror : (applicationCache t, event t) event_listener prop
+  method onnoupdate : (applicationCache t, event t) event_listener prop
+  method ondownloading : (applicationCache t, event t) event_listener prop
+  method onprogress : (applicationCache t, event t) event_listener prop
+  method onupdateready : (applicationCache t, event t) event_listener prop
+  method oncached : (applicationCache t, event t) event_listener prop
+  method onobsolete : (applicationCache t, event t) event_listener prop
+
+  inherit eventTarget
+
+end
+
 class type window = object
   method document : document t readonly_prop
+  method applicationCache : applicationCache t readonly_prop
   method name : js_string t prop
   method location : location t readonly_prop
   method history : history t readonly_prop
@@ -1048,6 +1081,9 @@ class type window = object
   method onscroll : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
   method onhashchange : (window t, hashChangeEvent t) event_listener prop
+
+  method ononline : (window t, event t) event_listener writeonly_prop
+  method onoffline : (window t, event t) event_listener writeonly_prop
 end
 
 let window : window t = Js.Unsafe.variable "this" (* The toplevel object *)
