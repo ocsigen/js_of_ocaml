@@ -244,10 +244,10 @@ let a_max u v =
 
 let approx_lift f s = VarSet.fold (fun y u -> a_max (f y) u) s Known
 
-let propagate2 defs known_origins possibly_mutable st x =
+let propagate2 ?(skip_param=false) defs known_origins possibly_mutable st x =
   match defs.(Var.idx x) with
     Param ->
-      false
+      true
   | Phi s ->
       VarSet.exists (fun y -> VarTbl.get st y) s
   | Expr e ->
@@ -278,12 +278,12 @@ end
 
 module Solver2 = G.Solver (Domain2)
 
-let solver2 vars deps defs known_origins possibly_mutable =
+let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
   let g =
     { G.domain = vars;
       G.iter_children = fun f x -> VarSet.iter f deps.(Var.idx x) }
   in
-  Solver2.f () g (propagate2 defs known_origins possibly_mutable)
+  Solver2.f () g (propagate2 ?skip_param defs known_origins possibly_mutable)
 
 (****)
 
@@ -510,7 +510,7 @@ let build_subst defs vars known_origins maybe_unknown possibly_mutable =
 
 (****)
 
-let f ((pc, blocks, free_pc) as p) =
+let f ?skip_param ((pc, blocks, free_pc) as p) =
   let t = Util.Timer.make () in
   let t1 = Util.Timer.make () in
   let (vars, deps, defs) = program_deps p in
@@ -522,7 +522,7 @@ let f ((pc, blocks, free_pc) as p) =
   let possibly_mutable = program_escape defs known_origins p in
   if times () then Format.eprintf "    flow analysis 3: %a@." Util.Timer.print t3;
   let t4 = Util.Timer.make () in
-  let maybe_unknown = solver2 vars deps defs known_origins possibly_mutable in
+  let maybe_unknown = solver2 ?skip_param vars deps defs known_origins possibly_mutable in
   if times () then Format.eprintf "    flow analysis 4: %a@." Util.Timer.print t4;
 
   if debug () then begin
