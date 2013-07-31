@@ -977,6 +977,25 @@ class type screen = object
   method availHeight : int readonly_prop
 end
 
+class type applicationCache = object
+  method status : int readonly_prop
+
+  method update : unit meth
+  method abort : unit meth
+  method swapCache : unit meth
+
+  method onchecking : (applicationCache t, event t) event_listener prop
+  method onerror : (applicationCache t, event t) event_listener prop
+  method onnoupdate : (applicationCache t, event t) event_listener prop
+  method ondownloading : (applicationCache t, event t) event_listener prop
+  method onprogress : (applicationCache t, event t) event_listener prop
+  method onupdateready : (applicationCache t, event t) event_listener prop
+  method oncached : (applicationCache t, event t) event_listener prop
+  method onobsolete : (applicationCache t, event t) event_listener prop
+
+  inherit eventTarget
+end
+
 type interval_id
 type timeout_id
 
@@ -985,6 +1004,7 @@ class type window = object
   inherit eventTarget
 
   method document : document t readonly_prop
+  method applicationCache : applicationCache t readonly_prop
   method name : js_string t prop
   method location : location t readonly_prop
   method history : history t readonly_prop
@@ -1030,6 +1050,9 @@ class type window = object
   method onresize : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
   method onhashchange : (window t, hashChangeEvent t) event_listener prop
+
+  method ononline : (window t, event t) event_listener writeonly_prop
+  method onoffline : (window t, event t) event_listener writeonly_prop
 end
 
 val window : window t
@@ -1138,6 +1161,18 @@ module Event : sig
   val error : event t typ
   val abort : event t typ
   val select : event t typ
+
+  val online : event t typ
+  val offline : event t typ
+
+  val checking : event t typ
+  val error : event t typ
+  val noupdate : event t typ
+  val downloading : event t typ
+  val progress : event t typ
+  val updateready : event t typ
+  val cached : event t typ
+  val obsolete : event t typ
 
   val make : string -> 'a typ
 end
