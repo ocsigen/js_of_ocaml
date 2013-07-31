@@ -21,11 +21,20 @@
 module J = Javascript
 
 let eplus_int e1 e2 =
-  match e2 with
-    J.ENum n when n < 0. ->
+  match e2,e1 with
+    J.ENum n, _ when n < 0. ->
       J.EBin (J.Minus, e1, J.ENum (-. n))
+  | _,J.ENum n when n < 0. ->
+      J.EBin (J.Minus, e2, J.ENum (-. n))
   | _ ->
       J.EBin (J.Plus, e1, e2)
+
+let eminus_int e1 e2 =
+  match e2,e1 with
+    J.ENum n,_  when n < 0. ->
+      J.EBin (J.Plus, e1, J.ENum (-. n))
+  | _ ->
+      J.EBin (J.Minus, e1, e2)
 
 let rec enot_rec e =
   let (_, cost) as res =

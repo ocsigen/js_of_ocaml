@@ -21,6 +21,7 @@
 open Javascript
 
 val eplus_int : expression -> expression -> expression
+val eminus_int : expression -> expression -> expression
 
 val source_elements : statement_list -> source_elements
 

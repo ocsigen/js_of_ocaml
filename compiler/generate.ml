@@ -531,7 +531,7 @@ let _ =
   register_bin_prim "%int_add" `Pure
     (fun cx cy -> Js_simpl.eplus_int cx cy);
   register_bin_prim "%int_sub" `Pure
-    (fun cx cy -> J.EBin (J.Minus, cx, cy));
+    (fun cx cy -> Js_simpl.eminus_int cx cy);
   register_bin_prim "%direct_int_mul" `Pure
     (fun cx cy -> to_int (J.EBin (J.Mul, cx, cy)));
   register_bin_prim "%direct_int_div" `Pure
