@@ -149,9 +149,9 @@ let get x : t Js.t = (Js.Unsafe.coerce Dom_html.window)##var
 
 == Object property with multiple types
 
-If you want to read a property of an object wich can have multiple types, you can define an intermediate type to do typesafe casting ex:
+If you want to read a property of an object which can have multiple types, you can define an intermediate type to do typesafe casting ex:
 
-Suppose the object obj has a property prop which can be either a string or a Dom node:
+Suppose the object {{{obj}}} has a property {{{prop}}} which can be either a string or a Dom node:
 
 <<code language="ocaml"|
 
