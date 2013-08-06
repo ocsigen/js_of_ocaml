@@ -3,29 +3,38 @@ BIN := compiler/${COMPILER}
 INTF := lib/*.cmi
 
 IMPL := lib/$(LIBNAME).cma   \
-        lib/syntax/pa_js.cmo lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs \
-	lib/dll$(LIBNAME)$(DLLEXT) \
+        lib/syntax/pa_js.cmo \
+        lib/dll$(LIBNAME)$(DLLEXT) \
         lib/lib$(LIBNAME)$(LIBEXT)
+
+ifeq "${BEST}" "opt"
+ifeq "${NATDYNLINK}" "YES"
+IMPL += lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs
+endif
+endif
 
 OTHERS := runtime/runtime.js
 
 ifneq "${DERIVING}" ""
 
 JSON := lib/deriving_json/deriving_Json.cmi       \
-        lib/deriving_json/deriving_Json_lexer.cmi \
+        lib/deriving_json/deriving_Json_lexer.cmi
 
 INTF += $(JSON)
 
 IMPL += lib/syntax/pa_deriving_Json.cmo \
-        lib/syntax/pa_deriving_Json.cmx \
-        lib/syntax/pa_deriving_Json.cmxs \
-        lib/deriving_json.cma           \
+        lib/deriving_json.cma
 
 NATIMPL := lib/deriving_json.cmxa     \
 	   lib/deriving_json.cmxs     \
 	   lib/deriving_json$(LIBEXT) \
 
 NATIMPL += $(JSON:.cmi=.cmx)
+
+ifeq "${NATDYNLINK}" "YES"
+NATIMPL += lib/syntax/pa_deriving_Json.cmx \
+           lib/syntax/pa_deriving_Json.cmxs
+endif
 
 ifeq "$(BEST)" "opt"
 IMPL += $(NATIMPL)
