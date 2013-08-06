@@ -102,10 +102,9 @@ let rec path_of_path_string s = (* inspired from: Ocsigen_lib *)
       let pos_slash = String.index s '/' in
       if pos_slash = 0
       then "" :: path_of_path_string (String.sub s 1 (length-1))
-      else (   String.sub s 0 pos_slash
+      else (String.sub s 0 pos_slash
             :: (path_of_path_string
-                  (String.sub s (pos_slash+1) (length - pos_slash - 1))
-               )
+                  (String.sub s (pos_slash+1) (length - pos_slash - 1)))
            )
   with Not_found -> [s]
 
@@ -165,7 +164,7 @@ let url_re =
 let file_re =
   jsnew Js.regExp (Js.bytestring "^([Ff][Ii][Ll][Ee])://\
                                    ([^\\?#]*)\
-                                   (\\?([^#])*)?\
+                                   (\\?([^#]*))?\
                                    (#(.*))?$"
                   )
 

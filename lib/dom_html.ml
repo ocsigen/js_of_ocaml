@@ -211,7 +211,7 @@ and touch = object
 end
 
 and dragEvent = object
-  inherit event
+  inherit mouseEvent
   method dataTransfer : dataTransfer t readonly_prop
 end
 
