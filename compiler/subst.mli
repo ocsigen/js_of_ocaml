@@ -21,6 +21,8 @@
 open Code
 
 val program : (Var.t -> Var.t) -> program -> program
+val expr : (Var.t -> Var.t) -> expr -> expr
+val instr : (Var.t -> Var.t) -> instr -> instr
 val instrs : (Var.t -> Var.t) -> instr list -> instr list
 val last : (Var.t -> Var.t) -> last -> last
 

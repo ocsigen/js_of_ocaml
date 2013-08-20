@@ -27,3 +27,5 @@ val from_string : string array -> string -> Pretty_print.t -> unit
 val set_pretty : unit -> unit
 
 val set_debug_info : unit -> unit
+
+val set_profile : int -> unit

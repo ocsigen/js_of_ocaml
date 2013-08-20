@@ -490,3 +490,16 @@ let fold_children blocks pc f accu =
   | Switch (_, a1, a2) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+
+let eq (pc1,blocks1,_) (pc2,blocks2,_) =
+  pc1 = pc2 &&
+  AddrMap.cardinal blocks1 = AddrMap.cardinal blocks2 &&
+  AddrMap.fold (fun pc block1 b ->
+    b &&
+    try
+      let block2 = AddrMap.find pc blocks2 in
+      block1.params = block2.params &&
+      block1.branch = block2.branch &&
+      block1.body   = block2.body
+    with _ -> false
+  ) blocks1 true
