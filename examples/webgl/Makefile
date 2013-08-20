@@ -1,5 +1,5 @@
-OBJS=webgl.cmo
-NAME=webgl
+OBJS=webgldemo.cmo
+NAME=webgldemo
 OPTIONS=-pretty
 
 include ../Makefile.common

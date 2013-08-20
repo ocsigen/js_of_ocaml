@@ -22,19 +22,7 @@
 
 module Typ :
   sig
-    type 'a typ
-    val click : Dom_html.mouseEvent Js.t typ
-    val dblclick : Dom_html.mouseEvent Js.t typ
-    val mousedown : Dom_html.mouseEvent Js.t typ
-    val mouseup : Dom_html.mouseEvent Js.t typ
-    val mouseover : Dom_html.mouseEvent Js.t typ
-    val mousemove : Dom_html.mouseEvent Js.t typ
-    val mouseout : Dom_html.mouseEvent Js.t typ
-    val keypress : Dom_html.keyboardEvent Js.t typ
-    val keydown : Dom_html.keyboardEvent Js.t typ
-    val keyup : Dom_html.keyboardEvent Js.t typ
-    val mousewheel : Dom_html.mousewheelEvent Js.t typ
-    val _DOMMouseScroll : Dom_html.mouseScrollEvent Js.t typ
+    include module type of Dom_html.Event
   end
 
 
