@@ -541,7 +541,7 @@ class type inputElement = object ('self)
   method select : unit meth
   method click : unit meth
   method files : File.fileList t optdef readonly_prop
-
+  method placeholder : js_string t prop
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
   method oninput : ('self t, event t) event_listener prop
@@ -565,7 +565,7 @@ class type textAreaElement = object ('self)
   method blur : unit meth
   method focus : unit meth
   method select : unit meth
-
+  method placeholder : js_string t prop
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
   method oninput : ('self t, event t) event_listener prop
@@ -1000,7 +1000,7 @@ class type navigator = object
   method appName : js_string t readonly_prop
   method appVersion : js_string t readonly_prop
   method cookieEnabled : bool t readonly_prop
-  method online : bool t readonly_prop
+  method onLine : bool t readonly_prop
   method platform : js_string t readonly_prop
   method userAgent : js_string t readonly_prop
   method language : js_string t optdef readonly_prop
