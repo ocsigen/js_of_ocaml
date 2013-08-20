@@ -925,6 +925,8 @@ external pixel_set : canvasPixelArray t -> int -> int -> unit = "caml_js_set"
 class type document = object
   inherit [element] Dom.document
   inherit nodeSelector
+  inherit eventTarget
+
   method title : js_string t prop
   method referrer : js_string t readonly_prop
   method domain : js_string t prop
@@ -1001,6 +1003,8 @@ class type screen = object
 end
 
 class type window = object
+  inherit eventTarget
+
   method document : document t readonly_prop
   method name : js_string t prop
   method location : location t readonly_prop
@@ -1045,7 +1049,6 @@ class type window = object
   method onblur : (window t, event t) event_listener prop
   method onfocus : (window t, event t) event_listener prop
   method onresize : (window t, event t) event_listener prop
-  method onscroll : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
   method onhashchange : (window t, hashChangeEvent t) event_listener prop
 end
