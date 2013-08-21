@@ -83,14 +83,7 @@ let _ =
        else
          input_file := Some s)
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  let runtime =
-    if !no_runtime then [] else
-    try
-      [Filename.concat (Findlib.package_directory "js_of_ocaml") "runtime.js"]
-    with Findlib.No_such_package _ ->
-      Format.eprintf "%s: runtime file 'runtime.js' not found.@." Sys.argv.(0);
-      exit 1
-  in
+  let runtime = if !no_runtime then [] else ["+runtime.js"] in
   let chop_extension s =
     try Filename.chop_extension s with Invalid_argument _ -> s in
   f !paths (runtime @ List.rev !js_files) !input_file

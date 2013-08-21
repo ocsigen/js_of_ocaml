@@ -112,13 +112,34 @@ let collect_code l =
 
 let (>>) x f = f x
 
+let split_dir =
+  let reg = Str.regexp_string Filename.dir_sep in
+  Str.split reg
+
 let parse_file f =
+  let f,use_findlib =
+    if f.[0] = '+'
+    then String.sub f 1 (String.length f - 1), true
+    else f,false in
   let ch =
     try
+      let f =
+        if use_findlib
+        then
+          let pkg,f' = match split_dir f with
+            | [] -> assert false
+            | [f] -> "js_of_ocaml",f
+            | pkg::l -> pkg, List.fold_left Filename.concat "" l in
+          Filename.concat (Findlib.package_directory pkg) f'
+        else f in
       open_in f
-    with Sys_error s ->
-      Format.eprintf "%s: %s@." Sys.argv.(0) s;
-      exit 1
+    with
+      | Findlib.No_such_package (name,_) ->
+        Format.eprintf "%s: findlib cannot find package '%s' (needed to find file '%s'). @." Sys.argv.(0) name f;
+        exit 1
+      | Sys_error s ->
+        Format.eprintf "%s: %s@." Sys.argv.(0) s;
+        exit 1
   in
   let l = ref [] in
   let i = ref 0 in
