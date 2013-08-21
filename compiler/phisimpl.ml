@@ -100,16 +100,13 @@ let program_deps (_, blocks, _) =
 let rec repr' reprs x acc =
   let idx = Var.idx x in
   match reprs.(idx) with
-    | None -> acc
-    | Some x' when x' = x -> acc
-    | Some y -> repr' reprs y (y::acc)
+  | None   -> (x, acc)
+  | Some y -> repr' reprs y (x :: acc)
 
 let repr reprs x =
-  match repr' reprs x [] with
-    | [] -> x
-    | last::l ->
-      List.iter (fun v -> reprs.(Var.idx v) <- Some last) l;
-      last
+  let (last, l) = repr' reprs x [] in
+  List.iter (fun v -> reprs.(Var.idx v) <- Some last) l;
+  last
 
 let replace deps reprs x y =
   let yidx = Var.idx y in
