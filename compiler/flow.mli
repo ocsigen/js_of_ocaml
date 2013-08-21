@@ -37,4 +37,4 @@ val get_label : t -> Code.Var.t option
 
 *)
 
-val f : Code.program -> Code.program (* * t array*)
+val f : ?skip_param:bool -> Code.program -> Code.program (* * t array*)

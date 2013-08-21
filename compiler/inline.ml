@@ -20,6 +20,7 @@
 
 open Code
 
+let inline_disabled = Util.disabled "inline"
 (****)
 
 let get_closures (_, blocks, _) =
@@ -130,14 +131,11 @@ let inline closures live_vars blocks free_pc pc =
 
 (****)
 
-let do_inline = ref true
-
 (*FIX: this is unefficient, as we still perform the other
   optimizations phases repeatedly *)
-let disable_inlining () = do_inline := false
 
 let f ((pc, blocks, free_pc) as p) live_vars =
-  if !do_inline && not (Deadcode.disabled ()) then begin
+  if not (inline_disabled() || Deadcode.disabled ()) then begin
     let closures = get_closures p in
     let (blocks, free_pc) =
       AddrMap.fold

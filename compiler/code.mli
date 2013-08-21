@@ -143,3 +143,6 @@ val fold_children :
   block AddrMap.t -> addr  -> (addr -> 'c -> 'c) -> 'c -> 'c
 
 val add_reserved_name : string -> unit
+
+
+val eq : program -> program -> bool

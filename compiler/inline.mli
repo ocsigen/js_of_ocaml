@@ -18,6 +18,4 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val disable_inlining : unit -> unit
-
 val f : Code.program -> int array -> Code.program

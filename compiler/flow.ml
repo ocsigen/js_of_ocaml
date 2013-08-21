@@ -244,10 +244,10 @@ let a_max u v =
 
 let approx_lift f s = VarSet.fold (fun y u -> a_max (f y) u) s Known
 
-let propagate2 defs known_origins possibly_mutable st x =
+let propagate2 ?(skip_param=false) defs known_origins possibly_mutable st x =
   match defs.(Var.idx x) with
     Param ->
-      false
+      true
   | Phi s ->
       VarSet.exists (fun y -> VarTbl.get st y) s
   | Expr e ->
@@ -278,12 +278,12 @@ end
 
 module Solver2 = G.Solver (Domain2)
 
-let solver2 vars deps defs known_origins possibly_mutable =
+let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
   let g =
     { G.domain = vars;
       G.iter_children = fun f x -> VarSet.iter f deps.(Var.idx x) }
   in
-  Solver2.f () g (propagate2 defs known_origins possibly_mutable)
+  Solver2.f () g (propagate2 ?skip_param defs known_origins possibly_mutable)
 
 (****)
 
@@ -296,16 +296,23 @@ let get_approx (defs, known_origins, maybe_unknown) f top join x =
   | _ -> VarSet.fold (fun x u -> join (f x) u) s (f (VarSet.choose s))
 
 let the_def_of ((defs, _, _) as info) x =
-  get_approx info
-    (fun x -> match defs.(Var.idx x) with Expr e -> Some e | _ -> None)
-    None (fun u v -> None) x
+  match x with
+    | Pv x ->
+      get_approx info
+        (fun x -> match defs.(Var.idx x) with Expr e -> Some e | _ -> None)
+        None (fun u v -> None) x
+    | Pc c -> Some (Constant c)
 
 let the_int ((defs, _, _) as info) x =
-  get_approx info
-    (fun x -> match defs.(Var.idx x) with Expr (Const i) -> Some i | _ -> None)
-    None
-    (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
-    x
+  match x with
+    | Pv x ->
+      get_approx info
+        (fun x -> match defs.(Var.idx x) with Expr (Const i) -> Some i | _ -> None)
+        None
+        (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
+        x
+    | Pc (Int i) -> Some i
+    | _ -> None
 
 let function_cardinality ((defs, _, _) as info) x =
   get_approx info
@@ -323,62 +330,62 @@ let specialize_instr info i =
       Let (x, Apply (f, l, function_cardinality info f))
 
 (*FIX this should be moved to a different file (javascript specific) *)
-  | Let (x, Prim (Extern "caml_js_var", [Pv y])) ->
+  | Let (x, Prim (Extern "caml_js_var", [y])) ->
       begin match the_def_of info y with
         Some (Constant (String _ as c)) ->
           Let (x, Prim (Extern "caml_js_var", [Pc c]))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "caml_js_const", [Pv y])) ->
+  | Let (x, Prim (Extern "caml_js_const", [y])) ->
       begin match the_def_of info y with
         Some (Constant (String _ as c)) ->
           Let (x, Prim (Extern "caml_js_const", [Pc c]))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "caml_js_call", [Pv f; Pv o; Pv a])) ->
+  | Let (x, Prim (Extern "caml_js_call", [f; o; a])) ->
       begin match the_def_of info a with
         Some (Block (_, a)) ->
           let a = Array.map (fun x -> Pv x) a in
           Let (x, Prim (Extern "caml_js_opt_call",
-                        Pv f :: Pv o :: Array.to_list a))
+                        f :: o :: Array.to_list a))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "caml_js_fun_call", [Pv f; Pv a])) ->
+  | Let (x, Prim (Extern "caml_js_fun_call", [f; a])) ->
       begin match the_def_of info a with
         Some (Block (_, a)) ->
           let a = Array.map (fun x -> Pv x) a in
           Let (x, Prim (Extern "caml_js_opt_fun_call",
-                        Pv f :: Array.to_list a))
+                        f :: Array.to_list a))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "caml_js_meth_call", [Pv o; Pv m; Pv a])) ->
+  | Let (x, Prim (Extern "caml_js_meth_call", [o; m; a])) ->
       begin match the_def_of info m with
         Some (Constant (String _ as m)) ->
           begin match the_def_of info a with
             Some (Block (_, a)) ->
               let a = Array.map (fun x -> Pv x) a in
               Let (x, Prim (Extern "caml_js_opt_meth_call",
-                            Pv o :: Pc m :: Array.to_list a))
+                            o :: Pc m :: Array.to_list a))
           | _ ->
               i
           end
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "caml_js_new", [Pv c; Pv a])) ->
+  | Let (x, Prim (Extern "caml_js_new", [c; a])) ->
       begin match the_def_of info a with
         Some (Block (_, a)) ->
           let a = Array.map (fun x -> Pv x) a in
           Let (x, Prim (Extern "caml_js_opt_new",
-                        Pv c :: Array.to_list a))
+                        c :: Array.to_list a))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "caml_js_object", [Pv a])) ->
+  | Let (x, Prim (Extern "caml_js_object", [a])) ->
       begin try
         let a =
           match the_def_of info a with
@@ -388,10 +395,10 @@ let specialize_instr info i =
         let a =
           Array.map
             (fun x ->
-               match the_def_of info x with
+               match the_def_of info (Pv x) with
                  Some (Block (_, [|k; v|])) ->
                    let k =
-                     match the_def_of info k with
+                     match the_def_of info (Pv k) with
                        Some (Constant (String _ as s)) -> Pc s
                      | _                               -> raise Exit
                    in
@@ -405,45 +412,45 @@ let specialize_instr info i =
       with Exit ->
         i
       end
-  | Let (x, Prim (Extern "caml_js_get", [Pv o; Pv f])) ->
+  | Let (x, Prim (Extern "caml_js_get", [o; f])) ->
       begin match the_def_of info f with
         Some (Constant (String _ as c)) ->
-          Let (x, Prim (Extern "caml_js_get", [Pv o; Pc c]))
+          Let (x, Prim (Extern "caml_js_get", [o; Pc c]))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "caml_js_set", [Pv o; Pv f; Pv v])) ->
+  | Let (x, Prim (Extern "caml_js_set", [o; f; v])) ->
       begin match the_def_of info f with
         Some (Constant (String _ as c)) ->
-          Let (x, Prim (Extern "caml_js_set", [Pv o; Pc c; Pv v]))
+          Let (x, Prim (Extern "caml_js_set", [o; Pc c; v]))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "caml_js_delete", [Pv o; Pv f])) ->
+  | Let (x, Prim (Extern "caml_js_delete", [o; f])) ->
       begin match the_def_of info f with
         Some (Constant (String _ as c)) ->
-          Let (x, Prim (Extern "caml_js_delete", [Pv o; Pc c]))
+          Let (x, Prim (Extern "caml_js_delete", [o; Pc c]))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "%int_mul", [Pv y; Pv z])) ->
+  | Let (x, Prim (Extern "%int_mul", [y; z])) ->
       begin match the_int info y, the_int info z with
         Some j, _ | _, Some j when abs j < 0x200000 ->
-          Let (x, Prim (Extern "%direct_int_mul", [Pv y; Pv z]))
+          Let (x, Prim (Extern "%direct_int_mul", [y; z]))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "%int_div", [Pv y; Pv z])) ->
+  | Let (x, Prim (Extern "%int_div", [y; z])) ->
       begin match the_int info z with
         Some j when j <> 0 ->
-          Let (x, Prim (Extern "%direct_int_div", [Pv y; Pv z]))
+          Let (x, Prim (Extern "%direct_int_div", [y; z]))
       | _ ->
           i
       end
-  | Let (x, Prim (Extern "%int_mod", [Pv y; Pv z])) ->
+  | Let (x, Prim (Extern "%int_mod", [y; z])) ->
       begin match the_int info z with
         Some j when j <> 0 ->
-          Let (x, Prim (Extern "%direct_int_mod", [Pv y; Pv z]))
+          Let (x, Prim (Extern "%direct_int_mod", [y; z]))
       | _ ->
           i
       end
@@ -503,7 +510,7 @@ let build_subst defs vars known_origins maybe_unknown possibly_mutable =
 
 (****)
 
-let f ((pc, blocks, free_pc) as p) =
+let f ?skip_param ((pc, blocks, free_pc) as p) =
   let t = Util.Timer.make () in
   let t1 = Util.Timer.make () in
   let (vars, deps, defs) = program_deps p in
@@ -515,7 +522,7 @@ let f ((pc, blocks, free_pc) as p) =
   let possibly_mutable = program_escape defs known_origins p in
   if times () then Format.eprintf "    flow analysis 3: %a@." Util.Timer.print t3;
   let t4 = Util.Timer.make () in
-  let maybe_unknown = solver2 vars deps defs known_origins possibly_mutable in
+  let maybe_unknown = solver2 ?skip_param vars deps defs known_origins possibly_mutable in
   if times () then Format.eprintf "    flow analysis 4: %a@." Util.Timer.print t4;
 
   if debug () then begin
