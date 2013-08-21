@@ -22,7 +22,7 @@
 //Provides: caml_weak_create
 function caml_weak_create (n) {
   var x = [251];
-  x.length = n + 1;
+  x.length = n + 2;
   return x;
 }
 //Provides: caml_weak_set
@@ -35,7 +35,7 @@ function caml_weak_get_copy(x, i) {
   var y = caml_weak_get(x, i);
   if (y === 0) return y;
   var z = y[1];
-  if (z instanceof Array && z[1] === (z[1]|0)) return [0, z.slice()];
+  if (z instanceof Array) return [0, z.slice()];
   return y;
 }
 //Provides: caml_weak_check mutable
