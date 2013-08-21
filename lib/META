@@ -26,4 +26,12 @@ package "deriving" (
     archive(syntax, toploop) = "pa_deriving_Json.cmo"
   )
 
+  package "syntax_tc" (
+    description = "Safe \"IO in JSON\" class for deriving-ocsigen."
+    version = "[distributed with js_of_ocaml]"
+    requires(syntax) = "deriving-ocsigen.syntax_tc"
+    archive(syntax, preprocessor) = "pa_deriving_Json.cmo"
+    archive(syntax, toploop) = "pa_deriving_Json.cmo"
+  )
+
 )
