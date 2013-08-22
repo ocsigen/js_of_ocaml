@@ -6,7 +6,7 @@ function unix_gettimeofday () {
 //Provides: unix_time
 //Requires: unix_gettimeofday
 function unix_time () {
-  return (unix_gettimeofday ());
+  return Math.floor(unix_gettimeofday ());
 }
 
 //Provides: unix_gmtime
@@ -38,7 +38,7 @@ function unix_localtime (t) {
 //Requires: unix_localtime
 function unix_mktime(tm){
     var d = new Date(tm[6]+1900,tm[5],tm[4],tm[3],tm[2],tm[1]);
-    var t = d.getTime() / 1000;
+    var t = Math.floor(d.getTime() / 1000);
     var tm2 = unix_localtime(t);
     return [0,t,tm2];
 }
