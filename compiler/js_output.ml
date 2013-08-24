@@ -51,16 +51,21 @@ let output_debug_info f pc =
       | None -> ())
     | _, _ -> ()
 
+
+let ident = function
+  | S s -> s
+  | V v -> Code.Var.to_string v
+
 let opt_identifier f i =
   match i with
     None   -> ()
-  | Some i -> PP.space f; PP.string f i
+  | Some i -> PP.space f; PP.string f (ident i)
 
 let rec formal_parameter_list f l =
   match l with
     []     -> ()
-  | [i]    -> PP.string f i
-  | i :: r -> PP.string f i; PP.string f ","; PP.break f;
+  | [i]    -> PP.string f (ident i)
+  | i :: r -> PP.string f (ident i); PP.string f ","; PP.break f;
               formal_parameter_list f r
 
 (*
@@ -217,7 +222,7 @@ let string_escape s =
 let rec expression l f e =
   match e with
     EVar v ->
-      PP.string f v
+      PP.string f (ident v)
   | ESeq (e1, e2) ->
       if l > 0 then begin PP.start_group f 1; PP.string f "(" end;
       expression 0 f e1;
@@ -490,10 +495,10 @@ and arguments f l =
 and variable_declaration f (i, init) =
   match init with
     None   ->
-      PP.string f i
+      PP.string f (ident i)
   | Some e ->
       PP.start_group f 1;
-      PP.string f i; PP.string f "="; PP.break f; expression 1 f e;
+      PP.string f (ident i); PP.string f "="; PP.break f; expression 1 f e;
       PP.end_group f
 
 and variable_declaration_list f l =
@@ -520,14 +525,14 @@ and statement f s =
           PP.start_group f 1;
           PP.string f "var";
           PP.space f;
-          PP.string f i;
+          PP.string f (ident i);
           PP.string f ";";
           PP.end_group f
       | [(i, Some e)] ->
           PP.start_group f 1;
           PP.string f "var";
           PP.space f;
-          PP.string f i;
+          PP.string f (ident i);
           PP.string f "=";
           PP.genbreak f "" 1;
           PP.start_group f 0;
@@ -857,7 +862,7 @@ and source_element f se =
       PP.start_group f 0;
       PP.string f "function";
       PP.space f;
-      PP.string f i;
+      PP.string f (ident i);
       PP.end_group f;
       PP.break f;
       PP.start_group f 1;

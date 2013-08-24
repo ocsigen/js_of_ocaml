@@ -67,7 +67,7 @@ and expression =
   | EAccess of expression * expression
   | EDot of expression * identifier
   | ENew of expression * arguments option
-  | EVar of identifier
+  | EVar of ident
   | EFun of function_expression * node_pc
   | EStr of string * [`Bytes (*| `Utf8*)]
   | EArr of array_litteral
@@ -113,11 +113,7 @@ and block = statement_list
 
 and statement_list = statement list
 
-and variable_statement = variable_declaration_list
-
-and variable_declaration_list = variable_declaration list
-
-and variable_declaration = identifier * initialiser option
+and variable_declaration = ident * initialiser option
 
 and case_clause = expression * statement_list
 
@@ -130,12 +126,12 @@ and initialiser = expression
 (* A.5 Functions and programs *)
 
 and function_declaration =
-  identifier * formal_parameter_list * function_body * node_pc
+  ident * formal_parameter_list * function_body * node_pc
 
 and function_expression =
-  identifier option * formal_parameter_list * function_body
+  ident option * formal_parameter_list * function_body
 
-and formal_parameter_list = identifier list
+and formal_parameter_list = ident list
 
 and function_body = source_elements
 
@@ -148,3 +144,7 @@ and source_element =
   | Function_declaration of function_declaration
 
 and identifier = string
+
+and ident =
+  | S of identifier
+  | V of Code.Var.t
