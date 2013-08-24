@@ -819,7 +819,7 @@ and statement f s =
           PP.break f;
           PP.start_group f 1;
           PP.string f "catch(";
-          PP.string f i;
+          PP.string f (ident i);
           PP.string f ")";
           PP.break f;
           block f b;

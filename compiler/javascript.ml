@@ -18,17 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*
-   variable_declaration_list_no_in
-   variable_declaration_no_in
-   initialiser_no_in
-...
 
-
-*)
-type foo = unit
-
-and node_pc = int option
+type node_pc = int option
 
 (* A.3 Expressions *)
 
@@ -82,7 +73,7 @@ and expression =
 
 and statement =
     Block of block
-  | Variable_statement of variable_declaration_list
+  | Variable_statement of variable_declaration list
 (*
   | Empty_statement
 *)
@@ -95,16 +86,16 @@ and statement =
 (*
   | Iteration_statement
 *)
-  | Continue_statement of identifier option
-  | Break_statement of identifier option
+  | Continue_statement of label option
+  | Break_statement of label option
   | Return_statement of expression option
 (*
   | With_statement
 *)
-  | Labelled_statement of identifier * statement
+  | Labelled_statement of label * statement
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
-  | Try_statement of block * (identifier * block) option * block option * node_pc
+  | Try_statement of block * (ident * block) option * block option * node_pc
 (*
   | Debugger_statement
 *)
@@ -148,3 +139,4 @@ and identifier = string
 and ident =
   | S of identifier
   | V of Code.Var.t
+and label = identifier

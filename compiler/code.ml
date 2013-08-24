@@ -21,9 +21,9 @@
 (*FIX: this should probably be somewhere else... *)
 module VarPrinter = struct
   let names = Hashtbl.create 107
-  let name v nm = Hashtbl.add names v nm
+  let name'' v nm = Hashtbl.add names v nm
   let propagate_name v v' =
-    try name v' (Hashtbl.find names v) with Not_found -> ()
+    try name'' v' (Hashtbl.find names v) with Not_found -> ()
   let name v nm =
     let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') in
     let is_num c = (c >= '0' && c <= '9') in
@@ -37,7 +37,7 @@ module VarPrinter = struct
       for i = 0 to String.length nm - 1 do
         if nm.[i] = '_' then incr c
       done;
-      if !c < String.length nm then name v nm
+      if !c < String.length nm then name'' v nm
     end
 
   let reserved = Hashtbl.create 107
@@ -99,8 +99,6 @@ module VarPrinter = struct
   let _ = reset ()
 end
 
-let string_of_ident = VarPrinter.format_ident
-
 let add_reserved_name = VarPrinter.add_reserved
 
 module Var : sig
@@ -136,18 +134,6 @@ end = struct
 
   type stream = int
 
-  let c = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
-
-  let rec format_var x =
-    let char x = String.make 1 (c.[x]) in
-    if x < 65 then
-       char (x - 1)
-    else
-      format_var (x / 64) ^ char (x mod 64)
-
-(*
-  let to_string (x, i) = "o$" ^ format_var i(*format_var x ^ Format.sprintf "%d" i*)
-*)
   let to_string (x, i) = VarPrinter.to_string i
 
   let print f x = Format.fprintf f "%s" (to_string x)
@@ -171,6 +157,13 @@ end = struct
   let set_pretty () = VarPrinter.pretty := true
 
   let dummy = (-1 , -1)
+end
+
+module Label = struct
+  type t = int
+  let zero = 0
+  let succ t = succ t
+  let to_string t = VarPrinter.format_ident t
 end
 
 module VarSet = Set.Make (Var)

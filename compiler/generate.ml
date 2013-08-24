@@ -68,19 +68,12 @@ let list_group f l =
 
 module Ctx = struct
   type t =
-    { var_stream : Var.stream;
-      mutable blocks : block AddrMap.t;
+    { mutable blocks : block AddrMap.t;
       live : int array;
       mutated_vars : VarSet.t AddrMap.t }
 
-  let fresh_var ctx =
-    let (x, stream) = Var.next ctx.var_stream in
-    (x, {ctx with var_stream = stream})
-
   let initial b l v =
-    { var_stream = Var.make_stream (); blocks = b; live = l; mutated_vars = v }
-
-  let used_once ctx x = ctx.live.(Var.idx x) <= 1
+    { blocks = b; live = l; mutated_vars = v }
 end
 
 let add_names = Hashtbl.create 101
@@ -188,7 +181,7 @@ type state =
     backs : (int, AddrSet.t) Hashtbl.t;
     preds : (int, int) Hashtbl.t;
     mutable loops : AddrSet.t;
-    mutable loop_stack : (addr * (int * bool ref)) list;
+    mutable loop_stack : (addr * (Label.t * bool ref)) list;
     mutable visited_blocks : AddrSet.t;
     mutable interm_idx : int;
     ctx : Ctx.t; mutable blocks : Code.block AddrMap.t }
@@ -1025,7 +1018,7 @@ Format.eprintf ")@.";
   end;
   if AddrSet.mem pc st.loops then begin
     let lab =
-      match st.loop_stack with (_, (l, _)) :: _ -> l + 1 | [] -> 0 in
+      match st.loop_stack with (_, (l, _)) :: _ -> Code.Label.succ l | [] -> Code.Label.zero in
     st.loop_stack <- (pc, (lab, ref false)) :: st.loop_stack
   end;
   let succs = Hashtbl.find st.succs pc in
@@ -1081,7 +1074,7 @@ Format.eprintf "===== %d ===== (%b)@." pc3 limit_body;
         if limit_body then decr_preds st pc3;
         flush_all queue
           (J.Try_statement (Js_simpl.statement_list body,
-                            Some (Var.to_string x,
+                            Some (J.V x,
                                   Js_simpl.statement_list handler),
                             None,
                             Some pc) ::
@@ -1163,7 +1156,7 @@ res
   if AddrSet.mem pc st.loops then begin
     let label =
       match st.loop_stack with
-        (_, (l, used)) :: r -> st.loop_stack <- r; if !used then l else -1
+        (_, (l, used)) :: r -> st.loop_stack <- r; if !used then Some l else None
       | []                  -> assert false
     in
     let st =
@@ -1181,10 +1174,9 @@ res
             end),
         Some pc)
     in
-    if label = -1 then
-      [st]
-    else
-      [J.Labelled_statement (Code.string_of_ident label, st)]
+    match label with
+      | None -> [st]
+      | Some label -> [J.Labelled_statement (Code.Label.to_string label, st)]
   end else
     body
 end
@@ -1413,7 +1405,7 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
           else begin
             let (lab, used) = List.assoc pc rem in
             used := true;
-            Some (Code.string_of_ident lab)
+            Some (Code.Label.to_string lab)
           end
     in
     if debug () then begin

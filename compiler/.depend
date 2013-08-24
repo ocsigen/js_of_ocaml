@@ -26,10 +26,10 @@ inline.cmo : util.cmi deadcode.cmi code.cmi inline.cmi
 inline.cmx : util.cmx deadcode.cmx code.cmx inline.cmi
 instr.cmo : instr.cmi
 instr.cmx : instr.cmi
-javascript.cmo : javascript.cmi
-javascript.cmx : javascript.cmi
-js_output.cmo : pretty_print.cmi javascript.cmi js_output.cmi
-js_output.cmx : pretty_print.cmx javascript.cmx js_output.cmi
+javascript.cmo : code.cmi javascript.cmi
+javascript.cmx : code.cmx javascript.cmi
+js_output.cmo : pretty_print.cmi javascript.cmi code.cmi js_output.cmi
+js_output.cmx : pretty_print.cmx javascript.cmx code.cmx js_output.cmi
 js_rename.cmo : util.cmi javascript.cmi
 js_rename.cmx : util.cmx javascript.cmx
 js_simpl.cmo : javascript.cmi js_simpl.cmi
@@ -68,7 +68,7 @@ freevars.cmi : util.cmi code.cmi
 generate.cmi : pretty_print.cmi parse_bytecode.cmi code.cmi
 inline.cmi : code.cmi
 instr.cmi :
-javascript.cmi :
+javascript.cmi : code.cmi
 js_output.cmi : pretty_print.cmi parse_bytecode.cmi javascript.cmi
 js_simpl.cmi : javascript.cmi
 linker.cmi : pretty_print.cmi
