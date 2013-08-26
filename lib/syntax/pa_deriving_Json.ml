@@ -46,14 +46,13 @@ module Description = struct
   let depends = []
 end
 
-module Builder(Loc : Defs.Loc) = struct
+module Builder(Generator : Defs.Generator) = struct
 
-  module Helpers = Base.AstHelpers(Loc)
-  module Generator = Base.Generator(Loc)(Description)
-
-  open Loc
+  open Generator.Loc
   open Camlp4.PreCast
   open Description
+
+  module Helpers = Generator.AstHelpers
 
   let wrap
       ?(read_variant = [ <:match_case< _ -> assert false >> ])
@@ -240,6 +239,4 @@ module Builder(Loc : Defs.Loc) = struct
 
 end
 
-module Json = Base.Register(Description)(Builder)
-
-let depends = (module Builder : Defs.FullClassBuilder)
+include Base.RegisterFullClass(Description)(Builder)

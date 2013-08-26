@@ -23,6 +23,7 @@ JSON := lib/deriving_json/deriving_Json.cmi       \
 INTF += $(JSON)
 
 IMPL += lib/syntax/pa_deriving_Json.cmo \
+        lib/syntax/pa_deriving_Json.cmi \
         lib/deriving_json.cma
 
 NATIMPL := lib/deriving_json.cmxa     \
