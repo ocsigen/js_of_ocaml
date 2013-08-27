@@ -169,9 +169,6 @@ BUGS
 - ISINT is compiled to "not a block"; document this deviation
   (or document that we should not rely on the Obj module)
 
-- fix definitions of max_int and min_int in pervasive...
-  (not sure how...)
-
 PERFORMANCE
 ===========
 - should we rebind variables from a deeper level ?
@@ -292,7 +289,6 @@ with ocaml 3.06. Has anyone had luck setting this up in more recent
 versions of ocaml?
 
 OCamlexc (on caml list)
-So I was wondering if there is any current or recent projects (or interests) 
+So I was wondering if there is any current or recent projects (or interests)
 to resume OCamlExc development and complete the set of handled constructs,
-as I'm afraid I'll have neither the time nor the skills to do the job. 
-
+as I'm afraid I'll have neither the time nor the skills to do the job.
