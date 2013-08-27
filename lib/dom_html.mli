@@ -316,6 +316,8 @@ and element = object
   method dir : js_string t prop
   method className : js_string t prop
   method classList : tokenList t readonly_prop
+    (* Not supported by IE9 by default. Add +classList.js to the
+       Js_of_ocaml command line for compatibility *)
   method style : cssStyleDeclaration t prop
 
   method innerHTML : js_string t prop
