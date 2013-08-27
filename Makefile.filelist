@@ -13,7 +13,7 @@ IMPL += lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs
 endif
 endif
 
-OTHERS := runtime/runtime.js runtime/weak.js runtime/unix.js
+OTHERS := runtime/runtime.js runtime/weak.js runtime/unix.js runtime/classlist.js
 
 ifneq "${DERIVING}" ""
 
