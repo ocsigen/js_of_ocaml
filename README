@@ -16,8 +16,8 @@ very stable API.
   * Lwt (**version 2.3.0** at least)
 
   [optionnal]
-  * deriving-ocsigen (**version 0.3** at least
-                      see: https://github.com/hnrgrgr/deriving)
+  * deriving-ocsigen (**version 0.5** at least
+                      see: https://github.com/ocsigen/deriving)
 
 === Installation ===
 
@@ -33,12 +33,13 @@ toplevel as well.
 === Usage ===
 
 Your program must first be compiled using the OCaml bytecode compiler
-{{{ocamlc}}}.  Javascript bindings, as well as a corresponding syntax
-extension, are provided by the {{{js_of_ocaml}}} package.
+{{{ocamlc}}}.  Javascript bindings are provided by the {{{js_of_ocaml}}} package.
+The syntax extension is provided by {{{js_of_ocaml.syntax}}} package.
 
 {{{
       ocamlfind ocamlc -package js_of_ocaml \
-          -syntax camlp4o -linkpkg -o cubes.byte cubes.ml
+          -syntax camlp4o -package js_of_ocaml.syntax \
+          -linkpkg -o cubes.byte cubes.ml
 }}}
 
 Then, run the {{{js_of_ocaml}}} compiler to produce Javascript code:
