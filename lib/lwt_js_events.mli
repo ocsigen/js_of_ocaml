@@ -113,6 +113,28 @@ val buffered_loop :
 *)
 val async : (unit -> 'a Lwt.t) -> unit
 
+(** [func_limited_loop event delay_fun target handler] will behave like
+    [Lwt_js_events.async_loop event target handler] but it will run [delay_fun]
+    first, and execut [handler] only when [delay_fun] is finished and
+    no other event occurred in the meantime.
+
+    This allows to limit the number of events catched.
+
+    Be careful, it is an asynchrone loop, so if you give too little time,
+    several instances of your handler could be run in same time **)
+val func_limited_loop :
+  (?use_capture:bool -> 'a -> 'b Lwt.t) ->
+  (unit -> 'a Lwt.t) ->
+  ?use_capture:bool ->
+  'a -> ('b -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+
+(** Same as func_limited_loop but take time instead of function
+    By default elapsed_time = 0.1s = 100ms **)
+val limited_loop:
+  (?use_capture:bool -> 'a -> 'b Lwt.t) ->
+  ?elapsed_time:float ->
+  ?use_capture:bool ->
+  'a -> ('b -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 (**  {2 Predefined functions for some types of events} *)
 
@@ -386,12 +408,27 @@ val onload : unit -> Dom_html.event Js.t Lwt.t
 
 val onbeforeunload : unit -> Dom_html.event Js.t Lwt.t
 val onresize : unit -> Dom_html.event Js.t Lwt.t
+val onorientationchange : unit -> Dom_html.event Js.t Lwt.t
 val onpopstate : unit -> Dom_html.event Js.t Lwt.t
 val onhashchange : unit -> Dom_html.event Js.t Lwt.t
 
+val onorientationchange_or_onresize : unit -> Dom_html.event Js.t Lwt.t
+
 val onresizes :
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val onorientationchanges :
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val onpopstates :
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val onhashchanges :
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+
+val onorientationchanges_or_onresizes :
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+
+val limited_onresizes : ?elapsed_time:float ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val limited_onorientationchanges : ?elapsed_time:float ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val limited_onorientationchanges_or_onresizes : ?elapsed_time:float ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t

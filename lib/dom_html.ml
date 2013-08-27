@@ -382,6 +382,7 @@ module Event = struct
   let load = Dom.Event.make "load"
   let beforeunload = Dom.Event.make "beforeunload"
   let resize = Dom.Event.make "resize"
+  let orientationchange = Dom.Event.make "orientationchange"
   let popstate = Dom.Event.make "popstate"
   let hashchange = Dom.Event.make "hashchange"
   let error = Dom.Event.make "error"
@@ -1082,6 +1083,7 @@ class type window = object
   method onblur : (window t, event t) event_listener prop
   method onfocus : (window t, event t) event_listener prop
   method onresize : (window t, event t) event_listener prop
+  method onorientationchange : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
   method onhashchange : (window t, hashChangeEvent t) event_listener prop
 
