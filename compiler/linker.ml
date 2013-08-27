@@ -169,6 +169,7 @@ let parse_file f =
 let last_code_id = ref 0
 let provided = Hashtbl.create 31
 let code_pieces = Hashtbl.create 31
+let always_included = ref []
 
 let add_file f =
   List.iter
@@ -189,6 +190,7 @@ let add_file f =
             Primitive.register nm kind;
             Hashtbl.add provided nm (id, loc))
          prov;
+       if prov = [] then always_included := id :: !always_included;
        Hashtbl.add code_pieces id (code, req))
     (parse_file f)
 
@@ -199,12 +201,15 @@ let rec resolve_dep f visited path loc nm =
     with Not_found ->
       error loc (Format.sprintf "missing dependency '%s'@." nm)
   in
+  resolve_dep_rec f visited path id
+
+and resolve_dep_rec f visited path id =
   if Util.IntSet.mem id visited then begin
-(*    if List.mem_assoc id path then error loc "circular dependency";*)
+(*    if List.memq id path then error loc "circular dependency";*)
     visited
   end else begin
     let visited = Util.IntSet.add id visited in
-    let path = (id, loc) :: path in
+    let path = id :: path in
     let (code, req) = Hashtbl.find code_pieces id in
     let visited =
       List.fold_left
@@ -216,6 +221,11 @@ let rec resolve_dep f visited path loc nm =
   end
 
 let resolve_deps ?(linkall = false) compact f l =
+  let visited =
+    List.fold_left
+      (fun (visited) id -> resolve_dep_rec f visited [] id)
+      Util.IntSet.empty (List.rev !always_included)
+  in
   let (missing, visited) =
     List.fold_left
       (fun (missing, visited) nm ->
@@ -223,7 +233,7 @@ let resolve_deps ?(linkall = false) compact f l =
            (missing, resolve_dep f visited [] ("", -1) nm)
          else
            (nm :: missing, visited))
-      ([], Util.IntSet.empty) l
+      ([], visited) l
   in
   if linkall then begin
     let visited = ref visited in
