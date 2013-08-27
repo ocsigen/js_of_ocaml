@@ -1051,6 +1051,7 @@ class type window = object
   method onblur : (window t, event t) event_listener prop
   method onfocus : (window t, event t) event_listener prop
   method onresize : (window t, event t) event_listener prop
+  method onorientationchange : (window t, event t) event_listener prop
   method onpopstate : (window t, popStateEvent t) event_listener prop
   method onhashchange : (window t, hashChangeEvent t) event_listener prop
 
@@ -1159,6 +1160,7 @@ module Event : sig
   val load : event t typ
   val beforeunload : event t typ
   val resize : event t typ
+  val orientationchange : event t typ
   val popstate : event t typ
   val hashchange : event t typ
   val error : event t typ

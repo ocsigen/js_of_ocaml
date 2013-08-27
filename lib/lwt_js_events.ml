@@ -138,6 +138,18 @@ let buffered_loop evh ?(cancel_handler = false) ?(cancel_queue = true)
   Lwt.async runner ;
   lt
 
+let func_limited_loop event limited_func ?use_capture target handler =
+  let count = ref 0 in
+  async_loop event ?use_capture target
+    (fun ev lt -> incr count;
+      let nb = !count in
+      limited_func () >>= (fun _ ->
+	if (!count = nb)
+	then handler ev lt
+	else Lwt.return ()))
+
+let limited_loop event ?(elapsed_time=0.1) =
+  func_limited_loop event (fun () -> Lwt_js.sleep elapsed_time)
 
 let click ?use_capture target =
   make_event Dom_html.Event.click ?use_capture target
@@ -331,9 +343,30 @@ let request_animation_frame () =
 let onload () = make_event Dom_html.Event.load Dom_html.window
 let onbeforeunload () = make_event Dom_html.Event.beforeunload Dom_html.window
 let onresize () = make_event Dom_html.Event.resize Dom_html.window
+let onorientationchange () =
+  make_event Dom_html.Event.orientationchange Dom_html.window
 let onpopstate () = make_event Dom_html.Event.popstate Dom_html.window
 let onhashchange () = make_event Dom_html.Event.hashchange Dom_html.window
 
+let onorientationchange_or_onresize () =
+  Lwt.pick [onresize (); onorientationchange ()]
+
 let onresizes t = seq_loop (fun ?use_capture () -> onresize ()) () t
+let onorientationchanges t =
+  seq_loop (fun ?use_capture () -> onorientationchange ()) () t
 let onpopstates t = seq_loop (fun ?use_capture () -> onpopstate ()) () t
 let onhashchanges t = seq_loop (fun ?use_capture () -> onhashchange ()) () t
+
+let onorientationchanges_or_onresizes t =
+  seq_loop
+    (fun ?use_capture () -> onorientationchange_or_onresize ()) () t
+
+let limited_onresizes ?elapsed_time t =
+  limited_loop (fun ?use_capture () -> onresize ()) ?elapsed_time () t
+let limited_onorientationchanges ?elapsed_time t =
+  limited_loop
+    (fun ?use_capture () -> onorientationchange ()) ?elapsed_time () t
+let limited_onorientationchanges_or_onresizes ?elapsed_time t =
+  limited_loop
+    (fun ?use_capture () -> onorientationchange_or_onresize ())
+    ?elapsed_time () t
