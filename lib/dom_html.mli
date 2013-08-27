@@ -492,7 +492,7 @@ class type inputElement = object ('self)
   method select : unit meth
   method click : unit meth
   method files : File.fileList t optdef readonly_prop
-  method placeholder : js_string t writeonly_prop (* Not supported by IE 9 *)
+  method placeholder : js_string t optdef prop (* Not supported by IE 9 *)
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
   method oninput : ('self t, event t) event_listener prop
@@ -516,7 +516,7 @@ class type textAreaElement = object ('self)
   method blur : unit meth
   method focus : unit meth
   method select : unit meth
-  method placeholder : js_string t writeonly_prop (* Not supported by IE 9 *)
+  method placeholder : js_string t optdef prop (* Not supported by IE 9 *)
 
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
