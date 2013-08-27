@@ -1690,3 +1690,7 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
 
 let hasPushState () =
   Js.Optdef.test ((Js.Unsafe.coerce (window##history))##pushState)
+
+let hasPlaceholder () =
+ let i = createInput document in
+  Js.Optdef.test ((Js.Unsafe.coerce i)##placeholder)

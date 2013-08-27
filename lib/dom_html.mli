@@ -1475,3 +1475,4 @@ end
 
 val onIE : bool
 val hasPushState : unit -> bool
+val hasPlaceholder : unit -> bool
