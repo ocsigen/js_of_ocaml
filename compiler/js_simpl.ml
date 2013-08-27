@@ -80,8 +80,14 @@ let rec enot_rec e =
     | J.EBool b ->
         (J.EBool (not b), 0)
     | J.ECall _ | J.EAccess _ | J.EDot _ | J.ENew _ | J.EVar _ | J.EFun _
-    | J.EStr _ | J.EArr _ | J.ENum _ | J.EObj _ | J.EQuote _ ->
-        (J.EUn (J.Not, e), 1)
+   | J.EStr _ | J.EArr _ | J.ENum _ | J.EObj _ | J.EQuote _
+   | J.EUn
+       (( J.IncrA
+        | J.IncrB
+        | J.DecrA
+        | J.DecrB
+        | J.Bnot ),_) ->
+     (J.EUn (J.Not, e), 1)
   in
   if cost <= 1 then res else (J.EUn (J.Not, e), 1)
 
