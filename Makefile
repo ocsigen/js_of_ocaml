@@ -16,8 +16,10 @@ toplevel: compiler library runtime
 	$(MAKE) -C toplevel
 examples: compiler library runtime
 	$(MAKE) -C examples
-tests: compiler library
+tests: compiler library runtime
 	$(MAKE) -C tests
+phantomtests: compiler library runtime
+	$(MAKE) -C tests phantom
 doc: library
 	$(MAKE) -C doc
 

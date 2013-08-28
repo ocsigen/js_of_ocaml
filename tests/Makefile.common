@@ -2,18 +2,16 @@
 include ../Makefile.conf
 
 COMP=../compiler/$(COMPILER)
-JSFILES=../runtime/runtime.js
+JSFILES=../runtime/runtime.js ../runtime/unix.js file/unix.js
 OCAMLC=ocamlfind ocamlc -package lwt,deriving-ocsigen.base,deriving-ocsigen.syntax -ppopt ../lib/syntax/pa_js.cmo -ppopt ../lib/syntax/pa_deriving_Json.cmo -I ../lib -I ../lib/deriving_json
 STDLIB=$(LIBNAME).cma
 
-$(NAME).js: $(NAME).byte $(COMP) $(JSFILES)
-	$(COMP) -noruntime $(JSFILES) $(NAME).byte $(OPTIONS)
 
-$(NAME).byte: $(OBJS)
-	$(OCAMLC) -linkpkg -o $@ $(STDLIB) $^
+%.js: %.byte $(COMP) $(JSFILES)
+	@$(COMP) -noruntime $(JSFILES) $< $(OPTIONS) -pretty
+
+%.byte: %.cmo
+	@$(OCAMLC) -linkpkg -o $@ $(STDLIB) ../lib/deriving_json.cma common.cmo -package unix $^
 
 %.cmo: %.ml ../lib/$(STDLIB)
-	$(OCAMLC) -syntax camlp4o -g -c $<
-
-clean::
-	rm -f *.cm[io] $(NAME).byte $(NAME).js
+	@$(OCAMLC) -syntax camlp4o -g -c $<
