@@ -3,6 +3,8 @@ include ../Makefile.conf
 
 all: $(COMPILER)
 
+lib: compiler.cma compiler.cmxa compiler.cmxs
+
 PACKAGES=findlib,str,unix
 
 OBJS=pretty_print.cmx util.cmx dgraph.cmx \
@@ -25,10 +27,20 @@ compile.opt: $(COMPOBJS)
 	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -o $@ $^
 
 compiler.cma: $(OBJS:cmx=cmo)
-	ocamlfind ocamlc -a -o $@ $^
+	ocamlfind ocamlc -pack -o $@ $^
+
+local/compiler.cma: compiler.cma
+	mkdir -p local
+	cp compiler.cma compiler.cmi local/
+
+compiler.cmxa: $(OBJS)
+	ocamlfind ocamlopt -pack -o $@ $^
+
+compiler.cmxs: $(OBJS)
+	ocamlfind ocamlopt -shared -o $@ $^
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -package findlib,str -c $<
+	ocamlfind ocamlopt -package findlib,str -for-pack Compiler -c $<
 
 %.cmo: %.ml
 	ocamlfind ocamlc -package findlib,str -c $<
@@ -37,7 +49,7 @@ compiler.cma: $(OBJS:cmx=cmo)
 	ocamlfind ocamlc -package findlib,str -c $<
 
 clean:
-	rm -f *.cm[aiox] *.o
+	rm -f *.cm{a,i,o,x,xa,xs} *.o *.a
 	rm -f js_of_ocaml compile.opt compile.byte
 
 depend:
