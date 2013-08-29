@@ -66,7 +66,6 @@ MlString.prototype = {
       return this.string = decodeURIComponent (escape(a));
     } catch (e){
       console.error("MlString.toJsString: wrong encoding for \"%s\" ", a);
-      console.error("this is probably a bug, please report at https://github.com/ocsigen/js_of_ocaml");
       return a;
     }
   },
@@ -78,7 +77,6 @@ MlString.prototype = {
         var b = unescape (encodeURIComponent (this.string));
       } catch (e) {
         console.error("MlString.toBytes: wrong encoding for \"%s\" ", this.string);
-        console.error("this is probably a bug, please report at https://github.com/ocsigen/js_of_ocaml");
         var b = this.string;
       }
     } else {
