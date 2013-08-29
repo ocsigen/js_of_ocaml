@@ -17,8 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Typesafe IO (based on the {i deriving-ocsigen} library).
-    @see <https://github.com/hnrgrgr/deriving> the source code of {i deriving-ocsigen}
+(** Typesafe IO (based on the {i deriving} library).
+    @see <https://github.com/hnrgrgr/deriving> the source code of {i deriving}
     @see <http://code.google.com/p/deriving/> the documentation of the original {i deriving} library by Jeremy Yallop.
 *)
 
