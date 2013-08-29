@@ -18,7 +18,7 @@
  *)
 
 (** Typesafe IO (based on the {i deriving} library).
-    @see <https://github.com/hnrgrgr/deriving> the source code of {i deriving}
+    @see <https://github.com/ocsigen/deriving> the source code of {i deriving}
     @see <http://code.google.com/p/deriving/> the documentation of the original {i deriving} library by Jeremy Yallop.
 *)
 
