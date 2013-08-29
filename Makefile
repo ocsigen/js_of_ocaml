@@ -1,10 +1,11 @@
 
-all: check_lwt compiler compiler_lib library doc runtime examples
+all: no_examples examples
+no_examples: check_lwt compiler compiler_lib library doc runtime
 
 include Makefile.conf
 -include Makefile.local
 
-.PHONY: compiler library runtime examples check_lwt doc
+.PHONY: all no_examples compiler library runtime examples check_lwt doc
 
 compiler:
 	$(MAKE) -C compiler
