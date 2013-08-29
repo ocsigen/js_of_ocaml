@@ -26,6 +26,8 @@ TODO
 - syntax highlighting?
 *)
 
+open Compiler
+
 let split_primitives p =
   let len = String.length p in
   let rec split beg cur =

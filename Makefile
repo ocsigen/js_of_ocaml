@@ -1,5 +1,5 @@
 
-all: check_lwt compiler library doc runtime examples
+all: check_lwt compiler compiler_lib library doc runtime examples
 
 include Makefile.conf
 -include Makefile.local
@@ -8,6 +8,8 @@ include Makefile.conf
 
 compiler:
 	$(MAKE) -C compiler
+compiler_lib:
+	$(MAKE) -C compiler lib
 library:
 	$(MAKE) -C lib
 runtime:
@@ -34,11 +36,13 @@ include Makefile.filelist
 VERSION := $(shell head -n 1 VERSION)
 install:
 	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(OTHERS) $(DOC)
+	ocamlfind install -patch-version ${VERSION} $(COMPILER_LIBRARY) compiler/META $(COMP_INTF) $(COMP_IMPL)
 	install -d -m 755 $(BINDIR)
 	install $(BIN) $(BINDIR)
 
 uninstall:
 	ocamlfind remove $(LIBRARY)
+	ocamlfind remove $(COMPILER_LIBRARY)
 	rm -f $(BINDIR)/$(COMPILER)
 
 reinstall: uninstall install
