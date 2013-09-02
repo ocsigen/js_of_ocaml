@@ -49,7 +49,7 @@ compiler.cmxs: $(OBJS)
 	ocamlfind ocamlc -package findlib,str -c $<
 
 clean:
-	rm -f *.cm{a,i,o,x,xa,xs} *.o *.a
+	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a
 	rm -f js_of_ocaml compile.opt compile.byte
 
 depend:
