@@ -52,10 +52,10 @@ syntax/pa_js.cmxs: syntax/pa_js.cmx
 	ocamlfind ocamlopt -shared -linkall -o $@ $<
 
 syntax/pa_deriving_Json.cmo: syntax/pa_deriving_Json.ml
-	ocamlfind ocamlc -package deriving-ocsigen.syntax,camlp4.quotations.o -syntax camlp4o -c $<
+	ocamlfind ocamlc -package deriving.syntax,camlp4.quotations.o -syntax camlp4o -c $<
 
 syntax/pa_deriving_Json.cmx: syntax/pa_deriving_Json.ml
-	ocamlfind ocamlopt -package deriving-ocsigen.syntax,camlp4.quotations.o -syntax camlp4o -c $<
+	ocamlfind ocamlopt -package deriving.syntax,camlp4.quotations.o -syntax camlp4o -c $<
 
 syntax/pa_deriving_Json.cmxs: syntax/pa_deriving_Json.cmx
 	ocamlfind ocamlopt -shared -linkall -o $@ $<
@@ -70,10 +70,10 @@ syntax/pa_deriving_Json.cmxs: syntax/pa_deriving_Json.cmx
 	ocamllex $<
 
 ${JSON_OBJS}: %.cmo: %.ml ${PA_DERIVING}
-	ocamlfind ocamlc -package deriving-ocsigen.syntax -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
+	ocamlfind ocamlc -package deriving.syntax -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
 
 ${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml ${PA_DERIVING}
-	ocamlfind ocamlopt -package deriving-ocsigen.syntax -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
+	ocamlfind ocamlopt -package deriving.syntax -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
 
 
 %$(OBJEXT): %.c
@@ -100,7 +100,7 @@ ifneq "${DERIVING}" ""
 	${MAKE} --no-print-directory deriving_json/deriving_Json_lexer.ml
 	ls deriving_json/*.mli deriving_json/*.ml | \
 	  grep -v deriving_Json_stdlib.mli | \
-	  xargs ocamlfind ocamldep -I deriving_json -package deriving-ocsigen.syntax -syntax camlp4o -ppopt ${PA_DERIVING} >> .depend
+	  xargs ocamlfind ocamldep -I deriving_json -package deriving.syntax -syntax camlp4o -ppopt ${PA_DERIVING} >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)
 	ocamldep -I deriving_json deriving_json/deriving_Json_stdlib.mli  >> .depend
 endif
