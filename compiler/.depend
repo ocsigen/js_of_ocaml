@@ -22,8 +22,8 @@ generate.cmo : util.cmi subst.cmi primitive.cmi pretty_print.cmi linker.cmi \
 generate.cmx : util.cmx subst.cmx primitive.cmx pretty_print.cmx linker.cmx \
     js_simpl.cmx js_output.cmx javascript.cmx freevars.cmx code.cmx \
     generate.cmi
-inline.cmo : deadcode.cmi code.cmi inline.cmi
-inline.cmx : deadcode.cmx code.cmx inline.cmi
+inline.cmo : util.cmi deadcode.cmi code.cmi inline.cmi
+inline.cmx : util.cmx deadcode.cmx code.cmx inline.cmi
 instr.cmo : instr.cmi
 instr.cmx : instr.cmi
 javascript.cmo : javascript.cmi
@@ -34,12 +34,12 @@ js_rename.cmo : util.cmi javascript.cmi
 js_rename.cmx : util.cmx javascript.cmx
 js_simpl.cmo : javascript.cmi js_simpl.cmi
 js_simpl.cmx : javascript.cmx js_simpl.cmi
-linker.cmo : util.cmi primitive.cmi pretty_print.cmi linker.cmi
-linker.cmx : util.cmx primitive.cmx pretty_print.cmx linker.cmi
+linker.cmo : util.cmi primitive.cmi pretty_print.cmi code.cmi linker.cmi
+linker.cmx : util.cmx primitive.cmx pretty_print.cmx code.cmx linker.cmi
 main.cmo : util.cmi pretty_print.cmi parse_bytecode.cmi linker.cmi \
-    inline.cmi driver.cmi
+    driver.cmi
 main.cmx : util.cmx pretty_print.cmx parse_bytecode.cmx linker.cmx \
-    inline.cmx driver.cmx
+    driver.cmx
 parse_bytecode.cmo : util.cmi primitive.cmi instr.cmi code.cmi \
     parse_bytecode.cmi
 parse_bytecode.cmx : util.cmx primitive.cmx instr.cmx code.cmx \
