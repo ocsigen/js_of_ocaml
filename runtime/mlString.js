@@ -61,14 +61,25 @@ MlString.prototype = {
 
   toJsString:function() {
     // assumes this.string == null
-    return this.string = decodeURIComponent (escape(this.getFullBytes()));
+    var a = this.getFullBytes();
+    try {
+      return this.string = decodeURIComponent (escape(a));
+    } catch (e){
+      console.error("MlString.toJsString: wrong encoding for \"%s\" ", a);
+      return a;
+    }
   },
 
   toBytes:function() {
     // assumes this.bytes == null
-    if (this.string != null)
-      var b = unescape (encodeURIComponent (this.string));
-    else {
+    if (this.string != null){
+      try {
+        var b = unescape (encodeURIComponent (this.string));
+      } catch (e) {
+        console.error("MlString.toBytes: wrong encoding for \"%s\" ", this.string);
+        var b = this.string;
+      }
+    } else {
       var b = "", a = this.array, l = a.length;
       // FIX should benchmark different conversion functions
       for (var i = 0; i < l; i ++) b += String.fromCharCode (a[i]);
