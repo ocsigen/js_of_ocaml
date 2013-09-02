@@ -1,0 +1,7 @@
+description = "Js_of_ocaml compiler library"
+version = "dev"
+archive(byte) = "compiler.cma"
+archive(byte, plugin) = "compiler.cma"
+archive(native) = "compiler.cmxa"
+archive(native, plugin) = "compiler.cmxs"
+requires = "str"

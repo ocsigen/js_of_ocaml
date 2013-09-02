@@ -15,6 +15,11 @@ endif
 
 OTHERS := runtime/runtime.js runtime/weak.js runtime/unix.js runtime/classlist.js
 
+COMP_INTF := compiler/compiler.cmi
+COMP_IMPL := compiler/compiler.cma
+COMP_NAT_IMPL := compiler/compiler.cmxa
+COMP_NATDYN_IMPL := compiler/compiler.cmxs
+
 ifneq "${DERIVING}" ""
 
 JSON := lib/deriving_json/deriving_Json.cmi       \
@@ -35,10 +40,12 @@ NATIMPL += $(JSON:.cmi=.cmx)
 ifeq "${NATDYNLINK}" "YES"
 NATIMPL += lib/syntax/pa_deriving_Json.cmx \
            lib/syntax/pa_deriving_Json.cmxs
+COMP_IMPL += $(COMP_NATDYN_IMPL)
 endif
 
 ifeq "$(BEST)" "opt"
 IMPL += $(NATIMPL)
+COMP_IMPL += $(COMP_NAT_IMPL)
 endif
 
 endif
