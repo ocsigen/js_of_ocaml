@@ -322,6 +322,8 @@ struct
 
   let host = urldecode_js_string_string l##hostname
 
+  let protocol = urldecode_js_string_string l##protocol
+
   let port =
     try Some (int_of_string (Js.to_bytestring l##port))
     with Failure _ -> None

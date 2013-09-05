@@ -106,6 +106,9 @@ module Current :
     (** The port of the current url. *)
     val port : int option
 
+    (** The protocol of the current url. *)
+    val protocol : string
+
     (** The path of the current url as one long string. *)
     val path_string : string
 
@@ -137,5 +140,3 @@ module Current :
 
 
   end
-
-
