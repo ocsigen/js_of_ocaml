@@ -1,0 +1,14 @@
+opam-version: "1"
+maintainer: "dev@ocsigen.org"
+build: [
+  ["%{make}%"]
+  ["%{make}%" "install" "BINDIR=%{bin}%"]
+]
+remove: [
+  ["ocamlfind" "remove" "js_of_ocaml"]
+]
+depends: [
+  "ocamlfind"
+  "deriving" {>= "9999"}
+  "lwt" {>= "2.4"}
+]
