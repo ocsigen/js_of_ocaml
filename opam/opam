@@ -6,6 +6,7 @@ build: [
 ]
 remove: [
   ["ocamlfind" "remove" "js_of_ocaml"]
+  ["ocamlfind" "remove" "js_of_ocaml_compiler"]
 ]
 depends: [
   "ocamlfind"
