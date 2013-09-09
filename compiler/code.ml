@@ -19,6 +19,22 @@
  *)
 
 (*FIX: this should probably be somewhere else... *)
+
+
+module Reserved = struct
+  let reserved = Hashtbl.create 107
+
+  let add s = if String.length s <= 5 then Hashtbl.replace reserved s ()
+
+  let mem s = Hashtbl.mem reserved s
+
+  let _ =
+    List.iter add
+      ["break"; "case"; "catch"; "do"; "else"; "for"; "if"; "in"; "new";
+       "this"; "throw"; "try"; "var"; "void"; "while"; "with"; "class";
+       "enum"; "super"; "const"; "yield"; "let"]
+end
+
 module VarPrinter = struct
   let names = Hashtbl.create 107
   let name'' v nm = Hashtbl.add names v nm
@@ -39,17 +55,6 @@ module VarPrinter = struct
       done;
       if !c < String.length nm then name'' v nm
     end
-
-  let reserved = Hashtbl.create 107
-
-  let add_reserved s =
-    if String.length s <= 5 then Hashtbl.replace reserved s ()
-
-  let _ =
-    List.iter add_reserved
-      ["break"; "case"; "catch"; "do"; "else"; "for"; "if"; "in"; "new";
-       "this"; "throw"; "try"; "var"; "void"; "while"; "with"; "class";
-       "enum"; "super"; "const"; "yield"; "let"]
 
   let known = Hashtbl.create 1001
 
@@ -86,7 +91,7 @@ module VarPrinter = struct
       incr last;
       let j = !last in
       let s = format_var i j in
-      if Hashtbl.mem reserved s then
+      if Reserved.mem s then
         to_string i
       else begin
         Hashtbl.add known i s;
@@ -98,8 +103,6 @@ module VarPrinter = struct
 
   let _ = reset ()
 end
-
-let add_reserved_name = VarPrinter.add_reserved
 
 module Var : sig
   type t

@@ -178,7 +178,7 @@ let add_file f =
        let id = !last_code_id in
        List.iter
          (fun (loc, nm, kind) ->
-           Code.add_reserved_name nm;
+           Code.Reserved.add nm;
             let kind =
               match kind with
                 "pure" | "const" -> `Pure

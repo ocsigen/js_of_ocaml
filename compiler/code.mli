@@ -18,6 +18,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+module Reserved : sig
+  val add : string -> unit
+  val mem : string -> bool
+end
 module Var : sig
   type t
   val print : Format.formatter -> t -> unit
@@ -146,8 +150,5 @@ val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 val fold_children :
   block AddrMap.t -> addr  -> (addr -> 'c -> 'c) -> 'c -> 'c
-
-val add_reserved_name : string -> unit
-
 
 val eq : program -> program -> bool

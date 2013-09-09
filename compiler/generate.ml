@@ -505,7 +505,7 @@ let register_bin_math_prim name prim =
     (fun cx cy -> J.ECall (J.EDot (J.EVar (J.S "Math"), prim), [cx; cy]))
 
 let _ =
-  Code.add_reserved_name "Math";
+  Code.Reserved.add "Math";
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
   register_bin_prim "caml_string_get" `Mutable
@@ -726,10 +726,10 @@ and translate_expr ctx queue x e =
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
-          Code.add_reserved_name nm;  (*XXX HACK *)
+          Code.Reserved.add nm;  (*XXX HACK *)
           (J.EVar (J.S nm), const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
-          Code.add_reserved_name nm;  (*XXX HACK *)
+          Code.Reserved.add nm;  (*XXX HACK *)
           (J.EVar (J.S nm), const_p, queue)
       | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
           let ((pf, cf), queue) = access_queue queue f in
@@ -821,7 +821,7 @@ and translate_expr ctx queue x e =
               f l queue
           | None ->
               Primitive.mark_used name;
-              Code.add_reserved_name name;  (*XXX HACK *)
+              Code.Reserved.add name;  (*XXX HACK *)
                                (* FIX: this is done at the wrong time... *)
               let prim_kind = kind (Primitive.kind name) in
               let (args, prop, queue) =
