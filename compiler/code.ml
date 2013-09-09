@@ -129,7 +129,7 @@ module Var : sig
   val dummy : t
 end = struct
 
-  type t = int * int
+  type t = int
 
   let last_var = ref 0
 
@@ -137,7 +137,7 @@ end = struct
 
   type stream = int
 
-  let to_string (x, i) = VarPrinter.to_string i
+  let to_string i = VarPrinter.to_string i
 
   let print f x = Format.fprintf f "%s" (to_string x)
 
@@ -145,21 +145,21 @@ end = struct
 
   let next current =
     incr last_var;
-    ((current, !last_var), current + 1)
+    (!last_var, current + 1)
 
-  let fresh () = incr last_var; (0, !last_var)
+  let fresh () = incr last_var; !last_var
 
   let count () = !last_var + 1
 
-  let idx v = snd v
+  let idx v = v
 
-  let compare (_,v1) (_,v2) = v1 - v2
+  let compare v1 v2 = v1 - v2
 
-  let name (_, i) nm = VarPrinter.name i nm
-  let propagate_name (_, i) (_, j) = VarPrinter.propagate_name i j
+  let name i nm = VarPrinter.name i nm
+  let propagate_name i j = VarPrinter.propagate_name i j
   let set_pretty () = VarPrinter.pretty := true
 
-  let dummy = (-1 , -1)
+  let dummy = -1
 end
 
 module Label = struct
