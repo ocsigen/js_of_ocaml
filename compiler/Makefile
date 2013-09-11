@@ -5,15 +5,15 @@ all: $(COMPILER)
 
 lib: compiler.cma compiler.cmxa compiler.cmxs
 
-PACKAGES=findlib,str,unix
+PACKAGES=findlib,str,unix,ocamlgraph
 
 OBJS=pretty_print.cmx util.cmx dgraph.cmx \
      code.cmx javascript.cmx js_output.cmx js_simpl.cmx \
      instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
-     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx \
-	   js_interfer.cmx
+	   js_interfer.cmx \
+     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx
 
 COMPOBJS=$(OBJS) main.cmx
 
@@ -41,13 +41,13 @@ compiler.cmxs: $(OBJS)
 	ocamlfind ocamlopt -shared -o $@ $^
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -package findlib,str -for-pack Compiler -c $<
+	ocamlfind ocamlopt -package findlib,str,ocamlgraph -for-pack Compiler -c $<
 
 %.cmo: %.ml
-	ocamlfind ocamlc -package findlib,str -c $<
+	ocamlfind ocamlc -package findlib,str,ocamlgraph -c $<
 
 %.cmi: %.mli
-	ocamlfind ocamlc -package findlib,str -c $<
+	ocamlfind ocamlc -package findlib,str,ocamlgraph -c $<
 
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a

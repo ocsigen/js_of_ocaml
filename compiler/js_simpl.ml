@@ -99,8 +99,8 @@ let source_elements l =
   List.fold_right
     (fun st rem ->
        match st, rem with
-         J.Variable_statement [addr, Some (J.EFun ((None, params, body), pc))], _ ->
-           J.Function_declaration (addr, params, body, pc) :: rem
+         (* J.Variable_statement [addr, Some (J.EFun ((None, params, body), pc))], _ -> *)
+         (*   J.Function_declaration (addr, params, body, pc) :: rem *)
        | J.Variable_statement l1,
          J.Statement (J.Variable_statement l2) :: rem' ->
            J.Statement (J.Variable_statement (l1 @ l2)) :: rem'

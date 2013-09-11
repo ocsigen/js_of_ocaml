@@ -21,6 +21,8 @@
 (*FIX: this should probably be somewhere else... *)
 
 
+let disable_compact = Util.disabled "compact"
+
 module Reserved = struct
   let reserved = Hashtbl.create 107
 
@@ -110,6 +112,8 @@ module Var : sig
   val idx : t -> int
   val to_string : t -> string
 
+  val set_mapping : (t -> int) -> unit
+
   type stream
   val make_stream : unit -> stream
   val next : stream -> t * stream
@@ -137,7 +141,12 @@ end = struct
 
   type stream = int
 
-  let to_string i = VarPrinter.to_string i
+  let mapping = ref (fun x -> x)
+  let set_mapping f =
+    if not (disable_compact ())
+    then mapping := f
+
+  let to_string i = VarPrinter.to_string (!mapping i)
 
   let print f x = Format.fprintf f "%s" (to_string x)
 

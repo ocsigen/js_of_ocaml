@@ -17,11 +17,11 @@ flow.cmx : util.cmx subst.cmx dgraph.cmx code.cmx flow.cmi
 freevars.cmo : util.cmi code.cmi freevars.cmi
 freevars.cmx : util.cmx code.cmx freevars.cmi
 generate.cmo : util.cmi subst.cmi primitive.cmi pretty_print.cmi linker.cmi \
-    js_simpl.cmi js_output.cmi javascript.cmi freevars.cmi code.cmi \
-    generate.cmi
+    js_simpl.cmi js_output.cmi js_interfer.cmo javascript.cmi freevars.cmi \
+    code.cmi generate.cmi
 generate.cmx : util.cmx subst.cmx primitive.cmx pretty_print.cmx linker.cmx \
-    js_simpl.cmx js_output.cmx javascript.cmx freevars.cmx code.cmx \
-    generate.cmi
+    js_simpl.cmx js_output.cmx js_interfer.cmx javascript.cmx freevars.cmx \
+    code.cmx generate.cmi
 inline.cmo : util.cmi deadcode.cmi code.cmi inline.cmi
 inline.cmx : util.cmx deadcode.cmx code.cmx inline.cmi
 instr.cmo : instr.cmi

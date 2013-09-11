@@ -74,31 +74,22 @@ and expression =
 and statement =
     Block of block
   | Variable_statement of variable_declaration list
-(*
-  | Empty_statement
-*)
+  (* | Empty_statement *)
   | Expression_statement of expression * node_pc
   | If_statement of expression * statement * statement option
   | Do_while_statement of statement * expression
   | While_statement of expression * statement
-  | For_statement of
-      expression option * expression option * expression option * statement * node_pc
-(*
-  | Iteration_statement
-*)
+  | For_statement of  expression option * expression option * expression option * statement * node_pc
+  (* | Iteration_statement *)
   | Continue_statement of label option
   | Break_statement of label option
   | Return_statement of expression option
-(*
-  | With_statement
-*)
+  (* | With_statement of expression * statement *)
   | Labelled_statement of label * statement
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
   | Try_statement of block * (ident * block) option * block option * node_pc
-(*
-  | Debugger_statement
-*)
+  (* | Debugger_statement *)
 
 and block = statement_list
 

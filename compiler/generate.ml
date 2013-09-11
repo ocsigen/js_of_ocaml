@@ -1489,6 +1489,9 @@ let f ch ?(standalone=true) ?linkall ((pc, blocks, _) as p) dl live_vars =
     list_missing missing
   end;
   Hashtbl.clear add_names;
+  let module V = Js_interfer.V in
+  let vars = V.program p in
   let res = Js_output.program ch p dl in
+
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
   res
