@@ -28,6 +28,8 @@ instr.cmo : instr.cmi
 instr.cmx : instr.cmi
 javascript.cmo : code.cmi javascript.cmi
 javascript.cmx : code.cmx javascript.cmi
+js_interfer.cmo : javascript.cmi code.cmi
+js_interfer.cmx : javascript.cmx code.cmx
 js_output.cmo : pretty_print.cmi javascript.cmi code.cmi js_output.cmi
 js_output.cmx : pretty_print.cmx javascript.cmx code.cmx js_output.cmi
 js_rename.cmo : util.cmi javascript.cmi

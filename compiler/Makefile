@@ -12,7 +12,8 @@ OBJS=pretty_print.cmx util.cmx dgraph.cmx \
      instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
-     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx
+     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx \
+	   js_interfer.cmx
 
 COMPOBJS=$(OBJS) main.cmx
 
