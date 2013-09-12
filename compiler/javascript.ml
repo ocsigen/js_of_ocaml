@@ -131,3 +131,11 @@ and ident =
   | S of identifier
   | V of Code.Var.t
 and label = identifier
+
+
+let compare_ident t1 t2 =
+  match t1, t2 with
+    | V v1, V v2 -> Code.Var.compare v1 v2
+    | S s1, S s2 -> String.compare s1 s2
+    | S _, V _ -> -1
+    | V _, S _ -> 1
