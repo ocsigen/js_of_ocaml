@@ -1,5 +1,7 @@
 code.cmo : util.cmi code.cmi
 code.cmx : util.cmx code.cmi
+constant.cmo : util.cmi primitive.cmi code.cmi
+constant.cmx : util.cmx primitive.cmx code.cmx
 control.cmo : subst.cmi code.cmi control.cmi
 control.cmx : subst.cmx code.cmx control.cmi
 deadcode.cmo : util.cmi pure_fun.cmi code.cmi deadcode.cmi

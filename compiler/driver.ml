@@ -29,21 +29,19 @@ let deadcode' p =
   Deadcode.f p
 
 let deadcode p =
-  let r,_ = deadcode' p
+  let r,_,_ = deadcode' p
   in r
 
 let inline p =
-  let (p,live_vars) = deadcode' p in
+  let (p,live_vars,_) = deadcode' p in
   if debug () then Format.eprintf "Inlining...@.";
   Inline.f p live_vars
 
 let constant p =
-p
-(*
   let (p,_,defs) = deadcode' p in
   if debug () then Format.eprintf "Constant...@.";
   Constant.f p defs
-*)
+
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
   Flow.f p
@@ -63,7 +61,7 @@ let (>>>) x f = f x
 
 let (>>) f g = fun x -> g (f x)
 
-let rec loop max name round i p =
+let rec loop max name round i (p : 'a) : 'a =
   let p' = round p in
   if i >= max || Code.eq p' p
   then p'
@@ -78,7 +76,7 @@ let identity x = x
 
 (* o1 *)
 
-let o1 =
+let o1 : 'a -> 'a=
   print >>
   tailcall >>
   phi >>
@@ -95,17 +93,18 @@ let o1 =
 
 (* o2 *)
 
-let o2 =
+let o2 : 'a -> 'a =
   loop 10 "o1" o1 1 >>
   print
 
 (* o3 *)
 
-let round1 =
+let round1 : 'a -> 'a =
   print >>
   tailcall >>
   inline >> (* inlining may reveal new tailcall opt *)
   constant >>
+  (* deadcode required before flow simple -> provided by constant *)
   flow_simple >> (* flow simple to keep information for furture tailcall opt *)
   identity
 
@@ -120,7 +119,7 @@ let o3 =
 
 let profile = ref o1
 
-let generate ~standalone (p,live_vars) =
+let generate ~standalone (p,live_vars,_) =
   if times ()
   then Format.eprintf "Start Generation...@.";
   Generate.f ~standalone p live_vars

@@ -20,4 +20,4 @@
 
 val disabled : unit -> bool
 
-val f : Code.program -> Code.program * int array
+val f : Code.program -> Code.program * int array * int array

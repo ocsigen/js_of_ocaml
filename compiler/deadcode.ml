@@ -254,4 +254,4 @@ let f ((pc, blocks, free_pc) as program) =
       blocks AddrMap.empty
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Util.Timer.print t;
-  (pc, blocks, free_pc), st.live
+  (pc, blocks, free_pc), st.live, Array.map List.length st.defs
