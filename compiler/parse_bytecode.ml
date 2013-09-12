@@ -226,9 +226,7 @@ module Debug = struct
 
 end
 
-let keep_variable_names = ref false
-
-let set_pretty () = keep_variable_names := true; Code.Var.set_pretty ()
+let don't_keep_variable_names = Util.disabled ~init:true "pretty"
 
 (****)
 
@@ -1767,7 +1765,7 @@ let from_channel ~paths ic =
   ignore(seek_section toc ic "SYMB");
   let symbols = (input_value ic : Ident.t numtable) in
 
-  if !keep_variable_names then begin
+  if not (don't_keep_variable_names ()) then begin
     try
       ignore(seek_section toc ic "DBUG");
       Debug.read ic;

@@ -110,9 +110,8 @@ module Var : sig
   type t
   val print : Format.formatter -> t -> unit
   val idx : t -> int
+  val from_idx : int -> t
   val to_string : t -> string
-
-  val set_mapping : (t -> int) -> unit
 
   type stream
   val make_stream : unit -> stream
@@ -141,12 +140,7 @@ end = struct
 
   type stream = int
 
-  let mapping = ref (fun x -> x)
-  let set_mapping f =
-    if not (disable_compact ())
-    then mapping := f
-
-  let to_string i = VarPrinter.to_string (!mapping i)
+  let to_string i = VarPrinter.to_string i
 
   let print f x = Format.fprintf f "%s" (to_string x)
 
@@ -161,6 +155,7 @@ end = struct
   let count () = !last_var + 1
 
   let idx v = v
+  let from_idx v = v
 
   let compare v1 v2 = v1 - v2
 

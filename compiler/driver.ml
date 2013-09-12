@@ -120,20 +120,39 @@ let o3 =
 
 let profile = ref o1
 
-let f ?standalone ?linkall (p, d) =
-  !profile p >>> deadcode' >>> fun (p,live_vars) ->
-  fun formatter ->
-    if times ()
-    then Format.eprintf "Start Generation...@.";
-    Generate.f formatter ?standalone ?linkall p d live_vars
 
-let from_string prims s =
-  let p = Parse_bytecode.from_string prims s in
-  f ~standalone:false p
+let f_generate formatter  ~standalone ?linkall d (p,live_vars) =
+  if times ()
+  then Format.eprintf "Start Generation...@.";
+  Generate.f formatter ~standalone ?linkall p d live_vars
 
-let set_pretty () = Generate.set_pretty (); Parse_bytecode.set_pretty ()
+let f_link formatter ~standalone ?linkall pretty js =
+  if times ()
+  then Format.eprintf "Start Linking...@.";
+  Generate.f_link formatter ~standalone ?linkall pretty;
+  js
 
-let set_debug_info () = Js_output.set_debug_info ()
+let f_coloring js =
+  if times ()
+  then Format.eprintf "Start Coloring...@.";
+  js,Js_var.program js
+
+let f_output formatter d (js,subs) =
+  if times ()
+  then Format.eprintf "Start Writing file...@.";
+  Js_output.program formatter js d
+
+let f ?(standalone=true) ?linkall formatter d =
+  !profile >>
+  deadcode' >>
+  f_generate formatter ~standalone ?linkall d >>
+  f_link formatter ~standalone ?linkall false >>
+  f_coloring >>
+  f_output formatter d
+
+let from_string prims s formatter =
+  let (p,d) = Parse_bytecode.from_string prims s in
+  f ~standalone:false formatter d p
 
 let set_profile = function
   | 1 -> profile := o1

@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val set_pretty : unit -> unit
+val f : Pretty_print.t -> standalone:bool -> ?linkall:bool ->
+        Code.program -> Parse_bytecode.debug_loc -> int array -> Javascript.program
 
-val f : Pretty_print.t -> ?standalone:bool -> ?linkall:bool ->
-        Code.program -> Parse_bytecode.debug_loc -> int array -> unit
+val f_link : Pretty_print.t -> standalone:bool -> ?linkall:bool -> bool -> unit

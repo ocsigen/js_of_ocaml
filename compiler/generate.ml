@@ -38,7 +38,7 @@ let debug = Util.debug "gen"
 let times = Util.debug "times"
 let disable_compact_expr = Util.disabled "compactexpr"
 
-let set_pretty () = compact := false
+let pretty_off = Util.disabled ~init:true "pretty"
 
 (****)
 
@@ -75,8 +75,6 @@ module Ctx = struct
   let initial b l v =
     { blocks = b; live = l; mutated_vars = v }
 end
-
-let add_names = Hashtbl.create 101
 
 let var x = J.EVar (J.V x)
 let int n = J.ENum (float n)
@@ -1475,23 +1473,23 @@ let list_missing l =
     List.iter (fun nm -> Format.eprintf "  %s@." nm) l
   end
 
-let f ch ?(standalone=true) ?linkall ((pc, blocks, _) as p) dl live_vars =
+let f ch ~standalone ?linkall ((pc, blocks, _) as p) dl live_vars =
   let mutated_vars = Freevars.f p in
   let t' = Util.Timer.make () in
   let ctx = Ctx.initial blocks live_vars mutated_vars in
   let p = compile_program standalone ctx pc in
-  if !compact then Pretty_print.set_compact ch true;
-  if standalone then begin
-    Pretty_print.string ch
-      "// This program was compiled from OCaml by js_of_ocaml 1.3";
-    Pretty_print.newline ch;
-    let missing = Linker.resolve_deps ?linkall !compact ch (Primitive.get_used ()) in
-    list_missing missing
-  end;
-  Hashtbl.clear add_names;
-  let module V = Js_interfer.V in
-  let vars = V.program p in
-  let res = Js_output.program ch p dl in
-
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
-  res
+  p
+
+
+
+let f_link ch ~standalone ?linkall pretty =
+  if standalone
+  then
+    begin
+      Pretty_print.string ch
+        "// This program was compiled from OCaml by js_of_ocaml 1.3";
+      Pretty_print.newline ch;
+      let missing = Linker.resolve_deps ?linkall ch (Primitive.get_used ()) in
+      list_missing missing
+    end

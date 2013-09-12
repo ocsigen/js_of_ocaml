@@ -26,6 +26,8 @@ module Var : sig
   type t
   val print : Format.formatter -> t -> unit
   val idx : t -> int
+  val from_idx : int -> t
+
   val to_string : t -> string
 
   type stream
@@ -38,10 +40,10 @@ module Var : sig
 
   val compare : t -> t -> int
 
+
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
   val set_pretty : unit -> unit
-  val set_mapping : (t -> int) -> unit
   val reset : unit -> unit
 end
 

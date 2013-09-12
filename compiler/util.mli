@@ -33,8 +33,9 @@ val read_file : string -> string
 val debug : string -> unit -> bool
 val set_debug : string -> unit
 
-val disabled : string -> unit -> bool
+val disabled : ?init:bool -> string -> (unit -> bool)
 val set_disabled : string -> unit
+val set_enabled : string -> unit
 
 module Timer : sig
   type t

@@ -220,7 +220,7 @@ and resolve_dep_rec f visited path id =
     visited
   end
 
-let resolve_deps ?(linkall = false) compact f l =
+let resolve_deps ?(linkall = false) f l =
   let visited =
     List.fold_left
       (fun (visited) id -> resolve_dep_rec f visited [] id)

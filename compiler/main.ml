@@ -27,7 +27,7 @@ let f paths js_files input_file output_file =
   List.iter Linker.add_file js_files;
   let paths = List.rev_append paths [Findlib.package_directory "stdlib"] in
   let t1 = Util.Timer.make () in
-  let p =
+  let p,d =
     match input_file with
       None ->
         Parse_bytecode.from_channel ~paths stdin
@@ -39,11 +39,11 @@ let f paths js_files input_file output_file =
   in
   if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
   let linkall = !linkall in
-  let output_program = Driver.f ~linkall p in
+  let output_program fmt = Driver.f ~linkall fmt d p in
   begin match output_file with
-    None ->
+    | None ->
       output_program (Pretty_print.to_out_channel stdout)
-  | Some f ->
+    | Some f ->
       let ch = open_out_bin f in
       output_program (Pretty_print.to_out_channel ch);
       close_out ch
@@ -62,8 +62,8 @@ let _ =
     [("-debug", Arg.String Util.set_debug, "<name> debug module <name>");
      ("-disable",
       Arg.String Util.set_disabled, "<name> disable optimization <name>");
-     ("-pretty", Arg.Unit Driver.set_pretty, " pretty print the output");
-     ("-debuginfo", Arg.Unit Driver.set_debug_info, " output debug info");
+     ("-pretty", Arg.Unit (fun () -> Util.set_enabled "pretty"), " pretty print the output");
+     ("-debuginfo", Arg.Unit (fun () -> Util.set_enabled "debuginfo"), " output debug info");
      ("-opt", Arg.Int Driver.set_profile, "<oN> set optimization profile : o1 (default), o2, o3");
      ("-noinline", Arg.Unit (fun () -> Util.set_disabled "inline"), " disable inlining");
      ("-linkall", Arg.Set linkall, " link all primitives");

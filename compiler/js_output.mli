@@ -21,7 +21,4 @@
 (* val statement : *)
 (*   Pretty_print.t -> Javascript.statement -> Parse_bytecode.debug_loc -> unit *)
 
-val program :
-  Pretty_print.t -> Javascript.function_body -> Parse_bytecode.debug_loc -> unit
-
-val set_debug_info : unit -> unit
+val program : Pretty_print.t -> Javascript.program -> Parse_bytecode.debug_loc -> unit
