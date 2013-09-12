@@ -75,7 +75,7 @@ let rec enot_rec e =
         end
     | J.EUn (J.Not, e) ->
         (e, 0)
-    | J.EUn ((J.Neg | J.Pl | J.Typeof | J.Delete), _) ->
+    | J.EUn ((J.Neg | J.Pl | J.Typeof | J.Delete | J.Bnot ), _) ->
         (J.EUn (J.Not, e), 0)
 
     | J.EBool b ->
@@ -86,8 +86,7 @@ let rec enot_rec e =
         (( J.IncrA
          | J.IncrB
          | J.DecrA
-         | J.DecrB
-         | J.Bnot ),_) ->
+         | J.DecrB ),_) ->
       (J.EUn (J.Not, e), 1)
   in
   if cost <= 1 then res else (J.EUn (J.Not, e), 1)
@@ -108,6 +107,53 @@ let source_elements l =
            J.Statement st :: rem)
     l []
 
+let tr = function
+  | J.Div -> J.SlashEq
+  | J.Mod -> J.ModEq
+  | J.Lsl -> J.LslEq
+  | J.Asr -> J.AsrEq
+  | J.Lsr -> J.LsrEq
+  | J.Band -> J.BandEq
+  | J.Bor -> J.BorEq
+  | J.Bxor -> J.BxorEq
+  | J.Mul -> J.StarEq
+  | J.Plus -> J.PlusEq
+  | J.Minus -> J.MinusEq
+  | _ -> assert false
+
+let var isint = function
+  | (x,Some (J.EBin (J.Plus,y, J.EVar x')))
+  | (x,Some (J.EBin (J.Plus, J.EVar x',y))) when x = x' ->
+    if y = J.ENum 1.
+    then Some (J.EUn (J.IncrB,J.EVar x))
+    else Some (J.EBin (J.PlusEq, J.EVar x,y))
+  | (x,Some (J.EBin (J.Minus, J.EVar x',y))) when x = x' ->
+    if y = J.ENum 1.
+    then Some (J.EUn (J.DecrB,J.EVar x))
+    else Some (J.EBin (J.MinusEq, J.EVar x,y))
+  | (x,Some (J.EBin (J.Mul,y, J.EVar x')))
+  | (x,Some (J.EBin (J.Mul, J.EVar x',y))) when x = x' ->
+    Some (J.EBin (J.StarEq, J.EVar x,y))
+  | (x,Some (J.EBin (J.Div | J.Mod | J.Lsl | J.Asr | J. Lsr | J.Band | J.Bxor | J.Bor as unop, J.EVar x',y))) when x = x' && not isint ->
+    Some (J.EBin (tr unop, J.EVar x,y))
+  | x -> None
+
+let var = function
+  | (x,Some (J.EBin (J.Bor,e,J.ENum 0.))) -> var true (x,Some e)
+  | x -> var false x
+
+let optim_hh l =
+  List.fold_right (fun st rem ->
+    match st with
+      | J.Variable_statement l1 ->
+        let x = List.map (function x ->
+            match var x with
+              | Some e -> J.Expression_statement (e,None)
+              | None -> J.Variable_statement [x]) l1 in
+        x@rem
+      | _ -> st::rem
+  ) l []
+
 let statement_list l =
   List.fold_right
     (fun st rem ->
@@ -116,7 +162,7 @@ let statement_list l =
            J.Variable_statement (l1 @ l2) :: rem'
        | _ ->
            st :: rem)
-    l []
+    (optim_hh l) []
 
 let block l = match l with [s] -> s | _ -> J.Block (statement_list l)
 
@@ -157,7 +203,17 @@ let assignment_of_statement st =
   | J.Block l                        -> assignment_of_statement_list l
   | _                                -> raise Not_assignment
 
+let simplify_condition = function
+    (* | J.ECond _  -> J.ENum 1. *)
+    | J.ECond (e, J.ENum 1., J.ENum 0.) -> e
+    | J.ECond (e, J.ENum 0., J.ENum 1.) -> J.EUn (J.Not, e)
+    | J.ECond (J.EBin((J.NotEqEq | J.NotEq), J.ENum n, y ),e1,e2)
+    | J.ECond (J.EBin((J.NotEqEq | J.NotEq), y, J.ENum n),e1,e2) ->
+      J.ECond (J.EBin(J.Band,y,J.ENum n),e1,e2)
+    | cond        -> cond
+
 let rec if_statement_2 e iftrue truestop iffalse falsestop =
+  let e = simplify_condition e in
   match iftrue, iffalse with
     (* Empty blocks *)
     J.Block [], J.Block [] ->
@@ -172,7 +228,11 @@ let rec if_statement_2 e iftrue truestop iffalse falsestop =
         let (x1, e1) = assignment_of_statement iftrue in
         let (x2, e2) = assignment_of_statement iffalse in
         if x1 <> x2 then raise Not_assignment;
-        [J.Variable_statement [x1, Some (J.ECond (e, e1, e2))]]
+        let exp =
+          if e1 = e
+          then J.EBin(J.Or,e,e2)
+          else J.ECond (e, e1, e2) in
+        [J.Variable_statement [x1, Some exp]]
       with Not_assignment -> try
         let e1 = expression_of_statement iftrue in
         let e2 = expression_of_statement iffalse in
@@ -189,12 +249,8 @@ let rec if_statement_2 e iftrue truestop iffalse falsestop =
 let unopt b = match b with Some b -> b | None -> J.Block []
 
 let rec if_statement e iftrue truestop (iffalse : J.statement) falsestop =
-  let e =
-    (*FIX: should be done at an earlier stage*)
-    match e with
-      J.ECond (e, J.ENum 1., J.ENum 0.) -> e
-    | _                                 -> e
-  in
+  (*FIX: should be done at an earlier stage*)
+  let e = simplify_condition e in
   match iftrue, iffalse with
     (* Shared statements *)
   | J.If_statement (e', iftrue', iffalse'), _
