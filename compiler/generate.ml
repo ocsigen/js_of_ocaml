@@ -236,9 +236,6 @@ let rec build_graph st pc anc =
 let rec dominance_frontier_rec st pc visited grey =
   let n = get_preds st pc in
   let v = try AddrMap.find pc visited with Not_found -> 0 in
-(*
-Format.eprintf "%d %d %d@." pc n v;
-*)
   if v < n then begin
     let v = v + 1 in
     let visited = AddrMap.add pc v visited in
@@ -263,26 +260,9 @@ let dominance_frontier st pc =
 let never_continue st (pc, _) frontier interm succs =
   (* If not found in successors, this is a backward edge *)
   let d = try List.assoc pc succs with Not_found -> AddrSet.empty in
-(*
-Format.eprintf "pc: %d@." pc;
-List.iter (fun (pc, _) ->Format.eprintf "pc: %d@." pc) succs;
-Format.eprintf "never_continue@.";
-Format.eprintf "  %d /" pc;
-AddrSet.iter (fun i -> Format.eprintf " %d" i) frontier;
-Format.eprintf " /";
-AddrMap.iter (fun i _ -> Format.eprintf " %d" i) interm;
-Format.eprintf " /";
-AddrSet.iter (fun i -> Format.eprintf " %d" i) d;
-let res =
-*)
   not (AddrSet.mem pc frontier || AddrMap.mem pc interm)
     &&
   AddrSet.is_empty d
-(*
-in
-Format.eprintf " ==> %b@." res;
-res
-*)
 
 let rec resolve_node interm pc =
   try
@@ -855,9 +835,6 @@ and translate_expr ctx queue x e =
           let ((px, cx), queue) = access_queue queue x in
           (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), J.EStr ("number", `Bytes)),
            px, queue)
-(*
-          (boolnot (J.EBin(J.InstanceOf, cx, J.EVar ("Array"))), px, queue)
-*)
       | Ult, [Pv x; Pv y] ->
           let ((px, cx), queue) = access_queue queue x in
           let ((py, cy), queue) = access_queue queue y in
@@ -996,14 +973,6 @@ and compile_block st queue pc frontier interm =
 if queue <> [] && AddrSet.mem pc st.loops then
   flush_all queue (compile_block st [] pc frontier interm)
 else begin
-(*
-Format.eprintf "(frontier: ";
-AddrSet.iter (fun pc -> Format.eprintf "%d " pc) frontier;
-Format.eprintf ")@.";
-Format.eprintf "(interm: ";
-AddrMap.iter (fun pc (pc', _) -> Format.eprintf " %d->%d " pc pc') interm;
-Format.eprintf ")@.";
-*)
   if pc >= 0 then begin
     if AddrSet.mem pc st.visited_blocks then begin
       Format.eprintf "!!!! %d@." pc; assert false
@@ -1030,11 +999,6 @@ Format.eprintf ")@.";
       succs AddrSet.empty
   in
   let new_frontier = resolve_nodes interm grey in
-(*
-Format.eprintf "<<%d:" pc;
-AddrSet.iter (fun pc -> Format.eprintf " %d" pc) frontier;
-Format.eprintf ">>@ ";
-*)
   let block = AddrMap.find pc st.blocks in
   let (seq, queue) = translate_instr st.ctx queue pc block.body in
   let body =
@@ -1054,9 +1018,6 @@ Format.eprintf ">>@ ";
         if limit_body then incr_preds st pc3;
         assert (AddrSet.cardinal inner_frontier <= 1);
         if debug () then Format.eprintf "@[<2>try {@,";
-(*
-Format.eprintf "===== %d ===== (%b)@." pc3 limit_body;
-*)
         let body =
           compile_branch st [] (pc1, args1)
             None AddrSet.empty inner_frontier interm
@@ -1078,18 +1039,10 @@ Format.eprintf "===== %d ===== (%b)@." pc3 limit_body;
                             Some pc) ::
            if AddrSet.is_empty inner_frontier then [] else begin
              let pc = AddrSet.choose inner_frontier in
-(*
-Format.eprintf ">>Frontier: ";
-AddrSet.iter (fun pc -> Format.eprintf "%d " pc) frontier;
-Format.eprintf "@.";
-*)
              if AddrSet.mem pc frontier then [] else
                compile_block st [] pc frontier interm
            end)
     | _ ->
-(*
-Format.eprintf "[[@.";
-*)
         let (new_frontier, new_interm) =
           if AddrSet.cardinal new_frontier > 1 then begin
             let x = Code.Var.fresh () in
@@ -1097,11 +1050,6 @@ Format.eprintf "[[@.";
             if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
             let idx = st.interm_idx in
             st.interm_idx <- idx - 1;
-(*
-Format.eprintf "%d ====> " idx;
-AddrSet.iter (fun pc -> Format.eprintf "%d " pc) new_frontier;
-Format.eprintf "@.";
-*)
             let cases = Array.map (fun pc -> (pc, [])) a in
             let switch =
               if Array.length cases > 2 then
@@ -1136,20 +1084,12 @@ Format.eprintf "@.";
           compile_conditional
             st queue pc block.branch block.handler
             backs new_frontier new_interm succs in
-(*
-let res =
-*)
         cond @
         if AddrSet.cardinal new_frontier = 0 then [] else begin
           let pc = AddrSet.choose new_frontier in
           if AddrSet.mem pc frontier then [] else
           compile_block st [] pc frontier interm
         end
-(*
-in
-Format.eprintf "]]@.";
-res
-*)
   in
   if AddrSet.mem pc st.loops then begin
     let label =
@@ -1182,9 +1122,6 @@ end
 and compile_if st e cont1 cont2 handler backs frontier interm succs =
   let iftrue = compile_branch st [] cont1 handler backs frontier interm in
   let iffalse = compile_branch st [] cont2 handler backs frontier interm in
-(*
-Format.eprintf "====@.";
-*)
   Js_simpl.if_statement e
     (Js_simpl.block iftrue) (never_continue st cont1 frontier interm succs)
     (Js_simpl.block iffalse) (never_continue st cont2 frontier interm succs)
@@ -1359,7 +1296,6 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
             [], [] ->
               continuation queue
           | x :: args, y :: params ->
-(*Format.eprintf "ZZZ@.";*)
               let (z, old) =
                 match old with [] -> (None, []) | z :: old -> (Some z, old)
               in
@@ -1369,7 +1305,6 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
                 loop continuation old args params queue
               else begin
                let ((px, cx), queue) = access_queue queue x in
-(*Format.eprintf "%a := %a@." Var.print y Var.print x;*)
                let (st, queue) =
 (*FIX: we should flush only the variables we need rather than doing this;
        do the same for closure free variables *)
@@ -1384,9 +1319,6 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
           | _ ->
               assert false
         in
-(*
-Format.eprintf "%d ==> %d/%d/%d@." pc (List.length h_args) (List.length h_block.params) (List.length old_args);
-*)
         loop continuation old_args h_args h_block.params queue
 
 and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
@@ -1461,8 +1393,6 @@ let compile_program standalone ctx pc =
   else
     let f = J.EFun ((None, [J.V (Var.fresh ())], res), None) in
     [J.Statement (J.Expression_statement (f, Some pc))]
-
-(**********************)
 
 let f ~standalone ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
