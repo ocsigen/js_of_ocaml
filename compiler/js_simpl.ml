@@ -214,3 +214,41 @@ let rec if_statement e iftrue truestop (iffalse : J.statement) falsestop =
         iftrue truestop iftrue' falsestop
   | _ ->
       if_statement_2 e iftrue truestop iffalse falsestop
+
+
+module VSet = Set.Make(struct
+    type t = J.ident
+    let compare = J.compare_ident
+end)
+
+
+let rec get_variable acc = function
+  | J.ESeq (e1,e2)
+  | J.EBin (_,e1,e2)
+  | J.EAccess (e1,e2) -> get_variable (get_variable acc e1) e2
+  | J.ECond (e1,e2,e3) ->
+    get_variable (
+      get_variable (
+        get_variable
+          acc
+          e1)
+        e2)
+      e2
+  | J.EUn (_,e1)
+  | J.EDot (e1,_)
+  | J.ENew (e1,None) -> get_variable acc e1
+  | J.ECall (e1,el)
+  | J.ENew (e1,Some el) -> List.fold_left get_variable acc (e1::el)
+  | J.EVar (J.V v) -> Code.VarSet.add v acc
+  | J.EVar (J.S _) -> acc
+  | J.EFun _
+  | J.EStr _
+  | J.EBool _
+  | J.ENum _
+  | J.EQuote _ -> acc
+  | J.EArr a -> List.fold_left (fun acc i ->
+                  match i with
+                    | None -> acc
+                    | Some e1 -> get_variable acc e1) acc a
+  | J.EObj l -> List.fold_left (fun acc (_,e1) ->
+                  get_variable acc e1) acc l

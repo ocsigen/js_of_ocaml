@@ -30,3 +30,7 @@ val statement_list : statement_list -> statement_list
 val block : statement_list -> statement
 
 val if_statement : expression -> statement -> bool -> statement -> bool -> statement list
+
+
+module VSet : Set.S with type elt = Javascript.ident
+val get_variable : Code.VarSet.t -> expression -> Code.VarSet.t

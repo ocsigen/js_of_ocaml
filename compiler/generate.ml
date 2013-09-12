@@ -137,30 +137,79 @@ let kind k =
   match k with
     `Pure -> const_p | `Mutable -> mutable_p | `Mutator -> mutator_p
 
+type queue_elt = {
+  prop : int;
+  cardinal : int;
+  ce : J.expression;
+  deps : Code.VarSet.t
+}
+
 let access_queue queue x =
   try
-    let res = List.assoc x queue in
-    (res, List.remove_assoc x queue)
+    let elt = List.assoc x queue in
+    if elt.cardinal = 1
+    then
+      (elt.prop,elt.ce), List.remove_assoc x queue
+    else
+      ((elt.prop,elt.ce), List.map (function (x',elt) when x = x' -> x',{elt with cardinal=pred elt.cardinal} | x -> x) queue)
   with Not_found ->
     ((const_p, var x), queue)
+
+let access_queue' queue x =
+  match x with
+    | Pc c -> (const_p,constant c),queue
+    | Pv x -> access_queue queue x
+
+let access_queue_may_flush queue v x =
+  let tx,queue = access_queue queue x in
+  let _,instrs,queue = List.fold_left (fun (deps,instrs,queue) ((y,elt) as eq) ->
+      if Code.VarSet.exists (fun p -> Code.VarSet.mem p deps) elt.deps
+      then (Code.VarSet.add ( y) deps),
+        ((J.Variable_statement [ J.V y, Some elt.ce]) ::instrs),
+        queue
+      else  deps,instrs,(eq::queue)
+    ) (Code.VarSet.singleton ( v),[],[]) queue
+  in instrs,(tx,List.rev queue)
+
+
 
 let should_flush cond prop = cond <> const_p && cond + prop >= flush_p
 
 let flush_queue expr_queue prop l =
   let (instrs, expr_queue) =
     if prop >= flush_p then (expr_queue, []) else
-    List.partition (fun (y, (p, _)) -> should_flush prop p) expr_queue
+      List.partition (fun (y, elt) -> should_flush prop elt.prop) expr_queue
   in
   let instrs =
-    List.map (fun (x, (_, ce)) ->
+    List.map (fun (x, elt) ->
                 J.Variable_statement
-                  [J.V x, Some ce]) instrs
+                  [J.V x, Some elt.ce]) instrs
   in
   (List.rev_append instrs l, expr_queue)
 
+(* let flush_queue expr_queue prop l = *)
+(*   let l : J.statement list = l in *)
+(*   let (instrs, expr_queue) = *)
+(*     if prop >= flush_p then (List.fold_left (fun instrs (x,elt) -> *)
+(*       J.Variable_statement [ x, Some elt.ce] :: instrs) l expr_queue, []) *)
+(*     else *)
+(*       let _,instrs, expr_queue = *)
+(*         List.fold_left (fun (deps,instrs, expr_queue) ((y, elt) as eq) -> *)
+(*           if should_flush prop elt.prop *)
+(*           then ( *)
+(*             (y::deps), *)
+(*             ((J.Variable_statement [ y, Some elt.ce]) ::instrs), *)
+(*             expr_queue) *)
+(*           else *)
+(*             deps,instrs,(eq::expr_queue) *)
+(*         ) ([],l,[]) expr_queue in *)
+(*       instrs,List.rev expr_queue in *)
+(*   (\* List.partition (fun (y, (p, _,_,_)) -> should_flush prop p) expr_queue *\) *)
+(*   (instrs, expr_queue) *)
+
 let flush_all expr_queue l = fst (flush_queue expr_queue flush_p l)
 
-let enqueue expr_queue prop x ce =
+let enqueue expr_queue prop x ce cardinal =
   let (instrs, expr_queue) =
     if disable_compact_expr () then
       flush_queue expr_queue flush_p []
@@ -169,7 +218,13 @@ let enqueue expr_queue prop x ce =
     else
       [], expr_queue
   in
-  (instrs, (x, (prop, ce)) :: expr_queue)
+  let deps = Js_simpl.get_variable Code.VarSet.empty ce in
+  let deps = List.fold_left (fun deps (x',elt) ->
+      if Code.VarSet.mem ( x') deps
+      then Code.VarSet.union elt.deps deps
+      else deps) deps expr_queue
+  in
+  (instrs, (x, {prop; ce; cardinal; deps}) :: expr_queue)
 
 (****)
 
@@ -313,19 +368,11 @@ let parallel_renaming ctx params args continuation queue =
   let l = List.rev (visit_all params args) in
   List.fold_left
     (fun continuation (y, x) ->
-       fun queue ->
-       let ((px, cx), queue) = access_queue queue x in
-       let (st, queue) =
-(*
-         let idx = Var.idx y in
-         let len = Array.length ctx.Ctx.live in
-         match if idx >= len then 2 else ctx.Ctx.live.(Var.idx y) with
-           0 -> assert false
-         | 1 -> enqueue queue px y cx
-         | _ -> *)
-         flush_queue queue px [J.Variable_statement [J.V y, Some cx]]
-       in
-       st @ continuation queue)
+    fun queue ->
+      let instrs,((px, cx), queue) = access_queue_may_flush queue y x in
+      let (st, queue) = flush_queue queue px (instrs@[J.Variable_statement [ J.V y, Some cx]])
+      in
+      st @ continuation queue)
     continuation l queue
 
 (****)
@@ -445,33 +492,32 @@ let register_un_prim name k f =
   register_prim name k
     (fun l queue ->
        match l with
-         [Pv x] ->
-           let ((px, cx), queue) = access_queue queue x in
+         [x] ->
+           let ((px, cx), queue) = access_queue' queue x in
            (f cx, or_p (kind k) px, queue)
-       | _ ->
+         | _ ->
            assert false)
 
 let register_bin_prim name k f =
   register_prim name k
     (fun l queue ->
        match l with
-         [Pv x; Pv y] ->
-           let ((px, cx), queue) = access_queue queue x in
-           let ((py, cy), queue) = access_queue queue y in
+         [x;y] ->
+           let ((px, cx), queue) = access_queue' queue x in
+           let ((py, cy), queue) = access_queue' queue y in
            (f cx cy, or_p (kind k) (or_p px py), queue)
-       | _ ->
-           assert false)
+         | _ -> assert false)
 
 let register_tern_prim name f =
   register_prim name `Mutator
     (fun l queue ->
        match l with
-         [Pv x; Pv y; Pv z] ->
-           let ((px, cx), queue) = access_queue queue x in
-           let ((py, cy), queue) = access_queue queue y in
-           let ((pz, cz), queue) = access_queue queue z in
+         [x;y;z] ->
+           let ((px, cx), queue) = access_queue' queue x in
+           let ((py, cy), queue) = access_queue' queue y in
+           let ((pz, cz), queue) = access_queue' queue z in
            (f cx cy cz, or_p mutator_p (or_p px (or_p py pz)), queue)
-       | _ ->
+         | _ ->
            assert false)
 
 let register_un_math_prim name prim =
@@ -695,12 +741,12 @@ and translate_expr ctx queue x e =
       (constant c, const_p, queue)
   | Prim (p, l) ->
       begin match p, l with
-        Vectlength, [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
+        Vectlength, [x] ->
+          let ((px, cx), queue) = access_queue' queue x in
           (J.EBin (J.Minus, J.EDot (cx, "length"), one), px, queue)
-      | Array_get, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Array_get, [x; y] ->
+          let ((px, cx), queue) = access_queue' queue x in
+          let ((py, cy), queue) = access_queue' queue y in
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
@@ -715,9 +761,9 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let x = match x with Pv x -> x | _ -> assert false in
-                 let ((prop', cx), queue) = access_queue queue x in
-                 (cx :: args, or_p prop prop', queue))
+                let ((prop', cx), queue) = access_queue' queue x in
+                (cx :: args, or_p prop prop', queue)
+              )
               l ([], mutator_p, queue)
           in
           (J.ECall (J.EDot (cf, "call"), co :: args),
@@ -727,8 +773,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let x = match x with Pv x -> x | _ -> assert false in
-                 let ((prop', cx), queue) = access_queue queue x in
+                 let ((prop', cx), queue) = access_queue' queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
@@ -738,8 +783,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let x = match x with Pv x -> x | _ -> assert false in
-                 let ((prop', cx), queue) = access_queue queue x in
+                 let ((prop', cx), queue) = access_queue' queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
@@ -749,8 +793,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let x = match x with Pv x -> x | _ -> assert false in
-                 let ((prop', cx), queue) = access_queue queue x in
+                 let ((prop', cx), queue) = access_queue' queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
@@ -805,44 +848,43 @@ and translate_expr ctx queue x e =
               let (args, prop, queue) =
                 List.fold_right
                   (fun x (args, prop, queue) ->
-                     let x = match x with Pv x -> x | _ -> assert false in
-                     let ((prop', cx), queue) = access_queue queue x in
-                     (cx :: args, or_p prop prop', queue))
+                    let ((prop', cx), queue) = access_queue' queue x in
+                    (cx :: args, or_p prop prop', queue))
                   l ([], prim_kind, queue)
               in
               (J.ECall (J.EVar (J.S name), args), prop, queue)
           end
-      | Not, [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
+      | Not, [x] ->
+          let ((px, cx), queue) = access_queue' queue x in
           (J.EBin (J.Minus, one, cx), px, queue)
-      | Lt, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Lt, [x; y] ->
+          let ((px, cx), queue) = access_queue' queue x in
+          let ((py, cy), queue) = access_queue' queue y in
           (bool (J.EBin (J.Lt, cx, cy)), or_p px py, queue)
-      | Le, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Le, [x; y] ->
+          let ((px, cx), queue) = access_queue' queue x in
+          let ((py, cy), queue) = access_queue' queue y in
           (bool (J.EBin (J.Le, cx, cy)), or_p px py, queue)
-      | Eq, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Eq, [x; y] ->
+          let ((px, cx), queue) = access_queue' queue x in
+          let ((py, cy), queue) = access_queue' queue y in
           (bool (J.EBin (J.EqEqEq, cx, cy)), or_p px py, queue)
-      | Neq, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Neq, [x; y] ->
+          let ((px, cx), queue) = access_queue' queue x in
+          let ((py, cy), queue) = access_queue' queue y in
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
-      | IsInt, [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
+      | IsInt, [x] ->
+          let ((px, cx), queue) = access_queue' queue x in
           (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), J.EStr ("number", `Bytes)),
            px, queue)
-      | Ult, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Ult, [x; y] ->
+          let ((px, cx), queue) = access_queue' queue x in
+          let ((py, cy), queue) = access_queue' queue y in
           (bool (J.EBin (J.Or, J.EBin (J.Lt, cy, int 0),
                          J.EBin (J.Lt, cx, cy))),
            or_p px py, queue)
-      | WrapInt, [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
+      | WrapInt, [x] ->
+          let ((px, cx), queue) = access_queue' queue x in
           (to_int cx, px, queue)
       | (Vectlength | Array_get | Not | IsInt | Eq |
          Neq | Lt | Le | Ult | WrapInt), _ ->
@@ -869,7 +911,7 @@ and translate_closures ctx expr_queue l =
       let (st, expr_queue) =
         match ctx.Ctx.live.(Var.idx x) with
           0 -> flush_queue expr_queue flush_p [J.Expression_statement (cl, None)]
-        | 1 -> enqueue expr_queue flush_p x cl
+        | 1 -> enqueue expr_queue flush_p x cl 1
         | _ -> flush_queue expr_queue flush_p
                  [J.Variable_statement [J.V x, Some cl]]
       in
@@ -936,10 +978,17 @@ and translate_instr ctx expr_queue pc instr =
         match i with
           Let (x, e) ->
             let (ce, prop, expr_queue) = translate_expr ctx expr_queue x e in
-            begin match ctx.Ctx.live.(Var.idx x) with
-              0 -> flush_queue expr_queue prop [J.Expression_statement
+            begin match ctx.Ctx.live.(Var.idx x),e with
+              0,_ -> flush_queue expr_queue prop [J.Expression_statement
                                                    (ce, Some pc)]
-            | 1 -> enqueue expr_queue prop x ce
+            | 1,_ -> enqueue expr_queue prop x ce 1
+            (* We could inline more.
+               size_v : length of the variable after serialization
+               size_c : length of the constant after serialization
+               num : number of occurence
+               size_c * n < size_v * n + size_v + 1 + size_c
+            *)
+            | n,(Const _| Constant (Int _|Float _| Int32 _| Nativeint _)) -> enqueue expr_queue prop x ce n
             | _ -> flush_queue expr_queue prop
                      [J.Variable_statement [J.V x, Some ce]]
             end
@@ -950,7 +999,7 @@ and translate_instr ctx expr_queue pc instr =
               [J.Expression_statement
                   ((J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy)), Some pc)]
         | Offset_ref (x, n) ->
-(* FIX: may overflow.. *)
+          (* FIX: may overflow.. *)
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
@@ -1253,20 +1302,9 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
 and compile_argument_passing ctx queue (pc, args) backs continuation =
   if args = [] then
     continuation queue
-  else begin
+  else
     let block = AddrMap.find pc ctx.Ctx.blocks in
-    (* We flush on backward edged.  We do not need to flush on forward
-       edges, as the block parameter variables are fresh. *)
-    (*FIX: this is overly aggressive: we should instead keep track of
-      dependencies between queued variables and take this into account
-      to perform parallel renaming. *)
-    let cont queue =
-      parallel_renaming ctx block.params args continuation queue in
-    if AddrSet.mem pc backs then
-      flush_all queue (cont [])
-    else
-      cont queue
-  end
+    parallel_renaming ctx block.params args continuation queue
 
 and compile_exn_handling ctx queue (pc, args) handler continuation =
   if pc < 0 then
@@ -1310,7 +1348,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
        do the same for closure free variables *)
                  match 2 (*ctx.Ctx.live.(Var.idx y)*) with
                    0 -> assert false
-                 | 1 -> enqueue queue px y cx
+                 | 1 -> enqueue queue px y cx 1
                  | _ -> flush_queue queue px
                           [J.Variable_statement [J.V y, Some cx]]
                in
