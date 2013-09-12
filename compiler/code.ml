@@ -113,10 +113,6 @@ module Var : sig
   val from_idx : int -> t
   val to_string : t -> string
 
-  type stream
-  val make_stream : unit -> stream
-  val next : stream -> t * stream
-
   val fresh : unit -> t
 
   val count : unit -> int
@@ -138,17 +134,9 @@ end = struct
 
   let reset () = last_var := 0; VarPrinter.reset ()
 
-  type stream = int
-
   let to_string i = VarPrinter.to_string i
 
   let print f x = Format.fprintf f "%s" (to_string x)
-
-  let make_stream () = 1
-
-  let next current =
-    incr last_var;
-    (!last_var, current + 1)
 
   let fresh () = incr last_var; !last_var
 

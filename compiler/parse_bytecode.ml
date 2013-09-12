@@ -268,12 +268,11 @@ module State = struct
 
   type t =
     { accu : elt; stack : elt list; env : elt array; env_offset : int;
-      handlers : (Var.t * addr * int) list;
-      var_stream : Var.stream; globals : globals }
+      handlers : (Var.t * addr * int) list; globals : globals }
 
   let fresh_var state =
-    let (x, stream) = Var.next state.var_stream in
-    (x, {state with var_stream = stream; accu = Var x})
+    let x = Var.fresh () in
+    (x, {state with accu = Var x})
 
   let globals st = st.globals
 
@@ -348,18 +347,18 @@ module State = struct
                 handlers = []}
 
   let start_block state =
-    let (stack, stream) =
+    let stack =
       List.fold_right
-        (fun e (stack, stream) ->
+        (fun e stack ->
            match e with
              Dummy ->
-               (Dummy :: stack, stream)
+               Dummy :: stack
            | Var _ ->
-               let (x, stream) = Var.next stream in
-               (Var x :: stack, stream))
-        state.stack ([], state.var_stream)
+               let x = Var.fresh () in
+               Var x :: stack)
+        state.stack []
     in
-    let state = { state with stack = stack; var_stream = stream } in
+    let state = { state with stack = stack } in
     match state.accu with
       Dummy -> state
     | Var _ -> snd (fresh_var state)
@@ -385,7 +384,7 @@ module State = struct
 
   let initial g =
     { accu = Dummy; stack = []; env = [||]; env_offset = 0; handlers = [];
-      var_stream = Var.make_stream (); globals = g }
+      globals = g }
 
   let rec print_stack f l =
     match l with

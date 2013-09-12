@@ -30,16 +30,11 @@ module Var : sig
 
   val to_string : t -> string
 
-  type stream
-  val make_stream : unit -> stream
-  val next : stream -> t * stream
-
   val fresh : unit -> t
 
   val count : unit -> int
 
   val compare : t -> t -> int
-
 
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
