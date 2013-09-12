@@ -44,9 +44,14 @@ let f paths js_files input_file output_file =
     | None ->
       output_program (Pretty_print.to_out_channel stdout)
     | Some f ->
-      let ch = open_out_bin f in
-      output_program (Pretty_print.to_out_channel ch);
-      close_out ch
+      try
+        let ch = open_out_bin f in
+        output_program (Pretty_print.to_out_channel ch);
+        close_out ch
+      with exc ->
+        Sys.remove f;
+        Format.eprintf "compilation error: %s@." (Printexc.to_string exc);
+        raise exc
   end;
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
 
