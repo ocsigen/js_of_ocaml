@@ -1,3 +1,4 @@
+//Provides: unix_inet_addr_of_string
 function unix_inet_addr_of_string () {return 0;}
 
 //Provides: unix_gettimeofday
