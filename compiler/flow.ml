@@ -246,8 +246,7 @@ let approx_lift f s = VarSet.fold (fun y u -> a_max (f y) u) s Known
 
 let propagate2 ?(skip_param=false) defs known_origins possibly_mutable st x =
   match defs.(Var.idx x) with
-    Param ->
-      true
+    Param -> skip_param
   | Phi s ->
       VarSet.exists (fun y -> VarTbl.get st y) s
   | Expr e ->
