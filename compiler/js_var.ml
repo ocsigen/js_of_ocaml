@@ -1,5 +1,7 @@
 open Javascript
 
+let debug = Util.debug "coloring"
+
 module G = Graph.Pack.Graph
 (* module G = struct *)
 (*   include Graph.Imperative.Matrix.Graph *)
@@ -230,37 +232,41 @@ let program p =
   let t = source_elts (create()) p in
   assert(S.cardinal (get_free t) = 0);
   let t = mark t in
-  Printf.printf "compute graph degree\n%!";
+  if debug ()
+  then Printf.eprintf "compute graph degree\n%!";
   let degree = G.fold_vertex (fun v acc -> max acc (G.in_degree t.g v)) t.g 0 in
   let percent x all =
     float_of_int x /. float_of_int all *. 100. in
   let nb_vertex = (G.nb_vertex t.g) in
 
-  Printf.printf "degree:%d; optimal:%d #:%d gain:%.2f%%\n%!" degree t.biggest nb_vertex
+  if debug ()
+  then Printf.eprintf "degree:%d; optimal:%d #:%d gain:%.2f%%\n%!" degree t.biggest nb_vertex
     (percent (nb_vertex - t.biggest) nb_vertex);
 
   let rec loop = function
     | [] -> raise Not_found
     | k :: rem ->
       try
-        Printf.printf "try coloring with %d\n%!" k;
+        if debug ()
+        then Printf.eprintf "try coloring with %d\n%!" k;
         M.coloring t.g k
       with _ -> loop rem in
   loop [t.biggest;degree];
 
-
   (* build the mapping function *)
-  let vertex_count = Hashtbl.length t.vertex in
   let color_map = Hashtbl.fold (fun var vertex map ->
     let color = G.Mark.get vertex in
-    let count = try VM.find var t.count with _ -> failwith "no count" in
     let varset  = S.add var (try VM.find (V.from_idx color) map with _ -> S.empty) in
     let map = VM.add (V.from_idx color) varset map in
     map
   ) t.vertex VM.empty in
   let arr = Array.of_list (VM.bindings color_map) in
-  Array.sort (fun (_,i) (_,j) -> (S.cardinal i) - (S.cardinal j)) arr;
+  Array.sort (fun (_,i) (_,j) -> (S.cardinal j) - (S.cardinal i)) arr;
   let _,map = Array.fold_left (fun (i,map) (_,varset) ->
+    (* let count = S.cardinal varset in *)
+    let name = V.to_string (V.from_idx i) in
     succ i,
-    S.fold(fun var map -> VM.add var (V.from_idx i) map) varset map) (0,VM.empty) arr
-  in map
+    S.fold(fun var map ->
+      VM.add var name map) varset map) (0,VM.empty) arr
+  in
+  (fun v -> VM.find v map)

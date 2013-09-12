@@ -150,15 +150,22 @@ let link formatter ~standalone ?linkall pretty js =
     end;
   js
 
-let coloring js =
-  if times ()
-  then Format.eprintf "Start Coloring...@.";
-  js,Js_var.program js
+let coloring_disabled = Util.disabled "coloring"
 
-let output formatter d (js,subs) =
+let coloring js =
+  if not (coloring_disabled ())
+  then
+    begin
+      if times ()
+      then Format.eprintf "Start Coloring...@.";
+      js,Js_var.program js
+    end
+  else js, (fun v -> Code.Var.to_string v)
+
+let output formatter d (js,to_string) =
   if times ()
   then Format.eprintf "Start Writing file...@.";
-  Js_output.program formatter js d
+  Js_output.program formatter d to_string js
 
 let f ?(standalone=true) ?linkall formatter d =
   !profile >>
