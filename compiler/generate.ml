@@ -1453,43 +1453,21 @@ and compile_closure ctx (pc, args) =
 
 let compile_program standalone ctx pc =
   let res = compile_closure ctx (pc, []) in
+  let res = generate_apply_funs res in
   if debug () then Format.eprintf "@.@.";
-(*
-  Primitive.list_used ();
-*)
   if standalone then
-    let f = J.EFun ((None, [], generate_apply_funs res), None) in
+    let f = J.EFun ((None, [], res), None) in
     [J.Statement (J.Expression_statement ((J.ECall (f, [])), Some pc))]
   else
-    let f = J.EFun ((None, [J.V (Var.fresh ())],
-                     generate_apply_funs res), None) in
+    let f = J.EFun ((None, [J.V (Var.fresh ())], res), None) in
     [J.Statement (J.Expression_statement (f, Some pc))]
 
 (**********************)
 
-let list_missing l =
-  if l <> [] then begin
-    Format.eprintf "Missing primitives:@.";
-    List.iter (fun nm -> Format.eprintf "  %s@." nm) l
-  end
-
-let f ch ~standalone ?linkall ((pc, blocks, _) as p) dl live_vars =
+let f ~standalone ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let t' = Util.Timer.make () in
   let ctx = Ctx.initial blocks live_vars mutated_vars in
   let p = compile_program standalone ctx pc in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
   p
-
-
-
-let f_link ch ~standalone ?linkall pretty =
-  if standalone
-  then
-    begin
-      Pretty_print.string ch
-        "// This program was compiled from OCaml by js_of_ocaml 1.3";
-      Pretty_print.newline ch;
-      let missing = Linker.resolve_deps ?linkall ch (Primitive.get_used ()) in
-      list_missing missing
-    end

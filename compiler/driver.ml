@@ -120,24 +120,42 @@ let o3 =
 
 let profile = ref o1
 
-
-let f_generate formatter  ~standalone ?linkall d (p,live_vars) =
+let generate ~standalone (p,live_vars) =
   if times ()
   then Format.eprintf "Start Generation...@.";
-  Generate.f formatter ~standalone ?linkall p d live_vars
+  Generate.f ~standalone p live_vars
 
-let f_link formatter ~standalone ?linkall pretty js =
-  if times ()
-  then Format.eprintf "Start Linking...@.";
-  Generate.f_link formatter ~standalone ?linkall pretty;
+
+let header formatter ~standalone js =
+  if standalone then begin
+    Pretty_print.string formatter
+      "// This program was compiled from OCaml by js_of_ocaml 1.3";
+    Pretty_print.newline formatter;
+  end;
   js
 
-let f_coloring js =
+let link formatter ~standalone ?linkall pretty js =
+  if standalone
+  then
+    begin
+      if times ()
+      then Format.eprintf "Start Linking...@.";
+      let missing = Linker.resolve_deps ?linkall formatter (Primitive.get_used ()) in
+      match missing with
+        | [] -> ()
+        | l ->
+          Format.eprintf "Missing primitives:@.";
+          List.iter (fun nm -> Format.eprintf "  %s@." nm) l
+
+    end;
+  js
+
+let coloring js =
   if times ()
   then Format.eprintf "Start Coloring...@.";
   js,Js_var.program js
 
-let f_output formatter d (js,subs) =
+let output formatter d (js,subs) =
   if times ()
   then Format.eprintf "Start Writing file...@.";
   Js_output.program formatter js d
@@ -145,10 +163,11 @@ let f_output formatter d (js,subs) =
 let f ?(standalone=true) ?linkall formatter d =
   !profile >>
   deadcode' >>
-  f_generate formatter ~standalone ?linkall d >>
-  f_link formatter ~standalone ?linkall false >>
-  f_coloring >>
-  f_output formatter d
+  generate ~standalone >>
+  header formatter ~standalone >>
+  link formatter ~standalone ?linkall false >>
+  coloring >>
+  output formatter d
 
 let from_string prims s formatter =
   let (p,d) = Parse_bytecode.from_string prims s in

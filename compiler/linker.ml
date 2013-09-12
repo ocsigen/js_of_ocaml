@@ -242,13 +242,3 @@ let resolve_deps ?(linkall = false) f l =
     ) provided;
   end;
   List.rev missing
-
-(*
-let _ =
-  for i = 1 to Array.length Sys.argv - 1 do
-    add_file Sys.argv.(i)
-  done;
-  let missing = ref [] in
-  Format.eprintf "%a@."
-    (fun f v -> missing := resolve_deps f v) ["caml_array_get"]
-*)

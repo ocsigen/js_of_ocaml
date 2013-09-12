@@ -18,7 +18,4 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* val statement : *)
-(*   Pretty_print.t -> Javascript.statement -> Parse_bytecode.debug_loc -> unit *)
-
 val program : Pretty_print.t -> Javascript.program -> Parse_bytecode.debug_loc -> unit
