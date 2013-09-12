@@ -10,10 +10,12 @@ dgraph.cmo : dgraph.cmi
 dgraph.cmx : dgraph.cmi
 driver.cmo : util.cmi tailcall.cmi primitive.cmi pretty_print.cmi \
     phisimpl.cmi parse_bytecode.cmi linker.cmi js_var.cmi js_output.cmi \
-    inline.cmi generate.cmi flow.cmi deadcode.cmi code.cmi driver.cmi
+    inline.cmi generate.cmi flow.cmi deadcode.cmi constant.cmo code.cmi \
+    driver.cmi
 driver.cmx : util.cmx tailcall.cmx primitive.cmx pretty_print.cmx \
     phisimpl.cmx parse_bytecode.cmx linker.cmx js_var.cmx js_output.cmx \
-    inline.cmx generate.cmx flow.cmx deadcode.cmx code.cmx driver.cmi
+    inline.cmx generate.cmx flow.cmx deadcode.cmx constant.cmx code.cmx \
+    driver.cmi
 flow.cmo : util.cmi subst.cmi dgraph.cmi code.cmi flow.cmi
 flow.cmx : util.cmx subst.cmx dgraph.cmx code.cmx flow.cmi
 freevars.cmo : util.cmi code.cmi freevars.cmi
@@ -34,8 +36,8 @@ js_output.cmx : util.cmx pretty_print.cmx parse_bytecode.cmx javascript.cmx \
     code.cmx js_output.cmi
 js_rename.cmo : util.cmi javascript.cmi
 js_rename.cmx : util.cmx javascript.cmx
-js_simpl.cmo : javascript.cmi js_simpl.cmi
-js_simpl.cmx : javascript.cmx js_simpl.cmi
+js_simpl.cmo : javascript.cmi code.cmi js_simpl.cmi
+js_simpl.cmx : javascript.cmx code.cmx js_simpl.cmi
 js_var.cmo : util.cmi javascript.cmi code.cmi js_var.cmi
 js_var.cmx : util.cmx javascript.cmx code.cmx js_var.cmi
 linker.cmo : util.cmi primitive.cmi pretty_print.cmi code.cmi linker.cmi
@@ -74,7 +76,7 @@ inline.cmi : code.cmi
 instr.cmi :
 javascript.cmi : code.cmi
 js_output.cmi : pretty_print.cmi parse_bytecode.cmi javascript.cmi code.cmi
-js_simpl.cmi : javascript.cmi
+js_simpl.cmi : javascript.cmi code.cmi
 js_var.cmi : javascript.cmi code.cmi
 linker.cmi : pretty_print.cmi
 parse_bytecode.cmi : code.cmi
