@@ -47,7 +47,7 @@ let update a =
     end else
       false
   end else begin
-    if get a (i - 1) j k & get a i (j - 1) k && get a i j (k - 1) then begin
+    if get a (i - 1) j k && get a i (j - 1) k && get a i j (k - 1) then begin
       a.(i).(j).(k) <- true;
       true
     end else
