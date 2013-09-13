@@ -73,25 +73,20 @@ let vertex t v =
 let get_free t = S.diff t.use t.def
 
 let mark g =
-  let free = get_free g in
-  S.iter (fun u -> G.add_vertex g.g (vertex g u)) g.def;
-  let u = S.union g.def (S.union free g.use) in
-  let f a b =
-    S.iter (fun u1 ->
-      S.iter (fun u2 ->
-        if u1 <> u2
-        then
-          G.add_edge
-            g.g
-            (vertex g u1)
-            (vertex g u2)
-      ) a
-    ) b
-  in
-  f g.use g.use;
-  f g.use free;
-  f g.def g.use;
-  f g.def free;
+  let u = S.union g.def g.use in
+  S.iter (fun u -> G.add_vertex g.g (vertex g u)) u;
+  S.fold (fun u1 set ->
+    let set = S.remove u1 set in
+    S.iter (fun u2 ->
+      if u1 <> u2
+      then
+        G.add_edge
+          g.g
+          (vertex g u1)
+          (vertex g u2)
+    ) set;
+    set
+  ) u u;
   {g with biggest = max g.biggest (S.cardinal u)}
 
 let create () = (* empty (G.make (Code.Var.count ())) *)
@@ -213,13 +208,16 @@ and statement t s = match s with
     let t = match w with
       | None -> t
       | Some (id,block) ->
-        let tbody = statements (empty t) block in
-        let tbody = def_var tbody id in
-        let tbody = mark tbody in
-        let t = merge_info ~from:tbody ~into:t in
-        { t with
-          use = S.union t.use (rm_var t.use id) ;
-          def = S.union t.def (rm_var t.def id) }
+        let t = statements t block in
+        let t = def_var t id in
+        t
+        (* let tbody = statements (empty t) block in *)
+        (* let tbody = def_var tbody id in *)
+        (* let tbody = mark tbody in *)
+        (* let t = merge_info ~from:tbody ~into:t in *)
+        (* { t with *)
+        (*   use = S.union t.use (rm_var t.use id) ; *)
+        (*   def = S.union t.def (rm_var t.def id) } *)
     in
     let t = match f with
       | None -> t
