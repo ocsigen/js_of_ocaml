@@ -216,12 +216,6 @@ let rec if_statement e iftrue truestop (iffalse : J.statement) falsestop =
       if_statement_2 e iftrue truestop iffalse falsestop
 
 
-module VSet = Set.Make(struct
-    type t = J.ident
-    let compare = J.compare_ident
-end)
-
-
 let rec get_variable acc = function
   | J.ESeq (e1,e2)
   | J.EBin (_,e1,e2)
