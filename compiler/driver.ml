@@ -49,11 +49,11 @@ let constant p =
   else p
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
-  Flow.f p
+  fst (Flow.f p)
 
 let flow_simple p =
   if debug () then Format.eprintf "Data flow...@.";
-  Flow.f ~skip_param:true p
+  fst (Flow.f ~skip_param:true p)
 
 let phi p =
   if debug () then Format.eprintf "Variable passing simplification...@.";

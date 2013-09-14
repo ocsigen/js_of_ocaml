@@ -38,8 +38,8 @@ js_rename.cmo : util.cmi javascript.cmi
 js_rename.cmx : util.cmx javascript.cmx
 js_simpl.cmo : javascript.cmi code.cmi js_simpl.cmi
 js_simpl.cmx : javascript.cmx code.cmx js_simpl.cmi
-js_var.cmo : option.cmo javascript.cmi code.cmi js_var.cmi
-js_var.cmx : option.cmx javascript.cmx code.cmx js_var.cmi
+js_var.cmo : util.cmi option.cmo javascript.cmi code.cmi js_var.cmi
+js_var.cmx : util.cmx option.cmx javascript.cmx code.cmx js_var.cmi
 linker.cmo : util.cmi primitive.cmi pretty_print.cmi code.cmi linker.cmi
 linker.cmx : util.cmx primitive.cmx pretty_print.cmx code.cmx linker.cmi
 main.cmo : util.cmi pretty_print.cmi parse_bytecode.cmi option.cmo \
@@ -62,6 +62,8 @@ primitive.cmo : util.cmi primitive.cmi
 primitive.cmx : util.cmx primitive.cmi
 pure_fun.cmo : primitive.cmi code.cmi pure_fun.cmi
 pure_fun.cmx : primitive.cmx code.cmx pure_fun.cmi
+specialize.cmo : option.cmo flow.cmi code.cmi
+specialize.cmx : option.cmx flow.cmx code.cmx
 subst.cmo : util.cmi code.cmi subst.cmi
 subst.cmx : util.cmx code.cmx subst.cmi
 tailcall.cmo : util.cmi subst.cmi option.cmo code.cmi tailcall.cmi

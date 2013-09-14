@@ -37,4 +37,16 @@ val get_label : t -> Code.Var.t option
 
 *)
 
-val f : ?skip_param:bool -> Code.program -> Code.program (* * t array*)
+type def = Phi of Code.VarSet.t | Expr of Code.expr | Param
+
+type info = {
+  info_defs:def array;
+  info_known_origins : Code.VarSet.t Code.VarTbl.t;
+  info_maybe_unknown : bool Code.VarTbl.t;
+  info_possibly_mutable : bool array;
+}
+
+val get_approx : info -> (Code.VarSet.elt -> 'b) ->
+           'b -> ('b -> 'b -> 'b) -> Code.VarTbl.key -> 'b
+
+val f : ?skip_param:bool -> Code.program -> Code.program * info
