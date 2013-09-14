@@ -105,7 +105,6 @@ module Var : sig
   type t
   val print : Format.formatter -> t -> unit
   val idx : t -> int
-  val from_idx : int -> t
   val to_string : t -> string
 
   val fresh : unit -> t
@@ -137,7 +136,6 @@ end = struct
   let count () = !last_var + 1
 
   let idx v = v
-  let from_idx v = v
 
   let compare v1 v2 = v1 - v2
 

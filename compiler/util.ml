@@ -23,6 +23,7 @@ module IntSet = Set.Make (Int)
 module IntMap = Map.Make (Int)
 
 module StringSet = Set.Make (String)
+module StringMap = Map.Make (String)
 
 let opt_map f x = match x with None -> None | Some v -> Some (f v)
 let opt_iter f x = match x with None -> () | Some v -> f v

@@ -252,19 +252,19 @@ let program p =
   loop [t.biggest;degree];
 
   (* build the mapping function *)
+  let module M = Util.IntMap in
   let color_map = Hashtbl.fold (fun var vertex map ->
     let color = G.Mark.get vertex in
-    let varset  = S.add var (try VM.find (V.from_idx color) map with _ -> S.empty) in
-    let map = VM.add (V.from_idx color) varset map in
+    let varset  = S.add var (try M.find color map with _ -> S.empty) in
+    let map = M.add color varset map in
     map
-  ) t.vertex VM.empty in
-  let arr = Array.of_list (VM.bindings color_map) in
+  ) t.vertex M.empty in
+  let arr = Array.of_list (M.bindings color_map) in
   Array.sort (fun (_,i) (_,j) -> (S.cardinal j) - (S.cardinal i)) arr;
-  let _,map = Array.fold_left (fun (i,map) (_,varset) ->
+  let map = Array.fold_left (fun map (_,varset) ->
     (* let count = S.cardinal varset in *)
-    let name = V.to_string (V.from_idx i) in
-    succ i,
+    let name = V.to_string (S.choose varset) in
     S.fold(fun var map ->
-      VM.add var name map) varset map) (0,VM.empty) arr
+      VM.add var name map) varset map) VM.empty arr
   in
   (fun v -> VM.find v map)
