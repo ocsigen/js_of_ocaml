@@ -20,9 +20,6 @@
 
 (*FIX: this should probably be somewhere else... *)
 
-
-let disable_compact = Util.disabled "compact"
-
 module Reserved = struct
   let reserved = Hashtbl.create 107
 
@@ -73,11 +70,9 @@ module VarPrinter = struct
     else
       format_ident ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
 
-  let pretty = ref false
-
   let format_var i x =
     let s = format_ident x in
-    if !pretty then begin
+    if Option.Optim.pretty () then begin
       try
         let nm = Hashtbl.find names i in
         Format.sprintf "%s_%s_" nm s
@@ -121,7 +116,6 @@ module Var : sig
 
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
-  val set_pretty : unit -> unit
 
   val reset : unit -> unit
 
@@ -149,7 +143,6 @@ end = struct
 
   let name i nm = VarPrinter.name i nm
   let propagate_name i j = VarPrinter.propagate_name i j
-  let set_pretty () = VarPrinter.pretty := true
 
   let dummy = -1
 end

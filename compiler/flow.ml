@@ -18,9 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let debug = Util.debug "flow"
-let disable_optcall = Util.disabled "optcall"
-let times = Util.debug "times"
+let debug = Option.Debug.find "flow"
+let times = Option.Debug.find "times"
 
 open Code
 
@@ -325,7 +324,7 @@ let function_cardinality ((defs, _, _) as info) x =
 
 let specialize_instr info i =
   match i with
-    Let (x, Apply (f, l, _)) when not (disable_optcall ()) ->
+    Let (x, Apply (f, l, _)) when Option.Optim.optcall () ->
       Let (x, Apply (f, l, function_cardinality info f))
 
 (*FIX this should be moved to a different file (javascript specific) *)

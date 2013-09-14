@@ -52,44 +52,6 @@ let read_file f =
   close_in ch;
   Buffer.contents b
 
-(****)
-
-let debugs = ref []
-
-let debug s =
-  let state =
-    try
-      List.assoc s !debugs
-    with Not_found ->
-      let state = ref false in
-      debugs := (s, state) :: !debugs;
-      state
-  in
-  fun () -> !state
-
-let set_debug s =
-  try List.assoc s !debugs := true with Not_found -> ()
-
-(****)
-
-let disabled_lst = ref []
-
-let disabled ?(init=false) s =
-  let state = ref init in
-  if not (List.mem_assoc s !disabled_lst)
-  then disabled_lst := (s, state) :: !disabled_lst;
-  fun () -> !state
-
-let set_disabled s =
-  try List.assoc s !disabled_lst := true with Not_found ->
-   Format.eprintf "%s: no disable option named '%s'@." Sys.argv.(0) s; exit 1
-
-let set_enabled s =
-  try List.assoc s !disabled_lst := false with Not_found ->
-   Format.eprintf "%s: no disable option named '%s'@." Sys.argv.(0) s; exit 1
-
-(****)
-
 module Timer = struct
   type t = float
   let timer = ref (fun _ -> 0.)

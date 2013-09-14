@@ -1,12 +1,8 @@
 open Code
 
-let static_eval_disabled = Util.disabled "static_eval"
-let propagate_constant_disabled = Util.disabled "constant"
-
 let eval_prim x =
-  if static_eval_disabled ()
-  then None
-  else
+  if Option.Optim.staticeval ()
+  then
     let bool b = Some (Int (if b then 1 else 0)) in
     match x with
       | Not, [Pc (Int i)] -> bool (i=0)
@@ -92,7 +88,7 @@ let eval_prim x =
           | ("caml_js_equals"|"caml_equal"), [Pv x1;Pv x2] when x1 = x2 -> bool true
           | _ -> None)
       | _ -> None
-
+  else None
 
 let propagate constants defs blocks free_pc pc =
   let block = AddrMap.find pc blocks in
@@ -178,14 +174,11 @@ let get_constant (_, blocks, _) defs =
 
 
 let f ((pc,blocks,free_pc) as p) defs =
-  if propagate_constant_disabled ()
-  then p
-  else
-    let constants = get_constant p defs in
-    let blocks,free_pc,_ =
-      AddrMap.fold
-        (fun pc _ (blocks, free_pc,constants) ->
-          propagate constants defs blocks free_pc pc)
-        blocks
-        (blocks, free_pc,constants)
-    in (pc,blocks,free_pc)
+  let constants = get_constant p defs in
+  let blocks,free_pc,_ =
+    AddrMap.fold
+      (fun pc _ (blocks, free_pc,constants) ->
+        propagate constants defs blocks free_pc pc)
+      blocks
+      (blocks, free_pc,constants)
+  in (pc,blocks,free_pc)

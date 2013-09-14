@@ -18,8 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let debug = Util.debug "main"
-let times = Util.debug "times"
+let debug = Option.Debug.find "main"
+let times = Option.Debug.find "times"
 let tailcall p =
   if debug () then Format.eprintf "Tail-call optimization...@.";
   Tailcall.f p
@@ -33,15 +33,20 @@ let deadcode p =
   in r
 
 let inline p =
-  let (p,live_vars,_) = deadcode' p in
-  if debug () then Format.eprintf "Inlining...@.";
-  Inline.f p live_vars
+  if Option.Optim.inline () && Option.Optim.deadcode ()
+  then
+    let (p,live_vars,_) = deadcode' p in
+    if debug () then Format.eprintf "Inlining...@.";
+    Inline.f p live_vars
+  else p
 
 let constant p =
-  let (p,_,defs) = deadcode' p in
-  if debug () then Format.eprintf "Constant...@.";
-  Constant.f p defs
-
+  if Option.Optim.constant ()
+  then
+    let (p,_,defs) = deadcode' p in
+    if debug () then Format.eprintf "Constant...@.";
+    Constant.f p defs
+  else p
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
   Flow.f p
@@ -149,10 +154,8 @@ let link formatter ~standalone ?linkall pretty js =
     end;
   js
 
-let coloring_disabled = Util.disabled "coloring"
-
 let coloring js =
-  if not (coloring_disabled ())
+  if Option.Optim.shortvar ()
   then
     begin
       if times ()
@@ -166,7 +169,13 @@ let output formatter d (js,to_string) =
   then Format.eprintf "Start Writing file...@.";
   Js_output.program formatter d to_string js
 
+
+let configure formatter p =
+  Pretty_print.set_compact formatter (not (Option.Optim.pretty ()));
+  p
+
 let f ?(standalone=true) ?linkall formatter d =
+  configure formatter >>
   !profile >>
   deadcode' >>
   generate ~standalone >>

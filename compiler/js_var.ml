@@ -1,6 +1,6 @@
 open Javascript
 
-let debug = Util.debug "coloring"
+let debug = Option.Debug.find "shortvar"
 
 module G = Graph.Pack.Graph
 (* module G = struct *)

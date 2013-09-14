@@ -33,15 +33,13 @@ open Javascript
 
 module PP = Pretty_print
 
-let no_debug_info = Util.disabled ~init:true "debuginfo"
-
 module Make(D : sig
   val debug_info : Parse_bytecode.debug_loc
   val to_string : Code.Var.t -> string
 end) = struct
 
   let output_debug_info f pc =
-    if not (no_debug_info())
+    if Option.Optim.debuginfo ()
     then
       match pc with
         | None -> ()

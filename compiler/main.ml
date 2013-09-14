@@ -18,11 +18,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let debug = Util.debug "main"
-let times = Util.debug "times"
-let linkall = ref false
+let times = Option.Debug.find "times"
 
-let f paths js_files input_file output_file =
+let f linkall paths js_files input_file output_file =
   let t = Util.Timer.make () in
   List.iter Linker.add_file js_files;
   let paths = List.rev_append paths [Findlib.package_directory "stdlib"] in
@@ -38,7 +36,6 @@ let f paths js_files input_file output_file =
         p
   in
   if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
-  let linkall = !linkall in
   let output_program fmt = Driver.f ~linkall fmt d p in
   begin match output_file with
     | None ->
@@ -62,15 +59,16 @@ let _ =
   let output_file = ref None in
   let input_file = ref None in
   let no_runtime = ref false in
+  let linkall = ref false in
   let paths = ref [] in
   let options =
-    [("-debug", Arg.String Util.set_debug, "<name> debug module <name>");
+    [("-debug", Arg.String Option.Debug.set, "<name> debug module <name>");
      ("-disable",
-      Arg.String Util.set_disabled, "<name> disable optimization <name>");
-     ("-pretty", Arg.Unit (fun () -> Util.set_enabled "pretty"), " pretty print the output");
-     ("-debuginfo", Arg.Unit (fun () -> Util.set_enabled "debuginfo"), " output debug info");
+      Arg.String Option.Optim.disable, "<name> disable optimization <name>");
+     ("-pretty", Arg.Unit (fun () -> Option.Optim.enable "pretty"), " pretty print the output");
+     ("-debuginfo", Arg.Unit (fun () -> Option.Optim.enable "debuginfo"), " output debug info");
      ("-opt", Arg.Int Driver.set_profile, "<oN> set optimization profile : o1 (default), o2, o3");
-     ("-noinline", Arg.Unit (fun () -> Util.set_disabled "inline"), " disable inlining");
+     ("-noinline", Arg.Unit (fun () -> Option.Optim.disable "inline"), " disable inlining");
      ("-linkall", Arg.Set linkall, " link all primitives");
      ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
       " do not include the standard runtime");
@@ -91,7 +89,7 @@ let _ =
   let runtime = if !no_runtime then [] else ["+runtime.js"] in
   let chop_extension s =
     try Filename.chop_extension s with Invalid_argument _ -> s in
-  f !paths (runtime @ List.rev !js_files) !input_file
+  f !linkall !paths (runtime @ List.rev !js_files) !input_file
     (match !output_file with
        Some _ -> !output_file
      | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") !input_file)

@@ -23,7 +23,7 @@
 open Code
 open Instr
 
-let debug = Util.debug "parser"
+let debug = Option.Debug.find "parser"
 
 (****)
 
@@ -225,8 +225,6 @@ module Debug = struct
     | _                  -> ()
 
 end
-
-let don't_keep_variable_names = Util.disabled ~init:true "pretty"
 
 (****)
 
@@ -1764,7 +1762,7 @@ let from_channel ~paths ic =
   ignore(seek_section toc ic "SYMB");
   let symbols = (input_value ic : Ident.t numtable) in
 
-  if not (don't_keep_variable_names ()) then begin
+  if Option.Optim.pretty () then begin
     try
       ignore(seek_section toc ic "DBUG");
       Debug.read ic;

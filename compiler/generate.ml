@@ -33,12 +33,8 @@ Patterns:
 - CLEAN UP!!!
 *)
 
-let compact = ref true
-let debug = Util.debug "gen"
-let times = Util.debug "times"
-let disable_compact_expr = Util.disabled "compactexpr"
-
-let pretty_off = Util.disabled ~init:true "pretty"
+let debug = Option.Debug.find "gen"
+let times = Option.Debug.find "times"
 
 (****)
 
@@ -211,12 +207,12 @@ let flush_all expr_queue l = fst (flush_queue expr_queue flush_p l)
 
 let enqueue expr_queue prop x ce cardinal =
   let (instrs, expr_queue) =
-    if disable_compact_expr () then
-      flush_queue expr_queue flush_p []
-    else if is_mutable prop then
-      flush_queue expr_queue prop []
-    else
-      [], expr_queue
+    if Option.Optim.compact () then
+      if is_mutable prop then
+        flush_queue expr_queue prop []
+      else
+        [], expr_queue
+    else flush_queue expr_queue flush_p []
   in
   let deps = Js_simpl.get_variable Code.VarSet.empty ce in
   let deps = List.fold_left (fun deps (x',elt) ->
