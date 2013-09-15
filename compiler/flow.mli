@@ -49,4 +49,8 @@ type info = {
 val get_approx : info -> (Code.VarSet.elt -> 'b) ->
            'b -> ('b -> 'b -> 'b) -> Code.VarTbl.key -> 'b
 
+val the_def_of : info -> Code.prim_arg -> Code.expr option
+
+val the_int : info -> Code.prim_arg -> int option
+
 val f : ?skip_param:bool -> Code.program -> Code.program * info

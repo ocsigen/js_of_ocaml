@@ -14,6 +14,8 @@ driver.cmx : tailcall.cmx specialize_js.cmx specialize.cmx primitive.cmx \
     pretty_print.cmx phisimpl.cmx parse_bytecode.cmx option.cmx linker.cmx \
     js_var.cmx js_output.cmx inline.cmx generate.cmx flow.cmx deadcode.cmx \
     code.cmx driver.cmi
+eval.cmo : primitive.cmi option.cmo flow.cmi code.cmi
+eval.cmx : primitive.cmx option.cmx flow.cmx code.cmx
 flow.cmo : util.cmi subst.cmi option.cmo dgraph.cmi code.cmi flow.cmi
 flow.cmx : util.cmx subst.cmx option.cmx dgraph.cmx code.cmx flow.cmi
 freevars.cmo : util.cmi option.cmo code.cmi freevars.cmi
@@ -62,8 +64,8 @@ pure_fun.cmo : primitive.cmi code.cmi pure_fun.cmi
 pure_fun.cmx : primitive.cmx code.cmx pure_fun.cmi
 specialize.cmo : option.cmo flow.cmi code.cmi
 specialize.cmx : option.cmx flow.cmx code.cmx
-specialize_js.cmo : primitive.cmi option.cmo flow.cmi code.cmi
-specialize_js.cmx : primitive.cmx option.cmx flow.cmx code.cmx
+specialize_js.cmo : flow.cmi code.cmi
+specialize_js.cmx : flow.cmx code.cmx
 subst.cmo : util.cmi code.cmi subst.cmi
 subst.cmx : util.cmx code.cmx subst.cmi
 tailcall.cmo : util.cmi subst.cmi option.cmo code.cmi tailcall.cmi

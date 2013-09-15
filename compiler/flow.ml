@@ -36,6 +36,7 @@ type info = {
   info_possibly_mutable : bool array
 }
 
+
 let undefined = Phi VarSet.empty
 
 let is_undefined d = match d with Phi s -> VarSet.is_empty s | _ -> false
@@ -204,9 +205,9 @@ let expr_escape st x e =
     st.possibly_mutable.(Var.idx s) <- true;
       List.iter
         (fun x ->
-           match x with
-             Pv x -> block_escape st x
-           | Pc _ -> ())
+          match x with
+              Pv x -> block_escape st x
+            | Pc _ -> ())
         l
   | Prim (_, l) ->
       List.iter
@@ -307,6 +308,25 @@ let get_approx {info_defs; info_known_origins;info_maybe_unknown} f top join x =
     0 -> top
   | 1 -> f (VarSet.choose s)
   | _ -> VarSet.fold (fun x u -> join (f x) u) s (f (VarSet.choose s))
+
+let the_def_of info x =
+  match x with
+    | Pv x ->
+      get_approx info
+        (fun x -> match info.info_defs.(Var.idx x) with Expr e -> Some e | _ -> None)
+        None (fun u v -> None) x
+    | Pc c -> Some (Constant c)
+
+let the_int info x =
+  match x with
+    | Pv x ->
+      get_approx info
+        (fun x -> match info.info_defs.(Var.idx x) with Expr (Const i) -> Some i | _ -> None)
+        None
+        (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
+        x
+    | Pc (Int i) -> Some i
+    | _ -> None
 
 (*XXX Maybe we could iterate? *)
 let direct_approx info x =

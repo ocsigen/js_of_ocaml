@@ -48,10 +48,20 @@ let specialize_js (p,info) =
   if debug () then Format.eprintf "Specialize js...@.";
   Specialize_js.f p info
 
-let specialize (p,info) =
+let specialize' (p,info) =
   let p = specialize_1 (p,info)in
   let p = specialize_js (p,info) in
-  p
+  p,info
+
+let specialize p =
+  fst (specialize' p)
+
+let eval (p,info) =
+  if Option.Optim.staticeval()
+  then
+    let (p,live_vars,_) = deadcode' p in
+    Eval.f info live_vars p
+  else p
 
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
@@ -120,12 +130,14 @@ let round1 : 'a -> 'a =
   deadcode >>
   (* deadcode required before flow simple -> provided by constant *)
   flow_simple >> (* flow simple to keep information for furture tailcall opt *)
-  specialize >>
+  specialize' >>
+  eval >>
   identity
 
 let round2 =
   flow >>
-  specialize >>
+  specialize' >>
+  eval >>
   deadcode >>
   o1
 

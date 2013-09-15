@@ -10,7 +10,7 @@ PACKAGES=findlib,str,unix,ocamlgraph
 OBJS=pretty_print.cmx util.cmx option.cmx dgraph.cmx \
      code.cmx javascript.cmx js_output.cmx js_simpl.cmx \
      instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
-     flow.cmx specialize.cmx specialize_js.cmx inline.cmx \
+     flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
 	   js_var.cmx \
      linker.cmx generate.cmx parse_bytecode.cmx driver.cmx
