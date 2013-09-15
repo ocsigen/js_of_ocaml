@@ -125,12 +125,12 @@ let eval_instr info i =
       end
     | Let (x,Prim (Extern ("caml_js_from_string"), [y])) ->
       begin match the_def_of info y with
-        | Some (Constant (String str) as c) ->
+        | Some (Constant (String str)) ->
           begin match y with
-            | Pv y when false && not (info.info_possibly_mutable.(Var.idx y)) ->
-              Let(x,c)
+            | Pv y when true || not (info.info_possibly_mutable.(Var.idx y)) ->
+              Let(x,(Constant (IString str)))
             | Pc _ ->
-              Let(x, c)
+              Let(x, (Constant (IString str)))
             | _ -> i
           end
         | _ -> i
