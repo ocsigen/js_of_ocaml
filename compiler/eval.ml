@@ -115,18 +115,23 @@ let eval_instr info live i =
           end
         | _ -> i
       end
-    | Let (x,Prim (prim, prim_args)) ->
+    | Let (x,Prim (prim, prim_args)) when false ->
       begin
-        try
-          let prim_args = List.map (fun x ->
-            match the_def_of info x with
-              | Some (Constant c) -> c
-              | Some (Const i) -> Int i
-              | _ -> raise Not_constant) prim_args in
-          match eval_prim (prim,prim_args) with
-            | Some c -> Let (x,Constant c)
-            | _ -> i
-        with Not_constant -> i
+        let prim_args' = List.map (fun x ->
+          match the_def_of info x with
+            | Some (Constant c) -> Some c
+            | Some (Const i) -> Some (Int i)
+            | _ -> None) prim_args in
+        let res =
+          if List.for_all (function Some _ -> true | _ -> false) prim_args'
+          then eval_prim (prim,List.map (function Some c -> c | None -> assert false) prim_args')
+          else None in
+        match res with
+          | Some c -> Let (x,Constant c)
+          | _ -> Let(x, Prim(prim, (List.map2 (fun arg c ->
+            match c with
+              | Some c -> Pc c
+              | _ -> arg) prim_args prim_args')))
       end
     | _ -> i
 

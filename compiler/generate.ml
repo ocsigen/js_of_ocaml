@@ -104,27 +104,21 @@ let get_string s =
     strings_state := (s,v)::!strings_state;
     v
 
-let rec constant ?ctx x =
+let rec constant ~ctx x =
   match x with
     String s ->
-      let once = match ctx with
-        | None -> false
-        | Some ctx -> Ctx.string_used_once ctx s in
       Primitive.mark_used "s";
-      if once
+      if Ctx.string_used_once ctx s
       then J.ECall (J.EVar (J.S "s"), [J.EStr (s,`Bytes)])
       else
         let x = get_string s in
         J.ECall (J.EVar (J.S "s"), [J.EVar x])
   | IString s ->
-      let once = match ctx with
-        | None -> false
-        | Some ctx -> Ctx.string_used_once ctx s in
-      if once
-      then J.EStr (s,`Bytes)
-      else
-        let x = get_string s in
-        J.EVar x
+    if Ctx.string_used_once ctx s
+    then J.EStr (s,`Bytes)
+    else
+      let x = get_string s in
+      J.EVar x
   | Float f ->
       float_const f
   | Float_array a ->
@@ -141,7 +135,7 @@ let rec constant ?ctx x =
               Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))]
   | Tuple (tag, a) ->
       J.EArr (Some (int tag) ::
-              Array.to_list (Array.map (fun x -> Some (constant ?ctx x)) a))
+              Array.to_list (Array.map (fun x -> Some (constant ~ctx x)) a))
   | Int i ->
       int i
 
@@ -186,9 +180,9 @@ let access_queue queue x =
   with Not_found ->
     ((const_p, var x), queue)
 
-let access_queue' queue x =
+let access_queue' ~ctx queue x =
   match x with
-    | Pc c -> (const_p,constant c),queue
+    | Pc c -> (const_p,constant ~ctx c),queue
     | Pv x -> access_queue queue x
 
 let access_queue_may_flush queue v x =
@@ -470,7 +464,7 @@ let _ =
      "caml_int32_of_float", "caml_int_of_float";
      "caml_int32_to_float", "%identity";
      "caml_int32_format", "caml_format_int";
-     "caml_int32_of_string", "caml_int_of_string";
+     "caml_int32_of_string", "caml_int_of_amlstring";
      "caml_int32_compare", "caml_int_compare";
      "caml_nativeint_neg", "%int_neg";
      "caml_nativeint_add", "%int_add";
@@ -521,32 +515,32 @@ let register_prim name k f =
 
 let register_un_prim name k f =
   register_prim name k
-    (fun l queue ->
+    (fun l queue ctx ->
        match l with
          [x] ->
-           let ((px, cx), queue) = access_queue' queue x in
+           let ((px, cx), queue) = access_queue' ~ctx queue x in
            (f cx, or_p (kind k) px, queue)
          | _ ->
            assert false)
 
 let register_bin_prim name k f =
   register_prim name k
-    (fun l queue ->
+    (fun l queue ctx ->
        match l with
          [x;y] ->
-           let ((px, cx), queue) = access_queue' queue x in
-           let ((py, cy), queue) = access_queue' queue y in
+           let ((px, cx), queue) = access_queue' ~ctx queue x in
+           let ((py, cy), queue) = access_queue' ~ctx queue y in
            (f cx cy, or_p (kind k) (or_p px py), queue)
          | _ -> assert false)
 
 let register_tern_prim name f =
   register_prim name `Mutator
-    (fun l queue ->
+    (fun l queue ctx ->
        match l with
          [x;y;z] ->
-           let ((px, cx), queue) = access_queue' queue x in
-           let ((py, cy), queue) = access_queue' queue y in
-           let ((pz, cz), queue) = access_queue' queue z in
+           let ((px, cx), queue) = access_queue' ~ctx queue x in
+           let ((py, cy), queue) = access_queue' ~ctx queue y in
+           let ((pz, cz), queue) = access_queue' ~ctx queue z in
            (f cx cy cz, or_p mutator_p (or_p px (or_p py pz)), queue)
          | _ ->
            assert false)
@@ -561,6 +555,8 @@ let register_bin_math_prim name prim =
 
 let _ =
   Code.Reserved.add "Math";
+  register_un_prim "%caml_format_int_special" `Pure
+    (fun cx -> J.ECall (J.EVar (J.S "s"), [J.EBin (J.Plus,J.EStr("",`Bytes),cx)]));
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
   register_bin_prim "caml_string_get" `Mutable
@@ -773,11 +769,11 @@ and translate_expr ctx queue x e =
   | Prim (p, l) ->
       begin match p, l with
         Vectlength, [x] ->
-          let ((px, cx), queue) = access_queue' queue x in
+          let ((px, cx), queue) = access_queue' ~ctx queue x in
           (J.EBin (J.Minus, J.EDot (cx, "length"), one), px, queue)
       | Array_get, [x; y] ->
-          let ((px, cx), queue) = access_queue' queue x in
-          let ((py, cy), queue) = access_queue' queue y in
+          let ((px, cx), queue) = access_queue' ~ctx queue x in
+          let ((py, cy), queue) = access_queue' ~ctx queue y in
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
@@ -792,7 +788,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                let ((prop', cx), queue) = access_queue' queue x in
+                let ((prop', cx), queue) = access_queue' ~ctx queue x in
                 (cx :: args, or_p prop prop', queue)
               )
               l ([], mutator_p, queue)
@@ -804,7 +800,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let ((prop', cx), queue) = access_queue' queue x in
+                 let ((prop', cx), queue) = access_queue' ~ctx queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
@@ -814,7 +810,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let ((prop', cx), queue) = access_queue' queue x in
+                 let ((prop', cx), queue) = access_queue' ~ctx queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
@@ -824,7 +820,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let ((prop', cx), queue) = access_queue' queue x in
+                 let ((prop', cx), queue) = access_queue' ~ctx queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
@@ -867,55 +863,55 @@ and translate_expr ctx queue x e =
           let (prop, fields, queue) = build_fields queue fields in
           (J.EObj fields, prop, queue)
       | Extern name, l ->
+        begin
           let name = Primitive.resolve name in
-          begin match internal_prim name with
-            Some f ->
-              f l queue
-          | None ->
+          match internal_prim name with
+            | Some f -> f l queue ctx
+            | None ->
               Primitive.mark_used name;
               Code.Reserved.add name;  (*XXX HACK *)
-                               (* FIX: this is done at the wrong time... *)
+              (* FIX: this is done at the wrong time... *)
               let prim_kind = kind (Primitive.kind name) in
               let (args, prop, queue) =
                 List.fold_right
                   (fun x (args, prop, queue) ->
-                    let ((prop', cx), queue) = access_queue' queue x in
+                    let ((prop', cx), queue) = access_queue' ~ctx queue x in
                     (cx :: args, or_p prop prop', queue))
                   l ([], prim_kind, queue)
               in
               (J.ECall (J.EVar (J.S name), args), prop, queue)
-          end
+        end
       | Not, [x] ->
-          let ((px, cx), queue) = access_queue' queue x in
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
           (J.EBin (J.Minus, one, cx), px, queue)
       | Lt, [x; y] ->
-          let ((px, cx), queue) = access_queue' queue x in
-          let ((py, cy), queue) = access_queue' queue y in
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.Lt, cx, cy)), or_p px py, queue)
       | Le, [x; y] ->
-          let ((px, cx), queue) = access_queue' queue x in
-          let ((py, cy), queue) = access_queue' queue y in
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.Le, cx, cy)), or_p px py, queue)
       | Eq, [x; y] ->
-          let ((px, cx), queue) = access_queue' queue x in
-          let ((py, cy), queue) = access_queue' queue y in
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.EqEqEq, cx, cy)), or_p px py, queue)
       | Neq, [x; y] ->
-          let ((px, cx), queue) = access_queue' queue x in
-          let ((py, cy), queue) = access_queue' queue y in
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [x] ->
-          let ((px, cx), queue) = access_queue' queue x in
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
           (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (J.EVar (get_string "number"))),
            px, queue)
       | Ult, [x; y] ->
-          let ((px, cx), queue) = access_queue' queue x in
-          let ((py, cy), queue) = access_queue' queue y in
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.Or, J.EBin (J.Lt, cy, int 0),
                          J.EBin (J.Lt, cx, cy))),
            or_p px py, queue)
       | WrapInt, [x] ->
-          let ((px, cx), queue) = access_queue' queue x in
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
           (to_int cx, px, queue)
       | (Vectlength | Array_get | Not | IsInt | Eq |
          Neq | Lt | Le | Ult | WrapInt), _ ->
@@ -1456,14 +1452,14 @@ let compile_program standalone ctx pc =
   clear_string ();
   let res = compile_closure ctx (pc, []) in
   let res = generate_apply_funs res in
-  let strings = J.Variable_statement (List.map (fun (s,v) -> v, Some (J.EStr(s,`Bytes))) (get_strings ())) in
+  let res = J.Statement (J.Variable_statement (List.map (fun (s,v) -> v, Some (J.EStr(s,`Bytes))) (get_strings ()))) :: res in
   if debug () then Format.eprintf "@.@.";
   if standalone then
     let f = J.EFun ((None, [], res), None) in
-    [J.Statement strings;J.Statement (J.Expression_statement ((J.ECall (f, [])), Some pc))]
+    [J.Statement (J.Expression_statement ((J.ECall (f, [])), Some pc))]
   else
     let f = J.EFun ((None, [J.V (Var.fresh ())], res), None) in
-    [J.Statement strings;J.Statement (J.Expression_statement (f, Some pc))]
+    [J.Statement (J.Expression_statement (f, Some pc))]
 
 
 let get_all_strings (_, blocks, _) =

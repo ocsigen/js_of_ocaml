@@ -120,6 +120,7 @@ let inline closures live_vars blocks free_pc pc =
                    body = []; branch = Branch (clos_pc, clos_args) } blocks
              in
              ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
+
          | _ ->
              (i :: rem, state))
       block.body ([], (block.branch, blocks, free_pc))

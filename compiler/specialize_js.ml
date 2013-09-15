@@ -4,6 +4,12 @@ open Flow
 
 let specialize_instr info i =
   match i with
+  | Let (x, Prim (Extern "caml_format_int", [y;z])) ->
+    begin match the_def_of info y with
+      | Some (Constant (String "%d")) ->
+        Let (x, Prim (Extern "%caml_format_int_special", [z]))
+      | _ -> i
+    end
   | Let (x, Prim (Extern "caml_js_var", [y])) ->
       begin match the_def_of info y with
         Some (Constant (String _ as c)) ->

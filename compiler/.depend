@@ -8,14 +8,14 @@ dgraph.cmo : dgraph.cmi
 dgraph.cmx : dgraph.cmi
 driver.cmo : tailcall.cmi specialize_js.cmo specialize.cmo primitive.cmi \
     pretty_print.cmi phisimpl.cmi parse_bytecode.cmi option.cmo linker.cmi \
-    js_var.cmi js_output.cmi inline.cmi generate.cmi flow.cmi deadcode.cmi \
-    code.cmi driver.cmi
+    js_var.cmi js_output.cmi inline.cmi generate.cmi flow.cmi eval.cmo \
+    deadcode.cmi code.cmi driver.cmi
 driver.cmx : tailcall.cmx specialize_js.cmx specialize.cmx primitive.cmx \
     pretty_print.cmx phisimpl.cmx parse_bytecode.cmx option.cmx linker.cmx \
-    js_var.cmx js_output.cmx inline.cmx generate.cmx flow.cmx deadcode.cmx \
-    code.cmx driver.cmi
-eval.cmo : primitive.cmi option.cmo flow.cmi code.cmi
-eval.cmx : primitive.cmx option.cmx flow.cmx code.cmx
+    js_var.cmx js_output.cmx inline.cmx generate.cmx flow.cmx eval.cmx \
+    deadcode.cmx code.cmx driver.cmi
+eval.cmo : primitive.cmi flow.cmi code.cmi
+eval.cmx : primitive.cmx flow.cmx code.cmx
 flow.cmo : util.cmi subst.cmi option.cmo dgraph.cmi code.cmi flow.cmi
 flow.cmx : util.cmx subst.cmx option.cmx dgraph.cmx code.cmx flow.cmi
 freevars.cmo : util.cmi option.cmo code.cmi freevars.cmi
