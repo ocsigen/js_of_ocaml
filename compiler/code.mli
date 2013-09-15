@@ -86,6 +86,7 @@ type prim =
 
 type constant =
     String of string
+  | IString of string
   | Float of float
   | Float_array of float array
   | Int32 of int32

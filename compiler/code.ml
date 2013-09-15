@@ -194,6 +194,7 @@ type prim =
 
 type constant =
     String of string
+  | IString of string
   | Float of float
   | Float_array of float array
   | Int32 of int32
@@ -257,6 +258,8 @@ let print_cont f (pc, args) =
 let rec print_constant f x =
   match x with
     String s ->
+      Format.fprintf f "%S" s
+  | IString s ->
       Format.fprintf f "%S" s
   | Float fl ->
       Format.fprintf f "%.12g" fl

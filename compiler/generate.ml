@@ -90,6 +90,8 @@ let rec constant x =
     String s ->
       Primitive.mark_used "MlString";
       J.ENew (J.EVar (J.S "MlString"), Some [J.EStr (s, `Bytes)])
+  | IString s ->
+    J.EStr (s, `Bytes)
   | Float f ->
       float_const f
   | Float_array a ->
