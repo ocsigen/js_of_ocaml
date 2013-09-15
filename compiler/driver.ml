@@ -40,20 +40,26 @@ let inline p =
     Inline.f p live_vars
   else p
 
-let constant p =
-  if Option.Optim.constant ()
-  then
-    let (p,_,defs) = deadcode' p in
-    if debug () then Format.eprintf "Constant...@.";
-    Constant.f p defs
-  else p
+let specialize_1 (p,info) =
+  if debug () then Format.eprintf "Specialize...@.";
+  Specialize.f p info
+
+let specialize_js (p,info) =
+  if debug () then Format.eprintf "Specialize js...@.";
+  Specialize_js.f p info
+
+let specialize (p,info) =
+  let p = specialize_1 (p,info)in
+  let p = specialize_js (p,info) in
+  p
+
 let flow p =
   if debug () then Format.eprintf "Data flow...@.";
-  fst (Flow.f p)
+  Flow.f p
 
 let flow_simple p =
   if debug () then Format.eprintf "Data flow...@.";
-  fst (Flow.f ~skip_param:true p)
+  Flow.f ~skip_param:true p
 
 let phi p =
   if debug () then Format.eprintf "Variable passing simplification...@.";
@@ -86,14 +92,17 @@ let o1 : 'a -> 'a=
   tailcall >>
   phi >>
   flow >>
+  specialize >>
   inline >>
   deadcode >>
   print >>
   flow >>
+  specialize >>
   inline >>
   deadcode >>
   phi >>
   flow >>
+  specialize >>
   identity
 
 (* o2 *)
@@ -108,13 +117,17 @@ let round1 : 'a -> 'a =
   print >>
   tailcall >>
   inline >> (* inlining may reveal new tailcall opt *)
-  constant >>
+  deadcode >>
   (* deadcode required before flow simple -> provided by constant *)
   flow_simple >> (* flow simple to keep information for furture tailcall opt *)
+  specialize >>
   identity
 
 let round2 =
-  constant >> o1
+  flow >>
+  specialize >>
+  deadcode >>
+  o1
 
 let o3 =
   loop 10 "tailcall+inline" round1 1 >>

@@ -198,6 +198,16 @@ let expr_escape st x e =
       ()
   | Apply (_, l, _) ->
       List.iter (fun x -> block_escape st x) l
+  | Prim ((Extern ( "caml_fill_string" |
+                   "caml_string_get" |
+                   "caml_string_set" )), (Pv s::_ as l)) ->
+    st.possibly_mutable.(Var.idx s) <- true;
+      List.iter
+        (fun x ->
+           match x with
+             Pv x -> block_escape st x
+           | Pc _ -> ())
+        l
   | Prim (_, l) ->
       List.iter
         (fun x ->
