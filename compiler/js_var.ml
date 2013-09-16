@@ -87,7 +87,7 @@ let get_free_name t = StringSet.diff t.use_name t.def_name
 let mark g =
   let u = S.union g.def g.use in
   S.iter (fun u -> G.add_vertex g.g (vertex g u)) u;
-  S.fold (fun u1 set ->
+  let _ = S.fold (fun u1 set ->
     let set = S.remove u1 set in
     S.iter (fun u2 ->
       if u1 <> u2
@@ -98,7 +98,7 @@ let mark g =
           (vertex g u2)
     ) set;
     set
-  ) u u;
+  ) u u in
   {g with biggest = max g.biggest (S.cardinal u)}
 
 let create () = (* empty (G.make (Code.Var.count ())) *)
@@ -244,20 +244,7 @@ and statement t s = match s with
 module M = Graph.Coloring.Mark(G)
 
 
-let program p =
-  let t = source_elts (create()) p in
-  let free = get_free t in
-  if S.cardinal free != 0
-  then begin
-    failwith "free variables"
-  end;
-  let free_name = get_free_name t in
-  StringSet.iter (fun s ->
-    (* Printf.eprintf "use %s\n%!" s; *)
-    Code.Reserved.add s;
-    Primitive.mark_used s;
-  ) free_name;
-  let t = mark t in
+let assign t =
   if debug ()
   then Printf.eprintf "compute graph degree\n%!";
   let degree = G.fold_vertex (fun v acc -> max acc (G.in_degree t.g v)) t.g 0 in
@@ -296,3 +283,24 @@ let program p =
       VM.add var name map) varset map) VM.empty arr
   in
   (fun v -> VM.find v map)
+
+
+
+let program p =
+  let t = source_elts (create()) p in
+  let t = mark t in
+  let free = get_free t in
+  if S.cardinal free != 0
+  then begin
+    failwith "free variables"
+  end;
+  let free_name = get_free_name t in
+
+  StringSet.iter (fun s ->
+    (* Printf.eprintf "use %s\n%!" s; *)
+    Code.Reserved.add s;
+    Primitive.mark_used s;
+  ) free_name;
+  if Option.Optim.shortvar ()
+  then assign t
+  else (fun v -> Code.Var.to_string v)

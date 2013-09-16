@@ -257,8 +257,8 @@ function MlStringFromArray (a) {
 MlStringFromArray.prototype = new MlString ();
 
 //Provides: caml_create_string const
-//Requires: MlString
 //Requires: caml_invalid_argument
+//Requires: MlMakeString
 function caml_create_string(len) {
   if (len < 0) caml_invalid_argument("String.create");
   return new MlMakeString(len);

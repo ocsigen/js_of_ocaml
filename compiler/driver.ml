@@ -180,14 +180,10 @@ let link formatter ~standalone ?linkall pretty js =
   js
 
 let coloring js =
-  if Option.Optim.shortvar ()
-  then
-    begin
-      if times ()
-      then Format.eprintf "Start Coloring...@.";
-      js,Js_var.program js
-    end
-  else js, (fun v -> Code.Var.to_string v)
+  if times ()
+  then Format.eprintf "Start Coloring...@.";
+  js,Js_var.program js
+
 
 let output formatter d (js,to_string) =
   if times ()
