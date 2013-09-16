@@ -18,10 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Reserved : sig
-  val add : string -> unit
-  val mem : string -> bool
-end
 module Var : sig
   type t
   val print : Format.formatter -> t -> unit

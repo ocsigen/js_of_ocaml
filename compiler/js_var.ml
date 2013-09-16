@@ -298,7 +298,7 @@ let program p =
 
   StringSet.iter (fun s ->
     (* Printf.eprintf "use %s\n%!" s; *)
-    Code.Reserved.add s;
+    Reserved.add s;
     Primitive.mark_used s;
   ) free_name;
   if Option.Optim.shortvar ()

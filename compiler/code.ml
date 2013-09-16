@@ -18,22 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*FIX: this should probably be somewhere else... *)
-
-module Reserved = struct
-  let reserved = Hashtbl.create 107
-
-  let add s = if String.length s <= 5 then Hashtbl.replace reserved s ()
-
-  let mem s = Hashtbl.mem reserved s
-
-  let _ =
-    List.iter add
-      ["break"; "case"; "catch"; "do"; "else"; "for"; "if"; "in"; "new";
-       "this"; "throw"; "try"; "var"; "void"; "while"; "with"; "class";
-       "enum"; "super"; "const"; "yield"; "let"]
-end
-
 module VarPrinter = struct
   let names = Hashtbl.create 107
   let name'' v nm = Hashtbl.add names v nm
