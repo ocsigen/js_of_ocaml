@@ -263,7 +263,7 @@ let assign t =
         if debug ()
         then Printf.eprintf "try coloring with %d\n%!" k;
         M.coloring t.g k
-      with _ -> loop rem in
+      with M.NoColoring -> loop rem in
   loop [t.biggest;degree];
 
   (* build the mapping function *)
