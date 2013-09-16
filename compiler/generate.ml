@@ -91,29 +91,52 @@ module Share = struct
     let n = try IntMap.find i t.applies with _ -> 0 in
     {t with applies = IntMap.add i (n+1) t.applies }
 
+  let add_code_string s share =
+    let share = add_string s share in
+    add_prim "caml_new_string" share
+
+  let add_code_istring s share =
+    add_string s share
+
+  let rec get_constant c t =
+    match c with
+      | String s -> add_code_string s t
+      | IString s -> add_code_istring s t
+      | Tuple (_,args) -> Array.fold_left (fun t c ->
+        get_constant c t) t args
+      | _ -> t
+
+  let add_args args t =
+    List.fold_left(fun t a ->
+      match a with
+        | Pc c -> get_constant c t
+        | _ -> t) t args
+
+
   let get (_, blocks, _) : t =
     let count = AddrMap.fold
       (fun _ block share ->
         List.fold_left
           (fun share i ->
             match i with
-              | Let (_, Constant (String s)) ->
-                let share = add_string s share in
-                add_prim "caml_new_string" share
-              | Let (_, Constant (IString s)) ->
-                add_string s share
+              | Let (_, Constant c) -> get_constant c share
               | Let (_, Apply (_,args,None)) ->
                 add_apply (List.length args) share
               | Let (_, Prim (Extern name, args)) ->
                 let name = Primitive.resolve name in
-                add_prim name share
+                let share = add_prim name share in
+                add_args args share
+              | Let (_, Prim (_, args)) ->
+                add_args args share
               | _ -> share
           )
           share block.body)
-      blocks empty_aux
-    in {count; vars = empty_aux}
+      blocks empty_aux in
+    let count = add_string "number" count in
+    {count; vars = empty_aux}
 
   let get_string gen s t =
+    let s = Primitive.resolve s in
     try
       let c = StringMap.find s t.count.strings in
       if c > 1
@@ -127,7 +150,9 @@ module Share = struct
           J.EVar v
       else
         gen s
-    with _ -> gen s
+    with _ ->
+      Printf.eprintf "missed %S\n%!" s;
+      gen s
 
   let get_prim gen s t =
     try
@@ -891,7 +916,7 @@ and translate_expr ctx queue x e =
               [] ->
                 []
             | Pc (String nm) :: Pc (String v) :: r ->
-                (J.PNS nm, J.EStr (v, `Bytes)) :: build_fields r
+                (J.PNS nm, Share.get_string (fun v -> J.EStr (v, `Bytes)) v ctx.Ctx.share ) :: build_fields r
             | _ ->
                 assert false
           in
