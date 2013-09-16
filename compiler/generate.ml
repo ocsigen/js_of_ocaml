@@ -345,7 +345,7 @@ type state =
     backs : (int, AddrSet.t) Hashtbl.t;
     preds : (int, int) Hashtbl.t;
     mutable loops : AddrSet.t;
-    mutable loop_stack : (addr * (Label.t * bool ref)) list;
+    mutable loop_stack : (addr * (J.Label.t * bool ref)) list;
     mutable visited_blocks : AddrSet.t;
     mutable interm_idx : int;
     ctx : Ctx.t; mutable blocks : Code.block AddrMap.t }
@@ -1134,7 +1134,7 @@ else begin
   end;
   if AddrSet.mem pc st.loops then begin
     let lab =
-      match st.loop_stack with (_, (l, _)) :: _ -> Code.Label.succ l | [] -> Code.Label.zero in
+      match st.loop_stack with (_, (l, _)) :: _ -> J.Label.succ l | [] -> J.Label.zero in
     st.loop_stack <- (pc, (lab, ref false)) :: st.loop_stack
   end;
   let succs = Hashtbl.find st.succs pc in
@@ -1263,7 +1263,7 @@ else begin
     in
     match label with
       | None -> [st]
-      | Some label -> [J.Labelled_statement (Code.Label.to_string label, st)]
+      | Some label -> [J.Labelled_statement (label, st)]
   end else
     body
 end
@@ -1473,7 +1473,7 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
           else begin
             let (lab, used) = List.assoc pc rem in
             used := true;
-            Some (Code.Label.to_string lab)
+            Some lab
           end
     in
     if debug () then begin

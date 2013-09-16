@@ -36,12 +36,6 @@ module Var : sig
   val reset : unit -> unit
 end
 
-module Label : sig
-  type t
-  val zero : t
-  val succ : t -> t
-  val to_string : t -> string
-end
 
 module VarSet : Set.S with type elt = Var.t
 module VarMap : Map.S with type key = Var.t

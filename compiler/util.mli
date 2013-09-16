@@ -38,3 +38,15 @@ module Timer : sig
   val get : t -> float
   val print : Format.formatter -> t -> unit
 end
+
+module VarPrinter : sig
+  type t
+
+  val create : unit -> t
+  val reset : t -> unit
+  val to_string : t -> int -> string
+  val name : t -> int -> string -> unit
+  val propagate_name : t -> int -> int -> unit
+  val set_pretty : t -> bool -> unit
+
+end

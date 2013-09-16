@@ -61,3 +61,87 @@ module Timer = struct
   let get t = !timer () -. t
   let print f t = Format.fprintf f "%.2f" (get t)
 end
+
+
+
+module VarPrinter = struct
+
+  type t = {
+    names : (int,string) Hashtbl.t;
+    known : (int,string) Hashtbl.t;
+    mutable last : int;
+    mutable pretty : bool;
+  }
+
+  let c1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
+  let c2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
+
+  let name_raw t v nm = Hashtbl.add t.names v nm
+  let propagate_name t v v' =
+    try name_raw t v' (Hashtbl.find t.names v) with Not_found -> ()
+
+  let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+  let is_num c = (c >= '0' && c <= '9')
+
+  let name t v nm =
+    if String.length nm > 0 then begin
+      let nm = String.copy nm in
+      if not (is_alpha nm.[0]) then nm.[0] <- '_';
+      for i = 1 to String.length nm - 1 do
+        if not (is_alpha nm.[i] || is_num nm.[i]) then nm.[i] <- '_';
+      done;
+      let c = ref 0 in
+      for i = 0 to String.length nm - 1 do
+        if nm.[i] = '_' then incr c
+      done;
+      if !c < String.length nm then name_raw t v nm
+    end
+
+  let rec format_ident x =
+    assert (x >= 0);
+    let char c x = String.make 1 (c.[x]) in
+    if x < 54 then
+      char c1 x
+    else
+      format_ident ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
+
+  let format_var t i x =
+    let s = format_ident x in
+    if t.pretty then begin
+      try
+        let nm = Hashtbl.find t.names i in
+        Format.sprintf "%s_%s_" nm s
+      with Not_found ->
+        Format.sprintf "_%s_" s
+    end else
+      s
+
+  let rec to_string t i =
+    try
+      Hashtbl.find t.known i
+    with Not_found ->
+      t.last <- t.last + 1;
+      let j = t.last in
+      let s = format_var t i j in
+      if Reserved.mem s then
+        to_string t i
+      else begin
+        Hashtbl.add t.known i s;
+        s
+      end
+
+  let set_pretty t b = t.pretty <- b
+
+
+  let reset t =
+    Hashtbl.clear t.names; Hashtbl.clear t.known; t.last <- -1
+
+  let create () =
+    let t = {
+      names = Hashtbl.create 107;
+      known = Hashtbl.create 1001;
+      last = -1;
+      pretty = false;
+    } in
+    reset t; t
+end

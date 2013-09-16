@@ -19,7 +19,24 @@
  *)
 
 
+module Label = struct
+  open Util
+  type t = int
+
+  let printer = VarPrinter.create ()
+
+  let zero = 0
+  let succ t = succ t
+  let to_string t = VarPrinter.to_string printer t
+end
+
 type node_pc = int option
+
+type identifier = string
+
+type ident =
+  | S of identifier
+  | V of Code.Var.t
 
 (* A.3 Expressions *)
 
@@ -81,11 +98,11 @@ and statement =
   | While_statement of expression * statement
   | For_statement of  expression option * expression option * expression option * statement * node_pc
   (* | Iteration_statement *)
-  | Continue_statement of label option
-  | Break_statement of label option
+  | Continue_statement of Label.t option
+  | Break_statement of Label.t option
   | Return_statement of expression option
   (* | With_statement of expression * statement *)
-  | Labelled_statement of label * statement
+  | Labelled_statement of Label.t * statement
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
   | Try_statement of block * (ident * block) option * block option * node_pc
@@ -124,14 +141,6 @@ and source_elements = source_element list
 and source_element =
     Statement of statement
   | Function_declaration of function_declaration
-
-and identifier = string
-
-and ident =
-  | S of identifier
-  | V of Code.Var.t
-and label = identifier
-
 
 let compare_ident t1 t2 =
   match t1, t2 with

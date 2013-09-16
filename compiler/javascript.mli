@@ -18,9 +18,22 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+module Label : sig
+  type t
+  val zero : t
+  val succ : t -> t
+  val to_string : t -> string
+end
+
 type node_pc = int option
 
 (* A.3 Expressions *)
+
+type identifier = string
+
+type ident =
+  | S of identifier
+  | V of Code.Var.t
 
 and array_litteral = element_list
 
@@ -85,13 +98,13 @@ and statement =
 (*
   | Iteration_statement
 *)
-  | Continue_statement of label option
-  | Break_statement of label option
+  | Continue_statement of Label.t option
+  | Break_statement of Label.t option
   | Return_statement of expression option
 (*
   | With_statement
 *)
-  | Labelled_statement of label * statement
+  | Labelled_statement of Label.t * statement
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
   | Try_statement of block * (ident * block) option * block option * node_pc
@@ -132,11 +145,3 @@ and source_elements = source_element list
 and source_element =
     Statement of statement
   | Function_declaration of function_declaration
-
-and identifier = string
-
-and ident =
-  | S of identifier
-  | V of Code.Var.t
-
-and label = identifier

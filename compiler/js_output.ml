@@ -702,13 +702,13 @@ end) = struct
         PP.string f "continue;"
       | Continue_statement (Some s) ->
         PP.string f "continue ";
-        PP.string f s;
+        PP.string f (Javascript.Label.to_string s);
         PP.string f ";"
       | Break_statement None ->
         PP.string f "break;"
       | Break_statement (Some s) ->
         PP.string f "break ";
-        PP.string f s;
+        PP.string f (Javascript.Label.to_string s);
         PP.string f ";"
       | Return_statement e ->
         begin match e with
@@ -748,7 +748,7 @@ end) = struct
          argument. A line return will not work *)
         end
       | Labelled_statement (i, s) ->
-        PP.string f i;
+        PP.string f (Javascript.Label.to_string i);
         PP.string f ":";
         PP.break f;
         statement f s
