@@ -132,6 +132,8 @@ module Share = struct
           )
           share block.body)
       blocks empty_aux in
+    (* hack to shared "number" string *)
+    let count = add_string "number" count in
     let count = add_string "number" count in
     {count; vars = empty_aux}
 
