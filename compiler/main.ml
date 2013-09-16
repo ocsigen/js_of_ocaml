@@ -41,12 +41,15 @@ let f linkall paths js_files input_file output_file =
     | None ->
       output_program (Pretty_print.to_out_channel stdout)
     | Some f ->
+      let f_tmp = f^".tmp" in
       try
-        let ch = open_out_bin f in
+        let ch = open_out_bin f_tmp in
         output_program (Pretty_print.to_out_channel ch);
-        close_out ch
+        close_out ch;
+        (try Sys.remove f with _ -> ());
+        Sys.rename f_tmp f
       with exc ->
-        Sys.remove f;
+        Sys.remove f_tmp;
         Format.eprintf "compilation error: %s@." (Printexc.to_string exc);
         raise exc
   end;
