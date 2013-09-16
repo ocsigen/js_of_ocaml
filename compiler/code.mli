@@ -49,7 +49,6 @@ end
 
 module VarSet : Set.S with type elt = Var.t
 module VarMap : Map.S with type key = Var.t
-module StringMap : Map.S with type key = string
 module VarTbl : sig
   type 'a t
   type key = Var.t

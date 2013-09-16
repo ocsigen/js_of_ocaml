@@ -8,7 +8,7 @@ lib: compiler.cma compiler.cmxa compiler.cmxs
 PACKAGES=findlib,str,unix,ocamlgraph
 
 OBJS=pretty_print.cmx util.cmx option.cmx dgraph.cmx \
-     code.cmx javascript.cmx js_output.cmx js_simpl.cmx \
+     code.cmx reserved.cmx javascript.cmx js_output.cmx js_simpl.cmx \
      instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \

@@ -1,3 +1,4 @@
+open Util
 open Javascript
 
 let debug = Option.Debug.find "shortvar"
@@ -28,20 +29,27 @@ type t = {
   count : int VM.t;
   biggest : int;
   vertex : (Code.Var.t, G.V.t) Hashtbl.t;
+  def_name: StringSet.t;
+  use_name: StringSet.t;
 }
 
 let incr_count (x : Code.Var.t) (map : int VM.t) n =
   let v = try VM.find x map with _ -> 0 in
   VM.add x (v + n) map
 
+let use_name s t = { t with use_name = StringSet.add s t.use_name  }
+
+let def_name s t = { t with def_name = StringSet.add s t.def_name  }
+
+
 let use_var t = function
-  | S _ -> t
+  | S s -> use_name s t
   | V i -> { t with
     use = S.add i t.use;
     count = incr_count i t.count 1 }
 
 let def_var t = function
-  | S _ -> t
+  | S s -> def_name s t
   | V i -> { t with
     def = S.add i t.def;
     count = incr_count i t.count 1}
@@ -58,6 +66,8 @@ let empty t = {
     def = S.empty;
     use = S.empty;
     count = VM.empty;
+    def_name = StringSet.empty;
+    use_name = StringSet.empty;
     biggest = 0;
 }
 
@@ -71,6 +81,8 @@ let vertex t v =
     r
 
 let get_free t = S.diff t.use t.def
+
+let get_free_name t = StringSet.diff t.use_name t.def_name
 
 let mark g =
   let u = S.union g.def g.use in
@@ -96,15 +108,20 @@ let create () = (* empty (G.make (Code.Var.count ())) *)
     count = VM.empty;
     biggest = 0;
     vertex = Hashtbl.create 17;
-    g = G.create ()
+    g = G.create ();
+    use_name = StringSet.empty;
+    def_name = StringSet.empty;
   }
 
 let merge_info ~from ~into =
   let free = get_free from in
+  let free_name = get_free_name from in
+
   {into with
     count = merge_count from.count into.count;
     biggest = max from.biggest into.biggest;
-    use = S.union into.use free }
+    use = S.union into.use free;
+    use_name = StringSet.union into.use_name free_name}
 
 let rec expression t e = match e with
   | ECond (e1,e2,e3) ->
@@ -226,9 +243,20 @@ and statement t s = match s with
 
 module M = Graph.Coloring.Mark(G)
 
+
 let program p =
   let t = source_elts (create()) p in
-  assert(S.cardinal (get_free t) = 0);
+  let free = get_free t in
+  if S.cardinal free != 0
+  then begin
+    failwith "free variables"
+  end;
+  let free_name = get_free_name t in
+  StringSet.iter (fun s ->
+    (* Printf.eprintf "use %s\n%!" s; *)
+    Code.Reserved.add s;
+    Primitive.mark_used s;
+  ) free_name;
   let t = mark t in
   if debug ()
   then Printf.eprintf "compute graph degree\n%!";

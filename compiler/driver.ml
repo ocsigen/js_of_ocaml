@@ -204,9 +204,11 @@ let f ?(standalone=true) ?linkall formatter d =
   !profile >>
   deadcode' >>
   generate ~standalone >>
+  coloring >>
+
   header formatter ~standalone >>
   link formatter ~standalone ?linkall false >>
-  coloring >>
+
   output formatter d
 
 let from_string prims s formatter =

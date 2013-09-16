@@ -147,9 +147,7 @@ let parse_file f =
     while true do
       incr i;
       let x = read_line ch (f, !i) in
-(*
-      debug x;
-*)
+      (* debug x; *)
       l := x :: !l
     done
   with End_of_file -> () end;

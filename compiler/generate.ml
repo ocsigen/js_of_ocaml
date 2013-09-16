@@ -36,9 +36,8 @@ Patterns:
 let debug = Option.Debug.find "gen"
 let times = Option.Debug.find "times"
 
-(****)
-
 open Code
+open Util
 
 module J = Javascript
 
@@ -62,24 +61,120 @@ let list_group f l =
 
 (****)
 
+
+module Share = struct
+  type 'a aux = {
+    strings : 'a StringMap.t;
+    applies : 'a IntMap.t;
+    prims :   'a StringMap.t;
+  }
+
+
+  let empty_aux = { prims = StringMap.empty;
+                    strings = StringMap.empty;
+                    applies = IntMap.empty }
+
+  type t = {
+    mutable count : int aux;
+    mutable vars : J.ident aux;
+  }
+
+  let add_string s t =
+    let n = try StringMap.find s t.strings with _ -> 0 in
+    {t with strings = StringMap.add s (n+1) t.strings}
+
+  let add_prim s t =
+    let n = try StringMap.find s t.prims with _ -> 0 in
+    {t with prims  = StringMap.add s (n+1) t.prims}
+
+  let add_apply i t =
+    let n = try IntMap.find i t.applies with _ -> 0 in
+    {t with applies = IntMap.add i (n+1) t.applies }
+
+  let get (_, blocks, _) : t =
+    let count = AddrMap.fold
+      (fun _ block share ->
+        List.fold_left
+          (fun share i ->
+            match i with
+              | Let (_, Constant (String s)) ->
+                let share = add_string s share in
+                add_prim "caml_new_string" share
+              | Let (_, Constant (IString s)) ->
+                add_string s share
+              | Let (_, Apply (_,args,None)) ->
+                add_apply (List.length args) share
+              | Let (_, Prim (Extern name, args)) ->
+                let name = Primitive.resolve name in
+                add_prim name share
+              | _ -> share
+          )
+          share block.body)
+      blocks empty_aux
+    in {count; vars = empty_aux}
+
+  let get_string gen s t =
+    try
+      let c = StringMap.find s t.count.strings in
+      if c > 1
+      then
+        try
+          J.EVar (StringMap.find s t.vars.strings)
+        with _ ->
+          let x = Var.fresh() in
+          let v = J.V x in
+          t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
+          J.EVar v
+      else
+        gen s
+    with _ -> gen s
+
+  let get_prim gen s t =
+    try
+      let c = StringMap.find s t.count.prims in
+      if c > 1
+      then
+        try
+          J.EVar (StringMap.find s t.vars.prims)
+        with _ ->
+          let x = Var.fresh() in
+          let v = J.V x in
+          t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
+          J.EVar v
+      else
+        gen s
+    with _ -> gen s
+
+
+  let get_apply gen n t =
+    try
+      let c = IntMap.find n t.count.applies in
+      if c > 1
+      then
+        try
+          J.EVar (IntMap.find n t.vars.applies)
+        with _ ->
+          let x = Var.fresh() in
+          let v = J.V x in
+          t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
+          J.EVar v
+      else
+        gen n
+    with _ -> gen n
+
+end
+
+
 module Ctx = struct
   type t =
     { mutable blocks : block AddrMap.t;
       live : int array;
       mutated_vars : VarSet.t AddrMap.t;
-      strings : int StringMap.t }
+      share: Share.t }
 
-  let initial b l v strings =
-    { blocks = b; live = l; mutated_vars = v; strings }
+  let initial b l v share =
+    { blocks = b; live = l; mutated_vars = v; share }
 
-  let string_used_once ctx x =
-    if String.length x <= 1
-    then true
-    else
-      try
-        let n = StringMap.find x ctx.strings in
-        n <= 1
-      with _ -> false
 end
 
 let var x = J.EVar (J.V x)
@@ -95,30 +190,14 @@ let float_val e = e (*J.EAccess (e, one)*)
 
 let float_const f = val_float (J.ENum f)
 
-let strings_state = ref []
-let clear_string () = strings_state:=[]
-let get_strings () = !strings_state
-let get_string s =
-  try List.assoc s !strings_state with _ ->
-    let v = J.V (Var.fresh ()) in
-    strings_state := (s,v)::!strings_state;
-    v
-
 let rec constant ~ctx x =
   match x with
     String s ->
-      Primitive.mark_used "s";
-      if Ctx.string_used_once ctx s
-      then J.ECall (J.EVar (J.S "s"), [J.EStr (s,`Bytes)])
-      else
-        let x = get_string s in
-        J.ECall (J.EVar (J.S "s"), [J.EVar x])
+      let e = Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share in
+      let p = Share.get_prim (fun s -> J.EVar (J.S s)) "caml_new_string" ctx.Ctx.share in
+      J.ECall (p,[e])
   | IString s ->
-    if Ctx.string_used_once ctx s
-    then J.EStr (s,`Bytes)
-    else
-      let x = get_string s in
-      J.EVar x
+      Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share
   | Float f ->
       float_const f
   | Float_array a ->
@@ -211,26 +290,6 @@ let flush_queue expr_queue prop l =
                   [J.V x, Some elt.ce]) instrs
   in
   (List.rev_append instrs l, expr_queue)
-
-(* let flush_queue expr_queue prop l = *)
-(*   let l : J.statement list = l in *)
-(*   let (instrs, expr_queue) = *)
-(*     if prop >= flush_p then (List.fold_left (fun instrs (x,elt) -> *)
-(*       J.Variable_statement [ x, Some elt.ce] :: instrs) l expr_queue, []) *)
-(*     else *)
-(*       let _,instrs, expr_queue = *)
-(*         List.fold_left (fun (deps,instrs, expr_queue) ((y, elt) as eq) -> *)
-(*           if should_flush prop elt.prop *)
-(*           then ( *)
-(*             (y::deps), *)
-(*             ((J.Variable_statement [ y, Some elt.ce]) ::instrs), *)
-(*             expr_queue) *)
-(*           else *)
-(*             deps,instrs,(eq::expr_queue) *)
-(*         ) ([],l,[]) expr_queue in *)
-(*       instrs,List.rev expr_queue in *)
-(*   (\* List.partition (fun (y, (p, _,_,_)) -> should_flush prop p) expr_queue *\) *)
-(*   (instrs, expr_queue) *)
 
 let flush_all expr_queue l = fst (flush_queue expr_queue flush_p l)
 
@@ -402,41 +461,23 @@ let parallel_renaming ctx params args continuation queue =
 
 (****)
 
-let apply_funs = ref Util.IntMap.empty
-
-let get_apply_fun n =
-  try
-    Util.IntMap.find n !apply_funs
-  with Not_found ->
-    Primitive.mark_used "caml_call_gen";
-    let x = J.V (Var.fresh ()) in
-    apply_funs := Util.IntMap.add n x !apply_funs;
-    x
-
-let generate_apply_funs cont =
-  let funs = !apply_funs in
-  apply_funs := Util.IntMap.empty;
-  Util.IntMap.fold
-    (fun n x cont ->
-       let f = J.V (Var.fresh ()) in
-       let params =
-         Array.to_list (Array.init n (fun _ -> J.V (Var.fresh ())))
-       in
-       let f' = J.EVar f in
-       let params' = List.map (fun x -> J.EVar x) params in
-       J.Function_declaration
-         (x, f :: params,
-          [J.Statement
-             (J.Return_statement
-                (Some
-                   (J.ECond (J.EBin (J.EqEq, J.EDot (f', "length"),
-                                     J.ENum (float n)),
-                             J.ECall (f', params'),
-                             J.ECall (J.EVar (J.S "caml_call_gen"),
-                                      [f'; J.EArr (List.map (fun x -> Some x) params')])))))],
-          None) ::
-       cont)
-    funs cont
+let generate_apply_fun ?x n =
+  let f = J.V (Var.fresh ()) in
+  let params =
+    Array.to_list (Array.init n (fun _ -> J.V (Var.fresh ())))
+  in
+  let f' = J.EVar f in
+  let params' = List.map (fun x -> J.EVar x) params in
+  J.EFun ((x, f :: params,
+           [J.Statement
+               (J.Return_statement
+                  (Some
+                     (J.ECond (J.EBin (J.EqEq, J.EDot (f', "length"),
+                                       J.ENum (float n)),
+                               J.ECall (f', params'),
+                               J.ECall (J.EVar (J.S "caml_call_gen"),
+                                        [f'; J.EArr (List.map (fun x -> Some x) params')])))))]),
+          None)
 
 (****)
 
@@ -523,6 +564,16 @@ let register_un_prim name k f =
          | _ ->
            assert false)
 
+let register_un_prim_ctx name k f =
+  register_prim name k
+    (fun l queue ctx ->
+       match l with
+         [x] ->
+           let ((px, cx), queue) = access_queue' ~ctx queue x in
+           (f ctx cx, or_p (kind k) px, queue)
+         | _ ->
+           assert false)
+
 let register_bin_prim name k f =
   register_prim name k
     (fun l queue ctx ->
@@ -554,9 +605,10 @@ let register_bin_math_prim name prim =
     (fun cx cy -> J.ECall (J.EDot (J.EVar (J.S "Math"), prim), [cx; cy]))
 
 let _ =
-  Code.Reserved.add "Math";
-  register_un_prim "%caml_format_int_special" `Pure
-    (fun cx -> J.ECall (J.EVar (J.S "s"), [J.EBin (J.Plus,J.EStr("",`Bytes),cx)]));
+  register_un_prim_ctx  "%caml_format_int_special" `Pure
+    (fun ctx cx ->
+      let p = Share.get_prim (fun s -> J.EVar (J.S s)) "caml_new_string" ctx.Ctx.share in
+      J.ECall (p, [J.EBin (J.Plus,J.EStr("",`Bytes),cx)]));
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
   register_bin_prim "caml_string_get" `Mutable
@@ -640,9 +692,7 @@ let _ =
   register_un_prim "caml_js_from_string" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "toString"), []));
   register_un_prim "caml_js_to_string" `Mutable
-    (fun cx ->
-       Primitive.mark_used "MlString";
-       J.ENew (J.EVar (J.S "MlWrappedString"), Some [cx]));
+    (fun cx -> J.ENew (J.EVar (J.S "MlWrappedString"), Some [cx]));
   register_tern_prim "caml_js_set"
     (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable
@@ -720,8 +770,8 @@ and translate_expr ctx queue x e =
                access_queue queue x in (cx :: args, or_p prop prop', queue))
           (x :: l) ([], mutator_p, queue)
       in
-      let y = get_apply_fun (List.length l) in
-      (J.ECall (J.EVar y, args),
+      let y = Share.get_apply (generate_apply_fun) (List.length l) ctx.Ctx.share in
+      (J.ECall (y, args),
        prop, queue)
   | Block (tag, a) ->
       let (contents, prop, queue) =
@@ -777,11 +827,9 @@ and translate_expr ctx queue x e =
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
-          Code.Reserved.add nm;  (*XXX HACK *)
-          (J.EVar (J.S nm), const_p, queue)
+        (J.EVar (J.S nm), const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
-          Code.Reserved.add nm;  (*XXX HACK *)
-          (J.EVar (J.S nm), const_p, queue)
+        (J.EVar (J.S nm), const_p, queue)
       | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
           let ((pf, cf), queue) = access_queue queue f in
           let ((po, co), queue) = access_queue queue o in
@@ -868,9 +916,7 @@ and translate_expr ctx queue x e =
           match internal_prim name with
             | Some f -> f l queue ctx
             | None ->
-              Primitive.mark_used name;
-              Code.Reserved.add name;  (*XXX HACK *)
-              (* FIX: this is done at the wrong time... *)
+              let prim = Share.get_prim (fun s -> J.EVar (J.S s)) name ctx.Ctx.share in
               let prim_kind = kind (Primitive.kind name) in
               let (args, prop, queue) =
                 List.fold_right
@@ -879,7 +925,7 @@ and translate_expr ctx queue x e =
                     (cx :: args, or_p prop prop', queue))
                   l ([], prim_kind, queue)
               in
-              (J.ECall (J.EVar (J.S name), args), prop, queue)
+              (J.ECall (prim, args), prop, queue)
         end
       | Not, [x] ->
           let ((px, cx), queue) = access_queue' ~ctx  queue x in
@@ -902,7 +948,7 @@ and translate_expr ctx queue x e =
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [x] ->
           let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (J.EVar (get_string "number"))),
+          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (Share.get_string (fun s -> J.EStr (s,`Bytes)) "number" ctx.Ctx.share)),
            px, queue)
       | Ult, [x; y] ->
           let ((px, cx), queue) = access_queue' ~ctx  queue x in
@@ -1306,7 +1352,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
              so we can directly refer to it *)
           (Js_simpl.if_statement
               (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
-                      (J.EVar (get_string "number"))))
+                      (Share.get_string (fun s -> J.EStr (s,`Bytes)) "number" st.ctx.Ctx.share)))
               (build_switch (var x) a1)
               false
               (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
@@ -1448,11 +1494,24 @@ and compile_closure ctx (pc, args) =
   if debug () then Format.eprintf "}@]@ ";
   Js_simpl.source_elements res
 
+
+let generate_shared_value ctx =
+  let strings =
+    J.Statement (
+      J.Variable_statement (
+        List.map (fun (s,v) -> v, Some (J.EStr(s,`Bytes))) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
+        @ List.map (fun (s,v) -> v, Some (J.EVar (J.S s))) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
+      )) in
+  let applies = List.map (fun (n,v) ->
+    match generate_apply_fun n with
+      | J.EFun ((_,param,body),_) ->
+        J.Function_declaration (v,param,body,None)
+      | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in
+  strings::applies
+
 let compile_program standalone ctx pc =
-  clear_string ();
   let res = compile_closure ctx (pc, []) in
-  let res = generate_apply_funs res in
-  let res = J.Statement (J.Variable_statement (List.map (fun (s,v) -> v, Some (J.EStr(s,`Bytes))) (get_strings ()))) :: res in
+  let res = generate_shared_value ctx @ res in
   if debug () then Format.eprintf "@.@.";
   if standalone then
     let f = J.EFun ((None, [], res), None) in
@@ -1462,24 +1521,12 @@ let compile_program standalone ctx pc =
     [J.Statement (J.Expression_statement (f, Some pc))]
 
 
-let get_all_strings (_, blocks, _) =
-  AddrMap.fold
-    (fun _ block constants ->
-      List.fold_left
-        (fun constants i ->
-          match i with
-            | Let (x, Constant (String s | IString s)) ->
-              let n = try StringMap.find s constants with _ -> 0 in
-              StringMap.add s (n+1) constants
-            | _ -> constants)
-        constants block.body)
-    blocks StringMap.empty
 
 let f ~standalone ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let t' = Util.Timer.make () in
-  let strings = get_all_strings p in
-  let ctx = Ctx.initial blocks live_vars mutated_vars strings in
+  let share = Share.get p in
+  let ctx = Ctx.initial blocks live_vars mutated_vars share in
   let p = compile_program standalone ctx pc in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
   p
