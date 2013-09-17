@@ -41,7 +41,7 @@ let f linkall paths js_files input_file output_file =
     | None ->
       output_program (Pretty_print.to_out_channel stdout)
     | Some f ->
-      let f_tmp = f^".tmp" in
+      let f_tmp = Filename.temp_file (Filename.basename f) ".tmpjs" in
       try
         let ch = open_out_bin f_tmp in
         output_program (Pretty_print.to_out_channel ch);
