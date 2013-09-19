@@ -3,10 +3,10 @@ version = "dev"
 archive(byte) = "js_of_ocaml.cma"
 requires = "js_of_ocaml.syntax,lwt"
 
-linkopts(javascript,-joo_noruntime) = "runtime.js"
-linkopts(javascript,pkg_unix) += "unix.js"
-linkopts(javascript,joo_weak) += "weak.js"
-linkopts(javascript,joo_classlist) += "classlist.js"
+linkopts(javascript,-joo_noruntime) = "+js_of_ocaml/runtime.js"
+linkopts(javascript,pkg_unix) += "+js_of_ocaml/unix.js"
+linkopts(javascript,joo_weak) += "+js_of_ocaml/weak.js"
+linkopts(javascript,joo_classlist) += "+js_of_ocaml/classlist.js"
 
 package "syntax" (
   description = "Js_of_ocaml syntax extension"
