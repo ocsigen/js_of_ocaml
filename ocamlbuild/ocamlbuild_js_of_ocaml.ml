@@ -46,23 +46,23 @@ let ocamlfind cmd f =
   Pack.My_unix.run_and_open cmd (fun ic -> fold (fun () -> f ic))
 
 let link_opts prod =
-    let (all_pkgs, predicates) =
-      let tags = Tags.elements (tags_of_pathname prod) in
-      let pkgs = fold_pflag (fun x -> Scanf.sscanf x "package(%[^)])") tags in
-      let predicates = fold_pflag (fun x -> Scanf.sscanf x "predicate(%[^)])") tags in
-      ("js_of_ocaml" :: pkgs, predicates)
-    in
+  let (all_pkgs, predicates) =
+    let tags = Tags.elements (tags_of_pathname prod) in
+    let pkgs = fold_pflag (fun x -> Scanf.sscanf x "package(%[^)])") tags in
+    let predicates = fold_pflag (fun x -> Scanf.sscanf x "predicate(%[^)])") tags in
+    ("js_of_ocaml" :: pkgs, predicates)
+  in
 
-    (* Findlib usualy set pkg_* predicate for all selected packages *)
-    (* It doesn't do it with 'query' command, we have to it manualy. *)
-    let cmd = "-format" :: "pkg_%p" :: "-r" :: all_pkgs in
-    let predicates_pkgs = ocamlfind cmd (fun ic -> input_line ic) in
+  (* Findlib usualy set pkg_* predicate for all selected packages *)
+  (* It doesn't do it with 'query' command, we have to it manualy. *)
+  let cmd = "-format" :: "pkg_%p" :: "-r" :: all_pkgs in
+  let predicates_pkgs = ocamlfind cmd (fun ic -> input_line ic) in
 
-    let all_predicates = String.concat "," ("javascript" :: predicates @ predicates_pkgs) in
+  let all_predicates = String.concat "," ("javascript" :: predicates @ predicates_pkgs) in
 
-    (* query findlib for linking option *)
-    let cmd = "-o-format" :: "-r" :: "-predicates" :: all_predicates :: all_pkgs in
-    ocamlfind cmd (fun ic -> A (input_line ic))
+  (* query findlib for linking option *)
+  let cmd = "-o-format" :: "-r" :: "-predicates" :: all_predicates :: all_pkgs in
+  ocamlfind cmd (fun ic -> A (input_line ic))
 
 let init () =
   let dep = "%.byte" in
