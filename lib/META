@@ -43,7 +43,7 @@ package "deriving" (
 
 package "ocamlbuild" (
   description = "Js_of_ocaml ocamlbuild plugin"
-  requires = "ocamlbuild"
+  requires = "ocamlbuild str"
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "ocamlbuild_js_of_ocaml.cma"
   archive(byte, plugin) = "ocamlbuild_js_of_ocaml.cma"

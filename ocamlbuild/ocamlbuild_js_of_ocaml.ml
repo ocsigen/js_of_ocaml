@@ -26,13 +26,7 @@ let fold f =
   (try while true do l @:= [f ()] done with _ -> ());
   !l
 
-let split_comma s =
-  let rec aux acc final_acc = function
-    | ','::xs -> aux [] (final_acc @ [String.implode acc]) xs
-    | x::xs -> aux (acc @ [x]) final_acc xs
-    | [] -> final_acc @ [String.implode acc]
-  in
-  aux [] [] (String.explode s)
+let split_comma = Str.split_delim (Str.regexp ",")
 
 let fold_pflag scan =
   List.fold_left
