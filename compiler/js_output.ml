@@ -110,7 +110,7 @@ end) = struct
       | Bxor -> 6, 6, 6
       | Band -> 7, 7, 7
       | EqEq | NotEq | EqEqEq | NotEqEq -> 8, 8, 9
-      | Lt | Le | InstanceOf -> 9, 9, 10
+      | Gt | Ge | Lt | Le | InstanceOf | In -> 9, 9, 10
       | Lsl | Lsr | Asr -> 10, 10, 11
       | Plus | Minus -> 11, 11, 12
       | Mul | Div | Mod -> 12, 12, 13
@@ -140,6 +140,8 @@ end) = struct
       | BorEq   -> "|="
       | Lt      -> "<"
       | Le      -> "<="
+      | Gt      -> ">"
+      | Ge      -> ">="
       | Lsl     -> "<<"
       | Lsr     -> ">>>"
       | Asr     -> ">>"
@@ -148,7 +150,8 @@ end) = struct
       | Mul     -> "*"
       | Div     -> "/"
       | Mod     -> "%"
-      | InstanceOf -> assert false
+      | InstanceOf
+      | In -> assert false
 
   let unop_str op =
     match op with
@@ -157,7 +160,7 @@ end) = struct
       | Pl  -> "+"
       | Bnot -> "~"
       | IncrA | IncrB | DecrA | DecrB
-      | Typeof | Delete -> assert false
+      | Typeof | Void | Delete -> assert false
 
 (*XXX May need to be updated... *)
   let rec ends_with_if_without_else st =
@@ -321,6 +324,14 @@ end) = struct
         expression 13 f e;
         PP.end_group f;
         if l > 13 then begin PP.string f ")"; PP.end_group f end
+      | EUn (Void, e) ->
+        if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
+        PP.start_group f 0;
+        PP.string f "void";
+        PP.space f;
+        expression 13 f e;
+        PP.end_group f;
+        if l > 13 then begin PP.string f ")"; PP.end_group f end
       | EUn (Delete, e) ->
         if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
         PP.start_group f 0;
@@ -351,6 +362,17 @@ end) = struct
         expression lft f e1;
         PP.space f;
         PP.string f "instanceof";
+        PP.space f;
+        expression rght f e2;
+        PP.end_group f;
+        if l > out then begin PP.string f ")"; PP.end_group f end
+      | EBin (In, e1, e2) ->
+        let (out, lft, rght) = op_prec InstanceOf in
+        if l > out then begin PP.start_group f 1; PP.string f "(" end;
+        PP.start_group f 0;
+        expression lft f e1;
+        PP.space f;
+        PP.string f "in";
         PP.space f;
         expression rght f e2;
         PP.end_group f;
@@ -549,6 +571,7 @@ end) = struct
             PP.string f ";";
             PP.end_group f
         end
+      | Empty_statement -> ()
       | Expression_statement (EVar _, pc)-> ()
       | Expression_statement (e, pc) ->
       (* Parentheses are required when the expression
@@ -690,6 +713,27 @@ end) = struct
         opt_expression 0 f e2;
         PP.string f ";"; PP.break f;
         opt_expression 0 f e3;
+        PP.string f ")";
+        PP.end_group f;
+        PP.end_group f;
+        PP.break f;
+        PP.start_group f 0;
+        statement f s;
+        PP.end_group f;
+        PP.end_group f
+      | ForIn_statement (e1, e2, s, pc) ->
+        output_debug_info f pc;
+        PP.start_group f 1;
+        PP.start_group f 0;
+        PP.string f "for";
+        PP.break f;
+        PP.start_group f 1;
+        PP.string f "(";
+        expression 0 f e1;
+        PP.space f;
+        PP.string f "in"; PP.break f;
+        PP.space f;
+        expression 0 f e2;
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;

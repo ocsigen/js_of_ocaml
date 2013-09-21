@@ -23,6 +23,7 @@ module Label : sig
   val zero : t
   val succ : t -> t
   val to_string : t -> string
+  val of_string : string -> t
 end
 
 type node_pc = int option
@@ -44,13 +45,12 @@ and binop =
   | LslEq | AsrEq | LsrEq | BandEq | BxorEq | BorEq
   | Or | And | Bor | Bxor | Band
   | EqEq | NotEq | EqEqEq | NotEqEq
-  | Lt | Le | InstanceOf
+  | Lt | Le | Gt | Ge | InstanceOf | In
   | Lsl | Lsr | Asr
   | Plus | Minus
   | Mul | Div | Mod
 
-and unop = Not | Neg | Pl | Typeof | Delete | Bnot | IncrA | DecrA | IncrB | DecrB
-(*XXX*)
+and unop = Not | Neg | Pl | Typeof | Void | Delete | Bnot | IncrA | DecrA | IncrB | DecrB
 
 and arguments = expression list
 
@@ -86,18 +86,14 @@ and expression =
 and statement =
     Block of block
   | Variable_statement of variable_declaration list
-(*
   | Empty_statement
-*)
   | Expression_statement of expression * node_pc
   | If_statement of expression * statement * statement option
   | Do_while_statement of statement * expression
   | While_statement of expression * statement
   | For_statement of
       expression option * expression option * expression option * statement * node_pc
-(*
-  | Iteration_statement
-*)
+  | ForIn_statement of  expression * expression * statement * node_pc
   | Continue_statement of Label.t option
   | Break_statement of Label.t option
   | Return_statement of expression option
@@ -121,8 +117,6 @@ and variable_declaration = ident * initialiser option
 and case_clause = expression * statement_list
 
 and initialiser = expression
-
-(*... *)
 
 (****)
 

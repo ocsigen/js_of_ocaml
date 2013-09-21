@@ -187,6 +187,7 @@ and statement t s = match s with
       match eopt with
         | None -> t
         | Some e -> expression t e) t l
+  | Empty_statement -> t
   | Expression_statement (e,_) -> expression t e
   | If_statement(e1,s2,e3opt) ->
     let t = statement (expression t e1) s2 in
@@ -203,6 +204,9 @@ and statement t s = match s with
       match x with
         | None -> acc
         | Some e -> expression acc e ) t [e1;e2;e3] in
+    statement t s
+  | ForIn_statement (e1,e2,s,_) ->
+    let t = List.fold_left expression t [e1;e2] in
     statement t s
   | Continue_statement _
   | Break_statement _ -> t
