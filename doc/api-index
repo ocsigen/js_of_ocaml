@@ -22,6 +22,12 @@ WebGL
 WebSockets
 }
 
+{1 The ocamlbuild plugin – API Reference}
+
+{!modules:
+Ocamlbuild_js_of_ocaml
+}
+
 {1 Indexes}
 
 {!indexlist}

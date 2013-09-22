@@ -25,7 +25,7 @@ tests: compiler library runtime
 	$(MAKE) -C tests
 phantomtests: compiler library runtime
 	$(MAKE) -C tests phantom
-doc: library
+doc: library ocamlbuild
 	$(MAKE) -C doc
 
 LWTERROR="Js_of_ocaml requires Lwt version 2.3.0 at least.  Please upgrade."

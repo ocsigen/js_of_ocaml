@@ -22,6 +22,8 @@ COMP_NATDYN_IMPL := compiler/compiler.cmxs
 
 OCAMLBUILD_IMPL := ocamlbuild_js_of_ocaml.cma
 
+INTF += ocamlbuild/_build/ocamlbuild_js_of_ocaml.cmi
+
 ifeq "${BEST}" "opt"
 OCAMLBUILD_IMPL += ocamlbuild_js_of_ocaml.cmxa ocamlbuild_js_of_ocaml.a
 ifeq "${NATDYNLINK}" "YES"
@@ -62,5 +64,3 @@ endif
 endif
 
 DOC := ${INTF:.cmi=.mli}
-
-INTF += ocamlbuild/_build/ocamlbuild_js_of_ocaml.cmi
