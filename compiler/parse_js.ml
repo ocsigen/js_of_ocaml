@@ -298,7 +298,7 @@ let parse file =
     let p = Parser_js.program lexer_fun lexbuf  in
     let buf = Buffer.create 1024 in
     let f = Pretty_print.to_buffer buf in
-
+    Pretty_print.set_compact f true;
     Js_output.program f (fun _ -> None) (fun _ -> assert false) p;
     Printf.printf "%s" (Buffer.contents buf)
   with Parsing.Parse_error ->
