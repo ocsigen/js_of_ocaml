@@ -484,7 +484,7 @@ function caml_hash_univ_param (count, limit, obj) {
         // Object
         count --;
         hash_accu = (hash_accu * 65599 + obj[2]) | 0;
-        break
+        break;
       case 250:
         // Forward
         limit++; hash_aux(obj); break;
