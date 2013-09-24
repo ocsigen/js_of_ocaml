@@ -55,7 +55,7 @@ function caml_int64_float_of_bits (x) {
   var k = Math.pow(2,-24);
   var res = (x[1]*k+x[2])*k+(x[3]&0xf);
   if (exp > 0) {
-    res += 16
+    res += 16;
     res *= Math.pow(2,exp-1027);
   } else
     res *= Math.pow(2,-1026);

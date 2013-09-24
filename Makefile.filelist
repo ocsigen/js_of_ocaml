@@ -20,6 +20,19 @@ COMP_IMPL := compiler/compiler.cma
 COMP_NAT_IMPL := compiler/compiler.cmxa
 COMP_NATDYN_IMPL := compiler/compiler.cmxs
 
+OCAMLBUILD_IMPL := ocamlbuild_js_of_ocaml.cma
+
+INTF += ocamlbuild/_build/ocamlbuild_js_of_ocaml.cmi
+
+ifeq "${BEST}" "opt"
+OCAMLBUILD_IMPL += ocamlbuild_js_of_ocaml.cmxa ocamlbuild_js_of_ocaml.a
+ifeq "${NATDYNLINK}" "YES"
+OCAMLBUILD_IMPL += ocamlbuild_js_of_ocaml.cmxs
+endif
+endif
+
+IMPL += $(addprefix ocamlbuild/_build/,$(OCAMLBUILD_IMPL))
+
 ifneq "${DERIVING}" ""
 
 JSON := lib/deriving_json/deriving_Json.cmi       \
