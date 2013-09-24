@@ -223,6 +223,12 @@ end) = struct
     done;
     Buffer.contents b
 
+  let regexp_compact s o =
+    not ( s = ""
+       || s.[0] = '*'
+       || s.[0] = '/'
+       ||s.[0] = '[' )
+
   let rec expression l f e =
     match e with
         EVar v ->
@@ -419,6 +425,10 @@ end) = struct
         PP.string f "()";
         PP.end_group f;
         if l > 15 then begin PP.string f ")"; PP.end_group f end
+      | ENew (EVar (S "RegExp"), Some [EStr (s,_)]) when regexp_compact s None ->
+        PP.string f (Printf.sprintf "/%s/" s)
+      | ENew (EVar (S "RegExp"), Some [EStr (s,_);EStr (s',_)]) when regexp_compact s (Some s')->
+        PP.string f (Printf.sprintf "/%s/%s" s s')
       | ENew (e, Some el) ->
         if l > 15 then begin PP.start_group f 1; PP.string f "(" end;
         PP.start_group f 1;
