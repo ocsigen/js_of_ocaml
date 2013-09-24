@@ -386,11 +386,11 @@ post_in_expression:
  | post_in_expression T_IN post_in_expression
    { bop J.In $1 $3 }
  | post_in_expression T_EQUAL post_in_expression
-   { bop J.Eq $1 $3 }
+   { bop J.EqEq $1 $3 }
  | post_in_expression T_NOT_EQUAL post_in_expression
    { bop J.NotEq $1 $3 }
  | post_in_expression T_STRICT_EQUAL post_in_expression
-   { bop J.EqEq $1 $3 }
+   { bop J.EqEqEq $1 $3 }
  | post_in_expression T_STRICT_NOT_EQUAL post_in_expression
    { bop J.NotEqEq $1 $3 }
  | post_in_expression T_BIT_AND post_in_expression
@@ -506,11 +506,11 @@ post_in_expression_no_in:
  | post_in_expression_no_in T_INSTANCEOF post_in_expression
    { bop J.InstanceOf $1 $3 }
  | post_in_expression_no_in T_EQUAL post_in_expression
-   { bop J.Eq $1 $3 }
+   { bop J.EqEq $1 $3 }
  | post_in_expression_no_in T_NOT_EQUAL post_in_expression
    { bop J.NotEq $1 $3 }
  | post_in_expression_no_in T_STRICT_EQUAL post_in_expression
-   { bop J.EqEq $1 $3 }
+   { bop J.EqEqEq $1 $3 }
  | post_in_expression_no_in T_STRICT_NOT_EQUAL post_in_expression
    { bop J.NotEqEq $1 $3 }
  | post_in_expression_no_in T_BIT_AND post_in_expression
@@ -559,11 +559,11 @@ post_in_expression_no_statement:
  | post_in_expression_no_statement T_IN post_in_expression
    { bop J.In $1 $3 }
  | post_in_expression_no_statement T_EQUAL post_in_expression
-   { bop J.Eq $1 $3 }
+   { bop J.EqEq $1 $3 }
  | post_in_expression_no_statement T_NOT_EQUAL post_in_expression
    { bop J.NotEq $1 $3 }
  | post_in_expression_no_statement T_STRICT_EQUAL post_in_expression
-   { bop J.EqEq $1 $3 }
+   { bop J.EqEqEq $1 $3 }
  | post_in_expression_no_statement T_STRICT_NOT_EQUAL post_in_expression
    { bop J.NotEqEq $1 $3 }
  | post_in_expression_no_statement T_BIT_AND post_in_expression
