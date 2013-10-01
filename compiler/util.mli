@@ -42,7 +42,7 @@ end
 module VarPrinter : sig
   type t
 
-  val create : unit -> t
+  val create : ?pretty:bool -> unit -> t
   val reset : t -> unit
   val to_string : t -> int -> string
   val name : t -> int -> string -> unit

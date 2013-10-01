@@ -136,12 +136,12 @@ module VarPrinter = struct
   let reset t =
     Hashtbl.clear t.names; Hashtbl.clear t.known; t.last <- -1
 
-  let create () =
+  let create ?(pretty=false) () =
     let t = {
       names = Hashtbl.create 107;
       known = Hashtbl.create 1001;
       last = -1;
-      pretty = false;
+      pretty;
     } in
     reset t; t
 end

@@ -43,7 +43,7 @@ end = struct
   open Util
   type t = int
 
-  let printer = VarPrinter.create ()
+  let printer = VarPrinter.create ~pretty:(Option.Optim.pretty ()) ()
 
   let last_var = ref 0
 

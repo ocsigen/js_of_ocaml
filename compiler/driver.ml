@@ -163,7 +163,7 @@ let header formatter ~standalone js =
   end;
   js
 
-let link formatter ~standalone ?linkall pretty js =
+let link formatter ~standalone ?linkall js =
   if standalone
   then
     begin
@@ -203,7 +203,7 @@ let f ?(standalone=true) ?linkall formatter d =
   coloring >>
 
   header formatter ~standalone >>
-  link formatter ~standalone ?linkall false >>
+  link formatter ~standalone ?linkall >>
 
   output formatter d
 
