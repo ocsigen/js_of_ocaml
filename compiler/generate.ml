@@ -1098,6 +1098,13 @@ and translate_instr ctx expr_queue pc instr =
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy)), Some pc)]
+        | Offset_ref (x, 1) ->
+          (* FIX: may overflow.. *)
+            let ((px, cx), expr_queue) = access_queue expr_queue x in
+            flush_queue expr_queue mutator_p
+              [J.Expression_statement
+                  ((J.EUn (J.IncrA, (J.EAccess (cx, J.ENum 1.)))),
+                  Some pc)]
         | Offset_ref (x, n) ->
           (* FIX: may overflow.. *)
             let ((px, cx), expr_queue) = access_queue expr_queue x in
