@@ -31,6 +31,8 @@ val opt_iter : ('a -> unit) -> 'a option -> unit
 val find_in_paths : string list -> string -> string
 val read_file : string -> string
 
+val move_file : string -> string -> unit
+
 module Timer : sig
   type t
   val init : (unit -> float) -> unit

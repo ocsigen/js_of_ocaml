@@ -53,6 +53,29 @@ let read_file f =
   close_in ch;
   Buffer.contents b
 
+
+let move_file source dest =
+  try Sys.rename source dest with
+    | Sys_error _ ->
+      (* it may fail if not on the same device
+         copy file instead *)
+      let oc = open_out dest in
+      let ic = open_in source in
+      let buff = String.create (1024 * 1024) in
+      let maxlen = String.length buff in
+      let rec copy () =
+        let count = input ic buff 0 maxlen in
+        match count with
+          | 0 -> ()
+          | _ ->
+            output oc buff 0 count;
+            copy ()
+      in
+      copy ();
+      close_out oc;
+      close_in ic;
+      Sys.remove source
+
 module Timer = struct
   type t = float
   let timer = ref (fun _ -> 0.)

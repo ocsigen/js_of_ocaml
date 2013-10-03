@@ -47,7 +47,7 @@ let f linkall paths js_files input_file output_file =
         output_program (Pretty_print.to_out_channel ch);
         close_out ch;
         (try Sys.remove f with _ -> ());
-        Sys.rename f_tmp f
+        Util.move_file f_tmp f
       with exc ->
         Sys.remove f_tmp;
         Format.eprintf "compilation error: %s@." (Printexc.to_string exc);
