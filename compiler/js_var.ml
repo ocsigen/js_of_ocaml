@@ -85,21 +85,24 @@ let get_free t = S.diff t.use t.def
 let get_free_name t = StringSet.diff t.use_name t.def_name
 
 let mark g =
-  let u = S.union g.def g.use in
-  S.iter (fun u -> G.add_vertex g.g (vertex g u)) u;
-  let _ = S.fold (fun u1 set ->
-    let set = S.remove u1 set in
-    S.iter (fun u2 ->
-      if u1 <> u2
-      then
-        G.add_edge
-          g.g
-          (vertex g u1)
-          (vertex g u2)
-    ) set;
-    set
-  ) u u in
-  {g with biggest = max g.biggest (S.cardinal u)}
+  if Option.Optim.shortvar ()
+  then
+    let u = S.union g.def g.use in
+    S.iter (fun u -> G.add_vertex g.g (vertex g u)) u;
+    let _ = S.fold (fun u1 set ->
+        let set = S.remove u1 set in
+        S.iter (fun u2 ->
+            if u1 <> u2
+            then
+              G.add_edge
+                g.g
+                (vertex g u1)
+                (vertex g u2)
+          ) set;
+        set
+      ) u u in
+    {g with biggest = max g.biggest (S.cardinal u)}
+  else g
 
 let create () = (* empty (G.make (Code.Var.count ())) *)
   {
