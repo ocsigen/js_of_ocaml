@@ -532,7 +532,7 @@ let _ =
      "caml_int32_of_float", "caml_int_of_float";
      "caml_int32_to_float", "%identity";
      "caml_int32_format", "caml_format_int";
-     "caml_int32_of_string", "caml_int_of_amlstring";
+     "caml_int32_of_string", "caml_int_of_string";
      "caml_int32_compare", "caml_int_compare";
      "caml_nativeint_neg", "%int_neg";
      "caml_nativeint_add", "%int_add";
