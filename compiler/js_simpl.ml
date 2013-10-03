@@ -109,7 +109,7 @@ let source_elements l =
            J.Statement st :: rem)
     l []
 
-let tr = function
+let translate_assign_op = function
   | J.Div -> J.SlashEq
   | J.Mod -> J.ModEq
   | J.Lsl -> J.LslEq
@@ -123,35 +123,37 @@ let tr = function
   | J.Minus -> J.MinusEq
   | _ -> assert false
 
-let var isint = function
-  | (x,Some (J.EBin (J.Plus,y, J.EVar x')))
-  | (x,Some (J.EBin (J.Plus, J.EVar x',y))) when x = x' ->
+let assign_op' force_int = function
+  | (exp,Some (J.EBin (J.Plus,y, exp')))
+  | (exp,Some (J.EBin (J.Plus, exp',y))) when exp = exp' ->
     if y = J.ENum 1.
-    then Some (J.EUn (J.IncrB,J.EVar x))
-    else Some (J.EBin (J.PlusEq, J.EVar x,y))
-  | (x,Some (J.EBin (J.Minus, J.EVar x',y))) when x = x' ->
+    then Some (J.EUn (J.IncrB,exp))
+    else Some (J.EBin (J.PlusEq,exp,y))
+  | (exp,Some (J.EBin (J.Minus, exp',y))) when exp = exp' ->
     if y = J.ENum 1.
-    then Some (J.EUn (J.DecrB,J.EVar x))
-    else Some (J.EBin (J.MinusEq, J.EVar x,y))
-  | (x,Some (J.EBin (J.Mul,y, J.EVar x')))
-  | (x,Some (J.EBin (J.Mul, J.EVar x',y))) when x = x' ->
-    Some (J.EBin (J.StarEq, J.EVar x,y))
-  | (x,Some (J.EBin (J.Div | J.Mod | J.Lsl | J.Asr | J. Lsr | J.Band | J.Bxor | J.Bor as unop, J.EVar x',y))) when x = x' && not isint ->
-    Some (J.EBin (tr unop, J.EVar x,y))
-  | x -> None
+    then Some (J.EUn (J.DecrB, exp))
+    else Some (J.EBin (J.MinusEq, exp,y))
+  | (exp,Some (J.EBin (J.Mul,y, exp')))
+  | (exp,Some (J.EBin (J.Mul, exp',y))) when exp = exp' ->
+    Some (J.EBin (J.StarEq, exp,y))
+  | (exp,Some (J.EBin (J.Div | J.Mod | J.Lsl | J.Asr | J. Lsr | J.Band | J.Bxor | J.Bor as unop, exp',y))) when exp = exp' && not force_int ->
+    Some (J.EBin (translate_assign_op unop, exp,y))
+  | _ -> None
 
-let var = function
-  | (x,Some (J.EBin (J.Bor,e,J.ENum 0.))) -> var true (x,Some e)
-  | x -> var false x
+let assign_op = function
+  (* unsafe, could be optionnaly enabled *)
+  (* x+=1 <> x = (x + 1) | 0 *)
+  (* | (exp,Some (J.EBin (J.Bor,e,J.ENum 0.))) -> assign_op' true (exp,Some e) *)
+  | x -> assign_op' false x
 
-let optim_hh l =
+let assign_opt_pass l =
   List.fold_right (fun st rem ->
     match st with
       | J.Variable_statement l1 ->
-        let x = List.map (function x ->
-            match var x with
+        let x = List.map (function (ident,exp) ->
+            match assign_op (J.EVar ident,exp) with
               | Some e -> J.Expression_statement (e,None)
-              | None -> J.Variable_statement [x]) l1 in
+              | None -> J.Variable_statement [(ident,exp)]) l1 in
         x@rem
       | _ -> st::rem
   ) l []
@@ -164,7 +166,7 @@ let statement_list l =
            J.Variable_statement (l1 @ l2) :: rem'
        | _ ->
            st :: rem)
-    (optim_hh l) []
+    (assign_opt_pass l) []
 
 let block l = match l with [s] -> s | _ -> J.Block (statement_list l)
 
