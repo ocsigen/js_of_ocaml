@@ -88,8 +88,8 @@ stubs.c: $(MLOBJS:cmo=ml)
         > stubs.c
 
 clean:
-	rm -f *.cm[ioa] *.[ao] *.so
-	rm -f syntax/*.cm[io]
+	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa]
+	rm -f syntax/*.cm[xioa] syntax/*.[ao] syntax/*.so syntax/*.cmx[sa]
 	rm -f deriving_json/*.cm[ioa] deriving_json/*.[ao] deriving_json/*.so
 	rm -f deriving_json/deriving_Json_lexer.ml
 	rm -f stubs.c
