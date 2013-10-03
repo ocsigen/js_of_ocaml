@@ -50,11 +50,6 @@ external global_data : unit -> global_data Js.t = "caml_get_global_data"
 let g = global_data ()
 
 let _ =
-(*
-  Util.set_debug "parser";
-  Util.set_debug "deadcode";
-  Util.set_debug "main";
-*)
   let toc = g##toc in
   let prims = split_primitives (List.assoc "PRIM" toc) in
 

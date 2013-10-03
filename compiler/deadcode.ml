@@ -18,8 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let debug = Util.debug "deadcode"
-let times = Util.debug "times"
+let debug = Option.Debug.find "deadcode"
+let times = Option.Debug.find "times"
 
 open Code
 
@@ -34,10 +34,8 @@ type t =
 
 (****)
 
-let disabled = Util.disabled "deadcode"
-
 let pure_expr pure_funs e =
-  Pure_fun.pure_expr pure_funs e && not (disabled ())
+  Pure_fun.pure_expr pure_funs e && Option.Optim.deadcode ()
 
 (****)
 
@@ -254,4 +252,4 @@ let f ((pc, blocks, free_pc) as program) =
       blocks AddrMap.empty
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Util.Timer.print t;
-  (pc, blocks, free_pc), st.live
+  (pc, blocks, free_pc), st.live, Array.map List.length st.defs

@@ -39,8 +39,20 @@ let is_pure nm = kind nm <> `Mutator
 
 let primitives = ref Util.StringSet.empty
 
+let ign =
+  let h = Hashtbl.create 17 in
+  List.iter (fun s -> Hashtbl.add h s ()) Reserved.provided;
+  (fun s ->
+    let s =
+      try
+        let i = String.index s '.' in
+        String.sub s 0 i
+      with _ -> s in
+    Hashtbl.mem h s)
+
 let mark_used nm =
-  primitives := Util.StringSet.add nm !primitives
+  if not (ign nm)
+  then primitives := Util.StringSet.add nm !primitives
 
 let list_used () =
   Format.eprintf "Primitives:@.";

@@ -20,9 +20,6 @@
 
 open Code
 
-let inline_disabled = Util.disabled "inline"
-(****)
-
 let get_closures (_, blocks, _) =
   AddrMap.fold
     (fun _ block closures ->
@@ -123,6 +120,7 @@ let inline closures live_vars blocks free_pc pc =
                    body = []; branch = Branch (clos_pc, clos_args) } blocks
              in
              ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
+
          | _ ->
              (i :: rem, state))
       block.body ([], (block.branch, blocks, free_pc))
@@ -131,18 +129,12 @@ let inline closures live_vars blocks free_pc pc =
 
 (****)
 
-(*FIX: this is unefficient, as we still perform the other
-  optimizations phases repeatedly *)
-
 let f ((pc, blocks, free_pc) as p) live_vars =
-  if not (inline_disabled() || Deadcode.disabled ()) then begin
-    let closures = get_closures p in
-    let (blocks, free_pc) =
-      AddrMap.fold
-        (fun pc _ (blocks, free_pc) ->
-           inline closures live_vars blocks free_pc pc)
-        blocks (blocks, free_pc)
-    in
-    (pc, blocks, free_pc)
-  end else
-    p
+  let closures = get_closures p in
+  let (blocks, free_pc) =
+    AddrMap.fold
+      (fun pc _ (blocks, free_pc) ->
+        inline closures live_vars blocks free_pc pc)
+      blocks (blocks, free_pc)
+  in
+  (pc, blocks, free_pc)

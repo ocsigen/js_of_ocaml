@@ -147,9 +147,7 @@ let parse_file f =
     while true do
       incr i;
       let x = read_line ch (f, !i) in
-(*
-      debug x;
-*)
+      (* debug x; *)
       l := x :: !l
     done
   with End_of_file -> () end;
@@ -178,7 +176,6 @@ let add_file f =
        let id = !last_code_id in
        List.iter
          (fun (loc, nm, kind) ->
-           Code.add_reserved_name nm;
             let kind =
               match kind with
                 "pure" | "const" -> `Pure
@@ -220,7 +217,7 @@ and resolve_dep_rec f visited path id =
     visited
   end
 
-let resolve_deps ?(linkall = false) compact f l =
+let resolve_deps ?(linkall = false) f l =
   let visited =
     List.fold_left
       (fun (visited) id -> resolve_dep_rec f visited [] id)
@@ -242,13 +239,3 @@ let resolve_deps ?(linkall = false) compact f l =
     ) provided;
   end;
   List.rev missing
-
-(*
-let _ =
-  for i = 1 to Array.length Sys.argv - 1 do
-    add_file Sys.argv.(i)
-  done;
-  let missing = ref [] in
-  Format.eprintf "%a@."
-    (fun f v -> missing := resolve_deps f v) ["caml_array_get"]
-*)

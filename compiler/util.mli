@@ -22,6 +22,7 @@ module IntSet : Set.S with type elt = int
 module IntMap : Map.S with type key = int
 
 module StringSet : Set.S with type elt = string
+module StringMap : Map.S with type key = string
 
 val opt_filter : ('a -> bool) -> 'a option -> 'a option
 val opt_map : ('a -> 'b) -> 'a option -> 'b option
@@ -30,11 +31,7 @@ val opt_iter : ('a -> unit) -> 'a option -> unit
 val find_in_paths : string list -> string -> string
 val read_file : string -> string
 
-val debug : string -> unit -> bool
-val set_debug : string -> unit
-
-val disabled : string -> unit -> bool
-val set_disabled : string -> unit
+val move_file : string -> string -> unit
 
 module Timer : sig
   type t
@@ -42,4 +39,16 @@ module Timer : sig
   val make : unit -> t
   val get : t -> float
   val print : Format.formatter -> t -> unit
+end
+
+module VarPrinter : sig
+  type t
+
+  val create : ?pretty:bool -> unit -> t
+  val reset : t -> unit
+  val to_string : t -> int -> string
+  val name : t -> int -> string -> unit
+  val propagate_name : t -> int -> int -> unit
+  val set_pretty : t -> bool -> unit
+
 end
