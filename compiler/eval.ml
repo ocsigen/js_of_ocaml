@@ -19,7 +19,7 @@ let eval_prim x =
         | [Int i; Int j] -> fun f -> Some (Int (Int.to_int (f (Int.of_int i) (Int.of_int j))))
         | _ -> fun _ -> None in
       let shift = match l with
-        | [Int i; Int j] -> fun f -> Some (Int (Int.to_int (f (Int.of_int i) j)))
+        | [Int i; Int j] -> fun f -> Some (Int (Int.to_int (f (Int.of_int i) (j land 0x1f))))
         | _ -> fun _ -> None in
       let float_binop_aux =
         let args = match l with
