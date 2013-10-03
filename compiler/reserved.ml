@@ -13,6 +13,7 @@ let provided = [
   "Date";
   "Math";
   "JSON";
+  "Object";
   "RegExp";
   "String";
   "XMLHttpRequest";
