@@ -31,6 +31,9 @@
 // This way, using the wrong object is detected early.
 
 //Provides: MlString
+//Provides: MlStringFromArray
+//Provides: MlMakeString
+//Provides: MlWrappedString
 //Requires: caml_array_bound_error
 function caml_str_repeat(n, s) {
   if (!n) { return ""; }
@@ -237,20 +240,14 @@ MlString.prototype = {
 }
 
 // Conversion Javascript -> Caml
-//Provides: MlWrappedString
-//Requires: MlString
 function MlWrappedString (s) { this.string = s; }
 MlWrappedString.prototype = new MlString();
 
 // Uninitialized Caml string
-//Provides: MlMakeString
-//Requires: MlString
 function MlMakeString (l) { this.bytes = ""; this.len = l; }
 MlMakeString.prototype = new MlString ();
 
 // Caml string initialized form an array of bytes
-//Provides: MlStringFromArray
-//Requires: MlString
 function MlStringFromArray (a) {
   var len = a.length; this.array = a; this.len = this.last = len;
 }

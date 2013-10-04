@@ -30,7 +30,7 @@ function caml_js_to_float(x) { return x; }
 //Provides: caml_js_from_string mutable
 function caml_js_from_string(s) { return s.toString(); }
 //Provides: caml_js_to_string const
-//Requires: MlString
+//Requires: MlWrappedString
 function caml_js_to_string(s) { return new MlWrappedString(s); }
 //Provides: caml_js_from_array mutable
 function caml_js_from_array(a) { return a.slice(1); }

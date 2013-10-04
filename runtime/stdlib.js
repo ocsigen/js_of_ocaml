@@ -55,7 +55,7 @@ function caml_raise_constant (tag) { throw [0, tag]; }
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 
 //Provides: caml_raise_with_string
-//Requires: caml_raise_with_arg, MlString
+//Requires: caml_raise_with_arg, MlWrappedString
 function caml_raise_with_string (tag, msg) {
   caml_raise_with_arg (tag, new MlWrappedString (msg));
 }
@@ -378,7 +378,7 @@ function caml_parse_format (fmt) {
 }
 
 //Provides: caml_finish_formatting
-//Requires: MlString
+//Requires: MlWrappedString
 function caml_finish_formatting(f, rawbuffer) {
   if (f.uppercase) rawbuffer = rawbuffer.toUpperCase();
   var len = rawbuffer.length;
@@ -407,7 +407,7 @@ function caml_finish_formatting(f, rawbuffer) {
 }
 
 //Provides: caml_format_int const
-//Requires: caml_parse_format, caml_finish_formatting, MlString
+//Requires: caml_parse_format, caml_finish_formatting, MlWrappedString
 function caml_format_int(fmt, i) {
   if (fmt.toString() == "%d") return new MlWrappedString(""+i);
   var f = caml_parse_format(fmt);
@@ -663,7 +663,7 @@ function () {
 var caml_initial_time = new Date() * 0.001;
 function caml_sys_time () { return new Date() * 0.001 - caml_initial_time; }
 //Provides: caml_sys_get_config const
-//Requires: MlString
+//Requires: MlWrappedString
 function caml_sys_get_config () {
   return [0, new MlWrappedString("Unix"), 32, 0];
 }
@@ -741,7 +741,7 @@ function caml_ml_open_descriptor_out () { return 0; }
 //Provides: caml_ml_open_descriptor_in const
 function caml_ml_open_descriptor_in () { return 0; }
 //Provides: caml_sys_get_argv const
-//Requires: MlString
+//Requires: MlWrappedString
 function caml_sys_get_argv () {
   var p = new MlWrappedString("a.out"); return [0, p, [0, p]];
 }
