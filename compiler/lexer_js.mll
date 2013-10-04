@@ -1,4 +1,9 @@
 {
+
+(* Js_of_ocaml compiler
+ * Copyright (C) 2013 Hugo Heuzard
+ *)
+
 (* Yoann Padioleau
  *
  * Copyright (C) 2010 Facebook
