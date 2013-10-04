@@ -24,7 +24,7 @@ module Var : sig
   val idx : t -> int
   val of_idx : int -> t
 
-  val to_string : t -> string
+  val to_string : ?origin:t -> t -> string
 
   val fresh : unit -> t
 

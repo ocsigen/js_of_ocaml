@@ -69,6 +69,7 @@ module VarPrinter = struct
   type t = {
     names : (int,string) Hashtbl.t;
     known : (int,string) Hashtbl.t;
+    cache : (int*int,string) Hashtbl.t;
     mutable last : int;
     mutable pretty : bool;
   }
@@ -107,28 +108,42 @@ module VarPrinter = struct
 
   let format_var t i x =
     let s = format_ident x in
-    if t.pretty then begin
-      try
-        let nm = Hashtbl.find t.names i in
-        Format.sprintf "%s_%s_" nm s
-      with Not_found ->
-        Format.sprintf "_%s_" s
-    end else
-      s
+    if t.pretty
+    then Format.sprintf "_%s_" s
+    else s
 
-  let rec to_string t i =
+  let rec to_string t ?origin i =
+    let origin = match origin with
+      | Some i when t.pretty -> i
+      | _ -> i in
     try
-      Hashtbl.find t.known i
+      Hashtbl.find t.cache (i,origin)
     with Not_found ->
-      t.last <- t.last + 1;
-      let j = t.last in
-      let s = format_var t i j in
-      if Reserved.mem s then
-        to_string t i
-      else begin
-        Hashtbl.add t.known i s;
-        s
-      end
+      let name =
+        try
+          Hashtbl.find t.known i
+        with Not_found ->
+          t.last <- t.last + 1;
+          let j = t.last in
+          let s = format_var t i j in
+          if Reserved.mem s then
+            to_string t i
+          else begin
+            Hashtbl.add t.known i s;
+            s
+          end in
+      let name =
+        if t.pretty
+        then
+          try
+            let nm = Hashtbl.find t.names origin in
+            nm ^ name
+          with Not_found -> name
+        else name
+      in
+      Hashtbl.add t.cache (i,origin) name;
+      name
+
 
   let set_pretty t b = t.pretty <- b
 
@@ -140,6 +155,7 @@ module VarPrinter = struct
     let t = {
       names = Hashtbl.create 107;
       known = Hashtbl.create 1001;
+      cache = Hashtbl.create 1001;
       last = -1;
       pretty;
     } in

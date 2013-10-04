@@ -47,8 +47,9 @@ open Javascript
 let debug = Option.Debug.find "shortvar"
 
 module S = Code.VarSet
-module V = Code.Var
 module VM = Code.VarMap
+
+module Var = Code.Var
 
 type alloc =
   { mutable first_free : int;
@@ -97,7 +98,7 @@ let mark_allocated l i = List.iter (fun a -> allocate a i) l
 type g = {
   weight : int array;        (* Number of occurrences of each variable *)
   constr : alloc list array; (* Constraints on variables *)
-  mutable parameters : V.t list array; (* Function parameters *)
+  mutable parameters : Var.t list array; (* Function parameters *)
   mutable constraints : S.t list }     (* For debugging *)
 
 type t = {
@@ -380,26 +381,20 @@ let allocate_variables t =
     if n < 54 then begin incr n1; n2 := !n2 + weight.(i) end;
     n3 := !n3 + weight.(i)
   in
-  let names = Hashtbl.create 1024 in
-  let nm n =
-    try
-      Hashtbl.find names n
-    with Not_found ->
-      let nm = V.to_string (V.of_idx n) in
-      Hashtbl.add names n nm;
-      nm
-  in
+  let nm ~origin n =
+    name.(origin) <- Var.to_string ~origin:(Var.of_idx origin) (Var.of_idx n) in
   let total = ref 0 in
   let bad = ref 0 in
   for i = 0 to Array.length t.global.parameters - 1 do
     List.iter
       (fun x ->
          incr total;
-         let l = constr.(V.idx x) in
+         let idx = Var.idx x in
+         let l = constr.(idx) in
          if is_available l i then begin
-           name.(V.idx x) <- nm i;
+           nm ~origin:idx i;
            mark_allocated l i;
-           stats (V.idx x) i
+           stats idx i
          end else
            incr bad)
       (List.rev t.global.parameters.(i))
@@ -411,9 +406,10 @@ let allocate_variables t =
     let l = constr.(idx.(i)) in
     if l <> [] && String.length name.(idx.(i)) = 0 then begin
       let n = first_available l in
-      name.(idx.(i)) <- nm n;
+      let idx = idx.(i) in
+      nm ~origin:idx n;
       mark_allocated l n;
-      stats idx.(i) n
+      stats idx n
     end;
     if l = [] then assert (weight.(idx.(i)) = 0);
   done;
@@ -431,7 +427,6 @@ let program p =
 
   let free_name = get_free_name t in
   StringSet.iter (fun s ->
-    (* Printf.eprintf "use %s\n%!" s; *)
     Reserved.add s;
     Primitive.mark_used s;
   ) free_name;
@@ -440,4 +435,4 @@ let program p =
     if debug () then output_debug_information t;
     (fun v -> name.(Code.Var.idx v))
   end else
-    (fun v -> Code.Var.to_string v)
+    (fun v -> Var.to_string v)

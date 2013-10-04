@@ -44,7 +44,7 @@ module VarPrinter : sig
 
   val create : ?pretty:bool -> unit -> t
   val reset : t -> unit
-  val to_string : t -> int -> string
+  val to_string : t -> ?origin:int -> int -> string
   val name : t -> int -> string -> unit
   val propagate_name : t -> int -> int -> unit
   val set_pretty : t -> bool -> unit

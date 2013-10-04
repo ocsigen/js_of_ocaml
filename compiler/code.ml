@@ -25,7 +25,7 @@ module Var : sig
   val print : Format.formatter -> t -> unit
   val idx : t -> int
   val of_idx : int -> t
-  val to_string : t -> string
+  val to_string : ?origin:t -> t -> string
 
   val fresh : unit -> t
 
@@ -53,7 +53,7 @@ end = struct
     last_var := 0;
     VarPrinter.reset printer
 
-  let to_string i = VarPrinter.to_string printer i
+  let to_string ?origin i = VarPrinter.to_string printer ?origin i
 
   let print f x = Format.fprintf f "%s" (to_string x)
 
