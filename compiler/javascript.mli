@@ -18,19 +18,23 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*
-   variable_declaration_list_no_in
-   variable_declaration_no_in
-   initialiser_no_in
-...
+module Label : sig
+  type t
+  val zero : t
+  val succ : t -> t
+  val to_string : t -> string
+  val of_string : string -> t
+end
 
-
-*)
-type foo = unit
-
-and node_pc = int option
+type node_pc = int option
 
 (* A.3 Expressions *)
+
+type identifier = string
+
+type ident =
+  | S of identifier
+  | V of Code.Var.t
 
 and array_litteral = element_list
 
@@ -41,13 +45,12 @@ and binop =
   | LslEq | AsrEq | LsrEq | BandEq | BxorEq | BorEq
   | Or | And | Bor | Bxor | Band
   | EqEq | NotEq | EqEqEq | NotEqEq
-  | Lt | Le | InstanceOf
+  | Lt | Le | Gt | Ge | InstanceOf | In
   | Lsl | Lsr | Asr
   | Plus | Minus
   | Mul | Div | Mod
 
-and unop = Not | Neg | Pl | Typeof | Delete | Bnot | IncrA | DecrA | IncrB | DecrB
-(*XXX*)
+and unop = Not | Neg | Pl | Typeof | Void | Delete | Bnot | IncrA | DecrA | IncrB | DecrB
 
 and arguments = expression list
 
@@ -67,7 +70,7 @@ and expression =
   | EAccess of expression * expression
   | EDot of expression * identifier
   | ENew of expression * arguments option
-  | EVar of identifier
+  | EVar of ident
   | EFun of function_expression * node_pc
   | EStr of string * [`Bytes (*| `Utf8*)]
   | EArr of array_litteral
@@ -82,29 +85,25 @@ and expression =
 
 and statement =
     Block of block
-  | Variable_statement of variable_declaration_list
-(*
+  | Variable_statement of variable_declaration list
   | Empty_statement
-*)
   | Expression_statement of expression * node_pc
   | If_statement of expression * statement * statement option
   | Do_while_statement of statement * expression
   | While_statement of expression * statement
   | For_statement of
       expression option * expression option * expression option * statement * node_pc
-(*
-  | Iteration_statement
-*)
-  | Continue_statement of string option
-  | Break_statement of string option
+  | ForIn_statement of  expression * expression * statement * node_pc
+  | Continue_statement of Label.t option
+  | Break_statement of Label.t option
   | Return_statement of expression option
 (*
   | With_statement
 *)
-  | Labelled_statement of identifier * statement
+  | Labelled_statement of Label.t * statement
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
-  | Try_statement of block * (identifier * block) option * block option * node_pc
+  | Try_statement of block * (ident * block) option * block option * node_pc
 (*
   | Debugger_statement
 *)
@@ -113,29 +112,23 @@ and block = statement_list
 
 and statement_list = statement list
 
-and variable_statement = variable_declaration_list
-
-and variable_declaration_list = variable_declaration list
-
-and variable_declaration = identifier * initialiser option
+and variable_declaration = ident * initialiser option
 
 and case_clause = expression * statement_list
 
 and initialiser = expression
-
-(*... *)
 
 (****)
 
 (* A.5 Functions and programs *)
 
 and function_declaration =
-  identifier * formal_parameter_list * function_body * node_pc
+  ident * formal_parameter_list * function_body * node_pc
 
 and function_expression =
-  identifier option * formal_parameter_list * function_body
+  ident option * formal_parameter_list * function_body
 
-and formal_parameter_list = identifier list
+and formal_parameter_list = ident list
 
 and function_body = source_elements
 
@@ -146,5 +139,3 @@ and source_elements = source_element list
 and source_element =
     Statement of statement
   | Function_declaration of function_declaration
-
-and identifier = string

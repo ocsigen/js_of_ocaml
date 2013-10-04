@@ -33,16 +33,11 @@ Patterns:
 - CLEAN UP!!!
 *)
 
-let compact = ref true
-let debug = Util.debug "gen"
-let times = Util.debug "times"
-let disable_compact_expr = Util.disabled "compactexpr"
-
-let set_pretty () = compact := false
-
-(****)
+let debug = Option.Debug.find "gen"
+let times = Option.Debug.find "times"
 
 open Code
+open Util
 
 module J = Javascript
 
@@ -66,40 +61,153 @@ let list_group f l =
 
 (****)
 
-module Ctx = struct
-  type t =
-    { var_stream : Var.stream;
-      mutable blocks : block AddrMap.t;
-      live : int array;
-      mutated_vars : VarSet.t AddrMap.t }
 
-  let fresh_var ctx =
-    let (x, stream) = Var.next ctx.var_stream in
-    (x, {ctx with var_stream = stream})
+module Share = struct
+  type 'a aux = {
+    strings : 'a StringMap.t;
+    applies : 'a IntMap.t;
+    prims :   'a StringMap.t;
+  }
 
-  let initial b l v =
-    { var_stream = Var.make_stream (); blocks = b; live = l; mutated_vars = v }
 
-  let used_once ctx x = ctx.live.(Var.idx x) <= 1
+  let empty_aux = { prims = StringMap.empty;
+                    strings = StringMap.empty;
+                    applies = IntMap.empty }
+
+  type t = {
+    mutable count : int aux;
+    mutable vars : J.ident aux;
+  }
+
+  let add_string s t =
+    let n = try StringMap.find s t.strings with _ -> 0 in
+    {t with strings = StringMap.add s (n+1) t.strings}
+
+  let add_prim s t =
+    let n = try StringMap.find s t.prims with _ -> 0 in
+    {t with prims  = StringMap.add s (n+1) t.prims}
+
+  let add_apply i t =
+    let n = try IntMap.find i t.applies with _ -> 0 in
+    {t with applies = IntMap.add i (n+1) t.applies }
+
+  let add_code_string s share =
+    let share = add_string s share in
+    add_prim "caml_new_string" share
+
+  let add_code_istring s share =
+    add_string s share
+
+  let rec get_constant c t =
+    match c with
+      | String s -> add_code_string s t
+      | IString s -> add_code_istring s t
+      | Tuple (_,args) -> Array.fold_left (fun t c ->
+        get_constant c t) t args
+      | _ -> t
+
+  let add_args args t =
+    List.fold_left(fun t a ->
+      match a with
+        | Pc c -> get_constant c t
+        | _ -> t) t args
+
+
+  let get (_, blocks, _) : t =
+    let count = AddrMap.fold
+      (fun _ block share ->
+        List.fold_left
+          (fun share i ->
+            match i with
+              | Let (_, Constant c) -> get_constant c share
+              | Let (_, Apply (_,args,None)) ->
+                add_apply (List.length args) share
+              | Let (_, Prim (Extern name, args)) ->
+                let name = Primitive.resolve name in
+                let share = add_prim name share in
+                add_args args share
+              | Let (_, Prim (_, args)) ->
+                add_args args share
+              | _ -> share
+          )
+          share block.body)
+      blocks empty_aux in
+    (* hack to shared "number" string *)
+    let count = add_string "number" count in
+    let count = add_string "number" count in
+    {count; vars = empty_aux}
+
+  let get_string gen s t =
+    let s = Primitive.resolve s in
+    try
+      let c = StringMap.find s t.count.strings in
+      if c > 1
+      then
+        try
+          J.EVar (StringMap.find s t.vars.strings)
+        with _ ->
+          let x = Var.fresh() in
+          let v = J.V x in
+          t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
+          J.EVar v
+      else
+        gen s
+    with _ ->
+      Printf.eprintf "missed %S\n%!" s;
+      gen s
+
+  let get_prim gen s t =
+    try
+      let c = StringMap.find s t.count.prims in
+      if c > 1
+      then
+        try
+          J.EVar (StringMap.find s t.vars.prims)
+        with _ ->
+          let x = Var.fresh() in
+          let v = J.V x in
+          t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
+          J.EVar v
+      else
+        gen s
+    with _ -> gen s
+
+
+  let get_apply gen n t =
+    try
+      let c = IntMap.find n t.count.applies in
+      if c > 1
+      then
+        try
+          J.EVar (IntMap.find n t.vars.applies)
+        with _ ->
+          let x = Var.fresh() in
+          let v = J.V x in
+          t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
+          J.EVar v
+      else
+        gen n
+    with _ -> gen n
+
 end
 
-let add_names = Hashtbl.create 101
 
-let var x = J.EVar (Var.to_string x)
+module Ctx = struct
+  type t =
+    { mutable blocks : block AddrMap.t;
+      live : int array;
+      mutated_vars : VarSet.t AddrMap.t;
+      share: Share.t }
+
+  let initial b l v share =
+    { blocks = b; live = l; mutated_vars = v; share }
+
+end
+
+let var x = J.EVar (J.V x)
 let int n = J.ENum (float n)
 let one = int 1
 let zero = int 0
-let addr pc =
-  if not !compact then
-    Format.sprintf "f%d" pc
-  else begin
-    try
-      Hashtbl.find add_names pc
-    with Not_found ->
-      let x = Var.to_string (Var.fresh ()) in
-      Hashtbl.replace add_names pc x;
-      x
-  end
 let bool e = J.ECond (e, one, zero)
 let boolnot e = J.ECond (e, zero, one)
 let val_float f = f (*J.EArr [Some (J.ENum 253.); Some f]*)
@@ -109,11 +217,14 @@ let float_val e = e (*J.EAccess (e, one)*)
 
 let float_const f = val_float (J.ENum f)
 
-let rec constant x =
+let rec constant ~ctx x =
   match x with
     String s ->
-      Primitive.mark_used "MlString";
-      J.ENew (J.EVar ("MlString"), Some [J.EStr (s, `Bytes)])
+      let e = Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share in
+      let p = Share.get_prim (fun s -> J.EVar (J.S s)) "caml_new_string" ctx.Ctx.share in
+      J.ECall (p,[e])
+  | IString s ->
+      Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share
   | Float f ->
       float_const f
   | Float_array a ->
@@ -130,7 +241,7 @@ let rec constant x =
               Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))]
   | Tuple (tag, a) ->
       J.EArr (Some (int tag) ::
-              Array.to_list (Array.map (fun x -> Some (constant x)) a))
+              Array.to_list (Array.map (fun x -> Some (constant ~ctx x)) a))
   | Int i ->
       int i
 
@@ -157,39 +268,74 @@ let kind k =
   match k with
     `Pure -> const_p | `Mutable -> mutable_p | `Mutator -> mutator_p
 
+type queue_elt = {
+  prop : int;
+  cardinal : int;
+  ce : J.expression;
+  deps : Code.VarSet.t
+}
+
 let access_queue queue x =
   try
-    let res = List.assoc x queue in
-    (res, List.remove_assoc x queue)
+    let elt = List.assoc x queue in
+    if elt.cardinal = 1
+    then
+      (elt.prop,elt.ce), List.remove_assoc x queue
+    else
+      ((elt.prop,elt.ce), List.map (function (x',elt) when x = x' -> x',{elt with cardinal=pred elt.cardinal} | x -> x) queue)
   with Not_found ->
     ((const_p, var x), queue)
+
+let access_queue' ~ctx queue x =
+  match x with
+    | Pc c -> (const_p,constant ~ctx c),queue
+    | Pv x -> access_queue queue x
+
+let access_queue_may_flush queue v x =
+  let tx,queue = access_queue queue x in
+  let _,instrs,queue = List.fold_left (fun (deps,instrs,queue) ((y,elt) as eq) ->
+      if Code.VarSet.exists (fun p -> Code.VarSet.mem p deps) elt.deps
+      then (Code.VarSet.add ( y) deps),
+        ((J.Variable_statement [ J.V y, Some elt.ce]) ::instrs),
+        queue
+      else  deps,instrs,(eq::queue)
+    ) (Code.VarSet.singleton ( v),[],[]) queue
+  in instrs,(tx,List.rev queue)
+
+
 
 let should_flush cond prop = cond <> const_p && cond + prop >= flush_p
 
 let flush_queue expr_queue prop l =
   let (instrs, expr_queue) =
     if prop >= flush_p then (expr_queue, []) else
-    List.partition (fun (y, (p, _)) -> should_flush prop p) expr_queue
+      List.partition (fun (y, elt) -> should_flush prop elt.prop) expr_queue
   in
   let instrs =
-    List.map (fun (x, (_, ce)) ->
+    List.map (fun (x, elt) ->
                 J.Variable_statement
-                  [Var.to_string x, Some ce]) instrs
+                  [J.V x, Some elt.ce]) instrs
   in
   (List.rev_append instrs l, expr_queue)
 
 let flush_all expr_queue l = fst (flush_queue expr_queue flush_p l)
 
-let enqueue expr_queue prop x ce =
+let enqueue expr_queue prop x ce cardinal =
   let (instrs, expr_queue) =
-    if disable_compact_expr () then
-      flush_queue expr_queue flush_p []
-    else if is_mutable prop then
-      flush_queue expr_queue prop []
-    else
-      [], expr_queue
+    if Option.Optim.compact () then
+      if is_mutable prop then
+        flush_queue expr_queue prop []
+      else
+        [], expr_queue
+    else flush_queue expr_queue flush_p []
   in
-  (instrs, (x, (prop, ce)) :: expr_queue)
+  let deps = Js_simpl.get_variable Code.VarSet.empty ce in
+  let deps = List.fold_left (fun deps (x',elt) ->
+      if Code.VarSet.mem ( x') deps
+      then Code.VarSet.union elt.deps deps
+      else deps) deps expr_queue
+  in
+  (instrs, (x, {prop; ce; cardinal; deps}) :: expr_queue)
 
 (****)
 
@@ -199,7 +345,7 @@ type state =
     backs : (int, AddrSet.t) Hashtbl.t;
     preds : (int, int) Hashtbl.t;
     mutable loops : AddrSet.t;
-    mutable loop_stack : (addr * (int * bool ref)) list;
+    mutable loop_stack : (addr * (J.Label.t * bool ref)) list;
     mutable visited_blocks : AddrSet.t;
     mutable interm_idx : int;
     ctx : Ctx.t; mutable blocks : Code.block AddrMap.t }
@@ -256,9 +402,6 @@ let rec build_graph st pc anc =
 let rec dominance_frontier_rec st pc visited grey =
   let n = get_preds st pc in
   let v = try AddrMap.find pc visited with Not_found -> 0 in
-(*
-Format.eprintf "%d %d %d@." pc n v;
-*)
   if v < n then begin
     let v = v + 1 in
     let visited = AddrMap.add pc v visited in
@@ -283,26 +426,9 @@ let dominance_frontier st pc =
 let never_continue st (pc, _) frontier interm succs =
   (* If not found in successors, this is a backward edge *)
   let d = try List.assoc pc succs with Not_found -> AddrSet.empty in
-(*
-Format.eprintf "pc: %d@." pc;
-List.iter (fun (pc, _) ->Format.eprintf "pc: %d@." pc) succs;
-Format.eprintf "never_continue@.";
-Format.eprintf "  %d /" pc;
-AddrSet.iter (fun i -> Format.eprintf " %d" i) frontier;
-Format.eprintf " /";
-AddrMap.iter (fun i _ -> Format.eprintf " %d" i) interm;
-Format.eprintf " /";
-AddrSet.iter (fun i -> Format.eprintf " %d" i) d;
-let res =
-*)
   not (AddrSet.mem pc frontier || AddrMap.mem pc interm)
     &&
   AddrSet.is_empty d
-(*
-in
-Format.eprintf " ==> %b@." res;
-res
-*)
 
 let rec resolve_node interm pc =
   try
@@ -353,58 +479,32 @@ let parallel_renaming ctx params args continuation queue =
   let l = List.rev (visit_all params args) in
   List.fold_left
     (fun continuation (y, x) ->
-       fun queue ->
-       let ((px, cx), queue) = access_queue queue x in
-       let (st, queue) =
-(*
-         let idx = Var.idx y in
-         let len = Array.length ctx.Ctx.live in
-         match if idx >= len then 2 else ctx.Ctx.live.(Var.idx y) with
-           0 -> assert false
-         | 1 -> enqueue queue px y cx
-         | _ -> *)
-         flush_queue queue px [J.Variable_statement [Var.to_string y, Some cx]]
-       in
-       st @ continuation queue)
+    fun queue ->
+      let instrs,((px, cx), queue) = access_queue_may_flush queue y x in
+      let (st, queue) = flush_queue queue px (instrs@[J.Variable_statement [ J.V y, Some cx]])
+      in
+      st @ continuation queue)
     continuation l queue
 
 (****)
 
-let apply_funs = ref Util.IntMap.empty
-
-let get_apply_fun n =
-  try
-    Util.IntMap.find n !apply_funs
-  with Not_found ->
-    Primitive.mark_used "caml_call_gen";
-    let x = Var.fresh () in
-    apply_funs := Util.IntMap.add n x !apply_funs;
-    x
-
-let generate_apply_funs cont =
-  let funs = !apply_funs in
-  apply_funs := Util.IntMap.empty;
-  Util.IntMap.fold
-    (fun n x cont ->
-       let f = Var.to_string (Var.fresh ()) in
-       let params =
-         Array.to_list (Array.init n (fun _ -> Var.to_string (Var.fresh ())))
-       in
-       let f' = J.EVar f in
-       let params' = List.map (fun x -> J.EVar x) params in
-       J.Function_declaration
-         (Var.to_string x, f :: params,
-          [J.Statement
-             (J.Return_statement
-                (Some
-                   (J.ECond (J.EBin (J.EqEq, J.EDot (f', "length"),
-                                     J.ENum (float n)),
-                             J.ECall (f', params'),
-                             J.ECall (J.EVar "caml_call_gen",
-                                      [f'; J.EArr (List.map (fun x -> Some x) params')])))))],
-          None) ::
-       cont)
-    funs cont
+let generate_apply_fun ?x n =
+  let f = J.V (Var.fresh ()) in
+  let params =
+    Array.to_list (Array.init n (fun _ -> J.V (Var.fresh ())))
+  in
+  let f' = J.EVar f in
+  let params' = List.map (fun x -> J.EVar x) params in
+  J.EFun ((x, f :: params,
+           [J.Statement
+               (J.Return_statement
+                  (Some
+                     (J.ECond (J.EBin (J.EqEq, J.EDot (f', "length"),
+                                       J.ENum (float n)),
+                               J.ECall (f', params'),
+                               J.ECall (J.EVar (J.S "caml_call_gen"),
+                                        [f'; J.EArr (List.map (fun x -> Some x) params')])))))]),
+          None)
 
 (****)
 
@@ -483,47 +583,59 @@ let register_prim name k f =
 
 let register_un_prim name k f =
   register_prim name k
-    (fun l queue ->
+    (fun l queue ctx ->
        match l with
-         [Pv x] ->
-           let ((px, cx), queue) = access_queue queue x in
+         [x] ->
+           let ((px, cx), queue) = access_queue' ~ctx queue x in
            (f cx, or_p (kind k) px, queue)
-       | _ ->
+         | _ ->
+           assert false)
+
+let register_un_prim_ctx name k f =
+  register_prim name k
+    (fun l queue ctx ->
+       match l with
+         [x] ->
+           let ((px, cx), queue) = access_queue' ~ctx queue x in
+           (f ctx cx, or_p (kind k) px, queue)
+         | _ ->
            assert false)
 
 let register_bin_prim name k f =
   register_prim name k
-    (fun l queue ->
+    (fun l queue ctx ->
        match l with
-         [Pv x; Pv y] ->
-           let ((px, cx), queue) = access_queue queue x in
-           let ((py, cy), queue) = access_queue queue y in
+         [x;y] ->
+           let ((px, cx), queue) = access_queue' ~ctx queue x in
+           let ((py, cy), queue) = access_queue' ~ctx queue y in
            (f cx cy, or_p (kind k) (or_p px py), queue)
-       | _ ->
-           assert false)
+         | _ -> assert false)
 
 let register_tern_prim name f =
   register_prim name `Mutator
-    (fun l queue ->
+    (fun l queue ctx ->
        match l with
-         [Pv x; Pv y; Pv z] ->
-           let ((px, cx), queue) = access_queue queue x in
-           let ((py, cy), queue) = access_queue queue y in
-           let ((pz, cz), queue) = access_queue queue z in
+         [x;y;z] ->
+           let ((px, cx), queue) = access_queue' ~ctx queue x in
+           let ((py, cy), queue) = access_queue' ~ctx queue y in
+           let ((pz, cz), queue) = access_queue' ~ctx queue z in
            (f cx cy cz, or_p mutator_p (or_p px (or_p py pz)), queue)
-       | _ ->
+         | _ ->
            assert false)
 
 let register_un_math_prim name prim =
   register_un_prim name `Pure
-    (fun cx -> J.ECall (J.EDot (J.EVar "Math", prim), [cx]))
+    (fun cx -> J.ECall (J.EDot (J.EVar (J.S "Math"), prim), [cx]))
 
 let register_bin_math_prim name prim =
   register_bin_prim name `Pure
-    (fun cx cy -> J.ECall (J.EDot (J.EVar "Math", prim), [cx; cy]))
+    (fun cx cy -> J.ECall (J.EDot (J.EVar (J.S "Math"), prim), [cx; cy]))
 
 let _ =
-  Code.add_reserved_name "Math";
+  register_un_prim_ctx  "%caml_format_int_special" `Pure
+    (fun ctx cx ->
+      let p = Share.get_prim (fun s -> J.EVar (J.S s)) "caml_new_string" ctx.Ctx.share in
+      J.ECall (p, [J.EBin (J.Plus,J.EStr("",`Bytes),cx)]));
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
   register_bin_prim "caml_string_get" `Mutable
@@ -607,9 +719,7 @@ let _ =
   register_un_prim "caml_js_from_string" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "toString"), []));
   register_un_prim "caml_js_to_string" `Mutable
-    (fun cx ->
-       Primitive.mark_used "MlString";
-       J.ENew (J.EVar "MlWrappedString", Some [cx]));
+    (fun cx -> J.ENew (J.EVar (J.S "MlWrappedString"), Some [cx]));
   register_tern_prim "caml_js_set"
     (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable
@@ -650,12 +760,12 @@ let rec collect_closures ctx l =
       let vars = VarSet.remove x all_vars in
       let fun_name =
         if not (VarSet.is_empty vars) && VarSet.mem x all_vars then
-          Some (Var.to_string x)
+          Some (J.V x)
         else
           None
       in
       let cl =
-        J.EFun ((fun_name, List.map Var.to_string args,
+        J.EFun ((fun_name, List.map (fun v -> J.V v) args,
                  compile_closure ctx cont), Some pc)
       in
       let (l', rem') = collect_closures ctx rem in
@@ -687,8 +797,8 @@ and translate_expr ctx queue x e =
                access_queue queue x in (cx :: args, or_p prop prop', queue))
           (x :: l) ([], mutator_p, queue)
       in
-      let y = get_apply_fun (List.length l) in
-      (J.ECall (J.EVar (Var.to_string y), args),
+      let y = Share.get_apply (generate_apply_fun) (List.length l) ctx.Ctx.share in
+      (J.ECall (y, args),
        prop, queue)
   | Block (tag, a) ->
       let (contents, prop, queue) =
@@ -711,16 +821,16 @@ and translate_expr ctx queue x e =
         all_vars
         >> VarSet.remove x
         >> VarSet.elements
-        >> List.map Var.to_string
+        >> List.map (fun v -> J.V v)
       in
       let fun_name =
         if vars <> [] && VarSet.mem x all_vars then
-          Some (Var.to_string x)
+          Some (J.V x)
         else
           None
       in
       let cl =
-        J.EFun ((fun_name, List.map Var.to_string args,
+        J.EFun ((fun_name, List.map (fun v -> J.V v) args,
                  compile_closure ctx cont), Some pc)
       in
       let cl =
@@ -732,32 +842,30 @@ and translate_expr ctx queue x e =
       in
       (cl, flush_p, queue)
   | Constant c ->
-      (constant c, const_p, queue)
+      (constant ~ctx c, const_p, queue)
   | Prim (p, l) ->
       begin match p, l with
-        Vectlength, [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
+        Vectlength, [x] ->
+          let ((px, cx), queue) = access_queue' ~ctx queue x in
           (J.EBin (J.Minus, J.EDot (cx, "length"), one), px, queue)
-      | Array_get, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Array_get, [x; y] ->
+          let ((px, cx), queue) = access_queue' ~ctx queue x in
+          let ((py, cy), queue) = access_queue' ~ctx queue y in
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
-          Code.add_reserved_name nm;  (*XXX HACK *)
-          (J.EVar nm, const_p, queue)
+        (J.EVar (J.S nm), const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
-          Code.add_reserved_name nm;  (*XXX HACK *)
-          (J.EVar nm, const_p, queue)
+        (J.EVar (J.S nm), const_p, queue)
       | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
           let ((pf, cf), queue) = access_queue queue f in
           let ((po, co), queue) = access_queue queue o in
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let x = match x with Pv x -> x | _ -> assert false in
-                 let ((prop', cx), queue) = access_queue queue x in
-                 (cx :: args, or_p prop prop', queue))
+                let ((prop', cx), queue) = access_queue' ~ctx queue x in
+                (cx :: args, or_p prop prop', queue)
+              )
               l ([], mutator_p, queue)
           in
           (J.ECall (J.EDot (cf, "call"), co :: args),
@@ -767,8 +875,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let x = match x with Pv x -> x | _ -> assert false in
-                 let ((prop', cx), queue) = access_queue queue x in
+                 let ((prop', cx), queue) = access_queue' ~ctx queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
@@ -778,8 +885,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let x = match x with Pv x -> x | _ -> assert false in
-                 let ((prop', cx), queue) = access_queue queue x in
+                 let ((prop', cx), queue) = access_queue' ~ctx queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
@@ -789,8 +895,7 @@ and translate_expr ctx queue x e =
           let (args, prop, queue) =
             List.fold_right
               (fun x (args, prop, queue) ->
-                 let x = match x with Pv x -> x | _ -> assert false in
-                 let ((prop', cx), queue) = access_queue queue x in
+                 let ((prop', cx), queue) = access_queue' ~ctx queue x in
                  (cx :: args, or_p prop prop', queue))
               l ([], mutator_p, queue)
           in
@@ -813,7 +918,7 @@ and translate_expr ctx queue x e =
               [] ->
                 []
             | Pc (String nm) :: Pc (String v) :: r ->
-                (J.PNS nm, J.EStr (v, `Bytes)) :: build_fields r
+                (J.PNS nm, Share.get_string (fun v -> J.EStr (v, `Bytes)) v ctx.Ctx.share ) :: build_fields r
             | _ ->
                 assert false
           in
@@ -833,59 +938,53 @@ and translate_expr ctx queue x e =
           let (prop, fields, queue) = build_fields queue fields in
           (J.EObj fields, prop, queue)
       | Extern name, l ->
+        begin
           let name = Primitive.resolve name in
-          begin match internal_prim name with
-            Some f ->
-              f l queue
-          | None ->
-              Primitive.mark_used name;
-              Code.add_reserved_name name;  (*XXX HACK *)
-                               (* FIX: this is done at the wrong time... *)
+          match internal_prim name with
+            | Some f -> f l queue ctx
+            | None ->
+              let prim = Share.get_prim (fun s -> J.EVar (J.S s)) name ctx.Ctx.share in
               let prim_kind = kind (Primitive.kind name) in
               let (args, prop, queue) =
                 List.fold_right
                   (fun x (args, prop, queue) ->
-                     let x = match x with Pv x -> x | _ -> assert false in
-                     let ((prop', cx), queue) = access_queue queue x in
-                     (cx :: args, or_p prop prop', queue))
+                    let ((prop', cx), queue) = access_queue' ~ctx queue x in
+                    (cx :: args, or_p prop prop', queue))
                   l ([], prim_kind, queue)
               in
-              (J.ECall (J.EVar name, args), prop, queue)
-          end
-      | Not, [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
+              (J.ECall (prim, args), prop, queue)
+        end
+      | Not, [x] ->
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
           (J.EBin (J.Minus, one, cx), px, queue)
-      | Lt, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Lt, [x; y] ->
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.Lt, cx, cy)), or_p px py, queue)
-      | Le, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Le, [x; y] ->
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.Le, cx, cy)), or_p px py, queue)
-      | Eq, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Eq, [x; y] ->
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.EqEqEq, cx, cy)), or_p px py, queue)
-      | Neq, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Neq, [x; y] ->
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
-      | IsInt, [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
-          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), J.EStr ("number", `Bytes)),
+      | IsInt, [x] ->
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (Share.get_string (fun s -> J.EStr (s,`Bytes)) "number" ctx.Ctx.share)),
            px, queue)
-(*
-          (boolnot (J.EBin(J.InstanceOf, cx, J.EVar ("Array"))), px, queue)
-*)
-      | Ult, [Pv x; Pv y] ->
-          let ((px, cx), queue) = access_queue queue x in
-          let ((py, cy), queue) = access_queue queue y in
+      | Ult, [x; y] ->
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
+          let ((py, cy), queue) = access_queue' ~ctx  queue y in
           (bool (J.EBin (J.Or, J.EBin (J.Lt, cy, int 0),
                          J.EBin (J.Lt, cx, cy))),
            or_p px py, queue)
-      | WrapInt, [Pv x] ->
-          let ((px, cx), queue) = access_queue queue x in
+      | WrapInt, [x] ->
+          let ((px, cx), queue) = access_queue' ~ctx  queue x in
           (to_int cx, px, queue)
       | (Vectlength | Array_get | Not | IsInt | Eq |
          Neq | Lt | Le | Ult | WrapInt), _ ->
@@ -900,7 +999,7 @@ and translate_closures ctx expr_queue l =
       let vars =
         vars
         >> VarSet.elements
-        >> List.map Var.to_string
+        >> List.map (fun v -> J.V v)
       in
       let cl =
         if vars = [] then cl else
@@ -912,9 +1011,9 @@ and translate_closures ctx expr_queue l =
       let (st, expr_queue) =
         match ctx.Ctx.live.(Var.idx x) with
           0 -> flush_queue expr_queue flush_p [J.Expression_statement (cl, None)]
-        | 1 -> enqueue expr_queue flush_p x cl
+        | 1 -> enqueue expr_queue flush_p x cl 1
         | _ -> flush_queue expr_queue flush_p
-                 [J.Variable_statement [Var.to_string x, Some cl]]
+                 [J.Variable_statement [J.V x, Some cl]]
       in
       let (st', expr_queue) = translate_closures ctx expr_queue rem in
       (st @ st', expr_queue)
@@ -927,10 +1026,10 @@ and translate_closures ctx expr_queue l =
       let vars =
         VarSet.diff vars names
         >> VarSet.elements
-        >> List.map Var.to_string
+        >> List.map (fun v -> J.V v)
       in
       let defs =
-        List.map (fun (x, _, cl) -> (Var.to_string x, Some cl)) l in
+        List.map (fun (x, _, cl) -> (J.V x, Some cl)) l in
       let statement =
         if vars = [] then
           J.Variable_statement defs
@@ -938,18 +1037,18 @@ and translate_closures ctx expr_queue l =
           let tbl = Var.fresh () in
           let arr =
             J.EArr
-              (List.map (fun (x, _, _) -> Some (J.EVar (Var.to_string x))) l)
+              (List.map (fun (x, _, _) -> Some (J.EVar (J.V x))) l)
           in
           let assgn =
             List.fold_left
               (fun (l, n) (x, _, _) ->
-                 ((Var.to_string x,
-                   Some (J.EAccess (J.EVar (Var.to_string tbl), int n))) :: l,
+                 ((J.V x,
+                   Some (J.EAccess (J.EVar (J.V tbl), int n))) :: l,
                   n + 1))
               ([], 0) l
           in
           J.Variable_statement
-            ((Var.to_string tbl,
+            ((J.V tbl,
               Some
                 (J.ECall
                    (J.EFun ((None, vars,
@@ -979,12 +1078,19 @@ and translate_instr ctx expr_queue pc instr =
         match i with
           Let (x, e) ->
             let (ce, prop, expr_queue) = translate_expr ctx expr_queue x e in
-            begin match ctx.Ctx.live.(Var.idx x) with
-              0 -> flush_queue expr_queue prop [J.Expression_statement
+            begin match ctx.Ctx.live.(Var.idx x),e with
+              0,_ -> flush_queue expr_queue prop [J.Expression_statement
                                                    (ce, Some pc)]
-            | 1 -> enqueue expr_queue prop x ce
+            | 1,_ -> enqueue expr_queue prop x ce 1
+            (* We could inline more.
+               size_v : length of the variable after serialization
+               size_c : length of the constant after serialization
+               num : number of occurence
+               size_c * n < size_v * n + size_v + 1 + size_c
+            *)
+            | n,(Const _| Constant (Int _|Float _| Int32 _| Nativeint _)) -> enqueue expr_queue prop x ce n
             | _ -> flush_queue expr_queue prop
-                     [J.Variable_statement [Var.to_string x, Some ce]]
+                     [J.Variable_statement [J.V x, Some ce]]
             end
         | Set_field (x, n, y) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
@@ -992,8 +1098,15 @@ and translate_instr ctx expr_queue pc instr =
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy)), Some pc)]
+        | Offset_ref (x, 1) ->
+          (* FIX: may overflow.. *)
+            let ((px, cx), expr_queue) = access_queue expr_queue x in
+            flush_queue expr_queue mutator_p
+              [J.Expression_statement
+                  ((J.EUn (J.IncrA, (J.EAccess (cx, J.ENum 1.)))),
+                  Some pc)]
         | Offset_ref (x, n) ->
-(* FIX: may overflow.. *)
+          (* FIX: may overflow.. *)
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
@@ -1016,14 +1129,6 @@ and compile_block st queue pc frontier interm =
 if queue <> [] && AddrSet.mem pc st.loops then
   flush_all queue (compile_block st [] pc frontier interm)
 else begin
-(*
-Format.eprintf "(frontier: ";
-AddrSet.iter (fun pc -> Format.eprintf "%d " pc) frontier;
-Format.eprintf ")@.";
-Format.eprintf "(interm: ";
-AddrMap.iter (fun pc (pc', _) -> Format.eprintf " %d->%d " pc pc') interm;
-Format.eprintf ")@.";
-*)
   if pc >= 0 then begin
     if AddrSet.mem pc st.visited_blocks then begin
       Format.eprintf "!!!! %d@." pc; assert false
@@ -1036,7 +1141,7 @@ Format.eprintf ")@.";
   end;
   if AddrSet.mem pc st.loops then begin
     let lab =
-      match st.loop_stack with (_, (l, _)) :: _ -> l + 1 | [] -> 0 in
+      match st.loop_stack with (_, (l, _)) :: _ -> J.Label.succ l | [] -> J.Label.zero in
     st.loop_stack <- (pc, (lab, ref false)) :: st.loop_stack
   end;
   let succs = Hashtbl.find st.succs pc in
@@ -1050,11 +1155,6 @@ Format.eprintf ")@.";
       succs AddrSet.empty
   in
   let new_frontier = resolve_nodes interm grey in
-(*
-Format.eprintf "<<%d:" pc;
-AddrSet.iter (fun pc -> Format.eprintf " %d" pc) frontier;
-Format.eprintf ">>@ ";
-*)
   let block = AddrMap.find pc st.blocks in
   let (seq, queue) = translate_instr st.ctx queue pc block.body in
   let body =
@@ -1074,9 +1174,6 @@ Format.eprintf ">>@ ";
         if limit_body then incr_preds st pc3;
         assert (AddrSet.cardinal inner_frontier <= 1);
         if debug () then Format.eprintf "@[<2>try {@,";
-(*
-Format.eprintf "===== %d ===== (%b)@." pc3 limit_body;
-*)
         let body =
           compile_branch st [] (pc1, args1)
             None AddrSet.empty inner_frontier interm
@@ -1092,24 +1189,16 @@ Format.eprintf "===== %d ===== (%b)@." pc3 limit_body;
         if limit_body then decr_preds st pc3;
         flush_all queue
           (J.Try_statement (Js_simpl.statement_list body,
-                            Some (Var.to_string x,
+                            Some (J.V x,
                                   Js_simpl.statement_list handler),
                             None,
                             Some pc) ::
            if AddrSet.is_empty inner_frontier then [] else begin
              let pc = AddrSet.choose inner_frontier in
-(*
-Format.eprintf ">>Frontier: ";
-AddrSet.iter (fun pc -> Format.eprintf "%d " pc) frontier;
-Format.eprintf "@.";
-*)
              if AddrSet.mem pc frontier then [] else
                compile_block st [] pc frontier interm
            end)
     | _ ->
-(*
-Format.eprintf "[[@.";
-*)
         let (new_frontier, new_interm) =
           if AddrSet.cardinal new_frontier > 1 then begin
             let x = Code.Var.fresh () in
@@ -1117,11 +1206,6 @@ Format.eprintf "[[@.";
             if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
             let idx = st.interm_idx in
             st.interm_idx <- idx - 1;
-(*
-Format.eprintf "%d ====> " idx;
-AddrSet.iter (fun pc -> Format.eprintf "%d " pc) new_frontier;
-Format.eprintf "@.";
-*)
             let cases = Array.map (fun pc -> (pc, [])) a in
             let switch =
               if Array.length cases > 2 then
@@ -1156,25 +1240,17 @@ Format.eprintf "@.";
           compile_conditional
             st queue pc block.branch block.handler
             backs new_frontier new_interm succs in
-(*
-let res =
-*)
         cond @
         if AddrSet.cardinal new_frontier = 0 then [] else begin
           let pc = AddrSet.choose new_frontier in
           if AddrSet.mem pc frontier then [] else
           compile_block st [] pc frontier interm
         end
-(*
-in
-Format.eprintf "]]@.";
-res
-*)
   in
   if AddrSet.mem pc st.loops then begin
     let label =
       match st.loop_stack with
-        (_, (l, used)) :: r -> st.loop_stack <- r; if !used then l else -1
+        (_, (l, used)) :: r -> st.loop_stack <- r; if !used then Some l else None
       | []                  -> assert false
     in
     let st =
@@ -1192,10 +1268,9 @@ res
             end),
         Some pc)
     in
-    if label = -1 then
-      [st]
-    else
-      [J.Labelled_statement (Code.string_of_ident label, st)]
+    match label with
+      | None -> [st]
+      | Some label -> [J.Labelled_statement (label, st)]
   end else
     body
 end
@@ -1203,9 +1278,6 @@ end
 and compile_if st e cont1 cont2 handler backs frontier interm succs =
   let iftrue = compile_branch st [] cont1 handler backs frontier interm in
   let iffalse = compile_branch st [] cont2 handler backs frontier interm in
-(*
-Format.eprintf "====@.";
-*)
   Js_simpl.if_statement e
     (Js_simpl.block iftrue) (never_continue st cont1 frontier interm succs)
     (Js_simpl.block iffalse) (never_continue st cont2 frontier interm succs)
@@ -1314,7 +1386,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
              so we can directly refer to it *)
           (Js_simpl.if_statement
               (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
-                      J.EStr ("number", `Bytes)))
+                      (Share.get_string (fun s -> J.EStr (s,`Bytes)) "number" st.ctx.Ctx.share)))
               (build_switch (var x) a1)
               false
               (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
@@ -1337,20 +1409,9 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
 and compile_argument_passing ctx queue (pc, args) backs continuation =
   if args = [] then
     continuation queue
-  else begin
+  else
     let block = AddrMap.find pc ctx.Ctx.blocks in
-    (* We flush on backward edged.  We do not need to flush on forward
-       edges, as the block parameter variables are fresh. *)
-    (*FIX: this is overly aggressive: we should instead keep track of
-      dependencies between queued variables and take this into account
-      to perform parallel renaming. *)
-    let cont queue =
-      parallel_renaming ctx block.params args continuation queue in
-    if AddrSet.mem pc backs then
-      flush_all queue (cont [])
-    else
-      cont queue
-  end
+    parallel_renaming ctx block.params args continuation queue
 
 and compile_exn_handling ctx queue (pc, args) handler continuation =
   if pc < 0 then
@@ -1380,7 +1441,6 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
             [], [] ->
               continuation queue
           | x :: args, y :: params ->
-(*Format.eprintf "ZZZ@.";*)
               let (z, old) =
                 match old with [] -> (None, []) | z :: old -> (Some z, old)
               in
@@ -1390,24 +1450,20 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
                 loop continuation old args params queue
               else begin
                let ((px, cx), queue) = access_queue queue x in
-(*Format.eprintf "%a := %a@." Var.print y Var.print x;*)
                let (st, queue) =
 (*FIX: we should flush only the variables we need rather than doing this;
        do the same for closure free variables *)
                  match 2 (*ctx.Ctx.live.(Var.idx y)*) with
                    0 -> assert false
-                 | 1 -> enqueue queue px y cx
+                 | 1 -> enqueue queue px y cx 1
                  | _ -> flush_queue queue px
-                          [J.Variable_statement [Var.to_string y, Some cx]]
+                          [J.Variable_statement [J.V y, Some cx]]
                in
                st @ loop continuation old args params queue
               end
           | _ ->
               assert false
         in
-(*
-Format.eprintf "%d ==> %d/%d/%d@." pc (List.length h_args) (List.length h_block.params) (List.length old_args);
-*)
         loop continuation old_args h_args h_block.params queue
 
 and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
@@ -1424,7 +1480,7 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
           else begin
             let (lab, used) = List.assoc pc rem in
             used := true;
-            Some (Code.string_of_ident lab)
+            Some lab
           end
     in
     if debug () then begin
@@ -1444,7 +1500,7 @@ and compile_branch_selection pc interm =
   try
     let (pc, (x, i)) = AddrMap.find pc interm in
     if debug () then Format.eprintf "@ %a=%d;" Code.Var.print x i;
-    J.Variable_statement [Var.to_string x, Some (int i)] ::
+    J.Variable_statement [J.V x, Some (int i)] ::
     compile_branch_selection pc interm
   with Not_found ->
     []
@@ -1472,43 +1528,39 @@ and compile_closure ctx (pc, args) =
   if debug () then Format.eprintf "}@]@ ";
   Js_simpl.source_elements res
 
+
+let generate_shared_value ctx =
+  let strings =
+    J.Statement (
+      J.Variable_statement (
+        List.map (fun (s,v) -> v, Some (J.EStr(s,`Bytes))) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
+        @ List.map (fun (s,v) -> v, Some (J.EVar (J.S s))) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
+      )) in
+  let applies = List.map (fun (n,v) ->
+    match generate_apply_fun n with
+      | J.EFun ((_,param,body),_) ->
+        J.Function_declaration (v,param,body,None)
+      | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in
+  strings::applies
+
 let compile_program standalone ctx pc =
   let res = compile_closure ctx (pc, []) in
+  let res = generate_shared_value ctx @ res in
   if debug () then Format.eprintf "@.@.";
-(*
-  Primitive.list_used ();
-*)
   if standalone then
-    let f = J.EFun ((None, [], generate_apply_funs res), None) in
+    let f = J.EFun ((None, [], res), None) in
     [J.Statement (J.Expression_statement ((J.ECall (f, [])), Some pc))]
   else
-    let f = J.EFun ((None, [Var.to_string (Var.fresh ())],
-                     generate_apply_funs res), None) in
+    let f = J.EFun ((None, [J.V (Var.fresh ())], res), None) in
     [J.Statement (J.Expression_statement (f, Some pc))]
 
-(**********************)
 
-let list_missing l =
-  if l <> [] then begin
-    Format.eprintf "Missing primitives:@.";
-    List.iter (fun nm -> Format.eprintf "  %s@." nm) l
-  end
 
-let f ch ?(standalone=true) ?linkall ((pc, blocks, _) as p) dl live_vars =
+let f ~standalone ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let t' = Util.Timer.make () in
-  let ctx = Ctx.initial blocks live_vars mutated_vars in
+  let share = Share.get p in
+  let ctx = Ctx.initial blocks live_vars mutated_vars share in
   let p = compile_program standalone ctx pc in
-  if !compact then Pretty_print.set_compact ch true;
-  if standalone then begin
-    Pretty_print.string ch
-      "// This program was compiled from OCaml by js_of_ocaml 1.3";
-    Pretty_print.newline ch;
-    let missing = Linker.resolve_deps ?linkall !compact ch (Primitive.get_used ()) in
-    list_missing missing
-  end;
-  Hashtbl.clear add_names;
-  let res = Js_output.program ch p dl in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
-  res
-
+  p

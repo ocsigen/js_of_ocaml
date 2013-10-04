@@ -237,10 +237,14 @@ MlString.prototype = {
 }
 
 // Conversion Javascript -> Caml
+//Provides: MlWrappedString
+//Requires: MlString
 function MlWrappedString (s) { this.string = s; }
 MlWrappedString.prototype = new MlString();
 
 // Uninitialized Caml string
+//Provides: MlMakeString
+//Requires: MlString
 function MlMakeString (l) { this.bytes = ""; this.len = l; }
 MlMakeString.prototype = new MlString ();
 
@@ -253,8 +257,8 @@ function MlStringFromArray (a) {
 MlStringFromArray.prototype = new MlString ();
 
 //Provides: caml_create_string const
-//Requires: MlString
 //Requires: caml_invalid_argument
+//Requires: MlMakeString
 function caml_create_string(len) {
   if (len < 0) caml_invalid_argument("String.create");
   return new MlMakeString(len);
@@ -305,3 +309,6 @@ function caml_blit_string(s1, i1, s2, i2, len) {
   if (!a) a = s2.toArray(); else { s2.bytes = s2.string = null; }
   s1.blitToArray (i1, a, i2, len);
 }
+//Provides: caml_new_string
+//Requires: MlString
+function caml_new_string(x){return new MlString(x);}

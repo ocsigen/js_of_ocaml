@@ -22,11 +22,8 @@ module Var : sig
   type t
   val print : Format.formatter -> t -> unit
   val idx : t -> int
-  val to_string : t -> string
 
-  type stream
-  val make_stream : unit -> stream
-  val next : stream -> t * stream
+  val to_string : t -> string
 
   val fresh : unit -> t
 
@@ -36,12 +33,9 @@ module Var : sig
 
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
-  val set_pretty : unit -> unit
-
   val reset : unit -> unit
 end
 
-val string_of_ident : int -> string
 
 module VarSet : Set.S with type elt = Var.t
 module VarMap : Map.S with type key = Var.t
@@ -82,6 +76,7 @@ type prim =
 
 type constant =
     String of string
+  | IString of string
   | Float of float
   | Float_array of float array
   | Int32 of int32
@@ -141,8 +136,5 @@ val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 val fold_children :
   block AddrMap.t -> addr  -> (addr -> 'c -> 'c) -> 'c -> 'c
-
-val add_reserved_name : string -> unit
-
 
 val eq : program -> program -> bool

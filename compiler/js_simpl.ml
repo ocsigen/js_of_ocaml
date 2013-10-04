@@ -20,6 +20,8 @@
 
 module J = Javascript
 
+
+
 let eplus_int e1 e2 =
   match e2,e1 with
     J.ENum n, _ when n < 0. ->
@@ -75,19 +77,19 @@ let rec enot_rec e =
         end
     | J.EUn (J.Not, e) ->
         (e, 0)
-    | J.EUn ((J.Neg | J.Pl | J.Typeof | J.Delete), _) ->
+    | J.EUn ((J.Neg | J.Pl | J.Typeof | J.Void | J.Delete | J.Bnot ), _) ->
         (J.EUn (J.Not, e), 0)
+
     | J.EBool b ->
         (J.EBool (not b), 0)
     | J.ECall _ | J.EAccess _ | J.EDot _ | J.ENew _ | J.EVar _ | J.EFun _
-   | J.EStr _ | J.EArr _ | J.ENum _ | J.EObj _ | J.EQuote _
-   | J.EUn
-       (( J.IncrA
-        | J.IncrB
-        | J.DecrA
-        | J.DecrB
-        | J.Bnot ),_) ->
-     (J.EUn (J.Not, e), 1)
+    | J.EStr _ | J.EArr _ | J.ENum _ | J.EObj _ | J.EQuote _
+    | J.EUn
+        (( J.IncrA
+         | J.IncrB
+         | J.DecrA
+         | J.DecrB ),_) ->
+      (J.EUn (J.Not, e), 1)
   in
   if cost <= 1 then res else (J.EUn (J.Not, e), 1)
 
@@ -98,14 +100,63 @@ let source_elements l =
   List.fold_right
     (fun st rem ->
        match st, rem with
-         J.Variable_statement [addr, Some (J.EFun ((None, params, body), pc))], _ ->
-           J.Function_declaration (addr, params, body, pc) :: rem
+       | J.Variable_statement [addr, Some (J.EFun ((None, params, body), pc))], _ ->
+         J.Function_declaration (addr, params, body, pc) :: rem
        | J.Variable_statement l1,
          J.Statement (J.Variable_statement l2) :: rem' ->
            J.Statement (J.Variable_statement (l1 @ l2)) :: rem'
        | _ ->
            J.Statement st :: rem)
     l []
+
+let translate_assign_op = function
+  | J.Div -> J.SlashEq
+  | J.Mod -> J.ModEq
+  | J.Lsl -> J.LslEq
+  | J.Asr -> J.AsrEq
+  | J.Lsr -> J.LsrEq
+  | J.Band -> J.BandEq
+  | J.Bor -> J.BorEq
+  | J.Bxor -> J.BxorEq
+  | J.Mul -> J.StarEq
+  | J.Plus -> J.PlusEq
+  | J.Minus -> J.MinusEq
+  | _ -> assert false
+
+let assign_op' force_int = function
+  | (exp,Some (J.EBin (J.Plus,y, exp')))
+  | (exp,Some (J.EBin (J.Plus, exp',y))) when exp = exp' ->
+    if y = J.ENum 1.
+    then Some (J.EUn (J.IncrB,exp))
+    else Some (J.EBin (J.PlusEq,exp,y))
+  | (exp,Some (J.EBin (J.Minus, exp',y))) when exp = exp' ->
+    if y = J.ENum 1.
+    then Some (J.EUn (J.DecrB, exp))
+    else Some (J.EBin (J.MinusEq, exp,y))
+  | (exp,Some (J.EBin (J.Mul,y, exp')))
+  | (exp,Some (J.EBin (J.Mul, exp',y))) when exp = exp' ->
+    Some (J.EBin (J.StarEq, exp,y))
+  | (exp,Some (J.EBin (J.Div | J.Mod | J.Lsl | J.Asr | J. Lsr | J.Band | J.Bxor | J.Bor as unop, exp',y))) when exp = exp' && not force_int ->
+    Some (J.EBin (translate_assign_op unop, exp,y))
+  | _ -> None
+
+let assign_op = function
+  (* unsafe, could be optionnaly enabled *)
+  (* x+=1 <> x = (x + 1) | 0 *)
+  (* | (exp,Some (J.EBin (J.Bor,e,J.ENum 0.))) -> assign_op' true (exp,Some e) *)
+  | x -> assign_op' false x
+
+let assign_opt_pass l =
+  List.fold_right (fun st rem ->
+    match st with
+      | J.Variable_statement l1 ->
+        let x = List.map (function (ident,exp) ->
+            match assign_op (J.EVar ident,exp) with
+              | Some e -> J.Expression_statement (e,None)
+              | None -> J.Variable_statement [(ident,exp)]) l1 in
+        x@rem
+      | _ -> st::rem
+  ) l []
 
 let statement_list l =
   List.fold_right
@@ -115,7 +166,7 @@ let statement_list l =
            J.Variable_statement (l1 @ l2) :: rem'
        | _ ->
            st :: rem)
-    l []
+    (assign_opt_pass l) []
 
 let block l = match l with [s] -> s | _ -> J.Block (statement_list l)
 
@@ -156,7 +207,17 @@ let assignment_of_statement st =
   | J.Block l                        -> assignment_of_statement_list l
   | _                                -> raise Not_assignment
 
+let simplify_condition = function
+    (* | J.ECond _  -> J.ENum 1. *)
+    | J.ECond (e, J.ENum 1., J.ENum 0.) -> e
+    | J.ECond (e, J.ENum 0., J.ENum 1.) -> J.EUn (J.Not, e)
+    | J.ECond (J.EBin((J.NotEqEq | J.NotEq), J.ENum n, y ),e1,e2)
+    | J.ECond (J.EBin((J.NotEqEq | J.NotEq), y, J.ENum n),e1,e2) ->
+      J.ECond (J.EBin(J.Band,y,J.ENum n),e1,e2)
+    | cond        -> cond
+
 let rec if_statement_2 e iftrue truestop iffalse falsestop =
+  let e = simplify_condition e in
   match iftrue, iffalse with
     (* Empty blocks *)
     J.Block [], J.Block [] ->
@@ -171,7 +232,11 @@ let rec if_statement_2 e iftrue truestop iffalse falsestop =
         let (x1, e1) = assignment_of_statement iftrue in
         let (x2, e2) = assignment_of_statement iffalse in
         if x1 <> x2 then raise Not_assignment;
-        [J.Variable_statement [x1, Some (J.ECond (e, e1, e2))]]
+        let exp =
+          if e1 = e
+          then J.EBin(J.Or,e,e2)
+          else J.ECond (e, e1, e2) in
+        [J.Variable_statement [x1, Some exp]]
       with Not_assignment -> try
         let e1 = expression_of_statement iftrue in
         let e2 = expression_of_statement iffalse in
@@ -188,12 +253,8 @@ let rec if_statement_2 e iftrue truestop iffalse falsestop =
 let unopt b = match b with Some b -> b | None -> J.Block []
 
 let rec if_statement e iftrue truestop (iffalse : J.statement) falsestop =
-  let e =
-    (*FIX: should be done at an earlier stage*)
-    match e with
-      J.ECond (e, J.ENum 1., J.ENum 0.) -> e
-    | _                                 -> e
-  in
+  (*FIX: should be done at an earlier stage*)
+  let e = simplify_condition e in
   match iftrue, iffalse with
     (* Shared statements *)
   | J.If_statement (e', iftrue', iffalse'), _
@@ -213,3 +274,35 @@ let rec if_statement e iftrue truestop (iffalse : J.statement) falsestop =
         iftrue truestop iftrue' falsestop
   | _ ->
       if_statement_2 e iftrue truestop iffalse falsestop
+
+
+let rec get_variable acc = function
+  | J.ESeq (e1,e2)
+  | J.EBin (_,e1,e2)
+  | J.EAccess (e1,e2) -> get_variable (get_variable acc e1) e2
+  | J.ECond (e1,e2,e3) ->
+    get_variable (
+      get_variable (
+        get_variable
+          acc
+          e1)
+        e2)
+      e2
+  | J.EUn (_,e1)
+  | J.EDot (e1,_)
+  | J.ENew (e1,None) -> get_variable acc e1
+  | J.ECall (e1,el)
+  | J.ENew (e1,Some el) -> List.fold_left get_variable acc (e1::el)
+  | J.EVar (J.V v) -> Code.VarSet.add v acc
+  | J.EVar (J.S _) -> acc
+  | J.EFun _
+  | J.EStr _
+  | J.EBool _
+  | J.ENum _
+  | J.EQuote _ -> acc
+  | J.EArr a -> List.fold_left (fun acc i ->
+                  match i with
+                    | None -> acc
+                    | Some e1 -> get_variable acc e1) acc a
+  | J.EObj l -> List.fold_left (fun acc (_,e1) ->
+                  get_variable acc e1) acc l

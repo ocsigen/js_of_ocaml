@@ -18,100 +18,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*FIX: this should probably be somewhere else... *)
-module VarPrinter = struct
-  let names = Hashtbl.create 107
-  let name v nm = Hashtbl.add names v nm
-  let propagate_name v v' =
-    try name v' (Hashtbl.find names v) with Not_found -> ()
-  let name v nm =
-    let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') in
-    let is_num c = (c >= '0' && c <= '9') in
-    if String.length nm > 0 then begin
-      let nm = String.copy nm in
-      if not (is_alpha nm.[0]) then nm.[0] <- '_';
-      for i = 1 to String.length nm - 1 do
-        if not (is_alpha nm.[i] || is_num nm.[i]) then nm.[i] <- '_';
-      done;
-      let c = ref 0 in
-      for i = 0 to String.length nm - 1 do
-        if nm.[i] = '_' then incr c
-      done;
-      if !c < String.length nm then name v nm
-    end
-
-  let reserved = Hashtbl.create 107
-
-  let add_reserved s =
-    if String.length s <= 5 then Hashtbl.replace reserved s ()
-
-  let _ =
-    List.iter add_reserved
-      ["break"; "case"; "catch"; "do"; "else"; "for"; "if"; "in"; "new";
-       "this"; "throw"; "try"; "var"; "void"; "while"; "with"; "class";
-       "enum"; "super"; "const"; "yield"; "let"]
-
-  let known = Hashtbl.create 1001
-
-  let last = ref (-1)
-
-  let c1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
-  let c2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
-
-  let rec format_ident x =
-    assert (x >= 0);
-    let char c x = String.make 1 (c.[x]) in
-    if x < 54 then
-       char c1 x
-    else
-      format_ident ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
-
-  let pretty = ref false
-
-  let format_var i x =
-    let s = format_ident x in
-    if !pretty then begin
-      try
-        let nm = Hashtbl.find names i in
-        Format.sprintf "%s_%s_" nm s
-      with Not_found ->
-        Format.sprintf "_%s_" s
-    end else
-      s
-
-  let rec to_string i =
-    try
-      Hashtbl.find known i
-    with Not_found ->
-      incr last;
-      let j = !last in
-      let s = format_var i j in
-      if Hashtbl.mem reserved s then
-        to_string i
-      else begin
-        Hashtbl.add known i s;
-        s
-      end
-
-  let reset () =
-    Hashtbl.clear names; Hashtbl.clear known; last := -1
-
-  let _ = reset ()
-end
-
-let string_of_ident = VarPrinter.format_ident
-
-let add_reserved_name = VarPrinter.add_reserved
 
 module Var : sig
   type t
+
   val print : Format.formatter -> t -> unit
   val idx : t -> int
   val to_string : t -> string
-
-  type stream
-  val make_stream : unit -> stream
-  val next : stream -> t * stream
 
   val fresh : unit -> t
 
@@ -121,56 +34,39 @@ module Var : sig
 
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
-  val set_pretty : unit -> unit
 
   val reset : unit -> unit
 
   val dummy : t
 end = struct
 
-  type t = int * int
+  open Util
+  type t = int
+
+  let printer = VarPrinter.create ~pretty:(Option.Optim.pretty ()) ()
 
   let last_var = ref 0
 
-  let reset () = last_var := 0; VarPrinter.reset ()
+  let reset () =
+    last_var := 0;
+    VarPrinter.reset printer
 
-  type stream = int
-
-  let c = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
-
-  let rec format_var x =
-    let char x = String.make 1 (c.[x]) in
-    if x < 65 then
-       char (x - 1)
-    else
-      format_var (x / 64) ^ char (x mod 64)
-
-(*
-  let to_string (x, i) = "o$" ^ format_var i(*format_var x ^ Format.sprintf "%d" i*)
-*)
-  let to_string (x, i) = VarPrinter.to_string i
+  let to_string i = VarPrinter.to_string printer i
 
   let print f x = Format.fprintf f "%s" (to_string x)
 
-  let make_stream () = 1
-
-  let next current =
-    incr last_var;
-    ((current, !last_var), current + 1)
-
-  let fresh () = incr last_var; (0, !last_var)
+  let fresh () = incr last_var; !last_var
 
   let count () = !last_var + 1
 
-  let idx v = snd v
+  let idx v = v
 
-  let compare (_,v1) (_,v2) = v1 - v2
+  let compare v1 v2 = v1 - v2
 
-  let name (_, i) nm = VarPrinter.name i nm
-  let propagate_name (_, i) (_, j) = VarPrinter.propagate_name i j
-  let set_pretty () = VarPrinter.pretty := true
+  let name i nm = VarPrinter.name printer i nm
+  let propagate_name i j = VarPrinter.propagate_name printer i j
 
-  let dummy = (-1 , -1)
+  let dummy = -1
 end
 
 module VarSet = Set.Make (Var)
@@ -215,6 +111,7 @@ type prim =
 
 type constant =
     String of string
+  | IString of string
   | Float of float
   | Float_array of float array
   | Int32 of int32
@@ -278,6 +175,8 @@ let print_cont f (pc, args) =
 let rec print_constant f x =
   match x with
     String s ->
+      Format.fprintf f "%S" s
+  | IString s ->
       Format.fprintf f "%S" s
   | Float fl ->
       Format.fprintf f "%.12g" fl

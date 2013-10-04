@@ -19,7 +19,7 @@
  *)
 
 
-let times = Util.debug "times"
+let times = Option.Debug.find "times"
 
 open Code
 

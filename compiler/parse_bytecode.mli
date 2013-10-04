@@ -24,6 +24,4 @@ val from_channel : paths:string list -> in_channel -> Code.program * debug_loc
 
 val from_string : string array -> string -> Code.program * debug_loc
 
-val set_pretty : unit -> unit
-
 val build_toplevel : unit -> unit

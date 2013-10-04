@@ -1,7 +1,5 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,10 +16,4 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val f :
-  ?standalone:bool -> ?linkall:bool -> Pretty_print.t ->
-  Parse_bytecode.debug_loc -> Code.program -> unit
-
-val from_string : string array -> string -> Pretty_print.t -> unit
-
-val set_profile : int -> unit
+val program : Javascript.program -> (Code.Var.t -> string)

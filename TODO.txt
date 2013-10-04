@@ -1,14 +1,6 @@
 Priorities
 ==========
 
-- use short names for primitives
-- share string constants
-  =====> generic mechanism for sharing constants?
-
-- optimize pattern (new Mlstring("foo").toString())
-                 ===> "foo" converted to UTF-8
-- new MlString(x) replaced by primitive
-
 - unhoist functions when possible
 
 ---------
@@ -80,8 +72,6 @@ Compiler optimizations
 
 - fix control.ml
 
-- detect caml_format_int("%d", x) and generate ""+x
-
 - syntactic sugar for Javascript literal strings
   + optimization to avoid going through Caml strings
 
@@ -93,12 +83,8 @@ Compiler optimizations
   ===> explicit conversion to boolean; specialized "if" that operates
        on booleans directly
 
-- inlining (especially of functions that are used only once!)
 - constant hoisting (including functions, out of loops and functions)
 - inline also partially applied functions
-
-- implement variable coalescing (in code generation, reuse the same
-  name for several variables when they have a disting lifetime)
 
 - we should check stack compatibility when parsing:
   when jumping somewhere, the stack should keep the same shape
@@ -184,10 +170,7 @@ COMPACT MODE
 ============
 - We need to insert newlines from time to time to avoid problems with
   some routers...
-- Code for variable renaming in Javascript code
-  ==> also eliminate redundant "var"?
-- Start with function parameters.  Then, variables that are used most.
-- Use interference mechanism...
+- eliminate redundant "var"?
 
 IMPROVEMENTS
 ============
@@ -196,9 +179,6 @@ IMPROVEMENTS
   (is it accurate?)
   ==> gdtoa
     http://caml.inria.fr/pub/ml-archives/caml-list/2002/12/2813f8e8be115b0bad1bc16b1e41b744.en.html
-
-- We only have to make sure we do not use a
-  reserved word nor a function used outside for naming variables
 
 - explicit conversion from int to boolean
 
