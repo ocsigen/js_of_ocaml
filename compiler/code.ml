@@ -37,6 +37,7 @@ module Var : sig
   val propagate_name : t -> t -> unit
 
   val reset : unit -> unit
+  val set_pretty : bool -> unit
 
   val dummy : t
 end = struct
@@ -44,7 +45,7 @@ end = struct
   open Util
   type t = int
 
-  let printer = VarPrinter.create ~pretty:(Option.Optim.pretty ()) ()
+  let printer = VarPrinter.create ()
 
   let last_var = ref 0
 
@@ -68,6 +69,7 @@ end = struct
 
   let name i nm = VarPrinter.name printer i nm
   let propagate_name i j = VarPrinter.propagate_name printer i j
+  let set_pretty b = VarPrinter.set_pretty printer b
 
   let dummy = -1
 end

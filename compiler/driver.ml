@@ -192,7 +192,9 @@ let output formatter d (js,to_string) =
 
 
 let configure formatter p =
-  Pretty_print.set_compact formatter (not (Option.Optim.pretty ()));
+  let pretty = Option.Optim.pretty () in
+  Pretty_print.set_compact formatter (not pretty);
+  Code.Var.set_pretty pretty;
   p
 
 let f ?(standalone=true) ?linkall formatter d =

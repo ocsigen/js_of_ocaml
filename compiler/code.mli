@@ -35,6 +35,7 @@ module Var : sig
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
   val reset : unit -> unit
+  val set_pretty : bool -> unit
 end
 
 
