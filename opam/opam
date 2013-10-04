@@ -12,5 +12,4 @@ depends: [
   "ocamlfind"
   "deriving" {>= "9999"}
   "lwt" {>= "2.4"}
-  "ocamlgraph"
 ]
