@@ -124,18 +124,34 @@ let translate_assign_op = function
   | _ -> assert false
 
 let assign_op' force_int = function
-  | (exp,Some (J.EBin (J.Plus,y, exp')))
-  | (exp,Some (J.EBin (J.Plus, exp',y))) when exp = exp' ->
-    if y = J.ENum 1.
-    then Some (J.EUn (J.IncrB,exp))
-    else Some (J.EBin (J.PlusEq,exp,y))
+  | (exp,Some (J.EBin (J.Plus, exp',exp''))) ->
+    begin
+      match exp=exp',exp=exp'' with
+        | false,false -> None
+        | true, false ->
+          if exp'' = J.ENum 1.
+          then Some (J.EUn (J.IncrB,exp))
+          else Some (J.EBin (J.PlusEq,exp,exp''))
+        | false, true ->
+          if exp' = J.ENum 1.
+          then Some (J.EUn (J.IncrB,exp))
+          else Some (J.EBin (J.PlusEq,exp,exp'))
+        | true, true ->
+          Some(J.EBin(J.StarEq,exp,J.ENum 2.))
+    end
   | (exp,Some (J.EBin (J.Minus, exp',y))) when exp = exp' ->
     if y = J.ENum 1.
     then Some (J.EUn (J.DecrB, exp))
     else Some (J.EBin (J.MinusEq, exp,y))
-  | (exp,Some (J.EBin (J.Mul,y, exp')))
-  | (exp,Some (J.EBin (J.Mul, exp',y))) when exp = exp' ->
-    Some (J.EBin (J.StarEq, exp,y))
+  | (exp,Some (J.EBin (J.Mul, exp',exp''))) ->
+    begin
+      match exp=exp',exp=exp'' with
+        | false,false -> None
+        | true,_ ->
+          Some (J.EBin (J.StarEq, exp,exp''))
+        | _,true ->
+          Some (J.EBin (J.StarEq, exp,exp'))
+    end
   | (exp,Some (J.EBin (J.Div | J.Mod | J.Lsl | J.Asr | J. Lsr | J.Band | J.Bxor | J.Bor as unop, exp',y))) when exp = exp' && not force_int ->
     Some (J.EBin (translate_assign_op unop, exp,y))
   | _ -> None
