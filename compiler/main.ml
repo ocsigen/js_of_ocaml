@@ -41,13 +41,13 @@ let f linkall paths js_files input_file output_file =
     | None ->
       output_program (Pretty_print.to_out_channel stdout)
     | Some f ->
-      let f_tmp = Filename.temp_file (Filename.basename f) ".tmpjs" in
+      let f_tmp = Filename.temp_file ~temp_dir:(Filename.dirname f) (Filename.basename f) ".tmpjs" in
       try
         let ch = open_out_bin f_tmp in
         output_program (Pretty_print.to_out_channel ch);
         close_out ch;
         (try Sys.remove f with _ -> ());
-        Util.move_file f_tmp f
+        Sys.rename f_tmp f
       with exc ->
         Sys.remove f_tmp;
         Format.eprintf "compilation error: %s@." (Printexc.to_string exc);
