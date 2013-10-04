@@ -124,7 +124,10 @@ module Share = struct
                 add_apply (List.length args) share
               | Let (_, Prim (Extern name, args)) ->
                 let name = Primitive.resolve name in
-                let share = add_prim name share in
+                let share =
+                  if Primitive.exists name
+                  then add_prim name share
+                  else share in
                 add_args args share
               | Let (_, Prim (_, args)) ->
                 add_args args share

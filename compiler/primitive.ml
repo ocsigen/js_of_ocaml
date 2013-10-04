@@ -35,6 +35,7 @@ let kind nm = try Hashtbl.find kinds (resolve nm) with Not_found -> `Mutator
 
 let is_pure nm = kind nm <> `Mutator
 
+let exists p = Hashtbl.mem kinds p
 (****)
 
 let primitives = ref Util.StringSet.empty
