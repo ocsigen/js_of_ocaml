@@ -10,9 +10,7 @@
     (by Hugo Heuzard)
  ** Compiler: Improve missing primitives & reserved name detection
     (by Hugo Heuzard)
- ** Compiler: Add variable renaming (Based on graph coloring)
-    can be enable with -enable shortvar
-    (by Hugo Heuzard)
+ ** Compiler: Add variable renaming
  ** Compiler: static evaluation of constant ("staticeval" optimisation)
     (by Hugo Heuzard)
  ** Compiler: Share string constant (by Hugo Heuzard)
