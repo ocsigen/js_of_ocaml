@@ -14,7 +14,6 @@ very stable API.
 
   * Findlib
   * Lwt (**version 2.3.0** at least)
-  * OCamlgraph
 
   [optionnal]
   * deriving (**version 0.5** at least
