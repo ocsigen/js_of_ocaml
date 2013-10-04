@@ -1,5 +1,5 @@
-code.cmo : util.cmi reserved.cmo option.cmo code.cmi
-code.cmx : util.cmx reserved.cmx option.cmx code.cmi
+code.cmo : util.cmi option.cmo code.cmi
+code.cmx : util.cmx option.cmx code.cmi
 control.cmo : subst.cmi code.cmi control.cmi
 control.cmx : subst.cmx code.cmx control.cmi
 deadcode.cmo : util.cmi pure_fun.cmi option.cmo code.cmi deadcode.cmi
@@ -24,12 +24,12 @@ generate.cmo : util.cmi subst.cmi primitive.cmi option.cmo js_simpl.cmi \
     javascript.cmi freevars.cmi code.cmi generate.cmi
 generate.cmx : util.cmx subst.cmx primitive.cmx option.cmx js_simpl.cmx \
     javascript.cmx freevars.cmx code.cmx generate.cmi
-inline.cmo : subst.cmi code.cmi inline.cmi
-inline.cmx : subst.cmx code.cmx inline.cmi
+inline.cmo : code.cmi inline.cmi
+inline.cmx : code.cmx inline.cmi
 instr.cmo : instr.cmi
 instr.cmx : instr.cmi
-javascript.cmo : code.cmi javascript.cmi
-javascript.cmx : code.cmx javascript.cmi
+javascript.cmo : util.cmi code.cmi javascript.cmi
+javascript.cmx : util.cmx code.cmx javascript.cmi
 js_output.cmo : pretty_print.cmi parse_bytecode.cmi option.cmo \
     javascript.cmi code.cmi js_output.cmi
 js_output.cmx : pretty_print.cmx parse_bytecode.cmx option.cmx \
@@ -54,6 +54,10 @@ parse_bytecode.cmo : util.cmi primitive.cmi option.cmo instr.cmi code.cmi \
     parse_bytecode.cmi
 parse_bytecode.cmx : util.cmx primitive.cmx option.cmx instr.cmx code.cmx \
     parse_bytecode.cmi
+parse_info.cmo :
+parse_info.cmx :
+parse_js.cmo : pretty_print.cmi parse_info.cmo js_output.cmi
+parse_js.cmx : pretty_print.cmx parse_info.cmx js_output.cmx
 phisimpl.cmo : util.cmi subst.cmi option.cmo dgraph.cmi code.cmi \
     phisimpl.cmi
 phisimpl.cmx : util.cmx subst.cmx option.cmx dgraph.cmx code.cmx \
@@ -74,8 +78,8 @@ subst.cmo : util.cmi code.cmi subst.cmi
 subst.cmx : util.cmx code.cmx subst.cmi
 tailcall.cmo : util.cmi subst.cmi option.cmo code.cmi tailcall.cmi
 tailcall.cmx : util.cmx subst.cmx option.cmx code.cmx tailcall.cmi
-util.cmo : util.cmi
-util.cmx : util.cmi
+util.cmo : reserved.cmo util.cmi
+util.cmx : reserved.cmx util.cmi
 code.cmi : util.cmi
 control.cmi : code.cmi
 deadcode.cmi : code.cmi

@@ -22,6 +22,7 @@ module Var : sig
   type t
   val print : Format.formatter -> t -> unit
   val idx : t -> int
+  val of_idx : int -> t
 
   val to_string : t -> string
 
