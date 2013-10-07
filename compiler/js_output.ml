@@ -198,7 +198,7 @@ end) = struct
     then '\''
     else '"'
 
-  let string_escape quote s =
+  let string_escape quote ?(utf=false) s =
     let l = String.length s in
     let b = Buffer.create (4 * l) in
     let conv = "0123456789abcdef" in
@@ -223,7 +223,12 @@ end) = struct
           Buffer.add_string b "\\r"
         | '\\' ->
           Buffer.add_string b "\\\\"
-        | '\000' .. '\031' | '\127' .. '\255' ->
+        | '\000' .. '\031' ->
+          let c = Char.code c in
+          Buffer.add_string b "\\x";
+          Buffer.add_char b conv.[c lsr 4];
+          Buffer.add_char b conv.[c land 0xf]
+        | '\127' .. '\255' when not utf ->
           let c = Char.code c in
           Buffer.add_string b "\\x";
           Buffer.add_char b conv.[c lsr 4];
@@ -289,7 +294,7 @@ end) = struct
         let quote = best_string_quote s in
         let quote_s = String.make 1 quote in
         PP.string f quote_s;
-        PP.string f (string_escape quote s);
+        PP.string f (string_escape ~utf:(kind = `Utf8) quote s);
         PP.string f quote_s
       | EBool b ->
         PP.string f (if b then "true" else "false")
