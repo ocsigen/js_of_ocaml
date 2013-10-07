@@ -306,16 +306,25 @@ and statement t s = match s with
     let t = match w with
       | None -> t
       | Some (id,block) ->
-        let t = statements t block in
-        let t = def_var t id in
-        t
-        (* let tbody = statements (empty t) block in *)
-        (* let tbody = def_var tbody id in *)
-        (* let tbody = mark tbody in *)
-        (* let t = merge_info ~from:tbody ~into:t in *)
-        (* { t with *)
-        (*   use = S.union t.use (rm_var t.use id) ; *)
-        (*   def = S.union t.def (rm_var t.def id) } *)
+        let t' = statements (empty t) block in
+        let t' = def_var t' id in
+        (* should we treat 'id' as a regular param ? *)
+        (* add_constraints [id] t'; *)
+        add_constraints [] t';
+
+        (* special merge here *)
+        (* we need to propagate both def and use .. *)
+        (* .. except 'id' because its scope is limitied to 'block' *)
+        let clean set sets = match id with
+          | S s -> set,StringSet.remove s sets
+          | V i -> S.remove i set, sets in
+        let def,def_name = clean t'.def t'.def_name in
+        let use,use_name = clean t'.use t'.use_name in
+        {t with
+           use = S.union t.use use;
+           use_name = StringSet.union t.use_name use_name;
+           def = S.union t.def def;
+           def_name = StringSet.union t.def_name def_name }
     in
     let t = match f with
       | None -> t
