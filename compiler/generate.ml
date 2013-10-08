@@ -141,7 +141,6 @@ module Share = struct
     {count; vars = empty_aux}
 
   let get_string gen s t =
-    let s = Primitive.resolve s in
     try
       let c = StringMap.find s t.count.strings in
       if c > 1
@@ -160,6 +159,7 @@ module Share = struct
       gen s
 
   let get_prim gen s t =
+    let s = Primitive.resolve s in
     try
       let c = StringMap.find s t.count.prims in
       if c > 1
