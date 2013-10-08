@@ -223,12 +223,12 @@ end) = struct
           Buffer.add_string b "\\r"
         | '\\' ->
           Buffer.add_string b "\\\\"
-        | '\000' .. '\031' ->
+        | '\000' .. '\031'  | '\127'->
           let c = Char.code c in
           Buffer.add_string b "\\x";
           Buffer.add_char b conv.[c lsr 4];
           Buffer.add_char b conv.[c land 0xf]
-        | '\127' .. '\255' when not utf ->
+        | '\128' .. '\255' when not utf ->
           let c = Char.code c in
           Buffer.add_string b "\\x";
           Buffer.add_char b conv.[c lsr 4];
