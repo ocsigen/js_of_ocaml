@@ -158,7 +158,7 @@ let get_free t = S.diff t.use t.def
 
 let get_free_name t = StringSet.diff t.use_name t.def_name
 
-let add_constraints params g =
+let add_constraints ?(offset=0) params g =
   if Option.Optim.shortvar () then begin
     let u = S.union g.def g.use in
     let constr = g.global.constr in
@@ -167,15 +167,16 @@ let add_constraints params g =
       (fun v -> let i = Code.Var.idx v in constr.(i) <- c :: constr.(i)) u;
     let params = Array.of_list params in
     let len = Array.length params in
-    if Array.length g.global.parameters < len then begin
-      let a = Array.make (2 * len) [] in
+    let len_max = len + offset in
+    if Array.length g.global.parameters < len_max then begin
+      let a = Array.make (2 * len_max) [] in
       Array.blit g.global.parameters 0 a 0 (Array.length g.global.parameters);
       g.global.parameters <- a
     end;
     for i = 0 to len - 1 do
       match params.(i) with
         Javascript.V x ->
-          g.global.parameters.(i) <- x :: g.global.parameters.(i)
+          g.global.parameters.(i + offset) <- x :: g.global.parameters.(i + offset)
       | _ ->
           ()
     done;
@@ -308,9 +309,7 @@ and statement t s = match s with
       | Some (id,block) ->
         let t' = statements (empty t) block in
         let t' = def_var t' id in
-        (* should we treat 'id' as a regular param ? *)
-        (* add_constraints [id] t'; *)
-        add_constraints [] t';
+        add_constraints ~offset:5 [id] t';
 
         (* special merge here *)
         (* we need to propagate both def and use .. *)
