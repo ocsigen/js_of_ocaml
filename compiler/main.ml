@@ -46,7 +46,7 @@ let f linkall paths js_files input_file output_file =
         let ch = open_out_bin f_tmp in
         output_program (Pretty_print.to_out_channel ch);
         close_out ch;
-        (try Sys.remove f with _ -> ());
+        (try Sys.remove f with Sys_error _ -> ());
         Sys.rename f_tmp f
       with exc ->
         Sys.remove f_tmp;

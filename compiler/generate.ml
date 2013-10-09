@@ -80,15 +80,15 @@ module Share = struct
   }
 
   let add_string s t =
-    let n = try StringMap.find s t.strings with _ -> 0 in
+    let n = try StringMap.find s t.strings with Not_found -> 0 in
     {t with strings = StringMap.add s (n+1) t.strings}
 
   let add_prim s t =
-    let n = try StringMap.find s t.prims with _ -> 0 in
+    let n = try StringMap.find s t.prims with Not_found -> 0 in
     {t with prims  = StringMap.add s (n+1) t.prims}
 
   let add_apply i t =
-    let n = try IntMap.find i t.applies with _ -> 0 in
+    let n = try IntMap.find i t.applies with Not_found -> 0 in
     {t with applies = IntMap.add i (n+1) t.applies }
 
   let add_code_string s share =
@@ -147,15 +147,14 @@ module Share = struct
       then
         try
           J.EVar (StringMap.find s t.vars.strings)
-        with _ ->
+        with Not_found ->
           let x = Var.fresh() in
           let v = J.V x in
           t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
           J.EVar v
       else
         gen s
-    with _ ->
-      Printf.eprintf "missed %S\n%!" s;
+    with Not_found->
       gen s
 
   let get_prim gen s t =
@@ -166,14 +165,15 @@ module Share = struct
       then
         try
           J.EVar (StringMap.find s t.vars.prims)
-        with _ ->
+        with Not_found ->
           let x = Var.fresh() in
           let v = J.V x in
           t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
           J.EVar v
       else
         gen s
-    with _ -> gen s
+    with Not_found ->
+      gen s
 
 
   let get_apply gen n t =
@@ -183,14 +183,15 @@ module Share = struct
       then
         try
           J.EVar (IntMap.find n t.vars.applies)
-        with _ ->
+        with Not_found ->
           let x = Var.fresh() in
           let v = J.V x in
           t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
           J.EVar v
       else
         gen n
-    with _ -> gen n
+    with Not_found ->
+      gen n
 
 end
 

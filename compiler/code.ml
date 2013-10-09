@@ -405,5 +405,5 @@ let eq (pc1,blocks1,_) (pc2,blocks2,_) =
       block1.params = block2.params &&
       block1.branch = block2.branch &&
       block1.body   = block2.body
-    with _ -> false
+    with Not_found -> false
   ) blocks1 true

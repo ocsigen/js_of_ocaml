@@ -48,7 +48,7 @@ let ign =
       try
         let i = String.index s '.' in
         String.sub s 0 i
-      with _ -> s in
+      with Not_found -> s in
     Hashtbl.mem h s)
 
 let mark_used nm =
