@@ -149,7 +149,8 @@ module VarPrinter = struct
 
 
   let reset t =
-    Hashtbl.clear t.names; Hashtbl.clear t.known; t.last <- -1
+    Hashtbl.clear t.names; Hashtbl.clear t.known; Hashtbl.clear t.cache;
+    t.last <- -1
 
   let create ?(pretty=false) () =
     let t = {
