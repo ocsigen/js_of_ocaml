@@ -1,6 +1,6 @@
 
 all: no_examples examples
-no_examples: check_lwt compiler compiler_lib library ocamlbuild doc runtime
+no_examples: check_lwt compiler compiler_lib library ocamlbuild runtime doc
 
 include Makefile.conf
 -include Makefile.local
@@ -9,7 +9,7 @@ include Makefile.conf
 
 compiler:
 	$(MAKE) -C compiler
-compiler_lib:
+compiler_lib: compiler
 	$(MAKE) -C compiler lib
 library:
 	$(MAKE) -C lib
@@ -17,7 +17,7 @@ ocamlbuild:
 	$(MAKE) -C ocamlbuild
 runtime:
 	$(MAKE) -C runtime
-toplevel: compiler library runtime
+toplevel: compiler compiler_lib library runtime
 	$(MAKE) -C toplevel
 examples: compiler library runtime
 	$(MAKE) -C examples
@@ -59,6 +59,7 @@ clean:
 	$(MAKE) -C lib clean
 	$(MAKE) -C ocamlbuild clean
 	$(MAKE) -C runtime clean
+	$(MAKE) -C toplevel clean
 	$(MAKE) -C examples clean
 ifeq ($(wildcard tests),tests)
 	$(MAKE) -C tests clean
