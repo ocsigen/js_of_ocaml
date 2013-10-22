@@ -38,9 +38,17 @@ let rec find_in_paths paths name =
     [] ->
       raise Not_found
   | path :: rem ->
-      let file = Filename.concat path name in
-      if Sys.file_exists file then file else find_in_paths rem name
-
+    let file =
+      if(path <> "" && path.[0] = '+')
+      then
+        let path = String.sub path 1 (String.length path - 1) in
+        Filename.concat (Filename.concat (Findlib.package_directory "stdlib") path) name
+      else Filename.concat path name in
+    if Sys.file_exists file then file else
+      begin
+        (* Printf.eprintf "cannot find %s\n" file; *)
+        find_in_paths rem name
+      end
 let read_file f =
   let ch = open_in_bin f in
   let b = Buffer.create 4096 in
