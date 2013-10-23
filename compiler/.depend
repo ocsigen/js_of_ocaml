@@ -1,5 +1,9 @@
-code.cmo : util.cmi option.cmo code.cmi
-code.cmx : util.cmx option.cmx code.cmi
+code.cmo : util.cmi code.cmi
+code.cmx : util.cmx code.cmi
+compile.cmo : util.cmi pretty_print.cmi parse_bytecode.cmi option.cmo \
+    linker.cmi driver.cmi
+compile.cmx : util.cmx pretty_print.cmx parse_bytecode.cmx option.cmx \
+    linker.cmx driver.cmx
 control.cmo : subst.cmi code.cmi control.cmi
 control.cmx : subst.cmx code.cmx control.cmi
 deadcode.cmo : util.cmi pure_fun.cmi option.cmo code.cmi deadcode.cmi
@@ -44,10 +48,6 @@ js_var.cmx : util.cmx reserved.cmx primitive.cmx option.cmx javascript.cmx \
     code.cmx js_var.cmi
 linker.cmo : util.cmi primitive.cmi pretty_print.cmi linker.cmi
 linker.cmx : util.cmx primitive.cmx pretty_print.cmx linker.cmi
-main.cmo : util.cmi pretty_print.cmi parse_bytecode.cmi option.cmo \
-    linker.cmi driver.cmi
-main.cmx : util.cmx pretty_print.cmx parse_bytecode.cmx option.cmx \
-    linker.cmx driver.cmx
 option.cmo :
 option.cmx :
 parse_bytecode.cmo : util.cmi primitive.cmi option.cmo instr.cmi code.cmi \

@@ -15,7 +15,7 @@ OBJS=pretty_print.cmx reserved.cmx util.cmx option.cmx dgraph.cmx \
 	   js_var.cmx \
      linker.cmx generate.cmx parse_bytecode.cmx driver.cmx
 
-COMPOBJS=$(OBJS) main.cmx
+COMPOBJS=$(OBJS) compile.cmx
 
 $(COMPILER): compile.$(BEST)
 	mv -f $< $@
