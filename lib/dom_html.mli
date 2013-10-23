@@ -462,6 +462,7 @@ class type selectElement = object ('self)
   method remove : int -> unit meth
   method blur : unit meth
   method focus : unit meth
+  method required : bool t writeonly_prop (* Not supported by IE 9/Safari *)
 
   method onchange : ('self t, event t) event_listener prop
   method oninput : ('self t, event t) event_listener prop
@@ -481,6 +482,7 @@ class type inputElement = object ('self)
   method maxLength : int prop
   method name : js_string t readonly_prop (* Cannot be changed under IE *)
   method readOnly : bool t prop
+  method required : bool t writeonly_prop (* Not supported by IE 9/Safari *)
   method size : int prop
   method src : js_string t prop
   method tabIndex : int prop
@@ -516,6 +518,7 @@ class type textAreaElement = object ('self)
   method blur : unit meth
   method focus : unit meth
   method select : unit meth
+  method required : bool t writeonly_prop (* Not supported by IE 9/Safari *)
   method placeholder : js_string t writeonly_prop (* Not supported by IE 9 *)
 
   method onselect : ('self t, event t) event_listener prop
@@ -1476,3 +1479,4 @@ end
 val onIE : bool
 val hasPushState : unit -> bool
 val hasPlaceholder : unit -> bool
+val hasRequired : unit -> bool
