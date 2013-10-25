@@ -747,6 +747,8 @@ function caml_sys_get_argv () {
 }
 //Provides: caml_ml_output const
 function caml_ml_output () { return 0; }
+//Provides: caml_ml_output_char const
+function caml_ml_output_char () { return 0; }
 //Provides: caml_final_register const
 function caml_final_register () { return 0; }
 //Provides: caml_final_release const
@@ -754,20 +756,16 @@ function caml_final_release () { return 0; }
 //Provides: caml_backtrace_status const
 function caml_backtrace_status () { return 0; }
 //Provides: caml_get_exception_backtrace const
-function caml_get_exception_backtrace () {
-  caml_invalid_argument
-    ("Primitive 'caml_get_exception_backtrace' not implemented");
-}
+function caml_get_exception_backtrace () { return 0; }
 //Provides: caml_get_exception_raw_backtrace const
-function caml_get_exception_raw_backtrace () {
-  caml_invalid_argument
-    ("Primitive 'caml_get_exception_raw_backtrace' not implemented");
-}
+function caml_get_exception_raw_backtrace () { return 0; }
 //Provides: caml_convert_raw_backtrace const
-function caml_convert_raw_backtrace () {
-  caml_invalid_argument
-    ("Primitive 'caml_convert_raw_backtrace' not implemented");
-}
+function caml_convert_raw_backtrace () { return 0; }
 //Provides: caml_sys_getenv
 //Requires: caml_raise_not_found
 function caml_sys_getenv () { caml_raise_not_found (); }
+//Provides: caml_sys_exit
+//Requires: caml_invalid_argument
+function caml_sys_exit () {
+  caml_invalid_argument("Function 'exit' not implemented");
+}
