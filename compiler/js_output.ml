@@ -186,7 +186,19 @@ end) = struct
       | EFun (_, _) | EObj _ ->
         true
 
-  let string_escape s =
+  let best_string_quote s =
+    let simple = ref 0 and double = ref 0 in
+    for i = 0 to String.length s - 1 do
+      match s.[i] with
+        | '\'' -> incr simple
+        | '"' -> incr double
+        | _ -> ()
+    done;
+    if !simple < !double
+    then '\''
+    else '"'
+
+  let string_escape quote ?(utf=false) s =
     let l = String.length s in
     let b = Buffer.create (4 * l) in
     let conv = "0123456789abcdef" in
@@ -209,16 +221,20 @@ end) = struct
           Buffer.add_string b "\\f"
         | '\r' ->
           Buffer.add_string b "\\r"
-        | '"' ->
-          Buffer.add_string b "\\\""
         | '\\' ->
           Buffer.add_string b "\\\\"
-        | '\000' .. '\031' | '\127' .. '\255' ->
+        | '\000' .. '\031'  | '\127'->
+          let c = Char.code c in
+          Buffer.add_string b "\\x";
+          Buffer.add_char b conv.[c lsr 4];
+          Buffer.add_char b conv.[c land 0xf]
+        | '\128' .. '\255' when not utf ->
           let c = Char.code c in
           Buffer.add_string b "\\x";
           Buffer.add_char b conv.[c lsr 4];
           Buffer.add_char b conv.[c land 0xf]
         | _ ->
+          if c = quote then Buffer.add_char b '\\';
           Buffer.add_char b c
     done;
     Buffer.contents b
@@ -274,10 +290,12 @@ end) = struct
         PP.end_group f;
         PP.end_group f;
         if l > 15 then begin PP.string f ")"; PP.end_group f end
-      | EStr (s, `Bytes) ->
-        PP.string f "\"";
-        PP.string f (string_escape s);
-        PP.string f "\""
+      | EStr (s, kind) ->
+        let quote = best_string_quote s in
+        let quote_s = String.make 1 quote in
+        PP.string f quote_s;
+        PP.string f (string_escape ~utf:(kind = `Utf8) quote s);
+        PP.string f quote_s
       | EBool b ->
         PP.string f (if b then "true" else "false")
       | ENum v ->

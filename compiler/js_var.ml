@@ -158,7 +158,7 @@ let get_free t = S.diff t.use t.def
 
 let get_free_name t = StringSet.diff t.use_name t.def_name
 
-let add_constraints params g =
+let add_constraints ?(offset=0) params g =
   if Option.Optim.shortvar () then begin
     let u = S.union g.def g.use in
     let constr = g.global.constr in
@@ -167,15 +167,16 @@ let add_constraints params g =
       (fun v -> let i = Code.Var.idx v in constr.(i) <- c :: constr.(i)) u;
     let params = Array.of_list params in
     let len = Array.length params in
-    if Array.length g.global.parameters < len then begin
-      let a = Array.make (2 * len) [] in
+    let len_max = len + offset in
+    if Array.length g.global.parameters < len_max then begin
+      let a = Array.make (2 * len_max) [] in
       Array.blit g.global.parameters 0 a 0 (Array.length g.global.parameters);
       g.global.parameters <- a
     end;
     for i = 0 to len - 1 do
       match params.(i) with
         Javascript.V x ->
-          g.global.parameters.(i) <- x :: g.global.parameters.(i)
+          g.global.parameters.(i + offset) <- x :: g.global.parameters.(i + offset)
       | _ ->
           ()
     done;
@@ -306,16 +307,23 @@ and statement t s = match s with
     let t = match w with
       | None -> t
       | Some (id,block) ->
-        let t = statements t block in
-        let t = def_var t id in
-        t
-        (* let tbody = statements (empty t) block in *)
-        (* let tbody = def_var tbody id in *)
-        (* let tbody = mark tbody in *)
-        (* let t = merge_info ~from:tbody ~into:t in *)
-        (* { t with *)
-        (*   use = S.union t.use (rm_var t.use id) ; *)
-        (*   def = S.union t.def (rm_var t.def id) } *)
+        let t' = statements (empty t) block in
+        let t' = def_var t' id in
+        add_constraints ~offset:5 [id] t';
+
+        (* special merge here *)
+        (* we need to propagate both def and use .. *)
+        (* .. except 'id' because its scope is limitied to 'block' *)
+        let clean set sets = match id with
+          | S s -> set,StringSet.remove s sets
+          | V i -> S.remove i set, sets in
+        let def,def_name = clean t'.def t'.def_name in
+        let use,use_name = clean t'.use t'.use_name in
+        {t with
+           use = S.union t.use use;
+           use_name = StringSet.union t.use_name use_name;
+           def = S.union t.def def;
+           def_name = StringSet.union t.def_name def_name }
     in
     let t = match f with
       | None -> t

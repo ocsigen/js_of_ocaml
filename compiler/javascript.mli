@@ -72,7 +72,7 @@ and expression =
   | ENew of expression * arguments option
   | EVar of ident
   | EFun of function_expression * node_pc
-  | EStr of string * [`Bytes (*| `Utf8*)]
+  | EStr of string * [`Bytes | `Utf8]
   | EArr of array_litteral
   | EBool of bool
   | ENum of float
