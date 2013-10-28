@@ -46,6 +46,8 @@ end
 module VarPrinter : sig
   type t
 
+  val add_reserved : string list -> unit
+  val get_reserved : unit -> StringSet.t
   val create : ?pretty:bool -> unit -> t
   val reset : t -> unit
   val to_string : t -> ?origin:int -> int -> string

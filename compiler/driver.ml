@@ -152,10 +152,10 @@ let o3 =
 
 let profile = ref o1
 
-let generate ~standalone (p,live_vars,_) =
+let generate (p,live_vars,_) =
   if times ()
   then Format.eprintf "Start Generation...@.";
-  Generate.f ~standalone p live_vars
+  Generate.f p live_vars
 
 
 let header formatter ~standalone js =
@@ -172,27 +172,68 @@ let link formatter ~standalone ?linkall js =
     begin
       if times ()
       then Format.eprintf "Start Linking...@.";
-      let missing = Linker.resolve_deps ?linkall formatter (Primitive.get_used ()) in
-      match missing with
-        | [] -> ()
-        | l ->
-          Format.eprintf "Missing primitives:@.";
-          List.iter (fun nm -> Format.eprintf "  %s@." nm) l
+      let traverse = new Js_traverse.free in
+      let js = traverse#program js in
+      let free = traverse#get_free_name in
 
-    end;
+      let prim = Primitive.get_external () in
+      let prov = Linker.get_provided () in
+
+      let all_external = StringSet.union prim prov in
+
+      let used = StringSet.inter free all_external in
+
+      let other =  StringSet.diff free used in
+
+      let res = Util.VarPrinter.get_reserved() in
+      let other = StringSet.diff other res in
+      let js,missing = Linker.resolve_deps ?linkall js used in
+      if not (StringSet.is_empty missing)
+      then begin
+        Format.eprintf "Missing primitives:@.";
+        StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
+      end;
+      if not (StringSet.is_empty other)
+      then begin
+        Format.eprintf "Missing var def:@.";
+        StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other
+      end;
+
+      js
+    end
+  else js
+
+let optimize_var js =
+  if times ()
+  then Format.eprintf "Start Optimizing...@.";
+  let js =
+    if (Option.Optim.shortvar ())
+    then (new Js_traverse.rename_str)#program js
+    else js in
+  let js =
+    if Option.Optim.compact_vardecl ()
+    then (new Js_traverse.compact_vardecl)#program js
+    else js in
   js
 
 let coloring js =
   if times ()
   then Format.eprintf "Start Coloring...@.";
-  js,Js_var.program js
-
+  js,Js_assign.program js
 
 let output formatter d (js,to_string) =
   if times ()
   then Format.eprintf "Start Writing file...@.";
   Js_output.program formatter d to_string js
 
+let pack ~standalone js =
+  let module J = Javascript in
+  if standalone then
+    let f = J.EFun ((None, [], js), None) in
+    [J.Statement (J.Expression_statement ((J.ECall (f, [])), None))]
+  else
+    let f = J.EFun ((None, [J.V (Code.Var.fresh ())], js), None) in
+    [J.Statement (J.Expression_statement (f, None))]
 
 let configure formatter p =
   let pretty = Option.Optim.pretty () in
@@ -204,12 +245,16 @@ let f ?(standalone=true) ?linkall formatter d =
   configure formatter >>
   !profile >>
   deadcode' >>
-  generate ~standalone >>
+  generate >>
+
+  link formatter ~standalone ?linkall >>
+
+  pack ~standalone >>
+  optimize_var >>
+
   coloring >>
 
   header formatter ~standalone >>
-  link formatter ~standalone ?linkall >>
-
   output formatter d
 
 let from_string prims s formatter =

@@ -19,9 +19,34 @@
 
 
 let keyword =
-  ["break"; "case"; "catch"; "do"; "else"; "for"; "if"; "in"; "new";
-   "this"; "throw"; "try"; "var"; "void"; "while"; "with"; "class";
-   "enum"; "super"; "const"; "yield"; "let" ]
+  [
+    (* keywork *)
+    "break";
+    "case"; "catch"; "continue";
+    "debugger";"default";"delete";"do";
+    "else";
+    "finally";"for";"function";
+    "if"; "in";"instanceof";
+    "new";
+    "return";
+    "switch";
+    "this"; "throw"; "try"; "typeof";
+    "var"; "void"; "while"; "with";
+
+    (* reserved for future use *)
+    "class"; "enum"; "export"; "extends"; "import"; "super";
+
+    "implements";"interface";
+    "let";
+    "package";"private";"protected";"public";
+    "static";
+    "yield";
+
+    (* other *)
+    "null";
+    "true";
+    "false";
+]
 
 
 let provided = [
@@ -47,15 +72,5 @@ let provided = [
   "window";
   "unescape";
   "this";
-  "true"; "false"; "undefined"; "null"
+  "undefined";
 ]
-
-let reserved = Hashtbl.create 107
-
-let add s = if String.length s <= 5 then Hashtbl.replace reserved s ()
-
-let mem s = Hashtbl.mem reserved s
-
-let _ =
-  List.iter add keyword;
-  List.iter add provided

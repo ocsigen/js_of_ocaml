@@ -416,7 +416,9 @@ end
 let primitive_name state i =
   let g = State.globals state in
   assert (i >= 0 && i <= Array.length g.primitives);
-  g.primitives.(i)
+  let prim = g.primitives.(i) in
+  Primitive.add_external prim;
+  prim
 
 let access_global g i =
   match g.vars.(i) with
@@ -1772,7 +1774,7 @@ let from_channel ~paths ic =
   let globals = make_globals (Array.length init_data) init_data primitives in
   if !is_toplevel then begin
     Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
-    Primitive.mark_used "caml_string_greaterthan"
+    (* Primitive.mark_used "caml_string_greaterthan" *)
   end;
 
   fix_min_max_int code;

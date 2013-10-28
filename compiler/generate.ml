@@ -1549,24 +1549,17 @@ let generate_shared_value ctx =
       | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in
   strings::applies
 
-let compile_program standalone ctx pc =
+let compile_program ctx pc =
   let res = compile_closure ctx (pc, []) in
   let res = generate_shared_value ctx @ res in
   if debug () then Format.eprintf "@.@.";
-  if standalone then
-    let f = J.EFun ((None, [], res), None) in
-    [J.Statement (J.Expression_statement ((J.ECall (f, [])), Some pc))]
-  else
-    let f = J.EFun ((None, [J.V (Var.fresh ())], res), None) in
-    [J.Statement (J.Expression_statement (f, Some pc))]
+  res
 
-
-
-let f ~standalone ((pc, blocks, _) as p) live_vars =
+let f ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let t' = Util.Timer.make () in
   let share = Share.get p in
   let ctx = Ctx.initial blocks live_vars mutated_vars share in
-  let p = compile_program standalone ctx pc in
+  let p = compile_program ctx pc in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
   p

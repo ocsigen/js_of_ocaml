@@ -138,6 +138,20 @@ module VarPrinter = struct
     then Format.sprintf "_%s_" s
     else s
 
+  let reserved = ref StringSet.empty
+
+  let add_reserved s = reserved := List.fold_left (fun acc x ->
+    StringSet.add x acc) !reserved s
+
+
+  let _ =
+    add_reserved Reserved.keyword;
+    add_reserved Reserved.provided
+
+  let get_reserved () = !reserved
+
+  let is_reserved s = StringSet.mem s !reserved
+
   let rec to_string t ?origin i =
     let origin = match origin with
       | Some i when t.pretty -> i
@@ -152,7 +166,7 @@ module VarPrinter = struct
           t.last <- t.last + 1;
           let j = t.last in
           let s = format_var t i j in
-          if Reserved.mem s then
+          if is_reserved s then
             to_string t i
           else begin
             Hashtbl.add t.known i s;
