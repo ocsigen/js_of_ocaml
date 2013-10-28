@@ -33,7 +33,7 @@ module J = Javascript
 
 let bop op a b= J.EBin(op,a,b)
 let uop op a = J.EUn(op,a)
-
+let var name = J.S name
 %}
 
 /*(*************************************************************************)*/
@@ -44,7 +44,7 @@ let uop op a = J.EUn(op,a)
 /*(*2 the comment tokens *)*/
 /*(*-----------------------------------------*)*/
 /*(* coupling: Token_helpers.is_real_comment *)*/
-%token <Parse_info.t> TCommentSpace TCommentNewline   TComment
+%token <Parse_info.t * string> TCommentSpace TCommentNewline   TComment
 
 /*(*-----------------------------------------*)*/
 /*(*2 the normal tokens *)*/
@@ -58,8 +58,8 @@ let uop op a = J.EUn(op,a)
 
 /*(* keywords tokens *)*/
 %token <Parse_info.t>
- T_FUNCTION T_IF T_IN T_INSTANCEOF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
- T_VAR T_WHILE T_WITH T_CONST T_NULL T_FALSE T_TRUE
+ T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
+ T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
  T_BREAK T_CASE T_CATCH T_CONTINUE T_DEFAULT T_DO T_FINALLY T_FOR
 
 %token <Parse_info.t> T_ELSE
@@ -110,19 +110,9 @@ let uop op a = J.EUn(op,a)
 /*(*2 priorities *)*/
 /*(*-----------------------------------------*)*/
 
-/*(* must be at the top so that it has the lowest priority *)*/
-%nonassoc SHIFTHERE
-
 /*(* Special if / else associativity*)*/
 %nonassoc p_IF
 %nonassoc T_ELSE
-
-%nonassoc p_POSTFIX
-
-%right
- T_RSHIFT3_ASSIGN T_RSHIFT_ASSIGN T_LSHIFT_ASSIGN
- T_BIT_XOR_ASSIGN T_BIT_OR_ASSIGN T_BIT_AND_ASSIGN T_MOD_ASSIGN T_DIV_ASSIGN
- T_MULT_ASSIGN T_MINUS_ASSIGN T_PLUS_ASSIGN T_ASSIGN
 
 %left T_OR
 %left T_AND
@@ -143,7 +133,7 @@ let uop op a = J.EUn(op,a)
 /*(*************************************************************************)*/
 
 %start program
-%type <Javascript.source_elements> program
+%type <Javascript.program> program
 
 %%
 
@@ -152,8 +142,16 @@ let uop op a = J.EUn(op,a)
 /*(*************************************************************************)*/
 
 program:
-    | source_elements { $1 }
-    | { [] }
+    | source_elements EOF { $1 }
+    | EOF { [] }
+    | fake { assert false }
+
+fake:
+    | TCommentSpace
+    | TCommentNewline
+    | TComment
+    | TUnknown { () }
+
 source_element:
  | statement            { J.Statement $1 }
  | function_declaration { J.Function_declaration $1 }
@@ -188,8 +186,8 @@ variable_statement:
  | T_VAR variable_declaration_list semicolon  { J.Variable_statement $2 }
 
 variable_declaration:
- | identifier initializeur { J.S $1, Some $2 }
- | identifier { J.S $1, None }
+ | identifier initializeur { var $1, Some $2 }
+ | identifier { var $1, None }
 
 initializeur:
  | T_ASSIGN assignment_expression { $2 }
@@ -219,28 +217,24 @@ iteration_statement:
      expression_opt T_SEMICOLON
      expression_opt
      T_RPAREN statement
-     { J.For_statement ( $3, $5, $7, $9, None) }
+     { J.For_statement ( J.Left $3, $5, $7, $9, None) }
  | T_FOR T_LPAREN
      T_VAR variable_declaration_list_no_in T_SEMICOLON
      expression_opt T_SEMICOLON
      expression_opt
      T_RPAREN statement
-     { J.Block [
-          J.Variable_statement $4 ;
-          J.For_statement (None, $6, $8, $10, None)] }
+     {
+       J.For_statement (J.Right($4), $6, $8, $10, None)
+     }
  | T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement
-     { J.ForIn_statement ($3,$5,$7,None) }
+     { J.ForIn_statement (J.Left $3,$5,$7,None) }
  | T_FOR T_LPAREN T_VAR variable_declaration_no_in T_IN expression T_RPAREN
      statement
-     {
-       let (var,_) as vardecl = $4 in
-       J.Block [
-         J.Variable_statement [vardecl] ;
-         J.ForIn_statement ( J.EVar var, $6, $8, None)] }
+     { J.ForIn_statement ( J.Right $4, $6, $8, None) }
 
 variable_declaration_no_in:
- | identifier initializer_no_in { J.S $1, Some $2 }
- | identifier { J.S $1, None }
+ | identifier initializer_no_in { var $1, Some $2 }
+ | identifier { var $1, None }
 
 initializer_no_in:
  | T_ASSIGN assignment_expression_no_in { $2 }
@@ -283,7 +277,7 @@ try_statement:
  | T_TRY block catch finally { J.Try_statement ($2, Some $3, Some $4,None) }
 
 catch:
- | T_CATCH T_LPAREN identifier T_RPAREN block { J.S $3, $5 }
+ | T_CATCH T_LPAREN identifier T_RPAREN block { var $3, $5 }
 
 
 finally:
@@ -308,19 +302,19 @@ default_clause:
 function_declaration:
  | T_FUNCTION identifier T_LPAREN formal_parameter_list T_RPAREN
      T_LCURLY function_body T_RCURLY
-     { J.S $2, $4, $7, None }
+     { var $2, $4, $7, None }
  | T_FUNCTION identifier T_LPAREN T_RPAREN
      T_LCURLY function_body T_RCURLY
-     { J.S $2, [],$6, None }
+     { var $2, [],$6, None }
 
 
 function_expression:
  | T_FUNCTION identifier T_LPAREN formal_parameter_list T_RPAREN
      T_LCURLY function_body T_RCURLY
-     { J.EFun ((Some (J.S $2), $4, $7),None) }
+     { J.EFun ((Some (var $2), $4, $7),None) }
  | T_FUNCTION identifier T_LPAREN T_RPAREN
      T_LCURLY function_body T_RCURLY
-     { J.EFun ((Some (J.S $2), [], $6),None) }
+     { J.EFun ((Some (var $2), [], $6),None) }
  | T_FUNCTION T_LPAREN formal_parameter_list T_RPAREN
      T_LCURLY function_body T_RCURLY
      { J.EFun ((None, $3, $6),None) }
@@ -329,8 +323,8 @@ function_expression:
      { J.EFun ((None, [], $5),None) }
 
 formal_parameter_list:
- | identifier                                { [J.S $1] }
- | formal_parameter_list T_COMMA identifier  { $1 @ [J.S $3] }
+ | identifier                                { [var $1] }
+ | formal_parameter_list T_COMMA identifier  { $1 @ [var $3] }
 
 function_body:
  | /*(* empty *)*/ { [] }
@@ -410,9 +404,9 @@ post_in_expression:
 pre_in_expression:
  | left_hand_side_expression
    { $1 }
- | pre_in_expression T_INCR %prec p_POSTFIX
+ | pre_in_expression T_INCR
    { uop J.IncrA $1 }
- | pre_in_expression T_DECR %prec p_POSTFIX
+ | pre_in_expression T_DECR
    { uop J.DecrA $1 }
  | T_DELETE pre_in_expression
    { uop J.Delete $2 }
@@ -465,10 +459,10 @@ primary_expression:
  | function_expression             { $1 }
 
 primary_expression_no_statement:
- | T_THIS          { J.EVar (J.S "this") }
- | identifier      { J.EVar (J.S $1) }
+ | T_THIS          { J.EVar (var "this") }
+ | identifier      { J.EVar (var $1) }
 
- | null_literal    { J.EVar (J.S "null") }
+ | null_literal    { J.EVar (var "null") }
  | boolean_literal { J.EBool $1 }
  | numeric_literal { J.ENum $1 }
  | string_literal  { J.EStr ($1, `Bytes) }
@@ -667,7 +661,7 @@ regex_literal:
        let i = String.rindex s '/' in
        [String.sub s 1 (i - 1) ; String.sub s (i+1) (len - i - 1)]
    in
-   J.ENew(J.EVar (J.S "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) }
+   J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) }
 
 string_literal:
  | T_STRING { let s,_ = $1 in s}

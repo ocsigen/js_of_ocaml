@@ -221,11 +221,13 @@ let float_val e = e (*J.EAccess (e, one)*)
 
 let float_const f = val_float (J.ENum f)
 
+let s_var name = J.EVar (J.S name)
+
 let rec constant ~ctx x =
   match x with
     String s ->
       let e = Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share in
-      let p = Share.get_prim (fun s -> J.EVar (J.S s)) "caml_new_string" ctx.Ctx.share in
+      let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
       J.ECall (p,[e])
   | IString s ->
       Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share
@@ -506,7 +508,7 @@ let generate_apply_fun ?x n =
                      (J.ECond (J.EBin (J.EqEq, J.EDot (f', "length"),
                                        J.ENum (float n)),
                                J.ECall (f', params'),
-                               J.ECall (J.EVar (J.S "caml_call_gen"),
+                               J.ECall (s_var "caml_call_gen",
                                         [f'; J.EArr (List.map (fun x -> Some x) params')])))))]),
           None)
 
@@ -629,16 +631,16 @@ let register_tern_prim name f =
 
 let register_un_math_prim name prim =
   register_un_prim name `Pure
-    (fun cx -> J.ECall (J.EDot (J.EVar (J.S "Math"), prim), [cx]))
+    (fun cx -> J.ECall (J.EDot (s_var "Math", prim), [cx]))
 
 let register_bin_math_prim name prim =
   register_bin_prim name `Pure
-    (fun cx cy -> J.ECall (J.EDot (J.EVar (J.S "Math"), prim), [cx; cy]))
+    (fun cx cy -> J.ECall (J.EDot (s_var "Math", prim), [cx; cy]))
 
 let _ =
   register_un_prim_ctx  "%caml_format_int_special" `Pure
     (fun ctx cx ->
-      let p = Share.get_prim (fun s -> J.EVar (J.S s)) "caml_new_string" ctx.Ctx.share in
+      let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
       J.ECall (p, [J.EBin (J.Plus,J.EStr("",`Bytes),cx)]));
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
@@ -723,7 +725,7 @@ let _ =
   register_un_prim "caml_js_from_string" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "toString"), []));
   register_un_prim "caml_js_to_string" `Mutable
-    (fun cx -> J.ENew (J.EVar (J.S "MlWrappedString"), Some [cx]));
+    (fun cx -> J.ENew (s_var "MlWrappedString", Some [cx]));
   register_tern_prim "caml_js_set"
     (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable
@@ -858,9 +860,9 @@ and translate_expr ctx queue x e =
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
-        (J.EVar (J.S nm), const_p, queue)
+        (s_var nm, const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
-        (J.EVar (J.S nm), const_p, queue)
+        (s_var nm, const_p, queue)
       | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
           let ((pf, cf), queue) = access_queue queue f in
           let ((po, co), queue) = access_queue queue o in
@@ -947,7 +949,7 @@ and translate_expr ctx queue x e =
           match internal_prim name with
             | Some f -> f l queue ctx
             | None ->
-              let prim = Share.get_prim (fun s -> J.EVar (J.S s)) name ctx.Ctx.share in
+              let prim = Share.get_prim s_var name ctx.Ctx.share in
               let prim_kind = kind (Primitive.kind name) in
               let (args, prop, queue) =
                 List.fold_right
@@ -1259,7 +1261,7 @@ else begin
     in
     let st =
       J.For_statement
-        (None, None, None,
+        (J.Left None, None, None,
          Js_simpl.block
            (if AddrSet.cardinal frontier > 0 then begin
               if debug () then
@@ -1538,7 +1540,7 @@ let generate_shared_value ctx =
     J.Statement (
       J.Variable_statement (
         List.map (fun (s,v) -> v, Some (J.EStr(s,`Bytes))) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
-        @ List.map (fun (s,v) -> v, Some (J.EVar (J.S s))) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
+        @ List.map (fun (s,v) -> v, Some (s_var s)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
       )) in
   let applies = List.map (fun (n,v) ->
     match generate_apply_fun n with

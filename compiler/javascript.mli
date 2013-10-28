@@ -91,9 +91,8 @@ and statement =
   | If_statement of expression * statement * statement option
   | Do_while_statement of statement * expression
   | While_statement of expression * statement
-  | For_statement of
-      expression option * expression option * expression option * statement * node_pc
-  | ForIn_statement of  expression * expression * statement * node_pc
+  | For_statement of (expression option,variable_declaration list) either * expression option * expression option * statement * node_pc
+  | ForIn_statement of  (expression,variable_declaration) either * expression * statement * node_pc
   | Continue_statement of Label.t option
   | Break_statement of Label.t option
   | Return_statement of expression option
@@ -107,6 +106,11 @@ and statement =
 (*
   | Debugger_statement
 *)
+
+and ('left,'right) either =
+  | Left of 'left
+  | Right of 'right
+
 
 and block = statement_list
 
@@ -139,3 +143,6 @@ and source_elements = source_element list
 and source_element =
     Statement of statement
   | Function_declaration of function_declaration
+
+
+val compare_ident : ident -> ident -> int

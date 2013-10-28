@@ -552,12 +552,42 @@ end) = struct
         PP.string f (ident i); PP.string f "="; PP.break f; expression 1 f e;
         PP.end_group f
 
-  and variable_declaration_list f l =
+  and variable_declaration_list_aux f l =
     match l with
         []     -> assert false
       | [d]    -> variable_declaration f d
       | d :: r -> variable_declaration f d; PP.string f ","; PP.break f;
-        variable_declaration_list f r
+        variable_declaration_list_aux f r
+
+  and variable_declaration_list close f = function
+    | []  -> ()
+    | [(i, None)] ->
+      PP.start_group f 1;
+      PP.string f "var";
+      PP.space f;
+      PP.string f (ident i);
+      if close then PP.string f ";";
+      PP.end_group f
+    | [(i, Some e)] ->
+      PP.start_group f 1;
+      PP.string f "var";
+      PP.space f;
+      PP.string f (ident i);
+      PP.string f "=";
+      PP.genbreak f "" 1;
+      PP.start_group f 0;
+      expression 1 f e;
+      if close then PP.string f ";";
+      PP.end_group f;
+      PP.end_group f
+    | l ->
+      PP.start_group f 1;
+      PP.string f "var";
+      PP.space f;
+      variable_declaration_list_aux f l;
+      if close then PP.string f ";";
+      PP.end_group f
+
 
   and opt_expression l f e =
     match e with
@@ -568,37 +598,7 @@ end) = struct
     match s with
         Block b ->
           block f b
-      | Variable_statement l ->
-        begin match l with
-            []  ->
-              ()
-          | [(i, None)] ->
-            PP.start_group f 1;
-            PP.string f "var";
-            PP.space f;
-            PP.string f (ident i);
-            PP.string f ";";
-            PP.end_group f
-          | [(i, Some e)] ->
-            PP.start_group f 1;
-            PP.string f "var";
-            PP.space f;
-            PP.string f (ident i);
-            PP.string f "=";
-            PP.genbreak f "" 1;
-            PP.start_group f 0;
-            expression 1 f e;
-            PP.string f ";";
-            PP.end_group f;
-            PP.end_group f
-          | l ->
-            PP.start_group f 1;
-            PP.string f "var";
-            PP.space f;
-            variable_declaration_list f l;
-            PP.string f ";";
-            PP.end_group f
-        end
+      | Variable_statement l -> variable_declaration_list true f l
       | Empty_statement -> ()
       | Expression_statement (EVar _, pc)-> ()
       | Expression_statement (e, pc) ->
@@ -736,7 +736,9 @@ end) = struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
-        opt_expression 0 f e1;
+        (match e1 with
+          | Left e -> opt_expression 0 f e
+          | Right l -> variable_declaration_list false f l);
         PP.string f ";"; PP.break f;
         opt_expression 0 f e2;
         PP.string f ";"; PP.break f;
@@ -757,7 +759,9 @@ end) = struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "(";
-        expression 0 f e1;
+        (match e1 with
+          | Left e -> expression 0 f e
+          | Right v -> variable_declaration_list false f [v]);
         PP.space f;
         PP.string f "in"; PP.break f;
         PP.space f;
