@@ -14,7 +14,7 @@ OBJS=pretty_print.cmx reserved.cmx util.cmx option.cmx dgraph.cmx \
      instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
-	   js_var.cmx \
+	   js_traverse.cmx js_assign.cmx \
      linker.cmx generate.cmx parse_bytecode.cmx driver.cmx
 
 COMPOBJS=$(OBJS) compile.cmx

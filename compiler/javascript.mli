@@ -144,5 +144,6 @@ and source_element =
     Statement of statement
   | Function_declaration of function_declaration
 
-
 val compare_ident : ident -> ident -> int
+
+module IdentSet : Set.S with type elt = ident

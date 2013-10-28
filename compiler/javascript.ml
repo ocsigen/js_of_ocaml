@@ -156,3 +156,6 @@ let compare_ident t1 t2 =
     | S s1, S s2 -> String.compare s1 s2
     | S _, V _ -> -1
     | V _, S _ -> 1
+
+
+module IdentSet = Set.Make(struct type t = ident let compare = compare_ident end)

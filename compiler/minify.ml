@@ -64,11 +64,11 @@ let _ =
   Pretty_print.set_compact pp (not (Option.Optim.pretty ()));
 
   let p = List.flatten (List.map (fun file ->
-    let lex = Parse_js.lexer_from_file file in
+    let lex = Js_parser.lexer_from_file file in
     Parse_js.parse lex) !js_files) in
 
   let p = (new Js_traverse.free true)#program p in
-  let to_string = Js_var.program p in
+  let to_string = Js_assign.program p in
   Js_output.program pp (fun _ -> None) to_string p;
 
 

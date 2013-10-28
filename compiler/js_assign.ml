@@ -120,215 +120,17 @@ type g = {
   mutable parameters : Var.t list array; (* Function parameters *)
   mutable constraints : S.t list }     (* For debugging *)
 
-type t = {
-  def : S.t;
-  use : S.t;
-  def_name: StringSet.t;
-  use_name: StringSet.t;
-  global: g
-}
-
-let use_name s t = { t with use_name = StringSet.add s t.use_name  }
-
-let def_name s t = { t with def_name = StringSet.add s t.def_name  }
-
 let bump_weight t i =
   let idx = Code.Var.idx i in
-  let weight = t.global.weight in
+  let weight = t.weight in
   weight.(idx) <- weight.(idx) + 1
-
-let use_var t = function
-  | S s -> use_name s t
-  | V i -> bump_weight t i;
-           { t with use = S.add i t.use }
-
-let def_var t = function
-  | S s -> def_name s t
-  | V i -> bump_weight t i;
-           { t with def = S.add i t.def }
-
-let empty t = {
-  t with
-    def = S.empty;
-    use = S.empty;
-    def_name = StringSet.empty;
-    use_name = StringSet.empty }
-
-let get_free t = S.diff t.use t.def
-
-let get_free_name t = StringSet.diff t.use_name t.def_name
-
-let add_constraints ?(offset=0) params g =
-  if Option.Optim.shortvar () then begin
-    let u = S.union g.def g.use in
-    let constr = g.global.constr in
-    let c = make_alloc_table () in
-    S.iter
-      (fun v -> let i = Code.Var.idx v in constr.(i) <- c :: constr.(i)) u;
-    let params = Array.of_list params in
-    let len = Array.length params in
-    let len_max = len + offset in
-    if Array.length g.global.parameters < len_max then begin
-      let a = Array.make (2 * len_max) [] in
-      Array.blit g.global.parameters 0 a 0 (Array.length g.global.parameters);
-      g.global.parameters <- a
-    end;
-    for i = 0 to len - 1 do
-      match params.(i) with
-        Javascript.V x ->
-          g.global.parameters.(i + offset) <- x :: g.global.parameters.(i + offset)
-      | _ ->
-          ()
-    done;
-    g.global.constraints <- u :: g.global.constraints
-  end
 
 let create () =
   let nv = Code.Var.count () in
-  { def = S.empty;
-    use = S.empty;
-    use_name = StringSet.empty;
-    def_name = StringSet.empty;
-    global =
-      { weight = Array.create nv 0;
-        constr = Array.create nv [];
-        parameters = [|[]|];
-        constraints = [] } }
-
-let merge_info ~from ~into =
-  let free = get_free from in
-  let free_name = get_free_name from in
-  { into with
-    use = S.union into.use free;
-    use_name = StringSet.union into.use_name free_name }
-
-let rec expression t e = match e with
-  | ECond (e1,e2,e3) ->
-    expression
-      (expression
-         (expression t e1)
-         e2
-      )
-      e3
-  | ESeq (e1,e2)
-  | EAccess (e1,e2)
-  | EBin (_,e1,e2) ->
-    expression (expression t e1) e2
-  | EUn (_,e1)
-  | EDot (e1,_)
-  | ENew (e1,None) -> expression t e1
-  | ECall (e,args)
-  | ENew (e,Some args) ->
-    List.fold_left (fun acc x ->
-      expression acc x) (expression t e) args
-  | EVar v -> use_var t v
-  | EFun ((ident,params,body),_) ->
-    let tbody = List.fold_left def_var (empty t) params in
-    let tbody = match ident with
-      | None -> tbody
-      | Some v -> def_var tbody v in
-    let tbody = source_elts tbody body in
-    add_constraints params tbody;
-    merge_info ~from:tbody ~into:t
-  | EStr _
-  | EBool _
-  | ENum _
-  | EQuote _ -> t
-  | EObj l ->
-    List.fold_left (fun acc (_,e) ->
-      expression acc e) t l
-  | EArr l ->
-    List.fold_left (fun acc x ->
-      match x with
-        | None -> acc
-        | Some e -> expression acc e) t l
-
-and source_elts t l =
-  List.fold_left (fun acc s ->
-    source_elt acc s) t l
-
-and source_elt t e = match e with
-  | Statement s -> statement t s
-  | Function_declaration (id,params, body, _) ->
-    let tbody = List.fold_left def_var (empty t) params in
-    let tbody = source_elts tbody body in
-    add_constraints params tbody;
-    def_var (merge_info ~from:tbody ~into:t) id
-
-and statements t l = List.fold_left statement t l
-
-and statement t s = match s with
-  | Block l -> List.fold_left statement t l
-  | Variable_statement l ->
-    List.fold_left (fun t (id,eopt) ->
-      let t = def_var t id in
-      match eopt with
-        | None -> t
-        | Some e -> expression t e) t l
-  | Empty_statement -> t
-  | Expression_statement (e,_) -> expression t e
-  | If_statement(e1,s2,e3opt) ->
-    let t = statement (expression t e1) s2 in
-    begin
-      match e3opt with
-        | None -> t
-        | Some e -> statement t e
-    end
-  | Do_while_statement (s,e)
-  | While_statement (e,s) ->
-    statement (expression t e) s
-  | For_statement (e1,e2,e3,s,_) ->
-    let t = List.fold_left (fun acc x ->
-      match x with
-        | None -> acc
-        | Some e -> expression acc e ) t [e1;e2;e3] in
-    statement t s
-  | ForIn_statement (e1,e2,s,_) ->
-    let t = List.fold_left expression t [e1;e2] in
-    statement t s
-  | Continue_statement _
-  | Break_statement _ -> t
-  | Return_statement None -> t
-  | Return_statement (Some e) -> expression t e
-  | Labelled_statement (_,s) -> statement t s
-  | Switch_statement(e,cl,sl) ->
-    let t = expression t e in
-    let t = List.fold_left (fun t (e, sl) ->
-      let t = expression t e in
-      statements t sl) t cl in
-    begin match sl with
-      | None -> t
-      | Some sl -> statements t sl
-    end
-  | Throw_statement e ->
-    expression t e
-  | Try_statement (b,w,f,_) ->
-    let t = statements t b in
-    let t = match w with
-      | None -> t
-      | Some (id,block) ->
-        let t' = statements (empty t) block in
-        let t' = def_var t' id in
-        add_constraints ~offset:5 [id] t';
-
-        (* special merge here *)
-        (* we need to propagate both def and use .. *)
-        (* .. except 'id' because its scope is limitied to 'block' *)
-        let clean set sets = match id with
-          | S s -> set,StringSet.remove s sets
-          | V i -> S.remove i set, sets in
-        let def,def_name = clean t'.def t'.def_name in
-        let use,use_name = clean t'.use t'.use_name in
-        {t with
-           use = S.union t.use use;
-           use_name = StringSet.union t.use_name use_name;
-           def = S.union t.def def;
-           def_name = StringSet.union t.def_name def_name }
-    in
-    let t = match f with
-      | None -> t
-      | Some block -> statements t block
-    in t
+  { weight = Array.create nv 0;
+    constr = Array.create nv [];
+    parameters = [|[]|];
+    constraints = [] }
 
 let output_debug_information t =
   let usage =
@@ -337,7 +139,7 @@ let output_debug_information t =
          S.fold
            (fun v u -> VM.add v (try 1 + VM.find v u with Not_found -> 1) u)
            s u)
-      VM.empty t.global.constraints
+      VM.empty t.constraints
   in
 
   let l = List.map fst (VM.bindings usage) in
@@ -345,7 +147,7 @@ let output_debug_information t =
   let ch = open_out "/tmp/weights.txt" in
   List.iter
     (fun v ->
-       Printf.fprintf ch "%d / %d / %d\n" (t.global.weight.(Code.Var.idx v))
+       Printf.fprintf ch "%d / %d / %d\n" (t.weight.(Code.Var.idx v))
          (VM.find v usage) (Code.Var.idx v))
     l;
   close_out ch;
@@ -356,7 +158,7 @@ let output_debug_information t =
   Printf.fprintf ch "  ";
   for i = 0 to Array.length a - 1 do
     let v = a.(i) in
-    let w = t.global.weight.(Code.Var.idx v) in
+    let w = t.weight.(Code.Var.idx v) in
     if i > 0 then Printf.fprintf ch " + ";
     Printf.fprintf ch "%d x%d" w (Code.Var.idx v)
   done;
@@ -373,7 +175,7 @@ let output_debug_information t =
         done;
         Printf.fprintf ch "<= 54\n"
       end)
-    t.global.constraints;
+    t.constraints;
   Printf.fprintf ch "Binary\n  ";
   List.iter (fun v -> Printf.fprintf ch " x%d" (Code.Var.idx v)) l;
   Printf.fprintf ch "\nEnd\n";
@@ -381,17 +183,17 @@ let output_debug_information t =
 
   let ch = open_out "/tmp/problem2" in
   let var x = string_of_int (Code.Var.idx x) in
-  let a = List.map (fun v -> (var v, t.global.weight.(Code.Var.idx v))) l in
+  let a = List.map (fun v -> (var v, t.weight.(Code.Var.idx v))) l in
   let b =
-    List.map (fun s -> List.map var (S.elements s)) t.global.constraints in
+    List.map (fun s -> List.map var (S.elements s)) t.constraints in
   let c = List.map var l in
   output_value ch
     ((a, b, c) : (string * int) list * string list list * string list);
   close_out ch
 
 let allocate_variables t =
-  let weight = t.global.weight in
-  let constr = t.global.constr in
+  let weight = t.weight in
+  let constr = t.constr in
   let len = Array.length weight in
   let idx = Array.make len 0 in
   for i = 0 to len - 1 do
@@ -412,7 +214,7 @@ let allocate_variables t =
     name.(origin) <- Var.to_string ~origin:(Var.of_idx origin) (Var.of_idx n) in
   let total = ref 0 in
   let bad = ref 0 in
-  for i = 0 to Array.length t.global.parameters - 1 do
+  for i = 0 to Array.length t.parameters - 1 do
     List.iter
       (fun x ->
          incr total;
@@ -424,7 +226,7 @@ let allocate_variables t =
            stats idx i
          end else
            incr bad)
-      (List.rev t.global.parameters.(i))
+      (List.rev t.parameters.(i))
   done;
   if debug () then
     Format.eprintf
@@ -446,20 +248,72 @@ let allocate_variables t =
   end;
   name
 
-let program p =
-  let t = source_elts (create()) p in
-  add_constraints [] t;
+class ['state] color (state : 'state) = object(m)
+  inherit Js_traverse.free as super
+  val mutable global_ = state
 
-  assert (S.cardinal (get_free t) = 0);
+  method global = global_
 
-  let free_name = get_free_name t in
-  StringSet.iter (fun s ->
-    Reserved.add s;
-    Primitive.mark_used s;
-  ) free_name;
+  method add_constraints ?(offset=0) params =
   if Option.Optim.shortvar () then begin
-    let name = allocate_variables t in
-    if debug () then output_debug_information t;
+    let u = S.union m#state.Js_traverse.def m#state.Js_traverse.use in
+    let constr = global_.constr in
+    let c = make_alloc_table () in
+
+    S.iter (fun v -> let i = Code.Var.idx v in constr.(i) <- c :: constr.(i)) u;
+    let params = Array.of_list params in
+    let len = Array.length params in
+    let len_max = len + offset in
+    if Array.length global_.parameters < len_max then begin
+      let a = Array.make (2 * len_max) [] in
+      Array.blit global_.parameters 0 a 0 (Array.length global_.parameters);
+      global_.parameters <- a
+    end;
+    for i = 0 to len - 1 do
+      match params.(i) with
+        | V x ->
+          global_.parameters.(i + offset) <- x :: global_.parameters.(i + offset)
+        | _ -> ()
+    done;
+    global_.constraints <- u :: global_.constraints
+  end
+
+  method use_var x =
+    begin match x with
+      | V i -> bump_weight global_ i
+      | S s -> ()
+    end;
+    super#use_var x
+
+  method def_var x =
+    begin match x with
+      | V i -> bump_weight global_ i
+      | S s -> ()
+    end;
+    super#def_var x
+
+  method block params =
+    m#add_constraints params;
+    super#block params
+
+
+end
+
+
+let program p =
+  let coloring = new color (create()) in
+  let _p = coloring#program p in
+  coloring#add_constraints [];
+  let g = coloring#global in
+  if S.cardinal (coloring#get_free) <> 0
+  then begin
+    (Printf.printf "variables escape: should not append #%d"
+       (S.cardinal (coloring#get_free)));
+    S.iter(fun s -> (Printf.printf "%s\n" (Code.Var.to_string s))) coloring#get_free
+  end;
+  if Option.Optim.shortvar () then begin
+    let name = allocate_variables g in
+    if debug () then output_debug_information g;
     (fun v -> name.(Code.Var.idx v))
   end else
     (fun v -> Var.to_string v)
