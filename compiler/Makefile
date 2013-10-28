@@ -7,7 +7,7 @@ lib: compiler.cma compiler.cmxa compiler.cmxs
 
 PACKAGES=findlib,str,unix
 
-OBJS=pretty_print.cmx reserved.cmx util.cmx option.cmx dgraph.cmx \
+OBJS=pretty_print.cmx util.cmx reserved.cmx varPrinter.cmx option.cmx dgraph.cmx \
      code.cmx javascript.cmx js_output.cmx js_simpl.cmx \
 	   parse_info.cmx js_parser.cmx js_lexer.cmx parse_js.cmx\
 		 annot_parser.cmx annot_lexer.cmx \

@@ -185,7 +185,7 @@ let link formatter ~standalone ?linkall js =
 
       let other =  StringSet.diff free used in
 
-      let res = Util.VarPrinter.get_reserved() in
+      let res = VarPrinter.get_reserved() in
       let other = StringSet.diff other res in
       let js,missing = Linker.resolve_deps ?linkall js used in
       if not (StringSet.is_empty missing)
