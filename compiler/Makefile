@@ -26,6 +26,10 @@ $(COMPILER): compile.$(BEST)
 compile.byte: $(COMPOBJS:cmx=cmo)
 	ocamlfind ocamlc -package $(PACKAGES) -linkpkg -o $@ $^
 
+minify.byte: $(OBJS:cmx=cmo) minify.cmo
+	ocamlfind ocamlc -package $(PACKAGES) -linkpkg -o $@ $^
+
+
 compile.opt: $(COMPOBJS)
 	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -o $@ $^
 

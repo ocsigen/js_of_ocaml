@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Compiler
 
 let error k = Format.ksprintf (fun s ->
     Printf.eprintf "%s\n" s;
@@ -53,6 +52,7 @@ let _ =
      ("-o", Arg.String (fun s -> output_file := Some s),
       "<file> set output file name to <file>")]
   in
+
   Arg.parse (Arg.align options)
     (fun s ->
        if Filename.check_suffix s ".js" then
@@ -63,6 +63,7 @@ let _ =
          error "Don't know what to do with '%s'" s
     )
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
+
   let chop_extension s =
     try Filename.chop_extension s with Invalid_argument _ -> s in
 
@@ -82,11 +83,13 @@ let _ =
 
   Pretty_print.set_compact pp (not (Option.Optim.pretty ()));
 
+
   let p = List.flatten (List.map (fun file ->
-    let lex = Js_parser.lexer_from_file file in
+    let lex = Parse_js.lexer_from_file file in
     Parse_js.parse lex) !js_files) in
 
-  let p = (new Js_traverse.free true)#program p in
+
+  let p = (new Js_traverse.rename_str Util.StringSet.empty)#program p in
   let to_string = Js_assign.program p in
   Js_output.program pp (fun _ -> None) to_string p;
 
