@@ -2,8 +2,8 @@ annot_lexer.cmo : annot_parser.cmi
 annot_lexer.cmx : annot_parser.cmx
 annot_parser.cmo : primitive.cmi annot_parser.cmi
 annot_parser.cmx : primitive.cmx annot_parser.cmi
-code.cmo : util.cmi code.cmi
-code.cmx : util.cmx code.cmi
+code.cmo : varPrinter.cmi util.cmi code.cmi
+code.cmx : varPrinter.cmx util.cmx code.cmi
 compile.cmo : util.cmi pretty_print.cmi parse_bytecode.cmi option.cmo \
     linker.cmi driver.cmi
 compile.cmx : util.cmx pretty_print.cmx parse_bytecode.cmx option.cmx \
@@ -14,16 +14,16 @@ deadcode.cmo : util.cmi pure_fun.cmi option.cmo code.cmi deadcode.cmi
 deadcode.cmx : util.cmx pure_fun.cmx option.cmx code.cmx deadcode.cmi
 dgraph.cmo : dgraph.cmi
 dgraph.cmx : dgraph.cmi
-driver.cmo : util.cmi tailcall.cmi specialize_js.cmo specialize.cmo \
-    primitive.cmi pretty_print.cmi phisimpl.cmi parse_bytecode.cmi option.cmo \
-    linker.cmi js_traverse.cmi js_output.cmi js_assign.cmi javascript.cmi \
-    inline.cmi generate.cmi flow.cmi eval.cmo deadcode.cmi code.cmi \
-    driver.cmi
-driver.cmx : util.cmx tailcall.cmx specialize_js.cmx specialize.cmx \
-    primitive.cmx pretty_print.cmx phisimpl.cmx parse_bytecode.cmx option.cmx \
-    linker.cmx js_traverse.cmx js_output.cmx js_assign.cmx javascript.cmx \
-    inline.cmx generate.cmx flow.cmx eval.cmx deadcode.cmx code.cmx \
-    driver.cmi
+driver.cmo : varPrinter.cmi util.cmi tailcall.cmi specialize_js.cmo \
+    specialize.cmo reserved.cmo primitive.cmi pretty_print.cmi phisimpl.cmi \
+    parse_bytecode.cmi option.cmo linker.cmi js_traverse.cmi js_output.cmi \
+    js_assign.cmi javascript.cmi inline.cmi generate.cmi flow.cmi eval.cmo \
+    deadcode.cmi code.cmi driver.cmi
+driver.cmx : varPrinter.cmx util.cmx tailcall.cmx specialize_js.cmx \
+    specialize.cmx reserved.cmx primitive.cmx pretty_print.cmx phisimpl.cmx \
+    parse_bytecode.cmx option.cmx linker.cmx js_traverse.cmx js_output.cmx \
+    js_assign.cmx javascript.cmx inline.cmx generate.cmx flow.cmx eval.cmx \
+    deadcode.cmx code.cmx driver.cmi
 eval.cmo : primitive.cmi flow.cmi code.cmi
 eval.cmx : primitive.cmx flow.cmx code.cmx
 flow.cmo : util.cmi subst.cmi option.cmo dgraph.cmi code.cmi flow.cmi
@@ -38,8 +38,8 @@ inline.cmo : code.cmi inline.cmi
 inline.cmx : code.cmx inline.cmi
 instr.cmo : instr.cmi
 instr.cmx : instr.cmi
-javascript.cmo : util.cmi code.cmi javascript.cmi
-javascript.cmx : util.cmx code.cmx javascript.cmi
+javascript.cmo : varPrinter.cmi util.cmi code.cmi javascript.cmi
+javascript.cmx : varPrinter.cmx util.cmx code.cmx javascript.cmi
 js_assign.cmo : util.cmi option.cmo js_traverse.cmi javascript.cmi code.cmi \
     js_assign.cmi
 js_assign.cmx : util.cmx option.cmx js_traverse.cmx javascript.cmx code.cmx \
@@ -86,8 +86,8 @@ primitive.cmo : util.cmi parse_info.cmi primitive.cmi
 primitive.cmx : util.cmx parse_info.cmx primitive.cmi
 pure_fun.cmo : primitive.cmi code.cmi pure_fun.cmi
 pure_fun.cmx : primitive.cmx code.cmx pure_fun.cmi
-reserved.cmo :
-reserved.cmx :
+reserved.cmo : util.cmi
+reserved.cmx : util.cmx
 specialize.cmo : option.cmo flow.cmi code.cmi
 specialize.cmx : option.cmx flow.cmx code.cmx
 specialize_js.cmo : flow.cmi code.cmi
@@ -96,8 +96,10 @@ subst.cmo : util.cmi code.cmi subst.cmi
 subst.cmx : util.cmx code.cmx subst.cmi
 tailcall.cmo : util.cmi subst.cmi option.cmo code.cmi tailcall.cmi
 tailcall.cmx : util.cmx subst.cmx option.cmx code.cmx tailcall.cmi
-util.cmo : reserved.cmo util.cmi
-util.cmx : reserved.cmx util.cmi
+util.cmo : util.cmi
+util.cmx : util.cmi
+varPrinter.cmo : util.cmi reserved.cmo varPrinter.cmi
+varPrinter.cmx : util.cmx reserved.cmx varPrinter.cmi
 annot_parser.cmi : primitive.cmi
 code.cmi : util.cmi
 control.cmi : code.cmi
@@ -126,6 +128,7 @@ pure_fun.cmi : code.cmi
 subst.cmi : code.cmi
 tailcall.cmi : code.cmi
 util.cmi :
+varPrinter.cmi : util.cmi
 js_parser.cmo : parse_info.cmi javascript.cmi js_parser.cmi
 js_parser.cmx : parse_info.cmx javascript.cmx js_parser.cmi
 js_parser.cmi : parse_info.cmi javascript.cmi
