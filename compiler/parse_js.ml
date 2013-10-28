@@ -17,19 +17,12 @@
  *)
 
 let is_comment = function
-  | Parser_js.TCommentSpace _
-  | Parser_js.TCommentNewline _
-  | Parser_js.TComment _ -> true
+  | Js_parser.TCommentSpace _
+  |Js_parser.TCommentNewline _
+  | Js_parser.TComment _ -> true
   | _ -> false
 
-let make_lexer f =
-  (fun lexbuf ->
-    let t = f lexbuf in
-    if not(is_comment t)
-    then begin
-      Lexer_js._last_non_whitespace_like_token := Some t;
-    end;
-    t)
+let strip_comment l= List.filter (fun x -> not (is_comment x)) l
 
 let iter_with_previous_opt f = function
   | [] -> ()
@@ -48,8 +41,8 @@ let pop l =
 
 
 let rparens_of_if toks =
-  let open Parser_js in
-  let toks = List.filter (fun x -> not (is_comment x)) toks in
+  let open Js_parser in
+  let toks = strip_comment toks in
   let stack = ref [] in
   let rparens_if = ref [] in
   iter_with_previous_opt (fun prev x ->
@@ -68,12 +61,12 @@ let rparens_of_if toks =
   !rparens_if
 
 let info_of_tok t =
-  let open Parser_js in
+  let open Js_parser in
       match t with
   | TUnknown ii -> ii
-  | TCommentSpace ii -> ii
-  | TCommentNewline ii -> ii
-  | TComment ii -> ii
+  | TCommentSpace (ii,_) -> ii
+  | TCommentNewline (ii,_) -> ii
+  | TComment (ii,_) -> ii
   | EOF ii -> ii
 
   | T_NUMBER (s, ii) -> ii
@@ -93,7 +86,6 @@ let info_of_tok t =
   | T_VAR ii -> ii
   | T_WHILE ii -> ii
   | T_WITH ii -> ii
-  | T_CONST ii -> ii
   | T_NULL ii -> ii
   | T_FALSE ii -> ii
   | T_TRUE ii -> ii
@@ -161,14 +153,14 @@ let info_of_tok t =
   | T_VIRTUAL_SEMICOLON ii -> ii
 
 let compute_line x prev : Parse_info.t option =
-  let (x,_) as tok = info_of_tok x in
-  let (prev,_) = info_of_tok prev in
-  if prev <> x
-  then Some tok
+  let x = info_of_tok x in
+  let prev = info_of_tok prev in
+  if prev.Parse_info.line <> x.Parse_info.line
+  then Some x
   else None
 
 let rec adjust_tokens xs =
-  let open Parser_js in
+  let open Js_parser in
   let rparens_if = rparens_of_if xs in
   let hrparens_if =
     let h = Hashtbl.create 101 in
@@ -274,54 +266,76 @@ let rec adjust_tokens xs =
       List.rev !res
 
 type st = {
-  mutable rest : Parser_js.token list;
-  mutable current : Parser_js.token ;
-  mutable passed : Parser_js.token list }
+  mutable rest : Js_parser.token list;
+  mutable current : Js_parser.token ;
+  mutable passed : Js_parser.token list }
 
-let lex file =
-  let open Parser_js in
-  let ic = open_in file in
-  Lexer_js.reset();
-  let lexbuf = Lexing.from_channel ic in
-  let f = make_lexer Lexer_js.initial in
-  let rec loop lexbuf acc =
-    let t = f lexbuf in
+type lexer = Js_parser.token list
+let lexer_aux ?(rm_comment=true) lines_info lexbuf =
+  let tokinfo = Parse_info.t_of_lexbuf lines_info in
+  let rec loop lexbuf lines_info prev acc =
+    let t = Js_lexer.initial tokinfo prev lexbuf in
     match t with
-      | EOF _ -> List.rev (t::acc)
-      | _ -> loop lexbuf (t :: acc)
+      | Js_parser.EOF _ -> List.rev (t::acc)
+      | _ ->
+        let prev =
+          if is_comment t
+          then prev
+          else Some t in
+        loop lexbuf lines_info prev (t::acc)
   in
-  let toks = loop lexbuf [] in
+  let toks = loop lexbuf lines_info None [] in
+  (* hack: adjust tokens *)
   let toks = adjust_tokens toks in
-  let toks = List.filter (fun x -> not (is_comment x)) toks in
-  let cur = {
+  (* remove comments *)
+  if rm_comment
+  then strip_comment toks
+  else toks
+
+let lexer_from_file ?rm_comment file : lexer =
+  let lines_info = Parse_info.make_lineinfo_from_file file in
+  let ic = open_in file in
+  let lexbuf = Lexing.from_channel ic in
+  lexer_aux ?rm_comment lines_info lexbuf
+
+let lexer_from_string ?rm_comment str : lexer =
+  let lines_info = Parse_info.make_lineinfo_from_string str in
+  let lexbuf = Lexing.from_string str in
+  lexer_aux ?rm_comment lines_info lexbuf
+
+(* let rec collect_annot acc = function *)
+(*   | [] -> List.rev acc *)
+(*   | x::xs -> match is_annot with *)
+(*       | Some str -> collect_annot (str::acc) xs *)
+(*       | None -> List.rev acc *)
+
+let lexer_map = List.map
+let lexer_fold f acc l = List.fold_left f acc l
+let lexer_filter f l = List.filter f l
+let lexer_from_list x =
+  let l = match List.rev x with
+    | Js_parser.EOF _ :: _  -> x
+    | (last::_) as all -> List.rev (Js_parser.EOF (info_of_tok last) :: all)
+    | [] -> raise (Invalid_argument "lexer_from_list; empty list") in
+  adjust_tokens l
+
+let parse toks =
+  let state = {
     rest = toks;
     passed = [];
     current = List.hd toks
   }
   in
-  (fun lb ->
-    match cur.rest with
+  let lexer_fun lb =
+    match state.rest with
       | [] -> assert false
       | x::tl ->
-        cur.rest <- tl;
-        cur.current <- x;
-        cur.passed <- x::cur.passed;
-        x
-  ),lexbuf,cur
-let parse file =
-  let lexer_fun,lexbuf,state = lex file in
-  try
-    let p = Parser_js.program lexer_fun lexbuf  in
-    let buf = Buffer.create 1024 in
-    let f = Pretty_print.to_buffer buf in
-    Pretty_print.set_compact f true;
-    Js_output.program f (fun _ -> None) (fun _ -> assert false) p;
-    Printf.printf "%s" (Buffer.contents buf)
+        state.rest <- tl;
+        state.current <- x;
+        state.passed <- x::state.passed;
+        x in
+  let lexbuf = Lexing.from_string "" in
+  try Js_parser.program lexer_fun lexbuf
   with Parsing.Parse_error ->
-    let (l,c) = info_of_tok (List.hd state.rest) in
-    Printf.eprintf "error at l:%d col:%d\n" l c;
-
-    exit 1
-
-let _ =
-  parse (Sys.argv.(1))
+    let pi = info_of_tok state.current in
+    failwith (Printf.sprintf "error at l:%d col:%d\n" pi.Parse_info.line pi.Parse_info.col)

@@ -19,102 +19,58 @@
  * license.txt for more details.
  *)
 
-open Parser_js
+open Js_parser
 
-(*****************************************************************************)
-(* Helpers *)
-(*****************************************************************************)
+let tok lexbuf = Lexing.lexeme lexbuf
 
-exception Lexical of string
-
-(* pad: hack around ocamllex to emulate the yyless of flex. It seems
- * to work.
- *)
-let yyless n lexbuf =
-  lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - n;
-  let currp = lexbuf.Lexing.lex_curr_p in
-  lexbuf.Lexing.lex_curr_p <- { currp with
-    Lexing.pos_cnum = currp.Lexing.pos_cnum - n;
-  }
-
-let tok     lexbuf  =
-  Lexing.lexeme lexbuf
-let tokinfo lexbuf  = Parse_info.t_of_lexbuf lexbuf
-  (* Parse_info.tokinfo_str_pos (Lexing.lexeme lexbuf) (Lexing.lexeme_start lexbuf) *)
-
-(* ---------------------------------------------------------------------- *)
 let keyword_table =
   let h = Hashtbl.create 17 in
   List.iter (fun (s,f) -> Hashtbl.add h s f ) [
 
-   (* todo? had some special handling in lexer of marcel *)
-  "catch",      (fun ii -> T_CATCH ii);
-  "finally",    (fun ii -> T_FINALLY ii);
-  "in",         (fun ii -> T_IN ii);
-  "instanceof", (fun ii -> T_INSTANCEOF ii);
+    "catch",      (fun ii -> T_CATCH ii);
+    "finally",    (fun ii -> T_FINALLY ii);
+    "in",         (fun ii -> T_IN ii);
+    "instanceof", (fun ii -> T_INSTANCEOF ii);
 
-  (* todo? had some special handling in lexer of marcel *)
-  "else",       (fun ii -> T_ELSE ii);
-  "while",      (fun ii -> T_WHILE ii);
+    "else",       (fun ii -> T_ELSE ii);
+    "while",      (fun ii -> T_WHILE ii);
 
-  "break",      (fun ii -> T_BREAK ii);
-  "case",       (fun ii -> T_CASE ii);
-  "continue",   (fun ii -> T_CONTINUE ii);
-  "default",    (fun ii -> T_DEFAULT ii);
-  "delete",     (fun ii -> T_DELETE ii);
-  "do",         (fun ii -> T_DO ii);
-  "else",       (fun ii -> T_ELSE ii);
-  "for",        (fun ii -> T_FOR ii);
-  "function",   (fun ii -> T_FUNCTION ii);
-  "if",         (fun ii -> T_IF ii);
-  "new",        (fun ii -> T_NEW ii);
-  "return",     (fun ii -> T_RETURN ii);
-  "switch",     (fun ii -> T_SWITCH ii);
-  "this",       (fun ii -> T_THIS ii);
-  "throw",      (fun ii -> T_THROW ii);
-  "try",        (fun ii -> T_TRY ii);
-  "typeof",     (fun ii -> T_TYPEOF ii);
-  "var",        (fun ii -> T_VAR ii);
-  "void",       (fun ii -> T_VOID ii);
-  "while",      (fun ii -> T_WHILE ii);
-  "with",       (fun ii -> T_WITH ii);
-  "const",      (fun ii -> T_CONST ii);
-  "null",       (fun ii -> T_NULL ii);
-  "false",      (fun ii -> T_FALSE ii);
-  "true",       (fun ii -> T_TRUE ii);
-];
+    "break",      (fun ii -> T_BREAK ii);
+    "case",       (fun ii -> T_CASE ii);
+    "continue",   (fun ii -> T_CONTINUE ii);
+    "default",    (fun ii -> T_DEFAULT ii);
+    "delete",     (fun ii -> T_DELETE ii);
+    "do",         (fun ii -> T_DO ii);
+    "else",       (fun ii -> T_ELSE ii);
+    "for",        (fun ii -> T_FOR ii);
+    "function",   (fun ii -> T_FUNCTION ii);
+    "if",         (fun ii -> T_IF ii);
+    "new",        (fun ii -> T_NEW ii);
+    "return",     (fun ii -> T_RETURN ii);
+    "switch",     (fun ii -> T_SWITCH ii);
+    "this",       (fun ii -> T_THIS ii);
+    "throw",      (fun ii -> T_THROW ii);
+    "try",        (fun ii -> T_TRY ii);
+    "typeof",     (fun ii -> T_TYPEOF ii);
+    "var",        (fun ii -> T_VAR ii);
+    "void",       (fun ii -> T_VOID ii);
+    "while",      (fun ii -> T_WHILE ii);
+    "with",       (fun ii -> T_WITH ii);
+    "null",       (fun ii -> T_NULL ii);
+    "false",      (fun ii -> T_FALSE ii);
+    "true",       (fun ii -> T_TRUE ii);
+  ];
   h
-
-(* ---------------------------------------------------------------------- *)
-
-type state_mode =
-  | INITIAL
-
-let default_state = INITIAL
-
-(* The logic to modify _last_non_whitespace_like_token is in the
- * caller of the lexer, that is in Parse_js.tokens.
- * Used for ambiguity between / as a divisor and start of regexp.
- *)
-let _last_non_whitespace_like_token =
-  ref (None: Parser_js.token option)
-
-exception Token of Parser_js.token
-
-let reset () =
-   _last_non_whitespace_like_token := None;
-  ()
 
 }
 
 (*****************************************************************************)
-let _WHITESPACE = [' ' '\n' '\r' '\t']+
-let TABS_AND_SPACES = [' ''\t']*
+
 let NEWLINE = ("\r"|"\n"|"\r\n")
 
 (*****************************************************************************)
 
-rule initial = parse
+rule initial tokinfo prev = parse
 
   (* ----------------------------------------------------------------------- *)
   (* spacing/comments *)
@@ -122,20 +78,20 @@ rule initial = parse
   | "/*" {
       let info = tokinfo lexbuf in
       let com = st_comment lexbuf in
-      TComment(info)
+      TComment(info,com)
     }
 
   | "//" {
       let info = tokinfo lexbuf in
       let com = st_one_line_comment lexbuf in
-      TComment(info)
+      TComment(info,com)
     }
 
-  | [' ' '\t' ]+            { TCommentSpace(tokinfo lexbuf) }
+  | [' ' '\t' ]+            { TCommentSpace(tokinfo lexbuf,"") }
   | NEWLINE {
       lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with
                                       Lexing.pos_lnum = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum + 1 };
-      TCommentNewline(tokinfo lexbuf) }
+      TCommentNewline(tokinfo lexbuf,"") }
 
   (* ----------------------------------------------------------------------- *)
   (* symbols *)
@@ -273,7 +229,7 @@ rule initial = parse
   | "/" {
       let info = tokinfo lexbuf in
 
-      match !_last_non_whitespace_like_token with
+      match prev with
       | Some (
             T_IDENTIFIER _
           | T_NUMBER _

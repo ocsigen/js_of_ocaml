@@ -9,6 +9,8 @@ PACKAGES=findlib,str,unix
 
 OBJS=pretty_print.cmx reserved.cmx util.cmx option.cmx dgraph.cmx \
      code.cmx javascript.cmx js_output.cmx js_simpl.cmx \
+	   parse_info.cmx js_parser.cmx js_lexer.cmx parse_js.cmx\
+		 annot_parser.cmx annot_lexer.cmx \
      instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
@@ -49,11 +51,23 @@ compiler.cmxs: $(OBJS)
 %.cmi: %.mli
 	ocamlfind ocamlc -package findlib,str -c $<
 
+
+%.ml: %.mly
+	menhir $<
+
+%.ml: %.mll
+	ocamllex $<
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a
 	rm -f js_of_ocaml compile.opt compile.byte
 
 depend:
+	${MAKE} --no-print-directory js_lexer.ml
+	${MAKE} --no-print-directory annot_lexer.ml
 	ocamldep *.ml *.mli > .depend
+	menhir --depend js_parser.mly >> .depend
+	menhir --depend annot_parser.mly >> .depend
+
+
 
 include .depend
