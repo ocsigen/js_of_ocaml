@@ -41,7 +41,7 @@ class type freevar =
 
 class free : freevar
 
-class rename_str : freevar
+class rename_str : Util.StringSet.t -> freevar
 
 class compact_vardecl : object('a)
   inherit free

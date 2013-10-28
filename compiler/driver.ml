@@ -208,7 +208,9 @@ let optimize_var js =
   then Format.eprintf "Start Optimizing...@.";
   let js =
     if (Option.Optim.shortvar ())
-    then (new Js_traverse.rename_str)#program js
+    then
+      let keeps = StringSet.singleton "caml_get_global_data" in
+      (new Js_traverse.rename_str keeps)#program js
     else js in
   let js =
     if Option.Optim.compact_vardecl ()

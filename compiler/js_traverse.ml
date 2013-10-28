@@ -287,14 +287,17 @@ class free =
 
 
 
-class rename_str = object(m : 'test)
+class rename_str keeps = object(m : 'test)
   inherit free as super
 
   val mutable sub_ = new subst (fun x -> x)
 
   method merge_info from =
     let h = Hashtbl.create 17 in
-    let _ = StringSet.iter (fun name -> Hashtbl.add h name (Code.Var.fresh ())) from#state.def_name in
+    let _ = StringSet.iter (fun name ->
+        if StringSet.mem name keeps
+        then ()
+        else Hashtbl.add h name (Code.Var.fresh ())) from#state.def_name in
     let f = function
       | (S name) when Hashtbl.mem h name -> V (Hashtbl.find h name)
       | s -> s in

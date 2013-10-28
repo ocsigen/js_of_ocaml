@@ -1561,14 +1561,6 @@ let is_toplevel = ref false
 
 let build_toplevel () = is_toplevel := true
 
-let set_global x v rem =
-  let globals = Var.fresh () in
-  Let (globals,
-       Prim (Extern "caml_js_var", [Pc (String "caml_global_data")])) ::
-  Let (Var.fresh (),
-       Prim (Extern "caml_js_set", [Pv globals; Pc (String x); Pv v])) ::
-  rem
-
 let parse_bytecode code state standalone_info =
   Code.Var.reset ();
   analyse_blocks code;
@@ -1591,6 +1583,16 @@ let parse_bytecode code state standalone_info =
     match standalone_info with
       Some (symb, crcs, prim, paths) ->
         let l = ref [] in
+
+
+        let set_global x v rem =
+          let globals = Var.fresh () in
+          Let (globals,
+               Prim (Extern "caml_get_global_data", [])) ::
+            Let (Var.fresh (),
+                 Prim (Extern "caml_js_set", [Pv globals; Pc (String x); Pv v])) ::
+            rem in
+
 
         let register_global n =
           l :=
@@ -1650,8 +1652,7 @@ let parse_bytecode code state standalone_info =
         let globals = Var.fresh () in
         let l =
           ref [Let (globals,
-                    Prim (Extern "caml_js_var",
-                          [Pc (String "caml_global_data")]))]
+                    Prim (Extern "caml_get_global_data", []))]
         in
         for i = 0 to Array.length g.vars - 1 do
           match g.vars.(i) with
