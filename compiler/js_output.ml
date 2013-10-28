@@ -493,7 +493,12 @@ end) = struct
   and property_name f n =
     match n with
         PNI s -> PP.string f s
-      | PNS s -> PP.string f "\""; PP.string f s; PP.string f "\""
+      | PNS s ->
+        let quote = best_string_quote s in
+        let quote_s = String.make 1 quote in
+        PP.string f quote_s;
+        PP.string f (string_escape ~utf:true quote s);
+        PP.string f quote_s
       | PNN v -> expression 0 f (ENum v)
 
   and property_name_and_value_list f l =
