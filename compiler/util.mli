@@ -27,8 +27,12 @@ module StringMap : Map.S with type key = string
 val opt_filter : ('a -> bool) -> 'a option -> 'a option
 val opt_map : ('a -> 'b) -> 'a option -> 'b option
 val opt_iter : ('a -> unit) -> 'a option -> unit
+val filter_map : ('a -> 'b option) -> 'a list -> 'b list
 
-val find_in_paths : string list -> string -> string
+
+val path_require_findlib : string -> string option
+val find_pkg_dir : string -> string
+val find_in_paths : ?pkg:string -> string list -> string -> string
 val read_file : string -> string
 
 module Timer : sig

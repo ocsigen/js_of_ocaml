@@ -20,6 +20,9 @@
 
 let debug = Option.Debug.find "main"
 let times = Option.Debug.find "times"
+
+open Util
+
 let tailcall p =
   if debug () then Format.eprintf "Tail-call optimization...@.";
   Tailcall.f p

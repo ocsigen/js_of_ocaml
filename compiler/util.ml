@@ -33,22 +33,34 @@ let opt_filter p x =
 
 (****)
 
-let rec find_in_paths paths name =
+
+let findlib_init = Lazy.lazy_from_fun Findlib.init
+
+let find_pkg_dir pkg =
+  let () = Lazy.force findlib_init in
+  try Findlib.package_directory pkg with _ -> raise Not_found
+
+let path_require_findlib path =
+  if path <> "" && path.[0] = '+'
+  then Some (String.sub  path 1 (String.length path - 1))
+  else None
+
+let rec find_in_paths ?(pkg="stdlib") paths name =
   match paths with
-    [] ->
+    | [] ->
       raise Not_found
-  | path :: rem ->
-    let file =
-      if(path <> "" && path.[0] = '+')
-      then
-        let path = String.sub path 1 (String.length path - 1) in
-        Filename.concat (Filename.concat (Findlib.package_directory "stdlib") path) name
-      else Filename.concat path name in
-    if Sys.file_exists file then file else
-      begin
-        (* Printf.eprintf "cannot find %s\n" file; *)
-        find_in_paths rem name
-      end
+    | path :: rem ->
+      try
+        let file = match path_require_findlib path with
+          | Some path ->
+            let () = Lazy.force findlib_init in
+            Filename.concat (Filename.concat (find_pkg_dir pkg) path) name
+          | None -> Filename.concat path name in
+
+        if Sys.file_exists file then file else
+          find_in_paths rem name
+      with Not_found -> find_in_paths rem name
+
 let read_file f =
   let ch = open_in_bin f in
   let b = Buffer.create 4096 in
@@ -60,6 +72,12 @@ let read_file f =
   do () done;
   close_in ch;
   Buffer.contents b
+
+let filter_map f l =
+  let l = List.fold_left (fun acc x -> match f x with
+    | Some x -> x::acc
+    | None -> acc) [] l
+  in List.rev l
 
 module Timer = struct
   type t = float

@@ -23,7 +23,7 @@ let times = Option.Debug.find "times"
 let f linkall paths js_files input_file output_file =
   let t = Util.Timer.make () in
   List.iter Linker.add_file js_files;
-  let paths = List.rev_append paths [Findlib.package_directory "stdlib"] in
+  let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
   let t1 = Util.Timer.make () in
   let p,d =
     match input_file with
@@ -56,7 +56,6 @@ let f linkall paths js_files input_file output_file =
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
 
 let _ =
-  Findlib.init ();
   Util.Timer.init Unix.gettimeofday;
   let js_files = ref [] in
   let output_file = ref None in
