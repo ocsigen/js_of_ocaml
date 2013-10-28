@@ -17,8 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Util
 
-let keyword =
+let keyword = List.fold_left (fun acc x -> StringSet.add x acc)
+ StringSet.empty
   [
     (* keywork *)
     "break";
@@ -46,11 +48,22 @@ let keyword =
     "null";
     "true";
     "false";
+
+
+    "undefined";
+    "this";
+
 ]
 
 
-let provided = [
-  "ActiveXObject";
+let provided = List.fold_left (fun acc x -> StringSet.add x acc)
+ StringSet.empty
+ [
+
+  "event";
+  "location";
+  "window";
+
   "Array";
   "Date";
   "Math";
@@ -58,19 +71,18 @@ let provided = [
   "Object";
   "RegExp";
   "String";
+
+  "ActiveXObject";
   "XMLHttpRequest";
+
   "decodeURI";
   "decodeURIComponent";
   "encodeURI";
   "encodeURIComponent";
   "escape";
-  "event";
+  "unescape";
+
   "isNaN";
   "parseFloat";
   "parseInt";
-  "location";
-  "window";
-  "unescape";
-  "this";
-  "undefined";
 ]

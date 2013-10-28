@@ -33,18 +33,6 @@ let error _ s =
   Format.eprintf "error: %s@." s;
   exit 1
 
-(* let read_line ch loc = *)
-(*   let l = input_line ch in *)
-(*   if String.length l > 2 && l.[0] ='/' && l.[1] ='/' *)
-(*   then *)
-(*     let l = String.sub l 2 (String.length l - 2) in *)
-(*     match parse_annot loc l with *)
-(*       | Some annot -> (annot :> [`Comment |`Code of string | Primitive.t]) *)
-(*       | None -> *)
-(*         `Comment *)
-(*   else *)
-(*     `Code l *)
-
 let debug l =
   match l with
     `Provides (_, nm, k) -> Format.eprintf "provides %s (%s)@." nm k
@@ -137,8 +125,6 @@ let parse_file f =
     | `Annot _ -> assert false
     | `Code([],_) -> assert false
     | `Code(annot,code) -> (List.rev annot,List.rev code)::lexs in
-  (* Printf.printf "lexs:%d \n" (List.length lexs); *)
-  (* exit 1; *)
 
   let res = List.rev_map (fun (annot,code) ->
     let lex = Parse_js.lexer_from_list code in
@@ -162,14 +148,14 @@ let add_file f =
       incr last_code_id;
       let id = !last_code_id in
 
-      let req = List.fold_left (fun req a -> match a with
+      let req,has_provide = List.fold_left (fun (req,has_provide) a -> match a with
         | `Provides (_,name,kind) ->
           Primitive.register name kind;
           Hashtbl.add provided name id;
-          req
-        | `Requires (_,mn) -> mn@req) [] annot in
+          req,true
+        | `Requires (_,mn) -> (mn@req),has_provide) ([],false) annot in
 
-      (* if prov = [] then always_included := id :: !always_included; *)
+      if not has_provide then always_included := id :: !always_included;
       Hashtbl.add code_pieces id (code, req))
     (parse_file f)
 

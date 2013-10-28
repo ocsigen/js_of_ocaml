@@ -166,6 +166,7 @@ let header formatter ~standalone js =
   end;
   js
 
+let debug_linker = Option.Debug.find "linker"
 let link formatter ~standalone ?linkall js =
   if standalone
   then
@@ -193,12 +194,23 @@ let link formatter ~standalone ?linkall js =
         Format.eprintf "Missing primitives:@.";
         StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
       end;
-      if not (StringSet.is_empty other)
-      then begin
-        Format.eprintf "Missing var def:@.";
-        StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other
-      end;
 
+      let probably_prov = StringSet.inter other Reserved.provided in
+      let other = StringSet.diff other probably_prov in
+
+      if not (StringSet.is_empty other) && debug_linker ()
+      then
+        begin
+          Format.eprintf "Missing variables:@.";
+          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other
+        end;
+
+      if not (StringSet.is_empty probably_prov) && debug_linker ()
+      then
+        begin
+          Format.eprintf "Variables provided by the browser:@.";
+          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov
+        end;
       js
     end
   else js
