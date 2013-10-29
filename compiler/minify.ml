@@ -86,7 +86,7 @@ let _ =
 
   let p = List.flatten (List.map (fun file ->
     let lex = Parse_js.lexer_from_file file in
-    try Parse_js.parse lex with Parsing_error pi ->
+    try Parse_js.parse lex with Parse_js.Parsing_error pi ->
       error "error at l:%d col:%d" pi.Parse_info.line pi.Parse_info.col) !js_files) in
 
 
