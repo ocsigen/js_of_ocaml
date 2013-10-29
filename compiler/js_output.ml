@@ -604,8 +604,8 @@ end) = struct
         Block b ->
           block f b
       | Variable_statement l -> variable_declaration_list true f l
-      | Empty_statement -> ()
-      | Expression_statement (EVar _, pc)-> ()
+      | Empty_statement -> PP.string f ";"
+      | Expression_statement (EVar _, pc)-> PP.string f ";"
       | Expression_statement (e, pc) ->
       (* Parentheses are required when the expression
          starts syntactically with "{" or "function" *)
