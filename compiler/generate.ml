@@ -167,6 +167,7 @@ module Share = struct
           J.EVar (StringMap.find s t.vars.prims)
         with Not_found ->
           let x = Var.fresh() in
+          Code.Var.name x s;
           let v = J.V x in
           t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
           J.EVar v
@@ -185,6 +186,7 @@ module Share = struct
           J.EVar (IntMap.find n t.vars.applies)
         with Not_found ->
           let x = Var.fresh() in
+          Code.Var.name x (Printf.sprintf "caml_call_gen%d" n);
           let v = J.V x in
           t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
           J.EVar v

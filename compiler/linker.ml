@@ -30,7 +30,7 @@ let parse_annot loc s =
     None
 
 let error s =
-  Format.kprintf (fun s -> Format.eprintf "error: %s" s; exit 1) s
+  Format.kprintf (fun s -> Format.eprintf "error: %s@." s; exit 1) s
 
 let debug l =
   match l with

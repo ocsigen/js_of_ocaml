@@ -323,7 +323,10 @@ class rename_str keeps = object(m : 'test)
     let _ = StringSet.iter (fun name ->
         if StringSet.mem name keeps
         then ()
-        else Hashtbl.add h name (Code.Var.fresh ())) from#state.def_name in
+        else
+          let v = Code.Var.fresh () in
+          Code.Var.name v name;
+          Hashtbl.add h name v) from#state.def_name in
     let f = function
       | (S name) when Hashtbl.mem h name -> V (Hashtbl.find h name)
       | s -> s in
@@ -344,6 +347,7 @@ class rename_str keeps = object(m : 'test)
         let w = match w with
           | Some(S name,block) ->
             let v = Code.Var.fresh () in
+            Code.Var.name v name;
             let sub = function
               | S name' when name' = name -> V v
               | x -> x in
