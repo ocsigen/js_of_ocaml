@@ -1,4 +1,4 @@
-{1 Js_of_ocaml – API Reference}
+{1 Js_of_ocaml - API Reference}
 
 {!modules:
 Js
@@ -22,7 +22,7 @@ WebGL
 WebSockets
 }
 
-{1 The ocamlbuild plugin – API Reference}
+{1 The ocamlbuild plugin - API Reference}
 
 {!modules:
 Ocamlbuild_js_of_ocaml

@@ -1,77 +1,80 @@
+BINDIR := /usr/local/bin
 
-all: no_examples examples
-no_examples: check_lwt compiler compiler_lib library ocamlbuild runtime doc
+OCB= BINDIR=$(BINDIR) ocamlbuild #-classic-display
 
-include Makefile.conf
--include Makefile.local
+all: no_examples examples install.sh
 
-.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc
+
+no_examples: check_lwt
+	$(OCB) all.otarget
+
+.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc toplevel
 
 compiler:
-	$(MAKE) -C compiler
-compiler_lib: compiler
-	$(MAKE) -C compiler lib
+	$(OCB) compiler/compile.native
+
+compiler_lib:
+	$(OCB) compiler/compiler.cma compiler/compiler.cmxs compiler/compiler.cmxa
+
 library:
-	$(MAKE) -C lib
+	$(OCB) lib/js_of_ocaml.cma
+
 ocamlbuild:
-	$(MAKE) -C ocamlbuild
+	$(OCB) ocamlbuild/ocamlbuild_js_of_ocaml.cma ocamlbuild/ocamlbuild_js_of_ocaml.cmxs ocamlbuild/ocamlbuild_js_of_ocaml.cmxa
+
 runtime:
-	$(MAKE) -C runtime
-toplevel: compiler compiler_lib library runtime
-	$(MAKE) -C toplevel
-examples: compiler library runtime
-	$(MAKE) -C examples
-tests: compiler library runtime
-	$(MAKE) -C tests
-phantomtests: compiler library runtime
-	$(MAKE) -C tests phantom
-doc: library ocamlbuild
-	$(MAKE) -C doc
+	$(OCB) runtime/runtime.js
+
+examples:
+	$(OCB) examples/all.otarget
+
+doc:
+	$(OCB) doc/api.docdir/index.html
+
+toplevel:
+	$(OCB) toplevel/toplevel_expunge.js
+
+tests: check_phantomjs
+	$(OCB) tests/tests.js
+
+TESTS_LOG = $(patsubst %.ml,%.jslog,$(wildcard tests/test_*.ml))
+phantomtests: check_phantomjs
+	$(OCB) $(TESTS_LOG)
 
 LWTERROR="Js_of_ocaml requires Lwt version 2.3.0 at least.  Please upgrade."
 check_lwt:
 	@if ocamlfind query lwt -l | ocaml tools/check_version.ml 2.3.0; then \
 	  echo $(LWTERROR); exit 1; \
 	fi
-
-include Makefile.filelist
+PHANTOMJSERROR="You need phantomjs in your PATH to run this"
+check_phantomjs:
+	@if which phantomjs; then echo ""; else \
+		echo $(PHANTOMJSERROR); exit 1; \
+	fi
 
 VERSION := $(shell head -n 1 VERSION)
-install:
-	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(OTHERS) $(DOC)
-	ocamlfind install -patch-version ${VERSION} $(COMPILER_LIBRARY) compiler/META $(COMP_INTF) $(COMP_IMPL)
-	install -d -m 755 $(BINDIR)
-	install $(BIN) $(BINDIR)
+
+install.sh:
+	$(OCB) install.sh
+
+install: install.sh
+	cd _build && sh install.sh && cd -
 
 uninstall:
-	ocamlfind remove $(LIBRARY)
-	ocamlfind remove $(COMPILER_LIBRARY)
-	rm -f $(BINDIR)/$(COMPILER)
-	rm -f $(BINDIR)/$(MINIFIER)
+	ocamlfind remove js_of_ocaml
+	rm -f $(BINDIR)/js_of_ocaml
+	rm -f $(BINDIR)/joo_minify
 
 reinstall: uninstall install
 
-depend:
-	$(MAKE) -C compiler depend
-	$(MAKE) -C lib depend
-
 clean:
-	$(MAKE) -C compiler clean
-	$(MAKE) -C lib clean
-	$(MAKE) -C ocamlbuild clean
-	$(MAKE) -C runtime clean
-	$(MAKE) -C toplevel clean
-	$(MAKE) -C examples clean
-ifeq ($(wildcard tests),tests)
-	$(MAKE) -C tests clean
-	$(MAKE) -C doc clean
-endif
+	$(OCB) -clean
 
 realclean: clean
 	find . -name "*~" -print | xargs rm -f
 
 dist:
 	rm -rf /tmp/js_of_ocaml-${VERSION} &&\
-        cd /tmp &&\
-	darcs get http://ocsigen.org/darcs/js_of_ocaml/ js_of_ocaml-${VERSION} &&\
+	cd /tmp &&\
+	git clone https://github.com/ocsigen/js_of_ocaml.git js_of_ocaml-${VERSION} &&\
 	tar zcvf js_of_ocaml-${VERSION}.tar.gz js_of_ocaml-${VERSION} --exclude benchmarks --exclude _darcs --exclude tests

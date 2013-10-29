@@ -1,0 +1,3 @@
+<pa_*.ml{,i}>: syntax(camlp4o)
+<pa_js.ml{,i}>: package(camlp4.extend,camlp4.quotations)
+<pa_deriving_Json.ml{,i}>: package(deriving.syntax,camlp4.quotations.o)
