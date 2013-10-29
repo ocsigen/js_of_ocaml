@@ -24,7 +24,9 @@ class type mapper = object
   method expression_o : Javascript.expression option -> Javascript.expression option
   method statement : Javascript.statement -> Javascript.statement
   method statement_o : Javascript.statement option -> Javascript.statement option
+  method statements : Javascript.statement list -> Javascript.statement list
   method source : Javascript.source_element -> Javascript.source_element
+  method sources : Javascript.source_element list -> Javascript.source_element list
   method ident : Javascript.ident -> Javascript.ident
   method program : Javascript.program -> Javascript.program
 end
@@ -33,8 +35,11 @@ end
 (* generic js ast walk/map *)
 class map : mapper = object(m)
   method ident i = i
+
+  method statements l = List.map m#statement l
+
   method statement s = match s with
-    | Block b -> Block (List.map m#statement b)
+    | Block b -> Block (m#statements b)
     | Variable_statement l ->
       Variable_statement (
         List.map
@@ -78,19 +83,19 @@ class map : mapper = object(m)
   | Switch_statement (e,l,def) ->
     Switch_statement (
       m#expression e,
-      List.map (fun (e,s) -> m#expression e, List.map m#statement s) l,
+      List.map (fun (e,s) -> m#expression e, m#statements s) l,
       match def with
         | None -> None
-        | Some l -> Some (List.map m#statement l))
+        | Some l -> Some (m#statements l))
   | Try_statement (b,catch,final,nid) ->
     Try_statement (
-    List.map m#statement b,
+    m#statements b,
     (match catch with
       | None -> None
-      | Some (id,b) -> Some (m#ident id, List.map m#statement b)),
+      | Some (id,b) -> Some (m#ident id, m#statements b)),
     (match final with
       | None -> None
-      | Some s -> Some (List.map m#statement s)),
+      | Some s -> Some (m#statements s)),
     nid)
 
   method statement_o x = match x with
@@ -105,12 +110,12 @@ class map : mapper = object(m)
     EBin(b,m#expression  e1,m#expression  e2)
   | EUn(b,e1) -> EUn(b,m#expression  e1)
   | ECall(e1,e2) ->
-    ECall(m#expression  e1,List.map (m#expression ) e2)
+    ECall(m#expression  e1,List.map m#expression e2)
   | EAccess(e1,e2) ->
     EAccess(m#expression  e1,m#expression  e2)
   | EDot(e1,id) -> EDot(m#expression  e1, id)
   | ENew(e1,Some args) ->
-    ENew(m#expression  e1,Some (List.map (fun x -> m#expression  x) args))
+    ENew(m#expression  e1,Some (List.map m#expression args))
   | ENew(e1,None) ->
     ENew(m#expression  e1,None)
   | EVar v -> EVar (m#ident v)
@@ -118,7 +123,7 @@ class map : mapper = object(m)
     let idopt = match idopt with
       | None -> None
       | Some i -> Some (m#ident i) in
-    EFun ((idopt, List.map m#ident params, List.map m#source body) ,nid)
+    EFun ((idopt, List.map m#ident params, m#sources body) ,nid)
   | EArr l ->
     EArr (List.map (fun x -> m#expression_o x) l)
   | EObj l ->
@@ -136,9 +141,11 @@ class map : mapper = object(m)
   method source x = match x with
     | Statement s -> Statement (m#statement s)
     | Function_declaration(id,params,body,nid) ->
-      Function_declaration(m#ident id, List.map m#ident params, List.map m#source body,nid)
+      Function_declaration(m#ident id, List.map m#ident params, m#sources body,nid)
 
-  method program x = List.map m#source x
+  method sources x = List.map m#source x
+
+  method program x = m#sources x
 end
 
 (* var substitution *)
@@ -225,7 +232,7 @@ class free =
       let () = match ident with
         | None -> ()
         | Some v -> tbody#def_var v in
-      let body = List.map tbody#source body in
+      let body = tbody#sources body in
       tbody#block params;
       m#merge_info tbody;
       EFun ((ident,params,body),nid)
@@ -235,7 +242,7 @@ class free =
     | Function_declaration (id,params, body, nid) ->
       let tbody = {< state_ = empty >} in
       let () = List.iter tbody#def_var params in
-      let body = List.map tbody#source body in
+      let body = tbody#sources body in
       tbody#block params;
       m#def_var id;
       m#merge_info tbody;
@@ -273,12 +280,12 @@ class free =
           (id,Some e) in
       ForIn_statement(Right r,m#expression e2,m#statement s,nid)
     | Try_statement (b,w,f,nid) ->
-      let b = List.map m#statement b in
+      let b = m#statements b in
       let tbody = {< state_ = empty >} in
       let w = match w with
         | None -> None
         | Some (id,block) ->
-          let block = List.map tbody#statement block in
+          let block = tbody#statements block in
           let () = tbody#def_var id in
           tbody#block ~catch:true [id];
           (* special merge here *)
@@ -298,7 +305,7 @@ class free =
       in
       let f = match f with
         | None -> None
-        | Some block -> Some (List.map m#statement block)
+        | Some block -> Some (m#statements block)
       in
       Try_statement (b,w,f,nid)
     | _ -> super#statement x
@@ -341,7 +348,7 @@ class rename_str keeps = object(m : 'test)
               | S name' when name' = name -> V v
               | x -> x in
             let s = new subst sub in
-            Some(V v ,List.map s#statement block)
+            Some(V v ,s#statements block)
           | x -> x in
         Try_statement (b,w,f,nid)
       | _ -> x
@@ -437,4 +444,25 @@ class compact_vardecl = object(m)
           EFun ((ident,params,d::body),nid)
         | _ -> x
 
+end
+
+
+class clean = object(m)
+  inherit map as super
+  method statements l =
+    let l = super#statements l in
+    let l = List.filter (function
+        | Empty_statement -> false
+        | Expression_statement (EVar _, pc) -> false
+        | _ -> true) l in
+    match l with
+      | [] -> [Empty_statement]
+      | l -> l
+  method sources l =
+    let l = super#sources l in
+    let l = List.filter (function
+        | Statement (Empty_statement) -> false
+        | Statement (Expression_statement (EVar _, pc)) -> false
+        | _ -> true) l in
+    l
 end

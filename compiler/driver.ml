@@ -218,6 +218,7 @@ let link formatter ~standalone ?linkall js =
 let optimize_var js =
   if times ()
   then Format.eprintf "Start Optimizing...@.";
+  let js = (new Js_traverse.clean)#program js in
   let js =
     if (Option.Optim.shortvar ())
     then

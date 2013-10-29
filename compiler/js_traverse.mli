@@ -21,8 +21,10 @@ class type mapper = object
   method expression : Javascript.expression -> Javascript.expression
   method expression_o : Javascript.expression option -> Javascript.expression option
   method statement : Javascript.statement -> Javascript.statement
+  method statements : Javascript.statement list -> Javascript.statement list
   method statement_o : Javascript.statement option -> Javascript.statement option
   method source : Javascript.source_element -> Javascript.source_element
+  method sources : Javascript.source_element list -> Javascript.source_element list
   method ident : Javascript.ident -> Javascript.ident
   method program : Javascript.program -> Javascript.program
 end
@@ -64,3 +66,5 @@ class compact_vardecl : object('a)
   inherit free
   method exc  : Javascript.IdentSet.t
 end
+
+class clean : mapper
