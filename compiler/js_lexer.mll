@@ -202,18 +202,13 @@ rule initial tokinfo prev = parse
   (* ----------------------------------------------------------------------- *)
   (* Strings *)
   (* ----------------------------------------------------------------------- *)
-  | "'" {
+  | ("'"|'"') as quote {
       let info = tokinfo lexbuf in
-      let s = string_quote lexbuf in
+      let s = string_quote quote lexbuf in
       (* s does not contain the enclosing "'" but the info does *)
       T_STRING (s, info)
     }
 
-  | '"' {
-      let info = tokinfo lexbuf in
-      let s = string_double_quote lexbuf in
-      T_STRING (s, info)
-    }
 
   (* ----------------------------------------------------------------------- *)
   (* Regexp *)
@@ -268,50 +263,49 @@ rule initial tokinfo prev = parse
   | eof { EOF (tokinfo lexbuf) }
 
   | _ {
-      Printf.eprintf "LEXER:unrecognised symbol, in token rule: %s" (tok lexbuf);
+      Printf.eprintf "LEXER:unrecognised symbol, in token rule: %s\n" (tok lexbuf);
       TUnknown (tokinfo lexbuf)
     }
 (*****************************************************************************)
 
-and string_quote = parse
-  | "'"            { "" }
-  | ('\\' (_ as v)) {
-      (* check char ? *)
-      let v = match v with
-      | 'b' -> '\b'
-      | 't' -> '\t'
-      | 'n' -> '\n'
-      | 'r' -> '\r'
-      | x -> x in
-      String.make 1 v ^ string_quote lexbuf
-    }
-  | (_ as x)       { String.make 1  x^string_quote lexbuf}
-  | eof { Printf.eprintf  "LEXER: WIERD end of file in quoted string"; ""}
+and string_escape quote = parse
+  | 'b' { "\b" }
+  | 't' { "\t" }
+  | 'n' { "\n" }
+  | 'f' { "\012" }
+  | 'r' { "\r" }
+  | '\\'{ "\\" }
+  | 'x' (hexa as a) (hexa as b)
+    { let code = hexa_to_int a * 16 + hexa_to_int b in
+      String.make 1 (Char.chr code) }
+  | '0' { "\000" }
+  | 'u' hexa hexa hexa hexa { "\\"^Lexing.lexeme lexbuf }
+  | (_ as c)
+    { if c = quote
+      then String.make 1 quote
+      else String.make 1 c }
 
-and string_double_quote  = parse
-  | '"'            { "" }
-  | ('\\' (_ as v)) {
-      (* check char ? *)
-      let v = match v with
-      | 'b' -> '\b'
-      | 't' -> '\t'
-      | 'n' -> '\n'
-      | 'r' -> '\r'
-      | x -> x in
-      String.make 1 v ^ string_double_quote lexbuf
+
+
+and string_quote q = parse
+  | ("'"|'"') as q' {
+    if q = q'
+    then ""
+    else String.make 1 q' ^ string_quote q lexbuf }
+  | '\\' {
+      let v = string_escape q lexbuf in
+      v ^ string_quote q lexbuf
     }
-  | (_ as x)       { String.make 1  x^string_double_quote lexbuf}
-  | eof { Printf.eprintf "LEXER: WIERD end of file in double quoted string"; ""}
+  | (_ as x)       { String.make 1  x^string_quote q lexbuf}
+  | eof { Printf.eprintf  "LEXER: WIERD end of file in quoted string"; ""}
 
 (*****************************************************************************)
 and regexp = parse
   | '/'            { "/" ^ regexp_maybe_ident lexbuf }
-  | ('\\' (_ as v)) as x {
-      (* check char ? *)
-      (match v with
-      | _ -> ()
-      );
-      x ^ regexp lexbuf
+  | '\\' {
+      (* fixme: hack *)
+      let v = string_escape '/' lexbuf in
+      v ^ regexp lexbuf
     }
   | (_ as x)       { String.make 1 x^regexp lexbuf}
   | eof { Printf.eprintf "LEXER: WIERD end of file in regexp"; ""}
@@ -331,7 +325,7 @@ and st_comment = parse
   | eof { Printf.eprintf "LEXER: end of file in comment"; "*/"}
   | _  {
       let s = tok lexbuf in
-      Printf.eprintf "LEXER: unrecognised symbol in comment: %s" s;
+      Printf.eprintf "LEXER: unrecognised symbol in comment: %s\n" s;
       s ^ st_comment lexbuf
     }
 
