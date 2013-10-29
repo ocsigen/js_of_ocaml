@@ -292,8 +292,9 @@ class ['state] color (state : 'state) = object(m)
     end;
     super#def_var x
 
-  method block params =
-    m#add_constraints params;
+  method block ?(catch =false) params =
+    let offset = if catch then 5 else 0 in
+    m#add_constraints ~offset params;
     super#block params
 
 

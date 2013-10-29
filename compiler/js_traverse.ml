@@ -175,7 +175,7 @@ class type freevar =
   object('a)
     inherit mapper
     method merge_info : 'a -> unit
-    method block : Javascript.ident list -> unit
+    method block : ?catch:bool -> Javascript.ident list -> unit
 
     method def_var : Javascript.ident -> unit
     method use_var : Javascript.ident -> unit
@@ -242,7 +242,7 @@ class free =
       Function_declaration (id,params, body, nid)
     | _ -> super#source x
 
-  method block params = ()
+  method block ?catch params = ()
 
 
   method statement x = match x with
@@ -280,7 +280,7 @@ class free =
         | Some (id,block) ->
           let block = List.map tbody#statement block in
           let () = tbody#def_var id in
-          tbody#block [id];
+          tbody#block ~catch:true [id];
           (* special merge here *)
           (* we need to propagate both def and use .. *)
           (* .. except 'id' because its scope is limitied to 'block' *)
@@ -329,6 +329,23 @@ class rename_str keeps = object(m : 'test)
     match x with
       | EFun _ -> sub_#expression x
       | _ -> x
+
+  method statement x =
+    let x = super#statement x in
+    match x with
+      | Try_statement (b,w,f,nid) ->
+        let w = match w with
+          | Some(S name,block) ->
+            let v = Code.Var.fresh () in
+            let sub = function
+              | S name' when name' = name -> V v
+              | x -> x in
+            let s = new subst sub in
+            Some(V v ,List.map s#statement block)
+          | x -> x in
+        Try_statement (b,w,f,nid)
+      | _ -> x
+
 
   method source x =
     let x = super#source x in
@@ -384,7 +401,7 @@ class compact_vardecl = object(m)
           Try_statement (b,w,f,nid)
         | s -> s
 
-    method block params =
+    method block ?(catch=false) params =
       List.iter m#except params;
       super#block params;
 

@@ -47,7 +47,7 @@ class type freevar =
   object('a)
     inherit mapper
     method merge_info : 'a -> unit
-    method block : Javascript.ident list -> unit
+    method block : ?catch:bool -> Javascript.ident list -> unit
 
     method def_var : Javascript.ident -> unit
     method use_var : Javascript.ident -> unit
