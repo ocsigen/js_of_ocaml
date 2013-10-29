@@ -264,41 +264,48 @@ rule initial tokinfo prev = parse
       TUnknown (tokinfo lexbuf)
     }
 (*****************************************************************************)
+
 and string_quote = parse
   | "'"            { "" }
-  | (_ as x)       { String.make 1  x^string_quote lexbuf}
-  | ("\\" (_ as v)) as x {
+  | ('\\' (_ as v)) as x {
       (* check char ? *)
-      (match v with
-      | _ -> ()
-      );
-      x ^ string_quote lexbuf
+      let v = match v with
+      | 'b' -> '\b'
+      | 't' -> '\t'
+      | 'n' -> '\n'
+      | 'r' -> '\r'
+      | x -> x in
+      String.make 1 v ^ string_quote lexbuf
     }
+  | (_ as x)       { String.make 1  x^string_quote lexbuf}
   | eof { Printf.eprintf  "LEXER: WIERD end of file in quoted string"; ""}
 
 and string_double_quote  = parse
   | '"'            { "" }
-  | (_ as x)       { String.make 1  x^string_double_quote lexbuf}
-  | ("\\" (_ as v)) as x {
+  | ('\\' (_ as v)) as x {
       (* check char ? *)
-      (match v with
-      | _ -> ()
-      );
-      x ^ string_double_quote lexbuf
+      let v = match v with
+      | 'b' -> '\b'
+      | 't' -> '\t'
+      | 'n' -> '\n'
+      | 'r' -> '\r'
+      | x -> x in
+      String.make 1 v ^ string_double_quote lexbuf
     }
+  | (_ as x)       { String.make 1  x^string_double_quote lexbuf}
   | eof { Printf.eprintf "LEXER: WIERD end of file in double quoted string"; ""}
 
 (*****************************************************************************)
 and regexp = parse
   | '/'            { "/" ^ regexp_maybe_ident lexbuf }
-  | (_ as x)       { String.make 1 x^regexp lexbuf}
-  | ("\\" (_ as v)) as x {
+  | ('\\' (_ as v)) as x {
       (* check char ? *)
       (match v with
       | _ -> ()
       );
       x ^ regexp lexbuf
     }
+  | (_ as x)       { String.make 1 x^regexp lexbuf}
   | eof { Printf.eprintf "LEXER: WIERD end of file in regexp"; ""}
 
 and regexp_maybe_ident = parse
