@@ -1775,6 +1775,14 @@ let from_channel ~paths ic =
   let globals = make_globals (Array.length init_data) init_data primitives in
   if !is_toplevel then begin
     Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
+    (* @vouillon: *)
+    (* we should then use the -linkalloption to build the toplevel. *)
+    (* The OCaml compiler can generate code using this primitive but *)
+    (* does not use it itself. This is the only primitive in this case. *)
+    (* Ideally, Js_of_ocaml should parse the .mli files for primitives as *)
+    (* well as marking this primitive as potentially used. But *)
+    (* the -linkall option is probably good enough. *)
+
     (* Primitive.mark_used "caml_string_greaterthan" *)
   end;
 
