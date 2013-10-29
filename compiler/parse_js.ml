@@ -69,7 +69,7 @@ let info_of_tok t =
   | TComment (ii,_) -> ii
   | EOF ii -> ii
 
-  | T_NUMBER (s, ii) -> ii
+  | T_NUMBER (s, _,ii) -> ii
   | T_IDENTIFIER (s, ii) -> ii
   | T_STRING (s, ii) -> ii
   | T_REGEX (s, ii) -> ii

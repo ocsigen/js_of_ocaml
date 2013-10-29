@@ -62,11 +62,18 @@ let keyword_table =
   ];
   h
 
+let hexa_to_int = function
+  | '0'..'9' as x -> Char.code x - Char.code '0'
+  | 'a'..'f' as x -> Char.code x - Char.code 'a' + 10
+  | 'A'..'F' as x -> Char.code x - Char.code 'A' + 10
+  | _ -> assert false;;
+
 }
 
 (*****************************************************************************)
 
 let NEWLINE = ("\r"|"\n"|"\r\n")
+let hexa = ['0'-'9''a'-'f''A'-'F']
 
 (*****************************************************************************)
 
@@ -167,28 +174,29 @@ rule initial tokinfo prev = parse
   (* Constant *)
   (* ----------------------------------------------------------------------- *)
 
-  | "0x"['a'-'f''A'-'F''0'-'9']+ {
+  | "0x" hexa+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER (s, `Int (int_of_string s), info)
     }
   | '0'['0'-'7']+ {
       let s = tok lexbuf in
+      let s' = String.sub s 1 (String.length s - 1 ) in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER (s, `Int (int_of_string ("0o"^s')), info)
     }
 
   | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER (s, `Float (float_of_string s),info)
     }
 
   | ['0'-'9']+'.'? |
     ['0'-'9']*'.'['0'-'9']+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER (s, `Float (float_of_string s), info)
     }
 
   (* ----------------------------------------------------------------------- *)
