@@ -239,7 +239,7 @@ end) = struct
     done;
     Buffer.contents b
 
-  let regexp_compact s o =
+  let regexp_compact s o = false &&
     not ( s = ""
        || s.[0] = '*'
        || s.[0] = '/'
