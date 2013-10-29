@@ -338,6 +338,8 @@ let parse toks =
         x in
   let lexbuf = Lexing.from_string "" in
   try Js_parser.program lexer_fun lexbuf
-  with Parsing.Parse_error ->
-    let pi = info_of_tok state.current in
-    raise (Parsing_error pi)
+  with
+    | Js_parser.Error
+    | Parsing.Parse_error ->
+      let pi = info_of_tok state.current in
+      raise (Parsing_error pi)

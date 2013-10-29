@@ -176,6 +176,8 @@ statement:
  | throw_statement      { $1 }
  | try_statement        { $1 }
 
+statement_bloc:
+  list(T_VIRTUAL_SEMICOLON) statement {$2}
 
 block:
  | T_LCURLY statement_list T_RCURLY { $2 }
@@ -208,28 +210,28 @@ if_statement:
 
 
 iteration_statement:
- | T_DO statement T_WHILE T_LPAREN expression T_RPAREN semicolon
+ | T_DO statement_bloc T_WHILE T_LPAREN expression T_RPAREN semicolon
      { J.Do_while_statement ($2, $5) }
- | T_WHILE T_LPAREN expression T_RPAREN statement
+ | T_WHILE T_LPAREN expression T_RPAREN statement_bloc
      { J.While_statement ($3, $5) }
  | T_FOR T_LPAREN
      expression_no_in_opt T_SEMICOLON
      expression_opt T_SEMICOLON
      expression_opt
-     T_RPAREN statement
+     T_RPAREN statement_bloc
      { J.For_statement ( J.Left $3, $5, $7, $9, None) }
  | T_FOR T_LPAREN
      T_VAR variable_declaration_list_no_in T_SEMICOLON
      expression_opt T_SEMICOLON
      expression_opt
-     T_RPAREN statement
+     T_RPAREN statement_bloc
      {
        J.For_statement (J.Right($4), $6, $8, $10, None)
      }
- | T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement
+ | T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement_bloc
      { J.ForIn_statement (J.Left $3,$5,$7,None) }
  | T_FOR T_LPAREN T_VAR variable_declaration_no_in T_IN expression T_RPAREN
-     statement
+     statement_bloc
      { J.ForIn_statement ( J.Right $4, $6, $8, None) }
 
 variable_declaration_no_in:
