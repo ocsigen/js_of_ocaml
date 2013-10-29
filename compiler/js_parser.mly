@@ -659,14 +659,15 @@ regex_literal:
  | T_REGEX {
    let s,_ = $1 in
    let len = String.length s in
-   let args =
+   let regexp,option =
      if s.[len - 1] = '/'
-     then [String.sub s 1 (len - 2)]
+     then String.sub s 1 (len - 2),None
      else
        let i = String.rindex s '/' in
-       [String.sub s 1 (i - 1) ; String.sub s (i+1) (len - i - 1)]
+       String.sub s 1 (i - 1),Some (String.sub s (i+1) (len - i - 1))
    in
-   J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) }
+   J.ERegexp (regexp,option) }
+   (* J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) } *)
 
 string_literal:
  | T_STRING { let s,_ = $1 in s}

@@ -131,7 +131,8 @@ class map : mapper = object(m)
   | (EStr _ as x)
   | (EBool _ as x)
   | (ENum _ as x)
-  | (EQuote _ as x) -> x
+  | (EQuote _ as x)
+  | (ERegexp _ as x) -> x
 
 
   method expression_o x = match x with

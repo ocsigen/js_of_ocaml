@@ -89,6 +89,7 @@ and expression =
   | ENum of float
   | EObj of property_name_and_value_list
   | EQuote of string
+  | ERegexp of string * string option
 
 (****)
 

@@ -302,10 +302,8 @@ and string_quote q = parse
 (*****************************************************************************)
 and regexp = parse
   | '/'            { "/" ^ regexp_maybe_ident lexbuf }
-  | '\\' {
-      (* fixme: hack *)
-      let v = string_escape '/' lexbuf in
-      v ^ regexp lexbuf
+  | "\\/" {
+      "\\/" ^ regexp lexbuf
     }
   | (_ as x)       { String.make 1 x^regexp lexbuf}
   | eof { Format.eprintf "LEXER: WIERD end of file in regexp@."; ""}

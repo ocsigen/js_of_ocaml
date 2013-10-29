@@ -181,7 +181,7 @@ end) = struct
         l <= out && need_paren lft e
       | ECall (e, _) | EAccess (e, _) | EDot (e, _) ->
         l <= 15 && need_paren 15 e
-      | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | EUn _ | ENew _ ->
+      | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | ERegexp _| EUn _ | ENew _ ->
         false
       | EFun (_, _) | EObj _ ->
         true
@@ -485,6 +485,12 @@ end) = struct
         property_name_and_value_list f lst;
         PP.string f "}";
         PP.end_group f
+      | ERegexp (s,opt) -> begin
+          PP.string f "/";PP.string f s;PP.string f "/";
+          match opt with
+            | None -> ()
+            | Some o -> PP.string f o
+        end
       | EQuote s ->
         PP.string f "(";
         PP.string f s;
