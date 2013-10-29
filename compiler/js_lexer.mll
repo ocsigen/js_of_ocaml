@@ -267,7 +267,7 @@ rule initial tokinfo prev = parse
 
 and string_quote = parse
   | "'"            { "" }
-  | ('\\' (_ as v)) as x {
+  | ('\\' (_ as v)) {
       (* check char ? *)
       let v = match v with
       | 'b' -> '\b'
@@ -282,7 +282,7 @@ and string_quote = parse
 
 and string_double_quote  = parse
   | '"'            { "" }
-  | ('\\' (_ as v)) as x {
+  | ('\\' (_ as v)) {
       (* check char ? *)
       let v = match v with
       | 'b' -> '\b'
