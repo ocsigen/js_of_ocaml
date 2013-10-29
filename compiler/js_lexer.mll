@@ -263,7 +263,7 @@ rule initial tokinfo prev = parse
   | eof { EOF (tokinfo lexbuf) }
 
   | _ {
-      Printf.eprintf "LEXER:unrecognised symbol, in token rule: %s\n" (tok lexbuf);
+      Format.eprintf "LEXER:unrecognised symbol, in token rule: %s@." (tok lexbuf);
       TUnknown (tokinfo lexbuf)
     }
 (*****************************************************************************)
@@ -297,7 +297,7 @@ and string_quote q = parse
       v ^ string_quote q lexbuf
     }
   | (_ as x)       { String.make 1  x^string_quote q lexbuf}
-  | eof { Printf.eprintf  "LEXER: WIERD end of file in quoted string"; ""}
+  | eof { Format.eprintf  "LEXER: WIERD end of file in quoted string@."; ""}
 
 (*****************************************************************************)
 and regexp = parse
@@ -308,7 +308,7 @@ and regexp = parse
       v ^ regexp lexbuf
     }
   | (_ as x)       { String.make 1 x^regexp lexbuf}
-  | eof { Printf.eprintf "LEXER: WIERD end of file in regexp"; ""}
+  | eof { Format.eprintf "LEXER: WIERD end of file in regexp@."; ""}
 
 and regexp_maybe_ident = parse
   | ['A'-'Z''a'-'z']* { tok lexbuf }
@@ -322,10 +322,10 @@ and st_comment = parse
   | [^'*']+ { let s = tok lexbuf in s ^ st_comment lexbuf }
   | "*"     { let s = tok lexbuf in s ^ st_comment lexbuf }
 
-  | eof { Printf.eprintf "LEXER: end of file in comment"; "*/"}
+  | eof { Format.eprintf "LEXER: end of file in comment@."; "*/"}
   | _  {
       let s = tok lexbuf in
-      Printf.eprintf "LEXER: unrecognised symbol in comment: %s\n" s;
+      Format.eprintf "LEXER: unrecognised symbol in comment: %s@." s;
       s ^ st_comment lexbuf
     }
 
@@ -341,8 +341,8 @@ and st_one_line_comment = parse
 
       tok lexbuf }
 
-  | eof { Printf.eprintf "LEXER: end of file in comment"; "\n" }
+  | eof { Format.eprintf "LEXER: end of file in comment@."; "\n" }
   | _ {
-      Printf.eprintf "LEXER:unrecognised symbol, in st_one_line_comment rule: %s " (tok lexbuf);
+      Format.eprintf "LEXER:unrecognised symbol, in st_one_line_comment rule: %s@." (tok lexbuf);
       tok lexbuf
     }

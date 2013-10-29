@@ -19,7 +19,7 @@
 
 
 let error k = Format.ksprintf (fun s ->
-    Printf.eprintf "%s\n" s;
+    Format.eprintf "%s" s;
     exit 1
   ) k
 
@@ -86,7 +86,8 @@ let _ =
 
   let p = List.flatten (List.map (fun file ->
     let lex = Parse_js.lexer_from_file file in
-    Parse_js.parse lex) !js_files) in
+    try Parse_js.parse lex with Parsing_error pi ->
+      error "error at l:%d col:%d" pi.Parse_info.line pi.Parse_info.col) !js_files) in
 
 
   let p = (new Js_traverse.rename_str Util.StringSet.empty)#program p in

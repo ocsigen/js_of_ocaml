@@ -31,7 +31,6 @@ rule initial = parse
   | "mutator" {TAnnot `Mutator }
   | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''0'-'9']* {
       let x = Lexing.lexeme lexbuf in
-      (* Printf.eprintf "%S\n" x; *)
       TIdent x}
   | "," {TComma}
   | ":" {TSemi}

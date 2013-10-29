@@ -307,10 +307,10 @@ let program p =
   let g = coloring#global in
   if S.cardinal (coloring#get_free) <> 0
   then begin
-    (Printf.eprintf "some variables escaped: it should not append (#%d):\n"
+    (Format.eprintf "some variables escaped: it should not append (#%d)@."
        (S.cardinal (coloring#get_free)));
     failwith "This is probably a bug."
-    (* S.iter(fun s -> (Printf.eprintf "%s\n" (Code.Var.to_string s))) coloring#get_free *)
+    (* S.iter(fun s -> (Format.eprintf "%s@." (Code.Var.to_string s))) coloring#get_free *)
   end;
   if Option.Optim.shortvar () then begin
     let name = allocate_variables g in

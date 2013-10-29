@@ -319,6 +319,8 @@ let lexer_from_list x =
     | [] -> raise (Invalid_argument "lexer_from_list; empty list") in
   adjust_tokens l
 
+exception Parsing_error of Parse_info.t
+
 let parse toks =
   let state = {
     rest = toks;
@@ -338,4 +340,4 @@ let parse toks =
   try Js_parser.program lexer_fun lexbuf
   with Parsing.Parse_error ->
     let pi = info_of_tok state.current in
-    failwith (Printf.sprintf "error at l:%d col:%d\n" pi.Parse_info.line pi.Parse_info.col)
+    raise (Parsing_error pi)

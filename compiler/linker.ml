@@ -26,12 +26,11 @@ let parse_annot loc s =
   try Some (Annot_parser.annot Annot_lexer.initial buf) with
     | Not_found -> None
     | exc ->
-    (* Printf.eprintf "Not found for %s : %s \n" (Printexc.to_string exc) s; *)
+    (* Format.eprintf "Not found for %s : %s @." (Printexc.to_string exc) s; *)
     None
 
-let error _ s =
-  Format.eprintf "error: %s@." s;
-  exit 1
+let error s =
+  Format.kprintf (fun s -> Format.eprintf "error: %s" s; exit 1) s
 
 let debug l =
   match l with
@@ -97,11 +96,9 @@ let parse_file f =
         | None -> f
     with
       | Not_found ->
-        Format.eprintf "%s: cannot find file '%s'. @." Sys.argv.(0) f;
-        exit 1
+        error "cannot find file '%s'. @." f
       | Sys_error s ->
-        Format.eprintf "%s: %s@." Sys.argv.(0) s;
-        exit 1
+        error "%s@." s
   in
 
   let lex = Parse_js.lexer_from_file ~rm_comment:false file in
@@ -130,10 +127,9 @@ let parse_file f =
     let lex = Parse_js.lexer_from_list code in
     try
       annot,Parse_js.parse lex
-    with _ ->
-      let i = Parse_js.info_of_tok (List.hd code) in
-      Printf.eprintf "cannot parse file %s from l:%d, c:%d\n" f i.Parse_info.line i.Parse_info.col;
-      error 0 "merde") lexs in
+    with Parse_js.Parsing_error pi ->
+      error "cannot parse file %s from l:%d, c:%d@." f pi.Parse_info.line pi.Parse_info.col)
+    lexs in
   res
 
 let last_code_id = ref 0
@@ -169,13 +165,13 @@ let rec resolve_dep visited path nm =
     try
       Hashtbl.find provided nm
     with Not_found ->
-      error 0 (Format.sprintf "missing dependency '%s'@." nm)
+      error "missing dependency '%s'@." nm
   in
   resolve_dep_rec visited path id
 
 and resolve_dep_rec visited path id =
   if IntSet.mem id visited.ids then begin
-(*    if List.memq id path then error loc "circular dependency";*)
+(*    if List.memq id path then error  "circular dependency";*)
     visited
   end else begin
     let visited = { visited with ids = IntSet.add id visited.ids } in

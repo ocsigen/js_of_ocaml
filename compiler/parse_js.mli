@@ -22,6 +22,8 @@
 
 type lexer
 
+exception Parsing_error of Parse_info.t
+
 val is_comment : Js_parser.token -> bool
 val strip_comment : lexer -> lexer
 

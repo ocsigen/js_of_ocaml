@@ -54,11 +54,8 @@ module Line_info = struct
     let acc,line,pos =
       if t.acc_pos <= pos
       then
-        (* let () = Printf.printf "current pos: %d   line: %d\n" t.acc_pos t.acc_line in *)
         compute t.lines t.acc_pos t.acc_line (pos - t.acc_pos)
       else
-        (* let () = Printf.printf "acc:%d < %d\n" t.acc_pos pos in *)
-        (* let () = assert false in *)
         compute t.lines 0 0 pos
     in
     t.acc_pos <- acc;
