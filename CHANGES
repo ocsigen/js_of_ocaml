@@ -29,7 +29,7 @@
  ** Add Application Cache (by Marc Simon)
  ** Compile native syntax extension (by Hugo Heuzard)
  ** Add a javascript parser (extracted from facebook/pfff)
-   (to be use later)
+ ** parsing and minifying external javascript file (ie: runtime)(by Hugo Heuzard)
 
  * BugFixes
  ** Compiler: js file is not create in case of error (by Hugo Heuzard)
