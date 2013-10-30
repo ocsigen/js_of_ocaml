@@ -19,7 +19,7 @@
 
 
 let error k = Format.ksprintf (fun s ->
-    Format.eprintf "%s" s;
+    Format.eprintf "%s@." s;
     exit 1
   ) k
 
@@ -91,8 +91,10 @@ let _ =
 
 
   let p = (new Js_traverse.rename_str Util.StringSet.empty)#program p in
+  let p = (new Js_traverse.compact_vardecl)#program p in
   let p = (new Js_traverse.clean)#program p in
   let to_string = Js_assign.program p in
+
   Js_output.program pp (fun _ -> None) to_string p;
 
 
