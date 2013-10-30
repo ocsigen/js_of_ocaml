@@ -84,14 +84,16 @@ rule initial tokinfo prev = parse
   (* ----------------------------------------------------------------------- *)
   | "/*" {
       let info = tokinfo lexbuf in
-      let com = st_comment lexbuf in
-      TComment(info,com)
+      let buf = Buffer.create 127 in
+      st_comment buf lexbuf;
+      TComment(info,Buffer.contents buf)
     }
 
   | "//" {
       let info = tokinfo lexbuf in
-      let com = st_one_line_comment lexbuf in
-      TComment(info,com)
+      let buf = Buffer.create 127 in
+      st_one_line_comment buf lexbuf;
+      TComment(info,Buffer.contents buf)
     }
 
   | [' ' '\t' ]+            { TCommentSpace(tokinfo lexbuf,"") }
@@ -204,7 +206,9 @@ rule initial tokinfo prev = parse
   (* ----------------------------------------------------------------------- *)
   | ("'"|'"') as quote {
       let info = tokinfo lexbuf in
-      let s = string_quote quote lexbuf in
+      let buf = Buffer.create 127 in
+      string_quote quote buf lexbuf;
+      let s = Buffer.contents buf in
       (* s does not contain the enclosing "'" but the info does *)
       T_STRING (s, info)
     }
@@ -248,8 +252,10 @@ rule initial tokinfo prev = parse
           T_DIV (info);
       | _ ->
           (* raise (Token t); *)
-          let s = regexp lexbuf in
-          T_REGEX ("/" ^ s, info)
+          let buf = Buffer.create 127 in
+          Buffer.add_char buf '/';
+          regexp buf lexbuf;
+          T_REGEX (Buffer.contents buf, info)
     }
 
   (* ----------------------------------------------------------------------- *)
@@ -268,79 +274,93 @@ rule initial tokinfo prev = parse
     }
 (*****************************************************************************)
 
-and string_escape quote = parse
-  | 'b' { "\b" }
-  | 't' { "\t" }
-  | 'n' { "\n" }
-  | 'f' { "\012" }
-  | 'r' { "\r" }
-  | '\\'{ "\\" }
+and string_escape quote buf = parse
+  | 'b' { Buffer.add_char buf '\b' }
+  | 't' { Buffer.add_char buf '\t' }
+  | 'n' { Buffer.add_char buf '\n' }
+  | 'f' { Buffer.add_char buf '\012' }
+  | 'r' { Buffer.add_char buf '\r' }
+  | '\\'{ Buffer.add_char buf '\\' }
   | 'x' (hexa as a) (hexa as b)
     { let code = hexa_to_int a * 16 + hexa_to_int b in
-      String.make 1 (Char.chr code) }
-  | '0' { "\000" }
-  | 'u' hexa hexa hexa hexa { "\\"^Lexing.lexeme lexbuf }
+      if code > 127
+      then
+        let c1 = code lsr 6 + 0xC0
+        and c2 = code land 0x3f + 0x80 in
+        Buffer.add_char buf (Char.chr c1);
+        Buffer.add_char buf (Char.chr c2)
+      else Buffer.add_char buf (Char.chr code) }
+  | '0' { Buffer.add_char buf '\000' }
+  | 'u' hexa hexa hexa hexa {
+      Buffer.add_char buf '\\';
+      Buffer.add_string buf (Lexing.lexeme lexbuf) }
   | (_ as c)
     { if c = quote
-      then String.make 1 quote
-      else String.make 1 c }
+      then Buffer.add_char buf quote
+      else (
+        Format.eprintf  "LEXER: WIERD escaped char: %c@." c;
+        Buffer.add_char buf c
+      ) }
 
 
 
-and string_quote q = parse
+and string_quote q buf = parse
   | ("'"|'"') as q' {
     if q = q'
-    then ""
-    else String.make 1 q' ^ string_quote q lexbuf }
+    then ()
+    else (Buffer.add_char buf q'; string_quote q buf lexbuf) }
   | '\\' {
-      let v = string_escape q lexbuf in
-      v ^ string_quote q lexbuf
+      string_escape q buf lexbuf;
+      string_quote q buf lexbuf
     }
-  | (_ as x)       { String.make 1  x^string_quote q lexbuf}
-  | eof { Format.eprintf  "LEXER: WIERD end of file in quoted string@."; ""}
+  | (_ as x)       { Buffer.add_char buf x; string_quote q buf lexbuf }
+  | eof { Format.eprintf  "LEXER: WIERD end of file in quoted string@."; ()}
 
 (*****************************************************************************)
-and regexp = parse
-  | '/'            { "/" ^ regexp_maybe_ident lexbuf }
+and regexp buf = parse
+  | '/'            { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
   | ("\\/"|"\\\\") as x {
-      x ^ regexp lexbuf
+      Buffer.add_string buf x;
+      regexp buf lexbuf
     }
-  | (_ as x)       { String.make 1 x^regexp lexbuf}
-  | eof { Format.eprintf "LEXER: WIERD end of file in regexp@."; ""}
+  | (_ as x)       { Buffer.add_char buf x; regexp buf lexbuf}
+  | eof { Format.eprintf "LEXER: WIERD end of file in regexp@."; ()}
 
-and regexp_maybe_ident = parse
-  | ['A'-'Z''a'-'z']* { tok lexbuf }
+and regexp_maybe_ident buf = parse
+  | ['A'-'Z''a'-'z']* { Buffer.add_string buf (tok lexbuf) }
 
 (*****************************************************************************)
 
-and st_comment = parse
-  | "*/" { tok lexbuf }
+and st_comment buf = parse
+  | "*/" { Buffer.add_string buf (tok lexbuf) }
 
   (* noteopti: *)
-  | [^'*']+ { let s = tok lexbuf in s ^ st_comment lexbuf }
-  | "*"     { let s = tok lexbuf in s ^ st_comment lexbuf }
+  | [^'*']+ { Buffer.add_string buf (tok lexbuf);st_comment buf lexbuf }
+  | '*'     { Buffer.add_char buf '*';st_comment buf lexbuf }
 
-  | eof { Format.eprintf "LEXER: end of file in comment@."; "*/"}
+  | eof { Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "*/"}
   | _  {
       let s = tok lexbuf in
       Format.eprintf "LEXER: unrecognised symbol in comment: %s@." s;
-      s ^ st_comment lexbuf
+      Buffer.add_string buf s;
+      st_comment buf lexbuf
     }
 
-and st_one_line_comment = parse
+and st_one_line_comment buf = parse
   | [^'\n' '\r']* {
-      let s = tok lexbuf in
-      s ^ st_one_line_comment lexbuf
+      Buffer.add_string buf (tok lexbuf);
+      st_one_line_comment buf lexbuf
     }
 
   | NEWLINE {
       lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with
                                       Lexing.pos_lnum = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum + 1 };
 
-      tok lexbuf }
+      Buffer.add_string buf (tok lexbuf); }
 
-  | eof { Format.eprintf "LEXER: end of file in comment@."; "\n" }
+  | eof { Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "\n" }
   | _ {
-      Format.eprintf "LEXER:unrecognised symbol, in st_one_line_comment rule: %s@." (tok lexbuf);
-      tok lexbuf
+      let other = tok lexbuf in
+      Format.eprintf "LEXER:unrecognised symbol, in st_one_line_comment rule: %s@." other;
+      Buffer.add_string buf other
     }
