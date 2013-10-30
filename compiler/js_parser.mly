@@ -467,7 +467,7 @@ primary_expression_no_statement:
  | null_literal    { J.EVar (var "null") }
  | boolean_literal { J.EBool $1 }
  | numeric_literal { J.ENum $1 }
- | string_literal  { J.EStr ($1, `Bytes) }
+ | string_literal  { J.EStr ($1, `Utf8) }
  /*(* marcel: this isn't an expansion of literal in ECMA-262... mistake? *)*/
  | regex_literal                { $1 }
  | array_literal                { $1 }
