@@ -302,8 +302,8 @@ and string_quote q = parse
 (*****************************************************************************)
 and regexp = parse
   | '/'            { "/" ^ regexp_maybe_ident lexbuf }
-  | "\\/" {
-      "\\/" ^ regexp lexbuf
+  | ("\\/"|"\\\\") as x {
+      x ^ regexp lexbuf
     }
   | (_ as x)       { String.make 1 x^regexp lexbuf}
   | eof { Format.eprintf "LEXER: WIERD end of file in regexp@."; ""}
