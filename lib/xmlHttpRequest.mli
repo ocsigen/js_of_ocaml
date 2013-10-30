@@ -47,6 +47,11 @@ class type xmlHttpRequest = object ('self)
 
   inherit File.progressEventTarget
   method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
+  method upload : xmlHttpRequestUpload t optdef readonly_prop
+end
+
+and xmlHttpRequestUpload = object ('self)
+  inherit File.progressEventTarget
 end
 
 val create : unit -> xmlHttpRequest t
@@ -90,6 +95,8 @@ val perform_raw_url :
   -> ?get_args:((string * string) list)  (* [] *)
   -> ?form_arg:Form.form_contents
   -> ?check_headers:(int -> (string -> string option) -> bool)
+  -> ?progress:(int -> int -> unit)
+  -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> string
   -> http_frame Lwt.t
