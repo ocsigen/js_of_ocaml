@@ -29,7 +29,7 @@ let debug = Option.Debug.find "parser"
 
 let blocks = ref AddrSet.empty
 
-type debug_loc = int -> (string * int * int * int) option
+type debug_loc = Javascript.loc -> Parse_info.t option
 
 let add_jump info pc = blocks := AddrSet.add pc !blocks
 
@@ -214,8 +214,11 @@ module Debug = struct
       let ev = Hashtbl.find events_by_pc pc in
       let loc = ev.ev_loc in
       let pos = loc.li_start in
-      Some (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol,
-            loc.li_end.pos_cnum - loc.li_end.pos_bol)
+      Some {Parse_info.name = pos.pos_fname;
+            line=pos.pos_lnum;
+            col=pos.pos_cnum - pos.pos_bol;
+            (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
+            idx=0}
     with Not_found ->
       None
 

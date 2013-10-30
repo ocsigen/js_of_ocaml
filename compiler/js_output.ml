@@ -45,10 +45,13 @@ end) = struct
         | None -> ()
         | Some pc ->
           match D.debug_info pc with
-            | Some (file, l, s, e) ->
+            | Some {
+              Parse_info.name=file;
+              line=l;
+              col=s } ->
               PP.string f "/*";
-              PP.string f (Format.sprintf "<<%d: %s %d %d %d>>"
-                             pc file l s e);
+              PP.string f (Format.sprintf "<<%d: %s %d %d>>"
+                             pc file l s);
               PP.string f "*/"
             | None -> ()
 

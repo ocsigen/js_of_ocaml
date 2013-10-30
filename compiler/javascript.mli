@@ -26,7 +26,8 @@ module Label : sig
   val of_string : string -> t
 end
 
-type node_pc = int option
+type loc = Code.addr
+type node_pc = loc option
 
 (* A.3 Expressions *)
 

@@ -46,10 +46,10 @@ js_assign.cmx : util.cmx option.cmx js_traverse.cmx javascript.cmx code.cmx \
     js_assign.cmi
 js_lexer.cmo : js_parser.cmi
 js_lexer.cmx : js_parser.cmx
-js_output.cmo : pretty_print.cmi parse_bytecode.cmi option.cmo \
-    javascript.cmi code.cmi js_output.cmi
-js_output.cmx : pretty_print.cmx parse_bytecode.cmx option.cmx \
-    javascript.cmx code.cmx js_output.cmi
+js_output.cmo : pretty_print.cmi parse_info.cmi parse_bytecode.cmi \
+    option.cmo javascript.cmi code.cmi js_output.cmi
+js_output.cmx : pretty_print.cmx parse_info.cmx parse_bytecode.cmx \
+    option.cmx javascript.cmx code.cmx js_output.cmi
 js_parser.cmo : parse_info.cmi javascript.cmi js_parser.cmi
 js_parser.cmx : parse_info.cmx javascript.cmx js_parser.cmi
 js_rename.cmo : util.cmi javascript.cmi
@@ -62,16 +62,16 @@ linker.cmo : util.cmi primitive.cmi parse_js.cmi parse_info.cmi \
     js_parser.cmi javascript.cmi annot_parser.cmi annot_lexer.cmo linker.cmi
 linker.cmx : util.cmx primitive.cmx parse_js.cmx parse_info.cmx \
     js_parser.cmx javascript.cmx annot_parser.cmx annot_lexer.cmx linker.cmi
-minify.cmo : util.cmi pretty_print.cmi parse_js.cmi option.cmo \
-    js_traverse.cmi js_parser.cmi js_output.cmi js_assign.cmi
-minify.cmx : util.cmx pretty_print.cmx parse_js.cmx option.cmx \
-    js_traverse.cmx js_parser.cmx js_output.cmx js_assign.cmx
+minify.cmo : util.cmi pretty_print.cmi parse_js.cmi parse_info.cmi \
+    option.cmo js_traverse.cmi js_output.cmi js_assign.cmi
+minify.cmx : util.cmx pretty_print.cmx parse_js.cmx parse_info.cmx \
+    option.cmx js_traverse.cmx js_output.cmx js_assign.cmx
 option.cmo :
 option.cmx :
-parse_bytecode.cmo : util.cmi primitive.cmi option.cmo instr.cmi code.cmi \
-    parse_bytecode.cmi
-parse_bytecode.cmx : util.cmx primitive.cmx option.cmx instr.cmx code.cmx \
-    parse_bytecode.cmi
+parse_bytecode.cmo : util.cmi primitive.cmi parse_info.cmi option.cmo \
+    javascript.cmi instr.cmi code.cmi parse_bytecode.cmi
+parse_bytecode.cmx : util.cmx primitive.cmx parse_info.cmx option.cmx \
+    javascript.cmx instr.cmx code.cmx parse_bytecode.cmi
 parse_info.cmo : parse_info.cmi
 parse_info.cmx : parse_info.cmi
 parse_js.cmo : parse_info.cmi js_parser.cmi js_lexer.cmo parse_js.cmi
@@ -118,7 +118,7 @@ js_parser.cmi : parse_info.cmi javascript.cmi
 js_simpl.cmi : javascript.cmi code.cmi
 js_traverse.cmi : util.cmi javascript.cmi code.cmi
 linker.cmi : util.cmi javascript.cmi
-parse_bytecode.cmi : code.cmi
+parse_bytecode.cmi : parse_info.cmi javascript.cmi code.cmi
 parse_info.cmi :
 parse_js.cmi : parse_info.cmi js_parser.cmi javascript.cmi
 phisimpl.cmi : code.cmi

@@ -37,7 +37,8 @@ module Label = struct
   let of_string s = S s
 end
 
-type node_pc = int option
+type loc = Code.addr
+type node_pc = loc option
 
 type identifier = string
 
