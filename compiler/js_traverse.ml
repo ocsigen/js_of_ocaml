@@ -68,7 +68,7 @@ class map : mapper = object(m)
   | ForIn_statement(e1,e2,s,nid) ->
     let e1 = match e1 with
       | Left e -> Left(m#expression e)
-      | Right ((id,e)) -> Right ((id,m#expression_o e)) in
+      | Right ((id,e)) -> Right ((m#ident id,m#expression_o e)) in
     ForIn_statement(
       e1,
       m#expression e2,
