@@ -72,6 +72,3 @@ module Optim = struct
   let compact_vardecl = o ~name:"vardecl" ~default:true
 
 end
-let is_toplevel_ = ref false
-let set_toplevel () = is_toplevel_ := true
-let is_toplevel () = !is_toplevel_

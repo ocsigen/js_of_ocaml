@@ -1557,7 +1557,7 @@ let match_exn_traps ((_, blocks, _) as p) =
 
 (****)
 
-let parse_bytecode code state standalone_info =
+let parse_bytecode ?(toplevel=false) code state standalone_info =
   Code.Var.reset ();
   analyse_blocks code;
   compile_block code 0 state;
@@ -1611,7 +1611,7 @@ let parse_bytecode code state standalone_info =
           | _ ->
               ()
         done;
-        if Option.is_toplevel () then begin
+        if toplevel then begin
           (* Include linking information *)
           let toc =
             [("SYMB", Obj.repr symb); ("CRCS", crcs); ("PRIM", Obj.repr prim)]
@@ -1748,7 +1748,7 @@ let fix_min_max_int code =
 
 (****)
 
-let from_channel ~paths ic =
+let from_channel ?(toplevel=false) ~paths ic =
   let toc = read_toc ic in
   let primitives = read_primitive_table toc ic in
   let code_size = seek_section toc ic "CODE" in
@@ -1769,7 +1769,7 @@ let from_channel ~paths ic =
   end;
 
   let globals = make_globals (Array.length init_data) init_data primitives in
-  if Option.is_toplevel() then begin
+  if toplevel then begin
     Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
     (* @vouillon: *)
     (* we should then use the -linkalloption to build the toplevel. *)
@@ -1792,10 +1792,10 @@ let from_channel ~paths ic =
   let prim = String.create len in
   really_input ic prim 0 len;
 
-  parse_bytecode code state (Some (symbols, crcs, prim, paths))
+  parse_bytecode ~toplevel code state (Some (symbols, crcs, prim, paths))
 
 (* As input: list of primitives + size of global table *)
-let from_string primitives code =
+let from_string ?toplevel primitives code =
   let globals = make_globals 0 [||] primitives in
   let state = State.initial globals in
-  parse_bytecode code state None
+  parse_bytecode ?toplevel code state None

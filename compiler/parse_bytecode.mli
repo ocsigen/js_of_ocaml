@@ -20,6 +20,6 @@
 
 type debug_loc = int -> (string * int * int * int) option
 
-val from_channel : paths:string list -> in_channel -> Code.program * debug_loc
+val from_channel : ?toplevel:bool -> paths:string list -> in_channel -> Code.program * debug_loc
 
-val from_string : string array -> string -> Code.program * debug_loc
+val from_string : ?toplevel:bool -> string array -> string -> Code.program * debug_loc
