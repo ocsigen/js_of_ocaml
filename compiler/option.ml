@@ -69,6 +69,6 @@ module Optim = struct
   let inline =     o ~name:"inline" ~default:true
   let staticeval = o ~name:"staticeval" ~default:true
   let constant =   o ~name:"constant" ~default:true
-  let compact_vardecl = o ~name:"vardecl" ~default:true
+  let compact_vardecl = o ~name:"vardecl" ~default:false
 
 end
