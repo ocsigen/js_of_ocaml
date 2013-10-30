@@ -74,7 +74,7 @@ let _ =
      ("-linkall", Arg.Set linkall, " link all primitives");
      ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
       " do not include the standard runtime");
-     ("-toplevel", Arg.Unit Parse_bytecode.build_toplevel,
+     ("-toplevel", Arg.Unit Option.set_toplevel,
       " compile a toplevel");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");

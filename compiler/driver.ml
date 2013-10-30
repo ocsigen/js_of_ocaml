@@ -215,14 +215,18 @@ let link formatter ~standalone ?linkall js =
     end
   else js
 
-let optimize_var js =
+let optimize_var ?(linkall=false) js =
   if times ()
   then Format.eprintf "Start Optimizing...@.";
   let js = (new Js_traverse.clean)#program js in
   let js =
     if (Option.Optim.shortvar ())
     then
-      let keeps = StringSet.singleton "caml_get_global_data" in
+      let keeps =
+        if linkall || Option.is_toplevel ()
+        then Primitive.get_external ()
+        else StringSet.empty in
+      let keeps = StringSet.add "caml_get_global_data" keeps in
       (new Js_traverse.rename_str keeps)#program js
     else js in
   let js =
@@ -265,7 +269,7 @@ let f ?(standalone=true) ?linkall formatter d =
   link formatter ~standalone ?linkall >>
 
   pack ~standalone >>
-  optimize_var >>
+  optimize_var ?linkall >>
 
   coloring >>
 

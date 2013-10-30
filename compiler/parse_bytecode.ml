@@ -1557,10 +1557,6 @@ let match_exn_traps ((_, blocks, _) as p) =
 
 (****)
 
-let is_toplevel = ref false
-
-let build_toplevel () = is_toplevel := true
-
 let parse_bytecode code state standalone_info =
   Code.Var.reset ();
   analyse_blocks code;
@@ -1615,7 +1611,7 @@ let parse_bytecode code state standalone_info =
           | _ ->
               ()
         done;
-        if !is_toplevel then begin
+        if Option.is_toplevel () then begin
           (* Include linking information *)
           let toc =
             [("SYMB", Obj.repr symb); ("CRCS", crcs); ("PRIM", Obj.repr prim)]
@@ -1773,7 +1769,7 @@ let from_channel ~paths ic =
   end;
 
   let globals = make_globals (Array.length init_data) init_data primitives in
-  if !is_toplevel then begin
+  if Option.is_toplevel() then begin
     Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
     (* @vouillon: *)
     (* we should then use the -linkalloption to build the toplevel. *)
