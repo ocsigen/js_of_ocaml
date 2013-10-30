@@ -423,17 +423,50 @@ class compact_vardecl = object(m)
       let all = StringSet.fold (fun e acc -> IdentSet.add (S e) acc) from#state.def_name all in
       insert_ <- IdentSet.diff all from#exc
 
+    method private split x =
+      let rec loop = function
+        | ESeq(e1,e2) -> loop e1 @ loop e2
+        | e -> [e] in
+      loop x
+
+    method private pack all sources =
+      let may_flush rem vars s instr =
+        if vars = []
+        then rem,[],s::instr
+        else rem,[],s::Statement (Variable_statement (List.rev vars))::instr in
+
+      let rem,vars,instr = List.fold_left (fun (rem,vars,instr) s ->
+        match s with
+          | Statement (Expression_statement (e,nid)) -> begin
+            let l = m#split e in
+            List.fold_left (fun (rem,vars,instr) e -> match e with
+              | EBin(Eq,EVar id,exp) when IdentSet.mem id rem ->
+                (IdentSet.remove id rem,(id,Some exp)::vars,instr)
+              | x -> may_flush rem vars (Statement(Expression_statement (x,nid))) instr)
+              (rem,vars,instr) l
+          end
+          | Statement _ as s -> may_flush rem vars s instr
+          | Function_declaration _ as x -> (rem,vars,x::instr)
+      ) (all,[],[]) sources in
+      let instr = match vars with
+        | [] -> (List.rev instr)
+        | d ->
+          let d = Statement (Variable_statement (List.rev d)) in
+          List.rev (d::instr) in
+      let l = IdentSet.fold (fun x acc -> (x,None)::acc) rem [] in
+      match l,instr with
+        | [],_ -> instr
+        | l, (Statement (Variable_statement l')::rest) -> Statement (Variable_statement (List.rev_append l l')) :: rest
+        | l,_ -> (Statement (Variable_statement l))::instr
+
     method source x =
       let x = super#source x in
       match x with
         | Function_declaration (id,params, body, nid) ->
           let all = IdentSet.diff insert_ exc_ in
-          let d = IdentSet.fold (fun x acc ->
-              assert (not (List.mem x params));
-              (x,None)::acc) all [] in
-          let d = Statement (Variable_statement d) in
+          let body = m#pack all body in
           m#except id;
-          Function_declaration (id,params, d::body, nid)
+          Function_declaration (id,params, body, nid)
         | _ -> x
 
     method expression x =
@@ -441,16 +474,25 @@ class compact_vardecl = object(m)
       match x with
         | EFun ((ident,params,body),nid) ->
           let all = IdentSet.diff insert_ exc_ in
-          let d = IdentSet.fold (fun x acc -> (x,None)::acc) all [] in
-          let d = Statement (Variable_statement d) in
+          let body = m#pack all body in
           (match ident with
             | Some id -> m#except id;
             | None -> ());
-          EFun ((ident,params,d::body),nid)
+          EFun ((ident,params,body),nid)
         | _ -> x
 
-end
+    method statements l =
+      let l = super#statements l in
+      let l = List.fold_left (fun acc x ->
+        match x with
+          | Expression_statement (e,nid) ->
+            let l = m#split e in
+            let l = List.fold_left (fun acc e -> Expression_statement (e,nid)::acc) acc l in
+            l
+          | x -> x::acc) [] l in
+      List.rev l
 
+end
 
 class clean = object(m)
   inherit map as super
