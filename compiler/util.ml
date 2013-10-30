@@ -79,6 +79,20 @@ let filter_map f l =
     | None -> acc) [] l
   in List.rev l
 
+let rec take acc n l =
+  if n = 0
+  then acc,l
+  else match l with
+    | [] -> acc,[]
+    | x::xs -> take (x::acc) (pred n) xs
+let rec partition_aux n acc l =
+  let l',res = take [] n l in
+  match res with
+    | [] -> l'::acc
+    | l -> partition_aux n (l'::acc) l
+
+let partition n l = partition_aux n [] l
+
 module Timer = struct
   type t = float
   let timer = ref (fun _ -> 0.)

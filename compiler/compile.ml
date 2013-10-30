@@ -67,6 +67,8 @@ let _ =
     [("-debug", Arg.String Option.Debug.set, "<name> debug module <name>");
      ("-disable",
       Arg.String Option.Optim.disable, "<name> disable optimization <name>");
+     ("-enable",
+      Arg.String Option.Optim.enable, "<name> enable optimization <name>");
      ("-pretty", Arg.Unit (fun () -> Option.Optim.enable "pretty"), " pretty print the output");
      ("-debuginfo", Arg.Unit (fun () -> Option.Optim.enable "debuginfo"), " output debug info");
      ("-opt", Arg.Int Driver.set_profile, "<oN> set optimization profile : o1 (default), o2, o3");
