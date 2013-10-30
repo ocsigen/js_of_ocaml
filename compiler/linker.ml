@@ -118,9 +118,7 @@ let parse_file f =
           | `Annot (annot) -> `Code(annot,[c]),lexs
   ) (`Annot [],[]) lex in
   let lexs = match status with
-    | `Annot [] -> lexs
-    | `Annot _ -> assert false
-    | `Code([],_) -> assert false
+    | `Annot _ -> lexs
     | `Code(annot,code) -> (List.rev annot,List.rev code)::lexs in
 
   let res = List.rev_map (fun (annot,code) ->
