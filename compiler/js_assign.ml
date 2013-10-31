@@ -115,24 +115,20 @@ let first_available l =
 let mark_allocated l i = List.iter (fun a -> allocate a i) l
 
 type g = {
-  weight : int array;        (* Number of occurrences of each variable *)
   constr : alloc list array; (* Constraints on variables *)
   mutable parameters : Var.t list array; (* Function parameters *)
   mutable constraints : S.t list }     (* For debugging *)
 
-let bump_weight t i =
-  let idx = Code.Var.idx i in
-  let weight = t.weight in
-  weight.(idx) <- weight.(idx) + 1
-
-let create () =
-  let nv = Code.Var.count () in
-  { weight = Array.create nv 0;
-    constr = Array.create nv [];
+let create nv =
+  { constr = Array.create nv [];
     parameters = [|[]|];
     constraints = [] }
 
-let output_debug_information t =
+let output_debug_information t count =
+
+
+  let weight v = (IdentMap.find (V v) count) in
+
   let usage =
     List.fold_left
       (fun u s ->
@@ -147,7 +143,7 @@ let output_debug_information t =
   let ch = open_out "/tmp/weights.txt" in
   List.iter
     (fun v ->
-       Printf.fprintf ch "%d / %d / %d\n" (t.weight.(Code.Var.idx v))
+       Printf.fprintf ch "%d / %d / %d\n" (weight v)
          (VM.find v usage) (Code.Var.idx v))
     l;
   close_out ch;
@@ -158,7 +154,7 @@ let output_debug_information t =
   Printf.fprintf ch "  ";
   for i = 0 to Array.length a - 1 do
     let v = a.(i) in
-    let w = t.weight.(Code.Var.idx v) in
+    let w = weight v in
     if i > 0 then Printf.fprintf ch " + ";
     Printf.fprintf ch "%d x%d" w (Code.Var.idx v)
   done;
@@ -183,7 +179,7 @@ let output_debug_information t =
 
   let ch = open_out "/tmp/problem2" in
   let var x = string_of_int (Code.Var.idx x) in
-  let a = List.map (fun v -> (var v, t.weight.(Code.Var.idx v))) l in
+  let a = List.map (fun v -> (var v, weight v)) l in
   let b =
     List.map (fun s -> List.map var (S.elements s)) t.constraints in
   let c = List.map var l in
@@ -191,15 +187,15 @@ let output_debug_information t =
     ((a, b, c) : (string * int) list * string list list * string list);
   close_out ch
 
-let allocate_variables t =
-  let weight = t.weight in
+let allocate_variables t nv count =
+  let weight v = try IdentMap.find (V (Code.Var.of_idx v)) count with Not_found -> 0 in
   let constr = t.constr in
-  let len = Array.length weight in
+  let len = nv in
   let idx = Array.make len 0 in
   for i = 0 to len - 1 do
     idx.(i) <- i
   done;
-  Array.stable_sort (fun i j -> compare weight.(j) weight.(i)) idx;
+  Array.stable_sort (fun i j -> compare (weight j) (weight i)) idx;
   let name = Array.make len "" in
   let n0 = ref 0 in
   let n1 = ref 0 in
@@ -207,8 +203,8 @@ let allocate_variables t =
   let n3 = ref 0 in
   let stats i n =
     incr n0;
-    if n < 54 then begin incr n1; n2 := !n2 + weight.(i) end;
-    n3 := !n3 + weight.(i)
+    if n < 54 then begin incr n1; n2 := !n2 + (weight i) end;
+    n3 := !n3 + (weight i)
   in
   let nm ~origin n =
     name.(origin) <- Var.to_string ~origin:(Var.of_idx origin) (Var.of_idx n) in
@@ -240,7 +236,7 @@ let allocate_variables t =
       mark_allocated l n;
       stats idx n
     end;
-    if l = [] then assert (weight.(idx.(i)) = 0);
+    if l = [] then assert (weight (idx.(i)) = 0);
   done;
   if debug () then begin
     Format.eprintf "short variable count: %d/%d@." !n1 !n0;
@@ -278,20 +274,6 @@ class ['state] color (state : 'state) = object(m)
     global_.constraints <- u :: global_.constraints
   end
 
-  method use_var x =
-    begin match x with
-      | V i -> bump_weight global_ i
-      | S s -> ()
-    end;
-    super#use_var x
-
-  method def_var x =
-    begin match x with
-      | V i -> bump_weight global_ i
-      | S s -> ()
-    end;
-    super#def_var x
-
   method block ?(catch =false) params =
     let offset = if catch then 5 else 0 in
     m#add_constraints ~offset params;
@@ -302,7 +284,8 @@ end
 
 
 let program p =
-  let coloring = new color (create()) in
+  let nv = Code.Var.count () in
+  let coloring = new color (create nv) in
   let _p = coloring#program p in
   coloring#add_constraints [];
   let g = coloring#global in
@@ -314,8 +297,8 @@ let program p =
     (* S.iter(fun s -> (Format.eprintf "%s@." (Code.Var.to_string s))) coloring#get_free *)
   end;
   if Option.Optim.shortvar () then begin
-    let name = allocate_variables g in
-    if debug () then output_debug_information g;
+    let name = allocate_variables g nv coloring#state.count in
+    if debug () then output_debug_information g coloring#state.count;
     (fun v -> name.(Code.Var.idx v))
   end else
     (fun v -> Var.to_string v)

@@ -161,3 +161,4 @@ let compare_ident t1 t2 =
 
 
 module IdentSet = Set.Make(struct type t = ident let compare = compare_ident end)
+module IdentMap = Map.Make(struct type t = ident let compare = compare_ident end)

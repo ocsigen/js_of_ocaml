@@ -149,3 +149,4 @@ and source_element =
 val compare_ident : ident -> ident -> int
 
 module IdentSet : Set.S with type elt = ident
+module IdentMap : Map.S with type key = ident

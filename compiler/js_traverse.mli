@@ -42,6 +42,7 @@ type t = {
   def_name : StringSet.t;
   def : Code.VarSet.t;
   use : Code.VarSet.t;
+  count : int Javascript.IdentMap.t;
 }
 
 
