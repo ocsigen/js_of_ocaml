@@ -282,7 +282,7 @@ end
 
 
 let program p =
-  let color =
+  let color,p =
     if Option.Optim.shortvar ()
     then
       let nv = Code.Var.count () in
@@ -299,7 +299,7 @@ let program p =
       end;
       let name = allocate_variables state nv coloring#state.Js_traverse.count in
       if debug () then output_debug_information state coloring#state.Js_traverse.count;
-      (function V v -> S (name.(Code.Var.idx v)) | x -> x)
-    else (function V v -> S (Var.to_string v) | x -> x)
+      (function V v -> S (name.(Code.Var.idx v)) | x -> x),p
+    else (function V v -> S (Var.to_string v) | x -> x),p
   in
   (new Js_traverse.subst color)#program p
