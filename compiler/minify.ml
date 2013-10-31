@@ -81,8 +81,9 @@ let _ =
     | None ->
       error "You must provide an output file" in
 
-  Pretty_print.set_compact pp (not (Option.Optim.pretty ()));
-
+  let pretty = Option.Optim.pretty () in
+  Pretty_print.set_compact pp (not pretty);
+  Code.Var.set_pretty pretty;
 
   let p = List.flatten (List.map (fun file ->
     let lex = Parse_js.lexer_from_file file in
