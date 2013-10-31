@@ -737,6 +737,7 @@ end) = struct
         PP.genbreak f " " 1;
         PP.start_group f 0;
         statement f s;
+        PP.string f ";";
         PP.end_group f;
         PP.break f;
         PP.string f "while";
