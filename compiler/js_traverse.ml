@@ -380,7 +380,8 @@ class rename_str keeps = object(m : 'test)
   method source x =
     let x = super#source x in
     match x with
-      | Function_declaration _ -> sub_#source x
+      | Function_declaration (id,params,body,nid) ->
+        Function_declaration (id,List.map sub_#ident params,sub_#sources body,nid)
       | _ -> x
 
 end
