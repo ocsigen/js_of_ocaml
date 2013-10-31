@@ -22,9 +22,10 @@ type t
 
 val string : t -> string -> unit
 
-val genbreak : t -> string -> int -> unit
+val genbreak : t -> int -> unit
 val break : t -> unit
 val space : t -> unit
+val may_space : t -> unit
 
 val start_group : t -> int -> unit
 val end_group : t -> unit
