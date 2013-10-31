@@ -24,6 +24,7 @@ toplevel/toplevel.js
 examples/wiki/wikicreole.ml
 examples/*/*.js
 compiler/js_of_ocaml
+compiler/joo_minify
 compiler/js_lexer.ml
 compiler/js_lexer.mli
 compiler/js_parser.ml

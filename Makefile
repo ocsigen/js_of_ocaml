@@ -47,6 +47,7 @@ uninstall:
 	ocamlfind remove $(LIBRARY)
 	ocamlfind remove $(COMPILER_LIBRARY)
 	rm -f $(BINDIR)/$(COMPILER)
+	rm -f $(BINDIR)/$(MINIFIER)
 
 reinstall: uninstall install
 

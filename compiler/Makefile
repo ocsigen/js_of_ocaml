@@ -1,7 +1,7 @@
 
 include ../Makefile.conf
 
-all: $(COMPILER)
+all: $(COMPILER) $(MINIFIER)
 
 lib: compiler.cma compiler.cmxa compiler.cmxs
 
@@ -22,16 +22,21 @@ COMPOBJS=$(OBJS) compile.cmx
 $(COMPILER): compile.$(BEST)
 	mv -f $< $@
 
-.INTERMEDIATE: compile.byte compile.opt
+$(MINIFIER): minify.$(BEST)
+	mv -f $< $@
+
+.INTERMEDIATE: compile.byte compile.opt minify.byte minify.opt
+
 compile.byte: $(COMPOBJS:cmx=cmo)
 	ocamlfind ocamlc -package $(PACKAGES) -linkpkg -o $@ $^
+compile.opt: $(COMPOBJS)
+	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -o $@ $^
 
 minify.byte: $(OBJS:cmx=cmo) minify.cmo
 	ocamlfind ocamlc -package $(PACKAGES) -linkpkg -o $@ $^
-
-
-compile.opt: $(COMPOBJS)
+minify.opt: $(OBJS:cmx=cmx) minify.cmx
 	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -o $@ $^
+
 
 compiler.cma: $(OBJS:cmx=cmo)
 	ocamlfind ocamlc -pack -o $@ $^
@@ -63,7 +68,7 @@ compiler.cmxs: $(OBJS)
 	ocamllex $<
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a
-	rm -f js_of_ocaml compile.opt compile.byte
+	rm -f js_of_ocaml compile.opt compile.byte minify.opt minify.byte
 
 depend:
 	${MAKE} --no-print-directory js_lexer.ml

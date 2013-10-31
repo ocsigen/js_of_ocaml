@@ -1,4 +1,4 @@
-BIN := compiler/${COMPILER}
+BIN := compiler/${COMPILER} compiler/${MINIFIER}
 
 INTF := lib/*.cmi
 
