@@ -166,8 +166,8 @@ let perform_raw_url
     ?(get_args=[])
     ?(form_arg:Form.form_contents option)
     ?(check_headers=(fun _ _ -> true))
-    ?(progress=(fun _ _ -> ()))
-    ?(upload_progress=(fun _ _ -> ()))
+    ?progress
+    ?upload_progress
     ?override_mime_type
     url =
 
@@ -271,15 +271,22 @@ let perform_raw_url
             }
 	| _ -> ()));
 
-  req##onprogress <- Dom.handler
-    (fun e ->
-      progress e##loaded e##total;
-      Js._true);
-  Optdef.iter (req##upload) (fun upload ->
-    upload##onprogress <- Dom.handler
+  begin match progress with
+  | Some progress ->
+    req##onprogress <- Dom.handler
       (fun e ->
-        upload_progress e##loaded e##total;
+        progress e##loaded e##total;
         Js._true)
+  | None -> ()
+  end;
+  Optdef.iter (req##upload) (fun upload ->
+    match upload_progress with
+    | Some upload_progress ->
+      upload##onprogress <- Dom.handler
+        (fun e ->
+          upload_progress e##loaded e##total;
+          Js._true)
+    | None -> ()
   );
 
   (match form_arg with
