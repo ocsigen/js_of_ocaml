@@ -215,26 +215,6 @@ let link formatter ~standalone ?linkall js =
     end
   else js
 
-let optimize_var ?(toplevel=false)?(linkall=false) js =
-  if times ()
-  then Format.eprintf "Start Optimizing...@.";
-  let js = (new Js_traverse.clean)#program js in
-  let js =
-    if (Option.Optim.shortvar ())
-    then
-      let keeps =
-        if toplevel
-        then Primitive.get_external ()
-        else StringSet.empty in
-      let keeps = StringSet.add "caml_get_global_data" keeps in
-      (new Js_traverse.rename_str keeps)#program js
-    else js in
-  let js =
-    if Option.Optim.compact_vardecl ()
-    then (new Js_traverse.compact_vardecl)#program js
-    else js in
-  js
-
 let coloring js =
   if times ()
   then Format.eprintf "Start Coloring...@.";
@@ -245,14 +225,43 @@ let output formatter d js =
   then Format.eprintf "Start Writing file...@.";
   Js_output.program formatter d js
 
-let pack ~standalone js =
+let pack ~standalone ?(toplevel=false)?(linkall=false) js =
   let module J = Javascript in
-  if standalone then
-    let f = J.EFun ((None, [], js), None) in
-    [J.Statement (J.Expression_statement ((J.ECall (f, [])), None))]
-  else
-    let f = J.EFun ((None, [J.V (Code.Var.fresh ())], js), None) in
-    [J.Statement (J.Expression_statement (f, None))]
+  if times ()
+  then Format.eprintf "Start Optimizing js...@.";
+  (* pre pack optim *)
+  let js =
+    if Option.Optim.share_constant ()
+    then (new Js_traverse.share_constant)#program js
+    else js in
+  let js =
+    if Option.Optim.compact_vardecl ()
+    then (new Js_traverse.compact_vardecl)#program js
+    else js in
+
+  (* pack *)
+  let js = if standalone then
+      let f = J.EFun ((None, [], js), None) in
+      [J.Statement (J.Expression_statement ((J.ECall (f, [])), None))]
+    else
+      let f = J.EFun ((None, [J.V (Code.Var.fresh ())], js), None) in
+      [J.Statement (J.Expression_statement (f, None))] in
+
+  (* post pack optim *)
+  let js = (new Js_traverse.clean)#program js in
+  let js =
+    if (Option.Optim.shortvar ())
+    then
+      let keeps =
+        if toplevel
+        then Primitive.get_external ()
+        else StringSet.empty in
+      let keeps = StringSet.add "caml_get_global_data" keeps in
+      (new Js_traverse.rename_variable keeps)#program js
+    else js in
+  js
+
+
 
 let configure formatter p =
   let pretty = Option.Optim.pretty () in
@@ -268,8 +277,7 @@ let f ?(standalone=true) ?toplevel ?linkall formatter d =
 
   link formatter ~standalone ?linkall >>
 
-  pack ~standalone >>
-  optimize_var ?linkall ?toplevel >>
+  pack ~standalone ?linkall ?toplevel >>
 
   coloring >>
 

@@ -155,7 +155,54 @@ class subst sub = object
     method ident x = sub x
 end
 
+let string_replace v f s =
+  let v' = f s in
+  if v = v'
+  then raise Not_found
+  else EVar v'
+
+class str_to_var f = object(m)
+  inherit map as super
+  method expression e = match e with
+    | EStr (s,_) -> (try EVar (f s) with Not_found -> e)
+    | _ -> super#expression e
+end
+
 open Util
+
+(* this optimisation should be done at the lowest common scope *)
+(* and for other constant *)
+class share_constant = object(m)
+  inherit map as super
+  val count = Hashtbl.create 17
+  method expression e =
+    let _ = match e with
+      | EStr (s,k) ->
+        let n,k = try Hashtbl.find count s with Not_found -> 0,k in
+        Hashtbl.replace count s (n+1,k)
+      | _ -> ()
+    in super#expression e
+  method program p =
+    let p = super#program p in
+
+    let all = Hashtbl.fold (fun x (n,k) acc ->
+        if n > 1
+        then
+          let v = Code.Var.fresh () in
+          StringMap.add x (V v) acc
+        else acc
+      ) count StringMap.empty in
+    if StringMap.is_empty all
+    then p
+    else
+      let f = (fun s -> StringMap.find s all) in
+      let p = (new str_to_var f)#program p in
+      let all = StringMap.fold (fun s v acc ->
+          let _,k = Hashtbl.find count s in
+          (v, Some (EStr(s,k))) :: acc) all [] in
+      Statement(Variable_statement all):: p
+end
+
 module S = Code.VarSet
 type t = {
   use_name : StringSet.t;
@@ -332,7 +379,7 @@ class free =
 
 
 
-class rename_str keeps = object(m : 'test)
+class rename_variable keeps = object(m : 'test)
   inherit free as super
 
   val mutable sub_ = new subst (fun x -> x)

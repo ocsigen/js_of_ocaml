@@ -106,8 +106,15 @@ let _ =
     else
       p in
 
-  let p = (new Js_traverse.rename_str Util.StringSet.empty)#program p in
-  let p = (new Js_traverse.clean)#program p in
+  let true_ = (fun () -> true) in
+  let open Option in
+  let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
+    [ Optim.shortvar, (fun () -> ((new Js_traverse.rename_variable Util.StringSet.empty) :> Js_traverse.mapper) );
+      Optim.share_constant, (fun () -> new Js_traverse.share_constant);
+      true_, (fun () -> new Js_traverse.clean);
+    ] in
+
+  let p = List.fold_left (fun p (t,m) -> if t() then (m())#program p else p) p passes in
   let p = Js_assign.program p in
   Js_output.program pp (fun _ -> None) p;
   finalize()

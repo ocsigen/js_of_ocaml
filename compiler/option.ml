@@ -63,12 +63,13 @@ module Optim = struct
   let pretty =     o ~name:"pretty" ~default:false
   let debuginfo =  o ~name:"debuginfo" ~default:false
   let deadcode =   o ~name:"deadcode" ~default:true
-  let shortvar =  o ~name:"shortvar" ~default:true
+  let shortvar =   o ~name:"shortvar" ~default:true
   let compact =    o ~name:"compact" ~default:true
   let optcall =    o ~name:"optcall" ~default:true
   let inline =     o ~name:"inline" ~default:true
   let staticeval = o ~name:"staticeval" ~default:true
-  let constant =   o ~name:"constant" ~default:true
-  let compact_vardecl = o ~name:"vardecl" ~default:false
+  let share_constant = o ~name:"share" ~default:true
 
+  (* this does not optimize properly *)
+  let compact_vardecl = o ~name:"vardecl" ~default:false
 end
