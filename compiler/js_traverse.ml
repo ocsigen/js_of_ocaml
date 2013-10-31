@@ -514,20 +514,37 @@ end
 
 class clean = object(m)
   inherit map as super
+
   method statements l =
     let l = super#statements l in
-    let l = List.filter (function
-        | Empty_statement -> false
-        | Expression_statement (EVar _, pc) -> false
-        | _ -> true) l in
-    match l with
-      | [] -> [Empty_statement]
-      | l -> l
+    let vars_rev,instr_rev = List.fold_left (fun (vars_rev,instr_rev) x ->
+        match x with
+          | Variable_statement l -> (List.rev_append l vars_rev,instr_rev)
+          | Empty_statement
+          | Expression_statement (EVar _, _) -> vars_rev,instr_rev
+          | x when vars_rev = [] -> ([],x::instr_rev)
+          | x -> ([],x::Variable_statement (List.rev vars_rev)::instr_rev)
+      ) ([],[]) l in
+    let instr_rev = match vars_rev with
+      | [] -> instr_rev
+      | vars_rev -> Variable_statement (List.rev vars_rev) :: instr_rev
+    in List.rev instr_rev
+
   method sources l =
     let l = super#sources l in
-    let l = List.filter (function
-        | Statement (Empty_statement) -> false
-        | Statement (Expression_statement (EVar _, pc)) -> false
-        | _ -> true) l in
-    l
+    let append_st st_rev sources_rev =
+      let st = m#statements (List.rev st_rev) in
+      let st = List.map (fun s -> Statement s) st in
+      List.rev_append st sources_rev in
+
+    let (st_rev,sources_rev) = List.fold_left (fun (st_rev,sources_rev) x ->
+        match x with
+          | Statement s -> s::st_rev,sources_rev
+          | x when st_rev = [] -> [],x::sources_rev
+          | x -> [],(x::(append_st st_rev sources_rev))
+      ) ([],[]) l in
+    let sources_rev = match st_rev with
+      | [] -> sources_rev
+      | st_rev -> append_st st_rev sources_rev in
+    List.rev sources_rev
 end

@@ -297,8 +297,8 @@ let program p =
         failwith "This is probably a bug."
         (* S.iter(fun s -> (Format.eprintf "%s@." (Code.Var.to_string s))) coloring#get_free *)
       end;
-      let name = allocate_variables state nv coloring#state.count in
-      if debug () then output_debug_information state coloring#state.count;
+      let name = allocate_variables state nv coloring#state.Js_traverse.count in
+      if debug () then output_debug_information state coloring#state.Js_traverse.count;
       (function V v -> S (name.(Code.Var.idx v)) | x -> x)
     else (function V v -> S (Var.to_string v) | x -> x)
   in
