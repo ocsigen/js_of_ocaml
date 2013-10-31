@@ -35,7 +35,6 @@ module PP = Pretty_print
 
 module Make(D : sig
   val debug_info : Parse_bytecode.debug_loc
-  val to_string : Code.Var.t -> string
 end) = struct
 
   let output_debug_info f pc =
@@ -58,7 +57,7 @@ end) = struct
 
   let ident = function
     | S s -> s
-    | V v -> D.to_string v
+    | V v -> Format.eprintf "This should not append@."; exit 1
 
   let opt_identifier f i =
     match i with
@@ -984,9 +983,8 @@ end) = struct
 
 end
 
-let program f dl to_string se =
+let program f dl se =
   let module O = Make(struct
-    let debug_info = dl
-    let to_string = to_string
-  end) in
+      let debug_info = dl
+    end) in
   PP.start_group f 0; O.source_elements f se; PP.end_group f; PP.newline f

@@ -238,12 +238,12 @@ let optimize_var ?(toplevel=false)?(linkall=false) js =
 let coloring js =
   if times ()
   then Format.eprintf "Start Coloring...@.";
-  js,Js_assign.program js
+  Js_assign.program js
 
-let output formatter d (js,to_string) =
+let output formatter d js =
   if times ()
   then Format.eprintf "Start Writing file...@.";
-  Js_output.program formatter d to_string js
+  Js_output.program formatter d js
 
 let pack ~standalone js =
   let module J = Javascript in

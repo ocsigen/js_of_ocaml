@@ -244,39 +244,37 @@ let allocate_variables t nv count =
   end;
   name
 
-class ['state] color (state : 'state) = object(m)
-  inherit Js_traverse.free as super
-  val mutable global_ = state
-
-  method global = global_
-
-  method add_constraints ?(offset=0) params =
+let add_constraints global u ?(offset=0) params =
   if Option.Optim.shortvar () then begin
-    let u = S.union m#state.Js_traverse.def m#state.Js_traverse.use in
-    let constr = global_.constr in
+
+    let constr = global.constr in
     let c = make_alloc_table () in
 
     S.iter (fun v -> let i = Code.Var.idx v in constr.(i) <- c :: constr.(i)) u;
     let params = Array.of_list params in
     let len = Array.length params in
     let len_max = len + offset in
-    if Array.length global_.parameters < len_max then begin
+    if Array.length global.parameters < len_max then begin
       let a = Array.make (2 * len_max) [] in
-      Array.blit global_.parameters 0 a 0 (Array.length global_.parameters);
-      global_.parameters <- a
+      Array.blit global.parameters 0 a 0 (Array.length global.parameters);
+      global.parameters <- a
     end;
     for i = 0 to len - 1 do
       match params.(i) with
         | V x ->
-          global_.parameters.(i + offset) <- x :: global_.parameters.(i + offset)
+          global.parameters.(i + offset) <- x :: global.parameters.(i + offset)
         | _ -> ()
     done;
-    global_.constraints <- u :: global_.constraints
+    global.constraints <- u :: global.constraints
   end
+
+class ['state] color (state : 'state) = object(m)
+  inherit Js_traverse.free as super
 
   method block ?(catch =false) params =
     let offset = if catch then 5 else 0 in
-    m#add_constraints ~offset params;
+    let all = S.union m#state.Js_traverse.def m#state.Js_traverse.use in
+    add_constraints state all ~offset params;
     super#block params
 
 
@@ -284,21 +282,24 @@ end
 
 
 let program p =
-  let nv = Code.Var.count () in
-  let coloring = new color (create nv) in
-  let _p = coloring#program p in
-  coloring#add_constraints [];
-  let g = coloring#global in
-  if S.cardinal (coloring#get_free) <> 0
-  then begin
-    (Format.eprintf "some variables escaped: it should not append (#%d)@."
-       (S.cardinal (coloring#get_free)));
-    failwith "This is probably a bug."
-    (* S.iter(fun s -> (Format.eprintf "%s@." (Code.Var.to_string s))) coloring#get_free *)
-  end;
-  if Option.Optim.shortvar () then begin
-    let name = allocate_variables g nv coloring#state.count in
-    if debug () then output_debug_information g coloring#state.count;
-    (fun v -> name.(Code.Var.idx v))
-  end else
-    (fun v -> Var.to_string v)
+  let color =
+    if Option.Optim.shortvar ()
+    then
+      let nv = Code.Var.count () in
+      let state = create nv in
+      let coloring = new color state in
+      let p = coloring#program p in
+      coloring#block [];
+      if S.cardinal (coloring#get_free) <> 0
+      then begin
+        (Format.eprintf "some variables escaped: it should not append (#%d)@."
+           (S.cardinal (coloring#get_free)));
+        failwith "This is probably a bug."
+        (* S.iter(fun s -> (Format.eprintf "%s@." (Code.Var.to_string s))) coloring#get_free *)
+      end;
+      let name = allocate_variables state nv coloring#state.count in
+      if debug () then output_debug_information state coloring#state.count;
+      (function V v -> S (name.(Code.Var.idx v)) | x -> x)
+    else (function V v -> S (Var.to_string v) | x -> x)
+  in
+  (new Js_traverse.subst color)#program p
