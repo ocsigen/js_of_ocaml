@@ -728,7 +728,7 @@ end) = struct
         PP.start_group f 1;
         PP.string f "(";
         expression 0 f e;
-        PP.string f ")";
+        PP.string f ");";
         PP.end_group f;
         PP.end_group f
       | Do_while_statement (s, e) ->
@@ -744,7 +744,7 @@ end) = struct
         PP.start_group f 1;
         PP.string f "(";
         expression 0 f e;
-        PP.string f ")";
+        PP.string f ");";
         PP.end_group f;
         PP.end_group f
       | For_statement (e1, e2, e3, s, pc) ->
