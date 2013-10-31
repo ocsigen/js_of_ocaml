@@ -46,6 +46,11 @@ class type xmlHttpRequest = object ('self)
 
   inherit File.progressEventTarget
   method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
+  method upload : xmlHttpRequestUpload t optdef readonly_prop
+end
+
+and xmlHttpRequestUpload = object ('self)
+  inherit File.progressEventTarget
 end
 
 module Event = struct
@@ -161,6 +166,8 @@ let perform_raw_url
     ?(get_args=[])
     ?(form_arg:Form.form_contents option)
     ?(check_headers=(fun _ _ -> true))
+    ?progress
+    ?upload_progress
     ?override_mime_type
     url =
 
@@ -263,6 +270,24 @@ let perform_raw_url
              headers = headers
             }
 	| _ -> ()));
+
+  begin match progress with
+  | Some progress ->
+    req##onprogress <- Dom.handler
+      (fun e ->
+        progress e##loaded e##total;
+        Js._true)
+  | None -> ()
+  end;
+  Optdef.iter (req##upload) (fun upload ->
+    match upload_progress with
+    | Some upload_progress ->
+      upload##onprogress <- Dom.handler
+        (fun e ->
+          upload_progress e##loaded e##total;
+          Js._true)
+    | None -> ()
+  );
 
   (match form_arg with
      | None -> req##send (Js.null)
