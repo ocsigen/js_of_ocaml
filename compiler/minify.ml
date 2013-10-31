@@ -41,6 +41,7 @@ let read_file f =
 let _ =
   Util.Timer.init Unix.gettimeofday;
   let js_files = ref [] in
+  let stdin = ref false in
   let output_file = ref None in
   let options =
     [("-debug", Arg.String Option.Debug.set, "<name> debug module <name>");
@@ -49,9 +50,13 @@ let _ =
      ("-pretty", Arg.Unit (fun () -> Option.Optim.enable "pretty"), " pretty print the output");
      ("-debuginfo", Arg.Unit (fun () -> Option.Optim.enable "debuginfo"), " output debug info");
      ("-noinline", Arg.Unit (fun () -> Option.Optim.disable "inline"), " disable inlining");
+     ("-stdin", Arg.Set stdin, " read from standard input");
      ("-o", Arg.String (fun s -> output_file := Some s),
       "<file> set output file name to <file>")]
   in
+
+  let usage_header = (Format.sprintf "Usage: %s [options]" Sys.argv.(0)) in
+
 
   Arg.parse (Arg.align options)
     (fun s ->
@@ -62,11 +67,10 @@ let _ =
        else
          error "Don't know what to do with '%s'" s
     )
-    (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
+    (usage_header);
 
   let chop_extension s =
     try Filename.chop_extension s with Invalid_argument _ -> s in
-
 
   let pp,finalize = match !output_file with
     | Some "-" ->
@@ -74,27 +78,36 @@ let _ =
     | Some file ->
       let oc = open_out file in
       Pretty_print.to_out_channel oc, (fun _ -> close_out oc)
-    | None when List.length !js_files = 1 ->
+    | None when not(!stdin) && List.length !js_files = 1 ->
       let file = chop_extension (List.hd !js_files) ^ ".min.js" in
       let oc = open_out file in
       Pretty_print.to_out_channel oc, (fun _ -> close_out oc)
-    | None ->
-      error "You must provide an output file" in
+    | None when !stdin -> Pretty_print.to_out_channel stdout,(fun _ -> ())
+    | None -> Arg.usage options usage_header; exit 0 in
 
   let pretty = Option.Optim.pretty () in
   Pretty_print.set_compact pp (not pretty);
   Code.Var.set_pretty pretty;
 
+  let error_of_pi pi =
+    if pi.Parse_info.name = ""
+    then error "error at l:%d col:%d" pi.Parse_info.line pi.Parse_info.col
+    else error "error at file:%S l:%d col:%d" pi.Parse_info.name pi.Parse_info.line pi.Parse_info.col in
+
   let p = List.flatten (List.map (fun file ->
     let lex = Parse_js.lexer_from_file file in
-    try Parse_js.parse lex with Parse_js.Parsing_error pi ->
-      error "error at l:%d col:%d" pi.Parse_info.line pi.Parse_info.col) !js_files) in
+    try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi) !js_files) in
 
+  let p =
+    if !stdin
+    then
+      let lex = Parse_js.lexer_from_channel Pervasives.stdin in
+      try p@(Parse_js.parse lex) with Parse_js.Parsing_error pi -> error_of_pi pi;
+    else
+      p in
 
   let p = (new Js_traverse.rename_str Util.StringSet.empty)#program p in
   let p = (new Js_traverse.clean)#program p in
   let p = Js_assign.program p in
   Js_output.program pp (fun _ -> None) p;
-
-
   finalize()

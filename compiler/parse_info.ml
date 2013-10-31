@@ -90,6 +90,24 @@ module Line_info = struct
       acc_line = 0;
       lines;
       name=""}
+
+  let from_channel ic =
+    let buf = Buffer.create 1024 in
+    let rec read_lines acc : int list = try
+        let l = input_line ic in
+        Buffer.add_string buf l;
+        Buffer.add_char buf '\n';
+        read_lines (String.length l::acc) with End_of_file -> List.rev acc in
+    let l = read_lines [] in
+    let lines = Array.of_list l in
+    let t = {
+      acc_pos = 0;
+      acc_line = 0;
+      lines;
+      name="";
+    } in
+    t,Buffer.contents buf
+
 end
 
 type lineinfo = Line_info.t
@@ -97,6 +115,8 @@ type lineinfo = Line_info.t
 let make_lineinfo_from_file file = Line_info.from_file file
 
 let make_lineinfo_from_string str = Line_info.from_string str
+
+let make_lineinfo_from_channel c = Line_info.from_channel c
 
 let t_of_lexbuf line_info lexbuf : t =
   let idx = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
