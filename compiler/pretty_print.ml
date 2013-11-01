@@ -138,7 +138,7 @@ let break st = if not st.compact then push st break_token
 
 let space_token = Break (" ", 0)
 
-let may_space st = if st.compact then st.pending_space <- true else st.output st " " 0 1
+let may_space st = if st.compact then st.pending_space <- true else push st space_token
 let space st = may_space st (* if st.compact then st.output st " " 0 1 else push st space_token *)
 
 let start_group st n = if not st.compact then push st (Start_group n)
