@@ -71,7 +71,7 @@ $(NAME).js: $(NAME).byte $(COMP) $(JSFILES)
 	$(COMP) -I $(shell ocamlc -where)/compiler-libs -toplevel -noinline -noruntime $(JSFILES) $(NAME).byte $(OPTIONS)
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
-	$(OCAMLC) -linkall -package str,ocamlgraph,findlib -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
+	$(OCAMLC) -linkall -package str,findlib -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
 

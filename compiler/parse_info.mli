@@ -1,7 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
+ * Copyright (C) 2013 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,4 +17,19 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val program : Pretty_print.t ->  Parse_bytecode.debug_loc -> Javascript.program -> unit
+type t = {
+  name : string;
+  col : int;
+  line : int;
+  idx : int;
+}
+
+val zero : t
+
+type lineinfo
+
+val make_lineinfo_from_file : string -> lineinfo
+val make_lineinfo_from_string : string -> lineinfo
+val make_lineinfo_from_channel : in_channel -> lineinfo * string
+
+val t_of_lexbuf : lineinfo -> Lexing.lexbuf -> t

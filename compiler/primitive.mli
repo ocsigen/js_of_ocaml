@@ -19,15 +19,19 @@
  *)
 
 val is_pure : string -> bool
-
-val mark_used : string -> unit
-val list_used : unit -> unit
-val get_used : unit -> string list
 val exists : string -> bool
+
 type kind = [ `Pure | `Mutable | `Mutator ]
+type t =
+  [ `Requires of Parse_info.t option * string list
+  | `Provides of Parse_info.t option * string * kind ]
 
 val kind : string -> kind
 val register : string -> kind -> unit
 
 val alias : string -> string -> unit
 val resolve : string -> string
+
+val add_external : string -> unit
+val is_external : string -> bool
+val get_external : unit -> Util.StringSet.t

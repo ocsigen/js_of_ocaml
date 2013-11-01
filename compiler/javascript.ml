@@ -37,7 +37,8 @@ module Label = struct
   let of_string s = S s
 end
 
-type node_pc = int option
+type loc = Code.addr
+type node_pc = loc option
 
 type identifier = string
 
@@ -89,6 +90,7 @@ and expression =
   | ENum of float
   | EObj of property_name_and_value_list
   | EQuote of string
+  | ERegexp of string * string option
 
 (****)
 
@@ -102,8 +104,8 @@ and statement =
   | If_statement of expression * statement * statement option
   | Do_while_statement of statement * expression
   | While_statement of expression * statement
-  | For_statement of  expression option * expression option * expression option * statement * node_pc
-  | ForIn_statement of  expression * expression * statement * node_pc
+  | For_statement of  (expression option,variable_declaration list) either * expression option * expression option * statement * node_pc
+  | ForIn_statement of  (expression,variable_declaration) either * expression * statement * node_pc
   | Continue_statement of Label.t option
   | Break_statement of Label.t option
   | Return_statement of expression option
@@ -113,6 +115,10 @@ and statement =
   | Throw_statement of expression
   | Try_statement of block * (ident * block) option * block option * node_pc
   (* | Debugger_statement *)
+
+and ('left,'right) either =
+  | Left of 'left
+  | Right of 'right
 
 and block = statement_list
 
@@ -152,3 +158,7 @@ let compare_ident t1 t2 =
     | S s1, S s2 -> String.compare s1 s2
     | S _, V _ -> -1
     | V _, S _ -> 1
+
+
+module IdentSet = Set.Make(struct type t = ident let compare = compare_ident end)
+module IdentMap = Map.Make(struct type t = ident let compare = compare_ident end)

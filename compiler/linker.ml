@@ -18,52 +18,19 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let ws_opt = "[ \t]*"
-let ws = "[ \t]+"
-let ident = "[a-zA-Z$_][a-zA-Z$_0-9]*"
 
-let comment_rx =
-  Str.regexp
-    (String.concat "\\|"
-       [Format.sprintf "^%s$" ws_opt;
-        Format.sprintf "^%s//" ws_opt;
-        Format.sprintf "^%s/[*]\\([^*]\\|[*]+[^/]\\)*[*]/%s$" ws_opt ws_opt])
+open Util
 
-let provides_start_rx =
-  Str.regexp (Format.sprintf "^//%sProvides:" ws_opt)
+let parse_annot loc s =
+  let buf = Lexing.from_string s in
+  try Some (Annot_parser.annot Annot_lexer.initial buf) with
+    | Not_found -> None
+    | exc ->
+    (* Format.eprintf "Not found for %s : %s @." (Printexc.to_string exc) s; *)
+    None
 
-let provides_rx =
-  Str.regexp (Format.sprintf "^//%sProvides:%s\\(%s\\)\\(%s\\(%s\\)\\)?%s$"
-                ws_opt ws_opt ident ws ident ws_opt)
-
-let requires_start_rx =
-  Str.regexp (Format.sprintf "^//%sRequires:" ws_opt)
-
-let requires_rx =
-  Str.regexp (Format.sprintf "^//%sRequires:%s\\(\\(%s%s,%s\\)*%s\\)%s$"
-                ws_opt ws_opt ident ws_opt ws_opt ident ws_opt)
-
-let comma_rx = Str.regexp (Format.sprintf "%s,%s" ws_opt ws_opt)
-
-let error (f, i) s =
-  Format.eprintf "%s:%d: error: %s@." f i s;
-  exit 1
-
-let read_line ch loc =
-  let l = input_line ch in
-  if Str.string_match provides_start_rx l 0 then begin
-    if not (Str.string_match provides_rx l 0) then
-      error loc "malformed provide line";
-    `Provides (loc, Str.matched_group 1 l,
-               try Str.matched_group 3 l with Not_found -> "mutator")
-  end else if Str.string_match requires_start_rx l 0 then begin
-    if not (Str.string_match requires_rx l 0) then
-      error loc "malformed requirement line";
-    `Requires (loc, Str.split comma_rx (Str.matched_group 1 l))
-  end else if Str.string_match comment_rx l 0 then
-    `Comment
-  else
-    `Code l
+let error s =
+  Format.kprintf (fun s -> Format.eprintf "error: %s@." s; exit 1) s
 
 let debug l =
   match l with
@@ -117,52 +84,51 @@ let split_dir =
   Str.split reg
 
 let parse_file f =
-  let f,use_findlib =
-    if f.[0] = '+'
-    then String.sub f 1 (String.length f - 1), true
-    else f,false in
-  let ch =
+  let file =
     try
-      let f =
-        if use_findlib
-        then
+      match Util.path_require_findlib f with
+        | Some f ->
           let pkg,f' = match split_dir f with
             | [] -> assert false
             | [f] -> "js_of_ocaml",f
             | pkg::l -> pkg, List.fold_left Filename.concat "" l in
-          Filename.concat (Findlib.package_directory pkg) f'
-        else f in
-      open_in f
+          Filename.concat (Util.find_pkg_dir pkg)  f'
+        | None -> f
     with
-      | Findlib.No_such_package (name,_) ->
-        Format.eprintf "%s: findlib cannot find package '%s' (needed to find file '%s'). @." Sys.argv.(0) name f;
-        exit 1
+      | Not_found ->
+        error "cannot find file '%s'. @." f
       | Sys_error s ->
-        Format.eprintf "%s: %s@." Sys.argv.(0) s;
-        exit 1
+        error "%s@." s
   in
-  let l = ref [] in
-  let i = ref 0 in
-  begin try
-    while true do
-      incr i;
-      let x = read_line ch (f, !i) in
-      (* debug x; *)
-      l := x :: !l
-    done
-  with End_of_file -> () end;
-  close_in ch;
-  !l >> List.rev >> List.filter (fun x -> x <> `Comment)
-  >> repeat
-       (collect_provides ++ collect_requires ++ collect_code)
-       (fun info _ -> info)
-  >> List.map
-       (fun ((prov, req), code) ->
-          let req =
-            req >> List.map (fun (loc, l) -> List.map (fun r -> (loc, r)) l)
-                >> List.flatten
-          in
-          (prov, req, code))
+
+  let lex = Parse_js.lexer_from_file ~rm_comment:false file in
+  let status,lexs = Parse_js.lexer_fold (fun (status,lexs) t ->
+    match t with
+      | Js_parser.TComment (info,str) -> begin
+        match parse_annot info str with
+          | None -> (status,lexs)
+          | Some a ->
+            match status with
+              | `Annot annot -> `Annot (a::annot),lexs
+              | `Code (an,co) -> `Annot [a], ((List.rev an,List.rev co)::lexs)
+      end
+      | _ when Parse_js.is_comment t -> (status,lexs)
+      | c -> match status with
+          | `Code (annot,code) -> `Code (annot,c::code),lexs
+          | `Annot (annot) -> `Code(annot,[c]),lexs
+  ) (`Annot [],[]) lex in
+  let lexs = match status with
+    | `Annot _ -> lexs
+    | `Code(annot,code) -> (List.rev annot,List.rev code)::lexs in
+
+  let res = List.rev_map (fun (annot,code) ->
+    let lex = Parse_js.lexer_from_list code in
+    try
+      annot,Parse_js.parse lex
+    with Parse_js.Parsing_error pi ->
+      error "cannot parse file %s from l:%d, c:%d@." f pi.Parse_info.line pi.Parse_info.col)
+    lexs in
+  res
 
 let last_code_id = ref 0
 let provided = Hashtbl.create 31
@@ -170,72 +136,73 @@ let code_pieces = Hashtbl.create 31
 let always_included = ref []
 
 let add_file f =
+
   List.iter
-    (fun (prov, req, code) ->
-       incr last_code_id;
-       let id = !last_code_id in
-       List.iter
-         (fun (loc, nm, kind) ->
-            let kind =
-              match kind with
-                "pure" | "const" -> `Pure
-              | "mutable" -> `Mutable
-              | "mutator" -> `Mutator
-              | _ ->
-                  error loc (Format.sprintf "invalid primitive kind '%s'" kind)
-            in
-            Primitive.register nm kind;
-            Hashtbl.add provided nm (id, loc))
-         prov;
-       if prov = [] then always_included := id :: !always_included;
-       Hashtbl.add code_pieces id (code, req))
+    (fun (annot,code) ->
+      incr last_code_id;
+      let id = !last_code_id in
+
+      let req,has_provide = List.fold_left (fun (req,has_provide) a -> match a with
+        | `Provides (_,name,kind) ->
+          Primitive.register name kind;
+          Hashtbl.add provided name id;
+          req,true
+        | `Requires (_,mn) -> (mn@req),has_provide) ([],false) annot in
+
+      if not has_provide then always_included := id :: !always_included;
+      Hashtbl.add code_pieces id (code, req))
     (parse_file f)
 
-let rec resolve_dep f visited path loc nm =
-  let (id, loc) =
+type visited = {
+  ids : IntSet.t;
+  codes : Javascript.program list ;
+}
+
+let rec resolve_dep visited path nm =
+  let id =
     try
       Hashtbl.find provided nm
     with Not_found ->
-      error loc (Format.sprintf "missing dependency '%s'@." nm)
+      error "missing dependency '%s'@." nm
   in
-  resolve_dep_rec f visited path id
+  resolve_dep_rec visited path id
 
-and resolve_dep_rec f visited path id =
-  if Util.IntSet.mem id visited then begin
-(*    if List.memq id path then error loc "circular dependency";*)
+and resolve_dep_rec visited path id =
+  if IntSet.mem id visited.ids then begin
+(*    if List.memq id path then error  "circular dependency";*)
     visited
   end else begin
-    let visited = Util.IntSet.add id visited in
+    let visited = { visited with ids = IntSet.add id visited.ids } in
     let path = id :: path in
     let (code, req) = Hashtbl.find code_pieces id in
     let visited =
       List.fold_left
-        (fun visited (loc, nm) -> resolve_dep f visited path loc nm)
+        (fun visited nm -> resolve_dep visited path nm)
         visited req
     in
-    List.iter (fun s -> Pretty_print.string f s; Pretty_print.newline f) code;
-    visited
+    {visited with codes = code::visited.codes}
   end
 
-let resolve_deps ?(linkall = false) f l =
+let resolve_deps ?(linkall = false) program used =
   let visited =
     List.fold_left
-      (fun (visited) id -> resolve_dep_rec f visited [] id)
-      Util.IntSet.empty (List.rev !always_included)
+      (fun visited id -> resolve_dep_rec visited [] id)
+      {ids=IntSet.empty;codes=[program]} (List.rev !always_included)
   in
   let (missing, visited) =
-    List.fold_left
-      (fun (missing, visited) nm ->
-         if Hashtbl.mem provided nm then
-           (missing, resolve_dep f visited [] ("", -1) nm)
-         else
-           (nm :: missing, visited))
-      ([], visited) l
+    StringSet.fold
+      (fun nm (missing, visited)->
+        if Hashtbl.mem provided nm then
+          (missing, resolve_dep visited [] nm)
+        else
+          (StringSet.add nm missing, visited))
+      used (StringSet.empty, visited)
   in
-  if linkall then begin
-    let visited = ref visited in
-    Hashtbl.iter (fun nm (id, loc) ->
-      visited := resolve_dep f !visited [] ("", -1) nm
-    ) provided;
-  end;
-  List.rev missing
+  let visited =
+    if linkall
+    then Hashtbl.fold (fun nm id visited -> resolve_dep visited [] nm ) provided visited
+    else visited in
+  List.flatten visited.codes, missing
+
+let get_provided () =
+  Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty

@@ -1,5 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2013 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -16,4 +17,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val program : Javascript.program -> (Code.Var.t -> string)
+type t
+
+val add_reserved : string list -> unit
+val get_reserved : unit -> Util.StringSet.t
+val create : ?pretty:bool -> unit -> t
+val reset : t -> unit
+val to_string : t -> ?origin:int -> int -> string
+val name : t -> int -> string -> unit
+val propagate_name : t -> int -> int -> unit
+val set_pretty : t -> bool -> unit

@@ -135,9 +135,6 @@ module Share = struct
           )
           share block.body)
       blocks empty_aux in
-    (* hack to shared "number" string *)
-    let count = add_string "number" count in
-    let count = add_string "number" count in
     {count; vars = empty_aux}
 
   let get_string gen s t =
@@ -167,6 +164,7 @@ module Share = struct
           J.EVar (StringMap.find s t.vars.prims)
         with Not_found ->
           let x = Var.fresh() in
+          Code.Var.name x s;
           let v = J.V x in
           t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
           J.EVar v
@@ -185,6 +183,7 @@ module Share = struct
           J.EVar (IntMap.find n t.vars.applies)
         with Not_found ->
           let x = Var.fresh() in
+          Code.Var.name x (Printf.sprintf "caml_call_gen%d" n);
           let v = J.V x in
           t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
           J.EVar v
@@ -221,14 +220,31 @@ let float_val e = e (*J.EAccess (e, one)*)
 
 let float_const f = val_float (J.ENum f)
 
+let s_var name = J.EVar (J.S name)
+
+let escape_backslash s =
+    let l = String.length s in
+    let b = Buffer.create (2 * l) in
+    for i = 0 to l - 1 do
+      let c = s.[i] in
+      match c with
+        | '\\' -> Buffer.add_string b "\\\\"
+        | _ -> Buffer.add_char b c
+    done;
+    Buffer.contents b
+
+let str_js s =
+  let s = escape_backslash s in
+  J.EStr (s,`Bytes)
+
 let rec constant ~ctx x =
   match x with
     String s ->
-      let e = Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share in
-      let p = Share.get_prim (fun s -> J.EVar (J.S s)) "caml_new_string" ctx.Ctx.share in
+      let e = Share.get_string str_js s ctx.Ctx.share in
+      let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
       J.ECall (p,[e])
   | IString s ->
-      Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share
+      Share.get_string str_js s ctx.Ctx.share
   | Float f ->
       float_const f
   | Float_array a ->
@@ -506,7 +522,7 @@ let generate_apply_fun ?x n =
                      (J.ECond (J.EBin (J.EqEq, J.EDot (f', "length"),
                                        J.ENum (float n)),
                                J.ECall (f', params'),
-                               J.ECall (J.EVar (J.S "caml_call_gen"),
+                               J.ECall (s_var "caml_call_gen",
                                         [f'; J.EArr (List.map (fun x -> Some x) params')])))))]),
           None)
 
@@ -629,17 +645,17 @@ let register_tern_prim name f =
 
 let register_un_math_prim name prim =
   register_un_prim name `Pure
-    (fun cx -> J.ECall (J.EDot (J.EVar (J.S "Math"), prim), [cx]))
+    (fun cx -> J.ECall (J.EDot (s_var "Math", prim), [cx]))
 
 let register_bin_math_prim name prim =
   register_bin_prim name `Pure
-    (fun cx cy -> J.ECall (J.EDot (J.EVar (J.S "Math"), prim), [cx; cy]))
+    (fun cx cy -> J.ECall (J.EDot (s_var "Math", prim), [cx; cy]))
 
 let _ =
   register_un_prim_ctx  "%caml_format_int_special" `Pure
     (fun ctx cx ->
-      let p = Share.get_prim (fun s -> J.EVar (J.S s)) "caml_new_string" ctx.Ctx.share in
-      J.ECall (p, [J.EBin (J.Plus,J.EStr("",`Bytes),cx)]));
+      let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
+      J.ECall (p, [J.EBin (J.Plus,str_js "",cx)]));
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
   register_bin_prim "caml_string_get" `Mutable
@@ -723,7 +739,7 @@ let _ =
   register_un_prim "caml_js_from_string" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "toString"), []));
   register_un_prim "caml_js_to_string" `Mutable
-    (fun cx -> J.ENew (J.EVar (J.S "MlWrappedString"), Some [cx]));
+    (fun cx -> J.ENew (s_var "MlWrappedString", Some [cx]));
   register_tern_prim "caml_js_set"
     (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable
@@ -858,9 +874,9 @@ and translate_expr ctx queue x e =
           (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
            or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
-        (J.EVar (J.S nm), const_p, queue)
+        (s_var nm, const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
-        (J.EVar (J.S nm), const_p, queue)
+        (s_var nm, const_p, queue)
       | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
           let ((pf, cf), queue) = access_queue queue f in
           let ((po, co), queue) = access_queue queue o in
@@ -922,7 +938,7 @@ and translate_expr ctx queue x e =
               [] ->
                 []
             | Pc (String nm) :: Pc (String v) :: r ->
-                (J.PNS nm, Share.get_string (fun v -> J.EStr (v, `Bytes)) v ctx.Ctx.share ) :: build_fields r
+                (J.PNS nm, Share.get_string str_js v ctx.Ctx.share ) :: build_fields r
             | _ ->
                 assert false
           in
@@ -947,7 +963,7 @@ and translate_expr ctx queue x e =
           match internal_prim name with
             | Some f -> f l queue ctx
             | None ->
-              let prim = Share.get_prim (fun s -> J.EVar (J.S s)) name ctx.Ctx.share in
+              let prim = Share.get_prim s_var name ctx.Ctx.share in
               let prim_kind = kind (Primitive.kind name) in
               let (args, prop, queue) =
                 List.fold_right
@@ -979,7 +995,7 @@ and translate_expr ctx queue x e =
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [x] ->
           let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (Share.get_string (fun s -> J.EStr (s,`Bytes)) "number" ctx.Ctx.share)),
+          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (Share.get_string str_js "number" ctx.Ctx.share)),
            px, queue)
       | Ult, [x; y] ->
           let ((px, cx), queue) = access_queue' ~ctx  queue x in
@@ -1259,7 +1275,7 @@ else begin
     in
     let st =
       J.For_statement
-        (None, None, None,
+        (J.Left None, None, None,
          Js_simpl.block
            (if AddrSet.cardinal frontier > 0 then begin
               if debug () then
@@ -1390,7 +1406,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
              so we can directly refer to it *)
           (Js_simpl.if_statement
               (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
-                      (Share.get_string (fun s -> J.EStr (s,`Bytes)) "number" st.ctx.Ctx.share)))
+                      (Share.get_string str_js "number" st.ctx.Ctx.share)))
               (build_switch (var x) a1)
               false
               (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
@@ -1537,8 +1553,8 @@ let generate_shared_value ctx =
   let strings =
     J.Statement (
       J.Variable_statement (
-        List.map (fun (s,v) -> v, Some (J.EStr(s,`Bytes))) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
-        @ List.map (fun (s,v) -> v, Some (J.EVar (J.S s))) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
+        List.map (fun (s,v) -> v, Some (str_js s)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
+        @ List.map (fun (s,v) -> v, Some (s_var s)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
       )) in
   let applies = List.map (fun (n,v) ->
     match generate_apply_fun n with
@@ -1547,24 +1563,17 @@ let generate_shared_value ctx =
       | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in
   strings::applies
 
-let compile_program standalone ctx pc =
+let compile_program ctx pc =
   let res = compile_closure ctx (pc, []) in
   let res = generate_shared_value ctx @ res in
   if debug () then Format.eprintf "@.@.";
-  if standalone then
-    let f = J.EFun ((None, [], res), None) in
-    [J.Statement (J.Expression_statement ((J.ECall (f, [])), Some pc))]
-  else
-    let f = J.EFun ((None, [J.V (Var.fresh ())], res), None) in
-    [J.Statement (J.Expression_statement (f, Some pc))]
+  res
 
-
-
-let f ~standalone ((pc, blocks, _) as p) live_vars =
+let f ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let t' = Util.Timer.make () in
   let share = Share.get p in
   let ctx = Ctx.initial blocks live_vars mutated_vars share in
-  let p = compile_program standalone ctx pc in
+  let p = compile_program ctx pc in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
   p

@@ -17,27 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let disabled_lst = ref []
-
-let disabled ?(init=false) s =
-  let state = ref init in
-  if not (List.mem_assoc s !disabled_lst)
-  then disabled_lst := (s, state) :: !disabled_lst;
-  fun () -> !state
-
-let set_disabled s =
-  try List.assoc s !disabled_lst := true with Not_found ->
-   Format.eprintf "%s: no disable option named '%s'@." Sys.argv.(0) s; exit 1
-
-let set_enabled s =
-  try List.assoc s !disabled_lst := false with Not_found ->
-   Format.eprintf "%s: no disable option named '%s'@." Sys.argv.(0) s; exit 1
-
-(****)
-
-
 (* Optimisation *)
-
 
 module Debug = struct
   let debugs : (string * bool ref) list ref = ref []
@@ -54,7 +34,9 @@ module Debug = struct
     fun () -> !state
 
   let set s =
-    try List.assoc s !debugs := true with Not_found -> ()
+    try List.assoc s !debugs := true with Not_found ->
+      Format.eprintf "The debug named %S doesn't exist@." s;
+      exit 1
 
 end
 
@@ -81,10 +63,13 @@ module Optim = struct
   let pretty =     o ~name:"pretty" ~default:false
   let debuginfo =  o ~name:"debuginfo" ~default:false
   let deadcode =   o ~name:"deadcode" ~default:true
-  let shortvar =  o ~name:"shortvar" ~default:true
+  let shortvar =   o ~name:"shortvar" ~default:true
   let compact =    o ~name:"compact" ~default:true
   let optcall =    o ~name:"optcall" ~default:true
   let inline =     o ~name:"inline" ~default:true
   let staticeval = o ~name:"staticeval" ~default:true
-  let constant =   o ~name:"constant" ~default:true
+  let share_constant = o ~name:"share" ~default:true
+
+  (* this does not optimize properly *)
+  let compact_vardecl = o ~name:"vardecl" ~default:false
 end

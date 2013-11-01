@@ -1,7 +1,7 @@
+{
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
+ * Copyright (C) 2013 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,5 +17,24 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open Annot_parser
+}
 
-val program : Pretty_print.t ->  Parse_bytecode.debug_loc -> Javascript.program -> unit
+let identifier = ['a'-'z''A'-'Z''_']+
+
+rule initial = parse
+  | "Provides" {TProvides}
+  | "Requires" {TRequires}
+  | "pure" {TAnnot `Pure }
+  | "const" {TAnnot `Pure }
+  | "mutable" {TAnnot `Mutable }
+  | "mutator" {TAnnot `Mutator }
+  | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''0'-'9']* {
+      let x = Lexing.lexeme lexbuf in
+      TIdent x}
+  | "," {TComma}
+  | ":" {TSemi}
+  | [' ''\t']+ { initial lexbuf }
+  | eof { EOF }
+  | ['\n'] {EOL}
+  | _ { TOTHER(Lexing.lexeme lexbuf) }

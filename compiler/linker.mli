@@ -19,4 +19,5 @@
  *)
 
 val add_file : string -> unit
-val resolve_deps : ?linkall:bool -> Pretty_print.t -> string list -> string list
+val resolve_deps : ?linkall:bool -> Javascript.program -> Util.StringSet.t -> Javascript.program * Util.StringSet.t
+val get_provided : unit -> Util.StringSet.t

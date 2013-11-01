@@ -17,15 +17,53 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Util
 
-let keyword =
-  ["break"; "case"; "catch"; "do"; "else"; "for"; "if"; "in"; "new";
-   "this"; "throw"; "try"; "var"; "void"; "while"; "with"; "class";
-   "enum"; "super"; "const"; "yield"; "let" ]
+let keyword = List.fold_left (fun acc x -> StringSet.add x acc)
+ StringSet.empty
+  [
+    (* keywork *)
+    "break";
+    "case"; "catch"; "continue";
+    "debugger";"default";"delete";"do";
+    "else";
+    "finally";"for";"function";
+    "if"; "in";"instanceof";
+    "new";
+    "return";
+    "switch";
+    "this"; "throw"; "try"; "typeof";
+    "var"; "void"; "while"; "with";
+
+    (* reserved for future use *)
+    "class"; "enum"; "export"; "extends"; "import"; "super";
+
+    "implements";"interface";
+    "let";
+    "package";"private";"protected";"public";
+    "static";
+    "yield";
+
+    (* other *)
+    "null";
+    "true";
+    "false";
 
 
-let provided = [
-  "ActiveXObject";
+    "undefined";
+    "this";
+
+]
+
+
+let provided = List.fold_left (fun acc x -> StringSet.add x acc)
+ StringSet.empty
+ [
+
+  "event";
+  "location";
+  "window";
+
   "Array";
   "Date";
   "Math";
@@ -33,29 +71,18 @@ let provided = [
   "Object";
   "RegExp";
   "String";
+
+  "ActiveXObject";
   "XMLHttpRequest";
+
   "decodeURI";
   "decodeURIComponent";
   "encodeURI";
   "encodeURIComponent";
   "escape";
-  "event";
+  "unescape";
+
   "isNaN";
   "parseFloat";
   "parseInt";
-  "location";
-  "window";
-  "unescape";
-  "this";
-  "true"; "false"; "undefined"; "null"
 ]
-
-let reserved = Hashtbl.create 107
-
-let add s = if String.length s <= 5 then Hashtbl.replace reserved s ()
-
-let mem s = Hashtbl.mem reserved s
-
-let _ =
-  List.iter add keyword;
-  List.iter add provided

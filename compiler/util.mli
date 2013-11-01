@@ -27,9 +27,15 @@ module StringMap : Map.S with type key = string
 val opt_filter : ('a -> bool) -> 'a option -> 'a option
 val opt_map : ('a -> 'b) -> 'a option -> 'b option
 val opt_iter : ('a -> unit) -> 'a option -> unit
+val filter_map : ('a -> 'b option) -> 'a list -> 'b list
 
-val find_in_paths : string list -> string -> string
+
+val path_require_findlib : string -> string option
+val find_pkg_dir : string -> string
+val find_in_paths : ?pkg:string -> string list -> string -> string
 val read_file : string -> string
+
+val partition : int -> 'a list -> 'a list list
 
 module Timer : sig
   type t
@@ -37,16 +43,4 @@ module Timer : sig
   val make : unit -> t
   val get : t -> float
   val print : Format.formatter -> t -> unit
-end
-
-module VarPrinter : sig
-  type t
-
-  val create : ?pretty:bool -> unit -> t
-  val reset : t -> unit
-  val to_string : t -> ?origin:int -> int -> string
-  val name : t -> int -> string -> unit
-  val propagate_name : t -> int -> int -> unit
-  val set_pretty : t -> bool -> unit
-
 end

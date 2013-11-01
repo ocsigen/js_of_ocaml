@@ -83,7 +83,7 @@ let rec enot_rec e =
     | J.EBool b ->
         (J.EBool (not b), 0)
     | J.ECall _ | J.EAccess _ | J.EDot _ | J.ENew _ | J.EVar _ | J.EFun _
-    | J.EStr _ | J.EArr _ | J.ENum _ | J.EObj _ | J.EQuote _
+    | J.EStr _ | J.EArr _ | J.ENum _ | J.EObj _ | J.EQuote _ | J.ERegexp _
     | J.EUn
         (( J.IncrA
          | J.IncrB
@@ -315,7 +315,8 @@ let rec get_variable acc = function
   | J.EStr _
   | J.EBool _
   | J.ENum _
-  | J.EQuote _ -> acc
+  | J.EQuote _
+  | J.ERegexp _ -> acc
   | J.EArr a -> List.fold_left (fun acc i ->
                   match i with
                     | None -> acc

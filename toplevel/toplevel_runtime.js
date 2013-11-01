@@ -79,10 +79,6 @@ function caml_ml_close_channel () { return 0;}
 
 //////////////////////////////////////////////////////////////////////
 
-//Provides: caml_get_global_data
-//Requires: caml_global_data
-function caml_get_global_data () { return caml_global_data; }
-
 //Provides: caml_get_section_table
 //Requires: caml_global_data
 function caml_get_section_table () { return caml_global_data.toc; }

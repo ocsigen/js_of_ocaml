@@ -48,6 +48,10 @@ var caml_global_data = [0];
 //Requires: caml_global_data
 function caml_register_global (n, v) { caml_global_data[n + 1] = v; }
 
+//Provides: caml_get_global_data
+//Requires: caml_global_data
+function caml_get_global_data () { return caml_global_data; }
+
 //Provides: caml_raise_constant
 function caml_raise_constant (tag) { throw [0, tag]; }
 

@@ -69,7 +69,8 @@ let s =
    String.make x 'a';;\n\
    sin 1.;;\n\
    let rec fact n = if n = 0 then 1. else float n *. fact (n - 1);;\n\
-   fact 20;;\n"
+   fact 20;;\n\
+   \"abc\" < \"def\";;\n"
 
 let doc = Dom_html.document
 let button_type = Js.string "button"

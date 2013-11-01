@@ -20,43 +20,40 @@
 
 let aliases = Hashtbl.create 17
 
-let alias nm nm' = Hashtbl.add aliases nm nm'
 let rec resolve nm = try resolve (Hashtbl.find aliases nm) with Not_found -> nm
 
 (****)
 
 type kind = [ `Pure | `Mutable | `Mutator ]
 
+type t = [
+  | `Requires of Parse_info.t option * string list
+  | `Provides of Parse_info.t option * string * kind ]
+
 let kinds = Hashtbl.create 37
 
-let register p k = Hashtbl.add kinds p k
 
 let kind nm = try Hashtbl.find kinds (resolve nm) with Not_found -> `Mutator
 
 let is_pure nm = kind nm <> `Mutator
 
 let exists p = Hashtbl.mem kinds p
-(****)
 
-let primitives = ref Util.StringSet.empty
+open Util
 
-let ign =
-  let h = Hashtbl.create 17 in
-  List.iter (fun s -> Hashtbl.add h s ()) Reserved.provided;
-  (fun s ->
-    let s =
-      try
-        let i = String.index s '.' in
-        String.sub s 0 i
-      with Not_found -> s in
-    Hashtbl.mem h s)
+let externals = ref StringSet.empty
 
-let mark_used nm =
-  if not (ign nm)
-  then primitives := Util.StringSet.add nm !primitives
+let add_external name = externals := StringSet.add name !externals
 
-let list_used () =
-  Format.eprintf "Primitives:@.";
-  Util.StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) !primitives
+let is_external name = StringSet.mem name !externals
 
-let get_used () = Util.StringSet.elements !primitives
+let get_external () = !externals
+
+let register p k =
+  add_external p;
+  Hashtbl.add kinds p k
+
+let alias nm nm' =
+  add_external nm';
+  add_external nm;
+  Hashtbl.add aliases nm nm'

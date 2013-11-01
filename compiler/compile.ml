@@ -20,23 +20,23 @@
 
 let times = Option.Debug.find "times"
 
-let f linkall paths js_files input_file output_file =
+let f toplevel linkall paths js_files input_file output_file =
   let t = Util.Timer.make () in
   List.iter Linker.add_file js_files;
-  let paths = List.rev_append paths [Findlib.package_directory "stdlib"] in
+  let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
   let t1 = Util.Timer.make () in
   let p,d =
     match input_file with
       None ->
-        Parse_bytecode.from_channel ~paths stdin
+        Parse_bytecode.from_channel ~toplevel ~paths stdin
     | Some f ->
         let ch = open_in_bin f in
-        let p = Parse_bytecode.from_channel ~paths ch in
+        let p = Parse_bytecode.from_channel ~toplevel ~paths ch in
         close_in ch;
         p
   in
   if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
-  let output_program fmt = Driver.f ~linkall fmt d p in
+  let output_program fmt = Driver.f ~toplevel ~linkall fmt d p in
   begin match output_file with
     | None ->
       output_program (Pretty_print.to_out_channel stdout)
@@ -56,18 +56,20 @@ let f linkall paths js_files input_file output_file =
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
 
 let _ =
-  Findlib.init ();
   Util.Timer.init Unix.gettimeofday;
   let js_files = ref [] in
   let output_file = ref None in
   let input_file = ref None in
   let no_runtime = ref false in
   let linkall = ref false in
+  let toplevel = ref false in
   let paths = ref [] in
   let options =
     [("-debug", Arg.String Option.Debug.set, "<name> debug module <name>");
      ("-disable",
       Arg.String Option.Optim.disable, "<name> disable optimization <name>");
+     ("-enable",
+      Arg.String Option.Optim.enable, "<name> enable optimization <name>");
      ("-pretty", Arg.Unit (fun () -> Option.Optim.enable "pretty"), " pretty print the output");
      ("-debuginfo", Arg.Unit (fun () -> Option.Optim.enable "debuginfo"), " output debug info");
      ("-opt", Arg.Int Driver.set_profile, "<oN> set optimization profile : o1 (default), o2, o3");
@@ -75,13 +77,13 @@ let _ =
      ("-linkall", Arg.Set linkall, " link all primitives");
      ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
       " do not include the standard runtime");
-     ("-toplevel", Arg.Unit Parse_bytecode.build_toplevel,
-      " compile a toplevel");
+     ("-toplevel", Arg.Set toplevel, " compile a toplevel");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");
      ("-o", Arg.String (fun s -> output_file := Some s),
       "<file> set output file name to <file>")]
   in
+  if !toplevel then linkall:=true;
   Arg.parse (Arg.align options)
     (fun s ->
        if Filename.check_suffix s ".js" then
@@ -92,7 +94,7 @@ let _ =
   let runtime = if !no_runtime then [] else ["+runtime.js"] in
   let chop_extension s =
     try Filename.chop_extension s with Invalid_argument _ -> s in
-  f !linkall !paths (runtime @ List.rev !js_files) !input_file
+  f !toplevel !linkall !paths (runtime @ List.rev !js_files) !input_file
     (match !output_file with
        Some _ -> !output_file
      | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") !input_file)

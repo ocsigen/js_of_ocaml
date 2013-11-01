@@ -18,10 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type debug_loc = int -> (string * int * int * int) option
+type debug_loc = Javascript.loc -> Parse_info.t option
 
-val from_channel : paths:string list -> in_channel -> Code.program * debug_loc
+val from_channel : ?toplevel:bool -> paths:string list -> in_channel -> Code.program * debug_loc
 
-val from_string : string array -> string -> Code.program * debug_loc
-
-val build_toplevel : unit -> unit
+val from_string : ?toplevel:bool -> string array -> string -> Code.program * debug_loc

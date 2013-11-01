@@ -170,7 +170,6 @@ COMPACT MODE
 ============
 - We need to insert newlines from time to time to avoid problems with
   some routers...
-- eliminate redundant "var"?
 
 IMPROVEMENTS
 ============

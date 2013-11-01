@@ -1,7 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
+ * Copyright (C) 2013 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,4 +17,26 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val program : Pretty_print.t ->  Parse_bytecode.debug_loc -> Javascript.program -> unit
+
+
+%token TProvides TRequires
+%token<Primitive.kind > TAnnot
+%token<string> TIdent
+%token TComma TSemi EOF EOL
+%token<string> TOTHER
+
+%start annot
+%type <Primitive.t> annot
+
+%%
+
+annot:
+  | TProvides TSemi id=TIdent opt=option(TAnnot) endline
+    { `Provides (None,id,match opt with None -> `Mutator | Some k -> k) }
+  | TRequires TSemi l=separated_nonempty_list(TComma,TIdent) endline
+    { `Requires (None,l) }
+
+endline:
+  | EOL { () }
+  | EOF { () }
+  | TOTHER { failwith $1  }

@@ -19,123 +19,88 @@
  * license.txt for more details.
  *)
 
-open Parser_js
+open Js_parser
 
-(*****************************************************************************)
-(* Helpers *)
-(*****************************************************************************)
+let tok lexbuf = Lexing.lexeme lexbuf
 
-exception Lexical of string
-
-(* pad: hack around ocamllex to emulate the yyless of flex. It seems
- * to work.
- *)
-let yyless n lexbuf =
-  lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - n;
-  let currp = lexbuf.Lexing.lex_curr_p in
-  lexbuf.Lexing.lex_curr_p <- { currp with
-    Lexing.pos_cnum = currp.Lexing.pos_cnum - n;
-  }
-
-let tok     lexbuf  =
-  Lexing.lexeme lexbuf
-let tokinfo lexbuf  = Parse_info.t_of_lexbuf lexbuf
-  (* Parse_info.tokinfo_str_pos (Lexing.lexeme lexbuf) (Lexing.lexeme_start lexbuf) *)
-
-(* ---------------------------------------------------------------------- *)
 let keyword_table =
   let h = Hashtbl.create 17 in
   List.iter (fun (s,f) -> Hashtbl.add h s f ) [
 
-   (* todo? had some special handling in lexer of marcel *)
-  "catch",      (fun ii -> T_CATCH ii);
-  "finally",    (fun ii -> T_FINALLY ii);
-  "in",         (fun ii -> T_IN ii);
-  "instanceof", (fun ii -> T_INSTANCEOF ii);
+    "catch",      (fun ii -> T_CATCH ii);
+    "finally",    (fun ii -> T_FINALLY ii);
+    "in",         (fun ii -> T_IN ii);
+    "instanceof", (fun ii -> T_INSTANCEOF ii);
 
-  (* todo? had some special handling in lexer of marcel *)
-  "else",       (fun ii -> T_ELSE ii);
-  "while",      (fun ii -> T_WHILE ii);
+    "else",       (fun ii -> T_ELSE ii);
+    "while",      (fun ii -> T_WHILE ii);
 
-  "break",      (fun ii -> T_BREAK ii);
-  "case",       (fun ii -> T_CASE ii);
-  "continue",   (fun ii -> T_CONTINUE ii);
-  "default",    (fun ii -> T_DEFAULT ii);
-  "delete",     (fun ii -> T_DELETE ii);
-  "do",         (fun ii -> T_DO ii);
-  "else",       (fun ii -> T_ELSE ii);
-  "for",        (fun ii -> T_FOR ii);
-  "function",   (fun ii -> T_FUNCTION ii);
-  "if",         (fun ii -> T_IF ii);
-  "new",        (fun ii -> T_NEW ii);
-  "return",     (fun ii -> T_RETURN ii);
-  "switch",     (fun ii -> T_SWITCH ii);
-  "this",       (fun ii -> T_THIS ii);
-  "throw",      (fun ii -> T_THROW ii);
-  "try",        (fun ii -> T_TRY ii);
-  "typeof",     (fun ii -> T_TYPEOF ii);
-  "var",        (fun ii -> T_VAR ii);
-  "void",       (fun ii -> T_VOID ii);
-  "while",      (fun ii -> T_WHILE ii);
-  "with",       (fun ii -> T_WITH ii);
-  "const",      (fun ii -> T_CONST ii);
-  "null",       (fun ii -> T_NULL ii);
-  "false",      (fun ii -> T_FALSE ii);
-  "true",       (fun ii -> T_TRUE ii);
-];
+    "break",      (fun ii -> T_BREAK ii);
+    "case",       (fun ii -> T_CASE ii);
+    "continue",   (fun ii -> T_CONTINUE ii);
+    "default",    (fun ii -> T_DEFAULT ii);
+    "delete",     (fun ii -> T_DELETE ii);
+    "do",         (fun ii -> T_DO ii);
+    "else",       (fun ii -> T_ELSE ii);
+    "for",        (fun ii -> T_FOR ii);
+    "function",   (fun ii -> T_FUNCTION ii);
+    "if",         (fun ii -> T_IF ii);
+    "new",        (fun ii -> T_NEW ii);
+    "return",     (fun ii -> T_RETURN ii);
+    "switch",     (fun ii -> T_SWITCH ii);
+    "this",       (fun ii -> T_THIS ii);
+    "throw",      (fun ii -> T_THROW ii);
+    "try",        (fun ii -> T_TRY ii);
+    "typeof",     (fun ii -> T_TYPEOF ii);
+    "var",        (fun ii -> T_VAR ii);
+    "void",       (fun ii -> T_VOID ii);
+    "while",      (fun ii -> T_WHILE ii);
+    "with",       (fun ii -> T_WITH ii);
+    "null",       (fun ii -> T_NULL ii);
+    "false",      (fun ii -> T_FALSE ii);
+    "true",       (fun ii -> T_TRUE ii);
+  ];
   h
 
-(* ---------------------------------------------------------------------- *)
-
-type state_mode =
-  | INITIAL
-
-let default_state = INITIAL
-
-(* The logic to modify _last_non_whitespace_like_token is in the
- * caller of the lexer, that is in Parse_js.tokens.
- * Used for ambiguity between / as a divisor and start of regexp.
- *)
-let _last_non_whitespace_like_token =
-  ref (None: Parser_js.token option)
-
-exception Token of Parser_js.token
-
-let reset () =
-   _last_non_whitespace_like_token := None;
-  ()
+let hexa_to_int = function
+  | '0'..'9' as x -> Char.code x - Char.code '0'
+  | 'a'..'f' as x -> Char.code x - Char.code 'a' + 10
+  | 'A'..'F' as x -> Char.code x - Char.code 'A' + 10
+  | _ -> assert false;;
 
 }
 
 (*****************************************************************************)
-let _WHITESPACE = [' ' '\n' '\r' '\t']+
-let TABS_AND_SPACES = [' ''\t']*
+
 let NEWLINE = ("\r"|"\n"|"\r\n")
+let hexa = ['0'-'9''a'-'f''A'-'F']
 
 (*****************************************************************************)
 
-rule initial = parse
+rule initial tokinfo prev = parse
 
   (* ----------------------------------------------------------------------- *)
   (* spacing/comments *)
   (* ----------------------------------------------------------------------- *)
   | "/*" {
       let info = tokinfo lexbuf in
-      let com = st_comment lexbuf in
-      TComment(info)
+      let buf = Buffer.create 127 in
+      st_comment buf lexbuf;
+      TComment(info,Buffer.contents buf)
     }
 
   | "//" {
       let info = tokinfo lexbuf in
-      let com = st_one_line_comment lexbuf in
-      TComment(info)
+      let buf = Buffer.create 127 in
+      st_one_line_comment buf lexbuf;
+      TComment(info,Buffer.contents buf)
     }
 
-  | [' ' '\t' ]+            { TCommentSpace(tokinfo lexbuf) }
+  | [' ' '\t' ]+            { TCommentSpace(tokinfo lexbuf,"") }
   | NEWLINE {
       lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with
                                       Lexing.pos_lnum = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum + 1 };
-      TCommentNewline(tokinfo lexbuf) }
+      TCommentNewline(tokinfo lexbuf,"") }
 
   (* ----------------------------------------------------------------------- *)
   (* symbols *)
@@ -211,45 +176,43 @@ rule initial = parse
   (* Constant *)
   (* ----------------------------------------------------------------------- *)
 
-  | "0x"['a'-'f''A'-'F''0'-'9']+ {
+  | "0x" hexa+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER (s, `Int (int_of_string s), info)
     }
   | '0'['0'-'7']+ {
       let s = tok lexbuf in
+      let s' = String.sub s 1 (String.length s - 1 ) in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER (s, `Int (int_of_string ("0o"^s')), info)
     }
 
   | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER (s, `Float (float_of_string s),info)
     }
 
   | ['0'-'9']+'.'? |
     ['0'-'9']*'.'['0'-'9']+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, info)
+      T_NUMBER (s, `Float (float_of_string s), info)
     }
 
   (* ----------------------------------------------------------------------- *)
   (* Strings *)
   (* ----------------------------------------------------------------------- *)
-  | "'" {
+  | ("'"|'"') as quote {
       let info = tokinfo lexbuf in
-      let s = string_quote lexbuf in
+      let buf = Buffer.create 127 in
+      string_quote quote buf lexbuf;
+      let s = Buffer.contents buf in
       (* s does not contain the enclosing "'" but the info does *)
       T_STRING (s, info)
     }
 
-  | '"' {
-      let info = tokinfo lexbuf in
-      let s = string_double_quote lexbuf in
-      T_STRING (s, info)
-    }
 
   (* ----------------------------------------------------------------------- *)
   (* Regexp *)
@@ -273,7 +236,7 @@ rule initial = parse
   | "/" {
       let info = tokinfo lexbuf in
 
-      match !_last_non_whitespace_like_token with
+      match prev with
       | Some (
             T_IDENTIFIER _
           | T_NUMBER _
@@ -289,8 +252,10 @@ rule initial = parse
           T_DIV (info);
       | _ ->
           (* raise (Token t); *)
-          let s = regexp lexbuf in
-          T_REGEX ("/" ^ s, info)
+          let buf = Buffer.create 127 in
+          Buffer.add_char buf '/';
+          regexp buf lexbuf;
+          T_REGEX (Buffer.contents buf, info)
     }
 
   (* ----------------------------------------------------------------------- *)
@@ -304,80 +269,90 @@ rule initial = parse
   | eof { EOF (tokinfo lexbuf) }
 
   | _ {
-      Printf.eprintf "LEXER:unrecognised symbol, in token rule: %s" (tok lexbuf);
+      Format.eprintf "LEXER:unrecognised symbol, in token rule: %s@." (tok lexbuf);
       TUnknown (tokinfo lexbuf)
     }
 (*****************************************************************************)
-and string_quote = parse
-  | "'"            { "" }
-  | (_ as x)       { String.make 1  x^string_quote lexbuf}
-  | ("\\" (_ as v)) as x {
-      (* check char ? *)
-      (match v with
-      | _ -> ()
-      );
-      x ^ string_quote lexbuf
-    }
-  | eof { Printf.eprintf  "LEXER: WIERD end of file in quoted string"; ""}
 
-and string_double_quote  = parse
-  | '"'            { "" }
-  | (_ as x)       { String.make 1  x^string_double_quote lexbuf}
-  | ("\\" (_ as v)) as x {
-      (* check char ? *)
-      (match v with
-      | _ -> ()
-      );
-      x ^ string_double_quote lexbuf
+and string_escape quote buf = parse
+  | '\\'{ Buffer.add_string buf "\\\\" }
+  | 'x' (hexa as a) (hexa as b)
+    { let code = hexa_to_int a * 16 + hexa_to_int b in
+      if code > 127
+      then
+        let c1 = code lsr 6 + 0xC0
+        and c2 = code land 0x3f + 0x80 in
+        Buffer.add_char buf (Char.chr c1);
+        Buffer.add_char buf (Char.chr c2)
+      else Buffer.add_char buf (Char.chr code) }
+  | 'u' hexa hexa hexa hexa {
+      Buffer.add_char buf '\\';
+      Buffer.add_string buf (Lexing.lexeme lexbuf) }
+  | (_ as c)
+    { Buffer.add_char buf c }
+      (* if c = quote *)
+      (* then Buffer.add_char buf quote *)
+      (* else Buffer.add_char buf c } *)
+
+
+
+and string_quote q buf = parse
+  | ("'"|'"') as q' {
+    if q = q'
+    then ()
+    else (Buffer.add_char buf q'; string_quote q buf lexbuf) }
+  | '\\' {
+      string_escape q buf lexbuf;
+      string_quote q buf lexbuf
     }
-  | eof { Printf.eprintf "LEXER: WIERD end of file in double quoted string"; ""}
+  | (_ as x)       { Buffer.add_char buf x; string_quote q buf lexbuf }
+  | eof { Format.eprintf  "LEXER: WIERD end of file in quoted string@."; ()}
 
 (*****************************************************************************)
-and regexp = parse
-  | '/'            { "/" ^ regexp_maybe_ident lexbuf }
-  | (_ as x)       { String.make 1 x^regexp lexbuf}
-  | ("\\" (_ as v)) as x {
-      (* check char ? *)
-      (match v with
-      | _ -> ()
-      );
-      x ^ regexp lexbuf
+and regexp buf = parse
+  | '/'            { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
+  | ("\\/"|"\\\\") as x {
+      Buffer.add_string buf x;
+      regexp buf lexbuf
     }
-  | eof { Printf.eprintf "LEXER: WIERD end of file in regexp"; ""}
+  | (_ as x)       { Buffer.add_char buf x; regexp buf lexbuf}
+  | eof { Format.eprintf "LEXER: WIERD end of file in regexp@."; ()}
 
-and regexp_maybe_ident = parse
-  | ['A'-'Z''a'-'z']* { tok lexbuf }
+and regexp_maybe_ident buf = parse
+  | ['A'-'Z''a'-'z']* { Buffer.add_string buf (tok lexbuf) }
 
 (*****************************************************************************)
 
-and st_comment = parse
-  | "*/" { tok lexbuf }
+and st_comment buf = parse
+  | "*/" { Buffer.add_string buf (tok lexbuf) }
 
   (* noteopti: *)
-  | [^'*']+ { let s = tok lexbuf in s ^ st_comment lexbuf }
-  | "*"     { let s = tok lexbuf in s ^ st_comment lexbuf }
+  | [^'*']+ { Buffer.add_string buf (tok lexbuf);st_comment buf lexbuf }
+  | '*'     { Buffer.add_char buf '*';st_comment buf lexbuf }
 
-  | eof { Printf.eprintf "LEXER: end of file in comment"; "*/"}
+  | eof { Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "*/"}
   | _  {
       let s = tok lexbuf in
-      Printf.eprintf "LEXER: unrecognised symbol in comment: %s" s;
-      s ^ st_comment lexbuf
+      Format.eprintf "LEXER: unrecognised symbol in comment: %s@." s;
+      Buffer.add_string buf s;
+      st_comment buf lexbuf
     }
 
-and st_one_line_comment = parse
+and st_one_line_comment buf = parse
   | [^'\n' '\r']* {
-      let s = tok lexbuf in
-      s ^ st_one_line_comment lexbuf
+      Buffer.add_string buf (tok lexbuf);
+      st_one_line_comment buf lexbuf
     }
 
   | NEWLINE {
       lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with
                                       Lexing.pos_lnum = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum + 1 };
 
-      tok lexbuf }
+      Buffer.add_string buf (tok lexbuf); }
 
-  | eof { Printf.eprintf "LEXER: end of file in comment"; "\n" }
+  | eof { Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "\n" }
   | _ {
-      Printf.eprintf "LEXER:unrecognised symbol, in st_one_line_comment rule: %s " (tok lexbuf);
-      tok lexbuf
+      let other = tok lexbuf in
+      Format.eprintf "LEXER:unrecognised symbol, in st_one_line_comment rule: %s@." other;
+      Buffer.add_string buf other
     }

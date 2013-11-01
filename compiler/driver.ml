@@ -20,6 +20,9 @@
 
 let debug = Option.Debug.find "main"
 let times = Option.Debug.find "times"
+
+open Util
+
 let tailcall p =
   if debug () then Format.eprintf "Tail-call optimization...@.";
   Tailcall.f p
@@ -149,10 +152,10 @@ let o3 =
 
 let profile = ref o1
 
-let generate ~standalone (p,live_vars,_) =
+let generate (p,live_vars,_) =
   if times ()
   then Format.eprintf "Start Generation...@.";
-  Generate.f ~standalone p live_vars
+  Generate.f p live_vars
 
 
 let header formatter ~standalone js =
@@ -163,32 +166,101 @@ let header formatter ~standalone js =
   end;
   js
 
+let debug_linker = Option.Debug.find "linker"
 let link formatter ~standalone ?linkall js =
   if standalone
   then
     begin
       if times ()
       then Format.eprintf "Start Linking...@.";
-      let missing = Linker.resolve_deps ?linkall formatter (Primitive.get_used ()) in
-      match missing with
-        | [] -> ()
-        | l ->
-          Format.eprintf "Missing primitives:@.";
-          List.iter (fun nm -> Format.eprintf "  %s@." nm) l
+      let traverse = new Js_traverse.free in
+      let js = traverse#program js in
+      let free = traverse#get_free_name in
 
-    end;
-  js
+      let prim = Primitive.get_external () in
+      let prov = Linker.get_provided () in
+
+      let all_external = StringSet.union prim prov in
+
+      let used = StringSet.inter free all_external in
+
+      let other =  StringSet.diff free used in
+
+      let res = VarPrinter.get_reserved() in
+      let other = StringSet.diff other res in
+      let js,missing = Linker.resolve_deps ?linkall js used in
+      if not (StringSet.is_empty missing)
+      then begin
+        Format.eprintf "Missing primitives:@.";
+        StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
+      end;
+
+      let probably_prov = StringSet.inter other Reserved.provided in
+      let other = StringSet.diff other probably_prov in
+
+      if not (StringSet.is_empty other) && debug_linker ()
+      then
+        begin
+          Format.eprintf "Missing variables:@.";
+          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other
+        end;
+
+      if not (StringSet.is_empty probably_prov) && debug_linker ()
+      then
+        begin
+          Format.eprintf "Variables provided by the browser:@.";
+          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov
+        end;
+      js
+    end
+  else js
 
 let coloring js =
   if times ()
   then Format.eprintf "Start Coloring...@.";
-  js,Js_var.program js
+  Js_assign.program js
 
-
-let output formatter d (js,to_string) =
+let output formatter d js =
   if times ()
   then Format.eprintf "Start Writing file...@.";
-  Js_output.program formatter d to_string js
+  Js_output.program formatter d js
+
+let pack ~standalone ?(toplevel=false)?(linkall=false) js =
+  let module J = Javascript in
+  if times ()
+  then Format.eprintf "Start Optimizing js...@.";
+  (* pre pack optim *)
+  let js =
+    if Option.Optim.share_constant ()
+    then (new Js_traverse.share_constant)#program js
+    else js in
+  let js =
+    if Option.Optim.compact_vardecl ()
+    then (new Js_traverse.compact_vardecl)#program js
+    else js in
+
+  (* pack *)
+  let js = if standalone then
+      let f = J.EFun ((None, [], js), None) in
+      [J.Statement (J.Expression_statement ((J.ECall (f, [])), None))]
+    else
+      let f = J.EFun ((None, [J.V (Code.Var.fresh ())], js), None) in
+      [J.Statement (J.Expression_statement (f, None))] in
+
+  (* post pack optim *)
+  let js = (new Js_traverse.clean)#program js in
+  let js =
+    if (Option.Optim.shortvar ())
+    then
+      let keeps =
+        if toplevel
+        then Primitive.get_external ()
+        else StringSet.empty in
+      let keeps = StringSet.add "caml_get_global_data" keeps in
+      (new Js_traverse.rename_variable keeps)#program js
+    else js in
+  js
+
 
 
 let configure formatter p =
@@ -197,16 +269,19 @@ let configure formatter p =
   Code.Var.set_pretty pretty;
   p
 
-let f ?(standalone=true) ?linkall formatter d =
+let f ?(standalone=true) ?toplevel ?linkall formatter d =
   configure formatter >>
   !profile >>
   deadcode' >>
-  generate ~standalone >>
+  generate >>
+
+  link formatter ~standalone ?linkall >>
+
+  pack ~standalone ?linkall ?toplevel >>
+
   coloring >>
 
   header formatter ~standalone >>
-  link formatter ~standalone ?linkall >>
-
   output formatter d
 
 let from_string prims s formatter =

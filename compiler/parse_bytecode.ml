@@ -29,7 +29,7 @@ let debug = Option.Debug.find "parser"
 
 let blocks = ref AddrSet.empty
 
-type debug_loc = int -> (string * int * int * int) option
+type debug_loc = Javascript.loc -> Parse_info.t option
 
 let add_jump info pc = blocks := AddrSet.add pc !blocks
 
@@ -214,8 +214,11 @@ module Debug = struct
       let ev = Hashtbl.find events_by_pc pc in
       let loc = ev.ev_loc in
       let pos = loc.li_start in
-      Some (pos.pos_fname, pos.pos_lnum, pos.pos_cnum - pos.pos_bol,
-            loc.li_end.pos_cnum - loc.li_end.pos_bol)
+      Some {Parse_info.name = pos.pos_fname;
+            line=pos.pos_lnum;
+            col=pos.pos_cnum - pos.pos_bol;
+            (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
+            idx=0}
     with Not_found ->
       None
 
@@ -416,7 +419,9 @@ end
 let primitive_name state i =
   let g = State.globals state in
   assert (i >= 0 && i <= Array.length g.primitives);
-  g.primitives.(i)
+  let prim = g.primitives.(i) in
+  Primitive.add_external prim;
+  prim
 
 let access_global g i =
   match g.vars.(i) with
@@ -1555,19 +1560,7 @@ let match_exn_traps ((_, blocks, _) as p) =
 
 (****)
 
-let is_toplevel = ref false
-
-let build_toplevel () = is_toplevel := true
-
-let set_global x v rem =
-  let globals = Var.fresh () in
-  Let (globals,
-       Prim (Extern "caml_js_var", [Pc (String "caml_global_data")])) ::
-  Let (Var.fresh (),
-       Prim (Extern "caml_js_set", [Pv globals; Pc (String x); Pv v])) ::
-  rem
-
-let parse_bytecode code state standalone_info =
+let parse_bytecode ?(toplevel=false) code state standalone_info =
   Code.Var.reset ();
   analyse_blocks code;
   compile_block code 0 state;
@@ -1590,6 +1583,16 @@ let parse_bytecode code state standalone_info =
       Some (symb, crcs, prim, paths) ->
         let l = ref [] in
 
+
+        let set_global x v rem =
+          let globals = Var.fresh () in
+          Let (globals,
+               Prim (Extern "caml_get_global_data", [])) ::
+            Let (Var.fresh (),
+                 Prim (Extern "caml_js_set", [Pv globals; Pc (String x); Pv v])) ::
+            rem in
+
+
         let register_global n =
           l :=
             let x = Var.fresh () in
@@ -1611,7 +1614,7 @@ let parse_bytecode code state standalone_info =
           | _ ->
               ()
         done;
-        if !is_toplevel then begin
+        if toplevel then begin
           (* Include linking information *)
           let toc =
             [("SYMB", Obj.repr symb); ("CRCS", crcs); ("PRIM", Obj.repr prim)]
@@ -1648,8 +1651,7 @@ let parse_bytecode code state standalone_info =
         let globals = Var.fresh () in
         let l =
           ref [Let (globals,
-                    Prim (Extern "caml_js_var",
-                          [Pc (String "caml_global_data")]))]
+                    Prim (Extern "caml_get_global_data", []))]
         in
         for i = 0 to Array.length g.vars - 1 do
           match g.vars.(i) with
@@ -1749,7 +1751,7 @@ let fix_min_max_int code =
 
 (****)
 
-let from_channel ~paths ic =
+let from_channel ?(toplevel=false) ~paths ic =
   let toc = read_toc ic in
   let primitives = read_primitive_table toc ic in
   let code_size = seek_section toc ic "CODE" in
@@ -1770,9 +1772,17 @@ let from_channel ~paths ic =
   end;
 
   let globals = make_globals (Array.length init_data) init_data primitives in
-  if !is_toplevel then begin
+  if toplevel then begin
     Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
-    Primitive.mark_used "caml_string_greaterthan"
+    (* @vouillon: *)
+    (* we should then use the -linkalloption to build the toplevel. *)
+    (* The OCaml compiler can generate code using this primitive but *)
+    (* does not use it itself. This is the only primitive in this case. *)
+    (* Ideally, Js_of_ocaml should parse the .mli files for primitives as *)
+    (* well as marking this primitive as potentially used. But *)
+    (* the -linkall option is probably good enough. *)
+
+    (* Primitive.mark_used "caml_string_greaterthan" *)
   end;
 
   fix_min_max_int code;
@@ -1785,10 +1795,10 @@ let from_channel ~paths ic =
   let prim = String.create len in
   really_input ic prim 0 len;
 
-  parse_bytecode code state (Some (symbols, crcs, prim, paths))
+  parse_bytecode ~toplevel code state (Some (symbols, crcs, prim, paths))
 
 (* As input: list of primitives + size of global table *)
-let from_string primitives code =
+let from_string ?toplevel primitives code =
   let globals = make_globals 0 [||] primitives in
   let state = State.initial globals in
-  parse_bytecode code state None
+  parse_bytecode ?toplevel code state None
