@@ -204,58 +204,48 @@ end) = struct
     let l = String.length s in
     let b = Buffer.create (4 * l) in
     let conv = "0123456789abcdef" in
-    let is_hexa = function
-      | '0' .. '9' -> true
-      | 'a' .. 'z' -> true
-      | 'A' .. 'Z' -> true
-      | _ -> false in
-    let is_uni pos =
-      pos + 5 < l &&
-      s.[pos] = '\\' &&
-      s.[pos +1 ] = 'u' &&
-      is_hexa s.[pos+2] && is_hexa s.[pos+3] && is_hexa s.[pos+4] && is_hexa s.[pos+5] in
-    let i = ref 0 in
-    while !i < l do
-      let c = s.[!i] in
-      begin
-        match c with
-          | '\000' when !i = l - 1 || s.[!i + 1] < '0' || s.[!i + 1] > '9' ->
+    for i = 0 to l - 1 do
+      let c = s.[i] in
+      match c with
+          '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' ->
             Buffer.add_string b "\\0"
-          | '\b' ->
-            Buffer.add_string b "\\b"
-          | '\t' ->
-            Buffer.add_string b "\\t"
-          | '\n' ->
-            Buffer.add_string b "\\n"
-          (* This escape sequence is not supported by IE < 9
-             | '\011' ->
-             Buffer.add_string b "\\v"
-          *)
-          | '\012' ->
-            Buffer.add_string b "\\f"
-          | '\r' ->
-            Buffer.add_string b "\\r"
-          | '\\' ->
-            if is_uni !i
-            then begin Buffer.add_string b "\\u"; incr i end
-            else Buffer.add_string b "\\\\"
-          | '\000' .. '\031'  | '\127'->
-            let c = Char.code c in
-            Buffer.add_string b "\\x";
-            Buffer.add_char b conv.[c lsr 4];
-            Buffer.add_char b conv.[c land 0xf]
-          | '\128' .. '\255' when not utf ->
-            let c = Char.code c in
-            Buffer.add_string b "\\x";
-            Buffer.add_char b conv.[c lsr 4];
-            Buffer.add_char b conv.[c land 0xf]
-          | _ ->
-            if c = quote then Buffer.add_char b '\\';
-            Buffer.add_char b c
-      end;
-      incr i
+        | '\b' ->
+          Buffer.add_string b "\\b"
+        | '\t' ->
+          Buffer.add_string b "\\t"
+        | '\n' ->
+          Buffer.add_string b "\\n"
+      (* This escape sequence is not supported by IE < 9
+         | '\011' ->
+         Buffer.add_string b "\\v"
+      *)
+        | '\012' ->
+          Buffer.add_string b "\\f"
+        | '\r' ->
+          Buffer.add_string b "\\r"
+        | '\\' ->
+          Buffer.add_string b "\\\\"
+        | '\000' .. '\031'  | '\127'->
+          let c = Char.code c in
+          Buffer.add_string b "\\x";
+          Buffer.add_char b conv.[c lsr 4];
+          Buffer.add_char b conv.[c land 0xf]
+        | '\128' .. '\255' when not utf ->
+          let c = Char.code c in
+          Buffer.add_string b "\\x";
+          Buffer.add_char b conv.[c lsr 4];
+          Buffer.add_char b conv.[c land 0xf]
+        | _ ->
+          if c = quote then Buffer.add_char b '\\';
+          Buffer.add_char b c
     done;
     Buffer.contents b
+
+  let regexp_compact s o = false &&
+    not ( s = ""
+       || s.[0] = '*'
+       || s.[0] = '/'
+       ||s.[0] = '[' )
 
   let rec expression l f e =
     match e with
@@ -455,6 +445,10 @@ end) = struct
         PP.string f "()";
         PP.end_group f;
         if l > 15 then begin PP.string f ")"; PP.end_group f end
+      | ENew (EVar (S "RegExp"), Some [EStr (s,_)]) when regexp_compact s None ->
+        PP.string f (Printf.sprintf "/%s/" s)
+      | ENew (EVar (S "RegExp"), Some [EStr (s,_);EStr (s',_)]) when regexp_compact s (Some s')->
+        PP.string f (Printf.sprintf "/%s/%s" s s')
       | ENew (e, Some el) ->
         if l > 15 then begin PP.start_group f 1; PP.string f "(" end;
         PP.start_group f 1;
