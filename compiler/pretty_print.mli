@@ -22,10 +22,11 @@ type t
 
 val string : t -> string -> unit
 
-val genbreak : t -> int -> unit
+val genbreak : t -> string -> int -> unit
 val break : t -> unit
-val space : t -> unit
-val may_space : t -> unit
+val break1 : t -> unit
+val non_breaking_space : t -> unit
+val space : ?indent:int -> t -> unit
 
 val start_group : t -> int -> unit
 val end_group : t -> unit
@@ -36,3 +37,4 @@ val to_out_channel : out_channel -> t
 val to_buffer : Buffer.t -> t
 
 val set_compact : t -> bool -> unit
+val set_needed_space_function : t -> (char -> char -> bool) -> unit

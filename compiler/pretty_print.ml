@@ -37,22 +37,24 @@ type t =
     mutable w : int;
 
     mutable compact : bool;
+
+    mutable needed_space : (char -> char -> bool) option;
     mutable pending_space : bool;
     mutable last_char : char option;
-    output : t -> string -> int -> int -> unit }
+    output : string -> int -> int -> unit }
 
 let spaces = String.make 80 ' '
 
 let rec output_spaces st n =
-  st.output st spaces 0 (min n 80);
+  st.output spaces 0 (min n 80);
   if n > 80 then output_spaces st (n - 80)
 
-let output_newline st = st.output st "\n" 0 1
+let output_newline st = st.output "\n" 0 1
 
 let rec flat_render st l =
   match l with
     Text s :: r | Break (s, _) :: r ->
-      st.output st s 0 (String.length s); flat_render st r
+      st.output s 0 (String.length s); flat_render st r
   | _ :: r ->
       flat_render st r
   | [] ->
@@ -63,7 +65,7 @@ let rec push st e =
     (* Vertical rendering *)
     match e with
       Text s ->
-        st.output st s 0 (String.length s);
+        st.output s 0 (String.length s);
         st.cur <- st.cur + String.length s
     | Break (_, offs) ->
         output_newline st;
@@ -111,35 +113,38 @@ let rec push st e =
 
 (****)
 
-let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-let is_num c = (c >= '0' && c <= '9')
-let kind c = is_num c || is_alpha c || c = '_' || c = '$'
-
 let string st s =
   if st.compact then (
+    let len = (String.length s) in
+    if len <> 0
+    then begin
       if st.pending_space
       then
         begin
           st.pending_space <- false;
-          match st.last_char with
-            | None -> ()
-            | Some last ->
-              if kind last = kind s.[0] then st.output st " " 0 1
+          match st.last_char,st.needed_space with
+            | Some last,Some f ->
+              if  f last s.[0]
+              then st.output " " 0 1
+            | _, None -> st.output " " 0 1
+            | _ ->()
         end;
-      st.output st s 0 (String.length s)
+      st.output s 0 len;
+      st.last_char <- Some (s.[len-1])
+    end
   )
   else push st (Text s)
 
-let genbreak st n =
-  if not st.compact then push st (Break ("", n))
+let genbreak st s n =
+  if not st.compact then push st (Break (s, n))
 
 let break_token = Break ("", 0)
 let break st = if not st.compact then push st break_token
+let break1 st = if not st.compact then push st (Break ("", 1))
 
-let space_token = Break (" ", 0)
-
-let may_space st = if st.compact then st.pending_space <- true else push st (Text " ")
-let space st = may_space st (* if st.compact then st.output st " " 0 1 else push st space_token *)
+let non_breaking_space_token = Text " "
+let non_breaking_space st = if st.compact then st.pending_space <- true else push st non_breaking_space_token
+let space ?(indent=0) st = if st.compact then st.pending_space <- true else push st (Break (" ", indent))
 
 let start_group st n = if not st.compact then push st (Start_group n)
 let end_group st = if not st.compact then push st End_group
@@ -173,17 +178,15 @@ let newline st =
 let to_out_channel ch =
   { indent = 0; box_indent = 0; prev_indents = [];
     limit = 78; cur = 0; l = []; n = 0; w = 0;
-    compact = false; pending_space = false; last_char = None;
-    output = fun st s i l ->
-      if l > 0 then st.last_char <- Some s.[i + l - 1];
-      output ch s i l }
+    compact = false; pending_space = false; last_char = None; needed_space = None;
+    output = fun s i l -> output ch s i l }
 
 let to_buffer b =
   { indent = 0; box_indent = 0; prev_indents = [];
     limit = 78; cur = 0; l = []; n = 0; w = 0;
-    compact = false; pending_space = false; last_char = None;
-    output = fun st s i l ->
-      if l > 0 then st.last_char <- Some s.[i + l - 1];
-      Buffer.add_substring b s i l }
+    compact = false; pending_space = false; last_char = None; needed_space = None;
+    output = fun s i l -> Buffer.add_substring b s i l }
 
 let set_compact st v = st.compact <- v
+
+let set_needed_space_function st f = st.needed_space <- Some f

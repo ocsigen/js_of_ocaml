@@ -575,7 +575,7 @@ end) = struct
       PP.space f;
       PP.string f (ident i);
       PP.string f "=";
-      PP.genbreak f 1;
+      PP.break1 f;
       PP.start_group f 0;
       expression 1 f e;
       if close then PP.string f ";";
@@ -634,13 +634,13 @@ end) = struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        PP.genbreak f 1;
+        PP.break1 f;
         PP.start_group f 0;
         statement f s1;
         PP.end_group f;
         PP.break f;
         PP.string f "else";
-        PP.genbreak f 1;
+        PP.break1 f;
         PP.start_group f 0;
         statement ~last f s2;
         PP.end_group f;
@@ -656,14 +656,13 @@ end) = struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        PP.genbreak f 1;
+        PP.break1 f;
         PP.start_group f 0;
         statement f s1;
         PP.end_group f;
         PP.break f;
         PP.string f "else";
-        PP.genbreak f 1;
-        PP.may_space f;
+        PP.space ~indent:1 f;
         PP.start_group f 0;
         statement ~last f s2;
         PP.end_group f;
@@ -703,13 +702,13 @@ end) = struct
       | Do_while_statement (Block _ as s, e) ->
         PP.start_group f 0;
         PP.string f "do";
-        PP.genbreak f 1;
+        PP.break1 f;
         PP.start_group f 0;
         statement f s;
         PP.end_group f;
         PP.break f;
         PP.string f "while";
-        PP.genbreak f 1;
+        PP.break1 f;
         PP.start_group f 1;
         PP.string f "(";
         expression 0 f e;
@@ -720,14 +719,13 @@ end) = struct
       | Do_while_statement (s, e) ->
         PP.start_group f 0;
         PP.string f "do";
-        PP.genbreak f 1;
-        PP.may_space f;
+        PP.space ~indent:1 f;
         PP.start_group f 0;
         statement f s;
         PP.end_group f;
         PP.break f;
         PP.string f "while";
-        PP.genbreak f 1;
+        PP.break f;
         PP.start_group f 1;
         PP.string f "(";
         expression 0 f e;
@@ -826,7 +824,7 @@ end) = struct
           | Some e ->
             PP.start_group f 7;
             PP.string f "return";
-            PP.may_space f;
+            PP.non_breaking_space f;
             PP.start_group f 0;
             expression 0 f e;
             last_semi();
@@ -891,7 +889,7 @@ end) = struct
       | Throw_statement e ->
         PP.start_group f 6;
         PP.string f "throw";
-        PP.may_space f;
+        PP.non_breaking_space f;
         PP.start_group f 0;
         expression 0 f e;
         last_semi();
@@ -903,8 +901,7 @@ end) = struct
         output_debug_info f pc;
         PP.start_group f 0;
         PP.string f "try";
-        PP.genbreak f 1;
-        PP.may_space f;
+        PP.space ~indent:1 f;
         block f b;
         begin match ctch with
             None ->
