@@ -619,7 +619,7 @@ end) = struct
         Block b ->
           block f b
       | Variable_statement l -> variable_declaration_list (not last) f l
-      | Empty_statement -> last_semi()
+      | Empty_statement -> PP.string f ";"
       | Expression_statement (EVar _, pc)-> last_semi()
       | Expression_statement (e, pc) ->
       (* Parentheses are required when the expression
@@ -742,7 +742,6 @@ end) = struct
         PP.may_space f;
         PP.start_group f 0;
         statement f s;
-        PP.string f ";";
         PP.end_group f;
         PP.break f;
         PP.string f "while";
@@ -883,7 +882,7 @@ end) = struct
           PP.end_group f;
           PP.break f;
           PP.start_group f 0;
-          statement_list ~skip_last_semi:(last && match def with None -> true | _ -> false) f sl;
+          statement_list ~skip_last_semi:(last && def = None) f sl;
           PP.end_group f;
           PP.end_group f;
           PP.break f in
