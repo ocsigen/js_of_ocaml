@@ -553,7 +553,7 @@ end) = struct
         end;
         PP.string f ","; PP.break f; element_list f r
 
-  and function_body f b = source_elements f b
+  and function_body f b = source_elements f ~skip_last_semi:true b
 
   and arguments f l =
     match l with
@@ -613,13 +613,14 @@ end) = struct
         None   -> ()
       | Some e -> expression l f e
 
-  and statement f s =
+  and statement ?(last=false) f s =
+    let last_semi () = if last then () else PP.string f ";" in
     match s with
         Block b ->
           block f b
-      | Variable_statement l -> variable_declaration_list true f l
-      | Empty_statement -> PP.string f ";"
-      | Expression_statement (EVar _, pc)-> PP.string f ";"
+      | Variable_statement l -> variable_declaration_list (not last) f l
+      | Empty_statement -> last_semi()
+      | Expression_statement (EVar _, pc)-> last_semi()
       | Expression_statement (e, pc) ->
       (* Parentheses are required when the expression
          starts syntactically with "{" or "function" *)
@@ -628,17 +629,18 @@ end) = struct
           PP.start_group f 1;
           PP.string f "(";
           expression 0 f e;
-          PP.string f ");";
+          PP.string f ")";
+          last_semi();
           PP.end_group f
         end else begin
           PP.start_group f 0;
           expression 0 f e;
-          PP.string f ";";
+          last_semi();
           PP.end_group f
         end
       | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
       (* Dangling else issue... *)
-        statement f (If_statement (e, Block [s1], s2))
+        statement ~last f (If_statement (e, Block [s1], s2))
       | If_statement (e, s1, Some (Block _ as s2)) ->
         PP.start_group f 0;
         PP.start_group f 1;
@@ -658,7 +660,7 @@ end) = struct
         PP.string f "else";
         PP.genbreak f 1;
         PP.start_group f 0;
-        statement f s2;
+        statement ~last f s2;
         PP.end_group f;
         PP.end_group f
       | If_statement (e, s1, Some s2) ->
@@ -681,7 +683,7 @@ end) = struct
         PP.genbreak f 1;
         PP.may_space f;
         PP.start_group f 0;
-        statement f s2;
+        statement ~last f s2;
         PP.end_group f;
         PP.end_group f
       | If_statement (e, s1, None) ->
@@ -697,7 +699,7 @@ end) = struct
         PP.end_group f;
         PP.break f;
         PP.start_group f 0;
-        statement f s1;
+        statement ~last f s1;
         PP.end_group f;
         PP.end_group f
       | While_statement (e, s) ->
@@ -713,7 +715,7 @@ end) = struct
         PP.end_group f;
         PP.break f;
         PP.start_group f 0;
-        statement f s;
+        statement ~last f s;
         PP.end_group f;
         PP.end_group f
       | Do_while_statement (Block _ as s, e) ->
@@ -729,7 +731,8 @@ end) = struct
         PP.start_group f 1;
         PP.string f "(";
         expression 0 f e;
-        PP.string f ");";
+        PP.string f ")";
+        last_semi();
         PP.end_group f;
         PP.end_group f
       | Do_while_statement (s, e) ->
@@ -747,7 +750,8 @@ end) = struct
         PP.start_group f 1;
         PP.string f "(";
         expression 0 f e;
-        PP.string f ");";
+        PP.string f ")";
+        last_semi();
         PP.end_group f;
         PP.end_group f
       | For_statement (e1, e2, e3, s, pc) ->
@@ -770,7 +774,7 @@ end) = struct
         PP.end_group f;
         PP.break f;
         PP.start_group f 0;
-        statement f s;
+        statement ~last f s;
         PP.end_group f;
         PP.end_group f
       | ForIn_statement (e1, e2, s, pc) ->
@@ -793,25 +797,28 @@ end) = struct
         PP.end_group f;
         PP.break f;
         PP.start_group f 0;
-        statement f s;
+        statement ~last f s;
         PP.end_group f;
         PP.end_group f
       | Continue_statement None ->
-        PP.string f "continue;"
+        PP.string f "continue";
+        last_semi()
       | Continue_statement (Some s) ->
         PP.string f "continue ";
         PP.string f (Javascript.Label.to_string s);
-        PP.string f ";"
+        last_semi()
       | Break_statement None ->
-        PP.string f "break;"
+        PP.string f "break";
+        last_semi()
       | Break_statement (Some s) ->
         PP.string f "break ";
         PP.string f (Javascript.Label.to_string s);
-        PP.string f ";"
+        last_semi()
       | Return_statement e ->
         begin match e with
             None   ->
-              PP.string f "return;"
+              PP.string f "return";
+              last_semi()
           | Some (EFun ((i, l, b), pc)) ->
             output_debug_info f pc;
             PP.start_group f 1;
@@ -831,7 +838,8 @@ end) = struct
             PP.start_group f 1;
             PP.string f "{";
             function_body f b;
-            PP.string f "};";
+            PP.string f "}";
+            last_semi();
             PP.end_group f;
             PP.end_group f
           | Some e ->
@@ -840,7 +848,7 @@ end) = struct
             PP.may_space f;
             PP.start_group f 0;
             expression 0 f e;
-            PP.string f ";";
+            last_semi();
             PP.end_group f;
             PP.end_group f
       (* There MUST be a space between the return and its
@@ -850,7 +858,7 @@ end) = struct
         PP.string f (Javascript.Label.to_string i);
         PP.string f ":";
         PP.break f;
-        statement f s
+        statement ~last f s
       | Switch_statement (e, cc, def) ->
         PP.start_group f 1;
         PP.start_group f 0;
@@ -876,7 +884,7 @@ end) = struct
             PP.end_group f;
             PP.break f;
             PP.start_group f 0;
-            statement_list f sl;
+            statement_list ~skip_last_semi:(match def with None -> true | _ -> false) f sl;
             PP.end_group f;
             PP.end_group f;
             PP.break f)
@@ -889,7 +897,7 @@ end) = struct
             PP.string f "default:";
             PP.break f;
             PP.start_group f 0;
-            statement_list f def;
+            statement_list ~skip_last_semi:true f def;
             PP.end_group f;
             PP.end_group f
         end;
@@ -902,7 +910,7 @@ end) = struct
         PP.may_space f;
         PP.start_group f 0;
         expression 0 f e;
-        PP.string f ";";
+        last_semi();
         PP.end_group f;
         PP.end_group f
     (* There must be a space between the return and its
@@ -940,23 +948,23 @@ end) = struct
         end;
         PP.end_group f
 
-  and statement_list f b =
+  and statement_list f ?skip_last_semi b =
     match b with
         []     -> ()
-      | [s]    -> statement f s
-      | s :: r -> statement f s; PP.break f; statement_list f r
+      | [s]    -> statement f ?last:skip_last_semi s
+      | s :: r -> statement f s; PP.break f; statement_list f ?skip_last_semi r
 
   and block f b =
     PP.start_group f 1;
     PP.string f "{";
-    statement_list f b;
+    statement_list ~skip_last_semi:true f b;
     PP.string f "}";
     PP.end_group f
 
-  and source_element f se =
+  and source_element f ?skip_last_semi se =
     match se with
         Statement s ->
-          statement f s
+          statement f ?last:skip_last_semi s
       | Function_declaration (i, l, b, pc) ->
         output_debug_info f pc;
         PP.start_group f 1;
@@ -981,11 +989,11 @@ end) = struct
         PP.end_group f;
         PP.end_group f
 
-  and source_elements f se =
+  and source_elements f ?skip_last_semi se =
     match se with
         []     -> ()
-      | [s]    -> source_element f s
-      | s :: r -> source_element f s; PP.break f; source_elements f r
+      | [s]    -> source_element f ?skip_last_semi s
+      | s :: r -> source_element f s; PP.break f; source_elements f ?skip_last_semi r
 
 end
 
