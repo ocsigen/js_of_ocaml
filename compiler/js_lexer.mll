@@ -275,12 +275,7 @@ rule initial tokinfo prev = parse
 (*****************************************************************************)
 
 and string_escape quote buf = parse
-  | 'b' { Buffer.add_char buf '\b' }
-  | 't' { Buffer.add_char buf '\t' }
-  | 'n' { Buffer.add_char buf '\n' }
-  | 'f' { Buffer.add_char buf '\012' }
-  | 'r' { Buffer.add_char buf '\r' }
-  | '\\'{ Buffer.add_char buf '\\' }
+  | '\\'{ Buffer.add_string buf "\\\\" }
   | 'x' (hexa as a) (hexa as b)
     { let code = hexa_to_int a * 16 + hexa_to_int b in
       if code > 127
@@ -290,7 +285,6 @@ and string_escape quote buf = parse
         Buffer.add_char buf (Char.chr c1);
         Buffer.add_char buf (Char.chr c2)
       else Buffer.add_char buf (Char.chr code) }
-  | '0' { Buffer.add_char buf '\000' }
   | 'u' hexa hexa hexa hexa {
       Buffer.add_char buf '\\';
       Buffer.add_string buf (Lexing.lexeme lexbuf) }
