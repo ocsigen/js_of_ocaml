@@ -978,8 +978,14 @@ end) = struct
 
 end
 
+let part_of_ident c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c = '_' || c = '$'
+
+let need_space a b =
+  part_of_ident a = part_of_ident b
+
 let program f dl se =
   let module O = Make(struct
       let debug_info = dl
     end) in
+  PP.set_needed_space_function f need_space;
   PP.start_group f 0; O.source_elements f se; PP.end_group f; PP.newline f
