@@ -873,22 +873,25 @@ end) = struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "{";
-        List.iter
-          (fun (e, sl) ->
-            PP.start_group f 1;
-            PP.start_group f 1;
-            PP.string f "case";
-            PP.space f;
-            expression 0 f e;
-            PP.string f ":";
-            PP.end_group f;
-            PP.break f;
-            PP.start_group f 0;
-            statement_list ~skip_last_semi:(match def with None -> true | _ -> false) f sl;
-            PP.end_group f;
-            PP.end_group f;
-            PP.break f)
-          cc;
+        let ouput_one last (e,sl) =
+          PP.start_group f 1;
+          PP.start_group f 1;
+          PP.string f "case";
+          PP.space f;
+          expression 0 f e;
+          PP.string f ":";
+          PP.end_group f;
+          PP.break f;
+          PP.start_group f 0;
+          statement_list ~skip_last_semi:(last && match def with None -> true | _ -> false) f sl;
+          PP.end_group f;
+          PP.end_group f;
+          PP.break f in
+        let rec loop = function
+          | [] -> ()
+          | [x] -> ouput_one true x
+          | x::xs -> ouput_one false x; loop xs in
+        loop cc;
         begin match def with
             None ->
               ()
