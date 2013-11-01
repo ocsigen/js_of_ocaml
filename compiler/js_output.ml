@@ -223,8 +223,6 @@ end) = struct
           Buffer.add_string b "\\f"
         | '\r' ->
           Buffer.add_string b "\\r"
-        | '\\' ->
-          Buffer.add_string b "\\\\"
         | '\000' .. '\031'  | '\127'->
           let c = Char.code c in
           Buffer.add_string b "\\x";
@@ -240,12 +238,6 @@ end) = struct
           Buffer.add_char b c
     done;
     Buffer.contents b
-
-  let regexp_compact s o = false &&
-    not ( s = ""
-       || s.[0] = '*'
-       || s.[0] = '/'
-       ||s.[0] = '[' )
 
   let rec expression l f e =
     match e with
@@ -445,10 +437,6 @@ end) = struct
         PP.string f "()";
         PP.end_group f;
         if l > 15 then begin PP.string f ")"; PP.end_group f end
-      | ENew (EVar (S "RegExp"), Some [EStr (s,_)]) when regexp_compact s None ->
-        PP.string f (Printf.sprintf "/%s/" s)
-      | ENew (EVar (S "RegExp"), Some [EStr (s,_);EStr (s',_)]) when regexp_compact s (Some s')->
-        PP.string f (Printf.sprintf "/%s/%s" s s')
       | ENew (e, Some el) ->
         if l > 15 then begin PP.start_group f 1; PP.string f "(" end;
         PP.start_group f 1;

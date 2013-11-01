@@ -222,14 +222,29 @@ let float_const f = val_float (J.ENum f)
 
 let s_var name = J.EVar (J.S name)
 
+let escape_backslash s =
+    let l = String.length s in
+    let b = Buffer.create (2 * l) in
+    for i = 0 to l - 1 do
+      let c = s.[i] in
+      match c with
+        | '\\' -> Buffer.add_string b "\\\\"
+        | _ -> Buffer.add_char b c
+    done;
+    Buffer.contents b
+
+let str_js s =
+  let s = escape_backslash s in
+  J.EStr (s,`Bytes)
+
 let rec constant ~ctx x =
   match x with
     String s ->
-      let e = Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share in
+      let e = Share.get_string str_js s ctx.Ctx.share in
       let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
       J.ECall (p,[e])
   | IString s ->
-      Share.get_string (fun s -> J.EStr (s,`Bytes)) s ctx.Ctx.share
+      Share.get_string str_js s ctx.Ctx.share
   | Float f ->
       float_const f
   | Float_array a ->
@@ -640,7 +655,7 @@ let _ =
   register_un_prim_ctx  "%caml_format_int_special" `Pure
     (fun ctx cx ->
       let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
-      J.ECall (p, [J.EBin (J.Plus,J.EStr("",`Bytes),cx)]));
+      J.ECall (p, [J.EBin (J.Plus,str_js "",cx)]));
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
   register_bin_prim "caml_string_get" `Mutable
@@ -923,7 +938,7 @@ and translate_expr ctx queue x e =
               [] ->
                 []
             | Pc (String nm) :: Pc (String v) :: r ->
-                (J.PNS nm, Share.get_string (fun v -> J.EStr (v, `Bytes)) v ctx.Ctx.share ) :: build_fields r
+                (J.PNS nm, Share.get_string str_js v ctx.Ctx.share ) :: build_fields r
             | _ ->
                 assert false
           in
@@ -980,7 +995,7 @@ and translate_expr ctx queue x e =
           (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [x] ->
           let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (Share.get_string (fun s -> J.EStr (s,`Bytes)) "number" ctx.Ctx.share)),
+          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (Share.get_string str_js "number" ctx.Ctx.share)),
            px, queue)
       | Ult, [x; y] ->
           let ((px, cx), queue) = access_queue' ~ctx  queue x in
@@ -1391,7 +1406,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
              so we can directly refer to it *)
           (Js_simpl.if_statement
               (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
-                      (Share.get_string (fun s -> J.EStr (s,`Bytes)) "number" st.ctx.Ctx.share)))
+                      (Share.get_string str_js "number" st.ctx.Ctx.share)))
               (build_switch (var x) a1)
               false
               (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
@@ -1538,7 +1553,7 @@ let generate_shared_value ctx =
   let strings =
     J.Statement (
       J.Variable_statement (
-        List.map (fun (s,v) -> v, Some (J.EStr(s,`Bytes))) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
+        List.map (fun (s,v) -> v, Some (str_js s)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
         @ List.map (fun (s,v) -> v, Some (s_var s)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
       )) in
   let applies = List.map (fun (n,v) ->

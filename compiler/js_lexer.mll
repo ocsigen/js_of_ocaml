@@ -289,12 +289,10 @@ and string_escape quote buf = parse
       Buffer.add_char buf '\\';
       Buffer.add_string buf (Lexing.lexeme lexbuf) }
   | (_ as c)
-    { if c = quote
-      then Buffer.add_char buf quote
-      else (
-        Format.eprintf  "LEXER: WIERD escaped char: %c@." c;
-        Buffer.add_char buf c
-      ) }
+    { Buffer.add_char buf c }
+      (* if c = quote *)
+      (* then Buffer.add_char buf quote *)
+      (* else Buffer.add_char buf c } *)
 
 
 
