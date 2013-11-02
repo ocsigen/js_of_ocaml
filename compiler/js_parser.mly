@@ -162,6 +162,10 @@ source_element:
 
 statement:
  | block                { J.Block $1 }
+ (* this is not allowed but some browsers accept it *)
+ (* | function_declaration { *)
+ (*  let var,params,body,_ = $1 in *)
+ (*  J.Variable_statement [var,Some (J.EFun((None,params,body),None))]} *)
  | variable_statement   { $1 }
  | empty_statement      { $1 }
  | expression_statement { $1 }
