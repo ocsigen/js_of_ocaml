@@ -26,6 +26,8 @@ let onIE  = Js.to_bool (caml_js_on_ie ())
 
 external html_escape : js_string t -> js_string t = "caml_js_html_escape"
 
+external decode_html_entities : js_string t -> js_string t = "caml_js_html_entities"
+
 class type cssStyleDeclaration = object
   method background : js_string t prop
   method backgroundAttachment : js_string t prop

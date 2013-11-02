@@ -1476,6 +1476,8 @@ end
 
 (**/**)
 
+val decode_html_entities : js_string t -> js_string t
+
 val onIE : bool
 val hasPushState : unit -> bool
 val hasPlaceholder : unit -> bool
