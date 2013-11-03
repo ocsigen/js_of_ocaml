@@ -23,6 +23,7 @@ let info_of_tok t =
   | TCommentSpace (ii,_) -> ii
   | TCommentNewline (ii,_) -> ii
   | TComment (ii,_) -> ii
+  | TCommentML (ii,_) -> ii
   | EOF ii -> ii
 
   | T_NUMBER (s, _,ii) -> ii
@@ -116,6 +117,7 @@ let string_of_tok t =
   | TCommentSpace (ii,_) -> "COMMENT"
   | TCommentNewline (ii,_) -> "COMMENT"
   | TComment (ii,_) -> "COMMENT"
+  | TCommentML (ii,_) -> "COMMENT"
   | EOF ii -> "EOF"
 
   | T_NUMBER (s, _,ii) -> "T_NUMBER"
@@ -205,7 +207,8 @@ let string_of_tok t =
 let is_comment = function
   | Js_parser.TCommentSpace _
   | Js_parser.TCommentNewline _
-  | Js_parser.TComment _ -> true
+  | Js_parser.TComment _
+  | Js_parser.TCommentML _ -> true
   | _ -> false
 
 let strip_comment l= List.filter (fun x -> not (is_comment x)) l
@@ -345,13 +348,6 @@ let rec adjust_tokens xs =
             push x res
           | (T_RETURN _ | T_CONTINUE _ | T_BREAK _ | T_THROW _),_ ->
             auto_semi_if_newline x prev res
-          | (T_LPAREN _ | T_LCURLY _ | T_LBRACKET _
-            |T_SEMICOLON _ | T_VIRTUAL_SEMICOLON _),
-            (T_INCR _ | T_DECR _) ->
-            push x res
-          | _, (T_INCR _ | T_DECR _) ->
-            auto_semi_if_newline x prev res
-
           | _, _ -> push x res
       )
       in

@@ -85,8 +85,12 @@ rule initial tokinfo prev = parse
   | "/*" {
       let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
-      st_comment buf lexbuf;
-      TComment(info,Buffer.contents buf)
+      let nl = ref false in
+      st_comment buf nl lexbuf;
+      let content = Buffer.contents buf in
+      if !nl
+      then TCommentML(info,content)
+      else TComment(info,content)
     }
 
   | "//" {
@@ -331,19 +335,22 @@ and regexp_maybe_ident buf = parse
 
 (*****************************************************************************)
 
-and st_comment buf = parse
+and st_comment buf nl = parse
   | "*/" { Buffer.add_string buf (tok lexbuf) }
 
   (* noteopti: *)
-  | [^'*']+ { Buffer.add_string buf (tok lexbuf);st_comment buf lexbuf }
-  | '*'     { Buffer.add_char buf '*';st_comment buf lexbuf }
+  | NEWLINE { Buffer.add_string buf (tok lexbuf);
+              nl := true;
+              st_comment buf nl lexbuf }
+  | [^'*' '\n' '\r' ]+ { Buffer.add_string buf (tok lexbuf);st_comment buf nl lexbuf }
+  | '*'     { Buffer.add_char buf '*';st_comment buf nl lexbuf }
 
   | eof { Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "*/"}
   | _  {
       let s = tok lexbuf in
       Format.eprintf "LEXER: unrecognised symbol in comment: %s@." s;
       Buffer.add_string buf s;
-      st_comment buf lexbuf
+      st_comment buf nl lexbuf
     }
 
 and st_one_line_comment buf = parse

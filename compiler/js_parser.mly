@@ -44,7 +44,7 @@ let var name = J.S name
 /*(*2 the comment tokens *)*/
 /*(*-----------------------------------------*)*/
 /*(* coupling: Token_helpers.is_real_comment *)*/
-%token <Parse_info.t * string> TCommentSpace TCommentNewline   TComment
+%token <Parse_info.t * string> TCommentSpace TCommentNewline   TComment TCommentML
 
 /*(*-----------------------------------------*)*/
 /*(*2 the normal tokens *)*/
@@ -149,6 +149,7 @@ fake:
     | TCommentSpace
     | TCommentNewline
     | TComment
+    | TCommentML
     | TUnknown { () }
 
 source_element:
