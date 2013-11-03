@@ -976,6 +976,10 @@ end) = struct
       | [s]    -> source_element f ?skip_last_semi s
       | s :: r -> source_element f s; PP.break f; source_elements f ?skip_last_semi r
 
+
+  and program f s =
+    source_elements f s
+
 end
 
 let part_of_ident c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c = '_' || c = '$'
@@ -983,9 +987,9 @@ let part_of_ident c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= 
 let need_space a b =
   part_of_ident a = part_of_ident b
 
-let program f dl se =
+let program f dl p =
   let module O = Make(struct
       let debug_info = dl
     end) in
   PP.set_needed_space_function f need_space;
-  PP.start_group f 0; O.source_elements f se; PP.end_group f; PP.newline f
+  PP.start_group f 0; O.program f p; PP.end_group f; PP.newline f

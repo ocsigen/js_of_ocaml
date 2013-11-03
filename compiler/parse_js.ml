@@ -108,6 +108,100 @@ let info_of_tok t =
   | T_VOID ii -> ii
   | T_VIRTUAL_SEMICOLON ii -> ii
 
+
+let string_of_tok t =
+  let open Js_parser in
+      match t with
+  | TUnknown ii -> "COMMENT"
+  | TCommentSpace (ii,_) -> "COMMENT"
+  | TCommentNewline (ii,_) -> "COMMENT"
+  | TComment (ii,_) -> "COMMENT"
+  | EOF ii -> "EOF"
+
+  | T_NUMBER (s, _,ii) -> "T_NUMBER"
+  | T_IDENTIFIER (s, ii) -> "T_IDENTIFIER"
+  | T_STRING (s, ii) -> "T_STRING"
+  | T_REGEX (s, ii) -> "T_REGEX"
+
+  | T_FUNCTION ii -> " T_FUNCTION"
+  | T_IF ii -> "T_IF"
+  | T_IN ii -> "T_IN"
+  | T_INSTANCEOF ii -> "T_INSTANCEOF"
+  | T_RETURN ii -> "T_RETURN"
+  | T_SWITCH ii -> "T_SWITCH"
+  | T_THIS ii -> "T_THIS"
+  | T_THROW ii -> "T_THROW"
+  | T_TRY ii -> "T_TRY"
+  | T_VAR ii -> "T_VAR"
+  | T_WHILE ii -> "T_WHILE"
+  | T_WITH ii -> "T_WITH"
+  | T_NULL ii -> "T_NULL"
+  | T_FALSE ii -> "T_FALSE"
+  | T_TRUE ii -> "T_TRUE"
+  | T_BREAK ii -> "T_BREAK"
+  | T_CASE ii -> "T_CASE"
+  | T_CATCH ii -> "T_CATCH"
+  | T_CONTINUE ii -> "T_CONTINUE"
+  | T_DEFAULT ii -> "T_DEFAULT"
+  | T_DO ii -> "T_DO"
+  | T_FINALLY ii -> "T_FINALLY"
+  | T_FOR ii -> "T_FOR"
+  | T_ELSE ii -> "T_ELSE"
+  | T_NEW ii -> "T_NEW"
+  | T_LCURLY ii -> "T_LCURLY"
+  | T_RCURLY ii -> "T_RCURLY"
+  | T_LPAREN ii -> "T_LPAREN"
+  | T_RPAREN ii -> "T_RPAREN"
+  | T_LBRACKET ii -> "T_LBRACKET"
+  | T_RBRACKET ii -> "T_RBRACKET"
+  | T_SEMICOLON ii -> "T_SEMICOLON"
+  | T_COMMA ii -> "T_COMMA"
+  | T_PERIOD ii -> "T_PERIOD"
+  | T_RSHIFT3_ASSIGN ii -> "T_RSHIFT3"
+  | T_RSHIFT_ASSIGN ii -> "T_RSHIFT"
+  | T_LSHIFT_ASSIGN ii -> "T_LSHIFT"
+  | T_BIT_XOR_ASSIGN ii -> "T_BIT"
+  | T_BIT_OR_ASSIGN ii -> "T_BIT"
+  | T_BIT_AND_ASSIGN ii -> "T_BIT"
+  | T_MOD_ASSIGN ii -> "T_MOD"
+  | T_DIV_ASSIGN ii -> "T_DIV"
+  | T_MULT_ASSIGN ii -> "T_MULT"
+  | T_MINUS_ASSIGN ii -> "T_MINUS"
+  | T_PLUS_ASSIGN ii -> "T_PLUS"
+  | T_ASSIGN ii -> "T_ASSIGN"
+  | T_PLING ii -> "T_PLING"
+  | T_COLON ii -> "T_COLON"
+  | T_OR ii -> "T_OR"
+  | T_AND ii -> "T_AND"
+  | T_BIT_OR ii -> "T_BIT"
+  | T_BIT_XOR ii -> "T_BIT"
+  | T_BIT_AND ii -> "T_BIT"
+  | T_EQUAL ii -> "T_EQUAL"
+  | T_NOT_EQUAL ii -> "T_NOT"
+  | T_STRICT_EQUAL ii -> "T_STRICT"
+  | T_STRICT_NOT_EQUAL ii -> "T_STRICT"
+  | T_LESS_THAN_EQUAL ii -> "T_LESS"
+  | T_GREATER_THAN_EQUAL ii -> "T_GREATER"
+  | T_LESS_THAN ii -> "T_LESS"
+  | T_GREATER_THAN ii -> "T_GREATER"
+  | T_LSHIFT ii -> "T_LSHIFT"
+  | T_RSHIFT ii -> "T_RSHIFT"
+  | T_RSHIFT3 ii -> "T_RSHIFT3"
+  | T_PLUS ii -> "T_PLUS"
+  | T_MINUS ii -> "T_MINUS"
+  | T_DIV ii -> "T_DIV"
+  | T_MULT ii -> "T_MULT"
+  | T_MOD ii -> "T_MOD"
+  | T_NOT ii -> "T_NOT"
+  | T_BIT_NOT ii -> "T_BIT"
+  | T_INCR ii -> "T_INCR"
+  | T_DECR ii -> "T_DECR"
+  | T_DELETE ii -> "T_DELETE"
+  | T_TYPEOF ii -> "T_TYPEOF"
+  | T_VOID ii -> "T_VOID"
+  | T_VIRTUAL_SEMICOLON ii -> "T_VIRTUAL"
+
+
 let is_comment = function
   | Js_parser.TCommentSpace _
   | Js_parser.TCommentNewline _
@@ -215,14 +309,15 @@ let rec adjust_tokens xs =
           | ( T_IDENTIFIER _
             | T_NULL _
             | T_STRING _ | T_REGEX _
-            | T_FALSE _ | T_TRUE _ ),
+            | T_FALSE _ | T_TRUE _ | T_NUMBER _),
             ( T_VAR _
             | T_IDENTIFIER _
             | T_IF _
             | T_THIS _
             | T_RETURN _
             | T_BREAK _
-            | T_ELSE _ )  ->
+            | T_ELSE _
+            | T_NUMBER _ )  ->
             auto_semi_if_newline x prev res
 
           (* 7.9.1 - 2 *)
@@ -310,6 +405,11 @@ let lexer_map = List.map
 let lexer_fold f acc l = List.fold_left f acc l
 let lexer_filter f l = List.filter f l
 let lexer_from_list x =
+  let rec rm_virtual = function
+    | Js_parser.T_VIRTUAL_SEMICOLON _ ::xs -> rm_virtual xs
+    | l -> l in
+  let x = rm_virtual x in
+
   let l = match List.rev x with
     | Js_parser.EOF _ :: _  -> x
     | (last::_) as all -> List.rev (Js_parser.EOF (info_of_tok last) :: all)

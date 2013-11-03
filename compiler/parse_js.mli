@@ -38,3 +38,4 @@ val lexer_from_list : Js_parser.token list -> lexer
 val parse : lexer -> Javascript.program
 
 val info_of_tok : Js_parser.token -> Parse_info.t
+val string_of_tok : Js_parser.token -> string

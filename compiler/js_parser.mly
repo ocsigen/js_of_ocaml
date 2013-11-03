@@ -142,8 +142,7 @@ let var name = J.S name
 /*(*************************************************************************)*/
 
 program:
-    | source_elements EOF { $1 }
-    | EOF { [] }
+    | l=list(source_element) EOF { l }
     | fake { assert false }
 
 fake:
@@ -184,19 +183,16 @@ statement:
  | statement_all option(T_VIRTUAL_SEMICOLON) {$1}
 
 statement_bloc:
-  list(T_VIRTUAL_SEMICOLON) statement {$2}
+  list(T_VIRTUAL_SEMICOLON) s=statement { s }
 
 block:
- | T_LCURLY statement_list T_RCURLY { $2 }
- | T_LCURLY T_RCURLY                { [] }
-
+ | T_LCURLY l=list(statement) T_RCURLY { l }
 
 variable_statement:
- | T_VAR variable_declaration_list semicolon  { J.Variable_statement $2 }
+ | T_VAR separated_nonempty_list(T_COMMA,variable_declaration) semicolon  { J.Variable_statement $2 }
 
 variable_declaration:
- | identifier initializeur { var $1, Some $2 }
- | identifier { var $1, None }
+ | variable option(initializeur) { $1, $2 }
 
 initializeur:
  | T_ASSIGN assignment_expression { $2 }
@@ -222,15 +218,15 @@ iteration_statement:
  | T_WHILE T_LPAREN expression T_RPAREN statement_bloc
      { J.While_statement ($3, $5) }
  | T_FOR T_LPAREN
-     expression_no_in_opt T_SEMICOLON
-     expression_opt T_SEMICOLON
-     expression_opt
+     option(expression_no_in) T_SEMICOLON
+     option(expression) T_SEMICOLON
+     option(expression)
      T_RPAREN statement_bloc
      { J.For_statement ( J.Left $3, $5, $7, $9, None) }
  | T_FOR T_LPAREN
-     T_VAR variable_declaration_list_no_in T_SEMICOLON
-     expression_opt T_SEMICOLON
-     expression_opt
+     T_VAR separated_nonempty_list(T_COMMA,variable_declaration_no_in) T_SEMICOLON
+     option(expression) T_SEMICOLON
+     option(expression)
      T_RPAREN statement_bloc
      {
        J.For_statement (J.Right($4), $6, $8, $10, None)
@@ -242,38 +238,30 @@ iteration_statement:
      { J.ForIn_statement ( J.Right $4, $6, $8, None) }
 
 variable_declaration_no_in:
- | identifier initializer_no_in { var $1, Some $2 }
- | identifier { var $1, None }
+ | variable option(initializer_no_in) { $1, $2 }
 
 initializer_no_in:
  | T_ASSIGN assignment_expression_no_in { $2 }
 
 
 continue_statement:
- | T_CONTINUE identifier semicolon { J.Continue_statement (Some (J.Label.of_string $2)) }
- | T_CONTINUE semicolon            { J.Continue_statement None }
-
+ | T_CONTINUE option(label) semicolon { J.Continue_statement $2 }
 
 break_statement:
- | T_BREAK identifier semicolon { J.Break_statement (Some (J.Label.of_string $2)) }
- | T_BREAK semicolon            { J.Break_statement None }
-
+ | T_BREAK option(label) semicolon { J.Break_statement $2 }
 
 return_statement:
- | T_RETURN expression semicolon { J.Return_statement (Some $2) }
- | T_RETURN semicolon            { J.Return_statement  None }
+ | T_RETURN option(expression) semicolon { J.Return_statement ($2) }
 
 with_statement:
  | T_WITH T_LPAREN expression T_RPAREN statement { assert false }
 
 switch_statement:
- | T_SWITCH T_LPAREN expression T_RPAREN T_LCURLY case_clauses_opt T_RCURLY
-   { J.Switch_statement ($3, $6,None) }
- | T_SWITCH T_LPAREN expression T_RPAREN T_LCURLY case_clauses_opt default_clause T_RCURLY
-   { J.Switch_statement ($3, $6,Some $7) }
+ | T_SWITCH T_LPAREN expression T_RPAREN T_LCURLY list(case_clause) option(default_clause) option(T_VIRTUAL_SEMICOLON) T_RCURLY
+   { J.Switch_statement ($3, $6, $7) }
 
 labelled_statement:
- | identifier T_COLON statement { J.Labelled_statement (J.Label.of_string $1, $3) }
+ | label T_COLON statement { J.Labelled_statement ($1, $3) }
 
 
 throw_statement:
@@ -281,12 +269,12 @@ throw_statement:
 
 
 try_statement:
- | T_TRY block catch         { J.Try_statement ($2, Some $3, None, None)  }
+ | T_TRY block catch option(finally) { J.Try_statement ($2, Some $3, $4,None) }
  | T_TRY block       finally { J.Try_statement ($2, None, Some $3,None) }
- | T_TRY block catch finally { J.Try_statement ($2, Some $3, Some $4,None) }
+
 
 catch:
- | T_CATCH T_LPAREN identifier T_RPAREN block { var $3, $5 }
+ | T_CATCH T_LPAREN variable T_RPAREN block { $3, $5 }
 
 
 finally:
@@ -297,47 +285,28 @@ finally:
 /*(*----------------------------*)*/
 
 case_clause:
- | T_CASE expression T_COLON statement_list { $2, $4 }
- | T_CASE expression T_COLON { $2, [] }
+ | T_CASE expression T_COLON list(statement) { $2, $4 }
 
 default_clause:
- | T_DEFAULT T_COLON { [] }
- | T_DEFAULT T_COLON statement_list { $3 }
+ | T_DEFAULT T_COLON list(statement) { $3 }
 
 /*(*************************************************************************)*/
 /*(*1 function declaration *)*/
 /*(*************************************************************************)*/
 
 function_declaration:
- | T_FUNCTION identifier T_LPAREN formal_parameter_list T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { var $2, $4, $7, None }
- | T_FUNCTION identifier T_LPAREN T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { var $2, [],$6, None }
+ | T_FUNCTION v=variable T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
+     T_LCURLY b=function_body T_RCURLY
+     { v, args, b, None }
 
 
 function_expression:
- | T_FUNCTION identifier T_LPAREN formal_parameter_list T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { J.EFun ((Some (var $2), $4, $7),None) }
- | T_FUNCTION identifier T_LPAREN T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { J.EFun ((Some (var $2), [], $6),None) }
- | T_FUNCTION T_LPAREN formal_parameter_list T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { J.EFun ((None, $3, $6),None) }
- | T_FUNCTION T_LPAREN T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { J.EFun ((None, [], $5),None) }
-
-formal_parameter_list:
- | identifier                                { [var $1] }
- | formal_parameter_list T_COMMA identifier  { $1 @ [var $3] }
+ | T_FUNCTION v=option(variable) T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
+   T_LCURLY b=function_body T_RCURLY
+   { J.EFun ((v, args, b),None) }
 
 function_body:
- | /*(* empty *)*/ { [] }
- | source_elements  { $1 }
+ | l=list(source_element)  { l }
 
 /*(*************************************************************************)*/
 /*(*1 expression *)*/
@@ -469,7 +438,7 @@ primary_expression:
 
 primary_expression_no_statement:
  | T_THIS          { J.EVar (var "this") }
- | identifier      { J.EVar (var $1) }
+ | variable        { J.EVar $1 }
 
  | null_literal    { J.EVar (var "null") }
  | boolean_literal { J.EBool $1 }
@@ -677,7 +646,7 @@ regex_literal:
    (* J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) } *)
 
 string_literal:
- | T_STRING { let s,_ = $1 in s}
+ | str=T_STRING { let s,_ = str in s}
 
 /*(*----------------------------*)*/
 /*(*2 array *)*/
@@ -721,14 +690,7 @@ object_literal:
 /*(*----------------------------*)*/
 
 arguments:
- | T_LPAREN               T_RPAREN { [] }
- | T_LPAREN argument_list T_RPAREN { $2 }
-
-argument_list:
- | assignment_expression
-     { [$1] }
- | argument_list T_COMMA assignment_expression
-     { $1 @ [$3] }
+ | T_LPAREN l=separated_list(T_COMMA,assignment_expression) T_RPAREN { l }
 
 /*(*----------------------------*)*/
 /*(*2 auxillary bis *)*/
@@ -740,10 +702,16 @@ argument_list:
 identifier:
  | T_IDENTIFIER { let s,_ = $1 in s  }
 
+variable:
+ | i=identifier { var i }
+
+label:
+ | identifier { J.Label.of_string $1 }
+
 property_name:
- | identifier      { J.PNI $1 }
- | string_literal  { J.PNS $1 }
- | numeric_literal { J.PNN $1 }
+ | i=identifier      { J.PNI i }
+ | s=string_literal  { J.PNS s }
+ | n=numeric_literal { J.PNN n }
 
 /*(*************************************************************************)*/
 /*(*1 xxx_opt, xxx_list *)*/
@@ -756,39 +724,3 @@ semicolon:
 elison:
  | T_COMMA { [] }
  | elison T_COMMA { $1 @ [None] }
-
-source_elements:
- | source_element { [$1] }
- | source_elements source_element { $1 @ [$2] }
-
-statement_list:
- | statement { [$1] }
- | statement_list statement { $1 @ [$2] }
-
-case_clauses:
- | case_clause { [$1] }
- | case_clauses case_clause { $1 @ [$2] }
-
-variable_declaration_list:
- | variable_declaration
-     { [$1]  }
- | variable_declaration_list T_COMMA variable_declaration
-     { $1 @ [$3] }
-
-variable_declaration_list_no_in:
- | variable_declaration_no_in
-     { [$1] }
- | variable_declaration_list_no_in T_COMMA variable_declaration_no_in
-     { $1 @ [$3] }
-
-expression_opt:
- | /*(* empty *)*/ { None }
- | expression      { Some $1 }
-
-expression_no_in_opt:
- | /*(* empty *)*/  { None }
- | expression_no_in { Some $1 }
-
-case_clauses_opt:
- | /*(* empty *)*/ { [] }
- | case_clauses    { $1 }
