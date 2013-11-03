@@ -153,14 +153,14 @@ fake:
     | TUnknown { () }
 
 source_element:
- | statement            { J.Statement $1 }
- | function_declaration { J.Function_declaration $1 }
+ | statement option(T_VIRTUAL_SEMICOLON)            { J.Statement $1 }
+ | function_declaration option(T_VIRTUAL_SEMICOLON) { J.Function_declaration $1 }
 
 /*(*************************************************************************)*/
 /*(*1 statement *)*/
 /*(*************************************************************************)*/
 
-statement:
+statement_all:
  | block                { J.Block $1 }
  (* this is not allowed but some browsers accept it *)
  (* | function_declaration { *)
@@ -179,6 +179,9 @@ statement:
  | switch_statement     { $1 }
  | throw_statement      { $1 }
  | try_statement        { $1 }
+
+statement:
+ | statement_all option(T_VIRTUAL_SEMICOLON) {$1}
 
 statement_bloc:
   list(T_VIRTUAL_SEMICOLON) statement {$2}
@@ -200,7 +203,7 @@ initializeur:
 
 
 empty_statement:
- | semicolon { J.Empty_statement }
+ | T_SEMICOLON { J.Empty_statement }
 
 expression_statement:
  | expression_no_statement semicolon { J.Expression_statement ($1, None) }
@@ -693,17 +696,21 @@ element_list:
  | element_list   elison   assignment_expression { $1 @ $2 @ [Some $3] }
 
 
+
+separated_nonempty_list2(sep,X):
+| x = X { [ x ] }
+| x = X; sep { [ x ] }
+| x = X; sep; xs = separated_nonempty_list2(sep, X) { x :: xs }
+
 object_literal:
  | T_LCURLY T_RCURLY { [] }
- | T_LCURLY property_name_and_value_list T_VIRTUAL_SEMICOLON T_RCURLY { $2 }
-
-
-property_name_and_value_list:
- | property_name T_COLON assignment_expression
-     { [$1, $3] }
- | property_name_and_value_list T_COMMA
-   property_name T_COLON assignment_expression
-   { $1 @ [$3,$5] }
+ | T_LCURLY
+     l = separated_nonempty_list2(
+       T_COMMA,
+       separated_pair(property_name,T_COLON,assignment_expression)
+     )
+     option(T_VIRTUAL_SEMICOLON)
+   T_RCURLY { l }
 
 /*(*----------------------------*)*/
 /*(*2 variable *)*/

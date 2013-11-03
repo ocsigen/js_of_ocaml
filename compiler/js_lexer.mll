@@ -176,7 +176,7 @@ rule initial tokinfo prev = parse
   (* Constant *)
   (* ----------------------------------------------------------------------- *)
 
-  | "0x" hexa+ {
+  | "0" ['X''x'] hexa+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
       T_NUMBER (s, `Int (int_of_string s), info)
@@ -310,13 +310,21 @@ and string_quote q buf = parse
 
 (*****************************************************************************)
 and regexp buf = parse
-  | '/'            { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
-  | ("\\/"|"\\\\") as x {
-      Buffer.add_string buf x;
-      regexp buf lexbuf
-    }
-  | (_ as x)       { Buffer.add_char buf x; regexp buf lexbuf}
+  | '\\' (_ as x) { Buffer.add_char buf '\\';
+                    Buffer.add_char buf x;
+                    regexp buf lexbuf }
+  | '/' { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
+  | '[' { Buffer.add_char buf '['; regexp_class buf lexbuf }
+  | (_ as x)       { Buffer.add_char buf x; regexp buf lexbuf }
   | eof { Format.eprintf "LEXER: WIERD end of file in regexp@."; ()}
+
+and regexp_class buf = parse
+  | ']' { Buffer.add_char buf ']';
+             regexp buf lexbuf }
+  | '\\' (_ as x) { Buffer.add_char buf '\\';
+                    Buffer.add_char buf x;
+                    regexp_class buf lexbuf }
+  | (_ as x) { Buffer.add_char buf x; regexp_class buf lexbuf }
 
 and regexp_maybe_ident buf = parse
   | ['A'-'Z''a'-'z']* { Buffer.add_string buf (tok lexbuf) }
