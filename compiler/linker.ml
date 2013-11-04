@@ -151,12 +151,13 @@ let add_file f =
           Primitive.register name kind;
           if Hashtbl.mem provided name
           then begin
-            let loc = match pi with
-              | None -> ""
-              | Some pi -> Printf.sprintf "(%s:%d)" f pi.Parse_info.line in
-            Format.eprintf "warning: overriding primitive %S %s@." name loc;
+            let loc pi = match pi with
+              | None -> "unknown location"
+              | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line in
+            let ploc = snd(Hashtbl.find provided name) in
+            Format.eprintf "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
           end;
-          Hashtbl.add provided name id;
+          Hashtbl.add provided name (id,pi);
           req,true
         | `Requires (_,mn) -> (mn@req),has_provide) ([],false) annot in
 
@@ -172,7 +173,7 @@ type visited = {
 let rec resolve_dep visited path nm =
   let id =
     try
-      Hashtbl.find provided nm
+      fst(Hashtbl.find provided nm)
     with Not_found ->
       error "missing dependency '%s'@." nm
   in
@@ -211,7 +212,7 @@ let resolve_deps ?(linkall = false) program used =
   in
   let visited =
     if linkall
-    then Hashtbl.fold (fun nm id visited -> resolve_dep visited [] nm ) provided visited
+    then Hashtbl.fold (fun nm (id,_) visited -> resolve_dep visited [] nm ) provided visited
     else visited in
   List.flatten visited.codes, missing
 
