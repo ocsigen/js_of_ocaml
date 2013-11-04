@@ -1,0 +1,3 @@
+<*.ml{,i}>: syntax(camlp4o),package(camlp4,lwt,deriving.syntax),pkg_pa_js,pkg_pa_deriving_Json,use_js_of_ocaml,use_deriving_json
+<*.byte>:use_js_of_ocaml,use_deriving_json,package(lwt,unix)
+<*.byte>:with_js(runtime/runtime.js),with_js(runtime/unix.js),with_js(tests/file/common.js)

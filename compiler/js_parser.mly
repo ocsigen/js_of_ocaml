@@ -36,8 +36,9 @@ let bop op a b= J.EBin(op,a,b)
 let uop op a = J.EUn(op,a)
 let var name = J.S name
 
-
-
+(* this is need to fake menhir while using --infer *)
+type hack = { _menhir_token: token}
+let _menhir_env = {_menhir_token = EOF Parse_info.zero }
 
 %}
 

@@ -1,0 +1,5 @@
+<*.ml{,i}>:syntax(camlp4o),package(lwt,str,camlp4),use_compiler,use_js_of_ocaml,use_toplevellib
+<*.ml>:pkg_pa_js
+<*.byte>:use_js_of_ocaml,use_compiler,package(lwt,unix,str,findlib),use_toplevellib,linkall
+<*.byte>:with_js(runtime/runtime.js),with_js(runtime/unix.js),with_js(runtime/weak.js),with_js(toplevel/toplevel_runtime.js)
+<*.byte>:jsopt(-toplevel),jsopt(-noinline),jsopt(-I +compiler-libs)
