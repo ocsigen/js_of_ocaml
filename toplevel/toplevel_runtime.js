@@ -23,14 +23,6 @@ function caml_raise_sys_error (msg) {
   caml_raise_with_string(caml_global_data[2], msg);
 }
 
-//Provides: caml_raise_not_found
-//Requires: caml_raise_constant, caml_global_data
-function caml_raise_not_found () { caml_raise_constant(caml_global_data[7]); }
-
-//Provides: caml_sys_getenv
-//Requires: caml_raise_not_found
-function caml_sys_getenv () { caml_raise_not_found (); }
-
 //Provides: caml_terminfo_setup
 function caml_terminfo_setup () { return 1; } // Bad_term
 
@@ -53,9 +45,6 @@ function caml_sys_open (x) {
   } else
     caml_raise_sys_error (x + ": no such file or directory");
 }
-
-//Provides: caml_ml_open_descriptor_in
-function caml_ml_open_descriptor_in (x) { return x; }
 
 //Provides: caml_ml_input
 //Require: caml_blit_string
@@ -113,22 +102,11 @@ function caml_realloc_global (len) {
 
 /// In case the user tries to perform some I/Os...
 
-//Provides: caml_sys_exit
-function caml_sys_exit () {
-  caml_invalid_argument("Function 'exit' not implemented");
-}
-
 //Provides: caml_ml_output
 function caml_ml_output (x, s, p, l) {
   var o = document.getElementById("output");
   o.appendChild (document.createTextNode(s.toString().slice(p,p+l)));
   return 0;
-}
-
-//Provides: caml_ml_output_char
-//Requires: caml_ml_output
-function caml_ml_output_char (x, c) {
-    return caml_ml_output (x, String.fromCharCode (c), 0, 1);
 }
 
 //Provides: caml_raise_end_of_file
