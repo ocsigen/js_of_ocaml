@@ -23,7 +23,11 @@ open Util
 
 let parse_annot loc s =
   let buf = Lexing.from_string s in
-  try Some (Annot_parser.annot Annot_lexer.initial buf) with
+  try
+    match Annot_parser.annot Annot_lexer.initial buf with
+      | `Requires (_,l) -> Some (`Requires (Some loc,l))
+      | `Provides (_,n,k) -> Some (`Provides (Some loc,n,k))
+  with
     | Not_found -> None
     | exc ->
     (* Format.eprintf "Not found for %s : %s @." (Printexc.to_string exc) s; *)
@@ -143,8 +147,15 @@ let add_file f =
       let id = !last_code_id in
 
       let req,has_provide = List.fold_left (fun (req,has_provide) a -> match a with
-        | `Provides (_,name,kind) ->
+        | `Provides (pi,name,kind) ->
           Primitive.register name kind;
+          if Hashtbl.mem provided name
+          then begin
+            let loc = match pi with
+              | None -> ""
+              | Some pi -> Printf.sprintf "(%s:%d)" f pi.Parse_info.line in
+            Format.eprintf "warning: overriding primitive %S %s@." name loc;
+          end;
           Hashtbl.add provided name id;
           req,true
         | `Requires (_,mn) -> (mn@req),has_provide) ([],false) annot in
