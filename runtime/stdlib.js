@@ -738,21 +738,55 @@ function caml_get_public_method (obj, tag) {
 // Dummy functions
 //Provides: caml_ml_out_channels_list const
 function caml_ml_out_channels_list () { return 0; }
-//Provides: caml_ml_flush const
-function caml_ml_flush () { return 0; }
 //Provides: caml_ml_open_descriptor_out const
-function caml_ml_open_descriptor_out () { return 0; }
+function caml_ml_open_descriptor_out (x) { return x; }
 //Provides: caml_ml_open_descriptor_in const
-function caml_ml_open_descriptor_in () { return 0; }
+function caml_ml_open_descriptor_in (x) { return x; }
 //Provides: caml_sys_get_argv const
 //Requires: MlWrappedString
 function caml_sys_get_argv () {
   var p = new MlWrappedString("a.out"); return [0, p, [0, p]];
 }
-//Provides: caml_ml_output const
-function caml_ml_output () { return 0; }
-//Provides: caml_ml_output_char const
-function caml_ml_output_char () { return 0; }
+//Provides: caml_ml_output_buffer
+var caml_ml_output_buffer = "";
+//Provides: caml_ml_flush
+//Requires: caml_ml_output_buffer
+function caml_ml_flush (oc) {
+    this.console
+    && this.console.log
+    && caml_ml_output_buffer != ""
+    && this.console.log(caml_ml_output_buffer);
+    caml_ml_output_buffer = "";
+}
+//Provides: caml_ml_output
+//Requires: caml_ml_output_buffer
+//Requires: caml_ml_flush
+//Requires: MlString caml_create_string caml_blit_string
+function caml_ml_output (oc,buffer,offset,len) {
+    var string;
+    if(offset == 0 && buffer.getLen() == len)
+        string = buffer;
+    else {
+        string = caml_create_string(len);
+        caml_blit_string(buffer,offset,string,0,len);
+    }
+    var jsstring = string.toString();
+    var id = jsstring.lastIndexOf("\n");
+    if(id < 0)
+        caml_ml_output_buffer+=jsstring;
+    else {
+        caml_ml_output_buffer+=jsstring.substr(0,id);
+        caml_ml_flush (oc);
+        caml_ml_output_buffer += jsstring.substr(id+1);
+    }
+}
+//Provides: caml_ml_output_char
+//Requires: caml_ml_output
+//Requires: caml_new_string
+function caml_ml_output_char (oc,c) {
+    var s = caml_new_string(String.fromCharCode(c));
+    caml_ml_output(oc,s,0,1);
+}
 //Provides: caml_final_register const
 function caml_final_register () { return 0; }
 //Provides: caml_final_release const
