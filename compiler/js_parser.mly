@@ -204,13 +204,20 @@ statement:
        conditions is true:
        - The offending token is }.
        - The offending token is separated from the previous
-         token by at least one LineTerminator. (hack) *)
+         token by at least one LineTerminator. *)
 
     (* 7.9.1 - 2 *)
     (* When, as the program is parsed from left to right, the end of the input stream of tokens *)
     (* is encountered and the parser is unable to parse the input token stream as a single *)
     (* complete ECMAScript Program, then a semicolon is automatically inserted at the end *)
     (* of the input stream. *)
+
+    (* @@@@@@@@@ HACK @@@@@@@@@@ *)
+    (* menhir internal's         *)
+    (* look the current token:   *)
+    (* - if it is on another line (linebreak inbetween), accept the statement *)
+    (* - fail otherwise *)
+    (* @@@@@@@@@ HACK @@@@@@@@@@ *)
 
     match _menhir_env._menhir_token with
       | EOF _ -> s
