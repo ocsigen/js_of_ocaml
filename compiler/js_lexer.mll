@@ -19,7 +19,7 @@
  * license.txt for more details.
  *)
 
-open Js_parser
+open Js_token
 
 let tok lexbuf = Lexing.lexeme lexbuf
 
@@ -85,8 +85,12 @@ rule initial tokinfo prev = parse
   | "/*" {
       let info = tokinfo lexbuf in
       let buf = Buffer.create 127 in
-      st_comment buf lexbuf;
-      TComment(info,Buffer.contents buf)
+      let nl = ref false in
+      st_comment buf nl lexbuf;
+      let content = Buffer.contents buf in
+      if !nl
+      then TCommentML(info,content)
+      else TComment(info,content)
     }
 
   | "//" {
@@ -129,8 +133,18 @@ rule initial tokinfo prev = parse
   | ">=" { T_GREATER_THAN_EQUAL (tokinfo lexbuf); }
   | "==" { T_EQUAL (tokinfo lexbuf); }
   | "!=" { T_NOT_EQUAL (tokinfo lexbuf); }
-  | "++" { T_INCR (tokinfo lexbuf); }
-  | "--" { T_DECR (tokinfo lexbuf); }
+  | "++" {
+      let cpi = tokinfo lexbuf in
+      match prev with
+        | Some p when (Js_token.info_of_tok p).Parse_info.line = cpi.Parse_info.line ->
+          T_INCR_NB(cpi)
+        | _ -> T_INCR(cpi) }
+  | "--" {
+      let cpi = tokinfo lexbuf in
+      match prev with
+        | Some p when (Js_token.info_of_tok p).Parse_info.line = cpi.Parse_info.line ->
+          T_DECR_NB(cpi)
+        | _ -> T_DECR(cpi) }
   | "<<=" { T_LSHIFT_ASSIGN (tokinfo lexbuf); }
   | "<<" { T_LSHIFT (tokinfo lexbuf); }
   | ">>=" { T_RSHIFT_ASSIGN (tokinfo lexbuf); }
@@ -176,7 +190,7 @@ rule initial tokinfo prev = parse
   (* Constant *)
   (* ----------------------------------------------------------------------- *)
 
-  | "0x" hexa+ {
+  | "0" ['X''x'] hexa+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
       T_NUMBER (s, `Int (int_of_string s), info)
@@ -289,7 +303,7 @@ and string_escape quote buf = parse
       Buffer.add_char buf '\\';
       Buffer.add_string buf (Lexing.lexeme lexbuf) }
   | (_ as c)
-    { Buffer.add_char buf c }
+    { Buffer.add_char buf '\\'; Buffer.add_char buf c }
       (* if c = quote *)
       (* then Buffer.add_char buf quote *)
       (* else Buffer.add_char buf c } *)
@@ -310,32 +324,43 @@ and string_quote q buf = parse
 
 (*****************************************************************************)
 and regexp buf = parse
-  | '/'            { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
-  | ("\\/"|"\\\\") as x {
-      Buffer.add_string buf x;
-      regexp buf lexbuf
-    }
-  | (_ as x)       { Buffer.add_char buf x; regexp buf lexbuf}
+  | '\\' (_ as x) { Buffer.add_char buf '\\';
+                    Buffer.add_char buf x;
+                    regexp buf lexbuf }
+  | '/' { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
+  | '[' { Buffer.add_char buf '['; regexp_class buf lexbuf }
+  | (_ as x)       { Buffer.add_char buf x; regexp buf lexbuf }
   | eof { Format.eprintf "LEXER: WIERD end of file in regexp@."; ()}
+
+and regexp_class buf = parse
+  | ']' { Buffer.add_char buf ']';
+             regexp buf lexbuf }
+  | '\\' (_ as x) { Buffer.add_char buf '\\';
+                    Buffer.add_char buf x;
+                    regexp_class buf lexbuf }
+  | (_ as x) { Buffer.add_char buf x; regexp_class buf lexbuf }
 
 and regexp_maybe_ident buf = parse
   | ['A'-'Z''a'-'z']* { Buffer.add_string buf (tok lexbuf) }
 
 (*****************************************************************************)
 
-and st_comment buf = parse
+and st_comment buf nl = parse
   | "*/" { Buffer.add_string buf (tok lexbuf) }
 
   (* noteopti: *)
-  | [^'*']+ { Buffer.add_string buf (tok lexbuf);st_comment buf lexbuf }
-  | '*'     { Buffer.add_char buf '*';st_comment buf lexbuf }
+  | NEWLINE { Buffer.add_string buf (tok lexbuf);
+              nl := true;
+              st_comment buf nl lexbuf }
+  | [^'*' '\n' '\r' ]+ { Buffer.add_string buf (tok lexbuf);st_comment buf nl lexbuf }
+  | '*'     { Buffer.add_char buf '*';st_comment buf nl lexbuf }
 
   | eof { Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "*/"}
   | _  {
       let s = tok lexbuf in
       Format.eprintf "LEXER: unrecognised symbol in comment: %s@." s;
       Buffer.add_string buf s;
-      st_comment buf lexbuf
+      st_comment buf nl lexbuf
     }
 
 and st_one_line_comment buf = parse

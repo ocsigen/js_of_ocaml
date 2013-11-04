@@ -9,7 +9,7 @@ PACKAGES=findlib,str,unix
 
 OBJS=pretty_print.cmx util.cmx reserved.cmx varPrinter.cmx option.cmx dgraph.cmx \
      code.cmx javascript.cmx js_output.cmx js_simpl.cmx \
-	   parse_info.cmx js_parser.cmx js_lexer.cmx parse_js.cmx\
+	   parse_info.cmx js_token.cmx js_parser.cmx js_lexer.cmx parse_js.cmx\
 		 annot_parser.cmx annot_lexer.cmx \
      instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
@@ -62,19 +62,23 @@ compiler.cmxs: $(OBJS)
 
 
 %.ml: %.mly
-	menhir $<
+	menhir --infer --explain $<
+
+js_parser.ml: js_parser.mly
+	menhir --external-tokens Js_token --explain $<
+
 
 %.ml: %.mll
 	ocamllex $<
 clean:
-	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a
+	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
 	rm -f js_of_ocaml compile.opt compile.byte minify.opt minify.byte
 
 depend:
 	${MAKE} --no-print-directory js_lexer.ml
 	${MAKE} --no-print-directory annot_lexer.ml
 	ocamldep *.ml *.mli > .depend
-	menhir --depend js_parser.mly >> .depend
+	menhir --depend --external-tokens Js_token js_parser.mly >> .depend
 	menhir --depend annot_parser.mly >> .depend
 
 

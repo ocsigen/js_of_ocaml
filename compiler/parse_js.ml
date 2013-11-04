@@ -16,281 +16,77 @@
  * license.txt for more details.
  *)
 
-let is_comment = function
-  | Js_parser.TCommentSpace _
-  |Js_parser.TCommentNewline _
-  | Js_parser.TComment _ -> true
-  | _ -> false
+let strip_comment l= List.filter (fun x -> not (Js_token.is_comment x)) l
 
-let strip_comment l= List.filter (fun x -> not (is_comment x)) l
+let rec until_non_comment acc = function
+  | [] -> acc,None
+  | x::xs ->
+    if Js_token.is_comment x
+    then until_non_comment (x::acc) xs
+    else (acc, Some (x,xs))
 
-let iter_with_previous_opt f = function
-  | [] -> ()
-  | e::l ->
-      f None e;
-      let rec iter_with_previous_ previous = function
-        | [] -> ()
-        | e::l -> f (Some previous) e ; iter_with_previous_ e l
-      in iter_with_previous_ e l
+let rec adjust_tokens ?(keep_comment=true) l = match until_non_comment [] l with
+  | acc,None when keep_comment -> List.rev acc
+  | _,None -> []
+  | past,Some (first,rest) ->
+    let open Js_token in
+    let f prev x acc = match prev, x with
+      (* restricted productions *)
+      (* 7.9.1 - 3 *)
+      (* When, as the program is parsed from left to right, a token is encountered *)
+      (* that is allowed by some production of the grammar, but the production *)
+      (* is a restricted production and the token would be the first token for a *)
+      (* terminal or nonterminal immediately following the annotation [no LineTerminator here] *)
+      (* within the restricted production (and therefore such a token is called a restricted token), *)
+      (* and the restricted token is separated from the previous token by at least *)
+      (* one LineTerminator, then a semicolon is automatically inserted before the *)
+      (* restricted token. *)
+      | (T_RETURN _ | T_CONTINUE _ | T_BREAK _ | T_THROW _),(T_SEMICOLON _ | T_VIRTUAL_SEMICOLON _) ->
+        x::acc
+      | (T_RETURN _ | T_CONTINUE _ | T_BREAK _ | T_THROW _),_ ->
+        let x' = Js_token.info_of_tok x in
+        let prev' = Js_token.info_of_tok prev in
+        if prev'.Parse_info.line <> x'.Parse_info.line
+        then x::(Js_token.T_VIRTUAL_SEMICOLON x')::acc
+        else x::acc
+      | _, _ -> x::acc in
+    let rec aux prev acc = function
+      | [] -> List.rev acc
+      | e::l ->
+        let nprev,nacc =
+          if Js_token.is_comment e
+          then if keep_comment then prev,(e::acc) else prev,acc
+          else e,(f prev e acc) in
+        aux nprev nacc l in
+    let past = if keep_comment then past else [] in
+    aux first (first::past) rest
 
-let push v l = l := v :: !l
-let pop l =
-  let v = List.hd !l in
-  l := List.tl !l;
-  v
+type lexer = Js_token.token list
 
-
-let rparens_of_if toks =
-  let open Js_parser in
-  let toks = strip_comment toks in
-  let stack = ref [] in
-  let rparens_if = ref [] in
-  iter_with_previous_opt (fun prev x ->
-    (match x with
-      | T_LPAREN _ -> push prev stack;
-      | T_RPAREN info ->
-        if !stack <> []
-        then begin
-          match pop stack with
-            | Some (T_IF _) -> push info rparens_if
-            | _ -> ()
-        end
-      | _ -> ()
-    )
-  ) toks;
-  !rparens_if
-
-let info_of_tok t =
-  let open Js_parser in
-      match t with
-  | TUnknown ii -> ii
-  | TCommentSpace (ii,_) -> ii
-  | TCommentNewline (ii,_) -> ii
-  | TComment (ii,_) -> ii
-  | EOF ii -> ii
-
-  | T_NUMBER (s, _,ii) -> ii
-  | T_IDENTIFIER (s, ii) -> ii
-  | T_STRING (s, ii) -> ii
-  | T_REGEX (s, ii) -> ii
-
-  | T_FUNCTION ii -> ii
-  | T_IF ii -> ii
-  | T_IN ii -> ii
-  | T_INSTANCEOF ii -> ii
-  | T_RETURN ii -> ii
-  | T_SWITCH ii -> ii
-  | T_THIS ii -> ii
-  | T_THROW ii -> ii
-  | T_TRY ii -> ii
-  | T_VAR ii -> ii
-  | T_WHILE ii -> ii
-  | T_WITH ii -> ii
-  | T_NULL ii -> ii
-  | T_FALSE ii -> ii
-  | T_TRUE ii -> ii
-  | T_BREAK ii -> ii
-  | T_CASE ii -> ii
-  | T_CATCH ii -> ii
-  | T_CONTINUE ii -> ii
-  | T_DEFAULT ii -> ii
-  | T_DO ii -> ii
-  | T_FINALLY ii -> ii
-  | T_FOR ii -> ii
-  | T_ELSE ii -> ii
-  | T_NEW ii -> ii
-  | T_LCURLY ii -> ii
-  | T_RCURLY ii -> ii
-  | T_LPAREN ii -> ii
-  | T_RPAREN ii -> ii
-  | T_LBRACKET ii -> ii
-  | T_RBRACKET ii -> ii
-  | T_SEMICOLON ii -> ii
-  | T_COMMA ii -> ii
-  | T_PERIOD ii -> ii
-  | T_RSHIFT3_ASSIGN ii -> ii
-  | T_RSHIFT_ASSIGN ii -> ii
-  | T_LSHIFT_ASSIGN ii -> ii
-  | T_BIT_XOR_ASSIGN ii -> ii
-  | T_BIT_OR_ASSIGN ii -> ii
-  | T_BIT_AND_ASSIGN ii -> ii
-  | T_MOD_ASSIGN ii -> ii
-  | T_DIV_ASSIGN ii -> ii
-  | T_MULT_ASSIGN ii -> ii
-  | T_MINUS_ASSIGN ii -> ii
-  | T_PLUS_ASSIGN ii -> ii
-  | T_ASSIGN ii -> ii
-  | T_PLING ii -> ii
-  | T_COLON ii -> ii
-  | T_OR ii -> ii
-  | T_AND ii -> ii
-  | T_BIT_OR ii -> ii
-  | T_BIT_XOR ii -> ii
-  | T_BIT_AND ii -> ii
-  | T_EQUAL ii -> ii
-  | T_NOT_EQUAL ii -> ii
-  | T_STRICT_EQUAL ii -> ii
-  | T_STRICT_NOT_EQUAL ii -> ii
-  | T_LESS_THAN_EQUAL ii -> ii
-  | T_GREATER_THAN_EQUAL ii -> ii
-  | T_LESS_THAN ii -> ii
-  | T_GREATER_THAN ii -> ii
-  | T_LSHIFT ii -> ii
-  | T_RSHIFT ii -> ii
-  | T_RSHIFT3 ii -> ii
-  | T_PLUS ii -> ii
-  | T_MINUS ii -> ii
-  | T_DIV ii -> ii
-  | T_MULT ii -> ii
-  | T_MOD ii -> ii
-  | T_NOT ii -> ii
-  | T_BIT_NOT ii -> ii
-  | T_INCR ii -> ii
-  | T_DECR ii -> ii
-  | T_DELETE ii -> ii
-  | T_TYPEOF ii -> ii
-  | T_VOID ii -> ii
-  | T_VIRTUAL_SEMICOLON ii -> ii
-
-let compute_line x prev : Parse_info.t option =
-  let x = info_of_tok x in
-  let prev = info_of_tok prev in
-  if prev.Parse_info.line <> x.Parse_info.line
-  then Some x
-  else None
-
-let rec adjust_tokens xs =
-  let open Js_parser in
-  let rparens_if = rparens_of_if xs in
-  let hrparens_if =
-    let h = Hashtbl.create 101 in
-    List.iter (fun s -> Hashtbl.add h s true) rparens_if;
-    h in
-
-  match xs with
-    | [] -> []
-    | y::ys ->
-      let res = ref [] in
-      push y res;
-      let rec aux prev f xs =
-        match xs with
-          | [] -> ()
-          | e::l ->
-            if is_comment e
-            then begin
-              push e res;
-              aux prev f l
-            end else begin
-              f prev e;
-              aux e f l
-            end
-      in
-      let f = (fun prev x ->
-        match prev, x with
-          | (T_LCURLY _ | T_SEMICOLON _ | T_VIRTUAL_SEMICOLON _),
-        T_RCURLY _ ->
-            push x res;
-          (* also one after ? *)
-          (* push (T.T_VIRTUAL_SEMICOLON (Ast.fakeInfo ())) res; *)
-
-          | _, T_RCURLY fake ->
-            push (T_VIRTUAL_SEMICOLON fake) res;
-            push x res;
-        (* also one after ? *)
-        (* push (T.T_VIRTUAL_SEMICOLON (Ast.fakeInfo ())) res; *)
-
-          | (T_SEMICOLON _ | T_VIRTUAL_SEMICOLON _),
-            EOF _ ->
-            push x res;
-          | _, EOF fake ->
-            push (T_VIRTUAL_SEMICOLON fake) res;
-            push x res;
-
-          | T_RCURLY _,
-            (T_IDENTIFIER _ |
-             T_IF _ | T_VAR _ | T_FOR _ | T_RETURN _ |
-             T_SWITCH _ |
-             T_FUNCTION _ | T_THIS _ |
-             T_BREAK _ | T_NEW _
-
-            )
-            ->
-            begin match compute_line x prev with
-              | None -> ()
-              | Some fake -> push (T_VIRTUAL_SEMICOLON fake) res;
-            end;
-            push x res;
-
-        (* this is valid only if the RPAREN is not the closing paren
-         * of a if
-         *)
-          | T_RPAREN info,
-              (T_VAR _ | T_IF _ | T_THIS _ | T_FOR _ | T_RETURN _ |
-                  T_IDENTIFIER _ | T_CONTINUE _
-              ) when not (Hashtbl.mem hrparens_if info)
-                  ->
-            begin match compute_line x prev with
-              | None -> ()
-              | Some fake -> push (T_VIRTUAL_SEMICOLON fake) res;
-            end;
-            push x res;
-
-
-          | T_RBRACKET _,
-              (T_FOR _ | T_IF _ | T_VAR _ | T_IDENTIFIER _)
-              ->
-            begin match compute_line x prev with
-              | None -> ()
-              | Some fake -> push (T_VIRTUAL_SEMICOLON fake) res;
-            end;
-            push x res;
-
-
-          | (T_IDENTIFIER _ | T_NULL _ | T_STRING _ | T_REGEX _
-                | T_FALSE _ | T_TRUE _
-          ),
-              (T_VAR _ | T_IDENTIFIER _ | T_IF _ | T_THIS _ |
-                  T_RETURN _ | T_BREAK _ | T_ELSE _
-              )
-              ->
-            begin match compute_line x prev with
-              | None -> ()
-              | Some fake -> push (T_VIRTUAL_SEMICOLON fake) res;
-            end;
-            push x res;
-
-          | _, _ -> push x res
-      )
-      in
-      aux y f ys;
-      List.rev !res
-
-type st = {
-  mutable rest : Js_parser.token list;
-  mutable current : Js_parser.token ;
-  mutable passed : Js_parser.token list }
-
-type lexer = Js_parser.token list
 let lexer_aux ?(rm_comment=true) lines_info lexbuf =
-  let tokinfo = Parse_info.t_of_lexbuf lines_info in
   let rec loop lexbuf lines_info prev acc =
+    let tokinfo lexbuf =
+      let pi = Parse_info.t_of_lexbuf lines_info lexbuf in
+      match prev with
+        | None -> { pi with Parse_info.fol=Some true}
+        | Some prev ->
+          let prev_pi = Js_token.info_of_tok prev in
+          if prev_pi.Parse_info.line <> pi.Parse_info.line
+          then {pi with Parse_info.fol=Some true}
+          else pi in
     let t = Js_lexer.initial tokinfo prev lexbuf in
     match t with
-      | Js_parser.EOF _ -> List.rev (t::acc)
+      | Js_token.EOF _ -> List.rev acc
       | _ ->
         let prev =
-          if is_comment t
+          if Js_token.is_comment t
           then prev
           else Some t in
         loop lexbuf lines_info prev (t::acc)
   in
   let toks = loop lexbuf lines_info None [] in
   (* hack: adjust tokens *)
-  let toks = adjust_tokens toks in
-  (* remove comments *)
-  if rm_comment
-  then strip_comment toks
-  else toks
+  adjust_tokens ~keep_comment:(not rm_comment) toks
 
 let lexer_from_file ?rm_comment file : lexer =
   let lines_info = Parse_info.make_lineinfo_from_file file in
@@ -308,33 +104,37 @@ let lexer_from_string ?rm_comment str : lexer =
   let lexbuf = Lexing.from_string str in
   lexer_aux ?rm_comment lines_info lexbuf
 
-(* let rec collect_annot acc = function *)
-(*   | [] -> List.rev acc *)
-(*   | x::xs -> match is_annot with *)
-(*       | Some str -> collect_annot (str::acc) xs *)
-(*       | None -> List.rev acc *)
-
 let lexer_map = List.map
 let lexer_fold f acc l = List.fold_left f acc l
 let lexer_filter f l = List.filter f l
-let lexer_from_list x =
-  let l = match List.rev x with
-    | Js_parser.EOF _ :: _  -> x
-    | (last::_) as all -> List.rev (Js_parser.EOF (info_of_tok last) :: all)
-    | [] -> raise (Invalid_argument "lexer_from_list; empty list") in
-  adjust_tokens l
+let lexer_from_list l = adjust_tokens l
 
 exception Parsing_error of Parse_info.t
 
+type st = {
+  mutable rest : Js_token.token list;
+  mutable current : Js_token.token ;
+  mutable passed : Js_token.token list;
+  mutable eof : bool }
+
 let parse toks =
-  let state = {
-    rest = toks;
-    passed = [];
-    current = List.hd toks
-  }
-  in
+  let state = match toks with
+    | [] -> {
+      rest = [];
+      passed = [];
+      current = Js_token.EOF Parse_info.zero;
+      eof = false }
+    | hd :: _ -> {
+      rest = toks;
+      passed = [];
+      current = hd ;
+      eof = false } in
   let lexer_fun lb =
     match state.rest with
+      | [] when not state.eof ->
+        state.eof <- true;
+        let info = Js_token.info_of_tok state.current in
+        Js_token.EOF info
       | [] -> assert false
       | x::tl ->
         state.rest <- tl;
@@ -346,5 +146,5 @@ let parse toks =
   with
     | Js_parser.Error
     | Parsing.Parse_error ->
-      let pi = info_of_tok state.current in
+      let pi = Js_token.info_of_tok state.current in
       raise (Parsing_error pi)

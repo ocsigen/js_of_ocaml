@@ -104,7 +104,7 @@ let parse_file f =
   let lex = Parse_js.lexer_from_file ~rm_comment:false file in
   let status,lexs = Parse_js.lexer_fold (fun (status,lexs) t ->
     match t with
-      | Js_parser.TComment (info,str) -> begin
+      | Js_token.TComment (info,str) -> begin
         match parse_annot info str with
           | None -> (status,lexs)
           | Some a ->
@@ -112,7 +112,7 @@ let parse_file f =
               | `Annot annot -> `Annot (a::annot),lexs
               | `Code (an,co) -> `Annot [a], ((List.rev an,List.rev co)::lexs)
       end
-      | _ when Parse_js.is_comment t -> (status,lexs)
+      | _ when Js_token.is_comment t -> (status,lexs)
       | c -> match status with
           | `Code (annot,code) -> `Code (annot,c::code),lexs
           | `Annot (annot) -> `Code(annot,[c]),lexs

@@ -30,21 +30,20 @@
  *)
 
 module J = Javascript
+open Js_token
 
 let bop op a b= J.EBin(op,a,b)
 let uop op a = J.EUn(op,a)
 let var name = J.S name
+
+
+
+
 %}
 
 /*(*************************************************************************)*/
 /*(*1 Tokens *)*/
 /*(*************************************************************************)*/
-
-/*(*-----------------------------------------*)*/
-/*(*2 the comment tokens *)*/
-/*(*-----------------------------------------*)*/
-/*(* coupling: Token_helpers.is_real_comment *)*/
-%token <Parse_info.t * string> TCommentSpace TCommentNewline   TComment
 
 /*(*-----------------------------------------*)*/
 /*(*2 the normal tokens *)*/
@@ -94,7 +93,7 @@ let var name = J.S name
  T_LSHIFT T_RSHIFT T_RSHIFT3
  T_PLUS T_MINUS
  T_DIV T_MULT T_MOD
- T_NOT T_BIT_NOT T_INCR T_DECR T_DELETE T_TYPEOF T_VOID
+ T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 
 /*(*-----------------------------------------*)*/
 /*(*2 extra tokens: *)*/
@@ -103,12 +102,12 @@ let var name = J.S name
 %token <Parse_info.t> T_VIRTUAL_SEMICOLON
 
 /*(* classic *)*/
-%token <Parse_info.t> TUnknown
 %token <Parse_info.t> EOF
 
 /*(*-----------------------------------------*)*/
 /*(*2 priorities *)*/
 /*(*-----------------------------------------*)*/
+
 
 /*(* Special if / else associativity*)*/
 %nonassoc p_IF
@@ -126,7 +125,7 @@ let var name = J.S name
 %left T_LSHIFT T_RSHIFT T_RSHIFT3
 %left T_PLUS T_MINUS
 %left T_DIV T_MULT T_MOD
-%right T_NOT T_BIT_NOT T_INCR T_DECR T_DELETE T_TYPEOF T_VOID
+%right T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 
 /*(*************************************************************************)*/
 /*(*1 Rules type declaration *)*/
@@ -142,144 +141,181 @@ let var name = J.S name
 /*(*************************************************************************)*/
 
 program:
-    | source_elements EOF { $1 }
-    | EOF { [] }
-    | fake { assert false }
-
-fake:
-    | TCommentSpace
-    | TCommentNewline
-    | TComment
-    | TUnknown { () }
+    | l=source_elements EOF { l }
 
 source_element:
- | statement            { J.Statement $1 }
- | function_declaration { J.Function_declaration $1 }
+ | s=statement { J.Statement s }
+ | f=function_declaration { J.Function_declaration f }
 
+source_elements:
+ | l=list(source_element) { l }
 /*(*************************************************************************)*/
 /*(*1 statement *)*/
 /*(*************************************************************************)*/
 
-statement:
- | block                { J.Block $1 }
+statement_no_semi:
+ | b=block { J.Block b }
+ (* this is not allowed but some browsers accept it *)
+ (* | function_declaration { *)
+ (*  let var,params,body,_ = $1 in *)
+ (*  J.Variable_statement [var,Some (J.EFun((None,params,body),None))]} *)
+
+ | s=if_statement         { s }
+ | s=iteration_statement  { s }
+ | s=with_statement       { s }
+ | s=switch_statement     { s }
+ | s=try_statement        { s }
+ | s=labeled_statement    { s }
+ | s=empty_statement      { s }
+
+
+statement_need_semi:
  | variable_statement   { $1 }
- | empty_statement      { $1 }
  | expression_statement { $1 }
- | if_statement         { $1 }
- | iteration_statement  { $1 }
+ | do_while_statement   { $1 }
  | continue_statement   { $1 }
  | break_statement      { $1 }
  | return_statement     { $1 }
- | with_statement       { $1 }
- | labelled_statement   { $1 }
- | switch_statement     { $1 }
  | throw_statement      { $1 }
- | try_statement        { $1 }
 
-statement_bloc:
-  list(T_VIRTUAL_SEMICOLON) statement {$2}
+statement:
+ | s=statement_no_semi {s}
+ | s=statement_need_semi semicolon {s}
+ | s=statement_need_semi {
+    (* 7.9.1 - 1 *)
+    (* When, as the program is parsed from left to right, a token (called the offending token)
+       is encountered that is not allowed by any production of the grammar, then a semicolon
+       is automatically inserted before the offending token if one or more of the following
+       conditions is true:
+       - The offending token is }.
+       - The offending token is separated from the previous
+         token by at least one LineTerminator. *)
+
+    (* 7.9.1 - 2 *)
+    (* When, as the program is parsed from left to right, the end of the input stream of tokens *)
+    (* is encountered and the parser is unable to parse the input token stream as a single *)
+    (* complete ECMAScript Program, then a semicolon is automatically inserted at the end *)
+    (* of the input stream. *)
+
+    (* @@@@@@@@@ HACK @@@@@@@@@@ *)
+    (* menhir internal's         *)
+    (* look the current token:   *)
+    (* - if it is on another line (linebreak inbetween), accept the statement *)
+    (* - fail otherwise *)
+    (* @@@@@@@@@ HACK @@@@@@@@@@ *)
+
+    match _menhir_env._menhir_token with
+      | EOF _ -> s
+      | T_RCURLY _ -> s
+      | t ->
+        let info = Js_token.info_of_tok t in
+        match info.Parse_info.fol with
+          | Some true -> s
+          | _ -> $syntaxerror
+  }
+
+semicolon:
+ | T_SEMICOLON {}
+ | T_VIRTUAL_SEMICOLON {}
+
+labeled_statement:
+| l=label T_COLON s=statement { J.Labelled_statement (l,s) }
+
+statement_list:
+ | l=list(statement) {l}
 
 block:
- | T_LCURLY statement_list T_RCURLY { $2 }
- | T_LCURLY T_RCURLY                { [] }
-
+ | l=curly_block(statement_list) { l }
 
 variable_statement:
- | T_VAR variable_declaration_list semicolon  { J.Variable_statement $2 }
+ | T_VAR separated_nonempty_list(T_COMMA,variable_declaration) { J.Variable_statement $2 }
 
 variable_declaration:
- | identifier initializeur { var $1, Some $2 }
- | identifier { var $1, None }
+ | variable option(initializeur) { $1, $2 }
 
 initializeur:
  | T_ASSIGN assignment_expression { $2 }
 
 
 empty_statement:
- | semicolon { J.Empty_statement }
+ | T_SEMICOLON { J.Empty_statement }
 
 expression_statement:
- | expression_no_statement semicolon { J.Expression_statement ($1, None) }
+ | expression_no_statement { J.Expression_statement ($1, None) }
 
 
 if_statement:
- | T_IF T_LPAREN expression T_RPAREN statement T_ELSE statement
-     { J.If_statement ($3, $5, Some $7) }
- | T_IF T_LPAREN expression T_RPAREN statement %prec p_IF
-     { J.If_statement ($3, $5, None) }
+ | T_IF T_LPAREN i=expression T_RPAREN t=statement T_ELSE e=statement
+     { J.If_statement (i, t, Some e) }
+ | T_IF T_LPAREN i=expression T_RPAREN t=statement %prec p_IF
+     { J.If_statement (i, t, None) }
+
+do_while_statement:
+  | T_DO statement T_WHILE T_LPAREN expression T_RPAREN
+    { J.Do_while_statement ($2, $5) }
 
 
 iteration_statement:
- | T_DO statement_bloc T_WHILE T_LPAREN expression T_RPAREN semicolon
-     { J.Do_while_statement ($2, $5) }
- | T_WHILE T_LPAREN expression T_RPAREN statement_bloc
+ | T_WHILE T_LPAREN expression T_RPAREN statement
      { J.While_statement ($3, $5) }
  | T_FOR T_LPAREN
-     expression_no_in_opt T_SEMICOLON
-     expression_opt T_SEMICOLON
-     expression_opt
-     T_RPAREN statement_bloc
+     option(expression_no_in) T_SEMICOLON
+     option(expression) T_SEMICOLON
+     option(expression)
+     T_RPAREN statement
      { J.For_statement ( J.Left $3, $5, $7, $9, None) }
  | T_FOR T_LPAREN
-     T_VAR variable_declaration_list_no_in T_SEMICOLON
-     expression_opt T_SEMICOLON
-     expression_opt
-     T_RPAREN statement_bloc
+     T_VAR separated_nonempty_list(T_COMMA,variable_declaration_no_in) T_SEMICOLON
+     option(expression) T_SEMICOLON
+     option(expression)
+     T_RPAREN statement
      {
        J.For_statement (J.Right($4), $6, $8, $10, None)
      }
- | T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement_bloc
+ | T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement
      { J.ForIn_statement (J.Left $3,$5,$7,None) }
  | T_FOR T_LPAREN T_VAR variable_declaration_no_in T_IN expression T_RPAREN
-     statement_bloc
+     statement
      { J.ForIn_statement ( J.Right $4, $6, $8, None) }
 
 variable_declaration_no_in:
- | identifier initializer_no_in { var $1, Some $2 }
- | identifier { var $1, None }
+ | variable option(initializer_no_in) { $1, $2 }
 
 initializer_no_in:
  | T_ASSIGN assignment_expression_no_in { $2 }
 
 
 continue_statement:
- | T_CONTINUE identifier semicolon { J.Continue_statement (Some (J.Label.of_string $2)) }
- | T_CONTINUE semicolon            { J.Continue_statement None }
-
+ | T_CONTINUE option(label) { J.Continue_statement $2 }
 
 break_statement:
- | T_BREAK identifier semicolon { J.Break_statement (Some (J.Label.of_string $2)) }
- | T_BREAK semicolon            { J.Break_statement None }
-
+ | T_BREAK option(label) { J.Break_statement $2 }
 
 return_statement:
- | T_RETURN expression semicolon { J.Return_statement (Some $2) }
- | T_RETURN semicolon            { J.Return_statement  None }
+ | T_RETURN option(expression) { J.Return_statement ($2) }
 
 with_statement:
  | T_WITH T_LPAREN expression T_RPAREN statement { assert false }
 
 switch_statement:
- | T_SWITCH T_LPAREN expression T_RPAREN T_LCURLY case_clauses_opt T_RCURLY
-   { J.Switch_statement ($3, $6,None) }
- | T_SWITCH T_LPAREN expression T_RPAREN T_LCURLY case_clauses_opt default_clause T_RCURLY
-   { J.Switch_statement ($3, $6,Some $7) }
-
-labelled_statement:
- | identifier T_COLON statement { J.Labelled_statement (J.Label.of_string $1, $3) }
-
+ | T_SWITCH T_LPAREN e=expression T_RPAREN
+    b=curly_block(
+    pair(list(case_clause),option(default_clause)))
+    {
+      let (l,d) = b in
+      J.Switch_statement (e, l, d) }
 
 throw_statement:
- | T_THROW expression semicolon { J.Throw_statement $2 }
+ | T_THROW expression { J.Throw_statement $2 }
 
 
 try_statement:
- | T_TRY block catch         { J.Try_statement ($2, Some $3, None, None)  }
+ | T_TRY block catch option(finally) { J.Try_statement ($2, Some $3, $4,None) }
  | T_TRY block       finally { J.Try_statement ($2, None, Some $3,None) }
- | T_TRY block catch finally { J.Try_statement ($2, Some $3, Some $4,None) }
+
 
 catch:
- | T_CATCH T_LPAREN identifier T_RPAREN block { var $3, $5 }
+ | T_CATCH T_LPAREN variable T_RPAREN block { $3, $5 }
 
 
 finally:
@@ -290,47 +326,28 @@ finally:
 /*(*----------------------------*)*/
 
 case_clause:
- | T_CASE expression T_COLON statement_list { $2, $4 }
- | T_CASE expression T_COLON { $2, [] }
+ | T_CASE e=expression T_COLON l=statement_list { e,l }
 
 default_clause:
- | T_DEFAULT T_COLON { [] }
- | T_DEFAULT T_COLON statement_list { $3 }
+ | T_DEFAULT T_COLON l=statement_list { l }
 
 /*(*************************************************************************)*/
 /*(*1 function declaration *)*/
 /*(*************************************************************************)*/
 
 function_declaration:
- | T_FUNCTION identifier T_LPAREN formal_parameter_list T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { var $2, $4, $7, None }
- | T_FUNCTION identifier T_LPAREN T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { var $2, [],$6, None }
+ | T_FUNCTION v=variable T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
+     b=curly_block(function_body)
+     { v, args, b, None }
 
 
 function_expression:
- | T_FUNCTION identifier T_LPAREN formal_parameter_list T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { J.EFun ((Some (var $2), $4, $7),None) }
- | T_FUNCTION identifier T_LPAREN T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { J.EFun ((Some (var $2), [], $6),None) }
- | T_FUNCTION T_LPAREN formal_parameter_list T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { J.EFun ((None, $3, $6),None) }
- | T_FUNCTION T_LPAREN T_RPAREN
-     T_LCURLY function_body T_RCURLY
-     { J.EFun ((None, [], $5),None) }
-
-formal_parameter_list:
- | identifier                                { [var $1] }
- | formal_parameter_list T_COMMA identifier  { $1 @ [var $3] }
+ | T_FUNCTION v=option(variable) T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
+   b=curly_block(function_body)
+   { J.EFun ((v, args, b),None) }
 
 function_body:
- | /*(* empty *)*/ { [] }
- | source_elements  { $1 }
+ | l=source_elements  { l }
 
 /*(*************************************************************************)*/
 /*(*1 expression *)*/
@@ -406,9 +423,9 @@ post_in_expression:
 pre_in_expression:
  | left_hand_side_expression
    { $1 }
- | pre_in_expression T_INCR
+ | pre_in_expression T_INCR_NB
    { uop J.IncrA $1 }
- | pre_in_expression T_DECR
+ | pre_in_expression T_DECR_NB
    { uop J.DecrA $1 }
  | T_DELETE pre_in_expression
    { uop J.Delete $2 }
@@ -418,7 +435,11 @@ pre_in_expression:
    { uop J.Typeof $2 }
  | T_INCR pre_in_expression
    { uop J.IncrB $2 }
+ | T_INCR_NB pre_in_expression
+   { uop J.IncrB $2 }
  | T_DECR pre_in_expression
+   { uop J.DecrB $2 }
+ | T_DECR_NB pre_in_expression
    { uop J.DecrB $2 }
  | T_PLUS pre_in_expression
    { uop J.Pl $2 }
@@ -449,29 +470,32 @@ new_expression:
  | T_NEW new_expression { J.ENew ($2,None) }
 
 member_expression:
- | primary_expression                                 { $1 }
- | member_expression T_LBRACKET expression T_RBRACKET { J.EAccess ($1, $3) }
- | member_expression T_PERIOD identifier              { J.EDot($1,$3) }
- | T_NEW member_expression arguments
-     { J.ENew($2, Some $3) }
+ | e=primary_expression
+     { e }
+ | e1=member_expression T_LBRACKET e2=expression T_RBRACKET
+     { J.EAccess (e1,e2) }
+ | e1=member_expression T_PERIOD i=identifier
+     { J.EDot(e1,i) }
+ | T_NEW e1=member_expression a=arguments
+     { J.ENew(e1, Some a) }
 
 primary_expression:
- | primary_expression_no_statement { $1 }
- | object_literal                  { J.EObj $1 }
- | function_expression             { $1 }
+ | p=primary_expression_no_statement { p }
+ | o=object_literal                  { J.EObj o }
+ | f=function_expression             { f }
 
 primary_expression_no_statement:
  | T_THIS          { J.EVar (var "this") }
- | identifier      { J.EVar (var $1) }
+ | v=variable        { J.EVar v }
 
  | null_literal    { J.EVar (var "null") }
- | boolean_literal { J.EBool $1 }
- | numeric_literal { J.ENum $1 }
- | string_literal  { J.EStr ($1, `Utf8) }
+ | b=boolean_literal { J.EBool b }
+ | n=numeric_literal { J.ENum n }
+ | s=string_literal  { J.EStr (s, `Utf8) }
  /*(* marcel: this isn't an expansion of literal in ECMA-262... mistake? *)*/
- | regex_literal                { $1 }
- | array_literal                { $1 }
- | T_LPAREN expression T_RPAREN { $2 }
+ | r=regex_literal                { r }
+ | a=array_literal                { a }
+ | T_LPAREN e=expression T_RPAREN { e }
 
 /*(*----------------------------*)*/
 /*(*2 no in *)*/
@@ -580,9 +604,9 @@ post_in_expression_no_statement:
 pre_in_expression_no_statement:
  | left_hand_side_expression_no_statement
    { $1 }
- | pre_in_expression_no_statement T_INCR
+ | pre_in_expression_no_statement T_INCR_NB
    { uop J.IncrA $1 }
- | pre_in_expression_no_statement T_DECR
+ | pre_in_expression_no_statement T_DECR_NB
    { uop J.DecrA $1 }
  | T_DELETE pre_in_expression
    { uop J.Delete $2 }
@@ -592,7 +616,11 @@ pre_in_expression_no_statement:
    { uop J.Typeof $2 }
  | T_INCR pre_in_expression
    { uop J.IncrB $2 }
+ | T_INCR_NB pre_in_expression
+   { uop J.IncrB $2 }
  | T_DECR pre_in_expression
+   { uop J.DecrB $2 }
+ | T_DECR_NB pre_in_expression
    { uop J.DecrB $2 }
  | T_PLUS pre_in_expression
    { uop J.Pl $2 }
@@ -631,13 +659,14 @@ call_expression_no_statement:
    { J.EDot($1,$3) }
 
 member_expression_no_statement:
- | primary_expression_no_statement                                 { $1 }
- | member_expression_no_statement T_LBRACKET expression T_RBRACKET
-   { J.EAccess($1, $3) }
- | member_expression_no_statement T_PERIOD identifier
-   { J.EDot($1, $3) }
- | T_NEW member_expression arguments
-   { J.ENew($2,Some $3) }
+ | e=primary_expression_no_statement
+     { e }
+ | e1=member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
+   { J.EAccess(e1, e2) }
+ | e1=member_expression_no_statement T_PERIOD i=identifier
+   { J.EDot(e1,i) }
+ | T_NEW e=member_expression a=arguments
+   { J.ENew(e,Some a) }
 
 /*(*----------------------------*)*/
 /*(*2 scalar *)*/
@@ -670,7 +699,7 @@ regex_literal:
    (* J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) } *)
 
 string_literal:
- | T_STRING { let s,_ = $1 in s}
+ | str=T_STRING { let s,_ = str in s}
 
 /*(*----------------------------*)*/
 /*(*2 array *)*/
@@ -689,17 +718,22 @@ element_list:
  | element_list   elison   assignment_expression { $1 @ $2 @ [Some $3] }
 
 
+
+separated_nonempty_list2(sep,X):
+| x = X { [ x ] }
+| x = X; sep { [ x ] }
+| x = X; sep; xs = separated_nonempty_list2(sep, X) { x :: xs }
+
 object_literal:
- | T_LCURLY T_RCURLY { [] }
- | T_LCURLY property_name_and_value_list T_VIRTUAL_SEMICOLON T_RCURLY { $2 }
+ | curly_block(empty) { [] }
+ | l=curly_block(
+     separated_nonempty_list2(
+       T_COMMA,
+       separated_pair(property_name,T_COLON,assignment_expression)
+     ))  { l }
 
-
-property_name_and_value_list:
- | property_name T_COLON assignment_expression
-     { [$1, $3] }
- | property_name_and_value_list T_COMMA
-   property_name T_COLON assignment_expression
-   { $1 @ [$3,$5] }
+empty:
+ | {}
 
 /*(*----------------------------*)*/
 /*(*2 variable *)*/
@@ -710,14 +744,7 @@ property_name_and_value_list:
 /*(*----------------------------*)*/
 
 arguments:
- | T_LPAREN               T_RPAREN { [] }
- | T_LPAREN argument_list T_RPAREN { $2 }
-
-argument_list:
- | assignment_expression
-     { [$1] }
- | argument_list T_COMMA assignment_expression
-     { $1 @ [$3] }
+ | T_LPAREN l=separated_list(T_COMMA,assignment_expression) T_RPAREN { l }
 
 /*(*----------------------------*)*/
 /*(*2 auxillary bis *)*/
@@ -729,55 +756,25 @@ argument_list:
 identifier:
  | T_IDENTIFIER { let s,_ = $1 in s  }
 
+variable:
+ | i=identifier { var i }
+
+label:
+ | identifier { J.Label.of_string $1 }
+
 property_name:
- | identifier      { J.PNI $1 }
- | string_literal  { J.PNS $1 }
- | numeric_literal { J.PNN $1 }
+ | i=identifier      { J.PNI i }
+ | s=string_literal  { J.PNS s }
+ | n=numeric_literal { J.PNN n }
 
 /*(*************************************************************************)*/
 /*(*1 xxx_opt, xxx_list *)*/
 /*(*************************************************************************)*/
 
-semicolon:
- | T_SEMICOLON         { Some $1 }
- | T_VIRTUAL_SEMICOLON { None }
-
 elison:
  | T_COMMA { [] }
  | elison T_COMMA { $1 @ [None] }
 
-source_elements:
- | source_element { [$1] }
- | source_elements source_element { $1 @ [$2] }
 
-statement_list:
- | statement { [$1] }
- | statement_list statement { $1 @ [$2] }
-
-case_clauses:
- | case_clause { [$1] }
- | case_clauses case_clause { $1 @ [$2] }
-
-variable_declaration_list:
- | variable_declaration
-     { [$1]  }
- | variable_declaration_list T_COMMA variable_declaration
-     { $1 @ [$3] }
-
-variable_declaration_list_no_in:
- | variable_declaration_no_in
-     { [$1] }
- | variable_declaration_list_no_in T_COMMA variable_declaration_no_in
-     { $1 @ [$3] }
-
-expression_opt:
- | /*(* empty *)*/ { None }
- | expression      { Some $1 }
-
-expression_no_in_opt:
- | /*(* empty *)*/  { None }
- | expression_no_in { Some $1 }
-
-case_clauses_opt:
- | /*(* empty *)*/ { [] }
- | case_clauses    { $1 }
+curly_block(X):
+ | T_LCURLY x=X T_RCURLY {x}
