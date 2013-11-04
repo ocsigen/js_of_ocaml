@@ -218,7 +218,8 @@ module Debug = struct
             line=pos.pos_lnum;
             col=pos.pos_cnum - pos.pos_bol;
             (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
-            idx=0}
+            idx=0;
+            fol=None}
     with Not_found ->
       None
 

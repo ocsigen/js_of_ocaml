@@ -22,6 +22,7 @@ type t = {
   col : int;
   line : int;
   idx : int;
+  fol : bool option;
 }
 
 val zero : t

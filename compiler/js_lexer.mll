@@ -19,7 +19,7 @@
  * license.txt for more details.
  *)
 
-open Js_parser
+open Js_token
 
 let tok lexbuf = Lexing.lexeme lexbuf
 
@@ -133,8 +133,18 @@ rule initial tokinfo prev = parse
   | ">=" { T_GREATER_THAN_EQUAL (tokinfo lexbuf); }
   | "==" { T_EQUAL (tokinfo lexbuf); }
   | "!=" { T_NOT_EQUAL (tokinfo lexbuf); }
-  | "++" { T_INCR (tokinfo lexbuf); }
-  | "--" { T_DECR (tokinfo lexbuf); }
+  | "++" {
+      let cpi = tokinfo lexbuf in
+      match prev with
+        | Some p when (Js_token.info_of_tok p).Parse_info.line = cpi.Parse_info.line ->
+          T_INCR_NB(cpi)
+        | _ -> T_INCR(cpi) }
+  | "--" {
+      let cpi = tokinfo lexbuf in
+      match prev with
+        | Some p when (Js_token.info_of_tok p).Parse_info.line = cpi.Parse_info.line ->
+          T_DECR_NB(cpi)
+        | _ -> T_DECR(cpi) }
   | "<<=" { T_LSHIFT_ASSIGN (tokinfo lexbuf); }
   | "<<" { T_LSHIFT (tokinfo lexbuf); }
   | ">>=" { T_RSHIFT_ASSIGN (tokinfo lexbuf); }

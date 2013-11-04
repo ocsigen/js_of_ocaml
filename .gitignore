@@ -34,7 +34,7 @@ compiler/annot_lexer.ml
 compiler/annot_lexer.mli
 compiler/annot_parser.ml
 compiler/annot_parser.mli
-
+compiler/*.conflicts
 doc/api-html
 benchmarks/build
 benchmarks/results

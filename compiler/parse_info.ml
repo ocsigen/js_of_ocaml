@@ -22,6 +22,7 @@ type t = {
   col : int;
   line : int;
   idx : int;
+  fol : bool option;
 }
 
 let zero = {
@@ -29,6 +30,7 @@ let zero = {
   col = 0;
   line = 0;
   idx = 0;
+  fol = None
 }
 
 
@@ -122,6 +124,7 @@ let t_of_lexbuf line_info lexbuf : t =
   let idx = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
   let line,col = Line_info.get line_info idx in
   {
+    fol = None;
     idx;
     line;
     col;
