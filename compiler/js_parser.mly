@@ -46,12 +46,6 @@ let var name = J.S name
 /*(*************************************************************************)*/
 
 /*(*-----------------------------------------*)*/
-/*(*2 the comment tokens *)*/
-/*(*-----------------------------------------*)*/
-/*(* coupling: Token_helpers.is_real_comment *)*/
-%token <Parse_info.t * string> TCommentSpace TCommentNewline   TComment TCommentML
-
-/*(*-----------------------------------------*)*/
 /*(*2 the normal tokens *)*/
 /*(*-----------------------------------------*)*/
 
@@ -108,7 +102,6 @@ let var name = J.S name
 %token <Parse_info.t> T_VIRTUAL_SEMICOLON
 
 /*(* classic *)*/
-%token <Parse_info.t> TUnknown
 %token <Parse_info.t> EOF
 
 /*(*-----------------------------------------*)*/
@@ -149,14 +142,6 @@ let var name = J.S name
 
 program:
     | l=source_elements EOF { l }
-    | fake { assert false }
-
-fake:
-    | TCommentSpace
-    | TCommentNewline
-    | TComment
-    | TCommentML
-    | TUnknown { () }
 
 source_element:
  | s=statement { J.Statement s }
