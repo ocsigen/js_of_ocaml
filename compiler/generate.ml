@@ -222,20 +222,7 @@ let float_const f = val_float (J.ENum f)
 
 let s_var name = J.EVar (J.S name)
 
-let escape_backslash s =
-    let l = String.length s in
-    let b = Buffer.create (2 * l) in
-    for i = 0 to l - 1 do
-      let c = s.[i] in
-      match c with
-        | '\\' -> Buffer.add_string b "\\\\"
-        | _ -> Buffer.add_char b c
-    done;
-    Buffer.contents b
-
-let str_js s =
-  let s = escape_backslash s in
-  J.EStr (s,`Bytes)
+let str_js s = J.EStr (s,`Bytes)
 
 let rec constant ~ctx x =
   match x with

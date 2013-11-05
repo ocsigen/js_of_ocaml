@@ -212,33 +212,35 @@ end) = struct
     for i = 0 to l - 1 do
       let c = s.[i] in
       match c with
-          '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' ->
-            Buffer.add_string b "\\0"
-        | '\b' ->
+        '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' ->
+          Buffer.add_string b "\\0"
+      | '\b' ->
           Buffer.add_string b "\\b"
-        | '\t' ->
+      | '\t' ->
           Buffer.add_string b "\\t"
-        | '\n' ->
+      | '\n' ->
           Buffer.add_string b "\\n"
       (* This escape sequence is not supported by IE < 9
-         | '\011' ->
-         Buffer.add_string b "\\v"
+      | '\011' ->
+          Buffer.add_string b "\\v"
       *)
-        | '\012' ->
+      | '\012' ->
           Buffer.add_string b "\\f"
-        | '\r' ->
+      | '\\' when not utf ->
+          Buffer.add_string b "\\\\"
+      | '\r' ->
           Buffer.add_string b "\\r"
-        | '\000' .. '\031'  | '\127'->
+      | '\000' .. '\031'  | '\127'->
           let c = Char.code c in
           Buffer.add_string b "\\x";
           Buffer.add_char b conv.[c lsr 4];
           Buffer.add_char b conv.[c land 0xf]
-        | '\128' .. '\255' when not utf ->
+      | '\128' .. '\255' when not utf ->
           let c = Char.code c in
           Buffer.add_string b "\\x";
           Buffer.add_char b conv.[c lsr 4];
           Buffer.add_char b conv.[c land 0xf]
-        | _ ->
+      | _ ->
           if c = quote then Buffer.add_char b '\\';
           Buffer.add_char b c
     done;

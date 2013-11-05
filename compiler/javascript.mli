@@ -74,6 +74,9 @@ and expression =
   | EVar of ident
   | EFun of function_expression * node_pc
   | EStr of string * [`Bytes | `Utf8]
+      (* A string can either be composed of a sequence of bytes, or be
+         UTF-8 encoded. In the second case, the string may contain
+         escape sequences. *)
   | EArr of array_litteral
   | EBool of bool
   | ENum of float
