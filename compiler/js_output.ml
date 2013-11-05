@@ -167,10 +167,15 @@ end) = struct
 (*XXX May need to be updated... *)
   let rec ends_with_if_without_else st =
     match st with
-        If_statement (_, _, Some st) -> ends_with_if_without_else st
-      | If_statement (_, _, None)    -> true
-      | While_statement (_, st)      -> ends_with_if_without_else st
-      | _                            -> false
+      | If_statement (_, _, Some st)
+      | While_statement (_, st)
+      | For_statement (_, _, _, st, _)
+      | ForIn_statement (_, _, st, _) ->
+          ends_with_if_without_else st
+      | If_statement (_, _, None) ->
+          true
+      | _ ->
+          false
 
   let rec need_paren l e =
     match e with
