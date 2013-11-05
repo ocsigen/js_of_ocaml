@@ -134,6 +134,20 @@ let specialize_instr info i =
       | _ ->
           i
       end
+  | Let (x, Prim (Extern "caml_js_from_string", [y])) ->
+      let is_ascii s =
+        let res = ref true in
+        for i = 0 to String.length s - 1 do
+          if s.[i] > '\127' then res := false
+        done;
+        !res
+      in
+      begin match the_def_of info y with
+        Some (Constant (String s)) when is_ascii s ->
+          Let (x, Constant (IString s))
+      | _ ->
+          i
+      end
   | Let (x, Prim (Extern "%int_mul", [y; z])) ->
       begin match the_int info y, the_int info z with
         Some j, _ | _, Some j when abs j < 0x200000 ->
