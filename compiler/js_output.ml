@@ -57,7 +57,7 @@ end) = struct
 
   let ident = function
     | S s -> s
-    | V v -> Format.eprintf "This should not append@."; exit 1
+    | V v -> assert false
 
   let opt_identifier f i =
     match i with

@@ -292,9 +292,10 @@ let program p =
       coloring#block [];
       if S.cardinal (coloring#get_free) <> 0
       then begin
-        (Format.eprintf "some variables escaped: it should not append (#%d)@."
-           (S.cardinal (coloring#get_free)));
-        failwith "This is probably a bug."
+        failwith 
+          (Format.sprintf
+             "Some variables escaped (#%d); this is a bug."
+             (S.cardinal (coloring#get_free)));
         (* S.iter(fun s -> (Format.eprintf "%s@." (Code.Var.to_string s))) coloring#get_free *)
       end;
       let name = allocate_variables state nv coloring#state.Js_traverse.count in
