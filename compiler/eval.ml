@@ -119,18 +119,6 @@ let eval_instr info live i =
           Let (x , Constant (Int c))
         | _ -> i
       end
-    | Let (x,Prim (Extern ("caml_js_from_string"), [y])) ->
-      begin match the_def_of info y with
-        | Some (Constant (String str)) ->
-          begin match y with
-            | Pv y when live.(Var.idx y) <= 1 ->
-              Let(x,(Constant (IString str)))
-            | Pc _ ->
-              Let(x, (Constant (IString str)))
-            | _ -> i
-          end
-        | _ -> i
-      end
     | Let (x,Prim (prim, prim_args)) ->
       begin
         let prim_args' = List.map (fun x ->
