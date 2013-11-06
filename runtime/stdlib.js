@@ -752,10 +752,10 @@ var caml_ml_output_buffer = "";
 //Provides: caml_ml_flush
 //Requires: caml_ml_output_buffer
 function caml_ml_flush (oc) {
-    this.console
-    && this.console.log
+    joo_global_object.console
+    && joo_global_object.console.log
     && caml_ml_output_buffer != ""
-    && this.console.log(caml_ml_output_buffer);
+    && joo_global_object.console.log(caml_ml_output_buffer);
     caml_ml_output_buffer = "";
 }
 //Provides: caml_ml_output
