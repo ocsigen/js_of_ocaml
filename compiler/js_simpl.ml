@@ -67,6 +67,8 @@ let rec enot_rec e =
         | J.NotEqEq ->
             (J.EBin (J.EqEqEq, e1, e2), 0)
 (*Disabled: this is not correct!
+  var x = 0/0;
+  !(x < 0) and x >= 0 give different result
         | J.Lt ->
             (J.EBin (J.Le, e2, e1), 0)
         | J.Le ->
