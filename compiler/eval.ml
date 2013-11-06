@@ -133,7 +133,7 @@ let eval_instr info live i =
           end
         | _ -> i
       end
-    | Let (x,Prim (prim, prim_args)) when false ->
+    | Let (x,Prim (prim, prim_args)) ->
       begin
         let prim_args' = List.map (fun x ->
           match the_def_of info x with
@@ -148,7 +148,8 @@ let eval_instr info live i =
           | Some c -> Let (x,Constant c)
           | _ -> Let(x, Prim(prim, (List.map2 (fun arg c ->
             match c with
-              | Some c -> Pc c
+              (* this produce invalid code. why ??? *)
+              (* | Some c -> Pc c *)
               | _ -> arg) prim_args prim_args')))
       end
     | _ -> i
