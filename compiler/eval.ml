@@ -107,7 +107,7 @@ let eval_prim x =
 
 exception Not_constant
 
-let eval_instr info live i =
+let eval_instr info i =
   match i with
     | Let (x, Prim (Extern ("caml_js_equals"|"caml_equal"), [y;z])) ->
       begin match the_def_of info y, the_def_of info z with
@@ -134,9 +134,10 @@ let eval_instr info live i =
           | Some c -> Let (x,Constant c)
           | _ -> Let(x, Prim(prim, (List.map2 (fun arg c ->
             match c with
-              (* this produce invalid code. why ??? *)
-              (* | Some c -> Pc c *)
-              | _ -> arg) prim_args prim_args')))
+              | Some ((Int _ | Int32 _ | Float _ | Nativeint _ ) as c) -> Pc c
+              | Some _ (* do not be duplicated other constant as
+                          they're not represented with constant in javascript. *)
+              | None -> arg) prim_args prim_args')))
       end
     | _ -> i
 
@@ -161,13 +162,13 @@ let eval_branch info = function
 
 
 
-let f info live (pc, blocks, free_pc) =
+let f info (pc, blocks, free_pc) =
   let blocks =
     AddrMap.map
       (fun block ->
          { block with
            Code.body =
-             List.map (eval_instr info live) block.body;
+             List.map (eval_instr info) block.body;
            Code.branch = eval_branch info block.branch
          })
       blocks

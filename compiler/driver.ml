@@ -61,9 +61,7 @@ let specialize p =
 
 let eval (p,info) =
   if Option.Optim.staticeval()
-  then
-    let (p,live_vars,_) = deadcode' p in
-    Eval.f info live_vars p
+  then Eval.f info p
   else p
 
 let flow p =
