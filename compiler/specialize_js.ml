@@ -185,6 +185,4 @@ let specialize_instrs info (pc, blocks, free_pc) =
 
 (****)
 
-let f p info =
-  let p = specialize_instrs info p in
-  p
+let f info p = specialize_instrs info p

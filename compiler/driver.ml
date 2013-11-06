@@ -45,11 +45,11 @@ let inline p =
 
 let specialize_1 (p,info) =
   if debug () then Format.eprintf "Specialize...@.";
-  Specialize.f p info
+  Specialize.f info p
 
 let specialize_js (p,info) =
   if debug () then Format.eprintf "Specialize js...@.";
-  Specialize_js.f p info
+  Specialize_js.f info p
 
 let specialize' (p,info) =
   let p = specialize_1 (p,info)in
