@@ -48,6 +48,7 @@ let keyword = List.fold_left (fun acc x -> StringSet.add x acc)
     "null";
     "true";
     "false";
+    "NaN";
 
 
     "undefined";
