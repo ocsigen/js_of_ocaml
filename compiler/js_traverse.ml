@@ -182,6 +182,15 @@ class share_constant = object(m)
         Hashtbl.replace count s (n+1,k)
       | _ -> ()
     in super#expression e
+  method sources l =
+    let revl,_ = List.fold_left (fun (l,prolog) x ->
+      match x with
+        | Statement (Expression_statement (EStr _,_)) when prolog ->
+          x::l,prolog
+        | x -> (m#source x)::l,false
+    ) ([],true) l in
+    List.rev revl
+
   method program p =
     let p = super#program p in
 
