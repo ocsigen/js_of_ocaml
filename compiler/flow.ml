@@ -311,7 +311,10 @@ let the_int info x =
   match x with
     | Pv x ->
       get_approx info
-        (fun x -> match info.info_defs.(Var.idx x) with Expr (Const i) -> Some i | _ -> None)
+        (fun x -> match info.info_defs.(Var.idx x) with
+                  | Expr (Const i) -> Some i
+                  | Expr (Constant (Int i)) -> Some i
+                  | _ -> None)
         None
         (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
         x
