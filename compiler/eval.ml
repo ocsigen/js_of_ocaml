@@ -109,8 +109,6 @@ exception Not_constant
 
 let eval_instr info live i =
   match i with
-    | Let (x, Prim (Extern ("caml_js_equals"|"caml_equal"), [Pv y; Pv z])) when Var.compare y z = 0 ->
-      Let (x , Constant (Int 1))
     | Let (x, Prim (Extern ("caml_js_equals"|"caml_equal"), [y;z])) ->
       begin match the_def_of info y, the_def_of info z with
         | Some (Constant e1), Some (Constant e2) ->
