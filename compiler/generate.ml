@@ -220,7 +220,7 @@ let float_val e = e (*J.EAccess (e, one)*)
 
 let float_const f = val_float (J.ENum f)
 
-let s_var name = J.EVar (J.S name)
+let s_var name = J.EVar (J.S {J.name=name; J.var = None})
 
 let str_js s = J.EStr (s,`Bytes)
 

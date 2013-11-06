@@ -42,8 +42,12 @@ type node_pc = loc option
 
 type identifier = string
 
+type ident_string = {
+  name : identifier;
+  var : Code.Var.t option }
+
 type ident =
-  | S of identifier
+  | S of ident_string
   | V of Code.Var.t
 
 (* A.3 Expressions *)
@@ -155,7 +159,16 @@ and source_element =
 let compare_ident t1 t2 =
   match t1, t2 with
     | V v1, V v2 -> Code.Var.compare v1 v2
-    | S s1, S s2 -> String.compare s1 s2
+    | S {name=s1;var=v1}, S{name=s2;var=v2} -> begin
+      match String.compare s1 s2 with
+        | 0 -> begin match v1,v2 with
+            | None,None -> 0
+            | None, _ -> -1
+            | _, None -> 1
+            | Some v1, Some v2 -> Code.Var.compare v1 v2
+        end
+        | n -> n
+    end
     | S _, V _ -> -1
     | V _, S _ -> 1
 

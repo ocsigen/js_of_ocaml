@@ -279,7 +279,7 @@ class free =
     let n = try IdentMap.find x state_.count with Not_found -> 0 in
     let count = IdentMap.add x (succ n) state_.count in
     match x with
-      | S name  ->
+      | S {name}  ->
         let name = ident name in
         state_ <- { state_ with use_name = StringSet.add name state_.use_name;count }
       | V v ->
@@ -288,7 +288,7 @@ class free =
     let n = try IdentMap.find x state_.count with Not_found -> 0 in
     let count = IdentMap.add x (succ n) state_.count in
     match x with
-    | S name ->
+    | S {name} ->
       let name = ident name in
       state_ <- { state_ with def_name = StringSet.add name state_.def_name;count }
     | V v ->
@@ -362,7 +362,7 @@ class free =
           (* we need to propagate both def and use .. *)
           (* .. except 'id' because its scope is limitied to 'block' *)
           let clean set sets = match id with
-            | S s -> set,StringSet.remove s sets
+            | S {name} -> set,StringSet.remove name sets
             | V i -> S.remove i set, sets in
           let def,def_name = clean tbody#state.def tbody#state.def_name in
           let use,use_name = clean tbody#state.use tbody#state.use_name in
@@ -403,7 +403,7 @@ class rename_variable keeps = object(m : 'test)
           Code.Var.name v name;
           Hashtbl.add h name v) from#state.def_name in
     let f = function
-      | (S name) when Hashtbl.mem h name -> V (Hashtbl.find h name)
+      | (S {name}) when Hashtbl.mem h name -> V (Hashtbl.find h name)
       | s -> s in
     sub_ <- new subst f
 
@@ -420,11 +420,11 @@ class rename_variable keeps = object(m : 'test)
     match x with
       | Try_statement (b,w,f,nid) ->
         let w = match w with
-          | Some(S name,block) ->
+          | Some(S {name},block) ->
             let v = Code.Var.fresh () in
             Code.Var.name v name;
             let sub = function
-              | S name' when name' = name -> V v
+              | S {name=name'} when name' = name -> V v
               | x -> x in
             let s = new subst sub in
             Some(V v ,s#statements block)
@@ -495,7 +495,7 @@ class compact_vardecl = object(m)
     method merge_info from =
       super#merge_info from;
       let all = S.fold (fun e acc -> IdentSet.add (V e) acc) from#state.def IdentSet.empty in
-      let all = StringSet.fold (fun e acc -> IdentSet.add (S e) acc) from#state.def_name all in
+      let all = StringSet.fold (fun e acc -> IdentSet.add (S {name=e;var=None}) acc) from#state.def_name all in
       insert_ <- IdentSet.diff all from#exc
 
     method private split x =

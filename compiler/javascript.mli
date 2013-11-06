@@ -33,8 +33,12 @@ type node_pc = loc option
 
 type identifier = string
 
+type ident_string = {
+  name : identifier;
+  var : Code.Var.t option }
+
 type ident =
-  | S of identifier
+  | S of ident_string
   | V of Code.Var.t
 
 and array_litteral = element_list

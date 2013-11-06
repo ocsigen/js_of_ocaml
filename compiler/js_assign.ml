@@ -300,7 +300,7 @@ let program p =
       end;
       let name = allocate_variables state nv coloring#state.Js_traverse.count in
       if debug () then output_debug_information state coloring#state.Js_traverse.count;
-      (function V v -> S (name.(Code.Var.idx v)) | x -> x),p
-    else (function V v -> S (Var.to_string v) | x -> x),p
+      (function V v -> S {name=name.(Code.Var.idx v);var=Some v} | x -> x),p
+    else (function V v -> S {name=Var.to_string v;var=Some v} | x -> x),p
   in
   (new Js_traverse.subst color)#program p

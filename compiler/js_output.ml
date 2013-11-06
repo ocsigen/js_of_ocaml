@@ -55,20 +55,21 @@ end) = struct
             | None -> ()
 
 
-  let ident = function
-    | S s -> s
+  let ident f = function
+    | S {name;var=None} -> PP.string f name
+    | S {name;var=Some v} -> PP.string f name
     | V v -> assert false
 
   let opt_identifier f i =
     match i with
         None   -> ()
-      | Some i -> PP.space f; PP.string f (ident i)
+      | Some i -> PP.space f; ident f i
 
   let rec formal_parameter_list f l =
     match l with
         []     -> ()
-      | [i]    -> PP.string f (ident i)
-      | i :: r -> PP.string f (ident i); PP.string f ","; PP.break f;
+      | [i]    -> ident f i
+      | i :: r -> ident f i; PP.string f ","; PP.break f;
         formal_parameter_list f r
 
 (*
@@ -249,7 +250,7 @@ end) = struct
   let rec expression l f e =
     match e with
         EVar v ->
-          PP.string f (ident v)
+          ident f v
       | ESeq (e1, e2) ->
         if l > 0 then begin PP.start_group f 1; PP.string f "(" end;
         expression 0 f e1;
@@ -554,10 +555,10 @@ end) = struct
   and variable_declaration f (i, init) =
     match init with
         None   ->
-          PP.string f (ident i)
+          ident f i
       | Some e ->
         PP.start_group f 1;
-        PP.string f (ident i); PP.string f "="; PP.break f; expression 1 f e;
+        ident f i; PP.string f "="; PP.break f; expression 1 f e;
         PP.end_group f
 
   and variable_declaration_list_aux f l =
@@ -573,14 +574,14 @@ end) = struct
       PP.start_group f 1;
       PP.string f "var";
       PP.space f;
-      PP.string f (ident i);
+      ident f i;
       if close then PP.string f ";";
       PP.end_group f
     | [(i, Some e)] ->
       PP.start_group f 1;
       PP.string f "var";
       PP.space f;
-      PP.string f (ident i);
+      ident f i;
       PP.string f "=";
       PP.break1 f;
       PP.start_group f 0;
@@ -917,7 +918,7 @@ end) = struct
             PP.break f;
             PP.start_group f 1;
             PP.string f "catch(";
-            PP.string f (ident i);
+            ident f i;
             PP.string f ")";
             PP.break f;
             block f b;
@@ -960,7 +961,7 @@ end) = struct
         PP.start_group f 0;
         PP.string f "function";
         PP.space f;
-        PP.string f (ident i);
+        ident f i;
         PP.end_group f;
         PP.break f;
         PP.start_group f 1;

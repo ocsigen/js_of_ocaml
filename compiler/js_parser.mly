@@ -34,7 +34,7 @@ open Js_token
 
 let bop op a b= J.EBin(op,a,b)
 let uop op a = J.EUn(op,a)
-let var name = J.S name
+let var name = J.S {J.name;J.var=None}
 
 
 
