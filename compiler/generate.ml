@@ -873,7 +873,7 @@ and translate_expr ctx queue x e =
       | Extern "get_global_object_dot", [Pc _] -> assert false
       | Extern "get_global_object_dot", [Pv v] ->
         let ((p, v), queue) = access_queue queue v in
-        (J.EAccess (J.EVar ctx.Ctx.global_object, v), const_p, queue)
+        (J.EAccess (J.EVar ctx.Ctx.global_object, J.ECall (J.EDot (v,"toString"), [])), const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
         (s_var nm, const_p, queue)
       | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
