@@ -65,6 +65,10 @@ class rename_variable : Util.StringSet.t -> freevar
 
 class share_constant : mapper
 
+class unused : object
+  inherit freevar
+  method get_params : Javascript.ident list
+end
 class compact_vardecl : object('a)
   inherit free
   method exc  : Javascript.IdentSet.t

@@ -236,6 +236,7 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
     if Option.Optim.compact_vardecl ()
     then (new Js_traverse.compact_vardecl)#program js
     else js in
+  let js = (new Js_traverse.unused)#program js in
 
   (* pack *)
   let js = if standalone then

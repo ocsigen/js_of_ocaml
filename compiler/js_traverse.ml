@@ -321,7 +321,6 @@ class free =
 
   method block ?catch params = ()
 
-
   method statement x = match x with
     | Variable_statement l ->
       let l = List.map (fun (id,eopt) ->
@@ -566,6 +565,42 @@ class compact_vardecl = object(m)
             l
           | x -> x::acc) [] l in
       List.rev l
+
+end
+
+class unused = object(m)
+  inherit free as super
+
+  val mutable params_ = []
+
+  method get_params = params_
+
+  method merge_info tbody =
+    super#merge_info tbody;
+    params_ <- tbody#get_params
+
+  method block ?(catch=false) params =
+    super#block ~catch params;
+    if not catch
+    then
+      match params with
+        | [_] ->
+          params_ <- List.fold_right (fun v params ->
+            match params,v with
+              | [],S {name} when not (StringSet.mem name m#state.use_name) -> (* S{name="unused";var=None}:: *)params
+              | [],V v when not (S.mem v m#state.use) -> (* S{name="unused";var=None}:: *)params
+              | _, _ -> v::params) params []
+        | _ -> params_ <-params
+
+  method source x =
+    let x = super#source x in
+    match x with
+    | Function_declaration (id,_, body, nid) ->
+      Function_declaration (id,params_, body, nid)
+    | _ -> super#source x
+
+
+
 
 end
 
