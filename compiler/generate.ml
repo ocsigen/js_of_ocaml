@@ -200,10 +200,13 @@ module Ctx = struct
     { mutable blocks : block AddrMap.t;
       live : int array;
       mutated_vars : VarSet.t AddrMap.t;
-      share: Share.t }
+      share: Share.t;
+      global_object: J.ident }
 
-  let initial b l v share =
-    { blocks = b; live = l; mutated_vars = v; share }
+  let initial b l v share g =
+    { blocks = b; live = l; mutated_vars = v;
+      share;
+      global_object = g}
 
 end
 
@@ -355,7 +358,8 @@ type state =
     mutable loop_stack : (addr * (J.Label.t * bool ref)) list;
     mutable visited_blocks : AddrSet.t;
     mutable interm_idx : int;
-    ctx : Ctx.t; mutable blocks : Code.block AddrMap.t }
+    ctx : Ctx.t;
+    mutable blocks : Code.block AddrMap.t }
 
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
 let incr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1)
@@ -862,6 +866,14 @@ and translate_expr ctx queue x e =
            or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
         (s_var nm, const_p, queue)
+      | Extern "get_global_object", [_] ->
+        (J.EVar ctx.Ctx.global_object, const_p, queue)
+      | Extern "get_global_object_dot", [Pc (String nm)] ->
+        (J.EDot (J.EVar ctx.Ctx.global_object, nm), const_p, queue)
+      | Extern "get_global_object_dot", [Pc _] -> assert false
+      | Extern "get_global_object_dot", [Pv v] ->
+        let ((p, v), queue) = access_queue queue v in
+        (J.EAccess (J.EVar ctx.Ctx.global_object, J.ECall (J.EDot (v,"toString"), [])), const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
         (s_var nm, const_p, queue)
       | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
@@ -1560,7 +1572,8 @@ let f ((pc, blocks, _) as p) live_vars =
   let mutated_vars = Freevars.f p in
   let t' = Util.Timer.make () in
   let share = Share.get p in
-  let ctx = Ctx.initial blocks live_vars mutated_vars share in
+  let global_object = J.S {J.name = "joo_global_object"; var=None } in
+  let ctx = Ctx.initial blocks live_vars mutated_vars share global_object in
   let p = compile_program ctx pc in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
-  p
+  p,global_object

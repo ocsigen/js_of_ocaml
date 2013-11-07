@@ -118,8 +118,7 @@ module ReaderEvent = struct
   let loadend = Event.make "loadend"
 end
 
-let fileReader : fileReader t constr =
-  Unsafe.variable "this.FileReader"
+let fileReader : fileReader t constr = Js.Unsafe.get_global_dot "FileReader"
 
 let read_with_filereader (fileReader : fileReader t constr) kind file =
   let reader = jsnew fileReader () in

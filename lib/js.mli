@@ -551,5 +551,9 @@ module Unsafe : sig
   external eval_string : string -> 'a = "caml_js_eval_string"
     (** Evaluate Javascript code *)
 
+  val global : 'a
+  val get_global_dot : string -> 'a
+
+
 (*FIX also, object/array literals *)
 end

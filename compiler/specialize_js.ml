@@ -38,6 +38,13 @@ let specialize_instr info i =
       | _ ->
           i
       end
+  | Let (x, Prim (Extern "get_global_object_dot", [y])) ->
+      begin match the_def_of info y with
+        Some (Constant (String _ as c)) ->
+          Let (x, Prim (Extern "get_global_object_dot", [Pc c]))
+      | _ ->
+          i
+      end
   | Let (x, Prim (Extern "caml_js_const", [y])) ->
       begin match the_def_of info y with
         Some (Constant (String _ as c)) ->

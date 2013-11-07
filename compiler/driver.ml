@@ -165,7 +165,7 @@ let header formatter ~standalone js =
   js
 
 let debug_linker = Option.Debug.find "linker"
-let link formatter ~standalone ?linkall js =
+let link formatter ~standalone ?linkall (js,global) =
   if standalone
   then
     begin
@@ -209,9 +209,9 @@ let link formatter ~standalone ?linkall js =
           Format.eprintf "Variables provided by the browser:@.";
           StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov
         end;
-      js
+      js,global
     end
-  else js
+  else js,global
 
 let coloring js =
   if times ()
@@ -223,7 +223,7 @@ let output formatter d js =
   then Format.eprintf "Start Writing file...@.";
   Js_output.program formatter d js
 
-let pack ~standalone ?(toplevel=false)?(linkall=false) js =
+let pack ~standalone ?(toplevel=false)?(linkall=false) (js,global) =
   let module J = Javascript in
   if times ()
   then Format.eprintf "Start Optimizing js...@.";
@@ -238,12 +238,14 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
     else js in
 
   (* pack *)
-  let js = if standalone then
-      let f = J.EFun ((None, [], js), None) in
-      [J.Statement (J.Expression_statement ((J.ECall (f, [])), None))]
-    else
-      let f = J.EFun ((None, [J.V (Code.Var.fresh ())], js), None) in
-      [J.Statement (J.Expression_statement (f, None))] in
+
+  let f = J.EFun ((None, [global], js), None) in
+  let exp =
+    if standalone
+    then J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])
+    else f
+  in
+  let js = [J.Statement (J.Expression_statement (exp, None))] in
 
   (* post pack optim *)
   let js = (new Js_traverse.clean)#program js in

@@ -43,7 +43,13 @@ module Unsafe = struct
   external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
 
   external eval_string : string -> 'a = "caml_js_eval_string"
+
+  external get_global : unit -> 'a = "get_global_object"
+  let global = get_global ()
+  external get_global_dot : string -> 'a  = "get_global_object_dot"
+
 end
+
 
 (****)
 
