@@ -65,7 +65,7 @@ compiler.cmxs: $(OBJS)
 	menhir --infer --explain $<
 
 js_parser.ml: js_parser.mly
-	menhir --external-tokens Js_token --explain $<
+	menhir --infer --external-tokens Js_token --explain $<
 
 
 %.ml: %.mll
