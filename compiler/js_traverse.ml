@@ -301,9 +301,9 @@ class free =
       let () = List.iter tbody#def_var params in
       let body = tbody#sources body in
       let ident = match ident with
-        | Some (V v) as x when not(S.mem v tbody#state.use) -> None
-        | Some (S {name}) as x when not(StringSet.mem name tbody#state.use_name) -> None
-        | Some id -> tbody#def_var id
+        | Some (V v) when not(S.mem v tbody#state.use) -> None
+        | Some (S {name})when not(StringSet.mem name tbody#state.use_name) -> None
+        | Some id -> tbody#def_var id;ident
         | None -> None in
       tbody#block params;
       m#merge_info tbody;
