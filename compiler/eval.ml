@@ -58,6 +58,7 @@ let eval_prim x =
         | _ -> fun _ -> None in
       let float_binop_bool f = float_binop_aux (fun i j -> Int (if f i j then 1 else 0)) in
       (match name, l with
+        | "caml_ml_string_length", [String s] -> Some (Int (String.length s))
         (* int *)
         | "%int_add", _ -> int_binop (Int.add)
         | "%int_sub", _ -> int_binop (Int.sub)
