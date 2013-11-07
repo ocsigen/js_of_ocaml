@@ -37,8 +37,6 @@ let uop op a = J.EUn(op,a)
 let var name = J.S {J.name;J.var=None}
 
 
-type _this_this_a_hack_arrount_menhir_ = {_menhir_token : Js_token.token}
-let _menhir_env = {_menhir_token = EOF Parse_info.zero}
 
 
 %}
