@@ -26,11 +26,10 @@ class type formData = object
   method append_blob : js_string t -> File.blob t -> unit meth
 end
 
-let formData : formData t constr =
-  Js.Unsafe.variable "this.FormData"
+let formData : formData t constr = Js.Unsafe.global ## _FormData
 
 let formData_form : (formElement t -> formData t) constr =
-  Js.Unsafe.variable "this.FormData"
+  Js.Unsafe.global ## _FormData
 
 type form_elt =
   [ `String of js_string t

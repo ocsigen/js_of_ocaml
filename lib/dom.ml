@@ -243,7 +243,7 @@ let eventTarget (e: (< .. > as 'a) #event t) : 'a t =
     Optdef.get (e##target) (fun () ->
     Optdef.get (e##srcElement) (fun () -> assert false))
   in
-  if Js.instanceof target (Js.Unsafe.variable "this.Node")
+  if Js.instanceof target (Js.Unsafe.global ## _Node)
   then
     (* Workaround for Safari bug *)
     let target' : node Js.t = Js.Unsafe.coerce target in

@@ -1096,7 +1096,7 @@ class type window = object
   method onoffline : (window t, event t) event_listener writeonly_prop
 end
 
-let window : window t = Js.Unsafe.variable "this" (* The toplevel object *)
+let window : window t = Js.Unsafe.global (* The toplevel object *)
 
 let document = window##document
 
@@ -1277,7 +1277,7 @@ let createCanvas doc : canvasElement t =
   if not (Opt.test c##getContext) then raise Canvas_not_available;
   c
 
-let html_element : htmlElement t constr = Js.Unsafe.variable "this.HTMLElement"
+let html_element : htmlElement t constr = Js.Unsafe.global ## _HTMLElement
 
 module CoerceTo = struct
   let element : #Dom.node Js.t -> element Js.t Js.opt =
@@ -1358,17 +1358,19 @@ module CoerceTo = struct
   let tr e = unsafeCoerce "tr" e
   let ul e = unsafeCoerce "ul" e
 
-  let unsafeCoerceEvent name (ev : #event t) =
-    let constr = Js.Unsafe.variable name in
+  let unsafeCoerceEvent constr (ev : #event t) =
     if def constr != undefined && Js.instanceof ev constr then
       Js.some (Js.Unsafe.coerce ev)
     else Js.null
 
-  let mouseEvent ev = unsafeCoerceEvent "this.MouseEvent" ev
-  let keyboardEvent ev = unsafeCoerceEvent "this.KeyboardEvent" ev
-  let wheelEvent ev = unsafeCoerceEvent "this.WheelEvent" ev
-  let mouseScrollEvent ev = unsafeCoerceEvent "this.MouseScrollEvent" ev
-  let popStateEvent ev = unsafeCoerceEvent "this.PopStateEvent" ev
+  let mouseEvent ev = unsafeCoerceEvent (Js.Unsafe.global##_MouseEvent) ev
+  let keyboardEvent ev =
+    unsafeCoerceEvent (Js.Unsafe.global##_KeyboardEvent) ev
+  let wheelEvent ev = unsafeCoerceEvent (Js.Unsafe.global##_WheelEvent) ev
+  let mouseScrollEvent ev =
+    unsafeCoerceEvent (Js.Unsafe.global##_MouseScrollEvent) ev
+  let popStateEvent ev =
+    unsafeCoerceEvent (Js.Unsafe.global##_PopStateEvent) ev
 
 end
 

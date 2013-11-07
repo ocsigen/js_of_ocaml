@@ -37,7 +37,8 @@ function caml_js_typeof(o) { return typeof o; }
 
 //Provides: caml_js_on_ie const
 function caml_js_on_ie () {
-  var ua = this.navigator?this.navigator.userAgent:"";
+  var ua =
+    joo_global_object.navigator?joo_global_object.navigator.userAgent:"";
   return ua.indexOf("MSIE") != -1 && ua.indexOf("Opera") != 0;
 }
 
@@ -62,7 +63,7 @@ function caml_js_html_entities(s) {
 /////////// Debugging console
 //Provides: caml_js_get_console const
 function caml_js_get_console () {
-  var c = this.console?this.console:{};
+  var c = joo_global_object.console?joo_global_object.console:{};
   var m = ["log", "debug", "info", "warn", "error", "assert", "dir", "dirxml",
            "trace", "group", "groupCollapsed", "groupEnd", "time", "timeEnd"];
   function f () {}

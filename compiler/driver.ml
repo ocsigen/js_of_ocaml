@@ -239,8 +239,11 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
 
   (* pack *)
   let js = if standalone then
-      let f = J.EFun ((None, [], js), None) in
-      [J.Statement (J.Expression_statement ((J.ECall (f, [])), None))]
+      let f =
+        J.EFun ((None, [J.S {J.name = "joo_global_object"; var=None }], js),
+                None) in
+      [J.Statement (J.Expression_statement
+          ((J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])), None))]
     else
       let f = J.EFun ((None, [J.V (Code.Var.fresh ())], js), None) in
       [J.Statement (J.Expression_statement (f, None))] in
@@ -252,7 +255,7 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
     then
       let keeps =
         if toplevel
-        then Primitive.get_external ()
+        then StringSet.add "joo_global_object" (Primitive.get_external ())
         else StringSet.empty in
       let keeps = StringSet.add "caml_get_global_data" keeps in
       (new Js_traverse.rename_variable keeps)#program js
