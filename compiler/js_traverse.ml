@@ -299,10 +299,12 @@ class free =
     | EFun ((ident,params,body),nid) ->
       let tbody  = ({< state_ = empty  >} :> 'test) in
       let () = List.iter tbody#def_var params in
-      let () = match ident with
-        | None -> ()
-        | Some v -> tbody#def_var v in
       let body = tbody#sources body in
+      let ident = match ident with
+        | Some (V v) as x when not(S.mem v tbody#state.use) -> None
+        | Some (S {name}) as x when not(StringSet.mem name tbody#state.use_name) -> None
+        | Some id -> tbody#def_var id
+        | None -> None in
       tbody#block params;
       m#merge_info tbody;
       EFun ((ident,params,body),nid)
