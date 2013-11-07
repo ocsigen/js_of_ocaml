@@ -240,7 +240,9 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
   (* pack *)
   let js = if standalone then
       let f =
-        J.EFun ((None, [J.S {J.name = "joo_global_object"; var=None }], js),
+        J.EFun ((None, [J.S {J.name = "joo_global_object"; var=None }],
+                 J.Statement (J.Expression_statement
+                                (J.EStr ("use strict", `Utf8), None)) :: js),
                 None) in
       [J.Statement (J.Expression_statement
           ((J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])), None))]
