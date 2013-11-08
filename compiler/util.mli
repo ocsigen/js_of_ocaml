@@ -36,6 +36,8 @@ val find_in_paths : ?pkg:string -> string list -> string -> string
 val read_file : string -> string
 
 val partition : int -> 'a list -> 'a list list
+val is_ascii : string -> bool
+val has_backslash : string -> bool
 
 module Timer : sig
   type t
