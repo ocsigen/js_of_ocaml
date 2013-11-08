@@ -154,6 +154,6 @@ and source_element =
   | Function_declaration of function_declaration
 
 val compare_ident : ident -> ident -> int
-
+val string_of_number : float -> string
 module IdentSet : Set.S with type elt = ident
 module IdentMap : Map.S with type key = ident
