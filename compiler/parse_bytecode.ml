@@ -1679,9 +1679,21 @@ let parse_bytecode ?(toplevel=false) code state standalone_info =
 
 (****)
 
-exception Bad_magic_number
+exception Bad_magic_number of string
 
-let exec_magic_number = "Caml1999X008"
+let magic_size = 12
+let type_file = function
+  | "Caml1999X008" -> "exe"
+  | "Caml1999I015" -> "cmi"
+  | "Caml1999O007" -> "cmo"
+  | "Caml1999A008" -> "cma"
+  | "Caml1999Y011" -> "cmx"
+  | "Caml1999Z010" -> "cmxa"
+  | "Caml2007D001" -> "cmxs"
+  | "Caml2012T002" -> "cmt"
+  | "Caml1999M016" -> "impl"
+  | "Caml1999N015" -> "intf"
+  | s -> raise (Bad_magic_number s)
 
 let seek_section toc ic name =
   let rec seek_sec curr_ofs = function
@@ -1696,9 +1708,9 @@ let read_toc ic =
   let pos_trailer = in_channel_length ic - 16 in
   seek_in ic pos_trailer;
   let num_sections = input_binary_int ic in
-  let header = String.create(String.length exec_magic_number) in
-  really_input ic header 0 (String.length exec_magic_number);
-  if header <> exec_magic_number then raise Bad_magic_number;
+  let header = String.create magic_size in
+  really_input ic header 0 magic_size;
+  if type_file header <> "exe" then raise (Bad_magic_number header);
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
   for i = 1 to num_sections do
@@ -1719,7 +1731,7 @@ let read_primitive_table toc ic =
       String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
     else
       split beg (cur + 1) in
-  Array.of_list(split 0 0)
+  Array.of_list(split 0 0),p
 
 (****)
 
@@ -1754,7 +1766,7 @@ let fix_min_max_int code =
 
 let from_channel ?(toplevel=false) ~paths ic =
   let toc = read_toc ic in
-  let primitives = read_primitive_table toc ic in
+  let primitive_table,prim = read_primitive_table toc ic in
   let code_size = seek_section toc ic "CODE" in
   let code = String.create code_size in
   really_input ic code 0 code_size;
@@ -1772,7 +1784,7 @@ let from_channel ?(toplevel=false) ~paths ic =
     with Not_found -> ()
   end;
 
-  let globals = make_globals (Array.length init_data) init_data primitives in
+  let globals = make_globals (Array.length init_data) init_data primitive_table in
   if toplevel then begin
     Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
     (* @vouillon: *)
@@ -1792,10 +1804,6 @@ let from_channel ?(toplevel=false) ~paths ic =
 
   ignore(seek_section toc ic "CRCS");
   let crcs = (input_value ic : Obj.t) in
-  let len = seek_section toc ic "PRIM" in
-  let prim = String.create len in
-  really_input ic prim 0 len;
-
   parse_bytecode ~toplevel code state (Some (symbols, crcs, prim, paths))
 
 (* As input: list of primitives + size of global table *)
