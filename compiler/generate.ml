@@ -495,14 +495,14 @@ let parallel_renaming ctx params args continuation queue =
 
 (****)
 
-let generate_apply_fun ?x n =
+let generate_apply_fun n =
   let f = J.V (Var.fresh ()) in
   let params =
     Array.to_list (Array.init n (fun _ -> J.V (Var.fresh ())))
   in
   let f' = J.EVar f in
   let params' = List.map (fun x -> J.EVar x) params in
-  J.EFun ((x, f :: params,
+  J.EFun ((None, f :: params,
            [J.Statement
                (J.Return_statement
                   (Some
