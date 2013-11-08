@@ -101,3 +101,18 @@ module Timer = struct
   let get t = !timer () -. t
   let print f t = Format.fprintf f "%.2f" (get t)
 end
+
+
+let is_ascii s =
+  let res = ref true in
+  for i = 0 to String.length s - 1 do
+    if s.[i] > '\127' then res := false
+  done;
+  !res
+
+let has_backslash s =
+  let res = ref false in
+  for i = 0 to String.length s - 1 do
+    if s.[i] = '\\' then res := true
+  done;
+  !res

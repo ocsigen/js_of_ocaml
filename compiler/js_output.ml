@@ -301,47 +301,17 @@ end) = struct
       | EBool b ->
         PP.string f (if b then "true" else "false")
       | ENum v ->
-        if v = infinity then
-          PP.string f "Infinity"
-        else if v = neg_infinity then begin
-          if l > 13 then
-            PP.string f "(-Infinity)"
-          else
-            PP.string f "-Infinity"
-        end else if v <> v then
-            PP.string f "NaN"
-          else begin
-            let s =
-              let vint = int_of_float v in
-            (* compiler 1000 into 1e3 *)
-              if float_of_int vint = v
-              then
-                let rec div n i =
-                  if n <> 0 && n mod 10 = 0
-                  then div (n/10) (succ i)
-                  else
-                    if i > 2
-                    then Printf.sprintf "%de%d" n i
-                    else string_of_int vint in
-                div vint 0
-              else
-                let s1 = Printf.sprintf "%.12g" v in
-                if v = float_of_string s1 then s1 else
-                  let s2 = Printf.sprintf "%.15g" v in
-                  if v = float_of_string s2 then s2 else
-                    Printf.sprintf "%.18g" v
-            in
-            if
-            (* Negative numbers may need to be parenthesized. *)
-              (l > 13 && (v < 0. || (v = 0. && 1. /. v < 0.)))
-              ||
-              (* Parenthesize as well when followed by a dot. *)
-                (l = 15)
-            then begin
-              PP.string f "("; PP.string f s; PP.string f ")"
-            end else
-              PP.string f s
-          end
+        let s = Javascript.string_of_number v in
+        let need_parent =
+          if s.[0] = '-'
+          then l > 13  (* Negative numbers may need to be parenthesized. *)
+          else l = 15  (* Parenthesize as well when followed by a dot. *)
+               && s.[0] <> 'I' (* Infinity *)
+               && s.[0] <> 'N' (* NaN *)
+        in
+        if need_parent then PP.string f "(";
+        PP.string f s;
+        if need_parent then PP.string f ")";
       | EUn (Typeof, e) ->
         if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
         PP.start_group f 0;
