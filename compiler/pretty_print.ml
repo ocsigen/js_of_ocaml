@@ -39,7 +39,7 @@ type t =
     mutable compact : bool;
 
     mutable needed_space : (char -> char -> bool) option;
-    mutable pending_space : bool;
+    mutable pending_space : string option;
     mutable last_char : char option;
     output : string -> int -> int -> unit }
 
@@ -118,17 +118,19 @@ let string st s =
     let len = (String.length s) in
     if len <> 0
     then begin
-      if st.pending_space
-      then
-        begin
-          st.pending_space <- false;
-          match st.last_char,st.needed_space with
-            | Some last,Some f ->
-              if  f last s.[0]
-              then st.output " " 0 1
-            | _, None -> st.output " " 0 1
-            | _ ->()
-        end;
+      (match st.pending_space with
+        | None -> ()
+        | Some sp ->
+          begin
+            st.pending_space <- None;
+            match st.last_char,st.needed_space with
+              | Some last,Some f ->
+                if  f last s.[0]
+                then st.output sp 0 1
+              | _, None -> st.output sp 0 1
+              | _ ->()
+          end);
+
       st.output s 0 len;
       st.last_char <- Some (s.[len-1])
     end
@@ -143,8 +145,8 @@ let break st = if not st.compact then push st break_token
 let break1 st = if not st.compact then push st (Break ("", 1))
 
 let non_breaking_space_token = Text " "
-let non_breaking_space st = if st.compact then st.pending_space <- true else push st non_breaking_space_token
-let space ?(indent=0) st = if st.compact then st.pending_space <- true else push st (Break (" ", indent))
+let non_breaking_space st = if st.compact then st.pending_space <- Some " " else push st non_breaking_space_token
+let space ?(indent=0) st = if st.compact then st.pending_space <- Some "\n" else push st (Break (" ", indent))
 
 let start_group st n = if not st.compact then push st (Start_group n)
 let end_group st = if not st.compact then push st End_group
@@ -178,13 +180,13 @@ let newline st =
 let to_out_channel ch =
   { indent = 0; box_indent = 0; prev_indents = [];
     limit = 78; cur = 0; l = []; n = 0; w = 0;
-    compact = false; pending_space = false; last_char = None; needed_space = None;
+    compact = false; pending_space = None; last_char = None; needed_space = None;
     output = fun s i l -> output ch s i l }
 
 let to_buffer b =
   { indent = 0; box_indent = 0; prev_indents = [];
     limit = 78; cur = 0; l = []; n = 0; w = 0;
-    compact = false; pending_space = false; last_char = None; needed_space = None;
+    compact = false; pending_space = None; last_char = None; needed_space = None;
     output = fun s i l -> Buffer.add_substring b s i l }
 
 let set_compact st v = st.compact <- v
