@@ -35,8 +35,8 @@ val find_pkg_dir : string -> string
 val find_in_paths : ?pkg:string -> string list -> string -> string
 val read_file : string -> string
 
-val partition : int -> 'a list -> 'a list list
-
+val split_rev : int -> 'a list -> 'a list list
+val take : int -> 'a list -> 'a list * 'a list
 module Timer : sig
   type t
   val init : (unit -> float) -> unit
