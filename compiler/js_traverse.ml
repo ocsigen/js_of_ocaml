@@ -161,27 +161,34 @@ let string_replace v f s =
   then raise Not_found
   else EVar v'
 
-class str_to_var f = object(m)
+class replace_expr f = object(m)
   inherit map as super
-  method expression e = match e with
-    | EStr (s,_) -> (try EVar (f s) with Not_found -> e)
-    | _ -> super#expression e
+  method expression e = try EVar (f e) with Not_found -> super#expression e
 end
 
 open Util
 
 (* this optimisation should be done at the lowest common scope *)
-(* and for other constant *)
 class share_constant = object(m)
   inherit map as super
+
   val count = Hashtbl.create 17
+
   method expression e =
-    let _ = match e with
-      | EStr (s,k) ->
-        let n,k = try Hashtbl.find count s with Not_found -> 0,k in
-        Hashtbl.replace count s (n+1,k)
-      | _ -> ()
-    in super#expression e
+    let e = match e with
+      | EStr (s,`Utf8) when not(Util.has_backslash s) && Util.is_ascii s ->
+        let e = EStr (s,`Bytes) in
+        let n = try Hashtbl.find count e with Not_found -> 0 in
+        Hashtbl.replace count e (n+1);
+        e
+      | EStr (_,_)
+      | ENum _ ->
+        let n = try Hashtbl.find count e with Not_found -> 0 in
+        Hashtbl.replace count e (n+1);
+        e
+      | _ -> e in
+    super#expression e
+
   method sources l =
     let revl,_ = List.fold_left (fun (l,prolog) x ->
       match x with
@@ -194,21 +201,27 @@ class share_constant = object(m)
   method program p =
     let p = super#program p in
 
-    let all = Hashtbl.fold (fun x (n,k) acc ->
-        if n > 1
+    let all = Hashtbl.create 17 in
+    Hashtbl.iter (fun x n ->
+        let shareit = match x with
+          | EStr(_,_) when n > 1 -> true
+          | ENum f when n > 1 ->
+            let s = Javascript.string_of_number f in
+            let l = String.length s in
+            l > 2
+          | _ -> false in
+        if shareit
         then
           let v = Code.Var.fresh () in
-          StringMap.add x (V v) acc
-        else acc
-      ) count StringMap.empty in
-    if StringMap.is_empty all
+          Hashtbl.add all x (V v)
+      ) count ;
+    if Hashtbl.length all = 0
     then p
     else
-      let f = (fun s -> StringMap.find s all) in
-      let p = (new str_to_var f)#program p in
-      let all = StringMap.fold (fun s v acc ->
-          let _,k = Hashtbl.find count s in
-          (v, Some (EStr(s,k))) :: acc) all [] in
+      let f = Hashtbl.find all in
+      let p = (new replace_expr f)#program p in
+      let all = Hashtbl.fold (fun e v acc ->
+          (v, Some e) :: acc) all [] in
       Statement(Variable_statement all):: p
 end
 
