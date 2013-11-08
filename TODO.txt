@@ -59,11 +59,6 @@ Benchmarks/examples
 - 3D effects: http://gyu.que.jp/jscloth/
               http://stackoverflow.com/questions/1584854/how-to-draw-3d-sphere
 
-Known issues
-============
-- mutually recursive functions in a loop are not correctly compiled:
-  should build a shared closure
-
 Compiler optimizations
 ======================
 - "unsafe" option: no check for division by zero / array access
