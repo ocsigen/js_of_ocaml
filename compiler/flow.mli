@@ -37,17 +37,25 @@ val get_label : t -> Code.Var.t option
 
 *)
 
-type def = Phi of Code.VarSet.t | Expr of Code.expr | Param
+type def = Phi of Code.VarSet.t | Expr of Code.expr | Param of (Code.Var.t * int) option
+
+type 'a v =
+  | Bottom
+  | Val of 'a
+  | Top
+
+val string_of_approx :  ('a -> string ) -> 'a v -> string
 
 type info = {
   info_defs:def array;
+  info_params: Code.VarSet.t array array;
   info_known_origins : Code.VarSet.t Code.VarTbl.t;
   info_maybe_unknown : bool Code.VarTbl.t;
   info_possibly_mutable : bool array;
 }
 
 val get_approx : info -> (Code.VarSet.elt -> 'b) ->
-           'b -> ('b -> 'b -> 'b) -> Code.VarTbl.key -> 'b
+           'b -> 'b -> ('b -> 'b -> 'b) -> Code.VarTbl.key -> 'b
 
 val the_def_of : info -> Code.prim_arg -> Code.expr option
 
