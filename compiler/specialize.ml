@@ -26,6 +26,11 @@ let function_cardinality info x =
     (fun x ->
       match info.info_defs.(Var.idx x) with
         | Expr (Closure (l, _)) -> Some (List.length l)
+        | Expr (Apply (f,l,Some n)) ->
+          let diff = n - List.length l in
+          if diff > 0
+          then Some diff
+          else None
         | _                     -> None)
     None
     (fun u v -> match u, v with Some n, Some m when n = m -> u | _ -> None)
