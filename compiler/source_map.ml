@@ -86,20 +86,16 @@ let string_of_mapping mapping =
   loop {gen_line=0;gen_col=0;ori_source=0;ori_line=0;ori_col=0;ori_name=None} 0;
   Buffer.contents buf
 
-let statements t =
+let expression t =
   let open Javascript in
-  [Statement (
-    Expression_statement (
-      EObj [
-        PNS "version", ENum (float_of_int t.version);
-        PNS "file", EStr (t.file,`Bytes);
-        PNS "sourceRoot", EStr ((match t.sourceroot with None -> "" | Some s -> s),`Bytes);
-        PNS "sources", EArr (List.map (fun s -> Some (EStr (s,`Bytes))) t.sources);
-        PNS "sources_content", EArr (List.map (function
-          | None -> Some (EVar (S {name="null";var=None}))
-          | Some s -> Some (EStr (s,`Bytes))) t. sources_content);
-        PNS "names", EArr (List.map (fun s -> Some (EStr (s,`Bytes))) t.names);
-        PNS "mappings", EStr (string_of_mapping t.mappings,`Bytes)
-      ],
-      None)
-  )]
+  EObj [
+    PNS "version", ENum (float_of_int t.version);
+    PNS "file", EStr (t.file,`Bytes);
+    PNS "sourceRoot", EStr ((match t.sourceroot with None -> "" | Some s -> s),`Bytes);
+    PNS "sources", EArr (List.map (fun s -> Some (EStr (s,`Bytes))) t.sources);
+    PNS "sources_content", EArr (List.map (function
+        | None -> Some (EVar (S {name="null";var=None}))
+        | Some s -> Some (EStr (s,`Bytes))) t. sources_content);
+    PNS "names", EArr (List.map (fun s -> Some (EStr (s,`Bytes))) t.names);
+    PNS "mappings", EStr (string_of_mapping t.mappings,`Bytes)
+  ]

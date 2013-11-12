@@ -1022,8 +1022,8 @@ let program f ?source_map dl p =
       let pp = Pretty_print.to_out_channel oc in
       Pretty_print.set_compact pp false;
 
-      let stms = Source_map.statements sm in
-      O.program pp stms;
+      let e = Source_map.expression sm in
+      O.expression 0 pp e;
       close_out oc;
 
       PP.newline f;
