@@ -639,7 +639,6 @@ let register_bin_math_prim name prim =
     (fun cx cy -> J.ECall (J.EDot (s_var "Math", prim), [cx; cy]))
 
 let _ =
-  Primitive.register "debugger" `Mutator;
   register_un_prim_ctx  "%caml_format_int_special" `Pure
     (fun ctx cx ->
       let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
