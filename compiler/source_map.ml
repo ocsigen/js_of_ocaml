@@ -4,7 +4,7 @@ type map = {
   ori_source : int;
   ori_line : int;
   ori_col : int;
-  ori_name : int
+  ori_name : int option
 }
 
 type mapping = map list
@@ -46,15 +46,25 @@ let string_of_mapping mapping =
           prev
         end in
       begin
-        Vlq64.encode_l buf [c.gen_col - prev.gen_col;
-                            c.ori_source - prev.ori_source;
-                            c.ori_line - prev.ori_line;
-                            c.ori_col - prev.ori_col;
-                            c.ori_name - prev.ori_name];
-        loop c (succ i)
+        let diff_name,prev_name = match c.ori_name, prev.ori_name with
+          | None,None -> None,None
+          | Some o,Some p -> Some (o - p), Some o
+          | Some o,None -> Some o, Some o
+          | None, Some p -> None, Some p in
+
+        let l = [c.gen_col - prev.gen_col;
+                 c.ori_source - prev.ori_source;
+                 c.ori_line - prev.ori_line;
+                 c.ori_col - prev.ori_col ] in
+        let l = match diff_name with
+          | None -> l
+          | Some d -> l@[d] in
+
+        Vlq64.encode_l buf l;
+        loop {c with ori_name = prev_name} (succ i)
       end
   in
-  loop {gen_line=0;gen_col=0;ori_source=0;ori_line=0;ori_col=0;ori_name=0} 0;
+  loop {gen_line=0;gen_col=0;ori_source=0;ori_line=0;ori_col=0;ori_name=None} 0;
   Buffer.contents buf
 
 let statements t =

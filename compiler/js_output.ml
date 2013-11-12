@@ -84,7 +84,7 @@ end) = struct
                   ori_source=get_file_index file;
                   ori_line = l;
                   ori_col = s;
-                  ori_name = 0;
+                  ori_name = None;
                 }
               end
 
