@@ -41,20 +41,32 @@ type t =
     mutable needed_space : (char -> char -> bool) option;
     mutable pending_space : string option;
     mutable last_char : char option;
+    mutable line : int;
+    mutable col : int;
     output : string -> int -> int -> unit }
 
 let spaces = String.make 80 ' '
+let output st s l =
+  (try
+     let last = String.rindex_from s (l-1) '\n' in
+     let line = ref 0 in
+     String.iteri(fun i c -> if c = '\n' && i < l then incr line) s;
+     st.line <- st.line + !line;
+     st.col <- l - last
+   with Not_found ->());
+  st.output s 0 l
+
 
 let rec output_spaces st n =
-  st.output spaces 0 (min n 80);
+  output st spaces (min n 80);
   if n > 80 then output_spaces st (n - 80)
 
-let output_newline st = st.output "\n" 0 1
+let output_newline st = output st "\n" 1
 
 let rec flat_render st l =
   match l with
     Text s :: r | Break (s, _) :: r ->
-      st.output s 0 (String.length s); flat_render st r
+      output st s (String.length s); flat_render st r
   | _ :: r ->
       flat_render st r
   | [] ->
@@ -65,7 +77,7 @@ let rec push st e =
     (* Vertical rendering *)
     match e with
       Text s ->
-        st.output s 0 (String.length s);
+        output st s (String.length s);
         st.cur <- st.cur + String.length s
     | Break (_, offs) ->
         output_newline st;
@@ -126,12 +138,12 @@ let string st s =
             match st.last_char,st.needed_space with
               | Some last,Some f ->
                 if  f last s.[0]
-                then st.output sp 0 1
-              | _, None -> st.output sp 0 1
+                then output st sp 1
+              | _, None -> output st sp 1
               | _ ->()
           end);
 
-      st.output s 0 len;
+      output st s len;
       st.last_char <- Some (s.[len-1])
     end
   )
@@ -172,6 +184,8 @@ for i = 1 to 10 do render (tree i) done
 
 *)
 
+let pos t = t.line, t.col
+
 let newline st =
   output_newline st;
   st.indent <- 0; st.box_indent <- 0; st.prev_indents <- [];
@@ -180,12 +194,14 @@ let newline st =
 let to_out_channel ch =
   { indent = 0; box_indent = 0; prev_indents = [];
     limit = 78; cur = 0; l = []; n = 0; w = 0;
+    col = 0; line = 0;
     compact = false; pending_space = None; last_char = None; needed_space = None;
-    output = fun s i l -> output ch s i l }
+    output = fun s i l -> Pervasives.output ch s i l }
 
 let to_buffer b =
   { indent = 0; box_indent = 0; prev_indents = [];
     limit = 78; cur = 0; l = []; n = 0; w = 0;
+    col = 0; line = 0;
     compact = false; pending_space = None; last_char = None; needed_space = None;
     output = fun s i l -> Buffer.add_substring b s i l }
 
