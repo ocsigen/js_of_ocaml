@@ -60,27 +60,20 @@ compiler.cmxs: $(OBJS)
 %.cmi: %.mli
 	ocamlfind ocamlc -package findlib,str -c $<
 
+%.ml %.mli: %.mly
+	menhir --explain $<
 
-%.ml: %.mly
-	menhir --infer --explain $<
-
-js_parser.ml: js_parser.mly
+js_parser.ml js_parser.mli: js_parser.mly
 	menhir --external-tokens Js_token --explain $<
 
-
-%.ml: %.mll
+%.ml %.mli: %.mll
 	ocamllex $<
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
 	rm -f js_of_ocaml compile.opt compile.byte minify.opt minify.byte
 
-depend:
-	${MAKE} --no-print-directory js_lexer.ml
-	${MAKE} --no-print-directory annot_lexer.ml
+.PHONY: depend
+depend: js_lexer.ml annot_lexer.ml js_parser.ml annot_parser.ml
 	ocamldep *.ml *.mli > .depend
-	menhir --depend --external-tokens Js_token js_parser.mly >> .depend
-	menhir --depend annot_parser.mly >> .depend
-
-
 
 include .depend

@@ -92,8 +92,8 @@ reserved.cmo : util.cmi
 reserved.cmx : util.cmx
 specialize.cmo : option.cmo flow.cmi code.cmi specialize.cmi
 specialize.cmx : option.cmx flow.cmx code.cmx specialize.cmi
-specialize_js.cmo : flow.cmi code.cmi specialize_js.cmi
-specialize_js.cmx : flow.cmx code.cmx specialize_js.cmi
+specialize_js.cmo : util.cmi flow.cmi code.cmi specialize_js.cmi
+specialize_js.cmx : util.cmx flow.cmx code.cmx specialize_js.cmi
 subst.cmo : util.cmi code.cmi subst.cmi
 subst.cmx : util.cmx code.cmx subst.cmi
 tailcall.cmo : util.cmi subst.cmi option.cmo code.cmi tailcall.cmi
@@ -135,11 +135,3 @@ subst.cmi : code.cmi
 tailcall.cmi : code.cmi
 util.cmi :
 varPrinter.cmi : util.cmi
-js_parser.cmo : parse_info.cmi js_token.cmi javascript.cmi js_parser.cmi
-js_parser.cmx : parse_info.cmx js_token.cmx javascript.cmx js_parser.cmi
-js_parser.cmi : js_token.cmi javascript.cmi
-js_parser.ml js_parser.mli: javascript.cmi js_token.cmi parse_info.cmi
-annot_parser.cmo : primitive.cmi annot_parser.cmi
-annot_parser.cmx : primitive.cmx annot_parser.cmi
-annot_parser.cmi : primitive.cmi
-annot_parser.ml annot_parser.mli: primitive.cmi
