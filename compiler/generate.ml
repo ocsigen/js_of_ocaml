@@ -639,6 +639,7 @@ let register_bin_math_prim name prim =
     (fun cx cy -> J.ECall (J.EDot (s_var "Math", prim), [cx; cy]))
 
 let _ =
+  Primitive.register "debugger" `Mutator;
   register_un_prim_ctx  "%caml_format_int_special" `Pure
     (fun ctx cx ->
       let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
@@ -1074,6 +1075,11 @@ and translate_instr ctx expr_queue pc instr =
   match instr with
     [] ->
       ([], expr_queue)
+  | Let (_, Prim (Extern "debugger",_))::rem ->
+    let st = flush_all expr_queue [J.Debugger_statement] in
+    let (instrs, expr_queue) = translate_instr ctx [] pc rem in
+    (st @ instrs, expr_queue)
+
   | Let (_, Closure _) :: _ ->
       let (l, rem) = collect_closures ctx instr in
       let l = group_closures l in

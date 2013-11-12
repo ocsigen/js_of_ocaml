@@ -45,6 +45,7 @@ class map : mapper = object(m)
         List.map
           (fun (id, eo) -> m#ident id, m#expression_o eo) l)
     | Empty_statement -> Empty_statement
+    | Debugger_statement -> Debugger_statement
     | Expression_statement (e,nid) ->
       Expression_statement (m#expression e, nid)
     | If_statement(e,s,sopt) ->

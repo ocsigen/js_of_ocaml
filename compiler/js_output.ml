@@ -580,6 +580,8 @@ end) = struct
           block f b
       | Variable_statement l -> variable_declaration_list (not last) f l
       | Empty_statement -> PP.string f ";"
+      | Debugger_statement ->
+        PP.string f "debugger"; last_semi ()
       | Expression_statement (EVar _, pc)-> last_semi()
       | Expression_statement (e, pc) ->
       (* Parentheses are required when the expression

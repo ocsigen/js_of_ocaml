@@ -60,6 +60,7 @@ let var name = J.S {J.name;J.var=None}
  T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
  T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
  T_BREAK T_CASE T_CATCH T_CONTINUE T_DEFAULT T_DO T_FINALLY T_FOR
+ T_DEBUGGER
 
 %token <Parse_info.t> T_ELSE
 
@@ -177,6 +178,7 @@ statement_need_semi:
  | break_statement      { $1 }
  | return_statement     { $1 }
  | throw_statement      { $1 }
+ | debugger_statement   { $1 }
 
 statement:
  | s=statement_no_semi {s}
@@ -239,6 +241,9 @@ initializeur:
 
 empty_statement:
  | T_SEMICOLON { J.Empty_statement }
+
+debugger_statement:
+ | T_DEBUGGER { J.Debugger_statement }
 
 expression_statement:
  | expression_no_statement { J.Expression_statement ($1, None) }

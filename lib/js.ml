@@ -52,6 +52,8 @@ end
 type 'a opt = 'a
 type 'a optdef = 'a
 
+external debugger : unit -> unit = "debugger"
+
 let null : 'a opt = Unsafe.constant "null"
 external some : 'a -> 'a opt = "%identity"
 

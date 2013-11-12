@@ -40,6 +40,8 @@ val undefined : 'a optdef
   (** The [undefined] value *)
 val def : 'a -> 'a optdef
   (** Consider a value into a possibly undefined value. *)
+val debugger : unit -> unit
+
 
 (** Signatures of a set of standard functions for manipulating
     optional values. *)

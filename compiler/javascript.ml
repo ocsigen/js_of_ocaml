@@ -118,7 +118,7 @@ and statement =
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
   | Try_statement of block * (ident * block) option * block option * node_pc
-  (* | Debugger_statement *)
+  | Debugger_statement
 
 and ('left,'right) either =
   | Left of 'left
