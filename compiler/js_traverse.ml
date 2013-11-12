@@ -266,6 +266,7 @@ class type freevar =
 class free =
   object(m : 'test)
     inherit map as super
+  val level : int = 0
   val mutable state_ : t = empty
   method state = state_
 
@@ -310,7 +311,7 @@ class free =
   method expression x = match x with
     | EVar v -> m#use_var v; x
     | EFun ((ident,params,body),nid) ->
-      let tbody  = ({< state_ = empty  >} :> 'test) in
+      let tbody  = ({< state_ = empty; level = succ level  >} :> 'test) in
       let () = List.iter tbody#def_var params in
       let body = tbody#sources body in
       let ident = match ident with
@@ -325,7 +326,7 @@ class free =
 
   method source x = match x with
     | Function_declaration (id,params, body, nid) ->
-      let tbody = {< state_ = empty >} in
+      let tbody = {< state_ = empty; level = succ level >} in
       let () = List.iter tbody#def_var params in
       let body = tbody#sources body in
       tbody#block params;
@@ -366,7 +367,7 @@ class free =
       ForIn_statement(Right r,m#expression e2,m#statement s,nid)
     | Try_statement (b,w,f,nid) ->
       let b = m#statements b in
-      let tbody = {< state_ = empty >} in
+      let tbody = {< state_ = empty; level = level >} in
       let w = match w with
         | None -> None
         | Some (id,block) ->
