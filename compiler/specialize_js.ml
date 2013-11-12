@@ -28,8 +28,16 @@ let specialize_instr info i =
   | Let (x, Prim (Extern "caml_format_int", [y;z])) ->
     begin match the_def_of info y with
       | Some (Constant (String "%d")) ->
-        Let (x, Prim (Extern "%caml_format_int_special", [z]))
+        begin match the_int info z with
+          | Some i -> Let(x,Constant(String (string_of_int i)))
+          | None -> Let (x, Prim (Extern "%caml_format_int_special", [z]))
+        end
       | _ -> i
+    end
+  | Let (x, Prim (Extern "%caml_format_int_special", [z])) ->
+    begin match the_int info z with
+      | Some i -> Let(x,Constant(String (string_of_int i)))
+      | None -> i
     end
   | Let (x, Prim (Extern "caml_js_var", [y])) ->
       begin match the_def_of info y with
