@@ -20,7 +20,9 @@
 let code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
 let code_rev =
   let a = Array.make 127 (-1) in
-  String.iteri (fun i c -> a.(Char.code c) <- i) code;
+  for i = 0 to String.length code - 1 do
+    a.(Char.code code.[i]) <- i;
+  done;
   a
 
 let vlq_base_shift = 5

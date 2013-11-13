@@ -50,10 +50,12 @@ let output st s l =
   (try
      let last = String.rindex_from s (l-1) '\n' in
      let line = ref 0 in
-     String.iteri(fun i c -> if c = '\n' && i < l then incr line) s;
+     for i = 0 to l-1 do
+       if s.[i] = '\n' then incr line;
+     done;
      st.line <- st.line + !line;
      st.col <- l - last
-   with Not_found ->());
+   with Not_found -> st.col <- l + st.col);
   st.output s 0 l
 
 
