@@ -224,33 +224,6 @@ let s_var name = J.EVar (J.S {J.name=name; J.var = None})
 
 let str_js s = J.EStr (s,`Bytes)
 
-let rec constant ~ctx x =
-  match x with
-    String s ->
-      let e = Share.get_string str_js s ctx.Ctx.share in
-      let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
-      J.ECall (p,[e])
-  | IString s ->
-      Share.get_string str_js s ctx.Ctx.share
-  | Float f ->
-      float_const f
-  | Float_array a ->
-      J.EArr (Some (int Obj.double_array_tag) ::
-              Array.to_list (Array.map (fun f -> Some (float_const f)) a))
-  | Int32 i ->
-      J.ENum (Int32.to_float i)
-  | Nativeint i ->
-      J.ENum (Nativeint.to_float i)
-  | Int64 i ->
-      J.EArr [Some (int 255);
-              Some (int (Int64.to_int i land 0xffffff));
-              Some (int (Int64.to_int (Int64.shift_right i 24) land 0xffffff));
-              Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))]
-  | Tuple (tag, a) ->
-      J.EArr (Some (int tag) ::
-              Array.to_list (Array.map (fun x -> Some (constant ~ctx x)) a))
-  | Int i ->
-      int i
 
 (****)
 
@@ -275,6 +248,67 @@ let kind k =
   match k with
     `Pure -> const_p | `Mutable -> mutable_p | `Mutator -> mutator_p
 
+let max_depth = 10
+
+let rec constant_rec ~ctx x level instrs =
+  match x with
+    String s ->
+      let e = Share.get_string str_js s ctx.Ctx.share in
+      let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
+      J.ECall (p,[e]), instrs
+  | IString s ->
+      Share.get_string str_js s ctx.Ctx.share, instrs
+  | Float f ->
+      float_const f, instrs
+  | Float_array a ->
+      J.EArr (Some (int Obj.double_array_tag) ::
+              Array.to_list (Array.map (fun f -> Some (float_const f)) a)),
+      instrs
+  | Int32 i ->
+      J.ENum (Int32.to_float i), instrs
+  | Nativeint i ->
+      J.ENum (Nativeint.to_float i), instrs
+  | Int64 i ->
+      J.EArr [Some (int 255);
+              Some (int (Int64.to_int i land 0xffffff));
+              Some (int (Int64.to_int (Int64.shift_right i 24) land 0xffffff));
+              Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))],
+      instrs
+  | Tuple (tag, a) ->
+      let split = level = max_depth in
+      let level = if split then 0 else level + 1 in
+      let (l, instrs) =
+        List.fold_left
+          (fun (l, instrs) cc ->
+             let (js, instrs) = constant_rec ~ctx cc level instrs in
+             js::l, instrs)
+          ([], instrs) (Array.to_list a)
+      in
+      let (l, instrs) =
+        if split then
+          List.fold_left
+            (fun (acc,instrs) js ->
+               match js with
+               | J.EArr _ ->
+                   let v = Code.Var.fresh () in
+                   let instrs =
+                     J.Variable_statement [J.V v, Some js] :: instrs in
+                   Some (J.EVar (J.V v))::acc,instrs
+               | _ ->
+                   Some js :: acc,instrs)
+            ([],instrs) l
+        else
+          List.rev_map (fun x -> Some x) l, instrs
+      in
+      J.EArr (Some (int tag) :: l), instrs
+  | Int i ->
+      int i, instrs
+
+let constant ~ctx x level =
+  let (expr, instr) = constant_rec ~ctx x level [] in
+  (expr, List.rev instr)
+
+
 type queue_elt = {
   prop : int;
   cardinal : int;
@@ -295,7 +329,10 @@ let access_queue queue x =
 
 let access_queue' ~ctx queue x =
   match x with
-    | Pc c -> (const_p,constant ~ctx c),queue
+    | Pc c ->
+      let js,instrs = constant ~ctx c max_depth in
+      assert (instrs = []); (* We only have simple constants here *)
+      (const_p, js), queue
     | Pv x -> access_queue queue x
 
 let access_queue_may_flush queue v x =
@@ -327,7 +364,7 @@ let flush_queue expr_queue prop l =
 
 let flush_all expr_queue l = fst (flush_queue expr_queue flush_p l)
 
-let enqueue expr_queue prop x ce cardinal =
+let enqueue expr_queue prop x ce cardinal acc =
   let (instrs, expr_queue) =
     if Option.Optim.compact () then
       if is_mutable prop then
@@ -342,7 +379,7 @@ let enqueue expr_queue prop x ce cardinal =
       then Code.VarSet.union elt.deps deps
       else deps) deps expr_queue
   in
-  (instrs, (x, {prop; ce; cardinal; deps}) :: expr_queue)
+  (instrs @ acc , (x, {prop; ce; cardinal; deps}) :: expr_queue)
 
 (****)
 
@@ -782,10 +819,10 @@ let rec collect_closures ctx l =
 
 (****)
 
-and translate_expr ctx queue x e =
+and translate_expr ctx queue x e level =
   match e with
     Const i ->
-      (int i, const_p, queue)
+      (int i, const_p, queue),[]
   | Apply (x, l, Some n) when n = List.length l ->
       let ((px, cx), queue) = access_queue queue x in
       let (args, prop, queue) =
@@ -795,7 +832,7 @@ and translate_expr ctx queue x e =
                access_queue queue x in (cx :: args, or_p prop prop', queue))
           l ([], or_p px mutator_p, queue)
       in
-      (J.ECall (cx, args), prop, queue)
+      (J.ECall (cx, args), prop, queue),[]
   | Apply (x, l, _) ->
       let (args, prop, queue) =
         List.fold_right
@@ -806,7 +843,7 @@ and translate_expr ctx queue x e =
       in
       let y = Share.get_apply (generate_apply_fun) (List.length l) ctx.Ctx.share in
       (J.ECall (y, args),
-       prop, queue)
+       prop, queue),[]
   | Block (tag, a) ->
       let (contents, prop, queue) =
         List.fold_right
@@ -815,135 +852,110 @@ and translate_expr ctx queue x e =
              (Some cx :: args, or_p prop prop', queue))
           (Array.to_list a) ([], const_p, queue)
       in
-      (J.EArr (Some (int tag) :: contents), prop, queue)
+      (J.EArr (Some (int tag) :: contents), prop, queue),[]
   | Field (x, n) ->
       let ((px, cx), queue) = access_queue queue x in
-      (J.EAccess (cx, int (n + 1)), or_p px mutable_p, queue)
-  | Closure (args, ((pc, _) as cont)) ->
-      (*FIX: should flush only the closure free variables...*)
-      (*FIX: if there are several closures in a row, we should process them
-        simultaneously (possibly recursive functions)*)
-      let all_vars = AddrMap.find pc ctx.Ctx.mutated_vars in
-      let vars =
-        all_vars
-        >> VarSet.remove x
-        >> VarSet.elements
-        >> List.map (fun v -> J.V v)
-      in
-      let fun_name =
-        if vars <> [] && VarSet.mem x all_vars then
-          Some (J.V x)
-        else
-          None
-      in
-      let cl =
-        J.EFun (fun_name, List.map (fun v -> J.V v) args,
-                 compile_closure ctx cont, J.Loc pc)
-      in
-      let cl =
-        if vars = [] then cl else
-        J.ECall (J.EFun (None, vars,
-                          [J.Statement (J.Return_statement (Some cl))],
-                         J.Loc pc),
-                 List.map (fun x -> J.EVar x) vars)
-      in
-      (cl, flush_p, queue)
+      (J.EAccess (cx, int (n + 1)), or_p px mutable_p, queue),[]
+  | Closure _ ->
+    (* this is done by translate_instr *)
+      assert false
   | Constant c ->
-      (constant ~ctx c, const_p, queue)
+      let js, instrs = constant ~ctx c level in
+      (js, const_p, queue), instrs
   | Prim (p, l) ->
-      begin match p, l with
+    let res = match p, l with
         Vectlength, [x] ->
-          let ((px, cx), queue) = access_queue' ~ctx queue x in
-          (J.EBin (J.Minus, J.EDot (cx, "length"), one), px, queue)
+        let ((px, cx), queue) = access_queue' ~ctx queue x in
+        (J.EBin (J.Minus, J.EDot (cx, "length"), one), px, queue)
       | Array_get, [x; y] ->
-          let ((px, cx), queue) = access_queue' ~ctx queue x in
-          let ((py, cy), queue) = access_queue' ~ctx queue y in
-          (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
-           or_p mutable_p (or_p px py), queue)
+        let ((px, cx), queue) = access_queue' ~ctx queue x in
+        let ((py, cy), queue) = access_queue' ~ctx queue y in
+        (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
+         or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
         (s_var nm, const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
         (s_var nm, const_p, queue)
       | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
-          let ((pf, cf), queue) = access_queue queue f in
-          let ((po, co), queue) = access_queue queue o in
-          let (args, prop, queue) =
-            List.fold_right
-              (fun x (args, prop, queue) ->
-                let ((prop', cx), queue) = access_queue' ~ctx queue x in
-                (cx :: args, or_p prop prop', queue)
-              )
-              l ([], mutator_p, queue)
-          in
-          (J.ECall (J.EDot (cf, "call"), co :: args),
-           or_p (or_p pf po) prop, queue)
+        let ((pf, cf), queue) = access_queue queue f in
+        let ((po, co), queue) = access_queue queue o in
+        let (args, prop, queue) =
+          List.fold_right
+            (fun x (args, prop, queue) ->
+               let ((prop', cx), queue) = access_queue' ~ctx queue x in
+               (cx :: args, or_p prop prop', queue)
+            )
+            l ([], mutator_p, queue)
+        in
+        (J.ECall (J.EDot (cf, "call"), co :: args),
+         or_p (or_p pf po) prop, queue)
       | Extern "caml_js_opt_fun_call", Pv f :: l ->
-          let ((pf, cf), queue) = access_queue queue f in
-          let (args, prop, queue) =
-            List.fold_right
-              (fun x (args, prop, queue) ->
-                 let ((prop', cx), queue) = access_queue' ~ctx queue x in
-                 (cx :: args, or_p prop prop', queue))
-              l ([], mutator_p, queue)
-          in
-          (J.ECall (cf, args), or_p pf prop, queue)
+        let ((pf, cf), queue) = access_queue queue f in
+        let (args, prop, queue) =
+          List.fold_right
+            (fun x (args, prop, queue) ->
+               let ((prop', cx), queue) = access_queue' ~ctx queue x in
+               (cx :: args, or_p prop prop', queue))
+            l ([], mutator_p, queue)
+        in
+        (J.ECall (cf, args), or_p pf prop, queue)
       | Extern "caml_js_opt_meth_call", Pv o :: Pc (String m) :: l ->
-          let ((po, co), queue) = access_queue queue o in
-          let (args, prop, queue) =
-            List.fold_right
-              (fun x (args, prop, queue) ->
-                 let ((prop', cx), queue) = access_queue' ~ctx queue x in
-                 (cx :: args, or_p prop prop', queue))
-              l ([], mutator_p, queue)
-          in
-          (J.ECall (J.EDot (co, m), args), or_p po prop, queue)
+        let ((po, co), queue) = access_queue queue o in
+        let (args, prop, queue) =
+          List.fold_right
+            (fun x (args, prop, queue) ->
+               let ((prop', cx), queue) = access_queue' ~ctx queue x in
+               (cx :: args, or_p prop prop', queue))
+            l ([], mutator_p, queue)
+        in
+        (J.ECall (J.EDot (co, m), args), or_p po prop, queue)
       | Extern "caml_js_opt_new", Pv c :: l ->
-          let ((pc, cc), queue) = access_queue queue c in
-          let (args, prop, queue) =
-            List.fold_right
-              (fun x (args, prop, queue) ->
-                 let ((prop', cx), queue) = access_queue' ~ctx queue x in
-                 (cx :: args, or_p prop prop', queue))
-              l ([], mutator_p, queue)
-          in
-          (J.ENew (cc, if args = [] then None else Some args),
-           or_p pc prop, queue)
+        let ((pc, cc), queue) = access_queue queue c in
+        let (args, prop, queue) =
+          List.fold_right
+            (fun x (args, prop, queue) ->
+               let ((prop', cx), queue) = access_queue' ~ctx queue x in
+               (cx :: args, or_p prop prop', queue))
+            l ([], mutator_p, queue)
+        in
+        (J.ENew (cc, if args = [] then None else Some args),
+         or_p pc prop, queue)
       | Extern "caml_js_get", [Pv o; Pc (String f)] ->
-          let ((po, co), queue) = access_queue queue o in
-          (J.EDot (co, f), or_p po mutable_p, queue)
+        let ((po, co), queue) = access_queue queue o in
+        (J.EDot (co, f), or_p po mutable_p, queue)
       | Extern "caml_js_set", [Pv o; Pc (String f); Pv v] ->
-          let ((po, co), queue) = access_queue queue o in
-          let ((pv, cv), queue) = access_queue queue v in
-          (J.EBin (J.Eq, J.EDot (co, f), cv),
-           or_p (or_p po pv) mutator_p, queue)
+        let ((po, co), queue) = access_queue queue o in
+        let ((pv, cv), queue) = access_queue queue v in
+        (J.EBin (J.Eq, J.EDot (co, f), cv),
+         or_p (or_p po pv) mutator_p, queue)
       | Extern "caml_js_delete", [Pv o; Pc (String f)] ->
-          let ((po, co), queue) = access_queue queue o in
-          (J.EUn(J.Delete, J.EDot (co, f)), or_p po mutator_p, queue)
+        let ((po, co), queue) = access_queue queue o in
+        (J.EUn(J.Delete, J.EDot (co, f)), or_p po mutator_p, queue)
       | Extern "%object_literal", fields ->
-          let rec build_fields l =
-            match l with
+        let rec build_fields l =
+          match l with
               [] ->
-                []
+              []
             | Pc (String nm) :: Pc (String v) :: r ->
-                (J.PNS nm, Share.get_string str_js v ctx.Ctx.share ) :: build_fields r
+              (J.PNS nm, Share.get_string str_js v ctx.Ctx.share ) :: build_fields r
             | _ ->
-                assert false
-          in
-          (J.EObj (build_fields fields), const_p, queue)
+              assert false
+        in
+        (J.EObj (build_fields fields), const_p, queue)
       | Extern "caml_js_opt_object", fields ->
-          let rec build_fields queue l =
-            match l with
+        let rec build_fields queue l =
+          match l with
               [] ->
-                (const_p, [], queue)
+              (const_p, [], queue)
             | Pc (String nm) :: Pv x :: r ->
-                let ((prop, cx), queue) = access_queue queue x in
-                let (prop', r', queue') = build_fields queue r in
-                (or_p prop prop', (J.PNS nm, cx) :: r', queue)
+              let ((prop, cx), queue) = access_queue queue x in
+              let (prop', r', queue') = build_fields queue r in
+              (or_p prop prop', (J.PNS nm, cx) :: r', queue)
             | _ ->
-                assert false
-          in
-          let (prop, fields, queue) = build_fields queue fields in
-          (J.EObj fields, prop, queue)
+              assert false
+        in
+        let (prop, fields, queue) = build_fields queue fields in
+        (J.EObj fields, prop, queue)
       | Extern name, l ->
         begin
           let name = Primitive.resolve name in
@@ -955,48 +967,48 @@ and translate_expr ctx queue x e =
               let (args, prop, queue) =
                 List.fold_right
                   (fun x (args, prop, queue) ->
-                    let ((prop', cx), queue) = access_queue' ~ctx queue x in
-                    (cx :: args, or_p prop prop', queue))
+                     let ((prop', cx), queue) = access_queue' ~ctx queue x in
+                     (cx :: args, or_p prop prop', queue))
                   l ([], prim_kind, queue)
               in
               (J.ECall (prim, args), prop, queue)
         end
       | Not, [x] ->
-          let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          (J.EBin (J.Minus, one, cx), px, queue)
+        let ((px, cx), queue) = access_queue' ~ctx  queue x in
+        (J.EBin (J.Minus, one, cx), px, queue)
       | Lt, [x; y] ->
-          let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          let ((py, cy), queue) = access_queue' ~ctx  queue y in
-          (bool (J.EBin (J.Lt, cx, cy)), or_p px py, queue)
+        let ((px, cx), queue) = access_queue' ~ctx  queue x in
+        let ((py, cy), queue) = access_queue' ~ctx  queue y in
+        (bool (J.EBin (J.Lt, cx, cy)), or_p px py, queue)
       | Le, [x; y] ->
-          let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          let ((py, cy), queue) = access_queue' ~ctx  queue y in
-          (bool (J.EBin (J.Le, cx, cy)), or_p px py, queue)
+        let ((px, cx), queue) = access_queue' ~ctx  queue x in
+        let ((py, cy), queue) = access_queue' ~ctx  queue y in
+        (bool (J.EBin (J.Le, cx, cy)), or_p px py, queue)
       | Eq, [x; y] ->
-          let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          let ((py, cy), queue) = access_queue' ~ctx  queue y in
-          (bool (J.EBin (J.EqEqEq, cx, cy)), or_p px py, queue)
+        let ((px, cx), queue) = access_queue' ~ctx  queue x in
+        let ((py, cy), queue) = access_queue' ~ctx  queue y in
+        (bool (J.EBin (J.EqEqEq, cx, cy)), or_p px py, queue)
       | Neq, [x; y] ->
-          let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          let ((py, cy), queue) = access_queue' ~ctx  queue y in
-          (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
+        let ((px, cx), queue) = access_queue' ~ctx  queue x in
+        let ((py, cy), queue) = access_queue' ~ctx  queue y in
+        (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [x] ->
-          let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (Share.get_string str_js "number" ctx.Ctx.share)),
-           px, queue)
+        let ((px, cx), queue) = access_queue' ~ctx  queue x in
+        (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (Share.get_string str_js "number" ctx.Ctx.share)),
+         px, queue)
       | Ult, [x; y] ->
-          let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          let ((py, cy), queue) = access_queue' ~ctx  queue y in
-          (bool (J.EBin (J.Or, J.EBin (J.Lt, cy, int 0),
-                         J.EBin (J.Lt, cx, cy))),
-           or_p px py, queue)
+        let ((px, cx), queue) = access_queue' ~ctx  queue x in
+        let ((py, cy), queue) = access_queue' ~ctx  queue y in
+        (bool (J.EBin (J.Or, J.EBin (J.Lt, cy, int 0),
+                       J.EBin (J.Lt, cx, cy))),
+         or_p px py, queue)
       | WrapInt, [x] ->
-          let ((px, cx), queue) = access_queue' ~ctx  queue x in
-          (to_int cx, px, queue)
+        let ((px, cx), queue) = access_queue' ~ctx  queue x in
+        (to_int cx, px, queue)
       | (Vectlength | Array_get | Not | IsInt | Eq |
          Neq | Lt | Le | Ult | WrapInt), _ ->
-          assert false
-      end
+        assert false
+    in res,[]
 
 and translate_closures ctx expr_queue l =
   match l with
@@ -1018,7 +1030,7 @@ and translate_closures ctx expr_queue l =
       let (st, expr_queue) =
         match ctx.Ctx.live.(Var.idx x) with
           0 -> flush_queue expr_queue flush_p [J.Expression_statement (cl, J.N)]
-        | 1 -> enqueue expr_queue flush_p x cl 1
+        | 1 -> enqueue expr_queue flush_p x cl 1 []
         | _ -> flush_queue expr_queue flush_p
                  [J.Variable_statement [J.V x, Some cl]]
       in
@@ -1089,20 +1101,21 @@ and translate_instr ctx expr_queue pc instr =
       let (st, expr_queue) =
         match i with
           Let (x, e) ->
-            let (ce, prop, expr_queue) = translate_expr ctx expr_queue x e in
+            let (ce, prop, expr_queue),instrs = translate_expr ctx expr_queue x e 0 in
             begin match ctx.Ctx.live.(Var.idx x),e with
-              0,_ -> flush_queue expr_queue prop [J.Expression_statement
-                                                   (ce, J.Loc pc)]
-            | 1,_ -> enqueue expr_queue prop x ce 1
+            | 0,_ -> flush_queue expr_queue prop (J.Expression_statement
+                                                    (ce, J.Loc pc)::instrs)
+            | 1,_ -> enqueue expr_queue prop x ce 1 instrs
             (* We could inline more.
                size_v : length of the variable after serialization
                size_c : length of the constant after serialization
                num : number of occurence
                size_c * n < size_v * n + size_v + 1 + size_c
             *)
-            | n,(Const _| Constant (Int _|Float _| Int32 _| Nativeint _)) -> enqueue expr_queue prop x ce n
+            | n,(Const _| Constant (Int _|Float _| Int32 _| Nativeint _)) ->
+                   enqueue expr_queue prop x ce n instrs
             | _ -> flush_queue expr_queue prop
-                     [J.Variable_statement [J.V x, Some ce]]
+                     (J.Variable_statement [J.V x, Some ce]::instrs)
             end
         | Set_field (x, n, y) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
@@ -1467,7 +1480,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
        do the same for closure free variables *)
                  match 2 (*ctx.Ctx.live.(Var.idx y)*) with
                    0 -> assert false
-                 | 1 -> enqueue queue px y cx 1
+                 | 1 -> enqueue queue px y cx 1 []
                  | _ -> flush_queue queue px
                           [J.Variable_statement [J.V y, Some cx]]
                in
