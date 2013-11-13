@@ -248,55 +248,65 @@ let kind k =
   match k with
     `Pure -> const_p | `Mutable -> mutable_p | `Mutator -> mutator_p
 
+let max_depth = 10
 
-let rec constant ?(split=true) ~ctx x level =
-  (* if level > 100 && split then assert false; *)
+let rec constant_rec ~ctx x level instrs =
   match x with
     String s ->
       let e = Share.get_string str_js s ctx.Ctx.share in
       let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
-      J.ECall (p,[e]),const_p,[]
+      J.ECall (p,[e]), instrs
   | IString s ->
-      Share.get_string str_js s ctx.Ctx.share, const_p, []
+      Share.get_string str_js s ctx.Ctx.share, instrs
   | Float f ->
-      float_const f, const_p, []
+      float_const f, instrs
   | Float_array a ->
       J.EArr (Some (int Obj.double_array_tag) ::
-              Array.to_list (Array.map (fun f -> Some (float_const f)) a)), const_p, []
+              Array.to_list (Array.map (fun f -> Some (float_const f)) a)),
+      instrs
   | Int32 i ->
-      J.ENum (Int32.to_float i), const_p, []
+      J.ENum (Int32.to_float i), instrs
   | Nativeint i ->
-      J.ENum (Nativeint.to_float i), const_p, []
+      J.ENum (Nativeint.to_float i), instrs
   | Int64 i ->
       J.EArr [Some (int 255);
               Some (int (Int64.to_int i land 0xffffff));
               Some (int (Int64.to_int (Int64.shift_right i 24) land 0xffffff));
-              Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))], const_p, []
+              Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))],
+      instrs
   | Tuple (tag, a) ->
-    let level'',split'' =
-      if level > 10 && split
-      then 0,true
-      else succ level,false in
-    let l,instrs = List.fold_left (fun (l,instrs) cc ->
-          let js,p,instrs' = constant ~split ~ctx cc level'' in
-          js::l,  List.rev_append instrs' instrs
-      ) ([],[]) (Array.to_list a) in
-    let l,instrs =
-      if split''
-      then
-        (* let () = assert false in *)
-        List.fold_left (fun (acc,instrs) js ->
-            match js with
-              | J.EArr _ ->
-                let v = Code.Var.fresh () in
-                let instrs = J.Variable_statement [J.V v, Some js] :: instrs in
-                Some (J.EVar (J.V v))::acc,instrs
-              | _ -> Some js :: acc,instrs
-        ) ([],instrs) l
-      else List.rev_map (fun x -> Some x) l,instrs in
-    J.EArr (Some (int tag) :: l), const_p, instrs
+      let split = level = max_depth in
+      let level = if split then 0 else level + 1 in
+      let (l, instrs) =
+        List.fold_left
+          (fun (l, instrs) cc ->
+             let (js, instrs) = constant_rec ~ctx cc level instrs in
+             js::l, instrs)
+          ([], instrs) (Array.to_list a)
+      in
+      let (l, instrs) =
+        if split then
+          List.fold_left
+            (fun (acc,instrs) js ->
+               match js with
+               | J.EArr _ ->
+                   let v = Code.Var.fresh () in
+                   let instrs =
+                     J.Variable_statement [J.V v, Some js] :: instrs in
+                   Some (J.EVar (J.V v))::acc,instrs
+               | _ ->
+                   Some js :: acc,instrs)
+            ([],instrs) l
+        else
+          List.rev_map (fun x -> Some x) l, instrs
+      in
+      J.EArr (Some (int tag) :: l), instrs
   | Int i ->
-      int i, const_p, []
+      int i, instrs
+
+let constant ~ctx x level =
+  let (expr, instr) = constant_rec ~ctx x level [] in
+  (expr, List.rev instr)
 
 
 type queue_elt = {
@@ -320,9 +330,9 @@ let access_queue queue x =
 let access_queue' ~ctx queue x =
   match x with
     | Pc c ->
-      let js,p,instrs = constant ~split:false ~ctx c 0 in
-      assert (instrs = []);
-      (p,js),queue
+      let js,instrs = constant ~ctx c max_depth in
+      assert (instrs = []); (* We only have simple constants here *)
+      (const_p, js), queue
     | Pv x -> access_queue queue x
 
 let access_queue_may_flush queue v x =
@@ -848,10 +858,10 @@ and translate_expr ctx queue x e level =
       (J.EAccess (cx, int (n + 1)), or_p px mutable_p, queue),[]
   | Closure _ ->
     (* this is done by translate_instr *)
-    assert false
+      assert false
   | Constant c ->
-    let js,p,instrs = constant ~ctx c level in
-    (js,p,queue),instrs
+      let js, instrs = constant ~ctx c level in
+      (js, const_p, queue), instrs
   | Prim (p, l) ->
     let res = match p, l with
         Vectlength, [x] ->
