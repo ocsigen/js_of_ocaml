@@ -24,17 +24,24 @@ open Flow
 let function_cardinality info x =
   get_approx info
     (fun x ->
-       match info.info_defs.(Var.idx x) with
-         Expr (Closure (l, _)) -> Some (List.length l)
-       | _                     -> None)
-    None
-    (fun u v -> match u, v with Some n, Some m when n = m -> u | _ -> None)
+      match info.info_defs.(Var.idx x) with
+        | Expr (Closure (l, _)) ->
+          Val (List.length l)
+        | _ -> Top)
+    Top Bottom
+    (fun u v -> match u, v with
+      | Val n, Val m when n = m -> u
+      | Bottom, x | x, Bottom -> x
+      | x -> Top)
     x
 
 let specialize_instr info i =
   match i with
-    | Let (x, Apply (f, l, _)) when Option.Optim.optcall () ->
-      Let (x, Apply (f, l, function_cardinality info f))
+    | Let (x, Apply (f, l, None)) when Option.Optim.optcall () ->
+      let nopt = match function_cardinality info f with
+        | Val n -> Some n
+        | _ -> None in
+      Let (x, Apply (f, l, nopt))
     | _ ->
       i
 
