@@ -40,7 +40,6 @@ val undefined : 'a optdef
   (** The [undefined] value *)
 val def : 'a -> 'a optdef
   (** Consider a value into a possibly undefined value. *)
-val debugger : unit -> unit
 
 
 (** Signatures of a set of standard functions for manipulating
@@ -499,6 +498,13 @@ external typeof : < .. > t -> js_string t = "caml_js_typeof"
 
 external instanceof : < .. > t -> _ constr -> bool = "caml_js_instanceof"
   (** Tests whether a Javascript object is an instance of a given class. *)
+
+(** {2 Debugging operations.} *)
+
+external debugger : unit -> unit = "debugger"
+  (** Invokes any available debugging functionality.
+      If no debugging functionality is available, it has no effect.
+      In practice, it will insert a "debugger;" statement in the generated javascript. *)
 
 (** {2 Unsafe operations.} *)
 

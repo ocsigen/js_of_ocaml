@@ -60,10 +60,11 @@ end) = struct
   let output_debug_info f pc =
     if source_map_enabled || debug_enabled
     then
-      match pc with
-        | None -> ()
-        | Some pc ->
-          match D.debug_info pc with
+      let pi = match pc with
+        | N -> None
+        | Loc pc -> D.debug_info pc
+        | Pi pi -> Some pi in
+      match pi with
             | None -> ()
             | Some {
               Parse_info.name=file;
@@ -71,8 +72,7 @@ end) = struct
               col=s } ->
               if debug_enabled
               then begin PP.string f "/*";
-                PP.string f (Format.sprintf "<<%d: %s %d %d>>"
-                               pc file l s);
+                PP.string f (Format.sprintf "<<%s %d %d>>" file l s);
                 PP.string f "*/";
               end;
               if source_map_enabled
@@ -224,7 +224,7 @@ end) = struct
         l <= 15 && need_paren 15 e
       | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | ERegexp _| EUn _ | ENew _ ->
         false
-      | EFun (_, _) | EObj _ ->
+      | EFun _ | EObj _ ->
         true
 
   let best_string_quote s =
@@ -291,7 +291,7 @@ end) = struct
         PP.break f;
         expression 0 f e2;
         if l > 0 then begin PP.string f ")"; PP.end_group f end
-      | EFun ((i, l, b), pc) ->
+      | EFun (i, l, b, pc) ->
         output_debug_info f pc;
         PP.start_group f 1;
         PP.start_group f 0;
@@ -811,7 +811,7 @@ end) = struct
             None   ->
               PP.string f "return";
               last_semi()
-          | Some (EFun ((i, l, b), pc)) ->
+          | Some (EFun (i, l, b, pc)) ->
             output_debug_info f pc;
             PP.start_group f 1;
             PP.start_group f 0;

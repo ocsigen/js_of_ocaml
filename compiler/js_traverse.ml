@@ -120,11 +120,11 @@ class map : mapper = object(m)
   | ENew(e1,None) ->
     ENew(m#expression  e1,None)
   | EVar v -> EVar (m#ident v)
-  | EFun ((idopt, params, body) ,nid) ->
+  | EFun (idopt, params, body ,nid) ->
     let idopt = match idopt with
       | None -> None
       | Some i -> Some (m#ident i) in
-    EFun ((idopt, List.map m#ident params, m#sources body) ,nid)
+    EFun (idopt, List.map m#ident params, m#sources body ,nid)
   | EArr l ->
     EArr (List.map (fun x -> m#expression_o x) l)
   | EObj l ->
@@ -311,7 +311,7 @@ class free =
 
   method expression x = match x with
     | EVar v -> m#use_var v; x
-    | EFun ((ident,params,body),nid) ->
+    | EFun (ident,params,body,nid) ->
       let tbody  = ({< state_ = empty; level = succ level  >} :> 'test) in
       let () = List.iter tbody#def_var params in
       let body = tbody#sources body in
@@ -322,7 +322,7 @@ class free =
         | None -> None in
       tbody#block params;
       m#merge_info tbody;
-      EFun ((ident,params,body),nid)
+      EFun (ident,params,body,nid)
     | _ -> super#expression x
 
   method source x = match x with
@@ -477,7 +477,7 @@ class compact_vardecl = object(m)
       let l = m#translate l in
       match l with
         | [] -> Empty_statement
-        | x::l -> Expression_statement (List.fold_left (fun acc e -> ESeq(acc,e)) x l,None)
+        | x::l -> Expression_statement (List.fold_left (fun acc e -> ESeq(acc,e)) x l,N)
 
     method private translate_ex l =
       let l = m#translate l in
@@ -564,13 +564,13 @@ class compact_vardecl = object(m)
     method expression x =
       let x = super#expression x in
       match x with
-        | EFun ((ident,params,body),nid) ->
+        | EFun (ident,params,body,nid) ->
           let all = IdentSet.diff insert_ exc_ in
           let body = m#pack all body in
           (match ident with
             | Some id -> m#except id;
             | None -> ());
-          EFun ((ident,params,body),nid)
+          EFun (ident,params,body,nid)
         | _ -> x
 
     method statements l =

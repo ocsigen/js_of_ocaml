@@ -102,7 +102,7 @@ let source_elements l =
   List.fold_right
     (fun st rem ->
        match st, rem with
-       | J.Variable_statement [addr, Some (J.EFun ((None, params, body), pc))], _ ->
+       | J.Variable_statement [addr, Some (J.EFun (None, params, body, pc))], _ ->
          J.Function_declaration (addr, params, body, pc) :: rem
        | J.Variable_statement l1,
          J.Statement (J.Variable_statement l2) :: rem' ->
@@ -170,7 +170,7 @@ let assign_opt_pass l =
       | J.Variable_statement l1 ->
         let x = List.map (function (ident,exp) ->
             match assign_op (J.EVar ident,exp) with
-              | Some e -> J.Expression_statement (e,None)
+              | Some e -> J.Expression_statement (e,J.N)
               | None -> J.Variable_statement [(ident,exp)]) l1 in
         x@rem
       | _ -> st::rem
@@ -239,7 +239,7 @@ let rec if_statement_2 e iftrue truestop iffalse falsestop =
   match iftrue, iffalse with
     (* Empty blocks *)
     J.Block [], J.Block [] ->
-      [J.Expression_statement (e, None)]
+      [J.Expression_statement (e, J.N)]
   | J.Block [], _ ->
       if_statement_2 (enot e) iffalse falsestop iftrue truestop
   | _, J.Block [] ->

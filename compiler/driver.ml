@@ -240,18 +240,18 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
   (* pack *)
   let use_strict js =
     if Option.Optim.strictmode ()
-    then J.Statement (J.Expression_statement (J.EStr ("use strict", `Utf8), None)) :: js
+    then J.Statement (J.Expression_statement (J.EStr ("use strict", `Utf8), J.N)) :: js
     else js in
 
   let js = if standalone then
       let f =
-        J.EFun ((None, [J.S {J.name = "joo_global_object"; var=None }], use_strict js),None) in
+        J.EFun (None, [J.S {J.name = "joo_global_object"; var=None }], use_strict js,J.N) in
       [J.Statement (
         J.Expression_statement
-          ((J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])), None))]
+          ((J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])), J.N))]
     else
-      let f = J.EFun ((None, [J.V (Code.Var.fresh ())], js), None) in
-      [J.Statement (J.Expression_statement (f, None))] in
+      let f = J.EFun (None, [J.V (Code.Var.fresh ())], js, J.N) in
+      [J.Statement (J.Expression_statement (f, J.N))] in
 
   (* post pack optim *)
   let js = (new Js_traverse.clean)#program js in
