@@ -218,10 +218,10 @@ let coloring js =
   then Format.eprintf "Start Coloring...@.";
   Js_assign.program js
 
-let output formatter d js =
+let output formatter ?source_map d js =
   if times ()
   then Format.eprintf "Start Writing file...@.";
-  Js_output.program formatter d js
+  Js_output.program formatter ?source_map d js
 
 let pack ~standalone ?(toplevel=false)?(linkall=false) js =
   let module J = Javascript in
@@ -275,7 +275,7 @@ let configure formatter p =
   Code.Var.set_pretty pretty;
   p
 
-let f ?(standalone=true) ?toplevel ?linkall formatter d =
+let f ?(standalone=true) ?toplevel ?linkall ?source_map formatter d =
   configure formatter >>
   !profile >>
   deadcode' >>
@@ -288,7 +288,7 @@ let f ?(standalone=true) ?toplevel ?linkall formatter d =
   coloring >>
 
   header formatter ~standalone >>
-  output formatter d
+  output formatter ?source_map d
 
 let from_string prims s formatter =
   let (p,d) = Parse_bytecode.from_string prims s in

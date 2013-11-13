@@ -35,25 +35,58 @@ module PP = Pretty_print
 
 module Make(D : sig
   val debug_info : Parse_bytecode.debug_loc
+  val source_map : Source_map.t option
 end) = struct
 
+  let push_mapping,get_file_index,source_map_enabled =
+    let idx = ref 0 in
+    let files = Hashtbl.create 17 in
+    match D.source_map with
+      | None -> (fun _ -> ()),(fun _ -> -1),false
+      | Some sm ->
+        List.iter (fun f -> Hashtbl.add files f !idx; incr idx) sm.Source_map.sources;
+        (fun m -> sm.Source_map.mappings <- m :: sm.Source_map.mappings),
+        (fun file ->
+          try Hashtbl.find files file with
+            | Not_found ->
+              let pos = !idx in
+              Hashtbl.add files file pos;
+              incr idx;
+              sm.Source_map.sources <- sm.Source_map.sources @ [file];
+              pos),
+        true
+
+  let debug_enabled = Option.Optim.debuginfo ()
   let output_debug_info f pc =
-    if Option.Optim.debuginfo ()
+    if source_map_enabled || debug_enabled
     then
       let pi = match pc with
         | N -> None
         | Loc pc -> D.debug_info pc
         | Pi pi -> Some pi in
       match pi with
-        | Some {
-          Parse_info.name=file;
-          line=l;
-          col=s } ->
-          PP.string f "/*";
-          PP.string f (Format.sprintf "<< %s %d %d>>" file l s);
-          PP.string f "*/"
-        | None -> ()
-
+            | None -> ()
+            | Some {
+              Parse_info.name=file;
+              line=l;
+              col=s } ->
+              if debug_enabled
+              then begin PP.string f "/*";
+                PP.string f (Format.sprintf "<<%s %d %d>>" file l s);
+                PP.string f "*/";
+              end;
+              if source_map_enabled
+              then begin
+                let gen_line,gen_col = PP.pos f in
+                push_mapping {
+                  Source_map.gen_line;
+                  gen_col;
+                  ori_source=get_file_index file;
+                  ori_line = l;
+                  ori_col = s;
+                  ori_name = None;
+                }
+              end
 
   let ident f = function
     | S {name;var=None} -> PP.string f name
@@ -967,9 +1000,31 @@ let part_of_ident c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= 
 let need_space a b =
   part_of_ident a = part_of_ident b
 
-let program f dl p =
+
+let chop_extension s =
+  try Filename.chop_extension s with Invalid_argument _ -> s
+
+let program f ?source_map dl p =
+  let smo = match source_map with
+    | None -> None
+    | Some (_,sm) -> Some sm in
   let module O = Make(struct
-      let debug_info = dl
-    end) in
+    let debug_info = dl
+    let source_map = smo
+  end) in
   PP.set_needed_space_function f need_space;
-  PP.start_group f 0; O.program f p; PP.end_group f; PP.newline f
+  PP.start_group f 0; O.program f p; PP.end_group f; PP.newline f;
+  (match source_map with
+    | None -> ()
+    | Some (out_file,sm) ->
+
+      let oc = open_out out_file in
+      let pp = Pretty_print.to_out_channel oc in
+      Pretty_print.set_compact pp false;
+
+      let e = Source_map.expression sm in
+      O.expression 0 pp e;
+      close_out oc;
+
+      PP.newline f;
+      PP.string f (Printf.sprintf "//# sourceMappingURL=%s" out_file))

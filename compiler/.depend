@@ -4,10 +4,10 @@ annot_parser.cmo : primitive.cmi annot_parser.cmi
 annot_parser.cmx : primitive.cmx annot_parser.cmi
 code.cmo : varPrinter.cmi util.cmi code.cmi
 code.cmx : varPrinter.cmx util.cmx code.cmi
-compile.cmo : util.cmi pretty_print.cmi parse_bytecode.cmi option.cmo \
-    linker.cmi driver.cmi
-compile.cmx : util.cmx pretty_print.cmx parse_bytecode.cmx option.cmx \
-    linker.cmx driver.cmx
+compile.cmo : util.cmi source_map.cmo pretty_print.cmi parse_bytecode.cmi \
+    option.cmo linker.cmi driver.cmi
+compile.cmx : util.cmx source_map.cmx pretty_print.cmx parse_bytecode.cmx \
+    option.cmx linker.cmx driver.cmx
 control.cmo : subst.cmi code.cmi control.cmi
 control.cmx : subst.cmx code.cmx control.cmi
 deadcode.cmo : util.cmi pure_fun.cmi option.cmo code.cmi deadcode.cmi
@@ -48,10 +48,10 @@ js_assign.cmx : util.cmx option.cmx js_traverse.cmx javascript.cmx code.cmx \
     js_assign.cmi
 js_lexer.cmo : parse_info.cmi js_token.cmi
 js_lexer.cmx : parse_info.cmx js_token.cmx
-js_output.cmo : pretty_print.cmi parse_info.cmi parse_bytecode.cmi \
-    option.cmo javascript.cmi js_output.cmi
-js_output.cmx : pretty_print.cmx parse_info.cmx parse_bytecode.cmx \
-    option.cmx javascript.cmx js_output.cmi
+js_output.cmo : source_map.cmo pretty_print.cmi parse_info.cmi \
+    parse_bytecode.cmi option.cmo javascript.cmi js_output.cmi
+js_output.cmx : source_map.cmx pretty_print.cmx parse_info.cmx \
+    parse_bytecode.cmx option.cmx javascript.cmx js_output.cmi
 js_parser.cmo : parse_info.cmi js_token.cmi javascript.cmi js_parser.cmi
 js_parser.cmx : parse_info.cmx js_token.cmx javascript.cmx js_parser.cmi
 js_simpl.cmo : javascript.cmi code.cmi js_simpl.cmi
@@ -92,6 +92,8 @@ pure_fun.cmo : primitive.cmi code.cmi pure_fun.cmi
 pure_fun.cmx : primitive.cmx code.cmx pure_fun.cmi
 reserved.cmo : util.cmi
 reserved.cmx : util.cmx
+source_map.cmo : vlq64.cmo javascript.cmi
+source_map.cmx : vlq64.cmx javascript.cmx
 specialize.cmo : option.cmo flow.cmi code.cmi specialize.cmi
 specialize.cmx : option.cmx flow.cmx code.cmx specialize.cmi
 specialize_js.cmo : util.cmi flow.cmi code.cmi specialize_js.cmi
@@ -104,12 +106,14 @@ util.cmo : util.cmi
 util.cmx : util.cmi
 varPrinter.cmo : util.cmi reserved.cmo varPrinter.cmi
 varPrinter.cmx : util.cmx reserved.cmx varPrinter.cmi
+vlq64.cmo :
+vlq64.cmx :
 annot_parser.cmi : primitive.cmi
 code.cmi : util.cmi
 control.cmi : code.cmi
 deadcode.cmi : code.cmi
 dgraph.cmi :
-driver.cmi : pretty_print.cmi parse_bytecode.cmi code.cmi
+driver.cmi : source_map.cmo pretty_print.cmi parse_bytecode.cmi code.cmi
 eval.cmi : flow.cmi code.cmi
 flow.cmi : code.cmi
 freevars.cmi : util.cmi code.cmi
@@ -118,7 +122,8 @@ inline.cmi : code.cmi
 instr.cmi :
 javascript.cmi : parse_info.cmi code.cmi
 js_assign.cmi : javascript.cmi
-js_output.cmi : pretty_print.cmi parse_bytecode.cmi javascript.cmi
+js_output.cmi : source_map.cmo pretty_print.cmi parse_bytecode.cmi \
+    javascript.cmi
 js_parser.cmi : js_token.cmi javascript.cmi
 js_simpl.cmi : javascript.cmi code.cmi
 js_token.cmi : parse_info.cmi

@@ -20,6 +20,8 @@
 
 type debug_loc = Javascript.loc -> Parse_info.t option
 
-val from_channel : ?toplevel:bool -> paths:string list -> in_channel -> Code.program * debug_loc
+val from_channel :
+  ?toplevel:bool -> ?debug:bool ->
+  paths:string list -> in_channel -> Code.program * debug_loc
 
 val from_string : ?toplevel:bool -> string array -> string -> Code.program * debug_loc
