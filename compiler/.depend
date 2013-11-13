@@ -38,8 +38,10 @@ inline.cmo : code.cmi inline.cmi
 inline.cmx : code.cmx inline.cmi
 instr.cmo : instr.cmi
 instr.cmx : instr.cmi
-javascript.cmo : varPrinter.cmi util.cmi code.cmi javascript.cmi
-javascript.cmx : varPrinter.cmx util.cmx code.cmx javascript.cmi
+javascript.cmo : varPrinter.cmi util.cmi parse_info.cmi code.cmi \
+    javascript.cmi
+javascript.cmx : varPrinter.cmx util.cmx parse_info.cmx code.cmx \
+    javascript.cmi
 js_assign.cmo : util.cmi option.cmo js_traverse.cmi javascript.cmi code.cmi \
     js_assign.cmi
 js_assign.cmx : util.cmx option.cmx js_traverse.cmx javascript.cmx code.cmx \
@@ -114,7 +116,7 @@ freevars.cmi : util.cmi code.cmi
 generate.cmi : javascript.cmi code.cmi
 inline.cmi : code.cmi
 instr.cmi :
-javascript.cmi : code.cmi
+javascript.cmi : parse_info.cmi code.cmi
 js_assign.cmi : javascript.cmi
 js_output.cmi : pretty_print.cmi parse_bytecode.cmi javascript.cmi
 js_parser.cmi : js_token.cmi javascript.cmi

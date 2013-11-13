@@ -38,7 +38,10 @@ module Label = struct
 end
 
 type loc = Code.addr
-type node_pc = loc option
+type node_pc =
+  | Loc of loc
+  | Pi of Parse_info.t
+  | N
 
 type identifier = string
 
@@ -87,7 +90,7 @@ and expression =
   | EDot of expression * identifier
   | ENew of expression * arguments option
   | EVar of ident
-  | EFun of function_expression * node_pc
+  | EFun of function_expression
   | EStr of string * [`Bytes | `Utf8]
   | EArr of array_litteral
   | EBool of bool
@@ -142,7 +145,7 @@ and function_declaration =
   ident * formal_parameter_list * function_body * node_pc
 
 and function_expression =
-  ident option * formal_parameter_list * function_body
+  ident option * formal_parameter_list * function_body * node_pc
 
 and formal_parameter_list = ident list
 
