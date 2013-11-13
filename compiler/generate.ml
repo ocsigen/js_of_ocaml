@@ -539,7 +539,7 @@ let generate_apply_fun n =
   in
   let f' = J.EVar f in
   let params' = List.map (fun x -> J.EVar x) params in
-  J.EFun ((None, f :: params,
+  J.EFun (None, f :: params,
            [J.Statement
                (J.Return_statement
                   (Some
@@ -547,8 +547,8 @@ let generate_apply_fun n =
                                        J.ENum (float n)),
                                J.ECall (f', params'),
                                J.ECall (s_var "caml_call_gen",
-                                        [f'; J.EArr (List.map (fun x -> Some x) params')])))))]),
-          None)
+                                        [f'; J.EArr (List.map (fun x -> Some x) params')])))))],
+          J.N)
 
 (****)
 
@@ -809,8 +809,8 @@ let rec collect_closures ctx l =
           None
       in
       let cl =
-        J.EFun ((fun_name, List.map (fun v -> J.V v) args,
-                 compile_closure ctx cont), Some pc)
+        J.EFun (fun_name, List.map (fun v -> J.V v) args,
+                 compile_closure ctx cont, J.Loc pc)
       in
       let (l', rem') = collect_closures ctx rem in
       ((x, vars, cl) :: l', rem')
@@ -1022,14 +1022,14 @@ and translate_closures ctx expr_queue l =
       in
       let cl =
         if vars = [] then cl else
-        J.ECall (J.EFun ((None, vars,
-                           [J.Statement (J.Return_statement (Some cl))]),
-                          None),
+        J.ECall (J.EFun (None, vars,
+                           [J.Statement (J.Return_statement (Some cl))],
+                          J.N),
                  List.map (fun x -> J.EVar x) vars)
       in
       let (st, expr_queue) =
         match ctx.Ctx.live.(Var.idx x) with
-          0 -> flush_queue expr_queue flush_p [J.Expression_statement (cl, None)]
+          0 -> flush_queue expr_queue flush_p [J.Expression_statement (cl, J.N)]
         | 1 -> enqueue expr_queue flush_p x cl 1 []
         | _ -> flush_queue expr_queue flush_p
                  [J.Variable_statement [J.V x, Some cl]]
@@ -1070,10 +1070,10 @@ and translate_closures ctx expr_queue l =
             ((J.V tbl,
               Some
                 (J.ECall
-                   (J.EFun ((None, vars,
+                   (J.EFun (None, vars,
                              [J.Statement (J.Variable_statement defs);
-                              J.Statement (J.Return_statement (Some arr))]),
-                            None),
+                              J.Statement (J.Return_statement (Some arr))],
+                            J.N),
                     List.map (fun x -> J.EVar x) vars))) ::
               List.rev (fst assgn))
         end
@@ -1103,39 +1103,40 @@ and translate_instr ctx expr_queue pc instr =
           Let (x, e) ->
             let (ce, prop, expr_queue),instrs = translate_expr ctx expr_queue x e 0 in
             begin match ctx.Ctx.live.(Var.idx x),e with
-              | 0,_ -> flush_queue expr_queue prop (J.Expression_statement
-                                                      (ce, Some pc)::instrs)
-              | 1,_ -> enqueue expr_queue prop x ce 1 instrs
-              (* We could inline more.
-                 size_v : length of the variable after serialization
-                 size_c : length of the constant after serialization
-                 num : number of occurence
-                 size_c * n < size_v * n + size_v + 1 + size_c
-              *)
-              | n,(Const _| Constant (Int _|Float _| Int32 _| Nativeint _)) -> enqueue expr_queue prop x ce n instrs
-              | _ -> flush_queue expr_queue prop
-                       (J.Variable_statement [J.V x, Some ce]::instrs)
+            | 0,_ -> flush_queue expr_queue prop (J.Expression_statement
+                                                    (ce, J.Loc pc)::instrs)
+            | 1,_ -> enqueue expr_queue prop x ce 1 instrs
+            (* We could inline more.
+               size_v : length of the variable after serialization
+               size_c : length of the constant after serialization
+               num : number of occurence
+               size_c * n < size_v * n + size_v + 1 + size_c
+            *)
+            | n,(Const _| Constant (Int _|Float _| Int32 _| Nativeint _)) ->
+                   enqueue expr_queue prop x ce n instrs
+            | _ -> flush_queue expr_queue prop
+                     (J.Variable_statement [J.V x, Some ce]::instrs)
             end
         | Set_field (x, n, y) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
-                  ((J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy)), Some pc)]
+                  ((J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy)), J.Loc pc)]
         | Offset_ref (x, 1) ->
           (* FIX: may overflow.. *)
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EUn (J.IncrA, (J.EAccess (cx, J.ENum 1.)))),
-                  Some pc)]
+                  J.Loc pc)]
         | Offset_ref (x, n) ->
           (* FIX: may overflow.. *)
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EBin (J.PlusEq, (J.EAccess (cx, J.ENum 1.)), int n)),
-                  Some pc)]
+                  J.Loc pc)]
         | Array_set (x, y, z) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
@@ -1144,7 +1145,7 @@ and translate_instr ctx expr_queue pc instr =
               [J.Expression_statement
                   ((J.EBin (J.Eq, J.EAccess (cx, J.EBin(J.Plus, cy, one)),
                             cz)),
-                   Some pc)]
+                   J.Loc pc)]
       in
       let (instrs, expr_queue) = translate_instr ctx expr_queue pc rem in
       (st @ instrs, expr_queue)
@@ -1216,7 +1217,7 @@ else begin
                             Some (J.V x,
                                   Js_simpl.statement_list handler),
                             None,
-                            Some pc) ::
+                            J.Loc pc) ::
            if AddrSet.is_empty inner_frontier then [] else begin
              let pc = AddrSet.choose inner_frontier in
              if AddrSet.mem pc frontier then [] else
@@ -1290,7 +1291,7 @@ else begin
               if debug () then Format.eprintf "}@]";
               body
             end),
-        Some pc)
+        J.Loc pc)
     in
     match label with
       | None -> [st]
@@ -1562,8 +1563,8 @@ let generate_shared_value ctx =
       )) in
   let applies = List.map (fun (n,v) ->
     match generate_apply_fun n with
-      | J.EFun ((_,param,body),_) ->
-        J.Function_declaration (v,param,body,None)
+      | J.EFun (_,param,body,_) ->
+        J.Function_declaration (v,param,body,J.N)
       | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in
   strings::applies
 
