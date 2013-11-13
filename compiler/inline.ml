@@ -92,37 +92,82 @@ update closure body to return to this location
 make current block continuation jump to closure body
 *)
 
+exception No_inlining
+let inline_copy ~bind ~return ~args ~params ~body ~rem ~state =
+  let sub = Subst.build_mapping params args in
+  let instrs,sub,score = List.fold_left (fun (instrs, sub,score) i ->
+    match i with
+      | Let (v,Closure _) -> (* *) raise No_inlining
+      | Let (v,e) ->
+        let v' =
+          if v = return
+          then bind
+          else Code.Var.fresh () in
+        let sub = VarMap.add v v' sub in
+        Let(v',Subst.expr (Subst.from_map sub) e)::instrs , sub, score + 1
+      | _  -> raise No_inlining (* Subst.instr (Subst.from_map sub) i :: instrs , sub, score + 10 *)
+  ) ([],sub,0) body in
+  if score >= 3 then raise No_inlining;
+  let v'' = try VarMap.find return sub with
+      Not_found -> Format.eprintf "COULD NOT INLINE"; raise No_inlining in
+  let instrs =
+    if v'' = bind
+    then instrs
+    else raise No_inlining
+      (* this avoid to propagate substitution *)
+      (* Let(bind,Prim (Extern "%identity", [Pv v''])) ::instrs *)
+  in
+  List.rev_append instrs rem,state
+
 let inline closures live_vars blocks free_pc pc =
   let block = AddrMap.find pc blocks in
   let (body, (branch, blocks, free_pc)) =
     List.fold_right
       (fun i (rem, state) ->
-         match i with
-           Let (x, Apply (f, args, Some n))
-               when n = List.length args
-                 && live_vars.(Var.idx f) = 1
-                 && VarMap.mem f closures ->
-             let (params, (clos_pc, clos_args)) = VarMap.find f closures in
-             let (branch, blocks, free_pc) = state in
-             let blocks =
-               AddrMap.add free_pc
-                 { params = [x]; handler = block.handler;
-                   body = rem; branch = branch } blocks
-             in
-             let blocks =
-               rewrite_closure blocks free_pc clos_pc block.handler in
-             (* We do not really need this intermediate block.  It
-                just avoid the need to find which function parameters
-                are used in the function body. *)
-             let blocks =
-               AddrMap.add (free_pc + 1)
-                 { params = params; handler = block.handler;
-                   body = []; branch = Branch (clos_pc, clos_args) } blocks
-             in
-             ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
-
+        match i with
+            Let (x, Apply (f, args, Some n))
+              when n = List.length args
+              && live_vars.(Var.idx f) = 1
+              && VarMap.mem f closures ->
+            let (params, (clos_pc, clos_args)) = VarMap.find f closures in
+            let (branch, blocks, free_pc) = state in
+            let blocks =
+              AddrMap.add free_pc
+                { params = [x]; handler = block.handler;
+                  body = rem; branch = branch } blocks
+            in
+            let blocks =
+              rewrite_closure blocks free_pc clos_pc block.handler in
+            (* We do not really need this intermediate block.  It
+               just avoid the need to find which function parameters
+               are used in the function body. *)
+            let blocks =
+              AddrMap.add (free_pc + 1)
+                { params = params; handler = block.handler;
+                  body = []; branch = Branch (clos_pc, clos_args) } blocks
+            in
+            ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
+          | Let (x, Apply (f, args, Some n))
+              when n = List.length args
+              && VarMap.mem f closures -> begin
+                let (params, (clos_pc, clos_args)) = VarMap.find f closures in
+                let f_block = AddrMap.find clos_pc blocks in
+                match f_block with
+                  | {branch=Return x';
+                     body ;
+                     handler=None}
+                      when
+                        List.length params = List.length args
+                        && clos_args = [] ->
+                    begin
+                      (* Format.eprintf "Trying to inline %s@." (Code.Var.to_string f); *)
+                      try inline_copy ~bind:x ~return:x' ~args ~params ~body ~rem ~state with
+                        | No_inlining -> (i :: rem, state)
+                    end
+                  | _ -> (i :: rem, state)
+              end
          | _ ->
-             (i :: rem, state))
+           (i :: rem, state))
       block.body ([], (block.branch, blocks, free_pc))
   in
   (AddrMap.add pc {block with body = body; branch = branch} blocks, free_pc)
