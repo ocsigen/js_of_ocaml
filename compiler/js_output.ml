@@ -72,7 +72,7 @@ end) = struct
               col=s } ->
               if debug_enabled
               then begin PP.string f "/*";
-                PP.string f (Format.sprintf "<<%s %d %d>>" file l s);
+                PP.string f (Format.sprintf "<<%s %d %d>>" file (l + 1) s);
                 PP.string f "*/";
               end;
               if source_map_enabled

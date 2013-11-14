@@ -215,7 +215,7 @@ module Debug = struct
       let loc = ev.ev_loc in
       let pos = loc.li_start in
       Some {Parse_info.name = pos.pos_fname;
-            line=pos.pos_lnum;
+            line=pos.pos_lnum - 1;
             col=pos.pos_cnum - pos.pos_bol;
             (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
             idx=0;
