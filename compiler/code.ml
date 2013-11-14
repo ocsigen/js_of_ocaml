@@ -131,7 +131,7 @@ type prim_arg =
 
 type expr =
     Const of int
-  | Apply of Var.t * Var.t list * int option
+  | Apply of Var.t * Var.t list * bool
   | Block of int * Var.t array
   | Field of Var.t * int
   | Closure of Var.t list * cont
@@ -272,8 +272,8 @@ let print_expr f e =
   match e with
     Const i ->
       Format.fprintf f "%d" i
-  | Apply (g, l, n) ->
-      if n = Some (List.length l) then
+  | Apply (g, l, exact) ->
+      if exact then
         Format.fprintf f "%a!(%a)" Var.print g print_var_list l
       else
         Format.fprintf f "%a(%a)" Var.print g print_var_list l

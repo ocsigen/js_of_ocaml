@@ -120,7 +120,7 @@ module Share = struct
           (fun share i ->
             match i with
               | Let (_, Constant c) -> get_constant c share
-              | Let (_, Apply (_,args,None)) ->
+              | Let (_, Apply (_,args,false)) ->
                 add_apply (List.length args) share
               | Let (_, Prim (Extern name, args)) ->
                 let name = Primitive.resolve name in
@@ -823,7 +823,7 @@ and translate_expr ctx queue x e level =
   match e with
     Const i ->
       (int i, const_p, queue),[]
-  | Apply (x, l, Some n) when n = List.length l ->
+  | Apply (x, l, true) ->
       let ((px, cx), queue) = access_queue queue x in
       let (args, prop, queue) =
         List.fold_right
@@ -833,7 +833,7 @@ and translate_expr ctx queue x e level =
           l ([], or_p px mutator_p, queue)
       in
       (J.ECall (cx, args), prop, queue),[]
-  | Apply (x, l, _) ->
+  | Apply (x, l, false) ->
       let (args, prop, queue) =
         List.fold_right
           (fun x (args, prop, queue) ->

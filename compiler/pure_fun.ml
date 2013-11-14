@@ -26,12 +26,8 @@ let pure_expr pure_funs e =
   match e with
     Const _  | Block _ | Field _ | Closure _ | Constant _ ->
       true
-  | Apply (f, l, n) ->
-      begin match n with
-        Some n -> let m = List.length l in
-                  m < n || (m = n && VarSet.mem f pure_funs)
-      | None   -> false
-      end
+  | Apply (f, l, exact) ->
+      exact && VarSet.mem f pure_funs
   | Prim (p, l) ->
       match p with
         Extern f -> Primitive.is_pure f

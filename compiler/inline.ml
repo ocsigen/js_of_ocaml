@@ -98,9 +98,8 @@ let inline closures live_vars blocks free_pc pc =
     List.fold_right
       (fun i (rem, state) ->
          match i with
-           Let (x, Apply (f, args, Some n))
-               when n = List.length args
-                 && live_vars.(Var.idx f) = 1
+           Let (x, Apply (f, args, true))
+               when live_vars.(Var.idx f) = 1
                  && VarMap.mem f closures ->
              let (params, (clos_pc, clos_args)) = VarMap.find f closures in
              let (branch, blocks, free_pc) = state in
