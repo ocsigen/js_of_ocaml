@@ -228,6 +228,7 @@ module Debug = struct
       v1 :: r1, v2 :: r2 -> Var.propagate_name v1 v2; propagate r1 r2
     | _                  -> ()
 
+  let iter f = Hashtbl.iter f events_by_pc
 end
 
 (****)
@@ -1561,9 +1562,10 @@ let match_exn_traps ((_, blocks, _) as p) =
 
 (****)
 
-let parse_bytecode ?(toplevel=false) code state standalone_info =
+let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
   Code.Var.reset ();
   analyse_blocks code;
+  if debug = `Full then Debug.iter (fun pc _ -> add_jump () pc);
   compile_block code 0 state;
 
   let blocks =
@@ -1764,7 +1766,7 @@ let fix_min_max_int code =
 
 (****)
 
-let from_channel  ?(toplevel=false) ?(debug=false) ~paths ic =
+let from_channel  ?(toplevel=false) ?(debug=`No) ~paths ic =
   let toc = read_toc ic in
   let primitive_table,prim = read_primitive_table toc ic in
   let code_size = seek_section toc ic "CODE" in
@@ -1777,8 +1779,7 @@ let from_channel  ?(toplevel=false) ?(debug=false) ~paths ic =
   ignore(seek_section toc ic "SYMB");
   let symbols = (input_value ic : Ident.t numtable) in
 
-  if debug then
-  begin
+  if debug <> `No then begin
     try
       ignore(seek_section toc ic "DBUG");
       Debug.read ic;
@@ -1805,7 +1806,7 @@ let from_channel  ?(toplevel=false) ?(debug=false) ~paths ic =
 
   ignore(seek_section toc ic "CRCS");
   let crcs = (input_value ic : Obj.t) in
-  parse_bytecode ~toplevel code state (Some (symbols, crcs, prim, paths))
+  parse_bytecode ~toplevel ~debug code state (Some (symbols, crcs, prim, paths))
 
 (* As input: list of primitives + size of global table *)
 let from_string ?toplevel primitives code =

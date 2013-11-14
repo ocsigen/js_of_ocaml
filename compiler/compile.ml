@@ -25,7 +25,10 @@ let f toplevel linkall paths js_files input_file output_file source_map =
   List.iter Linker.add_file js_files;
   let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
   let t1 = Util.Timer.make () in
-  let need_debug = source_map <> None || Option.Optim.pretty () in
+  let need_debug =
+    if source_map <> None || Option.Optim.debuginfo () then `Full else
+    if Option.Optim.pretty () then `Names else `No
+  in
   let p,d =
     match input_file with
       None ->
