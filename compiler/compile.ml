@@ -20,23 +20,24 @@
 
 let times = Option.Debug.find "times"
 
-let f toplevel linkall paths js_files input_file output_file =
+let f toplevel linkall paths js_files input_file output_file source_map =
   let t = Util.Timer.make () in
   List.iter Linker.add_file js_files;
   let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
   let t1 = Util.Timer.make () in
+  let need_debug = source_map <> None || Option.Optim.pretty () in
   let p,d =
     match input_file with
       None ->
-        Parse_bytecode.from_channel ~toplevel ~paths stdin
+        Parse_bytecode.from_channel ~toplevel ~debug:need_debug ~paths stdin
     | Some f ->
         let ch = open_in_bin f in
-        let p = Parse_bytecode.from_channel ~toplevel ~paths ch in
+        let p,d = Parse_bytecode.from_channel ~debug:need_debug ~toplevel ~paths ch in
         close_in ch;
-        p
+        p,d
   in
   if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
-  let output_program fmt = Driver.f ~toplevel ~linkall fmt d p in
+  let output_program fmt = Driver.f ~toplevel ~linkall ?source_map fmt d p in
   begin match output_file with
     | None ->
       output_program (Pretty_print.to_out_channel stdout)
@@ -63,6 +64,7 @@ let _ =
   let no_runtime = ref false in
   let linkall = ref false in
   let toplevel = ref false in
+  let source_map = ref false in
   let paths = ref [] in
   let options =
     [("-debug", Arg.String Option.Debug.set, "<name> debug module <name>");
@@ -77,6 +79,7 @@ let _ =
      ("-linkall", Arg.Set linkall, " link all primitives");
      ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
       " do not include the standard runtime");
+     ("-sourcemap", Arg.Unit (fun () -> source_map := true), " generate source map");
      ("-toplevel", Arg.Set toplevel, " compile a toplevel");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");
@@ -94,7 +97,33 @@ let _ =
   let runtime = if !no_runtime then [] else ["+runtime.js"] in
   let chop_extension s =
     try Filename.chop_extension s with Invalid_argument _ -> s in
-  f !toplevel !linkall !paths (runtime @ List.rev !js_files) !input_file
-    (match !output_file with
-       Some _ -> !output_file
-     | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") !input_file)
+  let output_f = match !output_file with
+      Some _ -> !output_file
+    | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") !input_file in
+  let source_m =
+    if !source_map
+    then
+      if Option.Optim.pretty ()
+      then begin
+        Format.eprintf "Source-map is not compatible with pretty mode@.";
+        exit 1
+      end
+      else match output_f with
+        | Some file ->
+          Some (
+            chop_extension file ^ ".map",
+            {
+              Source_map.version = 3;
+              file;
+              sourceroot = None;
+              sources = [];
+              sources_content = [];
+              names = [];
+              mappings = []
+            })
+        | None ->
+          Format.eprintf "Don't know where to output the Source-map@.";
+          exit 1
+    else None in
+  f !toplevel !linkall !paths (runtime @ List.rev !js_files)
+    !input_file output_f source_m

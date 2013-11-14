@@ -35,6 +35,7 @@ val newline : t -> unit
 
 val to_out_channel : out_channel -> t
 val to_buffer : Buffer.t -> t
+val pos : t -> int * int
 
 val set_compact : t -> bool -> unit
 val set_needed_space_function : t -> (char -> char -> bool) -> unit

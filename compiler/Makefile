@@ -8,14 +8,15 @@ lib: compiler.cma compiler.cmxa compiler.cmxs
 PACKAGES=findlib,str,unix
 
 OBJS=pretty_print.cmx util.cmx reserved.cmx varPrinter.cmx option.cmx dgraph.cmx \
-     code.cmx javascript.cmx js_output.cmx js_simpl.cmx \
+     code.cmx javascript.cmx vlq64.cmx source_map.cmx js_output.cmx js_simpl.cmx \
 	   parse_info.cmx js_token.cmx js_parser.cmx js_lexer.cmx parse_js.cmx\
 		 annot_parser.cmx annot_lexer.cmx \
      instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
 	   js_traverse.cmx js_assign.cmx \
-     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx
+     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx \
+
 
 COMPOBJS=$(OBJS) compile.cmx
 

@@ -1764,7 +1764,7 @@ let fix_min_max_int code =
 
 (****)
 
-let from_channel ?(toplevel=false) ~paths ic =
+let from_channel  ?(toplevel=false) ?(debug=false) ~paths ic =
   let toc = read_toc ic in
   let primitive_table,prim = read_primitive_table toc ic in
   let code_size = seek_section toc ic "CODE" in
@@ -1777,7 +1777,8 @@ let from_channel ?(toplevel=false) ~paths ic =
   ignore(seek_section toc ic "SYMB");
   let symbols = (input_value ic : Ident.t numtable) in
 
-  if Option.Optim.pretty () then begin
+  if debug then
+  begin
     try
       ignore(seek_section toc ic "DBUG");
       Debug.read ic;
