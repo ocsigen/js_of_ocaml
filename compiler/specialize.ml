@@ -21,17 +21,22 @@
 open Code
 open Flow
 
-let function_cardinality info x =
+let rec function_cardinality info x =
   get_approx info
     (fun x ->
-      match info.info_defs.(Var.idx x) with
-        | Expr (Closure (l, _)) -> Some (List.length l)
-        | Expr (Apply (f,l,Some n)) ->
-          let diff = n - List.length l in
-          if diff > 0
-          then Some diff
-          else None
-        | _                     -> None)
+       match info.info_defs.(Var.idx x) with
+       | Expr (Closure (l, _)) ->
+           Some (List.length l)
+       | Expr (Apply (f, l, _)) ->
+           begin match function_cardinality info f with
+             Some n ->
+               let diff = n - List.length l in
+               if diff > 0 then Some diff else None
+           | None ->
+               None
+           end
+       | _ ->
+           None)
     None
     (fun u v -> match u, v with Some n, Some m when n = m -> u | _ -> None)
     x
