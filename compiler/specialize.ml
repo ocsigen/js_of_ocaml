@@ -47,12 +47,12 @@ let specialize_instr info (acc,free_pc,extra) i =
       let n' = List.length l in
       match function_cardinality info f with
         | None -> i::acc,free_pc,extra
-        | Some n when n = n' -> Let (x, Apply (f, l, Some n))::acc,free_pc,extra
+        | Some n when n = n' -> Let (x, Apply (f, l, true))::acc,free_pc,extra
         | Some n when n < n' ->
           let v = Code.Var.fresh () in
           let args,rest = Util.take n l in
-          (Let(v, Apply(f,args,Some n)))
-          ::(Let(x,Apply(v,rest,None)))
+          (Let(v, Apply(f,args,true)))
+          ::(Let(x,Apply(v,rest,false)))
           ::acc,free_pc,extra
         | Some n when n > n' ->
           let missing = Array.init (n - n') (fun _ -> Code.Var.fresh ()) in
@@ -62,7 +62,7 @@ let specialize_instr info (acc,free_pc,extra) i =
             let params' = Array.to_list params' in
             let return' = Code.Var.fresh () in
             { params=params';
-              body = [Let(return',Apply(f,l@params',Some n))];
+              body = [Let(return',Apply(f,l@params',true))];
               branch = Return return';
               handler = None;
             } in

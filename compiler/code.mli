@@ -93,7 +93,8 @@ type prim_arg =
 
 type expr =
     Const of int
-  | Apply of Var.t * Var.t list * int option
+  | Apply of Var.t * Var.t list * bool
+                           (* if true, then # of arguments = # of parameters *)
   | Block of int * Var.t array
   | Field of Var.t * int
   | Closure of Var.t list * cont

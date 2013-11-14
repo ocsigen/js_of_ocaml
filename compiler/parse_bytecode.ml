@@ -595,7 +595,7 @@ and compile code limit pc state instrs =
         Format.printf ")@."
       end;
       compile code limit (pc + 2) (State.pop 3 state)
-        (Let (x, Apply (f, args, None)) :: instrs)
+        (Let (x, Apply (f, args, false)) :: instrs)
   | APPLY1 ->
       let f = State.accu state in
       let (x, state) = State.fresh_var state in
@@ -604,7 +604,7 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a(%a)@." Var.print x
           Var.print f Var.print y;
       compile code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Apply (f, [y], None)) :: instrs)
+        (Let (x, Apply (f, [y], false)) :: instrs)
   | APPLY2 ->
       let f = State.accu state in
       let (x, state) = State.fresh_var state in
@@ -613,7 +613,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = %a(%a, %a)@." Var.print x
         Var.print f Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 2 state)
-        (Let (x, Apply (f, [y; z], None)) :: instrs)
+        (Let (x, Apply (f, [y; z], false)) :: instrs)
   | APPLY3 ->
       let f = State.accu state in
       let (x, state) = State.fresh_var state in
@@ -623,7 +623,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = %a(%a, %a, %a)@." Var.print x
         Var.print f Var.print y Var.print z Var.print t;
       compile code limit (pc + 1) (State.pop 3 state)
-        (Let (x, Apply (f, [y; z; t], None)) :: instrs)
+        (Let (x, Apply (f, [y; z; t], false)) :: instrs)
   | APPTERM ->
       let n = getu code (pc + 1) in
       let f = State.accu state in
@@ -637,13 +637,13 @@ and compile code limit pc state instrs =
         Format.printf ")@."
       end;
       let (x, state) = State.fresh_var state in
-      (Let (x, Apply (f, l, None)) :: instrs, Return x, state)
+      (Let (x, Apply (f, l, false)) :: instrs, Return x, state)
   | APPTERM1 ->
       let f = State.accu state in
       let x = State.peek 0 state in
       if debug () then Format.printf "return %a(%a)@." Var.print f Var.print x;
       let (y, state) = State.fresh_var state in
-      (Let (y, Apply (f, [x], None)) :: instrs, Return y, state)
+      (Let (y, Apply (f, [x], false)) :: instrs, Return y, state)
   | APPTERM2 ->
       let f = State.accu state in
       let x = State.peek 0 state in
@@ -651,7 +651,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "return %a(%a, %a)@."
         Var.print f Var.print x Var.print y;
       let (z, state) = State.fresh_var state in
-      (Let (z, Apply (f, [x; y], None)) :: instrs, Return z, state)
+      (Let (z, Apply (f, [x; y], false)) :: instrs, Return z, state)
   | APPTERM3 ->
       let f = State.accu state in
       let x = State.peek 0 state in
@@ -660,7 +660,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "return %a(%a, %a, %a)@."
         Var.print f Var.print x Var.print y Var.print z;
       let (t, state) = State.fresh_var state in
-      (Let (t, Apply (f, [x; y; z], None)) :: instrs, Return t, state)
+      (Let (t, Apply (f, [x; y; z], false)) :: instrs, Return t, state)
   | RETURN ->
       let x = State.accu state in
       if debug () then Format.printf "return %a@." Var.print x;
