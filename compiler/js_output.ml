@@ -40,19 +40,19 @@ end) = struct
   let output_debug_info f pc =
     if Option.Optim.debuginfo ()
     then
-      match pc with
+      let pi = match pc with
+        | N -> None
+        | Loc pc -> D.debug_info pc
+        | Pi pi -> Some pi in
+      match pi with
+        | Some {
+          Parse_info.name=file;
+          line=l;
+          col=s } ->
+          PP.string f "/*";
+          PP.string f (Format.sprintf "<< %s %d %d>>" file l s);
+          PP.string f "*/"
         | None -> ()
-        | Some pc ->
-          match D.debug_info pc with
-            | Some {
-              Parse_info.name=file;
-              line=l;
-              col=s } ->
-              PP.string f "/*";
-              PP.string f (Format.sprintf "<<%d: %s %d %d>>"
-                             pc file l s);
-              PP.string f "*/"
-            | None -> ()
 
 
   let ident f = function
@@ -191,7 +191,7 @@ end) = struct
         l <= 15 && need_paren 15 e
       | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | ERegexp _| EUn _ | ENew _ ->
         false
-      | EFun (_, _) | EObj _ ->
+      | EFun _ | EObj _ ->
         true
 
   let best_string_quote s =
@@ -258,7 +258,7 @@ end) = struct
         PP.break f;
         expression 0 f e2;
         if l > 0 then begin PP.string f ")"; PP.end_group f end
-      | EFun ((i, l, b), pc) ->
+      | EFun (i, l, b, pc) ->
         output_debug_info f pc;
         PP.start_group f 1;
         PP.start_group f 0;
@@ -301,47 +301,17 @@ end) = struct
       | EBool b ->
         PP.string f (if b then "true" else "false")
       | ENum v ->
-        if v = infinity then
-          PP.string f "Infinity"
-        else if v = neg_infinity then begin
-          if l > 13 then
-            PP.string f "(-Infinity)"
-          else
-            PP.string f "-Infinity"
-        end else if v <> v then
-            PP.string f "NaN"
-          else begin
-            let s =
-              let vint = int_of_float v in
-            (* compiler 1000 into 1e3 *)
-              if float_of_int vint = v
-              then
-                let rec div n i =
-                  if n <> 0 && n mod 10 = 0
-                  then div (n/10) (succ i)
-                  else
-                    if i > 2
-                    then Printf.sprintf "%de%d" n i
-                    else string_of_int vint in
-                div vint 0
-              else
-                let s1 = Printf.sprintf "%.12g" v in
-                if v = float_of_string s1 then s1 else
-                  let s2 = Printf.sprintf "%.15g" v in
-                  if v = float_of_string s2 then s2 else
-                    Printf.sprintf "%.18g" v
-            in
-            if
-            (* Negative numbers may need to be parenthesized. *)
-              (l > 13 && (v < 0. || (v = 0. && 1. /. v < 0.)))
-              ||
-              (* Parenthesize as well when followed by a dot. *)
-                (l = 15)
-            then begin
-              PP.string f "("; PP.string f s; PP.string f ")"
-            end else
-              PP.string f s
-          end
+        let s = Javascript.string_of_number v in
+        let need_parent =
+          if s.[0] = '-'
+          then l > 13  (* Negative numbers may need to be parenthesized. *)
+          else l = 15  (* Parenthesize as well when followed by a dot. *)
+               && s.[0] <> 'I' (* Infinity *)
+               && s.[0] <> 'N' (* NaN *)
+        in
+        if need_parent then PP.string f "(";
+        PP.string f s;
+        if need_parent then PP.string f ")";
       | EUn (Typeof, e) ->
         if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
         PP.start_group f 0;
@@ -610,6 +580,8 @@ end) = struct
           block f b
       | Variable_statement l -> variable_declaration_list (not last) f l
       | Empty_statement -> PP.string f ";"
+      | Debugger_statement ->
+        PP.string f "debugger"; last_semi ()
       | Expression_statement (EVar _, pc)-> last_semi()
       | Expression_statement (e, pc) ->
       (* Parentheses are required when the expression
@@ -806,7 +778,7 @@ end) = struct
             None   ->
               PP.string f "return";
               last_semi()
-          | Some (EFun ((i, l, b), pc)) ->
+          | Some (EFun (i, l, b, pc)) ->
             output_debug_info f pc;
             PP.start_group f 1;
             PP.start_group f 0;

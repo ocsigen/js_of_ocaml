@@ -18,6 +18,8 @@
 
 # Specific to Js_of_ocaml
 *.byte
+*.tmpjs
+*.map
 lib/stubs.c
 runtime/runtime.js
 toplevel/toplevel.js

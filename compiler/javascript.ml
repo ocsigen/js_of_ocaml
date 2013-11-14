@@ -38,7 +38,10 @@ module Label = struct
 end
 
 type loc = Code.addr
-type node_pc = loc option
+type node_pc =
+  | Loc of loc
+  | Pi of Parse_info.t
+  | N
 
 type identifier = string
 
@@ -87,7 +90,7 @@ and expression =
   | EDot of expression * identifier
   | ENew of expression * arguments option
   | EVar of ident
-  | EFun of function_expression * node_pc
+  | EFun of function_expression
   | EStr of string * [`Bytes | `Utf8]
   | EArr of array_litteral
   | EBool of bool
@@ -118,7 +121,7 @@ and statement =
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
   | Try_statement of block * (ident * block) option * block option * node_pc
-  (* | Debugger_statement *)
+  | Debugger_statement
 
 and ('left,'right) either =
   | Left of 'left
@@ -142,7 +145,7 @@ and function_declaration =
   ident * formal_parameter_list * function_body * node_pc
 
 and function_expression =
-  ident option * formal_parameter_list * function_body
+  ident option * formal_parameter_list * function_body * node_pc
 
 and formal_parameter_list = ident list
 
@@ -172,6 +175,36 @@ let compare_ident t1 t2 =
     | S _, V _ -> -1
     | V _, S _ -> 1
 
+
+let string_of_number v =
+  if v = infinity
+  then "Infinity"
+  else if v = neg_infinity
+  then "-Infinity"
+  else if v <> v
+  then "NaN"
+  else
+    let vint = int_of_float v in
+    (* compiler 1000 into 1e3 *)
+    if float_of_int vint = v
+    then
+      let rec div n i =
+        if n <> 0 && n mod 10 = 0
+        then div (n/10) (succ i)
+        else
+        if i > 2
+        then Printf.sprintf "%de%d" n i
+        else string_of_int vint in
+      div vint 0
+    else
+      let s1 = Printf.sprintf "%.12g" v in
+      if v = float_of_string s1
+      then s1
+      else
+        let s2 = Printf.sprintf "%.15g" v in
+        if v = float_of_string s2
+        then s2
+        else  Printf.sprintf "%.18g" v
 
 module IdentSet = Set.Make(struct type t = ident let compare = compare_ident end)
 module IdentMap = Map.Make(struct type t = ident let compare = compare_ident end)

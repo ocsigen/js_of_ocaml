@@ -45,6 +45,7 @@ class map : mapper = object(m)
         List.map
           (fun (id, eo) -> m#ident id, m#expression_o eo) l)
     | Empty_statement -> Empty_statement
+    | Debugger_statement -> Debugger_statement
     | Expression_statement (e,nid) ->
       Expression_statement (m#expression e, nid)
     | If_statement(e,s,sopt) ->
@@ -119,11 +120,11 @@ class map : mapper = object(m)
   | ENew(e1,None) ->
     ENew(m#expression  e1,None)
   | EVar v -> EVar (m#ident v)
-  | EFun ((idopt, params, body) ,nid) ->
+  | EFun (idopt, params, body ,nid) ->
     let idopt = match idopt with
       | None -> None
       | Some i -> Some (m#ident i) in
-    EFun ((idopt, List.map m#ident params, m#sources body) ,nid)
+    EFun (idopt, List.map m#ident params, m#sources body ,nid)
   | EArr l ->
     EArr (List.map (fun x -> m#expression_o x) l)
   | EObj l ->
@@ -161,27 +162,34 @@ let string_replace v f s =
   then raise Not_found
   else EVar v'
 
-class str_to_var f = object(m)
+class replace_expr f = object(m)
   inherit map as super
-  method expression e = match e with
-    | EStr (s,_) -> (try EVar (f s) with Not_found -> e)
-    | _ -> super#expression e
+  method expression e = try EVar (f e) with Not_found -> super#expression e
 end
 
 open Util
 
 (* this optimisation should be done at the lowest common scope *)
-(* and for other constant *)
 class share_constant = object(m)
   inherit map as super
+
   val count = Hashtbl.create 17
+
   method expression e =
-    let _ = match e with
-      | EStr (s,k) ->
-        let n,k = try Hashtbl.find count s with Not_found -> 0,k in
-        Hashtbl.replace count s (n+1,k)
-      | _ -> ()
-    in super#expression e
+    let e = match e with
+      | EStr (s,`Utf8) when not(Util.has_backslash s) && Util.is_ascii s ->
+        let e = EStr (s,`Bytes) in
+        let n = try Hashtbl.find count e with Not_found -> 0 in
+        Hashtbl.replace count e (n+1);
+        e
+      | EStr (_,_)
+      | ENum _ ->
+        let n = try Hashtbl.find count e with Not_found -> 0 in
+        Hashtbl.replace count e (n+1);
+        e
+      | _ -> e in
+    super#expression e
+
   method sources l =
     let revl,_ = List.fold_left (fun (l,prolog) x ->
       match x with
@@ -194,21 +202,27 @@ class share_constant = object(m)
   method program p =
     let p = super#program p in
 
-    let all = Hashtbl.fold (fun x (n,k) acc ->
-        if n > 1
+    let all = Hashtbl.create 17 in
+    Hashtbl.iter (fun x n ->
+        let shareit = match x with
+          | EStr(_,_) when n > 1 -> true
+          | ENum f when n > 1 ->
+            let s = Javascript.string_of_number f in
+            let l = String.length s in
+            l > 2
+          | _ -> false in
+        if shareit
         then
           let v = Code.Var.fresh () in
-          StringMap.add x (V v) acc
-        else acc
-      ) count StringMap.empty in
-    if StringMap.is_empty all
+          Hashtbl.add all x (V v)
+      ) count ;
+    if Hashtbl.length all = 0
     then p
     else
-      let f = (fun s -> StringMap.find s all) in
-      let p = (new str_to_var f)#program p in
-      let all = StringMap.fold (fun s v acc ->
-          let _,k = Hashtbl.find count s in
-          (v, Some (EStr(s,k))) :: acc) all [] in
+      let f = Hashtbl.find all in
+      let p = (new replace_expr f)#program p in
+      let all = Hashtbl.fold (fun e v acc ->
+          (v, Some e) :: acc) all [] in
       Statement(Variable_statement all):: p
 end
 
@@ -253,6 +267,7 @@ class type freevar =
 class free =
   object(m : 'test)
     inherit map as super
+  val level : int = 0
   val mutable state_ : t = empty
   method state = state_
 
@@ -296,8 +311,8 @@ class free =
 
   method expression x = match x with
     | EVar v -> m#use_var v; x
-    | EFun ((ident,params,body),nid) ->
-      let tbody  = ({< state_ = empty  >} :> 'test) in
+    | EFun (ident,params,body,nid) ->
+      let tbody  = ({< state_ = empty; level = succ level  >} :> 'test) in
       let () = List.iter tbody#def_var params in
       let body = tbody#sources body in
       let ident = match ident with
@@ -307,12 +322,12 @@ class free =
         | None -> None in
       tbody#block params;
       m#merge_info tbody;
-      EFun ((ident,params,body),nid)
+      EFun (ident,params,body,nid)
     | _ -> super#expression x
 
   method source x = match x with
     | Function_declaration (id,params, body, nid) ->
-      let tbody = {< state_ = empty >} in
+      let tbody = {< state_ = empty; level = succ level >} in
       let () = List.iter tbody#def_var params in
       let body = tbody#sources body in
       tbody#block params;
@@ -353,7 +368,7 @@ class free =
       ForIn_statement(Right r,m#expression e2,m#statement s,nid)
     | Try_statement (b,w,f,nid) ->
       let b = m#statements b in
-      let tbody = {< state_ = empty >} in
+      let tbody = {< state_ = empty; level = level >} in
       let w = match w with
         | None -> None
         | Some (id,block) ->
@@ -462,7 +477,7 @@ class compact_vardecl = object(m)
       let l = m#translate l in
       match l with
         | [] -> Empty_statement
-        | x::l -> Expression_statement (List.fold_left (fun acc e -> ESeq(acc,e)) x l,None)
+        | x::l -> Expression_statement (List.fold_left (fun acc e -> ESeq(acc,e)) x l,N)
 
     method private translate_ex l =
       let l = m#translate l in
@@ -549,13 +564,13 @@ class compact_vardecl = object(m)
     method expression x =
       let x = super#expression x in
       match x with
-        | EFun ((ident,params,body),nid) ->
+        | EFun (ident,params,body,nid) ->
           let all = IdentSet.diff insert_ exc_ in
           let body = m#pack all body in
           (match ident with
             | Some id -> m#except id;
             | None -> ());
-          EFun ((ident,params,body),nid)
+          EFun (ident,params,body,nid)
         | _ -> x
 
     method statements l =

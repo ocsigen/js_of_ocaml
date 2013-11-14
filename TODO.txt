@@ -1,24 +1,5 @@
-Priorities
-==========
-
-- unhoist functions when possible
-
----------
-
--  stopPropagation: function(){
-         if (this.event.stopPropagation) this.event.stopPropagation();
-         else this.event.cancelBubble = true;
-         return this; }
-- check canvas availability in examples
-- website: menus + doc
-- finish planet (no cpu when not moving / not visible)
-
-Examples
---------
-- polishing
-
 Libraries
----------
+=========
 - object literals
     {:m = 1; n = "abcd":} : [> `m of int; `n of string] Js.record Js.t
   ==> usual rule for mapping field names; check for no duplicate.
@@ -44,16 +25,14 @@ Libraries
 
    <_0: t0; _1: t1; _n: tn> t
 
-Libraries
-=========
 - DOMContentLoaded (+workarounds for legacy browsers)
   ===> see jquery
-- Add expm1, log1p
-  ===> log(1+x) == (log(1+x) * x) / ((1-x) - 1)
-       (may be misoptimized...)
 
 Benchmarks/examples
 ===================
+- polishing
+- check canvas availability in examples
+- finish planet (no cpu when not moving / not visible)
 - take examples from http://shootout.alioth.debian.org/?
 - planets (+satellites?) ===> Runge-Kutta
 - 3D effects: http://gyu.que.jp/jscloth/
@@ -161,11 +140,6 @@ PERFORMANCE
         ... y .... y ... y ....
      }
 
-COMPACT MODE
-============
-- We need to insert newlines from time to time to avoid problems with
-  some routers...
-
 IMPROVEMENTS
 ============
 
@@ -207,9 +181,7 @@ COMPRESSION OPTIMIZATION
 - http://timepedia.blogspot.com/2009/08/on-reducing-size-of-compressed.html
   http://timepedia.blogspot.com/2009/11/traveling-salesman-problem-and.html
   ==> order functions by similarity
-  ==> try to always use the same arguments for functions
   ==> 7-zip is better at compressing than gzip, with the same algorithm...
-- we can remove some whitespaces but we have to look at the context...
 
 DOCUMENTATION
 =============

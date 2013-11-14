@@ -1,451 +1,96 @@
 
 
 type token =
-  | T_WITH of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 8 "js_parser.ml"
-)
-  | T_WHILE of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 13 "js_parser.ml"
-)
-  | T_VOID of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 18 "js_parser.ml"
-)
-  | T_VIRTUAL_SEMICOLON of (
-# 295 "js_parser.mly"
-       (Parse_info.t)
-# 23 "js_parser.ml"
-)
-  | T_VAR of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 28 "js_parser.ml"
-)
-  | T_TYPEOF of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 33 "js_parser.ml"
-)
-  | T_TRY of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 38 "js_parser.ml"
-)
-  | T_TRUE of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 43 "js_parser.ml"
-)
-  | T_THROW of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 48 "js_parser.ml"
-)
-  | T_THIS of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 53 "js_parser.ml"
-)
-  | T_SWITCH of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 58 "js_parser.ml"
-)
-  | T_STRING of (
-# 248 "js_parser.mly"
-      (string * Parse_info.t)
-# 63 "js_parser.ml"
-)
-  | T_STRICT_NOT_EQUAL of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 68 "js_parser.ml"
-)
-  | T_STRICT_EQUAL of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 73 "js_parser.ml"
-)
-  | T_SEMICOLON of (
-# 262 "js_parser.mly"
-       (Parse_info.t)
-# 78 "js_parser.ml"
-)
-  | T_RSHIFT_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 83 "js_parser.ml"
-)
-  | T_RSHIFT3_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 88 "js_parser.ml"
-)
-  | T_RSHIFT3 of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 93 "js_parser.ml"
-)
-  | T_RSHIFT of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 98 "js_parser.ml"
-)
-  | T_RPAREN of (
-# 262 "js_parser.mly"
-       (Parse_info.t)
-# 103 "js_parser.ml"
-)
-  | T_RETURN of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 108 "js_parser.ml"
-)
-  | T_REGEX of (
-# 249 "js_parser.mly"
-      (string * Parse_info.t)
-# 113 "js_parser.ml"
-)
-  | T_RCURLY of (
-# 262 "js_parser.mly"
-       (Parse_info.t)
-# 118 "js_parser.ml"
-)
-  | T_RBRACKET of (
-# 262 "js_parser.mly"
-       (Parse_info.t)
-# 123 "js_parser.ml"
-)
-  | T_PLUS_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 128 "js_parser.ml"
-)
-  | T_PLUS of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 133 "js_parser.ml"
-)
-  | T_PLING of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 138 "js_parser.ml"
-)
-  | T_PERIOD of (
-# 262 "js_parser.mly"
-       (Parse_info.t)
-# 143 "js_parser.ml"
-)
-  | T_OR of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 148 "js_parser.ml"
-)
-  | T_NUMBER of (
-# 246 "js_parser.mly"
-      (string * [`Float of float | `Int of int] * Parse_info.t)
-# 153 "js_parser.ml"
-)
-  | T_NULL of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 158 "js_parser.ml"
-)
-  | T_NOT_EQUAL of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 163 "js_parser.ml"
-)
-  | T_NOT of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 168 "js_parser.ml"
-)
-  | T_NEW of (
-# 259 "js_parser.mly"
-       (Parse_info.t)
-# 173 "js_parser.ml"
-)
-  | T_MULT_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 178 "js_parser.ml"
-)
-  | T_MULT of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 183 "js_parser.ml"
-)
-  | T_MOD_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 188 "js_parser.ml"
-)
-  | T_MOD of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 193 "js_parser.ml"
-)
-  | T_MINUS_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 198 "js_parser.ml"
-)
-  | T_MINUS of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 203 "js_parser.ml"
-)
-  | T_LSHIFT_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 208 "js_parser.ml"
-)
-  | T_LSHIFT of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 213 "js_parser.ml"
-)
-  | T_LPAREN of (
-# 262 "js_parser.mly"
-       (Parse_info.t)
-# 218 "js_parser.ml"
-)
-  | T_LESS_THAN_EQUAL of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 223 "js_parser.ml"
-)
-  | T_LESS_THAN of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 228 "js_parser.ml"
-)
-  | T_LCURLY of (
-# 262 "js_parser.mly"
-       (Parse_info.t)
-# 233 "js_parser.ml"
-)
-  | T_LBRACKET of (
-# 262 "js_parser.mly"
-       (Parse_info.t)
-# 238 "js_parser.ml"
-)
-  | T_INSTANCEOF of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 243 "js_parser.ml"
-)
-  | T_INCR_NB of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 248 "js_parser.ml"
-)
-  | T_INCR of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 253 "js_parser.ml"
-)
-  | T_IN of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 258 "js_parser.ml"
-)
-  | T_IF of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 263 "js_parser.ml"
-)
-  | T_IDENTIFIER of (
-# 247 "js_parser.mly"
-      (string * Parse_info.t)
-# 268 "js_parser.ml"
-)
-  | T_GREATER_THAN_EQUAL of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 273 "js_parser.ml"
-)
-  | T_GREATER_THAN of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 278 "js_parser.ml"
-)
-  | T_FUNCTION of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 283 "js_parser.ml"
-)
-  | T_FOR of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 288 "js_parser.ml"
-)
-  | T_FINALLY of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 293 "js_parser.ml"
-)
-  | T_FALSE of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 298 "js_parser.ml"
-)
-  | T_EQUAL of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 303 "js_parser.ml"
-)
-  | T_ELSE of (
-# 257 "js_parser.mly"
-       (Parse_info.t)
-# 308 "js_parser.ml"
-)
-  | T_DO of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 313 "js_parser.ml"
-)
-  | T_DIV_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 318 "js_parser.ml"
-)
-  | T_DIV of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 323 "js_parser.ml"
-)
-  | T_DELETE of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 328 "js_parser.ml"
-)
-  | T_DEFAULT of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 333 "js_parser.ml"
-)
-  | T_DECR_NB of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 338 "js_parser.ml"
-)
-  | T_DECR of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 343 "js_parser.ml"
-)
-  | T_CONTINUE of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 348 "js_parser.ml"
-)
-  | T_COMMA of (
-# 262 "js_parser.mly"
-       (Parse_info.t)
-# 353 "js_parser.ml"
-)
-  | T_COLON of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 358 "js_parser.ml"
-)
-  | T_CATCH of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 363 "js_parser.ml"
-)
-  | T_CASE of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 368 "js_parser.ml"
-)
-  | T_BREAK of (
-# 252 "js_parser.mly"
-       (Parse_info.t)
-# 373 "js_parser.ml"
-)
-  | T_BIT_XOR_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 378 "js_parser.ml"
-)
-  | T_BIT_XOR of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 383 "js_parser.ml"
-)
-  | T_BIT_OR_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 388 "js_parser.ml"
-)
-  | T_BIT_OR of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 393 "js_parser.ml"
-)
-  | T_BIT_NOT of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 398 "js_parser.ml"
-)
-  | T_BIT_AND_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 403 "js_parser.ml"
-)
-  | T_BIT_AND of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 408 "js_parser.ml"
-)
-  | T_ASSIGN of (
-# 271 "js_parser.mly"
-       (Parse_info.t)
-# 413 "js_parser.ml"
-)
-  | T_AND of (
-# 276 "js_parser.mly"
-       (Parse_info.t)
-# 418 "js_parser.ml"
-)
-  | TUnknown of (
-# 298 "js_parser.mly"
-       (Parse_info.t)
-# 423 "js_parser.ml"
-)
-  | TCommentSpace of (
-# 239 "js_parser.mly"
-       (Parse_info.t * string)
-# 428 "js_parser.ml"
-)
-  | TCommentNewline of (
-# 239 "js_parser.mly"
-       (Parse_info.t * string)
-# 433 "js_parser.ml"
-)
-  | TCommentML of (
-# 239 "js_parser.mly"
-       (Parse_info.t * string)
-# 438 "js_parser.ml"
-)
-  | TComment of (
-# 239 "js_parser.mly"
-       (Parse_info.t * string)
-# 443 "js_parser.ml"
-)
-  | EOF of (
-# 299 "js_parser.mly"
-       (Parse_info.t)
-# 448 "js_parser.ml"
-)
+  | T_WITH of Parse_info.t
+  | T_WHILE of Parse_info.t
+  | T_VOID of Parse_info.t
+  | T_VIRTUAL_SEMICOLON of Parse_info.t
+  | T_VAR of Parse_info.t
+  | T_TYPEOF of Parse_info.t
+  | T_TRY of Parse_info.t
+  | T_TRUE of Parse_info.t
+  | T_THROW of Parse_info.t
+  | T_THIS of Parse_info.t
+  | T_SWITCH of Parse_info.t
+  | T_STRING of (string * Parse_info.t)
+  | T_STRICT_NOT_EQUAL of Parse_info.t
+  | T_STRICT_EQUAL of Parse_info.t
+  | T_SEMICOLON of Parse_info.t
+  | T_RSHIFT_ASSIGN of Parse_info.t
+  | T_RSHIFT3_ASSIGN of Parse_info.t
+  | T_RSHIFT3 of Parse_info.t
+  | T_RSHIFT of Parse_info.t
+  | T_RPAREN of Parse_info.t
+  | T_RETURN of Parse_info.t
+  | T_REGEX of (string * Parse_info.t)
+  | T_RCURLY of Parse_info.t
+  | T_RBRACKET of Parse_info.t
+  | T_PLUS_ASSIGN of Parse_info.t
+  | T_PLUS of Parse_info.t
+  | T_PLING of Parse_info.t
+  | T_PERIOD of Parse_info.t
+  | T_OR of Parse_info.t
+  | T_NUMBER of (string * [`Float of float | `Int of int] * Parse_info.t)
+  | T_NULL of Parse_info.t
+  | T_NOT_EQUAL of Parse_info.t
+  | T_NOT of Parse_info.t
+  | T_NEW of Parse_info.t
+  | T_MULT_ASSIGN of Parse_info.t
+  | T_MULT of Parse_info.t
+  | T_MOD_ASSIGN of Parse_info.t
+  | T_MOD of Parse_info.t
+  | T_MINUS_ASSIGN of Parse_info.t
+  | T_MINUS of Parse_info.t
+  | T_LSHIFT_ASSIGN of Parse_info.t
+  | T_LSHIFT of Parse_info.t
+  | T_LPAREN of Parse_info.t
+  | T_LESS_THAN_EQUAL of Parse_info.t
+  | T_LESS_THAN of Parse_info.t
+  | T_LCURLY of Parse_info.t
+  | T_LBRACKET of Parse_info.t
+  | T_INSTANCEOF of Parse_info.t
+  | T_INCR_NB of Parse_info.t
+  | T_INCR of Parse_info.t
+  | T_IN of Parse_info.t
+  | T_IF of Parse_info.t
+  | T_IDENTIFIER of (string * Parse_info.t)
+  | T_GREATER_THAN_EQUAL of Parse_info.t
+  | T_GREATER_THAN of Parse_info.t
+  | T_FUNCTION of Parse_info.t
+  | T_FOR of Parse_info.t
+  | T_FINALLY of Parse_info.t
+  | T_FALSE of Parse_info.t
+  | T_EQUAL of Parse_info.t
+  | T_ELSE of Parse_info.t
+  | T_DO of Parse_info.t
+  | T_DIV_ASSIGN of Parse_info.t
+  | T_DIV of Parse_info.t
+  | T_DELETE of Parse_info.t
+  | T_DEFAULT of Parse_info.t
+  | T_DECR_NB of Parse_info.t
+  | T_DECR of Parse_info.t
+  | T_CONTINUE of Parse_info.t
+  | T_COMMA of Parse_info.t
+  | T_COLON of Parse_info.t
+  | T_CATCH of Parse_info.t
+  | T_CASE of Parse_info.t
+  | T_BREAK of Parse_info.t
+  | T_BIT_XOR_ASSIGN of Parse_info.t
+  | T_BIT_XOR of Parse_info.t
+  | T_BIT_OR_ASSIGN of Parse_info.t
+  | T_BIT_OR of Parse_info.t
+  | T_BIT_NOT of Parse_info.t
+  | T_BIT_AND_ASSIGN of Parse_info.t
+  | T_BIT_AND of Parse_info.t
+  | T_ASSIGN of Parse_info.t
+  | T_AND of Parse_info.t
+  | T_DEBUGGER of Parse_info.t
+  | TUnknown of Parse_info.t
+  | TCommentSpace of (Parse_info.t * string)
+  | TCommentNewline of (Parse_info.t * string)
+  | TCommentML of (Parse_info.t * string)
+  | TComment of (Parse_info.t * string)
+  | EOF of Parse_info.t
 
 
 
@@ -457,6 +102,7 @@ let info_of_tok = function
   | TComment (ii,_) -> ii
   | TCommentML (ii,_) -> ii
   | EOF ii -> ii
+  | T_DEBUGGER ii -> ii
 
   | T_NUMBER (s, _,ii) -> ii
   | T_IDENTIFIER (s, ii) -> ii
@@ -552,6 +198,8 @@ let string_of_tok = function
   | TComment (ii,_) -> "COMMENT"
   | TCommentML (ii,_) -> "COMMENT"
   | EOF ii -> "EOF"
+
+  | T_DEBUGGER ii -> "DEBUGGER"
 
   | T_NUMBER (s, _,ii) -> "T_NUMBER"
   | T_IDENTIFIER (s, ii) -> "T_IDENTIFIER"

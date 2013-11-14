@@ -60,6 +60,7 @@ let var name = J.S {J.name;J.var=None}
  T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
  T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
  T_BREAK T_CASE T_CATCH T_CONTINUE T_DEFAULT T_DO T_FINALLY T_FOR
+ T_DEBUGGER
 
 %token <Parse_info.t> T_ELSE
 
@@ -177,6 +178,7 @@ statement_need_semi:
  | break_statement      { $1 }
  | return_statement     { $1 }
  | throw_statement      { $1 }
+ | debugger_statement   { $1 }
 
 statement:
  | s=statement_no_semi {s}
@@ -240,8 +242,11 @@ initializeur:
 empty_statement:
  | T_SEMICOLON { J.Empty_statement }
 
+debugger_statement:
+ | T_DEBUGGER { J.Debugger_statement }
+
 expression_statement:
- | expression_no_statement { J.Expression_statement ($1, None) }
+ | expression_no_statement { J.Expression_statement ($1, J.N) }
 
 
 if_statement:
@@ -258,25 +263,25 @@ do_while_statement:
 iteration_statement:
  | T_WHILE T_LPAREN expression T_RPAREN statement
      { J.While_statement ($3, $5) }
- | T_FOR T_LPAREN
+ | pi=T_FOR T_LPAREN
      option(expression_no_in) T_SEMICOLON
      option(expression) T_SEMICOLON
      option(expression)
      T_RPAREN statement
-     { J.For_statement ( J.Left $3, $5, $7, $9, None) }
- | T_FOR T_LPAREN
+     { J.For_statement ( J.Left $3, $5, $7, $9, J.Pi pi) }
+ | pi=T_FOR T_LPAREN
      T_VAR separated_nonempty_list(T_COMMA,variable_declaration_no_in) T_SEMICOLON
      option(expression) T_SEMICOLON
      option(expression)
      T_RPAREN statement
      {
-       J.For_statement (J.Right($4), $6, $8, $10, None)
+       J.For_statement (J.Right($4), $6, $8, $10, J.Pi pi)
      }
- | T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement
-     { J.ForIn_statement (J.Left $3,$5,$7,None) }
- | T_FOR T_LPAREN T_VAR variable_declaration_no_in T_IN expression T_RPAREN
+ | pi=T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement
+     { J.ForIn_statement (J.Left $3,$5,$7,J.Pi pi) }
+ | pi=T_FOR T_LPAREN T_VAR variable_declaration_no_in T_IN expression T_RPAREN
      statement
-     { J.ForIn_statement ( J.Right $4, $6, $8, None) }
+     { J.ForIn_statement ( J.Right $4, $6, $8, J.Pi pi) }
 
 variable_declaration_no_in:
  | variable option(initializer_no_in) { $1, $2 }
@@ -310,8 +315,8 @@ throw_statement:
 
 
 try_statement:
- | T_TRY block catch option(finally) { J.Try_statement ($2, Some $3, $4,None) }
- | T_TRY block       finally { J.Try_statement ($2, None, Some $3,None) }
+ | pi=T_TRY block catch option(finally) { J.Try_statement ($2, Some $3, $4,J.Pi pi) }
+ | pi=T_TRY block       finally { J.Try_statement ($2, None, Some $3,J.Pi pi) }
 
 
 catch:
@@ -336,15 +341,15 @@ default_clause:
 /*(*************************************************************************)*/
 
 function_declaration:
- | T_FUNCTION v=variable T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
+ | pi=T_FUNCTION v=variable T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
      b=curly_block(function_body)
-     { v, args, b, None }
+     { v, args, b, J.Pi pi }
 
 
 function_expression:
- | T_FUNCTION v=option(variable) T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
+ | pi=T_FUNCTION v=option(variable) T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
    b=curly_block(function_body)
-   { J.EFun ((v, args, b),None) }
+   { J.EFun (v, args, b, J.Pi pi) }
 
 function_body:
  | l=source_elements  { l }

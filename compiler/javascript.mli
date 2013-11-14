@@ -27,7 +27,10 @@ module Label : sig
 end
 
 type loc = Code.addr
-type node_pc = loc option
+type node_pc =
+  | Loc of loc
+  | Pi of Parse_info.t
+  | N
 
 (* A.3 Expressions *)
 
@@ -76,7 +79,7 @@ and expression =
   | EDot of expression * identifier
   | ENew of expression * arguments option
   | EVar of ident
-  | EFun of function_expression * node_pc
+  | EFun of function_expression
   | EStr of string * [`Bytes | `Utf8]
       (* A string can either be composed of a sequence of bytes, or be
          UTF-8 encoded. In the second case, the string may contain
@@ -112,9 +115,8 @@ and statement =
   | Switch_statement of expression * case_clause list * statement_list option
   | Throw_statement of expression
   | Try_statement of block * (ident * block) option * block option * node_pc
-(*
+
   | Debugger_statement
-*)
 
 and ('left,'right) either =
   | Left of 'left
@@ -139,7 +141,7 @@ and function_declaration =
   ident * formal_parameter_list * function_body * node_pc
 
 and function_expression =
-  ident option * formal_parameter_list * function_body
+  ident option * formal_parameter_list * function_body * node_pc
 
 and formal_parameter_list = ident list
 
@@ -154,6 +156,6 @@ and source_element =
   | Function_declaration of function_declaration
 
 val compare_ident : ident -> ident -> int
-
+val string_of_number : float -> string
 module IdentSet : Set.S with type elt = ident
 module IdentMap : Map.S with type key = ident

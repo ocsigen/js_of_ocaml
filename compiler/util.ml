@@ -86,15 +86,6 @@ let rec take' acc n l =
     | [] -> acc,[]
     | x::xs -> take' (x::acc) (pred n) xs
 
-
-let rec partition_aux n acc l =
-  let l',res = take' [] n l in
-  match res with
-    | [] -> l'::acc
-    | l -> partition_aux n (l'::acc) l
-
-let split_rev n l = partition_aux n [] l
-
 let take n l =
   let x,xs = take' [] n l in
   List.rev x, xs
@@ -107,3 +98,18 @@ module Timer = struct
   let get t = !timer () -. t
   let print f t = Format.fprintf f "%.2f" (get t)
 end
+
+
+let is_ascii s =
+  let res = ref true in
+  for i = 0 to String.length s - 1 do
+    if s.[i] > '\127' then res := false
+  done;
+  !res
+
+let has_backslash s =
+  let res = ref false in
+  for i = 0 to String.length s - 1 do
+    if s.[i] = '\\' then res := true
+  done;
+  !res

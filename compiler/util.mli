@@ -35,8 +35,11 @@ val find_pkg_dir : string -> string
 val find_in_paths : ?pkg:string -> string list -> string -> string
 val read_file : string -> string
 
-val split_rev : int -> 'a list -> 'a list list
 val take : int -> 'a list -> 'a list * 'a list
+
+val is_ascii : string -> bool
+val has_backslash : string -> bool
+
 module Timer : sig
   type t
   val init : (unit -> float) -> unit
