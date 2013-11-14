@@ -58,7 +58,6 @@ let eval_prim x =
         | _ -> fun _ -> None in
       let float_binop_bool f = float_binop_aux (fun i j -> Int (if f i j then 1 else 0)) in
       (match name, l with
-        | "caml_ml_string_length", [String s] -> Some (Int (String.length s))
         (* int *)
         | "%int_add", _ -> int_binop (Int.add)
         | "%int_sub", _ -> int_binop (Int.sub)
@@ -108,6 +107,22 @@ let eval_prim x =
 
 exception Not_constant
 
+let the_length_of info x =
+  get_approx info
+    (fun x ->
+       match info.info_defs.(Var.idx x) with
+         | Expr (Constant (String s))
+         | Expr (Constant (IString s)) -> Some (String.length s)
+         | Expr (Prim (Extern "caml_create_string",[arg])) ->
+           the_int info arg
+         | _ -> None)
+    None
+    (fun u v -> match u,v with
+       | Some l, Some l' when l = l' -> Some l
+       | _ -> None)
+    x
+
+
 let eval_instr info i =
   match i with
     | Let (x, Prim (Extern ("caml_js_equals"|"caml_equal"), [y;z])) ->
@@ -120,6 +135,16 @@ let eval_instr info i =
           Let (x , Constant (Int c))
         | _ -> i
       end
+    | Let (x,Prim (Extern "caml_ml_string_length", [s])) ->
+      let c = match s with
+        | Pc (String s)
+        | Pc (IString s) -> Some (String.length s)
+        | Pv v -> the_length_of info v
+        | _ -> None
+      in
+      (match c with
+        | None -> i
+        | Some c -> Let(x,Constant (Int c)))
     | Let (x,Prim (prim, prim_args)) ->
       begin
         let prim_args' = List.map (fun x ->
