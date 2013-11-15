@@ -190,46 +190,50 @@ let link formatter ~standalone ?linkall js =
   else js
 
 
-let check_js js =
-  let traverse = new Js_traverse.free in
-  let js = traverse#program js in
-  let free = traverse#get_free_name in
-
-  let prim = Primitive.get_external () in
-  let prov = Linker.get_provided () in
-
-  let all_external = StringSet.union prim prov in
-
-  let missing = StringSet.inter free all_external in
-
-  let other =  StringSet.diff free missing in
-
-  let res = VarPrinter.get_reserved() in
-  let other = StringSet.diff other res in
-  if not (StringSet.is_empty missing)
-  then begin
-    Format.eprintf "Missing primitives:@.";
-    StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
-  end;
-
-  let probably_prov = StringSet.inter other Reserved.provided in
-  let other = StringSet.diff other probably_prov in
-
-  if not (StringSet.is_empty other) && debug_linker ()
+let check_js ~standalone js =
+  if standalone
   then
     begin
-      Format.eprintf "Missing variables:@.";
-      StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other
-    end;
+      let traverse = new Js_traverse.free in
+      let js = traverse#program js in
+      let free = traverse#get_free_name in
 
-  if not (StringSet.is_empty probably_prov) && debug_linker ()
-  then
-    begin
-      Format.eprintf "Variables provided by the browser:@.";
-      StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov
-    end;
-  js
+      let prim = Primitive.get_external () in
+      let prov = Linker.get_provided () in
 
+      let all_external = StringSet.union prim prov in
+
+      let missing = StringSet.inter free all_external in
+
+      let other =  StringSet.diff free missing in
+
+      let res = VarPrinter.get_reserved() in
+      let other = StringSet.diff other res in
+      if not (StringSet.is_empty missing)
+      then begin
+        Format.eprintf "Missing primitives:@.";
+        StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
+      end;
+
+      let probably_prov = StringSet.inter other Reserved.provided in
+      let other = StringSet.diff other probably_prov in
+
+      if not (StringSet.is_empty other) && debug_linker ()
+      then
+        begin
+          Format.eprintf "Missing variables:@.";
+          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other
+        end;
+
+      if not (StringSet.is_empty probably_prov) && debug_linker ()
+      then
+        begin
+          Format.eprintf "Variables provided by the browser:@.";
+          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov
+        end;
+      js
+    end
+  else js
 
 let coloring js =
   if times ()
@@ -305,7 +309,7 @@ let f ?(standalone=true) ?toplevel ?linkall ?source_map formatter d =
 
   coloring >>
 
-  check_js >>
+  check_js ~standalone >>
   header formatter ~standalone >>
   output formatter ?source_map d
 
