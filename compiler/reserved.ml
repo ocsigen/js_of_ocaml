@@ -64,6 +64,10 @@ let provided = List.fold_left (fun acc x -> StringSet.add x acc)
   "event";
   "location";
   "window";
+  "document";
+  "eval";
+  "navigator";
+  "self";
 
   "Array";
   "Date";
@@ -72,9 +76,20 @@ let provided = List.fold_left (fun acc x -> StringSet.add x acc)
   "Object";
   "RegExp";
   "String";
+  "Boolean";
+  "Number";
+
+  "Infinity";
+  "isFinite";
 
   "ActiveXObject";
   "XMLHttpRequest";
+  "XDomainRequest";
+
+  "DOMException";
+  "Error";
+  "SyntaxError";
+  "arguments";
 
   "decodeURI";
   "decodeURIComponent";

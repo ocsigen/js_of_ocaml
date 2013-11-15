@@ -165,6 +165,9 @@ let header formatter ~standalone js =
   js
 
 let debug_linker = Option.Debug.find "linker"
+
+let global_object = "joo_global_object"
+
 let link formatter ~standalone ?linkall js =
   if standalone
   then
@@ -181,37 +184,52 @@ let link formatter ~standalone ?linkall js =
       let all_external = StringSet.union prim prov in
 
       let used = StringSet.inter free all_external in
-
-      let other =  StringSet.diff free used in
-
-      let res = VarPrinter.get_reserved() in
-      let other = StringSet.diff other res in
-      let js,missing = Linker.resolve_deps ?linkall js used in
-      if not (StringSet.is_empty missing)
-      then begin
-        Format.eprintf "Missing primitives:@.";
-        StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
-      end;
-
-      let probably_prov = StringSet.inter other Reserved.provided in
-      let other = StringSet.diff other probably_prov in
-
-      if not (StringSet.is_empty other) && debug_linker ()
-      then
-        begin
-          Format.eprintf "Missing variables:@.";
-          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other
-        end;
-
-      if not (StringSet.is_empty probably_prov) && debug_linker ()
-      then
-        begin
-          Format.eprintf "Variables provided by the browser:@.";
-          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov
-        end;
+      let js,_missing = Linker.resolve_deps ?linkall js used in
       js
     end
   else js
+
+
+let check_js js =
+  let traverse = new Js_traverse.free in
+  let js = traverse#program js in
+  let free = traverse#get_free_name in
+
+  let prim = Primitive.get_external () in
+  let prov = Linker.get_provided () in
+
+  let all_external = StringSet.union prim prov in
+
+  let missing = StringSet.inter free all_external in
+
+  let other =  StringSet.diff free missing in
+
+  let res = VarPrinter.get_reserved() in
+  let other = StringSet.diff other res in
+  if not (StringSet.is_empty missing)
+  then begin
+    Format.eprintf "Missing primitives:@.";
+    StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
+  end;
+
+  let probably_prov = StringSet.inter other Reserved.provided in
+  let other = StringSet.diff other probably_prov in
+
+  if not (StringSet.is_empty other) && debug_linker ()
+  then
+    begin
+      Format.eprintf "Missing variables:@.";
+      StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other
+    end;
+
+  if not (StringSet.is_empty probably_prov) && debug_linker ()
+  then
+    begin
+      Format.eprintf "Variables provided by the browser:@.";
+      StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov
+    end;
+  js
+
 
 let coloring js =
   if times ()
@@ -245,7 +263,7 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
 
   let js = if standalone then
       let f =
-        J.EFun (None, [J.S {J.name = "joo_global_object"; var=None }], use_strict js,J.N) in
+        J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js,J.N) in
       [J.Statement (
         J.Expression_statement
           ((J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])), J.N))]
@@ -260,7 +278,7 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
     then
       let keeps =
         if toplevel
-        then StringSet.add "joo_global_object" (Primitive.get_external ())
+        then StringSet.add global_object (Primitive.get_external ())
         else StringSet.empty in
       let keeps = StringSet.add "caml_get_global_data" keeps in
       (new Js_traverse.rename_variable keeps)#program js
@@ -287,6 +305,7 @@ let f ?(standalone=true) ?toplevel ?linkall ?source_map formatter d =
 
   coloring >>
 
+  check_js >>
   header formatter ~standalone >>
   output formatter ?source_map d
 
