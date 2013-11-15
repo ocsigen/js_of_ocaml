@@ -199,7 +199,7 @@ let resolve_deps ?(linkall = false) program used =
   let visited =
     List.fold_left
       (fun visited id -> resolve_dep_rec visited [] id)
-      {ids=IntSet.empty;codes=[program]} (List.rev !always_included)
+      {ids=IntSet.empty;codes=[program]} !always_included
   in
   let (missing, visited) =
     StringSet.fold
