@@ -39,6 +39,8 @@ module Common = Viewer_common.F (struct
   let scale ctx ~sx ~sy = ctx##scale (sx, sy)
   let translate ctx ~tx ~ty = ctx##translate (tx, ty)
 
+  let set_line_width ctx w = ctx##lineWidth <- w
+
   let begin_path ctx = ctx##beginPath ()
   let close_path ctx = ctx##closePath ()
   let move_to ctx ~x ~y = ctx##moveTo (x, y)
@@ -56,6 +58,7 @@ module Common = Viewer_common.F (struct
   let draw_text (ctx:ctx) x y txt font fill_color stroke_color =
      ctx##font <- font;
      ctx##textAlign <- Js.string "center";
+     ctx##textBaseline <- Js.string "middle";
      begin match fill_color with
        Some c -> ctx##fillStyle <- c; ctx##fillText (txt, x, y)
      | None   -> ()
@@ -93,10 +96,7 @@ let redraw st s h v (canvas : Html.canvasElement Js.t) =
   let height = canvas##height in
 (*Firebug.console##time (Js.string "draw");*)
   redraw st s h v canvas
-    {x = 0; y = 0; width = width; height = height} 0 0 width height;
-  begin try
-    ignore (canvas##getContext(Html._2d_)##getImageData (0., 0., 1., 1.)) 
-  with _ -> () end
+    {x = 0; y = 0; width = width; height = height} 0 0 width height
 (*
 ;Firebug.console##timeEnd (Js.string "draw")
 ;Firebug.console##log_2 (Js.string "draw", Js.date##now())
@@ -245,6 +245,14 @@ Firebug.console##log_2(Js.string "update", Js.date##now());
     if vadj#value < 0. then vadj#set_value 0.;
     if vadj#value > mv then vadj#set_value mv;
 
+    if not !redraw_queued then begin
+      redraw_queued := true;
+      Html._requestAnimationFrame
+        (Js.wrap_callback (fun () ->
+           redraw_queued := false;
+           redraw st (get_scale ()) hadj#value vadj#value canvas))
+    end
+(*
     if force then redraw st (get_scale ()) hadj#value vadj#value canvas else
     if not !redraw_queued then
       ignore (redraw_queued := true;
@@ -255,6 +263,7 @@ Firebug.console##log(Js.string "sleep");
               redraw_queued := false;
               redraw st (get_scale ()) hadj#value vadj#value canvas;
               Lwt.return ())
+*)
   in
 
   let a = allocation () in
