@@ -97,12 +97,12 @@ let encode_multipart boundary elements =
      (fun v ->
        ignore(b##push(Js.string ("--"^boundary^"\r\n")));
        match v with
-	 | name, `String value ->
+	 | name,`String value ->
 	   ignore(b##push_3(Js.string ("Content-Disposition: form-data; name=\"" ^ name ^ "\"\r\n\r\n"),
 			    value,
 			    Js.string "\r\n"));
 	   return ()
-	 | name, `File value ->
+	 | name,`File value ->
 	   File.readAsBinaryString (value :> File.blob Js.t)
 	   >>= (fun file ->
 	     ignore(b##push_4(Js.string ("Content-Disposition: form-data; name=\"" ^ name ^ "\"; filename=\""),
@@ -157,7 +157,7 @@ let extract_get_param url =
 let perform_raw_url
     ?(headers = [])
     ?content_type
-    ?(post_args:(string * Form.form_elt) list option)
+    ?(post_args:(string * string) list option)
     ?(get_args=[])
     ?(form_arg:Form.form_contents option)
     ?(check_headers=(fun _ _ -> true))
@@ -167,21 +167,17 @@ let perform_raw_url
   let form_arg =
     match form_arg with
       | None ->
-	(match post_args with
+	( match post_args with
 	  | None -> None
 	  | Some post_args ->
 	    let contents = Form.empty_form_contents () in
-	    List.iter (fun (name, value) ->
-              Form.append contents (name, value))
-              post_args;
-	    Some contents)
+	    List.iter (fun (name,value) -> Form.append contents (name,`String (string value))) post_args;
+	    Some contents )
       | Some form_arg ->
-	(match post_args with
+	( match post_args with
 	  | None -> ()
 	  | Some post_args ->
-	    List.iter (fun (name, value) ->
-              Form.append form_arg (name, value))
-              post_args);
+	    List.iter (fun (name,value) -> Form.append form_arg (name,`String (string value))) post_args; );
 	Some form_arg
   in
 
@@ -299,3 +295,4 @@ let perform
     (Url.string_of_url url)
 
 let get s = perform_raw_url s
+
