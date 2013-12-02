@@ -1502,7 +1502,7 @@ let f ch ?(standalone=true) ?linkall ((pc, blocks, _) as p) dl live_vars =
   if !compact then Pretty_print.set_compact ch true;
   if standalone then begin
     Pretty_print.string ch
-      "// This program was compiled from OCaml by js_of_ocaml 1.3";
+      "// This program was compiled from OCaml by js_of_ocaml 1.4";
     Pretty_print.newline ch;
     let missing = Linker.resolve_deps ?linkall !compact ch (Primitive.get_used ()) in
     list_missing missing

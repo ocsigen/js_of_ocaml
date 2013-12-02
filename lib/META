@@ -1,5 +1,5 @@
 description = "Js_of_ocaml library"
-version = "dev"
+version = "1.4"
 archive(byte) = "js_of_ocaml.cma"
 requires = "js_of_ocaml.syntax,lwt"
 

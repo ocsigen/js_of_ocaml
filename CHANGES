@@ -1,7 +1,20 @@
-===== dev =====
+===== 1.4 (2013-12-01) =====
 
  * Features/Changes
- ** Add -linkall option to keep all provided primitives
+ ** Add missing primitives for OCaml 4.01
+ ** Improved Dom bindings (Hugo Heuzard and many other contributors)
+ ** Add -linkall option to keep all provided primitives (Pierre Chambard)
+ ** Improved tail-call optimization (Hugo Heuzard)
+ ** Added optimization levels: -o {1,2,3} (Hugo Heuzard)
+
+ * Bugfixes
+ ** Fixed some incorrect Dom bindings
+ ** Fixed hypot primitive (Pierre Chambard)
+ ** Fixed tail call optimization bug (some incorrect code was
+    generated when the number of arguments did not match the number of
+    function parameters)
+ ** Fixed a bug with empty strings
+ ** Fixed weak.js (primitives for Weak module)
 
 ===== 1.3 (2012-11-28) =====
 
