@@ -272,7 +272,7 @@ val array_empty : 'a js_array t constr
       [jsnew array_empty ()] returns an empty array. *)
 val array_length : (int -> 'a js_array t) constr
   (** Constructor of [Array] objects.  The expression
-      [jsnew array_empty (l)] returns an array of length [l]. *)
+      [jsnew array_length (l)] returns an array of length [l]. *)
 
 val array_get : 'a #js_array t -> int -> 'a optdef
   (** Array access: [array_get a i] returns the element at index [i]
