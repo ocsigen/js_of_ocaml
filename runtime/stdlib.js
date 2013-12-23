@@ -761,7 +761,7 @@ function caml_ml_flush (oc) {
 //Provides: caml_ml_output
 //Requires: caml_ml_output_buffer
 //Requires: caml_ml_flush
-//Requires: MlString caml_create_string caml_blit_string
+//Requires: MlString, caml_create_string, caml_blit_string
 function caml_ml_output (oc,buffer,offset,len) {
     var string;
     if(offset == 0 && buffer.getLen() == len)
