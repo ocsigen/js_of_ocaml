@@ -193,13 +193,13 @@ rule initial tokinfo prev = parse
   | "0" ['X''x'] hexa+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, `Int (Int32.of_string s), info)
+      T_NUMBER (s, `Int (float_of_string s), info)
     }
   | '0'['0'-'7']+ {
       let s = tok lexbuf in
       let s' = String.sub s 1 (String.length s - 1 ) in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, `Int (Int32.of_string ("0o"^s')), info)
+      T_NUMBER (s, `Int (float_of_string ("0o"^s')), info)
     }
 
   | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
