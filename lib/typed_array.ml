@@ -59,17 +59,35 @@ let int8Array_fromTypedArray = int8Array
 let int8Array_fromBuffer = int8Array
 let int8Array_inBuffer = int8Array
 
+let uint8Array = Js.Unsafe.global ## _Uint8Array
+let uint8Array_fromArray = uint8Array
+let uint8Array_fromTypedArray = uint8Array
+let uint8Array_fromBuffer = uint8Array
+let uint8Array_inBuffer = uint8Array
+
 let int16Array = Js.Unsafe.global ## _Int16Array
 let int16Array_fromArray = int16Array
 let int16Array_fromTypedArray = int16Array
 let int16Array_fromBuffer = int16Array
 let int16Array_inBuffer = int16Array
 
+let uint16Array = Js.Unsafe.global ## _Uint16Array
+let uint16Array_fromArray = uint16Array
+let uint16Array_fromTypedArray = uint16Array
+let uint16Array_fromBuffer = uint16Array
+let uint16Array_inBuffer = uint16Array
+
 let int32Array = Js.Unsafe.global ## _Int32Array
 let int32Array_fromArray = int32Array
 let int32Array_fromTypedArray = int32Array
 let int32Array_fromBuffer = int32Array
 let int32Array_inBuffer = int32Array
+
+let uint32Array = Js.Unsafe.global ## _Uint32Array
+let uint32Array_fromArray = uint32Array
+let uint32Array_fromTypedArray = uint32Array
+let uint32Array_fromBuffer = uint32Array
+let uint32Array_inBuffer = uint32Array
 
 let float32Array = Js.Unsafe.global ## _Float32Array
 let float32Array_fromArray = float32Array

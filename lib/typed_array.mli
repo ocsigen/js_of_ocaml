@@ -58,17 +58,35 @@ val int8Array_fromTypedArray : (int8Array t -> int8Array t) constr
 val int8Array_fromBuffer : (arrayBuffer t -> int8Array t) constr
 val int8Array_inBuffer : (arrayBuffer t -> int -> int -> int8Array t) constr
 
+val uint8Array : (int -> uint8Array t) constr
+val uint8Array_fromArray : (int js_array t -> uint8Array t) constr
+val uint8Array_fromTypedArray : (uint8Array t -> uint8Array t) constr
+val uint8Array_fromBuffer : (arrayBuffer t -> uint8Array t) constr
+val uint8Array_inBuffer : (arrayBuffer t -> int -> int -> uint8Array t) constr
+
 val int16Array : (int -> int16Array t) constr
 val int16Array_fromArray : (int js_array t -> int16Array t) constr
 val int16Array_fromTypedArray : (int16Array t -> int16Array t) constr
 val int16Array_fromBuffer : (arrayBuffer t -> int16Array t) constr
 val int16Array_inBuffer : (arrayBuffer t -> int -> int -> int16Array t) constr
 
+val uint16Array : (int -> uint16Array t) constr
+val uint16Array_fromArray : (int js_array t -> uint16Array t) constr
+val uint16Array_fromTypedArray : (uint16Array t -> uint16Array t) constr
+val uint16Array_fromBuffer : (arrayBuffer t -> uint16Array t) constr
+val uint16Array_inBuffer : (arrayBuffer t -> int -> int -> uint16Array t) constr
+
 val int32Array : (int -> int32Array t) constr
 val int32Array_fromArray : (int js_array t -> int32Array t) constr
 val int32Array_fromTypedArray : (int32Array t -> int32Array t) constr
 val int32Array_fromBuffer : (arrayBuffer t -> int32Array t) constr
 val int32Array_inBuffer : (arrayBuffer t -> int -> int -> int32Array t) constr
+
+val uint32Array : (int -> uint32Array t) constr
+val uint32Array_fromArray : (int js_array t -> uint32Array t) constr
+val uint32Array_fromTypedArray : (uint32Array t -> uint32Array t) constr
+val uint32Array_fromBuffer : (arrayBuffer t -> uint32Array t) constr
+val uint32Array_inBuffer : (arrayBuffer t -> int -> int -> uint32Array t) constr
 
 val float32Array : (int -> float32Array t) constr
 val float32Array_fromArray : (float js_array t -> float32Array t) constr
