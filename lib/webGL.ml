@@ -27,7 +27,6 @@ type intptr = int
 type uint = int
 type clampf = float
 
-
 type clearBufferMask = int
 type beginMode
 type blendingFactor
@@ -49,12 +48,12 @@ type attachmentPoint
 type rbTarget
 type texTarget
 type 'a parameter
-type bufferParameter
+type 'a bufferParameter
 type 'a vertexAttribParam
 type vertexAttribPointerParam
 type 'a attachParam
 type framebufferStatus
-type renderbufferParam
+type 'a renderbufferParam
 type format
 type pixelFormat
 type pixelType
@@ -68,6 +67,8 @@ type wrapMode
 type texFilter
 type uniformType
 type colorspaceConversion
+type shaderPrecisionType
+type objectType
 
 (** 5.2 WebGLContextAttributes *)
 class type contextAttributes = object
@@ -77,7 +78,20 @@ class type contextAttributes = object
   method antialias : bool t prop
   method premultipliedAlpha : bool t prop
   method preserveDrawingBuffer : bool t prop
+  method preferLowPowerToHighPerformance : bool t prop
+  method failIfMajorPerformanceCaveat : bool t prop
 end
+
+let defaultContextAttributes =
+  Js.Unsafe.(obj
+    [|"alpha", inject _true;
+      "depth", inject _true;
+      "stencil", inject _false;
+      "antialias", inject _true;
+      "premultipliedAlpha", inject _false;
+      "preserveDrawingBuffer", inject _false;
+      "preferLowPowerToHighPerformance", inject _false;
+      "failIfMajorPerformanceCaveat", inject _false |])
 
 type buffer
 type framebuffer
@@ -91,6 +105,12 @@ class type activeInfo = object
   method size : int readonly_prop
   method _type : uniformType readonly_prop
   method name : js_string t readonly_prop
+end
+
+class type shaderPrecisionFormat = object
+  method rangeMin : int readonly_prop
+  method rangeMax : int readonly_prop
+  method precision : int readonly_prop
 end
 
 class type renderingContext = object
@@ -145,7 +165,7 @@ class type renderingContext = object
 
   (** 5.13.5 Buffer objects *)
   method bindBuffer : bufferTarget -> buffer t -> unit meth
-  method bindBuffer_ : bufferTarget opt -> buffer t -> unit meth
+  method bindBuffer_ : bufferTarget -> buffer t opt -> unit meth
   method bufferData_create :
     bufferTarget -> sizeiptr -> bufferUsage -> unit meth
   method bufferData :
@@ -158,12 +178,12 @@ class type renderingContext = object
     bufferTarget -> intptr -> Typed_array.arrayBuffer t -> unit meth
   method createBuffer : buffer t meth
   method deleteBuffer : buffer t -> unit meth
-  method getBufferParameter : bufferTarget -> bufferParameter -> int meth
+  method getBufferParameter : 'a. bufferTarget -> 'a bufferParameter -> 'a meth
   method isBuffer : buffer t -> bool t meth
 
   (** 5.13.6 Framebuffer objects *)
   method bindFramebuffer : fbTarget -> framebuffer t -> unit meth
-  method bindFramebuffer_ : fbTarget opt -> framebuffer t -> unit meth
+  method bindFramebuffer_ : fbTarget -> framebuffer t opt -> unit meth
   method checkFramebufferStatus : fbTarget -> framebufferStatus meth
   method createFramebuffer : framebuffer t meth
   method deleteFramebuffer : framebuffer t -> unit meth
@@ -177,17 +197,24 @@ class type renderingContext = object
 
   (** 5.13.7 Renderbuffer objects *)
   method bindRenderbuffer : rbTarget -> renderbuffer t -> unit meth
-  method bindRenderbuffer_ : rbTarget opt -> renderbuffer t -> unit meth
+  method bindRenderbuffer_ : rbTarget -> renderbuffer t opt -> unit meth
   method createRenderbuffer : renderbuffer t meth
   method deleteRenderbuffer : renderbuffer t -> unit meth
-  method getRenderbufferParameter : rbTarget -> renderbufferParam -> int meth
+  method getRenderbufferParameter :
+    'a. rbTarget -> 'a renderbufferParam -> 'a meth
   method isRenderbuffer : renderbuffer t -> bool t meth
   method renderbufferStorage :
     rbTarget -> format -> sizei -> sizei -> unit meth
 
   (** 5.13.8 Texture objects *)
   method bindTexture : texTarget -> texture t -> unit meth
-  method bindTexture_ : texTarget opt -> texture t -> unit meth
+  method bindTexture_ : texTarget -> texture t opt -> unit meth
+  method compressedTexImage2D :
+    texTarget -> int -> pixelFormat -> sizei -> sizei -> int ->
+    #Typed_array.arrayBufferView t -> unit meth
+  method compressedTexSubImage2D :
+    texTarget -> int -> int -> int -> sizei -> sizei -> pixelFormat ->
+    #Typed_array.arrayBufferView t -> unit meth
   method copyTexImage2D :
     texTarget -> int -> pixelFormat -> int -> int -> sizei -> sizei ->
     int -> unit meth
@@ -246,6 +273,8 @@ class type renderingContext = object
   method getProgramParameter : 'a . program t -> 'a programParam -> 'a meth
   method getProgramInfoLog : program t -> js_string t meth
   method getShaderParameter : 'a . shader t -> 'a shaderParam -> 'a meth
+  method getShaderPrecisionFormat :
+    shaderType -> shaderPrecisionType -> shaderPrecisionFormat t meth
   method getShaderInfoLog : shader t -> js_string t meth
   method getShaderSource : shader t -> js_string t meth
   method isProgram : program t -> bool t meth
@@ -253,7 +282,6 @@ class type renderingContext = object
   method linkProgram : program t -> unit meth
   method shaderSource : shader t -> js_string t -> unit meth
   method useProgram : program t -> unit meth
-  method useProgram_ : program t opt -> unit meth
   method validateProgram : program t -> unit meth
 
   (** 5.13.10 Uniforms and attributes *)
@@ -356,7 +384,7 @@ class type renderingContext = object
 
   (** 5.13.14 Detecting and enabling extensions *)
   method getSupportedExtensions : js_string t js_array t meth
-  method getExtension : 'a. js_string t -> 'a t meth (* Untyped! *)
+  method getExtension : 'a. js_string t -> 'a t opt meth (* Untyped! *)
 
   (** Constants *)
 
@@ -497,11 +525,12 @@ class type renderingContext = object
   method _SAMPLE_COVERAGE_VALUE_ : float parameter readonly_prop
   method _SAMPLE_COVERAGE_INVERT_ : bool t parameter readonly_prop
   method _NUM_COMPRESSED_TEXTURE_FORMATS_ : int parameter readonly_prop
-  method _COMPRESSED_TEXTURE_FORMATS_ : unit opt parameter readonly_prop
+  method _COMPRESSED_TEXTURE_FORMATS_ :
+    Typed_array.uint32Array t parameter readonly_prop
   method _GENERATE_MIPMAP_HINT_PARAM_ : hintMode parameter readonly_prop
 
-  method _BUFFER_SIZE_ : bufferParameter readonly_prop
-  method _BUFFER_USAGE_ : bufferParameter readonly_prop
+  method _BUFFER_SIZE_ : int bufferParameter readonly_prop
+  method _BUFFER_USAGE_ : bufferUsage bufferParameter readonly_prop
 
   method _BYTE : dataType readonly_prop
   method _UNSIGNED_BYTE_DT : dataType readonly_prop
@@ -535,7 +564,7 @@ class type renderingContext = object
   method _MAX_TEXTURE_IMAGE_UNITS_ : int parameter readonly_prop
   method _MAX_FRAGMENT_UNIFORM_VECTORS_ : int parameter readonly_prop
 
-  method _SHADER_TYPE_ : int shaderParam readonly_prop
+  method _SHADER_TYPE_ : shaderType shaderParam readonly_prop
   method _DELETE_STATUS_ : bool t shaderParam readonly_prop
   method _COMPILE_STATUS_ : bool t shaderParam readonly_prop
 
@@ -587,9 +616,9 @@ class type renderingContext = object
   method _TEXTURE_WRAP_S_ : wrapMode texParam readonly_prop
   method _TEXTURE_WRAP_T_ : wrapMode texParam readonly_prop
 
-(*???
-  method _TEXTURE : enum readonly_prop
-*)
+  method _NONE_OT : objectType readonly_prop
+  method _TEXTURE_OT : objectType readonly_prop
+  method _RENDERBUFFER_OT : objectType readonly_prop
 
   method _TEXTURE_2D_ : texTarget readonly_prop
   method _TEXTURE_CUBE_MAP_ : texTarget readonly_prop
@@ -641,10 +670,11 @@ class type renderingContext = object
   method _FLOAT_VEC2_ : uniformType readonly_prop
   method _FLOAT_VEC3_ : uniformType readonly_prop
   method _FLOAT_VEC4_ : uniformType readonly_prop
+  method _INT_ : uniformType readonly_prop
   method _INT_VEC2_ : uniformType readonly_prop
   method _INT_VEC3_ : uniformType readonly_prop
   method _INT_VEC4_ : uniformType readonly_prop
-  method _BOOL : uniformType readonly_prop
+  method _BOOL_ : uniformType readonly_prop
   method _BOOL_VEC2_ : uniformType readonly_prop
   method _BOOL_VEC3_ : uniformType readonly_prop
   method _BOOL_VEC4_ : uniformType readonly_prop
@@ -666,14 +696,12 @@ class type renderingContext = object
   method _CURRENT_VERTEX_ATTRIB_ :
     Typed_array.float32Array t vertexAttribParam readonly_prop
 
-  (*??? Shader Precision-Specified Types
-  method _LOW_FLOAT_ : enum readonly_prop
-  method _MEDIUM_FLOAT_ : enum readonly_prop
-  method _HIGH_FLOAT_ : enum readonly_prop
-  method _LOW_INT_ : enum readonly_prop
-  method _MEDIUM_INT_ : enum readonly_prop
-  method _HIGH_INT_ : enum readonly_prop
-  *)
+  method _LOW_FLOAT_ : shaderPrecisionType readonly_prop
+  method _MEDIUM_FLOAT_ : shaderPrecisionType readonly_prop
+  method _HIGH_FLOAT_ : shaderPrecisionType readonly_prop
+  method _LOW_INT_ : shaderPrecisionType readonly_prop
+  method _MEDIUM_INT_ : shaderPrecisionType readonly_prop
+  method _HIGH_INT_ : shaderPrecisionType readonly_prop
 
   method _FRAMEBUFFER : fbTarget readonly_prop
   method _RENDERBUFFER : rbTarget readonly_prop
@@ -684,17 +712,19 @@ class type renderingContext = object
   method _DEPTH_COMPONENT16_ : format readonly_prop
   method _STENCIL_INDEX8_ : format readonly_prop
 
-  method _RENDERBUFFER_WIDTH_ : renderbufferParam readonly_prop
-  method _RENDERBUFFER_HEIGHT_ : renderbufferParam readonly_prop
-  method _RENDERBUFFER_INTERNAL_FORMAT_ : renderbufferParam readonly_prop
-  method _RENDERBUFFER_RED_SIZE_ : renderbufferParam readonly_prop
-  method _RENDERBUFFER_GREEN_SIZE_ : renderbufferParam readonly_prop
-  method _RENDERBUFFER_BLUE_SIZE_ : renderbufferParam readonly_prop
-  method _RENDERBUFFER_ALPHA_SIZE_ : renderbufferParam readonly_prop
-  method _RENDERBUFFER_DEPTH_SIZE_ : renderbufferParam readonly_prop
-  method _RENDERBUFFER_STENCIL_SIZE_ : renderbufferParam readonly_prop
+  method _RENDERBUFFER_WIDTH_ : int renderbufferParam readonly_prop
+  method _RENDERBUFFER_HEIGHT_ : int renderbufferParam readonly_prop
+  method _RENDERBUFFER_INTERNAL_FORMAT_ :
+    format renderbufferParam readonly_prop
+  method _RENDERBUFFER_RED_SIZE_ : int renderbufferParam readonly_prop
+  method _RENDERBUFFER_GREEN_SIZE_ : int renderbufferParam readonly_prop
+  method _RENDERBUFFER_BLUE_SIZE_ : int renderbufferParam readonly_prop
+  method _RENDERBUFFER_ALPHA_SIZE_ : int renderbufferParam readonly_prop
+  method _RENDERBUFFER_DEPTH_SIZE_ : int renderbufferParam readonly_prop
+  method _RENDERBUFFER_STENCIL_SIZE_ : int renderbufferParam readonly_prop
 
-  method _FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_ : int attachParam readonly_prop
+  method _FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_ :
+    objectType attachParam readonly_prop
   method _FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_RENDERBUFFER :
     renderbuffer t attachParam readonly_prop
   method _FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_TEXTURE :
@@ -710,7 +740,8 @@ class type renderingContext = object
 
   method _FRAMEBUFFER_COMPLETE_ : framebufferStatus readonly_prop
   method _FRAMEBUFFER_INCOMPLETE_ATTACHMENT_ : framebufferStatus readonly_prop
-  method _FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_ : framebufferStatus readonly_prop
+  method _FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_ :
+    framebufferStatus readonly_prop
   method _FRAMEBUFFER_INCOMPLETE_DIMENSIONS_ : framebufferStatus readonly_prop
   method _FRAMEBUFFER_UNSUPPORTED_ : framebufferStatus readonly_prop
 
@@ -735,8 +766,6 @@ end
 class type contextEvent = object
   inherit Dom_html.event
   method statusMessage : js_string t readonly_prop
-  method initWebGLContextEvent :
-    js_string t -> bool t -> bool t -> js_string t -> unit meth
 end
 
 module Event = struct
@@ -750,9 +779,17 @@ end
 
 class type canvasElement = object
   method getContext : js_string t -> renderingContext t opt meth
+  method getContext_ :
+    js_string t -> contextAttributes t -> renderingContext t opt meth
 end
 
 let getContext (c : Dom_html.canvasElement t) =
   let c : canvasElement t = Js.Unsafe.coerce c in
   let ctx = c##getContext (Js.string "webgl") in
   if Opt.test ctx then ctx else c##getContext (Js.string "experimental-webgl")
+
+let getContextWithAttributes (c : Dom_html.canvasElement t) attribs =
+  let c : canvasElement t = Js.Unsafe.coerce c in
+  let ctx = c##getContext_ (Js.string "webgl", attribs) in
+  if Opt.test ctx then ctx else
+  c##getContext_ (Js.string "experimental-webgl", attribs)
