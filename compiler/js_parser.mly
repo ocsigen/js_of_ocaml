@@ -50,7 +50,7 @@ let var name = J.S {J.name;J.var=None}
 /*(*-----------------------------------------*)*/
 
 /*(* tokens with a value *)*/
-%token<string * [`Float of float | `Int of int] * Parse_info.t> T_NUMBER
+%token<string * [`Float of float | `Int of int32] * Parse_info.t> T_NUMBER
 %token<string * Parse_info.t> T_IDENTIFIER
 %token<string * Parse_info.t> T_STRING
 %token<string * Parse_info.t> T_REGEX
@@ -687,7 +687,7 @@ numeric_literal:
  | T_NUMBER {
    match $1 with
    | _,`Float f,_  -> f
-   | _,`Int i, _ -> float_of_int i }
+   | _,`Int i, _ -> Int32.to_float i }
 
 regex_literal:
  | T_REGEX {
