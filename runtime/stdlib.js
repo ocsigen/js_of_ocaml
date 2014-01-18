@@ -318,6 +318,13 @@ function caml_float_of_string(s) {
   s = s.replace(/_/g,"");
   res = +s;
   if (((s.length > 0) && (res === res)) || /^[+-]?nan$/i.test(s)) return res;
+  if(/^ *0x[0-9a-f_]+p[+-]?[0-9_]+/i.test(s)){
+    var pidx = s.indexOf('p');
+    pidx = (pidx==-1)?s.indexOf('P'):pidx;
+    var exp = +s.substring(pidx + 1);
+    res = +s.substring(0,pidx);
+    return res * Math.pow(2,exp);
+  }
   caml_failwith("float_of_string");
 }
 
