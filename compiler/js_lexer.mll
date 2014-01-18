@@ -199,7 +199,7 @@ rule initial tokinfo prev = parse
       let s = tok lexbuf in
       let s' = String.sub s 1 (String.length s - 1 ) in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, float_of_string ("0o"^s'), info)
+      T_NUMBER (s, Int64.(to_float (of_string ("0o"^s'))), info)
     }
 
   | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
