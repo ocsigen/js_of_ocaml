@@ -96,8 +96,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   let eof_error v lexbuf = custom_error "Unexpected end of input" v lexbuf
   let byte_error v lexbuf = custom_error "Unexpected byte in string" v lexbuf
-  let tag_error ~classname v =
-    custom_error ("Unexpected constructor : Json_"^classname) v v.lexbuf
+  let tag_error ~typename v =
+    custom_error
+      (Printf.sprintf "Unexpected constructor %s for Json_%s" (Lexing.lexeme v.lexbuf) typename)
+      v v.lexbuf
 
   let lexer_error descr v lexbuf =
     custom_error
@@ -328,20 +330,20 @@ and read_vcase v = parse
   let read_bounded_int min max v lexbuf =
     let n = read_int v lexbuf in
     if n < min || n > max then
-      lexer_error "Int outside of bounds" v lexbuf
+      lexer_error (Printf.sprintf "Int outside of bounds [%d - %d]" min max) v lexbuf
     else
       n
 
   let read_tag_1 n v lexbuf =
     if n = read_int v lexbuf
     then n
-    else lexer_error "Int outside of bounds" v lexbuf
+    else lexer_error (Printf.sprintf "Int expected to be %d" n) v lexbuf
 
   let read_tag_2 n1 n2 v lexbuf =
     let n = read_int v lexbuf in
     if n = n1 || n = n2
     then n
-    else lexer_error "Int outside of bounds" v lexbuf
+    else lexer_error (Printf.sprintf "Int expected to be either %d or %d" n1 n2) v lexbuf
 
   let read_int v = read_space v v.lexbuf; read_int v v.lexbuf
   let read_bounded_int ?(min = 0) ~max v =
