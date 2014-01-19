@@ -94,6 +94,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     let msg = sprintf "Line %i, %s:\n%s" v.lnum bytes descr in
     json_error msg
 
+  let eof_error v lexbuf = custom_error "Unexpected end of input" v lexbuf
+  let byte_error v lexbuf = custom_error "Unexpected byte in string" v lexbuf
+  let tag_error ~classname v =
+    custom_error ("Unexpected constructor : Json_"^classname) v v.lexbuf
 
   let lexer_error descr v lexbuf =
     custom_error
@@ -169,7 +173,7 @@ rule finish_string v = parse
              else
                finish_utf8_encoded_byte v c lexbuf;
              finish_string v lexbuf }
-  | eof    { custom_error "Unexpected end of input" v lexbuf }
+  | eof    { eof_error v lexbuf }
 
 and finish_utf8_encoded_byte v c1 = parse
   | _ as c2 { (* Even if encoded in UTF-8, a byte could not be greater than 255 ! *)
@@ -177,8 +181,8 @@ and finish_utf8_encoded_byte v c1 = parse
                 let c = ((Char.code c1 lsl 6) lor Char.code c2) land 0xFF in
                 Buffer.add_char v.buf (Char.chr c)
               else
-                custom_error "Unexpected byte in string" v lexbuf }
-  | eof     { custom_error "Unexpected end of input" v lexbuf }
+                byte_error v lexbuf }
+  | eof     { eof_error v lexbuf }
 
 and finish_escaped_char v = parse
     '"'
@@ -195,21 +199,21 @@ and finish_escaped_char v = parse
 	     let c = (hex c lsl 4) lor hex d in
              Buffer.add_char v.buf (Char.chr c)
            else
-	     custom_error "Unexpected byte in string" v lexbuf
+	     byte_error v lexbuf
 	 }
   | _    { lexer_error "Invalid escape sequence" v lexbuf }
-  | eof  { custom_error "Unexpected end of input" v lexbuf }
+  | eof  { eof_error v lexbuf }
 
 and read_comma v = parse
   | ','   { () }
   | _     { lexer_error "Expected ',' but found" v lexbuf }
-  | eof   { custom_error "Unexpected end of input" v lexbuf }
+  | eof   { eof_error v lexbuf }
 
 and read_comma_or_rbracket v = parse
   | ','   { `Comma }
   | ']'   { `RBracket }
   | _     { lexer_error "Expected ',' or ']' but found" v lexbuf }
-  | eof   { custom_error "Unexpected end of input" v lexbuf }
+  | eof   { eof_error v lexbuf }
 
 and finish_comment v = parse
   | "*/" { () }
@@ -234,28 +238,28 @@ and read_int v = parse
 			   with Int_overflow ->
 			     lexer_error "Int overflow" v lexbuf }
   | _                    { lexer_error "Expected integer but found" v lexbuf }
-  | eof                  { custom_error "Unexpected end of input" v lexbuf }
+  | eof                  { eof_error v lexbuf }
 
 and read_positive_int v = parse
     positive_int         { try extract_positive_int lexbuf
 			   with Int_overflow ->
 			     lexer_error "Int overflow" v lexbuf }
   | _                    { lexer_error "Expected integer but found" v lexbuf }
-  | eof                  { custom_error "Unexpected end of input" v lexbuf }
+  | eof                  { eof_error v lexbuf }
 
 and read_int32 v = parse
     '-'? positive_int    { try Int32.of_string (Lexing.lexeme lexbuf)
 			   with _ ->
 			     lexer_error "Int32 overflow" v lexbuf }
   | _                    { lexer_error "Expected int32 but found" v lexbuf }
-  | eof                  { custom_error "Unexpected end of input" v lexbuf }
+  | eof                  { eof_error v lexbuf }
 
 and read_int64 v = parse
     '-'? positive_int    { try Int64.of_string (Lexing.lexeme lexbuf)
 			   with _ ->
 			     lexer_error "Int32 overflow" v lexbuf }
   | _                    { lexer_error "Expected int64 but found" v lexbuf }
-  | eof                  { custom_error "Unexpected end of input" v lexbuf }
+  | eof                  { eof_error v lexbuf }
 
 and read_number v = parse
   | "NaN"       { nan }
@@ -263,23 +267,23 @@ and read_number v = parse
   | "-Infinity" { neg_infinity }
   | number      { float_of_string (lexeme lexbuf) }
   | _           { lexer_error "Expected number but found" v lexbuf }
-  | eof         { custom_error "Unexpected end of input" v lexbuf }
+  | eof         { eof_error v lexbuf }
 
 and read_string v = parse
     '"'      { Buffer.clear v.buf;
 	       finish_string v lexbuf }
   | _        { lexer_error "Expected '\"' but found" v lexbuf }
-  | eof      { custom_error "Unexpected end of input" v lexbuf }
+  | eof      { eof_error v lexbuf }
 
 and read_lbracket v = parse
     '['      { () }
   | _        { lexer_error "Expected '[' but found" v lexbuf }
-  | eof      { custom_error "Unexpected end of input" v lexbuf }
+  | eof      { eof_error v lexbuf }
 
 and read_rbracket v = parse
     ']'      { () }
   | _        { lexer_error "Expected ']' but found" v lexbuf }
-  | eof      { custom_error "Unexpected end of input" v lexbuf }
+  | eof      { eof_error v lexbuf }
 
 and read_case v = parse
   | positive_int { try `Cst (extract_positive_int lexbuf)
@@ -287,7 +291,7 @@ and read_case v = parse
   | '['          { read_space v lexbuf;
 		   `NCst (read_positive_int v lexbuf) }
   | _            { lexer_error "Expected positive integer or '[' but found" v lexbuf }
-  | eof          { custom_error "Unexpected end of input" v lexbuf }
+  | eof          { eof_error v lexbuf }
 
 and read_vcase v = parse
   | positive_int { try `Cst (extract_positive_int lexbuf)
@@ -304,7 +308,7 @@ and read_vcase v = parse
 		   read_space v lexbuf;
 		   `NCst (read_int v lexbuf) }
   | _            { lexer_error "Expected positive integer or '[' but found" v lexbuf }
-  | eof          { custom_error "Unexpected end of input" v lexbuf }
+  | eof          { eof_error v lexbuf }
 
 {
 

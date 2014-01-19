@@ -140,8 +140,7 @@ module Builder(Generator : Defs.Generator) = struct
 	  (cst_tag, succ ncst_tag, dumper::dumpers, reader::readers)
 
     method sum ?eq ctxt name params _ summands =
-      let msg = Printf.sprintf "Json_%s: Unexpected constructor." classname in
-      let failover = <:match_case< _ -> failwith $str:msg$ >> in
+      let failover = <:match_case< _ -> Deriving_Json_lexer.tag_error ~classname buf >> in
       let _, _, dumpers, readers =
 	List.fold_left (self#case ctxt) (0,0,[],[failover]) summands in
       let read = <:expr<
@@ -217,8 +216,7 @@ module Builder(Generator : Defs.Generator) = struct
           <:expr< $self#call_expr ctxt t "match_variant"$ hash >>
 
     method variant ctxt name params _ (_,tags) =
-      let msg = Printf.sprintf "Json_%s: Unexpected constructor." classname in
-      let failover = <:match_case< _ -> failwith $str:msg$ >> in
+      let failover = <:match_case< _ -> Deriving_Json_lexer.tag_error ~classname buf >> in
       let dumpers, readers, hashes = List.split3 (List.map (self#polycase ctxt) tags) in
       let read = <:expr< read_variant buf (Deriving_Json_lexer.read_vcase buf) >> in
       let hashes =
