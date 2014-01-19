@@ -121,11 +121,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     else
       !n
 
-  let make_positive_int v lexbuf =
-      try `Int (extract_positive_int lexbuf)
-      with Int_overflow ->
-        lexer_error "Int overflow" v lexbuf
-
   let extract_negative_int lexbuf =
     let start = lexbuf.lex_start_pos + 1 in
     let stop = lexbuf.lex_curr_pos in
@@ -142,17 +137,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     else
       !n
 
-  let make_negative_int v lexbuf =
-      try `Int (extract_negative_int lexbuf)
-      with Int_overflow ->
-        lexer_error "Int overflow" v lexbuf
-
   let newline v lexbuf =
     v.lnum <- v.lnum + 1;
     v.bol <- lexbuf.lex_abs_pos + lexbuf.lex_curr_pos
 
-  type variant_kind = [ `Edgy_bracket | `Square_bracket | `Double_quote ]
-  type tuple_kind = [ `Parenthesis | `Square_bracket ]
 }
 
 let space = [' ' '\t' '\r']+
@@ -231,27 +219,12 @@ and finish_comment v = parse
 
 (* Readers expecting a particular JSON construct *)
 
-and read_eof = parse
-    eof       { true }
-  | ""        { false }
-
 and read_space v = parse
   | "//"[^'\n']* ('\n'|eof)  { newline v lexbuf; read_space v lexbuf }
   | "/*"                     { finish_comment v lexbuf; read_space v lexbuf }
   | '\n'                     { newline v lexbuf; read_space v lexbuf }
   | [' ' '\t' '\r']+         { read_space v lexbuf }
   | ""                       { () }
-
-and read_null v = parse
-    "null"    { () }
-  | _         { lexer_error "Expected 'null' but found" v lexbuf }
-  | eof       { custom_error "Unexpected end of input" v lexbuf }
-
-and read_bool v = parse
-    "true"    { true }
-  | "false"   { false }
-  | _         { lexer_error "Expected 'true' or 'false' but found" v lexbuf }
-  | eof       { custom_error "Unexpected end of input" v lexbuf }
 
 and read_int v = parse
     positive_int         { try extract_positive_int lexbuf
@@ -362,14 +335,10 @@ and read_vcase v = parse
 
   let read_tag_2 n1 n2 v lexbuf =
     let n = read_int v lexbuf in
-    if n = n1 
-    then n1
-    else if n = n2
-    then n2
+    if n = n1 || n = n2
+    then n
     else lexer_error "Int outside of bounds" v lexbuf
 
-
-  let read_bool v = read_space v v.lexbuf; read_bool v v.lexbuf
   let read_int v = read_space v v.lexbuf; read_int v v.lexbuf
   let read_bounded_int ?(min = 0) ~max v =
     read_space v v.lexbuf; read_bounded_int min max v v.lexbuf
