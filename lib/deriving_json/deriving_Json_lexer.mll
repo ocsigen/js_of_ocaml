@@ -94,6 +94,12 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     let msg = sprintf "Line %i, %s:\n%s" v.lnum bytes descr in
     json_error msg
 
+  let eof_error v lexbuf = custom_error "Unexpected end of input" v lexbuf
+  let byte_error v lexbuf = custom_error "Unexpected byte in string" v lexbuf
+  let tag_error ~typename v =
+    custom_error
+      (Printf.sprintf "Unexpected constructor %s for Json_%s" (Lexing.lexeme v.lexbuf) typename)
+      v v.lexbuf
 
   let lexer_error descr v lexbuf =
     custom_error
@@ -121,11 +127,6 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     else
       !n
 
-  let make_positive_int v lexbuf =
-      try `Int (extract_positive_int lexbuf)
-      with Int_overflow ->
-        lexer_error "Int overflow" v lexbuf
-
   let extract_negative_int lexbuf =
     let start = lexbuf.lex_start_pos + 1 in
     let stop = lexbuf.lex_curr_pos in
@@ -142,17 +143,10 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     else
       !n
 
-  let make_negative_int v lexbuf =
-      try `Int (extract_negative_int lexbuf)
-      with Int_overflow ->
-        lexer_error "Int overflow" v lexbuf
-
   let newline v lexbuf =
     v.lnum <- v.lnum + 1;
     v.bol <- lexbuf.lex_abs_pos + lexbuf.lex_curr_pos
 
-  type variant_kind = [ `Edgy_bracket | `Square_bracket | `Double_quote ]
-  type tuple_kind = [ `Parenthesis | `Square_bracket ]
 }
 
 let space = [' ' '\t' '\r']+
@@ -181,7 +175,7 @@ rule finish_string v = parse
              else
                finish_utf8_encoded_byte v c lexbuf;
              finish_string v lexbuf }
-  | eof    { custom_error "Unexpected end of input" v lexbuf }
+  | eof    { eof_error v lexbuf }
 
 and finish_utf8_encoded_byte v c1 = parse
   | _ as c2 { (* Even if encoded in UTF-8, a byte could not be greater than 255 ! *)
@@ -189,8 +183,8 @@ and finish_utf8_encoded_byte v c1 = parse
                 let c = ((Char.code c1 lsl 6) lor Char.code c2) land 0xFF in
                 Buffer.add_char v.buf (Char.chr c)
               else
-                custom_error "Unexpected byte in string" v lexbuf }
-  | eof     { custom_error "Unexpected end of input" v lexbuf }
+                byte_error v lexbuf }
+  | eof     { eof_error v lexbuf }
 
 and finish_escaped_char v = parse
     '"'
@@ -207,21 +201,21 @@ and finish_escaped_char v = parse
 	     let c = (hex c lsl 4) lor hex d in
              Buffer.add_char v.buf (Char.chr c)
            else
-	     custom_error "Unexpected byte in string" v lexbuf
+	     byte_error v lexbuf
 	 }
   | _    { lexer_error "Invalid escape sequence" v lexbuf }
-  | eof  { custom_error "Unexpected end of input" v lexbuf }
+  | eof  { eof_error v lexbuf }
 
 and read_comma v = parse
   | ','   { () }
   | _     { lexer_error "Expected ',' but found" v lexbuf }
-  | eof   { custom_error "Unexpected end of input" v lexbuf }
+  | eof   { eof_error v lexbuf }
 
 and read_comma_or_rbracket v = parse
   | ','   { `Comma }
   | ']'   { `RBracket }
   | _     { lexer_error "Expected ',' or ']' but found" v lexbuf }
-  | eof   { custom_error "Unexpected end of input" v lexbuf }
+  | eof   { eof_error v lexbuf }
 
 and finish_comment v = parse
   | "*/" { () }
@@ -231,27 +225,12 @@ and finish_comment v = parse
 
 (* Readers expecting a particular JSON construct *)
 
-and read_eof = parse
-    eof       { true }
-  | ""        { false }
-
 and read_space v = parse
   | "//"[^'\n']* ('\n'|eof)  { newline v lexbuf; read_space v lexbuf }
   | "/*"                     { finish_comment v lexbuf; read_space v lexbuf }
   | '\n'                     { newline v lexbuf; read_space v lexbuf }
   | [' ' '\t' '\r']+         { read_space v lexbuf }
   | ""                       { () }
-
-and read_null v = parse
-    "null"    { () }
-  | _         { lexer_error "Expected 'null' but found" v lexbuf }
-  | eof       { custom_error "Unexpected end of input" v lexbuf }
-
-and read_bool v = parse
-    "true"    { true }
-  | "false"   { false }
-  | _         { lexer_error "Expected 'true' or 'false' but found" v lexbuf }
-  | eof       { custom_error "Unexpected end of input" v lexbuf }
 
 and read_int v = parse
     positive_int         { try extract_positive_int lexbuf
@@ -261,28 +240,28 @@ and read_int v = parse
 			   with Int_overflow ->
 			     lexer_error "Int overflow" v lexbuf }
   | _                    { lexer_error "Expected integer but found" v lexbuf }
-  | eof                  { custom_error "Unexpected end of input" v lexbuf }
+  | eof                  { eof_error v lexbuf }
 
 and read_positive_int v = parse
     positive_int         { try extract_positive_int lexbuf
 			   with Int_overflow ->
 			     lexer_error "Int overflow" v lexbuf }
   | _                    { lexer_error "Expected integer but found" v lexbuf }
-  | eof                  { custom_error "Unexpected end of input" v lexbuf }
+  | eof                  { eof_error v lexbuf }
 
 and read_int32 v = parse
     '-'? positive_int    { try Int32.of_string (Lexing.lexeme lexbuf)
 			   with _ ->
 			     lexer_error "Int32 overflow" v lexbuf }
   | _                    { lexer_error "Expected int32 but found" v lexbuf }
-  | eof                  { custom_error "Unexpected end of input" v lexbuf }
+  | eof                  { eof_error v lexbuf }
 
 and read_int64 v = parse
     '-'? positive_int    { try Int64.of_string (Lexing.lexeme lexbuf)
 			   with _ ->
 			     lexer_error "Int32 overflow" v lexbuf }
   | _                    { lexer_error "Expected int64 but found" v lexbuf }
-  | eof                  { custom_error "Unexpected end of input" v lexbuf }
+  | eof                  { eof_error v lexbuf }
 
 and read_number v = parse
   | "NaN"       { nan }
@@ -290,23 +269,23 @@ and read_number v = parse
   | "-Infinity" { neg_infinity }
   | number      { float_of_string (lexeme lexbuf) }
   | _           { lexer_error "Expected number but found" v lexbuf }
-  | eof         { custom_error "Unexpected end of input" v lexbuf }
+  | eof         { eof_error v lexbuf }
 
 and read_string v = parse
     '"'      { Buffer.clear v.buf;
 	       finish_string v lexbuf }
   | _        { lexer_error "Expected '\"' but found" v lexbuf }
-  | eof      { custom_error "Unexpected end of input" v lexbuf }
+  | eof      { eof_error v lexbuf }
 
 and read_lbracket v = parse
     '['      { () }
   | _        { lexer_error "Expected '[' but found" v lexbuf }
-  | eof      { custom_error "Unexpected end of input" v lexbuf }
+  | eof      { eof_error v lexbuf }
 
 and read_rbracket v = parse
     ']'      { () }
   | _        { lexer_error "Expected ']' but found" v lexbuf }
-  | eof      { custom_error "Unexpected end of input" v lexbuf }
+  | eof      { eof_error v lexbuf }
 
 and read_case v = parse
   | positive_int { try `Cst (extract_positive_int lexbuf)
@@ -314,7 +293,7 @@ and read_case v = parse
   | '['          { read_space v lexbuf;
 		   `NCst (read_positive_int v lexbuf) }
   | _            { lexer_error "Expected positive integer or '[' but found" v lexbuf }
-  | eof          { custom_error "Unexpected end of input" v lexbuf }
+  | eof          { eof_error v lexbuf }
 
 and read_vcase v = parse
   | positive_int { try `Cst (extract_positive_int lexbuf)
@@ -331,7 +310,7 @@ and read_vcase v = parse
 		   read_space v lexbuf;
 		   `NCst (read_int v lexbuf) }
   | _            { lexer_error "Expected positive integer or '[' but found" v lexbuf }
-  | eof          { custom_error "Unexpected end of input" v lexbuf }
+  | eof          { eof_error v lexbuf }
 
 {
 
@@ -351,25 +330,21 @@ and read_vcase v = parse
   let read_bounded_int min max v lexbuf =
     let n = read_int v lexbuf in
     if n < min || n > max then
-      lexer_error "Int outside of bounds" v lexbuf
+      lexer_error (Printf.sprintf "Int outside of bounds [%d - %d]" min max) v lexbuf
     else
       n
 
   let read_tag_1 n v lexbuf =
     if n = read_int v lexbuf
     then n
-    else lexer_error "Int outside of bounds" v lexbuf
+    else lexer_error (Printf.sprintf "Int expected to be %d" n) v lexbuf
 
   let read_tag_2 n1 n2 v lexbuf =
     let n = read_int v lexbuf in
-    if n = n1 
-    then n1
-    else if n = n2
-    then n2
-    else lexer_error "Int outside of bounds" v lexbuf
+    if n = n1 || n = n2
+    then n
+    else lexer_error (Printf.sprintf "Int expected to be either %d or %d" n1 n2) v lexbuf
 
-
-  let read_bool v = read_space v v.lexbuf; read_bool v v.lexbuf
   let read_int v = read_space v v.lexbuf; read_int v v.lexbuf
   let read_bounded_int ?(min = 0) ~max v =
     read_space v v.lexbuf; read_bounded_int min max v v.lexbuf

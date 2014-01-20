@@ -34,6 +34,8 @@ val init_lexer:
     Lexing.lexbuf -> lexbuf
 	(** Create a fresh lexbuf record. *)
 
+val tag_error: typename:string -> lexbuf -> 'a
+
 val read_int: lexbuf  -> int
 val read_bounded_int: ?min:int -> max:int -> lexbuf  -> int
 val read_tag_1 : int -> lexbuf -> int

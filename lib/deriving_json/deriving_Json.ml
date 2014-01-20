@@ -229,7 +229,7 @@ module Json_list(A : Json) = Defaults(struct
 		let x = A.read buf in
 		Deriving_Json_lexer.read_comma buf;
 		aux (x::l) (succ c)
-	    | _ -> failwith "Json_list.read: unexpected constructor."
+	    | _ -> Deriving_Json_lexer.tag_error ~typename:"list" buf
 	in
 	aux [] 0
     end)
@@ -246,7 +246,7 @@ module Json_ref(A : Json) = Defaults(struct
 	    let x = A.read buf in
 	    Deriving_Json_lexer.read_rbracket buf;
 	    ref x
-	| _ -> failwith "Json_ref.read: unexpected constructor."
+	| _ -> Deriving_Json_lexer.tag_error ~typename:"ref" buf
     end)
 
 module Json_option(A : Json) = Defaults(struct
@@ -265,7 +265,7 @@ module Json_option(A : Json) = Defaults(struct
 	    let x = A.read buf in
 	    Deriving_Json_lexer.read_rbracket buf;
 	    Some x
-	| _ -> failwith "Json_option.read: unexpected constructor."
+	| _ -> Deriving_Json_lexer.tag_error ~typename:"option" buf
     end)
 
 module Json_array(A : Json) = Defaults(struct
@@ -287,5 +287,5 @@ module Json_array(A : Json) = Defaults(struct
 	match Deriving_Json_lexer.read_case buf with
 	(* We allow the tag 254 in case of float array *)
 	| `NCst 0 | `NCst 254 -> Array.of_list (List.rev (read_list [] buf))
-	| _ -> failwith "Json_array.read: unexpected constructor."
+	| _ -> Deriving_Json_lexer.tag_error ~typename:"array" buf
     end)
