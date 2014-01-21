@@ -1,6 +1,3 @@
-//Provides: unix_inet_addr_of_string
-function unix_inet_addr_of_string () {return 0;}
-
 //Provides: unix_gettimeofday
 function unix_gettimeofday () {
   return (new Date()).getTime() / 1000;

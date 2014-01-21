@@ -1,5 +1,5 @@
 FILES= 	mlString.js ieee_754.js int64.js md5.js marshall.js \
-	lexing.js parsing.js json.js \
+	lexing.js parsing.js json.js bigarray.js \
 	stdlib.js jslib.js jslib_js_of_ocaml.js
 
 runtime.js: $(FILES)

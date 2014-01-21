@@ -814,3 +814,5 @@ function caml_sys_getenv () { caml_raise_not_found (); }
 function caml_sys_exit () {
   caml_invalid_argument("Function 'exit' not implemented");
 }
+//Provides: unix_inet_addr_of_string
+function unix_inet_addr_of_string () {return 0;}
