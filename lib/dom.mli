@@ -118,6 +118,9 @@ class type characterData = object
   method replaceData : int -> int -> js_string t -> unit meth
 end
 
+(** Specification of [Comment] objects *)
+class type comment = characterData
+
 (** Specification of [Text] objects. *)
 class type text = characterData
 
@@ -133,6 +136,7 @@ class type ['element] document = object
   method createElementNS : js_string t -> js_string t -> 'element t meth
   method createTextNode : js_string t -> text t meth
   method createAttribute : js_string t -> attr t meth
+  method createComment : js_string t -> comment t meth
   method getElementById : js_string t -> 'element t opt meth
   method getElementsByTagName : js_string t -> 'element nodeList t meth
   method importNode : element t -> bool t -> 'element t meth
