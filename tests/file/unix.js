@@ -1,6 +1,6 @@
 //Provides: caml_sys_exit
 function caml_sys_exit(n) {
-  if(this.phantom && this.phantom.exit)
+  if(joo_global_object.phantom && joo_global_object.phantom.exit)
     phantom.exit(n);
   else
     return 0;
