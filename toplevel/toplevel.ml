@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (*
 TODO
@@ -121,20 +121,20 @@ let ensure_at_bol ppf =
 let loop s ppf =
   let lb = Lexing.from_function (refill_lexbuf s (ref 0) ppf) in
   begin try
-    while true do
-      try
-        let phr = !Toploop.parse_toplevel_phrase lb in
-        ensure_at_bol ppf;
-        ignore(Toploop.execute_phrase true ppf phr)
-      with
-        End_of_file ->
+      while true do
+        try
+          let phr = !Toploop.parse_toplevel_phrase lb in
+          ensure_at_bol ppf;
+          ignore(Toploop.execute_phrase true ppf phr)
+        with
+          End_of_file ->
           raise End_of_file
-      | x ->
+        | x ->
           ensure_at_bol ppf;
           Errors.report_error ppf x
-    done
-  with End_of_file ->
-    ()
+      done
+    with End_of_file ->
+      ()
   end
 
 let run _ =
