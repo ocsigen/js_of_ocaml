@@ -292,7 +292,7 @@ let program p =
       coloring#block [];
       if S.cardinal (coloring#get_free) <> 0
       then begin
-        failwith 
+        failwith
           (Format.sprintf
              "Some variables escaped (#%d); this is a bug."
              (S.cardinal (coloring#get_free)));

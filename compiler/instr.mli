@@ -186,4 +186,3 @@ val gets : string -> int -> int
 val getu : string -> int -> int
 
 val print_obj : Format.formatter -> Obj.t -> unit
-
