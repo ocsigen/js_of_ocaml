@@ -79,7 +79,7 @@ let make_state eventkind
     then state := Some ev (* We keep the more recent state during the handler *)
     else begin
       locked := true;
-      ignore (handler ev c1 >|= fun r -> 
+      ignore (handler ev c1 >|= fun r ->
               locked := false;
               match !state with
               | None -> ()
@@ -89,7 +89,7 @@ let make_state eventkind
   el := Js.some
       (Dom_html.addEventListener
          target eventkind
-         (Dom_html.handler (fun ev -> 
+         (Dom_html.handler (fun ev ->
               if not propagate
               then Dom_html.stopPropagation ev;
               f ev;
@@ -170,5 +170,3 @@ let keyups ?use_capture ?keep_default ?propagate t =
    let mousewheels ?use_capture ?keep_default ?propagate t =
    loop_event mousewheel ?use_capture ?keep_default ?propagate t
 *)
-
-

@@ -42,9 +42,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
       let result = c_engine tbl state buf in
       (*
       if result >= 0 then begin
-	buf.lex_start_p <- buf.lex_curr_p;
-	buf.lex_curr_p <- {buf.lex_curr_p
-			   with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
+buf.lex_start_p <- buf.lex_curr_p;
+buf.lex_curr_p <- {buf.lex_curr_p
+   with pos_cnum = buf.lex_abs_pos + buf.lex_curr_pos};
       end;
       *)
       result
@@ -62,7 +62,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
     mutable bol : int;
       (* Absolute position of the first character of the current line
-	 (starting from 0) *)
+ (starting from 0) *)
 
     lexbuf : Lexing.lexbuf;
 
@@ -73,7 +73,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   let hex c =
     match c with
-	'0'..'9' -> int_of_char c - int_of_char '0'
+        '0'..'9' -> int_of_char c - int_of_char '0'
       | 'a'..'f' -> int_of_char c - int_of_char 'a' + 10
       | 'A'..'F' -> int_of_char c - int_of_char 'A' + 10
       | _ -> assert false
@@ -87,9 +87,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     let pos2 = max pos1 (offs + lexbuf.lex_curr_pos - bol - 1) in
     let bytes =
       if pos1 = pos2 then
-	sprintf "byte %i" (pos1+1)
+        sprintf "byte %i" (pos1+1)
       else
-	sprintf "bytes %i-%i" (pos1+1) (pos2+1)
+        sprintf "bytes %i-%i" (pos1+1) (pos2+1)
     in
     let msg = sprintf "Line %i, %s:\n%s" v.lnum bytes descr in
     json_error msg
@@ -118,9 +118,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     let n = ref 0 in
     for i = start to stop - 1 do
       if !n >= max10 then
-	raise Int_overflow
+        raise Int_overflow
       else
-	n := 10 * !n + dec s.[i]
+        n := 10 * !n + dec s.[i]
     done;
     if !n < 0 then
       raise Int_overflow
@@ -134,9 +134,9 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     let n = ref 0 in
     for i = start to stop - 1 do
       if !n <= min10 then
-	raise Int_overflow
+        raise Int_overflow
       else
-	n := 10 * !n - dec s.[i]
+        n := 10 * !n - dec s.[i]
     done;
     if !n > 0 then
       raise Int_overflow
@@ -169,7 +169,7 @@ let ident = ['a'-'z' 'A'-'Z' '_']['a'-'z' 'A'-'Z' '_' '0'-'9']*
 rule finish_string v = parse
     '"'    { Buffer.contents v.buf }
   | '\\'   { finish_escaped_char v lexbuf;
-	     finish_string v lexbuf }
+             finish_string v lexbuf }
   | _ as c { if c < '\x80' then
                Buffer.add_char v.buf c
              else
@@ -179,11 +179,11 @@ rule finish_string v = parse
 
 and finish_utf8_encoded_byte v c1 = parse
   | _ as c2 { (* Even if encoded in UTF-8, a byte could not be greater than 255 ! *)
-              if '\xC2' <= c1 && c1 < '\xC4' && '\x80' <= c2 && c2 < '\xC0' then
-                let c = ((Char.code c1 lsl 6) lor Char.code c2) land 0xFF in
-                Buffer.add_char v.buf (Char.chr c)
-              else
-                byte_error v lexbuf }
+      if '\xC2' <= c1 && c1 < '\xC4' && '\x80' <= c2 && c2 < '\xC0' then
+        let c = ((Char.code c1 lsl 6) lor Char.code c2) land 0xFF in
+        Buffer.add_char v.buf (Char.chr c)
+      else
+        byte_error v lexbuf }
   | eof     { eof_error v lexbuf }
 
 and finish_escaped_char v = parse
@@ -196,13 +196,13 @@ and finish_escaped_char v = parse
   | 'r'  { Buffer.add_char v.buf '\r' }
   | 't'  { Buffer.add_char v.buf '\t' }
   | 'u' (hex as a) (hex as b) (hex as c) (hex as d)
-         { (* Even if encoded in UTF-8, a byte could not be greater than 255 ! *)
-            if hex a = 0 && hex b = 0 then
-	     let c = (hex c lsl 4) lor hex d in
-             Buffer.add_char v.buf (Char.chr c)
-           else
-	     byte_error v lexbuf
-	 }
+      { (* Even if encoded in UTF-8, a byte could not be greater than 255 ! *)
+        if hex a = 0 && hex b = 0 then
+          let c = (hex c lsl 4) lor hex d in
+          Buffer.add_char v.buf (Char.chr c)
+        else
+          byte_error v lexbuf
+      }
   | _    { lexer_error "Invalid escape sequence" v lexbuf }
   | eof  { eof_error v lexbuf }
 
@@ -234,32 +234,32 @@ and read_space v = parse
 
 and read_int v = parse
     positive_int         { try extract_positive_int lexbuf
-			   with Int_overflow ->
-			     lexer_error "Int overflow" v lexbuf }
+                           with Int_overflow ->
+                             lexer_error "Int overflow" v lexbuf }
   | '-' positive_int     { try extract_negative_int lexbuf
-			   with Int_overflow ->
-			     lexer_error "Int overflow" v lexbuf }
+                           with Int_overflow ->
+                             lexer_error "Int overflow" v lexbuf }
   | _                    { lexer_error "Expected integer but found" v lexbuf }
   | eof                  { eof_error v lexbuf }
 
 and read_positive_int v = parse
     positive_int         { try extract_positive_int lexbuf
-			   with Int_overflow ->
-			     lexer_error "Int overflow" v lexbuf }
+                           with Int_overflow ->
+                             lexer_error "Int overflow" v lexbuf }
   | _                    { lexer_error "Expected integer but found" v lexbuf }
   | eof                  { eof_error v lexbuf }
 
 and read_int32 v = parse
     '-'? positive_int    { try Int32.of_string (Lexing.lexeme lexbuf)
-			   with _ ->
-			     lexer_error "Int32 overflow" v lexbuf }
+                           with _ ->
+                             lexer_error "Int32 overflow" v lexbuf }
   | _                    { lexer_error "Expected int32 but found" v lexbuf }
   | eof                  { eof_error v lexbuf }
 
 and read_int64 v = parse
     '-'? positive_int    { try Int64.of_string (Lexing.lexeme lexbuf)
-			   with _ ->
-			     lexer_error "Int32 overflow" v lexbuf }
+                           with _ ->
+                             lexer_error "Int32 overflow" v lexbuf }
   | _                    { lexer_error "Expected int64 but found" v lexbuf }
   | eof                  { eof_error v lexbuf }
 
@@ -273,7 +273,7 @@ and read_number v = parse
 
 and read_string v = parse
     '"'      { Buffer.clear v.buf;
-	       finish_string v lexbuf }
+               finish_string v lexbuf }
   | _        { lexer_error "Expected '\"' but found" v lexbuf }
   | eof      { eof_error v lexbuf }
 
@@ -289,81 +289,79 @@ and read_rbracket v = parse
 
 and read_case v = parse
   | positive_int { try `Cst (extract_positive_int lexbuf)
-                       with Int_overflow -> lexer_error "Int overflow" v lexbuf }
+                   with Int_overflow -> lexer_error "Int overflow" v lexbuf }
   | '['          { read_space v lexbuf;
-		   `NCst (read_positive_int v lexbuf) }
+                   `NCst (read_positive_int v lexbuf) }
   | _            { lexer_error "Expected positive integer or '[' but found" v lexbuf }
   | eof          { eof_error v lexbuf }
 
 and read_vcase v = parse
   | positive_int { try `Cst (extract_positive_int lexbuf)
-                       with Int_overflow -> lexer_error "Int overflow" v lexbuf }
+                   with Int_overflow -> lexer_error "Int overflow" v lexbuf }
   | '-'? positive_int { try `Cst (extract_negative_int lexbuf)
-                       with Int_overflow -> lexer_error "Int overflow" v lexbuf }
+                        with Int_overflow -> lexer_error "Int overflow" v lexbuf }
   | '['          { read_space v lexbuf;
-		   let zero = read_positive_int v lexbuf in
-		   if (zero <> 0) then
-		     lexer_error
-		       (Printf.sprintf "Expected 0 but found %d" zero) v lexbuf;
-		   read_space v lexbuf;
-		   read_comma v lexbuf;
-		   read_space v lexbuf;
-		   `NCst (read_int v lexbuf) }
+                   let zero = read_positive_int v lexbuf in
+                   if (zero <> 0) then
+                     lexer_error
+                       (Printf.sprintf "Expected 0 but found %d" zero) v lexbuf;
+                   read_space v lexbuf;
+                   read_comma v lexbuf;
+                   read_space v lexbuf;
+                   `NCst (read_int v lexbuf) }
   | _            { lexer_error "Expected positive integer or '[' but found" v lexbuf }
   | eof          { eof_error v lexbuf }
 
 {
 
-  let init_lexer ?buf lexbuf =
-    let buf =
-      match buf with
-	  None -> Buffer.create 256
-	| Some buf -> buf
-    in
-    {
-      buf = buf;
-      lnum = 1;
-      bol = 0;
-      lexbuf = lexbuf;
-    }
+let init_lexer ?buf lexbuf =
+  let buf = match buf with
+    | None -> Buffer.create 256
+    | Some buf -> buf in
+  {
+    buf = buf;
+    lnum = 1;
+    bol = 0;
+    lexbuf = lexbuf;
+  }
 
-  let read_bounded_int min max v lexbuf =
-    let n = read_int v lexbuf in
-    if n < min || n > max then
-      lexer_error (Printf.sprintf "Int outside of bounds [%d - %d]" min max) v lexbuf
-    else
-      n
+let read_bounded_int min max v lexbuf =
+  let n = read_int v lexbuf in
+  if n < min || n > max then
+    lexer_error (Printf.sprintf "Int outside of bounds [%d - %d]" min max) v lexbuf
+  else
+    n
 
-  let read_tag_1 n v lexbuf =
-    if n = read_int v lexbuf
-    then n
-    else lexer_error (Printf.sprintf "Int expected to be %d" n) v lexbuf
+let read_tag_1 n v lexbuf =
+  if n = read_int v lexbuf
+  then n
+  else lexer_error (Printf.sprintf "Int expected to be %d" n) v lexbuf
 
-  let read_tag_2 n1 n2 v lexbuf =
-    let n = read_int v lexbuf in
-    if n = n1 || n = n2
-    then n
-    else lexer_error (Printf.sprintf "Int expected to be either %d or %d" n1 n2) v lexbuf
+let read_tag_2 n1 n2 v lexbuf =
+  let n = read_int v lexbuf in
+  if n = n1 || n = n2
+  then n
+  else lexer_error (Printf.sprintf "Int expected to be either %d or %d" n1 n2) v lexbuf
 
-  let read_int v = read_space v v.lexbuf; read_int v v.lexbuf
-  let read_bounded_int ?(min = 0) ~max v =
-    read_space v v.lexbuf; read_bounded_int min max v v.lexbuf
-  let read_tag_1 n v =
-    read_space v v.lexbuf; read_tag_1 n v v.lexbuf
-  let read_tag_2 n1 n2 v =
-    read_space v v.lexbuf; read_tag_2 n1 n2 v v.lexbuf
-  let read_int32 v = read_space v v.lexbuf; read_int32 v v.lexbuf
-  let read_int64 v = read_space v v.lexbuf; read_int64 v v.lexbuf
-  let read_number v = read_space v v.lexbuf; read_number v v.lexbuf
-  let read_string v = read_space v v.lexbuf; read_string v v.lexbuf
+let read_int v = read_space v v.lexbuf; read_int v v.lexbuf
+let read_bounded_int ?(min = 0) ~max v =
+  read_space v v.lexbuf; read_bounded_int min max v v.lexbuf
+let read_tag_1 n v =
+  read_space v v.lexbuf; read_tag_1 n v v.lexbuf
+let read_tag_2 n1 n2 v =
+  read_space v v.lexbuf; read_tag_2 n1 n2 v v.lexbuf
+let read_int32 v = read_space v v.lexbuf; read_int32 v v.lexbuf
+let read_int64 v = read_space v v.lexbuf; read_int64 v v.lexbuf
+let read_number v = read_space v v.lexbuf; read_number v v.lexbuf
+let read_string v = read_space v v.lexbuf; read_string v v.lexbuf
 
-  let read_case v = read_space v v.lexbuf; read_case v v.lexbuf
-  let read_vcase v = read_space v v.lexbuf; read_vcase v v.lexbuf
+let read_case v = read_space v v.lexbuf; read_case v v.lexbuf
+let read_vcase v = read_space v v.lexbuf; read_vcase v v.lexbuf
 
-  let read_lbracket v = read_space v v.lexbuf; read_lbracket v v.lexbuf
-  let read_rbracket v = read_space v v.lexbuf; read_rbracket v v.lexbuf
-  let read_comma v = read_space v v.lexbuf; read_comma v v.lexbuf
-  let read_comma_or_rbracket v =
-    read_space v v.lexbuf; read_comma_or_rbracket v v.lexbuf
+let read_lbracket v = read_space v v.lexbuf; read_lbracket v v.lexbuf
+let read_rbracket v = read_space v v.lexbuf; read_rbracket v v.lexbuf
+let read_comma v = read_space v v.lexbuf; read_comma v v.lexbuf
+let read_comma_or_rbracket v =
+  read_space v v.lexbuf; read_comma_or_rbracket v v.lexbuf
 
 }

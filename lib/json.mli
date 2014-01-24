@@ -25,4 +25,3 @@ val output: 'a -> Js.js_string Js.t
 (** Unmarshall a string in JSON format as an OCaml value (unsafe but
     fast !). *)
 val unsafe_input: Js.js_string Js.t -> 'a
-
