@@ -53,11 +53,11 @@ function caml_js_html_escape (s) {
 
 //Provides: caml_js_html_entities
 function caml_js_html_entities(s) {
-    var str, temp = document.createElement('p');
-    temp.innerHTML= s;
-    str= temp.textContent || temp.innerText;
-    temp=null;
-    return str;
+  var str, temp = document.createElement('p');
+  temp.innerHTML= s;
+  str= temp.textContent || temp.innerText;
+  temp=null;
+  return str;
 }
 
 /////////// Debugging console
