@@ -37,7 +37,7 @@
 (* Translation in ocaml by VB:
    This program is probably not the best splay tree implementation in OCaml,
    because it tries to follow exactly the steps of the Google v8 benchmark.
-*) 
+*)
 
 let kSplayTreeSize = 8000
 let kSplayTreeModifications = 80
@@ -47,7 +47,7 @@ type content_leaf = { array : int array ; string : string }
 
 type content = CLeaf of content_leaf | CNode of content * content
 
-type tree = 
+type tree =
   | Empty
   | Node of (tree * float * content * tree)
 
@@ -73,7 +73,7 @@ let rec splay_ ((left, key, value, right) as a) k =
         (* not found *)
         | Node n -> (* zig-zig *)
           let (llleft, llk, llv, llright) = splay_ n k in
-          (llleft, llk, llv, 
+          (llleft, llk, llv,
            Node (llright, lk, lv, Node(lright, key, value, right)))
       else match lright with
         | Empty -> (lleft, lk, lv, Node (Empty, key, value, right))
@@ -90,16 +90,16 @@ let rec splay_ ((left, key, value, right) as a) k =
       then match rright with
         | Empty -> (Node (left, key, value, rleft), rk, rv, rright)
                     (* not found *)
-	| Node n -> (* zag-zag *)
+| Node n -> (* zag-zag *)
           let (rrleft, rrk, rrv, rrright) = splay_ n k in
-	  (Node (Node (left, key, value, rleft), rk, rv, rrleft), 
+  (Node (Node (left, key, value, rleft), rk, rv, rrleft),
            rrk, rrv, rrright)
       else match rleft with
-	| Empty -> (Node (left, key, value, rleft), rk, rv, rright)
+| Empty -> (Node (left, key, value, rleft), rk, rv, rright)
                     (* not found *)
-	| Node n -> (* zag-zig *)
-	  let (rlleft, rlk, rlv, rlright) = splay_ n k in
-	  (Node (left, key, value, rlleft), rlk, rlv, 
+| Node n -> (* zag-zig *)
+  let (rlleft, rlk, rlv, rlright) = splay_ n k in
+  (Node (left, key, value, rlleft), rlk, rlv,
            Node (rlright, rk, rv, rright)))
 
 let rec splay t key = match t with
@@ -211,7 +211,7 @@ let insertNewNode t =
 
 let splaySetup () =
   let rec aux i t =
-    if i < kSplayTreeSize 
+    if i < kSplayTreeSize
     then aux (i+1) (snd (insertNewNode t))
     else t
   in

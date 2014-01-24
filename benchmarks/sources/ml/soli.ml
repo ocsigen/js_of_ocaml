@@ -112,5 +112,3 @@ let rec solve m =
 
 
 let _ = if solve 0 then ((*print_string "\n"; print_board board*)) else assert false
-
-
