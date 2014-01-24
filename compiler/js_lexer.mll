@@ -218,7 +218,7 @@ rule initial tokinfo prev = parse
   (* ----------------------------------------------------------------------- *)
   (* Strings *)
   (* ----------------------------------------------------------------------- *)
-  | (("'"|'"') as quote) {
+  | ("'"|'"') as quote {
     let info = tokinfo lexbuf in
     let buf = Buffer.create 127 in
     string_quote quote buf lexbuf;

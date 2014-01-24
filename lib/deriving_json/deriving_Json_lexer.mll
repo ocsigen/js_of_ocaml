@@ -187,9 +187,7 @@ and finish_utf8_encoded_byte v c1 = parse
   | eof       { eof_error v lexbuf }
 
 and finish_escaped_char v = parse
-    '"'
-  | '\\'
-  | ('/' as c) { Buffer.add_char v.buf c }
+  | (('"'|'\\'|'/') as c) { Buffer.add_char v.buf c }
   | 'b'  { Buffer.add_char v.buf '\b' }
   | 'f'  { Buffer.add_char v.buf '\012' }
   | 'n'  { Buffer.add_char v.buf '\n' }

@@ -20,7 +20,7 @@
 open Annot_parser
 }
 
-let identifier = (['a'-'z''A'-'Z''_']+)
+let identifier = ['a'-'z''A'-'Z''_']+
 
 rule initial = parse
   | "Provides" {TProvides}
