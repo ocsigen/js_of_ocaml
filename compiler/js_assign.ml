@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (*
 We are trying to achieve the following goals:
@@ -162,15 +162,15 @@ let output_debug_information t count =
   Printf.fprintf ch "Subject To\n";
   List.iter
     (fun s ->
-      if S.cardinal s > 0 then begin
-        Printf.fprintf ch "  ";
-        let a = Array.of_list (S.elements s) in
-        for i = 0 to Array.length a - 1 do
-          if i > 0 then Printf.fprintf ch " + ";
-          Printf.fprintf ch "x%d" (Code.Var.idx a.(i))
-        done;
-        Printf.fprintf ch "<= 54\n"
-      end)
+       if S.cardinal s > 0 then begin
+         Printf.fprintf ch "  ";
+         let a = Array.of_list (S.elements s) in
+         for i = 0 to Array.length a - 1 do
+           if i > 0 then Printf.fprintf ch " + ";
+           Printf.fprintf ch "x%d" (Code.Var.idx a.(i))
+         done;
+         Printf.fprintf ch "<= 54\n"
+       end)
     t.constraints;
   Printf.fprintf ch "Binary\n  ";
   List.iter (fun v -> Printf.fprintf ch " x%d" (Code.Var.idx v)) l;
@@ -261,9 +261,9 @@ let add_constraints global u ?(offset=0) params =
     end;
     for i = 0 to len - 1 do
       match params.(i) with
-        | V x ->
-          global.parameters.(i + offset) <- x :: global.parameters.(i + offset)
-        | _ -> ()
+      | V x ->
+        global.parameters.(i + offset) <- x :: global.parameters.(i + offset)
+      | _ -> ()
     done;
     global.constraints <- u :: global.constraints
   end

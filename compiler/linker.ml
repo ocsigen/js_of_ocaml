@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 
 open Util
@@ -25,11 +25,11 @@ let parse_annot loc s =
   let buf = Lexing.from_string s in
   try
     match Annot_parser.annot Annot_lexer.initial buf with
-      | `Requires (_,l) -> Some (`Requires (Some loc,l))
-      | `Provides (_,n,k) -> Some (`Provides (Some loc,n,k))
+    | `Requires (_,l) -> Some (`Requires (Some loc,l))
+    | `Provides (_,n,k) -> Some (`Provides (Some loc,n,k))
   with
-    | Not_found -> None
-    | exc ->
+  | Not_found -> None
+  | exc ->
     (* Format.eprintf "Not found for %s : %s @." (Printexc.to_string exc) s; *)
     None
 
@@ -40,8 +40,8 @@ let debug l =
   match l with
     `Provides (_, nm, k) -> Format.eprintf "provides %s (%s)@." nm k
   | `Requires (_, l) -> Format.eprintf "requires";
-      List.iter (fun nm -> Format.eprintf " %s" nm) l;
-      Format.eprintf "@."
+    List.iter (fun nm -> Format.eprintf " %s" nm) l;
+    Format.eprintf "@."
   | `Comment  -> Format.eprintf "comment@."
   | `Code _   -> Format.eprintf "code@."
   | `EOF      -> Format.eprintf "eof@."
@@ -54,23 +54,23 @@ let bind x f cont l = x (fun v l -> f v cont l) l
 let accept f cont l =
   match l with
     [] ->
-      cont None []
+    cont None []
   | x :: r ->
-      let v = f x in
-      if v = None then cont None l else cont v r
+    let v = f x in
+    if v = None then cont None l else cont v r
 
 let (++) f g =
   bind f (fun v1 -> bind g (fun v2 -> return (v1, v2)))
 
 let rec collect f =
   bind (accept f) (fun v ->
-  match v with
-    None   -> return []
-  | Some v -> bind (collect f) (fun r -> return (v :: r)))
+      match v with
+        None   -> return []
+      | Some v -> bind (collect f) (fun r -> return (v :: r)))
 
 let rec repeat f cont l =
   if l = [] then return [] cont l else
-  bind f (fun v -> bind (repeat f) (fun r -> return (v :: r))) cont l
+    bind f (fun v -> bind (repeat f) (fun r -> return (v :: r))) cont l
 
 let collect_provides l =
   collect (fun l -> match l with `Provides v -> Some v | _ -> None) l
@@ -91,47 +91,47 @@ let parse_file f =
   let file =
     try
       match Util.path_require_findlib f with
-        | Some f ->
-          let pkg,f' = match split_dir f with
-            | [] -> assert false
-            | [f] -> "js_of_ocaml",f
-            | pkg::l -> pkg, List.fold_left Filename.concat "" l in
-          Filename.concat (Util.find_pkg_dir pkg)  f'
-        | None -> f
+      | Some f ->
+        let pkg,f' = match split_dir f with
+          | [] -> assert false
+          | [f] -> "js_of_ocaml",f
+          | pkg::l -> pkg, List.fold_left Filename.concat "" l in
+        Filename.concat (Util.find_pkg_dir pkg)  f'
+      | None -> f
     with
-      | Not_found ->
-        error "cannot find file '%s'. @." f
-      | Sys_error s ->
-        error "%s@." s
+    | Not_found ->
+      error "cannot find file '%s'. @." f
+    | Sys_error s ->
+      error "%s@." s
   in
 
   let lex = Parse_js.lexer_from_file ~rm_comment:false file in
   let status,lexs = Parse_js.lexer_fold (fun (status,lexs) t ->
-    match t with
+      match t with
       | Js_token.TComment (info,str) -> begin
-        match parse_annot info str with
+          match parse_annot info str with
           | None -> (status,lexs)
           | Some a ->
             match status with
-              | `Annot annot -> `Annot (a::annot),lexs
-              | `Code (an,co) -> `Annot [a], ((List.rev an,List.rev co)::lexs)
-      end
+            | `Annot annot -> `Annot (a::annot),lexs
+            | `Code (an,co) -> `Annot [a], ((List.rev an,List.rev co)::lexs)
+        end
       | _ when Js_token.is_comment t -> (status,lexs)
       | c -> match status with
-          | `Code (annot,code) -> `Code (annot,c::code),lexs
-          | `Annot (annot) -> `Code(annot,[c]),lexs
-  ) (`Annot [],[]) lex in
+        | `Code (annot,code) -> `Code (annot,c::code),lexs
+        | `Annot (annot) -> `Code(annot,[c]),lexs
+    ) (`Annot [],[]) lex in
   let lexs = match status with
     | `Annot _ -> lexs
     | `Code(annot,code) -> (List.rev annot,List.rev code)::lexs in
 
   let res = List.rev_map (fun (annot,code) ->
-    let lex = Parse_js.lexer_from_list code in
-    try
-      annot,Parse_js.parse lex
-    with Parse_js.Parsing_error pi ->
-      error "cannot parse file %s from l:%d, c:%d@." f pi.Parse_info.line pi.Parse_info.col)
-    lexs in
+      let lex = Parse_js.lexer_from_list code in
+      try
+        annot,Parse_js.parse lex
+      with Parse_js.Parsing_error pi ->
+        error "cannot parse file %s from l:%d, c:%d@." f pi.Parse_info.line pi.Parse_info.col)
+      lexs in
   res
 
 let last_code_id = ref 0
@@ -143,26 +143,26 @@ let add_file f =
 
   List.iter
     (fun (annot,code) ->
-      incr last_code_id;
-      let id = !last_code_id in
+       incr last_code_id;
+       let id = !last_code_id in
 
-      let req,has_provide = List.fold_left (fun (req,has_provide) a -> match a with
-        | `Provides (pi,name,kind) ->
-          Primitive.register name kind;
-          if Hashtbl.mem provided name
-          then begin
-            let loc pi = match pi with
-              | None -> "unknown location"
-              | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line in
-            let ploc = snd(Hashtbl.find provided name) in
-            Format.eprintf "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
-          end;
-          Hashtbl.add provided name (id,pi);
-          req,true
-        | `Requires (_,mn) -> (mn@req),has_provide) ([],false) annot in
+       let req,has_provide = List.fold_left (fun (req,has_provide) a -> match a with
+           | `Provides (pi,name,kind) ->
+             Primitive.register name kind;
+             if Hashtbl.mem provided name
+             then begin
+               let loc pi = match pi with
+                 | None -> "unknown location"
+                 | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line in
+               let ploc = snd(Hashtbl.find provided name) in
+               Format.eprintf "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
+             end;
+             Hashtbl.add provided name (id,pi);
+             req,true
+           | `Requires (_,mn) -> (mn@req),has_provide) ([],false) annot in
 
-      if not has_provide then always_included := id :: !always_included;
-      Hashtbl.add code_pieces id (code, req))
+       if not has_provide then always_included := id :: !always_included;
+       Hashtbl.add code_pieces id (code, req))
     (parse_file f)
 
 type visited = {
@@ -181,7 +181,7 @@ let rec resolve_dep visited path nm =
 
 and resolve_dep_rec visited path id =
   if IntSet.mem id visited.ids then begin
-(*    if List.memq id path then error  "circular dependency";*)
+    (*    if List.memq id path then error  "circular dependency";*)
     visited
   end else begin
     let visited = { visited with ids = IntSet.add id visited.ids } in
@@ -204,10 +204,10 @@ let resolve_deps ?(linkall = false) program used =
   let (missing, visited) =
     StringSet.fold
       (fun nm (missing, visited)->
-        if Hashtbl.mem provided nm then
-          (missing, resolve_dep visited [] nm)
-        else
-          (StringSet.add nm missing, visited))
+         if Hashtbl.mem provided nm then
+           (missing, resolve_dep visited [] nm)
+         else
+           (StringSet.add nm missing, visited))
       used (StringSet.empty, visited)
   in
   let visited =

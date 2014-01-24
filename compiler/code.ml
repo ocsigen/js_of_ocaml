@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 
 module Var : sig
@@ -180,39 +180,39 @@ let print_cont f (pc, args) =
 let rec print_constant f x =
   match x with
     String s ->
-      Format.fprintf f "%S" s
+    Format.fprintf f "%S" s
   | IString s ->
-      Format.fprintf f "%S" s
+    Format.fprintf f "%S" s
   | Float fl ->
-      Format.fprintf f "%.12g" fl
+    Format.fprintf f "%.12g" fl
   | Float_array a ->
-      Format.fprintf f "[|";
-      for i = 0 to Array.length a - 1 do
-        if i > 0 then Format.fprintf f ", ";
-        Format.fprintf f "%.12g" a.(i)
-      done;
-      Format.fprintf f "|]"
+    Format.fprintf f "[|";
+    for i = 0 to Array.length a - 1 do
+      if i > 0 then Format.fprintf f ", ";
+      Format.fprintf f "%.12g" a.(i)
+    done;
+    Format.fprintf f "|]"
   | Int32 i ->
-      Format.fprintf f "%ldl" i
+    Format.fprintf f "%ldl" i
   | Nativeint i ->
-      Format.fprintf f "%ndn" i
+    Format.fprintf f "%ndn" i
   | Int64 i ->
-      Format.fprintf f "%LdL" i
+    Format.fprintf f "%LdL" i
   | Tuple (tag, a) ->
-      Format.fprintf f "<%d>" tag;
-      begin match Array.length a with
+    Format.fprintf f "<%d>" tag;
+    begin match Array.length a with
         0 -> ()
       | 1 ->
-          Format.fprintf f "("; print_constant f a.(0); Format.fprintf f ")"
+        Format.fprintf f "("; print_constant f a.(0); Format.fprintf f ")"
       | n ->
-          Format.fprintf f "("; print_constant f a.(0);
-          for i = 1 to n - 1 do
-            Format.fprintf f ", "; print_constant f a.(i)
-          done;
-          Format.fprintf f ")"
-      end
-   | Int i ->
-       Format.fprintf f "%d" i
+        Format.fprintf f "("; print_constant f a.(0);
+        for i = 1 to n - 1 do
+          Format.fprintf f ", "; print_constant f a.(i)
+        done;
+        Format.fprintf f ")"
+    end
+  | Int i ->
+    Format.fprintf f "%d" i
 
 let print_arg f a =
   match a with
@@ -245,17 +245,17 @@ let print_prim f p l =
     Vectlength, [x]   -> Format.fprintf f "%a.length" print_arg x
   | Array_get, [x; y] -> Format.fprintf f "%a[%a]" print_arg x print_arg y
   | Extern s, [x; y]  ->
-      begin try
+    begin try
         Format.fprintf f "%a %s %a" print_arg x (binop s) print_arg y
       with Not_found ->
         Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l
-      end
+    end
   | Extern s, [x]  ->
-      begin try
+    begin try
         Format.fprintf f "%s %a" (unop s) print_arg x
       with Not_found ->
         Format.fprintf f "\"%s\"(%a)" s (print_list print_arg) l
-      end
+    end
   | Extern s, _       -> Format.fprintf f "\"%s\"(%a)"
                            s (print_list print_arg) l
   | Not, [x]          -> Format.fprintf f "!%a" print_arg x
@@ -271,37 +271,37 @@ let print_prim f p l =
 let print_expr f e =
   match e with
     Const i ->
-      Format.fprintf f "%d" i
+    Format.fprintf f "%d" i
   | Apply (g, l, exact) ->
-      if exact then
-        Format.fprintf f "%a!(%a)" Var.print g print_var_list l
-      else
-        Format.fprintf f "%a(%a)" Var.print g print_var_list l
+    if exact then
+      Format.fprintf f "%a!(%a)" Var.print g print_var_list l
+    else
+      Format.fprintf f "%a(%a)" Var.print g print_var_list l
   | Block (t, a) ->
-      Format.fprintf f "{tag=%d" t;
-      for i = 0 to Array.length a - 1 do
-        Format.fprintf f "; %d = %a" i Var.print a.(i)
-      done;
-      Format.fprintf f "}"
+    Format.fprintf f "{tag=%d" t;
+    for i = 0 to Array.length a - 1 do
+      Format.fprintf f "; %d = %a" i Var.print a.(i)
+    done;
+    Format.fprintf f "}"
   | Field (x, i) ->
-      Format.fprintf f "%a[%d]" Var.print x i
+    Format.fprintf f "%a[%d]" Var.print x i
   | Closure (l, cont) ->
-      Format.fprintf f "fun(%a){%a}" print_var_list l print_cont cont
+    Format.fprintf f "fun(%a){%a}" print_var_list l print_cont cont
   | Constant c ->
-      Format.fprintf f "CONST{%a}" print_constant c
+    Format.fprintf f "CONST{%a}" print_constant c
   | Prim (p, l) ->
-      print_prim f p l
+    print_prim f p l
 
 let print_instr f i =
   match i with
     Let (x, e)    ->
-      Format.fprintf f "%a = %a" Var.print x print_expr e
+    Format.fprintf f "%a = %a" Var.print x print_expr e
   | Set_field (x, i, y) ->
-      Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
+    Format.fprintf f "%a[%d] = %a" Var.print x i Var.print y
   | Offset_ref (x, i) ->
-      Format.fprintf f "%a[0] += %d" Var.print x i
+    Format.fprintf f "%a[0] += %d" Var.print x i
   | Array_set (x, y, z) ->
-      Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
+    Format.fprintf f "%a[%a] = %a" Var.print x Var.print y Var.print z
 
 let print_cond f (c, x) =
   match c with
@@ -314,37 +314,37 @@ let print_cond f (c, x) =
 let print_last f l =
   match l with
     Return x ->
-      Format.fprintf f "return %a" Var.print x
+    Format.fprintf f "return %a" Var.print x
   | Raise x ->
-      Format.fprintf f "raise %a" Var.print x
+    Format.fprintf f "raise %a" Var.print x
   | Stop ->
-      Format.fprintf f "stop"
+    Format.fprintf f "stop"
   | Branch cont ->
-      Format.fprintf f "branch %a" print_cont cont
+    Format.fprintf f "branch %a" print_cont cont
   | Cond (cond, x, cont1, cont2) ->
-      Format.fprintf f "if %a then %a else %a" print_cond (cond, x)
-        print_cont cont1 print_cont cont2
+    Format.fprintf f "if %a then %a else %a" print_cond (cond, x)
+      print_cont cont1 print_cont cont2
   | Switch (x, a1, a2) ->
-      Format.fprintf f "switch %a {" Var.print x;
-      Array.iteri
-        (fun i cont -> Format.fprintf f "int %d -> %a; " i print_cont cont) a1;
-      Array.iteri
-        (fun i cont -> Format.fprintf f "tag %d -> %a; " i print_cont cont) a2;
-      Format.fprintf f "}"
+    Format.fprintf f "switch %a {" Var.print x;
+    Array.iteri
+      (fun i cont -> Format.fprintf f "int %d -> %a; " i print_cont cont) a1;
+    Array.iteri
+      (fun i cont -> Format.fprintf f "tag %d -> %a; " i print_cont cont) a2;
+    Format.fprintf f "}"
   | Pushtrap (cont1, x, cont2, pc) ->
-      Format.fprintf f "pushtrap %a handler %a => %a continuation %d"
-        print_cont cont1 Var.print x print_cont cont2 pc
+    Format.fprintf f "pushtrap %a handler %a => %a continuation %d"
+      print_cont cont1 Var.print x print_cont cont2 pc
   | Poptrap cont ->
-      Format.fprintf f "poptrap %a" print_cont cont
+    Format.fprintf f "poptrap %a" print_cont cont
 
 type xinstr = Instr of instr | Last of last
 
 let print_block annot pc block =
   Format.eprintf "==== %d (%a) ====@." pc print_var_list block.params;
   begin match block.handler with
-    Some (x, cont) ->
+      Some (x, cont) ->
       Format.eprintf "    handler %a => %a@." Var.print x print_cont cont
-  | None ->
+    | None ->
       ()
   end;
   List.iter
@@ -367,9 +367,9 @@ let fold_closures (pc, blocks, _) f accu =
          (fun accu i ->
             match i with
               Let (x, Closure (params, cont)) ->
-                f (Some x) params cont accu
+              f (Some x) params cont accu
             | _ ->
-                accu)
+              accu)
          accu block.body)
     blocks (f None [] (pc, []) accu)
 
@@ -386,24 +386,24 @@ let fold_children blocks pc f accu =
   in
   match block.branch with
     Return _ | Raise _ | Stop ->
-      accu
+    accu
   | Branch (pc', _) | Poptrap (pc', _) | Pushtrap ((pc', _), _, _, _) ->
-      f pc' accu
+    f pc' accu
   | Cond (_, _, (pc1, _), (pc2, _)) ->
-      f pc1 accu >> f pc1 >> f pc2
+    f pc1 accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+    accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
+    >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
 let eq (pc1,blocks1,_) (pc2,blocks2,_) =
   pc1 = pc2 &&
   AddrMap.cardinal blocks1 = AddrMap.cardinal blocks2 &&
   AddrMap.fold (fun pc block1 b ->
-    b &&
-    try
-      let block2 = AddrMap.find pc blocks2 in
-      block1.params = block2.params &&
-      block1.branch = block2.branch &&
-      block1.body   = block2.body
-    with Not_found -> false
-  ) blocks1 true
+      b &&
+      try
+        let block2 = AddrMap.find pc blocks2 in
+        block1.params = block2.params &&
+        block1.branch = block2.branch &&
+        block1.body   = block2.body
+      with Not_found -> false
+    ) blocks1 true

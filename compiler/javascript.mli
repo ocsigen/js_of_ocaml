@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 module Label : sig
   type t
@@ -81,9 +81,9 @@ and expression =
   | EVar of ident
   | EFun of function_expression
   | EStr of string * [`Bytes | `Utf8]
-      (* A string can either be composed of a sequence of bytes, or be
-         UTF-8 encoded. In the second case, the string may contain
-         escape sequences. *)
+  (* A string can either be composed of a sequence of bytes, or be
+     UTF-8 encoded. In the second case, the string may contain
+     escape sequences. *)
   | EArr of array_litteral
   | EBool of bool
   | ENum of float

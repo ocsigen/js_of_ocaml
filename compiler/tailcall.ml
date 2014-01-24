@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 let times = Option.Debug.find "times"
 
@@ -35,44 +35,44 @@ let rec tail_call x f l =
   match l with
     [] -> None
   | [Let (y, Apply (g, args, _))]
-        when Var.compare x y = 0 && Var.compare f g = 0 ->
-      Some args
+    when Var.compare x y = 0 && Var.compare f g = 0 ->
+    Some args
   | i :: rem ->
-      tail_call x f rem
+    tail_call x f rem
 
 let rec return ?(subst=VarMap.empty) block blocks =
   match block.branch with
-    | Return x -> Some (Subst.from_map subst x)
-    | Branch (pc,l) ->
-      let block = AddrMap.find pc blocks in
-      if block.body = []
-      then
-        let subst = Subst.build_mapping block.params l in
-        return ~subst block blocks
-      else None
-    | _ -> None
+  | Return x -> Some (Subst.from_map subst x)
+  | Branch (pc,l) ->
+    let block = AddrMap.find pc blocks in
+    if block.body = []
+    then
+      let subst = Subst.build_mapping block.params l in
+      return ~subst block blocks
+    else None
+  | _ -> None
 
 let rewrite_block (f, f_params, f_pc, args) pc blocks =
   (*Format.eprintf "%d@." pc;*)
   let block = AddrMap.find pc blocks in
   match return block blocks with
-    | Some x ->
-        begin match tail_call x f block.body with
-            Some f_args when List.length f_params = List.length f_args ->
-            let m = Subst.build_mapping f_params f_args in
-            AddrMap.add pc
-              { params = block.params;
-                handler = block.handler;
-                body = remove_last block.body;
-                branch =
-                  Branch
-                    (f_pc, List.map (fun x -> VarMap.find x m) args) }
-              blocks
-          | _ ->
-            blocks
-        end
-    | _ ->
-      blocks
+  | Some x ->
+    begin match tail_call x f block.body with
+        Some f_args when List.length f_params = List.length f_args ->
+        let m = Subst.build_mapping f_params f_args in
+        AddrMap.add pc
+          { params = block.params;
+            handler = block.handler;
+            body = remove_last block.body;
+            branch =
+              Branch
+                (f_pc, List.map (fun x -> VarMap.find x m) args) }
+          blocks
+      | _ ->
+        blocks
+    end
+  | _ ->
+    blocks
 
 let (>>) x f = f x
 
@@ -81,16 +81,16 @@ let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
     Return _ | Raise _ | Stop ->
-      accu
+    accu
   | Branch (pc', _) | Poptrap (pc', _) ->
-      f pc' accu
+    f pc' accu
   | Pushtrap (_, _, (pc1, _), pc2) ->
-      f pc1 (if pc2 >= 0 then f pc2 accu else accu)
+    f pc1 (if pc2 >= 0 then f pc2 accu else accu)
   | Cond (_, _, (pc1, _), (pc2, _)) ->
-      accu >> f pc1 >> f pc2
+    accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+    accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
+    >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
 let rec traverse f pc visited blocks =
   if not (AddrSet.mem pc visited) then begin
@@ -114,12 +114,12 @@ let f ((pc, blocks, free_pc) as p) =
     fold_closures p
       (fun f params (pc, args) blocks ->
          match f with
-             Some f when List.length params = List.length args ->
-             let (_, blocks) =
-               traverse (f, params, pc, args) pc AddrSet.empty blocks in
-             blocks
-           | _ ->
-             blocks)
+           Some f when List.length params = List.length args ->
+           let (_, blocks) =
+             traverse (f, params, pc, args) pc AddrSet.empty blocks in
+           blocks
+         | _ ->
+           blocks)
       blocks
   in
   if times () then Format.eprintf "  tail calls: %a@." Util.Timer.print t;

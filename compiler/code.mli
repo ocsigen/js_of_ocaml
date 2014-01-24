@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 module Var : sig
   type t
@@ -94,7 +94,7 @@ type prim_arg =
 type expr =
     Const of int
   | Apply of Var.t * Var.t list * bool
-                           (* if true, then # of arguments = # of parameters *)
+  (* if true, then # of arguments = # of parameters *)
   | Block of int * Var.t array
   | Field of Var.t * int
   | Closure of Var.t list * cont

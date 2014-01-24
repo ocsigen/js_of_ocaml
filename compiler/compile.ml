@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 let times = Option.Debug.find "times"
 
@@ -32,12 +32,12 @@ let f toplevel linkall paths js_files input_file output_file source_map =
   let p,d =
     match input_file with
       None ->
-        Parse_bytecode.from_channel ~toplevel ~debug:need_debug ~paths stdin
+      Parse_bytecode.from_channel ~toplevel ~debug:need_debug ~paths stdin
     | Some f ->
-        let ch = open_in_bin f in
-        let p,d = Parse_bytecode.from_channel ~debug:need_debug ~toplevel ~paths ch in
-        close_in ch;
-        p,d
+      let ch = open_in_bin f in
+      let p,d = Parse_bytecode.from_channel ~debug:need_debug ~toplevel ~paths ch in
+      close_in ch;
+      p,d
   in
   if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
   let output_program fmt = Driver.f ~toplevel ~linkall ?source_map fmt d p in
@@ -91,42 +91,42 @@ let _ =
   in
   if !toplevel then linkall:=true;
   Arg.parse (Arg.align options)
-    (fun s ->
-       if Filename.check_suffix s ".js" then
-         js_files := s :: !js_files
-       else
-         input_file := Some s)
-    (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  let runtime = if !no_runtime then [] else ["+runtime.js"] in
-  let chop_extension s =
-    try Filename.chop_extension s with Invalid_argument _ -> s in
-  let output_f = match !output_file with
-      Some _ -> !output_file
-    | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") !input_file in
-  let source_m =
-    if !source_map
-    then
-      if Option.Optim.pretty ()
-      then begin
-        Format.eprintf "Source-map is not compatible with pretty mode@.";
-        exit 1
-      end
-      else match output_f with
-        | Some file ->
-          Some (
-            chop_extension file ^ ".map",
-            {
-              Source_map.version = 3;
-              file;
-              sourceroot = None;
-              sources = [];
-              sources_content = [];
-              names = [];
-              mappings = []
-            })
-        | None ->
-          Format.eprintf "Don't know where to output the Source-map@.";
+      (fun s ->
+         if Filename.check_suffix s ".js" then
+           js_files := s :: !js_files
+         else
+           input_file := Some s)
+      (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
+    let runtime = if !no_runtime then [] else ["+runtime.js"] in
+    let chop_extension s =
+      try Filename.chop_extension s with Invalid_argument _ -> s in
+    let output_f = match !output_file with
+        Some _ -> !output_file
+      | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") !input_file in
+    let source_m =
+      if !source_map
+      then
+        if Option.Optim.pretty ()
+        then begin
+          Format.eprintf "Source-map is not compatible with pretty mode@.";
           exit 1
-    else None in
-  f !toplevel !linkall !paths (runtime @ List.rev !js_files)
-    !input_file output_f source_m
+        end
+        else match output_f with
+          | Some file ->
+            Some (
+              chop_extension file ^ ".map",
+              {
+                Source_map.version = 3;
+                file;
+                sourceroot = None;
+                sources = [];
+                sources_content = [];
+                names = [];
+                mappings = []
+              })
+          | None ->
+            Format.eprintf "Don't know where to output the Source-map@.";
+            exit 1
+      else None in
+    f !toplevel !linkall !paths (runtime @ List.rev !js_files)
+      !input_file output_f source_m
