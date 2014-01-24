@@ -246,7 +246,7 @@ let invoke_handler
 let eventTarget (e: (< .. > as 'a) #event t) : 'a t =
   let target =
     Optdef.get (e##target) (fun () ->
-    Optdef.get (e##srcElement) (fun () -> assert false))
+        Optdef.get (e##srcElement) (fun () -> assert false))
   in
   if Js.instanceof target (Js.Unsafe.global ## _Node)
   then
