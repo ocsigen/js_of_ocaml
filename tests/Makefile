@@ -22,7 +22,7 @@ tests.byte: $(TESTS_CMO) $(COMMON)
 	@$(OCAMLC) -linkpkg $(STDLIB) ../lib/deriving_json.cma common.cmo -package unix $(TESTS_CMO) -o tests.byte
 
 %.log: %.js
-	(phantomjs $^ > $@ && head -n 1 $@) || (echo "Error for " $^ "\n" && mv $@ $@.err && cat $@.err)
+	@(phantomjs $^ > $@ && head -n 1 $@) || (echo "Error for " $^ "\n" && mv $@ $@.err && cat $@.err)
 
 clean:
 	rm -f *.cm[io] *.byte *.js dir/*.cm[io] dir/*.byte dir/*.js dir/*.log
