@@ -16,11 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (** DOM HTML binding
 
-This is a partial binding to the DOM HTML API.
+    This is a partial binding to the DOM HTML API.
 *)
 
 open Js
@@ -128,9 +128,9 @@ end
 (** {2 Events} *)
 
 type (-'a, -'b) event_listener = ('a, 'b) Dom.event_listener
-  (** The type of event listener functions.  The first type parameter
-      ['a] is the type of the target object; the second parameter
-      ['b] is the type of the event object. *)
+(** The type of event listener functions.  The first type parameter
+    ['a] is the type of the target object; the second parameter
+    ['b] is the type of the event object. *)
 
 type mouse_button =
   | No_button
@@ -316,8 +316,8 @@ and element = object
   method dir : js_string t prop
   method className : js_string t prop
   method classList : tokenList t readonly_prop
-    (* Not supported by IE9 by default. Add +classList.js to the
-       Js_of_ocaml command line for compatibility *)
+  (* Not supported by IE9 by default. Add +classList.js to the
+     Js_of_ocaml command line for compatibility *)
   method style : cssStyleDeclaration t prop
 
   method innerHTML : js_string t prop
@@ -922,7 +922,7 @@ class type document = object
 end
 
 val document : document t
-  (** The current document *)
+(** The current document *)
 
 (** {2 Window objects} *)
 
@@ -955,12 +955,12 @@ end
 
 (** Undo manager *)
 class type undoManager = object
-(*...*)
+  (*...*)
 end
 
 (** Information on current selection *)
 class type selection = object
-(*...*)
+  (*...*)
 end
 
 (** Navigator information *)
@@ -1063,15 +1063,15 @@ class type window = object
 end
 
 val window : window t
-  (** The current window *)
+(** The current window *)
 
 val _requestAnimationFrame : (unit -> unit) Js.callback -> unit
-  (** Call the appropriate [requestAnimationFrame] method variant
-      (depending on the navigator), or sleep for a short amount
-      of time when there no such method is provided. We currently
-      prefix the function name with as underscore as the interface of
-      this function is not completely standardized yet. Thus, we leave
-      the room to a function with a possibly refined type. *)
+(** Call the appropriate [requestAnimationFrame] method variant
+    (depending on the navigator), or sleep for a short amount
+    of time when there no such method is provided. We currently
+    prefix the function name with as underscore as the interface of
+    this function is not completely standardized yet. Thus, we leave
+    the room to a function with a possibly refined type. *)
 
 (* {2 Frames } *)
 
@@ -1114,18 +1114,18 @@ end
 (** {2 Event handlers} *)
 
 val no_handler : ('a, 'b) event_listener
-  (** see [Dom.no_handler] *)
+(** see [Dom.no_handler] *)
 val handler : ((#event t as 'b) -> bool t) -> ('a, 'b) event_listener
-  (** see [Dom.handler] *)
+(** see [Dom.handler] *)
 val full_handler : ('a -> (#event t as 'b) -> bool t) -> ('a, 'b) event_listener
-  (** see [Dom.full_handler] *)
+(** see [Dom.full_handler] *)
 val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
-  (** see [Dom.invoke_handler] *)
+(** see [Dom.invoke_handler] *)
 val eventTarget : #event t -> element t
-  (** see [Dom.eventTarget] *)
+(** see [Dom.eventTarget] *)
 
 val eventRelatedTarget : #mouseEvent t -> element t opt
-  (** Returns this event related target. *)
+(** Returns this event related target. *)
 
 (** Event types: [mousedown], [keypress], ... *)
 module Event : sig
@@ -1190,20 +1190,20 @@ type event_listener_id = Dom.event_listener_id
 val addEventListener :
   (#eventTarget t as 'a) -> 'b Event.typ ->
   ('a, 'b) event_listener -> bool t -> event_listener_id
-  (** Add an event listener.  This function matches the
-      [addEventListener] DOM method, except that it returns
-      an id for removing the listener. *)
+(** Add an event listener.  This function matches the
+    [addEventListener] DOM method, except that it returns
+    an id for removing the listener. *)
 
 val removeEventListener : event_listener_id -> unit
-  (** Remove the given event listener. *)
+(** Remove the given event listener. *)
 
 val addMousewheelEventListener :
   (#eventTarget t as 'a) ->
   (mouseEvent t -> dx:int -> dy:int -> bool t) ->
   bool t -> event_listener_id
-  (** Add a mousewheel event listener.  The callback is provided the
-      event and the numbers of ticks the mouse wheel moved.  Positive
-      means down / right. *)
+(** Add a mousewheel event listener.  The callback is provided the
+    event and the numbers of ticks the mouse wheel moved.  Positive
+    means down / right. *)
 
 (****)
 
@@ -1214,11 +1214,11 @@ val buttonPressed : #mouseEvent Js.t -> mouse_button
 (** {2 Position helper functions} *)
 
 val eventAbsolutePosition : #mouseEvent t -> int * int
-  (** Returns the absolute position of the mouse pointer. *)
+(** Returns the absolute position of the mouse pointer. *)
 val elementClientPosition : #element t -> int * int
-  (** Position of an element relative to the viewport *)
+(** Position of an element relative to the viewport *)
 val getDocumentScroll : unit -> int * int
-  (** Viewport top/left position *)
+(** Viewport top/left position *)
 
 (****)
 
@@ -1309,16 +1309,16 @@ val createIframe : document t -> iFrameElement t
 
 exception Canvas_not_available
 val createCanvas : document t -> canvasElement t
-  (** @raise Canvas_not_available when canvas elements are not
-      supported by the browser. *)
+(** @raise Canvas_not_available when canvas elements are not
+    supported by the browser. *)
 
 (****)
 
 (** {2 Coercion functions} *)
 
 val element : #Dom.element t -> element t
-  (** Coercion from a general DOM element to an HTML element.
-      (Unsafe in general.) *)
+(** Coercion from a general DOM element to an HTML element.
+    (Unsafe in general.) *)
 
 type taggedElement =
   | A of anchorElement t

@@ -16,21 +16,21 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (** Javascript events *)
 
 module Typ :
-  sig
-    include module type of Dom_html.Event
-  end
+sig
+  include module type of Dom_html.Event
+end
 
 
 type listener
 
 
 val listen :
-     ?capture:bool
+  ?capture:bool
   -> (#Dom_html.eventTarget as 'a) Js.t
   -> (#Dom_html.event as 'b) Js.t Typ.typ
   -> ('a Js.t -> 'b Js.t -> bool)

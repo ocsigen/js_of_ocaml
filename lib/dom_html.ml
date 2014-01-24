@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Js
 
@@ -1153,37 +1153,37 @@ let rec unsafeCreateElementEx ?_type ?name doc elt =
   else
     match !createElementSyntax with
       `Standard ->
-        let res = Js.Unsafe.coerce (createElement doc elt) in
-        opt_iter _type (fun t -> res##_type <- t);
-        opt_iter name (fun n -> res##name <- n);
-        res
+      let res = Js.Unsafe.coerce (createElement doc elt) in
+      opt_iter _type (fun t -> res##_type <- t);
+      opt_iter name (fun n -> res##name <- n);
+      res
     | `Extended ->
-        let a = jsnew Js.array_empty () in
-        ignore (a##push_2(Js.string "<", Js.string elt));
-        opt_iter _type (fun t ->
+      let a = jsnew Js.array_empty () in
+      ignore (a##push_2(Js.string "<", Js.string elt));
+      opt_iter _type (fun t ->
           ignore
             (a##push_3(Js.string " type=\"", html_escape t, Js.string "\"")));
-        opt_iter name (fun n ->
+      opt_iter name (fun n ->
           ignore
             (a##push_3(Js.string " name=\"", html_escape n, Js.string "\"")));
-        ignore (a##push(Js.string ">"));
-        Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
+      ignore (a##push(Js.string ">"));
+      Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
     | `Unknown ->
-        createElementSyntax :=
-          if
-            try
-              let el : inputElement Js.t =
-                Js.Unsafe.coerce
-                  (document##createElement(Js.string "<input name=\"x\">")) in
-              el##tagName##toLowerCase() == Js.string "input" &&
-              el##name == Js.string "x"
-            with _ ->
-              false
-          then
-            `Extended
-          else
-            `Standard;
-        unsafeCreateElementEx ?_type ?name doc elt
+      createElementSyntax :=
+        if
+          try
+            let el : inputElement Js.t =
+              Js.Unsafe.coerce
+                (document##createElement(Js.string "<input name=\"x\">")) in
+            el##tagName##toLowerCase() == Js.string "input" &&
+            el##name == Js.string "x"
+          with _ ->
+            false
+        then
+          `Extended
+        else
+          `Standard;
+      unsafeCreateElementEx ?_type ?name doc elt
 
 let createHtml doc : htmlElement t = unsafeCreateElement doc "html"
 let createHead doc : headElement t = unsafeCreateElement doc "head"
@@ -1283,16 +1283,16 @@ module CoerceTo = struct
   let element : #Dom.node Js.t -> element Js.t Js.opt =
     if def html_element == undefined then
       (* ie < 9 does not have HTMLElement: we have to cheat to check
-	 that something is an html element *)
+         that something is an html element *)
       (fun e ->
-	if def ((Js.Unsafe.coerce e)##innerHTML) == undefined then
-	  Js.null
-	else Js.some (Js.Unsafe.coerce e))
+         if def ((Js.Unsafe.coerce e)##innerHTML) == undefined then
+           Js.null
+         else Js.some (Js.Unsafe.coerce e))
     else
       (fun e ->
-	if Js.instanceof e html_element then
-	  Js.some (Js.Unsafe.coerce e)
-	else Js.null)
+         if Js.instanceof e html_element then
+           Js.some (Js.Unsafe.coerce e)
+         else Js.null)
 
   let unsafeCoerce tag (e : #element t) =
     if e##tagName##toLowerCase() == Js.string tag then
@@ -1380,10 +1380,10 @@ let eventTarget = Dom.eventTarget
 
 let eventRelatedTarget (e : #mouseEvent t) =
   Optdef.get (e##relatedTarget) (fun () ->
-  match Js.to_string (e##_type) with
-    "mouseover" -> Optdef.get (e##fromElement) (fun () -> assert false)
-  | "mouseout"  -> Optdef.get (e##toElement) (fun () -> assert false)
-  | _           -> Js.null)
+      match Js.to_string (e##_type) with
+        "mouseover" -> Optdef.get (e##fromElement) (fun () -> assert false)
+      | "mouseout"  -> Optdef.get (e##toElement) (fun () -> assert false)
+      | _           -> Js.null)
 
 let eventAbsolutePosition' (e : #mouseEvent t) =
   let body = document##body in
@@ -1393,8 +1393,8 @@ let eventAbsolutePosition' (e : #mouseEvent t) =
 
 let eventAbsolutePosition (e : #mouseEvent t) =
   Optdef.case (e##pageX) (fun () -> eventAbsolutePosition' e) (fun x ->
-  Optdef.case (e##pageY) (fun () -> eventAbsolutePosition' e) (fun y ->
-  (x, y)))
+      Optdef.case (e##pageY) (fun () -> eventAbsolutePosition' e) (fun y ->
+          (x, y)))
 
 let elementClientPosition (e : #element t) =
   let r = e##getBoundingClientRect () in
@@ -1411,11 +1411,11 @@ let getDocumentScroll () =
 let buttonPressed (ev : #mouseEvent Js.t) =
   Js.Optdef.case (ev##which)
     (fun () ->
-      match ev##button with
-	| 1 -> Left_button
-	| 2 -> Right_button
-	| 4 -> Middle_button
-	| _ -> No_button)
+       match ev##button with
+       | 1 -> Left_button
+       | 2 -> Right_button
+       | 4 -> Middle_button
+       | _ -> No_button)
     (fun x -> x)
 
 let hasMousewheelEvents () =
@@ -1517,45 +1517,45 @@ let tagged (e : #element t) =
   else
     match String.unsafe_get tag 0 with
       'a' ->
-        begin match tag with
+      begin match tag with
         | "a" -> A (Js.Unsafe.coerce e)
         | "area" -> Area (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'b' ->
-        begin match tag with
+      begin match tag with
         | "base" -> Base (Js.Unsafe.coerce e)
         | "blockquote" -> Blockquote (Js.Unsafe.coerce e)
         | "body" -> Body (Js.Unsafe.coerce e)
         | "br" -> Br (Js.Unsafe.coerce e)
         | "button" -> Button (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'c' ->
-        begin match tag with
+      begin match tag with
         | "canvas" -> Canvas (Js.Unsafe.coerce e)
         | "caption" -> Caption (Js.Unsafe.coerce e)
         | "col" -> Col (Js.Unsafe.coerce e)
         | "colgroup" -> Colgroup (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'd' ->
-        begin match tag with
+      begin match tag with
         | "del" -> Del (Js.Unsafe.coerce e)
         | "div" -> Div (Js.Unsafe.coerce e)
         | "dl" -> Dl (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'f' ->
-        begin match tag with
+      begin match tag with
         | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
         | "form" -> Form (Js.Unsafe.coerce e)
         | "frameset" -> Frameset (Js.Unsafe.coerce e)
         | "frame" -> Frame (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'h' ->
-        begin match tag with
+      begin match tag with
         | "h1" -> H1 (Js.Unsafe.coerce e)
         | "h2" -> H2 (Js.Unsafe.coerce e)
         | "h3" -> H3 (Js.Unsafe.coerce e)
@@ -1566,58 +1566,58 @@ let tagged (e : #element t) =
         | "hr" -> Hr (Js.Unsafe.coerce e)
         | "html" -> Html (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'i' ->
-        begin match tag with
+      begin match tag with
         | "iframe" -> Iframe (Js.Unsafe.coerce e)
         | "img" -> Img (Js.Unsafe.coerce e)
         | "input" -> Input (Js.Unsafe.coerce e)
         | "ins" -> Ins (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'l' ->
-        begin match tag with
+      begin match tag with
         | "label" -> Label (Js.Unsafe.coerce e)
         | "legend" -> Legend (Js.Unsafe.coerce e)
         | "li" -> Li (Js.Unsafe.coerce e)
         | "link" -> Link (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'm' ->
-        begin match tag with
+      begin match tag with
         | "map" -> Map (Js.Unsafe.coerce e)
         | "meta" -> Meta (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'o' ->
-        begin match tag with
+      begin match tag with
         | "object" -> Object (Js.Unsafe.coerce e)
         | "ol" -> Ol (Js.Unsafe.coerce e)
         | "optgroup" -> Optgroup (Js.Unsafe.coerce e)
         | "option" -> Option (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'p' ->
-        begin match tag with
+      begin match tag with
         | "p" -> P (Js.Unsafe.coerce e)
         | "param" -> Param (Js.Unsafe.coerce e)
         | "pre" -> Pre (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'q' ->
-        begin match tag with
+      begin match tag with
         | "q" -> Q (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 's' ->
-        begin match tag with
+      begin match tag with
         | "script" -> Script (Js.Unsafe.coerce e)
         | "select" -> Select (Js.Unsafe.coerce e)
         | "style" -> Style (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 't' ->
-        begin match tag with
+      begin match tag with
         | "table" -> Table (Js.Unsafe.coerce e)
         | "tbody" -> Tbody (Js.Unsafe.coerce e)
         | "td" -> Td (Js.Unsafe.coerce e)
@@ -1628,14 +1628,14 @@ let tagged (e : #element t) =
         | "title" -> Title (Js.Unsafe.coerce e)
         | "tr" -> Tr (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | 'u' ->
-        begin match tag with
+      begin match tag with
         | "ul" -> Ul (Js.Unsafe.coerce e)
         | _ -> other e
-        end
+      end
     | _ ->
-        other e
+      other e
 
 let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
 
@@ -1650,14 +1650,14 @@ type taggedEvent =
 let taggedEvent (ev : #event Js.t) =
   Js.Opt.case (CoerceTo.mouseEvent ev)
     (fun () -> Js.Opt.case (CoerceTo.keyboardEvent ev)
-      (fun () -> Js.Opt.case (CoerceTo.wheelEvent ev)
-	(fun () -> Js.Opt.case (CoerceTo.mouseScrollEvent ev)
-	  (fun () -> Js.Opt.case (CoerceTo.popStateEvent ev)
-	    (fun () -> OtherEvent (ev :> event t))
-	    (fun ev -> PopStateEvent ev))
-	  (fun ev -> MouseScrollEvent ev))
-	(fun ev -> MousewheelEvent ev))
-      (fun ev -> KeyboardEvent ev))
+        (fun () -> Js.Opt.case (CoerceTo.wheelEvent ev)
+            (fun () -> Js.Opt.case (CoerceTo.mouseScrollEvent ev)
+                (fun () -> Js.Opt.case (CoerceTo.popStateEvent ev)
+                    (fun () -> OtherEvent (ev :> event t))
+                    (fun ev -> PopStateEvent ev))
+                (fun ev -> MouseScrollEvent ev))
+            (fun ev -> MousewheelEvent ev))
+        (fun ev -> KeyboardEvent ev))
     (fun ev -> MouseEvent ev)
 
 let opt_taggedEvent ev = Opt.case ev (fun () -> None) (fun ev -> Some (taggedEvent ev))
@@ -1699,9 +1699,9 @@ let hasPushState () =
   Js.Optdef.test ((Js.Unsafe.coerce (window##history))##pushState)
 
 let hasPlaceholder () =
- let i = createInput document in
+  let i = createInput document in
   Js.Optdef.test ((Js.Unsafe.coerce i)##placeholder)
 
 let hasRequired () =
- let i = createInput document in
+  let i = createInput document in
   Js.Optdef.test ((Js.Unsafe.coerce i)##required)

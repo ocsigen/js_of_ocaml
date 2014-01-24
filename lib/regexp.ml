@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 type regexp = Js.regExp Js.t
 
@@ -60,7 +60,7 @@ let replace_first r s s_by =
 let list_of_js_array a =
   let rec aux accu idx =
     if idx < 0 then accu else
-    aux (blunt_str_array_get a idx :: accu) (idx - 1)
+      aux (blunt_str_array_get a idx :: accu) (idx - 1)
   in
   aux [] (a##length - 1)
 

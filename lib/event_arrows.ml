@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (** Events with arrows. *)
 
@@ -45,17 +45,17 @@ let make_event eventkind
   let cancel () = Js.Opt.iter !el Dom_html.removeEventListener in
   set_canceller c cancel;
   el := Js.some
-    (Dom_html.addEventListener
-       target eventkind
-       (Dom_html.handler
-          (fun (ev : #Dom_html.event Js.t) ->
-            if not propagate
-            then Dom_html.stopPropagation ev;
-            cancel ();
-            Lwt.wakeup w (ev, c);
-            Js.bool keep_default))
-       (Js.bool use_capture)
-    );
+      (Dom_html.addEventListener
+         target eventkind
+         (Dom_html.handler
+            (fun (ev : #Dom_html.event Js.t) ->
+               if not propagate
+               then Dom_html.stopPropagation ev;
+               cancel ();
+               Lwt.wakeup w (ev, c);
+               Js.bool keep_default))
+         (Js.bool use_capture)
+      );
   t
 
 let rec loop_event f ?use_capture ?keep_default ?propagate target handler x c =
@@ -82,20 +82,20 @@ let make_state eventkind
       ignore (handler ev c1 >|= fun r -> 
               locked := false;
               match !state with
-                | None -> ()
-                | Some ev -> state := None; f ev);
+              | None -> ()
+              | Some ev -> state := None; f ev);
     end
   in
   el := Js.some
-    (Dom_html.addEventListener
-       target eventkind
-       (Dom_html.handler (fun ev -> 
-         if not propagate
-         then Dom_html.stopPropagation ev;
-         f ev;
-         Js.bool keep_default))
-       (Js.bool use_capture)
-    );
+      (Dom_html.addEventListener
+         target eventkind
+         (Dom_html.handler (fun ev -> 
+              if not propagate
+              then Dom_html.stopPropagation ev;
+              f ev;
+              Js.bool keep_default))
+         (Js.bool use_capture)
+      );
   fst (Lwt.wait ())
 
 let first l x c =
@@ -139,8 +139,8 @@ let keyup ?use_capture ?keep_default ?propagate t a c =
   make_event Dom_html.Event.keyup ?use_capture ?keep_default ?propagate t a c
 
 (* TODO: implement with Dom_html.addMousewheelEventListener
-let mousewheel ?use_capture ?keep_default ?propagate t a c =
-  make_event Dom_html.Event.mousewheel ?use_capture ?keep_default ?propagate t a c
+   let mousewheel ?use_capture ?keep_default ?propagate t a c =
+   make_event Dom_html.Event.mousewheel ?use_capture ?keep_default ?propagate t a c
 *)
 
 let clicks ?use_capture ?keep_default ?propagate t =
@@ -167,8 +167,8 @@ let keyups ?use_capture ?keep_default ?propagate t =
   make_state Dom_html.Event.keyup ?use_capture ?keep_default ?propagate t
 
 (* TODO: implement with Dom_html.addMousewheelEventListener
-let mousewheels ?use_capture ?keep_default ?propagate t =
-  loop_event mousewheel ?use_capture ?keep_default ?propagate t
+   let mousewheels ?use_capture ?keep_default ?propagate t =
+   loop_event mousewheel ?use_capture ?keep_default ?propagate t
 *)
 
 

@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 let (>>=) = Lwt.bind
 
@@ -27,17 +27,17 @@ let make_event event_kind ?(use_capture = false) target =
   let t, w = Lwt.task () in
   let cancel () = Js.Opt.iter !el Dom_html.removeEventListener in
   Lwt.on_cancel t cancel;
-  el := Js.some
-    (Dom.addEventListener
-       target event_kind
-       (Dom_html.handler
-          (fun (ev : #Dom_html.event Js.t) ->
-            cancel ();
-            Lwt.wakeup w ev;
-            Js.bool true)) (* true because we do not want to prevent default ->
-                              the user can use the preventDefault function
-                              above. *)
-       (Js.bool use_capture)
+  el := Js.some (
+      Dom.addEventListener
+        target event_kind
+        (Dom_html.handler
+           (fun (ev : #Dom_html.event Js.t) ->
+              cancel ();
+              Lwt.wakeup w ev;
+              Js.bool true)) (* true because we do not want to prevent default ->
+                                the user can use the preventDefault function
+                                above. *)
+        (Js.bool use_capture)
     );
   t
 
@@ -45,8 +45,8 @@ let catch_cancel f x =
   Lwt.catch
     (fun () -> f x)
     (function
-    | Lwt.Canceled -> Lwt.return ()
-    | e -> Lwt.fail e)
+      | Lwt.Canceled -> Lwt.return ()
+      | e -> Lwt.fail e)
 
 let with_error_log f x =
   Lwt.catch
@@ -62,9 +62,9 @@ let seq_loop evh ?(cancel_handler = false) ?use_capture target handler =
   let lt, lw = Lwt.task () in
   Lwt.on_cancel lt
     (fun () ->
-      Lwt.cancel !cur;
-      if cancel_handler then Lwt.cancel !cur_handler;
-      cancelled := true);
+       Lwt.cancel !cur;
+       if cancel_handler then Lwt.cancel !cur_handler;
+       cancelled := true);
   let rec aux () =
     if not !cancelled (* In the case it has been cancelled
                          during the previous handler,
@@ -108,10 +108,10 @@ let buffered_loop evh ?(cancel_handler = false) ?(cancel_queue = true)
   let lt, lw = Lwt.task () in
   let spawn = Lwt_condition.create () in
   Lwt.on_cancel lt (fun () ->
-    Lwt.cancel !cur ;
-    if cancel_handler then Lwt.cancel !cur_handler ;
-    if cancel_queue then queue := [] ;
-    cancelled := true) ;
+      Lwt.cancel !cur ;
+      if cancel_handler then Lwt.cancel !cur_handler ;
+      if cancel_queue then queue := [] ;
+      cancelled := true) ;
   let rec spawner () =
     if not !cancelled then begin
       let t = evh ?use_capture target in
@@ -129,7 +129,7 @@ let buffered_loop evh ?(cancel_handler = false) ?(cancel_queue = true)
       match !queue with
       | [] -> Lwt_condition.wait spawn >>= runner
       | e :: tl ->
-	queue := tl ;
+        queue := tl ;
         cur_handler := with_error_log (handler e) lt;
         !cur_handler >>= runner
     else Lwt.return ()
@@ -144,9 +144,9 @@ let func_limited_loop event limited_func ?use_capture target handler =
     (fun ev lt -> incr count;
       let nb = !count in
       limited_func () >>= (fun _ ->
-	if (!count = nb)
-	then handler ev lt
-	else Lwt.return ()))
+          if (!count = nb)
+          then handler ev lt
+          else Lwt.return ()))
 
 let limited_loop event ?(elapsed_time=0.1) =
   func_limited_loop event (fun () -> Lwt_js.sleep elapsed_time)
@@ -216,22 +216,22 @@ let mousewheel ?(use_capture=false) target =
   let t, w = Lwt.task () in
   let cancel () = Js.Opt.iter !el Dom_html.removeEventListener in
   Lwt.on_cancel t cancel;
-  el := Js.some
-    (Dom_html.addMousewheelEventListener
-       target
-       (fun (ev : #Dom_html.event Js.t) ~dx ~dy ->
-         Firebug.console##log(ev);
-         cancel ();
-         Lwt.wakeup w (ev, (dx, dy));
-         Js.bool true) (* true because we do not want to prevent default ->
-                           the user can use the preventDefault function
-                           above. *)
-       (Js.bool use_capture)
+  el := Js.some (
+      Dom_html.addMousewheelEventListener
+        target
+        (fun (ev : #Dom_html.event Js.t) ~dx ~dy ->
+           Firebug.console##log(ev);
+           cancel ();
+           Lwt.wakeup w (ev, (dx, dy));
+           Js.bool true) (* true because we do not want to prevent default ->
+                             the user can use the preventDefault function
+                             above. *)
+        (Js.bool use_capture)
     );
   t
 
 (* let _DOMMouseScroll ?use_capture target =
-  make_event Dom_html.Event._DOMMouseScroll ?use_capture target
+   make_event Dom_html.Event._DOMMouseScroll ?use_capture target
 *)
 
 let touchstart ?use_capture target =
@@ -314,7 +314,7 @@ let transition_evn =
   try
     snd (List.find
            (fun (propname, evname) ->
-             Js.Unsafe.get (e##style) propname != Js.undefined)
+              Js.Unsafe.get (e##style) propname != Js.undefined)
            [("WebkitTransition", [Dom.Event.make "webkitTransitionEnd"]);
             ("MozTransition", [Dom.Event.make "transitionend"]);
             ("OTransition", [Dom.Event.make "oTransitionEnd";
@@ -324,12 +324,12 @@ let transition_evn =
 
 let transitionend elt =
   match transition_evn with
-    | [] -> Lwt.return ()
-    | _ -> Lwt.pick
-      (List.map
-         (fun ev -> make_event ev elt)
-         transition_evn) >>= fun _ ->
-      Lwt.return ()
+  | [] -> Lwt.return ()
+  | _ -> Lwt.pick
+           (List.map
+              (fun ev -> make_event ev elt)
+              transition_evn) >>= fun _ ->
+    Lwt.return ()
 
 let transitionends t =
   seq_loop (fun ?use_capture e -> transitionend e) t

@@ -16,14 +16,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (** Javascript specific Lwt functions. *)
 
 val sleep : float -> unit Lwt.t
-  (** [sleep d] is a threads which remain suspended for [d] seconds
-      and then terminates. *)
+(** [sleep d] is a threads which remain suspended for [d] seconds
+    and then terminates. *)
 
 val yield : unit -> unit Lwt.t
-  (** [yield ()] is a threads which suspends itself and then resumes
-      as soon as possible and terminates. *)
+(** [yield ()] is a threads which suspends itself and then resumes
+    as soon as possible and terminates. *)
