@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Common
 
@@ -27,10 +27,10 @@ let () = match Url.Current.get () with
   | Some u -> match url_string_url u with
     | None -> log_failure "can't parse pretty-printed url"
     | Some v ->
-       if u = v then
-         log_success ()
-       else
-         log_failure "no fixpoint"
+      if u = v then
+        log_success ()
+      else
+        log_failure "no fixpoint"
 let () =
   let t1 = Url.urlencode "/toto+ blah&tutu" in
   let t2 = Url.urlencode ~with_plus:false "/toto+ blah&tutu" in
