@@ -15,90 +15,90 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Util
 
 let keyword = List.fold_left (fun acc x -> StringSet.add x acc)
- StringSet.empty
-  [
-    (* keywork *)
-    "break";
-    "case"; "catch"; "continue";
-    "debugger";"default";"delete";"do";
-    "else";
-    "finally";"for";"function";
-    "if"; "in";"instanceof";
-    "new";
-    "return";
-    "switch";
-    "this"; "throw"; "try"; "typeof";
-    "var"; "void"; "while"; "with";
+    StringSet.empty
+    [
+      (* keywork *)
+      "break";
+      "case"; "catch"; "continue";
+      "debugger";"default";"delete";"do";
+      "else";
+      "finally";"for";"function";
+      "if"; "in";"instanceof";
+      "new";
+      "return";
+      "switch";
+      "this"; "throw"; "try"; "typeof";
+      "var"; "void"; "while"; "with";
 
-    (* reserved for future use *)
-    "class"; "enum"; "export"; "extends"; "import"; "super";
+      (* reserved for future use *)
+      "class"; "enum"; "export"; "extends"; "import"; "super";
 
-    "implements";"interface";
-    "let";
-    "package";"private";"protected";"public";
-    "static";
-    "yield";
+      "implements";"interface";
+      "let";
+      "package";"private";"protected";"public";
+      "static";
+      "yield";
 
-    (* other *)
-    "null";
-    "true";
-    "false";
-    "NaN";
+      (* other *)
+      "null";
+      "true";
+      "false";
+      "NaN";
 
 
-    "undefined";
-    "this";
+      "undefined";
+      "this";
 
-]
+    ]
 
 
 let provided = List.fold_left (fun acc x -> StringSet.add x acc)
- StringSet.empty
- [
+    StringSet.empty
+    [
 
-  "event";
-  "location";
-  "window";
-  "document";
-  "eval";
-  "navigator";
-  "self";
+      "event";
+      "location";
+      "window";
+      "document";
+      "eval";
+      "navigator";
+      "self";
 
-  "Array";
-  "Date";
-  "Math";
-  "JSON";
-  "Object";
-  "RegExp";
-  "String";
-  "Boolean";
-  "Number";
+      "Array";
+      "Date";
+      "Math";
+      "JSON";
+      "Object";
+      "RegExp";
+      "String";
+      "Boolean";
+      "Number";
 
-  "Infinity";
-  "isFinite";
+      "Infinity";
+      "isFinite";
 
-  "ActiveXObject";
-  "XMLHttpRequest";
-  "XDomainRequest";
+      "ActiveXObject";
+      "XMLHttpRequest";
+      "XDomainRequest";
 
-  "DOMException";
-  "Error";
-  "SyntaxError";
-  "arguments";
+      "DOMException";
+      "Error";
+      "SyntaxError";
+      "arguments";
 
-  "decodeURI";
-  "decodeURIComponent";
-  "encodeURI";
-  "encodeURIComponent";
-  "escape";
-  "unescape";
+      "decodeURI";
+      "decodeURIComponent";
+      "encodeURI";
+      "encodeURIComponent";
+      "escape";
+      "unescape";
 
-  "isNaN";
-  "parseFloat";
-  "parseInt";
-]
+      "isNaN";
+      "parseFloat";
+      "parseInt";
+    ]

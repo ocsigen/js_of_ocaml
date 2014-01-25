@@ -19,7 +19,7 @@ let print_newline _ = ()
 
 (****************** Term manipulations *****************)
 
-type term = 
+type term =
     Var of int
   | Term of string * term list
 
@@ -27,7 +27,7 @@ let rec union l1 l2 =
   match l1 with
     []   -> l2
   | a::r -> if List.mem a l2 then union r l2 else a :: union r l2
-  
+
 
 let rec vars = function
     Var n -> [n]
@@ -89,7 +89,7 @@ let matching term1 term2 = match_rec [] term1 term2
 
 (* A naive unification algorithm. *)
 
-let compsubst subst1 subst2 = 
+let compsubst subst1 subst2 =
   (List.map (fun (v,t) -> (v, substitute subst1 t)) subst2) @ subst1
 
 
@@ -169,7 +169,7 @@ and pretty_close = function
 
 
 
-type rule = 
+type rule =
   { number: int;
     numvars: int;
     lhs: term;
@@ -206,7 +206,7 @@ let pretty_rule rule =
 
 
 let pretty_rules rules = List.iter pretty_rule rules
- 
+
 (****************** Rewriting **************************)
 
 (* Top-level rewriting. Let eq:L=R be an equation, M be a term such that L<=M.
@@ -286,7 +286,7 @@ let rec mrewrite_all rules m =
 (*********************** Recursive Path Ordering ****************************)
 
 
-type ordering = 
+type ordering =
     Greater
   | Equal
   | NotGE
@@ -335,10 +335,10 @@ let lex_ext order = function
       | ( _ , []) -> Greater
       | (x1::l1, x2::l2) ->
           match order (x1,x2) with
-            Greater -> if List.for_all (fun n' -> gt_ord order (m,n')) l2 
+            Greater -> if List.for_all (fun n' -> gt_ord order (m,n')) l2
                        then Greater else NotGE
           | Equal -> lexrec (l1,l2)
-          | NotGE -> if List.exists (fun m' -> ge_ord order (m',n)) l1 
+          | NotGE -> if List.exists (fun m' -> ge_ord order (m',n)) l1
                      then Greater else NotGE in
       lexrec (sons1, sons2)
   | _ -> failwith "lex_ext"
@@ -346,9 +346,9 @@ let lex_ext order = function
 
 (* Recursive path ordering *)
 
-let rpo op_order ext = 
+let rpo op_order ext =
   let rec rporec (m,n) =
-    if m = n then Equal else 
+    if m = n then Equal else
       match m with
           Var vm -> NotGE
         | Term(op1,sons1) ->
@@ -404,7 +404,7 @@ let rec super m = function
 
 
 (* Ex :
-let (m,_) = <<F(A,B)>> 
+let (m,_) = <<F(A,B)>>
 and (n,_) = <<H(F(A,x),F(x,y))>> in super m n
 ==> [[1],[2,Term ("B",[])];                      x <- B
      [2],[2,Term ("A",[]); 1,Term ("B",[])]]     x <- A  y <- B
@@ -476,7 +476,7 @@ let rec get_rule n = function
 
 (* Improved Knuth-Bendix completion procedure *)
 
-let kb_completion greater = 
+let kb_completion greater =
   let rec kbrec j rules =
   let rec process failures (k,l) eqs =
 (****
@@ -532,7 +532,7 @@ let kb_completion greater =
                   (strict_critical_pairs el (rename rl.numvars el))
         else
           try
-            let rk = get_rule k rules in 
+            let rk = get_rule k rules in
             let ek = (rk.lhs, rk.rhs) in
               process failures (k,l)
                       (mutual_critical_pairs el (rename rl.numvars ek))
@@ -622,11 +622,10 @@ let group_precedence op1 op2 =
     if r1 = r2 then Equal else
     if r1 > r2 then Greater else NotGE
 
-let group_order = rpo group_precedence lex_ext 
+let group_order = rpo group_precedence lex_ext
 
 let greater pair =
   match group_order pair with Greater -> true | _ -> false
 
 let _ =
   for i = 1 to 20 do kb_complete greater [] geom_rules done
-

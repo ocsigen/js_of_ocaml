@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 module Int = struct type t = int let compare (x : int) y = compare x y end
 module IntSet = Set.Make (Int)
@@ -47,19 +47,19 @@ let path_require_findlib path =
 
 let rec find_in_paths ?(pkg="stdlib") paths name =
   match paths with
-    | [] ->
-      raise Not_found
-    | path :: rem ->
-      try
-        let file = match path_require_findlib path with
-          | Some path ->
-            let () = Lazy.force findlib_init in
-            Filename.concat (Filename.concat (find_pkg_dir pkg) path) name
-          | None -> Filename.concat path name in
+  | [] ->
+    raise Not_found
+  | path :: rem ->
+    try
+      let file = match path_require_findlib path with
+        | Some path ->
+          let () = Lazy.force findlib_init in
+          Filename.concat (Filename.concat (find_pkg_dir pkg) path) name
+        | None -> Filename.concat path name in
 
-        if Sys.file_exists file then file else
-          find_in_paths rem name
-      with Not_found -> find_in_paths rem name
+      if Sys.file_exists file then file else
+        find_in_paths rem name
+    with Not_found -> find_in_paths rem name
 
 let read_file f =
   let ch = open_in_bin f in
@@ -75,8 +75,8 @@ let read_file f =
 
 let filter_map f l =
   let l = List.fold_left (fun acc x -> match f x with
-    | Some x -> x::acc
-    | None -> acc) [] l
+      | Some x -> x::acc
+      | None -> acc) [] l
   in List.rev l
 
 let rec take' acc n l =

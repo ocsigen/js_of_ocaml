@@ -97,7 +97,7 @@ function caml_lex_engine(tbl, start_state, lexbuf) {
     }else{
       /* Erase the EOF condition only if the EOF pseudo-character was
          consumed by the automaton (i.e. there was no backtrack above)
-       */
+      */
       if (c == 256) lexbuf[lex_eof_reached] = 0;
     }
   }
@@ -230,13 +230,11 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
       else
         pc_off = tbl.lex_default_code[pstate];
       if (pc_off > 0)
-        caml_lex_run_mem
-          (tbl.lex_code, pc_off, lexbuf[lex_mem], lexbuf[lex_curr_pos]);
+        caml_lex_run_mem(tbl.lex_code, pc_off, lexbuf[lex_mem], lexbuf[lex_curr_pos]);
       /* Erase the EOF condition only if the EOF pseudo-character was
          consumed by the automaton (i.e. there was no backtrack above)
-       */
+      */
       if (c == 256) lexbuf[lex_eof_reached] = 0;
     }
   }
 }
-

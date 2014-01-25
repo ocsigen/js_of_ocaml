@@ -15,14 +15,14 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (** Json **)
 
 type 'a t = {
-    write: Buffer.t -> 'a -> unit;
-    read: Deriving_Json_lexer.lexbuf -> 'a
-  }
+  write: Buffer.t -> 'a -> unit;
+  read: Deriving_Json_lexer.lexbuf -> 'a
+}
 
 let to_string t v =
   let buf = Buffer.create 50 in
@@ -122,47 +122,47 @@ module Json_char = Defaults(struct
   end)
 
 module Json_bool =  Defaults(struct
-  type a = bool
-  let write buffer b =
-    Buffer.add_char buffer (if b then '1' else '0')
-  let read buf = 1 = Deriving_Json_lexer.read_tag_2 0 1 buf
-end)
+    type a = bool
+    let write buffer b =
+      Buffer.add_char buffer (if b then '1' else '0')
+    let read buf = 1 = Deriving_Json_lexer.read_tag_2 0 1 buf
+  end)
 module Json_unit = Defaults(struct
-  type a = unit
-  let write buffer () = Buffer.add_char buffer '0'
-  let read buf = ignore(Deriving_Json_lexer.read_tag_1 0 buf)
-end)
+    type a = unit
+    let write buffer () = Buffer.add_char buffer '0'
+    let read buf = ignore(Deriving_Json_lexer.read_tag_1 0 buf)
+  end)
 module Json_int =  Defaults(struct
     type a = int
     let write buffer i = Format.bprintf buffer "%d" i
     let read buf = Deriving_Json_lexer.read_int buf
-end)
+  end)
 module Json_int32 =  Defaults(struct
     type a = int32
     let write buffer i = Format.bprintf buffer "%ld" i
     let read buf = Deriving_Json_lexer.read_int32 buf
-end)
+  end)
 module Json_int64 =  Defaults(struct
-  type a = int64
-  let mask24 = Int64.of_int 0xffffff
-  let mask16 = Int64.of_int 0xffff
-  let write buffer i =
-    Printf.bprintf buffer "[255,%Ld,%Ld,%Ld]"
-      (Int64.logand i mask24)
-      (Int64.logand (Int64.shift_right i 24) mask24)
-      (Int64.logand (Int64.shift_right i 48) mask16)
-  let read buf =
-    Deriving_Json_lexer.read_lbracket buf;
-    ignore(Deriving_Json_lexer.read_tag_1 255 buf);
-    Deriving_Json_lexer.read_comma buf;
-    let h1 = Deriving_Json_lexer.read_int64 buf in
-    Deriving_Json_lexer.read_comma buf;
-    let h2 = Int64.shift_left (Deriving_Json_lexer.read_int64 buf) 24 in
-    Deriving_Json_lexer.read_comma buf;
-    let h3 = Int64.shift_left (Deriving_Json_lexer.read_int64 buf) 48 in
-    Deriving_Json_lexer.read_rbracket buf;
-    Int64.logor h3 (Int64.logor h2 h1)
-end)
+    type a = int64
+    let mask24 = Int64.of_int 0xffffff
+    let mask16 = Int64.of_int 0xffff
+    let write buffer i =
+      Printf.bprintf buffer "[255,%Ld,%Ld,%Ld]"
+        (Int64.logand i mask24)
+        (Int64.logand (Int64.shift_right i 24) mask24)
+        (Int64.logand (Int64.shift_right i 48) mask16)
+    let read buf =
+      Deriving_Json_lexer.read_lbracket buf;
+      ignore(Deriving_Json_lexer.read_tag_1 255 buf);
+      Deriving_Json_lexer.read_comma buf;
+      let h1 = Deriving_Json_lexer.read_int64 buf in
+      Deriving_Json_lexer.read_comma buf;
+      let h2 = Int64.shift_left (Deriving_Json_lexer.read_int64 buf) 24 in
+      Deriving_Json_lexer.read_comma buf;
+      let h3 = Int64.shift_left (Deriving_Json_lexer.read_int64 buf) 48 in
+      Deriving_Json_lexer.read_rbracket buf;
+      Int64.logor h3 (Int64.logor h2 h1)
+  end)
 
 module Json_nativeint = Json_undef(struct type a = nativeint end)
 (* module Json_num = Json_undef(struct type a = Num.num end) *)
@@ -170,122 +170,122 @@ module Json_float = Defaults(struct
     type a = float
     let write buffer f = Printf.bprintf buffer "%e" f
     let read buf = Deriving_Json_lexer.read_number buf
-end)
+  end)
 module Json_string = Defaults(struct
-  (* Given that JSON must be valid UTF-8 and that OCaml string are
-     just a sequence of byte we need to "embed" byte string in an
-     UTF-8 sequence. Each byte af an OCaml string is considered as
-     Unicode code point (< 256) and then encoded in UTF-8. Hence,
-     bytes greater than 127 are "wrapped" in two bytes.  *)
-  type a = string
-  let write buffer s =
-    Buffer.add_char buffer '\"';
-    for i = 0 to String.length s - 1 do
-      match s.[i] with
-	| '\"' -> Buffer.add_string buffer "\\\""
-	| '\\' -> Buffer.add_string buffer "\\\\"
-	| '\b' -> Buffer.add_string buffer "\\b"
-	| '\x0C' -> Buffer.add_string buffer "\\f"
-	| '\n' -> Buffer.add_string buffer "\\n"
-	| '\r' -> Buffer.add_string buffer "\\r"
-	| '\t' -> Buffer.add_string buffer "\\t"
-	| c when c <= '\x1F' -> (* Other control characters are escaped. *)
-	  Printf.bprintf buffer "\\u%04X" (int_of_char c)
-      | c when c < '\x80' ->
-	  Buffer.add_char buffer s.[i]
-      | c (* >= '\x80' *) -> (* Bytes greater than 127 are embeded in a UTF-8 sequence. *)
-	  Buffer.add_char buffer (Char.chr (0xC2 lor (Char.code s.[i] lsr 6)));
-	  Buffer.add_char buffer (Char.chr (0x80 lor (Char.code s.[i] land 0x3F)))
-    done;
-    Buffer.add_char buffer '\"'
-  let read buf = Deriving_Json_lexer.read_string buf
-end)
+    (* Given that JSON must be valid UTF-8 and that OCaml string are
+       just a sequence of byte we need to "embed" byte string in an
+       UTF-8 sequence. Each byte af an OCaml string is considered as
+       Unicode code point (< 256) and then encoded in UTF-8. Hence,
+       bytes greater than 127 are "wrapped" in two bytes.  *)
+    type a = string
+    let write buffer s =
+      Buffer.add_char buffer '\"';
+      for i = 0 to String.length s - 1 do
+        match s.[i] with
+        | '\"' -> Buffer.add_string buffer "\\\""
+        | '\\' -> Buffer.add_string buffer "\\\\"
+        | '\b' -> Buffer.add_string buffer "\\b"
+        | '\x0C' -> Buffer.add_string buffer "\\f"
+        | '\n' -> Buffer.add_string buffer "\\n"
+        | '\r' -> Buffer.add_string buffer "\\r"
+        | '\t' -> Buffer.add_string buffer "\\t"
+        | c when c <= '\x1F' -> (* Other control characters are escaped. *)
+          Printf.bprintf buffer "\\u%04X" (int_of_char c)
+        | c when c < '\x80' ->
+          Buffer.add_char buffer s.[i]
+        | c (* >= '\x80' *) -> (* Bytes greater than 127 are embeded in a UTF-8 sequence. *)
+          Buffer.add_char buffer (Char.chr (0xC2 lor (Char.code s.[i] lsr 6)));
+          Buffer.add_char buffer (Char.chr (0x80 lor (Char.code s.[i] land 0x3F)))
+      done;
+      Buffer.add_char buffer '\"'
+    let read buf = Deriving_Json_lexer.read_string buf
+  end)
 
 module Json_list(A : Json) = Defaults(struct
-      type a = A.a list
-      let write buffer xs =
-	let rec aux l c =
-	  match l with
-	    | [] ->
-		Buffer.add_char buffer '0';
-		for i = c downto 1 do
-		  Buffer.add_char buffer ']'
-		done
-	    | x::xs ->
-		Printf.bprintf buffer "[0,%a," A.write x;
-		aux xs (succ c)
-	in aux xs 0
+    type a = A.a list
+    let write buffer xs =
+      let rec aux l c =
+        match l with
+        | [] ->
+          Buffer.add_char buffer '0';
+          for i = c downto 1 do
+            Buffer.add_char buffer ']'
+          done
+        | x::xs ->
+          Printf.bprintf buffer "[0,%a," A.write x;
+          aux xs (succ c)
+      in aux xs 0
 
-      let read buf =
- 	let rec aux l c =
-	  match Deriving_Json_lexer.read_case buf with
-	    | `Cst 0 ->
-		for i = c downto 1 do
-		  Deriving_Json_lexer.read_rbracket buf
-		done;
-		List.rev l
-	    | `NCst 0 ->
-		Deriving_Json_lexer.read_comma buf;
-		let x = A.read buf in
-		Deriving_Json_lexer.read_comma buf;
-		aux (x::l) (succ c)
-	    | _ -> Deriving_Json_lexer.tag_error ~typename:"list" buf
-	in
-	aux [] 0
-    end)
+    let read buf =
+      let rec aux l c =
+        match Deriving_Json_lexer.read_case buf with
+        | `Cst 0 ->
+          for i = c downto 1 do
+            Deriving_Json_lexer.read_rbracket buf
+          done;
+          List.rev l
+        | `NCst 0 ->
+          Deriving_Json_lexer.read_comma buf;
+          let x = A.read buf in
+          Deriving_Json_lexer.read_comma buf;
+          aux (x::l) (succ c)
+        | _ -> Deriving_Json_lexer.tag_error ~typename:"list" buf
+      in
+      aux [] 0
+  end)
 
 module Json_ref(A : Json) = Defaults(struct
-      type a = A.a ref
-      let write buffer r =
-	Printf.bprintf buffer "[0,%a]"
-	  A.write !r
-      let read buf =
-	match Deriving_Json_lexer.read_case buf with
-	| `NCst 0 ->
-	    Deriving_Json_lexer.read_comma buf;
-	    let x = A.read buf in
-	    Deriving_Json_lexer.read_rbracket buf;
-	    ref x
-	| _ -> Deriving_Json_lexer.tag_error ~typename:"ref" buf
-    end)
+    type a = A.a ref
+    let write buffer r =
+      Printf.bprintf buffer "[0,%a]"
+        A.write !r
+    let read buf =
+      match Deriving_Json_lexer.read_case buf with
+      | `NCst 0 ->
+        Deriving_Json_lexer.read_comma buf;
+        let x = A.read buf in
+        Deriving_Json_lexer.read_rbracket buf;
+        ref x
+      | _ -> Deriving_Json_lexer.tag_error ~typename:"ref" buf
+  end)
 
 module Json_option(A : Json) = Defaults(struct
-      type a = A.a option
-      let write buffer o =
-	match o with
-	| None -> Buffer.add_char buffer '0'
-	| Some x ->
-	    Printf.bprintf buffer "[0,%a]"
-	      A.write x
-      let read buf =
-	match Deriving_Json_lexer.read_case buf with
-	| `Cst 0 -> None
-	| `NCst 0 ->
-	    Deriving_Json_lexer.read_comma buf;
-	    let x = A.read buf in
-	    Deriving_Json_lexer.read_rbracket buf;
-	    Some x
-	| _ -> Deriving_Json_lexer.tag_error ~typename:"option" buf
-    end)
+    type a = A.a option
+    let write buffer o =
+      match o with
+      | None -> Buffer.add_char buffer '0'
+      | Some x ->
+        Printf.bprintf buffer "[0,%a]"
+          A.write x
+    let read buf =
+      match Deriving_Json_lexer.read_case buf with
+      | `Cst 0 -> None
+      | `NCst 0 ->
+        Deriving_Json_lexer.read_comma buf;
+        let x = A.read buf in
+        Deriving_Json_lexer.read_rbracket buf;
+        Some x
+      | _ -> Deriving_Json_lexer.tag_error ~typename:"option" buf
+  end)
 
 module Json_array(A : Json) = Defaults(struct
-      type a = A.a array
-      let write buffer a =
-	Buffer.add_string buffer "[0";
-	for i = 0 to Array.length a - 1 do
-	  Buffer.add_char buffer ',';
-	  A.write buffer a.(i);
-	done;
-	Buffer.add_char buffer ']'
-      let rec read_list acc buf =
-	match Deriving_Json_lexer.read_comma_or_rbracket buf with
-	| `RBracket -> acc
-	| `Comma ->
-	    let x = A.read buf in
-	    read_list (x :: acc) buf
-      let read buf =
-	match Deriving_Json_lexer.read_case buf with
-	(* We allow the tag 254 in case of float array *)
-	| `NCst 0 | `NCst 254 -> Array.of_list (List.rev (read_list [] buf))
-	| _ -> Deriving_Json_lexer.tag_error ~typename:"array" buf
-    end)
+    type a = A.a array
+    let write buffer a =
+      Buffer.add_string buffer "[0";
+      for i = 0 to Array.length a - 1 do
+        Buffer.add_char buffer ',';
+        A.write buffer a.(i);
+      done;
+      Buffer.add_char buffer ']'
+    let rec read_list acc buf =
+      match Deriving_Json_lexer.read_comma_or_rbracket buf with
+      | `RBracket -> acc
+      | `Comma ->
+        let x = A.read buf in
+        read_list (x :: acc) buf
+    let read buf =
+      match Deriving_Json_lexer.read_case buf with
+      (* We allow the tag 254 in case of float array *)
+      | `NCst 0 | `NCst 254 -> Array.of_list (List.rev (read_list [] buf))
+      | _ -> Deriving_Json_lexer.tag_error ~typename:"array" buf
+  end)

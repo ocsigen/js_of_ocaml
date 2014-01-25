@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 type map = {
   gen_line : int;
@@ -42,7 +42,7 @@ let string_of_mapping mapping =
   let a = Array.of_list mapping in
   let len = Array.length a in
   Array.fast_sort (fun t1 t2 ->
-    match compare t1.gen_line t2.gen_line with
+      match compare t1.gen_line t2.gen_line with
       | 0 -> compare t1.gen_col t2.gen_col
       | n -> n) a;
   let buf = Buffer.create 1024 in

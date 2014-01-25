@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Js
 
@@ -31,8 +31,8 @@ let list_of_nodeList (nodeList:'a nodeList t) =
     if i < length
     then
       match Opt.to_option (nodeList##item(i)) with
-	| None -> add_item acc (i+1)
-	| Some e -> add_item (e::acc) (i+1)
+      | None -> add_item acc (i+1)
+      | Some e -> add_item (e::acc) (i+1)
     else List.rev acc
   in
   add_item [] 0
@@ -161,11 +161,11 @@ type node_type =
 
 let nodeType e =
   match e##nodeType with
-    | ELEMENT -> Element (Js.Unsafe.coerce e)
-    | ATTRIBUTE -> Attr (Js.Unsafe.coerce e)
-    | CDATA_SECTION
-    | TEXT -> Text (Js.Unsafe.coerce e)
-    | _ -> Other (e:>node t)
+  | ELEMENT -> Element (Js.Unsafe.coerce e)
+  | ATTRIBUTE -> Attr (Js.Unsafe.coerce e)
+  | CDATA_SECTION
+  | TEXT -> Text (Js.Unsafe.coerce e)
+  | _ -> Other (e:>node t)
 
 module CoerceTo = struct
 
@@ -186,9 +186,9 @@ module CoerceTo = struct
 end
 
 type ('a, 'b) event_listener = ('a, 'b -> bool t) meth_callback opt
-  (** The type of event listener functions.  The first type parameter
-      ['a] is the type of the target object; the second parameter
-      ['b] is the type of the event object. *)
+(** The type of event listener functions.  The first type parameter
+    ['a] is the type of the target object; the second parameter
+    ['b] is the type of the event object. *)
 
 class type ['a] event = object
   method _type : js_string t readonly_prop
@@ -204,47 +204,49 @@ let window_event () : 'a #event t = Js.Unsafe.variable "event"
 (* The function preventDefault must be called explicitely when
    using addEventListener... *)
 let handler f =
-  Js.some (Js.wrap_callback
-    (fun e ->
-      (* depending on the internet explorer version, e can be 0, null
-	 or undefined. This is the only way I know to test them all *)
-      if not (Obj.magic e)
-      then
-        let e = window_event () in
-        let res = f e in
-        if not (Js.to_bool res)
-        then e##returnValue <- res;
-	res
-      else
-	let res = f e in
-        if not (Js.to_bool res) then
-          (Js.Unsafe.coerce e)##preventDefault ();
-        res))
+  Js.some (
+    Js.wrap_callback
+      (fun e ->
+         (* depending on the internet explorer version, e can be 0, null
+            or undefined. This is the only way I know to test them all *)
+         if not (Obj.magic e)
+         then
+           let e = window_event () in
+           let res = f e in
+           if not (Js.to_bool res)
+           then e##returnValue <- res;
+           res
+         else
+           let res = f e in
+           if not (Js.to_bool res) then
+             (Js.Unsafe.coerce e)##preventDefault ();
+           res))
 let full_handler f =
-  Js.some (Js.wrap_meth_callback
-    (fun this e ->
-      (* depending on the internet explorer version, e can be 0, null
-	 or undefined. This is the only way I know to test them all *)
-      if not (Obj.magic e)
-      then
-        let e = window_event () in
-        let res = f this e in
-        if not (Js.to_bool res)
-        then e##returnValue <- res;
-        res
-      else
-        let res = f this e in
-        if not (Js.to_bool res) then
-          (Js.Unsafe.coerce e)##preventDefault ();
-        res))
+  Js.some (
+    Js.wrap_meth_callback
+      (fun this e ->
+         (* depending on the internet explorer version, e can be 0, null
+            or undefined. This is the only way I know to test them all *)
+         if not (Obj.magic e)
+         then
+           let e = window_event () in
+           let res = f this e in
+           if not (Js.to_bool res)
+           then e##returnValue <- res;
+           res
+         else
+           let res = f this e in
+           if not (Js.to_bool res) then
+             (Js.Unsafe.coerce e)##preventDefault ();
+           res))
 let invoke_handler
-  (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
+    (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
   Js.Unsafe.call f this [|Js.Unsafe.inject event|]
 
 let eventTarget (e: (< .. > as 'a) #event t) : 'a t =
   let target =
     Optdef.get (e##target) (fun () ->
-    Optdef.get (e##srcElement) (fun () -> assert false))
+        Optdef.get (e##srcElement) (fun () -> assert false))
   in
   if Js.instanceof target (Js.Unsafe.global ## _Node)
   then

@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Common
 let log_stop = log_start "Time test suite"
@@ -36,16 +36,16 @@ let now = 1377134255.469(* +. 24. *. 60. *. 60. *. 1. *)
 let tmg = Unix.gmtime now
 let () = match tmg with
   | {Unix.tm_sec = 35; Unix.tm_min = 17; Unix.tm_hour = 1; Unix.tm_mday = 22;
-      Unix.tm_mon = 7; Unix.tm_year = 113; Unix.tm_wday = 4; Unix.tm_yday = 233;
-      Unix.tm_isdst = false} -> log_success ()
+     Unix.tm_mon = 7; Unix.tm_year = 113; Unix.tm_wday = 4; Unix.tm_yday = 233;
+     Unix.tm_isdst = false} -> log_success ()
   | _ -> log_failure_tm "Unix.gmtime" tmg
 
 (* check localetime *)
 let tm = Unix.localtime now
 let () = match tm with
   | {Unix.tm_sec = 35; Unix.tm_min = 17; Unix.tm_hour = 18; Unix.tm_mday = 21;
-      Unix.tm_mon = 7; Unix.tm_year = 113; Unix.tm_wday = 3; Unix.tm_yday = 232;
-      Unix.tm_isdst = true} -> log_success ()
+     Unix.tm_mon = 7; Unix.tm_year = 113; Unix.tm_wday = 3; Unix.tm_yday = 232;
+     Unix.tm_isdst = true} -> log_success ()
   | _ -> log_failure_tm "Unix.localtime" tm
 
 (* check normalization *)
@@ -53,8 +53,8 @@ let norm = Unix.mktime {tm with Unix.tm_mon = 9; Unix.tm_mday = 40}
 let _ = match norm with
   | (1384049855.,
      {Unix.tm_sec = 35; Unix.tm_min = 17; Unix.tm_hour = 18; Unix.tm_mday = 9;
-    Unix.tm_mon = 10; Unix.tm_year = 113; Unix.tm_wday = 6;
-    Unix.tm_yday = 312; Unix.tm_isdst = false}) -> log_success ()
+      Unix.tm_mon = 10; Unix.tm_year = 113; Unix.tm_wday = 6;
+      Unix.tm_yday = 312; Unix.tm_isdst = false}) -> log_success ()
   | (1384049855.,tm) -> log_failure_tm "Unix.mktime" tm
   | (wrong,tm) -> log_failure_tm "Unix.mktime" tm;
     log_failure (Printf.sprintf "Unix.mktime: %f <> 1384049855" wrong)

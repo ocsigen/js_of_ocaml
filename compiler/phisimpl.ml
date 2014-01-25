@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 let times = Option.Debug.find "times"
 
@@ -38,11 +38,11 @@ let add_dep deps x y =
 let rec arg_deps vars deps defs params args =
   match params, args with
     x :: params, y :: args ->
-      add_dep deps x y;
-      add_def vars defs x y;
-      arg_deps vars deps defs params args
+    add_dep deps x y;
+    add_def vars defs x y;
+    arg_deps vars deps defs params args
   | _ ->
-      ()
+    ()
 
 let cont_deps blocks vars deps defs (pc, args) =
   let block = AddrMap.find pc blocks in
@@ -51,13 +51,13 @@ let cont_deps blocks vars deps defs (pc, args) =
 let expr_deps blocks vars deps defs x e =
   match e with
     Const _ | Constant _ | Apply _ | Prim _ ->
-      ()
+    ()
   | Closure (l, cont) ->
-      cont_deps blocks vars deps defs cont
+    cont_deps blocks vars deps defs cont
   | Block (_, a) ->
-      Array.iter (fun y -> add_dep deps x y) a
+    Array.iter (fun y -> add_dep deps x y) a
   | Field (y, _) ->
-      add_dep deps x y
+    add_dep deps x y
 
 let program_deps (_, blocks, _) =
   let nv = Var.count () in
@@ -70,10 +70,10 @@ let program_deps (_, blocks, _) =
          (fun i ->
             match i with
               Let (x, e) ->
-                add_var vars x;
-                expr_deps blocks vars deps defs x e
+              add_var vars x;
+              expr_deps blocks vars deps defs x e
             | Set_field _ | Array_set _ | Offset_ref _ ->
-                ())
+              ())
          block.body;
        Util.opt_iter
          (fun (x, cont) ->
@@ -81,19 +81,19 @@ let program_deps (_, blocks, _) =
          block.handler;
        match block.branch with
          Return _ | Raise _ | Stop ->
-           ()
+         ()
        | Branch cont ->
-           cont_deps blocks vars deps defs cont
+         cont_deps blocks vars deps defs cont
        | Cond (_, _, cont1, cont2) ->
-           cont_deps blocks vars deps defs cont1;
-           cont_deps blocks vars deps defs cont2
+         cont_deps blocks vars deps defs cont1;
+         cont_deps blocks vars deps defs cont2
        | Switch (_, a1, a2) ->
-           Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a1;
-           Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a2
+         Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a1;
+         Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a2
        | Pushtrap (cont, _, _, _) ->
-           cont_deps blocks vars deps defs cont
+         cont_deps blocks vars deps defs cont
        | Poptrap cont ->
-           cont_deps blocks vars deps defs cont)
+         cont_deps blocks vars deps defs cont)
     blocks;
   (vars, deps, defs)
 
@@ -126,15 +126,15 @@ let propagate1 deps defs reprs st x =
     defs.(idx) <- s;
     match VarSet.cardinal s with
       1 ->
-        replace deps reprs x (VarSet.choose s)
+      replace deps reprs x (VarSet.choose s)
     | 2 ->
-        begin match VarSet.elements s with
+      begin match VarSet.elements s with
           [y; z] when Var.compare x y = 0 -> replace deps reprs x z
         | [z; y] when Var.compare x y = 0 -> replace deps reprs x z
         | _                               -> false
-        end
+      end
     | _ ->
-        false
+      false
   end
 
 module G = Dgraph.Make_Imperative (Var) (VarISet) (VarTbl)
@@ -159,10 +159,10 @@ let solver1 vars deps defs =
     (fun idx y ->
        match y with
          Some y ->
-           let y = repr reprs y in
-           if Var.idx y = idx then None else Some y
+         let y = repr reprs y in
+         if Var.idx y = idx then None else Some y
        | None ->
-           None)
+         None)
     reprs
 
 let f p =

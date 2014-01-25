@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Js
 
@@ -84,14 +84,14 @@ end
 
 let defaultContextAttributes =
   Js.Unsafe.(obj
-    [|"alpha", inject _true;
-      "depth", inject _true;
-      "stencil", inject _false;
-      "antialias", inject _true;
-      "premultipliedAlpha", inject _false;
-      "preserveDrawingBuffer", inject _false;
-      "preferLowPowerToHighPerformance", inject _false;
-      "failIfMajorPerformanceCaveat", inject _false |])
+               [|"alpha", inject _true;
+                 "depth", inject _true;
+                 "stencil", inject _false;
+                 "antialias", inject _true;
+                 "premultipliedAlpha", inject _false;
+                 "preserveDrawingBuffer", inject _false;
+                 "preferLowPowerToHighPerformance", inject _false;
+                 "failIfMajorPerformanceCaveat", inject _false |])
 
 type buffer
 type framebuffer
@@ -792,4 +792,4 @@ let getContextWithAttributes (c : Dom_html.canvasElement t) attribs =
   let c : canvasElement t = Js.Unsafe.coerce c in
   let ctx = c##getContext_ (Js.string "webgl", attribs) in
   if Opt.test ctx then ctx else
-  c##getContext_ (Js.string "experimental-webgl", attribs)
+    c##getContext_ (Js.string "experimental-webgl", attribs)

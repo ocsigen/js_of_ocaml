@@ -16,11 +16,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
-module Make (N : sig type t end)
-            (NSet : Set.S with type elt = N.t)
-            (NMap : Map.S with type key = N.t) : sig
+module Make
+    (N : sig type t end)
+    (NSet : Set.S with type elt = N.t)
+    (NMap : Map.S with type key = N.t) : sig
 
   type t =
     { domain : NSet.t;
@@ -57,9 +58,9 @@ module type Tbl = sig
 end
 
 module Make_Imperative
-  (N : sig type t end)
-  (NSet : ISet with type elt = N.t)
-  (NTbl : Tbl with type key = N.t) : sig
+    (N : sig type t end)
+    (NSet : ISet with type elt = N.t)
+    (NTbl : Tbl with type key = N.t) : sig
 
   type t =
     { domain : NSet.t;

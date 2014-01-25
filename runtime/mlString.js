@@ -69,8 +69,8 @@ MlString.prototype = {
       return this.string = decodeURIComponent (escape(a));
     } catch (e){
       joo_global_object.console &&
-      joo_global_object.console.error &&
-      joo_global_object.console.error("MlString.toJsString: wrong encoding for \"%s\" ", a);
+        joo_global_object.console.error &&
+        joo_global_object.console.error("MlString.toJsString: wrong encoding for \"%s\" ", a);
       return a;
     }
   },
@@ -82,8 +82,8 @@ MlString.prototype = {
         var b = unescape (encodeURIComponent (this.string));
       } catch (e) {
         joo_global_object.console &&
-        joo_global_object.console.error &&
-        joo_global_object.console.error("MlString.toBytes: wrong encoding for \"%s\" ", this.string);
+          joo_global_object.console.error &&
+          joo_global_object.console.error("MlString.toBytes: wrong encoding for \"%s\" ", this.string);
         var b = this.string;
       }
     } else {

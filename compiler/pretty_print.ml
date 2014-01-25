@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 type elt =
     Text of string
@@ -68,61 +68,61 @@ let output_newline st = output st "\n" 1
 let rec flat_render st l =
   match l with
     Text s :: r | Break (s, _) :: r ->
-      output st s (String.length s); flat_render st r
+    output st s (String.length s); flat_render st r
   | _ :: r ->
-      flat_render st r
+    flat_render st r
   | [] ->
-      ()
+    ()
 
 let rec push st e =
   if st.n = 0 then begin
     (* Vertical rendering *)
     match e with
       Text s ->
-        output st s (String.length s);
-        st.cur <- st.cur + String.length s
+      output st s (String.length s);
+      st.cur <- st.cur + String.length s
     | Break (_, offs) ->
-        output_newline st;
-        let indent = st.box_indent + offs in
-        st.indent <- indent;
-        output_spaces st indent;
-        st.limit <- max (indent + 60) 78;
-        st.cur <- st.indent
+      output_newline st;
+      let indent = st.box_indent + offs in
+      st.indent <- indent;
+      output_spaces st indent;
+      st.limit <- max (indent + 60) 78;
+      st.cur <- st.indent
     | Start_group n ->
-        st.n <- 1;
-        st.w <- st.limit - st.cur;
-        st.prev_indents <- (st.box_indent, st.indent) :: st.prev_indents;
-        st.indent <- st.indent + n;
-        st.box_indent <- st.indent
+      st.n <- 1;
+      st.w <- st.limit - st.cur;
+      st.prev_indents <- (st.box_indent, st.indent) :: st.prev_indents;
+      st.indent <- st.indent + n;
+      st.box_indent <- st.indent
     | End_group ->
-        st.box_indent <- fst (List.hd st.prev_indents);
-        st.indent <- snd (List.hd st.prev_indents);
-        st.prev_indents <- List.tl st.prev_indents
+      st.box_indent <- fst (List.hd st.prev_indents);
+      st.indent <- snd (List.hd st.prev_indents);
+      st.prev_indents <- List.tl st.prev_indents
   end else begin
     (* Fits? *)
     st.l <- e :: st.l;
     match e with
       Text s | Break (s, _) ->
-        let w = st.w - String.length s in
-        st.w <- w;
-        if w < 0 then begin
-          let l = List.rev st.l in
-          st.l <- [];
-          st.n <- 0;
-          List.iter (fun e -> push st e) l
-        end
+      let w = st.w - String.length s in
+      st.w <- w;
+      if w < 0 then begin
+        let l = List.rev st.l in
+        st.l <- [];
+        st.n <- 0;
+        List.iter (fun e -> push st e) l
+      end
     | Start_group _ ->
-        st.n <- st.n + 1
+      st.n <- st.n + 1
     | End_group ->
-        st.n <- st.n - 1;
-        if st.n = 0 then begin
-          flat_render st (List.rev st.l);
-          st.box_indent <- fst (List.hd st.prev_indents);
-          st.indent <- snd (List.hd st.prev_indents);
-          st.prev_indents <- List.tl st.prev_indents;
-          st.cur <- st.cur + st.w;
-          st.l <- []
-        end
+      st.n <- st.n - 1;
+      if st.n = 0 then begin
+        flat_render st (List.rev st.l);
+        st.box_indent <- fst (List.hd st.prev_indents);
+        st.indent <- snd (List.hd st.prev_indents);
+        st.prev_indents <- List.tl st.prev_indents;
+        st.cur <- st.cur + st.w;
+        st.l <- []
+      end
   end
 
 (****)
@@ -133,17 +133,17 @@ let string st s =
     if len <> 0
     then begin
       (match st.pending_space with
-        | None -> ()
-        | Some sp ->
-          begin
-            st.pending_space <- None;
-            match st.last_char,st.needed_space with
-              | Some last,Some f ->
-                if  f last s.[0]
-                then output st sp 1
-              | _, None -> output st sp 1
-              | _ ->()
-          end);
+       | None -> ()
+       | Some sp ->
+         begin
+           st.pending_space <- None;
+           match st.last_char,st.needed_space with
+           | Some last,Some f ->
+             if  f last s.[0]
+             then output st sp 1
+           | _, None -> output st sp 1
+           | _ ->()
+         end);
 
       output st s len;
       st.last_char <- Some (s.[len-1])

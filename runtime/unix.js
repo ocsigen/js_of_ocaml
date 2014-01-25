@@ -28,17 +28,18 @@ function unix_localtime (t) {
   var jan = new Date(d.getFullYear(), 0, 1);
   var jul = new Date(d.getFullYear(), 6, 1);
   var stdTimezoneOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
-  return [0, d.getSeconds(), d.getMinutes(), d.getHours(),
-  d.getDate(), d.getMonth(), d.getFullYear() - 1900,
-  d.getDay(), doy,
-  (d.getTimezoneOffset() < stdTimezoneOffset) | 0 /* daylight savings time  field. */]
+  return [
+    0, d.getSeconds(), d.getMinutes(), d.getHours(),
+    d.getDate(), d.getMonth(), d.getFullYear() - 1900,
+    d.getDay(), doy,
+    (d.getTimezoneOffset() < stdTimezoneOffset) | 0 /* daylight savings time  field. */]
 }
 
 //Provides: unix_mktime
 //Requires: unix_localtime
 function unix_mktime(tm){
-    var d = new Date(tm[6]+1900,tm[5],tm[4],tm[3],tm[2],tm[1]);
-    var t = Math.floor(d.getTime() / 1000);
-    var tm2 = unix_localtime(t);
-    return [0,t,tm2];
+  var d = new Date(tm[6]+1900,tm[5],tm[4],tm[3],tm[2],tm[1]);
+  var t = Math.floor(d.getTime() / 1000);
+  var tm2 = unix_localtime(t);
+  return [0,t,tm2];
 }

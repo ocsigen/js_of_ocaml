@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (** Warning: this module is now deprecated. Use Lwt_js_events instead. *)
 
@@ -47,7 +47,7 @@ val iter : ('a, 'b) t list -> ('a, 'b) t
 
    If [use_capture] is set to [true], the event will be caught during the
    capture phase (default: bubble phase).
- 
+
    If [keep_default] is set to [true], the default event will not be removed.
 
    If [propagate] is set to [true], the event will continue to propagate
@@ -86,7 +86,7 @@ val keyup : ?use_capture : bool ->  ?keep_default : bool ->
   ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> ('a, Dom_html.keyboardEvent Js.t) t
 (* val mousewheel : ?use_capture : bool ->  ?keep_default : bool ->
-  #Dom_html.eventTarget Js.t -> ('a, Dom_html.mousewheelEvent Js.t) t *)
+   #Dom_html.eventTarget Js.t -> ('a, Dom_html.mousewheelEvent Js.t) t *)
 
 val clicks : ?use_capture : bool ->  ?keep_default : bool ->
   ?propagate : bool ->
@@ -119,8 +119,6 @@ val keyups : ?use_capture : bool ->  ?keep_default : bool ->
   ?propagate : bool ->
   #Dom_html.eventTarget Js.t -> (Dom_html.keyboardEvent Js.t, 'a) t -> ('b, 'c) t
 (* val mousewheels : ?use_capture : bool ->  ?keep_default : bool ->
-  ?propagate : bool ->
-  #Dom_html.eventTarget Js.t -> (Dom_html.mousewheelEvent Js.t, 'a) t -> ('b, 'c) t
+   ?propagate : bool ->
+   #Dom_html.eventTarget Js.t -> (Dom_html.mousewheelEvent Js.t, 'a) t -> ('b, 'c) t
 *)
-
-

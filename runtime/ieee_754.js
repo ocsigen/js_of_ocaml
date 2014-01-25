@@ -47,10 +47,10 @@ function caml_int64_bits_of_float (x) {
 function caml_int64_float_of_bits (x) {
   var exp = (x[3] & 0x7fff) >> 4;
   if (exp == 2047) {
-      if ((x[1]|x[2]|(x[3]&0xf)) == 0)
-        return (x[3] & 0x8000)?(-Infinity):Infinity;
-      else
-        return NaN;
+    if ((x[1]|x[2]|(x[3]&0xf)) == 0)
+      return (x[3] & 0x8000)?(-Infinity):Infinity;
+    else
+      return NaN;
   }
   var k = Math.pow(2,-24);
   var res = (x[1]*k+x[2])*k+(x[3]&0xf);

@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 
 let times = Option.Debug.find "times"
@@ -30,17 +30,17 @@ let iter_cont_free_vars f (_, l) = List.iter f l
 let iter_expr_free_vars f e =
   match e with
     Const _ | Constant _ ->
-      ()
+    ()
   | Apply (x, l, _) ->
-      f x; List.iter f l
+    f x; List.iter f l
   | Block (_, a) ->
-      Array.iter f a
+    Array.iter f a
   | Field (x, _) ->
-      f x
+    f x
   | Closure _ ->
-      ()
+    ()
   | Prim (_, l) ->
-      List.iter (fun x -> match x with Pv x -> f x | Pc _ -> ()) l
+    List.iter (fun x -> match x with Pv x -> f x | Pc _ -> ()) l
 
 let iter_instr_free_vars f i =
   match i with
@@ -53,19 +53,19 @@ let iter_last_free_var f l =
   match l with
     Return x
   | Raise x ->
-      f x
+    f x
   | Stop ->
-      ()
+    ()
   | Branch cont | Poptrap cont ->
-      iter_cont_free_vars f cont
+    iter_cont_free_vars f cont
   | Cond (_, x, cont1, cont2) ->
-      f x; iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
+    f x; iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
   | Switch (x, a1, a2) ->
-      f x;
-      Array.iter (fun c -> iter_cont_free_vars f c) a1;
-      Array.iter (fun c -> iter_cont_free_vars f c) a2
+    f x;
+    Array.iter (fun c -> iter_cont_free_vars f c) a1;
+    Array.iter (fun c -> iter_cont_free_vars f c) a2
   | Pushtrap (cont1, _, cont2, _) ->
-      iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
+    iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
 
 let iter_block_free_vars f block =
   List.iter (fun i -> iter_instr_free_vars f i) block.body;
@@ -74,16 +74,16 @@ let iter_block_free_vars f block =
 let iter_instr_bound_vars f i =
   match i with
     Let (x, _) ->
-      f x
+    f x
   | Set_field _ | Offset_ref _ | Array_set _ ->
-      ()
+    ()
 
 let iter_last_bound_vars f l =
   match l with
     Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ ->
-      ()
+    ()
   | Pushtrap (_, x, _, _) ->
-      f x
+    f x
 
 let iter_block_bound_vars f block =
   List.iter f block.params;
@@ -137,13 +137,13 @@ let mark_variables in_loop (pc, blocks, free_pc) =
       visited.(pc) <- true;
       let block = AddrMap.find pc blocks in
       begin try
-        let pc' = AddrMap.find pc in_loop in
-        iter_block_bound_vars (fun x ->
+          let pc' = AddrMap.find pc in_loop in
+          iter_block_bound_vars (fun x ->
 (*
 Format.eprintf "!%a: %d@." Var.print x pc';
 *)
- VarTbl.set vars x pc') block
-      with Not_found -> () end;
+              VarTbl.set vars x pc') block
+        with Not_found -> () end;
       List.iter
         (fun i ->
            match i with
@@ -178,15 +178,15 @@ Format.eprintf "%a: %d@." Var.print x pc';
            end)
         block;
       begin try
-        let pc'' = AddrMap.find pc in_loop in
-        all_freevars := AddrMap.remove pc'' !all_freevars
-      with Not_found -> () end;
+          let pc'' = AddrMap.find pc in_loop in
+          all_freevars := AddrMap.remove pc'' !all_freevars
+        with Not_found -> () end;
       List.iter
         (fun i ->
            match i with
              Let (_, Closure (_, (pc', _))) ->
-               traverse pc';
-               begin try
+             traverse pc';
+             begin try
                  let pc'' = AddrMap.find pc in_loop in
                  let fv =
                    try AddrMap.find pc'' !all_freevars with Not_found -> VarSet.empty in
@@ -194,13 +194,13 @@ Format.eprintf "%a: %d@." Var.print x pc';
                  all_freevars := AddrMap.remove pc'' !all_freevars
                with Not_found ->
                  freevars := AddrMap.add pc' VarSet.empty !freevars;
-               end
+             end
            | _ -> ())
         block.body;
       Code.fold_children blocks pc (fun pc' () -> traverse pc') ()
     end
   in
-   traverse pc;
+  traverse pc;
 (*
 AddrMap.iter
 (fun pc fv -> if VarSet.cardinal fv > 0 then

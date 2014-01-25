@@ -9,12 +9,12 @@ let fannkuch n =
    let perm1 = Array.create n 0 in for i = 0 to (n-1) do perm1.(i) <- i done;
    let perm = Array.create n 0 in
    let count = Array.create n 0 in
-   let flips = ref 0 
-   and maxflips = ref 0 
-   and checksum = ref 0 
+   let flips = ref 0
+   and maxflips = ref 0
+   and checksum = ref 0
    and nperm = ref 0
    and r = ref n in
-   while !r > 0 do 
+   while !r > 0 do
 (*      Printf.printf "perm="; i := 0; while !i < n do Printf.printf "%d " perm1.(!i); i := !i +1; done; Printf.printf "\n"; *)
       for i = 0 to n-1 do perm.(i) <- perm1.(i) done;
 
@@ -29,14 +29,14 @@ let fannkuch n =
             perm.(i) <- perm.(!k - i);
             perm.(!k - i) <- !t;
             done;
-            
+
          k := perm.(0);
          flips := !flips + 1;
          done;
 
       maxflips := max !maxflips !flips;
       checksum := !checksum + !flips * (1 - (!nperm land 1) lsl 1);
-      
+
       let go = ref true in
       let t = ref 0 in
       while !go do

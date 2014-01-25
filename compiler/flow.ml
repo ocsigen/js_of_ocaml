@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 let debug = Option.Debug.find "flow"
 let times = Option.Debug.find "times"
@@ -51,9 +51,9 @@ let add_assign_def vars defs x y =
   let idx = Var.idx x in
   match defs.(idx) with
     Expr _ | Param ->
-      assert false
+    assert false
   | Phi s  ->
-      defs.(idx) <- Phi (VarSet.add y s)
+    defs.(idx) <- Phi (VarSet.add y s)
 
 let add_param_def vars defs x =
   add_var vars x;
@@ -69,11 +69,11 @@ let add_dep deps x y =
 let rec arg_deps vars deps defs params args =
   match params, args with
     x :: params, y :: args ->
-      add_dep deps x y;
-      add_assign_def vars defs x y;
-      arg_deps vars deps defs params args
+    add_dep deps x y;
+    add_assign_def vars defs x y;
+    arg_deps vars deps defs params args
   | _ ->
-      ()
+    ()
 
 let cont_deps blocks vars deps defs (pc, args) =
   let block = AddrMap.find pc blocks in
@@ -82,14 +82,14 @@ let cont_deps blocks vars deps defs (pc, args) =
 let expr_deps blocks vars deps defs x e =
   match e with
     Const _ | Constant _ | Apply _ | Prim _ ->
-      ()
+    ()
   | Closure (l, cont) ->
-      List.iter (fun x -> add_param_def vars defs x) l;
-      cont_deps blocks vars deps defs cont
+    List.iter (fun x -> add_param_def vars defs x) l;
+    cont_deps blocks vars deps defs cont
   | Block (_, a) ->
-      Array.iter (fun y -> add_dep deps x y) a
+    Array.iter (fun y -> add_dep deps x y) a
   | Field (y, _) ->
-      add_dep deps x y
+    add_dep deps x y
 
 let program_deps (_, blocks, _) =
   let nv = Var.count () in
@@ -102,11 +102,11 @@ let program_deps (_, blocks, _) =
          (fun i ->
             match i with
               Let (x, e) ->
-                add_var vars x;
-                add_expr_def defs x e;
-                expr_deps blocks vars deps defs x e
+              add_var vars x;
+              add_expr_def defs x e;
+              expr_deps blocks vars deps defs x e
             | Set_field _ | Array_set _ | Offset_ref _ ->
-                ())
+              ())
          block.body;
        Util.opt_iter
          (fun (x, cont) ->
@@ -115,17 +115,17 @@ let program_deps (_, blocks, _) =
          block.handler;
        match block.branch with
          Return _ | Raise _ | Stop ->
-           ()
+         ()
        | Branch cont | Poptrap cont ->
-           cont_deps blocks vars deps defs cont
+         cont_deps blocks vars deps defs cont
        | Cond (_, _, cont1, cont2) ->
-           cont_deps blocks vars deps defs cont1;
-           cont_deps blocks vars deps defs cont2
+         cont_deps blocks vars deps defs cont1;
+         cont_deps blocks vars deps defs cont2
        | Switch (_, a1, a2) ->
-           Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a1;
-           Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a2
+         Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a1;
+         Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a2
        | Pushtrap (cont, _, _, _) ->
-           cont_deps blocks vars deps defs cont)
+         cont_deps blocks vars deps defs cont)
     blocks;
   (vars, deps, defs)
 
@@ -135,25 +135,25 @@ let var_set_lift f s =
 let propagate1 deps defs st x =
   match defs.(Var.idx x) with
     Param ->
-      VarSet.singleton x
+    VarSet.singleton x
   | Phi s ->
-      var_set_lift (fun y -> VarTbl.get st y) s
+    var_set_lift (fun y -> VarTbl.get st y) s
   | Expr e ->
-      match e with
-        Const _ | Constant _  | Apply _ | Prim _
-      | Closure _ | Block _ ->
-          VarSet.singleton x
-      | Field (y, n) ->
-          var_set_lift
-            (fun z ->
-               match defs.(Var.idx z) with
-                 Expr (Block (_, a)) when n < Array.length a ->
-                   let t = a.(n) in
-                   add_dep deps x t;
-                   VarTbl.get st t
-               | Phi _ | Param | Expr _ ->
-                   VarSet.empty)
-            (VarTbl.get st y)
+    match e with
+      Const _ | Constant _  | Apply _ | Prim _
+    | Closure _ | Block _ ->
+      VarSet.singleton x
+    | Field (y, n) ->
+      var_set_lift
+        (fun z ->
+           match defs.(Var.idx z) with
+             Expr (Block (_, a)) when n < Array.length a ->
+             let t = a.(n) in
+             add_dep deps x t;
+             VarTbl.get st t
+           | Phi _ | Param | Expr _ ->
+             VarSet.empty)
+        (VarTbl.get st y)
 
 module G = Dgraph.Make_Imperative (Var) (VarISet) (VarTbl)
 
@@ -196,16 +196,16 @@ let rec block_escape st x =
 let expr_escape st x e =
   match e with
     Const _ | Constant _ | Closure _ | Block _ | Field _ ->
-      ()
+    ()
   | Apply (_, l, _) ->
-      List.iter (fun x -> block_escape st x) l
+    List.iter (fun x -> block_escape st x) l
   | Prim (_, l) ->
-      List.iter
-        (fun x ->
-           match x with
-             Pv x -> block_escape st x
-           | Pc _ -> ())
-        l
+    List.iter
+      (fun x ->
+         match x with
+           Pv x -> block_escape st x
+         | Pc _ -> ())
+      l
 
 let program_escape defs known_origins (_, blocks, _) =
   let nv = Var.count () in
@@ -223,20 +223,20 @@ let program_escape defs known_origins (_, blocks, _) =
          (fun i ->
             match i with
               Let (x, e) ->
-                expr_escape st x e
+              expr_escape st x e
             | Set_field (x, _, y) | Array_set (x, _, y) ->
-                VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
-                  (VarTbl.get known_origins x);
-                block_escape st y
+              VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
+                (VarTbl.get known_origins x);
+              block_escape st y
             | Offset_ref (x, _) ->
-                VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
-                  (VarTbl.get known_origins x))
+              VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
+                (VarTbl.get known_origins x))
          block.body;
        match block.branch with
          Return x | Raise x ->
-           block_escape st x
+         block_escape st x
        | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ ->
-           ())
+         ())
     blocks;
   possibly_mutable
 
@@ -255,26 +255,26 @@ let propagate2 ?(skip_param=false) defs known_origins possibly_mutable st x =
   match defs.(Var.idx x) with
     Param -> skip_param
   | Phi s ->
-      VarSet.exists (fun y -> VarTbl.get st y) s
+    VarSet.exists (fun y -> VarTbl.get st y) s
   | Expr e ->
-      match e with
-        Const _ | Constant _ | Closure _ | Apply _ | Prim _ | Block _ ->
-          false
-      | Field (y, n) ->
-          VarTbl.get st y
-            ||
-          VarSet.exists
-            (fun z ->
-               match defs.(Var.idx z) with
-                 Expr (Block (_, a)) ->
-                   n >= Array.length a
-                    ||
-                   possibly_mutable.(Var.idx z)
-                    ||
-                   VarTbl.get st a.(n)
-               | Phi _ | Param | Expr _ ->
-                   true)
-              (VarTbl.get known_origins y)
+    match e with
+      Const _ | Constant _ | Closure _ | Apply _ | Prim _ | Block _ ->
+      false
+    | Field (y, n) ->
+      VarTbl.get st y
+      ||
+      VarSet.exists
+        (fun z ->
+           match defs.(Var.idx z) with
+             Expr (Block (_, a)) ->
+             n >= Array.length a
+             ||
+             possibly_mutable.(Var.idx z)
+             ||
+             VarTbl.get st a.(n)
+           | Phi _ | Param | Expr _ ->
+             true)
+        (VarTbl.get known_origins y)
 
 module Domain2 = struct
   type t = bool
@@ -294,53 +294,53 @@ let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
 let get_approx {info_defs; info_known_origins;info_maybe_unknown} f top join x =
   let s = VarTbl.get info_known_origins x in
   if VarTbl.get info_maybe_unknown x then top else
-  match VarSet.cardinal s with
-    0 -> top
-  | 1 -> f (VarSet.choose s)
-  | _ -> VarSet.fold (fun x u -> join (f x) u) s (f (VarSet.choose s))
+    match VarSet.cardinal s with
+      0 -> top
+    | 1 -> f (VarSet.choose s)
+    | _ -> VarSet.fold (fun x u -> join (f x) u) s (f (VarSet.choose s))
 
 let the_def_of info x =
   match x with
-    | Pv x ->
-      get_approx info
-        (fun x -> match info.info_defs.(Var.idx x) with Expr e -> Some e | _ -> None)
-        None (fun u v -> None) x
-    | Pc c -> Some (Constant c)
+  | Pv x ->
+    get_approx info
+      (fun x -> match info.info_defs.(Var.idx x) with Expr e -> Some e | _ -> None)
+      None (fun u v -> None) x
+  | Pc c -> Some (Constant c)
 
 let the_int info x =
   match x with
-    | Pv x ->
-      get_approx info
-        (fun x -> match info.info_defs.(Var.idx x) with
-                  | Expr (Const i) -> Some i
-                  | Expr (Constant (Int i)) -> Some i
-                  | _ -> None)
-        None
-        (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
-        x
-    | Pc (Int i) -> Some i
-    | _ -> None
+  | Pv x ->
+    get_approx info
+      (fun x -> match info.info_defs.(Var.idx x) with
+         | Expr (Const i) -> Some i
+         | Expr (Constant (Int i)) -> Some i
+         | _ -> None)
+      None
+      (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
+      x
+  | Pc (Int i) -> Some i
+  | _ -> None
 
 (*XXX Maybe we could iterate? *)
 let direct_approx info x =
   match info.info_defs.(Var.idx x) with
     Expr (Field (y, n)) ->
-      get_approx info
-        (fun z ->
-           if info.info_possibly_mutable.(Var.idx z) then None else
+    get_approx info
+      (fun z ->
+         if info.info_possibly_mutable.(Var.idx z) then None else
            match info.info_defs.(Var.idx z) with
              Expr (Block (_, a)) when n < Array.length a ->
-               Some a.(n)
+             Some a.(n)
            | _ ->
-               None)
-        None
-        (fun u v ->
-           match u, v with
-             Some n, Some m when Var.compare n m = 0 -> u
-           | _ -> None)
-        y
-  | _ ->
+             None)
       None
+      (fun u v ->
+         match u, v with
+           Some n, Some m when Var.compare n m = 0 -> u
+         | _ -> None)
+      y
+  | _ ->
+    None
 
 let build_subst info  vars =
   let nv = Var.count () in

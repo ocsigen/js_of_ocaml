@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Code
 
@@ -25,20 +25,20 @@ open Code
 let pure_expr pure_funs e =
   match e with
     Const _  | Block _ | Field _ | Closure _ | Constant _ ->
-      true
+    true
   | Apply (f, l, exact) ->
-      exact && VarSet.mem f pure_funs
+    exact && VarSet.mem f pure_funs
   | Prim (p, l) ->
-      match p with
-        Extern f -> Primitive.is_pure f
-      | _        -> true
+    match p with
+      Extern f -> Primitive.is_pure f
+    | _        -> true
 
 let pure_instr pure_funs i =
   match i with
     Let (_, e) ->
-      pure_expr pure_funs e
+    pure_expr pure_funs e
   | Set_field _ | Offset_ref _ | Array_set _ ->
-      false
+    false
 
 (****)
 
@@ -65,10 +65,10 @@ and block blocks pc pure visited funs =
        let (visited, funs) =
          match i with
            Let (x, Closure (_, (pc, _))) ->
-             let (pure, visited, funs) = traverse blocks pc visited funs in
-             (visited, if pure then VarSet.add x funs else funs)
+           let (pure, visited, funs) = traverse blocks pc visited funs in
+           (visited, if pure then VarSet.add x funs else funs)
          | _ ->
-             (visited, funs)
+           (visited, funs)
        in
        (pure && pure_instr funs i, visited, funs))
     (pure, visited, funs) b.body

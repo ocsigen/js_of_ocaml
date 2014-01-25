@@ -138,7 +138,7 @@ let compr_file_size =
     ~comptime:false
     (Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s")
 
-let runtime_size = 
+let runtime_size =
   compile_no_ext ~comptime:false (Format.sprintf "head -n -1 %s | wc -c > %s")
 
 let gen_size =
@@ -244,12 +244,12 @@ let _ =
   let (compilers, suites) =
     if !full then
       (!interpreters,
-       [js_of_ocaml; 
-        js_of_ocaml_unsafe; 
-        js_of_ocaml_inline; 
-        js_of_ocaml_deadcode; 
-        js_of_ocaml_compact; 
-        js_of_ocaml_call; 
+       [js_of_ocaml;
+        js_of_ocaml_unsafe;
+        js_of_ocaml_inline;
+        js_of_ocaml_deadcode;
+        js_of_ocaml_compact;
+        js_of_ocaml_call;
         ocamljs;
         ocamljs_unsafe; ])
     else

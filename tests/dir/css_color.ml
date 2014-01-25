@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Common
 
@@ -38,19 +38,19 @@ let () =
   in
   List.iter
     (fun c ->
-      try
-        let js = CSS.Color.js c  in
-        let ml = CSS.Color.ml js in
-        if c = ml then
-          log_success ()
-        else
-          log_failure (Printf.sprintf "%s   %s"
-            (CSS.Color.string_of_t c)
-            (CSS.Color.string_of_t ml)
-            )
-      with
-        | Invalid_argument s -> log_failure s
-        | Failure s -> log_failure s
+       try
+         let js = CSS.Color.js c  in
+         let ml = CSS.Color.ml js in
+         if c = ml then
+           log_success ()
+         else
+           log_failure (Printf.sprintf "%s   %s"
+                          (CSS.Color.string_of_t c)
+                          (CSS.Color.string_of_t ml)
+                       )
+       with
+       | Invalid_argument s -> log_failure s
+       | Failure s -> log_failure s
     )
     cols
 

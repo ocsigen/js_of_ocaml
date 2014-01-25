@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Js
 open Dom
@@ -118,6 +118,6 @@ val readAsDataURL : #blob t -> js_string t Lwt.t
 val addEventListener :
   (#progressEventTarget t as 'a) -> 'b Event.typ ->
   ('a, 'b) event_listener -> bool t -> event_listener_id
-  (** Add an event listener.  This function matches the
-      [addEventListener] DOM method, except that it returns
-      an id for removing the listener. *)
+(** Add an event listener.  This function matches the
+    [addEventListener] DOM method, except that it returns
+    an id for removing the listener. *)

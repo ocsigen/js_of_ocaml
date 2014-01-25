@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (** Unsafe IO. (See {!Deriving_Json} for typesafe IO) *)
 
@@ -25,4 +25,3 @@ val output: 'a -> Js.js_string Js.t
 (** Unmarshall a string in JSON format as an OCaml value (unsafe but
     fast !). *)
 val unsafe_input: Js.js_string Js.t -> 'a
-

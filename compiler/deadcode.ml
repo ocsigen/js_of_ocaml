@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 let debug = Option.Debug.find "deadcode"
 let times = Option.Debug.find "times"
@@ -53,17 +53,17 @@ and mark_def st d =
 and mark_expr st e =
   match e with
     Const _ | Constant _ ->
-      ()
+    ()
   | Apply (f, l, _) ->
-      mark_var st f; List.iter (fun x -> mark_var st x) l
+    mark_var st f; List.iter (fun x -> mark_var st x) l
   | Block (_, a) ->
-      Array.iter (fun x -> mark_var st x) a
+    Array.iter (fun x -> mark_var st x) a
   | Field (x, _) ->
-      mark_var st x
+    mark_var st x
   | Closure (_, (pc, _)) ->
-      mark_reachable st pc
+    mark_reachable st pc
   | Prim (_, l) ->
-      List.iter (fun x -> match x with Pv x -> mark_var st x | _ -> ()) l
+    List.iter (fun x -> match x with Pv x -> mark_var st x | _ -> ()) l
 
 and mark_cont_reachable st (pc, param) = mark_reachable st pc
 
@@ -75,30 +75,30 @@ and mark_reachable st pc =
       (fun i ->
          match i with
            Let (_, e) ->
-             if not (pure_expr st.pure_funs e) then mark_expr st e
+           if not (pure_expr st.pure_funs e) then mark_expr st e
          | Set_field (x, _, y) ->
-             mark_var st x; mark_var st y
+           mark_var st x; mark_var st y
          | Array_set (x, y, z) ->
-             mark_var st x; mark_var st y; mark_var st z
+           mark_var st x; mark_var st y; mark_var st z
          | Offset_ref (x, _) ->
-             mark_var st x)
+           mark_var st x)
       block.body;
     match block.branch with
       Return x | Raise x ->
-        mark_var st x
+      mark_var st x
     | Stop ->
-        ()
+      ()
     | Branch cont | Poptrap cont ->
-        mark_cont_reachable st cont
+      mark_cont_reachable st cont
     | Cond (_, x, cont1, cont2) ->
-        mark_var st x;
-        mark_cont_reachable st cont1; mark_cont_reachable st cont2
+      mark_var st x;
+      mark_cont_reachable st cont1; mark_cont_reachable st cont2
     | Switch (x, a1, a2) ->
-        mark_var st x;
-        Array.iter (fun cont -> mark_cont_reachable st cont) a1;
-        Array.iter (fun cont -> mark_cont_reachable st cont) a2
+      mark_var st x;
+      Array.iter (fun cont -> mark_cont_reachable st cont) a1;
+      Array.iter (fun cont -> mark_cont_reachable st cont) a2
     | Pushtrap (cont1, _, cont2, _) ->
-        mark_cont_reachable st cont1; mark_cont_reachable st cont2
+      mark_cont_reachable st cont1; mark_cont_reachable st cont2
   end
 
 (****)
@@ -106,21 +106,21 @@ and mark_reachable st pc =
 let live_instr st i =
   match i with
     Let (x, e) ->
-      st.live.(Var.idx x) > 0 || not (pure_expr st.pure_funs e)
+    st.live.(Var.idx x) > 0 || not (pure_expr st.pure_funs e)
   | Set_field _ | Offset_ref _ | Array_set _ ->
-      true
+    true
 
 let rec filter_args st pl al =
   match pl, al with
     x :: pl, y :: al ->
-      if st.live.(Var.idx x) > 0 then
-        y :: filter_args st pl al
-      else
-        filter_args st pl al
+    if st.live.(Var.idx x) > 0 then
+      y :: filter_args st pl al
+    else
+      filter_args st pl al
   | [], _ ->
-      []
+    []
   | _ ->
-      assert false
+    assert false
 
 let filter_cont blocks st (pc, args) =
   let params = (AddrMap.find pc blocks).params in
@@ -129,28 +129,28 @@ let filter_cont blocks st (pc, args) =
 let filter_closure blocks st i =
   match i with
     Let (x, Closure (l, cont)) ->
-      Let (x, Closure (l, filter_cont blocks st cont))
+    Let (x, Closure (l, filter_cont blocks st cont))
   | _ ->
-      i
+    i
 
 let filter_live_last blocks st l =
   match l with
     Return _ | Raise _ | Stop ->
-      l
+    l
   | Branch cont ->
-      Branch (filter_cont blocks st cont)
+    Branch (filter_cont blocks st cont)
   | Cond (c, x, cont1, cont2) ->
-      Cond (c, x, filter_cont blocks st cont1, filter_cont blocks st cont2)
+    Cond (c, x, filter_cont blocks st cont1, filter_cont blocks st cont2)
   | Switch (x, a1, a2) ->
-      Switch (x,
-              Array.map (fun cont -> filter_cont blocks st cont) a1,
-              Array.map (fun cont -> filter_cont blocks st cont) a2)
+    Switch (x,
+            Array.map (fun cont -> filter_cont blocks st cont) a1,
+            Array.map (fun cont -> filter_cont blocks st cont) a2)
   | Pushtrap (cont1, x, cont2, pc) ->
-      Pushtrap (filter_cont blocks st cont1,
-                x, filter_cont blocks st cont2,
-                if AddrSet.mem pc st.reachable_blocks then pc else -1)
+    Pushtrap (filter_cont blocks st cont1,
+              x, filter_cont blocks st cont2,
+              if AddrSet.mem pc st.reachable_blocks then pc else -1)
   | Poptrap cont ->
-      Poptrap (filter_cont blocks st cont)
+    Poptrap (filter_cont blocks st cont)
 
 (****)
 
@@ -161,10 +161,10 @@ let ref_count st i =
 
 let annot st pc xi =
   if not (AddrSet.mem pc st.reachable_blocks) then "x" else
-  match xi with
-    Last _ ->
+    match xi with
+      Last _ ->
       " "
-  | Instr i ->
+    | Instr i ->
       let c = ref_count st i in
       if c > 0 then Format.sprintf "%d" c else
       if live_instr st i then " " else "x"
@@ -178,10 +178,10 @@ let add_def defs x i =
 let rec add_arg_dep defs params args =
   match params, args with
     x :: params, y :: args ->
-      add_def defs x (Var y);
-      add_arg_dep defs params args
+    add_def defs x (Var y);
+    add_arg_dep defs params args
   | _ ->
-      ()
+    ()
 
 let add_cont_dep blocks defs (pc, args) =
   match try Some (AddrMap.find pc blocks) with Not_found -> None with
@@ -200,27 +200,27 @@ let f ((pc, blocks, free_pc) as program) =
          (fun i ->
             match i with
               Let (x, e) ->
-                add_def defs x (Expr e)
+              add_def defs x (Expr e)
             | Set_field (x, _, _) | Array_set (x, _, _) | Offset_ref (x, _) ->
-                ())
+              ())
          block.body;
        Util.opt_iter
          (fun (_, cont) -> add_cont_dep blocks defs cont) block.handler;
        match block.branch with
          Return _ | Raise _ | Stop ->
-           ()
+         ()
        | Branch cont ->
-           add_cont_dep blocks defs cont
+         add_cont_dep blocks defs cont
        | Cond (_, _, cont1, cont2) ->
-           add_cont_dep blocks defs cont1;
-           add_cont_dep blocks defs cont2
+         add_cont_dep blocks defs cont1;
+         add_cont_dep blocks defs cont2
        | Switch (_, a1, a2) ->
-           Array.iter (fun cont -> add_cont_dep blocks defs cont) a1;
-           Array.iter (fun cont -> add_cont_dep blocks defs cont) a2
+         Array.iter (fun cont -> add_cont_dep blocks defs cont) a1;
+         Array.iter (fun cont -> add_cont_dep blocks defs cont) a2
        | Pushtrap (cont, _, _, _) ->
-           add_cont_dep blocks defs cont
+         add_cont_dep blocks defs cont
        | Poptrap cont ->
-           add_cont_dep blocks defs cont)
+         add_cont_dep blocks defs cont)
     blocks;
   let st =
     { live = live; defs = defs; blocks = blocks;
@@ -236,19 +236,19 @@ let f ((pc, blocks, free_pc) as program) =
     AddrMap.fold
       (fun pc block blocks ->
          if not (AddrSet.mem pc st.reachable_blocks) then blocks else
-         AddrMap.add pc
-           { params =
-               List.filter (fun x -> st.live.(Var.idx x) > 0) block.params;
-             handler =
-               Util.opt_map
-                 (fun (x, cont) -> (x, filter_cont all_blocks st cont))
-                 block.handler;
-             body =
-               List.map (fun i -> filter_closure all_blocks st i)
-                 (List.filter (fun i -> live_instr st i) block.body);
-             branch =
-               filter_live_last all_blocks st block.branch }
-           blocks)
+           AddrMap.add pc
+             { params =
+                 List.filter (fun x -> st.live.(Var.idx x) > 0) block.params;
+               handler =
+                 Util.opt_map
+                   (fun (x, cont) -> (x, filter_cont all_blocks st cont))
+                   block.handler;
+               body =
+                 List.map (fun i -> filter_closure all_blocks st i)
+                   (List.filter (fun i -> live_instr st i) block.body);
+               branch =
+                 filter_live_last all_blocks st block.branch }
+             blocks)
       blocks AddrMap.empty
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Util.Timer.print t;

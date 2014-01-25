@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (*
 type 'a flat = Void | Known of 'a | Unknown
@@ -47,7 +47,7 @@ type info = {
 }
 
 val get_approx : info -> (Code.VarSet.elt -> 'b) ->
-           'b -> ('b -> 'b -> 'b) -> Code.VarTbl.key -> 'b
+  'b -> ('b -> 'b -> 'b) -> Code.VarTbl.key -> 'b
 
 val the_def_of : info -> Code.prim_arg -> Code.expr option
 

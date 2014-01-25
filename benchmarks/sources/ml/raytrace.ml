@@ -495,4 +495,3 @@ let render_scene () =
   Engine.render_scene engine scene None
 
 let _ = for i = 0 to 99 do render_scene () done
-

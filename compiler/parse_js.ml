@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * Copyright (C) 2013 Hugo Heuzard
- *)
+*)
 (* Yoann Padioleau
  *
  * Copyright (C) 2010 Facebook
@@ -14,7 +14,7 @@
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the file
  * license.txt for more details.
- *)
+*)
 
 let strip_comment l= List.filter (fun x -> not (Js_token.is_comment x)) l
 
@@ -68,21 +68,21 @@ let lexer_aux ?(rm_comment=true) lines_info lexbuf =
     let tokinfo lexbuf =
       let pi = Parse_info.t_of_lexbuf lines_info lexbuf in
       match prev with
-        | None -> { pi with Parse_info.fol=Some true}
-        | Some prev ->
-          let prev_pi = Js_token.info_of_tok prev in
-          if prev_pi.Parse_info.line <> pi.Parse_info.line
-          then {pi with Parse_info.fol=Some true}
-          else pi in
+      | None -> { pi with Parse_info.fol=Some true}
+      | Some prev ->
+        let prev_pi = Js_token.info_of_tok prev in
+        if prev_pi.Parse_info.line <> pi.Parse_info.line
+        then {pi with Parse_info.fol=Some true}
+        else pi in
     let t = Js_lexer.initial tokinfo prev lexbuf in
     match t with
-      | Js_token.EOF _ -> List.rev acc
-      | _ ->
-        let prev =
-          if Js_token.is_comment t
-          then prev
-          else Some t in
-        loop lexbuf lines_info prev (t::acc)
+    | Js_token.EOF _ -> List.rev acc
+    | _ ->
+      let prev =
+        if Js_token.is_comment t
+        then prev
+        else Some t in
+      loop lexbuf lines_info prev (t::acc)
   in
   let toks = loop lexbuf lines_info None [] in
   (* hack: adjust tokens *)
@@ -120,31 +120,31 @@ type st = {
 let parse toks =
   let state = match toks with
     | [] -> {
-      rest = [];
-      passed = [];
-      current = Js_token.EOF Parse_info.zero;
-      eof = false }
+        rest = [];
+        passed = [];
+        current = Js_token.EOF Parse_info.zero;
+        eof = false }
     | hd :: _ -> {
-      rest = toks;
-      passed = [];
-      current = hd ;
-      eof = false } in
+        rest = toks;
+        passed = [];
+        current = hd ;
+        eof = false } in
   let lexer_fun lb =
     match state.rest with
-      | [] when not state.eof ->
-        state.eof <- true;
-        let info = Js_token.info_of_tok state.current in
-        Js_token.EOF info
-      | [] -> assert false
-      | x::tl ->
-        state.rest <- tl;
-        state.current <- x;
-        state.passed <- x::state.passed;
-        x in
+    | [] when not state.eof ->
+      state.eof <- true;
+      let info = Js_token.info_of_tok state.current in
+      Js_token.EOF info
+    | [] -> assert false
+    | x::tl ->
+      state.rest <- tl;
+      state.current <- x;
+      state.passed <- x::state.passed;
+      x in
   let lexbuf = Lexing.from_string "" in
   try Js_parser.program lexer_fun lexbuf
   with
-    | Js_parser.Error
-    | Parsing.Parse_error ->
-      let pi = Js_token.info_of_tok state.current in
-      raise (Parsing_error pi)
+  | Js_parser.Error
+  | Parsing.Parse_error ->
+    let pi = Js_token.info_of_tok state.current in
+    raise (Parsing_error pi)

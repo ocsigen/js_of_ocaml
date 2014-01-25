@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Code
 
@@ -27,9 +27,9 @@ let get_closures (_, blocks, _) =
          (fun closures i ->
             match i with
               Let (x, Closure (l, cont)) ->
-                VarMap.add x (l, cont) closures
+              VarMap.add x (l, cont) closures
             | _ ->
-                closures)
+              closures)
          closures block.body)
     blocks VarMap.empty
 
@@ -53,16 +53,16 @@ let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
     Return _ | Raise _ | Stop ->
-      accu
+    accu
   | Branch (pc', _) | Poptrap (pc', _) ->
-      f pc' accu
+    f pc' accu
   | Pushtrap (_, _, (pc1, _), pc2) ->
-      f pc1 (if pc2 >= 0 then f pc2 accu else accu)
+    f pc1 (if pc2 >= 0 then f pc2 accu else accu)
   | Cond (_, _, (pc1, _), (pc2, _)) ->
-      accu >> f pc1 >> f pc2
+    accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+    accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
+    >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
 let rec traverse f pc visited blocks =
   if not (AddrSet.mem pc visited) then begin
@@ -99,29 +99,29 @@ let inline closures live_vars blocks free_pc pc =
       (fun i (rem, state) ->
          match i with
            Let (x, Apply (f, args, true))
-               when live_vars.(Var.idx f) = 1
-                 && VarMap.mem f closures ->
-             let (params, (clos_pc, clos_args)) = VarMap.find f closures in
-             let (branch, blocks, free_pc) = state in
-             let blocks =
-               AddrMap.add free_pc
-                 { params = [x]; handler = block.handler;
-                   body = rem; branch = branch } blocks
-             in
-             let blocks =
-               rewrite_closure blocks free_pc clos_pc block.handler in
-             (* We do not really need this intermediate block.  It
-                just avoid the need to find which function parameters
-                are used in the function body. *)
-             let blocks =
-               AddrMap.add (free_pc + 1)
-                 { params = params; handler = block.handler;
-                   body = []; branch = Branch (clos_pc, clos_args) } blocks
-             in
-             ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
+           when live_vars.(Var.idx f) = 1
+             && VarMap.mem f closures ->
+           let (params, (clos_pc, clos_args)) = VarMap.find f closures in
+           let (branch, blocks, free_pc) = state in
+           let blocks =
+             AddrMap.add free_pc
+               { params = [x]; handler = block.handler;
+                 body = rem; branch = branch } blocks
+           in
+           let blocks =
+             rewrite_closure blocks free_pc clos_pc block.handler in
+           (* We do not really need this intermediate block.  It
+              just avoid the need to find which function parameters
+              are used in the function body. *)
+           let blocks =
+             AddrMap.add (free_pc + 1)
+               { params = params; handler = block.handler;
+                 body = []; branch = Branch (clos_pc, clos_args) } blocks
+           in
+           ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
 
          | _ ->
-             (i :: rem, state))
+           (i :: rem, state))
       block.body ([], (block.branch, blocks, free_pc))
   in
   (AddrMap.add pc {block with body = body; branch = branch} blocks, free_pc)
@@ -133,7 +133,7 @@ let f ((pc, blocks, free_pc) as p) live_vars =
   let (blocks, free_pc) =
     AddrMap.fold
       (fun pc _ (blocks, free_pc) ->
-        inline closures live_vars blocks free_pc pc)
+         inline closures live_vars blocks free_pc pc)
       blocks (blocks, free_pc)
   in
   (pc, blocks, free_pc)

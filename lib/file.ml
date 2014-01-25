@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 open Js
 open Dom
@@ -43,13 +43,13 @@ end
 let filename file =
   let file = (Js.Unsafe.coerce file:file_name_only t) in
   match Optdef.to_option (file##name) with
-    | None ->
-      begin
-	match Optdef.to_option (file##fileName) with
-	  | None -> failwith "can't retrieve file name: not implemented"
-	  | Some name -> name
-      end
-    | Some name -> name
+  | None ->
+    begin
+      match Optdef.to_option (file##fileName) with
+      | None -> failwith "can't retrieve file name: not implemented"
+      | Some name -> name
+    end
+  | Some name -> name
 
 type file_any = < > t
 
@@ -124,60 +124,60 @@ let read_with_filereader (fileReader : fileReader t constr) kind file =
   let reader = jsnew fileReader () in
   let (res, w) = Lwt.task () in
   reader##onloadend <- handler
-    (fun _ ->
-      if reader##readyState = DONE then
-        Lwt.wakeup w
-	  (match Opt.to_option (CoerceTo.string (reader##result)) with
-	    | None -> assert false (* can't happen: called with good readAs_ *)
-	    | Some s -> s)
-      else (); (* CCC TODO: handle errors *)
-      Js._false);
+      (fun _ ->
+         if reader##readyState = DONE then
+           Lwt.wakeup w
+             (match Opt.to_option (CoerceTo.string (reader##result)) with
+              | None -> assert false (* can't happen: called with good readAs_ *)
+              | Some s -> s)
+         else (); (* CCC TODO: handle errors *)
+         Js._false);
   Lwt.on_cancel res (fun () -> reader##abort ());
   (match kind with
-    | `BinaryString -> reader##readAsBinaryString(file)
-    | `Text -> reader##readAsText(file)
-    | `Text_withEncoding e -> reader##readAsText_withEncoding(file,e)
-    | `DataURL -> reader##readAsDataURL(file));
+   | `BinaryString -> reader##readAsBinaryString(file)
+   | `Text -> reader##readAsText(file)
+   | `Text_withEncoding e -> reader##readAsText_withEncoding(file,e)
+   | `DataURL -> reader##readAsDataURL(file));
   res
 
 (* Old firefox specific part: available in firefox 3.0, deprecated in 3.6.
    Those are nonstandard extensions. *)
 class type old_firefox_file =
-object
-  method getAsBinary : js_string t meth
-  method getAsBinary_presence : unit optdef readonly_prop
-  method getAsDataURL : js_string t meth
-  method getAsDataURL_presence : unit optdef readonly_prop
-  method getAsText_presence : unit optdef readonly_prop
-  method getAsText : js_string t -> js_string t meth
-end
+  object
+    method getAsBinary : js_string t meth
+    method getAsBinary_presence : unit optdef readonly_prop
+    method getAsDataURL : js_string t meth
+    method getAsDataURL_presence : unit optdef readonly_prop
+    method getAsText_presence : unit optdef readonly_prop
+    method getAsText : js_string t -> js_string t meth
+  end
 
 let old_firefox_reader kind file =
   let file = (Js.Unsafe.coerce file:old_firefox_file t) in
   let fail () = failwith "browser can't read file: unimplemented" in
   match kind with
-    | `BinaryString ->
-      if Js.Optdef.test ( file##getAsBinary_presence )
-      then file##getAsBinary()
-      else fail ()
-    | `Text ->
-      if Js.Optdef.test ( file##getAsText_presence )
-      then file##getAsText(Js.string "utf8")
-      else fail ()
-    | `Text_withEncoding e ->
-      if Js.Optdef.test ( file##getAsText_presence )
-      then file##getAsText(e)
-      else fail ()
-    | `DataURL ->
-      if Js.Optdef.test ( file##getAsDataURL_presence )
-      then file##getAsDataURL()
-      else fail ()
+  | `BinaryString ->
+    if Js.Optdef.test ( file##getAsBinary_presence )
+    then file##getAsBinary()
+    else fail ()
+  | `Text ->
+    if Js.Optdef.test ( file##getAsText_presence )
+    then file##getAsText(Js.string "utf8")
+    else fail ()
+  | `Text_withEncoding e ->
+    if Js.Optdef.test ( file##getAsText_presence )
+    then file##getAsText(e)
+    else fail ()
+  | `DataURL ->
+    if Js.Optdef.test ( file##getAsDataURL_presence )
+    then file##getAsDataURL()
+    else fail ()
 (* end of old firefox specific part *)
 
 let reader kind file =
   match Js.Optdef.to_option (Js.def fileReader) with
-    | None -> Lwt.return (old_firefox_reader kind file)
-    | Some fileReader -> read_with_filereader fileReader kind file
+  | None -> Lwt.return (old_firefox_reader kind file)
+  | Some fileReader -> read_with_filereader fileReader kind file
 
 let readAsBinaryString file =
   reader `BinaryString file

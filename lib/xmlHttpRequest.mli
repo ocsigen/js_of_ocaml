@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (** XmlHttpRequest object. *)
 
@@ -72,13 +72,13 @@ module Event : sig
 end
 
 type http_frame =
-    {
-      url: string;
-      code: int;
-      headers: string -> string option;
-      content: string;
-      content_xml: unit -> Dom.element Dom.document t option;
-    }
+  {
+    url: string;
+    code: int;
+    headers: string -> string option;
+    content: string;
+    content_xml: unit -> Dom.element Dom.document t option;
+  }
 (** The type for XHR results. The code field is the http status code of the
     answer. The headers field is a function associating values to any header
     name. *)
@@ -89,7 +89,7 @@ exception Wrong_headers of (int * (string -> string option))
     function is like the [headers] function of [http_frame] *)
 
 val perform_raw_url :
-    ?headers:(string * string) list
+  ?headers:(string * string) list
   -> ?content_type:string
   -> ?post_args:((string * Form.form_elt) list)
   -> ?get_args:((string * string) list)  (* [] *)
@@ -100,17 +100,17 @@ val perform_raw_url :
   -> ?override_mime_type:string
   -> string
   -> http_frame Lwt.t
-  (** [perform_raw_url ?headers ?content_type ?post_args ?get_args ?form_arg url]
-      makes an asynchronous request to the specified [url] with
-      specified options. The result is a cancelable thread returning
-      an HTTP frame. If [post_args] and [form_arg] are [None], a GET request is
-      used. If [post_args] or [form_arg] is [Some _] (even [Some []]) then a POST
-      request is made. The [check_headers] argument is run as soon as the answer
-      code and headers are available. If it returns false, the request is canceled
-      and the functions raise the [Wrong_headers] exception *)
+(** [perform_raw_url ?headers ?content_type ?post_args ?get_args ?form_arg url]
+    makes an asynchronous request to the specified [url] with
+    specified options. The result is a cancelable thread returning
+    an HTTP frame. If [post_args] and [form_arg] are [None], a GET request is
+    used. If [post_args] or [form_arg] is [Some _] (even [Some []]) then a POST
+    request is made. The [check_headers] argument is run as soon as the answer
+    code and headers are available. If it returns false, the request is canceled
+    and the functions raise the [Wrong_headers] exception *)
 
 val perform :
-    ?headers:(string * string) list
+  ?headers:(string * string) list
   -> ?content_type:string
   -> ?post_args:((string * Form.form_elt) list)
   -> ?get_args:((string * string) list)  (* [] *)
@@ -119,8 +119,8 @@ val perform :
   -> ?override_mime_type:string
   -> Url.url
   -> http_frame Lwt.t
-  (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
-      {!Url.url}. *)
+(** [perform] is the same as {!perform_raw_url} except that the Url argument has type
+    {!Url.url}. *)
 
 val get : string -> http_frame Lwt.t
-  (** [get url] makes an asynchronous request to the specified [url] *)
+(** [get url] makes an asynchronous request to the specified [url] *)

@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 type t =
     ACC0
@@ -360,37 +360,37 @@ let rec print_obj f x =
   if Obj.is_block x then begin
     let tag = Obj.tag x in
     if tag = Obj.string_tag then
-        Format.fprintf f "%S" (Obj.magic x : string)
+      Format.fprintf f "%S" (Obj.magic x : string)
     else if tag = Obj.double_tag then
-        Format.fprintf f "%.12g" (Obj.magic x : float)
+      Format.fprintf f "%.12g" (Obj.magic x : float)
     else if tag = Obj.double_array_tag then begin
-        let a = (Obj.magic x : float array) in
-        Format.fprintf f "[|";
-        for i = 0 to Array.length a - 1 do
-          if i > 0 then Format.fprintf f ", ";
-          Format.fprintf f "%.12g" a.(i)
-        done;
-        Format.fprintf f "|]"
+      let a = (Obj.magic x : float array) in
+      Format.fprintf f "[|";
+      for i = 0 to Array.length a - 1 do
+        if i > 0 then Format.fprintf f ", ";
+        Format.fprintf f "%.12g" a.(i)
+      done;
+      Format.fprintf f "|]"
     end else if tag = Obj.custom_tag && same_custom x 0l then
-        Format.fprintf f "%ldl" (Obj.magic x : int32)
+      Format.fprintf f "%ldl" (Obj.magic x : int32)
     else if tag = Obj.custom_tag && same_custom x 0n then
-        Format.fprintf f "%ndn" (Obj.magic x : nativeint)
+      Format.fprintf f "%ndn" (Obj.magic x : nativeint)
     else if tag = Obj.custom_tag && same_custom x 0L then
-        Format.fprintf f "%LdL" (Obj.magic x : int64)
+      Format.fprintf f "%LdL" (Obj.magic x : int64)
     else if tag < Obj.no_scan_tag then begin
-        Format.fprintf f "<%d>" (Obj.tag x);
-        match Obj.size x with
-          0 -> ()
-        | 1 ->
-            Format.fprintf f "("; print_obj f (Obj.field x 0);
-            Format.fprintf f ")"
-        | n ->
-            Format.fprintf f "("; print_obj f (Obj.field x 0);
-            for i = 1 to n - 1 do
-              Format.fprintf f ", "; print_obj f (Obj.field x i)
-            done;
-            Format.fprintf f ")"
+      Format.fprintf f "<%d>" (Obj.tag x);
+      match Obj.size x with
+        0 -> ()
+      | 1 ->
+        Format.fprintf f "("; print_obj f (Obj.field x 0);
+        Format.fprintf f ")"
+      | n ->
+        Format.fprintf f "("; print_obj f (Obj.field x 0);
+        for i = 1 to n - 1 do
+          Format.fprintf f ", "; print_obj f (Obj.field x i)
+        done;
+        Format.fprintf f ")"
     end else
-        Format.fprintf f "<tag %d>" tag
+      Format.fprintf f "<tag %d>" tag
   end else
     Format.fprintf f "%d" (Obj.magic x : int)

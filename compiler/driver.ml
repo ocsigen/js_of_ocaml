@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 let debug = Option.Debug.find "main"
 let times = Option.Debug.find "times"
@@ -269,8 +269,8 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
       let f =
         J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js,J.N) in
       [J.Statement (
-        J.Expression_statement
-          ((J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])), J.N))]
+          J.Expression_statement
+            ((J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])), J.N))]
     else
       let f = J.EFun (None, [J.V (Code.Var.fresh ())], js, J.N) in
       [J.Statement (J.Expression_statement (f, J.N))] in

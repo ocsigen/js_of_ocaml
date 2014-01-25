@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 (*XXX FIX: avoid the need of global datastructures for analyse_blocks *)
 
@@ -37,37 +37,37 @@ let rec scan info code pc len =
   if pc < len then begin
     match (get_instr code pc).kind with
       KNullary ->
-        scan info code (pc + 1) len
+      scan info code (pc + 1) len
     | KUnary ->
-        scan info code (pc + 2) len
+      scan info code (pc + 2) len
     | KBinary ->
-        scan info code (pc + 3) len
+      scan info code (pc + 3) len
     | KJump ->
-        let offset = gets code (pc + 1) in
-        add_jump info (pc + offset + 1);
-        scan info code (pc + 2) len
+      let offset = gets code (pc + 1) in
+      add_jump info (pc + offset + 1);
+      scan info code (pc + 2) len
     | KCond_jump ->
-        let offset = gets code (pc + 1) in
-        add_jump info (pc + offset + 1);
-        scan info code (pc + 2) len
+      let offset = gets code (pc + 1) in
+      add_jump info (pc + offset + 1);
+      scan info code (pc + 2) len
     | KCmp_jump ->
-        let offset = gets code (pc + 2) in
-        add_jump info (pc + offset + 2);
-        scan info code (pc + 3) len
+      let offset = gets code (pc + 2) in
+      add_jump info (pc + offset + 2);
+      scan info code (pc + 3) len
     | KSwitch ->
-        let sz = getu code (pc + 1) in
-        for i = 0 to sz land 0xffff + sz lsr 16 - 1 do
-          let offset = gets code (pc + 2 + i) in
-          add_jump info (pc + offset + 2)
-        done;
-        scan info code (pc + 2 + sz land 0xffff + sz lsr 16) len
+      let sz = getu code (pc + 1) in
+      for i = 0 to sz land 0xffff + sz lsr 16 - 1 do
+        let offset = gets code (pc + 2 + i) in
+        add_jump info (pc + offset + 2)
+      done;
+      scan info code (pc + 2 + sz land 0xffff + sz lsr 16) len
     | KClosurerec ->
-        let nfuncs = getu code (pc + 1) in
-        scan info code (pc + nfuncs + 3) len
+      let nfuncs = getu code (pc + 1) in
+      scan info code (pc + nfuncs + 3) len
     | KClosure ->
-        scan info code (pc + 3) len
+      scan info code (pc + 3) len
     | KStop n ->
-        scan info code (pc + n + 1) len
+      scan info code (pc + n + 1) len
   end
 
 let rec next_block len pc =
@@ -109,10 +109,10 @@ let rec parse_const x =
 
 let inlined_const x =
   not (Obj.is_block x)
-    ||
+  ||
   (let tag = Obj.tag x in
    (tag = Obj.double_tag)
-      ||
+   ||
    (tag = Obj.custom_tag && (same_custom x 0l || same_custom x 0n)))
 
 (****)
@@ -130,10 +130,10 @@ module Ident = struct
   let rec table_contents_rec sz t rem =
     match t with
       Empty ->
-        rem
+      rem
     | Node (l, v, r, _) ->
-        table_contents_rec sz l
-          ((sz - v.data, v.ident.name) :: table_contents_rec sz r rem)
+      table_contents_rec sz l
+        ((sz - v.data, v.ident.name) :: table_contents_rec sz r rem)
 
   let table_contents sz t =
     List.sort (fun (i, _) (j, _) -> compare i j)
@@ -149,7 +149,7 @@ module Tbl = struct
   let rec iter f = function
       Empty -> ()
     | Node(l, v, d, r, _) ->
-        iter f l; f v d; iter f r
+      iter f l; f v d; iter f r
 end
 
 type 'a numtable =
@@ -266,7 +266,7 @@ module State = struct
   let print_elt f v =
     match v with
     | Var x   -> Format.fprintf f "%a" Var.print x
-(*    | Addr x  -> Format.fprintf f "[%d]" x*)
+    (*    | Addr x  -> Format.fprintf f "[%d]" x*)
     | Dummy   -> Format.fprintf f "???"
 
   type t =
@@ -284,9 +284,9 @@ module State = struct
 
   let rec list_start n l =
     if n = 0 then [] else
-    match l with
-      []     -> assert false
-    | v :: r -> v :: list_start (n - 1) r
+      match l with
+        []     -> assert false
+      | v :: r -> v :: list_start (n - 1) r
 
   let rec st_pop n st =
     if n = 0 then
@@ -326,10 +326,10 @@ module State = struct
   let rec st_unalias s x n y =
     match s with
       [] ->
-        []
+      []
     | z :: rem ->
-        (if n <> 0 && z = Var x then Var y else z) ::
-        st_unalias rem x (n - 1) y
+      (if n <> 0 && z = Var x then Var y else z) ::
+      st_unalias rem x (n - 1) y
 
   let unalias st x n y =
     assert (List.nth st.stack n = Var x);
@@ -338,9 +338,9 @@ module State = struct
   let rec st_assign s n x =
     match s with
       [] ->
-        assert false
+      assert false
     | y :: rem ->
-        if n = 0 then x :: rem else y :: st_assign rem (n - 1) x
+      if n = 0 then x :: rem else y :: st_assign rem (n - 1) x
 
   let assign st n =
     {st with stack = st_assign st.stack n st.accu }
@@ -355,10 +355,10 @@ module State = struct
         (fun e stack ->
            match e with
              Dummy ->
-               Dummy :: stack
+             Dummy :: stack
            | Var _ ->
-               let x = Var.fresh () in
-               Var x :: stack)
+             let x = Var.fresh () in
+             Var x :: stack)
         state.stack []
     in
     let state = { state with stack = stack } in
@@ -376,14 +376,14 @@ module State = struct
   let current_handler state =
     match state.handlers with
       [] ->
-        None
+      None
     | (x, addr, len) :: _ ->
-        let state =
-          { state
-            with accu = Var x;
-                 stack = st_pop (List.length state.stack - len) state.stack}
-        in
-        Some (x, (addr, stack_vars state))
+      let state =
+        { state
+          with accu = Var x;
+               stack = st_pop (List.length state.stack - len) state.stack}
+      in
+      Some (x, (addr, stack_vars state))
 
   let initial g =
     { accu = Dummy; stack = []; env = [||]; env_offset = 0; handlers = [];
@@ -407,13 +407,13 @@ module State = struct
   let rec name_rec i l s =
     match l, s with
       [], _ ->
-        ()
+      ()
     | (j, nm) :: lrem, Var v :: srem when i = j ->
-        Var.name v nm; name_rec (i + 1) lrem srem
+      Var.name v nm; name_rec (i + 1) lrem srem
     | (j, _) :: _, _ :: srem when i < j ->
-        name_rec (i + 1) l srem
+      name_rec (i + 1) l srem
     | _ ->
-        assert false
+      assert false
 
   let name_vars st l = name_rec 0 l st.stack
 end
@@ -428,33 +428,33 @@ let primitive_name state i =
 let access_global g i =
   match g.vars.(i) with
     Some x ->
-      x
+    x
   | None ->
-      g.is_const.(i) <- true;
-      let x = Var.fresh () in
-      g.vars.(i) <- Some x;
-      x
+    g.is_const.(i) <- true;
+    let x = Var.fresh () in
+    g.vars.(i) <- Some x;
+    x
 
 let get_global state instrs i =
   State.size_globals state (i + 1);
   let g = State.globals state in
   match g.vars.(i) with
     Some x ->
-      if debug () then Format.printf "(global access %a)@." Var.print x;
-      (x, State.set_accu state x, instrs)
+    if debug () then Format.printf "(global access %a)@." Var.print x;
+    (x, State.set_accu state x, instrs)
   | None ->
-      if
-        i < Array.length g.constants && inlined_const g.constants.(i)
-      then begin
-        let (x, state) = State.fresh_var state in
-        (x, state, Let (x, Constant (parse_const g.constants.(i))) :: instrs)
-      end else begin
-        g.is_const.(i) <- true;
-        let (x, state) = State.fresh_var state in
-          if debug () then Format.printf "%a = CONST(%d)@." Var.print x i;
-          g.vars.(i) <- Some x;
-          (x, state, instrs)
-      end
+    if
+      i < Array.length g.constants && inlined_const g.constants.(i)
+    then begin
+      let (x, state) = State.fresh_var state in
+      (x, state, Let (x, Constant (parse_const g.constants.(i))) :: instrs)
+    end else begin
+      g.is_const.(i) <- true;
+      let (x, state) = State.fresh_var state in
+      if debug () then Format.printf "%a = CONST(%d)@." Var.print x i;
+      g.vars.(i) <- Some x;
+      (x, state, instrs)
+    end
 
 let tagged_blocks = ref AddrSet.empty
 let compiled_blocks = ref AddrMap.empty
@@ -470,15 +470,15 @@ let rec compile_block code pc state =
     compiled_blocks :=
       AddrMap.add pc (state, List.rev instr, last) !compiled_blocks;
     begin match last with
-      Branch (pc', _) | Poptrap (pc', _) ->
+        Branch (pc', _) | Poptrap (pc', _) ->
         compile_block code pc' state'
-    | Cond (_, _, (pc1, _), (pc2, _)) ->
+      | Cond (_, _, (pc1, _), (pc2, _)) ->
         compile_block code pc1 state';
         compile_block code pc2 state'
-    | Switch (_, l1, l2) ->
+      | Switch (_, l1, l2) ->
         Array.iter (fun (pc', _) -> compile_block code pc' state') l1;
         Array.iter (fun (pc', _) -> compile_block code pc' state') l2
-    | Pushtrap _ | Raise _ | Return _ | Stop ->
+      | Pushtrap _ | Raise _ | Return _ | Stop ->
         ()
     end
   end
@@ -488,63 +488,63 @@ and compile code limit pc state instrs =
   if pc = limit then
     (instrs, Branch (pc, State.stack_vars state), state)
   else begin
-  if debug () then Format.eprintf "%4d " pc;
+    if debug () then Format.eprintf "%4d " pc;
 
-  State.name_vars state (Debug.find pc);
+    State.name_vars state (Debug.find pc);
 
-  let instr =
-    try
-      get_instr code pc
-    with Bad_instruction op ->
-      if debug () then Format.eprintf "%08x@." op;
-      assert false
-  in
-  if debug () then Format.eprintf "%08x %s@." instr.opcode instr.name;
-  match instr.code with
-  | ACC0 ->
+    let instr =
+      try
+        get_instr code pc
+      with Bad_instruction op ->
+        if debug () then Format.eprintf "%08x@." op;
+        assert false
+    in
+    if debug () then Format.eprintf "%08x %s@." instr.opcode instr.name;
+    match instr.code with
+    | ACC0 ->
       compile code limit (pc + 1) (State.acc 0 state) instrs
-  | ACC1 ->
+    | ACC1 ->
       compile code limit (pc + 1) (State.acc 1 state) instrs
-  | ACC2 ->
+    | ACC2 ->
       compile code limit (pc + 1) (State.acc 2 state) instrs
-  | ACC3 ->
+    | ACC3 ->
       compile code limit (pc + 1) (State.acc 3 state) instrs
-  | ACC4 ->
+    | ACC4 ->
       compile code limit (pc + 1) (State.acc 4 state) instrs
-  | ACC5 ->
+    | ACC5 ->
       compile code limit (pc + 1) (State.acc 5 state) instrs
-  | ACC6 ->
+    | ACC6 ->
       compile code limit (pc + 1) (State.acc 6 state) instrs
-  | ACC7 ->
+    | ACC7 ->
       compile code limit (pc + 1) (State.acc 7 state) instrs
-  | ACC ->
+    | ACC ->
       let n = getu code (pc + 1) in
       compile code limit (pc + 2) (State.acc n state) instrs
-  | PUSH ->
+    | PUSH ->
       compile code limit (pc + 1) (State.push state) instrs
-  | PUSHACC0 ->
+    | PUSHACC0 ->
       compile code limit (pc + 1) (State.acc 0 (State.push state)) instrs
-  | PUSHACC1 ->
+    | PUSHACC1 ->
       compile code limit (pc + 1) (State.acc 1 (State.push state)) instrs
-  | PUSHACC2 ->
+    | PUSHACC2 ->
       compile code limit (pc + 1) (State.acc 2 (State.push state)) instrs
-  | PUSHACC3 ->
+    | PUSHACC3 ->
       compile code limit (pc + 1) (State.acc 3 (State.push state)) instrs
-  | PUSHACC4 ->
+    | PUSHACC4 ->
       compile code limit (pc + 1) (State.acc 4 (State.push state)) instrs
-  | PUSHACC5 ->
+    | PUSHACC5 ->
       compile code limit (pc + 1) (State.acc 5 (State.push state)) instrs
-  | PUSHACC6 ->
+    | PUSHACC6 ->
       compile code limit (pc + 1) (State.acc 6 (State.push state)) instrs
-  | PUSHACC7 ->
+    | PUSHACC7 ->
       compile code limit (pc + 1) (State.acc 7 (State.push state)) instrs
-  | PUSHACC ->
+    | PUSHACC ->
       let n = getu code (pc + 1) in
       compile code limit (pc + 2) (State.acc n (State.push state)) instrs
-  | POP ->
+    | POP ->
       let n = getu code (pc + 1) in
       compile code limit (pc + 2) (State.pop n state) instrs
-  | ASSIGN ->
+    | ASSIGN ->
       let n = getu code (pc + 1) in
       let state = State.assign state n in
       let (x, state) = State.fresh_var state in
@@ -555,34 +555,34 @@ and compile code limit pc state instrs =
       (Let (x, Const 0) :: instrs,
        Branch (pc + 2, State.stack_vars state),
        state)
-  | ENVACC1 ->
+    | ENVACC1 ->
       compile code limit (pc + 1) (State.env_acc 1 state) instrs
-  | ENVACC2 ->
+    | ENVACC2 ->
       compile code limit (pc + 1) (State.env_acc 2 state) instrs
-  | ENVACC3 ->
+    | ENVACC3 ->
       compile code limit (pc + 1) (State.env_acc 3 state) instrs
-  | ENVACC4 ->
+    | ENVACC4 ->
       compile code limit (pc + 1) (State.env_acc 4 state) instrs
-  | ENVACC ->
+    | ENVACC ->
       let n = getu code (pc + 1) in
       compile code limit (pc + 2) (State.env_acc n state) instrs
-  | PUSHENVACC1 ->
+    | PUSHENVACC1 ->
       compile code limit (pc + 1) (State.env_acc 1 (State.push state)) instrs
-  | PUSHENVACC2 ->
+    | PUSHENVACC2 ->
       compile code limit (pc + 1) (State.env_acc 2 (State.push state)) instrs
-  | PUSHENVACC3 ->
+    | PUSHENVACC3 ->
       compile code limit (pc + 1) (State.env_acc 3 (State.push state)) instrs
-  | PUSHENVACC4 ->
+    | PUSHENVACC4 ->
       compile code limit (pc + 1) (State.env_acc 4 (State.push state)) instrs
-  | PUSHENVACC ->
+    | PUSHENVACC ->
       let n = getu code (pc + 1) in
       compile code limit (pc + 2) (State.env_acc n (State.push state)) instrs
-  | PUSH_RETADDR ->
+    | PUSH_RETADDR ->
       compile code limit (pc + 2)
         {state with State.stack =
-            State.Dummy :: State.Dummy :: State.Dummy :: state.State.stack}
+                      State.Dummy :: State.Dummy :: State.Dummy :: state.State.stack}
         instrs
-  | APPLY ->
+    | APPLY ->
       let n = getu code (pc + 1) in
       let f = State.accu state in
       let (x, state) = State.fresh_var state in
@@ -597,7 +597,7 @@ and compile code limit pc state instrs =
       end;
       compile code limit (pc + 2) (State.pop 3 state)
         (Let (x, Apply (f, args, false)) :: instrs)
-  | APPLY1 ->
+    | APPLY1 ->
       let f = State.accu state in
       let (x, state) = State.fresh_var state in
       let y = State.peek 0 state in
@@ -606,26 +606,26 @@ and compile code limit pc state instrs =
           Var.print f Var.print y;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Apply (f, [y], false)) :: instrs)
-  | APPLY2 ->
+    | APPLY2 ->
       let f = State.accu state in
       let (x, state) = State.fresh_var state in
       let y = State.peek 0 state in
       let z = State.peek 1 state in
       if debug () then Format.printf "%a = %a(%a, %a)@." Var.print x
-        Var.print f Var.print y Var.print z;
+          Var.print f Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 2 state)
         (Let (x, Apply (f, [y; z], false)) :: instrs)
-  | APPLY3 ->
+    | APPLY3 ->
       let f = State.accu state in
       let (x, state) = State.fresh_var state in
       let y = State.peek 0 state in
       let z = State.peek 1 state in
       let t = State.peek 2 state in
       if debug () then Format.printf "%a = %a(%a, %a, %a)@." Var.print x
-        Var.print f Var.print y Var.print z Var.print t;
+          Var.print f Var.print y Var.print z Var.print t;
       compile code limit (pc + 1) (State.pop 3 state)
         (Let (x, Apply (f, [y; z; t], false)) :: instrs)
-  | APPTERM ->
+    | APPTERM ->
       let n = getu code (pc + 1) in
       let f = State.accu state in
       let (l, state) = State.grab n state in
@@ -639,38 +639,38 @@ and compile code limit pc state instrs =
       end;
       let (x, state) = State.fresh_var state in
       (Let (x, Apply (f, l, false)) :: instrs, Return x, state)
-  | APPTERM1 ->
+    | APPTERM1 ->
       let f = State.accu state in
       let x = State.peek 0 state in
       if debug () then Format.printf "return %a(%a)@." Var.print f Var.print x;
       let (y, state) = State.fresh_var state in
       (Let (y, Apply (f, [x], false)) :: instrs, Return y, state)
-  | APPTERM2 ->
+    | APPTERM2 ->
       let f = State.accu state in
       let x = State.peek 0 state in
       let y = State.peek 1 state in
       if debug () then Format.printf "return %a(%a, %a)@."
-        Var.print f Var.print x Var.print y;
+          Var.print f Var.print x Var.print y;
       let (z, state) = State.fresh_var state in
       (Let (z, Apply (f, [x; y], false)) :: instrs, Return z, state)
-  | APPTERM3 ->
+    | APPTERM3 ->
       let f = State.accu state in
       let x = State.peek 0 state in
       let y = State.peek 1 state in
       let z = State.peek 2 state in
       if debug () then Format.printf "return %a(%a, %a, %a)@."
-        Var.print f Var.print x Var.print y Var.print z;
+          Var.print f Var.print x Var.print y Var.print z;
       let (t, state) = State.fresh_var state in
       (Let (t, Apply (f, [x; y; z], false)) :: instrs, Return t, state)
-  | RETURN ->
+    | RETURN ->
       let x = State.accu state in
       if debug () then Format.printf "return %a@." Var.print x;
       (instrs, Return x, state)
-  | RESTART ->
+    | RESTART ->
       assert false
-  | GRAB ->
+    | GRAB ->
       compile code limit (pc + 2) state instrs
-  | CLOSURE ->
+    | CLOSURE ->
       let nvars = getu code (pc + 1) in
       let addr = pc + gets code (pc + 2) + 2 in
       let state = if nvars > 0 then State.push state else state in
@@ -707,7 +707,7 @@ and compile code limit pc state instrs =
 
       compile code limit (pc + 3) state
         (Let (x, Closure (List.rev params, (addr, args))) :: instrs)
-  | CLOSUREREC ->
+    | CLOSUREREC ->
       let nfuncs = getu code (pc + 1) in
       let nvars = getu code (pc + 2) in
       let state = if nvars > 0 then (State.push state) else state in
@@ -759,49 +759,49 @@ and compile code limit pc state instrs =
              Debug.propagate (State.stack_vars state'') args;
 
              Let (x, Closure (List.rev params, (addr, args))) :: instr)
-         instrs (List.rev !vars)
+          instrs (List.rev !vars)
       in
       compile
         code limit (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
-  | OFFSETCLOSUREM2 ->
+    | OFFSETCLOSUREM2 ->
       compile code limit (pc + 1) (State.env_acc (-2) state) instrs
-  | OFFSETCLOSURE0 ->
+    | OFFSETCLOSURE0 ->
       compile code limit (pc + 1) (State.env_acc 0 state) instrs
-  | OFFSETCLOSURE2 ->
+    | OFFSETCLOSURE2 ->
       compile code limit (pc + 1) (State.env_acc 2 state) instrs
-  | OFFSETCLOSURE ->
+    | OFFSETCLOSURE ->
       let n = gets code (pc + 1) in
       compile code limit (pc + 2) (State.env_acc n state) instrs
-  | PUSHOFFSETCLOSUREM2 ->
+    | PUSHOFFSETCLOSUREM2 ->
       let state = State.push state in
       compile code limit (pc + 1) (State.env_acc (-2) state) instrs
-  | PUSHOFFSETCLOSURE0 ->
+    | PUSHOFFSETCLOSURE0 ->
       let state = State.push state in
       compile code limit (pc + 1) (State.env_acc 0 state) instrs
-  | PUSHOFFSETCLOSURE2 ->
+    | PUSHOFFSETCLOSURE2 ->
       let state = State.push state in
       compile code limit (pc + 1) (State.env_acc 2 state) instrs
-  | PUSHOFFSETCLOSURE ->
+    | PUSHOFFSETCLOSURE ->
       let state = State.push state in
       let n = gets code (pc + 1) in
       compile code limit (pc + 2) (State.env_acc n state) instrs
-  | GETGLOBAL ->
+    | GETGLOBAL ->
       let i = getu code (pc + 1) in
       let (_, state, instrs) = get_global state instrs i in
       compile code limit (pc + 2) state instrs
-  | PUSHGETGLOBAL ->
+    | PUSHGETGLOBAL ->
       let state = State.push state in
       let i = getu code (pc + 1) in
       let (_, state, instrs) = get_global state instrs i in
       compile code limit (pc + 2) state instrs
-  | GETGLOBALFIELD ->
+    | GETGLOBALFIELD ->
       let i = getu code (pc + 1) in
       let (x, state, instrs) = get_global state instrs i in
       let j = getu code (pc + 2) in
       let (y, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
       compile code limit (pc + 3) state (Let (y, Field (x, j)) :: instrs)
-  | PUSHGETGLOBALFIELD ->
+    | PUSHGETGLOBALFIELD ->
       let state = State.push state in
       let i = getu code (pc + 1) in
       let (x, state, instrs) = get_global state instrs i in
@@ -809,7 +809,7 @@ and compile code limit pc state instrs =
       let (y, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[%d]@." Var.print y Var.print x j;
       compile code limit (pc + 3) state (Let (y, Field (x, j)) :: instrs)
-  | SETGLOBAL ->
+    | SETGLOBAL ->
       let i = getu code (pc + 1) in
       let y = State.accu state in
       let g = State.globals state in
@@ -830,27 +830,27 @@ and compile code limit pc state instrs =
           instrs
       in
       compile code limit (pc + 2) state (Let (x, Const 0) :: instrs)
-  | ATOM0 ->
+    | ATOM0 ->
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = ATOM(0)@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Block (0, [||])) :: instrs)
-  | ATOM ->
+    | ATOM ->
       let i = getu code (pc + 1) in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = ATOM(%d)@." Var.print x i;
       compile code limit (pc + 2) state (Let (x, Block (i, [||])) :: instrs)
-  | PUSHATOM0 ->
+    | PUSHATOM0 ->
       let state = State.push state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = ATOM(0)@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Block (0, [||])) :: instrs)
-  | PUSHATOM ->
+    | PUSHATOM ->
       let state = State.push state in
       let i = getu code (pc + 1) in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = ATOM(%d)@." Var.print x i;
       compile code limit (pc + 2) state (Let (x, Block (i, [||])) :: instrs)
-  | MAKEBLOCK ->
+    | MAKEBLOCK ->
       let size = getu code (pc + 1) in
       let tag = getu code (pc + 2) in
       let state = State.push state in
@@ -865,32 +865,32 @@ and compile code limit pc state instrs =
       end;
       compile code limit (pc + 3) state
         (Let (x, Block (tag, Array.of_list contents)) :: instrs)
-  | MAKEBLOCK1 ->
+    | MAKEBLOCK1 ->
       let tag = getu code (pc + 1) in
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = { 0 = %a; }@." Var.print x Var.print y;
       compile code limit (pc + 2) state (Let (x, Block (tag, [|y|])) :: instrs)
-  | MAKEBLOCK2 ->
+    | MAKEBLOCK2 ->
       let tag = getu code (pc + 1) in
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = { 0 = %a; 1 = %a; }@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 2) (State.pop 1 state)
         (Let (x, Block (tag, [|y; z|])) :: instrs)
-  | MAKEBLOCK3 ->
+    | MAKEBLOCK3 ->
       let tag = getu code (pc + 1) in
       let y = State.accu state in
       let z = State.peek 0 state in
       let t = State.peek 1 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = { 0 = %a; 1 = %a; 2 = %a }@."
-        Var.print x Var.print y Var.print z Var.print t;
+          Var.print x Var.print y Var.print z Var.print t;
       compile code limit (pc + 2) (State.pop 2 state)
         (Let (x, Block (tag, [|y; z; t|])) :: instrs)
-  | MAKEFLOATBLOCK ->
+    | MAKEFLOATBLOCK ->
       let size = getu code (pc + 1) in
       let state = State.push state in
       let (x, state) = State.fresh_var state in
@@ -904,39 +904,39 @@ and compile code limit pc state instrs =
       end;
       compile code limit (pc + 2) state
         (Let (x, Block (254, Array.of_list contents)) :: instrs)
-  | GETFIELD0 ->
+    | GETFIELD0 ->
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[0]@." Var.print x Var.print y;
       compile code limit (pc + 1) state (Let (x, Field (y, 0)) :: instrs)
-  | GETFIELD1 ->
+    | GETFIELD1 ->
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[1]@." Var.print x Var.print y;
       compile code limit (pc + 1) state (Let (x, Field (y, 1)) :: instrs)
-  | GETFIELD2 ->
+    | GETFIELD2 ->
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[2]@." Var.print x Var.print y;
       compile code limit (pc + 1) state (Let (x, Field (y, 2)) :: instrs)
-  | GETFIELD3 ->
+    | GETFIELD3 ->
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[3]@." Var.print x Var.print y;
       compile code limit (pc + 1) state (Let (x, Field (y, 3)) :: instrs)
-  | GETFIELD ->
+    | GETFIELD ->
       let y = State.accu state in
       let n = getu code (pc + 1) in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
       compile code limit (pc + 2) state (Let (x, Field (y, n)) :: instrs)
-  | GETFLOATFIELD ->
+    | GETFLOATFIELD ->
       let y = State.accu state in
       let n = getu code (pc + 1) in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[%d]@." Var.print x Var.print y n;
       compile code limit (pc + 2) state (Let (x, Field (y, n)) :: instrs)
-  | SETFIELD0 ->
+    | SETFIELD0 ->
       let y = State.accu state in
       let z = State.peek 0 state in
       if debug () then Format.printf "%a[0] = %a@." Var.print y Var.print z;
@@ -944,7 +944,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Const 0) :: Set_field (y, 0, z) :: instrs)
-  | SETFIELD1 ->
+    | SETFIELD1 ->
       let y = State.accu state in
       let z = State.peek 0 state in
       if debug () then Format.printf "%a[1] = %a@." Var.print y Var.print z;
@@ -952,7 +952,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Const 0) :: Set_field (y, 1, z) :: instrs)
-  | SETFIELD2 ->
+    | SETFIELD2 ->
       let y = State.accu state in
       let z = State.peek 0 state in
       if debug () then Format.printf "%a[2] = %a@." Var.print y Var.print z;
@@ -960,7 +960,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Const 0) :: Set_field (y, 2, z) :: instrs)
-  | SETFIELD3 ->
+    | SETFIELD3 ->
       let y = State.accu state in
       let z = State.peek 0 state in
       if debug () then Format.printf "%a[3] = %a@." Var.print y Var.print z;
@@ -968,7 +968,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Const 0) :: Set_field (y, 3, z) :: instrs)
-  | SETFIELD ->
+    | SETFIELD ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let n = getu code (pc + 1) in
@@ -977,7 +977,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 2) (State.pop 1 state)
         (Let (x, Const 0) :: Set_field (y, n, z) :: instrs)
-  | SETFLOATFIELD ->
+    | SETFLOATFIELD ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let n = getu code (pc + 1) in
@@ -986,25 +986,25 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 2) (State.pop 1 state)
         (Let (x, Const 0) :: Set_field (y, n, z) :: instrs)
-  | VECTLENGTH ->
+    | VECTLENGTH ->
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a.length@."
-        Var.print x Var.print y;
+          Var.print x Var.print y;
       compile code limit (pc + 1) state
         (Let (x, Prim (Vectlength, [Pv y])) :: instrs)
-  | GETVECTITEM ->
+    | GETVECTITEM ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[%a]@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Array_get, [Pv y; Pv z])) :: instrs)
-  | SETVECTITEM ->
+    | SETVECTITEM ->
       if debug () then Format.printf "%a[%a] = %a@." Var.print (State.accu state)
-        Var.print (State.peek 0 state)
-        Var.print (State.peek 1 state);
+          Var.print (State.peek 0 state)
+          Var.print (State.peek 1 state);
       let instrs =
         Array_set (State.accu state, State.peek 0 state, State.peek 1 state)
         :: instrs
@@ -1013,18 +1013,18 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) (State.pop 2 state)
         (Let (x, Const 0) :: instrs)
-  | GETSTRINGCHAR ->
+    | GETSTRINGCHAR ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a[%a]@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "caml_string_get", [Pv y; Pv z])) :: instrs)
-  | SETSTRINGCHAR ->
+    | SETSTRINGCHAR ->
       if debug () then Format.printf "%a[%a] = %a@." Var.print (State.accu state)
-        Var.print (State.peek 0 state)
-        Var.print (State.peek 1 state);
+          Var.print (State.peek 0 state)
+          Var.print (State.peek 1 state);
       let x = State.accu state in
       let y = State.peek 0 state in
       let z = State.peek 1 state in
@@ -1036,23 +1036,23 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) (State.pop 2 state)
         (Let (x, Const 0) :: instrs)
-  | BRANCH ->
+    | BRANCH ->
       let offset = gets code (pc + 1) in
       if debug () then Format.printf "... (branch)@.";
       (instrs, Branch (pc + offset + 1, State.stack_vars state), state)
-  | BRANCHIF ->
+    | BRANCHIF ->
       let offset = gets code (pc + 1) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (IsTrue, x, (pc + offset + 1, args), (pc + 2, args)), state)
-  | BRANCHIFNOT ->
+    | BRANCHIFNOT ->
       let offset = gets code (pc + 1) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (IsTrue, x, (pc + 2, args), (pc + offset + 1, args)), state)
-  | SWITCH ->
+    | SWITCH ->
       if debug () then Format.printf "switch ...@.";
       let sz = getu code (pc + 1) in
       let x = State.accu state in
@@ -1067,32 +1067,32 @@ and compile code limit pc state instrs =
           (fun i -> (pc + 2 + gets code (pc + 2 + l + i), args))
       in
       (instrs, Switch (x, it, bt), state)
-  | BOOLNOT ->
+    | BOOLNOT ->
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = !%a@." Var.print x Var.print y;
       compile code limit (pc + 1) state (Let (x, Prim (Not, [Pv y])) :: instrs)
-  | PUSHTRAP ->
+    | PUSHTRAP ->
       let addr = pc + 1 + gets code (pc + 1) in
       let (x, state') = State.fresh_var state in
       compile_block code addr state';
       compile_block code (pc + 2)
         {(State.push_handler state x addr)
          with State.stack =
-            State.Dummy :: State.Dummy :: State.Dummy :: State.Dummy ::
-            state.State.stack};
+                State.Dummy :: State.Dummy :: State.Dummy :: State.Dummy ::
+                state.State.stack};
       (instrs,
        Pushtrap ((pc + 2, State.stack_vars state), x,
                  (addr, State.stack_vars state'), -1), state)
-  | POPTRAP ->
+    | POPTRAP ->
       compile_block code (pc + 1) (State.pop 4 (State.pop_handler state));
       (instrs, Poptrap (pc + 1, State.stack_vars state), state)
-  | RAISE ->
+    | RAISE ->
       if debug () then Format.printf "throw(%a)@." Var.print (State.accu state);
       (instrs, Raise (State.accu state), state)
-  | CHECK_SIGNALS ->
+    | CHECK_SIGNALS ->
       compile code limit (pc + 1) state instrs
-  | C_CALL1 ->
+    | C_CALL1 ->
       let prim = primitive_name state (getu code (pc + 1)) in
       if Primitive.resolve prim = "%identity" then
         (* This is a no-op *)
@@ -1101,30 +1101,30 @@ and compile code limit pc state instrs =
         let y = State.accu state in
         let (x, state) = State.fresh_var state in
         if debug () then Format.printf "%a = ccall \"%s\" (%a)@."
-          Var.print x prim Var.print y;
+            Var.print x prim Var.print y;
         compile code limit (pc + 2) state
           (Let (x, Prim (Extern prim, [Pv y])) :: instrs)
       end
-  | C_CALL2 ->
+    | C_CALL2 ->
       let prim = primitive_name state (getu code (pc + 1)) in
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = ccall \"%s\" (%a, %a)@."
-        Var.print x prim Var.print y Var.print z;
+          Var.print x prim Var.print y Var.print z;
       compile code limit (pc + 2) (State.pop 1 state)
         (Let (x, Prim (Extern prim, [Pv y; Pv z])) :: instrs)
-  | C_CALL3 ->
+    | C_CALL3 ->
       let prim = primitive_name state (getu code (pc + 1)) in
       let y = State.accu state in
       let z = State.peek 0 state in
       let t = State.peek 1 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = ccall \"%s\" (%a, %a, %a)@."
-        Var.print x prim Var.print y Var.print z Var.print t;
+          Var.print x prim Var.print y Var.print z Var.print t;
       compile code limit (pc + 2) (State.pop 2 state)
         (Let (x, Prim (Extern prim, [Pv y; Pv z; Pv t])) :: instrs)
-  | C_CALL4 ->
+    | C_CALL4 ->
       let nargs = 4 in
       let prim = primitive_name state (getu code (pc + 1)) in
       let state = State.push state in
@@ -1140,7 +1140,7 @@ and compile code limit pc state instrs =
       end;
       compile code limit (pc + 2) state
         (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
-  | C_CALL5 ->
+    | C_CALL5 ->
       let nargs = 5 in
       let prim = primitive_name state (getu code (pc + 1)) in
       let state = State.push state in
@@ -1156,7 +1156,7 @@ and compile code limit pc state instrs =
       end;
       compile code limit (pc + 2) state
         (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
-  | C_CALLN ->
+    | C_CALLN ->
       let nargs = getu code (pc + 1) in
       let prim = primitive_name state (getu code (pc + 2)) in
       let state = State.push state in
@@ -1172,54 +1172,54 @@ and compile code limit pc state instrs =
       end;
       compile code limit (pc + 3) state
         (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
-  | CONST0 ->
+    | CONST0 ->
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Const 0) :: instrs)
-  | CONST1 ->
+    | CONST1 ->
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 1@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Const 1) :: instrs)
-  | CONST2 ->
+    | CONST2 ->
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 2@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Const 2) :: instrs)
-  | CONST3 ->
+    | CONST3 ->
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 3@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Const 3) :: instrs)
-  | CONSTINT ->
+    | CONSTINT ->
       let n = gets code (pc + 1) in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %d@." Var.print x n;
       compile code limit (pc + 2) state (Let (x, Const n) :: instrs)
-  | PUSHCONST0 ->
+    | PUSHCONST0 ->
       let state = State.push state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 0@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Const 0) :: instrs)
-  | PUSHCONST1 ->
+    | PUSHCONST1 ->
       let state = State.push state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 1@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Const 1) :: instrs)
-  | PUSHCONST2 ->
+    | PUSHCONST2 ->
       let state = State.push state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 2@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Const 2) :: instrs)
-  | PUSHCONST3 ->
+    | PUSHCONST3 ->
       let state = State.push state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 3@." Var.print x;
       compile code limit (pc + 1) state (Let (x, Const 3) :: instrs)
-  | PUSHCONSTINT ->
+    | PUSHCONSTINT ->
       let state = State.push state in
       let n = gets code (pc + 1) in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %d@." Var.print x n;
       compile code limit (pc + 2) state (Let (x, Const n) :: instrs)
-  | NEGINT ->
+    | NEGINT ->
       let y = State.accu state in
       let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
@@ -1227,17 +1227,17 @@ and compile code limit pc state instrs =
       compile code limit (pc + 1) state
         (Let (x, Prim (WrapInt, [Pv x'])) ::
          Let (x', Prim (Extern "%int_neg", [Pv y])) :: instrs)
-  | ADDINT ->
+    | ADDINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %a + %a@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (WrapInt, [Pv x'])) ::
          Let (x', Prim (Extern "%int_add", [Pv y; Pv z])) :: instrs)
-  | SUBINT ->
+    | SUBINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x', state) = State.fresh_var state in
@@ -1247,7 +1247,7 @@ and compile code limit pc state instrs =
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (WrapInt, [Pv x'])) ::
          Let (x', Prim (Extern "%int_sub", [Pv y; Pv z])) :: instrs)
-  | MULINT ->
+    | MULINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
@@ -1255,7 +1255,7 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a * %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "%int_mul", [Pv y; Pv z])) :: instrs)
-  | DIVINT ->
+    | DIVINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
@@ -1263,7 +1263,7 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a / %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "%int_div", [Pv y; Pv z])) :: instrs)
-  | MODINT ->
+    | MODINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
@@ -1271,7 +1271,7 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a %% %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "%int_mod", [Pv y; Pv z])) :: instrs)
-  | ANDINT ->
+    | ANDINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
@@ -1279,7 +1279,7 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a & %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "%int_and", [Pv y; Pv z])) :: instrs)
-  | ORINT ->
+    | ORINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
@@ -1287,7 +1287,7 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a | %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "%int_or", [Pv y; Pv z])) :: instrs)
-  | XORINT ->
+    | XORINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
@@ -1295,7 +1295,7 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a ^ %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "%int_xor", [Pv y; Pv z])) :: instrs)
-  | LSLINT ->
+    | LSLINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
@@ -1303,7 +1303,7 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a << %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "%int_lsl", [Pv y; Pv z])) :: instrs)
-  | LSRINT ->
+    | LSRINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
@@ -1311,7 +1311,7 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a >>> %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "%int_lsr", [Pv y; Pv z])) :: instrs)
-  | ASRINT ->
+    | ASRINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
@@ -1319,55 +1319,55 @@ and compile code limit pc state instrs =
         Format.printf "%a = %a >> %a@." Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Extern "%int_asr", [Pv y; Pv z])) :: instrs)
-  | EQ ->
+    | EQ ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = mk_bool(%a == %a)@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Eq, [Pv y; Pv z])) :: instrs)
-  | NEQ ->
+    | NEQ ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = mk_bool(%a != %a)@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Neq, [Pv y; Pv z])) :: instrs)
-  | LTINT ->
+    | LTINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = mk_bool(%a < %a)@." Var.print x
-        Var.print y Var.print (State.peek 0 state);
+          Var.print y Var.print (State.peek 0 state);
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Lt, [Pv y; Pv z])) :: instrs)
-  | LEINT ->
+    | LEINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = mk_bool(%a <= %a)@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Le, [Pv y; Pv z])) :: instrs)
-  | GTINT ->
+    | GTINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = mk_bool(%a > %a)@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Lt, [Pv z; Pv y])) :: instrs)
-  | GEINT ->
+    | GEINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = mk_bool(%a >= %a)@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Le, [Pv z; Pv y])) :: instrs)
-  | OFFSETINT ->
+    | OFFSETINT ->
       let n = gets code (pc + 1) in
       let y = State.accu state in
       let (z, state) = State.fresh_var state in
@@ -1378,7 +1378,7 @@ and compile code limit pc state instrs =
         (Let (x, Prim (WrapInt, [Pv x'])) ::
          Let (x', Prim (Extern "%int_add", [Pv y; Pv z])) ::
          Let (z, Const n) :: instrs)
-  | OFFSETREF ->
+    | OFFSETREF ->
       let n = gets code (pc + 1) in
       let x = State.accu state in
       if debug () then Format.printf "%a += %d@." Var.print x n;
@@ -1386,116 +1386,116 @@ and compile code limit pc state instrs =
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "x = 0@.";
       compile code limit (pc + 2) state (Let (x, Const 0) :: instrs)
-  | ISINT ->
+    | ISINT ->
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = !%a@." Var.print x Var.print y;
       compile code limit (pc + 1) state (Let (x, Prim (IsInt, [Pv y])) :: instrs)
-  | BEQ ->
+    | BEQ ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (CEq n, x, (pc + offset + 2, args), (pc + 3, args)), state)
-  | BNEQ ->
+    | BNEQ ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (CEq n, x, (pc + 3, args), (pc + offset + 2, args)), state)
-  | BLTINT ->
+    | BLTINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (CLt n, x, (pc + offset + 2, args), (pc + 3, args)), state)
-  | BLEINT ->
+    | BLEINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (CLe n, x, (pc + offset + 2, args), (pc + 3, args)), state)
-  | BGTINT ->
+    | BGTINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (CLe n, x, (pc + 3, args), (pc + offset + 2, args)), state)
-  | BGEINT ->
+    | BGEINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (CLt n, x, (pc + 3, args), (pc + offset + 2, args)), state)
-  | BULTINT ->
+    | BULTINT ->
       let n = getu code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (CUlt n, x, (pc + offset + 2, args), (pc + 3, args)), state)
-  | BUGEINT ->
+    | BUGEINT ->
       let n = getu code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
        Cond (CUlt n, x, (pc + 3, args), (pc + offset + 2, args)), state)
-  | ULTINT ->
+    | ULTINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = mk_bool(%a <= %a) (unsigned)@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Ult, [Pv y; Pv z])) :: instrs)
-  | UGEINT ->
+    | UGEINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = mk_bool(%a >= %a)@."
-        Var.print x Var.print y Var.print z;
+          Var.print x Var.print y Var.print z;
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Ult, [Pv z; Pv y])) :: instrs)
-  | GETPUBMET ->
-(*FIX: should cache*)
+    | GETPUBMET ->
+      (*FIX: should cache*)
       let n = gets code (pc + 1) in
       let obj = State.accu state in
       let state = State.push state in
       let (tag, state) = State.fresh_var state in
       let (m, state) = State.fresh_var state in
-if debug () then Format.printf "%a = %d@." Var.print tag n;
-if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
-        Var.print m Var.print obj Var.print tag;
+      if debug () then Format.printf "%a = %d@." Var.print tag n;
+      if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
+          Var.print m Var.print obj Var.print tag;
       compile code limit (pc + 3) state
         (Let (m, Prim (Extern "caml_get_public_method", [Pv obj; Pv tag])) ::
          Let (tag, Const n) :: instrs)
-  | GETDYNMET ->
+    | GETDYNMET ->
       let tag = State.accu state in
       let obj = State.peek 0 state in
       let (m, state) = State.fresh_var state in
-if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
-        Var.print m Var.print obj Var.print tag;
+      if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
+          Var.print m Var.print obj Var.print tag;
       compile code limit (pc + 1) state
         (Let (m, Prim (Extern "caml_get_public_method", [Pv obj; Pv tag])) ::
          instrs)
-  | GETMETHOD ->
+    | GETMETHOD ->
       let lab = State.accu state in
       let obj = State.peek 0 state in
       let (meths, state) = State.fresh_var state in
       let (m, state) = State.fresh_var state in
-if debug () then Format.printf "%a = lookup(%a, %a)@."
-  Var.print m Var.print obj Var.print lab;
+      if debug () then Format.printf "%a = lookup(%a, %a)@."
+          Var.print m Var.print obj Var.print lab;
       compile code limit (pc + 1) state
         (Let (m, Prim (Array_get, [Pv meths; Pv lab])) ::
          Let (meths, Field (obj, 0)) :: instrs)
-  | STOP ->
+    | STOP ->
       (instrs, Stop, state)
   end
 
@@ -1513,14 +1513,14 @@ let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
     Return _ | Raise _ | Stop ->
-      accu
+    accu
   | Branch (pc', _) | Poptrap (pc', _) ->
-      f pc' accu
+    f pc' accu
   | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
-      f pc1 accu >> f pc1 >> f pc2
+    f pc1 accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+    accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
+    >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
 let rec traverse blocks pc visited blocks' =
   if not (AddrSet.mem pc visited) then begin
@@ -1539,14 +1539,14 @@ let rec traverse blocks pc visited blocks' =
          raised in the [try ... with ...] body. *)
       match block.branch, path with
         Pushtrap (cont1, x, cont2, _), pc3 :: rem ->
-          (AddrMap.add
-             pc { block with branch = Pushtrap (cont1, x, cont2, pc3) }
-             blocks',
-           rem)
+        (AddrMap.add
+           pc { block with branch = Pushtrap (cont1, x, cont2, pc3) }
+           blocks',
+         rem)
       | Poptrap (pc, _), _ ->
-          (blocks', pc :: path)
+        (blocks', pc :: path)
       | _ ->
-          (blocks', path)
+        (blocks', path)
     in
     (visited, blocks', path)
   end else
@@ -1584,86 +1584,86 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
   let body =
     match standalone_info with
       Some (symb, crcs, prim, paths) ->
-        let l = ref [] in
+      let l = ref [] in
 
 
-        let set_global x v rem =
-          let globals = Var.fresh () in
-          Let (globals,
-               Prim (Extern "caml_get_global_data", [])) ::
-            Let (Var.fresh (),
-                 Prim (Extern "caml_js_set", [Pv globals; Pc (String x); Pv v])) ::
-            rem in
-
-
-        let register_global n =
-          l :=
-            let x = Var.fresh () in
-            Let (x, Const n) ::
-            Let (Var.fresh (),
-                 Prim (Extern "caml_register_global",
-                       [Pv x ; Pv (access_global g n)])) ::
-            !l
-        in
-        register_global 2; (* Failure *)
-        register_global 3; (* Invalid_argument *)
-        register_global 5; (* Division_by_zero *)
-        register_global 6; (* Not_found *)
-        for i = Array.length g.constants - 1  downto 0 do
-          match g.vars.(i) with
-            Some x when g.is_const.(i) ->
-              if g.is_exported.(i) then register_global i;
-              l := Let (x, Constant (parse_const g.constants.(i))) :: !l
-          | _ ->
-              ()
-        done;
-        if toplevel then begin
-          (* Include linking information *)
-          let toc =
-            [("SYMB", Obj.repr symb); ("CRCS", crcs); ("PRIM", Obj.repr prim)]
-          in
-          l :=
-            (let x = Var.fresh () in
-             Let (x, Constant (parse_const (Obj.repr toc))) ::
-             set_global "toc" x !l);
-          (* Include interface files *)
-          let fields = ref [] in
-          Tbl.iter
-            (fun id num ->
-               if id.Ident.flags = 1 then begin
-                 let name = String.uncapitalize id.Ident.name ^ ".cmi" in
-                 let file =
-                   try
-                     Util.find_in_paths paths name
-                   with Not_found ->
-                     Format.eprintf "%s: interface file '%s' not found@."
-                       Sys.argv.(0) name;
-                     exit 1
-                 in
-                 let s = Util.read_file file in
-                 fields := Pc (String name) :: Pc (String s) :: !fields
-               end) symb.num_tbl;
-          l :=
-            (let x = Var.fresh () in
-             Let (x, Prim (Extern "%object_literal", !fields)) ::
-             set_global "interfaces" x !l)
-        end;
-
-        !l
-    | None ->
+      let set_global x v rem =
         let globals = Var.fresh () in
-        let l =
-          ref [Let (globals,
-                    Prim (Extern "caml_get_global_data", []))]
+        Let (globals,
+             Prim (Extern "caml_get_global_data", [])) ::
+        Let (Var.fresh (),
+             Prim (Extern "caml_js_set", [Pv globals; Pc (String x); Pv v])) ::
+        rem in
+
+
+      let register_global n =
+        l :=
+          let x = Var.fresh () in
+          Let (x, Const n) ::
+          Let (Var.fresh (),
+               Prim (Extern "caml_register_global",
+                     [Pv x ; Pv (access_global g n)])) ::
+          !l
+      in
+      register_global 2; (* Failure *)
+      register_global 3; (* Invalid_argument *)
+      register_global 5; (* Division_by_zero *)
+      register_global 6; (* Not_found *)
+      for i = Array.length g.constants - 1  downto 0 do
+        match g.vars.(i) with
+          Some x when g.is_const.(i) ->
+          if g.is_exported.(i) then register_global i;
+          l := Let (x, Constant (parse_const g.constants.(i))) :: !l
+        | _ ->
+          ()
+      done;
+      if toplevel then begin
+        (* Include linking information *)
+        let toc =
+          [("SYMB", Obj.repr symb); ("CRCS", crcs); ("PRIM", Obj.repr prim)]
         in
-        for i = 0 to Array.length g.vars - 1 do
-          match g.vars.(i) with
-            Some x when g.is_const.(i) ->
-              l := Let (x, Field (globals, i)) :: !l
-          | _ ->
-              ()
-        done;
-        List.rev !l
+        l :=
+          (let x = Var.fresh () in
+           Let (x, Constant (parse_const (Obj.repr toc))) ::
+           set_global "toc" x !l);
+        (* Include interface files *)
+        let fields = ref [] in
+        Tbl.iter
+          (fun id num ->
+             if id.Ident.flags = 1 then begin
+               let name = String.uncapitalize id.Ident.name ^ ".cmi" in
+               let file =
+                 try
+                   Util.find_in_paths paths name
+                 with Not_found ->
+                   Format.eprintf "%s: interface file '%s' not found@."
+                     Sys.argv.(0) name;
+                   exit 1
+               in
+               let s = Util.read_file file in
+               fields := Pc (String name) :: Pc (String s) :: !fields
+             end) symb.num_tbl;
+        l :=
+          (let x = Var.fresh () in
+           Let (x, Prim (Extern "%object_literal", !fields)) ::
+           set_global "interfaces" x !l)
+      end;
+
+      !l
+    | None ->
+      let globals = Var.fresh () in
+      let l =
+        ref [Let (globals,
+                  Prim (Extern "caml_get_global_data", []))]
+      in
+      for i = 0 to Array.length g.vars - 1 do
+        match g.vars.(i) with
+          Some x when g.is_const.(i) ->
+          l := Let (x, Field (globals, i)) :: !l
+        | _ ->
+          ()
+      done;
+      List.rev !l
   in
   let last = Branch (0, []) in
   let pc = free_pc in
@@ -1699,8 +1699,8 @@ let type_file = function
 
 let seek_section toc ic name =
   let rec seek_sec curr_ofs = function
-    [] -> raise Not_found
-  | (n, len) :: rem ->
+      [] -> raise Not_found
+    | (n, len) :: rem ->
       if n = name
       then begin seek_in ic (curr_ofs - len); len end
       else seek_sec (curr_ofs - len) rem in
@@ -1738,16 +1738,16 @@ let read_primitive_table toc ic =
 (****)
 
 let orig_code = Str.regexp_string
-  ("\x6c\x00\x00\x00\x1f\x00\x00\x00" ^ (* pushconstint 31 *)
-   "\x69\x00\x00\x00" ^                 (* pushconst1 *)
-   "\x76\x00\x00\x00" ^                 (* lslint *)
-   "\x84\x00\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00" ^
-                                        (* bneq +5    (overwrite from here) *)
-   "\x67\x00\x00\x00\x1e\x00\x00\x00" ^ (* constint 30 *)
-   "\x54\x00\x00\x00\x03\x00\x00\x00" ^ (* branch +3 *)
-   "\x67\x00\x00\x00\x3e\x00\x00\x00" ^ (* constint 62 *)
-   "\x69\x00\x00\x00" ^                 (* pushconst1 *)
-   "\x76\x00\x00\x00")                  (* lslint *)
+    ("\x6c\x00\x00\x00\x1f\x00\x00\x00" ^ (* pushconstint 31 *)
+     "\x69\x00\x00\x00" ^                 (* pushconst1 *)
+     "\x76\x00\x00\x00" ^                 (* lslint *)
+     "\x84\x00\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00" ^
+     (* bneq +5    (overwrite from here) *)
+     "\x67\x00\x00\x00\x1e\x00\x00\x00" ^ (* constint 30 *)
+     "\x54\x00\x00\x00\x03\x00\x00\x00" ^ (* branch +3 *)
+     "\x67\x00\x00\x00\x3e\x00\x00\x00" ^ (* constint 62 *)
+     "\x69\x00\x00\x00" ^                 (* pushconst1 *)
+     "\x76\x00\x00\x00")                  (* lslint *)
 
 let fixed_code =
   "\x67\x00\x00\x00\x1f\x00\x00\x00" ^ (* constint 31 *)
@@ -1756,12 +1756,12 @@ let fixed_code =
 
 let fix_min_max_int code =
   begin try
-    let i = Str.search_forward orig_code code 0 in
-    String.blit fixed_code 0 code (i + 16) (String.length fixed_code)
-  with Not_found ->
-    Format.eprintf
-      "Warning: could not fix min_int/max_int definition \
-       (bytecode not found).@."
+      let i = Str.search_forward orig_code code 0 in
+      String.blit fixed_code 0 code (i + 16) (String.length fixed_code)
+    with Not_found ->
+      Format.eprintf
+        "Warning: could not fix min_int/max_int definition \
+         (bytecode not found).@."
   end
 
 (****)

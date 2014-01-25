@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 
 open Common
@@ -32,20 +32,20 @@ let () =
   begin match Regexp.string_match re1 s1 0 with
     | None -> log_failure "Can't match 1 1"
     | Some r ->
-        let x = Regexp.matched_string r in
-        if x = "a" then
-          log_success ()
-        else
-          log_failure ("Wrong match 1 1: " ^ x)
+      let x = Regexp.matched_string r in
+      if x = "a" then
+        log_success ()
+      else
+        log_failure ("Wrong match 1 1: " ^ x)
   end;
   begin match Regexp.string_match re1 s2 0 with
     | None -> log_failure "Can't match 1 2"
     | Some r ->
-        let x = Regexp.matched_string r in
-        if x = "ab" then
-          log_success ()
-        else
-          log_failure ("Wrong match 1 2: " ^ x)
+      let x = Regexp.matched_string r in
+      if x = "ab" then
+        log_success ()
+      else
+        log_failure ("Wrong match 1 2: " ^ x)
   end;
   begin
     let l = Regexp.split re2 s2 in

@@ -16,11 +16,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
-module Make (N : sig type t end)
-            (NSet : Set.S with type elt = N.t)
-            (NMap : Map.S with type key = N.t) = struct
+module Make
+    (N : sig type t end)
+    (NSet : Set.S with type elt = N.t)
+    (NMap : Map.S with type key = N.t) = struct
 
   type t =
     { domain : NSet.t;
@@ -71,7 +72,7 @@ module Make (N : sig type t end)
           iterate g f v w
         end else
           iterate g f v w
-     end
+      end
 
     let rec traverse g visited stack x =
       if not (NSet.mem x visited) then begin
@@ -141,9 +142,9 @@ module type Tbl = sig
 end
 
 module Make_Imperative
-  (N : sig type t end)
-  (NSet : ISet with type elt = N.t)
-  (NTbl : Tbl with type key = N.t) =
+    (N : sig type t end)
+    (NSet : ISet with type elt = N.t)
+    (NTbl : Tbl with type key = N.t) =
 struct
 
   type t = { domain : NSet.t; iter_children : (N.t -> unit) -> N.t -> unit }
@@ -188,7 +189,7 @@ struct
           iterate g f v w
         end else
           iterate g f v w
-     end
+      end
 
     let rec traverse g to_visit stack x =
       if NSet.mem to_visit x then begin
