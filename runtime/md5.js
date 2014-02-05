@@ -38,10 +38,9 @@ function () {
   function md5(buffer, length) {
     var i = length;
     buffer[i >> 2] |= 0x80 << (8 * (i & 3));
-    for (i = (i & ~0x3) + 4;(i & 0x3F) < 56 ;i += 4)
-      buffer[i >> 2] = 0;
-    buffer[i >> 2] = length << 3;
-    i += 4;
+    for (i = (i & ~0x3) + 8;(i & 0x3F) < 60 ;i += 4)
+      buffer[(i >> 2) - 1] = 0;
+    buffer[(i >> 2) -1] = length << 3;
     buffer[i >> 2] = (length >> 29) & 0x1FFFFFFF;
 
     var w = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476];
