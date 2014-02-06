@@ -26,6 +26,7 @@ type sizeiptr = int
 type intptr = int
 type uint = int
 type clampf = float
+type void
 
 type clearBufferMask = int
 type beginMode
@@ -225,9 +226,12 @@ class type renderingContext = object
   method generateMipmap : texTarget -> unit meth
   method getTexParameter : texTarget -> 'a texParam -> 'a meth
   method isTexture : texture t -> bool t meth
+  method texImage2D_new :
+    texTarget -> int -> pixelFormat -> sizei -> sizei -> int ->
+    pixelFormat -> pixelType -> void opt -> unit meth
   method texImage2D_fromView :
     texTarget -> int -> pixelFormat -> sizei -> sizei -> int ->
-    pixelFormat -> pixelType -> #Typed_array.arrayBufferView t -> unit
+    pixelFormat -> pixelType -> #Typed_array.arrayBufferView t -> unit meth
   method texImage2D_fromImageData :
     texTarget -> int -> pixelFormat -> pixelFormat -> pixelType ->
     Dom_html.imageData t -> unit meth
