@@ -22,23 +22,15 @@ package "deriving" (
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "deriving_json.cma"
   archive(native) = "deriving_json.cmxa"
+  requires(syntax) = "js_of_ocaml.deriving.syntax"
 
   package "syntax" (
     description = "Safe \"IO in JSON\" class for deriving."
     version = "[distributed with js_of_ocaml]"
-    requires(syntax) = "deriving.syntax"
     archive(syntax, preprocessor) = "pa_deriving_Json.cmo"
     archive(syntax, toploop) = "pa_deriving_Json.cmo"
+    requires(syntax) = "deriving.syntax.common"
   )
-
-  package "syntax_tc" (
-    description = "Safe \"IO in JSON\" class for deriving."
-    version = "[distributed with js_of_ocaml]"
-    requires(syntax) = "deriving.syntax_tc"
-    archive(syntax, preprocessor) = "pa_deriving_Json.cmo"
-    archive(syntax, toploop) = "pa_deriving_Json.cmo"
-  )
-
 )
 
 package "ocamlbuild" (
