@@ -126,8 +126,8 @@ let the_length_of info x =
 let eval_instr info i =
   match i with
     | Let (x, Prim (Extern ("caml_js_equals"|"caml_equal"), [y;z])) ->
-      begin match the_def_of info y, the_def_of info z with
-        | Some (Constant e1), Some (Constant e2) ->
+      begin match the_const_of info y, the_const_of info z with
+        | Some e1, Some e2 ->
           let c =
             if e1 = e2
             then 1
@@ -147,11 +147,7 @@ let eval_instr info i =
         | Some c -> Let(x,Constant (Int c)))
     | Let (x,Prim (prim, prim_args)) ->
       begin
-        let prim_args' = List.map (fun x ->
-          match the_def_of info x with
-            | Some (Constant c) -> Some c
-            | Some (Const i) -> Some (Int i)
-            | _ -> None) prim_args in
+        let prim_args' = List.map (fun x -> the_const_of info x) prim_args in
         let res =
           if List.for_all (function Some _ -> true | _ -> false) prim_args'
           then eval_prim (prim,List.map (function Some c -> c | None -> assert false) prim_args')
