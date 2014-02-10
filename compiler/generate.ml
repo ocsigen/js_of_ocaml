@@ -1087,10 +1087,13 @@ and translate_instr ctx expr_queue pc instr =
     [] ->
       ([], expr_queue)
   | Let (_, Prim (Extern "debugger",_))::rem ->
-    let st = flush_all expr_queue [J.Debugger_statement] in
+    let ins =
+      if Option.Optim.debugger ()
+      then J.Debugger_statement
+      else J.Empty_statement in
+    let st = flush_all expr_queue [ins] in
     let (instrs, expr_queue) = translate_instr ctx [] pc rem in
     (st @ instrs, expr_queue)
-
   | Let (_, Closure _) :: _ ->
       let (l, rem) = collect_closures ctx instr in
       let l = group_closures l in
