@@ -173,7 +173,7 @@ function caml_compare_val (a, b, total) {
     if (!(total && a === b)) {
       if (a instanceof MlString) {
         if (b instanceof MlString) {
-            if (a != b) {
+            if (a !== b) {
 		var x = a.compare(b);
 		if (x != 0) return x;
 	    }
@@ -709,7 +709,7 @@ function caml_array_append(a1, a2) {
 //Provides: caml_array_concat mutable
 function caml_array_concat(l) {
   var a = [0];
-  while (l != 0) {
+  while (l !== 0) {
     var b = l[1];
     for (var i = 1; i < b.length; i++) a.push(b[i]);
     l = l[2];
