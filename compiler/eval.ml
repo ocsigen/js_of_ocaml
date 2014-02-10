@@ -167,6 +167,29 @@ let eval_instr info i =
       end
     | _ -> i
 
+type case_of = Const of int | Tag of int | N
+
+let the_case_of info x =
+  match x with
+    | Pv x ->
+      get_approx info
+        (fun x -> match info.info_defs.(Var.idx x) with
+                  | Expr (Const i)
+                  | Expr (Constant (Int i)) -> Const i
+                  | Expr (Block (j,_))
+                  | Expr (Constant (Tuple (j,_))) -> Tag j
+                  | _ -> N)
+        N
+        (fun u v -> match u, v with
+           | Tag i, Tag j when i = j -> u
+           | Const i, Const j when i = j -> u
+           | _ -> N)
+        x
+    | Pc (Int i) -> Const i
+    | Pc (Tuple (j,_)) -> Tag j
+    | _ -> N
+
+
 let eval_branch info = function
   | Cond (cond,x,ftrue,ffalse) as b->
     begin
@@ -183,6 +206,13 @@ let eval_branch info = function
             | true -> Branch ftrue
             | false -> Branch ffalse)
         | _ -> b
+    end
+  | Switch (x,const,tags) as b ->
+    begin
+      match the_case_of info (Pv x) with
+      | Const j -> Branch (const.(j))
+      | Tag j -> Branch (tags.(j))
+      | N -> b
     end
   | _ as b -> b
 
