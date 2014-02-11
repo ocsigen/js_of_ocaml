@@ -5,6 +5,7 @@ requires = "js_of_ocaml.syntax,lwt"
 
 linkopts(javascript,-joo_noruntime) = "+js_of_ocaml/runtime.js"
 linkopts(javascript,pkg_unix) += "+js_of_ocaml/unix.js"
+linkopts(javascript,pkg_bigarray) += "+js_of_ocaml/bigarray.js"
 linkopts(javascript,joo_weak) += "+js_of_ocaml/weak.js"
 linkopts(javascript,joo_classlist) += "+js_of_ocaml/classlist.js"
 
