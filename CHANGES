@@ -28,12 +28,14 @@
  ** Compiler: remove redundant 'var' (by Hugo Heuzard)
  ** Compiler: strict mode enabled
  ** Compiler: improve compact mode, remove unnecessary space, semicolon
+ ** Runtime: add one-dimensional Bigarray support
  ** Library: switch from "float Js.t" to just "float" for typing
     JavaScript numbers
 
  * BugFixes
  ** Compiler: js file is not create in case of error (by Hugo Heuzard)
  ** Fix compatibility when using type conv (by Hugo Heuzard)
+ ** Fix md5 : incorrect for string where (length % 64) E 56..59 (by Grégoire Henry)
 
 ===== 1.4 (2013-12-03) =====
 

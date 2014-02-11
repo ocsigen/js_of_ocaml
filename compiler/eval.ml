@@ -126,8 +126,8 @@ let the_length_of info x =
 let eval_instr info i =
   match i with
     | Let (x, Prim (Extern ("caml_js_equals"|"caml_equal"), [y;z])) ->
-      begin match the_def_of info y, the_def_of info z with
-        | Some (Constant e1), Some (Constant e2) ->
+      begin match the_const_of info y, the_const_of info z with
+        | Some e1, Some e2 ->
           let c =
             if e1 = e2
             then 1
@@ -147,11 +147,7 @@ let eval_instr info i =
         | Some c -> Let(x,Constant (Int c)))
     | Let (x,Prim (prim, prim_args)) ->
       begin
-        let prim_args' = List.map (fun x ->
-          match the_def_of info x with
-            | Some (Constant c) -> Some c
-            | Some (Const i) -> Some (Int i)
-            | _ -> None) prim_args in
+        let prim_args' = List.map (fun x -> the_const_of info x) prim_args in
         let res =
           if List.for_all (function Some _ -> true | _ -> false) prim_args'
           then eval_prim (prim,List.map (function Some c -> c | None -> assert false) prim_args')
@@ -166,6 +162,29 @@ let eval_instr info i =
               | None -> arg) prim_args prim_args')))
       end
     | _ -> i
+
+type case_of = Const of int | Tag of int | N
+
+let the_case_of info x =
+  match x with
+    | Pv x ->
+      get_approx info
+        (fun x -> match info.info_defs.(Var.idx x) with
+                  | Expr (Const i)
+                  | Expr (Constant (Int i)) -> Const i
+                  | Expr (Block (j,_))
+                  | Expr (Constant (Tuple (j,_))) -> Tag j
+                  | _ -> N)
+        N
+        (fun u v -> match u, v with
+           | Tag i, Tag j when i = j -> u
+           | Const i, Const j when i = j -> u
+           | _ -> N)
+        x
+    | Pc (Int i) -> Const i
+    | Pc (Tuple (j,_)) -> Tag j
+    | _ -> N
+
 
 let eval_branch info = function
   | Cond (cond,x,ftrue,ffalse) as b->
@@ -183,6 +202,13 @@ let eval_branch info = function
             | true -> Branch ftrue
             | false -> Branch ffalse)
         | _ -> b
+    end
+  | Switch (x,const,tags) as b ->
+    begin
+      match the_case_of info (Pv x) with
+      | Const j -> Branch (const.(j))
+      | Tag j -> Branch (tags.(j))
+      | N -> b
     end
   | _ as b -> b
 

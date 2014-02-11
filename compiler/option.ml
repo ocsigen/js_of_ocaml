@@ -76,6 +76,7 @@ module Optim = struct
   let staticeval = o ~name:"staticeval" ~default:true
   let share_constant = o ~name:"share" ~default:true
   let strictmode = o ~name:"strict" ~default:true
+  let debugger = o ~name:"debugger" ~default:true
   (* this does not optimize properly *)
   let compact_vardecl = o ~name:"vardecl" ~default:false
 end
