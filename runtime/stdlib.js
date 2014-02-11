@@ -806,6 +806,8 @@ function caml_get_exception_backtrace () { return 0; }
 function caml_get_exception_raw_backtrace () { return 0; }
 //Provides: caml_convert_raw_backtrace const
 function caml_convert_raw_backtrace () { return 0; }
+//Provides: caml_get_current_callstack const
+function caml_get_current_callstack () { return 0; }
 //Provides: caml_sys_getenv
 //Requires: caml_raise_not_found
 function caml_sys_getenv () { caml_raise_not_found (); }
