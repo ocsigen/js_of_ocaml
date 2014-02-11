@@ -49,7 +49,7 @@ type uint8Array = (int, [`Uint8]) typedArray
 type int16Array = (int, [`Int16]) typedArray
 type uint16Array = (int, [`Uint16]) typedArray
 type int32Array = (int, [`Int32]) typedArray
-type uint32Array = (int, [`Uint32]) typedArray
+type uint32Array = (float, [`Uint32]) typedArray
 type float32Array = (float, [`Float32]) typedArray
 type float64Array = (float, [`Float64]) typedArray
 
@@ -104,4 +104,40 @@ let float64Array_inBuffer = float64Array
 let set : ('a,'b) typedArray t -> int -> 'a -> unit =
   fun a i v -> array_set (Unsafe.coerce a) i v
 let get : ('a,'b) typedArray t -> int -> 'a optdef =
-  fun a i -> array_get (Unsafe.coerce a) i
+  fun a i -> Js.Unsafe.get a i
+let unsafe_get : ('a,'b) typedArray t -> int -> 'a =
+  fun a i -> Js.Unsafe.get a i
+
+class type dataView = object
+  inherit arrayBufferView
+  method getInt8 : int -> int meth
+  method getUint8 : int -> int meth
+  method getInt16_ : int -> bool t -> int meth
+  method getUint16 : int -> int meth
+  method getUint16_ : int -> bool t -> int meth
+  method getInt32 : int -> int meth
+  method getInt32_ : int -> bool t -> int meth
+  method getUint32 : int -> float meth
+  method getUint32_ : int -> bool t -> float meth
+  method getFloat32 : int -> float meth
+  method getFloat32_ : int -> bool t -> float meth
+  method getFloat64 : int -> float meth
+  method getFloat64_ : int -> bool t -> float meth
+  method setInt8 : int -> int -> unit meth
+  method setUint8 : int -> int -> unit meth
+  method setInt16 : int -> int -> unit meth
+  method setInt16_ : int -> int -> bool t -> unit meth
+  method setUint16 : int -> int -> unit meth
+  method setUint16_ : int -> int -> bool t -> unit meth
+  method setInt32 : int -> int -> unit meth
+  method setInt32_ : int -> int -> bool t -> unit meth
+  method setUint32 : int -> float -> unit meth
+  method setUint32_ : int -> float -> bool t -> unit meth
+  method setFloat32 : int -> float -> unit meth
+  method setFloat32_ : int -> float -> bool t -> unit meth
+  method setFloat64 : int -> float -> unit meth
+  method setFloat64_ : int -> float -> bool t -> unit meth
+end
+
+let dataView = Js.Unsafe.global ## _DataView
+let dataView_inBuffer = dataView
