@@ -267,14 +267,14 @@ let propagate2 ?(skip_param=false) defs known_origins possibly_mutable st x =
             (fun z ->
                match defs.(Var.idx z) with
                  Expr (Block (_, a)) ->
-                   n >= Array.length a
-                    ||
-                   possibly_mutable.(Var.idx z)
-                    ||
-                   VarTbl.get st a.(n)
+                 n >= Array.length a
+                 ||
+                 possibly_mutable.(Var.idx z)
+                 ||
+                 VarTbl.get st a.(n)
                | Phi _ | Param | Expr _ ->
-                   true)
-              (VarTbl.get known_origins y)
+                 true)
+            (VarTbl.get known_origins y)
 
 module Domain2 = struct
   type t = bool
@@ -307,19 +307,28 @@ let the_def_of info x =
         None (fun u v -> None) x
     | Pc c -> Some (Constant c)
 
-let the_int info x =
+let rec the_const_of info x =
   match x with
-    | Pv x ->
-      get_approx info
-        (fun x -> match info.info_defs.(Var.idx x) with
-                  | Expr (Const i) -> Some i
-                  | Expr (Constant (Int i)) -> Some i
-                  | _ -> None)
-        None
-        (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
-        x
-    | Pc (Int i) -> Some i
-    | _ -> None
+  | Pv x ->
+    get_approx info
+      (fun x -> match info.info_defs.(Var.idx x) with
+         | Expr (Const i) -> Some (Int i)
+         | Expr (Constant c) -> Some c
+         | _ -> None)
+      None
+      (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
+      x
+  | Pc c -> Some c
+
+let the_int info x =
+  match the_const_of info x with
+  | Some (Int i) -> Some i
+  | _ -> None
+
+let the_string_of info x =
+  match the_const_of info x with
+  | Some (String i) -> Some i
+  | _ -> None
 
 (*XXX Maybe we could iterate? *)
 let direct_approx info x =
@@ -354,8 +363,7 @@ let build_subst info  vars =
            subst.(Var.idx x) <- Some (VarSet.choose s)
        end;
        if subst.(Var.idx x) = None then
-         subst.(Var.idx x) <-
-           direct_approx info x)
+         subst.(Var.idx x) <- direct_approx info x)
     vars;
   subst
 

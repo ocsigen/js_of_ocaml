@@ -26,8 +26,8 @@ open Flow
 let specialize_instr info i =
   match i with
   | Let (x, Prim (Extern "caml_format_int", [y;z])) ->
-    begin match the_def_of info y with
-      | Some (Constant (String "%d")) ->
+    begin match the_string_of info y with
+      | Some "%d" ->
         begin match the_int info z with
           | Some i -> Let(x,Constant(String (string_of_int i)))
           | None -> Let (x, Prim (Extern "%caml_format_int_special", [z]))
@@ -40,16 +40,16 @@ let specialize_instr info i =
       | None -> i
     end
   | Let (x, Prim (Extern "caml_js_var", [y])) ->
-      begin match the_def_of info y with
-        Some (Constant (String _ as c)) ->
-          Let (x, Prim (Extern "caml_js_var", [Pc c]))
+      begin match the_string_of info y with
+        Some s ->
+          Let (x, Prim (Extern "caml_js_var", [Pc (String s)]))
       | _ ->
           i
       end
   | Let (x, Prim (Extern "caml_js_const", [y])) ->
-      begin match the_def_of info y with
-        Some (Constant (String _ as c)) ->
-          Let (x, Prim (Extern "caml_js_const", [Pc c]))
+      begin match the_string_of info y with
+        Some s ->
+          Let (x, Prim (Extern "caml_js_const", [Pc (String s)]))
       | _ ->
           i
       end
@@ -72,13 +72,13 @@ let specialize_instr info i =
           i
       end
   | Let (x, Prim (Extern "caml_js_meth_call", [o; m; a])) ->
-      begin match the_def_of info m with
-        Some (Constant (String _ as m)) ->
+      begin match the_string_of info m with
+        Some m ->
           begin match the_def_of info a with
             Some (Block (_, a)) ->
               let a = Array.map (fun x -> Pv x) a in
               Let (x, Prim (Extern "caml_js_opt_meth_call",
-                            o :: Pc m :: Array.to_list a))
+                            o :: Pc (String m) :: Array.to_list a))
           | _ ->
               i
           end
@@ -107,8 +107,8 @@ let specialize_instr info i =
                match the_def_of info (Pv x) with
                  Some (Block (_, [|k; v|])) ->
                    let k =
-                     match the_def_of info (Pv k) with
-                       Some (Constant (String _ as s)) -> Pc s
+                     match the_string_of info (Pv k) with
+                     | Some s -> Pc (String s)
                      | _                               -> raise Exit
                    in
                    [k; Pv v]
@@ -122,29 +122,29 @@ let specialize_instr info i =
         i
       end
   | Let (x, Prim (Extern "caml_js_get", [o; f])) ->
-      begin match the_def_of info f with
-        Some (Constant (String _ as c)) ->
-          Let (x, Prim (Extern "caml_js_get", [o; Pc c]))
+      begin match the_string_of info f with
+        Some s ->
+          Let (x, Prim (Extern "caml_js_get", [o; Pc (String s)]))
       | _ ->
           i
       end
   | Let (x, Prim (Extern "caml_js_set", [o; f; v])) ->
-      begin match the_def_of info f with
-        Some (Constant (String _ as c)) ->
-          Let (x, Prim (Extern "caml_js_set", [o; Pc c; v]))
+      begin match the_string_of info f with
+        Some s ->
+          Let (x, Prim (Extern "caml_js_set", [o; Pc (String s); v]))
       | _ ->
           i
       end
   | Let (x, Prim (Extern "caml_js_delete", [o; f])) ->
-      begin match the_def_of info f with
-        Some (Constant (String _ as c)) ->
-          Let (x, Prim (Extern "caml_js_delete", [o; Pc c]))
+      begin match the_string_of info f with
+        Some s ->
+          Let (x, Prim (Extern "caml_js_delete", [o; Pc (String s)]))
       | _ ->
           i
       end
   | Let (x, Prim (Extern "caml_js_from_string", [y])) ->
-      begin match the_def_of info y with
-        Some (Constant (String s)) when Util.is_ascii s ->
+      begin match the_string_of info y with
+        Some s when Util.is_ascii s ->
           Let (x, Constant (IString s))
       | _ ->
           i

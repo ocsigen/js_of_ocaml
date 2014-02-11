@@ -51,6 +51,10 @@ val get_approx : info -> (Code.VarSet.elt -> 'b) ->
 
 val the_def_of : info -> Code.prim_arg -> Code.expr option
 
+val the_const_of : info -> Code.prim_arg -> Code.constant option
+
+val the_string_of : info -> Code.prim_arg -> string option
+
 val the_int : info -> Code.prim_arg -> int option
 
 val f : ?skip_param:bool -> Code.program -> Code.program * info
