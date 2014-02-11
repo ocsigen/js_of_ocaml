@@ -331,12 +331,12 @@ and element = object
 end
 
 and clientRect = object
-  method top : float t readonly_prop
-  method right : float t readonly_prop
-  method bottom : float t readonly_prop
-  method left : float t readonly_prop
-  method width : float t optdef readonly_prop
-  method height : float t optdef readonly_prop
+  method top : float readonly_prop
+  method right : float readonly_prop
+  method bottom : float readonly_prop
+  method left : float readonly_prop
+  method width : float optdef readonly_prop
+  method height : float optdef readonly_prop
 end
 
 and clientRectList = object
@@ -831,7 +831,7 @@ and canvasRenderingContext2D = object
     float -> float -> float -> float -> float -> float -> unit meth
   method setTransform :
     float -> float -> float -> float -> float -> float -> unit meth
-  method globalAlpha : float_prop
+  method globalAlpha : float prop
   method globalCompositeOperation : js_string t prop
   method strokeStyle : js_string t writeonly_prop
   method strokeStyle_gradient : canvasGradient t writeonly_prop
@@ -849,14 +849,14 @@ and canvasRenderingContext2D = object
     canvasElement t -> js_string t -> canvasPattern t meth
   method createPattern_fromVideo :
     videoElement t -> js_string t -> canvasPattern t meth
-  method lineWidth : float_prop
+  method lineWidth : float prop
   method lineCap : js_string t prop
   method lineJoin : js_string t prop
-  method miterLimit : float_prop
+  method miterLimit : float prop
 
-  method shadowOffsetX : float_prop
-  method shadowOffsetY : float_prop
-  method shadowBlur : float_prop
+  method shadowOffsetX : float prop
+  method shadowOffsetY : float prop
+  method shadowBlur : float prop
   method shadowColor : js_string t prop
 
   method clearRect : float -> float -> float -> float -> unit meth
@@ -1400,8 +1400,8 @@ let elementClientPosition (e : #element t) =
   let r = e##getBoundingClientRect () in
   let body = document##body in
   let html = document##documentElement in
-  (truncate (Js.to_float r##left) - body##clientLeft - html##clientLeft,
-   truncate (Js.to_float r##top) - body##clientTop - html##clientTop)
+  (truncate r##left - body##clientLeft - html##clientLeft,
+   truncate r##top - body##clientTop - html##clientTop)
 
 let getDocumentScroll () =
   let body = document##body in
@@ -1684,7 +1684,7 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
          let req = List.find (fun c -> Js.Optdef.test c) l in
          fun callback -> Js.Unsafe.fun_call req [|Js.Unsafe.inject callback|]
        with Not_found ->
-         let now () = Js.to_float (jsnew Js.date_now ()##getTime()) in
+         let now () = jsnew Js.date_now ()##getTime() in
          let last = ref (now ()) in
          fun callback ->
            let t = now () in

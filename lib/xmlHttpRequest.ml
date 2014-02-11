@@ -91,7 +91,7 @@ let encode_url args =
 
 let generateBoundary () =
   let nine_digits () =
-    string_of_int (truncate (Js.to_float (Js.math##random()) *. 1000000000.))
+    string_of_int (truncate (Js.math##random() *. 1000000000.))
   in
   "js_of_ocaml-------------------" ^ nine_digits () ^ nine_digits ()
 

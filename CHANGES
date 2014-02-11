@@ -28,6 +28,8 @@
  ** Compiler: remove redundant 'var' (by Hugo Heuzard)
  ** Compiler: strict mode enabled
  ** Compiler: improve compact mode, remove unnecessary space, semicolon
+ ** Library: switch from "float Js.t" to just "float" for typing
+    JavaScript numbers
 
  * BugFixes
  ** Compiler: js file is not create in case of error (by Hugo Heuzard)

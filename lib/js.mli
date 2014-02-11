@@ -110,10 +110,6 @@ type 'a optdef_prop = <get : 'a optdef; set : 'a -> unit> gen_prop
       you can set them to a value of some type [t], but if you read
       them, you will get a value of type [t optdef] (that may be
       [undefined]). *)
-type float_prop = <get : float t; set : float -> unit> gen_prop
-  (** Type of float properties:
-      you can set them to an OCaml [float], but you will get back a
-      native Javascript number of type [float t]. *)
 
 (** {2 Object constructors} *)
 
@@ -174,7 +170,7 @@ class type js_string = object
   method toString : js_string t meth
   method valueOf : js_string t meth
   method charAt : int -> js_string t meth
-  method charCodeAt : int -> float t meth        (* This may return NaN... *)
+  method charCodeAt : int -> float meth        (* This may return NaN... *)
   method concat : js_string t -> js_string t meth
   method concat_2 : js_string t -> js_string t -> js_string t meth
   method concat_3 :
@@ -186,7 +182,7 @@ class type js_string = object
   method indexOf_from : js_string t -> int -> int meth
   method lastIndexOf : js_string t -> int meth
   method lastIndexOf_from : js_string t -> int -> int meth
-  method localeCompare : js_string t -> float t meth
+  method localeCompare : js_string t -> float meth
   method _match : regExp t -> match_result_handle t opt meth
   method replace : regExp t -> js_string t -> js_string t meth
   (* FIX: version of replace taking a function... *)
@@ -322,8 +318,8 @@ class type date = object
   method toLocaleString : js_string t meth
   method toLocaleDateString : js_string t meth
   method toLocaleTimeString : js_string t meth
-  method valueOf : float t meth
-  method getTime : float t meth
+  method valueOf : float meth
+  method getTime : float meth
   method getFullYear : int meth
   method getUTCFullYear : int meth
   method getMonth : int meth
@@ -341,23 +337,23 @@ class type date = object
   method getMilliseconds : int meth
   method getUTCMilliseconds : int meth
   method getTimezoneOffset : int meth
-  method setTime : float -> float t meth
-  method setFullYear : int -> float t meth
-  method setUTCFullYear : int -> float t meth
-  method setMonth : int -> float t meth
-  method setUTCMonth : int -> float t meth
-  method setDate : int -> float t meth
-  method setUTCDate : int -> float t meth
-  method setDay : int -> float t meth
-  method setUTCDay : int -> float t meth
-  method setHours : int -> float t meth
-  method setUTCHours : int -> float t meth
-  method setMinutes : int -> float t meth
-  method setUTCMinutes : int -> float t meth
-  method setSeconds : int -> float t meth
-  method setUTCSeconds : int -> float t meth
-  method setMilliseconds : int -> float t meth
-  method setUTCMilliseconds : int -> float t meth
+  method setTime : float -> float meth
+  method setFullYear : int -> float meth
+  method setUTCFullYear : int -> float meth
+  method setMonth : int -> float meth
+  method setUTCMonth : int -> float meth
+  method setDate : int -> float meth
+  method setUTCDate : int -> float meth
+  method setDay : int -> float meth
+  method setUTCDay : int -> float meth
+  method setHours : int -> float meth
+  method setUTCHours : int -> float meth
+  method setMinutes : int -> float meth
+  method setUTCMinutes : int -> float meth
+  method setSeconds : int -> float meth
+  method setUTCSeconds : int -> float meth
+  method setMilliseconds : int -> float meth
+  method setUTCMilliseconds : int -> float meth
   method toUTCString : js_string t meth
   method toISOString : js_string t meth
   method toJSON : 'a -> js_string t meth
@@ -394,16 +390,16 @@ val date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr
 
 (** Specification of the date constructor, considered as an object. *)
 class type date_constr = object
-  method parse : js_string t -> float t meth
-  method _UTC_month : int -> int -> float t meth
-  method _UTC_day : int -> int -> float t meth
-  method _UTC_hour : int -> int -> int -> int -> float t meth
-  method _UTC_min : int -> int -> int -> int -> int -> float t meth
-  method _UTC_sec : int -> int -> int -> int -> int -> int -> float t meth
+  method parse : js_string t -> float meth
+  method _UTC_month : int -> int -> float meth
+  method _UTC_day : int -> int -> float meth
+  method _UTC_hour : int -> int -> int -> int -> float meth
+  method _UTC_min : int -> int -> int -> int -> int -> float meth
+  method _UTC_sec : int -> int -> int -> int -> int -> int -> float meth
   method _UTC_ms :
-    int -> int -> int -> int -> int -> int -> int -> float t meth
+    int -> int -> int -> int -> int -> int -> int -> float meth
 (* This method is not available on Internet Explorer...
-  method now : float t meth
+  method now : float meth
 *)
 end
 
@@ -412,7 +408,7 @@ val date : date_constr t
 
 (** Specification of Javascript math object. *)
 class type math = object
-  method random : float t meth
+  method random : float meth
 end
 
 val math : math t
@@ -445,7 +441,7 @@ val isNaN : 'a -> bool
 
 val parseInt : js_string t -> int
 
-val parseFloat : js_string t -> float t
+val parseFloat : js_string t -> float
 
 
 (** {2 Conversion functions between Javascript and OCaml types} *)
@@ -460,10 +456,6 @@ external string : string -> js_string t = "caml_js_from_string"
       UTF-16.) *)
 external to_string : js_string t -> string = "caml_js_to_string"
   (** Conversion of strings from Javascript to OCaml. *)
-external float : float -> float t = "caml_js_from_float"
-  (** Conversion of OCaml floats to Javascript numbers. *)
-external to_float : float t -> float = "caml_js_to_float"
-  (** Conversion of Javascript numbers to OCaml floats. *)
 external array : 'a array -> 'a js_array t = "caml_js_from_array"
   (** Conversion of arrays from OCaml to Javascript. *)
 external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
@@ -564,3 +556,12 @@ module Unsafe : sig
 
 (*FIX also, array literals *)
 end
+
+(** {2 Deprecated functions and types.} *)
+
+external float : float -> float = "%identity"
+  (** Conversion of OCaml floats to Javascript numbers. *)
+external to_float : float -> float = "%identity"
+  (** Conversion of Javascript numbers to OCaml floats. *)
+type float_prop = float prop
+  (** Type of float properties. *)

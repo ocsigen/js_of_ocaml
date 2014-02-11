@@ -115,7 +115,6 @@ type 'a readonly_prop = <get : 'a> gen_prop
 type 'a writeonly_prop = <set : 'a -> unit> gen_prop
 type 'a prop = <get : 'a; set : 'a -> unit> gen_prop
 type 'a optdef_prop = <get : 'a optdef; set : 'a -> unit> gen_prop
-type float_prop = <get : float t; set : float -> unit> gen_prop
 
 type +'a constr
 
@@ -139,7 +138,7 @@ class type js_string = object
   method toString : js_string t meth
   method valueOf : js_string t meth
   method charAt : int -> js_string t meth
-  method charCodeAt : int -> float t meth (* This may return NaN... *)
+  method charCodeAt : int -> float meth (* This may return NaN... *)
   method concat : js_string t -> js_string t meth
   method concat_2 : js_string t -> js_string t -> js_string t meth
   method concat_3 :
@@ -151,7 +150,7 @@ class type js_string = object
   method indexOf_from : js_string t -> int -> int meth
   method lastIndexOf : js_string t -> int meth
   method lastIndexOf_from : js_string t -> int -> int meth
-  method localeCompare : js_string t -> float t meth
+  method localeCompare : js_string t -> float meth
   method _match : regExp t -> match_result_handle t opt meth
   method replace : regExp t -> js_string t -> js_string t meth
   method replace_string : js_string t -> js_string t -> js_string t meth
@@ -257,8 +256,8 @@ class type date = object
   method toLocaleString : js_string t meth
   method toLocaleDateString : js_string t meth
   method toLocaleTimeString : js_string t meth
-  method valueOf : float t meth
-  method getTime : float t meth
+  method valueOf : float meth
+  method getTime : float meth
   method getFullYear : int meth
   method getUTCFullYear : int meth
   method getMonth : int meth
@@ -276,39 +275,39 @@ class type date = object
   method getMilliseconds : int meth
   method getUTCMilliseconds : int meth
   method getTimezoneOffset : int meth
-  method setTime : float -> float t meth
-  method setFullYear : int -> float t meth
-  method setUTCFullYear : int -> float t meth
-  method setMonth : int -> float t meth
-  method setUTCMonth : int -> float t meth
-  method setDate : int -> float t meth
-  method setUTCDate : int -> float t meth
-  method setDay : int -> float t meth
-  method setUTCDay : int -> float t meth
-  method setHours : int -> float t meth
-  method setUTCHours : int -> float t meth
-  method setMinutes : int -> float t meth
-  method setUTCMinutes : int -> float t meth
-  method setSeconds : int -> float t meth
-  method setUTCSeconds : int -> float t meth
-  method setMilliseconds : int -> float t meth
-  method setUTCMilliseconds : int -> float t meth
+  method setTime : float -> float meth
+  method setFullYear : int -> float meth
+  method setUTCFullYear : int -> float meth
+  method setMonth : int -> float meth
+  method setUTCMonth : int -> float meth
+  method setDate : int -> float meth
+  method setUTCDate : int -> float meth
+  method setDay : int -> float meth
+  method setUTCDay : int -> float meth
+  method setHours : int -> float meth
+  method setUTCHours : int -> float meth
+  method setMinutes : int -> float meth
+  method setUTCMinutes : int -> float meth
+  method setSeconds : int -> float meth
+  method setUTCSeconds : int -> float meth
+  method setMilliseconds : int -> float meth
+  method setUTCMilliseconds : int -> float meth
   method toUTCString : js_string t meth
   method toISOString : js_string t meth
   method toJSON : 'a -> js_string t meth
 end
 
 class type date_constr = object
-  method parse : js_string t -> float t meth
-  method _UTC_month : int -> int -> float t meth
-  method _UTC_day : int -> int -> float t meth
-  method _UTC_hour : int -> int -> int -> int -> float t meth
-  method _UTC_min : int -> int -> int -> int -> int -> float t meth
-  method _UTC_sec : int -> int -> int -> int -> int -> int -> float t meth
+  method parse : js_string t -> float meth
+  method _UTC_month : int -> int -> float meth
+  method _UTC_day : int -> int -> float meth
+  method _UTC_hour : int -> int -> int -> int -> float meth
+  method _UTC_min : int -> int -> int -> int -> int -> float meth
+  method _UTC_sec : int -> int -> int -> int -> int -> int -> float meth
   method _UTC_ms :
-    int -> int -> int -> int -> int -> int -> int -> float t meth
+    int -> int -> int -> int -> int -> int -> int -> float meth
 (*
-  method now : float t meth
+  method now : float meth
 *)
 end
 
@@ -327,7 +326,7 @@ let date_ms :
   date_constr
 
 class type math = object
-  method random : float t meth
+  method random : float meth
 end
 
 let math = Unsafe.variable "Math"
@@ -349,8 +348,6 @@ external bool : bool -> bool t = "caml_js_from_bool"
 external to_bool : bool t -> bool = "caml_js_to_bool"
 external string : string -> js_string t = "caml_js_from_string"
 external to_string : js_string t -> string = "caml_js_to_string"
-external float : float -> float t = "caml_js_from_float"
-external to_float : float t -> float = "caml_js_to_float"
 external array : 'a array -> 'a js_array t = "caml_js_from_array"
 external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
 external bytestring : string -> js_string t = "caml_js_from_byte_string"
@@ -368,7 +365,7 @@ let parseInt (s : js_string t) : int =
   then failwith "parseInt"
   else s
 
-let parseFloat (s : js_string t) : float t =
+let parseFloat (s : js_string t) : float =
   let s = Unsafe.fun_call (Unsafe.variable "parseFloat") [|Unsafe.inject s|] in
   if isNaN s
   then failwith "parseFloat"
@@ -379,3 +376,11 @@ let _ =
     (fun e ->
        if instanceof e array_constructor then None
        else Some (to_string (Unsafe.meth_call (Obj.magic e) "toString" [||])))
+
+(****)
+
+(* DEPRECATED *)
+
+type float_prop = float prop
+external float : float -> float = "%identity"
+external to_float : float -> float = "%identity"

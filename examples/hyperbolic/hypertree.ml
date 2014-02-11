@@ -748,7 +748,7 @@ let rec randomize_tree n =
   let Node (info, ch) = n in
   for i = Array.length ch - 1 downto 0 do
     let v = ch.(i) in
-    let j = truncate (Js.to_float (Js.math##random()) *. float (i + 1)) in
+    let j = truncate (Js.math##random() *. float (i + 1)) in
     ch.(i) <- ch.(j);
     ch.(j) <- v
   done;

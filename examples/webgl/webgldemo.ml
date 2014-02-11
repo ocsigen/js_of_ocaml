@@ -268,11 +268,11 @@ let start (pos,norm) =
   check_error gl;
   debug "ready";
 
-  let get_time () = to_float ((jsnew date_now ())##getTime()) in
+  let get_time () = (jsnew date_now ())##getTime() in
   let last_draw = ref (get_time ()) in
   let draw_times = Queue.create () in
   let rec f () =
-    let t = to_float (jsnew date_now ())##getTime() /. 1000. in
+    let t = (jsnew date_now ())##getTime() /. 1000. in
     let mat' = Proj3D.mult mat (Proj3D.rotate_y (1. *. t)) in
     gl##uniformMatrix4fv_typed(proj_loc, _false, Proj3D.array mat');
 
