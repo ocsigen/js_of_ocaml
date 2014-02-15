@@ -120,7 +120,7 @@ let inlined_const x =
 module Ident = struct
   type t = { stamp: int; name: string; mutable flags: int }
   type 'a tbl =
-      Empty
+    | Empty
     | Node of 'a tbl * 'a data * 'a tbl * int
   and 'a data =
     { ident: t;
@@ -143,7 +143,7 @@ end
 
 module Tbl = struct
   type ('a, 'b) t =
-      Empty
+    | Empty
     | Node of ('a, 'b) t * 'a * 'b * ('a, 'b) t * int
 
   let rec iter f = function
@@ -208,6 +208,8 @@ module Debug = struct
       Ident.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
     with Not_found ->
       []
+
+  let has_loc pc = Hashtbl.mem events_by_pc pc
 
   let find_loc pc =
     try
@@ -416,6 +418,17 @@ module State = struct
         assert false
 
   let name_vars st l = name_rec 0 l st.stack
+
+  let rec make_stack i state =
+    if i = 0
+    then ([], state)
+    else
+      let (x, state) = fresh_var state in
+      let (params, state) = make_stack (pred i) (push state) in
+      if debug () then if i > 1 then Format.printf ", ";
+      if debug () then Format.printf "%a" Var.print x;
+      (x :: params, state)
+
 end
 
 let primitive_name state i =
@@ -458,6 +471,8 @@ let get_global state instrs i =
 
 let tagged_blocks = ref AddrSet.empty
 let compiled_blocks = ref AddrMap.empty
+
+
 
 let rec compile_block code pc state =
   if not (AddrSet.mem pc !tagged_blocks) then begin
@@ -685,17 +700,7 @@ and compile code limit pc state instrs =
         | _    -> 1
       in
       let state' = State.start_function state env 0 in
-      let rec make_stack i state =
-        if i = nparams then ([], state) else begin
-          let (x, state) = State.fresh_var state in
-          let (params, state) =
-            make_stack (i + 1) (State.push state) in
-          if debug () then if i < nparams - 1 then Format.printf ", ";
-          if debug () then Format.printf "%a" Var.print x;
-          (x :: params, state)
-        end
-      in
-      let (params, state') = make_stack 0 state' in
+      let (params, state') = State.make_stack nparams state' in
       if debug () then Format.printf ") {@.";
       let state' = State.clear_accu state' in
       compile_block code addr state';
@@ -738,17 +743,7 @@ and compile code limit pc state instrs =
                | _    -> 1
              in
              let state' = State.start_function state env (i * 2) in
-             let rec make_stack i state =
-               if i = nparams then ([], state) else begin
-                 let (x, state) = State.fresh_var state in
-                 let (params, state) =
-                   make_stack (i + 1) (State.push state) in
-                 if debug () then if i < nparams - 1 then Format.printf ", ";
-                 if debug () then Format.printf "%a" Var.print x;
-                 (x :: params, state)
-               end
-             in
-             let (params, state') = make_stack 0 state' in
+             let (params, state') = State.make_stack nparams state' in
              if debug () then Format.printf ") {@.";
              let state' = State.clear_accu state' in
              compile_block code addr state';
