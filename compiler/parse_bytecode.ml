@@ -178,13 +178,23 @@ module Debug = struct
     { mutable ev_pos: int;                (* Position in bytecode *)
       ev_module: string;                  (* Name of defining module *)
       ev_loc: loc_info;                   (* Location in source file *)
-      ev_kind: unit;                      (* Before/after event *)
-      ev_info: unit;                      (* Extra information *)
+      ev_kind: debug_event_kind;          (* Before/after event *)
+      ev_info: debug_event_info;          (* Extra information *)
       ev_typenv: unit;                    (* Typing environment *)
       ev_typsubst: unit;                  (* Substitution over types *)
       ev_compenv: compilation_env;        (* Compilation environment *)
       ev_stacksize: int;                  (* Size of stack frame *)
       ev_repr: unit }                     (* Position of the representative *)
+
+  and debug_event_kind = unit
+    (*   Event_before *)
+    (* | Event_after of unit *)
+    (* | Event_pseudo *)
+
+  and debug_event_info = unit
+    (*   Event_function *)
+    (* | Event_return of int *)
+    (* | Event_other *)
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
