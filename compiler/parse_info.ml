@@ -62,7 +62,7 @@ module Line_info = struct
     in
     t.acc_pos <- acc;
     t.acc_line <- line;
-    line + 1 ,pos
+    line,pos
 
   let from_file file =
     let ic = open_in file in
