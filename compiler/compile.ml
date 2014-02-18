@@ -106,12 +106,7 @@ let _ =
   let source_m =
     if !source_map
     then
-      if Option.Optim.pretty ()
-      then begin
-        Format.eprintf "Source-map is not compatible with pretty mode@.";
-        exit 1
-      end
-      else match output_f with
+      match output_f with
         | Some file ->
           Some (
             chop_extension file ^ ".map",

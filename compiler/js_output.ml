@@ -38,14 +38,16 @@ module Make(D : sig
   val source_map : Source_map.t option
 end) = struct
 
+  let temp_mappings = ref []
+
   let push_mapping,get_file_index,source_map_enabled =
     let idx = ref 0 in
     let files = Hashtbl.create 17 in
     match D.source_map with
-      | None -> (fun _ -> ()),(fun _ -> -1),false
+      | None -> (fun _ _ -> ()),(fun _ -> -1),false
       | Some sm ->
         List.iter (fun f -> Hashtbl.add files f !idx; incr idx) sm.Source_map.sources;
-        (fun m -> sm.Source_map.mappings <- m :: sm.Source_map.mappings),
+        (fun pos m -> temp_mappings := (pos,m)::!temp_mappings),
         (fun file ->
           try Hashtbl.find files file with
             | Not_found ->
@@ -77,10 +79,10 @@ end) = struct
               end;
               if source_map_enabled
               then begin
-                let gen_line,gen_col = PP.pos f in
-                push_mapping {
-                  Source_map.gen_line;
-                  gen_col;
+                let pos = PP.pos f in
+                push_mapping pos {
+                  Source_map.gen_line = -1;
+                  gen_col = -1;
                   ori_source=get_file_index file;
                   ori_line = l;
                   ori_col = s;
@@ -1021,6 +1023,13 @@ let program f ?source_map dl p =
       let oc = open_out out_file in
       let pp = Pretty_print.to_out_channel oc in
       Pretty_print.set_compact pp false;
+
+      let sm =
+        { sm with
+          Source_map.mappings = List.map (fun (pos,m) ->
+              {m with
+               Source_map.gen_line = pos.PP.p_line;
+               Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings} in
 
       let e = Source_map.expression sm in
       O.expression 0 pp e;

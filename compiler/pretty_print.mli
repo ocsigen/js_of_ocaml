@@ -20,6 +20,11 @@
 
 type t
 
+type pos = {
+  mutable p_line : int;
+  mutable p_col : int
+}
+
 val string : t -> string -> unit
 
 val genbreak : t -> string -> int -> unit
@@ -35,7 +40,7 @@ val newline : t -> unit
 
 val to_out_channel : out_channel -> t
 val to_buffer : Buffer.t -> t
-val pos : t -> int * int
+val pos : t -> pos
 
 val set_compact : t -> bool -> unit
 val set_needed_space_function : t -> (char -> char -> bool) -> unit

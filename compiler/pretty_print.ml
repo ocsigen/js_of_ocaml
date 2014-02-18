@@ -18,11 +18,17 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+type pos = {
+  mutable p_line : int;
+  mutable p_col : int
+}
+
 type elt =
     Text of string
   | Break of string * int
   | Start_group of int
   | End_group
+  | Set_pos of pos
 
 type t =
   { mutable indent : int;
@@ -69,6 +75,10 @@ let rec flat_render st l =
   match l with
     Text s :: r | Break (s, _) :: r ->
       output st s (String.length s); flat_render st r
+  | Set_pos p :: r ->
+    p.p_line <- st.line;
+    p.p_col  <- st.col;
+    flat_render st r
   | _ :: r ->
       flat_render st r
   | [] ->
@@ -81,6 +91,9 @@ let rec push st e =
       Text s ->
         output st s (String.length s);
         st.cur <- st.cur + String.length s
+    | Set_pos p ->
+      p.p_line <- st.line;
+      p.p_col  <- st.col
     | Break (_, offs) ->
         output_newline st;
         let indent = st.box_indent + offs in
@@ -111,6 +124,7 @@ let rec push st e =
           st.n <- 0;
           List.iter (fun e -> push st e) l
         end
+    | Set_pos _ -> ()
     | Start_group _ ->
         st.n <- st.n + 1
     | End_group ->
@@ -186,7 +200,16 @@ for i = 1 to 10 do render (tree i) done
 
 *)
 
-let pos t = t.line, t.col
+let pos t =
+  if t.compact
+  then {
+    p_line = t.line;
+    p_col  = t.col
+  }
+  else
+    let p = { p_line = -1 ; p_col = -1 } in
+    push t (Set_pos p);
+    p
 
 let newline st =
   output_newline st;
