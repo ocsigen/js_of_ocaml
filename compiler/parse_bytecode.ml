@@ -222,6 +222,7 @@ module Debug = struct
   let has_loc pc = Hashtbl.mem events_by_pc pc
 
   let find_loc pc =
+    let pc = Code.DebugAddr.to_addr pc in
     try
       let ev = Hashtbl.find events_by_pc pc in
       let loc = ev.ev_loc in
@@ -495,15 +496,15 @@ let rec compile_block code pc state =
     compiled_blocks :=
       AddrMap.add pc (state, List.rev instr, last) !compiled_blocks;
     begin match last with
-      Branch (pc', _) | Poptrap (pc', _) ->
+      Branch ((pc', _),_) | Poptrap (pc', _) ->
         compile_block code pc' state'
-    | Cond (_, _, (pc1, _), (pc2, _)) ->
+    | Cond (_, _, (pc1, _), (pc2, _), _) ->
         compile_block code pc1 state';
         compile_block code pc2 state'
-    | Switch (_, l1, l2) ->
+    | Switch (_, l1, l2,_) ->
         Array.iter (fun (pc', _) -> compile_block code pc' state') l1;
         Array.iter (fun (pc', _) -> compile_block code pc' state') l2
-    | Pushtrap _ | Raise _ | Return _ | Stop ->
+    | Pushtrap _ | Raise _ | Return _ | Stop _ ->
         ()
     end
   end
@@ -511,7 +512,7 @@ let rec compile_block code pc state =
 and compile code limit pc state instrs =
   if debug () then State.print state;
   if pc = limit then
-    (instrs, Branch (pc, State.stack_vars state), state)
+    (instrs, Branch ((pc, State.stack_vars state), DebugAddr.of_addr pc), state)
   else begin
   if debug () then Format.eprintf "%4d " pc;
 
@@ -578,7 +579,7 @@ and compile code limit pc state instrs =
          changed the exception handler continuation *)
       compile_block code (pc + 2) state;
       (Let (x, Const 0) :: instrs,
-       Branch (pc + 2, State.stack_vars state),
+       Branch ((pc + 2, State.stack_vars state),DebugAddr.of_addr pc),
        state)
   | ENVACC1 ->
       compile code limit (pc + 1) (State.env_acc 1 state) instrs
@@ -663,13 +664,13 @@ and compile code limit pc state instrs =
         Format.printf ")@."
       end;
       let (x, state) = State.fresh_var state in
-      (Let (x, Apply (f, l, false)) :: instrs, Return x, state)
+      (Let (x, Apply (f, l, false)) :: instrs, Return (x,DebugAddr.of_addr pc), state)
   | APPTERM1 ->
       let f = State.accu state in
       let x = State.peek 0 state in
       if debug () then Format.printf "return %a(%a)@." Var.print f Var.print x;
       let (y, state) = State.fresh_var state in
-      (Let (y, Apply (f, [x], false)) :: instrs, Return y, state)
+      (Let (y, Apply (f, [x], false)) :: instrs, Return (y,DebugAddr.of_addr pc), state)
   | APPTERM2 ->
       let f = State.accu state in
       let x = State.peek 0 state in
@@ -677,7 +678,7 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "return %a(%a, %a)@."
         Var.print f Var.print x Var.print y;
       let (z, state) = State.fresh_var state in
-      (Let (z, Apply (f, [x; y], false)) :: instrs, Return z, state)
+      (Let (z, Apply (f, [x; y], false)) :: instrs, Return (z,DebugAddr.of_addr pc), state)
   | APPTERM3 ->
       let f = State.accu state in
       let x = State.peek 0 state in
@@ -686,11 +687,11 @@ and compile code limit pc state instrs =
       if debug () then Format.printf "return %a(%a, %a, %a)@."
         Var.print f Var.print x Var.print y Var.print z;
       let (t, state) = State.fresh_var state in
-      (Let (t, Apply (f, [x; y; z], false)) :: instrs, Return t, state)
+      (Let (t, Apply (f, [x; y; z], false)) :: instrs, Return (t,DebugAddr.of_addr pc), state)
   | RETURN ->
       let x = State.accu state in
       if debug () then Format.printf "return %a@." Var.print x;
-      (instrs, Return x, state)
+      (instrs, Return (x,DebugAddr.of_addr pc), state)
   | RESTART ->
       assert false
   | GRAB ->
@@ -1044,19 +1045,19 @@ and compile code limit pc state instrs =
   | BRANCH ->
       let offset = gets code (pc + 1) in
       if debug () then Format.printf "... (branch)@.";
-      (instrs, Branch (pc + offset + 1, State.stack_vars state), state)
+      (instrs, Branch ((pc + offset + 1, State.stack_vars state), DebugAddr.of_addr pc), state)
   | BRANCHIF ->
       let offset = gets code (pc + 1) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (IsTrue, x, (pc + offset + 1, args), (pc + 2, args)), state)
+       Cond (IsTrue, x, (pc + offset + 1, args), (pc + 2, args), DebugAddr.of_addr pc), state)
   | BRANCHIFNOT ->
       let offset = gets code (pc + 1) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (IsTrue, x, (pc + 2, args), (pc + offset + 1, args)), state)
+       Cond (IsTrue, x, (pc + 2, args), (pc + offset + 1, args), DebugAddr.of_addr pc), state)
   | SWITCH ->
       if debug () then Format.printf "switch ...@.";
       let sz = getu code (pc + 1) in
@@ -1071,7 +1072,7 @@ and compile code limit pc state instrs =
         Array.init (sz lsr 16)
           (fun i -> (pc + 2 + gets code (pc + 2 + l + i), args))
       in
-      (instrs, Switch (x, it, bt), state)
+      (instrs, Switch (x, it, bt, DebugAddr.of_addr pc), state)
   | BOOLNOT ->
       let y = State.accu state in
       let (x, state) = State.fresh_var state in
@@ -1094,7 +1095,7 @@ and compile code limit pc state instrs =
       (instrs, Poptrap (pc + 1, State.stack_vars state), state)
   | RAISE ->
       if debug () then Format.printf "throw(%a)@." Var.print (State.accu state);
-      (instrs, Raise (State.accu state), state)
+      (instrs, Raise (State.accu state, DebugAddr.of_addr pc), state)
   | CHECK_SIGNALS ->
       compile code limit (pc + 1) state instrs
   | C_CALL1 ->
@@ -1387,56 +1388,56 @@ and compile code limit pc state instrs =
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (CEq n, x, (pc + offset + 2, args), (pc + 3, args)), state)
+       Cond (CEq n, x, (pc + offset + 2, args), (pc + 3, args), DebugAddr.of_addr pc), state)
   | BNEQ ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (CEq n, x, (pc + 3, args), (pc + offset + 2, args)), state)
+       Cond (CEq n, x, (pc + 3, args), (pc + offset + 2, args), DebugAddr.of_addr pc), state)
   | BLTINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (CLt n, x, (pc + offset + 2, args), (pc + 3, args)), state)
+       Cond (CLt n, x, (pc + offset + 2, args), (pc + 3, args), DebugAddr.of_addr pc), state)
   | BLEINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (CLe n, x, (pc + offset + 2, args), (pc + 3, args)), state)
+       Cond (CLe n, x, (pc + offset + 2, args), (pc + 3, args), DebugAddr.of_addr pc), state)
   | BGTINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (CLe n, x, (pc + 3, args), (pc + offset + 2, args)), state)
+       Cond (CLe n, x, (pc + 3, args), (pc + offset + 2, args), DebugAddr.of_addr pc), state)
   | BGEINT ->
       let n = gets code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (CLt n, x, (pc + 3, args), (pc + offset + 2, args)), state)
+       Cond (CLt n, x, (pc + 3, args), (pc + offset + 2, args), DebugAddr.of_addr pc), state)
   | BULTINT ->
       let n = getu code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (CUlt n, x, (pc + offset + 2, args), (pc + 3, args)), state)
+       Cond (CUlt n, x, (pc + offset + 2, args), (pc + 3, args), DebugAddr.of_addr pc), state)
   | BUGEINT ->
       let n = getu code (pc + 1) in
       let offset = gets code (pc + 2) in
       let x = State.accu state in
       let args = State.stack_vars state in
       (instrs,
-       Cond (CUlt n, x, (pc + 3, args), (pc + offset + 2, args)), state)
+       Cond (CUlt n, x, (pc + 3, args), (pc + offset + 2, args), DebugAddr.of_addr pc), state)
   | ULTINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1486,7 +1487,7 @@ if debug () then Format.printf "%a = lookup(%a, %a)@."
         (Let (m, Prim (Array_get, [Pv meths; Pv lab])) ::
          Let (meths, Field (obj, 0)) :: instrs)
   | STOP ->
-      (instrs, Stop, state)
+      (instrs, Stop (DebugAddr.of_addr pc), state)
   end
 
 (****)
@@ -1502,13 +1503,13 @@ let (>>) x f = f x
 let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
-    Return _ | Raise _ | Stop ->
+    Return _ | Raise _ | Stop _ ->
       accu
-  | Branch (pc', _) | Poptrap (pc', _) ->
+  | Branch ((pc', _), _) | Poptrap (pc', _) ->
       f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
+  | Cond (_, _, (pc1, _), (pc2, _), _) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
       f pc1 accu >> f pc1 >> f pc2
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1, a2, _) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
@@ -1656,7 +1657,7 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
         done;
         List.rev !l
   in
-  let last = Branch (0, []) in
+  let last = Branch ((0, []),DebugAddr.no) in
   let pc = free_pc in
   let blocks =
     AddrMap.add free_pc

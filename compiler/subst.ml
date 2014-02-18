@@ -52,22 +52,23 @@ let subst_cont s (pc, arg) = (pc, List.map (fun x -> s x) arg)
 
 let last s l =
   match l with
-    Stop ->
+    Stop _ ->
       l
-  | Branch cont ->
-      Branch (subst_cont s cont)
+  | Branch (cont,pc) ->
+      Branch (subst_cont s cont,pc)
   | Pushtrap (cont1, x, cont2, pc) ->
       Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pc)
-  | Return x ->
-      Return (s x)
-  | Raise x ->
-      Raise (s x)
-  | Cond (c, x, cont1, cont2) ->
-      Cond (c, s x, subst_cont s cont1, subst_cont s cont2)
-  | Switch (x, a1, a2) ->
+  | Return (x,pc) ->
+      Return (s x, pc)
+  | Raise (x,pc) ->
+      Raise (s x, pc)
+  | Cond (c, x, cont1, cont2, pc) ->
+      Cond (c, s x, subst_cont s cont1, subst_cont s cont2, pc)
+  | Switch (x, a1, a2, pc) ->
       Switch (s x,
               Array.map (fun cont -> subst_cont s cont) a1,
-              Array.map (fun cont -> subst_cont s cont) a2)
+              Array.map (fun cont -> subst_cont s cont) a2,
+              pc)
   | Poptrap cont ->
       Poptrap (subst_cont s cont)
 

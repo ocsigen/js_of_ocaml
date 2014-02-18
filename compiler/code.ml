@@ -18,6 +18,19 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+type addr = int
+
+module DebugAddr : sig
+  type dbg = private addr
+  val of_addr : addr -> dbg
+  val to_addr : dbg -> addr
+  val no : dbg
+end = struct
+  type dbg = int
+  let of_addr (x : addr) = (x : dbg)
+  let no = 0
+  let to_addr (x : dbg) = (x : addr)
+end
 
 module Var : sig
   type t
@@ -100,7 +113,6 @@ module VarISet = struct
   let empty v = Array.make (Var.count ()) Var.dummy
 end
 
-type addr = int
 
 module AddrSet = Util.IntSet
 module AddrMap = Util.IntMap
@@ -148,12 +160,12 @@ type instr =
 type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
 
 type last =
-    Return of Var.t
-  | Raise of Var.t
-  | Stop
-  | Branch of cont
-  | Cond of cond * Var.t * cont * cont
-  | Switch of Var.t * cont array * cont array
+    Return of Var.t * DebugAddr.dbg
+  | Raise of Var.t * DebugAddr.dbg
+  | Stop of DebugAddr.dbg
+  | Branch of cont * DebugAddr.dbg
+  | Cond of cond * Var.t * cont * cont * DebugAddr.dbg
+  | Switch of Var.t * cont array * cont array * DebugAddr.dbg
   | Pushtrap of cont * Var.t * cont * addr
   | Poptrap of cont
 
@@ -314,18 +326,18 @@ let print_cond f (c, x) =
 
 let print_last f l =
   match l with
-    Return x ->
+    Return (x,_) ->
       Format.fprintf f "return %a" Var.print x
-  | Raise x ->
+  | Raise (x,_) ->
       Format.fprintf f "raise %a" Var.print x
-  | Stop ->
+  | Stop _ ->
       Format.fprintf f "stop"
-  | Branch cont ->
+  | Branch (cont,_) ->
       Format.fprintf f "branch %a" print_cont cont
-  | Cond (cond, x, cont1, cont2) ->
+  | Cond (cond, x, cont1, cont2, _) ->
       Format.fprintf f "if %a then %a else %a" print_cond (cond, x)
         print_cont cont1 print_cont cont2
-  | Switch (x, a1, a2) ->
+  | Switch (x, a1, a2, _) ->
       Format.fprintf f "switch %a {" Var.print x;
       Array.iteri
         (fun i cont -> Format.fprintf f "int %d -> %a; " i print_cont cont) a1;
@@ -386,13 +398,13 @@ let fold_children blocks pc f accu =
     | None              -> accu
   in
   match block.branch with
-    Return _ | Raise _ | Stop ->
+    Return _ | Raise _ | Stop _ ->
       accu
-  | Branch (pc', _) | Poptrap (pc', _) | Pushtrap ((pc', _), _, _, _) ->
+  | Branch ((pc', _),_) | Poptrap (pc', _) | Pushtrap ((pc', _), _, _, _) ->
       f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) ->
+  | Cond (_, _, (pc1, _), (pc2, _), _) ->
       f pc1 accu >> f pc1 >> f pc2
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1, a2, _) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 

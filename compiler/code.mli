@@ -18,6 +18,15 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+type addr = int
+
+module DebugAddr : sig
+  type dbg = private int
+  val of_addr : addr -> dbg
+  val to_addr : dbg -> addr
+  val no : dbg
+end
+
 module Var : sig
   type t
   val print : Format.formatter -> t -> unit
@@ -61,7 +70,7 @@ module VarISet : sig
   val copy : t -> t
 end
 
-type addr = int
+
 
 module AddrSet : Set.S with type elt = int and type t = Util.IntSet.t
 module AddrMap : Map.S with type key = int and type 'a t = 'a Util.IntMap.t
@@ -111,12 +120,12 @@ type instr =
 type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
 
 type last =
-    Return of Var.t
-  | Raise of Var.t
-  | Stop
-  | Branch of cont
-  | Cond of cond * Var.t * cont * cont
-  | Switch of Var.t * cont array * cont array
+    Return of Var.t * DebugAddr.dbg
+  | Raise of Var.t * DebugAddr.dbg
+  | Stop of DebugAddr.dbg
+  | Branch of cont * DebugAddr.dbg
+  | Cond of cond * Var.t * cont * cont * DebugAddr.dbg
+  | Switch of Var.t * cont array * cont array * DebugAddr.dbg
   | Pushtrap of cont * Var.t * cont * addr
   | Poptrap of cont
 

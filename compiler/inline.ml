@@ -41,7 +41,7 @@ let rewrite_block (pc', handler) pc blocks =
   let block = { block with handler = handler } in
   let block =
     match block.branch with
-      Return y -> { block with branch = Branch (pc', [y]) }
+      Return (y,pc) -> { block with branch = Branch ((pc', [y]),pc) }
     | _        -> block
   in
   AddrMap.add pc block blocks
@@ -52,15 +52,15 @@ let (>>) x f = f x
 let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
-    Return _ | Raise _ | Stop ->
+    Return _ | Raise _ | Stop _ ->
       accu
-  | Branch (pc', _) | Poptrap (pc', _) ->
+  | Branch ((pc', _), _) | Poptrap (pc', _) ->
       f pc' accu
   | Pushtrap (_, _, (pc1, _), pc2) ->
       f pc1 (if pc2 >= 0 then f pc2 accu else accu)
-  | Cond (_, _, (pc1, _), (pc2, _)) ->
+  | Cond (_, _, (pc1, _), (pc2, _), _) ->
       accu >> f pc1 >> f pc2
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1, a2, _) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
@@ -116,9 +116,9 @@ let inline closures live_vars blocks free_pc pc =
              let blocks =
                AddrMap.add (free_pc + 1)
                  { params = params; handler = block.handler;
-                   body = []; branch = Branch (clos_pc, clos_args) } blocks
+                   body = []; branch = Branch ((clos_pc, clos_args),Code.DebugAddr.no) } blocks
              in
-             ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
+             ([], (Branch ((free_pc + 1, args), Code.DebugAddr.no), blocks, free_pc + 2))
 
          | _ ->
              (i :: rem, state))

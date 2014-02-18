@@ -292,7 +292,7 @@ let rec constant_rec ~ctx x level instrs =
                | J.EArr _ ->
                    let v = Code.Var.fresh () in
                    let instrs =
-                     J.Variable_statement [J.V v, Some js] :: instrs in
+                     J.Variable_statement ([J.V v, Some js],J.N) :: instrs in
                    Some (J.EVar (J.V v))::acc,instrs
                | _ ->
                    Some js :: acc,instrs)
@@ -340,7 +340,7 @@ let access_queue_may_flush queue v x =
   let _,instrs,queue = List.fold_left (fun (deps,instrs,queue) ((y,elt) as eq) ->
       if Code.VarSet.exists (fun p -> Code.VarSet.mem p deps) elt.deps
       then (Code.VarSet.add ( y) deps),
-        ((J.Variable_statement [ J.V y, Some elt.ce]) ::instrs),
+        ((J.Variable_statement ([ J.V y, Some elt.ce],J.N)) ::instrs),
         queue
       else  deps,instrs,(eq::queue)
     ) (Code.VarSet.singleton ( v),[],[]) queue
@@ -358,7 +358,7 @@ let flush_queue expr_queue prop l =
   let instrs =
     List.map (fun (x, elt) ->
                 J.Variable_statement
-                  [J.V x, Some elt.ce]) instrs
+                  ([J.V x, Some elt.ce],J.N)) instrs
   in
   (List.rev_append instrs l, expr_queue)
 
@@ -409,13 +409,13 @@ let (>>) x f = f x
 let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
-    Return _ | Raise _ | Stop ->
+    Return _ | Raise _ | Stop _ ->
       accu
-  | Branch (pc', _) | Poptrap (pc', _) ->
+  | Branch ((pc', _),_) | Poptrap (pc', _) ->
       f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
+  | Cond (_, _, (pc1, _), (pc2, _),_) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
       accu >> f pc1 >> f pc2
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1, a2, _) ->
       let normalize a =
         a >> Array.to_list
           >> List.sort compare
@@ -525,7 +525,7 @@ let parallel_renaming ctx params args continuation queue =
     (fun continuation (y, x) ->
     fun queue ->
       let instrs,((px, cx), queue) = access_queue_may_flush queue y x in
-      let (st, queue) = flush_queue queue px (instrs@[J.Variable_statement [ J.V y, Some cx]])
+      let (st, queue) = flush_queue queue px (instrs@[J.Variable_statement ([ J.V y, Some cx],J.N)])
       in
       st @ continuation queue)
     continuation l queue
@@ -547,7 +547,7 @@ let generate_apply_fun n =
                                        J.ENum (float n)),
                                J.ECall (f', params'),
                                J.ECall (s_var "caml_call_gen",
-                                        [f'; J.EArr (List.map (fun x -> Some x) params')])))))],
+                                        [f'; J.EArr (List.map (fun x -> Some x) params')]))), J.N))],
           J.N)
 
 (****)
@@ -810,7 +810,7 @@ let rec collect_closures ctx l =
       in
       let cl =
         J.EFun (fun_name, List.map (fun v -> J.V v) args,
-                 compile_closure ctx cont, J.Loc pc)
+                 compile_closure ctx cont, J.Loc (DebugAddr.of_addr pc))
       in
       let (l', rem') = collect_closures ctx rem in
       ((x, vars, cl) :: l', rem')
@@ -1023,7 +1023,7 @@ and translate_closures ctx expr_queue l =
       let cl =
         if vars = [] then cl else
         J.ECall (J.EFun (None, vars,
-                           [J.Statement (J.Return_statement (Some cl))],
+                           [J.Statement (J.Return_statement (Some cl,J.N))],
                           J.N),
                  List.map (fun x -> J.EVar x) vars)
       in
@@ -1032,7 +1032,7 @@ and translate_closures ctx expr_queue l =
           0 -> flush_queue expr_queue flush_p [J.Expression_statement (cl, J.N)]
         | 1 -> enqueue expr_queue flush_p x cl 1 []
         | _ -> flush_queue expr_queue flush_p
-                 [J.Variable_statement [J.V x, Some cl]]
+                 [J.Variable_statement ([J.V x, Some cl],J.N)]
       in
       let (st', expr_queue) = translate_closures ctx expr_queue rem in
       (st @ st', expr_queue)
@@ -1051,7 +1051,7 @@ and translate_closures ctx expr_queue l =
         List.map (fun (x, _, cl) -> (J.V x, Some cl)) l in
       let statement =
         if vars = [] then
-          J.Variable_statement defs
+          J.Variable_statement (defs,J.N)
         else begin
           let tbl = Var.fresh () in
           let arr =
@@ -1071,26 +1071,26 @@ and translate_closures ctx expr_queue l =
               Some
                 (J.ECall
                    (J.EFun (None, vars,
-                             [J.Statement (J.Variable_statement defs);
-                              J.Statement (J.Return_statement (Some arr))],
+                             [J.Statement (J.Variable_statement (defs,J.N));
+                              J.Statement (J.Return_statement (Some arr,J.N))],
                             J.N),
                     List.map (fun x -> J.EVar x) vars))) ::
-              List.rev (fst assgn))
+              List.rev (fst assgn), J.N)
         end
       in
       let (st, expr_queue) = flush_queue expr_queue flush_p [statement] in
       let (st', expr_queue) = translate_closures ctx expr_queue rem in
       (st @ st', expr_queue)
 
-and translate_instr ctx expr_queue pc instr =
+and translate_instr ctx expr_queue (pc : addr) instr =
   match instr with
     [] ->
       ([], expr_queue)
   | Let (_, Prim (Extern "debugger",_))::rem ->
     let ins =
       if Option.Optim.debugger ()
-      then J.Debugger_statement
-      else J.Empty_statement in
+      then J.Debugger_statement J.N
+      else J.Empty_statement J.N in
     let st = flush_all expr_queue [ins] in
     let (instrs, expr_queue) = translate_instr ctx [] pc rem in
     (st @ instrs, expr_queue)
@@ -1107,7 +1107,7 @@ and translate_instr ctx expr_queue pc instr =
             let (ce, prop, expr_queue),instrs = translate_expr ctx expr_queue x e 0 in
             begin match ctx.Ctx.live.(Var.idx x),e with
             | 0,_ -> flush_queue expr_queue prop (J.Expression_statement
-                                                    (ce, J.Loc pc)::instrs)
+                                                    (ce, J.Loc (DebugAddr.of_addr pc))::instrs)
             | 1,_ -> enqueue expr_queue prop x ce 1 instrs
             (* We could inline more.
                size_v : length of the variable after serialization
@@ -1118,28 +1118,28 @@ and translate_instr ctx expr_queue pc instr =
             | n,(Const _| Constant (Int _|Float _| Int32 _| Nativeint _)) ->
                    enqueue expr_queue prop x ce n instrs
             | _ -> flush_queue expr_queue prop
-                     (J.Variable_statement [J.V x, Some ce]::instrs)
+                     (J.Variable_statement ([J.V x, Some ce],J.N)::instrs)
             end
         | Set_field (x, n, y) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
-                  ((J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy)), J.Loc pc)]
+                  ((J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy)), J.Loc (DebugAddr.of_addr pc))]
         | Offset_ref (x, 1) ->
           (* FIX: may overflow.. *)
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EUn (J.IncrA, (J.EAccess (cx, J.ENum 1.)))),
-                  J.Loc pc)]
+                  J.Loc (DebugAddr.of_addr pc))]
         | Offset_ref (x, n) ->
           (* FIX: may overflow.. *)
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EBin (J.PlusEq, (J.EAccess (cx, J.ENum 1.)), int n)),
-                  J.Loc pc)]
+                  J.Loc (DebugAddr.of_addr pc))]
         | Array_set (x, y, z) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
             let ((py, cy), expr_queue) = access_queue expr_queue y in
@@ -1148,12 +1148,12 @@ and translate_instr ctx expr_queue pc instr =
               [J.Expression_statement
                   ((J.EBin (J.Eq, J.EAccess (cx, J.EBin(J.Plus, cy, one)),
                             cz)),
-                   J.Loc pc)]
+                   J.Loc (DebugAddr.of_addr pc))]
       in
       let (instrs, expr_queue) = translate_instr ctx expr_queue pc rem in
       (st @ instrs, expr_queue)
 
-and compile_block st queue pc frontier interm =
+and compile_block st queue (pc : addr) frontier interm =
 if queue <> [] && AddrSet.mem pc st.loops then
   flush_all queue (compile_block st [] pc frontier interm)
 else begin
@@ -1220,7 +1220,7 @@ else begin
                             Some (J.V x,
                                   Js_simpl.statement_list handler),
                             None,
-                            J.Loc pc) ::
+                            J.Loc (DebugAddr.of_addr pc)) ::
            if AddrSet.is_empty inner_frontier then [] else begin
              let pc = AddrSet.choose inner_frontier in
              if AddrSet.mem pc frontier then [] else
@@ -1237,9 +1237,9 @@ else begin
             let cases = Array.map (fun pc -> (pc, [])) a in
             let switch =
               if Array.length cases > 2 then
-                Code.Switch (x, cases, [||])
+                Code.Switch (x, cases, [||], Code.DebugAddr.no)
               else
-                Code.Cond (IsTrue, x, cases.(1), cases.(0))
+                Code.Cond (IsTrue, x, cases.(1), cases.(0), Code.DebugAddr.no)
             in
             st.blocks <-
               AddrMap.add idx
@@ -1289,24 +1289,24 @@ else begin
               if debug () then
                 Format.eprintf "@ break (%d); }@]"
                   (AddrSet.choose new_frontier);
-              body @ [J.Break_statement None]
+              body @ [J.Break_statement (None,J.N)]
             end else begin
               if debug () then Format.eprintf "}@]";
               body
             end),
-        J.Loc pc)
+        J.Loc (DebugAddr.of_addr pc))
     in
     match label with
       | None -> [st]
-      | Some label -> [J.Labelled_statement (label, st)]
+      | Some label -> [J.Labelled_statement (label, st, J.N)]
   end else
     body
 end
 
-and compile_if st e cont1 cont2 handler backs frontier interm succs =
+and compile_if st e ?pc cont1 cont2 handler backs frontier interm succs =
   let iftrue = compile_branch st [] cont1 handler backs frontier interm in
   let iffalse = compile_branch st [] cont2 handler backs frontier interm in
-  Js_simpl.if_statement e
+  Js_simpl.if_statement e ?pc
     (Js_simpl.block iftrue) (never_continue st cont1 frontier interm succs)
     (Js_simpl.block iffalse) (never_continue st cont2 frontier interm succs)
 
@@ -1318,23 +1318,23 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
       Branch _ | Poptrap _ | Pushtrap _ -> ()
     | Return _ -> Format.eprintf "ret"
     | Raise _ -> Format.eprintf "raise"
-    | Stop -> Format.eprintf "stop"
+    | Stop _ -> Format.eprintf "stop"
     | Cond _ -> Format.eprintf "@[<hv 2>cond{@,"
     | Switch _ -> Format.eprintf "@[<hv 2>switch{@,"
   end;
   let res =
   match last with
-    Return x ->
+    Return (x,pc) ->
       let ((px, cx), queue) = access_queue queue x in
-      flush_all queue [J.Return_statement (Some cx)]
-  | Raise x ->
+      flush_all queue [J.Return_statement (Some cx,J.Loc pc)]
+  | Raise (x,pc) ->
       let ((px, cx), queue) = access_queue queue x in
-      flush_all queue [J.Throw_statement cx]
-  | Stop ->
-      flush_all queue [J.Return_statement None]
-  | Branch cont ->
+      flush_all queue [J.Throw_statement (cx,J.Loc pc)]
+  | Stop pc ->
+      flush_all queue [J.Return_statement (None,J.Loc pc)]
+  | Branch (cont,pc) ->
       compile_branch st queue cont handler backs frontier interm
-  | Cond (c, x, cont1, cont2) ->
+  | Cond (c, x, cont1, cont2, pc) ->
       let ((px, cx), queue) = access_queue queue x in
       let e =
         match c with
@@ -1348,9 +1348,9 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
       (* Some changes here may require corresponding changes
          in function [fold_children] above. *)
       flush_all queue
-        (compile_if st e cont1 cont2 handler backs frontier interm succs)
+        (compile_if st e ~pc:(J.Loc pc) cont1 cont2 handler backs frontier interm succs)
 
-  | Switch (x, a1, a2) ->
+  | Switch (x, a1, a2, pc) ->
       (* Some changes here may require corresponding changes
          in function [fold_children] above. *)
       let build_switch e a =
@@ -1390,7 +1390,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
                                  then
                                    []
                                  else
-                                   [J.Break_statement None]))
+                                   [J.Break_statement (None, J.N)]))
                                ::
                              List.map
                              (fun (i, _) -> (J.ENum (float i), [])) r))
@@ -1400,7 +1400,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
               (e, l,
                Some (Js_simpl.statement_list
                        (compile_branch
-                          st [] cont handler backs frontier interm)))
+                          st [] cont handler backs frontier interm)), J.Loc pc)
       in
       let (st, queue) =
         if Array.length a1 = 0 then
@@ -1415,6 +1415,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
           (Js_simpl.if_statement
               (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
                       (Share.get_string str_js "number" st.ctx.Ctx.share)))
+              ~pc:(J.Loc pc)
               (build_switch (var x) a1)
               false
               (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
@@ -1429,7 +1430,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
   in
   if debug () then begin
     match last with
-      Branch _ | Poptrap _ | Pushtrap _ | Return _ | Raise _ | Stop -> ()
+      Branch _ | Poptrap _ | Pushtrap _ | Return _ | Raise _ | Stop _ -> ()
     | Switch _ | Cond _ -> Format.eprintf "}@]@ "
   end;
   res
@@ -1485,7 +1486,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
                    0 -> assert false
                  | 1 -> enqueue queue px y cx 1 []
                  | _ -> flush_queue queue px
-                          [J.Variable_statement [J.V y, Some cx]]
+                          [J.Variable_statement ([J.V y, Some cx],J.N)]
                in
                st @ loop continuation old args params queue
               end
@@ -1517,7 +1518,7 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
       else
         Format.eprintf "continue (%d);@ " pc
     end;
-    flush_all queue [J.Continue_statement label]
+    flush_all queue [J.Continue_statement (label,J.Loc (DebugAddr.of_addr pc))]
   end else if AddrSet.mem pc frontier || AddrMap.mem pc interm then begin
     if debug () then Format.eprintf "(br %d)@ " pc;
     flush_all queue (compile_branch_selection pc interm)
@@ -1528,7 +1529,7 @@ and compile_branch_selection pc interm =
   try
     let (pc, (x, i)) = AddrMap.find pc interm in
     if debug () then Format.eprintf "@ %a=%d;" Code.Var.print x i;
-    J.Variable_statement [J.V x, Some (int i)] ::
+    J.Variable_statement ([J.V x, Some (int i)],J.Loc (DebugAddr.of_addr pc)) ::
     compile_branch_selection pc interm
   with Not_found ->
     []
@@ -1563,7 +1564,7 @@ let generate_shared_value ctx =
       J.Variable_statement (
         List.map (fun (s,v) -> v, Some (str_js s)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
         @ List.map (fun (s,v) -> v, Some (s_var s)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
-      )) in
+      , J.N)) in
   let applies = List.map (fun (n,v) ->
     match generate_apply_fun n with
       | J.EFun (_,param,body,_) ->

@@ -203,12 +203,12 @@ end) = struct
 (*XXX May need to be updated... *)
   let rec ends_with_if_without_else st =
     match st with
-      | If_statement (_, _, Some st)
-      | While_statement (_, st)
+      | If_statement (_, _, Some st,_)
+      | While_statement (_, st, _)
       | For_statement (_, _, _, st, _)
       | ForIn_statement (_, _, st, _) ->
           ends_with_if_without_else st
-      | If_statement (_, _, None) ->
+      | If_statement (_, _, None, _) ->
           true
       | _ ->
           false
@@ -611,11 +611,15 @@ end) = struct
   and statement ?(last=false) f s =
     let last_semi () = if last then () else PP.string f ";" in
     match s with
-        Block b ->
-          block f b
-      | Variable_statement l -> variable_declaration_list (not last) f l
-      | Empty_statement -> PP.string f ";"
-      | Debugger_statement ->
+      | Block (b,pc) ->
+        output_debug_info f pc;
+        block f b
+      | Variable_statement (l,pc) ->
+        output_debug_info f pc;
+        variable_declaration_list (not last) f l
+      | Empty_statement _ -> PP.string f ";"
+      | Debugger_statement pc ->
+        output_debug_info f pc;
         PP.string f "debugger"; last_semi ()
       | Expression_statement (EVar _, pc)-> last_semi()
       | Expression_statement (e, pc) ->
@@ -635,10 +639,12 @@ end) = struct
           last_semi();
           PP.end_group f
         end
-      | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
-      (* Dangling else issue... *)
-        statement ~last f (If_statement (e, Block [s1], s2))
-      | If_statement (e, s1, Some (Block _ as s2)) ->
+      | If_statement (e, s1, (Some _ as s2),pc) when ends_with_if_without_else s1 ->
+        output_debug_info f pc;
+        (* Dangling else issue... *)
+        statement ~last f (If_statement (e, Block ([s1],N), s2, pc))
+      | If_statement (e, s1, Some (Block _ as s2),pc) ->
+        output_debug_info f pc;
         PP.start_group f 0;
         PP.start_group f 1;
         PP.string f "if";
@@ -660,7 +666,8 @@ end) = struct
         statement ~last f s2;
         PP.end_group f;
         PP.end_group f
-      | If_statement (e, s1, Some s2) ->
+      | If_statement (e, s1, Some s2, pc) ->
+        output_debug_info f pc;
         PP.start_group f 0;
         PP.start_group f 1;
         PP.string f "if";
@@ -682,7 +689,8 @@ end) = struct
         statement ~last f s2;
         PP.end_group f;
         PP.end_group f
-      | If_statement (e, s1, None) ->
+      | If_statement (e, s1, None, pc) ->
+        output_debug_info f pc;
         PP.start_group f 1;
         PP.start_group f 0;
         PP.string f "if";
@@ -698,7 +706,8 @@ end) = struct
         statement ~last f s1;
         PP.end_group f;
         PP.end_group f
-      | While_statement (e, s) ->
+      | While_statement (e, s, pc) ->
+        output_debug_info f pc;
         PP.start_group f 1;
         PP.start_group f 0;
         PP.string f "while";
@@ -714,7 +723,8 @@ end) = struct
         statement ~last f s;
         PP.end_group f;
         PP.end_group f
-      | Do_while_statement (Block _ as s, e) ->
+      | Do_while_statement (Block _ as s, e, pc) ->
+        output_debug_info f pc;
         PP.start_group f 0;
         PP.string f "do";
         PP.break1 f;
@@ -731,7 +741,8 @@ end) = struct
         last_semi();
         PP.end_group f;
         PP.end_group f
-      | Do_while_statement (s, e) ->
+      | Do_while_statement (s, e, pc) ->
+        output_debug_info f pc;
         PP.start_group f 0;
         PP.string f "do";
         PP.space ~indent:1 f;
@@ -794,21 +805,26 @@ end) = struct
         statement ~last f s;
         PP.end_group f;
         PP.end_group f
-      | Continue_statement None ->
+      | Continue_statement (None,pc) ->
+        output_debug_info f pc;
         PP.string f "continue";
         last_semi()
-      | Continue_statement (Some s) ->
+      | Continue_statement (Some s, pc) ->
+        output_debug_info f pc;
         PP.string f "continue ";
         PP.string f (Javascript.Label.to_string s);
         last_semi()
-      | Break_statement None ->
+      | Break_statement (None, pc) ->
+        output_debug_info f pc;
         PP.string f "break";
         last_semi()
-      | Break_statement (Some s) ->
+      | Break_statement (Some s, pc) ->
+        output_debug_info f pc;
         PP.string f "break ";
         PP.string f (Javascript.Label.to_string s);
         last_semi()
-      | Return_statement e ->
+      | Return_statement (e,pc) ->
+        output_debug_info f pc;
         begin match e with
             None   ->
               PP.string f "return";
@@ -848,12 +864,14 @@ end) = struct
       (* There MUST be a space between the return and its
          argument. A line return will not work *)
         end
-      | Labelled_statement (i, s) ->
+      | Labelled_statement (i, s, pc) ->
+        output_debug_info f pc;
         PP.string f (Javascript.Label.to_string i);
         PP.string f ":";
         PP.break f;
         statement ~last f s
-      | Switch_statement (e, cc, def) ->
+      | Switch_statement (e, cc, def, pc) ->
+        output_debug_info f pc;
         PP.start_group f 1;
         PP.start_group f 0;
         PP.string f "switch";
@@ -901,7 +919,8 @@ end) = struct
         PP.string f "}";
         PP.end_group f;
         PP.end_group f
-      | Throw_statement e ->
+      | Throw_statement (e,pc) ->
+        output_debug_info f pc;
         PP.start_group f 6;
         PP.string f "throw";
         PP.non_breaking_space f;

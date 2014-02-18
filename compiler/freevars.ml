@@ -51,16 +51,16 @@ let iter_instr_free_vars f i =
 
 let iter_last_free_var f l =
   match l with
-    Return x
-  | Raise x ->
+    Return (x,_)
+  | Raise (x,_) ->
       f x
-  | Stop ->
+  | Stop _ ->
       ()
-  | Branch cont | Poptrap cont ->
+  | Branch (cont,_) | Poptrap cont ->
       iter_cont_free_vars f cont
-  | Cond (_, x, cont1, cont2) ->
+  | Cond (_, x, cont1, cont2, _) ->
       f x; iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
-  | Switch (x, a1, a2) ->
+  | Switch (x, a1, a2, _) ->
       f x;
       Array.iter (fun c -> iter_cont_free_vars f c) a1;
       Array.iter (fun c -> iter_cont_free_vars f c) a2
@@ -80,7 +80,7 @@ let iter_instr_bound_vars f i =
 
 let iter_last_bound_vars f l =
   match l with
-    Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ ->
+    Return _ | Raise _ | Stop _ | Branch _ | Cond _ | Switch _ | Poptrap _ ->
       ()
   | Pushtrap (_, x, _, _) ->
       f x

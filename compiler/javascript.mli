@@ -26,7 +26,7 @@ module Label : sig
   val of_string : string -> t
 end
 
-type loc = Code.addr
+type loc = Code.DebugAddr.dbg
 type node_pc =
   | Loc of loc
   | Pi of Parse_info.t
@@ -96,27 +96,27 @@ and expression =
 (* A.4 Statements *)
 
 and statement =
-    Block of block
-  | Variable_statement of variable_declaration list
-  | Empty_statement
+    Block of block * node_pc
+  | Variable_statement of variable_declaration list * node_pc
+  | Empty_statement of node_pc
   | Expression_statement of expression * node_pc
-  | If_statement of expression * statement * statement option
-  | Do_while_statement of statement * expression
-  | While_statement of expression * statement
+  | If_statement of expression * statement * statement option * node_pc
+  | Do_while_statement of statement * expression * node_pc
+  | While_statement of expression * statement * node_pc
   | For_statement of (expression option,variable_declaration list) either * expression option * expression option * statement * node_pc
   | ForIn_statement of  (expression,variable_declaration) either * expression * statement * node_pc
-  | Continue_statement of Label.t option
-  | Break_statement of Label.t option
-  | Return_statement of expression option
+  | Continue_statement of Label.t option * node_pc
+  | Break_statement of Label.t option * node_pc
+  | Return_statement of expression option * node_pc
 (*
   | With_statement
 *)
-  | Labelled_statement of Label.t * statement
-  | Switch_statement of expression * case_clause list * statement_list option
-  | Throw_statement of expression
+  | Labelled_statement of Label.t * statement * node_pc
+  | Switch_statement of expression * case_clause list * statement_list option * node_pc
+  | Throw_statement of expression * node_pc
   | Try_statement of block * (ident * block) option * block option * node_pc
 
-  | Debugger_statement
+  | Debugger_statement of node_pc
 
 and ('left,'right) either =
   | Left of 'left

@@ -80,14 +80,14 @@ let program_deps (_, blocks, _) =
             cont_deps blocks vars deps defs cont)
          block.handler;
        match block.branch with
-         Return _ | Raise _ | Stop ->
+         Return _ | Raise _ | Stop _ ->
            ()
-       | Branch cont ->
+       | Branch (cont, _) ->
            cont_deps blocks vars deps defs cont
-       | Cond (_, _, cont1, cont2) ->
+       | Cond (_, _, cont1, cont2, _) ->
            cont_deps blocks vars deps defs cont1;
            cont_deps blocks vars deps defs cont2
-       | Switch (_, a1, a2) ->
+       | Switch (_, a1, a2, _) ->
            Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a1;
            Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a2
        | Pushtrap (cont, _, _, _) ->

@@ -39,23 +39,23 @@ class map : mapper = object(m)
   method statements l = List.map m#statement l
 
   method statement s = match s with
-    | Block b -> Block (m#statements b)
-    | Variable_statement l ->
+    | Block (b,pc) -> Block (m#statements b, pc)
+    | Variable_statement (l, pc) ->
       Variable_statement (
         List.map
-          (fun (id, eo) -> m#ident id, m#expression_o eo) l)
-    | Empty_statement -> Empty_statement
-    | Debugger_statement -> Debugger_statement
+          (fun (id, eo) -> m#ident id, m#expression_o eo) l, pc)
+    | Empty_statement pc -> Empty_statement pc
+    | Debugger_statement pc -> Debugger_statement pc
     | Expression_statement (e,nid) ->
       Expression_statement (m#expression e, nid)
-    | If_statement(e,s,sopt) ->
+    | If_statement(e,s,sopt,pc) ->
       If_statement(m#expression e,
     m#statement s,
-    m#statement_o sopt)
-  | Do_while_statement (s,e) ->
-    Do_while_statement (m#statement s, m#expression e)
-  | While_statement(e,s) ->
-    While_statement(m#expression e,m#statement s)
+    m#statement_o sopt, pc)
+  | Do_while_statement (s,e,pc) ->
+    Do_while_statement (m#statement s, m#expression e, pc)
+  | While_statement(e,s, pc) ->
+    While_statement(m#expression e,m#statement s, pc)
   | For_statement(e1,e2,e3,s,nid) ->
     let e1 = match  e1 with
       | Left o -> Left(m#expression_o o)
@@ -75,19 +75,20 @@ class map : mapper = object(m)
       m#expression e2,
       m#statement s,
       nid)
-  | Continue_statement s -> Continue_statement s
-  | Break_statement s -> Break_statement s
-  | Return_statement e ->
-    Return_statement (m#expression_o e)
-  | Labelled_statement(l,s) -> Labelled_statement(l,m#statement s)
-  | Throw_statement e -> Throw_statement (m#expression e)
-  | Switch_statement (e,l,def) ->
+  | Continue_statement (s,pc) -> Continue_statement (s,pc)
+  | Break_statement (s,pc) -> Break_statement (s,pc)
+  | Return_statement (e,pc) ->
+    Return_statement (m#expression_o e,pc)
+  | Labelled_statement(l,s,pc) -> Labelled_statement(l,m#statement s, pc)
+  | Throw_statement (e,pc) -> Throw_statement (m#expression e, pc)
+  | Switch_statement (e,l,def,pc) ->
     Switch_statement (
       m#expression e,
       List.map (fun (e,s) -> m#expression e, m#statements s) l,
-      match def with
+      (match def with
         | None -> None
-        | Some l -> Some (m#statements l))
+        | Some l -> Some (m#statements l)),
+      pc)
   | Try_statement (b,catch,final,nid) ->
     Try_statement (
     m#statements b,
@@ -223,7 +224,7 @@ class share_constant = object(m)
       let p = (new replace_expr f)#program p in
       let all = Hashtbl.fold (fun e v acc ->
           (v, Some e) :: acc) all [] in
-      Statement(Variable_statement all):: p
+      Statement(Variable_statement (all,N)):: p
 end
 
 module S = Code.VarSet
@@ -340,7 +341,7 @@ class free =
 
 
   method statement x = match x with
-    | Variable_statement l ->
+    | Variable_statement (l,pc) ->
       let l = List.map (fun (id,eopt) ->
         m#def_var id;
         match eopt with
@@ -348,7 +349,7 @@ class free =
           | Some e ->
             let e = m#expression e in
             (id,Some e)) l in
-      Variable_statement l
+      Variable_statement (l,pc)
     | For_statement (Right l,e2,e3,s,nid) ->
       let l = List.map (fun (id,eopt) ->
           m#def_var id;
@@ -476,7 +477,7 @@ class compact_vardecl = object(m)
     method private translate_st l =
       let l = m#translate l in
       match l with
-        | [] -> Empty_statement
+        | [] -> Empty_statement N
         | x::l -> Expression_statement (List.fold_left (fun acc e -> ESeq(acc,e)) x l,N)
 
     method private translate_ex l =
@@ -490,7 +491,7 @@ class compact_vardecl = object(m)
     method statement s =
       let s = super#statement s in
       match s with
-        | Variable_statement l -> m#translate_st l
+        | Variable_statement (l,_) -> m#translate_st l
         | For_statement (Right l,e2,e3,s,nid) ->
           For_statement (Left (m#translate_ex l), e2, e3, s,nid)
         | ForIn_statement(Right (id,op),e2,s,nid) ->
@@ -525,7 +526,7 @@ class compact_vardecl = object(m)
       let may_flush rem vars s instr =
         if vars = []
         then rem,[],s::instr
-        else rem,[],s::Statement (Variable_statement (List.rev vars))::instr in
+        else rem,[],s::Statement (Variable_statement (List.rev vars,N))::instr in
 
       let rem,vars,instr = List.fold_left (fun (rem,vars,instr) s ->
         match s with
@@ -543,13 +544,14 @@ class compact_vardecl = object(m)
       let instr = match vars with
         | [] -> (List.rev instr)
         | d ->
-          let d = Statement (Variable_statement (List.rev d)) in
+          let d = Statement (Variable_statement (List.rev d, N)) in
           List.rev (d::instr) in
       let l = IdentSet.fold (fun x acc -> (x,None)::acc) rem [] in
       match l,instr with
         | [],_ -> instr
-        | l, (Statement (Variable_statement l')::rest) -> Statement (Variable_statement (List.rev_append l l')) :: rest
-        | l,_ -> (Statement (Variable_statement l))::instr
+        | l, (Statement (Variable_statement (l',pc))::rest) ->
+          Statement (Variable_statement (List.rev_append l l', N)) :: rest
+        | l,_ -> (Statement (Variable_statement (l,N)))::instr
 
     method source x =
       let x = super#source x in
@@ -593,15 +595,15 @@ class clean = object(m)
     let l = super#statements l in
     let vars_rev,instr_rev = List.fold_left (fun (vars_rev,instr_rev) x ->
         match x with
-          | Variable_statement l -> (List.rev_append l vars_rev,instr_rev)
-          | Empty_statement
+          | Variable_statement (l,_) -> (List.rev_append l vars_rev,instr_rev)
+          | Empty_statement _
           | Expression_statement (EVar _, _) -> vars_rev,instr_rev
           | x when vars_rev = [] -> ([],x::instr_rev)
-          | x -> ([],x::Variable_statement (List.rev vars_rev)::instr_rev)
+          | x -> ([],x::Variable_statement (List.rev vars_rev,N)::instr_rev)
       ) ([],[]) l in
     let instr_rev = match vars_rev with
       | [] -> instr_rev
-      | vars_rev -> Variable_statement (List.rev vars_rev) :: instr_rev
+      | vars_rev -> Variable_statement (List.rev vars_rev,N) :: instr_rev
     in List.rev instr_rev
 
   method sources l =

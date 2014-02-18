@@ -42,8 +42,8 @@ let rec tail_call x f l =
 
 let rec return ?(subst=VarMap.empty) block blocks =
   match block.branch with
-    | Return x -> Some (Subst.from_map subst x)
-    | Branch (pc,l) ->
+    | Return (x,pc) -> Some (Subst.from_map subst x, pc)
+    | Branch ((pc,l),_) ->
       let block = AddrMap.find pc blocks in
       if block.body = []
       then
@@ -56,7 +56,7 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
   (*Format.eprintf "%d@." pc;*)
   let block = AddrMap.find pc blocks in
   match return block blocks with
-    | Some x ->
+    | Some (x,pc') ->
         begin match tail_call x f block.body with
             Some f_args when List.length f_params = List.length f_args ->
             let m = Subst.build_mapping f_params f_args in
@@ -66,7 +66,7 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
                 body = remove_last block.body;
                 branch =
                   Branch
-                    (f_pc, List.map (fun x -> VarMap.find x m) args) }
+                    ((f_pc, List.map (fun x -> VarMap.find x m) args),pc') }
               blocks
           | _ ->
             blocks
@@ -80,15 +80,15 @@ let (>>) x f = f x
 let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
-    Return _ | Raise _ | Stop ->
+    Return _ | Raise _ | Stop _ ->
       accu
-  | Branch (pc', _) | Poptrap (pc', _) ->
+  | Branch ((pc', _), _) | Poptrap (pc', _) ->
       f pc' accu
   | Pushtrap (_, _, (pc1, _), pc2) ->
       f pc1 (if pc2 >= 0 then f pc2 accu else accu)
-  | Cond (_, _, (pc1, _), (pc2, _)) ->
+  | Cond (_, _, (pc1, _), (pc2, _), _) ->
       accu >> f pc1 >> f pc2
-  | Switch (_, a1, a2) ->
+  | Switch (_, a1, a2, _) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 

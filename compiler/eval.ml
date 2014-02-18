@@ -187,7 +187,7 @@ let the_case_of info x =
 
 
 let eval_branch info = function
-  | Cond (cond,x,ftrue,ffalse) as b->
+  | Cond (cond,x,ftrue,ffalse, pc) as b->
     begin
       match the_int info (Pv x) with
         | Some j ->
@@ -199,15 +199,15 @@ let eval_branch info = function
             | CUlt i -> j < 0 || i < j
           in
           (match res with
-            | true -> Branch ftrue
-            | false -> Branch ffalse)
+            | true -> Branch (ftrue,pc)
+            | false -> Branch (ffalse,pc))
         | _ -> b
     end
-  | Switch (x,const,tags) as b ->
+  | Switch (x,const,tags, pc) as b ->
     begin
       match the_case_of info (Pv x) with
-      | CConst j -> Branch (const.(j))
-      | CTag j -> Branch (tags.(j))
+      | CConst j -> Branch (const.(j),pc)
+      | CTag j -> Branch (tags.(j),pc)
       | N -> b
     end
   | _ as b -> b
