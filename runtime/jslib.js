@@ -70,3 +70,16 @@ function caml_js_get_console () {
   for (var i = 0; i < m.length; i++) if (!c[m[i]]) c[m[i]]=f;
   return c;
 }
+
+//Provides: js_print_stdout
+function js_print_stdout(s) {
+  joo_global_object.console
+  && joo_global_object.console.log
+  && joo_global_object.console.log(s);
+}
+//Provides: js_print_stderr
+function js_print_stderr(s) {
+  joo_global_object.console
+  && joo_global_object.console.error
+  && joo_global_object.console.error(s);
+}

@@ -76,6 +76,12 @@ function caml_failwith (msg) {
   caml_raise_with_string(caml_global_data[3], msg);
 }
 
+//Provides: caml_sys_error
+//Requires: caml_raise_with_string, caml_global_data
+function caml_sys_error (msg) {
+  caml_raise_with_string(caml_global_data[1], msg);
+}
+
 //Provides: caml_array_bound_error
 //Requires: caml_invalid_argument
 function caml_array_bound_error () {
@@ -745,31 +751,49 @@ function caml_get_public_method (obj, tag) {
 // Dummy functions
 //Provides: caml_ml_out_channels_list const
 function caml_ml_out_channels_list () { return 0; }
-//Provides: caml_ml_open_descriptor_out const
-function caml_ml_open_descriptor_out (x) { return x; }
-//Provides: caml_ml_open_descriptor_in const
-function caml_ml_open_descriptor_in (x) { return x; }
+
+//Provides: caml_ml_open_descriptor_out
+//Requires: js_print_stderr, js_print_stdout
+function caml_ml_open_descriptor_out (x) {
+    return {
+        buffer:"",
+        fd:x,
+        closed:false,
+        output:((x==2)?js_print_stderr:js_print_stdout)
+    };
+}
+//Provides: caml_ml_open_descriptor_in
+function caml_ml_open_descriptor_in (x)  {
+    return {
+        buffer:"",
+        fd:x,
+        closed:false
+    }; }
+//Provides: caml_ml_close_channel
+//Requires: caml_ml_flush
+function caml_ml_close_channel (x) {
+    caml_ml_flush(x);
+    x.closed = true;
+    return 0;
+}
 //Provides: caml_sys_get_argv const
 //Requires: MlWrappedString
 function caml_sys_get_argv () {
   var p = new MlWrappedString("a.out"); return [0, p, [0, p]];
 }
-//Provides: caml_ml_output_buffer
-var caml_ml_output_buffer = "";
 //Provides: caml_ml_flush
-//Requires: caml_ml_output_buffer
+//Requires: caml_sys_error
 function caml_ml_flush (oc) {
-    joo_global_object.console
-    && joo_global_object.console.log
-    && caml_ml_output_buffer != ""
-    && joo_global_object.console.log(caml_ml_output_buffer);
-    caml_ml_output_buffer = "";
+    if(oc.closed) caml_sys_error("");
+    if(oc.buffer == "") return 0;
+    if(oc.output) {oc.output(oc.buffer)};
+    oc.buffer = "";
 }
 //Provides: caml_ml_output
-//Requires: caml_ml_output_buffer
 //Requires: caml_ml_flush
-//Requires: MlString, caml_create_string, caml_blit_string
+//Requires: MlString, caml_create_string, caml_blit_string, caml_sys_error
 function caml_ml_output (oc,buffer,offset,len) {
+    if(oc.closed) caml_sys_error("");
     var string;
     if(offset == 0 && buffer.getLen() == len)
         string = buffer;
@@ -780,11 +804,11 @@ function caml_ml_output (oc,buffer,offset,len) {
     var jsstring = string.toString();
     var id = jsstring.lastIndexOf("\n");
     if(id < 0)
-        caml_ml_output_buffer+=jsstring;
+        oc.buffer+=jsstring;
     else {
-        caml_ml_output_buffer+=jsstring.substr(0,id);
+        oc.buffer+=jsstring.substr(0,id);
         caml_ml_flush (oc);
-        caml_ml_output_buffer += jsstring.substr(id+1);
+        oc.buffer += jsstring.substr(id+1);
     }
 }
 //Provides: caml_ml_output_char

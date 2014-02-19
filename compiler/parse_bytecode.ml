@@ -1595,6 +1595,7 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                        [Pv x ; Pv (access_global g n)])) ::
             !l
         in
+        register_global 1; (* Sys_error *)
         register_global 2; (* Failure *)
         register_global 3; (* Invalid_argument *)
         register_global 5; (* Division_by_zero *)

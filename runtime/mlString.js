@@ -34,7 +34,7 @@
 //Provides: MlStringFromArray
 //Provides: MlMakeString
 //Provides: MlWrappedString
-//Requires: caml_array_bound_error
+//Requires: caml_array_bound_error, js_print_stderr
 function caml_str_repeat(n, s) {
   if (!n) { return ""; }
   if (n & 1) { return caml_str_repeat(n - 1, s) + s; }
@@ -68,9 +68,7 @@ MlString.prototype = {
     try {
       return this.string = decodeURIComponent (escape(a));
     } catch (e){
-      joo_global_object.console &&
-      joo_global_object.console.error &&
-      joo_global_object.console.error("MlString.toJsString: wrong encoding for \"%s\" ", a);
+      js_print_stderr("MlString.toJsString: wrong encoding for \"%s\" ", a);
       return a;
     }
   },
@@ -81,9 +79,7 @@ MlString.prototype = {
       try {
         var b = unescape (encodeURIComponent (this.string));
       } catch (e) {
-        joo_global_object.console &&
-        joo_global_object.console.error &&
-        joo_global_object.console.error("MlString.toBytes: wrong encoding for \"%s\" ", this.string);
+        js_print_stderr("MlString.toBytes: wrong encoding for \"%s\" ", this.string);
         var b = this.string;
       }
     } else {
