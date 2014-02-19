@@ -363,7 +363,11 @@ let build_subst info  vars =
            subst.(Var.idx x) <- Some (VarSet.choose s)
        end;
        if subst.(Var.idx x) = None then
-         subst.(Var.idx x) <- direct_approx info x)
+         subst.(Var.idx x) <- direct_approx info x;
+       match subst.(Var.idx x) with
+         | None -> ()
+         | Some y -> Var.propagate_name x y
+    )
     vars;
   subst
 
