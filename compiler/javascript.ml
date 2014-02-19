@@ -135,7 +135,7 @@ and variable_declaration = ident * initialiser option
 
 and case_clause = expression * statement_list
 
-and initialiser = expression
+and initialiser = expression * node_pc
 
 (****)
 

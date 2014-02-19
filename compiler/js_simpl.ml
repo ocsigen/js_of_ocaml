@@ -105,8 +105,8 @@ let rec assignment_of_statement_list l =
     [J.Variable_statement ([x, Some e],_)] ->
       (x, e)
   | J.Expression_statement (e, pc) :: rem ->
-      let (x, e') = assignment_of_statement_list rem in
-      (x, J.ESeq (e, e'))
+      let (x, (e',nid)) = assignment_of_statement_list rem in
+      (x, (J.ESeq (e, e'),nid))
   | _ ->
       raise Not_assignment
 
@@ -138,14 +138,14 @@ let rec if_statement_2 e pc iftrue truestop iffalse falsestop =
   | _ ->
       (* Generates conditional *)
       begin try
-        let (x1, e1) = assignment_of_statement iftrue in
-        let (x2, e2) = assignment_of_statement iffalse in
+        let (x1, (e1,_)) = assignment_of_statement iftrue in
+        let (x2, (e2,_)) = assignment_of_statement iffalse in
         if x1 <> x2 then raise Not_assignment;
         let exp =
           if e1 = e
           then J.EBin(J.Or,e,e2)
           else J.ECond (e, e1, e2) in
-        [J.Variable_statement ([x1, Some exp],pc)]
+        [J.Variable_statement ([x1, Some (exp,pc)],pc)]
       with Not_assignment -> try
         let e1 = expression_of_statement iftrue in
         let e2 = expression_of_statement iffalse in

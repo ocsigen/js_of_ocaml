@@ -238,7 +238,12 @@ module Debug = struct
 
   let rec propagate l1 l2 =
     match l1, l2 with
-      v1 :: r1, v2 :: r2 -> Var.propagate_name v1 v2; propagate r1 r2
+      v1 :: r1, v2 :: r2 ->
+      Var.propagate_name v1 v2;
+      (match Var.get_addr v1 with
+       | None -> ()
+       | Some pc -> Var.addr v2 (DebugAddr.to_addr pc));
+      propagate r1 r2
     | _                  -> ()
 
   let iter f = Hashtbl.iter f events_by_pc
@@ -362,7 +367,7 @@ module State = struct
     {state with accu = Dummy; stack = []; env = env; env_offset = offset;
                 handlers = []}
 
-  let start_block state =
+  let start_block state pc =
     let stack =
       List.fold_right
         (fun e stack ->
@@ -381,6 +386,7 @@ module State = struct
     | Var x ->
       let y,state = fresh_var state in
       Var.propagate_name x y;
+      Var.addr x pc;
       state
 
   let push_handler state x addr =
@@ -494,7 +500,7 @@ let rec compile_block code pc state =
     let len = String.length code  / 4 in
     let limit = next_block len pc in
     if debug () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
-    let state = State.start_block state in
+    let state = State.start_block state pc in
     tagged_blocks := AddrSet.add pc !tagged_blocks;
     let (instr, last, state') = compile code limit pc state [] in
     compiled_blocks :=

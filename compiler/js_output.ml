@@ -560,10 +560,14 @@ end) = struct
   and variable_declaration f (i, init) =
     match init with
         None   ->
-          ident f i
-      | Some e ->
+      ident f i
+      | Some (e,pc) ->
         PP.start_group f 1;
-        ident f i; PP.string f "="; PP.break f; expression 1 f e;
+        ident f i;
+        PP.string f "=";
+        PP.break f;
+        output_debug_info f pc;
+        expression 1 f e;
         PP.end_group f
 
   and variable_declaration_list_aux f l =
@@ -582,7 +586,7 @@ end) = struct
       ident f i;
       if close then PP.string f ";";
       PP.end_group f
-    | [(i, Some e)] ->
+    | [(i, Some (e,pc))] ->
       PP.start_group f 1;
       PP.string f "var";
       PP.space f;
@@ -590,6 +594,7 @@ end) = struct
       PP.string f "=";
       PP.break1 f;
       PP.start_group f 0;
+      output_debug_info f pc;
       expression 1 f e;
       if close then PP.string f ";";
       PP.end_group f;

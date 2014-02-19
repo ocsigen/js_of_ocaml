@@ -239,7 +239,7 @@ variable_declaration:
  | variable option(initializeur) { $1, $2 }
 
 initializeur:
- | T_ASSIGN assignment_expression { $2 }
+ | T_ASSIGN assignment_expression { $2, J.Pi $1 }
 
 
 empty_statement:
@@ -290,7 +290,7 @@ variable_declaration_no_in:
  | variable option(initializer_no_in) { $1, $2 }
 
 initializer_no_in:
- | T_ASSIGN assignment_expression_no_in { $2 }
+ | T_ASSIGN assignment_expression_no_in { $2, J.Pi $1 }
 
 
 continue_statement:

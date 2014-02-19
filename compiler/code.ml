@@ -53,6 +53,8 @@ module Var : sig
   val reset : unit -> unit
   val set_pretty : bool -> unit
 
+  val addr : t -> addr -> unit
+  val get_addr : t -> DebugAddr.dbg option
   val dummy : t
 end = struct
 
@@ -90,6 +92,11 @@ end = struct
     let n = fresh () in
     propagate_name o n;
     n
+
+  let addr_tbl = Hashtbl.create 17
+
+  let addr x pc = Hashtbl.add addr_tbl x pc
+  let get_addr x = try Some (DebugAddr.of_addr (Hashtbl.find addr_tbl x)) with _ -> None
 
   let dummy = -1
 end

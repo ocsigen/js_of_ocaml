@@ -46,6 +46,9 @@ module Var : sig
   val propagate_name : t -> t -> unit
   val reset : unit -> unit
   val set_pretty : bool -> unit
+
+  val addr : t -> addr -> unit
+  val get_addr : t -> DebugAddr.dbg option
 end
 
 
