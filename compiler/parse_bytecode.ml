@@ -1167,47 +1167,32 @@ and compile code limit pc state instrs =
       end;
       compile code limit (pc + 3) state
         (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
-  | CONST0 ->
+  | ( CONST0 | CONST1 | CONST2 | CONST3 ) as cc ->
       let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = 0@." Var.print x;
-      compile code limit (pc + 1) state (Let (x, Const 0) :: instrs)
-  | CONST1 ->
-      let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = 1@." Var.print x;
-      compile code limit (pc + 1) state (Let (x, Const 1) :: instrs)
-  | CONST2 ->
-      let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = 2@." Var.print x;
-      compile code limit (pc + 1) state (Let (x, Const 2) :: instrs)
-  | CONST3 ->
-      let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = 3@." Var.print x;
-      compile code limit (pc + 1) state (Let (x, Const 3) :: instrs)
+      let n = match cc with
+        | CONST0 -> 0
+        | CONST1 -> 1
+        | CONST2 -> 2
+        | CONST3 -> 3
+        | _ -> assert false in
+      if debug () then Format.printf "%a = %d@." Var.print x n;
+      compile code limit (pc + 1) state (Let (x, Const n) :: instrs)
   | CONSTINT ->
       let n = gets code (pc + 1) in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = %d@." Var.print x n;
       compile code limit (pc + 2) state (Let (x, Const n) :: instrs)
-  | PUSHCONST0 ->
+  | ( PUSHCONST0 | PUSHCONST1 | PUSHCONST2 | PUSHCONST3 ) as cc ->
       let state = State.push state in
       let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = 0@." Var.print x;
-      compile code limit (pc + 1) state (Let (x, Const 0) :: instrs)
-  | PUSHCONST1 ->
-      let state = State.push state in
-      let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = 1@." Var.print x;
-      compile code limit (pc + 1) state (Let (x, Const 1) :: instrs)
-  | PUSHCONST2 ->
-      let state = State.push state in
-      let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = 2@." Var.print x;
-      compile code limit (pc + 1) state (Let (x, Const 2) :: instrs)
-  | PUSHCONST3 ->
-      let state = State.push state in
-      let (x, state) = State.fresh_var state in
-      if debug () then Format.printf "%a = 3@." Var.print x;
-      compile code limit (pc + 1) state (Let (x, Const 3) :: instrs)
+      let n = match cc with
+        | PUSHCONST0 -> 0
+        | PUSHCONST1 -> 1
+        | PUSHCONST2 -> 2
+        | PUSHCONST3 -> 3
+        | _ -> assert false in
+      if debug () then Format.printf "%a = %d@." Var.print x n;
+      compile code limit (pc + 1) state (Let (x, Const n) :: instrs)
   | PUSHCONSTINT ->
       let state = State.push state in
       let n = gets code (pc + 1) in
