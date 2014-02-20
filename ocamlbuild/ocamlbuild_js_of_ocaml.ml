@@ -65,7 +65,7 @@ let init () =
     let dep = env dep in
     let prod = env prod in
     let link_opts = link_opts prod in
-    let tags = tags_of_pathname prod ++ "js_of_ocaml" in
+    let tags = tags_of_pathname dep ++ tags_of_pathname prod ++ "js_of_ocaml" in
     Cmd (S [A "js_of_ocaml"; A "-noruntime"; T tags; S link_opts; P dep; A "-o"; Px prod])
   in
   rule "js_of_ocaml: .byte -> .js" ~dep ~prod f;
