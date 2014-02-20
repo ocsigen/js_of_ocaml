@@ -55,7 +55,8 @@ end = struct
 
   let to_string ?origin i = VarPrinter.to_string printer ?origin i
 
-  let print f x = Format.fprintf f "%s" (to_string x)
+  let print f x = Format.fprintf f "v%d" x
+    (* Format.fprintf f "%s" (to_string x) *)
 
   let fresh () = incr last_var; !last_var
 
