@@ -70,6 +70,9 @@ let init () =
   in
   rule "js_of_ocaml: .byte -> .js" ~dep ~prod f;
   flag ["js_of_ocaml"; "debug"] (S [A "-pretty"; A "-debuginfo"; A "-noinline"]);
+  flag ["js_of_ocaml"; "pretty"] (A "-pretty");
+  flag ["js_of_ocaml"; "debuginfo"] (A "-debuginfo");
+  flag ["js_of_ocaml"; "noinline"] (A "-noinline");
   pflag ["js_of_ocaml"] "opt" (fun n -> S [A "-opt"; A n])
 
 let dispatcher = function
