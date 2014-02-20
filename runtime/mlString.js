@@ -30,11 +30,7 @@
 // implementation of string differs significantly from Javascript.
 // This way, using the wrong object is detected early.
 
-//Provides: MlString
-//Provides: MlStringFromArray
-//Provides: MlMakeString
-//Provides: MlWrappedString
-//Requires: caml_array_bound_error, js_print_stderr
+//Provided caml_str_repeat
 function caml_str_repeat(n, s) {
   if (!n) { return ""; }
   if (n & 1) { return caml_str_repeat(n - 1, s) + s; }
@@ -42,6 +38,8 @@ function caml_str_repeat(n, s) {
   return r + r;
 }
 
+//Provides: MlString
+//Requires: caml_array_bound_error, js_print_stderr
 function MlString(param) {
   if (param != null) {
     this.bytes = this.fullBytes = param;
@@ -240,24 +238,33 @@ MlString.prototype = {
 }
 
 // Conversion Javascript -> Caml
+
+//Provides: MlWrappedString
+//Requires: MlString
 function MlWrappedString (s) { this.string = s; }
 MlWrappedString.prototype = new MlString();
 
 // Uninitialized Caml string
+//Provides: MlMakeString
+//Requires: MlString
 function MlMakeString (l) { this.bytes = ""; this.len = l; }
 MlMakeString.prototype = new MlString ();
 
 // Caml string initialized form an array of bytes
+//Provides: MlStringFromArray
+//Requires: MlString
 function MlStringFromArray (a) {
   var len = a.length; this.array = a; this.len = this.last = len;
 }
 MlStringFromArray.prototype = new MlString ();
 
 //Provides: caml_create_string const
-//Requires: caml_invalid_argument
-//Requires: MlMakeString
+//Requires: MlMakeString,MlWrappedString,caml_global_data,caml_raise_with_arg
 function caml_create_string(len) {
-  if (len < 0) caml_invalid_argument("String.create");
+  // if (len < 0) caml_invalid_argument("String.create");
+  // Hack to avoid circular deps
+  if (len < 0)
+    caml_raise_with_arg (caml_global_data[4], new MlWrappedString ("String.create"));
   return new MlMakeString(len);
 }
 //Provides: caml_fill_string

@@ -52,6 +52,8 @@ function caml_register_global (n, v) { caml_global_data[n + 1] = v; }
 //Requires: caml_global_data
 function caml_get_global_data () { return caml_global_data; }
 
+//Raise exception
+
 //Provides: caml_raise_constant
 function caml_raise_constant (tag) { throw [0, tag]; }
 
@@ -64,10 +66,10 @@ function caml_raise_with_string (tag, msg) {
   caml_raise_with_arg (tag, new MlWrappedString (msg));
 }
 
-//Provides: caml_invalid_argument
+//Provides: caml_raise_sys_error
 //Requires: caml_raise_with_string, caml_global_data
-function caml_invalid_argument (msg) {
-  caml_raise_with_string(caml_global_data[4], msg);
+function caml_raise_sys_error (msg) {
+  caml_raise_with_string(caml_global_data[2], msg);
 }
 
 //Provides: caml_failwith
@@ -76,16 +78,16 @@ function caml_failwith (msg) {
   caml_raise_with_string(caml_global_data[3], msg);
 }
 
-//Provides: caml_sys_error
+//Provides: caml_invalid_argument
 //Requires: caml_raise_with_string, caml_global_data
-function caml_sys_error (msg) {
-  caml_raise_with_string(caml_global_data[1], msg);
+function caml_invalid_argument (msg) {
+  caml_raise_with_string(caml_global_data[4], msg);
 }
 
-//Provides: caml_array_bound_error
-//Requires: caml_invalid_argument
-function caml_array_bound_error () {
-  caml_invalid_argument("index out of bounds");
+//Provides: caml_raise_end_of_file
+//Requires: caml_raise_constant, caml_global_data
+function caml_raise_end_of_file () {
+  caml_raise_constant(caml_global_data[5]);
 }
 
 //Provides: caml_raise_zero_divide
@@ -96,7 +98,17 @@ function caml_raise_zero_divide () {
 
 //Provides: caml_raise_not_found
 //Requires: caml_raise_constant, caml_global_data
-function caml_raise_not_found () { caml_raise_constant(caml_global_data[7]); }
+function caml_raise_not_found () {
+  caml_raise_constant(caml_global_data[7]); }
+
+
+//Provides: caml_array_bound_error
+//Requires: caml_invalid_argument
+function caml_array_bound_error () {
+  caml_invalid_argument("index out of bounds");
+}
+
+
 
 //Provides: caml_update_dummy
 function caml_update_dummy (x, y) {
@@ -746,78 +758,6 @@ function caml_get_public_method (obj, tag) {
   return (tag == meths[li+1] ? meths[li] : 0);
 }
 
-/////////////////////////////
-
-// Dummy functions
-//Provides: caml_ml_out_channels_list const
-function caml_ml_out_channels_list () { return 0; }
-
-//Provides: caml_ml_open_descriptor_out
-//Requires: js_print_stderr, js_print_stdout
-function caml_ml_open_descriptor_out (x) {
-    return {
-        buffer:"",
-        fd:x,
-        closed:false,
-        output:((x==2)?js_print_stderr:js_print_stdout)
-    };
-}
-//Provides: caml_ml_open_descriptor_in
-function caml_ml_open_descriptor_in (x)  {
-    return {
-        buffer:"",
-        fd:x,
-        closed:false
-    }; }
-//Provides: caml_ml_close_channel
-//Requires: caml_ml_flush
-function caml_ml_close_channel (x) {
-    caml_ml_flush(x);
-    x.closed = true;
-    return 0;
-}
-//Provides: caml_sys_get_argv const
-//Requires: MlWrappedString
-function caml_sys_get_argv () {
-  var p = new MlWrappedString("a.out"); return [0, p, [0, p]];
-}
-//Provides: caml_ml_flush
-//Requires: caml_sys_error
-function caml_ml_flush (oc) {
-    if(oc.closed) caml_sys_error("");
-    if(oc.buffer == "") return 0;
-    if(oc.output) {oc.output(oc.buffer)};
-    oc.buffer = "";
-}
-//Provides: caml_ml_output
-//Requires: caml_ml_flush
-//Requires: MlString, caml_create_string, caml_blit_string, caml_sys_error
-function caml_ml_output (oc,buffer,offset,len) {
-    if(oc.closed) caml_sys_error("");
-    var string;
-    if(offset == 0 && buffer.getLen() == len)
-        string = buffer;
-    else {
-        string = caml_create_string(len);
-        caml_blit_string(buffer,offset,string,0,len);
-    }
-    var jsstring = string.toString();
-    var id = jsstring.lastIndexOf("\n");
-    if(id < 0)
-        oc.buffer+=jsstring;
-    else {
-        oc.buffer+=jsstring.substr(0,id);
-        caml_ml_flush (oc);
-        oc.buffer += jsstring.substr(id+1);
-    }
-}
-//Provides: caml_ml_output_char
-//Requires: caml_ml_output
-//Requires: caml_new_string
-function caml_ml_output_char (oc,c) {
-    var s = caml_new_string(String.fromCharCode(c));
-    caml_ml_output(oc,s,0,1);
-}
 //Provides: caml_final_register const
 function caml_final_register () { return 0; }
 //Provides: caml_final_release const
@@ -840,5 +780,12 @@ function caml_sys_getenv () { caml_raise_not_found (); }
 function caml_sys_exit () {
   caml_invalid_argument("Function 'exit' not implemented");
 }
+
+//Provides: caml_sys_get_argv const
+//Requires: MlWrappedString
+function caml_sys_get_argv () {
+  var p = new MlWrappedString("a.out"); return [0, p, [0, p]];
+}
+
 //Provides: unix_inet_addr_of_string
 function unix_inet_addr_of_string () {return 0;}

@@ -17,22 +17,10 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-//Provides: caml_raise_sys_error
-//Requires: caml_raise_with_string, caml_global_data
-function caml_raise_sys_error (msg) {
-  caml_raise_with_string(caml_global_data[2], msg);
-}
-
 //Provides: caml_terminfo_setup
 function caml_terminfo_setup () { return 1; } // Bad_term
 
 //////////////////////////////////////////////////////////////////////
-
-// This is to read cmi files, included in the Javascript code
-
-//Provides: caml_sys_file_exists
-//Requires: caml_global_data
-function caml_sys_file_exists (x) { return (caml_global_data.interfaces[x])?1:0; }
 
 //Provides: caml_sys_open
 //Requires: MlString, caml_raise_sys_error, caml_global_data
@@ -62,9 +50,6 @@ function caml_input_value (s) {
   caml_marshal_data_size (s, s.offset);
   return caml_input_value_from_string(s, s.offset);
 }
-
-//Provides: caml_ml_close_channel
-function caml_ml_close_channel () { return 0;}
 
 //////////////////////////////////////////////////////////////////////
 
