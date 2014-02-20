@@ -369,15 +369,19 @@ module State = struct
            match e with
              Dummy ->
                Dummy :: stack
-           | Var _ ->
-               let x = Var.fresh () in
-               Var x :: stack)
+           | Var x ->
+             let y = Var.fresh () in
+             Var.propagate_name x y;
+             Var y :: stack)
         state.stack []
     in
     let state = { state with stack = stack } in
     match state.accu with
       Dummy -> state
-    | Var _ -> snd (fresh_var state)
+    | Var x ->
+      let y,state = fresh_var state in
+      Var.propagate_name x y;
+      state
 
   let push_handler state x addr =
     { state
