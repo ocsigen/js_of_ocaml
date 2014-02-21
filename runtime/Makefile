@@ -3,7 +3,11 @@ FILES= 	mlString.js ieee_754.js int64.js md5.js marshall.js \
 	stdlib.js jslib.js jslib_js_of_ocaml.js
 
 runtime.js: $(FILES)
-	cat $(FILES) > runtime.js
+	echo "//concat $(FILES)" > runtime.js
+	for f in $(FILES) ; do \
+		 echo "//# 1 \"$$f\"" >> runtime.js; \
+	   cat $$f >> runtime.js; \
+	done
 
 clean:
 	rm -f runtime.js

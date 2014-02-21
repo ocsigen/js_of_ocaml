@@ -65,7 +65,7 @@ function caml_raise_with_string (tag, msg) {
 }
 
 //Provides: caml_invalid_argument
-//Requires: caml_raise_with_string
+//Requires: caml_raise_with_string, caml_global_data
 function caml_invalid_argument (msg) {
   caml_raise_with_string(caml_global_data[4], msg);
 }
@@ -253,7 +253,7 @@ function caml_int_compare (a, b) {
 //Requires: caml_compare_val
 function caml_equal (x, y) { return +(caml_compare_val(x,y,false) == 0); }
 //Provides: caml_notequal mutable
-//Requires: caml_compare
+//Requires: caml_compare_val
 function caml_notequal (x, y) { return +(caml_compare_val(x,y,false) != 0); }
 //Provides: caml_greaterequal mutable
 //Requires: caml_compare

@@ -280,7 +280,7 @@ function caml_marshal_data_size (s, ofs) {
 }
 
 //Provides: caml_output_val
-//Requires: caml_marshal_constants, caml_int64_to_bytes, caml_failwith
+//Requires: caml_marshal_constants, caml_int64_to_bytes, caml_failwith, MlString
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
