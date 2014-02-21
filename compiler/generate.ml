@@ -1106,8 +1106,8 @@ and translate_instr ctx expr_queue (pc : addr) instr =
           Let (x, e) ->
             let (ce, prop, expr_queue),instrs = translate_expr ctx expr_queue x e 0 in
             begin match ctx.Ctx.live.(Var.idx x),e with
-            | 0,_ -> flush_queue expr_queue prop (J.Expression_statement
-                                                    (ce, J.Loc (DebugAddr.of_addr pc))::instrs)
+            | 0,_ -> flush_queue expr_queue prop (instrs@[J.Expression_statement
+                                                    (ce, J.Loc (DebugAddr.of_addr pc))])
             | 1,_ -> enqueue expr_queue prop x ce 1 instrs
             (* We could inline more.
                size_v : length of the variable after serialization
@@ -1118,7 +1118,7 @@ and translate_instr ctx expr_queue (pc : addr) instr =
             | n,(Const _| Constant (Int _|Float _| Int32 _| Nativeint _)) ->
                    enqueue expr_queue prop x ce n instrs
             | _ -> flush_queue expr_queue prop
-                     (J.Variable_statement ([J.V x, Some ce],J.N)::instrs)
+                     (instrs@[J.Variable_statement ([J.V x, Some ce],J.N)])
             end
         | Set_field (x, n, y) ->
             let ((px, cx), expr_queue) = access_queue expr_queue x in
