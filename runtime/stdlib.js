@@ -541,7 +541,7 @@ function caml_hash_univ_param (count, limit, obj) {
 }
 
 //Provides: caml_hash mutable
-//Requires: MlString, caml_int64_bits_of_float
+//Requires: MlString, caml_int64_bits_of_float, caml_mul
 var caml_hash =
 function () {
   var HASH_QUEUE_SIZE = 256;
