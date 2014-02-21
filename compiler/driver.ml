@@ -174,6 +174,7 @@ let link formatter ~standalone ?linkall js =
     begin
       if times ()
       then Format.eprintf "Start Linking...@.";
+      Linker.check_deps ();
       let traverse = new Js_traverse.free in
       let js = traverse#program js in
       let free = traverse#get_free_name in

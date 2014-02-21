@@ -136,8 +136,13 @@ let parse_file f =
 
 let last_code_id = ref 0
 let provided = Hashtbl.create 31
+let provided_rev = Hashtbl.create 31
 let code_pieces = Hashtbl.create 31
 let always_included = ref []
+
+let loc pi = match pi with
+  | None -> "unknown location"
+  | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line
 
 let add_file f =
 
@@ -151,13 +156,11 @@ let add_file f =
           Primitive.register name kind;
           if Hashtbl.mem provided name
           then begin
-            let loc pi = match pi with
-              | None -> "unknown location"
-              | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line in
             let ploc = snd(Hashtbl.find provided name) in
             Format.eprintf "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
           end;
           Hashtbl.add provided name (id,pi);
+          Hashtbl.add provided_rev id (name,pi);
           req,true
         | `Requires (_,mn) -> (mn@req),has_provide) ([],false) annot in
 
@@ -218,3 +221,24 @@ let resolve_deps ?(linkall = false) program used =
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
+
+let check_deps () =
+  let provided = get_provided () in
+  let fail = ref false in
+  Hashtbl.iter (fun id (code,requires) ->
+    let traverse = new Js_traverse.free in
+    let _js = traverse#program code in
+    let free = traverse#get_free_name in
+    let requires = List.fold_right StringSet.add requires StringSet.empty in
+    let real = StringSet.inter free provided in
+    let missing = StringSet.diff real requires in
+    if not (StringSet.is_empty missing)
+    then begin
+      let (name,ploc) = Hashtbl.find provided_rev id in
+      Format.eprintf "code providing %s (%s) may miss dependencies: %s\n"
+        name
+        (loc ploc)
+        (String.concat ", " (StringSet.elements missing));
+      fail := true
+    end
+  ) code_pieces
