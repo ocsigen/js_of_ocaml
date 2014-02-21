@@ -64,27 +64,43 @@ let rec adjust_tokens ?(keep_comment=true) l = match until_non_comment [] l with
 type lexer = Js_token.token list
 
 let lexer_aux ?(rm_comment=true) lines_info lexbuf =
-  let rec loop lexbuf lines_info prev acc =
+  let rec loop lexbuf extra lines_info prev acc =
     let tokinfo lexbuf =
       let pi = Parse_info.t_of_lexbuf lines_info lexbuf in
-      match prev with
+      let pi = match prev with
         | None -> { pi with Parse_info.fol=Some true}
         | Some prev ->
           let prev_pi = Js_token.info_of_tok prev in
           if prev_pi.Parse_info.line <> pi.Parse_info.line
           then {pi with Parse_info.fol=Some true}
           else pi in
+      match extra with
+      | None -> pi
+      | Some (file,offset) ->
+        { pi with Parse_info.name = file;
+                  line = pi.Parse_info.line - offset } in
     let t = Js_lexer.initial tokinfo prev lexbuf in
     match t with
       | Js_token.EOF _ -> List.rev acc
       | _ ->
+        let extra = match t with
+          | Js_token.TComment (ii,cmt) when String.length cmt > 1 && cmt.[0] = '#' ->
+            let lexbuf = Lexing.from_string cmt in
+            begin
+              try
+                let file,line = Js_lexer.pos lexbuf in
+                match extra with
+                | None -> Some (file, ii.Parse_info.line - ( line - 1))
+                | Some (_,offset) -> Some (file, ii.Parse_info.line - (line - 1) + offset)
+              with _ -> extra end
+          | _ -> extra in
         let prev =
           if Js_token.is_comment t
           then prev
           else Some t in
-        loop lexbuf lines_info prev (t::acc)
+        loop lexbuf extra lines_info prev (t::acc)
   in
-  let toks = loop lexbuf lines_info None [] in
+  let toks = loop lexbuf None lines_info None [] in
   (* hack: adjust tokens *)
   adjust_tokens ~keep_comment:(not rm_comment) toks
 

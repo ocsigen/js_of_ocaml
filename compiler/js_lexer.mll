@@ -227,7 +227,6 @@ rule initial tokinfo prev = parse
       T_STRING (s, info)
     }
 
-
   (* ----------------------------------------------------------------------- *)
   (* Regexp *)
   (* ----------------------------------------------------------------------- *)
@@ -309,7 +308,6 @@ and string_escape quote buf = parse
       (* else Buffer.add_char buf c } *)
 
 
-
 and string_quote q buf = parse
   | ("'"|'"') as q' {
     if q = q'
@@ -381,3 +379,9 @@ and st_one_line_comment buf = parse
       Format.eprintf "LEXER:unrecognised symbol, in st_one_line_comment rule: %s@." other;
       Buffer.add_string buf other
     }
+
+and pos = parse
+  | '#' [' ' '\t' ]+ (['0'-'9']+ as line) [' ' '\t' ]+ (("'"|'"') as quote) {
+      let buf = Buffer.create 127 in
+      string_quote quote buf lexbuf;
+      Buffer.contents buf, int_of_string line }
