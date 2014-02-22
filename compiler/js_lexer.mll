@@ -59,6 +59,7 @@ let keyword_table =
     "null",       (fun ii -> T_NULL ii);
     "false",      (fun ii -> T_FALSE ii);
     "true",       (fun ii -> T_TRUE ii);
+    "debugger",   (fun ii -> T_DEBUGGER ii);
   ];
   h
 
