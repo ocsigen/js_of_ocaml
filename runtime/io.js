@@ -125,6 +125,12 @@ function caml_ml_channel_size_64(chan) {
   return caml_int64_of_float(chan.data.getLen());
 }
 
+//Provides: caml_ml_set_channel_output
+function caml_ml_set_channel_output(chan,f) {
+  chan.output = f;
+  return;
+}
+
 //Provides: caml_ml_input
 //Requires: caml_blit_string
 function caml_ml_input (chan, s, i, l) {

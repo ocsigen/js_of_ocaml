@@ -498,6 +498,18 @@ external debugger : unit -> unit = "debugger"
       If no debugging functionality is available, it has no effect.
       In practice, it will insert a "debugger;" statement in the generated javascript. *)
 
+(** {2 Io operations.} *)
+
+val register_file: name:string -> content:string -> unit
+  (** Register a file to a Pseudo Filesystem.
+      [register_file ~name ~content] register the file [name] with content [content]
+      so it can be be opened with [Pervasives.open_in name] *)
+
+val set_channel_flusher : out_channel -> (string -> unit) -> unit
+  (** Set a callback to be called when an out_channel flush its buffer.
+      [set_channel_flusher chan cb] install the callback [cb] for [chan] out_channel.
+      [cb] will be called with the string to flush. *)
+
 (** {2 Unsafe operations.} *)
 
 (** Unsafe Javascript operations *)

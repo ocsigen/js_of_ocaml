@@ -377,6 +377,20 @@ let _ =
        if instanceof e array_constructor then None
        else Some (to_string (Unsafe.meth_call (Obj.magic e) "toString" [||])))
 
+
+
+
+external register_file': string -> string -> unit = "caml_ml_register_file"
+
+let register_file ~name ~content = register_file' name content
+
+external set_channel_output' : out_channel -> (js_string t -> unit) callback -> unit = "caml_ml_set_channel_output"
+
+let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
+  let f' : (js_string t -> unit) callback = wrap_callback (fun s -> f (to_string s)) in
+  set_channel_output' out_channel f'
+
+
 (****)
 
 (* DEPRECATED *)
