@@ -1603,6 +1603,7 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
         register_global 1; (* Sys_error *)
         register_global 2; (* Failure *)
         register_global 3; (* Invalid_argument *)
+        register_global 4; (* End_of_file *)
         register_global 5; (* Division_by_zero *)
         register_global 6; (* Not_found *)
         for i = Array.length g.constants - 1  downto 0 do
@@ -1637,12 +1638,11 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                      exit 1
                  in
                  let s = Util.read_file file in
-                 fields := Pc (String name) :: Pc (String s) :: !fields
+                 fields := (Pc (IString name),Pc (IString s)) :: !fields
                end) symb.num_tbl;
           l :=
-            (let x = Var.fresh () in
-             Let (x, Prim (Extern "%object_literal", !fields)) ::
-             set_global "interfaces" x !l)
+            (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "joo_register_file", [n;c]))) !fields)
+            @ !l
         end;
 
         !l
