@@ -69,7 +69,7 @@ let s =
    String.make x 'a';;\n\
    sin 1.;;\n\
    let rec fact n = if n = 0 then 1. else float n *. fact (n - 1);;\n\
-   fact 20;;\n\
+   Printf.printf \"fact 20 = %f\\n\" (fact 20);;\n\
    \"abc\" < \"def\";;\n"
 
 let doc = Dom_html.document
@@ -134,7 +134,7 @@ let loop s ppf =
           Errors.report_error ppf x
     done
   with End_of_file ->
-    ()
+    flush_all ()
   end
 
 let run _ =
@@ -145,14 +145,16 @@ let run _ =
   output##id <- Js.string "output";
   output##style##whiteSpace <- Js.string "pre";
   Dom.appendChild top output;
+  let append_string s = Dom.appendChild output (doc##createTextNode(Js.string s )) in
+  Js.set_channel_flusher stdout append_string;
+  Js.set_channel_flusher stderr append_string;
 
   let ppf =
     let b = Buffer.create 80 in
     Format.make_formatter
       (fun s i l -> Buffer.add_substring b s i l)
       (fun _ ->
-         Dom.appendChild output
-           (doc##createTextNode(Js.string (Buffer.contents b)));
+         append_string (Buffer.contents b);
          Buffer.clear b)
   in
 

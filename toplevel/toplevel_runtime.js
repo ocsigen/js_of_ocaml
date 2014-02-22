@@ -22,37 +22,6 @@ function caml_terminfo_setup () { return 1; } // Bad_term
 
 //////////////////////////////////////////////////////////////////////
 
-//Provides: caml_sys_open
-//Requires: MlString, caml_raise_sys_error, caml_global_data
-function caml_sys_open (x) {
-  var v = caml_global_data.interfaces[x];
-  if (v) {
-    var s = new MlString (v);
-    s.offset = 0;
-    return s;
-  } else
-    caml_raise_sys_error (x + ": no such file or directory");
-}
-
-//Provides: caml_ml_input
-//Require: caml_blit_string
-function caml_ml_input (f, s, i, l) {
-  var l2 = f.getLen() - f.offset;
-  if (l2 < l) l = l2;
-  caml_blit_string(f, f.offset, s, i, l);
-  f.offset += l;
-  return l;
-}
-
-//Provides: caml_input_value
-//Requires: caml_marshal_data_size, caml_input_value_from_string
-function caml_input_value (s) {
-  caml_marshal_data_size (s, s.offset);
-  return caml_input_value_from_string(s, s.offset);
-}
-
-//////////////////////////////////////////////////////////////////////
-
 //Provides: caml_get_section_table
 //Requires: caml_global_data
 function caml_get_section_table () { return caml_global_data.toc; }
@@ -70,7 +39,7 @@ function caml_reify_bytecode (code, sz) {
 function caml_static_release_bytecode () { return 0; }
 
 //Provides: caml_static_alloc
-//Requires: MlString
+//Requires: MlMakeString
 function caml_static_alloc (len) { return new MlMakeString (len); }
 
 //Provides: caml_static_free
@@ -81,27 +50,4 @@ function caml_static_free () { return 0; }
 function caml_realloc_global (len) {
   if (len + 1 > caml_global_data.length) caml_global_data.length = len + 1;
   return 0;
-}
-
-/////////////////////////////////////////////////////////////////////////
-
-/// In case the user tries to perform some I/Os...
-
-//Provides: caml_ml_output
-function caml_ml_output (x, s, p, l) {
-  var o = document.getElementById("output");
-  o.appendChild (document.createTextNode(s.toString().slice(p,p+l)));
-  return 0;
-}
-
-//Provides: caml_raise_end_of_file
-//Requires: caml_raise_constant, caml_global_data
-function caml_raise_end_of_file () {
-  caml_raise_constant(caml_global_data[5]);
-}
-
-//Provides: caml_ml_input_char
-//Requires: caml_raise_end_of_file
-function caml_ml_input_char (f) {
-  caml_raise_end_of_file ();
 }
