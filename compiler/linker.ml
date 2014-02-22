@@ -173,51 +173,53 @@ type visited = {
   codes : Javascript.program list ;
 }
 
-let rec resolve_dep visited path nm =
+let rec resolve_dep_name_rev visited path nm =
   let id =
     try
       fst(Hashtbl.find provided nm)
     with Not_found ->
       error "missing dependency '%s'@." nm
   in
-  resolve_dep_rec visited path id
+  resolve_dep_id_rev visited path id
 
-and resolve_dep_rec visited path id =
+and resolve_dep_id_rev visited path id =
   if IntSet.mem id visited.ids then begin
-(*    if List.memq id path then error  "circular dependency";*)
+    (* if List.memq id path then error  "circular dependency: %s" (String.concat ", " (List.map (fun id -> fst(Hashtbl.find provided_rev id)) path)); *)
     visited
   end else begin
-    let visited = { visited with ids = IntSet.add id visited.ids } in
     let path = id :: path in
     let (code, req) = Hashtbl.find code_pieces id in
+    let visited = {visited with ids = IntSet.add id visited.ids} in
     let visited =
       List.fold_left
-        (fun visited nm -> resolve_dep visited path nm)
-        visited req
-    in
-    {visited with codes = code::visited.codes}
+        (fun visited nm -> resolve_dep_name_rev visited path nm)
+        visited req in
+    let visited = {visited with codes = code::visited.codes} in
+    visited
   end
 
 let resolve_deps ?(linkall = false) program used =
-  let visited =
-    List.fold_left
-      (fun visited id -> resolve_dep_rec visited [] id)
-      {ids=IntSet.empty;codes=[program]} !always_included
+  (* link the special files *)
+  let visited_rev = List.fold_left
+      (fun visited id -> resolve_dep_id_rev visited [] id)
+       {ids=IntSet.empty; codes=[]} !always_included
   in
-  let (missing, visited) =
-    StringSet.fold
-      (fun nm (missing, visited)->
-        if Hashtbl.mem provided nm then
-          (missing, resolve_dep visited [] nm)
-        else
-          (StringSet.add nm missing, visited))
-      used (StringSet.empty, visited)
-  in
-  let visited =
+  let missing,visited_rev =
     if linkall
-    then Hashtbl.fold (fun nm (id,_) visited -> resolve_dep visited [] nm ) provided visited
-    else visited in
-  List.flatten visited.codes, missing
+    then
+      begin
+        (* link all primitives *)
+        StringSet.empty, Hashtbl.fold (fun nm (id,_) visited -> resolve_dep_name_rev visited [] nm ) provided visited_rev
+      end
+    else (* link used primitives *)
+      StringSet.fold
+        (fun nm (missing, visited)->
+           if Hashtbl.mem provided nm then
+             (missing, resolve_dep_name_rev visited [] nm)
+           else
+             (StringSet.add nm missing, visited))
+        used (StringSet.empty, visited_rev) in
+  List.flatten (List.rev (program::visited_rev.codes)), missing
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
