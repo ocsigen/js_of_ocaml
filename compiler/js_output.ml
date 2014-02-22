@@ -885,7 +885,7 @@ end) = struct
         PP.break f;
         PP.start_group f 1;
         PP.string f "{";
-        let ouput_one last (e,sl) =
+        let output_one last (e,sl) =
           PP.start_group f 1;
           PP.start_group f 1;
           PP.string f "case";
@@ -901,8 +901,8 @@ end) = struct
           PP.break f in
         let rec loop = function
           | [] -> ()
-          | [x] -> ouput_one true x
-          | x::xs -> ouput_one false x; loop xs in
+          | [x] -> output_one true x
+          | x::xs -> output_one false x; loop xs in
         loop cc;
         begin match def with
             None ->
