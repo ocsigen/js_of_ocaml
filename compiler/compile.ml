@@ -89,7 +89,6 @@ let _ =
      ("-o", Arg.String (fun s -> output_file := Some s),
       "<file> set output file name to <file>")]
   in
-  if !toplevel then linkall:=true;
   Arg.parse (Arg.align options)
     (fun s ->
        if Filename.check_suffix s ".js" then
@@ -97,6 +96,7 @@ let _ =
        else
          input_file := Some s)
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
+  if !toplevel then linkall:=true;
   let runtime = if !no_runtime then [] else ["+runtime.js"] in
   let chop_extension s =
     try Filename.chop_extension s with Invalid_argument _ -> s in
