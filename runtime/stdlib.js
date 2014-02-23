@@ -61,7 +61,7 @@ function caml_raise_constant (tag) { throw [0, tag]; }
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 
 //Provides: caml_raise_with_string
-//Requires: caml_raise_with_arg, MlWrappedString
+//Requires: caml_raise_with_arg,MlWrappedString
 function caml_raise_with_string (tag, msg) {
   caml_raise_with_arg (tag, new MlWrappedString (msg));
 }
@@ -107,8 +107,6 @@ function caml_raise_not_found () {
 function caml_array_bound_error () {
   caml_invalid_argument("index out of bounds");
 }
-
-
 
 //Provides: caml_update_dummy
 function caml_update_dummy (x, y) {

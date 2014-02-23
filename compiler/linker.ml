@@ -184,7 +184,7 @@ let rec resolve_dep_name_rev visited path nm =
 
 and resolve_dep_id_rev visited path id =
   if IntSet.mem id visited.ids then begin
-    (* if List.memq id path then error  "circular dependency: %s" (String.concat ", " (List.map (fun id -> fst(Hashtbl.find provided_rev id)) path)); *)
+    if false && List.memq id path then error  "circular dependency: %s" (String.concat ", " (List.map (fun id -> fst(Hashtbl.find provided_rev id)) path));
     visited
   end else begin
     let path = id :: path in

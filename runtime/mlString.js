@@ -39,14 +39,17 @@ function caml_str_repeat(n, s) {
 }
 
 //Provides: MlString
-//Requires: caml_array_bound_error, js_print_stderr
+//Requires: caml_raise_with_arg, js_print_stderr, caml_global_data
 function MlString(param) {
   if (param != null) {
     this.bytes = this.fullBytes = param;
     this.last = this.len = param.length;
   }
 }
-
+//This is here to avoid circular deps
+function mlstring_bound_error () {
+    caml_raise_with_arg(caml_global_data[4],new MlString("index out of bounds"));
+}
 MlString.prototype = {
   // JS string
   string:null,
@@ -170,7 +173,7 @@ MlString.prototype = {
 
   safeGet:function (i) {
     if (this.len == null) this.toBytes();
-    if ((i < 0) || (i >= this.len)) caml_array_bound_error ();
+    if ((i < 0) || (i >= this.len)) mlstring_bound_error ();
     return this.get(i);
   },
 
@@ -192,7 +195,7 @@ MlString.prototype = {
 
   safeSet:function (i, c) {
     if (this.len == null) this.toBytes ();
-    if ((i < 0) || (i >= this.len)) caml_array_bound_error ();
+    if ((i < 0) || (i >= this.len)) mlstring_bound_error ();
     this.set(i, c);
   },
 
@@ -259,12 +262,9 @@ function MlStringFromArray (a) {
 MlStringFromArray.prototype = new MlString ();
 
 //Provides: caml_create_string const
-//Requires: MlMakeString,MlWrappedString,caml_global_data,caml_raise_with_arg
+//Requires: MlMakeString,caml_invalid_argument
 function caml_create_string(len) {
-  // if (len < 0) caml_invalid_argument("String.create");
-  // Hack to avoid circular deps
-  if (len < 0)
-    caml_raise_with_arg (caml_global_data[4], new MlWrappedString ("String.create"));
+  if (len < 0) caml_invalid_argument("String.create");
   return new MlMakeString(len);
 }
 //Provides: caml_fill_string
