@@ -154,7 +154,20 @@ function caml_ml_input_char (chan) {
   if (chan.data.offset >= chan.data.getLen())
     caml_raise_end_of_file();
   var c = chan.data.safeGet(chan.data.offset);
+  chan.data.offset++;
   return c;
+}
+
+//Provides: caml_ml_input_scan_line
+function caml_ml_input_scan_line(chan){
+    var p = chan.data.offset;
+    var len = chan.data.getLen();
+    if(p >= len) { return 0;}
+    while(true) {
+        if(p >= len) return - (p - chan.data.offset);
+        if(chan.data.safeGet(p) == 10) return p - chan.data.offset + 1;
+        p++;
+    }
 }
 
 //Provides: caml_ml_flush
