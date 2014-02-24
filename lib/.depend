@@ -28,6 +28,8 @@ lwt_js_events.cmx : lwt_js.cmx js.cmx firebug.cmx dom_html.cmx dom.cmx \
     lwt_js_events.cmi
 regexp.cmo : js.cmi regexp.cmi
 regexp.cmx : js.cmx regexp.cmi
+sys_js.cmo : js.cmi sys_js.cmi
+sys_js.cmx : js.cmx sys_js.cmi
 typed_array.cmo : js.cmi typed_array.cmi
 typed_array.cmx : js.cmx typed_array.cmi
 url.cmo : regexp.cmi js.cmi url.cmi
@@ -54,6 +56,7 @@ keycode.cmi :
 lwt_js.cmi :
 lwt_js_events.cmi : js.cmi dom_html.cmi
 regexp.cmi :
+sys_js.cmi :
 typed_array.cmi : js.cmi
 url.cmi :
 webGL.cmi : typed_array.cmi js.cmi dom_html.cmi

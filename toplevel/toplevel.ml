@@ -146,8 +146,8 @@ let run _ =
   output##style##whiteSpace <- Js.string "pre";
   Dom.appendChild top output;
   let append_string s = Dom.appendChild output (doc##createTextNode(Js.string s )) in
-  Js.set_channel_flusher stdout append_string;
-  Js.set_channel_flusher stderr append_string;
+  Sys_js.set_channel_flusher stdout append_string;
+  Sys_js.set_channel_flusher stderr append_string;
 
   let ppf =
     let b = Buffer.create 80 in
