@@ -18,7 +18,7 @@
  *)
 
 
-external register_file': string -> string -> unit = "caml_ml_register_file"
+external register_file': string -> string -> unit = "caml_register_file"
 
 let register_file ~name ~content = register_file' name content
 

@@ -19,9 +19,9 @@
 
 ///////////// Io && fake FileSystem
 
-//Provides: joo_register_file
+//Provides: caml_register_file
 //Requires: caml_global_data, MlString
-function joo_register_file(name,content) {
+function caml_register_file(name,content) {
   if(!caml_global_data.files)
     caml_global_data.files = new Array();
   caml_global_data.files[(name instanceof MlString)?name.toString():name] = content;
