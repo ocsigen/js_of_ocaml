@@ -138,5 +138,4 @@ class type dataView = object
 end
 
 val dataView : (arrayBuffer t -> dataView t) constr
-val dataView_inBuffer :
-  (arrayBuffer t -> float -> float -> float32Array t) constr
+val dataView_inBuffer : (arrayBuffer t -> int -> int -> dataView t) constr
