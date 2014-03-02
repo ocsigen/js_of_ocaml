@@ -1641,7 +1641,7 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                  fields := (Pc (IString name),Pc (IString s)) :: !fields
                end) symb.num_tbl;
           l :=
-            (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "joo_register_file", [n;c]))) !fields)
+            (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "caml_register_file", [n;c]))) !fields)
             @ !l
         end;
 
