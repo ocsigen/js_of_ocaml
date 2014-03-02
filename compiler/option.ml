@@ -84,3 +84,31 @@ module Optim = struct
   (* this does not optimize properly *)
   let compact_vardecl = o ~name:"vardecl" ~default:false
 end
+
+module Tailcall = struct
+  type t =
+    | TcNone
+    | TcTrampoline
+    | TcWhile
+
+  let default = TcTrampoline
+
+  let all = default :: List.filter ((<>) default) [TcNone;TcTrampoline;TcWhile]
+
+  let to_string = function
+    | TcNone -> "none"
+    | TcTrampoline -> "trampoline"
+    | TcWhile -> "while"
+
+  let of_string =
+    let all_string = List.map (fun x -> to_string x,x) all in
+    fun x -> List.assoc x all_string
+
+
+  let set,get =
+    let r = ref default in
+    (fun x -> r:=x),(fun () -> !r)
+
+  let maximum () = 5000
+
+end

@@ -85,6 +85,8 @@ let _ =
       " do not include the standard runtime");
      ("-sourcemap", Arg.Unit (fun () -> source_map := true), " generate source map");
      ("-toplevel", Arg.Set toplevel, " compile a toplevel");
+     ("-tc", Arg.Symbol (List.map Option.Tailcall.to_string Option.Tailcall.all,(fun s -> Option.Tailcall.(set (of_string s)))),
+      " set tailcall optimisation");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");
      ("-file", Arg.String (fun s -> files:= s :: !files ),

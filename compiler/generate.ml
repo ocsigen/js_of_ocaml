@@ -793,35 +793,36 @@ let rec group_closures_rec closures req =
   match closures with
     [] ->
       ([], VarSet.empty)
-  | ((var, vars, _) as elt) :: rem ->
-      let req = VarSet.union vars req in
+  | ((var, vars, req_tc, clo) as elt) :: rem ->
+    let req = VarSet.union vars req in
+    let req = VarSet.union req req_tc in
       let (closures', prov) = group_closures_rec rem req in
-      if varset_disjoint prov req then
+      match closures' with
+      | [] ->
         ([elt] :: closures', VarSet.singleton var)
-      else
-        match closures' with
-          []     -> assert false
-        | l :: r -> ((elt :: l) :: r, VarSet.add var prov)
+      | _ when varset_disjoint prov req ->
+        ([elt] :: closures', VarSet.singleton var)
+      | l :: r -> ((elt :: l) :: r, VarSet.add var prov)
 
 let group_closures l = fst (group_closures_rec l VarSet.empty)
 
 let rec collect_closures ctx l =
   match l with
     Let (x, Closure (args, ((pc, _) as cont))) :: rem ->
+      let clo = compile_closure ctx cont in
+
       let all_vars = AddrMap.find pc ctx.Ctx.mutated_vars in
+
+      let tc = (new Js_tailcall.tailcall) in
+      ignore(tc#sources clo);
+      let req_tc = (tc#get) in
+
       let vars = VarSet.remove x all_vars in
-      let fun_name =
-        if not (VarSet.is_empty vars) && VarSet.mem x all_vars then
-          Some (J.V x)
-        else
-          None
-      in
       let cl =
-        J.EFun (fun_name, List.map (fun v -> J.V v) args,
-                 compile_closure ctx cont, J.Loc (DebugAddr.of_addr pc))
+        J.EFun (None, List.map (fun v -> J.V v) args, clo, J.Loc (DebugAddr.of_addr pc))
       in
       let (l', rem') = collect_closures ctx rem in
-      ((x, vars, cl) :: l', rem')
+      ((x, vars, req_tc, cl) :: l', rem')
   | _ ->
     ([], l)
 
@@ -1022,72 +1023,79 @@ and translate_closures ctx expr_queue l =
   match l with
     [] ->
       ([], expr_queue)
-  | [(x, vars, cl)] :: rem ->
+  | [(x, vars, req_tc, cl)] :: rem ->
       let vars =
         vars
         >> VarSet.elements
         >> List.map (fun v -> J.V v)
       in
-      let cl =
-        if vars = [] then cl else
-        J.ECall (J.EFun (None, vars,
-                           [J.Statement (J.Return_statement (Some cl,J.N))],
-                          J.N),
-                 List.map (fun x -> J.EVar x) vars)
+      let defs = Js_tailcall.rewrite [x,cl,req_tc] in
+      let statements =
+        if vars = [] then defs else
+          [J.Variable_statement ([
+            J.V x,
+            Some (
+              J.ECall (J.EFun (None, vars,
+                               (List.map (fun s -> J.Statement s) defs)
+                               @ [J.Statement (J.Return_statement (Some (J.EVar (J.V x)),J.N))],
+                               J.N),
+                       List.map (fun x -> J.EVar x) vars) )],J.N)]
       in
-      let (st, expr_queue) =
-        match ctx.Ctx.live.(Var.idx x) with
-          0 -> flush_queue expr_queue flush_p [J.Expression_statement (cl, J.N)]
-        | 1 -> enqueue expr_queue flush_p x cl 1 []
-        | _ -> flush_queue expr_queue flush_p
-                 [J.Variable_statement ([J.V x, Some cl],J.N)]
-      in
+
+      (* let (st, expr_queue) = *)
+      (*   match ctx.Ctx.live.(Var.idx x) with *)
+      (*     0 -> flush_queue expr_queue flush_p [J.Expression_statement (cl, J.N)] *)
+      (*   | 1 -> enqueue expr_queue flush_p x cl 1 [] *)
+      (*   | _ -> flush_queue expr_queue flush_p *)
+      (*            [J.Variable_statement ([J.V x, Some cl],J.N)] *)
+      (* in *)
+      let (st, expr_queue) = flush_queue expr_queue flush_p statements in
       let (st', expr_queue) = translate_closures ctx expr_queue rem in
       (st @ st', expr_queue)
   | l :: rem ->
       let names =
-        List.fold_left (fun s (x, _, _) -> VarSet.add x s) VarSet.empty l in
+        List.fold_left (fun s (x, _, _, _) -> VarSet.add x s) VarSet.empty l in
       let vars =
-        List.fold_left (fun s (_, s', _) -> VarSet.union s s') VarSet.empty l
+        List.fold_left (fun s (_, s', _, _) -> VarSet.union s s') VarSet.empty l
       in
       let vars =
         VarSet.diff vars names
         >> VarSet.elements
         >> List.map (fun v -> J.V v)
       in
-      let defs =
-        List.map (fun (x, _, cl) -> (J.V x, Some cl)) l in
-      let statement =
-        if vars = [] then
-          J.Variable_statement (defs,J.N)
+      let defs' =
+        List.map (fun (x, _, req_tc, cl) -> x,cl,req_tc) l in
+      let defs = Js_tailcall.rewrite defs' in
+      let statements =
+        if vars = [] then defs
         else begin
           let tbl = Var.fresh () in
           Var.name tbl "funenv";
           let arr =
             J.EArr
-              (List.map (fun (x, _, _) -> Some (J.EVar (J.V x))) l)
+              (List.map (fun (x, _, _, _) -> Some (J.EVar (J.V x))) l)
           in
           let assgn =
             List.fold_left
-              (fun (l, n) (x, _, _) ->
+              (fun (l, n) (x, _, _, _) ->
                  ((J.V x,
                    Some (J.EAccess (J.EVar (J.V tbl), int n))) :: l,
                   n + 1))
               ([], 0) l
           in
-          J.Variable_statement
+          [J.Variable_statement
             ((J.V tbl,
               Some
                 (J.ECall
                    (J.EFun (None, vars,
-                             [J.Statement (J.Variable_statement (defs,J.N));
-                              J.Statement (J.Return_statement (Some arr,J.N))],
+                            List.map (fun s -> J.Statement s) defs
+                            @ [J.Statement (J.Return_statement (Some arr,J.N))],
                             J.N),
                     List.map (fun x -> J.EVar x) vars))) ::
-              List.rev (fst assgn), J.N)
+              List.rev (fst assgn), J.N)]
         end
       in
-      let (st, expr_queue) = flush_queue expr_queue flush_p [statement] in
+      let (st, expr_queue) = flush_queue expr_queue flush_p statements in
       let (st', expr_queue) = translate_closures ctx expr_queue rem in
       (st @ st', expr_queue)
 
