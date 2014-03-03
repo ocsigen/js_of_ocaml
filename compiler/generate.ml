@@ -685,9 +685,9 @@ let _ =
   register_bin_prim "caml_string_get" `Mutable
     (fun cx cy -> J.ECall (J.EDot (cx, "safeGet"), [cy]));
   register_bin_prim "%int_add" `Pure
-    (fun cx cy -> Js_simpl.eplus_int cx cy);
+    (fun cx cy -> J.EBin (J.Plus,cx,cy));
   register_bin_prim "%int_sub" `Pure
-    (fun cx cy -> Js_simpl.eminus_int cx cy);
+    (fun cx cy -> J.EBin (J.Minus,cx,cy));
   register_bin_prim "%direct_int_mul" `Pure
     (fun cx cy -> to_int (J.EBin (J.Mul, cx, cy)));
   register_bin_prim "%direct_int_div" `Pure
@@ -1216,9 +1216,9 @@ else begin
         if debug () then Format.eprintf "}@]@ ";
         if limit_body then decr_preds st pc3;
         flush_all queue
-          (J.Try_statement (Js_simpl.statement_list body,
+          (J.Try_statement (body,
                             Some (J.V x,
-                                  Js_simpl.statement_list handler),
+                                  handler),
                             None,
                             J.Loc (DebugAddr.of_addr pc)) ::
            if AddrSet.is_empty inner_frontier then [] else begin
@@ -1284,7 +1284,7 @@ else begin
     let st =
       J.For_statement
         (J.Left None, None, None,
-         Js_simpl.block
+         J.Block(
            (if AddrSet.cardinal frontier > 0 then begin
               if debug () then
                 Format.eprintf "@ break (%d); }@]"
@@ -1293,7 +1293,7 @@ else begin
             end else begin
               if debug () then Format.eprintf "}@]";
               body
-            end),
+            end),J.N),
         J.Loc (DebugAddr.of_addr pc))
     in
     match label with
@@ -1307,8 +1307,8 @@ and compile_if st e ?pc cont1 cont2 handler backs frontier interm succs =
   let iftrue = compile_branch st [] cont1 handler backs frontier interm in
   let iffalse = compile_branch st [] cont2 handler backs frontier interm in
   Js_simpl.if_statement e ?pc
-    (Js_simpl.block iftrue) (never_continue st cont1 frontier interm succs)
-    (Js_simpl.block iffalse) (never_continue st cont2 frontier interm succs)
+    (J.Block (iftrue,J.N)) (never_continue st cont1 frontier interm succs)
+    (J.Block (iffalse,J.N)) (never_continue st cont2 frontier interm succs)
 
 and compile_conditional st queue pc last handler backs frontier interm succs =
   List.iter
@@ -1366,11 +1366,11 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
           [] ->
             assert false
         | [(cont, _)] ->
-            Js_simpl.block
-              (compile_branch st [] cont handler backs frontier interm)
+            J.Block
+              (compile_branch st [] cont handler backs frontier interm,J.N)
         | [cont1, [(n, _)]; cont2, _] | [cont2, _; cont1, [(n, _)]] ->
-            Js_simpl.block (compile_if st (J.EBin (J.EqEqEq, int n, e))
-                              cont1 cont2 handler backs frontier interm succs)
+          J.Block (compile_if st (J.EBin (J.EqEqEq, int n, e))
+                     cont1 cont2 handler backs frontier interm succs, J.N)
         | (cont, l') :: rem ->
             let l =
               List.flatten
@@ -1382,25 +1382,23 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
                       | (i, _) :: r ->
                           List.rev
                             ((J.ENum (float i),
-                              Js_simpl.statement_list
-                                (compile_branch
-                                   st [] cont handler backs frontier interm @
-                                 if
-                                   never_continue st cont frontier interm succs
-                                 then
-                                   []
-                                 else
-                                   [J.Break_statement (None, J.N)]))
-                               ::
+                              (compile_branch
+                                 st [] cont handler backs frontier interm @
+                               if
+                                 never_continue st cont frontier interm succs
+                               then
+                                 []
+                               else
+                                 [J.Break_statement (None, J.N)]))
+                             ::
                              List.map
                              (fun (i, _) -> (J.ENum (float i), [])) r))
                    rem)
             in
             J.Switch_statement
               (e, l,
-               Some (Js_simpl.statement_list
-                       (compile_branch
-                          st [] cont handler backs frontier interm)), J.Loc pc)
+               Some (compile_branch
+                          st [] cont handler backs frontier interm), J.Loc pc)
       in
       let (st, queue) =
         if Array.length a1 = 0 then
@@ -1555,7 +1553,7 @@ and compile_closure ctx (pc, args) =
     Format.eprintf "Some blocks not compiled!@."; assert false
   end;
   if debug () then Format.eprintf "}@]@ ";
-  Js_simpl.source_elements res
+  List.map (fun st -> J.Statement st ) res
 
 
 let generate_shared_value ctx =

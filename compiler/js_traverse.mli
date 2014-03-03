@@ -71,3 +71,4 @@ class compact_vardecl : object('a)
 end
 
 class clean : mapper
+class simpl : mapper

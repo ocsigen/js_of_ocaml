@@ -277,6 +277,7 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
       [J.Statement (J.Expression_statement (f, J.N))] in
 
   (* post pack optim *)
+  let js = (new Js_traverse.simpl)#program js in
   let js = (new Js_traverse.clean)#program js in
   let js =
     if (Option.Optim.shortvar ())

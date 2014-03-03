@@ -20,24 +20,6 @@
 
 module J = Javascript
 
-
-
-let eplus_int e1 e2 =
-  match e2,e1 with
-    J.ENum n, _ when n < 0. ->
-      J.EBin (J.Minus, e1, J.ENum (-. n))
-  | _,J.ENum n when n < 0. ->
-      J.EBin (J.Minus, e2, J.ENum (-. n))
-  | _ ->
-      J.EBin (J.Plus, e1, e2)
-
-let eminus_int e1 e2 =
-  match e2,e1 with
-    J.ENum n,_  when n < 0. ->
-      J.EBin (J.Plus, e1, J.ENum (-. n))
-  | _ ->
-      J.EBin (J.Minus, e1, e2)
-
 let rec enot_rec e =
   let (_, cost) as res =
     match e with
@@ -96,97 +78,6 @@ let rec enot_rec e =
   if cost <= 1 then res else (J.EUn (J.Not, e), 1)
 
 let enot e = fst (enot_rec e)
-
-let source_elements l =
-  (* FIX: not tail recursive *)
-  List.fold_right
-    (fun st rem ->
-       match st, rem with
-       | J.Variable_statement ([addr, Some (J.EFun (None, params, body, pc))],_), _ ->
-         J.Function_declaration (addr, params, body, pc) :: rem
-       | J.Variable_statement (l1,pc),
-         J.Statement (J.Variable_statement (l2,_)) :: rem' ->
-           J.Statement (J.Variable_statement ((l1 @ l2), pc)) :: rem'
-       | _ ->
-           J.Statement st :: rem)
-    l []
-
-let translate_assign_op = function
-  | J.Div -> J.SlashEq
-  | J.Mod -> J.ModEq
-  | J.Lsl -> J.LslEq
-  | J.Asr -> J.AsrEq
-  | J.Lsr -> J.LsrEq
-  | J.Band -> J.BandEq
-  | J.Bor -> J.BorEq
-  | J.Bxor -> J.BxorEq
-  | J.Mul -> J.StarEq
-  | J.Plus -> J.PlusEq
-  | J.Minus -> J.MinusEq
-  | _ -> assert false
-
-let assign_op' force_int = function
-  | (exp,Some (J.EBin (J.Plus, exp',exp''))) ->
-    begin
-      match exp=exp',exp=exp'' with
-        | false,false -> None
-        | true, false ->
-          if exp'' = J.ENum 1.
-          then Some (J.EUn (J.IncrB,exp))
-          else Some (J.EBin (J.PlusEq,exp,exp''))
-        | false, true ->
-          if exp' = J.ENum 1.
-          then Some (J.EUn (J.IncrB,exp))
-          else Some (J.EBin (J.PlusEq,exp,exp'))
-        | true, true ->
-          Some(J.EBin(J.StarEq,exp,J.ENum 2.))
-    end
-  | (exp,Some (J.EBin (J.Minus, exp',y))) when exp = exp' ->
-    if y = J.ENum 1.
-    then Some (J.EUn (J.DecrB, exp))
-    else Some (J.EBin (J.MinusEq, exp,y))
-  | (exp,Some (J.EBin (J.Mul, exp',exp''))) ->
-    begin
-      match exp=exp',exp=exp'' with
-        | false,false -> None
-        | true,_ ->
-          Some (J.EBin (J.StarEq, exp,exp''))
-        | _,true ->
-          Some (J.EBin (J.StarEq, exp,exp'))
-    end
-  | (exp,Some (J.EBin (J.Div | J.Mod | J.Lsl | J.Asr | J. Lsr | J.Band | J.Bxor | J.Bor as unop, exp',y))) when exp = exp' && not force_int ->
-    Some (J.EBin (translate_assign_op unop, exp,y))
-  | _ -> None
-
-let assign_op = function
-  (* unsafe, could be optionnaly enabled *)
-  (* x+=1 <> x = (x + 1) | 0 *)
-  (* | (exp,Some (J.EBin (J.Bor,e,J.ENum 0.))) -> assign_op' true (exp,Some e) *)
-  | x -> assign_op' false x
-
-let assign_opt_pass l =
-  List.fold_right (fun st rem ->
-    match st with
-      | J.Variable_statement (l1,pc) ->
-        let x = List.map (function (ident,exp) ->
-            match assign_op (J.EVar ident,exp) with
-              | Some e -> J.Expression_statement (e,J.N)
-              | None -> J.Variable_statement ([(ident,exp)],pc)) l1 in
-        x@rem
-      | _ -> st::rem
-  ) l []
-
-let statement_list l =
-  List.fold_right
-    (fun st rem ->
-       match st, rem with
-         J.Variable_statement (l1,pc), J.Variable_statement (l2,_) :: rem' ->
-           J.Variable_statement ((l1 @ l2),pc) :: rem'
-       | _ ->
-           st :: rem)
-    (assign_opt_pass l) []
-
-let block l = match l with [s] -> s | _ -> J.Block (statement_list l,J.N)
 
 let unblock st = match st with J.Block (l,_) -> l | _ -> [st]
 

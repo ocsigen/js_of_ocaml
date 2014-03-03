@@ -111,6 +111,7 @@ let _ =
   let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
     [ Optim.shortvar, (fun () -> ((new Js_traverse.rename_variable Util.StringSet.empty) :> Js_traverse.mapper) );
       Optim.share_constant, (fun () -> new Js_traverse.share_constant);
+      true_, (fun () -> new Js_traverse.simpl);
       true_, (fun () -> new Js_traverse.clean);
     ] in
 

@@ -624,3 +624,115 @@ class clean = object(m)
       | st_rev -> append_st st_rev sources_rev in
     List.rev sources_rev
 end
+
+let translate_assign_op = function
+  | Div -> SlashEq
+  | Mod -> ModEq
+  | Lsl -> LslEq
+  | Asr -> AsrEq
+  | Lsr -> LsrEq
+  | Band -> BandEq
+  | Bor -> BorEq
+  | Bxor -> BxorEq
+  | Mul -> StarEq
+  | Plus -> PlusEq
+  | Minus -> MinusEq
+  | _ -> assert false
+
+let assign_op = function
+  | (exp,Some (EBin (Plus, exp',exp''))) ->
+    begin
+      match exp=exp',exp=exp'' with
+        | false,false -> None
+        | true, false ->
+          if exp'' = ENum 1.
+          then Some (EUn (IncrB,exp))
+          else Some (EBin (PlusEq,exp,exp''))
+        | false, true ->
+          if exp' = ENum 1.
+          then Some (EUn (IncrB,exp))
+          else Some (EBin (PlusEq,exp,exp'))
+        | true, true ->
+          Some(EBin(StarEq,exp,ENum 2.))
+    end
+  | (exp,Some (EBin (Minus, exp',y))) when exp = exp' ->
+    if y = ENum 1.
+    then Some (EUn (DecrB, exp))
+    else Some (EBin (MinusEq, exp,y))
+  | (exp,Some (EBin (Mul, exp',exp''))) ->
+    begin
+      match exp=exp',exp=exp'' with
+        | false,false -> None
+        | true,_ ->
+          Some (EBin (StarEq, exp,exp''))
+        | _,true ->
+          Some (EBin (StarEq, exp,exp'))
+    end
+  | (exp,Some (EBin (Div | Mod | Lsl | Asr |  Lsr | Band | Bxor | Bor as unop, exp',y))) when exp = exp' ->
+    Some (EBin (translate_assign_op unop, exp,y))
+  | _ -> None
+
+class simpl = object(m)
+  inherit map as super
+  method expression e =
+    let e = super#expression e in
+    match e with
+    | EBin (Plus,e1,e2) -> begin
+        match e2,e1 with
+        | ENum n, _ when n < 0. ->
+          EBin (Minus, e1, ENum (-. n))
+        | _,ENum n when n < 0. ->
+          EBin (Minus, e2, ENum (-. n))
+        | _ -> e
+      end
+    | EBin (Minus,e1,e2) -> begin
+        match e2,e1 with
+        | ENum n,_  when n < 0. ->
+          EBin (Plus, e1, ENum (-. n))
+        | _ -> e
+      end
+    | _ -> e
+
+  method statement s =
+    let s = super#statement s in
+    match s with
+    | Block ([x],_) -> x
+    | _ -> s
+
+  method statements s =
+    let s = super#statements s in
+    List.fold_right (fun st rem ->
+        match st with
+        | Variable_statement (l1,pc) ->
+          let x = List.map (function (ident,exp) ->
+              match assign_op (EVar ident,exp) with
+              | Some e -> Expression_statement (e,N)
+              | None -> Variable_statement ([(ident,exp)],pc)) l1 in
+          x@rem
+        | _ -> st::rem
+      ) s []
+
+
+  method sources l =
+    let l = super#sources l in
+    let append_st st_rev sources_rev =
+      let st = m#statements (List.rev st_rev) in
+      let st = List.map (function
+          | Variable_statement ([addr, Some (EFun (None, params, body, pc))],_) ->
+            Function_declaration (addr, params, body, pc)
+          | s -> Statement s) st in
+      List.rev_append st sources_rev in
+
+    let (st_rev,sources_rev) = List.fold_left (fun (st_rev,sources_rev) x ->
+        match x with
+          | Statement s -> s::st_rev,sources_rev
+          | x when st_rev = [] -> [],x::sources_rev
+          | x -> [],(x::(append_st st_rev sources_rev))
+      ) ([],[]) l in
+    let sources_rev = match st_rev with
+      | [] -> sources_rev
+      | st_rev -> append_st st_rev sources_rev in
+    List.rev sources_rev
+
+
+end
