@@ -30,10 +30,10 @@ flow.cmo : util.cmi subst.cmi option.cmo dgraph.cmi code.cmi flow.cmi
 flow.cmx : util.cmx subst.cmx option.cmx dgraph.cmx code.cmx flow.cmi
 freevars.cmo : util.cmi option.cmo code.cmi freevars.cmi
 freevars.cmx : util.cmx option.cmx code.cmx freevars.cmi
-generate.cmo : util.cmi subst.cmi primitive.cmi option.cmo js_simpl.cmi \
-    javascript.cmi freevars.cmi code.cmi generate.cmi
-generate.cmx : util.cmx subst.cmx primitive.cmx option.cmx js_simpl.cmx \
-    javascript.cmx freevars.cmx code.cmx generate.cmi
+generate.cmo : util.cmi subst.cmi primitive.cmi option.cmo js_tailcall.cmo \
+    js_simpl.cmi javascript.cmi freevars.cmi code.cmi generate.cmi
+generate.cmx : util.cmx subst.cmx primitive.cmx option.cmx js_tailcall.cmx \
+    js_simpl.cmx javascript.cmx freevars.cmx code.cmx generate.cmi
 inline.cmo : code.cmi inline.cmi
 inline.cmx : code.cmx inline.cmi
 instr.cmo : instr.cmi
@@ -56,6 +56,8 @@ js_parser.cmo : parse_info.cmi js_token.cmi javascript.cmi js_parser.cmi
 js_parser.cmx : parse_info.cmx js_token.cmx javascript.cmx js_parser.cmi
 js_simpl.cmo : javascript.cmi code.cmi js_simpl.cmi
 js_simpl.cmx : javascript.cmx code.cmx js_simpl.cmi
+js_tailcall.cmo : option.cmo js_traverse.cmi javascript.cmi code.cmi
+js_tailcall.cmx : option.cmx js_traverse.cmx javascript.cmx code.cmx
 js_token.cmo : parse_info.cmi js_token.cmi
 js_token.cmx : parse_info.cmx js_token.cmi
 js_traverse.cmo : util.cmi javascript.cmi code.cmi js_traverse.cmi
