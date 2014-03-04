@@ -703,6 +703,17 @@ class simpl = object(m)
     let s = super#statements s in
     List.fold_right (fun st rem ->
         match st with
+        | If_statement(
+            cond,
+            Return_statement (Some e1,_),
+            Some (Return_statement (Some e2,_)), pc) ->
+          Return_statement (Some (ECond(cond,e1,e2)),pc)::rem
+        | If_statement(
+            cond,
+            Expression_statement (EBin(Eq,v1,e1),_),
+            Some (Expression_statement (EBin(Eq,v2,e2),_)), pc) when v1 = v2 ->
+          Expression_statement (EBin(Eq,v1,ECond(cond,e1,e2)),pc)::rem
+
         | Variable_statement (l1,pc) ->
           let x = List.map (function (ident,exp) ->
               match assign_op (EVar ident,exp) with
