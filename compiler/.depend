@@ -60,10 +60,12 @@ js_token.cmo : parse_info.cmi js_token.cmi
 js_token.cmx : parse_info.cmx js_token.cmi
 js_traverse.cmo : util.cmi javascript.cmi code.cmi js_traverse.cmi
 js_traverse.cmx : util.cmx javascript.cmx code.cmx js_traverse.cmi
-linker.cmo : util.cmi primitive.cmi parse_js.cmi parse_info.cmi js_token.cmi \
-    javascript.cmi annot_parser.cmi annot_lexer.cmo linker.cmi
-linker.cmx : util.cmx primitive.cmx parse_js.cmx parse_info.cmx js_token.cmx \
-    javascript.cmx annot_parser.cmx annot_lexer.cmx linker.cmi
+linker.cmo : util.cmi primitive.cmi parse_js.cmi parse_info.cmi \
+    js_traverse.cmi js_token.cmi javascript.cmi annot_parser.cmi \
+    annot_lexer.cmo linker.cmi
+linker.cmx : util.cmx primitive.cmx parse_js.cmx parse_info.cmx \
+    js_traverse.cmx js_token.cmx javascript.cmx annot_parser.cmx \
+    annot_lexer.cmx linker.cmi
 minify.cmo : util.cmi pretty_print.cmi parse_js.cmi parse_info.cmi \
     option.cmo js_traverse.cmi js_output.cmi js_assign.cmi code.cmi
 minify.cmx : util.cmx pretty_print.cmx parse_js.cmx parse_info.cmx \
@@ -94,8 +96,8 @@ reserved.cmo : util.cmi
 reserved.cmx : util.cmx
 source_map.cmo : vlq64.cmo javascript.cmi
 source_map.cmx : vlq64.cmx javascript.cmx
-specialize.cmo : option.cmo flow.cmi code.cmi specialize.cmi
-specialize.cmx : option.cmx flow.cmx code.cmx specialize.cmi
+specialize.cmo : util.cmi option.cmo flow.cmi code.cmi specialize.cmi
+specialize.cmx : util.cmx option.cmx flow.cmx code.cmx specialize.cmi
 specialize_js.cmo : util.cmi flow.cmi code.cmi specialize_js.cmi
 specialize_js.cmx : util.cmx flow.cmx code.cmx specialize_js.cmi
 subst.cmo : util.cmi code.cmi subst.cmi
