@@ -93,7 +93,7 @@ module Tailcall = struct
 
   let default = TcTrampoline
 
-  let all = default :: List.filter ((<>) default) [TcNone;TcTrampoline;TcWhile]
+  let all = default :: List.filter ((<>) default) [TcNone;TcTrampoline(* ;TcWhile *)]
 
   let to_string = function
     | TcNone -> "none"
