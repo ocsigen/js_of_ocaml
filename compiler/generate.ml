@@ -1030,26 +1030,31 @@ and translate_closures ctx expr_queue l =
         >> List.map (fun v -> J.V v)
       in
       let defs = Js_tailcall.rewrite [x,cl,req_tc] in
+      let rec return_last x = function
+        | [] -> [J.Statement (J.Return_statement (Some (J.EVar (J.V x)),J.N))]
+        | [J.Variable_statement (l,nid) as sts]  ->
+          let l' = List.rev l in
+          begin match l' with
+            | (J.V x',e) :: rem when x = x' -> [J.Statement (J.Variable_statement (List.rev rem,nid)); J.Statement (J.Return_statement (e,nid))]
+            | _ -> [J.Statement sts]
+          end
+        | y::xs -> J.Statement (y) :: return_last x xs
+      in
       let statements =
         if vars = [] then defs else
           [J.Variable_statement ([
             J.V x,
             Some (
-              J.ECall (J.EFun (None, vars,
-                               (List.map (fun s -> J.Statement s) defs)
-                               @ [J.Statement (J.Return_statement (Some (J.EVar (J.V x)),J.N))],
-                               J.N),
+              J.ECall (J.EFun (None, vars, return_last x defs, J.N),
                        List.map (fun x -> J.EVar x) vars) )],J.N)]
       in
 
-      (* let (st, expr_queue) = *)
-      (*   match ctx.Ctx.live.(Var.idx x) with *)
-      (*     0 -> flush_queue expr_queue flush_p [J.Expression_statement (cl, J.N)] *)
-      (*   | 1 -> enqueue expr_queue flush_p x cl 1 [] *)
-      (*   | _ -> flush_queue expr_queue flush_p *)
-      (*            [J.Variable_statement ([J.V x, Some cl],J.N)] *)
-      (* in *)
-      let (st, expr_queue) = flush_queue expr_queue flush_p statements in
+      let (st, expr_queue) =
+        match ctx.Ctx.live.(Var.idx x),statements with
+        | 0, _ -> assert false
+        | 1, [J.Variable_statement ([(J.V x',Some e')],_)] when x == x' -> enqueue expr_queue flush_p x e' 1 []
+        | _ -> flush_queue expr_queue flush_p statements
+      in
       let (st', expr_queue) = translate_closures ctx expr_queue rem in
       (st @ st', expr_queue)
   | l :: rem ->
