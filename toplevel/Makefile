@@ -61,6 +61,7 @@ STDLIB_MODULES=\
   stream \
   string \
   stringLabels \
+  sys \
   weak
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
