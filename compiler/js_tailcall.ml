@@ -110,8 +110,9 @@ module Tramp : TC = struct
     | [x,cl,req_tc] when not (VarSet.mem x req_tc) -> Ident.rewrite cls
     | _ ->
     let counter = Var.fresh () in
+    Var.name counter "counter";
     let m2old,m2new = List.fold_right (fun (v,_,_) (m2old,m2new) ->
-        let v' = Var.fresh () in
+        let v' = Var.fork v in
         VarMap.add v' v m2old, VarMap.add v v' m2new
       ) cls (VarMap.empty,VarMap.empty)in
     let rewrite v args =
@@ -145,7 +146,9 @@ module Tramp : TC = struct
           v,J.EFun (None, args,[b],nid )
         | _ -> assert false) cls in
     let reals = List.map (fun (v,clo,_) ->
-        let arr = J.V (Var.fresh()) in
+        let arr' = Var.fresh() in
+        Var.name arr' "tramp_arg";
+        let arr = J.V arr' in
         VarMap.find v m2new,
         match clo with
         | J.EFun (nm,args,body,nid) ->
