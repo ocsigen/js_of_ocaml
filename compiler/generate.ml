@@ -1565,8 +1565,8 @@ let generate_shared_value ctx =
       , J.N)) in
   let applies = List.map (fun (n,v) ->
     match generate_apply_fun n with
-      | J.EFun (_,param,body,_) ->
-        J.Function_declaration (v,param,body,J.N)
+      | J.EFun (_,param,body,nid) ->
+        J.Function_declaration (v,param,body,nid)
       | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in
   strings::applies
 
