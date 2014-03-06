@@ -24,7 +24,12 @@
 function caml_register_file(name,content) {
   if(!caml_global_data.files)
     caml_global_data.files = {};
-  caml_global_data.files[(name instanceof MlString)?name.toString():name] = content;
+  if(content instanceof MlString)
+    var arr = content.getArray();
+  else if(content instanceof Array)
+    var arr = content
+  else var arr = (new MlString(content)).getArray();
+  caml_global_data.files[(name instanceof MlString)?name.toString():name] = arr;
 }
 
 //Provides: caml_sys_file_exists
@@ -59,12 +64,15 @@ function caml_sys_close(fd) {
 
 //Provides: caml_sys_open
 //Requires: MlString, caml_raise_sys_error, caml_global_data,caml_sys_file_exists
+//Requires: caml_register_file
 function caml_sys_open_internal(idx,v,flags) {
   if(caml_global_data.fds === undefined) caml_global_data.fds = new Array();
-  var s = (v instanceof MlString)?v:(new MlString(v));
-  s.offset = 0;
-  s.flags = flags?flags:{};
-  caml_global_data.fds[idx] = s;
+  flags=flags?flags:{};
+  var data = {};
+  data.array = v;
+  data.offset = flags.append?data.array.length:0;
+  data.flags = flags;
+  caml_global_data.fds[idx] = data;
   caml_global_data.fd_last_idx = idx;
   return idx;
 }
@@ -82,8 +90,9 @@ function caml_sys_open (name, flags, perms) {
     case 7: f.text = 1;break;
     case 8: f.nonblock = 1;break;
     }
+    flags=flags[2];
   }
-  name2 = name.toString();
+  var name2 = name.toString();
   if(f.rdonly && f.wronly)
     caml_raise_sys_error(name2 + " : flags Open_rdonly and Open_wronly are not compatible");
   if(f.text && f.binary)
@@ -93,15 +102,16 @@ function caml_sys_open (name, flags, perms) {
     var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
     if(f.truncate) caml_global_data.files[name2] = "";
     return caml_sys_open_internal (idx+1,caml_global_data.files[name2],f);
-  } if (f.create) {
+  } else if (f.create) {
     var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
-    return caml_sys_open_internal (idx+1,"",f);
+    caml_register_file(name2,[]);
+    return caml_sys_open_internal (idx+1,caml_global_data.files[name2],f);
   }
   else caml_raise_sys_error (name2 + ": no such file or directory");
 }
-caml_sys_open_internal(0,""); //stdin
-caml_sys_open_internal(1,""); //stdout
-caml_sys_open_internal(2,""); //stderr
+caml_sys_open_internal(0,[]); //stdin
+caml_sys_open_internal(1,[]); //stdout
+caml_sys_open_internal(2,[]); //stderr
 
 
 // ocaml Channels
@@ -123,12 +133,22 @@ function caml_ml_out_channels_list () {
 
 //Provides: caml_ml_open_descriptor_out
 //Requires: js_print_stderr, js_print_stdout, caml_ml_out_channels, caml_global_data,caml_sys_open
-//Requires: caml_raise_sys_error
+//Requires: caml_raise_sys_error,MlString
+function caml_std_output(chan,s){
+  var str = new MlString(s),slen = str.getLen();
+  for(var i = 0;i<slen;i++){
+    chan.data.array[chan.data.offset + i] = str.get(i);
+  }
+  chan.data.offset += slen;
+  return 0;
+}
+
 function caml_ml_open_descriptor_out (fd) {
-  var output = function () { return; };
+  var output;
   switch(fd){
     case 1: output=js_print_stdout;break;
     case 2: output=js_print_stderr;break;
+    default: output=caml_std_output;
   }
   var data = caml_global_data.fds[fd];
   if(data.flags.rdonly) caml_raise_sys_error("fd "+ fd + " is readonly");
@@ -170,13 +190,13 @@ function caml_ml_close_channel (channel) {
 
 //Provides: caml_ml_channel_size
 function caml_ml_channel_size(chan) {
-  return chan.data.getLen();
+  return chan.data.array.length;
 }
 
 //Provides: caml_ml_channel_size_64
 //Requires: caml_ml_channel_size,caml_int64_of_float
 function caml_ml_channel_size_64(chan) {
-  return caml_int64_of_float(chan.data.getLen());
+  return caml_int64_of_float(chan.data.array.length);
 }
 
 //Provides: caml_ml_set_channel_output
@@ -186,40 +206,46 @@ function caml_ml_set_channel_output(chan,f) {
 }
 
 //Provides: caml_ml_input
-//Requires: caml_blit_string
+//Requires: caml_blit_string, MlStringFromArray
 function caml_ml_input (chan, s, i, l) {
-  var l2 = chan.data.getLen() - chan.data.offset;
+  var l2 = chan.data.array.length - chan.data.array.offset;
   if (l2 < l) l = l2;
-  caml_blit_string(chan.data, chan.data.offset, s, i, l);
+  caml_blit_string(new MlStringFromArray(chan.data.array), chan.data.offset, s, i, l);
   chan.data.offset += l;
   return l;
 }
 
 //Provides: caml_input_value
-//Requires: caml_marshal_data_size, caml_input_value_from_string
+//Requires: caml_marshal_data_size, caml_input_value_from_string, MlStringFromArray
 function caml_input_value (chan) {
-  caml_marshal_data_size (chan.data, chan.data.offset);
-  return caml_input_value_from_string(chan.data, chan.data.offset);
+  var str = new MlStringFromArray(chan.data.array);
+  var len = caml_marshal_data_size (str, chan.data.offset);
+  var res = caml_input_value_from_string(str, chan.data.offset);
+  chan.data.offset = str.offset;
+  return res;
 }
 
 //Provides: caml_ml_input_char
-//Requires: caml_raise_end_of_file
+//Requires: caml_raise_end_of_file, caml_array_bound_error
 function caml_ml_input_char (chan) {
-  if (chan.data.offset >= chan.data.getLen())
+  if (chan.data.offset >= chan.data.array.length)
     caml_raise_end_of_file();
-  var c = chan.data.safeGet(chan.data.offset);
+  if(chan.data.offset < 0 || chan.data.offset > chan.data.array.length) caml_array_bound_error();
+  var c = chan.data.array[chan.data.offset];
   chan.data.offset++;
   return c;
 }
 
 //Provides: caml_ml_input_scan_line
+//Requires: caml_array_bound_error
 function caml_ml_input_scan_line(chan){
     var p = chan.data.offset;
-    var len = chan.data.getLen();
+    var len = chan.data.array.length;
     if(p >= len) { return 0;}
     while(true) {
         if(p >= len) return - (p - chan.data.offset);
-        if(chan.data.safeGet(p) == 10) return p - chan.data.offset + 1;
+        if(p < 0 || p > chan.data.array.length) caml_array_bound_error();
+        if(chan.data.array[p] == 10) return p - chan.data.offset + 1;
         p++;
     }
 }
@@ -229,7 +255,12 @@ function caml_ml_input_scan_line(chan){
 function caml_ml_flush (oc) {
     if(! oc.opened) caml_raise_sys_error("Cannot flush a closed channel");
     if(oc.buffer == "") return 0;
-    if(oc.output) {oc.output(oc.buffer)};
+    if(oc.output) {
+      switch(oc.output.length){
+      case 2: oc.output(oc,oc.buffer);break;
+      default: oc.output(oc.buffer)
+      };
+    }
     oc.buffer = "";
 }
 
