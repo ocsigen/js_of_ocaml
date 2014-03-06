@@ -130,7 +130,7 @@ let parse_file f =
     try
       annot,Parse_js.parse lex
     with Parse_js.Parsing_error pi ->
-      error "cannot parse file %s from l:%d, c:%d@." f pi.Parse_info.line pi.Parse_info.col)
+      error "cannot parse file %S (orig:%S from l:%d, c:%d)@." f pi.Parse_info.name pi.Parse_info.line pi.Parse_info.col)
     lexs in
   res
 
