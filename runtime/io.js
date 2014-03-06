@@ -198,7 +198,7 @@ function caml_ml_output (oc,buffer,offset,len) {
     if(id < 0)
         oc.buffer+=jsstring;
     else {
-        oc.buffer+=jsstring.substr(0,id);
+        oc.buffer+=jsstring.substr(0,id+1);
         caml_ml_flush (oc);
         oc.buffer += jsstring.substr(id+1);
     }

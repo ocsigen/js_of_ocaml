@@ -73,13 +73,19 @@ function caml_js_get_console () {
 
 //Provides: js_print_stdout
 function js_print_stdout(s) {
-  joo_global_object.console
-  && joo_global_object.console.log
-  && joo_global_object.console.log(s);
+  // Do not output the last \n if present
+  // as console logging display a newline at the end
+  if(s.charCodeAt(s.length - 1))
+    s = s.substr(0,s.length - 1 );
+  var v = joo_global_object.console;
+  v  && v.log && v.log(s);
 }
 //Provides: js_print_stderr
 function js_print_stderr(s) {
-  joo_global_object.console
-  && joo_global_object.console.error
-  && joo_global_object.console.error(s);
+  // Do not output the last \n if present
+  // as console logging display a newline at the end
+  if(s.charCodeAt(s.length - 1))
+    s = s.substr(0,s.length - 1 );
+  var v = joo_global_object.console;
+  v && v.error && v.error(s);
 }
