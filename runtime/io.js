@@ -50,6 +50,13 @@ function caml_sys_rename(o,n){
   return;
 }
 
+//Provides: caml_sys_close
+//Requires: caml_global_data
+function caml_sys_close(fd) {
+  delete caml_global_data.fds[fd];
+  return;
+}
+
 //Provides: caml_sys_open
 //Requires: MlString, caml_raise_sys_error, caml_global_data
 function caml_sys_open_internal(idx,v) {
