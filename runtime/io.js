@@ -23,7 +23,7 @@
 //Requires: caml_global_data, MlString
 function caml_register_file(name,content) {
   if(!caml_global_data.files)
-    caml_global_data.files = new Array();
+    caml_global_data.files = {};
   caml_global_data.files[(name instanceof MlString)?name.toString():name] = content;
 }
 
@@ -31,6 +31,23 @@ function caml_register_file(name,content) {
 //Requires: caml_global_data
 function caml_sys_file_exists (name) {
   return (caml_global_data.files && caml_global_data.files[name.toString()])?1:0;
+}
+
+//Provides: caml_sys_remove
+//Requires: caml_global_data
+function caml_sys_remove(name){
+  if(caml_global_data.files)
+    delete caml_global_data.files[name.toString()];
+}
+
+//Provides: caml_sys_rename
+//Requires: caml_global_data,caml_sys_file_exists,caml_register_file,caml_sys_remove
+function caml_sys_rename(o,n){
+  if(caml_sys_file_exists(o)){
+    caml_register_file(n, caml_global_data.files[o.toString()]);
+    caml_sys_remove(o);
+  }
+  return;
 }
 
 //Provides: caml_sys_open
