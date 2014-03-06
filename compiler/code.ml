@@ -41,6 +41,7 @@ module Var : sig
   val to_string : ?origin:t -> t -> string
 
   val fresh : unit -> t
+  val fork : t -> t
 
   val count : unit -> int
 
@@ -84,6 +85,11 @@ end = struct
   let name i nm = VarPrinter.name printer i nm
   let propagate_name i j = VarPrinter.propagate_name printer i j
   let set_pretty b = VarPrinter.set_pretty printer b
+
+  let fork o =
+    let n = fresh () in
+    propagate_name o n;
+    n
 
   let dummy = -1
 end

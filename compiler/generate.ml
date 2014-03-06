@@ -146,6 +146,7 @@ module Share = struct
           J.EVar (StringMap.find s t.vars.strings)
         with Not_found ->
           let x = Var.fresh() in
+          Var.name x "str";
           let v = J.V x in
           t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
           J.EVar v
@@ -291,6 +292,7 @@ let rec constant_rec ~ctx x level instrs =
                match js with
                | J.EArr _ ->
                    let v = Code.Var.fresh () in
+                   Var.name v "partial";
                    let instrs =
                      J.Variable_statement ([J.V v, Some js],J.N) :: instrs in
                    Some (J.EVar (J.V v))::acc,instrs
@@ -533,9 +535,14 @@ let parallel_renaming ctx params args continuation queue =
 (****)
 
 let generate_apply_fun n =
-  let f = J.V (Var.fresh ()) in
+  let f' = Var.fresh () in
+  let f = J.V f' in
+  Code.Var.name f' "fun";
   let params =
-    Array.to_list (Array.init n (fun _ -> J.V (Var.fresh ())))
+    Array.to_list (Array.init n (fun i ->
+        let a = Var.fresh () in
+        Var.name a ("var"^(string_of_int i));
+        J.V a))
   in
   let f' = J.EVar f in
   let params' = List.map (fun x -> J.EVar x) params in
@@ -1054,6 +1061,7 @@ and translate_closures ctx expr_queue l =
           J.Variable_statement (defs,J.N)
         else begin
           let tbl = Var.fresh () in
+          Var.name tbl "funenv";
           let arr =
             J.EArr
               (List.map (fun (x, _, _) -> Some (J.EVar (J.V x))) l)

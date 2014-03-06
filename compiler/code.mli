@@ -36,6 +36,7 @@ module Var : sig
   val to_string : ?origin:t -> t -> string
 
   val fresh : unit -> t
+  val fork : t -> t
 
   val count : unit -> int
 
