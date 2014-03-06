@@ -72,28 +72,19 @@ function caml_js_get_console () {
 }
 
 //Provides:caml_trampoline
-function caml_trampoline(f) {
-    var f = f.apply(null,[].splice.call(arguments,(1)))
+function caml_trampoline(res) {
     var c = 1;
-    while(f && f.joo_tramp){
-        f = f();
+    while(res && res.joo_tramp){
+        res = res.joo_tramp(res.joo_args);
         c++;
     }
     if(c>10) console.log("trampoline ", c, "times")
-    return f;
+    return res;
 }
 
 //Provides:caml_trampoline_return
-//Requires:caml_trampoline_apply
-function caml_trampoline_return(f) {
-    var args = [].splice.call(arguments,(1));
-    var r = caml_trampoline_apply.bind(null,f,args);
-    r.joo_tramp = true;
-    return r
-}
-//Provides:caml_trampoline_apply
-function caml_trampoline_apply(f,args) {
-    return f.apply(null,args);
+function caml_trampoline_return(f,args) {
+    return {joo_tramp:f,joo_args:args};
 }
 
 //Provides: js_print_stdout

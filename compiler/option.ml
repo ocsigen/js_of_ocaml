@@ -109,6 +109,6 @@ module Tailcall = struct
     let r = ref default in
     (fun x -> r:=x),(fun () -> !r)
 
-  let maximum () = 5000
+  let maximum () = 50
 
 end
