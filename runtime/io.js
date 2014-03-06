@@ -58,22 +58,46 @@ function caml_sys_close(fd) {
 }
 
 //Provides: caml_sys_open
-//Requires: MlString, caml_raise_sys_error, caml_global_data
-function caml_sys_open_internal(idx,v) {
+//Requires: MlString, caml_raise_sys_error, caml_global_data,caml_sys_file_exists
+function caml_sys_open_internal(idx,v,flags) {
   if(caml_global_data.fds === undefined) caml_global_data.fds = new Array();
   var s = (v instanceof MlString)?v:(new MlString(v));
   s.offset = 0;
+  s.flags = flags?flags:{};
   caml_global_data.fds[idx] = s;
   caml_global_data.fd_last_idx = idx;
   return idx;
 }
 function caml_sys_open (name, flags, perms) {
-    name = name.toString();
-  if (caml_global_data.files && caml_global_data.files[name]) {
-    var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
-    return caml_sys_open_internal (idx+1,caml_global_data.files[name]);
+  var f = {};
+  while(flags){
+    switch(flags[1]){
+    case 0: f.rdonly = 1;break;
+    case 1: f.wronly = 1;break;
+    case 2: f.append = 1;break;
+    case 3: f.create = 1;break;
+    case 4: f.truncate = 1;break;
+    case 5: f.excl = 1; break;
+    case 6: f.binary = 1;break;
+    case 7: f.text = 1;break;
+    case 8: f.nonblock = 1;break;
+    }
   }
-  else caml_raise_sys_error (name + ": no such file or directory");
+  name2 = name.toString();
+  if(f.rdonly && f.wronly)
+    caml_raise_sys_error(name2 + " : flags Open_rdonly and Open_wronly are not compatible");
+  if(f.text && f.binary)
+    caml_raise_sys_error(name2 + " : flags Open_text and Open_binary are not compatible");
+  if (caml_sys_file_exists(name)) {
+    if (f.create && f.excl) caml_raise_sys_error(name2 + " : file already exists");
+    var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
+    if(f.truncate) caml_global_data.files[name2] = "";
+    return caml_sys_open_internal (idx+1,caml_global_data.files[name2],f);
+  } if (f.create) {
+    var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
+    return caml_sys_open_internal (idx+1,"",f);
+  }
+  else caml_raise_sys_error (name2 + ": no such file or directory");
 }
 caml_sys_open_internal(0,""); //stdin
 caml_sys_open_internal(1,""); //stdout
@@ -99,14 +123,17 @@ function caml_ml_out_channels_list () {
 
 //Provides: caml_ml_open_descriptor_out
 //Requires: js_print_stderr, js_print_stdout, caml_ml_out_channels, caml_global_data,caml_sys_open
+//Requires: caml_raise_sys_error
 function caml_ml_open_descriptor_out (fd) {
   var output = function () { return; };
   switch(fd){
     case 1: output=js_print_stdout;break;
     case 2: output=js_print_stderr;break;
   }
+  var data = caml_global_data.fds[fd];
+  if(data.flags.rdonly) caml_raise_sys_error("fd "+ fd + " is readonly");
   var channel = {
-    data: caml_global_data.fds[fd],
+    data: data,
     fd:fd,
     opened:true,
 
@@ -118,10 +145,13 @@ function caml_ml_open_descriptor_out (fd) {
 }
 
 //Provides: caml_ml_open_descriptor_in
-//Requires: caml_global_data,caml_sys_open
+//Requires: caml_global_data,caml_sys_open,caml_raise_sys_error
 function caml_ml_open_descriptor_in (fd)  {
+  var data = caml_global_data.fds[fd];
+  if(data.flags.wronly) caml_raise_sys_error("fd "+ fd + " is writeonly");
+
   return {
-    data: caml_global_data.fds[fd],
+    data: data,
     fd:fd,
     opened:true
   };
@@ -197,7 +227,7 @@ function caml_ml_input_scan_line(chan){
 //Provides: caml_ml_flush
 //Requires: caml_raise_sys_error
 function caml_ml_flush (oc) {
-    if(! oc.opened) caml_raise_sys_error("");
+    if(! oc.opened) caml_raise_sys_error("Cannot flush a closed channel");
     if(oc.buffer == "") return 0;
     if(oc.output) {oc.output(oc.buffer)};
     oc.buffer = "";
@@ -209,7 +239,7 @@ function caml_ml_flush (oc) {
 //Requires: caml_ml_flush
 //Requires: MlString, caml_create_string, caml_blit_string, caml_raise_sys_error
 function caml_ml_output (oc,buffer,offset,len) {
-    if(! oc.opened) caml_raise_sys_error("");
+    if(! oc.opened) caml_raise_sys_error("Cannot output to a closed channel");
     var string;
     if(offset == 0 && buffer.getLen() == len)
         string = buffer;
