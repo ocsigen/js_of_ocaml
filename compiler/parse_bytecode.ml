@@ -149,7 +149,16 @@ module Tbl = struct
   let rec iter f = function
       Empty -> ()
     | Node(l, v, d, r, _) ->
-        iter f l; f v d; iter f r
+      iter f l; f v d; iter f r
+
+  let rec find compare x = function
+      Empty ->
+      raise Not_found
+    | Node(l, v, d, r, _) ->
+      let c = compare x v in
+      if c = 0 then d
+      else find compare x (if c < 0 then l else r)
+
 end
 
 type 'a numtable =
@@ -250,6 +259,7 @@ type globals =
   { mutable vars : Var.t option array;
     mutable is_const : bool array;
     mutable is_exported : bool array;
+    mutable override : (Var.t -> Code.instr list -> (Var.t * Code.instr list)) option array;
     constants : Obj.t array;
     primitives : string array }
 
@@ -257,6 +267,7 @@ let make_globals size constants primitives =
   { vars = Array.create size None;
     is_const = Array.create size false;
     is_exported = Array.create size false;
+    override = Array.create size None;
     constants = constants; primitives = primitives }
 
 let resize_array a len def =
@@ -267,7 +278,8 @@ let resize_array a len def =
 let resize_globals g size =
   g.vars <- resize_array g.vars size None;
   g.is_const <- resize_array g.is_const size false;
-  g.is_exported <- resize_array g.is_exported size true
+  g.is_exported <- resize_array g.is_exported size true;
+  g.override <- resize_array g.override size None
 
 module State = struct
 
@@ -826,7 +838,14 @@ and compile code limit pc state instrs =
       let g = State.globals state in
       assert (g.vars.(i) = None);
       if debug () then Format.printf "(global %d) = %a@." i Var.print y;
-      g.vars.(i) <- Some y;
+      let instrs = match g.override.(i) with
+        | Some f ->
+          let v,instrs = f y instrs in
+          g.vars.(i) <- Some v;
+          instrs
+        | None ->
+          g.vars.(i) <- Some y;
+          instrs in
       let (x, state) = State.fresh_var state in
       if debug () then Format.printf "%a = 0@." Var.print x;
       let instrs =
@@ -1776,6 +1795,22 @@ let fix_min_max_int code =
 
 (****)
 
+let override_global =
+  let jsmodule name func =
+    Prim(Extern "%overrideMod",[Pc (String name);Pc (String func)]) in
+  [
+    "CamlinternalMod",(fun orig instrs ->
+        let x = Var.fresh () in
+        Var.name x "internalMod";
+        let init_mod = Var.fresh () in
+        let update_mod = Var.fresh () in
+        x, Let(x,Block(0,[| init_mod; update_mod |]))::
+           Let(init_mod,jsmodule "CamlinternalMod" "init_mod")::
+           Let(update_mod,jsmodule "CamlinternalMod" "update_mod")::
+           instrs)
+  ]
+
+
 let from_channel  ?(toplevel=false) ?(debug=`No) ~files ~paths ic =
   let toc = read_toc ic in
   let primitive_table,prim = read_primitive_table toc ic in
@@ -1813,6 +1848,16 @@ let from_channel  ?(toplevel=false) ?(debug=`No) ~files ~paths ic =
   fix_min_max_int code;
 
   let state = State.initial globals in
+
+  List.iter (fun (name, v) ->
+      try
+        let nn = { Ident.stamp= 0; name; flags= 0 } in
+        let i = Tbl.find (fun x1 x2 -> String.compare x1.Ident.name x2.Ident.name) nn symbols.num_tbl in
+        globals.override.(i) <- Some v;
+        if debug ()
+        then Format.eprintf "overriding global %s@." name
+      with Not_found -> ()
+    ) override_global;
 
   ignore(seek_section toc ic "CRCS");
   let crcs = (input_value ic : Obj.t) in
