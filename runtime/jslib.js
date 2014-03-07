@@ -75,7 +75,7 @@ function caml_js_get_console () {
 function js_print_stdout(s) {
   // Do not output the last \n if present
   // as console logging display a newline at the end
-  if(s.charCodeAt(s.length - 1))
+  if(s.charCodeAt(s.length - 1) == 10)
     s = s.substr(0,s.length - 1 );
   var v = joo_global_object.console;
   v  && v.log && v.log(s);
@@ -84,7 +84,7 @@ function js_print_stdout(s) {
 function js_print_stderr(s) {
   // Do not output the last \n if present
   // as console logging display a newline at the end
-  if(s.charCodeAt(s.length - 1))
+  if(s.charCodeAt(s.length - 1) == 10)
     s = s.substr(0,s.length - 1 );
   var v = joo_global_object.console;
   v && v.error && v.error(s);
