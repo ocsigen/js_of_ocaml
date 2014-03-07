@@ -183,6 +183,7 @@ function caml_make_vect (len, init) {
 
 //Provides: caml_compare_val
 //Requires: MlString, caml_int64_compare, caml_int_compare
+//Requires: caml_invalid_argument
 function caml_compare_val (a, b, total) {
   var stack = [];
   for(;;) {
@@ -218,6 +219,9 @@ function caml_compare_val (a, b, total) {
 		if (x != 0) return x;
 		break;
 	    }
+            case 251: {
+                caml_invalid_argument("equal: abstract value");
+            }
             case 255: {
 		// Int64
 		var x = caml_int64_compare(a, b);
