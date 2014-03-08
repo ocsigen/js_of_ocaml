@@ -29,6 +29,8 @@ XXX Beware automatic semi-colon insertion...
        e ++, e --, continue e, break e, return e, throw e
 *)
 
+let stats = Option.Debug.find "output"
+
 open Javascript
 
 module PP = Pretty_print
@@ -37,6 +39,8 @@ module Make(D : sig
   val debug_info : Parse_bytecode.debug_loc
   val source_map : Source_map.t option
 end) = struct
+
+  let stringsize = ref 0
 
   let temp_mappings = ref []
 
@@ -280,7 +284,10 @@ end) = struct
           if c = quote then Buffer.add_char b '\\';
           Buffer.add_char b c
     done;
-    Buffer.contents b
+    let res = Buffer.contents b in
+    let l = String.length res in
+    stringsize:=!stringsize+l+2;
+    res
 
   let rec expression l f e =
     match e with
@@ -1055,4 +1062,15 @@ let program f ?source_map dl p =
       close_out oc;
 
       PP.newline f;
-      PP.string f (Printf.sprintf "//# sourceMappingURL=%s" out_file))
+      PP.string f (Printf.sprintf "//# sourceMappingURL=%s" out_file));
+  if stats ()
+  then begin
+    let size i =
+      Printf.sprintf "%.2fKo" (float_of_int i /. 1024.) in
+    let percent n d =
+      Printf.sprintf "%.1f%%" (float_of_int n *. 100. /. (float_of_int d)) in
+    let total_s = PP.total f in
+    let string_s = !O.stringsize in
+    Format.eprintf "total size : %s\n" (size total_s);
+    Format.eprintf "string size: %s (%s)\n" (size string_s) (percent string_s total_s);
+  end
