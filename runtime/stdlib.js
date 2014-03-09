@@ -748,13 +748,24 @@ function caml_array_blit(a1, i1, a2, i2, len) {
 
 ///////////// CamlinternalOO
 //Provides: caml_get_public_method const
-function caml_get_public_method (obj, tag) {
+var caml_get_public_method_cache = [];
+function caml_get_public_method (obj, tag, cacheid) {
   var meths = obj[1];
+  if(cacheid) {
+    var ofs = caml_get_public_method_cache[cacheid];
+    if(meths[ofs + 4] == tag){
+//      console.log("cache hit");
+      return meths[ofs + 3];
+    }
+  }
   var li = 3, hi = meths[1] * 2 + 1, mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;
     if (tag < meths[mi+1]) hi = mi-2;
     else li = mi;
+  }
+  if(cacheid) {
+    caml_get_public_method_cache[cacheid] = li - 3;
   }
   /* return 0 if tag is not there */
   return (tag == meths[li+1] ? meths[li] : 0);
