@@ -57,7 +57,7 @@ let specialize_instr info i =
       begin match the_def_of info a with
         Some (Block (_, a)) ->
           let a = Array.map (fun x -> Pv x) a in
-          Let (x, Prim (Extern "caml_js_opt_call",
+          Let (x, Prim (Extern "%caml_js_opt_call",
                         f :: o :: Array.to_list a))
       | _ ->
           i
@@ -66,7 +66,7 @@ let specialize_instr info i =
       begin match the_def_of info a with
         Some (Block (_, a)) ->
           let a = Array.map (fun x -> Pv x) a in
-          Let (x, Prim (Extern "caml_js_opt_fun_call",
+          Let (x, Prim (Extern "%caml_js_opt_fun_call",
                         f :: Array.to_list a))
       | _ ->
           i
@@ -77,7 +77,7 @@ let specialize_instr info i =
           begin match the_def_of info a with
             Some (Block (_, a)) ->
               let a = Array.map (fun x -> Pv x) a in
-              Let (x, Prim (Extern "caml_js_opt_meth_call",
+              Let (x, Prim (Extern "%caml_js_opt_meth_call",
                             o :: Pc (String m) :: Array.to_list a))
           | _ ->
               i
@@ -89,7 +89,7 @@ let specialize_instr info i =
       begin match the_def_of info a with
         Some (Block (_, a)) ->
           let a = Array.map (fun x -> Pv x) a in
-          Let (x, Prim (Extern "caml_js_opt_new",
+          Let (x, Prim (Extern "%caml_js_opt_new",
                         c :: Array.to_list a))
       | _ ->
           i
@@ -116,7 +116,7 @@ let specialize_instr info i =
                    raise Exit)
             a
         in
-        Let (x, Prim (Extern "caml_js_opt_object",
+        Let (x, Prim (Extern "%caml_js_opt_object",
                       List.flatten (Array.to_list a)))
       with Exit ->
         i

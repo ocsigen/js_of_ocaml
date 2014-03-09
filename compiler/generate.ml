@@ -883,7 +883,7 @@ and translate_expr ctx queue x e level =
         (s_var nm, const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
         (s_var nm, const_p, queue)
-      | Extern "caml_js_opt_call", Pv f :: Pv o :: l ->
+      | Extern "%caml_js_opt_call", Pv f :: Pv o :: l ->
         let ((pf, cf), queue) = access_queue queue f in
         let ((po, co), queue) = access_queue queue o in
         let (args, prop, queue) =
@@ -896,7 +896,7 @@ and translate_expr ctx queue x e level =
         in
         (J.ECall (J.EDot (cf, "call"), co :: args),
          or_p (or_p pf po) prop, queue)
-      | Extern "caml_js_opt_fun_call", Pv f :: l ->
+      | Extern "%caml_js_opt_fun_call", Pv f :: l ->
         let ((pf, cf), queue) = access_queue queue f in
         let (args, prop, queue) =
           List.fold_right
@@ -906,7 +906,7 @@ and translate_expr ctx queue x e level =
             l ([], mutator_p, queue)
         in
         (J.ECall (cf, args), or_p pf prop, queue)
-      | Extern "caml_js_opt_meth_call", Pv o :: Pc (String m) :: l ->
+      | Extern "%caml_js_opt_meth_call", Pv o :: Pc (String m) :: l ->
         let ((po, co), queue) = access_queue queue o in
         let (args, prop, queue) =
           List.fold_right
@@ -916,7 +916,7 @@ and translate_expr ctx queue x e level =
             l ([], mutator_p, queue)
         in
         (J.ECall (J.EDot (co, m), args), or_p po prop, queue)
-      | Extern "caml_js_opt_new", Pv c :: l ->
+      | Extern "%caml_js_opt_new", Pv c :: l ->
         let ((pc, cc), queue) = access_queue queue c in
         let (args, prop, queue) =
           List.fold_right
@@ -949,7 +949,7 @@ and translate_expr ctx queue x e level =
               assert false
         in
         (J.EObj (build_fields fields), const_p, queue)
-      | Extern "caml_js_opt_object", fields ->
+      | Extern "%caml_js_opt_object", fields ->
         let rec build_fields queue l =
           match l with
               [] ->
