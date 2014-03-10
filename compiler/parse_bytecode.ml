@@ -486,7 +486,7 @@ let get_global state instrs i =
 
 let tagged_blocks = ref AddrSet.empty
 let compiled_blocks = ref AddrMap.empty
-
+let method_cache_id = ref 1
 
 
 let rec compile_block code pc state =
@@ -1459,8 +1459,9 @@ and compile code limit pc state instrs =
       compile code limit (pc + 1) (State.pop 1 state)
         (Let (x, Prim (Ult, [Pv z; Pv y])) :: instrs)
   | GETPUBMET ->
-(*FIX: should cache*)
       let n = gets code (pc + 1) in
+      let cache = !method_cache_id in
+      incr method_cache_id;
       let obj = State.accu state in
       let state = State.push state in
       let (tag, state) = State.fresh_var state in
@@ -1469,7 +1470,8 @@ if debug () then Format.printf "%a = %d@." Var.print tag n;
 if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
         Var.print m Var.print obj Var.print tag;
       compile code limit (pc + 3) state
-        (Let (m, Prim (Extern "caml_get_public_method", [Pv obj; Pv tag])) ::
+        (Let (m, Prim (Extern "caml_get_public_method",
+                       [Pv obj; Pv tag; Pc (Int cache)])) ::
          Let (tag, Const n) :: instrs)
   | GETDYNMET ->
       let tag = State.accu state in
@@ -1478,7 +1480,8 @@ if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
 if debug () then Format.printf "%a = caml_get_public_method(%a, %a)@."
         Var.print m Var.print obj Var.print tag;
       compile code limit (pc + 1) state
-        (Let (m, Prim (Extern "caml_get_public_method", [Pv obj; Pv tag])) ::
+        (Let (m, Prim (Extern "caml_get_public_method",
+                       [Pv obj; Pv tag; Pc (Int 0)])) ::
          instrs)
   | GETMETHOD ->
       let lab = State.accu state in
