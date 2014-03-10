@@ -87,6 +87,11 @@ module Share = struct
     let n = try StringMap.find s t.prims with Not_found -> 0 in
     {t with prims  = StringMap.add s (n+1) t.prims}
 
+  let add_special_prim_if_exists s t =
+    if Primitive.exists s
+    then {t with prims  = StringMap.add s (-1) t.prims}
+    else t
+
   let add_apply i t =
     let n = try IntMap.find i t.applies with Not_found -> 0 in
     {t with applies = IntMap.add i (n+1) t.applies }
@@ -135,6 +140,11 @@ module Share = struct
           )
           share block.body)
       blocks empty_aux in
+
+    let count = List.fold_left (fun acc x ->
+        add_special_prim_if_exists x acc)
+        count
+        ["caml_trampoline";"caml_trampoline_return"] in
     {count; vars = empty_aux}
 
   let get_string gen s t =
@@ -160,7 +170,7 @@ module Share = struct
     let s = Primitive.resolve s in
     try
       let c = StringMap.find s t.count.prims in
-      if c > 1
+      if c > 1 || c = -1
       then
         try
           J.EVar (StringMap.find s t.vars.prims)
@@ -1029,7 +1039,8 @@ and translate_closures ctx expr_queue l =
         >> VarSet.elements
         >> List.map (fun v -> J.V v)
       in
-      let defs = Js_tailcall.rewrite [x,cl,req_tc] in
+      let prim name = Share.get_prim s_var name ctx.Ctx.share in
+      let defs = Js_tailcall.rewrite [x,cl,req_tc] prim in
       let rec return_last x = function
         | [] -> [J.Statement (J.Return_statement (Some (J.EVar (J.V x)),J.N))]
         | [J.Variable_statement (l,nid) as sts]  ->
@@ -1070,7 +1081,8 @@ and translate_closures ctx expr_queue l =
       in
       let defs' =
         List.map (fun (x, _, req_tc, cl) -> x,cl,req_tc) l in
-      let defs = Js_tailcall.rewrite defs' in
+      let prim name = Share.get_prim s_var name ctx.Ctx.share in
+      let defs = Js_tailcall.rewrite defs' prim in
       let statements =
         if vars = [] then defs
         else begin

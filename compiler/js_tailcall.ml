@@ -87,11 +87,11 @@ end
 
 
 module type TC = sig
-  val rewrite : (Code.Var.t * Javascript.expression * VarSet.t) list -> Javascript.statement list
+  val rewrite : (Code.Var.t * Javascript.expression * VarSet.t) list -> (string -> Javascript.expression) -> Javascript.statement list
 end
 
 module Ident : TC = struct
-  let rewrite closures =
+  let rewrite closures get_prim =
     [J.Variable_statement (
       List.map (fun (name, cl,_) ->
           J.V name, Some cl
@@ -100,14 +100,14 @@ module Ident : TC = struct
 end
 
 module While : TC = struct
-  let rewrite closures = failwith "todo"
+  let rewrite closures get_prim = failwith "todo"
 end
 
 module Tramp : TC = struct
 
-  let rewrite cls =
+  let rewrite cls get_prim =
     match cls with
-    | [x,cl,req_tc] when not (VarSet.mem x req_tc) -> Ident.rewrite cls
+    | [x,cl,req_tc] when not (VarSet.mem x req_tc) -> Ident.rewrite cls get_prim
     | _ ->
     let counter = Var.fresh () in
     Var.name counter "counter";
@@ -129,7 +129,7 @@ module Tramp : TC = struct
                         J.ENum (float_of_int (Option.Tailcall.maximum()))),
                 J.ECall(J.EVar n, J.EBin (J.Plus,J.ENum 1.,J.EVar (J.V counter)) :: args),
                 J.ECall (
-                  J.EVar (J.S {J.name="caml_trampoline_return";var = None} ),
+                  get_prim "caml_trampoline_return",
                   [J.EVar n ; J.EArr (List.map (fun x -> Some x) (J.ENum 0. :: args))]
                 ))),J.N)
           in Some st
@@ -140,7 +140,7 @@ module Tramp : TC = struct
         match clo with
         | J.EFun (_, args, _, nid) ->
           let b = J.ECall(
-              J.EVar (J.S ({J.name="caml_trampoline" ;var = None})),
+              get_prim "caml_trampoline",
               [J.ECall(J.EVar (J.V (VarMap.find v m2new)), J.ENum 0. :: List.map (fun i -> J.EVar i) args)]) in
           let b = J.Statement (J.Return_statement (Some b,J.N)) in
           v,J.EFun (None, args,[b],nid )
