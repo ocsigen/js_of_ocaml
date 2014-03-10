@@ -146,9 +146,6 @@ module Tramp : TC = struct
           v,J.EFun (None, args,[b],nid )
         | _ -> assert false) cls in
     let reals = List.map (fun (v,clo,_) ->
-        let arr' = Var.fresh() in
-        Var.name arr' "tramp_arg";
-        let arr = J.V arr' in
         VarMap.find v m2new,
         match clo with
         | J.EFun (nm,args,body,nid) ->
