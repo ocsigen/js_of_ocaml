@@ -37,18 +37,30 @@ let propagate_name t v v' =
 let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 let is_num c = (c >= '0' && c <= '9')
 
-let name t v nm =
-  if String.length nm > 0 then begin
-    let nm = String.copy nm in
-    if not (is_alpha nm.[0]) then nm.[0] <- '_';
-    for i = 1 to String.length nm - 1 do
-      if not (is_alpha nm.[i] || is_num nm.[i]) then nm.[i] <- '_';
+let name t v nm_orig =
+  let len = String.length nm_orig in
+  if len > 0 then begin
+    let buf = Buffer.create (String.length nm_orig) in
+    let idx = ref 0 in
+    while (!idx < len && not (is_alpha nm_orig.[!idx])) do incr idx done;
+    let pending = ref false in
+    if(!idx >= len) then begin
+      pending := true;
+      idx := 0
+    end;
+    for i = !idx to len - 1 do
+      if is_alpha nm_orig.[i] || is_num nm_orig.[i]
+      then begin
+        if !pending
+        then Buffer.add_char buf '_';
+        Buffer.add_char buf nm_orig.[i];
+        pending:=false
+      end
+      else pending := true
     done;
-    let c = ref 0 in
-    for i = 0 to String.length nm - 1 do
-      if nm.[i] = '_' then incr c
-    done;
-    if !c < String.length nm then name_raw t v nm
+    let str = Buffer.contents buf in
+    if String.length str > 0
+    then name_raw t v str
   end
 
 let rec format_ident x =

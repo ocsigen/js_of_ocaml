@@ -138,21 +138,22 @@ module Share = struct
     {count; vars = empty_aux}
 
   let get_string gen s t =
-    try
-      let c = StringMap.find s t.count.strings in
-      if c > 1
-      then
-        try
-          J.EVar (StringMap.find s t.vars.strings)
-        with Not_found ->
-          let x = Var.fresh() in
-          Var.name x "str";
-          let v = J.V x in
-          t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
-          J.EVar v
-      else
-        gen s
-    with Not_found->
+    (* disabled because it is done later on Js ast *)
+    (* try *)
+    (*   let c = StringMap.find s t.count.strings in *)
+    (*   if c > 1 *)
+    (*   then *)
+    (*     try *)
+    (*       J.EVar (StringMap.find s t.vars.strings) *)
+    (*     with Not_found -> *)
+    (*       let x = Var.fresh() in *)
+    (*       Var.name x "str"; *)
+    (*       let v = J.V x in *)
+    (*       t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings }; *)
+    (*       J.EVar v *)
+    (*   else *)
+    (*     gen s *)
+    (* with Not_found-> *)
       gen s
 
   let get_prim gen s t =
