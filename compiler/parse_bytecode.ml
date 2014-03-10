@@ -267,7 +267,7 @@ let resize_array a len def =
 let resize_globals g size =
   g.vars <- resize_array g.vars size None;
   g.is_const <- resize_array g.is_const size false;
-  g.is_exported <- resize_array g.is_exported size false
+  g.is_exported <- resize_array g.is_exported size true
 
 module State = struct
 
@@ -821,6 +821,7 @@ and compile code limit pc state instrs =
       compile code limit (pc + 3) state (Let (y, Field (x, j)) :: instrs)
   | SETGLOBAL ->
       let i = getu code (pc + 1) in
+      State.size_globals state (i + 1);
       let y = State.accu state in
       let g = State.globals state in
       assert (g.vars.(i) = None);
