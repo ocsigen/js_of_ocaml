@@ -161,14 +161,14 @@ let add_file f =
           end;
           Hashtbl.add provided name (id,pi);
           Hashtbl.add provided_rev id (name,pi);
-          req,Some pi
+          req,Some (name,pi)
         | `Requires (_,mn) -> (mn@req),has_provide) ([],None) annot in
 
 
 
       (match has_provide with
        | None -> always_included := id :: !always_included
-       | Some pi ->
+       | Some (name,pi) ->
          let free = new Js_traverse.free in
          let _code = free#program code in
          let freename = free#get_free_name in
@@ -178,7 +178,7 @@ let add_file f =
          let freename = StringSet.remove Option.global_object freename in
          if not(StringSet.is_empty freename)
          then begin
-           Format.eprintf "warning: free variable in primitive code %s@." (loc pi);
+           Format.eprintf "warning: free variables in primitive code %S (%s)@." name (loc pi);
            Format.eprintf "vars: %s@." (String.concat ", " (StringSet.elements freename))
          end);
       Hashtbl.add code_pieces id (code, req))
