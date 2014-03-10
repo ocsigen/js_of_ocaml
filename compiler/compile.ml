@@ -20,7 +20,7 @@
 
 let times = Option.Debug.find "times"
 
-let f toplevel linkall paths js_files input_file output_file source_map =
+let f toplevel linkall paths files js_files input_file output_file source_map =
   let t = Util.Timer.make () in
   List.iter Linker.add_file js_files;
   let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
@@ -32,10 +32,10 @@ let f toplevel linkall paths js_files input_file output_file source_map =
   let p,d =
     match input_file with
       None ->
-        Parse_bytecode.from_channel ~toplevel ~debug:need_debug ~paths stdin
+        Parse_bytecode.from_channel ~toplevel ~debug:need_debug ~files ~paths stdin
     | Some f ->
         let ch = open_in_bin f in
-        let p,d = Parse_bytecode.from_channel ~debug:need_debug ~toplevel ~paths ch in
+        let p,d = Parse_bytecode.from_channel ~toplevel ~debug:need_debug ~files ~paths ch in
         close_in ch;
         p,d
   in
@@ -62,6 +62,7 @@ let f toplevel linkall paths js_files input_file output_file source_map =
 let _ =
   Util.Timer.init Unix.gettimeofday;
   let js_files = ref [] in
+  let files = ref [] in
   let output_file = ref None in
   let input_file = ref None in
   let no_runtime = ref false in
@@ -86,6 +87,8 @@ let _ =
      ("-toplevel", Arg.Set toplevel, " compile a toplevel");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");
+     ("-file", Arg.String (fun s -> files:= s :: !files ),
+      "<file> register <file> to the pseudo filesystem");
      ("-o", Arg.String (fun s -> output_file := Some s),
       "<file> set output file name to <file>")]
   in
@@ -123,5 +126,5 @@ let _ =
           Format.eprintf "Don't know where to output the Source-map@.";
           exit 1
     else None in
-  f !toplevel !linkall !paths (runtime @ List.rev !js_files)
+  f !toplevel !linkall !paths !files (runtime @ List.rev !js_files)
     !input_file output_f source_m

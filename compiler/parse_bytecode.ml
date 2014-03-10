@@ -1581,7 +1581,7 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
   let g = State.globals state in
   let body =
     match standalone_info with
-      Some (symb, crcs, prim, paths) ->
+      Some (symb, crcs, prim, files, paths) ->
         let l = ref [] in
 
 
@@ -1617,6 +1617,20 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
           | _ ->
               ()
         done;
+        let fs = ref [] in
+        List.iter (fun name ->
+            let file =
+              try
+                Util.find_in_paths paths name
+              with Not_found ->
+                Format.eprintf "%s: file '%s' not found@."
+                  Sys.argv.(0) name;
+                exit 1
+            in
+            let s = Util.read_file file in
+            fs := (Pc (IString name),Pc (IString s)) :: !fs
+          ) files;
+
         if toplevel then begin
           (* Include linking information *)
           let toc =
@@ -1627,7 +1641,7 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
              Let (x, Constant (parse_const (Obj.repr toc))) ::
              set_global "toc" x !l);
           (* Include interface files *)
-          let fields = ref [] in
+
           Tbl.iter
             (fun id num ->
                if id.Ident.flags = 1 then begin
@@ -1641,14 +1655,10 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                      exit 1
                  in
                  let s = Util.read_file file in
-                 fields := (Pc (IString name),Pc (IString s)) :: !fields
+                 fs := (Pc (IString name),Pc (IString s)) :: !fs
                end) symb.num_tbl;
-          l :=
-            (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "caml_register_file", [n;c]))) !fields)
-            @ !l
         end;
-
-        !l
+        (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "caml_register_file", [n;c]))) !fs) @ !l
     | None ->
         let globals = Var.fresh () in
         let l =
@@ -1765,7 +1775,7 @@ let fix_min_max_int code =
 
 (****)
 
-let from_channel  ?(toplevel=false) ?(debug=`No) ~paths ic =
+let from_channel  ?(toplevel=false) ?(debug=`No) ~files ~paths ic =
   let toc = read_toc ic in
   let primitive_table,prim = read_primitive_table toc ic in
   let code_size = seek_section toc ic "CODE" in
@@ -1805,7 +1815,7 @@ let from_channel  ?(toplevel=false) ?(debug=`No) ~paths ic =
 
   ignore(seek_section toc ic "CRCS");
   let crcs = (input_value ic : Obj.t) in
-  parse_bytecode ~toplevel ~debug code state (Some (symbols, crcs, prim, paths))
+  parse_bytecode ~toplevel ~debug code state (Some (symbols, crcs, prim, files, paths))
 
 (* As input: list of primitives + size of global table *)
 let from_string ?toplevel primitives code =
