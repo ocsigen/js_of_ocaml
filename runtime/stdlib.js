@@ -438,7 +438,7 @@ function caml_finish_formatting(f, rawbuffer) {
 }
 
 //Provides: caml_format_int const
-//Requires: caml_parse_format, caml_finish_formatting, MlWrappedString
+//Requires: caml_parse_format, caml_finish_formatting, MlWrappedString,caml_str_repeat
 function caml_format_int(fmt, i) {
   if (fmt.toString() == "%d") return new MlWrappedString(""+i);
   var f = caml_parse_format(fmt);

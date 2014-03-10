@@ -30,7 +30,7 @@
 // implementation of string differs significantly from Javascript.
 // This way, using the wrong object is detected early.
 
-//Provided caml_str_repeat
+//Provides: caml_str_repeat
 function caml_str_repeat(n, s) {
   if (!n) { return ""; }
   if (n & 1) { return caml_str_repeat(n - 1, s) + s; }
@@ -39,7 +39,7 @@ function caml_str_repeat(n, s) {
 }
 
 //Provides: MlString
-//Requires: caml_raise_with_arg, js_print_stderr, caml_global_data
+//Requires: caml_raise_with_arg, js_print_stderr, caml_global_data, caml_str_repeat
 function MlString(param) {
   if (param != null) {
     this.bytes = this.fullBytes = param;

@@ -265,7 +265,7 @@ function caml_int64_of_float (x) {
 //Requires: caml_parse_format, caml_finish_formatting
 //Requires: caml_int64_is_negative, caml_int64_neg
 //Requires: caml_int64_of_int32, caml_int64_udivmod, caml_int64_to_int32
-//Requires: caml_int64_is_zero
+//Requires: caml_int64_is_zero, caml_str_repeat
 function caml_int64_format (fmt, x) {
   var f = caml_parse_format(fmt);
   if (f.signedconv && caml_int64_is_negative(x)) {

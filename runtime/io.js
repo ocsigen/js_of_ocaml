@@ -335,7 +335,7 @@ function caml_ml_output_char (oc,c) {
 
 //Provides: caml_output_value
 //Requires: caml_output_value_to_string, caml_ml_output
-function caml_output_value (chan) {
+function caml_output_value (chan,v,flags) {
   var s = caml_output_value_to_string(v);
   caml_ml_output(chan,s,0,s.getLen());
 }
@@ -366,6 +366,6 @@ function caml_ml_pos_out_64(chan) {
 //Requires: MlStringFromArray
 function caml_ml_output_int (oc,i) {
   var arr = [(i>>24) & 0xFF,(i>>16) & 0xFF,(i>>8) & 0xFF,i & 0xFF ];
-  let s = new MlStringFromArray(arr);
+  var s = new MlStringFromArray(arr);
   caml_ml_output(oc,s,0,4);
 }
