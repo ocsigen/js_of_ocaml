@@ -127,7 +127,7 @@ module Tramp : TC = struct
                 J.EBin (J.Lt,
                         J.EVar (J.V counter),
                         J.ENum (float_of_int (Option.Tailcall.maximum()))),
-                J.ECall(J.EVar n,[J.EArr(Some (J.EBin (J.Plus,J.ENum 1.,J.EVar (J.V counter))):: List.map (fun x -> Some x) args)]),
+                J.ECall(J.EVar n, J.EBin (J.Plus,J.ENum 1.,J.EVar (J.V counter)) :: args),
                 J.ECall (
                   J.EVar (J.S {J.name="caml_trampoline_return";var = None} ),
                   [J.EVar n ; J.EArr (List.map (fun x -> Some x) (J.ENum 0. :: args))]
@@ -141,7 +141,7 @@ module Tramp : TC = struct
         | J.EFun (_, args, _, nid) ->
           let b = J.ECall(
               J.EVar (J.S ({J.name="caml_trampoline" ;var = None})),
-              [J.ECall(J.EVar (J.V (VarMap.find v m2new)), [J.EArr ((Some (J.ENum 0.)) :: List.map (fun i -> Some (J.EVar i)) args)])]) in
+              [J.ECall(J.EVar (J.V (VarMap.find v m2new)), J.ENum 0. :: List.map (fun i -> J.EVar i) args)]) in
           let b = J.Statement (J.Return_statement (Some b,J.N)) in
           v,J.EFun (None, args,[b],nid )
         | _ -> assert false) cls in
@@ -152,13 +152,7 @@ module Tramp : TC = struct
         VarMap.find v m2new,
         match clo with
         | J.EFun (nm,args,body,nid) ->
-          let args',_ =
-            List.fold_left
-              (fun (acc,i) v -> (v,Some (J.EAccess (J.EVar arr,J.ENum (float_of_int i))))::acc,succ i)
-              ([],0)
-              (J.V counter::args) in
-          let body = J.Statement (J.Variable_statement (args',J.N)) :: body in
-          J.EFun (nm,[arr],rw#sources body, nid)
+          J.EFun (nm,(J.V counter)::args,rw#sources body, nid)
         | _ -> assert false
       ) cls in
     let make binds = [J.Variable_statement (

@@ -75,7 +75,7 @@ function caml_js_get_console () {
 function caml_trampoline(res) {
     var c = 1;
     while(res && res.joo_tramp){
-        res = res.joo_tramp(res.joo_args);
+        res = res.joo_tramp.apply(null, res.joo_args);
         c++;
     }
     if(c>10) console.log("trampoline ", c, "times")
