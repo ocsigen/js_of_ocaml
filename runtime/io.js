@@ -177,6 +177,14 @@ function caml_ml_open_descriptor_in (fd)  {
   };
 }
 
+
+//Provides: caml_ml_set_binary_mode
+function caml_ml_set_binary_mode(chan,mode){
+  chan.data.flags.text = !mode
+  chan.data.flags.binary = mode
+  return 0;
+}
+
 //Input from in_channel
 
 //Provides: caml_ml_close_channel
@@ -236,6 +244,35 @@ function caml_ml_input_char (chan) {
   return c;
 }
 
+//Provides: caml_ml_input_int
+//Requires: caml_raise_end_of_file
+function caml_ml_input_int (chan) {
+  if ((chan.data.offset + 3) >= chan.data.array.length)
+    caml_raise_end_of_file();
+  var a = chan.data.array, o = chan.data.offset;
+  var r = (a[o] << 24) | (a[o+1] << 16) | (a[o+2] << 8) | (a[o+3]);
+  chan.data.offset+=4;
+  return r;
+}
+
+//Provides: caml_ml_seek_in
+function caml_ml_seek_in(chan,pos){
+  chan.data.offset = pos;
+}
+
+//Provides: caml_ml_seek_in_64
+//Requires: caml_int64_to_float
+function caml_ml_seek_in_64(chan,pos){
+  chan.data.offset = caml_int64_to_float(pos);
+}
+
+//Provides: caml_ml_pos_in
+function caml_ml_pos_in(chan) {return chan.data.offset}
+
+//Provides: caml_ml_pos_in_64
+//Requires: caml_int64_of_float
+function caml_ml_pos_in_64(chan) {return caml_int64_of_float(chan.data.offset)}
+
 //Provides: caml_ml_input_scan_line
 //Requires: caml_array_bound_error
 function caml_ml_input_scan_line(chan){
@@ -294,4 +331,41 @@ function caml_ml_output (oc,buffer,offset,len) {
 function caml_ml_output_char (oc,c) {
     var s = caml_new_string(String.fromCharCode(c));
     caml_ml_output(oc,s,0,1);
+}
+
+//Provides: caml_output_value
+//Requires: caml_output_value_to_string, caml_ml_output
+function caml_output_value (chan) {
+  var s = caml_output_value_to_string(v);
+  caml_ml_output(chan,s,0,s.getLen());
+}
+
+
+//Provides: caml_ml_seek_out
+function caml_ml_seek_out(chan,pos){
+  chan.data.offset = pos;
+}
+
+//Provides: caml_ml_seek_out_64
+//Requires: caml_int64_to_float
+function caml_ml_seek_out_64(chan,pos){
+  chan.data.offset = caml_int64_to_float(pos);
+}
+
+//Provides: caml_ml_pos_out
+function caml_ml_pos_out(chan) {return chan.data.offset}
+
+//Provides: caml_ml_pos_out_64
+//Requires: caml_int64_of_float
+function caml_ml_pos_out_64(chan) {
+  return caml_int64_of_float (chan.data.offset);
+}
+
+//Provides: caml_ml_output_int
+//Requires: caml_ml_output
+//Requires: MlStringFromArray
+function caml_ml_output_int (oc,i) {
+  var arr = [(i>>24) & 0xFF,(i>>16) & 0xFF,(i>>8) & 0xFF,i & 0xFF ];
+  let s = new MlStringFromArray(arr);
+  caml_ml_output(oc,s,0,4);
 }

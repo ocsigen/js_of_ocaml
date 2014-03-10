@@ -17,6 +17,16 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+
+//Provides: caml_md5_chan
+//Requires: caml_md5_string, MlStringFromArray
+function caml_md5_chan(chan,len){
+  if(len<0){
+    len=chan.data.array.length - chan.data.offset;
+  }
+  return caml_md5_string(new MlStringFromArray(chan.data.array),chan.data.offset,len);
+}
+
 //Provides: caml_md5_string
 //Requires: MlString, MlStringFromArray
 var caml_md5_string =
