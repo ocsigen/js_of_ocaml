@@ -166,7 +166,7 @@ let header formatter ~standalone js =
 
 let debug_linker = Option.Debug.find "linker"
 
-let global_object = "joo_global_object"
+let global_object = Option.global_object
 
 let link formatter ~standalone ?linkall js =
   if standalone
