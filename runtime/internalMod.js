@@ -11,7 +11,7 @@ function caml_CamlinternalMod_init_mod(loc,shape) {
             return;
         case 1://lazy
         case 2://class
-            struct[idx]=null;
+            struct[idx]=[];
             break;
         default://module
             struct[0] = [0];
@@ -24,23 +24,18 @@ function caml_CamlinternalMod_init_mod(loc,shape) {
     return res[0]
 }
 //Provides: caml_CamlinternalMod_update_mod
+//Requires: caml_update_dummy
 function caml_CamlinternalMod_update_mod(shape,real,x) {
-    function loop (shape,real,x,idx){
-        switch(shape){
-        case 0://function
-            var tmp = x[idx];
-            while(tmp.fun)
-                tmp = tmp.fun;
-            real[idx].fun = tmp;
-            break;
-        case 1:
-        case 2:
-            real[idx]=x[idx];
-            break;
-        default:
-            for(var i=1;i<shape[1].length;i++)
-                loop(shape[1][i],real[idx],x[idx],i)
-        }
-    }
-    loop(shape,[real],[x],0)
+  switch(shape){
+  case 0://function
+    real.fun = x;
+    break;
+  case 1://lazy
+  case 2://class
+    caml_update_dummy(real,x);
+    break;
+  default:
+    for(var i=1;i<shape[1].length;i++)
+      caml_CamlinternalMod_update_mod(shape[1][i],real[i],x[i])
+  }
 }
