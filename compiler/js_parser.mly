@@ -233,7 +233,7 @@ block:
  | block_with_pi { fst $1 }
 
 variable_statement:
- | pi=T_VAR separated_nonempty_list(T_COMMA,variable_declaration) { J.Variable_statement ($2,J.Pi pi) }
+ | pi=T_VAR separated_nonempty_list(T_COMMA,variable_declaration) { J.Variable_statement $2 }
 
 variable_declaration:
  | variable option(initializeur) { $1, $2 }

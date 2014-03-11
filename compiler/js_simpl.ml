@@ -102,7 +102,7 @@ exception Not_assignment
 
 let rec assignment_of_statement_list l =
   match l with
-    [J.Variable_statement ([x, Some e],_)] ->
+    [J.Variable_statement [x, Some e]] ->
       (x, e)
   | J.Expression_statement (e, pc) :: rem ->
       let (x, (e',nid)) = assignment_of_statement_list rem in
@@ -112,7 +112,7 @@ let rec assignment_of_statement_list l =
 
 let assignment_of_statement st =
   match st with
-    J.Variable_statement ([x, Some e],_) -> (x, e)
+    J.Variable_statement [x, Some e] -> (x, e)
   | J.Block (l,_)                        -> assignment_of_statement_list l
   | _                                    -> raise Not_assignment
 
@@ -145,7 +145,7 @@ let rec if_statement_2 e pc iftrue truestop iffalse falsestop =
           if e1 = e
           then J.EBin(J.Or,e,e2)
           else J.ECond (e, e1, e2) in
-        [J.Variable_statement ([x1, Some (exp,pc)],pc)]
+        [J.Variable_statement [x1, Some (exp,pc)]]
       with Not_assignment -> try
         let e1 = expression_of_statement iftrue in
         let e2 = expression_of_statement iffalse in

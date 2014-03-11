@@ -46,9 +46,6 @@ module Var : sig
   val propagate_name : t -> t -> unit
   val reset : unit -> unit
   val set_pretty : bool -> unit
-
-  val addr : t -> addr -> unit
-  val get_addr : t -> DebugAddr.dbg option
 end
 
 
@@ -124,12 +121,12 @@ type instr =
 type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
 
 type last =
-    Return of Var.t * DebugAddr.dbg
-  | Raise of Var.t * DebugAddr.dbg
-  | Stop of DebugAddr.dbg
-  | Branch of cont * DebugAddr.dbg
-  | Cond of cond * Var.t * cont * cont * DebugAddr.dbg
-  | Switch of Var.t * cont array * cont array * DebugAddr.dbg
+    Return of Var.t
+  | Raise of Var.t
+  | Stop
+  | Branch of cont
+  | Cond of cond * Var.t * cont * cont
+  | Switch of Var.t * cont array * cont array
   | Pushtrap of cont * Var.t * cont * addr
   | Poptrap of cont
 

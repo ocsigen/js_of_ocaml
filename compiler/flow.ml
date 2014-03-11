@@ -114,14 +114,14 @@ let program_deps (_, blocks, _) =
             cont_deps blocks vars deps defs cont)
          block.handler;
        match block.branch with
-         Return _ | Raise _ | Stop _ ->
+         Return _ | Raise _ | Stop ->
            ()
-       | Branch (cont,_) | Poptrap cont ->
+       | Branch cont | Poptrap cont ->
            cont_deps blocks vars deps defs cont
-       | Cond (_, _, cont1, cont2, _) ->
+       | Cond (_, _, cont1, cont2) ->
            cont_deps blocks vars deps defs cont1;
            cont_deps blocks vars deps defs cont2
-       | Switch (_, a1, a2, _) ->
+       | Switch (_, a1, a2) ->
            Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a1;
            Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a2
        | Pushtrap (cont, _, _, _) ->
@@ -233,9 +233,9 @@ let program_escape defs known_origins (_, blocks, _) =
                   (VarTbl.get known_origins x))
          block.body;
        match block.branch with
-         Return (x,_) | Raise (x,_) ->
+         Return x | Raise x ->
            block_escape st x
-       | Stop _ | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ ->
+       | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ ->
            ())
     blocks;
   possibly_mutable

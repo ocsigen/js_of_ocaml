@@ -619,8 +619,7 @@ end) = struct
       | Block (b,pc) ->
         output_debug_info f pc;
         block f b
-      | Variable_statement (l,pc) ->
-        output_debug_info f pc;
+      | Variable_statement l ->
         variable_declaration_list (not last) f l
       | Empty_statement _ -> PP.string f ";"
       | Debugger_statement pc ->

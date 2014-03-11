@@ -84,16 +84,16 @@ and mark_reachable st pc =
              mark_var st x)
       block.body;
     match block.branch with
-      Return (x,_) | Raise (x,_) ->
+      Return x | Raise x ->
         mark_var st x
-    | Stop _ ->
+    | Stop ->
         ()
-    | Branch (cont,_) | Poptrap cont ->
+    | Branch cont | Poptrap cont ->
         mark_cont_reachable st cont
-    | Cond (_, x, cont1, cont2, _) ->
+    | Cond (_, x, cont1, cont2) ->
         mark_var st x;
         mark_cont_reachable st cont1; mark_cont_reachable st cont2
-    | Switch (x, a1, a2, _) ->
+    | Switch (x, a1, a2) ->
         mark_var st x;
         Array.iter (fun cont -> mark_cont_reachable st cont) a1;
         Array.iter (fun cont -> mark_cont_reachable st cont) a2
@@ -135,17 +135,16 @@ let filter_closure blocks st i =
 
 let filter_live_last blocks st l =
   match l with
-    Return _ | Raise _ | Stop _ ->
+    Return _ | Raise _ | Stop ->
       l
-  | Branch (cont, pc) ->
-      Branch (filter_cont blocks st cont, pc)
-  | Cond (c, x, cont1, cont2, pc) ->
-      Cond (c, x, filter_cont blocks st cont1, filter_cont blocks st cont2, pc)
-  | Switch (x, a1, a2, pc) ->
+  | Branch cont ->
+      Branch (filter_cont blocks st cont)
+  | Cond (c, x, cont1, cont2) ->
+      Cond (c, x, filter_cont blocks st cont1, filter_cont blocks st cont2)
+  | Switch (x, a1, a2) ->
       Switch (x,
               Array.map (fun cont -> filter_cont blocks st cont) a1,
-              Array.map (fun cont -> filter_cont blocks st cont) a2,
-              pc)
+              Array.map (fun cont -> filter_cont blocks st cont) a2)
   | Pushtrap (cont1, x, cont2, pc) ->
       Pushtrap (filter_cont blocks st cont1,
                 x, filter_cont blocks st cont2,
@@ -208,14 +207,14 @@ let f ((pc, blocks, free_pc) as program) =
        Util.opt_iter
          (fun (_, cont) -> add_cont_dep blocks defs cont) block.handler;
        match block.branch with
-         Return _ | Raise _ | Stop _ ->
+         Return _ | Raise _ | Stop ->
            ()
-       | Branch (cont,_) ->
+       | Branch cont ->
            add_cont_dep blocks defs cont
-       | Cond (_, _, cont1, cont2, _) ->
+       | Cond (_, _, cont1, cont2) ->
            add_cont_dep blocks defs cont1;
            add_cont_dep blocks defs cont2
-       | Switch (_, a1, a2, _) ->
+       | Switch (_, a1, a2) ->
            Array.iter (fun cont -> add_cont_dep blocks defs cont) a1;
            Array.iter (fun cont -> add_cont_dep blocks defs cont) a2
        | Pushtrap (cont, _, _, _) ->
