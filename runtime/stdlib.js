@@ -782,6 +782,8 @@ function caml_backtrace_status () { return 0; }
 function caml_get_exception_backtrace () { return 0; }
 //Provides: caml_get_exception_raw_backtrace const
 function caml_get_exception_raw_backtrace () { return 0; }
+//Provides: caml_record_backtrace
+function caml_record_backtrace () { return 0; }
 //Provides: caml_convert_raw_backtrace const
 function caml_convert_raw_backtrace () { return 0; }
 //Provides: caml_get_current_callstack const

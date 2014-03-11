@@ -17,7 +17,7 @@
     (by Hugo Heuzard)
  ** add Ocamlbuild plugin js_of_ocaml.ocamlbuild
     (by Jacques-Pascal Deplaix)
- ** Add/Install unix.js, classlist.js, weak.js
+ ** Add/Install classlist.js, weak.js
  ** Add Url.Current.protocol (by Vicent Balat)
  ** Dependency: deriving instead of deriving-ocsigen
  ** Log in case of wrong string encoding (by Hugo Heuzard)
