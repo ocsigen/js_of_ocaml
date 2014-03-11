@@ -961,6 +961,10 @@ and translate_expr ctx queue x e level =
               assert false
         in
         (J.EObj (build_fields fields), const_p, queue)
+      | Extern "%overrideMod", [Pc (String m);Pc (String f)] ->
+        s_var (Printf.sprintf "caml_%s_%s" m f), const_p,queue
+      | Extern "%overrideMod", _ ->
+        assert false
       | Extern "%caml_js_opt_object", fields ->
         let rec build_fields queue l =
           match l with
@@ -981,6 +985,8 @@ and translate_expr ctx queue x e level =
           match internal_prim name with
             | Some f -> f l queue ctx
             | None ->
+              if name.[0] = '%'
+              then failwith (Printf.sprintf "Unresolved interal primitive: %s" name);
               let prim = Share.get_prim s_var name ctx.Ctx.share in
               let prim_kind = kind (Primitive.kind name) in
               let (args, prop, queue) =
