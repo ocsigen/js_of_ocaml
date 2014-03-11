@@ -69,6 +69,7 @@ endif
 
 realclean: clean
 	find . -name "*~" -print | xargs rm -f
+	find . -name "*.tmpjs" -print | xargs rm -f
 
 dist:
 	rm -rf /tmp/js_of_ocaml-${VERSION} &&\
