@@ -1669,9 +1669,13 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                    try
                      Util.find_in_paths paths name
                    with Not_found ->
-                     Format.eprintf "%s: interface file '%s' not found@."
-                       Sys.argv.(0) name;
-                     exit 1
+                     let name = String.capitalize id.Ident.name ^ ".cmi" in
+                     try
+                       Util.find_in_paths paths name
+                     with Not_found ->
+                       Format.eprintf "%s: interface file '%s' not found@."
+                         Sys.argv.(0) name;
+                       exit 1
                  in
                  let s = Util.read_file file in
                  fs := (Pc (IString name),Pc (IString s)) :: !fs
