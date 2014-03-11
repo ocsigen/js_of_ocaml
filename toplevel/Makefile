@@ -68,8 +68,8 @@ PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 #toplevel.byte: $(OBJS:cmx=cmo) toplevel.cmo
 #	ocamlfind ocamlc -linkall -g -package str -linkpkg toplevellib.cma -o $@.tmp $^
 
-$(NAME).js: $(NAME).byte $(COMP) $(JSFILES)
-	$(COMP) -I $(shell ocamlc -where)/compiler-libs -toplevel -noinline -noruntime $(JSFILES) $(NAME).byte $(OPTIONS)
+$(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
+	$(COMP) -I $(shell ocamlc -where)/compiler-libs -toplevel -noinline -noruntime $(JSFILES) $(NAME).byte $(OPTIONS) -I ./ -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
 	$(OCAMLC) -linkall -package str,findlib -linkpkg -o $@.tmp $(STDLIB) $(OBJS)

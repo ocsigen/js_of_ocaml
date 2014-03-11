@@ -41,7 +41,7 @@ function caml_js_to_array(a) { return [0].concat(a); }
 function caml_js_var(x) { return eval(x.toString()); }
 //Provides: caml_js_const const
 function caml_js_const(x) {
-  switch (caml_string_to_js(x)) {
+  switch (x.toString()) {
   case "null": return null;
   case "true": return true;
   case "false": return false;
@@ -66,7 +66,7 @@ function caml_js_new(c, a) {
   case 7: return new c (a[1],a[2],a[3],a[4],a[5],a[6]);
   case 8: return new c (a[1],a[2],a[3],a[4],a[5],a[6], a[7]);
   }
-  function F() { return c.apply(this, args.slice(1)); }
+  function F() { return c.apply(this, a.slice(1)); }
   F.prototype = c.prototype;
   return new F;
 }

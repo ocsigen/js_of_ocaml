@@ -17,8 +17,8 @@ very stable API.
   * Menhir
 
   [optionnal]
-  * deriving (**version 0.5** at least
-                      see: https://github.com/ocsigen/deriving)
+  * deriving (**version 0.6** at least
+              see: https://github.com/ocsigen/deriving)
 
 === Installation ===
 
@@ -51,16 +51,21 @@ Then, run the {{{js_of_ocaml}}} compiler to produce Javascript code:
 
 === Features ===
 
-The whole OCaml standard library should be supported, except for
-input/ouput channels, weak references, and most functions of the
-Sys module.  Extra libraries such as Bigarray, Unix, Thread or Str
-are not supported.
+Most of the OCaml standard library is supported. However,
+  * Weak semantic cannot be implemented using javascript.
+    A dummy implemtation is available (use `+weak.js` option)
+  * Most of Sys module is not supported.
 
-Tail call is not optimized in general.  However, self recursive
-functions (when the tail calls are to the function itself) are
-compiled using a loop.
+Extra libraries distributed with Ocaml (such as Thread or Str) are not
+supported in general. However,
+  * Bigarray: 1-dimensional bigarray are supported using Typed Arrays
+  * Unix: time related functions are supported
 
-Recursive modules are not supported at the moment.
+Tail call is not optimized in general. However, mutually recursive
+functions are optimized.
+  * self recursive functions (when the tail calls are the function itself) are
+    compiled using a loop.
+  * trampolines are used otherwise.
 
 Data representation differs from the usual one, for performance
 reasons.  Most notably, integers are 32 bits (rather than 31 bits or

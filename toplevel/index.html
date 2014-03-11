@@ -5,8 +5,59 @@
   <head>
     <title>OCaml toplevel</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <style>
+      #toplevel-container {
+      width: 700px;
+      background-color: black;
+      color: #ccc;
+      overflow: auto;
+      overflow-x: hidden;
+      height: 500px;
+      float:left;
+      }
+
+      #toplevel-container #output {
+      font-size: 12px;
+      line-height: 18px;
+      margin-bottom: 0px;
+      }
+
+      #toplevel-container textarea {
+      width:90%;
+      font-size: 12px;
+      background-color: transparent;
+      color: #fff;
+      border: 0;
+      resize: none;
+      outline: none;
+      font-family: monospace;
+      line-height: 18px;
+      font-weight: bold;
+      float:left;
+      margin: 0px;
+      padding: 0px;
+      margin-left: 6px;
+      }
+      #toplevel-container #sharp {
+      float: left;
+      white-space: pre;
+      font-family: monospace;
+      }
+      #toplevel-examples{
+      float:left;
+      margin-left:30px;
+      }
+      #toplevel-examples ul{
+      padding: 0px;
+      list-style-type: none;
+      }
+    </style>
     <script type="text/javascript" src="toplevel.js"></script>
   </head>
-  <body id="toplevel">
+  <body>
+    <div id="toplevel-container"></div>
+    <div id="toplevel-examples">
+      <h2>Samples</h2>
+    </div>
   </body>
 </html>

@@ -49,6 +49,7 @@ type t =
     mutable last_char : char option;
     mutable line : int;
     mutable col : int;
+    mutable total : int;
     output : string -> int -> int -> unit }
 
 let spaces = String.make 80 ' '
@@ -62,6 +63,7 @@ let output st s l =
      st.line <- st.line + !line;
      st.col <- l - last
    with Not_found -> st.col <- l + st.col);
+  st.total <- st.total + String.length s;
   st.output s 0 l
 
 
@@ -200,6 +202,8 @@ for i = 1 to 10 do render (tree i) done
 
 *)
 
+let total t = t.total
+
 let pos t =
   if t.compact
   then {
@@ -219,14 +223,14 @@ let newline st =
 let to_out_channel ch =
   { indent = 0; box_indent = 0; prev_indents = [];
     limit = 78; cur = 0; l = []; n = 0; w = 0;
-    col = 0; line = 0;
+    col = 0; line = 0; total = 0;
     compact = false; pending_space = None; last_char = None; needed_space = None;
     output = fun s i l -> Pervasives.output ch s i l }
 
 let to_buffer b =
   { indent = 0; box_indent = 0; prev_indents = [];
     limit = 78; cur = 0; l = []; n = 0; w = 0;
-    col = 0; line = 0;
+    col = 0; line = 0; total = 0;
     compact = false; pending_space = None; last_char = None; needed_space = None;
     output = fun s i l -> Buffer.add_substring b s i l }
 

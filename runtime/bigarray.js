@@ -1,10 +1,13 @@
 //Provides: caml_ba_init const
 function caml_ba_init () {}
 
-//Provides: caml_ba_create const
-//Requires: caml_invalid_argument
+
+//Provides: caml_ba_views
 var caml_ba_views;
 
+//Provides: caml_ba_create const
+//Requires: caml_invalid_argument
+//Requires: caml_ba_views
 function caml_ba_create (kind, layout, dim) {
   if (dim.length != 2)
     caml_invalid_argument("Bigarray.create: bad number of dimensions");
@@ -29,7 +32,7 @@ function caml_ba_create (kind, layout, dim) {
 function caml_ba_dim_1 (b) { return b.length; }
 
 //Provides: caml_ba_kind const
-
+//Requires: caml_ba_views
 // Not exactly the bigarray kind, but accurate enough to create
 // another array of the same kind
 function caml_ba_kind (b) {

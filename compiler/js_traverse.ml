@@ -213,16 +213,23 @@ class share_constant = object(m)
     let all = Hashtbl.create 17 in
     Hashtbl.iter (fun x n ->
         let shareit = match x with
-          | EStr(_,_) when n > 1 -> true
+          | EStr(s,_) when n > 1 ->
+            if String.length s < 20
+            then Some ("str_"^s)
+            else Some ("str_"^(String.sub s 0 16)^"_abr")
           | ENum f when n > 1 ->
             let s = Javascript.string_of_number f in
             let l = String.length s in
-            l > 2
-          | _ -> false in
-        if shareit
-        then
+            if l > 2
+            then Some ("num_"^s)
+            else None
+          | _ -> None in
+        match shareit with
+        | Some name ->
           let v = Code.Var.fresh () in
+          Code.Var.name v name;
           Hashtbl.add all x (V v)
+        | _ -> ()
       ) count ;
     if Hashtbl.length all = 0
     then p

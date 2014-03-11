@@ -15,7 +15,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
+
+
+
+let global_object = "joo_global_object"
 
 (* Optimisation *)
 
@@ -79,4 +83,32 @@ module Optim = struct
   let debugger = o ~name:"debugger" ~default:true
   (* this does not optimize properly *)
   let compact_vardecl = o ~name:"vardecl" ~default:false
+end
+
+module Tailcall = struct
+  type t =
+    | TcNone
+    | TcTrampoline
+    | TcWhile
+
+  let default = TcTrampoline
+
+  let all = default :: List.filter ((<>) default) [TcNone;TcTrampoline(* ;TcWhile *)]
+
+  let to_string = function
+    | TcNone -> "none"
+    | TcTrampoline -> "trampoline"
+    | TcWhile -> "while"
+
+  let of_string =
+    let all_string = List.map (fun x -> to_string x,x) all in
+    fun x -> List.assoc x all_string
+
+
+  let set,get =
+    let r = ref default in
+    (fun x -> r:=x),(fun () -> !r)
+
+  let maximum () = 50
+
 end

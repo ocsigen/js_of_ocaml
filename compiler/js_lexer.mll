@@ -111,11 +111,9 @@ rule initial tokinfo prev = parse
   (* symbols *)
   (* ----------------------------------------------------------------------- *)
 
-   (* todo? marcel does some stack push/pop on that *)
   | "{" { T_LCURLY (tokinfo lexbuf); }
   | "}" { T_RCURLY (tokinfo lexbuf); }
 
-   (* todo? marcel does some stack push/pop on that *)
   | "(" { T_LPAREN (tokinfo lexbuf); }
   | ")" { T_RPAREN (tokinfo lexbuf); }
 
@@ -244,7 +242,6 @@ rule initial tokinfo prev = parse
    *
    *)
 
-  (* todo? marcel was changing of state context condition there *)
   | "/=" { T_DIV_ASSIGN (tokinfo lexbuf); }
 
   | "/" {

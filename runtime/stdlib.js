@@ -183,6 +183,7 @@ function caml_make_vect (len, init) {
 
 //Provides: caml_compare_val
 //Requires: MlString, caml_int64_compare, caml_int_compare
+//Requires: caml_invalid_argument
 function caml_compare_val (a, b, total) {
   var stack = [];
   for(;;) {
@@ -218,6 +219,9 @@ function caml_compare_val (a, b, total) {
 		if (x != 0) return x;
 		break;
 	    }
+            case 251: {
+                caml_invalid_argument("equal: abstract value");
+            }
             case 255: {
 		// Int64
 		var x = caml_int64_compare(a, b);
@@ -434,7 +438,7 @@ function caml_finish_formatting(f, rawbuffer) {
 }
 
 //Provides: caml_format_int const
-//Requires: caml_parse_format, caml_finish_formatting, MlWrappedString
+//Requires: caml_parse_format, caml_finish_formatting, MlWrappedString,caml_str_repeat
 function caml_format_int(fmt, i) {
   if (fmt.toString() == "%d") return new MlWrappedString(""+i);
   var f = caml_parse_format(fmt);
@@ -744,14 +748,26 @@ function caml_array_blit(a1, i1, a2, i2, len) {
 
 ///////////// CamlinternalOO
 //Provides: caml_get_public_method const
-function caml_get_public_method (obj, tag) {
+var caml_method_cache = [];
+function caml_get_public_method (obj, tag, cacheid) {
   var meths = obj[1];
+  var ofs = caml_method_cache[cacheid];
+  if (ofs === null) {
+    // Make sure the array is not sparse
+    for (var i = caml_method_cache.length; i < cacheid; i++)
+      caml_method_cache[i] = 0;
+  } else if (meths[ofs] === tag) {
+//      console.log("cache hit");
+    return meths[ofs - 1];
+  }
+//  console.log("cache miss");
   var li = 3, hi = meths[1] * 2 + 1, mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;
     if (tag < meths[mi+1]) hi = mi-2;
     else li = mi;
   }
+  caml_method_cache[cacheid] = li + 1;
   /* return 0 if tag is not there */
   return (tag == meths[li+1] ? meths[li] : 0);
 }
@@ -766,6 +782,8 @@ function caml_backtrace_status () { return 0; }
 function caml_get_exception_backtrace () { return 0; }
 //Provides: caml_get_exception_raw_backtrace const
 function caml_get_exception_raw_backtrace () { return 0; }
+//Provides: caml_record_backtrace
+function caml_record_backtrace () { return 0; }
 //Provides: caml_convert_raw_backtrace const
 function caml_convert_raw_backtrace () { return 0; }
 //Provides: caml_get_current_callstack const

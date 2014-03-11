@@ -245,6 +245,18 @@ var caml_input_value_from_string = function (){
               var v = reader.read32s ();
               if (intern_obj_table) intern_obj_table[obj_counter++] = v;
               return v;
+            case "_n":
+              // Nativeint
+              switch (reader.read8u ()) {
+              case 1:
+                var v = reader.read32s ();
+                if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+                return v;
+              case 2:
+                caml_failwith("input_value: native integer value too large");
+              default:
+                caml_failwith("input_value: ill-formed native integer");
+              }
             default:
               caml_failwith("input_value: unknown custom block identifier");
             }

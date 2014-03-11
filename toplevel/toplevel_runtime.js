@@ -26,9 +26,6 @@ function caml_terminfo_setup () { return 1; } // Bad_term
 //Requires: caml_global_data
 function caml_get_section_table () { return caml_global_data.toc; }
 
-//Provides: caml_dynlink_get_current_libs
-function caml_dynlink_get_current_libs () { return [0]; }
-
 //Provides: caml_reify_bytecode
 //Requires: caml_global_data
 function caml_reify_bytecode (code, sz) {
@@ -51,3 +48,23 @@ function caml_realloc_global (len) {
   if (len + 1 > caml_global_data.length) caml_global_data.length = len + 1;
   return 0;
 }
+
+//Provides: caml_dynlink_open_lib
+function caml_dynlink_open_lib () { return 0; }
+
+//Provides: caml_dynlink_close_lib
+function caml_dynlink_close_lib () { return 0; }
+
+//Provides: caml_dynlink_lookup_symbol
+function caml_dynlink_lookup_symbol (h, s) {
+  try { eval(s.toString()); return 1; } catch (e) { return 0; };
+}
+
+//Provides: caml_dynlink_add_primitive
+//Requires: caml_global_data
+function caml_dynlink_add_primitive () {
+  return caml_global_data.prim_count++;
+}
+
+//Provides: caml_dynlink_get_current_libs
+function caml_dynlink_get_current_libs () { return [0, 0]; }
