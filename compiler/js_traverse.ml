@@ -22,6 +22,8 @@ open Javascript
 class type mapper = object
   method expression : Javascript.expression -> Javascript.expression
   method expression_o : Javascript.expression option -> Javascript.expression option
+  method initialiser : (Javascript.expression * Javascript.node_pc) -> (Javascript.expression * Javascript.node_pc)
+  method initialiser_o : (Javascript.expression * Javascript.node_pc) option -> (Javascript.expression * Javascript.node_pc) option
   method statement : Javascript.statement -> Javascript.statement
   method statement_o : Javascript.statement option -> Javascript.statement option
   method statements : Javascript.statement list -> Javascript.statement list
@@ -40,10 +42,10 @@ class map : mapper = object(m)
 
   method statement s = match s with
     | Block (b,pc) -> Block (m#statements b, pc)
-    | Variable_statement (l, pc) ->
+    | Variable_statement l ->
       Variable_statement (
         List.map
-          (fun (id, eo) -> m#ident id, m#expression_o eo) l, pc)
+          (fun (id, eo) -> m#ident id, m#initialiser_o eo) l)
     | Empty_statement pc -> Empty_statement pc
     | Debugger_statement pc -> Debugger_statement pc
     | Expression_statement (e,nid) ->
@@ -59,7 +61,7 @@ class map : mapper = object(m)
   | For_statement(e1,e2,e3,s,nid) ->
     let e1 = match  e1 with
       | Left o -> Left(m#expression_o o)
-      | Right l -> Right(List.map (fun (id, eo) -> m#ident id, m#expression_o eo) l) in
+      | Right l -> Right(List.map (fun (id, eo) -> m#ident id,m#initialiser_o eo) l) in
     For_statement(
       e1,
       m#expression_o e2,
@@ -69,7 +71,7 @@ class map : mapper = object(m)
   | ForIn_statement(e1,e2,s,nid) ->
     let e1 = match e1 with
       | Left e -> Left(m#expression e)
-      | Right ((id,e)) -> Right ((m#ident id,m#expression_o e)) in
+      | Right ((id,e)) -> Right ((m#ident id,m#initialiser_o e)) in
     ForIn_statement(
       e1,
       m#expression e2,
@@ -140,6 +142,11 @@ class map : mapper = object(m)
   method expression_o x = match x with
     | None -> None
     | Some s -> Some (m#expression s)
+
+  method initialiser (e,pc) = (m#expression e,pc)
+  method initialiser_o x = match x with
+    | None -> None
+    | Some i -> Some (m#initialiser i)
 
   method source x = match x with
     | Statement s -> Statement (m#statement s)
@@ -230,8 +237,8 @@ class share_constant = object(m)
       let f = Hashtbl.find all in
       let p = (new replace_expr f)#program p in
       let all = Hashtbl.fold (fun e v acc ->
-          (v, Some e) :: acc) all [] in
-      Statement(Variable_statement (all,N)):: p
+          (v, Some (e,N)) :: acc) all [] in
+      Statement(Variable_statement all):: p
 end
 
 module S = Code.VarSet
@@ -348,31 +355,31 @@ class free =
 
 
   method statement x = match x with
-    | Variable_statement (l,pc) ->
+    | Variable_statement l ->
       let l = List.map (fun (id,eopt) ->
         m#def_var id;
         match eopt with
           | None -> (id,None)
-          | Some e ->
+          | Some (e,pc) ->
             let e = m#expression e in
-            (id,Some e)) l in
-      Variable_statement (l,pc)
+            (id,Some (e,pc))) l in
+      Variable_statement l
     | For_statement (Right l,e2,e3,s,nid) ->
       let l = List.map (fun (id,eopt) ->
           m#def_var id;
           match eopt with
             | None -> (id,None)
-            | Some e ->
+            | Some (e,pc) ->
               let e = m#expression e in
-              (id,Some e)) l in
+              (id,Some (e,pc))) l in
       For_statement (Right l, m#expression_o e2, m#expression_o e3, m#statement s,nid)
     | ForIn_statement(Right ((id,eopt)),e2,s,nid) ->
       m#def_var id;
       let r = match eopt with
         | None -> (id,None)
-        | Some e ->
+        | Some (e,pc) ->
           let e = m#expression e in
-          (id,Some e) in
+          (id,Some (e,pc)) in
       ForIn_statement(Right r,m#expression e2,m#statement s,nid)
     | Try_statement (b,w,f,nid) ->
       let b = m#statements b in
@@ -479,7 +486,7 @@ class compact_vardecl = object(m)
       Util.filter_map (fun (id,eopt) ->
         match eopt with
           | None -> None
-          | Some e -> Some (EBin (Eq,EVar id,e))) l
+          | Some (e,_) -> Some (EBin (Eq,EVar id,e))) l
 
     method private translate_st l =
       let l = m#translate l in
@@ -498,7 +505,7 @@ class compact_vardecl = object(m)
     method statement s =
       let s = super#statement s in
       match s with
-        | Variable_statement (l,_) -> m#translate_st l
+        | Variable_statement l -> m#translate_st l
         | For_statement (Right l,e2,e3,s,nid) ->
           For_statement (Left (m#translate_ex l), e2, e3, s,nid)
         | ForIn_statement(Right (id,op),e2,s,nid) ->
@@ -533,7 +540,7 @@ class compact_vardecl = object(m)
       let may_flush rem vars s instr =
         if vars = []
         then rem,[],s::instr
-        else rem,[],s::Statement (Variable_statement (List.rev vars,N))::instr in
+        else rem,[],s::Statement (Variable_statement (List.rev vars))::instr in
 
       let rem,vars,instr = List.fold_left (fun (rem,vars,instr) s ->
         match s with
@@ -541,7 +548,7 @@ class compact_vardecl = object(m)
             let l = m#split e in
             List.fold_left (fun (rem,vars,instr) e -> match e with
               | EBin(Eq,EVar id,exp) when IdentSet.mem id rem ->
-                (IdentSet.remove id rem,(id,Some exp)::vars,instr)
+                (IdentSet.remove id rem,(id,Some (exp,N))::vars,instr)
               | x -> may_flush rem vars (Statement(Expression_statement (x,nid))) instr)
               (rem,vars,instr) l
           end
@@ -551,14 +558,14 @@ class compact_vardecl = object(m)
       let instr = match vars with
         | [] -> (List.rev instr)
         | d ->
-          let d = Statement (Variable_statement (List.rev d, N)) in
+          let d = Statement (Variable_statement (List.rev d)) in
           List.rev (d::instr) in
       let l = IdentSet.fold (fun x acc -> (x,None)::acc) rem [] in
       match l,instr with
         | [],_ -> instr
-        | l, (Statement (Variable_statement (l',pc))::rest) ->
-          Statement (Variable_statement (List.rev_append l l', N)) :: rest
-        | l,_ -> (Statement (Variable_statement (l,N)))::instr
+        | l, (Statement (Variable_statement l')::rest) ->
+          Statement (Variable_statement (List.rev_append l l')) :: rest
+        | l,_ -> (Statement (Variable_statement l))::instr
 
     method source x =
       let x = super#source x in
@@ -602,15 +609,15 @@ class clean = object(m)
     let l = super#statements l in
     let vars_rev,instr_rev = List.fold_left (fun (vars_rev,instr_rev) x ->
         match x with
-          | Variable_statement (l,_) -> (List.rev_append l vars_rev,instr_rev)
+          | Variable_statement l -> (List.rev_append l vars_rev,instr_rev)
           | Empty_statement _
           | Expression_statement (EVar _, _) -> vars_rev,instr_rev
           | x when vars_rev = [] -> ([],x::instr_rev)
-          | x -> ([],x::Variable_statement (List.rev vars_rev,N)::instr_rev)
+          | x -> ([],x::Variable_statement (List.rev vars_rev)::instr_rev)
       ) ([],[]) l in
     let instr_rev = match vars_rev with
       | [] -> instr_rev
-      | vars_rev -> Variable_statement (List.rev vars_rev,N) :: instr_rev
+      | vars_rev -> Variable_statement (List.rev vars_rev) :: instr_rev
     in List.rev instr_rev
 
   method sources l =
@@ -647,7 +654,7 @@ let translate_assign_op = function
   | _ -> assert false
 
 let assign_op = function
-  | (exp,Some (EBin (Plus, exp',exp''))) ->
+  | (exp,EBin (Plus, exp',exp'')) ->
     begin
       match exp=exp',exp=exp'' with
         | false,false -> None
@@ -662,11 +669,11 @@ let assign_op = function
         | true, true ->
           Some(EBin(StarEq,exp,ENum 2.))
     end
-  | (exp,Some (EBin (Minus, exp',y))) when exp = exp' ->
+  | (exp,EBin (Minus, exp',y)) when exp = exp' ->
     if y = ENum 1.
     then Some (EUn (DecrB, exp))
     else Some (EBin (MinusEq, exp,y))
-  | (exp,Some (EBin (Mul, exp',exp''))) ->
+  | (exp,EBin (Mul, exp',exp'')) ->
     begin
       match exp=exp',exp=exp'' with
         | false,false -> None
@@ -675,7 +682,7 @@ let assign_op = function
         | _,true ->
           Some (EBin (StarEq, exp,exp'))
     end
-  | (exp,Some (EBin (Div | Mod | Lsl | Asr |  Lsr | Band | Bxor | Bor as unop, exp',y))) when exp = exp' ->
+  | (exp,EBin (Div | Mod | Lsl | Asr |  Lsr | Band | Bxor | Bor as unop, exp',y)) when exp = exp' ->
     Some (EBin (translate_assign_op unop, exp,y))
   | _ -> None
 
@@ -721,11 +728,13 @@ class simpl = object(m)
             Some (Expression_statement (EBin(Eq,v2,e2),_)), pc) when v1 = v2 ->
           Expression_statement (EBin(Eq,v1,ECond(cond,e1,e2)),pc)::rem
 
-        | Variable_statement (l1,pc) ->
-          let x = List.map (function (ident,exp) ->
+        | Variable_statement l1 ->
+          let x = List.map (function
+              | (ident,None) -> Variable_statement [(ident,None)]
+              | (ident,Some (exp,pc)) ->
               match assign_op (EVar ident,exp) with
               | Some e -> Expression_statement (e,N)
-              | None -> Variable_statement ([(ident,exp)],pc)) l1 in
+              | None -> Variable_statement [(ident,Some (exp,pc))]) l1 in
           x@rem
         | _ -> st::rem
       ) s []
@@ -736,8 +745,9 @@ class simpl = object(m)
     let append_st st_rev sources_rev =
       let st = m#statements (List.rev st_rev) in
       let st = List.map (function
-          | Variable_statement ([addr, Some (EFun (None, params, body, pc))],_) ->
-            Function_declaration (addr, params, body, pc)
+          | Variable_statement
+              [addr, Some (EFun (None, params, body, pc),pc')] ->
+            Function_declaration (addr, params, body, pc')
           | s -> Statement s) st in
       List.rev_append st sources_rev in
 

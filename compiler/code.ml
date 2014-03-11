@@ -166,12 +166,12 @@ type instr =
 type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
 
 type last =
-    Return of Var.t * DebugAddr.dbg
-  | Raise of Var.t * DebugAddr.dbg
-  | Stop of DebugAddr.dbg
-  | Branch of cont * DebugAddr.dbg
-  | Cond of cond * Var.t * cont * cont * DebugAddr.dbg
-  | Switch of Var.t * cont array * cont array * DebugAddr.dbg
+    Return of Var.t
+  | Raise of Var.t
+  | Stop
+  | Branch of cont
+  | Cond of cond * Var.t * cont * cont
+  | Switch of Var.t * cont array * cont array
   | Pushtrap of cont * Var.t * cont * addr
   | Poptrap of cont
 
@@ -332,18 +332,18 @@ let print_cond f (c, x) =
 
 let print_last f l =
   match l with
-    Return (x,_) ->
+    Return x ->
       Format.fprintf f "return %a" Var.print x
-  | Raise (x,_) ->
+  | Raise x ->
       Format.fprintf f "raise %a" Var.print x
-  | Stop _ ->
+  | Stop ->
       Format.fprintf f "stop"
-  | Branch (cont,_) ->
+  | Branch cont ->
       Format.fprintf f "branch %a" print_cont cont
-  | Cond (cond, x, cont1, cont2, _) ->
+  | Cond (cond, x, cont1, cont2) ->
       Format.fprintf f "if %a then %a else %a" print_cond (cond, x)
         print_cont cont1 print_cont cont2
-  | Switch (x, a1, a2, _) ->
+  | Switch (x, a1, a2) ->
       Format.fprintf f "switch %a {" Var.print x;
       Array.iteri
         (fun i cont -> Format.fprintf f "int %d -> %a; " i print_cont cont) a1;
@@ -404,13 +404,13 @@ let fold_children blocks pc f accu =
     | None              -> accu
   in
   match block.branch with
-    Return _ | Raise _ | Stop _ ->
+    Return _ | Raise _ | Stop ->
       accu
-  | Branch ((pc', _),_) | Poptrap (pc', _) | Pushtrap ((pc', _), _, _, _) ->
+  | Branch (pc', _) | Poptrap (pc', _) | Pushtrap ((pc', _), _, _, _) ->
       f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _), _) ->
+  | Cond (_, _, (pc1, _), (pc2, _)) ->
       f pc1 accu >> f pc1 >> f pc2
-  | Switch (_, a1, a2, _) ->
+  | Switch (_, a1, a2) ->
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 

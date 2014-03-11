@@ -233,13 +233,13 @@ block:
  | block_with_pi { fst $1 }
 
 variable_statement:
- | pi=T_VAR separated_nonempty_list(T_COMMA,variable_declaration) { J.Variable_statement ($2,J.Pi pi) }
+ | pi=T_VAR separated_nonempty_list(T_COMMA,variable_declaration) { J.Variable_statement $2 }
 
 variable_declaration:
  | variable option(initializeur) { $1, $2 }
 
 initializeur:
- | T_ASSIGN assignment_expression { $2 }
+ | T_ASSIGN assignment_expression { $2, J.Pi $1 }
 
 
 empty_statement:
@@ -290,7 +290,7 @@ variable_declaration_no_in:
  | variable option(initializer_no_in) { $1, $2 }
 
 initializer_no_in:
- | T_ASSIGN assignment_expression_no_in { $2 }
+ | T_ASSIGN assignment_expression_no_in { $2, J.Pi $1 }
 
 
 continue_statement:

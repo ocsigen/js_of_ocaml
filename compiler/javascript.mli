@@ -97,7 +97,7 @@ and expression =
 
 and statement =
     Block of block * node_pc
-  | Variable_statement of variable_declaration list * node_pc
+  | Variable_statement of variable_declaration list
   | Empty_statement of node_pc
   | Expression_statement of expression * node_pc
   | If_statement of expression * statement * statement option * node_pc
@@ -131,7 +131,7 @@ and variable_declaration = ident * initialiser option
 
 and case_clause = expression * statement_list
 
-and initialiser = expression
+and initialiser = expression * node_pc
 
 (****)
 

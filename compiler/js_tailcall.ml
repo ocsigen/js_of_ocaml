@@ -105,15 +105,16 @@ end
 
 
 module type TC = sig
-  val rewrite : (Code.Var.t * Javascript.expression * VarSet.t) list -> (string -> Javascript.expression) -> Javascript.statement list
+  val rewrite :
+    (Code.Var.t * Javascript.expression * J.node_pc * VarSet.t) list ->
+    (string -> Javascript.expression) -> Javascript.statement list
 end
 
 module Ident : TC = struct
   let rewrite closures get_prim =
-    [J.Variable_statement (
-      List.map (fun (name, cl,_) ->
-          J.V name, Some cl
-          ) closures, J.N)]
+    [J.Variable_statement
+       (List.map (fun (name, cl, loc, _) -> J.V name, Some (cl, loc))
+          closures)]
 
 end
 
@@ -125,11 +126,12 @@ module Tramp : TC = struct
 
   let rewrite cls get_prim =
     match cls with
-    | [x,cl,req_tc] when not (VarSet.mem x req_tc) -> Ident.rewrite cls get_prim
+    | [x,cl,_,req_tc] when not (VarSet.mem x req_tc) ->
+        Ident.rewrite cls get_prim
     | _ ->
     let counter = Var.fresh () in
     Var.name counter "counter";
-    let m2old,m2new = List.fold_right (fun (v,_,_) (m2old,m2new) ->
+    let m2old,m2new = List.fold_right (fun (v,_,_,_) (m2old,m2new) ->
         let v' = Var.fork v in
         VarMap.add v' v m2old, VarMap.add v v' m2new
       ) cls (VarMap.empty,VarMap.empty)in
@@ -154,7 +156,7 @@ module Tramp : TC = struct
       with Not_found -> None
     in
     let rw = new tailcall_rewrite rewrite in
-    let wrappers = List.map (fun (v,clo,_) ->
+    let wrappers = List.map (fun (v,clo,_,_) ->
         match clo with
         | J.EFun (_, args, _, nid) ->
           let b = J.ECall(
@@ -163,17 +165,16 @@ module Tramp : TC = struct
           let b = J.Statement (J.Return_statement (Some b,J.N)) in
           v,J.EFun (None, args,[b],nid )
         | _ -> assert false) cls in
-    let reals = List.map (fun (v,clo,_) ->
+    let reals = List.map (fun (v,clo,_,_) ->
         VarMap.find v m2new,
         match clo with
         | J.EFun (nm,args,body,nid) ->
           J.EFun (nm,(J.V counter)::args,rw#sources body, nid)
         | _ -> assert false
       ) cls in
-    let make binds = [J.Variable_statement (
-        List.map (fun (name, ex) ->
-            J.V (name), Some ex
-          ) binds, J.N)] in
+    let make binds =
+      [J.Variable_statement
+         (List.map (fun (name, ex) -> J.V (name), Some (ex, J.N)) binds)] in
     make (reals@wrappers)
 
 end

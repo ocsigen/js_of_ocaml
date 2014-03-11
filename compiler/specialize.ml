@@ -63,7 +63,7 @@ let specialize_instr info (acc,free_pc,extra) i =
             let return' = Code.Var.fresh () in
             { params=params';
               body = [Let(return',Apply(f,l@params',true))];
-              branch = Return (return',Code.DebugAddr.no);
+              branch = Return return';
               handler = None;
             } in
           Let(x, Closure(missing,(free_pc,missing)))::acc,(free_pc + 1),(free_pc,block)::extra
