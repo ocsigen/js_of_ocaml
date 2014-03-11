@@ -31,11 +31,19 @@
  ** Runtime: add one-dimensional Bigarray support
  ** Library: switch from "float Js.t" to just "float" for typing
     JavaScript numbers
+ ** Runtime: add support for recursive module
+ ** Compiler: use trampoline to implement tailcall optim
+ ** Runtime: Support in_channel and out_channel
+ ** Compiler: option to embed files into the generated js
+    such files can be read using open_in
+ ** Runtime: add cache for method lookup
+ ** Compiler: sourcemap support
 
  * BugFixes
  ** Compiler: js file is not create in case of error (by Hugo Heuzard)
  ** Fix compatibility when using type conv (by Hugo Heuzard)
  ** Fix md5 : incorrect for string where (length % 64) E 56..59 (by Grégoire Henry)
+ ** Fix caml_js_new: when called with more than 8 arguments
 
 ===== 1.4 (2013-12-03) =====
 
