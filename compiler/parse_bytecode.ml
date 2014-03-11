@@ -1659,6 +1659,10 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
             (let x = Var.fresh () in
              Let (x, Constant (parse_const (Obj.repr toc))) ::
              set_global "toc" x !l);
+          l :=
+            (let x = Var.fresh () in
+             Let (x, Constant (Int (Array.length g.primitives))) ::
+             set_global "prim_count" x !l);
           (* Include interface files *)
 
           Tbl.iter

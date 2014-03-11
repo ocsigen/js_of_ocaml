@@ -57,10 +57,10 @@ end = struct
   let setup output =
     Option.Optim.disable "shortvar";
     Option.Optim.enable "pretty";
-    let toc = g##toc in
-    let prims = split_primitives (List.assoc "PRIM" toc) in
 
     let compile s =
+      let prims =
+        split_primitives (Symtable.data_primitive_names ()) in
       let output_program = Driver.from_string prims s in
       let b = Buffer.create 100 in
       output_program (Pretty_print.to_buffer b);
