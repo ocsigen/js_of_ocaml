@@ -376,7 +376,7 @@ module State = struct
     {state with accu = Dummy; stack = []; env = env; env_offset = offset;
                 handlers = []}
 
-  let start_block state pc =
+  let start_block state =
     let stack =
       List.fold_right
         (fun e stack ->
@@ -508,7 +508,7 @@ let rec compile_block code pc state =
     let len = String.length code  / 4 in
     let limit = next_block len pc in
     if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
-    let state = State.start_block state pc in
+    let state = State.start_block state in
     tagged_blocks := AddrSet.add pc !tagged_blocks;
     let (instr, last, state') = compile code limit pc state [] in
     compiled_blocks :=
