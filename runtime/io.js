@@ -216,7 +216,7 @@ function caml_ml_set_channel_output(chan,f) {
 //Provides: caml_ml_input
 //Requires: caml_blit_string, MlStringFromArray
 function caml_ml_input (chan, s, i, l) {
-  var l2 = chan.data.array.length - chan.data.array.offset;
+  var l2 = chan.data.array.length - chan.data.offset;
   if (l2 < l) l = l2;
   caml_blit_string(new MlStringFromArray(chan.data.array), chan.data.offset, s, i, l);
   chan.data.offset += l;
