@@ -71,6 +71,22 @@ function caml_js_get_console () {
   return c;
 }
 
+//Provides:caml_trampoline
+function caml_trampoline(res) {
+  var c = 1;
+  while(res && res.joo_tramp){
+    res = res.joo_tramp.apply(null, res.joo_args);
+    c++;
+  }
+  //if(c>10) joo_global_object.console.log("trampoline ", c, "times")
+  return res;
+}
+
+//Provides:caml_trampoline_return
+function caml_trampoline_return(f,args) {
+  return {joo_tramp:f,joo_args:args};
+}
+
 //Provides: js_print_stdout
 function js_print_stdout(s) {
   // Do not output the last \n if present

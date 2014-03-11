@@ -15,6 +15,7 @@ OBJS=pretty_print.cmx util.cmx reserved.cmx varPrinter.cmx option.cmx dgraph.cmx
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
 	   js_traverse.cmx js_assign.cmx \
+	   js_tailcall.cmx \
      linker.cmx generate.cmx parse_bytecode.cmx driver.cmx \
 
 
