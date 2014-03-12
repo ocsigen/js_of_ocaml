@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let rnd = Random.State.make [|0x513511d4|]
+let rnd = Random.State.make [|0x313511d4|]
 let random_var () =
   Format.sprintf "a%08Lx" (Random.State.int64 rnd 0x100000000L)
 
