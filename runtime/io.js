@@ -35,7 +35,9 @@ function caml_register_file(name,content) {
 //Provides: caml_sys_file_exists
 //Requires: caml_global_data
 function caml_sys_file_exists (name) {
-  return (caml_global_data.files && caml_global_data.files[name.toString()])?1:0;
+  return (caml_global_data.files && caml_global_data.files[name.toString()])?1:
+         (caml_global_data.auto_register_file === undefined ? 0 :
+          caml_global_data.auto_register_file(name));
 }
 
 //Provides: caml_sys_remove
