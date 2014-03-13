@@ -81,6 +81,7 @@ module Optim = struct
   let share_constant = o ~name:"share" ~default:true
   let strictmode = o ~name:"strict" ~default:true
   let debugger = o ~name:"debugger" ~default:true
+  let genprim = o ~name:"genprim" ~default:true
   (* this does not optimize properly *)
   let compact_vardecl = o ~name:"vardecl" ~default:false
 end

@@ -226,7 +226,15 @@ let resolve_deps ?(linkall = false) program used =
     then
       begin
         (* link all primitives *)
-        StringSet.empty, Hashtbl.fold (fun nm (id,_) visited -> resolve_dep_name_rev visited [] nm ) provided visited_rev
+        let prog,set =
+          Hashtbl.fold (fun nm (id,_) (visited,set) ->
+              resolve_dep_name_rev visited [] nm,
+              StringSet.add nm set
+            )
+            provided
+            (visited_rev,StringSet.empty) in
+        let missing = StringSet.diff used set in
+        missing,prog
       end
     else (* link used primitives *)
       StringSet.fold

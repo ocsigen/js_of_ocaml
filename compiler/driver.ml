@@ -168,6 +168,36 @@ let debug_linker = Option.Debug.find "linker"
 
 let global_object = Option.global_object
 
+let gen_missing js missing =
+  if Option.Optim.genprim ()
+  then begin
+    let open Javascript in
+    let miss = StringSet.fold (fun prim acc ->
+        let p = S {name=prim;var=None} in
+        (p,
+         Some (
+           ECond(EBin(NotEqEq,
+                      EDot(EVar (S {name=global_object;var=None}),prim),
+                      EVar(S {name="undefined";var=None})),
+                 EDot(EVar (S {name=global_object;var=None}),prim),
+                 EFun(None,[],[
+                     Statement(
+                       Expression_statement (
+                         ECall(EVar (S {name="caml_failwith";var=None}),
+                               [EStr(
+                                   Printf.sprintf "%s not implemented" prim
+                                 ,`Utf8)]),
+                         N))],N)
+                ),
+           N
+         )) :: acc
+      ) missing [] in
+    Statement (Variable_statement miss) :: js
+  end
+  else
+    js
+
+
 let link formatter ~standalone ?linkall js =
   if standalone
   then
@@ -185,8 +215,8 @@ let link formatter ~standalone ?linkall js =
       let all_external = StringSet.union prim prov in
 
       let used = StringSet.inter free all_external in
-      let js,_missing = Linker.resolve_deps ?linkall js used in
-      js
+      let js,missing = Linker.resolve_deps ?linkall js used in
+      gen_missing js missing
     end
   else js
 
