@@ -176,6 +176,10 @@ let add_file f =
          let freename = StringSet.diff freename Reserved.keyword in
          let freename = StringSet.diff freename Reserved.provided in
          let freename = StringSet.remove Option.global_object freename in
+         if not(StringSet.mem name free#get_def_name)
+         then begin
+           Format.eprintf "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)
+         end;
          if not(StringSet.is_empty freename)
          then begin
            Format.eprintf "warning: free variables in primitive code %S (%s)@." name (loc pi);
@@ -200,7 +204,7 @@ let rec resolve_dep_name_rev visited path nm =
 
 and resolve_dep_id_rev visited path id =
   if IntSet.mem id visited.ids then begin
-    if false && List.memq id path
+    if List.memq id path
     then error  "circular dependency: %s" (String.concat ", " (List.map (fun id -> fst(Hashtbl.find provided_rev id)) path));
     visited
   end else begin

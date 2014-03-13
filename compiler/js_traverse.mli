@@ -59,6 +59,8 @@ class type freevar =
     method state : t
     method get_free_name : Util.StringSet.t
     method get_free : Code.VarSet.t
+    method get_def_name : Util.StringSet.t
+    method get_def : Code.VarSet.t
   end
 
 class free : freevar

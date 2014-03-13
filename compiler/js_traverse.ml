@@ -277,6 +277,9 @@ class type freevar =
     method state : t
     method get_free_name : Util.StringSet.t
     method get_free : Code.VarSet.t
+    method get_def_name : Util.StringSet.t
+    method get_def : Code.VarSet.t
+
   end
 
 class free =
@@ -289,8 +292,12 @@ class free =
   method get_free =
     S.diff m#state.use m#state.def
 
+  method get_def = m#state.def
+
   method get_free_name =
     StringSet.diff m#state.use_name m#state.def_name
+
+  method get_def_name = m#state.def_name
 
   method merge_info from =
     let free_name = from#get_free_name in
