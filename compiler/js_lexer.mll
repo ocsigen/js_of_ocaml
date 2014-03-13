@@ -75,7 +75,7 @@ let hexa_to_int = function
 
 let NEWLINE = ("\r"|"\n"|"\r\n")
 let hexa = ['0'-'9''a'-'f''A'-'F']
-
+let inputCharacter = [^ '\r' '\n' ]
 (*****************************************************************************)
 
 rule initial tokinfo prev = parse
@@ -93,15 +93,10 @@ rule initial tokinfo prev = parse
       then TCommentML(info,content)
       else TComment(info,content)
     }
+  (* don't keep the trailing \n; it will be in another token *)
+  | "//" (inputCharacter* as cmt) { TComment(tokinfo lexbuf,cmt) }
 
-  | "//" {
-      let info = tokinfo lexbuf in
-      let buf = Buffer.create 127 in
-      st_one_line_comment buf lexbuf;
-      TComment(info,Buffer.contents buf)
-    }
-
-  | [' ' '\t' ]+            { TCommentSpace(tokinfo lexbuf,"") }
+  | ([' ' '\t' ]+ as cmt)         { TCommentSpace(tokinfo lexbuf,cmt) }
   | NEWLINE {
       lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with
                                       Lexing.pos_lnum = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum + 1 };
@@ -242,36 +237,30 @@ rule initial tokinfo prev = parse
    *
    *)
 
-  | "/=" { T_DIV_ASSIGN (tokinfo lexbuf); }
-
-  | "/" {
+  | "/" | "/=" {
+    let s = tok lexbuf in
       let info = tokinfo lexbuf in
 
       match prev with
       | Some (
             T_IDENTIFIER _
-          | T_NUMBER _
-          | T_STRING _
-          | T_REGEX _
-          | T_INCR _ | T_DECR _
-          | T_RBRACKET _
-          | T_RPAREN _
-          | T_FALSE _ | T_TRUE _
-          | T_NULL _
+          | T_NUMBER _ | T_STRING _ | T_REGEX _
+          | T_FALSE _ | T_TRUE _ | T_NULL _
           | T_THIS _
-        ) ->
-          T_DIV (info);
+          | T_INCR _ | T_DECR _
+          | T_RBRACKET _ | T_RPAREN _
+        ) -> begin match s with
+          | "/" -> T_DIV (info);
+          | "/=" -> T_DIV_ASSIGN info
+          | _ -> assert false
+        end
       | _ ->
           (* raise (Token t); *)
           let buf = Buffer.create 127 in
-          Buffer.add_char buf '/';
+          Buffer.add_string buf s;
           regexp buf lexbuf;
           T_REGEX (Buffer.contents buf, info)
     }
-
-  (* ----------------------------------------------------------------------- *)
-  (* Misc *)
-  (* ----------------------------------------------------------------------- *)
 
   (* ----------------------------------------------------------------------- *)
   (* eof *)
@@ -357,25 +346,6 @@ and st_comment buf nl = parse
       Format.eprintf "LEXER: unrecognised symbol in comment: %s@." s;
       Buffer.add_string buf s;
       st_comment buf nl lexbuf
-    }
-
-and st_one_line_comment buf = parse
-  | [^'\n' '\r']* {
-      Buffer.add_string buf (tok lexbuf);
-      st_one_line_comment buf lexbuf
-    }
-
-  | NEWLINE {
-      lexbuf.Lexing.lex_curr_p <- { lexbuf.Lexing.lex_curr_p with
-                                      Lexing.pos_lnum = lexbuf.Lexing.lex_curr_p.Lexing.pos_lnum + 1 };
-
-      Buffer.add_string buf (tok lexbuf); }
-
-  | eof { Format.eprintf "LEXER: end of file in comment@."; Buffer.add_string buf "\n" }
-  | _ {
-      let other = tok lexbuf in
-      Format.eprintf "LEXER:unrecognised symbol, in st_one_line_comment rule: %s@." other;
-      Buffer.add_string buf other
     }
 
 and pos = parse
