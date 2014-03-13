@@ -18,11 +18,7 @@
  *)
 
 
-let error k = Format.ksprintf (fun s ->
-    Format.eprintf "%s@." s;
-    exit 1
-  ) k
-
+let error k = Format.ksprintf (fun s -> failwith s) k
 
 let read_file f =
   let c = open_in f in
@@ -38,7 +34,7 @@ let read_file f =
     assert false;
   with Not_found -> Buffer.contents out
 
-let _ =
+let run () =
   Util.Timer.init Unix.gettimeofday;
   let js_files = ref [] in
   let stdin = ref false in
@@ -119,3 +115,17 @@ let _ =
   let p = Js_assign.program p in
   Js_output.program pp (fun _ -> None) p;
   finalize()
+
+
+let _ =
+  try run () with
+  | (Match_failure _ | Assert_failure _ | Util.Bug _) as exc ->
+    Format.eprintf "%s: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :@." Sys.argv.(0);
+    Format.eprintf "%s: Error: %s@." Sys.argv.(0) (Printexc.to_string exc);
+    exit 1
+  | Failure s ->
+    Format.eprintf "%s: Error: %s@." Sys.argv.(0) s;
+    exit 1
+  | exc ->
+    Format.eprintf "%s: Error: %s@." Sys.argv.(0) (Printexc.to_string exc);
+    exit 1

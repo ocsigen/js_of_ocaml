@@ -39,8 +39,7 @@ module Debug = struct
 
   let set s =
     try List.assoc s !debugs := true with Not_found ->
-      Format.eprintf "The debug named %S doesn't exist@." s;
-      exit 1
+      failwith (Printf.sprintf "The debug named %S doesn't exist@." s)
 
 end
 
@@ -61,14 +60,11 @@ module Optim = struct
 
   let disable s =
     try List.assoc s !optims := false with Not_found ->
-      Format.eprintf "The option named %S doesn't exist@." s;
-      exit 1
+      failwith (Printf.sprintf "The option named %S doesn't exist@." s)
 
   let enable s =
     try List.assoc s !optims := true with Not_found ->
-      Format.eprintf "The option  named %S doesn't exist@." s;
-      exit 1
-
+      failwith (Printf.sprintf "The option named %S doesn't exist@." s)
 
   let pretty =     o ~name:"pretty" ~default:false
   let debuginfo =  o ~name:"debuginfo" ~default:false

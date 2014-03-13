@@ -54,12 +54,11 @@ let f toplevel linkall paths files js_files input_file output_file source_map =
         Sys.rename f_tmp f
       with exc ->
         Sys.remove f_tmp;
-        Format.eprintf "compilation error: %s@." (Printexc.to_string exc);
         raise exc
   end;
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
 
-let _ =
+let run () =
   Util.Timer.init Unix.gettimeofday;
   let js_files = ref [] in
   let files = ref [] in
@@ -125,8 +124,21 @@ let _ =
               mappings = []
             })
         | None ->
-          Format.eprintf "Don't know where to output the Source-map@.";
-          exit 1
+          failwith "Don't know where to output the Source-map@."
     else None in
   f !toplevel !linkall !paths !files (runtime @ List.rev !js_files)
     !input_file output_f source_m
+
+
+let _ =
+  try run () with
+  | (Match_failure _ | Assert_failure _ | Util.Bug _) as exc ->
+    Format.eprintf "%s: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :@." Sys.argv.(0);
+    Format.eprintf "%s: Error: %s@." Sys.argv.(0) (Printexc.to_string exc);
+    exit 1
+  | Failure s ->
+    Format.eprintf "%s: Error: %s@." Sys.argv.(0) s;
+    exit 1
+  | exc ->
+    Format.eprintf "%s: Error: %s@." Sys.argv.(0) (Printexc.to_string exc);
+    exit 1
