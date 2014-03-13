@@ -39,15 +39,23 @@ type result
 val regexp: string -> regexp
 (** Simple regexp constructor. *)
 
+val regexp_case_fold : string -> regexp
+(** Same as [regexp] but matching will be performed in a case
+    insensitive way. *)
+
 val regexp_with_flag: string -> string -> regexp
-(** Regexp constructor with flag that allow for global or
-    case-insensitive search. *)
+(** Regexp constructor with flag that allow for case-insensitive search
+    or multiline search (the global flag is always set). *)
 
 val quote: string -> string
 (** Escapes characters with special meaning in the regexp context. *)
 
 val regexp_string: string -> regexp
 (** [regexp_string s] creates a regexp matching the exact string [s]. *)
+
+val regexp_string_case_fold: string -> regexp
+(** Same as [regexp_string] but matching will be performed in a case
+    insensitive way. *)
 
 (** Functions *)
 
@@ -59,6 +67,9 @@ val string_match: regexp -> string -> int -> result option
 val search: regexp -> string -> int -> (int * result) option
 (** [search r s i] evaluates to the index of the match and the match result or
     [None] if [s] (starting from [i]) doesn't match [r]. *)
+
+val search_forward : regexp -> string -> int -> (int * result) option
+(** Same as [search]. *)
 
 val matched_string : result -> string
 (** [matched_string r] return the exact substring that matched when evaluating

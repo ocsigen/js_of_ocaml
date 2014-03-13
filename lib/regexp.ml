@@ -24,8 +24,11 @@ type result = Js.match_result Js.t
 
 let regexp s = jsnew Js.regExp_withFlags (Js.bytestring s, Js.string "g")
 
+let regexp_case_fold s =
+  jsnew Js.regExp_withFlags (Js.bytestring s, Js.string "gi")
+
 let regexp_with_flag s f =
-  jsnew Js.regExp_withFlags (Js.bytestring s, Js.string f)
+  jsnew Js.regExp_withFlags (Js.bytestring s, Js.string ("g" ^ f))
 
 
 let blunt_str_array_get a i =
@@ -41,6 +44,8 @@ let search r s i =
     (Js.Opt.map (r##exec(Js.bytestring s))
        (fun res_pre -> let res = Js.match_result res_pre in (res##index, res)))
 
+let search_forward = search
+
 let matched_string r = blunt_str_array_get r 0
 
 let matched_group r i =
@@ -54,8 +59,15 @@ let global_replace r s s_by =
   r##lastIndex <- 0;
   Js.to_bytestring (Js.bytestring s)##replace(r, quote_repl s_by)
 let replace_first r s s_by =
-  r##lastIndex <- 0;
-  Js.to_bytestring (Js.bytestring s)##replace(r, quote_repl s_by)
+  let flags =
+    match Js.to_bool r##ignoreCase, Js.to_bool r##multiline with
+      false, false -> Js.string ""
+    | false, true  -> Js.string "m"
+    | true,  false -> Js.string "i"
+    | true,  true  -> Js.string "mi"
+  in
+  let r' = jsnew Js.regExp_withFlags (r##source, flags) in
+  Js.to_bytestring (Js.bytestring s)##replace(r', quote_repl s_by)
 
 let list_of_js_array a =
   let rec aux accu idx =
@@ -79,3 +91,5 @@ let quote s =
   Js.to_bytestring (Js.bytestring s)##replace (quote_re, Js.string "\\$&")
 
 let regexp_string s = regexp (quote s)
+
+let regexp_string_case_fold s = regexp_case_fold (quote s)
