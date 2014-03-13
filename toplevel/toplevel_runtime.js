@@ -57,7 +57,8 @@ function caml_dynlink_close_lib () { return 0; }
 
 //Provides: caml_dynlink_lookup_symbol
 function caml_dynlink_lookup_symbol (h, s) {
-  try { eval(s.toString()); return 1; } catch (e) { return 0; };
+  return 1;
+//  try { eval(s.toString()); return 1; } catch (e) { return 0; };
 }
 
 //Provides: caml_dynlink_add_primitive

@@ -58,13 +58,28 @@ end = struct
     Option.Optim.disable "shortvar";
     Option.Optim.enable "pretty";
 
+    let initial_primitive_count =
+      Array.length (split_primitives (Symtable.data_primitive_names ())) in
+
     let compile s =
       let prims =
         split_primitives (Symtable.data_primitive_names ()) in
+      let unbound_primitive p =
+        try Js.Unsafe.eval_string p; false with _ -> true in
+      let stubs = ref [] in
+      Array.iteri
+        (fun i p ->
+           if i >= initial_primitive_count && unbound_primitive p then
+             stubs :=
+               Format.sprintf
+                 "function %s(){caml_failwith(\"%s not implemented\")}" p p
+               :: !stubs)
+        prims;
       let output_program = Driver.from_string prims s in
       let b = Buffer.create 100 in
       output_program (Pretty_print.to_buffer b);
       let res = Buffer.contents b in
+      let res = String.concat "" !stubs ^ res in
       output res;
       res
     in
