@@ -471,7 +471,7 @@ call_expression:
  | member_expression arguments                      { J.ECall($1, $2) }
  | call_expression arguments                        { J.ECall($1, $2) }
  | call_expression T_LBRACKET expression T_RBRACKET { J.EAccess ($1, $3) }
- | call_expression T_PERIOD identifier              { J.EDot ($1, $3) }
+ | call_expression T_PERIOD method_name             { J.EDot ($1, $3) }
 
 new_expression:
  | member_expression    { $1 }
@@ -482,7 +482,7 @@ member_expression:
      { e }
  | e1=member_expression T_LBRACKET e2=expression T_RBRACKET
      { J.EAccess (e1,e2) }
- | e1=member_expression T_PERIOD i=identifier
+ | e1=member_expression T_PERIOD i=field_name
      { J.EDot(e1,i) }
  | T_NEW e1=member_expression a=arguments
      { J.ENew(e1, Some a) }
@@ -663,7 +663,7 @@ call_expression_no_statement:
    { J.ECall($1, $2) }
  | call_expression_no_statement T_LBRACKET expression T_RBRACKET
    { J.EAccess($1, $3) }
- | call_expression_no_statement T_PERIOD identifier
+ | call_expression_no_statement T_PERIOD method_name
    { J.EDot($1,$3) }
 
 member_expression_no_statement:
@@ -671,7 +671,7 @@ member_expression_no_statement:
      { e }
  | e1=member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
    { J.EAccess(e1, e2) }
- | e1=member_expression_no_statement T_PERIOD i=identifier
+ | e1=member_expression_no_statement T_PERIOD i=field_name
    { J.EDot(e1,i) }
  | T_NEW e=member_expression a=arguments
    { J.ENew(e,Some a) }
@@ -761,7 +761,13 @@ arguments:
 /*(*1 Entities, names *)*/
 /*(*************************************************************************)*/
 identifier:
- | T_IDENTIFIER { let s,_ = $1 in s  }
+ | T_IDENTIFIER { fst $1  }
+
+/*(* should some keywork be allowed for field_name and method_name ??*)*/
+field_name:
+ | T_IDENTIFIER { fst $1 }
+method_name:
+ | T_IDENTIFIER { fst $1 }
 
 variable:
  | i=identifier { var i }
@@ -770,7 +776,7 @@ label:
  | identifier { J.Label.of_string $1 }
 
 property_name:
- | i=identifier      { J.PNI i }
+ | i=T_IDENTIFIER    { J.PNI (fst i) }
  | s=string_literal  { J.PNS s }
  | n=numeric_literal { J.PNN n }
 
