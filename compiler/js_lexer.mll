@@ -277,22 +277,21 @@ rule initial tokinfo prev = parse
 and string_escape quote buf = parse
   | '\\'{ Buffer.add_string buf "\\\\" }
   | 'x' (hexa as a) (hexa as b)
+  | "u00" (hexa as a) (hexa as b)
     { let code = hexa_to_int a * 16 + hexa_to_int b in
-      if code > 127
-      then
-        let c1 = code lsr 6 + 0xC0
-        and c2 = code land 0x3f + 0x80 in
-        Buffer.add_char buf (Char.chr c1);
-        Buffer.add_char buf (Char.chr c2)
-      else Buffer.add_char buf (Char.chr code) }
+      if code < 127 && code > 31
+      then Buffer.add_char buf (Char.chr code)
+      else begin
+        Buffer.add_char buf '\\';
+        Buffer.add_string buf (Lexing.lexeme lexbuf)
+      end }
   | 'u' hexa hexa hexa hexa {
       Buffer.add_char buf '\\';
       Buffer.add_string buf (Lexing.lexeme lexbuf) }
-  | (_ as c)
-    { Buffer.add_char buf '\\'; Buffer.add_char buf c }
-      (* if c = quote *)
-      (* then Buffer.add_char buf quote *)
-      (* else Buffer.add_char buf c } *)
+  | (_ as c) {
+      if c = quote
+      then Buffer.add_char buf quote
+      else begin Buffer.add_char buf '\\';Buffer.add_char buf c end }
 
 
 and string_quote q buf = parse
