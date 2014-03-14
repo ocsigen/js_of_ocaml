@@ -50,7 +50,7 @@ class tailcall = object(m)
 
   method clear = tc <- VarSet.empty
 
-  method last_e e =
+  method private last_e e =
     match e with
       | ECall (EVar (V var), args) -> tc <- VarSet.add var tc
       | ESeq (_,e) -> m#last_e e
@@ -74,7 +74,7 @@ class tailcall_rewrite f = object(m)
       end
     | _ -> s
 
-  method last_e e =
+  method private last_e e =
     match e with
     | ECall (EVar var,args) -> f var args
     | ECond (cond,e1,e2) ->
