@@ -7,17 +7,16 @@ lib: compiler.cma compiler.cmxa compiler.cmxs
 
 PACKAGES=findlib,str,unix
 
-OBJS=pretty_print.cmx util.cmx reserved.cmx varPrinter.cmx option.cmx dgraph.cmx \
-     code.cmx javascript.cmx vlq64.cmx source_map.cmx js_output.cmx js_simpl.cmx \
-	   parse_info.cmx js_token.cmx js_parser.cmx js_lexer.cmx parse_js.cmx\
-		 annot_parser.cmx annot_lexer.cmx \
+OBJS=compiler_version.cmx \
+     pretty_print.cmx util.cmx reserved.cmx varPrinter.cmx option.cmx \
+     dgraph.cmx code.cmx javascript.cmx vlq64.cmx source_map.cmx \
+     js_output.cmx js_simpl.cmx parse_info.cmx js_token.cmx js_parser.cmx \
+     js_lexer.cmx parse_js.cmx annot_parser.cmx annot_lexer.cmx \
      instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
-	   js_traverse.cmx js_assign.cmx \
-	   js_tailcall.cmx \
-     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx \
-
+     js_traverse.cmx js_assign.cmx js_tailcall.cmx \
+     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx
 
 COMPOBJS=$(OBJS) compile.cmx
 
@@ -53,6 +52,11 @@ compiler.cmxa: $(OBJS)
 compiler.cmxs: $(OBJS)
 	ocamlfind ocamlopt -shared -o $@ $^
 
+
+compiler_version.ml: ../VERSION
+	echo 'print_string ("let s = \"" ^ input_line (open_in "../VERSION") ^ "\"\n")' | ocaml -stdin > $@
+
+
 %.cmx: %.ml
 	ocamlfind ocamlopt -package findlib,str -for-pack Compiler -c $<
 
@@ -73,9 +77,10 @@ js_parser.ml js_parser.mli: js_parser.mly
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
 	rm -f js_of_ocaml compile.opt compile.byte minify.opt minify.byte
+	rm -f compiler_version.ml
 
 .PHONY: depend
-depend: js_lexer.ml annot_lexer.ml js_parser.ml annot_parser.ml
+depend: compiler_version.ml js_lexer.ml annot_lexer.ml js_parser.ml annot_parser.ml
 	ocamldep *.ml *.mli > .depend
 
 include .depend

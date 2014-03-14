@@ -8,6 +8,8 @@ compile.cmo : util.cmi source_map.cmo pretty_print.cmi parse_bytecode.cmi \
     option.cmo linker.cmi driver.cmi
 compile.cmx : util.cmx source_map.cmx pretty_print.cmx parse_bytecode.cmx \
     option.cmx linker.cmx driver.cmx
+compiler_version.cmo :
+compiler_version.cmx :
 control.cmo : subst.cmi code.cmi control.cmi
 control.cmx : subst.cmx code.cmx control.cmi
 deadcode.cmo : util.cmi pure_fun.cmi option.cmo code.cmi deadcode.cmi
@@ -18,12 +20,12 @@ driver.cmo : varPrinter.cmi util.cmi tailcall.cmi specialize_js.cmi \
     specialize.cmi reserved.cmo primitive.cmi pretty_print.cmi phisimpl.cmi \
     parse_bytecode.cmi option.cmo linker.cmi js_traverse.cmi js_output.cmi \
     js_assign.cmi javascript.cmi inline.cmi generate.cmi flow.cmi eval.cmi \
-    deadcode.cmi code.cmi driver.cmi
+    deadcode.cmi compiler_version.cmo code.cmi driver.cmi
 driver.cmx : varPrinter.cmx util.cmx tailcall.cmx specialize_js.cmx \
     specialize.cmx reserved.cmx primitive.cmx pretty_print.cmx phisimpl.cmx \
     parse_bytecode.cmx option.cmx linker.cmx js_traverse.cmx js_output.cmx \
     js_assign.cmx javascript.cmx inline.cmx generate.cmx flow.cmx eval.cmx \
-    deadcode.cmx code.cmx driver.cmi
+    deadcode.cmx compiler_version.cmx code.cmx driver.cmi
 eval.cmo : primitive.cmi flow.cmi code.cmi eval.cmi
 eval.cmx : primitive.cmx flow.cmx code.cmx eval.cmi
 flow.cmo : util.cmi subst.cmi option.cmo dgraph.cmi code.cmi flow.cmi
