@@ -292,9 +292,8 @@ let program p =
       coloring#block [];
       if S.cardinal (coloring#get_free) <> 0
       then begin
-        raise (Util.Bug
-                 (Printf.sprintf "Some variables escaped (#%d)"
-                    (S.cardinal (coloring#get_free))))
+        failwith (Printf.sprintf "Some variables escaped (#%d)"
+                    (S.cardinal (coloring#get_free)))
         (* S.iter(fun s -> (Format.eprintf "%s@." (Code.Var.to_string s))) coloring#get_free *)
       end;
       let name = allocate_variables state nv coloring#state.Js_traverse.count in

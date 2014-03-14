@@ -132,7 +132,7 @@ let run () =
 
 let _ =
   try run () with
-  | (Match_failure _ | Assert_failure _ | Util.Bug _) as exc ->
+  | (Match_failure _ | Assert_failure _) as exc ->
     Format.eprintf "%s: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :@." Sys.argv.(0);
     Format.eprintf "%s: Error: %s@." Sys.argv.(0) (Printexc.to_string exc);
     exit 1
