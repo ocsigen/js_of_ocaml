@@ -28,13 +28,11 @@ examples/*/*.js
 compiler/js_of_ocaml
 compiler/joo_minify
 compiler/js_lexer.ml
-compiler/js_lexer.mli
 compiler/js_parser.ml
 compiler/js_parser.mli
 compiler/compiler_version.ml
 
 compiler/annot_lexer.ml
-compiler/annot_lexer.mli
 compiler/annot_parser.ml
 compiler/annot_parser.mli
 compiler/*.conflicts
