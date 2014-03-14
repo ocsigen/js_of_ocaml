@@ -31,6 +31,7 @@ compiler/js_lexer.ml
 compiler/js_lexer.mli
 compiler/js_parser.ml
 compiler/js_parser.mli
+compiler/compiler_version.ml
 
 compiler/annot_lexer.ml
 compiler/annot_lexer.mli
