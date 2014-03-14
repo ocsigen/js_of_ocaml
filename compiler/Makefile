@@ -76,8 +76,11 @@ js_parser.ml js_parser.mli: js_parser.mly
 	ocamllex $<
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
-	rm -f js_of_ocaml compile.opt compile.byte minify.opt minify.byte
+	rm -f compile.opt compile.byte minify.opt minify.byte
+	rm -f js_of_ocaml joo_minify
 	rm -f compiler_version.ml
+	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
+	rm -f js_lexer.ml js_parser.ml js_parser.mli
 
 .PHONY: depend
 depend: compiler_version.ml js_lexer.ml annot_lexer.ml js_parser.ml annot_parser.ml
