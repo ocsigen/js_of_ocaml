@@ -33,9 +33,6 @@ let opt_filter p x =
 
 (****)
 
-exception Bug of string
-
-
 let findlib_init = Lazy.lazy_from_fun Findlib.init
 
 let find_pkg_dir pkg =

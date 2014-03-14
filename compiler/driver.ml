@@ -159,7 +159,8 @@ let generate (p,live_vars,_) =
 let header formatter ~standalone js =
   if standalone then begin
     Pretty_print.string formatter
-      "// This program was compiled from OCaml by js_of_ocaml 1.99dev";
+      ("// This program was compiled from OCaml by js_of_ocaml "
+       ^ Compiler_version.s);
     Pretty_print.newline formatter;
   end;
   js

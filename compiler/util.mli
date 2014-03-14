@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
-exception Bug of string
-
 module IntSet : Set.S with type elt = int
 module IntMap : Map.S with type key = int
 

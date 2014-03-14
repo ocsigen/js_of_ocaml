@@ -1075,6 +1075,6 @@ let program f ?source_map dl p =
       Printf.sprintf "%.1f%%" (float_of_int n *. 100. /. (float_of_int d)) in
     let total_s = PP.total f in
     let string_s = !O.stringsize in
-    Format.eprintf "total size : %s\n" (size total_s);
-    Format.eprintf "string size: %s (%s)\n" (size string_s) (percent string_s total_s);
+    Format.eprintf "total size : %s@." (size total_s);
+    Format.eprintf "string size: %s (%s)@." (size string_s) (percent string_s total_s);
   end
