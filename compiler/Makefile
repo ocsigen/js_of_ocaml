@@ -72,7 +72,7 @@ compiler_version.ml: ../VERSION
 js_parser.ml js_parser.mli: js_parser.mly
 	menhir --external-tokens Js_token --explain $<
 
-%.ml %.mli: %.mll
+%.ml: %.mll
 	ocamllex $<
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
@@ -83,7 +83,7 @@ clean:
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
 
 .PHONY: depend
-depend: compiler_version.ml js_lexer.ml annot_lexer.ml js_parser.ml annot_parser.ml
+depend: compiler_version.ml annot_lexer.ml js_parser.ml annot_parser.ml
 	ocamldep *.ml *.mli > .depend
 
 include .depend
