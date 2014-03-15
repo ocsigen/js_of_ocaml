@@ -185,9 +185,7 @@ let gen_missing js missing =
                      Statement(
                        Expression_statement (
                          ECall(EVar (S {name="caml_failwith";var=None}),
-                               [EStr(
-                                   Printf.sprintf "%s not implemented" prim
-                                 ,`Utf8)]),
+                               [EBin(Plus,EStr(prim,`Utf8),EStr(" not implemented",`Utf8))]),
                          N))],N)
                 ),
            N
