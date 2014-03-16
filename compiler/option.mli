@@ -37,6 +37,7 @@ module Optim : sig
   val debugger : unit -> bool
   val pretty : unit -> bool
   val debuginfo : unit -> bool
+  val excwrap : unit -> bool
 
   val enable : string -> unit
   val disable : string -> unit

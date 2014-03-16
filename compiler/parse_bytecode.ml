@@ -1632,6 +1632,8 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
         register_global 4; (* End_of_file *)
         register_global 5; (* Division_by_zero *)
         register_global 6; (* Not_found *)
+        register_global 7; (* Match_failure *)
+        register_global 8; (* Stack_overflow *)
         for i = Array.length g.constants - 1  downto 0 do
           match g.vars.(i) with
             Some x when g.is_const.(i) ->

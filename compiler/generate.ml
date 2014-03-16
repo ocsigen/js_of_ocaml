@@ -143,7 +143,7 @@ module Share = struct
     let count = List.fold_left (fun acc x ->
         add_special_prim_if_exists x acc)
         count
-        ["caml_trampoline";"caml_trampoline_return"] in
+        ["caml_trampoline";"caml_trampoline_return";"caml_wrap_exception"] in
     {count; vars = empty_aux}
 
   let get_string gen s t =
@@ -1263,6 +1263,16 @@ else begin
         in
         if debug () then Format.eprintf "} catch {@,";
         let handler = compile_block st [] pc2 inner_frontier interm in
+        let handler =
+          if st.ctx.Ctx.live.(Var.idx x) > 0 && Option.Optim.excwrap ()
+          then J.Expression_statement (
+            J.EBin(
+              J.Eq,
+              J.EVar (J.V x),
+              J.ECall (Share.get_prim s_var "caml_wrap_exception" st.ctx.Ctx.share,
+                       [J.EVar (J.V x)])),J.N)
+            ::handler
+          else handler in
         let x =
           let block2 = AddrMap.find pc2 st.blocks in
           let m = Subst.build_mapping args2 block2.params in

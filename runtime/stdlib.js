@@ -77,6 +77,19 @@ function caml_raise_sys_error (msg) {
 function caml_failwith (msg) {
   caml_raise_with_string(caml_global_data[3], msg);
 }
+//Provides: caml_wrap_exception
+//Requires: caml_global_data,MlWrappedString
+function caml_wrap_exception(e) {
+  if(e instanceof Array) return e;
+  var s = e.toString();
+  switch(s){
+  case "RangeError: Maximum call stack size exceeded"://chrome
+  case "InternalError: too much recursion"://firefox
+    return [0,caml_global_data[9]];
+  default:
+    return [0,caml_global_data[3],new MlWrappedString (s)];
+  }
+}
 
 //Provides: caml_invalid_argument
 //Requires: caml_raise_with_string, caml_global_data
