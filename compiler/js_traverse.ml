@@ -627,6 +627,25 @@ class clean = object(m)
       | vars_rev -> Variable_statement (List.rev vars_rev) :: instr_rev
     in List.rev instr_rev
 
+   method statement s =
+     let s = super#statement s in
+    let b = function
+      | Block ([],nid) -> Empty_statement nid
+      | Block ([x],_) -> x
+      | b -> b in
+    let bopt = function
+      | Some (Block  ([],nid)) -> None
+      | Some (Block  ([x],nid)) -> Some x
+      | Some b -> Some b
+      | None -> None in
+     match s with
+    | If_statement (if',then',else',nid) -> If_statement (if',b then',bopt else',nid)
+    | Do_while_statement (do',while',nid) -> Do_while_statement (b do',while',nid)
+    | While_statement (cond,st,nid) -> While_statement (cond,b st,nid)
+    | For_statement (p1,p2,p3,st,nid) -> For_statement (p1,p2,p3,b st,nid)
+    | ForIn_statement (param,e,st,n) -> ForIn_statement (param,e,b st,n)
+    | s -> s
+
   method sources l =
     let l = super#sources l in
     let append_st st_rev sources_rev =
