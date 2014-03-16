@@ -40,7 +40,7 @@ let run () =
   let stdin = ref false in
   let output_file = ref None in
   let options =
-    [("-debug", Arg.String Option.Debug.set, "<name> debug module <name>");
+    [("-debug", Arg.String Option.Debug.enable, "<name> debug module <name>");
      ("-disable",
       Arg.String Option.Optim.disable, "<name> disable optimization <name>");
      ("-pretty", Arg.Unit (fun () -> Option.Optim.enable "pretty"), " pretty print the output");

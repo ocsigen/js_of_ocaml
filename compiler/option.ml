@@ -37,8 +37,12 @@ module Debug = struct
     in
     fun () -> !state
 
-  let set s =
+  let enable s =
     try List.assoc s !debugs := true with Not_found ->
+      failwith (Printf.sprintf "The debug named %S doesn't exist@." s)
+
+  let disable s =
+    try List.assoc s !debugs := false with Not_found ->
       failwith (Printf.sprintf "The debug named %S doesn't exist@." s)
 
 end

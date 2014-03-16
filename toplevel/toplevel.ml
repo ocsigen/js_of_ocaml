@@ -43,7 +43,6 @@ end = struct
     Array.of_list(split 0 0)
 
   class type global_data = object
-    method toc : (string * string) list Js.readonly_prop
     method compile : (string -> string) Js.writeonly_prop
   end
 
@@ -52,9 +51,14 @@ end = struct
   let g = global_data ()
 
   let setup output =
-    Option.Optim.disable "shortvar";
-    Option.Optim.enable "pretty";
-
+    Hashtbl.add Toploop.directive_table "enable" (Toploop.Directive_string Option.Optim.enable);
+    Hashtbl.add Toploop.directive_table "disable" (Toploop.Directive_string Option.Optim.disable);
+    Hashtbl.add Toploop.directive_table "debug_on" (Toploop.Directive_string Option.Debug.enable);
+    Hashtbl.add Toploop.directive_table "debug_off" (Toploop.Directive_string Option.Debug.disable);
+    Hashtbl.add Toploop.directive_table "debug_off" (Toploop.Directive_string Option.Debug.disable);
+    Hashtbl.add Toploop.directive_table "tailcall" (Toploop.Directive_string (fun s ->
+      let x = Option.Tailcall.of_string s in
+      Option.Tailcall.set x));
     let initial_primitive_count =
       Array.length (split_primitives (Symtable.data_primitive_names ())) in
 
@@ -130,7 +134,9 @@ end = struct
     Toploop.initialize_toplevel_env ();
     Toploop.input_name := "//toplevel//";
     let header = "        Objective Caml version %s@.@." in
-    exec' (Printf.sprintf "Format.printf \"%s\" Sys.ocaml_version;;" header)
+    exec' (Printf.sprintf "Format.printf \"%s\" Sys.ocaml_version;;" header);
+    exec' ("#enable \"pretty\";;");
+    exec' ("#enable \"shortvar\";;")
 end
 
 let trim s =
@@ -155,10 +161,6 @@ let do_by_id s f =
   Js.Opt.case (Html.document##getElementById(Js.string s))
     (fun () -> ())
     (fun d -> f d)
-
-
-
-exception Next
 
 let examples =
   let r = Regexp.regexp "^\\(\\*+(.*)\\*+\\)$" in
@@ -239,7 +241,6 @@ let indent_textarea textbox =
       textbox##focus();
       ()
     | None -> () end
-
 
 let run _ =
   let container = by_id "toplevel-container" in

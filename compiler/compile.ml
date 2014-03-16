@@ -70,7 +70,7 @@ let run () =
   let source_map = ref false in
   let paths = ref [] in
   let options =
-    [("-debug", Arg.String Option.Debug.set, "<name> debug module <name>");
+    [("-debug", Arg.String Option.Debug.enable, "<name> debug module <name>");
      ("-disable",
       Arg.String Option.Optim.disable, "<name> disable optimization <name>");
      ("-enable",

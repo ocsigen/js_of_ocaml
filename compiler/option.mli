@@ -19,7 +19,8 @@
 
 module Debug : sig
   val find : string -> unit -> bool
-  val set : string -> unit
+  val enable : string -> unit
+  val disable : string -> unit
 end
 
 module Optim : sig
