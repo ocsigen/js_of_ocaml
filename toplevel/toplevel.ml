@@ -191,6 +191,20 @@ let examples =
     end
   with  _ -> []
 
+let indent_caml s =
+  let output = {
+    IndentPrinter.debug = false;
+    config = IndentConfig.default;
+    in_lines = (fun _ -> true);
+    indent_empty = true;
+    adaptive = true;
+    kind = IndentPrinter.Print (fun s acc -> acc ^ s)
+  }
+  in
+  let stream = Nstream.of_string s in
+  IndentPrinter.proceed output stream IndentBlock.empty ""
+
+
 let run _ =
   let container = by_id "toplevel-container" in
   let output = by_id "output" in
@@ -258,8 +272,10 @@ let run _ =
                        Js.to_bool e##metaKey) ->
           Lwt.async execute;
           Js._false
+        | 13 ->
+          Lwt.async resize;Js._true
         | 09 ->
-          textbox##value <- textbox##value##concat (Js.string "   ");
+          textbox##value <- Js.string (indent_caml (Js.to_string textbox##value));
           Js._false
         | 38 ->
           let str = Js.to_string textbox##value in
