@@ -62,7 +62,7 @@ end = struct
       let prims =
         split_primitives (Symtable.data_primitive_names ()) in
       let unbound_primitive p =
-        try Js.Unsafe.eval_string p; false with _ -> true in
+        try ignore (Js.Unsafe.eval_string p); false with _ -> true in
       let stubs = ref [] in
       Array.iteri
         (fun i p ->
