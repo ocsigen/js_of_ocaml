@@ -20,9 +20,6 @@
 
 (*
 TODO
-- different style for toplevel input, output and errors
-  in particular, the prompt should not be part of the text
-  (CSS generated content)
 - syntax highlighting?
 *)
 
@@ -33,7 +30,7 @@ module Html = Dom_html
 module Top : sig
   val setup : (string -> unit) -> unit
   val exec : Format.formatter -> string -> unit
-  val initialize : Format.formatter -> unit
+  val initialize : unit -> unit
 end = struct
   let split_primitives p =
     let len = String.length p in
@@ -86,76 +83,55 @@ end = struct
     g##compile <- compile (*XXX HACK!*)
 
 
-  let at_bol = ref true
-  let consume_nl = ref false
-
   let refill_lexbuf s p ppf buffer len =
-    if !consume_nl then begin
-      let l = String.length s in
-      if (!p < l && s.[!p] = '\n') then
-        incr p
-      else if (!p + 1 < l && s.[!p] = '\r' && s.[!p + 1] = '\n') then
-        p := !p + 2;
-      consume_nl := false
-    end;
-    if !p = String.length s then
-      0
-    else begin
-      let c = s.[!p] in
-      incr p;
-      buffer.[0] <- c;
-      if !at_bol then Format.fprintf ppf "# ";
-      at_bol := (c = '\n');
-      if c = '\n' then
-        Format.fprintf ppf "@."
-      else
-        Format.fprintf ppf "%c" c;
-      1
-    end
+    if !p = String.length s
+    then 0
+    else
+      let len',nl =
+        try String.index_from s !p '\n' - !p + 1,false
+        with _ -> String.length s - !p,true in
+      let len'' = min len len' in
+      String.blit s !p buffer 0 len'';
+      Format.fprintf ppf "%s" (String.sub buffer 0 len'');
+      if nl then Format.pp_print_newline ppf ();
+      Format.pp_print_flush ppf ();
+      p:=!p + len'';
+      len''
 
-  let ensure_at_bol ppf =
-    if not !at_bol then begin
-      Format.fprintf ppf "@.";
-      consume_nl := true; at_bol := true
-    end
-
-  let exec' ppf s =
+  let exec' s =
     let lb = Lexing.from_string s in
     try
       List.iter
         (fun phr ->
-           if not (Toploop.execute_phrase false ppf phr) then raise Exit)
+           if not (Toploop.execute_phrase false Format.std_formatter phr) then raise Exit)
         (!Toploop.parse_use_file lb)
     with
     | Exit -> ()
-    | x    -> Errors.report_error ppf x
+    | x    -> Errors.report_error Format.err_formatter x
 
-  let exec ppf s =
-    let lb = Lexing.from_function (refill_lexbuf s (ref 0) ppf) in
+  let exec sharpf s =
+    let lb = Lexing.from_function (refill_lexbuf s (ref 0) sharpf) in
     try
       while true do
         try
           let phr = !Toploop.parse_toplevel_phrase lb in
-          ensure_at_bol ppf;
-          ignore(Toploop.execute_phrase true ppf phr)
+          ignore(Toploop.execute_phrase true Format.std_formatter phr)
         with
           End_of_file ->
           raise End_of_file
         | x ->
-          ensure_at_bol ppf;
-          Errors.report_error ppf x
+          Errors.report_error Format.err_formatter x
       done
     with End_of_file ->
       flush_all ()
 
 
-  let initialize ppf =
+  let initialize () =
     Toploop.initialize_toplevel_env ();
-    Toploop.input_name := "";
+    Toploop.input_name := "//toplevel//";
     let header = "        Objective Caml version %s@.@." in
-    exec' ppf (Printf.sprintf "Format.printf \"%s\" Sys.ocaml_version;;" header)
+    exec' (Printf.sprintf "Format.printf \"%s\" Sys.ocaml_version;;" header)
 end
-
 
 let trim s =
   let ws c = c = ' ' || c = '\t' || c = '\n' in
@@ -168,64 +144,61 @@ let trim s =
   do decr stop done;
   String.sub s !start (!stop - !start + 1)
 
-let button_type = Js.string "button"
-let button id txt =
-  let b = Html.createInput ~_type:button_type Html.document in
-  b##value <- Js.string txt;
-  b##id <- Js.string id;
-  b
-
 let by_id s =
   Js.Opt.get (Html.document##getElementById(Js.string s)) (fun () -> failwith (Printf.sprintf "cannot find dom id %S\n%!" s))
+
+let by_id_coerce s f  =
+  Js.Opt.get (Js.Opt.bind (Html.document##getElementById(Js.string s)) f)
+    (fun () -> failwith (Printf.sprintf "cannot find dom id %S\n%!" s))
+
+let do_by_id s f =
+  Js.Opt.case (Html.document##getElementById(Js.string s))
+    (fun () -> ())
+    (fun d -> f d)
+
+
 
 exception Next
 
 let examples =
+  let r = Regexp.regexp "^\\(\\*+(.*)\\*+\\)$" in
+  let l = ref [] and name = ref "" in
+  let content = ref [] in
   try
     begin
       let ic = open_in "examples.ml" in
-      let ex = ref [] in
       try
         while true do
-          let name = input_line ic in
-          let content = ref [] in
-          try
-            while true do
-              let l = input_line ic in
-              if l = ""
-              then raise Next
-              else content := l :: !content
-            done
-          with
-          | Next -> ex:=(name,String.concat "\n" (List.rev !content))::!ex
-          | End_of_file -> ex:=(name,String.concat "\n" (List.rev !content))::!ex; raise End_of_file
+          let line = input_line ic in
+          match Regexp.string_match r line 0 with
+          | Some res ->
+            if !l <> []
+            then begin
+              content:=(!name,List.rev !l)::!content;
+              l:=[]
+            end;
+            (name := match Regexp.matched_group res 1 with Some s -> s | None -> assert false)
+          | None -> l:= line::!l
         done;
-        List.rev !ex
-      with End_of_file -> List.rev !ex
+        assert false
+      with End_of_file ->
+        if !l <> []
+        then begin
+          content:=(!name,List.rev !l)::!content;
+          l:=[]
+        end;
+        List.rev_map (fun (name,content) -> name,trim (String.concat "\n" content)) !content
     end
   with  _ -> []
+
 let run _ =
   let container = by_id "toplevel-container" in
-  let output = Html.createPre Html.document in
-  let sharp = Html.createDiv Html.document in
-  let userinput = Html.createDiv Html.document in
-  let textbox = Html.createTextarea Html.document in
-  let button_exec = button "sendit" "Execute" in
+  let output = by_id "output" in
+  let textbox : 'a Js.t = by_id_coerce "userinput" Html.CoerceTo.textarea in
+  let example_container = by_id "toplevel-examples" in
 
-  let side = by_id "toplevel-examples" in
-  let ul = Html.createUl Html.document in
-
-  Dom.appendChild container output;
-  Dom.appendChild container sharp;
-  Dom.appendChild container userinput;
-  Dom.appendChild userinput textbox;
-  Dom.appendChild userinput button_exec;
-  Dom.appendChild side ul;
-
-  output##id <- Js.string "output";
-  sharp##id <- Js.string "sharp";
-  sharp##innerHTML <- Js.string "#";
-
+  let sharp_chan = open_out "sharp" in
+  let sharp_ppf = Format.formatter_of_out_channel sharp_chan in
   let resize () =
     Lwt.pause () >>= fun () ->
     textbox##style##height <- Js.string "auto";
@@ -233,7 +206,7 @@ let run _ =
     container##scrollTop <- container##scrollHeight;
     Lwt.return () in
 
-  let execute ppf =
+  let execute () =
     let content' = Js.to_string textbox##value in
     let content = trim content' in
     let len = String.length content in
@@ -244,7 +217,7 @@ let run _ =
           && content.[len - 2] = ';')
       then content'
       else content' ^ ";;" in
-    Top.exec ppf content;
+    Top.exec sharp_ppf content;
     textbox##value <- Js.string "";
     resize () >>= fun () ->
     container##scrollTop <- container##scrollHeight;
@@ -252,9 +225,10 @@ let run _ =
     Lwt.return_unit in
 
   List.iter (fun (name,content) ->
-      let li = Html.createLi Html.document in
-      li##innerHTML <- Js.string name;
-      li##onclick <- Html.handler (fun _ ->
+      let a = Html.createA Html.document in
+      a##className <- Js.string "list-group-item";
+      a##innerHTML <- Js.string name;
+      a##onclick <- Html.handler (fun _ ->
           textbox##value <- Js.string content;
           Lwt.async(fun () ->
               resize () >>= fun () ->
@@ -263,25 +237,27 @@ let run _ =
               Lwt.return_unit);
           Js._true
         );
-      Dom.appendChild ul li
+      Dom.appendChild example_container a
     ) examples;
 
   begin (* setup handlers *)
-    button_exec##onclick <- Html.handler (fun _ -> Lwt.async (fun () -> execute Format.std_formatter); Js._false);
+    container##onclick <- Html.handler (fun _ -> textbox##focus(); Js._false);
+    do_by_id "btn-execute"
+      (fun e -> e##onclick <- Html.handler (fun _ -> Lwt.async execute; Js._false));
+    do_by_id "btn-clear"
+      (fun e -> e##onclick <- Html.handler (fun _ -> output##innerHTML <- Js.string ""; Js._false));
+    do_by_id "btn-reset"
+      (fun e -> e##onclick <- Html.handler (fun _ -> output##innerHTML <- Js.string "";
+                                             Top.initialize (); Js._false));
 
     textbox##onkeydown <- Html.handler (fun e ->
         match e##keyCode with
-        | 13 ->
-          if not (Js.to_bool e##ctrlKey)
-          && not (Js.to_bool e##metaKey)
-          && not (Js.to_bool e##shiftKey)
-          && not (Js.to_bool e##altKey)
-          then
-            begin
-              Lwt.async (fun () -> execute Format.std_formatter);
-              Js._false
-            end
-          else Js._true
+        | 13 when not (Js.to_bool e##ctrlKey  ||
+                       Js.to_bool e##shiftKey ||
+                       Js.to_bool e##altKey   ||
+                       Js.to_bool e##metaKey) ->
+          Lwt.async execute;
+          Js._false
         | 09 ->
           textbox##value <- textbox##value##concat (Js.string "   ");
           Js._false
@@ -295,7 +271,12 @@ let run _ =
           if str = ""
           then Js._false
           else Js._true
-
+        | 76 when (Js.to_bool e##ctrlKey  ||
+                   Js.to_bool e##shiftKey ||
+                   Js.to_bool e##altKey   ||
+                   Js.to_bool e##metaKey) ->
+          output##innerHTML <- Js.string "";
+          Js._true
         | _ -> Js._true
       );
     textbox##onkeyup <- Html.handler (fun e ->
@@ -303,21 +284,23 @@ let run _ =
     textbox##onchange <- Html.handler (fun _ -> Lwt.async resize; Js._true)
   end;
 
-  let append_string s =
+  let append_string cl s =
     let span = Html.createSpan Html.document in
+    span##className <- Js.string cl;
     Dom.appendChild span (Html.document##createTextNode(Js.string s ));
     Dom.appendChild output span in
-
-  Sys_js.set_channel_flusher stdout append_string;
-  Sys_js.set_channel_flusher stderr append_string;
+  Sys_js.set_channel_flusher sharp_chan (append_string "sharp");
+  Sys_js.set_channel_flusher stdout (append_string "stdout");
+  Sys_js.set_channel_flusher stderr (append_string "stderr");
 
   Lwt.async (fun () ->
       resize () >>= fun () ->
       textbox##focus ();
       Lwt.return_unit
     );
+  let ph = by_id "last-js" in
 
-  Top.setup (fun _ -> ());
-  Top.initialize Format.std_formatter
+  Top.setup (fun s -> ph##innerHTML <- Js.string s);
+  Top.initialize ()
 
 let _ = Html.window##onload <- Html.handler (fun _ -> run (); Js._false)

@@ -1,4 +1,4 @@
-(** First *)
+(** Overview *)
 let x = 10+10
 let y = x * 3
 let c = String.make x 'a'
@@ -17,7 +17,7 @@ and odd n =
   | 0 -> false
   | x -> even (x-1)
 
-(** Recusive module *)
+(** Mutually recursive module *)
 module rec Odd : sig
   val odd : int -> bool
 end = struct
