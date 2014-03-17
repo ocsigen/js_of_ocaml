@@ -102,7 +102,7 @@ end
 let is_ascii s =
   let res = ref true in
   for i = 0 to String.length s - 1 do
-    if s.[i] > '\127' then res := false
+    if s.[i] >= '\127' || s.[i] <= '\031' then res := false
   done;
   !res
 
