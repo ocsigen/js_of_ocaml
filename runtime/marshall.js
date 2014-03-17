@@ -352,8 +352,16 @@ var caml_output_val = function (){
         writer.size_32 += 1 + (((len + 4) / 4)|0);
         writer.size_64 += 1 + (((len + 8) / 8)|0);
       } else {
-        if (v != (v|0)) caml_failwith("output_value: non-serializable value");
-        if (v >= 0 && v < 0x40) {
+        if (v != (v|0)){
+          if(typeof v != "number")
+            caml_failwith("output_value: non-serializable value");
+          else {
+            var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
+            writer.write (8, cst.CODE_DOUBLE_BIG);
+            for(var i = 0; i<8; i++){writer.write(8,t[i])}
+          }
+        }
+        else if (v >= 0 && v < 0x40) {
           writer.write (8, cst.PREFIX_SMALL_INT + v);
         } else {
           if (v >= -(1 << 7) && v < (1 << 7))
