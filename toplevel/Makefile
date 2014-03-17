@@ -63,13 +63,18 @@ STDLIB_MODULES=\
   stringLabels \
   sys \
   weak
-PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
+
+JOO=js dom typed_array dom_html file dom_events firebug lwt_js sys_js regexp CSS url \
+  form xmlHttpRequest event_arrows lwt_js_events json webGL webSockets keycode
+JOO=
+
+PERVASIVES=$(STDLIB_MODULES) $(JOO) outcometree topdirs toploop
 
 #toplevel.byte: $(OBJS:cmx=cmo) toplevel.cmo
 #	ocamlfind ocamlc -linkall -g -package str -linkpkg toplevellib.cma -o $@.tmp $^
 
 $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
-	$(COMP) -I $(shell ocamlc -where)/compiler-libs -toplevel -noruntime $(JSFILES) $(NAME).byte $(OPTIONS) -I ./ -file examples.ml
+	$(COMP) -I $(shell ocamlc -where)/compiler-libs -toplevel -noruntime $(JSFILES) $(NAME).byte $(OPTIONS) -I ./ -I ../lib/ -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
 	$(OCAMLC) -linkall -package str,findlib,ocp-indent.lib -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
