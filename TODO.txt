@@ -49,10 +49,6 @@ Compiler optimizations
 - syntactic sugar for Javascript literal strings
   + optimization to avoid going through Caml strings
 
-- turn partial applications into closures?
-    x = app(f, x) ====>
-    x = fun(x1,...,xn) {return f(x, x1, ...,xn);}
-
 - Can we avoid spurious conversions from boolean to integers???
   ===> explicit conversion to boolean; specialized "if" that operates
        on booleans directly
@@ -158,9 +154,6 @@ IMPROVEMENTS
 
 NEW FEATURES
 ============
-
-- Map Caml objects to Javascript objects
-  ==> remap CamlinternalOO module
 
 - dynamic linking? (code generation from cmo files)
 
