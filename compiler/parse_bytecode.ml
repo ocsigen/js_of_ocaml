@@ -1649,8 +1649,12 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                 let d = String.sub name (i + 1) (String.length name - i - 1) in
                 let n = String.sub name 0 i in
                 if String.length d > 0 && d.[0] <> '/'
-                then failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" d n)
-                else n,d
+                then failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" d n);
+                let d =
+                  if d.[String.length d - 1] <> '/'
+                  then d^"/"
+                  else d in
+                n,d
               with Not_found ->
                 name,"/static/" in
             let file =
