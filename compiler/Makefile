@@ -52,9 +52,9 @@ compiler.cmxa: $(OBJS)
 compiler.cmxs: $(OBJS)
 	ocamlfind ocamlopt -shared -o $@ $^
 
-
+VERSION := $(shell head -n 1 ../VERSION)
 compiler_version.ml: ../VERSION
-	echo 'print_string ("let s = \"" ^ input_line (open_in "../VERSION") ^ "\"\n")' | ocaml -stdin > $@
+	echo "let s = \"${VERSION}\"\n" > $@
 
 
 %.cmx: %.ml
