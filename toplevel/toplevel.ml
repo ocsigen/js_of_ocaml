@@ -80,7 +80,16 @@ module H = struct
       let s = get_storage () in
       match Js.Opt.to_option (s##getItem(Js.string "history")) with
         | None -> raise Not_found
-        | Some s -> Json.unsafe_input s
+        | Some s ->
+          let a = Json.unsafe_input s in
+          if Array.length a.data = n
+          then a
+          else
+            let a' = make n (Js.string "") in
+            for i = 0 to a.size - 1 do
+              add (get a i) a';
+            done;
+            a'
     with Not_found -> make n (Js.string "")
 
   let save t =
@@ -323,7 +332,7 @@ let run _ =
     Lwt.return () in
 
 
-  let hist = H.load_or_create 10 in
+  let hist = H.load_or_create 100 in
   let hist_idx = ref (H.size hist) in
   let cur = ref (Js.string "") in
   let execute () =
