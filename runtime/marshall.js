@@ -293,6 +293,7 @@ function caml_marshal_data_size (s, ofs) {
 
 //Provides: caml_output_val
 //Requires: caml_marshal_constants, caml_int64_to_bytes, caml_failwith, MlString
+//Requires: caml_int64_bits_of_float
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -333,6 +334,9 @@ var caml_output_val = function (){
           writer.size_64 += 3;
           return;
         }
+        if (v[0] == 251) {
+          caml_failwith("output_value: abstract value (Abstract)");
+        }
         if (v[0] < 16 && v.length - 1 < 8)
           writer.write (8, cst.PREFIX_SMALL_BLOCK + v[0] + ((v.length - 1)<<4));
         else
@@ -353,13 +357,12 @@ var caml_output_val = function (){
         writer.size_64 += 1 + (((len + 8) / 8)|0);
       } else {
         if (v != (v|0)){
-          if(typeof v != "number")
-            caml_failwith("output_value: non-serializable value");
-          else {
-            var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
-            writer.write (8, cst.CODE_DOUBLE_BIG);
-            for(var i = 0; i<8; i++){writer.write(8,t[i])}
-          }
+          var type_of_v = typeof v;
+          if(type_of_v != "number")
+            caml_failwith("output_value: abstract value ("+type_of_v+")");
+          var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
+          writer.write (8, cst.CODE_DOUBLE_BIG);
+          for(var i = 0; i<8; i++){writer.write(8,t[i])}
         }
         else if (v >= 0 && v < 0x40) {
           writer.write (8, cst.PREFIX_SMALL_INT + v);
