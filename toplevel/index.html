@@ -105,11 +105,37 @@
     <div id="toplevel-side">
       <h3>Js_of_ocaml</h3>
       <h4>A compiler from OCaml bytecode to Javascript.</h4>
-      <p>It makes it possible to write OCaml programs that run on Web browsers.  It is
+      <p>It allow to write OCaml programs that run on Web browsers.  It is
         easy to install as it works with an existing installation of OCaml,
         with no need to recompile any library.  It comes with bindings for a
         large part of the browser APIs.</p>
-      <h3>Web-based OCaml toplevel</h3>
+      <p>This web-based OCaml toplevel is compiled using Js_of_ocaml.</p>
+      <h4>Command</h4>
+      <table class="table table-striped table-condensed">
+        <tbody class>
+          <tr>
+            <td>Enter/Return</td>
+            <td>Submit code</td>
+          </tr>
+          <tr>
+            <td>Ctrl + Enter</td>
+            <td>Newline</td>
+          </tr>
+          <tr>
+            <td>Ctrl + l</td>
+            <td>Clear display</td>
+          </tr>
+          <tr>
+            <td>Ctrl + k</td>
+            <td>Reset toplevel</td>
+          </tr>
+          <tr>
+            <td>Tab</td>
+            <td>Indent code</td>
+          </tr>
+
+        </tbody>
+      </table>
       <h4>Try to execute samples</h4>
       <div id="toplevel-examples" class="list-group"></div>
       <h4>See the generated javascript code</h4>

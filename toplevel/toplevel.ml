@@ -330,6 +330,12 @@ let run _ =
                    Js.to_bool e##metaKey) ->
           output##innerHTML <- Js.string "";
           Js._true
+        | 75 when (Js.to_bool e##ctrlKey  ||
+                   Js.to_bool e##shiftKey ||
+                   Js.to_bool e##altKey   ||
+                   Js.to_bool e##metaKey) ->
+          Top.initialize ();
+          Js._false
         | _ -> Js._true
       );
     textbox##onkeyup <- Html.handler (fun e ->
