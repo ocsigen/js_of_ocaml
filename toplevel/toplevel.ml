@@ -27,6 +27,71 @@ open Lwt
 open Compiler
 module Html = Dom_html
 
+
+module H = struct
+  type 'a t = {
+    data : 'a array;
+    mutable start : int;
+    mutable size : int;
+  }
+
+  let m x m =
+    let r = x mod m in
+    if r < 0 then r + m else r
+
+  let make len (init : 'a) : 'a t = {
+    data = Array.make len init;
+    start = 0;
+    size = 0;
+  }
+
+  let clear t = t.start <- 0; t.size <- 0
+
+  let add x t =
+    let len' = Array.length t.data in
+    t.data.(m (t.start + t.size) len') <- x;
+    if t.size < len'
+    then t.size <- t.size + 1
+    else t.start <- m (t.start + 1) len'
+  let get t i =
+    if i >= t.size || i < 0 then raise Not_found;
+    t.data.(m (t.start + i) (Array.length t.data))
+
+  let to_array t =
+    if t.size = 0 then [||]
+    else
+      let arr = Array.make t.size t.data.(0) in
+      for i = 0 to t.size - 1 do
+        arr.(i) <- get t i;
+      done;
+      arr
+
+  let size t = t.size
+
+
+  let get_storage () =
+    match Js.Optdef.to_option Html.window##localStorage with
+        None -> raise Not_found
+      | Some t -> t
+
+
+  let load_or_create n : Js.js_string Js.t t =
+    try
+      let s = get_storage () in
+      match Js.Opt.to_option (s##getItem(Js.string "history")) with
+        | None -> raise Not_found
+        | Some s -> Json.unsafe_input s
+    with Not_found -> make n (Js.string "")
+
+  let save t =
+    try
+      let s = get_storage () in
+      let str = Json.output t in
+      s##setItem(Js.string "history", str)
+    with Not_found -> ()
+
+end
+
 module Top : sig
   val setup : (string -> unit) -> unit
   val exec : Format.formatter -> string -> unit
@@ -257,6 +322,10 @@ let run _ =
     container##scrollTop <- container##scrollHeight;
     Lwt.return () in
 
+
+  let hist = H.load_or_create 10 in
+  let hist_idx = ref (H.size hist) in
+  let cur = ref (Js.string "") in
   let execute () =
     let content' = Js.to_string textbox##value in
     let content = trim content' in
@@ -268,6 +337,10 @@ let run _ =
           && content.[len - 2] = ';')
       then content'
       else content' ^ ";;" in
+    H.add (Js.string content') hist;
+    H.save hist;
+    cur:=Js.string "";
+    hist_idx:=H.size hist;
     Top.exec sharp_ppf content;
     textbox##value <- Js.string "";
     resize () >>= fun () ->
@@ -314,16 +387,30 @@ let run _ =
         | 09 ->
           indent_textarea textbox;
           Js._false
-        | 38 ->
-          let str = Js.to_string textbox##value in
-          if str = ""
-          then Js._false
-          else Js._true
-        | 40 ->
-          let str = Js.to_string textbox##value in
-          if str = ""
-          then Js._false
-          else Js._true
+        | 38 (* when not (Js.to_bool e##ctrlKey) *) ->
+          (try
+             if !hist_idx = H.size hist
+             then cur := textbox##value;
+             let idx = !hist_idx - 1 in
+             let s=H.get hist idx in
+             hist_idx:=idx;
+             textbox##value <- s;
+             Js._false
+          with _ -> Js._false)
+        | 40 (* when not (Js.to_bool e##ctrlKey) *) ->
+          (try
+             let idx = !hist_idx + 1 in
+             if idx = H.size hist
+             then begin
+               incr hist_idx;
+               textbox##value <- !cur;
+             end else begin
+               let s=H.get hist idx in
+               hist_idx:=idx;
+               textbox##value <- s
+             end;
+             Js._false
+           with _ -> Js._false)
         | 76 when (Js.to_bool e##ctrlKey  ||
                    Js.to_bool e##shiftKey ||
                    Js.to_bool e##altKey   ||
@@ -336,6 +423,7 @@ let run _ =
                    Js.to_bool e##metaKey) ->
           Top.initialize ();
           Js._false
+
         | _ -> Js._true
       );
     textbox##onkeyup <- Html.handler (fun e ->
