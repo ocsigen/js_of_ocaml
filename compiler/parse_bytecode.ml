@@ -1644,14 +1644,23 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
         done;
         let fs = ref [] in
         List.iter (fun name ->
+            let name,dir = try
+                let i = String.index name ':' in
+                let d = String.sub name (i + 1) (String.length name - i - 1) in
+                let n = String.sub name 0 i in
+                if String.length d > 0 && d.[0] <> '/'
+                then failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" d n)
+                else n,d
+              with Not_found ->
+                name,"/static/" in
             let file =
               try
                 Util.find_in_paths paths name
               with Not_found ->
-                failwith (Printf.sprintf "file '%s' not found@." name)
+                failwith (Printf.sprintf "file '%s' not found" name)
             in
             let s = Util.read_file file in
-            fs := (Pc (IString name),Pc (IString s)) :: !fs
+            fs := (Pc (IString (dir^name)),Pc (IString s)) :: !fs
           ) files;
 
         if toplevel then begin
@@ -1681,8 +1690,7 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                      try
                        Util.find_in_paths paths name
                      with Not_found ->
-                       failwith (Printf.sprintf "interface file '%s' not found@."
-                                   name)
+                       failwith (Printf.sprintf "interface file '%s' not found" name)
                  in
                  let s = Util.read_file file in
                  fs := (Pc (IString name),Pc (IString s)) :: !fs
