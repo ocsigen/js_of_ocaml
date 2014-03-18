@@ -439,10 +439,6 @@ and parse_rem c =
       push_chars c lexbuf;
       parse_rem c lexbuf
     }
-  | _ {
-     Format.eprintf "Unrecognized char '%s'@." (Lexing.lexeme lexbuf);
-     parse_rem c lexbuf
-  }
   | eof {
       end_paragraph c 0
     }
