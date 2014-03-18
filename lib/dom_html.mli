@@ -1428,7 +1428,7 @@ module CoerceTo : sig
   val col : #element t -> tableColElement t opt
   val colgroup : #element t -> tableColElement t opt
   val del : #element t -> modElement t opt
-  val div : #element t -> modElement t opt
+  val div : #element t -> divElement t opt
   val embed : #element t -> embedElement t opt
   val dl : #element t -> dListElement t opt
   val fieldset : #element t -> fieldSetElement t opt
