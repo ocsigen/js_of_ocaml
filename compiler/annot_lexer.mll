@@ -29,11 +29,20 @@ rule initial = parse
   | "const" {TAnnot `Pure }
   | "mutable" {TAnnot `Mutable }
   | "mutator" {TAnnot `Mutator }
+  | "Version" {TVersion}
   | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''0'-'9']* {
       let x = Lexing.lexeme lexbuf in
       TIdent x}
+  | ['0'-'9']+ ('.' (['0'-'9']+)) * {
+      let x = Lexing.lexeme lexbuf in
+      TVNum x}
   | "," {TComma}
   | ":" {TSemi}
+  | "<=" {LE}
+  | "<"  {LT}
+  | ">"  {GT}
+  | ">=" {GE}
+  | "="  {EQ}
   | [' ''\t']+ { initial lexbuf }
   | eof { EOF }
   | ['\n'] {EOL}

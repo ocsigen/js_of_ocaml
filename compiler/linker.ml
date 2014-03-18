@@ -27,6 +27,7 @@ let parse_annot loc s =
     match Annot_parser.annot Annot_lexer.initial buf with
       | `Requires (_,l) -> Some (`Requires (Some loc,l))
       | `Provides (_,n,k) -> Some (`Provides (Some loc,n,k))
+      | `Version (_,l) -> Some (`Version  (Some loc, l))
   with
     | Not_found -> None
     | exc ->
@@ -34,53 +35,6 @@ let parse_annot loc s =
     None
 
 let error s = Format.kprintf (fun s -> failwith s) s
-
-let debug l =
-  match l with
-    `Provides (_, nm, k) -> Format.eprintf "provides %s (%s)@." nm k
-  | `Requires (_, l) -> Format.eprintf "requires";
-      List.iter (fun nm -> Format.eprintf " %s" nm) l;
-      Format.eprintf "@."
-  | `Comment  -> Format.eprintf "comment@."
-  | `Code _   -> Format.eprintf "code@."
-  | `EOF      -> Format.eprintf "eof@."
-
-
-let return x cont l = cont x l
-
-let bind x f cont l = x (fun v l -> f v cont l) l
-
-let accept f cont l =
-  match l with
-    [] ->
-      cont None []
-  | x :: r ->
-      let v = f x in
-      if v = None then cont None l else cont v r
-
-let (++) f g =
-  bind f (fun v1 -> bind g (fun v2 -> return (v1, v2)))
-
-let rec collect f =
-  bind (accept f) (fun v ->
-  match v with
-    None   -> return []
-  | Some v -> bind (collect f) (fun r -> return (v :: r)))
-
-let rec repeat f cont l =
-  if l = [] then return [] cont l else
-  bind f (fun v -> bind (repeat f) (fun r -> return (v :: r))) cont l
-
-let collect_provides l =
-  collect (fun l -> match l with `Provides v -> Some v | _ -> None) l
-
-let collect_requires l =
-  collect (fun l -> match l with `Requires v -> Some v | _ -> None) l
-
-let collect_code l =
-  collect (fun l -> match l with `Code v -> Some v | _ -> None) l
-
-let (>>) x f = f x
 
 let split_dir =
   let reg = Str.regexp_string Filename.dir_sep in
@@ -139,6 +93,32 @@ let provided_rev = Hashtbl.create 31
 let code_pieces = Hashtbl.create 31
 let always_included = ref []
 
+let version_match =
+  let v = Sys.ocaml_version in
+  let split_plus =
+    let reg = Str.regexp_string "+" in
+    Str.split reg in
+  let split_dot =
+    let reg = Str.regexp_string "." in
+    Str.split reg in
+  let cano v = match split_plus v with
+    | [] -> assert false
+    | x::_ -> List.map int_of_string (split_dot x) in
+  let v' = cano v in
+  let rec compute op v v' = match v,v' with
+    | [x],[y] -> op x y
+    | [],[] -> op 0 0
+    | [],y::_ -> op 0 y
+    | x::_,[] -> op x 0
+    | x::xs,y::ys ->
+      if x = y
+      then compute op xs ys
+      else op x y
+  in
+  List.for_all (fun (op,str) ->
+      compute op v' (cano str)
+    )
+
 let loc pi = match pi with
   | None -> "unknown location"
   | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line
@@ -150,41 +130,52 @@ let add_file f =
       incr last_code_id;
       let id = !last_code_id in
 
-      let req,has_provide = List.fold_left (fun (req,has_provide) a -> match a with
+      let req,has_provide,vmatch = List.fold_left (fun (req,has_provide,vmatch) a -> match a with
         | `Provides (pi,name,kind) ->
-          Primitive.register name kind;
-          if Hashtbl.mem provided name
-          then begin
-            let ploc = snd(Hashtbl.find provided name) in
-            Format.eprintf "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
-          end;
-          Hashtbl.add provided name (id,pi);
-          Hashtbl.add provided_rev id (name,pi);
-          req,Some (name,pi)
-        | `Requires (_,mn) -> (mn@req),has_provide) ([],None) annot in
+          req,Some (name,pi,kind),vmatch
+        | `Requires (_,mn) -> (mn@req),has_provide,vmatch
+        | `Version (_,l) ->
+          let vmatch = match vmatch with
+            | Some true -> vmatch
+            | _ -> Some (version_match l) in
+          req,has_provide,vmatch
+        ) ([],None,None) annot in
 
+      (match vmatch with
+       | Some false -> ()
+       | None | Some true ->
 
+         (match has_provide with
+          | None -> always_included := id :: !always_included
+          | Some (name,pi,kind) ->
 
-      (match has_provide with
-       | None -> always_included := id :: !always_included
-       | Some (name,pi) ->
-         let free = new Js_traverse.free in
-         let _code = free#program code in
-         let freename = free#get_free_name in
-         let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename req in
-         let freename = StringSet.diff freename Reserved.keyword in
-         let freename = StringSet.diff freename Reserved.provided in
-         let freename = StringSet.remove Option.global_object freename in
-         if not(StringSet.mem name free#get_def_name)
-         then begin
-           Format.eprintf "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)
-         end;
-         if not(StringSet.is_empty freename)
-         then begin
-           Format.eprintf "warning: free variables in primitive code %S (%s)@." name (loc pi);
-           Format.eprintf "vars: %s@." (String.concat ", " (StringSet.elements freename))
-         end);
-      Hashtbl.add code_pieces id (code, req))
+            Primitive.register name kind;
+            if Hashtbl.mem provided name
+            then begin
+              let ploc = snd(Hashtbl.find provided name) in
+              Format.eprintf "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
+            end;
+            Hashtbl.add provided name (id,pi);
+            Hashtbl.add provided_rev id (name,pi);
+
+            let free = new Js_traverse.free in
+            let _code = free#program code in
+            let freename = free#get_free_name in
+            let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename req in
+            let freename = StringSet.diff freename Reserved.keyword in
+            let freename = StringSet.diff freename Reserved.provided in
+            let freename = StringSet.remove Option.global_object freename in
+            if not(StringSet.mem name free#get_def_name)
+            then begin
+              Format.eprintf "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)
+            end;
+            if not(StringSet.is_empty freename)
+            then begin
+              Format.eprintf "warning: free variables in primitive code %S (%s)@." name (loc pi);
+              Format.eprintf "vars: %s@." (String.concat ", " (StringSet.elements freename))
+            end);
+         Hashtbl.add code_pieces id (code, req)
+      ))
     (parse_file f)
 
 type visited = {

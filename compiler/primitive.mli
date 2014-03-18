@@ -24,7 +24,8 @@ val exists : string -> bool
 type kind = [ `Pure | `Mutable | `Mutator ]
 type t =
   [ `Requires of Parse_info.t option * string list
-  | `Provides of Parse_info.t option * string * kind ]
+  | `Provides of Parse_info.t option * string * kind
+  | `Version of Parse_info.t option * ((int -> int -> bool) * string) list ]
 
 val kind : string -> kind
 val register : string -> kind -> unit
