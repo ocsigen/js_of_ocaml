@@ -50,3 +50,6 @@ end
 
 val failwith_ : ('a,unit,string,unit) format4 -> 'a
 val raise_ : exn -> unit
+
+val split_char : char -> string -> string list
+val split : string -> string -> string list

@@ -36,16 +36,12 @@ let parse_annot loc s =
 
 let error s = Format.kprintf (fun s -> failwith s) s
 
-let split_dir =
-  let reg = Str.regexp_string Filename.dir_sep in
-  Str.split reg
-
 let parse_file f =
   let file =
     try
       match Util.path_require_findlib f with
         | Some f ->
-          let pkg,f' = match split_dir f with
+          let pkg,f' = match Util.split Filename.dir_sep f with
             | [] -> assert false
             | [f] -> "js_of_ocaml",f
             | pkg::l -> pkg, List.fold_left Filename.concat "" l in
@@ -95,15 +91,9 @@ let always_included = ref []
 
 let version_match =
   let v = Sys.ocaml_version in
-  let split_plus =
-    let reg = Str.regexp_string "+" in
-    Str.split reg in
-  let split_dot =
-    let reg = Str.regexp_string "." in
-    Str.split reg in
-  let cano v = match split_plus v with
+  let cano v = match Util.split_char '+' v with
     | [] -> assert false
-    | x::_ -> List.map int_of_string (split_dot x) in
+    | x::_ -> List.map int_of_string (Util.split_char '.' x) in
   let rec compute op v v' = match v,v' with
     | [x],[y] -> op x y
     | [],[] -> op 0 0
@@ -114,8 +104,8 @@ let version_match =
       then compute op xs ys
       else op x y
   in
+  let v' = cano v in
   (fun l ->
-     let v' = cano v in
      List.for_all (fun (op,str) ->
          compute op v' (cano str)
        ) l)

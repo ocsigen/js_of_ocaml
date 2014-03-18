@@ -1774,13 +1774,7 @@ let read_primitive_table toc ic =
   let len = seek_section toc ic "PRIM" in
   let p = String.create len in
   really_input ic p 0 len;
-  let rec split beg cur =
-    if cur >= len then []
-    else if p.[cur] = '\000' then
-      String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
-    else
-      split beg (cur + 1) in
-  Array.of_list(split 0 0),p
+  Array.of_list(Util.split_char '\000' p),p
 
 (****)
 

@@ -125,3 +125,60 @@ let raise_ exn =
   else begin
     Format.eprintf "%s@." (Printexc.to_string exn)
   end
+
+let split_char sep p =
+  let len = String.length p in
+  let rec split beg cur =
+    if cur >= len then
+      if cur - beg > 0
+      then [String.sub p beg (cur - beg)]
+      else []
+    else if p.[cur] = sep then
+      String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
+    else
+      split beg (cur + 1) in
+  split 0 0
+
+(* copied from https://github.com/ocaml/ocaml/pull/10 *)
+let split sep s =
+  let sep_len = String.length sep in
+  if sep_len = 1
+  then split_char sep.[0] s
+  else
+  let sep_max = sep_len - 1 in
+  if sep_max < 0 then invalid_arg "String.split: empty separator" else
+    let s_max = String.length s - 1 in
+    if s_max < 0 then [""] else
+      let acc = ref [] in
+      let sub_start = ref 0 in
+      let k = ref 0 in
+      let i = ref 0 in
+      (* We build the substrings by running from the start of [s] to the
+         end with [i] trying to match the first character of [sep] in
+         [s]. If this matches, we verify that the whole [sep] is matched
+         using [k]. If this matches we extract a substring from the start
+         of the current substring [sub_start] to [!i - 1] (the position
+         before the [sep] we found).  We then continue to try to match
+         with [i] by starting after the [sep] we just found, this is also
+         becomes the start position of the next substring. If [i] is such
+         that no separator can be found we exit the loop and make a
+         substring from [sub_start] until the end of the string. *)
+      while (!i + sep_max <= s_max) do
+        if String.unsafe_get s !i <> String.unsafe_get sep 0 then incr i else
+          begin
+            (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
+               guaranteed by loop invariant. *)
+            k := 1;
+            while (!k <= sep_max && String.unsafe_get s (!i + !k) = String.unsafe_get sep !k)
+            do incr k done;
+            if !k <= sep_max then (* no match *) incr i else begin
+              let new_sub_start = !i + sep_max + 1 in
+              let sub_end = !i - 1 in
+              let sub_len = sub_end - !sub_start + 1 in
+              acc := String.sub s !sub_start sub_len :: !acc;
+              sub_start := new_sub_start;
+              i := new_sub_start;
+            end
+          end
+      done;
+      List.rev (String.sub s !sub_start (s_max - !sub_start + 1) :: !acc)
