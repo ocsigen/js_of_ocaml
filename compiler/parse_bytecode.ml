@@ -1799,7 +1799,7 @@ let fixed_code = Instr.compile fixed_code_bytes
 
 let fix_min_max_int code =
   begin try
-    let i = Str.search_forward (Str.regexp_string orig_code) code 0 in
+    let i = Util.find orig_code code in
     String.blit fixed_code 0 code (i + 16) (String.length fixed_code)
   with Not_found ->
     Format.eprintf
