@@ -47,3 +47,6 @@ module Timer : sig
   val get : t -> float
   val print : Format.formatter -> t -> unit
 end
+
+val failwith_ : ('a,unit,string,unit) format4 -> 'a
+val raise_ : exn -> unit

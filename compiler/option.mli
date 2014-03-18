@@ -57,3 +57,5 @@ module Tailcall : sig
 end
 
 val global_object : string
+
+val fail : bool ref

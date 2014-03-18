@@ -110,8 +110,8 @@ subst.cmo : util.cmi code.cmi subst.cmi
 subst.cmx : util.cmx code.cmx subst.cmi
 tailcall.cmo : util.cmi subst.cmi option.cmi code.cmi tailcall.cmi
 tailcall.cmx : util.cmx subst.cmx option.cmx code.cmx tailcall.cmi
-util.cmo : util.cmi
-util.cmx : util.cmi
+util.cmo : option.cmi util.cmi
+util.cmx : option.cmx util.cmi
 varPrinter.cmo : util.cmi reserved.cmi varPrinter.cmi
 varPrinter.cmx : util.cmx reserved.cmx varPrinter.cmi
 vlq64.cmo : vlq64.cmi

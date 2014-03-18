@@ -112,3 +112,16 @@ let has_backslash s =
     if s.[i] = '\\' then res := true
   done;
   !res
+
+let failwith_ fmt =
+  Printf.ksprintf (fun s ->
+      if !Option.fail
+      then failwith s
+      else Format.eprintf "%s@." s) fmt
+
+let raise_ exn =
+  if !Option.fail
+  then raise exn
+  else begin
+    Format.eprintf "%s@." (Printexc.to_string exn)
+  end

@@ -114,3 +114,5 @@ module Tailcall = struct
   let maximum () = 50
 
 end
+
+let fail = ref true

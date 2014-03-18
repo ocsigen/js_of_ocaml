@@ -94,11 +94,14 @@ let run () =
       "<file> set output file name to <file>")]
   in
   Arg.parse (Arg.align options)
-    (fun s ->
-       if Filename.check_suffix s ".js" then
-         js_files := s :: !js_files
-       else
-         input_file := Some s)
+      (fun s ->
+         (* internal option for debugging only *)
+         if s="@nofail" then Option.fail:=false
+         else
+         if Filename.check_suffix s ".js" then
+           js_files := s :: !js_files
+         else
+           input_file := Some s)
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
   if !toplevel then linkall:=true;
   let runtime = if !no_runtime then [] else ["+runtime.js"] in

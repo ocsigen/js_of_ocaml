@@ -1763,7 +1763,7 @@ let read_toc ic =
   let num_sections = input_binary_int ic in
   let header = String.create magic_size in
   really_input ic header 0 magic_size;
-  if type_file header <> "exe" then raise (Bad_magic_number header);
+  (try if type_file header <> "exe" then raise (Bad_magic_number header) with exc -> Util.raise_ exc);
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
   for i = 1 to num_sections do

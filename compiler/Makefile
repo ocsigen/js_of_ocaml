@@ -8,7 +8,7 @@ lib: compiler.cma compiler.cmxa compiler.cmxs
 PACKAGES=findlib,str,unix
 
 OBJS=compiler_version.cmx \
-     pretty_print.cmx util.cmx reserved.cmx varPrinter.cmx option.cmx \
+     pretty_print.cmx option.cmx util.cmx reserved.cmx varPrinter.cmx \
      dgraph.cmx code.cmx javascript.cmx vlq64.cmx source_map.cmx \
      js_output.cmx js_simpl.cmx parse_info.cmx js_token.cmx js_parser.cmx \
      js_lexer.cmx parse_js.cmx annot_parser.cmx annot_lexer.cmx \
@@ -83,7 +83,7 @@ clean:
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
 
 .PHONY: depend
-depend: compiler_version.ml annot_lexer.ml js_parser.ml annot_parser.ml
+depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml
 	ocamldep *.ml *.mli > .depend
 
 include .depend
