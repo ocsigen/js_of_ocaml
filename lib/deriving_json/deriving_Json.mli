@@ -25,10 +25,10 @@
 (** The type of JSON parser/printer for value of type ['a]. *)
 type 'a t
 
-(** [to_string Json.t<ty> v] marshall the [v] of type [ty] to a JSON string.*)
+(** [to_string Json.t<ty> v] marshal the [v] of type [ty] to a JSON string.*)
 val to_string: 'a t -> 'a -> string
 
-(** [from_string Json.t<ty> s] safely unmarshall the JSON [s] into an
+(** [from_string Json.t<ty> s] safely unmarshal the JSON [s] into an
     OCaml value of type [ty]. Throws [Failure] if the received value
     isn't the javascript representation of a value of type [ty]. *)
 val from_string: 'a t -> string -> 'a

@@ -6,7 +6,7 @@ easy to install as it works with an existing installation of OCaml,
 with no need to recompile any library.  It comes with bindings for a
 large part of the browser APIs.  According to our benchmarks, the
 generated programs runs typically faster than with the OCaml bytecode
-interpreter.  We believe this compiler will prove much easier to
+interpreter. We believe this compiler will prove much easier to
 maintain than a retargeted OCaml compiler, as the bytecode provides a
 very stable API.
 
@@ -70,7 +70,7 @@ functions are optimized.
 
 Data representation differs from the usual one, for performance
 reasons.  Most notably, integers are 32 bits (rather than 31 bits or
-63 bits) and floats are not boxed.  As a consequence, marshalling,
+63 bits) and floats are not boxed.  As a consequence, marshaling,
 polymorphic comparison, and hashing functions can yield results
 different from usual:
   * the polymorphic hash function will not give the same results on

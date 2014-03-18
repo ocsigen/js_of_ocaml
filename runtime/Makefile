@@ -1,4 +1,4 @@
-FILES= 	mlString.js ieee_754.js int64.js md5.js marshall.js \
+FILES= 	mlString.js ieee_754.js int64.js md5.js marshal.js \
 	lexing.js parsing.js json.js bigarray.js unix.js \
 	stdlib.js io.js jslib.js jslib_js_of_ocaml.js \
 	internalMod.js gc.js

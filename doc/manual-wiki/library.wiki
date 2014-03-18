@@ -138,7 +138,7 @@ To call an OCaml function from Javascript, follow this example:
 
 Or, to create a JS object with OCaml methods:
 {{{
-(Js.Unsafe.coerce Dom_html.window)##plop <- 
+(Js.Unsafe.coerce Dom_html.window)##plop <-
   Js.Unsafe.obj [| ("f", Js.wrap_meth_callback f);
                    ("g", Js.wrap_meth_callback g) |]
 }}}
@@ -146,12 +146,12 @@ Or, to create a JS object with OCaml methods:
 
 == IO ==
 
-The <<a_api | module Json >> module allows to marshall and unmarshall the
+The <<a_api | module Json >> module allows to marshal and unmarshal the
 javascript representation of OCaml values into the corresponding JSON
-string. The unmarshalling is unsafe in the same way the OCaml
-{{{Marshall.from_string}}} function is.
+string. The unmarshaling is unsafe in the same way the OCaml
+{{{Marshal.from_string}}} function is.
 
-Type-safe unmarshalling may be achieved with the
+Type-safe unmarshaling may be achieved with the
 {{{deriving}}} library using either the optionnal {{{Json}}}
 class or the {{{Pickle}}} class.
 
@@ -203,5 +203,5 @@ before the handler has terminated. It is probably a better idea
 to return immediately after having launched the long handlers.
 
 
-Look at the <<a_api text="API documentation" | module Lwt_js_events>> 
+Look at the <<a_api text="API documentation" | module Lwt_js_events>>
 for more information.
