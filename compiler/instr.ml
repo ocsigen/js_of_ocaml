@@ -111,6 +111,8 @@ type t =
   | PUSHTRAP
   | POPTRAP
   | RAISE
+  | RERAISE
+  | RAISE_NOTRACE
   | CHECK_SIGNALS
   | C_CALL1
   | C_CALL2
@@ -178,8 +180,11 @@ type kind =
 
 type desc = { code : t; kind : kind; name : string; opcode : int }
 
-let ops =
-  Array.mapi (fun i (c, k, n) -> {code = c; kind = k; name = n; opcode = i})
+let ops,ops_rev =
+  let ops_rev = Hashtbl.create 17 in
+  let ops = Array.mapi (fun i (c, k, n) ->
+      Hashtbl.add ops_rev c i;
+      {code = c; kind = k; name = n; opcode = i})
     [| ACC0, KNullary, "ACC0";
        ACC1, KNullary, "ACC1";
        ACC2, KNullary, "ACC2";
@@ -272,6 +277,10 @@ let ops =
        PUSHTRAP, KCond_jump, "PUSHTRAP";
        POPTRAP, KNullary, "POPTRAP";
        RAISE, KStop 0, "RAISE";
+#if ocaml_version >= (4,02)
+       RERAISE, KStop 0, "RERAISE";
+       RAISE_NOTRACE, KStop 0, "RAISE_NOTRACE";
+#endif
        CHECK_SIGNALS, KNullary, "CHECK_SIGNALS";
        C_CALL1, KUnary, "C_CALL1";
        C_CALL2, KUnary, "C_CALL2";
@@ -323,7 +332,10 @@ let ops =
        BUGEINT, KCmp_jump, "BUGEINT";
        GETPUBMET, KBinary, "GETPUBMET";
        GETDYNMET, KNullary, "GETDYNMET";
-       STOP, KStop 0, "STOP"|]
+       STOP, KStop 0, "STOP"|] in
+  ops,ops_rev
+
+let to_int c = Hashtbl.find ops_rev c
 
 let get code i = Char.code code.[i]
 

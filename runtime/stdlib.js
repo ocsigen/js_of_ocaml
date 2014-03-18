@@ -54,8 +54,14 @@ function caml_get_global_data () { return caml_global_data; }
 
 //Raise exception
 
+
 //Provides: caml_raise_constant
+//Version: <= 4.01
 function caml_raise_constant (tag) { throw [0, tag]; }
+
+//Provides: caml_raise_constant
+//Version: >= 4.02
+function caml_raise_constant (tag) { throw tag; }
 
 //Provides: caml_raise_with_arg
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
@@ -818,3 +824,11 @@ function caml_sys_get_argv () {
 
 //Provides: unix_inet_addr_of_string
 function unix_inet_addr_of_string () {return 0;}
+
+
+//Provides: caml_set_oo_id
+var oo_last_id = 0;
+function caml_set_oo_id(b){
+  b[2]=oo_last_id;
+  oo_last_id+=2;
+  return b }

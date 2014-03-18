@@ -111,6 +111,8 @@ type t =
   | PUSHTRAP
   | POPTRAP
   | RAISE
+  | RERAISE
+  | RAISE_NOTRACE
   | CHECK_SIGNALS
   | C_CALL1
   | C_CALL2
@@ -185,5 +187,6 @@ val get_instr : string -> int -> desc
 val gets : string -> int -> int
 val getu : string -> int -> int
 
-val print_obj : Format.formatter -> Obj.t -> unit
+val to_int : t -> int
 
+val print_obj : Format.formatter -> Obj.t -> unit

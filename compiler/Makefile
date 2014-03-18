@@ -58,13 +58,13 @@ compiler_version.ml: ../VERSION
 
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -package findlib,str -for-pack Compiler -c $<
+	ocamlfind ocamlopt -package findlib,str,optcomp -syntax camlp4o -for-pack Compiler -c $<
 
 %.cmo: %.ml
-	ocamlfind ocamlc -package findlib,str -c $<
+	ocamlfind ocamlc -package findlib,str,optcomp -syntax camlp4o -c $<
 
 %.cmi: %.mli
-	ocamlfind ocamlc -package findlib,str -c $<
+	ocamlfind ocamlc -package findlib,str,optcomp -syntax camlp4o -c $<
 
 %.ml %.mli: %.mly
 	menhir --explain $<
@@ -84,6 +84,6 @@ clean:
 
 .PHONY: depend
 depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml
-	ocamldep *.ml *.mli > .depend
+	ocamlfind ocamldep -syntax camlp4o -package optcomp *.ml *.mli > .depend
 
 include .depend

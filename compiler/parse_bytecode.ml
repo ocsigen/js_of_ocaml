@@ -1119,6 +1119,8 @@ and compile code limit pc state instrs =
   | POPTRAP ->
       compile_block code (pc + 1) (State.pop 4 (State.pop_handler state));
       (instrs, Poptrap (pc + 1, State.stack_vars state), state)
+  | RERAISE
+  | RAISE_NOTRACE
   | RAISE ->
       if debug_parser () then
         Format.printf "throw(%a)@." Var.print (State.accu state);
@@ -1736,7 +1738,8 @@ exception Bad_magic_number of string
 
 let magic_size = 12
 let type_file = function
-  | "Caml1999X008" -> "exe"
+  | "Caml1999X008"
+  | "Caml1999X010" -> "exe"
   | "Caml1999I015" -> "cmi"
   | "Caml1999O007" -> "cmo"
   | "Caml1999A008" -> "cma"
@@ -1763,7 +1766,10 @@ let read_toc ic =
   let num_sections = input_binary_int ic in
   let header = String.create magic_size in
   really_input ic header 0 magic_size;
-  (try if type_file header <> "exe" then raise (Bad_magic_number header) with exc -> Util.raise_ exc);
+  (try
+     if type_file header <> "exe"
+     then raise (Bad_magic_number header)
+   with exc -> Util.raise_ exc);
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
   for i = 1 to num_sections do
@@ -1788,26 +1794,43 @@ let read_primitive_table toc ic =
 
 (****)
 
-let orig_code = Str.regexp_string
-  ("\x6c\x00\x00\x00\x1f\x00\x00\x00" ^ (* pushconstint 31 *)
-   "\x69\x00\x00\x00" ^                 (* pushconst1 *)
-   "\x76\x00\x00\x00" ^                 (* lslint *)
-   "\x84\x00\x00\x00\x00\x00\x00\x00\x05\x00\x00\x00" ^
-                                        (* bneq +5    (overwrite from here) *)
-   "\x67\x00\x00\x00\x1e\x00\x00\x00" ^ (* constint 30 *)
-   "\x54\x00\x00\x00\x03\x00\x00\x00" ^ (* branch +3 *)
-   "\x67\x00\x00\x00\x3e\x00\x00\x00" ^ (* constint 62 *)
-   "\x69\x00\x00\x00" ^                 (* pushconst1 *)
-   "\x76\x00\x00\x00")                  (* lslint *)
+let orig_code_bytes =
+  [`I PUSHCONSTINT; `C 31;
+   `I PUSHCONST1;
+   `I LSLINT;
+   `I BNEQ; `C 0; `C 5; (* overwrite from here *)
+   `I CONSTINT; `C 30;
+   `I BRANCH; `C 3;
+   `I CONSTINT; `C 62;
+   `I PUSHCONST1;
+   `I LSLINT ]
 
-let fixed_code =
-  "\x67\x00\x00\x00\x1f\x00\x00\x00" ^ (* constint 31 *)
-  "\x54\x00\x00\x00\x06\x00\x00\x00" ^ (* branch   +6 *)
-  "\x69\x00\x00\x00"                   (* pushconst1  *)
+let fixed_code_bytes =
+  [`I CONSTINT; `C 31;
+   `I BRANCH; `C 6;
+   `I PUSHCONST1]
+
+let int_to_buf buf i =
+  Buffer.add_char buf (Char.chr (i land 0xFF));
+  Buffer.add_char buf (Char.chr ((i lsr 8) land 0xFF));
+  Buffer.add_char buf (Char.chr ((i lsr 16) land 0xFF));
+  Buffer.add_char buf (Char.chr ((i lsr 24) land 0xFF))
+
+let bytecode_to_string l =
+  let b = Buffer.create 50 in
+  List.iter (fun i ->
+      let i = match i with
+        | `C i -> i
+        | `I i -> Instr.to_int i in
+      int_to_buf b i) l;
+  Buffer.contents b
+
+let orig_code = bytecode_to_string orig_code_bytes
+let fixed_code = bytecode_to_string fixed_code_bytes
 
 let fix_min_max_int code =
   begin try
-    let i = Str.search_forward orig_code code 0 in
+    let i = Str.search_forward (Str.regexp_string orig_code) code 0 in
     String.blit fixed_code 0 code (i + 16) (String.length fixed_code)
   with Not_found ->
     Format.eprintf
