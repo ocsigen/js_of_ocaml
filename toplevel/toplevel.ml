@@ -133,6 +133,7 @@ end = struct
     Hashtbl.add Toploop.directive_table "tailcall" (Toploop.Directive_string (fun s ->
       let x = Option.Tailcall.of_string s in
       Option.Tailcall.set x));
+    Topdirs.dir_directory "/cmis";
     let initial_primitive_count =
       Array.length (split_primitives (Symtable.data_primitive_names ())) in
 
@@ -242,7 +243,7 @@ let examples =
   let content = ref [] in
   try
     begin
-      let ic = open_in "examples.ml" in
+      let ic = open_in "/static/examples.ml" in
       try
         while true do
           let line = input_line ic in

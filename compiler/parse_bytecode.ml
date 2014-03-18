@@ -1697,7 +1697,7 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                        failwith (Printf.sprintf "interface file '%s' not found" name)
                  in
                  let s = Util.read_file file in
-                 fs := (Pc (IString name),Pc (IString s)) :: !fs
+                 fs := (Pc (IString ("/cmis/"^name)),Pc (IString s)) :: !fs
                end) symb.num_tbl;
         end;
         (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "caml_register_file", [n;c]))) !fs) @ !l
