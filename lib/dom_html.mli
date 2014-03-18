@@ -679,6 +679,15 @@ class type scriptElement = object
   method async : bool t prop
 end
 
+class type embedElement = object
+  inherit element
+  method src : js_string t prop
+  method height : js_string t prop
+  method width  : js_string t prop
+  method allowFullscreen: bool t prop
+  method _type : js_string t prop
+end
+
 class type tableCellElement = object
   inherit element
   method cellIndex : int readonly_prop
@@ -1251,6 +1260,7 @@ val createOl : document t -> oListElement t
 val createDl : document t -> dListElement t
 val createLi : document t -> liElement t
 val createDiv : document t -> divElement t
+val createEmbed : document t -> embedElement t
 val createP : document t -> paragraphElement t
 val createH1 : document t -> headingElement t
 val createH2 : document t -> headingElement t
@@ -1335,6 +1345,7 @@ type taggedElement =
   | Del of modElement t
   | Div of divElement t
   | Dl of dListElement t
+  | Embed of embedElement t
   | Fieldset of fieldSetElement t
   | Form of formElement t
   | Frameset of frameSetElement t
@@ -1418,6 +1429,7 @@ module CoerceTo : sig
   val colgroup : #element t -> tableColElement t opt
   val del : #element t -> modElement t opt
   val div : #element t -> divElement t opt
+  val embed : #element t -> embedElement t opt
   val dl : #element t -> dListElement t opt
   val fieldset : #element t -> fieldSetElement t opt
   val form : #element t -> formElement t opt

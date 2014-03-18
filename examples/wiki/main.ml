@@ -18,10 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*
-FIX:
-- example at first
-*)
 module Html = Dom_html
 
 let (>>=) = Lwt.bind
@@ -37,6 +33,7 @@ let onload _ =
       (fun () -> assert false) in
   let textbox = Html.createTextarea d in
   textbox##rows <- 20; textbox##cols <- 80;
+  textbox##value <- Js.string Test.test1;
   let preview = Html.createDiv d in
   preview##style##border <- Js.string "1px black dashed";
   preview##style##padding <- Js.string "5px";
@@ -62,4 +59,4 @@ let onload _ =
   Js._false
 
 let _ =
-Html.window##onload <- Html.handler onload
+  Html.window##onload <- Html.handler onload
