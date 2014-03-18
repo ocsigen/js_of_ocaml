@@ -104,7 +104,6 @@ let version_match =
   let cano v = match split_plus v with
     | [] -> assert false
     | x::_ -> List.map int_of_string (split_dot x) in
-  let v' = cano v in
   let rec compute op v v' = match v,v' with
     | [x],[y] -> op x y
     | [],[] -> op 0 0
@@ -115,9 +114,11 @@ let version_match =
       then compute op xs ys
       else op x y
   in
-  List.for_all (fun (op,str) ->
-      compute op v' (cano str)
-    )
+  (fun l ->
+     let v' = cano v in
+     List.for_all (fun (op,str) ->
+         compute op v' (cano str)
+       ) l)
 
 let loc pi = match pi with
   | None -> "unknown location"
