@@ -54,7 +54,7 @@ compiler.cmxs: $(OBJS)
 
 VERSION := $(shell head -n 1 ../VERSION)
 compiler_version.ml: ../VERSION
-	echo "let s = \"${VERSION}\"\n" > $@
+	echo "let s = \"${VERSION}\"" > $@
 
 
 %.cmx: %.ml
