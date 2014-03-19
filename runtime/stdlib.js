@@ -56,7 +56,7 @@ function caml_get_global_data () { return caml_global_data; }
 
 
 //Provides: caml_raise_constant
-//Version: <= 4.01
+//Version: < 4.02
 function caml_raise_constant (tag) { throw [0, tag]; }
 
 //Provides: caml_raise_constant
