@@ -92,6 +92,9 @@ $(NAME).byte: $(OBJS) ../compiler/compiler.cma
 errors.cmi: errors.mli
 	$(OCAMLC) -c $<
 
+server: server.ml
+	ocamlfind ocamlc -linkpkg -package cohttp.lwt server.ml -o server
+
 clean::
 	rm -f *.cm[io] $(NAME).byte $(NAME).js
 
