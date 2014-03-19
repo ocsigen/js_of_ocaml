@@ -201,6 +201,7 @@ let link formatter ~standalone ?linkall js =
   if standalone
   then
     begin
+      let t = Util.Timer.make () in
       if times ()
       then Format.eprintf "Start Linking...@.";
       Linker.check_deps ();
@@ -215,7 +216,9 @@ let link formatter ~standalone ?linkall js =
 
       let used = StringSet.inter free all_external in
       let js,missing = Linker.resolve_deps ?linkall js used in
-      gen_missing js missing
+      let js = gen_missing js missing in
+      if times () then Format.eprintf "  linking: %a@." Util.Timer.print t;
+      js
     end
   else js
 
@@ -224,6 +227,10 @@ let check_js ~standalone js =
   if standalone
   then
     begin
+      let t = Util.Timer.make () in
+      if times ()
+      then Format.eprintf "Start Checks...@.";
+
       let traverse = new Js_traverse.free in
       let js = traverse#program js in
       let free = traverse#get_free_name in
@@ -261,32 +268,47 @@ let check_js ~standalone js =
           Format.eprintf "Variables provided by the browser:@.";
           StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov
         end;
+      if times () then Format.eprintf "  checks: %a@." Util.Timer.print t;
       js
     end
   else js
 
 let coloring js =
+  let t = Util.Timer.make () in
   if times ()
   then Format.eprintf "Start Coloring...@.";
-  Js_assign.program js
+  let js = Js_assign.program js in
+  if times () then Format.eprintf "  coloring: %a@." Util.Timer.print t;
+  js
 
 let output formatter ?source_map d js =
+  let t = Util.Timer.make () in
   if times ()
   then Format.eprintf "Start Writing file...@.";
-  Js_output.program formatter ?source_map d js
+  Js_output.program formatter ?source_map d js;
+  if times () then Format.eprintf "  write: %a@." Util.Timer.print t
 
 let pack ~standalone ?(toplevel=false)?(linkall=false) js =
   let module J = Javascript in
+  let t = Util.Timer.make () in
   if times ()
   then Format.eprintf "Start Optimizing js...@.";
   (* pre pack optim *)
   let js =
     if Option.Optim.share_constant ()
-    then (new Js_traverse.share_constant)#program js
+    then
+      let t1 = Util.Timer.make () in
+      let js = (new Js_traverse.share_constant)#program js in
+      if times () then Format.eprintf "    share constant: %a@." Util.Timer.print t1;
+      js
     else js in
   let js =
     if Option.Optim.compact_vardecl ()
-    then (new Js_traverse.compact_vardecl)#program js
+    then
+      let t2 = Util.Timer.make () in
+      let js = (new Js_traverse.compact_vardecl)#program js in
+      if times () then Format.eprintf "    compact var decl: %a@." Util.Timer.print t2;
+      js
     else js in
 
   (* pack *)
@@ -306,18 +328,26 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
       [J.Statement (J.Expression_statement (f, J.N))] in
 
   (* post pack optim *)
+  let t3 = Util.Timer.make () in
   let js = (new Js_traverse.simpl)#program js in
+  if times () then Format.eprintf "    simpl: %a@." Util.Timer.print t3;
+  let t4 = Util.Timer.make () in
   let js = (new Js_traverse.clean)#program js in
+  if times () then Format.eprintf "    clean: %a@." Util.Timer.print t4;
   let js =
     if (Option.Optim.shortvar ())
     then
+      let t5 = Util.Timer.make () in
       let keeps =
         if toplevel
         then StringSet.add global_object (Primitive.get_external ())
         else StringSet.empty in
       let keeps = StringSet.add "caml_get_global_data" keeps in
-      (new Js_traverse.rename_variable keeps)#program js
+      let js = (new Js_traverse.rename_variable keeps)#program js in
+      if times () then Format.eprintf "    shortten vars: %a@." Util.Timer.print t5;
+      js
     else js in
+  if times () then Format.eprintf "  optimizing: %a@." Util.Timer.print t;
   js
 
 

@@ -25,6 +25,7 @@ let f toplevel linkall paths files js_files input_file output_file source_map =
   List.iter Linker.add_file js_files;
   let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
   let t1 = Util.Timer.make () in
+  if times () then Format.eprintf "Start parsing...@.";
   let need_debug =
     if source_map <> None || Option.Optim.debuginfo () then `Full else
     if Option.Optim.pretty () then `Names else `No
