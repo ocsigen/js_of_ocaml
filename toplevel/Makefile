@@ -81,7 +81,7 @@ $(NAME).byte: $(OBJS) ../compiler/compiler.cma
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
 
-%.cmo: %.ml
+%.cmo: %.ml ../compiler/compiler.cma
 	$(OCAMLC) -c $<
 
 %.cmi: ../compiler/compiler.cma
