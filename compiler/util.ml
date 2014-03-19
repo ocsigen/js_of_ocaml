@@ -113,14 +113,16 @@ let has_backslash s =
   done;
   !res
 
+let fail = ref true
+
 let failwith_ fmt =
   Printf.ksprintf (fun s ->
-      if !Option.fail
+      if !fail
       then failwith s
       else Format.eprintf "%s@." s) fmt
 
 let raise_ exn =
-  if !Option.fail
+  if !fail
   then raise exn
   else begin
     Format.eprintf "%s@." (Printexc.to_string exn)
@@ -214,7 +216,7 @@ module Version = struct
     | [] -> assert false
     | x::_ -> List.map int_of_string (split_char '.' x)
 
-  let version = split Sys.ocaml_version
+  let current = split Sys.ocaml_version
 
   let compint (a : int) b = compare a b
 

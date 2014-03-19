@@ -58,8 +58,6 @@ end
 
 val global_object : string
 
-val fail : bool ref
-
 val ocaml_version :
   [ `V3      (* OCaml 3.12 to 4.01 *)
   | `V4_02 ] (* OCaml 4.02 *)

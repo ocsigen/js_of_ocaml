@@ -97,7 +97,7 @@ let run () =
   Arg.parse (Arg.align options)
       (fun s ->
          (* internal option for debugging only *)
-         if s="@nofail" then Option.fail:=false
+         if s="@nofail" then Util.fail:=false
          else
          if Filename.check_suffix s ".js" then
            js_files := s :: !js_files

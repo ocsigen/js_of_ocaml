@@ -116,7 +116,7 @@ let check_primitive name pi code req =
 
 let version_match =
   List.for_all (fun (op,str) ->
-      op (Util.Version.(compare version (split str))) 0
+      op (Util.Version.(compare current (split str))) 0
     )
 
 type visited = {
@@ -165,7 +165,6 @@ let get_provided () =
 
 let check_deps () =
   let provided = get_provided () in
-  let fail = ref false in
   Hashtbl.iter (fun id (code,requires) ->
     let traverse = new Js_traverse.free in
     let _js = traverse#program code in
@@ -179,8 +178,7 @@ let check_deps () =
       Format.eprintf "code providing %s (%s) may miss dependencies: %s\n"
         name
         (loc ploc)
-        (String.concat ", " (StringSet.elements missing));
-      fail := true
+        (String.concat ", " (StringSet.elements missing))
     end
   ) code_pieces
 
