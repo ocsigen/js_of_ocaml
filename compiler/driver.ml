@@ -32,13 +32,13 @@ let deadcode' p =
   Deadcode.f p
 
 let deadcode p =
-  let r,_,_ = deadcode' p
+  let r,_ = deadcode' p
   in r
 
 let inline p =
   if Option.Optim.inline () && Option.Optim.deadcode ()
   then
-    let (p,live_vars,_) = deadcode' p in
+    let (p,live_vars) = deadcode' p in
     if debug () then Format.eprintf "Inlining...@.";
     Inline.f p live_vars
   else p
@@ -150,7 +150,7 @@ let o3 =
 
 let profile = ref o1
 
-let generate (p,live_vars,_) =
+let generate (p,live_vars) =
   if times ()
   then Format.eprintf "Start Generation...@.";
   Generate.f p live_vars
