@@ -15,9 +15,9 @@ let test1 = "
 
 <<youtube 1XNTjVScm_8>>
 
-[[ya.ru|Link to Yandex]]
+[[http://ya.ru|Link to Yandex]]
 
-[[google.com]]
+[[http://google.com]]
 
 {{http://icons-search.com/img/yellowicon/firefox_win.zip/Firefox_Thunderbird_Win-icons-Firefox.ico-128x128.png|mail icon}}
 

@@ -684,7 +684,6 @@ class type embedElement = object
   method src : js_string t prop
   method height : js_string t prop
   method width  : js_string t prop
-  method allowFullscreen: bool t prop
   method _type : js_string t prop
 end
 

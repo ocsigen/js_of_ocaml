@@ -54,18 +54,26 @@ let builder =
 
     W.youtube_elem = (fun addr s ->
         let o = Html.createObject d in
+        o##width <- Js.string "480";
+        o##height <- Js.string "385";
         let video_link = Printf.sprintf "http://youtube.com/v/%s" addr in
         let param1 = Html.createParam d in
-        param1##name <- Js.string "movie"; param1##value <- Js.string video_link;
+        param1##name <- Js.string "movie";
+        param1##value <- Js.string video_link;
         let param2 = Html.createParam d in
-        param2##name <- Js.string "allowFullscreen"; param2##value <- Js.string "true";
+        param2##name <- Js.string "allowFullScreen";
+        param2##value <- Js.string "true";
+        let param3 = Html.createParam d in
+        param3##name <- Js.string "allowScriptAccess";
+        param3##value <- Js.string "always";
         let e = Html.createEmbed d in
         e##height <- Js.string "385"; e##width <- Js.string "480";
-        e##allowFullscreen <- Js._true; e##_type <- Js.string "application/x-shockwave-flash";
+        e##setAttribute (Js.string "allowfullscreen", Js.string "true");
+        e##setAttribute (Js.string "allowscriptaccess", Js.string "always");
+        e##_type <- Js.string "application/x-shockwave-flash";
         e##src <- Js.string video_link;
         List.iter (fun x -> o##appendChild (x) |> ignore)
-          [(param1 :> Dom.node Js.t); (param2 :> Dom.node Js.t); (e :> Dom.node Js.t)];
-
+          [node param1; node param2; node e];
         node o);
     W.br_elem = (fun () -> node (d##createElement (Js.string "br")));
     W.img_elem =
