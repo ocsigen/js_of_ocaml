@@ -53,28 +53,15 @@ let builder =
          let a = Html.createA d in a##href <- Js.string addr; a <| s);
 
     W.youtube_elem = (fun addr s ->
-        let o = Html.createObject d in
-        o##width <- Js.string "480";
-        o##height <- Js.string "385";
-        let video_link = Printf.sprintf "http://youtube.com/v/%s" addr in
-        let param1 = Html.createParam d in
-        param1##name <- Js.string "movie";
-        param1##value <- Js.string video_link;
-        let param2 = Html.createParam d in
-        param2##name <- Js.string "allowFullScreen";
-        param2##value <- Js.string "true";
-        let param3 = Html.createParam d in
-        param3##name <- Js.string "allowScriptAccess";
-        param3##value <- Js.string "always";
-        let e = Html.createEmbed d in
-        e##height <- Js.string "385"; e##width <- Js.string "480";
-        e##setAttribute (Js.string "allowfullscreen", Js.string "true");
-        e##setAttribute (Js.string "allowscriptaccess", Js.string "always");
-        e##_type <- Js.string "application/x-shockwave-flash";
-        e##src <- Js.string video_link;
-        List.iter (fun x -> o##appendChild (x) |> ignore)
-          [node param1; node param2; node e];
-        node o);
+        let i = Html.createIframe d in
+        i##width <- Js.string "480";
+        i##height <- Js.string "360";
+        let video_link =
+          "http://youtube.com/embed/" ^
+          Js.to_string (Js.encodeURI (Js.string addr)) in
+        i##src <- Js.string video_link;
+        i##frameBorder <- Js.string "0";
+        node i);
     W.br_elem = (fun () -> node (d##createElement (Js.string "br")));
     W.img_elem =
       (fun addr alt ->
