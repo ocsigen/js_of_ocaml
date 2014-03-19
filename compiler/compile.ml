@@ -60,7 +60,7 @@ let f toplevel linkall paths files js_files input_file output_file source_map =
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
 
 let run () =
-  Util.Timer.init Unix.gettimeofday;
+  Util.Timer.init Sys.time;
   let js_files = ref [] in
   let files = ref [] in
   let output_file = ref None in

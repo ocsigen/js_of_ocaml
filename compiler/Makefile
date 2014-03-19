@@ -5,7 +5,7 @@ all: $(COMPILER) $(MINIFIER)
 
 lib: compiler.cma compiler.cmxa compiler.cmxs
 
-PACKAGES=findlib,unix
+PACKAGES=findlib
 
 OBJS=compiler_version.cmx \
      pretty_print.cmx option.cmx util.cmx reserved.cmx varPrinter.cmx \
@@ -58,13 +58,13 @@ compiler_version.ml: ../VERSION
 
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -package findlib -for-pack Compiler -c $<
+	ocamlfind ocamlopt -package $(PACKAGES) -for-pack Compiler -c $<
 
 %.cmo: %.ml
-	ocamlfind ocamlc -package findlib -c $<
+	ocamlfind ocamlc -package $(PACKAGES) -c $<
 
 %.cmi: %.mli
-	ocamlfind ocamlc -package findlib -c $<
+	ocamlfind ocamlc -package $(PACKAGES) -c $<
 
 %.ml %.mli: %.mly
 	menhir --explain $<
