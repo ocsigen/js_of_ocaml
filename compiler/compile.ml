@@ -22,7 +22,7 @@ let times = Option.Debug.find "times"
 
 let f toplevel linkall paths files js_files input_file output_file source_map =
   let t = Util.Timer.make () in
-  List.iter Linker.add_file js_files;
+  Linker.load_files js_files;
   let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
   let t1 = Util.Timer.make () in
   if times () then Format.eprintf "Start parsing...@.";
