@@ -54,3 +54,19 @@ val raise_ : exn -> unit
 val split_char : char -> string -> string list
 val split : string -> string -> string list
 val find : string -> string -> int
+
+
+module Version : sig
+  type t = int list
+  val version : t
+  val compare : t -> t -> int
+  val split : string -> t
+end
+
+module MagicNumber : sig
+  exception Bad_magic_number of string
+  type t = string * int
+  val size : int
+  val compare : t -> t -> int
+  val of_string : string -> t
+end

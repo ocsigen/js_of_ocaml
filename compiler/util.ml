@@ -206,3 +206,61 @@ let find sep s =
     done;
     raise Not_found
   with Found i -> i
+
+module Version = struct
+  type t = int list
+  let split v =
+    match split_char '+' v with
+    | [] -> assert false
+    | x::_ -> List.map int_of_string (split_char '.' x)
+
+  let version = split Sys.ocaml_version
+
+  let compint (a : int) b = compare a b
+
+  let rec compare v v' = match v,v' with
+    | [x],[y] -> 0
+    | [],[] -> 0
+    | [],y::_ -> compint 0 y
+    | x::_,[] -> compint x 0
+    | x::xs,y::ys ->
+      match compint x y with
+      | 0 -> compare xs ys
+      | n -> n
+end
+
+module MagicNumber = struct
+  type t = string * int
+
+
+  exception Bad_magic_number of string
+
+  let size = 12
+
+  let kind_of_string = function
+    | "Caml1999X" -> "exe"
+    | "Caml1999I" -> "cmi"
+    | "Caml1999O" -> "cmo"
+    | "Caml1999A" -> "cma"
+    | "Caml1999Y" -> "cmx"
+    | "Caml1999Z" -> "cmxa"
+    | "Caml2007D" -> "cmxs"
+    | "Caml2012T" -> "cmt"
+    | "Caml1999M" -> "impl"
+    | "Caml1999N" -> "intf"
+    | s -> raise Not_found
+
+  let of_string s =
+    try
+      if String.length s <> size
+      then raise Not_found;
+      let kind = String.sub s 0 9 in
+      let v = String.sub s 9 3 in
+      kind_of_string kind, int_of_string v
+    with _ -> raise (Bad_magic_number s)
+
+
+  let compare (p1,n1) (p2,n2) =
+    if p1 <> p2 then raise Not_found;
+    compare n1 n2
+end
