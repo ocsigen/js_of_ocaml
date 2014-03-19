@@ -38,8 +38,8 @@ generate.cmx : util.cmx subst.cmx primitive.cmx option.cmx js_tailcall.cmx \
     js_simpl.cmx javascript.cmx freevars.cmx code.cmx generate.cmi
 inline.cmo : code.cmi inline.cmi
 inline.cmx : code.cmx inline.cmi
-instr.cmo : instr.cmi
-instr.cmx : instr.cmi
+instr.cmo : option.cmi instr.cmi
+instr.cmx : option.cmx instr.cmi
 javascript.cmo : varPrinter.cmi util.cmi parse_info.cmi code.cmi \
     javascript.cmi
 javascript.cmx : varPrinter.cmx util.cmx parse_info.cmx code.cmx \

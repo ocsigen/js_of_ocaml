@@ -111,6 +111,8 @@ type t =
   | PUSHTRAP
   | POPTRAP
   | RAISE
+  | RERAISE
+  | RAISE_NOTRACE
   | CHECK_SIGNALS
   | C_CALL1
   | C_CALL2
@@ -178,8 +180,9 @@ type kind =
 
 type desc = { code : t; kind : kind; name : string; opcode : int }
 
-let ops =
-  Array.mapi (fun i (c, k, n) -> {code = c; kind = k; name = n; opcode = i})
+let ops,ops_rev =
+  let ops_rev = Hashtbl.create 17 in
+  let block1 =
     [| ACC0, KNullary, "ACC0";
        ACC1, KNullary, "ACC1";
        ACC2, KNullary, "ACC2";
@@ -271,8 +274,12 @@ let ops =
        BOOLNOT, KNullary, "BOOLNOT";
        PUSHTRAP, KCond_jump, "PUSHTRAP";
        POPTRAP, KNullary, "POPTRAP";
-       RAISE, KStop 0, "RAISE";
-       CHECK_SIGNALS, KNullary, "CHECK_SIGNALS";
+       RAISE, KStop 0, "RAISE" |]
+  and block2 =
+    [| RERAISE, KStop 0, "RERAISE";
+       RAISE_NOTRACE, KStop 0, "RAISE_NOTRACE" |]
+  and block3 =
+    [| CHECK_SIGNALS, KNullary, "CHECK_SIGNALS";
        C_CALL1, KUnary, "C_CALL1";
        C_CALL2, KUnary, "C_CALL2";
        C_CALL3, KUnary, "C_CALL3";
@@ -324,6 +331,37 @@ let ops =
        GETPUBMET, KBinary, "GETPUBMET";
        GETDYNMET, KNullary, "GETDYNMET";
        STOP, KStop 0, "STOP"|]
+  in
+  let instrs =
+    match Option.ocaml_version with
+      `V3    -> [block1; block3]
+    | `V4_02 -> [block1; block2; block3]
+  in
+  let ops =
+    Array.mapi
+      (fun i (c, k, n) ->
+         Hashtbl.add ops_rev c i;
+         {code = c; kind = k; name = n; opcode = i})
+      (Array.concat instrs)
+  in
+  ops,ops_rev
+
+let to_int c = Hashtbl.find ops_rev c
+
+let int_to_buf buf i =
+  Buffer.add_char buf (Char.chr (i land 0xFF));
+  Buffer.add_char buf (Char.chr ((i lsr 8) land 0xFF));
+  Buffer.add_char buf (Char.chr ((i lsr 16) land 0xFF));
+  Buffer.add_char buf (Char.chr ((i lsr 24) land 0xFF))
+
+let compile l =
+  let b = Buffer.create 50 in
+  List.iter (fun i ->
+      let i = match i with
+        | `C i -> i
+        | `I i -> to_int i in
+      int_to_buf b i) l;
+  Buffer.contents b
 
 let get code i = Char.code code.[i]
 
