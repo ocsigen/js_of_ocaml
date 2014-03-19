@@ -26,7 +26,7 @@ module Html = Dom_html
 module W = Wikicreole
 
 (*
-let create n ?attrs children = 
+let create n ?attrs children =
   let m = create n ?attrs () in
   List.iter (Js.Node.append m) children ;
   m
@@ -51,6 +51,22 @@ let builder =
     W.a_elem =
       (fun addr s ->
          let a = Html.createA d in a##href <- Js.string addr; a <| s);
+
+    W.youtube_elem = (fun addr s ->
+        let o = Html.createObject d in
+        let video_link = Printf.sprintf "http://youtube.com/v/%s" addr in
+        let param1 = Html.createParam d in
+        param1##name <- Js.string "movie"; param1##value <- Js.string video_link;
+        let param2 = Html.createParam d in
+        param2##name <- Js.string "allowFullscreen"; param2##value <- Js.string "true";
+        let e = Html.createEmbed d in
+        e##height <- Js.string "385"; e##width <- Js.string "480";
+        e##allowFullscreen <- Js._true; e##_type <- Js.string "application/x-shockwave-flash";
+        e##src <- Js.string video_link;
+        List.iter (fun x -> o##appendChild (x) |> ignore)
+          [(param1 :> Dom.node Js.t); (param2 :> Dom.node Js.t); (e :> Dom.node Js.t)];
+
+        node o);
     W.br_elem = (fun () -> node (d##createElement (Js.string "br")));
     W.img_elem =
       (fun addr alt ->

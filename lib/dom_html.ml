@@ -729,6 +729,15 @@ class type scriptElement = object
   method async : bool t prop
 end
 
+class type embedElement = object
+  inherit element
+  method src : js_string t prop
+  method height : js_string t prop
+  method width  : js_string t prop
+  method allowFullscreen: bool t prop
+  method _type : js_string t prop
+end
+
 class type tableCellElement = object
   inherit element
   method cellIndex : int readonly_prop
@@ -1212,6 +1221,7 @@ let createOl doc : oListElement t = unsafeCreateElement doc "ol"
 let createDl doc : dListElement t = unsafeCreateElement doc "dl"
 let createLi doc : liElement t = unsafeCreateElement doc "li"
 let createDiv doc : divElement t = unsafeCreateElement doc "div"
+let createEmbed doc : embedElement t = unsafeCreateElement doc "embed"
 let createP doc : paragraphElement t = unsafeCreateElement doc "p"
 let createH1 doc : headingElement t = unsafeCreateElement doc "h1"
 let createH2 doc : headingElement t = unsafeCreateElement doc "h2"
@@ -1314,6 +1324,7 @@ module CoerceTo = struct
   let div e = unsafeCoerce "div" e
   let dl e = unsafeCoerce "dl" e
   let fieldset e = unsafeCoerce "fieldset" e
+  let embed e = unsafeCoerce "embed" e
   let form e = unsafeCoerce "form" e
   let frameset e = unsafeCoerce "frameset" e
   let frame e = unsafeCoerce "frame" e
@@ -1462,6 +1473,7 @@ type taggedElement =
   | Del of modElement t
   | Div of divElement t
   | Dl of dListElement t
+  | Embed of embedElement t
   | Fieldset of fieldSetElement t
   | Form of formElement t
   | Frameset of frameSetElement t
@@ -1544,6 +1556,11 @@ let tagged (e : #element t) =
         | "del" -> Del (Js.Unsafe.coerce e)
         | "div" -> Div (Js.Unsafe.coerce e)
         | "dl" -> Dl (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'e' ->
+        begin match tag with
+        | "embed" -> Embed (Js.Unsafe.coerce e)
         | _ -> other e
         end
     | 'f' ->

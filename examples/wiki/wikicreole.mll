@@ -30,6 +30,7 @@ type ('flow, 'inline, 'a_content) builder =
     img_elem : string -> string -> 'a_content;
     tt_elem : 'inline list -> 'a_content;
     a_elem : string -> 'a_content list -> 'inline;
+    youtube_elem : string -> 'a_content list -> 'inline;
     p_elem : 'inline list -> 'flow;
     pre_elem : string list -> 'flow;
     h1_elem : 'inline list -> 'flow;
@@ -359,6 +360,16 @@ and parse_rem c =
         let addr = String.sub s 2 (String.length s - 4) in
         c.inline_mix <-
          c.build.a_elem addr [c.build.chars addr] :: c.inline_mix;
+      parse_rem c lexbuf
+  }
+  | "<<youtube " ('>' ? (not_line_break # [ '>' ])) + ">>" {
+      if c.link then
+        push_chars c lexbuf
+      else
+        let s = Lexing.lexeme lexbuf in
+        let addr = String.sub s 10 (String.length s - 12) in
+        c.inline_mix <-
+         c.build.youtube_elem addr [c.build.chars addr] :: c.inline_mix;
       parse_rem c lexbuf
   }
   | "[[" (']' ? (not_line_break # [ ']' '|' ])) + "|" {
