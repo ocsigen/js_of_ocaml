@@ -348,6 +348,21 @@ let ops,ops_rev =
 
 let to_int c = Hashtbl.find ops_rev c
 
+let int_to_buf buf i =
+  Buffer.add_char buf (Char.chr (i land 0xFF));
+  Buffer.add_char buf (Char.chr ((i lsr 8) land 0xFF));
+  Buffer.add_char buf (Char.chr ((i lsr 16) land 0xFF));
+  Buffer.add_char buf (Char.chr ((i lsr 24) land 0xFF))
+
+let compile l =
+  let b = Buffer.create 50 in
+  List.iter (fun i ->
+      let i = match i with
+        | `C i -> i
+        | `I i -> to_int i in
+      int_to_buf b i) l;
+  Buffer.contents b
+
 let get code i = Char.code code.[i]
 
 let getu code pc =

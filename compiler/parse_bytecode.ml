@@ -1800,23 +1800,8 @@ let fixed_code_bytes =
    `I BRANCH; `C 6;
    `I PUSHCONST1]
 
-let int_to_buf buf i =
-  Buffer.add_char buf (Char.chr (i land 0xFF));
-  Buffer.add_char buf (Char.chr ((i lsr 8) land 0xFF));
-  Buffer.add_char buf (Char.chr ((i lsr 16) land 0xFF));
-  Buffer.add_char buf (Char.chr ((i lsr 24) land 0xFF))
-
-let bytecode_to_string l =
-  let b = Buffer.create 50 in
-  List.iter (fun i ->
-      let i = match i with
-        | `C i -> i
-        | `I i -> Instr.to_int i in
-      int_to_buf b i) l;
-  Buffer.contents b
-
-let orig_code = bytecode_to_string orig_code_bytes
-let fixed_code = bytecode_to_string fixed_code_bytes
+let orig_code = Instr.compile orig_code_bytes
+let fixed_code = Instr.compile fixed_code_bytes
 
 let fix_min_max_int code =
   begin try

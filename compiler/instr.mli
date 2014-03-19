@@ -187,6 +187,6 @@ val get_instr : string -> int -> desc
 val gets : string -> int -> int
 val getu : string -> int -> int
 
-val to_int : t -> int
+val compile : [`C of int | `I of t] list -> string
 
 val print_obj : Format.formatter -> Obj.t -> unit
