@@ -76,8 +76,8 @@ minify.cmo : util.cmi pretty_print.cmi parse_js.cmi parse_info.cmi \
     option.cmi js_traverse.cmi js_output.cmi js_assign.cmi code.cmi
 minify.cmx : util.cmx pretty_print.cmx parse_js.cmx parse_info.cmx \
     option.cmx js_traverse.cmx js_output.cmx js_assign.cmx code.cmx
-option.cmo : option.cmi
-option.cmx : option.cmi
+option.cmo : util.cmi option.cmi
+option.cmx : util.cmx option.cmi
 parse_bytecode.cmo : util.cmi primitive.cmi parse_info.cmi option.cmi \
     javascript.cmi instr.cmi code.cmi parse_bytecode.cmi
 parse_bytecode.cmx : util.cmx primitive.cmx parse_info.cmx option.cmx \
@@ -110,8 +110,8 @@ subst.cmo : util.cmi code.cmi subst.cmi
 subst.cmx : util.cmx code.cmx subst.cmi
 tailcall.cmo : util.cmi subst.cmi option.cmi code.cmi tailcall.cmi
 tailcall.cmx : util.cmx subst.cmx option.cmx code.cmx tailcall.cmi
-util.cmo : option.cmi util.cmi
-util.cmx : option.cmx util.cmi
+util.cmo : util.cmi
+util.cmx : util.cmi
 varPrinter.cmo : util.cmi reserved.cmi varPrinter.cmi
 varPrinter.cmx : util.cmx reserved.cmx varPrinter.cmi
 vlq64.cmo : vlq64.cmi
