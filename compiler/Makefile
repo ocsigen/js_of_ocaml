@@ -60,14 +60,8 @@ compiler_version.ml: ../VERSION
 %.cmx: %.ml
 	ocamlfind ocamlopt -package findlib,str -for-pack Compiler -c $<
 
-instr.cmx: instr.ml
-	ocamlfind ocamlopt -package findlib,str,optcomp -syntax camlp4o -for-pack Compiler -c $<
-
 %.cmo: %.ml
 	ocamlfind ocamlc -package findlib,str -c $<
-
-instr.cmo: instr.ml
-	ocamlfind ocamlc -package findlib,str,optcomp -syntax camlp4o -c $<
 
 %.cmi: %.mli
 	ocamlfind ocamlc -package findlib,str -c $<
@@ -90,7 +84,6 @@ clean:
 
 .PHONY: depend
 depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml
-	ocamlfind ocamldep -syntax camlp4o -package optcomp instr.ml > .depend
-	ocamlfind ocamldep $(patsubst instr.ml,,$(wildcard *.ml)) *.mli >> .depend
+	ocamldep *.ml *.mli > .depend
 
 include .depend
