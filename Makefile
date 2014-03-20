@@ -37,15 +37,22 @@ check_lwt:
 include Makefile.filelist
 
 VERSION := $(shell head -n 1 VERSION)
-install:
-	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(OTHERS) $(DOC)
-	ocamlfind install -patch-version ${VERSION} $(COMPILER_LIBRARY) compiler/META $(COMP_INTF) $(COMP_IMPL)
+
+install: install-lib install-bin
+
+install-lib:
+	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(OTHERS) $(DOC) $(COMP_INTF) $(COMP_IMPL)
+
+install-bin:
 	install -d -m 755 $(BINDIR)
 	install $(BIN) $(BINDIR)
 
-uninstall:
+uninstall: uninstall-lib uninstall-bin
+
+uninstall-lib:
 	ocamlfind remove $(LIBRARY)
-	ocamlfind remove $(COMPILER_LIBRARY)
+
+uninstall-bin:
 	rm -f $(BINDIR)/$(COMPILER)
 	rm -f $(BINDIR)/$(MINIFIER)
 

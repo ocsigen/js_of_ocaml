@@ -41,3 +41,13 @@ package "ocamlbuild" (
   archive(native) = "ocamlbuild_js_of_ocaml.cmxa"
   archive(native, plugin) = "ocamlbuild_js_of_ocaml.cmxs"
 )
+
+package "compiler" (
+  description = "Js_of_ocaml compiler library"
+  version = "[distributed with js_of_ocaml]"
+  archive(byte) = "compiler.cma"
+  archive(byte, plugin) = "compiler.cma"
+  archive(native) = "compiler.cmxa"
+  archive(native, plugin) = "compiler.cmxs"
+  requires = "str findlib"
+)

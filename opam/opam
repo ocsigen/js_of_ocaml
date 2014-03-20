@@ -2,11 +2,10 @@ opam-version: "1"
 maintainer: "dev@ocsigen.org"
 build: [
   ["%{make}%"]
-  ["%{make}%" "install" "BINDIR=%{bin}%"]
+  ["%{make}%" "install-lib" "BINDIR=%{bin}%"]
 ]
 remove: [
   ["ocamlfind" "remove" "js_of_ocaml"]
-  ["ocamlfind" "remove" "js_of_ocaml_compiler"]
 ]
 depends: [
   "ocamlfind"
