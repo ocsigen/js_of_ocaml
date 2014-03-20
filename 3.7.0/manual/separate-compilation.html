@@ -1,0 +1,117 @@
+<html><head><title> Separate compilation</title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="https://ocsigen.org/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script type="text/javascript" src="https://ocsigen.org/js/client.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js">
+//<![CDATA[
+
+//]]>
+</script></head><body class="separate-compilation js_of_ocaml"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href=".././../../" class="ocsimore_phrasing_link"><img src=".././../../img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml</p><div class="mainmenu"><p class="mainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a></p><p class="mainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a></p><p><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a></p><p class="mainmenu-current"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a></p><p><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a></p><p><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a></p><p><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a></p></div><form id="googlesearch" action="https://google.com/search"><input name="q" id="gsearch-box" placeholder="Search using Google"/><label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label><input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/></form><aside class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a>
+</li><li class="drawermainmenu-project"><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-project"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a>
+</li><li class="drawermainmenu-project"><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a>
+</li><li class="drawermainmenu-project"><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-toolkit/" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-project"><a href=".././../../html_of_wiki/" class="ocsimore_phrasing_link">html_of_wiki</a>
+</li><li class="drawermainmenu-project"><a href=".././../../deriving/" class="ocsimore_phrasing_link">deriving</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsimore/" class="ocsimore_phrasing_link">Ocsimore (<em>deprecated</em>)</a>
+</li><li class="drawermainmenu-page"><a href=".././../../projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href=".././../../papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href=".././../../credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li><li class="drawermainmenu-page"><a href=".././../../contributing" class="ocsimore_phrasing_link">Contributing</a>
+</li><li class="drawermainmenu-page"><a href=".././../../blog" class="ocsimore_phrasing_link">Blog</a>
+</li><li class="drawermainmenu-page"><a href=".././../../install" class="ocsimore_phrasing_link">Installation</a>
+</li><li class="drawermainmenu-page"><a href="https://github.com/ocsigen" class="ocsimore_phrasing_link">Source code</a>
+</li></ul><nav class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="install" class="ocsimore_phrasing_link">Install</a></h2><h2><a href="library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h2><a href="../api/index.html" class="ocsimore_phrasing_link">API</a></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h1>Syntaxes</h1><h2><a href="ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="camlp4" class="ocsimore_phrasing_link">Camlp4 syntax extension</a></h2><h2><a href="ppx-deriving" class="ocsimore_phrasing_link">Ppx deriving json</a></h2><h1>Compiler</h1><h2><a href="options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h1>Misc</h1><h2><a href="debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href=".././manual/files/toplevel/index.html">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href=".././manual/files/planet/index.html">An animated 3D view of the Earth</a></span></h2><h2><span><a href=".././manual/files/graph_viewer/index.html">A graph viewer</a></span></h2><h2><span><a href=".././manual/files/boulderdash/index.html">A Boulder Dash game</a></span></h2><h2><span><a href=".././manual/files/wiki/index.html">A realtime wiki editor</a></span></h2><h2><span><a href=".././manual/files/webgl/index.html">A webgl demo</a></span></h2><h2><span><a href=".././manual/files/minesweeper/index.html">A Minesweeper game</a></span></h2><h2><span><a href=".././manual/files/hyperbolic/index.html">A hyperbolic tree viewer</a></span></h2><h2><span><a href=".././manual/files/cubes/index.html">A random walk on lozenge tiling configurations</a></span></h2></nav></nav></aside></div><p class="reasonwarning">Warning: Reason support is experimental.
+We are looking for beta-tester and contributors.
+</p><button id="reason">Switch to </button><div class="twocols"><nav class="leftcol">Version <select class="how-versions" onchange="location = this.value;"><option value=".././../dev/manual/separate-compilation">dev</option><option value=".././../5.4.0/manual/separate-compilation">5.4.0</option><option value=".././../5.3.0/manual/separate-compilation">5.3.0</option><option value=".././../5.2.0/manual/separate-compilation">5.2.0</option><option value=".././../5.1.0/manual/separate-compilation">5.1.0</option><option value=".././../5.0.1/manual/separate-compilation">5.0.1</option><option value=".././../4.1.0/manual/separate-compilation">4.1.0</option><option value=".././../4.0.0/manual/separate-compilation">4.0.0</option><option value=".././../3.11.0/manual/separate-compilation">3.11.0</option><option value=".././../3.10.0/manual/separate-compilation">3.10.0</option><option value=".././../3.9.0/manual/separate-compilation">3.9.0</option><option value=".././../3.8.0/manual/separate-compilation">3.8.0</option><option value=".././../3.7.0/manual/separate-compilation" selected="selected">3.7.0</option><option value=".././../3.6.0/manual/separate-compilation">3.6.0</option><option value=".././../3.5.1/manual/separate-compilation">3.5.1</option></select><nav class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="install" class="ocsimore_phrasing_link">Install</a></h2><h2><a href="library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h2><a href="../api/index.html" class="ocsimore_phrasing_link">API</a></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h1>Syntaxes</h1><h2><a href="ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="camlp4" class="ocsimore_phrasing_link">Camlp4 syntax extension</a></h2><h2><a href="ppx-deriving" class="ocsimore_phrasing_link">Ppx deriving json</a></h2><h1>Compiler</h1><h2><a href="options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h1>Misc</h1><h2><a href="debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href=".././manual/files/toplevel/index.html">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href=".././manual/files/planet/index.html">An animated 3D view of the Earth</a></span></h2><h2><span><a href=".././manual/files/graph_viewer/index.html">A graph viewer</a></span></h2><h2><span><a href=".././manual/files/boulderdash/index.html">A Boulder Dash game</a></span></h2><h2><span><a href=".././manual/files/wiki/index.html">A realtime wiki editor</a></span></h2><h2><span><a href=".././manual/files/webgl/index.html">A webgl demo</a></span></h2><h2><span><a href=".././manual/files/minesweeper/index.html">A Minesweeper game</a></span></h2><h2><span><a href=".././manual/files/hyperbolic/index.html">A hyperbolic tree viewer</a></span></h2><h2><span><a href=".././manual/files/cubes/index.html">A random walk on lozenge tiling configurations</a></span></h2></nav></nav><article class="rightcol"><h1> Separate compilation</h1><p>The js_of_ocaml compiler supports two compilation modes.  Whole program
+compilation that compiles a bytecode executable to a single JavaScript
+file and separate compilation that compiles individual compilation units
+(.cmo) and libraries (.cma) to one or more javascript files.
+</p><h2> Why use separate compilation</h2><p>Separate compilation improves the overall compilation times and gives
+(many) incremental build opportunities.
+</p><p>Theses improvements come at the cost of bigger executable and slower
+runtime.  In particular, separate compilation will disable most cross
+module and cross library optimisations and make the dead-code
+elimination almost useless.
+</p><h2> Compilation scheme</h2><p>Js_of_ocaml separate compilation is somewhat similar to the OCaml
+separate compilation with some differences.
+</p><p>The general idea is generate one JavaScript file containing the
+JavaScript runtime and JavaScript files for every compilation unit (or
+library) needed to run the program. One can then link (or
+&quot;concatenate&quot;) all individual JavaScript files together, respecting
+the order induced by dependencies, into a single JavaScript file.
+</p><h3> 1. Build the runtime</h3><p>To build a standalone runtime:
+</p><pre>js_of_ocaml build-runtime -o my-runtime.js
+</pre><p>Additional runtime files are sometime needed and can be passed on the
+command line.  In particular, some packages/libraries come with their
+own runtime file.
+</p><p>As an example, compiling a program that has a dependency on <span class="teletype">base</span>
+will require the <span class="teletype">runtime.js}</span> file provided by base.
+</p><pre>js_of_ocaml --runtime-only -o my-runtime.js PATH_TO_BASE_LIB/runtime.js dummy
+</pre><p>If js_of_ocaml is compiled with findlib support, one can also use the
+following syntax <span class="teletype"> +{findlib-package}/{javascript-file} </span>.
+</p><pre>js_of_ocaml --runtime-only -o my-runtime.js +base/runtime.js dummy
+</pre><h3> 2. Build compilation units</h3><p>In addition to bytecode executables, the js_of_ocaml compiler can
+process compilation units (.cmo) and libraries (.cma).
+</p><p>One can specify the name of the generated file with <span class="teletype">-o</span>. By
+default, the name will be inferred from the input file.
+</p><p>By default, the js_of_ocaml compiler will generate a single JavaScript
+file when compiling an ocaml library (.cma). One can choose to
+generate one file per compilation unit by passing the
+<span class="teletype">--keep-unit-names</span> flag. In that case, the name will be inferred
+from the compilation unit name and <span class="teletype">-o</span> will be understood as a
+destination directory.
+</p><pre>js_of_ocaml modname.cmo
+#generates modname.js
+
+js_of_ocaml libname.cma
+#generates libname.js
+
+js_of_ocaml libname.cma -o name.js
+#generates name.js
+
+mkdir libname
+js_of_ocaml libname.cma --keep-unit-names -o libname/
+#generates libname/Unit1.js libname/Unit2.js
+</pre><h3> 3. Link</h3><p>The final step is to link all individual JavaScript files into a
+single one.  The <span class="teletype">link</span> command of the js_of_ocaml-compiler takes
+a list of JavaScript filename as input and concatenates them all
+(merging source-maps together if needed).
+</p><pre>js_of_ocaml link my-runtime.js stdlib.js libname.js modname.js std_exit.js-o myexe.js
+</pre><p>Note that, unlike the ocaml compiler, the ocaml stdlib and std_exit need to be
+passed explicitly (here, {stdlib.js} and {std_exit.js} are the result of compiling
+{stdlib.cma} and {std_exit.cmo}).
+</p><h2> Support in dune</h2><p>Support for js_of_ocaml separate compilation has been added to dune
+(previously jbuilder). The separate compilation mode is selected when
+the build profile is dev, which is the default.  There is currently no
+other way to control this behaviour.
+</p><p>See <a href="https://dune.readthedocs.io/en/latest/jsoo.html" class="ocsimore_phrasing_link">dune documentation</a>
+</p><h2> Source-maps support</h2><p>Separate compilation can be used together with source-map.  The
+recommended way is to build all individual javascript files with
+inlined source-map by passing <span class="teletype">--source-map-inline</span> to
+<span class="teletype">js_of_ocaml</span>.
+</p><p>Note that other configurations have not been well tested and might
+require additional tuning.
+</p><h2> Building Toplevel</h2><p>Building a toplevel using separate compilation is not supported / has
+not been tested yet.</p></article></div></div></body></html>

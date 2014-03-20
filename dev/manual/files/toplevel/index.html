@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+          "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title>OCaml toplevel</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" />
+    <style>
+
+      code, kbd, pre, samp {
+      font-family: Menlo,Monaco,Consolas,monospace;
+      }
+      body,html {
+      height: 100%;
+      background-color:#eee;
+      }
+
+      #toplevel-container {
+      width: 50%;
+      background-color: black;
+      color: #ccc;
+      overflow: auto;
+      overflow-x: hidden;
+      height: 100%;
+      float:left;
+      padding:10px;
+      padding-top: 20px;
+      }
+
+      #toplevel-container pre#output {
+      padding: 0px;
+      }
+
+      #toplevel-container #output {
+      background-color:transparent;
+      color: #ccc;
+      border: none;
+      line-height:18px;
+      font-size: 12px;
+      margin-bottom: 0px;
+      }
+
+      #toplevel-container textarea {
+      width:90%;
+      line-height:18px;
+      font-size: 12px;
+      background-color: transparent;
+      color: #fff;
+      border: 0;
+      resize: none;
+      outline: none;
+      font-family: Menlo,Monaco,Consolas,monospace;
+      font-weight: bold;
+      float:left;
+      margin: 0px;
+      padding:0px;
+      }
+      #toplevel-container #sharp {
+      float: left;
+      line-height:18px;
+      font-size: 12px;
+      font-family: Menlo,Monaco,Consolas,monospace;
+      white-space: pre;
+      }
+      .sharp:before{
+      content:"# ";
+      line-height:18px;
+      font-size: 12px;
+      font-family: Menlo,Monaco,Consolas,monospace;
+      }
+      .caml{
+      color:rgb(110, 110, 201);
+      }
+      #toplevel-side{
+      position:relative;
+      width:45%;
+      height: 100%;
+      overflow: auto;
+      text-align:justify;
+      float:left;
+      margin-left:30px;
+      }
+      #toplevel-side ul{
+      padding: 0px;
+      list-style-type: none;
+      }
+
+      .stderr {
+      color: #d9534f;
+      }
+      .stdout {
+
+      }
+      .errorloc{
+      border-bottom-width: 3px;
+      border-bottom-style: solid;
+      border-bottom-color: red;
+      }
+      canvas {
+      border: 1px dashed black;
+      float: left;
+      margin: 7px;
+      }
+      #output canvas {
+      background-color: #464646;
+      float: none;
+      display: block;
+      border: 1px dashed while;
+      margin: 7px;
+      }
+      #output img {
+      display:block;
+      }
+      #toplevel-examples {
+      width: 270px;
+      float: left;
+      }
+      #toplevel-examples .list-group-item{
+      padding: 5px 15px;
+      }
+      #btn-share {
+      float:right;
+      margin-top:-20px;
+      background-color:rgb(92, 129, 184);
+      border-color: rgb(70, 75, 128);
+      padding: 1px 5px;
+      display:none;
+      }
+      .clear { clear:both; }
+
+      .sharp .id { color: #59B65C ; font-style: italic }
+      .sharp .kw0 { color: rgb(64, 75, 190); font-weight: bold ;}
+      .sharp .kw1 { color: rgb(150, 0, 108); font-weight: bold ;}
+      .sharp .kw2 { color: rgb(23, 100, 42); font-weight: bold ;}
+      .sharp .kw3 { color: #59B65C; font-weight: bold ;}
+      .sharp .kw4 { color: #59B65C; font-weight: bold ;}
+      .sharp .comment { color: green ; font-style: italic ; }
+      .sharp .string { color: #6B6B6B; font-weight: bold ; }
+      .sharp .text { }
+      .sharp .numeric { color: #729AAF; }
+      .sharp .directive { font-style: italic ; color : #EB00FF; } ;
+      .sharp .escape { color: #409290 ; }
+      .sharp .symbol0 { color: orange ; font-weight: bold ; }
+      .sharp .symbol1 { color: #993300 ; font-weight: bold ; }
+      .sharp .constant { color: rgb(0, 152, 255); }
+    </style>
+    <script type="text/javascript">
+
+      window.onhashchange = function() { window.location.reload() }
+      var hash = window.location.hash.replace(/^#/,"");
+      var fields = hash.split(/&/);
+      var prefix = "";
+      var version = "";
+      var main = "toplevel.js";
+      for(var f in fields){
+        var data = fields[f].split(/=/);
+        if(data[0] == "version"){
+          version = data[1].replace(/%20|%2B/g,"+");
+        }
+        else if (data[0] == "separate"){
+          main = "toplevel.bc.js";
+        }
+      }
+      function load_script(url){
+        var fileref=document.createElement('script');
+        fileref.setAttribute("type","text/javascript");
+        fileref.setAttribute("src", prefix+(version==""?"":(version+"/"))+url);
+        document.getElementsByTagName("head")[0].appendChild(fileref);
+      }
+      load_script("exported-unit.cmis.js");
+      load_script(main);
+
+    </script>
+  </head>
+  <body>
+    <div id="toplevel-container">
+      <pre id="output"></pre>
+      <div>
+        <div id="sharp" class="sharp"></div>
+        <textarea id="userinput">Loading ...</textarea>
+        <button type="button" class="btn btn-default"
+                id="btn-share">Share</button>
+      </div>
+    </div>
+    <div id="toplevel-side">
+      <h3>Js_of_ocaml</h3>
+      <h4>A compiler from OCaml bytecode to Javascript.</h4>
+      <p>It makes OCaml programs that run on Web browsers. It is
+        easy to install as it works with an existing installation of OCaml,
+        with no need to recompile any library. It comes with bindings for a
+        large part of the browser APIs.</p>
+      <p>This web-based OCaml toplevel is compiled using Js_of_ocaml.</p>
+      <h4>Command</h4>
+      <table class="table table-striped table-condensed">
+        <tbody class>
+          <tr>
+            <td>Enter/Return</td>
+            <td>Submit code</td>
+          </tr>
+          <tr>
+            <td>Ctrl + Enter</td>
+            <td>Newline</td>
+          </tr>
+          <tr>
+            <td>Up / Down</td>
+            <td>Browse history</td>
+          </tr>
+          <tr>
+            <td>Ctrl + l</td>
+            <td>Clear display</td>
+          </tr>
+          <tr>
+            <td>Ctrl + k</td>
+            <td>Reset toplevel</td>
+          </tr>
+          <tr>
+            <td>Tab</td>
+            <td>Indent code</td>
+          </tr>
+
+        </tbody>
+      </table>
+      <h4>Try to execute samples</h4>
+      <div id="toplevel-examples" class="list-group"></div>
+      <canvas width=200 height=200 id="test-canvas"></canvas>
+      <h4 class="clear">See the generated javascript code</h4>
+      <pre id="last-js">
+      </pre>
+    </div>
+  </body>
+</html>

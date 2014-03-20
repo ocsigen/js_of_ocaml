@@ -1,0 +1,105 @@
+<html><head><title> Ppx syntax extension for Js_of_ocaml</title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="https://ocsigen.org/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script type="text/javascript" src="https://ocsigen.org/js/client.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js">
+//<![CDATA[
+
+//]]>
+</script><script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js">
+//<![CDATA[
+
+//]]>
+</script></head><body class="ppx js_of_ocaml"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href=".././../../" class="ocsimore_phrasing_link"><img src=".././../../img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml</p><div class="mainmenu"><p class="mainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a></p><p class="mainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a></p><p><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a></p><p class="mainmenu-current"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a></p><p><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a></p><p><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a></p><p><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a></p></div><form id="googlesearch" action="https://google.com/search"><input name="q" id="gsearch-box" placeholder="Search using Google"/><label for="gsearch-box"><img src="/img/search.svg" alt="" id="gsearch-icon"/></label><input type="submit" id="gsearch-submit" onclick="document.getElementById('gsearch-box').value += ' site:ocsigen.org';"/></form><aside class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href=".././../../" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href=".././../../tuto/" class="ocsimore_phrasing_link">Doc</a>
+</li><li class="drawermainmenu-project"><a href=".././../../eliom/" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-project"><a href=".././../../js_of_ocaml/" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigenserver/" class="ocsimore_phrasing_link">Server</a>
+</li><li class="drawermainmenu-project"><a href=".././../../lwt/" class="ocsimore_phrasing_link">Lwt</a>
+</li><li class="drawermainmenu-project"><a href=".././../../tyxml/" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-toolkit/" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsigen-start/" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-project"><a href=".././../../html_of_wiki/" class="ocsimore_phrasing_link">html_of_wiki</a>
+</li><li class="drawermainmenu-project"><a href=".././../../deriving/" class="ocsimore_phrasing_link">deriving</a>
+</li><li class="drawermainmenu-project"><a href=".././../../ocsimore/" class="ocsimore_phrasing_link">Ocsimore (<em>deprecated</em>)</a>
+</li><li class="drawermainmenu-page"><a href=".././../../projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href=".././../../papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href=".././../../credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li><li class="drawermainmenu-page"><a href=".././../../contributing" class="ocsimore_phrasing_link">Contributing</a>
+</li><li class="drawermainmenu-page"><a href=".././../../blog" class="ocsimore_phrasing_link">Blog</a>
+</li><li class="drawermainmenu-page"><a href=".././../../install" class="ocsimore_phrasing_link">Installation</a>
+</li><li class="drawermainmenu-page"><a href="https://github.com/ocsigen" class="ocsimore_phrasing_link">Source code</a>
+</li></ul><nav class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="install" class="ocsimore_phrasing_link">Install</a></h2><h2><a href="library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h2><span><a href=".././api/js_of_ocaml/">API</a></span></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h1>Syntaxes</h1><h2><a href="ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="ppx-deriving" class="ocsimore_phrasing_link">Ppx deriving json</a></h2><h1>Compiler</h1><h2><a href="options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h1>Misc</h1><h2><a href="debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href=".././manual/files/toplevel/index.html">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href=".././manual/files/planet/index.html">An animated 3D view of the Earth</a></span></h2><h2><span><a href=".././manual/files/graph_viewer/index.html">A graph viewer</a></span></h2><h2><span><a href=".././manual/files/boulderdash/index.html">A Boulder Dash game</a></span></h2><h2><span><a href=".././manual/files/wiki/index.html">A realtime wiki editor</a></span></h2><h2><span><a href=".././manual/files/webgl/index.html">A webgl demo</a></span></h2><h2><span><a href=".././manual/files/minesweeper/index.html">A Minesweeper game</a></span></h2><h2><span><a href=".././manual/files/hyperbolic/index.html">A hyperbolic tree viewer</a></span></h2><h2><span><a href=".././manual/files/cubes/index.html">A random walk on lozenge tiling configurations</a></span></h2></nav></nav></aside></div><p class="reasonwarning">Warning: Reason support is experimental.
+We are looking for beta-tester and contributors.
+</p><button id="reason">Switch to </button><div class="twocols"><nav class="leftcol">Version <select class="how-versions" onchange="location = this.value;"><option value=".././../dev/manual/ppx">dev</option><option value=".././../5.4.0/manual/ppx">5.4.0</option><option value=".././../5.3.0/manual/ppx">5.3.0</option><option value=".././../5.2.0/manual/ppx">5.2.0</option><option value=".././../5.1.0/manual/ppx">5.1.0</option><option value=".././../5.0.1/manual/ppx">5.0.1</option><option value=".././../4.1.0/manual/ppx">4.1.0</option><option value=".././../4.0.0/manual/ppx" selected="selected">4.0.0</option><option value=".././../3.11.0/manual/ppx">3.11.0</option><option value=".././../3.10.0/manual/ppx">3.10.0</option><option value=".././../3.9.0/manual/ppx">3.9.0</option><option value=".././../3.8.0/manual/ppx">3.8.0</option><option value=".././../3.7.0/manual/ppx">3.7.0</option><option value=".././../3.6.0/manual/ppx">3.6.0</option><option value=".././../3.5.1/manual/ppx">3.5.1</option></select><nav class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="install" class="ocsimore_phrasing_link">Install</a></h2><h2><a href="library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h2><span><a href=".././api/js_of_ocaml/">API</a></span></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h1>Syntaxes</h1><h2><a href="ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="ppx-deriving" class="ocsimore_phrasing_link">Ppx deriving json</a></h2><h1>Compiler</h1><h2><a href="options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h1>Misc</h1><h2><a href="debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href=".././manual/files/toplevel/index.html">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href=".././manual/files/planet/index.html">An animated 3D view of the Earth</a></span></h2><h2><span><a href=".././manual/files/graph_viewer/index.html">A graph viewer</a></span></h2><h2><span><a href=".././manual/files/boulderdash/index.html">A Boulder Dash game</a></span></h2><h2><span><a href=".././manual/files/wiki/index.html">A realtime wiki editor</a></span></h2><h2><span><a href=".././manual/files/webgl/index.html">A webgl demo</a></span></h2><h2><span><a href=".././manual/files/minesweeper/index.html">A Minesweeper game</a></span></h2><h2><span><a href=".././manual/files/hyperbolic/index.html">A hyperbolic tree viewer</a></span></h2><h2><span><a href=".././manual/files/cubes/index.html">A random walk on lozenge tiling configurations</a></span></h2></nav></nav><article class="rightcol"><h1> Ppx syntax extension for Js_of_ocaml</h1><p>To migrate from the camlp4 extension, it is advised to use
+<a href="https://github.com/janestreet/camlp4-to-ppx" class="ocsimore_phrasing_link">camlp4-to-ppx</a>
+which provides built-in support for Js_of_ocaml syntax.
+</p><p>A ppx rewriter (syntax extension) is available for manipulating object properties,
+invoking methods and creating objects.
+</p><p>The syntax and typing rules are as follows:
+</p><ul><li> Getting a property
+</li></ul><pre>obj : &lt;m : u Js.prop&gt; Js.t
+--------------------------
+     obj##.m : u
+</pre><ul><li> Setting a property
+</li></ul><pre>obj : &lt;m : u Js.prop&gt; Js.t
+     e : u
+--------------------------
+  obj##.m := e : unit
+</pre><ul><li> Invoking a method
+</li></ul><pre>obj : &lt;m : t_1 -&gt; ... -&gt; t_n -&gt; u Js.meth; ..&gt; Js.t
+e_i : t_i               (1 &lt;= i &lt;= n)
+----------------------------------------------------
+        obj##m e_1 ... e_n : u
+</pre><p>For easier chaining, the following alternative syntax is also possible: [ obj<span class="monospace">(m e_1 ... e_n) ].
+</span></p><p>Beware, partial application is not allowed.
+</p><ul><li> Using an object constructor
+</li></ul><pre>constr : (t_1 -&gt; ... -&gt; t_n -&gt; u Js.t) Js.constr
+   e_i : t_i               (1 &lt;= i &lt;= n)
+------------------------------------------------
+          new%js constr e1 ... en : u Js.t
+</pre><p>[ constr ] here must be an identifier. For constructors
+that are not identifiers, bind them first:
+</p><pre class=""><code class="language-ocaml translatable">let a = Js.Unsafe.global##.A in
+  new%js a</code></pre><ul><li> Creating a literal object
+</li></ul><pre class=""><code class="language-ocaml translatable">object%js (self) (* Equivalent of this *)
+  val x1 = 3 (* read-only prop *)
+  val x2 = 3 [@@readonly] (* read-only prop *)
+
+  val mutable y1 = 4 (* read/write prop *)
+  val y2 = 4 [@@readwrite] (* read/write prop *)
+
+  val z = 5 [@@writeonly] (* write-only prop *)
+
+  val t1 = Js.undefined [@@jsoo.optdef] (* optdef prop *)
+
+  method foo i = self##.y1 := self##.x1 + i
+end</code></pre><p>Properties are defined with the [val] keyword. [mutable] makes the
+property writable. Properties can be annotated with attributes to change the
+default semantic.
+Attributes can be one of [readwrite], [readonly], [writeonly],
+[optdef].
+</p><p>[self] can be any identifier and will be bind
+to [this] in javascript.
+</p><p>In this case, the object has the following type:
+</p><pre class=""><code class="language-ocaml translatable">&lt; foo : int -&gt; unit Js.meth;
+      t1 : 'a Js.optdef_prop;
+      x1 : int Js.readonly_prop;
+      x2 : int Js.readonly_prop;
+      y1 : int Js.prop;
+      y2 : int Js.prop;
+      z : int Js.writeonly_prop &gt;
+    Js.t</code></pre></article></div></div></body></html>

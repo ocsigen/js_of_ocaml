@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Intl (js_of_ocaml.Js_of_ocaml.Intl)</title><link rel="stylesheet" href="../../../odoc.css"/><meta charset="utf-8"/><meta name="generator" content="odoc %%VERSION%%"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><script src="../../../highlight.pack.js"></script><script>hljs.initHighlightingOnLoad();</script></head><body><div class="content"><header><nav><a href="../index.html">Up</a> – <a href="../../index.html">js_of_ocaml</a> &#x00BB; <a href="../index.html">Js_of_ocaml</a> &#x00BB; Intl</nav><h1>Module <code>Js_of_ocaml.Intl</code></h1><p>Internationalization API</p><p>A code example:</p><pre><code class="ml">open Js ;;
+
+let fc v = Firebug.console##debug v in
+
+let jas a = array(Array.map (fun v -&gt; string v) a) in
+
+if (Intl.is_supported()) then (
+  let intl = Intl.intl in
+  fc (intl##getCanonicalLocales (jas [| &quot;EN-US&quot;; &quot;Fr&quot; |])) ;
+  try
+    let options = Intl.Collator.object_options () in
+    options##.localeMatcher := string &quot;lookup&quot; ;
+    fc (
+      intl##._Collator##supportedLocalesOf
+        (jas [| &quot;ban&quot;; &quot;id-u-co-pinyin&quot;; &quot;de-ID&quot; |])
+        (def options)
+    ) ;
+    (* Note: the exact output may be browser-dependent *)
+
+    let letterSort lang letters =
+      letters##sort (wrap_callback (fun a b -&gt;
+          let collator = new%js Intl.collator_constr
+            (def (array [| lang |])) undefined
+          in
+          float_of_int(collator##.compare a b))) ;
+      letters
+    in
+    let a = jas [| &quot;a&quot;; &quot;z&quot;; &quot;ä&quot; |] in
+    fc (letterSort (string &quot;de&quot;) a) ;
+    fc (letterSort (string &quot;sv&quot;) a) ;
+
+    let collator = new%js Intl.collator_constr undefined undefined in
+    fc (collator##.compare (string &quot;a&quot;) (string &quot;c&quot;)) ;
+    fc (collator##.compare (string &quot;c&quot;) (string &quot;a&quot;)) ;
+    fc (collator##.compare (string &quot;a&quot;) (string &quot;a&quot;)) ;
+
+    let collator = new%js Intl.collator_constr
+      (def (jas [| &quot;de&quot; |])) undefined
+    in
+    fc (collator##.compare (string &quot;ä&quot;) (string &quot;z&quot;)) ;
+    let collator = new%js Intl.collator_constr
+      (def (jas [| &quot;sv&quot; |])) undefined
+    in
+    fc (collator##.compare (string &quot;ä&quot;) (string &quot;z&quot;)) ;
+    let options = Intl.Collator.options () in
+    let () = options##.sensitivity := string &quot;base&quot; in
+    let collator = new%js Intl.collator_constr
+      (def (jas [| &quot;de&quot; |])) (def options)
+    in
+    fc (collator##.compare (string &quot;ä&quot;) (string &quot;a&quot;)) ;
+    let collator = new%js Intl.collator_constr
+      (def (jas [| &quot;sv&quot; |])) (def options)
+    in
+    fc (collator##.compare (string &quot;ä&quot;) (string &quot;a&quot;)) ;
+
+    let firstAlphabetical locale letter1 letter2 =
+      let collator = new%js Intl.collator_constr
+        (def (array [| locale |])) undefined
+      in
+      if (collator##.compare letter1 letter2) &gt; 0 then (
+        letter1
+      ) else (
+        letter2
+      )
+    in
+    fc (firstAlphabetical (string &quot;de&quot;) (string &quot;z&quot;) (string &quot;ä&quot;)) ;
+    fc (firstAlphabetical (string &quot;sv&quot;) (string &quot;z&quot;) (string &quot;ä&quot;)) ;
+
+    let a = jas [| &quot;Offenbach&quot;; &quot;Österreich&quot;; &quot;Odenwald&quot; |] in
+    let collator = new%js Intl.collator_constr
+      (def (jas [| &quot;de-u-co-phonebk&quot; |])) undefined
+    in
+    let a = a##sort (wrap_callback
+                       (fun v1 v2 -&gt; float_of_int(collator##.compare v1 v2)))
+    in
+    fc (a##join (string &quot;, &quot;)) ;
+
+    let a = jas [| &quot;Congrès&quot;; &quot;congres&quot;; &quot;Assemblée&quot;; &quot;poisson&quot; |] in
+    let options = Intl.Collator.options () in
+    let () = options##.usage := string &quot;search&quot; in
+    let () = options##.sensitivity := string &quot;base&quot; in
+    let collator = new%js Intl.collator_constr
+      (def (jas [| &quot;fr&quot; |])) (def options)
+    in
+    let s = string &quot;congres&quot; in
+    let matches = a##filter (wrap_callback
+                               (fun v _ _ -&gt; bool ((collator##.compare v s) = 0)))
+    in
+    fc (matches##join (string &quot;, &quot;)) ;
+
+    let options = Intl.Collator.options () in
+    let () = options##.sensitivity := string &quot;base&quot; in
+    let collator = new%js Intl.collator_constr
+      (def (jas [| &quot;de&quot; |])) (def options)
+    in
+    let usedOptions = collator##resolvedOptions () in
+    fc (usedOptions##.locale) ;
+    fc (usedOptions##.usage) ;
+    fc (usedOptions##.sensitivity) ;
+    fc (usedOptions##.ignorePunctuation) ;
+    fc (usedOptions##.collation) ;
+    fc (usedOptions##.numeric) ;
+
+    let date = new%js date_sec 2012 11 20 3 0 0 in
+    (* Results below assume UTC timezone - your results may vary *)
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;en-US&quot; |])) undefined
+    in
+    fc (dtf##.format date) ;
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;ban&quot;; &quot;id&quot; |])) undefined
+    in
+    fc (dtf##.format date) ;
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;ja-JP-u-ca-japanese&quot; |])) undefined
+    in
+    fc (dtf##.format date) ;
+    let options = Intl.DateTimeFormat.options () in
+    let () = options##.weekday := def(string &quot;long&quot;) in
+    let () = options##.year := def(string &quot;numeric&quot;) in
+    let () = options##.month := def(string &quot;long&quot;) in
+    let () = options##.day := def(string &quot;numeric&quot;) in
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;de-DE&quot; |])) (def options)
+    in
+    fc (dtf##.format date) ;
+    let () = options##.timeZone := def(string &quot;UTC&quot;) in
+    let () = options##.timeZoneName := def(string &quot;short&quot;) in
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;en-US&quot; |])) (def options)
+    in
+    fc (dtf##.format date) ;
+    let options = Intl.DateTimeFormat.options () in
+    let () = options##.hour := def(string &quot;numeric&quot;) in
+    let () = options##.minute := def(string &quot;numeric&quot;) in
+    let () = options##.second := def(string &quot;numeric&quot;) in
+    let () = options##.timeZone := def(string &quot;Australia/Sydney&quot;) in
+    let () = options##.timeZoneName := def(string &quot;short&quot;) in
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;en-AU&quot; |])) (def options)
+    in
+    fc (dtf##.format date) ;
+    let options = Intl.DateTimeFormat.options () in
+    let () = options##.year := def(string &quot;numeric&quot;) in
+    let () = options##.month := def(string &quot;numeric&quot;) in
+    let () = options##.day := def(string &quot;numeric&quot;) in
+    let () = options##.hour := def(string &quot;numeric&quot;) in
+    let () = options##.minute := def(string &quot;numeric&quot;) in
+    let () = options##.second := def(string &quot;numeric&quot;) in
+    let () = options##.hour12 := def(_false) in
+    let () = options##.timeZone := def(string &quot;America/Los_Angeles&quot;) in
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;en-US&quot; |])) (def options)
+    in
+    fc (dtf##.format date) ;
+
+    let date = new%js date_month 2012 05 in
+    let options = Intl.DateTimeFormat.options () in
+    let () = options##.weekday := def(string &quot;long&quot;) in
+    let () = options##.year := def(string &quot;numeric&quot;) in
+    let () = options##.month := def(string &quot;long&quot;) in
+    let () = options##.day := def(string &quot;numeric&quot;) in
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;sr-RS&quot; |])) (def options)
+    in
+    fc (dtf##.format date) ;
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;en-GB&quot; |])) (def options)
+    in
+    fc (dtf##.format date) ;
+
+    let a = array [| new%js date_month 2012 08 ;
+                     new%js date_month 2012 11 ;
+                     new%js date_month 2012 03 |]
+    in
+    let options = Intl.DateTimeFormat.options () in
+    let () = options##.year := def(string &quot;numeric&quot;) in
+    let () = options##.month := def(string &quot;long&quot;) in
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;pt-BR&quot; |])) (def options)
+    in
+    let formatted = array_map dtf##.format a in
+    fc (formatted##join (string &quot;; &quot;)) ;
+
+    let date = new%js date_sec 2012 11 17 3 0 42 in
+    let options = Intl.DateTimeFormat.options () in
+    let () = options##.weekday := def(string &quot;long&quot;) in
+    let () = options##.year := def(string &quot;numeric&quot;) in
+    let () = options##.month := def(string &quot;numeric&quot;) in
+    let () = options##.day := def(string &quot;numeric&quot;) in
+    let () = options##.hour := def(string &quot;numeric&quot;) in
+    let () = options##.minute := def(string &quot;numeric&quot;) in
+    let () = options##.second := def(string &quot;numeric&quot;) in
+    let () = options##.hour12 := def(_true) in
+    let () = options##.timeZone := def(string &quot;UTC&quot;) in
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;en-us&quot; |])) (def options)
+    in
+    fc (dtf##.format date) ;
+    let parts = dtf##formatToParts (def(date)) in
+    fc parts ;
+    let dateString = (
+      array_map (fun (v:Intl.DateTimeFormat.format_part Js.t) -&gt;
+          match (to_string v##._type) with
+          | &quot;dayPeriod&quot; -&gt;
+            (string &quot;&lt;b&gt;&quot;)##concat_2 v##._value (string &quot;&lt;/b&gt;&quot;)
+          | _ -&gt; v##._value)
+        (dtf##formatToParts (def(date)))
+    )##reduce (wrap_callback (fun s part _ _ -&gt; s##concat part)) in
+    fc dateString ;
+
+    let options = Intl.DateTimeFormat.options () in
+    let () = options##.timeZone := def(string &quot;UTC&quot;) in
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;zh-CN&quot; |])) (def options)
+    in
+    let ropt = dtf##resolvedOptions () in
+    fc ropt##.locale ;
+    fc ropt##.calendar ;
+    fc ropt##.numberingSystem ;
+
+    let options = Intl.DateTimeFormat.options () in
+    let () = options##.timeZone := def(string &quot;UTC&quot;) in
+    let dtf = new%js Intl.dateTimeFormat_constr
+      (def (jas [| &quot;de-XX&quot; |])) (def options)
+    in
+    let ropt = dtf##resolvedOptions () in
+    fc ropt##.locale ;
+    fc ropt##.calendar ;
+    fc ropt##.numberingSystem ;
+    fc ropt##.timeZone ;
+    fc ropt##.month ;
+
+    let options = Intl.DateTimeFormat.object_options () in
+    options##.localeMatcher := string &quot;lookup&quot; ;
+    fc (
+      intl##._DateTimeFormat##supportedLocalesOf
+        (jas [| &quot;ban&quot;; &quot;id-u-co-pinyin&quot;; &quot;de-ID&quot; |])
+        (def options)
+    ) ;
+
+    let number = number_of_float 123456.789 in
+    let options = Intl.NumberFormat.options () in
+    options##.style := string &quot;currency&quot; ;
+    options##.currency := def(string &quot;EUR&quot;) ;
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;de-DE&quot; |])) (def options)
+    in
+    fc (nf##.format number) ;
+    options##.currency := def(string &quot;JPY&quot;) ;
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;ja-JP&quot; |])) (def options)
+    in
+    fc (nf##.format number) ;
+    let options = Intl.NumberFormat.options () in
+    options##.maximumSignificantDigits := (def 3) ;
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;en-IN&quot; |])) (def options)
+    in
+    fc (nf##.format number) ;
+
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;de-DE&quot; |])) undefined
+    in
+    fc (nf##.format number) ;
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;ar-EG&quot; |])) undefined
+    in
+    fc (nf##.format number) ;
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;zh-Hans-CN-u-nu-hanidec&quot; |])) undefined
+    in
+    fc (nf##.format number) ;
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;ban&quot;; &quot;id&quot; |])) undefined
+    in
+    fc (nf##.format number) ;
+
+    let amount = number_of_float 654321.987 in
+    let options = Intl.NumberFormat.options () in
+    options##.style := string &quot;currency&quot; ;
+    options##.currency := def(string &quot;RUB&quot;) ;
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;ru-RU&quot; |])) (def options)
+    in
+    fc (nf##.format amount) ;
+    options##.currency := def(string &quot;USD&quot;) ;
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;en-US&quot; |])) (def options)
+    in
+    fc (nf##.format amount) ;
+
+    let a = array [| number_of_float 123456.789 ;
+                     number_of_float 987654.321 ;
+                     number_of_float 456789.123 |]
+    in
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;es-ES&quot; |])) undefined
+    in
+    let formatted = array_map nf##.format a in
+    fc (formatted##join (string &quot;; &quot;)) ;
+
+    let number = number_of_float 3500. in
+    let options = Intl.NumberFormat.options () in
+    options##.style := string &quot;currency&quot; ;
+    options##.currency := def(string &quot;EUR&quot;) ;
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;de-DE&quot; |])) (def options)
+    in
+    fc (nf##.format number) ;
+    let parts = nf##formatToParts (def(number)) in
+    fc parts ;
+    let numberString = (
+      array_map (fun (v:Intl.NumberFormat.format_part Js.t) -&gt;
+          match (to_string v##._type) with
+          | &quot;currency&quot; -&gt;
+            (string &quot;&lt;strong&gt;&quot;)##concat_2 v##._value (string &quot;&lt;/strong&gt;&quot;)
+          | _ -&gt; v##._value)
+        (nf##formatToParts (def(number)))
+    )##reduce (wrap_callback (fun s part _ _ -&gt; s##concat part)) in
+    fc numberString ;
+
+    let nf = new%js Intl.numberFormat_constr
+      (def (jas [| &quot;de-DE&quot; |])) undefined
+    in
+    let options = nf##resolvedOptions () in
+    fc (options##.locale) ;
+    fc (options##.numberingSystem) ;
+    fc (options##.style) ;
+    fc (options##.minimumIntegerDigits) ;
+    fc (options##.minimumFractionDigits) ;
+    fc (options##.maximumFractionDigits) ;
+    fc (options##.useGrouping) ;
+
+    let options = Intl.NumberFormat.object_options () in
+    options##.localeMatcher := string &quot;lookup&quot; ;
+    fc (
+      intl##._NumberFormat##supportedLocalesOf
+        (jas [| &quot;ban&quot;; &quot;id-u-co-pinyin&quot;; &quot;de-ID&quot; |])
+        (def options)
+    ) ;
+
+    let pr = new%js Intl.pluralRules_constr undefined undefined in
+    fc (pr##select (number_of_float 0.)) ;
+    fc (pr##select (number_of_float 1.)) ;
+    fc (pr##select (number_of_float 2.)) ;
+
+    let pr = new%js Intl.pluralRules_constr
+      (def (jas [| &quot;ar-EG&quot; |])) undefined
+    in
+    fc (pr##select (number_of_float 0.)) ;
+    fc (pr##select (number_of_float 1.)) ;
+    fc (pr##select (number_of_float 2.)) ;
+    fc (pr##select (number_of_float 6.)) ;
+    fc (pr##select (number_of_float 18.)) ;
+
+    let options = Intl.PluralRules.options () in
+    options##._type := string &quot;ordinal&quot; ;
+    let pr = new%js Intl.pluralRules_constr
+      (def (jas [| &quot;en-US&quot; |])) (def options)
+    in
+    fc (pr##select (number_of_float 0.)) ;
+    fc (pr##select (number_of_float 1.)) ;
+    fc (pr##select (number_of_float 3.)) ;
+    fc (pr##select (number_of_float 4.)) ;
+    fc (pr##select (number_of_float 42.)) ;
+
+    let de = new%js Intl.pluralRules_constr
+      (def (jas [| &quot;de-DE&quot; |])) undefined
+    in
+    let usedOptions = de##resolvedOptions () in
+    fc usedOptions##.locale ;
+    fc usedOptions##.maximumFractionDigits ;
+    fc usedOptions##.minimumFractionDigits ;
+    fc usedOptions##.minimumIntegerDigits ;
+    fc usedOptions##.pluralCategories ;
+    fc usedOptions##._type ;
+
+    let options = Intl.PluralRules.object_options () in
+    options##.localeMatcher := string &quot;lookup&quot; ;
+    fc (
+      intl##._PluralRules##supportedLocalesOf
+        (jas [| &quot;ban&quot;; &quot;id-u-co-pinyin&quot;; &quot;de-ID&quot; |])
+        (def options)
+    ) ;
+
+  with
+  | Error err -&gt; Firebug.console##debug (
+      string (string_of_error err)) ;
+) else (
+  Firebug.console##debug (string &quot;Intl is not supported!&quot;) ;
+)</code></pre><dl><dt>see <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl">https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl</a></dt><dd><p>for API documentation.</p></dd></dl><dl><dt>see <a href="https://www.ecma-international.org/ecma-402/1.0/">https://www.ecma-international.org/ecma-402/1.0/</a></dt><dd><p>for the ECMAScript specification.</p></dd></dl></header><div class="spec module-type" id="module-type-Shared"><a href="#module-type-Shared" class="anchor"></a><code><span class="keyword">module</span> <span class="keyword">type</span> <a href="module-type-Shared/index.html">Shared</a> = <span class="keyword">sig</span> ... <span class="keyword">end</span></code></div><div class="spec module" id="module-Collator"><a href="#module-Collator" class="anchor"></a><code><span class="keyword">module</span> <a href="Collator/index.html">Collator</a> : <span class="keyword">sig</span> ... <span class="keyword">end</span></code></div><div class="spec module" id="module-DateTimeFormat"><a href="#module-DateTimeFormat" class="anchor"></a><code><span class="keyword">module</span> <a href="DateTimeFormat/index.html">DateTimeFormat</a> : <span class="keyword">sig</span> ... <span class="keyword">end</span></code></div><div class="spec module" id="module-NumberFormat"><a href="#module-NumberFormat" class="anchor"></a><code><span class="keyword">module</span> <a href="NumberFormat/index.html">NumberFormat</a> : <span class="keyword">sig</span> ... <span class="keyword">end</span></code></div><div class="spec module" id="module-PluralRules"><a href="#module-PluralRules" class="anchor"></a><code><span class="keyword">module</span> <a href="PluralRules/index.html">PluralRules</a> : <span class="keyword">sig</span> ... <span class="keyword">end</span></code></div><div class="spec class-type" id="class-type-intl"><a href="#class-type-intl" class="anchor"></a><code><span class="keyword">class</span> <span class="keyword">type</span>  <a href="class-type-intl/index.html">intl</a> = <span class="keyword">object</span> ... <span class="keyword">end</span></code></div><dl><dt class="spec value" id="val-intl"><a href="#val-intl" class="anchor"></a><code><span class="keyword">val</span> intl : <span><a href="class-type-intl/index.html">intl</a> <a href="../Js/index.html#type-t">Js.t</a></span></code></dt><dt class="spec value" id="val-collator_constr"><a href="#val-collator_constr" class="anchor"></a><code><span class="keyword">val</span> collator_constr : <span><span>(<span><span><span><span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/class-type-js_array/index.html">Js.js_array</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/index.html#type-optdef">Js.optdef</a></span> <span>&#45;&gt;</span> <span><span><a href="Collator/class-type-options/index.html">Collator.options</a> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/index.html#type-optdef">Js.optdef</a></span> <span>&#45;&gt;</span> <span><a href="Collator/class-type-t/index.html">Collator.t</a> <a href="../Js/index.html#type-t">Js.t</a></span>)</span> <a href="../Js/index.html#type-constr">Js.constr</a></span></code></dt><dt class="spec value" id="val-dateTimeFormat_constr"><a href="#val-dateTimeFormat_constr" class="anchor"></a><code><span class="keyword">val</span> dateTimeFormat_constr : <span><span>(<span><span><span><span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/class-type-js_array/index.html">Js.js_array</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/index.html#type-optdef">Js.optdef</a></span> <span>&#45;&gt;</span> <span><span><a href="DateTimeFormat/class-type-options/index.html">DateTimeFormat.options</a> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/index.html#type-optdef">Js.optdef</a></span> <span>&#45;&gt;</span> <span><a href="DateTimeFormat/class-type-t/index.html">DateTimeFormat.t</a> <a href="../Js/index.html#type-t">Js.t</a></span>)</span> <a href="../Js/index.html#type-constr">Js.constr</a></span></code></dt><dt class="spec value" id="val-numberFormat_constr"><a href="#val-numberFormat_constr" class="anchor"></a><code><span class="keyword">val</span> numberFormat_constr : <span><span>(<span><span><span><span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/class-type-js_array/index.html">Js.js_array</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/index.html#type-optdef">Js.optdef</a></span> <span>&#45;&gt;</span> <span><span><a href="NumberFormat/class-type-options/index.html">NumberFormat.options</a> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/index.html#type-optdef">Js.optdef</a></span> <span>&#45;&gt;</span> <span><a href="NumberFormat/class-type-t/index.html">NumberFormat.t</a> <a href="../Js/index.html#type-t">Js.t</a></span>)</span> <a href="../Js/index.html#type-constr">Js.constr</a></span></code></dt><dt class="spec value" id="val-pluralRules_constr"><a href="#val-pluralRules_constr" class="anchor"></a><code><span class="keyword">val</span> pluralRules_constr : <span><span>(<span><span><span><span><a href="../Js/class-type-js_string/index.html">Js.js_string</a> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/class-type-js_array/index.html">Js.js_array</a></span> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/index.html#type-optdef">Js.optdef</a></span> <span>&#45;&gt;</span> <span><span><a href="PluralRules/class-type-options/index.html">PluralRules.options</a> <a href="../Js/index.html#type-t">Js.t</a></span> <a href="../Js/index.html#type-optdef">Js.optdef</a></span> <span>&#45;&gt;</span> <span><a href="PluralRules/class-type-t/index.html">PluralRules.t</a> <a href="../Js/index.html#type-t">Js.t</a></span>)</span> <a href="../Js/index.html#type-constr">Js.constr</a></span></code></dt><dt class="spec value" id="val-is_supported"><a href="#val-is_supported" class="anchor"></a><code><span class="keyword">val</span> is_supported : unit <span>&#45;&gt;</span> bool</code></dt></dl></div></body></html>
