@@ -79,6 +79,16 @@ realclean: clean
 	find . -name "*.tmpjs" -print | xargs rm -f
 	find . -name "#*" -print | xargs rm -f
 
+
+toplevel-version-%:
+	@opam switch show
+	opam switch $*
+	eval `opam config env`
+	opam install lwt menhir ocamlfind ocp-indent
+	$(MAKE) realclean
+	$(MAKE) toplevel
+	cp toplevel/toplevel.js toplevel/v/toplevel-$*.js
+
 dist:
 	rm -rf /tmp/js_of_ocaml-${VERSION} &&\
         cd /tmp &&\

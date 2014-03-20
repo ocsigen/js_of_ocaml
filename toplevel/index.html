@@ -86,7 +86,15 @@
 
       }
     </style>
-    <script type="text/javascript" src="toplevel.js"></script>
+    <script type="text/javascript">
+      window.onhashchange = function() { window.location.reload() }
+      var version = window.location.hash.match(/#?(.*)/);
+      var url = (version[1]=="")?("toplevel.js"):("v/toplevel-"+version[1]+".js");
+      var fileref=document.createElement('script');
+      fileref.setAttribute("type","text/javascript");
+      fileref.setAttribute("src", url);
+      document.getElementsByTagName("head")[0].appendChild(fileref);
+    </script>
   </head>
   <body>
     <div id="toplevel-container">

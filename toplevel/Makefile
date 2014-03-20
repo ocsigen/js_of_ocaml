@@ -13,9 +13,11 @@ else
 OCAMLLIB=toplevellib.cma
 endif
 
+OCPINDENT=$(shell ocamlfind query ocp-indent -format "-package %p.lib" 2> /dev/null)
+
 COMP=../compiler/$(COMPILER)
 JSFILES=../runtime/runtime.js ../runtime/weak.js toplevel_runtime.js
-OCAMLC=ocamlfind ocamlc -package lwt,str,ocp-indent.lib -pp "camlp4o ../lib/syntax/pa_js.cmo" -I +compiler-libs -I ../lib -I ../compiler
+OCAMLC=ocamlfind ocamlc -package lwt,optcomp -syntax camlp4o $(OCPINDENT) -ppopt "../lib/syntax/pa_js.cmo" -I +compiler-libs -I ../lib -I ../compiler
 STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB)
 EXPUNGE=$(shell ocamlc -where)/expunge
 # Removed gc and sys
@@ -77,7 +79,7 @@ $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
 	$(COMP) -I $(shell ocamlc -where)/compiler-libs -toplevel -noruntime $(JSFILES) $(NAME).byte $(OPTIONS) -I ./ -I ../lib/ -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
-	$(OCAMLC) -linkall -package findlib,ocp-indent.lib -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
+	$(OCAMLC) -linkall -package findlib $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
 

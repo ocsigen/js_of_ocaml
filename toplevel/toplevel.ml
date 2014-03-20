@@ -207,7 +207,7 @@ end = struct
 
 
   (* load (binary) file from server using a synchronous XMLHttpRequest *)
-  let load_from_server path = 
+  let load_from_server path =
     let xml = XmlHttpRequest.create () in
     let () = xml##_open(Js.string "GET", Js.string ("filesys/" ^ path), Js._false) in
     let () = xml##send(Js.null) in
@@ -215,20 +215,20 @@ end = struct
       let resp = xml##responseText in
       let len = resp##length in
       let str = String.create len in
-      for i=0 to len-1 do 
+      for i=0 to len-1 do
           str.[i] <- Char.chr (int_of_float resp##charCodeAt(i) land 0xff)
       done;
       Some(str)
     else
       None
-  
-  let auto_register_file name = 
+
+  let auto_register_file name =
     match load_from_server name with
     | None -> 0
     | Some(content) ->
       let () = Sys_js.register_file ~name ~content in
       1
-  
+
   let initialize () =
     g##auto_register_file_ <- auto_register_file;
     Toploop.initialize_toplevel_env ();
@@ -294,6 +294,7 @@ let examples =
   with  _ -> []
 
 let indent_caml s =
+#if ocaml_version < (4,02)
   let output = {
     IndentPrinter.debug = false;
     config = IndentConfig.default;
@@ -305,7 +306,10 @@ let indent_caml s =
   in
   let stream = Nstream.of_string s in
   IndentPrinter.proceed output stream IndentBlock.empty ""
-
+#else
+  (* ocp-indent not available yet in 4.02 *)
+  s
+#endif
 
 let indent_textarea textbox =
   let rec loop s acc (i,pos') =
