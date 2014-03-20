@@ -84,7 +84,7 @@ toplevel-version-%:
 	@opam switch show
 	opam switch $*
 	eval `opam config env`
-	opam install lwt menhir ocamlfind ocp-indent
+	opam install lwt menhir ocamlfind ocp-indent optcomp
 	$(MAKE) realclean
 	$(MAKE) toplevel
 	cp toplevel/toplevel.js toplevel/v/toplevel-$*.js

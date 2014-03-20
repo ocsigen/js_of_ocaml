@@ -28,7 +28,9 @@ type t =
   | `Version of Parse_info.t option * ((int -> int -> bool) * string) list ]
 
 val kind : string -> kind
-val register : string -> kind -> unit
+val register : string -> kind -> int option -> unit
+
+val arity : string -> int
 
 val alias : string -> string -> unit
 val resolve : string -> string

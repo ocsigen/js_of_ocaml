@@ -144,13 +144,19 @@ let add_file f =
          (match provide with
           | None -> always_included := id :: !always_included
           | Some (pi,name,kind) ->
-
-            Primitive.register name kind;
+            let module J = Javascript in
+            let rec find = function
+              | [] -> None
+              | J.Function_declaration (J.S{J.name=n},l,_,_)::_ when name=n -> Some(List.length l)
+              | _::rem -> find rem in
+            let arity = find code in
+            Primitive.register name kind arity;
             if Hashtbl.mem provided name
             then begin
               let ploc = snd(Hashtbl.find provided name) in
               Format.eprintf "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
             end;
+
             Hashtbl.add provided name (id,pi);
             Hashtbl.add provided_rev id (name,pi);
             check_primitive name pi code req

@@ -33,9 +33,11 @@ type t = [
 ]
 
 let kinds = Hashtbl.create 37
+let arities = Hashtbl.create 37
 
 
 let kind nm = try Hashtbl.find kinds (resolve nm) with Not_found -> `Mutator
+let arity nm = Hashtbl.find arities (resolve nm)
 
 let is_pure nm = kind nm <> `Mutator
 
@@ -51,8 +53,9 @@ let is_external name = StringSet.mem name !externals
 
 let get_external () = !externals
 
-let register p k =
+let register p k arity =
   add_external p;
+  (match arity with Some a -> Hashtbl.add arities p a | _ -> ());
   Hashtbl.add kinds p k
 
 let alias nm nm' =
