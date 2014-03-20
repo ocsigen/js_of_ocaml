@@ -13,12 +13,17 @@ else
 OCAMLLIB=toplevellib.cma
 endif
 
+ifeq ($(METAOCAML),1)
+BER=metalib.cma bertop.cmo
+BER_MODULE=trx runcode
+endif
+
 OCPINDENT=$(shell ocamlfind query ocp-indent -format "-package %p.lib" 2> /dev/null)
 
 COMP=../compiler/$(COMPILER)
 JSFILES=../runtime/runtime.js ../runtime/weak.js toplevel_runtime.js
 OCAMLC=ocamlfind ocamlc -package lwt,optcomp -syntax camlp4o $(OCPINDENT) -ppopt "../lib/syntax/pa_js.cmo" -I +compiler-libs -I ../lib -I ../compiler
-STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB)
+STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER)
 EXPUNGE=$(shell ocamlc -where)/expunge
 # Removed gc and sys
 STDLIB_MODULES=\
@@ -70,7 +75,7 @@ JOO=js dom typed_array dom_html file dom_events firebug lwt_js sys_js regexp CSS
   form xmlHttpRequest event_arrows lwt_js_events json webGL webSockets keycode
 JOO=
 
-PERVASIVES=$(STDLIB_MODULES) $(JOO) outcometree topdirs toploop
+PERVASIVES=$(STDLIB_MODULES) $(JOO) $(BER_MODULE) outcometree topdirs toploop
 
 #toplevel.byte: $(OBJS:cmx=cmo) toplevel.cmo
 #	ocamlfind ocamlc -linkall -g -package str -linkpkg toplevellib.cma -o $@.tmp $^

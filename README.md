@@ -85,6 +85,7 @@ different from usual:
 ## Toplevel
   * [Ocaml 4.01.0](http://ocsigen.github.io/js_of_ocaml/#4.01.0)
   * [Ocaml 4.01.0+open-types](http://ocsigen.github.io/js_of_ocaml/#4.01.0+open-types)
+  * [Ocaml 4.01.0+BER](http://ocsigen.github.io/js_of_ocaml/#4.01.0+open-types) : metaocaml
   * [Ocaml 4.02.0dev+trunk](http://ocsigen.github.io/js_of_ocaml/#4.02.0dev+trunk)
 
 ## Contents of the distribution
