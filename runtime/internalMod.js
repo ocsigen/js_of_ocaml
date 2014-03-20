@@ -3,13 +3,19 @@
 
 
 //Provides: caml_CamlinternalMod_init_mod
+//Requires: caml_raise_with_arg, caml_global_data
 function caml_CamlinternalMod_init_mod(loc,shape) {
+    function undef_module (x) {
+      caml_raise_with_arg(caml_global_data[12], loc);
+    }
     function loop (shape,struct,idx){
         switch(shape){
         case 0://function
-            struct[idx]={};//fun:null
-            return;
+            struct[idx]={fun:undef_module};
+            break;
         case 1://lazy
+            struct[idx]=[246, undef_module];
+            break;
         case 2://class
             struct[idx]=[];
             break;
