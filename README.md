@@ -82,6 +82,11 @@ different from usual:
   * these functions may be more prone to stack overflow, as the
     Javascript stack is small.
 
+## Toplevel
+  * [Ocaml 4.01.0](http://ocsigen.github.io/js_of_ocaml/#4.01.0)
+  * [Ocaml 4.01.0+open-types](http://ocsigen.github.io/js_of_ocaml/#4.01.0+open-types)
+  * [Ocaml 4.02.0dev+trunk](http://ocsigen.github.io/js_of_ocaml/#4.02.0dev+trunk)
+
 ## Contents of the distribution
 | Filename  | Description                                  |
 |-----------|----------------------------------------------|
