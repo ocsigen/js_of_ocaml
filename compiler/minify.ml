@@ -35,7 +35,7 @@ let read_file f =
   with Not_found -> Buffer.contents out
 
 let run () =
-  Util.Timer.init Unix.gettimeofday;
+  Util.Timer.init Sys.time;
   let js_files = ref [] in
   let stdin = ref false in
   let output_file = ref None in

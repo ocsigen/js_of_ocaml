@@ -113,15 +113,156 @@ let has_backslash s =
   done;
   !res
 
+let fail = ref true
+
 let failwith_ fmt =
   Printf.ksprintf (fun s ->
-      if !Option.fail
+      if !fail
       then failwith s
       else Format.eprintf "%s@." s) fmt
 
 let raise_ exn =
-  if !Option.fail
+  if !fail
   then raise exn
   else begin
     Format.eprintf "%s@." (Printexc.to_string exn)
   end
+
+let split_char sep p =
+  let len = String.length p in
+  let rec split beg cur =
+    if cur >= len then
+      if cur - beg > 0
+      then [String.sub p beg (cur - beg)]
+      else []
+    else if p.[cur] = sep then
+      String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
+    else
+      split beg (cur + 1) in
+  split 0 0
+
+(* copied from https://github.com/ocaml/ocaml/pull/10 *)
+let split sep s =
+  let sep_len = String.length sep in
+  if sep_len = 1
+  then split_char sep.[0] s
+  else
+  let sep_max = sep_len - 1 in
+  if sep_max < 0 then invalid_arg "String.split: empty separator" else
+    let s_max = String.length s - 1 in
+    if s_max < 0 then [""] else
+      let acc = ref [] in
+      let sub_start = ref 0 in
+      let k = ref 0 in
+      let i = ref 0 in
+      (* We build the substrings by running from the start of [s] to the
+         end with [i] trying to match the first character of [sep] in
+         [s]. If this matches, we verify that the whole [sep] is matched
+         using [k]. If this matches we extract a substring from the start
+         of the current substring [sub_start] to [!i - 1] (the position
+         before the [sep] we found).  We then continue to try to match
+         with [i] by starting after the [sep] we just found, this is also
+         becomes the start position of the next substring. If [i] is such
+         that no separator can be found we exit the loop and make a
+         substring from [sub_start] until the end of the string. *)
+      while (!i + sep_max <= s_max) do
+        if String.unsafe_get s !i <> String.unsafe_get sep 0 then incr i else
+          begin
+            (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
+               guaranteed by loop invariant. *)
+            k := 1;
+            while (!k <= sep_max && String.unsafe_get s (!i + !k) = String.unsafe_get sep !k)
+            do incr k done;
+            if !k <= sep_max then (* no match *) incr i else begin
+              let new_sub_start = !i + sep_max + 1 in
+              let sub_end = !i - 1 in
+              let sub_len = sub_end - !sub_start + 1 in
+              acc := String.sub s !sub_start sub_len :: !acc;
+              sub_start := new_sub_start;
+              i := new_sub_start;
+            end
+          end
+      done;
+      List.rev (String.sub s !sub_start (s_max - !sub_start + 1) :: !acc)
+
+exception Found of int
+let find sep s =
+  let sep_max = String.length sep - 1 in
+  let s_max = String.length s - 1 in
+  if sep_max < 0 then invalid_arg "find: empty string";
+  let k = ref 0 in
+  let i = ref 0 in
+  try
+    while (!i + sep_max <= s_max) do
+      if String.unsafe_get s !i <> String.unsafe_get sep 0
+      then incr i
+      else
+        begin
+          (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
+             guaranteed by loop invariant. *)
+          k := 1;
+          while (!k <= sep_max && String.unsafe_get s (!i + !k) = String.unsafe_get sep !k)
+          do incr k done;
+          if !k <= sep_max then (* no match *) incr i else raise (Found !i)
+        end
+    done;
+    raise Not_found
+  with Found i -> i
+
+module Version = struct
+  type t = int list
+  let split v =
+    match split_char '+' v with
+    | [] -> assert false
+    | x::_ -> List.map int_of_string (split_char '.' x)
+
+  let current = split Sys.ocaml_version
+
+  let compint (a : int) b = compare a b
+
+  let rec compare v v' = match v,v' with
+    | [x],[y] -> 0
+    | [],[] -> 0
+    | [],y::_ -> compint 0 y
+    | x::_,[] -> compint x 0
+    | x::xs,y::ys ->
+      match compint x y with
+      | 0 -> compare xs ys
+      | n -> n
+end
+
+module MagicNumber = struct
+  type t = string * int
+
+
+  exception Bad_magic_number of string
+
+  let size = 12
+
+  let kind_of_string = function
+    | "Caml1999X" -> "exe"
+    | "Caml1999I" -> "cmi"
+    | "Caml1999O" -> "cmo"
+    | "Caml1999A" -> "cma"
+    | "Caml1999Y" -> "cmx"
+    | "Caml1999Z" -> "cmxa"
+    | "Caml2007D" -> "cmxs"
+    | "Caml2012T" -> "cmt"
+    | "Caml1999M" -> "impl"
+    | "Caml1999N" -> "intf"
+    | s -> raise Not_found
+
+  let of_string s =
+    try
+      if String.length s <> size
+      then raise Not_found;
+      let kind = String.sub s 0 9 in
+      let v = String.sub s 9 3 in
+      kind_of_string kind, int_of_string v
+    with _ -> raise (Bad_magic_number s)
+
+
+  let compare (p1,n1) (p2,n2) =
+    if p1 <> p2 then raise Not_found;
+    compare n1 n2
+end

@@ -115,13 +115,8 @@ module Tailcall = struct
 
 end
 
-let fail = ref true
-
 let ocaml_version =
-  let (major, minor) =
-    Scanf.sscanf Sys.ocaml_version "%d.%d" (fun major minor -> (major, minor))
-  in
-  if major < 4 || (major = 4 && minor < 2) then
+  if Util.Version.(compare current [4;2] < 0) then
     `V3
   else
     `V4_02

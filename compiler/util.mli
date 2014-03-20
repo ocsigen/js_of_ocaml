@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
+ *)
 
 module IntSet : Set.S with type elt = int
 module IntMap : Map.S with type key = int
@@ -48,5 +48,26 @@ module Timer : sig
   val print : Format.formatter -> t -> unit
 end
 
+val fail : bool ref
 val failwith_ : ('a,unit,string,unit) format4 -> 'a
 val raise_ : exn -> unit
+
+val split_char : char -> string -> string list
+val split : string -> string -> string list
+val find : string -> string -> int
+
+
+module Version : sig
+  type t = int list
+  val current : t
+  val compare : t -> t -> int
+  val split : string -> t
+end
+
+module MagicNumber : sig
+  exception Bad_magic_number of string
+  type t = string * int
+  val size : int
+  val compare : t -> t -> int
+  val of_string : string -> t
+end

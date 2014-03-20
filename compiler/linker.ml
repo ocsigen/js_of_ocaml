@@ -36,16 +36,12 @@ let parse_annot loc s =
 
 let error s = Format.kprintf (fun s -> failwith s) s
 
-let split_dir =
-  let reg = Str.regexp_string Filename.dir_sep in
-  Str.split reg
-
 let parse_file f =
   let file =
     try
       match Util.path_require_findlib f with
         | Some f ->
-          let pkg,f' = match split_dir f with
+          let pkg,f' = match Util.split Filename.dir_sep f with
             | [] -> assert false
             | [f] -> "js_of_ocaml",f
             | pkg::l -> pkg, List.fold_left Filename.concat "" l in
@@ -79,13 +75,54 @@ let parse_file f =
     | `Code(annot,code) -> (List.rev annot,List.rev code)::lexs in
 
   let res = List.rev_map (fun (annot,code) ->
-    let lex = Parse_js.lexer_from_list code in
-    try
-      annot,Parse_js.parse lex
-    with Parse_js.Parsing_error pi ->
-      error "cannot parse file %S (orig:%S from l:%d, c:%d)@." f pi.Parse_info.name pi.Parse_info.line pi.Parse_info.col)
-    lexs in
+      let lex = Parse_js.lexer_from_list code in
+      try
+        let code = Parse_js.parse lex in
+        let req,has_provide,versions = List.fold_left (fun (req,has_provide,versions) a -> match a with
+            | `Provides (pi,name,kind) ->
+              req,Some (pi,name,kind),versions
+            | `Requires (_,mn) -> (mn@req),has_provide,versions
+            | `Version (_,l) -> req,has_provide,l::versions
+          ) ([],None,[]) annot in
+        has_provide,req,versions,code
+      with Parse_js.Parsing_error pi ->
+        error "cannot parse file %S (orig:%S from l:%d, c:%d)@."
+          f pi.Parse_info.name pi.Parse_info.line pi.Parse_info.col)
+      lexs in
   res
+
+let loc pi = match pi with
+  | None -> "unknown location"
+  | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line
+
+
+let check_primitive name pi code req =
+  let free = new Js_traverse.free in
+  let _code = free#program code in
+  let freename = free#get_free_name in
+  let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename req in
+  let freename = StringSet.diff freename Reserved.keyword in
+  let freename = StringSet.diff freename Reserved.provided in
+  let freename = StringSet.remove Option.global_object freename in
+  if not(StringSet.mem name free#get_def_name)
+  then begin
+    Format.eprintf "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)
+  end;
+  if not(StringSet.is_empty freename)
+  then begin
+    Format.eprintf "warning: free variables in primitive code %S (%s)@." name (loc pi);
+    Format.eprintf "vars: %s@." (String.concat ", " (StringSet.elements freename))
+  end
+
+let version_match =
+  List.for_all (fun (op,str) ->
+      op (Util.Version.(compare current (split str))) 0
+    )
+
+type visited = {
+  ids : IntSet.t;
+  codes : Javascript.program list ;
+}
 
 let last_code_id = ref 0
 let provided = Hashtbl.create 31
@@ -93,62 +130,20 @@ let provided_rev = Hashtbl.create 31
 let code_pieces = Hashtbl.create 31
 let always_included = ref []
 
-let version_match =
-  let v = Sys.ocaml_version in
-  let split_plus =
-    let reg = Str.regexp_string "+" in
-    Str.split reg in
-  let split_dot =
-    let reg = Str.regexp_string "." in
-    Str.split reg in
-  let cano v = match split_plus v with
-    | [] -> assert false
-    | x::_ -> List.map int_of_string (split_dot x) in
-  let rec compute op v v' = match v,v' with
-    | [x],[y] -> op x y
-    | [],[] -> op 0 0
-    | [],y::_ -> op 0 y
-    | x::_,[] -> op x 0
-    | x::xs,y::ys ->
-      if x = y
-      then compute op xs ys
-      else op x y
-  in
-  (fun l ->
-     let v' = cano v in
-     List.for_all (fun (op,str) ->
-         compute op v' (cano str)
-       ) l)
-
-let loc pi = match pi with
-  | None -> "unknown location"
-  | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line
 
 let add_file f =
-
   List.iter
-    (fun (annot,code) ->
-      incr last_code_id;
-      let id = !last_code_id in
-
-      let req,has_provide,vmatch = List.fold_left (fun (req,has_provide,vmatch) a -> match a with
-        | `Provides (pi,name,kind) ->
-          req,Some (name,pi,kind),vmatch
-        | `Requires (_,mn) -> (mn@req),has_provide,vmatch
-        | `Version (_,l) ->
-          let vmatch = match vmatch with
-            | Some true -> vmatch
-            | _ -> Some (version_match l) in
-          req,has_provide,vmatch
-        ) ([],None,None) annot in
-
-      (match vmatch with
-       | Some false -> ()
-       | None | Some true ->
-
-         (match has_provide with
+    (fun (provide,req,versions,code) ->
+       incr last_code_id;
+       let id = !last_code_id in
+       let vmatch = match versions with
+         | [] -> true
+         | l -> List.exists version_match l in
+       if vmatch
+       then begin
+         (match provide with
           | None -> always_included := id :: !always_included
-          | Some (name,pi,kind) ->
+          | Some (pi,name,kind) ->
 
             Primitive.register name kind;
             if Hashtbl.mem provided name
@@ -158,32 +153,40 @@ let add_file f =
             end;
             Hashtbl.add provided name (id,pi);
             Hashtbl.add provided_rev id (name,pi);
-
-            let free = new Js_traverse.free in
-            let _code = free#program code in
-            let freename = free#get_free_name in
-            let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename req in
-            let freename = StringSet.diff freename Reserved.keyword in
-            let freename = StringSet.diff freename Reserved.provided in
-            let freename = StringSet.remove Option.global_object freename in
-            if not(StringSet.mem name free#get_def_name)
-            then begin
-              Format.eprintf "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)
-            end;
-            if not(StringSet.is_empty freename)
-            then begin
-              Format.eprintf "warning: free variables in primitive code %S (%s)@." name (loc pi);
-              Format.eprintf "vars: %s@." (String.concat ", " (StringSet.elements freename))
-            end);
+            check_primitive name pi code req
+         );
          Hashtbl.add code_pieces id (code, req)
-      ))
+       end
+    )
     (parse_file f)
 
-type visited = {
-  ids : IntSet.t;
-  codes : Javascript.program list ;
-}
+let get_provided () =
+  Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
 
+let check_deps () =
+  let provided = get_provided () in
+  Hashtbl.iter (fun id (code,requires) ->
+    let traverse = new Js_traverse.free in
+    let _js = traverse#program code in
+    let free = traverse#get_free_name in
+    let requires = List.fold_right StringSet.add requires StringSet.empty in
+    let real = StringSet.inter free provided in
+    let missing = StringSet.diff real requires in
+    if not (StringSet.is_empty missing)
+    then begin
+      let (name,ploc) = Hashtbl.find provided_rev id in
+      Format.eprintf "code providing %s (%s) may miss dependencies: %s\n"
+        name
+        (loc ploc)
+        (String.concat ", " (StringSet.elements missing))
+    end
+  ) code_pieces
+
+let load_files l =
+  List.iter add_file l;
+  check_deps ()
+
+(* resolve *)
 let rec resolve_dep_name_rev visited path nm =
   let id =
     try
@@ -214,7 +217,7 @@ let resolve_deps ?(linkall = false) program used =
   (* link the special files *)
   let visited_rev = List.fold_left
       (fun visited id -> resolve_dep_id_rev visited [] id)
-       {ids=IntSet.empty; codes=[]} !always_included
+      {ids=IntSet.empty; codes=[]} !always_included
   in
   let missing,visited_rev =
     if linkall
@@ -240,27 +243,3 @@ let resolve_deps ?(linkall = false) program used =
              (StringSet.add nm missing, visited))
         used (StringSet.empty, visited_rev) in
   List.flatten (List.rev (program::visited_rev.codes)), missing
-
-let get_provided () =
-  Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
-
-let check_deps () =
-  let provided = get_provided () in
-  let fail = ref false in
-  Hashtbl.iter (fun id (code,requires) ->
-    let traverse = new Js_traverse.free in
-    let _js = traverse#program code in
-    let free = traverse#get_free_name in
-    let requires = List.fold_right StringSet.add requires StringSet.empty in
-    let real = StringSet.inter free provided in
-    let missing = StringSet.diff real requires in
-    if not (StringSet.is_empty missing)
-    then begin
-      let (name,ploc) = Hashtbl.find provided_rev id in
-      Format.eprintf "code providing %s (%s) may miss dependencies: %s\n"
-        name
-        (loc ploc)
-        (String.concat ", " (StringSet.elements missing));
-      fail := true
-    end
-  ) code_pieces

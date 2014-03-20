@@ -22,9 +22,10 @@ let times = Option.Debug.find "times"
 
 let f toplevel linkall paths files js_files input_file output_file source_map =
   let t = Util.Timer.make () in
-  List.iter Linker.add_file js_files;
+  Linker.load_files js_files;
   let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
   let t1 = Util.Timer.make () in
+  if times () then Format.eprintf "Start parsing...@.";
   let need_debug =
     if source_map <> None || Option.Optim.debuginfo () then `Full else
     if Option.Optim.pretty () then `Names else `No
@@ -59,7 +60,7 @@ let f toplevel linkall paths files js_files input_file output_file source_map =
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
 
 let run () =
-  Util.Timer.init Unix.gettimeofday;
+  Util.Timer.init Sys.time;
   let js_files = ref [] in
   let files = ref [] in
   let output_file = ref None in
@@ -96,7 +97,7 @@ let run () =
   Arg.parse (Arg.align options)
       (fun s ->
          (* internal option for debugging only *)
-         if s="@nofail" then Option.fail:=false
+         if s="@nofail" then Util.fail:=false
          else
          if Filename.check_suffix s ".js" then
            js_files := s :: !js_files
