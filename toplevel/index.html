@@ -87,9 +87,10 @@
       }
     </style>
     <script type="text/javascript">
+      var default_top = "toplevel.js";
       window.onhashchange = function() { window.location.reload() }
       var version = window.location.hash.match(/#?(.*)/);
-      var url = (version[1]=="")?("toplevel.js"):("v/toplevel-"+version[1]+".js");
+      var url = (version[1]=="")?default_top:("v/toplevel-"+version[1]+".js");
       var fileref=document.createElement('script');
       fileref.setAttribute("type","text/javascript");
       fileref.setAttribute("src", url);
