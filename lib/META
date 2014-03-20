@@ -49,5 +49,5 @@ package "compiler" (
   archive(byte, plugin) = "compiler.cma"
   archive(native) = "compiler.cmxa"
   archive(native, plugin) = "compiler.cmxs"
-  requires = "str findlib"
+  requires = "findlib"
 )
