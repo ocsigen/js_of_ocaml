@@ -118,7 +118,7 @@ end = struct
 
   class type global_data = object
     method compile : (string -> string) Js.writeonly_prop
-    method auto_register_file_ : (string -> int) Js.writeonly_prop
+    method auto_register_file_ : (string -> bool) Js.writeonly_prop
   end
 
   external global_data : unit -> global_data Js.t = "caml_get_global_data"
@@ -208,26 +208,29 @@ end = struct
 
   (* load (binary) file from server using a synchronous XMLHttpRequest *)
   let load_from_server path =
-    let xml = XmlHttpRequest.create () in
-    let () = xml##_open(Js.string "GET", Js.string ("filesys/" ^ path), Js._false) in
-    let () = xml##send(Js.null) in
-    if xml##status = 200 then
-      let resp = xml##responseText in
-      let len = resp##length in
-      let str = String.create len in
-      for i=0 to len-1 do
-          str.[i] <- Char.chr (int_of_float resp##charCodeAt(i) land 0xff)
-      done;
-      Some(str)
-    else
+    try
+      let xml = XmlHttpRequest.create () in
+      xml##_open(Js.string "GET", Js.string ("filesys/" ^ path), Js._false);
+      xml##send(Js.null);
+      if xml##status = 200 then
+        let resp = xml##responseText in
+        let len = resp##length in
+        let str = String.create len in
+        for i=0 to len-1 do
+            str.[i] <- Char.chr (int_of_float resp##charCodeAt(i) land 0xff)
+        done;
+        Some(str)
+      else
+        None
+    with _ ->
       None
 
   let auto_register_file name =
     match load_from_server name with
-    | None -> 0
+    | None -> false
     | Some(content) ->
-      let () = Sys_js.register_file ~name ~content in
-      1
+        Sys_js.register_file ~name ~content;
+        true
 
   let initialize () =
     g##auto_register_file_ <- auto_register_file;
