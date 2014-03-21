@@ -116,6 +116,18 @@ end = struct
         split beg (cur + 1) in
     Array.of_list(split 0 0)
 
+  let split_char sep p =
+    let len = String.length p in
+    let rec split beg cur =
+      if cur >= len then
+        [String.sub p beg (cur - beg)]
+      else if p.[cur] = sep then
+        String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
+      else
+        split beg (cur + 1) in
+    split 0 0
+
+
   class type global_data = object
     method compile : (string -> string) Js.writeonly_prop
     method auto_register_file_ : (string -> bool) Js.writeonly_prop
@@ -297,7 +309,8 @@ let examples =
   with  _ -> []
 
 let indent_caml s =
-#if ocaml_version < (4,02)
+#let_default ocpindent = false
+#if ocpindent
   let output = {
     IndentPrinter.debug = false;
     config = IndentConfig.default;

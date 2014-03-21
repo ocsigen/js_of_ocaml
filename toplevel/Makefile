@@ -20,9 +20,13 @@ endif
 
 OCPINDENT=$(shell ocamlfind query ocp-indent -format "-package %p.lib" 2> /dev/null)
 
+ifneq ($(OCPINDENT),)
+OPTCOMP_OPT=-ppopt -let -ppopt ocpindent=true
+endif
+
 COMP=../compiler/$(COMPILER)
 JSFILES=../runtime/runtime.js ../runtime/weak.js toplevel_runtime.js
-OCAMLC=ocamlfind ocamlc -package lwt,optcomp -syntax camlp4o $(OCPINDENT) -ppopt "../lib/syntax/pa_js.cmo" -I +compiler-libs -I ../lib -I ../compiler
+OCAMLC=ocamlfind ocamlc -package lwt,optcomp -syntax camlp4o $(OCPINDENT) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" -I +compiler-libs -I ../lib -I ../compiler
 STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER)
 EXPUNGE=$(shell ocamlc -where)/expunge
 # Removed gc and sys
@@ -91,13 +95,8 @@ $(NAME).byte: $(OBJS) ../compiler/compiler.cma
 %.cmo: %.ml ../compiler/compiler.cma
 	$(OCAMLC) -c $<
 
-%.cmi: ../compiler/compiler.cma
-
 ../compiler/compiler.cma:
 	$(MAKE) -C ../compiler compiler.cma
-
-errors.cmi: errors.mli
-	$(OCAMLC) -c $<
 
 server: server.ml
 	ocamlfind ocamlc -linkpkg -package cohttp.lwt server.ml -o server
@@ -106,6 +105,6 @@ clean::
 	rm -f *.cm[io] $(NAME).byte $(NAME).js
 
 depend:
-	ocamldep -pp "camlp4o ../lib/syntax/pa_js.cmo" -I ../compiler *.ml *.mli > .depend
+	ocamlfind ocamldep -syntax camlp4o -package optcomp -ppopt "../lib/syntax/pa_js.cmo" -I ../compiler *.ml *.mli > .depend
 
 include .depend

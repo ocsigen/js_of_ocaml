@@ -1,3 +1,8 @@
-toplevel.cmo: errors.cmi ../compiler/driver.cmi 
-toplevel.cmx: errors.cmi ../compiler/driver.cmx 
-errors.cmi: 
+examples.cmo :
+examples.cmx :
+server.cmo : server.cmo
+server.cmx : server.cmx
+toplevel.cmo : ../compiler/pretty_print.cmi ../compiler/option.cmi \
+    ../compiler/driver.cmi
+toplevel.cmx : ../compiler/pretty_print.cmx ../compiler/option.cmx \
+    ../compiler/driver.cmx
