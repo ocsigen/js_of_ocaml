@@ -180,11 +180,16 @@ let check_deps () =
     let missing = StringSet.diff real requires in
     if not (StringSet.is_empty missing)
     then begin
-      let (name,ploc) = Hashtbl.find provided_rev id in
-      Format.eprintf "code providing %s (%s) may miss dependencies: %s\n"
-        name
-        (loc ploc)
-        (String.concat ", " (StringSet.elements missing))
+      try
+        let (name,ploc) = Hashtbl.find provided_rev id in
+        Format.eprintf "code providing %s (%s) may miss dependencies: %s\n"
+          name
+          (loc ploc)
+          (String.concat ", " (StringSet.elements missing))
+      with Not_found ->
+        (* there is no //Provides for this piece of code *)
+        (* FIXME handle missing deps in this case *)
+        ()
     end
   ) code_pieces
 
