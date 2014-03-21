@@ -16,10 +16,13 @@ as the bytecode provides a very stable API.
   * Lwt: **version 2.3.0** at least
   * Menhir
 
-###optionnal
+### optionnal
   * [deriving](https://github.com/ocsigen/deriving): **version 0.6** at least
-  * ocp-indent: needed to build the toplevel
-  * cohttp: needed to build the toplevel webserver
+
+### Toplevel requirements
+ * optcomp
+ * ocp-indent: needed to support indentation in the toplevel
+ * cohttp: needed to build the toplevel webserver
 
 ## Installation
 

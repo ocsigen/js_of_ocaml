@@ -21,7 +21,6 @@ retargeted OCaml compiler, as the bytecode provides a very stable API.
   [optionnal]
   * deriving (**version 0.6** at least
               see: https://github.com/ocsigen/deriving)
-  * ocp-indent (** to compile the toplevel *)
 
 == Installation ==
   * run {{{make}}} to compile everything
