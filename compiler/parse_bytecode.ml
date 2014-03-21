@@ -1867,8 +1867,8 @@ let from_channel  ?(toplevel=false) ?(debug=`No) ~files ~paths ic =
 
     (* Primitive.mark_used "caml_string_greaterthan" *)
   end;
-
-  fix_min_max_int code;
+  if (Util.Version.(compare current [4;2]) < 0)
+  then fix_min_max_int code;
 
   let state = State.initial globals in
 
