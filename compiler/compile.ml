@@ -108,9 +108,12 @@ let run () =
          else
            input_file := Some s)
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
+  let version = match Compiler_version.git_version with
+    | "" -> Compiler_version.s
+    | v  -> Printf.sprintf "%s+git-%s"Compiler_version.s v in
   match !show_version with
-  | `Number -> Format.printf "%s@." Compiler_version.s
-  | `Full -> Format.printf "Js_of_ocaml compiler, version %s@." Compiler_version.s
+  | `Number -> Format.printf "%s@." version
+  | `Full -> Format.printf "Js_of_ocaml compiler, version %s@." version
   | `No ->
   if !toplevel then linkall:=true;
   let runtime = if !no_runtime then [] else ["+runtime.js"] in

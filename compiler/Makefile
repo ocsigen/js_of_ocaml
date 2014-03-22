@@ -55,6 +55,7 @@ compiler.cmxs: $(OBJS)
 VERSION := $(shell head -n 1 ../VERSION)
 compiler_version.ml: ../VERSION
 	echo "let s = \"${VERSION}\"" > $@
+	echo "let git_version = \"${VERSION_GIT}\"" >> $@
 
 
 %.cmx: %.ml
