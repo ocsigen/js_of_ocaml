@@ -69,9 +69,13 @@ let run () =
   let linkall = ref false in
   let toplevel = ref false in
   let source_map = ref false in
+  let show_version = ref `No in
   let paths = ref [] in
   let options =
-    [("-debug", Arg.String Option.Debug.enable, "<name> debug module <name>");
+    [
+     ("-version",Arg.Unit (fun () -> show_version:=`Full) ," display version");
+     ("-vnum",Arg.Unit (fun () -> show_version:=`Number) ," display version number");
+     ("-debug", Arg.String Option.Debug.enable, "<name> debug module <name>");
      ("-disable",
       Arg.String Option.Optim.disable, "<name> disable optimization <name>");
      ("-enable",
@@ -104,6 +108,10 @@ let run () =
          else
            input_file := Some s)
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
+  match !show_version with
+  | `Number -> Format.printf "%s@." Compiler_version.s
+  | `Full -> Format.printf "Js_of_ocaml compiler, version %s@." Compiler_version.s
+  | `No ->
   if !toplevel then linkall:=true;
   let runtime = if !no_runtime then [] else ["+runtime.js"] in
   let chop_extension s =
