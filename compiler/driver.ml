@@ -191,6 +191,16 @@ let gen_missing js missing =
            N
          )) :: acc
       ) missing [] in
+    if not (StringSet.is_empty missing)
+    then begin
+      Format.eprintf "There are some missing primitives@.";
+      Format.eprintf "Dummy implementations (raising 'Failure' exception) ";
+      Format.eprintf "will be use if they are not available at runtime.@.";
+      Format.eprintf "You can prevent the generation of dummy implementations with ";
+      Format.eprintf "the commandline option '-disable genprim'@.";
+      Format.eprintf "Missing primitives:@.";
+      StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
+    end;
     Statement (Variable_statement miss) :: js
   end
   else
