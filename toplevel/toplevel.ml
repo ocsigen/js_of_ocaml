@@ -130,7 +130,6 @@ end = struct
 
   class type global_data = object
     method compile : (string -> string) Js.writeonly_prop
-    method auto_register_file_ : (string -> bool) Js.writeonly_prop
   end
 
   external global_data : unit -> global_data Js.t = "caml_get_global_data"
@@ -237,15 +236,8 @@ end = struct
     with _ ->
       None
 
-  let auto_register_file name =
-    match load_from_server name with
-    | None -> false
-    | Some(content) ->
-        Sys_js.register_file ~name ~content;
-        true
-
   let initialize () =
-    g##auto_register_file_ <- auto_register_file;
+    Sys_js.register_autoload "/cmis" (fun s -> load_from_server s);
     Toploop.initialize_toplevel_env ();
     Toploop.input_name := "//toplevel//";
     let header = "        Objective Caml version %s@.@." in

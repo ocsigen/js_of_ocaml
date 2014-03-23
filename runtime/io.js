@@ -17,45 +17,7 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-///////////// Io && fake FileSystem
-
-//Provides: caml_register_file
-//Requires: caml_global_data, MlString
-function caml_register_file(name,content) {
-  if(!caml_global_data.files)
-    caml_global_data.files = {};
-  if(content instanceof MlString)
-    var arr = content.getArray();
-  else if(content instanceof Array)
-    var arr = content
-  else var arr = (new MlString(content)).getArray();
-  caml_global_data.files[(name instanceof MlString)?name.toString():name] = arr;
-}
-
-//Provides: caml_sys_file_exists
-//Requires: caml_global_data
-function caml_sys_file_exists (name) {
-  return (caml_global_data.files && caml_global_data.files[name.toString()])?1:
-         (caml_global_data.auto_register_file === undefined ? 0 :
-          caml_global_data.auto_register_file(name));
-}
-
-//Provides: caml_sys_remove
-//Requires: caml_global_data
-function caml_sys_remove(name){
-  if(caml_global_data.files)
-    delete caml_global_data.files[name.toString()];
-}
-
-//Provides: caml_sys_rename
-//Requires: caml_global_data,caml_sys_file_exists,caml_register_file,caml_sys_remove
-function caml_sys_rename(o,n){
-  if(caml_sys_file_exists(o)){
-    caml_register_file(n, caml_global_data.files[o.toString()]);
-    caml_sys_remove(o);
-  }
-  return;
-}
+///////////// Io
 
 //Provides: caml_sys_close
 //Requires: caml_global_data
@@ -66,7 +28,8 @@ function caml_sys_close(fd) {
 
 //Provides: caml_sys_open
 //Requires: MlString, caml_raise_sys_error, caml_global_data,caml_sys_file_exists
-//Requires: caml_register_file
+//Requires: caml_fs_register,caml_make_path,caml_fs_content
+//Requires: caml_raise_no_such_file,caml_sys_is_directory
 function caml_sys_open_internal(idx,v,flags) {
   if(caml_global_data.fds === undefined) caml_global_data.fds = new Array();
   flags=flags?flags:{};
@@ -95,21 +58,25 @@ function caml_sys_open (name, flags, perms) {
     flags=flags[2];
   }
   var name2 = name.toString();
+  var path = caml_make_path(name);
   if(f.rdonly && f.wronly)
     caml_raise_sys_error(name2 + " : flags Open_rdonly and Open_wronly are not compatible");
   if(f.text && f.binary)
     caml_raise_sys_error(name2 + " : flags Open_text and Open_binary are not compatible");
   if (caml_sys_file_exists(name)) {
+    if (caml_sys_is_directory(name)) caml_raise_sys_error(name2 + " : is a directory");
     if (f.create && f.excl) caml_raise_sys_error(name2 + " : file already exists");
     var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
-    if(f.truncate) caml_global_data.files[name2] = "";
-    return caml_sys_open_internal (idx+1,caml_global_data.files[name2],f);
+    var file = caml_fs_content(path);
+    if(f.truncate) file.truncate();
+    return caml_sys_open_internal (idx+1,file.content(),f);
   } else if (f.create) {
     var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
-    caml_register_file(name2,[]);
-    return caml_sys_open_internal (idx+1,caml_global_data.files[name2],f);
+    caml_fs_register(name,[]);
+    var file = caml_fs_content(path);
+    return caml_sys_open_internal (idx+1,file.content(),f);
   }
-  else caml_raise_sys_error (name2 + ": no such file or directory");
+  else caml_raise_no_such_file (name);
 }
 caml_sys_open_internal(0,[]); //stdin
 caml_sys_open_internal(1,[]); //stdout
