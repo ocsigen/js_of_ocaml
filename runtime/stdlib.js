@@ -155,9 +155,9 @@ function caml_obj_truncate (x, s) { x.length = s + 1; return 0; }
 function caml_lazy_make_forward (v) { return [250, v]; }
 
 //Provides: caml_mul const
-function caml_mul(x,y) {
-  return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0;
-}
+var caml_mul =
+  Math.imul?Math.imul:
+  function (x,y) { return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0; };
 
 //slightly slower
 // function mul32(x,y) {
