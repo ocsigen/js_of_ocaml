@@ -80,6 +80,8 @@ reasons.  Most notably, integers are 32 bits (rather than 31 bits or
 63 bits) and floats are not boxed.  As a consequence, marshaling,
 polymorphic comparison, and hashing functions can yield results
 different from usual:
+  * when marshaling datastructures containing floats, the result can
+    only be unmarshaled with js_of_ocaml programs.
   * the polymorphic hash function will not give the same results on
     datastructures containing floats;
   * these functions may be more prone to stack overflow, as the
