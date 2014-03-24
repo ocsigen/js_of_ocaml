@@ -99,7 +99,7 @@ $(NAME).byte: $(OBJS) ../compiler/compiler.cma
 	$(MAKE) -C ../compiler compiler.cma
 
 server: server.ml
-	ocamlfind ocamlc -linkpkg -package cohttp.lwt server.ml -o server
+	ocamlfind ocamlc -linkpkg -package findlib,cohttp.lwt server.ml -o server
 
 clean::
 	rm -f *.cm[io] $(NAME).byte $(NAME).js

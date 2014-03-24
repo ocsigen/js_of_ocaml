@@ -127,15 +127,6 @@ end = struct
         split beg (cur + 1) in
     split 0 0
 
-
-  class type global_data = object
-    method compile : (string -> string) Js.writeonly_prop
-  end
-
-  external global_data : unit -> global_data Js.t = "caml_get_global_data"
-
-  let g = global_data ()
-
   let setup output =
     Hashtbl.add Toploop.directive_table "enable" (Toploop.Directive_string Option.Optim.enable);
     Hashtbl.add Toploop.directive_table "disable" (Toploop.Directive_string Option.Optim.disable);
@@ -171,7 +162,7 @@ end = struct
       output res;
       res
     in
-    g##compile <- compile (*XXX HACK!*)
+    Js.Unsafe.global##toplevelCompile <- compile (*XXX HACK!*)
 
 
   let refill_lexbuf s p ppf buffer len =
@@ -221,7 +212,7 @@ end = struct
   let load_from_server path =
     try
       let xml = XmlHttpRequest.create () in
-      xml##_open(Js.string "GET", Js.string ("filesys/" ^ path), Js._false);
+      xml##_open(Js.string "GET", Js.string ("http://127.0.0.1:8888/filesys/" ^ path), Js._false);
       xml##send(Js.null);
       if xml##status = 200 then
         let resp = xml##responseText in
@@ -237,7 +228,7 @@ end = struct
       None
 
   let initialize () =
-    Sys_js.register_autoload "/cmis" (fun s -> load_from_server s);
+    Sys_js.register_autoload "/" (fun s -> load_from_server s);
     Toploop.initialize_toplevel_env ();
     Toploop.input_name := "//toplevel//";
     let header = "        Objective Caml version %s@.@." in

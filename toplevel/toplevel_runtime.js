@@ -27,9 +27,8 @@ function caml_terminfo_setup () { return 1; } // Bad_term
 function caml_get_section_table () { return caml_global_data.toc; }
 
 //Provides: caml_reify_bytecode
-//Requires: caml_global_data
 function caml_reify_bytecode (code, sz) {
-  return eval(caml_global_data.compile(code).toString());
+  return eval(joo_global_object.toplevelCompile(code).toString());
 }
 
 //Provides: caml_static_release_bytecode
