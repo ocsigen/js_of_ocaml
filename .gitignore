@@ -23,6 +23,7 @@
 lib/stubs.c
 runtime/runtime.js
 toplevel/toplevel.js
+toplevel/server
 examples/wiki/wikicreole.ml
 examples/*/*.js
 compiler/js_of_ocaml
