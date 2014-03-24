@@ -57,6 +57,6 @@ let _ = match norm with
     Unix.tm_yday = 312; Unix.tm_isdst = false}) -> log_success ()
   | (1384049855.,tm) -> log_failure_tm "Unix.mktime" tm
   | (wrong,tm) -> log_failure_tm "Unix.mktime" tm;
-    log_failure (Printf.sprintf "Unix.mktime: %f <> 1384049855" wrong)
+    log_failure (Printf.sprintf "Unix.mktime: %.0f <> 1384049855" wrong)
 
 let () = log_stop ()
