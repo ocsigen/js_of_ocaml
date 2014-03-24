@@ -83,9 +83,8 @@ module Optim = struct
   let debugger = o ~name:"debugger" ~default:true
   let genprim = o ~name:"genprim" ~default:true
   let excwrap = o ~name:"excwrap" ~default:true
-  let pack = o ~name:"pack" ~default:true
-
   let include_cmis = o ~name:"withcmi" ~default: true
+
   (* this does not optimize properly *)
   let compact_vardecl = o ~name:"vardecl" ~default:false
 end
