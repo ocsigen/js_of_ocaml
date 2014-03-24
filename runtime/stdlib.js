@@ -88,13 +88,20 @@ function caml_failwith (msg) {
 function caml_wrap_exception(e) {
   if(e instanceof Array) return e;
   var s = e.toString();
-  switch(s){
-  case "RangeError: Maximum call stack size exceeded"://chrome
-  case "InternalError: too much recursion"://firefox
+  //Stack_overflow: chrome, safari
+  if(joo_global_object.RangeError
+     && e instanceof joo_global_object.RangeError
+     && e.message
+     && e.message.match(/maximum call stack/i))
     return [0,caml_global_data[9]];
-  default:
-    return [0,caml_global_data[3],new MlWrappedString (s)];
-  }
+  //Stack_overflow: firefox
+  if(joo_global_object.InternalError
+     && e instanceof joo_global_object.InternalError
+     && e.message
+     && e.message.match(/too much recursion/i))
+    return [0,caml_global_data[9]];
+  //fallback: wrapped in Failure
+  return [0,caml_global_data[3],new MlWrappedString (s)];
 }
 
 //Provides: caml_invalid_argument
