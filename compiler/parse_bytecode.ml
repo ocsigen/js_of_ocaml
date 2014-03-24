@@ -1693,24 +1693,24 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
              Let (x, Constant (Int (Array.length g.primitives))) ::
              set_global "prim_count" x !l);
           (* Include interface files *)
-
-          Tbl.iter
-            (fun id num ->
-               if id.Ident.flags = 1 then begin
-                 let name = String.uncapitalize id.Ident.name ^ ".cmi" in
-                 let file =
-                   try
-                     Util.find_in_paths paths name
-                   with Not_found ->
-                     let name = String.capitalize id.Ident.name ^ ".cmi" in
+          if Option.Optim.include_cmis ()
+          then Tbl.iter
+              (fun id num ->
+                 if id.Ident.flags = 1 then begin
+                   let name = String.uncapitalize id.Ident.name ^ ".cmi" in
+                   let file =
                      try
                        Util.find_in_paths paths name
                      with Not_found ->
-                       failwith (Printf.sprintf "interface file '%s' not found" name)
-                 in
-                 let s = Util.read_file file in
-                 fs := (Pc (IString ("/cmis/"^name)),Pc (IString s)) :: !fs
-               end) symb.num_tbl;
+                       let name = String.capitalize id.Ident.name ^ ".cmi" in
+                       try
+                         Util.find_in_paths paths name
+                       with Not_found ->
+                         failwith (Printf.sprintf "interface file '%s' not found" name)
+                   in
+                   let s = Util.read_file file in
+                   fs := (Pc (IString ("/cmis/"^name)),Pc (IString s)) :: !fs
+                 end) symb.num_tbl;
         end;
         (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "caml_register_file", [n;c]))) !fs) @ !l
     | None ->

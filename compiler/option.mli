@@ -39,6 +39,7 @@ module Optim : sig
   val debuginfo : unit -> bool
   val excwrap : unit -> bool
   val pack : unit -> bool
+  val include_cmis: unit -> bool
 
   val enable : string -> unit
   val disable : string -> unit
