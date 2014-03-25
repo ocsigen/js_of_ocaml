@@ -19,6 +19,8 @@ let server () =
         h
     in
     let header_html = header "text/html; charset=UTF-8" in
+    let header_js = header "application/javascript; charset=UTF-8" in
+    let header_css = header "text/css; charset=UTF-8" in
     let header_plain_user_charset = header "text/plain; charset=x-user-defined" in
 
     let callback conn_id req body =
@@ -34,7 +36,14 @@ let server () =
             (* send static file *)
             let fname = Server.resolve_file ~docroot:"." ~uri:uri in
             Lwt_io.eprintf "static: %s\n" fname >>= fun () ->
-            Server.respond_file ~headers:header_html ~fname:fname ()
+            let headers =
+              if Filename.check_suffix fname ".css"
+              then header_css
+              else if Filename.check_suffix fname ".js"
+              then header_js
+              else header_html in
+            Server.respond_file ~headers ~fname ()
+
     in
     let conn_closed conn_id () = () in
     let config = { Server.callback; conn_closed } in

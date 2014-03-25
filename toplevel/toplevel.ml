@@ -487,6 +487,8 @@ let run _ =
   Sys_js.set_channel_flusher stdout (append_string "stdout");
   Sys_js.set_channel_flusher stderr (append_string "stderr");
 
+  Lwt.async_exception_hook:=(fun exc -> Format.eprintf "exc during Lwt.async: %s@." (Printexc.to_string exc));
+
   Lwt.async (fun () ->
       resize () >>= fun () ->
       textbox##focus ();
