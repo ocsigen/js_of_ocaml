@@ -20,90 +20,100 @@
 open Code
 open Flow
 
+
+module Int = Int32
+let int_binop l f = match l with
+  | [Int i; Int j] -> Some (Int (Int.to_int (f (Int.of_int i) (Int.of_int j))))
+  | _ -> None
+let shift l f = match l with
+  | [Int i; Int j] -> Some (Int (Int.to_int (f (Int.of_int i) (j land 0x1f))))
+  | _ -> None
+let float_binop_aux l f =
+  let args = match l with
+    | [Float i; Float j]-> Some (i,j)
+    | [Int i ; Int j] -> Some (float_of_int i,float_of_int j)
+    | [Int i ; Float j] -> Some(float_of_int i,j)
+    | [Float i ; Int j] -> Some(i,float_of_int j)
+    | _ -> None in
+  match args with
+  | None -> None
+  | Some (i,j) -> Some (f i j)
+
+let float_binop l f = match float_binop_aux l f with
+  | Some x -> Some (Float x)
+  | None -> None
+
+let float_unop l f = match l with
+  | [Float i] -> Some (Float (f i))
+  | [Int i] -> Some (Float (f (float_of_int i)))
+  | _ -> None
+
+let float_binop_bool l f = match float_binop_aux l f with
+  | Some true -> Some (Int 1)
+  | Some false -> Some (Int 0)
+  | None -> None
+
+let bool b = Some (Int (if b then 1 else 0))
+
 let eval_prim x =
-  let bool b = Some (Int (if b then 1 else 0)) in
   match x with
-    | Not, [Int i] -> bool (i=0)
-    | Lt,  [Int i; Int j ] -> bool (i < j)
-    | Le,  [Int i; Int j ] -> bool (i <= j)
-    | Eq,  [Int i; Int j ] -> bool (i = j)
-    | Neq, [Int i; Int j ] -> bool (i <> j)
-    | IsInt, [Int _] -> bool true
-    | Ult, [Int i; Int j ] -> bool (j < 0 || i < j)
-    | WrapInt, [Int i] -> Some (Int i)
-    | Extern name, l ->
-      let name = Primitive.resolve name in
-      let module Int = Int32 in
-      let int_binop = match l with
-        | [Int i; Int j] -> fun f -> Some (Int (Int.to_int (f (Int.of_int i) (Int.of_int j))))
-        | _ -> fun _ -> None in
-      let shift = match l with
-        | [Int i; Int j] -> fun f -> Some (Int (Int.to_int (f (Int.of_int i) (j land 0x1f))))
-        | _ -> fun _ -> None in
-      let float_binop_aux =
-        let args = match l with
-          | [Float i; Float j]-> Some (i,j)
-          | [Int i ; Int j] -> Some (float_of_int i,float_of_int j)
-          | [Int i ; Float j] -> Some(float_of_int i,j)
-          | [Float i ; Int j] -> Some(i,float_of_int j)
-          | _ -> None
-        in
-        match args with
-          | None -> (fun _ -> None)
-          | Some (i,j) -> fun f -> Some (f i j) in
-      let float_binop f = float_binop_aux (fun i j -> Float (f i j)) in
-      let float_unop = match l with
-        | [Float i] -> fun f -> Some (Float (f i))
-        | [Int i] -> fun f -> Some (Float (f (float_of_int i)))
-        | _ -> fun _ -> None in
-      let float_binop_bool f = float_binop_aux (fun i j -> Int (if f i j then 1 else 0)) in
-      (match name, l with
-        (* int *)
-        | "%int_add", _ -> int_binop (Int.add)
-        | "%int_sub", _ -> int_binop (Int.sub)
-        | "%direct_int_mul", _ -> int_binop (Int.mul )
-        | "%direct_int_div", [_; Int 0] -> None
-        | "%direct_int_div", _ -> int_binop (Int.div)
-        | "%direct_int_mod", _ -> int_binop (Int.rem)
-        | "%int_and", _ -> int_binop (Int.logand)
-        | "%int_or", _  -> int_binop (Int.logor)
-        | "%int_xor", _ -> int_binop (Int.logxor)
-        | "%int_lsl", _ -> shift (Int.shift_left)
-        | "%int_lsr", _ -> shift (Int.shift_right_logical)
-        | "%int_asr", _ -> shift (Int.shift_right)
-        | "%int_neg", [Int i] -> Some (Int (Int.to_int (Int.neg (Int.of_int i) )))
-        (* float *)
-        | "caml_eq_float", _ -> float_binop_bool (=)
-        | "caml_neq_float", _ -> float_binop_bool (<>)
-        | "caml_ge_float", _ -> float_binop_bool (>=)
-        | "caml_le_float", _ -> float_binop_bool (<=)
-        | "caml_gt_float", _ -> float_binop_bool (>)
-        | "caml_lt_float", _ -> float_binop_bool (<)
-        | "caml_add_float",_ -> float_binop (+.)
-        | "caml_sub_float",_ -> float_binop (-.)
-        | "caml_mul_float",_ -> float_binop ( *. )
-        | "caml_div_float",_ -> float_binop ( /. )
-        | "caml_fmod_float",_ -> float_binop mod_float
-        | "caml_int_of_float",[Float f] -> Some (Int (int_of_float f))
-        | "to_int",[Float f]  -> Some (Int (int_of_float f))
-        | "to_int",[Int i] -> Some (Int i)
-          (* Math *)
-        | "caml_abs_float",_ -> float_unop abs_float
-        | "caml_acos_float",_ -> float_unop acos
-        | "caml_asin_float",_ -> float_unop asin
-        | "caml_atan_float",_ -> float_unop atan
-        | "caml_atan2_float",_ -> float_binop atan2
-        | "caml_ceil_float",_ -> float_unop ceil
-        | "caml_cos_float",_ -> float_unop cos
-        | "caml_exp_float",_ -> float_unop exp
-        | "caml_floor_float",_ -> float_unop floor
-        | "caml_log_float",_ -> float_unop log
-        | "caml_power_float",_ -> float_binop ( ** )
-        | "caml_sin_float",_ -> float_unop sin
-        | "caml_sqrt_float",_ -> float_unop sqrt
-        | "caml_tan_float",_ -> float_unop tan
-        | _ -> None)
-    | _ -> None
+  | Not, [Int i] -> bool (i=0)
+  | Lt,  [Int i; Int j ] -> bool (i < j)
+  | Le,  [Int i; Int j ] -> bool (i <= j)
+  | Eq,  [Int i; Int j ] -> bool (i = j)
+  | Neq, [Int i; Int j ] -> bool (i <> j)
+  | IsInt, [Int _] -> bool true
+  | Ult, [Int i; Int j ] -> bool (j < 0 || i < j)
+  | WrapInt, [Int i] -> Some (Int i)
+  | Extern name, l ->
+    let name = Primitive.resolve name in
+    (match name, l with
+     (* int *)
+     | "%int_add", _ -> int_binop l (Int.add)
+     | "%int_sub", _ -> int_binop l (Int.sub)
+     | "%direct_int_mul", _ -> int_binop l (Int.mul )
+     | "%direct_int_div", [_; Int 0] -> None
+     | "%direct_int_div", _ -> int_binop l (Int.div)
+     | "%direct_int_mod", _ -> int_binop l (Int.rem)
+     | "%int_and", _ -> int_binop l (Int.logand)
+     | "%int_or", _  -> int_binop l (Int.logor)
+     | "%int_xor", _ -> int_binop l (Int.logxor)
+     | "%int_lsl", _ -> shift l (Int.shift_left)
+     | "%int_lsr", _ -> shift l (Int.shift_right_logical)
+     | "%int_asr", _ -> shift l (Int.shift_right)
+     | "%int_neg", [Int i] -> Some (Int (Int.to_int (Int.neg (Int.of_int i) )))
+     (* float *)
+     | "caml_eq_float", _ -> float_binop_bool l (=)
+     | "caml_neq_float", _ -> float_binop_bool l (<>)
+     | "caml_ge_float", _ -> float_binop_bool l (>=)
+     | "caml_le_float", _ -> float_binop_bool l (<=)
+     | "caml_gt_float", _ -> float_binop_bool l (>)
+     | "caml_lt_float", _ -> float_binop_bool l (<)
+     | "caml_add_float",_ -> float_binop l (+.)
+     | "caml_sub_float",_ -> float_binop l (-.)
+     | "caml_mul_float",_ -> float_binop l ( *. )
+     | "caml_div_float",_ -> float_binop l ( /. )
+     | "caml_fmod_float",_ -> float_binop l mod_float
+     | "caml_int_of_float",[Float f] -> Some (Int (int_of_float f))
+     | "to_int",[Float f]  -> Some (Int (int_of_float f))
+     | "to_int",[Int i] -> Some (Int i)
+     (* Math *)
+     | "caml_abs_float",_ -> float_unop l abs_float
+     | "caml_acos_float",_ -> float_unop l acos
+     | "caml_asin_float",_ -> float_unop l asin
+     | "caml_atan_float",_ -> float_unop l atan
+     | "caml_atan2_float",_ -> float_binop l atan2
+     | "caml_ceil_float",_ -> float_unop l ceil
+     | "caml_cos_float",_ -> float_unop l cos
+     | "caml_exp_float",_ -> float_unop l exp
+     | "caml_floor_float",_ -> float_unop l floor
+     | "caml_log_float",_ -> float_unop l log
+     | "caml_power_float",_ -> float_binop l ( ** )
+     | "caml_sin_float",_ -> float_unop l sin
+     | "caml_sqrt_float",_ -> float_unop l sqrt
+     | "caml_tan_float",_ -> float_unop l tan
+     | _ -> None)
+  | _ -> None
 
 exception Not_constant
 
