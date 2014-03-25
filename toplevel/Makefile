@@ -25,7 +25,7 @@ OPTCOMP_OPT=-ppopt -let -ppopt ocpindent=true
 endif
 
 COMP=../compiler/$(COMPILER)
-JSFILES=../runtime/runtime.js ../runtime/weak.js toplevel_runtime.js
+JSFILES=../runtime/runtime.js ../runtime/weak.js ../runtime/toplevel.js
 OCAMLC=ocamlfind ocamlc -package lwt,optcomp -syntax camlp4o $(OCPINDENT) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" -I +compiler-libs -I ../lib -I ../compiler
 STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER)
 EXPUNGE=$(shell ocamlc -where)/expunge
