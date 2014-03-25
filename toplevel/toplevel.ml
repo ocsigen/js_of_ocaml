@@ -368,8 +368,15 @@ let run _ =
   let textbox : 'a Js.t = by_id_coerce "userinput" Html.CoerceTo.textarea in
   let example_container = by_id "toplevel-examples" in
 
-  let sharp_chan = open_out "sharp" in
+  let sharp_chan = open_out "/dev/null0" in
   let sharp_ppf = Format.formatter_of_out_channel sharp_chan in
+
+  let caml_chan = open_out "/dev/null1" in
+  let caml_ppf = Format.formatter_of_out_channel caml_chan in
+  let tmp = !Toploop.print_out_phrase in
+  Toploop.print_out_phrase:= (fun fmt outcome -> tmp caml_ppf outcome);
+
+
   let resize () =
     Lwt.pause () >>= fun () ->
     textbox##style##height <- Js.string "auto";
@@ -491,6 +498,8 @@ let run _ =
     span##className <- Js.string cl;
     Dom.appendChild span (Html.document##createTextNode(Js.string s ));
     Dom.appendChild output span in
+
+  Sys_js.set_channel_flusher caml_chan (append_string "caml");
   Sys_js.set_channel_flusher sharp_chan (append_string "sharp");
   Sys_js.set_channel_flusher stdout (append_string "stdout");
   Sys_js.set_channel_flusher stderr (append_string "stderr");
