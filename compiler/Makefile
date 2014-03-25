@@ -31,12 +31,12 @@ $(MINIFIER): minify.$(BEST)
 compile.byte: $(COMPOBJS:cmx=cmo)
 	ocamlfind ocamlc -package $(PACKAGES) -linkpkg -o $@ $^
 compile.opt: $(COMPOBJS)
-	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -o $@ $^
+	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -g -o $@ $^
 
 minify.byte: $(OBJS:cmx=cmo) minify.cmo
 	ocamlfind ocamlc -package $(PACKAGES) -linkpkg -o $@ $^
 minify.opt: $(OBJS:cmx=cmx) minify.cmx
-	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -o $@ $^
+	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -g -o $@ $^
 
 
 compiler.cma: $(OBJS:cmx=cmo)
@@ -47,10 +47,10 @@ local/compiler.cma: compiler.cma
 	cp compiler.cma compiler.cmi local/
 
 compiler.cmxa: $(OBJS)
-	ocamlfind ocamlopt -pack -o $@ $^
+	ocamlfind ocamlopt -pack -g -o $@ $^
 
 compiler.cmxs: $(OBJS)
-	ocamlfind ocamlopt -shared -o $@ $^
+	ocamlfind ocamlopt -shared -g -o $@ $^
 
 VERSION := $(shell head -n 1 ../VERSION)
 compiler_version.ml: ../VERSION
@@ -59,7 +59,7 @@ compiler_version.ml: ../VERSION
 
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -package $(PACKAGES) -for-pack Compiler -c $<
+	ocamlfind ocamlopt -package $(PACKAGES) -for-pack Compiler -g -c $<
 
 %.cmo: %.ml
 	ocamlfind ocamlc -package $(PACKAGES) -c $<
