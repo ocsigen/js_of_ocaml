@@ -1712,7 +1712,7 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                    fs := (Pc (IString ("/cmis/"^name)),Pc (IString s)) :: !fs
                  end) symb.num_tbl;
         end;
-        (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "caml_register_file", [n;c]))) !fs) @ !l
+        (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "caml_fs_register", [n;c]))) !fs) @ !l
     | None ->
         let globals = Var.fresh () in
         let l =

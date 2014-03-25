@@ -18,11 +18,20 @@
  *)
 
 
-external register_file': string -> string -> unit = "caml_register_file"
+external register_file': string -> string -> unit = "caml_fs_register"
+external caml_fs_register_autoload : string -> (Js.js_string Js.t -> bool Js.t) Js.callback -> unit = "caml_fs_register_autoload"
+
+external set_channel_output' : out_channel -> (Js.js_string Js.t -> unit) Js.callback -> unit = "caml_ml_set_channel_output"
 
 let register_file ~name ~content = register_file' name content
 
-external set_channel_output' : out_channel -> (Js.js_string Js.t -> unit) Js.callback -> unit = "caml_ml_set_channel_output"
+let register_autoload ~path f =
+  let f' filename =
+    let filename = Js.to_string filename in
+    match f filename  with
+    | None -> Js._false
+    | Some c -> register_file ~name:filename ~content:c; Js._true in
+  caml_fs_register_autoload path (Js.wrap_callback f')
 
 let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
   let f' : (Js.js_string Js.t -> unit) Js.callback = Js.wrap_callback (fun s -> f (Js.to_string s)) in
