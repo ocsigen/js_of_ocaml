@@ -53,10 +53,14 @@ compiler.cmxs: $(OBJS)
 	ocamlfind ocamlopt -shared -g -o $@ $^
 
 VERSION := $(shell head -n 1 ../VERSION)
-compiler_version.ml: ../VERSION
+
+compiler_version.ml: compiler_version.ml.tmp
+	if cmp -s $^ $@; then rm $^; else mv $^ $@; fi
+
+.PHONY: compiler_version.ml.tmp
+compiler_version.ml.tmp:
 	echo "let s = \"${VERSION}\"" > $@
 	echo "let git_version = \"${VERSION_GIT}\"" >> $@
-
 
 %.cmx: %.ml
 	ocamlfind ocamlopt -package $(PACKAGES) -for-pack Compiler -g -c $<
