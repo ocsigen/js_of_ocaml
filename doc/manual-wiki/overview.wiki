@@ -63,9 +63,10 @@ functions are optimized.
 
 Data representation differs from the usual one, for performance
 reasons.  Most notably, integers are 32 bits (rather than 31 bits or
-63 bits) and floats are not boxed.  As a consequence, marshaling,
+63 bits) and floats are not boxed.  As a consequence, marshalling,
 polymorphic comparison, and hashing functions can yield results
 different from usual:
+  * marshalling of floats is not supported (unmarshalling works);
   * the polymorphic hash function will not give the same results on
     datastructures containing floats;
   * these functions may be more prone to stack overflow, as the

@@ -358,11 +358,18 @@ var caml_output_val = function (){
       } else {
         if (v != (v|0)){
           var type_of_v = typeof v;
-          if(type_of_v != "number")
-            caml_failwith("output_value: abstract value ("+type_of_v+")");
-          var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
-          writer.write (8, cst.CODE_DOUBLE_BIG);
-          for(var i = 0; i<8; i++){writer.write(8,t[i])}
+//
+// If a float happens to be an integer it is serialized as an integer
+// (Js_of_ocaml cannot tell whether the type of an integer number is
+// float or integer.) This can result in unexpected crashes when
+// unmarshalling using the standard runtime. It seems better to
+// systematically fail on marshalling.
+//
+//          if(type_of_v != "number")
+          caml_failwith("output_value: abstract value ("+type_of_v+")");
+//          var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
+//          writer.write (8, cst.CODE_DOUBLE_BIG);
+//          for(var i = 0; i<8; i++){writer.write(8,t[i])}
         }
         else if (v >= 0 && v < 0x40) {
           writer.write (8, cst.PREFIX_SMALL_INT + v);
