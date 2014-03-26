@@ -101,6 +101,12 @@ let identity x = x
 let o1 : 'a -> 'a=
   print >>
   tailcall >>
+  flow_simple >> (* flow simple to keep information for furture tailcall opt *)
+  specialize' >>
+  eval >>
+  inline >> (* inlining may reveal new tailcall opt *)
+  deadcode >>
+  tailcall >>
   phi >>
   flow >>
   specialize >>
