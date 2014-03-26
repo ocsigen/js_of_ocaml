@@ -120,8 +120,13 @@ let run () =
 let _ =
   try run () with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
-    Format.eprintf "%s: You found a bug. Please report it at https://github.com/ocsigen/js_of_ocaml/issues :@." Sys.argv.(0);
-    Format.eprintf "%s: Error: %s@." Sys.argv.(0) (Printexc.to_string exc);
+    let backtrace = Printexc.get_backtrace () in
+    Format.eprintf
+      "%s: You found a bug. \
+       Please report it at https://github.com/ocsigen/js_of_ocaml/issues :@."
+      Sys.argv.(0);
+    Format.eprintf "Error: %s@." (Printexc.to_string exc);
+    prerr_string backtrace;
     exit 1
   | Failure s ->
     Format.eprintf "%s: Error: %s@." Sys.argv.(0) s;
