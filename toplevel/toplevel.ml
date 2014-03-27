@@ -291,13 +291,13 @@ let examples =
     end
   with  _ -> []
 
-let indent_caml s =
+let indent_caml s in_lines =
 #let_default ocpindent = false
 #if ocpindent
   let output = {
     IndentPrinter.debug = false;
     config = IndentConfig.default;
-    in_lines = (fun _ -> true);
+    in_lines;
     indent_empty = true;
     adaptive = true;
     kind = IndentPrinter.Print (fun s acc -> acc ^ s)
@@ -331,7 +331,10 @@ let indent_textarea textbox =
       Some (find l c1,find l c2)
     end
     else None in
-  let v = indent_caml (Js.to_string v) in
+  let f = match pos with
+    | None -> (fun _ -> true)
+    | Some ((c1,line1,lo1,up1),(c2,line2,lo2,up2)) -> (fun l -> l>=(line1+1) && l<=(line2+1)) in
+  let v = indent_caml (Js.to_string v) f in
   textbox##value<-Js.string v;
   begin match pos with
     | Some ((c1,line1,lo1,up1),(c2,line2,lo2,up2)) ->
@@ -432,30 +435,53 @@ let run _ =
         | 09 ->
           indent_textarea textbox;
           Js._false
-        | 38 (* when not (Js.to_bool e##ctrlKey) *) ->
-          (try
-             if !hist_idx = H.size hist
-             then cur := textbox##value;
-             let idx = !hist_idx - 1 in
-             let s=H.get hist idx in
-             hist_idx:=idx;
-             textbox##value <- s;
-             Js._false
-          with _ -> Js._false)
-        | 40 (* when not (Js.to_bool e##ctrlKey) *) ->
-          (try
-             let idx = !hist_idx + 1 in
-             if idx = H.size hist
-             then begin
-               incr hist_idx;
-               textbox##value <- !cur;
-             end else begin
-               let s=H.get hist idx in
-               hist_idx:=idx;
-               textbox##value <- s
-             end;
-             Js._false
-           with _ -> Js._false)
+        | 38 -> begin
+            let txt = Js.to_string textbox##value in
+            try
+              let pos = (Obj.magic textbox)##selectionStart - 1  in
+              (if pos < 0  then raise Not_found);
+              let _ = String.rindex_from txt pos '\n' in
+              Js._true
+            with Not_found ->
+              try
+                if !hist_idx = H.size hist
+                then cur := textbox##value;
+                let idx = !hist_idx - 1 in
+                let s=H.get hist idx in
+                hist_idx:=idx;
+                textbox##value <- s;
+                let s' = Js.to_string s in
+                let p' = try max 0 (String.index s' '\n' - 1) with _ -> String.length s' in
+                (Obj.magic textbox)##setSelectionRange(p',p');
+                Js.Unsafe.global##console##log(p');
+                Js._false
+              with _ -> Js._false
+          end
+        | 40 -> begin
+            let txt = Js.to_string textbox##value in
+            try
+              let pos = (Obj.magic textbox)##selectionStart in
+              (if String.length txt = pos  then raise Not_found);
+              let _ = String.index_from txt pos '\n' in
+              Js._true
+            with Not_found ->
+              try
+                let idx = !hist_idx + 1 in
+                if idx = H.size hist
+                then begin
+                  incr hist_idx;
+                  textbox##value <- !cur;
+                end else begin
+                  let s=H.get hist idx in
+                  hist_idx:=idx;
+                  let s' = Js.to_string s in
+                  let slen = String.length s' in
+                  (Obj.magic textbox)##setSelectionRange(slen,slen);
+                  textbox##value <- s
+                end;
+                Js._false
+              with _ -> Js._false
+          end
         | 76 when (Js.to_bool e##ctrlKey  ||
                    Js.to_bool e##shiftKey ||
                    Js.to_bool e##altKey   ||
