@@ -331,6 +331,20 @@ end
 
 let math = Unsafe.variable "Math"
 
+
+class type error = object
+  method name : js_string t prop
+  method message : js_string t prop
+  method stack : js_string t optdef prop
+  method toString : js_string t meth
+end
+
+exception Error of error t
+let error_constr = Unsafe.variable "Error"
+let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
+
+
+
 let decodeURI (s : js_string t) : js_string t =
   Unsafe.fun_call (Unsafe.variable "decodeURI") [|Unsafe.inject s|]
 let decodeURIComponent (s : js_string t) : js_string t =
@@ -373,10 +387,12 @@ let parseFloat (s : js_string t) : float =
 
 let _ =
   Printexc.register_printer
+    (function Error e -> Some (to_string (Unsafe.meth_call e "toString" [||])) | _ -> None)
+let _ =
+  Printexc.register_printer
     (fun e ->
        if instanceof e array_constructor then None
        else Some (to_string (Unsafe.meth_call (Obj.magic e) "toString" [||])))
-
 
 (****)
 
