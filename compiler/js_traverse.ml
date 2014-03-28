@@ -644,6 +644,7 @@ class clean = object(m)
     | While_statement (cond,st,nid) -> While_statement (cond,b st,nid)
     | For_statement (p1,p2,p3,st,nid) -> For_statement (p1,p2,p3,b st,nid)
     | ForIn_statement (param,e,st,n) -> ForIn_statement (param,e,b st,n)
+    | Switch_statement(e,l,Some [],pc) -> Switch_statement(e,l,None,pc)
     | s -> s
 
   method sources l =
