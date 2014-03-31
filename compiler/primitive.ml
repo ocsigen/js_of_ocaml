@@ -25,18 +25,22 @@ let rec resolve nm = try resolve (Hashtbl.find aliases nm) with Not_found -> nm
 (****)
 
 type kind = [ `Pure | `Mutable | `Mutator ]
-
+type kind_arg = [`Shallow_const | `Const | `Mutable]
 type t = [
   | `Requires of Parse_info.t option * string list
-  | `Provides of Parse_info.t option * string * kind
+  | `Provides of Parse_info.t option * string * kind * kind_arg list option
   | `Version of Parse_info.t option * ((int -> int -> bool) * string) list
 ]
 
 let kinds = Hashtbl.create 37
+let kind_args_tbl = Hashtbl.create 37
 let arities = Hashtbl.create 37
 
 
 let kind nm = try Hashtbl.find kinds (resolve nm) with Not_found -> `Mutator
+
+let kind_args nm = try Some (Hashtbl.find kind_args_tbl (resolve nm)) with Not_found -> None
+
 let arity nm = Hashtbl.find arities (resolve nm)
 
 let is_pure nm = kind nm <> `Mutator
@@ -53,9 +57,10 @@ let is_external name = StringSet.mem name !externals
 
 let get_external () = !externals
 
-let register p k arity =
+let register p k kargs arity =
   add_external p;
   (match arity with Some a -> Hashtbl.add arities p a | _ -> ());
+  (match kargs with Some k -> Hashtbl.add kind_args_tbl p k | _ -> ());
   Hashtbl.add kinds p k
 
 let alias nm nm' =

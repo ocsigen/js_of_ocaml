@@ -35,7 +35,7 @@ function caml_call_gen(f, args) {
 //Provides: caml_named_values
 var caml_named_values = {};
 
-//Provides: caml_register_named_value
+//Provides: caml_register_named_value(const,shallow)
 //Requires: caml_named_values
 function caml_register_named_value(nm,v) {
   caml_named_values[nm] = v; return 0;
@@ -44,7 +44,7 @@ function caml_register_named_value(nm,v) {
 //Provides: caml_global_data
 var caml_global_data = [0];
 
-//Provides: caml_register_global
+//Provides: caml_register_global(const,shallow)
 //Requires: caml_global_data
 function caml_register_global (n, v) { caml_global_data[n + 1] = v; }
 

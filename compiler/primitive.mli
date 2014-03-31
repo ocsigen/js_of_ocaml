@@ -22,13 +22,15 @@ val is_pure : string -> bool
 val exists : string -> bool
 
 type kind = [ `Pure | `Mutable | `Mutator ]
+type kind_arg = [`Shallow_const | `Const | `Mutable]
 type t =
   [ `Requires of Parse_info.t option * string list
-  | `Provides of Parse_info.t option * string * kind
+  | `Provides of Parse_info.t option * string * kind * kind_arg list option
   | `Version of Parse_info.t option * ((int -> int -> bool) * string) list ]
 
 val kind : string -> kind
-val register : string -> kind -> int option -> unit
+val kind_args : string -> kind_arg list option
+val register : string -> kind -> kind_arg list option -> int option -> unit
 
 val arity : string -> int
 

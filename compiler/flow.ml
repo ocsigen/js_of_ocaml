@@ -199,13 +199,32 @@ let expr_escape st x e =
       ()
   | Apply (_, l, _) ->
       List.iter (fun x -> block_escape st x) l
-  | Prim (_, l) ->
-      List.iter
-        (fun x ->
-           match x with
-             Pv x -> block_escape st x
-           | Pc _ -> ())
-        l
+  | Prim (prim, l) ->
+    let ka = match prim with
+      | Extern name -> Primitive.kind_args name
+      | _ -> None in
+    let ka = match ka with
+      | None -> []
+      | Some l -> l in
+    let rec loop args ka =
+      match args,ka with
+      | [], _ -> ()
+      | Pc _::ax, [] -> loop ax []
+      | Pv a::ax, [] -> block_escape st a; loop ax []
+      | a::ax, k::kx ->
+        begin match a,k with
+          | _,`Const
+          | Pc _, _ -> ()
+          | Pv v,`Shallow_const ->
+            begin match st.defs.(Var.idx v) with
+              | Expr (Block (_, a)) ->
+                Array.iter (fun x -> block_escape st x) a
+              | _ -> block_escape st v
+            end;
+          | Pv v, _ -> block_escape st v
+        end;
+        loop ax kx in
+    loop l ka
 
 let program_escape defs known_origins (_, blocks, _) =
   let nv = Var.count () in
