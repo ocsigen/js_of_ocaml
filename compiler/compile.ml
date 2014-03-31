@@ -156,6 +156,23 @@ let _ =
     Format.eprintf "Error: %s@." (Printexc.to_string exc);
     prerr_string backtrace;
     exit 1
+  | Util.MagicNumber.Bad_magic_number s ->
+    Format.eprintf "%s: Error: Not an ocaml executable bytecode@." Sys.argv.(0);
+    Format.eprintf "%s: Error: Invalid magic number %S, expecting %S@." Sys.argv.(0) s Util.MagicNumber.(to_string current);
+    exit 1
+  | Util.MagicNumber.Bad_magic_version h ->
+    Format.eprintf "%s: Error: Bytecode version missmatch. Got version %S, expecting %S.@."
+      Sys.argv.(0)
+      Util.MagicNumber.(to_string h)
+      Util.MagicNumber.(to_string current);
+    let comp =
+      if Util.MagicNumber.(compare h current) < 0
+      then "an older"
+      else "a newer" in
+    Format.eprintf "%s: Error: Your program and the js_of_ocaml compiler have to be compiled with the same version of ocaml.@." Sys.argv.(0);
+    Format.eprintf "%s: Error: The Js_of_ocaml compiler has been compiled with ocaml version %s.@." Sys.argv.(0) Sys.ocaml_version;
+    Format.eprintf "%s: Error: Its seems that your program has been compiled with %s version of ocaml.@." Sys.argv.(0) comp;
+    exit 1
   | Failure s ->
     Format.eprintf "%s: Error: %s@." Sys.argv.(0) s;
     exit 1
