@@ -229,6 +229,13 @@ module Version = struct
       match compint x y with
       | 0 -> compare xs ys
       | n -> n
+
+  let v =
+    if compare current [4;2] < 0 then
+      `V3
+    else
+      `V4_02
+
 end
 
 module MagicNumber = struct
@@ -268,10 +275,9 @@ module MagicNumber = struct
     compare n1 n2
 
   let current =
-    let v =
-      if Version.(compare current [4;2] < 0)
-      then 8
-      else 10 in
+    let v = match Version.v with
+      | `V3 -> 8
+      | `V4_02 -> 11 in
     ("Caml1999X",v)
 
   let assert_current h': unit =

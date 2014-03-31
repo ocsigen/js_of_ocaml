@@ -62,6 +62,8 @@ module Version : sig
   val current : t
   val compare : t -> t -> int
   val split : string -> t
+  val v : [ `V3      (* OCaml 3.12 to 4.01 *)
+          | `V4_02 ] (* OCaml 4.02 *)
 end
 
 module MagicNumber : sig
