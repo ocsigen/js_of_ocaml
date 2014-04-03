@@ -1744,13 +1744,6 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
 
 (****)
 
-exception Bad_magic_number of string
-
-let exec_magic_number =
-  match Option.ocaml_version with
-    `V3    -> "Caml1999X008"
-  | `V4_02 -> "Caml1999X010"
-
 let seek_section toc ic name =
   let rec seek_sec curr_ofs = function
     [] -> raise Not_found
@@ -1766,8 +1759,7 @@ let read_toc ic =
   let num_sections = input_binary_int ic in
   let header = String.create Util.MagicNumber.size in
   really_input ic header 0 Util.MagicNumber.size;
-  if header <> exec_magic_number
-  then Util.raise_ (Util.MagicNumber.Bad_magic_number header);
+  Util.MagicNumber.assert_current header;
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
   for i = 1 to num_sections do

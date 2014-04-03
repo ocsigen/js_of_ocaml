@@ -65,9 +65,14 @@ module Version : sig
 end
 
 module MagicNumber : sig
+  type t = private string * int
   exception Bad_magic_number of string
-  type t = string * int
+  exception Bad_magic_version of t
+
   val size : int
   val compare : t -> t -> int
   val of_string : string -> t
+  val to_string : t -> string
+  val current : t
+  val assert_current : string -> unit
 end

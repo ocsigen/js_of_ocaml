@@ -234,8 +234,8 @@ end
 module MagicNumber = struct
   type t = string * int
 
-
   exception Bad_magic_number of string
+  exception Bad_magic_version of t
 
   let size = 12
 
@@ -258,11 +258,28 @@ module MagicNumber = struct
       then raise Not_found;
       let kind = String.sub s 0 9 in
       let v = String.sub s 9 3 in
-      kind_of_string kind, int_of_string v
+      kind, int_of_string v
     with _ -> raise (Bad_magic_number s)
 
+  let to_string (k,v) = Printf.sprintf "%s%03d" k v
 
   let compare (p1,n1) (p2,n2) =
     if p1 <> p2 then raise Not_found;
     compare n1 n2
+
+  let current =
+    let v =
+      if Version.(compare current [4;2] < 0)
+      then 8
+      else 10 in
+    ("Caml1999X",v)
+
+  let assert_current h': unit =
+    let (t',v') as h = of_string h' in
+    let t,v = current in
+    if t <> t'
+    then raise_ (Bad_magic_number h')
+    else if v <> v'
+    then raise_ (Bad_magic_version h)
+    else ()
 end
