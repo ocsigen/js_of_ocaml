@@ -217,7 +217,7 @@ end
 
 (** Specification of the string constructor, considered as an object. *)
 class type string_constr = object
-  method fromCharCode : int -> js_string t
+  method fromCharCode : int -> js_string t meth
 end
 
 val string : string_constr t

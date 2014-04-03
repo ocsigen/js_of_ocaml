@@ -182,7 +182,7 @@ and regExp = object
 end
 
 class type string_constr = object
-  method fromCharCode : int -> js_string t
+  method fromCharCode : int -> js_string t meth
 end
 
 let string = Unsafe.variable "String"
