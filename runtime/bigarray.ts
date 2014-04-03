@@ -44,10 +44,16 @@ interface BaseArray extends ArrayBufferView {
     subarray(begin: number, end?: number): BaseArray;
 }
 
+declare enum Data_type { 
+  General=0,  // all types which can fit in a single TypedArray
+  Int64=1,    // int64, split over two TypedArrays
+  Complex=2   // Complex32+64, split over two TypedArrays
+}
+
 interface Bigarray {
   data : BaseArray;
   data2 : BaseArray;
-  data_type : number;
+  data_type : Data_type;
 
   num_dims: number;
   nth_dim(i:number) : number;
@@ -79,9 +85,9 @@ function caml_ba_init_views() {
       [g.Float32Array, g.Float64Array, g.Int8Array, g.Uint8Array,
        g.Int16Array, g.Uint16Array, g.Int32Array, g.Int32Array,
        g.Int32Array, g.Int32Array, g.Float32Array, g.Float64Array, g.Uint8Array],
-      [0, 0, 0, 0,
-       0, 0, 0, 1,
-       0, 0, 2, 2, 0]
+      [Data_type.General, Data_type.General, Data_type.General, Data_type.General,
+       Data_type.General, Data_type.General, Data_type.General, Data_type.Int64,
+       Data_type.General, Data_type.General, Data_type.Complex, Data_type.Complex, Data_type.General]
     ];
   }
 }
@@ -105,7 +111,7 @@ var caml_ba_views;
 //Requires: caml_ba_get_size
 //Requires: caml_invalid_argument
 //Requires: caml_array_bound_error
-function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:number, kind: number, layout: number, dims: number[]) : Bigarray {
+function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:Data_type, kind: number, layout: number, dims: number[]) : Bigarray {
 
   var n_dims = dims.length;
   var size = caml_ba_get_size(dims);
@@ -166,8 +172,8 @@ function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:number, 
     return [254, r, i];
   }
 
-  var get : any = data_type == 1 ? get_int64 :
-                 (data_type == 2 ? get_complex : get_std);
+  var get : any = data_type == Data_type.Int64 ? get_int64 :
+                 (data_type == Data_type.Complex ? get_complex : get_std);
 
   function get1_c(i:number) {
     if (i<0 || i>=dim0) caml_array_bound_error();
@@ -181,7 +187,7 @@ function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:number, 
     return get([i]);
   }
 
-  var get1 = data_type == 0 ? (layout == 0 ? get1_c : get1_fortran) : get1_any;
+  var get1 = data_type == Data_type.General ? (layout == 0 ? get1_c : get1_fortran) : get1_any;
 
   // 
   // Element set functions
@@ -208,8 +214,8 @@ function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:number, 
   function set_int64(index, v) { return set_int64_raw(offset(index), v); }
   function set_complex(index, v) { return set_complex_raw(offset(index), v); }
 
-  var set = data_type == 1 ? set_int64 :
-           (data_type == 2 ? set_complex : set_std);
+  var set = data_type == Data_type.Int64 ? set_int64 :
+           (data_type == Data_type.Complex ? set_complex : set_std);
 
   function set1_c(i:number,v:number) {
     if (i<0 || i>=dim0) caml_array_bound_error();
@@ -223,7 +229,7 @@ function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:number, 
     set([i],v);
   }
 
-  var set1 = data_type == 0 ? (layout == 0 ? set1_c : set1_fortran) : set1_any;
+  var set1 = data_type == Data_type.General ? (layout == 0 ? set1_c : set1_fortran) : set1_any;
 
   //
   // other
@@ -235,11 +241,11 @@ function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:number, 
   }
 
   function fill(v:any) {
-    if (data_type == 0)
+    if (data_type == Data_type.General)
       for (var i=0; i<data.length; i++) set_std_raw(i,v);
-    if (data_type == 1)
+    if (data_type == Data_type.Int64)
       for (var i=0; i<data.length; i++) set_int64_raw(i,v);
-    if (data_type == 2)
+    if (data_type == Data_type.Complex)
       for (var i=0; i<data.length; i++) set_complex_raw(i,v);
   }
   function blit(from:Bigarray) {
@@ -247,7 +253,7 @@ function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:number, 
     for (var i=0; i<n_dims; i++)
       if (dims[i] != from.nth_dim(i)) caml_invalid_argument("Bigarray.blit: dimension mismatch");
     data.set(from.data);
-    if (data_type != 0) data2.set(from.data2);
+    if (data_type != Data_type.General) data2.set(from.data2);
   }
 
   function sub(ofs:number,len:number):Bigarray { 
@@ -267,7 +273,7 @@ function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:number, 
       caml_invalid_argument("Bigarray.sub: bad sub-array");
 
     var new_data = data.subarray(ofs*mul, (ofs+len)*mul);
-    var new_data2 = data_type == 0 ? null : data2.subarray(ofs*mul,(ofs+len)*mul);
+    var new_data2 = data_type == Data_type.General ? null : data2.subarray(ofs*mul,(ofs+len)*mul);
 
     var new_dims = [];
     for (var i=0; i<n_dims; i++) new_dims[i] = dims[i];
@@ -303,7 +309,7 @@ function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:number, 
 
     var size = caml_ba_get_size(sub_dims);
     var new_data = data.subarray(ofs, ofs+size);
-    var new_data2 = data_type == 0 ? null : data2.subarray(ofs,ofs+size);
+    var new_data2 = data_type == Data_type.General ? null : data2.subarray(ofs,ofs+size);
 
     return caml_ba_create_from(new_data, new_data2, data_type, kind, layout, sub_dims);
   }
@@ -374,7 +380,7 @@ function caml_ba_create(kind: number, layout: number, dims_ml: any) : Bigarray {
   // 2nd TypedArray for int64, complex32 and complex64
   var data_type = caml_ba_views[1][kind];
   var data2 = null;
-  if (data_type > 0) {
+  if (data_type != Data_type.General) {
     data2 = new view(size);
   }
 
