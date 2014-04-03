@@ -87,3 +87,5 @@ different from usual:
 To help debugging your programs, use the "-pretty" and "-noinline"
 options of Js_of_ocaml. If the bytecode is build with ocaml "-g"
 option, Js_of_ocaml will attempt to preserve variable names as well.
+Also use {{{Js.debugger()}}} to output the javascript {{{debugger}}}
+statement and set breakpoints.

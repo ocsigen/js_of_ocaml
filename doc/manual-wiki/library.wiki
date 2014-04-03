@@ -110,7 +110,7 @@ functions.  You should use either {{{Js.Unsafe.call}}} or
 bound to some particular object in the function body or not.
 
 You can also refer to a Javascript function using an OCaml external
-declaration.  Then, you need to write stub functions in C so that the
+declaration. Then, you need to write stub functions in C so that the
 OCaml compiler accept the external declaration:
 
 {{{
@@ -121,9 +121,12 @@ OCaml compiler accept the external declaration:
       #define D(f) void f () { exit(1); }
       D(foo)
 }}}
-
 You can call this function as if it was an OCaml function, as the
 Javascript function is appropriately wrapped by the system.
+
+Refer to [[linker|the linker manual]] to link your program with
+javascript stubs.
+
 
 === Using OCaml functions from JS  ===
 
@@ -132,16 +135,16 @@ You should use function {{{Js.wrap_callback}}} or function
 it can be called from Javascript.
 
 To call an OCaml function from Javascript, follow this example:
-{{{
-(Js.Unsafe.coerce Dom_html.window)##plop <- Js.wrap_callback f
-}}}
+<<code language="ocaml"|
+Js.Unsafe.global##plop <- Js.wrap_callback f
+>>
 
 Or, to create a JS object with OCaml methods:
-{{{
-(Js.Unsafe.coerce Dom_html.window)##plop <-
+<<code language="ocaml"|
+Js.Unsafe.global##plop <-
   Js.Unsafe.obj [| ("f", Js.wrap_meth_callback f);
                    ("g", Js.wrap_meth_callback g) |]
-}}}
+>>
 
 
 == IO ==
@@ -174,28 +177,28 @@ an Lwt thread that will return when the event occures.
 
 Example:
 
-{{{
+<<code language="ocaml"|
 Lwt.ignore_result (Lwt_js_events.click target >>= handler);
-}}}
+>>
 
 The handler receives the JS event as parameter.
 
 Each of these functions has a version (same name with an ending "s")
 that loops when the handler terminates. Example:
 
-{{{
+<<code language="ocaml"|
 Lwt.ignore_result (Lwt_js_events.clicks target handler);
-}}}
+>>
 
 To remove an event handler, cancel the Lwt threads using {{{Lwt.cancel}}}.
 It is also possible to use {{{Lwt.pick}}}.
 For example the following piece of code waits
 for a click on one of t1 or t2:
 
-{{{
+<<code language="ocaml"|
 Lwt.pick [Lwt_js_events.click t1 >>= handler1;
           Lwt_js_events.click t2 >>= handler2]
-}}}
+>>
 
 Warning: If you are using {{{Lwt.pick}}} and your handlers take time,
 be aware that other events listeners will not be cancelled

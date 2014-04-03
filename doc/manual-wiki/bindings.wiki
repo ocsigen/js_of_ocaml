@@ -6,14 +6,20 @@ Write in .ml:
 <<code language="ocaml"|
 let v = Js.Unsafe.variable "window.document"
 >>
+Alternatively, the global object can be used. In the browser, it refers to {{{window}}}.
+<<code language="ocaml"|
+let v = Js.Unsafe.global##document
+>>
+
 and in .mli:
 
 <<code language="ocaml"|
 val v : ... Js.t
 >>
 
-Be careful the function <<a_api | val Js.Unsafe.variable >> is not typed. Verify the library documentation before writing the type.
-
+Be careful the function <<a_api | val Js.Unsafe.variable >>
+and the value <<a_api | val Js.Unsafe.global >> are not typed.
+Verify the library documentation before writing the type.
 
 ==Binding a JS function
 
@@ -82,7 +88,7 @@ end
 
 ===Example binding some constants:
 
-For example if the JS class is used to define three constants {{{thelib.Theclass.VALUEA}}}, {{{thelib.Theclass.VALUEA}}}, {{{thelib.Theclass.VALUEA}}},
+For example if the JS class is used to define three constants {{{thelib.Theclass.VALUEA}}}, {{{thelib.Theclass.VALUEB}}}, {{{thelib.Theclass.VALUEC}}},
 
 Since ocaml doesn't allows method name to start with capitalised letter, we can add an {{{_}}}
 
@@ -138,13 +144,13 @@ let empty_options () = Js.Unsafe.obj [||]
 
 == Set/get variables
 
-You can access every variable through the {{{window}}} Javascript object:
+You can access every variable through the global javascript object ({{{window}}}):
 
 If the variable {{{var}}} has type {{{t Js.t}}}
 
 <<code language="ocaml"|
-let set (x:t Js.t) = (Js.Unsafe.coerce Dom_html.window)##var <- x
-let get x : t Js.t = (Js.Unsafe.coerce Dom_html.window)##var
+let set (x:t Js.t) = Js.Unsafe.global##var <- x
+let get x : t Js.t = Js.Unsafe.global##var
 >>
 
 == Object property with multiple types
@@ -163,14 +169,14 @@ end
 
 let obj : obj Js.t = Js.Unsafe.variable "obj"
 
-let string_constr : Js.js_string Js.t Js.constr = Js.Unsafe.variable "window.String"
+let string_constr : Js.js_string Js.t Js.constr = Js.Unsafe.global##_String
 
 let cast_string (x:dom_or_string Js.t) : Js.js_string Js.t Js.opt =
   if instanceof x string_constr
   then Js.Unsafe.coerce x
   else Js.null
 
-let node_constr : Dom.node Js.t Js.constr = Js.Unsafe.variable "window.Node"
+let node_constr : Dom.node Js.t Js.constr = Js.Unsafe.global##_Node
 
 let cast_string (x:dom_or_string Js.t) : Dom.node Js.t Js.opt =
   if instanceof x node_constr
