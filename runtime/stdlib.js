@@ -225,14 +225,18 @@ function caml_compare_val (a, b, total) {
           // Should not happen
           return 1;
       } else if (a instanceof Array && a[0] === (a[0]|0)) {
-        // Forward object
         var ta = a[0];
+        // ignore double_array_tag
+        if (ta === 254) ta=0;
+        // Forward object
         if (ta === 250) {
           a = a[1];
           continue;
         } else if (b instanceof Array && b[0] === (b[0]|0)) {
-          // Forward object
           var tb = b[0];
+          // ignore double_array_tag
+          if (tb === 254) tb=0;
+          // Forward object
           if (tb === 250) {
             b = b[1];
             continue;
