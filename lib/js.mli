@@ -220,7 +220,7 @@ class type string_constr = object
   method fromCharCode : int -> js_string t meth
 end
 
-val string : string_constr t
+val string_constr : string_constr t
   (** The string constructor, as an object. *)
 
 val regExp : (js_string t -> regExp t) constr
