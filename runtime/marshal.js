@@ -188,7 +188,7 @@ var caml_input_value_from_string = function (){
             return v;
           case cst.CODE_DOUBLE_ARRAY8_LITTLE:
             var len = reader.read8u();
-            var v = [0];
+            var v = [254];
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (var i = 1;i <= len;i++) {
               var t = [];
@@ -198,7 +198,7 @@ var caml_input_value_from_string = function (){
             return v;
           case cst.CODE_DOUBLE_ARRAY8_BIG:
             var len = reader.read8u();
-            var v = [0];
+            var v = [254];
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (var i = 1;i <= len;i++) {
               var t = [];
@@ -208,7 +208,7 @@ var caml_input_value_from_string = function (){
             return v;
           case cst.CODE_DOUBLE_ARRAY32_LITTLE:
             var len = reader.read32u();
-            var v = [0];
+            var v = [254];
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
             for (var i = 1;i <= len;i++) {
               var t = [];
@@ -218,7 +218,7 @@ var caml_input_value_from_string = function (){
             return v;
           case cst.CODE_DOUBLE_ARRAY32_BIG:
             var len = reader.read32u();
-            var v = [0];
+            var v = [254];
             for (var i = 1;i <= len;i++) {
               var t = [];
               for (var j = 0;j < 8;j++) t[j] = reader.read8u();
