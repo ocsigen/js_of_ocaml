@@ -394,6 +394,10 @@ let from_string prims s formatter =
   f ~standalone:false formatter d p
 
 let set_profile = function
+  | 0 ->
+    List.iter Option.Optim.enable ["pretty";"debuginfo"];
+    List.iter Option.Optim.disable ["inline"];
+    profile := o1
   | 1 -> profile := o1
   | 2 -> profile := o2
   | 3 -> profile := o3
