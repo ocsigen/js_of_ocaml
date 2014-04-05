@@ -644,7 +644,7 @@ let internal_prim name =
   try Hashtbl.find internal_primitives name with Not_found -> None
 
 let register_prim name k f =
-  Primitive.register name k None;
+  Primitive.register name k None None;
   Hashtbl.add internal_primitives name (Some f)
 
 let register_un_prim name k f =

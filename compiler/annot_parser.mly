@@ -20,9 +20,9 @@
 
 
 %token TProvides TRequires TVersion
-%token<Primitive.kind > TAnnot
+%token TA_Pure TA_Const TA_Mutable TA_Mutator TA_Shallow
 %token<string> TIdent TVNum
-%token TComma TSemi EOF EOL LE LT GE GT EQ
+%token TComma TSemi EOF EOL LE LT GE GT EQ LPARENT RPARENT
 %token<string> TOTHER
 
 %start annot
@@ -31,12 +31,25 @@
 %%
 
 annot:
-  | TProvides TSemi id=TIdent opt=option(TAnnot) endline
-    { `Provides (None,id,match opt with None -> `Mutator | Some k -> k) }
+  | TProvides TSemi id=TIdent opt=option(prim_annot)
+    args=option(delimited(LPARENT, separated_list(TComma,arg_annot),RPARENT))
+    endline
+    { `Provides (None,id,(match opt with None -> `Mutator | Some k -> k),args) }
   | TRequires TSemi l=separated_nonempty_list(TComma,TIdent) endline
     { `Requires (None,l) }
   | TVersion TSemi l=separated_nonempty_list(TComma,version) endline
     { `Version (None,l) }
+
+prim_annot:
+  | TA_Pure {`Pure}
+  | TA_Const {`Pure}
+  | TA_Mutable {`Mutable}
+  | TA_Mutator {`Mutator}
+
+arg_annot:
+  | TA_Const { `Const }
+  | TA_Shallow { `Shallow_const}
+  | TA_Mutable { `Mutable}
 
 op:
   | LE {(<=)}

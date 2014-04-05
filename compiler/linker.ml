@@ -26,7 +26,7 @@ let parse_annot loc s =
   try
     match Annot_parser.annot Annot_lexer.initial buf with
       | `Requires (_,l) -> Some (`Requires (Some loc,l))
-      | `Provides (_,n,k) -> Some (`Provides (Some loc,n,k))
+      | `Provides (_,n,k,ka) -> Some (`Provides (Some loc,n,k,ka))
       | `Version (_,l) -> Some (`Version  (Some loc, l))
   with
     | Not_found -> None
@@ -79,8 +79,8 @@ let parse_file f =
       try
         let code = Parse_js.parse lex in
         let req,has_provide,versions = List.fold_left (fun (req,has_provide,versions) a -> match a with
-            | `Provides (pi,name,kind) ->
-              req,Some (pi,name,kind),versions
+            | `Provides (pi,name,kind,ka) ->
+              req,Some (pi,name,kind,ka),versions
             | `Requires (_,mn) -> (mn@req),has_provide,versions
             | `Version (_,l) -> req,has_provide,l::versions
           ) ([],None,[]) annot in
@@ -143,14 +143,14 @@ let add_file f =
        then begin
          (match provide with
           | None -> always_included := id :: !always_included
-          | Some (pi,name,kind) ->
+          | Some (pi,name,kind,ka) ->
             let module J = Javascript in
             let rec find = function
               | [] -> None
               | J.Function_declaration (J.S{J.name=n},l,_,_)::_ when name=n -> Some(List.length l)
               | _::rem -> find rem in
             let arity = find code in
-            Primitive.register name kind arity;
+            Primitive.register name kind ka arity;
             if Hashtbl.mem provided name
             then begin
               let ploc = snd(Hashtbl.find provided name) in

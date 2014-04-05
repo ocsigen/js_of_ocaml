@@ -25,10 +25,11 @@ let identifier = ['a'-'z''A'-'Z''_']+
 rule initial = parse
   | "Provides" {TProvides}
   | "Requires" {TRequires}
-  | "pure" {TAnnot `Pure }
-  | "const" {TAnnot `Pure }
-  | "mutable" {TAnnot `Mutable }
-  | "mutator" {TAnnot `Mutator }
+  | "pure" {TA_Pure }
+  | "const" {TA_Const }
+  | "mutable" {TA_Mutable }
+  | "mutator" {TA_Mutator }
+  | "shallow" {TA_Shallow}
   | "Version" {TVersion}
   | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''0'-'9']* {
       let x = Lexing.lexeme lexbuf in
@@ -36,6 +37,8 @@ rule initial = parse
   | ['0'-'9']+ ('.' (['0'-'9']+)) * {
       let x = Lexing.lexeme lexbuf in
       TVNum x}
+  | "(" {LPARENT}
+  | ")" {RPARENT}
   | "," {TComma}
   | ":" {TSemi}
   | "<=" {LE}
