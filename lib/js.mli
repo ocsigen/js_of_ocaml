@@ -360,31 +360,31 @@ class type date = object
 end
 
 val date_now : date t constr
-  (** Constructor of [Date] objects: [new date_now ()] returns a
+  (** Constructor of [Date] objects: [jsnew date_now ()] returns a
       [Date] object initialized with the current date. *)
 val date_fromTimeValue : (float -> date t) constr
-  (** Constructor of [Date] objects: [new date_fromTimeValue (t)] returns a
+  (** Constructor of [Date] objects: [jsnew date_fromTimeValue (t)] returns a
       [Date] object initialized with the time value [t]. *)
 val date_month : (int -> int -> date t) constr
-  (** Constructor of [Date] objects: [new date_fromTimeValue (y, m)]
+  (** Constructor of [Date] objects: [jsnew date_fromTimeValue (y, m)]
       returns a [Date] object corresponding to year [y] and month [m]. *)
 val date_day : (int -> int -> int -> date t) constr
-  (** Constructor of [Date] objects: [new date_fromTimeValue (y, m, d)]
+  (** Constructor of [Date] objects: [jsnew date_fromTimeValue (y, m, d)]
       returns a [Date] object corresponding to year [y], month [m] and
       day [d]. *)
 val date_hour : (int -> int -> int -> int -> date t) constr
-  (** Constructor of [Date] objects: [new date_fromTimeValue (y, m, d, h)]
+  (** Constructor of [Date] objects: [jsnew date_fromTimeValue (y, m, d, h)]
       returns a [Date] object corresponding to year [y] to hour [h]. *)
 val date_min : (int -> int -> int -> int -> int -> date t) constr
-  (** Constructor of [Date] objects: [new date_fromTimeValue (y, m, d, h, m')]
+  (** Constructor of [Date] objects: [jsnew date_fromTimeValue (y, m, d, h, m')]
       returns a [Date] object corresponding to year [y] to minute [m']. *)
 val date_sec : (int -> int -> int -> int -> int -> int -> date t) constr
   (** Constructor of [Date] objects:
-      [new date_fromTimeValue (y, m, d, h, m', s)]
+      [jsnew date_fromTimeValue (y, m, d, h, m', s)]
       returns a [Date] object corresponding to year [y] to second [s]. *)
 val date_ms : (int -> int -> int -> int -> int -> int -> int -> date t) constr
   (** Constructor of [Date] objects:
-      [new date_fromTimeValue (y, m, d, h, m', s, ms)]
+      [jsnew date_fromTimeValue (y, m, d, h, m', s, ms)]
       returns a [Date] object corresponding to year [y]
       to millisecond [ms]. *)
 
@@ -412,7 +412,26 @@ class type math = object
 end
 
 val math : math t
-  (** The Math object *)
+(** The Math object *)
+
+(** Specification of Javascript error object. *)
+class type error = object
+  method name : js_string t prop
+  method message : js_string t prop
+  method stack : js_string t optdef prop
+  method toString : js_string t meth
+end
+
+val error_constr : (js_string t -> error t) constr
+(** Constructor of [Error] objects:
+      [jsnew error_constr (msg)]
+      returns an [Error] object with the message [msg]. *)
+
+exception Error of error t
+  (** The [Error] exception wrap javascript exceptions when catched by ocaml code.
+      In case the javascript exception is not an instance of javascript [Error],
+      it will be serialized and wrapped into a [Failure] exception.
+  *)
 
 (** {2 Standard Javascript functions} *)
 

@@ -38,7 +38,13 @@ var caml_named_values = {};
 //Provides: caml_register_named_value
 //Requires: caml_named_values
 function caml_register_named_value(nm,v) {
-  caml_named_values[nm] = v; return 0;
+  caml_named_values[nm.toString()] = v; return 0;
+}
+
+//Provides: caml_named_value
+//Requires: caml_named_values
+function caml_named_value(nm) {
+  return caml_named_values[nm]
 }
 
 //Provides: caml_global_data
@@ -84,10 +90,9 @@ function caml_failwith (msg) {
   caml_raise_with_string(caml_global_data[3], msg);
 }
 //Provides: caml_wrap_exception
-//Requires: caml_global_data,MlWrappedString
+//Requires: caml_global_data,MlWrappedString,caml_named_value
 function caml_wrap_exception(e) {
   if(e instanceof Array) return e;
-  var s = e.toString();
   //Stack_overflow: chrome, safari
   if(joo_global_object.RangeError
      && e instanceof joo_global_object.RangeError
@@ -100,8 +105,11 @@ function caml_wrap_exception(e) {
      && e.message
      && e.message.match(/too much recursion/i))
     return [0,caml_global_data[9]];
+  //Wrap Error in Js.Error exception
+  if(e instanceof joo_global_object.Error)
+    return [0,caml_named_value("jsError"),e];
   //fallback: wrapped in Failure
-  return [0,caml_global_data[3],new MlWrappedString (s)];
+  return [0,caml_global_data[3],new MlWrappedString (String(e))];
 }
 
 //Provides: caml_invalid_argument
