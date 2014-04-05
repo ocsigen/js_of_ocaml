@@ -20,9 +20,9 @@ function caml_CamlinternalMod_init_mod(loc,shape) {
             struct[idx]=[];
             break;
         default://module
-            struct[0] = [0];
+            struct[idx] = [0];
             for(var i=1;i<shape[1].length;i++)
-                loop(shape[1][i],struct[0],i)
+                loop(shape[1][i],struct[idx],i)
         }
     }
     var res = [];
@@ -40,7 +40,7 @@ function caml_CamlinternalMod_update_mod(shape,real,x) {
   case 2://class
     caml_update_dummy(real,x);
     break;
-  default:
+  default://module
     for(var i=1;i<shape[1].length;i++)
       caml_CamlinternalMod_update_mod(shape[1][i],real[i],x[i])
   }
