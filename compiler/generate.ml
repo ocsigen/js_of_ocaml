@@ -313,8 +313,10 @@ let rec constant_rec ~ctx x level instrs =
           List.rev_map (fun x -> Some x) l, instrs
       in
       J.EArr (Some (int tag) :: l), instrs
-  | Int i ->
-      int i, instrs
+  | Int i-> int i, instrs
+  | Int_overflow i ->
+    Format.eprintf "Integer too big: %Lx@." (Int64.of_int i);
+    int i, instrs
 
 let constant ~ctx x level =
   let (expr, instr) = constant_rec ~ctx x level [] in

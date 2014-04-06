@@ -143,6 +143,7 @@ type constant =
   | Int64 of int64
   | Tuple of int * constant array
   | Int of int
+  | Int_overflow of int
 
 type prim_arg =
     Pv of Var.t
@@ -230,7 +231,8 @@ let rec print_constant f x =
           done;
           Format.fprintf f ")"
       end
-   | Int i ->
+  | Int i
+  | Int_overflow i ->
        Format.fprintf f "%d" i
 
 let print_arg f a =

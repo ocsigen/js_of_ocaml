@@ -96,6 +96,7 @@ type constant =
   | Int64 of int64
   | Tuple of int * constant array
   | Int of int
+  | Int_overflow of int
 
 type prim_arg =
     Pv of Var.t

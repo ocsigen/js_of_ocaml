@@ -110,7 +110,14 @@ let rec parse_const x =
     else
       assert false
   end else
-    Int (Obj.magic x : int)
+    let i : int = (Obj.magic x : int) in
+    let i32 = Int32.of_int i in
+    let i' = Int32.to_int i32 in
+    if i' = i
+    then Int i
+    else
+      (* one may want to accept ints *)
+      Int_overflow i
 
 let inlined_const x =
   not (Obj.is_block x)
