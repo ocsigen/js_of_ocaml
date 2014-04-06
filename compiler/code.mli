@@ -84,7 +84,6 @@ type prim =
   | Extern of string
   | Not | IsInt
   | Eq | Neq | Lt | Le | Ult
-  | WrapInt
 
 type constant =
     String of string

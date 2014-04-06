@@ -1254,32 +1254,26 @@ and compile blocks code limit pc state instrs =
       compile blocks code limit (pc + 2) state (Let (x, Const n) :: instrs)
   | NEGINT ->
       let y = State.accu state in
-      let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
       if debug_parser () then Format.printf "%a = -%a@." Var.print x Var.print y;
       compile blocks code limit (pc + 1) state
-        (Let (x, Prim (WrapInt, [Pv x'])) ::
-         Let (x', Prim (Extern "%int_neg", [Pv y])) :: instrs)
+        (Let (x, Prim (Extern "%int_neg", [Pv y])) :: instrs)
   | ADDINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
-      let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
       if debug_parser () then Format.printf "%a = %a + %a@."
         Var.print x Var.print y Var.print z;
       compile blocks code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (WrapInt, [Pv x'])) ::
-         Let (x', Prim (Extern "%int_add", [Pv y; Pv z])) :: instrs)
+        (Let (x, Prim (Extern "%int_add", [Pv y; Pv z])) :: instrs)
   | SUBINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
-      let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
       if debug_parser () then
         Format.printf "%a = %a - %a@." Var.print x Var.print y Var.print z;
       compile blocks code limit (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (WrapInt, [Pv x'])) ::
-         Let (x', Prim (Extern "%int_sub", [Pv y; Pv z])) :: instrs)
+        (Let (x, Prim (Extern "%int_sub", [Pv y; Pv z])) :: instrs)
   | MULINT ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -1404,12 +1398,10 @@ and compile blocks code limit pc state instrs =
       let n = gets code (pc + 1) in
       let y = State.accu state in
       let (z, state) = State.fresh_var state in
-      let (x', state) = State.fresh_var state in
       let (x, state) = State.fresh_var state in
       if debug_parser () then Format.printf "%a = %a + %d@." Var.print x Var.print y n;
       compile blocks code limit (pc + 2) state
-        (Let (x, Prim (WrapInt, [Pv x'])) ::
-         Let (x', Prim (Extern "%int_add", [Pv y; Pv z])) ::
+        (Let (x, Prim (Extern "%int_add", [Pv y; Pv z])) ::
          Let (z, Const n) :: instrs)
   | OFFSETREF ->
       let n = gets code (pc + 1) in

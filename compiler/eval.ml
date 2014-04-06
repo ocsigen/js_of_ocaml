@@ -64,7 +64,6 @@ let eval_prim x =
   | Neq, [Int i; Int j ] -> bool (i <> j)
   | IsInt, [Int _] -> bool true
   | Ult, [Int i; Int j ] -> bool (j < 0 || i < j)
-  | WrapInt, [Int i] -> Some (Int i)
   | Extern name, l ->
     let name = Primitive.resolve name in
     (match name, l with

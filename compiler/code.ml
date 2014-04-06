@@ -131,7 +131,6 @@ type prim =
   | Extern of string
   | Not | IsInt
   | Eq | Neq | Lt | Le | Ult
-  | WrapInt
 
 type constant =
     String of string
@@ -286,7 +285,6 @@ let print_prim f p l =
   | Lt,  [x; y]       -> Format.fprintf f "%a < %a" print_arg x print_arg y
   | Le,  [x; y]       -> Format.fprintf f "%a <= %a" print_arg x print_arg y
   | Ult, [x; y]       -> Format.fprintf f "%a <= %a" print_arg x print_arg y
-  | WrapInt, [x]      -> Format.fprintf f "to_int(%a)" print_arg x
   | _                 -> assert false
 
 let print_expr f e =

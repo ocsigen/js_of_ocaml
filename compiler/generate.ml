@@ -709,9 +709,9 @@ let _ =
   register_bin_prim "caml_string_get" `Mutable
     (fun cx cy -> J.ECall (J.EDot (cx, "safeGet"), [cy]));
   register_bin_prim "%int_add" `Pure
-    (fun cx cy -> J.EBin (J.Plus,cx,cy));
+    (fun cx cy -> to_int (J.EBin (J.Plus,cx,cy)));
   register_bin_prim "%int_sub" `Pure
-    (fun cx cy -> J.EBin (J.Minus,cx,cy));
+    (fun cx cy -> to_int (J.EBin (J.Minus,cx,cy)));
   register_bin_prim "%direct_int_mul" `Pure
     (fun cx cy -> to_int (J.EBin (J.Mul, cx, cy)));
   register_bin_prim "%direct_int_div" `Pure
@@ -731,7 +731,7 @@ let _ =
   register_bin_prim "%int_asr" `Pure
     (fun cx cy -> J.EBin (J.Asr, cx, cy));
   register_un_prim "%int_neg" `Pure
-    (fun cx -> J.EUn (J.Neg, cx));
+    (fun cx -> to_int (J.EUn (J.Neg, cx)));
   register_bin_prim "caml_eq_float" `Pure
     (fun cx cy -> bool (J.EBin (J.EqEq, float_val cx, float_val cy)));
   register_bin_prim "caml_neq_float" `Pure
@@ -1022,11 +1022,8 @@ and translate_expr ctx queue x e level =
         (bool (J.EBin (J.Or, J.EBin (J.Lt, cy, int 0),
                        J.EBin (J.Lt, cx, cy))),
          or_p px py, queue)
-      | WrapInt, [x] ->
-        let ((px, cx), queue) = access_queue' ~ctx  queue x in
-        (to_int cx, px, queue)
       | (Vectlength | Array_get | Not | IsInt | Eq |
-         Neq | Lt | Le | Ult | WrapInt), _ ->
+         Neq | Lt | Le | Ult), _ ->
         assert false
     in res,[]
 
