@@ -40,9 +40,9 @@ let rewrite_block (pc', handler) pc blocks =
   assert (block.handler = None);
   let block = { block with handler = handler } in
   let block =
-    match block.branch with
-      Return y -> { block with branch = Branch (pc', [y]) }
-    | _        -> block
+    match block.branch, pc' with
+      Return y, Some pc' -> { block with branch = Branch (pc', [y]) }
+    | _                  -> block
   in
   AddrMap.add pc block blocks
 
@@ -103,13 +103,19 @@ let inline closures live_vars blocks free_pc pc =
                  && VarMap.mem f closures ->
              let (params, (clos_pc, clos_args)) = VarMap.find f closures in
              let (branch, blocks, free_pc) = state in
-             let blocks =
-               AddrMap.add free_pc
-                 { params = [x]; handler = block.handler;
-                   body = rem; branch = branch } blocks
+             let (blocks, cont_pc) =
+               match rem, branch with
+                 [], Return y when Var.compare x y = 0 ->
+                   (* We do not need a continuation block for tail calls *)
+                   (blocks, None)
+               | _ ->
+                   (AddrMap.add free_pc
+                      { params = [x]; handler = block.handler;
+                        body = rem; branch = branch } blocks,
+                    Some free_pc)
              in
              let blocks =
-               rewrite_closure blocks free_pc clos_pc block.handler in
+               rewrite_closure blocks cont_pc clos_pc block.handler in
              (* We do not really need this intermediate block.  It
                 just avoid the need to find which function parameters
                 are used in the function body. *)

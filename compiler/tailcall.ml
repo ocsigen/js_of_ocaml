@@ -40,23 +40,11 @@ let rec tail_call x f l =
   | i :: rem ->
       tail_call x f rem
 
-let rec return ?(subst=VarMap.empty) block blocks =
-  match block.branch with
-    | Return x -> Some (Subst.from_map subst x)
-    | Branch (pc,l) ->
-      let block = AddrMap.find pc blocks in
-      if block.body = []
-      then
-        let subst = Subst.build_mapping block.params l in
-        return ~subst block blocks
-      else None
-    | _ -> None
-
 let rewrite_block (f, f_params, f_pc, args) pc blocks =
   (*Format.eprintf "%d@." pc;*)
   let block = AddrMap.find pc blocks in
-  match return block blocks with
-    | Some x ->
+  match block.branch with
+    | Return x ->
         begin match tail_call x f block.body with
             Some f_args when List.length f_params = List.length f_args ->
             let m = Subst.build_mapping f_params f_args in
