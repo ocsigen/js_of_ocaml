@@ -116,9 +116,3 @@ module Tailcall = struct
   let maximum () = 50
 
 end
-
-let ocaml_version =
-  if Util.Version.(compare current [4;2] < 0) then
-    `V3
-  else
-    `V4_02

@@ -216,10 +216,15 @@ module Debug = struct
     (Hashtbl.create 257 : (int, debug_event) Hashtbl.t)
 
   let read ic =
+    let read_paths : unit -> string list =
+      match Util.Version.v with
+      | `V3 -> (fun () -> [])
+      | `V4_02 -> (fun () -> (input_value ic : string list)) in
     let len = input_binary_int ic in
     for i = 0 to len - 1 do
       let orig = input_binary_int ic in
       let evl : debug_event list = input_value ic in
+      ignore(read_paths ());
       List.iter
         (fun ev ->
            relocate_event orig ev; Hashtbl.add events_by_pc ev.ev_pos ev)
@@ -1859,7 +1864,7 @@ let from_channel  ?(toplevel=false) ?(debug=`No) ~files ~paths ic =
 
     (* Primitive.mark_used "caml_string_greaterthan" *)
   end;
-  if (Util.Version.(compare current [4;2]) < 0)
+  if Util.Version.v = `V3
   then fix_min_max_int code;
 
   let state = State.initial globals in

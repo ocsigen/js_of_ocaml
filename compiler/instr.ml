@@ -333,7 +333,7 @@ let ops,ops_rev =
        STOP, KStop 0, "STOP"|]
   in
   let instrs =
-    match Option.ocaml_version with
+    match Util.Version.v with
       `V3    -> [block1; block3]
     | `V4_02 -> [block1; block2; block3]
   in
