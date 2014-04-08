@@ -245,49 +245,47 @@ end) = struct
     then '\''
     else '"'
 
-  let string_escape quote ?(utf=false) s =
+  let string_escape f quote ?(utf=false) s =
     let l = String.length s in
-    let b = Buffer.create (4 * l) in
     let conv = "0123456789abcdef" in
     for i = 0 to l - 1 do
       let c = s.[i] in
-      match c with
-        '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' ->
-          Buffer.add_string b "\\0"
-      | '\b' ->
-          Buffer.add_string b "\\b"
-      | '\t' ->
-          Buffer.add_string b "\\t"
-      | '\n' ->
-          Buffer.add_string b "\\n"
+      let str = match c with
+          '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' -> "\\0"
+        | '\b' -> "\\b"
+        | '\t' -> "\\t"
+        | '\n' -> "\\n"
       (* This escape sequence is not supported by IE < 9
-      | '\011' ->
-          Buffer.add_string b "\\v"
+         | '\011' -> "\\v"
       *)
-      | '\012' ->
-          Buffer.add_string b "\\f"
-      | '\\' when not utf ->
-          Buffer.add_string b "\\\\"
-      | '\r' ->
-          Buffer.add_string b "\\r"
-      | '\000' .. '\031'  | '\127'->
+        | '\012' -> "\\f"
+        | '\\' when not utf -> "\\\\"
+        | '\r' -> "\\r"
+        | '\000' .. '\031'  | '\127'->
           let c = Char.code c in
-          Buffer.add_string b "\\x";
-          Buffer.add_char b conv.[c lsr 4];
-          Buffer.add_char b conv.[c land 0xf]
-      | '\128' .. '\255' when not utf ->
+          let s = "\\x??" in (* ?? is set right after *)
+          s.[2] <- conv.[c lsr 4];
+          s.[3] <- conv.[c land 0xf];
+          s
+        | '\128' .. '\255' when not utf ->
           let c = Char.code c in
-          Buffer.add_string b "\\x";
-          Buffer.add_char b conv.[c lsr 4];
-          Buffer.add_char b conv.[c land 0xf]
-      | _ ->
-          if c = quote then Buffer.add_char b '\\';
-          Buffer.add_char b c
+          let s = "\\x??" in (* ?? is set right after *)
+          s.[2] <- conv.[c lsr 4];
+          s.[3] <- conv.[c land 0xf];
+          s
+        | _ ->
+          if c = quote
+          then
+            let s = "\\?" in (* ? is set right after *)
+            s.[1] <- c;
+            s
+          else
+            String.make 1 c
+      in
+      stringsize:=!stringsize + String.length str;
+      PP.string f str
     done;
-    let res = Buffer.contents b in
-    let l = String.length res in
-    stringsize:=!stringsize+l+2;
-    res
+    stringsize:=!stringsize+2
 
   let rec expression l f e =
     match e with
@@ -338,7 +336,7 @@ end) = struct
         let quote = best_string_quote s in
         let quote_s = String.make 1 quote in
         PP.string f quote_s;
-        PP.string f (string_escape ~utf:(kind = `Utf8) quote s);
+        string_escape f ~utf:(kind = `Utf8) quote s;
         PP.string f quote_s
       | EBool b ->
         PP.string f (if b then "true" else "false")
@@ -513,7 +511,7 @@ end) = struct
         let quote = best_string_quote s in
         let quote_s = String.make 1 quote in
         PP.string f quote_s;
-        PP.string f (string_escape ~utf:true quote s);
+        string_escape f ~utf:true quote s;
         PP.string f quote_s
       | PNN v -> expression 0 f (ENum v)
 
