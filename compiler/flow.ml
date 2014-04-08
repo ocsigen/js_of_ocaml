@@ -332,12 +332,14 @@ let rec the_const_of info x =
     get_approx info
       (fun x -> match info.info_defs.(Var.idx x) with
          | Expr (Const i) -> Some (Int i)
+         | Expr (Constant (Int_overflow _)) -> None
          | Expr (Constant c) -> Some c
          | _ -> None)
       None
       (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
       x
   | Pc c -> Some c
+
 
 let the_int info x =
   match the_const_of info x with

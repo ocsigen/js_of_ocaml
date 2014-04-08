@@ -362,9 +362,20 @@ function caml_int_of_string (s) {
     if (res > threshold) caml_failwith("int_of_string");
   }
   if (i != s.getLen()) caml_failwith("int_of_string");
-  res = sign * res;
-  if ((res | 0) != res) caml_failwith("int_of_string");
-  return res;
+  if(base == 10){
+    /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits-1) - 1 */
+    if(sign >= 0) {
+      if(res >= ((1 << 31) >>>0)) caml_failwith("int_of_string");
+    } else {
+      debugger;
+      if(res > ((1 << 31) >>>0)) caml_failwith("int_of_string");
+    }
+  } else {
+    /* Unsigned representation expected, allow 0 to 2^nbits - 1
+       and tolerate -(2^nbits - 1) to 0 */
+    if ((res >>> 0) != res) caml_failwith("int_of_string");
+  }
+  return (sign * res) | 0;
 }
 
 //Provides: caml_float_of_string mutable

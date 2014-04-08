@@ -23,17 +23,17 @@ open Flow
 
 module Int = Int32
 let int_binop l f = match l with
-  | [Int i; Int j] -> Some (Int (Int.to_int (f (Int.of_int i) (Int.of_int j))))
+  | [Int i; Int j] -> Some (Int (f i j))
   | _ -> None
 let shift l f = match l with
-  | [Int i; Int j] -> Some (Int (Int.to_int (f (Int.of_int i) (j land 0x1f))))
+  | [Int i; Int j] -> Some (Int (f i ((Int32.to_int j) land 0x1f)))
   | _ -> None
 let float_binop_aux l f =
   let args = match l with
     | [Float i; Float j]-> Some (i,j)
-    | [Int i ; Int j] -> Some (float_of_int i,float_of_int j)
-    | [Int i ; Float j] -> Some(float_of_int i,j)
-    | [Float i ; Int j] -> Some(i,float_of_int j)
+    | [Int i ; Int j] -> Some (Int32.to_float i,Int32.to_float j)
+    | [Int i ; Float j] -> Some(Int32.to_float i,j)
+    | [Float i ; Int j] -> Some(i,Int32.to_float j)
     | _ -> None in
   match args with
   | None -> None
@@ -45,26 +45,25 @@ let float_binop l f = match float_binop_aux l f with
 
 let float_unop l f = match l with
   | [Float i] -> Some (Float (f i))
-  | [Int i] -> Some (Float (f (float_of_int i)))
+  | [Int i] -> Some (Float (f (Int32.to_float i)))
   | _ -> None
 
 let float_binop_bool l f = match float_binop_aux l f with
-  | Some true -> Some (Int 1)
-  | Some false -> Some (Int 0)
+  | Some true -> Some (Int 1l)
+  | Some false -> Some (Int 0l)
   | None -> None
 
-let bool b = Some (Int (if b then 1 else 0))
+let bool b = Some (Int (if b then 1l else 0l))
 
 let eval_prim x =
   match x with
-  | Not, [Int i] -> bool (i=0)
+  | Not, [Int i] -> bool (i=0l)
   | Lt,  [Int i; Int j ] -> bool (i < j)
   | Le,  [Int i; Int j ] -> bool (i <= j)
   | Eq,  [Int i; Int j ] -> bool (i = j)
   | Neq, [Int i; Int j ] -> bool (i <> j)
   | IsInt, [Int _] -> bool true
-  | Ult, [Int i; Int j ] -> bool (j < 0 || i < j)
-  | WrapInt, [Int i] -> Some (Int i)
+  | Ult, [Int i; Int j ] -> bool (j < 0l || i < j)
   | Extern name, l ->
     let name = Primitive.resolve name in
     (match name, l with
@@ -72,7 +71,7 @@ let eval_prim x =
      | "%int_add", _ -> int_binop l (Int.add)
      | "%int_sub", _ -> int_binop l (Int.sub)
      | "%direct_int_mul", _ -> int_binop l (Int.mul )
-     | "%direct_int_div", [_; Int 0] -> None
+     | "%direct_int_div", [_; Int 0l] -> None
      | "%direct_int_div", _ -> int_binop l (Int.div)
      | "%direct_int_mod", _ -> int_binop l (Int.rem)
      | "%int_and", _ -> int_binop l (Int.logand)
@@ -81,7 +80,7 @@ let eval_prim x =
      | "%int_lsl", _ -> shift l (Int.shift_left)
      | "%int_lsr", _ -> shift l (Int.shift_right_logical)
      | "%int_asr", _ -> shift l (Int.shift_right)
-     | "%int_neg", [Int i] -> Some (Int (Int.to_int (Int.neg (Int.of_int i) )))
+     | "%int_neg", [Int i] -> Some (Int (Int.neg i ))
      (* float *)
      | "caml_eq_float", _ -> float_binop_bool l (=)
      | "caml_neq_float", _ -> float_binop_bool l (<>)
@@ -94,8 +93,8 @@ let eval_prim x =
      | "caml_mul_float",_ -> float_binop l ( *. )
      | "caml_div_float",_ -> float_binop l ( /. )
      | "caml_fmod_float",_ -> float_binop l mod_float
-     | "caml_int_of_float",[Float f] -> Some (Int (int_of_float f))
-     | "to_int",[Float f]  -> Some (Int (int_of_float f))
+     | "caml_int_of_float",[Float f] -> Some (Int (Int32.of_float f))
+     | "to_int",[Float f]  -> Some (Int (Int32.of_float f))
      | "to_int",[Int i] -> Some (Int i)
      (* Math *)
      | "caml_abs_float",_ -> float_unop l abs_float
@@ -122,7 +121,7 @@ let the_length_of info x =
     (fun x ->
        match info.info_defs.(Var.idx x) with
          | Expr (Constant (String s))
-         | Expr (Constant (IString s)) -> Some (String.length s)
+         | Expr (Constant (IString s)) -> Some (Int32.of_int (String.length s))
          | Expr (Prim (Extern "caml_create_string",[arg])) ->
            the_int info arg
          | _ -> None)
@@ -140,15 +139,15 @@ let eval_instr info i =
         | Some e1, Some e2 ->
           let c =
             if e1 = e2
-            then 1
-            else 0 in
+            then 1l
+            else 0l in
           Let (x , Constant (Int c))
         | _ -> i
       end
     | Let (x,Prim (Extern "caml_ml_string_length", [s])) ->
       let c = match s with
         | Pc (String s)
-        | Pc (IString s) -> Some (String.length s)
+        | Pc (IString s) -> Some (Int32.of_int (String.length s))
         | Pv v -> the_length_of info v
         | _ -> None
       in
@@ -181,7 +180,7 @@ let the_case_of info x =
       get_approx info
         (fun x -> match info.info_defs.(Var.idx x) with
                   | Expr (Const i)
-                  | Expr (Constant (Int i)) -> CConst i
+                  | Expr (Constant (Int i)) -> CConst (Int32.to_int i)
                   | Expr (Block (j,_))
                   | Expr (Constant (Tuple (j,_))) -> CTag j
                   | _ -> N)
@@ -191,7 +190,7 @@ let the_case_of info x =
            | CConst i, CConst j when i = j -> u
            | _ -> N)
         x
-    | Pc (Int i) -> CConst i
+    | Pc (Int i) -> CConst (Int32.to_int i)
     | Pc (Tuple (j,_)) -> CTag j
     | _ -> N
 
@@ -202,11 +201,11 @@ let eval_branch info = function
       match the_int info (Pv x) with
         | Some j ->
           let res = match cond with
-            | IsTrue -> (match j with 0 -> false | 1 -> true | _ -> assert false)
+            | IsTrue -> (match j with 0l -> false | 1l -> true | _ -> assert false)
             | CEq i -> i = j
             | CLt i -> i < j
             | CLe i -> i<= j
-            | CUlt i -> j < 0 || i < j
+            | CUlt i -> j < 0l || i < j
           in
           (match res with
             | true -> Branch ftrue

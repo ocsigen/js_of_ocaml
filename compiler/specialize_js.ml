@@ -29,14 +29,14 @@ let specialize_instr info i =
     begin match the_string_of info y with
       | Some "%d" ->
         begin match the_int info z with
-          | Some i -> Let(x,Constant(String (string_of_int i)))
+          | Some i -> Let(x,Constant(String (Int32.to_string i)))
           | None -> Let (x, Prim (Extern "%caml_format_int_special", [z]))
         end
       | _ -> i
     end
   | Let (x, Prim (Extern "%caml_format_int_special", [z])) ->
     begin match the_int info z with
-      | Some i -> Let(x,Constant(String (string_of_int i)))
+      | Some i -> Let(x,Constant(String (Int32.to_string i)))
       | None -> i
     end
   | Let (x, Prim (Extern "caml_js_var", [y])) ->
@@ -151,21 +151,21 @@ let specialize_instr info i =
       end
   | Let (x, Prim (Extern "%int_mul", [y; z])) ->
       begin match the_int info y, the_int info z with
-        Some j, _ | _, Some j when abs j < 0x200000 ->
+        Some j, _ | _, Some j when Int32.abs j < 0x200000l ->
           Let (x, Prim (Extern "%direct_int_mul", [y; z]))
       | _ ->
           i
       end
   | Let (x, Prim (Extern "%int_div", [y; z])) ->
       begin match the_int info z with
-        Some j when j <> 0 ->
+        Some j when j <> 0l ->
           Let (x, Prim (Extern "%direct_int_div", [y; z]))
       | _ ->
           i
       end
   | Let (x, Prim (Extern "%int_mod", [y; z])) ->
       begin match the_int info z with
-        Some j when j <> 0 ->
+        Some j when j <> 0l ->
           Let (x, Prim (Extern "%direct_int_mod", [y; z]))
       | _ ->
           i

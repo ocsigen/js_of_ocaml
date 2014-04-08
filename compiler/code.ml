@@ -131,7 +131,6 @@ type prim =
   | Extern of string
   | Not | IsInt
   | Eq | Neq | Lt | Le | Ult
-  | WrapInt
 
 type constant =
     String of string
@@ -142,14 +141,15 @@ type constant =
   | Nativeint of nativeint
   | Int64 of int64
   | Tuple of int * constant array
-  | Int of int
+  | Int of int32
+  | Int_overflow of int64
 
 type prim_arg =
     Pv of Var.t
   | Pc of constant
 
 type expr =
-    Const of int
+    Const of int32
   | Apply of Var.t * Var.t list * bool
   | Block of int * Var.t array
   | Field of Var.t * int
@@ -163,7 +163,7 @@ type instr =
   | Offset_ref of Var.t * int
   | Array_set of Var.t * Var.t * Var.t
 
-type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
+type cond = IsTrue | CEq of int32 | CLt of int32 | CLe of int32 | CUlt of int32
 
 type last =
     Return of Var.t
@@ -230,8 +230,9 @@ let rec print_constant f x =
           done;
           Format.fprintf f ")"
       end
-   | Int i ->
-       Format.fprintf f "%d" i
+  | Int i -> Format.fprintf f "%ld" i
+  | Int_overflow i ->
+       Format.fprintf f "%Ld" i
 
 let print_arg f a =
   match a with
@@ -284,13 +285,12 @@ let print_prim f p l =
   | Lt,  [x; y]       -> Format.fprintf f "%a < %a" print_arg x print_arg y
   | Le,  [x; y]       -> Format.fprintf f "%a <= %a" print_arg x print_arg y
   | Ult, [x; y]       -> Format.fprintf f "%a <= %a" print_arg x print_arg y
-  | WrapInt, [x]      -> Format.fprintf f "to_int(%a)" print_arg x
   | _                 -> assert false
 
 let print_expr f e =
   match e with
     Const i ->
-      Format.fprintf f "%d" i
+      Format.fprintf f "%ld" i
   | Apply (g, l, exact) ->
       if exact then
         Format.fprintf f "%a!(%a)" Var.print g print_var_list l
@@ -325,10 +325,10 @@ let print_instr f i =
 let print_cond f (c, x) =
   match c with
     IsTrue -> Var.print f x
-  | CEq n  -> Format.fprintf f "%d = %a" n Var.print x
-  | CLt n  -> Format.fprintf f "%d < %a" n Var.print x
-  | CLe n  -> Format.fprintf f "%d <= %a" n Var.print x
-  | CUlt n -> Format.fprintf f "%d < %a" n Var.print x
+  | CEq n  -> Format.fprintf f "%ld = %a" n Var.print x
+  | CLt n  -> Format.fprintf f "%ld < %a" n Var.print x
+  | CLe n  -> Format.fprintf f "%ld <= %a" n Var.print x
+  | CUlt n -> Format.fprintf f "%ld < %a" n Var.print x
 
 let print_last f l =
   match l with

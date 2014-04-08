@@ -186,6 +186,8 @@ val get_instr : string -> int -> desc
 
 val gets : string -> int -> int
 val getu : string -> int -> int
+val gets32 : string -> int -> int32
+val getu32 : string -> int -> int32
 
 val compile : [`C of int | `I of t] list -> string
 

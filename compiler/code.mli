@@ -84,7 +84,6 @@ type prim =
   | Extern of string
   | Not | IsInt
   | Eq | Neq | Lt | Le | Ult
-  | WrapInt
 
 type constant =
     String of string
@@ -95,14 +94,15 @@ type constant =
   | Nativeint of nativeint
   | Int64 of int64
   | Tuple of int * constant array
-  | Int of int
+  | Int of int32
+  | Int_overflow of int64
 
 type prim_arg =
     Pv of Var.t
   | Pc of constant
 
 type expr =
-    Const of int
+    Const of int32
   | Apply of Var.t * Var.t list * bool
                            (* if true, then # of arguments = # of parameters *)
   | Block of int * Var.t array
@@ -118,7 +118,7 @@ type instr =
   | Array_set of Var.t * Var.t * Var.t
 
 (*XXX REMOVE *)
-type cond = IsTrue | CEq of int | CLt of int | CLe of int | CUlt of int
+type cond = IsTrue | CEq of int32 | CLt of int32 | CLe of int32 | CUlt of int32
 
 type last =
     Return of Var.t
