@@ -220,6 +220,7 @@ end
 
 let var x = J.EVar (J.V x)
 let int n = J.ENum (float n)
+let int32 n = J.ENum (Int32.to_float n)
 let one = int 1
 let zero = int 0
 let bool e = J.ECond (e, one, zero)
@@ -313,10 +314,10 @@ let rec constant_rec ~ctx x level instrs =
           List.rev_map (fun x -> Some x) l, instrs
       in
       J.EArr (Some (int tag) :: l), instrs
-  | Int i-> int i, instrs
+  | Int i-> int32 i, instrs
   | Int_overflow i ->
-    Format.eprintf "Integer too big: %Lx@." (Int64.of_int i);
-    int i, instrs
+    Format.eprintf "Integer too big: %Lx@." i;
+    J.ENum (Int64.to_float i), instrs
 
 let constant ~ctx x level =
   let (expr, instr) = constant_rec ~ctx x level [] in
@@ -847,7 +848,7 @@ let rec collect_closures ctx l =
 and translate_expr ctx queue x e level =
   match e with
     Const i ->
-      (int i, const_p, queue),[]
+      (int32 i, const_p, queue),[]
   | Apply (x, l, true) ->
       let ((px, cx), queue) = access_queue queue x in
       let (args, prop, queue) =
@@ -1393,11 +1394,11 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
       let e =
         match c with
           IsTrue         -> cx
-        | CEq n          -> J.EBin (J.EqEqEq, int n, cx)
-        | CLt n          -> J.EBin (J.Lt, int n, cx)
+        | CEq n          -> J.EBin (J.EqEqEq, int32 n, cx)
+        | CLt n          -> J.EBin (J.Lt, int32 n, cx)
         | CUlt n         -> J.EBin (J.Or, J.EBin (J.Lt, cx, int 0),
-                                          J.EBin (J.Lt, int n, cx))
-        | CLe n          -> J.EBin (J.Le, int n, cx)
+                                          J.EBin (J.Lt, int32 n, cx))
+        | CLe n          -> J.EBin (J.Le, int32 n, cx)
       in
       (* Some changes here may require corresponding changes
          in function [fold_children] above. *)

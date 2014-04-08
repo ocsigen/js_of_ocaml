@@ -373,6 +373,8 @@ let getu code pc =
   let b4 = get code (i + 3) in
   (b4 lsl 24) + (b3 lsl 16) + (b2 lsl 8) + b1
 
+let getu32 code pc = Int32.of_int (getu code pc)
+
 let gets code pc =
   let i = pc * 4 in
   let b1 = get code i in
@@ -381,6 +383,8 @@ let gets code pc =
   let b4 = get code (i + 3) in
   let b4' = if b4 >= 128 then b4-256 else b4 in
   (b4' lsl 24) + (b3 lsl 16) + (b2 lsl 8) + b1
+
+let gets32 code pc = Int32.of_int (gets code pc)
 
 exception Bad_instruction of int
 
