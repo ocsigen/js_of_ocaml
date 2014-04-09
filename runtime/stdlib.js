@@ -362,20 +362,14 @@ function caml_int_of_string (s) {
     if (res > threshold) caml_failwith("int_of_string");
   }
   if (i != s.getLen()) caml_failwith("int_of_string");
-  if(base == 10){
+  // For base different from 10, we expect an unsigned representation,
+  // hence any value of 'res' (less than 'threshold') is acceptable.
+  // But we have to convert the result back to a signed integer.
+  res = sign * res;
+  if ((base == 10) && ((res | 0) != res))
     /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits-1) - 1 */
-    if(sign >= 0) {
-      if(res >= ((1 << 31) >>>0)) caml_failwith("int_of_string");
-    } else {
-      debugger;
-      if(res > ((1 << 31) >>>0)) caml_failwith("int_of_string");
-    }
-  } else {
-    /* Unsigned representation expected, allow 0 to 2^nbits - 1
-       and tolerate -(2^nbits - 1) to 0 */
-    if ((res >>> 0) != res) caml_failwith("int_of_string");
-  }
-  return (sign * res) | 0;
+    caml_failwith("int_of_string");
+  return res | 0;
 }
 
 //Provides: caml_float_of_string mutable
