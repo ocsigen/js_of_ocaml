@@ -1,4 +1,4 @@
 bin: [
   "compiler/js_of_ocaml"
-  "compiler/joo_minify"
+  "compiler/jsoo_minify"
 ]

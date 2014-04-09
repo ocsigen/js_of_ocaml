@@ -82,7 +82,7 @@ js_parser.ml js_parser.mli: js_parser.mly
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
 	rm -f compile.opt compile.byte minify.opt minify.byte
-	rm -f js_of_ocaml joo_minify
+	rm -f $(MINIFIER) $(COMPILER)
 	rm -f compiler_version.ml
 	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
