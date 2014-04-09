@@ -164,9 +164,13 @@ let generate (p,live_vars) =
 
 let header formatter ~standalone js =
   if standalone then begin
+    let version = match Compiler_version.git_version with
+      | "" -> Compiler_version.s
+      | v  -> Printf.sprintf "%s+git-%s"Compiler_version.s v in
+
     Pretty_print.string formatter
       ("// This program was compiled from OCaml by js_of_ocaml "
-       ^ Compiler_version.s);
+       ^ version);
     Pretty_print.newline formatter;
   end;
   js
