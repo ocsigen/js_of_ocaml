@@ -263,20 +263,25 @@ end) = struct
         | '\r' -> "\\r"
         | '\000' .. '\031'  | '\127'->
           let c = Char.code c in
-          let s = "\\x??" in (* ?? is set right after *)
+          let s = String.create 4 in
+          s.[0] <- '\\';
+          s.[1] <- 'x';
           s.[2] <- conv.[c lsr 4];
           s.[3] <- conv.[c land 0xf];
           s
         | '\128' .. '\255' when not utf ->
           let c = Char.code c in
-          let s = "\\x??" in (* ?? is set right after *)
+          let s = String.create 4 in
+          s.[0] <- '\\';
+          s.[1] <- 'x';
           s.[2] <- conv.[c lsr 4];
           s.[3] <- conv.[c land 0xf];
           s
         | _ ->
           if c = quote
           then
-            let s = "\\?" in (* ? is set right after *)
+            let s = String.create 2 in
+            s.[0] <- '\\';
             s.[1] <- c;
             s
           else
