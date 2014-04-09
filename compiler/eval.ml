@@ -165,7 +165,7 @@ let eval_instr info i =
           | Some c -> Let (x,Constant c)
           | _ -> Let(x, Prim(prim, (List.map2 (fun arg c ->
             match c with
-              | Some ((Int _ | Int32 _ | Float _ | Nativeint _ ) as c) -> Pc c
+              | Some ((Int _ | Float _) as c) -> Pc c
               | Some _ (* do not be duplicated other constant as
                           they're not represented with constant in javascript. *)
               | None -> arg) prim_args prim_args')))

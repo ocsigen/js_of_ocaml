@@ -90,12 +90,9 @@ type constant =
   | IString of string
   | Float of float
   | Float_array of float array
-  | Int32 of int32
-  | Nativeint of nativeint
   | Int64 of int64
   | Tuple of int * constant array
   | Int of int32
-  | Int_overflow of int64
 
 type prim_arg =
     Pv of Var.t

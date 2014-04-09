@@ -89,6 +89,11 @@ end
 let same_custom x y =
   Obj.field x 0 == Obj.field (Obj.repr y) 0
 
+let warn_overflow i i32 =
+  Format.eprintf
+    "Warning: integer overflow: integer 0x%s truncated to 0x%lx; \
+     the generated code might be incorrect.@." i i32
+
 let rec parse_const x =
   if Obj.is_block x then begin
     let tag = Obj.tag x in
@@ -99,9 +104,13 @@ let rec parse_const x =
     else if tag = Obj.double_array_tag then
       Float_array (Obj.magic x : float array)
     else if tag = Obj.custom_tag && same_custom x 0l then
-      Int32 (Obj.magic x : int32)
+      Int (Obj.magic x : int32)
     else if tag = Obj.custom_tag && same_custom x 0n then
-      Nativeint (Obj.magic x : nativeint)
+      let i : nativeint = Obj.magic x in
+      let i32 = Nativeint.to_int32 i in
+      let i' = Nativeint.of_int32 i32 in
+      if i' <> i then warn_overflow (Printf.sprintf "%nx" i) i32;
+      Int i32
     else if tag = Obj.custom_tag && same_custom x 0L then
       Int64 (Obj.magic x : int64)
     else if tag < Obj.no_scan_tag then
@@ -110,14 +119,11 @@ let rec parse_const x =
     else
       assert false
   end else
-    let i : int = (Obj.magic x : int) in
+    let i : int = Obj.magic x in
     let i32 = Int32.of_int i in
     let i' = Int32.to_int i32 in
-    if i' = i
-    then Int i32
-    else
-      (* one may want to accept ints *)
-      Int_overflow (Int64.of_int i)
+    if i' <> i then warn_overflow (Printf.sprintf "%x" i) i32;
+    Int i32
 
 let inlined_const x =
   not (Obj.is_block x)

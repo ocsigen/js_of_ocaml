@@ -332,7 +332,6 @@ let rec the_const_of info x =
     get_approx info
       (fun x -> match info.info_defs.(Var.idx x) with
          | Expr (Const i) -> Some (Int i)
-         | Expr (Constant (Int_overflow _)) -> None
          | Expr (Constant c) -> Some c
          | _ -> None)
       None

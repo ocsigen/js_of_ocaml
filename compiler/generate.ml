@@ -276,10 +276,6 @@ let rec constant_rec ~ctx x level instrs =
       J.EArr (Some (int Obj.double_array_tag) ::
               Array.to_list (Array.map (fun f -> Some (float_const f)) a)),
       instrs
-  | Int32 i ->
-      J.ENum (Int32.to_float i), instrs
-  | Nativeint i ->
-      J.ENum (Nativeint.to_float i), instrs
   | Int64 i ->
       J.EArr [Some (int 255);
               Some (int (Int64.to_int i land 0xffffff));
@@ -315,9 +311,6 @@ let rec constant_rec ~ctx x level instrs =
       in
       J.EArr (Some (int tag) :: l), instrs
   | Int i-> int32 i, instrs
-  | Int_overflow i ->
-    Format.eprintf "Integer too big: %Lx@." i;
-    J.ENum (Int64.to_float i), instrs
 
 let constant ~ctx x level =
   let (expr, instr) = constant_rec ~ctx x level [] in
@@ -1156,7 +1149,7 @@ and translate_instr ctx expr_queue (pc : addr) instr =
                num : number of occurence
                size_c * n < size_v * n + size_v + 1 + size_c
             *)
-            | n,(Const _| Constant (Int _|Float _| Int32 _| Nativeint _)) ->
+            | n,(Const _| Constant (Int _|Float _)) ->
                    enqueue expr_queue prop x ce pc n instrs
             | _ -> flush_queue expr_queue prop
                      (instrs@

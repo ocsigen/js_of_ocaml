@@ -137,12 +137,9 @@ type constant =
   | IString of string
   | Float of float
   | Float_array of float array
-  | Int32 of int32
-  | Nativeint of nativeint
   | Int64 of int64
   | Tuple of int * constant array
   | Int of int32
-  | Int_overflow of int64
 
 type prim_arg =
     Pv of Var.t
@@ -211,10 +208,6 @@ let rec print_constant f x =
         Format.fprintf f "%.12g" a.(i)
       done;
       Format.fprintf f "|]"
-  | Int32 i ->
-      Format.fprintf f "%ldl" i
-  | Nativeint i ->
-      Format.fprintf f "%ndn" i
   | Int64 i ->
       Format.fprintf f "%LdL" i
   | Tuple (tag, a) ->
@@ -231,8 +224,6 @@ let rec print_constant f x =
           Format.fprintf f ")"
       end
   | Int i -> Format.fprintf f "%ld" i
-  | Int_overflow i ->
-       Format.fprintf f "%Ld" i
 
 let print_arg f a =
   match a with
