@@ -1,88 +1,469 @@
-//Provides: caml_ba_init const
-function caml_ba_init () {}
+// Js_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+// Copyright (C) 2014 Jérôme Vouillon, Hugo Heuzard, Andy Ray
+// Laboratoire PPS - CNRS Université Paris Diderot
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+//
+// Bigarray.
+//
+// - all bigarray types including Int64 and Complex.
+// - fortran + c layouts
+// - sub/slice/reshape
+// - retain fast path for 1d array access
+//
+// Note; int64+complex support if provided by allocating a second TypedArray
+// Note; accessor functions are selected when the bigarray is created.  It is assumed
+//       that this results in just a function pointer and will thus be fast.
 
+//Provides: caml_ba_init const
+function caml_ba_init() {
+}
+
+//Provides: caml_ba_init_views
+//Requires: caml_ba_views
+function caml_ba_init_views() {
+    if (!caml_ba_views) {
+        var g = joo_global_object;
+        caml_ba_views = [
+            [
+                g.Float32Array, g.Float64Array, g.Int8Array, g.Uint8Array,
+                g.Int16Array, g.Uint16Array, g.Int32Array, g.Int32Array,
+                g.Int32Array, g.Int32Array, g.Float32Array, g.Float64Array, g.Uint8Array],
+            [
+                0 /* General */, 0 /* General */, 0 /* General */, 0 /* General */,
+                0 /* General */, 0 /* General */, 0 /* General */, 1 /* Int64 */,
+                0 /* General */, 0 /* General */, 2 /* Complex */, 2 /* Complex */, 0 /* General */]
+        ];
+    }
+}
+
+//Provides: caml_ba_get_size
+//Requires: caml_invalid_argument
+function caml_ba_get_size(dims) {
+    var n_dims = dims.length;
+    var size = 1;
+    for (var i = 0; i < n_dims; i++) {
+        if (dims[i] < 0)
+            caml_invalid_argument("Bigarray.create: negative dimension");
+        size = size * dims[i];
+    }
+    return size;
+}
 
 //Provides: caml_ba_views
 var caml_ba_views;
 
-//Provides: caml_ba_create const
+//Provides: caml_ba_create_from
+//Requires: caml_ba_get_size
 //Requires: caml_invalid_argument
-//Requires: caml_ba_views
-function caml_ba_create (kind, layout, dim) {
-  if (dim.length != 2)
-    caml_invalid_argument("Bigarray.create: bad number of dimensions");
-  if (layout != 0)
-    caml_invalid_argument("Bigarray.create: unsupported layout");
-  if (dim [1] < 0)
-    caml_invalid_argument("Bigarray.create: negative dimension");
-  if (!caml_ba_views) {
-    var g = joo_global_object;
-    caml_ba_views =
-      [g.Float32Array, g.Float64Array, g.Int8Array, g.Uint8Array,
-       g.Int16Array, g.Uint16Array, g.Int32Array, null,
-       g.Int32Array, g.Int32Array, null, null, g.Uint8Array];
-  }
-  var View = caml_ba_views[kind];
-  if (!View) caml_invalid_argument("Bigarray.create: unsupported kind");
-  return new View (dim[1]);
-}
-
-//Provides: caml_ba_dim_1 const
-
-function caml_ba_dim_1 (b) { return b.length; }
-
-//Provides: caml_ba_kind const
-//Requires: caml_ba_views
-// Not exactly the bigarray kind, but accurate enough to create
-// another array of the same kind
-function caml_ba_kind (b) {
-  for (var i = 0; caml_ba_views[i]; i++)
-    if (b instanceof caml_ba_views[i]) return i;
-  return 0; // Should not happen
-}
-
-//Provides: caml_ba_layout const
-
-function caml_ba_layout () { return 0; }
-
-//Provides: caml_ba_sub const
-//Requires: caml_invalid_argument
-
-function caml_ba_sub (b, ofs, len) {
-  if (ofs < 0 || len < 0 || ofs + len > b.length)
-    caml_invalid_argument("Bigarray.sub: bad sub-array");
-  return b.subarray(ofs, ofs + len);
-}
-
-//Provides: caml_ba_blit
-//Requires: caml_invalid_argument
-
-function caml_ba_blit (src, dst) {
-  if (dst.length != src.length)
-    caml_invalid_argument ("Bigarray.blit: dimension mismatch");
-  dst.set(src);
-  return 0;
-}
-
-//Provides: caml_ba_fill
-
-function caml_ba_fill (b, init) {
-  for (var i = 0; i < b.length; i++) b[i] = init;
-}
-
-//Provides: caml_ba_get_1 mutable
 //Requires: caml_array_bound_error
+function caml_ba_create_from(data, data2, data_type, kind, layout, dims) {
+    var n_dims = dims.length;
+    var size = caml_ba_get_size(dims);
 
-function caml_ba_get_1 (b, ind) {
-  if ((ind < 0) || (ind >= b.length)) caml_array_bound_error();
-  return b[ind];
+    //
+    // Functions to compute the offsets for C or Fortran layout arrays
+    // from the given array of indices.
+    //
+    function offset_c(index) {
+        var ofs = 0;
+        if (n_dims != index.length)
+            caml_invalid_argument("Bigarray.get/set: bad number of dimensions");
+        for (var i = 0; i < n_dims; i++) {
+            if (index[i] < 0 || index[i] >= dims[i])
+                caml_array_bound_error();
+            ofs = (ofs * dims[i]) + index[i];
+        }
+        return ofs;
+    }
+
+    function offset_fortran(index) {
+        var ofs = 0;
+        if (n_dims != index.length)
+            caml_invalid_argument("Bigarray.get/set: wrong number of indices");
+        for (var i = n_dims - 1; i >= 0; i--) {
+            if (index[i] < 1 || index[i] > dims[i])
+                caml_array_bound_error();
+            ofs = (ofs * dims[i]) + (index[i] - 1);
+        }
+        return ofs;
+    }
+
+    var offset = layout == 0 ? offset_c : offset_fortran;
+
+    var dim0 = dims[0];
+
+    //
+    // Element get functions.
+    //
+    function get_std(index) {
+        var ofs = offset(index);
+        var v = data[ofs];
+        return v;
+    }
+
+    function get_int64(index) {
+        var off = offset(index);
+        var l = data[off];
+        var h = data2[off];
+        return [
+            255,
+            l & 0xffffff,
+            ((l >>> 24) & 0xff) | ((h & 0xffff) << 8),
+            (h >>> 16) & 0xffff];
+    }
+
+    function get_complex(index) {
+        var off = offset(index);
+        var r = data[off];
+        var i = data2[off];
+        return [254, r, i];
+    }
+
+    var get = data_type == 1 /* Int64 */ ? get_int64 : (data_type == 2 /* Complex */ ? get_complex : get_std);
+
+    function get1_c(i) {
+        if (i < 0 || i >= dim0)
+            caml_array_bound_error();
+        return data[i];
+    }
+    function get1_fortran(i) {
+        if (i < 1 || i > dim0)
+            caml_array_bound_error();
+        return data[i - 1];
+    }
+    function get1_any(i) {
+        return get([i]);
+    }
+
+    var get1 = data_type == 0 /* General */ ? (layout == 0 ? get1_c : get1_fortran) : get1_any;
+
+    //
+    // Element set functions
+    //
+    function set_std_raw(off, v) {
+        data[off] = v;
+    }
+
+    function set_int64_raw(off, v) {
+        data[off] = v[1] | ((v[2] & 0xff) << 24);
+        data2[off] = ((v[2] >>> 8) & 0xffff) | (v[3] << 16);
+    }
+
+    function set_complex_raw(off, v) {
+        data[off] = v[1];
+        data2[off] = v[2];
+    }
+
+    function set_std(index, v) {
+        var ofs = offset(index);
+        return set_std_raw(ofs, v);
+    }
+    function set_int64(index, v) {
+        return set_int64_raw(offset(index), v);
+    }
+    function set_complex(index, v) {
+        return set_complex_raw(offset(index), v);
+    }
+
+    var set = data_type == 1 /* Int64 */ ? set_int64 : (data_type == 2 /* Complex */ ? set_complex : set_std);
+
+    function set1_c(i, v) {
+        if (i < 0 || i >= dim0)
+            caml_array_bound_error();
+        data[i] = v;
+    }
+    function set1_fortran(i, v) {
+        if (i < 1 || i > dim0)
+            caml_array_bound_error();
+        data[i - 1] = v;
+    }
+    function set1_any(i, v) {
+        set([i], v);
+    }
+
+    var set1 = data_type == 0 /* General */ ? (layout == 0 ? set1_c : set1_fortran) : set1_any;
+
+    //
+    // other
+    //
+    function nth_dim(i) {
+        if (i < 0 || i >= n_dims)
+            caml_invalid_argument("Bigarray.dim");
+        return dims[i];
+    }
+
+    function fill(v) {
+        if (data_type == 0 /* General */)
+            for (var i = 0; i < data.length; i++)
+                set_std_raw(i, v);
+        if (data_type == 1 /* Int64 */)
+            for (var i = 0; i < data.length; i++)
+                set_int64_raw(i, v);
+        if (data_type == 2 /* Complex */)
+            for (var i = 0; i < data.length; i++)
+                set_complex_raw(i, v);
+    }
+    function blit(from) {
+        if (n_dims != from.num_dims)
+            caml_invalid_argument("Bigarray.blit: dimension mismatch");
+        for (var i = 0; i < n_dims; i++)
+            if (dims[i] != from.nth_dim(i))
+                caml_invalid_argument("Bigarray.blit: dimension mismatch");
+        data.set(from.data);
+        if (data_type != 0 /* General */)
+            data2.set(from.data2);
+    }
+
+    function sub(ofs, len) {
+        var changed_dim;
+        var mul = 1;
+
+        if (layout == 0) {
+            for (var i = 1; i < n_dims; i++)
+                mul = mul * dims[i];
+            changed_dim = 0;
+        } else {
+            for (var i = 0; i < (n_dims - 1); i++)
+                mul = mul * dims[i];
+            changed_dim = n_dims - 1;
+            ofs = ofs - 1;
+        }
+
+        if (ofs < 0 || len < 0 || (ofs + len) > dims[changed_dim])
+            caml_invalid_argument("Bigarray.sub: bad sub-array");
+
+        var new_data = data.subarray(ofs * mul, (ofs + len) * mul);
+        var new_data2 = data_type == 0 /* General */ ? null : data2.subarray(ofs * mul, (ofs + len) * mul);
+
+        var new_dims = [];
+        for (var i = 0; i < n_dims; i++)
+            new_dims[i] = dims[i];
+        new_dims[changed_dim] = len;
+
+        return caml_ba_create_from(new_data, new_data2, data_type, kind, layout, new_dims);
+    }
+
+    function slice(vind) {
+        var num_inds = vind.length;
+        var index = [];
+        var sub_dims = [];
+        var ofs;
+
+        if (num_inds >= n_dims)
+            caml_invalid_argument("Bigarray.slice: too many indices");
+
+        // Compute offset and check bounds
+        if (layout == 0) {
+            for (var i = 0; i < num_inds; i++)
+                index[i] = vind[i];
+            for (; i < n_dims; i++)
+                index[i] = 0;
+            ofs = offset(index);
+            sub_dims = dims.slice(num_inds);
+        } else {
+            for (var i = 0; i < num_inds; i++)
+                index[n_dims - num_inds + i] = vind[i];
+            for (var i = 0; i < n_dims - num_inds; i++)
+                index[i] = 1;
+            ofs = offset(index);
+            sub_dims = dims.slice(0, num_inds);
+        }
+
+        var size = caml_ba_get_size(sub_dims);
+        var new_data = data.subarray(ofs, ofs + size);
+        var new_data2 = data_type == 0 /* General */ ? null : data2.subarray(ofs, ofs + size);
+
+        return caml_ba_create_from(new_data, new_data2, data_type, kind, layout, sub_dims);
+    }
+
+    function reshape(vdim) {
+        var new_dim = [];
+        var num_dims = vdim.length;
+
+        if (num_dims < 1)
+            caml_invalid_argument("Bigarray.reshape: bad number of dimensions");
+        var num_elts = 1;
+        for (var i = 0; i < num_dims; i++) {
+            new_dim[i] = vdim[i];
+            if (new_dim[i] < 0)
+                caml_invalid_argument("Bigarray.reshape: negative dimension");
+            num_elts = num_elts * new_dim[i];
+        }
+
+        // Check that sizes agree
+        if (num_elts != size)
+            caml_invalid_argument("Bigarray.reshape: size mismatch");
+
+        return caml_ba_create_from(data, data2, data_type, kind, layout, new_dim);
+    }
+
+    return {
+        data: data,
+        data2: data2,
+        data_type: data_type,
+        num_dims: n_dims,
+        nth_dim: nth_dim,
+        kind: kind,
+        layout: layout,
+        size: size,
+        sub: sub,
+        slice: slice,
+        blit: blit,
+        fill: fill,
+        reshape: reshape,
+        get: get,
+        get1: get1,
+        set: set,
+        set1: set1
+    };
+}
+
+//Provides: caml_ba_create
+//Requires: caml_ba_create_from
+//Requires: caml_js_from_array
+//Requires: caml_ba_views
+//Requires: caml_ba_init_views
+//Requires: caml_invalid_argument
+//Requires: caml_ba_get_size
+function caml_ba_create(kind, layout, dims_ml) {
+    // Initialize TypedArray views
+    caml_ba_init_views();
+
+    // set up dimensions and calculate size
+    var dims = caml_js_from_array(dims_ml);
+    var n_dims = dims.length;
+    var size = caml_ba_get_size(dims);
+
+    // Allocate TypedArray
+    var view = caml_ba_views[0][kind];
+    if (!view)
+        caml_invalid_argument("Bigarray.create: unsupported kind");
+    var data = new view(size);
+
+    // 2nd TypedArray for int64, complex32 and complex64
+    var data_type = caml_ba_views[1][kind];
+    var data2 = null;
+    if (data_type != 0 /* General */) {
+        data2 = new view(size);
+    }
+
+    return caml_ba_create_from(data, data2, data_type, size, layout, dims);
+}
+
+//Provides: caml_ba_kind
+function caml_ba_kind(ba) {
+    return ba.kind;
+}
+
+//Provides: caml_ba_layout
+function caml_ba_layout(ba) {
+    return ba.layout;
+}
+
+//Provides: caml_ba_num_dims
+function caml_ba_num_dims(ba, dim) {
+    return ba.num_dims;
+}
+
+//Provides: caml_ba_dim
+function caml_ba_dim(ba, dim) {
+    return ba.nth_dim(dim);
+}
+
+//Provides: caml_ba_dim_1
+function caml_ba_dim_1(ba) {
+    return ba.nth_dim(0);
+}
+
+//Provides: caml_ba_dim_2
+function caml_ba_dim_2(ba) {
+    return ba.nth_dim(1);
+}
+
+//Provides: caml_ba_dim_3
+function caml_ba_dim_3(ba) {
+    return ba.nth_dim(2);
+}
+
+//Provides: caml_ba_get_generic
+//Requires: caml_js_from_array
+function caml_ba_get_generic(ba, index) {
+    return ba.get(caml_js_from_array(index));
+}
+
+//Provides: caml_ba_get_1
+function caml_ba_get_1(ba, i0) {
+    return ba.get1(i0);
+}
+
+//Provides: caml_ba_get_2
+function caml_ba_get_2(ba, i0, i1) {
+    return ba.get([i0, i1]);
+}
+
+//Provides: caml_ba_get_3
+function caml_ba_get_3(ba, i0, i1, i2) {
+    return ba.get([i0, i1, i2]);
+}
+
+//Provides: caml_ba_set_generic
+//Requires: caml_js_from_array
+function caml_ba_set_generic(ba, index, v) {
+    return ba.set(caml_js_from_array(index), v);
 }
 
 //Provides: caml_ba_set_1
-//Requires: caml_array_bound_error
+function caml_ba_set_1(ba, i0, v) {
+    return ba.set1(i0, v);
+}
 
-function caml_ba_set_1 (b, ind, newval) {
-  if ((ind < 0) || (ind >= b.length)) caml_array_bound_error();
-  b[ind] = newval;
-  return 0;
+//Provides: caml_ba_set_2
+function caml_ba_set_2(ba, i0, i1, v) {
+    return ba.set([i0, i1], v);
+}
+
+//Provides: caml_ba_set_3
+function caml_ba_set_3(ba, i0, i1, i2, v) {
+    return ba.set([i0, i1, i2], v);
+}
+
+//Provides: caml_ba_blit
+function caml_ba_blit(src, dst) {
+    dst.blit(src);
+}
+
+//Provides: caml_ba_fill
+function caml_ba_fill(ba, init) {
+    ba.fill(init);
+}
+
+//Provides: caml_ba_sub
+function caml_ba_sub(ba, ofs, len) {
+    return ba.sub(ofs, len);
+}
+
+//Provides: caml_ba_slice
+//Requires: caml_js_from_array
+function caml_ba_slice(ba, vind) {
+    return ba.slice(caml_js_from_array(vind));
+}
+
+//Provides: caml_ba_reshape
+//Requires: caml_js_from_array
+function caml_ba_reshape(ba, vind) {
+    return ba.reshape(caml_js_from_array(vind));
 }
