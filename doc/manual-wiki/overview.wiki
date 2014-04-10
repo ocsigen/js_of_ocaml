@@ -2,7 +2,7 @@
 
 == Overview ==
 
-Js_of_ocaml is a compiler from OCaml bytecode programs to Javascript.
+Js_of_ocaml is a compiler from OCaml bytecode programs to JavaScript.
 It makes it possible to write OCaml programs that run on Web browsers.
 It is easy to install as it works with an existing installation of
 OCaml, with no need to recompile any library.  It comes with bindings
@@ -31,14 +31,14 @@ retargeted OCaml compiler, as the bytecode provides a very stable API.
 == Usage ==
 
   Your program must first be compiled using the OCaml bytecode
-  compiler {{{ocamlc}}}.  Javascript bindings, as well as a
+  compiler {{{ocamlc}}}.  JavaScript bindings, as well as a
   corresponding syntax extension, are provided by the
   {{{js_of_ocaml}}} package.
 {{{
       ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml.syntax \
           -syntax camlp4o -linkpkg -o cubes.byte cubes.ml
 }}}
-  Then, run the {{{js_of_ocaml}}} compiler to produce Javascript code:
+  Then, run the {{{js_of_ocaml}}} compiler to produce JavaScript code:
 {{{
       js_of_ocaml cubes.byte
 }}}
@@ -46,7 +46,7 @@ retargeted OCaml compiler, as the bytecode provides a very stable API.
 == Features ==
 
 Most of the OCaml standard library is supported. However,
-  * Weak semantic cannot be implemented using javascript.
+  * Weak semantic cannot be implemented using JavaScript.
     A dummy implemtation is available (use `+weak.js` option)
   * Most of Sys module is not supported.
 
@@ -70,7 +70,7 @@ different from usual:
   * the polymorphic hash function will not give the same results on
     datastructures containing floats;
   * these functions may be more prone to stack overflow, as the
-    Javascript stack is small.
+    JavaScript stack is small.
 
 == Contents of the distribution ==
 
@@ -78,7 +78,7 @@ different from usual:
 |    README      |   this file                                      |
 |    compiler/   |   compiler                                       |
 |    examples/   |   small examples                                 |
-|    lib/        |   library for interfacing with Javascript APIs   |
+|    lib/        |   library for interfacing with JavaScript APIs   |
 |    runtime/    |   runtime system                                 |
 
 
@@ -87,5 +87,6 @@ different from usual:
 To help debugging your programs, use the "-pretty" and "-noinline"
 options of Js_of_ocaml. If the bytecode is build with ocaml "-g"
 option, Js_of_ocaml will attempt to preserve variable names as well.
-Also use {{{Js.debugger()}}} to output the javascript {{{debugger}}}
-statement and set breakpoints.
+You can also use {{{Js.debugger()}}} which inserts a JavaScript {{{debugger}}}
+statement. When the JavaScript debugger is active, this statement
+pauses the execution of the program.
