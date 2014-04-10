@@ -613,14 +613,17 @@ class clean = object(m)
   inherit map as super
 
   method statements l =
+    let rev_append_st x l = match x with
+      | Block (b,_) -> List.rev_append b l
+      | x -> x::l in
     let l = super#statements l in
     let vars_rev,instr_rev = List.fold_left (fun (vars_rev,instr_rev) x ->
         match x with
           | Variable_statement l -> (List.rev_append l vars_rev,instr_rev)
           | Empty_statement _
           | Expression_statement (EVar _, _) -> vars_rev,instr_rev
-          | x when vars_rev = [] -> ([],x::instr_rev)
-          | x -> ([],x::Variable_statement (List.rev vars_rev)::instr_rev)
+          | x when vars_rev = [] -> ([],rev_append_st x instr_rev)
+          | x -> ([],rev_append_st x (Variable_statement (List.rev vars_rev)::instr_rev))
       ) ([],[]) l in
     let instr_rev = match vars_rev with
       | [] -> instr_rev
