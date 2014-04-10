@@ -24,6 +24,8 @@ let random_var () =
 let random_tvar () =
   Format.sprintf "A%08Lx" (Random.State.int64 rnd 0x100000000L)
 
+module StringMap = Map.Make(String)
+
 open Camlp4
 
 module Id : Sig.Id = struct
@@ -148,6 +150,59 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       >>
       args
 
+  let rec parse_field_list l =
+    match l with
+      <:rec_binding< $f1$; $f2$ >> -> f1 :: parse_field_list f2
+    | _                            -> [l]
+
+  let parse_field f =
+    match f with
+      <:rec_binding< $lab$ = $e$ >> ->
+        let lab_loc,lab = match lab with
+          | Ast.IdLid(loc,lab) -> loc,lab
+          | _ -> assert false in
+        let e_loc = Ast.loc_of_expr e in
+        let t = fresh_type lab_loc in
+        ((lab, lab_loc), (e,e_loc), t)
+    | _ ->
+        assert false
+
+  let object_init _loc fields =
+    let obj_type = fresh_type _loc in
+    let constr_expr =
+      List.fold_right
+        (fun ((lab, lab_loc), _, t) accu ->
+           let meth_type =
+             <:ctyp< Js.gen_prop <set:$t$->unit; ..> >>
+           in
+           let constr =
+             let y = random_var () in
+             let body =
+               let o = <:expr< $lid:y$ >> in
+               let _loc = lab_loc in <:expr< ($o$#$lab$ : $meth_type$) >>
+             in
+             <:expr< fun ($lid:y$ : $obj_type$) -> $body$ >>
+           in
+           <:expr< let _ = $constr$ in $accu$ >>)
+        fields
+        <:expr< () >>
+    in
+    let args =
+      List.map
+        (fun ((lab,l), (e,_), t) ->
+           let _loc = l in
+           <:expr< ($str:unescape lab$,
+                    Js.Unsafe.inject $with_type e t$) >>)
+        fields
+    in
+    let args = make_array _loc args in
+    let x = random_var () in
+    <:expr<
+      let $lid:x$ : Js.t (< .. > as $obj_type$) = Js.Unsafe.obj $args$ in
+      let () = $constr_expr$ in
+      $lid:x$
+    >>
+
   let new_object _loc constructor args =
     let args = List.map (fun e -> (e, fresh_type _loc)) args in
     let obj_type = <:ctyp< $js_t_id _loc "t"$ $fresh_type _loc$ >> in
@@ -208,7 +263,21 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [[ "jsnew"; e = expr LEVEL "label"; "("; ")" ->
          new_object _loc e []
      | "jsnew"; e = expr LEVEL "label"; "("; l = comma_expr; ")" ->
-         new_object _loc e (parse_comma_list l) ]];
+         new_object _loc e (parse_comma_list l)
+    | "{|"; "|}" ->
+    <:expr< Js.Unsafe.obj [| |] >>
+     | "{|"; l = field_expr_list; "|}" ->
+       let field_list = parse_field_list l in
+       let fields = List.map parse_field field_list in
+       let _ = List.fold_left (fun acc ((lab,loc),_,_) ->
+           if StringMap.mem lab acc
+           then
+             let loc' = StringMap.find lab acc in
+             Format.eprintf "Duplicated label %S at %s@.%S previously seen at %s@."
+               lab (Loc.to_string loc) lab (Loc.to_string loc');
+             failwith "Error while preprocessing with with Js_of_ocaml extention syntax"
+           else StringMap.add lab loc acc) StringMap.empty fields in
+       object_init _loc fields ]];
     END
 
 (*XXX n-ary methods
