@@ -28,22 +28,25 @@
  ** Compiler: remove redundant 'var' (by Hugo Heuzard)
  ** Compiler: strict mode enabled
  ** Compiler: improve compact mode, remove unnecessary space, semicolon
- ** Runtime: add one-dimensional Bigarray support
+ ** Runtime: add Bigarray support (contributed by Andrew Ray)
  ** Library: switch from "float Js.t" to just "float" for typing
     JavaScript numbers
- ** Runtime: add support for recursive module
- ** Compiler: use trampoline to implement tailcall optim
- ** Runtime: Support in_channel and out_channel
+ ** Runtime: add support for recursive module (by Hugo Heuzard)
+ ** Compiler: use trampoline to implement tailcall optim (by Hugo Heuzard)
+ ** Runtime: Support in_channel and out_channel (by Hugo Heuzard)
  ** Compiler: option to embed files into the generated js
-    such files can be read using open_in
- ** Runtime: add cache for method lookup
- ** Compiler: sourcemap support
+    such files can be read using open_in (by Hugo Heuzard)
+ ** Runtime: add cache for method lookup (by Hugo Heuzard)
+ ** Compiler: experimental sourcemap support (by Hugo Heuzard)
+ ** JavaScript Errors are now wrapped inside OCaml exceptions (by Hugo Heuzard)
+ ** Improved OCaml toplevel (by Hugo Heuzard)
 
  * BugFixes
  ** Compiler: js file is not create in case of error (by Hugo Heuzard)
- ** Fix compatibility when using type conv (by Hugo Heuzard)
+ ** Fix compatibility when using type covn (by Hugo Heuzard)
  ** Fix md5 : incorrect for string where (length % 64) E 56..59 (by Grégoire Henry)
  ** Fix caml_js_new: when called with more than 8 arguments
+ ** Address a number of integer overflow issues (by Hugo Heuzard)
 
 ===== 1.4 (2013-12-03) =====
 

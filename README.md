@@ -1,14 +1,15 @@
 # Js_of_ocaml
 
-Js_of_ocaml is a compiler from OCaml bytecode to Javascript. It makes OCaml programs run on Web browsers.
-
-  * It is easy to install as it works with an existing installation of OCaml,
-with no need to recompile any library.
+Js_of_ocaml is a compiler from OCaml bytecode to Javascript. It makes
+OCaml programs run on Web browsers.
+  * It is easy to install and use as it works with an existing
+    installation of OCaml, with no need to recompile any library.
   * It comes with bindings for a large part of the browser APIs.
-  * According to our benchmarks, the generated programs runs typically faster than with the OCaml bytecode
-interpreter.
-  * We believe this compiler will prove much easier to maintain than a retargeted OCaml compiler,
-as the bytecode provides a very stable API.
+  * According to our benchmarks, the generated programs runs typically
+    faster than with the OCaml bytecode interpreter.
+  * We believe this compiler will prove much easier to maintain than a
+    retargeted OCaml compiler, as the bytecode provides a very stable
+    API.
 
 ## Requirements
 
@@ -16,7 +17,7 @@ as the bytecode provides a very stable API.
   * Lwt: **version 2.3.0** at least
   * Menhir
 
-### optionnal
+### optional
   * [deriving](https://github.com/ocsigen/deriving): **version 0.6** at least
 
 ### Toplevel requirements
@@ -61,30 +62,29 @@ js_of_ocaml cubes.byte
 
 Most of the OCaml standard library is supported. However,
   * Weak semantic cannot be implemented using javascript.
-    A dummy implemtation is available (use `+weak.js` option)
-  * Most of Sys module is not supported.
+    A dummy implementation is available (use `+weak.js` option)
+  * Most of the Sys module is not supported.
 
 Extra libraries distributed with Ocaml (such as Thread or Str) are not
 supported in general. However,
-  * Bigarray: 1-dimensional bigarray are supported using Typed Arrays
+  * Bigarray: bigarrays are supported using Typed Arrays
   * Unix: time related functions are supported
 
 Tail call is not optimized in general. However, mutually recursive
-functions are optimized.
+functions are optimized:
   * self recursive functions (when the tail calls are the function itself) are
     compiled using a loop.
   * trampolines are used otherwise.
 
-Data representation differs from the usual one, for performance
-reasons.  Most notably, integers are 32 bits (rather than 31 bits or
-63 bits) and floats are not boxed.  As a consequence, marshalling,
-polymorphic comparison, and hashing functions can yield results
-different from usual:
+Data representation differs from the usual one.  Most notably,
+integers are 32 bits (rather than 31 bits or 63 bits), which is their
+natural size in JavaScript, and floats are not boxed.  As a
+consequence, marshalling, polymorphic comparison, and hashing
+functions can yield results different from usual:
   * marshalling of floats is not supported (unmarshalling works);
   * the polymorphic hash function will not give the same results on
     datastructures containing floats;
-  * these functions may be more prone to stack overflow, as the
-    Javascript stack is small.
+  * these functions may be more prone to stack overflow.
 
 ## Toplevel
   * [Ocaml 4.01.0](http://ocsigen.github.io/js_of_ocaml/#4.01.0)
