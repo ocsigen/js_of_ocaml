@@ -959,8 +959,8 @@ and translate_expr ctx queue x e level =
           match l with
               [] ->
               (const_p, [], queue)
-            | Pc (String nm) :: Pv x :: r ->
-              let ((prop, cx), queue) = access_queue queue x in
+            | Pc (String nm) :: x :: r ->
+              let ((prop, cx), queue) = access_queue' ~ctx queue x in
               let (prop', r', queue') = build_fields queue r in
               (or_p prop prop', (J.PNS nm, cx) :: r', queue)
             | _ ->
