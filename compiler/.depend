@@ -28,8 +28,10 @@ driver.cmx : varPrinter.cmx util.cmx tailcall.cmx specialize_js.cmx \
     deadcode.cmx compiler_version.cmx code.cmx driver.cmi
 eval.cmo : primitive.cmi flow.cmi code.cmi eval.cmi
 eval.cmx : primitive.cmx flow.cmx code.cmx eval.cmi
-flow.cmo : util.cmi subst.cmi option.cmi dgraph.cmi code.cmi flow.cmi
-flow.cmx : util.cmx subst.cmx option.cmx dgraph.cmx code.cmx flow.cmi
+flow.cmo : util.cmi subst.cmi primitive.cmi option.cmi dgraph.cmi code.cmi \
+    flow.cmi
+flow.cmx : util.cmx subst.cmx primitive.cmx option.cmx dgraph.cmx code.cmx \
+    flow.cmi
 freevars.cmo : util.cmi option.cmi code.cmi freevars.cmi
 freevars.cmx : util.cmx option.cmx code.cmx freevars.cmi
 generate.cmo : util.cmi subst.cmi primitive.cmi option.cmi js_tailcall.cmi \
@@ -38,8 +40,8 @@ generate.cmx : util.cmx subst.cmx primitive.cmx option.cmx js_tailcall.cmx \
     js_simpl.cmx javascript.cmx freevars.cmx code.cmx generate.cmi
 inline.cmo : code.cmi inline.cmi
 inline.cmx : code.cmx inline.cmi
-instr.cmo : option.cmi instr.cmi
-instr.cmx : option.cmx instr.cmi
+instr.cmo : util.cmi instr.cmi
+instr.cmx : util.cmx instr.cmi
 javascript.cmo : varPrinter.cmi util.cmi parse_info.cmi code.cmi \
     javascript.cmi
 javascript.cmx : varPrinter.cmx util.cmx parse_info.cmx code.cmx \
@@ -76,8 +78,8 @@ minify.cmo : util.cmi pretty_print.cmi parse_js.cmi parse_info.cmi \
     option.cmi js_traverse.cmi js_output.cmi js_assign.cmi code.cmi
 minify.cmx : util.cmx pretty_print.cmx parse_js.cmx parse_info.cmx \
     option.cmx js_traverse.cmx js_output.cmx js_assign.cmx code.cmx
-option.cmo : util.cmi option.cmi
-option.cmx : util.cmx option.cmi
+option.cmo : option.cmi
+option.cmx : option.cmi
 parse_bytecode.cmo : util.cmi primitive.cmi parse_info.cmi option.cmi \
     javascript.cmi instr.cmi code.cmi parse_bytecode.cmi
 parse_bytecode.cmx : util.cmx primitive.cmx parse_info.cmx option.cmx \
