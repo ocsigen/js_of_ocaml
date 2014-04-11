@@ -1,45 +1,47 @@
-===== dev =====
+===== 2.0 (2013-04-11) =====
 
  * Features/Changes
+ ** Compiler: generate shorter variable names
+ ** Parsing and minifying of external javascript file (ie: runtime)
+    (by Hugo Heuzard)
+ ** Compiler: JavaScript strict mode enabled
+ ** Runtime: add support for recursive module (by Hugo Heuzard)
+ ** Compiler: use trampoline to implement tailcall optim (by Hugo Heuzard)
+ ** Improved OCaml toplevel UI (by Hugo Heuzard)
+ ** Toplevel: support dynamic loading of cmo and cma files
+ ** Runtime: add Bigarray support (contributed by Andrew Ray)
+ ** Library: switch from "float Js.t" to just "float" for typing
+    JavaScript numbers
  ** Compiler: Add javascript file lookup using findlib
     (+mypkg/myfile.js will read myfile.js from mypkg findlib directory)
     (by Hugo Heuzard)
- ** Compiler: Improve missing primitives & reserved name detection
+ ** Compiler: improve missing primitives & reserved name detection
     (by Hugo Heuzard)
- ** Compiler: Add variable renaming
  ** Compiler: static evaluation of constant ("staticeval" optimisation)
     (by Hugo Heuzard)
- ** Compiler: Share constant (by Hugo Heuzard)
- ** Compiler: Alias primitives (by Hugo Heuzard)
- ** Compiler: Complete javacript ast (by Hugo Heuzard)
+ ** Compiler: share constants (by Hugo Heuzard)
+ ** Compiler: alias primitives (by Hugo Heuzard)
+ ** Compiler: complete javacript ast (by Hugo Heuzard)
  ** Compiler: 'caml_format_int %d x' compiles to ""+x (by Hugo Heuzard)
- ** add javascript file in META (to be used with ocamlfind)
+ ** Add JavaScript file in META (to be used with ocamlfind)
     (by Hugo Heuzard)
- ** add Ocamlbuild plugin js_of_ocaml.ocamlbuild
+ ** Add Ocamlbuild plugin js_of_ocaml.ocamlbuild
     (by Jacques-Pascal Deplaix)
  ** Add/Install classlist.js, weak.js
  ** Add Url.Current.protocol (by Vicent Balat)
  ** Dependency: deriving instead of deriving-ocsigen
- ** Log in case of wrong string encoding (by Hugo Heuzard)
+ ** Runtime: log wrong string encoding issues to the console (by Hugo Heuzard)
  ** Add compiler_libs (by Pierre Chambart)
- ** Compile native syntax extension (by Hugo Heuzard)
- ** Add a javascript parser (extracted from facebook/pfff)
- ** parsing and minifying external javascript file (ie: runtime)(by Hugo Heuzard)
+ ** Compile syntax extension to native code as well (by Hugo Heuzard)
+ ** Add a JavaScript parser (extracted from facebook/pfff)
  ** Compiler: remove redundant 'var' (by Hugo Heuzard)
- ** Compiler: strict mode enabled
  ** Compiler: improve compact mode, remove unnecessary space, semicolon
- ** Runtime: add Bigarray support (contributed by Andrew Ray)
- ** Library: switch from "float Js.t" to just "float" for typing
-    JavaScript numbers
- ** Runtime: add support for recursive module (by Hugo Heuzard)
- ** Compiler: use trampoline to implement tailcall optim (by Hugo Heuzard)
  ** Runtime: Support in_channel and out_channel (by Hugo Heuzard)
  ** Compiler: option to embed files into the generated js
     such files can be read using open_in (by Hugo Heuzard)
  ** Runtime: add cache for method lookup (by Hugo Heuzard)
  ** Compiler: experimental sourcemap support (by Hugo Heuzard)
  ** JavaScript Errors are now wrapped inside OCaml exceptions (by Hugo Heuzard)
- ** Improved OCaml toplevel (by Hugo Heuzard)
 
  * BugFixes
  ** Compiler: js file is not create in case of error (by Hugo Heuzard)
@@ -47,6 +49,7 @@
  ** Fix md5 : incorrect for string where (length % 64) E 56..59 (by Grégoire Henry)
  ** Fix caml_js_new: when called with more than 8 arguments
  ** Address a number of integer overflow issues (by Hugo Heuzard)
+ ** Fix float comparisons (NaN was not compared correctly)
 
 ===== 1.4 (2013-12-03) =====
 
