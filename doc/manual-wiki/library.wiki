@@ -44,7 +44,7 @@ Javascript field name {{{foo}}}: when accessing a field of an object,
 the name given in the OCaml code is transformed by removing a leading
 underscore and then removing all characters starting from the last
 underscore; this yields the corresponding Javascript name.  For
-instance, these for types correspond to the same Javascript method
+instance, these four types correspond to the same Javascript method
 {{{drawImage}}}:
 {{{
     drawImage :
