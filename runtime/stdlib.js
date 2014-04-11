@@ -280,7 +280,8 @@ function caml_compare_val (a, b, total) {
       } else {
         if (a < b) return -1;
         if (a > b) return 1;
-        if (total && a != b) {
+        if (a != b) {
+          if (!total) return NaN;
           if (a == a) return 1;
           if (b == b) return -1;
         }
@@ -309,17 +310,17 @@ function caml_equal (x, y) { return +(caml_compare_val(x,y,false) == 0); }
 //Requires: caml_compare_val
 function caml_notequal (x, y) { return +(caml_compare_val(x,y,false) != 0); }
 //Provides: caml_greaterequal mutable
-//Requires: caml_compare
-function caml_greaterequal (x, y) { return +(caml_compare(x,y,false) >= 0); }
+//Requires: caml_compare_val
+function caml_greaterequal (x, y) { return +(caml_compare_val(x,y,false) >= 0); }
 //Provides: caml_greaterthan mutable
-//Requires: caml_compare
-function caml_greaterthan (x, y) { return +(caml_compare(x,y,false) > 0); }
+//Requires: caml_compare_val
+function caml_greaterthan (x, y) { return +(caml_compare_val(x,y,false) > 0); }
 //Provides: caml_lessequal mutable
-//Requires: caml_compare
-function caml_lessequal (x, y) { return +(caml_compare(x,y,false) <= 0); }
+//Requires: caml_compare_val
+function caml_lessequal (x, y) { return +(caml_compare_val(x,y,false) <= 0); }
 //Provides: caml_lessthan mutable
-//Requires: caml_compare
-function caml_lessthan (x, y) { return +(caml_compare(x,y,false) < 0); }
+//Requires: caml_compare_val
+function caml_lessthan (x, y) { return +(caml_compare_val(x,y,false) < 0); }
 
 //Provides: caml_parse_sign_and_base
 //Requires: MlString
