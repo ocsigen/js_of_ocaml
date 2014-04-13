@@ -231,8 +231,12 @@ end = struct
     Sys_js.register_autoload "/" (fun s -> load_from_server s);
     Toploop.initialize_toplevel_env ();
     Toploop.input_name := "//toplevel//";
-    let header = "        Objective Caml version %s@.@." in
-    exec' (Printf.sprintf "Format.printf \"%s\" Sys.ocaml_version;;" header);
+    let header =
+      "        Objective Caml version %s" in
+    let header2 = Printf.sprintf
+      "     Compiled with Js_of_ocaml version %s" Sys_js.js_of_ocaml_version in
+    exec' (Printf.sprintf "Format.printf \"%s@.\" Sys.ocaml_version;;" header);
+    exec' (Printf.sprintf "Format.printf \"%s@.@.\";;" header2);
     exec' ("#enable \"pretty\";;");
     exec' ("#enable \"shortvar\";;")
 end
