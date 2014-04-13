@@ -36,3 +36,7 @@ let register_autoload ~path f =
 let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
   let f' : (Js.js_string Js.t -> unit) Js.callback = Js.wrap_callback (fun s -> f (Js.to_string s)) in
   set_channel_output' out_channel f'
+
+(* The version string is found in file ../VERSION *)
+
+let js_of_ocaml_version = "%%VERSION%%"

@@ -63,6 +63,9 @@ syntax/pa_deriving_Json.cmxs: syntax/pa_deriving_Json.cmx
 %.cmo: %.ml syntax/pa_js.cmo
 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c -g $<
 
+sys_js.ml: sys_js.mlp
+	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys_js.mlp >sys_js.ml
+
 %.cmi: %.mli
 	ocamlfind ocamlc -package lwt -I deriving_json -c $<
 
@@ -93,6 +96,7 @@ clean:
 	rm -f deriving_json/*.cm[xioa] deriving_json/*.[ao] deriving_json/*.so
 	rm -f deriving_json/deriving_Json_lexer.ml
 	rm -f stubs.c
+	rm -f sys_js.ml
 
 depend: syntax/pa_js.cmo ${PA_DERIVING}
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend

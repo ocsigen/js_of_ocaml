@@ -33,3 +33,10 @@ val set_channel_flusher : out_channel -> (string -> unit) -> unit
   (** Set a callback to be called when an out_channel flush its buffer.
       [set_channel_flusher chan cb] install the callback [cb] for [chan] out_channel.
       [cb] will be called with the string to flush. *)
+
+val js_of_ocaml_version : string
+  (** [js_of_ocaml_version] is the version of Js_of_ocaml.
+      It is a string of the form ["major.minor[.patchlevel][+additional-info]"],
+      where [major], [minor], and [patchlevel] are integers, and
+      [additional-info] is an arbitrary string. The [[.patchlevel]] and
+      [[+additional-info]] parts may be absent. *)
