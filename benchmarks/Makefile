@@ -25,27 +25,31 @@ missingsizes=$(missingsizesml) $(missingsizesocamljs)
 missingcompiletimes = $(exesnames:%=results/compiletimes/`hostname`/byte/%) $(exesnames:%=results/compiletimes/`hostname`/opt/%)
 possiblymissingbenchs = results/times/`hostname`/nitro/js_of_ocaml/kb results/times/`hostname`/tm/js_of_ocaml/hamming results/times/`hostname`/tm/js_of_ocaml/splay
 
+OCAML=ocaml unix.cma
+RUN=$(OCAML) ./run.ml
+REPORT=$(OCAML) ./report.ml
+
 .PHONY: $(GRAPHSNOPR:.pdf=.svg) $(GRAPHSPR:.pdf=.svg) size.gpl _noprecomp
 
 # compile with precompiled programs for creating benchs
 __precomp:
 	mkdir -p build/byte
 	ln -sf $(exes:%=../../%) build/byte
-	if [ ! -d precomptmp ] ; then ./run.ml -compile ; else cd precomptmp ; find . -type f -exec mv {} ../{} \; ; fi
+	if [ ! -d precomptmp ] ; then $(RUN) -compile ; else cd precomptmp ; find . -type f -exec mv {} ../{} \; ; fi
 	rm -rf precomptmp
 	touch __precomp
 
 # for running the test we do not want precompiled programs
 __run:
 	make _noprecomp
-	./run.ml -all
+	$(RUN) -all
 	make __possiblymissingbenchs
 	touch __run
 
 fastrun:
 	make _noprecomp
 	echo "======================== WARNING: fast benchs!"
-	./run.ml -ffast -all
+	$(RUN) -ffast -all
 	make __possiblymissingbenchs
 	touch __run
 
@@ -92,7 +96,7 @@ __missingsizes: __precomp
 # To generate SVG, we first need to run the benchs,
 # then to add data for precompiled programs
 time.svg: __run
-	./report.ml -config report-time.config \
+	$(REPORT) -config report-time.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
 	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
 	 > $@
@@ -101,7 +105,7 @@ size.svg: size.gpl
 	gnuplot < $^ > $@
 
 size.gpl: __run __missingsizes
-	./report.ml -config report-size.config \
+	$(REPORT) -config report-size.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
 	 -omit fannkuch_redux_2 \
 	 -omit boyer_no_exc -omit kb_no_exc \
@@ -121,14 +125,14 @@ size.gpl: __run __missingsizes
 	 > $@
 
 time-optim.svg: __run
-	./report.ml -config report-time-optim.config \
+	$(REPORT) -config report-time-optim.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
 	 -omit fannkuch_redux_2 \
 	 -max 4 -svg 7 400 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size-optim.svg: __run __missingsizes
-	./report.ml -config report-size-optim.config \
+	$(REPORT) -config report-size-optim.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop  \
 	 -omit fannkuch_redux_2 \
 	 -omit boyer_no_exc -omit kb_no_exc \
@@ -146,14 +150,14 @@ size-optim.svg: __run __missingsizes
 	 > $@
 
 time-ocamljs.svg: __run
-	./report.ml -config report-time-ocamljs.config \
+	$(REPORT) -config report-time-ocamljs.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
 	 -omit fannkuch_redux_2 \
 	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
 	 > $@
 
 size-ocamljs.svg: __run __precomp
-	./report.ml -config report-size-ocamljs.config -omit loop \
+	$(REPORT) -config report-size-ocamljs.config -omit loop \
 	 -omit binary_trees -omit fannkuch_redux \
 	 -omit fannkuch_redux_2 \
 	 -omit spectral_norm \
@@ -172,13 +176,13 @@ size-ocamljs.svg: __run __precomp
 	 > $@
 
 compiletime.svg: __run __precomp __missingcompiletimes
-	./report.ml -config report-compiletime.config \
+	$(REPORT) -config report-compiletime.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
 	 -max 2 -svg 7 500 150 -edgecaption -ylabel "Compile time" \
 	 > $@
 
 nativejs.svg: __run
-	./report.ml -config report-nativejs.config \
+	$(REPORT) -config report-nativejs.config \
 	 -omit binary_trees -omit fannkuch_redux -omit loop \
 	 -max 2.8 -svg 7 200 150 -edgecaption -ylabel "Execution time" \
 	 > $@
