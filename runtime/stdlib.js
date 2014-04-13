@@ -753,6 +753,12 @@ function caml_sys_random_seed () {
 function caml_sys_const_big_endian () { return 0; }
 //Provides: caml_sys_const_word_size const
 function caml_sys_const_word_size () { return 32; }
+//Provides: caml_sys_const_int_size const
+function caml_sys_const_int_size () { return 32; }
+
+//Provides: caml_sys_const_max_wosize const
+function caml_sys_const_max_wosize () { return 0x7FFFFFFF; /* max_int */}
+
 //Provides: caml_sys_const_ostype_cygwin const
 function caml_sys_const_ostype_cygwin () { return 0; }
 //Provides: caml_sys_const_ostype_unix const
