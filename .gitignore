@@ -21,6 +21,7 @@
 *.tmpjs
 *.map
 lib/stubs.c
+lib/sys_js.ml
 runtime/runtime.js
 toplevel/toplevel.js
 toplevel/server
