@@ -838,7 +838,8 @@ function caml_get_current_callstack () { return 0; }
 function caml_sys_getenv () { caml_raise_not_found (); }
 //Provides: caml_sys_exit
 //Requires: caml_invalid_argument
-function caml_sys_exit () {
+function caml_sys_exit (code) {
+  if(joo_global_object.quit) joo_global_object.quit(code);
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
