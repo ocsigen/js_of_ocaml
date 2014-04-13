@@ -61,7 +61,7 @@ let fannkuch n =
 
 let _ =
         let n = 10 in
-        let (maxflips, checksum) = fannkuch n in
+        let (_maxflips, _checksum) = fannkuch n in
 ((*
         Printf.printf "%d\nPfannkuchen(%d) = %d\n" checksum n maxflips
  *))

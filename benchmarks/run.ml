@@ -138,8 +138,8 @@ let compr_file_size =
     ~comptime:false
     (Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s")
 
-let runtime_size = 
-  compile_no_ext ~comptime:false (Format.sprintf "head -n -1 %s | wc -c > %s")
+(* let runtime_size = *)
+(*   compile_no_ext ~comptime:false (Format.sprintf "head -n -1 %s | wc -c > %s") *)
 
 let gen_size =
   compile_no_ext ~comptime:false (Format.sprintf "tail -1 %s | wc -c > %s")
@@ -212,9 +212,9 @@ let _ =
   compile ~comptime:true "ocamlc" src ml code byte;
   compile ~comptime:true "ocamlopt" src ml code opt;
   compile ~comptime:true "js_of_ocaml" code byte code js_of_ocaml;
-  compile ~comptime:true "js_of_ocaml -noinline" code byte code js_of_ocaml_inline;
+  compile ~comptime:true "js_of_ocaml -disable inline" code byte code js_of_ocaml_inline;
   compile ~comptime:true "js_of_ocaml -disable deadcode" code byte code js_of_ocaml_deadcode;
-  compile ~comptime:true "js_of_ocaml -disable compactexpr" code byte code js_of_ocaml_compact;
+  compile ~comptime:true "js_of_ocaml -disable compact" code byte code js_of_ocaml_compact;
   compile ~comptime:true "js_of_ocaml -disable optcall" code byte code js_of_ocaml_call;
   if run_ocamljs () then compile ~comptime:true "ocamljs" src ml code ocamljs;
   compile ~comptime:true "ocamlc -unsafe" src ml code byte_unsafe;
@@ -226,7 +226,7 @@ let _ =
   file_size code byte sizes byte;
   file_size code js_of_ocaml sizes (sub_spec js_of_ocaml "full");
   compr_file_size code js_of_ocaml sizes (sub_spec js_of_ocaml "gzipped");
-  runtime_size code js_of_ocaml sizes (sub_spec js_of_ocaml "runtime");
+  (* runtime_size code js_of_ocaml sizes (sub_spec js_of_ocaml "runtime"); *)
   gen_size code js_of_ocaml sizes (sub_spec js_of_ocaml "generated");
   gen_size code js_of_ocaml_inline sizes js_of_ocaml_inline;
   gen_size code js_of_ocaml_deadcode sizes js_of_ocaml_deadcode;
