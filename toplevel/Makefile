@@ -25,9 +25,9 @@ OPTCOMP_OPT=-ppopt -let -ppopt ocpindent=true
 endif
 
 COMP=../compiler/$(COMPILER)
-JSFILES=../runtime/runtime.js ../runtime/weak.js ../runtime/toplevel.js
+JSFILES=../runtime/runtime.js ../runtime/weak.js ../runtime/toplevel.js ../runtime/graphics.js
 OCAMLC=ocamlfind ocamlc -package lwt,optcomp -syntax camlp4o $(OCPINDENT) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" -I +compiler-libs -I ../lib -I ../compiler
-STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER)
+STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER) ../lib/graphics.cma
 EXPUNGE=$(shell ocamlc -where)/expunge
 # Removed gc and sys
 STDLIB_MODULES=\
@@ -73,7 +73,11 @@ STDLIB_MODULES=\
   string \
   stringLabels \
   sys \
-  weak
+  weak \
+	graphics \
+	graphics_js \
+	lwt \
+	lwt_js
 
 JOO=js dom typed_array dom_html file dom_events firebug lwt_js sys_js regexp CSS url \
   form xmlHttpRequest event_arrows lwt_js_events json webGL webSockets keycode
@@ -85,10 +89,10 @@ PERVASIVES=$(STDLIB_MODULES) $(JOO) $(BER_MODULE) outcometree topdirs toploop
 #	ocamlfind ocamlc -linkall -g -package str -linkpkg toplevellib.cma -o $@.tmp $^
 
 $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
-	$(COMP) -I $(shell ocamlc -where)/compiler-libs -toplevel -noruntime $(JSFILES) $(NAME).byte $(OPTIONS) -I ./ -I ../lib/ -file examples.ml
+	$(COMP) -I $(shell ocamlc -where)/compiler-libs -I $(shell ocamlfind query lwt) -toplevel -noruntime $(JSFILES) $(NAME).byte $(OPTIONS) -I ./ -I ../lib/ -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
-	$(OCAMLC) -linkall -package findlib $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
+	$(OCAMLC) -linkall -package findlib,graphics,lwt $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
 
