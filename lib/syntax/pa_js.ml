@@ -81,22 +81,16 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   let fresh_type _loc = <:ctyp< '$random_var ()$ >>
 
-  let access_object e m m_loc m_typ f =
-    let _loc = Ast.loc_of_expr e in
-    let x = random_var () in
-    let obj_type = fresh_type _loc in
-    let obj = <:expr< ($e$ : Js.t (< .. > as $obj_type$)) >> in
-    let constr =
-      let y = random_var () in
-      let body =
-        let o = <:expr< $lid:y$ >> in
-        let _loc = m_loc in <:expr< ($o$#$m$ : $m_typ$) >>
-      in
-      <:expr< fun ($lid:y$ : $obj_type$) -> $body$ >>
-    in
-    <:expr< let $lid:x$ = $obj$ in
-            let _ = $constr$ in
-            $f x$ >>
+  let constrain_types _loc (e:string) (v:string) v_typ m m_typ =
+    <:expr<
+      let module M = struct
+        value _ =
+          let _ign1 = ($lid:e$ : Js.t 'b) in
+          let _ign2 = ($lid:v$ : $v_typ$) in
+          (fun (x : 'b) -> (x#$lid:m$ : $m_typ$ ));
+        end
+      in ()
+    >>
 
   let method_call _loc obj lab lab_loc args =
     let args = List.map (fun e -> (e, fresh_type _loc)) args in
@@ -106,14 +100,19 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         (fun (_, arg_ty) rem_ty -> <:ctyp< $arg_ty$ -> $rem_ty$ >>)
         args <:ctyp< Js.meth $ret_type$ >>
     in
-    access_object obj lab lab_loc method_type (fun x ->
+    let o = random_var () in
+    let fakev = random_var () in
+    let typ = fresh_type _loc in
     let args =
       List.map (fun (e, t) -> <:expr< Js.Unsafe.inject $with_type e t$ >>) args
     in
     let args = make_array _loc args in
     <:expr<
-       (Js.Unsafe.meth_call $lid:x$ $str:unescape lab$ $args$ : $ret_type$)
-    >>)
+      let $lid:o$ = $obj$ in
+      let $lid:fakev$ : $typ$ = Obj.magic () in
+      let () = $constrain_types _loc o fakev ret_type lab method_type$ in
+      ((Js.Unsafe.meth_call $lid:o$ $str:unescape lab$ $args$): $typ$)
+    >>
 
   let new_object _loc constructor args =
     let args = List.map (fun e -> (e, fresh_type _loc)) args in
@@ -142,17 +141,24 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     expr: BEFORE "."
     ["##" RIGHTA
      [ e = SELF; (lab_loc, lab) = jsmeth ->
-         let prop_type = fresh_type _loc in
-         let meth_type = <:ctyp< Js.gen_prop <get:$prop_type$; ..> >> in
-         access_object e lab lab_loc meth_type (fun x ->
-         <:expr< (Js.Unsafe.get $lid:x$ $str:unescape lab$ : $prop_type$) >>)
+       let o = random_var () in
+       let fakev = random_var () in
+       let typ = fresh_type _loc in
+       <:expr<
+         let $lid:o$ = $e$ in
+         let $lid:fakev$ : $typ$ = Obj.magic () in
+         let () = $constrain_types _loc o fakev <:ctyp< 'a >> lab <:ctyp< Js.gen_prop <get : 'a; ..> >>$ in
+         (Js.Unsafe.get $lid:o$ $str:unescape lab$ : $typ$)
+         >>
      | e1 = SELF; (lab_loc, lab) = jsmeth; "<-"; e2 = expr LEVEL "top" ->
-         let prop_type = fresh_type _loc in
-         let meth_type = <:ctyp< Js.gen_prop <set:$prop_type$->unit; ..> >> in
-         access_object e1 lab lab_loc meth_type (fun x ->
-         <:expr<
-           Js.Unsafe.set $lid:x$ $str:unescape lab$ ($e2$ : $prop_type$)
-         >>)
+       let o = random_var () in
+       let v = random_var () in
+       <:expr<
+         let $lid:o$ = $e1$ in
+         let $lid:v$ = $e2$ in
+         let () = $constrain_types _loc o v <:ctyp< 'a >> lab <:ctyp< Js.gen_prop <set : 'a -> unit; ..> >>$ in
+         Js.Unsafe.set $lid:o$ $str:unescape lab$ ($lid:v$)
+         >>
      | e = SELF; (lab_loc, lab) = jsmeth; "("; ")" ->
          method_call _loc e lab lab_loc []
      | e = SELF; (lab_loc, lab) = jsmeth; "("; l = comma_expr; ")" ->
