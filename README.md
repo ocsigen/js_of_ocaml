@@ -1,4 +1,4 @@
-# Js_of_ocaml
+# Js_of_ocaml (jsoo)
 
 Js_of_ocaml is a compiler from OCaml bytecode to Javascript. It makes
 OCaml programs run on Web browsers.
