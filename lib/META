@@ -6,6 +6,7 @@ requires = "js_of_ocaml.syntax,lwt"
 linkopts(javascript,-joo_noruntime) = "+js_of_ocaml/runtime.js"
 linkopts(javascript,joo_weak) += "+js_of_ocaml/weak.js"
 linkopts(javascript,joo_classlist) += "+js_of_ocaml/classlist.js"
+linkopts(javascript,pkg_graphics) += "+js_of_ocaml/graphics.js"
 
 package "syntax" (
   description = "Js_of_ocaml syntax extension"
@@ -30,6 +31,14 @@ package "deriving" (
     archive(syntax, toploop) = "pa_deriving_Json.cmo"
     requires(syntax) = "deriving.syntax.common"
   )
+)
+
+package "graphics" (
+  exists_if = "graphics.cma"
+  description = "Graphics for js_of_ocaml."
+  version = "[distributed with js_of_ocaml]"
+  archive(byte) = "grapgics.cma"
+  requires(syntax) = "lwt,graphics,js_of_ocaml"
 )
 
 package "ocamlbuild" (

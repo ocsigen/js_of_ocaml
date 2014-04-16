@@ -357,7 +357,8 @@ let run _ =
   let output = by_id "output" in
   let textbox : 'a Js.t = by_id_coerce "userinput" Html.CoerceTo.textarea in
   let example_container = by_id "toplevel-examples" in
-
+  let can = by_id_coerce "test-canvas" Html.CoerceTo.canvas in
+  Graphics_js.open_canvas can;
   let sharp_chan = open_out "/dev/null0" in
   let sharp_ppf = Format.formatter_of_out_channel sharp_chan in
 
@@ -457,7 +458,6 @@ let run _ =
                 let s' = Js.to_string s in
                 let p' = try max 0 (String.index s' '\n' - 1) with _ -> String.length s' in
                 (Obj.magic textbox)##setSelectionRange(p',p');
-                Js.Unsafe.global##console##log(p');
                 Js._false
               with _ -> Js._false
           end

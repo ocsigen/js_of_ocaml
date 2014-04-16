@@ -13,7 +13,10 @@ IMPL += lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs
 endif
 endif
 
-OTHERS := runtime/runtime.js runtime/weak.js runtime/classlist.js runtime/toplevel.js
+OTHERS := runtime/runtime.js runtime/weak.js \
+          runtime/classlist.js \
+          runtime/toplevel.js \
+          runtime/graphics.js
 
 COMP_INTF := compiler/compiler.cmi
 COMP_IMPL := compiler/compiler.cma
@@ -33,7 +36,7 @@ endif
 
 IMPL += $(addprefix ocamlbuild/_build/,$(OCAMLBUILD_IMPL))
 
-ifneq "${DERIVING}" ""
+ifneq "${WITH_DERIVING}" ""
 
 JSON := lib/deriving_json/deriving_Json.cmi       \
         lib/deriving_json/deriving_Json_lexer.cmi

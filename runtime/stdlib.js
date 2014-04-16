@@ -865,3 +865,6 @@ function caml_set_oo_id (b) {
   b[2]=caml_oo_last_id++;
   return b;
 }
+
+//Provides: caml_install_signal_handler const
+function caml_install_signal_handler(){return 0}

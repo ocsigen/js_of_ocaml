@@ -88,6 +88,16 @@
       .stdout {
 
       }
+      canvas {
+      border: 1px dashed black;
+      float: left;
+      margin: 7px;
+      }
+      #toplevel-examples {
+      width: 270px;
+      float: left;
+      }
+      .clear { clear:both; }
     </style>
     <script type="text/javascript">
       var default_top = "toplevel.js";
@@ -154,7 +164,8 @@
       </table>
       <h4>Try to execute samples</h4>
       <div id="toplevel-examples" class="list-group"></div>
-      <h4>See the generated javascript code</h4>
+      <canvas width=200 height=150 id="test-canvas"></canvas>
+      <h4 class="clear">See the generated javascript code</h4>
       <pre id="last-js">
       </pre>
     </div>

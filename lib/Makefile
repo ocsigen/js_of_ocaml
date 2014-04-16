@@ -8,7 +8,7 @@ JSON_OBJS=$(addprefix deriving_json/,deriving_Json_lexer.cmo deriving_Json.cmo)
 include ../Makefile.conf
 -include ../Makefile.local
 
-ifneq "${DERIVING}" ""
+ifneq "${WITH_DERIVING}" ""
 PA_DERIVING=syntax/pa_deriving_Json.cmo
 DERIVING_JSON=deriving_json.cma
 ifeq "$(BEST)" "opt"
@@ -17,6 +17,10 @@ ifeq "${NATDYNLINK}" "YES"
 PA_DERIVING_NDL= syntax/pa_deriving_Json.cmx syntax/pa_deriving_Json.cmxs
 endif
 endif
+endif
+
+ifneq "${WITH_GRAPHICS}" ""
+GRAPHICS_CMA=graphics.cma
 endif
 
 PA_JS= syntax/pa_js.cmo
@@ -29,7 +33,8 @@ endif
 all: $(LIBNAME).cma \
 	${PA_JS} ${PA_JS_NDL} \
 	${PA_DERIVING} 	${PA_DERIVING_NDL} \
-	${DERIVING_JSON}
+	${DERIVING_JSON} \
+	${GRAPHICS_CMA}
 
 $(LIBNAME).cma: $(OBJS)
 	ocamlmklib -o $(LIBNAME) $(OBJS)
@@ -78,6 +83,15 @@ ${JSON_OBJS}: %.cmo: %.ml ${PA_DERIVING}
 ${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml ${PA_DERIVING}
 	ocamlfind ocamlopt -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
 
+graphics_js.cmo: graphics_js.ml graphics_js.cmi syntax/pa_js.cmo
+	ocamlfind ocamlc -syntax camlp4o -package lwt,lwt.syntax,graphics -ppopt syntax/pa_js.cmo -c graphics_js.ml
+
+graphics_js.cmi: graphics_js.ml
+	ocamlfind ocamlc -package lwt,graphics graphics_js.mli
+
+graphics.cma: graphics_js.cmo
+	ocamlfind ocamlc -a -o $@ $^
+
 
 %$(OBJEXT): %.c
 	ocamlfind ocamlc -package lwt -c $<
@@ -100,7 +114,7 @@ clean:
 
 depend: syntax/pa_js.cmo ${PA_DERIVING}
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
-ifneq "${DERIVING}" ""
+ifneq "${WITH_DERIVING}" ""
 	${MAKE} --no-print-directory deriving_json/deriving_Json_lexer.ml
 	ls deriving_json/*.mli deriving_json/*.ml | \
 	  grep -v deriving_Json_stdlib.mli | \
