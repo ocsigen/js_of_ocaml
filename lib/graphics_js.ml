@@ -37,11 +37,22 @@ let open_canvas x =
   let ctx = create_context x in
   set_context ctx
 
+let compute_real_pos elt =
+  let rec loop elt left top =
+    let top = elt##offsetTop - elt##scrollTop + top
+    and left = elt##offsetLeft - elt##scrollLeft + left in
+    match Js.Opt.to_option elt##offsetParent with
+    | None -> top,left
+    | Some p -> loop p left top
+  in loop elt 0 0
+
 let mouse_pos () =
   let ctx = get_context() in
   let elt = ctx##canvas in
-  Lwt_js_events.mousemove elt >>= fun e ->
-  Lwt.return (e##clientX - elt##offsetLeft,elt##height - (e##clientY - elt##offsetTop))
+  Lwt_js_events.mousemove elt >>= fun ev ->
+  let top,left = compute_real_pos elt in
+  Lwt.return ((Js.Optdef.get (ev##pageX) (fun _ -> 0)) - left,
+              elt##height - ((Js.Optdef.get (ev##pageY) (fun _ -> 0)) - top))
 
 let button_down () =
   let ctx = get_context() in
@@ -59,7 +70,6 @@ let loop elist f : unit =
   let ctx = get_context() in
   let elt = ctx##canvas in
   let doc = Dom_html.document in
-  let cx, cy = elt##offsetLeft, elt##offsetTop in
   let button = ref false in
   let null = char_of_int 0 in
   let mouse_x, mouse_y = ref 0, ref 0 in
@@ -86,6 +96,7 @@ let loop elist f : unit =
 
 
   elt##onmousemove <- Dom_html.handler (fun ev ->
+      let cy,cx = compute_real_pos elt in
       mouse_x := (Js.Optdef.get (ev##pageX) (fun _ -> 0)) - cx;
       mouse_y := elt##height - (Js.Optdef.get (ev##pageY) (fun _ -> 0) - cy);
       if List.mem Mouse_motion elist then
