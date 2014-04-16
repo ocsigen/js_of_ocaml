@@ -311,6 +311,29 @@ function caml_ba_create_from(data, data2, data_type, kind, layout, dims) {
         return caml_ba_create_from(data, data2, data_type, kind, layout, new_dim);
     }
 
+    function compare(b) {
+        if (layout != b.layout)
+            return b.layout - layout;
+        if (n_dims != b.num_dims)
+            return b.num_dims - n_dims;
+        for (var i = 0; i < n_dims; i++)
+            if (nth_dim(i) != b.nth_dim(i))
+                return (nth_dim(i) < b.nth_dim(i)) ? -1 : 1;
+        for (var i = 0; i < data.length; i++) {
+            if (data[i] < b.data[i])
+                return -1;
+            if (data[i] > b.data[i])
+                return 1;
+            if (data2) {
+                if (data2[i] < b.data2[i])
+                    return -1;
+                if (data2[i] > b.data2[i])
+                    return 1;
+            }
+        }
+        return 0;
+    }
+
     return {
         data: data,
         data2: data2,
@@ -328,7 +351,8 @@ function caml_ba_create_from(data, data2, data_type, kind, layout, dims) {
         get: get,
         get1: get1,
         set: set,
-        set1: set1
+        set1: set1,
+        compare: compare
     };
 }
 
