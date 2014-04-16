@@ -28,6 +28,15 @@ end = struct
   let even x = if x = 0 then true else Odd.odd (pred x)
 end
 
+(** Graphics: Draw *)
+open Graphics_js;;
+loop [Mouse_motion] (function {mouse_x=x;mouse_y=y} -> fill_circle x y 5);;
+
+(** Graphics: Draw chars*)
+open Graphics_js;;
+loop [Mouse_motion;Key_pressed]
+  (function {mouse_x=x;mouse_y=y;key} ->
+    moveto x y; draw_char key);;
 
 (** Graphics: PingPong *)
 open Graphics;;
