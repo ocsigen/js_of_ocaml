@@ -40,11 +40,11 @@ loop [Mouse_motion;Key_pressed]
 
 (** Graphics: PingPong *)
 open Graphics;;
-let c = 5;;
-let x0 = c
-and x1 = size_x () - c
-and y0 = c
-and y1 = size_y () - c;;
+let c = 3;;
+let x0 = 0
+and x1 = size_x ()
+and y0 = 0
+and y1 = size_y ();;
 
 let draw_ball x y =
  set_color foreground;
@@ -59,9 +59,9 @@ let rec pong_aux x y dx dy =
  let new_x = x + dx
  and new_y = y + dy in
  let new_dx =
-  if new_x - c <= x0 + 1 || new_x + c >= x1 - 1 then (- dx) else dx
+  if new_x - c <= x0 || new_x + c >= x1 then (- dx) else dx
  and new_dy =
-  if new_y - c <= y0 + 1 || new_y + c >= y1 - 1 then (- dy) else dy in
+  if new_y - c <= y0 || new_y + c >= y1 then (- dy) else dy in
  Lwt.bind (wait ()) (fun () ->
      pong_aux new_x new_y new_dx new_dy);;
 
