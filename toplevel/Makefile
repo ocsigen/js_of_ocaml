@@ -77,7 +77,8 @@ STDLIB_MODULES=\
 	graphics \
 	graphics_js \
 	lwt \
-	lwt_js
+	lwt_js \
+	bigarray
 
 JOO=js dom typed_array dom_html file dom_events firebug lwt_js sys_js regexp CSS url \
   form xmlHttpRequest event_arrows lwt_js_events json webGL webSockets keycode
@@ -92,7 +93,7 @@ $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
 	$(COMP) -I $(shell ocamlc -where)/compiler-libs -I $(shell ocamlfind query lwt) -toplevel -noruntime $(JSFILES) $(NAME).byte $(OPTIONS) -I ./ -I ../lib/ -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
-	$(OCAMLC) -linkall -package findlib,graphics,lwt $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
+	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
 
