@@ -288,6 +288,20 @@ let http_get url =
   then Lwt.return msg
   else fst (Lwt.wait ())
 
+let getfile f =
+  if Sys.file_exists f
+  then
+    let ic = open_in f in
+    let buf = Buffer.create 1204 in
+    (try while true do
+        Buffer.add_string buf (input_line ic);
+      Buffer.add_char buf '\n'
+      done
+     with End_of_file -> ());
+    Lwt.return (Buffer.contents buf)
+  else http_get f
+
+
 let start _ =
   let body =
     Js.Opt.get (document##getElementById(js"boulderdash"))
@@ -297,7 +311,7 @@ let start _ =
   let (clock_div,clock_start,_) as clock = clock_div () in
   let load_data name process =
     let loading_end = loading body in
-    http_get name >>= fun data ->
+    getfile name >>= fun data ->
     process data >>= fun res ->
     loading_end ();
     Lwt.return res
@@ -369,7 +383,7 @@ let start _ =
                                     let img = Html.createImg document in
                                     img##src <- img_assoc c;
                                     img)) map
-	 in 
+	 in
 	 let gx = ref 0 and gy = ref 0 and ex = ref 0 and ey = ref 0 and rem = ref 0 in
          let style =
            js"border-collapse:collapse;line-height: 0; opacity: 0; \
@@ -450,4 +464,3 @@ let start _ =
 
 let _ =
 Html.window##onload <- Html.handler (fun _ -> ignore (start ()); Js._false)
-
