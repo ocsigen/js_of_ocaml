@@ -241,6 +241,20 @@ let http_get url =
   then Lwt.return msg
   else fst (Lwt.wait ())
 
+let getfile f =
+  if Sys.file_exists f
+  then
+    let ic = open_in f in
+    let buf = Buffer.create 1204 in
+    (try while true do
+        Buffer.add_string buf (input_line ic);
+      Buffer.add_char buf '\n'
+      done
+     with End_of_file -> ());
+    Lwt.return (Buffer.contents buf)
+  else http_get f
+
+
 let load_image src =
   let img = Html.createImg Html.document in
   lwt_wrap
@@ -497,7 +511,7 @@ let set_language lang =
   language := lang
 
 let load_messages () =
-  http_get "messages.json" >>= fun s ->
+  getfile "messages.json" >>= fun s ->
   Lwt.return (json##parse (Js.string s))
 
 let local_messages msgs : messages Js.t = option (Js.Unsafe.get msgs !language)
@@ -829,7 +843,7 @@ let compute_text_nodes node_names nodes =
   Html.document##title <- Js.string
     (try Hashtbl.find names "<TITLE>" with Not_found -> "");
   for i = 0 to Array.length nodes - 1 do
-    match nodes.(i) with 
+    match nodes.(i) with
       (neigh, `Txt (is_root, _, info)) ->
         let canvas =
           try
@@ -1014,7 +1028,7 @@ let tree_layout node_names root =
   (vertices, edges, nodes, boxes)
 
 let load_tree () =
-  http_get tree_url >>= fun s ->
+  getfile tree_url >>= fun s ->
   let info
     : Js.js_string Js.t tree *
       (Js.js_string Js.t * (Js.js_string Js.t * Js.js_string Js.t) array *
@@ -1049,7 +1063,7 @@ type info =
     img_url : Js.js_string Js.t option }
 
 let load_image_info () : info array Lwt.t =
-  http_get "image_info.json" >>= fun s ->
+  getfile "image_info.json" >>= fun s ->
   Lwt.return (json##parse (Js.string s))
 
 let close_button over =
