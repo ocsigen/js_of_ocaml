@@ -1,4 +1,10 @@
 ===== 2.0+dev =====
+ * Features/Changes
+ ** Runtime: bigarray comparison
+ ** Lib: js_of_ocaml.graphics
+
+ * BugFixes
+ ** Syntax: Better type constraint (#84)
 
 ===== 2.0 (2013-04-11) =====
 
