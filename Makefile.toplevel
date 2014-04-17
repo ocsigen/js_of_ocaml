@@ -1,0 +1,30 @@
+
+
+
+v-4.01.%:
+	@opam switch show
+	opam switch 4.01.$*
+	eval `opam config env`
+	opam install lwt menhir ocamlfind optcomp ocp-indent
+	$(MAKE) realclean
+	$(MAKE) toplevel
+	cp toplevel/toplevel.js toplevel-4.01.$*.js
+
+v-4.01.0+BER:
+	@opam switch show
+	opam switch 4.01.0+BER
+	eval `opam config env`
+	opam install lwt menhir ocamlfind optcomp ocp-indent
+	$(MAKE) realclean
+	$(MAKE) METAOCAML=1 toplevel
+	cp toplevel/toplevel.js toplevel-4.01.0+BER.js
+
+v-4.02.%:
+	@opam switch show
+	opam switch "4.02.$*"
+	eval `opam config env`
+	opam install lwt menhir ocamlfind optcomp camlp4
+	#opam reinstall ocamlfind
+	$(MAKE) realclean
+	$(MAKE) toplevel
+	cp toplevel/toplevel.js toplevel-4.02.$*.js
