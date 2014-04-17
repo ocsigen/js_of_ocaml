@@ -192,6 +192,17 @@ function caml_ml_input (chan, s, i, l) {
   return l;
 }
 
+//Provides: caml_fs_file_content
+//Requires: MlStringFromArray, caml_fs_content, caml_make_path, MlFile
+//Requires: caml_raise_not_found
+function caml_fs_file_content(name) {
+  var path = caml_make_path(name);
+  var f = caml_fs_content(path);
+  if(f instanceof MlFile)
+    return new MlStringFromArray(f.content());
+  caml_raise_not_found();
+}
+
 //Provides: caml_input_value
 //Requires: caml_marshal_data_size, caml_input_value_from_string, MlStringFromArray
 function caml_input_value (chan) {

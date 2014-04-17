@@ -34,6 +34,10 @@ val set_channel_flusher : out_channel -> (string -> unit) -> unit
       [set_channel_flusher chan cb] install the callback [cb] for [chan] out_channel.
       [cb] will be called with the string to flush. *)
 
+external file_content : string -> string = "caml_fs_file_content"
+  (** [file_content name] returns the content of the file [name].
+      Raise [Not_found] if the file does not exists. *)
+
 val js_of_ocaml_version : string
   (** [js_of_ocaml_version] is the version of Js_of_ocaml.
       It is a string of the form ["major.minor[.patchlevel][+additional-info]"],
