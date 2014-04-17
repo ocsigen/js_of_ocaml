@@ -66,7 +66,11 @@
       font-size: 12px;
       font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
       }
+      .caml{
+      color:rgb(110, 110, 201);
+      }
       #toplevel-side{
+      position:relative;
       width:45%;
       height: 100%;
       overflow: auto;
@@ -85,9 +89,22 @@
       .stdout {
 
       }
+      canvas {
+      border: 1px dashed black;
+      float: left;
+      margin: 7px;
+      }
+      #toplevel-examples {
+      width: 270px;
+      float: left;
+      }
+      #toplevel-examples .list-group-item{
+      padding: 5px 15px;
+      }
+      .clear { clear:both; }
     </style>
     <script type="text/javascript">
-      var default_top = "v/toplevel-4.01.0.js";
+      var default_top = "toplevel.js";
       window.onhashchange = function() { window.location.reload() }
       var version = window.location.hash.match(/#?(.*)/);
       var url = (version[1]=="")?default_top:("v/toplevel-"+version[1]+".js");
@@ -151,7 +168,8 @@
       </table>
       <h4>Try to execute samples</h4>
       <div id="toplevel-examples" class="list-group"></div>
-      <h4>See the generated javascript code</h4>
+      <canvas width=200 height=200 id="test-canvas"></canvas>
+      <h4 class="clear">See the generated javascript code</h4>
       <pre id="last-js">
       </pre>
     </div>
