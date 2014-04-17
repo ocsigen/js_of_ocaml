@@ -101,7 +101,7 @@ let redraw st s h v (canvas : Html.canvasElement Js.t) =
 ;Firebug.console##timeEnd (Js.string "draw")
 ;Firebug.console##log_2 (Js.string "draw", Js.date##now())
 *)
-
+let json : < parse : Js.js_string Js.t -> 'a> Js.t = Js.Unsafe.variable "JSON"
 let (>>=) = Lwt.bind
 
 let http_get url =
@@ -111,7 +111,18 @@ let http_get url =
   then Lwt.return msg
   else fst (Lwt.wait ())
 
-let json : < parse : Js.js_string Js.t -> 'a> Js.t = Js.Unsafe.variable "JSON"
+let getfile f =
+  if Sys.file_exists f
+  then
+    let ic = open_in f in
+    let buf = Buffer.create 1204 in
+    (try while true do
+        Buffer.add_string buf (input_line ic);
+      Buffer.add_char buf '\n'
+      done
+     with End_of_file -> ());
+    Lwt.return (Buffer.contents buf)
+  else http_get f
 
 class adjustment
     ?(value=0.) ?(lower=0.) ?(upper=100.)
@@ -185,7 +196,7 @@ let start () =
 (*
   Firebug.console##time(Js.string "loading");
 *)
-  http_get "scene.json" >>= fun s ->
+  getfile "scene.json" >>= fun s ->
 (*
   Firebug.console##timeEnd(Js.string "loading");
   Firebug.console##time(Js.string "parsing");
