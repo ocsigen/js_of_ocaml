@@ -242,18 +242,10 @@ let http_get url =
   else fst (Lwt.wait ())
 
 let getfile f =
-  if Sys.file_exists f
-  then
-    let ic = open_in f in
-    let buf = Buffer.create 1204 in
-    (try while true do
-        Buffer.add_string buf (input_line ic);
-      Buffer.add_char buf '\n'
-      done
-     with End_of_file -> ());
-    Lwt.return (Buffer.contents buf)
-  else http_get f
-
+  try
+    Lwt.return (Sys_js.file_content f)
+  with Not_found ->
+    http_get f
 
 let load_image src =
   let img = Html.createImg Html.document in
