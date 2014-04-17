@@ -433,21 +433,21 @@ class type renderingContext = object
   method _DEPTH_TEST_ : enableCap readonly_prop
   method _SCISSOR_TEST_ : enableCap readonly_prop
   method _POLYGON_OFFSET_FILL_ : enableCap readonly_prop
-  method _SAMPLE_ALPHA_TO_COVERAGE : enableCap readonly_prop
-  method _SAMPLE_COVERAGE : enableCap readonly_prop
+  method _SAMPLE_ALPHA_TO_COVERAGE_ : enableCap readonly_prop
+  method _SAMPLE_COVERAGE_ : enableCap readonly_prop
 
-  method _NO_ERROR : errorCode readonly_prop
-  method _INVALID_ENUM : errorCode readonly_prop
-  method _INVALID_VALUE : errorCode readonly_prop
-  method _INVALID_OPERATION : errorCode readonly_prop
-  method _OUT_OF_MEMORY : errorCode readonly_prop
-  method _CONTEXT_LOST_WEBGL : errorCode readonly_prop
+  method _NO_ERROR_ : errorCode readonly_prop
+  method _INVALID_ENUM_ : errorCode readonly_prop
+  method _INVALID_VALUE_ : errorCode readonly_prop
+  method _INVALID_OPERATION_ : errorCode readonly_prop
+  method _OUT_OF_MEMORY_ : errorCode readonly_prop
+  method _CONTEXT_LOST_WEBGL_ : errorCode readonly_prop
   method _INVALID_FRAMEBUFFER_OPERATION_ : errorCode readonly_prop
 
   method _CW : frontFaceDir readonly_prop
   method _CCW : frontFaceDir readonly_prop
 
-  method _DONT_CARE : hintMode readonly_prop
+  method _DONT_CARE_ : hintMode readonly_prop
   method _FASTEST : hintMode readonly_prop
   method _NICEST : hintMode readonly_prop
   method _GENERATE_MIPMAP_HINT_ : hintTarget readonly_prop
