@@ -311,7 +311,7 @@ function caml_ba_create_from(data, data2, data_type, kind, layout, dims) {
         return caml_ba_create_from(data, data2, data_type, kind, layout, new_dim);
     }
 
-    function compare(b) {
+    function compare(b, total) {
         if (layout != b.layout)
             return b.layout - layout;
         if (n_dims != b.num_dims)
@@ -319,17 +319,84 @@ function caml_ba_create_from(data, data2, data_type, kind, layout, dims) {
         for (var i = 0; i < n_dims; i++)
             if (nth_dim(i) != b.nth_dim(i))
                 return (nth_dim(i) < b.nth_dim(i)) ? -1 : 1;
-        for (var i = 0; i < data.length; i++) {
-            if (data[i] < b.data[i])
-                return -1;
-            if (data[i] > b.data[i])
-                return 1;
-            if (data2) {
-                if (data2[i] < b.data2[i])
-                    return -1;
-                if (data2[i] > b.data2[i])
-                    return 1;
-            }
+        switch (kind) {
+            case 0:
+            case 1:
+            case 10:
+            case 11:
+                var x, y;
+                for (var i = 0; i < data.length; i++) {
+                    x = data[i];
+                    y = b.data[i];
+
+                    //first array
+                    if (x < y)
+                        return -1;
+                    if (x > y)
+                        return 1;
+                    if (x != y) {
+                        if (x != y) {
+                            if (!total)
+                                return NaN;
+                            if (x == x)
+                                return 1;
+                            if (y == y)
+                                return -1;
+                        }
+                    }
+                    if (data2) {
+                        //second array
+                        x = data2[i];
+                        y = b.data2[i];
+                        if (x < y)
+                            return -1;
+                        if (x > y)
+                            return 1;
+                        if (x != y) {
+                            if (x != y) {
+                                if (!total)
+                                    return NaN;
+                                if (x == x)
+                                    return 1;
+                                if (y == y)
+                                    return -1;
+                            }
+                        }
+                    }
+                }
+                ;
+                break;
+
+            case 2:
+            case 3:
+            case 4:
+            case 5:
+            case 6:
+            case 8:
+            case 9:
+            case 12:
+                for (var i = 0; i < data.length; i++) {
+                    if (data[i] < b.data[i])
+                        return -1;
+                    if (data[i] > b.data[i])
+                        return 1;
+                }
+                ;
+                break;
+
+            case 7:
+                for (var i = 0; i < data.length; i++) {
+                    if (data2[i] < b.data2[i])
+                        return -1;
+                    if (data2[i] > b.data2[i])
+                        return 1;
+                    if (data[i] < b.data[i])
+                        return -1;
+                    if (data[i] > b.data[i])
+                        return 1;
+                }
+                ;
+                break;
         }
         return 0;
     }
@@ -385,7 +452,7 @@ function caml_ba_create(kind, layout, dims_ml) {
         data2 = new view(size);
     }
 
-    return caml_ba_create_from(data, data2, data_type, size, layout, dims);
+    return caml_ba_create_from(data, data2, data_type, kind, layout, dims);
 }
 
 //Provides: caml_ba_kind

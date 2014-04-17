@@ -72,7 +72,7 @@ interface Bigarray {
   set(index: number[], v: any): void;
   set1(i0: number, v: any): void;
 
-  compare(v:Bigarray) : number;
+  compare(v:Bigarray, total : boolean) : number;
 }
 
 //Provides: caml_ba_init const
@@ -336,19 +336,69 @@ function caml_ba_create_from(data:BaseArray, data2:BaseArray, data_type:Data_typ
     return caml_ba_create_from(data, data2, data_type, kind, layout, new_dim);
   }
 
-  function compare (b: Bigarray) : number {
+  function compare (b: Bigarray, total: boolean) : number {
     if(layout != b.layout) return b.layout - layout;
     if(n_dims != b.num_dims) return b.num_dims - n_dims;
     for(var i = 0; i < n_dims; i++)
       if(nth_dim(i)!=b.nth_dim(i))
         return (nth_dim(i)<b.nth_dim(i))?-1:1;
-    for(var i = 0; i < data.length;i++){
-      if(data[i] < b.data[i]) return -1;
-      if(data[i] > b.data[i]) return 1;
-      if(data2){
+    switch(kind){
+      case 0: //float32
+      case 1: //float64
+      case 10: //complex32
+      case 11: //complex64
+      var x,y;
+      for(var i = 0; i < data.length;i++){
+        x = data[i]; y = b.data[i]
+        //first array
+        if(x < y) return -1;
+        if(x > y) return 1;
+        if(x != y) {
+          if(x != y) {
+            if(!total) return NaN;
+            if(x == x) return 1;
+            if(y == y) return -1;
+          }
+        }
+        if(data2){
+          //second array
+          x = data2[i]; y = b.data2[i]
+          if(x < y) return -1;
+          if(x > y) return 1;
+          if(x != y) {
+            if(x != y) {
+              if(!total) return NaN;
+              if(x == x) return 1;
+              if(y == y) return -1;
+            }
+          }
+        }
+      };
+      break;
+
+      case 2: //int8
+      case 3: //uint8
+      case 4: //int16
+      case 5: //uint16
+      case 6: //int32
+      case 8: //int
+      case 9: //nativeint
+      case 12: //char
+      for(var i = 0; i < data.length;i++){
+        if(data[i] < b.data[i]) return -1;
+        if(data[i] > b.data[i]) return 1;
+      };
+      break;
+
+      case 7: //int64
+      for(var i = 0; i < data.length;i++){
         if(data2[i] < b.data2[i]) return -1;
         if(data2[i] > b.data2[i]) return 1;
-      }
+        if(data[i] < b.data[i]) return -1;
+        if(data[i] > b.data[i]) return 1;
+      };
+      break;
+      //default: should no append
     }
     return 0;}
 
@@ -403,7 +453,7 @@ function caml_ba_create(kind: number, layout: number, dims_ml: any) : Bigarray {
     data2 = new view(size);
   }
 
-  return caml_ba_create_from(data, data2, data_type, size, layout, dims);
+  return caml_ba_create_from(data, data2, data_type, kind, layout, dims);
 }
 
 //Provides: caml_ba_kind

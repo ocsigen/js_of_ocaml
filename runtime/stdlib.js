@@ -278,7 +278,7 @@ function caml_compare_val (a, b, total) {
                  (b instanceof Array && b[0] === (b[0]|0))) {
         return -1;
       } else if (typeof a != "number" && a && a.compare) {
-        return a.compare(b);
+        return a.compare(b,total);
       } else {
         if (a < b) return -1;
         if (a > b) return 1;
