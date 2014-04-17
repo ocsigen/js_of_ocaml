@@ -1,6 +1,5 @@
 OBJS=test.cmo wikicreole.cmo wiki_syntax.cmo main.cmo
 NAME=wiki
-OPTIONS=-pretty
 
 include ../Makefile.common
 
