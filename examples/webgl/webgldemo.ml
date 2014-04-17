@@ -25,7 +25,7 @@ let debug f = Printf.ksprintf (fun s -> Firebug.console##log(Js.string s)) f
 let alert f = Printf.ksprintf (fun s -> Dom_html.window##alert(Js.string s); failwith s) f
 
 let check_error gl =
-  if gl##getError() <> gl##_NO_ERROR
+  if gl##getError() <> gl##_NO_ERROR_
   then error "WebGL error"
 
 let init_canvas canvas_id =
@@ -150,13 +150,6 @@ let read_line l =
             | r -> None)
         | _ -> None
 
-let array_iter f a =
-  let rec aux i =
-    match Optdef.to_option (array_get a i) with
-      | None -> ()
-      | Some s -> f s; aux (i+1) in
-  aux 0
-
 let concat a =
   let length =
     Array.fold_left (fun len l -> len + List.length l) 0 a in
@@ -189,14 +182,12 @@ let make_model vertex norm face =
   let norm = float32array (concat norm') in
   vertex, norm
 
-let read_model s =
-  let a = str_array ((string s)##split(string "\n")) in
-  (Unsafe.coerce Dom_html.window)##arr <- a;
+let read_model a =
   let vertex = ref [] in
   let norm = ref [] in
   let face = ref [] in
-  array_iter (fun s ->
-    match read_line (to_string s) with
+  Array.iter (fun s ->
+    match read_line s with
       | None -> ()
       | Some (F (a,b,c)) -> face := (a,b,c)::!face
       | Some (V (a,b,c)) -> vertex := (a,b,c)::!vertex
@@ -206,9 +197,24 @@ let read_model s =
     (Array.of_list (List.rev !norm))
     (Array.of_list (List.rev !face))
 
+let http_get url =
+  XmlHttpRequest.get url >>= fun r ->
+  let cod = r.XmlHttpRequest.code in
+  let msg = r.XmlHttpRequest.content in
+  if cod = 0 || cod = 200
+  then Lwt.return msg
+  else fst (Lwt.wait ())
+
+let getfile f =
+  try
+    Lwt.return (Sys_js.file_content f)
+  with Not_found ->
+    http_get f >|= (fun s -> s)
+
 let fetch_model s =
-  XmlHttpRequest.perform_raw_url s >|=
-    (fun frame -> read_model frame.XmlHttpRequest.content)
+  getfile s >|= (fun s ->
+    let a = Regexp.split (Regexp.regexp "\n") s in
+    read_model (Array.of_list a))
 
 let pi = 4. *. (atan 1.)
 
@@ -218,11 +224,13 @@ let start (pos,norm) =
     (Opt.bind ( Dom_html.document##getElementById(string "fps") )
        Dom_html.CoerceTo.element)
     (fun span -> Dom.appendChild span fps_text);
-
+  debug "init canvas";
   let canvas, gl = init_canvas "canvas" in
+  debug "create program";
   let prog = create_program gl
     (get_source "vertex-shader")
     (get_source "fragment-shader") in
+  debug "use program";
   gl##useProgram(prog);
 
   check_error gl;
@@ -293,6 +301,7 @@ let start (pos,norm) =
   f ()
 
 let go _ = ignore (
+  debug "fetching model";
   catch (fun () -> fetch_model "monkey.model" >>= start)
     (fun exn -> error "uncaught exception: %s" (Printexc.to_string exn)));
   _true

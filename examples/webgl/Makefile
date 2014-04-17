@@ -1,5 +1,5 @@
 OBJS=webgldemo.cmo
 NAME=webgldemo
-OPTIONS=-pretty
+OPTIONS=-I ../../examples/webgl -file monkey.model:/
 
 include ../Makefile.common
