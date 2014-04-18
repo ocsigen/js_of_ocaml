@@ -37,7 +37,7 @@ package "graphics" (
   exists_if = "graphics.cma"
   description = "Graphics for js_of_ocaml."
   version = "[distributed with js_of_ocaml]"
-  archive(byte) = "grapgics.cma"
+  archive(byte) = "graphics.cma"
   requires(syntax) = "lwt,graphics,js_of_ocaml"
 )
 
