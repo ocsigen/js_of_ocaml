@@ -38,12 +38,12 @@ package "graphics" (
   description = "Graphics for js_of_ocaml."
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "graphics.cma"
-  requires(syntax) = "lwt,graphics,js_of_ocaml"
+  requires = "lwt,graphics,js_of_ocaml"
 )
 
 package "ocamlbuild" (
   description = "Js_of_ocaml ocamlbuild plugin"
-  requires = "ocamlbuild str"
+  requires = "ocamlbuild,str"
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "ocamlbuild_js_of_ocaml.cma"
   archive(byte, plugin) = "ocamlbuild_js_of_ocaml.cma"
