@@ -13,6 +13,10 @@ IMPL += lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs
 endif
 endif
 
+ifneq "${WITH_GRAPHICS}" ""
+IMPL += lib/graphics.cma
+endif
+
 OTHERS := runtime/runtime.js runtime/weak.js \
           runtime/classlist.js \
           runtime/toplevel.js \
