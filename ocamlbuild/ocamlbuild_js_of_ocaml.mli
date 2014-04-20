@@ -19,3 +19,11 @@
  *)
 
 val dispatcher : Ocamlbuild_plugin.hook -> unit
+
+val dispatcher_with_oasis_support :
+  executables:string list ->
+  Ocamlbuild_plugin.hook ->
+  unit
+
+
+val oasis_support : executables:string list -> unit

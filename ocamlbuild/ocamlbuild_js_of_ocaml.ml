@@ -78,3 +78,18 @@ let init () =
 let dispatcher = function
   | After_rules -> init ()
   | _ -> ()
+
+let oasis_support ~executables =
+  let aux x =
+    if List.mem x executables then
+      Pathname.update_extension "js" x
+    else
+      x
+  in
+  Options.targets := List.map aux !Options.targets
+
+let dispatcher_with_oasis_support ~executables hook =
+  dispatcher hook;
+  match hook with
+  | After_rules -> oasis_support ~executables
+  | _ -> ()
