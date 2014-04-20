@@ -299,6 +299,10 @@ let coloring js =
   let t = Util.Timer.make () in
   if times ()
   then Format.eprintf "Start Coloring...@.";
+  let traverse = new Js_traverse.free in
+  traverse#program js;
+  let free = traverse#get_free_name in
+  VarPrinter.add_reserved (StringSet.elements free);
   let js = Js_assign.program js in
   if times () then Format.eprintf "  coloring: %a@." Util.Timer.print t;
   js
