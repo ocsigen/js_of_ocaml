@@ -234,6 +234,9 @@ let link formatter ~standalone ?linkall js =
       let all_external = StringSet.union prim prov in
 
       let used = StringSet.inter free all_external in
+
+      (* gen_missing may use caml_failwith. Here, we consider it's always used *)
+      let used = StringSet.add "caml_failwith" used in
       let js,missing = Linker.resolve_deps ?linkall js used in
       let js = gen_missing js missing in
       if times () then Format.eprintf "  linking: %a@." Util.Timer.print t;
