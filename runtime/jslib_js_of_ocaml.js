@@ -97,10 +97,8 @@ function caml_js_from_byte_string (s) {return s.getFullBytes();}
 //Requires: MlString
 function caml_js_to_byte_string (s) {return new MlString (s);}
 
-//Provides: caml_js_eval
-function caml_js_eval () {return eval(arguments[0]);}
 //Provides: caml_js_eval_string
-function caml_js_eval_string () {return eval(arguments[0].toString());}
+function caml_js_eval_string (s) {return eval(s.toString());}
 
 //Provides: caml_js_object
 function caml_js_object (a) {
