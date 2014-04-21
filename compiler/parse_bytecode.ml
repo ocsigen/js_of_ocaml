@@ -1685,8 +1685,18 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
               with Not_found ->
                 failwith (Printf.sprintf "file '%s' not found" name)
             in
-            let s = Util.read_file file in
-            fs := (Pc (IString (dir^name)),Pc (IString s)) :: !fs
+
+            let rec loop realfile virtfile =
+              if try Sys.is_directory realfile with _ -> false
+              then
+                Array.iter (fun s -> loop (Filename.concat realfile s) (Filename.concat virtfile s)) (Sys.readdir realfile)
+              else
+                try
+                  let s = Util.read_file realfile in
+                  fs := (Pc (IString (dir^virtfile)),Pc (IString s)) :: !fs
+                with exc ->
+                  Format.eprintf "ignoring %s: %s@." realfile (Printexc.to_string exc)
+            in loop file name
           ) files;
 
         if toplevel then begin
