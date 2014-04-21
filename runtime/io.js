@@ -158,10 +158,12 @@ function caml_ml_set_binary_mode(chan,mode){
 
 //Provides: caml_ml_close_channel
 //Requires: caml_ml_flush, caml_ml_out_channels
+//Requires: caml_sys_close
 function caml_ml_close_channel (channel) {
     caml_ml_flush(channel);
     channel.opened = false;
     delete caml_ml_out_channels[channel.fd];
+    caml_sys_close(channel.fd)
     return 0;
 }
 

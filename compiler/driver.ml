@@ -300,7 +300,7 @@ let coloring js =
   if times ()
   then Format.eprintf "Start Coloring...@.";
   let traverse = new Js_traverse.free in
-  traverse#program js;
+  let js = traverse#program js in
   let free = traverse#get_free_name in
   VarPrinter.add_reserved (StringSet.elements free);
   let js = Js_assign.program js in
