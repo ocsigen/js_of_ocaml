@@ -195,3 +195,11 @@ XXXX be more careful with error messages:
 end
 
 module M = Register.OCamlSyntaxExtension(Id)(Make)
+
+(* open Camlp4.PreCast *)
+(* let expand _loc _ str = *)
+(*   let lex = Compiler.Parse_js.lexer_from_string ~rm_comment:true str in *)
+(*   let p = Compiler.Parse_js.parse lex in *)
+(*   <:expr< 5 >> *)
+
+(* let _ = Syntax.Quotation.add "js" Syntax.Quotation.DynAst.expr_tag expand *)

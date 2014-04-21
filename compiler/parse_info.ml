@@ -84,7 +84,7 @@ module Line_info = struct
         let idx = String.index_from str pos '\n' in
         loop (idx + 1) ((idx - pos)::acc)
       with Not_found ->
-        let l = List.rev acc in
+        let l = List.rev ((String.length str - pos) :: acc) in
         Array.of_list l
     in
     let lines = loop 0 [] in
