@@ -570,6 +570,11 @@ module Unsafe : sig
   external eval_string : string -> 'a = "caml_js_eval_string"
     (** Evaluate Javascript code *)
 
+  external expr : string -> 'a = "caml_js_expr"
+    (** [expr e] will parse the JavaScript expression [e] if [e]
+        is available at compile time or will failback to a
+        runtime evaluation. See [eval_string] *)
+
   val global : < .. > t
     (** Javascript global object *)
 

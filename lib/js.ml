@@ -44,6 +44,8 @@ module Unsafe = struct
 
   external eval_string : string -> 'a = "caml_js_eval_string"
 
+  external expr : string -> 'a = "caml_js_expr"
+
   let global = variable "joo_global_object"
 end
 

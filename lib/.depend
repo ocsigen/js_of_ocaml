@@ -52,7 +52,7 @@ event_arrows.cmi : js.cmi dom_html.cmi
 file.cmi : typed_array.cmi js.cmi dom.cmi
 firebug.cmi : js.cmi dom.cmi
 form.cmi : js.cmi file.cmi dom_html.cmi
-graphics_js.cmi : dom_html.cmi
+graphics_js.cmi : js.cmi dom_html.cmi
 js.cmi :
 json.cmi : js.cmi
 keycode.cmi :

@@ -132,8 +132,8 @@ let var name = J.S {J.name;J.var=None}
 /*(*1 Rules type declaration *)*/
 /*(*************************************************************************)*/
 
-%start program
-%type <Javascript.program> program
+%start <Javascript.program> program
+%start <Javascript.expression> standalone_expression
 
 %%
 
@@ -143,6 +143,9 @@ let var name = J.S {J.name;J.var=None}
 
 program:
     | l=source_elements EOF { l }
+
+standalone_expression:
+ | e=expression EOF {e}
 
 source_element:
  | s=statement { J.Statement s }

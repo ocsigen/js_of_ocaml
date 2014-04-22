@@ -35,3 +35,4 @@ val lexer_filter : (Js_token.token -> bool) -> lexer -> lexer
 val lexer_from_list : Js_token.token list -> lexer
 
 val parse : lexer -> Javascript.program
+val parse_expr : lexer -> Javascript.expression

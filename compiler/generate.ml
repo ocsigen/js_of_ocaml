@@ -926,6 +926,15 @@ and translate_expr ctx queue x e level =
         (ident_from_string nm, const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
         (ident_from_string nm, const_p, queue)
+      | Extern "caml_js_expr", [Pc (String nm)] ->
+        begin
+          try
+            let lex = Parse_js.lexer_from_string nm in
+            let e = Parse_js.parse_expr lex in
+            (e, const_p, queue)
+          with Parse_js.Parsing_error pi ->
+            failwith (Printf.sprintf "Parsing error %S at l:%d col:%d" nm (pi.Parse_info.line + 1) pi.Parse_info.col)
+        end
       | Extern "%caml_js_opt_call", Pv f :: Pv o :: l ->
         let ((pf, cf), queue) = access_queue queue f in
         let ((po, co), queue) = access_queue queue o in

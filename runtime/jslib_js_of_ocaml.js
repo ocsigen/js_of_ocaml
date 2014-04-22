@@ -109,6 +109,12 @@ function caml_js_to_byte_string (s) {return new MlString (s);}
 //Provides: caml_js_eval_string
 function caml_js_eval_string (s) {return eval(s.toString());}
 
+//Provides: caml_js_expr
+//Requires: js_print_stderr
+function caml_js_expr(s) {
+  js_print_stderr("caml_js_expr: fallback to runtime evaluation");
+  return eval(s.toString());}
+
 //Provides: caml_js_object
 function caml_js_object (a) {
   var o = {};

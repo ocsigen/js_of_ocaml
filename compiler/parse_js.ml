@@ -133,7 +133,7 @@ type st = {
   mutable passed : Js_token.token list;
   mutable eof : bool }
 
-let parse toks =
+let parse_aux the_parser toks =
   let state = match toks with
     | [] -> {
       rest = [];
@@ -158,9 +158,13 @@ let parse toks =
         state.passed <- x::state.passed;
         x in
   let lexbuf = Lexing.from_string "" in
-  try Js_parser.program lexer_fun lexbuf
+  try the_parser lexer_fun lexbuf
   with
     | Js_parser.Error
     | Parsing.Parse_error ->
       let pi = Js_token.info_of_tok state.current in
       raise (Parsing_error pi)
+
+let parse lex = parse_aux Js_parser.program lex
+
+let parse_expr lex = parse_aux Js_parser.standalone_expression lex
