@@ -29,9 +29,18 @@ module Id : Sig.Id = struct
   let version = "1.0"
 end
 
+
 module Make (Syntax : Sig.Camlp4Syntax) = struct
   open Sig
   include Syntax
+
+  let inside_Js = lazy
+    (String.lowercase (
+        Filename.basename (
+          Filename.chop_extension (!Camlp4_config.current_input_file))) = "js")
+
+  let js_t_id _loc s = if Lazy.force inside_Js then <:ctyp< $lid:s$ >> else <:ctyp< Js.$lid:s$ >>
+  let js_u_id _loc s = if Lazy.force inside_Js then <:expr< Unsafe.$lid:s$ >> else <:expr< Js.Unsafe.$lid:s$ >>
 
   let rec filter stream =
     match stream with parser
@@ -85,7 +94,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     <:expr<
       let module M = struct
         value _ =
-          let _ign1 = ($lid:e$ : Js.t 'b) in
+          let _ign1 = ($lid:e$ : $js_t_id _loc "t"$ 'b) in
           let _ign2 = ($lid:v$ : $v_typ$) in
           (fun (x : 'b) -> (x#$lid:m$ : $m_typ$ ));
         end
@@ -98,40 +107,40 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let method_type =
       List.fold_right
         (fun (_, arg_ty) rem_ty -> <:ctyp< $arg_ty$ -> $rem_ty$ >>)
-        args <:ctyp< Js.meth $ret_type$ >>
+        args <:ctyp< $js_t_id _loc "meth"$ $ret_type$ >>
     in
     let o = random_var () in
     let fakev = random_var () in
     let typ = fresh_type _loc in
     let args =
-      List.map (fun (e, t) -> <:expr< Js.Unsafe.inject $with_type e t$ >>) args
+      List.map (fun (e, t) -> <:expr< $js_u_id _loc "inject"$ $with_type e t$ >>) args
     in
     let args = make_array _loc args in
     <:expr<
       let $lid:o$ = $obj$ in
       let $lid:fakev$ : $typ$ = Obj.magic () in
       let () = $constrain_types _loc o fakev ret_type lab method_type$ in
-      ((Js.Unsafe.meth_call $lid:o$ $str:unescape lab$ $args$): $typ$)
+      (($js_u_id _loc "meth_call"$ $lid:o$ $str:unescape lab$ $args$): $typ$)
     >>
 
   let new_object _loc constructor args =
     let args = List.map (fun e -> (e, fresh_type _loc)) args in
-    let obj_type = <:ctyp< Js.t $fresh_type _loc$ >> in
+    let obj_type = <:ctyp< $js_t_id _loc "t"$ $fresh_type _loc$ >> in
     let constr_fun_type =
       List.fold_right
         (fun (_, arg_ty) rem_ty -> <:ctyp< $arg_ty$ -> $rem_ty$ >>)
         args obj_type
     in
     let args =
-      List.map (fun (e, t) -> <:expr< Js.Unsafe.inject $with_type e t$ >>) args
+      List.map (fun (e, t) -> <:expr< $js_u_id _loc "inject"$ $with_type e t$ >>) args
     in
     let args = make_array _loc args in
     let x = random_var () in
     let constr =
-      with_type constructor <:ctyp< Js.constr $constr_fun_type$ >> in
+      with_type constructor <:ctyp< $js_t_id _loc "constr"$ $constr_fun_type$ >> in
     with_type
       <:expr< let $lid:x$ = $constr$ in
-              Js.Unsafe.new_obj $lid:x$ $args$ >>
+              $js_u_id _loc "new_obj"$ $lid:x$ $args$ >>
       <:ctyp< $obj_type$ >>
 
   let jsmeth = Gram.Entry.mk "jsmeth"
@@ -147,8 +156,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
        <:expr<
          let $lid:o$ = $e$ in
          let $lid:fakev$ : $typ$ = Obj.magic () in
-         let () = $constrain_types _loc o fakev <:ctyp< 'a >> lab <:ctyp< Js.gen_prop <get : 'a; ..> >>$ in
-         (Js.Unsafe.get $lid:o$ $str:unescape lab$ : $typ$)
+         let () = $constrain_types _loc o fakev <:ctyp< 'a >> lab <:ctyp< $js_t_id _loc "gen_prop"$ <get : 'a; ..> >>$ in
+         ($js_u_id _loc "get"$ $lid:o$ $str:unescape lab$ : $typ$)
          >>
      | e1 = SELF; (lab_loc, lab) = jsmeth; "<-"; e2 = expr LEVEL "top" ->
        let o = random_var () in
@@ -156,8 +165,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
        <:expr<
          let $lid:o$ = $e1$ in
          let $lid:v$ = $e2$ in
-         let () = $constrain_types _loc o v <:ctyp< 'a >> lab <:ctyp< Js.gen_prop <set : 'a -> unit; ..> >>$ in
-         Js.Unsafe.set $lid:o$ $str:unescape lab$ ($lid:v$)
+         let () = $constrain_types _loc o v <:ctyp< 'a >> lab <:ctyp< $js_t_id _loc "gen_prop"$ <set : 'a -> unit; ..> >>$ in
+         $js_u_id _loc "set"$ $lid:o$ $str:unescape lab$ ($lid:v$)
          >>
      | e = SELF; (lab_loc, lab) = jsmeth; "("; ")" ->
          method_call _loc e lab lab_loc []

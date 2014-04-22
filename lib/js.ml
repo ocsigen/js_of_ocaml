@@ -185,9 +185,9 @@ class type string_constr = object
   method fromCharCode : int -> js_string t meth
 end
 
-let string_constr = Unsafe.variable "String"
+let string_constr = Unsafe.global##_String
 
-let regExp = Unsafe.variable "RegExp"
+let regExp = Unsafe.global##_RegExp
 let regExp_copy = regExp
 let regExp_withFlags = regExp
 
@@ -219,7 +219,7 @@ class type ['a] js_array = object
   method length : int prop
 end
 
-let array_constructor = Unsafe.variable "Array"
+let array_constructor = Unsafe.global##_Array
 let array_empty = array_constructor
 let array_length = array_constructor
 
@@ -311,7 +311,7 @@ class type date_constr = object
 *)
 end
 
-let date_constr = Unsafe.variable "Date"
+let date_constr = Unsafe.global##_Date
 let date : date_constr t = date_constr
 let date_now : date t constr = date_constr
 let date_fromTimeValue : (float -> date t) constr = date_constr
@@ -329,7 +329,7 @@ class type math = object
   method random : float meth
 end
 
-let math = Unsafe.variable "Math"
+let math = Unsafe.global##_Math
 
 
 class type error = object
@@ -340,23 +340,23 @@ class type error = object
 end
 
 exception Error of error t
-let error_constr = Unsafe.variable "Error"
+let error_constr = Unsafe.global##_Error
 let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
 
 
 
 let decodeURI (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.variable "decodeURI") [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##decodeURI) [|Unsafe.inject s|]
 let decodeURIComponent (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.variable "decodeURIComponent") [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##decodeURIComponent) [|Unsafe.inject s|]
 let encodeURI (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.variable "encodeURI") [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##encodeURI) [|Unsafe.inject s|]
 let encodeURIComponent (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.variable "encodeURIComponent") [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##encodeURIComponent) [|Unsafe.inject s|]
 let escape (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.variable "escape") [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##escape) [|Unsafe.inject s|]
 let unescape (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.variable "unescape") [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##unescape) [|Unsafe.inject s|]
 
 external bool : bool -> bool t = "caml_js_from_bool"
 external to_bool : bool t -> bool = "caml_js_to_bool"
@@ -371,28 +371,28 @@ external typeof : < .. > t -> js_string t = "caml_js_typeof"
 external instanceof : 'a -> 'b -> bool = "caml_js_instanceof"
 
 let isNaN (i : 'a) : bool =
-  to_bool (Unsafe.fun_call (Unsafe.variable "isNaN") [|Unsafe.inject i|])
+  to_bool (Unsafe.fun_call (Unsafe.global##isNaN) [|Unsafe.inject i|])
 
 let parseInt (s : js_string t) : int =
-  let s = Unsafe.fun_call (Unsafe.variable "parseInt") [|Unsafe.inject s|] in
+  let s = Unsafe.fun_call (Unsafe.global##parseInt) [|Unsafe.inject s|] in
   if isNaN s
   then failwith "parseInt"
   else s
 
 let parseFloat (s : js_string t) : float =
-  let s = Unsafe.fun_call (Unsafe.variable "parseFloat") [|Unsafe.inject s|] in
+  let s = Unsafe.fun_call (Unsafe.global##parseFloat) [|Unsafe.inject s|] in
   if isNaN s
   then failwith "parseFloat"
   else s
 
 let _ =
   Printexc.register_printer
-    (function Error e -> Some (to_string (Unsafe.meth_call e "toString" [||])) | _ -> None)
+    (function Error e -> Some (to_string (e##toString ())) | _ -> None)
 let _ =
   Printexc.register_printer
     (fun e ->
        if instanceof e array_constructor then None
-       else Some (to_string (Unsafe.meth_call (Obj.magic e) "toString" [||])))
+       else Some (to_string ((Obj.magic e)##toString())))
 
 (****)
 
