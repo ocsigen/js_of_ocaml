@@ -38,7 +38,16 @@ function caml_js_from_array(a) { return a.slice(1); }
 function caml_js_to_array(a) { return [0].concat(a); }
 
 //Provides: caml_js_var mutable
-function caml_js_var(x) { return eval(x.toString()); }
+//Requires: js_print_stderr
+function caml_js_var(x) {
+  var x = x.toString();
+  //Checks that x has the form ident[.ident]*
+  if(!x.match(/^[a-zA-Z_$][a-zA-Z_$0-9]*(\.[a-zA-Z_$][a-zA-Z_$0-9]*)*$/)){
+    js_print_stderr("caml_js_var: \"" + x + "\" is not a valid JavaScript variable. continuing ..");
+    //joo_global_object.console.error("Js.Unsafe.eval_string")
+  }
+  return eval(x);
+}
 //Provides: caml_js_const const
 function caml_js_const(x) {
   switch (x.toString()) {
