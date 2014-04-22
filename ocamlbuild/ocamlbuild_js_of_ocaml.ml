@@ -69,10 +69,12 @@ let init () =
     Cmd (S [A "js_of_ocaml"; A "-noruntime"; T tags; S link_opts; P dep; A "-o"; Px prod])
   in
   rule "js_of_ocaml: .byte -> .js" ~dep ~prod f;
-  flag ["js_of_ocaml"; "debug"] (S [A "-pretty"; A "-debuginfo"]);
+  flag ["js_of_ocaml"; "debug"] (S [A "-pretty"; A "-debuginfo"; A "-sourcemap"]);
   flag ["js_of_ocaml"; "pretty"] (A "-pretty");
   flag ["js_of_ocaml"; "debuginfo"] (A "-debuginfo");
   flag ["js_of_ocaml"; "noinline"] (A "-noinline");
+  flag ["js_of_ocaml"; "sourcemap"] (A "-sourcemap");
+  pflag ["js_of_ocaml"] "tailcall" (fun x -> S [A "-tc"; A x]);
   pflag ["js_of_ocaml"] "opt" (fun n -> S [A "-opt"; A n])
 
 let dispatcher = function
