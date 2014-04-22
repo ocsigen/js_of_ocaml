@@ -318,7 +318,7 @@ struct
     method hash : Js.js_string Js.t Js.prop
   end
 
-  let l : location Js.t = Js.Unsafe.variable "location"
+  let l : location Js.t = Js.Unsafe.global##location
 
   let host = urldecode_js_string_string l##hostname
 

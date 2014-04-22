@@ -65,9 +65,7 @@ class type webSocket = object ('self)
   method send : Js.js_string Js.t -> unit Js.meth
 end
 
-let webSocket_string = "window.WebSocket"
-
-let webSocket = Js.Unsafe.variable webSocket_string
+let webSocket = Js.Unsafe.global##_WebSocket
 
 let webSocket_withProtocol = webSocket
 

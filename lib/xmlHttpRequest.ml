@@ -71,17 +71,11 @@ class type xmlHttpRequest_binary = object
   method sendAsBinary_presence : unit optdef readonly_prop
 end
 
-let xmlHttpRequest () : xmlHttpRequest t constr =
-  Js.Unsafe.variable "XMLHttpRequest"
-
-let activeXObject () : (js_string t -> xmlHttpRequest t) constr =
-  Js.Unsafe.variable "ActiveXObject"
-
 let create () =
-  try jsnew (xmlHttpRequest ()) () with _ ->
-  try jsnew (activeXObject ()) (Js.string "Msxml2.XMLHTTP") with _ ->
-  try jsnew (activeXObject ()) (Js.string "Msxml3.XMLHTTP") with _ ->
-  try jsnew (activeXObject ()) (Js.string "Microsoft.XMLHTTP") with _ ->
+  try jsnew (Js.Unsafe.global##_XMLHttpRequest)() with _ ->
+  try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Msxml2.XMLHTTP") with _ ->
+  try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Msxml3.XMLHTTP") with _ ->
+  try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Microsoft.XMLHTTP") with _ ->
   assert false
 
 let encode = Url.encode_arguments
