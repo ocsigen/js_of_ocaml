@@ -18,4 +18,28 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** {6 Dispatchers} *)
+
+(** The main dispatcher
+
+    The dispatcher should be used with {!Ocamlbuild_plugin.dispatch} as:
+    [Ocamlbuild_plugin.dispatch Ocamlbuild_js_of_ocaml.dispatcher]
+
+    Side note: {!Ocamlbuild_plugin.dispatch} should be used only once as
+    it record only one function for an ocamlbuild module.
+*)
 val dispatcher : Ocamlbuild_plugin.hook -> unit
+
+(** Same as {!dispatcher} followed by {!oasis_support} *)
+val dispatcher_with_oasis_support :
+  executables:string list ->
+  Ocamlbuild_plugin.hook ->
+  unit
+
+
+(** {6 Low level functions} *)
+
+(** Map each targets given as argument to ocamlbuild and replace each element
+    that exists in [~executables] by its corresponding .js target.
+*)
+val oasis_support : executables:string list -> unit
