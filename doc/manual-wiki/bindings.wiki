@@ -4,7 +4,7 @@
 Write in .ml:
 
 <<code language="ocaml"|
-let v = Js.Unsafe.variable "window.document"
+let v = (Js.Unsafe.variable "window")##document
 >>
 Alternatively, the global object can be used. In the browser, it refers to {{{window}}}.
 <<code language="ocaml"|
@@ -35,7 +35,7 @@ Have a look at the <<a_api | module Js.Unsafe >> module API.
 Write in .ml:
 
 <<code language="ocaml"|
-let f = Js.Unsafe.variable "window.F"
+let f = Js.Unsafe.global##_F
 >>
 and in .mli:
 
@@ -107,7 +107,7 @@ end
 and in .ml:
 
 <<code language="ocaml"|
-let theclass = Js.Unsafe.variable "thelib.Theclass"
+let theclass = (Js.Unsafe.variable "thelib")##_Theclass
 >>
 
 and in .mli:
