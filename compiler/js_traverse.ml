@@ -258,12 +258,6 @@ let empty = {
   count = Javascript.IdentMap.empty;
 }
 
-let ident s =
-  try
-    let i = String.index s '.' in
-    String.sub s 0 i
-  with Not_found -> s
-
 (* def/used/free variable *)
 
 class type freevar =
@@ -317,7 +311,6 @@ class free =
     let count = IdentMap.add x (succ n) state_.count in
     match x with
       | S {name}  ->
-        let name = ident name in
         state_ <- { state_ with use_name = StringSet.add name state_.use_name;count }
       | V v ->
         state_ <- { state_ with use = S.add v state_.use;count  }
@@ -326,7 +319,6 @@ class free =
     let count = IdentMap.add x (succ n) state_.count in
     match x with
     | S {name} ->
-      let name = ident name in
       state_ <- { state_ with def_name = StringSet.add name state_.def_name;count }
     | V v ->
       state_ <- { state_ with def = S.add v state_.def;count  }

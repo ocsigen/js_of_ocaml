@@ -107,7 +107,7 @@ class type style = object
   method buttonColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 end
 
-let style : style Js.t = option (Js.Unsafe.variable "window.hyp_style")
+let style : style Js.t = option (Js.Unsafe.global##hyp_style)
 
 class type messages = object
   method info : Js.js_string Js.t Js.optdef Js.readonly_prop
@@ -476,17 +476,10 @@ let text_size font txt =
   res
 
 (******)
-
-class type navigator = object
-  method language : Js.js_string Js.t Js.optdef Js.readonly_prop
-  method userLanguage : Js.js_string Js.t Js.optdef Js.readonly_prop
-end
-
-let navigator : navigator Js.t = Js.Unsafe.variable "window.navigator"
-
+    
 let default_language () =
-  (Js.Optdef.get (navigator##language) (fun () ->
-   Js.Optdef.get (navigator##userLanguage) (fun () ->
+  (Js.Optdef.get (Dom_html.window##navigator##language) (fun () ->
+   Js.Optdef.get (Dom_html.window##navigator##userLanguage) (fun () ->
    Js.string "en")))##substring(0,2)
 
 let language =

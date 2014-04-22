@@ -799,6 +799,32 @@ let _ =
 
 let varset_disjoint s s' = not (VarSet.exists (fun x -> VarSet.mem x s') s)
 
+let is_ident =
+  let l = Array.init 256 (fun i ->
+    let c = Char.chr i in
+    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c = '_' || c = '$'
+  ) in
+  fun s ->
+    try
+      for i = 0 to String.length s - 1 do
+        assert(l.(Char.code(s.[i])))
+      done;
+      true
+    with _ -> false
+      
+let ident_from_string s =
+  match Util.split_char '.' s with
+    | [] -> assert false
+    | [x] ->
+      if not (is_ident x)
+      then Format.eprintf "Warning: %S is not a valid identifier; the generated code might be incorrect.@." x;
+      s_var x
+    | (x::xs) as l ->
+      Format.eprintf "Warning: %S should be written (Js.Unsafe.variable %S)##%s@." s x (String.concat "##" xs);
+      if not (List.for_all is_ident l)
+      then Format.eprintf "Warning: %S is not a valid identifier; the generated code might be incorrect.@." s;
+      List.fold_left (fun e i -> J.EDot(e,i)) (s_var x) xs
+
 let rec group_closures_rec closures req =
   match closures with
     [] ->
@@ -892,9 +918,9 @@ and translate_expr ctx queue x e level =
         (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
          or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
-        (s_var nm, const_p, queue)
+        (ident_from_string nm, const_p, queue)
       | Extern "caml_js_const", [Pc (String nm)] ->
-        (s_var nm, const_p, queue)
+        (ident_from_string nm, const_p, queue)
       | Extern "%caml_js_opt_call", Pv f :: Pv o :: l ->
         let ((pf, cf), queue) = access_queue queue f in
         let ((po, co), queue) = access_queue queue o in
