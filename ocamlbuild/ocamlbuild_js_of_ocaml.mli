@@ -24,15 +24,25 @@
 
     The dispatcher should be used with {!Ocamlbuild_plugin.dispatch} as:
     [Ocamlbuild_plugin.dispatch Ocamlbuild_js_of_ocaml.dispatcher]
+    or if you use oasis it would look like:
+    [Ocamlbuild_plugin.dispatch
+       (fun hook ->
+         dispatch_default hook;
+         Ocamlbuild_js_of_ocaml.dispatcher
+           ~oasis_executables:["src/yourprogram.byte"]
+           hook;
+       )
+    ]
+
+    [?oasis_executables] is the paths of the executables
+    (having the .byte extension) you want to compile
+    as a javascript executable. The former executables are still compiled.
 
     Side note: {!Ocamlbuild_plugin.dispatch} should be used only once as
     it record only one function for an ocamlbuild module.
 *)
-val dispatcher : Ocamlbuild_plugin.hook -> unit
-
-(** Same as {!dispatcher} followed by {!oasis_support} *)
-val dispatcher_with_oasis_support :
-  executables:string list ->
+val dispatcher :
+  ?oasis_executables:Ocamlbuild_plugin.Pathname.t list ->
   Ocamlbuild_plugin.hook ->
   unit
 
@@ -42,4 +52,4 @@ val dispatcher_with_oasis_support :
 (** Map each targets given as argument to ocamlbuild and replace each element
     that exists in [~executables] by its corresponding .js target.
 *)
-val oasis_support : executables:string list -> unit
+val oasis_support : executables:Ocamlbuild_plugin.Pathname.t list -> unit

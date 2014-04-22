@@ -77,10 +77,6 @@ let init () =
   pflag ["js_of_ocaml"] "tailcall" (fun x -> S [A "-tc"; A x]);
   pflag ["js_of_ocaml"] "opt" (fun n -> S [A "-opt"; A n])
 
-let dispatcher = function
-  | After_rules -> init ()
-  | _ -> ()
-
 let oasis_support ~executables =
   let aux x =
     if List.mem x executables then
@@ -90,8 +86,7 @@ let oasis_support ~executables =
   in
   Options.targets := List.map aux !Options.targets
 
-let dispatcher_with_oasis_support ~executables hook =
-  dispatcher hook;
-  match hook with
-  | After_rules -> oasis_support ~executables
+let dispatcher ?(oasis_executables=[]) = function
+  | After_rules -> init ()
+  | After_options -> oasis_support ~executables:oasis_executables
   | _ -> ()
