@@ -84,7 +84,7 @@ STDLIB_MODULES=\
 
 JOO=js dom typed_array dom_html file dom_events firebug lwt_js sys_js regexp CSS url \
   form xmlHttpRequest event_arrows lwt_js_events json webGL webSockets keycode
-JOO=
+JOO=js
 
 PERVASIVES=$(STDLIB_MODULES) $(JOO) $(BER_MODULE) outcometree topdirs toploop
 
