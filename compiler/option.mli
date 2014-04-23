@@ -58,3 +58,4 @@ module Tailcall : sig
 end
 
 val global_object : string
+val extra_js_files : string list

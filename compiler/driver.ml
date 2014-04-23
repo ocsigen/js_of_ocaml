@@ -179,6 +179,33 @@ let debug_linker = Option.Debug.find "linker"
 
 let global_object = Option.global_object
 
+let extra_js_files = lazy (
+  List.fold_left (fun acc file ->
+      try
+        let ss = List.fold_left (fun ss (prov,_,_,_) ->
+            match prov with
+            | Some (_,name,_,_) -> StringSet.add name ss
+            | _ -> ss
+          ) StringSet.empty (Linker.parse_file file) in
+        (file,ss)::acc
+      with _ -> acc
+    ) [] Option.extra_js_files
+)
+
+let report_missing_primitives missing =
+  let missing =  List.fold_left (fun missing (file,pro) ->
+      let d = StringSet.inter missing pro in
+      if not (StringSet.is_empty d)
+      then begin
+        Format.eprintf "Missing primitives provided by %s:@." file;
+        StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) d;
+        StringSet.diff missing pro
+      end
+      else missing
+    ) missing (Lazy.force extra_js_files) in
+  Format.eprintf "Missing primitives:@.";
+  StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
+
 let gen_missing js missing =
   if Option.Optim.genprim ()
   then begin
@@ -208,8 +235,7 @@ let gen_missing js missing =
       Format.eprintf "will be used if they are not available at runtime.@.";
       Format.eprintf "You can prevent the generation of dummy implementations with ";
       Format.eprintf "the commandline option '-disable genprim'@.";
-      Format.eprintf "Missing primitives:@.";
-      StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
+      report_missing_primitives missing;
     end;
     Statement (Variable_statement miss) :: js
   end
@@ -270,8 +296,7 @@ let check_js ~standalone js =
       let other = StringSet.diff other res in
       if not (StringSet.is_empty missing)
       then begin
-        Format.eprintf "Missing primitives:@.";
-        StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
+        report_missing_primitives missing
       end;
 
       let probably_prov = StringSet.inter other Reserved.provided in
