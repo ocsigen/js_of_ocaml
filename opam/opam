@@ -1,7 +1,7 @@
 opam-version: "1"
 maintainer: "dev@ocsigen.org"
 build: [
-  ["%{make}%"]
+  ["%{make}%" "build"]
   ["%{make}%" "install-lib" "BINDIR=%{bin}%"]
 ]
 remove: [
