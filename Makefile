@@ -1,11 +1,12 @@
 
 all: no_examples examples
-no_examples: check_lwt compiler compiler_lib library ocamlbuild runtime doc
+no_examples: build doc
+build: check_lwt compiler compiler_lib library ocamlbuild runtime
 
 include Makefile.conf
 -include Makefile.local
 
-.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc
+.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build
 
 compiler:
 	$(MAKE) -C compiler
