@@ -23,6 +23,11 @@ ifeq "${WITH_GRAPHICS}" "YES"
 GRAPHICS_CMA=graphics/graphics.cma
 endif
 
+ifeq "${WITH_TYXML}" "YES"
+TYXML_CMA=tyxml/tyxml.cma
+endif
+
+
 PA_JS= syntax/pa_js.cmo
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
@@ -34,7 +39,8 @@ all: $(LIBNAME).cma \
 	${PA_JS} ${PA_JS_NDL} \
 	${PA_DERIVING} 	${PA_DERIVING_NDL} \
 	${DERIVING_JSON} \
-	${GRAPHICS_CMA}
+	${GRAPHICS_CMA} \
+	${TYXML_CMA}
 
 $(LIBNAME).cma: $(OBJS)
 	ocamlmklib -o $(LIBNAME) $(OBJS)
@@ -68,6 +74,27 @@ syntax/pa_deriving_Json.cmx: syntax/pa_deriving_Json.ml
 syntax/pa_deriving_Json.cmxs: syntax/pa_deriving_Json.cmx
 	ocamlfind ocamlopt -I syntax -shared -linkall -o $@ $<
 
+graphics/%.cmo: graphics/%.ml graphics/%.cmi syntax/pa_js.cmo
+	ocamlfind ocamlc -syntax camlp4o -package lwt,lwt.syntax,graphics -ppopt syntax/pa_js.cmo -I graphics -c $< -o $@
+
+graphics/%.cmi: graphics/%.mli
+	ocamlfind ocamlc -package lwt,graphics -I ./ $< -o $@
+
+graphics/graphics.cma: graphics/graphics_js.cmo
+	ocamlfind ocamlc -a -o $@ $^
+
+tyxml/%.cmo: tyxml/%.ml tyxml/%.cmi tyxml/tyxml_cast_sigs.cmi syntax/pa_js.cmo
+	ocamlfind ocamlc -syntax camlp4o -package lwt,lwt.syntax,tyxml.functor,react -ppopt syntax/pa_js.cmo -I tyxml -c $< -o $@
+
+tyxml/tyxml_cast_sig.cmi: tyxml/tyxml_cast_sig.mli
+	ocamlfind ocamlc -package lwt,tyxml.functor,react -I . -I tyxml $< -o $@
+
+tyxml/%.cmi: tyxml/%.mli tyxml/tyxml_cast_sigs.cmi
+	ocamlfind ocamlc -package lwt,tyxml.functor,react -I . -I tyxml $< -o $@
+
+tyxml/tyxml.cma: tyxml/tyxml_cast.cmo tyxml/tyxml_js.cmo
+	ocamlfind ocamlc -a -o $@ $^
+
 %.cmo: %.ml syntax/pa_js.cmo
 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c -g $<
 
@@ -85,15 +112,6 @@ ${JSON_OBJS}: %.cmo: %.ml ${PA_DERIVING}
 
 ${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml ${PA_DERIVING}
 	ocamlfind ocamlopt -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
-
-graphics/graphics_js.cmo: graphics/graphics_js.ml graphics/graphics_js.cmi syntax/pa_js.cmo
-	ocamlfind ocamlc -syntax camlp4o -package lwt,lwt.syntax,graphics -ppopt syntax/pa_js.cmo  -I ./ -I graphics -c graphics/graphics_js.ml -o $@
-
-graphics/graphics_js.cmi: graphics/graphics_js.ml
-	ocamlfind ocamlc -package lwt,graphics -I ./ graphics/graphics_js.mli -o $@
-
-graphics/graphics.cma: graphics/graphics_js.cmo
-	ocamlfind ocamlc -a -o $@ $^
 
 %$(OBJEXT): %.c
 	ocamlfind ocamlc -package lwt -c $<
@@ -120,6 +138,9 @@ ifeq "${WITH_GRAPHICS}" "YES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" graphics/*.ml  >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)
 	ocamldep -I graphics graphics/graphics_js.mli  >> .depend
+endif
+ifeq "${WITH_TYXML}" "YES"
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" tyxml/*.ml tyxml/*.mli >> .depend
 endif
 ifeq "${WITH_DERIVING}" "YES"
 	${MAKE} --no-print-directory deriving_json/deriving_Json_lexer.ml

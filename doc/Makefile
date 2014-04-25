@@ -9,18 +9,26 @@ ifeq "${WITH_GRAPHICS}" "YES"
 OTHER=-package graphics -I ../lib/graphics
 endif
 
+ifeq "${WITH_DERIVING}" "YES"
+OTHER += -package deriving.syntax.common
+endif
+
+ifeq "${WITH_TYXML}" "YES"
+OTHER += -package tyxml.functor,react -I ../lib/tyxml
+endif
+
+
 .PHONY: doc docwiki
 doc: api-html/index.html
 api-html/index.html: ${MLIS} api-index
 	mkdir -p api-html
-	ocamlfind ocamldoc -package lwt -package ocamlbuild,deriving.syntax.common ${OTHER} -intro api-index -html \
-	   -d api-html -I ../lib -I ../lib/deriving_json -I ../lib/syntax ${MLIS}
-
+	ocamlfind ocamldoc -package lwt,ocamlbuild ${OTHER} -intro api-index -html \
+	   -d api-html -I ../lib -I ../lib/deriving_json ${MLIS}
 
 docwiki: api-wiki/index.wiki
 api-wiki/index.wiki: ${MLIS} api-index
 	mkdir -p api-wiki
-	ocamlfind ocamldoc -package lwt -package ocamlbuild,deriving.syntax.common ${OTHER} -intro api-index \
+	ocamlfind ocamldoc -package lwt,ocamlbuild ${OTHER} -intro api-index \
 	   -d api-wiki -I ../lib -I ../lib/deriving_json -I ../lib/syntax \
 	   -i $(shell ocamlfind query wikidoc) -g odoc_wiki.cma \
 	   ${MLIS}

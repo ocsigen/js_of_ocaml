@@ -26,7 +26,7 @@ TODO
 open Lwt
 open Compiler
 module Html = Dom_html
-
+module type Dummy = module type of Html5_types
 
 module H = struct
   type 'a t = {
@@ -402,19 +402,18 @@ let run _ =
     Lwt.return_unit in
 
   List.iter (fun (name,content) ->
-      let a = Html.createA Html.document in
-      a##className <- Js.string "list-group-item";
-      a##innerHTML <- Js.string name;
-      a##onclick <- Html.handler (fun _ ->
-          textbox##value <- Js.string content;
-          Lwt.async(fun () ->
-              resize () >>= fun () ->
-              container##scrollTop <- container##scrollHeight;
-              textbox##focus();
-              Lwt.return_unit);
-          Js._true
-        );
-      Dom.appendChild example_container a
+      let a = Tyxml_js.D.(a ~a:[
+          a_class ["list-group-item"];
+          a_onclick (fun _ ->
+              textbox##value <- Js.string content;
+              Lwt.async(fun () ->
+                  resize () >>= fun () ->
+                  container##scrollTop <- container##scrollHeight;
+                  textbox##focus();
+                  Lwt.return_unit);
+              true
+            )] [pcdata name]) in
+      Dom.appendChild example_container (Tyxml_js.To_dom.of_a a)
     ) examples;
 
   begin (* setup handlers *)
@@ -505,10 +504,8 @@ let run _ =
   end;
 
   let append_string cl s =
-    let span = Html.createSpan Html.document in
-    span##className <- Js.string cl;
-    Dom.appendChild span (Html.document##createTextNode(Js.string s ));
-    Dom.appendChild output span in
+    let span = Tyxml_js.D.(span ~a:[a_class [cl]] [pcdata s]) in
+    Dom.appendChild output (Tyxml_js.To_dom.of_element span) in
 
   Sys_js.set_channel_flusher caml_chan (append_string "caml");
   Sys_js.set_channel_flusher sharp_chan (append_string "sharp");

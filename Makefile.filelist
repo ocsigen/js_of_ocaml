@@ -18,6 +18,11 @@ IMPL += lib/graphics/graphics.cma
 INTF += lib/graphics/*.cmi
 endif
 
+ifeq "${WITH_TYXML}" "YES"
+IMPL += lib/tyxml/tyxml.cma
+INTF += lib/tyxml/*.cmi
+endif
+
 OTHERS := runtime/runtime.js runtime/weak.js \
           runtime/classlist.js \
           runtime/toplevel.js \
