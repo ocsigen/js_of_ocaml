@@ -1,10 +1,19 @@
 ===== 2.0+dev =====
  * Features/Changes
  ** Runtime: bigarray comparison
+ ** Compiler: allow to embed directory with -file dir_name=ext1,ext2:dest_path
  ** Lib: js_of_ocaml.graphics
+ ** Lib: Js.Unsafe.expr to embed JavasScript expression
+    to be used instead of Js.Unsafe.variable (or eval_string)
+ ** Lib: Sys_js.js_of_ocaml_version && Sys_js.file_content
 
  * BugFixes
  ** Syntax: Better type constraint (#84)
+ ** Compiler: caml_failwith primitive was sometime missing (#147)
+ ** Compiler: variable names used outside a program were
+    not marked as reserved (#146)
+ ** Lib: fix WebGl interface
+
 
 ===== 2.0 (2013-04-11) =====
 
