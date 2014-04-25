@@ -1679,6 +1679,15 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                 n,d
               with Not_found ->
                 name,"/static/" in
+            let name, exts (* extensions filter *) =
+              try
+                let i = String.index name '=' in
+                let exts = String.sub name (i + 1) (String.length name - i - 1) in
+                let n = String.sub name 0 i in
+                let exts = Util.split_char ',' exts in
+                n,exts
+              with Not_found ->
+                name,[] in
             let file =
               try
                 Util.find_in_paths paths name
@@ -1692,8 +1701,18 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
                 Array.iter (fun s -> loop (Filename.concat realfile s) (Filename.concat virtfile s)) (Sys.readdir realfile)
               else
                 try
-                  let s = Util.read_file realfile in
-                  fs := (Pc (IString (dir^virtfile)),Pc (IString s)) :: !fs
+                  let exmatch =
+                    try
+                      let i = String.rindex realfile '.' in
+                      let e = String.sub realfile (i+1) (String.length realfile - i - 1) in
+                      List.mem e exts
+                    with Not_found -> List.mem "" exts
+                  in
+
+                  if exts = [] || exmatch
+                  then
+                    let s = Util.read_file realfile in
+                    fs := (Pc (IString (dir^virtfile)),Pc (IString s)) :: !fs
                 with exc ->
                   Format.eprintf "ignoring %s: %s@." realfile (Printexc.to_string exc)
             in loop file name
