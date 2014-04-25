@@ -1167,6 +1167,10 @@ end
 let window : window t = Js.Unsafe.global (* The toplevel object *)
 
 let document = window##document
+let getElementById id =
+  Js.Opt.case (document##getElementById (Js.string id))
+    (fun () -> raise Not_found)
+    (fun pnode -> pnode)
 
 (****)
 
