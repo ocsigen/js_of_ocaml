@@ -6,6 +6,9 @@
  ** Lib: Js.Unsafe.expr to embed JavasScript expression
     to be used instead of Js.Unsafe.variable (or eval_string)
  ** Lib: Sys_js.js_of_ocaml_version && Sys_js.file_content
+ ** OCamlbuild plugin: Add the OASIS support, document the API and add the tags
+    sourcemap (included in the meta-tag debug) and tailcall (#148)
+    (by Jacques-Pascal Deplaix)
 
  * BugFixes
  ** Syntax: Better type constraint (#84)
