@@ -207,8 +207,6 @@ let report_missing_primitives missing =
   StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
 
 let gen_missing js missing =
-  if Option.Optim.genprim ()
-  then begin
     let open Javascript in
     let miss = StringSet.fold (fun prim acc ->
         let p = S {name=prim;var=None} in
@@ -238,9 +236,6 @@ let gen_missing js missing =
       report_missing_primitives missing;
     end;
     Statement (Variable_statement miss) :: js
-  end
-  else
-    js
 
 
 let link formatter ~standalone ?linkall js =
@@ -261,12 +256,20 @@ let link formatter ~standalone ?linkall js =
 
       let used = StringSet.inter free all_external in
 
-      (* gen_missing may use caml_failwith. Here, we consider it's always used *)
-      let used = StringSet.add "caml_failwith" used in
-      let js,missing = Linker.resolve_deps ?linkall js used in
-      let js = gen_missing js missing in
+      let linkinfos = Linker.init () in
+      let linkinfos,missing = Linker.resolve_deps ?linkall linkinfos used in
+
+      (* gen_missing may use caml_failwith *)
+      let linkinfos,missing =
+        if not (StringSet.is_empty missing) && Option.Optim.genprim ()
+        then Linker.resolve_deps linkinfos (StringSet.singleton "caml_failwith")
+        else linkinfos,missing in
+
+      let js = if Option.Optim.genprim ()
+        then gen_missing js missing
+        else js in
       if times () then Format.eprintf "  linking: %a@." Util.Timer.print t;
-      js
+      Linker.link js linkinfos
     end
   else js
 

@@ -119,7 +119,7 @@ let version_match =
       op (Util.Version.(compare current (split str))) 0
     )
 
-type visited = {
+type state = {
   ids : IntSet.t;
   codes : Javascript.program list ;
 }
@@ -224,12 +224,14 @@ and resolve_dep_id_rev visited path id =
     visited
   end
 
-let resolve_deps ?(linkall = false) program used =
+
+let init () =
+  List.fold_left
+    (fun visited id -> resolve_dep_id_rev visited [] id)
+    {ids=IntSet.empty; codes=[]} !always_included
+
+let resolve_deps ?(linkall = false) visited_rev used =
   (* link the special files *)
-  let visited_rev = List.fold_left
-      (fun visited id -> resolve_dep_id_rev visited [] id)
-      {ids=IntSet.empty; codes=[]} !always_included
-  in
   let missing,visited_rev =
     if linkall
     then
@@ -253,4 +255,6 @@ let resolve_deps ?(linkall = false) program used =
            else
              (StringSet.add nm missing, visited))
         used (StringSet.empty, visited_rev) in
-  List.flatten (List.rev (program::visited_rev.codes)), missing
+  visited_rev, missing
+
+let link program state = List.flatten (List.rev (program::state.codes))

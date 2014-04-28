@@ -25,5 +25,9 @@ val parse_file : string ->
    Javascript.program) list
 
 val load_files : string list -> unit
-val resolve_deps : ?linkall:bool -> Javascript.program -> Util.StringSet.t -> Javascript.program * Util.StringSet.t
+
+type state
+val init : unit -> state
+val resolve_deps : ?linkall:bool -> state -> Util.StringSet.t -> state * Util.StringSet.t
+val link : Javascript.program -> state -> Javascript.program
 val get_provided : unit -> Util.StringSet.t
