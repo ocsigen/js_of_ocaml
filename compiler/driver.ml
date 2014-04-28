@@ -262,8 +262,10 @@ let link formatter ~standalone ?linkall js =
       (* gen_missing may use caml_failwith *)
       let linkinfos,missing =
         if not (StringSet.is_empty missing) && Option.Optim.genprim ()
-        then Linker.resolve_deps linkinfos (StringSet.singleton "caml_failwith")
-        else linkinfos,missing in
+        then
+          let linkinfos,missing2 = Linker.resolve_deps linkinfos (StringSet.singleton "caml_failwith") in
+          linkinfos, StringSet.union missing missing2
+        else linkinfos, missing in
 
       let js = if Option.Optim.genprim ()
         then gen_missing js missing
