@@ -73,8 +73,8 @@ end
 
 
 
-module AddrSet : Set.S with type elt = int and type t = Util.IntSet.t
-module AddrMap : Map.S with type key = int and type 'a t = 'a Util.IntMap.t
+module AddrSet : Set.S with type elt = addr and type t = Util.IntSet.t
+module AddrMap : Map.S with type key = addr and type 'a t = 'a Util.IntMap.t
 
 type cont = addr * Var.t list
 
@@ -146,5 +146,7 @@ val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 val fold_children :
   block AddrMap.t -> addr  -> (addr -> 'c -> 'c) -> 'c -> 'c
+
+val prepend : program -> instr list -> program
 
 val eq : program -> program -> bool

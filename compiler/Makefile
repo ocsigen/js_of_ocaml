@@ -16,7 +16,8 @@ OBJS=compiler_version.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
      js_traverse.cmx js_assign.cmx js_tailcall.cmx \
-     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx
+     linker.cmx generate.cmx parse_bytecode.cmx driver.cmx \
+     pseudoFs.cmx
 
 COMPOBJS=$(OBJS) compile.cmx
 

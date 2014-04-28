@@ -4,10 +4,10 @@ annot_parser.cmo : primitive.cmi annot_parser.cmi
 annot_parser.cmx : primitive.cmx annot_parser.cmi
 code.cmo : varPrinter.cmi util.cmi code.cmi
 code.cmx : varPrinter.cmx util.cmx code.cmi
-compile.cmo : util.cmi source_map.cmi pretty_print.cmi parse_bytecode.cmi \
-    option.cmi linker.cmi driver.cmi compiler_version.cmi
-compile.cmx : util.cmx source_map.cmx pretty_print.cmx parse_bytecode.cmx \
-    option.cmx linker.cmx driver.cmx compiler_version.cmx
+compile.cmo : util.cmi source_map.cmi pseudoFs.cmi pretty_print.cmi \
+    parse_bytecode.cmi option.cmi linker.cmi driver.cmi compiler_version.cmi
+compile.cmx : util.cmx source_map.cmx pseudoFs.cmx pretty_print.cmx \
+    parse_bytecode.cmx option.cmx linker.cmx driver.cmx compiler_version.cmx
 compiler_version.cmo : compiler_version.cmi
 compiler_version.cmx : compiler_version.cmi
 control.cmo : subst.cmi code.cmi control.cmi
@@ -100,6 +100,8 @@ pretty_print.cmo : pretty_print.cmi
 pretty_print.cmx : pretty_print.cmi
 primitive.cmo : util.cmi parse_info.cmi primitive.cmi
 primitive.cmx : util.cmx parse_info.cmx primitive.cmi
+pseudoFs.cmo : util.cmi code.cmi pseudoFs.cmi
+pseudoFs.cmx : util.cmx code.cmx pseudoFs.cmi
 pure_fun.cmo : primitive.cmi code.cmi pure_fun.cmi
 pure_fun.cmx : primitive.cmx code.cmx pure_fun.cmi
 reserved.cmo : util.cmi reserved.cmi
@@ -144,14 +146,15 @@ js_simpl.cmi : javascript.cmi code.cmi
 js_tailcall.cmi : js_traverse.cmi javascript.cmi code.cmi
 js_token.cmi : parse_info.cmi
 js_traverse.cmi : util.cmi javascript.cmi code.cmi
-linker.cmi : util.cmi javascript.cmi
+linker.cmi : util.cmi primitive.cmi parse_info.cmi javascript.cmi
 option.cmi :
-parse_bytecode.cmi : parse_info.cmi javascript.cmi code.cmi
+parse_bytecode.cmi : util.cmi parse_info.cmi javascript.cmi code.cmi
 parse_info.cmi :
 parse_js.cmi : parse_info.cmi js_token.cmi javascript.cmi
 phisimpl.cmi : code.cmi
 pretty_print.cmi :
 primitive.cmi : util.cmi parse_info.cmi
+pseudoFs.cmi : util.cmi code.cmi
 pure_fun.cmi : code.cmi
 reserved.cmi : util.cmi
 source_map.cmi : javascript.cmi

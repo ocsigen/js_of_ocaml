@@ -30,16 +30,17 @@ let f toplevel linkall paths files js_files input_file output_file source_map =
     if source_map <> None || Option.Optim.debuginfo () then `Full else
     if Option.Optim.pretty () then `Names else `No
   in
-  let p,d =
+  let p, cmis, d =
     match input_file with
       None ->
-        Parse_bytecode.from_channel ~toplevel ~debug:need_debug ~files ~paths stdin
+        Parse_bytecode.from_channel ~toplevel ~debug:need_debug stdin
     | Some f ->
         let ch = open_in_bin f in
-        let p,d = Parse_bytecode.from_channel ~toplevel ~debug:need_debug ~files ~paths ch in
+        let p,cmis,d = Parse_bytecode.from_channel ~toplevel ~debug:need_debug ch in
         close_in ch;
-        p,d
+        p, cmis, d
   in
+  let p = PseudoFs.f p cmis files paths in
   if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
   let output_program fmt = Driver.f ~toplevel ~linkall ?source_map fmt d p in
   begin match output_file with

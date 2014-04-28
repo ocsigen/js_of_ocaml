@@ -127,6 +127,27 @@ function caml_fs_register(name,content) {
   else caml_invalid_argument("caml_fs_register");
 }
 
+//Provides: caml_fs_init
+//Requires: caml_fs_register
+function caml_fs_init(){
+  var tmp=joo_global_object.caml_fs_tmp
+  if(tmp){
+    for(var i = 0; i < tmp.length; i++){
+      caml_fs_register(tmp[i].name,tmp[i].content);
+    }
+  }
+}
+
+//Provides: caml_fs_register_extern
+function caml_fs_register_extern(name,content){
+  if(joo_global_object.caml_fs_register)
+    joo_global_object.caml_fs_register(name,content);
+  else {
+    if(!joo_global_object.caml_fs_tmp) joo_global_object.caml_fs_tmp = [];
+    joo_global_object.caml_fs_tmp.push({name:name,content:content});
+  }
+}
+
 //Provides: caml_fs_content
 //Requires: caml_root_dir, caml_raise_no_such_file
 function caml_fs_content(path){
