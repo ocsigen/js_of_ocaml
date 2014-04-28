@@ -1,4 +1,5 @@
-===== 2.0+dev =====
+===== 2.1 (2014-04-28) =====
+
  * Features/Changes
  ** Runtime: bigarray comparison
  ** Compiler: allow to embed directory with -file dir_name=ext1,ext2:dest_path
@@ -18,8 +19,7 @@
     not marked as reserved (#146)
  ** Lib: fix WebGl interface
 
-
-===== 2.0 (2013-04-11) =====
+===== 2.0 (2014-04-11) =====
 
  * Features/Changes
  ** Compiler: generate shorter variable names
