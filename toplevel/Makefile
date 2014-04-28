@@ -28,8 +28,10 @@ endif
 
 COMP=../compiler/$(COMPILER)
 JSFILES=../runtime/runtime.js ../runtime/weak.js ../runtime/toplevel.js ../runtime/graphics.js
-OCAMLC=ocamlfind ocamlc -package lwt,optcomp -syntax camlp4o $(OCPINDENT) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" -I $(COMPILER_LIBS) -I ../lib -I ../compiler
-STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER) ../lib/graphics.cma
+OCAMLC=ocamlfind ocamlc -package lwt,optcomp -syntax camlp4o $(OCPINDENT) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" \
+	-I $(COMPILER_LIBS) -I ../compiler \
+	-I ../lib -I ../lib/graphics
+STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER) ../lib/graphics/graphics.cma
 EXPUNGE=$(shell ocamlc -where)/expunge
 # Removed gc and sys
 STDLIB_MODULES=\
@@ -92,7 +94,11 @@ PERVASIVES=$(STDLIB_MODULES) $(JOO) $(BER_MODULE) outcometree topdirs toploop
 #	ocamlfind ocamlc -linkall -g -package str -linkpkg toplevellib.cma -o $@.tmp $^
 
 $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
-	$(COMP) -I $(COMPILER_LIBS) -I $(shell ocamlfind query lwt) -toplevel -noruntime $(JSFILES) $(NAME).byte -ofs toplevel-fs.js $(OPTIONS) -I ./ -I ../lib/ -file examples.ml
+	$(COMP) -toplevel -noruntime $(JSFILES) $(NAME).byte \
+	-I $(COMPILER_LIBS) \
+	-I $(shell ocamlfind query lwt) \
+	-I ./ -I ../lib/ -I ../lib/graphics \
+	-ofs toplevel-fs.js $(OPTIONS) -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
 	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
