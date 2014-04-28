@@ -20,7 +20,7 @@ endif
 endif
 
 ifneq "${WITH_GRAPHICS}" ""
-GRAPHICS_CMA=graphics.cma
+GRAPHICS_CMA=graphics/graphics.cma
 endif
 
 PA_JS= syntax/pa_js.cmo
@@ -83,15 +83,14 @@ ${JSON_OBJS}: %.cmo: %.ml ${PA_DERIVING}
 ${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml ${PA_DERIVING}
 	ocamlfind ocamlopt -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
 
-graphics_js.cmo: graphics_js.ml graphics_js.cmi syntax/pa_js.cmo
-	ocamlfind ocamlc -syntax camlp4o -package lwt,lwt.syntax,graphics -ppopt syntax/pa_js.cmo -c graphics_js.ml
+graphics/graphics_js.cmo: graphics/graphics_js.ml graphics/graphics_js.cmi syntax/pa_js.cmo
+	ocamlfind ocamlc -syntax camlp4o -package lwt,lwt.syntax,graphics -ppopt syntax/pa_js.cmo  -I ./ -I graphics -c graphics/graphics_js.ml -o $@
 
-graphics_js.cmi: graphics_js.ml
-	ocamlfind ocamlc -package lwt,graphics graphics_js.mli
+graphics/graphics_js.cmi: graphics/graphics_js.ml
+	ocamlfind ocamlc -package lwt,graphics -I ./ graphics/graphics_js.mli -o $@
 
-graphics.cma: graphics_js.cmo
+graphics/graphics.cma: graphics/graphics_js.cmo
 	ocamlfind ocamlc -a -o $@ $^
-
 
 %$(OBJEXT): %.c
 	ocamlfind ocamlc -package lwt -c $<
@@ -112,8 +111,13 @@ clean:
 	rm -f stubs.c
 	rm -f sys_js.ml
 
-depend: syntax/pa_js.cmo ${PA_DERIVING}
+depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
+ifneq "${WITH_GRAPHICS}" ""
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" graphics/*.ml  >> .depend
+	@# camlp4 3.12.0 fails on (module type of ...)
+	ocamldep -I graphics graphics/graphics_js.mli  >> .depend
+endif
 ifneq "${WITH_DERIVING}" ""
 	${MAKE} --no-print-directory deriving_json/deriving_Json_lexer.ml
 	ls deriving_json/*.mli deriving_json/*.ml | \

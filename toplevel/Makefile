@@ -7,7 +7,7 @@ all: $(NAME).js
 include ../Makefile.conf
 -include ../Makefile.local
 
-ifeq ($(shell ocamlc -v | grep -q "version 4"; echo $$?),0)
+ifeq ($(OCAML4),"YES")
 OCAMLLIB=ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma
 else
 OCAMLLIB=toplevellib.cma

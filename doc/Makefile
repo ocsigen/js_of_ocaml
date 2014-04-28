@@ -5,11 +5,15 @@ include ../Makefile.filelist
 
 MLIS := ${addprefix ../, ${DOC}}
 
+ifneq "${WITH_GRAPHICS}" ""
+OTHER=-package graphics -I ../lib/graphics
+endif
+
 .PHONY: doc docwiki
 doc: api-html/index.html
 api-html/index.html: ${MLIS} api-index
 	mkdir -p api-html
-	ocamlfind ocamldoc -package lwt -package ocamlbuild -intro api-index -html \
+	ocamlfind ocamldoc -package lwt -package ocamlbuild ${OTHER} -intro api-index -html \
 	   -d api-html -I ../lib -I ../lib/deriving_json ${MLIS}
 
 

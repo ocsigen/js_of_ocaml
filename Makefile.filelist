@@ -14,7 +14,8 @@ endif
 endif
 
 ifneq "${WITH_GRAPHICS}" ""
-IMPL += lib/graphics.cma
+IMPL += lib/graphics/graphics.cma
+INTF += lib/graphics/*.cmi
 endif
 
 OTHERS := runtime/runtime.js runtime/weak.js \
