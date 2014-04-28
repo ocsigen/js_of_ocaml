@@ -5,9 +5,11 @@ annot_parser.cmx : primitive.cmx annot_parser.cmi
 code.cmo : varPrinter.cmi util.cmi code.cmi
 code.cmx : varPrinter.cmx util.cmx code.cmi
 compile.cmo : util.cmi source_map.cmi pseudoFs.cmi pretty_print.cmi \
-    parse_bytecode.cmi option.cmi linker.cmi driver.cmi compiler_version.cmi
+    parse_bytecode.cmi option.cmi linker.cmi driver.cmi compiler_version.cmi \
+    code.cmi
 compile.cmx : util.cmx source_map.cmx pseudoFs.cmx pretty_print.cmx \
-    parse_bytecode.cmx option.cmx linker.cmx driver.cmx compiler_version.cmx
+    parse_bytecode.cmx option.cmx linker.cmx driver.cmx compiler_version.cmx \
+    code.cmx
 compiler_version.cmo : compiler_version.cmi
 compiler_version.cmx : compiler_version.cmi
 control.cmo : subst.cmi code.cmi control.cmi
