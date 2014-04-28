@@ -20,7 +20,23 @@
 
 let times = Option.Debug.find "times"
 
-let f toplevel linkall paths files js_files input_file output_file source_map =
+let _ = Sys.catch_break true
+
+let gen_file file f =
+  let f_tmp = Filename.temp_file
+      ~temp_dir:(Filename.dirname file)
+      (Filename.basename file) ".tmp" in
+  try
+    let ch = open_out_bin f_tmp in
+    (try f ch with e -> close_out ch; raise e);
+    close_out ch;
+    (try Sys.remove file with Sys_error _ -> ());
+    Sys.rename f_tmp file;
+  with exc ->
+    Sys.remove f_tmp;
+    raise exc
+
+let f toplevel linkall paths files js_files input_file output_file output_file_fs source_map =
   let t = Util.Timer.make () in
   Linker.load_files js_files;
   let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
@@ -40,23 +56,32 @@ let f toplevel linkall paths files js_files input_file output_file source_map =
         close_in ch;
         p, cmis, d
   in
-  let p = PseudoFs.f p cmis files paths in
   if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
-  let output_program fmt = Driver.f ~toplevel ~linkall ?source_map fmt d p in
   begin match output_file with
     | None ->
-      output_program (Pretty_print.to_out_channel stdout)
-    | Some f ->
-      let f_tmp = Filename.temp_file ~temp_dir:(Filename.dirname f) (Filename.basename f) ".tmpjs" in
-      try
-        let ch = open_out_bin f_tmp in
-        output_program (Pretty_print.to_out_channel ch);
-        close_out ch;
-        (try Sys.remove f with Sys_error _ -> ());
-        Sys.rename f_tmp f
-      with exc ->
-        Sys.remove f_tmp;
-        raise exc
+      let p = PseudoFs.f p cmis files paths in
+      let fmt = Pretty_print.to_out_channel stdout in
+      Driver.f ~toplevel ~linkall ?source_map fmt d p
+    | Some file ->
+      gen_file file (fun chan ->
+          let p =
+            if output_file_fs = None
+            then PseudoFs.f p cmis files paths
+            else
+              let instrs = [
+                Code.(Let(Var.fresh (), Prim (Extern "caml_fs_init", [])))
+              ] in
+              Code.prepend p instrs in
+          let fmt = Pretty_print.to_out_channel chan in
+          Driver.f ~toplevel ~linkall ?source_map fmt d p;
+        );
+      Util.opt_iter (fun file ->
+          gen_file file (fun chan ->
+              let pfs = PseudoFs.f_empty cmis files paths in
+              let pfs_fmt = Pretty_print.to_out_channel chan in
+              Driver.f pfs_fmt d pfs
+            )
+        ) output_file_fs
   end;
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
 
@@ -65,6 +90,7 @@ let run () =
   let js_files = ref [] in
   let files = ref [] in
   let output_file = ref None in
+  let output_file_fs = ref None in
   let input_file = ref None in
   let no_runtime = ref false in
   let linkall = ref false in
@@ -97,7 +123,10 @@ let run () =
      ("-file", Arg.String (fun s -> files:= s :: !files ),
       "<file> register <file> to the pseudo filesystem");
      ("-o", Arg.String (fun s -> output_file := Some s),
-      "<file> set output file name to <file>")]
+      "<file> set output file name to <file>");
+     ("-ofs", Arg.String (fun s -> output_file_fs := Some s),
+      "<file> set filesystem ouput file name to <file>");
+    ]
   in
   Arg.parse (Arg.align options)
       (fun s ->
@@ -143,7 +172,7 @@ let run () =
           failwith "Don't know where to output the Source-map@."
     else None in
   f !toplevel !linkall !paths !files (runtime @ List.rev !js_files)
-    !input_file output_f source_m
+    !input_file output_f !output_file_fs source_m
 
 
 let _ =

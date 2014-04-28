@@ -9,8 +9,9 @@ let expand_path exts real virt =
       try
         let exmatch =
           try
-            let i = String.rindex realfile '.' in
-            let e = String.sub realfile (i+1) (String.length realfile - i - 1) in
+            let b = Filename.basename realfile in
+            let i = String.rindex b '.' in
+            let e = String.sub b (i+1) (String.length b - i - 1) in
             List.mem e exts
           with Not_found -> List.mem "" exts
         in
@@ -52,7 +53,7 @@ let list_files name paths =
     with Not_found ->
       failwith (Printf.sprintf "file '%s' not found" name)
   in
-  expand_path exts file name
+  expand_path exts file (Filename.concat dir name)
 
 let cmi_dir = "/cmis"
 
@@ -92,7 +93,7 @@ let f p cmis files paths =
   let body = make_body "caml_fs_register" cmis files paths in
   Code.prepend p body
 
-let f_sep cmis files paths =
+let f_empty cmis files paths =
   let body = make_body "caml_fs_register_extern" cmis files paths in
   let pc = 0 in
   let blocks = AddrMap.add pc {params=[];

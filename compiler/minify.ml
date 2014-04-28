@@ -20,6 +20,8 @@
 
 let error k = Format.ksprintf (fun s -> failwith s) k
 
+let _ = Sys.catch_break true
+
 let read_file f =
   let c = open_in f in
   let out = Buffer.create 1024 in

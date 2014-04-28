@@ -105,7 +105,7 @@ function caml_make_path (name) {
 //Provides: caml_fs_register
 //Requires: MlDir, MlFile, caml_root_dir, MlString, caml_make_path, caml_raise_sys_error
 //Requires: caml_invalid_argument
-// content be : MlDIr,MlFile,MlString,Array, string
+// content can be : MlDIr,MlFile,MlString,Array, string
 function caml_fs_register(name,content) {
   var path = caml_make_path(name);
   var dir = caml_root_dir;
@@ -129,13 +129,14 @@ function caml_fs_register(name,content) {
 
 //Provides: caml_fs_init
 //Requires: caml_fs_register
-function caml_fs_init(){
+function caml_fs_init (){
   var tmp=joo_global_object.caml_fs_tmp
   if(tmp){
     for(var i = 0; i < tmp.length; i++){
       caml_fs_register(tmp[i].name,tmp[i].content);
     }
   }
+  joo_global_object.caml_fs_register = caml_fs_register;
 }
 
 //Provides: caml_fs_register_extern

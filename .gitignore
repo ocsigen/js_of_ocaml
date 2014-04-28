@@ -24,6 +24,7 @@ lib/stubs.c
 lib/sys_js.ml
 runtime/runtime.js
 toplevel/toplevel.js
+toplevel/toplevel-fs.js
 toplevel/server
 examples/wiki/wikicreole.ml
 examples/*/*.js
