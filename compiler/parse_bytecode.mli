@@ -21,7 +21,7 @@
 type debug_loc = Javascript.loc -> Parse_info.t option
 
 val from_channel :
-  ?toplevel:bool -> ?debug:[`Full | `Names | `No] ->
-  files:string list -> paths:string list -> in_channel -> Code.program * debug_loc
+  ?toplevel:bool -> ?debug:[`Full | `Names | `No] -> in_channel ->
+  Code.program * Util.StringSet.t * debug_loc
 
-val from_string : ?toplevel:bool -> string array -> string -> Code.program * debug_loc
+val from_string : string array -> string -> Code.program * debug_loc

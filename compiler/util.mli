@@ -28,7 +28,7 @@ val opt_filter : ('a -> bool) -> 'a option -> 'a option
 val opt_map : ('a -> 'b) -> 'a option -> 'b option
 val opt_iter : ('a -> unit) -> 'a option -> unit
 val filter_map : ('a -> 'b option) -> 'a list -> 'b list
-
+val array_fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 
 val path_require_findlib : string -> string option
 val find_pkg_dir : string -> string

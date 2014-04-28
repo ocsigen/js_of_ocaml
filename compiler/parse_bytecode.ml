@@ -26,6 +26,8 @@ let debug_parser = Option.Debug.find "parser"
 type debug_loc = Javascript.loc -> Parse_info.t option
 type code = string
 
+(* Block analysis *)
+(* Detect each block *)
 module Blocks : sig
   type t
   val add  : t -> int -> t
@@ -84,57 +86,61 @@ end = struct
     (scan blocks code 0 len,len)
 
 end
-(****)
 
-let same_custom x y =
-  Obj.field x 0 == Obj.field (Obj.repr y) 0
+(* Parse constants *)
+module Constants : sig
+  val parse : Obj.t -> Code.constant
+  val inlined : Obj.t -> bool
+end = struct
+  let same_custom x y =
+    Obj.field x 0 == Obj.field (Obj.repr y) 0
 
-let warn_overflow i i32 =
-  Format.eprintf
-    "Warning: integer overflow: integer 0x%s truncated to 0x%lx; \
-     the generated code might be incorrect.@." i i32
+  let warn_overflow i i32 =
+    Format.eprintf
+      "Warning: integer overflow: integer 0x%s truncated to 0x%lx; \
+       the generated code might be incorrect.@." i i32
 
-let rec parse_const x =
-  if Obj.is_block x then begin
-    let tag = Obj.tag x in
-    if tag = Obj.string_tag then
-      String (Obj.magic x : string)
-    else if tag = Obj.double_tag then
-      Float (Obj.magic x : float)
-    else if tag = Obj.double_array_tag then
-      Float_array (Obj.magic x : float array)
-    else if tag = Obj.custom_tag && same_custom x 0l then
-      Int (Obj.magic x : int32)
-    else if tag = Obj.custom_tag && same_custom x 0n then
-      let i : nativeint = Obj.magic x in
-      let i32 = Nativeint.to_int32 i in
-      let i' = Nativeint.of_int32 i32 in
-      if i' <> i then warn_overflow (Printf.sprintf "%nx" i) i32;
+  let rec parse x =
+    if Obj.is_block x then begin
+      let tag = Obj.tag x in
+      if tag = Obj.string_tag then
+        String (Obj.magic x : string)
+      else if tag = Obj.double_tag then
+        Float (Obj.magic x : float)
+      else if tag = Obj.double_array_tag then
+        Float_array (Obj.magic x : float array)
+      else if tag = Obj.custom_tag && same_custom x 0l then
+        Int (Obj.magic x : int32)
+      else if tag = Obj.custom_tag && same_custom x 0n then
+        let i : nativeint = Obj.magic x in
+        let i32 = Nativeint.to_int32 i in
+        let i' = Nativeint.of_int32 i32 in
+        if i' <> i then warn_overflow (Printf.sprintf "%nx" i) i32;
+        Int i32
+      else if tag = Obj.custom_tag && same_custom x 0L then
+        Int64 (Obj.magic x : int64)
+      else if tag < Obj.no_scan_tag then
+        Tuple (tag,
+               Array.init (Obj.size x) (fun i -> parse (Obj.field x i)))
+      else
+        assert false
+    end else
+      let i : int = Obj.magic x in
+      let i32 = Int32.of_int i in
+      let i' = Int32.to_int i32 in
+      if i' <> i then warn_overflow (Printf.sprintf "%x" i) i32;
       Int i32
-    else if tag = Obj.custom_tag && same_custom x 0L then
-      Int64 (Obj.magic x : int64)
-    else if tag < Obj.no_scan_tag then
-      Tuple (tag,
-             Array.init (Obj.size x) (fun i -> parse_const (Obj.field x i)))
-    else
-      assert false
-  end else
-    let i : int = Obj.magic x in
-    let i32 = Int32.of_int i in
-    let i' = Int32.to_int i32 in
-    if i' <> i then warn_overflow (Printf.sprintf "%x" i) i32;
-    Int i32
 
-let inlined_const x =
-  not (Obj.is_block x)
+  let inlined x =
+    not (Obj.is_block x)
     ||
-  (let tag = Obj.tag x in
-   (tag = Obj.double_tag)
-      ||
-   (tag = Obj.custom_tag && (same_custom x 0l || same_custom x 0n)))
+    (let tag = Obj.tag x in
+     (tag = Obj.double_tag)
+     ||
+     (tag = Obj.custom_tag && (same_custom x 0l || same_custom x 0n)))
+end
 
-(****)
-
+(* Copied from ocaml/typing/ident.ml *)
 module Ident = struct
   type t = { stamp: int; name: string; mutable flags: int }
   type 'a tbl =
@@ -158,7 +164,7 @@ module Ident = struct
       (table_contents_rec sz t [])
 
 end
-
+(* Copied from ocaml/utils/tbl.ml *)
 module Tbl = struct
   type ('a, 'b) t =
     | Empty
@@ -177,13 +183,63 @@ module Tbl = struct
       if c = 0 then d
       else find compare x (if c < 0 then l else r)
 
+  let rec fold f m accu =
+    match m with
+    | Empty -> accu
+    | Node(l, v, d, r, _) ->
+      fold f r (f v d (fold f l accu))
 end
 
 type 'a numtable =
   { num_cnt: int;
     num_tbl: ('a, int) Tbl.t }
 
-module Debug = struct
+(* Read and manipulate debug section *)
+module Debug : sig
+    type compilation_env =
+    { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
+      ce_heap: int Ident.tbl;  (* Structure of the heap-allocated env *)
+      ce_rec: int Ident.tbl }  (* Functions bound by the same let rec *)
+
+  type pos =
+    { pos_fname: string;
+      pos_lnum: int;
+      pos_bol: int;
+      pos_cnum: int }
+
+  type loc_info =
+    { li_start: pos;
+      li_end: pos;
+      li_ghost: unit }
+
+  type debug_event =
+    { mutable ev_pos: int;                (* Position in bytecode *)
+      ev_module: string;                  (* Name of defining module *)
+      ev_loc: loc_info;                   (* Location in source file *)
+      ev_kind: debug_event_kind;          (* Before/after event *)
+      ev_info: debug_event_info;          (* Extra information *)
+      ev_typenv: unit;                    (* Typing environment *)
+      ev_typsubst: unit;                  (* Substitution over types *)
+      ev_compenv: compilation_env;        (* Compilation environment *)
+      ev_stacksize: int;                  (* Size of stack frame *)
+      ev_repr: unit }                     (* Position of the representative *)
+
+  and debug_event_kind =
+      Event_before
+    | Event_after of unit
+    | Event_pseudo
+
+  and debug_event_info = unit
+    (*   Event_function *)
+    (* | Event_return of int *)
+    (* | Event_other *)
+
+  val propagate : Code.Var.t list -> Code.Var.t list -> unit
+  val find : Code.addr -> (int * string) list
+  val find_loc : Code.DebugAddr.dbg -> Parse_info.t option
+  val read : in_channel -> unit
+  val fold : (Code.addr -> debug_event -> 'a -> 'a) -> 'a -> 'a
+end = struct
 
   type compilation_env =
     { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
@@ -251,8 +307,6 @@ module Debug = struct
     with Not_found ->
       []
 
-  let has_loc pc = Hashtbl.mem events_by_pc pc
-
   let find_loc pc =
     let pc = Code.DebugAddr.to_addr pc in
     try
@@ -281,8 +335,7 @@ module Debug = struct
   let fold f acc = Hashtbl.fold f events_by_pc acc
 end
 
-(****)
-
+(* Globals *)
 type globals =
   { mutable vars : Var.t option array;
     mutable is_const : bool array;
@@ -309,6 +362,8 @@ let resize_globals g size =
   g.is_exported <- resize_array g.is_exported size true;
   g.override <- resize_array g.override size None
 
+
+(* State of the VM *)
 module State = struct
 
   type elt = Var of Var.t | Dummy
@@ -375,18 +430,6 @@ module State = struct
   let peek n st = elt_to_var (List.nth st.stack n)
 
   let grab n st = (List.map elt_to_var (list_start n st.stack), pop n st)
-
-  let rec st_unalias s x n y =
-    match s with
-      [] ->
-        []
-    | z :: rem ->
-        (if n <> 0 && z = Var x then Var y else z) ::
-        st_unalias rem x (n - 1) y
-
-  let unalias st x n y =
-    assert (List.nth st.stack n = Var x);
-    {st with stack = st_unalias st.stack x n y }
 
   let rec st_assign s n x =
     match s with
@@ -483,7 +526,6 @@ module State = struct
       if debug_parser () then if i > 1 then Format.printf ", ";
       if debug_parser () then Format.printf "%a" Var.print x;
       (x :: params, state)
-
 end
 
 let primitive_name state i =
@@ -496,12 +538,21 @@ let primitive_name state i =
 let access_global g i =
   match g.vars.(i) with
     Some x ->
-      x
+    x
   | None ->
-      g.is_const.(i) <- true;
-      let x = Var.fresh () in
-      g.vars.(i) <- Some x;
-      x
+    g.is_const.(i) <- true;
+    let x = Var.fresh () in
+    g.vars.(i) <- Some x;
+    x
+
+let register_global ?(force=false) g i rem =
+  if force || g.is_exported.(i)
+  then
+    Let (Var.fresh (),
+         Prim (Extern "caml_register_global",
+               [Pc (Int (Int32.of_int i)) ;
+                Pv (access_global g i)])) :: rem
+  else rem
 
 let get_global state instrs i =
   State.size_globals state (i + 1);
@@ -512,10 +563,10 @@ let get_global state instrs i =
       (x, State.set_accu state x, instrs)
   | None ->
       if
-        i < Array.length g.constants && inlined_const g.constants.(i)
+        i < Array.length g.constants && Constants.inlined g.constants.(i)
       then begin
         let (x, state) = State.fresh_var state in
-        (x, state, Let (x, Constant (parse_const g.constants.(i))) :: instrs)
+        (x, state, Let (x, Constant (Constants.parse g.constants.(i))) :: instrs)
       end else begin
         g.is_const.(i) <- true;
         let (x, state) = State.fresh_var state in
@@ -874,17 +925,7 @@ and compile blocks code limit pc state instrs =
           instrs in
       let (x, state) = State.fresh_var state in
       if debug_parser () then Format.printf "%a = 0@." Var.print x;
-      let instrs =
-        if g.is_exported.(i) then begin
-          let x = Var.fresh () in
-          Let (Var.fresh (),
-               Prim (Extern "caml_register_global",
-                     [Pv x ; Pv (access_global g i)])) ::
-          Let (x, Const (Int32.of_int i)) ::
-          instrs
-        end else
-          instrs
-      in
+      let instrs = register_global g i instrs in
       compile blocks code limit (pc + 2) state (Let (x, Const 0l) :: instrs)
   | ATOM0 ->
       let (x, state) = State.fresh_var state in
@@ -1601,7 +1642,8 @@ let match_exn_traps ((_, blocks, _) as p) =
 
 (****)
 
-let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
+let parse_bytecode ?(debug=`No) code globals =
+  let state = State.initial globals in
   Code.Var.reset ();
   let blocks = Blocks.analyse code in
   let blocks =
@@ -1622,200 +1664,11 @@ let parse_bytecode ?(toplevel=false) ?(debug=`No) code state standalone_info =
   tagged_blocks := AddrSet.empty;
 
   let free_pc = String.length code / 4 in
-  let g = State.globals state in
-  let body =
-    match standalone_info with
-      Some (symb, crcs, prim, files, paths) ->
-        let l = ref [] in
+  let blocks = match_exn_traps (0, blocks, free_pc) in
+  (0, blocks, free_pc)
 
 
-        let set_global x v rem =
-          let globals = Var.fresh () in
-          Let (globals,
-               Prim (Extern "caml_get_global_data", [])) ::
-            Let (Var.fresh (),
-                 Prim (Extern "caml_js_set", [Pv globals; Pc (String x); Pv v])) ::
-            rem in
-
-
-        let register_global n =
-          l :=
-            let x = Var.fresh () in
-            Let (x, Const (Int32.of_int n)) ::
-            Let (Var.fresh (),
-                 Prim (Extern "caml_register_global",
-                       [Pv x ; Pv (access_global g n)])) ::
-            !l
-        in
-        register_global 1; (* Sys_error *)
-        register_global 2; (* Failure *)
-        register_global 3; (* Invalid_argument *)
-        register_global 4; (* End_of_file *)
-        register_global 5; (* Division_by_zero *)
-        register_global 6; (* Not_found *)
-        register_global 7; (* Match_failure *)
-        register_global 8; (* Stack_overflow *)
-        register_global 11; (* Undefined_recursive_module *)
-        for i = Array.length g.constants - 1  downto 0 do
-          match g.vars.(i) with
-            Some x when g.is_const.(i) ->
-              if g.is_exported.(i) then register_global i;
-              l := Let (x, Constant (parse_const g.constants.(i))) :: !l
-          | _ ->
-              ()
-        done;
-        let fs = ref [] in
-        List.iter (fun name ->
-            let name,dir = try
-                let i = String.index name ':' in
-                let d = String.sub name (i + 1) (String.length name - i - 1) in
-                let n = String.sub name 0 i in
-                if String.length d > 0 && d.[0] <> '/'
-                then failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" d n);
-                let d =
-                  if d.[String.length d - 1] <> '/'
-                  then d^"/"
-                  else d in
-                n,d
-              with Not_found ->
-                name,"/static/" in
-            let name, exts (* extensions filter *) =
-              try
-                let i = String.index name '=' in
-                let exts = String.sub name (i + 1) (String.length name - i - 1) in
-                let n = String.sub name 0 i in
-                let exts = Util.split_char ',' exts in
-                n,exts
-              with Not_found ->
-                name,[] in
-            let file =
-              try
-                Util.find_in_paths paths name
-              with Not_found ->
-                failwith (Printf.sprintf "file '%s' not found" name)
-            in
-
-            let rec loop realfile virtfile =
-              if try Sys.is_directory realfile with _ -> false
-              then
-                Array.iter (fun s -> loop (Filename.concat realfile s) (Filename.concat virtfile s)) (Sys.readdir realfile)
-              else
-                try
-                  let exmatch =
-                    try
-                      let i = String.rindex realfile '.' in
-                      let e = String.sub realfile (i+1) (String.length realfile - i - 1) in
-                      List.mem e exts
-                    with Not_found -> List.mem "" exts
-                  in
-
-                  if exts = [] || exmatch
-                  then
-                    let s = Util.read_file realfile in
-                    fs := (Pc (IString (dir^virtfile)),Pc (IString s)) :: !fs
-                with exc ->
-                  Format.eprintf "ignoring %s: %s@." realfile (Printexc.to_string exc)
-            in loop file name
-          ) files;
-
-        if toplevel then begin
-          (* Include linking information *)
-          let toc =
-            [("SYMB", Obj.repr symb); ("CRCS", crcs); ("PRIM", Obj.repr prim)]
-          in
-          l :=
-            (let x = Var.fresh () in
-             Let (x, Constant (parse_const (Obj.repr toc))) ::
-             set_global "toc" x !l);
-          l :=
-            (let x = Var.fresh () in
-             Let (x, Constant (Int (Int32.of_int (Array.length g.primitives)))) ::
-             set_global "prim_count" x !l);
-          (* Include interface files *)
-          if Option.Optim.include_cmis ()
-          then Tbl.iter
-              (fun id num ->
-                 if id.Ident.flags = 1 then begin
-                   let name = String.uncapitalize id.Ident.name ^ ".cmi" in
-                   let file =
-                     try
-                       Util.find_in_paths paths name
-                     with Not_found ->
-                       let name = String.capitalize id.Ident.name ^ ".cmi" in
-                       try
-                         Util.find_in_paths paths name
-                       with Not_found ->
-                         failwith (Printf.sprintf "interface file '%s' not found" name)
-                   in
-                   let s = Util.read_file file in
-                   fs := (Pc (IString ("/cmis/"^name)),Pc (IString s)) :: !fs
-                 end) symb.num_tbl;
-        end;
-        (List.map (fun (n, c) -> Let(Var.fresh (), Prim(Extern "caml_fs_register", [n;c]))) !fs) @ !l
-    | None ->
-        let globals = Var.fresh () in
-        let l =
-          ref [Let (globals,
-                    Prim (Extern "caml_get_global_data", []))]
-        in
-        for i = 0 to Array.length g.vars - 1 do
-          match g.vars.(i) with
-            Some x when g.is_const.(i) ->
-              l := Let (x, Field (globals, i)) :: !l
-          | _ ->
-              ()
-        done;
-        List.rev !l
-  in
-  let last = Branch (0, []) in
-  let pc = free_pc in
-  let blocks =
-    AddrMap.add free_pc
-      { params = []; handler = None; body = body; branch = last }
-      blocks
-  in
-  let free_pc = free_pc + 1 in
-  let blocks = match_exn_traps (pc, blocks, free_pc) in
-  let debug pc =
-    Debug.find_loc pc
-  in
-  ((pc, blocks, free_pc), debug)
-
-(****)
-
-let seek_section toc ic name =
-  let rec seek_sec curr_ofs = function
-    [] -> raise Not_found
-  | (n, len) :: rem ->
-      if n = name
-      then begin seek_in ic (curr_ofs - len); len end
-      else seek_sec (curr_ofs - len) rem in
-  seek_sec (in_channel_length ic - 16 - 8 * List.length toc) toc
-
-let read_toc ic =
-  let pos_trailer = in_channel_length ic - 16 in
-  seek_in ic pos_trailer;
-  let num_sections = input_binary_int ic in
-  let header = String.create Util.MagicNumber.size in
-  really_input ic header 0 Util.MagicNumber.size;
-  Util.MagicNumber.assert_current header;
-  seek_in ic (pos_trailer - 8 * num_sections);
-  let section_table = ref [] in
-  for i = 1 to num_sections do
-    let name = String.create 4 in
-    really_input ic name 0 4;
-    let len = input_binary_int ic in
-    section_table := (name, len) :: !section_table
-  done;
-  !section_table
-
-let read_primitive_table toc ic =
-  let len = seek_section toc ic "PRIM" in
-  let p = String.create len in
-  really_input ic p 0 len;
-  Array.of_list(Util.split_char '\000' p),p
-
-(****)
+(* HACK 1 - fix bytecode *)
 
 let orig_code_bytes =
   [`I PUSHCONSTINT; `C 31;
@@ -1847,7 +1700,7 @@ let fix_min_max_int code =
          (bytecode not found).@."
   end
 
-(****)
+(* HACK 2 - override module *)
 
 let override_global =
   let jsmodule name func =
@@ -1864,10 +1717,43 @@ let override_global =
            instrs)
   ]
 
+(* HACK END *)
 
-let from_channel  ?(toplevel=false) ?(debug=`No) ~files ~paths ic =
+let seek_section toc ic name =
+  let rec seek_sec curr_ofs = function
+    [] -> raise Not_found
+  | (n, len) :: rem ->
+      if n = name
+      then begin seek_in ic (curr_ofs - len); len end
+      else seek_sec (curr_ofs - len) rem in
+  seek_sec (in_channel_length ic - 16 - 8 * List.length toc) toc
+
+let read_toc ic =
+  let pos_trailer = in_channel_length ic - 16 in
+  seek_in ic pos_trailer;
+  let num_sections = input_binary_int ic in
+  let header = String.create Util.MagicNumber.size in
+  really_input ic header 0 Util.MagicNumber.size;
+  Util.MagicNumber.assert_current header;
+  seek_in ic (pos_trailer - 8 * num_sections);
+  let section_table = ref [] in
+  for i = 1 to num_sections do
+    let name = String.create 4 in
+    really_input ic name 0 4;
+    let len = input_binary_int ic in
+    section_table := (name, len) :: !section_table
+  done;
+  !section_table
+
+let from_channel ?(toplevel=false) ?(debug=`No) ic =
+
   let toc = read_toc ic in
-  let primitive_table,prim = read_primitive_table toc ic in
+
+  let prim_size = seek_section toc ic "PRIM" in
+  let prim = String.create prim_size in
+  really_input ic prim 0 prim_size;
+  let primitive_table = Array.of_list(Util.split_char '\000' prim) in
+
   let code_size = seek_section toc ic "CODE" in
   let code = String.create code_size in
   really_input ic code 0 code_size;
@@ -1878,6 +1764,9 @@ let from_channel  ?(toplevel=false) ?(debug=`No) ~files ~paths ic =
   ignore(seek_section toc ic "SYMB");
   let symbols = (input_value ic : Ident.t numtable) in
 
+  ignore(seek_section toc ic "CRCS");
+  let crcs = (input_value ic : Obj.t) in
+
   if debug <> `No then begin
     try
       ignore(seek_section toc ic "DBUG");
@@ -1885,24 +1774,13 @@ let from_channel  ?(toplevel=false) ?(debug=`No) ~files ~paths ic =
     with Not_found -> ()
   end;
 
-  let globals = make_globals (Array.length init_data) init_data primitive_table in
-  if toplevel then begin
-    Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
-    (* @vouillon: *)
-    (* we should then use the -linkalloption to build the toplevel. *)
-    (* The OCaml compiler can generate code using this primitive but *)
-    (* does not use it itself. This is the only primitive in this case. *)
-    (* Ideally, Js_of_ocaml should parse the .mli files for primitives as *)
-    (* well as marking this primitive as potentially used. But *)
-    (* the -linkall option is probably good enough. *)
-
-    (* Primitive.mark_used "caml_string_greaterthan" *)
-  end;
+  (* We fix the bytecode to replace max_int/min_int *)
   if Util.Version.v = `V3
   then fix_min_max_int code;
 
-  let state = State.initial globals in
+  let globals = make_globals (Array.length init_data) init_data primitive_table in
 
+  (* Initialize module override mechanism *)
   List.iter (fun (name, v) ->
       try
         let nn = { Ident.stamp= 0; name; flags= 0 } in
@@ -1912,12 +1790,80 @@ let from_channel  ?(toplevel=false) ?(debug=`No) ~files ~paths ic =
       with Not_found -> ()
     ) override_global;
 
-  ignore(seek_section toc ic "CRCS");
-  let crcs = (input_value ic : Obj.t) in
-  parse_bytecode ~toplevel ~debug code state (Some (symbols, crcs, prim, files, paths))
+  if toplevel then
+    begin
+      (* export globals *)
+      Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
+      (* @vouillon: *)
+      (* we should then use the -linkall option to build the toplevel. *)
+      (* The OCaml compiler can generate code using this primitive but *)
+      (* does not use it itself. This is the only primitive in this case. *)
+      (* Ideally, Js_of_ocaml should parse the .mli files for primitives as *)
+      (* well as marking this primitive as potentially used. But *)
+      (* the -linkall option is probably good enough. *)
+      (* Primitive.mark_used "caml_string_greaterthan" *)
+    end;
+
+  let p = parse_bytecode ~debug code globals in
+
+  (* register predefined exception *)
+  let body = ref [] in
+  for i = 0 to 11 do (* see ocaml/byterun/fail.h *)
+    body := register_global ~force:true globals i !body;
+    globals.is_exported.(i) <- false;
+  done;
+  let body = Util.array_fold_right_i (fun i c l ->
+      match globals.vars.(i) with
+        Some x when globals.is_const.(i) ->
+        let l = register_global globals i l in
+        Let (x, Constant (Constants.parse globals.constants.(i))) :: l
+      | _ -> l) globals.constants !body in
+
+
+  let body =
+    if toplevel
+    then
+      begin
+        (* Include linking information *)
+        let toc = [
+          ("SYMB", Obj.repr symbols);
+          ("CRCS", crcs);
+          ("PRIM", Obj.repr prim)
+        ] in
+        let gdata = Var.fresh () in
+        let infos = [
+          "toc",(Constants.parse (Obj.repr toc));
+          "prim_count",(Int (Int32.of_int (Array.length globals.primitives)))] in
+        let body = List.fold_left (fun rem (name,const) ->
+            let c = Var.fresh () in
+            Let (c, Constant const) ::
+            Let (Var.fresh (),
+                 Prim (Extern "caml_js_set", [Pv gdata; Pc (String name); Pv c])) ::
+            rem) body infos in
+        Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
+      end
+    else body in
+
+  (* List interface files *)
+  let cmis =
+    if toplevel && Option.Optim.include_cmis ()
+    then Tbl.fold (fun id _num acc ->
+        if id.Ident.flags = 1
+        then Util.StringSet.add id.Ident.name acc
+        else acc) symbols.num_tbl Util.StringSet.empty
+    else Util.StringSet.empty in
+  prepend p body, cmis, Debug.find_loc
 
 (* As input: list of primitives + size of global table *)
-let from_string ?toplevel primitives code =
+let from_string primitives code =
   let globals = make_globals 0 [||] primitives in
-  let state = State.initial globals in
-  parse_bytecode ?toplevel code state None
+  let p = parse_bytecode code globals in
+
+  let gdata = Var.fresh () in
+  let body = Util.array_fold_right_i (fun i var l ->
+      match var with
+      | Some x when globals.is_const.(i) ->
+        Let (x, Field (gdata, i)) :: l
+      | _ -> l) globals.vars [] in
+  let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
+  prepend p body, Debug.find_loc

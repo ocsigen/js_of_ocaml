@@ -78,6 +78,13 @@ let filter_map f l =
     | None -> acc) [] l
   in List.rev l
 
+let array_fold_right_i f a x =
+  let r = ref x in
+  for i = Array.length a - 1 downto 0 do
+    r := f i (Array.unsafe_get a i) !r
+  done;
+  !r
+
 let rec take' acc n l =
   if n = 0
   then acc,l
