@@ -196,7 +196,8 @@
 // Create a JSON object only if one does not already exist. We create the
 // methods in a closure to avoid creating global variables.
 
-//Provides: caml_json
+
+//Provides: JSON
 var JSON;
 if (!JSON) {
     JSON = {};
@@ -518,4 +519,6 @@ if (!JSON) {
 
 }());
 
+//Provides: caml_json
+//Requires: JSON
 function caml_json() { return JSON; }
