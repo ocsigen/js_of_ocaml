@@ -9,7 +9,9 @@ remove: [
 ]
 depends: [
   "ocamlfind"
-  "deriving" {>= "9999"}
   "lwt" {>= "2.4"}
   "menhir"
 ]
+
+depopts: ["deriving"]
+conflicts: ["deriving" {< "0.6"}]
