@@ -92,7 +92,7 @@ PERVASIVES=$(STDLIB_MODULES) $(JOO) $(BER_MODULE) outcometree topdirs toploop
 #	ocamlfind ocamlc -linkall -g -package str -linkpkg toplevellib.cma -o $@.tmp $^
 
 $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
-	$(COMP) -I $(COMPILER_LIBS) -I $(shell ocamlfind query lwt) -toplevel -noruntime $(JSFILES) $(NAME).byte $(OPTIONS) -I ./ -I ../lib/ -file examples.ml
+	$(COMP) -I $(COMPILER_LIBS) -I $(shell ocamlfind query lwt) -toplevel -noruntime $(JSFILES) $(NAME).byte -ofs toplevel-fs.js $(OPTIONS) -I ./ -I ../lib/ -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
 	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
