@@ -51,7 +51,7 @@ function mlstring_bound_error () {
     caml_raise_with_arg(caml_global_data[4],new MlString("index out of bounds"));
 }
 MlString.prototype = {
-  // JS string
+  // JS string : Utf16
   string:null,
   // byte string
   bytes:null,
@@ -300,6 +300,11 @@ function caml_string_greaterequal(s1, s2) { return s2.lessEqual(s1); }
 //Requires: MlString
 function caml_blit_string(s1, i1, s2, i2, len) {
   if (len === 0) return;
+  if (s1.array != null && s2.last == 0 && i2 == 0 && len == s2.len) {
+    s2.array = s1.array.slice(i1,i1+len);
+    s2.bytes = s2.string = null;
+    return;
+  }
   if (i2 === s2.last && s2.bytes != null) {
     // s2.last < s2.len; hence, s2.string and s2.array are null
     var b = s1.bytes;
