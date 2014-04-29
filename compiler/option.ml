@@ -87,6 +87,8 @@ module Optim = struct
   let excwrap = o ~name:"excwrap" ~default:true
   let include_cmis = o ~name:"withcmi" ~default: true
 
+  let inline_callgen = o ~name:"callgen" ~default:false
+
   (* this does not optimize properly *)
   let compact_vardecl = o ~name:"vardecl" ~default:false
 end

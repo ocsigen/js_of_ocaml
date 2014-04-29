@@ -40,6 +40,8 @@ module Optim : sig
   val excwrap : unit -> bool
   val include_cmis: unit -> bool
 
+  val inline_callgen : unit -> bool
+
   val enable : string -> unit
   val disable : string -> unit
 end

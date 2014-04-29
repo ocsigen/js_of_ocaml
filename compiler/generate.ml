@@ -545,28 +545,38 @@ let parallel_renaming ctx params args continuation queue =
 
 (****)
 
+let apply_fun_raw f params =
+  let n = List.length params in
+  J.ECond (J.EBin (J.EqEq, J.EDot (f, "length"),
+                   J.ENum (float n)),
+           J.ECall (f, params),
+           J.ECall (s_var "caml_call_gen",
+                    [f; J.EArr (List.map (fun x -> Some x) params)]))
+
 let generate_apply_fun n =
   let f' = Var.fresh () in
   let f = J.V f' in
   Code.Var.name f' "fun";
   let params =
     Array.to_list (Array.init n (fun i ->
-        let a = Var.fresh () in
-        Var.name a ("var"^(string_of_int i));
-        J.V a))
+      let a = Var.fresh () in
+      Var.name a ("var"^(string_of_int i));
+      J.V a))
   in
   let f' = J.EVar f in
   let params' = List.map (fun x -> J.EVar x) params in
   J.EFun (None, f :: params,
-           [J.Statement
-               (J.Return_statement
-                  (Some
-                     (J.ECond (J.EBin (J.EqEq, J.EDot (f', "length"),
-                                       J.ENum (float n)),
-                               J.ECall (f', params'),
-                               J.ECall (s_var "caml_call_gen",
-                                        [f'; J.EArr (List.map (fun x -> Some x) params')]))), J.N))],
+          [J.Statement
+              (J.Return_statement
+                 (Some (apply_fun_raw f' params'), J.N))],
           J.N)
+
+let apply_fun ctx f params =
+  if Option.Optim.inline_callgen ()
+  then apply_fun_raw f params
+  else
+    let y = Share.get_apply generate_apply_fun (List.length params) ctx.Ctx.share in
+    J.ECall (y, f::params)
 
 (****)
 
@@ -889,11 +899,13 @@ and translate_expr ctx queue x e level =
           (fun x (args, prop, queue) ->
              let ((prop', cx), queue) =
                access_queue queue x in (cx :: args, or_p prop prop', queue))
-          (x :: l) ([], mutator_p, queue)
+          l ([], mutator_p, queue)
       in
-      let y = Share.get_apply (generate_apply_fun) (List.length l) ctx.Ctx.share in
-      (J.ECall (y, args),
-       prop, queue),[]
+      let ((prop', f), queue) = access_queue queue x in
+      let prop = or_p prop prop' in
+
+      let e = apply_fun ctx f args in
+      (e, prop, queue),[]
   | Block (tag, a) ->
       let (contents, prop, queue) =
         List.fold_right
@@ -1653,12 +1665,16 @@ let generate_shared_value ctx =
         List.map (fun (s,v) -> v, Some (str_js s,J.N)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
         @ List.map (fun (s,v) -> v, Some (s_var s,J.N)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)))
   in
-  let applies = List.map (fun (n,v) ->
-    match generate_apply_fun n with
-      | J.EFun (_,param,body,nid) ->
-        J.Function_declaration (v,param,body,nid)
-      | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in
-  strings::applies
+
+  if not (Option.Optim.inline_callgen ())
+  then
+    let applies = List.map (fun (n,v) ->
+        match generate_apply_fun n with
+        | J.EFun (_,param,body,nid) ->
+          J.Function_declaration (v,param,body,nid)
+        | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in
+    strings::applies
+  else [strings]
 
 let compile_program ctx pc =
   let res = compile_closure ctx (pc, []) in
