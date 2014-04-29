@@ -66,9 +66,12 @@ module Line_info = struct
 
   let from_file file =
     let ic = open_in file in
-    let rec read_lines (acc : int list) : int list = try read_lines (String.length (input_line ic)::acc) with End_of_file -> List.rev acc in
-    let l = read_lines [] in
-    let lines = Array.of_list l in
+    let lines = ref [] in
+    (try
+       while true do
+         lines:=String.length (input_line ic) :: !lines
+       done with End_of_file -> ());
+    let lines = Array.of_list (List.rev !lines) in
     let t = {
       acc_pos = 0;
       acc_line = 0;
@@ -79,15 +82,16 @@ module Line_info = struct
     t
 
   let from_string str =
-    let rec loop pos acc =
-      try
-        let idx = String.index_from str pos '\n' in
-        loop (idx + 1) ((idx - pos)::acc)
-      with Not_found ->
-        let l = List.rev ((String.length str - pos) :: acc) in
-        Array.of_list l
-    in
-    let lines = loop 0 [] in
+    let pos = ref 0
+    and lines = ref [] in
+    (try
+       while true do
+         let idx = String.index_from str !pos '\n' in
+         lines:=(idx - !pos)::!lines;
+         pos:=idx+1;
+       done
+     with Not_found -> lines:= (String.length str - !pos) :: !lines);
+    let lines = Array.of_list (List.rev !lines) in
     { acc_pos = 0;
       acc_line = 0;
       lines;
@@ -95,13 +99,16 @@ module Line_info = struct
 
   let from_channel ic =
     let buf = Buffer.create 1024 in
-    let rec read_lines acc : int list = try
-        let l = input_line ic in
-        Buffer.add_string buf l;
-        Buffer.add_char buf '\n';
-        read_lines (String.length l::acc) with End_of_file -> List.rev acc in
-    let l = read_lines [] in
-    let lines = Array.of_list l in
+    let lines = ref [] in
+    (try
+       while true do
+         let l = input_line ic in
+         Buffer.add_string buf l;
+         Buffer.add_char buf '\n';
+
+         lines:=String.length l :: !lines
+       done with End_of_file -> ());
+    let lines = Array.of_list (List.rev !lines) in
     let t = {
       acc_pos = 0;
       acc_line = 0;
