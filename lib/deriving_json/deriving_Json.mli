@@ -25,6 +25,8 @@
 (** The type of JSON parser/printer for value of type ['a]. *)
 type 'a t
 
+val convert : 'a t -> ('a -> 'b) -> ('b -> 'a) -> 'b t
+
 (** [to_string Json.t<ty> v] marshal the [v] of type [ty] to a JSON string.*)
 val to_string: 'a t -> 'a -> string
 
@@ -69,9 +71,18 @@ module type Json_min'' = sig
   val t: a t
 end
 
+module type Json_converter = sig
+  type a
+  type b
+  val t : a t
+  val from_ : a -> b
+  val to_ : b -> a
+end
+
 module Defaults(J:Json_min) : Json with type a = J.a
 module Defaults'(J:Json_min') : Json with type a = J.a
 module Defaults''(J:Json_min'') : Json with type a = J.a
+module Convert(J:Json_converter) : Json with type a = J.b
 
 module Json_char : Json with type a = char
 module Json_bool : Json with type a = bool

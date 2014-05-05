@@ -22,7 +22,12 @@
 type 'a t = {
     write: Buffer.t -> 'a -> unit;
     read: Deriving_Json_lexer.lexbuf -> 'a
-  }
+}
+
+let convert t f1 f2 = {
+  write = (fun buf a -> t.write buf (f2 a));
+  read = (fun buf -> f1 (t.read buf))
+}
 
 let to_string t v =
   let buf = Buffer.create 50 in
@@ -59,6 +64,14 @@ end
 module type Json_min'' = sig
   type a
   val t : a t
+end
+
+module type Json_converter = sig
+  type a
+  type b
+  val t : a t
+  val from_ : a -> b
+  val to_ : b -> a
 end
 
 module type Json = sig
@@ -104,6 +117,14 @@ module Defaults''(J : Json_min'') : Json with type a = J.a = struct
   (* let from_channel ic = from_channel t ic *)
   let match_variant hash = assert false
   let read_variant buf hash = assert false
+end
+
+module Convert(J : Json_converter) : Json with type a = J.b = struct
+  module Tmp : Json with type a = J.b =  Defaults''(struct
+      type a = J.b
+      let t = convert J.t J.from_ J.to_
+    end)
+  include Tmp
 end
 
 (** Predefs *)
