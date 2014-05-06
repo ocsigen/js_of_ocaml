@@ -36,8 +36,8 @@ let bop op a b= J.EBin(op,a,b)
 let uop op a = J.EUn(op,a)
 let var name = J.S {J.name;J.var=None}
 
-
-
+(* this is need to fake menhir while using --infer *)
+let _tok = EOF Parse_info.zero
 
 %}
 
@@ -209,7 +209,7 @@ statement:
     (* - fail otherwise *)
     (* @@@@@@@@@ HACK @@@@@@@@@@ *)
 
-    match _menhir_env._menhir_token with
+    match _tok with
       | EOF _ -> s
       | T_RCURLY _ -> s
       | t ->
