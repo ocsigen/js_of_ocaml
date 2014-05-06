@@ -3,12 +3,12 @@ maintainer: "dev@ocsigen.org"
 homepage: "http://ocsigen.org/js_of_ocaml"
 version: "dev"
 build: [
-  [make "build"]
-  [make "install-lib" "BINDIR=%{bin}%"]
+  "ocaml" "pkg/build.ml" "native=%{ocaml-native}%"
+                         "native-dynlink=%{ocaml-native-dynlink}%"
+                         "deriving=%{deriving:installed}%"
+                         "graphics=true"
 ]
-remove: [
-  ["ocamlfind" "remove" "js_of_ocaml"]
-]
+
 depends: [
   "ocamlfind"
   "lwt"
