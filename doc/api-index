@@ -14,7 +14,6 @@ Url
 XmlHttpRequest
 Event_arrows
 Json
-Deriving_Json
 File
 Form
 Sys_js
@@ -23,7 +22,20 @@ WebGL
 WebSockets
 }
 
-{1 The ocamlbuild plugin – API Reference}
+{1 Deriving - API Reference}
+
+{!modules:
+Deriving_Json
+Pa_deriving_Json
+}
+
+{1 Graphics - API Reference}
+
+{!modules:
+Graphics_js
+}
+
+{1 The ocamlbuild plugin - API Reference}
 
 {!modules:
 Ocamlbuild_js_of_ocaml

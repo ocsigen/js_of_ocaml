@@ -25,8 +25,6 @@
 (** The type of JSON parser/printer for value of type ['a]. *)
 type 'a t
 
-val convert : 'a t -> ('a -> 'b) -> ('b -> 'a) -> 'b t
-
 (** [to_string Json.t<ty> v] marshal the [v] of type [ty] to a JSON string.*)
 val to_string: 'a t -> 'a -> string
 
@@ -47,6 +45,58 @@ module type Json = sig
   val match_variant: [`Cst of int | `NCst of int] -> bool
   val read_variant: Deriving_Json_lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
 end
+
+(**/**)
+(** {2 Convertion } *)
+
+(** [convert (t : 'a t) (from_ : 'a -> 'b) (to_ : 'b -> 'a)]
+    generate a JSON parser/printer for value of type ['b] using the parser/printer of type ['a]
+    provided by [t] *)
+val convert : 'a t -> ('a -> 'b) -> ('b -> 'a) -> 'b t
+
+(** The signature of the Converter class. *)
+module type Json_converter = sig
+  type a
+  type b
+  val t : a t
+  val from_ : a -> b
+  val to_ : b -> a
+end
+
+(** Generate a JSON class from a Converter *)
+module Convert(J:Json_converter) : Json with type a = J.b
+
+(** {3 Examples } *)
+(**
+Parse and serialize a map as if it was an array of tuple.
+{[
+(* My map module *)
+module StringMap = Map.Make(String)
+
+(* Use deriving_json syntax to generate the JSON class for the array of tuple *)
+type 'a t = (string * 'a) array deriving (Json)
+
+(* generate the JSON class for StringMap *)
+module Json_string_map_t(A : Deriving_Json.Json) : Deriving_Json.Json with type a = A.a StringMap.t = struct
+  module S = Json_t(A)
+  include Deriving_Json.Convert(struct
+      type a = A.a t
+      type b = A.a StringMap.t
+      let t = S.t
+      let to_ : b -> A.a t = fun a -> Array.of_list (StringMap.bindings a)
+      let from_ : A.a t -> b = fun l ->
+        Array.fold_left
+          (fun map (x,v) -> StringMap.add x v map)
+          StringMap.empty
+          l
+    end)
+end
+]}
+
+You can then ask the syntax extension to use the JSON class [Json_string_map_t] for [StringMap.t]
+by registering an alias
+{[Pa_deriving_Json.register_predefs ["StringMap";"t"] ["string_map_t"]]}
+*)
 
 (**/**)
 
@@ -71,18 +121,10 @@ module type Json_min'' = sig
   val t: a t
 end
 
-module type Json_converter = sig
-  type a
-  type b
-  val t : a t
-  val from_ : a -> b
-  val to_ : b -> a
-end
-
 module Defaults(J:Json_min) : Json with type a = J.a
 module Defaults'(J:Json_min') : Json with type a = J.a
 module Defaults''(J:Json_min'') : Json with type a = J.a
-module Convert(J:Json_converter) : Json with type a = J.b
+
 
 module Json_char : Json with type a = char
 module Json_bool : Json with type a = bool
