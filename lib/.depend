@@ -1,5 +1,5 @@
-CSS.cmo : regexp.cmi js.cmi CSS.cmi
-CSS.cmx : regexp.cmx js.cmx CSS.cmi
+cSS.cmo : regexp.cmi js.cmi cSS.cmi
+cSS.cmx : regexp.cmx js.cmx cSS.cmi
 dom.cmo : js.cmi dom.cmi
 dom.cmx : js.cmx dom.cmi
 dom_events.cmo : js.cmi dom_html.cmi dom_events.cmi
@@ -42,7 +42,7 @@ xmlHttpRequest.cmo : url.cmi js.cmi form.cmi file.cmi dom_html.cmi dom.cmi \
     xmlHttpRequest.cmi
 xmlHttpRequest.cmx : url.cmx js.cmx form.cmx file.cmx dom_html.cmx dom.cmx \
     xmlHttpRequest.cmi
-CSS.cmi : js.cmi
+cSS.cmi : js.cmi
 dom.cmi : js.cmi
 dom_events.cmi : js.cmi dom_html.cmi
 dom_html.cmi : js.cmi file.cmi dom.cmi

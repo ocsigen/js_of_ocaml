@@ -13,8 +13,8 @@ endif
 doc: api-html/index.html
 api-html/index.html: ${MLIS} api-index
 	mkdir -p api-html
-	ocamlfind ocamldoc -package lwt -package ocamlbuild ${OTHER} -intro api-index -html \
-	   -d api-html -I ../lib -I ../lib/deriving_json ${MLIS}
+	ocamlfind ocamldoc -package lwt -package ocamlbuild,deriving.syntax.common ${OTHER} -intro api-index -html \
+	   -d api-html -I ../lib -I ../lib/deriving_json -I ../lib/syntax ${MLIS}
 
 
 docwiki: api-wiki/index.wiki

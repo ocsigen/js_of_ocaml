@@ -47,6 +47,7 @@ JSON := lib/deriving_json/deriving_Json.cmi       \
         lib/deriving_json/deriving_Json_lexer.cmi
 
 INTF += $(JSON)
+INTF += lib/syntax/pa_deriving_Json.cmi
 
 IMPL += lib/syntax/pa_deriving_Json.cmo \
         lib/syntax/pa_deriving_Json.cmi \
