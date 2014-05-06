@@ -56,4 +56,29 @@ type 'a seq = ZZ | SS of 'a * 'a seq deriving (Json)
 
 let _ = test Json.t<int seq> (SS (1, SS (2, SS (3, ZZ))))
 
+
+module T = struct
+
+  type 'a t = (string * 'a) array deriving (Json)
+
+  module StringMap = Map.Make(String)
+  module Json_string_map_t(A : Deriving_Json.Json) : Deriving_Json.Json = struct
+    module S = Json_t(A)
+    include Deriving_Json.Convert(struct
+        type a = A.a t
+        type b = A.a StringMap.t
+        let t = S.t
+        let to_ : b -> A.a t = fun a -> Array.of_list (StringMap.bindings a)
+        let from_ : A.a t -> b = fun l ->
+          Array.fold_left
+            (fun map (x,v) -> StringMap.add x v map)
+            StringMap.empty
+            l
+      end)
+  end
+end
+
+module T2 = T.Json_string_map_t(Json_t);;
+(* type u = int StringMap.t deriving (Json) *)
+
 let () = log_stop()
