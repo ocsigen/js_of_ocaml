@@ -20,8 +20,8 @@ api-html/index.html: ${MLIS} api-index
 docwiki: api-wiki/index.wiki
 api-wiki/index.wiki: ${MLIS} api-index
 	mkdir -p api-wiki
-	ocamlfind ocamldoc -package lwt -package ocamlbuild -intro api-index \
-	   -d api-wiki -I ../lib -I ../lib/deriving_json \
+	ocamlfind ocamldoc -package lwt -package ocamlbuild,deriving.syntax.common ${OTHER} -intro api-index \
+	   -d api-wiki -I ../lib -I ../lib/deriving_json -I ../lib/syntax \
 	   -i $(shell ocamlfind query wikidoc) -g odoc_wiki.cma \
 	   ${MLIS}
 
