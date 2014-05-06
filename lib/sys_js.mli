@@ -15,7 +15,19 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
+
+(** Javascript specific Sys functions. *)
+
+(** {2 Io.} *)
+
+val set_channel_flusher : out_channel -> (string -> unit) -> unit
+  (** Set a callback to be called when an out_channel flush its buffer.
+      [set_channel_flusher chan cb] install the callback [cb] for [chan] out_channel.
+      [cb] will be called with the string to flush. *)
+
+
+(** {2 Pseudo filesystem.} *)
 
 val register_file: name:string -> content:string -> unit
   (** Register a file to a Pseudo Filesystem.
@@ -29,14 +41,11 @@ val register_autoload : path:string -> (string -> string option) -> unit
       [register_autoload ~path f] register the callback [f] to the path [path].
       The callback [f] receives the absolute filename as arguement.*)
 
-val set_channel_flusher : out_channel -> (string -> unit) -> unit
-  (** Set a callback to be called when an out_channel flush its buffer.
-      [set_channel_flusher chan cb] install the callback [cb] for [chan] out_channel.
-      [cb] will be called with the string to flush. *)
-
 external file_content : string -> string = "caml_fs_file_content"
   (** [file_content name] returns the content of the file [name].
       Raise [Not_found] if the file does not exists. *)
+
+(** {2 Information.} *)
 
 val js_of_ocaml_version : string
   (** [js_of_ocaml_version] is the version of Js_of_ocaml.
