@@ -1,0 +1,1 @@
+../../_build/examples/minesweeper/main.js
