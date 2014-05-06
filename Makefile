@@ -1,54 +1,46 @@
-PREFIX ?= /usr/local/
+# OASIS_START
+# DO NOT EDIT (digest: 9a60866e2fa295c5e33a3fe33b8f3a32)
 
-### Optional dependencies: deriving
-WITH_DERIVING := $(shell (ocamlfind query deriving 1> /dev/null && echo true || echo false) 2> /dev/null)
-WITH_GRAPHICS := $(shell (ocamlfind query graphics 1> /dev/null && echo true || echo false) 2> /dev/null)
-WITH_NATDYNLINK := $(shell if [ -f `ocamlc -where`/dynlink.cmxa ]; then echo true; else echo false; fi)
+SETUP = ./setup.exe
 
-OCB=ocamlbuild #-classic-display
+build: setup.data $(SETUP)
+	$(SETUP) -build $(BUILDFLAGS)
 
-.PHONY: all no_examples examples build
-.PHONY: install uninstall clean realclean dist
-.PHONY: doc toplevel tests phantomtests
+doc: setup.data $(SETUP) build
+	$(SETUP) -doc $(DOCFLAGS)
 
-all: no_examples examples
-no_examples: build doc
-build:
-	ocaml pkg/build.ml native=true native-dynlink=$(WITH_NATDYNLINK) deriving=$(WITH_DERIVING) graphics=$(WITH_GRAPHICS)
+test: setup.data $(SETUP) build
+	$(SETUP) -test $(TESTFLAGS)
 
-examples:
-	$(OCB) examples/all.otarget
+all: $(SETUP)
+	$(SETUP) -all $(ALLFLAGS)
 
-doc:
-	$(OCB) doc/api.docdir/index.html
+install: setup.data $(SETUP)
+	$(SETUP) -install $(INSTALLFLAGS)
 
-toplevel:
-	$(OCB) toplevel/toplevel_expunge.js
+uninstall: setup.data $(SETUP)
+	$(SETUP) -uninstall $(UNINSTALLFLAGS)
 
-install: build
-	opam-installer --prefix $(PREFIX) --install js_of_ocaml.install
-uninstall:
-	opam-installer --prefix $(PREFIX) --remove js_of_ocaml.install
+reinstall: setup.data $(SETUP)
+	$(SETUP) -reinstall $(REINSTALLFLAGS)
 
-tests:
-	$(OCB) tests/tests.js
+clean: $(SETUP)
+	$(SETUP) -clean $(CLEANFLAGS)
 
-TESTS_LOG = $(patsubst %.ml,%.jslog,$(wildcard tests/test_*.ml))
-phantomtests:
-	$(OCB) $(TESTS_LOG)
+distclean: $(SETUP)
+	$(SETUP) -distclean $(DISTCLEANFLAGS)
+	$(RM) $(SETUP)
 
-clean:
-	$(OCB) -clean
+setup.data: $(SETUP)
+	$(SETUP) -configure $(CONFIGUREFLAGS)
 
-realclean: clean
-	find . -name "*~" -print | xargs rm -f
-	find . -name "*.tmpjs" -print | xargs rm -f
-	find . -name "#*" -print | xargs rm -f
+configure: $(SETUP)
+	$(SETUP) -configure $(CONFIGUREFLAGS)
 
-VERSION := $(shell head -n 1 VERSION)
-dist:
-	rm -rf /tmp/js_of_ocaml-${VERSION} &&\
-	cd /tmp &&\
-	git clone https://github.com/ocsigen/js_of_ocaml.git js_of_ocaml-${VERSION} &&\
-	(cd js_of_ocaml-${VERSION}; git checkout ${VERSION}) &&\
-	tar zcvf js_of_ocaml-${VERSION}.tar.gz js_of_ocaml-${VERSION} --exclude benchmarks --exclude .git --exclude tests
+setup.exe: setup.ml
+	ocamlfind ocamlopt -o $@ -linkpkg -package oasis.dynrun $< || ocamlfind ocamlc -o $@ -linkpkg -package oasis.dynrun $< || true
+	$(RM) setup.cmi setup.cmo setup.cmx setup.o
+
+.PHONY: build doc test all install uninstall reinstall clean distclean configure
+
+# OASIS_STOP

@@ -2,5 +2,3 @@
 # DO NOT EDIT (digest: d41d8cd98f00b204e9800998ecf8427e)
 # OASIS_STOP
 
-"benchmarks":-traverse
-true:use_menhir

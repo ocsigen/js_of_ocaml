@@ -1,3 +1,8 @@
+(* OASIS_START *)
+(* DO NOT EDIT (digest: d41d8cd98f00b204e9800998ecf8427e) *)
+(* OASIS_STOP *)
+
+
 open Ocamlbuild_plugin
 module Pack = Ocamlbuild_pack
 
@@ -250,7 +255,6 @@ let init_expunge () =
     )
 
 let dispatcher = function
-  | After_options -> ()
   | After_rules ->
 
     (* add syntax extension *)
@@ -263,18 +267,6 @@ let dispatcher = function
     add_syntax "pa_js" "lib/syntax/";
     add_syntax "pa_deriving_Json" "lib/syntax/";
 
-    let ocaml_lib ~extern ~tag_name ~dir lib =
-      flag [tag_name;"link"] (S [A "-I" ; A dir]);
-      flag [tag_name;"js_of_ocaml"] (S [A "-I" ; A dir]);
-      if not extern
-      then dep [tag_name;"ocamldep"] [lib -.- "cma"];
-      ocaml_lib ~extern ~tag_name ~dir lib in
-
-    ocaml_lib ~extern:false ~tag_name:"use_js_of_ocaml" ~dir:"lib" "lib/js_of_ocaml";
-    ocaml_lib ~extern:false ~tag_name:"use_graphics_js" ~dir:"lib/graphics" "lib/graphics/graphics_js";
-    ocaml_lib ~extern:false ~tag_name:"use_deriving_json" ~dir:"lib/deriving_json" "lib/deriving_json/deriving_json";
-    ocaml_lib ~extern:false ~tag_name:"use_compiler" ~dir:"compiler" "compiler/compiler";
-
     if Sys.ocaml_version.[0] = '4'
     then begin
       ocaml_lib ~extern:true ~dir:"+compiler-libs" ~tag_name:"use_toplevellib" "ocamlcommon";
@@ -283,13 +275,7 @@ let dispatcher = function
     end else begin
       ocaml_lib ~extern:true ~dir:"+compiler-libs" ~tag_name:"use_toplevellib" "toplevellib";
     end;
-
-    (* hack to compile js_of_ocaml lib *)
-    flag ["use_js_of_ocaml";"link"] (S [A "-I" ; A "lib"]);
-    pflag_and_dep ["link"] "linkdep" (fun param -> P param);
-
-    (* ocamldoc intro *)
-    pflag_and_dep ["doc"] "with_intro" (fun f -> S [A "-intro"; P f] );
+    pflag ["ocaml";"parser";"menhir"] "menhir_external_token" (fun m -> S [A "--external-tokens"; A m]);
 
     init_js_of_ocaml ();
     init_joo_stubs ();
@@ -298,10 +284,8 @@ let dispatcher = function
     init_phantom_js ();
     init_expunge ();
     dev_version ();
-    preproc "pkg/META.in" "pkg/META" ["VERSION"];
     preproc "%.mlp" "%.ml" ["VERSION";"VERSION_DEV"];
-    pflag ["ocaml";"parser";"menhir"] "menhir_external_token" (fun m -> S [A "--external-tokens"; A m]);
     ()
   | _ -> ()
 
-let _ = dispatch dispatcher
+let _ = dispatch (fun x -> dispatcher x; dispatch_default x)

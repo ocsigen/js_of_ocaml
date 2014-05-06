@@ -1,2 +1,1 @@
-<*.ml{,i}>: syntax(camlp4o),package(camlp4,lwt),pkg_pa_js
-<js_of_ocaml.cma>:linkdep(lib/js_of_ocaml_stubs.o),ocamlmklib
+<*.ml{,i}>: syntax(camlp4o),package(camlp4),pkg_pa_js

@@ -1,10 +1,16 @@
 opam-version: "1"
 maintainer: "dev@ocsigen.org"
 build: [
-  "ocaml" "pkg/build.ml" "native=%{ocaml-native}%"
-                         "native-dynlink=%{ocaml-native-dynlink}%"
-                         "deriving=%{deriving:installed}%"
-                         "graphics=true"
+  ["%{make}%" "configure"
+        "--prefix" "%{prefix}%"
+        "--%{deriving:enable}-deriving"
+        "--enable-graphics"]
+  ["%{make}%" "build"]
+  ["%{make}%" "install"]
+]
+
+remove: [
+  ["%{make}%" "uninstall"]
 ]
 
 depends: [

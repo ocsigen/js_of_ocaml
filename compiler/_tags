@@ -1,8 +1,1 @@
-<util.ml{,i}>:package(findlib)
-
-<*.cmx>:for-pack(Compiler)
-<compiler.cmx>:-for-pack(Compiler)
-<minify.cmx>:-for-pack(Compiler)
-
 <js_parser.ml{,i,y}>:menhir_external_token(Js_token)
-<*.{byte,native}>: package(findlib,unix)

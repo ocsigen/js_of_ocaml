@@ -1,1 +1,1 @@
-<*.ml{,i}>:syntax(camlp4o),package(camlp4,lwt),pkg_pa_js,use_js_of_ocaml
+<*.ml{,i}>:syntax(camlp4o),package(camlp4,lwt),pkg_pa_js
