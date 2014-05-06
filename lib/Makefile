@@ -56,14 +56,17 @@ syntax/pa_js.cmx: syntax/pa_js.ml
 syntax/pa_js.cmxs: syntax/pa_js.cmx
 	ocamlfind ocamlopt -shared -linkall -o $@ $<
 
-syntax/pa_deriving_Json.cmo: syntax/pa_deriving_Json.ml
+syntax/pa_deriving_Json.cmo: syntax/pa_deriving_Json.ml syntax/pa_deriving_Json.cmi
+	ocamlfind ocamlc -I syntax -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
+
+syntax/pa_deriving_Json.cmi: syntax/pa_deriving_Json.mli
 	ocamlfind ocamlc -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
 
 syntax/pa_deriving_Json.cmx: syntax/pa_deriving_Json.ml
-	ocamlfind ocamlopt -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
+	ocamlfind ocamlopt -I syntax -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
 
 syntax/pa_deriving_Json.cmxs: syntax/pa_deriving_Json.cmx
-	ocamlfind ocamlopt -shared -linkall -o $@ $<
+	ocamlfind ocamlopt -I syntax -shared -linkall -o $@ $<
 
 %.cmo: %.ml syntax/pa_js.cmo
 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c -g $<
