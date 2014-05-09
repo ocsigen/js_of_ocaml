@@ -85,6 +85,9 @@ let f toplevel linkall paths files js_files input_file output_file output_file_f
   end;
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
 
+let config_for_nodejs () =
+  Option.global_object := "global"
+
 let run () =
   Util.Timer.init Sys.time;
   let js_files = ref [] in
@@ -120,6 +123,7 @@ let run () =
       " set tailcall optimisation");
      ("-with-global", Arg.String (fun s -> Option.global_object:= s),
       "<var> use <var> to refer to the global object (default 'this')");
+     ("-nodejs", Arg.Unit config_for_nodejs, " enable Node.js compatibility");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");
      ("-file", Arg.String (fun s -> files:= s :: !files ),
