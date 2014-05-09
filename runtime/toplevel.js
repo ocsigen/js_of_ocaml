@@ -27,7 +27,7 @@ function caml_terminfo_setup () { return 1; } // Bad_term
 function caml_get_section_table () { return caml_global_data.toc; }
 
 //Provides: caml_reify_bytecode
-function caml_reify_bytecode (code, sz) {
+function caml_reify_bytecode (code, _sz) {
   return eval(joo_global_object.toplevelCompile(code).toString());
 }
 
@@ -55,7 +55,7 @@ function caml_dynlink_open_lib () { return 0; }
 function caml_dynlink_close_lib () { return 0; }
 
 //Provides: caml_dynlink_lookup_symbol
-function caml_dynlink_lookup_symbol (h, s) {
+function caml_dynlink_lookup_symbol (_h, _s) {
   return 1;
 //  try { eval(s.toString()); return 1; } catch (e) { return 0; };
 }
