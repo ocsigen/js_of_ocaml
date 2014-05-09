@@ -25,6 +25,16 @@ include module type of Graphics
 type context
 (** type of a graphic context *)
 
+val open_graph : string -> unit
+(** Open a graphics window.
+    The graphics window is cleared and the current point is set
+    to (0, 0). The string argument is used to pass optional
+    information on the desired graphics mode, the graphics window
+    size, and so on. Specification can be found at
+    http://www.w3schools.com/jsref/met_win_open.asp.
+    Note: an extra specification is availble, "target",
+    to specifies the target attribute or the name of the window. *)
+
 val open_canvas : Dom_html.canvasElement Js.t -> unit
 (** use a canvas to setup the current context *)
 val get_context : unit -> context

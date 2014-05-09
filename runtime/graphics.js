@@ -39,16 +39,39 @@ function caml_gr_state_set(ctx) {
 //Provides: caml_gr_open_graph
 //Requires: caml_gr_state_create
 //Requires: caml_gr_state_set
+//Requires: caml_failwith
 function caml_gr_open_graph(info){
   var g = joo_global_object;
-  var h = 200, w = 200;
-  var title = "";
-  var doc = g.open("",title,"status=1,width="+w+",height="+h);
-  var doc = doc.document;
+  var info = info.toString();
+  function get(name){
+    var res = info.match("(^|,) *"+name+" *= *([a-zA-Z0-9_]+) *(,|$)");
+    if(res) return res[2];
+  }
+  var specs = [];
+  if(!(info=="")) specs.push(info);
+  var target = get("target");
+  if(!target) target="";
+  var status = get("status");
+  if(!status) specs.push("status=1")
+
+  var w = get("width");
+  w = w?parseInt(w):200;
+  specs.push("width="+w);
+
+  var h = get("height");
+  h = h?parseInt(h):200;
+  specs.push("height="+h);
+
+  var win = g.open("",target,specs.join(","));
+  if(!win) {caml_failwith("Graphics.open_graph: cannot open the window")}
+  var doc = win.document;
   var canvas = doc.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
-  var ctx = caml_gr_state_create(canvas);
+  var ctx = caml_gr_state_create(canvas,w,h);
+  ctx.set_title = function (title) {
+    doc.title = title;
+  };
   caml_gr_state_set(ctx);
   var body = doc.body;
   body.style.margin = "0px";
@@ -72,9 +95,7 @@ function caml_gr_state_init(){
 }
 
 //Provides: caml_gr_state_create
-function caml_gr_state_create(canvas){
-
-  var w = canvas.width, h = canvas.height;
+function caml_gr_state_create(canvas,w,h){
   var context = canvas.getContext("2d");
   return {
     context: context,
@@ -91,9 +112,15 @@ function caml_gr_state_create(canvas){
   };
 }
 
+//Provides: caml_gr_doc_of_state
+function caml_gr_doc_of_state(state) {
+  if(state.canvas.ownerDocument)
+    return state.canvas.ownerDocument;
+}
+
 //Provides: caml_gr_close_graph
 //Requires: caml_gr_state_get
-function caml_gr_close_graph(info){
+function caml_gr_close_graph(){
   var s = caml_gr_state_get();
   s.canvas.width = 0;
   s.canvas.height = 0;
@@ -104,7 +131,9 @@ function caml_gr_close_graph(info){
 //Requires: caml_gr_state_get
 function caml_gr_set_window_title(name){
   var s = caml_gr_state_get();
+  name = name.toString?name.toString():name;
   s.title = name;
+  if(s.set_title) s.set_title(name);
   return 0;
 }
 
@@ -234,7 +263,6 @@ function caml_gr_arc_aux(ctx,cx,cy,ry,rx,a1,a2){
   a1 /= 180;
   a2 /= 180;
   var rot = 0,xPos,yPos;
-  var first = true;
   var num = ((a2 - a1) * Math.PI) / 0.01 | 0;
   var i = a1 * Math.PI;
   for (var j=0;j<num;j++){
@@ -418,6 +446,6 @@ function caml_gr_sigio_handler(){return 0}
 function caml_gr_sigio_signal(){return 0}
 //Provides: caml_gr_wait_event
 //Requires: caml_failwith
-function caml_gr_wait_event(evl){
+function caml_gr_wait_event(_evl){
   caml_failwith("not Implemented: use Graphics_js instead");
 }

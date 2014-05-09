@@ -30,11 +30,15 @@ let get_context () =
 let set_context ctx =
   Js.Unsafe.(fun_call (variable "caml_gr_state_set") [| inject ctx |])
 
-let create_context canvas =
-  Js.Unsafe.(fun_call (variable "caml_gr_state_create") [| inject canvas|])
+let create_context canvas w h =
+  Js.Unsafe.(fun_call (variable "caml_gr_state_create")
+               [| inject canvas; inject w; inject h|])
+
+let document_of_context ctx =
+  Js.Unsafe.(fun_call (variable "caml_gr_doc_of_state") [| inject ctx |])
 
 let open_canvas x =
-  let ctx = create_context x in
+  let ctx = create_context x x##width x##height in
   set_context ctx
 
 let compute_real_pos elt =
@@ -63,13 +67,14 @@ let button_down () =
 let read_key () =
   (* let ctx = get_context() in *)
   (* let elt = ctx##canvas in *)
-  Lwt_js_events.keypress Dom_html.document >>= fun e ->
+  let doc = document_of_context (get_context ()) in
+  Lwt_js_events.keypress doc >>= fun e ->
   Lwt.return (Char.chr e##keyCode)
 
 let loop elist f : unit =
   let ctx = get_context() in
   let elt = ctx##canvas in
-  let doc = Dom_html.document in
+  let doc = document_of_context (get_context ()) in
   let button = ref false in
   let null = char_of_int 0 in
   let mouse_x, mouse_y = ref 0, ref 0 in
