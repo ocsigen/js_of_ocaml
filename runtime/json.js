@@ -213,7 +213,7 @@ if (!JSON) {
 
     if (typeof Date.prototype.toJSON !== 'function') {
 
-        Date.prototype.toJSON = function (key) {
+        Date.prototype.toJSON = function (_key) {
 
             return isFinite(this.valueOf()) ?
                 this.getUTCFullYear()     + '-' +
@@ -226,7 +226,7 @@ if (!JSON) {
 
         String.prototype.toJSON      =
             Number.prototype.toJSON  =
-            Boolean.prototype.toJSON = function (key) {
+            Boolean.prototype.toJSON = function (_key) {
                 return this.valueOf();
             };
     }

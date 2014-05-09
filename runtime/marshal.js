@@ -104,11 +104,11 @@ var caml_input_value_from_string = function (){
   return function (s, ofs) {
     var reader = s.array?new ArrayReader (s.array, ofs):
                          new StringReader (s.getFullBytes(), ofs);
-    var magic = reader.read32u ();
-    var block_len = reader.read32u ();
+    var _magic = reader.read32u ();
+    var _block_len = reader.read32u ();
     var num_objects = reader.read32u ();
-    var size_32 = reader.read32u ();
-    var size_64 = reader.read32u ();
+    var _size_32 = reader.read32u ();
+    var _size_64 = reader.read32u ();
     var stack = [];
     var intern_obj_table = (num_objects > 0)?[]:null;
     var obj_counter = 0;
@@ -397,14 +397,14 @@ var caml_output_val = function (){
 
 //Provides: caml_output_value_to_string mutable
 //Requires: caml_output_val, MlStringFromArray
-function caml_output_value_to_string (v, fl) {
+function caml_output_value_to_string (v, _fl) {
   /* ignores flags... */
   return new MlStringFromArray (caml_output_val (v));
 }
 
 //Provides: caml_output_value_to_buffer
 //Requires: caml_output_val, caml_failwith, caml_blit_string
-function caml_output_value_to_buffer (s, ofs, len, v, fl) {
+function caml_output_value_to_buffer (s, ofs, len, v, _fl) {
   /* ignores flags... */
   var t = caml_output_val (v);
   if (t.length > len) caml_failwith ("Marshal.to_buffer: buffer overflow");

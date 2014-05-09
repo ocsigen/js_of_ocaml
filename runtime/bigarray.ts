@@ -438,7 +438,7 @@ function caml_ba_create(kind: number, layout: number, dims_ml: any) : Bigarray {
 
   // set up dimensions and calculate size
   var dims : number[] = caml_js_from_array(dims_ml);
-  var n_dims = dims.length;
+  //var n_dims = dims.length;
   var size = caml_ba_get_size(dims);
 
   // Allocate TypedArray
@@ -463,7 +463,7 @@ function caml_ba_kind(ba: Bigarray) { return ba.kind; }
 function caml_ba_layout(ba: Bigarray) { return ba.layout; }
 
 //Provides: caml_ba_num_dims
-function caml_ba_num_dims(ba: Bigarray, dim: number) { return ba.num_dims; }
+function caml_ba_num_dims(ba: Bigarray, _dim: number) { return ba.num_dims; }
 
 //Provides: caml_ba_dim
 function caml_ba_dim(ba: Bigarray, dim: number) { return ba.nth_dim(dim); }

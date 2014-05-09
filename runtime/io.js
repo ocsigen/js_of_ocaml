@@ -41,7 +41,7 @@ function caml_sys_open_internal(idx,v,flags) {
   caml_global_data.fd_last_idx = idx;
   return idx;
 }
-function caml_sys_open (name, flags, perms) {
+function caml_sys_open (name, flags, _perms) {
   var f = {};
   while(flags){
     switch(flags[1]){
@@ -209,7 +209,7 @@ function caml_fs_file_content(name) {
 //Requires: caml_marshal_data_size, caml_input_value_from_string, MlStringFromArray
 function caml_input_value (chan) {
   var str = new MlStringFromArray(chan.data.array);
-  var len = caml_marshal_data_size (str, chan.data.offset);
+  var _len = caml_marshal_data_size (str, chan.data.offset);
   var res = caml_input_value_from_string(str, chan.data.offset);
   chan.data.offset = str.offset;
   return res;
@@ -317,7 +317,7 @@ function caml_ml_output_char (oc,c) {
 
 //Provides: caml_output_value
 //Requires: caml_output_value_to_string, caml_ml_output
-function caml_output_value (chan,v,flags) {
+function caml_output_value (chan,v,_flags) {
   var s = caml_output_value_to_string(v);
   caml_ml_output(chan,s,0,s.getLen());
 }

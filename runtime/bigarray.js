@@ -436,7 +436,8 @@ function caml_ba_create(kind, layout, dims_ml) {
 
     // set up dimensions and calculate size
     var dims = caml_js_from_array(dims_ml);
-    var n_dims = dims.length;
+
+    //var n_dims = dims.length;
     var size = caml_ba_get_size(dims);
 
     // Allocate TypedArray
@@ -466,7 +467,7 @@ function caml_ba_layout(ba) {
 }
 
 //Provides: caml_ba_num_dims
-function caml_ba_num_dims(ba, dim) {
+function caml_ba_num_dims(ba, _dim) {
     return ba.num_dims;
 }
 

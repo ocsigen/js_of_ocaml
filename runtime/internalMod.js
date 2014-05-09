@@ -5,7 +5,7 @@
 //Provides: caml_CamlinternalMod_init_mod
 //Requires: caml_raise_with_arg, caml_global_data
 function caml_CamlinternalMod_init_mod(loc,shape) {
-    function undef_module (x) {
+    function undef_module (_x) {
       caml_raise_with_arg(caml_global_data[12], loc);
     }
     function loop (shape,struct,idx){

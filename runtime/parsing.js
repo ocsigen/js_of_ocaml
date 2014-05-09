@@ -59,7 +59,7 @@ function caml_parse_engine(tables, env, cmd, arg)
   var env_state = 15;
   var env_errflag = 16;
 
-  var tbl_actions = 1;
+  // var _tbl_actions = 1;
   var tbl_transl_const = 2;
   var tbl_transl_block = 3;
   var tbl_lhs = 4;
@@ -72,9 +72,9 @@ function caml_parse_engine(tables, env, cmd, arg)
   var tbl_tablesize = 11;
   var tbl_table = 12;
   var tbl_check = 13;
-  var tbl_error_function = 14;
-  var tbl_names_const = 15;
-  var tbl_names_block = 16;
+  // var _tbl_error_function = 14;
+  // var _tbl_names_const = 15;
+  // var _tbl_names_block = 16;
 
   if (!tables.dgoto) {
     tables.defred = caml_lex_array (tables[tbl_defred]);
