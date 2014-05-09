@@ -1,3 +1,0 @@
-== Realtime wiki syntax parsing ==
-
-<<a_iframe src="wiki/wiki.html">>
