@@ -1,0 +1,1 @@
+<*.ml{,i}>: syntax(camlp4o),package(camlp4),pkg_pa_js

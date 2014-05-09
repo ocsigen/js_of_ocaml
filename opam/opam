@@ -1,12 +1,18 @@
 opam-version: "1"
 maintainer: "dev@ocsigen.org"
 build: [
+  ["%{make}%" "configure"
+        "--prefix" "%{prefix}%"
+        "--%{deriving:enable}-deriving"
+        "--enable-graphics"]
   ["%{make}%" "build"]
-  ["%{make}%" "install-lib" "BINDIR=%{bin}%"]
+  ["%{make}%" "install"]
 ]
+
 remove: [
-  ["ocamlfind" "remove" "js_of_ocaml"]
+  ["%{make}%" "uninstall"]
 ]
+
 depends: [
   "ocamlfind"
   "lwt"

@@ -1,0 +1,1 @@
+<webgldemo.byte>:jsopt(-I ../examples/webgl -file monkey.model:/)

@@ -1,88 +1,46 @@
+# OASIS_START
+# DO NOT EDIT (digest: 9a60866e2fa295c5e33a3fe33b8f3a32)
 
-all: no_examples examples
-no_examples: build doc
-build: check_lwt compiler compiler_lib library ocamlbuild runtime
+SETUP = ./setup.exe
 
-include Makefile.conf
--include Makefile.local
+build: setup.data $(SETUP)
+	$(SETUP) -build $(BUILDFLAGS)
 
-.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build
+doc: setup.data $(SETUP) build
+	$(SETUP) -doc $(DOCFLAGS)
 
-compiler:
-	$(MAKE) -C compiler
-compiler_lib: compiler
-	$(MAKE) -C compiler lib
-library:
-	$(MAKE) -C lib
-ocamlbuild:
-	$(MAKE) -C ocamlbuild
-runtime:
-	$(MAKE) -C runtime
-toplevel: compiler compiler_lib library runtime
-	$(MAKE) -C toplevel
-examples: compiler library runtime
-	$(MAKE) -C examples
-tests: compiler library runtime
-	$(MAKE) -C tests
-phantomtests: compiler library runtime
-	$(MAKE) -C tests phantom
-doc: library ocamlbuild
-	$(MAKE) -C doc
+test: setup.data $(SETUP) build
+	$(SETUP) -test $(TESTFLAGS)
 
-LWTERROR="Js_of_ocaml requires Lwt version 2.3.0 at least.  Please upgrade."
-check_lwt:
-	@if ocamlfind query lwt -l | ocaml tools/check_version.ml 2.3.0; then \
-	  echo $(LWTERROR); exit 1; \
-	fi
+all: $(SETUP)
+	$(SETUP) -all $(ALLFLAGS)
 
-include Makefile.filelist
+install: setup.data $(SETUP)
+	$(SETUP) -install $(INSTALLFLAGS)
 
-VERSION := $(shell head -n 1 VERSION)
+uninstall: setup.data $(SETUP)
+	$(SETUP) -uninstall $(UNINSTALLFLAGS)
 
-install: install-lib install-bin
+reinstall: setup.data $(SETUP)
+	$(SETUP) -reinstall $(REINSTALLFLAGS)
 
-install-lib:
-	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(OTHERS) $(DOC) $(COMP_INTF) $(COMP_IMPL)
+clean: $(SETUP)
+	$(SETUP) -clean $(CLEANFLAGS)
 
-install-bin:
-	install -d -m 755 $(BINDIR)
-	install $(BIN) $(BINDIR)
+distclean: $(SETUP)
+	$(SETUP) -distclean $(DISTCLEANFLAGS)
+	$(RM) $(SETUP)
 
-uninstall: uninstall-lib uninstall-bin
+setup.data: $(SETUP)
+	$(SETUP) -configure $(CONFIGUREFLAGS)
 
-uninstall-lib:
-	ocamlfind remove $(LIBRARY)
+configure: $(SETUP)
+	$(SETUP) -configure $(CONFIGUREFLAGS)
 
-uninstall-bin:
-	rm -f $(BINDIR)/$(COMPILER)
-	rm -f $(BINDIR)/$(MINIFIER)
+setup.exe: setup.ml
+	ocamlfind ocamlopt -o $@ -linkpkg -package oasis.dynrun $< || ocamlfind ocamlc -o $@ -linkpkg -package oasis.dynrun $< || true
+	$(RM) setup.cmi setup.cmo setup.cmx setup.o
 
-reinstall: uninstall install
+.PHONY: build doc test all install uninstall reinstall clean distclean configure
 
-depend:
-	$(MAKE) -C compiler depend
-	$(MAKE) -C lib depend
-
-clean:
-	$(MAKE) -C compiler clean
-	$(MAKE) -C lib clean
-	$(MAKE) -C ocamlbuild clean
-	$(MAKE) -C runtime clean
-	$(MAKE) -C toplevel clean
-	$(MAKE) -C examples clean
-ifeq ($(wildcard tests),tests)
-	$(MAKE) -C tests clean
-	$(MAKE) -C doc clean
-endif
-
-realclean: clean
-	find . -name "*~" -print | xargs rm -f
-	find . -name "*.tmpjs" -print | xargs rm -f
-	find . -name "#*" -print | xargs rm -f
-
-dist:
-	rm -rf /tmp/js_of_ocaml-${VERSION} &&\
-        cd /tmp &&\
-	git clone https://github.com/ocsigen/js_of_ocaml.git js_of_ocaml-${VERSION} &&\
-	(cd js_of_ocaml-${VERSION}; git checkout ${VERSION}) &&\
-	tar zcvf js_of_ocaml-${VERSION}.tar.gz js_of_ocaml-${VERSION} --exclude benchmarks --exclude .git --exclude tests
+# OASIS_STOP

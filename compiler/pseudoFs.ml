@@ -70,7 +70,7 @@ let list_files name paths =
     try
       Util.find_in_paths paths name
     with Not_found ->
-      failwith (Printf.sprintf "file '%s' not found" name)
+      failwith (Printf.sprintf "file '%s' not found. %s" name (String.concat ", "paths))
   in
   expand_path exts file (Filename.concat dir name)
 

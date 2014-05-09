@@ -1,0 +1,19 @@
+<*.ml{,i}>:syntax(camlp4o),package(lwt,str,camlp4)
+<*.ml{,i}>:use_compiler,use_js_of_ocaml,use_toplevellib,use_graphics_js
+<*.ml>:pkg_pa_js
+<*.ml>:package(optcomp)
+
+<*.byte>:use_js_of_ocaml,use_compiler,use_graphics_js
+<*.byte>:package(lwt,unix,str,findlib,bigarray,graphics),use_toplevellib,linkall
+
+#Build a toplevel
+<*.byte>:jsopt(-toplevel)
+
+#include directories to find cmis
+<*.byte>:jsopt(-I +../lwt),jsopt(-I +compiler-libs)
+
+#use runtimes files
+<*.byte>:with_js(runtime/runtime.js),with_js(runtime/weak.js),with_js(runtime/toplevel.js),with_js(runtime/graphics.js)
+
+#link examples.ml files
+<*.byte>:jsopt(-I toplevel),jsopt(-file examples.ml),jsdep(toplevel/examples.ml)

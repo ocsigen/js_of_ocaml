@@ -1,0 +1,1 @@
+<viewer_js.byte>:jsopt(-I ../examples/graph_viewer -file scene.json:/)
