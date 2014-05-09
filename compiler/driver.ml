@@ -373,12 +373,21 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
     then J.Statement (J.Expression_statement (J.EStr ("use strict", `Utf8), J.N)) :: js
     else js in
 
+  let global =
+    J.ECall (
+      J.EFun (None, [], [
+          J.Statement (
+            J.Return_statement(
+              Some (J.EVar (J.S {J.name="this";var=None})),
+              J.N))
+        ], J.N), []) in
+
   let js = if standalone then
       let f =
         J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js,J.N) in
       [J.Statement (
         J.Expression_statement
-          ((J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])), J.N))]
+          ((J.ECall (f, [global])), J.N))]
     else
       let f = J.EFun (None, [J.V (Code.Var.fresh ())], js, J.N) in
       [J.Statement (J.Expression_statement (f, J.N))] in
