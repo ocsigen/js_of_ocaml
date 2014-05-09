@@ -262,17 +262,21 @@ function caml_gr_arc_aux(ctx,cx,cy,ry,rx,a1,a2){
   while(a1>a2) a2+=360;
   a1 /= 180;
   a2 /= 180;
-  var rot = 0,xPos,yPos;
+  var rot = 0,xPos,yPos,xPos_prev,yPos_prev;
   var num = ((a2 - a1) * Math.PI) / 0.01 | 0;
   var i = a1 * Math.PI;
   for (var j=0;j<num;j++){
     xPos = cx - (rx * Math.sin(i)) * Math.sin(rot * Math.PI) + (ry * Math.cos(i)) * Math.cos(rot * Math.PI);
+    xPos = xPos.toFixed(2);
     yPos = cy + (ry * Math.cos(i)) * Math.sin(rot * Math.PI) + (rx * Math.sin(i)) * Math.cos(rot * Math.PI);
+    yPos = yPos.toFixed(2);
     if (j==0) {
       ctx.moveTo(xPos, yPos);
-    } else {
+    } else if (xPos_prev!=xPos || yPos_prev!=yPos){
       ctx.lineTo(xPos, yPos);
     }
+    xPos_prev=xPos;
+    yPos_prev=yPos;
     i-= 0.01;//ccw
   }
   return 0;
