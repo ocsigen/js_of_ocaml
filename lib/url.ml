@@ -307,18 +307,7 @@ let string_of_url = function
 module Current =
 struct
 
-  class type location = object
-    method href : Js.js_string Js.t Js.prop
-    method protocol : Js.js_string Js.t Js.readonly_prop
-    method host : Js.js_string Js.t Js.readonly_prop
-    method hostname : Js.js_string Js.t Js.readonly_prop
-    method port : Js.js_string Js.t Js.readonly_prop
-    method pathname : Js.js_string Js.t Js.readonly_prop
-    method search : Js.js_string Js.t Js.readonly_prop
-    method hash : Js.js_string Js.t Js.prop
-  end
-
-  let l : location Js.t = Js.Unsafe.global##location
+  let l = Dom_html.window##location
 
   let host = urldecode_js_string_string l##hostname
 
