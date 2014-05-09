@@ -95,9 +95,25 @@ let loc pi = match pi with
   | None -> "unknown location"
   | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line
 
+class check_and_warn name pi = object(m)
+  inherit Js_traverse.free as super
+  method merge_info from =
+    let def = from#get_def_name in
+    let use = from#get_use_name in
+    let diff = StringSet.diff def use in
+    let diff = StringSet.remove name diff in
+    let diff = StringSet.filter (fun s -> String.length s <> 0 && s.[0] <> '_') diff in
+    if not (StringSet.is_empty diff)
+    then Format.eprintf "WARN unused for primitive %s at %s:@. %s@."
+        name (loc pi) (String.concat ", " (StringSet.elements diff));
+    super#merge_info from
+end
 
 let check_primitive name pi code req =
-  let free = new Js_traverse.free in
+  let free =
+    if Option.Optim.warn_unused ()
+    then new check_and_warn name pi
+    else new Js_traverse.free in
   let _code = free#program code in
   let freename = free#get_free_name in
   let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename req in

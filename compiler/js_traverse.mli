@@ -61,6 +61,8 @@ class type freevar =
     method get_free : Code.VarSet.t
     method get_def_name : Util.StringSet.t
     method get_def : Code.VarSet.t
+    method get_use_name : Util.StringSet.t
+    method get_use : Code.VarSet.t
   end
 
 class free : freevar

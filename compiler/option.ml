@@ -88,6 +88,7 @@ module Optim = struct
   let genprim = o ~name:"genprim" ~default:true
   let excwrap = o ~name:"excwrap" ~default:true
   let include_cmis = o ~name:"withcmi" ~default: true
+  let warn_unused = o ~name:"warn-unused"  ~default: false
 
   let inline_callgen = o ~name:"callgen" ~default:false
 

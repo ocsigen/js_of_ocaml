@@ -273,7 +273,8 @@ class type freevar =
     method get_free : Code.VarSet.t
     method get_def_name : Util.StringSet.t
     method get_def : Code.VarSet.t
-
+    method get_use_name : Util.StringSet.t
+    method get_use : Code.VarSet.t
   end
 
 class free =
@@ -293,6 +294,9 @@ class free =
 
   method get_def_name = m#state.def_name
 
+  method get_use_name = m#state.use_name
+  method get_use = m#state.use
+
   method merge_info from =
     let free_name = from#get_free_name in
     let free = from#get_free in
@@ -304,7 +308,6 @@ class free =
       use_name = StringSet.union state_.use_name free_name;
       use = S.union state_.use free;
       count }
-
 
   method use_var x =
     let n = try IdentMap.find x state_.count with Not_found -> 0 in
