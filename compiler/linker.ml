@@ -103,7 +103,7 @@ let check_primitive name pi code req =
   let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename req in
   let freename = StringSet.diff freename Reserved.keyword in
   let freename = StringSet.diff freename Reserved.provided in
-  let freename = StringSet.remove Option.global_object freename in
+  let freename = StringSet.remove Option.global_object_inside_jsoo freename in
   if not(StringSet.mem name free#get_def_name)
   then begin
     Format.eprintf "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)

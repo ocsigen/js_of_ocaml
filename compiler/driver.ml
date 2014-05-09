@@ -177,7 +177,7 @@ let header formatter ~standalone js =
 
 let debug_linker = Option.Debug.find "linker"
 
-let global_object = Option.global_object
+let jsoo_global_object = Option.global_object_inside_jsoo
 
 let extra_js_files = lazy (
   List.fold_left (fun acc file ->
@@ -213,9 +213,9 @@ let gen_missing js missing =
         (p,
          Some (
            ECond(EBin(NotEqEq,
-                      EDot(EVar (S {name=global_object;var=None}),prim),
+                      EDot(EVar (S {name=jsoo_global_object;var=None}),prim),
                       EVar(S {name="undefined";var=None})),
-                 EDot(EVar (S {name=global_object;var=None}),prim),
+                 EDot(EVar (S {name=jsoo_global_object;var=None}),prim),
                  EFun(None,[],[
                      Statement(
                        Expression_statement (
@@ -375,10 +375,10 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
 
   let js = if standalone then
       let f =
-        J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js,J.N) in
+        J.EFun (None, [J.S {J.name = jsoo_global_object; var=None }], use_strict js,J.N) in
       [J.Statement (
         J.Expression_statement
-          ((J.ECall (f, [J.EVar (J.S {J.name="this";var=None})])), J.N))]
+          ((J.ECall (f, [J.EVar (J.S {J.name=(!Option.global_object);var=None})])), J.N))]
     else
       let f = J.EFun (None, [J.V (Code.Var.fresh ())], js, J.N) in
       [J.Statement (J.Expression_statement (f, J.N))] in
@@ -396,7 +396,7 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
       let t5 = Util.Timer.make () in
       let keeps =
         if toplevel
-        then StringSet.add global_object (Primitive.get_external ())
+        then StringSet.add jsoo_global_object (Primitive.get_external ())
         else StringSet.empty in
       let keeps = StringSet.add "caml_get_global_data" keeps in
       let js = (new Js_traverse.rename_variable keeps)#program js in
