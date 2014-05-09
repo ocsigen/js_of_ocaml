@@ -118,8 +118,6 @@ let run () =
      ("-toplevel", Arg.Set toplevel, " compile a toplevel");
      ("-tc", Arg.Symbol (List.map Option.Tailcall.to_string Option.Tailcall.all,(fun s -> Option.Tailcall.(set (of_string s)))),
       " set tailcall optimisation");
-     ("-with-global", Arg.String (fun s -> Option.global_object:= s),
-      "<var> use <var> to refer to the global object (default 'this')");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");
      ("-file", Arg.String (fun s -> files:= s :: !files ),

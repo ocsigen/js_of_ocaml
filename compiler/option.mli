@@ -60,6 +60,5 @@ module Tailcall : sig
   val maximum : unit -> int
 end
 
-val global_object_inside_jsoo : string
-val global_object : string ref
+val global_object : string
 val extra_js_files : string list

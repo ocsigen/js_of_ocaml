@@ -19,9 +19,7 @@
 
 
 
-let global_object_inside_jsoo = "joo_global_object"
-
-let global_object = ref "this"
+let global_object = "joo_global_object"
 
 let extra_js_files = ["+weak.js" ; "+graphics.js"; "+toplevel.js"]
 

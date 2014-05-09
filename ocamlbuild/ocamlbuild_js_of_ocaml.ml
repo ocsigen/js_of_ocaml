@@ -75,8 +75,7 @@ let init () =
   flag ["js_of_ocaml"; "noinline"] (A "-noinline");
   flag ["js_of_ocaml"; "sourcemap"] (A "-sourcemap");
   pflag ["js_of_ocaml"] "tailcall" (fun x -> S [A "-tc"; A x]);
-  pflag ["js_of_ocaml"] "opt" (fun n -> S [A "-opt"; A n]);
-  pflag ["js_of_ocaml"] "global" (fun n -> S [A "-with-global"; A n])
+  pflag ["js_of_ocaml"] "opt" (fun n -> S [A "-opt"; A n])
 
 let oasis_support ~executables =
   let aux x =
