@@ -1,4 +1,12 @@
 ===== 2.1+dev =====
+ * Features/Changes
+ ** Runtime: improve blit_string perf
+ ** Compiler: option to warn about unused js variable
+
+ * BugFixes
+ ** Syntax: catch exception in syntax extension (#158)
+ ** Compiler: compat with Node.js (global object) (#160)
+ ** Runtime: fix graphics.js
 
 ===== 2.1 (2014-04-28) =====
 
