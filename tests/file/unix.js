@@ -1,9 +1,9 @@
-//Provides: caml_sys_exit
-function caml_sys_exit(n) {
-    if(joo_global_object.phantom && joo_global_object.phantom.exit)
-        phantom.exit(n);
-    else
-        return 0;
-}
+//Phantom
+if(joo_global_object.phantom && joo_global_object.phantom.exit)
+  joo_global_object.quit = joo_global_object.phantom.exit;
+//Node
+else if(joo_global_object.process && joo_global_object.process.exit)
+  joo_global_object.quit = joo_global_object.process.exit;
 
-window.onerror = function() { caml_sys_exit(1);}
+if(joo_global_object.onerror)
+  joo_global_object.onerror = function() { caml_sys_exit(1);}
