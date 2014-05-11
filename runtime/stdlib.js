@@ -843,18 +843,47 @@ function caml_convert_raw_backtrace () { return 0; }
 function caml_get_current_callstack () { return 0; }
 //Provides: caml_sys_getenv
 //Requires: caml_raise_not_found
-function caml_sys_getenv () { caml_raise_not_found (); }
+//Requires: MlWrappedString
+function caml_sys_getenv (name) {
+  var g = joo_global_object;
+  var n = name.toString();
+  //nodejs env
+  if(g.process
+     && g.process.env
+     && g.process.env[n] != undefined)
+    return new MlWrappedString(g.process.env[n]);
+  caml_raise_not_found ();
+}
 //Provides: caml_sys_exit
 //Requires: caml_invalid_argument
 function caml_sys_exit (code) {
-  if(joo_global_object.quit) joo_global_object.quit(code);
+  var g = joo_global_object;
+  if(g.quit) g.quit(code);
+  //nodejs
+  if(g.process && g.process.exit) g.process.exit(code);
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
 //Provides: caml_sys_get_argv const
 //Requires: MlWrappedString
 function caml_sys_get_argv () {
-  var p = new MlWrappedString("a.out"); return [0, p, [0, p]];
+  var g = joo_global_object;
+  var main = "a.out";
+  var args = []
+
+  if(g.process
+     && g.process.argv
+     && g.process.argv.length > 0) {
+    //nodejs
+    main = g.process.argv[0];
+    args = g.process.argv.slice(1);
+  }
+
+  var p = new MlWrappedString(main);
+  var args2 = [0, p];
+  for(var i = 0; i < args.length; i++)
+    args2.push(new MlWrappedString(args[i]));
+  return [0, p, args2];
 }
 
 //Provides: unix_inet_addr_of_string
