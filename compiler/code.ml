@@ -385,7 +385,7 @@ let fold_closures (pc, blocks, _) f accu =
 
 (****)
 
-let prepend (start,blocks,free_pc) body =
+let prepend (start, blocks, free_pc) body =
   let new_start = free_pc in
   let blocks =
     AddrMap.add new_start
@@ -419,7 +419,7 @@ let fold_children blocks pc f accu =
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
-let eq (pc1,blocks1,_) (pc2,blocks2,_) =
+let eq (pc1, blocks1, _) (pc2, blocks2, _) =
   pc1 = pc2 &&
   AddrMap.cardinal blocks1 = AddrMap.cardinal blocks2 &&
   AddrMap.fold (fun pc block1 b ->
