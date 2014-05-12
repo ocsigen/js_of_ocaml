@@ -172,6 +172,9 @@ val keyup :
 val input :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val timeupdate :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
 val change :
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
@@ -300,6 +303,11 @@ val keyups :
   #Dom_html.eventTarget Js.t ->
   (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val inputs :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val timeupdates :
   ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.eventTarget Js.t ->

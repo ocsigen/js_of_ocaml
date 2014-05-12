@@ -377,6 +377,7 @@ module Event = struct
   let hashchange = Dom.Event.make "hashchange"
   let change = Dom.Event.make "change"
   let input = Dom.Event.make "input"
+  let timeupdate = Dom.Event.make "timeupdate"
   let submit = Dom.Event.make "submit"
   let scroll = Dom.Event.make "scroll"
   let focus = Dom.Event.make "focus"

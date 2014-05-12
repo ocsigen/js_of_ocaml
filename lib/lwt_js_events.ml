@@ -176,6 +176,8 @@ let change ?use_capture target =
   make_event Dom_html.Event.change ?use_capture target
 let input ?use_capture target =
   make_event Dom_html.Event.input ?use_capture target
+let timeupdate ?use_capture target =
+  make_event Dom_html.Event.timeupdate ?use_capture target
 
 let dragstart ?use_capture target =
   make_event Dom_html.Event.dragstart ?use_capture target
@@ -209,6 +211,8 @@ let error ?use_capture target =
   make_event Dom_html.Event.error ?use_capture target
 let load ?use_capture target =
   make_event Dom_html.Event.load ?use_capture target
+
+
 
 (* special case for mousewheel, because it depends on the browser *)
 let mousewheel ?(use_capture=false) target =
@@ -270,6 +274,8 @@ let changes ?cancel_handler ?use_capture t =
   seq_loop change ?cancel_handler ?use_capture t
 let inputs ?cancel_handler ?use_capture t =
   seq_loop input ?cancel_handler ?use_capture t
+let timeupdates ?cancel_handler ?use_capture t =
+  seq_loop timeupdate ?cancel_handler ?use_capture t
 
 let dragstarts ?cancel_handler ?use_capture t =
   seq_loop dragstart ?cancel_handler ?use_capture t

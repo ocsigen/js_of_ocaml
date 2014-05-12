@@ -1164,6 +1164,7 @@ module Event : sig
   val hashchange : hashChangeEvent t typ
   val change : event t typ
   val input : event t typ
+  val timeupdate : event t typ
   val submit : event t typ
   val scroll : event t typ
   val focus : event t typ
