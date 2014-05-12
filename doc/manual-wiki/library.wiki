@@ -178,7 +178,7 @@ an Lwt thread that will return when the event occures.
 Example:
 
 <<code language="ocaml"|
-Lwt.ignore_result (Lwt_js_events.click target >>= handler);
+Lwt.ignore_result (Lwt_js_events.click target ~>>= handler);
 >>
 
 The handler receives the JS event as parameter.
@@ -196,8 +196,8 @@ For example the following piece of code waits
 for a click on one of t1 or t2:
 
 <<code language="ocaml"|
-Lwt.pick [Lwt_js_events.click t1 >>= handler1;
-          Lwt_js_events.click t2 >>= handler2]
+Lwt.pick [Lwt_js_events.click t1 ~>>= handler1;
+          Lwt_js_events.click t2 ~>>= handler2]
 >>
 
 Warning: If you are using {{{Lwt.pick}}} and your handlers take time,
