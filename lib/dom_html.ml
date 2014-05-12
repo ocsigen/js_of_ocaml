@@ -814,7 +814,24 @@ class type tableElement = object
   method deleteRow : int -> unit meth
 end
 
-type videoElement
+
+class type mediaElement = object
+  inherit element
+  method currentTime : float prop
+  method duration : float prop
+  method play : unit meth
+  method pause : unit meth
+
+end
+
+class type audioElement = object
+  inherit mediaElement
+end
+
+
+class type videoElement = object
+  inherit mediaElement
+end
 
 type context = js_string t
 let _2d_ = Js.string "2d"
