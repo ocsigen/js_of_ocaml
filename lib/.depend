@@ -32,8 +32,8 @@ sys_js.cmo : js.cmi sys_js.cmi
 sys_js.cmx : js.cmx sys_js.cmi
 typed_array.cmo : js.cmi typed_array.cmi
 typed_array.cmx : js.cmx typed_array.cmi
-url.cmo : regexp.cmi js.cmi url.cmi
-url.cmx : regexp.cmx js.cmx url.cmi
+url.cmo : regexp.cmi js.cmi dom_html.cmi url.cmi
+url.cmx : regexp.cmx js.cmx dom_html.cmx url.cmi
 webGL.cmo : typed_array.cmi js.cmi dom_html.cmi webGL.cmi
 webGL.cmx : typed_array.cmx js.cmx dom_html.cmx webGL.cmi
 webSockets.cmo : js.cmi dom_html.cmi dom.cmi webSockets.cmi
