@@ -192,11 +192,11 @@ type ('a, 'b) event_listener = ('a, 'b -> bool t) meth_callback opt
 
 class type ['a] event = object
   method _type : js_string t readonly_prop
-  method target : 'a t optdef readonly_prop
-  method currentTarget : 'a t optdef readonly_prop
+  method target : 'a t opt readonly_prop
+  method currentTarget : 'a t opt readonly_prop
 
   (* Legacy methods *)
-  method srcElement : 'a t optdef readonly_prop
+  method srcElement : 'a t opt readonly_prop
 end
 
 let no_handler : ('a, 'b) event_listener = Js.null
@@ -243,8 +243,8 @@ let invoke_handler
 
 let eventTarget (e: (< .. > as 'a) #event t) : 'a t =
   let target =
-    Optdef.get (e##target) (fun () ->
-    Optdef.get (e##srcElement) (fun () -> assert false))
+    Opt.get (e##target) (fun () ->
+    Opt.get (e##srcElement) (fun () -> raise Not_found))
   in
   if Js.instanceof target (Js.Unsafe.global ## _Node)
   then

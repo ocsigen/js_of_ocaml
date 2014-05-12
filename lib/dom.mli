@@ -193,11 +193,11 @@ type (-'a, -'b) event_listener
 
 class type ['a] event = object
   method _type : js_string t readonly_prop
-  method target : 'a t optdef readonly_prop
-  method currentTarget : 'a t optdef readonly_prop
+  method target : 'a t opt readonly_prop
+  method currentTarget : 'a t opt readonly_prop
 
   (* Legacy methods *)
-  method srcElement : 'a t optdef readonly_prop
+  method srcElement : 'a t opt readonly_prop
 end
 
 (** {2 Event handlers} *)
@@ -215,7 +215,9 @@ val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
   (** Invoke an existing handler.  Useful to chain event handlers. *)
 
 val eventTarget : (< .. > as 'a) #event t -> 'a t
-  (** Returns which object is the target of this event. *)
+  (** Returns which object is the target of this event.
+      It raises [Not_found] in case there is no target
+      (if the event has not been triggered yet) *)
 
 type event_listener_id
 
