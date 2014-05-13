@@ -763,7 +763,26 @@ class type tableElement = object
   method deleteRow : int -> unit meth
 end
 
-type videoElement
+
+class type mediaElement = object
+  inherit element
+  method currentTime : float prop
+  method duration : float prop
+  method play : unit meth
+  method pause : unit meth
+
+end
+
+class type audioElement = object
+  inherit mediaElement
+end
+
+
+class type videoElement = object
+  inherit mediaElement
+end
+
+
 
 (** {2 Canvas object} *)
 
@@ -1164,6 +1183,7 @@ module Event : sig
   val hashchange : hashChangeEvent t typ
   val change : event t typ
   val input : event t typ
+  val timeupdate : event t typ
   val submit : event t typ
   val scroll : event t typ
   val focus : event t typ
