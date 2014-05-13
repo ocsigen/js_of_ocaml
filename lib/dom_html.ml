@@ -814,14 +814,56 @@ class type tableElement = object
   method deleteRow : int -> unit meth
 end
 
+class type timeRanges = object
+  method length : int readonly_prop
+  method start : int -> float meth
+  method end_ : int -> float meth
+end
 
+type networkState =
+  | NETWORK_EMPTY
+  | NETWORK_IDLE
+  | NETWORK_LOADING
+  | NETWORK_NO_SOURCE
+
+type readyState =
+  | HAVE_NOTHING
+  | HAVE_METADATA
+  | HAVE_CURRENT_DATA
+  | HAVE_FUTURE_DATA
+  | HAVE_ENOUGH_DATA
+
+(* http://www.w3schools.com/tags/ref_av_dom.asp *)
+(* only features supported by all browser. (IE9+) *)
 class type mediaElement = object
   inherit element
-  method currentTime : float prop
-  method duration : float prop
+  method canPlayType : js_string t -> js_string t meth
+  method load : unit meth
   method play : unit meth
   method pause : unit meth
 
+  method autoplay : bool t prop
+  method buffered : timeRanges t readonly_prop
+  method controls : bool t prop
+  method currentSrc : js_string t readonly_prop
+  method currentTime : float prop
+  method duration : float readonly_prop
+  method ended : bool t readonly_prop
+  method loop : bool t prop
+  method mediagroup : js_string t prop
+  method muted : bool t prop
+  method networkState_int : int readonly_prop
+  method networkState : networkState readonly_prop
+  method paused : bool t readonly_prop
+  method playbackRate : float prop
+  method played : timeRanges t readonly_prop
+  method preload : js_string t prop
+  method readyState_int : int readonly_prop
+  method readyState : readyState readonly_prop
+  method seekable : timeRanges t readonly_prop
+  method seeking : bool t readonly_prop
+  method src : js_string t prop
+  method volume : float prop
 end
 
 class type audioElement = object
@@ -1296,6 +1338,8 @@ let createAddress doc = createElement doc "address"
 let createFrameset doc : frameSetElement t = unsafeCreateElement doc "frameset"
 let createFrame doc : frameElement t = unsafeCreateElement doc "frame"
 let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
+let createAudio doc : audioElement t = unsafeCreateElement doc "audio"
+let createVideo doc : audioElement t = unsafeCreateElement doc "video"
 
 exception Canvas_not_available
 
@@ -1385,6 +1429,8 @@ module CoerceTo = struct
   let title e = unsafeCoerce "title" e
   let tr e = unsafeCoerce "tr" e
   let ul e = unsafeCoerce "ul" e
+  let audio e = unsafeCoerce "audio" e
+  let video e = unsafeCoerce "video" e
 
   let unsafeCoerceEvent constr (ev : #event t) =
     if def constr != undefined && Js.instanceof ev constr then
@@ -1478,6 +1524,7 @@ let element : #Dom.element t -> element t = Js.Unsafe.coerce
 type taggedElement =
   | A of anchorElement t
   | Area of areaElement t
+  | Audio of audioElement t
   | Base of baseElement t
   | Blockquote of quoteElement t
   | Body of bodyElement t
@@ -1535,6 +1582,7 @@ type taggedElement =
   | Title of titleElement t
   | Tr of tableRowElement t
   | Ul of uListElement t
+  | Video of videoElement t
   | Other of element t
 
 let other e = Other (e : #element t :> element t)
@@ -1549,6 +1597,7 @@ let tagged (e : #element t) =
         begin match tag with
         | "a" -> A (Js.Unsafe.coerce e)
         | "area" -> Area (Js.Unsafe.coerce e)
+        | "audio" -> Audio (Js.Unsafe.coerce e)
         | _ -> other e
         end
     | 'b' ->
@@ -1666,6 +1715,11 @@ let tagged (e : #element t) =
     | 'u' ->
         begin match tag with
         | "ul" -> Ul (Js.Unsafe.coerce e)
+        | _ -> other e
+        end
+    | 'v' ->
+        begin match tag with
+        | "video" -> Video (Js.Unsafe.coerce e)
         | _ -> other e
         end
     | _ ->

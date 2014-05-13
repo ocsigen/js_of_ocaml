@@ -763,14 +763,54 @@ class type tableElement = object
   method deleteRow : int -> unit meth
 end
 
+class type timeRanges = object
+  method length : int readonly_prop
+  method start : int -> float meth
+  method end_ : int -> float meth
+end
+
+type networkState =
+  | NETWORK_EMPTY
+  | NETWORK_IDLE
+  | NETWORK_LOADING
+  | NETWORK_NO_SOURCE
+
+type readyState =
+  | HAVE_NOTHING
+  | HAVE_METADATA
+  | HAVE_CURRENT_DATA
+  | HAVE_FUTURE_DATA
+  | HAVE_ENOUGH_DATA
 
 class type mediaElement = object
   inherit element
-  method currentTime : float prop
-  method duration : float prop
+  method canPlayType : js_string t -> js_string t meth
+  method load : unit meth
   method play : unit meth
   method pause : unit meth
 
+  method autoplay : bool t prop
+  method buffered : timeRanges t readonly_prop
+  method controls : bool t prop
+  method currentSrc : js_string t readonly_prop
+  method currentTime : float prop
+  method duration : float readonly_prop
+  method ended : bool t readonly_prop
+  method loop : bool t prop
+  method mediagroup : js_string t prop
+  method muted : bool t prop
+  method networkState_int : int readonly_prop
+  method networkState : networkState readonly_prop
+  method paused : bool t readonly_prop
+  method playbackRate : float prop
+  method played : timeRanges t readonly_prop
+  method preload : js_string t prop
+  method readyState_int : int readonly_prop
+  method readyState : readyState readonly_prop
+  method seekable : timeRanges t readonly_prop
+  method seeking : bool t readonly_prop
+  method src : js_string t prop
+  method volume : float prop
 end
 
 class type audioElement = object
@@ -1335,6 +1375,8 @@ val createAddress : document t -> element t
 val createFrameset : document t -> frameSetElement t
 val createFrame : document t -> frameElement t
 val createIframe : document t -> iFrameElement t
+val createAudio : document t -> audioElement t
+val createVideo : document t -> videoElement t
 
 exception Canvas_not_available
 val createCanvas : document t -> canvasElement t
@@ -1352,6 +1394,7 @@ val element : #Dom.element t -> element t
 type taggedElement =
   | A of anchorElement t
   | Area of areaElement t
+  | Audio of audioElement t
   | Base of baseElement t
   | Blockquote of quoteElement t
   | Body of bodyElement t
@@ -1409,6 +1452,7 @@ type taggedElement =
   | Title of titleElement t
   | Tr of tableRowElement t
   | Ul of uListElement t
+  | Video of videoElement t
   | Other of element t
 
 val tagged : #element t -> taggedElement
@@ -1437,6 +1481,7 @@ module CoerceTo : sig
 
   val a : #element t -> anchorElement t opt
   val area : #element t -> areaElement t opt
+  val audio : #element t -> audioElement t opt
   val base : #element t -> baseElement t opt
   val blockquote : #element t -> quoteElement t opt
   val body : #element t -> bodyElement t opt
@@ -1494,6 +1539,7 @@ module CoerceTo : sig
   val title : #element t -> titleElement t opt
   val tr : #element t -> tableRowElement t opt
   val ul : #element t -> uListElement t opt
+  val video : #element t -> videoElement t opt
 
   (** Event *)
 
