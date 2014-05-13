@@ -731,7 +731,7 @@ let _ =
   register_bin_prim "%int_lsl" `Pure
     (fun cx cy -> J.EBin (J.Lsl, cx, cy));
   register_bin_prim "%int_lsr" `Pure
-    (fun cx cy -> J.EBin (J.Lsr, cx, cy));
+    (fun cx cy -> to_int (J.EBin (J.Lsr, cx, cy)));
   register_bin_prim "%int_asr" `Pure
     (fun cx cy -> J.EBin (J.Asr, cx, cy));
   register_un_prim "%int_neg" `Pure
