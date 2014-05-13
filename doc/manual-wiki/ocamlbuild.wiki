@@ -1,0 +1,37 @@
+= Build with OCamlbuild =
+Js_of_ocaml comes with a support for OCamlbuild.
+
+== Initialize ==
+Initialize the js_of_ocaml ocamlbuild plugin with the following
+code in **myocamlbuild.ml**
+{{{
+  let _ = Ocamlbuild_plugin.dispatch Ocamlbuild_js_of_ocaml.dispatcher
+}}}
+**Side note**: {{{Ocamlbuild_plugin.dispatch}}} should be used only
+           once. The last call will override previous ones.
+
+== Build ==
+Build a JavaScript program **myprog.js** by calling the command:
+{{{
+  ocamlbuild -use-ocamlfind -plugin-tag "package(js_of_ocaml.ocamlbuild)" myprog.js
+}}}
+It will first build the bytecode **myprog.byte** and finally produce **myprog.js** (in **_build**).
+
+== Options ==
+One can pass option to the Js_of_ocaml compiler using tags.
+See [[options|Options]].
+
+available tags:
+ * **pretty** : Pretty print the generated javascript.
+ * **debuginfo** : Output debug information.
+ * **noinline** : Disable inlining
+ * **sourcemap** : Generate sourcemap
+ * **tailcall(none)** Set the tailcall optimisation (default "trampoline")
+ * **opt(3)** : Set the compilation profile (default 1)
+ * **debug** : enables **pretty**, **debuginfo**, **sourcemap**
+
+=== Exemples ===
+**_tags**:
+{{{
+<myprog.js>:pretty, opt(3)
+}}}

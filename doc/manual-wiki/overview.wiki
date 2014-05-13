@@ -43,6 +43,8 @@ retargeted OCaml compiler, as the bytecode provides a very stable API.
       js_of_ocaml cubes.byte
 }}}
 
+  See also [[ocamlbuild|Ocamlbuild integration]]
+
 == Features ==
 
 Most of the OCaml standard library is supported. However,

@@ -3,6 +3,7 @@
 ==[[library|Library overview]]
 ==[[bindings|Binding a JS library]]
 ==[[linker|Link javascript code]]
+==[[ocamlbuild|Build with ocamlbuild]]
 ==[[options|Command line options]]
 ==[[performances|Performances]]
 ==Examples
