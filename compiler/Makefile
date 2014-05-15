@@ -76,7 +76,7 @@ compiler_version.ml.tmp:
 	menhir --explain $<
 
 js_parser.ml js_parser.mli: js_parser.mly
-	menhir --external-tokens Js_token --explain --infer $<
+	menhir --external-tokens Js_token --explain $<
 
 %.ml: %.mll
 	ocamllex $<
