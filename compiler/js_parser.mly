@@ -719,13 +719,15 @@ array_literal:
  | T_LBRACKET elison T_RBRACKET              { J.EArr $2 }
  | T_LBRACKET        T_RBRACKET              { J.EArr [] }
  | T_LBRACKET element_list T_RBRACKET        { J.EArr $2 }
- | T_LBRACKET element_list elison T_RBRACKET { J.EArr ($2 @ $3) }
+ | T_LBRACKET element_list_rev elison_rev T_RBRACKET { J.EArr (List.rev_append $2 (List.rev $3)) }
 
 
 element_list:
- | elison   assignment_expression { $1 @ [Some $2] }
- |          assignment_expression { [Some $1] }
- | element_list   elison   assignment_expression { $1 @ $2 @ [Some $3] }
+  | element_list_rev { List.rev $1 }
+element_list_rev:
+ | elison_rev assignment_expression { (Some $2)::$1 }
+ |            assignment_expression { [Some $1] }
+ | element_list_rev elison assignment_expression { (Some $3) :: (List.rev_append $2 $1) }
 
 
 
@@ -787,10 +789,12 @@ property_name:
 /*(*1 xxx_opt, xxx_list *)*/
 /*(*************************************************************************)*/
 
-elison:
+elison_rev:
  | T_COMMA { [] }
- | elison T_COMMA { $1 @ [None] }
+ | elison T_COMMA { None :: $1 }
 
+elison: elison_rev {$1}
+ (* | elison_rev { List.rev $1} *)
 
 curly_block(X):
  | pi=T_LCURLY x=X T_RCURLY {x,pi}
