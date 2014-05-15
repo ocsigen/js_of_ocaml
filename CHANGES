@@ -2,11 +2,13 @@
  * Features/Changes
  ** Runtime: improve blit_string perf
  ** Compiler: option to warn about unused js variable
+ ** Lib: audio/videoElement
 
  * BugFixes
  ** Syntax: catch exception in syntax extension (#158)
  ** Compiler: compat with Node.js (global object) (#160)
  ** Runtime: fix graphics.js
+ ** Lib: fix Dom.event interface
 
 ===== 2.1 (2014-04-28) =====
 
