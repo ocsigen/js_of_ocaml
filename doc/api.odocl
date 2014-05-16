@@ -11,7 +11,6 @@ lib/CSS
 lib/Url
 lib/Form
 lib/XmlHttpRequest
-lib/Event_arrows
 lib/Lwt_js_events
 lib/Json
 lib/WebGL
