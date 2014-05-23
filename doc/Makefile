@@ -5,7 +5,7 @@ include ../Makefile.filelist
 
 MLIS := ${addprefix ../, ${DOC}}
 
-ifneq "${WITH_GRAPHICS}" ""
+ifeq "${WITH_GRAPHICS}" "YES"
 OTHER=-package graphics -I ../lib/graphics
 endif
 

@@ -8,7 +8,7 @@ JSON_OBJS=$(addprefix deriving_json/,deriving_Json_lexer.cmo deriving_Json.cmo)
 include ../Makefile.conf
 -include ../Makefile.local
 
-ifneq "${WITH_DERIVING}" ""
+ifeq "${WITH_DERIVING}" "YES"
 PA_DERIVING=syntax/pa_deriving_Json.cmo
 DERIVING_JSON=deriving_json.cma
 ifeq "$(BEST)" "opt"
@@ -19,7 +19,7 @@ endif
 endif
 endif
 
-ifneq "${WITH_GRAPHICS}" ""
+ifeq "${WITH_GRAPHICS}" "YES"
 GRAPHICS_CMA=graphics/graphics.cma
 endif
 
@@ -116,12 +116,12 @@ clean:
 
 depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
-ifneq "${WITH_GRAPHICS}" ""
+ifeq "${WITH_GRAPHICS}" "YES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" graphics/*.ml  >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)
 	ocamldep -I graphics graphics/graphics_js.mli  >> .depend
 endif
-ifneq "${WITH_DERIVING}" ""
+ifeq "${WITH_DERIVING}" "YES"
 	${MAKE} --no-print-directory deriving_json/deriving_Json_lexer.ml
 	ls deriving_json/*.mli deriving_json/*.ml | \
 	  grep -v deriving_Json_stdlib.mli | \
