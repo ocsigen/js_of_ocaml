@@ -494,7 +494,7 @@ class type optionElement = object
   method defaultSelected : bool t prop
   method text : js_string t readonly_prop
   method index : int readonly_prop
-  method selected : bool prop
+  method selected : bool t prop
   method value : js_string t prop
 end
 

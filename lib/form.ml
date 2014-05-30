@@ -73,7 +73,7 @@ let get_select_val (elt:selectElement t) =
       filter_map (function
 	| None -> None
 	| Some e ->
-	  if e##selected
+	  if Js.to_bool e##selected
 	  then Some (name,`String (e##value))
 	  else None)
 	(Array.to_list options)
