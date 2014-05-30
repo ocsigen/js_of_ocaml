@@ -1008,6 +1008,50 @@ end
 external pixel_get : canvasPixelArray t -> int -> int = "caml_js_get"
 external pixel_set : canvasPixelArray t -> int -> int -> unit = "caml_js_set"
 
+class type range = object
+  method collapsed : bool t readonly_prop
+  method startOffset : int readonly_prop
+  method endOffset : int readonly_prop
+  method startNode : Dom.node t readonly_prop
+  method endNode : Dom.node t readonly_prop
+  method setStart : Dom.node t -> int -> unit meth
+  method setEnd : Dom.node t -> int -> unit meth
+  method setStartBefore : Dom.node t -> unit meth
+  method setEndBefore : Dom.node t -> unit meth
+  method setStartAfter : Dom.node t -> unit meth
+  method setEndAfter : Dom.node t -> unit meth
+  method selectNode : Dom.node t -> unit meth
+  method selectNodeContent : Dom.node t -> unit meth
+  method collapse : bool -> unit meth
+  method cloneContents : Dom.documentFragment meth
+  method extactContents : Dom.documentFragment meth
+  method deleteContents : unit meth
+  method insertNode : Dom.node t -> unit meth
+  method surroundContents : Dom.node t -> unit meth
+end
+
+(** Information on current selection *)
+class type selection = object
+  method anchorNode : Dom.node t readonly_prop
+  method anchorOffset : int readonly_prop
+  method focusNode : Dom.node t readonly_prop
+  method focusOffset : int readonly_prop
+  method isCollapsed : bool t readonly_prop
+  method rangeCount : int readonly_prop
+  method getRangeAt : int -> range t meth
+  method collapse : bool -> unit meth
+  method extend : Dom.node t -> int -> unit meth
+  method modify : js_string t -> js_string t -> js_string t -> unit meth
+  method collapseToStart : unit meth
+  method collapseToEnd : unit meth
+  method selectAllChildren : Dom.node t -> unit meth
+  method addRange : range -> unit meth
+  method removeRange : range -> unit meth
+  method removeAllRanges : unit meth
+  method deleteFromDocument : unit meth
+  method containsNode : Dom.node t -> bool -> unit meth
+end
+
 class type document = object
   inherit [element] Dom.document
   inherit nodeSelector
@@ -1031,6 +1075,7 @@ class type document = object
   method close : unit meth
   method write : js_string t -> unit meth
   method execCommand : js_string t -> bool t -> js_string t opt -> unit meth
+  method createRange : range t meth
 
   inherit eventTarget
 end
@@ -1064,9 +1109,6 @@ class type history = object
 end
 
 class type undoManager = object
-end
-
-class type selection = object
 end
 
 class type navigator = object
