@@ -1022,9 +1022,9 @@ class type range = object
   method setEndAfter : Dom.node t -> unit meth
   method selectNode : Dom.node t -> unit meth
   method selectNodeContent : Dom.node t -> unit meth
-  method collapse : bool -> unit meth
-  method cloneContents : Dom.documentFragment meth
-  method extactContents : Dom.documentFragment meth
+  method collapse : bool t -> unit meth
+  method cloneContents : Dom.documentFragment t meth
+  method extactContents : Dom.documentFragment t meth
   method deleteContents : unit meth
   method insertNode : Dom.node t -> unit meth
   method surroundContents : Dom.node t -> unit meth
@@ -1039,17 +1039,17 @@ class type selection = object
   method isCollapsed : bool t readonly_prop
   method rangeCount : int readonly_prop
   method getRangeAt : int -> range t meth
-  method collapse : bool -> unit meth
+  method collapse : bool t -> unit meth
   method extend : Dom.node t -> int -> unit meth
   method modify : js_string t -> js_string t -> js_string t -> unit meth
   method collapseToStart : unit meth
   method collapseToEnd : unit meth
   method selectAllChildren : Dom.node t -> unit meth
-  method addRange : range -> unit meth
-  method removeRange : range -> unit meth
+  method addRange : range t -> unit meth
+  method removeRange : range t -> unit meth
   method removeAllRanges : unit meth
   method deleteFromDocument : unit meth
-  method containsNode : Dom.node t -> bool -> unit meth
+  method containsNode : Dom.node t -> bool t -> unit meth
 end
 
 class type document = object
