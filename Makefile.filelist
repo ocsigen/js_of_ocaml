@@ -13,7 +13,7 @@ IMPL += lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs
 endif
 endif
 
-ifneq "${WITH_GRAPHICS}" ""
+ifeq "${WITH_GRAPHICS}" "YES"
 IMPL += lib/graphics/graphics.cma
 INTF += lib/graphics/*.cmi
 endif
@@ -41,7 +41,7 @@ endif
 
 IMPL += $(addprefix ocamlbuild/_build/,$(OCAMLBUILD_IMPL))
 
-ifneq "${WITH_DERIVING}" ""
+ifeq "${WITH_DERIVING}" "YES"
 
 JSON := lib/deriving_json/deriving_Json.cmi       \
         lib/deriving_json/deriving_Json_lexer.cmi
