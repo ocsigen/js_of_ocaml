@@ -1049,7 +1049,7 @@ class type selection = object
   method removeRange : range t -> unit meth
   method removeAllRanges : unit meth
   method deleteFromDocument : unit meth
-  method containsNode : Dom.node t -> bool t -> unit meth
+  method containsNode : Dom.node t -> bool t -> bool t meth
 end
 
 class type document = object
