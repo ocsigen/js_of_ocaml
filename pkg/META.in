@@ -1,5 +1,5 @@
 description = "Js_of_ocaml library"
-version = "dev"
+version = "%%VERSION%%"
 archive(byte) = "js_of_ocaml.cma"
 requires = "js_of_ocaml.syntax,lwt"
 
@@ -16,7 +16,7 @@ package "syntax" (
 )
 
 package "deriving" (
-
+  directory = "deriving"
   exists_if = "deriving_json.cma deriving_json.cmxa"
   description = "Runtime library for the class Json."
   version = "[distributed with js_of_ocaml]"
@@ -27,29 +27,32 @@ package "deriving" (
   package "syntax" (
     description = "Safe \"IO in JSON\" class for deriving."
     version = "[distributed with js_of_ocaml]"
-    archive(syntax, preprocessor) = "pa_deriving_Json.cmo"
-    archive(syntax, toploop) = "pa_deriving_Json.cmo"
+    archive(syntax, preprocessor) = "pa_deriving_Json.cma"
+    archive(syntax, toploop) = "pa_deriving_Json.cma"
     requires(syntax) = "deriving.syntax.common"
   )
 )
 
 package "graphics" (
-  exists_if = "graphics.cma"
+  directory = "graphics"
+  exists_if = "graphics_js.cma"
   description = "Graphics for js_of_ocaml."
   version = "[distributed with js_of_ocaml]"
-  archive(byte) = "graphics.cma"
+  archive(byte) = "graphics_js.cma"
   requires = "lwt,graphics,js_of_ocaml"
 )
 
 package "tyxml" (
+  directory = "tyxml"
   exists_if = "tyxml.cma"
   description = "Tyxml for js_of_ocaml."
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "tyxml.cma"
-  requires = "lwt,tyxml.functor,react,js_of_ocaml"
+  requires = "tyxml.functor,lwt.react,js_of_ocaml"
 )
 
 package "ocamlbuild" (
+  directory = "ocamlbuild"
   description = "Js_of_ocaml ocamlbuild plugin"
   requires = "ocamlbuild,str"
   version = "[distributed with js_of_ocaml]"
@@ -60,6 +63,7 @@ package "ocamlbuild" (
 )
 
 package "compiler" (
+  directory = "compiler"
   description = "Js_of_ocaml compiler library"
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "compiler.cma"

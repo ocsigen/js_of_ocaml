@@ -34,6 +34,15 @@ Pa_deriving_Json
 Graphics_js
 }
 
+{1 Tyxml - API Reference}
+
+{!modules:
+Tyxml_js
+Tyxml_cast
+Tyxml_cast_sigs
+}
+
+
 {1 The ocamlbuild plugin - API Reference}
 
 {!modules:

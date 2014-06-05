@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Compiler
 let times = Option.Debug.find "times"
 
 let _ = Sys.catch_break true
@@ -138,9 +139,9 @@ let run () =
          else
            input_file := Some s)
     (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  let version = match Compiler_version.git_version with
+  let version = match Compiler_version.dev with
     | "" -> Compiler_version.s
-    | v  -> Printf.sprintf "%s+git-%s"Compiler_version.s v in
+    | v  -> Printf.sprintf "%s+%s" Compiler_version.s v in
   match !show_version with
   | `Number -> Format.printf "%s@." version
   | `Full -> Format.printf "Js_of_ocaml compiler, version %s@." version

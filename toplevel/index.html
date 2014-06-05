@@ -103,9 +103,8 @@
       }
       .clear { clear:both; }
     </style>
-    <script type="text/javascript" src="toplevel-fs.js"></script>
     <script type="text/javascript">
-      var default_top = "toplevel.js";
+      var default_top = "../_build/toplevel/toplevel_expunge.js";
       window.onhashchange = function() { window.location.reload() }
       var version = window.location.hash.match(/#?(.*)/);
       var url = (version[1]=="")?default_top:("v/toplevel-"+version[1]+".js");

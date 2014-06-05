@@ -1,0 +1,1 @@
+<boulderdash.byte>:jsopt(-I ../examples/boulderdash -file maps.txt:/ -file maps:/)

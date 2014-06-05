@@ -1,0 +1,1 @@
+<*.ml{,i}>:syntax(camlp4o),package(camlp4,tyxml.functor,lwt.react),pkg_pa_js,use_js_of_ocaml
