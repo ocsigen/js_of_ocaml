@@ -272,8 +272,11 @@ let dispatcher = function
 
     ocaml_lib ~extern:false ~tag_name:"use_js_of_ocaml" ~dir:"lib" "lib/js_of_ocaml";
     ocaml_lib ~extern:false ~tag_name:"use_graphics_js" ~dir:"lib/graphics" "lib/graphics/graphics_js";
+    ocaml_lib ~extern:false ~tag_name:"use_tyxml" ~dir:"lib/tyxml" "lib/tyxml/tyxml";
     ocaml_lib ~extern:false ~tag_name:"use_deriving_json" ~dir:"lib/deriving_json" "lib/deriving_json/deriving_json";
     ocaml_lib ~extern:false ~tag_name:"use_compiler" ~dir:"compiler" "compiler/compiler";
+
+    (* flag ["use_tyxml";"link"] (A "lib/js_of_ocaml.cma"); *)
 
     if Sys.ocaml_version.[0] = '4'
     then begin

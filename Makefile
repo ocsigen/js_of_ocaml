@@ -1,9 +1,11 @@
 PREFIX ?= /usr/local/
 
 ### Optional dependencies: deriving
-WITH_DERIVING := $(shell (ocamlfind query deriving 1> /dev/null && echo true || echo false) 2> /dev/null)
-WITH_GRAPHICS := $(shell (ocamlfind query graphics 1> /dev/null && echo true || echo false) 2> /dev/null)
-WITH_NATDYNLINK := $(shell if [ -f `ocamlc -where`/dynlink.cmxa ]; then echo true; else echo false; fi)
+WITH_DERIVING ?= $(shell if [ -f `ocamlfind query deriving 2> /dev/null`/deriving.cma ]; then echo true; else echo false; fi)
+WITH_GRAPHICS ?= $(shell if [ -f `ocamlfind query graphics 2> /dev/null`/graphics.cmi ]; then echo true; else echo false; fi)
+WITH_REACT ?= $(shell if [ -f `ocamlfind query react 2> /dev/null`/react.cma ]; then echo true; else echo false; fi)
+WITH_TYXML ?= $(shell if [ -f `ocamlfind query tyxml 2> /dev/null`/tyxml_f.cma ]; then echo true; else echo false; fi)
+WITH_NATDYNLINK ?= $(shell if [ -f `ocamlc -where`/dynlink.cmxa ]; then echo true; else echo false; fi)
 
 OCB=ocamlbuild #-classic-display
 
@@ -14,7 +16,9 @@ OCB=ocamlbuild #-classic-display
 all: no_examples examples
 no_examples: build doc
 build:
-	ocaml pkg/build.ml native=true native-dynlink=$(WITH_NATDYNLINK) deriving=$(WITH_DERIVING) graphics=$(WITH_GRAPHICS)
+	ocaml pkg/build.ml native=true native-dynlink=$(WITH_NATDYNLINK) \
+		deriving=$(WITH_DERIVING) graphics=$(WITH_GRAPHICS) \
+		tyxml=$(WITH_TYXML) react=$(WITH_REACT)
 
 examples:
 	$(OCB) examples/all.otarget

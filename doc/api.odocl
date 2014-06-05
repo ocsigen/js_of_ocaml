@@ -17,7 +17,12 @@ lib/WebGL
 lib/WebSockets
 lib/Keycode
 lib/Sys_js
+
 lib/graphics/Graphics_js
+
+lib/tyxml/tyxml_js
+lib/tyxml/tyxml_cast
+lib/tyxml/tyxml_cast_sigs
 
 lib/deriving_json/Deriving_Json
 lib/syntax/Pa_deriving_Json

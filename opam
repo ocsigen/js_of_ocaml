@@ -6,6 +6,8 @@ build: [
   "ocaml" "pkg/build.ml" "native=%{ocaml-native}%"
                          "native-dynlink=%{ocaml-native-dynlink}%"
                          "deriving=%{deriving:installed}%"
+                         "tyxml=%{tyxml:installed}%"
+                         "react=%{react:installed}%"
                          "graphics=true"
 ]
 
