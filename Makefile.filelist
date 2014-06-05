@@ -18,7 +18,7 @@ IMPL += lib/graphics/graphics.cma
 INTF += lib/graphics/*.cmi
 endif
 
-ifeq "${WITH_TYXML}" "YES"
+ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
 IMPL += lib/tyxml/tyxml.cma
 INTF += lib/tyxml/*.cmi
 endif

@@ -13,7 +13,7 @@ ifeq "${WITH_DERIVING}" "YES"
 OTHER += -package deriving.syntax.common
 endif
 
-ifeq "${WITH_TYXML}" "YES"
+ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
 OTHER += -package tyxml.functor,react -I ../lib/tyxml
 endif
 

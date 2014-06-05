@@ -23,7 +23,7 @@ ifeq "${WITH_GRAPHICS}" "YES"
 GRAPHICS_CMA=graphics/graphics.cma
 endif
 
-ifeq "${WITH_TYXML}" "YES"
+ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
 TYXML_CMA=tyxml/tyxml.cma
 endif
 
@@ -139,7 +139,7 @@ ifeq "${WITH_GRAPHICS}" "YES"
 	@# camlp4 3.12.0 fails on (module type of ...)
 	ocamldep -I graphics graphics/graphics_js.mli  >> .depend
 endif
-ifeq "${WITH_TYXML}" "YES"
+ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" tyxml/*.ml tyxml/*.mli >> .depend
 endif
 ifeq "${WITH_DERIVING}" "YES"
