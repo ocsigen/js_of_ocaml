@@ -989,7 +989,11 @@ class type document = object
 end
 
 val document : document t
-  (** The current document *)
+(** The current document *)
+
+val getElementById : string -> element Js.t
+(** [getElementById id] returns the element with the id [id] in the
+    current document. It raises [Not_found] if there are no such element *)
 
 (** {2 Window objects} *)
 

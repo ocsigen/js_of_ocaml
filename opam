@@ -14,8 +14,7 @@ depends: [
   "lwt"
   "menhir"
 ]
-
-depopts: ["deriving"]
+depopts: ["deriving" "tyxml" "react" ]
 
 conflicts: [
   "deriving" {< "0.6"}

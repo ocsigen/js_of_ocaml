@@ -41,6 +41,14 @@ package "graphics" (
   requires = "lwt,graphics,js_of_ocaml"
 )
 
+package "tyxml" (
+  exists_if = "tyxml.cma"
+  description = "Tyxml for js_of_ocaml."
+  version = "[distributed with js_of_ocaml]"
+  archive(byte) = "tyxml.cma"
+  requires = "lwt,tyxml.functor,react,js_of_ocaml"
+)
+
 package "ocamlbuild" (
   description = "Js_of_ocaml ocamlbuild plugin"
   requires = "ocamlbuild,str"

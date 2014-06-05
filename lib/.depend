@@ -64,6 +64,13 @@ graphics/graphics_js.cmo : lwt_js_events.cmi js.cmi dom_html.cmi \
 graphics/graphics_js.cmx : lwt_js_events.cmx js.cmx dom_html.cmx \
     graphics/graphics_js.cmi
 graphics/graphics_js.cmi : js.cmi dom_html.cmi
+tyxml/tyxml_cast.cmo : js.cmi dom.cmi tyxml/tyxml_cast.cmi
+tyxml/tyxml_cast.cmx : js.cmx dom.cmx tyxml/tyxml_cast.cmi
+tyxml/tyxml_js.cmo : js.cmi dom_html.cmi dom.cmi tyxml/tyxml_js.cmi
+tyxml/tyxml_js.cmx : js.cmx dom_html.cmx dom.cmx tyxml/tyxml_js.cmi
+tyxml/tyxml_cast.cmi : js.cmi dom.cmi
+tyxml/tyxml_cast_sigs.cmi : js.cmi dom_html.cmi dom.cmi
+tyxml/tyxml_js.cmi : js.cmi dom_html.cmi dom.cmi
 deriving_json/deriving_Json.cmo : deriving_json/deriving_Json_lexer.cmi \
     deriving_json/deriving_Json.cmi
 deriving_json/deriving_Json.cmx : deriving_json/deriving_Json_lexer.cmx \
