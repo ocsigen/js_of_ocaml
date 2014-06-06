@@ -79,18 +79,17 @@ module Xml = struct
     let entity = Dom_html.decode_html_entities (Js.string ("&" ^ e ^ ";")) in
     (Dom_html.document##createTextNode(entity) :> Dom.node Js.t)
 
-  let leaf ?(a=[]) name =
-    let e = Dom_html.document##createElement(Js.string name) in
-    List.iter (fun (_,att) -> (Js.Unsafe.coerce e)##setAttributeNode(att)) a;
-    (e :> Dom.node Js.t)
-
-
   let attach_attribs e l =
     List.iter (fun (n,att) ->
         match att with
         | Attr a -> (Js.Unsafe.coerce e)##setAttributeNode(a)
         | Event h -> Js.Unsafe.set e (Js.string n) (fun ev -> Js.bool (h ev))
       ) l
+
+  let leaf ?(a=[]) name =
+    let e = Dom_html.document##createElement(Js.string name) in
+    attach_attribs e a;
+    (e :> Dom.node Js.t)
 
   let node ?(a=[]) name children =
     let e = Dom_html.document##createElement(Js.string name) in
