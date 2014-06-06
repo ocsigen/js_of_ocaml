@@ -1028,6 +1028,7 @@ class type range = object
   method deleteContents : unit meth
   method insertNode : Dom.node t -> unit meth
   method surroundContents : Dom.node t -> unit meth
+  method cloneRange : unit -> range t meth
 end
 
 (** Information on current selection *)
