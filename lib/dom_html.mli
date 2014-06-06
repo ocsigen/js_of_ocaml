@@ -964,8 +964,6 @@ class type range = object
   method collapsed : bool t readonly_prop
   method startOffset : int readonly_prop
   method endOffset : int readonly_prop
-  method startNode : Dom.node t readonly_prop
-  method endNode : Dom.node t readonly_prop
   method setStart : Dom.node t -> int -> unit meth
   method setEnd : Dom.node t -> int -> unit meth
   method setStartBefore : Dom.node t -> unit meth
