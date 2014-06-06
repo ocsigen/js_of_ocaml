@@ -981,6 +981,7 @@ class type range = object
   method insertNode : Dom.node t -> unit meth
   method surroundContents : Dom.node t -> unit meth
   method cloneRange : range t meth
+  method toString : js_string t meth
 end
 
 (** Information on current selection *)
@@ -1003,6 +1004,7 @@ class type selection = object
   method removeAllRanges : unit meth
   method deleteFromDocument : unit meth
   method containsNode : Dom.node t -> bool t -> bool t meth
+  method toString : js_string t meth
 end
 
 (** {2 Document objects} *)
