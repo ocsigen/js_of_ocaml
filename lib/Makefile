@@ -84,13 +84,13 @@ graphics/graphics.cma: graphics/graphics_js.cmo
 	ocamlfind ocamlc -a -o $@ $^
 
 tyxml/%.cmo: tyxml/%.ml tyxml/%.cmi tyxml/tyxml_cast_sigs.cmi syntax/pa_js.cmo
-	ocamlfind ocamlc -syntax camlp4o -package lwt,lwt.syntax,tyxml.functor,react -ppopt syntax/pa_js.cmo -I tyxml -c $< -o $@
+	ocamlfind ocamlc -syntax camlp4o -package lwt,lwt.syntax,tyxml.functor,reactiveData,react -ppopt syntax/pa_js.cmo -I tyxml -c $< -o $@
 
 tyxml/tyxml_cast_sig.cmi: tyxml/tyxml_cast_sig.mli
-	ocamlfind ocamlc -package lwt,tyxml.functor,react -I . -I tyxml $< -o $@
+	ocamlfind ocamlc -package lwt,tyxml.functor,reactiveData,react -I . -I tyxml $< -o $@
 
 tyxml/%.cmi: tyxml/%.mli tyxml/tyxml_cast_sigs.cmi
-	ocamlfind ocamlc -package lwt,tyxml.functor,react -I . -I tyxml $< -o $@
+	ocamlfind ocamlc -package lwt,tyxml.functor,reactiveData,react -I . -I tyxml $< -o $@
 
 tyxml/tyxml.cma: tyxml/tyxml_cast.cmo tyxml/tyxml_js.cmo
 	ocamlfind ocamlc -a -o $@ $^

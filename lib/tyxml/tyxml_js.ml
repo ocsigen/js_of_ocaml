@@ -108,15 +108,77 @@ module Html5 = Html5_f.Make(Xml)(Svg)
 
 module Xml_wrap = struct
   type 'a t = 'a React.signal
-  type 'a tlist = 'a list React.signal
+  type 'a tlist = 'a ReactiveData.RList.t
   let return = React.S.const
   let fmap f = React.S.map f
-  let nil () = React.S.const []
-  let singleton x = React.S.map (fun x -> [x]) x
-  let cons x xs = React.S.l2 (fun x xs -> x::xs) x xs
-  let map f x = React.S.map (fun x -> List.map f x) x
-  let append x y = React.S.l2 (fun x y -> x@y) x y
+  let nil () = ReactiveData.RList.nil
+  let singleton = ReactiveData.RList.singleton_s
+  let cons x xs = ReactiveData.RList.concat (singleton x) xs
+  let map f = ReactiveData.RList.map f
+  let append x y = ReactiveData.RList.concat x y
 end
+
+
+module Util = struct
+  open ReactiveData
+  open RList
+
+  let insertAt dom i x =
+    let nodes = dom##childNodes in
+    assert (i <= nodes##length);
+    if i = nodes##length
+    then ignore(dom##appendChild((x :> Dom.node Js.t)))
+    else ignore(dom##insertBefore(x,nodes##item(i)))
+
+  let merge_one_patch (dom : Dom.node Js.t) (p : Dom.node Js.t p) =
+    match p with
+    | I (i,x) ->
+      let i = if i < 0 then dom##childNodes##length + 1 + i else i in
+      insertAt dom i x
+    | R i ->
+      let i = if i < 0 then dom##childNodes##length + i else i in
+      let nodes = dom##childNodes in
+      assert (i < nodes##length);
+      ignore(dom##removeChild(nodes##item(i)))
+    | U (i,x) ->
+      let i = if i < 0 then dom##childNodes##length + i else i in
+      (match Js.Opt.to_option dom##childNodes##item(i) with
+       | Some old -> ignore(dom##replaceChild(x,old))
+       | _ -> assert false)
+    | X (i,move) ->
+      let i = if i < 0 then dom##childNodes##length + i else i in
+      if move = 0
+      then ()
+      else
+        begin
+          match Js.Opt.to_option dom##childNodes##item(i) with
+          | Some i' -> insertAt dom (i+ if move > 0 then move + 1 else move) i'
+          | _ -> assert false
+        end
+
+  let rec removeChildren dom =
+    match Js.Opt.to_option dom##lastChild with
+    | None -> ()
+    | Some c ->
+      ignore(dom##removeChild(c));
+      removeChildren dom
+
+  let merge_msg (dom : Dom.node Js.t) (msg : Dom.node Js.t msg)  =
+    match msg with
+    | Set l ->
+      (* Format.eprintf "replace all@."; *)
+      removeChildren dom;
+      List.iter (fun l -> ignore(dom##appendChild(l))) l;
+    | Patch p ->
+      (* Format.eprintf "patch@."; *)
+      List.iter (merge_one_patch dom) p
+
+  let update_children (dom : Dom.node Js.t) (nodes : Dom.node Js.t t) =
+    removeChildren dom;
+    let _s : unit React.S.t = fold (fun () msg -> merge_msg dom msg) nodes ()
+    in ()
+end
+
 
 module R = struct
   module Xml_wed = struct
@@ -165,12 +227,7 @@ module R = struct
     let node ?(a=[]) name l =
       let e = Dom_html.document##createElement(Js.string name) in
       Xml.attach_attribs e a;
-      let _ = React.S.map (fun c ->
-          while Js.to_bool e##hasChildNodes() do
-            Js.Opt.iter (e##lastChild) (fun f -> ignore (e##removeChild(f)))
-          done;
-          List.iter (fun c -> ignore (e##appendChild(c))) c
-        ) l in
+      Util.update_children (e :> Dom.node Js.t) l;
       (e :> Dom.node Js.t)
     let cdata = Xml.cdata
     let cdata_script = Xml.cdata_script

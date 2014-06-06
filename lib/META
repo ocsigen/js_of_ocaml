@@ -46,7 +46,7 @@ package "tyxml" (
   description = "Tyxml for js_of_ocaml."
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "tyxml.cma"
-  requires = "lwt,tyxml.functor,react,js_of_ocaml"
+  requires = "tyxml.functor,reactiveData,react,js_of_ocaml"
 )
 
 package "ocamlbuild" (
