@@ -23,6 +23,7 @@ let js_string_of_int i = (Js.number_of_float (float_of_int i))##toString()
 module Xml = struct
 
   type 'a wrap = 'a
+  type 'a list_wrap = 'a list
 
   type uri = string
   let uri_of_string s = s
@@ -97,34 +98,30 @@ module Xml = struct
     List.iter (fun c -> ignore (e##appendChild(c))) children;
     (e :> Dom.node Js.t)
 
-  let cdata s = assert false
-  let cdata_script s = assert false
-  let cdata_style s = assert false
+  let cdata s = pcdata s
+  let cdata_script s = cdata s
+  let cdata_style s = cdata s
 end
 
-module D = struct
-  module Svg = Svg_f.Make(Xml)
-  module Raw = Html5_f.Make(Xml)(Svg)
-  module X = Xml
-  include Raw
-end
+module Svg = Svg_f.Make(Xml)
+module Html5 = Html5_f.Make(Xml)(Svg)
 
+module Xml_wrap = struct
+  type 'a t = 'a React.signal
+  type 'a tlist = 'a list React.signal
+  let return = React.S.const
+  let fmap f = React.S.map f
+  let nil () = React.S.const []
+  let singleton x = React.S.map (fun x -> [x]) x
+  let cons x xs = React.S.l2 (fun x xs -> x::xs) x xs
+  let map f x = React.S.map (fun x -> List.map f x) x
+  let append x y = React.S.l2 (fun x y -> x@y) x y
+end
 
 module R = struct
-
-  module Xml_w = struct
-    type 'a t = 'a React.signal
-    let return x = Lwt_react.S.return x
-    let bind x = Lwt_react.S.bind x
-    let fmap x = React.S.map x
-    let fmap2 x = React.S.l2 x
-    let fmap3 x = React.S.l3 x
-    let fmap4 x = React.S.l4 x
-    let fmap5 x = React.S.l5 x
-  end
-  module Xml_wed =
-  struct
-    type 'a wrap = 'a Xml_w.t
+  module Xml_wed = struct
+    type 'a wrap = 'a Xml_wrap.t
+    type 'a list_wrap = 'a Xml_wrap.tlist
     type uri = Xml.uri
     let string_of_uri = Xml.string_of_uri
     let uri_of_string = Xml.uri_of_string
@@ -136,7 +133,7 @@ module R = struct
 
     let attr name f s =
       let a = Dom_html.document##createAttribute(Js.string name) in
-      let _ = Xml_w.fmap (fun s -> match f s with
+      let _ = Xml_wrap.fmap (fun s -> match f s with
           | None -> ()
           | Some v -> a##value <- v) s in
       name,Xml.Attr a
@@ -152,7 +149,6 @@ module R = struct
     let string_attrib name s = attr name (fun f -> Some (Js.string f)) s
     let uri_attrib name s = attr name (fun f -> Some (Js.string f)) s
     let uris_attrib name s = attr name (fun f -> Some (Js.string (String.concat " " f))) s
-
 
     type elt = Xml.elt
     type ename = Xml.ename
@@ -181,17 +177,16 @@ module R = struct
     let cdata_style = Xml.cdata_style
   end
 
-  module Svg_w = Svg_f.MakeWrapped(Xml_w)(Xml_wed)
-  module Raw = Html5_f.MakeWrapped(Xml_w)(Xml_wed)(Svg_w)
-  include Raw
+  module Svg = Svg_f.MakeWrapped(Xml_wrap)(Xml_wed)
+  module Html5 = Html5_f.MakeWrapped(Xml_wrap)(Xml_wed)(Svg)
 end
 
 module To_dom = Tyxml_cast.MakeTo(struct
-    type 'a elt = 'a D.elt
+    type 'a elt = 'a Html5.elt
     let elt x = x
   end)
 
 module Of_dom = Tyxml_cast.MakeOf(struct
-    type 'a elt = 'a D.elt
+    type 'a elt = 'a Html5.elt
     let elt x = x
   end)
