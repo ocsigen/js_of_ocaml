@@ -26,47 +26,38 @@ module Xml : Xml_sigs.Wrapped
    and type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
    and type elt = Dom.node Js.t
 
-module D : sig
-  module Svg : Svg_sigs.T
-  with type Xml.uri = Xml.uri
-   and type Xml.event_handler = Xml.event_handler
-   and type Xml.mouse_event_handler = Xml.mouse_event_handler
-   and type Xml.keyboard_event_handler = Xml.keyboard_event_handler
-   and type Xml.attrib = Xml.attrib
-   and type Xml.elt = Xml.elt
-   and type 'a Xml.wrap = 'a
+module Xml_wrap : Xml_wrap.T
+  with type 'a t = 'a React.signal
+   and type 'a tlist = 'a list React.signal
+
+module Svg : Svg_sigs.T
+  with module Xml := Xml
    and type 'a wrap = 'a
+   and type 'a list_wrap = 'a list
 
-  module Raw : Html5_sigs.T
-    with type Xml.uri = Xml.uri
-     and type Xml.event_handler = Xml.event_handler
-     and type Xml.mouse_event_handler = Xml.mouse_event_handler
-     and type Xml.keyboard_event_handler = Xml.keyboard_event_handler
-     and type Xml.attrib = Xml.attrib
-     and type Xml.elt = Xml.elt
-     and type 'a Xml.wrap = 'a
-     and type 'a wrap = 'a
-     and type +'a attrib = Xml.attrib
-     and module Svg := Svg
-  include module type of Raw
-end
+module Html5 : Html5_sigs.T
+  with module Xml := Xml
+   and module Svg := Svg
+   and type 'a wrap = 'a
+   and type 'a list_wrap = 'a list
 
-module R: sig
-  module Raw : Html5_sigs.T
-    with type Xml.uri = Xml.uri
-     and type Xml.event_handler = Xml.event_handler
-     and type Xml.mouse_event_handler = Xml.mouse_event_handler
-     and type Xml.keyboard_event_handler = Xml.keyboard_event_handler
-     and type Xml.attrib = Xml.attrib
-     and type Xml.elt = Xml.elt
-     and module Svg := D.Svg
-     and type 'a elt = 'a D.elt
-     and type 'a Xml.wrap = 'a React.signal
+module R : sig
+  module Svg : Svg_sigs.T
+    with module Xml := Xml
      and type 'a wrap = 'a React.signal
-     and type 'a attrib = 'a D.attrib
-     and type uri = D.uri
-  include module type of Raw
+     and type 'a list_wrap = 'a list React.signal
+     and type 'a elt = 'a Svg.elt
+     and type 'a attrib = 'a Svg.attrib
+
+  module Html5 : Html5_sigs.T
+    with module Xml := Xml
+     and module Svg := Svg
+     and type 'a wrap = 'a React.signal
+     and type 'a list_wrap = 'a list React.signal
+     and type 'a elt = 'a Html5.elt
+     and type 'a attrib = 'a Html5.attrib
+     and type uri = Html5.uri
 end
 
-module To_dom : Tyxml_cast_sigs.TO with type 'a elt = 'a D.elt
-module Of_dom : Tyxml_cast_sigs.OF with type 'a elt = 'a D.elt
+module To_dom : Tyxml_cast_sigs.TO with type 'a elt = 'a Html5.elt
+module Of_dom : Tyxml_cast_sigs.OF with type 'a elt = 'a Html5.elt
