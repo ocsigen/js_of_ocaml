@@ -14,7 +14,7 @@ OTHER += -package deriving.syntax.common
 endif
 
 ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
-OTHER += -package tyxml.functor,react -I ../lib/tyxml
+OTHER += -package tyxml.functor,react,reactiveData -I ../lib/tyxml
 endif
 
 

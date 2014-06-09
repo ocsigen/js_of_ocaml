@@ -28,7 +28,11 @@ module Xml : Xml_sigs.Wrapped
 
 module Xml_wrap : Xml_wrap.T
   with type 'a t = 'a React.signal
-   and type 'a tlist = 'a list React.signal
+   and type 'a tlist = 'a ReactiveData.RList.t
+
+module Util : sig
+  val update_children : Dom.node Js.t -> Dom.node Js.t ReactiveData.RList.t -> unit
+end
 
 module Svg : Svg_sigs.T
   with module Xml := Xml
@@ -45,7 +49,7 @@ module R : sig
   module Svg : Svg_sigs.T
     with module Xml := Xml
      and type 'a wrap = 'a React.signal
-     and type 'a list_wrap = 'a list React.signal
+     and type 'a list_wrap = 'a ReactiveData.RList.t
      and type 'a elt = 'a Svg.elt
      and type 'a attrib = 'a Svg.attrib
 
@@ -53,7 +57,7 @@ module R : sig
     with module Xml := Xml
      and module Svg := Svg
      and type 'a wrap = 'a React.signal
-     and type 'a list_wrap = 'a list React.signal
+     and type 'a list_wrap = 'a ReactiveData.RList.t
      and type 'a elt = 'a Html5.elt
      and type 'a attrib = 'a Html5.attrib
      and type uri = Html5.uri
