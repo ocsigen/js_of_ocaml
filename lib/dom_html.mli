@@ -973,7 +973,7 @@ class type range = object
   method setStartAfter : Dom.node t -> unit meth
   method setEndAfter : Dom.node t -> unit meth
   method selectNode : Dom.node t -> unit meth
-  method selectNodeContent : Dom.node t -> unit meth
+  method selectNodeContents : Dom.node t -> unit meth
   method collapse : bool t -> unit meth
   method cloneContents : Dom.documentFragment t meth
   method extactContents : Dom.documentFragment t meth
