@@ -93,7 +93,7 @@ function caml_js_wrap_callback(f) {
 function caml_js_wrap_meth_callback(f) {
   var toArray = Array.prototype.slice;
   return function () {
-    var args = (arguments.length > 0)?toArray.call (arguments):[0];
+    var args = (arguments.length > 0)?toArray.call (arguments):[undefined];
     args.unshift (this);
     return caml_call_gen(f, args);
   }
