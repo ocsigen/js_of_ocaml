@@ -19,7 +19,7 @@ It will first build the bytecode **myprog.byte** and finally produce **myprog.js
 
 == Options ==
 One can pass option to the Js_of_ocaml compiler using tags.
-See [[options|Options]].
+See <<a_manual chapter="options" |Options>>.
 
 available tags:
  * **pretty** : Pretty print the generated javascript.

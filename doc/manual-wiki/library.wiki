@@ -124,8 +124,8 @@ OCaml compiler accept the external declaration:
 You can call this function as if it was an OCaml function, as the
 Javascript function is appropriately wrapped by the system.
 
-Refer to [[linker|the linker manual]] to link your program with
-javascript stubs.
+Refer to <<a_manual chapter="linker" |the linker manual>>
+to link your program with javascript stubs.
 
 
 === Using OCaml functions from JS  ===
