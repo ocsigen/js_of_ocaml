@@ -206,9 +206,8 @@ let window_event () : 'a #event t = Js.Unsafe.variable "event"
 let handler f =
   Js.some (Js.wrap_callback
     (fun e ->
-      (* depending on the internet explorer version, e can be 0, null
-	 or undefined. This is the only way I know to test them all *)
-      if not (Obj.magic e)
+      (* depending on the internet explorer version, e can be null or undefined. *)
+      if not (Js.Opt.test (some e))
       then
         let e = window_event () in
         let res = f e in
@@ -223,9 +222,8 @@ let handler f =
 let full_handler f =
   Js.some (Js.wrap_meth_callback
     (fun this e ->
-      (* depending on the internet explorer version, e can be 0, null
-	 or undefined. This is the only way I know to test them all *)
-      if not (Obj.magic e)
+      (* depending on the internet explorer version, e can be null or undefined *)
+      if not (Js.Opt.test (some e))
       then
         let e = window_event () in
         let res = f this e in
