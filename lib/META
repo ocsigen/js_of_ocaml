@@ -3,9 +3,8 @@ version = "dev"
 archive(byte) = "js_of_ocaml.cma"
 requires = "js_of_ocaml.syntax,lwt"
 
-linkopts(javascript,-joo_noruntime) = "+js_of_ocaml/runtime.js"
-linkopts(javascript,joo_weak) += "+js_of_ocaml/weak.js"
-linkopts(javascript,joo_classlist) += "+js_of_ocaml/classlist.js"
+linkopts(javascript,-jsoo_noruntime) = "+js_of_ocaml/runtime.js"
+linkopts(javascript,jsoo_classlist) += "+js_of_ocaml/classlist.js"
 linkopts(javascript,pkg_graphics) += "+js_of_ocaml/graphics.js"
 
 package "syntax" (
@@ -47,6 +46,14 @@ package "tyxml" (
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "tyxml.cma"
   requires = "lwt,tyxml.functor,react,js_of_ocaml"
+)
+
+
+package "weak" (
+  exists_if = "weak.js"
+  description = "weak emulation for js_of_ocaml."
+  version = "[distributed with js_of_ocaml]"
+  linkopts(javascript) = "+js_of_ocaml/weak.js"
 )
 
 package "ocamlbuild" (
