@@ -48,6 +48,13 @@ package "tyxml" (
   requires = "lwt,tyxml.functor,react,js_of_ocaml"
 )
 
+package "log" (
+  exists_if = "logger.cma"
+  description = "Lwt logger for js_of_ocaml."
+  version = "[distributed with js_of_ocaml]"
+  archive(byte) = "logger.cma"
+  requires = "lwt,lwt.log,js_of_ocaml,js_of_ocaml.weak"
+)
 
 package "weak" (
   exists_if = "weak.js"

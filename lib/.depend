@@ -59,6 +59,9 @@ url.cmi :
 webGL.cmi : typed_array.cmi js.cmi dom_html.cmi
 webSockets.cmi : js.cmi dom_html.cmi dom.cmi
 xmlHttpRequest.cmi : url.cmi js.cmi form.cmi file.cmi dom.cmi
+log/lwt_log_js.cmo : js.cmi firebug.cmi log/lwt_log_js.cmi
+log/lwt_log_js.cmx : js.cmx firebug.cmx log/lwt_log_js.cmi
+log/lwt_log_js.cmi :
 graphics/graphics_js.cmo : lwt_js_events.cmi js.cmi dom_html.cmi \
     graphics/graphics_js.cmi
 graphics/graphics_js.cmx : lwt_js_events.cmx js.cmx dom_html.cmx \

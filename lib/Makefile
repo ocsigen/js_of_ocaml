@@ -35,7 +35,7 @@ PA_JS_NDL= syntax/pa_js.cmx syntax/pa_js.cmxs
 endif
 endif
 
-all: $(LIBNAME).cma \
+all: $(LIBNAME).cma log/logger.cma \
 	${PA_JS} ${PA_JS_NDL} \
 	${PA_DERIVING} 	${PA_DERIVING_NDL} \
 	${DERIVING_JSON} \
@@ -95,6 +95,18 @@ tyxml/%.cmi: tyxml/%.mli tyxml/tyxml_cast_sigs.cmi
 tyxml/tyxml.cma: tyxml/tyxml_cast.cmo tyxml/tyxml_js.cmo
 	ocamlfind ocamlc -a -o $@ $^
 
+
+log/%.cmo: log/%.ml log/%.cmi syntax/pa_js.cmo
+	ocamlfind ocamlc -syntax camlp4o -package lwt,lwt.syntax,lwt.log -ppopt syntax/pa_js.cmo -I log -c $< -o $@
+
+log/%.cmi: log/%.mli
+	ocamlfind ocamlc -package lwt,lwt.log -I . -I log $< -o $@
+
+log/logger.cma: log/lwt_log_js.cmo
+	ocamlfind ocamlc -a -o $@ $^
+
+
+
 %.cmo: %.ml syntax/pa_js.cmo
 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c -g $<
 
@@ -134,6 +146,7 @@ clean:
 
 depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" log/*.ml log/*.mli >> .depend
 ifeq "${WITH_GRAPHICS}" "YES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" graphics/*.ml  >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)
