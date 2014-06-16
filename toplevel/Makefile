@@ -28,7 +28,7 @@ endif
 
 COMP=../compiler/$(COMPILER)
 JSFILES=../runtime/runtime.js ../runtime/weak.js ../runtime/toplevel.js ../runtime/graphics.js
-OCAMLC=ocamlfind ocamlc -package lwt,optcomp,tyxml.functor,lwt.react -syntax camlp4o $(OCPINDENT) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" \
+OCAMLC=ocamlfind ocamlc -package lwt,optcomp,tyxml.functor,reactiveData -syntax camlp4o $(OCPINDENT) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" \
 	-I $(COMPILER_LIBS) -I ../lib -I ../compiler -I ../lib/graphics -I ../lib/tyxml
 STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER) ../lib/graphics/graphics.cma ../lib/tyxml/tyxml.cma
 EXPUNGE=$(shell ocamlc -where)/expunge

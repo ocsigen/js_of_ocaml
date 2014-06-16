@@ -402,7 +402,7 @@ let run _ =
     Lwt.return_unit in
 
   List.iter (fun (name,content) ->
-      let a = Tyxml_js.D.(a ~a:[
+      let a = Tyxml_js.Html5.(a ~a:[
           a_class ["list-group-item"];
           a_onclick (fun _ ->
               textbox##value <- Js.string content;
@@ -504,7 +504,7 @@ let run _ =
   end;
 
   let append_string cl s =
-    let span = Tyxml_js.D.(span ~a:[a_class [cl]] [pcdata s]) in
+    let span = Tyxml_js.Html5.(span ~a:[a_class [cl]] [pcdata s]) in
     Dom.appendChild output (Tyxml_js.To_dom.of_element span) in
 
   Sys_js.set_channel_flusher caml_chan (append_string "caml");
