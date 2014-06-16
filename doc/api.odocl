@@ -19,6 +19,12 @@ lib/Keycode
 lib/Sys_js
 lib/graphics/Graphics_js
 
+lib/log/Lwt_log_js
+
+lib/tyxml/Tyxml_js
+lib/tyxml/Tyxml_cast
+lib/tyxml/Tyxml_cast_sigs
+
 lib/deriving_json/Deriving_Json
 lib/syntax/Pa_deriving_Json
 

@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+
 include module type of Lwt_log_core
   with type level = Lwt_log_core.level
    and type logger = Lwt_log_core.logger
@@ -24,7 +25,13 @@ include module type of Lwt_log_core
    and type template = Lwt_log_core.template
    and module Section = Lwt_log_core.Section
 
+(** Lwt logger for js_of_ocaml *)
+
+(** {2 Predefined logger} *)
+
 val console : Lwt_log.logger
+(** Logger that use the javascript console object. *)
+
 
 (** {2 Logging functions} *)
 
