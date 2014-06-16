@@ -7,6 +7,9 @@ IMPL := lib/$(LIBNAME).cma   \
         lib/dll$(LIBNAME)$(DLLEXT) \
         lib/lib$(LIBNAME)$(LIBEXT)
 
+INTF += lib/log/*.cmi
+IMPL += lib/log/logger.cma
+
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
 IMPL += lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs
