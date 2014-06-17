@@ -46,6 +46,7 @@ EX_CUBE:=index.html cubes.js
 
 cp-examples:
 	$(MAKE) -C .. toplevel examples
+	mkdir -p ${addprefix manual-aux/, toplevel/ boulderdash/ webgl/ graph_viewer/ planet/ wiki/ wysiwyg/ minesweeper/ cubes/ hyperbolic/}
 	cp -R ${addprefix ../toplevel/, ${EX_TOPLEVEL}} manual-aux/toplevel/
 	cp -R ${addprefix ../examples/boulderdash/, ${EX_BOULDER}} manual-aux/boulderdash/
 	cp -R ${addprefix ../examples/webgl/, ${EX_WEBGL}} manual-aux/webgl/
