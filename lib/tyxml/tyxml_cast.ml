@@ -76,6 +76,71 @@ module MakeTo( C : sig type 'a elt val elt : 'a elt -> Dom.node Js.t end) : Tyxm
   let of_audio elt = rebuild_node "of_audio" elt
   let of_video elt = rebuild_node "of_video" elt
 
+
+  (* Dom_html.headingElement *)
+
+  let of_h1 elt = rebuild_node "of_h1" elt
+  let of_h2 elt = rebuild_node "of_h2" elt
+  let of_h3 elt = rebuild_node "of_h3" elt
+  let of_h4 elt = rebuild_node "of_h4" elt
+  let of_h5 elt = rebuild_node "of_h5" elt
+  let of_h6 elt = rebuild_node "of_h6" elt
+
+  (* Dom_html.element *)
+
+  let of_abbr elt = rebuild_node "of_abbr" elt
+  let of_address elt = rebuild_node "of_address" elt
+  let of_article elt = rebuild_node "of_article" elt
+  let of_aside elt = rebuild_node "of_aside" elt
+  let of_b elt = rebuild_node "of_b" elt
+  let of_bdo elt = rebuild_node "of_bdo" elt
+  let of_cite elt = rebuild_node "of_cite" elt
+  let of_code elt = rebuild_node "of_code" elt
+  let of_colgroup elt = rebuild_node "of_colgroup" elt
+  let of_command elt = rebuild_node "of_command" elt
+  let of_datalist elt = rebuild_node "of_datalist" elt
+  let of_dd elt = rebuild_node "of_dd" elt
+  let of_details elt = rebuild_node "of_details" elt
+  let of_dfn elt = rebuild_node "of_dfn" elt
+  let of_dir elt = rebuild_node "of_dir" elt
+  let of_dt elt = rebuild_node "of_dt" elt
+  let of_em elt = rebuild_node "of_em" elt
+  let of_embed elt = rebuild_node "of_embed" elt
+  let of_figcaption elt = rebuild_node "of_figcaption" elt
+  let of_figure elt = rebuild_node "of_figure" elt
+  let of_footer elt = rebuild_node "of_footer" elt
+  let of_header elt = rebuild_node "of_header" elt
+  let of_hgroup elt = rebuild_node "of_hgroup" elt
+  let of_i elt = rebuild_node "of_i" elt
+  let of_kbd elt = rebuild_node "of_kbd" elt
+  let of_keygen elt = rebuild_node "of_keygen" elt
+  let of_mark elt = rebuild_node "of_mark" elt
+  let of_menu elt = rebuild_node "of_menu" elt
+  let of_meter elt = rebuild_node "of_meter" elt
+  let of_nav elt = rebuild_node "of_nav" elt
+  let of_noscript elt = rebuild_node "of_noscript" elt
+  let of_output elt = rebuild_node "of_output" elt
+  let of_progress elt = rebuild_node "of_progress" elt
+  let of_q elt = rebuild_node "of_q" elt
+  let of_rp elt = rebuild_node "of_rp" elt
+  let of_rt elt = rebuild_node "of_rt" elt
+  let of_ruby elt = rebuild_node "of_ruby" elt
+  let of_samp elt = rebuild_node "of_samp" elt
+  let of_section elt = rebuild_node "of_section" elt
+  let of_small elt = rebuild_node "of_small" elt
+  let of_source elt = rebuild_node "of_source" elt
+  let of_span elt = rebuild_node "of_span" elt
+  let of_strong elt = rebuild_node "of_strong" elt
+  let of_sub elt = rebuild_node "of_sub" elt
+  let of_summary elt = rebuild_node "of_summary" elt
+  let of_sup elt = rebuild_node "of_sup" elt
+  let of_th elt = rebuild_node "of_th" elt
+  let of_time elt = rebuild_node "of_time" elt
+  let of_u elt = rebuild_node "of_u" elt
+  let of_var elt = rebuild_node "of_var" elt
+  let of_wbr elt = rebuild_node "of_wbr" elt
+
+
 end
 
 

@@ -130,4 +130,67 @@ module type TO = sig
   val of_iframe : [< Html5_types.iframe] elt -> Dom_html.iFrameElement Js.t
   val of_audio : [< 'a Html5_types.audio_interactive ] elt -> Dom_html.audioElement Js.t
   val of_video : [< 'a Html5_types.video_interactive ] elt -> Dom_html.videoElement Js.t
+
+  (* Dom_html.headingElement *)
+
+  val of_h1 : Html5_types.heading elt -> Dom_html.headingElement Js.t
+  val of_h2 : Html5_types.heading elt -> Dom_html.headingElement Js.t
+  val of_h3 : Html5_types.heading elt -> Dom_html.headingElement Js.t
+  val of_h4 : Html5_types.heading elt -> Dom_html.headingElement Js.t
+  val of_h5 : Html5_types.heading elt -> Dom_html.headingElement Js.t
+  val of_h6 : Html5_types.heading elt -> Dom_html.headingElement Js.t
+
+  (* Dom_html.element *)
+
+  val of_abbr : [> Html5_types.abbr] elt -> Dom_html.element Js.t
+  val of_address : [> Html5_types.address ] elt -> Dom_html.element Js.t
+  val of_article : [> Html5_types.article] elt -> Dom_html.element Js.t
+  val of_aside : [> Html5_types.aside] elt -> Dom_html.element Js.t
+  val of_b : [> Html5_types.b] elt -> Dom_html.element Js.t
+  val of_bdo : [> Html5_types.bdo] elt -> Dom_html.element Js.t
+  val of_cite : [> Html5_types.cite] elt -> Dom_html.element Js.t
+  val of_code : [> Html5_types.code] elt -> Dom_html.element Js.t
+  val of_colgroup : [> Html5_types.colgroup] elt -> Dom_html.element Js.t
+  val of_command : [> Html5_types.command] elt -> Dom_html.element Js.t
+  val of_datalist : [> Html5_types.datalist] elt -> Dom_html.element Js.t
+  val of_dd : [> Html5_types.dd] elt -> Dom_html.element Js.t
+  val of_details : [> Html5_types.details] elt -> Dom_html.element Js.t
+  val of_dfn : [> Html5_types.dfn] elt -> Dom_html.element Js.t
+  val of_dir : [> `Dir] elt -> Dom_html.element Js.t
+  val of_dt : [> Html5_types.dt] elt -> Dom_html.element Js.t
+  val of_em : [> Html5_types.em] elt -> Dom_html.element Js.t
+  val of_embed : [> Html5_types.embed] elt -> Dom_html.element Js.t
+  val of_figcaption : [> Html5_types.figcaption] elt -> Dom_html.element Js.t
+  val of_figure : [> `Figure] elt -> Dom_html.element Js.t
+  val of_footer : [> Html5_types.footer] elt -> Dom_html.element Js.t
+  val of_header : [> Html5_types.header] elt -> Dom_html.element Js.t
+  val of_hgroup : [> Html5_types.hgroup] elt -> Dom_html.element Js.t
+  val of_i : [> Html5_types.i] elt -> Dom_html.element Js.t
+  val of_kbd : [> Html5_types.kbd] elt -> Dom_html.element Js.t
+  val of_keygen : [> Html5_types.keygen] elt -> Dom_html.element Js.t
+  val of_mark : [> Html5_types.mark] elt -> Dom_html.element Js.t
+  val of_menu : [> Html5_types.menu] elt -> Dom_html.element Js.t
+  val of_meter : [> Html5_types.meter] elt -> Dom_html.element Js.t
+  val of_nav : [> Html5_types.nav] elt -> Dom_html.element Js.t
+  val of_noscript : [> Html5_types.noscript] elt -> Dom_html.element Js.t
+  val of_output : [> Html5_types.output_elt] elt -> Dom_html.element Js.t
+  val of_progress : [> Html5_types.progress] elt -> Dom_html.element Js.t
+  val of_q : [> Html5_types.q] elt -> Dom_html.element Js.t
+  val of_rp : [> `Rp] elt -> Dom_html.element Js.t
+  val of_rt : [> `Rt] elt -> Dom_html.element Js.t
+  val of_ruby : [> `Ruby] elt -> Dom_html.element Js.t
+  val of_samp : [> Html5_types.samp] elt -> Dom_html.element Js.t
+  val of_section : [> Html5_types.section] elt -> Dom_html.element Js.t
+  val of_small : [> Html5_types.small] elt -> Dom_html.element Js.t
+  val of_source : [> Html5_types.source] elt -> Dom_html.element Js.t
+  val of_span : [> Html5_types.span] elt -> Dom_html.element Js.t
+  val of_strong : [> Html5_types.strong] elt -> Dom_html.element Js.t
+  val of_sub : [> Html5_types.sub] elt -> Dom_html.element Js.t
+  val of_summary : [> Html5_types.summary] elt -> Dom_html.element Js.t
+  val of_sup : [> Html5_types.sup] elt -> Dom_html.element Js.t
+  val of_th : [> Html5_types.th] elt -> Dom_html.element Js.t
+  val of_time : [> Html5_types.time] elt -> Dom_html.element Js.t
+  val of_u : [> Html5_types.u] elt -> Dom_html.element Js.t
+  val of_var : [> Html5_types.var] elt -> Dom_html.element Js.t
+  val of_wbr : [> Html5_types.wbr] elt -> Dom_html.element Js.t
 end
