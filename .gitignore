@@ -48,3 +48,16 @@ Makefile.local
 
 # OCamlbuild dir
 ocamlbuild/_build/
+
+
+doc/api-wiki/
+doc/manual-aux/boulderdash/
+doc/manual-aux/cubes/
+doc/manual-aux/graph_viewer/
+doc/manual-aux/hyperbolic/
+doc/manual-aux/minesweeper/
+doc/manual-aux/planet/
+doc/manual-aux/toplevel/
+doc/manual-aux/webgl/
+doc/manual-aux/wiki/
+doc/manual-aux/wysiwyg/

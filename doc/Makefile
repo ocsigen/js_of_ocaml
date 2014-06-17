@@ -25,7 +25,7 @@ api-html/index.html: ${MLIS} api-index
 	ocamlfind ocamldoc -package lwt,ocamlbuild ${OTHER} -intro api-index -html \
 	   -d api-html -I ../lib -I ../lib/deriving_json ${MLIS}
 
-docwiki: api-wiki/index.wiki
+docwiki: api-wiki/index.wiki cp-examples
 api-wiki/index.wiki: ${MLIS} api-index
 	mkdir -p api-wiki
 	ocamlfind ocamldoc -package lwt,ocamlbuild ${OTHER} -intro api-index \
@@ -45,6 +45,7 @@ EX_MINE:=index.html minesweeper.js sprites
 EX_CUBE:=index.html cubes.js
 
 cp-examples:
+	$(MAKE) -C .. toplevel examples
 	cp -R ${addprefix ../toplevel/, ${EX_TOPLEVEL}} manual-aux/toplevel/
 	cp -R ${addprefix ../examples/boulderdash/, ${EX_BOULDER}} manual-aux/boulderdash/
 	cp -R ${addprefix ../examples/webgl/, ${EX_WEBGL}} manual-aux/webgl/
