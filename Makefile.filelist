@@ -33,7 +33,7 @@ OTHERS := runtime/runtime.js runtime/weak.js \
 
 COMP_INTF := compiler/compiler.cmi
 COMP_IMPL := compiler/compiler.cma
-COMP_NAT_IMPL := compiler/compiler.cmxa
+COMP_NAT_IMPL := compiler/compiler.cmxa compiler/compiler.a compiler/compiler.cmx
 COMP_NATDYN_IMPL := compiler/compiler.cmxs
 
 OCAMLBUILD_IMPL := ocamlbuild_js_of_ocaml.cma
