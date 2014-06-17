@@ -40,17 +40,23 @@ minify.opt: $(OBJS:cmx=cmx) minify.cmx
 	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -g -o $@ $^
 
 
-compiler.cma: $(OBJS:cmx=cmo)
+compiler.cmo: $(OBJS:cmx=cmo)
 	ocamlfind ocamlc -pack -o $@ $^
+
+compiler.cma: compiler.cmo
+	ocamlfind ocamlc -a -o $@ $^
 
 local/compiler.cma: compiler.cma
 	mkdir -p local
 	cp compiler.cma compiler.cmi local/
 
-compiler.cmxa: $(OBJS)
+compiler.cmx: $(OBJS)
 	ocamlfind ocamlopt -pack -g -o $@ $^
 
-compiler.cmxs: $(OBJS)
+compiler.cmxa: compiler.cmx
+	ocamlfind ocamlopt -a -o $@ $^
+
+compiler.cmxs: compiler.cmxa
 	ocamlfind ocamlopt -shared -g -o $@ $^
 
 VERSION := $(shell head -n 1 ../VERSION)
