@@ -43,6 +43,8 @@ module Optim : sig
   val warn_unused : unit -> bool
   val inline_callgen : unit -> bool
 
+  val squash : unit -> bool
+
   val enable : string -> unit
   val disable : string -> unit
 end
