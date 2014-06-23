@@ -340,7 +340,7 @@ var caml_output_val = function (){
         if (v[0] < 16 && v.length - 1 < 8)
           writer.write (8, cst.PREFIX_SMALL_BLOCK + v[0] + ((v.length - 1)<<4));
         else
-          writer.write_code(32, cst.CODE_BLOCK32, (v.length << 10) | v[0]);
+          writer.write_code(32, cst.CODE_BLOCK32, ((v.length-1) << 10) | v[0]);
         writer.size_32 += v.length;
         writer.size_64 += v.length;
         if (v.length > 1) stack.push (v, 1);
