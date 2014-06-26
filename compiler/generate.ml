@@ -221,6 +221,7 @@ end
 let var x = J.EVar (J.V x)
 let int n = J.ENum (float n)
 let int32 n = J.ENum (Int32.to_float n)
+let unsigned x = J.EBin (J.Lsr,x,int 0)
 let one = int 1
 let zero = int 0
 let bool e = J.ECond (e, one, zero)
@@ -1065,8 +1066,7 @@ and translate_expr ctx queue x e level =
       | Ult, [x; y] ->
         let ((px, cx), queue) = access_queue' ~ctx  queue x in
         let ((py, cy), queue) = access_queue' ~ctx  queue y in
-        (bool (J.EBin (J.Or, J.EBin (J.Lt, cy, int 0),
-                       J.EBin (J.Lt, cx, cy))),
+        (bool (J.EBin (J.Lt, unsigned cx, unsigned cy)),
          or_p px py, queue)
       | (Vectlength | Array_get | Not | IsInt | Eq |
          Neq | Lt | Le | Ult), _ ->
@@ -1441,8 +1441,9 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
           IsTrue         -> cx
         | CEq n          -> J.EBin (J.EqEqEq, int32 n, cx)
         | CLt n          -> J.EBin (J.Lt, int32 n, cx)
-        | CUlt n         -> J.EBin (J.Or, J.EBin (J.Lt, cx, int 0),
-                                          J.EBin (J.Lt, int32 n, cx))
+        | CUlt n         ->
+          let n' = if n < 0l then unsigned (int32 n) else int32 n in
+          J.EBin (J.Lt, n', unsigned cx)
         | CLe n          -> J.EBin (J.Le, int32 n, cx)
       in
       (* Some changes here may require corresponding changes
