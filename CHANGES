@@ -2,7 +2,19 @@
 
  * Features/Changes
  ** Lib: remove deprecated Event_arrow
- ** Lib: introduce tyxml subpackage
+ ** Lib: introduce js_of_ocaml.tyxml
+ ** Lib: introduce js_of_ocaml.weak (that loads weak.js)
+         and remove predicate joo_weak
+ ** Lib: introduce js_of_ocaml.log (Lwt logger)
+ ** Lib: Dom_html.{range,selection} (Enguerrand Decorne)
+
+ * BugFixes
+ ** Compiler: fix traduction of Ult binop (#177)
+ ** Compiler: fix the build of compiler.{cmxs,cma} (Stéphane Glondu)
+ ** Compiler: fix traduction of logical shift right
+ ** Runtime: fix marshaling (#176)
+ ** Meta: update predicates (joo_* -> jsoo_*)
+ ** Lib: fix class type Dom_html.optionElement
 
 ===== 2.2 (2014-05-15) =====
 
