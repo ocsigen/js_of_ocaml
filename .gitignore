@@ -39,7 +39,7 @@ compiler/annot_lexer.ml
 compiler/annot_parser.ml
 compiler/annot_parser.mli
 compiler/*.conflicts
-doc/api-html
+doc/api/html
 benchmarks/build
 benchmarks/results
 benchmarks/config
@@ -50,14 +50,14 @@ Makefile.local
 ocamlbuild/_build/
 
 
-doc/api-wiki/
-doc/manual-aux/boulderdash/
-doc/manual-aux/cubes/
-doc/manual-aux/graph_viewer/
-doc/manual-aux/hyperbolic/
-doc/manual-aux/minesweeper/
-doc/manual-aux/planet/
-doc/manual-aux/toplevel/
-doc/manual-aux/webgl/
-doc/manual-aux/wiki/
-doc/manual-aux/wysiwyg/
+doc/api/wiki/
+doc/manual/files/boulderdash/
+doc/manual/files/cubes/
+doc/manual/files/graph_viewer/
+doc/manual/files/hyperbolic/
+doc/manual/files/minesweeper/
+doc/manual/files/planet/
+doc/manual/files/toplevel/
+doc/manual/files/webgl/
+doc/manual/files/wiki/
+doc/manual/files/wysiwyg/
