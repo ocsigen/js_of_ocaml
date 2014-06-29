@@ -102,7 +102,6 @@ module MakeTo( C : sig type 'a elt val elt : 'a elt -> Dom.node Js.t end) : Tyxm
   let of_dd elt = rebuild_node "of_dd" elt
   let of_details elt = rebuild_node "of_details" elt
   let of_dfn elt = rebuild_node "of_dfn" elt
-  let of_dir elt = rebuild_node "of_dir" elt
   let of_dt elt = rebuild_node "of_dt" elt
   let of_em elt = rebuild_node "of_em" elt
   let of_embed elt = rebuild_node "of_embed" elt

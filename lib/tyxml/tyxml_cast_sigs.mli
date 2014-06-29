@@ -156,7 +156,6 @@ module type TO = sig
   val of_dd : [> Html5_types.dd] elt -> Dom_html.element Js.t
   val of_details : [> Html5_types.details] elt -> Dom_html.element Js.t
   val of_dfn : [> Html5_types.dfn] elt -> Dom_html.element Js.t
-  val of_dir : [> `Dir] elt -> Dom_html.element Js.t
   val of_dt : [> Html5_types.dt] elt -> Dom_html.element Js.t
   val of_em : [> Html5_types.em] elt -> Dom_html.element Js.t
   val of_embed : [> Html5_types.embed] elt -> Dom_html.element Js.t
