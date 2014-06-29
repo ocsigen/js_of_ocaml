@@ -29,7 +29,8 @@ endif
 OTHERS := runtime/runtime.js runtime/weak.js \
           runtime/classlist.js \
           runtime/toplevel.js \
-          runtime/graphics.js
+          runtime/graphics.js \
+          runtime/nat.js \
 
 COMP_INTF := compiler/compiler.cmi
 COMP_IMPL := compiler/compiler.cma

@@ -21,7 +21,7 @@
 
 let global_object = "joo_global_object"
 
-let extra_js_files = ["+weak.js" ; "+graphics.js"; "+toplevel.js"]
+let extra_js_files = ["+weak.js" ; "+graphics.js"; "+toplevel.js"; "+nat.js"]
 
 (* Optimisation *)
 
