@@ -38,8 +38,7 @@ commit-doc: docwiki
 	&& git add js_of_ocaml/dev/manual/src \
 	&& ($(IGNORE_FILES) || git add js_of_ocaml/dev/manual/files) \
 	&& git add js_of_ocaml/dev/api \
-	&& git commit -m `git log -n 1 --format=js_of_ocaml-%h` \
-	&& git push
+	&& ( (git commit -m `git log -n 1 --format=js_of_ocaml-%h` && git push) || echo "nothing to update" )
 
 docwiki: api/wiki/index.wiki cp-examples
 api/wiki/index.wiki: ${MLIS} api/index
