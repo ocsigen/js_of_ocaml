@@ -28,11 +28,12 @@ api/html/index.html: ${MLIS} api/index
 IGNORE_FILES ?= true
 
 commit-doc: docwiki
-	ls ocsigen.org-data || git clone https://github.com/ocsigen/ocsigen.org-data.git
+	ls ocsigen.org-data || git clone git@github.com:ocsigen/ocsigen.org-data.git
 	cd ocsigen.org-data && git fetch && git reset --hard origin/master
-	mkdir -p ocsigen.org-data/js_of_ocaml/dev
-	cp -Rf manual/ ocsigen.org-data/js_of_ocaml/dev/manual
-	cp -Rf api/wiki/ ocsigen.org-data/js_of_ocaml/dev/api
+	mkdir -p ocsigen.org-data/js_of_ocaml/dev/manual
+	mkdir -p ocsigen.org-data/js_of_ocaml/dev/api
+	cp -Rf manual/* ocsigen.org-data/js_of_ocaml/dev/manual/
+	cp -Rf api/wiki/* ocsigen.org-data/js_of_ocaml/dev/api/
 	cd ocsigen.org-data \
 	&& git add js_of_ocaml/dev/manual/src \
 	&& ($(IGNORE_FILES) || git add js_of_ocaml/dev/manual/files) \
