@@ -160,7 +160,7 @@ module type TO = sig
   val of_em : [> Html5_types.em] elt -> Dom_html.element Js.t
   val of_embed : [> Html5_types.embed] elt -> Dom_html.element Js.t
   val of_figcaption : [> Html5_types.figcaption] elt -> Dom_html.element Js.t
-  val of_figure : [> `Figure] elt -> Dom_html.element Js.t
+  val of_figure : [> Html5_types.figure] elt -> Dom_html.element Js.t
   val of_footer : [> Html5_types.footer] elt -> Dom_html.element Js.t
   val of_header : [> Html5_types.header] elt -> Dom_html.element Js.t
   val of_hgroup : [> Html5_types.hgroup] elt -> Dom_html.element Js.t
@@ -175,9 +175,9 @@ module type TO = sig
   val of_output : [> Html5_types.output_elt] elt -> Dom_html.element Js.t
   val of_progress : [> Html5_types.progress] elt -> Dom_html.element Js.t
   val of_q : [> Html5_types.q] elt -> Dom_html.element Js.t
-  val of_rp : [> `Rp] elt -> Dom_html.element Js.t
-  val of_rt : [> `Rt] elt -> Dom_html.element Js.t
-  val of_ruby : [> `Ruby] elt -> Dom_html.element Js.t
+  val of_rp : [> Html5_types.rp] elt -> Dom_html.element Js.t
+  val of_rt : [> Html5_types.rt] elt -> Dom_html.element Js.t
+  val of_ruby : [> Html5_types.ruby] elt -> Dom_html.element Js.t
   val of_samp : [> Html5_types.samp] elt -> Dom_html.element Js.t
   val of_section : [> Html5_types.section] elt -> Dom_html.element Js.t
   val of_small : [> Html5_types.small] elt -> Dom_html.element Js.t
