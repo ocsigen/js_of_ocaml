@@ -49,7 +49,7 @@ Makefile.local
 # OCamlbuild dir
 ocamlbuild/_build/
 
-
+doc/ocsigen.org-data
 doc/api/wiki/
 doc/manual/files/boulderdash/
 doc/manual/files/cubes/
