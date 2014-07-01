@@ -1470,10 +1470,11 @@ module CoerceTo = struct
   let q e = unsafeCoerce "q" e
   let script e = unsafeCoerce "script" e
   let select e = unsafeCoerce "select" e
-  let style e = unsafeCoerce "style" e
+  let style e = unsafeCoerce "style" e 
   let table e = unsafeCoerce "table" e
   let tbody e = unsafeCoerce "tbody" e
   let td e = unsafeCoerce "td" e
+  let text e = unsafeCoerce "text" e 
   let textarea e = unsafeCoerce "textarea" e
   let tfoot e = unsafeCoerce "tfoot" e
   let th e = unsafeCoerce "th" e
@@ -1627,6 +1628,7 @@ type taggedElement =
   | Table of tableElement t
   | Tbody of tableSectionElement t
   | Td of tableColElement t
+  | Text of textElement t
   | Textarea of textAreaElement t
   | Tfoot of tableSectionElement t
   | Th of tableColElement t
@@ -1756,6 +1758,7 @@ let tagged (e : #element t) =
         | "table" -> Table (Js.Unsafe.coerce e)
         | "tbody" -> Tbody (Js.Unsafe.coerce e)
         | "td" -> Td (Js.Unsafe.coerce e)
+	| "text" -> Text (Js.Unsafe.coerce e)
         | "textarea" -> Textarea (Js.Unsafe.coerce e)
         | "tfoot" -> Tfoot (Js.Unsafe.coerce e)
         | "th" -> Th (Js.Unsafe.coerce e)

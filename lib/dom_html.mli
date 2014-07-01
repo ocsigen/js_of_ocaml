@@ -1496,6 +1496,7 @@ type taggedElement =
   | Table of tableElement t
   | Tbody of tableSectionElement t
   | Td of tableColElement t
+  | Text of textElement t
   | Textarea of textAreaElement t
   | Tfoot of tableSectionElement t
   | Th of tableColElement t
@@ -1583,6 +1584,7 @@ module CoerceTo : sig
   val table : #element t -> tableElement t opt
   val tbody : #element t -> tableSectionElement t opt
   val td : #element t -> tableColElement t opt
+  val text : #element t -> textElement t opt
   val textarea : #element t -> textAreaElement t opt
   val tfoot : #element t -> tableSectionElement t opt
   val th : #element t -> tableColElement t opt
