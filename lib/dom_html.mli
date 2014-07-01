@@ -109,6 +109,7 @@ class type cssStyleDeclaration = object
   method paddingTop : js_string t prop
   method pageBreakAfter : js_string t prop
   method pageBreakBefore : js_string t prop
+  method pointerEvents : js_string t prop
   method position : js_string t prop
   method right : js_string t prop
   method tableLayout : js_string t prop
