@@ -1428,6 +1428,7 @@ val createFrame : document t -> frameElement t
 val createIframe : document t -> iFrameElement t
 val createAudio : document t -> audioElement t
 val createVideo : document t -> videoElement t
+val createText : document t -> textElement t
 
 exception Canvas_not_available
 val createCanvas : document t -> canvasElement t

@@ -1392,6 +1392,7 @@ let createFrame doc : frameElement t = unsafeCreateElement doc "frame"
 let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
 let createAudio doc : audioElement t = unsafeCreateElement doc "audio"
 let createVideo doc : audioElement t = unsafeCreateElement doc "video"
+let createText doc = createElement doc "text"
 
 exception Canvas_not_available
 
