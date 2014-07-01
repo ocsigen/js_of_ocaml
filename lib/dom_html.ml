@@ -581,6 +581,8 @@ class type textAreaElement = object ('self)
   method onfocus : ('self t, event t) event_listener prop
 end
 
+class type textElement = element
+
 class type buttonElement = object
   inherit element
   method form : formElement t opt readonly_prop
