@@ -27,7 +27,7 @@ OPTCOMP_OPT=-ppopt -let -ppopt ocpindent=true
 endif
 
 COMP=../compiler/$(COMPILER)
-JSFILES=../runtime/runtime.js ../runtime/weak.js ../runtime/toplevel.js ../runtime/graphics.js
+JSFILES=../runtime/runtime.js ../runtime/weak.js ../runtime/toplevel.js ../runtime/graphics.js ../runtime/nat.js
 OCAMLC=ocamlfind ocamlc -package lwt,optcomp,tyxml.functor,reactiveData -syntax camlp4o $(OCPINDENT) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" \
 	-I $(COMPILER_LIBS) -I ../lib -I ../compiler -I ../lib/graphics -I ../lib/tyxml
 STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER) ../lib/graphics/graphics.cma ../lib/tyxml/tyxml.cma
