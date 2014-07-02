@@ -18,29 +18,14 @@ OTHER += -package tyxml.functor,react,reactiveData -I ../lib/tyxml
 endif
 
 
-.PHONY: doc docwiki commit-doc
+.PHONY: doc wikidoc
 doc: api/html/index.html
 api/html/index.html: ${MLIS} api/index
 	mkdir -p api/html
 	ocamlfind ocamldoc -package lwt,ocamlbuild ${OTHER} -intro api/index -html \
 	   -d api/html -I ../lib -I ../lib/deriving_json ${MLIS}
 
-IGNORE_FILES ?= true
-
-commit-doc: docwiki
-	ls ocsigen.org-data || git clone git@github.com:ocsigen/ocsigen.org-data.git
-	cd ocsigen.org-data && git fetch && git reset --hard origin/master
-	mkdir -p ocsigen.org-data/js_of_ocaml/dev/manual
-	mkdir -p ocsigen.org-data/js_of_ocaml/dev/api
-	cp -Rf manual/* ocsigen.org-data/js_of_ocaml/dev/manual/
-	cp -Rf api/wiki/* ocsigen.org-data/js_of_ocaml/dev/api/
-	cd ocsigen.org-data \
-	&& git add js_of_ocaml/dev/manual/src \
-	&& ($(IGNORE_FILES) || git add js_of_ocaml/dev/manual/files) \
-	&& git add js_of_ocaml/dev/api \
-	&& ( (git commit -m `git log -n 1 --format=js_of_ocaml-%h` && git push) || echo "nothing to update" )
-
-docwiki: api/wiki/index.wiki cp-examples
+wikidoc: api/wiki/index.wiki cp-examples
 api/wiki/index.wiki: ${MLIS} api/index
 	mkdir -p api/wiki
 	ocamlfind ocamldoc -package lwt,ocamlbuild ${OTHER} -intro api/index \
