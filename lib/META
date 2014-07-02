@@ -6,6 +6,7 @@ requires = "js_of_ocaml.syntax,lwt"
 linkopts(javascript,-jsoo_noruntime) = "+js_of_ocaml/runtime.js"
 linkopts(javascript,jsoo_classlist) += "+js_of_ocaml/classlist.js"
 linkopts(javascript,pkg_graphics) += "+js_of_ocaml/graphics.js"
+linkopts(javascript,pkg_num) += "+js_of_ocaml/nat.js"
 
 package "syntax" (
   description = "Js_of_ocaml syntax extension"
