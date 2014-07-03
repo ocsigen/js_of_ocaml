@@ -3,6 +3,10 @@
  * Features/Changes
  ** Runtime: support for num (Ryan Goulden)
 
+ * BugFixes
+ ** Compiler: generate js files with default permission, was 0o600
+    (#182) (Daniel Bünzli)
+
 ===== 2.3 (2014-06-30) =====
 
  * Features/Changes
