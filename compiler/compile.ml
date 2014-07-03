@@ -22,8 +22,16 @@ let times = Option.Debug.find "times"
 
 let _ = Sys.catch_break true
 
+let temp_file_name =         
+  (* Inlined unavailable Filename.temp_file_name. Filename.temp_file gives
+     us incorrect permissions. *)
+  let prng = lazy(Random.State.make_self_init ()) in 
+  fun ~temp_dir prefix suffix -> 
+    let rnd = (Random.State.bits (Lazy.force prng)) land 0xFFFFFF in
+    Filename.concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
+
 let gen_file file f =
-  let f_tmp = Filename.temp_file
+  let f_tmp = temp_file_name
       ~temp_dir:(Filename.dirname file)
       (Filename.basename file) ".tmp" in
   try
