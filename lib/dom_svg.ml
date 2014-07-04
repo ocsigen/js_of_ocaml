@@ -12,13 +12,13 @@ let xmlns = "http://www.w3.org/2000/svg"
 (* }; *)
 
 type svg_error =
-  | SVG_WRONG_TYPE_ERR_
-  | SVG_INVALID_VALUE_ERR_
-  | SVG_MATRIX_NOT_INVERTABLE_
+  | SVG_WRONG_TYPE_ERR
+  | SVG_INVALID_VALUE_ERR
+  | SVG_MATRIX_NOT_INVERTABLE
 
 
 
-type unitType =
+type lengthUnitType =
   | SVG_LENGTHTYPE_UNKNOWN
   | SVG_LENGTHTYPE_NUMBER
   | SVG_LENGTHTYPE_PERCENTAGE
@@ -31,6 +31,33 @@ type unitType =
   | SVG_LENGTHTYPE_PT
   | SVG_LENGTHTYPE_PC
 
+(*   // Angle Unit Types *)
+type angleUnitType =
+  | SVG_ANGLETYPE_UNKNOWN
+  | SVG_ANGLETYPE_UNSPECIFIED
+  | SVG_ANGLETYPE_DEG
+  | SVG_ANGLETYPE_RAD
+  | SVG_ANGLETYPE_GRAD
+
+(*   // Color Types *)
+type colorType =
+  | SVG_COLORTYPE_UNKNOWN
+  | SVG_COLORTYPE_RGBCOLOR
+  | SVG_COLORTYPE_RGBCOLOR_ICCCOLOR
+  | SVG_COLORTYPE_CURRENTCOLOR
+
+(* interface SVGUnitTypes { *)
+type unitType =
+  | SVG_UNIT_TYPE_UNKNOWN
+  | SVG_UNIT_TYPE_USERSPACEONUSE
+  | SVG_UNIT_TYPE_OBJECTBOUNDINGBOX
+
+class type ['a] svgAnimated = object
+  method baseVal : 'a prop
+  method animVal : 'a prop
+end
+
+
 (* interface SVGElement : Element { *)
 class type element = object
   inherit Dom.element
@@ -42,11 +69,9 @@ end
 
 (* interface SVGAnimatedBoolean { *)
 (* interface SVGAnimatedString { *)
-and ['a] svgAnimated = object
-  method baseVal : 'a prop
-  method animVal : 'a prop
-end
 
+and svgAnimatedString = [js_string t] svgAnimated
+and svgAnimatedBool = [bool t] svgAnimated
 (* interface SVGStringList { *)
 
 (*   readonly attribute unsigned long numberOfItems; *)
@@ -99,20 +124,17 @@ end
 
 (* interface SVGLength { *)
 and svgLength = object
-  method unitType : unitType readonly_prop
+  method unitType : lengthUnitType readonly_prop
   method value : float prop
   method valueInSpecifiedUnits : float prop
   method valueAsString : js_string t prop
-  method newValueSpecifiedUnits : unitType -> float -> unit meth
-  method convertToSpecifiedUnits : unitType -> unit meth
+  method newValueSpecifiedUnits : lengthUnitType -> float -> unit meth
+  method convertToSpecifiedUnits : lengthUnitType -> unit meth
 end
 (* interface SVGAnimatedLength { *)
 and animatedLength = object
   inherit [svgLength] svgAnimated
 end
-(*   readonly attribute SVGLength baseVal; *)
-(*   readonly attribute SVGLength animVal; *)
-(* }; *)
 
 (* interface SVGLengthList { *)
 
@@ -133,22 +155,14 @@ end
 (* }; *)
 
 (* interface SVGAngle { *)
-
-(*   // Angle Unit Types *)
-(*   const unsigned short SVG_ANGLETYPE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_ANGLETYPE_UNSPECIFIED = 1; *)
-(*   const unsigned short SVG_ANGLETYPE_DEG = 2; *)
-(*   const unsigned short SVG_ANGLETYPE_RAD = 3; *)
-(*   const unsigned short SVG_ANGLETYPE_GRAD = 4; *)
-
-(*   readonly attribute unsigned short unitType; *)
-(*            attribute float value setraises(DOMException); *)
-(*            attribute float valueInSpecifiedUnits setraises(DOMException); *)
-(*            attribute DOMString valueAsString setraises(DOMException); *)
-
-(*   void newValueSpecifiedUnits(in unsigned short unitType, in float valueInSpecifiedUnits) raises(DOMException); *)
-(*   void convertToSpecifiedUnits(in unsigned short unitType) raises(DOMException); *)
-(* }; *)
+and angle = object
+  method unitType : angleUnitType readonly_prop
+  method value : float prop
+  method valueInSpecifiedUnits : float prop
+  method valueAsString : js_string t prop
+  method newValueSpecifiedUnits : angleUnitType -> float -> unit meth
+  method convertToSpecifiedUnits : angleUnitType -> unit meth
+end
 
 (* interface SVGAnimatedAngle { *)
 (*   readonly attribute SVGAngle baseVal; *)
@@ -156,21 +170,16 @@ end
 (* }; *)
 
 (* interface SVGColor : CSSValue { *)
-
-(*   // Color Types *)
-(*   const unsigned short SVG_COLORTYPE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_COLORTYPE_RGBCOLOR = 1; *)
-(*   const unsigned short SVG_COLORTYPE_RGBCOLOR_ICCCOLOR = 2; *)
-(*   const unsigned short SVG_COLORTYPE_CURRENTCOLOR = 3; *)
-
-(*   readonly attribute unsigned short colorType; *)
+and color = object
+  method colorType : colorType readonly_prop
 (*   readonly attribute RGBColor rgbColor; *)
 (*   readonly attribute SVGICCColor iccColor; *)
 
 (*   void setRGBColor(in DOMString rgbColor) raises(SVGException); *)
 (*   void setRGBColorICCColor(in DOMString rgbColor, in DOMString iccColor) raises(SVGException); *)
 (*   void setColor(in unsigned short colorType, in DOMString rgbColor, in DOMString iccColor) raises(SVGException); *)
-(* }; *)
+  (* }; *)
+end
 
 (* interface SVGICCColor { *)
 (*            attribute DOMString colorProfile setraises(DOMException); *)
@@ -190,20 +199,12 @@ end
 (*   readonly attribute SVGRect animVal; *)
 (* }; *)
 
-(* interface SVGUnitTypes { *)
-(*   // Unit Types *)
-(*   const unsigned short SVG_UNIT_TYPE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_UNIT_TYPE_USERSPACEONUSE = 1; *)
-(*   const unsigned short SVG_UNIT_TYPE_OBJECTBOUNDINGBOX = 2; *)
-(* }; *)
-
 (* interface SVGStylable { *)
-
-(*   readonly attribute SVGAnimatedString className; *)
-(*   readonly attribute CSSStyleDeclaration style; *)
-
-(*   CSSValue getPresentationAttribute(in DOMString name); *)
-(* }; *)
+and stylable = object
+  method className : svgAnimatedString readonly_prop
+  method style : Dom_html.cssStyleDeclaration t readonly_prop
+  (*   CSSValue getPresentationAttribute(in DOMString name); *)
+end
 
 (* interface SVGLocatable { *)
 
@@ -230,9 +231,10 @@ end
 (* }; *)
 
 (* interface SVGLangSpace { *)
-(*   attribute DOMString xmllang setraises(DOMException); *)
-(*   attribute DOMString xmlspace setraises(DOMException); *)
-(* }; *)
+and langSpace = object
+  method xmllang : js_string t prop
+  method xmlspace : js_string t prop
+end
 
 (* interface SVGExternalResourcesRequired { *)
 (*   readonly attribute SVGAnimatedBoolean externalResourcesRequired; *)
@@ -306,6 +308,7 @@ end
 (*                           DocumentCSS { *)
 and svgElement = object
   inherit element
+  inherit langSpace
   method x : animatedLength t readonly_prop
   method y : animatedLength t readonly_prop
   method width : animatedLength t readonly_prop
@@ -366,7 +369,10 @@ end
 (*                         SVGExternalResourcesRequired, *)
 (*                         SVGStylable, *)
 (*                         SVGTransformable { *)
-(* }; *)
+and gElement = object
+  inherit element
+  inherit stylable
+end
 
 (* interface SVGDefsElement : SVGElement, *)
 (*                            SVGTests, *)
@@ -382,11 +388,19 @@ end
 (* }; *)
 
 (* interface SVGTitleElement : SVGElement, *)
-(*                             SVGLangSpace, *)
-(*                             SVGStylable { *)
-(* }; *)
+and titleElement = object
+  inherit element
+  inherit langSpace
+  inherit stylable
+end
 
 (* interface SVGSymbolElement : SVGElement, *)
+and symbolElement = object
+  inherit element
+  inherit langSpace
+  inherit stylable
+end
+
 (*                              SVGLangSpace, *)
 (*                              SVGExternalResourcesRequired, *)
 (*                              SVGStylable, *)
@@ -1407,51 +1421,37 @@ end
 (* interface SVGMPathElement : SVGElement, *)
 (*                             SVGURIReference, *)
 (*                             SVGExternalResourcesRequired { *)
-(* }; *)
 
 (* interface SVGAnimateColorElement : SVGAnimationElement, *)
 (*                                    SVGStylable { *)
-(* }; *)
 
 (* interface SVGAnimateTransformElement : SVGAnimationElement { *)
-(* }; *)
 
 (* interface SVGFontElement : SVGElement, *)
 (*                            SVGExternalResourcesRequired, *)
 (*                            SVGStylable { *)
-(* }; *)
 
 (* interface SVGGlyphElement : SVGElement, *)
 (*                             SVGStylable { *)
-(* }; *)
 
 (* interface SVGMissingGlyphElement : SVGElement, *)
 (*                                    SVGStylable { *)
-(* }; *)
 
 (* interface SVGHKernElement : SVGElement { *)
-(* }; *)
-
 (* interface SVGVKernElement : SVGElement { *)
-(* }; *)
 
 (* interface SVGFontFaceElement : SVGElement { *)
-(* }; *)
-
+class type fontFaceElement = element
 (* interface SVGFontFaceSrcElement : SVGElement { *)
-(* }; *)
-
+class type fontFaceSrcElement = element
 (* interface SVGFontFaceUriElement : SVGElement { *)
-(* }; *)
-
+class type fontFaceUriElement = element
 (* interface SVGFontFaceFormatElement : SVGElement { *)
-(* }; *)
-
+class type fontFaceFormatElement = element
 (* interface SVGFontFaceNameElement : SVGElement { *)
-(* }; *)
-
+class type fontFaceNameElement = element
 (* interface SVGMetadataElement : SVGElement { *)
-(* }; *)
+class type metadataElement = element
 
 (* interface SVGForeignObjectElement : SVGElement, *)
 (*                                     SVGTests, *)
