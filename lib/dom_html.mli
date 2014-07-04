@@ -109,6 +109,7 @@ class type cssStyleDeclaration = object
   method paddingTop : js_string t prop
   method pageBreakAfter : js_string t prop
   method pageBreakBefore : js_string t prop
+  method pointerEvents : js_string t prop
   method position : js_string t prop
   method right : js_string t prop
   method tableLayout : js_string t prop
@@ -527,6 +528,7 @@ class type textAreaElement = object ('self)
   method onblur : ('self t, event t) event_listener prop
   method onfocus : ('self t, event t) event_listener prop
 end
+
 
 class type buttonElement = object
   inherit element
@@ -1425,6 +1427,7 @@ val createFrame : document t -> frameElement t
 val createIframe : document t -> iFrameElement t
 val createAudio : document t -> audioElement t
 val createVideo : document t -> videoElement t
+
 
 exception Canvas_not_available
 val createCanvas : document t -> canvasElement t

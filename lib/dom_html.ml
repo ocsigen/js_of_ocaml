@@ -110,6 +110,7 @@ class type cssStyleDeclaration = object
   method paddingTop : js_string t prop
   method pageBreakAfter : js_string t prop
   method pageBreakBefore : js_string t prop
+  method pointerEvents : js_string t prop
   method position : js_string t prop
   method right : js_string t prop
   method tableLayout : js_string t prop
@@ -579,6 +580,7 @@ class type textAreaElement = object ('self)
   method onblur : ('self t, event t) event_listener prop
   method onfocus : ('self t, event t) event_listener prop
 end
+
 
 class type buttonElement = object
   inherit element
@@ -1390,6 +1392,7 @@ let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
 let createAudio doc : audioElement t = unsafeCreateElement doc "audio"
 let createVideo doc : audioElement t = unsafeCreateElement doc "video"
 
+
 exception Canvas_not_available
 
 let createCanvas doc : canvasElement t =
@@ -1467,10 +1470,11 @@ module CoerceTo = struct
   let q e = unsafeCoerce "q" e
   let script e = unsafeCoerce "script" e
   let select e = unsafeCoerce "select" e
-  let style e = unsafeCoerce "style" e
+  let style e = unsafeCoerce "style" e 
   let table e = unsafeCoerce "table" e
   let tbody e = unsafeCoerce "tbody" e
   let td e = unsafeCoerce "td" e
+  let text e = unsafeCoerce "text" e 
   let textarea e = unsafeCoerce "textarea" e
   let tfoot e = unsafeCoerce "tfoot" e
   let th e = unsafeCoerce "th" e
