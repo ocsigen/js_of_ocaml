@@ -3,7 +3,7 @@ open Js
 
 
 
-let xmlns = "http://www.w3.org/2000/svg"
+let xmlns = Js.string "http://www.w3.org/2000/svg"
 
 (* module svg { *)
 
@@ -71,6 +71,11 @@ type transformType =
   | TRANSFORM_SKEWX
   | TRANSFORM_SKEWY
 
+type zoomAndPanType =
+  | ZOOMANDPAN_UNKNOWN
+  | ZOOMANDPAN_DISABLE
+  | ZOOMANDPAN_MAGNIFY
+
 type lengthAdjust =
   | LENGTHADJUST_UNKNOWN
   | LENGTHADJUST_SPACING
@@ -81,6 +86,8 @@ type unitType =
   | UNIT_TYPE_UNKNOWN
   | UNIT_TYPE_USERSPACEONUSE
   | UNIT_TYPE_OBJECTBOUNDINGBOX
+
+type suspendHandleID
 
 (****)
 
@@ -214,15 +221,14 @@ and stylable = object
 end
 
 (* interface SVGLocatable { *)
-
-(*   readonly attribute SVGElement nearestViewportElement; *)
-(*   readonly attribute SVGElement farthestViewportElement; *)
-
-(*   SVGRect getBBox(); *)
-(*   SVGMatrix getCTM(); *)
-(*   SVGMatrix getScreenCTM(); *)
-(*   SVGMatrix getTransformToElement(in SVGElement element) raises(SVGException); *)
-(* }; *)
+and locatable = object
+  method nearestViewportElement : element t readonly_prop
+  method farthestViewportElement : element t readonly_prop
+  method getBBox : rect t meth
+  method getCTM : matrix t meth
+  method getScreenCTM : matrix t meth
+  method getTransformToElement : element t -> matrix t meth
+end
 
 (* interface SVGTransformable : SVGLocatable { *)
 and transformable = object
@@ -255,24 +261,22 @@ and fitToViewBox = object
 end
 
 (* interface SVGZoomAndPan { *)
-
-(*   // Zoom and Pan Types *)
-(*   const unsigned short SVG_ZOOMANDPAN_UNKNOWN = 0; *)
-(*   const unsigned short SVG_ZOOMANDPAN_DISABLE = 1; *)
-(*   const unsigned short SVG_ZOOMANDPAN_MAGNIFY = 2; *)
-
-(*   attribute unsigned short zoomAndPan setraises(DOMException); *)
-(* }; *)
+and zoomAndPan = object
+  method zoomAndPan : zoomAndPanType prop
+end
 
 (* interface SVGViewSpec : SVGZoomAndPan, *)
 (*                         SVGFitToViewBox { *)
-(*   readonly attribute SVGTransformList transform; *)
-(*   readonly attribute SVGElement viewTarget; *)
-(*   readonly attribute DOMString viewBoxString; *)
-(*   readonly attribute DOMString preserveAspectRatioString; *)
-(*   readonly attribute DOMString transformString; *)
-(*   readonly attribute DOMString viewTargetString; *)
-(* }; *)
+and viewSpec = object
+  inherit zoomAndPan
+  inherit fitToViewBox
+  method transform : transformList readonly_prop
+  method viewTarget : element t readonly_prop
+  method viewBoxString : js_string t readonly_prop
+  method preserveAspectRatioString : js_string t readonly_prop
+  method transformString : js_string t readonly_prop
+  method viewTargetString : js_string t readonly_prop
+end
 
 (* interface SVGURIReference { *)
 (*   readonly attribute SVGAnimatedString href; *)
@@ -318,7 +322,14 @@ end
 (*                           DocumentCSS { *)
 and svgElement = object
   inherit element
+  inherit tests
   inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  inherit locatable
+  inherit fitToViewBox
+  inherit zoomAndPan
+  (*XXX inherit documentevent, viewcss, documentcss *)
   method x : animatedLength t readonly_prop
   method y : animatedLength t readonly_prop
   method width : animatedLength t readonly_prop
@@ -332,35 +343,35 @@ and svgElement = object
   method screenPixelUnitToMillimeterX : float readonly_prop
   method screenPixelUnitToMillimeterY : float readonly_prop
   method useCurrentView : bool t readonly_prop
+  method currentView : viewSpec t readonly_prop
+  method currentScale : float prop
+  method currentTranslate : point t readonly_prop
+  method suspendRedraw : int -> suspendHandleID meth
+  method unsuspendRedraw : suspendHandleID -> unit meth
+  method unsuspendRedrawAll : unit meth
+  method forceRedraw : unit meth
+  method pauseAnimations : unit meth
+  method unpauseAnimations : unit meth
+  method animationsPaused : bool t meth
+  method getCurrentTime : float meth
+  method setCurrentTime : int -> unit meth
+  method getIntersectionList :
+    rect t -> element t -> element t Dom.nodeList t meth
+  method getEnclosureList :
+    rect t -> element t -> element t Dom.nodeList t meth
+  method checkIntersection : element t -> rect t -> bool t
+  method checkEnclosure : element t -> rect t -> bool t
+  method deselectAll : unit meth
+  method createSVGNumber : number t meth
+  method createSVGLength : length t meth
+  method createSVGAngle : angle t meth
+  method createSVGPoint : point t meth
+  method createSVGMatrix : matrix t meth
+  method createSVGRect : rect t meth
+  method createSVGTransform : transform t meth
+  method createSVGTransformFromMatrix : matrix t -> transform t meth
+  method getElementById : js_string t -> Dom.element t meth
 end
-(*   readonly attribute SVGViewSpec currentView; *)
-(*            attribute float currentScale; *)
-(*   readonly attribute SVGPoint currentTranslate; *)
-
-(*   unsigned long suspendRedraw(in unsigned long maxWaitMilliseconds); *)
-(*   void unsuspendRedraw(in unsigned long suspendHandleID); *)
-(*   void unsuspendRedrawAll(); *)
-(*   void forceRedraw(); *)
-(*   void pauseAnimations(); *)
-(*   void unpauseAnimations(); *)
-(*   boolean animationsPaused(); *)
-(*   float getCurrentTime(); *)
-(*   void setCurrentTime(in float seconds); *)
-(*   NodeList getIntersectionList(in SVGRect rect, in SVGElement referenceElement); *)
-(*   NodeList getEnclosureList(in SVGRect rect, in SVGElement referenceElement); *)
-(*   boolean checkIntersection(in SVGElement element, in SVGRect rect); *)
-(*   boolean checkEnclosure(in SVGElement element, in SVGRect rect); *)
-(*   void deselectAll(); *)
-(*   SVGNumber createSVGNumber(); *)
-(*   SVGLength createSVGLength(); *)
-(*   SVGAngle createSVGAngle(); *)
-(*   SVGPoint createSVGPoint(); *)
-(*   SVGMatrix createSVGMatrix(); *)
-(*   SVGRect createSVGRect(); *)
-(*   SVGTransform createSVGTransform(); *)
-(*   SVGTransform createSVGTransformFromMatrix(in SVGMatrix matrix); *)
-(*   Element getElementById(in DOMString elementId); *)
-(* }; *)
 
 (* interface SVGGElement : SVGElement, *)
 (*                         SVGTests, *)
@@ -1441,10 +1452,38 @@ class type metadataElement = element
 (* }; *)
 
 let createElement (doc : document t) name =
-  doc##createElementNS(Js.string xmlns,Js.string name)
+  doc##createElementNS(xmlns, Js.string name)
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 
 let createSvg doc : svgElement t = unsafeCreateElement doc "svg"
 let createG doc : gElement t = unsafeCreateElement doc "g"
 let createTextElement doc : textElement t = unsafeCreateElement doc "text"
 let createLineElement doc : lineElement t = unsafeCreateElement doc "line"
+
+(****)
+
+let svg_element : element t constr = Js.Unsafe.global ## _SVGElement
+
+let getElementById id : element t =
+  Js.Opt.case (Js.Unsafe.global##document##getElementById (Js.string id))
+    (fun () -> raise Not_found)
+    (fun e -> if Js.instanceof e svg_element then e else raise Not_found)
+
+module CoerceTo = struct
+  let element (e : #Dom.node Js.t) : element Js.t Js.opt =
+    if Js.instanceof e svg_element then
+      Js.some (Js.Unsafe.coerce e)
+    else
+      Js.null
+
+  let unsafeCoerce tag (e : #element t) =
+    if e##tagName##toLowerCase() == Js.string tag then
+      Js.some (Js.Unsafe.coerce e)
+    else
+      Js.null
+
+  let svg e : svgElement t opt = unsafeCoerce "svg" e
+  let g e : gElement t opt = unsafeCoerce "g" e
+  let text e : textElement t opt = unsafeCoerce "text" e
+  let line e : lineElement t opt = unsafeCoerce "line" e
+end
