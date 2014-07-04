@@ -228,7 +228,7 @@ module Version = struct
   let compint (a : int) b = compare a b
 
   let rec compare v v' = match v,v' with
-    | [x],[y] -> 0
+    | [x],[y] -> compint x y
     | [],[] -> 0
     | [],y::_ -> compint 0 y
     | x::_,[] -> compint x 0
