@@ -12,51 +12,95 @@ let xmlns = "http://www.w3.org/2000/svg"
 (* }; *)
 
 type svg_error =
-  | SVG_WRONG_TYPE_ERR
-  | SVG_INVALID_VALUE_ERR
-  | SVG_MATRIX_NOT_INVERTABLE
-
-
+  | WRONG_TYPE_ERR
+  | INVALID_VALUE_ERR
+  | MATRIX_NOT_INVERTABLE
 
 type lengthUnitType =
-  | SVG_LENGTHTYPE_UNKNOWN
-  | SVG_LENGTHTYPE_NUMBER
-  | SVG_LENGTHTYPE_PERCENTAGE
-  | SVG_LENGTHTYPE_EMS
-  | SVG_LENGTHTYPE_EXS
-  | SVG_LENGTHTYPE_PX
-  | SVG_LENGTHTYPE_CM
-  | SVG_LENGTHTYPE_MM
-  | SVG_LENGTHTYPE_IN
-  | SVG_LENGTHTYPE_PT
-  | SVG_LENGTHTYPE_PC
+  | LENGTHTYPE_UNKNOWN
+  | LENGTHTYPE_NUMBER
+  | LENGTHTYPE_PERCENTAGE
+  | LENGTHTYPE_EMS
+  | LENGTHTYPE_EXS
+  | LENGTHTYPE_PX
+  | LENGTHTYPE_CM
+  | LENGTHTYPE_MM
+  | LENGTHTYPE_IN
+  | LENGTHTYPE_PT
+  | LENGTHTYPE_PC
 
 (*   // Angle Unit Types *)
 type angleUnitType =
-  | SVG_ANGLETYPE_UNKNOWN
-  | SVG_ANGLETYPE_UNSPECIFIED
-  | SVG_ANGLETYPE_DEG
-  | SVG_ANGLETYPE_RAD
-  | SVG_ANGLETYPE_GRAD
+  | ANGLETYPE_UNKNOWN
+  | ANGLETYPE_UNSPECIFIED
+  | ANGLETYPE_DEG
+  | ANGLETYPE_RAD
+  | ANGLETYPE_GRAD
 
 (*   // Color Types *)
 type colorType =
-  | SVG_COLORTYPE_UNKNOWN
-  | SVG_COLORTYPE_RGBCOLOR
-  | SVG_COLORTYPE_RGBCOLOR_ICCCOLOR
-  | SVG_COLORTYPE_CURRENTCOLOR
+  | COLORTYPE_UNKNOWN
+  | COLORTYPE_RGBCOLOR
+  | COLORTYPE_RGBCOLOR_ICCCOLOR
+  | COLORTYPE_CURRENTCOLOR
+
+type alignmentType =
+  | PRESERVEASPECTRATIO_UNKNOWN
+  | PRESERVEASPECTRATIO_NONE
+  | PRESERVEASPECTRATIO_XMINYMIN
+  | PRESERVEASPECTRATIO_XMIDYMIN
+  | PRESERVEASPECTRATIO_XMAXYMIN
+  | PRESERVEASPECTRATIO_XMINYMID
+  | PRESERVEASPECTRATIO_XMIDYMID
+  | PRESERVEASPECTRATIO_XMAXYMID
+  | PRESERVEASPECTRATIO_XMINYMAX
+  | PRESERVEASPECTRATIO_XMIDYMAX
+  | PRESERVEASPECTRATIO_XMAXYMAX
+
+type meetOrSliceType =
+  | MEETORSLICE_UNKNOWN
+  | MEETORSLICE_MEET
+  | MEETORSLICE_SLICE
+
+type transformType =
+  | TRANSFORM_UNKNOWN
+  | TRANSFORM_MATRIX
+  | TRANSFORM_TRANSLATE
+  | TRANSFORM_SCALE
+  | TRANSFORM_ROTATE
+  | TRANSFORM_SKEWX
+  | TRANSFORM_SKEWY
+
+type lengthAdjust =
+  | LENGTHADJUST_UNKNOWN
+  | LENGTHADJUST_SPACING
+  | LENGTHADJUST_SPACINGANDGLYPHS
 
 (* interface SVGUnitTypes { *)
 type unitType =
-  | SVG_UNIT_TYPE_UNKNOWN
-  | SVG_UNIT_TYPE_USERSPACEONUSE
-  | SVG_UNIT_TYPE_OBJECTBOUNDINGBOX
+  | UNIT_TYPE_UNKNOWN
+  | UNIT_TYPE_USERSPACEONUSE
+  | UNIT_TYPE_OBJECTBOUNDINGBOX
 
-class type ['a] svgAnimated = object
+(****)
+
+class type ['a] animated = object
   method baseVal : 'a prop
   method animVal : 'a prop
 end
 
+class type ['a] list = object
+  method numberOfItems : int readonly_prop
+  method clear : unit meth
+  method initialize : 'a -> 'a meth
+  method getItem : int -> 'a meth
+  method insertItemBefore : 'a -> int -> 'a meth
+  method replaceItem : 'a -> int -> 'a meth
+  method removeItem : int -> 'a meth
+  method appendItem :  'a -> 'a meth
+end
+
+(****)
 
 (* interface SVGElement : Element { *)
 class type element = object
@@ -68,22 +112,13 @@ class type element = object
 end
 
 (* interface SVGAnimatedBoolean { *)
+and animatedString = [js_string t] animated
+
 (* interface SVGAnimatedString { *)
+and animatedBoolean = [bool t] animated
 
-and svgAnimatedString = [js_string t] svgAnimated
-and svgAnimatedBool = [bool t] svgAnimated
 (* interface SVGStringList { *)
-
-(*   readonly attribute unsigned long numberOfItems; *)
-
-(*   void clear() raises(DOMException); *)
-(*   DOMString initialize(in DOMString newItem) raises(DOMException); *)
-(*   DOMString getItem(in unsigned long index) raises(DOMException); *)
-(*   DOMString insertItemBefore(in DOMString newItem, in unsigned long index) raises(DOMException); *)
-(*   DOMString replaceItem(in DOMString newItem, in unsigned long index) raises(DOMException); *)
-(*   DOMString removeItem(in unsigned long index) raises(DOMException); *)
-(*   DOMString appendItem(in DOMString newItem) raises(DOMException); *)
-(* }; *)
+and stringList = [js_string t] list
 
 (* interface SVGAnimatedEnumeration { *)
 (*            attribute unsigned short baseVal setraises(DOMException); *)
@@ -100,30 +135,16 @@ and svgAnimatedBool = [bool t] svgAnimated
 (* }; *)
 
 (* interface SVGAnimatedNumber { *)
-(*            attribute float baseVal setraises(DOMException); *)
-(*   readonly attribute float animVal; *)
-(* }; *)
+and animatedNumber = [float] animated
 
 (* interface SVGNumberList { *)
-
-(*   readonly attribute unsigned long numberOfItems; *)
-
-(*   void clear() raises(DOMException); *)
-(*   SVGNumber initialize(in SVGNumber newItem) raises(DOMException); *)
-(*   SVGNumber getItem(in unsigned long index) raises(DOMException); *)
-(*   SVGNumber insertItemBefore(in SVGNumber newItem, in unsigned long index) raises(DOMException); *)
-(*   SVGNumber replaceItem(in SVGNumber newItem, in unsigned long index) raises(DOMException); *)
-(*   SVGNumber removeItem(in unsigned long index) raises(DOMException); *)
-(*   SVGNumber appendItem(in SVGNumber newItem) raises(DOMException); *)
-(* }; *)
+and numberList = [number t] list
 
 (* interface SVGAnimatedNumberList { *)
-(*   readonly attribute SVGNumberList baseVal; *)
-(*   readonly attribute SVGNumberList animVal; *)
-(* }; *)
+and animatedNumberList = [numberList t] animated
 
 (* interface SVGLength { *)
-and svgLength = object
+and length = object
   method unitType : lengthUnitType readonly_prop
   method value : float prop
   method valueInSpecifiedUnits : float prop
@@ -131,28 +152,15 @@ and svgLength = object
   method newValueSpecifiedUnits : lengthUnitType -> float -> unit meth
   method convertToSpecifiedUnits : lengthUnitType -> unit meth
 end
+
 (* interface SVGAnimatedLength { *)
-and animatedLength = object
-  inherit [svgLength] svgAnimated
-end
+and animatedLength =  [length] animated
 
 (* interface SVGLengthList { *)
-
-(*   readonly attribute unsigned long numberOfItems; *)
-
-(*   void clear() raises(DOMException); *)
-(*   SVGLength initialize(in SVGLength newItem) raises(DOMException); *)
-(*   SVGLength getItem(in unsigned long index) raises(DOMException); *)
-(*   SVGLength insertItemBefore(in SVGLength newItem, in unsigned long index) raises(DOMException); *)
-(*   SVGLength replaceItem(in SVGLength newItem, in unsigned long index) raises(DOMException); *)
-(*   SVGLength removeItem(in unsigned long index) raises(DOMException); *)
-(*   SVGLength appendItem(in SVGLength newItem) raises(DOMException); *)
-(* }; *)
+and lengthList = [length t] list
 
 (* interface SVGAnimatedLengthList { *)
-(*   readonly attribute SVGLengthList baseVal; *)
-(*   readonly attribute SVGLengthList animVal; *)
-(* }; *)
+and animatedLengthList = [lengthList t] animated
 
 (* interface SVGAngle { *)
 and angle = object
@@ -171,6 +179,7 @@ end
 
 (* interface SVGColor : CSSValue { *)
 and color = object
+  (* XXX inherit cssValue *)
   method colorType : colorType readonly_prop
 (*   readonly attribute RGBColor rgbColor; *)
 (*   readonly attribute SVGICCColor iccColor; *)
@@ -195,13 +204,11 @@ and rect = object
 end
 
 (* interface SVGAnimatedRect { *)
-(*   readonly attribute SVGRect baseVal; *)
-(*   readonly attribute SVGRect animVal; *)
-(* }; *)
+and animatedRect = [rect t] animated
 
 (* interface SVGStylable { *)
 and stylable = object
-  method className : svgAnimatedString readonly_prop
+  method className : animatedString t readonly_prop
   method style : Dom_html.cssStyleDeclaration t readonly_prop
   (*   CSSValue getPresentationAttribute(in DOMString name); *)
 end
@@ -218,17 +225,17 @@ end
 (* }; *)
 
 (* interface SVGTransformable : SVGLocatable { *)
-(*   readonly attribute SVGAnimatedTransformList transform; *)
-(* }; *)
+and transformable = object
+  method transform : animatedTransformList t readonly_prop
+end
 
 (* interface SVGTests { *)
-
-(*   readonly attribute SVGStringList requiredFeatures; *)
-(*   readonly attribute SVGStringList requiredExtensions; *)
-(*   readonly attribute SVGStringList systemLanguage; *)
-
-(*   boolean hasExtension(in DOMString extension); *)
-(* }; *)
+and tests = object
+  method requiredFeatures : stringList readonly_prop
+  method requiredExtensions : stringList readonly_prop
+  method systemLanguage : stringList readonly_prop
+  method hasExtension : js_string t -> bool t meth
+end
 
 (* interface SVGLangSpace { *)
 and langSpace = object
@@ -237,13 +244,15 @@ and langSpace = object
 end
 
 (* interface SVGExternalResourcesRequired { *)
-(*   readonly attribute SVGAnimatedBoolean externalResourcesRequired; *)
-(* }; *)
+and externalResourcesRequired = object
+  method externalResourcesRequired : animatedBoolean t readonly_prop
+end
 
 (* interface SVGFitToViewBox { *)
-(*   readonly attribute SVGAnimatedRect viewBox; *)
-(*   readonly attribute SVGAnimatedPreserveAspectRatio preserveAspectRatio; *)
-(* }; *)
+and fitToViewBox = object
+  method viewBox : animatedRect t readonly_prop
+  method preserveAspectRatio : animatedPreserveAspectRatio t readonly_prop
+end
 
 (* interface SVGZoomAndPan { *)
 
@@ -287,12 +296,13 @@ end
 (*                         DocumentEvent { *)
 and document = object
   inherit [element] Dom.document
+  (*XXX inherit documentEvent *)
 
   method title : js_string t prop
   method referrer : js_string t readonly_prop
   method domain : js_string t prop
   method _URL : js_string t readonly_prop
-  method rootElement : svgElement  t readonly_prop
+  method rootElement : svgElement t readonly_prop
 end
 
 (* interface SVGSVGElement : SVGElement, *)
@@ -321,19 +331,8 @@ and svgElement = object
   method pixelUnitToMillimeterY : float readonly_prop
   method screenPixelUnitToMillimeterX : float readonly_prop
   method screenPixelUnitToMillimeterY : float readonly_prop
+  method useCurrentView : bool t readonly_prop
 end
-(*   readonly attribute SVGAnimatedLength x; *)
-(*   readonly attribute SVGAnimatedLength y; *)
-(*   readonly attribute SVGAnimatedLength width; *)
-(*   readonly attribute SVGAnimatedLength height; *)
-(*            attribute DOMString contentScriptType setraises(DOMException); *)
-(*            attribute DOMString contentStyleType setraises(DOMException); *)
-(*   readonly attribute SVGRect viewport; *)
-(*   readonly attribute float pixelUnitToMillimeterX; *)
-(*   readonly attribute float pixelUnitToMillimeterY; *)
-(*   readonly attribute float screenPixelToMillimeterX; *)
-(*   readonly attribute float screenPixelToMillimeterY; *)
-(*   readonly attribute boolean useCurrentView; *)
 (*   readonly attribute SVGViewSpec currentView; *)
 (*            attribute float currentScale; *)
 (*   readonly attribute SVGPoint currentTranslate; *)
@@ -371,7 +370,12 @@ end
 (*                         SVGTransformable { *)
 and gElement = object
   inherit element
+  inherit tests
+  inherit langSpace
+  inherit externalResourcesRequired
   inherit stylable
+  inherit transformable
+  inherit Dom_html.eventTarget
 end
 
 (* interface SVGDefsElement : SVGElement, *)
@@ -398,14 +402,11 @@ end
 and symbolElement = object
   inherit element
   inherit langSpace
+  inherit externalResourcesRequired
   inherit stylable
+  inherit fitToViewBox
+  inherit Dom_html.eventTarget
 end
-
-(*                              SVGLangSpace, *)
-(*                              SVGExternalResourcesRequired, *)
-(*                              SVGStylable, *)
-(*                              SVGFitToViewBox { *)
-(* }; *)
 
 (* interface SVGUseElement : SVGElement, *)
 (*                           SVGURIReference, *)
@@ -474,12 +475,11 @@ end
 (* }; *)
 
 (* interface SVGPoint { *)
-
-(*   attribute float x setraises(DOMException); *)
-(*   attribute float y setraises(DOMException); *)
-
-(*   SVGPoint matrixTransform(in SVGMatrix matrix); *)
-(* }; *)
+and point = object
+  method x : float readonly_prop
+  method y : float readonly_prop
+  method matrixTransform : matrix t -> point t meth
+end
 
 (* interface SVGPointList { *)
 
@@ -495,98 +495,58 @@ end
 (* }; *)
 
 (* interface SVGMatrix { *)
+and matrix = object
+  method a : float readonly_prop
+  method b : float readonly_prop
+  method c : float readonly_prop
+  method d : float readonly_prop
+  method e : float readonly_prop
+  method f : float readonly_prop
 
-(*   attribute float a setraises(DOMException); *)
-(*   attribute float b setraises(DOMException); *)
-(*   attribute float c setraises(DOMException); *)
-(*   attribute float d setraises(DOMException); *)
-(*   attribute float e setraises(DOMException); *)
-(*   attribute float f setraises(DOMException); *)
-
-(*   SVGMatrix multiply(in SVGMatrix secondMatrix); *)
-(*   SVGMatrix inverse() raises(SVGException); *)
-(*   SVGMatrix translate(in float x, in float y); *)
-(*   SVGMatrix scale(in float scaleFactor); *)
-(*   SVGMatrix scaleNonUniform(in float scaleFactorX, in float scaleFactorY); *)
-(*   SVGMatrix rotate(in float angle); *)
-(*   SVGMatrix rotateFromVector(in float x, in float y) raises(SVGException); *)
-(*   SVGMatrix flipX(); *)
-(*   SVGMatrix flipY(); *)
-(*   SVGMatrix skewX(in float angle); *)
-(*   SVGMatrix skewY(in float angle); *)
-(* }; *)
+  method multiply : matrix t -> matrix t meth
+  method inverse : matrix t meth
+  method translate : float -> float -> matrix t meth
+  method scale : float -> matrix t meth
+  method scaleNonUniform : float -> float -> matrix t meth
+  method rotate : float -> matrix t meth
+  method rotateFromVector : float -> float -> matrix t meth
+  method flipX : matrix t meth
+  method flipY : matrix t meth
+  method skewX : float -> matrix t meth
+  method skewY : float -> matrix t meth
+end
 
 (* interface SVGTransform { *)
-
-(*   // Transform Types *)
-(*   const unsigned short SVG_TRANSFORM_UNKNOWN = 0; *)
-(*   const unsigned short SVG_TRANSFORM_MATRIX = 1; *)
-(*   const unsigned short SVG_TRANSFORM_TRANSLATE = 2; *)
-(*   const unsigned short SVG_TRANSFORM_SCALE = 3; *)
-(*   const unsigned short SVG_TRANSFORM_ROTATE = 4; *)
-(*   const unsigned short SVG_TRANSFORM_SKEWX = 5; *)
-(*   const unsigned short SVG_TRANSFORM_SKEWY = 6; *)
-
-(*   readonly attribute unsigned short type; *)
-(*   readonly attribute SVGMatrix matrix; *)
-(*   readonly attribute float angle; *)
-
-(*   void setMatrix(in SVGMatrix matrix) raises(DOMException); *)
-(*   void setTranslate(in float tx, in float ty) raises(DOMException); *)
-(*   void setScale(in float sx, in float sy) raises(DOMException); *)
-(*   void setRotate(in float angle, in float cx, in float cy) raises(DOMException); *)
-(*   void setSkewX(in float angle) raises(DOMException); *)
-(*   void setSkewY(in float angle) raises(DOMException); *)
-(* }; *)
+and transform = object
+  method _type : transformType readonly_prop
+  method matrix : matrix t readonly_prop
+  method angle : float readonly_prop
+  method setMatrix : matrix t -> unit meth
+  method setTranslate : float -> float -> unit meth
+  method setScale : float -> float -> unit meth
+  method setRotate : float -> float -> float -> unit meth
+  method setSkewX : float -> unit meth
+  method setSkewY : float -> unit meth
+end
 
 (* interface SVGTransformList { *)
-
-(*   readonly attribute unsigned long numberOfItems; *)
-
-(*   void clear() raises(DOMException); *)
-(*   SVGTransform initialize(in SVGTransform newItem) raises(DOMException); *)
-(*   SVGTransform getItem(in unsigned long index) raises(DOMException); *)
-(*   SVGTransform insertItemBefore(in SVGTransform newItem, in unsigned long index) raises(DOMException); *)
-(*   SVGTransform replaceItem(in SVGTransform newItem, in unsigned long index) raises(DOMException); *)
-(*   SVGTransform removeItem(in unsigned long index) raises(DOMException); *)
-(*   SVGTransform appendItem(in SVGTransform newItem) raises(DOMException); *)
-(*   SVGTransform createSVGTransformFromMatrix(in SVGMatrix matrix); *)
-(*   SVGTransform consolidate() raises(DOMException); *)
-(* }; *)
+and transformList = object
+  inherit [transform t] list
+  method createSVGTransformFromMatrix : matrix -> transform t meth
+  method consolidate : transform t meth
+end
 
 (* interface SVGAnimatedTransformList { *)
-(*   readonly attribute SVGTransformList baseVal; *)
-(*   readonly attribute SVGTransformList animVal; *)
-(* }; *)
+and animatedTransformList = [transformList t] animated
 
 (* interface SVGPreserveAspectRatio { *)
-
-(*   // Alignment Types *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_UNKNOWN = 0; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_NONE = 1; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_XMINYMIN = 2; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_XMIDYMIN = 3; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_XMAXYMIN = 4; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_XMINYMID = 5; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_XMIDYMID = 6; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_XMAXYMID = 7; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_XMINYMAX = 8; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_XMIDYMAX = 9; *)
-(*   const unsigned short SVG_PRESERVEASPECTRATIO_XMAXYMAX = 10; *)
-
-(*   // Meet-or-slice Types *)
-(*   const unsigned short SVG_MEETORSLICE_UNKNOWN = 0; *)
-(*   const unsigned short SVG_MEETORSLICE_MEET = 1; *)
-(*   const unsigned short SVG_MEETORSLICE_SLICE = 2; *)
-
-(*   attribute unsigned short align setraises(DOMException); *)
-(*   attribute unsigned short meetOrSlice setraises(DOMException); *)
-(* }; *)
+and preserveAspectRatio = object
+  method align : alignmentType readonly_prop
+  method meetOrSlice : meetOrSliceType readonly_prop
+end
 
 (* interface SVGAnimatedPreserveAspectRatio { *)
-(*   readonly attribute SVGPreserveAspectRatio baseVal; *)
-(*   readonly attribute SVGPreserveAspectRatio animVal; *)
-(* }; *)
+and animatedPreserveAspectRatio = [preserveAspectRatio t] animated
 
 (* interface SVGPathSeg { *)
 
@@ -828,11 +788,19 @@ end
 (*                            SVGExternalResourcesRequired, *)
 (*                            SVGStylable, *)
 (*                            SVGTransformable { *)
-(*   readonly attribute SVGAnimatedLength x1; *)
-(*   readonly attribute SVGAnimatedLength y1; *)
-(*   readonly attribute SVGAnimatedLength x2; *)
-(*   readonly attribute SVGAnimatedLength y2; *)
-(* }; *)
+class type lineElement = object
+  inherit element
+  inherit tests
+  inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  inherit transformable
+  inherit Dom_html.eventTarget
+  method x1 : animatedLength t readonly_prop
+  method y1 : animatedLength t readonly_prop
+  method x2 : animatedLength t readonly_prop
+  method y2 : animatedLength t readonly_prop
+end
 
 (* interface SVGAnimatedPoints { *)
 (*   readonly attribute SVGPointList points; *)
@@ -862,37 +830,42 @@ end
 (*                                   SVGLangSpace, *)
 (*                                   SVGExternalResourcesRequired, *)
 (*                                   SVGStylable { *)
-
-(*   // lengthAdjust Types *)
-(*   const unsigned short LENGTHADJUST_UNKNOWN = 0; *)
-(*   const unsigned short LENGTHADJUST_SPACING = 1; *)
-(*   const unsigned short LENGTHADJUST_SPACINGANDGLYPHS = 2; *)
-
-(*   readonly attribute SVGAnimatedLength textLength; *)
-(*   readonly attribute SVGAnimatedEnumeration lengthAdjust; *)
-
-(*   long getNumberOfChars(); *)
-(*   float getComputedTextLength(); *)
-(*   float getSubStringLength(in unsigned long charnum, in unsigned long nchars) raises(DOMException); *)
-(*   SVGPoint getStartPositionOfChar(in unsigned long charnum) raises(DOMException); *)
-(*   SVGPoint getEndPositionOfChar(in unsigned long charnum) raises(DOMException); *)
-(*   SVGRect getExtentOfChar(in unsigned long charnum) raises(DOMException); *)
-(*   float getRotationOfChar(in unsigned long charnum) raises(DOMException); *)
-(*   long getCharNumAtPosition(in SVGPoint point); *)
-(*   void selectSubString(in unsigned long charnum, in unsigned long nchars) raises(DOMException); *)
-(* }; *)
+and textContentElement = object
+  inherit element
+  inherit tests
+  inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  inherit Dom_html.eventTarget
+  method textLength : animatedLength t readonly_prop
+  method lengthAdjust : lengthAdjust animated t readonly_prop
+  method getNumberOfChars : int meth
+  method getComputedTextLength : float meth
+  method getSubStringLength : int -> int -> float meth
+  method getStartPositionOfChar : int -> point t meth
+  method getEndPositionOfChar : int -> point t meth
+  method getExtentOfChar : int -> rect t meth
+  method getRotationOfChar : int -> float meth
+  method getCharNumAtPosition : point -> int meth
+  method selectSubString : int -> int -> unit meth
+end
 
 (* interface SVGTextPositioningElement : SVGTextContentElement { *)
-(*   readonly attribute SVGAnimatedLengthList x; *)
-(*   readonly attribute SVGAnimatedLengthList y; *)
-(*   readonly attribute SVGAnimatedLengthList dx; *)
-(*   readonly attribute SVGAnimatedLengthList dy; *)
-(*   readonly attribute SVGAnimatedNumberList rotate; *)
-(* }; *)
+and textPositioningElement = object
+  inherit textContentElement
+  method x : animatedLengthList t readonly_prop
+  method y : animatedLengthList t readonly_prop
+  method dx : animatedLengthList t readonly_prop
+  method dy : animatedLengthList t readonly_prop
+  method rotate : animatedNumberList t readonly_prop
+end
 
 (* interface SVGTextElement : SVGTextPositioningElement, *)
 (*                            SVGTransformable { *)
-(* }; *)
+and textElement = object
+  inherit textPositioningElement
+  inherit transformable
+end
 
 (* interface SVGTSpanElement : SVGTextPositioningElement { *)
 (* }; *)
@@ -1467,8 +1440,11 @@ class type metadataElement = element
 
 (* }; *)
 
-let createElement (doc : document t) name = doc##createElementNS(Js.string xmlns,Js.string name)
+let createElement (doc : document t) name =
+  doc##createElementNS(Js.string xmlns,Js.string name)
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 
 let createSvg doc : svgElement t = unsafeCreateElement doc "svg"
-let createG doc : element t = unsafeCreateElement doc "g"
+let createG doc : gElement t = unsafeCreateElement doc "g"
+let createTextElement doc : textElement t = unsafeCreateElement doc "text"
+let createLineElement doc : lineElement t = unsafeCreateElement doc "line"
