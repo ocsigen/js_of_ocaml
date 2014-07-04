@@ -529,7 +529,6 @@ class type textAreaElement = object ('self)
   method onfocus : ('self t, event t) event_listener prop
 end
 
-class type textElement = element
 
 class type buttonElement = object
   inherit element
@@ -1428,7 +1427,7 @@ val createFrame : document t -> frameElement t
 val createIframe : document t -> iFrameElement t
 val createAudio : document t -> audioElement t
 val createVideo : document t -> videoElement t
-val createText : document t -> textElement t
+
 
 exception Canvas_not_available
 val createCanvas : document t -> canvasElement t
@@ -1497,7 +1496,6 @@ type taggedElement =
   | Table of tableElement t
   | Tbody of tableSectionElement t
   | Td of tableColElement t
-  | Text of textElement t
   | Textarea of textAreaElement t
   | Tfoot of tableSectionElement t
   | Th of tableColElement t
@@ -1585,7 +1583,6 @@ module CoerceTo : sig
   val table : #element t -> tableElement t opt
   val tbody : #element t -> tableSectionElement t opt
   val td : #element t -> tableColElement t opt
-  val text : #element t -> textElement t opt
   val textarea : #element t -> textAreaElement t opt
   val tfoot : #element t -> tableSectionElement t opt
   val th : #element t -> tableColElement t opt

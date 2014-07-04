@@ -581,7 +581,6 @@ class type textAreaElement = object ('self)
   method onfocus : ('self t, event t) event_listener prop
 end
 
-class type textElement = element
 
 class type buttonElement = object
   inherit element
@@ -1392,7 +1391,7 @@ let createFrame doc : frameElement t = unsafeCreateElement doc "frame"
 let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
 let createAudio doc : audioElement t = unsafeCreateElement doc "audio"
 let createVideo doc : audioElement t = unsafeCreateElement doc "video"
-let createText doc = createElement doc "text"
+
 
 exception Canvas_not_available
 
@@ -1629,7 +1628,6 @@ type taggedElement =
   | Table of tableElement t
   | Tbody of tableSectionElement t
   | Td of tableColElement t
-  | Text of textElement t
   | Textarea of textAreaElement t
   | Tfoot of tableSectionElement t
   | Th of tableColElement t
@@ -1759,7 +1757,6 @@ let tagged (e : #element t) =
         | "table" -> Table (Js.Unsafe.coerce e)
         | "tbody" -> Tbody (Js.Unsafe.coerce e)
         | "td" -> Td (Js.Unsafe.coerce e)
-	| "text" -> Text (Js.Unsafe.coerce e)
         | "textarea" -> Textarea (Js.Unsafe.coerce e)
         | "tfoot" -> Tfoot (Js.Unsafe.coerce e)
         | "th" -> Th (Js.Unsafe.coerce e)
