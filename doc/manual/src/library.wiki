@@ -150,6 +150,7 @@ it can be called from Javascript.
 
 To call an OCaml function from Javascript, follow this example:
 <<code language="ocaml"|
+
 Js.Unsafe.global##plop <- Js.wrap_callback f
 >>
 
@@ -160,7 +161,26 @@ Js.Unsafe.global##plop <-
                    ("g", Js.Unsafe.inject (Js.wrap_meth_callback g)) |]
 >>
 
+Variant: create an empty JavaScript object (typed or not) and
+set its properties afterward
 
+<<code language="ocaml"|
+
+(* Optionnal : type the exported JavaScript object. *)
+class type exported = object
+  method addFloat : (float -> float -> float) callback writeonly_prop
+  method printInt : (int -> unit) callback writeonly_prop
+end
+
+let exported : exported Js.t =
+  let empty = Js.Unsafe.obj [||] in
+  Js.Unsafe.global##exportModuleA <- empty;
+  empty
+
+let _ =
+  exported##printInt <- Js.wrap_callback (fun i -> print_int i );
+  exported##addFloat <- Js.wrap_callback (fun x y -> x +. y)
+>>
 
 == IO ==
 

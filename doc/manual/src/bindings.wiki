@@ -74,13 +74,13 @@ extended elements, or wrap the unsafe functions inside a getter and setter.
 
 Write in .ml and in .mli:
 
-<<code language="ocaml"
+<<code language="ocaml"|
 class type my_js_type = object
 
   (* read only property, read value with t##prop1 *)
   method prop1 : int readonly_prop
 
-  (* write only property, write value wiht t##prop2 <- 3.14 *)
+  (* write only property, write value with t##prop2 <- 3.14 *)
   method prop2 : float writeonly_prop
 
   (* both read and write *)
@@ -90,7 +90,7 @@ class type my_js_type = object
      with an underscore. *)
   method _Array : ... (* to access the JavasScript property or method Array *)
 
-  (* Define two method with differant types, that will translate to
+  (* Define two methods with differant types, that translate to
      the same JavaScript method. *)
   method my_fun_int : int -> unit meth
   method my_fun_string : js_string t -> unit meth
