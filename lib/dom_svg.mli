@@ -18,12 +18,15 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+(** DOM SVG binding
+
+This is a partial binding to the DOM SVG API.
+*)
+
 open Js
 
-let xmlns = Js.string "http://www.w3.org/2000/svg"
-
-(* translate spec from http://www.w3.org/TR/SVG/idl.html *)
-(* http://www.w3.org/TR/SVG/struct.html *)
+(** {2 Types} *)
+val xmlns : js_string t
 
 type error_code =
   | WRONG_TYPE_ERR
@@ -180,6 +183,7 @@ class type ['a] list = object
 end
 
 (****)
+(** {2 Elements } *)
 
 (* interface SVGElement *)
 class type element = object
@@ -1446,180 +1450,169 @@ class type foreignObjectElement = object
   method height : animatedLength t readonly_prop
 end
 
-let createElement (doc : document t) name =
-  doc##createElementNS(xmlns, Js.string name)
-let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
+(** {2 Helper functions for creating Svg elements} *)
 
-let createA doc : aElement t = unsafeCreateElement doc "a"
-let createAltGlyph doc : altGlyphElement t = unsafeCreateElement doc "altglyph"
-let createAltGlyphDef doc : altGlyphDefElement t = unsafeCreateElement doc "altglyphdef"
-let createAltGlyphItem doc : altGlyphItemElement t = unsafeCreateElement doc "altglyphitem"
-let createAnimate doc : animateElement t = unsafeCreateElement doc "animate"
-let createAnimateColor doc : animateColorElement t = unsafeCreateElement doc "animatecolor"
-let createAnimateMotion doc : animateMotionElement t = unsafeCreateElement doc "animatemotion"
-let createAnimateTransform doc : animateTransformElement t = unsafeCreateElement doc "animatetransform"
+val createElement : document t -> string -> element t
 
-let createCircle doc : circleElement t = unsafeCreateElement doc "circle"
-let createClipPath doc : clipPathElement t = unsafeCreateElement doc "clippath"
-(* let createColorProfile doc : colorProfile t = unsafeCreateElement doc "color-profile" *)
-let createCursor doc : cursorElement t = unsafeCreateElement doc "cursor"
+val createA : document t -> aElement t
+val createAltGlyph : document t -> altGlyphElement t
+val createAltGlyphDef : document t -> altGlyphDefElement t
+val createAltGlyphItem : document t -> altGlyphItemElement t
+val createAnimate : document t -> animateElement t
+val createAnimateColor : document t -> animateColorElement t
+val createAnimateMotion : document t -> animateMotionElement t
+val createAnimateTransform : document t -> animateTransformElement t
 
-let createDefs doc : defsElement t = unsafeCreateElement doc "defs"
-let createDesc doc : descElement t = unsafeCreateElement doc "desc"
+val createCircle : document t -> circleElement t
+val createClipPath : document t -> clipPathElement t
+(* val createColorProfile : document t -> colorProfile t *)
+val createCursor : document t -> cursorElement t
 
-let createEllipse doc : ellipseElement t = unsafeCreateElement doc "ellipse"
+val createDefs : document t -> defsElement t
+val createDesc : document t -> descElement t
 
-(* let createFe* *)
-let createFilter doc : filterElement t = unsafeCreateElement doc "filter"
-let createFont doc : fontElement t = unsafeCreateElement doc "font"
-let createFontFace doc : fontElement t = unsafeCreateElement doc "font-face"
-let createFontFaceFormat doc : fontElement t = unsafeCreateElement doc "font-face-format"
-let createFontFaceName doc : fontElement t = unsafeCreateElement doc "font-face-name"
-let createFontFaceSrc doc : fontElement t = unsafeCreateElement doc "font-face-src"
-let createFontFaceUri doc : fontElement t = unsafeCreateElement doc "font-face-uri"
-let createForeignObject doc : foreignObjectElement t = unsafeCreateElement doc "foreignobject"
+val createEllipse : document t -> ellipseElement t
 
-let createG doc : gElement t = unsafeCreateElement doc "g"
-let createGlyph doc : glyphElement t = unsafeCreateElement doc "glyph"
-let createGlyphRef doc : glyphElement t = unsafeCreateElement doc "glyphref"
+(* val createFe* *)
+val createFilter : document t -> filterElement t
+val createFont : document t -> fontElement t
+val createFontFace : document t -> fontElement t
+val createFontFaceFormat : document t -> fontElement t
+val createFontFaceName : document t -> fontElement t
+val createFontFaceSrc : document t -> fontElement t
+val createFontFaceUri : document t -> fontElement t
+val createForeignObject : document t -> foreignObjectElement t
 
-let createhkern doc : element t = unsafeCreateElement doc "hkern"
+val createG : document t -> gElement t
+val createGlyph : document t -> glyphElement t
+val createGlyphRef : document t -> glyphElement t
 
-let createImage doc : imageElement t = unsafeCreateElement doc "image"
+val createhkern : document t -> element t
 
-let createLineElement doc : lineElement t = unsafeCreateElement doc "line"
-let createLinearElement doc : linearGradientElement t = unsafeCreateElement doc "lineargradient"
+val createImage : document t -> imageElement t
 
-(* let createMarker doc : markerElement *)
-let createMask doc : maskElement t = unsafeCreateElement doc "mask"
-let createMetaData doc : metadataElement t = unsafeCreateElement doc "metadata"
-let createMissingGlyph doc : glyphElement t = unsafeCreateElement doc "missing-glyph"
-let createMPath doc : mPathElement t = unsafeCreateElement doc "mpath"
+val createLineElement : document t -> lineElement t
+val createLinearElement : document t -> linearGradientElement t
 
-
-let createPath doc : pathElement t = unsafeCreateElement doc "path"
-let createParttern doc : patternElement t = unsafeCreateElement doc "parttern"
-let createPolygon doc : polygonElement t = unsafeCreateElement doc "polygon"
-let createPolyline doc : polyLineElement t = unsafeCreateElement doc "polyline"
-
-let createRadialgradient doc : radialGradientElement t = unsafeCreateElement doc "radialgradient"
-let createRect doc : rectElement t = unsafeCreateElement doc "rect"
-
-let createScript doc : scriptElement t = unsafeCreateElement doc "script"
-let createSet doc : setElement t = unsafeCreateElement doc "set"
-let createStop doc : stopElement t = unsafeCreateElement doc "stop"
-let createStyle doc : styleElement t = unsafeCreateElement doc "style"
-let createSvg doc : svgElement t = unsafeCreateElement doc "svg"
-let createSwitch doc : switchElement t = unsafeCreateElement doc "switch"
-let createSymbol doc : symbolElement t = unsafeCreateElement doc "symbol"
+(* val createMarker : document t -> markerElement *)
+val createMask : document t -> maskElement t
+val createMetaData : document t -> metadataElement t
+val createMissingGlyph : document t -> glyphElement t
+val createMPath : document t -> mPathElement t
 
 
-let createTextElement doc : textElement t = unsafeCreateElement doc "text"
-let createTextpath doc : textPathElement t = unsafeCreateElement doc "textpath"
-let createTitle doc : titleElement t = unsafeCreateElement doc "title"
-let createTref doc : trefElement t = unsafeCreateElement doc "tref"
-let createTspan doc : tspanElement t = unsafeCreateElement doc "tspan"
+val createPath : document t -> pathElement t
+val createParttern : document t -> patternElement t
+val createPolygon : document t -> polygonElement t
+val createPolyline : document t -> polyLineElement t
 
-let createUse doc : useElement t = unsafeCreateElement doc "use"
+val createRadialgradient : document t -> radialGradientElement t
+val createRect : document t -> rectElement t
 
-let createView doc : viewElement t = unsafeCreateElement doc "view"
-let createvkern doc : element t = unsafeCreateElement doc "vkern"
+val createScript : document t -> scriptElement t
+val createSet : document t -> setElement t
+val createStop : document t -> stopElement t
+val createStyle : document t -> styleElement t
+val createSvg : document t -> svgElement t
+val createSwitch : document t -> switchElement t
+val createSymbol : document t -> symbolElement t
+
+
+val createTextElement : document t -> textElement t
+val createTextpath : document t -> textPathElement t
+val createTitle : document t -> titleElement t
+val createTref : document t -> trefElement t
+val createTspan : document t -> tspanElement t
+
+val createUse : document t -> useElement t
+
+val createView : document t -> viewElement t
+val createvkern : document t -> element t
 
 (****)
 
-let svg_element : element t constr = Js.Unsafe.global ## _SVGElement
+val svg_element : element t constr
 
-let getElementById id : element t =
-  Js.Opt.case (Js.Unsafe.global##document##getElementById (Js.string id))
-    (fun () -> raise Not_found)
-    (fun e -> if Js.instanceof e svg_element then e else raise Not_found)
-
-module CoerceTo = struct
-  let element (e : #Dom.node Js.t) : element Js.t Js.opt =
-    if Js.instanceof e svg_element then
-      Js.some (Js.Unsafe.coerce e)
-    else
-      Js.null
-
-  let unsafeCoerce (e : #element t) tag =
-    if e##tagName##toLowerCase() == Js.string tag then
-      Js.some (Js.Unsafe.coerce e)
-    else
-      Js.null
-
-  let a e : aElement t opt = unsafeCoerce e "a"
-  let altGlyph e : altGlyphElement t opt = unsafeCoerce e "altglyph"
-  let altGlyphDef e : altGlyphDefElement t opt = unsafeCoerce e "altglyphdef"
-  let altGlyphItem e : altGlyphItemElement t opt = unsafeCoerce e "altglyphitem"
-  let animate e : animateElement t opt = unsafeCoerce e "animate"
-  let animateColor e : animateColorElement t opt = unsafeCoerce e "animatecolor"
-  let animateMotion e : animateMotionElement t opt = unsafeCoerce e "animatemotion"
-  let animateTransform e : animateTransformElement t opt = unsafeCoerce e "animatetransform"
-
-  let circle e : circleElement t opt = unsafeCoerce e "circle"
-  let clipPath e : clipPathElement t opt = unsafeCoerce e "clippath"
-  (* let ColorProfile e : colorProfile t opt = unsafeCoerce e "color-profile" *)
-  let cursor e : cursorElement t opt = unsafeCoerce e "cursor"
-
-  let defs e : defsElement t opt = unsafeCoerce e "defs"
-  let desc e : descElement t opt = unsafeCoerce e "desc"
-
-  let ellipse e : ellipseElement t opt = unsafeCoerce e "ellipse"
-
-  (* let Fe* *)
-  let filter e : filterElement t opt = unsafeCoerce e "filter"
-  let font e : fontElement t opt = unsafeCoerce e "font"
-  let fontFace e : fontElement t opt = unsafeCoerce e "font-face"
-  let fontFaceFormat e : fontElement t opt = unsafeCoerce e "font-face-format"
-  let fontFaceName e : fontElement t opt = unsafeCoerce e "font-face-name"
-  let fontFaceSrc e : fontElement t opt = unsafeCoerce e "font-face-src"
-  let fontFaceUri e : fontElement t opt = unsafeCoerce e "font-face-uri"
-  let foreignObject e : foreignObjectElement t opt = unsafeCoerce e "foreignobject"
-
-  let g e : gElement t opt = unsafeCoerce e "g"
-  let glyph e : glyphElement t opt = unsafeCoerce e "glyph"
-  let glyphRef e : glyphElement t opt = unsafeCoerce e "glyphref"
-
-  let hkern e : element t opt = unsafeCoerce e "hkern"
-
-  let image e : imageElement t opt = unsafeCoerce e "image"
-
-  let lineElement e : lineElement t opt = unsafeCoerce e "line"
-  let linearElement e : linearGradientElement t opt = unsafeCoerce e "lineargradient"
-
-  (* let Marker e : markerElement *)
-  let mask e : maskElement t opt = unsafeCoerce e "mask"
-  let metaData e : metadataElement t opt = unsafeCoerce e "metadata"
-  let missingGlyph e : glyphElement t opt = unsafeCoerce e "missing-glyph"
-  let mPath e : mPathElement t opt = unsafeCoerce e "mpath"
+val getElementById : string -> element t
 
 
-  let path e : pathElement t opt = unsafeCoerce e "path"
-  let parttern e : patternElement t opt = unsafeCoerce e "parttern"
-  let polygon e : polygonElement t opt = unsafeCoerce e "polygon"
-  let polyline e : polyLineElement t opt = unsafeCoerce e "polyline"
+(** {2 Coercion functions} *)
+module CoerceTo : sig
+  val element : #Dom.node t -> element t opt
 
-  let radialgradient e : radialGradientElement t opt = unsafeCoerce e "radialgradient"
-  let rect e : rectElement t opt = unsafeCoerce e "rect"
+  val a : #element t -> aElement t opt
+  val altGlyph : #element t -> altGlyphElement t opt
+  val altGlyphDef : #element t -> altGlyphDefElement t opt
+  val altGlyphItem : #element t -> altGlyphItemElement t opt
+  val animate : #element t -> animateElement t opt
+  val animateColor : #element t -> animateColorElement t opt
+  val animateMotion : #element t -> animateMotionElement t opt
+  val animateTransform : #element t -> animateTransformElement t opt
 
-  let script e : scriptElement t opt = unsafeCoerce e "script"
-  let set e : setElement t opt = unsafeCoerce e "set"
-  let stop e : stopElement t opt = unsafeCoerce e "stop"
-  let style e : styleElement t opt = unsafeCoerce e "style"
-  let svg e : svgElement t opt = unsafeCoerce e "svg"
-  let switch e : switchElement t opt = unsafeCoerce e "switch"
-  let symbol e : symbolElement t opt = unsafeCoerce e "symbol"
+  val circle : #element t -> circleElement t opt
+  val clipPath : #element t -> clipPathElement t opt
+  (* val ColorProfile : #element t -> colorProfile t opt *)
+  val cursor : #element t -> cursorElement t opt
+
+  val defs : #element t -> defsElement t opt
+  val desc : #element t -> descElement t opt
+
+  val ellipse : #element t -> ellipseElement t opt
+
+  (* val Fe* *)
+  val filter : #element t -> filterElement t opt
+  val font : #element t -> fontElement t opt
+  val fontFace : #element t -> fontElement t opt
+  val fontFaceFormat : #element t -> fontElement t opt
+  val fontFaceName : #element t -> fontElement t opt
+  val fontFaceSrc : #element t -> fontElement t opt
+  val fontFaceUri : #element t -> fontElement t opt
+  val foreignObject : #element t -> foreignObjectElement t opt
+
+  val g : #element t -> gElement t opt
+  val glyph : #element t -> glyphElement t opt
+  val glyphRef : #element t -> glyphElement t opt
+
+  val hkern : #element t -> element t opt
+
+  val image : #element t -> imageElement t opt
+
+  val lineElement : #element t -> lineElement t opt
+  val linearElement : #element t -> linearGradientElement t opt
+
+  (* val Marker : #element t -> markerElement *)
+  val mask : #element t -> maskElement t opt
+  val metaData : #element t -> metadataElement t opt
+  val missingGlyph : #element t -> glyphElement t opt
+  val mPath : #element t -> mPathElement t opt
 
 
-  let textElement e : textElement t opt = unsafeCoerce e "text"
-  let textpath e : textPathElement t opt = unsafeCoerce e "textpath"
-  let title e : titleElement t opt = unsafeCoerce e "title"
-  let tref e : trefElement t opt = unsafeCoerce e "tref"
-  let tspan e : tspanElement t opt = unsafeCoerce e "tspan"
+  val path : #element t -> pathElement t opt
+  val parttern : #element t -> patternElement t opt
+  val polygon : #element t -> polygonElement t opt
+  val polyline : #element t -> polyLineElement t opt
 
-  let use e : useElement t opt = unsafeCoerce e "use"
+  val radialgradient : #element t -> radialGradientElement t opt
+  val rect : #element t -> rectElement t opt
 
-  let view e : viewElement t opt = unsafeCoerce e "view"
-  let vkern e : element t opt = unsafeCoerce e "vkern"
+  val script : #element t -> scriptElement t opt
+  val set : #element t -> setElement t opt
+  val stop : #element t -> stopElement t opt
+  val style : #element t -> styleElement t opt
+  val svg : #element t -> svgElement t opt
+  val switch : #element t -> switchElement t opt
+  val symbol : #element t -> symbolElement t opt
+
+
+  val textElement : #element t -> textElement t opt
+  val textpath : #element t -> textPathElement t opt
+  val title : #element t -> titleElement t opt
+  val tref : #element t -> trefElement t opt
+  val tspan : #element t -> tspanElement t opt
+
+  val use : #element t -> useElement t opt
+
+  val view : #element t -> viewElement t opt
+  val vkern : #element t -> element t opt
 
 end
