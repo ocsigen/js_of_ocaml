@@ -4,6 +4,7 @@
 Js
 Dom
 Dom_html
+Dom_svg
 Dom_events
 CSS
 Lwt_js
