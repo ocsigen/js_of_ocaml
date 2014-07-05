@@ -38,13 +38,15 @@ has a property {{{data}}} containing a Javascript string, and a method
 {{{appendData}}} taking a Javascript string as argument and returning
 no value.
 
+=== Method name and underscore
+
 Some overloading is possible using a syntactic trick: names
 {{{_foo}}}, {{{foo_abcd}}} and {{{foo}}} are all mapped to a same
 Javascript field name {{{foo}}}: when accessing a field of an object,
 the name given in the OCaml code is transformed by removing a leading
 underscore and then removing all characters starting from the last
 underscore; this yields the corresponding Javascript name.  For
-instance, these four types correspond to the same Javascript method
+instance, these three types correspond to the same Javascript method
 {{{drawImage}}}:
 {{{
     drawImage :
@@ -57,6 +59,18 @@ instance, these four types correspond to the same Javascript method
 This trick can also be used to refer to Javascript fields {{{type}}} or
 {{{URL}}}, for instance as {{{_type}}} and {{{_URL}}}.
 
+
+|= OCaml name      |= JavaScript method name |
+| {{{meth}}}       | {{{meth}}}              |
+| {{{meth_int}}}   | {{{meth}}}              |
+| {{{meth_a_int}}} | {{{meth_a}}}            |
+| {{{_Meth}}}      | {{{Meth}}}              |
+| {{{_meth_}}}     | {{{meth}}}              |
+| {{{_meth_aa}}}   | {{{meth}}}              |
+| {{{_meth_aa_}}}  | {{{meth_aa}}}           |
+| {{{_meth_aa_b}}} | {{{meth_aa}}}           |
+| {{{__meth_b}}}   | {{{_meth}}}             |
+| {{{__}}}         | {{{_}}}                 |
 
 == Syntax extension ==
 
@@ -142,9 +156,10 @@ Js.Unsafe.global##plop <- Js.wrap_callback f
 Or, to create a JS object with OCaml methods:
 <<code language="ocaml"|
 Js.Unsafe.global##plop <-
-  Js.Unsafe.obj [| ("f", Js.wrap_meth_callback f);
-                   ("g", Js.wrap_meth_callback g) |]
+  Js.Unsafe.obj [| ("f", Js.Unsafe.inject (Js.wrap_meth_callback f));
+                   ("g", Js.Unsafe.inject (Js.wrap_meth_callback g)) |]
 >>
+
 
 
 == IO ==

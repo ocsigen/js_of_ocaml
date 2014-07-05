@@ -70,19 +70,40 @@ Here, {{{v}}} may be a JS value or an OCaml value.
 If you want to do that in type safe manner, just define new types for the
 extended elements, or wrap the unsafe functions inside a getter and setter.
 
+== Binding a JS object ==
 
-==Example binding of a JS object type {{{tt}}}:
 Write in .ml and in .mli:
 
-<<code language="ocaml"|
-class type tt = object
-  method mm : int readonly_prop
-  method nn : js_string t writeonly_prop
-  method oo : Dom_html.element t prop
-  method pp : int js_array t -> int -> js_string t opt meth
-  method qq : unit meth
-  method rr_fromInt : int -> float -> unit meth
-  method rr_fromString : js_string t -> float -> unit meth
+<<code language="ocaml"
+class type my_js_type = object
+
+  (* read only property, read value with t##prop1 *)
+  method prop1 : int readonly_prop
+
+  (* write only property, write value wiht t##prop2 <- 3.14 *)
+  method prop2 : float writeonly_prop
+
+  (* both read and write *)
+  method prop3 : int prop
+
+  (* method or property starting with a capital letter can be prepend
+     with an underscore. *)
+  method _Array : ... (* to access the JavasScript property or method Array *)
+
+  (* Define two method with differant types, that will translate to
+     the same JavaScript method. *)
+  method my_fun_int : int -> unit meth
+  method my_fun_string : js_string t -> unit meth
+  (* Both will actually call the my_fun JavaScript method. *)
+
+  (* To call a javascript method starting with one underscore *)
+  method __hiddenfun : ..
+  method __hiddenfun_ : ..
+  method __hiddenfun_something : ..
+  (* This will call the _hiddenfun Javascript method *)
+
+  (* To call the javascript method '_' *)
+  method __ : ..
 end
 >>
 
