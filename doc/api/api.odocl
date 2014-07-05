@@ -2,6 +2,7 @@ lib/Js
 lib/Dom
 lib/Typed_array
 lib/Dom_html
+lib/Dom_svg
 lib/File
 lib/Dom_events
 lib/Firebug

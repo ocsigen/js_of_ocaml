@@ -85,7 +85,7 @@ STDLIB_MODULES=\
 	tyxml_js \
 	html5_types \
 
-JOO=js dom typed_array dom_html file dom_events firebug lwt_js sys_js regexp CSS url \
+JOO=js dom typed_array dom_html dom_svg file dom_events firebug lwt_js sys_js regexp CSS url \
   form xmlHttpRequest lwt_js_events json webGL webSockets keycode
 JOO=js
 
