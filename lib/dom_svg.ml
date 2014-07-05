@@ -113,6 +113,28 @@ type pathSegmentType =
   | PATHSEG_CURVETO_QUADRATIC_SMOOTH_ABS
   | PATHSEG_CURVETO_QUADRATIC_SMOOTH_REL
 
+
+(* textPath Method Types *)
+type textPathMethodType =
+  | TEXTPATH_METHODTYPE_UNKNOWN
+  | TEXTPATH_METHODTYPE_ALIGN
+  | TEXTPATH_METHODTYPE_STRETCH
+
+(* textPath Spacing Types *)
+type textPathSpacingType =
+  | TEXTPATH_SPACINGTYPE_UNKNOWN
+  | TEXTPATH_SPACINGTYPE_AUTO
+  | TEXTPATH_SPACINGTYPE_EXACT
+
+
+(* Spread Method Types *)
+type spreadMethodType =
+  | SPREADMETHOD_UNKNOWN
+  | SPREADMETHOD_PAD
+  | SPREADMETHOD_REFLECT
+  | SPREADMETHOD_REPEAT
+
+
 type suspendHandleID
 
 (****)
@@ -256,9 +278,9 @@ end
 
 (* interface SVGTests *)
 and tests = object
-  method requiredFeatures : stringList readonly_prop
-  method requiredExtensions : stringList readonly_prop
-  method systemLanguage : stringList readonly_prop
+  method requiredFeatures : stringList t readonly_prop
+  method requiredExtensions : stringList t readonly_prop
+  method systemLanguage : stringList t readonly_prop
   method hasExtension : js_string t -> bool t meth
 end
 
@@ -648,43 +670,43 @@ and animatedPathData = object
   method animatedNormalizedPathSegList : pathSegList t prop
 end
 
-(* interface SVGPathElement : SVGElement, *)
-(*                            SVGTests, *)
-(*                            SVGLangSpace, *)
-(*                            SVGExternalResourcesRequired, *)
-(*                            SVGStylable, *)
-(*                            SVGTransformable, *)
-(*                            SVGAnimatedPathData { *)
+  (* interface SVGPathElement *)
+and pathElement = object
+  inherit element
+  inherit tests
+  inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  inherit transformable
+  inherit animatedPathData
+  method pathLength : animatedNumber t readonly_prop
+  method getTotalLength : float meth
+  method getPointAtLength : float -> point t meth
+  method getPathSegAtLength : float -> int
 
-(*   readonly attribute SVGAnimatedNumber pathLength; *)
-
-(*   float getTotalLength(); *)
-(*   SVGPoint getPointAtLength(in float distance); *)
-(*   unsigned long getPathSegAtLength(in float distance); *)
-(*   SVGPathSegClosePath createSVGPathSegClosePath(); *)
-(*   SVGPathSegMovetoAbs createSVGPathSegMovetoAbs(in float x, in float y); *)
-(*   SVGPathSegMovetoRel createSVGPathSegMovetoRel(in float x, in float y); *)
-(*   SVGPathSegLinetoAbs createSVGPathSegLinetoAbs(in float x, in float y); *)
-(*   SVGPathSegLinetoRel createSVGPathSegLinetoRel(in float x, in float y); *)
-(*   SVGPathSegCurvetoCubicAbs createSVGPathSegCurvetoCubicAbs(in float x, in float y, in float x1, in float y1, in float x2, in float y2); *)
-(*   SVGPathSegCurvetoCubicRel createSVGPathSegCurvetoCubicRel(in float x, in float y, in float x1, in float y1, in float x2, in float y2); *)
-(*   SVGPathSegCurvetoQuadraticAbs createSVGPathSegCurvetoQuadraticAbs(in float x, in float y, in float x1, in float y1); *)
-(*   SVGPathSegCurvetoQuadraticRel createSVGPathSegCurvetoQuadraticRel(in float x, in float y, in float x1, in float y1); *)
-(*   SVGPathSegArcAbs createSVGPathSegArcAbs(in float x, in float y, in float r1, in float r2, in float angle, in boolean largeArcFlag, in boolean sweepFlag); *)
-(*   SVGPathSegArcRel createSVGPathSegArcRel(in float x, in float y, in float r1, in float r2, in float angle, in boolean largeArcFlag, in boolean sweepFlag); *)
-(*   SVGPathSegLinetoHorizontalAbs createSVGPathSegLinetoHorizontalAbs(in float x); *)
-(*   SVGPathSegLinetoHorizontalRel createSVGPathSegLinetoHorizontalRel(in float x); *)
-(*   SVGPathSegLinetoVerticalAbs createSVGPathSegLinetoVerticalAbs(in float y); *)
-(*   SVGPathSegLinetoVerticalRel createSVGPathSegLinetoVerticalRel(in float y); *)
-(*   SVGPathSegCurvetoCubicSmoothAbs createSVGPathSegCurvetoCubicSmoothAbs(in float x, in float y, in float x2, in float y2); *)
-(*   SVGPathSegCurvetoCubicSmoothRel createSVGPathSegCurvetoCubicSmoothRel(in float x, in float y, in float x2, in float y2); *)
-(*   SVGPathSegCurvetoQuadraticSmoothAbs createSVGPathSegCurvetoQuadraticSmoothAbs(in float x, in float y); *)
-(*   SVGPathSegCurvetoQuadraticSmoothRel createSVGPathSegCurvetoQuadraticSmoothRel(in float x, in float y); *)
-(* }; *)
-
+  method createSVGPathSegClosePath : pathSegClosePath meth
+  method createSVGPathSegMovetoAbs : float -> float -> pathSegMoveto meth
+  method createSVGPathSegMovetoRel : float -> float -> pathSegMoveto meth
+  method createSVGPathSegLinetoAbs : float -> float -> pathSegLineto meth
+  method createSVGPathSegLinetoRel : float -> float -> pathSegLineto meth
+  method createSVGPathSegCurvetoCubicAbs : float -> float -> float -> float -> float -> float -> pathSegCurvetoCubic meth
+  method createSVGPathSegCurvetoCubicRel : float -> float -> float -> float -> float -> float -> pathSegCurvetoCubic meth
+  method createSVGPathSegCurvetoQuadraticAbs : float -> float -> float -> float -> pathSegCurvetoQuadratic meth
+  method createSVGPathSegCurvetoQuadraticRel : float -> float -> float -> float -> pathSegCurvetoQuadratic meth
+  method createSVGPathSegArcAbs : float -> float -> float -> float -> float -> bool t -> bool t -> pathSegArc meth
+  method createSVGPathSegArcRel : float -> float -> float -> float -> float -> bool t -> bool t -> pathSegArc meth
+  method createSVGPathSegLinetoHorizontalAbs : float -> pathSegLinetoHorizontal meth
+  method createSVGPathSegLinetoHorizontalRel : float -> pathSegLinetoHorizontal meth
+  method createSVGPathSegLinetoVerticalAbs : float -> pathSegLinetoVertical meth
+  method createSVGPathSegLinetoVerticalRel : float -> pathSegLinetoVertical meth
+  method createSVGPathSegCurvetoCubicSmoothAbs : float -> float -> float -> float -> pathSegCurvetoCubicSmooth meth
+  method createSVGPathSegCurvetoCubicSmoothRel : float -> float -> float -> float -> pathSegCurvetoCubicSmooth meth
+  method createSVGPathSegCurvetoQuadraticSmoothAbs : float -> float -> pathSegCurvetoQuadraticSmooth meth
+  method createSVGPathSegCurvetoQuadraticSmoothRel : float -> float -> pathSegCurvetoQuadraticSmooth meth
+end
 
 (* interface SVGRectElement *)
-and reactElement = object
+and rectElement = object
   inherit element
   inherit tests
   inherit langSpace
@@ -807,53 +829,52 @@ and textElement = object
   inherit transformable
 end
 
-and spanElement = textPositioningElement
+and tspanElement = textPositioningElement
 
-and refElement = object
+and trefElement = object
   inherit textPositioningElement
   inherit uriReference
 end
 
-(* interface SVGTextPathElement : SVGTextContentElement, *)
-(*                                SVGURIReference { *)
+(* interface SVGTextPathElement *)
+and textPathElementMethod = [textPathMethodType] animated
+and textPathElementSpacing = [textPathSpacingType] animated
+and textPathElement = object
+  inherit textContentElement
+  inherit uriReference
 
-(*   // textPath Method Types *)
-(*   const unsigned short TEXTPATH_METHODTYPE_UNKNOWN = 0; *)
-(*   const unsigned short TEXTPATH_METHODTYPE_ALIGN = 1; *)
-(*   const unsigned short TEXTPATH_METHODTYPE_STRETCH = 2; *)
+  method startOffset : animatedLength t readonly_prop
+  method method_ : textPathElementMethod readonly_prop
+  method spacing : textPathElementSpacing readonly_prop
+end
 
-(*   // textPath Spacing Types *)
-(*   const unsigned short TEXTPATH_SPACINGTYPE_UNKNOWN = 0; *)
-(*   const unsigned short TEXTPATH_SPACINGTYPE_AUTO = 1; *)
-(*   const unsigned short TEXTPATH_SPACINGTYPE_EXACT = 2; *)
+(* interface SVGAltGlyphElement *)
+and altGlyphElement = object
+  inherit textPositioningElement
+  inherit uriReference
+  method glyphRef : js_string t prop
+  method format : js_string t prop
+end
 
-(*   readonly attribute SVGAnimatedLength startOffset; *)
-(*   readonly attribute SVGAnimatedEnumeration method; *)
-(*   readonly attribute SVGAnimatedEnumeration spacing; *)
-(* }; *)
+  (* interface SVGAltGlyphDefElement *)
+and altGlyphDefElement = element
 
-(* interface SVGAltGlyphElement : SVGTextPositioningElement, *)
-(*                                SVGURIReference { *)
-(*   attribute DOMString glyphRef setraises(DOMException); *)
-(*   attribute DOMString format setraises(DOMException); *)
-(* }; *)
+(* interface SVGAltGlyphItemElement *)
+and altGlyphItemElement = element
 
-(* interface SVGAltGlyphDefElement : SVGElement { *)
-(* }; *)
+(* interface SVGGlyphRefElement *)
+and glyphRefElement = object
+  inherit element
+  inherit uriReference
+  inherit stylable
+  method glyphRef : js_string t prop
+  method format : js_string t prop
+  method x : float prop
+  method y : float prop
+  method dx : float prop
+  method dy : float prop
+end
 
-(* interface SVGAltGlyphItemElement : SVGElement { *)
-(* }; *)
-
-(* interface SVGGlyphRefElement : SVGElement, *)
-(*                                SVGURIReference, *)
-(*                                SVGStylable { *)
-(*   attribute DOMString glyphRef setraises(DOMException); *)
-(*   attribute DOMString format setraises(DOMException); *)
-(*   attribute float x setraises(DOMException); *)
-(*   attribute float y setraises(DOMException); *)
-(*   attribute float dx setraises(DOMException); *)
-(*   attribute float dy setraises(DOMException); *)
-(* }; *)
 
 (* interface SVGPaint : SVGColor { *)
 
@@ -919,102 +940,104 @@ end
 (*   attribute unsigned short renderingIntent setraises(DOMException); *)
 (* }; *)
 
-(* interface SVGGradientElement : SVGElement, *)
-(*                                SVGURIReference, *)
-(*                                SVGExternalResourcesRequired, *)
-(*                                SVGStylable, *)
-(*                                SVGUnitTypes { *)
+(* interface SVGGradientElement *)
+and animatedSpreadMethod = [spreadMethodType] animated
+and gradientElement = object
+  inherit element
+  inherit uriReference
+  inherit stylable
+  (*   readonly attribute SVGAnimatedEnumeration gradientUnits; *)
+  method gradientTransform : animatedTransformList t readonly_prop
+  method spreadMethod : animatedSpreadMethod t readonly_prop
+end
+(* interface SVGLinearGradientElement *)
+and linearGradientElement = object
+  inherit gradientElement
+  method x1 : animatedLength t readonly_prop
+  method y1 : animatedLength t readonly_prop
+  method x2 : animatedLength t readonly_prop
+  method y2 : animatedLength t readonly_prop
+end
 
-(*   // Spread Method Types *)
-(*   const unsigned short SVG_SPREADMETHOD_UNKNOWN = 0; *)
-(*   const unsigned short SVG_SPREADMETHOD_PAD = 1; *)
-(*   const unsigned short SVG_SPREADMETHOD_REFLECT = 2; *)
-(*   const unsigned short SVG_SPREADMETHOD_REPEAT = 3; *)
+(* interface SVGRadialGradientElement *)
+and radialGradientElement = object
+  inherit gradientElement
+  method cx : animatedLength t readonly_prop
+  method cy : animatedLength t readonly_prop
+  method r : animatedLength t readonly_prop
+  method fx : animatedLength t readonly_prop
+  method fy : animatedLength t readonly_prop
+end
 
-(*   readonly attribute SVGAnimatedEnumeration gradientUnits; *)
-(*   readonly attribute SVGAnimatedTransformList gradientTransform; *)
-(*   readonly attribute SVGAnimatedEnumeration spreadMethod; *)
-(* }; *)
+(* interface SVGStopElement *)
+and stopElement = object
+  inherit element
+  inherit stylable
+  method offset : animatedNumber t readonly_prop
+end
 
-(* interface SVGLinearGradientElement : SVGGradientElement { *)
-(*   readonly attribute SVGAnimatedLength x1; *)
-(*   readonly attribute SVGAnimatedLength y1; *)
-(*   readonly attribute SVGAnimatedLength x2; *)
-(*   readonly attribute SVGAnimatedLength y2; *)
-(* }; *)
+(* interface SVGPatternElement *)
+and patternElement = object
+  inherit element
+  inherit uriReference
+  inherit tests
+  inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  inherit fitToViewBox
+  (*   readonly attribute SVGAnimatedEnumeration patternUnits; *)
+  (*   readonly attribute SVGAnimatedEnumeration patternContentUnits; *)
+  method patternTransform : animatedTransformList t readonly_prop
+  method x : animatedLength t readonly_prop
+  method y : animatedLength t readonly_prop
+  method width : animatedLength t readonly_prop
+  method height : animatedLength t readonly_prop
+end
 
-(* interface SVGRadialGradientElement : SVGGradientElement { *)
-(*   readonly attribute SVGAnimatedLength cx; *)
-(*   readonly attribute SVGAnimatedLength cy; *)
-(*   readonly attribute SVGAnimatedLength r; *)
-(*   readonly attribute SVGAnimatedLength fx; *)
-(*   readonly attribute SVGAnimatedLength fy; *)
-(* }; *)
+(* interface SVGClipPathElement *)
+and clipPathElement = object
+  inherit element
+  inherit tests
+  inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  inherit transformable
+  (*   readonly attribute SVGAnimatedEnumeration clipPathUnits; *)
+end
 
-(* interface SVGStopElement : SVGElement, *)
-(*                            SVGStylable { *)
-(*   readonly attribute SVGAnimatedNumber offset; *)
-(* }; *)
 
-(* interface SVGPatternElement : SVGElement, *)
-(*                               SVGURIReference, *)
-(*                               SVGTests, *)
-(*                               SVGLangSpace, *)
-(*                               SVGExternalResourcesRequired, *)
-(*                               SVGStylable, *)
-(*                               SVGFitToViewBox, *)
-(*                               SVGUnitTypes { *)
-(*   readonly attribute SVGAnimatedEnumeration patternUnits; *)
-(*   readonly attribute SVGAnimatedEnumeration patternContentUnits; *)
-(*   readonly attribute SVGAnimatedTransformList patternTransform; *)
-(*   readonly attribute SVGAnimatedLength x; *)
-(*   readonly attribute SVGAnimatedLength y; *)
-(*   readonly attribute SVGAnimatedLength width; *)
-(*   readonly attribute SVGAnimatedLength height; *)
-(* }; *)
+(* interface SVGMaskElement *)
+and maskElement = object
+  inherit element
+  inherit tests
+  inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  (*   readonly attribute SVGAnimatedEnumeration maskUnits; *)
+  (*   readonly attribute SVGAnimatedEnumeration maskContentUnits; *)
+  method x : animatedLength t readonly_prop
+  method y : animatedLength t readonly_prop
+  method width : animatedLength t readonly_prop
+  method height : animatedLength t readonly_prop
+end
 
-(* interface SVGClipPathElement : SVGElement, *)
-(*                                SVGTests, *)
-(*                                SVGLangSpace, *)
-(*                                SVGExternalResourcesRequired, *)
-(*                                SVGStylable, *)
-(*                                SVGTransformable, *)
-(*                                SVGUnitTypes { *)
-(*   readonly attribute SVGAnimatedEnumeration clipPathUnits; *)
-(* }; *)
-
-(* interface SVGMaskElement : SVGElement, *)
-(*                            SVGTests, *)
-(*                            SVGLangSpace, *)
-(*                            SVGExternalResourcesRequired, *)
-(*                            SVGStylable, *)
-(*                            SVGUnitTypes { *)
-(*   readonly attribute SVGAnimatedEnumeration maskUnits; *)
-(*   readonly attribute SVGAnimatedEnumeration maskContentUnits; *)
-(*   readonly attribute SVGAnimatedLength x; *)
-(*   readonly attribute SVGAnimatedLength y; *)
-(*   readonly attribute SVGAnimatedLength width; *)
-(*   readonly attribute SVGAnimatedLength height; *)
-(* }; *)
-
-(* interface SVGFilterElement : SVGElement, *)
-(*                              SVGURIReference, *)
-(*                              SVGLangSpace, *)
-(*                              SVGExternalResourcesRequired, *)
-(*                              SVGStylable, *)
-(*                              SVGUnitTypes { *)
-
-(*   readonly attribute SVGAnimatedEnumeration filterUnits; *)
-(*   readonly attribute SVGAnimatedEnumeration primitiveUnits; *)
-(*   readonly attribute SVGAnimatedLength x; *)
-(*   readonly attribute SVGAnimatedLength y; *)
-(*   readonly attribute SVGAnimatedLength width; *)
-(*   readonly attribute SVGAnimatedLength height; *)
-(*   readonly attribute SVGAnimatedInteger filterResX; *)
-(*   readonly attribute SVGAnimatedInteger filterResY; *)
-
-(*   void setFilterRes(in unsigned long filterResX, in unsigned long filterResY) raises(DOMException); *)
-(* }; *)
+(* interface SVGFilterElement *)
+and filterElement = object
+  inherit element
+  inherit uriReference
+  inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  (*   readonly attribute SVGAnimatedEnumeration filterUnits; *)
+  (*   readonly attribute SVGAnimatedEnumeration primitiveUnits; *)
+  method x : animatedLength t readonly_prop
+  method y : animatedLength t readonly_prop
+  method width : animatedLength t readonly_prop
+  method height : animatedLength t readonly_prop
+  method filterResX : animatedInteger t readonly_prop
+  method filterResY : animatedInteger t readonly_prop
+  method setFilterRes : int -> int -> unit meth
+end
 
 (* interface SVGFilterPrimitiveStandardAttributes : SVGStylable { *)
 (*   readonly attribute SVGAnimatedLength x; *)
@@ -1270,38 +1293,46 @@ end
 (*   readonly attribute SVGAnimatedEnumeration type; *)
 (* }; *)
 
-(* interface SVGCursorElement : SVGElement, *)
-(*                              SVGURIReference, *)
-(*                              SVGTests, *)
-(*                              SVGExternalResourcesRequired { *)
-(*   readonly attribute SVGAnimatedLength x; *)
-(*   readonly attribute SVGAnimatedLength y; *)
-(* }; *)
+(* interface SVGCursorElement *)
+and cursorElement = object
+  inherit element
+  inherit uriReference
+  inherit tests
+  inherit externalResourcesRequired
+  method x : animatedLength t readonly_prop
+  method y : animatedLength t readonly_prop
+end
 
-(* interface SVGAElement : SVGElement, *)
-(*                         SVGURIReference, *)
-(*                         SVGTests, *)
-(*                         SVGLangSpace, *)
-(*                         SVGExternalResourcesRequired, *)
-(*                         SVGStylable, *)
-(*                         SVGTransformable { *)
-(*   readonly attribute SVGAnimatedString target; *)
-(* }; *)
+  (* interface SVGAElement *)
+and aElement = object
+  inherit element
+  inherit uriReference
+  inherit tests
+  inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  inherit transformable
+  method target : animatedString t readonly_prop
+end
 
-(* interface SVGViewElement : SVGElement, *)
-(*                            SVGExternalResourcesRequired, *)
-(*                            SVGFitToViewBox, *)
-(*                            SVGZoomAndPan { *)
-(*   readonly attribute SVGStringList viewTarget; *)
-(* }; *)
+(* interface SVGViewElement *)
+and viewElement = object
+  inherit element
+  inherit externalResourcesRequired
+  inherit fitToViewBox
+  inherit zoomAndPan
+  method viewTarget : stringList t readonly_prop
+end
 
-(* interface SVGScriptElement : SVGElement, *)
-(*                              SVGURIReference, *)
-(*                              SVGExternalResourcesRequired { *)
-(*   attribute DOMString type setraises(DOMException); *)
-(* }; *)
+(* interface SVGScriptElement *)
+and scriptElement = object
+  inherit element
+  inherit uriReference
+  inherit externalResourcesRequired
+  method type_ : js_string t prop
+end
 
-(* interface SVGZoomEvent : UIEvent { *)
+(* interface SVGZoomEvent : UIEvent *)
 (*   readonly attribute SVGRect zoomRectScreen; *)
 (*   readonly attribute float previousScale; *)
 (*   readonly attribute SVGPoint previousTranslate; *)
@@ -1309,49 +1340,60 @@ end
 (*   readonly attribute SVGPoint newTranslate; *)
 (* }; *)
 
-(* interface SVGAnimationElement : SVGElement, *)
-(*                                 SVGTests, *)
-(*                                 SVGExternalResourcesRequired, *)
-(*                                 ElementTimeControl { *)
+(* interface SVGAnimationElement *)
+and animationElement = object
+  inherit element
+  inherit tests
+  inherit externalResourcesRequired
+  (* inherit elementTimeControl *)
+  method targetElement : element t readonly_prop
+  method getStartTime : float meth
+  method getCurrentTime : float meth
+  method getSimpleDuration : float meth
+end
 
-(*   readonly attribute SVGElement targetElement; *)
+  (* interface SVGAnimateElement *)
+and animateElement = object
+  inherit animationElement
+  inherit stylable
+end
 
-(*   float getStartTime() raises(DOMException); *)
-(*   float getCurrentTime(); *)
-(*   float getSimpleDuration() raises(DOMException); *)
-(* }; *)
+(* interface SVGSetElement *)
+and setElement = animationElement
 
-(* interface SVGAnimateElement : SVGAnimationElement, *)
-(*                               SVGStylable { *)
-(* }; *)
+(* interface SVGAnimateMotionElement *)
+and animateMotionElement = animationElement
 
-(* interface SVGSetElement : SVGAnimationElement { *)
-(* }; *)
+  (* interface SVGMPathElement *)
+and mPathElement = object
+  inherit element
+  inherit uriReference
+  inherit externalResourcesRequired
+end
 
-(* interface SVGAnimateMotionElement : SVGAnimationElement { *)
-(* }; *)
+  (* interface SVGAnimateColorElement *)
+and animateColorElement = object
+  inherit animationElement
+  inherit stylable
+end
 
-(* interface SVGMPathElement : SVGElement, *)
-(*                             SVGURIReference, *)
-(*                             SVGExternalResourcesRequired { *)
+(* interface SVGAnimateTransformElement *)
+and animateTransformElement = animationElement
 
-(* interface SVGAnimateColorElement : SVGAnimationElement, *)
-(*                                    SVGStylable { *)
+(* interface SVGFontElement *)
+and fontElement = object
+  inherit element
+  inherit stylable
+end
 
-(* interface SVGAnimateTransformElement : SVGAnimationElement { *)
+(* interface SVGGlyphElement *) (* interface SVGMissingGlyphElement*)
+and glyphElement = object
+  inherit element
+  inherit stylable
+end
 
-(* interface SVGFontElement : SVGElement, *)
-(*                            SVGExternalResourcesRequired, *)
-(*                            SVGStylable { *)
-
-(* interface SVGGlyphElement : SVGElement, *)
-(*                             SVGStylable { *)
-
-(* interface SVGMissingGlyphElement : SVGElement, *)
-(*                                    SVGStylable { *)
-
-(* interface SVGHKernElement : SVGElement { *)
-(* interface SVGVKernElement : SVGElement { *)
+(* interface SVGHKernElement : SVGElement *)
+(* interface SVGVKernElement : SVGElement *)
 
 (* interface SVGFontFaceElement *)
 class type fontFaceElement = element
@@ -1366,28 +1408,98 @@ class type fontFaceNameElement = element
 (* interface SVGMetadataElement *)
 class type metadataElement = element
 
-(* interface SVGForeignObjectElement : SVGElement, *)
-(*                                     SVGTests, *)
-(*                                     SVGLangSpace, *)
-(*                                     SVGExternalResourcesRequired, *)
-(*                                     SVGStylable, *)
-(*                                     SVGTransformable { *)
-(*   readonly attribute SVGAnimatedLength x; *)
-(*   readonly attribute SVGAnimatedLength y; *)
-(*   readonly attribute SVGAnimatedLength width; *)
-(*   readonly attribute SVGAnimatedLength height; *)
-(* }; *)
-
-(* }; *)
+(* interface SVGForeignObjectElement *)
+class type foreignObjectElement = object
+  inherit element
+  inherit tests
+  inherit langSpace
+  inherit externalResourcesRequired
+  inherit stylable
+  inherit transformable
+  method x : animatedLength t readonly_prop
+  method y : animatedLength t readonly_prop
+  method width : animatedLength t readonly_prop
+  method height : animatedLength t readonly_prop
+end
 
 let createElement (doc : document t) name =
   doc##createElementNS(xmlns, Js.string name)
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 
-let createSvg doc : svgElement t = unsafeCreateElement doc "svg"
+let createA doc : aElement t = unsafeCreateElement doc "a"
+let createAltGlyph doc : altGlyphElement t = unsafeCreateElement doc "altglyph"
+let createAltGlyphDef doc : altGlyphDefElement t = unsafeCreateElement doc "altglyphdef"
+let createAltGlyphItem doc : altGlyphItemElement t = unsafeCreateElement doc "altglyphitem"
+let createAnimate doc : animateElement t = unsafeCreateElement doc "animate"
+let createAnimateColor doc : animateColorElement t = unsafeCreateElement doc "animatecolor"
+let createAnimateMotion doc : animateMotionElement t = unsafeCreateElement doc "animatemotion"
+let createAnimateTransform doc : animateTransformElement t = unsafeCreateElement doc "animatetransform"
+
+let createCircle doc : circleElement t = unsafeCreateElement doc "circle"
+let createClipPath doc : clipPathElement t = unsafeCreateElement doc "clippath"
+(* let createColorProfile doc : colorProfile t = unsafeCreateElement doc "color-profile" *)
+let createCursor doc : cursorElement t = unsafeCreateElement doc "cursor"
+
+let createDefs doc : defsElement t = unsafeCreateElement doc "defs"
+let createDesc doc : descElement t = unsafeCreateElement doc "desc"
+
+let createEllipse doc : ellipseElement t = unsafeCreateElement doc "ellipse"
+
+(* let createFe* *)
+let createFilter doc : filterElement t = unsafeCreateElement doc "filter"
+let createFont doc : fontElement t = unsafeCreateElement doc "font"
+let createFontFace doc : fontElement t = unsafeCreateElement doc "font-face"
+let createFontFaceFormat doc : fontElement t = unsafeCreateElement doc "font-face-format"
+let createFontFaceName doc : fontElement t = unsafeCreateElement doc "font-face-name"
+let createFontFaceSrc doc : fontElement t = unsafeCreateElement doc "font-face-src"
+let createFontFaceUri doc : fontElement t = unsafeCreateElement doc "font-face-uri"
+let createForeignObject doc : foreignObjectElement t = unsafeCreateElement doc "foreignobject"
+
 let createG doc : gElement t = unsafeCreateElement doc "g"
-let createTextElement doc : textElement t = unsafeCreateElement doc "text"
+let createGlyph doc : glyphElement t = unsafeCreateElement doc "glyph"
+let createGlyphRef doc : glyphElement t = unsafeCreateElement doc "glyphref"
+
+let createhkern doc : element t = unsafeCreateElement doc "hkern"
+
+let createImage doc : imageElement t = unsafeCreateElement doc "image"
+
 let createLineElement doc : lineElement t = unsafeCreateElement doc "line"
+let createLinearElement doc : linearGradientElement t = unsafeCreateElement doc "lineargradient"
+
+(* let createMarker doc : markerElement *)
+let createMask doc : maskElement t = unsafeCreateElement doc "mask"
+let createMetaData doc : metadataElement t = unsafeCreateElement doc "metadata"
+let createMissingGlyph doc : glyphElement t = unsafeCreateElement doc "missing-glyph"
+let createMPath doc : mPathElement t = unsafeCreateElement doc "mpath"
+
+
+let createPath doc : pathElement t = unsafeCreateElement doc "path"
+let createParttern doc : patternElement t = unsafeCreateElement doc "parttern"
+let createPolygon doc : polygonElement t = unsafeCreateElement doc "polygon"
+let createPolyline doc : polyLineElement t = unsafeCreateElement doc "polyline"
+
+let createRadialgradient doc : radialGradientElement t = unsafeCreateElement doc "radialgradient"
+let createRect doc : rectElement t = unsafeCreateElement doc "rect"
+
+let createScript doc : scriptElement t = unsafeCreateElement doc "script"
+let createSet doc : setElement t = unsafeCreateElement doc "set"
+let createStop doc : stopElement t = unsafeCreateElement doc "stop"
+let createStyle doc : styleElement t = unsafeCreateElement doc "style"
+let createSvg doc : svgElement t = unsafeCreateElement doc "svg"
+let createSwitch doc : switchElement t = unsafeCreateElement doc "switch"
+let createSymbol doc : symbolElement t = unsafeCreateElement doc "symbol"
+
+
+let createTextElement doc : textElement t = unsafeCreateElement doc "text"
+let createTextpath doc : textPathElement t = unsafeCreateElement doc "textpath"
+let createTitle doc : titleElement t = unsafeCreateElement doc "title"
+let createTref doc : trefElement t = unsafeCreateElement doc "tref"
+let createTspan doc : tspanElement t = unsafeCreateElement doc "tspan"
+
+let createUse doc : useElement t = unsafeCreateElement doc "use"
+
+let createView doc : viewElement t = unsafeCreateElement doc "view"
+let createvkern doc : element t = unsafeCreateElement doc "vkern"
 
 (****)
 
@@ -1405,14 +1517,85 @@ module CoerceTo = struct
     else
       Js.null
 
-  let unsafeCoerce tag (e : #element t) =
+  let unsafeCoerce (e : #element t) tag =
     if e##tagName##toLowerCase() == Js.string tag then
       Js.some (Js.Unsafe.coerce e)
     else
       Js.null
 
-  let svg e : svgElement t opt = unsafeCoerce "svg" e
-  let g e : gElement t opt = unsafeCoerce "g" e
-  let text e : textElement t opt = unsafeCoerce "text" e
-  let line e : lineElement t opt = unsafeCoerce "line" e
+  let a e : aElement t opt = unsafeCoerce e "a"
+  let altGlyph e : altGlyphElement t opt = unsafeCoerce e "altglyph"
+  let altGlyphDef e : altGlyphDefElement t opt = unsafeCoerce e "altglyphdef"
+  let altGlyphItem e : altGlyphItemElement t opt = unsafeCoerce e "altglyphitem"
+  let animate e : animateElement t opt = unsafeCoerce e "animate"
+  let animateColor e : animateColorElement t opt = unsafeCoerce e "animatecolor"
+  let animateMotion e : animateMotionElement t opt = unsafeCoerce e "animatemotion"
+  let animateTransform e : animateTransformElement t opt = unsafeCoerce e "animatetransform"
+
+  let circle e : circleElement t opt = unsafeCoerce e "circle"
+  let clipPath e : clipPathElement t opt = unsafeCoerce e "clippath"
+  (* let ColorProfile e : colorProfile t opt = unsafeCoerce e "color-profile" *)
+  let cursor e : cursorElement t opt = unsafeCoerce e "cursor"
+
+  let defs e : defsElement t opt = unsafeCoerce e "defs"
+  let desc e : descElement t opt = unsafeCoerce e "desc"
+
+  let ellipse e : ellipseElement t opt = unsafeCoerce e "ellipse"
+
+  (* let Fe* *)
+  let filter e : filterElement t opt = unsafeCoerce e "filter"
+  let font e : fontElement t opt = unsafeCoerce e "font"
+  let fontFace e : fontElement t opt = unsafeCoerce e "font-face"
+  let fontFaceFormat e : fontElement t opt = unsafeCoerce e "font-face-format"
+  let fontFaceName e : fontElement t opt = unsafeCoerce e "font-face-name"
+  let fontFaceSrc e : fontElement t opt = unsafeCoerce e "font-face-src"
+  let fontFaceUri e : fontElement t opt = unsafeCoerce e "font-face-uri"
+  let foreignObject e : foreignObjectElement t opt = unsafeCoerce e "foreignobject"
+
+  let g e : gElement t opt = unsafeCoerce e "g"
+  let glyph e : glyphElement t opt = unsafeCoerce e "glyph"
+  let glyphRef e : glyphElement t opt = unsafeCoerce e "glyphref"
+
+  let hkern e : element t opt = unsafeCoerce e "hkern"
+
+  let image e : imageElement t opt = unsafeCoerce e "image"
+
+  let lineElement e : lineElement t opt = unsafeCoerce e "line"
+  let linearElement e : linearGradientElement t opt = unsafeCoerce e "lineargradient"
+
+  (* let Marker e : markerElement *)
+  let mask e : maskElement t opt = unsafeCoerce e "mask"
+  let metaData e : metadataElement t opt = unsafeCoerce e "metadata"
+  let missingGlyph e : glyphElement t opt = unsafeCoerce e "missing-glyph"
+  let mPath e : mPathElement t opt = unsafeCoerce e "mpath"
+
+
+  let path e : pathElement t opt = unsafeCoerce e "path"
+  let parttern e : patternElement t opt = unsafeCoerce e "parttern"
+  let polygon e : polygonElement t opt = unsafeCoerce e "polygon"
+  let polyline e : polyLineElement t opt = unsafeCoerce e "polyline"
+
+  let radialgradient e : radialGradientElement t opt = unsafeCoerce e "radialgradient"
+  let rect e : rectElement t opt = unsafeCoerce e "rect"
+
+  let script e : scriptElement t opt = unsafeCoerce e "script"
+  let set e : setElement t opt = unsafeCoerce e "set"
+  let stop e : stopElement t opt = unsafeCoerce e "stop"
+  let style e : styleElement t opt = unsafeCoerce e "style"
+  let svg e : svgElement t opt = unsafeCoerce e "svg"
+  let switch e : switchElement t opt = unsafeCoerce e "switch"
+  let symbol e : symbolElement t opt = unsafeCoerce e "symbol"
+
+
+  let textElement e : textElement t opt = unsafeCoerce e "text"
+  let textpath e : textPathElement t opt = unsafeCoerce e "textpath"
+  let title e : titleElement t opt = unsafeCoerce e "title"
+  let tref e : trefElement t opt = unsafeCoerce e "tref"
+  let tspan e : tspanElement t opt = unsafeCoerce e "tspan"
+
+  let use e : useElement t opt = unsafeCoerce e "use"
+
+  let view e : viewElement t opt = unsafeCoerce e "view"
+  let vkern e : element t opt = unsafeCoerce e "vkern"
+
 end
