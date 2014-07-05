@@ -165,6 +165,7 @@ type string_array
       (This type is used to resolved the mutual dependency between
        string and array type definitions.) *)
 
+
 (** Specification of Javascript string objects. *)
 class type js_string = object
   method toString : js_string t meth
