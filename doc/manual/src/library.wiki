@@ -59,18 +59,31 @@ instance, these three types correspond to the same Javascript method
 This trick can also be used to refer to Javascript fields {{{type}}} or
 {{{URL}}}, for instance as {{{_type}}} and {{{_URL}}}.
 
+==== Example
 
-|= OCaml name      |= JavaScript method name |
-| {{{meth}}}       | {{{meth}}}              |
-| {{{meth_int}}}   | {{{meth}}}              |
-| {{{meth_a_int}}} | {{{meth_a}}}            |
-| {{{_Meth}}}      | {{{Meth}}}              |
-| {{{_meth_}}}     | {{{meth}}}              |
-| {{{_meth_aa}}}   | {{{meth}}}              |
-| {{{_meth_aa_}}}  | {{{meth_aa}}}           |
-| {{{_meth_aa_b}}} | {{{meth_aa}}}           |
-| {{{__meth_b}}}   | {{{_meth}}}             |
-| {{{__}}}         | {{{_}}}                 |
+<<code language="ocaml"|
+class type .. = object
+  (* Referer to [meth] *)
+  method meth : ..
+  method meth_int : ..
+  method _meth_ : ..
+  method _meth_aa : ..
+
+  (* Referer to  [meth_a] *)
+  method meth_a_int : ..
+  method _meth_a_ : ..
+  method _meth_a_b : ..
+
+  (* Referer to [Meth] *)
+  method _Meth : ..
+
+  (* Referer to [_meth] *)
+  method __meth : ..
+
+  (* Referer to [_] *)
+  method __ : ..
+end
+>>
 
 == Syntax extension ==
 
