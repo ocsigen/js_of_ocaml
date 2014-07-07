@@ -1166,6 +1166,7 @@ class type window = object
   method outerHeight : int optdef readonly_prop
 
   method onload : (window t, event t) event_listener prop
+  method onunload : (window t, event t) event_listener prop
   method onbeforeunload : (window t, event t) event_listener prop
   method onblur : (window t, event t) event_listener prop
   method onfocus : (window t, event t) event_listener prop
@@ -1278,6 +1279,7 @@ module Event : sig
   val focus : event t typ
   val blur : event t typ
   val load : event t typ
+  val unload : event t typ
   val beforeunload : event t typ
   val resize : event t typ
   val orientationchange : event t typ

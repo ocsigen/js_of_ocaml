@@ -384,6 +384,7 @@ module Event = struct
   let focus = Dom.Event.make "focus"
   let blur = Dom.Event.make "blur"
   let load = Dom.Event.make "load"
+  let unload = Dom.Event.make "unload"
   let beforeunload = Dom.Event.make "beforeunload"
   let resize = Dom.Event.make "resize"
   let orientationchange = Dom.Event.make "orientationchange"
@@ -1198,6 +1199,7 @@ class type window = object
   method outerHeight : int optdef readonly_prop
 
   method onload : (window t, event t) event_listener prop
+  method onunload : (window t, event t) event_listener prop
   method onbeforeunload : (window t, event t) event_listener prop
   method onblur : (window t, event t) event_listener prop
   method onfocus : (window t, event t) event_listener prop
