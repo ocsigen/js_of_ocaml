@@ -347,6 +347,7 @@ let request_animation_frame () =
   t
 
 let onload () = make_event Dom_html.Event.load Dom_html.window
+let onunload () = make_event Dom_html.Event.unload Dom_html.window
 let onbeforeunload () = make_event Dom_html.Event.beforeunload Dom_html.window
 let onresize () = make_event Dom_html.Event.resize Dom_html.window
 let onorientationchange () =
