@@ -113,6 +113,8 @@ class type cssStyleDeclaration = object
   method pointerEvents : js_string t prop
   method position : js_string t prop
   method right : js_string t prop
+  method stroke : js_string t prop
+  method strokeWidth : js_string t prop
   method tableLayout : js_string t prop
   method textAlign : js_string t prop
   method textDecoration : js_string t prop
