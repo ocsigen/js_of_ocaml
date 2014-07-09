@@ -240,10 +240,10 @@ end
 
 module To_dom = Tyxml_cast.MakeTo(struct
     type 'a elt = 'a Html5.elt
-    let elt x = x
+    let elt = Html5.toelt
   end)
 
 module Of_dom = Tyxml_cast.MakeOf(struct
     type 'a elt = 'a Html5.elt
-    let elt x = x
+    let elt = Html5.tot
   end)
