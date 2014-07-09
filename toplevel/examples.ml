@@ -28,6 +28,24 @@ end = struct
   let even x = if x = 0 then true else Odd.odd (pred x)
 end
 
+(** Reactive dom *)
+open Tyxml_js.R.Html5
+open ReactiveData
+let rl,rhandle = ReactiveData.RList.make []
+let li_rl = RList.map (fun x -> Tyxml_js.Html5.li [Tyxml_js.Html5.pcdata x]) rl
+let ul_elt = Tyxml_js.To_dom.of_ul (Tyxml_js.R.Html5.ul li_rl)
+let init =
+  let _ = Dom.appendChild (Dom_html.getElementById "output") ul_elt in
+  let _ = ReactiveData.RList.cons "one" rhandle in
+  let _ = ReactiveData.RList.cons "two" rhandle in
+  let _ = ReactiveData.RList.cons "three" rhandle in
+  let rec loop () =
+    let t = Js.Unsafe.(meth_call (new_obj Js.date_now [||]) "toString" [||]) in
+    ReactiveData.RList.update t 0 rhandle;
+    Lwt.bind (Lwt_js.sleep 1.) loop in
+  Lwt.async loop;
+  (fun s -> ReactiveData.RList.cons s rhandle)
+
 (** Graphics: Draw *)
 open Graphics_js;;
 loop [Mouse_motion] (function {mouse_x=x;mouse_y=y} -> fill_circle x y 5);;

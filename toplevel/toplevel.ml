@@ -252,17 +252,12 @@ let trim s =
   do decr stop done;
   String.sub s !start (!stop - !start + 1)
 
-let by_id s =
-  Js.Opt.get (Html.document##getElementById(Js.string s)) (fun () -> failwith (Printf.sprintf "cannot find dom id %S\n%!" s))
+let by_id s = Dom_html.getElementById s
 
-let by_id_coerce s f  =
-  Js.Opt.get (Js.Opt.bind (Html.document##getElementById(Js.string s)) f)
-    (fun () -> failwith (Printf.sprintf "cannot find dom id %S\n%!" s))
+let by_id_coerce s f  = Js.Opt.get (f (Dom_html.getElementById s)) (fun () -> raise Not_found)
 
 let do_by_id s f =
-  Js.Opt.case (Html.document##getElementById(Js.string s))
-    (fun () -> ())
-    (fun d -> f d)
+  try f (Dom_html.getElementById s) with Not_found -> ()
 
 let examples =
   let r = Regexp.regexp "^\\(\\*+(.*)\\*+\\)$" in

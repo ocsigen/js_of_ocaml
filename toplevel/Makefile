@@ -83,11 +83,15 @@ STDLIB_MODULES=\
 	lwt_js \
 	bigarray \
 	tyxml_js \
+	tyxml_cast \
+	tyxml_cast_sig \
 	html5_types \
+  reactiveData \
+	react
 
 JOO=js dom typed_array dom_html dom_svg file dom_events firebug lwt_js sys_js regexp CSS url \
   form xmlHttpRequest lwt_js_events json webGL webSockets keycode
-JOO=js
+#JOO=js
 
 PERVASIVES=$(STDLIB_MODULES) $(JOO) $(BER_MODULE) outcometree topdirs toploop
 
@@ -99,11 +103,13 @@ $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
 	-I $(COMPILER_LIBS) \
 	-I $(shell ocamlfind query lwt) \
 	-I $(shell ocamlfind query tyxml) \
+	-I $(shell ocamlfind query reactiveData) \
+	-I $(shell ocamlfind query react) \
 	-I ./ -I ../lib/ -I ../lib/graphics -I ../lib/tyxml -file html5_types.cmi:/cmis \
 	-ofs toplevel-fs.js $(OPTIONS) -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
-	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray,tyxml.functor $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
+	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray,tyxml.functor,reactiveData $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
 
