@@ -29,22 +29,35 @@ end = struct
 end
 
 (** Reactive dom *)
-open Tyxml_js.R.Html5
-open ReactiveData
-let rl,rhandle = ReactiveData.RList.make []
-let li_rl = RList.map (fun x -> Tyxml_js.Html5.li [Tyxml_js.Html5.pcdata x]) rl
-let ul_elt = Tyxml_js.To_dom.of_ul (Tyxml_js.R.Html5.ul li_rl)
+module RList = ReactiveData.RList
+let rl,rhandle = RList.make []
+let li_rl = RList.map (fun x -> Tyxml_js.Html5.(li [pcdata x])) rl
+
+let ul_elt = Tyxml_js.R.Html5.ul li_rl
 let init =
-  let _ = Dom.appendChild (Dom_html.getElementById "output") ul_elt in
-  let _ = ReactiveData.RList.cons "one" rhandle in
-  let _ = ReactiveData.RList.cons "two" rhandle in
-  let _ = ReactiveData.RList.cons "three" rhandle in
+  let _ = RList.append "# cons \"some string\"" rhandle in
+  let _ = RList.append "# append \"some other\"" rhandle in
+  let _ = RList.append "# insert \"anywhere\" 1"  rhandle in
+  let _ = RList.append "# remove 1" rhandle in
+  ()
+let append s = RList.append s rhandle
+let cons s = RList.cons s rhandle
+let insert s pos = RList.insert s pos rhandle
+let remove pos = RList.remove pos rhandle
+let time_signal =
+  let s,set = React.S.create (Sys.time ()) in
   let rec loop () =
-    let t = Js.Unsafe.(meth_call (new_obj Js.date_now [||]) "toString" [||]) in
-    ReactiveData.RList.update t 0 rhandle;
+    set (Sys.time ());
     Lwt.bind (Lwt_js.sleep 1.) loop in
   Lwt.async loop;
-  (fun s -> ReactiveData.RList.cons s rhandle)
+  s
+let div_elt =
+  Tyxml_js.(Html5.(
+    div [
+      h4 [pcdata "Uptime is "; R.Html5.pcdata (React.S.map (fun s -> string_of_int (int_of_float s)) time_signal); pcdata " s"];
+      ul_elt
+    ]));;
+#display div_elt
 
 (** Graphics: Draw *)
 open Graphics_js;;

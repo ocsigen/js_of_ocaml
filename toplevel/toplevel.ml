@@ -246,6 +246,12 @@ end = struct
     Sys_js.register_autoload "/" (fun s -> load_from_server s);
     Toploop.initialize_toplevel_env ();
     Toploop.input_name := "//toplevel//";
+    exec' ("let jsoo_logo = Tyxml_js.Html5.(
+        img
+          ~src:\"http://ocsigen.org/resources/logos/text_js_of_ocaml_with_shadow.png\"
+          ~alt:\"Ocsigen\"  ())");
+    exec' ("#display jsoo_logo");
+
     let header =
       "        Objective Caml version %s" in
     let header2 = Printf.sprintf
