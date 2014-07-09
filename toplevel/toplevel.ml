@@ -132,7 +132,22 @@ end = struct
     Hashtbl.add Toploop.directive_table "disable" (Toploop.Directive_string Option.Optim.disable);
     Hashtbl.add Toploop.directive_table "debug_on" (Toploop.Directive_string Option.Debug.enable);
     Hashtbl.add Toploop.directive_table "debug_off" (Toploop.Directive_string Option.Debug.disable);
-    Hashtbl.add Toploop.directive_table "debug_off" (Toploop.Directive_string Option.Debug.disable);
+    Hashtbl.add Toploop.directive_table "display" (Toploop.Directive_ident (fun lid ->
+        let s =
+          match lid with
+          | Longident.Lident s -> s
+          | Longident.Ldot (_,s) -> s
+          | Longident.Lapply _ ->
+            raise Exit
+        in
+        let v : < .. > Js.t= Obj.magic (Toploop.getvalue s) in
+        if Js.instanceof v (Js.Unsafe.global ## _HTMLElement)
+        then
+          Dom.appendChild (Dom_html.getElementById "output") v
+        else
+          let s = Json.output v in
+          print_endline (Js.to_string s)
+      ));
     Hashtbl.add Toploop.directive_table "tailcall" (Toploop.Directive_string (fun s ->
       let x = Option.Tailcall.of_string s in
       Option.Tailcall.set x));
