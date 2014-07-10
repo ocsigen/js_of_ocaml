@@ -227,7 +227,7 @@ end = struct
   let load_from_server path =
     try
       let xml = XmlHttpRequest.create () in
-      xml##_open(Js.string "GET", Js.string ("http://127.0.0.1:8888/filesys/" ^ path), Js._false);
+      xml##_open(Js.string "GET", Js.string ("filesys/" ^ path), Js._false);
       xml##send(Js.null);
       if xml##status = 200 then
         let resp = xml##responseText in
@@ -368,6 +368,104 @@ let indent_textarea textbox =
       ()
     | None -> () end
 
+let rec filter_map f = function
+  | [] -> []
+  | x::xs ->
+    match f x with
+    | None -> filter_map f xs
+    | Some x -> x:: filter_map f xs
+
+let random_identifier size =
+  let s = String.create size in
+  for i = 0 to (size - 1) do
+    s.[i] <- Char.chr (97 + Random.int 26)
+  done;
+  s
+
+let callback cb =
+  let name = random_identifier 10 in
+  Js.Unsafe.set (Dom_html.window) (Js.string name) (Js.wrap_callback cb);
+  name
+
+module Base64 = struct
+
+(*
+ * Copyright (c) 2006-2009 Citrix Systems Inc.
+ * Copyright (c) 2010 Thomas Gazagnaire <thomas@gazagnaire.com>
+ *
+ * Permission to use, copy, modify, and distribute this software for any
+ * purpose with or without fee is hereby granted, provided that the above
+ * copyright notice and this permission notice appear in all copies.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+ * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+ * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+ * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+ * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+ *
+ *)
+
+
+    (* taken from https://github.com/avsm/ocaml-cohttp/blob/master/cohttp/base64.ml *)
+
+    let code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    let padding = '='
+
+    let of_char x = if x = padding then 0 else String.index code x
+
+    let to_char x = code.[x]
+
+    let decode x =
+      let words = String.length x / 4 in
+      let padding =
+        if String.length x = 0 then 0 else (
+        if x.[String.length x - 2] = padding
+        then 2 else (if x.[String.length x - 1] = padding then 1 else 0)) in
+      let output = String.make (words * 3 - padding) '\000' in
+      for i = 0 to words - 1 do
+        let a = of_char x.[4 * i + 0]
+        and b = of_char x.[4 * i + 1]
+        and c = of_char x.[4 * i + 2]
+        and d = of_char x.[4 * i + 3] in
+        let n = (a lsl 18) lor (b lsl 12) lor (c lsl 6) lor d in
+        let x = (n lsr 16) land 255
+        and y = (n lsr 8) land 255
+        and z = n land 255 in
+        output.[3 * i + 0] <- char_of_int x;
+        if i <> words - 1 || padding < 2 then output.[3 * i + 1] <- char_of_int y;
+        if i <> words - 1 || padding < 1 then output.[3 * i + 2] <- char_of_int z;
+      done;
+      output
+
+    let encode x =
+      let length = String.length x in
+      let words = (length + 2) / 3 in (* rounded up *)
+      let padding = if length mod 3 = 0 then 0 else 3 - (length mod 3) in
+      let output = String.make (words * 4) '\000' in
+      let get i = if i >= length then 0 else int_of_char x.[i] in
+      for i = 0 to words - 1 do
+        let x = get (3 * i + 0)
+        and y = get (3 * i + 1)
+        and z = get (3 * i + 2) in
+        let n = (x lsl 16) lor (y lsl 8) lor z in
+        let a = (n lsr 18) land 63
+        and b = (n lsr 12) land 63
+        and c = (n lsr 6) land 63
+        and d = n land 63 in
+        output.[4 * i + 0] <- to_char a;
+        output.[4 * i + 1] <- to_char b;
+        output.[4 * i + 2] <- to_char c;
+        output.[4 * i + 3] <- to_char d;
+      done;
+      for i = 1 to padding do
+        output.[String.length output - i] <- '=';
+      done;
+      output
+
+end
+
 let run _ =
   let container = by_id "toplevel-container" in
   let output = by_id "output" in
@@ -441,6 +539,50 @@ let run _ =
     do_by_id "btn-reset"
       (fun e -> e##onclick <- Html.handler (fun _ -> output##innerHTML <- Js.string "";
                                              Top.initialize (); Js._false));
+    do_by_id "btn-share"
+      (fun e ->
+         e##style##display <- Js.string "block";
+         e##onclick <- Html.handler (fun _ ->
+
+           (* get all ocaml code *)
+           let childs = Dom.list_of_nodeList output##childNodes in
+           let code = filter_map (fun t ->
+               let open Js.Opt in
+               to_option (bind (Dom_html.CoerceTo.element t) (fun t ->
+                   if Js.to_bool (t##classList##contains(Js.string "sharp"))
+                   then bind (t##textContent) (fun t -> return (Js.to_string t))
+                   else empty))) childs in
+           let code_encoded = Base64.encode (String.concat "" code) in
+
+           (* generate uri *)
+           let update_frag frag =
+             let frags = Url.decode_arguments frag in
+             let frags = List.remove_assoc "code" frags @ ["code",code_encoded] in
+             Url.encode_arguments frags
+           in
+           let url,frag = match Url.Current.get () with
+             | Some (Url.Http url) -> Url.Http ({url with Url.hu_fragment = "" }), update_frag url.Url.hu_fragment
+             | Some (Url.Https url) -> Url.Https ({url with Url.hu_fragment= "" }), update_frag url.Url.hu_fragment
+             | Some (Url.File url) -> Url.File ({url with Url.fu_fragment= "" }), update_frag url.Url.fu_fragment
+             | _ -> assert false in
+           let uri = Url.urlencode (Url.string_of_url url ^ "#" ^ frag) in
+
+           let script = Dom_html.(createScript document) in
+           let cb = callback (fun o ->
+               (* remove previously inserted script *)
+               ignore (Dom_html.document##body##removeChild(script));
+               let str = Js.to_string o##shorturl in
+               let dom = Tyxml_js.Html5.(
+                   p [ pcdata "Share this url : "; a ~a:[a_href str] [ pcdata str ]]) in
+               Dom.appendChild output (Tyxml_js.To_dom.of_element dom)
+             ) in
+
+           script##src <- Js.string (
+               Printf.sprintf
+                 "http://is.gd/create.php?format=json&callback=%s&url=%s" cb uri);
+           script##_type <- Js.string ("text/javascript");
+           Dom.appendChild (Dom_html.document##body) script;
+           Js._false));
 
     textbox##onkeydown <- Html.handler (fun e ->
         match e##keyCode with
@@ -538,6 +680,15 @@ let run _ =
   let ph = by_id "last-js" in
 
   Top.setup (fun s -> ph##innerHTML <- Js.string s);
-  Top.initialize ()
+  Top.initialize ();
+
+  (* Run initial code if any *)
+  let frag = Url.Current.get_fragment () in
+  let params = Url.decode_arguments frag in
+  try
+    let code = List.assoc "code" params in
+    textbox##value <- Js.string (Base64.decode code);
+    Lwt.async execute
+  with _ -> ()
 
 let _ = Html.window##onload <- Html.handler (fun _ -> run (); Js._false)
