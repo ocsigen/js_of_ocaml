@@ -683,12 +683,20 @@ let run _ =
   Top.initialize ();
 
   (* Run initial code if any *)
-  let frag = Url.Current.get_fragment () in
-  let params = Url.decode_arguments frag in
-  try
-    let code = List.assoc "code" params in
-    textbox##value <- Js.string (Base64.decode code);
-    Lwt.async execute
-  with _ -> ()
+  (* we need to compute the hash form href to avoid different encoding behavior
+    across browser. see Url.get_fragment *)
+  let hash_regexp = jsnew Js.regExp (Js.string "#(.*)") in
+  let frag = Dom_html.window##location##href##_match(hash_regexp) in
+  Js.Opt.iter frag (fun res ->
+      let res = Js.match_result res in
+      let frag  = Js.to_string (Js.Unsafe.get res 1) in
+      let params = Url.decode_arguments frag in
+      try
+        let code = List.assoc "code" params in
+        textbox##value <- Js.string (Base64.decode code);
+        Lwt.async execute
+      with exc ->
+        Firebug.console##log_3(Js.string "exception", Js.string (Printexc.to_string exc), exc)
+    )
 
 let _ = Html.window##onload <- Html.handler (fun _ -> run (); Js._false)
