@@ -324,12 +324,20 @@ struct
   let arguments = decode_arguments_js_string l##search
 
   let get_fragment () =
-    let s = Js.to_bytestring l##hash in
-    if String.length s > 0 && s.[0] = '#'
-    then String.sub s 1 (String.length s - 1)
-    else s
-    (*TODO: switch behavior depending on the browser (Firefox bug : https://bugzilla.mozilla.org/show_bug.cgi?id=483304 )*)
-
+    (* location.hash doesn't have the same behavior depending on the browser
+       Firefox bug : https://bugzilla.mozilla.org/show_bug.cgi?id=483304 *)
+    (* let s = Js.to_bytestring (l##hash) in *)
+    (* if String.length s > 0 && s.[0] = '#' *)
+    (* then String.sub s 1 (String.length s - 1) *)
+    (* else s; *)
+    Js.Opt.case (
+      l##href##_match (
+        jsnew Js.regExp (Js.string "#(.*)")))
+      (fun () -> "")
+      (fun res ->
+         let res = Js.match_result res in
+         Js.to_string (Js.Unsafe.get res 1)
+      )
   let set_fragment s = l##hash <- Js.bytestring (urlencode s)
 
   let get () = url_of_js_string l##href
