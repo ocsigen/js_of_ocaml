@@ -111,14 +111,30 @@
       #toplevel-examples .list-group-item{
       padding: 5px 15px;
       }
+      #btn-share {
+      float:right;
+      margin-top:-20px;
+      background-color:rgb(92, 129, 184);
+      border-color: rgb(70, 75, 128);
+      padding: 1px 5px;
+      display:none;
+      }
       .clear { clear:both; }
     </style>
     <script type="text/javascript" src="toplevel-fs.js"></script>
     <script type="text/javascript">
       var default_top = "v/toplevel-4.01.0.js";
       window.onhashchange = function() { window.location.reload() }
-      var version = window.location.hash.match(/#?(.*)/);
-      var url = (version[1]=="")?default_top:("v/toplevel-"+version[1]+".js");
+      var hash = window.location.hash.replace(/^#/,"");
+      var fields = hash.split(/&/);
+      var url = default_top;
+      for(var f in fields){
+        var data = fields[f].split(/=/);
+        if(data[0] == "version"){
+          url = "v/toplevel-"+data[1]+".js";
+          break;
+        }
+      }
       var fileref=document.createElement('script');
       fileref.setAttribute("type","text/javascript");
       fileref.setAttribute("src", url);
@@ -137,6 +153,8 @@
         <!--         id="btn-clear">Clear</button> -->
         <!-- <button type="button" class="btn btn-default" -->
         <!--         id="btn-reset">Reset</button> -->
+        <button type="button" class="btn btn-default"
+                id="btn-share">Share</button>
       </div>
     </div>
     <div id="toplevel-side">
