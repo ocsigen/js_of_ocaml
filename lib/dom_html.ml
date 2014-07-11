@@ -308,6 +308,7 @@ and element = object
   method style : cssStyleDeclaration t prop
 
   method innerHTML : js_string t prop
+  method outerHTML : js_string t prop
   method textContent : js_string t opt prop
 
   method clientLeft : int readonly_prop
