@@ -875,8 +875,8 @@ function caml_sys_get_argv () {
      && g.process.argv
      && g.process.argv.length > 0) {
     //nodejs
-    main = g.process.argv[0];
-    args = g.process.argv.slice(1);
+    main = g.process.argv[1];
+    args = g.process.argv.slice(2);
   }
 
   var p = new MlWrappedString(main);
