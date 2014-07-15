@@ -40,7 +40,7 @@ EX_GRAPH:=index.html jsviewer.js
 EX_PLANET:=index.html texture.jpg planet.js
 EX_WIKI:=index.html wiki.js
 EX_WYSIWYG:=index.html wiki.js
-EX_HYPER:=index.html hypertree.js icons
+EX_HYPER:=index.html hypertree.js icons thumbnails svg_icons
 EX_MINE:=index.html minesweeper.js sprites
 EX_CUBE:=index.html cubes.js
 
