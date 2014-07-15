@@ -8,7 +8,8 @@ do_build_doc () {
   make -C doc clean
   make -C doc doc
   make -C doc wikidoc
-  cp -Rf doc/manual/* ${MANUAL_DIR}/
+  cp -Rf doc/manual/files ${MANUAL_FILES_DIR}/
+  cp -Rf doc/manual/src ${MANUAL_SRC_DIR}/
   cp -Rf doc/api/wiki/*.wiki ${API_DIR}/
 }
 
