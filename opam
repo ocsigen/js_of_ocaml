@@ -10,6 +10,7 @@ remove: [
   ["ocamlfind" "remove" "js_of_ocaml"]
 ]
 depends: [
+  "base-unix"
   "ocamlfind"
   "lwt"
   "menhir"
