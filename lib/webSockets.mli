@@ -72,5 +72,7 @@ val webSocket :
   (Js.js_string Js.t -> webSocket Js.t) Js.constr
 val webSocket_withProtocol :
   (Js.js_string Js.t -> Js.js_string Js.t -> webSocket Js.t) Js.constr
+val webSocket_withProtocols :
+  (Js.js_string Js.t -> Js.js_string Js.t Js.js_array Js.t -> webSocket Js.t) Js.constr
 
 val is_supported : unit -> bool
