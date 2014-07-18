@@ -22,7 +22,6 @@ type +'a t
 
 module Unsafe = struct
   external variable : string -> 'a = "caml_js_var"
-  external constant : string -> 'a = "caml_js_const"
 
   type any
   external inject : 'a -> any = "%identity"
@@ -56,10 +55,10 @@ type 'a optdef = 'a
 
 external debugger : unit -> unit = "debugger"
 
-let null : 'a opt = Unsafe.constant "null"
+let null : 'a opt = Unsafe.expr "null"
 external some : 'a -> 'a opt = "%identity"
 
-let undefined : 'a optdef = Unsafe.constant "undefined"
+let undefined : 'a optdef = Unsafe.expr "undefined"
 external def : 'a -> 'a optdef = "%identity"
 
 module type OPT = sig
@@ -130,8 +129,8 @@ external wrap_meth_callback : ('a -> 'b -> 'c) -> ('a, 'b -> 'c) meth_callback =
 
 (****)
 
-let _true = Unsafe.constant "true"
-let _false = Unsafe.constant "false"
+let _true = Unsafe.expr "true"
+let _false = Unsafe.expr "false"
 
 type match_result_handle
 type string_array

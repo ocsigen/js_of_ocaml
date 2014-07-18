@@ -48,15 +48,6 @@ function caml_js_var(x) {
   }
   return eval(x);
 }
-//Provides: caml_js_const const
-function caml_js_const(x) {
-  switch (x.toString()) {
-  case "null": return null;
-  case "true": return true;
-  case "false": return false;
-  // case "undefined: return undefined;
-  }
-}
 //Provides: caml_js_call
 function caml_js_call(f, o, args) { return f.apply(o, args.slice(1)); }
 //Provides: caml_js_fun_call
