@@ -28,6 +28,7 @@ function caml_js_from_float(x) { return x; }
 //Provides: caml_js_to_float const
 function caml_js_to_float(x) { return x; }
 //Provides: caml_js_from_string mutable
+//Requires: MlString
 function caml_js_from_string(s) { return s.toString(); }
 //Provides: caml_js_to_string const
 //Requires: MlWrappedString
@@ -39,6 +40,7 @@ function caml_js_to_array(a) { return [0].concat(a); }
 
 //Provides: caml_js_var mutable
 //Requires: js_print_stderr
+//Requires: MlString
 function caml_js_var(x) {
   var x = x.toString();
   //Checks that x has the form ident[.ident]*
@@ -53,7 +55,9 @@ function caml_js_call(f, o, args) { return f.apply(o, args.slice(1)); }
 //Provides: caml_js_fun_call
 function caml_js_fun_call(f, args) { return f.apply(null, args.slice(1)); }
 //Provides: caml_js_meth_call
-function caml_js_meth_call(o, f, args) { return o[f].apply(o, args.slice(1)); }
+//Requires: MlString
+function caml_js_meth_call(o, f, args) {
+  return o[f.toString()].apply(o, args.slice(1)); }
 //Provides: caml_js_new
 function caml_js_new(c, a) {
   switch (a.length) {
@@ -92,26 +96,30 @@ function caml_js_wrap_meth_callback(f) {
 //Provides: caml_js_equals mutable
 function caml_js_equals (x, y) { return +(x == y); }
 //Provides: caml_js_from_byte_string mutable
+//Requires: MlString
 function caml_js_from_byte_string (s) {return s.getFullBytes();}
 //Provides: caml_js_to_byte_string const
 //Requires: MlString
 function caml_js_to_byte_string (s) {return new MlString (s);}
 
 //Provides: caml_js_eval_string
+//Requires: MlString
 function caml_js_eval_string (s) {return eval(s.toString());}
 
 //Provides: caml_js_expr
 //Requires: js_print_stderr
+//Requires: MlString
 function caml_js_expr(s) {
   js_print_stderr("caml_js_expr: fallback to runtime evaluation");
   return eval(s.toString());}
 
 //Provides: caml_js_object
+//Requires: MlString
 function caml_js_object (a) {
   var o = {};
   for (var i = 1; i < a.length; i++) {
     var p = a[i];
-    o[p[1]] = p[2];
+    o[p[1].toString()] = p[2];
   }
   return o;
 }
