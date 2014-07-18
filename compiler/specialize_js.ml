@@ -39,7 +39,7 @@ let specialize_instr info i =
       | Some i -> Let(x,Constant(String (Int32.to_string i)))
       | None -> i
     end
-  | Let (x, Prim (Extern ("caml_js_var"|"caml_js_const"|"caml_js_expr" as prim), [y])) ->
+  | Let (x, Prim (Extern ("caml_js_var"|"caml_js_expr" as prim), [y])) ->
       begin match the_string_of info y with
         Some s ->
           Let (x, Prim (Extern prim, [Pc (String s)]))

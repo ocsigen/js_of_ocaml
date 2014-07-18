@@ -937,8 +937,6 @@ and translate_expr ctx queue x e level =
          or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
         (ident_from_string nm, const_p, queue)
-      | Extern "caml_js_const", [Pc (String nm)] ->
-        (ident_from_string nm, const_p, queue)
       | Extern "caml_js_expr", [Pc (String nm)] ->
         begin
           try
