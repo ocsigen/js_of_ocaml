@@ -19,7 +19,7 @@
 
 (** Tyxml interface *)
 
-module Xml : Xml_sigs.Wrapped
+module Xml : Xml_sigs.T
   with type uri = string
    and type event_handler = Dom_html.event Js.t -> bool
    and type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
@@ -34,33 +34,13 @@ module Util : sig
   val update_children : Dom.node Js.t -> Dom.node Js.t ReactiveData.RList.t -> unit
 end
 
-module Svg : Svg_sigs.T
-  with module Xml := Xml
-   and type 'a wrap = 'a
-   and type 'a list_wrap = 'a list
+module Svg : Svg_sigs.Make(Xml).T
 
-module Html5 : Html5_sigs.T
-  with module Xml := Xml
-   and module Svg := Svg
-   and type 'a wrap = 'a
-   and type 'a list_wrap = 'a list
+module Html5 : Html5_sigs.Make(Xml)(Svg).T
 
 module R : sig
-  module Svg : Svg_sigs.T
-    with module Xml := Xml
-     and type 'a wrap = 'a React.signal
-     and type 'a list_wrap = 'a ReactiveData.RList.t
-     and type 'a elt = 'a Svg.elt
-     and type 'a attrib = 'a Svg.attrib
-
-  module Html5 : Html5_sigs.T
-    with module Xml := Xml
-     and module Svg := Svg
-     and type 'a wrap = 'a React.signal
-     and type 'a list_wrap = 'a ReactiveData.RList.t
-     and type 'a elt = 'a Html5.elt
-     and type 'a attrib = 'a Html5.attrib
-     and type uri = Html5.uri
+  module Svg : Svg_sigs.MakeWrapped(Xml_wrap)(Xml).T
+  module Html5 : Html5_sigs.MakeWrapped(Xml_wrap)(Xml)(Svg).T
 end
 
 module To_dom : Tyxml_cast_sigs.TO with type 'a elt = 'a Html5.elt
