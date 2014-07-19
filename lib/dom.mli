@@ -48,13 +48,19 @@ type nodeType =
   | DOCUMENT_FRAGMENT
   | NOTATION
 
-val document_position_disconnected : int
-val document_position_preceding : int
-val document_position_following : int
-val document_position_contains : int
-val document_position_contained_by : int
-val document_position_implementation_specific : int
-
+module DocumentPosition : sig
+  type t = private int
+  type mask = private int
+  val disconnected : mask
+  val preceding : mask
+  val following : mask
+  val contains : mask
+  val contained_by : mask
+  val implementation_specific : mask
+  val has : t -> mask -> bool
+  val add : mask -> mask -> mask
+  val (+) : mask -> mask -> mask
+end
 (** Specification of [Node] objects. *)
 class type node = object
   method nodeName : js_string t readonly_prop
@@ -73,7 +79,7 @@ class type node = object
   method appendChild : node t -> node t meth
   method hasChildNodes : bool t meth
   method cloneNode : bool t -> node t meth
-  method compareDocumentPosition : node t -> int meth
+  method compareDocumentPosition : node t -> DocumentPosition.t meth
 end
 
 (** Specification of [Attr] objects. *)
