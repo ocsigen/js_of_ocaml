@@ -3,6 +3,7 @@
  * Features/Changes
  ** Runtime: support for num (Ryan Goulden)
  ** Lib: initial support for Dom_svg
+ ** Lib: introduce Jsonp module
 
  * BugFixes
  ** Compiler: generate js files with default permission, was 0o600

@@ -18,6 +18,8 @@ js.cmo : js.cmi
 js.cmx : js.cmi
 json.cmo : js.cmi json.cmi
 json.cmx : js.cmx json.cmi
+jsonp.cmo : url.cmi lwt_js.cmi js.cmi dom_html.cmi dom.cmi jsonp.cmi
+jsonp.cmx : url.cmx lwt_js.cmx js.cmx dom_html.cmx dom.cmx jsonp.cmi
 keycode.cmo : keycode.cmi
 keycode.cmx : keycode.cmi
 lwt_js.cmo : js.cmi firebug.cmi dom_html.cmi lwt_js.cmi
@@ -52,6 +54,7 @@ firebug.cmi : js.cmi dom.cmi
 form.cmi : js.cmi file.cmi dom_html.cmi
 js.cmi :
 json.cmi : js.cmi
+jsonp.cmi :
 keycode.cmi :
 lwt_js.cmi :
 lwt_js_events.cmi : js.cmi dom_html.cmi
