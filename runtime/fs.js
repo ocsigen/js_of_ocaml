@@ -194,6 +194,7 @@ function caml_fs_register_autoload(path,f){
   }
 
   dir.auto = f;
+  return 0;
 }
 
 //Provides: caml_sys_read_directory
@@ -219,6 +220,7 @@ function caml_sys_remove(name){
   if(dir.exists(path[path.length-1]))
     dir.remove(path[path.length-1]);
   else caml_raise_no_such_file(name);
+  return 0;
 }
 
 //Provides: caml_sys_is_directory
@@ -242,5 +244,5 @@ function caml_sys_rename(o,n){
   }
   caml_fs_register(n, content);
   caml_sys_remove(o);
-  return;
+  return 0;
 }
