@@ -64,6 +64,8 @@ module DocumentPosition = struct
   let contained_by = 0x10
   let implementation_specific = 0x20
   let has t mask = t land mask = mask
+  let add x y = x lor y
+  let (+) = add
 end
 class type node = object
   method nodeName : js_string t readonly_prop

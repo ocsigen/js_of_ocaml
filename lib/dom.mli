@@ -58,6 +58,8 @@ module DocumentPosition : sig
   val contained_by : mask
   val implementation_specific : mask
   val has : t -> mask -> bool
+  val add : mask -> mask -> mask
+  val (+) : mask -> mask -> mask
 end
 (** Specification of [Node] objects. *)
 class type node = object
