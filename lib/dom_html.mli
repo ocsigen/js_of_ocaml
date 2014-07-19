@@ -70,6 +70,7 @@ class type cssStyleDeclaration = object
   method direction : js_string t prop
   method display : js_string t prop
   method emptyCells : js_string t prop
+  method fill : js_string t prop
   method font : js_string t prop
   method fontFamily : js_string t prop
   method fontSize : js_string t prop
