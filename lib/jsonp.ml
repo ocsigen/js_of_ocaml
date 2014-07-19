@@ -33,14 +33,25 @@ let raw_call name uri error_cb user_cb =
   let finalize () =
     Js.Unsafe.delete (Dom_html.window) (Js.string name);
     ignore (Dom_html.document##body##removeChild(script)) in
+  let executed = ref false in
   Js.Unsafe.set
     (Dom_html.window)
     (Js.string name)
-    (fun x -> finalize (); user_cb x);
+    (fun x -> executed:=true; finalize (); user_cb x);
   script##src <- Js.string uri;
   script##_type <- Js.string ("text/javascript");
   script##async <- Js._true;
   (Js.Unsafe.coerce script)##onerror <- (fun x -> finalize (); error_cb x);
+  (Js.Unsafe.coerce script)##onload <- (fun x ->
+      Lwt.async (fun () ->
+          Lwt.bind (Lwt_js.sleep 1.) (fun () ->
+              if !executed
+              then Lwt.return_unit
+              else (
+                Firebug.console##warn(Js.string "Jsonp: script loaded but callback not executed");
+                finalize (); error_cb x; Lwt.return_unit))
+        )
+    );
   let init () = ignore (Dom.appendChild (Dom_html.document##body) script) in
   init, finalize
 
@@ -51,7 +62,7 @@ let call_ make_uri error_cb user_cb =
 
 let call_custom_url ?timeout make_uri =
   let t,w = Lwt.task () in
-  let init, finalize = call_ make_uri (fun err -> Lwt.wakeup_exn w (Js.Error err)) (Lwt.wakeup w) in
+  let init, finalize = call_ make_uri (fun _ -> Lwt.cancel t) (Lwt.wakeup w) in
   Lwt.on_cancel t finalize;
   let new_t = match timeout with
     | None -> t
