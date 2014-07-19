@@ -560,28 +560,33 @@ let run _ =
              let frags = List.remove_assoc "code" frags @ ["code",code_encoded] in
              Url.encode_arguments frags
            in
-           let url,frag = match Url.Current.get () with
-             | Some (Url.Http url) -> Url.Http ({url with Url.hu_fragment = "" }), update_frag url.Url.hu_fragment
-             | Some (Url.Https url) -> Url.Https ({url with Url.hu_fragment= "" }), update_frag url.Url.hu_fragment
-             | Some (Url.File url) -> Url.File ({url with Url.fu_fragment= "" }), update_frag url.Url.fu_fragment
+           let url,frag,is_file = match Url.Current.get () with
+             | Some (Url.Http url) -> Url.Http ({url with Url.hu_fragment = "" }), update_frag url.Url.hu_fragment,false
+             | Some (Url.Https url) -> Url.Https ({url with Url.hu_fragment= "" }), update_frag url.Url.hu_fragment,false
+             | Some (Url.File url) -> Url.File ({url with Url.fu_fragment= "" }), update_frag url.Url.fu_fragment,true
              | _ -> assert false in
-           let uri = Url.urlencode (Url.string_of_url url ^ "#" ^ frag) in
-
-           let script = Dom_html.(createScript document) in
-           let cb = callback (fun o ->
-               (* remove previously inserted script *)
-               ignore (Dom_html.document##body##removeChild(script));
-               let str = Js.to_string o##shorturl in
-               let dom = Tyxml_js.Html5.(
-                   p [ pcdata "Share this url : "; a ~a:[a_href str] [ pcdata str ]]) in
-               Dom.appendChild output (Tyxml_js.To_dom.of_element dom)
-             ) in
-
-           script##src <- Js.string (
-               Printf.sprintf
-                 "http://is.gd/create.php?format=json&callback=%s&url=%s" cb uri);
-           script##_type <- Js.string ("text/javascript");
-           Dom.appendChild (Dom_html.document##body) script;
+           let uri = Url.string_of_url url ^ "#" ^ frag in
+           let append_url str =
+             let dom = Tyxml_js.Html5.(
+                 p [ pcdata "Share this url : "; a ~a:[a_href str] [ pcdata str ]]) in
+             Dom.appendChild output (Tyxml_js.To_dom.of_element dom);
+           in
+           Lwt.async (fun () ->
+               Lwt.catch (fun () ->
+                   if is_file
+                   then failwith "Cannot shorten url with file scheme"
+                   else
+                   let jsonp_call = Jsonp.call
+                       (Printf.sprintf "http://is.gd/create.php?format=json&url=%s" (Url.urlencode uri)) in
+                   Lwt.bind jsonp_call (fun o ->
+                       let str = Js.to_string o##shorturl in
+                       append_url str;
+                       Lwt.return_unit
+                     ))
+                 (fun exn ->
+                    Format.eprintf "Could not generate short url. reason: %s@." (Printexc.to_string exn);
+                    append_url uri;
+                    Lwt.return_unit));
            Js._false));
 
     textbox##onkeydown <- Html.handler (fun e ->
