@@ -434,6 +434,15 @@ exception Error of error t
       it will be serialized and wrapped into a [Failure] exception.
   *)
 
+(** Specification of Javascript JSON object. *)
+class type json = object
+  method parse : js_string t -> 'a meth
+  method stringify: 'a -> js_string t meth
+end
+
+val _JSON : json t
+(** JSON object *)
+
 (** {2 Standard Javascript functions} *)
 
 val decodeURI : js_string t -> js_string t

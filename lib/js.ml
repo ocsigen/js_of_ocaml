@@ -344,6 +344,12 @@ exception Error of error t
 let error_constr = Unsafe.global##_Error
 let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
 
+class type json = object
+  method parse : js_string t -> 'a meth
+  method stringify: 'a -> js_string t meth
+end
+
+let _JSON : json t = Unsafe.global##_JSON
 
 
 let decodeURI (s : js_string t) : js_string t =
