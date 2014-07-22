@@ -105,7 +105,9 @@ $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
 	-I $(shell ocamlfind query tyxml) \
 	-I $(shell ocamlfind query reactiveData) \
 	-I $(shell ocamlfind query react) \
-	-I ./ -I ../lib/ -I ../lib/graphics -I ../lib/tyxml -file html5_types.cmi:/cmis \
+	-I ./ -I ../lib/ -I ../lib/graphics -I ../lib/tyxml \
+	-file html5_types.cmi:/cmis -file html5_sigs.cmi:/cmis \
+	-file xml_wrap.cmi:/cmis \
 	-ofs toplevel-fs.js $(OPTIONS) -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
