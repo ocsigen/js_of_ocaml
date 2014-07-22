@@ -69,7 +69,7 @@ MlString.prototype = {
     try {
       return this.string = decodeURIComponent (escape(a));
     } catch (e){
-      js_print_stderr("MlString.toJsString: wrong encoding for \"%s\" ", a);
+      js_print_stderr("MlString.toJsString: wrong encoding for \"" + a + "\"");
       return a;
     }
   },
@@ -80,7 +80,7 @@ MlString.prototype = {
       try {
         var b = unescape (encodeURIComponent (this.string));
       } catch (e) {
-        js_print_stderr("MlString.toBytes: wrong encoding for \"%s\" ", this.string);
+        js_print_stderr("MlString.toBytes: wrong encoding for \"" + this.string + "\"");
         var b = this.string;
       }
     } else {
