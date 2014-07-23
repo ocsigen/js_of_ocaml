@@ -32,7 +32,7 @@ let raw_call name uri error_cb user_cb =
   let script = Dom_html.(createScript document) in
   let finalize () =
     Js.Unsafe.delete (Dom_html.window) (Js.string name);
-    ignore (Dom_html.document##body##removeChild(script)) in
+    Dom.removeChild (Dom_html.document##body) script in
   let executed = ref false in
   Js.Unsafe.set
     (Dom_html.window)

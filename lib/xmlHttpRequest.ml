@@ -71,7 +71,7 @@ class type xmlHttpRequest_binary = object
   method sendAsBinary_presence : unit optdef readonly_prop
 end
 
-let create () =
+let create () : xmlHttpRequest Js.t =
   try jsnew (Js.Unsafe.global##_XMLHttpRequest)() with _ ->
   try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Msxml2.XMLHTTP") with _ ->
   try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Msxml3.XMLHTTP") with _ ->

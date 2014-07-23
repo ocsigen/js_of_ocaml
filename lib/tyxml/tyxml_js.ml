@@ -138,8 +138,8 @@ module Util = struct
     | R i ->
       let i = if i < 0 then dom##childNodes##length + i else i in
       let nodes = dom##childNodes in
-      assert (i < nodes##length);
-      ignore(dom##removeChild(nodes##item(i)))
+      assert (i >= 0 && i < nodes##length);
+      Js.Opt.iter (nodes##item(i)) (fun n -> Dom.removeChild dom n)
     | U (i,x) ->
       let i = if i < 0 then dom##childNodes##length + i else i in
       (match Js.Opt.to_option dom##childNodes##item(i) with

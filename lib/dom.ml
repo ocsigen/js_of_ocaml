@@ -273,10 +273,10 @@ let addEventListener (e : (< .. > as 'a) t) typ h capt =
   if (Js.Unsafe.coerce e)##addEventListener == Js.undefined then begin
     let ev = (Js.string "on")##concat(typ) in
     let callback = fun e -> Js.Unsafe.call (h, e, [||]) in
-    (Js.Unsafe.coerce e)##attachEvent(ev, callback);
+    let () = (Js.Unsafe.coerce e)##attachEvent(ev, callback) in
     fun () -> (Js.Unsafe.coerce e)##detachEvent(ev, callback)
   end else begin
-    (Js.Unsafe.coerce e)##addEventListener(typ, h, capt);
+    let () = (Js.Unsafe.coerce e)##addEventListener(typ, h, capt) in
     fun () -> (Js.Unsafe.coerce e)##removeEventListener (typ, h, capt)
   end
 
