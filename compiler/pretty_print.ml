@@ -55,7 +55,7 @@ type t =
 let spaces = String.make 80 ' '
 let output st s l =
   (try
-     let last = String.rindex_from s (l-1) '\n' in
+     let last = String.rindex_from s (l-1) '\n' + 1 in
      let line = ref 0 in
      for i = 0 to l-1 do
        if s.[i] = '\n' then incr line;
