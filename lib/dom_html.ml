@@ -71,7 +71,7 @@ class type cssStyleDeclaration = object
   method direction : js_string t prop
   method display : js_string t prop
   method emptyCells : js_string t prop
-  method fill : js_string t prop 
+  method fill : js_string t prop
   method font : js_string t prop
   method fontFamily : js_string t prop
   method fontSize : js_string t prop
@@ -410,6 +410,8 @@ module Event = struct
   let updateready = Dom.Event.make "updateready"
   let cached = Dom.Event.make "cached"
   let obsolete = Dom.Event.make "obsolete"
+
+  let domContentLoaded = Dom.Event.make "DOMContentLoaded"
 
   let make = Dom.Event.make
 end
@@ -1086,6 +1088,7 @@ class type document = object
   method write : js_string t -> unit meth
   method execCommand : js_string t -> bool t -> js_string t opt -> unit meth
   method createRange : range t meth
+  method readyState : js_string t readonly_prop
 
   inherit eventTarget
 end

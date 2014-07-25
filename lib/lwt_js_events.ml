@@ -347,6 +347,40 @@ let request_animation_frame () =
   t
 
 let onload () = make_event Dom_html.Event.load Dom_html.window
+
+let domContentLoaded =
+  let complete = Js.string "complete" in
+  let doc = Dom_html.window##document in
+  (fun () ->
+     if doc##readyState = complete
+     then Lwt.return_unit
+     else
+       let t,w = Lwt.task () in
+       let wakeup w x = if Lwt.is_sleeping t then Lwt.wakeup w () in
+       let wakeup_exn w e = if Lwt.is_sleeping t then Lwt.wakeup_exn w e in
+       (* https://github.com/dperini/ContentLoaded/blob/master/src/contentloaded.js *)
+       let regular = make_event Dom_html.Event.domContentLoaded doc in
+       Lwt.on_any regular (wakeup w) (wakeup_exn w);
+       (* ie8 *)
+       let readystatechange = async_loop
+           (make_event (Dom.Event.make "readystatechange"))
+           doc
+           (fun e _ ->
+              if doc##readyState = complete
+              then wakeup w e;
+              Lwt.return_unit
+           ) in
+       (* fallback, just in case *)
+       let init = make_event Dom_html.Event.load Dom_html.window in
+       Lwt.on_any init (wakeup w) (wakeup_exn w);
+       (* clean and return *)
+       Lwt.bind t (fun e ->
+           Lwt.cancel regular;
+           Lwt.cancel readystatechange;
+           Lwt.cancel init;
+           Lwt.return_unit)
+  )
+
 let onunload () = make_event Dom_html.Event.unload Dom_html.window
 let onbeforeunload () = make_event Dom_html.Event.beforeunload Dom_html.window
 let onresize () = make_event Dom_html.Event.resize Dom_html.window

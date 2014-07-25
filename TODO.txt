@@ -25,9 +25,6 @@ Libraries
 
    <_0: t0; _1: t1; _n: tn> t
 
-- DOMContentLoaded (+workarounds for legacy browsers)
-  ===> see jquery
-
 Benchmarks/examples
 ===================
 - polishing

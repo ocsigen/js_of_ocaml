@@ -1039,6 +1039,7 @@ class type document = object
   method write : js_string t -> unit meth
   method execCommand : js_string t -> bool t -> js_string t opt -> unit meth
   method createRange : range t meth
+  method readyState : js_string t readonly_prop
 
   inherit eventTarget
 end
@@ -1305,6 +1306,8 @@ module Event : sig
   val updateready : event t typ
   val cached : event t typ
   val obsolete : event t typ
+
+  val domContentLoaded : event t typ
 
   val make : string -> 'a typ
 end
