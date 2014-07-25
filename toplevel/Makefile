@@ -121,9 +121,28 @@ $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
 	-ofs toplevel-fs.js $(OPTIONS) -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
-	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray,tyxml.functor,reactiveData $(OCPINDENT) -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
+	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
+
+EVAL=eval
+$(EVAL).byte: $(EVAL).ml ../compiler/compiler.cma
+	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray -linkpkg -o $@.tmp $(STDLIB) $(EVAL).ml
+	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
+	rm -f $@.tmp
+
+$(EVAL).js: $(EVAL).byte $(COMP) $(JSFILES) examples.ml
+	$(COMP) -toplevel -noruntime $(JSFILES) $(EVAL).byte \
+	-I $(COMPILER_LIBS) \
+	-I $(shell ocamlfind query lwt) \
+	-I $(shell ocamlfind query tyxml) \
+	-I $(shell ocamlfind query reactiveData) \
+	-I $(shell ocamlfind query react) \
+	-I ./ -I ../lib/ -I ../lib/graphics -I ../lib/tyxml \
+	-file html5_types.cmi:/cmis -file html5_sigs.cmi:/cmis \
+	-file xml_wrap.cmi:/cmis \
+	$(OPTIONS)
+
 
 %.cmo: %.ml ../compiler/compiler.cma
 	$(OCAMLC) -c $<

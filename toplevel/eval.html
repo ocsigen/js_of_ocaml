@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+          "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title></title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <script type="text/javascript" src="eval.js"></script>
+  </head>
+  <body>
+    <script type="text/ocaml" stdout="script1" stderr="script1">
+      let rec fact x =
+      if x = 0
+      then 1
+      else x * fact (pred x)
+      let _ = Format.printf "fact 10 = %d@." (fact 10)
+      let _ = Format.eprintf "fact 20 = %d@." (fact 20)
+      let _ = print_endline (Js.to_string ((jsnew Js.date_now())##toString()))
+    </script>
+    <div id="script1"> </div>
+
+    <script type="text/ocaml" stdout="script2" stderr="script2">
+      let () = print_endline "test"
+    </script>
+    <div id="script2"> </div>
+  </body>
+</html>
