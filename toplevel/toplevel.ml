@@ -670,8 +670,32 @@ let run _ =
     let span = Tyxml_js.Html5.(span ~a:[a_class [cl]] [pcdata s]) in
     Dom.appendChild output (Tyxml_js.To_dom.of_element span) in
 
-  Sys_js.set_channel_flusher caml_chan (append_string "caml");
-  Sys_js.set_channel_flusher sharp_chan (append_string "sharp");
+#let_default higlo = false
+#if higlo
+let append_ocaml cl_base s =
+  let tks = Higlo.parse ~lang:"ocaml" s in
+  let span' cl s = Tyxml_js.Html5.(span ~a:[a_class [cl]] [pcdata s]) in
+  let make_span = function
+    | Higlo.Bcomment s -> span' "comment" s
+    | Higlo.Constant s -> span' "constant" s
+    | Higlo.Directive s -> span' "directive" s
+    | Higlo.Escape s -> span' "escape" s
+    | Higlo.Id s -> span' "id" s
+    | Higlo.Keyword (level,s) -> span' (Printf.sprintf "kw%d" level) s
+    | Higlo.Lcomment s -> span' "comment" s
+    | Higlo.Numeric s -> span' "numeric" s
+    | Higlo.String s -> span' "string" s
+    | Higlo.Symbol (level,s) -> span' (Printf.sprintf "sym%d" level) s
+    | Higlo.Text s -> span' "text" s in
+  let container = Tyxml_js.Html5.(div ~a:[a_class [cl_base]] (List.map make_span tks)) in
+  Dom.appendChild output (Tyxml_js.To_dom.of_element container)
+in
+#else
+  append_string cl_base
+in
+#endif
+  Sys_js.set_channel_flusher caml_chan (append_ocaml "caml");
+  Sys_js.set_channel_flusher sharp_chan (append_ocaml "sharp");
   Sys_js.set_channel_flusher stdout (append_string "stdout");
   Sys_js.set_channel_flusher stderr (append_string "stderr");
 

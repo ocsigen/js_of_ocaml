@@ -20,14 +20,20 @@ BER_MODULE=trx runcode
 endif
 
 OCPINDENT=$(shell ocamlfind query ocp-indent -format "-package %p.lib" 2> /dev/null)
+HIGLO=$(shell ocamlfind query higlo.ocaml -format "-package %p -rectypes" 2> /dev/null)
 
+OPTCOMP_OPT=
 ifneq ($(OCPINDENT),)
-OPTCOMP_OPT=-ppopt -let -ppopt ocpindent=true
+OPTCOMP_OPT+=-ppopt -let -ppopt ocpindent=true
+endif
+
+ifneq ($(HIGLO),)
+OPTCOMP_OPT+=-ppopt -let -ppopt higlo=true
 endif
 
 COMP=../compiler/$(COMPILER)
 JSFILES=../runtime/runtime.js ../runtime/weak.js ../runtime/toplevel.js ../runtime/graphics.js ../runtime/nat.js
-OCAMLC=ocamlfind ocamlc -package lwt,optcomp,tyxml.functor,reactiveData -syntax camlp4o $(OCPINDENT) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" \
+OCAMLC=ocamlfind ocamlc -package lwt,optcomp,tyxml.functor,reactiveData -syntax camlp4o $(OCPINDENT) $(HIGLO) $(OPTCOMP_OPT) -ppopt "../lib/syntax/pa_js.cmo" \
 	-I $(COMPILER_LIBS) -I ../lib -I ../compiler -I ../lib/graphics -I ../lib/tyxml
 STDLIB= ../lib/$(LIBNAME).cma ../compiler/compiler.cma $(OCAMLLIB) $(BER) ../lib/graphics/graphics.cma ../lib/tyxml/tyxml.cma
 EXPUNGE=$(shell ocamlc -where)/expunge
