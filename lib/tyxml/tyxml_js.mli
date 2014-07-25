@@ -41,6 +41,8 @@ module Html5 : Html5_sigs.Make(Xml)(Svg).T
 module R : sig
   module Svg : Svg_sigs.MakeWrapped(Xml_wrap)(Xml).T
   module Html5 : Html5_sigs.MakeWrapped(Xml_wrap)(Xml)(Svg).T
+    with type +'a elt = 'a Html5.elt
+     and type +'a attrib = 'a Html5.attrib
 end
 
 module To_dom : Tyxml_cast_sigs.TO with type 'a elt = 'a Html5.elt
