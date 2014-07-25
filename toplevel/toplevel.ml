@@ -18,11 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*
-TODO
-- syntax highlighting?
-*)
-
 open Lwt
 open Compiler
 module Html = Dom_html
@@ -374,18 +369,6 @@ let rec filter_map f = function
     match f x with
     | None -> filter_map f xs
     | Some x -> x:: filter_map f xs
-
-let random_identifier size =
-  let s = String.create size in
-  for i = 0 to (size - 1) do
-    s.[i] <- Char.chr (97 + Random.int 26)
-  done;
-  s
-
-let callback cb =
-  let name = random_identifier 10 in
-  Js.Unsafe.set (Dom_html.window) (Js.string name) (Js.wrap_callback cb);
-  name
 
 module Base64 = struct
 
