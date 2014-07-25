@@ -768,6 +768,11 @@ function caml_sys_const_ostype_unix () { return 1; }
 //Provides: caml_sys_const_ostype_win32 const
 function caml_sys_const_ostype_win32 () { return 0; }
 
+//Provides: caml_sys_system_command
+function caml_sys_system_command(_cmd){
+  return 127;
+}
+
 ///////////// Array
 //Provides: caml_array_sub mutable
 function caml_array_sub (a, i, len) {
