@@ -363,7 +363,7 @@ let indent_textarea textbox =
       let (lo2'',up2'') = List.assoc line2 l in
       let n1 = max (c1 + up1'' - up1) lo1'' in
       let n2 = max (c2 + up2'' - up2) lo2'' in
-      (Obj.magic textbox)##setSelectionRange(n1,n2);
+      let () = (Obj.magic textbox)##setSelectionRange(n1,n2) in
       textbox##focus();
       ()
     | None -> () end
@@ -619,7 +619,7 @@ let run _ =
                 textbox##value <- s;
                 let s' = Js.to_string s in
                 let p' = try max 0 (String.index s' '\n' - 1) with _ -> String.length s' in
-                (Obj.magic textbox)##setSelectionRange(p',p');
+                let () = (Obj.magic textbox)##setSelectionRange(p',p') in
                 Js._false
               with _ -> Js._false
           end
@@ -642,7 +642,7 @@ let run _ =
                   hist_idx:=idx;
                   let s' = Js.to_string s in
                   let slen = String.length s' in
-                  (Obj.magic textbox)##setSelectionRange(slen,slen);
+                  let () = (Obj.magic textbox)##setSelectionRange(slen,slen) in
                   textbox##value <- s
                 end;
                 Js._false

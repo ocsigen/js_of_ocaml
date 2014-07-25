@@ -1,4 +1,3 @@
-
 NAME=toplevel
 OBJS=toplevel.cmo
 
@@ -77,23 +76,28 @@ STDLIB_MODULES=\
   stringLabels \
   sys \
   weak \
-	graphics \
-	graphics_js \
+  graphics \
+  bigarray \
+
+#tyxml lwt react
+OTHER=\
+	html5_types \
 	lwt \
-	lwt_js \
-	bigarray \
+	reactiveData \
+	react
+
+JOO=js dom typed_array dom_html dom_svg file dom_events firebug lwt_js sys_js regexp cSS url \
+  form xmlHttpRequest lwt_js_events json jsonp webGL webSockets keycode
+#JOO=js
+
+JOO_EXT =\
+	lwt_log_js \
+	graphics_js \
 	tyxml_js \
 	tyxml_cast \
 	tyxml_cast_sig \
-	html5_types \
-  reactiveData \
-	react
 
-JOO=js dom typed_array dom_html dom_svg file dom_events firebug lwt_js sys_js regexp CSS url \
-  form xmlHttpRequest lwt_js_events json webGL webSockets keycode
-#JOO=js
-
-PERVASIVES=$(STDLIB_MODULES) $(JOO) $(BER_MODULE) outcometree topdirs toploop
+PERVASIVES=$(STDLIB_MODULES) $(OTHER) $(JOO) $(JOO_EXT) $(BER_MODULE) outcometree topdirs toploop
 
 #toplevel.byte: $(OBJS:cmx=cmo) toplevel.cmo
 #	ocamlfind ocamlc -linkall -g -package str -linkpkg toplevellib.cma -o $@.tmp $^
