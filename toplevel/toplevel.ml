@@ -674,8 +674,7 @@ let append_ocaml cl_base s =
   Dom.appendChild output (Tyxml_js.To_dom.of_element container)
 in
 #else
-  append_string cl_base
-in
+let append_ocaml = append_string in
 #endif
   Sys_js.set_channel_flusher caml_chan (append_ocaml "caml");
   Sys_js.set_channel_flusher sharp_chan (append_ocaml "sharp");
