@@ -121,13 +121,23 @@ $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
 	-ofs toplevel-fs.js $(OPTIONS) -file examples.ml
 
 $(NAME).byte: $(OBJS) ../compiler/compiler.cma
-	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray -linkpkg -o $@.tmp $(STDLIB) $(OBJS)
+	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray -linkpkg -o $@.tmp $(STDLIB) \
+	-I +camlp4 dynlink.cma camlp4lib.cma \
+	Camlp4Parsers/Camlp4OCamlRevisedParser.cmo \
+	Camlp4Parsers/Camlp4OCamlParser.cmo \
+	syntax/pa_js.cmo Camlp4Top.cmo \
+	$(OBJS)
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
 
 EVAL=eval
 $(EVAL).byte: $(EVAL).ml ../compiler/compiler.cma
-	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray -linkpkg -o $@.tmp $(STDLIB) $(EVAL).ml
+	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray -linkpkg -o $@.tmp $(STDLIB) \
+	-I +camlp4 dynlink.cma camlp4lib.cma \
+	Camlp4Parsers/Camlp4OCamlRevisedParser.cmo \
+	Camlp4Parsers/Camlp4OCamlParser.cmo \
+	syntax/pa_js.cmo Camlp4Top.cmo \
+	$(EVAL).ml
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
 
