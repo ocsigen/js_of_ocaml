@@ -128,7 +128,7 @@ $(NAME).byte: $(OBJS) flush_camlp4_cb.cmo ../compiler/compiler.cma
 	syntax/pa_js.cmo \
 	flush_camlp4_cb.cmo \
 	lwt-syntax-options.cma lwt-syntax.cma \
-	Camlp4Top.cmo \
+	Camlp4Top/Top.cmo \
 	$(OBJS)
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
@@ -142,7 +142,7 @@ $(EVAL).byte: $(EVAL).ml flush_camlp4_cb.cmo ../compiler/compiler.cma
 	syntax/pa_js.cmo \
 	flush_camlp4_cb.cmo \
 	lwt-syntax-options.cma lwt-syntax.cma \
-	Camlp4Top.cmo \
+	Camlp4Top/Top.cmo \
 	$(EVAL).ml
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
