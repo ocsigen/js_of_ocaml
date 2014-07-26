@@ -1107,9 +1107,10 @@ and translate_closures ctx expr_queue l pc =
 
       let (st, expr_queue) =
         match ctx.Ctx.live.(Var.idx x),statements with
-        | 0, _ -> assert false
         | 1, [J.Variable_statement [(J.V x',Some (e', _))]] when x == x' ->
-            enqueue expr_queue flush_p x e' pc 1 []
+          enqueue expr_queue flush_p x e' pc 1 []
+        | 0, _ -> (* deadcode is off *)
+          flush_queue expr_queue flush_p statements
         | _ -> flush_queue expr_queue flush_p statements
       in
       let (st', expr_queue) = translate_closures ctx expr_queue rem pc in
