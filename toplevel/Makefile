@@ -120,23 +120,29 @@ $(NAME).js: $(NAME).byte $(COMP) $(JSFILES) examples.ml
 	-file xml_wrap.cmi:/cmis \
 	-ofs toplevel-fs.js $(OPTIONS) -file examples.ml
 
-$(NAME).byte: $(OBJS) ../compiler/compiler.cma
+$(NAME).byte: $(OBJS) flush_camlp4_cb.cmo ../compiler/compiler.cma
 	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray -linkpkg -o $@.tmp $(STDLIB) \
 	-I +camlp4 dynlink.cma camlp4lib.cma \
 	Camlp4Parsers/Camlp4OCamlRevisedParser.cmo \
 	Camlp4Parsers/Camlp4OCamlParser.cmo \
-	syntax/pa_js.cmo Camlp4Top.cmo \
+	syntax/pa_js.cmo \
+	flush_camlp4_cb.cmo \
+	lwt-syntax-options.cma lwt-syntax.cma \
+	Camlp4Top.cmo \
 	$(OBJS)
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
 
 EVAL=eval
-$(EVAL).byte: $(EVAL).ml ../compiler/compiler.cma
+$(EVAL).byte: $(EVAL).ml flush_camlp4_cb.cmo ../compiler/compiler.cma
 	$(OCAMLC) -linkall -package findlib,graphics,lwt,bigarray -linkpkg -o $@.tmp $(STDLIB) \
 	-I +camlp4 dynlink.cma camlp4lib.cma \
 	Camlp4Parsers/Camlp4OCamlRevisedParser.cmo \
 	Camlp4Parsers/Camlp4OCamlParser.cmo \
-	syntax/pa_js.cmo Camlp4Top.cmo \
+	syntax/pa_js.cmo \
+	flush_camlp4_cb.cmo \
+	lwt-syntax-options.cma lwt-syntax.cma \
+	Camlp4Top.cmo \
 	$(EVAL).ml
 	$(EXPUNGE) $@.tmp $@ $(PERVASIVES)
 	rm -f $@.tmp
