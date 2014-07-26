@@ -248,7 +248,12 @@ end = struct
                 ~alt:\"Ocsigen\"  ()
             ])");
     exec' ("#display jsoo_logo");
-
+    exec' ("module Lwt_main = struct
+             let run t = match Lwt.state t with
+               | Lwt.Return x -> x
+               | Lwt.Fail e -> raise e
+               | Lwt.Sleep -> failwith \"Lwt_main.run: thread didn't return\"
+            end");
     let header =
       "        Objective Caml version %s" in
     let header2 = Printf.sprintf
@@ -256,7 +261,7 @@ end = struct
     exec' (Printf.sprintf "Format.printf \"%s@.\" Sys.ocaml_version;;" header);
     exec' (Printf.sprintf "Format.printf \"%s@.@.\";;" header2);
     exec' ("#enable \"pretty\";;");
-    exec' ("#enable \"shortvar\";;")
+    exec' ("#enable \"shortvar\";;");
 end
 
 let trim s =
