@@ -242,9 +242,11 @@ end = struct
     Toploop.initialize_toplevel_env ();
     Toploop.input_name := "//toplevel//";
     exec' ("let jsoo_logo = Tyxml_js.Html5.(
-        img
-          ~src:\"http://ocsigen.org/resources/logos/text_js_of_ocaml_with_shadow.png\"
-          ~alt:\"Ocsigen\"  ())");
+            a ~a:[a_href \"http://ocsigen.org/js_of_ocaml\"] [
+              img
+                ~src:\"http://ocsigen.org/resources/logos/text_js_of_ocaml_with_shadow.png\"
+                ~alt:\"Ocsigen\"  ()
+            ])");
     exec' ("#display jsoo_logo");
 
     let header =
@@ -514,7 +516,7 @@ let run _ =
     ) examples;
 
   begin (* setup handlers *)
-    container##onclick <- Html.handler (fun _ -> textbox##focus(); Js._false);
+    container##onclick <- Html.handler (fun _ -> textbox##focus(); Js._true);
     do_by_id "btn-execute"
       (fun e -> e##onclick <- Html.handler (fun _ -> Lwt.async execute; Js._false));
     do_by_id "btn-clear"

@@ -76,7 +76,7 @@ end = struct
     | x    -> Errors.report_error Format.err_formatter x
 
 end
-let _ = Firebug.console##warn(Js.string "one")
+
 
 let append_string output cl s =
   let d = Dom_html.window##document in
@@ -97,7 +97,6 @@ let configure o chan attr default =
 
 
 let _ = Lwt.bind (Lwt_js_events.domContentLoaded ()) (fun () ->
-    let _ = Firebug.console##warn(Js.string "two") in
     let toploop_ = open_out "/dev/null" in
     let toploop_ppf = Format.formatter_of_out_channel toploop_ in
     let print = !Toploop.print_out_phrase in
