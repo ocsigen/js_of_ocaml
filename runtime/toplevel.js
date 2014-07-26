@@ -19,7 +19,22 @@
 
 //Provides: caml_terminfo_setup
 function caml_terminfo_setup () { return 1; } // Bad_term
-
+//Provides: caml_terminfo_backup
+function caml_terminfo_backup () { return 0; }
+//Provides: caml_terminfo_standout
+function caml_terminfo_standout () { return 0; }
+//Provides: caml_terminfo_resume
+function caml_terminfo_resume () { return 0; }
+//Provides: caml_invoke_traced_function
+//Requires: caml_invalid_argument
+function caml_invoke_traced_function() {
+  caml_invalid_argument("Meta.invoke_traced_function");
+}
+//Provides: caml_get_current_environment
+//Requires: caml_failwith
+function caml_get_current_environment() {
+  caml_failwith("caml_get_current_environment not Implemented");
+}
 //////////////////////////////////////////////////////////////////////
 
 //Provides: caml_get_section_table

@@ -453,5 +453,21 @@ function caml_gr_sigio_signal(){return 0}
 //Provides: caml_gr_wait_event
 //Requires: caml_failwith
 function caml_gr_wait_event(_evl){
-  caml_failwith("not Implemented: use Graphics_js instead");
+  caml_failwith("caml_gr_wait_event not Implemented: use Graphics_js instead");
+}
+
+//Provides: caml_gr_synchronize
+//Requires: caml_failwith
+function caml_gr_synchronize () {
+  caml_failwith("caml_gr_synchronize not Implemented");
+}
+//Provides: caml_gr_remember_mode
+//Requires: caml_failwith
+function caml_gr_remember_mode () {
+  caml_failwith("caml_gr_remember_mode not Implemented");
+}
+//Provides: caml_gr_display_mode
+//Requires: caml_failwith
+function caml_gr_display_mode() {
+  caml_failwith("caml_gr_display_mode not Implemented");
 }
