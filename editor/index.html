@@ -6,6 +6,10 @@
     <title>Editor</title>
     <script type="text/javascript" src="editor.js"></script>
     <style>
+      div.coll,div.colr {
+      width:50%;
+      float:left;
+      }
       .line pre, .line span {
       display: inline-block;
       margin: 0px;
@@ -30,11 +34,16 @@
     </style>
   </head>
   <body>
-    <div id="patch"></div>
-    <div id="content"></div>
-    <textarea type="text" id="input">
-This is a tiny editor written in ocaml
-and compile to javscript
-using js_of_ocaml</textarea>
+    <div class="coll">
+      <h2>First editor</h2>
+      <div id="content"></div>
+      <textarea type="text" id="input"></textarea>
+    </div>
+    <!-- <button id="undo">undo</button> -->
+    <div class="colr">
+      <h2>Second editor synced with patches</h2>
+      <div id="copy_content"></div>
+      <textarea type="text" id="copy_input"></textarea>
+    </div>
   </body>
 </html>
