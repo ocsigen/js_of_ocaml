@@ -198,7 +198,7 @@
 
 
 //Provides: JSON
-var JSON;
+var JSON = joo_global_object.JSON;
 if (!JSON) {
     JSON = {};
 }
