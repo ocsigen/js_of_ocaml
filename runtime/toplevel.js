@@ -41,9 +41,13 @@ function caml_get_current_environment() {
 //Requires: caml_global_data
 function caml_get_section_table () { return caml_global_data.toc; }
 
+
 //Provides: caml_reify_bytecode
+//Requires: caml_failwith
 function caml_reify_bytecode (code, _sz) {
-  return eval(joo_global_object.toplevelCompile(code).toString());
+  if(joo_global_object.toplevelCompile)
+    return joo_global_object.toplevelCompile(code);
+  else caml_failwith("Toplevel not initialized (toplevelCompile)")
 }
 
 //Provides: caml_static_release_bytecode

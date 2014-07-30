@@ -18,8 +18,10 @@ js.cmo : js.cmi
 js.cmx : js.cmi
 json.cmo : js.cmi json.cmi
 json.cmx : js.cmx json.cmi
-jsonp.cmo : url.cmi lwt_js.cmi js.cmi dom_html.cmi dom.cmi jsonp.cmi
-jsonp.cmx : url.cmx lwt_js.cmx js.cmx dom_html.cmx dom.cmx jsonp.cmi
+jsonp.cmo : url.cmi lwt_js.cmi js.cmi firebug.cmi dom_html.cmi dom.cmi \
+    jsonp.cmi
+jsonp.cmx : url.cmx lwt_js.cmx js.cmx firebug.cmx dom_html.cmx dom.cmx \
+    jsonp.cmi
 keycode.cmo : keycode.cmi
 keycode.cmx : keycode.cmi
 lwt_js.cmo : js.cmi firebug.cmi dom_html.cmi lwt_js.cmi
@@ -68,6 +70,9 @@ xmlHttpRequest.cmi : url.cmi js.cmi form.cmi file.cmi dom.cmi
 log/lwt_log_js.cmo : js.cmi firebug.cmi log/lwt_log_js.cmi
 log/lwt_log_js.cmx : js.cmx firebug.cmx log/lwt_log_js.cmi
 log/lwt_log_js.cmi :
+toplevel/jsooTop.cmo : sys_js.cmi js.cmi toplevel/jsooTop.cmi
+toplevel/jsooTop.cmx : sys_js.cmx js.cmx toplevel/jsooTop.cmi
+toplevel/jsooTop.cmi :
 graphics/graphics_js.cmo : lwt_js_events.cmi js.cmi dom_html.cmi \
     graphics/graphics_js.cmi
 graphics/graphics_js.cmx : lwt_js_events.cmx js.cmx dom_html.cmx \
