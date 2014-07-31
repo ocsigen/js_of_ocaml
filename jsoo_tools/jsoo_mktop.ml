@@ -108,10 +108,15 @@ end
 
 let usage () =
   Format.eprintf "Usage: jsoo_mktop [options] [ocamlfind arguments] @.";
-  Format.eprintf " -verbose\t\toutput intermediate commands@.";
-  Format.eprintf " -help\t\t\tDisplay usage@.";
-  Format.eprintf " -top-syntax [pkg]\tInclude syntax extension provided by [pkg] findlib package@.";
-  Format.eprintf " -top-syntax-mod [mod]\tInclude syntax extension provided by the module [mod]@.";
+  Format.eprintf " -verbose\t\t\tOutput intermediate commands@.";
+  Format.eprintf " -help\t\t\t\tDisplay usage@.";
+  Format.eprintf " -top-syntax [pkg]\t\tInclude syntax extension provided by [pkg] findlib package@.";
+  Format.eprintf " -top-syntax-mod [mod]\t\tInclude syntax extension provided by the module [mod]@.";
+  Format.eprintf " -o [name]\t\t\tSet output filename@.";
+  Format.eprintf " -jsopt [opt]\t\t\tPass [opt] option to js_of_ocaml compiler@.";
+  Format.eprintf " -export-package [pkg]\t\tCompile toplevel with [pkg] package loaded@.";
+  Format.eprintf " -export-unit [unit]\t\tExport [unit]@.";
+  Format.eprintf " -dont-export-unit [unit]\tDon't export [unit]@.";
   exit 1
 
 
