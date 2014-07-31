@@ -27,7 +27,7 @@ ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
 TYXML_CMA=tyxml/tyxml.cma
 endif
 
-ifeq ($(OCAML4),"YES")
+ifeq "${WITH_TOPLEVEL}" "YES"
 TOPLEVELLIB= toplevel/jsooTop.cmo
 endif
 

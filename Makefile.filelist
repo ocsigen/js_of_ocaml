@@ -31,7 +31,7 @@ IMPL += lib/tyxml/tyxml.cma
 INTF += lib/tyxml/*.cmi
 endif
 
-ifeq ($(OCAML4),"YES")
+ifeq "${WITH_TOPLEVEL}" "YES"
 IMPL += lib/toplevel/jsooTop.cmo
 INTF += lib/toplevel/jsooTop.cmi
 endif

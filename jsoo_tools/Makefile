@@ -1,7 +1,7 @@
 include ../Makefile.conf
 -include ../Makefile.local
 
-ifeq ($(OCAML4),"YES")
+ifeq "${WITH_TOPLEVEL}" "YES"
 ALL= $(MKTOP) $(MKCMIS)
 endif
 
