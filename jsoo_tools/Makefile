@@ -5,13 +5,18 @@ native: jsoo_mkcmis.native jsoo_mktop.native
 
 %.byte: %.ml ../compiler/local/compiler.cma
 	ocamlfind ocamlc -linkpkg \
-	-package js_of_ocaml.compiler,compiler-libs.common,findlib \
+	-package compiler-libs.common,findlib \
+	-I ../compiler/local/ compiler.cma \
 	$*.ml -o $*.byte
 
-%.native: %.ml ../compiler/local/compiler.cmxa
-	ocamlfind ocamlc -linkpkg \
-	-package js_of_ocaml.compiler,compiler-libs.common,findlib \
+%.native: %.ml ../compiler/local/compiler.cma
+	ocamlfind ocamlopt -linkpkg \
+	-package compiler-libs.common,findlib \
+	-I ../compiler/local/ compiler.cmxa \
 	$*.ml -o $*.native
 
-../compiler/%:
-	$(MAKE) -C ../compiler/ $*
+../compiler/local/compiler.cma:
+	$(MAKE) -C ../compiler local/compiler.cma
+
+clean:
+	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa] *.{byte,native}

@@ -1,3 +1,25 @@
+(* Js_of_ocaml compiler
+ * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2014 Hugo Heuzard
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *)
+
+(* Helper to compile js_of_ocaml toplevel
+   with support for camlp4 syntax extensions *)
+
 (* #use "topfind" *)
 (* #require "findlib" *)
 
@@ -26,6 +48,13 @@ let do_clean () =
 
 module type CAMLP4 = sig   val build : string list -> string list -> string list end
 module Camlp4 : CAMLP4 = struct
+
+  (* We do the same as Camlp4Bin
+     call Camlp4.Register.iter_and_take_callbacks
+     after Every load of syntax module to initialize them.
+     Camlp4 do it after dynlink;
+     Since we statically link modules, we have to
+     link dummy modules to trigger the callbacks *)
   let flush_str = Printf.sprintf
       "let _ = JsooTop.register_camlp4_syntax %S Camlp4.Register.iter_and_take_callbacks"
 
@@ -69,10 +98,19 @@ module Camlp4 : CAMLP4 = struct
       @ ["Camlp4Top/Top.cmo"]
 end
 
+let usage () =
+  Format.eprintf "Usage: jsoo_mktop [options] [ocamlfind arguments] @.";
+  Format.eprintf " -verbose\t\toutput intermediate commands@.";
+  Format.eprintf " -help\t\t\tDisplay usage@.";
+  Format.eprintf " -top-syntax [pkg]\tInclude syntax extension provided by [pkg] findlib package@.";
+  Format.eprintf " -top-syntax-mod [mod]\tInclude syntax extension provided by the module [mod]@.";
+  exit 1
+
 let rec scan_args acc = function
   | "-top-syntax" :: x :: xs -> add_syntax_pkg x; scan_args acc xs
   | "-top-syntax-mod" :: x :: xs -> add_syntax_mod x; scan_args acc xs
-  | "-verbose"::xs -> verbose:=true; scan_args ("-verbose"::acc) xs
+  | ("--verbose"|"-verbose")::xs -> verbose:=true; scan_args ("-verbose"::acc) xs
+  | ("--help"|"-help"|"-h")::_ -> usage ()
   | x :: xs -> scan_args (x::acc) xs
   | [] -> List.rev acc
 

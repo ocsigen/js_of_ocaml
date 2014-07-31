@@ -112,7 +112,9 @@ log/logger.cma: log/lwt_log_js.cmo
 
 
 COMPILER_LIBS=$(shell ocamlc -where)/compiler-libs
-toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo
+../compiler/local/compiler.cma:
+	$(MAKE) -C ../compiler local/compiler.cma
+toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo ../compiler/local/compiler.cma
 	ocamlfind ocamlc -syntax camlp4o \
 		-package lwt,lwt.syntax \
 		-ppopt syntax/pa_js.cmo \
