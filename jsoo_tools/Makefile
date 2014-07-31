@@ -1,4 +1,9 @@
+all: $(MKTOP) $(MKCMIS)
 
+$(MKTOP): jsoo_mktop.$(BEST)
+	mv -f $< $@
+$(MKCMIS): jsoo_mkcmis.$(BEST)
+	mv -f $< $@
 
 byte: jsoo_mkcmis.byte jsoo_mktop.byte
 native: jsoo_mkcmis.native jsoo_mktop.native

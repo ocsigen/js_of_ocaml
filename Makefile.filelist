@@ -1,5 +1,7 @@
 BIN := compiler/${COMPILER} compiler/${MINIFIER}
 
+TOOLS := jsoo_tools/${MKTOP} jsoo_tools/${MKCMIS}
+
 INTF := lib/*.cmi
 
 IMPL := lib/$(LIBNAME).cma   \

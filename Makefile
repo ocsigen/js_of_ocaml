@@ -49,6 +49,7 @@ install-lib:
 install-bin:
 	install -d -m 755 $(BINDIR)
 	install $(BIN) $(BINDIR)
+	install $(BIN) $(TOOLS)
 
 uninstall: uninstall-lib uninstall-bin
 
@@ -58,6 +59,8 @@ uninstall-lib:
 uninstall-bin:
 	rm -f $(BINDIR)/$(COMPILER)
 	rm -f $(BINDIR)/$(MINIFIER)
+	rm -f $(BINDIR)/$(MKTOP)
+	rm -f $(BINDIR)/$(MKCMIS)
 
 reinstall: uninstall install
 
