@@ -23,8 +23,16 @@
 (* #use "topfind" *)
 (* #require "findlib" *)
 
-let verbose = ref false
+let js_opt = ref []
+let add_js_opt x = js_opt:=!js_opt@[x]
 
+let pkgs = ref ["stdlib"]
+let add_pkgs x = pkgs:=!pkgs@[x]
+
+let export = ref []
+let dont_export = ref []
+let add_export x = export:=!export@[x]
+let add_dont_export x = dont_export:=!dont_export@[x]
 let syntaxes = ref []
 let syntaxes_mod = ref []
 let add_syntax_pkg p =
@@ -34,7 +42,7 @@ let add_syntax_mod p =
 
 let execute cmd =
   let s = String.concat " " cmd in
-  if !verbose then Printf.printf "+ %s\n" s;
+  if !Jsoo_common.verbose then Printf.printf "+ %s\n" s;
   let ret = Sys.command s in
   if ret <> 0
   then failwith (Printf.sprintf "Error: %s" s)
@@ -106,11 +114,19 @@ let usage () =
   Format.eprintf " -top-syntax-mod [mod]\tInclude syntax extension provided by the module [mod]@.";
   exit 1
 
+
+let output = ref "./a.out"
+
 let rec scan_args acc = function
   | "-top-syntax" :: x :: xs -> add_syntax_pkg x; scan_args acc xs
   | "-top-syntax-mod" :: x :: xs -> add_syntax_mod x; scan_args acc xs
-  | ("--verbose"|"-verbose")::xs -> verbose:=true; scan_args ("-verbose"::acc) xs
+  | ("--verbose"|"-verbose")::xs -> Jsoo_common.verbose:=true; scan_args ("-verbose"::acc) xs
   | ("--help"|"-help"|"-h")::_ -> usage ()
+  | "-jsopt" :: x :: xs -> add_js_opt x; scan_args acc xs
+  | "-o" :: x :: xs -> output:=x; scan_args acc xs
+  | "-export-package" :: x :: xs -> add_pkgs x; scan_args (x :: "-package" :: acc) xs
+  | "-export-unit" :: x :: xs -> add_export x; scan_args acc xs
+  | "-dont-export-unit" :: x :: xs -> add_dont_export x; scan_args acc xs
   | x :: xs -> scan_args (x::acc) xs
   | [] -> List.rev acc
 
@@ -120,7 +136,21 @@ let _ =
     let base_cmd = ["ocamlfind";"ocamlc";"-linkall";"-linkpkg"] in
     let args = List.tl (Array.to_list (Sys.argv)) in
     let args = scan_args [] args in
-    let cmd = base_cmd @ Camlp4.build !syntaxes !syntaxes_mod  @ jsoo_top @ args in
-    execute cmd;
+    let cmis = Jsoo_common.cmis_of_packages !pkgs in
+    List.iter (fun pkg ->
+      execute ["jsoo_mkcmis";pkg] ) !pkgs;
+    let modules = List.map (fun x -> Filename.(chop_extension (basename x))) cmis in
+    let modules = modules @ ["outcometree";"topdirs";"toploop"] @ !export in
+    let modules = List.filter (fun u -> not (List.mem u !dont_export)) modules in
+    begin match modules with
+      | [] -> assert false
+      | modules ->
+        let tmp_output = !output ^ ".tmp" in
+        let cmd = base_cmd @ Camlp4.build !syntaxes !syntaxes_mod  @ jsoo_top @ args @ ["-o"; tmp_output] in
+        execute cmd;
+        execute (["ocamlfind";"stdlib/expunge";tmp_output;!output] @ modules);
+        clean (tmp_output)
+    end;
+    execute (["js_of_ocaml";"-toplevel";"-no-cmis";] @ !js_opt @ [!output]);
     do_clean ()
   with exn -> do_clean (); raise exn

@@ -48,7 +48,7 @@ compiler.cma: compiler.cmo
 
 local/compiler.cma: compiler.cma compiler.cmxa
 	mkdir -p local
-	cp compiler.cma compiler.cmxa compiler.cmi local/
+	cp compiler.{cma,cmxa,a,cmi} local/
 
 compiler.cmx: $(OBJS)
 	ocamlfind ocamlopt -pack -g -o $@ $^
