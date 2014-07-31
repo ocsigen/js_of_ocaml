@@ -1,7 +1,11 @@
 include ../Makefile.conf
 -include ../Makefile.local
 
-all: $(MKTOP) $(MKCMIS)
+ifeq ($(OCAML4),"YES")
+ALL= $(MKTOP) $(MKCMIS)
+endif
+
+all: $(ALL)
 
 $(MKTOP): jsoo_mktop.$(BEST)
 	mv -f $< $@

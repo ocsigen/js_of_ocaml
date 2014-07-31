@@ -28,7 +28,7 @@ TYXML_CMA=tyxml/tyxml.cma
 endif
 
 ifeq ($(OCAML4),"YES")
-TOPLEVELLIB=toplevel/jsooTop.cmo
+TOPLEVELLIB= toplevel/jsooTop.cmo
 endif
 
 PA_JS= syntax/pa_js.cmo

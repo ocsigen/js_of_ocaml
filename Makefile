@@ -2,11 +2,7 @@
 all: no_examples examples
 no_examples: build doc
 
-ifeq ($(OCAML4),"YES")
-JSOO_TOOLS=jsoo_tools
-endif
-
-build: check_lwt compiler compiler_lib library ocamlbuild runtime $(JSOO_TOOLS)
+build: check_lwt compiler compiler_lib library ocamlbuild runtime jsoo_tools
 
 include Makefile.conf
 -include Makefile.local
