@@ -27,6 +27,11 @@ ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
 TYXML_CMA=tyxml/tyxml.cma
 endif
 
+ifeq ($(OCAML4),"YES")
+OCAMLLIB=ocamlcommon.cma ocamlbytecomp.cma ocamltoplevel.cma
+else
+OCAMLLIB=toplevellib.cma
+endif
 
 PA_JS= syntax/pa_js.cmo
 ifeq "${BEST}" "opt"
@@ -35,7 +40,7 @@ PA_JS_NDL= syntax/pa_js.cmx syntax/pa_js.cmxs
 endif
 endif
 
-all: $(LIBNAME).cma log/logger.cma \
+all: $(LIBNAME).cma log/logger.cma toplevel/jsooTop.cmo \
 	${PA_JS} ${PA_JS_NDL} \
 	${PA_DERIVING} 	${PA_DERIVING_NDL} \
 	${DERIVING_JSON} \
@@ -106,6 +111,19 @@ log/logger.cma: log/lwt_log_js.cmo
 	ocamlfind ocamlc -a -o $@ $^
 
 
+COMPILER_LIBS=$(shell ocamlc -where)/compiler-libs
+../compiler/local/compiler.cma:
+	$(MAKE) -C ../compiler local/compiler.cma
+toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo ../compiler/local/compiler.cma
+	ocamlfind ocamlc -syntax camlp4o \
+		-package lwt,lwt.syntax \
+		-ppopt syntax/pa_js.cmo \
+		-I toplevel -I ../compiler/local -I $(COMPILER_LIBS) \
+		-c $< -o $@
+
+toplevel/jsooTop.cmi: toplevel/jsooTop.mli
+	ocamlfind ocamlc -package lwt -I . -I log $< -o $@
+
 
 %.cmo: %.ml syntax/pa_js.cmo
 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" -package lwt -c -g $<
@@ -142,6 +160,7 @@ clean:
 	rm -f log/*.cm[xioa] log/*.[ao] log/*.so log/*.cmx[sa]
 	rm -f tyxml/*.cm[xioa] tyxml/*.[ao] tyxml/*.so tyxml/*.cmx[sa]
 	rm -f graphics/*.cm[xioa] graphics/*.[ao] graphics/*.so graphics/*.cmx[sa]
+	rm -f toplevel/*.cm[xioa] toplevel/*.[ao] toplevel/*.so toplevel/*.cmx[sa]
 	rm -f deriving_json/*.cm[xioa] deriving_json/*.[ao] deriving_json/*.so
 	rm -f deriving_json/deriving_Json_lexer.ml
 	rm -f stubs.c
@@ -150,6 +169,7 @@ clean:
 depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" log/*.ml log/*.mli >> .depend
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" toplevel/*.ml toplevel/*.mli >> .depend
 ifeq "${WITH_GRAPHICS}" "YES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" graphics/*.ml  >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)

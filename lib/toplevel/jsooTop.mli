@@ -1,4 +1,4 @@
-(* Js_of_ocaml compiler
+(* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2014 Hugo Heuzard
  *
@@ -17,8 +17,21 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Util
+(** Helper for Js_of_ocaml Toplevel. *)
+open Format
 
-val f : Code.program -> StringSet.t -> string list -> string list -> Code.program
-val f_empty : StringSet.t -> string list -> string list -> Code.program
-val program_of_files : (string * string) list -> Code.program
+(** [use fmt content] Execute commands [content]. It does not print types nor values. *)
+val use : formatter -> string -> bool
+
+(** [execute print fmt content] Execute [content].
+    [print] says whether the values and types of the results should be printed.
+    [pp_code] formatter can be use to output ocaml source during lexing. *)
+val execute : bool -> ?pp_code:formatter -> formatter -> string -> unit
+
+(** Initialize Js_of_ocaml toplevel. *)
+val initialize : unit -> unit
+
+(*/*)
+val get_camlp4_syntaxes : unit -> string list
+val register_camlp4_syntax : string ->
+  (((string * (unit -> unit)) -> unit) -> unit)-> unit

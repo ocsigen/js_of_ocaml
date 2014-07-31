@@ -1,17 +1,19 @@
 
 all: no_examples examples
 no_examples: build doc
-build: check_lwt compiler compiler_lib library ocamlbuild runtime
+build: check_lwt compiler compiler_lib library ocamlbuild runtime jsoo_tools
 
 include Makefile.conf
 -include Makefile.local
 
-.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build
+.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build jsoo_tools
 
 compiler:
 	$(MAKE) -C compiler
 compiler_lib: compiler
 	$(MAKE) -C compiler lib
+jsoo_tools:
+	$(MAKE) -C jsoo_tools
 library:
 	$(MAKE) -C lib
 ocamlbuild:
@@ -47,6 +49,7 @@ install-lib:
 install-bin:
 	install -d -m 755 $(BINDIR)
 	install $(BIN) $(BINDIR)
+	install $(BIN) $(TOOLS)
 
 uninstall: uninstall-lib uninstall-bin
 
@@ -56,6 +59,8 @@ uninstall-lib:
 uninstall-bin:
 	rm -f $(BINDIR)/$(COMPILER)
 	rm -f $(BINDIR)/$(MINIFIER)
+	rm -f $(BINDIR)/$(MKTOP)
+	rm -f $(BINDIR)/$(MKCMIS)
 
 reinstall: uninstall install
 
@@ -65,6 +70,7 @@ depend:
 
 clean:
 	$(MAKE) -C compiler clean
+	$(MAKE) -C jsoo_tools clean
 	$(MAKE) -C lib clean
 	$(MAKE) -C ocamlbuild clean
 	$(MAKE) -C runtime clean

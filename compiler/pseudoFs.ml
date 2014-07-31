@@ -92,6 +92,20 @@ let read name filename =
   let content = Util.read_file filename in
   (Pc (IString name),Pc (IString content))
 
+let program_of_files l =
+  let fs = List.map (fun (name,filename) ->
+      read name filename) l in
+  let body =
+    List.map (fun (n, c) ->
+        Let(Var.fresh (), Prim(Extern "caml_fs_register_extern", [n;c]))) fs in
+  let pc = 0 in
+  let blocks = AddrMap.add pc {params=[];
+                               handler=None;
+                               body=[];
+                               branch=Stop} AddrMap.empty in
+  let p = pc, blocks, pc+1 in
+  Code.prepend p body
+
 let make_body prim cmis files paths =
   let fs = StringSet.fold (fun s acc ->
       try
