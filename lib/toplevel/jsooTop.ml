@@ -68,6 +68,7 @@ let refill_lexbuf s p ppf buffer len =
 
 let use ffp content =
   let name = "/dev/fake_stdin" in
+  if Sys.file_exists name then Sys.remove name;
   Sys_js.register_file ~name ~content;
   Toploop.use_silently ffp name
 
@@ -95,3 +96,11 @@ let initialize () =
   Toploop.initialize_toplevel_env ();
   Toploop.input_name := "//toplevel//";
   Sys.interactive := true
+
+let syntaxes = ref []
+let register_camlp4_syntax name f =
+  syntaxes := name :: !syntaxes;
+  f (fun (_name,cb) ->
+      (* Format.eprintf "execute callback for %s@." name; *)
+      cb ())
+let get_camlp4_syntaxes () = List.rev !syntaxes
