@@ -12,9 +12,6 @@ IMPL := lib/$(LIBNAME).cma   \
 INTF += lib/log/*.cmi
 IMPL += lib/log/logger.cma
 
-INTF += lib/toplevel/*.cmi
-IMPL += lib/toplevel/jsooTop.cmo
-
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
 IMPL += lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs
