@@ -31,6 +31,12 @@ IMPL += lib/tyxml/tyxml.cma
 INTF += lib/tyxml/*.cmi
 endif
 
+ifeq ($(OCAML4),"YES")
+IMPL += lib/toplevel/jsooTop.cmo
+INTF += lib/toplevel/jsooTop.cmi
+endif
+
+
 OTHERS := runtime/runtime.js runtime/weak.js \
           runtime/classlist.js \
           runtime/toplevel.js \
