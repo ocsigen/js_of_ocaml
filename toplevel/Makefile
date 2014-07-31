@@ -22,7 +22,7 @@ endif
 
 JSFILES=-jsopt +weak.js -jsopt +toplevel.js -jsopt +graphics.js -jsopt +nat.js
 
-MKTOP=../jsoo_tools/jsoo_mktop -verbose \
+MKTOP=jsoo_mktop -verbose \
 	-top-syntax lwt.syntax -top-syntax js_of_ocaml.syntax \
 	-top-syntax js_of_ocaml.deriving.syntax \
 	-top-syntax deriving.syntax.std \
@@ -59,7 +59,7 @@ $(EVAL_NAME).js: $(EVAL_OBJS)
 	$(MKTOP) $(EVAL_OBJS) $(JSFILES) -o $(EVAL_NAME).byte
 
 %.cmis.js:
-	../jsoo_tools/jsoo_mkcmis $*
+	jsoo_mkcmis $*
 
 server.%: server.ml
 	ocamlbuild -use-ocamlfind -package findlib,cohttp.lwt server.$*
