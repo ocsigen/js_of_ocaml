@@ -96,181 +96,76 @@ module H = struct
 
 end
 
-module Top : sig
-  val setup : (string -> unit) -> unit
-  val exec : Format.formatter -> string -> unit
-  val initialize : unit -> unit
-end = struct
-  let split_primitives p =
-    let len = String.length p in
-    let rec split beg cur =
-      if cur >= len then []
-      else if p.[cur] = '\000' then
-        String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
-      else
-        split beg (cur + 1) in
-    Array.of_list(split 0 0)
-
-  let split_char sep p =
-    let len = String.length p in
-    let rec split beg cur =
-      if cur >= len then
-        [String.sub p beg (cur - beg)]
-      else if p.[cur] = sep then
-        String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
-      else
-        split beg (cur + 1) in
-    split 0 0
-
-  let setup output =
-    Hashtbl.add Toploop.directive_table "enable" (Toploop.Directive_string Option.Optim.enable);
-    Hashtbl.add Toploop.directive_table "disable" (Toploop.Directive_string Option.Optim.disable);
-    Hashtbl.add Toploop.directive_table "debug_on" (Toploop.Directive_string Option.Debug.enable);
-    Hashtbl.add Toploop.directive_table "debug_off" (Toploop.Directive_string Option.Debug.disable);
-    Hashtbl.add Toploop.directive_table "display" (Toploop.Directive_ident (fun lid ->
-        let s =
-          match lid with
-          | Longident.Lident s -> s
-          | Longident.Ldot (_,s) -> s
-          | Longident.Lapply _ ->
-            raise Exit
-        in
-        let v : < .. > Js.t= Obj.magic (Toploop.getvalue s) in
-        if Js.instanceof v (Js.Unsafe.global ## _HTMLElement)
-        then
-          Dom.appendChild (Dom_html.getElementById "output") v
-        else
-          let s = Json.output v in
-          print_endline (Js.to_string s)
-      ));
-    Hashtbl.add Toploop.directive_table "tailcall" (Toploop.Directive_string (fun s ->
-      let x = Option.Tailcall.of_string s in
-      Option.Tailcall.set x));
-    Hashtbl.add Toploop.directive_table "optim" (Toploop.Directive_int (fun i ->
-      Driver.set_profile i));
-
-    Topdirs.dir_directory "/cmis";
-    let initial_primitive_count =
-      Array.length (split_primitives (Symtable.data_primitive_names ())) in
-
-    let compile s =
-      let prims =
-        split_primitives (Symtable.data_primitive_names ()) in
-      let unbound_primitive p =
-        try ignore (Js.Unsafe.eval_string p); false with _ -> true in
-      let stubs = ref [] in
-      Array.iteri
-        (fun i p ->
-           if i >= initial_primitive_count && unbound_primitive p then
-             stubs :=
-               Format.sprintf
-                 "function %s(){caml_failwith(\"%s not implemented\")}" p p
-               :: !stubs)
-        prims;
-      let output_program = Driver.from_string prims s in
-      let b = Buffer.create 100 in
-      output_program (Pretty_print.to_buffer b);
-      let res = Buffer.contents b in
-      let res = String.concat "" !stubs ^ res in
-      output res;
-      res
-    in
-    Js.Unsafe.global##toplevelCompile <- compile (*XXX HACK!*)
-
-
-  let refill_lexbuf s p ppf buffer len =
-    if !p = String.length s
-    then 0
+(* load (binary) file from server using a synchronous XMLHttpRequest *)
+let load_from_server path =
+  try
+    let xml = XmlHttpRequest.create () in
+    xml##_open(Js.string "GET", Js.string ("filesys/" ^ path), Js._false);
+    xml##send(Js.null);
+    if xml##status = 200 then
+      let resp = xml##responseText in
+      let len = resp##length in
+      let str = String.create len in
+      for i=0 to len-1 do
+        str.[i] <- Char.chr (int_of_float resp##charCodeAt(i) land 0xff)
+      done;
+      Some(str)
     else
-      let len',nl =
-        try String.index_from s !p '\n' - !p + 1,false
-        with _ -> String.length s - !p,true in
-      let len'' = min len len' in
-      String.blit s !p buffer 0 len'';
-      Format.fprintf ppf "%s" (String.sub buffer 0 len'');
-      if nl then Format.pp_print_newline ppf ();
-      Format.pp_print_flush ppf ();
-      p:=!p + len'';
-      len''
-
-  let exec' s =
-    let lb = Lexing.from_string s in
-    try
-      List.iter
-        (fun phr ->
-           if not (Toploop.execute_phrase false Format.std_formatter phr) then raise Exit)
-        (!Toploop.parse_use_file lb)
-    with
-    | Exit -> ()
-    | x    -> Errors.report_error Format.err_formatter x
-
-  let exec sharpf s =
-    let lb = Lexing.from_function (refill_lexbuf s (ref 0) sharpf) in
-    try
-      while true do
-        try
-          let phr = !Toploop.parse_toplevel_phrase lb in
-          ignore(Toploop.execute_phrase true Format.std_formatter phr)
-        with
-          End_of_file ->
-          raise End_of_file
-        | x ->
-          Errors.report_error Format.err_formatter x
-      done
-    with End_of_file ->
-      flush_all ()
-
-
-  (* load (binary) file from server using a synchronous XMLHttpRequest *)
-  let load_from_server path =
-    try
-      let xml = XmlHttpRequest.create () in
-      xml##_open(Js.string "GET", Js.string ("filesys/" ^ path), Js._false);
-      xml##send(Js.null);
-      if xml##status = 200 then
-        let resp = xml##responseText in
-        let len = resp##length in
-        let str = String.create len in
-        for i=0 to len-1 do
-            str.[i] <- Char.chr (int_of_float resp##charCodeAt(i) land 0xff)
-        done;
-        Some(str)
-      else
-        None
-    with _ ->
       None
+  with _ ->
+    None
 
-  let initialize () =
-    Sys.interactive := false;
-    Sys_js.register_autoload "/" (fun s -> load_from_server s);
-    Toploop.initialize_toplevel_env ();
-    Toploop.input_name := "//toplevel//";
-    exec' ("let jsoo_logo = Tyxml_js.Html5.(
-            a ~a:[a_href \"http://ocsigen.org/js_of_ocaml\"] [
-              img
-                ~src:\"http://ocsigen.org/resources/logos/text_js_of_ocaml_with_shadow.png\"
-                ~alt:\"Ocsigen\"  ()
-            ])");
-    exec' ("#display jsoo_logo");
-    exec' ("module Lwt_main = struct
+let initialize () =
+  Sys_js.register_autoload "/" (fun s -> load_from_server s);
+  JsooTop.initialize ();
+  Sys.interactive := false;
+  Hashtbl.add Toploop.directive_table "display" (Toploop.Directive_ident (fun lid ->
+      let s =
+        match lid with
+        | Longident.Lident s -> s
+        | Longident.Ldot (_,s) -> s
+        | Longident.Lapply _ ->
+          raise Exit
+      in
+      let v : < .. > Js.t= Obj.magic (Toploop.getvalue s) in
+      if Js.instanceof v (Js.Unsafe.global ## _HTMLElement)
+      then
+        Dom.appendChild (Dom_html.getElementById "output") v
+      else
+        let s = Json.output v in
+        print_endline (Js.to_string s)
+    ));
+  let exec' s =
+    let res : bool = JsooTop.use Format.std_formatter s in
+    if not res then Format.eprintf "error while evaluating %s@." s;
+    () in
+  exec' ("module Lwt_main = struct
              let run t = match Lwt.state t with
                | Lwt.Return x -> x
                | Lwt.Fail e -> raise e
                | Lwt.Sleep -> failwith \"Lwt_main.run: thread didn't return\"
             end");
-    let header =
-      "        Objective Caml version %s" in
-    let header2 = Printf.sprintf
+  exec' ("let jsoo_logo = Tyxml_js.Html5.(
+            a ~a:[a_href \"http://ocsigen.org/js_of_ocaml\"] [
+              img
+                ~src:\"http://ocsigen.org/resources/logos/text_js_of_ocaml_with_shadow.png\"
+                ~alt:\"Ocsigen\"  ()
+            ])");
+  exec' ("#display jsoo_logo");
+
+  let header =
+    "        Objective Caml version %s" in
+  let header2 = Printf.sprintf
       "     Compiled with Js_of_ocaml version %s" Sys_js.js_of_ocaml_version in
-    let header3 = Printf.sprintf
-      "     Include Camlp4 syntax extension for Js_of_ocaml and Lwt" in
-    exec' (Printf.sprintf "Format.printf \"%s@.\" Sys.ocaml_version;;" header);
-    exec' (Printf.sprintf "Format.printf \"%s@.\";;" header2);
-    exec' (Printf.sprintf "Format.printf \"%s@.@.\";;" header3);
-    exec' ("#enable \"pretty\";;");
-    exec' ("#enable \"shortvar\";;");
-    Sys.interactive := true
-end
+  let header3 = Printf.sprintf
+      "     'JsooTop.get_camlp4_syntaxes ()' to get loaded syntax extensions" in
+  exec' (Printf.sprintf "Format.printf \"%s@.\" Sys.ocaml_version;;" header);
+  exec' (Printf.sprintf "Format.printf \"%s@.\";;" header2);
+  exec' (Printf.sprintf "Format.printf \"%s@.@.\";;" header3);
+  exec' ("#enable \"pretty\";;");
+  exec' ("#enable \"shortvar\";;");
+  Sys.interactive := true;
+  ()
 
 let trim s =
   let ws c = c = ' ' || c = '\t' || c = '\n' in
@@ -476,8 +371,6 @@ let run _ =
 
   let caml_chan = open_out "/dev/null1" in
   let caml_ppf = Format.formatter_of_out_channel caml_chan in
-  let tmp = !Toploop.print_out_phrase in
-  Toploop.print_out_phrase:= (fun fmt outcome -> tmp caml_ppf outcome);
 
 
   let resize () =
@@ -506,7 +399,7 @@ let run _ =
     H.save hist;
     cur:=Js.string "";
     hist_idx:=H.size hist;
-    Top.exec sharp_ppf content;
+    JsooTop.execute true ~pp_code:sharp_ppf caml_ppf content;
     textbox##value <- Js.string "";
     resize () >>= fun () ->
     container##scrollTop <- container##scrollHeight;
@@ -536,7 +429,7 @@ let run _ =
       (fun e -> e##onclick <- Html.handler (fun _ -> output##innerHTML <- Js.string ""; Js._false));
     do_by_id "btn-reset"
       (fun e -> e##onclick <- Html.handler (fun _ -> output##innerHTML <- Js.string "";
-                                             Top.initialize (); Js._false));
+                                             initialize (); Js._false));
     do_by_id "btn-share"
       (fun e ->
          e##style##display <- Js.string "block";
@@ -654,7 +547,7 @@ let run _ =
         | 75 when (Js.to_bool e##ctrlKey  ||
                    Js.to_bool e##altKey   ||
                    Js.to_bool e##metaKey) ->
-          Top.initialize ();
+          initialize ();
           Js._false
 
         | _ -> Js._true
@@ -704,9 +597,7 @@ let append_ocaml = append_string in
       Lwt.return_unit
     );
   let ph = by_id "last-js" in
-
-  Top.setup (fun s -> ph##innerHTML <- Js.string s);
-  Top.initialize ();
+  initialize ();
 
   (* Run initial code if any *)
   (* we need to compute the hash form href to avoid different encoding behavior
