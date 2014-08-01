@@ -90,9 +90,7 @@ functions can yield results different from usual:
 
 ## Toplevel
   * [Ocaml 4.01.0](http://ocsigen.github.io/js_of_ocaml/#version=4.01.0)
-  * [Ocaml 4.01.0+open-types](http://ocsigen.github.io/js_of_ocaml/#version=4.01.0+open-types)
-  * [Ocaml 4.01.0+BER](http://ocsigen.github.io/js_of_ocaml/#version=4.01.0+BER) : metaocaml
-  * [Ocaml 4.02.0dev+trunk](http://ocsigen.github.io/js_of_ocaml/#version=4.02.0dev+trunk)
+  * [Ocaml 4.01.0+BER](http://ocsigen.github.io/js_of_ocaml/#version=4.01.0+BER) : MetaOcaml
 
 ## Contents of the distribution
 | Filename  | Description                                  |
