@@ -3,60 +3,70 @@ include ../Makefile.conf
 
 all: toplevel.js eval.js
 
-ifeq ($(METAOCAML),1)
-BER=metalib.cma bertop.cmo
-BER_EXPORT= -export-unit trx -export-unit runcode
-endif
 
 OCPINDENT=$(shell ocamlfind query ocp-indent -format "-package %p.lib" 2> /dev/null)
 HIGLO=$(shell ocamlfind query higlo.ocaml -format "-package %p -rectypes" 2> /dev/null)
 
 OPTCOMP_OPT=
 ifneq ($(OCPINDENT),)
-OPTCOMP_OPT+=-ppopt -let -ppopt ocpindent=true
+OPTCOMP_OPT+= -let ocpindent=true
 endif
 
 ifneq ($(HIGLO),)
-OPTCOMP_OPT+=-ppopt -let -ppopt higlo=true
+OPTCOMP_OPT+= -let higlo=true
 endif
 
-JSFILES=-jsopt +weak.js -jsopt +toplevel.js -jsopt +graphics.js -jsopt +nat.js
+SYNTAXES= lwt.syntax js_of_ocaml.syntax js_of_ocaml.deriving.syntax deriving.syntax.std
+
+
+JSFILES= +weak.js +toplevel.js +graphics.js +nat.js
+
+PACKAGES= \
+	graphics lwt bigarray tyxml.functor \
+	react reactiveData \
+	js_of_ocaml \
+	js_of_ocaml.deriving \
+	js_of_ocaml.tyxml \
+	js_of_ocaml.graphics \
+	js_of_ocaml.toplevel
+
+ifeq ($(METAOCAML),1)
+BER_EXPORT=trx runcode
+BER=metalib.cma bertop.cmo \
+	${addprefix -export-unit , ${BER_EXPORT}} \
+	${addprefix -jsopt , -file trx.cmi:/cmis } \
+	${addprefix -jsopt , -file runcode.cmi:/cmis }
+#METAOCAML DOES NOT WORK WITH CAMLP4
+SYNTAXES=
+OPTCOMP_OPT+= -let compiler_name=\"MetaOCaml\"
+endif
 
 MKTOP=jsoo_mktop -verbose \
-	-top-syntax lwt.syntax -top-syntax js_of_ocaml.syntax \
-	-top-syntax js_of_ocaml.deriving.syntax \
-	-top-syntax deriving.syntax.std \
+	${addprefix -top-syntax , ${SYNTAXES}} \
 	-dont-export-unit gc \
-	-export-package graphics \
-	-export-package lwt \
-	-export-package bigarray \
-	-export-package tyxml.functor \
-	-export-package react \
-	-export-package reactiveData \
-	-export-package js_of_ocaml \
-	-export-package js_of_ocaml.deriving \
-	-export-package js_of_ocaml.tyxml \
-	-export-package js_of_ocaml.graphics \
-	-export-package js_of_ocaml.toplevel \
-	-jsopt -I -jsopt $(shell ocamlfind query tyxml) \
-	-jsopt -file -jsopt html5_types.cmi:/cmis \
-	-jsopt -file -jsopt html5_sigs.cmi:/cmis \
-  -jsopt -file -jsopt xml_wrap.cmi:/cmis \
+	${addprefix -export-package , ${PACKAGES}} \
+	${addprefix -jsopt , -I $(shell ocamlfind query tyxml)} \
+	${addprefix -jsopt , -file html5_types.cmi:/cmis } \
+	${addprefix -jsopt , -file html5_sigs.cmi:/cmis } \
+  ${addprefix -jsopt , -file xml_wrap.cmi:/cmis } \
 
 TOPLEVEL_NAME=toplevel
 TOPLEVEL_OBJS=toplevel.cmo
 $(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS)
 	$(MKTOP) \
-	$(BER) $(BER_EXPORT) \
+	$(BER) \
 	$(OCPINDENT) $(HIGLO) \
 	$(TOPLEVEL_OBJS) \
-	$(JSFILES) -jsopt -I -jsopt ./ -jsopt -file -jsopt examples.ml \
+	${addprefix -jsopt , ${JSFILES}} \
+	${addprefix -jsopt , -I ./ -file examples.ml} \
 	-o $(TOPLEVEL_NAME).byte
 
 EVAL_NAME=eval
 EVAL_OBJS=eval.cmo
 $(EVAL_NAME).js: $(EVAL_OBJS)
-	$(MKTOP) $(EVAL_OBJS) $(JSFILES) -o $(EVAL_NAME).byte
+	$(MKTOP) $(EVAL_OBJS) \
+	${addprefix -jsopt , ${JSFILES}} \
+	-o $(EVAL_NAME).byte
 
 %.cmis.js:
 	jsoo_mkcmis $*
@@ -66,8 +76,9 @@ server.%: server.ml
 
 %.cmo:%.ml
 	ocamlfind ocamlc -c -syntax camlp4o \
-		-package optcomp,js_of_ocaml.syntax,lwt,tyxml.functor,js_of_ocaml.toplevel \
-		$(OCPINDENT) $(HIGLO) $(OPTCOMP_OPT) \
+		-package optcomp,js_of_ocaml.syntax,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
+		$(OCPINDENT) $(HIGLO) \
+		${addprefix -ppopt , ${OPTCOMP_OPT}} \
 		$< -c $@
 clean::
 	rm -f *.cm[io] *.byte *.native *.js

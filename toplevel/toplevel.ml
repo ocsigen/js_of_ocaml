@@ -115,6 +115,7 @@ let load_from_server path =
   with _ ->
     None
 
+#let_default compiler_name = "OCaml"
 let initialize () =
   Sys_js.register_autoload "/" (fun s -> load_from_server s);
   JsooTop.initialize ();
@@ -152,16 +153,18 @@ let initialize () =
                 ~alt:\"Ocsigen\"  ()
             ])");
   exec' ("#display jsoo_logo");
-
-  let header =
-    "        Objective Caml version %s" in
+  let compiler_name = <:optcomp<compiler_name>> in
+  let header1 =
+      Printf.sprintf "        %s version %%s" compiler_name in
   let header2 = Printf.sprintf
       "     Compiled with Js_of_ocaml version %s" Sys_js.js_of_ocaml_version in
-  let header3 = Printf.sprintf
-      "     'JsooTop.get_camlp4_syntaxes ()' to get loaded syntax extensions" in
-  exec' (Printf.sprintf "Format.printf \"%s@.\" Sys.ocaml_version;;" header);
+  exec' (Printf.sprintf "Format.printf \"%s@.\" Sys.ocaml_version;;" header1);
   exec' (Printf.sprintf "Format.printf \"%s@.\";;" header2);
-  exec' (Printf.sprintf "Format.printf \"%s@.@.\";;" header3);
+  (if JsooTop.get_camlp4_syntaxes () <> []
+  then
+    let header3 = Printf.sprintf
+        "     'JsooTop.get_camlp4_syntaxes ()' to get loaded syntax extensions" in
+    exec' (Printf.sprintf "Format.printf \"%s@.@.\";;" header3));
   exec' ("#enable \"pretty\";;");
   exec' ("#enable \"shortvar\";;");
   Sys.interactive := true;
