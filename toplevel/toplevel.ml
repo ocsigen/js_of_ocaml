@@ -611,7 +611,11 @@ let append_ocaml = append_string in
     );
   let ph = by_id "last-js" in
   initialize ();
-
+  let runcode = Js.Unsafe.global##toplevelEval in
+  Js.Unsafe.global##toplevelEval <- (fun bc ->
+      ph##innerHTML <- Js.string bc;
+      runcode bc
+    );
   (* Run initial code if any *)
   (* we need to compute the hash form href to avoid different encoding behavior
     across browser. see Url.get_fragment *)

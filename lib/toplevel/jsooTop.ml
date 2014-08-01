@@ -62,9 +62,10 @@ let setup_fun () =
     output_program (Pretty_print.to_buffer b);
     let res = Buffer.contents b in
     let res = String.concat "" !stubs ^ res in
-    Js.Unsafe.eval_string res
+    Js.Unsafe.global##toplevelEval(res)
   in
   Js.Unsafe.global##toplevelCompile <- compile (*XXX HACK!*);
+  Js.Unsafe.global##toplevelEval <- (fun x -> Js.Unsafe.eval_string x);
   ()
 
 let refill_lexbuf s p ppf buffer len =
