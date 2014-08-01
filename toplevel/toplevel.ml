@@ -114,12 +114,24 @@ let load_from_server path =
       None
   with _ ->
     None
+#let_default metaocaml = false
+#if metaocaml
+let compiler_name = "MetaOCaml"
+#else
+let compiler_name = "OCaml"
+#endif
 
-#let_default compiler_name = "OCaml"
 let initialize () =
   Sys_js.register_autoload "/" (fun s -> load_from_server s);
   JsooTop.initialize ();
   Sys.interactive := false;
+  (* MetaOcaml *)
+#if metaocaml
+  Topdirs.dir_install_printer Format.std_formatter
+    (Longident.Ldot(Longident.Lident "Print_code", "print_code"));
+  Topdirs.dir_install_printer Format.std_formatter
+    (Longident.Ldot(Longident.Lident "Print_code", "print_closed_code"));
+#endif
   Hashtbl.add Toploop.directive_table "display" (Toploop.Directive_ident (fun lid ->
       let s =
         match lid with
@@ -153,7 +165,6 @@ let initialize () =
                 ~alt:\"Ocsigen\"  ()
             ])");
   exec' ("#display jsoo_logo");
-  let compiler_name = <:optcomp<compiler_name>> in
   let header1 =
       Printf.sprintf "        %s version %%s" compiler_name in
   let header2 = Printf.sprintf

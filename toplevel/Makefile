@@ -31,24 +31,19 @@ PACKAGES= \
 	js_of_ocaml.toplevel
 
 ifeq ($(METAOCAML),1)
-BER_EXPORT=trx runcode
+BER_EXPORT=trx runcode print_code
 BER=metalib.cma bertop.cmo \
-	${addprefix -export-unit , ${BER_EXPORT}} \
-	${addprefix -jsopt , -file trx.cmi:/cmis } \
-	${addprefix -jsopt , -file runcode.cmi:/cmis }
+	${addprefix -export-unit , ${BER_EXPORT}}
 #METAOCAML DOES NOT WORK WITH CAMLP4
 SYNTAXES=
-OPTCOMP_OPT+= -let compiler_name=\"MetaOCaml\"
+OPTCOMP_OPT+= -let metaocaml=true
 endif
 
 MKTOP=jsoo_mktop -verbose \
 	${addprefix -top-syntax , ${SYNTAXES}} \
 	-dont-export-unit gc \
 	${addprefix -export-package , ${PACKAGES}} \
-	${addprefix -jsopt , -I $(shell ocamlfind query tyxml)} \
-	${addprefix -jsopt , -file html5_types.cmi:/cmis } \
-	${addprefix -jsopt , -file html5_sigs.cmi:/cmis } \
-  ${addprefix -jsopt , -file xml_wrap.cmi:/cmis } \
+	${addprefix -export-unit , html5_types html5_sigs xml_wrap } \
 
 TOPLEVEL_NAME=toplevel
 TOPLEVEL_OBJS=toplevel.cmo

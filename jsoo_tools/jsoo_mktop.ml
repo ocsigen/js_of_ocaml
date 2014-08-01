@@ -29,7 +29,7 @@ let add_js_opt x = js_opt:=!js_opt@[x]
 let pkgs = ref ["stdlib"]
 let add_pkgs x = pkgs:=!pkgs@[x]
 
-let export = ref []
+let export = ref ["outcometree";"topdirs";"toploop"]
 let dont_export = ref []
 let add_export x = export:=!export@[x]
 let add_dont_export x = dont_export:=!dont_export@[x]
@@ -145,7 +145,7 @@ let _ =
     List.iter (fun pkg ->
       execute ["jsoo_mkcmis";pkg] ) !pkgs;
     let modules = List.map (fun x -> Filename.(chop_extension (basename x))) cmis in
-    let modules = modules @ ["outcometree";"topdirs";"toploop"] @ !export in
+    let modules = modules @ !export in
     let modules = List.filter (fun u -> not (List.mem u !dont_export)) modules in
     begin match modules with
       | [] -> assert false
@@ -156,6 +156,9 @@ let _ =
         execute (["ocamlfind";"stdlib/expunge";tmp_output;!output] @ modules);
         clean (tmp_output)
     end;
-    execute (["js_of_ocaml";"-toplevel";"-no-cmis";] @ !js_opt @ [!output]);
+    let extra_include = List.map (fun x -> ["-I";Findlib.package_directory x]) ("compiler-libs" :: !pkgs) in
+    let extra_cmis = List.map (fun u -> ["-file";Printf.sprintf "%s.cmi:/cmis" u]) !export in
+    let extra = List.flatten (extra_include @ extra_cmis) in
+    execute (["js_of_ocaml";"-toplevel";"-no-cmis";] @ extra @ !js_opt @ [!output]);
     do_clean ()
   with exn -> do_clean (); raise exn
