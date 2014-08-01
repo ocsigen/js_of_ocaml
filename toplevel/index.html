@@ -140,32 +140,36 @@
       .sharp .symbol1 { color: #993300 ; font-weight: bold ; }
       .sharp .constant { color: rgb(0, 152, 255); }
     </style>
-    <script type="text/javascript" src="stdlib.cmis.js"></script>
-    <script type="text/javascript" src="js_of_ocaml.cmis.js"></script>
-    <script type="text/javascript" src="js_of_ocaml.toplevel.cmis.js"></script>
-    <script type="text/javascript" src="js_of_ocaml.deriving.cmis.js"></script>
-    <script type="text/javascript" src="js_of_ocaml.tyxml.cmis.js"></script>
-    <script type="text/javascript" src="js_of_ocaml.graphics.cmis.js"></script>
-    <script type="text/javascript" src="lwt.cmis.js"></script>
-    <script type="text/javascript" src="react.cmis.js"></script>
-    <script type="text/javascript" src="reactiveData.cmis.js"></script>
     <script type="text/javascript">
-      var default_top = "toplevel.js";
+
       window.onhashchange = function() { window.location.reload() }
       var hash = window.location.hash.replace(/^#/,"");
       var fields = hash.split(/&/);
-      var url = default_top;
+      var prefix = "";
+      var version = "4.01.0"
       for(var f in fields){
         var data = fields[f].split(/=/);
         if(data[0] == "version"){
-          url = "v/toplevel-"+data[1]+".js";
+          version = data[1];
           break;
         }
       }
-      var fileref=document.createElement('script');
-      fileref.setAttribute("type","text/javascript");
-      fileref.setAttribute("src", url);
-      document.getElementsByTagName("head")[0].appendChild(fileref);
+      function load_script(url){
+        var fileref=document.createElement('script');
+        fileref.setAttribute("type","text/javascript");
+        fileref.setAttribute("src", prefix+version+"/"+url);
+        document.getElementsByTagName("head")[0].appendChild(fileref);
+      }
+      load_script("stdlib.cmis.js");
+      load_script("js_of_ocaml.cmis.js");
+      load_script("js_of_ocaml.toplevel.cmis.js");
+      load_script("js_of_ocaml.deriving.cmis.js");
+      load_script("js_of_ocaml.tyxml.cmis.js");
+      load_script("js_of_ocaml.graphics.cmis.js");
+      load_script("lwt.cmis.js");
+      load_script("react.cmis.js");
+      load_script("reactiveData.cmis.js");
+      load_script("toplevel.js");
     </script>
   </head>
   <body>
