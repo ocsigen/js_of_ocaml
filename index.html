@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
     <style>
 
+      code, kbd, pre, samp {
+      font-family: Menlo,Monaco,Consolas,monospace;
+      }
       body,html {
       height: 100%;
       background-color:#eee;
@@ -47,7 +50,7 @@
       border: 0;
       resize: none;
       outline: none;
-      font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+      font-family: Menlo,Monaco,Consolas,monospace;
       font-weight: bold;
       float:left;
       margin: 0px;
@@ -57,14 +60,14 @@
       float: left;
       line-height:18px;
       font-size: 12px;
-      font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+      font-family: Menlo,Monaco,Consolas,monospace;
       white-space: pre;
       }
       .sharp:before{
       content:"# ";
       line-height:18px;
       font-size: 12px;
-      font-family: Menlo,Monaco,Consolas,"Courier New",monospace;
+      font-family: Menlo,Monaco,Consolas,monospace;
       }
       .caml{
       color:rgb(110, 110, 201);
@@ -120,25 +123,53 @@
       display:none;
       }
       .clear { clear:both; }
+
+      .sharp .id { color: #59B65C ; font-style: italic }
+      .sharp .kw0 { color: rgb(64, 75, 190); font-weight: bold ;}
+      .sharp .kw1 { color: rgb(150, 0, 108); font-weight: bold ;}
+      .sharp .kw2 { color: rgb(23, 100, 42); font-weight: bold ;}
+      .sharp .kw3 { color: #59B65C; font-weight: bold ;}
+      .sharp .kw4 { color: #59B65C; font-weight: bold ;}
+      .sharp .comment { color: green ; font-style: italic ; }
+      .sharp .string { color: #6B6B6B; font-weight: bold ; }
+      .sharp .text { }
+      .sharp .numeric { color: #729AAF; }
+      .sharp .directive { font-style: italic ; color : #EB00FF; } ;
+      .sharp .escape { color: #409290 ; }
+      .sharp .symbol0 { color: orange ; font-weight: bold ; }
+      .sharp .symbol1 { color: #993300 ; font-weight: bold ; }
+      .sharp .constant { color: rgb(0, 152, 255); }
     </style>
-    <script type="text/javascript" src="toplevel-fs.js"></script>
     <script type="text/javascript">
-      var default_top = "v/toplevel-4.01.0.js";
+
       window.onhashchange = function() { window.location.reload() }
       var hash = window.location.hash.replace(/^#/,"");
       var fields = hash.split(/&/);
-      var url = default_top;
+      var prefix = "";
+      var version = "4.01.0"
       for(var f in fields){
         var data = fields[f].split(/=/);
         if(data[0] == "version"){
-          url = "v/toplevel-"+data[1]+".js";
+          version = data[1];
           break;
         }
       }
-      var fileref=document.createElement('script');
-      fileref.setAttribute("type","text/javascript");
-      fileref.setAttribute("src", url);
-      document.getElementsByTagName("head")[0].appendChild(fileref);
+      function load_script(url){
+        var fileref=document.createElement('script');
+        fileref.setAttribute("type","text/javascript");
+        fileref.setAttribute("src", prefix+version+"/"+url);
+        document.getElementsByTagName("head")[0].appendChild(fileref);
+      }
+      load_script("stdlib.cmis.js");
+      load_script("js_of_ocaml.cmis.js");
+      load_script("js_of_ocaml.toplevel.cmis.js");
+      load_script("js_of_ocaml.deriving.cmis.js");
+      load_script("js_of_ocaml.tyxml.cmis.js");
+      load_script("js_of_ocaml.graphics.cmis.js");
+      load_script("lwt.cmis.js");
+      load_script("react.cmis.js");
+      load_script("reactiveData.cmis.js");
+      load_script("toplevel.js");
     </script>
   </head>
   <body>
