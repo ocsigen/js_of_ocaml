@@ -145,7 +145,7 @@
       window.onhashchange = function() { window.location.reload() }
       var hash = window.location.hash.replace(/^#/,"");
       var fields = hash.split(/&/);
-      var prefix = "";
+      var prefix = "v/";
       var version = "4.01.0"
       for(var f in fields){
         var data = fields[f].split(/=/);
