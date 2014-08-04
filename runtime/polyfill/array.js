@@ -1,4 +1,4 @@
-
+//Version-IE: < 9
 if ( 'function' !== typeof Array.prototype.reduce ) {
   Array.prototype.reduce = function( callback /*, initialValue*/ ) {
     'use strict';
@@ -27,7 +27,7 @@ if ( 'function' !== typeof Array.prototype.reduce ) {
   };
 }
 
-
+//Version-IE: < 9
 if ( 'function' !== typeof Array.prototype.reduceRight ) {
   Array.prototype.reduceRight = function( callback /*, initialValue*/ ) {
     'use strict';
@@ -56,6 +56,7 @@ if ( 'function' !== typeof Array.prototype.reduceRight ) {
   };
 }
 
+//Version-IE: < 9
 if (!Array.prototype.filter)
 {
   Array.prototype.filter = function(fun /*, thisArg */)
@@ -92,6 +93,7 @@ if (!Array.prototype.filter)
   };
 }
 
+//Version-IE: < 9
 if (!Array.prototype.every) {
   Array.prototype.every = function (callbackfn, thisArg) {
     "use strict";
@@ -155,6 +157,7 @@ if (!Array.prototype.every) {
 }
 
 
+//Version-IE: < 9
 if (!Array.prototype.some)
 {
   Array.prototype.some = function(fun /*, thisArg */)
@@ -182,6 +185,7 @@ if (!Array.prototype.some)
 
 // Production steps of ECMA-262, Edition 5, 15.4.4.19
 // Reference: http://es5.github.com/#x15.4.4.19
+//Version-IE: < 9
 if (!Array.prototype.map) {
 
   Array.prototype.map = function (callback, thisArg) {
@@ -257,6 +261,7 @@ if (!Array.prototype.map) {
 
 // Production steps of ECMA-262, Edition 5, 15.4.4.18
 // Reference: http://es5.github.com/#x15.4.4.18
+//Version-IE: < 9
 if (!Array.prototype.forEach) {
 
   Array.prototype.forEach = function (callback, thisArg) {
