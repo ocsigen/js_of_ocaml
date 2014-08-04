@@ -54,6 +54,7 @@ $(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS)
 	$(TOPLEVEL_OBJS) \
 	${addprefix -jsopt , ${JSFILES}} \
 	${addprefix -jsopt , -I ./ -file examples.ml} \
+	-package base64 \
 	-o $(TOPLEVEL_NAME).byte
 
 EVAL_NAME=eval
@@ -72,6 +73,7 @@ server.%: server.ml
 %.cmo:%.ml
 	ocamlfind ocamlc -c -syntax camlp4o \
 		-package optcomp,js_of_ocaml.syntax,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
+		-package base64 \
 		$(OCPINDENT) $(HIGLO) \
 		${addprefix -ppopt , ${OPTCOMP_OPT}} \
 		$< -c $@
