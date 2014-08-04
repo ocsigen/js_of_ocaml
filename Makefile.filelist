@@ -35,7 +35,8 @@ endif
 
 
 OTHERS := runtime/runtime.js runtime/weak.js \
-          runtime/classlist.js \
+          runtime/polyfill/classlist.js \
+          runtime/polyfill/array.js \
           runtime/toplevel.js \
           runtime/graphics.js \
           runtime/nat.js \
