@@ -62,6 +62,7 @@ function caml_sys_chdir(dir) {
     var name = caml_make_path(dir);
     name.push(""); // we want the slash a the end
     caml_current_dir = name.join("/");
+    return 0;
   }
   else
     caml_raise_no_such_file(dir);
@@ -91,7 +92,7 @@ function caml_make_path (name) {
   for(var i = 0; i<comp.length; i++){
     switch(comp[i]){
     case "..": if(ncomp.length>1) ncomp.pop(); break;
-    case ".":
+    case ".": break;
     case "": if(ncomp.length == 0) ncomp.push(""); break;
     default: ncomp.push(comp[i]);break
     }
