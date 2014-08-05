@@ -424,7 +424,6 @@ let run _ =
              | Some (Url.File url) -> Url.File ({url with Url.fu_fragment= "" }), true
              | _ -> assert false in
 
-                      (* generate uri *)
            let frag =
              let frags = parse_hash () in
              let frags = List.remove_assoc "code" frags @ ["code",code_encoded] in
