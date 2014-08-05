@@ -181,7 +181,7 @@ function caml_ml_channel_size_64(chan) {
 //Provides: caml_ml_set_channel_output
 function caml_ml_set_channel_output(chan,f) {
   chan.output = f;
-  return;
+  return 0;
 }
 
 //Provides: caml_ml_input
@@ -240,12 +240,14 @@ function caml_ml_input_int (chan) {
 //Provides: caml_ml_seek_in
 function caml_ml_seek_in(chan,pos){
   chan.data.offset = pos;
+  return 0;
 }
 
 //Provides: caml_ml_seek_in_64
 //Requires: caml_int64_to_float
 function caml_ml_seek_in_64(chan,pos){
   chan.data.offset = caml_int64_to_float(pos);
+  return 0;
 }
 
 //Provides: caml_ml_pos_in
@@ -281,6 +283,7 @@ function caml_ml_flush (oc) {
       };
     }
     oc.buffer = "";
+    return 0;
 }
 
 //output to out_channel
@@ -306,6 +309,7 @@ function caml_ml_output (oc,buffer,offset,len) {
         caml_ml_flush (oc);
         oc.buffer += jsstring.substr(id+1);
     }
+    return 0;
 }
 //Provides: caml_ml_output_char
 //Requires: caml_ml_output
@@ -313,6 +317,7 @@ function caml_ml_output (oc,buffer,offset,len) {
 function caml_ml_output_char (oc,c) {
     var s = caml_new_string(String.fromCharCode(c));
     caml_ml_output(oc,s,0,1);
+    return 0;
 }
 
 //Provides: caml_output_value
@@ -320,18 +325,21 @@ function caml_ml_output_char (oc,c) {
 function caml_output_value (chan,v,_flags) {
   var s = caml_output_value_to_string(v);
   caml_ml_output(chan,s,0,s.getLen());
+  return 0;
 }
 
 
 //Provides: caml_ml_seek_out
 function caml_ml_seek_out(chan,pos){
   chan.data.offset = pos;
+  return 0;
 }
 
 //Provides: caml_ml_seek_out_64
 //Requires: caml_int64_to_float
 function caml_ml_seek_out_64(chan,pos){
   chan.data.offset = caml_int64_to_float(pos);
+  return 0;
 }
 
 //Provides: caml_ml_pos_out
@@ -350,4 +358,5 @@ function caml_ml_output_int (oc,i) {
   var arr = [(i>>24) & 0xFF,(i>>16) & 0xFF,(i>>8) & 0xFF,i & 0xFF ];
   var s = new MlStringFromArray(arr);
   caml_ml_output(oc,s,0,4);
+  return 0
 }

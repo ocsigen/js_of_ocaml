@@ -125,6 +125,7 @@ function caml_fs_register(name,content) {
   else if(content instanceof Array) dir.mk(d,new MlFile(content));
   else if(content.toString) dir.mk(d,new MlFile((new MlString(content.toString())).getArray()));
   else caml_invalid_argument("caml_fs_register");
+  return 0;
 }
 
 //Provides: caml_fs_init
@@ -137,6 +138,7 @@ function caml_fs_init (){
     }
   }
   joo_global_object.caml_fs_register = caml_fs_register;
+  return 0;
 }
 
 //Provides: caml_fs_register_extern
@@ -147,6 +149,7 @@ function caml_fs_register_extern(name,content){
     if(!joo_global_object.caml_fs_tmp) joo_global_object.caml_fs_tmp = [];
     joo_global_object.caml_fs_tmp.push({name:name,content:content});
   }
+  return 0;
 }
 
 //Provides: caml_fs_content
