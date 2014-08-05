@@ -151,10 +151,12 @@ let initialize () =
   (* MetaOcaml *)
 #if metaocaml
   Topdirs.dir_install_printer Format.std_formatter
-    (Longident.Ldot(Longident.Lident "Print_code", "print_code"));
+    (Longident.(Ldot(Lident "Print_code", "print_code")));
   Topdirs.dir_install_printer Format.std_formatter
-    (Longident.Ldot(Longident.Lident "Print_code", "print_closed_code"));
+    (Longident.(Ldot(Lident "Print_code", "print_closed_code")));
 #endif
+  Topdirs.dir_install_printer Format.std_formatter
+    (Longident.(Ldot(Lident "Js", "print_error")));
   Hashtbl.add Toploop.directive_table "display" (Toploop.Directive_ident (fun lid ->
       let s =
         match lid with

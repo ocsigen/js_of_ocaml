@@ -21,7 +21,7 @@ ocamlbuild:
 	$(MAKE) -C ocamlbuild
 runtime:
 	$(MAKE) -C runtime
-toplevel: compiler compiler_lib library runtime
+toplevel:: #compiler compiler_lib library runtime
 	$(MAKE) -C toplevel
 examples: compiler library runtime
 	$(MAKE) -C examples
