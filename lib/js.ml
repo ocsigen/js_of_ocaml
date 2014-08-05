@@ -217,6 +217,17 @@ class type ['a] js_array = object
   method unshift_2 : 'a -> 'a -> int meth
   method unshift_3 : 'a -> 'a -> 'a -> int meth
   method unshift_4 : 'a -> 'a -> 'a -> 'a -> int meth
+
+  method some : ('a -> int -> 'a js_array t -> bool t ) -> bool t meth
+  method every : ('a -> int -> 'a js_array t -> bool t ) -> bool t meth
+  method forEach : ('a -> int -> 'a js_array t -> unit ) -> unit meth
+  method map : ('a -> int -> 'a js_array t -> 'b) -> 'b js_array t meth
+  method filter : ('a -> int -> 'a js_array t -> bool t) -> 'a js_array t meth
+  method reduce_init : ('b -> 'a -> int -> 'a js_array t -> 'b) -> 'b -> 'b meth
+  method reduce : ('a -> 'a -> int -> 'a js_array t -> 'a) -> 'a meth
+  method reduceRight_init : ('b -> 'a -> int -> 'a js_array t -> 'b) -> 'b -> 'b meth
+  method reduceRight : ('a -> 'a -> int -> 'a js_array t -> 'a) -> 'a meth
+
   method length : int prop
 end
 
