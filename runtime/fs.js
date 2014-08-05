@@ -169,11 +169,12 @@ function caml_sys_file_exists (name) {
   var dir = caml_root_dir;
   var path = caml_make_path(name);
   var auto_load;
+  var pos;
   for(var i=0;i<path.length;i++){
-    if(dir.auto) { auto_load = dir.auto}
+    if(dir.auto) { auto_load = dir.auto; pos = i}
     if(!(dir.exists && dir.exists(path[i]))) {
       if(auto_load) {
-        return auto_load(path.join("/"));
+        return auto_load(path,pos);
       }
       else return 0;
     }
@@ -195,7 +196,6 @@ function caml_fs_register_autoload(path,f){
     if(!(dir instanceof MlDir))
       caml_raise_sys_error (path.orig + " : not a directory");
   }
-
   dir.auto = f;
   return 0;
 }

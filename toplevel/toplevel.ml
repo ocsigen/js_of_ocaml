@@ -97,10 +97,10 @@ module H = struct
 end
 
 (* load (binary) file from server using a synchronous XMLHttpRequest *)
-let load_from_server path =
+let load_from_server (_,suffix) =
   try
     let xml = XmlHttpRequest.create () in
-    xml##_open(Js.string "GET", Js.string ("filesys/" ^ path), Js._false);
+    xml##_open(Js.string "GET", Js.string ("filesys/" ^ suffix), Js._false);
     xml##send(Js.null);
     if xml##status = 200 then
       let resp = xml##responseText in
@@ -121,8 +121,31 @@ let compiler_name = "MetaOCaml"
 let compiler_name = "OCaml"
 #endif
 
+let load_resource scheme (_,suffix) =
+  try
+    let url = Printf.sprintf "%s://%s" scheme suffix in
+    let xml = XmlHttpRequest.create () in
+    xml##_open(Js.string "GET", Js.string url, Js._false);
+    xml##send(Js.null);
+    if xml##status = 200 then
+      let resp = xml##responseText in
+      let len = resp##length in
+      let str = String.create len in
+      for i=0 to len-1 do
+        str.[i] <- Char.chr (int_of_float resp##charCodeAt(i) land 0xff)
+      done;
+      Some(str)
+    else
+      None
+  with _ ->
+    None
+
 let initialize () =
+  Sys_js.register_autoload "/dev/" (fun s -> Some "");
   Sys_js.register_autoload "/" (fun s -> load_from_server s);
+  Sys_js.register_autoload "/http/" (fun s -> load_resource "http" s);
+  Sys_js.register_autoload "/https/" (fun s -> load_resource "https" s);
+  Sys_js.register_autoload "/ftp/" (fun s -> load_resource "ftp" s);
   JsooTop.initialize ();
   Sys.interactive := false;
   (* MetaOcaml *)
@@ -532,7 +555,7 @@ let append_ocaml = append_string in
     );
   let ph = by_id "last-js" in
   initialize ();
-  let runcode = Js.Unsafe.global##toplevelEval in
+  let runcode : (string -> 'a) = Js.Unsafe.global##toplevelEval in
   Js.Unsafe.global##toplevelEval <- (fun bc ->
       ph##innerHTML <- Js.string bc;
       runcode bc

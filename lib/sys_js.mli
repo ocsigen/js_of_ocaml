@@ -34,12 +34,14 @@ val register_file: name:string -> content:string -> unit
       [register_file ~name ~content] register the file [name] with content [content]
       so it can be be opened with [Pervasives.open_in name] *)
 
-val register_autoload : path:string -> (string -> string option) -> unit
+val register_autoload : path:string -> ((string * string) -> string option) -> unit
   (** Register a callback to the [path] to dynamicly load missing files.
       Whenever a file is missing in [path], the callback is used to optionally
       get the content of the file.
       [register_autoload ~path f] register the callback [f] to the path [path].
-      The callback [f] receives the absolute filename as arguement.*)
+      The callback [f] receives [(prefix,suffix)] where:
+       - [prefix] is the path the function has been registered to.
+       - [Filename.contact prefix suffix] is the absolute filename .*)
 
 external file_content : string -> string = "caml_fs_file_content"
   (** [file_content name] returns the content of the file [name].
