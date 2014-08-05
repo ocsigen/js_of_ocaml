@@ -319,6 +319,20 @@ let rec filter_map f = function
     | None -> filter_map f xs
     | Some x -> x:: filter_map f xs
 
+
+(* we need to compute the hash form href to avoid different encoding behavior
+     across browser. see Url.get_fragment *)
+let parse_hash () =
+  let hash_regexp = jsnew Js.regExp (Js.string "#(.*)") in
+  let frag = Dom_html.window##location##href##_match(hash_regexp) in
+  Js.Opt.case
+    frag
+    (fun () -> [])
+    (fun res ->
+       let res = Js.match_result res in
+       let frag = Js.to_string (Js.Unsafe.get res 1) in
+       Url.decode_arguments frag)
+
 let run _ =
   let container = by_id "toplevel-container" in
   let output = by_id "output" in
@@ -404,17 +418,19 @@ let run _ =
                    else empty))) childs in
            let code_encoded = Base64.encode (String.concat "" code) in
 
-           (* generate uri *)
-           let update_frag frag =
-             let frags = Url.decode_arguments frag in
+           let url,is_file = match Url.Current.get () with
+             | Some (Url.Http url) -> Url.Http ({url with Url.hu_fragment = "" }),false
+             | Some (Url.Https url) -> Url.Https ({url with Url.hu_fragment= "" }), false
+             | Some (Url.File url) -> Url.File ({url with Url.fu_fragment= "" }), true
+             | _ -> assert false in
+
+                      (* generate uri *)
+           let frag =
+             let frags = parse_hash () in
              let frags = List.remove_assoc "code" frags @ ["code",code_encoded] in
              Url.encode_arguments frags
            in
-           let url,frag,is_file = match Url.Current.get () with
-             | Some (Url.Http url) -> Url.Http ({url with Url.hu_fragment = "" }), update_frag url.Url.hu_fragment,false
-             | Some (Url.Https url) -> Url.Https ({url with Url.hu_fragment= "" }), update_frag url.Url.hu_fragment,false
-             | Some (Url.File url) -> Url.File ({url with Url.fu_fragment= "" }), update_frag url.Url.fu_fragment,true
-             | _ -> assert false in
+
            let uri = Url.string_of_url url ^ "#" ^ frag in
            let append_url str =
              let dom = Tyxml_js.Html5.(
@@ -563,20 +579,13 @@ let append_ocaml = append_string in
       runcode bc
     );
   (* Run initial code if any *)
-  (* we need to compute the hash form href to avoid different encoding behavior
-    across browser. see Url.get_fragment *)
-  let hash_regexp = jsnew Js.regExp (Js.string "#(.*)") in
-  let frag = Dom_html.window##location##href##_match(hash_regexp) in
-  Js.Opt.iter frag (fun res ->
-      let res = Js.match_result res in
-      let frag  = Js.to_string (Js.Unsafe.get res 1) in
-      let params = Url.decode_arguments frag in
-      try
-        let code = List.assoc "code" params in
-        textbox##value <- Js.string (Base64.decode code);
-        Lwt.async execute
-      with exc ->
-        Firebug.console##log_3(Js.string "exception", Js.string (Printexc.to_string exc), exc)
-    )
+  try
+    let code = List.assoc "code" (parse_hash ()) in
+    textbox##value <- Js.string (Base64.decode code);
+    Lwt.async execute
+  with
+  | Not_found -> ()
+  | exc ->
+    Firebug.console##log_3(Js.string "exception", Js.string (Printexc.to_string exc), exc)
 
 let _ = Html.window##onload <- Html.handler (fun _ -> run (); Js._false)
