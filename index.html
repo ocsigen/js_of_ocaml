@@ -146,7 +146,7 @@
       var hash = window.location.hash.replace(/^#/,"");
       var fields = hash.split(/&/);
       var prefix = "v/";
-      var version = "4.01.0"
+      var version = "4.01.0";
       for(var f in fields){
         var data = fields[f].split(/=/);
         if(data[0] == "version"){
@@ -157,7 +157,7 @@
       function load_script(url){
         var fileref=document.createElement('script');
         fileref.setAttribute("type","text/javascript");
-        fileref.setAttribute("src", prefix+version+"/"+url);
+        fileref.setAttribute("src", prefix+(version==""?"":(version+"/"))+url);
         document.getElementsByTagName("head")[0].appendChild(fileref);
       }
       load_script("stdlib.cmis.js");
