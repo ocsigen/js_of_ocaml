@@ -439,11 +439,14 @@ val error_constr : (js_string t -> error t) constr
       [jsnew error_constr (msg)]
       returns an [Error] object with the message [msg]. *)
 
+val print_error : Format.formatter -> error t -> unit
+
 exception Error of error t
   (** The [Error] exception wrap javascript exceptions when catched by ocaml code.
       In case the javascript exception is not an instance of javascript [Error],
       it will be serialized and wrapped into a [Failure] exception.
   *)
+
 
 (** Specification of Javascript JSON object. *)
 class type json = object

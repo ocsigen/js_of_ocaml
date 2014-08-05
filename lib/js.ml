@@ -412,6 +412,9 @@ let _ =
        if instanceof e array_constructor then None
        else Some (to_string ((Obj.magic e)##toString())))
 
+let print_error fmt e =
+  Format.pp_print_string fmt (to_string (e##toString()))
+
 (****)
 
 (* DEPRECATED *)
