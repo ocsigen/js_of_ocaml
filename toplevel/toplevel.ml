@@ -255,9 +255,10 @@ let examples =
     end
   with  _ -> []
 
-let indent_caml s in_lines =
 #let_default ocpindent = false
 #if ocpindent
+let _ = Approx_lexer.enable_extension "lwt"
+let indent_caml s in_lines =
   let output = {
     IndentPrinter.debug = false;
     config = IndentConfig.default;
@@ -270,8 +271,8 @@ let indent_caml s in_lines =
   let stream = Nstream.of_string s in
   IndentPrinter.proceed output stream IndentBlock.empty ""
 #else
+let indent_caml s in_lines = s
   (* ocp-indent not available yet in 4.02 *)
-  s
 #endif
 
 let indent_textarea textbox =
