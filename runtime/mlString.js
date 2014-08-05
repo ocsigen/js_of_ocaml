@@ -269,7 +269,9 @@ function caml_create_string(len) {
 }
 //Provides: caml_fill_string
 //Requires: MlString
-function caml_fill_string(s, i, l, c) { s.fill (i, l, c); }
+function caml_fill_string(s, i, l, c) {
+  s.fill (i, l, c);
+  return 0 }
 //Provides: caml_string_compare mutable
 //Requires: MlString
 function caml_string_compare(s1, s2) { return s1.compare(s2); }
@@ -299,11 +301,11 @@ function caml_string_greaterequal(s1, s2) { return s2.lessEqual(s1); }
 //Provides: caml_blit_string
 //Requires: MlString
 function caml_blit_string(s1, i1, s2, i2, len) {
-  if (len === 0) return;
+  if (len === 0) return 0;
   if (s1.array != null && s2.last == 0 && i2 == 0 && len == s2.len) {
     s2.array = s1.array.slice(i1,i1+len);
     s2.bytes = s2.string = null;
-    return;
+    return 0;
   }
   if (i2 === s2.last && s2.bytes != null) {
     // s2.last < s2.len; hence, s2.string and s2.array are null
@@ -312,11 +314,12 @@ function caml_blit_string(s1, i1, s2, i2, len) {
     if (i1 > 0 || s1.last > len) b = b.slice(i1, i1 + len);
     s2.bytes += b;
     s2.last += b.length;
-    return;
+    return 0;
   }
   var a = s2.array;
   if (!a) a = s2.toArray(); else { s2.bytes = s2.string = null; }
   s1.blitToArray (i1, a, i2, len);
+  return 0
 }
 //Provides: caml_new_string
 //Requires: MlString

@@ -109,6 +109,42 @@ class check_and_warn name pi = object(m)
     super#merge_info from
 end
 
+exception May_not_return
+
+let all_return p =
+  let open Javascript in
+  let rec loop_st = function
+    | [] -> raise  May_not_return
+    | [Return_statement (Some _, _)] -> ()
+    | [Return_statement (None, _)] -> raise May_not_return
+    | [If_statement(_,th,el,_)] ->
+      loop_st [th];
+      (match el with
+       | None -> raise May_not_return
+       | Some x -> loop_st [x])
+    | [Do_while_statement(st,_,_)] -> loop_st [st]
+    | [While_statement(_,st,_)] -> loop_st [st]
+    | [For_statement (_,_,_,st,_)] -> loop_st [st]
+    | [Switch_statement (_,l,def,_)] ->
+      List.iter (fun (_,sts) -> loop_st sts) l
+    | [Try_statement(b,_,_,_)] -> loop_st b
+    | [Throw_statement _] -> ()
+    | x::xs -> loop_st xs
+  in
+  let rec loop_sources = function
+    | [] -> raise May_not_return
+    | [Statement x] -> loop_st [x]
+    | [_] -> raise May_not_return
+    | x::xs -> loop_sources xs
+  in
+  let rec loop_all_sources = function
+    | [] -> ()
+    | Statement x :: xs -> loop_all_sources xs
+    | Function_declaration(_,_,b,_) :: xs ->
+      loop_sources b;
+      loop_all_sources xs in
+  try loop_all_sources p; true with May_not_return -> false
+
 let check_primitive name pi code req =
   let free =
     if Option.Optim.warn_unused ()
@@ -129,6 +165,10 @@ let check_primitive name pi code req =
     Format.eprintf "warning: free variables in primitive code %S (%s)@." name (loc pi);
     Format.eprintf "vars: %s@." (String.concat ", " (StringSet.elements freename))
   end
+  (* ; *)
+  (* return checks disabled *)
+  (* if false && not (all_return code) *)
+  (* then Format.eprintf "warning: returns may be missing for primitive code %S (%s)@." name (loc pi) *)
 
 let version_match =
   List.for_all (fun (op,str) ->

@@ -30,6 +30,7 @@
 
 //Provides: caml_ba_init const
 function caml_ba_init() {
+    return 0;
 }
 
 //Provides: caml_ba_init_views
@@ -536,11 +537,13 @@ function caml_ba_set_3(ba, i0, i1, i2, v) {
 //Provides: caml_ba_blit
 function caml_ba_blit(src, dst) {
     dst.blit(src);
+    return 0;
 }
 
 //Provides: caml_ba_fill
 function caml_ba_fill(ba, init) {
     ba.fill(init);
+    return 0;
 }
 
 //Provides: caml_ba_sub

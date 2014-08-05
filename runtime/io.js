@@ -23,7 +23,7 @@
 //Requires: caml_global_data
 function caml_sys_close(fd) {
   delete caml_global_data.fds[fd];
-  return;
+  return 0;
 }
 
 //Provides: caml_sys_open

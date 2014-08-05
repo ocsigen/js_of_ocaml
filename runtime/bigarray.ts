@@ -76,7 +76,7 @@ interface Bigarray {
 }
 
 //Provides: caml_ba_init const
-function caml_ba_init () {}
+function caml_ba_init () {return 0;}
 
 //Provides: caml_ba_init_views
 //Requires: caml_ba_views
@@ -504,10 +504,16 @@ function caml_ba_set_2(ba: Bigarray, i0:number, i1:number, v:number) { return ba
 function caml_ba_set_3(ba: Bigarray, i0:number, i1:number, i2:number, v:number) { return ba.set([i0,i1,i2],v); }
 
 //Provides: caml_ba_blit
-function caml_ba_blit(src: Bigarray, dst: Bigarray) { dst.blit(src); }
+function caml_ba_blit(src: Bigarray, dst: Bigarray) {
+  dst.blit(src);
+  return 0
+}
 
 //Provides: caml_ba_fill
-function caml_ba_fill(ba: Bigarray, init: number) { ba.fill(init); }
+function caml_ba_fill(ba: Bigarray, init: number) {
+  ba.fill(init);
+  return 0;
+}
 
 //Provides: caml_ba_sub
 function caml_ba_sub(ba: Bigarray, ofs: number, len:number): Bigarray { return ba.sub(ofs,len); }

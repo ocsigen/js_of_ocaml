@@ -38,7 +38,8 @@ var caml_named_values = {};
 //Provides: caml_register_named_value
 //Requires: caml_named_values
 function caml_register_named_value(nm,v) {
-  caml_named_values[nm.toString()] = v; return 0;
+  caml_named_values[nm.toString()] = v;
+  return 0;
 }
 
 //Provides: caml_named_value
@@ -801,7 +802,8 @@ function caml_array_blit(a1, i1, a2, i2, len) {
     for (var j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
   } else {
     for (var j = len; j >= 1; j--) a2[i2 + j] = a1[i1 + j];
-  }
+  };
+  return 0;
 }
 
 ///////////// CamlinternalOO
