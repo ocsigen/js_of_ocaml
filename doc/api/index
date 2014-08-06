@@ -14,6 +14,7 @@ Regexp
 Url
 XmlHttpRequest
 Json
+Jsonp
 File
 Form
 Sys_js
