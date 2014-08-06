@@ -1202,8 +1202,15 @@ and compile blocks code limit pc state instrs =
         let (x, state) = State.fresh_var state in
         if debug_parser () then Format.printf "%a = ccall \"%s\" (%a)@."
             Var.print x prim Var.print y;
-        compile blocks code limit (pc + 2) state
-          (Let (x, Prim (Extern prim, [Pv y])) :: instrs)
+        (* special case for "debugger",
+           assign unit to the returned value *)
+        match prim with
+        | "debugger" ->
+          compile blocks code limit (pc + 2) state
+            (Let (x, Const 0l) :: Let (Var.fresh (), Prim (Extern "debugger", [Pv y])) :: instrs)
+        | _ ->
+          compile blocks code limit (pc + 2) state
+            (Let (x, Prim (Extern prim, [Pv y])) :: instrs)
       end
     | C_CALL2 ->
       let prim = primitive_name state (getu code (pc + 1)) in
