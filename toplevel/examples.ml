@@ -70,7 +70,7 @@ loop [Mouse_motion;Key_pressed]
     moveto x y; draw_char key);;
 
 (** Graphics: PingPong *)
-open Graphics;;
+open Graphics_js;;
 let c = 3;;
 let x0 = 0
 and x1 = size_x ()
