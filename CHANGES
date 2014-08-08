@@ -1,16 +1,17 @@
-===== 2.3+dev =====
+===== 2.4 (2014-08-08) =====
 
  * Features/Changes
  ** Runtime: support for num (Ryan Goulden)
  ** Lib: initial support for Dom_svg
  ** Lib: introduce Jsonp module
- ** Lib: improve Dom_html bindings
  ** Lib: introduce JSON object binding
  ** Lib: introduce DomContentLoaded
  ** lib: introduce eventSource
  ** Lib: introduce js_of_ocaml.toplevel package
+ ** Lib: various improvement: textContent,outerHTML,unload event,css properties
  ** Lib: complete binding of Js.array
  ** Lib: change signature of Sys_js.register_autoload
+ ** Lib: sync js_of_ocaml.tyxml with latest tyxml
  ** Tools: helpers to build toplevel: jsoo_mktop, jsoo_mkcmis
 
  * BugFixes
