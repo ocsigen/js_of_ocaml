@@ -50,7 +50,7 @@ install-lib:
 install-bin:
 	install -d -m 755 $(BINDIR)
 	install $(BIN) $(BINDIR)
-	install $(BIN) $(TOOLS)
+	install $(TOOLS) $(BINDIR)
 
 uninstall: uninstall-lib uninstall-bin
 
