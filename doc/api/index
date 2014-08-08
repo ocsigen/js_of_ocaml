@@ -9,6 +9,7 @@ Dom_events
 CSS
 Lwt_js
 Lwt_js_events
+EventSource
 Firebug
 Regexp
 Url
