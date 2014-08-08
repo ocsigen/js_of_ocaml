@@ -925,6 +925,12 @@ and translate_expr ctx queue x e level =
   | Constant c ->
       let js, instrs = constant ~ctx c level in
       (js, const_p, queue), instrs
+  | Prim (Extern "debugger",_) ->
+    let ins =
+      if Option.Optim.debugger ()
+      then J.Debugger_statement J.N
+      else J.Empty_statement J.N in
+    (J.ENum 0., const_p,queue), [ins]
   | Prim (p, l) ->
     let res = match p, l with
         Vectlength, [x] ->
@@ -1171,14 +1177,6 @@ and translate_instr ctx expr_queue (pc : addr) instr =
   match instr with
     [] ->
       ([], expr_queue)
-  | Let (_, Prim (Extern "debugger",_))::rem ->
-    let ins =
-      if Option.Optim.debugger ()
-      then J.Debugger_statement J.N
-      else J.Empty_statement J.N in
-    let st = flush_all expr_queue [ins] in
-    let (instrs, expr_queue) = translate_instr ctx [] pc rem in
-    (st @ instrs, expr_queue)
   | Let (_, Closure _) :: _ ->
       let (l, rem) = collect_closures ctx instr in
       let l = group_closures l in
