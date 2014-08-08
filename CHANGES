@@ -4,10 +4,23 @@
  ** Runtime: support for num (Ryan Goulden)
  ** Lib: initial support for Dom_svg
  ** Lib: introduce Jsonp module
+ ** Lib: improve Dom_html bindings
+ ** Lib: introduce JSON object binding
+ ** Lib: introduce DomContentLoaded
+ ** lib: introduce eventSource
+ ** Lib: introduce js_of_ocaml.toplevel package
+ ** Lib: complete binding of Js.array
+ ** Lib: change signature of Sys_js.register_autoload
+ ** Tools: helpers to build toplevel: jsoo_mktop, jsoo_mkcmis
 
  * BugFixes
  ** Compiler: generate js files with default permission, was 0o600
     (#182) (Daniel Bünzli)
+ ** Syntax: fix typing of method arguments
+ ** Runtime: fix behaviour of Sys.argv (Tomohiro Matsuyama)
+ ** Runtime: fix caml_js_meth_call
+ ** Compiler: fix assert false when deadcode is off
+ ** Compiler: fix compilation of Js.debugger
 
 ===== 2.3 (2014-06-30) =====
 
