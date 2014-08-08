@@ -51,6 +51,12 @@ Tyxml_cast_sigs
 Graphics_js
 }
 
+{1 Toplevel - API Reference}
+
+{!modules:
+JsooTop
+}
+
 {1 The ocamlbuild plugin - API Reference}
 
 {!modules:
