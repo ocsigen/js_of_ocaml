@@ -20,12 +20,11 @@
 
 (* https://developer.mozilla.org/en-US/docs/Web/API/EventSource *)
 open Js
-
+open Dom
 type state =
   | CONNECTING
   | OPEN
   | CLOSED
-
 
 class type ['a] messageEvent = object
   inherit ['a] Dom.event
@@ -35,19 +34,15 @@ class type ['a] messageEvent = object
   (* method source : unit *)
 end
 
-
-type ('a,'b) handler = ('a,'b -> unit) meth_callback
-let handler f = Js.wrap_callback f
 class type eventSource = object('self)
   method url : string t readonly_prop
   method withCredentials : bool t readonly_prop
   method readyState : state readonly_prop
   method close : unit meth
 
-  method onopen : ('self t, 'self messageEvent t) handler writeonly_prop
-  method onmessage : ('self t, 'self messageEvent t) handler writeonly_prop
-  method onerror : ('self t, 'self messageEvent t) handler writeonly_prop
-  method addEventListener : js_string t -> ('self t, 'self messageEvent t) handler -> bool t -> unit meth
+  method onopen : ('self t, 'self messageEvent t) event_listener writeonly_prop
+  method onmessage : ('self t, 'self messageEvent t) event_listener writeonly_prop
+  method onerror : ('self t, 'self messageEvent t) event_listener writeonly_prop
 end
 
 class type options = object
@@ -61,3 +56,5 @@ let withCredentials b : options t =
 
 let eventSource         = Js.Unsafe.global##_EventSource
 let eventSource_options = Js.Unsafe.global##_EventSource
+
+let addEventListener = Dom.addEventListener
