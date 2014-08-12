@@ -40,6 +40,8 @@ module Html5 : Html5_sigs.Make(Xml)(Svg).T
 
 module R : sig
   module Svg : Svg_sigs.MakeWrapped(Xml_wrap)(Xml).T
+    with type +'a elt = 'a Svg.elt
+     and type +'a attrib = 'a Svg.attrib
   module Html5 : Html5_sigs.MakeWrapped(Xml_wrap)(Xml)(Svg).T
     with type +'a elt = 'a Html5.elt
      and type +'a attrib = 'a Html5.attrib
