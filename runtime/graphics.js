@@ -379,9 +379,10 @@ function caml_gr_set_text_size(size){
 
 //Provides: caml_gr_text_size
 //Requires: caml_gr_state_get
-function caml_gr_text_size(){
+function caml_gr_text_size(txt){
   var s = caml_gr_state_get();
-  return s.text_size;
+  var w = s.context.measureText(txt.toString()).width;
+  return [0,w,s.text_size];
 }
 
 
