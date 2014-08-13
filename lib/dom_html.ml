@@ -118,6 +118,7 @@ class type cssStyleDeclaration = object
   method strokeWidth : js_string t prop
   method tableLayout : js_string t prop
   method textAlign : js_string t prop
+  method textAnchor : js_string t prop
   method textDecoration : js_string t prop
   method textIndent : js_string t prop
   method textTransform : js_string t prop
