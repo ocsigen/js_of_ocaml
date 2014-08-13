@@ -92,12 +92,13 @@ function caml_gr_state_init(){
   caml_gr_set_font(caml_gr_state.font);
   caml_gr_set_color(caml_gr_state.color);
   caml_gr_set_window_title(caml_gr_state.title);
+  //caml_gr_resize_window might reset some canvas' properties
+  caml_gr_state.context.textBaseline = 'bottom';
 }
 
 //Provides: caml_gr_state_create
 function caml_gr_state_create(canvas,w,h){
   var context = canvas.getContext("2d");
-  context.textBaseline = 'bottom';
   return {
     context: context,
     canvas : canvas,
