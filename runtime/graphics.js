@@ -97,6 +97,7 @@ function caml_gr_state_init(){
 //Provides: caml_gr_state_create
 function caml_gr_state_create(canvas,w,h){
   var context = canvas.getContext("2d");
+  context.textBaseline = 'bottom';
   return {
     context: context,
     canvas : canvas,
