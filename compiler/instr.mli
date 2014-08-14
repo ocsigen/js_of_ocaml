@@ -19,7 +19,7 @@
  *)
 
 type t =
-    ACC0
+  | ACC0
   | ACC1
   | ACC2
   | ACC3
@@ -111,8 +111,6 @@ type t =
   | PUSHTRAP
   | POPTRAP
   | RAISE
-  | RERAISE
-  | RAISE_NOTRACE
   | CHECK_SIGNALS
   | C_CALL1
   | C_CALL2
@@ -165,6 +163,11 @@ type t =
   | GETPUBMET
   | GETDYNMET
   | STOP
+  | EVENT
+  | BREAK
+  | RERAISE
+  | RAISE_NOTRACE
+  | FIRST_UNIMPLEMENTED_OP
 
 type kind =
   | KNullary
@@ -177,6 +180,7 @@ type kind =
   | KClosurerec
   | KClosure
   | KStop of int
+  | K_will_not_append
 
 type desc = { code : t; kind : kind; name : string; opcode : int }
 

@@ -73,6 +73,7 @@ end = struct
         scan blocks code (pc + 3) len
       | KStop n ->
         scan blocks code (pc + n + 1) len
+      | K_will_not_append -> assert false
     end
     else blocks
 
@@ -1577,6 +1578,9 @@ and compile blocks code limit pc state instrs =
          Let (meths, Field (obj, 0)) :: instrs)
     | STOP ->
       (instrs, Stop, state)
+    | EVENT
+    | BREAK
+    | FIRST_UNIMPLEMENTED_OP -> assert false
   end
 
 (****)

@@ -906,3 +906,10 @@ function caml_set_oo_id (b) {
 
 //Provides: caml_install_signal_handler const
 function caml_install_signal_handler(){return 0}
+
+
+//Provides: caml_convert_raw_backtrace_slot
+//Requires: caml_failwith
+function caml_convert_raw_backtrace_slot(){
+  caml_failwith("caml_convert_raw_backtrace_slot");
+}

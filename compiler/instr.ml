@@ -19,7 +19,7 @@
  *)
 
 type t =
-    ACC0
+  | ACC0
   | ACC1
   | ACC2
   | ACC3
@@ -111,8 +111,6 @@ type t =
   | PUSHTRAP
   | POPTRAP
   | RAISE
-  | RERAISE
-  | RAISE_NOTRACE
   | CHECK_SIGNALS
   | C_CALL1
   | C_CALL2
@@ -165,6 +163,12 @@ type t =
   | GETPUBMET
   | GETDYNMET
   | STOP
+  | EVENT
+  | BREAK
+  | RERAISE
+  | RAISE_NOTRACE
+  | FIRST_UNIMPLEMENTED_OP
+
 
 type kind =
   | KNullary
@@ -177,12 +181,18 @@ type kind =
   | KClosurerec
   | KClosure
   | KStop of int
+  | K_will_not_append
 
 type desc = { code : t; kind : kind; name : string; opcode : int }
 
 let ops,ops_rev =
   let ops_rev = Hashtbl.create 17 in
-  let block1 =
+  let if_v4 =
+    match Util.Version.v with
+      `V3    -> (fun _ default -> default)
+    | `V4_02 -> (fun k _ -> k)
+  in
+  let instrs =
     [| ACC0, KNullary, "ACC0";
        ACC1, KNullary, "ACC1";
        ACC2, KNullary, "ACC2";
@@ -274,12 +284,8 @@ let ops,ops_rev =
        BOOLNOT, KNullary, "BOOLNOT";
        PUSHTRAP, KCond_jump, "PUSHTRAP";
        POPTRAP, KNullary, "POPTRAP";
-       RAISE, KStop 0, "RAISE" |]
-  and block2 =
-    [| RERAISE, KStop 0, "RERAISE";
-       RAISE_NOTRACE, KStop 0, "RAISE_NOTRACE" |]
-  and block3 =
-    [| CHECK_SIGNALS, KNullary, "CHECK_SIGNALS";
+       RAISE, KStop 0, "RAISE";
+       CHECK_SIGNALS, KNullary, "CHECK_SIGNALS";
        C_CALL1, KUnary, "C_CALL1";
        C_CALL2, KUnary, "C_CALL2";
        C_CALL3, KUnary, "C_CALL3";
@@ -330,19 +336,18 @@ let ops,ops_rev =
        BUGEINT, KCmp_jump, "BUGEINT";
        GETPUBMET, KBinary, "GETPUBMET";
        GETDYNMET, KNullary, "GETDYNMET";
-       STOP, KStop 0, "STOP"|]
-  in
-  let instrs =
-    match Util.Version.v with
-      `V3    -> [block1; block3]
-    | `V4_02 -> [block1; block2; block3]
-  in
+       STOP, KStop 0, "STOP";
+       EVENT, K_will_not_append, "EVENT";
+       BREAK, K_will_not_append, "BREAK";
+       RERAISE, if_v4 (KStop 0) K_will_not_append, "RERAISE";
+       RAISE_NOTRACE, if_v4 (KStop 0) K_will_not_append, "RAISE_NOTRACE";
+       FIRST_UNIMPLEMENTED_OP, K_will_not_append, "FIRST_UNIMPLEMENTED_OP"|] in
   let ops =
     Array.mapi
       (fun i (c, k, n) ->
          Hashtbl.add ops_rev c i;
-         {code = c; kind = k; name = n; opcode = i})
-      (Array.concat instrs)
+         {code = c; kind = k; name = n; opcode = i}
+      ) instrs
   in
   ops,ops_rev
 
@@ -391,7 +396,9 @@ exception Bad_instruction of int
 let get_instr code pc =
   let i = getu code pc in
   if i < 0 || i >= Array.length ops then raise (Bad_instruction i);
-  ops.(i)
+  let ins = ops.(i) in
+  if ins.kind = K_will_not_append then raise (Bad_instruction i);
+  ins
 
 (****)
 
