@@ -16,8 +16,11 @@ ifneq ($(HIGLO),)
 OPTCOMP_OPT+= -let higlo=true
 endif
 
-SYNTAXES= lwt.syntax js_of_ocaml.syntax js_of_ocaml.deriving.syntax deriving.syntax.std
-
+ifneq ($(NO_SYNTAXES),1)
+SYNTAXES= lwt.syntax \
+	js_of_ocaml.syntax \
+	js_of_ocaml.deriving.syntax deriving.syntax.std
+endif
 
 JSFILES= +weak.js +toplevel.js +graphics.js +nat.js
 

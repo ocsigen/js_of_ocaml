@@ -29,7 +29,7 @@ v-4.02.%:
 	opam switch "4.02.$*"
 	eval `opam config env`
 	opam install $(BASE)
-	$(MAKE)
-	$(MAKE) toplevel
+	$(MAKE) NO_SYNTAXES=1
+	$(MAKE) NO_SYNTAXES=1 toplevel
 	mkdir -p toplevel/4.02.$*/
 	cp toplevel/*.cmis.js toplevel/toplevel.js toplevel/4.02.$*/
