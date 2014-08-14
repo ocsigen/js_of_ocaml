@@ -224,5 +224,7 @@ let _ =
     Format.eprintf "%s: Error: %s@." Sys.argv.(0) s;
     exit 1
   | exc ->
+    let backtrace = Printexc.get_backtrace () in
     Format.eprintf "%s: Error: %s@." Sys.argv.(0) (Printexc.to_string exc);
+    prerr_string backtrace;
     exit 1

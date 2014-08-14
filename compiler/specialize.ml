@@ -21,22 +21,24 @@
 open Code
 open Flow
 
-let rec function_cardinality info x =
+let rec function_cardinality info x acc =
   get_approx info
     (fun x ->
        match info.info_defs.(Var.idx x) with
        | Expr (Closure (l, _)) ->
            Some (List.length l)
        | Expr (Apply (f, l, _)) ->
-           begin match function_cardinality info f with
+         if List.mem f acc
+         then None
+         else begin match function_cardinality info f (f::acc) with
              Some n ->
-               let diff = n - List.length l in
-               if diff > 0 then Some diff else None
+             let diff = n - List.length l in
+             if diff > 0 then Some diff else None
            | None ->
-               None
-           end
+             None
+         end
        | _ ->
-           None)
+         None)
     None
     (fun u v -> match u, v with Some n, Some m when n = m -> u | _ -> None)
     x
@@ -45,7 +47,7 @@ let specialize_instr info (acc,free_pc,extra) i =
   match i with
     | Let (x, Apply (f, l, _)) when Option.Optim.optcall () -> begin
       let n' = List.length l in
-      match function_cardinality info f with
+      match function_cardinality info f [] with
         | None -> i::acc,free_pc,extra
         | Some n when n = n' -> Let (x, Apply (f, l, true))::acc,free_pc,extra
         | Some n when n < n' ->
