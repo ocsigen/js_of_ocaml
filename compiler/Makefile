@@ -30,14 +30,14 @@ $(MINIFIER): minify.$(BEST)
 .INTERMEDIATE: compile.byte compile.opt minify.byte minify.opt
 
 compile.byte: $(COMPOBJS:cmx=cmo)
-	ocamlfind ocamlc -package $(PACKAGES) -linkpkg -o $@ $^
+	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -linkpkg -o $@ $^
 compile.opt: $(COMPOBJS)
-	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -g -o $@ $^
+	ocamlfind ocamlopt $(SAFESTRING) -package $(PACKAGES) -linkpkg -g -o $@ $^
 
 minify.byte: $(OBJS:cmx=cmo) minify.cmo
-	ocamlfind ocamlc -package $(PACKAGES) -linkpkg -o $@ $^
+	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -linkpkg -o $@ $^
 minify.opt: $(OBJS:cmx=cmx) minify.cmx
-	ocamlfind ocamlopt -package $(PACKAGES) -linkpkg -g -o $@ $^
+	ocamlfind ocamlopt $(SAFESTRING) -package $(PACKAGES) -linkpkg -g -o $@ $^
 
 
 compiler.cmo: $(OBJS:cmx=cmo)
@@ -66,13 +66,13 @@ compiler_version.ml.tmp:
 	echo "let git_version = \"${VERSION_GIT}\"" >> $@
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -package $(PACKAGES) -for-pack Compiler -g -c $<
+	ocamlfind ocamlopt $(SAFESTRING) -package $(PACKAGES) -for-pack Compiler -g -c $<
 
 %.cmo: %.ml
-	ocamlfind ocamlc -package $(PACKAGES) -c $<
+	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -c $<
 
 %.cmi: %.mli
-	ocamlfind ocamlc -package $(PACKAGES) -c $<
+	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -c $<
 
 annot_parser.ml: annot_parser.mli
 annot_parser.mli: annot_parser.mly

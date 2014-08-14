@@ -18,10 +18,11 @@
  *)
 
 let rec random_identifier size =
-  let s = String.create size in
+  let b = Buffer.create size in
   for i = 0 to (size - 1) do
-    s.[i] <- Char.chr (97 + Random.int 26)
+    Buffer.add_char b (Char.chr (97 + Random.int 26))
   done;
+  let s = Buffer.contents b in
   if Js.Optdef.test (Js.Unsafe.get (Dom_html.window) (Js.string s))
   then (* name already in use, choose another one*)
     random_identifier size

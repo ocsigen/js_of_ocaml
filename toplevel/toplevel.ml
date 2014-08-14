@@ -111,11 +111,11 @@ let load_resource_aux url =
     if xml##status = 200 then
       let resp = xml##responseText in
       let len = resp##length in
-      let str = String.create len in
+      let str = Bytes.create len in
       for i=0 to len-1 do
-        str.[i] <- Char.chr (int_of_float resp##charCodeAt(i) land 0xff)
+        Bytes.set str i (Char.chr (int_of_float resp##charCodeAt(i) land 0xff))
       done;
-      Some(str)
+      Some(Bytes.unsafe_to_string str)
     else
       None
   with _ ->

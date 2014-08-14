@@ -362,16 +362,26 @@ let int_to_buf buf i =
   Buffer.add_char buf (Char.chr ((i lsr 16) land 0xFF));
   Buffer.add_char buf (Char.chr ((i lsr 24) land 0xFF))
 
-let compile l =
-  let b = Buffer.create 50 in
+let compile b l =
   List.iter (fun i ->
       let i = match i with
         | `C i -> i
         | `I i -> to_int i in
-      int_to_buf b i) l;
+      int_to_buf b i) l
+
+let compile_to_string l =
+  let b = Buffer.create 50 in
+  compile b l;
   Buffer.contents b
 
-let get code i = Char.code code.[i]
+let compile_to_bytes l =
+  let b = Buffer.create 50 in
+  compile b l;
+  (* Buffer.to_bytes b; *)
+  (* compat hack wrt bytes in 4.02 *)
+  Bytes.unsafe_of_string (Buffer.contents b)
+
+let get code i = Char.code (Bytes.get code i)
 
 let getu code pc =
   let i = pc * 4 in

@@ -13,7 +13,7 @@ OCaml programs run on Web browsers.
 
 ## Requirements
 
-  * Findlib
+  * Findlib: **version 1.5.1** at least
   * Lwt: **version 2.3.0** at least
   * Menhir
 

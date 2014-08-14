@@ -20,6 +20,7 @@ depopts: ["deriving" "tyxml" "reactiveData" ]
 
 conflicts: [
   "deriving" {< "0.6"}
-  "lwt"      {< "2.4"}
   "tyxml"    {< "3.2.1"}
+  "lwt"      {< "2.4"}
+  "ocamlfind" {< "1.5.1"}
 ]
