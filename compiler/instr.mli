@@ -180,7 +180,7 @@ type kind =
   | KClosurerec
   | KClosure
   | KStop of int
-  | K_will_not_append
+  | K_will_not_happen
 
 type desc = { code : t; kind : kind; name : string; opcode : int }
 

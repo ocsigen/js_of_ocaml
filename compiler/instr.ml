@@ -181,7 +181,7 @@ type kind =
   | KClosurerec
   | KClosure
   | KStop of int
-  | K_will_not_append
+  | K_will_not_happen
 
 type desc = { code : t; kind : kind; name : string; opcode : int }
 
@@ -337,11 +337,11 @@ let ops,ops_rev =
        GETPUBMET, KBinary, "GETPUBMET";
        GETDYNMET, KNullary, "GETDYNMET";
        STOP, KStop 0, "STOP";
-       EVENT, K_will_not_append, "EVENT";
-       BREAK, K_will_not_append, "BREAK";
-       RERAISE, if_v4 (KStop 0) K_will_not_append, "RERAISE";
-       RAISE_NOTRACE, if_v4 (KStop 0) K_will_not_append, "RAISE_NOTRACE";
-       FIRST_UNIMPLEMENTED_OP, K_will_not_append, "FIRST_UNIMPLEMENTED_OP"|] in
+       EVENT, K_will_not_happen, "EVENT";
+       BREAK, K_will_not_happen, "BREAK";
+       RERAISE, if_v4 (KStop 0) K_will_not_happen, "RERAISE";
+       RAISE_NOTRACE, if_v4 (KStop 0) K_will_not_happen, "RAISE_NOTRACE";
+       FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"|] in
   let ops =
     Array.mapi
       (fun i (c, k, n) ->
@@ -397,7 +397,7 @@ let get_instr code pc =
   let i = getu code pc in
   if i < 0 || i >= Array.length ops then raise (Bad_instruction i);
   let ins = ops.(i) in
-  if ins.kind = K_will_not_append then raise (Bad_instruction i);
+  if ins.kind = K_will_not_happen then raise (Bad_instruction i);
   ins
 
 (****)

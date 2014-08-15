@@ -73,7 +73,7 @@ end = struct
         scan blocks code (pc + 3) len
       | KStop n ->
         scan blocks code (pc + n + 1) len
-      | K_will_not_append -> assert false
+      | K_will_not_happen -> assert false
     end
     else blocks
 
