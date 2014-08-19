@@ -4,3 +4,7 @@ bin: [
   "?jsoo_tools/jsoo_mktop"
   "?jsoo_tools/jsoo_mkcmis"
 ]
+man: [
+  "compiler/man/js_of_ocaml.1" {"man1/js_of_ocaml.1"}
+  "compiler/man/jsoo_minify.1" {"man1/jsoo_minify.1"}
+]

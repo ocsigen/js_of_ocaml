@@ -1,7 +1,7 @@
 
 include ../Makefile.conf
 
-all: $(COMPILER) $(MINIFIER)
+all: $(COMPILER) $(MINIFIER) man
 
 lib: compiler.cma compiler.cmxa compiler.cmxs
 
@@ -26,6 +26,15 @@ $(COMPILER): compile.$(BEST)
 
 $(MINIFIER): minify.$(BEST)
 	mv -f $< $@
+
+
+man: man/$(MINIFIER).1 man/$(COMPILER).1
+man/$(MINIFIER).1: $(MINIFIER)
+	mkdir -p man
+	./$(MINIFIER) --help=groff >$@
+man/$(COMPILER).1: $(COMPILER)
+	mkdir -p man
+	./$(COMPILER) --help=groff >$@
 
 .INTERMEDIATE: compile.byte compile.opt minify.byte minify.opt
 
@@ -91,6 +100,7 @@ clean:
 	rm -f compiler_version.ml
 	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
+	rm -Rf man
 
 .PHONY: depend
 depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml

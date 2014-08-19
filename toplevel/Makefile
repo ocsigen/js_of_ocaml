@@ -56,7 +56,7 @@ $(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS)
 	$(OCPINDENT) $(HIGLO) \
 	$(TOPLEVEL_OBJS) \
 	${addprefix -jsopt , ${JSFILES}} \
-	${addprefix -jsopt , -I ./ -file examples.ml} \
+	${addprefix -jsopt , -I ./ --file examples.ml} \
 	-package base64 \
 	-o $(TOPLEVEL_NAME).byte
 

@@ -36,6 +36,7 @@ compiler/js_lexer.ml
 compiler/js_parser.ml
 compiler/js_parser.mli
 compiler/compiler_version.ml
+compiler/man
 jsoo_tools/jsoo_mktop
 jsoo_tools/jsoo_mkcmis
 compiler/util.ml
