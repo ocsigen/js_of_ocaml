@@ -153,9 +153,6 @@ let o3 =
   loop 10 "flow" round2 1 >>
   print
 
-
-let profile = ref o1
-
 let generate d ?toplevel (p,live_vars) =
   if times ()
   then Format.eprintf "Start Generation...@.";
@@ -426,9 +423,11 @@ let configure formatter p =
   Code.Var.set_pretty pretty;
   p
 
-let f ?(standalone=true) ?toplevel ?linkall ?source_map formatter d =
+type profile = Code.program -> Code.program
+
+let f ?(standalone=true) ?(profile=o1) ?toplevel ?linkall ?source_map formatter d =
   configure formatter >>
-  !profile >>
+  profile >>
   deadcode' >>
   generate d ?toplevel >>
 
@@ -446,12 +445,11 @@ let from_string prims s formatter =
   let (p,d) = Parse_bytecode.from_string prims s in
   f ~standalone:false formatter d p
 
-let set_profile = function
-  | 0 ->
-    List.iter Option.Optim.enable ["pretty";"debuginfo"];
-    List.iter Option.Optim.disable ["inline";"staticeval"];
-    profile := o1
-  | 1 -> profile := o1
-  | 2 -> profile := o2
-  | 3 -> profile := o3
-  | _ -> ()
+
+let profiles = [1,o1;
+                2,o2;
+                3,o3]
+let profile i =
+  try
+    Some (List.assoc i profiles)
+  with Not_found -> None

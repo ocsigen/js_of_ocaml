@@ -1,7 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
+ * Copyright (C) 2014 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,17 +17,25 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type profile
+type t = {
+  common : CommonArg.t;
+  (* compile option *)
+  profile : Driver.profile option;
+  tailcall : Option.Tailcall.t;
+  source_map : (string * Source_map.t) option;
+  runtime_files : string list;
+  output_file : string option;
+  input_file : string option;
+  (* toplevel *)
+  linkall : bool;
+  toplevel : bool;
+  nocmis : bool;
+  (* filesystem *)
+  include_dir : string list;
+  fs_files : string list;
+  fs_output : string option;
+  fs_external : bool;
+}
 
-val f :
-  ?standalone:bool ->
-  ?profile:profile ->
-  ?toplevel:bool ->
-  ?linkall:bool ->
-  ?source_map:(string * Source_map.t) ->
-  Pretty_print.t -> Parse_bytecode.Debug.data -> Code.program -> unit
-
-val from_string : string array -> string -> Pretty_print.t -> unit
-
-val profiles : (int * profile) list
-val profile : int -> profile option
+val options : t Cmdliner.Term.t
+val info : Cmdliner.Term.info

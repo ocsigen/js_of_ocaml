@@ -4,12 +4,16 @@ annot_parser.cmo : primitive.cmi annot_parser.cmi
 annot_parser.cmx : primitive.cmx annot_parser.cmi
 code.cmo : varPrinter.cmi util.cmi code.cmi
 code.cmx : varPrinter.cmx util.cmx code.cmi
-compile.cmo : util.cmi source_map.cmi pseudoFs.cmi pretty_print.cmi \
-    parse_bytecode.cmi option.cmi linker.cmi driver.cmi compiler_version.cmi \
-    code.cmi
-compile.cmx : util.cmx source_map.cmx pseudoFs.cmx pretty_print.cmx \
-    parse_bytecode.cmx option.cmx linker.cmx driver.cmx compiler_version.cmx \
-    code.cmx
+commonArg.cmo : option.cmi commonArg.cmi
+commonArg.cmx : option.cmx commonArg.cmi
+compile.cmo : util.cmi pseudoFs.cmi pretty_print.cmi parse_bytecode.cmi \
+    option.cmi linker.cmi driver.cmi compileArg.cmi commonArg.cmi code.cmi
+compile.cmx : util.cmx pseudoFs.cmx pretty_print.cmx parse_bytecode.cmx \
+    option.cmx linker.cmx driver.cmx compileArg.cmx commonArg.cmx code.cmx
+compileArg.cmo : util.cmi source_map.cmi option.cmi driver.cmi \
+    compiler_version.cmi commonArg.cmi compileArg.cmi
+compileArg.cmx : util.cmx source_map.cmx option.cmx driver.cmx \
+    compiler_version.cmx commonArg.cmx compileArg.cmi
 compiler_version.cmo : compiler_version.cmi
 compiler_version.cmx : compiler_version.cmi
 control.cmo : subst.cmi code.cmi control.cmi
@@ -79,9 +83,13 @@ linker.cmx : util.cmx reserved.cmx primitive.cmx parse_js.cmx parse_info.cmx \
     option.cmx js_traverse.cmx js_token.cmx javascript.cmx annot_parser.cmx \
     annot_lexer.cmx linker.cmi
 minify.cmo : util.cmi pretty_print.cmi parse_js.cmi parse_info.cmi \
-    option.cmi js_traverse.cmi js_output.cmi js_assign.cmi code.cmi
+    option.cmi minifyArg.cmi js_traverse.cmi js_output.cmi js_assign.cmi \
+    commonArg.cmi code.cmi
 minify.cmx : util.cmx pretty_print.cmx parse_js.cmx parse_info.cmx \
-    option.cmx js_traverse.cmx js_output.cmx js_assign.cmx code.cmx
+    option.cmx minifyArg.cmx js_traverse.cmx js_output.cmx js_assign.cmx \
+    commonArg.cmx code.cmx
+minifyArg.cmo : compiler_version.cmi commonArg.cmi minifyArg.cmi
+minifyArg.cmx : compiler_version.cmx commonArg.cmx minifyArg.cmi
 option.cmo : option.cmi
 option.cmx : option.cmi
 parse_bytecode.cmo : util.cmi primitive.cmi parse_info.cmi option.cmi \
@@ -129,6 +137,8 @@ vlq64.cmx : vlq64.cmi
 annot_lexer.cmi : annot_parser.cmi
 annot_parser.cmi : primitive.cmi
 code.cmi : util.cmi
+commonArg.cmi :
+compileArg.cmi : source_map.cmi option.cmi driver.cmi commonArg.cmi
 compiler_version.cmi :
 control.cmi : code.cmi
 deadcode.cmi : code.cmi
@@ -150,6 +160,7 @@ js_tailcall.cmi : js_traverse.cmi javascript.cmi code.cmi
 js_token.cmi : parse_info.cmi
 js_traverse.cmi : util.cmi javascript.cmi code.cmi
 linker.cmi : util.cmi primitive.cmi parse_info.cmi javascript.cmi
+minifyArg.cmi : commonArg.cmi
 option.cmi :
 parse_bytecode.cmi : util.cmi parse_info.cmi code.cmi
 parse_info.cmi :

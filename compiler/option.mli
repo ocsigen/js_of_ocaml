@@ -18,12 +18,14 @@
 *)
 
 module Debug : sig
+  val available : unit -> string list
   val find : string -> unit -> bool
   val enable : string -> unit
   val disable : string -> unit
 end
 
 module Optim : sig
+  val available : unit -> string list
   val deadcode : unit -> bool
   val optcall : unit -> bool
   val shortvar : unit -> bool
@@ -60,6 +62,7 @@ module Tailcall : sig
     | TcNone
     | TcTrampoline
     | TcWhile
+  val default : t
   val get : unit -> t
   val set : t -> unit
   val of_string : string -> t

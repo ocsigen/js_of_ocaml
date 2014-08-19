@@ -37,8 +37,6 @@ let setup = lazy (
   Hashtbl.add Toploop.directive_table "tailcall" (Toploop.Directive_string (fun s ->
       let x = Option.Tailcall.of_string s in
       Option.Tailcall.set x));
-  Hashtbl.add Toploop.directive_table "optim" (Toploop.Directive_int (fun i ->
-      Driver.set_profile i));
   Topdirs.dir_directory "/cmis";
   let initial_primitive_count =
     Array.length (split_primitives (Symtable.data_primitive_names ())) in

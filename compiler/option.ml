@@ -28,6 +28,7 @@ let extra_js_files = ["+weak.js" ; "+graphics.js"; "+toplevel.js"; "+nat.js"]
 module Debug = struct
   let debugs : (string * bool ref) list ref = ref []
 
+  let available () = List.map fst !debugs
   let find s =
     let state =
       try
@@ -52,6 +53,8 @@ end
 module Optim = struct
 
   let optims = ref []
+
+  let available () = List.map fst !optims
 
   let o ~name ~default =
     let state =

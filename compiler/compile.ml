@@ -44,10 +44,15 @@ let gen_file file f =
     Sys.remove f_tmp;
     raise exc
 
-let f toplevel no_cmis extern_fs linkall paths files js_files input_file output_file output_file_fs source_map =
+let f {
+    CompileArg.common;
+    profile; source_map; runtime_files; input_file; output_file;
+    linkall; toplevel; nocmis;
+    include_dir; fs_files; fs_output; fs_external } =
+  CommonArg.eval common;
   let t = Util.Timer.make () in
-  Linker.load_files js_files;
-  let paths = List.rev_append paths [Util.find_pkg_dir "stdlib"] in
+  Linker.load_files runtime_files;
+  let paths = List.rev_append include_dir [Util.find_pkg_dir "stdlib"] in
   let t1 = Util.Timer.make () in
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug =
@@ -64,9 +69,9 @@ let f toplevel no_cmis extern_fs linkall paths files js_files input_file output_
         close_in ch;
         p, cmis, d
   in
-  let cmis = if no_cmis then Util.StringSet.empty else cmis in
+  let cmis = if nocmis then Util.StringSet.empty else cmis in
   let p =
-    if (toplevel && no_cmis) || extern_fs
+    if fs_external
     then
       let instrs = [
         Code.(Let(Var.fresh (), Prim (Extern "caml_fs_init", [])))
@@ -76,142 +81,35 @@ let f toplevel no_cmis extern_fs linkall paths files js_files input_file output_
   if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
   begin match output_file with
     | None ->
-      let p = PseudoFs.f p cmis files paths in
+      let p = PseudoFs.f p cmis fs_files paths in
       let fmt = Pretty_print.to_out_channel stdout in
-      Driver.f ~toplevel ~linkall ?source_map fmt d p
+      Driver.f ?profile ~toplevel ~linkall ?source_map fmt d p
     | Some file ->
       gen_file file (fun chan ->
           let p =
-            if output_file_fs = None
-            then PseudoFs.f p cmis files paths
+            if fs_output = None
+            then PseudoFs.f p cmis fs_files paths
             else p in
           let fmt = Pretty_print.to_out_channel chan in
-          Driver.f ~toplevel ~linkall ?source_map fmt d p;
+          Driver.f ?profile ~toplevel ~linkall ?source_map fmt d p;
         );
       Util.opt_iter (fun file ->
           gen_file file (fun chan ->
-              let pfs = PseudoFs.f_empty cmis files paths in
+              let pfs = PseudoFs.f_empty cmis fs_files paths in
               let pfs_fmt = Pretty_print.to_out_channel chan in
-              Driver.f pfs_fmt d pfs
+              Driver.f ?profile pfs_fmt d pfs
             )
-        ) output_file_fs
+        ) fs_output
   end;
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
 
-let run () =
-  Util.Timer.init Sys.time;
-  let js_files = ref [] in
-  let files = ref [] in
-  let output_file = ref None in
-  let output_file_fs = ref None in
-  let input_file = ref None in
-  let no_runtime = ref false in
-  let linkall = ref false in
-  let toplevel = ref false in
-  let no_cmis = ref false in
-  let extern_fs = ref false in
-  let source_map = ref false in
-  let show_version = ref `No in
-  let paths = ref [] in
-  let options =
-    [
-     ("-version",Arg.Unit (fun () -> show_version:=`Full) ," display version");
-     ("-vnum",Arg.Unit (fun () -> show_version:=`Number) ," display version number");
-     ("-debug", Arg.String Option.Debug.enable, "<name> debug module <name>");
-     ("-disable",
-      Arg.String Option.Optim.disable, "<name> disable optimization <name>");
-     ("-enable",
-      Arg.String Option.Optim.enable, "<name> enable optimization <name>");
-     ("-pretty", Arg.Unit (fun () -> Option.Optim.enable "pretty"), " pretty print the output");
-     ("-debuginfo", Arg.Unit (fun () -> Option.Optim.enable "debuginfo"), " output debug info");
-     ("-opt", Arg.Int Driver.set_profile, "<oN> set optimization profile : o1 (default), o2, o3");
-     ("-noinline", Arg.Unit (fun () -> Option.Optim.disable "inline"), " disable inlining");
-     ("-linkall", Arg.Set linkall, " link all primitives");
-     ("-noruntime", Arg.Unit (fun () -> no_runtime := true),
-      " do not include the standard runtime");
-     ("-sourcemap", Arg.Unit (fun () -> source_map := true), " generate source map");
-     ("-toplevel", Arg.Set toplevel, " compile a toplevel");
-     ("-no-cmis", Arg.Set no_cmis, " do not include cmis when compiling toplevel");
-     ("-extern-fs", Arg.Set extern_fs, " Configure pseudo-filesystem to allow registering files from outside");
-     ("-tc", Arg.Symbol (List.map Option.Tailcall.to_string Option.Tailcall.all,(fun s -> Option.Tailcall.(set (of_string s)))),
-      " set tailcall optimisation");
-     ("-set", Arg.String (fun s ->
-        match Util.split_char '=' s with
-        | [k;v] -> begin
-            let v = try int_of_string v with
-              | _ -> raise (Arg.Bad (
-              Printf.sprintf "wrong argument '%s'; option '-set' expects param=int" s)) in
-            try Option.Param.set k v with
-            | _ -> raise (Arg.Help (
-              Printf.sprintf
-                "parameter %S doesn't exist.\nList of parameters:\n - %s\n" k
-                (String.concat "\n - "
-                   (List.map (fun (name,desc) ->
-                      name ^ "\t: " ^ desc) (Option.Param.all ())))))
-          end
-        | _ -> raise (Arg.Bad (
-          Printf.sprintf
-            "wrong argument '%s'; option '-set' expects param=int" s))
-      ), "<param=int> set parameter <param>");
-     ("-I", Arg.String (fun s -> paths := s :: !paths),
-      "<dir> Add <dir> to the list of include directories");
-     ("-file", Arg.String (fun s -> files:= s :: !files ),
-      "<file> register <file> to the pseudo filesystem");
-     ("-o", Arg.String (fun s -> output_file := Some s),
-      "<file> set output file name to <file>");
-     ("-ofs", Arg.String (fun s -> output_file_fs := Some s),
-      "<file> set filesystem ouput file name to <file>");
-    ]
-  in
-  Arg.parse (Arg.align options)
-      (fun s ->
-         (* internal option for debugging only *)
-         if s="@nofail" then Util.fail:=false
-         else
-         if Filename.check_suffix s ".js" then
-           js_files := s :: !js_files
-         else
-           input_file := Some s)
-    (Format.sprintf "Usage: %s [options]" Sys.argv.(0));
-  let version = match Compiler_version.git_version with
-    | "" -> Compiler_version.s
-    | v  -> Printf.sprintf "%s+git-%s"Compiler_version.s v in
-  match !show_version with
-  | `Number -> Format.printf "%s@." version
-  | `Full -> Format.printf "Js_of_ocaml compiler, version %s@." version
-  | `No ->
-  if !toplevel then linkall:=true;
-  let runtime = if !no_runtime then [] else ["+runtime.js"] in
-  let chop_extension s =
-    try Filename.chop_extension s with Invalid_argument _ -> s in
-  let output_f = match !output_file with
-      Some _ -> !output_file
-    | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") !input_file in
-  let source_m =
-    if !source_map
-    then
-      match output_f with
-        | Some file ->
-          Some (
-            chop_extension file ^ ".map",
-            {
-              Source_map.version = 3;
-              file;
-              sourceroot = None;
-              sources = [];
-              sources_content = [];
-              names = [];
-              mappings = []
-            })
-        | None ->
-          failwith "Don't know where to output the Source-map@."
-    else None in
-  f !toplevel !no_cmis !extern_fs !linkall !paths !files (runtime @ List.rev !js_files)
-    !input_file output_f !output_file_fs source_m
-
+let main =
+  Cmdliner.Term.(pure f $ CompileArg.options),
+  CompileArg.info
 
 let _ =
-  try run () with
+  Util.Timer.init Sys.time;
+  try Cmdliner.Term.eval main with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
     let backtrace = Printexc.get_backtrace () in
     Format.eprintf
