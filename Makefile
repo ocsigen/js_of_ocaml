@@ -13,9 +13,9 @@ compiler:
 	$(MAKE) -C compiler
 compiler_lib: compiler
 	$(MAKE) -C compiler lib
-jsoo_tools:
+jsoo_tools: compiler_lib
 	$(MAKE) -C jsoo_tools
-library:
+library: compiler_lib
 	$(MAKE) -C lib
 ocamlbuild:
 	$(MAKE) -C ocamlbuild
