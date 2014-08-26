@@ -46,14 +46,20 @@ let options =
   let toplevel_section = "OPTIONS (TOPLEVEL)" in
   let filesystem_section = "OPTIONS (FILESYSTEM)" in
   let js_files =
-    Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv:"JS_FILES")
+    let doc = "Link JavaScript files [$(docv)]. " ^
+              "One can refer to path relative to Findlib packages with " ^
+              "the syntax '+pkg_name/file.js'"
+    in
+    Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv:"JS_FILES" ~doc)
   in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
     Arg.(value & opt (some string) None & info ["o"] ~docv:"FILE" ~doc)
   in
   let input_file =
-    Arg.(value & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM")
+    let doc = "Compile the bytecode program [$(docv)]. " ^
+              "Use '-' to read from the standard input instead." in
+    Arg.(value & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM" ~doc)
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
