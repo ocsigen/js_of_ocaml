@@ -46,22 +46,14 @@ let options =
   let toplevel_section = "OPTIONS (TOPLEVEL)" in
   let filesystem_section = "OPTIONS (FILESYSTEM)" in
   let js_files =
-    let arg = Arg.(value & pos_all file [] & info [] ~docv:"JS_FILES") in
-    let f l =
-      List.filter (fun s -> Filename.check_suffix s ".js") l
-    in
-    Term.(pure f $ arg)
+    Arg.(value & pos_left ~rev:true 0 string [] & info [] ~docv:"JS_FILES")
   in
   let output_file =
     let doc = "Set output file name to [$(docv)]." in
     Arg.(value & opt (some string) None & info ["o"] ~docv:"FILE" ~doc)
   in
   let input_file =
-    let arg = Arg.(value & pos_all file [] & info [] ~docv:"PROGRAM") in
-    let f l =
-      List.filter (fun s -> not (Filename.check_suffix s ".js")) l
-    in
-    Term.(pure f $ arg)
+    Arg.(value & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM")
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
@@ -125,8 +117,9 @@ let options =
       noruntime
       sourcemap
       output_file
-      js_files
       input_file
+      js_files
+
     =
     let chop_extension s =
       try Filename.chop_extension s with Invalid_argument _ -> s in
@@ -139,9 +132,9 @@ let options =
       let linkall = linkall || toplevel in
       let fs_external = fs_external || (toplevel && nocmis) in
       let input_file = match input_file with
-        | [] -> None
-        | [x] -> Some x
-        | _ -> raise (Error(false,"At most one input file (bytecode program) allowed")) in
+        | None
+        | Some "-" -> None
+        | Some x -> Some x in
       let output_file = match output_file with
         | Some _ -> output_file
         | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") input_file in
@@ -206,8 +199,8 @@ let options =
 
           $ output_file
 
-          $ js_files
-          $ input_file)
+          $ input_file
+          $ js_files)
   in
   Term.ret t
 
