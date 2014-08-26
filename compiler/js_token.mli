@@ -84,7 +84,7 @@ type token =
   | T_ASSIGN of (Parse_info.t)
   | T_AND of (Parse_info.t)
   | T_DEBUGGER of (Parse_info.t)
-  | TUnknown of (Parse_info.t)
+  | TUnknown of (Parse_info.t * string)
   | TCommentSpace of (Parse_info.t * string)
   | TCommentNewline of (Parse_info.t * string)
   | TCommentML of (Parse_info.t * string)
