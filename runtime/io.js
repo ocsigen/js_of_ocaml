@@ -102,9 +102,9 @@ function caml_ml_out_channels_list () {
 
 //Provides: caml_ml_open_descriptor_out
 //Requires: js_print_stderr, js_print_stdout, caml_ml_out_channels, caml_global_data,caml_sys_open
-//Requires: caml_raise_sys_error,MlString
+//Requires: caml_raise_sys_error,caml_new_string
 function caml_std_output(chan,s){
-  var str = new MlString(s),slen = str.getLen();
+  var str = caml_new_string(s),slen = str.getLen();
   for(var i = 0;i<slen;i++){
     chan.data.array[chan.data.offset + i] = str.get(i);
   }
@@ -185,30 +185,30 @@ function caml_ml_set_channel_output(chan,f) {
 }
 
 //Provides: caml_ml_input
-//Requires: caml_blit_string, MlStringFromArray
+//Requires: caml_blit_string, caml_string_of_array
 function caml_ml_input (chan, s, i, l) {
   var l2 = chan.data.array.length - chan.data.offset;
   if (l2 < l) l = l2;
-  caml_blit_string(new MlStringFromArray(chan.data.array), chan.data.offset, s, i, l);
+  caml_blit_string(caml_string_of_array(chan.data.array), chan.data.offset, s, i, l);
   chan.data.offset += l;
   return l;
 }
 
 //Provides: caml_fs_file_content
-//Requires: MlStringFromArray, caml_fs_content, caml_make_path, MlFile
+//Requires: caml_string_of_array, caml_fs_content, caml_make_path, MlFile
 //Requires: caml_raise_not_found
 function caml_fs_file_content(name) {
   var path = caml_make_path(name);
   var f = caml_fs_content(path);
   if(f instanceof MlFile)
-    return new MlStringFromArray(f.content());
+    return caml_string_of_array(f.content());
   caml_raise_not_found();
 }
 
 //Provides: caml_input_value
-//Requires: caml_marshal_data_size, caml_input_value_from_string, MlStringFromArray
+//Requires: caml_marshal_data_size, caml_input_value_from_string, caml_string_of_array
 function caml_input_value (chan) {
-  var str = new MlStringFromArray(chan.data.array);
+  var str = caml_string_of_array(chan.data.array);
   var _len = caml_marshal_data_size (str, chan.data.offset);
   var res = caml_input_value_from_string(str, chan.data.offset);
   chan.data.offset = str.offset;
@@ -290,7 +290,7 @@ function caml_ml_flush (oc) {
 
 //Provides: caml_ml_output
 //Requires: caml_ml_flush
-//Requires: MlString, caml_create_string, caml_blit_string, caml_raise_sys_error
+//Requires: caml_create_string, caml_blit_string, caml_raise_sys_error
 function caml_ml_output (oc,buffer,offset,len) {
     if(! oc.opened) caml_raise_sys_error("Cannot output to a closed channel");
     var string;
@@ -353,10 +353,10 @@ function caml_ml_pos_out_64(chan) {
 
 //Provides: caml_ml_output_int
 //Requires: caml_ml_output
-//Requires: MlStringFromArray
+//Requires: caml_string_of_array
 function caml_ml_output_int (oc,i) {
   var arr = [(i>>24) & 0xFF,(i>>16) & 0xFF,(i>>8) & 0xFF,i & 0xFF ];
-  var s = new MlStringFromArray(arr);
+  var s = caml_string_of_array(arr);
   caml_ml_output(oc,s,0,4);
   return 0
 }

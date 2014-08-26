@@ -791,8 +791,6 @@ let _ =
   register_un_prim "caml_js_to_bool" `Pure to_int;
   register_un_prim "caml_js_from_string" `Mutable
     (fun cx -> J.ECall (J.EDot (cx, "toString"), []));
-  register_un_prim "caml_js_to_string" `Mutable
-    (fun cx -> J.ENew (s_var "MlWrappedString", Some [cx]));
   register_tern_prim "caml_js_set"
     (fun cx cy cz -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable

@@ -30,9 +30,6 @@ function caml_js_to_float(x) { return x; }
 //Provides: caml_js_from_string mutable
 //Requires: MlString
 function caml_js_from_string(s) { return s.toString(); }
-//Provides: caml_js_to_string const
-//Requires: MlWrappedString
-function caml_js_to_string(s) { return new MlWrappedString(s); }
 //Provides: caml_js_from_array mutable
 function caml_js_from_array(a) { return a.slice(1); }
 //Provides: caml_js_to_array mutable
@@ -99,8 +96,8 @@ function caml_js_equals (x, y) { return +(x == y); }
 //Requires: MlString
 function caml_js_from_byte_string (s) {return s.getFullBytes();}
 //Provides: caml_js_to_byte_string const
-//Requires: MlString
-function caml_js_to_byte_string (s) {return new MlString (s);}
+//Requires: caml_new_string
+function caml_js_to_byte_string (s) {return caml_new_string (s);}
 
 //Provides: caml_js_eval_string
 //Requires: MlString

@@ -52,8 +52,8 @@ MlFile.prototype = {
 
 
 //Provides: caml_sys_getcwd
-//Requires: caml_current_dir, MlString
-function caml_sys_getcwd() { return new MlString(caml_current_dir); }
+//Requires: caml_current_dir, caml_new_string
+function caml_sys_getcwd() { return caml_new_string(caml_current_dir); }
 //Provides: caml_sys_chdir
 //Requires: caml_current_dir, caml_make_path
 //Requires: caml_sys_file_exists, caml_sys_is_directory,caml_raise_no_such_file
@@ -105,7 +105,7 @@ function caml_make_path (name) {
 
 //Provides: caml_fs_register
 //Requires: MlDir, MlFile, caml_root_dir, MlString, caml_make_path, caml_raise_sys_error
-//Requires: caml_invalid_argument
+//Requires: caml_invalid_argument, caml_new_string
 // content can be : MlDIr,MlFile,MlString,Array, string
 function caml_fs_register(name,content) {
   var path = caml_make_path(name);
@@ -124,7 +124,7 @@ function caml_fs_register(name,content) {
   else if(content instanceof MlFile) dir.mk(d,content);
   else if(content instanceof MlString) dir.mk(d,new MlFile(content.getArray()));
   else if(content instanceof Array) dir.mk(d,new MlFile(content));
-  else if(content.toString) dir.mk(d,new MlFile((new MlString(content.toString())).getArray()));
+  else if(content.toString) dir.mk(d,new MlFile((caml_new_string(content.toString())).getArray()));
   else caml_invalid_argument("caml_fs_register");
   return 0;
 }
@@ -202,7 +202,7 @@ function caml_fs_register_autoload(path,f){
 }
 
 //Provides: caml_sys_read_directory
-//Requires: MlString, MlDir
+//Requires: caml_new_string, MlDir
 //Requires: caml_fs_content, caml_make_path, caml_raise_not_a_dir
 function caml_sys_read_directory(name){
   var dir = caml_fs_content(caml_make_path(name));
@@ -212,7 +212,7 @@ function caml_sys_read_directory(name){
   var l = [0];
   var list = dir.list();
   for(var i=0;i<list.length;i++)
-    l.push(new MlString(list[i]));
+    l.push(caml_new_string(list[i]));
   return l;
 }
 

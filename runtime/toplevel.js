@@ -54,8 +54,8 @@ function caml_reify_bytecode (code, _sz) {
 function caml_static_release_bytecode () { return 0; }
 
 //Provides: caml_static_alloc
-//Requires: MlMakeString
-function caml_static_alloc (len) { return new MlMakeString (len); }
+//Requires: caml_create_string
+function caml_static_alloc (len) { return caml_create_string (len); }
 
 //Provides: caml_static_free
 function caml_static_free () { return 0; }

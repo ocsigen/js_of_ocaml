@@ -33,7 +33,8 @@ var caml_marshal_constants = {
 }
 
 //Provides: caml_input_value_from_string mutable
-//Requires: caml_failwith, MlStringFromArray, MlString, caml_marshal_constants
+//Requires: caml_failwith, caml_string_of_array, caml_new_string
+//Requires: caml_marshal_constants
 //Requires: caml_int64_float_of_bits, caml_int64_of_bytes
 var caml_input_value_from_string = function (){
   function ArrayReader (a, i) { this.a = a; this.i = i; }
@@ -63,7 +64,7 @@ var caml_input_value_from_string = function (){
     readstr:function (len) {
       var i = this.i;
       this.i = i + len;
-      return new MlStringFromArray(this.a.slice(i, i + len));
+      return caml_string_of_array(this.a.slice(i, i + len));
     }
   }
   function StringReader (s, i) { this.s = s; this.i = i; }
@@ -95,7 +96,7 @@ var caml_input_value_from_string = function (){
     readstr:function (len) {
       var i = this.i;
       this.i = i + len;
-      return new MlString(this.s.substring(i, i + len));
+      return caml_new_string(this.s.substring(i, i + len));
     }
   }
   function caml_float_of_bytes (a) {
@@ -396,10 +397,10 @@ var caml_output_val = function (){
 } ();
 
 //Provides: caml_output_value_to_string mutable
-//Requires: caml_output_val, MlStringFromArray
+//Requires: caml_output_val, caml_string_of_array
 function caml_output_value_to_string (v, _fl) {
   /* ignores flags... */
-  return new MlStringFromArray (caml_output_val (v));
+  return caml_string_of_array (caml_output_val (v));
 }
 
 //Provides: caml_output_value_to_buffer

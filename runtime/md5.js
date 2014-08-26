@@ -19,16 +19,16 @@
 
 
 //Provides: caml_md5_chan
-//Requires: caml_md5_string, MlStringFromArray
+//Requires: caml_md5_string, caml_string_of_array
 function caml_md5_chan(chan,len){
   if(len<0){
     len=chan.data.array.length - chan.data.offset;
   }
-  return caml_md5_string(new MlStringFromArray(chan.data.array),chan.data.offset,len);
+  return caml_md5_string(caml_string_of_array(chan.data.array),chan.data.offset,len);
 }
 
 //Provides: caml_md5_string
-//Requires: MlString, MlStringFromArray
+//Requires: caml_string_of_array
 var caml_md5_string =
 function () {
   function add (x, y) { return (x + y) | 0; }
@@ -160,6 +160,6 @@ function () {
       }
       for (; i < len; i++) buf[i>>2] |= b.charCodeAt(i + ofs) << (8 * (i & 3));
     }
-    return new MlStringFromArray(md5(buf, len));
+    return caml_string_of_array(md5(buf, len));
   }
 } ();

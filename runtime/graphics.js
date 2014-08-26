@@ -21,12 +21,12 @@ var caml_gr_state;
 
 //Provides: caml_gr_state_get
 //Requires: caml_gr_state
-//Requires: caml_named_value, MlString
+//Requires: caml_named_value, caml_new_string
 function caml_gr_state_get() {
   if(caml_gr_state) {
     return caml_gr_state;
   }
-  throw [0,caml_named_value("Graphics.Graphic_failure"), new MlString("Not initialized")]
+  throw [0,caml_named_value("Graphics.Graphic_failure"), caml_new_string("Not initialized")]
 }
 //Provides: caml_gr_state_set
 //Requires: caml_gr_state,caml_gr_state_init

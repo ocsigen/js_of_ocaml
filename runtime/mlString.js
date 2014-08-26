@@ -41,9 +41,13 @@ function caml_str_repeat(n, s) {
 //Provides: MlString
 //Requires: caml_raise_with_arg, js_print_stderr, caml_global_data, caml_str_repeat
 function MlString(param) {
-  if (param != null) {
+  this.string = this.array = null;
+  if (param !== undefined) {
     this.bytes = this.fullBytes = param;
     this.last = this.len = param.length;
+  } else {
+    this.bytes = this.fullBytes = null;
+    this.len = null; this.last = 0;
   }
 }
 //This is here to avoid circular deps
@@ -52,16 +56,16 @@ function mlstring_bound_error () {
 }
 MlString.prototype = {
   // JS string : Utf16
-  string:null,
+  //     string:null,
   // byte string
-  bytes:null,
-  fullBytes:null,
+  //     bytes:null,
+  //     fullBytes:null,
   // byte array
-  array:null,
+  //     array:null,
   // length
-  len:null,
+  //     len:null,
   // last initialized byte
-  last:0,
+  //     last:0,
 
   toJsString:function() {
     // assumes this.string == null
@@ -242,30 +246,28 @@ MlString.prototype = {
 
 // Conversion Javascript -> Caml
 
-//Provides: MlWrappedString
+//Provides: caml_js_to_string const
 //Requires: MlString
-function MlWrappedString (s) { this.string = s; }
-MlWrappedString.prototype = new MlString();
-
-// Uninitialized Caml string
-//Provides: MlMakeString
-//Requires: MlString
-function MlMakeString (l) { this.bytes = ""; this.len = l; }
-MlMakeString.prototype = new MlString ();
+function caml_js_to_string(s) {
+  var x = new MlString (); x.string = s; return x;
+}
 
 // Caml string initialized form an array of bytes
-//Provides: MlStringFromArray
+//Provides: caml_string_of_array
 //Requires: MlString
-function MlStringFromArray (a) {
-  var len = a.length; this.array = a; this.len = this.last = len;
+function caml_string_of_array (a) {
+  var s = new MlString ();
+  var len = a.length; s.array = a; s.len = s.last = len;
+  return s;
 }
-MlStringFromArray.prototype = new MlString ();
 
 //Provides: caml_create_string const
-//Requires: MlMakeString,caml_invalid_argument
+//Requires: MlString,caml_invalid_argument
 function caml_create_string(len) {
   if (len < 0) caml_invalid_argument("String.create");
-  return new MlMakeString(len);
+  var s = new MlString();
+  s.bytes = ""; s.len = len;
+  return s;
 }
 //Provides: caml_fill_string
 //Requires: MlString

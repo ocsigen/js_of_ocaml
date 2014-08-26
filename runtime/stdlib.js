@@ -74,9 +74,9 @@ function caml_raise_constant (tag) { throw tag; }
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 
 //Provides: caml_raise_with_string
-//Requires: caml_raise_with_arg,MlWrappedString
+//Requires: caml_raise_with_arg,caml_new_string
 function caml_raise_with_string (tag, msg) {
-  caml_raise_with_arg (tag, new MlWrappedString (msg));
+  caml_raise_with_arg (tag, caml_new_string (msg));
 }
 
 //Provides: caml_raise_sys_error
@@ -91,7 +91,7 @@ function caml_failwith (msg) {
   caml_raise_with_string(caml_global_data[3], msg);
 }
 //Provides: caml_wrap_exception
-//Requires: caml_global_data,MlWrappedString,caml_named_value
+//Requires: caml_global_data,caml_js_to_string,caml_named_value
 function caml_wrap_exception(e) {
   if(e instanceof Array) return e;
   //Stack_overflow: chrome, safari
@@ -110,7 +110,7 @@ function caml_wrap_exception(e) {
   if(e instanceof joo_global_object.Error)
     return [0,caml_named_value("jsError"),e];
   //fallback: wrapped in Failure
-  return [0,caml_global_data[3],new MlWrappedString (String(e))];
+  return [0,caml_global_data[3],caml_js_to_string (String(e))];
 }
 
 //Provides: caml_invalid_argument
@@ -457,7 +457,7 @@ function caml_parse_format (fmt) {
 }
 
 //Provides: caml_finish_formatting
-//Requires: MlWrappedString
+//Requires: caml_new_string
 function caml_finish_formatting(f, rawbuffer) {
   if (f.uppercase) rawbuffer = rawbuffer.toUpperCase();
   var len = rawbuffer.length;
@@ -482,13 +482,14 @@ function caml_finish_formatting(f, rawbuffer) {
   buffer += rawbuffer;
   if (f.justify == '-')
     for (var i = len; i < f.width; i++) buffer += ' ';
-  return new MlWrappedString (buffer);
+  return caml_new_string (buffer);
 }
 
 //Provides: caml_format_int const
-//Requires: caml_parse_format, caml_finish_formatting, MlWrappedString,caml_str_repeat
+//Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
+//Requires: caml_new_string
 function caml_format_int(fmt, i) {
-  if (fmt.toString() == "%d") return new MlWrappedString(""+i);
+  if (fmt.toString() == "%d") return caml_new_string(""+i);
   var f = caml_parse_format(fmt);
   if (i < 0) { if (f.signedconv) { f.sign = -1; i = -i; } else i >>>= 0; }
   var s = i.toString(f.base);
@@ -742,9 +743,9 @@ function () {
 var caml_initial_time = new Date() * 0.001;
 function caml_sys_time () { return new Date() * 0.001 - caml_initial_time; }
 //Provides: caml_sys_get_config const
-//Requires: MlWrappedString
+//Requires: caml_new_string
 function caml_sys_get_config () {
-  return [0, new MlWrappedString("Unix"), 32, 0];
+  return [0, caml_new_string("Unix"), 32, 0];
 }
 //Provides: caml_sys_random_seed mutable
 //The function needs to return an array since OCaml 4.0...
@@ -850,7 +851,7 @@ function caml_convert_raw_backtrace () { return 0; }
 function caml_get_current_callstack () { return 0; }
 //Provides: caml_sys_getenv
 //Requires: caml_raise_not_found
-//Requires: MlWrappedString
+//Requires: caml_js_to_string
 function caml_sys_getenv (name) {
   var g = joo_global_object;
   var n = name.toString();
@@ -858,7 +859,7 @@ function caml_sys_getenv (name) {
   if(g.process
      && g.process.env
      && g.process.env[n] != undefined)
-    return new MlWrappedString(g.process.env[n]);
+    return caml_js_to_string(g.process.env[n]);
   caml_raise_not_found ();
 }
 //Provides: caml_sys_exit
@@ -872,7 +873,7 @@ function caml_sys_exit (code) {
 }
 
 //Provides: caml_sys_get_argv const
-//Requires: MlWrappedString
+//Requires: caml_js_to_string
 function caml_sys_get_argv () {
   var g = joo_global_object;
   var main = "a.out";
@@ -886,10 +887,10 @@ function caml_sys_get_argv () {
     args = g.process.argv.slice(2);
   }
 
-  var p = new MlWrappedString(main);
+  var p = caml_js_to_string(main);
   var args2 = [0, p];
   for(var i = 0; i < args.length; i++)
-    args2.push(new MlWrappedString(args[i]));
+    args2.push(caml_js_to_string(args[i]));
   return [0, p, args2];
 }
 
