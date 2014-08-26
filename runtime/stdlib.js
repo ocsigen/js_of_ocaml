@@ -610,18 +610,18 @@ function () {
   var HASH_QUEUE_SIZE = 256;
   function ROTL32(x,n) { return ((x << n) | (x >>> (32-n))); }
   function MIX(h,d) {
-    d = caml_mul(d, 0xcc9e2d51);
+    d = caml_mul(d, 0xcc9e2d51|0);
     d = ROTL32(d, 15);
     d = caml_mul(d, 0x1b873593);
     h ^= d;
     h = ROTL32(h, 13);
-    return ((((h * 5)|0) + 0xe6546b64)|0);
+    return (((h + (h << 2))|0) + (0xe6546b64|0))|0;
   }
   function FINAL_MIX(h) {
     h ^= h >>> 16;
-    h = caml_mul (h, 0x85ebca6b);
+    h = caml_mul (h, 0x85ebca6b|0);
     h ^= h >>> 13;
-    h = caml_mul (h, 0xc2b2ae35);
+    h = caml_mul (h, 0xc2b2ae35|0);
     h ^= h >>> 16;
     return h;
   }
