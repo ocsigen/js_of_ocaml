@@ -2,35 +2,37 @@
 all: no_examples examples
 no_examples: build doc
 
-build: check_lwt compiler compiler_lib library ocamlbuild runtime jsoo_tools
+build: check_lwt compiler library ocamlbuild runtime jsoo_tools toplevel_lib
+
+toplevel:
+	$(MAKE) -C toplevel
 
 include Makefile.conf
 -include Makefile.local
 
-.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build jsoo_tools
+.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build jsoo_tools toplevel_lib
 
 compiler:
-	$(MAKE) -C compiler
-compiler_lib: compiler
-	$(MAKE) -C compiler lib
-jsoo_tools: compiler_lib
-	$(MAKE) -C jsoo_tools
-library: compiler_lib
+	$(MAKE) -C compiler all lib
+library:
 	$(MAKE) -C lib
-ocamlbuild:
-	$(MAKE) -C ocamlbuild
 runtime:
 	$(MAKE) -C runtime
-toplevel:: #compiler compiler_lib library runtime
-	$(MAKE) -C toplevel
+jsoo_tools: compiler
+	$(MAKE) -C jsoo_tools
+toplevel_lib: compiler
+	$(MAKE) -C lib toplevel_lib
+ocamlbuild:
+	$(MAKE) -C ocamlbuild
 examples: compiler library runtime
 	$(MAKE) -C examples
+doc: library ocamlbuild
+	$(MAKE) -C doc
+
 tests: compiler library runtime
 	$(MAKE) -C tests
 phantomtests: compiler library runtime
 	$(MAKE) -C tests phantom
-doc: library ocamlbuild
-	$(MAKE) -C doc
 
 LWTERROR="Js_of_ocaml requires Lwt version 2.3.0 at least.  Please upgrade."
 check_lwt:

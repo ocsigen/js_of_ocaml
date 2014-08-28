@@ -46,10 +46,6 @@ compiler.cmo: $(OBJS:cmx=cmo)
 compiler.cma: compiler.cmo
 	ocamlfind ocamlc -a -o $@ $^
 
-local/compiler.cma: compiler.cma compiler.cmxa
-	mkdir -p local
-	cp compiler.* local/
-
 compiler.cmx: $(OBJS)
 	ocamlfind ocamlopt -pack -g -o $@ $^
 
@@ -87,7 +83,6 @@ js_parser.ml js_parser.mli: js_parser.mly
 %.ml: %.mll
 	ocamllex $<
 clean:
-	rm -Rf local
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
 	rm -f compile.opt compile.byte minify.opt minify.byte
 	rm -f $(MINIFIER) $(COMPILER)
