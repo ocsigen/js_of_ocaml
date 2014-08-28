@@ -213,6 +213,10 @@ class share_constant = object(m)
     let all = Hashtbl.create 17 in
     Hashtbl.iter (fun x n ->
         let shareit = match x with
+          (* JavaScript engines recognize the pattern
+             'typeof x==="number"'; if the string is shared,
+             less efficient code is generated. *)
+          | EStr ("number", _) -> None
           | EStr(s,_) when n > 1 ->
             if String.length s < 20
             then Some ("str_"^s)

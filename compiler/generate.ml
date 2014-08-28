@@ -1062,8 +1062,11 @@ and translate_expr ctx queue x e level =
         let ((py, cy), queue) = access_queue' ~ctx  queue y in
         (bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue)
       | IsInt, [x] ->
+        (* JavaScript engines recognize the pattern
+           'typeof x==="number"'; if the string is shared,
+           less efficient code is generated. *)
         let ((px, cx), queue) = access_queue' ~ctx  queue x in
-        (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), (Share.get_string str_js "number" ctx.Ctx.share)),
+        (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), str_js "number"),
          px, queue)
       | Ult, [x; y] ->
         let ((px, cx), queue) = access_queue' ~ctx  queue x in
@@ -1506,9 +1509,11 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
         else
           (* The variable x is accessed several times,
              so we can directly refer to it *)
+          (* We do not want to share the string "number".
+             See comment for IsInt *)
           (Js_simpl.if_statement
               (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
-                      (Share.get_string str_js "number" st.ctx.Ctx.share)))
+                      str_js "number"))
               ~pc:loc
               (build_switch (var x) a1)
               false
