@@ -200,7 +200,7 @@ MlString.prototype = {
   safeSet:function (i, c) {
     if (this.len == null) this.toBytes ();
     if ((i < 0) || (i >= this.len)) mlstring_bound_error ();
-    this.set(i, c);
+    return this.set(i, c);
   },
 
   fill:function (ofs, len, c) {
