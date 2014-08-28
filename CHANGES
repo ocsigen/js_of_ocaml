@@ -1,3 +1,11 @@
+===== 2.4.1 (2014-08-28) =====
+
+ * BugFixes
+ ** Compiler: restore compatibility with ocaml 4.02
+ ** Runtime: fix caml_hash, Math.imul may give wrong results (#215)
+ ** Lib: Graphics_js, update text drawing baseline
+ ** Lib: Fix overuse of FormData in XmlHttpRequest (Tomohiro Matsuyama #214)
+
 ===== 2.4 (2014-08-08) =====
 
  * Features/Changes

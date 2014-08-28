@@ -4,13 +4,10 @@ no_examples: build doc
 
 build: check_lwt compiler library ocamlbuild runtime jsoo_tools toplevel_lib
 
-toplevel:
-	$(MAKE) -C toplevel
-
 include Makefile.conf
 -include Makefile.local
 
-.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build jsoo_tools toplevel_lib
+.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build jsoo_tools toplevel_lib toplevel
 
 compiler:
 	$(MAKE) -C compiler all lib
@@ -28,6 +25,9 @@ examples: compiler library runtime
 	$(MAKE) -C examples
 doc: library ocamlbuild
 	$(MAKE) -C doc
+
+toplevel:
+	$(MAKE) -C toplevel
 
 tests: compiler library runtime
 	$(MAKE) -C tests
