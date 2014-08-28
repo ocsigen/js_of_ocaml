@@ -154,6 +154,12 @@ let eval_instr info i =
       (match c with
         | None -> i
         | Some c -> Let(x,Constant (Int c)))
+    | Let (x, Prim (Extern
+                      ("caml_array_unsafe_get"|"caml_array_unsafe_set"), _)) ->
+        (* Fresh parameters can be introduced for these primitives
+           in Specialize_js, which would make the call to [the_const_of]
+           below fail. *)
+        i
     | Let (x,Prim (prim, prim_args)) ->
       begin
         let prim_args' = List.map (fun x -> the_const_of info x) prim_args in

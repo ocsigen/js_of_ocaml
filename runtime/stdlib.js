@@ -212,6 +212,13 @@ function caml_array_get (array, index) {
   return array[index+1];
 }
 
+//Provides: caml_check_bound
+//Requires: caml_array_bound_error
+function caml_check_bound (array, index) {
+  if (index >>> 0 >= array.length - 1) caml_array_bound_error();
+  return array;
+}
+
 //Provides: caml_make_vect const
 function caml_make_vect (len, init) {
   var b = [0]; for (var i = 1; i <= len; i++) b[i] = init; return b;
