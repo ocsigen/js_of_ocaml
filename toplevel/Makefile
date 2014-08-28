@@ -42,7 +42,7 @@ SYNTAXES=
 OPTCOMP_OPT+= -let metaocaml=true
 endif
 
-MKTOP=jsoo_mktop -verbose \
+MKTOP=jsoo_mktop -jsopt "-pretty -disable shortvar" -verbose \
 	${addprefix -top-syntax , ${SYNTAXES}} \
 	-dont-export-unit gc \
 	${addprefix -export-package , ${PACKAGES}} \

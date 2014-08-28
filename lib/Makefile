@@ -39,7 +39,6 @@ endif
 endif
 
 all: $(LIBNAME).cma log/logger.cma \
-	${TOPLEVELLIB} \
 	${PA_JS} ${PA_JS_NDL} \
 	${PA_DERIVING} 	${PA_DERIVING_NDL} \
 	${DERIVING_JSON} \
@@ -109,13 +108,13 @@ log/%.cmi: log/%.mli
 log/logger.cma: log/lwt_log_js.cmo
 	ocamlfind ocamlc -a -o $@ $^
 
-../compiler/local/compiler.cma:
-	$(MAKE) -C ../compiler local/compiler.cma
-toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo ../compiler/local/compiler.cma
+toplevel_lib: $(TOPLEVELLIB)
+
+toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo ../compiler/compiler.cma
 	ocamlfind ocamlc -syntax camlp4o \
 		-package lwt,lwt.syntax \
 		-ppopt syntax/pa_js.cmo \
-		-I toplevel -I ../compiler/local -I +compiler-libs \
+		-I toplevel -I ../compiler -I +compiler-libs \
 		-c $< -o $@
 
 toplevel/jsooTop.cmi: toplevel/jsooTop.mli

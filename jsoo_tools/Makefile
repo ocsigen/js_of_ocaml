@@ -8,24 +8,24 @@ endif
 all: $(ALL)
 
 $(MKTOP): jsoo_mktop.$(BEST)
-	mv -f $< $@
+	cp $< $@
 $(MKCMIS): jsoo_mkcmis.$(BEST)
-	mv -f $< $@
+	cp $< $@
 
 byte: jsoo_mkcmis.byte jsoo_mktop.byte
 opt: jsoo_mkcmis.opt jsoo_mktop.opt
 
 %.cmo: %.ml
 %.cmx: %.ml
-jsoo_mk%.cmo: jsoo_common.cmo
-jsoo_mk%.cmx: jsoo_common.cmx
+jsoo_mktop.cmo jsoo_mkcmis.cmo: jsoo_common.cmo
+jsoo_mktop.cmx jsoo_mkcmis.cmx: jsoo_common.cmx
 
-%.byte: ../compiler/local/compiler.cma jsoo_common.cmo%.cmo
+%.byte: ../compiler/compiler.cma jsoo_common.cmo %.cmo
 	ocamlfind ocamlc -linkpkg -g \
 	-package compiler-libs.common,findlib \
 	$^ -o $*.byte
 
-%.opt: ../compiler/local/compiler.cmxa jsoo_common.cmx %.cmx
+%.opt: ../compiler/compiler.cmxa jsoo_common.cmx %.cmx
 	ocamlfind ocamlopt -linkpkg -g \
 	-package compiler-libs.common,findlib \
 	$^ -o $*.opt
@@ -33,16 +33,13 @@ jsoo_mk%.cmx: jsoo_common.cmx
 %.cmo: %.ml
 	ocamlfind ocamlc -c -g \
 	-package compiler-libs.common,findlib \
-	-I ../compiler/local/ $<
+	-I ../compiler/ $<
 
 %.cmx: %.ml
 	ocamlfind ocamlopt -c -g \
 	-package compiler-libs.common,findlib \
-	-I ../compiler/local/ $<
-
-../compiler/local/compiler.cma:
-	$(MAKE) -C ../compiler local/compiler.cma
-../compiler/local/compiler.cmxa: ../compiler/local/compiler.cma
+	-I ../compiler/ $<
 
 clean:
-	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa] *.{byte,opt}
+	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa] *.byte *.opt $(MKTOP) $(MKCMIS)
+
