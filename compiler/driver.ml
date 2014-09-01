@@ -156,10 +156,10 @@ let o3 =
 
 let profile = ref o1
 
-let generate (p,live_vars) =
+let generate d (p,live_vars) =
   if times ()
   then Format.eprintf "Start Generation...@.";
-  Generate.f p live_vars
+  Generate.f p live_vars d
 
 
 let header formatter ~standalone js =
@@ -220,7 +220,8 @@ let gen_missing js missing =
                      Statement(
                        Expression_statement (
                          ECall(EVar (S {name="caml_failwith";var=None}),
-                               [EBin(Plus,EStr(prim,`Utf8),EStr(" not implemented",`Utf8))]),
+                               [EBin(Plus,EStr(prim,`Utf8),
+                                     EStr(" not implemented",`Utf8))], N),
                          N))],N)
                 ),
            N
@@ -337,11 +338,11 @@ let coloring js =
   if times () then Format.eprintf "  coloring: %a@." Util.Timer.print t;
   js
 
-let output formatter ?source_map d js =
+let output formatter ?source_map js =
   let t = Util.Timer.make () in
   if times ()
   then Format.eprintf "Start Writing file...@.";
-  Js_output.program formatter ?source_map d js;
+  Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Util.Timer.print t
 
 let pack ~standalone ?(toplevel=false)?(linkall=false) js =
@@ -380,14 +381,14 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
             J.Return_statement(
               Some (J.EVar (J.S {J.name="this";var=None})),
               J.N))
-        ], J.N), []) in
+        ], J.N), [], J.N) in
 
   let js = if standalone then
       let f =
         J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js,J.N) in
       [J.Statement (
         J.Expression_statement
-          ((J.ECall (f, [global])), J.N))]
+          ((J.ECall (f, [global], J.N)), J.N))]
     else
       let f = J.EFun (None, [J.V (Code.Var.fresh ())], js, J.N) in
       [J.Statement (J.Expression_statement (f, J.N))] in
@@ -427,7 +428,7 @@ let f ?(standalone=true) ?toplevel ?linkall ?source_map formatter d =
   configure formatter >>
   !profile >>
   deadcode' >>
-  generate >>
+  generate d >>
 
   link formatter ~standalone ?linkall >>
 
@@ -437,7 +438,7 @@ let f ?(standalone=true) ?toplevel ?linkall ?source_map formatter d =
 
   check_js ~standalone >>
   header formatter ~standalone >>
-  output formatter ?source_map d
+  output formatter ?source_map
 
 let from_string prims s formatter =
   let (p,d) = Parse_bytecode.from_string prims s in

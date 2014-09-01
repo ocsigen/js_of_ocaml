@@ -19,6 +19,5 @@
  *)
 
 val program :
-  Pretty_print.t ->
-  ?source_map:(string * Source_map.t) ->
-  Parse_bytecode.debug_loc -> Javascript.program -> unit
+  Pretty_print.t -> ?source_map:(string * Source_map.t) ->
+  Javascript.program -> unit

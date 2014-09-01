@@ -36,7 +36,6 @@ open Javascript
 module PP = Pretty_print
 
 module Make(D : sig
-  val debug_info : Parse_bytecode.debug_loc
   val source_map : Source_map.t option
 end) = struct
 
@@ -68,7 +67,6 @@ end) = struct
     then
       let pi = match pc with
         | N -> None
-        | Loc pc -> D.debug_info pc
         | Pi pi -> Some pi in
       match pi with
             | None -> ()
@@ -226,7 +224,7 @@ end) = struct
       | EBin (op, e, _) ->
         let (out, lft, rght) = op_prec op in
         l <= out && need_paren lft e
-      | ECall (e, _) | EAccess (e, _) | EDot (e, _) ->
+      | ECall (e, _, _) | EAccess (e, _) | EDot (e, _) ->
         l <= 15 && need_paren 15 e
       | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | ERegexp _| EUn _ | ENew _ ->
         false
@@ -325,8 +323,9 @@ end) = struct
         PP.string f "}";
         PP.end_group f;
         PP.end_group f
-      | ECall (e, el) ->
+      | ECall (e, el,loc) ->
         if l > 15 then begin PP.start_group f 1; PP.string f "(" end;
+        output_debug_info f loc;
         PP.start_group f 1;
         expression 15 f e;
         PP.break f;
@@ -573,10 +572,10 @@ end) = struct
       ident f i
       | Some (e,pc) ->
         PP.start_group f 1;
+        output_debug_info f pc;
         ident f i;
         PP.string f "=";
         PP.break f;
-        output_debug_info f pc;
         expression 1 f e;
         PP.end_group f
 
@@ -598,19 +597,23 @@ end) = struct
       PP.end_group f
     | [(i, Some (e,pc))] ->
       PP.start_group f 1;
+      output_debug_info f pc;
       PP.string f "var";
       PP.space f;
       ident f i;
       PP.string f "=";
       PP.break1 f;
       PP.start_group f 0;
-      output_debug_info f pc;
       expression 1 f e;
       if close then PP.string f ";";
       PP.end_group f;
       PP.end_group f
     | l ->
       PP.start_group f 1;
+      begin match l with
+        (_, Some (_, pc)) :: _ -> output_debug_info f pc
+      | _                      -> ()
+      end;
       PP.string f "var";
       PP.space f;
       variable_declaration_list_aux f l;
@@ -1039,12 +1042,11 @@ let need_space a b =
 let chop_extension s =
   try Filename.chop_extension s with Invalid_argument _ -> s
 
-let program f ?source_map dl p =
+let program f ?source_map p =
   let smo = match source_map with
     | None -> None
     | Some (_,sm) -> Some sm in
   let module O = Make(struct
-    let debug_info = dl
     let source_map = smo
   end) in
   PP.set_needed_space_function f need_space;

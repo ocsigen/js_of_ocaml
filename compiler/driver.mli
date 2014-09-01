@@ -23,7 +23,7 @@ val f :
   ?toplevel:bool ->
   ?linkall:bool ->
   ?source_map:(string * Source_map.t) ->
-  Pretty_print.t -> Parse_bytecode.debug_loc -> Code.program -> unit
+  Pretty_print.t -> Parse_bytecode.Debug.data -> Code.program -> unit
 
 val from_string : string array -> string -> Pretty_print.t -> unit
 

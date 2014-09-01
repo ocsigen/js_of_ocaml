@@ -52,7 +52,7 @@ class tailcall = object(m)
 
   method private last_e e =
     match e with
-      | ECall (EVar (V var), args) -> tc <- VarSet.add var tc
+      | ECall (EVar (V var), args, _) -> tc <- VarSet.add var tc
       | ESeq (_,e) -> m#last_e e
       | ECond (_,e1,e2) -> m#last_e e1;m#last_e e2
       | _ -> ()
@@ -76,7 +76,7 @@ class tailcall_rewrite f = object(m)
 
   method private last_e e =
     match e with
-    | ECall (EVar var,args) -> f var args
+    | ECall (EVar var,args, _) -> f var args
     | ECond (cond,e1,e2) ->
       let e1' = m#last_e e1 in
       let e2' = m#last_e e2 in
@@ -106,7 +106,7 @@ end
 
 module type TC = sig
   val rewrite :
-    (Code.Var.t * Javascript.expression * J.node_pc * VarSet.t) list ->
+    (Code.Var.t * Javascript.expression * J.loc * VarSet.t) list ->
     (string -> Javascript.expression) -> Javascript.statement list
 end
 
@@ -147,10 +147,10 @@ module Tramp : TC = struct
                 J.EBin (J.Lt,
                         J.EVar (J.V counter),
                         J.ENum (float_of_int (Option.Tailcall.maximum()))),
-                J.ECall(J.EVar n, J.EBin (J.Plus,J.ENum 1.,J.EVar (J.V counter)) :: args),
+                J.ECall(J.EVar n, J.EBin (J.Plus,J.ENum 1.,J.EVar (J.V counter)) :: args,J.N),
                 J.ECall (
                   get_prim "caml_trampoline_return",
-                  [J.EVar n ; J.EArr (List.map (fun x -> Some x) (J.ENum 0. :: args))]
+                  [J.EVar n ; J.EArr (List.map (fun x -> Some x) (J.ENum 0. :: args))], J.N
                 ))),J.N)
           in Some st
       with Not_found -> None
@@ -161,7 +161,7 @@ module Tramp : TC = struct
         | J.EFun (_, args, _, nid) ->
           let b = J.ECall(
               get_prim "caml_trampoline",
-              [J.ECall(J.EVar (J.V (VarMap.find v m2new)), J.ENum 0. :: List.map (fun i -> J.EVar i) args)]) in
+              [J.ECall(J.EVar (J.V (VarMap.find v m2new)), J.ENum 0. :: List.map (fun i -> J.EVar i) args, J.N)], J.N) in
           let b = J.Statement (J.Return_statement (Some b,J.N)) in
           v,J.EFun (None, args,[b],nid )
         | _ -> assert false) cls in

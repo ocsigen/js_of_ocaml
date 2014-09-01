@@ -115,7 +115,7 @@ let run () =
 
   let p = List.fold_left (fun p (t,m) -> if t() then (m())#program p else p) p passes in
   let p = Js_assign.program p in
-  Js_output.program pp (fun _ -> None) p;
+  Js_output.program pp p;
   finalize()
 
 

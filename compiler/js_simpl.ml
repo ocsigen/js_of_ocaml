@@ -200,7 +200,7 @@ let rec get_variable acc = function
   | J.EUn (_,e1)
   | J.EDot (e1,_)
   | J.ENew (e1,None) -> get_variable acc e1
-  | J.ECall (e1,el)
+  | J.ECall (e1,el,_)
   | J.ENew (e1,Some el) -> List.fold_left get_variable acc (e1::el)
   | J.EVar (J.V v) -> Code.VarSet.add v acc
   | J.EVar (J.S _) -> acc

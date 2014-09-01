@@ -20,8 +20,8 @@
 class type mapper = object
   method expression : Javascript.expression -> Javascript.expression
   method expression_o : Javascript.expression option -> Javascript.expression option
-  method initialiser : (Javascript.expression * Javascript.node_pc) -> (Javascript.expression * Javascript.node_pc)
-  method initialiser_o : (Javascript.expression * Javascript.node_pc) option -> (Javascript.expression * Javascript.node_pc) option
+  method initialiser : (Javascript.expression * Javascript.loc) -> (Javascript.expression * Javascript.loc)
+  method initialiser_o : (Javascript.expression * Javascript.loc) option -> (Javascript.expression * Javascript.loc) option
   method statement : Javascript.statement -> Javascript.statement
   method statements : Javascript.statement list -> Javascript.statement list
   method statement_o : Javascript.statement option -> Javascript.statement option

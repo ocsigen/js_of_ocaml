@@ -18,10 +18,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type debug_loc = Javascript.loc -> Parse_info.t option
+module Debug : sig
+  type data
+  val no_data : unit -> data
+  val find_loc : data -> ?after:bool -> int -> Parse_info.t option
+end
 
 val from_channel :
   ?toplevel:bool -> ?debug:[`Full | `Names | `No] -> in_channel ->
-  Code.program * Util.StringSet.t * debug_loc
+  Code.program * Util.StringSet.t * Debug.data
 
-val from_string : string array -> string -> Code.program * debug_loc
+val from_string : string array -> string -> Code.program * Debug.data

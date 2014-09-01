@@ -37,11 +37,11 @@ flow.cmx : util.cmx subst.cmx primitive.cmx option.cmx dgraph.cmx code.cmx \
 freevars.cmo : util.cmi option.cmi code.cmi freevars.cmi
 freevars.cmx : util.cmx option.cmx code.cmx freevars.cmi
 generate.cmo : util.cmi subst.cmi primitive.cmi parse_js.cmi parse_info.cmi \
-    option.cmi js_tailcall.cmi js_simpl.cmi javascript.cmi freevars.cmi \
-    code.cmi generate.cmi
+    parse_bytecode.cmi option.cmi js_tailcall.cmi js_simpl.cmi javascript.cmi \
+    freevars.cmi code.cmi generate.cmi
 generate.cmx : util.cmx subst.cmx primitive.cmx parse_js.cmx parse_info.cmx \
-    option.cmx js_tailcall.cmx js_simpl.cmx javascript.cmx freevars.cmx \
-    code.cmx generate.cmi
+    parse_bytecode.cmx option.cmx js_tailcall.cmx js_simpl.cmx javascript.cmx \
+    freevars.cmx code.cmx generate.cmi
 inline.cmo : code.cmi inline.cmi
 inline.cmx : code.cmx inline.cmi
 instr.cmo : util.cmi instr.cmi
@@ -56,10 +56,10 @@ js_assign.cmx : util.cmx option.cmx js_traverse.cmx javascript.cmx code.cmx \
     js_assign.cmi
 js_lexer.cmo : parse_info.cmi js_token.cmi js_lexer.cmi
 js_lexer.cmx : parse_info.cmx js_token.cmx js_lexer.cmi
-js_output.cmo : source_map.cmi pretty_print.cmi parse_info.cmi \
-    parse_bytecode.cmi option.cmi javascript.cmi js_output.cmi
-js_output.cmx : source_map.cmx pretty_print.cmx parse_info.cmx \
-    parse_bytecode.cmx option.cmx javascript.cmx js_output.cmi
+js_output.cmo : source_map.cmi pretty_print.cmi parse_info.cmi option.cmi \
+    javascript.cmi js_output.cmi
+js_output.cmx : source_map.cmx pretty_print.cmx parse_info.cmx option.cmx \
+    javascript.cmx js_output.cmi
 js_parser.cmo : parse_info.cmi js_token.cmi javascript.cmi js_parser.cmi
 js_parser.cmx : parse_info.cmx js_token.cmx javascript.cmx js_parser.cmi
 js_simpl.cmo : javascript.cmi code.cmi js_simpl.cmi
@@ -135,14 +135,13 @@ driver.cmi : source_map.cmi pretty_print.cmi parse_bytecode.cmi code.cmi
 eval.cmi : flow.cmi code.cmi
 flow.cmi : code.cmi
 freevars.cmi : util.cmi code.cmi
-generate.cmi : javascript.cmi code.cmi
+generate.cmi : parse_bytecode.cmi javascript.cmi code.cmi
 inline.cmi : code.cmi
 instr.cmi :
 javascript.cmi : parse_info.cmi code.cmi
 js_assign.cmi : javascript.cmi
 js_lexer.cmi : parse_info.cmi js_token.cmi
-js_output.cmi : source_map.cmi pretty_print.cmi parse_bytecode.cmi \
-    javascript.cmi
+js_output.cmi : source_map.cmi pretty_print.cmi javascript.cmi
 js_parser.cmi : js_token.cmi javascript.cmi
 js_simpl.cmi : javascript.cmi code.cmi
 js_tailcall.cmi : js_traverse.cmi javascript.cmi code.cmi
@@ -150,7 +149,7 @@ js_token.cmi : parse_info.cmi
 js_traverse.cmi : util.cmi javascript.cmi code.cmi
 linker.cmi : util.cmi primitive.cmi parse_info.cmi javascript.cmi
 option.cmi :
-parse_bytecode.cmi : util.cmi parse_info.cmi javascript.cmi code.cmi
+parse_bytecode.cmi : util.cmi parse_info.cmi code.cmi
 parse_info.cmi :
 parse_js.cmi : parse_info.cmi js_token.cmi javascript.cmi
 phisimpl.cmi : code.cmi

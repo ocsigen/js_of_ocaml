@@ -180,6 +180,9 @@ type kind =
   | KSwitch
   | KClosurerec
   | KClosure
+  | KNullaryCall
+  | KUnaryCall
+  | KBinaryCall
   | KStop of int
   | K_will_not_happen
 
@@ -225,10 +228,10 @@ let ops,ops_rev =
        PUSHENVACC4, KNullary, "PUSHENVACC4";
        PUSHENVACC, KUnary, "PUSHENVACC";
        PUSH_RETADDR, KUnary, "PUSH_RETADDR";
-       APPLY, KUnary, "APPLY";
-       APPLY1, KNullary, "APPLY1";
-       APPLY2, KNullary, "APPLY2";
-       APPLY3, KNullary, "APPLY3";
+       APPLY, KUnaryCall, "APPLY";
+       APPLY1, KNullaryCall, "APPLY1";
+       APPLY2, KNullaryCall, "APPLY2";
+       APPLY3, KNullaryCall, "APPLY3";
        APPTERM, KStop 2, "APPTERM";
        APPTERM1, KStop 1, "APPTERM1";
        APPTERM2, KStop 1, "APPTERM2";
@@ -286,12 +289,12 @@ let ops,ops_rev =
        POPTRAP, KNullary, "POPTRAP";
        RAISE, KStop 0, "RAISE";
        CHECK_SIGNALS, KNullary, "CHECK_SIGNALS";
-       C_CALL1, KUnary, "C_CALL1";
-       C_CALL2, KUnary, "C_CALL2";
-       C_CALL3, KUnary, "C_CALL3";
-       C_CALL4, KUnary, "C_CALL4";
-       C_CALL5, KUnary, "C_CALL5";
-       C_CALLN, KBinary, "C_CALLN";
+       C_CALL1, KUnaryCall, "C_CALL1";
+       C_CALL2, KUnaryCall, "C_CALL2";
+       C_CALL3, KUnaryCall, "C_CALL3";
+       C_CALL4, KUnaryCall, "C_CALL4";
+       C_CALL5, KUnaryCall, "C_CALL5";
+       C_CALLN, KBinaryCall, "C_CALLN";
        CONST0, KNullary, "CONST0";
        CONST1, KNullary, "CONST1";
        CONST2, KNullary, "CONST2";

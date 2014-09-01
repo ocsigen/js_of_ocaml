@@ -20,6 +20,8 @@
 
 open Javascript
 
-val if_statement : expression -> ?pc:node_pc -> statement -> bool -> statement -> bool -> statement list
+val if_statement :
+  expression -> ?pc:loc -> statement -> bool -> statement -> bool ->
+  statement list
 
 val get_variable : Code.VarSet.t -> expression -> Code.VarSet.t

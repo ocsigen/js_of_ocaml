@@ -179,6 +179,9 @@ type kind =
   | KSwitch
   | KClosurerec
   | KClosure
+  | KNullaryCall
+  | KUnaryCall
+  | KBinaryCall
   | KStop of int
   | K_will_not_happen
 

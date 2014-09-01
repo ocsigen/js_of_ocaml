@@ -55,4 +55,4 @@ let args =
     | None,_ -> failwith "-o <name> needed" in
   Compiler.Linker.load_files ["+runtime.js"];
   let pfs_fmt = Compiler.Pretty_print.to_out_channel oc in
-  Compiler.Driver.f pfs_fmt (fun _ -> None) program
+  Compiler.Driver.f pfs_fmt (Compiler.Parse_bytecode.Debug.no_data ()) program

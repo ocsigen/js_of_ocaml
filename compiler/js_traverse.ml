@@ -22,8 +22,8 @@ open Javascript
 class type mapper = object
   method expression : Javascript.expression -> Javascript.expression
   method expression_o : Javascript.expression option -> Javascript.expression option
-  method initialiser : (Javascript.expression * Javascript.node_pc) -> (Javascript.expression * Javascript.node_pc)
-  method initialiser_o : (Javascript.expression * Javascript.node_pc) option -> (Javascript.expression * Javascript.node_pc) option
+  method initialiser : (Javascript.expression * Javascript.loc) -> (Javascript.expression * Javascript.loc)
+  method initialiser_o : (Javascript.expression * Javascript.loc) option -> (Javascript.expression * Javascript.loc) option
   method statement : Javascript.statement -> Javascript.statement
   method statement_o : Javascript.statement option -> Javascript.statement option
   method statements : Javascript.statement list -> Javascript.statement list
@@ -113,8 +113,8 @@ class map : mapper = object(m)
   | EBin(b,e1,e2) ->
     EBin(b,m#expression  e1,m#expression  e2)
   | EUn(b,e1) -> EUn(b,m#expression  e1)
-  | ECall(e1,e2) ->
-    ECall(m#expression  e1,List.map m#expression e2)
+  | ECall(e1,e2,loc) ->
+    ECall(m#expression  e1,List.map m#expression e2,loc)
   | EAccess(e1,e2) ->
     EAccess(m#expression  e1,m#expression  e2)
   | EDot(e1,id) -> EDot(m#expression  e1, id)

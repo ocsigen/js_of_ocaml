@@ -19,6 +19,7 @@ opt: jsoo_mkcmis.opt jsoo_mktop.opt
 %.cmx: %.ml
 jsoo_mktop.cmo jsoo_mkcmis.cmo: jsoo_common.cmo
 jsoo_mktop.cmx jsoo_mkcmis.cmx: jsoo_common.cmx
+jsoo_common.cmo jsoo_common.cmx: ../compiler/compiler.cmi
 
 %.byte: ../compiler/compiler.cma jsoo_common.cmo %.cmo
 	ocamlfind ocamlc -linkpkg -g \

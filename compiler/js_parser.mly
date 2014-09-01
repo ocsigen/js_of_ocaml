@@ -39,110 +39,110 @@ let var name = J.S {J.name;J.var=None}
 (* this is need to fake menhir while using --infer *)
 let _tok = EOF Parse_info.zero
 
-%}
+           %}
 
-/*(*************************************************************************)*/
-/*(*1 Tokens *)*/
-/*(*************************************************************************)*/
+ /*(*************************************************************************)*/
+ /*(*1 Tokens *)*/
+ /*(*************************************************************************)*/
 
-/*(*-----------------------------------------*)*/
-/*(*2 the normal tokens *)*/
-/*(*-----------------------------------------*)*/
+ /*(*-----------------------------------------*)*/
+ /*(*2 the normal tokens *)*/
+ /*(*-----------------------------------------*)*/
 
-/*(* tokens with a value *)*/
-%token<string * float * Parse_info.t> T_NUMBER
-%token<string * Parse_info.t> T_IDENTIFIER
-%token<string * Parse_info.t> T_STRING
-%token<string * Parse_info.t> T_REGEX
+ /*(* tokens with a value *)*/
+                            %token<string * float * Parse_info.t> T_NUMBER
+                                                                  %token<string * Parse_info.t> T_IDENTIFIER
+                                                                                                %token<string * Parse_info.t> T_STRING
+                                                                                                                              %token<string * Parse_info.t> T_REGEX
 
-/*(* keywords tokens *)*/
-%token <Parse_info.t>
- T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
- T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
- T_BREAK T_CASE T_CATCH T_CONTINUE T_DEFAULT T_DO T_FINALLY T_FOR
- T_DEBUGGER
+                                                                                                                                                            /*(* keywords tokens *)*/
+                                                                                                                                                                                   %token <Parse_info.t>
+  T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
+             T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
+             T_BREAK T_CASE T_CATCH T_CONTINUE T_DEFAULT T_DO T_FINALLY T_FOR
+             T_DEBUGGER
 
-%token <Parse_info.t> T_ELSE
+  %token <Parse_info.t> T_ELSE
 
-%token <Parse_info.t> T_NEW
+                        %token <Parse_info.t> T_NEW
 
-/*(* syntax *)*/
-%token <Parse_info.t>
- T_LCURLY T_RCURLY
- T_LPAREN T_RPAREN
- T_LBRACKET T_RBRACKET
- T_SEMICOLON
- T_COMMA
- T_PERIOD
+                                              /*(* syntax *)*/
+                                                            %token <Parse_info.t>
+  T_LCURLY T_RCURLY
+           T_LPAREN T_RPAREN
+           T_LBRACKET T_RBRACKET
+           T_SEMICOLON
+           T_COMMA
+           T_PERIOD
 
-/*(* operators *)*/
-%token <Parse_info.t>
- T_RSHIFT3_ASSIGN T_RSHIFT_ASSIGN T_LSHIFT_ASSIGN
- T_BIT_XOR_ASSIGN T_BIT_OR_ASSIGN T_BIT_AND_ASSIGN T_MOD_ASSIGN T_DIV_ASSIGN
- T_MULT_ASSIGN T_MINUS_ASSIGN T_PLUS_ASSIGN T_ASSIGN
+  /*(* operators *)*/
+                   %token <Parse_info.t>
+  T_RSHIFT3_ASSIGN T_RSHIFT_ASSIGN T_LSHIFT_ASSIGN
+                   T_BIT_XOR_ASSIGN T_BIT_OR_ASSIGN T_BIT_AND_ASSIGN T_MOD_ASSIGN T_DIV_ASSIGN
+                   T_MULT_ASSIGN T_MINUS_ASSIGN T_PLUS_ASSIGN T_ASSIGN
 
-%token <Parse_info.t>
- T_PLING T_COLON
- T_OR
- T_AND
- T_BIT_OR
- T_BIT_XOR
- T_BIT_AND
- T_EQUAL T_NOT_EQUAL T_STRICT_EQUAL T_STRICT_NOT_EQUAL
- T_LESS_THAN_EQUAL T_GREATER_THAN_EQUAL T_LESS_THAN T_GREATER_THAN
- T_IN T_INSTANCEOF
- T_LSHIFT T_RSHIFT T_RSHIFT3
- T_PLUS T_MINUS
- T_DIV T_MULT T_MOD
- T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
+  %token <Parse_info.t>
+  T_PLING T_COLON
+          T_OR
+          T_AND
+          T_BIT_OR
+          T_BIT_XOR
+          T_BIT_AND
+          T_EQUAL T_NOT_EQUAL T_STRICT_EQUAL T_STRICT_NOT_EQUAL
+          T_LESS_THAN_EQUAL T_GREATER_THAN_EQUAL T_LESS_THAN T_GREATER_THAN
+          T_IN T_INSTANCEOF
+          T_LSHIFT T_RSHIFT T_RSHIFT3
+          T_PLUS T_MINUS
+          T_DIV T_MULT T_MOD
+          T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 
-/*(*-----------------------------------------*)*/
-/*(*2 extra tokens: *)*/
-/*(*-----------------------------------------*)*/
+  /*(*-----------------------------------------*)*/
+  /*(*2 extra tokens: *)*/
+  /*(*-----------------------------------------*)*/
 
-%token <Parse_info.t> T_VIRTUAL_SEMICOLON
+                                                 %token <Parse_info.t> T_VIRTUAL_SEMICOLON
 
-/*(* classic *)*/
-%token <Parse_info.t> EOF
+                                                                       /*(* classic *)*/
+                                                                                      %token <Parse_info.t> EOF
 
-/*(*-----------------------------------------*)*/
-/*(*2 priorities *)*/
-/*(*-----------------------------------------*)*/
+                                                                                                            /*(*-----------------------------------------*)*/
+                                                                                                            /*(*2 priorities *)*/
+                                                                                                            /*(*-----------------------------------------*)*/
 
 
-/*(* Special if / else associativity*)*/
-%nonassoc p_IF
-%nonassoc T_ELSE
+                                                                                                            /*(* Special if / else associativity*)*/
+                                                                                                                                                  %nonassoc p_IF
+                                                                                                                                                  %nonassoc T_ELSE
 
-%left T_OR
-%left T_AND
-%left T_BIT_OR
-%left T_BIT_XOR
-%left T_BIT_AND
-%left T_EQUAL T_NOT_EQUAL T_STRICT_EQUAL T_STRICT_NOT_EQUAL
-%left
- T_LESS_THAN_EQUAL T_GREATER_THAN_EQUAL T_LESS_THAN T_GREATER_THAN
- T_IN T_INSTANCEOF
-%left T_LSHIFT T_RSHIFT T_RSHIFT3
-%left T_PLUS T_MINUS
-%left T_DIV T_MULT T_MOD
-%right T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
+                                                                                                                                                  %left T_OR
+                                                                                                                                                  %left T_AND
+                                                                                                                                                  %left T_BIT_OR
+                                                                                                                                                  %left T_BIT_XOR
+                                                                                                                                                  %left T_BIT_AND
+                                                                                                                                                  %left T_EQUAL T_NOT_EQUAL T_STRICT_EQUAL T_STRICT_NOT_EQUAL
+                                                                                                                                                  %left
+                                                                                                                                                     T_LESS_THAN_EQUAL T_GREATER_THAN_EQUAL T_LESS_THAN T_GREATER_THAN
+                                                                                                                                                     T_IN T_INSTANCEOF
+                                                                                                                                                  %left T_LSHIFT T_RSHIFT T_RSHIFT3
+                                                                                                                                                  %left T_PLUS T_MINUS
+                                                                                                                                                  %left T_DIV T_MULT T_MOD
+                                                                                                                                                  %right T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 
-/*(*************************************************************************)*/
-/*(*1 Rules type declaration *)*/
-/*(*************************************************************************)*/
+                                                                                                                                                   /*(*************************************************************************)*/
+                                                                                                                                                   /*(*1 Rules type declaration *)*/
+                                                                                                                                                   /*(*************************************************************************)*/
 
-%start <Javascript.program> program
-%start <Javascript.expression> standalone_expression
+                                                                                                                                                                                                                                %start <Javascript.program> program
+                                                                                                                                                                                                                                                            %start <Javascript.expression> standalone_expression
 
-%%
+                                                                                                                                                                                                                                                                                           %%
 
-/*(*************************************************************************)*/
-/*(*1 Toplevel *)*/
-/*(*************************************************************************)*/
+                                                                                                                                                                                                                                                                                             /*(*************************************************************************)*/
+                                                                                                                                                                                                                                                                                             /*(*1 Toplevel *)*/
+                                                                                                                                                                                                                                                                                             /*(*************************************************************************)*/
 
-program:
-    | l=source_elements EOF { l }
+                                                                                                                                                                                                                                                                                                                                                                            program:
+| l=source_elements EOF { l }
 
 standalone_expression:
  | e=expression EOF {e}
@@ -353,9 +353,10 @@ function_declaration:
 
 
 function_expression:
- | pi=T_FUNCTION v=option(variable) T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
+ | pi=T_FUNCTION v=option(variable)
+   T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
    b=curly_block(function_body)
-   { J.EFun (v, args, fst b, J.Pi pi) }
+   { (pi, J.EFun (v, args, fst b, J.Pi pi)) }
 
 function_body:
  | l=source_elements  { l }
@@ -388,8 +389,8 @@ assignment_operator:
  | T_BIT_OR_ASSIGN  { J.BorEq }
 
 left_hand_side_expression:
- | new_expression  { $1 }
- | call_expression { $1 }
+ | new_expression  { snd $1 }
+ | call_expression { snd $1 }
 
 conditional_expression:
  | post_in_expression { $1 }
@@ -471,42 +472,46 @@ pre_in_expression:
  | pre_in_expression T_RSHIFT3 pre_in_expression { bop J.Lsr $1 $3 }
 
 call_expression:
- | member_expression arguments                      { J.ECall($1, $2) }
- | call_expression arguments                        { J.ECall($1, $2) }
- | call_expression T_LBRACKET expression T_RBRACKET { J.EAccess ($1, $3) }
- | call_expression T_PERIOD method_name             { J.EDot ($1, $3) }
+ | member_expression arguments
+     { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
+ | call_expression arguments
+     { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
+ | call_expression T_LBRACKET expression T_RBRACKET
+     { let (start, e) = $1 in (start, J.EAccess (e, $3)) }
+ | call_expression T_PERIOD method_name
+     { let (start, e) = $1 in (start, J.EDot (e, $3)) }
 
 new_expression:
  | member_expression    { $1 }
- | T_NEW new_expression { J.ENew ($2,None) }
+ | pi=T_NEW new_expression { (pi, J.ENew (snd $2,None)) }
 
 member_expression:
  | e=primary_expression
      { e }
- | e1=member_expression T_LBRACKET e2=expression T_RBRACKET
-     { J.EAccess (e1,e2) }
- | e1=member_expression T_PERIOD i=field_name
-     { J.EDot(e1,i) }
- | T_NEW e1=member_expression a=arguments
-     { J.ENew(e1, Some a) }
+ | member_expression T_LBRACKET e2=expression T_RBRACKET
+     { let (start, e1) = $1 in (start, J.EAccess (e1,e2)) }
+ | member_expression T_PERIOD i=field_name
+     { let (start, e1) = $1 in (start, J.EDot(e1,i)) }
+ | pi=T_NEW e1=member_expression a=arguments
+     { (pi, J.ENew(snd e1, Some a)) }
 
 primary_expression:
  | p=primary_expression_no_statement { p }
- | o=object_literal                  { J.EObj o }
+ | o=object_literal                  { o }
  | f=function_expression             { f }
 
 primary_expression_no_statement:
- | T_THIS          { J.EVar (var "this") }
- | v=variable        { J.EVar v }
+ | pi=T_THIS         { (pi, J.EVar (var "this")) }
+ | variable_with_loc { let (i, pi) = $1 in (pi, J.EVar (var i)) }
 
- | null_literal    { J.EVar (var "null") }
- | b=boolean_literal { J.EBool b }
- | n=numeric_literal { J.ENum n }
- | s=string_literal  { J.EStr (s, `Utf8) }
+ | n=null_literal    { n }
+ | b=boolean_literal { b }
+ | numeric_literal   { let (start, n) = $1 in (start, J.ENum n) }
+ | string_literal    { let (s, start) = $1 in (start, J.EStr (s, `Utf8)) }
  /*(* marcel: this isn't an expansion of literal in ECMA-262... mistake? *)*/
  | r=regex_literal                { r }
  | a=array_literal                { a }
- | T_LPAREN e=expression T_RPAREN { e }
+ | pi=T_LPAREN e=expression T_RPAREN { (pi, e) }
 
 /*(*----------------------------*)*/
 /*(*2 no in *)*/
@@ -652,51 +657,49 @@ pre_in_expression_no_statement:
  | pre_in_expression_no_statement T_RSHIFT3 pre_in_expression { bop J.Lsr $1 $3 }
 
 left_hand_side_expression_no_statement:
- | new_expression_no_statement { $1 }
- | call_expression_no_statement { $1 }
+ | new_expression_no_statement { snd $1 }
+ | call_expression_no_statement { snd $1 }
 
 new_expression_no_statement:
  | member_expression_no_statement { $1 }
- | T_NEW new_expression { J.ENew ($2,None) }
+ | pi=T_NEW new_expression { (pi, J.ENew (snd $2,None)) }
 
 call_expression_no_statement:
  | member_expression_no_statement arguments
-   { J.ECall($1, $2) }
+   { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
  | call_expression_no_statement arguments
-   { J.ECall($1, $2) }
+   { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
  | call_expression_no_statement T_LBRACKET expression T_RBRACKET
-   { J.EAccess($1, $3) }
+   { let (start, e) = $1 in (start, J.EAccess(e, $3)) }
  | call_expression_no_statement T_PERIOD method_name
-   { J.EDot($1,$3) }
+   { let (start, e) = $1 in (start, J.EDot(e,$3)) }
 
 member_expression_no_statement:
  | e=primary_expression_no_statement
      { e }
- | e1=member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
-   { J.EAccess(e1, e2) }
- | e1=member_expression_no_statement T_PERIOD i=field_name
-   { J.EDot(e1,i) }
- | T_NEW e=member_expression a=arguments
-   { J.ENew(e,Some a) }
+ | member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
+   { let (start, e1) = $1 in (start, J.EAccess(e1, e2)) }
+ | member_expression_no_statement T_PERIOD i=field_name
+   { let (start, e1) = $1 in (start, J.EDot(e1,i)) }
+ | pi=T_NEW e=member_expression a=arguments
+   { (pi, J.ENew(snd e,Some a)) }
 
 /*(*----------------------------*)*/
 /*(*2 scalar *)*/
 /*(*----------------------------*)*/
 null_literal:
- | T_NULL { }
+ | pi=T_NULL { (pi, J.EVar (var "null")) }
 
 boolean_literal:
- | T_TRUE  { true }
- | T_FALSE { false }
+ | pi=T_TRUE  { (pi, J.EBool true) }
+ | pi=T_FALSE { (pi, J.EBool false) }
 
 numeric_literal:
- | T_NUMBER {
-   match $1 with
-   | _,f,_  -> f }
+ | T_NUMBER { let (_, f, pi) = $1 in (pi, f) }
 
 regex_literal:
  | T_REGEX {
-   let s,_ = $1 in
+   let (s, pi) = $1 in
    let len = String.length s in
    let regexp,option =
      if s.[len - 1] = '/'
@@ -705,21 +708,25 @@ regex_literal:
        let i = String.rindex s '/' in
        String.sub s 1 (i - 1),Some (String.sub s (i+1) (len - i - 1))
    in
-   J.ERegexp (regexp,option) }
+   (pi, J.ERegexp (regexp,option)) }
    (* J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) } *)
 
 string_literal:
- | str=T_STRING { let s,_ = str in s}
+ | str=T_STRING { str }
 
 /*(*----------------------------*)*/
 /*(*2 array *)*/
 /*(*----------------------------*)*/
 
 array_literal:
- | T_LBRACKET elison T_RBRACKET              { J.EArr $2 }
- | T_LBRACKET        T_RBRACKET              { J.EArr [] }
- | T_LBRACKET element_list T_RBRACKET        { J.EArr $2 }
- | T_LBRACKET element_list_rev elison_rev T_RBRACKET { J.EArr (List.rev_append $2 (List.rev $3)) }
+ | pi=T_LBRACKET elison T_RBRACKET
+     { (pi, J.EArr $2) }
+ | pi=T_LBRACKET        T_RBRACKET
+     { (pi, J.EArr []) }
+ | pi=T_LBRACKET element_list T_RBRACKET
+     { (pi, J.EArr $2) }
+ | pi=T_LBRACKET element_list_rev elison_rev T_RBRACKET
+     { (pi, J.EArr (List.rev_append $2 (List.rev $3))) }
 
 
 element_list:
@@ -737,12 +744,12 @@ separated_nonempty_list2(sep,X):
 | x = X; sep; xs = separated_nonempty_list2(sep, X) { x :: xs }
 
 object_literal:
- | curly_block(empty) { [] }
+ | res=curly_block(empty) { (snd res, J.EObj []) }
  | res=curly_block(
      separated_nonempty_list2(
        T_COMMA,
        separated_pair(property_name,T_COLON,assignment_expression)
-     ))  { fst res }
+     ))  { (snd res, J.EObj (fst res)) }
 
 empty:
  | {}
@@ -777,13 +784,16 @@ method_name:
 variable:
  | i=identifier { var i }
 
+variable_with_loc:
+ | T_IDENTIFIER { $1 }
+
 label:
  | identifier { J.Label.of_string $1 }
 
 property_name:
  | i=T_IDENTIFIER    { J.PNI (fst i) }
- | s=string_literal  { J.PNS s }
- | n=numeric_literal { J.PNN n }
+ | s=string_literal  { J.PNS (fst s) }
+ | n=numeric_literal { J.PNN (snd n) }
 
 /*(*************************************************************************)*/
 /*(*1 xxx_opt, xxx_list *)*/
