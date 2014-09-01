@@ -326,3 +326,24 @@ function caml_blit_string(s1, i1, s2, i2, len) {
 //Provides: caml_new_string
 //Requires: MlString
 function caml_new_string(x){return new MlString(x);}
+
+
+//DEPRECATED!
+//Provides: MlStringFromArray
+//Requires: MlString
+function MlStringFromArray (a) {
+  this.array = a; this.len = this.last = a.length;
+}
+MlStringFromArray.prototype = new MlString ();
+
+//DEPRECATED!
+//Provides: MlWrappedString
+//Requires: MlString
+function MlWrappedString (s) { this.string = s; }
+MlWrappedString.prototype = new MlString();
+
+//DEPRECATED!
+//Provides: MlMakeString
+//Requires: MlString
+function MlMakeString (l) { this.bytes = ""; this.len = l; }
+MlMakeString.prototype = new MlString ();
