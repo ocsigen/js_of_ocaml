@@ -221,8 +221,8 @@ let gen_missing js missing =
                        Expression_statement (
                          ECall(EVar (S {name="caml_failwith";var=None}),
                                [EBin(Plus,EStr(prim,`Utf8),
-                                     EStr(" not implemented",`Utf8))], N),
-                         N))],N)
+                                     EStr(" not implemented",`Utf8))], N))),
+                     N],N)
                 ),
            N
          )) :: acc
@@ -236,7 +236,7 @@ let gen_missing js missing =
       Format.eprintf "the commandline option '-disable genprim'@.";
       report_missing_primitives missing;
     end;
-    Statement (Variable_statement miss) :: js
+    (Statement (Variable_statement miss), N) :: js
 
 
 let link formatter ~standalone ?linkall js =
@@ -371,7 +371,7 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
   (* pack *)
   let use_strict js =
     if Option.Optim.strictmode ()
-    then J.Statement (J.Expression_statement (J.EStr ("use strict", `Utf8), J.N)) :: js
+    then (J.Statement (J.Expression_statement (J.EStr ("use strict", `Utf8))), J.N) :: js
     else js in
 
   let global =
@@ -379,19 +379,21 @@ let pack ~standalone ?(toplevel=false)?(linkall=false) js =
       J.EFun (None, [], [
           J.Statement (
             J.Return_statement(
-              Some (J.EVar (J.S {J.name="this";var=None})),
-              J.N))
+              Some (J.EVar (J.S {J.name="this";var=None})))),
+          J.N
         ], J.N), [], J.N) in
 
-  let js = if standalone then
+  let js =
+    if standalone then
       let f =
-        J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js,J.N) in
+        J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js,
+                J.U) in
       [J.Statement (
         J.Expression_statement
-          ((J.ECall (f, [global], J.N)), J.N))]
+          ((J.ECall (f, [global], J.N)))), J.N]
     else
       let f = J.EFun (None, [J.V (Code.Var.fresh ())], js, J.N) in
-      [J.Statement (J.Expression_statement (f, J.N))] in
+      [J.Statement (J.Expression_statement f), J.N] in
 
   (* post pack optim *)
   let t3 = Util.Timer.make () in

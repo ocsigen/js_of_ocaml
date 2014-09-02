@@ -148,8 +148,10 @@ standalone_expression:
  | e=expression EOF {e}
 
 source_element:
- | s=statement { J.Statement s }
- | f=function_declaration { J.Function_declaration f }
+ | s=statement
+     { let (s, loc) = s in (J.Statement s, loc) }
+ | f=function_declaration
+     { let (f, loc) = f in (J.Function_declaration f, loc) }
 
 source_elements:
  | l=list(source_element) { l }
@@ -158,7 +160,7 @@ source_elements:
 /*(*************************************************************************)*/
 
 statement_no_semi:
- | b=block_with_pi { J.Block (fst b, J.Pi (snd b)) }
+ | b=block_with_pi { (J.Block (fst b), J.Pi (snd b)) }
  (* this is not allowed but some browsers accept it *)
  (* | function_declaration { *)
  (*  let var,params,body,_ = $1 in *)
@@ -224,19 +226,20 @@ semicolon:
  | T_VIRTUAL_SEMICOLON {}
 
 labeled_statement:
-| l=label T_COLON s=statement { J.Labelled_statement (l,s,J.N) }
+| l=label T_COLON s=statement { (J.Labelled_statement (l, s), J.N) }
 
 statement_list:
  | l=list(statement) {l}
 
 block_with_pi:
- | l=curly_block(statement_list) { l }
+ | l=curly_block(statement_list) { (fst l, fst (snd l)) }
 
 block:
  | block_with_pi { fst $1 }
 
 variable_statement:
- | T_VAR separated_nonempty_list(T_COMMA,variable_declaration) { J.Variable_statement $2 }
+ | pi=T_VAR separated_nonempty_list(T_COMMA,variable_declaration)
+     { (J.Variable_statement $2, J.Pi pi) }
 
 variable_declaration:
  | variable option(initializeur) { $1, $2 }
@@ -246,48 +249,46 @@ initializeur:
 
 
 empty_statement:
- | pi=T_SEMICOLON { J.Empty_statement (J.Pi pi) }
+ | pi=T_SEMICOLON { (J.Empty_statement, J.Pi pi) }
 
 debugger_statement:
- | pi=T_DEBUGGER { J.Debugger_statement (J.Pi pi) }
+ | pi=T_DEBUGGER { (J.Debugger_statement, J.Pi pi) }
 
 expression_statement:
- | expression_no_statement { J.Expression_statement ($1, J.N) }
+ | expression_no_statement { (J.Expression_statement $1, J.N) }
 
 
 if_statement:
  | pi=T_IF T_LPAREN i=expression T_RPAREN t=statement T_ELSE e=statement
-     { J.If_statement (i, t, Some e, J.Pi pi) }
+     { (J.If_statement (i, t, Some e), J.Pi pi) }
  | pi=T_IF T_LPAREN i=expression T_RPAREN t=statement %prec p_IF
-     { J.If_statement (i, t, None, J.Pi pi) }
+     { (J.If_statement (i, t, None), J.Pi pi) }
 
 do_while_statement:
   | pi=T_DO statement T_WHILE T_LPAREN expression T_RPAREN
-    { J.Do_while_statement ($2, $5, J.Pi pi) }
+    { (J.Do_while_statement ($2, $5), J.Pi pi) }
 
 
 iteration_statement:
  | pi=T_WHILE T_LPAREN expression T_RPAREN statement
-     { J.While_statement ($3, $5, J.Pi pi) }
+     { (J.While_statement ($3, $5), J.Pi pi) }
  | pi=T_FOR T_LPAREN
      option(expression_no_in) T_SEMICOLON
      option(expression) T_SEMICOLON
      option(expression)
      T_RPAREN statement
-     { J.For_statement ( J.Left $3, $5, $7, $9, J.Pi pi) }
+     { (J.For_statement (J.Left $3, $5, $7, $9), J.Pi pi) }
  | pi=T_FOR T_LPAREN
      T_VAR separated_nonempty_list(T_COMMA,variable_declaration_no_in) T_SEMICOLON
      option(expression) T_SEMICOLON
      option(expression)
      T_RPAREN statement
-     {
-       J.For_statement (J.Right($4), $6, $8, $10, J.Pi pi)
-     }
+     { (J.For_statement (J.Right($4), $6, $8, $10), J.Pi pi) }
  | pi=T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement
-     { J.ForIn_statement (J.Left $3,$5,$7,J.Pi pi) }
+     { (J.ForIn_statement (J.Left $3,$5,$7),J.Pi pi) }
  | pi=T_FOR T_LPAREN T_VAR variable_declaration_no_in T_IN expression T_RPAREN
      statement
-     { J.ForIn_statement ( J.Right $4, $6, $8, J.Pi pi) }
+     { (J.ForIn_statement ( J.Right $4, $6, $8), J.Pi pi) }
 
 variable_declaration_no_in:
  | variable option(initializer_no_in) { $1, $2 }
@@ -297,13 +298,13 @@ initializer_no_in:
 
 
 continue_statement:
- | pi=T_CONTINUE option(label) { J.Continue_statement ($2,J.Pi pi) }
+ | pi=T_CONTINUE option(label) { (J.Continue_statement $2,J.Pi pi) }
 
 break_statement:
- | pi=T_BREAK option(label) { J.Break_statement ($2, J.Pi pi) }
+ | pi=T_BREAK option(label) { (J.Break_statement $2, J.Pi pi) }
 
 return_statement:
- | pi=T_RETURN option(expression) { J.Return_statement ($2,J.Pi pi) }
+ | pi=T_RETURN option(expression) { (J.Return_statement $2, J.Pi pi) }
 
 with_statement:
  | T_WITH T_LPAREN expression T_RPAREN statement { assert false }
@@ -313,16 +314,16 @@ switch_statement:
     b=curly_block(
     pair(list(case_clause),option(default_clause)))
     {
-      let (l,d) = fst b in
-      J.Switch_statement (e, l, d, J.Pi pi) }
+      let (l, d) = fst b in
+      (J.Switch_statement (e, l, d), J.Pi pi) }
 
 throw_statement:
- | pi=T_THROW expression { J.Throw_statement ($2,J.Pi pi) }
+ | pi=T_THROW expression { (J.Throw_statement $2, J.Pi pi) }
 
 
 try_statement:
- | pi=T_TRY block catch option(finally) { J.Try_statement ($2, Some $3, $4,J.Pi pi) }
- | pi=T_TRY block       finally { J.Try_statement ($2, None, Some $3,J.Pi pi) }
+ | pi=T_TRY block catch option(finally) { (J.Try_statement ($2, Some $3, $4), J.Pi pi) }
+ | pi=T_TRY block       finally { (J.Try_statement ($2, None, Some $3), J.Pi pi) }
 
 
 catch:
@@ -349,7 +350,7 @@ default_clause:
 function_declaration:
  | pi=T_FUNCTION v=variable T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
      b=curly_block(function_body)
-     { v, args, fst b, J.Pi pi }
+     { ((v, args, fst b, J.Pi (snd (snd b))), J.Pi pi) }
 
 
 function_expression:
@@ -744,12 +745,12 @@ separated_nonempty_list2(sep,X):
 | x = X; sep; xs = separated_nonempty_list2(sep, X) { x :: xs }
 
 object_literal:
- | res=curly_block(empty) { (snd res, J.EObj []) }
+ | res=curly_block(empty) { (fst (snd res), J.EObj []) }
  | res=curly_block(
      separated_nonempty_list2(
        T_COMMA,
        separated_pair(property_name,T_COLON,assignment_expression)
-     ))  { (snd res, J.EObj (fst res)) }
+     ))  { (fst (snd res), J.EObj (fst res)) }
 
 empty:
  | {}
@@ -807,4 +808,4 @@ elison: elison_rev {$1}
  (* | elison_rev { List.rev $1} *)
 
 curly_block(X):
- | pi=T_LCURLY x=X T_RCURLY {x,pi}
+ | pi1=T_LCURLY x=X pi2=T_RCURLY { (x, (pi1, pi2)) }

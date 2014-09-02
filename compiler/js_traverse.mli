@@ -17,23 +17,25 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Javascript
+
 class type mapper = object
-  method expression : Javascript.expression -> Javascript.expression
-  method expression_o : Javascript.expression option -> Javascript.expression option
-  method initialiser : (Javascript.expression * Javascript.loc) -> (Javascript.expression * Javascript.loc)
-  method initialiser_o : (Javascript.expression * Javascript.loc) option -> (Javascript.expression * Javascript.loc) option
-  method statement : Javascript.statement -> Javascript.statement
-  method statements : Javascript.statement list -> Javascript.statement list
-  method statement_o : Javascript.statement option -> Javascript.statement option
-  method source : Javascript.source_element -> Javascript.source_element
-  method sources : Javascript.source_element list -> Javascript.source_element list
-  method ident : Javascript.ident -> Javascript.ident
-  method program : Javascript.program -> Javascript.program
+  method expression : expression -> expression
+  method expression_o : expression option -> expression option
+  method initialiser : (expression * location) -> (expression * location)
+  method initialiser_o : (expression * location) option -> (expression * location) option
+  method statement : statement -> statement
+  method statements : statement_list -> statement_list
+  method statement_o : (statement * location) option -> (statement * location) option
+  method source : source_element -> source_element
+  method sources : source_elements -> source_elements
+  method ident : ident -> ident
+  method program : program -> program
 end
 
 class map : mapper
 
-class subst : (Javascript.ident -> Javascript.ident) ->  object
+class subst : (ident -> ident) ->  object
     inherit mapper
   end
 
@@ -44,7 +46,7 @@ type t = {
   def_name : StringSet.t;
   def : Code.VarSet.t;
   use : Code.VarSet.t;
-  count : int Javascript.IdentMap.t;
+  count : int IdentMap.t;
 }
 
 
@@ -52,10 +54,10 @@ class type freevar =
   object('a)
     inherit mapper
     method merge_info : 'a -> unit
-    method block : ?catch:bool -> Javascript.ident list -> unit
+    method block : ?catch:bool -> ident list -> unit
 
-    method def_var : Javascript.ident -> unit
-    method use_var : Javascript.ident -> unit
+    method def_var : ident -> unit
+    method use_var : ident -> unit
     method state : t
     method get_free_name : Util.StringSet.t
     method get_free : Code.VarSet.t
@@ -73,7 +75,7 @@ class share_constant : mapper
 
 class compact_vardecl : object('a)
   inherit free
-  method exc  : Javascript.IdentSet.t
+  method exc  : IdentSet.t
 end
 
 class clean : mapper

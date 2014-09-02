@@ -62,35 +62,36 @@ end) = struct
         true
 
   let debug_enabled = Option.Optim.debuginfo ()
-  let output_debug_info f pc =
-    if source_map_enabled || debug_enabled
-    then
-      let pi = match pc with
-        | N -> None
-        | Pi pi -> Some pi in
-      match pi with
-            | None -> ()
-            | Some {
-              Parse_info.name=file;
-              line=l;
-              col=s } ->
-              if debug_enabled
-              then begin PP.string f "/*";
-                PP.string f (Format.sprintf "<<%s %d %d>>" file (l + 1) s);
-                PP.string f "*/";
-              end;
-              if source_map_enabled
-              then begin
-                let pos = PP.pos f in
-                push_mapping pos {
-                  Source_map.gen_line = -1;
-                  gen_col = -1;
-                  ori_source=get_file_index file;
-                  ori_line = l;
-                  ori_col = s;
-                  ori_name = None;
-                }
-              end
+  let output_debug_info f loc =
+    if debug_enabled then begin
+      match loc with
+        Pi {Parse_info.name = file; line; col} ->
+          PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file (line + 1) col)
+      | N ->
+          ()
+      | U ->
+          PP.string f "/*<<??>>*/"
+    end;
+    if source_map_enabled then
+      match loc with
+        N ->
+          ()
+      | U ->
+          push_mapping (PP.pos f)
+            { Source_map.gen_line = -1;
+              gen_col = -1;
+              ori_source = -1;
+              ori_line = -1;
+              ori_col = -1;
+              ori_name = None }
+      | Pi { Parse_info.name=file; line; col } ->
+          push_mapping (PP.pos f)
+            { Source_map.gen_line = -1;
+              gen_col = -1;
+              ori_source = get_file_index file;
+              ori_line = line;
+              ori_col = col;
+              ori_name = None }
 
   let ident f = function
     | S {name;var=None} -> PP.string f name
@@ -204,13 +205,13 @@ end) = struct
 
 (*XXX May need to be updated... *)
   let rec ends_with_if_without_else st =
-    match st with
-      | If_statement (_, _, Some st,_)
-      | While_statement (_, st, _)
-      | For_statement (_, _, _, st, _)
-      | ForIn_statement (_, _, st, _) ->
+    match fst st with
+      | If_statement (_, _, Some st)
+      | While_statement (_, st)
+      | For_statement (_, _, _, st)
+      | ForIn_statement (_, _, st) ->
           ends_with_if_without_else st
-      | If_statement (_, _, None, _) ->
+      | If_statement (_, _, None) ->
           true
       | _ ->
           false
@@ -302,7 +303,6 @@ end) = struct
         expression 0 f e2;
         if l > 0 then begin PP.string f ")"; PP.end_group f end
       | EFun (i, l, b, pc) ->
-        output_debug_info f pc;
         PP.start_group f 1;
         PP.start_group f 0;
         PP.start_group f 0;
@@ -320,6 +320,7 @@ end) = struct
         PP.start_group f 1;
         PP.string f "{";
         function_body f b;
+        output_debug_info f pc;
         PP.string f "}";
         PP.end_group f;
         PP.end_group f
@@ -610,10 +611,6 @@ end) = struct
       PP.end_group f
     | l ->
       PP.start_group f 1;
-      begin match l with
-        (_, Some (_, pc)) :: _ -> output_debug_info f pc
-      | _                      -> ()
-      end;
       PP.string f "var";
       PP.space f;
       variable_declaration_list_aux f l;
@@ -626,23 +623,23 @@ end) = struct
         None   -> ()
       | Some e -> expression l f e
 
-  and statement ?(last=false) f s =
+  and statement ?(last=false) f (s, loc) =
     let last_semi () = if last then () else PP.string f ";" in
+    output_debug_info f loc;
     match s with
-      | Block (b,pc) ->
-        output_debug_info f pc;
+    | Block b ->
         block f b
-      | Variable_statement l ->
+    | Variable_statement l ->
         variable_declaration_list (not last) f l
-      | Empty_statement _ -> PP.string f ";"
-      | Debugger_statement pc ->
-        output_debug_info f pc;
+    | Empty_statement ->
+        PP.string f ";"
+    | Debugger_statement ->
         PP.string f "debugger"; last_semi ()
-      | Expression_statement (EVar _, pc)-> last_semi()
-      | Expression_statement (e, pc) ->
+    | Expression_statement (EVar _)->
+        last_semi ()
+    | Expression_statement e ->
       (* Parentheses are required when the expression
          starts syntactically with "{" or "function" *)
-        output_debug_info f pc;
         if need_paren 0 e then begin
           PP.start_group f 1;
           PP.string f "(";
@@ -656,12 +653,10 @@ end) = struct
           last_semi();
           PP.end_group f
         end
-      | If_statement (e, s1, (Some _ as s2),pc) when ends_with_if_without_else s1 ->
-        output_debug_info f pc;
+    | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
         (* Dangling else issue... *)
-        statement ~last f (If_statement (e, Block ([s1],N), s2, pc))
-      | If_statement (e, s1, Some (Block _ as s2),pc) ->
-        output_debug_info f pc;
+        statement ~last f (If_statement (e, (Block ([s1]), N), s2), N)
+    | If_statement (e, s1, Some ((Block _, _) as s2)) ->
         PP.start_group f 0;
         PP.start_group f 1;
         PP.string f "if";
@@ -683,8 +678,7 @@ end) = struct
         statement ~last f s2;
         PP.end_group f;
         PP.end_group f
-      | If_statement (e, s1, Some s2, pc) ->
-        output_debug_info f pc;
+    | If_statement (e, s1, Some s2) ->
         PP.start_group f 0;
         PP.start_group f 1;
         PP.string f "if";
@@ -706,8 +700,7 @@ end) = struct
         statement ~last f s2;
         PP.end_group f;
         PP.end_group f
-      | If_statement (e, s1, None, pc) ->
-        output_debug_info f pc;
+    | If_statement (e, s1, None) ->
         PP.start_group f 1;
         PP.start_group f 0;
         PP.string f "if";
@@ -723,8 +716,7 @@ end) = struct
         statement ~last f s1;
         PP.end_group f;
         PP.end_group f
-      | While_statement (e, s, pc) ->
-        output_debug_info f pc;
+    | While_statement (e, s) ->
         PP.start_group f 1;
         PP.start_group f 0;
         PP.string f "while";
@@ -740,8 +732,7 @@ end) = struct
         statement ~last f s;
         PP.end_group f;
         PP.end_group f
-      | Do_while_statement (Block _ as s, e, pc) ->
-        output_debug_info f pc;
+    | Do_while_statement ((Block _, _) as s, e) ->
         PP.start_group f 0;
         PP.string f "do";
         PP.break1 f;
@@ -758,8 +749,7 @@ end) = struct
         last_semi();
         PP.end_group f;
         PP.end_group f
-      | Do_while_statement (s, e, pc) ->
-        output_debug_info f pc;
+    | Do_while_statement (s, e) ->
         PP.start_group f 0;
         PP.string f "do";
         PP.space ~indent:1 f;
@@ -776,8 +766,7 @@ end) = struct
         last_semi();
         PP.end_group f;
         PP.end_group f
-      | For_statement (e1, e2, e3, s, pc) ->
-        output_debug_info f pc;
+    | For_statement (e1, e2, e3, s) ->
         PP.start_group f 1;
         PP.start_group f 0;
         PP.string f "for";
@@ -799,8 +788,7 @@ end) = struct
         statement ~last f s;
         PP.end_group f;
         PP.end_group f
-      | ForIn_statement (e1, e2, s, pc) ->
-        output_debug_info f pc;
+    | ForIn_statement (e1, e2, s) ->
         PP.start_group f 1;
         PP.start_group f 0;
         PP.string f "for";
@@ -822,32 +810,26 @@ end) = struct
         statement ~last f s;
         PP.end_group f;
         PP.end_group f
-      | Continue_statement (None,pc) ->
-        output_debug_info f pc;
+    | Continue_statement None ->
         PP.string f "continue";
         last_semi()
-      | Continue_statement (Some s, pc) ->
-        output_debug_info f pc;
+    | Continue_statement (Some s) ->
         PP.string f "continue ";
         PP.string f (Javascript.Label.to_string s);
         last_semi()
-      | Break_statement (None, pc) ->
-        output_debug_info f pc;
+    | Break_statement None ->
         PP.string f "break";
         last_semi()
-      | Break_statement (Some s, pc) ->
-        output_debug_info f pc;
+    | Break_statement (Some s) ->
         PP.string f "break ";
         PP.string f (Javascript.Label.to_string s);
         last_semi()
-      | Return_statement (e,pc) ->
-        output_debug_info f pc;
+    | Return_statement e ->
         begin match e with
             None   ->
               PP.string f "return";
               last_semi()
           | Some (EFun (i, l, b, pc)) ->
-            output_debug_info f pc;
             PP.start_group f 1;
             PP.start_group f 0;
             PP.start_group f 0;
@@ -865,6 +847,7 @@ end) = struct
             PP.start_group f 1;
             PP.string f "{";
             function_body f b;
+            output_debug_info f pc;
             PP.string f "}";
             last_semi();
             PP.end_group f;
@@ -881,14 +864,12 @@ end) = struct
       (* There MUST be a space between the return and its
          argument. A line return will not work *)
         end
-      | Labelled_statement (i, s, pc) ->
-        output_debug_info f pc;
+    | Labelled_statement (i, s) ->
         PP.string f (Javascript.Label.to_string i);
         PP.string f ":";
         PP.break f;
         statement ~last f s
-      | Switch_statement (e, cc, def, pc) ->
-        output_debug_info f pc;
+    | Switch_statement (e, cc, def) ->
         PP.start_group f 1;
         PP.start_group f 0;
         PP.string f "switch";
@@ -936,8 +917,7 @@ end) = struct
         PP.string f "}";
         PP.end_group f;
         PP.end_group f
-      | Throw_statement (e,pc) ->
-        output_debug_info f pc;
+    | Throw_statement e ->
         PP.start_group f 6;
         PP.string f "throw";
         PP.non_breaking_space f;
@@ -948,8 +928,7 @@ end) = struct
         PP.end_group f
     (* There must be a space between the return and its
        argument. A line return would not work *)
-      | Try_statement (b, ctch, fin, pc) ->
-        output_debug_info f pc;
+    | Try_statement (b, ctch, fin) ->
         PP.start_group f 0;
         PP.string f "try";
         PP.space ~indent:1 f;
@@ -995,10 +974,10 @@ end) = struct
 
   and source_element f ?skip_last_semi se =
     match se with
-        Statement s ->
-          statement f ?last:skip_last_semi s
-      | Function_declaration (i, l, b, pc) ->
-        output_debug_info f pc;
+      (Statement s, loc) ->
+          statement f ?last:skip_last_semi (s, loc)
+    | (Function_declaration (i, l, b, loc'), loc) ->
+        output_debug_info f loc;
         PP.start_group f 1;
         PP.start_group f 0;
         PP.start_group f 0;
@@ -1017,6 +996,7 @@ end) = struct
         PP.start_group f 1;
         PP.string f "{";
         function_body f b;
+        output_debug_info f loc';
         PP.string f "}";
         PP.end_group f;
         PP.end_group f

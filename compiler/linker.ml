@@ -115,25 +115,25 @@ let all_return p =
   let open Javascript in
   let rec loop_st = function
     | [] -> raise  May_not_return
-    | [Return_statement (Some _, _)] -> ()
-    | [Return_statement (None, _)] -> raise May_not_return
-    | [If_statement(_,th,el,_)] ->
+    | [Return_statement (Some _), _] -> ()
+    | [Return_statement None, _] -> raise May_not_return
+    | [If_statement(_,th,el), _] ->
       loop_st [th];
       (match el with
        | None -> raise May_not_return
        | Some x -> loop_st [x])
-    | [Do_while_statement(st,_,_)] -> loop_st [st]
-    | [While_statement(_,st,_)] -> loop_st [st]
-    | [For_statement (_,_,_,st,_)] -> loop_st [st]
-    | [Switch_statement (_,l,def,_)] ->
+    | [Do_while_statement(st,_), _] -> loop_st [st]
+    | [While_statement(_,st), _] -> loop_st [st]
+    | [For_statement (_,_,_,st), _] -> loop_st [st]
+    | [Switch_statement (_,l,def), _] ->
       List.iter (fun (_,sts) -> loop_st sts) l
-    | [Try_statement(b,_,_,_)] -> loop_st b
-    | [Throw_statement _] -> ()
+    | [Try_statement(b,_,_),_] -> loop_st b
+    | [Throw_statement _, _] -> ()
     | x::xs -> loop_st xs
   in
   let rec loop_sources = function
     | [] -> raise May_not_return
-    | [Statement x] -> loop_st [x]
+    | [(Statement x, loc)] -> loop_st [(x, loc)]
     | [_] -> raise May_not_return
     | x::xs -> loop_sources xs
   in
@@ -189,7 +189,7 @@ let always_included = ref []
 
 let add_file f =
   List.iter
-    (fun (provide,req,versions,code) ->
+    (fun (provide,req,versions,(code:Javascript.program)) ->
        incr last_code_id;
        let id = !last_code_id in
        let vmatch = match versions with
@@ -203,7 +203,7 @@ let add_file f =
             let module J = Javascript in
             let rec find = function
               | [] -> None
-              | J.Function_declaration (J.S{J.name=n},l,_,_)::_ when name=n -> Some(List.length l)
+              | (J.Function_declaration (J.S{J.name=n},l,_,_), _)::_ when name=n -> Some(List.length l)
               | _::rem -> find rem in
             let arity = find code in
             Primitive.register name kind ka arity;

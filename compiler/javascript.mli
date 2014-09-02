@@ -26,9 +26,10 @@ module Label : sig
   val of_string : string -> t
 end
 
-type loc =
+type location =
   | Pi of Parse_info.t
-  | N
+  | N (* No location; use the one above *)
+  | U (* Unknown location *)
 
 (* A.3 Expressions *)
 
@@ -72,7 +73,7 @@ and expression =
   | ECond of expression * expression * expression
   | EBin of binop * expression * expression
   | EUn of unop * expression
-  | ECall of expression * arguments * loc
+  | ECall of expression * arguments * location
   | EAccess of expression * expression
   | EDot of expression * identifier
   | ENew of expression * arguments option
@@ -94,27 +95,27 @@ and expression =
 (* A.4 Statements *)
 
 and statement =
-    Block of block * loc
+    Block of block
   | Variable_statement of variable_declaration list
-  | Empty_statement of loc
-  | Expression_statement of expression * loc
-  | If_statement of expression * statement * statement option * loc
-  | Do_while_statement of statement * expression * loc
-  | While_statement of expression * statement * loc
-  | For_statement of (expression option,variable_declaration list) either * expression option * expression option * statement * loc
-  | ForIn_statement of  (expression,variable_declaration) either * expression * statement * loc
-  | Continue_statement of Label.t option * loc
-  | Break_statement of Label.t option * loc
-  | Return_statement of expression option * loc
+  | Empty_statement
+  | Expression_statement of expression
+  | If_statement of expression * (statement * location) * (statement * location) option
+  | Do_while_statement of (statement * location) * expression
+  | While_statement of expression * (statement * location)
+  | For_statement of (expression option,variable_declaration list) either * expression option * expression option * (statement * location)
+  | ForIn_statement of  (expression,variable_declaration) either * expression * (statement * location)
+  | Continue_statement of Label.t option
+  | Break_statement of Label.t option
+  | Return_statement of expression option
 (*
   | With_statement
 *)
-  | Labelled_statement of Label.t * statement * loc
-  | Switch_statement of expression * case_clause list * statement_list option * loc
-  | Throw_statement of expression * loc
-  | Try_statement of block * (ident * block) option * block option * loc
+  | Labelled_statement of Label.t * (statement * location)
+  | Switch_statement of expression * case_clause list * statement_list option
+  | Throw_statement of expression
+  | Try_statement of block * (ident * block) option * block option
 
-  | Debugger_statement of loc
+  | Debugger_statement
 
 and ('left,'right) either =
   | Left of 'left
@@ -123,23 +124,23 @@ and ('left,'right) either =
 
 and block = statement_list
 
-and statement_list = statement list
+and statement_list = (statement * location) list
 
 and variable_declaration = ident * initialiser option
 
 and case_clause = expression * statement_list
 
-and initialiser = expression * loc
+and initialiser = expression * location
 
 (****)
 
 (* A.5 Functions and programs *)
 
 and function_declaration =
-  ident * formal_parameter_list * function_body * loc
+  ident * formal_parameter_list * function_body * location
 
 and function_expression =
-  ident option * formal_parameter_list * function_body * loc
+  ident option * formal_parameter_list * function_body * location
 
 and formal_parameter_list = ident list
 
@@ -147,7 +148,7 @@ and function_body = source_elements
 
 and program = source_elements
 
-and source_elements = source_element list
+and source_elements = (source_element * location) list
 
 and source_element =
     Statement of statement

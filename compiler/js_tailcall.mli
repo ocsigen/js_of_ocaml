@@ -24,6 +24,6 @@ class tailcall : object
 end
 
 val rewrite :
-  (Code.Var.t * Javascript.expression * Javascript.loc * Code.VarSet.t)
+  (Code.Var.t * Javascript.expression * Javascript.location * Code.VarSet.t)
   list ->
-  (string -> Javascript.expression) -> Javascript.statement list
+  (string -> Javascript.expression) -> Javascript.statement_list

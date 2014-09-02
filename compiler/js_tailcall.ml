@@ -36,7 +36,7 @@ class tailcall = object(m)
   method statement s =
     let s = super#statement s in
     match s with
-    | Return_statement( Some e,nid ) ->
+    | Return_statement (Some e) ->
       ignore(m#last_e e);
       s
     | _ -> s
@@ -68,7 +68,7 @@ class tailcall_rewrite f = object(m)
   method statement s =
     let s = super#statement s in
     match s with
-    | Return_statement(Some e,nid) -> begin match m#last_e e with
+    | Return_statement(Some e) -> begin match m#last_e e with
         | None -> s
         | Some s -> s
       end
@@ -83,16 +83,16 @@ class tailcall_rewrite f = object(m)
       begin match e1',e2' with
         | None,None -> None
         | Some s,None ->
-          Some (If_statement(cond,s,Some (Return_statement (Some e2,N)),N))
+          Some (If_statement(cond,(s, N),Some (Return_statement (Some e2),N)))
         | None,Some s ->
-          Some (If_statement(cond,Return_statement (Some e1,N),Some s,N))
+          Some (If_statement(cond,(Return_statement (Some e1),N),Some (s, N)))
         | Some s1,Some s2 ->
-          Some (If_statement(cond,s1,Some (s2),N))
+          Some (If_statement(cond,(s1, N),Some (s2, N)))
       end
     | ESeq (e1,e2) ->
       begin match m#last_e e2 with
         | None -> None
-        | Some s2 -> Some (Block ([Expression_statement (e1,N);s2],N))
+        | Some s2 -> Some (Block ([(Expression_statement e1, N);(s2, N)]))
       end
     | _ -> None
   method source s =
@@ -106,15 +106,15 @@ end
 
 module type TC = sig
   val rewrite :
-    (Code.Var.t * Javascript.expression * J.loc * VarSet.t) list ->
-    (string -> Javascript.expression) -> Javascript.statement list
+    (Code.Var.t * Javascript.expression * J.location * VarSet.t) list ->
+    (string -> Javascript.expression) -> Javascript.statement_list
 end
 
 module Ident : TC = struct
   let rewrite closures get_prim =
     [J.Variable_statement
        (List.map (fun (name, cl, loc, _) -> J.V name, Some (cl, loc))
-          closures)]
+          closures), J.N]
 
 end
 
@@ -151,7 +151,7 @@ module Tramp : TC = struct
                 J.ECall (
                   get_prim "caml_trampoline_return",
                   [J.EVar n ; J.EArr (List.map (fun x -> Some x) (J.ENum 0. :: args))], J.N
-                ))),J.N)
+                ))))
           in Some st
       with Not_found -> None
     in
@@ -162,7 +162,7 @@ module Tramp : TC = struct
           let b = J.ECall(
               get_prim "caml_trampoline",
               [J.ECall(J.EVar (J.V (VarMap.find v m2new)), J.ENum 0. :: List.map (fun i -> J.EVar i) args, J.N)], J.N) in
-          let b = J.Statement (J.Return_statement (Some b,J.N)) in
+          let b = (J.Statement (J.Return_statement (Some b)), J.N) in
           v,J.EFun (None, args,[b],nid )
         | _ -> assert false) cls in
     let reals = List.map (fun (v,clo,_,_) ->
@@ -174,7 +174,8 @@ module Tramp : TC = struct
       ) cls in
     let make binds =
       [J.Variable_statement
-         (List.map (fun (name, ex) -> J.V (name), Some (ex, J.N)) binds)] in
+         (List.map (fun (name, ex) -> J.V (name), Some (ex, J.N)) binds),
+       J.N] in
     make (reals@wrappers)
 
 end

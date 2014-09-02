@@ -22,13 +22,13 @@ open Javascript
 class type mapper = object
   method expression : Javascript.expression -> Javascript.expression
   method expression_o : Javascript.expression option -> Javascript.expression option
-  method initialiser : (Javascript.expression * Javascript.loc) -> (Javascript.expression * Javascript.loc)
-  method initialiser_o : (Javascript.expression * Javascript.loc) option -> (Javascript.expression * Javascript.loc) option
+  method initialiser : (Javascript.expression * Javascript.location) -> (Javascript.expression * Javascript.location)
+  method initialiser_o : (Javascript.expression * Javascript.location) option -> (Javascript.expression * Javascript.location) option
   method statement : Javascript.statement -> Javascript.statement
-  method statement_o : Javascript.statement option -> Javascript.statement option
-  method statements : Javascript.statement list -> Javascript.statement list
+  method statement_o : (Javascript.statement * Javascript.location) option -> (Javascript.statement * Javascript.location) option
+  method statements : Javascript.statement_list -> Javascript.statement_list
   method source : Javascript.source_element -> Javascript.source_element
-  method sources : Javascript.source_element list -> Javascript.source_element list
+  method sources : Javascript.source_elements -> Javascript.source_elements
   method ident : Javascript.ident -> Javascript.ident
   method program : Javascript.program -> Javascript.program
 end
@@ -38,76 +38,77 @@ end
 class map : mapper = object(m)
   method ident i = i
 
-  method statements l = List.map m#statement l
+  method statements l = List.map (fun (s, pc) -> (m#statement s, pc)) l
 
-  method statement s = match s with
-    | Block (b,pc) -> Block (m#statements b, pc)
+  method statement s =
+    match s with
+    | Block b ->
+        Block (m#statements b)
     | Variable_statement l ->
-      Variable_statement (
-        List.map
-          (fun (id, eo) -> m#ident id, m#initialiser_o eo) l)
-    | Empty_statement pc -> Empty_statement pc
-    | Debugger_statement pc -> Debugger_statement pc
-    | Expression_statement (e,nid) ->
-      Expression_statement (m#expression e, nid)
-    | If_statement(e,s,sopt,pc) ->
-      If_statement(m#expression e,
-    m#statement s,
-    m#statement_o sopt, pc)
-  | Do_while_statement (s,e,pc) ->
-    Do_while_statement (m#statement s, m#expression e, pc)
-  | While_statement(e,s, pc) ->
-    While_statement(m#expression e,m#statement s, pc)
-  | For_statement(e1,e2,e3,s,nid) ->
-    let e1 = match  e1 with
-      | Left o -> Left(m#expression_o o)
-      | Right l -> Right(List.map (fun (id, eo) -> m#ident id,m#initialiser_o eo) l) in
-    For_statement(
-      e1,
-      m#expression_o e2,
-      m#expression_o  e3,
-      m#statement  s,
-      nid)
-  | ForIn_statement(e1,e2,s,nid) ->
-    let e1 = match e1 with
-      | Left e -> Left(m#expression e)
-      | Right ((id,e)) -> Right ((m#ident id,m#initialiser_o e)) in
-    ForIn_statement(
-      e1,
-      m#expression e2,
-      m#statement s,
-      nid)
-  | Continue_statement (s,pc) -> Continue_statement (s,pc)
-  | Break_statement (s,pc) -> Break_statement (s,pc)
-  | Return_statement (e,pc) ->
-    Return_statement (m#expression_o e,pc)
-  | Labelled_statement(l,s,pc) -> Labelled_statement(l,m#statement s, pc)
-  | Throw_statement (e,pc) -> Throw_statement (m#expression e, pc)
-  | Switch_statement (e,l,def,pc) ->
-    Switch_statement (
-      m#expression e,
-      List.map (fun (e,s) -> m#expression e, m#statements s) l,
-      (match def with
-        | None -> None
-        | Some l -> Some (m#statements l)),
-      pc)
-  | Try_statement (b,catch,final,nid) ->
-    Try_statement (
-    m#statements b,
-    (match catch with
-      | None -> None
-      | Some (id,b) -> Some (m#ident id, m#statements b)),
-    (match final with
-      | None -> None
-      | Some s -> Some (m#statements s)),
-    nid)
+        Variable_statement
+          (List.map (fun (id, eo) -> m#ident id, m#initialiser_o eo) l)
+    | Empty_statement ->
+        Empty_statement
+    | Debugger_statement ->
+        Debugger_statement
+    | Expression_statement e ->
+        Expression_statement (m#expression e)
+    | If_statement (e, (s, loc), sopt) ->
+        If_statement (m#expression e, (m#statement s, loc), m#statement_o sopt)
+    | Do_while_statement ((s, loc), e) ->
+        Do_while_statement ((m#statement s, loc), m#expression e)
+    | While_statement(e, (s, loc)) ->
+        While_statement(m#expression e, (m#statement s, loc))
+    | For_statement(e1, e2, e3, (s, loc)) ->
+        let e1 =
+          match e1 with
+          | Left o ->
+              Left(m#expression_o o)
+          | Right l ->
+              Right(List.map (fun (id, eo) -> m#ident id,m#initialiser_o eo) l)
+        in
+        For_statement (e1, m#expression_o e2, m#expression_o e3,
+                       (m#statement s, loc))
+    | ForIn_statement (e1, e2, (s, loc)) ->
+        let e1 =
+          match e1 with
+          | Left e         -> Left(m#expression e)
+          | Right ((id,e)) -> Right ((m#ident id,m#initialiser_o e))
+        in
+        ForIn_statement (e1, m#expression e2, (m#statement s, loc))
+    | Continue_statement s ->
+        Continue_statement s
+    | Break_statement s ->
+        Break_statement s
+    | Return_statement e ->
+        Return_statement (m#expression_o e)
+    | Labelled_statement (l, (s, loc)) ->
+        Labelled_statement (l, (m#statement s, loc))
+    | Throw_statement e ->
+        Throw_statement (m#expression e)
+    | Switch_statement (e, l, def) ->
+        Switch_statement
+          (m#expression e,
+           List.map (fun (e,s) -> m#expression e, m#statements s) l,
+           match def with
+           | None   -> None
+           | Some l -> Some (m#statements l))
+    | Try_statement (b, catch, final) ->
+        Try_statement
+          (m#statements b,
+           (match catch with
+            | None        -> None
+            | Some (id,b) -> Some (m#ident id, m#statements b)),
+           (match final with
+            | None   -> None
+            | Some s -> Some (m#statements s)))
 
   method statement_o x = match x with
-    | None -> None
-    | Some s -> Some (m#statement s)
+    | None          -> None
+    | Some (s, loc) -> Some (m#statement s, loc)
 
   method expression x = match x with
-    | ESeq(e1,e2) -> ESeq(m#expression  e1, m#expression  e2)
+  | ESeq(e1,e2) -> ESeq(m#expression  e1, m#expression  e2)
   | ECond(e1,e2,e3) ->
     ECond(m#expression  e1,m#expression  e2,m#expression  e3)
   | EBin(b,e1,e2) ->
@@ -153,7 +154,7 @@ class map : mapper = object(m)
     | Function_declaration(id,params,body,nid) ->
       Function_declaration(m#ident id, List.map m#ident params, m#sources body,nid)
 
-  method sources x = List.map m#source x
+  method sources x = List.map (fun (s, loc) -> (m#source s, loc)) x
 
   method program x = m#sources x
 end
@@ -199,12 +200,16 @@ class share_constant = object(m)
     super#expression e
 
   method sources l =
-    let revl,_ = List.fold_left (fun (l,prolog) x ->
-      match x with
-        | Statement (Expression_statement (EStr _,_)) when prolog ->
-          x::l,prolog
-        | x -> (m#source x)::l,false
-    ) ([],true) l in
+    let (revl, _) =
+      List.fold_left
+        (fun (l,prolog) (x, loc) ->
+           match x with
+           | Statement (Expression_statement (EStr _)) when prolog ->
+               (x, loc) :: l, prolog
+           | x ->
+               (m#source x, loc)::l, false)
+        ([],true) l
+    in
     List.rev revl
 
   method program p =
@@ -242,7 +247,7 @@ class share_constant = object(m)
       let p = (new replace_expr f)#program p in
       let all = Hashtbl.fold (fun e v acc ->
           (v, Some (e,N)) :: acc) all [] in
-      Statement(Variable_statement all):: p
+      (Statement (Variable_statement all), N) :: p
 end
 
 module S = Code.VarSet
@@ -370,7 +375,7 @@ class free =
             let e = m#expression e in
             (id,Some (e,pc))) l in
       Variable_statement l
-    | For_statement (Right l,e2,e3,s,nid) ->
+    | For_statement (Right l, e2, e3, (s, loc)) ->
       let l = List.map (fun (id,eopt) ->
           m#def_var id;
           match eopt with
@@ -378,16 +383,17 @@ class free =
             | Some (e,pc) ->
               let e = m#expression e in
               (id,Some (e,pc))) l in
-      For_statement (Right l, m#expression_o e2, m#expression_o e3, m#statement s,nid)
-    | ForIn_statement(Right ((id,eopt)),e2,s,nid) ->
+      For_statement (Right l, m#expression_o e2, m#expression_o e3,
+                     (m#statement s, loc))
+    | ForIn_statement (Right (id,eopt), e2, (s, loc)) ->
       m#def_var id;
       let r = match eopt with
         | None -> (id,None)
         | Some (e,pc) ->
           let e = m#expression e in
           (id,Some (e,pc)) in
-      ForIn_statement(Right r,m#expression e2,m#statement s,nid)
-    | Try_statement (b,w,f,nid) ->
+      ForIn_statement (Right r,m#expression e2, (m#statement s, loc))
+    | Try_statement (b,w,f) ->
       let b = m#statements b in
       let tbody = {< state_ = empty; level = level >} in
       let w = match w with
@@ -420,7 +426,7 @@ class free =
         | None -> None
         | Some block -> Some (m#statements block)
       in
-      Try_statement (b,w,f,nid)
+      Try_statement (b,w,f)
     | _ -> super#statement x
   end
 
@@ -456,7 +462,7 @@ class rename_variable keeps = object(m : 'test)
   method statement x =
     let x = super#statement x in
     match x with
-      | Try_statement (b,w,f,nid) ->
+      | Try_statement (b,w,f) ->
         let w = match w with
           | Some(S {name},block) ->
             let v = Code.Var.fresh () in
@@ -467,7 +473,7 @@ class rename_variable keeps = object(m : 'test)
             let s = new subst sub in
             Some(V v ,s#statements block)
           | x -> x in
-        Try_statement (b,w,f,nid)
+        Try_statement (b,w,f)
       | _ -> x
 
 
@@ -497,8 +503,8 @@ class compact_vardecl = object(m)
     method private translate_st l =
       let l = m#translate l in
       match l with
-        | [] -> Empty_statement N
-        | x::l -> Expression_statement (List.fold_left (fun acc e -> ESeq(acc,e)) x l,N)
+        | [] -> Empty_statement
+        | x::l -> Expression_statement (List.fold_left (fun acc e -> ESeq(acc,e)) x l)
 
     method private translate_ex l =
       let l = m#translate l in
@@ -512,18 +518,18 @@ class compact_vardecl = object(m)
       let s = super#statement s in
       match s with
         | Variable_statement l -> m#translate_st l
-        | For_statement (Right l,e2,e3,s,nid) ->
-          For_statement (Left (m#translate_ex l), e2, e3, s,nid)
-        | ForIn_statement(Right (id,op),e2,s,nid) ->
+        | For_statement (Right l,e2,e3,s) ->
+          For_statement (Left (m#translate_ex l), e2, e3, s)
+        | ForIn_statement(Right (id,op),e2,s) ->
           (match op with
             | Some _ -> assert false
             | None -> ());
-          ForIn_statement(Left (EVar id),e2,s,nid)
-        | Try_statement (b,w,f,nid) ->
+          ForIn_statement(Left (EVar id),e2,s)
+        | Try_statement (b,w,f) ->
           (match w with
             | None -> ()
             | Some (id,_) -> m#except id);
-          Try_statement (b,w,f,nid)
+          Try_statement (b,w,f)
         | s -> s
 
     method block ?(catch=false) params =
@@ -546,32 +552,32 @@ class compact_vardecl = object(m)
       let may_flush rem vars s instr =
         if vars = []
         then rem,[],s::instr
-        else rem,[],s::Statement (Variable_statement (List.rev vars))::instr in
+        else rem,[],s::(Statement (Variable_statement (List.rev vars)), N)::instr in
 
-      let rem,vars,instr = List.fold_left (fun (rem,vars,instr) s ->
+      let rem,vars,instr = List.fold_left (fun (rem,vars,instr) (s, loc) ->
         match s with
-          | Statement (Expression_statement (e,nid)) -> begin
+          | Statement (Expression_statement e) -> begin
             let l = m#split e in
             List.fold_left (fun (rem,vars,instr) e -> match e with
               | EBin(Eq,EVar id,exp) when IdentSet.mem id rem ->
                 (IdentSet.remove id rem,(id,Some (exp,N))::vars,instr)
-              | x -> may_flush rem vars (Statement(Expression_statement (x,nid))) instr)
+              | x -> may_flush rem vars (Statement(Expression_statement x), N) instr)
               (rem,vars,instr) l
           end
-          | Statement _ as s -> may_flush rem vars s instr
-          | Function_declaration _ as x -> (rem,vars,x::instr)
+          | Statement _ as s -> may_flush rem vars (s, loc) instr
+          | Function_declaration _ as x -> (rem,vars,(x, loc)::instr)
       ) (all,[],[]) sources in
       let instr = match vars with
         | [] -> (List.rev instr)
         | d ->
           let d = Statement (Variable_statement (List.rev d)) in
-          List.rev (d::instr) in
+          List.rev ((d, N)::instr) in
       let l = IdentSet.fold (fun x acc -> (x,None)::acc) rem [] in
       match l,instr with
         | [],_ -> instr
-        | l, (Statement (Variable_statement l')::rest) ->
-          Statement (Variable_statement (List.rev_append l l')) :: rest
-        | l,_ -> (Statement (Variable_statement l))::instr
+        | l, (Statement (Variable_statement l'), loc)::rest ->
+          (Statement (Variable_statement (List.rev_append l l')), loc) :: rest
+        | l,_ -> (Statement (Variable_statement l), N)::instr
 
     method source x =
       let x = super#source x in
@@ -597,13 +603,13 @@ class compact_vardecl = object(m)
 
     method statements l =
       let l = super#statements l in
-      let l = List.fold_left (fun acc x ->
+      let l = List.fold_left (fun acc (x, loc) ->
         match x with
-          | Expression_statement (e,nid) ->
+          | Expression_statement e ->
             let l = m#split e in
-            let l = List.fold_left (fun acc e -> Expression_statement (e,nid)::acc) acc l in
+            let l = List.fold_left (fun acc e -> (Expression_statement e, N)::acc) acc l in
             l
-          | x -> x::acc) [] l in
+          | _ -> (x, loc)::acc) [] l in
       List.rev l
 
 end
@@ -613,54 +619,55 @@ class clean = object(m)
 
   method statements l =
     let rev_append_st x l = match x with
-      | Block (b,_) -> List.rev_append b l
+      | (Block b, _) -> List.rev_append b l
       | x -> x::l in
     let l = super#statements l in
-    let vars_rev,instr_rev = List.fold_left (fun (vars_rev,instr_rev) x ->
+    let vars_rev,instr_rev =
+      List.fold_left (fun (vars_rev,instr_rev) (x, loc) ->
         match x with
           | Variable_statement l -> (List.rev_append l vars_rev,instr_rev)
-          | Empty_statement _
-          | Expression_statement (EVar _, _) -> vars_rev,instr_rev
-          | x when vars_rev = [] -> ([],rev_append_st x instr_rev)
-          | x -> ([],rev_append_st x (Variable_statement (List.rev vars_rev)::instr_rev))
+          | Empty_statement
+          | Expression_statement (EVar _) -> vars_rev,instr_rev
+          | _ when vars_rev = [] -> ([],rev_append_st (x, loc) instr_rev)
+          | _ -> ([],rev_append_st (x, loc) ((Variable_statement (List.rev vars_rev), N)::instr_rev))
       ) ([],[]) l in
     let instr_rev = match vars_rev with
       | [] -> instr_rev
-      | vars_rev -> Variable_statement (List.rev vars_rev) :: instr_rev
+      | vars_rev -> (Variable_statement (List.rev vars_rev), N) :: instr_rev
     in List.rev instr_rev
 
    method statement s =
      let s = super#statement s in
     let b = function
-      | Block ([],nid) -> Empty_statement nid
-      | Block ([x],_) -> x
+      | Block [], loc -> (Empty_statement, loc)
+      | Block [x], _ -> x
       | b -> b in
     let bopt = function
-      | Some (Block  ([],nid)) -> None
-      | Some (Block  ([x],nid)) -> Some x
+      | Some (Block [], _) -> None
+      | Some (Block [x], _) -> Some x
       | Some b -> Some b
       | None -> None in
      match s with
-    | If_statement (if',then',else',nid) -> If_statement (if',b then',bopt else',nid)
-    | Do_while_statement (do',while',nid) -> Do_while_statement (b do',while',nid)
-    | While_statement (cond,st,nid) -> While_statement (cond,b st,nid)
-    | For_statement (p1,p2,p3,st,nid) -> For_statement (p1,p2,p3,b st,nid)
-    | ForIn_statement (param,e,st,n) -> ForIn_statement (param,e,b st,n)
-    | Switch_statement(e,l,Some [],pc) -> Switch_statement(e,l,None,pc)
+    | If_statement (if',then',else') -> If_statement (if',b then',bopt else')
+    | Do_while_statement (do',while') -> Do_while_statement (b do',while')
+    | While_statement (cond,st) -> While_statement (cond,b st)
+    | For_statement (p1,p2,p3,st) -> For_statement (p1,p2,p3,b st)
+    | ForIn_statement (param,e,st) -> ForIn_statement (param,e,b st)
+    | Switch_statement(e,l,Some []) -> Switch_statement(e,l,None)
     | s -> s
 
   method sources l =
     let l = super#sources l in
     let append_st st_rev sources_rev =
       let st = m#statements (List.rev st_rev) in
-      let st = List.map (fun s -> Statement s) st in
+      let st = List.map (fun (s, loc) -> (Statement s, loc)) st in
       List.rev_append st sources_rev in
 
-    let (st_rev,sources_rev) = List.fold_left (fun (st_rev,sources_rev) x ->
+    let (st_rev,sources_rev) = List.fold_left (fun (st_rev,sources_rev) (x, loc) ->
         match x with
-          | Statement s -> s::st_rev,sources_rev
-          | x when st_rev = [] -> [],x::sources_rev
-          | x -> [],(x::(append_st st_rev sources_rev))
+          | Statement s -> (s, loc)::st_rev,sources_rev
+          | x when st_rev = [] -> [],(x, loc)::sources_rev
+          | x -> [],((x, loc)::(append_st st_rev sources_rev))
       ) ([],[]) l in
     let sources_rev = match st_rev with
       | [] -> sources_rev
@@ -739,33 +746,33 @@ class simpl = object(m)
   method statement s =
     let s = super#statement s in
     match s with
-    | Block ([x],_) -> x
+    | Block [x] -> fst x
     | _ -> s
 
   method statements s =
     let s = super#statements s in
-    List.fold_right (fun st rem ->
+    List.fold_right (fun (st, loc) rem ->
         match st with
         | If_statement(
             cond,
-            Return_statement (Some e1,_),
-            Some (Return_statement (Some e2,_)), pc) ->
-          Return_statement (Some (ECond(cond,e1,e2)),pc)::rem
+            (Return_statement (Some e1), _),
+            Some (Return_statement (Some e2), _)) ->
+          (Return_statement (Some (ECond(cond,e1,e2))), loc)::rem
         | If_statement(
             cond,
-            Expression_statement (EBin(Eq,v1,e1),_),
-            Some (Expression_statement (EBin(Eq,v2,e2),_)), pc) when v1 = v2 ->
-          Expression_statement (EBin(Eq,v1,ECond(cond,e1,e2)),pc)::rem
+            (Expression_statement (EBin(Eq,v1,e1)), _),
+            Some (Expression_statement (EBin(Eq,v2,e2)),_)) when v1 = v2 ->
+          (Expression_statement (EBin(Eq,v1,ECond(cond,e1,e2))),loc)::rem
 
         | Variable_statement l1 ->
           let x = List.map (function
-              | (ident,None) -> Variable_statement [(ident,None)]
+              | (ident,None) -> (Variable_statement [(ident,None)], N)
               | (ident,Some (exp,pc)) ->
               match assign_op (EVar ident,exp) with
-              | Some e -> Expression_statement (e,N)
-              | None -> Variable_statement [(ident,Some (exp,pc))]) l1 in
+              | Some e -> (Expression_statement e, N)
+              | None -> (Variable_statement [(ident,Some (exp,pc))],N)) l1 in
           x@rem
-        | _ -> st::rem
+        | _ -> (st, loc)::rem
       ) s []
 
 
@@ -774,15 +781,15 @@ class simpl = object(m)
     let append_st st_rev sources_rev =
       let st = m#statements (List.rev st_rev) in
       let st = List.map (function
-          | Variable_statement
-              [addr, Some (EFun (None, params, body, pc),pc')] ->
-            Function_declaration (addr, params, body, pc')
-          | s -> Statement s) st in
+          | (Variable_statement
+              [addr, Some (EFun (None, params, body, loc'), loc)], _) ->
+            (Function_declaration (addr, params, body, loc'), loc)
+          | (s, loc) -> (Statement s, loc)) st in
       List.rev_append st sources_rev in
 
     let (st_rev,sources_rev) = List.fold_left (fun (st_rev,sources_rev) x ->
         match x with
-          | Statement s -> s::st_rev,sources_rev
+          | (Statement s, loc) -> (s, loc)::st_rev,sources_rev
           | x when st_rev = [] -> [],x::sources_rev
           | x -> [],(x::(append_st st_rev sources_rev))
       ) ([],[]) l in

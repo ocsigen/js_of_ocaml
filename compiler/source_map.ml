@@ -41,49 +41,68 @@ type t = {
 let string_of_mapping mapping =
   let a = Array.of_list mapping in
   let len = Array.length a in
-  Array.fast_sort (fun t1 t2 ->
+  Array.stable_sort (fun t1 t2 ->
     match compare t1.gen_line t2.gen_line with
       | 0 -> compare t1.gen_col t2.gen_col
       | n -> n) a;
   let buf = Buffer.create 1024 in
+
+  let gen_line = ref 0 in
+  let gen_col = ref 0 in
+  let ori_source = ref 0 in
+  let ori_line = ref 0 in
+  let ori_col = ref 0 in
+  let ori_name = ref 0 in
+
   let rec loop prev i =
-    if i >= len
-    then ()
-    else
+    if i < len then
       let c = a.(i) in
-      let prev =
-        if prev.gen_line <> c.gen_line
-        then begin
-          assert (prev.gen_line < c.gen_line);
-          for j = prev.gen_line to c.gen_line - 1 do
+      if
+        prev >= 0 &&
+        c.ori_source = a.(prev).ori_source &&
+        c.ori_line = a.(prev).ori_line &&
+        c.ori_col = a.(prev).ori_col
+      then
+        (* We already are at this location *)
+        loop prev (i + 1)
+      else if
+        i + 1 < len &&
+        c.gen_line = a.(i+1).gen_line && c.gen_col = a.(i+1).gen_col
+      then
+        (* Only keep one source location per generated location *)
+        loop prev (i + 1)
+      else begin
+        if !gen_line <> c.gen_line then begin
+          assert (!gen_line < c.gen_line);
+          for j = !gen_line to c.gen_line - 1 do
             Buffer.add_char buf ';';
           done;
-          {prev with gen_col = 0; gen_line = c.gen_line}
+          gen_col := 0; gen_line := c.gen_line
+        end else if i > 0 then
+          Buffer.add_char buf ',';
+          let l =
+            c.gen_col - !gen_col ::
+            if c.ori_source = -1 then
+              []
+            else
+              c.ori_source - !ori_source ::
+              c.ori_line - !ori_line ::
+              c.ori_col - !ori_col ::
+              match c.ori_name with
+              | None   -> []
+              | Some n -> let n' = !ori_name in ori_name := n; [n - n']
+          in
+          gen_col := c.gen_col;
+          if c.ori_source <> -1 then begin
+            ori_source := c.ori_source;
+            ori_line := c.ori_line;
+            ori_col := c.ori_col
+          end;
+          Vlq64.encode_l buf l;
+          loop i (i + 1)
         end
-        else begin
-          if i > 0 then Buffer.add_char buf ',';
-          prev
-        end in
-      begin
-        let diff_name,prev_name = match c.ori_name, prev.ori_name with
-          | None,None -> None,None
-          | Some o,Some p -> Some (o - p), Some o
-          | Some o,None -> Some o, Some o
-          | None, Some p -> None, Some p in
-
-        let l = [c.gen_col - prev.gen_col;
-                 c.ori_source - prev.ori_source;
-                 c.ori_line - prev.ori_line;
-                 c.ori_col - prev.ori_col ] in
-        let l = match diff_name with
-          | None -> l
-          | Some d -> l@[d] in
-
-        Vlq64.encode_l buf l;
-        loop {c with ori_name = prev_name} (succ i)
-      end
   in
-  loop {gen_line=0;gen_col=0;ori_source=0;ori_line=0;ori_col=0;ori_name=None} 0;
+  loop (-1) 0;
   Buffer.contents buf
 
 let expression t =

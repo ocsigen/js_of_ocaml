@@ -79,42 +79,42 @@ let rec enot_rec e =
 
 let enot e = fst (enot_rec e)
 
-let unblock st = match st with J.Block (l,_) -> l | _ -> [st]
+let unblock st = match st with J.Block l, _ -> l | _ -> [st]
 
 exception Not_expression
 
 let rec expression_of_statement_list l =
   match l with
-    J.Return_statement (Some e,_) :: _ ->
+    (J.Return_statement (Some e), _) :: _ ->
       e
-  | J.Expression_statement (e, pc) :: rem ->
+  | (J.Expression_statement e, _) :: rem ->
       J.ESeq (e, expression_of_statement_list rem)
   | _ ->
       raise Not_expression
 
 let expression_of_statement st =
-  match st with
-    J.Return_statement (Some e,_) -> e
-  | J.Block (l,_)                 -> expression_of_statement_list l
-  | _                             -> raise Not_expression
+  match fst st with
+    J.Return_statement (Some e) -> e
+  | J.Block l                   -> expression_of_statement_list l
+  | _                           -> raise Not_expression
 
 exception Not_assignment
 
 let rec assignment_of_statement_list l =
   match l with
-    [J.Variable_statement [x, Some e]] ->
+    [(J.Variable_statement [x, Some e], _)] ->
       (x, e)
-  | J.Expression_statement (e, pc) :: rem ->
+  | (J.Expression_statement e, _) :: rem ->
       let (x, (e',nid)) = assignment_of_statement_list rem in
       (x, (J.ESeq (e, e'),nid))
   | _ ->
       raise Not_assignment
 
 let assignment_of_statement st =
-  match st with
+  match fst st with
     J.Variable_statement [x, Some e] -> (x, e)
-  | J.Block (l,_)                        -> assignment_of_statement_list l
-  | _                                    -> raise Not_assignment
+  | J.Block l                        -> assignment_of_statement_list l
+  | _                                -> raise Not_assignment
 
 let simplify_condition = function
     (* | J.ECond _  -> J.ENum 1. *)
@@ -125,16 +125,16 @@ let simplify_condition = function
       J.ECond (J.EBin(J.Band,y,J.ENum n),e1,e2)
     | cond        -> cond
 
-let rec if_statement_2 e pc iftrue truestop iffalse falsestop =
+let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
   let e = simplify_condition e in
-  match iftrue, iffalse with
+  match fst iftrue, fst iffalse with
     (* Empty blocks *)
-    J.Block ([],_), J.Block ([],_) ->
-      [J.Expression_statement (e, pc)]
-  | J.Block ([],_), _ ->
-      if_statement_2 (enot e) pc iffalse falsestop iftrue truestop
-  | _, J.Block ([],_) ->
-      [J.If_statement (e, iftrue, None, pc)]
+    J.Block [], J.Block [] ->
+      [(J.Expression_statement e, loc)]
+  | J.Block [], _ ->
+      if_statement_2 (enot e) loc iffalse falsestop iftrue truestop
+  | _, J.Block [] ->
+      [(J.If_statement (e, iftrue, None), loc)]
   | _ ->
       (* Generates conditional *)
       begin try
@@ -145,44 +145,44 @@ let rec if_statement_2 e pc iftrue truestop iffalse falsestop =
           if e1 = e
           then J.EBin(J.Or,e,e2)
           else J.ECond (e, e1, e2) in
-        [J.Variable_statement [x1, Some (exp,pc)]]
+        [J.Variable_statement [x1, Some (exp, loc)], loc]
       with Not_assignment -> try
         let e1 = expression_of_statement iftrue in
         let e2 = expression_of_statement iffalse in
-        [J.Return_statement (Some (J.ECond (e, e1, e2)), pc)]
+        [J.Return_statement (Some (J.ECond (e, e1, e2))), loc]
       with Not_expression ->
         if truestop then
-          J.If_statement (e, iftrue, None, pc) :: unblock iffalse
+          (J.If_statement (e, iftrue, None), loc) :: unblock iffalse
         else if falsestop then
-          J.If_statement (enot e, iffalse, None, pc) :: unblock iftrue
+          (J.If_statement (enot e, iffalse, None), loc) :: unblock iftrue
         else
-          [J.If_statement (e, iftrue, Some iffalse, pc)]
+          [(J.If_statement (e, iftrue, Some iffalse), loc)]
       end
 
-let unopt b = match b with Some b -> b | None -> J.Block ([],J.N)
+let unopt b = match b with Some b -> b | None -> (J.Block [], J.N)
 
-let rec if_statement e ?(pc=J.N) iftrue truestop (iffalse : J.statement) falsestop =
+let rec if_statement e loc iftrue truestop iffalse falsestop =
   (*FIX: should be done at an earlier stage*)
   let e = simplify_condition e in
   match iftrue, iffalse with
     (* Shared statements *)
-  | J.If_statement (e', iftrue', iffalse',pc), _
+  | (J.If_statement (e', iftrue', iffalse'), loc), _
         when iffalse = unopt iffalse' ->
-      if_statement_2 (J.EBin (J.And, e, e')) pc iftrue' truestop iffalse falsestop
-  | J.If_statement (e', iftrue', iffalse',pc), _
+      if_statement_2 (J.EBin (J.And, e, e')) loc iftrue' truestop iffalse falsestop
+  | (J.If_statement (e', iftrue', iffalse'), loc), _
         when iffalse = iftrue' ->
-      if_statement_2 (J.EBin (J.And, e, J.EUn (J.Not, e'))) pc
+      if_statement_2 (J.EBin (J.And, e, J.EUn (J.Not, e'))) loc
         (unopt iffalse') truestop iffalse falsestop
-  | _, J.If_statement (e', iftrue', iffalse',pc)
+  | _, (J.If_statement (e', iftrue', iffalse'), loc)
         when iftrue = iftrue' ->
-      if_statement_2 (J.EBin (J.Or, e, e')) pc
+      if_statement_2 (J.EBin (J.Or, e, e')) loc
         iftrue truestop (unopt iffalse') falsestop
-  | _, J.If_statement (e', iftrue', iffalse', pc)
+  | _, (J.If_statement (e', iftrue', iffalse'), loc)
         when iftrue = unopt iffalse' ->
-      if_statement_2 (J.EBin (J.Or, e, (J.EUn (J.Not, e')))) pc
+      if_statement_2 (J.EBin (J.Or, e, (J.EUn (J.Not, e')))) loc
         iftrue truestop iftrue' falsestop
   | _ ->
-      if_statement_2 e pc iftrue truestop iffalse falsestop
+      if_statement_2 e loc iftrue truestop iffalse falsestop
 
 
 let rec get_variable acc = function

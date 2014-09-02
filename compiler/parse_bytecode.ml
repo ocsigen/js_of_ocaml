@@ -23,132 +23,7 @@ open Instr
 
 let debug_parser = Option.Debug.find "parser"
 
-type debug_loc = Javascript.loc -> Parse_info.t option
 type code = string
-
-(* Block analysis *)
-(* Detect each block *)
-module Blocks : sig
-  type t
-  val add  : t -> int -> t
-  val next : t -> int -> int
-  val analyse : debug:bool -> code -> t
-end = struct
-  type t = AddrSet.t * int
-
-  let add (blocks,len) pc =  AddrSet.add pc blocks,len
-  let rec scan debug blocks code pc len =
-    if pc < len then begin
-      match (get_instr code pc).kind with
-        KNullary ->
-        scan debug blocks code (pc + 1) len
-      | KUnary ->
-        scan debug blocks code (pc + 2) len
-      | KBinary ->
-        scan debug blocks code (pc + 3) len
-      | KNullaryCall ->
-        let blocks = if debug then AddrSet.add pc blocks else blocks in
-        scan debug blocks code (pc + 1) len
-      | KUnaryCall ->
-        let blocks = if debug then AddrSet.add pc blocks else blocks in
-        scan debug blocks code (pc + 2) len
-      | KBinaryCall ->
-        let blocks = if debug then AddrSet.add pc blocks else blocks in
-        scan debug blocks code (pc + 3) len
-      | KJump ->
-        let offset = gets code (pc + 1) in
-        let blocks = AddrSet.add (pc + offset + 1) blocks in
-        scan debug blocks code (pc + 2) len
-      | KCond_jump ->
-        let offset = gets code (pc + 1) in
-        let blocks = AddrSet.add (pc + offset + 1) blocks in
-        scan debug blocks code (pc + 2) len
-      | KCmp_jump ->
-        let offset = gets code (pc + 2) in
-        let blocks = AddrSet.add (pc + offset + 2) blocks in
-        scan debug blocks code (pc + 3) len
-      | KSwitch ->
-        let sz = getu code (pc + 1) in
-        let blocks = ref blocks in
-        for i = 0 to sz land 0xffff + sz lsr 16 - 1 do
-          let offset = gets code (pc + 2 + i) in
-          blocks := AddrSet.add (pc + offset + 2) !blocks
-        done;
-        scan debug !blocks code (pc + 2 + sz land 0xffff + sz lsr 16) len
-      | KClosurerec ->
-        let nfuncs = getu code (pc + 1) in
-        scan debug blocks code (pc + nfuncs + 3) len
-      | KClosure ->
-        scan debug blocks code (pc + 3) len
-      | KStop n ->
-        scan debug blocks code (pc + n + 1) len
-      | K_will_not_happen -> assert false
-    end
-    else blocks
-
-  let rec next ((blocks,len) as info) pc =
-    let pc = pc + 1 in
-    if pc = len || AddrSet.mem pc blocks then pc else next info pc
-
-  let analyse ~debug code =
-    let blocks = AddrSet.empty in
-    let len = String.length code  / 4 in
-    (scan debug blocks code 0 len,len)
-
-end
-
-(* Parse constants *)
-module Constants : sig
-  val parse : Obj.t -> Code.constant
-  val inlined : Obj.t -> bool
-end = struct
-  let same_custom x y =
-    Obj.field x 0 == Obj.field (Obj.repr y) 0
-
-  let warn_overflow i i32 =
-    Format.eprintf
-      "Warning: integer overflow: integer 0x%s truncated to 0x%lx; \
-       the generated code might be incorrect.@." i i32
-
-  let rec parse x =
-    if Obj.is_block x then begin
-      let tag = Obj.tag x in
-      if tag = Obj.string_tag then
-        String (Obj.magic x : string)
-      else if tag = Obj.double_tag then
-        Float (Obj.magic x : float)
-      else if tag = Obj.double_array_tag then
-        Float_array (Obj.magic x : float array)
-      else if tag = Obj.custom_tag && same_custom x 0l then
-        Int (Obj.magic x : int32)
-      else if tag = Obj.custom_tag && same_custom x 0n then
-        let i : nativeint = Obj.magic x in
-        let i32 = Nativeint.to_int32 i in
-        let i' = Nativeint.of_int32 i32 in
-        if i' <> i then warn_overflow (Printf.sprintf "%nx" i) i32;
-        Int i32
-      else if tag = Obj.custom_tag && same_custom x 0L then
-        Int64 (Obj.magic x : int64)
-      else if tag < Obj.no_scan_tag then
-        Tuple (tag,
-               Array.init (Obj.size x) (fun i -> parse (Obj.field x i)))
-      else
-        assert false
-    end else
-      let i : int = Obj.magic x in
-      let i32 = Int32.of_int i in
-      let i' = Int32.to_int i32 in
-      if i' <> i then warn_overflow (Printf.sprintf "%x" i) i32;
-      Int i32
-
-  let inlined x =
-    not (Obj.is_block x)
-    ||
-    (let tag = Obj.tag x in
-     (tag = Obj.double_tag)
-     ||
-     (tag = Obj.custom_tag && (same_custom x 0l || same_custom x 0n)))
-end
 
 (* Copied from ocaml/typing/ident.ml *)
 module Ident = struct
@@ -172,7 +47,6 @@ module Ident = struct
   let table_contents sz t =
     List.sort (fun (i, _) (j, _) -> compare i j)
       (table_contents_rec sz t [])
-
 end
 (* Copied from ocaml/utils/tbl.ml *)
 module Tbl = struct
@@ -249,6 +123,7 @@ module Debug : sig
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
   val find : data -> Code.addr -> (int * string) list
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
+  val mem : data -> Code.addr -> bool
   val read : in_channel -> data
   val no_data : unit -> data
   val fold : data -> (Code.addr -> debug_event -> 'a -> 'a) -> 'a -> 'a
@@ -323,12 +198,16 @@ end = struct
     with Not_found ->
       []
 
+  let mem = Hashtbl.mem
+
   let find_loc events_by_pc ?(after = false) pc =
     try
-      let (ev, before) =
-        try Hashtbl.find events_by_pc pc, false with Not_found ->
-        try Hashtbl.find events_by_pc (pc + 1), true with Not_found ->
-        Hashtbl.find events_by_pc (pc + 1), true
+      let (before, ev) =
+        try false, Hashtbl.find events_by_pc pc with Not_found ->
+        true,
+        try Hashtbl.find events_by_pc (pc + 1) with Not_found ->
+        try Hashtbl.find events_by_pc (pc + 2) with Not_found ->
+        Hashtbl.find events_by_pc (pc + 3)
       in
       let loc = ev.ev_loc in
       let pos =
@@ -354,6 +233,133 @@ end = struct
   let iter events_by_pc f = Hashtbl.iter f events_by_pc
 
   let fold events_by_pc f acc = Hashtbl.fold f events_by_pc acc
+end
+
+(* Block analysis *)
+(* Detect each block *)
+module Blocks : sig
+  type t
+  val add  : t -> int -> t
+  val next : t -> int -> int
+  val analyse : Debug.data -> code -> t
+end = struct
+  type t = AddrSet.t * int
+
+  let add (blocks,len) pc =  AddrSet.add pc blocks,len
+  let rec scan debug blocks code pc len =
+    if pc < len then begin
+      match (get_instr code pc).kind with
+        KNullary ->
+        scan debug blocks code (pc + 1) len
+      | KUnary ->
+        scan debug blocks code (pc + 2) len
+      | KBinary ->
+        scan debug blocks code (pc + 3) len
+      | KNullaryCall ->
+        let blocks =
+          if Debug.mem debug (pc + 1) then AddrSet.add pc blocks else blocks in
+        scan debug blocks code (pc + 1) len
+      | KUnaryCall ->
+        let blocks =
+          if Debug.mem debug (pc + 2) then AddrSet.add pc blocks else blocks in
+        scan debug blocks code (pc + 2) len
+      | KBinaryCall ->
+        let blocks =
+          if Debug.mem debug (pc + 3) then AddrSet.add pc blocks else blocks in
+        scan debug blocks code (pc + 3) len
+      | KJump ->
+        let offset = gets code (pc + 1) in
+        let blocks = AddrSet.add (pc + offset + 1) blocks in
+        scan debug blocks code (pc + 2) len
+      | KCond_jump ->
+        let offset = gets code (pc + 1) in
+        let blocks = AddrSet.add (pc + offset + 1) blocks in
+        scan debug blocks code (pc + 2) len
+      | KCmp_jump ->
+        let offset = gets code (pc + 2) in
+        let blocks = AddrSet.add (pc + offset + 2) blocks in
+        scan debug blocks code (pc + 3) len
+      | KSwitch ->
+        let sz = getu code (pc + 1) in
+        let blocks = ref blocks in
+        for i = 0 to sz land 0xffff + sz lsr 16 - 1 do
+          let offset = gets code (pc + 2 + i) in
+          blocks := AddrSet.add (pc + offset + 2) !blocks
+        done;
+        scan debug !blocks code (pc + 2 + sz land 0xffff + sz lsr 16) len
+      | KClosurerec ->
+        let nfuncs = getu code (pc + 1) in
+        scan debug blocks code (pc + nfuncs + 3) len
+      | KClosure ->
+        scan debug blocks code (pc + 3) len
+      | KStop n ->
+        scan debug blocks code (pc + n + 1) len
+      | K_will_not_happen -> assert false
+    end
+    else blocks
+
+  let rec next ((blocks,len) as info) pc =
+    let pc = pc + 1 in
+    if pc = len || AddrSet.mem pc blocks then pc else next info pc
+
+  let analyse debug_data code =
+    let blocks = AddrSet.empty in
+    let len = String.length code  / 4 in
+    (scan debug_data blocks code 0 len,len)
+
+end
+
+(* Parse constants *)
+module Constants : sig
+  val parse : Obj.t -> Code.constant
+  val inlined : Obj.t -> bool
+end = struct
+  let same_custom x y =
+    Obj.field x 0 == Obj.field (Obj.repr y) 0
+
+  let warn_overflow i i32 =
+    Format.eprintf
+      "Warning: integer overflow: integer 0x%s truncated to 0x%lx; \
+       the generated code might be incorrect.@." i i32
+
+  let rec parse x =
+    if Obj.is_block x then begin
+      let tag = Obj.tag x in
+      if tag = Obj.string_tag then
+        String (Obj.magic x : string)
+      else if tag = Obj.double_tag then
+        Float (Obj.magic x : float)
+      else if tag = Obj.double_array_tag then
+        Float_array (Obj.magic x : float array)
+      else if tag = Obj.custom_tag && same_custom x 0l then
+        Int (Obj.magic x : int32)
+      else if tag = Obj.custom_tag && same_custom x 0n then
+        let i : nativeint = Obj.magic x in
+        let i32 = Nativeint.to_int32 i in
+        let i' = Nativeint.of_int32 i32 in
+        if i' <> i then warn_overflow (Printf.sprintf "%nx" i) i32;
+        Int i32
+      else if tag = Obj.custom_tag && same_custom x 0L then
+        Int64 (Obj.magic x : int64)
+      else if tag < Obj.no_scan_tag then
+        Tuple (tag,
+               Array.init (Obj.size x) (fun i -> parse (Obj.field x i)))
+      else
+        assert false
+    end else
+      let i : int = Obj.magic x in
+      let i32 = Int32.of_int i in
+      let i' = Int32.to_int i32 in
+      if i' <> i then warn_overflow (Printf.sprintf "%x" i) i32;
+      Int i32
+
+  let inlined x =
+    not (Obj.is_block x)
+    ||
+    (let tag = Obj.tag x in
+     (tag = Obj.double_tag)
+     ||
+     (tag = Obj.custom_tag && (same_custom x 0l || same_custom x 0n)))
 end
 
 (* Globals *)
@@ -1679,7 +1685,9 @@ let match_exn_traps ((_, blocks, _) as p) =
 let parse_bytecode ?(debug=`No) code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
-  let blocks = Blocks.analyse ~debug:(debug = `Full) code in
+  let blocks =
+    Blocks.analyse
+      (if debug = `Full then debug_data else Debug.no_data ()) code in
   let blocks =
     if debug = `Full
     then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks

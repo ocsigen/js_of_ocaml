@@ -21,7 +21,8 @@
 open Javascript
 
 val if_statement :
-  expression -> ?pc:loc -> statement -> bool -> statement -> bool ->
-  statement list
+  expression -> location ->
+  statement * location -> bool -> statement * location -> bool ->
+  (statement * location) list
 
 val get_variable : Code.VarSet.t -> expression -> Code.VarSet.t
