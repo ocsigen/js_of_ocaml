@@ -836,7 +836,7 @@ and compile infos pc state instrs =
         Array.of_list (State.Dummy :: List.map (fun x -> State.Var x) vals) in
       if debug_parser () then Format.printf "fun %a (" Var.print x;
       let nparams =
-        match (get_instr code addr).code with
+        match (get_instr code addr).Instr.code with
           GRAB -> getu code (addr + 1) + 1
         | _    -> 1
       in
@@ -879,7 +879,7 @@ and compile infos pc state instrs =
              let addr = pc + 3 + gets code (pc + 3 + i) in
              if debug_parser () then Format.printf "fun %a (" Var.print x;
              let nparams =
-               match (get_instr code addr).code with
+               match (get_instr code addr).Instr.code with
                  GRAB -> getu code (addr + 1) + 1
                | _    -> 1
              in
