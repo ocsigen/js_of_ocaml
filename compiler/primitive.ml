@@ -67,3 +67,10 @@ let alias nm nm' =
   add_external nm';
   add_external nm;
   Hashtbl.add aliases nm nm'
+
+
+let named_values = ref StringSet.empty
+
+let need_named_value s = StringSet.mem s !named_values
+
+let register_named_value s = named_values := StringSet.add s !named_values

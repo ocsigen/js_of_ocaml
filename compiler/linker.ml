@@ -186,6 +186,23 @@ let provided_rev = Hashtbl.create 31
 let code_pieces = Hashtbl.create 31
 let always_included = ref []
 
+class traverse_and_find_named_values all =
+  object
+    inherit Js_traverse.map as self
+    method expression x =
+      (match x with
+        | ECall(EVar (S {name="caml_named_value"}),[EStr (v,_)],_) ->
+          all:=StringSet.add v !all
+        | _ -> ()
+      );
+      self#expression x
+  end
+
+let find_named_value code =
+  let all = ref StringSet.empty in
+  let p = new traverse_and_find_named_values all in
+  ignore(p#program code);
+  !all
 
 let add_file f =
   List.iter
@@ -206,7 +223,9 @@ let add_file f =
               | (J.Function_declaration (J.S{J.name=n},l,_,_), _)::_ when name=n -> Some(List.length l)
               | _::rem -> find rem in
             let arity = find code in
+            let named_values = find_named_value code in
             Primitive.register name kind ka arity;
+            StringSet.iter Primitive.register_named_value named_values;
             if Hashtbl.mem provided name
             then begin
               let ploc = snd(Hashtbl.find provided name) in

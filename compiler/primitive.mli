@@ -40,3 +40,6 @@ val resolve : string -> string
 val add_external : string -> unit
 val is_external : string -> bool
 val get_external : unit -> Util.StringSet.t
+
+val need_named_value : string -> bool
+val register_named_value : string -> unit
