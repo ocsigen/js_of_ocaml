@@ -43,7 +43,9 @@ module Unsafe = struct
 
   external eval_string : string -> 'a = "caml_js_eval_string"
 
-  external expr : string -> 'a = "caml_js_expr"
+  external js_expr : string -> 'a = "caml_js_expr"
+
+  external pure_js_expr : string -> 'a = "caml_pure_js_expr"
 
   let global = variable "joo_global_object"
 end
@@ -55,10 +57,10 @@ type 'a optdef = 'a
 
 external debugger : unit -> unit = "debugger"
 
-let null : 'a opt = Unsafe.expr "null"
+let null : 'a opt = Unsafe.pure_js_expr "null"
 external some : 'a -> 'a opt = "%identity"
 
-let undefined : 'a optdef = Unsafe.expr "undefined"
+let undefined : 'a optdef = Unsafe.pure_js_expr "undefined"
 external def : 'a -> 'a optdef = "%identity"
 
 module type OPT = sig
@@ -129,8 +131,8 @@ external wrap_meth_callback : ('a -> 'b -> 'c) -> ('a, 'b -> 'c) meth_callback =
 
 (****)
 
-let _true = Unsafe.expr "true"
-let _false = Unsafe.expr "false"
+let _true = Unsafe.pure_js_expr "true"
+let _false = Unsafe.pure_js_expr "false"
 
 type match_result_handle
 type string_array
