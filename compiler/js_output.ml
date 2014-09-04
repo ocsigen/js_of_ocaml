@@ -70,7 +70,7 @@ end) = struct
       | N ->
           ()
       | U ->
-          PP.string f "/*<<??>>*/"
+          PP.string f "/*<<?>>*/"
     end;
     if source_map_enabled then
       match loc with
