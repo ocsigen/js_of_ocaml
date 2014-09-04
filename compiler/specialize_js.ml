@@ -38,12 +38,21 @@ let specialize_instr info i rem =
       | Some i -> Let(x,Constant(String (Int32.to_string i)))
       | None -> i
     end :: rem
-  | Let (x, Prim (Extern ("caml_js_var"|"caml_js_expr" as prim), [y])) ->
+  | Let (x, Prim (Extern ("caml_js_var"|"caml_js_expr"|"caml_pure_js_expr" as prim), [y])) ->
       begin match the_string_of info y with
         Some s ->
           Let (x, Prim (Extern prim, [Pc (String s)]))
       | _ ->
           i
+      end :: rem
+  | Let (x, Prim (Extern ("caml_register_named_value" as prim), [y;z])) ->
+      begin match the_string_of info y with
+        | Some s when Primitive.need_named_value s ->
+          Let (x, Prim (Extern prim, [Pc (String s);z]))
+        | Some s ->
+          (* Format.eprintf "Do not register named value %S@." s; *)
+          Let(x, Constant (Int 0l))
+        | None -> i
       end :: rem
   | Let (x, Prim (Extern "caml_js_call", [f; o; a])) ->
       begin match the_def_of info a with

@@ -110,6 +110,13 @@ function caml_js_expr(s) {
   js_print_stderr("caml_js_expr: fallback to runtime evaluation");
   return eval(s.toString());}
 
+//Provides: caml_pure_js_expr const
+//Requires: js_print_stderr
+//Requires: MlString
+function caml_pure_js_expr (s){
+  js_print_stderr("caml_pure_js_expr: fallback to runtime evaluation");
+  return eval(s.toString());}
+
 //Provides: caml_js_object
 //Requires: MlString
 function caml_js_object (a) {

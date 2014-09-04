@@ -85,9 +85,9 @@ minify.cmx : util.cmx pretty_print.cmx parse_js.cmx parse_info.cmx \
 option.cmo : option.cmi
 option.cmx : option.cmi
 parse_bytecode.cmo : util.cmi primitive.cmi parse_info.cmi option.cmi \
-    javascript.cmi instr.cmi code.cmi parse_bytecode.cmi
+    instr.cmi code.cmi parse_bytecode.cmi
 parse_bytecode.cmx : util.cmx primitive.cmx parse_info.cmx option.cmx \
-    javascript.cmx instr.cmx code.cmx parse_bytecode.cmi
+    instr.cmx code.cmx parse_bytecode.cmi
 parse_info.cmo : parse_info.cmi
 parse_info.cmx : parse_info.cmi
 parse_js.cmo : parse_info.cmi js_token.cmi js_parser.cmi js_lexer.cmi \
@@ -112,8 +112,10 @@ source_map.cmo : vlq64.cmi javascript.cmi source_map.cmi
 source_map.cmx : vlq64.cmx javascript.cmx source_map.cmi
 specialize.cmo : util.cmi option.cmi flow.cmi code.cmi specialize.cmi
 specialize.cmx : util.cmx option.cmx flow.cmx code.cmx specialize.cmi
-specialize_js.cmo : util.cmi flow.cmi code.cmi specialize_js.cmi
-specialize_js.cmx : util.cmx flow.cmx code.cmx specialize_js.cmi
+specialize_js.cmo : util.cmi primitive.cmi flow.cmi code.cmi \
+    specialize_js.cmi
+specialize_js.cmx : util.cmx primitive.cmx flow.cmx code.cmx \
+    specialize_js.cmi
 subst.cmo : util.cmi code.cmi subst.cmi
 subst.cmx : util.cmx code.cmx subst.cmi
 tailcall.cmo : util.cmi subst.cmi option.cmi code.cmi tailcall.cmi

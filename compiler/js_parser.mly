@@ -39,110 +39,110 @@ let var name = J.S {J.name;J.var=None}
 (* this is need to fake menhir while using --infer *)
 let _tok = EOF Parse_info.zero
 
-           %}
+%}
 
- /*(*************************************************************************)*/
- /*(*1 Tokens *)*/
- /*(*************************************************************************)*/
+/*(*************************************************************************)*/
+/*(*1 Tokens *)*/
+/*(*************************************************************************)*/
 
- /*(*-----------------------------------------*)*/
- /*(*2 the normal tokens *)*/
- /*(*-----------------------------------------*)*/
+/*(*-----------------------------------------*)*/
+/*(*2 the normal tokens *)*/
+/*(*-----------------------------------------*)*/
 
- /*(* tokens with a value *)*/
-                            %token<string * float * Parse_info.t> T_NUMBER
-                                                                  %token<string * Parse_info.t> T_IDENTIFIER
-                                                                                                %token<string * Parse_info.t> T_STRING
-                                                                                                                              %token<string * Parse_info.t> T_REGEX
+/*(* tokens with a value *)*/
+%token<string * float * Parse_info.t> T_NUMBER
+%token<string * Parse_info.t> T_IDENTIFIER
+%token<string * Parse_info.t> T_STRING
+%token<string * Parse_info.t> T_REGEX
 
-                                                                                                                                                            /*(* keywords tokens *)*/
-                                                                                                                                                                                   %token <Parse_info.t>
-  T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
-             T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
-             T_BREAK T_CASE T_CATCH T_CONTINUE T_DEFAULT T_DO T_FINALLY T_FOR
-             T_DEBUGGER
+/*(* keywords tokens *)*/
+%token <Parse_info.t>
+T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
+T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
+T_BREAK T_CASE T_CATCH T_CONTINUE T_DEFAULT T_DO T_FINALLY T_FOR
+T_DEBUGGER
 
-  %token <Parse_info.t> T_ELSE
+%token <Parse_info.t> T_ELSE
 
-                        %token <Parse_info.t> T_NEW
+%token <Parse_info.t> T_NEW
 
-                                              /*(* syntax *)*/
-                                                            %token <Parse_info.t>
-  T_LCURLY T_RCURLY
-           T_LPAREN T_RPAREN
-           T_LBRACKET T_RBRACKET
-           T_SEMICOLON
-           T_COMMA
-           T_PERIOD
+/*(* syntax *)*/
+%token <Parse_info.t>
+T_LCURLY T_RCURLY
+T_LPAREN T_RPAREN
+T_LBRACKET T_RBRACKET
+T_SEMICOLON
+T_COMMA
+T_PERIOD
 
-  /*(* operators *)*/
-                   %token <Parse_info.t>
-  T_RSHIFT3_ASSIGN T_RSHIFT_ASSIGN T_LSHIFT_ASSIGN
-                   T_BIT_XOR_ASSIGN T_BIT_OR_ASSIGN T_BIT_AND_ASSIGN T_MOD_ASSIGN T_DIV_ASSIGN
-                   T_MULT_ASSIGN T_MINUS_ASSIGN T_PLUS_ASSIGN T_ASSIGN
+/*(* operators *)*/
+%token <Parse_info.t>
+T_RSHIFT3_ASSIGN T_RSHIFT_ASSIGN T_LSHIFT_ASSIGN
+T_BIT_XOR_ASSIGN T_BIT_OR_ASSIGN T_BIT_AND_ASSIGN T_MOD_ASSIGN T_DIV_ASSIGN
+T_MULT_ASSIGN T_MINUS_ASSIGN T_PLUS_ASSIGN T_ASSIGN
 
-  %token <Parse_info.t>
-  T_PLING T_COLON
-          T_OR
-          T_AND
-          T_BIT_OR
-          T_BIT_XOR
-          T_BIT_AND
-          T_EQUAL T_NOT_EQUAL T_STRICT_EQUAL T_STRICT_NOT_EQUAL
-          T_LESS_THAN_EQUAL T_GREATER_THAN_EQUAL T_LESS_THAN T_GREATER_THAN
-          T_IN T_INSTANCEOF
-          T_LSHIFT T_RSHIFT T_RSHIFT3
-          T_PLUS T_MINUS
-          T_DIV T_MULT T_MOD
-          T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
+%token <Parse_info.t>
+T_PLING T_COLON
+T_OR
+T_AND
+T_BIT_OR
+T_BIT_XOR
+T_BIT_AND
+T_EQUAL T_NOT_EQUAL T_STRICT_EQUAL T_STRICT_NOT_EQUAL
+T_LESS_THAN_EQUAL T_GREATER_THAN_EQUAL T_LESS_THAN T_GREATER_THAN
+T_IN T_INSTANCEOF
+T_LSHIFT T_RSHIFT T_RSHIFT3
+T_PLUS T_MINUS
+T_DIV T_MULT T_MOD
+T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 
-  /*(*-----------------------------------------*)*/
-  /*(*2 extra tokens: *)*/
-  /*(*-----------------------------------------*)*/
+/*(*-----------------------------------------*)*/
+/*(*2 extra tokens: *)*/
+/*(*-----------------------------------------*)*/
 
-                                                 %token <Parse_info.t> T_VIRTUAL_SEMICOLON
+%token <Parse_info.t> T_VIRTUAL_SEMICOLON
 
-                                                                       /*(* classic *)*/
-                                                                                      %token <Parse_info.t> EOF
+/*(* classic *)*/
+%token <Parse_info.t> EOF
 
-                                                                                                            /*(*-----------------------------------------*)*/
-                                                                                                            /*(*2 priorities *)*/
-                                                                                                            /*(*-----------------------------------------*)*/
+/*(*-----------------------------------------*)*/
+/*(*2 priorities *)*/
+/*(*-----------------------------------------*)*/
 
 
-                                                                                                            /*(* Special if / else associativity*)*/
-                                                                                                                                                  %nonassoc p_IF
-                                                                                                                                                  %nonassoc T_ELSE
+/*(* Special if / else associativity*)*/
+%nonassoc p_IF
+%nonassoc T_ELSE
 
-                                                                                                                                                  %left T_OR
-                                                                                                                                                  %left T_AND
-                                                                                                                                                  %left T_BIT_OR
-                                                                                                                                                  %left T_BIT_XOR
-                                                                                                                                                  %left T_BIT_AND
-                                                                                                                                                  %left T_EQUAL T_NOT_EQUAL T_STRICT_EQUAL T_STRICT_NOT_EQUAL
-                                                                                                                                                  %left
-                                                                                                                                                     T_LESS_THAN_EQUAL T_GREATER_THAN_EQUAL T_LESS_THAN T_GREATER_THAN
-                                                                                                                                                     T_IN T_INSTANCEOF
-                                                                                                                                                  %left T_LSHIFT T_RSHIFT T_RSHIFT3
-                                                                                                                                                  %left T_PLUS T_MINUS
-                                                                                                                                                  %left T_DIV T_MULT T_MOD
-                                                                                                                                                  %right T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
+%left T_OR
+%left T_AND
+%left T_BIT_OR
+%left T_BIT_XOR
+%left T_BIT_AND
+%left T_EQUAL T_NOT_EQUAL T_STRICT_EQUAL T_STRICT_NOT_EQUAL
+%left
+T_LESS_THAN_EQUAL T_GREATER_THAN_EQUAL T_LESS_THAN T_GREATER_THAN
+T_IN T_INSTANCEOF
+%left T_LSHIFT T_RSHIFT T_RSHIFT3
+%left T_PLUS T_MINUS
+%left T_DIV T_MULT T_MOD
+%right T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 
-                                                                                                                                                   /*(*************************************************************************)*/
-                                                                                                                                                   /*(*1 Rules type declaration *)*/
-                                                                                                                                                   /*(*************************************************************************)*/
+/*(*************************************************************************)*/
+/*(*1 Rules type declaration *)*/
+/*(*************************************************************************)*/
 
-                                                                                                                                                                                                                                %start <Javascript.program> program
-                                                                                                                                                                                                                                                            %start <Javascript.expression> standalone_expression
+%start <Javascript.program> program
+%start <Javascript.expression> standalone_expression
 
-                                                                                                                                                                                                                                                                                           %%
+%%
 
-                                                                                                                                                                                                                                                                                             /*(*************************************************************************)*/
-                                                                                                                                                                                                                                                                                             /*(*1 Toplevel *)*/
-                                                                                                                                                                                                                                                                                             /*(*************************************************************************)*/
+/*(*************************************************************************)*/
+/*(*1 Toplevel *)*/
+/*(*************************************************************************)*/
 
-                                                                                                                                                                                                                                                                                                                                                                            program:
-| l=source_elements EOF { l }
+program:
+ | l=source_elements EOF { l }
 
 standalone_expression:
  | e=expression EOF {e}
@@ -731,7 +731,7 @@ array_literal:
 
 
 element_list:
-  | element_list_rev { List.rev $1 }
+ | element_list_rev { List.rev $1 }
 element_list_rev:
  | elison_rev assignment_expression { (Some $2)::$1 }
  |            assignment_expression { [Some $1] }
@@ -740,9 +740,9 @@ element_list_rev:
 
 
 separated_nonempty_list2(sep,X):
-| x = X { [ x ] }
-| x = X; sep { [ x ] }
-| x = X; sep; xs = separated_nonempty_list2(sep, X) { x :: xs }
+ | x = X { [ x ] }
+ | x = X; sep { [ x ] }
+ | x = X; sep; xs = separated_nonempty_list2(sep, X) { x :: xs }
 
 object_literal:
  | res=curly_block(empty) { (fst (snd res), J.EObj []) }

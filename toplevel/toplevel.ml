@@ -125,6 +125,11 @@ let load_resource scheme (_,suffix) =
   let url = Printf.sprintf "%s://%s" scheme suffix in
   load_resource_aux url
 
+let exec' s =
+  let res : bool = JsooTop.use Format.std_formatter s in
+  if not res then Format.eprintf "error while evaluating %s@." s;
+  ()
+
 let initialize () =
   Sys_js.register_autoload "/dev/" (fun s -> Some "");
   Sys_js.register_autoload "/" (fun (_,s) -> load_resource_aux ("filesys/" ^ s));
@@ -140,8 +145,9 @@ let initialize () =
   Topdirs.dir_install_printer Format.std_formatter
     (Longident.(Ldot(Lident "Print_code", "print_closed_code")));
 #endif
+  exec'("let _print_error fmt e = Format.pp_print_string fmt (Js.string_of_error e)");
   Topdirs.dir_install_printer Format.std_formatter
-    (Longident.(Ldot(Lident "Js", "print_error")));
+    (Longident.(Lident "_print_error"));
   Hashtbl.add Toploop.directive_table "display" (Toploop.Directive_ident (fun lid ->
       let s =
         match lid with
@@ -158,10 +164,6 @@ let initialize () =
         let s = Json.output v in
         print_endline (Js.to_string s)
     ));
-  let exec' s =
-    let res : bool = JsooTop.use Format.std_formatter s in
-    if not res then Format.eprintf "error while evaluating %s@." s;
-    () in
   exec' ("module Lwt_main = struct
              let run t = match Lwt.state t with
                | Lwt.Return x -> x

@@ -953,7 +953,7 @@ and translate_expr ctx queue loc x e level : _ * J.statement_list =
          or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm)] ->
         (ident_from_string nm, const_p, queue)
-      | Extern "caml_js_expr", [Pc (String nm)] ->
+      | Extern ("caml_js_expr"|"caml_pure_js_expr"), [Pc (String nm)] ->
         begin
           try
             let lex = Parse_js.lexer_from_string nm in
