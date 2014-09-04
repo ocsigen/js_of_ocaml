@@ -656,7 +656,7 @@ and compile infos pc state instrs =
         assert false
     in
     if debug_parser () then Format.eprintf "%08x %s@." instr.opcode instr.name;
-    match instr.code with
+    match instr.Instr.code with
     | ACC0 ->
       compile infos (pc + 1) (State.acc 0 state) instrs
     | ACC1 ->
