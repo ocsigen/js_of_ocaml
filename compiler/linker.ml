@@ -190,6 +190,7 @@ class traverse_and_find_named_values all =
   object
     inherit Js_traverse.map as self
     method expression x =
+      let open Javascript in
       (match x with
         | ECall(EVar (S {name="caml_named_value"}),[EStr (v,_)],_) ->
           all:=StringSet.add v !all
