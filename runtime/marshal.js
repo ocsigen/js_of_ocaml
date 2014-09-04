@@ -32,43 +32,11 @@ var caml_marshal_constants = {
   CODE_INFIXPOINTER:          0x11, CODE_CUSTOM:             0x12
 }
 
-//Provides: JsooArrayReader
-//Requires: caml_string_of_array
-function JsooArrayReader (a, i) { this.a = a; this.i = i; }
-JsooArrayReader.prototype = {
-  read8u:function () { return this.a[this.i++]; },
-  read8s:function () { return this.a[this.i++] << 24 >> 24; },
-  read16u:function () {
-    var a = this.a, i = this.i;
-    this.i = i + 2;
-    return (a[i] << 8) | a[i + 1]
-  },
-  read16s:function () {
-    var a = this.a, i = this.i;
-    this.i = i + 2;
-    return (a[i] << 24 >> 16) | a[i + 1];
-  },
-  read32u:function () {
-    var a = this.a, i = this.i;
-    this.i = i + 4;
-    return ((a[i] << 24) | (a[i+1] << 16) | (a[i+2] << 8) | a[i+3]) >>> 0;
-  },
-  read32s:function () {
-    var a = this.a, i = this.i;
-    this.i = i + 4;
-    return (a[i] << 24) | (a[i+1] << 16) | (a[i+2] << 8) | a[i+3];
-  },
-  readstr:function (len) {
-    var i = this.i;
-    this.i = i + len;
-    return caml_string_of_array(this.a.slice(i, i + len));
-  }
-}
 
-//Provides: JsooStringReader
+//Provides: MlStringReader
 //Requires: caml_new_string
-function JsooStringReader (s, i) { this.s = s; this.i = i; }
-JsooStringReader.prototype = {
+function MlStringReader (s, i) { this.s = s.getFullBytes(); this.i = i; }
+MlStringReader.prototype = {
   read8u:function () { return this.s.charCodeAt(this.i++); },
   read8s:function () { return this.s.charCodeAt(this.i++) << 24 >> 24; },
   read16u:function () {
@@ -110,10 +78,9 @@ function caml_float_of_bytes (a) {
 //Requires: caml_failwith
 //Requires: caml_marshal_constants
 //Requires: caml_float_of_bytes, caml_int64_of_bytes
-//Requires: JsooArrayReader, JsooStringReader
+//Requires: MlStringReader
 function caml_input_value_from_string(s, ofs) {
-  var reader = s.array?new JsooArrayReader (s.array, ofs):
-                       new JsooStringReader (s.getFullBytes(), ofs);
+  var reader = new MlStringReader (s, ofs);
   var _magic = reader.read32u ();
   var _block_len = reader.read32u ();
   var num_objects = reader.read32u ();
