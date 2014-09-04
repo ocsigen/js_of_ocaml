@@ -439,7 +439,7 @@ val error_constr : (js_string t -> error t) constr
       [jsnew error_constr (msg)]
       returns an [Error] object with the message [msg]. *)
 
-val print_error : Format.formatter -> error t -> unit
+val string_of_error : error t -> string
 
 exception Error of error t
   (** The [Error] exception wrap javascript exceptions when catched by ocaml code.
