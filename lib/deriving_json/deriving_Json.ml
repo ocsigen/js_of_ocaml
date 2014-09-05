@@ -155,12 +155,12 @@ module Json_unit = Defaults(struct
 end)
 module Json_int =  Defaults(struct
     type a = int
-    let write buffer i = Format.bprintf buffer "%d" i
+    let write buffer i = Printf.bprintf buffer "%d" i
     let read buf = Deriving_Json_lexer.read_int buf
 end)
 module Json_int32 =  Defaults(struct
     type a = int32
-    let write buffer i = Format.bprintf buffer "%ld" i
+    let write buffer i = Printf.bprintf buffer "%ld" i
     let read buf = Deriving_Json_lexer.read_int32 buf
 end)
 module Json_int64 =  Defaults(struct
