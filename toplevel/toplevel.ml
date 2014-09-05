@@ -170,12 +170,13 @@ let initialize () =
                | Lwt.Fail e -> raise e
                | Lwt.Sleep -> failwith \"Lwt_main.run: thread didn't return\"
             end");
-  exec' ("let jsoo_logo = Tyxml_js.Html5.(
+  exec' ("let jsoo_logo =
+            let open Tyxml_js.Html5 in
             a ~a:[a_href \"http://ocsigen.org/js_of_ocaml\"] [
               img
                 ~src:\"http://ocsigen.org/resources/logos/text_js_of_ocaml_with_shadow.png\"
                 ~alt:\"Ocsigen\"  ()
-            ])");
+            ]");
   exec' ("#display jsoo_logo");
   let header1 =
       Printf.sprintf "        %s version %%s" compiler_name in
