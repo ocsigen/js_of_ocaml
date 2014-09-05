@@ -83,7 +83,7 @@ module Xml = struct
   let attach_attribs e l =
     List.iter (fun (n,att) ->
         match att with
-        | Attr a -> (Js.Unsafe.coerce e)##setAttributeNode(a)
+        | Attr a -> ignore(e##setAttributeNode(a))
         | Event h -> Js.Unsafe.set e (Js.string n) (fun ev -> Js.bool (h ev))
       ) l
 
