@@ -108,6 +108,12 @@ and element = object
   method setAttribute : js_string t -> js_string t -> unit meth
   method removeAttribute : js_string t -> unit meth
   method hasAttribute : js_string t -> bool t meth
+
+  method getAttributeNS : js_string t -> js_string t -> js_string t opt meth
+  method setAttributeNS : js_string t -> js_string t -> js_string t -> unit meth
+  method removeAttributeNS : js_string t -> js_string t -> unit meth
+  method hasAttributeNS : js_string t -> js_string t -> bool t meth
+
   method getElementsByTagName : js_string t -> element nodeList t meth
   method attributes : attr namedNodeMap t readonly_prop
 end
