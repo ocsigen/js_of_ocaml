@@ -42,7 +42,7 @@ SYNTAXES=
 OPTCOMP_OPT+= -let metaocaml=true
 endif
 
-MKTOP=jsoo_mktop -jsopt "-pretty -disable shortvar" -verbose \
+MKTOP=jsoo_mktop -jsopt "-pretty -disable shortvar" -verbose $(SAFESTRING) \
 	${addprefix -top-syntax , ${SYNTAXES}} \
 	-dont-export-unit gc \
 	${addprefix -export-package , ${PACKAGES}} \
@@ -74,7 +74,7 @@ server.%: server.ml
 	ocamlbuild -use-ocamlfind -package findlib,cohttp.lwt server.$*
 
 %.cmo:%.ml
-	ocamlfind ocamlc -c -syntax camlp4o \
+	ocamlfind ocamlc -c -syntax camlp4o $(SAFESTRING) \
 		-package optcomp,js_of_ocaml.syntax,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
 		-package base64 \
 		$(OCPINDENT) $(HIGLO) \

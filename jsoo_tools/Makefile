@@ -22,25 +22,24 @@ jsoo_mktop.cmx jsoo_mkcmis.cmx: jsoo_common.cmx
 jsoo_common.cmo jsoo_common.cmx: ../compiler/compiler.cmi
 
 %.byte: ../compiler/compiler.cma jsoo_common.cmo %.cmo
-	ocamlfind ocamlc -linkpkg -g \
+	ocamlfind ocamlc -linkpkg -g $(SAFESTRING) \
 	-package compiler-libs.common,findlib \
 	$^ -o $*.byte
 
 %.opt: ../compiler/compiler.cmxa jsoo_common.cmx %.cmx
-	ocamlfind ocamlopt -linkpkg -g \
+	ocamlfind ocamlopt -linkpkg -g $(SAFESTRING) \
 	-package compiler-libs.common,findlib \
 	$^ -o $*.opt
 
 %.cmo: %.ml
-	ocamlfind ocamlc -c -g \
+	ocamlfind ocamlc -c -g $(SAFESTRING) \
 	-package compiler-libs.common,findlib \
 	-I ../compiler/ $<
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -c -g \
+	ocamlfind ocamlopt -c -g $(SAFESTRING) \
 	-package compiler-libs.common,findlib \
 	-I ../compiler/ $<
 
 clean:
 	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa] *.byte *.opt $(MKTOP) $(MKCMIS)
-

@@ -262,27 +262,27 @@ end) = struct
         | '\r' -> "\\r"
         | '\000' .. '\031'  | '\127'->
           let c = Char.code c in
-          let s = String.create 4 in
-          s.[0] <- '\\';
-          s.[1] <- 'x';
-          s.[2] <- conv.[c lsr 4];
-          s.[3] <- conv.[c land 0xf];
-          s
+          let s = Bytes.create 4 in
+          Bytes.set s 0 '\\';
+          Bytes.set s 1 'x';
+          Bytes.set s 2 (conv.[c lsr 4]);
+          Bytes.set s 3 (conv.[c land 0xf]);
+          Bytes.unsafe_to_string s
         | '\128' .. '\255' when not utf ->
           let c = Char.code c in
-          let s = String.create 4 in
-          s.[0] <- '\\';
-          s.[1] <- 'x';
-          s.[2] <- conv.[c lsr 4];
-          s.[3] <- conv.[c land 0xf];
-          s
+          let s = Bytes.create 4 in
+          Bytes.set s 0 '\\';
+          Bytes.set s 1 'x';
+          Bytes.set s 2 (conv.[c lsr 4]);
+          Bytes.set s 3 (conv.[c land 0xf]);
+          Bytes.unsafe_to_string s
         | _ ->
           if c = quote
           then
-            let s = String.create 2 in
-            s.[0] <- '\\';
-            s.[1] <- c;
-            s
+            let s = Bytes.create 2 in
+            Bytes.set s 0 '\\';
+            Bytes.set s 1 c;
+            Bytes.unsafe_to_string s
           else
             String.make 1 c
       in

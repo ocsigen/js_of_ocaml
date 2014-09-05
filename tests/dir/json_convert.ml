@@ -23,12 +23,12 @@ open Common
 
 let log_stop = log_start "Json"
 
-let str = String.create 256
-
-let () =
+let str =
+  let b = Buffer.create 256 in
   for i = 0 to 255 do
-    str.[i] <- Char.chr i
-  done
+    Buffer.add_char b (Char.chr i)
+  done;
+  Buffer.contents b
 
 type t = int list * float option * string deriving (Json)
 

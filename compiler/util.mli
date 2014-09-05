@@ -54,7 +54,7 @@ val raise_ : exn -> unit
 
 val split_char : char -> string -> string list
 val split : string -> string -> string list
-val find : string -> string -> int
+val find : Bytes.t -> Bytes.t -> int
 
 
 module Version : sig

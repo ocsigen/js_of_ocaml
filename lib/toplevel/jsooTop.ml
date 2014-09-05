@@ -79,7 +79,7 @@ let refill_lexbuf s p ppf buffer len =
     String.blit s !p buffer 0 len'';
     (match ppf with
      | Some ppf ->
-       Format.fprintf ppf "%s" (String.sub buffer 0 len'');
+       Format.fprintf ppf "%s" (Bytes.sub_string buffer 0 len'');
        if nl then Format.pp_print_newline ppf ();
        Format.pp_print_flush ppf ()
      | None -> ());

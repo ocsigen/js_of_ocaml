@@ -61,16 +61,12 @@ let rec find_in_paths ?(pkg="stdlib") paths name =
       with Not_found -> find_in_paths rem name
 
 let read_file f =
-  let ch = open_in_bin f in
-  let b = Buffer.create 4096 in
-  let s = String.create 4096 in
-  while
-    let n = input ch s 0 4096 in
-    Buffer.add_substring b s 0 n;
-    n <> 0
-  do () done;
-  close_in ch;
-  Buffer.contents b
+  let ic = open_in f in
+  let n = in_channel_length ic in
+  let s = Bytes.create n in
+  really_input ic s 0 n;
+  close_in ic;
+  Bytes.unsafe_to_string s
 
 let filter_map f l =
   let l = List.fold_left (fun acc x -> match f x with
@@ -194,21 +190,21 @@ let split sep s =
 
 exception Found of int
 let find sep s =
-  let sep_max = String.length sep - 1 in
-  let s_max = String.length s - 1 in
+  let sep_max = Bytes.length sep - 1 in
+  let s_max = Bytes.length s - 1 in
   if sep_max < 0 then invalid_arg "find: empty string";
   let k = ref 0 in
   let i = ref 0 in
   try
     while (!i + sep_max <= s_max) do
-      if String.unsafe_get s !i <> String.unsafe_get sep 0
+      if Bytes.unsafe_get s !i <> Bytes.unsafe_get sep 0
       then incr i
       else
         begin
           (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
              guaranteed by loop invariant. *)
           k := 1;
-          while (!k <= sep_max && String.unsafe_get s (!i + !k) = String.unsafe_get sep !k)
+          while (!k <= sep_max && Bytes.unsafe_get s (!i + !k) = Bytes.unsafe_get sep !k)
           do incr k done;
           if !k <= sep_max then (* no match *) incr i else raise (Found !i)
         end

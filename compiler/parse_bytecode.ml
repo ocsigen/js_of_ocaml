@@ -23,7 +23,7 @@ open Instr
 
 let debug_parser = Option.Debug.find "parser"
 
-type code = string
+type code = Bytes.t
 
 (* Copied from ocaml/typing/ident.ml *)
 module Ident = struct
@@ -304,7 +304,7 @@ end = struct
 
   let analyse debug_data code =
     let blocks = AddrSet.empty in
-    let len = String.length code  / 4 in
+    let len = Bytes.length code  / 4 in
     (scan debug_data blocks code 0 len,len)
 
 end
@@ -608,7 +608,7 @@ let method_cache_id = ref 1
 
 type compile_info =
   { blocks : Blocks.t;
-    code : string;
+    code : Bytes.t;
     limit : int;
     debug : Debug.data }
 
@@ -1705,7 +1705,7 @@ let parse_bytecode ?(debug=`No) code globals debug_data =
   compiled_blocks := AddrMap.empty;
   tagged_blocks := AddrSet.empty;
 
-  let free_pc = String.length code / 4 in
+  let free_pc = Bytes.length code / 4 in
   let blocks = match_exn_traps (0, blocks, free_pc) in
   (0, blocks, free_pc)
 
@@ -1728,14 +1728,14 @@ let fixed_code_bytes =
    `I BRANCH; `C 6;
    `I PUSHCONST1]
 
-let orig_code = Instr.compile orig_code_bytes
-let fixed_code = Instr.compile fixed_code_bytes
+let orig_code = Instr.compile_to_bytes orig_code_bytes
+let fixed_code = Instr.compile_to_bytes fixed_code_bytes
 
 let fix_min_max_int code =
   begin
     try
       let i = Util.find orig_code code in
-      String.blit fixed_code 0 code (i + 16) (String.length fixed_code)
+      Bytes.blit fixed_code 0 code (i + 16) (Bytes.length fixed_code)
     with Not_found ->
       Format.eprintf
         "Warning: could not fix min_int/max_int definition \
@@ -1774,16 +1774,16 @@ let read_toc ic =
   let pos_trailer = in_channel_length ic - 16 in
   seek_in ic pos_trailer;
   let num_sections = input_binary_int ic in
-  let header = String.create Util.MagicNumber.size in
+  let header = Bytes.create Util.MagicNumber.size in
   really_input ic header 0 Util.MagicNumber.size;
-  Util.MagicNumber.assert_current header;
+  Util.MagicNumber.assert_current (Bytes.to_string header);
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
   for i = 1 to num_sections do
-    let name = String.create 4 in
+    let name = Bytes.create 4 in
     really_input ic name 0 4;
     let len = input_binary_int ic in
-    section_table := (name, len) :: !section_table
+    section_table := (Bytes.unsafe_to_string name, len) :: !section_table
   done;
   !section_table
 
@@ -1792,12 +1792,12 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
   let toc = read_toc ic in
 
   let prim_size = seek_section toc ic "PRIM" in
-  let prim = String.create prim_size in
+  let prim = Bytes.create prim_size in
   really_input ic prim 0 prim_size;
-  let primitive_table = Array.of_list(Util.split_char '\000' prim) in
+  let primitive_table = Array.of_list(Util.split_char '\000' (Bytes.unsafe_to_string prim)) in
 
   let code_size = seek_section toc ic "CODE" in
-  let code = String.create code_size in
+  let code = Bytes.create code_size in
   really_input ic code 0 code_size;
 
   ignore(seek_section toc ic "DATA");
@@ -1901,7 +1901,7 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
   prepend p body, cmis, debug_data
 
 (* As input: list of primitives + size of global table *)
-let from_string primitives code =
+let from_bytes primitives (code : code) =
   let globals = make_globals 0 [||] primitives in
   let debug_data = Debug.no_data () in
   let p = parse_bytecode code globals debug_data in
@@ -1914,3 +1914,6 @@ let from_string primitives code =
       | _ -> l) globals.vars [] in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   prepend p body, debug_data
+
+let from_string primitives (code : string) =
+  from_bytes primitives (Bytes.of_string code)

@@ -22,6 +22,7 @@ package "deriving" (
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "deriving_json.cma"
   archive(native) = "deriving_json.cmxa"
+  requires = "bytes"
   requires(syntax) = "js_of_ocaml.deriving.syntax"
 
   package "syntax" (
@@ -81,7 +82,7 @@ package "compiler" (
   archive(byte, plugin) = "compiler.cma"
   archive(native) = "compiler.cmxa"
   archive(native, plugin) = "compiler.cmxs"
-  requires = "findlib"
+  requires = "findlib,bytes"
 )
 
 package "toplevel" (
@@ -89,6 +90,6 @@ package "toplevel" (
   description = "Js_of_ocaml toplevel library"
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "jsooTop.cmo"
-  requires = "compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel,js_of_ocaml,js_of_ocaml.compiler"
+  requires = "bytes,compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel,js_of_ocaml,js_of_ocaml.compiler"
   linkopts(javascript) = "+js_of_ocaml/toplevel.js"
 )

@@ -53,12 +53,12 @@ type t =
     output : string -> int -> int -> unit }
 
 let spaces = String.make 80 ' '
-let output st s l =
+let output st (s : string) l =
   (try
      let last = String.rindex_from s (l-1) '\n' + 1 in
      let line = ref 0 in
      for i = 0 to l-1 do
-       if s.[i] = '\n' then incr line;
+       if String.get s i = '\n' then incr line;
      done;
      st.line <- st.line + !line;
      st.col <- l - last
@@ -143,7 +143,7 @@ let rec push st e =
 
 (****)
 
-let string st s =
+let string st (s : string) =
   if st.compact then (
     let len = (String.length s) in
     if len <> 0
@@ -166,6 +166,8 @@ let string st s =
     end
   )
   else push st (Text s)
+
+let bytes st b = string st (Bytes.to_string b)
 
 let genbreak st s n =
   if not st.compact then push st (Break (s, n))
@@ -225,7 +227,8 @@ let to_out_channel ch =
     limit = 78; cur = 0; l = []; n = 0; w = 0;
     col = 0; line = 0; total = 0;
     compact = false; pending_space = None; last_char = None; needed_space = None;
-    output = fun s i l -> Pervasives.output ch s i l }
+    (* compat hack wrt bytes in 4.02 *)
+    output = fun s i l -> Pervasives.output ch (Bytes.unsafe_of_string s) i l }
 
 let to_buffer b =
   { indent = 0; box_indent = 0; prev_indents = [];

@@ -22,20 +22,6 @@ let error k = Format.ksprintf (fun s -> failwith s) k
 
 let _ = Sys.catch_break true
 
-let read_file f =
-  let c = open_in f in
-  let out = Buffer.create 1024 in
-  let buf = String.create 1024 in
-  try
-    while true; do
-      let i = input c buf 0 1023 in
-      if i <> 0
-      then Buffer.add_substring out buf 0 i
-      else raise Not_found
-    done;
-    assert false;
-  with Not_found -> Buffer.contents out
-
 let run () =
   Util.Timer.init Sys.time;
   let js_files = ref [] in

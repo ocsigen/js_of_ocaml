@@ -189,13 +189,14 @@ type desc = { code : t; kind : kind; name : string; opcode : int }
 
 exception Bad_instruction of int
 
-val get_instr : string -> int -> desc
+val get_instr : Bytes.t -> int -> desc
 
-val gets : string -> int -> int
-val getu : string -> int -> int
-val gets32 : string -> int -> int32
-val getu32 : string -> int -> int32
+val gets : Bytes.t -> int -> int
+val getu : Bytes.t -> int -> int
+val gets32 : Bytes.t -> int -> int32
+val getu32 : Bytes.t -> int -> int32
 
-val compile : [`C of int | `I of t] list -> string
+val compile_to_bytes : [`C of int | `I of t] list -> Bytes.t
+val compile_to_string : [`C of int | `I of t] list -> string
 
 val print_obj : Format.formatter -> Obj.t -> unit
