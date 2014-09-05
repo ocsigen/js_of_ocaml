@@ -61,6 +61,7 @@ function caml_subarray_to_string (a, i, len) {
 
 //Provides: MlString
 //Requires: caml_raise_with_arg, js_print_stderr, caml_global_data, caml_str_repeat
+//Requires: caml_subarray_to_string
 function MlString(param) {
   this.string = this.array = null;
   if (param !== undefined) {
@@ -109,7 +110,8 @@ MlString.prototype = {
         var b = this.string;
       }
     } else {
-      b = caml_subarray_to_string (a, 0, a.length);
+      var a = this.array;
+      var b = caml_subarray_to_string (a, 0, a.length);
     }
     this.bytes = this.fullBytes = b;
     this.last = this.len = b.length;
