@@ -11,8 +11,8 @@ OBJS=compiler_version.cmx \
      pretty_print.cmx util.cmx option.cmx reserved.cmx varPrinter.cmx \
      dgraph.cmx code.cmx javascript.cmx vlq64.cmx source_map.cmx \
      js_output.cmx js_simpl.cmx parse_info.cmx js_token.cmx js_parser.cmx \
-     js_lexer.cmx parse_js.cmx annot_parser.cmx annot_lexer.cmx \
-     instr.cmx primitive.cmx subst.cmx pure_fun.cmx deadcode.cmx \
+     js_lexer.cmx parse_js.cmx primitive.cmx annot_parser.cmx annot_lexer.cmx \
+     instr.cmx subst.cmx pure_fun.cmx deadcode.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
      js_traverse.cmx js_assign.cmx js_tailcall.cmx \
@@ -74,11 +74,11 @@ compiler_version.ml.tmp:
 %.cmi: %.mli
 	ocamlfind ocamlc -package $(PACKAGES) -c $<
 
-%.ml %.mli: %.mly
-	menhir --explain $<
+annot_parser.ml annot_parser.mli: annot_parser.mly
+	menhir --infer --explain $<
 
 js_parser.ml js_parser.mli: js_parser.mly
-	menhir --external-tokens Js_token --explain $<
+	menhir --infer --external-tokens Js_token --explain $<
 
 %.ml: %.mll
 	ocamllex $<
