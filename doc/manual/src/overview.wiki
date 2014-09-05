@@ -43,7 +43,7 @@ retargeted OCaml compiler, as the bytecode provides a very stable API.
       js_of_ocaml cubes.byte
 }}}
 
-  See also <<a_manual chapter="ocamlbuild" |Ocamlbuild integration>>
+  See also the plugin <<a_api | module Ocamlbuild_js_of_ocaml >>.
 
 == Features ==
 

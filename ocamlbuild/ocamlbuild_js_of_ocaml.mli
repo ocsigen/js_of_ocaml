@@ -20,21 +20,69 @@
 
 (** Ocamlbuild plugin to build with js_of_ocaml *)
 
-(** {6 Dispatchers} *)
+(**
+   Js_of_ocaml comes with a support for OCamlbuild.
+
+   {2 Initialize}
+
+   Initialize the js_of_ocaml ocamlbuild plugin with the following
+   code in {i myocamlbuild.ml}:
+   {[
+     let _ = Ocamlbuild_plugin.dispatch Ocamlbuild_js_of_ocaml.dispatcher
+   ]}
+   {b Side note}: {!Ocamlbuild_plugin.dispatch} should be used only
+   once. The last call will override previous ones.
+
+   {3 With Oasis}
+
+   If you use oasis, {b myocamlbuild.ml} should look like:
+   {[
+     let _ =
+       Ocamlbuild_plugin.dispatch
+         (fun hook ->
+            dispatch_default hook;
+            Ocamlbuild_js_of_ocaml.dispatcher
+              ~oasis_executables:["src/yourprogram.byte"]
+              hook;
+         )
+   ]}
+
+
+   {2 Build }
+
+   Build a JavaScript program {b myprog.js} by calling the command:
+   {[
+     ocamlbuild -use-ocamlfind -plugin-tag "package(js_of_ocaml.ocamlbuild)" myprog.js
+   ]}
+   It will first build the bytecode {b myprog.byte} and finally produce {b myprog.js} (in {b _build}).
+
+
+   {2 Options}
+
+   One can pass option to the Js_of_ocaml compiler using tags.
+   See <<a_manual chapter="options" |Options>>.
+
+   Available tags:
+   - {b pretty}: Pretty print the generated javascript.
+   - {b debuginfo}: Output debug information.
+   - {b noinline}: Disable inlining
+   - {b sourcemap}: Generate sourcemap
+   - {b tailcall(none)}: Set the tailcall optimisation (default "trampoline")
+   - {b opt(3)}: Set the compilation profile (default 1)
+   - {b debug}: enables {b pretty}, {b debuginfo}, {b sourcemap}
+
+
+   {3 Exemples}
+
+   In the {b _tags} file:
+   {[
+     <myprog.js>:pretty, opt(3)
+   ]}
+
+
+   {2 Dispatchers} *)
 
 (** The main dispatcher
-
-    The dispatcher should be used with {!Ocamlbuild_plugin.dispatch} as:
-    [Ocamlbuild_plugin.dispatch Ocamlbuild_js_of_ocaml.dispatcher]
-    or if you use oasis it would look like:
-    [Ocamlbuild_plugin.dispatch
-       (fun hook ->
-         dispatch_default hook;
-         Ocamlbuild_js_of_ocaml.dispatcher
-           ~oasis_executables:["src/yourprogram.byte"]
-           hook;
-       )
-    ]
 
     [?oasis_executables] is the paths of the executables
     (having the .byte extension) you want to compile
@@ -49,7 +97,7 @@ val dispatcher :
   unit
 
 
-(** {6 Low level functions} *)
+(** {2 Low level functions} *)
 
 (** Map each targets given as argument to ocamlbuild and replace each element
     that exists in [~executables] by its corresponding .js target.
