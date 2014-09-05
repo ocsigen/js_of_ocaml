@@ -377,9 +377,11 @@ let compile_to_string l =
 let compile_to_bytes l =
   let b = Buffer.create 50 in
   compile b l;
-  (* Buffer.to_bytes b; *)
-  (* compat hack wrt bytes in 4.02 *)
-  Bytes.unsafe_of_string (Buffer.contents b)
+#if ocaml_version < (4,02)
+  Buffer.contents b
+#else
+  Buffer.to_bytes b
+#endif
 
 let get code i = Char.code (Bytes.get code i)
 

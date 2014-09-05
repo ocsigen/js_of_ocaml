@@ -228,7 +228,13 @@ let to_out_channel ch =
     col = 0; line = 0; total = 0;
     compact = false; pending_space = None; last_char = None; needed_space = None;
     (* compat hack wrt bytes in 4.02 *)
-    output = fun s i l -> Pervasives.output ch (Bytes.unsafe_of_string s) i l }
+    output = fun s i l ->
+#if ocaml_version < (4,02)
+      Pervasives.output ch s i l
+#else
+      Pervasives.output_substring ch s i l
+#endif
+  }
 
 let to_buffer b =
   { indent = 0; box_indent = 0; prev_indents = [];

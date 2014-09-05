@@ -66,10 +66,10 @@ compiler_version.ml.tmp:
 	echo "let git_version = \"${VERSION_GIT}\"" >> $@
 
 %.cmx: %.ml
-	ocamlfind ocamlopt $(SAFESTRING) -package $(PACKAGES) -for-pack Compiler -g -c $<
+	ocamlfind ocamlopt $(SAFESTRING) -syntax camlp4o -package optcomp -package $(PACKAGES) -for-pack Compiler -g -c $<
 
 %.cmo: %.ml
-	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -c $<
+	ocamlfind ocamlc $(SAFESTRING) -syntax camlp4o -package optcomp -package $(PACKAGES) -c $<
 
 %.cmi: %.mli
 	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -c $<

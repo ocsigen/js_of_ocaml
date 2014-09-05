@@ -27,6 +27,7 @@ type pos = {
 
 val string : t -> string -> unit
 val bytes : t -> Bytes.t -> unit
+
 val genbreak : t -> string -> int -> unit
 val break : t -> unit
 val break1 : t -> unit

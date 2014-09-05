@@ -244,50 +244,45 @@ end) = struct
     then '\''
     else '"'
 
+  let array_str1 =
+    Array.init 256 (fun i -> String.make 1 (Char.chr i))
+  let array_conv =
+    Array.init 16 (fun i -> String.make 1 (("0123456789abcdef").[i]))
   let string_escape f quote ?(utf=false) s =
     let l = String.length s in
-    let conv = "0123456789abcdef" in
     for i = 0 to l - 1 do
       let c = s.[i] in
-      let str = match c with
-          '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' -> "\\0"
-        | '\b' -> "\\b"
-        | '\t' -> "\\t"
-        | '\n' -> "\\n"
-      (* This escape sequence is not supported by IE < 9
-         | '\011' -> "\\v"
-      *)
-        | '\012' -> "\\f"
-        | '\\' when not utf -> "\\\\"
-        | '\r' -> "\\r"
+      let size = match c with
+        | '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' -> PP.string f "\\0";2
+        | '\b' -> PP.string f "\\b";2
+        | '\t' -> PP.string f "\\t";2
+        | '\n' -> PP.string f "\\n";2
+        (* This escape sequence is not supported by IE < 9
+           | '\011' -> "\\v"
+        *)
+        | '\012' -> PP.string f "\\f";2
+        | '\\' when not utf -> PP.string f "\\\\";2
+        | '\r' -> PP.string f "\\r";2
         | '\000' .. '\031'  | '\127'->
           let c = Char.code c in
-          let s = Bytes.create 4 in
-          Bytes.set s 0 '\\';
-          Bytes.set s 1 'x';
-          Bytes.set s 2 (conv.[c lsr 4]);
-          Bytes.set s 3 (conv.[c land 0xf]);
-          Bytes.unsafe_to_string s
+          PP.string f "\\x";
+          PP.string f (Array.unsafe_get array_conv (c lsr 4));
+          PP.string f (Array.unsafe_get array_conv (c land 0xf));
+          4
         | '\128' .. '\255' when not utf ->
           let c = Char.code c in
-          let s = Bytes.create 4 in
-          Bytes.set s 0 '\\';
-          Bytes.set s 1 'x';
-          Bytes.set s 2 (conv.[c lsr 4]);
-          Bytes.set s 3 (conv.[c land 0xf]);
-          Bytes.unsafe_to_string s
+          PP.string f "\\x";
+          PP.string f (Array.unsafe_get array_conv (c lsr 4));
+          PP.string f (Array.unsafe_get array_conv (c land 0xf));
+          4
         | _ ->
           if c = quote
           then
-            let s = Bytes.create 2 in
-            Bytes.set s 0 '\\';
-            Bytes.set s 1 c;
-            Bytes.unsafe_to_string s
+            (PP.string f "\\"; PP.string f (Array.unsafe_get array_str1 (Char.code c)); 2)
           else
-            String.make 1 c
+            (PP.string f (Array.unsafe_get array_str1 (Char.code c)); 1)
       in
-      stringsize:=!stringsize + String.length str;
-      PP.string f str
+      stringsize:=!stringsize + size
     done;
     stringsize:=!stringsize+2
 

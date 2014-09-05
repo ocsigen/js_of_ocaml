@@ -1774,16 +1774,14 @@ let read_toc ic =
   let pos_trailer = in_channel_length ic - 16 in
   seek_in ic pos_trailer;
   let num_sections = input_binary_int ic in
-  let header = Bytes.create Util.MagicNumber.size in
-  really_input ic header 0 Util.MagicNumber.size;
-  Util.MagicNumber.assert_current (Bytes.to_string header);
+  let header = Util.input_s ic Util.MagicNumber.size in
+  Util.MagicNumber.assert_current header;
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
   for i = 1 to num_sections do
-    let name = Bytes.create 4 in
-    really_input ic name 0 4;
+    let name = Util.input_s ic 4 in
     let len = input_binary_int ic in
-    section_table := (Bytes.unsafe_to_string name, len) :: !section_table
+    section_table := (name, len) :: !section_table
   done;
   !section_table
 
@@ -1792,13 +1790,11 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
   let toc = read_toc ic in
 
   let prim_size = seek_section toc ic "PRIM" in
-  let prim = Bytes.create prim_size in
-  really_input ic prim 0 prim_size;
-  let primitive_table = Array.of_list(Util.split_char '\000' (Bytes.unsafe_to_string prim)) in
+  let prim = Util.input_s ic prim_size in
+  let primitive_table = Array.of_list(Util.split_char '\000' prim) in
 
   let code_size = seek_section toc ic "CODE" in
-  let code = Bytes.create code_size in
-  really_input ic code 0 code_size;
+  let code = Util.input_b ic code_size in
 
   ignore(seek_section toc ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
