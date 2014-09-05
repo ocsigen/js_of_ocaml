@@ -928,7 +928,7 @@ let array_map2 f a1 a2 =
   let l = Array.length a1 in
   assert (Array.length a2 = l);
   if l = 0 then [||] else begin
-    let r = Array.create l (f a1.(0) a2.(0)) in
+    let r = Array.make l (f a1.(0) a2.(0)) in
     for i = 1 to l - 1 do
       r.(i) <- f a1.(i) a2.(i)
     done;
@@ -1004,10 +1004,10 @@ let tree_layout node_names root =
   let tree = layout_rec root weights true (zero, one) 6. {x = -1.; y = 0.} in
   compute_neighbors nodes tree;
   let boxes =
-    { bx = Array.create node_count 0.;
-      by = Array.create node_count 0.;
-      bw = Array.create node_count 0.;
-      bh = Array.create node_count 0. }
+    { bx = Array.make node_count 0.;
+      by = Array.make node_count 0.;
+      bw = Array.make node_count 0.;
+      bh = Array.make node_count 0. }
   in
   compute_text_nodes node_names nodes;
   (vertices, edges, nodes, boxes)

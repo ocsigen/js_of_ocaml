@@ -372,10 +372,10 @@ type globals =
     primitives : string array }
 
 let make_globals size constants primitives =
-  { vars = Array.create size None;
-    is_const = Array.create size false;
-    is_exported = Array.create size false;
-    override = Array.create size None;
+  { vars = Array.make size None;
+    is_const = Array.make size false;
+    is_exported = Array.make size false;
+    override = Array.make size None;
     constants = constants; primitives = primitives }
 
 let resize_array a len def =

@@ -5,9 +5,9 @@
 *)
 
 let fannkuch n =
-  let p = Array.create n 0 in
-  let q = Array.create n 0 in
-  let s = Array.create n 0 in
+  let p = Array.make n 0 in
+  let q = Array.make n 0 in
+  let s = Array.make n 0 in
   let sign = ref 1 in
   let maxflips = ref 0 in
   let sum = ref 0 in

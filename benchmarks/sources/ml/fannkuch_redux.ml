@@ -6,9 +6,9 @@
 
 let fannkuch n =
    begin
-   let perm1 = Array.create n 0 in for i = 0 to (n-1) do perm1.(i) <- i done;
-   let perm = Array.create n 0 in
-   let count = Array.create n 0 in
+   let perm1 = Array.make n 0 in for i = 0 to (n-1) do perm1.(i) <- i done;
+   let perm = Array.make n 0 in
+   let count = Array.make n 0 in
    let flips = ref 0 
    and maxflips = ref 0 
    and checksum = ref 0 

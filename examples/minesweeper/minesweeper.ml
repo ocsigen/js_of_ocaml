@@ -174,7 +174,7 @@ let create_demin nb_c nb_r nb_m =
   generate_seed () ;
   { cf = cf ;
     bd = initialize_board cf;
-    dom = Array.create nbr [||] ;
+    dom = Array.make nbr [||] ;
     nb_marked_cells = 0;
     nb_hidden_cells = cf.nbrows*cf.nbcols-cf.nbmines;
     flag_switch_on = false }

@@ -120,7 +120,7 @@ type g = {
   mutable constraints : S.t list }     (* For debugging *)
 
 let create nv =
-  { constr = Array.create nv [];
+  { constr = Array.make nv [];
     parameters = [|[]|];
     constraints = [] }
 
