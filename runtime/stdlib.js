@@ -225,7 +225,7 @@ function caml_make_vect (len, init) {
 }
 
 //Provides: caml_compare_val
-//Requires: MlString, caml_int64_compare, caml_int_compare
+//Requires: MlString, caml_int64_compare, caml_int_compare, caml_string_compare
 //Requires: caml_invalid_argument
 function caml_compare_val (a, b, total) {
   var stack = [];
@@ -234,7 +234,7 @@ function caml_compare_val (a, b, total) {
       if (a instanceof MlString) {
         if (b instanceof MlString) {
             if (a !== b) {
-		var x = a.compare(b);
+		var x = caml_string_compare(a, b);
 		if (x != 0) return x;
 	    }
         } else
