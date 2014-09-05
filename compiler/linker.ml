@@ -34,7 +34,7 @@ let parse_annot loc s =
     (* Format.eprintf "Not found for %s : %s @." (Printexc.to_string exc) s; *)
     None
 
-let error s = Format.kprintf (fun s -> failwith s) s
+let error s = Format.ksprintf (fun s -> failwith s) s
 
 let parse_file f =
   let file =
