@@ -29,7 +29,7 @@ let split_primitives p =
       split beg (cur + 1) in
   Array.of_list(split 0 0)
 
-let setup_fun () =
+let setup = lazy (
   Hashtbl.add Toploop.directive_table "enable" (Toploop.Directive_string Option.Optim.enable);
   Hashtbl.add Toploop.directive_table "disable" (Toploop.Directive_string Option.Optim.disable);
   Hashtbl.add Toploop.directive_table "debug_on" (Toploop.Directive_string Option.Debug.enable);
@@ -66,7 +66,7 @@ let setup_fun () =
   in
   Js.Unsafe.global##toplevelCompile <- compile (*XXX HACK!*);
   Js.Unsafe.global##toplevelEval <- (fun x -> Js.Unsafe.eval_string x);
-  ()
+  ())
 
 let refill_lexbuf s p ppf buffer len =
   if !p = String.length s
@@ -107,8 +107,6 @@ let execute printval ?pp_code pp_answer s =
     done
   with End_of_file ->
     flush_all ()
-
-let setup = Lazy.lazy_from_fun setup_fun
 
 let initialize () =
   Sys.interactive := false;

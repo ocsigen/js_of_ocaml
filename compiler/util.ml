@@ -33,7 +33,7 @@ let opt_filter p x =
 
 (****)
 
-let findlib_init = Lazy.lazy_from_fun Findlib.init
+let findlib_init = lazy (Findlib.init ())
 
 let find_pkg_dir pkg =
   let () = Lazy.force findlib_init in
