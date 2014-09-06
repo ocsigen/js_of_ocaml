@@ -167,8 +167,6 @@ let string st (s : string) =
   )
   else push st (Text s)
 
-let bytes st b = string st (Bytes.to_string b)
-
 let genbreak st s n =
   if not st.compact then push st (Break (s, n))
 
@@ -227,13 +225,7 @@ let to_out_channel ch =
     limit = 78; cur = 0; l = []; n = 0; w = 0;
     col = 0; line = 0; total = 0;
     compact = false; pending_space = None; last_char = None; needed_space = None;
-    (* compat hack wrt bytes in 4.02 *)
-    output = fun s i l ->
-#if ocaml_version < (4,02)
-      Pervasives.output ch s i l
-#else
-      Pervasives.output_substring ch s i l
-#endif
+    output = Util.output_substring ch
   }
 
 let to_buffer b =

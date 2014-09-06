@@ -23,7 +23,7 @@ open Instr
 
 let debug_parser = Option.Debug.find "parser"
 
-type code = Bytes.t
+type code = string
 
 (* Copied from ocaml/typing/ident.ml *)
 module Ident = struct
@@ -304,7 +304,7 @@ end = struct
 
   let analyse debug_data code =
     let blocks = AddrSet.empty in
-    let len = Bytes.length code  / 4 in
+    let len = String.length code  / 4 in
     (scan debug_data blocks code 0 len,len)
 
 end
@@ -608,7 +608,7 @@ let method_cache_id = ref 1
 
 type compile_info =
   { blocks : Blocks.t;
-    code : Bytes.t;
+    code : string;
     limit : int;
     debug : Debug.data }
 
@@ -1705,7 +1705,7 @@ let parse_bytecode ?(debug=`No) code globals debug_data =
   compiled_blocks := AddrMap.empty;
   tagged_blocks := AddrSet.empty;
 
-  let free_pc = Bytes.length code / 4 in
+  let free_pc = String.length code / 4 in
   let blocks = match_exn_traps (0, blocks, free_pc) in
   (0, blocks, free_pc)
 
@@ -1728,14 +1728,14 @@ let fixed_code_bytes =
    `I BRANCH; `C 6;
    `I PUSHCONST1]
 
-let orig_code = Instr.compile_to_bytes orig_code_bytes
-let fixed_code = Instr.compile_to_bytes fixed_code_bytes
+let orig_code = lazy (Instr.compile_to_string orig_code_bytes)
+let fixed_code = lazy (Instr.compile_to_string fixed_code_bytes)
 
 let fix_min_max_int code =
   begin
     try
-      let i = Util.find orig_code code in
-      Bytes.blit fixed_code 0 code (i + 16) (Bytes.length fixed_code)
+      let i = Util.find (Lazy.force orig_code) code in
+      String.blit (Lazy.force fixed_code) 0 code (i + 16) (String.length (Lazy.force fixed_code))
     with Not_found ->
       Format.eprintf
         "Warning: could not fix min_int/max_int definition \
@@ -1794,7 +1794,14 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
   let primitive_table = Array.of_list(Util.split_char '\000' prim) in
 
   let code_size = seek_section toc ic "CODE" in
-  let code = Util.input_b ic code_size in
+  let code =
+    if Util.Version.v = `V3
+    then
+      let code = Util.input_b ic code_size in
+      (* We fix the bytecode to replace max_int/min_int *)
+      fix_min_max_int code;
+      Bytes.to_string code
+    else Util.input_s ic code_size in
 
   ignore(seek_section toc ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
@@ -1815,10 +1822,6 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
       with Not_found ->
         Debug.no_data ()
   in
-
-  (* We fix the bytecode to replace max_int/min_int *)
-  if Util.Version.v = `V3
-  then fix_min_max_int code;
 
   let globals = make_globals (Array.length init_data) init_data primitive_table in
 
@@ -1912,4 +1915,4 @@ let from_bytes primitives (code : code) =
   prepend p body, debug_data
 
 let from_string primitives (code : string) =
-  from_bytes primitives (Bytes.of_string code)
+  from_bytes primitives code

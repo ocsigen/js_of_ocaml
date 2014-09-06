@@ -54,9 +54,11 @@ val raise_ : exn -> unit
 
 val split_char : char -> string -> string list
 val split : string -> string -> string list
-val find : Bytes.t -> Bytes.t -> int
+val find : string -> Bytes.t -> int
 val input_s : in_channel -> int -> string
 val input_b : in_channel -> int -> Bytes.t
+
+val output_substring : out_channel -> string -> int -> int -> unit
 
 module Version : sig
   type t = int list

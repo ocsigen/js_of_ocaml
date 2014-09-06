@@ -374,16 +374,7 @@ let compile_to_string l =
   compile b l;
   Buffer.contents b
 
-let compile_to_bytes l =
-  let b = Buffer.create 50 in
-  compile b l;
-#if ocaml_version < (4,02)
-  Buffer.contents b
-#else
-  Buffer.to_bytes b
-#endif
-
-let get code i = Char.code (Bytes.get code i)
+let get code i = Char.code (code.[i])
 
 let getu code pc =
   let i = pc * 4 in

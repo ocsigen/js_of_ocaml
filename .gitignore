@@ -38,7 +38,7 @@ compiler/js_parser.mli
 compiler/compiler_version.ml
 jsoo_tools/jsoo_mktop
 jsoo_tools/jsoo_mkcmis
-
+compiler/util.ml
 compiler/annot_lexer.ml
 compiler/annot_parser.ml
 compiler/annot_parser.mli

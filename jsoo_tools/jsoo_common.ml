@@ -19,12 +19,16 @@
 
 let verbose = ref false
 
+let input_s ic size =
+  let b = Bytes.create size in
+  really_input ic b 0 size;
+  Bytes.unsafe_to_string b
+
 let unit_of_cma filename =
   let ic = open_in_bin filename in
   let len_magic_number = String.length Config.cma_magic_number in
-  let magic_number = Bytes.create len_magic_number in
-  really_input ic magic_number 0 len_magic_number;
-  if Bytes.unsafe_to_string magic_number <> Config.cma_magic_number
+  let magic_number = input_s ic len_magic_number in
+  if magic_number <> Config.cma_magic_number
   then failwith "not a cma file";
   let toc_pos = input_binary_int ic in
   seek_in ic toc_pos;
