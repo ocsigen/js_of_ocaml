@@ -131,6 +131,24 @@ let raise_ exn =
     Format.eprintf "%s@." (Printexc.to_string exn)
   end
 
+let output_substring ch s i l =
+#if ocaml_version < (4,02)
+  Pervasives.output ch s i l
+#else
+  Pervasives.output_substring ch s i l
+#endif
+
+
+let input_s ic size =
+  let b = Bytes.create size in
+  really_input ic b 0 size;
+  Bytes.unsafe_to_string b
+
+let input_b ic size =
+  let b = Bytes.create size in
+  really_input ic b 0 size;
+  b
+
 let split_char sep p =
   let len = String.length p in
   let rec split beg cur =
@@ -190,21 +208,21 @@ let split sep s =
 
 exception Found of int
 let find sep s =
-  let sep_max = Bytes.length sep - 1 in
+  let sep_max = String.length sep - 1 in
   let s_max = Bytes.length s - 1 in
   if sep_max < 0 then invalid_arg "find: empty string";
   let k = ref 0 in
   let i = ref 0 in
   try
     while (!i + sep_max <= s_max) do
-      if Bytes.unsafe_get s !i <> Bytes.unsafe_get sep 0
+      if Bytes.unsafe_get s !i <> String.unsafe_get sep 0
       then incr i
       else
         begin
           (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
              guaranteed by loop invariant. *)
           k := 1;
-          while (!k <= sep_max && Bytes.unsafe_get s (!i + !k) = Bytes.unsafe_get sep !k)
+          while (!k <= sep_max && Bytes.unsafe_get s (!i + !k) = String.unsafe_get sep !k)
           do incr k done;
           if !k <= sep_max then (* no match *) incr i else raise (Found !i)
         end

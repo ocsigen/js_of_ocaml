@@ -8,7 +8,7 @@ lib: compiler.cma compiler.cmxa compiler.cmxs
 PACKAGES=findlib
 
 OBJS=compiler_version.cmx \
-     pretty_print.cmx util.cmx option.cmx reserved.cmx varPrinter.cmx \
+     util.cmx pretty_print.cmx option.cmx reserved.cmx varPrinter.cmx \
      dgraph.cmx code.cmx javascript.cmx vlq64.cmx source_map.cmx \
      js_output.cmx js_simpl.cmx parse_info.cmx js_token.cmx js_parser.cmx \
      js_lexer.cmx parse_js.cmx primitive.cmx annot_parser.cmx annot_lexer.cmx \
@@ -74,6 +74,8 @@ compiler_version.ml.tmp:
 %.cmi: %.mli
 	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -c $<
 
+util.ml: util.mlp
+	optcomp-o util.mlp > util.ml
 annot_parser.ml: annot_parser.mli
 annot_parser.mli: annot_parser.mly
 	menhir --infer --explain $<
@@ -91,6 +93,7 @@ clean:
 	rm -f compiler_version.ml
 	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
+	rm -f util.ml
 
 .PHONY: depend
 depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml

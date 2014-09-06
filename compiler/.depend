@@ -98,8 +98,8 @@ phisimpl.cmo : util.cmi subst.cmi option.cmi dgraph.cmi code.cmi \
     phisimpl.cmi
 phisimpl.cmx : util.cmx subst.cmx option.cmx dgraph.cmx code.cmx \
     phisimpl.cmi
-pretty_print.cmo : pretty_print.cmi
-pretty_print.cmx : pretty_print.cmi
+pretty_print.cmo : util.cmi pretty_print.cmi
+pretty_print.cmx : util.cmx pretty_print.cmi
 primitive.cmo : util.cmi parse_info.cmi primitive.cmi
 primitive.cmx : util.cmx parse_info.cmx primitive.cmi
 pseudoFs.cmo : util.cmi code.cmi pseudoFs.cmi

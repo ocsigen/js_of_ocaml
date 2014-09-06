@@ -374,14 +374,7 @@ let compile_to_string l =
   compile b l;
   Buffer.contents b
 
-let compile_to_bytes l =
-  let b = Buffer.create 50 in
-  compile b l;
-  (* Buffer.to_bytes b; *)
-  (* compat hack wrt bytes in 4.02 *)
-  Bytes.unsafe_of_string (Buffer.contents b)
-
-let get code i = Char.code (Bytes.get code i)
+let get code i = Char.code (code.[i])
 
 let getu code pc =
   let i = pc * 4 in

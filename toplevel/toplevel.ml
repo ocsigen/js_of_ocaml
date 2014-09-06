@@ -111,11 +111,15 @@ let load_resource_aux url =
     if xml##status = 200 then
       let resp = xml##responseText in
       let len = resp##length in
-      let str = Bytes.create len in
+#if ocaml_version < (4,02)
+      let str = String.create len in
       for i=0 to len-1 do
-        Bytes.set str i (Char.chr (int_of_float resp##charCodeAt(i) land 0xff))
+        String.set str i (Char.chr (int_of_float resp##charCodeAt(i) land 0xff))
       done;
-      Some(Bytes.unsafe_to_string str)
+#else
+      let str = String.init len (fun i -> Char.chr (int_of_float resp##charCodeAt(i) land 0xff)) in
+#endif
+      Some(str)
     else
       None
   with _ ->

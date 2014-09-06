@@ -39,8 +39,6 @@ module Make(D : sig
   val source_map : Source_map.t option
 end) = struct
 
-  let stringsize = ref 0
-
   let temp_mappings = ref []
 
   let push_mapping,get_file_index,source_map_enabled =
@@ -244,52 +242,42 @@ end) = struct
     then '\''
     else '"'
 
+  let array_str1 =
+    Array.init 256 (fun i -> String.make 1 (Char.chr i))
+  let array_conv =
+    Array.init 16 (fun i -> String.make 1 (("0123456789abcdef").[i]))
   let string_escape f quote ?(utf=false) s =
     let l = String.length s in
-    let conv = "0123456789abcdef" in
     for i = 0 to l - 1 do
       let c = s.[i] in
-      let str = match c with
-          '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' -> "\\0"
-        | '\b' -> "\\b"
-        | '\t' -> "\\t"
-        | '\n' -> "\\n"
+      match c with
+      | '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' -> PP.string f "\\0"
+      | '\b' -> PP.string f "\\b"
+      | '\t' -> PP.string f "\\t"
+      | '\n' -> PP.string f "\\n"
       (* This escape sequence is not supported by IE < 9
          | '\011' -> "\\v"
       *)
-        | '\012' -> "\\f"
-        | '\\' when not utf -> "\\\\"
-        | '\r' -> "\\r"
-        | '\000' .. '\031'  | '\127'->
-          let c = Char.code c in
-          let s = Bytes.create 4 in
-          Bytes.set s 0 '\\';
-          Bytes.set s 1 'x';
-          Bytes.set s 2 (conv.[c lsr 4]);
-          Bytes.set s 3 (conv.[c land 0xf]);
-          Bytes.unsafe_to_string s
-        | '\128' .. '\255' when not utf ->
-          let c = Char.code c in
-          let s = Bytes.create 4 in
-          Bytes.set s 0 '\\';
-          Bytes.set s 1 'x';
-          Bytes.set s 2 (conv.[c lsr 4]);
-          Bytes.set s 3 (conv.[c land 0xf]);
-          Bytes.unsafe_to_string s
-        | _ ->
-          if c = quote
-          then
-            let s = Bytes.create 2 in
-            Bytes.set s 0 '\\';
-            Bytes.set s 1 c;
-            Bytes.unsafe_to_string s
-          else
-            String.make 1 c
-      in
-      stringsize:=!stringsize + String.length str;
-      PP.string f str
-    done;
-    stringsize:=!stringsize+2
+      | '\012' -> PP.string f "\\f"
+      | '\\' when not utf -> PP.string f "\\\\"
+      | '\r' -> PP.string f "\\r"
+      | '\000' .. '\031'  | '\127'->
+        let c = Char.code c in
+        PP.string f "\\x";
+        PP.string f (Array.unsafe_get array_conv (c lsr 4));
+        PP.string f (Array.unsafe_get array_conv (c land 0xf))
+      | '\128' .. '\255' when not utf ->
+        let c = Char.code c in
+        PP.string f "\\x";
+        PP.string f (Array.unsafe_get array_conv (c lsr 4));
+        PP.string f (Array.unsafe_get array_conv (c land 0xf))
+      | _ ->
+        if c = quote
+        then
+          (PP.string f "\\"; PP.string f (Array.unsafe_get array_str1 (Char.code c)))
+        else
+          PP.string f (Array.unsafe_get array_str1 (Char.code c))
+    done
 
   let rec expression l f e =
     match e with
@@ -1032,23 +1020,22 @@ let program f ?source_map p =
   PP.set_needed_space_function f need_space;
   PP.start_group f 0; O.program f p; PP.end_group f; PP.newline f;
   (match source_map with
-    | None -> ()
-    | Some (out_file,sm) ->
+   | None -> ()
+   | Some (out_file,sm) ->
+     let oc = open_out out_file in
+     let pp = Pretty_print.to_out_channel oc in
+     Pretty_print.set_compact pp false;
 
-      let oc = open_out out_file in
-      let pp = Pretty_print.to_out_channel oc in
-      Pretty_print.set_compact pp false;
+     let sm =
+       { sm with
+         Source_map.mappings = List.map (fun (pos,m) ->
+           {m with
+            Source_map.gen_line = pos.PP.p_line;
+            Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings} in
 
-      let sm =
-        { sm with
-          Source_map.mappings = List.map (fun (pos,m) ->
-              {m with
-               Source_map.gen_line = pos.PP.p_line;
-               Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings} in
-
-      let e = Source_map.expression sm in
-      O.expression 0 pp e;
-      close_out oc;
+     let e = Source_map.expression sm in
+     O.expression 0 pp e;
+     close_out oc;
 
       PP.newline f;
       PP.string f (Printf.sprintf "//# sourceMappingURL=%s" out_file));
@@ -1056,10 +1043,8 @@ let program f ?source_map p =
   then begin
     let size i =
       Printf.sprintf "%.2fKo" (float_of_int i /. 1024.) in
-    let percent n d =
+    let _percent n d =
       Printf.sprintf "%.1f%%" (float_of_int n *. 100. /. (float_of_int d)) in
     let total_s = PP.total f in
-    let string_s = !O.stringsize in
     Format.eprintf "total size : %s@." (size total_s);
-    Format.eprintf "string size: %s (%s)@." (size string_s) (percent string_s total_s);
   end
