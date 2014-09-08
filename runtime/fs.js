@@ -43,10 +43,10 @@ MlDir.prototype = {
 }
 
 //Provides: MlFile
-function MlFile(content){this.data=content}
+//Requires: caml_create_string
+function MlFile(content){ this.data = content }
 MlFile.prototype = {
-  content:function(){return this.data;},
-  truncate:function(){this.data.length=0;}
+  truncate:function(){ this.data = caml_create_string(0) }
 }
 
 
@@ -106,6 +106,7 @@ function caml_make_path (name) {
 //Provides: caml_fs_register
 //Requires: MlDir, MlFile, caml_root_dir, MlString, caml_make_path, caml_raise_sys_error
 //Requires: caml_invalid_argument, caml_new_string
+//Requires: caml_string_of_array
 // content can be : MlDIr,MlFile,MlString,Array, string
 function caml_fs_register(name,content) {
   var path = caml_make_path(name);
@@ -122,9 +123,9 @@ function caml_fs_register(name,content) {
   if(dir.exists(d)) caml_raise_sys_error (path.orig + " : file already exists");
   if(content instanceof MlDir) dir.mk(d,content);
   else if(content instanceof MlFile) dir.mk(d,content);
-  else if(content instanceof MlString) dir.mk(d,new MlFile(content.getArray()));
-  else if(content instanceof Array) dir.mk(d,new MlFile(content));
-  else if(content.toString) dir.mk(d,new MlFile((caml_new_string(content.toString())).getArray()));
+  else if(content instanceof MlString) dir.mk(d,new MlFile(content));
+  else if(content instanceof Array) dir.mk(d,new MlFile(caml_string_of_array(content)));
+  else if(content.toString) dir.mk(d,new MlFile((caml_new_string(content.toString()))));
   else caml_invalid_argument("caml_fs_register");
   return 0;
 }

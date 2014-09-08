@@ -30,14 +30,15 @@ function caml_sys_close(fd) {
 //Requires: MlString, caml_raise_sys_error, caml_global_data,caml_sys_file_exists
 //Requires: caml_fs_register,caml_make_path,caml_fs_content
 //Requires: caml_raise_no_such_file,caml_sys_is_directory
-function caml_sys_open_internal(idx,v,flags) {
+//Requires: caml_create_string,MlFile
+function caml_sys_open_internal(idx,file,flags) {
   if(caml_global_data.fds === undefined) caml_global_data.fds = new Array();
   flags=flags?flags:{};
-  var data = {};
-  data.array = v;
-  data.offset = flags.append?data.array.length:0;
-  data.flags = flags;
-  caml_global_data.fds[idx] = data;
+  var info = {};
+  info.file = file;
+  info.offset = flags.append?file.data.getLen():0;
+  info.flags = flags;
+  caml_global_data.fds[idx] = info;
   caml_global_data.fd_last_idx = idx;
   return idx;
 }
@@ -69,18 +70,18 @@ function caml_sys_open (name, flags, _perms) {
     var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
     var file = caml_fs_content(path);
     if(f.truncate) file.truncate();
-    return caml_sys_open_internal (idx+1,file.content(),f);
+    return caml_sys_open_internal (idx+1,file,f);
   } else if (f.create) {
     var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
-    caml_fs_register(name,[]);
+    caml_fs_register(name,caml_create_string(0));
     var file = caml_fs_content(path);
-    return caml_sys_open_internal (idx+1,file.content(),f);
+    return caml_sys_open_internal (idx+1,file,f);
   }
   else caml_raise_no_such_file (name);
 }
-caml_sys_open_internal(0,[]); //stdin
-caml_sys_open_internal(1,[]); //stdout
-caml_sys_open_internal(2,[]); //stderr
+caml_sys_open_internal(0,new MlFile(caml_create_string(0))); //stdin
+caml_sys_open_internal(1,new MlFile(caml_create_string(0))); //stdout
+caml_sys_open_internal(2,new MlFile(caml_create_string(0))); //stderr
 
 
 // ocaml Channels
@@ -103,12 +104,19 @@ function caml_ml_out_channels_list () {
 //Provides: caml_ml_open_descriptor_out
 //Requires: js_print_stderr, js_print_stdout, caml_ml_out_channels, caml_global_data,caml_sys_open
 //Requires: caml_raise_sys_error,caml_new_string
+//Requires: caml_create_string, caml_blit_string
 function caml_std_output(chan,s){
-  var str = caml_new_string(s),slen = str.getLen();
-  for(var i = 0;i<slen;i++){
-    chan.data.array[chan.data.offset + i] = str.get(i);
+  var str = caml_new_string(s);
+  var slen = str.getLen();
+  var clen = chan.file.data.getLen();
+  var offset = chan.offset;
+  if(offset + slen >= clen) {
+    var new_str = caml_create_string (offset + slen);
+    caml_blit_string(chan.file.data, 0, new_str, 0, clen);
+    caml_blit_string(str, 0, new_str, offset, slen);
+    chan.file.data = new_str;
   }
-  chan.data.offset += slen;
+  chan.offset += slen;
   return 0;
 }
 
@@ -122,7 +130,8 @@ function caml_ml_open_descriptor_out (fd) {
   var data = caml_global_data.fds[fd];
   if(data.flags.rdonly) caml_raise_sys_error("fd "+ fd + " is readonly");
   var channel = {
-    data: data,
+    file:data.file,
+    offset:data.offset,
     fd:fd,
     opened:true,
 
@@ -140,7 +149,8 @@ function caml_ml_open_descriptor_in (fd)  {
   if(data.flags.wronly) caml_raise_sys_error("fd "+ fd + " is writeonly");
 
   return {
-    data: data,
+    file:data.file,
+    offset:data.offset,
     fd:fd,
     opened:true
   };
@@ -148,9 +158,11 @@ function caml_ml_open_descriptor_in (fd)  {
 
 
 //Provides: caml_ml_set_binary_mode
+//Requires: caml_global_data
 function caml_ml_set_binary_mode(chan,mode){
-  chan.data.flags.text = !mode
-  chan.data.flags.binary = mode
+  var data = caml_global_data.fds[chan.fd];
+  data.flags.text = !mode
+  data.flags.binary = mode
   return 0;
 }
 
@@ -169,13 +181,13 @@ function caml_ml_close_channel (channel) {
 
 //Provides: caml_ml_channel_size
 function caml_ml_channel_size(chan) {
-  return chan.data.array.length;
+  return chan.file.data.getLen();
 }
 
 //Provides: caml_ml_channel_size_64
 //Requires: caml_ml_channel_size,caml_int64_of_float
 function caml_ml_channel_size_64(chan) {
-  return caml_int64_of_float(chan.data.array.length);
+  return caml_int64_of_float(chan.file.data.getLen());
 }
 
 //Provides: caml_ml_set_channel_output
@@ -187,10 +199,10 @@ function caml_ml_set_channel_output(chan,f) {
 //Provides: caml_ml_input
 //Requires: caml_blit_string, caml_string_of_array
 function caml_ml_input (chan, s, i, l) {
-  var l2 = chan.data.array.length - chan.data.offset;
+  var l2 = chan.file.data.getLen() - chan.offset;
   if (l2 < l) l = l2;
-  caml_blit_string(caml_string_of_array(chan.data.array), chan.data.offset, s, i, l);
-  chan.data.offset += l;
+  caml_blit_string(chan.file.data, chan.offset, s, i, l);
+  chan.offset += l;
   return l;
 }
 
@@ -201,74 +213,74 @@ function caml_fs_file_content(name) {
   var path = caml_make_path(name);
   var f = caml_fs_content(path);
   if(f instanceof MlFile)
-    return caml_string_of_array(f.content());
+    return f.data;
   caml_raise_not_found();
 }
 
 //Provides: caml_input_value
 //Requires: caml_marshal_data_size, caml_input_value_from_string, caml_string_of_array
 function caml_input_value (chan) {
-  var str = caml_string_of_array(chan.data.array);
-  var _len = caml_marshal_data_size (str, chan.data.offset);
-  var res = caml_input_value_from_string(str, chan.data.offset);
-  chan.data.offset = str.offset;
+  var str = chan.file.data;
+  var offset = chan.offset;
+  var _len = caml_marshal_data_size (str, offset);
+  var res = caml_input_value_from_string(str, offset);
+  chan.offset = str.offset;
   return res;
 }
 
 //Provides: caml_ml_input_char
 //Requires: caml_raise_end_of_file, caml_array_bound_error
 function caml_ml_input_char (chan) {
-  if (chan.data.offset >= chan.data.array.length)
+  if (chan.offset >= chan.file.data.getLen())
     caml_raise_end_of_file();
-  if(chan.data.offset < 0 || chan.data.offset > chan.data.array.length) caml_array_bound_error();
-  var c = chan.data.array[chan.data.offset];
-  chan.data.offset++;
+  var c = chan.file.data.safeGet(chan.offset);
+  chan.offset++;
   return c;
 }
 
 //Provides: caml_ml_input_int
 //Requires: caml_raise_end_of_file
 function caml_ml_input_int (chan) {
-  if ((chan.data.offset + 3) >= chan.data.array.length)
+  var s = chan.file.data, o = chan.offset;
+  if ((o + 3) >= s.getLen())
     caml_raise_end_of_file();
-  var a = chan.data.array, o = chan.data.offset;
-  var r = (a[o] << 24) | (a[o+1] << 16) | (a[o+2] << 8) | (a[o+3]);
-  chan.data.offset+=4;
+  var r = (s.get(o) << 24) | (s.get(o+1) << 16) | (s.get(o+2) << 8) | (s.get(o+3));
+  chan.offset+=4;
   return r;
 }
 
 //Provides: caml_ml_seek_in
 function caml_ml_seek_in(chan,pos){
-  chan.data.offset = pos;
+  chan.offset = pos;
   return 0;
 }
 
 //Provides: caml_ml_seek_in_64
 //Requires: caml_int64_to_float
 function caml_ml_seek_in_64(chan,pos){
-  chan.data.offset = caml_int64_to_float(pos);
+  chan.offset = caml_int64_to_float(pos);
   return 0;
 }
 
 //Provides: caml_ml_pos_in
-function caml_ml_pos_in(chan) {return chan.data.offset}
+function caml_ml_pos_in(chan) {return chan.offset}
 
 //Provides: caml_ml_pos_in_64
 //Requires: caml_int64_of_float
-function caml_ml_pos_in_64(chan) {return caml_int64_of_float(chan.data.offset)}
+function caml_ml_pos_in_64(chan) {return caml_int64_of_float(chan.offset)}
 
 //Provides: caml_ml_input_scan_line
 //Requires: caml_array_bound_error
 function caml_ml_input_scan_line(chan){
-    var p = chan.data.offset;
-    var len = chan.data.array.length;
-    if(p >= len) { return 0;}
-    while(true) {
-        if(p >= len) return - (p - chan.data.offset);
-        if(p < 0 || p > chan.data.array.length) caml_array_bound_error();
-        if(chan.data.array[p] == 10) return p - chan.data.offset + 1;
-        p++;
-    }
+  var p = chan.offset;
+  var s = chan.file.data;
+  var len = s.getLen();
+  if(p >= len) { return 0;}
+  while(true) {
+    if(p >= len) return - (p - chan.offset);
+    if(s.safeGet(p) == 10) return p - chan.offset + 1;
+    p++;
+  }
 }
 
 //Provides: caml_ml_flush
@@ -331,24 +343,24 @@ function caml_output_value (chan,v,_flags) {
 
 //Provides: caml_ml_seek_out
 function caml_ml_seek_out(chan,pos){
-  chan.data.offset = pos;
+  chan.offset = pos;
   return 0;
 }
 
 //Provides: caml_ml_seek_out_64
 //Requires: caml_int64_to_float
 function caml_ml_seek_out_64(chan,pos){
-  chan.data.offset = caml_int64_to_float(pos);
+  chan.offset = caml_int64_to_float(pos);
   return 0;
 }
 
 //Provides: caml_ml_pos_out
-function caml_ml_pos_out(chan) {return chan.data.offset}
+function caml_ml_pos_out(chan) {return chan.offset}
 
 //Provides: caml_ml_pos_out_64
 //Requires: caml_int64_of_float
 function caml_ml_pos_out_64(chan) {
-  return caml_int64_of_float (chan.data.offset);
+  return caml_int64_of_float (chan.offset);
 }
 
 //Provides: caml_ml_output_int

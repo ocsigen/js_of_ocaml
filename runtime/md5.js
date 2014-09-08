@@ -22,9 +22,9 @@
 //Requires: caml_md5_string, caml_string_of_array
 function caml_md5_chan(chan,len){
   if(len<0){
-    len=chan.data.array.length - chan.data.offset;
+    len=chan.file.data.getLen() - chan.offset;
   }
-  return caml_md5_string(caml_string_of_array(chan.data.array),chan.data.offset,len);
+  return caml_md5_string(chan.file.data,chan.offset,len);
 }
 
 //Provides: caml_md5_string
