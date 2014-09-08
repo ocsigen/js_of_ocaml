@@ -1759,6 +1759,16 @@ let override_global =
            instrs)
   ]
 
+(* HACK 3 - really input string *)
+
+let really_input_string ic size =
+  let b = Bytes.create size in
+  really_input ic b 0 size;
+  Bytes.unsafe_to_string b
+
+let really_input_string = (* the one above or the one in Pervasives *)
+  let open Pervasives in really_input_string
+
 (* HACK END *)
 
 let seek_section toc ic name =
@@ -1774,12 +1784,12 @@ let read_toc ic =
   let pos_trailer = in_channel_length ic - 16 in
   seek_in ic pos_trailer;
   let num_sections = input_binary_int ic in
-  let header = Util.input_s ic Util.MagicNumber.size in
+  let header = really_input_string ic Util.MagicNumber.size in
   Util.MagicNumber.assert_current header;
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
   for i = 1 to num_sections do
-    let name = Util.input_s ic 4 in
+    let name = really_input_string ic 4 in
     let len = input_binary_int ic in
     section_table := (name, len) :: !section_table
   done;
@@ -1790,18 +1800,19 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
   let toc = read_toc ic in
 
   let prim_size = seek_section toc ic "PRIM" in
-  let prim = Util.input_s ic prim_size in
+  let prim = really_input_string ic prim_size in
   let primitive_table = Array.of_list(Util.split_char '\000' prim) in
 
   let code_size = seek_section toc ic "CODE" in
   let code =
     if Util.Version.v = `V3
     then
-      let code = Util.input_b ic code_size in
+      let code = Bytes.create code_size in
+      really_input ic code 0 code_size;
       (* We fix the bytecode to replace max_int/min_int *)
       fix_min_max_int code;
       Bytes.to_string code
-    else Util.input_s ic code_size in
+    else really_input_string ic code_size in
 
   ignore(seek_section toc ic "DATA");
   let init_data = (input_value ic : Obj.t array) in

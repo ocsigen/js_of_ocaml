@@ -131,16 +131,6 @@ let raise_ exn =
     Format.eprintf "%s@." (Printexc.to_string exn)
   end
 
-let input_s ic size =
-  let b = Bytes.create size in
-  really_input ic b 0 size;
-  Bytes.unsafe_to_string b
-
-let input_b ic size =
-  let b = Bytes.create size in
-  really_input ic b 0 size;
-  b
-
 let split_char sep p =
   let len = String.length p in
   let rec split beg cur =
