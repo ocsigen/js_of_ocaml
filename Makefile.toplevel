@@ -2,34 +2,11 @@
 #opam pin add tyxml  git@github.com:ocsigen/tyxml.git
 #opam pin add js_of_ocaml ./
 BASE=camlp4 lwt menhir deriving tyxml ocamlfind optcomp higlo \
-     reactiveData react.1.1.0 base64
+     reactiveData react.1.2.0 base64 ocp-indent.1.4.2
 
-v-4.01.%:
+current:
 	@opam switch show
-	opam switch 4.01.$*
-	eval `opam config env`
-	opam install $(BASE) ocp-indent.1.4.1
-	$(MAKE)
-	$(MAKE) toplevel
-	mkdir -p toplevel/4.01.$*/
-	cp toplevel/*.cmis.js toplevel/toplevel.js toplevel/4.01.$*/
-
-v-4.01.0+BER:
-	@opam switch show
-	opam switch 4.01.0+BER
-	eval `opam config env`
-	opam install $(BASE) ocp-indent.1.4.1
-	$(MAKE) METAOCAML=1
-	$(MAKE) METAOCAML=1 toplevel
-	mkdir -p toplevel/4.01.0+BER/
-	cp toplevel/*.cmis.js toplevel/toplevel.js toplevel/4.01.0+BER/
-
-v-4.02.%:
-	@opam switch show
-	opam switch "4.02.$*"
-	eval `opam config env`
 	opam install $(BASE)
-	$(MAKE) NO_SYNTAXES=1
-	$(MAKE) NO_SYNTAXES=1 toplevel
-	mkdir -p toplevel/4.02.$*/
-	cp toplevel/*.cmis.js toplevel/toplevel.js toplevel/4.02.$*/
+	$(MAKE) METAOCAML=`(type -p metaocaml > /dev/null && echo 1)` toplevel
+	mkdir -p toplevel/`opam switch show`/
+	cp toplevel/*.cmis.js toplevel/toplevel.js toplevel/`opam switch show`/
