@@ -131,14 +131,6 @@ let raise_ exn =
     Format.eprintf "%s@." (Printexc.to_string exn)
   end
 
-let output_substring ch s i l =
-#if ocaml_version < (4,02)
-  Pervasives.output ch s i l
-#else
-  Pervasives.output_substring ch s i l
-#endif
-
-
 let input_s ic size =
   let b = Bytes.create size in
   really_input ic b 0 size;

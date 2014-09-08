@@ -220,12 +220,23 @@ let newline st =
   st.indent <- 0; st.box_indent <- 0; st.prev_indents <- [];
   st.cur <- 0; st.l <- []; st.n <- 0; st.w <- 0
 
+(* hack on*)
+let output_substring = Pervasives.output
+(* for ocaml <  4.02, output_substring will be Pervasives.ouput (above)
+   for ocaml >= 4.02, output_substring will be taken from the locally
+                      open Pervasives module *)
+let output_substring =
+  let open Pervasives in
+  output_substring
+(* hack off*)
+
+
 let to_out_channel ch =
   { indent = 0; box_indent = 0; prev_indents = [];
     limit = 78; cur = 0; l = []; n = 0; w = 0;
     col = 0; line = 0; total = 0;
     compact = false; pending_space = None; last_char = None; needed_space = None;
-    output = Util.output_substring ch
+    output = output_substring ch
   }
 
 let to_buffer b =

@@ -74,8 +74,6 @@ compiler_version.ml.tmp:
 %.cmi: %.mli
 	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -c $<
 
-util.ml: util.mlp
-	optcomp-o util.mlp > util.ml
 annot_parser.ml: annot_parser.mli
 annot_parser.mli: annot_parser.mly
 	menhir --infer --explain $<
@@ -93,7 +91,6 @@ clean:
 	rm -f compiler_version.ml
 	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
-	rm -f util.ml
 
 .PHONY: depend
 depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml

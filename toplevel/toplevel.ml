@@ -102,6 +102,20 @@ let compiler_name = "MetaOCaml"
 let compiler_name = "OCaml"
 #endif
 
+
+(* hack on *)
+module String' = struct
+  let init len f =
+    let str = Bytes.create len in
+    for i=0 to len-1 do
+      Bytes.set str i (f i)
+    done;
+    str
+  let init = (* init from String (ocaml >= 4.02) or init above *)
+    let open String in init
+end
+(* hack off *)
+
 (* load file using a synchronous XMLHttpRequest *)
 let load_resource_aux url =
   try
@@ -111,14 +125,7 @@ let load_resource_aux url =
     if xml##status = 200 then
       let resp = xml##responseText in
       let len = resp##length in
-#if ocaml_version < (4,02)
-      let str = String.create len in
-      for i=0 to len-1 do
-        String.set str i (Char.chr (int_of_float resp##charCodeAt(i) land 0xff))
-      done;
-#else
-      let str = String.init len (fun i -> Char.chr (int_of_float resp##charCodeAt(i) land 0xff)) in
-#endif
+      let str = String'.init len (fun i -> Char.chr (int_of_float resp##charCodeAt(i) land 0xff)) in
       Some(str)
     else
       None
