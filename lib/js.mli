@@ -236,7 +236,9 @@ val regExp_copy : (regExp t -> regExp t) constr
       [jsnew regExp (r)] builds a copy of regular expression [r]. *)
 
 (** Specification of Javascript regular arrays. *)
+(** use [Js.array_get] and [Js.array_set] to access and set array elements. *)
 class type ['a] js_array = object
+
   method toString : js_string t meth
   method toLocaleString : js_string t meth
   method concat : 'a js_array t -> 'a js_array t meth
