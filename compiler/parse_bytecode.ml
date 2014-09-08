@@ -1805,14 +1805,14 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
 
   let code_size = seek_section toc ic "CODE" in
   let code =
-    if Util.Version.v = `V3
-    then
+    match Util.Version.v with
+    | `V3 ->
       let code = Bytes.create code_size in
       really_input ic code 0 code_size;
       (* We fix the bytecode to replace max_int/min_int *)
       fix_min_max_int code;
       Bytes.to_string code
-    else really_input_string ic code_size in
+    | `V4_02 -> really_input_string ic code_size in
 
   ignore(seek_section toc ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
