@@ -21,8 +21,9 @@ OCaml programs run on Web browsers.
   * [deriving](https://github.com/ocsigen/deriving): **version 0.6** at least
 
 ### Toplevel requirements
- * optcomp
+ * optcomp, base64
  * ocp-indent: needed to support indentation in the toplevel
+ * higlo: needed to support Syntax highlighting in the toplevel
  * cohttp: needed to build the toplevel webserver
 
 ## Installation
@@ -91,7 +92,7 @@ functions can yield results different from usual:
 ## Toplevel
   * [Ocaml 4.01.0](http://ocsigen.github.io/js_of_ocaml/#version=4.01.0)
   * [Ocaml 4.01.0+BER](http://ocsigen.github.io/js_of_ocaml/#version=4.01.0+BER) : MetaOcaml
-  * [Ocaml 4.02.0](http://ocsigen.github.io/js_of_ocaml/#version=4.02.0+trunk)
+  * [Ocaml 4.02.0](http://ocsigen.github.io/js_of_ocaml/#version=4.02.0)
 
 ## Contents of the distribution
 | Filename  | Description                                  |
