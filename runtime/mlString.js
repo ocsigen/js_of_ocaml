@@ -59,9 +59,103 @@ function caml_subarray_to_string (a, i, len) {
   return s;
 }
 
+//Provides: caml_utf8_of_utf16
+function caml_utf8_of_utf16(s) {
+  for (var b = "", t = b, c, d, i = 0, l = s.length; i < l; i++) {
+    c = s.charCodeAt(i);
+    if (c < 0x80) {
+      for (var j = i + 1; (j < l) && (c = s.charCodeAt(j)) < 0x80; j++);
+      if (j - i > 512) { t.substr(0, 1); b += t; t = ""; b += s.slice(i, j) }
+      else t += s.slice(i, j);
+      if (j == l) break;
+      i = j;
+    }
+    if (c < 0x800) {
+      t += String.fromCharCode(0xc0 | (c >> 6));
+      t += String.fromCharCode(0x80 | (c & 0x3f));
+    } else if (c < 0xd800 || c >= 0xdfff) {
+      t += String.fromCharCode(0xe0 | (c >> 12),
+                               0x80 | ((c >> 6) & 0x3f),
+                               0x80 | (c & 0x3f));
+    } else if (c >= 0xdbff || i + 1 == l ||
+               (d = s.charCodeAt(i + 1)) < 0xdc00 || d > 0xdfff) {
+      // Unmatched surrogate pair, replaced by \ufffd (replacement character)
+      t += "\xef\xbf\xbd";
+    } else {
+      i++;
+      c = (c << 10) + d - 0x35fdc00;
+      t += String.fromCharCode(0xf0 | (c >> 18),
+                               0x80 | ((c >> 12) & 0x3f),
+                               0x80 | ((c >> 6) & 0x3f),
+                               0x80 | (c & 0x3f));
+    }
+    if (t.length > 1024) {t.substr(0, 1); b += t; t = "";}
+  }
+  return b+t;
+}
+
+//Provides: caml_utf16_of_utf8
+function caml_utf16_of_utf8(s) {
+  for (var b = "", t = "", c, c1, c2, v, i = 0, l = s.length; i < l; i++) {
+    c1 = s.charCodeAt(i);
+    if (c1 < 0x80) {
+      for (var j = i + 1; (j < l) && (c1 = s.charCodeAt(j)) < 0x80; j++);
+      if (j - i > 512) { t.substr(0, 1); b += t; t = ""; b += s.slice(i, j) }
+      else t += s.slice(i, j);
+      if (j == l) break;
+      i = j;
+    }
+    v = 1;
+    if ((++i < l) && (((c2 = s.charCodeAt(i)) & -64) == 128)) {
+      c = c2 + (c1 << 6);
+      if (c1 < 0xe0) {
+        v = c - 0x3080;
+        if (v < 0x80) v = 1;
+      } else {
+        v = 2;
+        if ((++i < l) && (((c2 = s.charCodeAt(i)) & -64) == 128)) {
+          c = c2 + (c << 6);
+          if (c1 < 0xf0) {
+            v = c - 0xe2080;
+            if ((v < 0x800) || ((v >= 0xd7ff) && (v < 0xe000))) v = 2;
+          } else {
+              v = 3;
+              if ((++i < l) && (((c2 = s.charCodeAt(i)) & -64) == 128) &&
+                  (c1 < 0xf5)) {
+                v = c2 - 0x3c82080 + (c << 6);
+                if (v < 0x10000 || v > 0x10ffff) v = 3;
+              }
+          }
+        }
+      }
+    }
+    if (v < 4) { // Invalid sequence
+      i -= v;
+      t += "\ufffd";
+    } else if (v > 0xffff)
+      t += String.fromCharCode(0xd7c0 + (v >> 10), 0xdc00 + (v & 0x3FF))
+    else
+      t += String.fromCharCode(v);
+    if (t.length > 1024) {t.substr(0, 1); b += t; t = "";}
+  }
+  return b+t;
+}
+
+//Provides: caml_is_ascii
+function caml_is_ascii (s) {
+  // The regular expression gets better at around this point for all browsers
+  if (s.length < 24) {
+    // Spidermonkey gets much slower when s.length >= 24 (on 64 bit archs)
+    for (var i = 0; i < s.length; i++) if (s.charCodeAt(i) > 127) return false;
+    return true;
+  } else
+    return !/[^\x00-\x7f]/.test(s);
+}
+
 //Provides: MlString
-//Requires: caml_raise_with_arg, js_print_stderr, caml_global_data, caml_str_repeat
-//Requires: caml_subarray_to_string
+//Requires: caml_raise_with_arg, caml_global_data
+//Requires: caml_str_repeat, caml_subarray_to_string
+//Requires: caml_is_ascii, caml_utf8_of_utf16, caml_utf16_of_utf8
 function MlString(param) {
   this.string = this.array = null;
   if (param !== undefined) {
@@ -91,27 +185,18 @@ MlString.prototype = {
 
   toJsString:function() {
     // assumes this.string == null
-    var a = this.getFullBytes();
-    try {
-      return this.string = decodeURIComponent (escape(a));
-    } catch (e){
-      js_print_stderr("MlString.toJsString: wrong encoding for \"" + a + "\"");
-      return a;
-    }
+    var b = this.getFullBytes();
+    return this.string = caml_is_ascii(b)?b:caml_utf16_of_utf8 (b);
   },
 
   toBytes:function() {
     // assumes this.bytes == null
-    if (this.string != null){
-      try {
-        var b = unescape (encodeURIComponent (this.string));
-      } catch (e) {
-        js_print_stderr("MlString.toBytes: wrong encoding for \"" + this.string + "\"");
-        var b = this.string;
-      }
+    var s = this.string;
+    if (s != null) {
+      b = caml_is_ascii(s)?s:caml_utf8_of_utf16 (s);
     } else {
-      var a = this.array;
-      var b = caml_subarray_to_string (a, 0, a.length);
+      var a = this.array,
+          b = caml_subarray_to_string (a, 0, a.length);
     }
     this.bytes = this.fullBytes = b;
     this.last = this.len = b.length;
