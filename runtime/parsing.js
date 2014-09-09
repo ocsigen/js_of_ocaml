@@ -23,12 +23,12 @@ function caml_parse_engine(tables, env, cmd, arg)
 {
   var ERRCODE = 256;
 
-  var START = 0;
-  var TOKEN_READ = 1;
-  var STACKS_GROWN_1 = 2;
-  var STACKS_GROWN_2 = 3;
-  var SEMANTIC_ACTION_COMPUTED = 4;
-  var ERROR_DETECTED = 5;
+  //var START = 0;
+  //var TOKEN_READ = 1;
+  //var STACKS_GROWN_1 = 2;
+  //var STACKS_GROWN_2 = 3;
+  //var SEMANTIC_ACTION_COMPUTED = 4;
+  //var ERROR_DETECTED = 5;
   var loop = 6;
   var testshift = 7;
   var shift = 8;
@@ -97,12 +97,12 @@ function caml_parse_engine(tables, env, cmd, arg)
 
   exit:for (;;) {
     switch(cmd) {
-    case START:
+    case 0://START:
       state = 0;
       errflag = 0;
       // Fall through
 
-    case loop:
+    case 6://loop:
       n = tables.defred[state];
       if (n != 0) { cmd = reduce; break; }
       if (env[env_curr_char] >= 0) { cmd = testshift; break; }
@@ -110,7 +110,7 @@ function caml_parse_engine(tables, env, cmd, arg)
       break exit;
                                   /* The ML code calls the lexer and updates */
                                   /* symb_start and symb_end */
-    case TOKEN_READ:
+    case 1://TOKEN_READ:
       if (arg instanceof Array) {
         env[env_curr_char] = tables[tbl_transl_block][arg[0] + 1];
         env[env_lval] = arg[1];
@@ -120,7 +120,7 @@ function caml_parse_engine(tables, env, cmd, arg)
       }
       // Fall through
 
-    case testshift:
+    case 7://testshift:
       n1 = tables.sindex[state];
       n2 = n1 + env[env_curr_char];
       if (n1 != 0 && n2 >= 0 && n2 <= tables[tbl_tablesize] &&
@@ -140,7 +140,7 @@ function caml_parse_engine(tables, env, cmd, arg)
       }
       // Fall through
                                   /* The ML code calls the error function */
-    case ERROR_DETECTED:
+    case 5://ERROR_DETECTED:
       if (errflag < 3) {
         errflag = 3;
         for (;;) {
@@ -163,11 +163,11 @@ function caml_parse_engine(tables, env, cmd, arg)
         cmd = loop; break;
       }
       // Fall through
-    case shift:
+    case 8://shift:
       env[env_curr_char] = -1;
       if (errflag > 0) errflag--;
       // Fall through
-    case shift_recover:
+    case 9://shift_recover:
       state = tables.table[n2];
       sp++;
       if (sp >= env[env_stacksize]) {
@@ -176,7 +176,7 @@ function caml_parse_engine(tables, env, cmd, arg)
       }
       // Fall through
                                    /* The ML code resizes the stacks */
-    case STACKS_GROWN_1:
+    case 2://STACKS_GROWN_1:
       env[env_s_stack][sp + 1] = state;
       env[env_v_stack][sp + 1] = env[env_lval];
       env[env_symb_start_stack][sp + 1] = env[env_symb_start];
@@ -184,7 +184,7 @@ function caml_parse_engine(tables, env, cmd, arg)
       cmd = loop;
       break;
 
-    case reduce:
+    case 10://reduce:
       var m = tables.len[n];
       env[env_asp] = sp;
       env[env_rule_number] = n;
@@ -205,11 +205,11 @@ function caml_parse_engine(tables, env, cmd, arg)
       }
       // Fall through
                                   /* The ML code resizes the stacks */
-    case STACKS_GROWN_2:
+    case 3://STACKS_GROWN_2:
       res = COMPUTE_SEMANTIC_ACTION;
       break exit;
                                   /* The ML code calls the semantic action */
-    case SEMANTIC_ACTION_COMPUTED:
+    case 4://SEMANTIC_ACTION_COMPUTED:
       env[env_s_stack][sp + 1] = state;
       env[env_v_stack][sp + 1] = arg;
       var asp = env[env_asp];

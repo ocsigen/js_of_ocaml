@@ -19,17 +19,29 @@
 
 //Provides: caml_marshal_constants
 var caml_marshal_constants = {
-  PREFIX_SMALL_BLOCK:  0x80,
-  PREFIX_SMALL_INT:    0x40,
-  PREFIX_SMALL_STRING: 0x20,
-  CODE_INT8:     0x00,  CODE_INT16:    0x01,  CODE_INT32:      0x02,
-  CODE_INT64:    0x03,  CODE_SHARED8:  0x04,  CODE_SHARED16:   0x05,
-  CODE_SHARED32: 0x06,  CODE_BLOCK32:  0x08,  CODE_BLOCK64:    0x13,
-  CODE_STRING8:  0x09,  CODE_STRING32: 0x0A,  CODE_DOUBLE_BIG: 0x0B,
-  CODE_DOUBLE_LITTLE:         0x0C, CODE_DOUBLE_ARRAY8_BIG:  0x0D,
-  CODE_DOUBLE_ARRAY8_LITTLE:  0x0E, CODE_DOUBLE_ARRAY32_BIG: 0x0F,
-  CODE_DOUBLE_ARRAY32_LITTLE: 0x07, CODE_CODEPOINTER:        0x10,
-  CODE_INFIXPOINTER:          0x11, CODE_CUSTOM:             0x12
+  PREFIX_SMALL_BLOCK:         0x80,
+  PREFIX_SMALL_INT:           0x40,
+  PREFIX_SMALL_STRING:        0x20,
+  CODE_INT8:                  0x00,
+  CODE_INT16:                 0x01,
+  CODE_INT32:                 0x02,
+  CODE_INT64:                 0x03,
+  CODE_SHARED8:               0x04,
+  CODE_SHARED16:              0x05,
+  CODE_SHARED32:              0x06,
+  CODE_BLOCK32:               0x08,
+  CODE_BLOCK64:               0x13,
+  CODE_STRING8:               0x09,
+  CODE_STRING32:              0x0A,
+  CODE_DOUBLE_BIG:            0x0B,
+  CODE_DOUBLE_LITTLE:         0x0C,
+  CODE_DOUBLE_ARRAY8_BIG:     0x0D,
+  CODE_DOUBLE_ARRAY8_LITTLE:  0x0E,
+  CODE_DOUBLE_ARRAY32_BIG:    0x0F,
+  CODE_DOUBLE_ARRAY32_LITTLE: 0x07,
+  CODE_CODEPOINTER:           0x10,
+  CODE_INFIXPOINTER:          0x11,
+  CODE_CUSTOM:                0x12
 }
 
 
@@ -76,7 +88,6 @@ function caml_float_of_bytes (a) {
 
 //Provides: caml_input_value_from_string mutable
 //Requires: caml_failwith
-//Requires: caml_marshal_constants
 //Requires: caml_float_of_bytes, caml_int64_of_bytes
 //Requires: MlStringReader
 function caml_input_value_from_string(s, ofs) {
@@ -90,10 +101,9 @@ function caml_input_value_from_string(s, ofs) {
   var intern_obj_table = (num_objects > 0)?[]:null;
   var obj_counter = 0;
   function intern_rec () {
-    var cst = caml_marshal_constants;
     var code = reader.read8u ();
-    if (code >= cst.PREFIX_SMALL_INT) {
-      if (code >= cst.PREFIX_SMALL_BLOCK) {
+    if (code >= 0x40 /*cst.PREFIX_SMALL_INT*/) {
+      if (code >= 0x80 /*cst.PREFIX_SMALL_BLOCK*/) {
         var tag = code & 0xF;
         var size = (code >> 4) & 0x7;
         var v = [tag];
@@ -104,32 +114,32 @@ function caml_input_value_from_string(s, ofs) {
       } else
         return (code & 0x3F);
     } else {
-      if (code >= cst.PREFIX_SMALL_STRING) {
+      if (code >= 0x20/*cst.PREFIX_SMALL_STRING */) {
         var len = code & 0x1F;
         var v = reader.readstr (len);
         if (intern_obj_table) intern_obj_table[obj_counter++] = v;
         return v;
       } else {
         switch(code) {
-        case cst.CODE_INT8:
+        case 0x00: //cst.CODE_INT8:
           return reader.read8s ();
-        case cst.CODE_INT16:
+        case 0x01: //cst.CODE_INT16:
           return reader.read16s ();
-        case cst.CODE_INT32:
+        case 0x02: //cst.CODE_INT32:
           return reader.read32s ();
-        case cst.CODE_INT64:
+        case 0x03: //cst.CODE_INT64:
           caml_failwith("input_value: integer too large");
           break;
-        case cst.CODE_SHARED8:
+        case 0x04: //cst.CODE_SHARED8:
           var ofs = reader.read8u ();
           return intern_obj_table[obj_counter - ofs];
-        case cst.CODE_SHARED16:
+        case 0x05: //cst.CODE_SHARED16:
           var ofs = reader.read16u ();
           return intern_obj_table[obj_counter - ofs];
-        case cst.CODE_SHARED32:
+        case 0x06: //cst.CODE_SHARED32:
           var ofs = reader.read32u ();
           return intern_obj_table[obj_counter - ofs];
-        case cst.CODE_BLOCK32:
+        case 0x08: //cst.CODE_BLOCK32:
           var header = reader.read32u ();
           var tag = header & 0xFF;
           var size = header >> 10;
@@ -138,32 +148,32 @@ function caml_input_value_from_string(s, ofs) {
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           stack.push(v, size);
           return v;
-        case cst.CODE_BLOCK64:
+        case 0x13: //cst.CODE_BLOCK64:
           caml_failwith ("input_value: data block too large");
           break;
-        case cst.CODE_STRING8:
+        case 0x09: //cst.CODE_STRING8:
           var len = reader.read8u();
           var v = reader.readstr (len);
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           return v;
-        case cst.CODE_STRING32:
+        case 0x0A: //cst.CODE_STRING32:
           var len = reader.read32u();
           var v = reader.readstr (len);
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           return v;
-        case cst.CODE_DOUBLE_LITTLE:
+        case 0x0C: //cst.CODE_DOUBLE_LITTLE:
           var t = [];
           for (var i = 0;i < 8;i++) t[7 - i] = reader.read8u ();
           var v = caml_float_of_bytes (t);
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           return v;
-        case cst.CODE_DOUBLE_BIG:
+        case 0x0B: //cst.CODE_DOUBLE_BIG:
           var t = [];
           for (var i = 0;i < 8;i++) t[i] = reader.read8u ();
           var v = caml_float_of_bytes (t);
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           return v;
-        case cst.CODE_DOUBLE_ARRAY8_LITTLE:
+        case 0x0E: //cst.CODE_DOUBLE_ARRAY8_LITTLE:
           var len = reader.read8u();
           var v = [254];
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
@@ -173,7 +183,7 @@ function caml_input_value_from_string(s, ofs) {
             v[i] = caml_float_of_bytes (t);
           }
           return v;
-        case cst.CODE_DOUBLE_ARRAY8_BIG:
+        case 0x0D: //cst.CODE_DOUBLE_ARRAY8_BIG:
           var len = reader.read8u();
           var v = [254];
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
@@ -183,7 +193,7 @@ function caml_input_value_from_string(s, ofs) {
             v [i] = caml_float_of_bytes (t);
           }
           return v;
-        case cst.CODE_DOUBLE_ARRAY32_LITTLE:
+        case 0x07: //cst.CODE_DOUBLE_ARRAY32_LITTLE:
           var len = reader.read32u();
           var v = [254];
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
@@ -193,7 +203,7 @@ function caml_input_value_from_string(s, ofs) {
             v[i] = caml_float_of_bytes (t);
           }
           return v;
-        case cst.CODE_DOUBLE_ARRAY32_BIG:
+        case 0x0F: //cst.CODE_DOUBLE_ARRAY32_BIG:
           var len = reader.read32u();
           var v = [254];
           for (var i = 1;i <= len;i++) {
@@ -202,11 +212,11 @@ function caml_input_value_from_string(s, ofs) {
             v [i] = caml_float_of_bytes (t);
           }
           return v;
-        case cst.CODE_CODEPOINTER:
-        case cst.CODE_INFIXPOINTER:
+        case 0x10: //cst.CODE_CODEPOINTER:
+        case 0x11: //cst.CODE_INFIXPOINTER:
           caml_failwith ("input_value: code pointer");
           break;
-        case cst.CODE_CUSTOM:
+        case 0x12: //cst.CODE_CUSTOM:
           var c, s = "";
           while ((c = reader.read8u ()) != 0) s += String.fromCharCode (c);
           switch(s) {
@@ -270,7 +280,7 @@ function caml_marshal_data_size (s, ofs) {
 }
 
 //Provides: caml_output_val
-//Requires: caml_marshal_constants, caml_int64_to_bytes, caml_failwith
+//Requires: caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
 //Requires: MlString, caml_ml_string_length, caml_string_unsafe_get
 var caml_output_val = function (){
@@ -301,11 +311,10 @@ var caml_output_val = function (){
     var writer = new Writer ();
     var stack = [];
     function extern_rec (v) {
-      var cst = caml_marshal_constants;
       if (v instanceof Array && v[0] === (v[0]|0)) {
         if (v[0] == 255) {
           // Int64
-          writer.write (8, cst.CODE_CUSTOM);
+          writer.write (8, 0x12 /*cst.CODE_CUSTOM*/);
           for (var i = 0; i < 3; i++) writer.write (8, "_j\0".charCodeAt(i));
           var b = caml_int64_to_bytes (v);
           for (var i = 0; i < 8; i++) writer.write (8, b[i]);
@@ -317,20 +326,20 @@ var caml_output_val = function (){
           caml_failwith("output_value: abstract value (Abstract)");
         }
         if (v[0] < 16 && v.length - 1 < 8)
-          writer.write (8, cst.PREFIX_SMALL_BLOCK + v[0] + ((v.length - 1)<<4));
+          writer.write (8, 0x80 /*cst.PREFIX_SMALL_BLOCK*/ + v[0] + ((v.length - 1)<<4));
         else
-          writer.write_code(32, cst.CODE_BLOCK32, ((v.length-1) << 10) | v[0]);
+          writer.write_code(32, 0x08 /*cst.CODE_BLOCK32*/, ((v.length-1) << 10) | v[0]);
         writer.size_32 += v.length;
         writer.size_64 += v.length;
         if (v.length > 1) stack.push (v, 1);
       } else if (v instanceof MlString) {
         var len = caml_ml_string_length(v);
         if (len < 0x20)
-          writer.write (8, cst.PREFIX_SMALL_STRING + len);
+          writer.write (8, 0x20 /*cst.PREFIX_SMALL_STRING*/ + len);
         else if (len < 0x100)
-          writer.write_code (8, cst.CODE_STRING8, len);
+          writer.write_code (8, 0x09/*cst.CODE_STRING8*/, len);
         else
-          writer.write_code (32, cst.CODE_STRING32, len);
+          writer.write_code (32, 0x0A /*cst.CODE_STRING32*/, len);
         for (var i = 0;i < len;i++)
           writer.write (8, caml_string_unsafe_get(v,i));
         writer.size_32 += 1 + (((len + 4) / 4)|0);
@@ -348,18 +357,18 @@ var caml_output_val = function (){
 //          if(type_of_v != "number")
           caml_failwith("output_value: abstract value ("+type_of_v+")");
 //          var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
-//          writer.write (8, cst.CODE_DOUBLE_BIG);
+//          writer.write (8, 0x0B /*cst.CODE_DOUBLE_BIG*/);
 //          for(var i = 0; i<8; i++){writer.write(8,t[i])}
         }
         else if (v >= 0 && v < 0x40) {
-          writer.write (8, cst.PREFIX_SMALL_INT + v);
+          writer.write (8, 0X40 /*cst.PREFIX_SMALL_INT*/ + v);
         } else {
           if (v >= -(1 << 7) && v < (1 << 7))
-            writer.write_code(8, cst.CODE_INT8, v);
+            writer.write_code(8, 0x00 /*cst.CODE_INT8*/, v);
           else if (v >= -(1 << 15) && v < (1 << 15))
-            writer.write_code(16, cst.CODE_INT16, v);
+            writer.write_code(16, 0x01 /*cst.CODE_INT16*/, v);
           else
-            writer.write_code(32, cst.CODE_INT32, v);
+            writer.write_code(32, 0x02 /*cst.CODE_INT32*/, v);
         }
       }
     }
