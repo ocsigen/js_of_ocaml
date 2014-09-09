@@ -563,7 +563,12 @@ let append_ocaml = append_string in
   Sys_js.set_channel_flusher stdout (append_string "stdout");
   Sys_js.set_channel_flusher stderr (append_string "stderr");
 
-  Lwt.async_exception_hook:=(fun exc -> Format.eprintf "exc during Lwt.async: %s@." (Printexc.to_string exc));
+  Lwt.async_exception_hook:=(fun exc ->
+    Format.eprintf "exc during Lwt.async: %s@." (Printexc.to_string exc);
+    match exc with
+    | Js.Error e -> Firebug.console##log(e##stack)
+    | _ -> ()
+ );
 
   Lwt.async (fun () ->
       resize () >>= fun () ->
