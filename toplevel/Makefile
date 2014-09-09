@@ -41,8 +41,8 @@ BER=metalib.cma bertop.cmo \
 SYNTAXES=
 OPTCOMP_OPT+= -let metaocaml=true
 endif
-
-MKTOP=jsoo_mktop -jsopt "-pretty -disable shortvar" -verbose $(SAFESTRING) \
+#-jsopt "-pretty -disable shortvar"
+MKTOP=jsoo_mktop -verbose $(SAFESTRING) \
 	${addprefix -top-syntax , ${SYNTAXES}} \
 	-dont-export-unit gc \
 	${addprefix -export-package , ${PACKAGES}} \
