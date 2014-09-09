@@ -720,8 +720,6 @@ let _ =
       J.ECall (p, [J.EBin (J.Plus,str_js "",cx)], loc));
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy _ -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
-  register_bin_prim "caml_string_get" `Mutable
-    (fun cx cy loc -> J.ECall (J.EDot (cx, "safeGet"), [cy], loc));
   register_bin_prim "%int_add" `Pure
     (fun cx cy _ -> to_int (J.EBin (J.Plus,cx,cy)));
   register_bin_prim "%int_sub" `Pure
@@ -770,13 +768,9 @@ let _ =
     (fun cx _ -> val_float (J.EUn (J.Neg, float_val cx)));
   register_bin_prim "caml_fmod_float" `Pure
     (fun cx cy _ -> val_float (J.EBin (J.Mod, float_val cx, float_val cy)));
-  register_un_prim "caml_ml_string_length" `Pure
-    (fun cx loc -> J.ECall (J.EDot (cx, "getLen"), [], loc));
   register_tern_prim "caml_array_unsafe_set"
     (fun cx cy cz _ ->
        J.EBin (J.Eq, J.EAccess (cx, J.EBin (J.Plus, cy, one)), cz));
-  register_tern_prim "caml_string_set"
-    (fun cx cy cz loc -> J.ECall (J.EDot (cx, "safeSet"), [cy; cz], loc));
   register_un_prim "caml_alloc_dummy" `Pure (fun cx _ -> J.EArr []);
   register_un_prim "caml_obj_dup" `Mutable
     (fun cx loc -> J.ECall (J.EDot (cx, "slice"), [], loc));
@@ -1507,7 +1501,8 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
             J.Switch_statement
               (e, l,
                Some (compile_branch
-                          st [] cont handler backs frontier interm)), loc
+                          st [] cont handler backs frontier interm),
+               []), loc
       in
       let (st, queue) =
         if Array.length a1 = 0 then

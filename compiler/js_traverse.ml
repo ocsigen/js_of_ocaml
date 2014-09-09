@@ -86,13 +86,15 @@ class map : mapper = object(m)
         Labelled_statement (l, (m#statement s, loc))
     | Throw_statement e ->
         Throw_statement (m#expression e)
-    | Switch_statement (e, l, def) ->
+    | Switch_statement (e, l, def, l') ->
         Switch_statement
           (m#expression e,
            List.map (fun (e,s) -> m#expression e, m#statements s) l,
-           match def with
+           begin match def with
            | None   -> None
-           | Some l -> Some (m#statements l))
+           | Some l -> Some (m#statements l)
+           end,
+           List.map (fun (e,s) -> m#expression e, m#statements s) l')
     | Try_statement (b, catch, final) ->
         Try_statement
           (m#statements b,
@@ -653,7 +655,7 @@ class clean = object(m)
     | While_statement (cond,st) -> While_statement (cond,b st)
     | For_statement (p1,p2,p3,st) -> For_statement (p1,p2,p3,b st)
     | ForIn_statement (param,e,st) -> ForIn_statement (param,e,b st)
-    | Switch_statement(e,l,Some []) -> Switch_statement(e,l,None)
+    | Switch_statement(e,l,Some [],[]) -> Switch_statement(e,l,None,[])
     | s -> s
 
   method sources l =

@@ -111,6 +111,7 @@ end
 
 exception May_not_return
 
+(*
 let all_return p =
   let open Javascript in
   let rec loop_st = function
@@ -144,6 +145,7 @@ let all_return p =
       loop_sources b;
       loop_all_sources xs in
   try loop_all_sources p; true with May_not_return -> false
+*)
 
 let check_primitive name pi code req =
   let free =

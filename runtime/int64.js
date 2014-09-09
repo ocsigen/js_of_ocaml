@@ -291,19 +291,20 @@ function caml_int64_format (fmt, x) {
 //Requires: caml_parse_sign_and_base, caml_failwith, caml_parse_digit, MlString
 //Requires: caml_int64_of_int32, caml_int64_udivmod, caml_int64_ult
 //Requires: caml_int64_add, caml_int64_mul, caml_int64_neg
+//Requires: caml_ml_string_length,caml_string_unsafe_get
 function caml_int64_of_string(s) {
   var r = caml_parse_sign_and_base (s);
   var i = r[0], sign = r[1], base = r[2];
   var base64 = caml_int64_of_int32(base);
   var threshold =
     caml_int64_udivmod([255, 0xffffff, 0xfffffff, 0xffff], base64)[1];
-  var c = s.get(i);
+  var c = caml_string_unsafe_get(s, i);
   var d = caml_parse_digit(c);
   if (d < 0 || d >= base) caml_failwith("int_of_string");
   var res = caml_int64_of_int32(d);
   for (;;) {
     i++;
-    c = s.get(i);
+    c = caml_string_unsafe_get(s, i);
     if (c == 95) continue;
     d = caml_parse_digit(c);
     if (d < 0 || d >= base) break;
@@ -314,7 +315,7 @@ function caml_int64_of_string(s) {
     /* Detect overflow in addition (base * res) + d */
     if (caml_int64_ult(res, d)) caml_failwith("int_of_string");
   }
-  if (i != s.getLen()) caml_failwith("int_of_string");
+  if (i != caml_ml_string_length(s)) caml_failwith("int_of_string");
   if (r[2] == 10 && caml_int64_ult([255, 0, 0, 0x8000], res))
     caml_failwith("int_of_string");
   if (sign < 0) res = caml_int64_neg(res);

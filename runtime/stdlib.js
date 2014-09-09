@@ -36,9 +36,9 @@ function caml_call_gen(f, args) {
 var caml_named_values = {};
 
 //Provides: caml_register_named_value
-//Requires: caml_named_values
+//Requires: caml_named_values, caml_bytes_of_string
 function caml_register_named_value(nm,v) {
-  caml_named_values[nm.toString()] = v;
+  caml_named_values[caml_bytes_of_string(nm)] = v;
   return 0;
 }
 
@@ -337,11 +337,11 @@ function caml_lessequal (x, y) { return +(caml_compare_val(x,y,false) <= 0); }
 function caml_lessthan (x, y) { return +(caml_compare_val(x,y,false) < 0); }
 
 //Provides: caml_parse_sign_and_base
-//Requires: MlString
+//Requires: caml_string_unsafe_get
 function caml_parse_sign_and_base (s) {
-  var i = 0, base = 10, sign = s.get(0) == 45?(i++,-1):1;
-  if (s.get(i) == 48)
-    switch (s.get(i + 1)) {
+  var i = 0, base = 10, sign = caml_string_unsafe_get(s,0) == 45?(i++,-1):1;
+  if (caml_string_unsafe_get(s, i) == 48)
+    switch (caml_string_unsafe_get(s, i + 1)) {
     case 120: case 88: base = 16; i += 2; break;
     case 111: case 79: base =  8; i += 2; break;
     case  98: case 66: base =  2; i += 2; break;
@@ -358,25 +358,26 @@ function caml_parse_digit(c) {
 }
 
 //Provides: caml_int_of_string mutable
-//Requires: caml_parse_sign_and_base, caml_parse_digit, MlString, caml_failwith
+//Requires: caml_ml_string_length, caml_string_unsafe_get
+//Requires: caml_parse_sign_and_base, caml_parse_digit, caml_failwith
 function caml_int_of_string (s) {
   var r = caml_parse_sign_and_base (s);
   var i = r[0], sign = r[1], base = r[2];
   var threshold = -1 >>> 0;
-  var c = s.get(i);
+  var c = caml_string_unsafe_get(s, i);
   var d = caml_parse_digit(c);
   if (d < 0 || d >= base) caml_failwith("int_of_string");
   var res = d;
   for (;;) {
     i++;
-    c = s.get(i);
+    c = caml_string_unsafe_get(s, i);
     if (c == 95) continue;
     d = caml_parse_digit(c);
     if (d < 0 || d >= base) break;
     res = base * res + d;
     if (res > threshold) caml_failwith("int_of_string");
   }
-  if (i != s.getLen()) caml_failwith("int_of_string");
+  if (i != caml_ml_string_length(s)) caml_failwith("int_of_string");
   // For base different from 10, we expect an unsigned representation,
   // hence any value of 'res' (less than 'threshold') is acceptable.
   // But we have to convert the result back to a signed integer.
@@ -388,10 +389,10 @@ function caml_int_of_string (s) {
 }
 
 //Provides: caml_float_of_string mutable
-//Requires: caml_failwith
+//Requires: caml_failwith, caml_bytes_of_string
 function caml_float_of_string(s) {
   var res;
-  s = s.getFullBytes();
+  s = caml_bytes_of_string (s);
   res = +s;
   if ((s.length > 0) && (res === res)) return res;
   s = s.replace(/_/g,"");
@@ -412,9 +413,9 @@ function caml_is_printable(c) { return +(c > 31 && c < 127); }
 
 ///////////// Format
 //Provides: caml_parse_format
-//Requires: caml_invalid_argument
+//Requires: caml_bytes_of_string, caml_invalid_argument
 function caml_parse_format (fmt) {
-  fmt = fmt.toString ();
+  fmt = caml_bytes_of_string(fmt);
   var len = fmt.length;
   if (len > 31) caml_invalid_argument("format_int: format too long");
   var f =
@@ -498,9 +499,9 @@ function caml_finish_formatting(f, rawbuffer) {
 
 //Provides: caml_format_int const
 //Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
-//Requires: caml_new_string
+//Requires: caml_new_string, caml_bytes_of_string
 function caml_format_int(fmt, i) {
-  if (fmt.toString() == "%d") return caml_new_string(""+i);
+  if (caml_bytes_of_string(fmt) == "%d") return caml_new_string(""+i);
   var f = caml_parse_format(fmt);
   if (i < 0) { if (f.signedconv) { f.sign = -1; i = -i; } else i >>>= 0; }
   var s = i.toString(f.base);
@@ -563,7 +564,8 @@ function caml_format_float (fmt, x) {
 
 ///////////// Hashtbl
 //Provides: caml_hash_univ_param mutable
-//Requires: MlString, caml_int64_to_bytes, caml_int64_bits_of_float
+//Requires: MlString, caml_convert_string_to_bytes
+//Requires: caml_int64_to_bytes, caml_int64_bits_of_float
 function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
   function hash_aux (obj) {
@@ -591,13 +593,16 @@ function caml_hash_univ_param (count, limit, obj) {
       }
     } else if (obj instanceof MlString) {
       count --;
-      var a = obj.array, l = obj.getLen ();
-      if (a) {
-        for (var i = 0; i < l; i++) hash_accu = (hash_accu * 19 + a[i]) | 0;
-      } else {
-        var b = obj.getFullBytes ();
-        for (var i = 0; i < l; i++)
+      switch (obj.t & 6) {
+      default: /* PARTIAL */
+        caml_convert_string_to_bytes(obj);
+      case 0: /* BYTES */
+        for (var b = obj.c, l = obj.l, i = 0; i < l; i++)
           hash_accu = (hash_accu * 19 + b.charCodeAt(i)) | 0;
+        break;
+      case 2: /* ARRAY */
+        for (var a = obj.c, l = obj.l, i = 0; i < l; i++)
+          hash_accu = (hash_accu * 19 + a[i]) | 0;
       }
     } else if (obj === (obj|0)) {
       // Integer
@@ -615,7 +620,8 @@ function caml_hash_univ_param (count, limit, obj) {
 }
 
 //Provides: caml_hash mutable
-//Requires: MlString, caml_int64_bits_of_float, caml_mul
+//Requires: MlString, caml_convert_string_to_bytes
+//Requires: caml_int64_bits_of_float, caml_mul
 var caml_hash =
 function () {
   var HASH_QUEUE_SIZE = 256;
@@ -724,12 +730,14 @@ function () {
           break;
         }
       } else if (v instanceof MlString) {
-        var a = v.array;
-        if (a) {
-          h = caml_hash_mix_string_arr(h, a);
-        } else {
-          var b = v.getFullBytes ();
-          h = caml_hash_mix_string_str(h, b);
+        switch (v.t & 6) {
+        default:
+          caml_convert_string_to_bytes (v);
+        case 0: /* BYTES */
+          h = caml_hash_mix_string_str(h, v.c);
+          break;
+        case 2: /* ARRAY */
+          h = caml_hash_mix_string_arr(h, v.c);
         }
         num--;
         break;

@@ -384,7 +384,7 @@ external string : string -> js_string t = "caml_js_from_string"
 external to_string : js_string t -> string = "caml_js_to_string"
 external array : 'a array -> 'a js_array t = "caml_js_from_array"
 external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
-external bytestring : string -> js_string t = "caml_js_from_byte_string"
+external bytestring : string -> js_string t = "caml_bytes_of_string"
 external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
 
 external typeof : < .. > t -> js_string t = "caml_js_typeof"

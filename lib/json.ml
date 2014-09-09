@@ -42,7 +42,7 @@ external to_MlString: js_string t -> 'a t = "caml_js_to_string"
 external to_jsstring: 'a t -> js_string t = "caml_js_from_string"
 
 external to_byte_MlString: js_string t -> 'a t = "caml_js_to_byte_string"
-external to_byte_jsstring: 'a t -> js_string t = "caml_js_from_byte_string"
+external to_byte_jsstring: 'a t -> js_string t = "caml_bytes_of_string"
 
 let input_reviver =
   let reviver this key value =

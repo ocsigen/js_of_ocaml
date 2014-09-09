@@ -104,7 +104,8 @@ function caml_make_path (name) {
 
 
 //Provides: caml_fs_register
-//Requires: MlDir, MlFile, caml_root_dir, MlString, caml_make_path, caml_raise_sys_error
+//Requires: MlDir, MlFile, caml_root_dir, caml_make_path, caml_raise_sys_error
+//Requires: MlString, caml_array_of_string
 //Requires: caml_invalid_argument, caml_new_string
 //Requires: caml_string_of_array
 // content can be : MlDIr,MlFile,MlString,Array, string

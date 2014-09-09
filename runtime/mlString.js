@@ -1,6 +1,6 @@
 // Js_of_ocaml runtime support
 // http://www.ocsigen.org/js_of_ocaml/
-// Copyright (C) 2010 Jérôme Vouillon
+// Copyright (C) 2010-2014 Jérôme Vouillon
 // Laboratoire PPS - CNRS Université Paris Diderot
 //
 // This program is free software; you can redistribute it and/or modify
@@ -17,28 +17,44 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-// Invariants
-// ==========
-// At any time, at least one property of "string", "bytes" or "array"
-// is set; if several are set, then their values must correspond.
-// If "bytes" is set, then properties "len" and "last" are also set.
-// If "array" is set, properties "len" and "last" are also set.
-// Properties "len" and "last" may have different values only when
-// "string" and "array" are both null.
+// An OCaml string is an object with three fields:
+// - tag 't'
+// - length 'l'
+// - contents 'c'
 //
-// We use unusual accessors (getLen/get/set) so that this
-// implementation of string differs significantly from Javascript.
-// This way, using the wrong object is detected early.
+// The contents of the string can be either a JavaScript array or
+// a JavaScript string. The length of this string can be less than the
+// length of the OCaml string. In this case, remaining bytes are
+// assumed to be zeroes. Arrays are mutable but consumes more memory
+// than strings. A common pattern is to start from an empty string and
+// progressively fill it from the start. Partial strings makes it
+// possible to implement this efficiently.
+//
+// When converting to and from UTF-16, we keep track of whether the
+// string is composed only of ASCII characters (in which case, no
+// conversion needs to be performed) or not.
+//
+// The string tag can thus take the following values:
+//   full string     BYTE | UNKNOWN:      0
+//                   BYTE | ASCII:        9
+//                   BYTE | NOT_ASCII:    8
+//   string prefix   PARTIAL:             2
+//   array           ARRAY:               4
+//
+// One can use bit masking to discriminate these different cases:
+//   known_encoding(x) = x&8
+//   is_ascii(x) =       x&1
+//   kind(x) =           x&6
 
 //Provides: caml_str_repeat
 function caml_str_repeat(n, s) {
   if (s.repeat) return s.repeat(n); // ECMAscript 6 and Firefox 24+
   var r = "", l = 0;
-  if (n === 0) return r;
+  if (n == 0) return r;
   for(;;) {
     if (n & 1) r += s;
     n >>= 1;
-    if (n === 0) return r;
+    if (n == 0) return r;
     s += s;
     l++;
     if (l == 9) {
@@ -152,280 +168,232 @@ function caml_is_ascii (s) {
     return !/[^\x00-\x7f]/.test(s);
 }
 
+//Provides: caml_to_js_string
+//Requires: caml_convert_string_to_bytes, caml_is_ascii, caml_utf16_of_utf8
+function caml_to_js_string(s) {
+  switch (s.t) {
+  case 9: /*BYTES | ASCII*/
+    return s.c;
+  default:
+    caml_convert_string_to_bytes(s);
+  case 0: /*BYTES | UNKOWN*/
+    if (caml_is_ascii(s.c)) {
+      s.t = 9; /*BYTES | ASCII*/
+      return s.c;
+    }
+    s.t = 8; /*BYTES | NOT_ASCII*/
+  case 8: /*BYTES | NOT_ASCII*/
+    return caml_utf16_of_utf8(s.c);
+  }
+}
+
+//Provides: caml_string_unsafe_get mutable
+function caml_string_unsafe_get (s, i) {
+  switch (s.t & 6) {
+  default: /* PARTIAL */
+    if (i >= s.c.length) return 0;
+  case 0: /* BYTES */
+    return s.c.charCodeAt(i);
+  case 4: /* ARRAY */
+    return s.c[i]
+  }
+}
+
+//Provides: caml_string_unsafe_set
+//Requires: caml_convert_string_to_array
+function caml_string_unsafe_set (s, i, c) {
+  // The OCaml compiler uses Char.unsafe_chr on integers larger than 255!
+  c &= 0xff;
+  if (s.t != 4 /* ARRAY */) {
+    if (i == s.c.length) {
+      s.c += String.fromCharCode (c);
+      return 0;
+    }
+    caml_convert_string_to_array (s);
+  }
+  s.c[i] = c;
+  return 0;
+}
+
+//Provides: caml_string_bound_error
+//Requires: caml_invalid_argument
+function caml_string_bound_error () {
+  caml_invalid_argument ("index out of bounds");
+}
+
+//Provides: caml_string_get mutable
+//Requires: caml_string_bound_error, caml_string_unsafe_get
+function caml_string_get (s, i) {
+  if (i >>> 0 >= s.l) caml_string_bound_error();
+  return caml_string_unsafe_get (s, i);
+}
+
+//Provides: caml_string_set
+//Requires: caml_string_bound_error, caml_string_unsafe_set
+function caml_string_set (s, i, c) {
+  if (i >>> 0 >= s.l) caml_string_bound_error();
+  return caml_string_unsafe_set (s, i, c);
+}
+
 //Provides: MlString
-//Requires: caml_raise_with_arg, caml_global_data
+//Requires: caml_to_js_string
+function MlString (tag, contents, length) {
+  this.t=tag; this.c=contents; this.l=length;
+}
+MlString.prototype = { toString:function(){return caml_to_js_string(this)} }
+
+//Provides: caml_convert_string_to_bytes
 //Requires: caml_str_repeat, caml_subarray_to_string
-//Requires: caml_is_ascii, caml_utf8_of_utf16, caml_utf16_of_utf8
-function MlString(param) {
-  this.string = this.array = null;
-  if (param !== undefined) {
-    this.bytes = this.fullBytes = param;
-    this.last = this.len = param.length;
-  } else {
-    this.bytes = this.fullBytes = null;
-    this.len = null; this.last = 0;
-  }
-}
-//This is here to avoid circular deps
-function mlstring_bound_error () {
-    caml_raise_with_arg(caml_global_data[4],new MlString("index out of bounds"));
-}
-MlString.prototype = {
-  // JS string : Utf16
-  //     string:null,
-  // byte string
-  //     bytes:null,
-  //     fullBytes:null,
-  // byte array
-  //     array:null,
-  // length
-  //     len:null,
-  // last initialized byte
-  //     last:0,
-
-  toJsString:function() {
-    // assumes this.string == null
-    var b = this.getFullBytes();
-    return this.string = caml_is_ascii(b)?b:caml_utf16_of_utf8 (b);
-  },
-
-  toBytes:function() {
-    // assumes this.bytes == null
-    var s = this.string;
-    if (s != null) {
-      b = caml_is_ascii(s)?s:caml_utf8_of_utf16 (s);
-    } else {
-      var a = this.array,
-          b = caml_subarray_to_string (a, 0, a.length);
-    }
-    this.bytes = this.fullBytes = b;
-    this.last = this.len = b.length;
-    return b;
-  },
-
-  getBytes:function() {
-    var b = this.bytes;
-    if (b == null) b = this.toBytes();
-    return b;
-  },
-
-  getFullBytes:function() {
-    var b = this.fullBytes;
-    if (b !== null) return b;
-    b = this.bytes;
-    if (b == null) b = this.toBytes ();
-    if (this.last < this.len) {
-      this.bytes = (b += caml_str_repeat(this.len - this.last, '\0'));
-      this.last = this.len;
-    }
-    this.fullBytes = b;
-    return b;
-  },
-
-  toArray:function() {
-    // assumes this.array == null
-    var b = this.bytes;
-    if (b == null) b = this.toBytes ();
-    var a = new Array(this.len), l = this.last;
-    for (var i = 0; i < l; i++) a[i] = b.charCodeAt(i);
-    for (l = this.len; i < l; i++) a[i] = 0;
-    this.string = this.bytes = this.fullBytes = null;
-    this.last = this.len;
-    this.array = a;
-    return a;
-  },
-
-  getArray:function() {
-    var a = this.array;
-    if (!a) a = this.toArray();
-    return a;
-  },
-
-  getLen:function() {
-    var len = this.len;
-    if (len !== null) return len;
-    this.toBytes();
-    return this.len;
-  },
-
-  toString:function() { var s = this.string; return s?s:this.toJsString(); },
-
-  valueOf:function() { var s = this.string; return s?s:this.toJsString(); },
-
-  get:function (i) {
-    var a = this.array;
-    if (a) return a[i];
-    var b = this.bytes;
-    if (b == null) b = this.toBytes();
-    return (i<this.last)?b.charCodeAt(i):0;
-  },
-
-  safeGet:function (i) {
-    if (this.len == null) this.toBytes();
-    if ((i < 0) || (i >= this.len)) mlstring_bound_error ();
-    return this.get(i);
-  },
-
-  set:function (i, c) {
-    var a = this.array;
-    if (!a) {
-      if (this.last == i) {
-        this.bytes += String.fromCharCode (c & 0xff);
-        this.last ++;
-        return 0;
-      }
-      a = this.toArray();
-    } else if (this.bytes != null) {
-      this.bytes = this.fullBytes = this.string = null;
-    }
-    a[i] = c & 0xff;
-    return 0;
-  },
-
-  safeSet:function (i, c) {
-    if (this.len == null) this.toBytes ();
-    if ((i < 0) || (i >= this.len)) mlstring_bound_error ();
-    return this.set(i, c);
-  }
+function caml_convert_string_to_bytes (s) {
+  /* Assumes not BYTES */
+  if (s.t == 2 /* PARTIAL */)
+    s.c += caml_str_repeat(s.l - s.c.length, '\0')
+  else
+    s.c = caml_subarray_to_string (s.c, 0, s.c.length);
+  s.t = 0; /*BYTES | UNKOWN*/
 }
 
-// Conversion Javascript -> Caml
+//Provides: caml_convert_string_to_array
+function caml_convert_string_to_array (s) {
+  /* Assumes not ARRAY */
+  var a = new Array(s.l), b = s.c, l = b.length, i = 0;
+  for (; i < l; i++) a[i] = b.charCodeAt(i);
+  for (l = s.l; i < l; i++) a[i] = 0;
+  s.c = a;
+  s.t = 4; /* ARRAY */
+  return a;
+}
+
+//Provides: caml_array_of_string mutable
+//Requires: caml_convert_string_to_array
+function caml_array_of_string (s) {
+  if (s.t != 4 /* ARRAY */) caml_convert_string_to_array(s);
+  return s.c;
+}
+
+//Provides: caml_bytes_of_string mutable
+//Requires: caml_convert_string_to_bytes
+function caml_bytes_of_string (s) {
+  if ((s.t & 6) != 0 /* BYTES */) caml_convert_string_to_bytes(s);
+  return s.c;
+}
 
 //Provides: caml_js_to_string const
-//Requires: MlString
-function caml_js_to_string(s) {
-  var x = new MlString (); x.string = s; return x;
-}
-
-// Caml string initialized form an array of bytes
-//Provides: caml_string_of_array
-//Requires: MlString
-function caml_string_of_array (a) {
-  var s = new MlString ();
-  var len = a.length; s.array = a; s.len = s.last = len;
-  return s;
+//Requires: caml_is_ascii, caml_utf8_of_utf16, MlString
+function caml_js_to_string (s) {
+  var tag = 9 /* BYTES | ASCII */;
+  if (!caml_is_ascii(s))
+    tag = 8 /* BYTES | NOT_ASCII */, s = caml_utf8_of_utf16(s);
+  return new MlString(tag, s, s.length);
 }
 
 //Provides: caml_create_string const
 //Requires: MlString,caml_invalid_argument
 function caml_create_string(len) {
   if (len < 0) caml_invalid_argument("String.create");
-  var s = new MlString();
-  s.bytes = ""; s.len = len;
-  return s;
+  return new MlString(len?2:9,"",len);
 }
-//Provides: caml_fill_string
-//Requires: caml_str_repeat
-function caml_fill_string(s, i, l, c) {
-  if (l > 0) {
-    if (i == 0 && l >= s.last && ((s.bytes != null) || s.array)) {
-      if (c == 0) l = 0;
-      s.array = s.string = null;
-      s.last = l;
-      s.bytes = caml_str_repeat (l, String.fromCharCode(c));
-      s.fullBytes = (s.len == l)?s.bytes:null;
-    } else {
-      var a = s.array;
-      if (!a) a = s.toArray();
-      else if (s.bytes != null) {
-        s.bytes = s.fullBytes = s.string = null;
-      }
-      for (l += i; i < l; i++) a[i] = c;
-    }
-  }
-  return 0;
-}
+//Provides: caml_new_string
+//Requires: MlString
+function caml_new_string (s) { return new MlString(0,s,s.length); }
+//Provides: caml_string_of_array
+//Requires: MlString
+function caml_string_of_array (a) { return new MlString(4,a,a.length); }
+
 //Provides: caml_string_compare mutable
-//Requires: MlString
+//Requires: caml_convert_string_to_bytes
 function caml_string_compare(s1, s2) {
-  if (s1.fullBytes != null && s2.fullBytes != null) {
-    if (s1.fullBytes < s2.fullBytes) return -1;
-    if (s1.fullBytes > s2.fullBytes) return 1;
-    return 0;
-  }
-  var b1 = s1.getFullBytes ();
-  var b2 = s2.getFullBytes ();
-  if (b1 < b2) return -1;
-  if (b1 > b2) return 1;
-  return 0;
+  (s1.t & 6) && caml_convert_string_to_bytes(s1);
+  (s2.t & 6) && caml_convert_string_to_bytes(s2);
+  return (s1.c < s2.c)?-1:(s1.c > s2.c)?1:0;
 }
+
 //Provides: caml_string_equal mutable
-//Requires: MlString
+//Requires: caml_convert_string_to_bytes
 function caml_string_equal(s1, s2) {
-  var b1 = s1.fullBytes;
-  var b2 = s2.fullBytes;
-  if (b1 != null && b2 != null) return (b1 == b2)?1:0;
-  return (s1.getFullBytes () == s2.getFullBytes ())?1:0;
+  (s1.t & 6) && caml_convert_string_to_bytes(s1);
+  (s2.t & 6) && caml_convert_string_to_bytes(s2);
+  return (s1.c == s2.c)?1:0;
 }
+
 //Provides: caml_string_notequal mutable
 //Requires: caml_string_equal
 function caml_string_notequal(s1, s2) { return 1-caml_string_equal(s1, s2); }
-//Provides: caml_string_lessequal
-//Requires: MlString
+
+//Provides: caml_string_lessequal mutable
+//Requires: caml_convert_string_to_bytes
 function caml_string_lessequal(s1, s2) {
-  if (s1.fullBytes != null && s2.fullBytes != null)
-    return s1.fullBytes <= s2.fullBytes;
-  return s1.getFullBytes () <= s2.getFullBytes ();
+  (s1.t & 6) && caml_convert_string_to_bytes(s1);
+  (s2.t & 6) && caml_convert_string_to_bytes(s2);
+  return (s1.c <= s2.c)?1:0;
 }
-//Provides: caml_string_lessthan
-//Requires: MlString
+
+//Provides: caml_string_lessthan mutable
+//Requires: caml_convert_string_to_bytes
 function caml_string_lessthan(s1, s2) {
-  if (s1.fullBytes != null && s2.fullBytes != null)
-    return s1.fullBytes < s2.fullBytes;
-  return s1.getFullBytes () < s2.getFullBytes ();
+  (s1.t & 6) && caml_convert_string_to_bytes(s1);
+  (s2.t & 6) && caml_convert_string_to_bytes(s2);
+  return (s1.c < s2.c)?1:0;
 }
-//Provides: caml_string_greaterthan
-//Requires: caml_string_lessthan
-function caml_string_greaterthan(s1, s2) {
-  return caml_string_lessthan(s2, s1);
-}
+
 //Provides: caml_string_greaterequal
 //Requires: caml_string_lessequal
 function caml_string_greaterequal(s1, s2) {
   return caml_string_lessequal(s2,s1);
 }
-//Provides: caml_blit_string
-//Requires: MlString, caml_subarray_to_string
-function caml_blit_string(s1, i1, s2, i2, len) {
-  if (len === 0) return 0;
-  if ((i2 == 0) && (s2.last <= len)) {
-    s2.array = s2.string = null;
-    s2.bytes =
-      (s1.bytes != null)?
-        s1.bytes.substr (i1, len):
-        (s1.array)?
-          caml_subarray_to_string(s1.array, i1, len):
-          s1.toBytes().substr (i1, len);
-    s2.last = s2.bytes.length;
-    s2.fullBytes = (s2.len == s2.last)?s2.bytes:null;
-  } else if (i2 == s2.last) {
-    s2.bytes +=
-      (s1.bytes != null)?
-        s1.bytes.substr (i1, len):
-        (s1.array)?
-          caml_subarray_to_string(s1.array, i1, len):
-          s1.toBytes().substr (i1, len);
-    s2.last = s2.bytes.length;
-    s2.fullBytes = (s2.len == s2.last)?s2.bytes:null;
-  } else {
-    var a2 = s2.array;
-    if (!a2) a2 = s2.toArray();
-    else if (s2.bytes != null) {
-      s2.bytes = s2.fullBytes = s2.string = null;
-    }
-    var a1 = s1.array;
-    if (a1)
-      for (var i = 0; i < len; i++) a2 [i2 + i] = a1 [i1 + i];
-    else {
-      var b = s1.bytes;
-      if (b == null) b = s1.toBytes();
-      var l = Math.min (len, b.length - i1);
-      for (var i = 0; i < l; i++) a2 [i2 + i] = b.charCodeAt(i1 + i);
-      for (; i < len; i++) a2 [i2 + i] = 0;
+
+//Provides: caml_string_greaterthan
+//Requires: caml_string_lessthan
+function caml_string_greaterthan(s1, s2) {
+  return caml_string_lessthan(s2, s1);
+}
+
+//Provides: caml_fill_string
+//Requires: caml_str_repeat, caml_convert_string_to_array
+function caml_fill_string(s, i, l, c) {
+  if (l > 0) {
+    if (i == 0 && (l >= s.l || (s.t == 2 /* PARTIAL */ && l >= s.c.length))) {
+      if (c == 0) {
+        s.c = "";
+        s.t = 2; /* PARTIAL */
+      } else {
+        s.c = caml_str_repeat (l, String.fromCharCode(c));
+        s.t = (l == s.l)?0 /* BYTES | UNKOWN */ :2; /* PARTIAL */
+      }
+    } else {
+      if (s.t != 4 /* ARRAY */) caml_convert_string_to_array(s);
+      for (l += i; i < l; i++) s.c[i] = c;
     }
   }
   return 0;
 }
-//Provides: caml_new_string
-//Requires: MlString
-function caml_new_string(x){return new MlString(x);}
+
+//Provides: caml_blit_string
+//Requires: caml_subarray_to_string, caml_convert_string_to_array
+function caml_blit_string(s1, i1, s2, i2, len) {
+  if (len == 0) return 0;
+  if ((i2 == 0) &&
+      (len >= s2.l || (s2.t == 2 /* PARTIAL */ && len >= s2.c.length))) {
+    s2.c = (s1.t == 4 /* ARRAY */)?caml_subarray_to_string(s1.c, i1, len):
+                                   s1.c.substr(i1, len);
+    s2.t = (s2.c.length == s2.l)?0 /* BYTES | UNKOWN */ :2; /* PARTIAL */
+  } else if (s2.t == 2 /* PARTIAL */ && i2 == s2.c.length) {
+    s2.c += (s1.t == 4 /* ARRAY */)?caml_subarray_to_string(s1.c, i1, len):
+                                    s1.c.substr(i1, len);
+    s2.t = (s2.c.length == s2.l)?0 /* BYTES | UNKOWN */ :2; /* PARTIAL */
+  } else {
+    if (s2.t != 4 /* ARRAY */) caml_convert_string_to_array(s2);
+    var c1 = s1.c, c2 = s2.c;
+    if (s1.t == 4 /* ARRAY */)
+      for (var i = 0; i < len; i++) c2 [i2 + i] = c1 [i1 + i];
+    else {
+      var l = Math.min (len, c1.length - i1);
+      for (var i = 0; i < l; i++) c2 [i2 + i] = c1.charCodeAt(i1 + i);
+      for (; i < len; i++) c2 [i2 + i] = 0;
+    }
+  }
+  return 0;
+}
+
+//Provides: caml_ml_string_length const
+function caml_ml_string_length(s) { return s.l }

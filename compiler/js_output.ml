@@ -859,7 +859,7 @@ end) = struct
         PP.string f ":";
         PP.break f;
         statement ~last f s
-    | Switch_statement (e, cc, def) ->
+    | Switch_statement (e, cc, def, cc') ->
         PP.start_group f 1;
         PP.start_group f 0;
         PP.string f "switch";
@@ -883,15 +883,15 @@ end) = struct
           PP.end_group f;
           PP.break f;
           PP.start_group f 0;
-          statement_list ~skip_last_semi:(last && def = None) f sl;
+          statement_list ~skip_last_semi:last f sl;
           PP.end_group f;
           PP.end_group f;
           PP.break f in
-        let rec loop = function
+        let rec loop last = function
           | [] -> ()
-          | [x] -> output_one true x
-          | x::xs -> output_one false x; loop xs in
-        loop cc;
+          | [x] -> output_one last x
+          | x::xs -> output_one false x; loop last xs in
+        loop (def = None && cc' = []) cc;
         begin match def with
             None ->
               ()
@@ -900,10 +900,11 @@ end) = struct
             PP.string f "default:";
             PP.break f;
             PP.start_group f 0;
-            statement_list ~skip_last_semi:true f def;
+            statement_list ~skip_last_semi:(cc' = []) f def;
             PP.end_group f;
             PP.end_group f
         end;
+        loop true cc';
         PP.string f "}";
         PP.end_group f;
         PP.end_group f

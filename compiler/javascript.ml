@@ -117,7 +117,8 @@ and statement =
   | Return_statement of expression option 
   (* | With_statement of expression * statement *)
   | Labelled_statement of Label.t * (statement * location)
-  | Switch_statement of expression * case_clause list * statement_list option 
+  | Switch_statement of
+      expression * case_clause list * statement_list option * case_clause list
   | Throw_statement of expression 
   | Try_statement of block * (ident * block) option * block option 
   | Debugger_statement

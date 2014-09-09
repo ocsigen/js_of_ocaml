@@ -301,12 +301,12 @@ function caml_ml_flush (oc) {
 //output to out_channel
 
 //Provides: caml_ml_output
-//Requires: caml_ml_flush
+//Requires: caml_ml_flush,caml_ml_string_length
 //Requires: caml_create_string, caml_blit_string, caml_raise_sys_error
 function caml_ml_output (oc,buffer,offset,len) {
     if(! oc.opened) caml_raise_sys_error("Cannot output to a closed channel");
     var string;
-    if(offset == 0 && buffer.getLen() == len)
+    if(offset == 0 && caml_ml_string_length(buffer) == len)
         string = buffer;
     else {
         string = caml_create_string(len);
@@ -333,10 +333,10 @@ function caml_ml_output_char (oc,c) {
 }
 
 //Provides: caml_output_value
-//Requires: caml_output_value_to_string, caml_ml_output
+//Requires: caml_output_value_to_string, caml_ml_output,caml_ml_string_length
 function caml_output_value (chan,v,_flags) {
   var s = caml_output_value_to_string(v);
-  caml_ml_output(chan,s,0,s.getLen());
+  caml_ml_output(chan,s,0,caml_ml_string_length(s));
   return 0;
 }
 

@@ -34,8 +34,8 @@ var caml_marshal_constants = {
 
 
 //Provides: MlStringReader
-//Requires: caml_new_string
-function MlStringReader (s, i) { this.s = s.getFullBytes(); this.i = i; }
+//Requires: caml_new_string, caml_bytes_of_string
+function MlStringReader (s, i) { this.s = caml_bytes_of_string(s); this.i = i; }
 MlStringReader.prototype = {
   read8u:function () { return this.s.charCodeAt(this.i++); },
   read8s:function () { return this.s.charCodeAt(this.i++) << 24 >> 24; },
@@ -256,11 +256,13 @@ function caml_input_value_from_string(s, ofs) {
 }
 
 //Provides: caml_marshal_data_size mutable
-//Requires: caml_failwith
+//Requires: caml_failwith, caml_string_unsafe_get
 function caml_marshal_data_size (s, ofs) {
   function get32(s,i) {
-    return (s.get(i) << 24) | (s.get(i + 1) << 16) |
-           (s.get(i + 2) << 8) | s.get(i + 3);
+    return (caml_string_unsafe_get(s, i) << 24) |
+           (caml_string_unsafe_get(s, i + 1) << 16) |
+           (caml_string_unsafe_get(s, i + 2) << 8) |
+            caml_string_unsafe_get(s, i + 3);
   }
   if (get32(s, ofs) != (0x8495A6BE|0))
     caml_failwith("Marshal.data_size: bad object");
@@ -268,8 +270,9 @@ function caml_marshal_data_size (s, ofs) {
 }
 
 //Provides: caml_output_val
-//Requires: caml_marshal_constants, caml_int64_to_bytes, caml_failwith, MlString
+//Requires: caml_marshal_constants, caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
+//Requires: MlString, caml_ml_string_length, caml_string_unsafe_get
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -321,14 +324,15 @@ var caml_output_val = function (){
         writer.size_64 += v.length;
         if (v.length > 1) stack.push (v, 1);
       } else if (v instanceof MlString) {
-        var len = v.getLen();
+        var len = caml_ml_string_length(v);
         if (len < 0x20)
           writer.write (8, cst.PREFIX_SMALL_STRING + len);
         else if (len < 0x100)
           writer.write_code (8, cst.CODE_STRING8, len);
         else
           writer.write_code (32, cst.CODE_STRING32, len);
-        for (var i = 0;i < len;i++) writer.write (8, v.get(i));
+        for (var i = 0;i < len;i++)
+          writer.write (8, caml_string_unsafe_get(v,i));
         writer.size_32 += 1 + (((len + 4) / 4)|0);
         writer.size_64 += 1 + (((len + 8) / 8)|0);
       } else {

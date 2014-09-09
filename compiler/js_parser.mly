@@ -312,10 +312,14 @@ with_statement:
 switch_statement:
  | pi=T_SWITCH T_LPAREN e=expression T_RPAREN
     b=curly_block(
-    pair(list(case_clause),option(default_clause)))
+    pair(list(case_clause),option(pair(default_clause,list(case_clause)))))
     {
-      let (l, d) = fst b in
-      (J.Switch_statement (e, l, d), J.Pi pi) }
+      let (l, d, l') =
+        match fst b with
+          (l, None) -> (l, None, [])
+        | (l, Some (d, l')) -> (l, Some d, l')
+      in
+      (J.Switch_statement (e, l, d, l'), J.Pi pi) }
 
 throw_statement:
  | pi=T_THROW expression { (J.Throw_statement $2, J.Pi pi) }
