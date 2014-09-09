@@ -69,7 +69,7 @@ module H = struct
       | Some t -> t
 
 
-  let load_or_create n : Js.js_string Js.t t =
+  let load_or_create n : string t =
     try
       let s = get_storage () in
       match Js.Opt.to_option (s##getItem(Js.string "history")) with
@@ -79,12 +79,12 @@ module H = struct
           if Array.length a.data = n
           then a
           else
-            let a' = make n (Js.string "") in
+            let a' = make n "" in
             for i = 0 to a.size - 1 do
               add (get a i) a';
             done;
             a'
-    with Not_found -> make n (Js.string "")
+    with _ | Not_found -> make n ""
 
   let save t =
     try
@@ -355,7 +355,7 @@ let run _ =
     Lwt.return () in
 
 
-  let hist = H.load_or_create 100 in
+  let hist : string H.t = H.load_or_create 100 in
   let hist_idx = ref (H.size hist) in
   let cur = ref (Js.string "") in
   let execute () =
@@ -369,7 +369,7 @@ let run _ =
           && content.[len - 2] = ';')
       then content'
       else content' ^ ";;" in
-    H.add (Js.string content') hist;
+    H.add (content') hist;
     H.save hist;
     cur:=Js.string "";
     hist_idx:=H.size hist;
@@ -481,8 +481,8 @@ let run _ =
                 let idx = !hist_idx - 1 in
                 let s=H.get hist idx in
                 hist_idx:=idx;
-                textbox##value <- s;
-                let s' = Js.to_string s in
+                textbox##value <- Js.string s;
+                let s' = s in
                 let p' = try max 0 (String.index s' '\n' - 1) with _ -> String.length s' in
                 let () = (Obj.magic textbox)##setSelectionRange(p',p') in
                 Js._false
@@ -505,10 +505,10 @@ let run _ =
                 end else begin
                   let s=H.get hist idx in
                   hist_idx:=idx;
-                  let s' = Js.to_string s in
+                  let s' = s in
                   let slen = String.length s' in
                   let () = (Obj.magic textbox)##setSelectionRange(slen,slen) in
-                  textbox##value <- s
+                  textbox##value <- Js.string s
                 end;
                 Js._false
               with _ -> Js._false
