@@ -221,7 +221,11 @@ function caml_check_bound (array, index) {
 
 //Provides: caml_make_vect const
 function caml_make_vect (len, init) {
-  var b = [0]; for (var i = 1; i <= len; i++) b[i] = init; return b;
+  var len = len + 1 | 0;
+  var b = new Array(len);
+  b[0]=0;
+  for (var i = 1; i < len; i++) b[i] = init;
+  return b;
 }
 
 //Provides: caml_compare_val
