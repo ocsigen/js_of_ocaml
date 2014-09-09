@@ -22,6 +22,7 @@ open Javascript
 class type mapper = object
   method expression : Javascript.expression -> Javascript.expression
   method expression_o : Javascript.expression option -> Javascript.expression option
+  method switch_case : Javascript.expression -> Javascript.expression
   method initialiser : (Javascript.expression * Javascript.location) -> (Javascript.expression * Javascript.location)
   method initialiser_o : (Javascript.expression * Javascript.location) option -> (Javascript.expression * Javascript.location) option
   method statement : Javascript.statement -> Javascript.statement
@@ -89,12 +90,12 @@ class map : mapper = object(m)
     | Switch_statement (e, l, def, l') ->
         Switch_statement
           (m#expression e,
-           List.map (fun (e,s) -> m#expression e, m#statements s) l,
+           List.map (fun (e,s) -> m#switch_case e, m#statements s) l,
            begin match def with
            | None   -> None
            | Some l -> Some (m#statements l)
            end,
-           List.map (fun (e,s) -> m#expression e, m#statements s) l')
+           List.map (fun (e,s) -> m#switch_case e, m#statements s) l')
     | Try_statement (b, catch, final) ->
         Try_statement
           (m#statements b,
@@ -108,6 +109,8 @@ class map : mapper = object(m)
   method statement_o x = match x with
     | None          -> None
     | Some (s, loc) -> Some (m#statement s, loc)
+
+  method switch_case e = m#expression e
 
   method expression x = match x with
   | ESeq(e1,e2) -> ESeq(m#expression  e1, m#expression  e2)
@@ -176,6 +179,12 @@ let string_replace v f s =
 class replace_expr f = object(m)
   inherit map as super
   method expression e = try EVar (f e) with Not_found -> super#expression e
+
+  (* do not replace constant in switch case *)
+  method switch_case e =
+    match e with
+    | ENum _ | EStr _ -> e
+    | _ -> m#expression e
 end
 
 open Util
@@ -200,6 +209,12 @@ class share_constant = object(m)
         e
       | _ -> e in
     super#expression e
+
+  (* do not replace constant in switch case *)
+  method switch_case e =
+    match e with
+    | ENum _ | EStr _ -> e
+    | _ -> m#expression e
 
   method sources l =
     let (revl, _) =

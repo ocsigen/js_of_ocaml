@@ -22,6 +22,7 @@ open Javascript
 class type mapper = object
   method expression : expression -> expression
   method expression_o : expression option -> expression option
+  method switch_case : expression -> expression
   method initialiser : (expression * location) -> (expression * location)
   method initialiser_o : (expression * location) option -> (expression * location) option
   method statement : statement -> statement
