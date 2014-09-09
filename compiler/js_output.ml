@@ -64,11 +64,13 @@ end) = struct
     if debug_enabled then begin
       match loc with
         Pi {Parse_info.name = file; line; col} ->
-          PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file (line + 1) col)
+        PP.space f;
+        PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file (line + 1) col);
+        PP.space f
       | N ->
           ()
       | U ->
-          PP.string f "/*<<?>>*/"
+        PP.space f; PP.string f "/*<<?>>*/"; PP.space f
     end;
     if source_map_enabled then
       match loc with
@@ -1001,10 +1003,19 @@ end) = struct
 
 end
 
-let part_of_ident c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c = '_' || c = '$'
+let part_of_ident =
+  let a = Array.init 256 (fun i ->
+    let c = Char.chr i in
+    (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c = '_' || c = '$'
+  ) in
+  (fun c -> Array.unsafe_get a (Char.code c))
 
 let need_space a b =
-  part_of_ident a = part_of_ident b
+  (* do not concat 2 differant identifier *)
+  (part_of_ident a && part_of_ident b) ||
+  (* do not generate end_of_line_comment.
+     handle the case of "num / /* coment */ b " *)
+  (a = '/' && b = '/')
 
 
 let chop_extension s =
