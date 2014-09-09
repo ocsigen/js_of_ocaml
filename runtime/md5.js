@@ -19,10 +19,10 @@
 
 
 //Provides: caml_md5_chan
-//Requires: caml_md5_string, caml_string_of_array
+//Requires: caml_md5_string, caml_string_of_array,caml_ml_string_length
 function caml_md5_chan(chan,len){
   if(len<0){
-    len=chan.file.data.getLen() - chan.offset;
+    len=caml_ml_string_length(chan.file.data) - chan.offset;
   }
   return caml_md5_string(chan.file.data,chan.offset,len);
 }

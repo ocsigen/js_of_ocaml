@@ -30,13 +30,13 @@ function caml_sys_close(fd) {
 //Requires: MlString, caml_raise_sys_error, caml_global_data,caml_sys_file_exists
 //Requires: caml_fs_register,caml_make_path,caml_fs_content
 //Requires: caml_raise_no_such_file,caml_sys_is_directory
-//Requires: caml_create_string,MlFile
+//Requires: caml_create_string,MlFile,caml_ml_string_length
 function caml_sys_open_internal(idx,file,flags) {
   if(caml_global_data.fds === undefined) caml_global_data.fds = new Array();
   flags=flags?flags:{};
   var info = {};
   info.file = file;
-  info.offset = flags.append?file.data.getLen():0;
+  info.offset = flags.append?caml_ml_string_length(file.data):0;
   info.flags = flags;
   caml_global_data.fds[idx] = info;
   caml_global_data.fd_last_idx = idx;
@@ -104,11 +104,11 @@ function caml_ml_out_channels_list () {
 //Provides: caml_ml_open_descriptor_out
 //Requires: js_print_stderr, js_print_stdout, caml_ml_out_channels, caml_global_data,caml_sys_open
 //Requires: caml_raise_sys_error,caml_new_string
-//Requires: caml_create_string, caml_blit_string
+//Requires: caml_create_string, caml_blit_string,caml_ml_string_length
 function caml_std_output(chan,s){
   var str = caml_new_string(s);
-  var slen = str.getLen();
-  var clen = chan.file.data.getLen();
+  var slen = caml_ml_string_length(str);
+  var clen = caml_ml_string_length(chan.file.data);
   var offset = chan.offset;
   if(offset + slen >= clen) {
     var new_str = caml_create_string (offset + slen);
@@ -180,14 +180,15 @@ function caml_ml_close_channel (channel) {
 }
 
 //Provides: caml_ml_channel_size
+//Requires: caml_ml_string_length
 function caml_ml_channel_size(chan) {
-  return chan.file.data.getLen();
+  return caml_ml_string_length(chan.file.data);
 }
 
 //Provides: caml_ml_channel_size_64
-//Requires: caml_ml_channel_size,caml_int64_of_float
+//Requires: caml_ml_channel_size,caml_int64_of_float,caml_ml_string_length
 function caml_ml_channel_size_64(chan) {
-  return caml_int64_of_float(chan.file.data.getLen());
+  return caml_int64_of_float(caml_ml_string_length(chan.file.data));
 }
 
 //Provides: caml_ml_set_channel_output
@@ -197,9 +198,9 @@ function caml_ml_set_channel_output(chan,f) {
 }
 
 //Provides: caml_ml_input
-//Requires: caml_blit_string, caml_string_of_array
+//Requires: caml_blit_string, caml_string_of_array, caml_ml_string_length
 function caml_ml_input (chan, s, i, l) {
-  var l2 = chan.file.data.getLen() - chan.offset;
+  var l2 = caml_ml_string_length(chan.file.data) - chan.offset;
   if (l2 < l) l = l2;
   caml_blit_string(chan.file.data, chan.offset, s, i, l);
   chan.offset += l;
@@ -230,21 +231,23 @@ function caml_input_value (chan) {
 
 //Provides: caml_ml_input_char
 //Requires: caml_raise_end_of_file, caml_array_bound_error
+//Requires: caml_ml_string_length, caml_string_get
 function caml_ml_input_char (chan) {
-  if (chan.offset >= chan.file.data.getLen())
+  if (chan.offset >= caml_ml_string_length(chan.file.data))
     caml_raise_end_of_file();
-  var c = chan.file.data.safeGet(chan.offset);
+  var c = caml_string_get(chan.file.data, chan.offset);
   chan.offset++;
   return c;
 }
 
 //Provides: caml_ml_input_int
 //Requires: caml_raise_end_of_file
+//Requires: caml_ml_string_length, caml_string_unsafe_get
 function caml_ml_input_int (chan) {
   var s = chan.file.data, o = chan.offset;
-  if ((o + 3) >= s.getLen())
+  if ((o + 3) >= caml_ml_string_length(s))
     caml_raise_end_of_file();
-  var r = (s.get(o) << 24) | (s.get(o+1) << 16) | (s.get(o+2) << 8) | (s.get(o+3));
+  var r = (caml_string_unsafe_get(s,o) << 24) | (caml_string_unsafe_get(s,o+1) << 16) | (caml_string_unsafe_get(s,o+2) << 8) | (caml_string_unsafe_get(s,o+3));
   chan.offset+=4;
   return r;
 }
@@ -270,15 +273,15 @@ function caml_ml_pos_in(chan) {return chan.offset}
 function caml_ml_pos_in_64(chan) {return caml_int64_of_float(chan.offset)}
 
 //Provides: caml_ml_input_scan_line
-//Requires: caml_array_bound_error
+//Requires: caml_array_bound_error, caml_ml_string_length, caml_string_get
 function caml_ml_input_scan_line(chan){
   var p = chan.offset;
   var s = chan.file.data;
-  var len = s.getLen();
+  var len = caml_ml_string_length(s);
   if(p >= len) { return 0;}
   while(true) {
     if(p >= len) return - (p - chan.offset);
-    if(s.safeGet(p) == 10) return p - chan.offset + 1;
+    if(caml_string_get(s, p) == 10) return p - chan.offset + 1;
     p++;
   }
 }
