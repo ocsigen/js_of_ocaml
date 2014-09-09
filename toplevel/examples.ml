@@ -60,26 +60,26 @@ let div_elt =
 #display div_elt
 
 (** Graphics: Draw *)
-open Graphics_js;;
+open Graphics_js
 loop [Mouse_motion] (function {mouse_x=x;mouse_y=y} -> fill_circle x y 5);;
 
 (** Graphics: Draw chars*)
-open Graphics_js;;
+open Graphics_js
 loop [Mouse_motion;Key_pressed]
   (function {mouse_x=x;mouse_y=y;key} ->
     moveto x y; draw_char key);;
 
 (** Graphics: PingPong *)
-open Graphics_js;;
-let c = 3;;
+open Graphics_js
+let c = 3
 let x0 = 0
 and x1 = size_x ()
 and y0 = 0
-and y1 = size_y ();;
+and y1 = size_y ()
 
 let draw_ball x y =
  set_color foreground;
- fill_circle x y c;;
+ fill_circle x y c
 
 
 let state = ref (Lwt.task ())
@@ -94,7 +94,7 @@ let rec pong_aux x y dx dy =
  and new_dy =
   if new_y - c <= y0 || new_y + c >= y1 then (- dy) else dy in
  Lwt.bind (wait ()) (fun () ->
-     pong_aux new_x new_y new_dx new_dy);;
+     pong_aux new_x new_y new_dx new_dy)
 
 let rec start () =
   let t = Lwt.task () in
@@ -104,8 +104,8 @@ let rec start () =
   Lwt.wakeup w ();
   Lwt.bind (Lwt_js.sleep (1./.60.)) start
 
-let pong x y dx dy = pong_aux x y dx dy;;
+let pong x y dx dy = pong_aux x y dx dy
 
-pong 111 87 2 3;;
-pong 28  57 5 3;;
-start ();;
+let _ = pong 111 87 2 3
+let _ = pong 28  57 5 3
+let _ = start ()
