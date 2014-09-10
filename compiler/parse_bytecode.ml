@@ -183,11 +183,25 @@ end = struct
     for i = 0 to len - 1 do
       let orig = input_binary_int ic in
       let evl : debug_event list = input_value ic in
-      ignore(read_paths ());
-      List.iter
-        (fun ev ->
-           relocate_event orig ev; Hashtbl.add events_by_pc ev.ev_pos ev)
-        evl
+
+      (* Work arround a bug in ocaml 4.02 *)
+      (* debug section in pack module may be wrong *)
+      (* containing no debug_info. *)
+      (* In this case, evl in not a debug_info list but a *)
+      (* string list (see read_paths) *)
+
+      (* save the current position *)
+      let pos = pos_in ic in
+      let evl_is_valid = try
+          ignore(read_paths ());true
+        with Failure _ ->
+          (* restore position *)
+          seek_in ic pos; false in
+      if evl_is_valid then
+        List.iter
+          (fun ev ->
+             relocate_event orig ev; Hashtbl.add events_by_pc ev.ev_pos ev)
+          evl
     done;
     events_by_pc
 
