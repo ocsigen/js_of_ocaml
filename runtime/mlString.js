@@ -207,6 +207,7 @@ function caml_string_unsafe_set (s, i, c) {
   if (s.t != 4 /* ARRAY */) {
     if (i == s.c.length) {
       s.c += String.fromCharCode (c);
+      if (i + 1 == s.l) s.t = 0; /*BYTES | UNKOWN*/
       return 0;
     }
     caml_convert_string_to_array (s);
