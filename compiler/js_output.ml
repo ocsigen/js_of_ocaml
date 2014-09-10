@@ -64,13 +64,13 @@ end) = struct
     if debug_enabled then begin
       match loc with
         Pi {Parse_info.name = file; line; col} ->
-        PP.space f;
+        PP.non_breaking_space f;
         PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file (line + 1) col);
-        PP.space f
+        PP.non_breaking_space f
       | N ->
           ()
       | U ->
-        PP.space f; PP.string f "/*<<?>>*/"; PP.space f
+        PP.non_breaking_space f; PP.string f "/*<<?>>*/"; PP.non_breaking_space f
     end;
     if source_map_enabled then
       match loc with
