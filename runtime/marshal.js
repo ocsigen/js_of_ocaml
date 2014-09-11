@@ -162,52 +162,56 @@ function caml_input_value_from_string(s, ofs) {
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           return v;
         case 0x0C: //cst.CODE_DOUBLE_LITTLE:
-          var t = [];
+          var t = new Array(8);;
           for (var i = 0;i < 8;i++) t[7 - i] = reader.read8u ();
           var v = caml_float_of_bytes (t);
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           return v;
         case 0x0B: //cst.CODE_DOUBLE_BIG:
-          var t = [];
+          var t = new Array(8);;
           for (var i = 0;i < 8;i++) t[i] = reader.read8u ();
           var v = caml_float_of_bytes (t);
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           return v;
         case 0x0E: //cst.CODE_DOUBLE_ARRAY8_LITTLE:
           var len = reader.read8u();
-          var v = [254];
+          var v = new Array(len+1);
+          v[0] = 254;
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           for (var i = 1;i <= len;i++) {
-            var t = [];
+            var t = new Array(8);;
             for (var j = 0;j < 8;j++) t[7 - j] = reader.read8u();
             v[i] = caml_float_of_bytes (t);
           }
           return v;
         case 0x0D: //cst.CODE_DOUBLE_ARRAY8_BIG:
           var len = reader.read8u();
-          var v = [254];
+          var v = new Array(len+1);
+          v[0] = 254;
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           for (var i = 1;i <= len;i++) {
-            var t = [];
+            var t = new Array(8);;
             for (var j = 0;j < 8;j++) t[j] = reader.read8u();
             v [i] = caml_float_of_bytes (t);
           }
           return v;
         case 0x07: //cst.CODE_DOUBLE_ARRAY32_LITTLE:
           var len = reader.read32u();
-          var v = [254];
+          var v = new Array(len+1);
+          v[0] = 254;
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           for (var i = 1;i <= len;i++) {
-            var t = [];
+            var t = new Array(8);;
             for (var j = 0;j < 8;j++) t[7 - j] = reader.read8u();
             v[i] = caml_float_of_bytes (t);
           }
           return v;
         case 0x0F: //cst.CODE_DOUBLE_ARRAY32_BIG:
           var len = reader.read32u();
-          var v = [254];
+          var v = new Array(len+1);
+          v[0] = 254;
           for (var i = 1;i <= len;i++) {
-            var t = [];
+            var t = new Array(8);;
             for (var j = 0;j < 8;j++) t[j] = reader.read8u();
             v [i] = caml_float_of_bytes (t);
           }
@@ -222,7 +226,7 @@ function caml_input_value_from_string(s, ofs) {
           switch(s) {
           case "_j":
             // Int64
-            var t = [];
+            var t = new Array(8);;
             for (var j = 0;j < 8;j++) t[j] = reader.read8u();
             var v = caml_int64_of_bytes (t);
             if (intern_obj_table) intern_obj_table[obj_counter++] = v;
