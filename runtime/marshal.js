@@ -177,9 +177,9 @@ function caml_input_value_from_string(s, ofs) {
           var len = reader.read8u();
           var v = new Array(len+1);
           v[0] = 254;
+          var t = new Array(8);;
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           for (var i = 1;i <= len;i++) {
-            var t = new Array(8);;
             for (var j = 0;j < 8;j++) t[7 - j] = reader.read8u();
             v[i] = caml_float_of_bytes (t);
           }
@@ -188,9 +188,9 @@ function caml_input_value_from_string(s, ofs) {
           var len = reader.read8u();
           var v = new Array(len+1);
           v[0] = 254;
+          var t = new Array(8);;
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
           for (var i = 1;i <= len;i++) {
-            var t = new Array(8);;
             for (var j = 0;j < 8;j++) t[j] = reader.read8u();
             v [i] = caml_float_of_bytes (t);
           }
@@ -200,8 +200,8 @@ function caml_input_value_from_string(s, ofs) {
           var v = new Array(len+1);
           v[0] = 254;
           if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+          var t = new Array(8);;
           for (var i = 1;i <= len;i++) {
-            var t = new Array(8);;
             for (var j = 0;j < 8;j++) t[7 - j] = reader.read8u();
             v[i] = caml_float_of_bytes (t);
           }
@@ -210,8 +210,8 @@ function caml_input_value_from_string(s, ofs) {
           var len = reader.read32u();
           var v = new Array(len+1);
           v[0] = 254;
+          var t = new Array(8);;
           for (var i = 1;i <= len;i++) {
-            var t = new Array(8);;
             for (var j = 0;j < 8;j++) t[j] = reader.read8u();
             v [i] = caml_float_of_bytes (t);
           }
