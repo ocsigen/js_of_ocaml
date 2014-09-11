@@ -222,10 +222,10 @@ function caml_fs_file_content(name) {
 //Requires: caml_marshal_data_size, caml_input_value_from_string, caml_string_of_array
 function caml_input_value (chan) {
   var str = chan.file.data;
-  var offset = chan.offset;
-  var _len = caml_marshal_data_size (str, offset);
+  var offset = [chan.offset];
+  var _len = caml_marshal_data_size (str, offset[0]);
   var res = caml_input_value_from_string(str, offset);
-  chan.offset = str.offset;
+  chan.offset = offset[0];
   return res;
 }
 

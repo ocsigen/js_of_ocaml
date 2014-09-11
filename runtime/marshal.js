@@ -91,7 +91,7 @@ function caml_float_of_bytes (a) {
 //Requires: caml_float_of_bytes, caml_int64_of_bytes
 //Requires: MlStringReader
 function caml_input_value_from_string(s, ofs) {
-  var reader = new MlStringReader (s, ofs);
+  var reader = new MlStringReader (s, typeof ofs=="number"?ofs:ofs[0]);
   var _magic = reader.read32u ();
   var _block_len = reader.read32u ();
   var num_objects = reader.read32u ();
@@ -261,7 +261,7 @@ function caml_input_value_from_string(s, ofs) {
     if (d < size) stack.push(v, size);
     v[d] = intern_rec ();
   }
-  s.offset = reader.i;
+  if (typeof ofs!="number") ofs[0] = reader.i;
   return res;
 }
 

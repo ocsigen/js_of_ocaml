@@ -337,10 +337,11 @@ function caml_lessequal (x, y) { return +(caml_compare_val(x,y,false) <= 0); }
 function caml_lessthan (x, y) { return +(caml_compare_val(x,y,false) < 0); }
 
 //Provides: caml_parse_sign_and_base
-//Requires: caml_string_unsafe_get
+//Requires: caml_string_unsafe_get, caml_ml_string_length
 function caml_parse_sign_and_base (s) {
-  var i = 0, base = 10, sign = caml_string_unsafe_get(s,0) == 45?(i++,-1):1;
-  if (caml_string_unsafe_get(s, i) == 48)
+  var i = 0, len = caml_ml_string_length(s), base = 10,
+     sign = (len > 0 && caml_string_unsafe_get(s,0) == 45)?(i++,-1):1;
+  if (i + 1 < len && caml_string_unsafe_get(s, i) == 48)
     switch (caml_string_unsafe_get(s, i + 1)) {
     case 120: case 88: base = 16; i += 2; break;
     case 111: case 79: base =  8; i += 2; break;
@@ -363,13 +364,13 @@ function caml_parse_digit(c) {
 function caml_int_of_string (s) {
   var r = caml_parse_sign_and_base (s);
   var i = r[0], sign = r[1], base = r[2];
+  var len = caml_ml_string_length(s);
   var threshold = -1 >>> 0;
-  var c = caml_string_unsafe_get(s, i);
+  var c = (i < len)?caml_string_unsafe_get(s, i):0;
   var d = caml_parse_digit(c);
   if (d < 0 || d >= base) caml_failwith("int_of_string");
   var res = d;
-  for (;;) {
-    i++;
+  for (i++;i<len;i++) {
     c = caml_string_unsafe_get(s, i);
     if (c == 95) continue;
     d = caml_parse_digit(c);
@@ -377,7 +378,7 @@ function caml_int_of_string (s) {
     res = base * res + d;
     if (res > threshold) caml_failwith("int_of_string");
   }
-  if (i != caml_ml_string_length(s)) caml_failwith("int_of_string");
+  if (i != len) caml_failwith("int_of_string");
   // For base different from 10, we expect an unsigned representation,
   // hence any value of 'res' (less than 'threshold') is acceptable.
   // But we have to convert the result back to a signed integer.

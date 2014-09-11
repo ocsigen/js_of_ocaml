@@ -132,7 +132,7 @@ function () {
       w[3] = add(d, w[3]);
     }
 
-    var t = [];
+    var t = new Array(16);
     for (var i = 0; i < 4; i++)
       for (var j = 0; j < 4; j++)
         t[i * 4 + j] = (w[i] >> (8 * j)) & 0xFF;
