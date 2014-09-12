@@ -122,6 +122,18 @@ let run () =
       Arg.String Option.Optim.disable, "<name> disable optimization <name>");
      ("-enable",
       Arg.String Option.Optim.enable, "<name> enable optimization <name>");
+     ("-set", Arg.String (fun s ->
+        match Util.split_char '=' s with
+        | [k;v] -> begin
+            try Option.Param.set k (int_of_string v) with
+            | Failure _ -> raise (Arg.Bad (
+              Printf.sprintf
+                "wrong argument '%s'; option '-opt' expects param=int" s))
+          end
+        | _ -> raise (Arg.Bad (
+          Printf.sprintf
+            "wrong argument '%s'; option '-opt' expects param=int" s))
+      ), "<oN> set parameter profile : o1 (default), o2, o3");
      ("-pretty", Arg.Unit (fun () -> Option.Optim.enable "pretty"), " pretty print the output");
      ("-debuginfo", Arg.Unit (fun () -> Option.Optim.enable "debuginfo"), " output debug info");
      ("-opt", Arg.Int Driver.set_profile, "<oN> set optimization profile : o1 (default), o2, o3");

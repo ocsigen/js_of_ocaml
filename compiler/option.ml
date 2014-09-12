@@ -94,6 +94,32 @@ module Optim = struct
   let compact_vardecl = o ~name:"vardecl" ~default:false
 end
 
+module Param = struct
+  let params = ref []
+
+  let p ~name ~default =
+    let state =
+      try
+        List.assoc name !params
+      with Not_found ->
+        let state = ref default in
+        params := (name, state) :: !params;
+        state
+    in
+    fun () -> !state
+
+  let set s v =
+    try List.assoc s !params := v with Not_found ->
+      failwith (Printf.sprintf "The option named %S doesn't exist" s)
+
+  (* V8 "optimize" switches with less than 128 case.
+     60 seams to perform well. *)
+  let switch_max_case = p ~name:"switch_size" ~default:60
+
+  let tailcall_max_depth = p ~name:"tc_depth" ~default:50
+  let constant_max_depth = p ~name:"cst_depth" ~default:10
+end
+
 module Tailcall = struct
   type t =
     | TcNone
@@ -117,7 +143,5 @@ module Tailcall = struct
   let set,get =
     let r = ref default in
     (fun x -> r:=x),(fun () -> !r)
-
-  let maximum () = 50
 
 end

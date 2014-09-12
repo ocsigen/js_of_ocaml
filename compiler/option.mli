@@ -47,6 +47,13 @@ module Optim : sig
   val disable : string -> unit
 end
 
+module Param : sig
+  val set : string -> int -> unit
+  val switch_max_case : unit -> int
+  val tailcall_max_depth : unit -> int
+  val constant_max_depth : unit -> int
+end
+
 module Tailcall : sig
   type t =
     | TcNone
@@ -57,7 +64,6 @@ module Tailcall : sig
   val of_string : string -> t
   val to_string : t -> string
   val all : t list
-  val maximum : unit -> int
 end
 
 val global_object : string
