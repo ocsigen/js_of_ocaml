@@ -1496,6 +1496,8 @@ and compile_decision_tree st queue handler backs frontier interm succs loc cx dt
         (J.Block iftrue, J.N) never1
         (J.Block iffalse, J.N) never2
     | DTree.Switch a ->
+      Array.stable_sort
+        (fun (l1, _) (l2, _) -> compare (List.length l1) (List.length l2)) a;
       let all_never = ref true in
       let arr = Array.map (fun (ints,cont) ->
         let never,cont = loop cx cont in
