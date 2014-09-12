@@ -59,6 +59,15 @@ let list_group f l =
     []     -> []
   | a :: r -> list_group_rec f r (f a) [a] []
 
+
+(* like [List.map] except that it calls the function with
+   an additional argument to indicate wether we're mapping
+   over the last element of the list *)
+let rec map_last f l = match l with
+  | [] -> assert false
+  | [x] -> [f true x]
+  | x::xs -> f false x :: map_last f xs
+
 (****)
 
 module Share = struct
@@ -1484,23 +1493,15 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
               List.flatten
                 (List.map
                    (fun (cont, l) ->
-                      match List.rev l with
-                        [] ->
-                          assert false
-                      | (i, _) :: r ->
-                          List.rev
-                            ((J.ENum (float i),
-                              (compile_branch
-                                 st [] cont handler backs frontier interm @
-                               if
-                                 never_continue st cont frontier interm succs
-                               then
-                                 []
-                               else
-                                 [J.Break_statement None, J.N]))
-                             ::
-                             List.map
-                             (fun (i, _) -> (J.ENum (float i), [])) r))
+                      map_last (fun last (i,_) ->
+                        J.ENum (float i),
+                        if last
+                        then
+                          compile_branch st [] cont handler backs frontier interm @
+                          if never_continue st cont frontier interm succs
+                          then []
+                          else [J.Break_statement None, J.N]
+                        else []) l)
                    rem)
             in
             J.Switch_statement
