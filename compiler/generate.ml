@@ -59,6 +59,30 @@ let list_group f l =
     []     -> []
   | a :: r -> list_group_rec f r (f a) [a] []
 
+
+let rec pack_list_aux max (len,buff,acc) (l:'a list list) : 'a list list =
+  if len > max
+  then pack_list_aux max (0,[],(List.rev buff)::acc) l
+  else match l with
+    | [] when buff = [] -> List.rev acc
+    | [] -> List.rev ( (List.rev buff) :: acc)
+    | x :: xs ->
+      let len' = List.length x in
+      if len + len' <= max
+      then pack_list_aux max (len+len',List.rev_append x buff,acc) xs
+      else pack_list_aux max (len',List.rev x,(List.rev buff)::acc) xs
+
+(* merge inner list if the result is smaller than max *)
+let repack_list_of_list max l = pack_list_aux max (0,[],[]) l
+
+(* like [List.map] except that it calls the function with
+   an additional argument to indicate wether we're mapping
+   over the last element of the list *)
+let rec map_last f l = match l with
+  | [] -> assert false
+  | [x] -> [f true x]
+  | x::xs -> f false x :: map_last f xs
+
 (****)
 
 module Share = struct
@@ -1476,34 +1500,44 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
           J.N
         | (cont, l') :: rem ->
             let l =
-              List.flatten
-                (List.map
-                   (fun (cont, l) ->
-                      match List.rev l with
-                        [] ->
-                          assert false
-                      | (i, _) :: r ->
-                          List.rev
-                            ((J.ENum (float i),
-                              (compile_branch
-                                 st [] cont handler backs frontier interm @
-                               if
-                                 never_continue st cont frontier interm succs
-                               then
-                                 []
-                               else
-                                 [J.Break_statement None, J.N]))
-                             ::
-                             List.map
-                             (fun (i, _) -> (J.ENum (float i), [])) r))
-                   rem)
+              List.map
+                (fun (cont, l) ->
+                   map_last (fun last (i,_) ->
+                     J.ENum (float i),
+                     if last
+                     then
+                       compile_branch st [] cont handler backs frontier interm @
+                       if never_continue st cont frontier interm succs
+                       then []
+                       else [J.Break_statement None, J.N]
+                     else []) l)
+                rem
             in
-            J.Switch_statement
-              (e, l,
-               Some (compile_branch
-                          st [] cont handler backs frontier interm),
-               []), loc
+            (* try to pack cases in groups smaller than 127.
+               V8 doesn't optimize switches with more than 128 cases. *)
+            let l = repack_list_of_list 127 l in
+            (* in case there are more than one group,
+               we may need to use an intermediate variable to store the
+               expression we match on *)
+            let e,bindings = match l,e with
+              | [], _ -> assert false
+              | [_], _ | _, J.EVar _ -> e,[]
+              | _ ->
+                let x = J.V (Code.Var.fresh ()) in
+                J.EVar x, [J.Variable_statement [x,Some (e,J.N)],J.N]
+            in
+            let st =
+              List.fold_right (fun x acc ->
+                [J.Switch_statement (e, x, Some acc, []),loc])
+                l
+                (compile_branch st [] cont handler backs frontier interm)
+            in
+            match bindings@st with
+            | [] -> assert false
+            | [st] -> st
+            | bl -> J.Block bl,J.N
       in
+
       let (st, queue) =
         if Array.length a1 = 0 then
           let ((px, cx), queue) = access_queue queue x in
