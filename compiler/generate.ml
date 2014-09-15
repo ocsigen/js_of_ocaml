@@ -43,22 +43,22 @@ module J = Javascript
 
 (****)
 
-let rec list_group_rec f l b m n =
+let rec list_group_rec f g l b m n =
   match l with
     [] ->
       List.rev ((b, List.rev m) :: n)
   | a :: r ->
       let fa = f a in
       if fa = b then
-        list_group_rec f r b (a :: m) n
+        list_group_rec f g r b (g a :: m) n
       else
-        list_group_rec f r fa [a] ((b, List.rev m) :: n)
+        list_group_rec f g r fa [g a] ((b, List.rev m) :: n)
 
-let list_group f l =
+let list_group f g l =
   match l with
     []     -> []
-  | a :: r -> list_group_rec f r (f a) [a] []
-
+  | a :: r ->
+    list_group_rec f g r (f a) [g a] []
 
 (* like [List.map] except that it calls the function with
    an additional argument to indicate wether we're mapping
@@ -450,34 +450,63 @@ module DTree = struct;;
 
   let normalize a =
     a >> Array.to_list
-    >> List.sort (fun (_,cont1) (_,cont2) -> compare cont1 cont2)
-    >> list_group (fun (_,x) -> x)
-    >> Array.of_list;;
+    >> List.sort (fun (cont1,_) (cont2,_) -> compare cont1 cont2)
+    >> list_group fst snd
+    >> List.map (fun (cont1, l1) -> cont1, List.flatten l1 )
+    >> List.sort (fun (_,l1) (_,l2) -> compare (List.length l1) (List.length l2))
+    >> Array.of_list
 
   let build_if cond b1 b2 = If(cond,Branch b1,Branch b2)
 
-  let build_switch a =
+  let build_switch (a : cont array) : 'a t =
     let m = Option.Param.switch_max_case () in
+    let ai = Array.mapi (fun i x -> x, i) a in
+    (* group the contiguous cases with the same continuation *)
+    let ai : (Code.cont * int list) array = Array.of_list (list_group fst snd (Array.to_list ai)) in
     let rec loop low up =
-      let len = up - low + 1 in
-      if len <= m
-      then
-        match len with
-        | 0 -> assert false
-        | 1 -> Branch a.(low)
-        | 2 -> If (CEq (Int32.of_int low),Branch a.(low),Branch a.(up))
-        | n ->
-          let array_sub = Array.mapi (fun i x -> (i + low), x) (Array.sub a low len) in
-          let array_norm : ('a * (int * 'a) list) array = normalize array_sub in
-          Switch (Array.map (fun (x,l) -> (List.map fst l),Branch x) array_norm)
+      let array_sub = Array.sub ai low (up - low + 1) in
+      let array_norm : (Code.cont * int list) array = normalize array_sub in
+      let array_len = Array.length array_norm in
+      if array_len = 1 (* remaining cases all jump to the same branch *)
+      then Branch (fst array_norm.(0))
       else
-        let h = (up + low) / 2 in
-        let b1 = loop low h and b2 = loop (succ h) up in
-        match b1, b2 with
-        | Branch _, _ -> If(Code.CEq (Int32.of_int h),b1,b2)
-        | _, Branch _ -> If(Code.CEq (Int32.of_int (succ h)),b2,b1)
-        | _, _ -> If(Code.CLt (Int32.of_int h),b2,b1) in
-    let len = Array.length a in
+        try
+          (* try to optimize when there are only 2 branch *)
+          match array_norm with
+          | [| b1,[i1]; b2,l2 |] ->
+            If (CEq (Int32.of_int i1), Branch b1,Branch b2)
+          | [| b1,l1; b2,[i2] |] ->
+            If (CEq (Int32.of_int i2), Branch b2,Branch b1)
+          | [|b1,l1;b2,l2|] ->
+            let bound l1 = match l1,List.rev l1 with
+              | min::_, max::_ -> min,max
+              | _ -> assert false in
+            let min1,max1 = bound l1 in
+            let min2,max2 = bound l2 in
+            if max1 < min2
+            then If (CLt (Int32.of_int max1),Branch b2,Branch b1)
+            else if max2 < min1
+            then If (CLt (Int32.of_int max2),Branch b1,Branch b2)
+            else raise Not_found
+          | _ -> raise Not_found
+        with Not_found ->
+          (* do we have to split again ? *)
+          (* we count the number of cases, default/last case count for one *)
+          let nbcases = ref 1 (* default case *) in
+          for i = 0 to array_len - 2 do
+            nbcases:= !nbcases + List.length (snd array_norm.(i))
+          done;
+          if !nbcases <= m
+          then
+            Switch (Array.map (fun (x,l) -> l,Branch x) array_norm)
+          else
+            let h = (up + low) / 2 in
+            let b1 = loop low h and b2 = loop (succ h) up in
+            let range1 = snd ai.(h) and range2 = snd ai.(succ h) in
+            match range1, range2 with
+            | [] , _ | _ , [] -> assert false
+            | _ , lower_bound2::_ -> If(Code.CLe (Int32.of_int lower_bound2),b2,b1) in
+    let len = Array.length ai in
     if len = 0 then Empty else loop 0 (len - 1);;
 
   let rec fold_cont f b acc = match b with
