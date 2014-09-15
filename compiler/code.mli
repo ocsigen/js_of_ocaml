@@ -147,6 +147,11 @@ val fold_closures :
 val fold_children :
   block AddrMap.t -> addr  -> (addr -> 'c -> 'c) -> 'c -> 'c
 
+val traverse :
+  (block AddrMap.t -> addr  -> (addr -> (AddrSet.t * 'c) -> (AddrSet.t * 'c)) -> (AddrSet.t * 'c) -> (AddrSet.t * 'c)) ->
+  (addr -> 'c -> 'c) ->
+  addr -> block AddrMap.t -> 'c -> 'c
+
 val prepend : program -> instr list -> program
 
 val eq : program -> program -> bool

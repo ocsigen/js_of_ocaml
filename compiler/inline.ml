@@ -20,6 +20,18 @@
 
 open Code
 
+let has_handler blocks pc acc =
+  Code.traverse Code.fold_children (fun pc acc ->
+    if acc
+    then acc
+    else
+      let b = AddrMap.find pc blocks in
+      match b with
+      | {handler = Some _}
+      | {branch = Pushtrap _ }
+      | {branch = Poptrap _ } -> true
+      | _ -> acc) pc blocks false
+
 let get_closures (_, blocks, _) =
   AddrMap.fold
     (fun _ block closures ->
@@ -27,7 +39,10 @@ let get_closures (_, blocks, _) =
          (fun closures i ->
             match i with
               Let (x, Closure (l, cont)) ->
-                VarMap.add x (l, cont) closures
+              (* we can compute this once during the pass
+                 as the property won't change with inlining *)
+              let f_has_handler = has_handler blocks (fst cont) false in
+              VarMap.add x (l, cont, f_has_handler) closures
             | _ ->
                 closures)
          closures block.body)
@@ -64,24 +79,8 @@ let fold_children blocks pc f accu =
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
-let rec traverse f pc visited blocks =
-  if not (AddrSet.mem pc visited) then begin
-    let visited = AddrSet.add pc visited in
-    let (visited, blocks) =
-      fold_children blocks pc
-        (fun pc (visited, blocks) ->
-           let (visited, blocks) =
-             traverse f pc visited blocks in
-           (visited, blocks))
-        (visited, blocks)
-    in
-    let blocks = rewrite_block f pc blocks in
-    (visited, blocks)
-  end else
-    (visited, blocks)
-
 let rewrite_closure blocks cont_pc clos_pc handler =
-  snd (traverse (cont_pc, handler) clos_pc AddrSet.empty blocks)
+  Code.traverse fold_children (rewrite_block (cont_pc, handler)) clos_pc blocks blocks
 
 (****)
 
@@ -92,7 +91,7 @@ update closure body to return to this location
 make current block continuation jump to closure body
 *)
 
-let inline closures live_vars blocks free_pc pc =
+let inline closures live_vars outer_has_handler pc (blocks,free_pc)=
   let block = AddrMap.find pc blocks in
   let (body, (branch, blocks, free_pc)) =
     List.fold_right
@@ -101,31 +100,41 @@ let inline closures live_vars blocks free_pc pc =
            Let (x, Apply (f, args, true))
                when live_vars.(Var.idx f) = 1
                  && VarMap.mem f closures ->
-             let (params, (clos_pc, clos_args)) = VarMap.find f closures in
-             let (branch, blocks, free_pc) = state in
-             let (blocks, cont_pc) =
-               match rem, branch with
-                 [], Return y when Var.compare x y = 0 ->
+             let (params, (clos_pc, clos_args),f_has_handler) = VarMap.find f closures in
+             (* inlining the code of an optimizable function could make
+                this code unoptimized. (wrt to Jit compilers)
+                At the moment, V8 doesn't optimize function containing try..catch.
+                We disable inlining if the inner and outer funcitons don't have
+                the same "contain_try_catch" property *)
+             if outer_has_handler = f_has_handler
+             then
+               let (branch, blocks, free_pc) = state in
+               let (blocks, cont_pc) =
+                 match rem, branch with
+                   [], Return y when Var.compare x y = 0 ->
                    (* We do not need a continuation block for tail calls *)
                    (blocks, None)
-               | _ ->
+                 | _ ->
                    (AddrMap.add free_pc
                       { params = [x]; handler = block.handler;
                         body = rem; branch = branch } blocks,
                     Some free_pc)
-             in
-             let blocks =
-               rewrite_closure blocks cont_pc clos_pc block.handler in
-             (* We do not really need this intermediate block.  It
-                just avoid the need to find which function parameters
-                are used in the function body. *)
-             let blocks =
-               AddrMap.add (free_pc + 1)
-                 { params = params; handler = block.handler;
-                   body = []; branch = Branch (clos_pc, clos_args) } blocks
-             in
-             ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
-
+               in
+               let blocks =
+                 rewrite_closure blocks cont_pc clos_pc block.handler in
+               (* We do not really need this intermediate block.  It
+                  just avoid the need to find which function parameters
+                  are used in the function body. *)
+               let blocks =
+                 AddrMap.add (free_pc + 1)
+                   { params = params; handler = block.handler;
+                     body = []; branch = Branch (clos_pc, clos_args) } blocks
+               in
+               ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
+             else begin
+               (* Format.eprintf "Do not inline because inner:%b outer:%b@." f_has_handler outer_has_handler; *)
+               (i :: rem, state)
+             end
          | _ ->
              (i :: rem, state))
       block.body ([], (block.branch, blocks, free_pc))
@@ -134,12 +143,18 @@ let inline closures live_vars blocks free_pc pc =
 
 (****)
 
+let times = Option.Debug.find "times"
 let f ((pc, blocks, free_pc) as p) live_vars =
+  let t = Util.Timer.make () in
   let closures = get_closures p in
   let (blocks, free_pc) =
-    AddrMap.fold
-      (fun pc _ (blocks, free_pc) ->
-        inline closures live_vars blocks free_pc pc)
-      blocks (blocks, free_pc)
+    Code.fold_closures p (fun name _ (pc,_) (blocks,free_pc) ->
+      let children_have_handler = match name with
+        | None -> has_handler blocks pc false
+        | Some x -> let _,_,b = VarMap.find x closures in
+          b in
+      Code.traverse Code.fold_children (inline closures live_vars children_have_handler) pc blocks (blocks,free_pc)
+    ) (blocks, free_pc)
   in
+  if times () then Format.eprintf "  inlining: %a@." Util.Timer.print t;
   (pc, blocks, free_pc)

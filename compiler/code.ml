@@ -419,6 +419,25 @@ let fold_children blocks pc f accu =
       accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
            >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
+let rec traverse' fold f pc visited blocks acc =
+  if not (AddrSet.mem pc visited) then begin
+    let visited = AddrSet.add pc visited in
+    let (visited, acc) =
+      fold blocks pc
+        (fun pc (visited, acc) ->
+           let (visited, acc) =
+             traverse' fold f pc visited blocks acc in
+           (visited, acc))
+        (visited, acc)
+    in
+    let acc = f pc acc in
+    (visited, acc)
+  end else
+    (visited, acc)
+
+let traverse fold f pc blocks acc =
+  snd (traverse' fold f pc AddrSet.empty blocks acc)
+
 let eq (pc1, blocks1, _) (pc2, blocks2, _) =
   pc1 = pc2 &&
   AddrMap.cardinal blocks1 = AddrMap.cardinal blocks2 &&
