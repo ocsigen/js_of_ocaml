@@ -450,10 +450,10 @@ module DTree = struct;;
 
   let normalize a =
     a >> Array.to_list
-    >> List.sort (fun (cont1,_) (cont2,_) -> compare cont1 cont2)
+    >> List.stable_sort (fun (cont1,_) (cont2,_) -> compare cont1 cont2)
     >> list_group fst snd
     >> List.map (fun (cont1, l1) -> cont1, List.flatten l1 )
-    >> List.sort (fun (_,l1) (_,l2) -> compare (List.length l1) (List.length l2))
+    >> List.stable_sort (fun (_,l1) (_,l2) -> compare (List.length l1) (List.length l2))
     >> Array.of_list
 
   let build_if cond b1 b2 = If(cond,Branch b1,Branch b2)
@@ -464,8 +464,7 @@ module DTree = struct;;
     (* group the contiguous cases with the same continuation *)
     let ai : (Code.cont * int list) array = Array.of_list (list_group fst snd (Array.to_list ai)) in
     let rec loop low up =
-      let array_sub = Array.sub ai low (up - low + 1) in
-      let array_norm : (Code.cont * int list) array = normalize array_sub in
+      let array_norm : (Code.cont * int list) array = normalize (Array.sub ai low (up - low + 1)) in
       let array_len = Array.length array_norm in
       if array_len = 1 (* remaining cases all jump to the same branch *)
       then Branch (fst array_norm.(0))
@@ -1525,8 +1524,6 @@ and compile_decision_tree st queue handler backs frontier interm succs loc cx dt
         (J.Block iftrue, J.N) never1
         (J.Block iffalse, J.N) never2
     | DTree.Switch a ->
-      Array.stable_sort
-        (fun (l1, _) (l2, _) -> compare (List.length l1) (List.length l2)) a;
       let all_never = ref true in
       let len = Array.length a in
       let last_index = len - 1 in
