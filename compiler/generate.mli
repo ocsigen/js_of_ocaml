@@ -19,5 +19,5 @@
  *)
 
 val f :
-  Code.program -> int array -> Parse_bytecode.Debug.data ->
+  Code.program -> ?toplevel:bool -> int array -> Parse_bytecode.Debug.data ->
   Javascript.program

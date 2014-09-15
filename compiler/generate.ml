@@ -76,6 +76,8 @@ module Share = struct
   type t = {
     mutable count : int aux;
     mutable vars : J.ident aux;
+    alias_prims : bool;
+    alias_strings : bool;
   }
 
   let add_string s t =
@@ -117,7 +119,7 @@ module Share = struct
         | _ -> t) t args
 
 
-  let get (_, blocks, _) : t =
+  let get ?(alias_strings=false) ?(alias_prims=false) (_, blocks, _) : t =
     let count = AddrMap.fold
       (fun _ block share ->
         List.fold_left
@@ -144,30 +146,33 @@ module Share = struct
         add_special_prim_if_exists x acc)
         count
         ["caml_trampoline";"caml_trampoline_return";"caml_wrap_exception"] in
-    {count; vars = empty_aux}
+    {count; vars = empty_aux; alias_strings; alias_prims}
 
   let get_string gen s t =
-    (* disabled because it is done later on Js ast *)
-    (* try *)
-    (*   let c = StringMap.find s t.count.strings in *)
-    (*   if c > 1 *)
-    (*   then *)
-    (*     try *)
-    (*       J.EVar (StringMap.find s t.vars.strings) *)
-    (*     with Not_found -> *)
-    (*       let x = Var.fresh() in *)
-    (*       Var.name x "str"; *)
-    (*       let v = J.V x in *)
-    (*       t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings }; *)
-    (*       J.EVar v *)
-    (*   else *)
-    (*     gen s *)
-    (* with Not_found-> *)
+    if not t.alias_strings
+    then gen s
+    else try
+      let c = StringMap.find s t.count.strings in
+      if c > 1
+      then
+        try
+          J.EVar (StringMap.find s t.vars.strings)
+        with Not_found ->
+          let x = Var.fresh() in
+          Var.name x "str";
+          let v = J.V x in
+          t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
+          J.EVar v
+      else
+        gen s
+    with Not_found->
       gen s
 
   let get_prim gen s t =
     let s = Primitive.resolve s in
-    try
+    if not t.alias_prims
+    then gen s
+    else try
       let c = StringMap.find s t.count.prims in
       if c > 1 || c = -1
       then
@@ -1690,11 +1695,11 @@ let compile_program ctx pc =
   if debug () then Format.eprintf "@.@.";
   res
 
-let f ((pc, blocks, _) as p) live_vars debug =
+let f ((pc, blocks, _) as p) ?toplevel live_vars debug =
   let mutated_vars = Freevars.f p in
   let t' = Util.Timer.make () in
-  let share = Share.get p in
-  let ctx = Ctx.initial blocks live_vars mutated_vars share debug in
+  let share = Share.get ?alias_prims:toplevel p in
+  let ctx = Ctx.initial blocks live_vars mutated_vars share debug  in
   let p = compile_program ctx pc in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
   p

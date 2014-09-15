@@ -156,10 +156,10 @@ let o3 =
 
 let profile = ref o1
 
-let generate d (p,live_vars) =
+let generate d ?toplevel (p,live_vars) =
   if times ()
   then Format.eprintf "Start Generation...@.";
-  Generate.f p live_vars d
+  Generate.f p ?toplevel live_vars d
 
 
 let header formatter ~standalone js =
@@ -430,7 +430,7 @@ let f ?(standalone=true) ?toplevel ?linkall ?source_map formatter d =
   configure formatter >>
   !profile >>
   deadcode' >>
-  generate d >>
+  generate d ?toplevel >>
 
   link formatter ~standalone ?linkall >>
 
