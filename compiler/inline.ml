@@ -20,17 +20,31 @@
 
 open Code
 
-let has_handler blocks pc acc =
+let optimizable blocks pc acc =
   Code.traverse Code.fold_children (fun pc acc ->
-    if acc
+    if not acc
     then acc
     else
       let b = AddrMap.find pc blocks in
       match b with
       | {handler = Some _}
       | {branch = Pushtrap _ }
-      | {branch = Poptrap _ } -> true
-      | _ -> acc) pc blocks false
+      | {branch = Poptrap _ } -> false
+      | _ ->
+        List.for_all (function
+          | Let (_, Prim (Extern "caml_js_eval_string",_)) -> false
+          | Let (_, Prim (Extern "debugger",_)) -> false
+          | Let
+              (x,
+               Prim(Extern
+                      ("caml_js_var"
+                      |"caml_js_expr"
+                      |"caml_pure_js_expr"),_)) ->
+            (* TODO: we should smarter here and look the generated js *)
+            (* let's consider it this opmiziable *)
+            true
+          | _ -> true
+        ) b.body )  pc blocks true
 
 let get_closures (_, blocks, _) =
   AddrMap.fold
@@ -41,8 +55,8 @@ let get_closures (_, blocks, _) =
               Let (x, Closure (l, cont)) ->
               (* we can compute this once during the pass
                  as the property won't change with inlining *)
-              let f_has_handler = has_handler blocks (fst cont) false in
-              VarMap.add x (l, cont, f_has_handler) closures
+              let f_optimizable = optimizable blocks (fst cont) true in
+              VarMap.add x (l, cont, f_optimizable) closures
             | _ ->
                 closures)
          closures block.body)
@@ -91,7 +105,7 @@ update closure body to return to this location
 make current block continuation jump to closure body
 *)
 
-let inline closures live_vars outer_has_handler pc (blocks,free_pc)=
+let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
   let block = AddrMap.find pc blocks in
   let (body, (branch, blocks, free_pc)) =
     List.fold_right
@@ -100,13 +114,13 @@ let inline closures live_vars outer_has_handler pc (blocks,free_pc)=
            Let (x, Apply (f, args, true))
                when live_vars.(Var.idx f) = 1
                  && VarMap.mem f closures ->
-             let (params, (clos_pc, clos_args),f_has_handler) = VarMap.find f closures in
+             let (params, (clos_pc, clos_args),f_optimizable) = VarMap.find f closures in
              (* inlining the code of an optimizable function could make
                 this code unoptimized. (wrt to Jit compilers)
                 At the moment, V8 doesn't optimize function containing try..catch.
                 We disable inlining if the inner and outer funcitons don't have
                 the same "contain_try_catch" property *)
-             if outer_has_handler = f_has_handler
+             if outer_optimizable = f_optimizable
              then
                let (branch, blocks, free_pc) = state in
                let (blocks, cont_pc) =
@@ -149,11 +163,11 @@ let f ((pc, blocks, free_pc) as p) live_vars =
   let closures = get_closures p in
   let (blocks, free_pc) =
     Code.fold_closures p (fun name _ (pc,_) (blocks,free_pc) ->
-      let children_have_handler = match name with
-        | None -> has_handler blocks pc false
+      let outer_optimizable = match name with
+        | None -> optimizable blocks pc true
         | Some x -> let _,_,b = VarMap.find x closures in
           b in
-      Code.traverse Code.fold_children (inline closures live_vars children_have_handler) pc blocks (blocks,free_pc)
+      Code.traverse Code.fold_children (inline closures live_vars outer_optimizable) pc blocks (blocks,free_pc)
     ) (blocks, free_pc)
   in
   if times () then Format.eprintf "  inlining: %a@." Util.Timer.print t;
