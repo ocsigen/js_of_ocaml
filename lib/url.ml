@@ -313,9 +313,9 @@ struct
 
   let protocol = urldecode_js_string_string l##protocol
 
-  let port =
+  let port = (fun () ->
     try Some (int_of_string (Js.to_bytestring l##port))
-    with Failure _ -> None
+    with Failure _ -> None) ()
 
   let path_string = urldecode_js_string_string l##pathname
 

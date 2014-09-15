@@ -315,26 +315,26 @@ let submits ?cancel_handler ?use_capture t =
 let selects ?cancel_handler ?use_capture t =
   seq_loop select ?cancel_handler ?use_capture t
 
-let transition_evn =
+let transition_evn = lazy (
   let e = Dom_html.createDiv Dom_html.document in
   try
     snd (List.find
            (fun (propname, evname) ->
-             Js.Unsafe.get (e##style) propname != Js.undefined)
+              Js.Unsafe.get (e##style) propname != Js.undefined)
            [("WebkitTransition", [Dom.Event.make "webkitTransitionEnd"]);
             ("MozTransition", [Dom.Event.make "transitionend"]);
             ("OTransition", [Dom.Event.make "oTransitionEnd";
                              Dom.Event.make "otransitionend"]);
             ("transition", [Dom.Event.make "transitionend"])])
-  with Not_found -> []
+  with Not_found -> [])
 
 let transitionend elt =
-  match transition_evn with
+  match Lazy.force transition_evn with
     | [] -> Lwt.return ()
-    | _ -> Lwt.pick
+    | l -> Lwt.pick
       (List.map
          (fun ev -> make_event ev elt)
-         transition_evn) >>= fun _ ->
+         l) >>= fun _ ->
       Lwt.return ()
 
 let transitionends t =
