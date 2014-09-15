@@ -1499,14 +1499,17 @@ and compile_decision_tree st queue handler backs frontier interm succs loc cx dt
       Array.stable_sort
         (fun (l1, _) (l2, _) -> compare (List.length l1) (List.length l2)) a;
       let all_never = ref true in
-      let arr = Array.map (fun (ints,cont) ->
+      let len = Array.length a in
+      let last_index = len - 1 in
+      let arr = Array.mapi (fun i (ints,cont) ->
         let never,cont = loop cx cont in
         if not never then all_never := false;
-        let cont = if never then cont else cont @ [J.Break_statement None, J.N] in
+        let cont =
+          if never || (* default case *) i = last_index
+          then cont
+          else cont @ [J.Break_statement None, J.N] in
         ints, cont) a in
-
-      let len = Array.length arr in
-      let (_,last) = arr.(len - 1) in
+      let (_,last) = arr.(last_index) in
       let l = Array.to_list (Array.sub arr 0 (len - 1)) in
       let l = List.flatten (List.map (fun (ints,br) ->
         map_last (fun last i ->
