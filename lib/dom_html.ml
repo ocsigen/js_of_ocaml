@@ -46,6 +46,7 @@ class type cssStyleDeclaration = object
   method borderLeftColor : js_string t prop
   method borderLeftStyle : js_string t prop
   method borderLeftWidth : js_string t prop
+  method borderRadius : js_string t prop 
   method borderRight : js_string t prop
   method borderRightColor : js_string t prop
   method borderRightStyle : js_string t prop
