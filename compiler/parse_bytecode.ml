@@ -74,6 +74,7 @@ module Tbl = struct
       fold f r (f v d (fold f l accu))
 end
 
+(* Copied from ocaml/bytecomp/symtable.ml *)
 type 'a numtable =
   { num_cnt: int;
     num_tbl: ('a, int) Tbl.t }
