@@ -20,6 +20,29 @@
 
 open Code
 
+let squash_closure blocks args (pc,l) =
+  let rec aux pc acc  =
+    let b = AddrMap.find pc blocks in
+    match b with
+    | { body = [Let (x, Closure (args,(pc,l)))];
+        branch = Return x';
+        handler = None;
+        params = [] } when x = x' ->
+      aux pc (args :: acc)
+    | {params=[]} -> begin
+        match acc with
+        | [] -> assert false
+        | [_] -> None
+        | acc ->
+          let args = List.fold_left (fun args args' ->
+              args' @ args
+            ) [] acc in
+          Some (Closure (args, (pc,[])))
+      end
+    | _ -> None
+  in
+  aux pc [args]
+
 let get_closures (_, blocks, _) =
   AddrMap.fold
     (fun _ block closures ->
@@ -126,6 +149,12 @@ let inline closures live_vars blocks free_pc pc =
              in
              ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
 
+         | Let (x,Closure (l,cont)) when Option.Optim.squash () ->
+           begin
+             match squash_closure blocks l cont with
+             | None -> i::rem,state
+             | Some c -> Let (x,c)::rem,state
+           end
          | _ ->
              (i :: rem, state))
       block.body ([], (block.branch, blocks, free_pc))

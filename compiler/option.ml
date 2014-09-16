@@ -88,6 +88,8 @@ module Optim = struct
   let include_cmis = o ~name:"withcmi" ~default: true
   let warn_unused = o ~name:"warn-unused"  ~default: false
 
+  let squash = o ~name:"squash" ~default: true
+
   let inline_callgen = o ~name:"callgen" ~default:false
 
   (* this does not optimize properly *)
