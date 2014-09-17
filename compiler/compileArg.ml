@@ -23,7 +23,6 @@ type t = {
   common : CommonArg.t;
   (* compile option *)
   profile : Driver.profile option;
-  tailcall : Option.Tailcall.t;
   source_map : (string * Source_map.t) option;
   runtime_files : string list;
   output_file : string option;
@@ -60,7 +59,7 @@ let options =
   let input_file =
     let doc = "Compile the bytecode program [$(docv)]. " ^
               "Use '-' to read from the standard input instead." in
-    Arg.(value & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM" ~doc)
+    Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM" ~doc)
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
@@ -75,18 +74,11 @@ let options =
     let doc = "Generate source map." in
     Arg.(value & flag & info ["sourcemap";"source-map"] ~doc)
   in
-  let tailcall =
-    let doc = "Set tailcall optimisation." in
-    let all = List.map (fun x ->
-        let s = Option.Tailcall.to_string x in
-        s, x) Option.Tailcall.all in
-    Arg.(value & opt (enum all) Option.Tailcall.default & info ["tc"] ~doc)
-  in
   let set_param =
-    let doc = "Set parameters." in
+    let doc = "Set compiler options." in
     let all = List.map (fun (x,_) ->
       x, x) (Option.Param.all ()) in
-    Arg.(value & opt_all (list (pair ~sep:'=' (enum all) string)) [] & info ["set"] ~doc)
+    Arg.(value & opt_all (list (pair ~sep:'=' (enum all) string)) [] & info ["set"] ~docv:"PARAM=VALUE"~doc)
   in
   let toplevel =
     let doc = "Compile a toplevel." in
@@ -118,7 +110,6 @@ let options =
   in
   let build_t
       common
-      tailcall
       set_param
       linkall
       toplevel
@@ -146,9 +137,8 @@ let options =
       let linkall = linkall || toplevel in
       let fs_external = fs_external || (toplevel && nocmis) in
       let input_file = match input_file with
-        | None
-        | Some "-" -> None
-        | Some x -> Some x in
+        | "-" -> None
+        | x -> Some x in
       let output_file = match output_file with
         | Some _ -> output_file
         | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") input_file in
@@ -175,7 +165,6 @@ let options =
       `Ok {
         common;
         params;
-        tailcall;
         profile;
 
         linkall;
@@ -198,7 +187,6 @@ let options =
   let t =
     Term.(pure build_t
           $ CommonArg.t
-          $ tailcall
           $ set_param
           $ linkall
           $ toplevel

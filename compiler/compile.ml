@@ -51,12 +51,7 @@ let f {
     linkall; toplevel; nocmis;
     include_dir; fs_files; fs_output; fs_external } =
   CommonArg.eval common;
-  List.iter (fun (s,v) ->
-    try
-      let i = int_of_string v in
-      Option.Param.set s i
-    with _ -> ()
-  ) params;
+  List.iter (fun (s,v) -> Option.Param.set s v) params;
   let t = Util.Timer.make () in
   Linker.load_files runtime_files;
   let paths = List.rev_append include_dir [Util.find_pkg_dir "stdlib"] in

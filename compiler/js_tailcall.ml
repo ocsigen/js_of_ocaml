@@ -181,8 +181,8 @@ module Tramp : TC = struct
 end
 
 let rewrite l =
-  let open Option.Tailcall in
-  match get () with
+  let open Option.Param in
+  match tailcall_optim () with
   | TcNone -> Ident.rewrite l
   | TcTrampoline -> Tramp.rewrite l
   | TcWhile -> While.rewrite l
