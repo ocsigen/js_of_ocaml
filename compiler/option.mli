@@ -49,6 +49,7 @@ end
 
 module Param : sig
   val set : string -> int -> unit
+  val all : unit -> (string * string) list
   val switch_max_case : unit -> int
   val tailcall_max_depth : unit -> int
   val constant_max_depth : unit -> int

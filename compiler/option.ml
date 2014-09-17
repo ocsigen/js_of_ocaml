@@ -97,27 +97,39 @@ end
 module Param = struct
   let params = ref []
 
-  let p ~name ~default =
+  let p ~name ~desc ~default=
     let state =
       try
-        List.assoc name !params
+        fst (List.assoc name !params)
       with Not_found ->
         let state = ref default in
-        params := (name, state) :: !params;
+        params := (name, (state,desc)) :: !params;
         state
     in
     fun () -> !state
 
   let set s v =
-    try List.assoc s !params := v with Not_found ->
+    try fst (List.assoc s !params) := v with Not_found ->
       failwith (Printf.sprintf "The option named %S doesn't exist" s)
+
+  let all () = List.map (fun (n,(_,d)) -> n,d) !params
 
   (* V8 "optimize" switches with less than 128 case.
      60 seams to perform well. *)
-  let switch_max_case = p ~name:"switch_size" ~default:60
+  let switch_max_case = p
+      ~name:"switch_size"
+      ~desc:"set the maximum number of case in a switch"
+      ~default:60
 
-  let tailcall_max_depth = p ~name:"tc_depth" ~default:50
-  let constant_max_depth = p ~name:"cst_depth" ~default:10
+  let tailcall_max_depth = p
+      ~name:"tc_depth"
+      ~desc:"set the maximum number of recursive tailcalls defore returning a trampoline"
+      ~default:50
+
+  let constant_max_depth = p
+      ~name:"cst_depth"
+      ~desc:"set the maximum depth of generated litteral JavaScript values"
+      ~default:10
 end
 
 module Tailcall = struct

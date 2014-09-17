@@ -122,18 +122,6 @@ let run () =
       Arg.String Option.Optim.disable, "<name> disable optimization <name>");
      ("-enable",
       Arg.String Option.Optim.enable, "<name> enable optimization <name>");
-     ("-set", Arg.String (fun s ->
-        match Util.split_char '=' s with
-        | [k;v] -> begin
-            try Option.Param.set k (int_of_string v) with
-            | Failure _ -> raise (Arg.Bad (
-              Printf.sprintf
-                "wrong argument '%s'; option '-opt' expects param=int" s))
-          end
-        | _ -> raise (Arg.Bad (
-          Printf.sprintf
-            "wrong argument '%s'; option '-opt' expects param=int" s))
-      ), "<oN> set parameter profile : o1 (default), o2, o3");
      ("-pretty", Arg.Unit (fun () -> Option.Optim.enable "pretty"), " pretty print the output");
      ("-debuginfo", Arg.Unit (fun () -> Option.Optim.enable "debuginfo"), " output debug info");
      ("-opt", Arg.Int Driver.set_profile, "<oN> set optimization profile : o1 (default), o2, o3");
@@ -147,6 +135,24 @@ let run () =
      ("-extern-fs", Arg.Set extern_fs, " Configure pseudo-filesystem to allow registering files from outside");
      ("-tc", Arg.Symbol (List.map Option.Tailcall.to_string Option.Tailcall.all,(fun s -> Option.Tailcall.(set (of_string s)))),
       " set tailcall optimisation");
+     ("-set", Arg.String (fun s ->
+        match Util.split_char '=' s with
+        | [k;v] -> begin
+            let v = try int_of_string v with
+              | _ -> raise (Arg.Bad (
+              Printf.sprintf "wrong argument '%s'; option '-set' expects param=int" s)) in
+            try Option.Param.set k v with
+            | _ -> raise (Arg.Help (
+              Printf.sprintf
+                "parameter %S doesn't exist.\nList of parameters:\n - %s\n" k
+                (String.concat "\n - "
+                   (List.map (fun (name,desc) ->
+                      name ^ "\t: " ^ desc) (Option.Param.all ())))))
+          end
+        | _ -> raise (Arg.Bad (
+          Printf.sprintf
+            "wrong argument '%s'; option '-set' expects param=int" s))
+      ), "<param=int> set parameter <param>");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");
      ("-file", Arg.String (fun s -> files:= s :: !files ),
