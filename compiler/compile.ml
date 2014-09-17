@@ -135,6 +135,24 @@ let run () =
      ("-extern-fs", Arg.Set extern_fs, " Configure pseudo-filesystem to allow registering files from outside");
      ("-tc", Arg.Symbol (List.map Option.Tailcall.to_string Option.Tailcall.all,(fun s -> Option.Tailcall.(set (of_string s)))),
       " set tailcall optimisation");
+     ("-set", Arg.String (fun s ->
+        match Util.split_char '=' s with
+        | [k;v] -> begin
+            let v = try int_of_string v with
+              | _ -> raise (Arg.Bad (
+              Printf.sprintf "wrong argument '%s'; option '-set' expects param=int" s)) in
+            try Option.Param.set k v with
+            | _ -> raise (Arg.Help (
+              Printf.sprintf
+                "parameter %S doesn't exist.\nList of parameters:\n - %s\n" k
+                (String.concat "\n - "
+                   (List.map (fun (name,desc) ->
+                      name ^ "\t: " ^ desc) (Option.Param.all ())))))
+          end
+        | _ -> raise (Arg.Bad (
+          Printf.sprintf
+            "wrong argument '%s'; option '-set' expects param=int" s))
+      ), "<param=int> set parameter <param>");
      ("-I", Arg.String (fun s -> paths := s :: !paths),
       "<dir> Add <dir> to the list of include directories");
      ("-file", Arg.String (fun s -> files:= s :: !files ),

@@ -80,6 +80,7 @@ let rec enot_rec e =
 let enot e = fst (enot_rec e)
 
 let unblock st = match st with J.Block l, _ -> l | _ -> [st]
+let block l = match l with | [x] -> x | l -> J.Block l,J.N
 
 exception Not_expression
 

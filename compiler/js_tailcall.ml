@@ -146,7 +146,7 @@ module Tramp : TC = struct
               J.ECond (
                 J.EBin (J.Lt,
                         J.EVar (J.V counter),
-                        J.ENum (float_of_int (Option.Tailcall.maximum()))),
+                        J.ENum (float_of_int (Option.Param.tailcall_max_depth ()))),
                 J.ECall(J.EVar n, J.EBin (J.Plus,J.ENum 1.,J.EVar (J.V counter)) :: args,J.N),
                 J.ECall (
                   get_prim "caml_trampoline_return",

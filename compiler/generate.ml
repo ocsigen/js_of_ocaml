@@ -43,21 +43,30 @@ module J = Javascript
 
 (****)
 
-let rec list_group_rec f l b m n =
+let rec list_group_rec f g l b m n =
   match l with
     [] ->
       List.rev ((b, List.rev m) :: n)
   | a :: r ->
       let fa = f a in
       if fa = b then
-        list_group_rec f r b (a :: m) n
+        list_group_rec f g r b (g a :: m) n
       else
-        list_group_rec f r fa [a] ((b, List.rev m) :: n)
+        list_group_rec f g r fa [g a] ((b, List.rev m) :: n)
 
-let list_group f l =
+let list_group f g l =
   match l with
     []     -> []
-  | a :: r -> list_group_rec f r (f a) [a] []
+  | a :: r ->
+    list_group_rec f g r (f a) [g a] []
+
+(* like [List.map] except that it calls the function with
+   an additional argument to indicate wether we're mapping
+   over the last element of the list *)
+let rec map_last f l = match l with
+  | [] -> assert false
+  | [x] -> [f true x]
+  | x::xs -> f false x :: map_last f xs
 
 (****)
 
@@ -274,8 +283,6 @@ let kind k =
   match k with
     `Pure -> const_p | `Mutable -> mutable_p | `Mutator -> mutator_p
 
-let max_depth = 10
-
 let rec constant_rec ~ctx x level instrs =
   match x with
     String s ->
@@ -297,7 +304,7 @@ let rec constant_rec ~ctx x level instrs =
               Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))],
       instrs
   | Tuple (tag, a) ->
-      let split = level = max_depth in
+      let split = level = Option.Param.constant_max_depth () in
       let level = if split then 0 else level + 1 in
       let (l, instrs) =
         List.fold_left
@@ -354,7 +361,7 @@ let access_queue queue x =
 let access_queue' ~ctx queue x =
   match x with
     | Pc c ->
-      let js,instrs = constant ~ctx c max_depth in
+      let js,instrs = constant ~ctx c (Option.Param.constant_max_depth ()) in
       assert (instrs = []); (* We only have simple constants here *)
       (const_p, js), queue
     | Pv x -> access_queue queue x
@@ -410,7 +417,7 @@ let enqueue expr_queue prop x ce loc cardinal acc =
 (****)
 
 type state =
-  { all_succs : (int, AddrSet.t) Hashtbl.t;
+  { all_succs : (int, AddrSet.t) Hashtbl.t; (* not used *)
     succs : (int, int list) Hashtbl.t;
     backs : (int, AddrSet.t) Hashtbl.t;
     preds : (int, int) Hashtbl.t;
@@ -432,25 +439,112 @@ let (>>) x f = f x
 
 (* This as to be kept in sync with the way we build conditionals
    and switches! *)
+
+module DTree = struct;;
+
+  type 'a t =
+    | If of Code.cond * 'a t * 'a t
+    | Switch of (int list * 'a t) array
+    | Branch of ('a)
+    | Empty
+
+  let normalize a =
+    a >> Array.to_list
+    >> List.stable_sort (fun (cont1,_) (cont2,_) -> compare cont1 cont2)
+    >> list_group fst snd
+    >> List.map (fun (cont1, l1) -> cont1, List.flatten l1 )
+    >> List.stable_sort (fun (_,l1) (_,l2) -> compare (List.length l1) (List.length l2))
+    >> Array.of_list
+
+  let build_if cond b1 b2 = If(cond,Branch b1,Branch b2)
+
+  let build_switch (a : cont array) : 'a t =
+    let m = Option.Param.switch_max_case () in
+    let ai = Array.mapi (fun i x -> x, i) a in
+    (* group the contiguous cases with the same continuation *)
+    let ai : (Code.cont * int list) array = Array.of_list (list_group fst snd (Array.to_list ai)) in
+    let rec loop low up =
+      let array_norm : (Code.cont * int list) array = normalize (Array.sub ai low (up - low + 1)) in
+      let array_len = Array.length array_norm in
+      if array_len = 1 (* remaining cases all jump to the same branch *)
+      then Branch (fst array_norm.(0))
+      else
+        try
+          (* try to optimize when there are only 2 branch *)
+          match array_norm with
+          | [| b1,[i1]; b2,l2 |] ->
+            If (CEq (Int32.of_int i1), Branch b1,Branch b2)
+          | [| b1,l1; b2,[i2] |] ->
+            If (CEq (Int32.of_int i2), Branch b2,Branch b1)
+          | [|b1,l1;b2,l2|] ->
+            let bound l1 = match l1,List.rev l1 with
+              | min::_, max::_ -> min,max
+              | _ -> assert false in
+            let min1,max1 = bound l1 in
+            let min2,max2 = bound l2 in
+            if max1 < min2
+            then If (CLt (Int32.of_int max1),Branch b2,Branch b1)
+            else if max2 < min1
+            then If (CLt (Int32.of_int max2),Branch b1,Branch b2)
+            else raise Not_found
+          | _ -> raise Not_found
+        with Not_found ->
+          (* do we have to split again ? *)
+          (* we count the number of cases, default/last case count for one *)
+          let nbcases = ref 1 (* default case *) in
+          for i = 0 to array_len - 2 do
+            nbcases:= !nbcases + List.length (snd array_norm.(i))
+          done;
+          if !nbcases <= m
+          then
+            Switch (Array.map (fun (x,l) -> l,Branch x) array_norm)
+          else
+            let h = (up + low) / 2 in
+            let b1 = loop low h and b2 = loop (succ h) up in
+            let range1 = snd ai.(h) and range2 = snd ai.(succ h) in
+            match range1, range2 with
+            | [] , _ | _ , [] -> assert false
+            | _ , lower_bound2::_ -> If(Code.CLe (Int32.of_int lower_bound2),b2,b1) in
+    let len = Array.length ai in
+    if len = 0 then Empty else loop 0 (len - 1);;
+
+  let rec fold_cont f b acc = match b with
+    | If (i,b1,b2) -> acc >> fold_cont f b1 >> fold_cont f b2
+    | Switch a -> Array.fold_left (fun acc (_,b) -> fold_cont f b acc) acc a
+    | Branch (pc,_) -> f pc acc
+    | Empty -> acc
+
+  let nbcomp a =
+    let rec loop c = function
+      | Empty -> c
+      | Branch _  -> c
+      | If(_,a,b) ->
+        let c = succ c in
+        let c = loop c a in
+        let c = loop c b in
+        c
+      | Switch a ->
+        let c = succ c in
+        Array.fold_left (fun acc (_,b) -> loop acc b) c a
+    in loop 0 a
+
+end
+
 let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
     Return _ | Raise _ | Stop ->
-      accu
+    accu
   | Branch (pc', _) | Poptrap (pc', _) ->
-      f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
-      accu >> f pc1 >> f pc2
+    f pc' accu
+  | Pushtrap ((pc1, _), _, (pc2, _), _) ->
+    accu >> f pc1 >> f pc2
+  | Cond (cond, _, cont1, cont2) ->
+    DTree.fold_cont f (DTree.build_if cond cont1 cont2) accu
   | Switch (_, a1, a2) ->
-      let normalize a =
-        a >> Array.to_list
-          >> List.sort compare
-          >> list_group (fun x -> x)
-          >> List.map fst
-          >> Array.of_list
-      in
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a1)
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) (normalize a2)
+    let a1 = DTree.build_switch a1
+    and a2 = DTree.build_switch a2 in
+    accu >> DTree.fold_cont f a1 >> DTree.fold_cont f a2
 
 let rec build_graph st pc anc =
   if not (AddrSet.mem pc st.visited_blocks) then begin
@@ -490,15 +584,6 @@ let rec dominance_frontier_rec st pc visited grey =
 
 let dominance_frontier st pc =
   snd (dominance_frontier_rec st pc AddrMap.empty AddrSet.empty)
-
-(* Block of code that never continues (either returns, throws an exception
-   or loops back) *)
-let never_continue st (pc, _) frontier interm succs =
-  (* If not found in successors, this is a backward edge *)
-  let d = try List.assoc pc succs with Not_found -> AddrSet.empty in
-  not (AddrSet.mem pc frontier || AddrMap.mem pc interm)
-    &&
-  AddrSet.is_empty d
 
 let rec resolve_node interm pc =
   try
@@ -1408,12 +1493,65 @@ else begin
     body
 end
 
-and compile_if st e loc cont1 cont2 handler backs frontier interm succs =
-  let iftrue = compile_branch st [] cont1 handler backs frontier interm in
-  let iffalse = compile_branch st [] cont2 handler backs frontier interm in
-  Js_simpl.if_statement e loc
-    (J.Block iftrue, J.N) (never_continue st cont1 frontier interm succs)
-    (J.Block iffalse, J.N) (never_continue st cont2 frontier interm succs)
+and compile_decision_tree st queue handler backs frontier interm succs loc cx dtree =
+  (* Some changes here may require corresponding changes
+     in function [DTree.fold_cont] above. *)
+  let rec loop cx = function
+    | DTree.Empty -> assert false
+    | DTree.Branch ((pc,_) as cont) ->
+      (* Block of code that never continues (either returns, throws an exception
+         or loops back) *)
+      (* If not found in successors, this is a backward edge *)
+      let never =
+        let d = try List.assoc pc succs with Not_found -> AddrSet.empty in
+        not (AddrSet.mem pc frontier || AddrMap.mem pc interm)
+        &&
+        AddrSet.is_empty d in
+      never, compile_branch st [] cont handler backs frontier interm
+    | DTree.If (cond,cont1,cont2) ->
+      let never1, iftrue = loop cx cont1 in
+      let never2, iffalse = loop cx cont2 in
+      let e' = match cond with
+          IsTrue         -> cx
+        | CEq n          -> J.EBin (J.EqEqEq, int32 n, cx)
+        | CLt n          -> J.EBin (J.Lt, int32 n, cx)
+        | CUlt n         ->
+          let n' = if n < 0l then unsigned (int32 n) else int32 n in
+          J.EBin (J.Lt, n', unsigned cx)
+        | CLe n          -> J.EBin (J.Le, int32 n, cx) in
+      never1&&never2,
+      Js_simpl.if_statement e' loc
+        (J.Block iftrue, J.N) never1
+        (J.Block iffalse, J.N) never2
+    | DTree.Switch a ->
+      let all_never = ref true in
+      let len = Array.length a in
+      let last_index = len - 1 in
+      let arr = Array.mapi (fun i (ints,cont) ->
+        let never,cont = loop cx cont in
+        if not never then all_never := false;
+        let cont =
+          if never || (* default case *) i = last_index
+          then cont
+          else cont @ [J.Break_statement None, J.N] in
+        ints, cont) a in
+      let (_,last) = arr.(last_index) in
+      let l = Array.to_list (Array.sub arr 0 (len - 1)) in
+      let l = List.flatten (List.map (fun (ints,br) ->
+        map_last (fun last i ->
+          J.ENum (float i), if last then br else []
+        ) ints
+      ) l) in
+
+      !all_never, [J.Switch_statement (cx, l, Some last, []), loc]
+  in
+  let cx, binds = match cx with
+    | J.EVar _
+    | _ when DTree.nbcomp dtree <= 1 -> cx,[]
+    | _ ->
+      let v = J.V (Code.Var.fresh ()) in
+      J.EVar v, [J.Variable_statement [v,Some (cx,J.N)],J.N] in
+  (binds @ snd(loop cx dtree))
 
 and compile_conditional st queue pc last handler backs frontier interm succs =
   List.iter
@@ -1439,104 +1577,47 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
   | Stop ->
       flush_all queue [J.Return_statement None, loc]
   | Branch cont ->
-      compile_branch st queue cont handler backs frontier interm
-  | Cond (c, x, cont1, cont2) ->
-      let ((px, cx), queue) = access_queue queue x in
-      let e =
-        match c with
-          IsTrue         -> cx
-        | CEq n          -> J.EBin (J.EqEqEq, int32 n, cx)
-        | CLt n          -> J.EBin (J.Lt, int32 n, cx)
-        | CUlt n         ->
-          let n' = if n < 0l then unsigned (int32 n) else int32 n in
-          J.EBin (J.Lt, n', unsigned cx)
-        | CLe n          -> J.EBin (J.Le, int32 n, cx)
-      in
-      (* Some changes here may require corresponding changes
-         in function [fold_children] above. *)
-      flush_all queue
-        (compile_if st e loc cont1 cont2 handler backs frontier interm succs)
-
-  | Switch (x, a1, a2) ->
-      (* Some changes here may require corresponding changes
-         in function [fold_children] above. *)
-      let build_switch e a =
-        let a = Array.mapi (fun i cont -> (i, cont)) a in
-        Array.stable_sort (fun (_, cont1) (_, cont2) -> compare cont1 cont2) a;
-        let l = Array.to_list a in
-        let l = list_group snd l in
-        let l =
-          List.sort
-            (fun (_, l1) (_, l2) ->
-               - compare (List.length l1) (List.length l2)) l in
-        match l with
-          [] ->
-            assert false
-        | [(cont, _)] ->
-            J.Block
-              (compile_branch st [] cont handler backs frontier interm), J.N
-        | [cont1, [(n, _)]; cont2, _] | [cont2, _; cont1, [(n, _)]] ->
-          J.Block (compile_if st (J.EBin (J.EqEqEq, int n, e)) loc
-                     cont1 cont2 handler backs frontier interm succs),
-          J.N
-        | (cont, l') :: rem ->
-            let l =
-              List.flatten
-                (List.map
-                   (fun (cont, l) ->
-                      match List.rev l with
-                        [] ->
-                          assert false
-                      | (i, _) :: r ->
-                          List.rev
-                            ((J.ENum (float i),
-                              (compile_branch
-                                 st [] cont handler backs frontier interm @
-                               if
-                                 never_continue st cont frontier interm succs
-                               then
-                                 []
-                               else
-                                 [J.Break_statement None, J.N]))
-                             ::
-                             List.map
-                             (fun (i, _) -> (J.ENum (float i), [])) r))
-                   rem)
-            in
-            J.Switch_statement
-              (e, l,
-               Some (compile_branch
-                          st [] cont handler backs frontier interm),
-               []), loc
-      in
-      let (st, queue) =
-        if Array.length a1 = 0 then
-          let ((px, cx), queue) = access_queue queue x in
-          ([build_switch (J.EAccess(cx, J.ENum 0.)) a2], queue)
-        else if Array.length a2 = 0 then
-          let ((px, cx), queue) = access_queue queue x in
-          ([build_switch cx a1], queue)
-        else
-          (* The variable x is accessed several times,
-             so we can directly refer to it *)
-          (* We do not want to share the string "number".
-             See comment for IsInt *)
-          (Js_simpl.if_statement
-              (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
-                      str_js "number"))
-              loc
-              (build_switch (var x) a1)
-              false
-              (build_switch (J.EAccess(var x, J.ENum 0.)) a2)
-              false,
-           queue)
-      in
-      flush_all queue st
+    compile_branch st queue cont handler backs frontier interm
   | Pushtrap _ ->
-      assert false
+    assert false
   | Poptrap cont ->
-      flush_all queue
-        (compile_branch st [] cont None backs frontier interm)
+    flush_all queue
+      (compile_branch st [] cont None backs frontier interm)
+  | Cond (cond,x,c1,c2) ->
+    let ((px, cx), queue) = access_queue queue x in
+    let b = compile_decision_tree st queue handler backs frontier interm succs
+        loc cx (DTree.build_if cond c1 c2) in
+    flush_all queue b
+  | Switch (x,[||],a2) ->
+    let ((px, cx), queue) = access_queue queue x in
+    let code =
+      compile_decision_tree st queue handler backs frontier interm succs
+        loc (J.EAccess(cx, J.ENum 0.)) (DTree.build_switch a2) in
+    flush_all queue code
+  | Switch (x,a1,[||]) ->
+    let ((px, cx), queue) = access_queue queue x in
+    let code =
+      compile_decision_tree st queue handler backs frontier interm succs
+        loc cx (DTree.build_switch a1) in
+    flush_all queue code
+  | Switch (x,a1,a2) ->
+    (* The variable x is accessed several times,
+       so we can directly refer to it *)
+    (* We do not want to share the string "number".
+       See comment for IsInt *)
+    let b1 = compile_decision_tree st queue handler backs frontier interm succs
+        loc (var x)
+        (DTree.build_switch a1) in
+    let b2 = compile_decision_tree st queue handler backs frontier interm succs
+        loc (J.EAccess(var x, J.ENum 0.))
+        (DTree.build_switch a2) in
+    let code =
+      Js_simpl.if_statement
+        (J.EBin(J.EqEqEq, J.EUn (J.Typeof, var x),
+                str_js "number"))
+        loc
+        (Js_simpl.block b1) false (Js_simpl.block b2) false in
+    flush_all queue code
   in
   if debug () then begin
     match last with
