@@ -47,9 +47,16 @@ let gen_file file f =
 let f {
     CompileArg.common;
     profile; source_map; runtime_files; input_file; output_file;
+    params ;
     linkall; toplevel; nocmis;
     include_dir; fs_files; fs_output; fs_external } =
   CommonArg.eval common;
+  List.iter (fun (s,v) ->
+    try
+      let i = int_of_string v in
+      Option.Param.set s i
+    with _ -> ()
+  ) params;
   let t = Util.Timer.make () in
   Linker.load_files runtime_files;
   let paths = List.rev_append include_dir [Util.find_pkg_dir "stdlib"] in

@@ -28,6 +28,7 @@ type t = {
   runtime_files : string list;
   output_file : string option;
   input_file : string option;
+  params : (string * string) list;
   (* toplevel *)
   linkall : bool;
   toplevel : bool;
@@ -81,6 +82,12 @@ let options =
         s, x) Option.Tailcall.all in
     Arg.(value & opt (enum all) Option.Tailcall.default & info ["tc"] ~doc)
   in
+  let set_param =
+    let doc = "Set parameters." in
+    let all = List.map (fun (x,_) ->
+      x, x) (Option.Param.all ()) in
+    Arg.(value & opt_all (list (pair ~sep:'=' (enum all) string)) [] & info ["set"] ~doc)
+  in
   let toplevel =
     let doc = "Compile a toplevel." in
     Arg.(value & flag & info ["toplevel"] ~docs:toplevel_section ~doc)
@@ -112,6 +119,7 @@ let options =
   let build_t
       common
       tailcall
+      set_param
       linkall
       toplevel
       include_dir
@@ -163,8 +171,10 @@ let options =
           | None ->
             raise (Error (false, "Don't know where to output the Source-map file."))
         else None in
+      let params : (string * string) list = List.flatten set_param in
       `Ok {
         common;
+        params;
         tailcall;
         profile;
 
@@ -189,6 +199,7 @@ let options =
     Term.(pure build_t
           $ CommonArg.t
           $ tailcall
+          $ set_param
           $ linkall
           $ toplevel
 
