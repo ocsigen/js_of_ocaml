@@ -42,8 +42,8 @@ generate.cmo : util.cmi subst.cmi primitive.cmi parse_js.cmi parse_info.cmi \
 generate.cmx : util.cmx subst.cmx primitive.cmx parse_js.cmx parse_info.cmx \
     parse_bytecode.cmx option.cmx js_tailcall.cmx js_simpl.cmx javascript.cmx \
     freevars.cmx code.cmx generate.cmi
-inline.cmo : code.cmi inline.cmi
-inline.cmx : code.cmx inline.cmi
+inline.cmo : util.cmi option.cmi code.cmi inline.cmi
+inline.cmx : util.cmx option.cmx code.cmx inline.cmi
 instr.cmo : util.cmi instr.cmi
 instr.cmx : util.cmx instr.cmi
 javascript.cmo : varPrinter.cmi util.cmi parse_info.cmi code.cmi \
