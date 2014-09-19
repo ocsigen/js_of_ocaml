@@ -1,12 +1,18 @@
 ===== 2.4.1 + dev =====
 
  * Features/Changes
- ** Misc: enable safestring for OCaml 4.02
  ** Compiler: SourceMap improvement
  ** Compiler: remove registration of unused named value (wrt runtime)
- ** Lib: Dom binding: *AttributeNS, *AttributeNode*
- ** Runime: improve performence of MlString
+ ** Compiler: Smarter inlining, Constant sharing, Switch generation
+ ** Lib: Dom binding: *AttributeNS, *AttributeNode*, borderRadius
+ ** Runtime: improve performence string, array allocation
 
+ * Misc: enable safestring for OCaml 4.02
+ 
+ * BugFixes
+ ** Compiler: workaround a bug in ocaml 4.02 wrt debug section.
+ ** Compiler: bug when generating minified JavaScript. 
+ 
 ===== 2.4.1 (2014-08-28) =====
 
  * BugFixes
