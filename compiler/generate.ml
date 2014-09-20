@@ -87,6 +87,7 @@ module Share = struct
     mutable vars : J.ident aux;
     alias_prims : bool;
     alias_strings : bool;
+    alias_apply : bool;
   }
 
   let add_string s t =
@@ -128,7 +129,7 @@ module Share = struct
         | _ -> t) t args
 
 
-  let get ?(alias_strings=false) ?(alias_prims=false) (_, blocks, _) : t =
+  let get ?(alias_strings=false) ?(alias_prims=false) ?(alias_apply=true) (_, blocks, _) : t =
     let count = AddrMap.fold
       (fun _ block share ->
         List.fold_left
@@ -155,7 +156,7 @@ module Share = struct
         add_special_prim_if_exists x acc)
         count
         ["caml_trampoline";"caml_trampoline_return";"caml_wrap_exception"] in
-    {count; vars = empty_aux; alias_strings; alias_prims}
+    {count; vars = empty_aux; alias_strings; alias_prims; alias_apply}
 
   let get_string gen s t =
     if not t.alias_strings
@@ -200,23 +201,16 @@ module Share = struct
 
 
   let get_apply gen n t =
-    try
-      let c = IntMap.find n t.count.applies in
-      if c > 1
-      then
-        try
-          J.EVar (IntMap.find n t.vars.applies)
-        with Not_found ->
-          let x = Var.fresh() in
-          Code.Var.name x (Printf.sprintf "caml_call_gen%d" n);
-          let v = J.V x in
-          t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
-          J.EVar v
-      else
-        gen n
-    with Not_found ->
-      gen n
-
+    if not t.alias_apply
+    then gen n
+    else try
+        J.EVar (IntMap.find n t.vars.applies)
+      with Not_found ->
+        let x = Var.fresh() in
+        Code.Var.name x (Printf.sprintf "caml_call_gen%d" n);
+        let v = J.V x in
+        t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
+        J.EVar v
 end
 
 
@@ -1695,15 +1689,15 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
     let label =
       match st.loop_stack with
         [] ->
-          assert false
+        assert false
       | (pc', _) :: rem ->
-          if pc = pc' then
-            None
-          else begin
-            let (lab, used) = List.assoc pc rem in
-            used := true;
-            Some lab
-          end
+        if pc = pc' then
+          None
+        else begin
+          let (lab, used) = List.assoc pc rem in
+          used := true;
+          Some lab
+        end
     in
     if debug () then begin
       if label = None then
