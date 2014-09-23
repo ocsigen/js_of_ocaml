@@ -66,16 +66,16 @@ let init () =
     let prod = env prod in
     let link_opts = link_opts prod in
     let tags = tags_of_pathname prod ++ "js_of_ocaml" in
-    Cmd (S [A "js_of_ocaml"; A "-noruntime"; T tags; S link_opts; P dep; A "-o"; Px prod])
+    Cmd (S [A "js_of_ocaml"; A "--no-runtime"; T tags; S link_opts; A "-o"; Px prod; P dep])
   in
   rule "js_of_ocaml: .byte -> .js" ~dep ~prod f;
-  flag ["js_of_ocaml"; "debug"] (S [A "-pretty"; A "-debuginfo"; A "-sourcemap"]);
-  flag ["js_of_ocaml"; "pretty"] (A "-pretty");
-  flag ["js_of_ocaml"; "debuginfo"] (A "-debuginfo");
-  flag ["js_of_ocaml"; "noinline"] (A "-noinline");
-  flag ["js_of_ocaml"; "sourcemap"] (A "-sourcemap");
-  pflag ["js_of_ocaml"] "tailcall" (fun x -> S [A "-tc"; A x]);
-  pflag ["js_of_ocaml"] "opt" (fun n -> S [A "-opt"; A n])
+  flag ["js_of_ocaml"; "debug"] (S [A "--pretty"; A "--debug-info"; A "--source-map"]);
+  flag ["js_of_ocaml"; "pretty"] (A "--pretty");
+  flag ["js_of_ocaml"; "debuginfo"] (A "--debug-info");
+  flag ["js_of_ocaml"; "noinline"] (A "--no-inline");
+  flag ["js_of_ocaml"; "sourcemap"] (A "--source-map");
+  pflag ["js_of_ocaml"] "opt" (fun n -> S [A "--opt"; A n]);
+  pflag ["js_of_ocaml"] "set" (fun n -> S [A "--set"; A n])
 
 let oasis_support ~executables =
   let aux x =
