@@ -34,9 +34,7 @@ let setup = lazy (
   Hashtbl.add Toploop.directive_table "disable" (Toploop.Directive_string Option.Optim.disable);
   Hashtbl.add Toploop.directive_table "debug_on" (Toploop.Directive_string Option.Debug.enable);
   Hashtbl.add Toploop.directive_table "debug_off" (Toploop.Directive_string Option.Debug.disable);
-  Hashtbl.add Toploop.directive_table "tailcall" (Toploop.Directive_string (fun s ->
-      let x = Option.Tailcall.of_string s in
-      Option.Tailcall.set x));
+  Hashtbl.add Toploop.directive_table "tailcall" (Toploop.Directive_string (Option.Param.set "tc"));
   Topdirs.dir_directory "/cmis";
   let initial_primitive_count =
     Array.length (split_primitives (Symtable.data_primitive_names ())) in
