@@ -16,6 +16,7 @@ OCaml programs run on Web browsers.
   * Findlib: **version 1.5.1** at least
   * Lwt: **version 2.3.0** at least
   * Menhir
+  * Cmdliner
 
 ### optional
   * [deriving](https://github.com/ocsigen/deriving): **version 0.6** at least
