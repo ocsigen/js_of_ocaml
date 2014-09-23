@@ -8,7 +8,7 @@ OCAMLC=ocamlfind ocamlc -package lwt -pp "camlp4o ../../lib/syntax/pa_js.cmo" -I
 STDLIB=$(LIBNAME).cma
 
 $(NAME).js: $(NAME).byte $(COMP) $(JSFILES)
-	$(COMP) -noruntime $(JSFILES) $(NAME).byte $(OPTIONS)
+	$(COMP) --noruntime $(JSFILES) $(OPTIONS) $(NAME).byte
 
 $(NAME).byte: $(OBJS)
 	$(OCAMLC) -linkpkg -o $@ $(STDLIB) $^

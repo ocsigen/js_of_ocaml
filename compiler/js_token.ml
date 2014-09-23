@@ -85,7 +85,7 @@ type token =
   | T_ASSIGN of Parse_info.t
   | T_AND of Parse_info.t
   | T_DEBUGGER of Parse_info.t
-  | TUnknown of Parse_info.t
+  | TUnknown of (Parse_info.t * string)
   | TCommentSpace of (Parse_info.t * string)
   | TCommentNewline of (Parse_info.t * string)
   | TCommentML of (Parse_info.t * string)
@@ -95,7 +95,7 @@ type token =
 
 
 let info_of_tok = function
-  | TUnknown ii -> ii
+  | TUnknown (ii,_) -> ii
 
   | TCommentSpace (ii,_) -> ii
   | TCommentNewline (ii,_) -> ii
@@ -191,7 +191,7 @@ let info_of_tok = function
 
 
 let string_of_tok = function
-  | TUnknown ii -> "COMMENT"
+  | TUnknown (ii,_) -> "COMMENT"
 
   | TCommentSpace (ii,_) -> "COMMENT"
   | TCommentNewline (ii,_) -> "COMMENT"

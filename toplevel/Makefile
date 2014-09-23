@@ -41,7 +41,8 @@ BER=metalib.cma bertop.cmo \
 SYNTAXES=
 OPTCOMP_OPT+= -let metaocaml=true
 endif
-#-jsopt "-pretty -disable shortvar"
+
+#-jsopt "--pretty --disable shortvar"
 MKTOP=jsoo_mktop -verbose $(SAFESTRING) \
 	${addprefix -top-syntax , ${SYNTAXES}} \
 	-dont-export-unit gc \
@@ -56,7 +57,7 @@ $(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS)
 	$(OCPINDENT) $(HIGLO) \
 	$(TOPLEVEL_OBJS) \
 	${addprefix -jsopt , ${JSFILES}} \
-	${addprefix -jsopt , -I ./ -file examples.ml} \
+	${addprefix -jsopt , -I ./ --file examples.ml} \
 	-package base64 \
 	-o $(TOPLEVEL_NAME).byte
 

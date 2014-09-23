@@ -1,36 +1,28 @@
 = Main Command-Line options
 
 |= Option name            |= Description                           |
-| -version                | Display the version of the compiler    |
-| -vnum                   | Display the version number of
-                            the compiler                           |
+| --version               | Display the version of the compiler    |
 | -o <file>               | Set the output filename to <file>      |
-| -sourcemap              | Generate sourcemap                     |
-| -opt {0,1,2,3}          | Set the compilation profile
+| --source-map            | Generate sourcemap                     |
+| --opt {1,2,3}           | Set the compilation profile
                             (default 1). See **Optimization**
                              section below.                        |
-| -tc {none,trampoline}   | Set the tailcall optimisation
-                            (default trampoline)                   |
-| -pretty                 | Pretty print javascript output         |
-| -noinline               | Disable code inlining                  |
-| -debuginfo              | Output debug information               |
+| --pretty                | Pretty print javascript output         |
+| --no-inline             | Disable code inlining                  |
+| --debug-info            | Output debug information               |
 | -I dir                  | Add <dir> to the list of
                             include directories                    |
-| -file file[:dir]        | Register <file> to the pseudo filesytem
+| --file file[:dir]       | Register <file> to the pseudo filesytem
                             and choose the the destination
                             directory <dir> (default /)            |
-| -noruntime              | Do not include the runtime             |
-| -linkall                | Link all primitives                    |
-| -toplevel               | Compile a toplevel                     |
-| -enable <option>        | Enable option <option>                 |
-| -disable <option>       | Disable option <option>                |
+| --enable <option>       | Enable option <option>                 |
+| --disable <option>      | Disable option <option>                |
 
 =Optimizations
-==Predefined optimization profile
- * For Debugging: "-opt 0". It is equivalent to "-pretty -disable inline -disable staticeval -disable share -debuginfo"
- * For Production: "-opt 3". It minimize the generated javascript by applying
-   various optimizations until fix-point is reached
-==List of option to "-disable" or "-enable"
+ * For Debugging: "--pretty --no-inline --debug-info" + eventually "--disable staticeval --disable share"
+ * For Production: "--opt 3". It minimize the generated javascript by applying
+   various optimizations until a fix-point is reached
+==List of option to "--disable" or "--enable"
 
 |= Option name |= Default |= Description                           |
 | pretty       | false    | Pretty print the javascript output     |

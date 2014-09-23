@@ -1,11 +1,11 @@
 
 include ../Makefile.conf
 
-all: $(COMPILER) $(MINIFIER)
+all: $(COMPILER) $(MINIFIER) man
 
 lib: compiler.cma compiler.cmxa compiler.cmxs
 
-PACKAGES=findlib
+PACKAGES=findlib,cmdliner
 
 OBJS=compiler_version.cmx \
      util.cmx pretty_print.cmx option.cmx reserved.cmx varPrinter.cmx \
@@ -19,13 +19,22 @@ OBJS=compiler_version.cmx \
      linker.cmx parse_bytecode.cmx generate.cmx driver.cmx \
      pseudoFs.cmx
 
-COMPOBJS=$(OBJS) compile.cmx
+COMPOBJS=$(OBJS) commonArg.cmx compileArg.cmx compile.cmx
 
 $(COMPILER): compile.$(BEST)
 	mv -f $< $@
 
 $(MINIFIER): minify.$(BEST)
 	mv -f $< $@
+
+
+man: man/$(MINIFIER).1 man/$(COMPILER).1
+man/$(MINIFIER).1: $(MINIFIER)
+	mkdir -p man
+	./$(MINIFIER) --help=groff >$@
+man/$(COMPILER).1: $(COMPILER)
+	mkdir -p man
+	./$(COMPILER) --help=groff >$@
 
 .INTERMEDIATE: compile.byte compile.opt minify.byte minify.opt
 
@@ -34,9 +43,9 @@ compile.byte: $(COMPOBJS:cmx=cmo)
 compile.opt: $(COMPOBJS)
 	ocamlfind ocamlopt $(SAFESTRING) -package $(PACKAGES) -linkpkg -g -o $@ $^
 
-minify.byte: $(OBJS:cmx=cmo) minify.cmo
+minify.byte: $(OBJS:cmx=cmo) commonArg.cmo minifyArg.cmo minify.cmo
 	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -linkpkg -o $@ $^
-minify.opt: $(OBJS:cmx=cmx) minify.cmx
+minify.opt: $(OBJS:cmx=cmx) commonArg.cmx minifyArg.cmx minify.cmx
 	ocamlfind ocamlopt $(SAFESTRING) -package $(PACKAGES) -linkpkg -g -o $@ $^
 
 
@@ -91,6 +100,7 @@ clean:
 	rm -f compiler_version.ml
 	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
+	rm -Rf man
 
 .PHONY: depend
 depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml

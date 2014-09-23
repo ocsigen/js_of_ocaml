@@ -21,6 +21,10 @@
 
 open Util
 
+let loc pi = match pi with
+  | None -> "unknown location"
+  | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line
+
 let parse_annot loc s =
   let buf = Lexing.from_string s in
   try
@@ -56,20 +60,25 @@ let parse_file f =
 
   let lex = Parse_js.lexer_from_file ~rm_comment:false file in
   let status,lexs = Parse_js.lexer_fold (fun (status,lexs) t ->
-    match t with
+      match t with
       | Js_token.TComment (info,str) -> begin
-        match parse_annot info str with
+          match parse_annot info str with
           | None -> (status,lexs)
           | Some a ->
             match status with
-              | `Annot annot -> `Annot (a::annot),lexs
-              | `Code (an,co) -> `Annot [a], ((List.rev an,List.rev co)::lexs)
-      end
+            | `Annot annot -> `Annot (a::annot),lexs
+            | `Code (an,co) -> `Annot [a], ((List.rev an,List.rev co)::lexs)
+        end
       | _ when Js_token.is_comment t -> (status,lexs)
+      | Js_token.TUnknown (info,_) ->
+        Format.eprintf "Unknown token while parsing JavaScript at %s@." (loc (Some info));
+        if not (Filename.check_suffix file ".js")
+        then Format.eprintf "%S doesn't look like a JavaScript file@." file;
+        failwith "Error while parsing JavaScript"
       | c -> match status with
-          | `Code (annot,code) -> `Code (annot,c::code),lexs
-          | `Annot (annot) -> `Code(annot,[c]),lexs
-  ) (`Annot [],[]) lex in
+        | `Code (annot,code) -> `Code (annot,c::code),lexs
+        | `Annot (annot) -> `Code(annot,[c]),lexs
+    ) (`Annot [],[]) lex in
   let lexs = match status with
     | `Annot _ -> lexs
     | `Code(annot,code) -> (List.rev annot,List.rev code)::lexs in
@@ -91,9 +100,6 @@ let parse_file f =
       lexs in
   res
 
-let loc pi = match pi with
-  | None -> "unknown location"
-  | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line
 
 class check_and_warn name pi = object(m)
   inherit Js_traverse.free as super

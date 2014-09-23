@@ -28,6 +28,7 @@ let extra_js_files = ["+weak.js" ; "+graphics.js"; "+toplevel.js"; "+nat.js"]
 module Debug = struct
   let debugs : (string * bool ref) list ref = ref []
 
+  let available () = List.map fst !debugs
   let find s =
     let state =
       try
@@ -52,6 +53,8 @@ end
 module Optim = struct
 
   let optims = ref []
+
+  let available () = List.map fst !optims
 
   let o ~name ~default =
     let state =
@@ -95,21 +98,30 @@ module Optim = struct
 end
 
 module Param = struct
-  let params = ref []
 
-  let p ~name ~desc ~default=
-    let state =
-      try
-        fst (List.assoc name !params)
-      with Not_found ->
-        let state = ref default in
-        params := (name, (state,desc)) :: !params;
-        state
+  let int default =
+    default, int_of_string
+
+  let enum : (string * 'a) list -> _ = function
+    | ((d,v) :: _) as l ->
+      v, (fun x -> List.assoc x l)
+    | _ -> assert false
+
+
+  let params : (string * _) list ref = ref []
+
+  let p ~name ~desc (default,convert) =
+    assert(not (List.mem_assoc name !params));
+    let state = ref default in
+    let set : string -> unit = fun v ->
+      try state := convert v with
+      | _ -> Format.eprintf "Warning: malformed option %s=%s. IGNORE@." name v
     in
+    params := (name, (set,desc)) :: !params;
     fun () -> !state
 
   let set s v =
-    try fst (List.assoc s !params) := v with Not_found ->
+    try fst (List.assoc s !params) v with Not_found ->
       failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let all () = List.map (fun (n,(_,d)) -> n,d) !params
@@ -119,41 +131,31 @@ module Param = struct
   let switch_max_case = p
       ~name:"switch_size"
       ~desc:"set the maximum number of case in a switch"
-      ~default:60
+      (int 60)
 
   let tailcall_max_depth = p
       ~name:"tc_depth"
       ~desc:"set the maximum number of recursive tailcalls defore returning a trampoline"
-      ~default:50
+      (int 50)
 
   let constant_max_depth = p
       ~name:"cst_depth"
       ~desc:"set the maximum depth of generated litteral JavaScript values"
-      ~default:10
-end
+      (int 10)
 
-module Tailcall = struct
-  type t =
+
+  type tc =
     | TcNone
     | TcTrampoline
     | TcWhile
 
-  let default = TcTrampoline
+  let tc_default = TcTrampoline
 
-  let all = default :: List.filter ((<>) default) [TcNone;TcTrampoline(* ;TcWhile *)]
+  let tc_all = tc_default :: List.filter ((<>) tc_default) [TcNone;TcTrampoline(* ;TcWhile *)]
 
-  let to_string = function
-    | TcNone -> "none"
-    | TcTrampoline -> "trampoline"
-    | TcWhile -> "while"
-
-  let of_string =
-    let all_string = List.map (fun x -> to_string x,x) all in
-    fun x -> List.assoc x all_string
-
-
-  let set,get =
-    let r = ref default in
-    (fun x -> r:=x),(fun () -> !r)
-
+  let tailcall_optim = p
+      ~name:"tc"
+      ~desc:"Set tailcall optimisation"
+      (enum ["trampoline",TcTrampoline;(* default *)
+             "none",TcNone])
 end

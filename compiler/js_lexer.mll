@@ -269,8 +269,8 @@ rule initial tokinfo prev = parse
   | eof { EOF (tokinfo lexbuf) }
 
   | _ {
-      Format.eprintf "LEXER:unrecognised symbol, in token rule: %s@." (tok lexbuf);
-      TUnknown (tokinfo lexbuf)
+      (* Format.eprintf "LEXER:unrecognised symbol, in token rule: %s@." (tok lexbuf); *)
+      TUnknown (tokinfo lexbuf, tok lexbuf)
     }
 (*****************************************************************************)
 
@@ -283,7 +283,7 @@ and string_escape quote buf = parse
   | (_ as c)
     { if c <> '\'' && c <> '\"' then Buffer.add_char buf '\\';
       Buffer.add_char buf c }
-
+  | eof { Format.eprintf  "LEXER: WIERD end of file in string_escape@."; ()}
 
 and string_quote q buf = parse
   | ("'"|'"') as q' {
@@ -314,6 +314,7 @@ and regexp_class buf = parse
                     Buffer.add_char buf x;
                     regexp_class buf lexbuf }
   | (_ as x) { Buffer.add_char buf x; regexp_class buf lexbuf }
+  | eof { Format.eprintf "LEXER: WIERD end of file in regexp_class@."; ()}
 
 and regexp_maybe_ident buf = parse
   | ['A'-'Z''a'-'z']* { Buffer.add_string buf (tok lexbuf) }

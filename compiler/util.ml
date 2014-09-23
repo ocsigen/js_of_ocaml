@@ -292,3 +292,15 @@ module MagicNumber = struct
     then raise_ (Bad_magic_version h)
     else ()
 end
+
+
+let normalize_argv a =
+  Array.map (fun s ->
+    let size = String.length s in
+    if size <= 2 then s
+    else if s.[0] = '-' && s.[1] <> '-' && s.[2] <> '='
+    then (* long option with one dash
+            lets double the dash *)
+      "-"^s
+    else s
+  ) a

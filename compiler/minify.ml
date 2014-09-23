@@ -22,52 +22,31 @@ let error k = Format.ksprintf (fun s -> failwith s) k
 
 let _ = Sys.catch_break true
 
-let run () =
-  Util.Timer.init Sys.time;
-  let js_files = ref [] in
-  let stdin = ref false in
-  let output_file = ref None in
-  let options =
-    [("-debug", Arg.String Option.Debug.enable, "<name> debug module <name>");
-     ("-disable",
-      Arg.String Option.Optim.disable, "<name> disable optimization <name>");
-     ("-pretty", Arg.Unit (fun () -> Option.Optim.enable "pretty"), " pretty print the output");
-     ("-debuginfo", Arg.Unit (fun () -> Option.Optim.enable "debuginfo"), " output debug info");
-     ("-noinline", Arg.Unit (fun () -> Option.Optim.disable "inline"), " disable inlining");
-     ("-stdin", Arg.Set stdin, " read from standard input");
-     ("-o", Arg.String (fun s -> output_file := Some s),
-      "<file> set output file name to <file>")]
-  in
-
-  let usage_header = (Format.sprintf "Usage: %s [options]" Sys.argv.(0)) in
-
-
-  Arg.parse (Arg.align options)
-    (fun s ->
-       if Filename.check_suffix s ".js" then
-         if Sys.file_exists s
-         then js_files := s :: !js_files
-         else error "file '%s' do not exist" s
-       else
-         error "Don't know what to do with '%s'" s
-    )
-    (usage_header);
-
+let f {
+    MinifyArg.common;
+    output_file;
+    stdin;
+    files
+  } =
+  CommonArg.eval common;
   let chop_extension s =
     try Filename.chop_extension s with Invalid_argument _ -> s in
 
-  let pp,finalize = match !output_file with
+  let pp,finalize = match output_file with
     | Some "-" ->
       Pretty_print.to_out_channel stdout,(fun _ -> ())
     | Some file ->
       let oc = open_out file in
       Pretty_print.to_out_channel oc, (fun _ -> close_out oc)
-    | None when not(!stdin) && List.length !js_files = 1 ->
-      let file = chop_extension (List.hd !js_files) ^ ".min.js" in
+    | None when not stdin ->
+      let file =
+        if List.length files = 1
+        then chop_extension (List.hd files) ^ ".min.js"
+        else "a.min.js" in
       let oc = open_out file in
       Pretty_print.to_out_channel oc, (fun _ -> close_out oc)
-    | None when !stdin -> Pretty_print.to_out_channel stdout,(fun _ -> ())
-    | None -> Arg.usage options usage_header; exit 0 in
+    | None (* when stdin *) -> Pretty_print.to_out_channel stdout,(fun _ -> ())
+  in
 
   let pretty = Option.Optim.pretty () in
   Pretty_print.set_compact pp (not pretty);
@@ -80,10 +59,10 @@ let run () =
 
   let p = List.flatten (List.map (fun file ->
     let lex = Parse_js.lexer_from_file file in
-    try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi) !js_files) in
+    try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi) files) in
 
   let p =
-    if !stdin
+    if stdin
     then
       let lex = Parse_js.lexer_from_channel Pervasives.stdin in
       try p@(Parse_js.parse lex) with Parse_js.Parsing_error pi -> error_of_pi pi;
@@ -104,9 +83,13 @@ let run () =
   Js_output.program pp p;
   finalize()
 
+let main =
+  Cmdliner.Term.(pure f $ MinifyArg.options),
+  MinifyArg.info
 
 let _ =
-  try run () with
+  Util.Timer.init Sys.time;
+  try Cmdliner.Term.eval ~argv:(Util.normalize_argv Sys.argv) main with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
     let backtrace = Printexc.get_backtrace () in
     Format.eprintf

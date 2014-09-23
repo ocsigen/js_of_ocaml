@@ -157,8 +157,8 @@ let _ =
         clean (tmp_output)
     end;
     let extra_include = List.map (fun x -> ["-I";Findlib.package_directory x]) ("compiler-libs" :: !pkgs) in
-    let extra_cmis = List.map (fun u -> ["-file";Printf.sprintf "%s.cmi:/cmis" u]) !export in
+    let extra_cmis = List.map (fun u -> ["--file";Printf.sprintf "%s.cmi:/cmis" u]) !export in
     let extra = List.flatten (extra_include @ extra_cmis) in
-    execute (["js_of_ocaml";"-toplevel";"-no-cmis";] @ extra @ !js_opt @ [!output]);
+    execute (["js_of_ocaml";"--toplevel";"--no-cmis";] @ extra @ !js_opt @ [!output]);
     do_clean ()
   with exn -> do_clean (); raise exn

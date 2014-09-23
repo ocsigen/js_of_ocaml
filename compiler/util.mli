@@ -56,6 +56,9 @@ val split_char : char -> string -> string list
 val split : string -> string -> string list
 val find : string -> Bytes.t -> int
 
+(* [normalize_argv argv] returns a new array of arguments where '-long-option' are replaced by '--long-option' *)
+val normalize_argv : string array -> string array
+
 module Version : sig
   type t = int list
   val current : t

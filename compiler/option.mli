@@ -18,12 +18,14 @@
 *)
 
 module Debug : sig
+  val available : unit -> string list
   val find : string -> unit -> bool
   val enable : string -> unit
   val disable : string -> unit
 end
 
 module Optim : sig
+  val available : unit -> string list
   val deadcode : unit -> bool
   val optcall : unit -> bool
   val shortvar : unit -> bool
@@ -48,23 +50,17 @@ module Optim : sig
 end
 
 module Param : sig
-  val set : string -> int -> unit
+  val set : string -> string -> unit
   val all : unit -> (string * string) list
   val switch_max_case : unit -> int
   val tailcall_max_depth : unit -> int
   val constant_max_depth : unit -> int
-end
 
-module Tailcall : sig
-  type t =
-    | TcNone
-    | TcTrampoline
-    | TcWhile
-  val get : unit -> t
-  val set : t -> unit
-  val of_string : string -> t
-  val to_string : t -> string
-  val all : t list
+  type tc =
+     | TcNone
+     | TcTrampoline
+     | TcWhile
+  val tailcall_optim : unit -> tc
 end
 
 val global_object : string

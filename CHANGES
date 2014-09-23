@@ -8,11 +8,12 @@
  ** Runtime: improve performence string, array allocation
 
  * Misc: enable safestring for OCaml 4.02
- 
+ * Commandline: switch to Cmdliner. Better -help + manpage
+
  * BugFixes
  ** Compiler: workaround a bug in ocaml 4.02 wrt debug section.
- ** Compiler: bug when generating minified JavaScript. 
- 
+ ** Compiler: bug when generating minified JavaScript.
+
 ===== 2.4.1 (2014-08-28) =====
 
  * BugFixes
