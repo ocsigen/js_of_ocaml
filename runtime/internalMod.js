@@ -1,6 +1,21 @@
-
-
-
+// Js_of_ocaml runtime support
+// http://www.ocsigen.org/js_of_ocaml/
+// Copyright (C) 2014 Jérôme Vouillon, Hugo Heuzard
+// Laboratoire PPS - CNRS Université Paris Diderot
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, with linking exception;
+// either version 2.1 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: caml_CamlinternalMod_init_mod
 //Requires: caml_raise_with_arg, caml_global_data
@@ -44,7 +59,7 @@ function caml_CamlinternalMod_update_mod(shape,real,x) {
       real.fun = x;
       break;
     case 1://lazy
-    case 2://class
+    default://case 2://class
       caml_update_dummy(real,x);
     }
   else
@@ -55,7 +70,6 @@ function caml_CamlinternalMod_update_mod(shape,real,x) {
       break;
     //case 1://Value
     default:
-      caml_update_dummy(real,x);
     };
   return 0
 }
