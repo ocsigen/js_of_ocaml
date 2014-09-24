@@ -419,7 +419,8 @@ type state =
     mutable loop_stack : (addr * (J.Label.t * bool ref)) list;
     mutable visited_blocks : AddrSet.t;
     mutable interm_idx : int;
-    ctx : Ctx.t; mutable blocks : Code.block AddrMap.t }
+    ctx : Ctx.t; mutable blocks : Code.block AddrMap.t;
+    at_toplevel : bool }
 
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
 let incr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1)
@@ -946,7 +947,7 @@ let group_closures l = fst (group_closures_rec l VarSet.empty)
 let rec collect_closures ctx l =
   match l with
     Let (x, Closure (args, ((pc, _) as cont))) :: rem ->
-      let clo = compile_closure ctx cont in
+      let clo = compile_closure ctx false cont in
 
       let all_vars = AddrMap.find pc ctx.Ctx.mutated_vars in
 
@@ -1399,12 +1400,44 @@ else begin
         in
         if debug () then Format.eprintf "}@]@ ";
         if limit_body then decr_preds st pc3;
+        let wrap s =
+          (* We wrap [try ... catch ...] statements at toplevel inside
+             an anonymous function, as V8 does not optimize functions
+             that contain these statements *)
+          if st.at_toplevel then
+            try
+              let pc = AddrSet.choose inner_frontier in
+              let block = AddrMap.find pc st.blocks in
+              let x =
+                match block.params with
+                  [x] -> x
+                | []  -> raise Not_found
+                | _   -> assert false
+              in
+              J.Variable_statement
+                [J.V x,
+                 Some
+                   (J.ECall (J.EFun (None, [],
+                                     [J.Statement s, J.N;
+                                      J.Statement
+                                        (J.Return_statement
+                                           (Some (J.EVar (J.V x)))), J.N],
+                                     J.N),
+                             [], J.N),
+                    J.N)]
+            with Not_found ->
+              J.Expression_statement
+                (J.ECall (J.EFun (None, [], [J.Statement s, J.N], J.N),
+                          [], J.N))
+          else
+            s
+        in
         flush_all queue
-          ((J.Try_statement (body,
-                             Some (J.V x,
-                                   handler),
-                             None),
-                            source_location st.ctx pc) ::
+          ((wrap
+              (J.Try_statement (body,
+                                Some (J.V x, handler),
+                                None)),
+            source_location st.ctx pc) ::
            if AddrSet.is_empty inner_frontier then [] else begin
              let pc = AddrSet.choose inner_frontier in
              if AddrSet.mem pc frontier then [] else
@@ -1721,12 +1754,13 @@ and compile_branch_selection pc interm =
   with Not_found ->
     []
 
-and compile_closure ctx (pc, args) =
+and compile_closure ctx at_toplevel (pc, args) =
   let st =
     { visited_blocks = AddrSet.empty; loops = AddrSet.empty; loop_stack = [];
       all_succs = Hashtbl.create 17; succs = Hashtbl.create 17;
       backs = Hashtbl.create 17; preds = Hashtbl.create 17;
-      interm_idx = -1; ctx = ctx; blocks = ctx.Ctx.blocks }
+      interm_idx = -1; ctx = ctx; blocks = ctx.Ctx.blocks;
+      at_toplevel }
   in
   build_graph st pc AddrSet.empty;
   let current_blocks = st.visited_blocks in
@@ -1765,7 +1799,7 @@ let generate_shared_value ctx =
   else [strings]
 
 let compile_program ctx pc =
-  let res = compile_closure ctx (pc, []) in
+  let res = compile_closure ctx true (pc, []) in
   let res = generate_shared_value ctx @ res in
   if debug () then Format.eprintf "@.@.";
   res
