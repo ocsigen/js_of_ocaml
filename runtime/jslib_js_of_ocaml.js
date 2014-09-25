@@ -94,7 +94,7 @@ function caml_js_wrap_callback(f) {
 function caml_js_wrap_meth_callback(f) {
   return function () {
     if (arguments.length > 0) {
-      return caml_call_gen(f,raw_array_cons(this,arguments));
+      return caml_call_gen(f,raw_array_cons(arguments,this));
     } else {
       return caml_call_gen(f,[this,undefined]);
     }

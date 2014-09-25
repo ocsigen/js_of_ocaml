@@ -22,7 +22,7 @@
 //Provides: raw_array_sub
 function raw_array_sub (a,i,l) {
   var b = new Array(l);
-  for(var j = 0; j < l; j++) b[i] = a[i+j];
+  for(var j = 0; j < l; j++) b[j] = a[i+j];
   return b
 }
 

@@ -71,8 +71,8 @@ function caml_subarray_to_string (a, i, len) {
   var f = String.fromCharCode;
   if (i == 0 && len <= 4096 && len == a.length) return f.apply (null, a);
   var s = "";
-  for (len += i; i < len; i += 1024)
-    s += f.apply (null, raw_array_sub(a,i, Math.min(len, i + 1024)));
+  for (; 0 < len; i += 1024,len-=1024)
+    s += f.apply (null, raw_array_sub(a,i, Math.min(len, 1024)));
   return s;
 }
 
