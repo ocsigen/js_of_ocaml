@@ -294,13 +294,20 @@ module MagicNumber = struct
 end
 
 
-let normalize_argv a =
-  Array.map (fun s ->
+let normalize_argv ?(warn=false) a =
+  let bad = ref [] in
+  let a = Array.map (fun s ->
     let size = String.length s in
     if size <= 2 then s
     else if s.[0] = '-' && s.[1] <> '-' && s.[2] <> '='
-    then (* long option with one dash
-            lets double the dash *)
+    then begin
+      bad:=s::!bad;
+      (* long option with one dash lets double the dash *)
       "-"^s
+    end
     else s
-  ) a
+  ) a in
+  if (warn && !bad <> [])
+  then Format.eprintf
+      "[Warning] long options with a single '-' are now deprecated.\ Please use '--' for the following options: %s@." (String.concat ", " !bad);
+  a
