@@ -31,9 +31,11 @@ function caml_js_to_float(x) { return x; }
 //Requires: MlString
 function caml_js_from_string(s) { return s.toString(); }
 //Provides: caml_js_from_array mutable
-function caml_js_from_array(a) { return a.slice(1); }
+//Requires: raw_array_sub
+function caml_js_from_array(a) { return raw_array_sub(a,1,a.length-1); }
 //Provides: caml_js_to_array mutable
-function caml_js_to_array(a) { return [0].concat(a); }
+//Requires: raw_array_cons
+function caml_js_to_array(a) { return raw_array_cons(a,0); }
 
 //Provides: caml_js_var mutable
 //Requires: js_print_stderr
@@ -48,14 +50,19 @@ function caml_js_var(x) {
   return eval(x);
 }
 //Provides: caml_js_call
-function caml_js_call(f, o, args) { return f.apply(o, args.slice(1)); }
+//Requires: caml_js_from_array
+function caml_js_call(f, o, args) { return f.apply(o, caml_js_from_array(args)); }
 //Provides: caml_js_fun_call
-function caml_js_fun_call(f, args) { return f.apply(null, args.slice(1)); }
+//Requires: caml_js_from_array
+function caml_js_fun_call(f, args) { return f.apply(null, caml_js_from_array(args)); }
 //Provides: caml_js_meth_call
 //Requires: MlString
+//Requires: caml_js_from_array
 function caml_js_meth_call(o, f, args) {
-  return o[f.toString()].apply(o, args.slice(1)); }
+  return o[f.toString()].apply(o, caml_js_from_array(args));
+}
 //Provides: caml_js_new
+//Requires: caml_js_from_array
 function caml_js_new(c, a) {
   switch (a.length) {
   case 1: return new c;
@@ -67,27 +74,30 @@ function caml_js_new(c, a) {
   case 7: return new c (a[1],a[2],a[3],a[4],a[5],a[6]);
   case 8: return new c (a[1],a[2],a[3],a[4],a[5],a[6], a[7]);
   }
-  function F() { return c.apply(this, a.slice(1)); }
+  function F() { return c.apply(this, caml_js_from_array(a)); }
   F.prototype = c.prototype;
   return new F;
 }
 //Provides: caml_js_wrap_callback const
-//Requires: caml_call_gen
+//Requires: caml_call_gen,raw_array_copy
 function caml_js_wrap_callback(f) {
-  var toArray = Array.prototype.slice;
   return function () {
-    var args = (arguments.length > 0)?toArray.call (arguments):[undefined];
-    return caml_call_gen(f, args);
+    if(arguments.length > 0){
+      return caml_call_gen(f, raw_array_copy(arguments));
+    } else {
+      return caml_call_gen(f, [undefined]);
+    }
   }
 }
 //Provides: caml_js_wrap_meth_callback const
-//Requires: caml_call_gen
+//Requires: caml_call_gen,raw_array_cons
 function caml_js_wrap_meth_callback(f) {
-  var toArray = Array.prototype.slice;
   return function () {
-    var args = (arguments.length > 0)?toArray.call (arguments):[undefined];
-    args.unshift (this);
-    return caml_call_gen(f, args);
+    if (arguments.length > 0) {
+      return caml_call_gen(f,raw_array_cons(this,arguments));
+    } else {
+      return caml_call_gen(f,[this,undefined]);
+    }
   }
 }
 //Provides: caml_js_equals mutable

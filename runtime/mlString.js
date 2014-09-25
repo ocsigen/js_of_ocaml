@@ -66,12 +66,13 @@ function caml_str_repeat(n, s) {
 }
 
 //Provides: caml_subarray_to_string
+//Requires: raw_array_sub
 function caml_subarray_to_string (a, i, len) {
   var f = String.fromCharCode;
   if (i == 0 && len <= 4096 && len == a.length) return f.apply (null, a);
   var s = "";
   for (len += i; i < len; i += 1024)
-    s += f.apply (null, a.slice(i, Math.min(len, i + 1024)));
+    s += f.apply (null, raw_array_sub(a,i, Math.min(len, i + 1024)));
   return s;
 }
 

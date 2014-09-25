@@ -31,11 +31,12 @@ function caml_weak_set(x, i, v) { x[i + 1] = v; return 0; }
 function caml_weak_get(x, i) { return (x[i + 1]===undefined)?0:x[i + 1]; }
 //Provides: caml_weak_get_copy mutable
 //Requires: caml_weak_get
+//Requires: caml_obj_dup
 function caml_weak_get_copy(x, i) {
   var y = caml_weak_get(x, i);
   if (y === 0) return y;
   var z = y[1];
-  if (z instanceof Array) return [0, z.slice()];
+  if (z instanceof Array) return [0, caml_obj_dup(z)];
   return y;
 }
 //Provides: caml_weak_check mutable
