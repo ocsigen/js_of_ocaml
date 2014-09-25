@@ -158,12 +158,18 @@ function caml_obj_tag (x) { return (x instanceof Array)?x[0]:1000; }
 function caml_obj_set_tag (x, tag) { x[0] = tag; return 0; }
 //Provides: caml_obj_block const
 function caml_obj_block (tag, size) {
-  var o = [tag];
+  var o = new Array(size+1);
+  o[0]=tag;
   for (var i = 1; i <= size; i++) o[i] = 0;
   return o;
 }
 //Provides: caml_obj_dup mutable
-function caml_obj_dup (x) { return x.slice(); }
+function caml_obj_dup (x) {
+  var l = x.length;
+  var a = new Array(l);
+  for(var i = 0; i < l; i++ ) a[i] = x[i];
+  return a;
+}
 //Provides: caml_obj_truncate
 function caml_obj_truncate (x, s) { x.length = s + 1; return 0; }
 
@@ -798,12 +804,24 @@ function caml_sys_system_command(_cmd){
 ///////////// Array
 //Provides: caml_array_sub mutable
 function caml_array_sub (a, i, len) {
-  return [0].concat(a.slice(i+1, i+1+len));
+  var a2 = new Array(len+1);
+  a2[0]=0;
+  for(var i2 = 1, i1= i+1; i2 <= len; i2++,i1++ ){
+    a2[i2]=a[i1];
+  }
+  return a2;
 }
 
 //Provides: caml_array_append mutable
 function caml_array_append(a1, a2) {
-  return a1.concat(a2.slice(1));
+  var l1 = a1.length, l2 = a2.length;
+  var l = l1+l2-1
+  var a = new Array(l);
+  a[0] = 0;
+  var i = 1,j = 1;
+  for(;i<l1;i++) a[i]=a1[i];
+  for(;i<l;i++,j++) a[i]=a2[j];
+  return a;
 }
 
 //Provides: caml_array_concat mutable

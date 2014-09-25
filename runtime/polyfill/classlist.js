@@ -8,9 +8,8 @@
  */
 
 /*global self, document, DOMException */
-
+//Version-IE: < 10
 /*! @source http://purl.eligrey.com/github/classList.js/blob/master/classList.js*/
-
 if (typeof document !== "undefined" && !("classList" in document.createElement("a"))) {
 
 (function (view) {
