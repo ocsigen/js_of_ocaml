@@ -84,7 +84,7 @@ module H = struct
               add (get a i) a';
             done;
             a'
-    with _ | Not_found -> make n ""
+    with _ -> make n ""
 
   let save t =
     try
