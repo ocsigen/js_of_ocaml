@@ -49,7 +49,7 @@ let unescape lab =
     lab
 
 (** Constraints for the various types.
-    Synthesize new type and create dummy declaration with type constraints.
+    Synthesize new types and create dummy declaration with type constraints.
 *)
 let constrain_types obj res res_typ meth meth_typ args =
   default_loc := obj.pexp_loc ;
@@ -91,12 +91,12 @@ let fresh_type loc = Typ.var ~loc @@ random_tvar ()
 
 let method_call obj meth args =
   let args = List.map (fun e -> (e, random_var (), fresh_type obj.pexp_loc)) args in
-  let ret_type = fresh_type obj.pexp_loc in
+  let ret_type = js_t_id "meth" [fresh_type obj.pexp_loc] in
   let method_type =
     List.fold_right
       (fun (_, _, arg_ty) rem_ty -> Typ.arrow "" arg_ty rem_ty)
       args
-      @@ js_t_id "meth" [ret_type]
+      ret_type
   in
   let o = random_var () in
   let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
@@ -162,11 +162,11 @@ let js_mapper _args =
           in [%e js_u_id "set"] [%e obj'] [%e str meth'] [%e value']
         ]
 
-      (** [%js obj#meth () *)
+      (** [%js obj#meth ()] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] () ]] ->
          method_call obj meth []
 
-      (** [%js obj#meth (args,..) *)
+      (** [%js obj#meth (args, ..)] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }]
                     [%e? {pexp_desc = Pexp_tuple args}]
                ]] ->
