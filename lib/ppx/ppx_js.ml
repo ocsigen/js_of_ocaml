@@ -30,10 +30,11 @@ let js_t_id ?loc s args =
   then Typ.constr ?loc (lid s) args
   else Typ.constr ?loc (lid @@ "Js."^s) args
 
-let js_u_id ?loc s =
+let js_u_id ?loc s args =
+  let args = List.map (fun x -> "",x) args in
   if Lazy.force inside_Js
-  then Exp.ident ?loc @@ lid ("Unsafe."^s)
-  else Exp.ident ?loc @@ lid ("Js.Unsafe."^s)
+  then Exp.(apply (ident ?loc @@ lid ("Unsafe."^s)) args)
+  else Exp.(apply (ident ?loc @@ lid ("Js.Unsafe."^s)) args)
 
 
 let unescape lab =
@@ -89,49 +90,47 @@ let constrain_types obj res res_typ meth meth_typ args =
 
 let fresh_type loc = Typ.var ~loc @@ random_tvar ()
 
+let arrows args ret =
+  List.fold_right
+    (fun arg_ty rem_ty -> Typ.arrow "" arg_ty rem_ty)
+    args
+    ret
+
 let method_call obj meth args =
   let args = List.map (fun e -> (e, random_var (), fresh_type obj.pexp_loc)) args in
   let ret_type = js_t_id "meth" [fresh_type obj.pexp_loc] in
-  let method_type =
-    List.fold_right
-      (fun (_, _, arg_ty) rem_ty -> Typ.arrow "" arg_ty rem_ty)
-      args
-      ret_type
-  in
+  let method_type = arrows (List.map (fun (_,_,x) -> x) args) ret_type in
   let o = random_var () in
   let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
   let res = random_var () in
   let meth' = unescape meth in
   let meth_args =
-    List.map (fun (_, x, _) -> Exp.apply (js_u_id "inject") ["",evar x]) args
+    Exp.array @@
+    List.map
+      (fun (_, x, _) -> js_u_id "inject" [evar x])
+      args
   in
-  let meth_args = Exp.array meth_args in
   List.fold_left
     (fun e' (e, x, _) -> [%expr let [%p pvar x] = [%e e] in [%e e']])
     [%expr
       let [%p pvar o] = [%e obj] in
       let [%p pvar res] =
-        [%e js_u_id "meth_call"] [%e evar o] [%e str meth'] [%e meth_args]
+        [%e js_u_id "meth_call" [ evar o ; str meth' ; meth_args] ]
       in
       [%e constrain_types obj' (lid res) ret_type meth' method_type args]
     ]
     args
 
-
-
 let new_object constr args =
   let args = List.map (fun e -> (e, fresh_type constr.loc)) args in
   let obj_type = js_t_id "t" [fresh_type constr.loc] in
-  let constr_fun_type =
-    List.fold_right
-      (fun (_, arg_ty) rem_ty -> Typ.arrow "" arg_ty rem_ty)
-      args obj_type
-  in
+  let constr_fun_type = arrows (List.map snd args) obj_type in
   let args =
+    Exp.array @@
     List.map
-      (fun (e, t) -> Exp.apply (js_u_id "inject") ["", Exp.constraint_ e t]) args
+      (fun (e, t) -> js_u_id "inject" [Exp.constraint_ e t])
+      args
   in
-  let args = Exp.array args in
   let x = random_var () in
   let constr =
     Exp.constraint_
@@ -140,7 +139,7 @@ let new_object constr args =
   in
   [%expr
     ( let [%p pvar x] = [%e constr] in
-      [%e Exp.apply (js_u_id "new_obj") ["",evar x ; "",args]]
+      [%e js_u_id "new_obj" [evar x ; args]]
     : [%t obj_type] )
   ]
 
@@ -158,7 +157,7 @@ let js_mapper _args =
         let meth' = unescape meth in
         [%expr
           let [%p pvar o] = [%e obj] in
-          let [%p pvar res] = [%e js_u_id "get"] [%e obj'] [%e str meth'] in
+          let [%p pvar res] = [%e js_u_id "get" [obj' ; str meth']] in
           [%e
             constrain_types
               obj'
@@ -186,7 +185,7 @@ let js_mapper _args =
               meth'
               (js_t_id "gen_prop" [[%type: <set : 'A -> unit ; ..> ]]) []
           ]
-          in [%e js_u_id "set"] [%e obj'] [%e str meth'] [%e value']
+          in [%e js_u_id "set" [ obj' ; str meth' ; value']]
         ]
 
       (** [%js obj#meth ()] *)
