@@ -117,6 +117,33 @@ let method_call obj meth args =
     ]
     args
 
+
+
+let new_object constr args =
+  let args = List.map (fun e -> (e, fresh_type constr.loc)) args in
+  let obj_type = js_t_id "t" [fresh_type constr.loc] in
+  let constr_fun_type =
+    List.fold_right
+      (fun (_, arg_ty) rem_ty -> Typ.arrow "" arg_ty rem_ty)
+      args obj_type
+  in
+  let args =
+    List.map
+      (fun (e, t) -> Exp.apply (js_u_id "inject") ["", Exp.constraint_ e t]) args
+  in
+  let args = Exp.array args in
+  let x = random_var () in
+  let constr =
+    Exp.constraint_
+      (Exp.ident constr)
+      (js_t_id "constr" [constr_fun_type])
+  in
+  [%expr
+    ( let [%p pvar x] = [%e constr] in
+      [%e Exp.apply (js_u_id "new_obj") ["",evar x ; "",args]]
+    : [%t obj_type] )
+  ]
+
 let js_mapper _args =
   { default_mapper with
     expr = (fun mapper expr ->
@@ -175,6 +202,22 @@ let js_mapper _args =
       (** [%js obj#meth arg] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] [%e? arg] ]] ->
          method_call obj meth [arg]
+
+
+      (** new%js constr ()] *)
+      | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]] ()] ->
+        new_object constr []
+
+      (** new%js constr (args, ..)] *)
+      | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]]
+                    [%e? {pexp_desc = Pexp_tuple args}]
+        ] ->
+        new_object constr args
+
+      (** new%js constr arg] *)
+      | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]] [%e? arg] ] ->
+        new_object constr [arg]
+
 
 
       | _ -> default_mapper.expr mapper expr
