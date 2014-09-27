@@ -172,6 +172,10 @@ let js_mapper _args =
                ]] ->
          method_call obj meth args
 
+      (** [%js obj#meth arg] *)
+      | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] [%e? arg] ]] ->
+         method_call obj meth [arg]
+
 
       | _ -> default_mapper.expr mapper expr
     );
