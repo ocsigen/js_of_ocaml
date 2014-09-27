@@ -191,13 +191,11 @@ let js_mapper _args =
       (** [%js obj#meth ()] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] () ]] ->
          method_call obj meth []
-
       (** [%js obj#meth (args, ..)] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }]
                     [%e? {pexp_desc = Pexp_tuple args}]
                ]] ->
          method_call obj meth args
-
       (** [%js obj#meth arg] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] [%e? arg] ]] ->
          method_call obj meth [arg]
@@ -206,18 +204,14 @@ let js_mapper _args =
       (** new%js constr ()] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]] ()] ->
         new_object constr []
-
       (** new%js constr (args, ..)] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]]
                     [%e? {pexp_desc = Pexp_tuple args}]
         ] ->
         new_object constr args
-
       (** new%js constr arg] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]] [%e? arg] ] ->
         new_object constr [arg]
-
-
 
       | _ -> default_mapper.expr mapper expr
     );
