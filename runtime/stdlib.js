@@ -153,7 +153,8 @@ function caml_update_dummy (x, y) {
 //Provides: caml_obj_is_block const
 function caml_obj_is_block (x) { return +(x instanceof Array); }
 //Provides: caml_obj_tag const
-function caml_obj_tag (x) { return (x instanceof Array)?x[0]:1000; }
+//Requires: MlString
+function caml_obj_tag (x) { return (x instanceof Array)?x[0]:(x instanceof MlString)?252:1000; }
 //Provides: caml_obj_set_tag
 function caml_obj_set_tag (x, tag) { x[0] = tag; return 0; }
 //Provides: caml_obj_block const
