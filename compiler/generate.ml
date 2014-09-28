@@ -1404,7 +1404,8 @@ else begin
           (* We wrap [try ... catch ...] statements at toplevel inside
              an anonymous function, as V8 does not optimize functions
              that contain these statements *)
-          if st.at_toplevel then
+          if st.at_toplevel
+            && false (* DISABLED -> FIXME https://github.com/ocsigen/js_of_ocaml/issues/226*) then
             try
               let pc = AddrSet.choose inner_frontier in
               let block = AddrMap.find pc st.blocks in
