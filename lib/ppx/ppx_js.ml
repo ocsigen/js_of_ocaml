@@ -24,17 +24,28 @@ let inside_Js = lazy
      Filename.chop_extension !Location.input_name = "js"
    with Invalid_argument _ -> false)
 
+module Js = struct
 
-let js_t_id ?loc s args =
-  if Lazy.force inside_Js
-  then Typ.constr ?loc (lid s) args
-  else Typ.constr ?loc (lid @@ "Js."^s) args
+  let type_ ?loc s args =
+    if Lazy.force inside_Js
+    then Typ.constr ?loc (lid s) args
+    else Typ.constr ?loc (lid @@ "Js."^s) args
 
-let js_u_id ?loc s args =
-  let args = List.map (fun x -> "",x) args in
-  if Lazy.force inside_Js
-  then Exp.(apply (ident ?loc @@ lid ("Unsafe."^s)) args)
-  else Exp.(apply (ident ?loc @@ lid ("Js.Unsafe."^s)) args)
+  let unsafe ?loc s args =
+    let args = List.map (fun x -> "",x) args in
+    if Lazy.force inside_Js
+    then Exp.(apply (ident ?loc @@ lid ("Unsafe."^s)) args)
+    else Exp.(apply (ident ?loc @@ lid ("Js.Unsafe."^s)) args)
+
+  let fun_ ?loc s args =
+    let args = List.map (fun x -> "",x) args in
+    if Lazy.force inside_Js
+    then Exp.(apply (ident ?loc @@ lid s) args)
+    else Exp.(apply (ident ?loc @@ lid ("Js."^s)) args)
+
+  let string ?loc arg = fun_ ?loc "string" [str arg]
+
+end
 
 
 let unescape lab =
@@ -59,7 +70,7 @@ let constrain_types obj res res_typ meth meth_typ args =
   let cstr =
     Exp.constraint_
       obj
-      (js_t_id "t" [Typ.var "B"])
+      (Js.type_ "t" [Typ.var "B"])
   in
 
   let x = evar "x" in
@@ -90,24 +101,31 @@ let constrain_types obj res res_typ meth meth_typ args =
 
 let fresh_type loc = Typ.var ~loc @@ random_tvar ()
 
-let arrows args ret =
-  List.fold_right
-    (fun arg_ty rem_ty -> Typ.arrow "" arg_ty rem_ty)
+let arrows ?loc args ret =
+  List.fold_right (fun (l, ty) fun_ -> Typ.arrow ?loc l ty fun_)
     args
     ret
+
+let sequence ?loc l last =
+  match l with
+  | [] -> last
+  | h :: t ->
+    let e =
+      List.fold_left (Exp.sequence ?loc) h t
+    in Exp.sequence ?loc e last
 
 let method_call obj meth args =
   let args = List.map (fun e -> (e, random_var (), fresh_type obj.pexp_loc)) args in
   let ret_type = fresh_type obj.pexp_loc in
   let method_type =
-    arrows (List.map (fun (_,_,x) -> x) args) @@ js_t_id "meth" [ret_type] in
+    arrows (List.map (fun (_,_,x) -> "",x) args) @@ Js.type_ "meth" [ret_type] in
   let o = random_var () in
   let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
   let res = random_var () in
   let meth_args =
     Exp.array @@
     List.map
-      (fun (_, x, _) -> js_u_id "inject" [evar x])
+      (fun (_, x, _) -> Js.unsafe "inject" [evar x])
       args
   in
   List.fold_left
@@ -115,31 +133,32 @@ let method_call obj meth args =
     [%expr
       let [%p pvar o] = [%e obj] in
       let [%p pvar res] =
-        [%e js_u_id "meth_call" [ evar o ; str @@ unescape meth ; meth_args] ]
+        [%e Js.unsafe "meth_call" [ evar o ; str @@ unescape meth ; meth_args] ]
       in
       [%e constrain_types obj' (lid res) ret_type meth method_type args]
     ]
     args
 
+(** Instantiation of a class, used by new%js. *)
 let new_object constr args =
   let args = List.map (fun e -> (e, fresh_type constr.loc)) args in
-  let obj_type = js_t_id "t" [fresh_type constr.loc] in
-  let constr_fun_type = arrows (List.map snd args) obj_type in
+  let obj_type = Js.type_ "t" [fresh_type constr.loc] in
+  let constr_fun_type = arrows (List.map (fun (_,x) -> "",x) args) obj_type in
   let args =
     Exp.array @@
     List.map
-      (fun (e, t) -> js_u_id "inject" [Exp.constraint_ e t])
+      (fun (e, t) -> Js.unsafe "inject" [Exp.constraint_ e t])
       args
   in
   let x = random_var () in
   let constr =
     Exp.constraint_
       (Exp.ident constr)
-      (js_t_id "constr" [constr_fun_type])
+      (Js.type_ "constr" [constr_fun_type])
   in
   [%expr
     ( let [%p pvar x] = [%e constr] in
-      [%e js_u_id "new_obj" [evar x ; args]]
+      [%e Js.unsafe "new_obj" [evar x ; args]]
     : [%t obj_type] )
   ]
 
@@ -158,12 +177,12 @@ let js_mapper _args =
         let new_expr =
           [%expr
             let [%p pvar o] = [%e obj] in
-            let [%p pvar res] = [%e js_u_id "get" [obj' ; str @@ unescape meth]] in
+            let [%p pvar res] = [%e Js.unsafe "get" [obj' ; str @@ unescape meth]] in
             [%e
               constrain_types
                 obj'
                 (lid res) [%type: 'A]
-                meth (js_t_id "gen_prop" [[%type: <get : 'A; ..> ]])
+                meth (Js.type_ "gen_prop" [[%type: <get : 'A; ..> ]])
                 []
             ]
           ]
@@ -184,10 +203,10 @@ let js_mapper _args =
               constrain_types
                 obj'
                 v_lid [%type: 'A]
-                meth (js_t_id "gen_prop" [[%type: <set : 'A -> unit ; ..> ]])
+                meth (Js.type_ "gen_prop" [[%type: <set : 'A -> unit ; ..> ]])
                 []
             ]
-            in [%e js_u_id "set" [ obj' ; str @@ unescape meth ; value']]
+            in [%e Js.unsafe "set" [ obj' ; str @@ unescape meth ; value']]
           ]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
