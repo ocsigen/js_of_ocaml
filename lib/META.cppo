@@ -15,6 +15,14 @@ package "syntax" (
   archive(syntax,preprocessor) = "pa_js.cmo"
 )
 
+package "ppx" (
+  description = "Js_of_ocaml ppx"
+  version = "[distributed with js_of_ocaml]"
+  ppx = "./ppx_js"
+  requires = "js_of_ocaml"
+  exists_if = "ppx_js"
+)
+
 package "deriving" (
 
   exists_if = "deriving_json.cma deriving_json.cmxa"

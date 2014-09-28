@@ -94,3 +94,7 @@ endif
 endif
 
 DOC := ${INTF:.cmi=.mli}
+
+ifeq "${WITH_PPX}" "YES"
+OCAMLFIND_BIN += lib/ppx/${PPX}
+endif
