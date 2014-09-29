@@ -211,10 +211,11 @@ function caml_sys_read_directory(name){
   if(!(dir instanceof MlDir)){
     caml_raise_not_a_dir(name);
   }
-  var l = [0];
   var list = dir.list();
+  var l = new Array(list.length + 1);
+  l[0] = 0;
   for(var i=0;i<list.length;i++)
-    l.push(caml_new_string(list[i]));
+    l[i+1] = caml_new_string(list[i]);
   return l;
 }
 
