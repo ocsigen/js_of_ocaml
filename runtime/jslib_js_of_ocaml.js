@@ -93,13 +93,12 @@ function caml_js_wrap_callback(f) {
 //Requires: caml_call_gen,raw_array_cons
 function caml_js_wrap_meth_callback(f) {
   return function () {
-    return caml_call_gen(f,raw_array_cons(arguments,this));
+    if (arguments.length > 0) {
+      return caml_call_gen(f,raw_array_cons(arguments,this));
+    } else {
+      return caml_call_gen(f,[this,undefined]);
+    }
   }
-}
-//Provides: caml_js_wrap_meth_callback_unsafe const
-//Requires: caml_call_gen,raw_array_cons
-function caml_js_wrap_meth_callback_unsafe(f) {
-  return function () { f.apply(null, raw_array_cons(arguments,this)); }
 }
 //Provides: caml_js_equals mutable
 function caml_js_equals (x, y) { return +(x == y); }
