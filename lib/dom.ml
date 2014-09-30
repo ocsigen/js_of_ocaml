@@ -225,7 +225,7 @@ let window_event () : 'a #event t = Js.Unsafe.variable "event"
 (* The function preventDefault must be called explicitely when
    using addEventListener... *)
 let handler f =
-  Js.some (Js.wrap_callback
+  Js.some (Js.Unsafe.callback
     (fun e ->
       (* depending on the internet explorer version, e can be null or undefined. *)
       if not (Js.Opt.test (some e))
@@ -241,7 +241,7 @@ let handler f =
           (Js.Unsafe.coerce e)##preventDefault ();
         res))
 let full_handler f =
-  Js.some (Js.wrap_meth_callback
+  Js.some (Js.Unsafe.meth_callback
     (fun this e ->
       (* depending on the internet explorer version, e can be null or undefined *)
       if not (Js.Opt.test (some e))
