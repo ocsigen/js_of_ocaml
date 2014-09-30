@@ -124,10 +124,6 @@ let encode_url l =
 	 | name,`File s -> ((Url.urlencode name) ^ "=" ^ (Url.urlencode (to_string (s##name))))
 ) l)
 
-let partition_string_file l = List.partition (function
-  | _,`String _ -> true
-  | _,`File _ -> false ) l
-
 (* Higher level interface: *)
 
 (** type of the http headers *)
@@ -186,20 +182,15 @@ let perform_raw_url
 	Some form_arg
   in
 
-  let method_, content_type, post_encode =
+  let method_, content_type =
     match form_arg, content_type with
-      | None, ct -> "GET", ct, `Urlencode
+      | None, ct -> "GET", ct
       | Some form_args, None ->
 	(match form_args with
-	  | `Fields l ->
-	    let strings,files = partition_string_file !l in
-	    (match files with
-	      | [] -> "POST", (Some "application/x-www-form-urlencoded"), `Urlencode
-	      | _ ->
-		let boundary = generateBoundary () in
-		"POST", (Some ("multipart/form-data; boundary="^boundary)), `Form_data (boundary))
-	  | `FormData f -> "POST", None, `Urlencode)
-      | Some _, ct -> "POST", ct, `Urlencode
+	  | `Fields strings ->
+               "POST", Some "application/x-www-form-urlencoded"
+	  | `FormData f -> "POST", None)
+      | Some _, ct -> "POST", ct
   in
   let url, url_get = extract_get_param url in
   let url = match url_get@get_args with
@@ -286,19 +277,7 @@ let perform_raw_url
   (match form_arg with
      | None -> req##send (Js.null)
      | Some (`Fields l) ->
-       ignore (
-	 match post_encode with
-	   | `Urlencode -> req##send(Js.some (string (encode_url !l)));return ()
-	   | `Form_data boundary ->
-	     (encode_multipart boundary !l >|=
-		 (fun data ->
-		   let data = Js.some (data##join(Js.string "")) in
-		   (* Firefox specific interface:
-		      Chrome can use FormData: don't need this *)
-		   let req = (Js.Unsafe.coerce req:xmlHttpRequest_binary t) in
-		   if Optdef.test req##sendAsBinary_presence
-		   then req##sendAsBinary(data)
-		   else req##send(data))))
+         ignore (req##send(Js.some (string (encode_url !l)));return ())
      | Some (`FormData f) -> req##send_formData(f));
 
   Lwt.on_cancel res (fun () -> req##abort ()) ;

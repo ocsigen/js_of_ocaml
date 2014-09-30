@@ -140,44 +140,7 @@ let read_with_filereader (fileReader : fileReader t constr) kind file =
     | `DataURL -> reader##readAsDataURL(file));
   res
 
-(* Old firefox specific part: available in firefox 3.0, deprecated in 3.6.
-   Those are nonstandard extensions. *)
-class type old_firefox_file =
-object
-  method getAsBinary : js_string t meth
-  method getAsBinary_presence : unit optdef readonly_prop
-  method getAsDataURL : js_string t meth
-  method getAsDataURL_presence : unit optdef readonly_prop
-  method getAsText_presence : unit optdef readonly_prop
-  method getAsText : js_string t -> js_string t meth
-end
-
-let old_firefox_reader kind file =
-  let file = (Js.Unsafe.coerce file:old_firefox_file t) in
-  let fail () = failwith "browser can't read file: unimplemented" in
-  match kind with
-    | `BinaryString ->
-      if Js.Optdef.test ( file##getAsBinary_presence )
-      then file##getAsBinary()
-      else fail ()
-    | `Text ->
-      if Js.Optdef.test ( file##getAsText_presence )
-      then file##getAsText(Js.string "utf8")
-      else fail ()
-    | `Text_withEncoding e ->
-      if Js.Optdef.test ( file##getAsText_presence )
-      then file##getAsText(e)
-      else fail ()
-    | `DataURL ->
-      if Js.Optdef.test ( file##getAsDataURL_presence )
-      then file##getAsDataURL()
-      else fail ()
-(* end of old firefox specific part *)
-
-let reader kind file =
-  match Js.Optdef.to_option (Js.def fileReader) with
-    | None -> Lwt.return (old_firefox_reader kind file)
-    | Some fileReader -> read_with_filereader fileReader kind file
+let reader kind file = read_with_filereader fileReader kind file
 
 let readAsBinaryString file =
   reader `BinaryString file
