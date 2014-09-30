@@ -12,8 +12,8 @@ remove: [
 depends: [
   "cmdliner"
   "base-unix"
-  "ocamlfind"
-  "lwt"
+  "ocamlfind" {>= "1.5.1"}
+  "lwt" {>= "2.4"}
   "menhir"
   "camlp4"
 ]
@@ -22,6 +22,4 @@ depopts: ["deriving" "tyxml" "reactiveData" ]
 conflicts: [
   "deriving" {< "0.6"}
   "tyxml"    {< "3.2.1"}
-  "lwt"      {< "2.4"}
-  "ocamlfind" {< "1.5.1"}
 ]
