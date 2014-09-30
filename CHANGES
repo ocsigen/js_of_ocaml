@@ -13,6 +13,8 @@
  * BugFixes
  ** Compiler: workaround a bug in ocaml 4.02 wrt debug section.
  ** Compiler: bug when generating minified JavaScript.
+ ** Runtime: fix Obj.tag
+ ** Runtime: fix internalmod wrt ocaml4.02
 
 ===== 2.4.1 (2014-08-28) =====
 
