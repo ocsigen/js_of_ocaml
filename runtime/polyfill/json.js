@@ -198,6 +198,7 @@
 
 
 //Provides: JSON
+//Version-IE: < 8
 var JSON = joo_global_object.JSON;
 if (!JSON) {
     JSON = {};

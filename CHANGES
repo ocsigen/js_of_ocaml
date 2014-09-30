@@ -5,7 +5,7 @@
  ** Compiler: remove registration of unused named value (wrt runtime)
  ** Compiler: Smarter inlining, Constant sharing, Switch generation
  ** Lib: Dom binding: *AttributeNS, *AttributeNode*, borderRadius
- ** Runtime: improve performence string, array allocation
+ ** Runtime: improve performence of string, array allocation
 
  * Misc: enable safestring for OCaml 4.02
  * Commandline: switch to Cmdliner. Better -help + manpage

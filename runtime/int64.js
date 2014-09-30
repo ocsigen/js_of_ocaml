@@ -187,10 +187,11 @@ function caml_int64_lsr1 (x) {
 //Provides: caml_int64_udivmod const
 //Requires: caml_int64_ucompare, caml_int64_lsl1, caml_int64_lsr1
 //Requires: caml_int64_sub
+//Requires: caml_obj_dup
 function caml_int64_udivmod (x, y) {
   var offset = 0;
-  var modulus = x.slice ();
-  var divisor = y.slice ();
+  var modulus = caml_obj_dup(x);
+  var divisor = caml_obj_dup(y);
   var quotient = [255, 0, 0, 0];
   while (caml_int64_ucompare (modulus, divisor) > 0) {
     offset++;

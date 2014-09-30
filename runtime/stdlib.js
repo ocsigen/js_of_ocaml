@@ -18,18 +18,58 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 ///////////// Core
+
+//Provides: raw_array_sub
+function raw_array_sub (a,i,l) {
+  var b = new Array(l);
+  for(var j = 0; j < l; j++) b[j] = a[i+j];
+  return b
+}
+
+//Provides: raw_array_copy
+function raw_array_copy (a) {
+  var l = a.length;
+  var b = new Array(l);
+  for(var i = 0; i < l; i++ ) b[i] = a[i];
+  return b
+}
+
+//Provides: raw_array_cons
+function raw_array_cons (a,x) {
+  var l = a.length;
+  var b = new Array(l+1);
+  b[0]=x;
+  for(var i = 1; i <= l; i++ ) b[i] = a[i-1];
+  return b
+}
+
+//Provides: raw_array_append_one
+function raw_array_append_one(a,x) {
+  var l = a.length;
+  var b = new Array(l+1);
+  var i = 0;
+  for(; i < l; i++ ) b[i] = a[i];
+  b[i]=x;
+  return b
+}
+
 //Provides: caml_call_gen
+//Requires: raw_array_sub
+//Requires: raw_array_append_one
 function caml_call_gen(f, args) {
   if(f.fun)
     return caml_call_gen(f.fun, args);
   var n = f.length;
-  var d = n - args.length;
+  var argsLen = args.length;
+  var d = n - argsLen;
   if (d == 0)
     return f.apply(null, args);
   else if (d < 0)
-    return caml_call_gen(f.apply(null, args.slice(0,n)), args.slice(n));
+    return caml_call_gen(f.apply(null,
+                                 raw_array_sub(args,0,n)),
+                         raw_array_sub(args,n,argsLen - n));
   else
-    return function (x){ return caml_call_gen(f, args.concat([x])); };
+    return function (x){ return caml_call_gen(f, raw_array_append_one(args,x)); };
 }
 
 //Provides: caml_named_values
@@ -159,12 +199,18 @@ function caml_obj_tag (x) { return (x instanceof Array)?x[0]:(x instanceof MlStr
 function caml_obj_set_tag (x, tag) { x[0] = tag; return 0; }
 //Provides: caml_obj_block const
 function caml_obj_block (tag, size) {
-  var o = [tag];
+  var o = new Array(size+1);
+  o[0]=tag;
   for (var i = 1; i <= size; i++) o[i] = 0;
   return o;
 }
 //Provides: caml_obj_dup mutable
-function caml_obj_dup (x) { return x.slice(); }
+function caml_obj_dup (x) {
+  var l = x.length;
+  var a = new Array(l);
+  for(var i = 0; i < l; i++ ) a[i] = x[i];
+  return a;
+}
 //Provides: caml_obj_truncate
 function caml_obj_truncate (x, s) { x.length = s + 1; return 0; }
 
@@ -799,12 +845,24 @@ function caml_sys_system_command(_cmd){
 ///////////// Array
 //Provides: caml_array_sub mutable
 function caml_array_sub (a, i, len) {
-  return [0].concat(a.slice(i+1, i+1+len));
+  var a2 = new Array(len+1);
+  a2[0]=0;
+  for(var i2 = 1, i1= i+1; i2 <= len; i2++,i1++ ){
+    a2[i2]=a[i1];
+  }
+  return a2;
 }
 
 //Provides: caml_array_append mutable
 function caml_array_append(a1, a2) {
-  return a1.concat(a2.slice(1));
+  var l1 = a1.length, l2 = a2.length;
+  var l = l1+l2-1
+  var a = new Array(l);
+  a[0] = 0;
+  var i = 1,j = 1;
+  for(;i<l1;i++) a[i]=a1[i];
+  for(;i<l;i++,j++) a[i]=a2[j];
+  return a;
 }
 
 //Provides: caml_array_concat mutable
@@ -895,6 +953,7 @@ function caml_sys_exit (code) {
 
 //Provides: caml_sys_get_argv const
 //Requires: caml_js_to_string
+//Requires: raw_array_sub
 function caml_sys_get_argv () {
   var g = joo_global_object;
   var main = "a.out";
@@ -903,9 +962,10 @@ function caml_sys_get_argv () {
   if(g.process
      && g.process.argv
      && g.process.argv.length > 0) {
+    var argv = g.process.argv
     //nodejs
-    main = g.process.argv[1];
-    args = g.process.argv.slice(2);
+    main = argv[1];
+    args = raw_array_sub(argv,2,argv.length - 2);
   }
 
   var p = caml_js_to_string(main);
