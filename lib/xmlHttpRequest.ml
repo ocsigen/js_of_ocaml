@@ -167,7 +167,15 @@ let perform_raw_url
 	(match post_args with
 	  | None -> None
 	  | Some post_args ->
-	    let contents = Form.empty_form_contents () in
+            let only_strings =
+              List.for_all
+                (fun x -> match x with (_, `String _) ->  true | _ -> false)
+                post_args
+            in
+	    let contents =
+              if only_strings then `Fields (ref []) else
+              Form.empty_form_contents ()
+            in
 	    List.iter (fun (name, value) ->
               Form.append contents (name, value))
               post_args;
