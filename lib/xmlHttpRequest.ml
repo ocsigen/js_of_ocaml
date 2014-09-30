@@ -171,7 +171,7 @@ let perform_raw_url
 	(match post_args with
 	  | None -> None
 	  | Some post_args ->
-	    let contents = `Fields (ref []) in
+	    let contents = Form.empty_form_contents () in
 	    List.iter (fun (name, value) ->
               Form.append contents (name, value))
               post_args;
