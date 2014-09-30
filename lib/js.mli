@@ -141,7 +141,7 @@ external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback =
   (** Wrap an OCaml function so that it can be invoked from
       Javascript. *)
 external wrap_meth_callback :
-  ('c -> 'a -> 'b) -> ('c, 'a -> 'b) meth_callback =
+  ('b -> 'a) -> ('b, 'a) meth_callback =
     "caml_js_wrap_meth_callback"
   (** Wrap an OCaml function so that it can be invoked from
       Javascript.  The first parameter of the function will be bound
@@ -606,6 +606,22 @@ module Unsafe : sig
 
   val global : < .. > t
     (** Javascript global object *)
+
+  external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "%identity"
+    (** Wrap an OCaml function so that it can be invoked from
+        Javascript. Contrary to [Js.wrap_callback], partial
+        application and over-application are not supported: missing
+        arguments will be set to [undefined] and extra arguments are
+        lost. *)
+
+  external meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback =
+      "caml_js_wrap_meth_callback_unsafe"
+    (** Wrap an OCaml function so that it can be invoked from
+        Javascript.  The first parameter of the function will be bound
+        to the value of the [this] implicit parameter. Contrary to
+        [Js.wrap_meth_callback], partial application and
+        over-application is not supported: missing arguments will be
+        set to [undefined] and extra arguments are lost. *)
 
 (*FIX also, array literals *)
 end
