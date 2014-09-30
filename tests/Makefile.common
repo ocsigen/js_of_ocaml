@@ -8,7 +8,7 @@ STDLIB=$(LIBNAME).cma
 
 
 %.js: %.byte $(COMP) $(JSFILES)
-	@$(COMP) -noruntime $(JSFILES) $< $(OPTIONS) -pretty
+	@$(COMP) --no-runtime $(JSFILES) $< $(OPTIONS) --pretty
 
 %.byte: %.cmo
 	@$(OCAMLC) -linkpkg -o $@ $(STDLIB) ../lib/deriving_json.cma common.cmo -package unix $^
