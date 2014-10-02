@@ -6,11 +6,6 @@ open Parsetree
 open Ast_convenience
 
 
-let with_loc f { txt ; loc } =
-  (f txt) [@metaloc loc]
-
-
-
 let rnd = Random.State.make [|0x313511d4|]
 let random_var () =
   Format.sprintf "x%08Lx" (Random.State.int64 rnd 0x100000000L)
@@ -101,18 +96,13 @@ let constrain_types obj res res_typ meth meth_typ args =
 
 let fresh_type loc = Typ.var ~loc @@ random_tvar ()
 
-let arrows ?loc args ret =
-  List.fold_right (fun (l, ty) fun_ -> Typ.arrow ?loc l ty fun_)
+let arrows args ret =
+  List.fold_right (fun (l, ty) fun_ -> Typ.arrow l ty fun_)
     args
     ret
 
-let sequence ?loc l last =
-  match l with
-  | [] -> last
-  | h :: t ->
-    let e =
-      List.fold_left (Exp.sequence ?loc) h t
-    in Exp.sequence ?loc e last
+let sequence l last =
+  List.fold_right Exp.sequence l last
 
 let method_call obj meth args =
   let args = List.map (fun (l,e) -> (e, random_var (), (l, fresh_type obj.pexp_loc))) args in
@@ -162,8 +152,6 @@ let new_object constr args =
     : [%t obj_type] )
   ]
 
-
-let tunit () = Typ.constr (lid "unit") []
 
 module S = Map.Make(String)
 
