@@ -84,7 +84,7 @@ let constrain_types obj res res_typ meth meth_typ args =
   let res_constr = [%expr ([%e Exp.ident res] : [%t res_typ])][@metaloc res.loc] in
   let res_bindings =
     List.fold_right
-      (fun (e, x, t) e' ->
+      (fun (e, x, (_,t)) e' ->
          [%expr let _ = ([%e evar x] : [%t t]) in [%e e']])
       args
       res_constr
@@ -115,10 +115,10 @@ let sequence ?loc l last =
     in Exp.sequence ?loc e last
 
 let method_call obj meth args =
-  let args = List.map (fun e -> (e, random_var (), fresh_type obj.pexp_loc)) args in
+  let args = List.map (fun (l,e) -> (e, random_var (), (l, fresh_type obj.pexp_loc))) args in
   let ret_type = fresh_type obj.pexp_loc in
   let method_type =
-    arrows (List.map (fun (_,_,x) -> "",x) args) @@ Js.type_ "meth" [ret_type] in
+    arrows (List.map (fun (_,_,x) -> x) args) @@ Js.type_ "meth" [ret_type] in
   let o = random_var () in
   let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
   let res = random_var () in
@@ -141,13 +141,13 @@ let method_call obj meth args =
 
 (** Instantiation of a class, used by new%js. *)
 let new_object constr args =
-  let args = List.map (fun e -> (e, fresh_type constr.loc)) args in
+  let args = List.map (fun (l,e) -> (e, (l,fresh_type constr.loc))) args in
   let obj_type = Js.type_ "t" [fresh_type constr.loc] in
-  let constr_fun_type = arrows (List.map (fun (_,x) -> "",x) args) obj_type in
+  let constr_fun_type = arrows (List.map snd args) obj_type in
   let args =
     Exp.array @@
     List.map
-      (fun (e, t) -> Js.unsafe "inject" [Exp.constraint_ e t])
+      (fun (e, (l,t)) -> Js.unsafe "inject" [Exp.constraint_ e t])
       args
   in
   let x = random_var () in
@@ -167,20 +167,21 @@ let tunit () = Typ.constr (lid "unit") []
 
 module S = Map.Make(String)
 
-(** We expand [method foo = x] to [method foo () = x]
-    so that methods have at least one argument.
+(** For each method 1) we remove Pexp_poly (should only be inside methods)
+    and we add the self argument.
 *)
-let rec add_meth_args body =
+let format_meth self_id body =
   match body.pexp_desc with
-  (* Need to remove this Pexp_poly, it should only be inside methods. *)
-  | Pexp_poly (e, _) -> [%expr fun _ -> [%e e ]] [@metaloc body.pexp_loc]
-  | Pexp_fun (_, _, _, _) -> body
-  | _ -> [%expr fun () -> [%e body]] [@metaloc body.pexp_loc]
+  | Pexp_poly (e, _) ->
+    [%expr
+      fun [%p self_id] -> [%e e ]
+    ] [@metaloc body.pexp_loc]
+  | _ -> body
 
 let is_optional attrs =
   List.exists (fun ({txt},_) -> txt = "optional") attrs
 
-let preprocess_literal_object ?(optional=false) fields =
+let preprocess_literal_object ?(optional=false) self_id fields =
   let is_opt e = is_optional e.pcf_attributes in
 
   let check_name id names =
@@ -198,7 +199,7 @@ let preprocess_literal_object ?(optional=false) fields =
       names, (`Val (id, mut, bang, body, optional || is_opt exp) :: fields)
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
       let names = check_name id names in
-      names, (`Meth (id, priv, bang, add_meth_args body, optional || is_opt exp) :: fields)
+      names, (`Meth (id, priv, bang, format_meth self_id body, optional || is_opt exp) :: fields)
     | _ ->
       Location.raise_errorf ~loc:exp.pcf_loc
         "This field is not valid inside a js literal object."
@@ -298,9 +299,10 @@ let js_mapper _args =
       let { pexp_attributes } = expr in
       match expr with
 
-      (** [%js obj#method] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }]]] ->
+      (** [%js obj.var] *)
+      | [%expr [%js [%e? {pexp_desc = Pexp_field (obj, meth) }]]] ->
         let o = random_var () in
+        let meth = String.concat "." @@ Longident.flatten meth.txt in
         let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
         let res = random_var () in
         let new_expr =
@@ -317,8 +319,9 @@ let js_mapper _args =
           ]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
-      (** [%js obj#meth := value] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] := [%e? value]]] ->
+      (** [%js obj.var := value] *)
+      | [%expr [%js [%e? {pexp_desc = Pexp_field (obj, meth) }] := [%e? value]]] ->
+        let meth = String.concat "." @@ Longident.flatten meth.txt in
         let o = random_var () in
         let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
         let v = random_var () in
@@ -339,48 +342,44 @@ let js_mapper _args =
           ]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
-      (** [%js obj#meth ()] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] () ]] ->
-        let new_expr =
-          method_call obj meth []
-        in mapper.expr mapper { new_expr with pexp_attributes }
-      (** [%js obj#meth (args, ..)] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }]
-                      [%e? {pexp_desc = Pexp_tuple args}]
-               ]] ->
+      (** [%js obj#meth] arg1 arg2 .. *)
+      | {pexp_desc = Pexp_apply
+             ([%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] ]]
+             , args)
+        } ->
         let new_expr =
           method_call obj meth args
         in mapper.expr mapper { new_expr with pexp_attributes }
-      (** [%js obj#meth arg] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] [%e? arg] ]] ->
+      (** [%js obj#meth] *)
+      | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] ]] ->
         let new_expr =
-          method_call obj meth [arg]
+          method_call obj meth []
         in mapper.expr mapper { new_expr with pexp_attributes }
 
 
-      (** new%js constr ()] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]] ()] ->
+      (** new%js constr] *)
+      | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]]] ->
         let new_expr =
           new_object constr []
         in mapper.expr mapper { new_expr with pexp_attributes }
-      (** new%js constr (args, ..)] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]]
-                 [%e? {pexp_desc = Pexp_tuple args}]
-      ] ->
+      (** new%js constr arg1 arg2 ..)] *)
+      | {pexp_desc = Pexp_apply
+             ([%expr [%js [%e? {pexp_desc = Pexp_new constr}]]]
+             , args)
+        } ->
         let new_expr =
           new_object constr args
-        in mapper.expr mapper { new_expr with pexp_attributes }
-      (** new%js constr arg] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]] [%e? arg] ] ->
-        let new_expr =
-          new_object constr [arg]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
 
       (** object%js ... end *)
       | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct} as obj_exp ]]] ->
         let optional = is_optional obj_exp.pexp_attributes in
-        let fields = preprocess_literal_object ~optional class_struct.pcstr_fields in
+        let fields =
+          preprocess_literal_object
+            ~optional class_struct.pcstr_self
+            class_struct.pcstr_fields
+        in
         let new_expr = match fields with
           | `Fields fields -> literal_object fields
           | `Error e -> Exp.extension e
