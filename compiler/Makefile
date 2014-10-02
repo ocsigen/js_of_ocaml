@@ -84,11 +84,11 @@ compiler_version.ml.tmp:
 	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -c $<
 
 annot_parser.ml: annot_parser.mli
-annot_parser.mli: annot_parser.mly
+annot_parser.mli: annot_parser.mly primitive.cmi
 	menhir --infer --explain $<
 
 js_parser.ml: js_parser.mli
-js_parser.mli: js_parser.mly
+js_parser.mli: js_parser.mly javascript.cmi js_token.cmi
 	menhir --infer --external-tokens Js_token --explain $<
 
 %.ml: %.mll
