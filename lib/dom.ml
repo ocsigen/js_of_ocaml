@@ -124,6 +124,7 @@ and element = object
   method getAttribute : js_string t -> js_string t opt meth
   method setAttribute : js_string t -> js_string t -> unit meth
   method removeAttribute : js_string t -> unit meth
+  method removeAttributeNS : js_string t -> js_string t -> unit meth
   method hasAttribute : js_string t -> bool t meth
 
   method getAttributeNS : js_string t -> js_string t -> js_string t opt meth
