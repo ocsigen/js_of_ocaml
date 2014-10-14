@@ -77,6 +77,7 @@ class type node = object
   method lastChild : node t opt prop
   method previousSibling : node t opt prop
   method nextSibling : node t opt prop
+  method namespaceURI : js_string t opt prop
 
   method insertBefore : node t -> node t opt -> node t meth
   method replaceChild : node t -> node t -> node t meth
@@ -85,6 +86,8 @@ class type node = object
   method hasChildNodes : bool t meth
   method cloneNode : bool t -> node t meth
   method compareDocumentPosition : node t -> DocumentPosition.t meth
+  method lookupNamespaceURI : js_string t -> js_string t opt meth
+  method lookupPrefix : js_string t -> js_string t opt meth
 end
 
 let appendChild (p : #node t) (n : #node t) =
