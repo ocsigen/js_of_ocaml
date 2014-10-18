@@ -43,6 +43,8 @@ module Js = struct
 end
 
 
+let fresh_type loc = Typ.var ~loc @@ random_tvar ()
+
 let unescape lab =
   assert (lab <> "");
   let lab =
@@ -61,11 +63,13 @@ let unescape lab =
 let constrain_types obj res res_typ meth meth_typ args =
   default_loc := obj.pexp_loc ;
 
-  (* [($obj$ : 'B Js.t)] *)
+  let typ_var = fresh_type obj.pexp_loc in
+
+  (* [($obj$ : <typ_var> Js.t)] *)
   let cstr =
     Exp.constraint_
       obj
-      (Js.type_ "t" [Typ.var "B"])
+      (Js.type_ "t" [typ_var] )
   in
 
   let x = evar "x" in
@@ -88,13 +92,12 @@ let constrain_types obj res res_typ meth meth_typ args =
     let module M = struct
       let res =
         let _ = [%e cstr] in
-        let _ = fun (x : 'B) -> [%e body] in
+        let _ = fun (x : [%t typ_var]) -> [%e body] in
         [%e res_bindings];
     end in M.res
   ]
 
 
-let fresh_type loc = Typ.var ~loc @@ random_tvar ()
 
 let arrows args ret =
   List.fold_right (fun (l, ty) fun_ -> Typ.arrow l ty fun_)
