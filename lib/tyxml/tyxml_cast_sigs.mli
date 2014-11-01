@@ -61,7 +61,7 @@ module type OF = sig
   val of_map : Dom_html.mapElement Js.t -> [> 'a Html5_types.map] elt
   val of_script : Dom_html.scriptElement Js.t -> [> Html5_types.script] elt
   val of_embed : Dom_html.embedElement Js.t -> [> Html5_types.embed] elt
-  val of_tableCell : Dom_html.tableCellElement Js.t -> [> Html5_types.td | Html5_types.td ] elt
+  val of_tableCell : Dom_html.tableCellElement Js.t -> [> Html5_types.td | Html5_types.th ] elt
   val of_tableRow : Dom_html.tableRowElement Js.t -> [> Html5_types.tr] elt
   val of_tableCol : Dom_html.tableColElement Js.t -> [> Html5_types.col] elt
   val of_tableSection : Dom_html.tableSectionElement Js.t -> [> Html5_types.tfoot | Html5_types.thead | Html5_types.tbody ] elt

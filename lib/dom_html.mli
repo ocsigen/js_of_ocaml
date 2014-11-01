@@ -1592,10 +1592,10 @@ module CoerceTo : sig
   val style : #element t -> styleElement t opt
   val table : #element t -> tableElement t opt
   val tbody : #element t -> tableSectionElement t opt
-  val td : #element t -> tableColElement t opt
+  val td : #element t -> tableCellElement t opt
   val textarea : #element t -> textAreaElement t opt
   val tfoot : #element t -> tableSectionElement t opt
-  val th : #element t -> tableColElement t opt
+  val th : #element t -> tableCellElement t opt
   val thead : #element t -> tableSectionElement t opt
   val title : #element t -> titleElement t opt
   val tr : #element t -> tableRowElement t opt
