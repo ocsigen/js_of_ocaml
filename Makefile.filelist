@@ -1,6 +1,8 @@
 BIN := compiler/${COMPILER} compiler/${MINIFIER}
 
-TOOLS := jsoo_tools/${MKTOP} jsoo_tools/${MKCMIS}
+ifeq "${WITH_TOPLEVEL}" "YES"
+BIN += jsoo_tools/${MKTOP} jsoo_tools/${MKCMIS}
+endif
 
 INTF := lib/*.cmi
 
