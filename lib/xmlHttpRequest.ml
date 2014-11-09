@@ -298,10 +298,12 @@ let perform
     ?(get_args=[])
     ?form_arg
     ?check_headers
+    ?progress
+    ?upload_progress
     ?override_mime_type
     url =
   perform_raw_url ~headers ?content_type ?post_args ~get_args ?form_arg
-    ?check_headers ?override_mime_type
+    ?check_headers ?progress ?upload_progress ?override_mime_type
     (Url.string_of_url url)
 
 let get s = perform_raw_url s

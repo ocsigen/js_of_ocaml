@@ -116,6 +116,8 @@ val perform :
   -> ?get_args:((string * string) list)  (* [] *)
   -> ?form_arg:Form.form_contents
   -> ?check_headers:(int -> (string -> string option) -> bool)
+  -> ?progress:(int -> int -> unit)
+  -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> Url.url
   -> http_frame Lwt.t
