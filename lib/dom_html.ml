@@ -46,7 +46,7 @@ class type cssStyleDeclaration = object
   method borderLeftColor : js_string t prop
   method borderLeftStyle : js_string t prop
   method borderLeftWidth : js_string t prop
-  method borderRadius : js_string t prop 
+  method borderRadius : js_string t prop
   method borderRight : js_string t prop
   method borderRightColor : js_string t prop
   method borderRightStyle : js_string t prop
@@ -1636,10 +1636,10 @@ type taggedElement =
   | Style of styleElement t
   | Table of tableElement t
   | Tbody of tableSectionElement t
-  | Td of tableColElement t
+  | Td of tableCellElement t
   | Textarea of textAreaElement t
   | Tfoot of tableSectionElement t
-  | Th of tableColElement t
+  | Th of tableCellElement t
   | Thead of tableSectionElement t
   | Title of titleElement t
   | Tr of tableRowElement t
