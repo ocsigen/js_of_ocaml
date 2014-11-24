@@ -828,7 +828,9 @@ function caml_sys_const_word_size () { return 32; }
 function caml_sys_const_int_size () { return 32; }
 
 //Provides: caml_sys_const_max_wosize const
-function caml_sys_const_max_wosize () { return 0x7FFFFFFF; /* max_int */}
+// max_int / 4 so that the following does not overflow
+//let max_string_length = word_size / 8 * max_array_length - 1;;
+function caml_sys_const_max_wosize () { return (0x7FFFFFFF/4) | 0;}
 
 //Provides: caml_sys_const_ostype_cygwin const
 function caml_sys_const_ostype_cygwin () { return 0; }
