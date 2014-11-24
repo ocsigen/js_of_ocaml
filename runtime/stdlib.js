@@ -405,7 +405,7 @@ function caml_parse_digit(c) {
   return -1;
 }
 
-//Provides: caml_int_of_string mutable
+//Provides: caml_int_of_string
 //Requires: caml_ml_string_length, caml_string_unsafe_get
 //Requires: caml_parse_sign_and_base, caml_parse_digit, caml_failwith
 function caml_int_of_string (s) {
@@ -436,7 +436,7 @@ function caml_int_of_string (s) {
   return res | 0;
 }
 
-//Provides: caml_float_of_string mutable
+//Provides: caml_float_of_string
 //Requires: caml_failwith, caml_bytes_of_string
 function caml_float_of_string(s) {
   var res;
