@@ -1115,6 +1115,20 @@ and translate_expr ctx queue loc x e level : _ * J.statement_list =
         in
         let (prop, fields, queue) = build_fields queue fields in
         (J.EObj fields, prop, queue)
+      | Extern "caml_alloc_dummy_function", [_ ; Pc (Int i)] ->
+        let args = Array.to_list (
+          Array.init (Int32.to_int i)
+            (fun _ -> J.V (Var.fresh ()))) in
+        let f = J.V (Var.fresh ()) in
+        let call = J.ECall (J.EDot (J.EVar f , "fun"),
+                            List.map (fun v -> J.EVar v) args, loc) in
+        let e = J.EFun (Some f, args,
+                        [J.Statement (
+                          J.Return_statement (
+                            Some call)), J.N ], J.N) in
+        e, const_p, queue
+      | Extern "caml_alloc_dummy_function", _ ->
+        assert false
       | Extern name, l ->
         begin
           let name = Primitive.resolve name in
