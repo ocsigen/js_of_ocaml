@@ -1050,7 +1050,8 @@ let program f ?source_map p =
      close_out oc;
 
       PP.newline f;
-      PP.string f (Printf.sprintf "//# sourceMappingURL=%s" out_file));
+      PP.string f (Printf.sprintf "//# sourceMappingURL=%s"
+                     (Filename.basename out_file)));
   if stats ()
   then begin
     let size i =
