@@ -984,7 +984,7 @@ class type range = object
   method selectNodeContents : Dom.node t -> unit meth
   method collapse : bool t -> unit meth
   method cloneContents : Dom.documentFragment t meth
-  method extactContents : Dom.documentFragment t meth
+  method extractContents : Dom.documentFragment t meth
   method deleteContents : unit meth
   method insertNode : Dom.node t -> unit meth
   method surroundContents : Dom.node t -> unit meth
