@@ -17,7 +17,7 @@ provided.
 
 Integers are implemented as Javascript numbers.  They can thus be
 directly passed to and from Javascript.  To allow a possible
-compatibility with Obrowser, where floats are boxed, we use to types
+compatibility with Obrowser, where floats are boxed, we use two types
 for floats.  Numbers of type {{{float}}} can be passed to Javascript
 functions.  We rely in implicit coercion to perform unboxing when
 needed.  On the other hand, Javascript will return unboxed float, of
