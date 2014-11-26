@@ -10,18 +10,13 @@ provided.
 
 |= OCaml values |= Ocaml type of Javascript values |= Actual Javascript type |
 | {{{int}}}     | {{{int}}}                        | Number                  |
-| {{{float}}}   | {{{float}}} or {{{float Js.t}}}  | Number                  |
+| {{{float}}}   | {{{float}}}                      | Number                  |
 | {{{bool}}}    | {{{bool Js.t}}}                  | Boolean                 |
 | {{{string}}}  | {{{Js.js_string Js.t}}}          | String                  |
 | {{{array}}}   | {{{Js.js_array Js.t}}}           | Array                   |
 
-Integers are implemented as Javascript numbers.  They can thus be
-directly passed to and from Javascript.  To allow a possible
-compatibility with Obrowser, where floats are boxed, we use to types
-for floats.  Numbers of type {{{float}}} can be passed to Javascript
-functions.  We rely in implicit coercion to perform unboxing when
-needed.  On the other hand, Javascript will return unboxed float, of
-type {{{float Js.t}}}.
+Integers and floats are implemented as Javascript numbers.  They can
+thus be directly passed to and from Javascript.
 
 == Typing Javascript objects ==
 
