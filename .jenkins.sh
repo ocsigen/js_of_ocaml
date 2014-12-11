@@ -5,7 +5,7 @@ opam install --deps-only js_of_ocaml
 opam install --verbose js_of_ocaml
 
 do_build_doc () {
-  opam install ocp-indent.1.4.1 optcomp higlo base64
+  opam install ocp-indent optcomp higlo base64
   make -C doc clean
   make -C doc doc
   make -C doc wikidoc
