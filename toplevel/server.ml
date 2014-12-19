@@ -49,4 +49,4 @@ let server () =
     let config = { Server.callback; conn_closed } in
     Server.create ~address:!address ~port:!port config
 
-let () = Lwt_unix.run (server())
+let () = Lwt_main.run (server())
