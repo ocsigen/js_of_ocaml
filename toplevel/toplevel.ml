@@ -416,7 +416,7 @@ let run _ =
                    if Js.to_bool (t##classList##contains(Js.string "sharp"))
                    then bind (t##textContent) (fun t -> return (Js.to_string t))
                    else empty))) childs in
-           let code_encoded = Base64.encode (String.concat "" code) in
+           let code_encoded = B64.encode (String.concat "" code) in
 
            let url,is_file = match Url.Current.get () with
              | Some (Url.Http url) -> Url.Http ({url with Url.hu_fragment = "" }),false
@@ -585,7 +585,7 @@ let append_ocaml = append_string in
   (* Run initial code if any *)
   try
     let code = List.assoc "code" (parse_hash ()) in
-    textbox##value <- Js.string (Base64.decode code);
+    textbox##value <- Js.string (B64.decode code);
     Lwt.async execute
   with
   | Not_found -> ()
