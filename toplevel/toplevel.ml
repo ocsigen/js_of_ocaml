@@ -339,7 +339,10 @@ let run _ =
   let textbox : 'a Js.t = by_id_coerce "userinput" Html.CoerceTo.textarea in
   let example_container = by_id "toplevel-examples" in
   let can = by_id_coerce "test-canvas" Html.CoerceTo.canvas in
+#let_default graphics = false
+#if graphics
   Graphics_js.open_canvas can;
+#endif
   let sharp_chan = open_out "/dev/null0" in
   let sharp_ppf = Format.formatter_of_out_channel sharp_chan in
 

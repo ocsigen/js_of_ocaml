@@ -22,16 +22,21 @@ SYNTAXES= lwt.syntax \
 	js_of_ocaml.deriving.syntax deriving.syntax.std
 endif
 
-JSFILES= +weak.js +toplevel.js +graphics.js +nat.js
+JSFILES= +weak.js +toplevel.js +nat.js
 
 PACKAGES= \
-	graphics lwt bigarray tyxml.functor \
+	lwt bigarray tyxml.functor \
 	react reactiveData \
 	js_of_ocaml \
 	js_of_ocaml.deriving \
 	js_of_ocaml.tyxml \
-	js_of_ocaml.graphics \
 	js_of_ocaml.toplevel
+
+ifeq ($(WITH_GRAPHICS),YES)
+JSFILES += +graphics.js
+PACKAGES += graphics js_of_ocaml.graphics
+OPTCOMP_OPT+= -let graphics=true
+endif
 
 ifeq ($(METAOCAML),1)
 BER_EXPORT=trx runcode print_code
