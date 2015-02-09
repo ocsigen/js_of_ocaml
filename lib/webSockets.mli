@@ -38,6 +38,8 @@ class type ['a] messageEvent = object
   inherit ['a] Dom.event
 
   method data : Js.js_string Js.t Js.readonly_prop
+  method data_buffer : Typed_array.arrayBuffer Js.t Js.readonly_prop
+  method data_blob : File.blob Js.t Js.readonly_prop
 end
 
 class type webSocket = object ('self)
@@ -66,6 +68,8 @@ class type webSocket = object ('self)
     ('self Js.t, 'self messageEvent Js.t) Dom.event_listener Js.writeonly_prop
   method binaryType : Js.js_string Js.t Js.prop
   method send : Js.js_string Js.t -> unit Js.meth
+  method send_buffer : Typed_array.arrayBuffer Js.t -> unit Js.meth
+  method send_blob : File.blob Js.t -> unit Js.meth
 end
 
 val webSocket :
