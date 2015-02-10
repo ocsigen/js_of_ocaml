@@ -406,36 +406,10 @@ conditional_expression:
 
 post_in_expression:
  | pre_in_expression { $1 }
- | post_in_expression T_LESS_THAN post_in_expression
-   { bop J.Lt $1 $3 }
- | post_in_expression T_GREATER_THAN post_in_expression
-   { bop J.Gt $1 $3 }
- | post_in_expression T_LESS_THAN_EQUAL post_in_expression
-   { bop J.Le $1 $3 }
- | post_in_expression T_GREATER_THAN_EQUAL post_in_expression
-   { bop J.Ge $1 $3 }
- | post_in_expression T_INSTANCEOF post_in_expression
-   { bop J.InstanceOf $1 $3 }
- | post_in_expression T_IN post_in_expression
-   { bop J.In $1 $3 }
- | post_in_expression T_EQUAL post_in_expression
-   { bop J.EqEq $1 $3 }
- | post_in_expression T_NOT_EQUAL post_in_expression
-   { bop J.NotEq $1 $3 }
- | post_in_expression T_STRICT_EQUAL post_in_expression
-   { bop J.EqEqEq $1 $3 }
- | post_in_expression T_STRICT_NOT_EQUAL post_in_expression
-   { bop J.NotEqEq $1 $3 }
- | post_in_expression T_BIT_AND post_in_expression
-   { bop J.Band $1 $3 }
- | post_in_expression T_BIT_XOR post_in_expression
-   { bop J.Bxor $1 $3 }
- | post_in_expression T_BIT_OR post_in_expression
-   { bop J.Bor $1 $3 }
- | post_in_expression T_AND post_in_expression
-   { bop J.And $1 $3 }
- | post_in_expression T_OR post_in_expression
-   { bop J.Or $1 $3 }
+ | left=post_in_expression
+   op=comparison_or_logical_or_bit_operator
+   right=post_in_expression
+   { bop op left right }
 
 pre_in_expression:
  | left_hand_side_expression
@@ -466,15 +440,10 @@ pre_in_expression:
    { uop J.Bnot $2 }
  | T_NOT pre_in_expression
    { uop J.Not $2 }
-
- | pre_in_expression T_MULT pre_in_expression    { bop J.Mul $1 $3 }
- | pre_in_expression T_DIV pre_in_expression     { bop J.Div $1 $3 }
- | pre_in_expression T_MOD pre_in_expression     { bop J.Mod $1 $3 }
- | pre_in_expression T_PLUS pre_in_expression    { bop J.Plus $1 $3 }
- | pre_in_expression T_MINUS pre_in_expression   { bop J.Minus $1 $3 }
- | pre_in_expression T_LSHIFT pre_in_expression  { bop J.Lsl $1 $3 }
- | pre_in_expression T_RSHIFT pre_in_expression  { bop J.Asr $1 $3 }
- | pre_in_expression T_RSHIFT3 pre_in_expression { bop J.Lsr $1 $3 }
+ | left=pre_in_expression
+   op=arithmetic_or_shift_operator
+   right=pre_in_expression
+   { bop op left right }
 
 call_expression:
  | member_expression arguments
@@ -539,35 +508,10 @@ conditional_expression_no_in:
 
 post_in_expression_no_in:
  | pre_in_expression { $1 }
- | post_in_expression_no_in T_LESS_THAN post_in_expression
-   { bop J.Lt $1 $3 }
- | post_in_expression_no_in T_GREATER_THAN post_in_expression
-   { bop J.Gt $1 $3 }
- | post_in_expression_no_in T_LESS_THAN_EQUAL post_in_expression
-   { bop J.Le $1 $3 }
- | post_in_expression_no_in T_GREATER_THAN_EQUAL post_in_expression
-   { bop J.Ge $1 $3 }
- | post_in_expression_no_in T_INSTANCEOF post_in_expression
-   { bop J.InstanceOf $1 $3 }
- | post_in_expression_no_in T_EQUAL post_in_expression
-   { bop J.EqEq $1 $3 }
- | post_in_expression_no_in T_NOT_EQUAL post_in_expression
-   { bop J.NotEq $1 $3 }
- | post_in_expression_no_in T_STRICT_EQUAL post_in_expression
-   { bop J.EqEqEq $1 $3 }
- | post_in_expression_no_in T_STRICT_NOT_EQUAL post_in_expression
-   { bop J.NotEqEq $1 $3 }
- | post_in_expression_no_in T_BIT_AND post_in_expression
-   { bop J.Band $1 $3 }
- | post_in_expression_no_in T_BIT_XOR post_in_expression
-   { bop J.Bxor $1 $3 }
- | post_in_expression_no_in T_BIT_OR post_in_expression
-   { bop J.Bor $1 $3 }
- | post_in_expression_no_in T_AND post_in_expression
-   { bop J.And $1 $3 }
- | post_in_expression_no_in T_OR post_in_expression
-   { bop J.Or $1 $3 }
-
+ | left=post_in_expression_no_in
+   op=comparison_or_logical_or_bit_operator_except_in
+   right=post_in_expression
+   { bop op left right}
 /*(*----------------------------*)*/
 /*(*2 (no statement)*)*/
 /*(*----------------------------*)*/
@@ -590,37 +534,10 @@ conditional_expression_no_statement:
 
 post_in_expression_no_statement:
  | pre_in_expression_no_statement { $1 }
- | post_in_expression_no_statement T_LESS_THAN post_in_expression
-   { bop J.Lt $1 $3 }
- | post_in_expression_no_statement T_GREATER_THAN post_in_expression
-   { bop J.Gt $1 $3 }
- | post_in_expression_no_statement T_LESS_THAN_EQUAL post_in_expression
-   { bop J.Le $1 $3 }
- | post_in_expression_no_statement T_GREATER_THAN_EQUAL post_in_expression
-   { bop J.Ge $1 $3 }
- | post_in_expression_no_statement T_INSTANCEOF post_in_expression
-   { bop J.InstanceOf $1 $3 }
- | post_in_expression_no_statement T_IN post_in_expression
-   { bop J.In $1 $3 }
- | post_in_expression_no_statement T_EQUAL post_in_expression
-   { bop J.EqEq $1 $3 }
- | post_in_expression_no_statement T_NOT_EQUAL post_in_expression
-   { bop J.NotEq $1 $3 }
- | post_in_expression_no_statement T_STRICT_EQUAL post_in_expression
-   { bop J.EqEqEq $1 $3 }
- | post_in_expression_no_statement T_STRICT_NOT_EQUAL post_in_expression
-   { bop J.NotEqEq $1 $3 }
- | post_in_expression_no_statement T_BIT_AND post_in_expression
-   { bop J.Band $1 $3 }
- | post_in_expression_no_statement T_BIT_XOR post_in_expression
-   { bop J.Bxor $1 $3 }
- | post_in_expression_no_statement T_BIT_OR post_in_expression
-   { bop J.Bor $1 $3 }
- | post_in_expression_no_statement T_AND post_in_expression
-   { bop J.And $1 $3 }
- | post_in_expression_no_statement T_OR post_in_expression
-   { bop J.Or $1 $3 }
-
+ | left=post_in_expression_no_statement
+   op=comparison_or_logical_or_bit_operator
+   right=post_in_expression
+   { bop op left right }
 
 pre_in_expression_no_statement:
  | left_hand_side_expression_no_statement
@@ -651,15 +568,10 @@ pre_in_expression_no_statement:
    { uop J.Bnot $2 }
  | T_NOT pre_in_expression
    { uop J.Not $2 }
-
- | pre_in_expression_no_statement T_MULT pre_in_expression    { bop J.Mul $1 $3 }
- | pre_in_expression_no_statement T_DIV pre_in_expression     { bop J.Div $1 $3 }
- | pre_in_expression_no_statement T_MOD pre_in_expression     { bop J.Mod $1 $3 }
- | pre_in_expression_no_statement T_PLUS pre_in_expression    { bop J.Plus $1 $3 }
- | pre_in_expression_no_statement T_MINUS pre_in_expression   { bop J.Minus $1 $3 }
- | pre_in_expression_no_statement T_LSHIFT pre_in_expression  { bop J.Lsl $1 $3 }
- | pre_in_expression_no_statement T_RSHIFT pre_in_expression  { bop J.Asr $1 $3 }
- | pre_in_expression_no_statement T_RSHIFT3 pre_in_expression { bop J.Lsr $1 $3 }
+ | left=pre_in_expression_no_statement
+   op=arithmetic_or_shift_operator
+   right=pre_in_expression
+   { bop op left right }
 
 left_hand_side_expression_no_statement:
  | new_expression_no_statement { snd $1 }
@@ -813,3 +725,37 @@ elison: elison_rev {$1}
 
 curly_block(X):
  | pi1=T_LCURLY x=X pi2=T_RCURLY { (x, (pi1, pi2)) }
+
+/*(*----------------------------*)*/
+/*(* Infix binary operators *)*/
+/*(*----------------------------*)*/
+
+%inline comparison_or_logical_or_bit_operator_except_in:
+ | T_LESS_THAN          { J.Lt         }
+ | T_GREATER_THAN       { J.Gt         }
+ | T_LESS_THAN_EQUAL    { J.Le         }
+ | T_GREATER_THAN_EQUAL { J.Ge         }
+ | T_INSTANCEOF         { J.InstanceOf }
+ | T_EQUAL              { J.EqEq       }
+ | T_NOT_EQUAL          { J.NotEq      }
+ | T_STRICT_EQUAL       { J.EqEqEq     }
+ | T_STRICT_NOT_EQUAL   { J.NotEqEq    }
+ | T_BIT_AND            { J.Band       }
+ | T_BIT_XOR            { J.Bxor       }
+ | T_BIT_OR             { J.Bor        }
+ | T_AND                { J.And        }
+ | T_OR                 { J.Or         }
+
+%inline comparison_or_logical_or_bit_operator:
+ | op=comparison_or_logical_or_bit_operator_except_in { op }
+ | T_IN { J.In }
+
+%inline arithmetic_or_shift_operator:
+ | T_MULT    { J.Mul   }
+ | T_DIV     { J.Div   }
+ | T_MOD     { J.Mod   }
+ | T_PLUS    { J.Plus  }
+ | T_MINUS   { J.Minus }
+ | T_LSHIFT  { J.Lsl   }
+ | T_RSHIFT  { J.Asr   }
+ | T_RSHIFT3 { J.Lsr   }
