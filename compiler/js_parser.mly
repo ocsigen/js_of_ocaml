@@ -598,15 +598,15 @@ element_list_rev:
  |            assignment_expression { [Some $1] }
  | element_list_rev elison assignment_expression { (Some $3) :: (List.rev_append $2 $1) }
 
-separated_nonempty_list2(sep,X):
+separated_or_terminated_list(sep, X):
  | x=X { [x] }
  | x=X; sep { [x] }
- | x=X; sep; xs=separated_nonempty_list2(sep, X) { x :: xs }
+ | x=X; sep; xs=separated_or_terminated_list(sep, X) { x :: xs }
 
 object_literal:
  | res=curly_block(empty) { (fst (snd res), J.EObj []) }
  | res=curly_block(
-     separated_nonempty_list2(
+     separated_or_terminated_list(
        T_COMMA,
        separated_pair(property_name,T_COLON,assignment_expression)
      ))  { (fst (snd res), J.EObj (fst res)) }
