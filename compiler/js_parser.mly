@@ -32,7 +32,6 @@
 module J = Javascript
 open Js_token
 
-let bop op a b= J.EBin(op,a,b)
 let uop op a = J.EUn(op,a)
 let var name = J.S {J.name;J.var=None}
 
@@ -400,7 +399,7 @@ post_in_expression:
  | left=post_in_expression
    op=comparison_or_logical_or_bit_operator
    right=post_in_expression
-   { bop op left right }
+   { J.EBin (op, left, right) }
 
 pre_in_expression:
  | left_hand_side_expression
@@ -434,7 +433,7 @@ pre_in_expression:
  | left=pre_in_expression
    op=arithmetic_or_shift_operator
    right=pre_in_expression
-   { bop op left right }
+   { J.EBin (op, left, right) }
 
 call_expression:
  | member_expression arguments
@@ -503,7 +502,7 @@ post_in_expression_no_in:
  | left=post_in_expression_no_in
    op=comparison_or_logical_or_bit_operator_except_in
    right=post_in_expression
-   { bop op left right}
+   { J.EBin (op, left, right) }
 
 (*----------------------------*)
 (* 2 (no statement)           *)
@@ -530,7 +529,7 @@ post_in_expression_no_statement:
  | left=post_in_expression_no_statement
    op=comparison_or_logical_or_bit_operator
    right=post_in_expression
-   { bop op left right }
+   { J.EBin (op, left, right) }
 
 pre_in_expression_no_statement:
  | left_hand_side_expression_no_statement
@@ -564,7 +563,7 @@ pre_in_expression_no_statement:
  | left=pre_in_expression_no_statement
    op=arithmetic_or_shift_operator
    right=pre_in_expression
-   { bop op left right }
+   { J.EBin (op, left, right) }
 
 left_hand_side_expression_no_statement:
  | new_expression_no_statement { snd $1 }
