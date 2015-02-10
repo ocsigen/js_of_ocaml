@@ -236,7 +236,7 @@ variable_statement:
      { (J.Variable_statement $2, J.Pi pi) }
 
 variable_declaration:
- | variable option(initializeur) { $1, $2 }
+ | variable initializeur? { $1, $2 }
 
 initializeur:
  | T_ASSIGN assignment_expression { $2, J.Pi $1 }
@@ -263,18 +263,15 @@ do_while_statement:
 iteration_statement:
  | pi=T_WHILE T_LPAREN expression T_RPAREN statement
      { (J.While_statement ($3, $5), J.Pi pi) }
- | pi=T_FOR T_LPAREN
-     option(expression_no_in) T_SEMICOLON
-     option(expression) T_SEMICOLON
-     option(expression)
-     T_RPAREN statement
-     { (J.For_statement (J.Left $3, $5, $7, $9), J.Pi pi) }
- | pi=T_FOR T_LPAREN
-     T_VAR separated_nonempty_list(T_COMMA,variable_declaration_no_in) T_SEMICOLON
-     option(expression) T_SEMICOLON
-     option(expression)
-     T_RPAREN statement
-     { (J.For_statement (J.Right($4), $6, $8, $10), J.Pi pi) }
+ | pi=T_FOR T_LPAREN initial=expression_no_in?
+         T_SEMICOLON condition=expression?
+         T_SEMICOLON increment=expression? T_RPAREN statement=statement
+   { (J.For_statement (J.Left initial, condition, increment, statement), J.Pi pi) }
+ | pi=T_FOR T_LPAREN T_VAR
+         initial=separated_nonempty_list(T_COMMA, variable_declaration_no_in)
+         T_SEMICOLON condition=expression?
+         T_SEMICOLON increment=expression? T_RPAREN statement=statement
+   { (J.For_statement (J.Right(initial), condition, increment, statement), J.Pi pi) }
  | pi=T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement
      { (J.ForIn_statement (J.Left $3,$5,$7),J.Pi pi) }
  | pi=T_FOR T_LPAREN T_VAR variable_declaration_no_in T_IN expression T_RPAREN
@@ -282,19 +279,19 @@ iteration_statement:
      { (J.ForIn_statement ( J.Right $4, $6, $8), J.Pi pi) }
 
 variable_declaration_no_in:
- | variable option(initializer_no_in) { $1, $2 }
+ | variable initializer_no_in? { $1, $2 }
 
 initializer_no_in:
  | T_ASSIGN assignment_expression_no_in { $2, J.Pi $1 }
 
 continue_statement:
- | pi=T_CONTINUE option(label) { (J.Continue_statement $2,J.Pi pi) }
+ | pi=T_CONTINUE label? { (J.Continue_statement $2,J.Pi pi) }
 
 break_statement:
- | pi=T_BREAK option(label) { (J.Break_statement $2, J.Pi pi) }
+ | pi=T_BREAK label? { (J.Break_statement $2, J.Pi pi) }
 
 return_statement:
- | pi=T_RETURN option(expression) { (J.Return_statement $2, J.Pi pi) }
+ | pi=T_RETURN expression? { (J.Return_statement $2, J.Pi pi) }
 
 with_statement:
  | T_WITH T_LPAREN expression T_RPAREN statement { assert false }
@@ -302,7 +299,7 @@ with_statement:
 switch_statement:
  | pi=T_SWITCH T_LPAREN e=expression T_RPAREN
     b=curly_block(
-    pair(case_clause*, option(pair(default_clause, case_clause*))))
+    pair(case_clause*, pair(default_clause, case_clause*)?))
     {
       let (l, d, l') =
         match fst b with
@@ -315,7 +312,7 @@ throw_statement:
  | pi=T_THROW expression { (J.Throw_statement $2, J.Pi pi) }
 
 try_statement:
- | pi=T_TRY block catch option(finally) { (J.Try_statement ($2, Some $3, $4), J.Pi pi) }
+ | pi=T_TRY block catch finally? { (J.Try_statement ($2, Some $3, $4), J.Pi pi) }
  | pi=T_TRY block       finally { (J.Try_statement ($2, None, Some $3), J.Pi pi) }
 
 catch:
@@ -344,7 +341,7 @@ function_declaration:
      { ((v, args, fst b, J.Pi (snd (snd b))), J.Pi pi) }
 
 function_expression:
- | pi=T_FUNCTION v=option(variable)
+ | pi=T_FUNCTION v=variable?
    T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
    b=curly_block(function_body)
    { (pi, J.EFun (v, args, fst b, J.Pi pi)) }
@@ -561,14 +558,14 @@ regex_literal:
  | T_REGEX {
    let (s, pi) = $1 in
    let len = String.length s in
-   let regexp,option =
+   let regexp, option =
      if s.[len - 1] = '/'
      then String.sub s 1 (len - 2),None
      else
        let i = String.rindex s '/' in
        String.sub s 1 (i - 1),Some (String.sub s (i+1) (len - i - 1))
    in
-   (pi, J.ERegexp (regexp,option)) }
+   (pi, J.ERegexp (regexp, option)) }
    (* J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) } *)
 
 string_literal:
