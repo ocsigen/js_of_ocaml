@@ -32,7 +32,6 @@
 module J = Javascript
 open Js_token
 
-let uop op a = J.EUn(op,a)
 let var name = J.S {J.name;J.var=None}
 
 (* This is need to fake menhir while using `--infer`. *)
@@ -404,32 +403,9 @@ post_in_expression:
 pre_in_expression:
  | left_hand_side_expression
    { $1 }
- | pre_in_expression T_INCR_NB
-   { uop J.IncrA $1 }
- | pre_in_expression T_DECR_NB
-   { uop J.DecrA $1 }
- | T_DELETE pre_in_expression
-   { uop J.Delete $2 }
- | T_VOID pre_in_expression
-   { uop J.Void $2 }
- | T_TYPEOF pre_in_expression
-   { uop J.Typeof $2 }
- | T_INCR pre_in_expression
-   { uop J.IncrB $2 }
- | T_INCR_NB pre_in_expression
-   { uop J.IncrB $2 }
- | T_DECR pre_in_expression
-   { uop J.DecrB $2 }
- | T_DECR_NB pre_in_expression
-   { uop J.DecrB $2 }
- | T_PLUS pre_in_expression
-   { uop J.Pl $2 }
- | T_MINUS pre_in_expression
-   { uop J.Neg $2}
- | T_BIT_NOT pre_in_expression
-   { uop J.Bnot $2 }
- | T_NOT pre_in_expression
-   { uop J.Not $2 }
+ | e=pre_in_expression op=postfix_operator
+ | op=prefix_operator e=pre_in_expression
+   { J.EUn (op, e) }
  | left=pre_in_expression
    op=arithmetic_or_shift_operator
    right=pre_in_expression
@@ -534,32 +510,9 @@ post_in_expression_no_statement:
 pre_in_expression_no_statement:
  | left_hand_side_expression_no_statement
    { $1 }
- | pre_in_expression_no_statement T_INCR_NB
-   { uop J.IncrA $1 }
- | pre_in_expression_no_statement T_DECR_NB
-   { uop J.DecrA $1 }
- | T_DELETE pre_in_expression
-   { uop J.Delete $2 }
- | T_VOID pre_in_expression
-   { uop J.Void $2 }
- | T_TYPEOF pre_in_expression
-   { uop J.Typeof $2 }
- | T_INCR pre_in_expression
-   { uop J.IncrB $2 }
- | T_INCR_NB pre_in_expression
-   { uop J.IncrB $2 }
- | T_DECR pre_in_expression
-   { uop J.DecrB $2 }
- | T_DECR_NB pre_in_expression
-   { uop J.DecrB $2 }
- | T_PLUS pre_in_expression
-   { uop J.Pl $2 }
- | T_MINUS pre_in_expression
-   { uop J.Neg $2}
- | T_BIT_NOT pre_in_expression
-   { uop J.Bnot $2 }
- | T_NOT pre_in_expression
-   { uop J.Not $2 }
+ | e=pre_in_expression_no_statement op=postfix_operator
+ | op=prefix_operator e=pre_in_expression
+   { J.EUn (op, e) }
  | left=pre_in_expression_no_statement
    op=arithmetic_or_shift_operator
    right=pre_in_expression
@@ -585,7 +538,7 @@ call_expression_no_statement:
 
 member_expression_no_statement:
  | e=primary_expression_no_statement
-     { e }
+   { e }
  | member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
    { let (start, e1) = $1 in (start, J.EAccess(e1, e2)) }
  | member_expression_no_statement T_PERIOD i=field_name
@@ -750,3 +703,20 @@ curly_block(X):
  | T_LSHIFT  { J.Lsl   }
  | T_RSHIFT  { J.Asr   }
  | T_RSHIFT3 { J.Lsr   }
+
+%inline prefix_operator:
+ | T_DELETE  { J.Delete }
+ | T_VOID    { J.Void   }
+ | T_TYPEOF  { J.Typeof }
+ | T_INCR    { J.IncrB  }
+ | T_INCR_NB { J.IncrB  }
+ | T_DECR    { J.DecrB  }
+ | T_DECR_NB { J.DecrB  }
+ | T_PLUS    { J.Pl     }
+ | T_MINUS   { J.Neg    }
+ | T_BIT_NOT { J.Bnot   }
+ | T_NOT     { J.Not    }
+
+%inline postfix_operator:
+ | T_INCR_NB { J.IncrA }
+ | T_DECR_NB { J.DecrA }
