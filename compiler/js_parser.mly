@@ -152,7 +152,7 @@ source_element:
      { let (f, loc) = f in (J.Function_declaration f, loc) }
 
 source_elements:
- | l=list(source_element) { l }
+ | l=source_element* { l }
 
 (*************************************************************************)
 (* 1 statement                                                           *)
@@ -225,11 +225,8 @@ semicolon:
 labeled_statement:
 | l=label T_COLON s=statement { (J.Labelled_statement (l, s), J.N) }
 
-statement_list:
- | l=list(statement) {l}
-
 block_with_pi:
- | l=curly_block(statement_list) { (fst l, fst (snd l)) }
+ | l=curly_block(statement*) { (fst l, fst (snd l)) }
 
 block:
  | block_with_pi { fst $1 }
@@ -305,7 +302,7 @@ with_statement:
 switch_statement:
  | pi=T_SWITCH T_LPAREN e=expression T_RPAREN
     b=curly_block(
-    pair(list(case_clause),option(pair(default_clause,list(case_clause)))))
+    pair(case_clause*, option(pair(default_clause, case_clause*))))
     {
       let (l, d, l') =
         match fst b with
@@ -332,10 +329,10 @@ finally:
 (*----------------------------*)
 
 case_clause:
- | T_CASE e=expression T_COLON l=statement_list { e,l }
+ | T_CASE e=expression T_COLON l=statement* { e,l }
 
 default_clause:
- | T_DEFAULT T_COLON l=statement_list { l }
+ | T_DEFAULT T_COLON l=statement* { l }
 
 (*************************************************************************)
 (* 1 function declaration                                                *)
@@ -593,6 +590,7 @@ array_literal:
 
 element_list:
  | element_list_rev { List.rev $1 }
+
 element_list_rev:
  | elison_rev assignment_expression { (Some $2)::$1 }
  |            assignment_expression { [Some $1] }
