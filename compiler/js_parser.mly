@@ -107,7 +107,6 @@ T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 (* 2 priorities                            *)
 (*-----------------------------------------*)
 
-
 (* Special if / else associativity*)
 %nonassoc p_IF
 %nonassoc T_ELSE
@@ -140,52 +139,53 @@ T_IN T_INSTANCEOF
 (*************************************************************************)
 
 program:
- | l=source_elements EOF { l }
+ | l=source_element* EOF { l }
 
 standalone_expression:
- | e=expression EOF {e}
+ | e=expression EOF { e }
 
 source_element:
- | s=statement
-     { let (s, loc) = s in (J.Statement s, loc) }
- | f=function_declaration
-     { let (f, loc) = f in (J.Function_declaration f, loc) }
-
-source_elements:
- | l=source_element* { l }
+ | statement
+   { let statement, pi = $1 in J.Statement statement, pi }
+ | function_declaration
+   { let declaration, pi = $1 in J.Function_declaration declaration, pi }
 
 (*************************************************************************)
 (* 1 statement                                                           *)
 (*************************************************************************)
 
 statement_no_semi:
- | b=block_with_pi { (J.Block (fst b), J.Pi (snd b)) }
+ | block=curly_block(statement*)
+   { let statements, pi_start, pi_end = block in
+     J.Block statements, J.Pi pi_start }
  (* this is not allowed but some browsers accept it *)
  (* | function_declaration { *)
  (*  let var,params,body,_ = $1 in *)
  (*  J.Variable_statement [var,Some (J.EFun((None,params,body),None))]} *)
- | s=if_statement         { s }
- | s=iteration_statement  { s }
- | s=with_statement       { s }
- | s=switch_statement     { s }
- | s=try_statement        { s }
- | s=labeled_statement    { s }
- | s=empty_statement      { s }
+ | s=if_statement
+ | s=while_statement
+ | s=for_statement
+ | s=for_in_statement
+ | s=with_statement
+ | s=switch_statement
+ | s=try_statement
+ | s=labeled_statement
+ | s=empty_statement { s }
 
 statement_need_semi:
- | variable_statement   { $1 }
- | expression_statement { $1 }
- | do_while_statement   { $1 }
- | continue_statement   { $1 }
- | break_statement      { $1 }
- | return_statement     { $1 }
- | throw_statement      { $1 }
- | debugger_statement   { $1 }
+ | s=variable_statement
+ | s=expression_statement
+ | s=do_while_statement
+ | s=continue_statement
+ | s=break_statement
+ | s=return_statement
+ | s=throw_statement
+ | s=debugger_statement { s }
 
 statement:
- | s=statement_no_semi {s}
- | s=statement_need_semi semicolon {s}
- | s=statement_need_semi {
+ | s=statement_no_semi { s }
+ | s=statement_need_semi either(T_SEMICOLON, T_VIRTUAL_SEMICOLON) { s }
+ | statement=statement_need_semi {
     (* 7.9.1 - 1 *)
     (* When, as the program is parsed from left to right, a token (called the offending token)
        is encountered that is not allowed by any production of the grammar, then a semicolon
@@ -209,77 +209,69 @@ statement:
     (* @@@@@@@@@ HACK @@@@@@@@@@ *)
 
     match _tok with
-      | EOF _ -> s
-      | T_RCURLY _ -> s
-      | t ->
-        let info = Js_token.info_of_tok t in
+      | EOF _ | T_RCURLY _ -> statement
+      | token ->
+        let info = Js_token.info_of_tok token in
         match info.Parse_info.fol with
-          | Some true -> s
+          | Some true -> statement
           | _ -> $syntaxerror
   }
 
-semicolon:
- | T_SEMICOLON {}
- | T_VIRTUAL_SEMICOLON {}
-
 labeled_statement:
-| l=label T_COLON s=statement { (J.Labelled_statement (l, s), J.N) }
-
-block_with_pi:
- | l=curly_block(statement*) { (fst l, fst (snd l)) }
+| l=label T_COLON s=statement { J.Labelled_statement (l, s), J.N }
 
 block:
- | block_with_pi { fst $1 }
+ | block=curly_block(statement*)
+   { let statements, _, _ = block in statements }
 
 variable_statement:
- | pi=T_VAR separated_nonempty_list(T_COMMA,variable_declaration)
-     { (J.Variable_statement $2, J.Pi pi) }
+ | pi=T_VAR list=separated_nonempty_list(T_COMMA, pair(variable, initializer_?))
+   { J.Variable_statement list, J.Pi pi }
 
-variable_declaration:
- | variable initializeur? { $1, $2 }
-
-initializeur:
- | T_ASSIGN assignment_expression { $2, J.Pi $1 }
+initializer_:
+ | pi=T_ASSIGN e=assignment_expression { e, J.Pi pi }
 
 empty_statement:
- | pi=T_SEMICOLON { (J.Empty_statement, J.Pi pi) }
+ | pi=T_SEMICOLON { J.Empty_statement, J.Pi pi }
 
 debugger_statement:
- | pi=T_DEBUGGER { (J.Debugger_statement, J.Pi pi) }
+ | pi=T_DEBUGGER { J.Debugger_statement, J.Pi pi }
 
 expression_statement:
- | expression_no_statement { (J.Expression_statement $1, J.N) }
+ | expression_no_statement { J.Expression_statement $1, J.N }
 
 if_statement:
- | pi=T_IF T_LPAREN i=expression T_RPAREN t=statement T_ELSE e=statement
-     { (J.If_statement (i, t, Some e), J.Pi pi) }
- | pi=T_IF T_LPAREN i=expression T_RPAREN t=statement %prec p_IF
-     { (J.If_statement (i, t, None), J.Pi pi) }
+ | pi=T_IF condition=parenthesised(expression) t=statement T_ELSE e=statement
+     { (J.If_statement (condition, t, Some e), J.Pi pi) }
+ | pi=T_IF condition=parenthesised(expression) t=statement %prec p_IF
+     { (J.If_statement (condition, t, None), J.Pi pi) }
 
 do_while_statement:
-  | pi=T_DO statement T_WHILE T_LPAREN expression T_RPAREN
-    { (J.Do_while_statement ($2, $5), J.Pi pi) }
+  | pi=T_DO body=statement T_WHILE condition=parenthesised(expression)
+    { (J.Do_while_statement (body, condition), J.Pi pi) }
 
-iteration_statement:
- | pi=T_WHILE T_LPAREN expression T_RPAREN statement
-     { (J.While_statement ($3, $5), J.Pi pi) }
+while_statement:
+ | pi=T_WHILE condition=parenthesised(expression) body=statement
+     { (J.While_statement (condition, body), J.Pi pi) }
+
+for_statement:
  | pi=T_FOR T_LPAREN initial=expression_no_in?
-         T_SEMICOLON condition=expression?
-         T_SEMICOLON increment=expression? T_RPAREN statement=statement
-   { (J.For_statement (J.Left initial, condition, increment, statement), J.Pi pi) }
+   T_SEMICOLON condition=expression? T_SEMICOLON increment=expression?
+   T_RPAREN statement=statement
+   { J.For_statement (J.Left initial, condition, increment, statement), J.Pi pi }
  | pi=T_FOR T_LPAREN T_VAR
-         initial=separated_nonempty_list(T_COMMA, variable_declaration_no_in)
-         T_SEMICOLON condition=expression?
-         T_SEMICOLON increment=expression? T_RPAREN statement=statement
-   { (J.For_statement (J.Right(initial), condition, increment, statement), J.Pi pi) }
- | pi=T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement
-     { (J.ForIn_statement (J.Left $3,$5,$7),J.Pi pi) }
- | pi=T_FOR T_LPAREN T_VAR variable_declaration_no_in T_IN expression T_RPAREN
-     statement
-     { (J.ForIn_statement ( J.Right $4, $6, $8), J.Pi pi) }
+   initial=separated_nonempty_list(T_COMMA, pair(variable, initializer_no_in?))
+   T_SEMICOLON condition=expression?  T_SEMICOLON increment=expression?
+   T_RPAREN statement=statement
+   { J.For_statement (J.Right initial, condition, increment, statement), J.Pi pi }
 
-variable_declaration_no_in:
- | variable initializer_no_in? { $1, $2 }
+for_in_statement:
+ | pi=T_FOR T_LPAREN left=left_hand_side_expression
+   T_IN right=expression T_RPAREN body=statement
+   { J.ForIn_statement (J.Left left, right, body), J.Pi pi }
+ | pi=T_FOR T_LPAREN T_VAR left=pair(variable, initializer_no_in?)
+   T_IN right=expression T_RPAREN body=statement
+   { J.ForIn_statement (J.Right left, right, body), J.Pi pi }
 
 initializer_no_in:
  | T_ASSIGN assignment_expression_no_in { $2, J.Pi $1 }
@@ -294,19 +286,17 @@ return_statement:
  | pi=T_RETURN expression? { (J.Return_statement $2, J.Pi pi) }
 
 with_statement:
- | T_WITH T_LPAREN expression T_RPAREN statement { assert false }
+ | T_WITH parenthesised(expression) statement { assert false }
 
 switch_statement:
- | pi=T_SWITCH T_LPAREN e=expression T_RPAREN
-    b=curly_block(
-    pair(case_clause*, pair(default_clause, case_clause*)?))
-    {
-      let (l, d, l') =
-        match fst b with
-          (l, None) -> (l, None, [])
-        | (l, Some (d, l')) -> (l, Some d, l')
-      in
-      (J.Switch_statement (e, l, d, l'), J.Pi pi) }
+ | pi=T_SWITCH subject=parenthesised(expression)
+   T_LCURLY pair=pair(case_clause*, pair(default_clause, case_clause*)?) T_RCURLY
+   { let switch = match pair with
+       | cases, None ->
+         J.Switch_statement (subject, cases, None, [])
+       | cases, Some (default, more_cases) ->
+         J.Switch_statement (subject, cases, Some default, more_cases)
+      in switch, J.Pi pi }
 
 throw_statement:
  | pi=T_THROW expression { (J.Throw_statement $2, J.Pi pi) }
@@ -316,7 +306,7 @@ try_statement:
  | pi=T_TRY block       finally { (J.Try_statement ($2, None, Some $3), J.Pi pi) }
 
 catch:
- | T_CATCH T_LPAREN variable T_RPAREN block { $3, $5 }
+ | T_CATCH pair=pair(parenthesised(variable), block) { pair }
 
 finally:
  | T_FINALLY block { $2 }
@@ -326,28 +316,26 @@ finally:
 (*----------------------------*)
 
 case_clause:
- | T_CASE e=expression T_COLON l=statement* { e,l }
+ | T_CASE pair=separated_pair(expression, T_COLON, statement*) { pair }
 
 default_clause:
- | T_DEFAULT T_COLON l=statement* { l }
+ | T_DEFAULT T_COLON list=statement* { list }
 
 (*************************************************************************)
 (* 1 function declaration                                                *)
 (*************************************************************************)
 
 function_declaration:
- | pi=T_FUNCTION v=variable T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
-     b=curly_block(function_body)
-     { ((v, args, fst b, J.Pi (snd (snd b))), J.Pi pi) }
+ | pi=T_FUNCTION name=variable args=parenthesised(separated_list(T_COMMA, variable))
+   block=curly_block(source_element*)
+   { let elements, pi_start, pi_end = block in
+     (name, args, elements, J.Pi pi_end), J.Pi pi }
 
 function_expression:
- | pi=T_FUNCTION v=variable?
-   T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
-   b=curly_block(function_body)
-   { (pi, J.EFun (v, args, fst b, J.Pi pi)) }
-
-function_body:
- | l=source_elements  { l }
+ | pi=T_FUNCTION name=variable? args=parenthesised(separated_list(T_COMMA, variable))
+   block=curly_block(source_element*)
+   { let elements, pi_start, pi_end = block in
+     pi, J.EFun (name, args, elements, J.Pi pi) }
 
 (*************************************************************************)
 (* 1 expression                                                          *)
@@ -362,30 +350,18 @@ assignment_expression:
  | left_hand_side_expression assignment_operator assignment_expression
    { J.EBin ($2, $1, $3) }
 
-assignment_operator:
- | T_ASSIGN         { J.Eq }
- | T_MULT_ASSIGN    { J.StarEq }
- | T_DIV_ASSIGN     { J.SlashEq }
- | T_MOD_ASSIGN     { J.ModEq }
- | T_PLUS_ASSIGN    { J.PlusEq }
- | T_MINUS_ASSIGN   { J.MinusEq }
- | T_LSHIFT_ASSIGN  { J.LslEq }
- | T_RSHIFT_ASSIGN  { J.AsrEq }
- | T_RSHIFT3_ASSIGN { J.LsrEq }
- | T_BIT_AND_ASSIGN { J.BandEq }
- | T_BIT_XOR_ASSIGN { J.BxorEq }
- | T_BIT_OR_ASSIGN  { J.BorEq }
-
 left_hand_side_expression:
  | new_expression  { snd $1 }
  | call_expression { snd $1 }
 
 conditional_expression:
  | post_in_expression { $1 }
- | post_in_expression
-     T_PLING assignment_expression
-     T_COLON assignment_expression
-     { J.ECond ($1, $3, $5) }
+ | ternary(post_in_expression, assignment_expression) { $1 }
+
+ternary(condition, consequence):
+ | condition=condition T_PLING consequence=consequence
+                       T_COLON alternative=consequence
+   { J.ECond (condition, consequence, alternative) }
 
 post_in_expression:
  | pre_in_expression { $1 }
@@ -412,7 +388,7 @@ call_expression:
      { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
  | call_expression T_LBRACKET expression T_RBRACKET
      { let (start, e) = $1 in (start, J.EAccess (e, $3)) }
- | call_expression T_PERIOD method_name
+ | call_expression T_PERIOD identifier
      { let (start, e) = $1 in (start, J.EDot (e, $3)) }
 
 new_expression:
@@ -424,24 +400,23 @@ member_expression:
      { e }
  | member_expression T_LBRACKET e2=expression T_RBRACKET
      { let (start, e1) = $1 in (start, J.EAccess (e1,e2)) }
- | member_expression T_PERIOD i=field_name
+ | member_expression T_PERIOD i=identifier
      { let (start, e1) = $1 in (start, J.EDot(e1,i)) }
  | pi=T_NEW e1=member_expression a=arguments
      { (pi, J.ENew(snd e1, Some a)) }
 
 primary_expression:
- | p=primary_expression_no_statement { p }
- | o=object_literal                  { o }
- | f=function_expression             { f }
+ | e=primary_expression_no_statement
+ | e=object_literal
+ | e=function_expression { e }
 
 primary_expression_no_statement:
  | pi=T_THIS         { (pi, J.EVar (var "this")) }
  | variable_with_loc { let (i, pi) = $1 in (pi, J.EVar (var i)) }
-
  | n=null_literal    { n }
  | b=boolean_literal { b }
  | numeric_literal   { let (start, n) = $1 in (start, J.ENum n) }
- | string_literal    { let (s, start) = $1 in (start, J.EStr (s, `Utf8)) }
+ | T_STRING          { let (s, start) = $1 in (start, J.EStr (s, `Utf8)) }
    (* marcel: this isn't an expansion of literal in ECMA-262... mistake? *)
  | r=regex_literal                { r }
  | a=array_literal                { a }
@@ -462,10 +437,7 @@ assignment_expression_no_in:
 
 conditional_expression_no_in:
  | post_in_expression_no_in { $1 }
- | post_in_expression_no_in
-     T_PLING assignment_expression_no_in
-     T_COLON assignment_expression_no_in
-     { J.ECond ($1, $3, $5) }
+ | ternary(post_in_expression_no_in, assignment_expression_no_in) { $1 }
 
 post_in_expression_no_in:
  | pre_in_expression { $1 }
@@ -485,14 +457,11 @@ expression_no_statement:
 assignment_expression_no_statement:
  | conditional_expression_no_statement { $1 }
  | left_hand_side_expression_no_statement assignment_operator assignment_expression
-     { J.EBin ($2,$1,$3) }
+   { J.EBin ($2,$1,$3) }
 
 conditional_expression_no_statement:
  | post_in_expression_no_statement { $1 }
- | post_in_expression_no_statement
-     T_PLING assignment_expression
-     T_COLON assignment_expression
-     { J.ECond ($1, $3, $5) }
+ | ternary(post_in_expression_no_statement, assignment_expression) { $1 }
 
 post_in_expression_no_statement:
  | pre_in_expression_no_statement { $1 }
@@ -527,7 +496,7 @@ call_expression_no_statement:
    { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
  | call_expression_no_statement T_LBRACKET expression T_RBRACKET
    { let (start, e) = $1 in (start, J.EAccess(e, $3)) }
- | call_expression_no_statement T_PERIOD method_name
+ | call_expression_no_statement T_PERIOD identifier
    { let (start, e) = $1 in (start, J.EDot(e,$3)) }
 
 member_expression_no_statement:
@@ -535,7 +504,7 @@ member_expression_no_statement:
    { e }
  | member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
    { let (start, e1) = $1 in (start, J.EAccess(e1, e2)) }
- | member_expression_no_statement T_PERIOD i=field_name
+ | member_expression_no_statement T_PERIOD i=identifier
    { let (start, e1) = $1 in (start, J.EDot(e1,i)) }
  | pi=T_NEW e=member_expression a=arguments
    { (pi, J.ENew(snd e,Some a)) }
@@ -568,9 +537,6 @@ regex_literal:
    (pi, J.ERegexp (regexp, option)) }
    (* J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) } *)
 
-string_literal:
- | str=T_STRING { str }
-
 (*----------------------------*)
 (* 2 array                    *)
 (*----------------------------*)
@@ -593,21 +559,14 @@ element_list_rev:
  |            assignment_expression { [Some $1] }
  | element_list_rev elison assignment_expression { (Some $3) :: (List.rev_append $2 $1) }
 
-separated_or_terminated_list(sep, X):
- | x=X { [x] }
- | x=X; sep { [x] }
- | x=X; sep; xs=separated_or_terminated_list(sep, X) { x :: xs }
-
 object_literal:
- | res=curly_block(empty) { (fst (snd res), J.EObj []) }
- | res=curly_block(
-     separated_or_terminated_list(
-       T_COMMA,
-       separated_pair(property_name,T_COLON,assignment_expression)
-     ))  { (fst (snd res), J.EObj (fst res)) }
+ | block=curly_block(empty)
+   { let pairs, pi_start, pi_end = block in pi_start, J.EObj [] }
+ | block=curly_block(separated_or_terminated_list(T_COMMA, object_key_value))
+   { let pairs, pi_start, pi_end = block in pi_start, J.EObj pairs }
 
-empty:
- | {}
+object_key_value:
+ | pair=separated_pair(property_name, T_COLON, assignment_expression) { pair }
 
 (*----------------------------*)
 (* 2 variable                 *)
@@ -618,7 +577,7 @@ empty:
 (*----------------------------*)
 
 arguments:
- | T_LPAREN l=separated_list(T_COMMA,assignment_expression) T_RPAREN { l }
+ | args=parenthesised(separated_list(T_COMMA, assignment_expression)) { args }
 
 (*----------------------------*)
 (* 2 auxillary bis            *)
@@ -629,12 +588,6 @@ arguments:
 (*************************************************************************)
 
 identifier:
- | T_IDENTIFIER { fst $1  }
-
-(* should some keywork be allowed for field_name and method_name ??*)
-field_name:
- | T_IDENTIFIER { fst $1 }
-method_name:
  | T_IDENTIFIER { fst $1 }
 
 variable:
@@ -648,7 +601,7 @@ label:
 
 property_name:
  | i=T_IDENTIFIER    { J.PNI (fst i) }
- | s=string_literal  { J.PNS (fst s) }
+ | s=T_STRING        { J.PNS (fst s) }
  | n=numeric_literal { J.PNN (snd n) }
 
 (*************************************************************************)
@@ -663,7 +616,7 @@ elison: elison_rev {$1}
  (* | elison_rev { List.rev $1} *)
 
 curly_block(X):
- | pi1=T_LCURLY x=X pi2=T_RCURLY { (x, (pi1, pi2)) }
+ | pi1=T_LCURLY x=X pi2=T_RCURLY { (x, pi1, pi2) }
 
 (*----------------------------*)
 (* Infix binary operators     *)
@@ -712,6 +665,33 @@ curly_block(X):
  | T_BIT_NOT { J.Bnot   }
  | T_NOT     { J.Not    }
 
-%inline postfix_operator:
+postfix_operator:
  | T_INCR_NB { J.IncrA }
  | T_DECR_NB { J.DecrA }
+
+assignment_operator:
+ | T_ASSIGN         { J.Eq }
+ | T_MULT_ASSIGN    { J.StarEq }
+ | T_DIV_ASSIGN     { J.SlashEq }
+ | T_MOD_ASSIGN     { J.ModEq }
+ | T_PLUS_ASSIGN    { J.PlusEq }
+ | T_MINUS_ASSIGN   { J.MinusEq }
+ | T_LSHIFT_ASSIGN  { J.LslEq }
+ | T_RSHIFT_ASSIGN  { J.AsrEq }
+ | T_RSHIFT3_ASSIGN { J.LsrEq }
+ | T_BIT_AND_ASSIGN { J.BandEq }
+ | T_BIT_XOR_ASSIGN { J.BxorEq }
+ | T_BIT_OR_ASSIGN  { J.BorEq }
+
+(* Library definitions *)
+
+either(a, b): a { $1 } | b { $1 }
+
+empty: {}
+
+%inline parenthesised(ITEM): T_LPAREN item=ITEM T_RPAREN { item }
+
+separated_or_terminated_list(separator, X):
+ | x=X { [x] }
+ | x=X separator { [x] }
+ | x=X separator xs=separated_or_terminated_list(separator, X) { x :: xs }
