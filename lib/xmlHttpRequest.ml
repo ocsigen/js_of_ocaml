@@ -23,7 +23,12 @@ open Js
 
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
-type xmlHttpRequestResponseType = ArrayBuffer | Blob | Document | JSON | Text
+type _ response =
+    ArrayBuffer : Typed_array.arrayBuffer t response
+  | Blob : #File.blob t response
+  | Document : string response
+  | JSON : string response
+  | Text : string response
 
 class type xmlHttpRequest = object ('self)
   method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
@@ -193,7 +198,7 @@ let arraybuffer_response url code headers req =
     headers = headers
   }
 
-let perform_raw_url_1
+let perform_raw
     ?(headers = [])
     ?content_type
     ?(post_args:(string * Form.form_elt) list option)
@@ -203,8 +208,7 @@ let perform_raw_url_1
     ?progress
     ?upload_progress
     ?override_mime_type
-    ?response_type
-    ~coerce_response
+    (type resptype) ~(response_type:resptype response)
     url =
 
   let form_arg =
@@ -252,7 +256,7 @@ let perform_raw_url_1
     | _::_ as l -> url ^ "?" ^ encode l
   in
 
-  let (res, w) = Lwt.task () in
+  let ((res : resptype http_frame Lwt.t), w) = Lwt.task () in
   let req = create () in
 
   begin match override_mime_type with
@@ -261,12 +265,11 @@ let perform_raw_url_1
   end;
 
   begin match response_type with
-    None             -> ()
-  | Some ArrayBuffer -> req ## responseType <- (Js.string "arraybuffer")
-  | Some Blob        -> req ## responseType <- (Js.string "blob")
-  | Some Document    -> req ## responseType <- (Js.string "document")
-  | Some JSON        -> req ## responseType <- (Js.string "json")
-  | Some Text        -> req ## responseType <- (Js.string "text")
+  | ArrayBuffer -> req ## responseType <- (Js.string "arraybuffer")
+  | Blob        -> req ## responseType <- (Js.string "blob")
+  | Document    -> req ## responseType <- (Js.string "document")
+  | JSON        -> req ## responseType <- (Js.string "json")
+  | Text        -> req ## responseType <- (Js.string "text")
   end;
 
   req##_open (Js.string method_, Js.string url, Js._true);
@@ -303,7 +306,14 @@ let perform_raw_url_1
 	| DONE ->
           (* If we didn't catch a previous event, we check the header. *)
           do_check_headers ();
-	  Lwt.wakeup w (coerce_response url (req##status) headers req)
+	  let response : resptype http_frame =
+	    match response_type with
+	      ArrayBuffer -> arraybuffer_response url (req##status) headers req
+	    | Blob -> blob_response url (req##status) headers req
+	    | Document -> default_response url (req##status) headers req
+	    | JSON -> default_response url (req##status) headers req
+	    | Text -> default_response url (req##status) headers req in
+	  Lwt.wakeup w response
 	| _ -> ()));
 
   begin match progress with
@@ -344,39 +354,9 @@ let perform_raw_url
     ?upload_progress
     ?override_mime_type
     url =
-  perform_raw_url_1 ~headers ?content_type ?post_args ~get_args ?form_arg
+  perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ~coerce_response:default_response url
-
-let perform_raw_url_blob
-    ?(headers = [])
-    ?content_type
-    ?post_args
-    ?(get_args=[])
-    ?form_arg
-    ?check_headers
-    ?progress
-    ?upload_progress
-    ?override_mime_type
-    url =
-  perform_raw_url_1 ~headers ?content_type ?post_args ~get_args ?form_arg
-    ?check_headers ?progress ?upload_progress ?override_mime_type
-    ~response_type:Blob ~coerce_response:blob_response url
-
-let perform_raw_url_arraybuffer
-    ?(headers = [])
-    ?content_type
-    ?post_args
-    ?(get_args=[])
-    ?form_arg
-    ?check_headers
-    ?progress
-    ?upload_progress
-    ?override_mime_type
-    url =
-  perform_raw_url_1 ~headers ?content_type ?post_args ~get_args ?form_arg
-    ?check_headers ?progress ?upload_progress ?override_mime_type
-    ~response_type:ArrayBuffer ~coerce_response:arraybuffer_response url
+    ~response_type:JSON url
 
 let perform
     ?(headers = [])
@@ -389,8 +369,8 @@ let perform
     ?upload_progress
     ?override_mime_type
     url =
-  perform_raw_url_1 ~headers ?content_type ?post_args ~get_args ?form_arg
+  perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ~coerce_response:default_response (Url.string_of_url url)
+    ~response_type:JSON (Url.string_of_url url)
 
 let get s = perform_raw_url s

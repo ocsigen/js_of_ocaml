@@ -24,7 +24,12 @@ open Js
 
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
-type xmlHttpRequestResponseType = ArrayBuffer | Blob | Document | JSON | Text
+type _ response =
+    ArrayBuffer : Typed_array.arrayBuffer t response
+  | Blob : #File.blob t response
+  | Document : string response
+  | JSON : string response
+  | Text : string response
 
 class type xmlHttpRequest = object ('self)
   method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
@@ -92,7 +97,7 @@ exception Wrong_headers of (int * (string -> string option))
     parameter returned false. The parameter of the exception is a
     function is like the [headers] function of [http_frame] *)
 
-val perform_raw_url_blob :
+val perform_raw :
     ?headers:(string * string) list
   -> ?content_type:string
   -> ?post_args:((string * Form.form_elt) list)
@@ -102,21 +107,9 @@ val perform_raw_url_blob :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
+  -> response_type:('a response)
   -> string
-  -> #File.blob t http_frame Lwt.t
-
-val perform_raw_url_arraybuffer :
-    ?headers:(string * string) list
-  -> ?content_type:string
-  -> ?post_args:((string * Form.form_elt) list)
-  -> ?get_args:((string * string) list)  (* [] *)
-  -> ?form_arg:Form.form_contents
-  -> ?check_headers:(int -> (string -> string option) -> bool)
-  -> ?progress:(int -> int -> unit)
-  -> ?upload_progress:(int -> int -> unit)
-  -> ?override_mime_type:string
-  -> string
-  -> Typed_array.arrayBuffer t http_frame Lwt.t
+  -> 'a http_frame Lwt.t
 
 val perform_raw_url :
     ?headers:(string * string) list
