@@ -53,7 +53,13 @@ let filename file =
 
 type file_any = < > t
 
+let blob_constr = Unsafe.global##_Blob
+
 module CoerceTo = struct
+  let blob (e : file_any) =
+    if instanceof e blob_constr
+    then Js.some (Unsafe.coerce e:#blob t)
+    else Js.null
   let string (e : file_any) =
     if typeof e = string "string"
     then Js.some (Unsafe.coerce e:js_string t)

@@ -23,6 +23,8 @@ open Js
 
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
+type xmlHttpRequestResponseType = ArrayBuffer | Blob | Document | JSON | Text
+
 class type xmlHttpRequest = object ('self)
   method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
   method readyState : readyState readonly_prop
@@ -41,8 +43,10 @@ class type xmlHttpRequest = object ('self)
   method statusText : js_string t readonly_prop
   method getResponseHeader : js_string t -> js_string t opt meth
   method getAllResponseHeaders : js_string t meth
+  method response : File.file_any readonly_prop
   method responseText : js_string t readonly_prop
   method responseXML : Dom.element Dom.document t opt readonly_prop
+  method responseType : js_string t prop
 
   inherit File.progressEventTarget
   method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
@@ -127,12 +131,12 @@ let encode_url l =
 (* Higher level interface: *)
 
 (** type of the http headers *)
-type http_frame =
+type 'response http_frame =
     {
       url: string;
       code: int;
       headers: string -> string option;
-      content: string;
+      content: 'response;
       content_xml: unit -> Dom.element Dom.document t option;
     }
 
@@ -149,7 +153,47 @@ let extract_get_param url =
       url.hu_arguments
     | _ -> url, []
 
-let perform_raw_url
+let default_response url code headers req =
+  { url = url;
+    code = code;
+    content = Js.to_string req##responseText;
+    content_xml =
+      (fun () ->
+	match Js.Opt.to_option (req##responseXML) with
+	  | None -> None
+	  | Some doc ->
+	    if (Js.some doc##documentElement) == Js.null
+	    then None
+	    else Some doc);
+    headers = headers
+  }
+
+let blob_response url code headers req =
+  { url = url;
+    code = code;
+    content =
+      begin match Js.Opt.to_option (File.CoerceTo.blob (req##response)) with
+        None -> assert false
+      | Some blob -> blob
+      end;
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
+let arraybuffer_response url code headers req =
+  { url = url;
+    code = code;
+    content =
+      begin match Js.Opt.to_option (File.CoerceTo.arrayBuffer
+				     (req##response)) with
+        None -> assert false
+      | Some arraybuf -> arraybuf
+      end;
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
+let perform_raw_url_1
     ?(headers = [])
     ?content_type
     ?(post_args:(string * Form.form_elt) list option)
@@ -159,6 +203,8 @@ let perform_raw_url
     ?progress
     ?upload_progress
     ?override_mime_type
+    ?response_type
+    ~coerce_response
     url =
 
   let form_arg =
@@ -214,6 +260,15 @@ let perform_raw_url
   | Some mime_type -> req ## overrideMimeType (Js.string mime_type)
   end;
 
+  begin match response_type with
+    None             -> ()
+  | Some ArrayBuffer -> req ## responseType <- (Js.string "arraybuffer")
+  | Some Blob        -> req ## responseType <- (Js.string "blob")
+  | Some Document    -> req ## responseType <- (Js.string "document")
+  | Some JSON        -> req ## responseType <- (Js.string "json")
+  | Some Text        -> req ## responseType <- (Js.string "text")
+  end;
+
   req##_open (Js.string method_, Js.string url, Js._true);
   (match content_type with
     | Some content_type ->
@@ -248,20 +303,7 @@ let perform_raw_url
 	| DONE ->
           (* If we didn't catch a previous event, we check the header. *)
           do_check_headers ();
-	  Lwt.wakeup w
-            {url = url;
-	     code = req##status;
-             content = Js.to_string req##responseText;
-	     content_xml =
-		(fun () ->
-		  match Js.Opt.to_option (req##responseXML) with
-		    | None -> None
-		    | Some doc ->
-		      if (Js.some doc##documentElement) == Js.null
-		      then None
-		      else Some doc);
-             headers = headers
-            }
+	  Lwt.wakeup w (coerce_response url (req##status) headers req)
 	| _ -> ()));
 
   begin match progress with
@@ -291,6 +333,51 @@ let perform_raw_url
   Lwt.on_cancel res (fun () -> req##abort ()) ;
   res
 
+let perform_raw_url
+    ?(headers = [])
+    ?content_type
+    ?post_args
+    ?(get_args=[])
+    ?form_arg
+    ?check_headers
+    ?progress
+    ?upload_progress
+    ?override_mime_type
+    url =
+  perform_raw_url_1 ~headers ?content_type ?post_args ~get_args ?form_arg
+    ?check_headers ?progress ?upload_progress ?override_mime_type
+    ~coerce_response:default_response url
+
+let perform_raw_url_blob
+    ?(headers = [])
+    ?content_type
+    ?post_args
+    ?(get_args=[])
+    ?form_arg
+    ?check_headers
+    ?progress
+    ?upload_progress
+    ?override_mime_type
+    url =
+  perform_raw_url_1 ~headers ?content_type ?post_args ~get_args ?form_arg
+    ?check_headers ?progress ?upload_progress ?override_mime_type
+    ~response_type:Blob ~coerce_response:blob_response url
+
+let perform_raw_url_arraybuffer
+    ?(headers = [])
+    ?content_type
+    ?post_args
+    ?(get_args=[])
+    ?form_arg
+    ?check_headers
+    ?progress
+    ?upload_progress
+    ?override_mime_type
+    url =
+  perform_raw_url_1 ~headers ?content_type ?post_args ~get_args ?form_arg
+    ?check_headers ?progress ?upload_progress ?override_mime_type
+    ~response_type:ArrayBuffer ~coerce_response:arraybuffer_response url
+
 let perform
     ?(headers = [])
     ?content_type
@@ -302,8 +389,8 @@ let perform
     ?upload_progress
     ?override_mime_type
     url =
-  perform_raw_url ~headers ?content_type ?post_args ~get_args ?form_arg
+  perform_raw_url_1 ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    (Url.string_of_url url)
+    ~coerce_response:default_response (Url.string_of_url url)
 
 let get s = perform_raw_url s
