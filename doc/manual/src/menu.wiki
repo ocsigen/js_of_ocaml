@@ -7,7 +7,6 @@
 ==[[performances|Performances]]
 ==Examples
 ===<<a_file src="toplevel/index.html"|An OCaml toplevel running in the browser>>
-===<<a_file src="hyperbolic/index.html" |An hyperbolic tree viewer>>
 ===<<a_file src="planet/index.html" |An animated 3D view of the Earth>>
 ===<<a_file src="graph_viewer/index.html" |A graph viewer>>
 ===<<a_file src="boulderdash/index.html" |A Boulder Dash game>>
