@@ -570,11 +570,11 @@ module Unsafe : sig
   external call : 'a -> 'b -> any array -> 'c = "caml_js_call"
     (** Performs a Javascript function call.  The expression
         [call f o a] calls the Javascript function [f] with the
-        arguments given by the array [o], and binding [this] to [o]. *)
+        arguments given by the array [a], and binding [this] to [o]. *)
   external fun_call : 'a -> any array -> 'b = "caml_js_fun_call"
     (** Performs a Javascript function call.  The expression
         [fun_call f a] calls the Javascript function [f] with the
-        arguments given by the array [o]. *)
+        arguments given by the array [a]. *)
   external meth_call : 'a -> string -> any array -> 'b = "caml_js_meth_call"
     (** Performs a Javascript method call.  The expression
         [meth_call o m a] calls the Javascript method [m] of object [o]
