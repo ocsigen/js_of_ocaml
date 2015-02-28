@@ -13,5 +13,5 @@
 ===<<a_file src="wiki/index.html" |A realtime wiki editor>>
 ===<<a_file src="webgl/index.html" |A webgl demo>>
 ===<<a_file src="minesweeper/index.html" |A Minesweeper game>>
-===<<a_file src="hyperbolic/index.html" |Hyperbolic tree viewer>>
+===<<a_file src="hyperbolic/index.html" |A hyperbolic tree viewer>>
 ===<<a_file src="cubes/index.html" |A random walk on lozenge tiling configurations>>
