@@ -5,6 +5,16 @@ open Parsetree
 
 open Ast_convenience
 
+(** Check if an expression is an identifier and returns it.
+    Raise a Location.error if it's not.
+*)
+let exp_to_string = function
+  | {pexp_desc= Pexp_ident {txt = Longident.Lident s}} -> s
+  | {pexp_loc} ->
+     Location.raise_errorf
+       ~loc:pexp_loc
+       "Javascript methods or attributes can only be simple identifiers."
+
 
 let rnd = Random.State.make [|0x313511d4|]
 let random_var () =
@@ -14,7 +24,7 @@ let random_tvar () =
 
 let inside_Js = lazy
   (try
-     String.lowercase @@
+     String.lowercase_ascii @@
      Filename.basename @@
      Filename.chop_extension !Location.input_name = "js"
    with Invalid_argument _ -> false)
@@ -27,13 +37,13 @@ module Js = struct
     else Typ.constr ?loc (lid @@ "Js."^s) args
 
   let unsafe ?loc s args =
-    let args = List.map (fun x -> "",x) args in
+    let args = List.map (fun x -> Nolabel,x) args in
     if Lazy.force inside_Js
     then Exp.(apply (ident ?loc @@ lid ("Unsafe."^s)) args)
     else Exp.(apply (ident ?loc @@ lid ("Js.Unsafe."^s)) args)
 
   let fun_ ?loc s args =
-    let args = List.map (fun x -> "",x) args in
+    let args = List.map (fun x -> Nolabel,x) args in
     if Lazy.force inside_Js
     then Exp.(apply (ident ?loc @@ lid s) args)
     else Exp.(apply (ident ?loc @@ lid ("Js."^s)) args)
@@ -290,10 +300,10 @@ let js_mapper _args =
       let { pexp_attributes } = expr in
       match expr with
 
-      (** [%js obj.var] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_field (obj, meth) }]]] ->
+      (** obj##.var *)
+      | [%expr [%e? obj] ##. [%e? meth] ] ->
+        let meth = exp_to_string meth in
         let o = random_var () in
-        let meth = String.concat "." @@ Longident.flatten meth.txt in
         let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
         let res = random_var () in
         let new_expr =
@@ -310,9 +320,9 @@ let js_mapper _args =
           ]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
-      (** [%js obj.var := value] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_field (obj, meth) }] := [%e? value]]] ->
-        let meth = String.concat "." @@ Longident.flatten meth.txt in
+      (** obj##.var := value *)
+      | [%expr [%e? obj] ##. [%e? meth] := [%e? value]] ->
+        let meth = exp_to_string meth in
         let o = random_var () in
         let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
         let v = random_var () in
@@ -333,16 +343,17 @@ let js_mapper _args =
           ]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
-      (** [%js obj#meth] arg1 arg2 .. *)
+      (** obj##meth arg1 arg2 .. *)
       | {pexp_desc = Pexp_apply
-             ([%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] ]]
-             , args)
+             ([%expr [%e? obj] ## [%e? meth]] , args)
         } ->
+        let meth = exp_to_string meth in
         let new_expr =
           method_call obj meth args
         in mapper.expr mapper { new_expr with pexp_attributes }
-      (** [%js obj#meth] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_send (obj, meth) }] ]] ->
+      (** obj##meth *)
+      | [%expr [%e? obj] ## [%e? meth]] ->
+        let meth = exp_to_string meth in
         let new_expr =
           method_call obj meth []
         in mapper.expr mapper { new_expr with pexp_attributes }
