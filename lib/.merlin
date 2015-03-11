@@ -1,0 +1,4 @@
+B ./**
+S ./**
+PKG cmdliner
+PKG menhir
