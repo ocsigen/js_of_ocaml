@@ -35,10 +35,11 @@ module Js = struct
     then Typ.constr ?loc (lid s) args
     else Typ.constr ?loc (lid @@ "Js."^s) args
 
-(* ocaml 4.02+trunk *)  
+#if OCAML_MAJOR = 4 && OCAML_MINOR = 2
   let nolabel = ""
-(* ocaml 4.03 *)
-(* let nolabel = Nolabel *)
+#else
+  let nolabel = Nolabel
+#endif
 
   let unsafe ?loc s args =
     let args = List.map (fun x -> nolabel,x) args in

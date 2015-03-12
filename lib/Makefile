@@ -157,6 +157,10 @@ ppx/ppx_js.cmo: ppx/ppx_js.ml
 ppx/ppx_js.cmi: ppx/ppx_js.mli
 	ocamlfind ocamlc $(SAFESTRING) -package ppx_tools.metaquot -c $<
 
+%.ml: %.cppo.ml
+	cppo $< -o $@ -V OCAML:`ocamlc -version`
+
+
 $(PPX_EX): ppx/ppx_js.$(BEST)
 	mv -f $< $@
 

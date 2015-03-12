@@ -24,6 +24,7 @@ OCaml programs run on Web browsers.
   * [deriving](https://github.com/ocsigen/deriving): **version 0.6** at least
 
 ### Toplevel requirements
+ * base64 (version 2.0.0 at least)
  * ocp-indent: needed to support indentation in the toplevel
  * higlo: needed to support Syntax highlighting in the toplevel
  * cohttp: needed to build the toplevel webserver
