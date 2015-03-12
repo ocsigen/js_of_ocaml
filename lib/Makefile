@@ -120,6 +120,8 @@ toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo 
 toplevel/jsooTop.cmi: toplevel/jsooTop.mli
 	ocamlfind ocamlc $(SAFESTRING) -package lwt -I . -I log $< -o $@
 
+%.ml: %.cppo.ml
+	cppo $< -o $@ -V OCAML:`ocamlc -version`
 
 %.cmo: %.ml syntax/pa_js.cmo
 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt -c -g $<

@@ -28,6 +28,7 @@ toplevel/eval.js
 toplevel/toplevel-fs.js
 toplevel/*.cmis.js
 toplevel/server
+toplevel/toplevel.ml
 examples/wiki/wikicreole.ml
 examples/*/*.js
 compiler/js_of_ocaml
