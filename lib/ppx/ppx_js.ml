@@ -24,7 +24,6 @@ let random_tvar () =
 
 let inside_Js = lazy
   (try
-     String.lowercase_ascii @@
      Filename.basename @@
      Filename.chop_extension !Location.input_name = "js"
    with Invalid_argument _ -> false)
@@ -36,14 +35,19 @@ module Js = struct
     then Typ.constr ?loc (lid s) args
     else Typ.constr ?loc (lid @@ "Js."^s) args
 
+(* ocaml 4.02+trunk *)  
+  let nolabel = ""
+(* ocaml 4.03 *)
+(* let nolabel = Nolabel *)
+
   let unsafe ?loc s args =
-    let args = List.map (fun x -> Nolabel,x) args in
+    let args = List.map (fun x -> nolabel,x) args in
     if Lazy.force inside_Js
     then Exp.(apply (ident ?loc @@ lid ("Unsafe."^s)) args)
     else Exp.(apply (ident ?loc @@ lid ("Js.Unsafe."^s)) args)
 
   let fun_ ?loc s args =
-    let args = List.map (fun x -> Nolabel,x) args in
+    let args = List.map (fun x -> nolabel,x) args in
     if Lazy.force inside_Js
     then Exp.(apply (ident ?loc @@ lid s) args)
     else Exp.(apply (ident ?loc @@ lid ("Js."^s)) args)
