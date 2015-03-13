@@ -435,7 +435,7 @@ let (>>) x f = f x
 (* This as to be kept in sync with the way we build conditionals
    and switches! *)
 
-module DTree = struct;;
+module DTree = struct
 
   type 'a t =
     | If of Code.cond * 'a t * 'a t
