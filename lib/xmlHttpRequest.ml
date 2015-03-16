@@ -24,11 +24,12 @@ open Js
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
 type _ response =
-    ArrayBuffer : Typed_array.arrayBuffer t response
-  | Blob : #File.blob t response
-  | Document : string response
-  | JSON : string response
-  | Text : string response
+    ArrayBuffer : Typed_array.arrayBuffer t Opt.t response
+  | Blob : #File.blob t Opt.t response
+  | Document : Dom.element Dom.document t Opt.t response
+  | JSON : 'a Opt.t response
+  | Text : js_string t response
+  | Default: string response
 
 class type xmlHttpRequest = object ('self)
   method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
@@ -173,14 +174,34 @@ let default_response url code headers req =
     headers = headers
   }
 
+let text_response url code headers req =
+  { url = url;
+    code = code;
+    content = req##responseText;
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
+let document_response url code headers req =
+  { url = url;
+    code = code;
+    content = File.CoerceTo.document (req##response);
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
+let json_response url code headers req =
+  { url = url;
+    code = code;
+    content = File.CoerceTo.json (req##response);
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
 let blob_response url code headers req =
   { url = url;
     code = code;
-    content =
-      begin match Js.Opt.to_option (File.CoerceTo.blob (req##response)) with
-        None -> assert false
-      | Some blob -> blob
-      end;
+    content = File.CoerceTo.blob (req##response);
     content_xml = (fun () -> assert false);
     headers = headers
   }
@@ -188,12 +209,7 @@ let blob_response url code headers req =
 let arraybuffer_response url code headers req =
   { url = url;
     code = code;
-    content =
-      begin match Js.Opt.to_option (File.CoerceTo.arrayBuffer
-				     (req##response)) with
-        None -> assert false
-      | Some arraybuf -> arraybuf
-      end;
+    content = File.CoerceTo.arrayBuffer (req##response);
     content_xml = (fun () -> assert false);
     headers = headers
   }
@@ -270,6 +286,7 @@ let perform_raw
   | Document    -> req ## responseType <- (Js.string "document")
   | JSON        -> req ## responseType <- (Js.string "json")
   | Text        -> req ## responseType <- (Js.string "text")
+  | Default     -> req ## responseType <- (Js.string "")
   end;
 
   req##_open (Js.string method_, Js.string url, Js._true);
@@ -310,9 +327,10 @@ let perform_raw
 	    match response_type with
 	      ArrayBuffer -> arraybuffer_response url (req##status) headers req
 	    | Blob -> blob_response url (req##status) headers req
-	    | Document -> default_response url (req##status) headers req
-	    | JSON -> default_response url (req##status) headers req
-	    | Text -> default_response url (req##status) headers req in
+	    | Document -> document_response url (req##status) headers req
+	    | JSON -> json_response url (req##status) headers req
+	    | Text -> text_response url (req##status) headers req
+	    | Default -> default_response url (req##status) headers req in
 	  Lwt.wakeup w response
 	| _ -> ()));
 
@@ -356,7 +374,7 @@ let perform_raw_url
     url =
   perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ~response_type:JSON url
+    ~response_type:Default url
 
 let perform
     ?(headers = [])
@@ -371,6 +389,6 @@ let perform
     url =
   perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ~response_type:JSON (Url.string_of_url url)
+    ~response_type:Default (Url.string_of_url url)
 
 let get s = perform_raw_url s

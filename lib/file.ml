@@ -55,7 +55,15 @@ type file_any = < > t
 
 let blob_constr = Unsafe.global##_Blob
 
+let doc_constr = Unsafe.global##_Document
+
 module CoerceTo = struct
+  external json : file_any -> 'a Opt.t = "%identity"
+
+  let document (e : file_any) =
+    if instanceof e doc_constr
+    then Js.some (Unsafe.coerce e:element document t)
+    else Js.null
   let blob (e : file_any) =
     if instanceof e blob_constr
     then Js.some (Unsafe.coerce e:#blob t)

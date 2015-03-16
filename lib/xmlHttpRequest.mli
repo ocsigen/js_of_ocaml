@@ -25,11 +25,12 @@ open Js
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
 type _ response =
-    ArrayBuffer : Typed_array.arrayBuffer t response
-  | Blob : #File.blob t response
-  | Document : string response
-  | JSON : string response
-  | Text : string response
+    ArrayBuffer : Typed_array.arrayBuffer t Opt.t response
+  | Blob : #File.blob t Opt.t response
+  | Document : Dom.element Dom.document t Opt.t response
+  | JSON : 'a Opt.t response
+  | Text : js_string t response
+  | Default : string response
 
 class type xmlHttpRequest = object ('self)
   method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
@@ -110,6 +111,10 @@ val perform_raw :
   -> response_type:('a response)
   -> string
   -> 'a http_frame Lwt.t
+  (** [perform_raw] is the same as {!perform_raw_url} except that an additional
+      response_type argument can be given to set the XMLHttpRequest
+      responseType, and hence return different types of data for GET
+      requests. *)
 
 val perform_raw_url :
     ?headers:(string * string) list

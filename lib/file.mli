@@ -39,7 +39,9 @@ end
 type file_any
 
 module CoerceTo : sig
+  val document : file_any -> element document t Opt.t
   val blob : file_any -> #blob t Opt.t
+  val json : file_any -> 'a Opt.t
   val string : file_any -> js_string t Opt.t
   val arrayBuffer : file_any -> Typed_array.arrayBuffer t Opt.t
 end

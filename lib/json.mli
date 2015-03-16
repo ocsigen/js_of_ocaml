@@ -19,6 +19,17 @@
 
 (** Unsafe IO. (See {!Deriving_Json} for typesafe IO) *)
 
+open Js
+
+class type json = object
+  method parse : 'a. js_string t -> 'a meth
+  method parse_: 'a 'b 'c 'd. js_string t ->
+    ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
+  method stringify : 'a. 'a -> js_string t meth
+  method stringify_ : 'a 'b 'c 'd. 'a ->
+   (js_string t -> 'c -> 'd) -> js_string t meth
+end
+
 (** Marshal any OCaml value into this JSON representation. *)
 val output: 'a -> Js.js_string Js.t
 
