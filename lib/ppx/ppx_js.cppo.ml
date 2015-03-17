@@ -35,7 +35,7 @@ module Js = struct
     then Typ.constr ?loc (lid s) args
     else Typ.constr ?loc (lid @@ "Js."^s) args
 
-#if OCAML_MAJOR = 4 && OCAML_MINOR = 2
+#if OCAML_VERSION < (4,03,0)
   let nolabel = ""
 #else
   let nolabel = Nolabel
