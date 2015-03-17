@@ -90,6 +90,10 @@ minify.cmx : util.cmx pretty_print.cmx parse_js.cmx parse_info.cmx \
     commonArg.cmx code.cmx
 minifyArg.cmo : compiler_version.cmi commonArg.cmi minifyArg.cmi
 minifyArg.cmx : compiler_version.cmx commonArg.cmx minifyArg.cmi
+myfindlib.cppo.cmo :
+myfindlib.cppo.cmx :
+myfindlib.cmo :
+myfindlib.cmx :
 option.cmo : option.cmi
 option.cmx : option.cmi
 parse_bytecode.cmo : util.cmi primitive.cmi parse_info.cmi option.cmi \
@@ -128,8 +132,8 @@ subst.cmo : util.cmi code.cmi subst.cmi
 subst.cmx : util.cmx code.cmx subst.cmi
 tailcall.cmo : util.cmi subst.cmi option.cmi code.cmi tailcall.cmi
 tailcall.cmx : util.cmx subst.cmx option.cmx code.cmx tailcall.cmi
-util.cmo : util.cmi
-util.cmx : util.cmi
+util.cmo : myfindlib.cmo util.cmi
+util.cmx : myfindlib.cmx util.cmi
 varPrinter.cmo : util.cmi reserved.cmi varPrinter.cmi
 varPrinter.cmx : util.cmx reserved.cmx varPrinter.cmi
 vlq64.cmo : vlq64.cmi
@@ -138,7 +142,7 @@ annot_lexer.cmi : annot_parser.cmi
 annot_parser.cmi : primitive.cmi
 code.cmi : util.cmi
 commonArg.cmi :
-compileArg.cmi : source_map.cmi option.cmi driver.cmi commonArg.cmi
+compileArg.cmi : source_map.cmi driver.cmi commonArg.cmi
 compiler_version.cmi :
 control.cmi : code.cmi
 deadcode.cmi : code.cmi

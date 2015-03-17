@@ -43,7 +43,8 @@ all: $(LIBNAME).cma log/logger.cma \
 	${PA_DERIVING} 	${PA_DERIVING_NDL} \
 	${DERIVING_JSON} \
 	${GRAPHICS_CMA} \
-	${TYXML_CMA}
+	${TYXML_CMA} \
+	META
 
 $(LIBNAME).cma: $(OBJS)
 	ocamlmklib -o $(LIBNAME) $(OBJS)
@@ -120,9 +121,6 @@ toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo 
 toplevel/jsooTop.cmi: toplevel/jsooTop.mli
 	ocamlfind ocamlc $(SAFESTRING) -package lwt -I . -I log $< -o $@
 
-%.ml: %.cppo.ml
-	cppo $< -o $@ -V OCAML:`ocamlc -version` -D "JSOO_VERSION `cat ../VERSION`"
-
 %.cmo: %.ml syntax/pa_js.cmo
 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt -c -g $<
 
@@ -158,7 +156,7 @@ clean:
 	rm -f toplevel/*.cm[xioa] toplevel/*.[ao] toplevel/*.so toplevel/*.cmx[sa]
 	rm -f deriving_json/*.cm[xioa] deriving_json/*.[ao] deriving_json/*.so
 	rm -f deriving_json/deriving_Json_lexer.ml
-	rm -f stubs.c
+	rm -f stubs.c META
 	rm -f sys_js.ml
 
 depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml

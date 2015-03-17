@@ -1,7 +1,7 @@
 include ../Makefile.conf
 -include ../Makefile.local
 
-ifeq "${WITH_TOPLEVEL}" "YES"
+ifeq "${WITH_TOPLEVEL}${WITH_FINDLIB}" "YESYES"
 ALL= $(MKTOP) $(MKCMIS)
 endif
 
