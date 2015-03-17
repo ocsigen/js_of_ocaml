@@ -33,11 +33,7 @@ let opt_filter p x =
 
 (****)
 
-let findlib_init = lazy (Findlib.init ())
-
-let find_pkg_dir pkg =
-  let () = Lazy.force findlib_init in
-  try Findlib.package_directory pkg with _ -> raise Not_found
+let find_pkg_dir pkg = try Myfindlib.package_directory pkg with _ -> raise Not_found
 
 let path_require_findlib path =
   if path <> "" && path.[0] = '+'
@@ -52,7 +48,6 @@ let rec find_in_paths ?(pkg="stdlib") paths name =
       try
         let file = match path_require_findlib path with
           | Some path ->
-            let () = Lazy.force findlib_init in
             Filename.concat (Filename.concat (find_pkg_dir pkg) path) name
           | None -> Filename.concat path name in
 

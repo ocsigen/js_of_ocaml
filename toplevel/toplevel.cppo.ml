@@ -95,8 +95,7 @@ module H = struct
 
 end
 
-#let_default metaocaml = false
-#if metaocaml
+#ifdef metaocaml
 let compiler_name = "MetaOCaml"
 #else
 let compiler_name = "OCaml"
@@ -150,7 +149,7 @@ let initialize () =
   JsooTop.initialize ();
   Sys.interactive := false;
   (* MetaOcaml *)
-#if metaocaml
+#ifdef metaocaml
   Topdirs.dir_install_printer Format.std_formatter
     (Longident.(Ldot(Lident "Print_code", "print_code")));
   Topdirs.dir_install_printer Format.std_formatter
@@ -254,8 +253,7 @@ let examples =
     end
   with  _ -> []
 
-#let_default ocpindent = false
-#if ocpindent
+#ifdef ocpindent
 let _ = Approx_lexer.enable_extension "lwt"
 let indent_caml s in_lines =
   let output = {
@@ -339,8 +337,7 @@ let run _ =
   let textbox : 'a Js.t = by_id_coerce "userinput" Html.CoerceTo.textarea in
   let example_container = by_id "toplevel-examples" in
   let can = by_id_coerce "test-canvas" Html.CoerceTo.canvas in
-#let_default graphics = false
-#if graphics
+#ifdef graphics
   Graphics_js.open_canvas can;
 #endif
   let sharp_chan = open_out "/dev/null0" in
@@ -538,8 +535,7 @@ let run _ =
     let span = Tyxml_js.Html5.(span ~a:[a_class [cl]] [pcdata s]) in
     Dom.appendChild output (Tyxml_js.To_dom.of_element span) in
 
-#let_default higlo = false
-#if higlo
+#ifdef higlo
 let append_ocaml cl_base s =
   let tks = Higlo.parse ~lang:"ocaml" s in
   let span' cl s = Tyxml_js.Html5.(span ~a:[a_class [cl]] [pcdata s]) in

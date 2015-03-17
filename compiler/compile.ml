@@ -54,7 +54,9 @@ let f {
   List.iter (fun (s,v) -> Option.Param.set s v) params;
   let t = Util.Timer.make () in
   Linker.load_files runtime_files;
-  let paths = List.rev_append include_dir [Util.find_pkg_dir "stdlib"] in
+  let paths =
+    try List.append include_dir [Util.find_pkg_dir "stdlib"]
+    with Not_found -> include_dir in
   let t1 = Util.Timer.make () in
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug =

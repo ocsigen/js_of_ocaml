@@ -1,7 +1,6 @@
-(* Js_of_ocaml library
+(* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
+ * Copyright (C) 2015 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,26 +17,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-let sleep d =
-  let (t, w) = Lwt.task () in
-  let id = Dom_html.setTimeout (Lwt.wakeup w) (d *. 1000.) in
-  Lwt.on_cancel t (fun () -> Dom_html.clearTimeout id);
-  t
+(* make ifdef else endif work *)
+#ifdef FINDLIB
+let findlib_init = lazy (Findlib.init ())
+let package_directory pkg =
+  Lazy.force findlib_init;
+  Findlib.package_directory pkg;;
+#endif
 
-let yield () = sleep 0.
-
-let wakeup = function
-  | 1 -> ignore (Dom_html.window##setTimeout
-		  (Js.wrap_callback Lwt.wakeup_paused , 0.))
-  | _ -> ()
-
-let () = Lwt.register_pause_notifier wakeup
-
-
-let prerr_string s = Firebug.console##log(Js.string s)
-
-let _ =
-  Lwt.async_exception_hook := (fun exn ->
-    prerr_string "Exception during Lwt.async: ";
-    prerr_string (Printexc.to_string exn);
-    Printexc.print_backtrace stderr)
+#ifndef FINDLIB
+let package_directory _ = raise Not_found;;
+#endif

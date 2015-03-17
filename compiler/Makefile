@@ -1,13 +1,17 @@
 
 include ../Makefile.conf
 
+PACKAGES=cmdliner
+
+ifeq "${WITH_FINDLIB}" "YES"
+PACKAGES+=findlib
+endif
+
 all: $(COMPILER) $(MINIFIER) man
 
 lib: compiler.cma compiler.cmxa compiler.cmxs
 
-PACKAGES=findlib,cmdliner
-
-OBJS=compiler_version.cmx \
+OBJS=compiler_version.cmx myfindlib.cmx \
      util.cmx pretty_print.cmx option.cmx reserved.cmx varPrinter.cmx \
      dgraph.cmx code.cmx javascript.cmx vlq64.cmx source_map.cmx \
      js_output.cmx js_simpl.cmx parse_info.cmx js_token.cmx js_parser.cmx \
@@ -39,14 +43,14 @@ man/$(COMPILER).1: $(COMPILER)
 .INTERMEDIATE: compile.byte compile.opt minify.byte minify.opt
 
 compile.byte: $(COMPOBJS:cmx=cmo)
-	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -linkpkg -o $@ $^
+	ocamlfind ocamlc $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
 compile.opt: $(COMPOBJS)
-	ocamlfind ocamlopt $(SAFESTRING) -package $(PACKAGES) -linkpkg -g -o $@ $^
+	ocamlfind ocamlopt $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -g -o $@ $^
 
 minify.byte: $(OBJS:cmx=cmo) commonArg.cmo minifyArg.cmo minify.cmo
-	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -linkpkg -o $@ $^
+	ocamlfind ocamlc $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
 minify.opt: $(OBJS:cmx=cmx) commonArg.cmx minifyArg.cmx minify.cmx
-	ocamlfind ocamlopt $(SAFESTRING) -package $(PACKAGES) -linkpkg -g -o $@ $^
+	ocamlfind ocamlopt $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -g -o $@ $^
 
 
 compiler.cmo: $(OBJS:cmx=cmo)
@@ -75,13 +79,13 @@ compiler_version.ml.tmp:
 	echo "let git_version = \"${VERSION_GIT}\"" >> $@
 
 %.cmx: %.ml
-	ocamlfind ocamlopt $(SAFESTRING) -package $(PACKAGES) -for-pack Compiler -g -c $<
+	ocamlfind ocamlopt $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -for-pack Compiler -g -c $<
 
 %.cmo: %.ml
-	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -c $<
+	ocamlfind ocamlc $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 %.cmi: %.mli
-	ocamlfind ocamlc $(SAFESTRING) -package $(PACKAGES) -c $<
+	ocamlfind ocamlc $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 annot_parser.ml: annot_parser.mli
 annot_parser.mli: annot_parser.mly primitive.cmi
@@ -100,10 +104,11 @@ clean:
 	rm -f compiler_version.ml
 	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
+	rm -f myfindlib.ml
 	rm -Rf man
 
 .PHONY: depend
-depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml
+depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml myfindlib.ml
 	ocamldep *.ml *.mli > .depend
 
 include .depend
