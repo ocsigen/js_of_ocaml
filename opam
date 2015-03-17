@@ -16,6 +16,7 @@ depends: [
   "lwt" {>= "2.4"}
   "menhir"
   "camlp4"
+  "base64"
 ]
 depopts: ["deriving" "tyxml" "reactiveData" ]
 

@@ -21,7 +21,7 @@ type t = {
   common : CommonArg.t;
   (* compile option *)
   profile : Driver.profile option;
-  source_map : (string * Source_map.t) option;
+  source_map : (string option * Source_map.t) option;
   runtime_files : string list;
   output_file : string option;
   input_file : string option;

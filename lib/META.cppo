@@ -83,9 +83,9 @@ package "compiler" (
   archive(native) = "compiler.cmxa"
   archive(native, plugin) = "compiler.cmxs"
 #ifdef FINDLIB
-  requires = "findlib,bytes"
+  requires = "findlib,base64,bytes"
 #else
-  requires = "bytes"
+  requires = "base64,bytes"
 #endif
 )
 

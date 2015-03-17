@@ -1,7 +1,7 @@
 
 include ../Makefile.conf
 
-PACKAGES=cmdliner
+PACKAGES=cmdliner base64
 
 ifeq "${WITH_FINDLIB}" "YES"
 PACKAGES+=findlib

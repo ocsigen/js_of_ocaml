@@ -23,12 +23,12 @@ jsoo_common.cmo jsoo_common.cmx: ../compiler/compiler.cmi
 
 %.byte: ../compiler/compiler.cma jsoo_common.cmo %.cmo
 	ocamlfind ocamlc -linkpkg -g $(SAFESTRING) \
-	-package compiler-libs.common,findlib \
+	-package base64,compiler-libs.common,findlib \
 	$^ -o $*.byte
 
 %.opt: ../compiler/compiler.cmxa jsoo_common.cmx %.cmx
 	ocamlfind ocamlopt -linkpkg -g $(SAFESTRING) \
-	-package compiler-libs.common,findlib \
+	-package base64,compiler-libs.common,findlib \
 	$^ -o $*.opt
 
 %.cmo: %.ml

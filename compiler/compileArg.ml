@@ -23,7 +23,7 @@ type t = {
   common : CommonArg.t;
   (* compile option *)
   profile : Driver.profile option;
-  source_map : (string * Source_map.t) option;
+  source_map : (string option * Source_map.t) option;
   runtime_files : string list;
   output_file : string option;
   input_file : string option;
@@ -74,6 +74,10 @@ let options =
     let doc = "Generate source map." in
     Arg.(value & flag & info ["sourcemap";"source-map"] ~doc)
   in
+  let inlined_sourcemap =
+    let doc = "Generate inlined source map." in
+    Arg.(value & flag & info ["inlined-source-map"] ~doc)
+  in
   let set_param =
     let doc = "Set compiler options." in
     let all = List.map (fun (x,_) ->
@@ -121,6 +125,7 @@ let options =
       profile
       noruntime
       sourcemap
+      inlined_sourcemap
       output_file
       input_file
       js_files
@@ -143,12 +148,15 @@ let options =
         | Some _ -> output_file
         | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") input_file in
       let source_map =
-        if sourcemap
+        if sourcemap || inlined_sourcemap
         then
-          match output_file with
-          | Some file ->
-            Some (
-              chop_extension file ^ ".map",
+	  let file, output_file =
+	    match output_file with
+            | Some file when inlined_sourcemap -> file, None
+	    | Some file -> file, Some (chop_extension file ^ ".map")
+	    | None -> "STDIN", None in
+          Some (
+              output_file,
               {
                 Source_map.version = 3;
                 file;
@@ -157,9 +165,7 @@ let options =
                 sources_content = [];
                 names = [];
                 mappings = []
-              })
-          | None ->
-            raise (Error (false, "Don't know where to output the Source-map file."))
+            })
         else None in
       let params : (string * string) list = List.flatten set_param in
       `Ok {
@@ -201,6 +207,7 @@ let options =
 
           $ noruntime
           $ sourcemap
+          $ inlined_sourcemap
 
           $ output_file
 

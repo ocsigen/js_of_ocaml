@@ -1,11 +1,11 @@
 
 opam pin add --no-action js_of_ocaml .
-opam install deriving tyxml reactiveData cppo
+opam install deriving tyxml reactiveData cppo base64
 opam install --deps-only js_of_ocaml
 opam install --verbose js_of_ocaml
 
 do_build_doc () {
-  opam install ocp-indent higlo base64
+  opam install ocp-indent higlo
   make -C doc clean
   make -C doc doc
   make -C doc wikidoc

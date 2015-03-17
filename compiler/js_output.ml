@@ -1034,24 +1034,33 @@ let program f ?source_map p =
   (match source_map with
    | None -> ()
    | Some (out_file,sm) ->
-     let oc = open_out out_file in
-     let pp = Pretty_print.to_out_channel oc in
-     Pretty_print.set_compact pp false;
-
-     let sm =
+      let sm =
        { sm with
          Source_map.mappings = List.map (fun (pos,m) ->
            {m with
             Source_map.gen_line = pos.PP.p_line;
             Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings} in
 
-     let e = Source_map.expression sm in
-     O.expression 0 pp e;
-     close_out oc;
-
+      let urlData =
+	match out_file with
+	| None ->
+	   let buf = Buffer.create 1024 in
+	   let pp = Pretty_print.to_buffer buf in 
+	   let e = Source_map.expression sm in
+	   O.expression 0 pp e;
+	   let data = Buffer.contents buf in
+	   "data:application/json;base64,"^ (B64.encode data)
+	| Some out_file ->
+	   let oc = open_out out_file in
+	   let pp = Pretty_print.to_out_channel oc in
+	   Pretty_print.set_compact pp false;
+	   let e = Source_map.expression sm in
+	   O.expression 0 pp e;
+	   close_out oc;
+	   Filename.basename out_file
+      in
       PP.newline f;
-      PP.string f (Printf.sprintf "//# sourceMappingURL=%s"
-                     (Filename.basename out_file)));
+      PP.string f (Printf.sprintf "//# sourceMappingURL=%s" urlData));
   if stats ()
   then begin
     let size i =
