@@ -121,13 +121,10 @@ toplevel/jsooTop.cmi: toplevel/jsooTop.mli
 	ocamlfind ocamlc $(SAFESTRING) -package lwt -I . -I log $< -o $@
 
 %.ml: %.cppo.ml
-	cppo $< -o $@ -V OCAML:`ocamlc -version`
+	cppo $< -o $@ -V OCAML:`ocamlc -version` -D "JSOO_VERSION `cat ../VERSION`"
 
 %.cmo: %.ml syntax/pa_js.cmo
 	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt -c -g $<
-
-sys_js.ml: sys_js.mlp
-	sed -e "s|%%VERSION%%|`sed -e 1q ../VERSION`|" sys_js.mlp >sys_js.ml
 
 %.cmi: %.mli
 	ocamlfind ocamlc -package lwt -I deriving_json $(SAFESTRING) -c $<
