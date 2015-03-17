@@ -120,7 +120,7 @@ module Debug : sig
   (* | Event_other *)
 
   type data
-
+  val is_empty : data -> bool
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
   val find : data -> Code.addr -> (int * string) list
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
@@ -173,6 +173,8 @@ end = struct
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
   let no_data () = Hashtbl.create 17
+
+  let is_empty a = Hashtbl.length a = 0
 
   let read ic =
     let events_by_pc = Hashtbl.create 257 in

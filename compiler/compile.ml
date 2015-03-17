@@ -73,6 +73,13 @@ let f {
         close_in ch;
         p, cmis, d
   in
+  let () =
+    if source_map <> None &&  Parse_bytecode.Debug.is_empty d
+    then Format.eprintf
+	   "Warning: '--source-map' is enabled but the bytecode program \
+	    was compiled with no debugging information.\n\
+	    Warning: Consider passing '-g' option to ocamlc.\n%!"
+  in
   let cmis = if nocmis then Util.StringSet.empty else cmis in
   let p =
     if fs_external
