@@ -185,11 +185,9 @@ let format_meth self_id body =
     ] [@metaloc body.pexp_loc]
   | _ -> body
 
-let is_optional attrs =
-  List.exists (fun ({txt},_) -> txt = "optional") attrs
 
-let preprocess_literal_object ?(optional=false) self_id fields =
-  let is_opt e = is_optional e.pcf_attributes in
+
+let preprocess_literal_object self_id fields =
 
   let check_name id names =
     if S.mem id.txt names then
@@ -204,10 +202,10 @@ let preprocess_literal_object ?(optional=false) self_id fields =
   let f (names, fields) exp = match exp.pcf_desc with
     | Pcf_val (id, mut, Cfk_concrete (bang, body)) ->
       let names = check_name id names in
-      names, (`Val (id, mut, bang, body, optional || is_opt exp) :: fields)
+      names, (`Val (id, mut, bang, body) :: fields)
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
       let names = check_name id names in
-      names, (`Meth (id, priv, bang, format_meth self_id body, optional || is_opt exp) :: fields)
+      names, (`Meth (id, priv, bang, format_meth self_id body) :: fields)
     | _ ->
       Location.raise_errorf ~loc:exp.pcf_loc
         "This field is not valid inside a js literal object."
@@ -223,10 +221,10 @@ let literal_object ?loc fields =
 
   let fields =
     List.map (function
-      | `Val (n, mut, bang, body, is_opt) ->
+      | `Val (n, mut, bang, body) ->
         let ty = fresh_type n.loc in
-        `Val (n, mut, bang, body, ty, is_opt)
-      | `Meth (n, priv, bang, body, is_opt) ->
+        `Val (n, mut, bang, body, ty)
+      | `Meth (n, priv, bang, body) ->
         let rec create_meth_ty exp = match exp.pexp_desc with
           | Pexp_fun (label,_,_,body) ->
             (label, fresh_type exp.pexp_loc) :: create_meth_ty body
@@ -234,16 +232,16 @@ let literal_object ?loc fields =
         in
         let ret_ty = fresh_type body.pexp_loc in
         let fun_ty = create_meth_ty body in
-        `Meth (n, priv, bang, body, (fun_ty, ret_ty), is_opt)
+        `Meth (n, priv, bang, body, (fun_ty, ret_ty))
     )
       fields
   in
 
   let set_field = function
-    | `Val (id, _, _, body, ty, _) ->
+    | `Val (id, _, _, body, ty) ->
       Js.unsafe "set" [ evar obj_lid ; Js.string id.txt ; Exp.constraint_ body ty ]
         [@metaloc body.pexp_loc]
-    | `Meth (id, _, _, body, (fun_ty, ret_ty), _) ->
+    | `Meth (id, _, _, body, (fun_ty, ret_ty)) ->
       Js.unsafe "set" [
         evar obj_lid ;
         Js.string id.txt ;
@@ -263,31 +261,19 @@ let literal_object ?loc fields =
     List.fold_right
       (fun field e -> match field with
          | `Val _ -> e
-         | `Meth (n, _, _, body, ty, _) -> meth_def n body ty e)
+         | `Meth (n, _, _, body, ty) -> meth_def n body ty e)
       fields
       assignments in
 
   let obj_field_meth_type = function
-    | `Val  (id, _, _, _body, ty, _) ->
+    | `Val  (id, _, _, _body, ty) ->
       (id.txt, [], Js.type_ "prop" [ty])
-    | `Meth (id, _, _, _body, (fun_ty, ret_ty), _) ->
+    | `Meth (id, _, _, _body, (fun_ty, ret_ty)) ->
       (id.txt, [], arrows (List.tl fun_ty) (Js.type_ "meth" [ret_ty]))
   in
 
-  let ty_rows = List.map obj_field_meth_type fields in
-
-  let optional_part_ty = Typ.object_ ty_rows Open in
   let obj_ty =
-    (* We deliberately leave optional properties/methods out
-       so that we don't need to cast the object manually. *)
-    let l =
-      ("__optional__", [], optional_part_ty) ::
-      (List.map obj_field_meth_type
-        ( List.filter
-            (function `Val  (_, _, _, _, _, is_opt) |
-                      `Meth (_, _, _, _, _, is_opt) -> not is_opt)
-            fields )
-      )
+    let l = List.map obj_field_meth_type fields
     in Typ.object_ l Closed
   in
   [%expr
@@ -382,11 +368,10 @@ let js_mapper _args =
 
 
       (** object%js ... end *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct} as obj_exp ]]] ->
-        let optional = is_optional obj_exp.pexp_attributes in
+      | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct} ]]] ->
         let fields =
           preprocess_literal_object
-            ~optional class_struct.pcstr_self
+            class_struct.pcstr_self
             class_struct.pcstr_fields
         in
         let new_expr = match fields with
