@@ -18,9 +18,9 @@ let exp_to_string = function
 
 let rnd = Random.State.make [|0x313511d4|]
 let random_var () =
-  Format.sprintf "x%08Lx" (Random.State.int64 rnd 0x100000000L)
+  Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
 let random_tvar () =
-  Format.sprintf "A%08Lx" (Random.State.int64 rnd 0x100000000L)
+  Format.sprintf "Jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
 
 let inside_Js = lazy
   (try
@@ -173,8 +173,9 @@ let new_object constr args =
 
 module S = Map.Make(String)
 
-(** For each method 1) we remove Pexp_poly (should only be inside methods)
-    and we add the self argument.
+(** For each method:
+    - We remove Pexp_poly. (It should only be inside methods! It's always the first.)
+    - We add the self argument.
 *)
 let format_meth self_id body =
   match body.pexp_desc with
@@ -193,6 +194,7 @@ let preprocess_literal_object ?(optional=false) self_id fields =
   let check_name id names =
     if S.mem id.txt names then
       let id' = S.find id.txt names in
+      (* We point out both definitions in locations (more convenient for the user). *)
       let sub = [Location.errorf ~loc:id'.loc "Duplicated val or method %S." id'.txt] in
       Location.raise_errorf ~loc:id.loc ~sub "Duplicated val or method %S." id.txt
     else
