@@ -264,9 +264,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
          new_object _loc e []
      | "jsnew"; e = expr LEVEL "label"; "("; l = comma_expr; ")" ->
          new_object _loc e (parse_comma_list l)
-    | "{|"; "|}" ->
-    <:expr< Js.Unsafe.obj [| |] >>
-     | "{|"; l = field_expr_list; "|}" ->
+     | "{:"; ":}" -> <:expr< Js.Unsafe.obj [| |] >>
+     | "{:"; l = field_expr_list; ":}" ->
        let field_list = parse_field_list l in
        let fields = List.map parse_field field_list in
        let _ = List.fold_left (fun acc ((lab,loc),_,_) ->
