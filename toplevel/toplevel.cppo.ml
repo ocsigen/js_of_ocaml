@@ -321,15 +321,8 @@ let rec filter_map f = function
 (* we need to compute the hash form href to avoid different encoding behavior
      across browser. see Url.get_fragment *)
 let parse_hash () =
-  let hash_regexp = jsnew Js.regExp (Js.string "#(.*)") in
-  let frag = Dom_html.window##location##href##_match(hash_regexp) in
-  Js.Opt.case
-    frag
-    (fun () -> [])
-    (fun res ->
-       let res = Js.match_result res in
-       let frag = Js.to_string (Js.Unsafe.get res 1) in
-       Url.decode_arguments frag)
+  let frag = Url.Current.get_fragment () in
+  Url.decode_arguments frag
 
 let run _ =
   let container = by_id "toplevel-container" in
