@@ -788,7 +788,6 @@ function () {
           h = caml_hash_mix_string_arr(h, v.c);
         }
         num--;
-        break;
       } else if (v === (v|0)) {
         // Integer
         h = MIX(h, v+v+1);
@@ -797,7 +796,6 @@ function () {
         // Float
         h = caml_hash_mix_int64(h, caml_int64_bits_of_float (v));
         num--;
-        break;
       }
     }
     h = FINAL_MIX(h);
