@@ -47,6 +47,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   let js_t_id _loc s = if Lazy.force inside_Js then <:ctyp< $lid:s$ >> else <:ctyp< Js.$lid:s$ >>
   let js_u_id _loc s = if Lazy.force inside_Js then <:expr< Unsafe.$lid:s$ >> else <:expr< Js.Unsafe.$lid:s$ >>
+  let js_id _loc s = if Lazy.force inside_Js then <:expr< $lid:s$ >> else <:expr< Js.$lid:s$ >>
+
 
   let rec filter stream =
     match stream with parser
@@ -96,6 +98,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   let fresh_type _loc = <:ctyp< '$random_tvar ()$ >>
 
+  let arrows _loc args ret =
+    List.fold_right
+      (fun arg_typ rem_typ -> <:ctyp< $arg_typ$ -> $rem_typ$ >>)
+      args ret
+
+
   let constrain_types
           _loc e_loc (e:string) v_loc (v:string) v_typ m_loc m m_typ args =
     let cstr =
@@ -125,11 +133,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   let method_call _loc obj lab lab_loc args =
     let args = List.map (fun e -> (e, random_var (), fresh_type _loc)) args in
-    let ret_type = fresh_type _loc in
+    let ret_typ = fresh_type _loc in
     let method_type =
-      List.fold_right
-        (fun (_, _, arg_ty) rem_ty -> <:ctyp< $arg_ty$ -> $rem_ty$ >>)
-        args <:ctyp< $js_t_id _loc "meth"$ $ret_type$ >>
+      arrows _loc (List.map (fun (_,_,ty) -> ty) args)
+	     <:ctyp< $js_t_id _loc "meth"$ $ret_typ$ >>
     in
     let o = random_var () in
     let res = random_var () in
@@ -145,72 +152,15 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         let $lid:o$ = $obj$ in
         let $lid:res$ =
           $js_u_id _loc "meth_call"$ $lid:o$ $str:unescape lab$ $meth_args$ in
-        $constrain_types _loc o_loc o _loc res ret_type
+        $constrain_types _loc o_loc o _loc res ret_typ
            lab_loc lab method_type args$
       >>
       args
 
-  let rec parse_field_list l =
-    match l with
-      <:rec_binding< $f1$; $f2$ >> -> f1 :: parse_field_list f2
-    | _                            -> [l]
-
-  let parse_field f =
-    match f with
-      <:rec_binding< $lab$ = $e$ >> ->
-        let lab_loc,lab = match lab with
-          | Ast.IdLid(loc,lab) -> loc,lab
-          | _ -> assert false in
-        let e_loc = Ast.loc_of_expr e in
-        let t = fresh_type lab_loc in
-        ((lab, lab_loc), (e,e_loc), t)
-    | _ ->
-        assert false
-
-  let object_init _loc fields =
-    let obj_type = fresh_type _loc in
-    let constr_expr =
-      List.fold_right
-        (fun ((lab, lab_loc), _, t) accu ->
-           let meth_type =
-             <:ctyp< Js.gen_prop <set:$t$->unit; ..> >>
-           in
-           let constr =
-             let y = random_var () in
-             let body =
-               let o = <:expr< $lid:y$ >> in
-               let _loc = lab_loc in <:expr< ($o$#$lab$ : $meth_type$) >>
-             in
-             <:expr< fun ($lid:y$ : $obj_type$) -> $body$ >>
-           in
-           <:expr< let _ = $constr$ in $accu$ >>)
-        fields
-        <:expr< () >>
-    in
-    let args =
-      List.map
-        (fun ((lab,l), (e,_), t) ->
-           let _loc = l in
-           <:expr< ($str:unescape lab$,
-                    Js.Unsafe.inject $with_type e t$) >>)
-        fields
-    in
-    let args = make_array _loc args in
-    let x = random_var () in
-    <:expr<
-      let $lid:x$ : Js.t (< .. > as $obj_type$) = Js.Unsafe.obj $args$ in
-      let () = $constr_expr$ in
-      $lid:x$
-    >>
-
   let new_object _loc constructor args =
     let args = List.map (fun e -> (e, fresh_type _loc)) args in
     let obj_type = <:ctyp< $js_t_id _loc "t"$ $fresh_type _loc$ >> in
-    let constr_fun_type =
-      List.fold_right
-        (fun (_, arg_ty) rem_ty -> <:ctyp< $arg_ty$ -> $rem_ty$ >>)
-        args obj_type
-    in
+    let constr_fun_type = arrows _loc (List.map snd args) obj_type in
     let args =
       List.map
         (fun (e, t) -> <:expr< $js_u_id _loc "inject"$ $with_type e t$ >>) args
@@ -224,6 +174,135 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       <:expr< let $lid:x$ = $constr$ in
               $js_u_id _loc "new_obj"$ $lid:x$ $args$ >>
       <:ctyp< $obj_type$ >>
+
+
+  let rec parse_field_list l =
+    match l with
+      <:rec_binding< $f1$; $f2$ >> -> f1 :: parse_field_list f2
+    | _                            -> [l]
+
+  let rec parse_class_str_list l =
+    match l with
+    | <:class_str_item< $f1$; $f2$ >> -> f1 :: parse_class_str_list f2
+    | _                              -> [l]
+
+  type 'a loc = 'a * Loc.t
+
+  type val_ = {
+    label    : string loc ;
+    mutabl : bool ;
+    body     : Ast.expr loc ;
+    typ    : Ast.ctyp ;
+  }
+
+  type meth_ = {
+    label    : string loc ;
+    body     : Ast.expr loc ;
+    fun_typ  : Ast.ctyp list ;
+    ret_typ    : Ast.ctyp ;
+  }
+
+  type val_and_meth = [`Val of val_ | `Meth of meth_]
+
+  let parse_field f : val_and_meth =
+    match f with
+      <:rec_binding< $label$ = $e$ >> ->
+        let lab_loc,lab = match label with
+          | Ast.IdLid(loc,lab) -> loc,lab
+          | _ -> assert false in
+        let e_loc = Ast.loc_of_expr e in
+        let t = fresh_type lab_loc in
+        `Val { label    = lab, lab_loc;
+	       mutabl   = false;
+	       body     = e,e_loc;
+	       typ      = t }
+    | _ ->
+        assert false
+
+  let parse_class_item c : val_and_meth =
+    let _loc = Ast.loc_of_class_str_item c in
+    match c with
+    | <:class_str_item< value $lab$ = $e$ >> ->
+       let e_loc = Ast.loc_of_expr e in
+       let t = fresh_type _loc in
+        `Val { label    = lab, _loc ;
+	       mutabl   = false;
+	       body     = e,e_loc;
+	       typ      = t }
+    | <:class_str_item< value mutable $label$ = $e$ >> ->
+       let e_loc = Ast.loc_of_expr e in
+       let t = fresh_type _loc in
+        `Val { label    = label, _loc;
+	       mutabl   = true;
+	       body     = e,e_loc;
+	       typ      = t }
+    | <:class_str_item< method $label$ = $e$ >> ->
+       let e_loc = Ast.loc_of_expr e in
+
+       let rec get_arg x =
+	 match x with
+	 | <:expr< fun $x$ -> $e$ >> -> (fresh_type e_loc )::get_arg e
+	 | _ -> [] in
+       let _loc = e_loc in
+       let t = fresh_type _loc in
+        `Meth { label    = label, _loc;
+	       body      = e,e_loc;
+	       fun_typ   = get_arg e;
+	       ret_typ   = t }
+    | c ->
+      let loc = Ast.loc_of_class_str_item c in
+      Format.eprintf "This field is not valid inside a js literal object (%s)@."
+        (Loc.to_string loc);
+      failwith "Error while preprocessing with with Js_of_ocaml extention syntax"
+
+  let literal_object _loc ?self (fields : val_and_meth list) =
+     let self_patt = match self with
+      | Some x -> x
+      | None -> <:patt< _ >> in
+     let self_typ = fresh_type _loc in
+
+     let _ = List.fold_left (fun acc (`Val {label=lab,loc;typ=_}|`Meth{label=lab,loc;ret_typ=_}) ->
+           if StringMap.mem lab acc
+           then
+             let loc' = StringMap.find lab acc in
+             Format.eprintf "Duplicated label %S at %s@.%S previously seen at %s@."
+               lab (Loc.to_string loc) lab (Loc.to_string loc');
+             failwith "Error while preprocessing with with Js_of_ocaml extention syntax"
+           else StringMap.add lab loc acc) StringMap.empty fields in
+
+    let create_method_type = function
+      | `Val {label=(label,_loc); mutabl=true; typ} ->
+	 <:ctyp< $lid:label$ : ( $js_t_id _loc "prop"$ $typ$) >>
+      | `Val {label=(label,_loc); mutabl=false; typ} ->
+	 <:ctyp< $lid:label$ : ($js_t_id _loc "readonly_prop"$ $typ$) >>
+      | `Meth {label=(label,_loc); fun_typ; ret_typ} ->
+	 let all = arrows _loc fun_typ <:ctyp< $js_t_id _loc "meth"$ $ret_typ$ >> in
+	 <:ctyp< $lid:label$ : $all$ >>
+    in
+
+    let obj_type = <:ctyp< < $list:List.map create_method_type fields$  > >> in
+
+    let create_value = function
+      | `Val {label=(lab,_loc); body=(e,_);typ} ->
+	 <:expr< ($str:lab$,
+          $js_u_id _loc "inject"$ $with_type e typ$) >>
+      | `Meth {label=(lab,_loc); body=(e,_);fun_typ; ret_typ} ->
+	 let all = arrows _loc fun_typ ret_typ in
+	 let typ = <:ctyp< $js_t_id _loc "meth_callback"$ $self_typ$ $all$ >> in
+         let e_with_self = <:expr<fun ($self_patt$ : $self_typ$) -> $e$  >> in
+	 <:expr< ($str:lab$,
+	  $js_u_id _loc "inject"$
+	  $with_type
+	  (<:expr< $js_id _loc "wrap_meth_callback"$ $e_with_self$>>) typ$) >>
+    in
+    let args = List.map create_value fields in
+    let args = make_array _loc args in
+    let x = random_var () in
+    <:expr<
+      let $lid:x$ : (Js.t $obj_type$ as $self_typ$) = Js.Unsafe.obj $args$ in
+      $lid:x$
+    >>
+
 
   let jsmeth = Gram.Entry.mk "jsmeth"
 
@@ -264,19 +343,20 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
          new_object _loc e []
      | "jsnew"; e = expr LEVEL "label"; "("; l = comma_expr; ")" ->
          new_object _loc e (parse_comma_list l)
-     | "{:"; ":}" -> <:expr< Js.Unsafe.obj [| |] >>
+     | "jsobject"; "end" -> <:expr< ($js_u_id _loc "obj"$ [| |] : Js.t < > ) >>
+     | "jsobject"; self = opt_class_self_patt; l = class_structure ; "end" ->
+       let field_list = parse_class_str_list l in
+       let fields = List.map parse_class_item field_list in
+       literal_object _loc ~self fields
+     | "jsobject"; l = class_structure ; "end" ->
+       let field_list = parse_class_str_list l in
+       let fields = List.map (parse_class_item) field_list in
+       literal_object _loc fields
+     | "{:"; ":}" -> <:expr< ($js_u_id _loc "obj"$ [| |] : Js.t < > ) >>
      | "{:"; l = field_expr_list; ":}" ->
        let field_list = parse_field_list l in
        let fields = List.map parse_field field_list in
-       let _ = List.fold_left (fun acc ((lab,loc),_,_) ->
-           if StringMap.mem lab acc
-           then
-             let loc' = StringMap.find lab acc in
-             Format.eprintf "Duplicated label %S at %s@.%S previously seen at %s@."
-               lab (Loc.to_string loc) lab (Loc.to_string loc');
-             failwith "Error while preprocessing with with Js_of_ocaml extention syntax"
-           else StringMap.add lab loc acc) StringMap.empty fields in
-       object_init _loc fields ]];
+       literal_object _loc fields ]];
     END
 
 (*XXX n-ary methods
