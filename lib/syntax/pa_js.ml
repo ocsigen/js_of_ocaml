@@ -256,9 +256,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       failwith "Error while preprocessing with with Js_of_ocaml extention syntax"
 
   let literal_object _loc ?self (fields : val_and_meth list) =
-     let self_patt = match self with
-      | Some x -> x
-      | None -> <:patt< _ >> in
+
      let self_typ = fresh_type _loc in
 
      let _ = List.fold_left (fun acc (`Val {label=lab,loc;typ=_}|`Meth{label=lab,loc;ret_typ=_}) ->
@@ -289,11 +287,15 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | `Meth {label=(lab,_loc); body=(e,_);fun_typ; ret_typ} ->
 	 let all = arrows _loc fun_typ ret_typ in
 	 let typ = <:ctyp< $js_t_id _loc "meth_callback"$ $self_typ$ $all$ >> in
-         let e_with_self = <:expr<fun ($self_patt$ : $self_typ$) -> $e$  >> in
+         let e,wrapper = match self with
+           | None -> e,"wrap_callback"
+           | Some self_patt ->
+             <:expr<fun ($self_patt$ : $self_typ$) -> $e$  >>,
+             "wrap_meth_callback" in
 	 <:expr< ($str:lab$,
 	  $js_u_id _loc "inject"$
 	  $with_type
-	  (<:expr< $js_id _loc "wrap_meth_callback"$ $e_with_self$>>) typ$) >>
+	  (<:expr< $js_id _loc wrapper$ $e$>>) typ$) >>
     in
     let args = List.map create_value fields in
     let args = make_array _loc args in
