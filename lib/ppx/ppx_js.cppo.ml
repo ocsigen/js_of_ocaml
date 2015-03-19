@@ -20,7 +20,7 @@ let rnd = Random.State.make [|0x313511d4|]
 let random_var () =
   Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
 let random_tvar () =
-  Format.sprintf "Jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
+  Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
 
 let inside_Js = lazy
   (try
@@ -173,21 +173,18 @@ let new_object constr args =
 
 module S = Map.Make(String)
 
-(** For each method:
-    - We remove Pexp_poly. (It should only be inside methods! It's always the first.)
-    - We add the self argument.
+(** We remove Pexp_poly as it should never be in the parsetree except after a method call.
 *)
-let format_meth self_id body =
+let format_meth body =
   match body.pexp_desc with
-  | Pexp_poly (e, _) ->
-    [%expr
-      fun [%p self_id] -> [%e e ]
-    ] [@metaloc body.pexp_loc]
+  | Pexp_poly (e, _) -> e
   | _ -> body
 
-
-
-let preprocess_literal_object self_id fields =
+(** Ensure basic sanity rules about fields of a literal object:
+    - No duplicated declaration
+    - Only relevant declarations (val and method, for now).
+*)
+let preprocess_literal_object fields =
 
   let check_name id names =
     if S.mem id.txt names then
@@ -205,7 +202,7 @@ let preprocess_literal_object self_id fields =
       names, (`Val (id, mut, bang, body) :: fields)
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
       let names = check_name id names in
-      names, (`Meth (id, priv, bang, format_meth self_id body) :: fields)
+      names, (`Meth (id, priv, bang, format_meth body) :: fields)
     | _ ->
       Location.raise_errorf ~loc:exp.pcf_loc
         "This field is not valid inside a js literal object."
@@ -213,11 +210,32 @@ let preprocess_literal_object self_id fields =
   try `Fields (snd @@ List.fold_left f (S.empty, []) fields)
   with Location.Error error -> `Error (extension_of_error error)
 
+(** Desugar something like this:
 
-let literal_object ?loc fields =
-  let obj_lid = random_var () in
-  let constr_lid = random_var () in
-  let self_ty = random_tvar () in
+  object%js (self)
+    val mutable foo = 3
+    method bar x = 3 + x
+  end
+
+to:
+
+  let bar
+    : ('self,'jsoo_173316d7 -> 'jsoo_32b5ee21) Js.meth_callback
+    = Js.wrap_meth_callback (fun self -> fun x -> 3 + x)
+  and foo
+    : 'jsoo_29529091 = 3
+  in
+  ( Js.Unsafe.obj
+      [| ("bar", (Js.Unsafe.inject bar)) ;
+         ("foo", (Js.Unsafe.inject foo)) |]
+   : < bar :'jsoo_173316d7 -> 'jsoo_32b5ee21 Js.meth ;
+       foo :'jsoo_29529091 Js.prop >
+     Js.t as 'self)
+
+ *)
+
+let literal_object ?loc self_id fields =
+  let self_type = random_tvar () in
 
   let fields =
     List.map (function
@@ -232,59 +250,70 @@ let literal_object ?loc fields =
         in
         let ret_ty = fresh_type body.pexp_loc in
         let fun_ty = create_meth_ty body in
-        `Meth (n, priv, bang, body, (fun_ty, ret_ty))
+        let self_and_body = [%expr fun [%p self_id] -> [%e body]] in
+        `Meth (n, priv, bang, self_and_body, (fun_ty, ret_ty))
     )
       fields
   in
 
-  let set_field = function
-    | `Val (id, _, _, body, ty) ->
-      Js.unsafe "set" [ evar obj_lid ; Js.string id.txt ; Exp.constraint_ body ty ]
-        [@metaloc body.pexp_loc]
-    | `Meth (id, _, _, body, (fun_ty, ret_ty)) ->
-      Js.unsafe "set" [
-        evar obj_lid ;
-        Js.string id.txt ;
-        Exp.constraint_
-          (Js.fun_ "wrap_meth_callback" [ (evar id.txt)[@metaloc id.loc] ])
-          (Js.type_ "meth_callback" [
-             Typ.var self_ty ;
-             arrows (List.tl fun_ty) ret_ty
-           ])
-      ]
-  in
-
-  let assignments = sequence (List.map set_field fields) (unit ()) in
-  let meth_def n body (fun_ty,ret_ty) e =
-    [%expr let [%p Pat.var n] = ([%e body] : [%t arrows fun_ty ret_ty]) in [%e e] ] in
-  let meth_defs_and_field_assignments =
-    List.fold_right
-      (fun field e -> match field with
-         | `Val _ -> e
-         | `Meth (n, _, _, body, ty) -> meth_def n body ty e)
-      fields
-      assignments in
-
-  let obj_field_meth_type = function
-    | `Val  (id, _, _, _body, ty) ->
+  let create_method_type = function
+    | `Val  (id, Mutable, _, _body, ty) ->
       (id.txt, [], Js.type_ "prop" [ty])
+
+    | `Val  (id, Immutable, _, _body, ty) ->
+      (id.txt, [], Js.type_ "readonly_prop" [ty])
+
     | `Meth (id, _, _, _body, (fun_ty, ret_ty)) ->
-      (id.txt, [], arrows (List.tl fun_ty) (Js.type_ "meth" [ret_ty]))
+      (id.txt, [], arrows fun_ty (Js.type_ "meth" [ret_ty]))
   in
 
-  let obj_ty =
-    let l = List.map obj_field_meth_type fields
+  let obj_type =
+    let l = List.map create_method_type fields
     in Typ.object_ l Closed
   in
-  [%expr
-    let ([%p pvar obj_lid] : [%t Typ.alias (Js.type_ "t" [obj_ty]) self_ty]) =
-      let [%p pvar constr_lid] : [%t Js.type_ "constr" [Typ.var self_ty]] =
-        [%e Js.unsafe "variable" [str "Object"]] in
-      let [%p pvar obj_lid] = [%e Js.unsafe "new_obj" [ evar constr_lid ; Exp.array []]] in
-      [%e meth_defs_and_field_assignments] ;
-      [%e evar obj_lid]
-    in [%e evar obj_lid]
-  ]
+
+
+  let create_value = function
+    | `Val (id, _, _, body, ty) ->
+      (id.txt, Exp.constraint_ body ty)
+      [@metaloc body.pexp_loc]
+
+    | `Meth (id, _, _, body, (fun_ty, ret_ty)) ->
+      (id.txt,
+       Exp.constraint_
+         (Js.fun_ "wrap_meth_callback" [ body ])
+         (Js.type_ "meth_callback" [
+           Typ.var self_type ;
+           arrows fun_ty ret_ty
+         ]))
+
+  in
+
+  let values = List.map create_value fields in
+
+  let object_creation =
+    Js.unsafe
+      "obj"
+      [Exp.array (
+        List.map
+          (fun (name, _exp) ->
+           tuple [str name ; Js.unsafe "inject" [evar name] ]
+          )
+          values
+       )]
+  in
+
+  let value_declaration =
+    Exp.let_
+      Nonrecursive
+      (List.map (fun (name, exp) -> Vb.mk (pvar name) exp) values)
+      (Exp.constraint_
+         object_creation
+         (Typ.alias (Js.type_ "t" [obj_type]) self_type)
+      )
+  in
+
+  value_declaration
 
 let js_mapper _args =
   { default_mapper with
@@ -369,13 +398,10 @@ let js_mapper _args =
 
       (** object%js ... end *)
       | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct} ]]] ->
-        let fields =
-          preprocess_literal_object
-            class_struct.pcstr_self
-            class_struct.pcstr_fields
-        in
+        let fields = preprocess_literal_object class_struct.pcstr_fields in
         let new_expr = match fields with
-          | `Fields fields -> literal_object fields
+          | `Fields fields ->
+             literal_object class_struct.pcstr_self fields
           | `Error e -> Exp.extension e
         in mapper.expr mapper { new_expr with pexp_attributes }
 
