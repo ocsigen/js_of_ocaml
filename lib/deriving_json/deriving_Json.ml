@@ -231,7 +231,7 @@ module Json_list(A : Json) = Defaults(struct
 	  match l with
 	    | [] ->
 		Buffer.add_char buffer '0';
-		for _ = c downto 1 do
+		for _i = c downto 1 do
 		  Buffer.add_char buffer ']'
 		done
 	    | x::xs ->
@@ -243,7 +243,7 @@ module Json_list(A : Json) = Defaults(struct
  	let rec aux l c =
 	  match Deriving_Json_lexer.read_case buf with
 	    | `Cst 0 ->
-		for _ = c downto 1 do
+		for _i = c downto 1 do
 		  Deriving_Json_lexer.read_rbracket buf
 		done;
 		List.rev l

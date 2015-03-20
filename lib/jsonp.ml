@@ -19,7 +19,7 @@
 
 let rec random_identifier size =
   let b = Buffer.create size in
-  for _ = 0 to (size - 1) do
+  for _i = 0 to (size - 1) do
     Buffer.add_char b (Char.chr (97 + Random.int 26))
   done;
   let s = Buffer.contents b in

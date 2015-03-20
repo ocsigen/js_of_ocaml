@@ -183,7 +183,7 @@ end = struct
       | `V3 -> (fun () -> [])
       | `V4_02 -> (fun () -> (input_value ic : string list)) in
     let len = input_binary_int ic in
-    for _ = 0 to len - 1 do
+    for _i = 0 to len - 1 do
       let orig = input_binary_int ic in
       let evl : debug_event list = input_value ic in
 
@@ -1803,7 +1803,7 @@ let read_toc ic =
   Util.MagicNumber.assert_current header;
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
-  for _ = 1 to num_sections do
+  for _i = 1 to num_sections do
     let name = really_input_string ic 4 in
     let len = input_binary_int ic in
     section_table := (name, len) :: !section_table
