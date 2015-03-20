@@ -38,7 +38,7 @@ let expand_path exts real virt =
         then (virtfile, realfile) :: acc
         else acc
       with exc ->
-        Format.eprintf "ignoring %s: %s@." realfile (Printexc.to_string exc);
+	Util.warn "ignoring %s: %s@." realfile (Printexc.to_string exc);
         acc
   in loop real virt []
 

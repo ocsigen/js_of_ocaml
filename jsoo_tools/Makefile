@@ -1,7 +1,7 @@
 include ../Makefile.conf
 -include ../Makefile.local
 
-ifeq "${WITH_TOPLEVEL}" "YES"
+ifeq "${WITH_TOPLEVEL}${WITH_FINDLIB}" "YESYES"
 ALL= $(MKTOP) $(MKCMIS)
 endif
 
@@ -19,27 +19,30 @@ opt: jsoo_mkcmis.opt jsoo_mktop.opt
 %.cmx: %.ml
 jsoo_mktop.cmo jsoo_mkcmis.cmo: jsoo_common.cmo
 jsoo_mktop.cmx jsoo_mkcmis.cmx: jsoo_common.cmx
-jsoo_common.cmo jsoo_common.cmx: ../compiler/compiler.cmi
+jsoo_common.cmo jsoo_common.cmx: ../compiler/lib/compiler.cmi
 
-%.byte: ../compiler/compiler.cma jsoo_common.cmo %.cmo
-	ocamlfind ocamlc -linkpkg -g $(SAFESTRING) \
-	-package compiler-libs.common,findlib \
+OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45
+OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
+
+%.byte: ../compiler/lib/compiler.cma jsoo_common.cmo %.cmo
+	$(OCAMLC) -linkpkg -g $(SAFESTRING) \
+	-package base64,compiler-libs.common,findlib \
 	$^ -o $*.byte
 
-%.opt: ../compiler/compiler.cmxa jsoo_common.cmx %.cmx
-	ocamlfind ocamlopt -linkpkg -g $(SAFESTRING) \
-	-package compiler-libs.common,findlib \
+%.opt: ../compiler/lib/compiler.cmxa jsoo_common.cmx %.cmx
+	$(OCAMLOPT) -linkpkg -g $(SAFESTRING) \
+	-package base64,compiler-libs.common,findlib \
 	$^ -o $*.opt
 
 %.cmo: %.ml
-	ocamlfind ocamlc -c -g $(SAFESTRING) \
+	$(OCAMLC) -c -g $(SAFESTRING) \
 	-package compiler-libs.common,findlib \
-	-I ../compiler/ $<
+	-I ../compiler/lib/ $<
 
 %.cmx: %.ml
-	ocamlfind ocamlopt -c -g $(SAFESTRING) \
+	$(OCAMLOPT) -c -g $(SAFESTRING) \
 	-package compiler-libs.common,findlib \
-	-I ../compiler/ $<
+	-I ../compiler/lib/ $<
 
 clean:
 	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa] *.byte *.opt $(MKTOP) $(MKCMIS)

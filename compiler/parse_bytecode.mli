@@ -22,6 +22,7 @@ module Debug : sig
   type data
   val no_data : unit -> data
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
+  val is_empty : data -> bool
 end
 
 val from_channel :

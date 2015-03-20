@@ -82,7 +82,11 @@ package "compiler" (
   archive(byte, plugin) = "compiler.cma"
   archive(native) = "compiler.cmxa"
   archive(native, plugin) = "compiler.cmxs"
-  requires = "findlib,bytes"
+#ifdef FINDLIB
+  requires = "findlib,base64,bytes"
+#else
+  requires = "base64,bytes"
+#endif
 )
 
 package "toplevel" (

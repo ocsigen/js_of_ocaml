@@ -79,8 +79,6 @@ let phi p =
 let print p =
   if debug () then Code.print_program (fun _ _ -> "") p; p
 
-let (>>>) x f = f x
-
 let (>>) f g = fun x -> g (f x)
 
 let rec loop max name round i (p : 'a) : 'a =
@@ -194,14 +192,14 @@ let report_missing_primitives missing =
       let d = StringSet.inter missing pro in
       if not (StringSet.is_empty d)
       then begin
-        Format.eprintf "Missing primitives provided by %s:@." file;
-        StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) d;
+        Util.warn "Missing primitives provided by %s:@." file;
+        StringSet.iter (fun nm -> Util.warn "  %s@." nm) d;
         StringSet.diff missing pro
       end
       else missing
     ) missing (Lazy.force extra_js_files) in
-  Format.eprintf "Missing primitives:@.";
-  StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) missing
+  Util.warn "Missing primitives:@.";
+  StringSet.iter (fun nm -> Util.warn "  %s@." nm) missing
 
 let gen_missing js missing =
     let open Javascript in
@@ -226,17 +224,17 @@ let gen_missing js missing =
       ) missing [] in
     if not (StringSet.is_empty missing)
     then begin
-      Format.eprintf "There are some missing primitives@.";
-      Format.eprintf "Dummy implementations (raising 'Failure' exception) ";
-      Format.eprintf "will be used if they are not available at runtime.@.";
-      Format.eprintf "You can prevent the generation of dummy implementations with ";
-      Format.eprintf "the commandline option '-disable genprim'@.";
+      Util.warn "There are some missing primitives@.";
+      Util.warn "Dummy implementations (raising 'Failure' exception) ";
+      Util.warn "will be used if they are not available at runtime.@.";
+      Util.warn "You can prevent the generation of dummy implementations with ";
+      Util.warn "the commandline option '-disable genprim'@.";
       report_missing_primitives missing;
     end;
     (Statement (Variable_statement miss), N) :: js
 
 
-let link formatter ~standalone ?linkall js =
+let link ~standalone ?linkall js =
   if standalone
   then
     begin
@@ -308,15 +306,15 @@ let check_js ~standalone js =
       if not (StringSet.is_empty other) && debug_linker ()
       then
         begin
-          Format.eprintf "Missing variables:@.";
-          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) other
+          Util.warn "Missing variables:@.";
+          StringSet.iter (fun nm -> Util.warn "  %s@." nm) other
         end;
 
       if not (StringSet.is_empty probably_prov) && debug_linker ()
       then
         begin
-          Format.eprintf "Variables provided by the browser:@.";
-          StringSet.iter (fun nm -> Format.eprintf "  %s@." nm) probably_prov
+          Util.warn "Variables provided by the browser:@.";
+          StringSet.iter (fun nm -> Util.warn "  %s@." nm) probably_prov
         end;
       if times () then Format.eprintf "  checks: %a@." Util.Timer.print t;
       js
@@ -342,7 +340,7 @@ let output formatter ?source_map js =
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Util.Timer.print t
 
-let pack ~standalone ?(toplevel=false)?(linkall=false) js =
+let pack ~standalone ?(toplevel=false) js =
   let module J = Javascript in
   let t = Util.Timer.make () in
   if times ()
@@ -431,9 +429,9 @@ let f ?(standalone=true) ?(profile=o1) ?toplevel ?linkall ?source_map formatter 
   deadcode' >>
   generate d ?toplevel >>
 
-  link formatter ~standalone ?linkall >>
+  link ~standalone ?linkall >>
 
-  pack ~standalone ?linkall ?toplevel >>
+  pack ~standalone ?toplevel >>
 
   coloring >>
 

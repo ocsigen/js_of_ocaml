@@ -234,7 +234,7 @@ let unsigned x = J.EBin (J.Lsr,x,int 0)
 let one = int 1
 let zero = int 0
 let bool e = J.ECond (e, one, zero)
-let boolnot e = J.ECond (e, zero, one)
+(*let boolnot e = J.ECond (e, zero, one)*)
 let val_float f = f (*J.EArr [Some (J.ENum 253.); Some f]*)
 let float_val e = e (*J.EAccess (e, one)*)
 
@@ -272,7 +272,7 @@ let mutator_p = 2
 let flush_p = 3
 let or_p p q = max p q
 let is_mutable p = p >= mutable_p
-let is_mutator p = p >= mutator_p
+(*let is_mutator p = p >= mutator_p*)
 let kind k =
   match k with
     `Pure -> const_p | `Mutable -> mutable_p | `Mutator -> mutator_p
@@ -380,7 +380,7 @@ let should_flush cond prop = cond <> const_p && cond + prop >= flush_p
 let flush_queue expr_queue prop (l:J.statement_list) =
   let (instrs, expr_queue) =
     if prop >= flush_p then (expr_queue, []) else
-      List.partition (fun (y, elt) -> should_flush prop elt.prop) expr_queue
+      List.partition (fun (_, elt) -> should_flush prop elt.prop) expr_queue
   in
   let instrs =
     List.map (fun (x, elt) ->
@@ -435,7 +435,7 @@ let (>>) x f = f x
 (* This as to be kept in sync with the way we build conditionals
    and switches! *)
 
-module DTree = struct;;
+module DTree = struct
 
   type 'a t =
     | If of Code.cond * 'a t * 'a t
@@ -467,9 +467,9 @@ module DTree = struct;;
         try
           (* try to optimize when there are only 2 branch *)
           match array_norm with
-          | [| b1,[i1]; b2,l2 |] ->
+          | [| b1,[i1]; b2,_l2 |] ->
             If (CEq (Int32.of_int i1), Branch b1,Branch b2)
-          | [| b1,l1; b2,[i2] |] ->
+          | [| b1,_l1; b2,[i2] |] ->
             If (CEq (Int32.of_int i2), Branch b2,Branch b1)
           | [|b1,l1;b2,l2|] ->
             let bound l1 = match l1,List.rev l1 with
@@ -504,7 +504,7 @@ module DTree = struct;;
     if len = 0 then Empty else loop 0 (len - 1);;
 
   let rec fold_cont f b acc = match b with
-    | If (i,b1,b2) -> acc >> fold_cont f b1 >> fold_cont f b2
+    | If (_,b1,b2) -> acc >> fold_cont f b1 >> fold_cont f b2
     | Switch a -> Array.fold_left (fun acc (_,b) -> fold_cont f b acc) acc a
     | Branch (pc,_) -> f pc acc
     | Empty -> acc
@@ -856,10 +856,10 @@ let _ =
   register_tern_prim "caml_array_unsafe_set"
     (fun cx cy cz _ ->
        J.EBin (J.Eq, J.EAccess (cx, J.EBin (J.Plus, cy, one)), cz));
-  register_un_prim "caml_alloc_dummy" `Pure (fun cx _ -> J.EArr []);
+  register_un_prim "caml_alloc_dummy" `Pure (fun _ _ -> J.EArr []);
   register_un_prim "caml_obj_dup" `Mutable
     (fun cx loc -> J.ECall (J.EDot (cx, "slice"), [], loc));
-  register_un_prim "caml_int_of_float" `Pure (fun cx loc -> to_int cx);
+  register_un_prim "caml_int_of_float" `Pure (fun cx _loc -> to_int cx);
   register_un_math_prim "caml_abs_float" "abs";
   register_un_math_prim "caml_acos_float" "acos";
   register_un_math_prim "caml_asin_float" "asin";
@@ -919,19 +919,19 @@ let ident_from_string s =
     | [] -> assert false
     | [x] ->
       if not (is_ident x)
-      then Format.eprintf "Warning: %S is not a valid identifier; the generated code might be incorrect.@." x;
+      then Util.warn "Warning: %S is not a valid identifier; the generated code might be incorrect.@." x;
       s_var x
     | (x::xs) as l ->
-      Format.eprintf "Warning: %S should be written (Js.Unsafe.variable %S)##%s@." s x (String.concat "##" xs);
+      warn "Warning: %S should be written (Js.Unsafe.variable %S)##%s@." s x (String.concat "##" xs);
       if not (List.for_all is_ident l)
-      then Format.eprintf "Warning: %S is not a valid identifier; the generated code might be incorrect.@." s;
+      then Util.warn "Warning: %S is not a valid identifier; the generated code might be incorrect.@." s;
       List.fold_left (fun e i -> J.EDot(e,i)) (s_var x) xs
 
 let rec group_closures_rec closures req =
   match closures with
     [] ->
       ([], VarSet.empty)
-  | ((var, vars, req_tc, clo) as elt) :: rem ->
+  | ((var, vars, req_tc, _clo) as elt) :: rem ->
     let req = VarSet.union vars req in
     let req = VarSet.union req req_tc in
       let (closures', prov) = group_closures_rec rem req in
@@ -970,7 +970,7 @@ let rec collect_closures ctx l =
 
 (****)
 
-and translate_expr ctx queue loc x e level : _ * J.statement_list =
+and translate_expr ctx queue loc _x e level : _ * J.statement_list =
   match e with
     Const i ->
       (int32 i, const_p, queue),[]
@@ -1108,7 +1108,7 @@ and translate_expr ctx queue loc x e level : _ * J.statement_list =
               (const_p, [], queue)
             | Pc (String nm) :: x :: r ->
               let ((prop, cx), queue) = access_queue' ~ctx queue x in
-              let (prop', r', queue') = build_fields queue r in
+              let (prop', r', queue) = build_fields queue r in
               (or_p prop prop', (J.PNS nm, cx) :: r', queue)
             | _ ->
               assert false
@@ -1310,28 +1310,28 @@ and translate_instr ctx expr_queue loc instr =
                       [J.Variable_statement [J.V x, Some (ce, loc)], loc])
             end
         | Set_field (x, n, y) ->
-            let ((px, cx), expr_queue) = access_queue expr_queue x in
-            let ((py, cy), expr_queue) = access_queue expr_queue y in
+            let ((_px, cx), expr_queue) = access_queue expr_queue x in
+            let ((_py, cy), expr_queue) = access_queue expr_queue y in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy))), loc]
         | Offset_ref (x, 1) ->
           (* FIX: may overflow.. *)
-            let ((px, cx), expr_queue) = access_queue expr_queue x in
+            let ((_px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EUn (J.IncrA, (J.EAccess (cx, J.ENum 1.))))), loc]
         | Offset_ref (x, n) ->
           (* FIX: may overflow.. *)
-            let ((px, cx), expr_queue) = access_queue expr_queue x in
+            let ((_px, cx), expr_queue) = access_queue expr_queue x in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EBin (J.PlusEq, (J.EAccess (cx, J.ENum 1.)), int n))),
                loc]
         | Array_set (x, y, z) ->
-            let ((px, cx), expr_queue) = access_queue expr_queue x in
-            let ((py, cy), expr_queue) = access_queue expr_queue y in
-            let ((pz, cz), expr_queue) = access_queue expr_queue z in
+            let ((_px, cx), expr_queue) = access_queue expr_queue x in
+            let ((_py, cy), expr_queue) = access_queue expr_queue y in
+            let ((_pz, cz), expr_queue) = access_queue expr_queue z in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
                   ((J.EBin (J.Eq, J.EAccess (cx, J.EBin(J.Plus, cy, one)),
@@ -1535,7 +1535,7 @@ else begin
     body
 end
 
-and compile_decision_tree st queue handler backs frontier interm succs loc cx dtree =
+and compile_decision_tree st _queue handler backs frontier interm succs loc cx dtree =
   (* Some changes here may require corresponding changes
      in function [DTree.fold_cont] above. *)
   let rec loop cx = function
@@ -1611,10 +1611,10 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
   let res =
   match last with
     Return x ->
-      let ((px, cx), queue) = access_queue queue x in
+      let ((_px, cx), queue) = access_queue queue x in
       flush_all queue [J.Return_statement (Some cx), loc]
   | Raise x ->
-      let ((px, cx), queue) = access_queue queue x in
+      let ((_px, cx), queue) = access_queue queue x in
       flush_all queue [J.Throw_statement cx, loc]
   | Stop ->
       flush_all queue [J.Return_statement None, loc]
@@ -1626,18 +1626,18 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
     flush_all queue
       (compile_branch st [] cont None backs frontier interm)
   | Cond (cond,x,c1,c2) ->
-    let ((px, cx), queue) = access_queue queue x in
+    let ((_px, cx), queue) = access_queue queue x in
     let b = compile_decision_tree st queue handler backs frontier interm succs
         loc cx (DTree.build_if cond c1 c2) in
     flush_all queue b
   | Switch (x,[||],a2) ->
-    let ((px, cx), queue) = access_queue queue x in
+    let ((_px, cx), queue) = access_queue queue x in
     let code =
       compile_decision_tree st queue handler backs frontier interm succs
         loc (J.EAccess(cx, J.ENum 0.)) (DTree.build_switch a2) in
     flush_all queue code
   | Switch (x,a1,[||]) ->
-    let ((px, cx), queue) = access_queue queue x in
+    let ((_px, cx), queue) = access_queue queue x in
     let code =
       compile_decision_tree st queue handler backs frontier interm succs
         loc cx (DTree.build_switch a1) in
@@ -1668,7 +1668,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
   end;
   res
 
-and compile_argument_passing ctx queue (pc, args) backs continuation =
+and compile_argument_passing ctx queue (pc, args) _backs continuation =
   if args = [] then
     continuation queue
   else

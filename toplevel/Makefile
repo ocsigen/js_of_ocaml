@@ -7,13 +7,13 @@ all: toplevel.js eval.js
 OCPINDENT=$(shell ocamlfind query ocp-indent -format "-package %p.lib" 2> /dev/null)
 HIGLO=$(shell ocamlfind query higlo.ocaml -format "-package %p -rectypes" 2> /dev/null)
 
-OPTCOMP_OPT=
+CPPO_OPT=
 ifneq ($(OCPINDENT),)
-OPTCOMP_OPT+= -let ocpindent=true
+CPPO_OPT+= -D ocpindent
 endif
 
 ifneq ($(HIGLO),)
-OPTCOMP_OPT+= -let higlo=true
+CPPO_OPT+= -D higlo
 endif
 
 ifneq ($(NO_SYNTAXES),1)
@@ -35,7 +35,7 @@ PACKAGES= \
 ifeq ($(WITH_GRAPHICS),YES)
 JSFILES += +graphics.js
 PACKAGES += graphics js_of_ocaml.graphics
-OPTCOMP_OPT+= -let graphics=true
+CPPO_OPT+= -D graphics
 endif
 
 ifeq ($(METAOCAML),1)
@@ -44,7 +44,7 @@ BER=metalib.cma bertop.cmo \
 	${addprefix -export-unit , ${BER_EXPORT}}
 #METAOCAML DOES NOT WORK WITH CAMLP4
 SYNTAXES=
-OPTCOMP_OPT+= -let metaocaml=true
+CPPO_OPT+= -D metaocaml
 endif
 
 #-jsopt "--pretty --disable shortvar"
@@ -79,12 +79,14 @@ $(EVAL_NAME).js: $(EVAL_OBJS)
 server.%: server.ml
 	ocamlbuild -use-ocamlfind -package findlib,cohttp.lwt server.$*
 
+%.ml: %.cppo.ml
+	cppo ${CPPO_OPT} $< -o $@
+
 %.cmo:%.ml
 	ocamlfind ocamlc -c -syntax camlp4o $(SAFESTRING) \
-		-package optcomp,js_of_ocaml.syntax,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
+		-package js_of_ocaml.syntax,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
 		-package base64 \
 		$(OCPINDENT) $(HIGLO) \
-		${addprefix -ppopt , ${OPTCOMP_OPT}} \
 		$< -c $@
 clean::
 	rm -f *.cm[io] *.byte *.native *.js

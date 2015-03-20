@@ -54,7 +54,9 @@ let f {
   List.iter (fun (s,v) -> Option.Param.set s v) params;
   let t = Util.Timer.make () in
   Linker.load_files runtime_files;
-  let paths = List.rev_append include_dir [Util.find_pkg_dir "stdlib"] in
+  let paths =
+    try List.append include_dir [Util.find_pkg_dir "stdlib"]
+    with Not_found -> include_dir in
   let t1 = Util.Timer.make () in
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug =
@@ -70,6 +72,14 @@ let f {
         let p,cmis,d = Parse_bytecode.from_channel ~toplevel ~debug:need_debug ch in
         close_in ch;
         p, cmis, d
+  in
+  let () =
+    if source_map <> None &&  Parse_bytecode.Debug.is_empty d
+    then
+      Util.warn
+	"Warning: '--source-map' is enabled but the bytecode program \
+	 was compiled with no debugging information.\n\
+	 Warning: Consider passing '-g' option to ocamlc.\n%!"
   in
   let cmis = if nocmis then Util.StringSet.empty else cmis in
   let p =
@@ -111,7 +121,7 @@ let main =
 
 let _ =
   Util.Timer.init Sys.time;
-  try Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn:true Sys.argv) main with
+  try Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn_:true Sys.argv) main with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
     let backtrace = Printexc.get_backtrace () in
     Format.eprintf

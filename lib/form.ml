@@ -55,7 +55,7 @@ end
 let have_content (elt:submittableElement t) =
   elt##name##length > 0 && not (Js.to_bool (elt##disabled))
 
-let get_textarea_val ?(get=false) (elt:textAreaElement t) =
+let get_textarea_val (elt:textAreaElement t) =
   if have_content (elt:>submittableElement t)
   then
     let name = to_string (elt##name) in

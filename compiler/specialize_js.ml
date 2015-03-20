@@ -49,7 +49,7 @@ let specialize_instr info i rem =
       begin match the_string_of info y with
         | Some s when Primitive.need_named_value s ->
           Let (x, Prim (Extern prim, [Pc (String s);z]))
-        | Some s ->
+        | Some _ ->
           (* Format.eprintf "Do not register named value %S@." s; *)
           Let(x, Constant (Int 0l))
         | None -> i

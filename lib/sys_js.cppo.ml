@@ -45,4 +45,4 @@ external file_content : string -> string = "caml_fs_file_content"
 
 (* The version string is found in file ../VERSION *)
 
-let js_of_ocaml_version = "%%VERSION%%"
+let js_of_ocaml_version = STRINGIFY(JSOO_VERSION)

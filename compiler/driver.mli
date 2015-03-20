@@ -25,7 +25,7 @@ val f :
   ?profile:profile ->
   ?toplevel:bool ->
   ?linkall:bool ->
-  ?source_map:(string * Source_map.t) ->
+  ?source_map:(string option * Source_map.t) ->
   Pretty_print.t -> Parse_bytecode.Debug.data -> Code.program -> unit
 
 val from_string : string array -> string -> Pretty_print.t -> unit

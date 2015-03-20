@@ -32,30 +32,28 @@
 module J = Javascript
 open Js_token
 
-let bop op a b= J.EBin(op,a,b)
-let uop op a = J.EUn(op,a)
 let var name = J.S {J.name;J.var=None}
 
-(* this is need to fake menhir while using --infer *)
+(* This is need to fake menhir while using `--infer`. *)
 let _tok = EOF Parse_info.zero
 
 %}
 
-/*(*************************************************************************)*/
-/*(*1 Tokens *)*/
-/*(*************************************************************************)*/
+(*************************************************************************)
+(* 1 Tokens                                                              *)
+(*************************************************************************)
 
-/*(*-----------------------------------------*)*/
-/*(*2 the normal tokens *)*/
-/*(*-----------------------------------------*)*/
+(*-----------------------------------------*)
+(* 2 the normal tokens                     *)
+(*-----------------------------------------*)
 
-/*(* tokens with a value *)*/
+(* Tokens with a value *)
 %token<string * float * Parse_info.t> T_NUMBER
 %token<string * Parse_info.t> T_IDENTIFIER
 %token<string * Parse_info.t> T_STRING
 %token<string * Parse_info.t> T_REGEX
 
-/*(* keywords tokens *)*/
+(* Keywords tokens *)
 %token <Parse_info.t>
 T_FUNCTION T_IF T_RETURN T_SWITCH T_THIS T_THROW T_TRY
 T_VAR T_WHILE T_WITH T_NULL T_FALSE T_TRUE
@@ -66,7 +64,7 @@ T_DEBUGGER
 
 %token <Parse_info.t> T_NEW
 
-/*(* syntax *)*/
+(* Syntax *)
 %token <Parse_info.t>
 T_LCURLY T_RCURLY
 T_LPAREN T_RPAREN
@@ -75,7 +73,7 @@ T_SEMICOLON
 T_COMMA
 T_PERIOD
 
-/*(* operators *)*/
+(* Operators *)
 %token <Parse_info.t>
 T_RSHIFT3_ASSIGN T_RSHIFT_ASSIGN T_LSHIFT_ASSIGN
 T_BIT_XOR_ASSIGN T_BIT_OR_ASSIGN T_BIT_AND_ASSIGN T_MOD_ASSIGN T_DIV_ASSIGN
@@ -96,21 +94,20 @@ T_PLUS T_MINUS
 T_DIV T_MULT T_MOD
 T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 
-/*(*-----------------------------------------*)*/
-/*(*2 extra tokens: *)*/
-/*(*-----------------------------------------*)*/
+(*-----------------------------------------*)
+(* 2 extra tokens:                         *)
+(*-----------------------------------------*)
 
 %token <Parse_info.t> T_VIRTUAL_SEMICOLON
 
-/*(* classic *)*/
+(* classic *)
 %token <Parse_info.t> EOF
 
-/*(*-----------------------------------------*)*/
-/*(*2 priorities *)*/
-/*(*-----------------------------------------*)*/
+(*-----------------------------------------*)
+(* 2 priorities                            *)
+(*-----------------------------------------*)
 
-
-/*(* Special if / else associativity*)*/
+(* Special if / else associativity*)
 %nonassoc p_IF
 %nonassoc T_ELSE
 
@@ -128,67 +125,67 @@ T_IN T_INSTANCEOF
 %left T_DIV T_MULT T_MOD
 %right T_NOT T_BIT_NOT T_INCR T_DECR T_INCR_NB T_DECR_NB T_DELETE T_TYPEOF T_VOID
 
-/*(*************************************************************************)*/
-/*(*1 Rules type declaration *)*/
-/*(*************************************************************************)*/
+(*************************************************************************)
+(* 1 Rules type declaration                                              *)
+(*************************************************************************)
 
 %start <Javascript.program> program
 %start <Javascript.expression> standalone_expression
 
 %%
 
-/*(*************************************************************************)*/
-/*(*1 Toplevel *)*/
-/*(*************************************************************************)*/
+(*************************************************************************)
+(* 1 Toplevel                                                            *)
+(*************************************************************************)
 
 program:
- | l=source_elements EOF { l }
+ | l=source_element* EOF { l }
 
 standalone_expression:
- | e=expression EOF {e}
+ | e=expression EOF { e }
 
 source_element:
- | s=statement
-     { let (s, loc) = s in (J.Statement s, loc) }
- | f=function_declaration
-     { let (f, loc) = f in (J.Function_declaration f, loc) }
+ | statement
+   { let statement, pi = $1 in J.Statement statement, pi }
+ | function_declaration
+   { let declaration, pi = $1 in J.Function_declaration declaration, pi }
 
-source_elements:
- | l=list(source_element) { l }
-/*(*************************************************************************)*/
-/*(*1 statement *)*/
-/*(*************************************************************************)*/
+(*************************************************************************)
+(* 1 statement                                                           *)
+(*************************************************************************)
 
 statement_no_semi:
- | b=block_with_pi { (J.Block (fst b), J.Pi (snd b)) }
+ | block=curly_block(statement*)
+   { let statements, pi_start, _pi_end = block in
+     J.Block statements, J.Pi pi_start }
  (* this is not allowed but some browsers accept it *)
  (* | function_declaration { *)
  (*  let var,params,body,_ = $1 in *)
  (*  J.Variable_statement [var,Some (J.EFun((None,params,body),None))]} *)
-
- | s=if_statement         { s }
- | s=iteration_statement  { s }
- | s=with_statement       { s }
- | s=switch_statement     { s }
- | s=try_statement        { s }
- | s=labeled_statement    { s }
- | s=empty_statement      { s }
-
+ | s=if_statement
+ | s=while_statement
+ | s=for_statement
+ | s=for_in_statement
+ | s=with_statement
+ | s=switch_statement
+ | s=try_statement
+ | s=labeled_statement
+ | s=empty_statement { s }
 
 statement_need_semi:
- | variable_statement   { $1 }
- | expression_statement { $1 }
- | do_while_statement   { $1 }
- | continue_statement   { $1 }
- | break_statement      { $1 }
- | return_statement     { $1 }
- | throw_statement      { $1 }
- | debugger_statement   { $1 }
+ | s=variable_statement
+ | s=expression_statement
+ | s=do_while_statement
+ | s=continue_statement
+ | s=break_statement
+ | s=return_statement
+ | s=throw_statement
+ | s=debugger_statement { s }
 
 statement:
- | s=statement_no_semi {s}
- | s=statement_need_semi semicolon {s}
- | s=statement_need_semi {
+ | s=statement_no_semi { s }
+ | s=statement_need_semi either(T_SEMICOLON, T_VIRTUAL_SEMICOLON) { s }
+ | statement=statement_need_semi {
     (* 7.9.1 - 1 *)
     (* When, as the program is parsed from left to right, a token (called the offending token)
        is encountered that is not allowed by any production of the grammar, then a semicolon
@@ -212,163 +209,137 @@ statement:
     (* @@@@@@@@@ HACK @@@@@@@@@@ *)
 
     match _tok with
-      | EOF _ -> s
-      | T_RCURLY _ -> s
-      | t ->
-        let info = Js_token.info_of_tok t in
+      | EOF _ | T_RCURLY _ -> statement
+      | token ->
+        let info = Js_token.info_of_tok token in
         match info.Parse_info.fol with
-          | Some true -> s
+          | Some true -> statement
           | _ -> $syntaxerror
   }
 
-semicolon:
- | T_SEMICOLON {}
- | T_VIRTUAL_SEMICOLON {}
-
 labeled_statement:
-| l=label T_COLON s=statement { (J.Labelled_statement (l, s), J.N) }
-
-statement_list:
- | l=list(statement) {l}
-
-block_with_pi:
- | l=curly_block(statement_list) { (fst l, fst (snd l)) }
+| l=label T_COLON s=statement { J.Labelled_statement (l, s), J.N }
 
 block:
- | block_with_pi { fst $1 }
+ | block=curly_block(statement*)
+   { let statements, _, _ = block in statements }
 
 variable_statement:
- | pi=T_VAR separated_nonempty_list(T_COMMA,variable_declaration)
-     { (J.Variable_statement $2, J.Pi pi) }
+ | pi=T_VAR list=separated_nonempty_list(T_COMMA, pair(variable, initializer_?))
+   { J.Variable_statement list, J.Pi pi }
 
-variable_declaration:
- | variable option(initializeur) { $1, $2 }
-
-initializeur:
- | T_ASSIGN assignment_expression { $2, J.Pi $1 }
-
+initializer_:
+ | pi=T_ASSIGN e=assignment_expression { e, J.Pi pi }
 
 empty_statement:
- | pi=T_SEMICOLON { (J.Empty_statement, J.Pi pi) }
+ | pi=T_SEMICOLON { J.Empty_statement, J.Pi pi }
 
 debugger_statement:
- | pi=T_DEBUGGER { (J.Debugger_statement, J.Pi pi) }
+ | pi=T_DEBUGGER { J.Debugger_statement, J.Pi pi }
 
 expression_statement:
- | expression_no_statement { (J.Expression_statement $1, J.N) }
-
+ | expression_no_statement { J.Expression_statement $1, J.N }
 
 if_statement:
- | pi=T_IF T_LPAREN i=expression T_RPAREN t=statement T_ELSE e=statement
-     { (J.If_statement (i, t, Some e), J.Pi pi) }
- | pi=T_IF T_LPAREN i=expression T_RPAREN t=statement %prec p_IF
-     { (J.If_statement (i, t, None), J.Pi pi) }
+ | pi=T_IF condition=parenthesised(expression) t=statement T_ELSE e=statement
+     { (J.If_statement (condition, t, Some e), J.Pi pi) }
+ | pi=T_IF condition=parenthesised(expression) t=statement %prec p_IF
+     { (J.If_statement (condition, t, None), J.Pi pi) }
 
 do_while_statement:
-  | pi=T_DO statement T_WHILE T_LPAREN expression T_RPAREN
-    { (J.Do_while_statement ($2, $5), J.Pi pi) }
+  | pi=T_DO body=statement T_WHILE condition=parenthesised(expression)
+    { (J.Do_while_statement (body, condition), J.Pi pi) }
 
+while_statement:
+ | pi=T_WHILE condition=parenthesised(expression) body=statement
+     { (J.While_statement (condition, body), J.Pi pi) }
 
-iteration_statement:
- | pi=T_WHILE T_LPAREN expression T_RPAREN statement
-     { (J.While_statement ($3, $5), J.Pi pi) }
- | pi=T_FOR T_LPAREN
-     option(expression_no_in) T_SEMICOLON
-     option(expression) T_SEMICOLON
-     option(expression)
-     T_RPAREN statement
-     { (J.For_statement (J.Left $3, $5, $7, $9), J.Pi pi) }
- | pi=T_FOR T_LPAREN
-     T_VAR separated_nonempty_list(T_COMMA,variable_declaration_no_in) T_SEMICOLON
-     option(expression) T_SEMICOLON
-     option(expression)
-     T_RPAREN statement
-     { (J.For_statement (J.Right($4), $6, $8, $10), J.Pi pi) }
- | pi=T_FOR T_LPAREN left_hand_side_expression T_IN expression T_RPAREN statement
-     { (J.ForIn_statement (J.Left $3,$5,$7),J.Pi pi) }
- | pi=T_FOR T_LPAREN T_VAR variable_declaration_no_in T_IN expression T_RPAREN
-     statement
-     { (J.ForIn_statement ( J.Right $4, $6, $8), J.Pi pi) }
+for_statement:
+ | pi=T_FOR T_LPAREN initial=expression_no_in?
+   T_SEMICOLON condition=expression? T_SEMICOLON increment=expression?
+   T_RPAREN statement=statement
+   { J.For_statement (J.Left initial, condition, increment, statement), J.Pi pi }
+ | pi=T_FOR T_LPAREN T_VAR
+   initial=separated_nonempty_list(T_COMMA, pair(variable, initializer_no_in?))
+   T_SEMICOLON condition=expression?  T_SEMICOLON increment=expression?
+   T_RPAREN statement=statement
+   { J.For_statement (J.Right initial, condition, increment, statement), J.Pi pi }
 
-variable_declaration_no_in:
- | variable option(initializer_no_in) { $1, $2 }
+for_in_statement:
+ | pi=T_FOR T_LPAREN left=left_hand_side_expression
+   T_IN right=expression T_RPAREN body=statement
+   { J.ForIn_statement (J.Left left, right, body), J.Pi pi }
+ | pi=T_FOR T_LPAREN T_VAR left=pair(variable, initializer_no_in?)
+   T_IN right=expression T_RPAREN body=statement
+   { J.ForIn_statement (J.Right left, right, body), J.Pi pi }
 
 initializer_no_in:
  | T_ASSIGN assignment_expression_no_in { $2, J.Pi $1 }
 
-
 continue_statement:
- | pi=T_CONTINUE option(label) { (J.Continue_statement $2,J.Pi pi) }
+ | pi=T_CONTINUE label? { (J.Continue_statement $2,J.Pi pi) }
 
 break_statement:
- | pi=T_BREAK option(label) { (J.Break_statement $2, J.Pi pi) }
+ | pi=T_BREAK label? { (J.Break_statement $2, J.Pi pi) }
 
 return_statement:
- | pi=T_RETURN option(expression) { (J.Return_statement $2, J.Pi pi) }
+ | pi=T_RETURN expression? { (J.Return_statement $2, J.Pi pi) }
 
 with_statement:
- | T_WITH T_LPAREN expression T_RPAREN statement { assert false }
+ | T_WITH parenthesised(expression) statement { assert false }
 
 switch_statement:
- | pi=T_SWITCH T_LPAREN e=expression T_RPAREN
-    b=curly_block(
-    pair(list(case_clause),option(pair(default_clause,list(case_clause)))))
-    {
-      let (l, d, l') =
-        match fst b with
-          (l, None) -> (l, None, [])
-        | (l, Some (d, l')) -> (l, Some d, l')
-      in
-      (J.Switch_statement (e, l, d, l'), J.Pi pi) }
+ | pi=T_SWITCH subject=parenthesised(expression)
+   T_LCURLY pair=pair(case_clause*, pair(default_clause, case_clause*)?) T_RCURLY
+   { let switch = match pair with
+       | cases, None ->
+         J.Switch_statement (subject, cases, None, [])
+       | cases, Some (default, more_cases) ->
+         J.Switch_statement (subject, cases, Some default, more_cases)
+      in switch, J.Pi pi }
 
 throw_statement:
  | pi=T_THROW expression { (J.Throw_statement $2, J.Pi pi) }
 
-
 try_statement:
- | pi=T_TRY block catch option(finally) { (J.Try_statement ($2, Some $3, $4), J.Pi pi) }
+ | pi=T_TRY block catch finally? { (J.Try_statement ($2, Some $3, $4), J.Pi pi) }
  | pi=T_TRY block       finally { (J.Try_statement ($2, None, Some $3), J.Pi pi) }
 
-
 catch:
- | T_CATCH T_LPAREN variable T_RPAREN block { $3, $5 }
-
+ | T_CATCH pair=pair(parenthesised(variable), block) { pair }
 
 finally:
  | T_FINALLY block { $2 }
 
-/*(*----------------------------*)*/
-/*(*2 auxillary statements *)*/
-/*(*----------------------------*)*/
+(*----------------------------*)
+(* 2 auxillary statements     *)
+(*----------------------------*)
 
 case_clause:
- | T_CASE e=expression T_COLON l=statement_list { e,l }
+ | T_CASE pair=separated_pair(expression, T_COLON, statement*) { pair }
 
 default_clause:
- | T_DEFAULT T_COLON l=statement_list { l }
+ | T_DEFAULT T_COLON list=statement* { list }
 
-/*(*************************************************************************)*/
-/*(*1 function declaration *)*/
-/*(*************************************************************************)*/
+(*************************************************************************)
+(* 1 function declaration                                                *)
+(*************************************************************************)
 
 function_declaration:
- | pi=T_FUNCTION v=variable T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
-     b=curly_block(function_body)
-     { ((v, args, fst b, J.Pi (snd (snd b))), J.Pi pi) }
-
+ | pi=T_FUNCTION name=variable args=parenthesised(separated_list(T_COMMA, variable))
+   block=curly_block(source_element*)
+   { let elements, _pi_start, pi_end = block in
+     (name, args, elements, J.Pi pi_end), J.Pi pi }
 
 function_expression:
- | pi=T_FUNCTION v=option(variable)
-   T_LPAREN args=separated_list(T_COMMA,variable) T_RPAREN
-   b=curly_block(function_body)
-   { (pi, J.EFun (v, args, fst b, J.Pi pi)) }
+ | pi=T_FUNCTION name=variable? args=parenthesised(separated_list(T_COMMA, variable))
+   block=curly_block(source_element*)
+   { let elements, _pi_start, _pi_end = block in
+     pi, J.EFun (name, args, elements, J.Pi pi) }
 
-function_body:
- | l=source_elements  { l }
-
-/*(*************************************************************************)*/
-/*(*1 expression *)*/
-/*(*************************************************************************)*/
+(*************************************************************************)
+(* 1 expression                                                          *)
+(*************************************************************************)
 
 expression:
  | assignment_expression { $1 }
@@ -379,102 +350,36 @@ assignment_expression:
  | left_hand_side_expression assignment_operator assignment_expression
    { J.EBin ($2, $1, $3) }
 
-assignment_operator:
- | T_ASSIGN         { J.Eq }
- | T_MULT_ASSIGN    { J.StarEq }
- | T_DIV_ASSIGN     { J.SlashEq }
- | T_MOD_ASSIGN     { J.ModEq }
- | T_PLUS_ASSIGN    { J.PlusEq }
- | T_MINUS_ASSIGN   { J.MinusEq }
- | T_LSHIFT_ASSIGN  { J.LslEq }
- | T_RSHIFT_ASSIGN  { J.AsrEq }
- | T_RSHIFT3_ASSIGN { J.LsrEq }
- | T_BIT_AND_ASSIGN { J.BandEq }
- | T_BIT_XOR_ASSIGN { J.BxorEq }
- | T_BIT_OR_ASSIGN  { J.BorEq }
-
 left_hand_side_expression:
  | new_expression  { snd $1 }
  | call_expression { snd $1 }
 
 conditional_expression:
  | post_in_expression { $1 }
- | post_in_expression
-     T_PLING assignment_expression
-     T_COLON assignment_expression
-     { J.ECond ($1, $3, $5) }
+ | ternary(post_in_expression, assignment_expression) { $1 }
+
+ternary(condition, consequence):
+ | condition=condition T_PLING consequence=consequence
+                       T_COLON alternative=consequence
+   { J.ECond (condition, consequence, alternative) }
 
 post_in_expression:
  | pre_in_expression { $1 }
- | post_in_expression T_LESS_THAN post_in_expression
-   { bop J.Lt $1 $3 }
- | post_in_expression T_GREATER_THAN post_in_expression
-   { bop J.Gt $1 $3 }
- | post_in_expression T_LESS_THAN_EQUAL post_in_expression
-   { bop J.Le $1 $3 }
- | post_in_expression T_GREATER_THAN_EQUAL post_in_expression
-   { bop J.Ge $1 $3 }
- | post_in_expression T_INSTANCEOF post_in_expression
-   { bop J.InstanceOf $1 $3 }
- | post_in_expression T_IN post_in_expression
-   { bop J.In $1 $3 }
- | post_in_expression T_EQUAL post_in_expression
-   { bop J.EqEq $1 $3 }
- | post_in_expression T_NOT_EQUAL post_in_expression
-   { bop J.NotEq $1 $3 }
- | post_in_expression T_STRICT_EQUAL post_in_expression
-   { bop J.EqEqEq $1 $3 }
- | post_in_expression T_STRICT_NOT_EQUAL post_in_expression
-   { bop J.NotEqEq $1 $3 }
- | post_in_expression T_BIT_AND post_in_expression
-   { bop J.Band $1 $3 }
- | post_in_expression T_BIT_XOR post_in_expression
-   { bop J.Bxor $1 $3 }
- | post_in_expression T_BIT_OR post_in_expression
-   { bop J.Bor $1 $3 }
- | post_in_expression T_AND post_in_expression
-   { bop J.And $1 $3 }
- | post_in_expression T_OR post_in_expression
-   { bop J.Or $1 $3 }
+ | left=post_in_expression
+   op=comparison_or_logical_or_bit_operator
+   right=post_in_expression
+   { J.EBin (op, left, right) }
 
 pre_in_expression:
  | left_hand_side_expression
    { $1 }
- | pre_in_expression T_INCR_NB
-   { uop J.IncrA $1 }
- | pre_in_expression T_DECR_NB
-   { uop J.DecrA $1 }
- | T_DELETE pre_in_expression
-   { uop J.Delete $2 }
- | T_VOID pre_in_expression
-   { uop J.Void $2 }
- | T_TYPEOF pre_in_expression
-   { uop J.Typeof $2 }
- | T_INCR pre_in_expression
-   { uop J.IncrB $2 }
- | T_INCR_NB pre_in_expression
-   { uop J.IncrB $2 }
- | T_DECR pre_in_expression
-   { uop J.DecrB $2 }
- | T_DECR_NB pre_in_expression
-   { uop J.DecrB $2 }
- | T_PLUS pre_in_expression
-   { uop J.Pl $2 }
- | T_MINUS pre_in_expression
-   { uop J.Neg $2}
- | T_BIT_NOT pre_in_expression
-   { uop J.Bnot $2 }
- | T_NOT pre_in_expression
-   { uop J.Not $2 }
-
- | pre_in_expression T_MULT pre_in_expression    { bop J.Mul $1 $3 }
- | pre_in_expression T_DIV pre_in_expression     { bop J.Div $1 $3 }
- | pre_in_expression T_MOD pre_in_expression     { bop J.Mod $1 $3 }
- | pre_in_expression T_PLUS pre_in_expression    { bop J.Plus $1 $3 }
- | pre_in_expression T_MINUS pre_in_expression   { bop J.Minus $1 $3 }
- | pre_in_expression T_LSHIFT pre_in_expression  { bop J.Lsl $1 $3 }
- | pre_in_expression T_RSHIFT pre_in_expression  { bop J.Asr $1 $3 }
- | pre_in_expression T_RSHIFT3 pre_in_expression { bop J.Lsr $1 $3 }
+ | e=pre_in_expression op=postfix_operator
+ | op=prefix_operator e=pre_in_expression
+   { J.EUn (op, e) }
+ | left=pre_in_expression
+   op=arithmetic_or_shift_operator
+   right=pre_in_expression
+   { J.EBin (op, left, right) }
 
 call_expression:
  | member_expression arguments
@@ -483,7 +388,7 @@ call_expression:
      { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
  | call_expression T_LBRACKET expression T_RBRACKET
      { let (start, e) = $1 in (start, J.EAccess (e, $3)) }
- | call_expression T_PERIOD method_name
+ | call_expression T_PERIOD identifier
      { let (start, e) = $1 in (start, J.EDot (e, $3)) }
 
 new_expression:
@@ -495,32 +400,32 @@ member_expression:
      { e }
  | member_expression T_LBRACKET e2=expression T_RBRACKET
      { let (start, e1) = $1 in (start, J.EAccess (e1,e2)) }
- | member_expression T_PERIOD i=field_name
+ | member_expression T_PERIOD i=identifier
      { let (start, e1) = $1 in (start, J.EDot(e1,i)) }
  | pi=T_NEW e1=member_expression a=arguments
      { (pi, J.ENew(snd e1, Some a)) }
 
 primary_expression:
- | p=primary_expression_no_statement { p }
- | o=object_literal                  { o }
- | f=function_expression             { f }
+ | e=primary_expression_no_statement
+ | e=object_literal
+ | e=function_expression { e }
 
 primary_expression_no_statement:
  | pi=T_THIS         { (pi, J.EVar (var "this")) }
  | variable_with_loc { let (i, pi) = $1 in (pi, J.EVar (var i)) }
-
  | n=null_literal    { n }
  | b=boolean_literal { b }
  | numeric_literal   { let (start, n) = $1 in (start, J.ENum n) }
- | string_literal    { let (s, start) = $1 in (start, J.EStr (s, `Utf8)) }
- /*(* marcel: this isn't an expansion of literal in ECMA-262... mistake? *)*/
+ | T_STRING          { let (s, start) = $1 in (start, J.EStr (s, `Utf8)) }
+   (* marcel: this isn't an expansion of literal in ECMA-262... mistake? *)
  | r=regex_literal                { r }
  | a=array_literal                { a }
  | pi=T_LPAREN e=expression T_RPAREN { (pi, e) }
 
-/*(*----------------------------*)*/
-/*(*2 no in *)*/
-/*(*----------------------------*)*/
+(*----------------------------*)
+(* 2 no in                    *)
+(*----------------------------*)
+
 expression_no_in:
  | assignment_expression_no_in { $1 }
  | expression_no_in T_COMMA assignment_expression_no_in { J.ESeq ($1, $3) }
@@ -532,45 +437,19 @@ assignment_expression_no_in:
 
 conditional_expression_no_in:
  | post_in_expression_no_in { $1 }
- | post_in_expression_no_in
-     T_PLING assignment_expression_no_in
-     T_COLON assignment_expression_no_in
-     { J.ECond ($1, $3, $5) }
+ | ternary(post_in_expression_no_in, assignment_expression_no_in) { $1 }
 
 post_in_expression_no_in:
  | pre_in_expression { $1 }
- | post_in_expression_no_in T_LESS_THAN post_in_expression
-   { bop J.Lt $1 $3 }
- | post_in_expression_no_in T_GREATER_THAN post_in_expression
-   { bop J.Gt $1 $3 }
- | post_in_expression_no_in T_LESS_THAN_EQUAL post_in_expression
-   { bop J.Le $1 $3 }
- | post_in_expression_no_in T_GREATER_THAN_EQUAL post_in_expression
-   { bop J.Ge $1 $3 }
- | post_in_expression_no_in T_INSTANCEOF post_in_expression
-   { bop J.InstanceOf $1 $3 }
- | post_in_expression_no_in T_EQUAL post_in_expression
-   { bop J.EqEq $1 $3 }
- | post_in_expression_no_in T_NOT_EQUAL post_in_expression
-   { bop J.NotEq $1 $3 }
- | post_in_expression_no_in T_STRICT_EQUAL post_in_expression
-   { bop J.EqEqEq $1 $3 }
- | post_in_expression_no_in T_STRICT_NOT_EQUAL post_in_expression
-   { bop J.NotEqEq $1 $3 }
- | post_in_expression_no_in T_BIT_AND post_in_expression
-   { bop J.Band $1 $3 }
- | post_in_expression_no_in T_BIT_XOR post_in_expression
-   { bop J.Bxor $1 $3 }
- | post_in_expression_no_in T_BIT_OR post_in_expression
-   { bop J.Bor $1 $3 }
- | post_in_expression_no_in T_AND post_in_expression
-   { bop J.And $1 $3 }
- | post_in_expression_no_in T_OR post_in_expression
-   { bop J.Or $1 $3 }
+ | left=post_in_expression_no_in
+   op=comparison_or_logical_or_bit_operator_except_in
+   right=post_in_expression
+   { J.EBin (op, left, right) }
 
-/*(*----------------------------*)*/
-/*(*2 (no statement)*)*/
-/*(*----------------------------*)*/
+(*----------------------------*)
+(* 2 (no statement)           *)
+(*----------------------------*)
+
 expression_no_statement:
  | assignment_expression_no_statement { $1 }
  | expression_no_statement T_COMMA assignment_expression { J.ESeq($1,$3) }
@@ -578,88 +457,29 @@ expression_no_statement:
 assignment_expression_no_statement:
  | conditional_expression_no_statement { $1 }
  | left_hand_side_expression_no_statement assignment_operator assignment_expression
-     { J.EBin ($2,$1,$3) }
+   { J.EBin ($2,$1,$3) }
 
 conditional_expression_no_statement:
  | post_in_expression_no_statement { $1 }
- | post_in_expression_no_statement
-     T_PLING assignment_expression
-     T_COLON assignment_expression
-     { J.ECond ($1, $3, $5) }
-
+ | ternary(post_in_expression_no_statement, assignment_expression) { $1 }
 
 post_in_expression_no_statement:
  | pre_in_expression_no_statement { $1 }
- | post_in_expression_no_statement T_LESS_THAN post_in_expression
-   { bop J.Lt $1 $3 }
- | post_in_expression_no_statement T_GREATER_THAN post_in_expression
-   { bop J.Gt $1 $3 }
- | post_in_expression_no_statement T_LESS_THAN_EQUAL post_in_expression
-   { bop J.Le $1 $3 }
- | post_in_expression_no_statement T_GREATER_THAN_EQUAL post_in_expression
-   { bop J.Ge $1 $3 }
- | post_in_expression_no_statement T_INSTANCEOF post_in_expression
-   { bop J.InstanceOf $1 $3 }
- | post_in_expression_no_statement T_IN post_in_expression
-   { bop J.In $1 $3 }
- | post_in_expression_no_statement T_EQUAL post_in_expression
-   { bop J.EqEq $1 $3 }
- | post_in_expression_no_statement T_NOT_EQUAL post_in_expression
-   { bop J.NotEq $1 $3 }
- | post_in_expression_no_statement T_STRICT_EQUAL post_in_expression
-   { bop J.EqEqEq $1 $3 }
- | post_in_expression_no_statement T_STRICT_NOT_EQUAL post_in_expression
-   { bop J.NotEqEq $1 $3 }
- | post_in_expression_no_statement T_BIT_AND post_in_expression
-   { bop J.Band $1 $3 }
- | post_in_expression_no_statement T_BIT_XOR post_in_expression
-   { bop J.Bxor $1 $3 }
- | post_in_expression_no_statement T_BIT_OR post_in_expression
-   { bop J.Bor $1 $3 }
- | post_in_expression_no_statement T_AND post_in_expression
-   { bop J.And $1 $3 }
- | post_in_expression_no_statement T_OR post_in_expression
-   { bop J.Or $1 $3 }
-
+ | left=post_in_expression_no_statement
+   op=comparison_or_logical_or_bit_operator
+   right=post_in_expression
+   { J.EBin (op, left, right) }
 
 pre_in_expression_no_statement:
  | left_hand_side_expression_no_statement
    { $1 }
- | pre_in_expression_no_statement T_INCR_NB
-   { uop J.IncrA $1 }
- | pre_in_expression_no_statement T_DECR_NB
-   { uop J.DecrA $1 }
- | T_DELETE pre_in_expression
-   { uop J.Delete $2 }
- | T_VOID pre_in_expression
-   { uop J.Void $2 }
- | T_TYPEOF pre_in_expression
-   { uop J.Typeof $2 }
- | T_INCR pre_in_expression
-   { uop J.IncrB $2 }
- | T_INCR_NB pre_in_expression
-   { uop J.IncrB $2 }
- | T_DECR pre_in_expression
-   { uop J.DecrB $2 }
- | T_DECR_NB pre_in_expression
-   { uop J.DecrB $2 }
- | T_PLUS pre_in_expression
-   { uop J.Pl $2 }
- | T_MINUS pre_in_expression
-   { uop J.Neg $2}
- | T_BIT_NOT pre_in_expression
-   { uop J.Bnot $2 }
- | T_NOT pre_in_expression
-   { uop J.Not $2 }
-
- | pre_in_expression_no_statement T_MULT pre_in_expression    { bop J.Mul $1 $3 }
- | pre_in_expression_no_statement T_DIV pre_in_expression     { bop J.Div $1 $3 }
- | pre_in_expression_no_statement T_MOD pre_in_expression     { bop J.Mod $1 $3 }
- | pre_in_expression_no_statement T_PLUS pre_in_expression    { bop J.Plus $1 $3 }
- | pre_in_expression_no_statement T_MINUS pre_in_expression   { bop J.Minus $1 $3 }
- | pre_in_expression_no_statement T_LSHIFT pre_in_expression  { bop J.Lsl $1 $3 }
- | pre_in_expression_no_statement T_RSHIFT pre_in_expression  { bop J.Asr $1 $3 }
- | pre_in_expression_no_statement T_RSHIFT3 pre_in_expression { bop J.Lsr $1 $3 }
+ | e=pre_in_expression_no_statement op=postfix_operator
+ | op=prefix_operator e=pre_in_expression
+   { J.EUn (op, e) }
+ | left=pre_in_expression_no_statement
+   op=arithmetic_or_shift_operator
+   right=pre_in_expression
+   { J.EBin (op, left, right) }
 
 left_hand_side_expression_no_statement:
  | new_expression_no_statement { snd $1 }
@@ -676,22 +496,23 @@ call_expression_no_statement:
    { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
  | call_expression_no_statement T_LBRACKET expression T_RBRACKET
    { let (start, e) = $1 in (start, J.EAccess(e, $3)) }
- | call_expression_no_statement T_PERIOD method_name
+ | call_expression_no_statement T_PERIOD identifier
    { let (start, e) = $1 in (start, J.EDot(e,$3)) }
 
 member_expression_no_statement:
  | e=primary_expression_no_statement
-     { e }
+   { e }
  | member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
    { let (start, e1) = $1 in (start, J.EAccess(e1, e2)) }
- | member_expression_no_statement T_PERIOD i=field_name
+ | member_expression_no_statement T_PERIOD i=identifier
    { let (start, e1) = $1 in (start, J.EDot(e1,i)) }
  | pi=T_NEW e=member_expression a=arguments
    { (pi, J.ENew(snd e,Some a)) }
 
-/*(*----------------------------*)*/
-/*(*2 scalar *)*/
-/*(*----------------------------*)*/
+(*----------------------------*)
+(* 2 scalar                   *)
+(*----------------------------*)
+
 null_literal:
  | pi=T_NULL { (pi, J.EVar (var "null")) }
 
@@ -706,22 +527,19 @@ regex_literal:
  | T_REGEX {
    let (s, pi) = $1 in
    let len = String.length s in
-   let regexp,option =
+   let regexp, option =
      if s.[len - 1] = '/'
      then String.sub s 1 (len - 2),None
      else
        let i = String.rindex s '/' in
        String.sub s 1 (i - 1),Some (String.sub s (i+1) (len - i - 1))
    in
-   (pi, J.ERegexp (regexp,option)) }
+   (pi, J.ERegexp (regexp, option)) }
    (* J.ENew(J.EVar (var "RegExp"), Some (List.map (fun s -> J.EStr (s,`Bytes)) args)) } *)
 
-string_literal:
- | str=T_STRING { str }
-
-/*(*----------------------------*)*/
-/*(*2 array *)*/
-/*(*----------------------------*)*/
+(*----------------------------*)
+(* 2 array                    *)
+(*----------------------------*)
 
 array_literal:
  | pi=T_LBRACKET elison T_RBRACKET
@@ -733,57 +551,43 @@ array_literal:
  | pi=T_LBRACKET element_list_rev elison_rev T_RBRACKET
      { (pi, J.EArr (List.rev_append $2 (List.rev $3))) }
 
-
 element_list:
  | element_list_rev { List.rev $1 }
+
 element_list_rev:
  | elison_rev assignment_expression { (Some $2)::$1 }
  |            assignment_expression { [Some $1] }
  | element_list_rev elison assignment_expression { (Some $3) :: (List.rev_append $2 $1) }
 
-
-
-separated_nonempty_list2(sep,X):
- | x = X { [ x ] }
- | x = X; sep { [ x ] }
- | x = X; sep; xs = separated_nonempty_list2(sep, X) { x :: xs }
-
 object_literal:
- | res=curly_block(empty) { (fst (snd res), J.EObj []) }
- | res=curly_block(
-     separated_nonempty_list2(
-       T_COMMA,
-       separated_pair(property_name,T_COLON,assignment_expression)
-     ))  { (fst (snd res), J.EObj (fst res)) }
+ | block=curly_block(empty)
+   { let _pairs, pi_start, _pi_end = block in pi_start, J.EObj [] }
+ | block=curly_block(separated_or_terminated_list(T_COMMA, object_key_value))
+   { let pairs, pi_start, _pi_end = block in pi_start, J.EObj pairs }
 
-empty:
- | {}
+object_key_value:
+ | pair=separated_pair(property_name, T_COLON, assignment_expression) { pair }
 
-/*(*----------------------------*)*/
-/*(*2 variable *)*/
-/*(*----------------------------*)*/
+(*----------------------------*)
+(* 2 variable                 *)
+(*----------------------------*)
 
-/*(*----------------------------*)*/
-/*(*2 function call *)*/
-/*(*----------------------------*)*/
+(*----------------------------*)
+(* 2 function call            *)
+(*----------------------------*)
 
 arguments:
- | T_LPAREN l=separated_list(T_COMMA,assignment_expression) T_RPAREN { l }
+ | args=parenthesised(separated_list(T_COMMA, assignment_expression)) { args }
 
-/*(*----------------------------*)*/
-/*(*2 auxillary bis *)*/
-/*(*----------------------------*)*/
+(*----------------------------*)
+(* 2 auxillary bis            *)
+(*----------------------------*)
 
-/*(*************************************************************************)*/
-/*(*1 Entities, names *)*/
-/*(*************************************************************************)*/
+(*************************************************************************)
+(* 1 Entities, names                                                     *)
+(*************************************************************************)
+
 identifier:
- | T_IDENTIFIER { fst $1  }
-
-/*(* should some keywork be allowed for field_name and method_name ??*)*/
-field_name:
- | T_IDENTIFIER { fst $1 }
-method_name:
  | T_IDENTIFIER { fst $1 }
 
 variable:
@@ -797,12 +601,12 @@ label:
 
 property_name:
  | i=T_IDENTIFIER    { J.PNI (fst i) }
- | s=string_literal  { J.PNS (fst s) }
+ | s=T_STRING        { J.PNS (fst s) }
  | n=numeric_literal { J.PNN (snd n) }
 
-/*(*************************************************************************)*/
-/*(*1 xxx_opt, xxx_list *)*/
-/*(*************************************************************************)*/
+(*************************************************************************)
+(* 1 xxx_opt, xxx_list                                                   *)
+(*************************************************************************)
 
 elison_rev:
  | T_COMMA { [] }
@@ -812,4 +616,82 @@ elison: elison_rev {$1}
  (* | elison_rev { List.rev $1} *)
 
 curly_block(X):
- | pi1=T_LCURLY x=X pi2=T_RCURLY { (x, (pi1, pi2)) }
+ | pi1=T_LCURLY x=X pi2=T_RCURLY { (x, pi1, pi2) }
+
+(*----------------------------*)
+(* Infix binary operators     *)
+(*----------------------------*)
+
+%inline comparison_or_logical_or_bit_operator_except_in:
+ | T_LESS_THAN          { J.Lt         }
+ | T_GREATER_THAN       { J.Gt         }
+ | T_LESS_THAN_EQUAL    { J.Le         }
+ | T_GREATER_THAN_EQUAL { J.Ge         }
+ | T_INSTANCEOF         { J.InstanceOf }
+ | T_EQUAL              { J.EqEq       }
+ | T_NOT_EQUAL          { J.NotEq      }
+ | T_STRICT_EQUAL       { J.EqEqEq     }
+ | T_STRICT_NOT_EQUAL   { J.NotEqEq    }
+ | T_BIT_AND            { J.Band       }
+ | T_BIT_XOR            { J.Bxor       }
+ | T_BIT_OR             { J.Bor        }
+ | T_AND                { J.And        }
+ | T_OR                 { J.Or         }
+
+%inline comparison_or_logical_or_bit_operator:
+ | op=comparison_or_logical_or_bit_operator_except_in { op }
+ | T_IN { J.In }
+
+%inline arithmetic_or_shift_operator:
+ | T_MULT    { J.Mul   }
+ | T_DIV     { J.Div   }
+ | T_MOD     { J.Mod   }
+ | T_PLUS    { J.Plus  }
+ | T_MINUS   { J.Minus }
+ | T_LSHIFT  { J.Lsl   }
+ | T_RSHIFT  { J.Asr   }
+ | T_RSHIFT3 { J.Lsr   }
+
+%inline prefix_operator:
+ | T_DELETE  { J.Delete }
+ | T_VOID    { J.Void   }
+ | T_TYPEOF  { J.Typeof }
+ | T_INCR    { J.IncrB  }
+ | T_INCR_NB { J.IncrB  }
+ | T_DECR    { J.DecrB  }
+ | T_DECR_NB { J.DecrB  }
+ | T_PLUS    { J.Pl     }
+ | T_MINUS   { J.Neg    }
+ | T_BIT_NOT { J.Bnot   }
+ | T_NOT     { J.Not    }
+
+postfix_operator:
+ | T_INCR_NB { J.IncrA }
+ | T_DECR_NB { J.DecrA }
+
+assignment_operator:
+ | T_ASSIGN         { J.Eq }
+ | T_MULT_ASSIGN    { J.StarEq }
+ | T_DIV_ASSIGN     { J.SlashEq }
+ | T_MOD_ASSIGN     { J.ModEq }
+ | T_PLUS_ASSIGN    { J.PlusEq }
+ | T_MINUS_ASSIGN   { J.MinusEq }
+ | T_LSHIFT_ASSIGN  { J.LslEq }
+ | T_RSHIFT_ASSIGN  { J.AsrEq }
+ | T_RSHIFT3_ASSIGN { J.LsrEq }
+ | T_BIT_AND_ASSIGN { J.BandEq }
+ | T_BIT_XOR_ASSIGN { J.BxorEq }
+ | T_BIT_OR_ASSIGN  { J.BorEq }
+
+(* Library definitions *)
+
+either(a, b): a { $1 } | b { $1 }
+
+empty: {}
+
+%inline parenthesised(ITEM): T_LPAREN item=ITEM T_RPAREN { item }
+
+separated_or_terminated_list(separator, X):
+ | x=X { [x] }
+ | x=X separator { [x] }
+ | x=X separator xs=separated_or_terminated_list(separator, X) { x :: xs }

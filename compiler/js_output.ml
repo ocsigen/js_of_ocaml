@@ -95,8 +95,8 @@ end) = struct
 
   let ident f = function
     | S {name;var=None} -> PP.string f name
-    | S {name;var=Some v} -> PP.string f name
-    | V v -> assert false
+    | S {name;var=Some _v} -> PP.string f name
+    | V _v -> assert false
 
   let opt_identifier f i =
     match i with
@@ -223,7 +223,7 @@ end) = struct
       | ECond (e, _, _) ->
         l <= 2 && need_paren 3 e
       | EBin (op, e, _) ->
-        let (out, lft, rght) = op_prec op in
+        let (out, lft, _rght) = op_prec op in
         l <= out && need_paren lft e
       | ECall (e, _, _) | EAccess (e, _) | EDot (e, _) ->
         l <= 15 && need_paren 15 e
@@ -1018,10 +1018,6 @@ let need_space a b =
      handle the case of "num / /* coment */ b " *)
   (a = '/' && b = '/')
 
-
-let chop_extension s =
-  try Filename.chop_extension s with Invalid_argument _ -> s
-
 let program f ?source_map p =
   let smo = match source_map with
     | None -> None
@@ -1034,24 +1030,33 @@ let program f ?source_map p =
   (match source_map with
    | None -> ()
    | Some (out_file,sm) ->
-     let oc = open_out out_file in
-     let pp = Pretty_print.to_out_channel oc in
-     Pretty_print.set_compact pp false;
-
-     let sm =
+      let sm =
        { sm with
          Source_map.mappings = List.map (fun (pos,m) ->
            {m with
             Source_map.gen_line = pos.PP.p_line;
             Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings} in
 
-     let e = Source_map.expression sm in
-     O.expression 0 pp e;
-     close_out oc;
-
+      let urlData =
+	match out_file with
+	| None ->
+	   let buf = Buffer.create 1024 in
+	   let pp = Pretty_print.to_buffer buf in 
+	   let e = Source_map.expression sm in
+	   O.expression 0 pp e;
+	   let data = Buffer.contents buf in
+	   "data:application/json;base64,"^ (B64.encode data)
+	| Some out_file ->
+	   let oc = open_out out_file in
+	   let pp = Pretty_print.to_out_channel oc in
+	   Pretty_print.set_compact pp false;
+	   let e = Source_map.expression sm in
+	   O.expression 0 pp e;
+	   close_out oc;
+	   Filename.basename out_file
+      in
       PP.newline f;
-      PP.string f (Printf.sprintf "//# sourceMappingURL=%s"
-                     (Filename.basename out_file)));
+      PP.string f (Printf.sprintf "//# sourceMappingURL=%s" urlData));
   if stats ()
   then begin
     let size i =

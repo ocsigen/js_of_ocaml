@@ -34,16 +34,18 @@ let to_string t v =
   t.write buf v;
   Buffer.contents buf
 
-let to_channel t oc v =
+(*let to_channel t oc v =
   let buf = Buffer.create 50 in
   t.write buf v;
   Buffer.output_buffer oc buf
+*)
 
 let from_string t s =
   t.read (Deriving_Json_lexer.init_lexer (Lexing.from_string s))
-
+(*
 let from_channel t ic =
   t.read (Deriving_Json_lexer.init_lexer (Lexing.from_channel ic))
+*)
 
 (** Deriver **)
 
@@ -94,8 +96,8 @@ module Defaults(J : Json_min) : Json with type a = J.a = struct
   (* let to_channel oc v = to_channel t oc v *)
   let from_string s = from_string t s
   (* let from_channel ic = from_channel t ic *)
-  let match_variant hash = assert false
-  let read_variant buf hash = assert false
+  let match_variant _hash = assert false
+  let read_variant _buf _hash = assert false
 end
 
 module Defaults'(J : Json_min') : Json with type a = J.a = struct
@@ -115,8 +117,8 @@ module Defaults''(J : Json_min'') : Json with type a = J.a = struct
   (* let to_channel oc v = to_channel t oc v *)
   let from_string s = from_string t s
   (* let from_channel ic = from_channel t ic *)
-  let match_variant hash = assert false
-  let read_variant buf hash = assert false
+  let match_variant _hash = assert false
+  let read_variant _buf _hash = assert false
 end
 
 module Convert(J : Json_converter) : Json with type a = J.b = struct
@@ -131,8 +133,8 @@ end
 
 module Json_undef (T : sig type a end) = Defaults(struct
     type a = T.a
-    let write buf _ = failwith "Unimplemented"
-    let read buf = failwith "Unimplemented"
+    let write _buf _ = failwith "Unimplemented"
+    let read _buf = failwith "Unimplemented"
   end)
 
 module Json_char = Defaults(struct
@@ -214,7 +216,7 @@ module Json_string = Defaults(struct
 	  Printf.bprintf buffer "\\u%04X" (int_of_char c)
       | c when c < '\x80' ->
 	  Buffer.add_char buffer s.[i]
-      | c (* >= '\x80' *) -> (* Bytes greater than 127 are embeded in a UTF-8 sequence. *)
+      | _c (* >= '\x80' *) -> (* Bytes greater than 127 are embeded in a UTF-8 sequence. *)
 	  Buffer.add_char buffer (Char.chr (0xC2 lor (Char.code s.[i] lsr 6)));
 	  Buffer.add_char buffer (Char.chr (0x80 lor (Char.code s.[i] land 0x3F)))
     done;
@@ -229,7 +231,7 @@ module Json_list(A : Json) = Defaults(struct
 	  match l with
 	    | [] ->
 		Buffer.add_char buffer '0';
-		for i = c downto 1 do
+		for _ = c downto 1 do
 		  Buffer.add_char buffer ']'
 		done
 	    | x::xs ->
@@ -241,7 +243,7 @@ module Json_list(A : Json) = Defaults(struct
  	let rec aux l c =
 	  match Deriving_Json_lexer.read_case buf with
 	    | `Cst 0 ->
-		for i = c downto 1 do
+		for _ = c downto 1 do
 		  Deriving_Json_lexer.read_rbracket buf
 		done;
 		List.rev l

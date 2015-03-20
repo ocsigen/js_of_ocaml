@@ -120,7 +120,7 @@ module Debug : sig
   (* | Event_other *)
 
   type data
-
+  val is_empty : data -> bool
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
   val find : data -> Code.addr -> (int * string) list
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
@@ -174,6 +174,8 @@ end = struct
 
   let no_data () = Hashtbl.create 17
 
+  let is_empty a = Hashtbl.length a = 0
+
   let read ic =
     let events_by_pc = Hashtbl.create 257 in
     let read_paths : unit -> string list =
@@ -181,7 +183,7 @@ end = struct
       | `V3 -> (fun () -> [])
       | `V4_02 -> (fun () -> (input_value ic : string list)) in
     let len = input_binary_int ic in
-    for i = 0 to len - 1 do
+    for _ = 0 to len - 1 do
       let orig = input_binary_int ic in
       let evl : debug_event list = input_value ic in
 
@@ -245,7 +247,7 @@ end = struct
       propagate r1 r2
     | _                  -> ()
 
-  let iter events_by_pc f = Hashtbl.iter f events_by_pc
+(*  let iter events_by_pc f = Hashtbl.iter f events_by_pc *)
 
   let fold events_by_pc f acc = Hashtbl.fold f events_by_pc acc
 end
@@ -333,7 +335,7 @@ end = struct
     Obj.field x 0 == Obj.field (Obj.repr y) 0
 
   let warn_overflow i i32 =
-    Format.eprintf
+    Util.warn
       "Warning: integer overflow: integer 0x%s truncated to 0x%lx; \
        the generated code might be incorrect.@." i i32
 
@@ -411,7 +413,6 @@ module State = struct
   type elt = Var of Var.t | Dummy
 
   let elt_to_var e = match e with Var x -> x | _ -> assert false
-  let opt_elt_to_var e = match e with Var x -> Some x | _ -> None
 
   let print_elt f v =
     match v with
@@ -444,7 +445,7 @@ module State = struct
     else
       match st with
         []     -> assert false
-      | v :: r -> st_pop (n - 1) r
+      | _ :: r -> st_pop (n - 1) r
 
   let push st = {st with stack = st.accu :: st.stack}
 
@@ -454,11 +455,7 @@ module State = struct
 
   let env_acc n st = {st with accu = st.env.(st.env_offset + n)}
 
-  let has_accu st = st.accu <> Dummy
-
   let accu st = elt_to_var st.accu
-
-  let opt_accu st = opt_elt_to_var st.accu
 
   let stack_vars st =
     List.fold_left
@@ -1712,7 +1709,7 @@ let parse_bytecode ?(debug=`No) code globals debug_data =
 
   let blocks =
     AddrMap.mapi
-      (fun pc (state, instr, last) ->
+      (fun _ (state, instr, last) ->
          { params = State.stack_vars state;
            handler = State.current_handler state;
            body = instr; branch = last })
@@ -1753,7 +1750,7 @@ let fix_min_max_int code =
       let i = Util.find (Lazy.force orig_code) code in
       String.blit (Lazy.force fixed_code) 0 code (i + 16) (String.length (Lazy.force fixed_code))
     with Not_found ->
-      Format.eprintf
+      Util.warn
         "Warning: could not fix min_int/max_int definition \
          (bytecode not found).@."
   end
@@ -1764,7 +1761,7 @@ let override_global =
   let jsmodule name func =
     Prim(Extern "%overrideMod",[Pc (String name);Pc (String func)]) in
   [
-    "CamlinternalMod",(fun orig instrs ->
+    "CamlinternalMod",(fun _orig instrs ->
         let x = Var.fresh () in
         Var.name x "internalMod";
         let init_mod = Var.fresh () in
@@ -1781,6 +1778,8 @@ let really_input_string ic size =
   let b = Bytes.create size in
   really_input ic b 0 size;
   Bytes.unsafe_to_string b
+
+let _ = really_input_string
 
 let really_input_string = (* the one above or the one in Pervasives *)
   let open Pervasives in really_input_string
@@ -1804,7 +1803,7 @@ let read_toc ic =
   Util.MagicNumber.assert_current header;
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
-  for i = 1 to num_sections do
+  for _ = 1 to num_sections do
     let name = really_input_string ic 4 in
     let len = input_binary_int ic in
     section_table := (name, len) :: !section_table
@@ -1884,7 +1883,7 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
     body := register_global ~force:true globals i !body;
     globals.is_exported.(i) <- false;
   done;
-  let body = Util.array_fold_right_i (fun i c l ->
+  let body = Util.array_fold_right_i (fun i _ l ->
       match globals.vars.(i) with
         Some x when globals.is_const.(i) ->
         let l = register_global globals i l in

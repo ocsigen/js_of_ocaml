@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2014 Hugo Heuzard
+ * Copyright (C) 2015 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,25 +17,14 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type t = {
-  common : CommonArg.t;
-  (* compile option *)
-  profile : Driver.profile option;
-  source_map : (string option * Source_map.t) option;
-  runtime_files : string list;
-  output_file : string option;
-  input_file : string option;
-  params : (string * string) list;
-  (* toplevel *)
-  linkall : bool;
-  toplevel : bool;
-  nocmis : bool;
-  (* filesystem *)
-  include_dir : string list;
-  fs_files : string list;
-  fs_output : string option;
-  fs_external : bool;
-}
+(* make ifdef else endif work *)
+#ifdef FINDLIB
+let findlib_init = lazy (Findlib.init ())
+let package_directory pkg =
+  Lazy.force findlib_init;
+  Findlib.package_directory pkg;;
+#endif
 
-val options : t Cmdliner.Term.t
-val info : Cmdliner.Term.info
+#ifndef FINDLIB
+let package_directory _ = raise Not_found;;
+#endif

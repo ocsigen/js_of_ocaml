@@ -38,7 +38,7 @@ module Debug = struct
         debugs := (s, state) :: !debugs;
         state
     in
-    fun () -> !state
+    fun () -> not !Util.quiet && !state
 
   let enable s =
     try List.assoc s !debugs := true with Not_found ->
@@ -103,7 +103,7 @@ module Param = struct
     default, int_of_string
 
   let enum : (string * 'a) list -> _ = function
-    | ((d,v) :: _) as l ->
+    | ((_,v) :: _) as l ->
       v, (fun x -> List.assoc x l)
     | _ -> assert false
 
@@ -115,7 +115,7 @@ module Param = struct
     let state = ref default in
     let set : string -> unit = fun v ->
       try state := convert v with
-      | _ -> Format.eprintf "Warning: malformed option %s=%s. IGNORE@." name v
+      | _ -> Util.warn "Warning: malformed option %s=%s. IGNORE@." name v
     in
     params := (name, (set,desc)) :: !params;
     fun () -> !state
@@ -151,7 +151,7 @@ module Param = struct
 
   let tc_default = TcTrampoline
 
-  let tc_all = tc_default :: List.filter ((<>) tc_default) [TcNone;TcTrampoline(* ;TcWhile *)]
+  let _tc_all = tc_default :: List.filter ((<>) tc_default) [TcNone;TcTrampoline(* ;TcWhile *)]
 
   let tailcall_optim = p
       ~name:"tc"

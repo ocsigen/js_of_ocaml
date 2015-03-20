@@ -25,7 +25,7 @@ let rec until_non_comment acc = function
     then until_non_comment (x::acc) xs
     else (acc, Some (x,xs))
 
-let rec adjust_tokens ?(keep_comment=true) l = match until_non_comment [] l with
+let adjust_tokens ?(keep_comment=true) l = match until_non_comment [] l with
   | acc,None when keep_comment -> List.rev acc
   | _,None -> []
   | past,Some (first,rest) ->
@@ -145,7 +145,7 @@ let parse_aux the_parser toks =
       passed = [];
       current = hd ;
       eof = false } in
-  let lexer_fun lb =
+  let lexer_fun _lb =
     match state.rest with
       | [] when not state.eof ->
         state.eof <- true;

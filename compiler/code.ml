@@ -56,7 +56,6 @@ module Var : sig
   val dummy : t
 end = struct
 
-  open Util
   type t = int
 
   let printer = VarPrinter.create ()
@@ -116,7 +115,7 @@ module VarISet = struct
   let add t x = t.(Var.idx x) <- x
   let remove t x = t.(Var.idx x) <- Var.dummy
   let copy = Array.copy
-  let empty v = Array.make (Var.count ()) Var.dummy
+  let empty _v = Array.make (Var.count ()) Var.dummy
 end
 
 
