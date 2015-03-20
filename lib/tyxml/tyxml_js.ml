@@ -50,10 +50,6 @@ module Xml = struct
     a##value <- v;
     name,Attr a
 
-  let event_handler_of_function f =
-    (fun e -> f (Js.Unsafe.coerce e))
-
-
   let float_attrib name value : attrib = attr name (js_string_of_float value)
   let int_attrib name value = attr name (js_string_of_int value)
   let string_attrib name value = attr name (Js.string value)
@@ -208,7 +204,6 @@ module R = struct
     let event_handler_attrib name s = Xml.event_handler_attrib name s
     let mouse_event_handler_attrib name s = Xml.mouse_event_handler_attrib name s
     let keyboard_event_handler_attrib name s = Xml.keyboard_event_handler_attrib name s
-    let string_attrib name s = attr name (fun f -> Some (Js.string f)) s
     let uri_attrib name s = attr name (fun f -> Some (Js.string f)) s
     let uris_attrib name s = attr name (fun f -> Some (Js.string (String.concat " " f))) s
 

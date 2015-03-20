@@ -396,7 +396,6 @@ module Event = struct
   let resize = Dom.Event.make "resize"
   let orientationchange = Dom.Event.make "orientationchange"
   let popstate = Dom.Event.make "popstate"
-  let hashchange = Dom.Event.make "hashchange"
   let error = Dom.Event.make "error"
   let abort = Dom.Event.make "abort"
   let select = Dom.Event.make "select"
@@ -405,7 +404,6 @@ module Event = struct
   let offline = Dom.Event.make "offline"
 
   let checking = Dom.Event.make "checking"
-  let error = Dom.Event.make "error"
   let noupdate = Dom.Event.make "noupdate"
   let downloading = Dom.Event.make "downloading"
   let progress = Dom.Event.make "progress"

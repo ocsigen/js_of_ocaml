@@ -94,7 +94,7 @@ let decode_pos s =
     else aux i (d::acc)
   in aux 0 []
 
-
+let _ = decode_pos
 (* let _ = assert ( *)
 (*   let l = [0;0;16;1] in *)
 (*   decode_pos (encode_pos l) = l); *)

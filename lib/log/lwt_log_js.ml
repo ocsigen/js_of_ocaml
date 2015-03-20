@@ -92,8 +92,8 @@ let ign_fatal ?inspect ?exn ?section ?location ?logger msg = ign_log ?inspect ?e
 let ign_fatal_f ?inspect ?exn ?section ?location ?logger fmt = Printf.ksprintf (ign_fatal ?inspect ?exn ?section ?location ?logger) fmt
 
 
-let raise_error ?inspect ?exn ?section ?location ?logger msg =
+(*let raise_error ?inspect ?exn ?section ?location ?logger msg =
   Lwt.ignore_result (log ?inspect ?exn ?section ?location ?logger ~level:Error msg);
-  failwith msg
-let raise_error_f ?inspect ?exn ?section ?location ?logger fmt =
-  Printf.ksprintf (raise_error ?inspect ?exn ?section ?location ?logger) fmt
+  failwith msg *)
+(*let raise_error_f ?inspect ?exn ?section ?location ?logger fmt =
+  Printf.ksprintf (raise_error ?inspect ?exn ?section ?location ?logger) fmt *)

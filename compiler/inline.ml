@@ -20,7 +20,7 @@
 
 open Code
 
-let optimizable blocks pc acc =
+let optimizable blocks pc _ =
   Code.traverse Code.fold_children (fun pc acc ->
     if not acc
     then acc
@@ -35,7 +35,7 @@ let optimizable blocks pc acc =
           | Let (_, Prim (Extern "caml_js_eval_string",_)) -> false
           | Let (_, Prim (Extern "debugger",_)) -> false
           | Let
-              (x,
+              (_,
                Prim(Extern
                       ("caml_js_var"
                       |"caml_js_expr"

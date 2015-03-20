@@ -33,7 +33,6 @@ end]}
 *)
 
 open Pa_deriving_common
-open Defs
 
 val register_predefs : Type.qname -> Type.qname -> unit
 (** [register_predefs typeA typeB] tells the syntax extension

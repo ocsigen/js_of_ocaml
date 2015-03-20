@@ -34,6 +34,8 @@ lwt_js_events.cmx : lwt_js.cmx js.cmx firebug.cmx dom_html.cmx dom.cmx \
     lwt_js_events.cmi
 regexp.cmo : js.cmi regexp.cmi
 regexp.cmx : js.cmx regexp.cmi
+sys_js.cppo.cmo : js.cmi
+sys_js.cppo.cmx : js.cmx
 sys_js.cmo : js.cmi sys_js.cmi
 sys_js.cmx : js.cmx sys_js.cmi
 typed_array.cmo : js.cmi typed_array.cmi

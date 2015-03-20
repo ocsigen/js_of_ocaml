@@ -63,12 +63,6 @@ let keyword_table =
   ];
   h
 
-let hexa_to_int = function
-  | '0'..'9' as x -> Char.code x - Char.code '0'
-  | 'a'..'f' as x -> Char.code x - Char.code 'a' + 10
-  | 'A'..'F' as x -> Char.code x - Char.code 'A' + 10
-  | _ -> assert false;;
-
 }
 
 (*****************************************************************************)

@@ -27,7 +27,6 @@ module StringMap = Map.Make (String)
 
 let opt_map f x = match x with None -> None | Some v -> Some (f v)
 let opt_iter f x = match x with None -> () | Some v -> f v
-let opt_bind x f = match x with None -> None | Some v -> f v
 let opt_filter p x =
   match x with None -> None | Some v -> if p v then Some v else None
 
@@ -246,7 +245,7 @@ module MagicNumber = struct
 
   let size = 12
 
-  let kind_of_string = function
+  let _kind_of_string = function
     | "Caml1999X" -> "exe"
     | "Caml1999I" -> "cmi"
     | "Caml1999O" -> "cmo"
@@ -257,7 +256,7 @@ module MagicNumber = struct
     | "Caml2012T" -> "cmt"
     | "Caml1999M" -> "impl"
     | "Caml1999N" -> "intf"
-    | s -> raise Not_found
+    | _ -> raise Not_found
 
   let of_string s =
     try

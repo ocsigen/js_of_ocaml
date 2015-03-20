@@ -61,15 +61,15 @@ let mouse_pos () =
 let button_down () =
   let ctx = get_context() in
   let elt = ctx##canvas in
-  Lwt_js_events.mousedown elt >>= fun e ->
+  Lwt_js_events.mousedown elt >>= fun _ev ->
   Lwt.return true
 
 let read_key () =
   (* let ctx = get_context() in *)
   (* let elt = ctx##canvas in *)
   let doc = document_of_context (get_context ()) in
-  Lwt_js_events.keypress doc >>= fun e ->
-  Lwt.return (Char.chr e##keyCode)
+  Lwt_js_events.keypress doc >>= fun ev ->
+  Lwt.return (Char.chr ev##keyCode)
 
 let loop elist f : unit =
   let ctx = get_context() in
@@ -82,20 +82,20 @@ let loop elist f : unit =
   let get_pos_mouse () = !mouse_x, !mouse_y in
 
   if List.mem Button_down elist then
-    elt##onmousedown <- Dom_html.handler (fun ev ->
+    elt##onmousedown <- Dom_html.handler (fun _ev ->
         let mouse_x, mouse_y = get_pos_mouse () in
         button := true;
         let s = { mouse_x ; mouse_y ; button=true ;
-		              keypressed=false ; key=null } in
+                  keypressed=false ; key=null } in
         f s;
         Js._true);
 
   if List.mem Button_up elist then
-    elt##onmouseup <- Dom_html.handler (fun ev ->
+    elt##onmouseup <- Dom_html.handler (fun _ev ->
         let mouse_x, mouse_y = get_pos_mouse () in
         button := false;
         let s = { mouse_x ; mouse_y ; button=false ;
-		              keypressed=false ; key=null } in
+                  keypressed=false ; key=null } in
         f s;
         Js._true);
 
@@ -107,7 +107,7 @@ let loop elist f : unit =
       if List.mem Mouse_motion elist then
         (let mouse_x, mouse_y = get_pos_mouse () in
          let s = { mouse_x ; mouse_y ; button=(!button) ;
-		               keypressed=false ; key=null } in
+                   keypressed=false ; key=null } in
          f s);
       Js._true);
 
@@ -117,11 +117,11 @@ let loop elist f : unit =
     doc##onkeypress <- Dom_html.handler (fun ev ->
         (* Uncaught Invalid_argument char_of_int with key € for example *)
         let key =
-	        try char_of_int (Js.Optdef.get (ev##charCode) (fun _ -> 0))
-	        with Invalid_argument _ -> null in
+          try char_of_int (Js.Optdef.get (ev##charCode) (fun _ -> 0))
+          with Invalid_argument _ -> null in
         let mouse_x, mouse_y = get_pos_mouse () in
         let s = { mouse_x ; mouse_y ; button=(!button) ;
-		              keypressed=true ; key } in
+                  keypressed=true ; key } in
         f s;
         Js._true)
 

@@ -34,7 +34,7 @@ let parse_annot loc s =
       | `Version (_,l) -> Some (`Version  (Some loc, l))
   with
     | Not_found -> None
-    | exc ->
+    | _exc ->
     (* Format.eprintf "Not found for %s : %s @." (Printexc.to_string exc) s; *)
     None
 
@@ -101,7 +101,7 @@ let parse_file f =
   res
 
 
-class check_and_warn name pi = object(m)
+class check_and_warn name pi = object
   inherit Js_traverse.free as super
   method merge_info from =
     let def = from#get_def_name in
@@ -322,7 +322,7 @@ let resolve_deps ?(linkall = false) visited_rev used =
       begin
         (* link all primitives *)
         let prog,set =
-          Hashtbl.fold (fun nm (id,_) (visited,set) ->
+          Hashtbl.fold (fun nm (_id,_) (visited,set) ->
               resolve_dep_name_rev visited [] nm,
               StringSet.add nm set
             )

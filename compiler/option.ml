@@ -103,7 +103,7 @@ module Param = struct
     default, int_of_string
 
   let enum : (string * 'a) list -> _ = function
-    | ((d,v) :: _) as l ->
+    | ((_,v) :: _) as l ->
       v, (fun x -> List.assoc x l)
     | _ -> assert false
 
@@ -151,7 +151,7 @@ module Param = struct
 
   let tc_default = TcTrampoline
 
-  let tc_all = tc_default :: List.filter ((<>) tc_default) [TcNone;TcTrampoline(* ;TcWhile *)]
+  let _tc_all = tc_default :: List.filter ((<>) tc_default) [TcNone;TcTrampoline(* ;TcWhile *)]
 
   let tailcall_optim = p
       ~name:"tc"

@@ -79,8 +79,6 @@ let phi p =
 let print p =
   if debug () then Code.print_program (fun _ _ -> "") p; p
 
-let (>>>) x f = f x
-
 let (>>) f g = fun x -> g (f x)
 
 let rec loop max name round i (p : 'a) : 'a =
@@ -236,7 +234,7 @@ let gen_missing js missing =
     (Statement (Variable_statement miss), N) :: js
 
 
-let link formatter ~standalone ?linkall js =
+let link ~standalone ?linkall js =
   if standalone
   then
     begin
@@ -342,7 +340,7 @@ let output formatter ?source_map js =
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Util.Timer.print t
 
-let pack ~standalone ?(toplevel=false)?(linkall=false) js =
+let pack ~standalone ?(toplevel=false) js =
   let module J = Javascript in
   let t = Util.Timer.make () in
   if times ()
@@ -431,9 +429,9 @@ let f ?(standalone=true) ?(profile=o1) ?toplevel ?linkall ?source_map formatter 
   deadcode' >>
   generate d ?toplevel >>
 
-  link formatter ~standalone ?linkall >>
+  link ~standalone ?linkall >>
 
-  pack ~standalone ?linkall ?toplevel >>
+  pack ~standalone ?toplevel >>
 
   coloring >>
 

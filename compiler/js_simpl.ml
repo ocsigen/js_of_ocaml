@@ -162,7 +162,7 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
 
 let unopt b = match b with Some b -> b | None -> (J.Block [], J.N)
 
-let rec if_statement e loc iftrue truestop iffalse falsestop =
+let if_statement e loc iftrue truestop iffalse falsestop =
   (*FIX: should be done at an earlier stage*)
   let e = simplify_condition e in
   match iftrue, iffalse with
@@ -197,7 +197,7 @@ let rec get_variable acc = function
           acc
           e1)
         e2)
-      e2
+      e3
   | J.EUn (_,e1)
   | J.EDot (e1,_)
   | J.ENew (e1,None) -> get_variable acc e1

@@ -75,14 +75,14 @@ let output_newline st = output st "\n" 1
 
 let rec flat_render st l =
   match l with
-    Text s :: r | Break (s, _) :: r ->
+  | Text s :: r | Break (s, _) :: r ->
       output st s (String.length s); flat_render st r
   | Set_pos p :: r ->
     p.p_line <- st.line;
     p.p_col  <- st.col;
     flat_render st r
-  | _ :: r ->
-      flat_render st r
+  | (Start_group _| End_group) :: r ->
+     flat_render st r
   | [] ->
       ()
 
@@ -225,11 +225,11 @@ let output_substring = Pervasives.output
 (* for ocaml <  4.02, output_substring will be Pervasives.ouput (above)
    for ocaml >= 4.02, output_substring will be taken from the locally
                       open Pervasives module *)
+let _ = output_substring
 let output_substring =
   let open Pervasives in
   output_substring
 (* hack off*)
-
 
 let to_out_channel ch =
   { indent = 0; box_indent = 0; prev_indents = [];

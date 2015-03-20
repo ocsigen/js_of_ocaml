@@ -117,7 +117,6 @@ module type TO = sig
   val of_area : [< Html5_types.area] elt -> Dom_html.areaElement Js.t
   val of_map : [< 'a Html5_types.map] elt -> Dom_html.mapElement Js.t
   val of_script : [< Html5_types.script] elt -> Dom_html.scriptElement Js.t
-  val of_embed : [< Html5_types.embed] elt -> Dom_html.embedElement Js.t
   val of_td : [< Html5_types.td | Html5_types.td ] elt -> Dom_html.tableCellElement Js.t
   val of_tr : [< Html5_types.tr] elt -> Dom_html.tableRowElement Js.t
   val of_col : [< Html5_types.col] elt -> Dom_html.tableColElement Js.t

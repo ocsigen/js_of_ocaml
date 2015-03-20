@@ -170,12 +170,6 @@ class subst sub = object
     method ident x = sub x
 end
 
-let string_replace v f s =
-  let v' = f s in
-  if v = v'
-  then raise Not_found
-  else EVar v'
-
 class replace_expr f = object(m)
   inherit map as super
   method expression e = try EVar (f e) with Not_found -> super#expression e
@@ -379,7 +373,7 @@ class free =
       Function_declaration (id,params, body, nid)
     | _ -> super#source x
 
-  method block ?catch params = ()
+  method block ?catch:_ _ = ()
 
 
   method statement x = match x with
@@ -449,7 +443,7 @@ class free =
 
 
 
-class rename_variable keeps = object(m : 'test)
+class rename_variable keeps = object
   inherit free as super
 
   val mutable sub_ = new subst (fun x -> x)
@@ -550,6 +544,7 @@ class compact_vardecl = object(m)
         | s -> s
 
     method block ?(catch=false) params =
+      ignore catch;
       List.iter m#except params;
       super#block params;
 

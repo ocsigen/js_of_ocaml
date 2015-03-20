@@ -1292,7 +1292,6 @@ module Event : sig
   val resize : event t typ
   val orientationchange : event t typ
   val popstate : event t typ
-  val hashchange : event t typ
   val error : event t typ
   val abort : event t typ
   val select : event t typ
@@ -1301,7 +1300,6 @@ module Event : sig
   val offline : event t typ
 
   val checking : event t typ
-  val error : event t typ
   val noupdate : event t typ
   val downloading : event t typ
   val progress : event t typ

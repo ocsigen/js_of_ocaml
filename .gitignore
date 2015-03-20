@@ -22,6 +22,7 @@
 *.map
 lib/stubs.c
 lib/sys_js.ml
+lib/META
 runtime/runtime.js
 toplevel/toplevel.js
 toplevel/eval.js
@@ -47,6 +48,8 @@ compiler/annot_lexer.ml
 compiler/annot_parser.ml
 compiler/annot_parser.mli
 compiler/*.conflicts
+compiler/lib/compier.*
+compiler/myfindlib.ml
 doc/api/html
 benchmarks/build
 benchmarks/results

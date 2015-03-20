@@ -9,7 +9,11 @@ endif
 
 all: $(COMPILER) $(MINIFIER) man
 
-lib: compiler.cma compiler.cmxa compiler.cmxs
+compilerlib: lib/compiler.cma lib/compiler.cmxa lib/compiler.cmxs
+	cp compiler.cmi compiler.a lib/
+
+lib/%: %
+	cp $< $@
 
 OBJS=compiler_version.cmx myfindlib.cmx \
      util.cmx pretty_print.cmx option.cmx reserved.cmx varPrinter.cmx \
@@ -24,7 +28,8 @@ OBJS=compiler_version.cmx myfindlib.cmx \
      pseudoFs.cmx
 
 COMPOBJS=$(OBJS) commonArg.cmx compileArg.cmx compile.cmx
-
+OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45
+OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
 $(COMPILER): compile.$(BEST)
 	mv -f $< $@
 
@@ -43,30 +48,30 @@ man/$(COMPILER).1: $(COMPILER)
 .INTERMEDIATE: compile.byte compile.opt minify.byte minify.opt
 
 compile.byte: $(COMPOBJS:cmx=cmo)
-	ocamlfind ocamlc $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
+	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
 compile.opt: $(COMPOBJS)
-	ocamlfind ocamlopt $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -g -o $@ $^
+	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -g -o $@ $^
 
 minify.byte: $(OBJS:cmx=cmo) commonArg.cmo minifyArg.cmo minify.cmo
-	ocamlfind ocamlc $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
+	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
 minify.opt: $(OBJS:cmx=cmx) commonArg.cmx minifyArg.cmx minify.cmx
-	ocamlfind ocamlopt $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -g -o $@ $^
+	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -g -o $@ $^
 
 
 compiler.cmo: $(OBJS:cmx=cmo)
-	ocamlfind ocamlc -pack -o $@ $^
+	$(OCAMLC) -pack -o $@ $^
 
 compiler.cma: compiler.cmo
-	ocamlfind ocamlc -a -o $@ $^
+	$(OCAMLC) -a -o $@ $^
 
 compiler.cmx: $(OBJS)
-	ocamlfind ocamlopt -pack -g -o $@ $^
+	$(OCAMLOPT) -pack -g -o $@ $^
 
 compiler.cmxa: compiler.cmx
-	ocamlfind ocamlopt -a -o $@ $^
+	$(OCAMLOPT) -a -o $@ $^
 
 compiler.cmxs: compiler.cmxa
-	ocamlfind ocamlopt -shared -g -o $@ $^
+	$(OCAMLOPT) -shared -g -o $@ $^
 
 VERSION := $(shell head -n 1 ../VERSION)
 
@@ -79,13 +84,13 @@ compiler_version.ml.tmp:
 	echo "let git_version = \"${VERSION_GIT}\"" >> $@
 
 %.cmx: %.ml
-	ocamlfind ocamlopt $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -for-pack Compiler -g -c $<
+	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -for-pack Compiler -g -c $<
 
 %.cmo: %.ml
-	ocamlfind ocamlc $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
+	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 %.cmi: %.mli
-	ocamlfind ocamlc $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
+	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 annot_parser.ml: annot_parser.mli
 annot_parser.mli: annot_parser.mly primitive.cmi

@@ -52,7 +52,7 @@ class tailcall = object(m)
 
   method private last_e e =
     match e with
-      | ECall (EVar (V var), args, _) -> tc <- VarSet.add var tc
+      | ECall (EVar (V var), _args, _) -> tc <- VarSet.add var tc
       | ESeq (_,e) -> m#last_e e
       | ECond (_,e1,e2) -> m#last_e e1;m#last_e e2
       | _ -> ()
@@ -111,7 +111,7 @@ module type TC = sig
 end
 
 module Ident : TC = struct
-  let rewrite closures get_prim =
+  let rewrite closures _get_prim =
     [J.Variable_statement
        (List.map (fun (name, cl, loc, _) -> J.V name, Some (cl, loc))
           closures), J.N]
@@ -119,19 +119,19 @@ module Ident : TC = struct
 end
 
 module While : TC = struct
-  let rewrite closures get_prim = failwith "todo"
+  let rewrite _closures _get_prim = failwith "todo"
 end
 
 module Tramp : TC = struct
 
   let rewrite cls get_prim =
     match cls with
-    | [x,cl,_,req_tc] when not (VarSet.mem x req_tc) ->
+    | [x,_cl,_,req_tc] when not (VarSet.mem x req_tc) ->
         Ident.rewrite cls get_prim
     | _ ->
     let counter = Var.fresh () in
     Var.name counter "counter";
-    let m2old,m2new = List.fold_right (fun (v,_,_,_) (m2old,m2new) ->
+    let _m2old,m2new = List.fold_right (fun (v,_,_,_) (m2old,m2new) ->
         let v' = Var.fork v in
         VarMap.add v' v m2old, VarMap.add v v' m2new
       ) cls (VarMap.empty,VarMap.empty)in

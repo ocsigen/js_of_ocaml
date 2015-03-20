@@ -452,7 +452,7 @@ val onbeforeunload : unit -> Dom_html.event Js.t Lwt.t
 val onresize : unit -> Dom_html.event Js.t Lwt.t
 val onorientationchange : unit -> Dom_html.event Js.t Lwt.t
 val onpopstate : unit -> Dom_html.event Js.t Lwt.t
-val onhashchange : unit -> Dom_html.event Js.t Lwt.t
+val onhashchange : unit -> Dom_html.hashChangeEvent Js.t Lwt.t
 
 val onorientationchange_or_onresize : unit -> Dom_html.event Js.t Lwt.t
 
@@ -463,7 +463,7 @@ val onorientationchanges :
 val onpopstates :
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 val onhashchanges :
-  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  (Dom_html.hashChangeEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val onorientationchanges_or_onresizes :
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
