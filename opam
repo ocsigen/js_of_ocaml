@@ -24,3 +24,4 @@ conflicts: [
   "deriving" {< "0.6"}
   "tyxml"    {< "3.2.1"}
 ]
+available: [ ocaml-version >= "4.00.0" ]
