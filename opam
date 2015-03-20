@@ -13,7 +13,7 @@ depends: [
   "cmdliner"
   "base-unix"
   "ocamlfind" {>= "1.5.1"}
-  "lwt" {>= "2.4"}
+  "lwt" {>= "2.4.4"}
   "menhir"
   "camlp4"
   "base64"
