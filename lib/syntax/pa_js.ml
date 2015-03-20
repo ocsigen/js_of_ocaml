@@ -241,7 +241,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
        let rec get_arg x =
 	 match x with
-	 | <:expr< fun $x$ -> $e$ >> -> (fresh_type e_loc )::get_arg e
+	 | <:expr< fun $_x$ -> $e$ >> -> (fresh_type e_loc )::get_arg e
 	 | _ -> [] in
        let _loc = e_loc in
        let t = fresh_type _loc in
