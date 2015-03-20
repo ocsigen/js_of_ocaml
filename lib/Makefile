@@ -5,6 +5,9 @@ OBJS=$(MLOBJS) $(COBJS)
 
 JSON_OBJS=$(addprefix deriving_json/,deriving_Json_lexer.cmo deriving_Json.cmo)
 
+OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45
+OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
+
 include ../Makefile.conf
 -include ../Makefile.local
 
@@ -50,94 +53,97 @@ $(LIBNAME).cma: $(OBJS)
 	ocamlmklib -o $(LIBNAME) $(OBJS)
 
 deriving_json.cma: $(JSON_OBJS)
-	ocamlfind ocamlc -a -o $@ $^
+	$(OCAMLC) -a -o $@ $^
 
 deriving_json.cmxa: $(JSON_OBJS:.cmo=.cmx)
-	ocamlfind ocamlopt -a -o $@ $^
+	$(OCAMLOPT) -a -o $@ $^
 deriving_json.cmxs: deriving_json.cmxa
-	ocamlfind ocamlopt -shared -linkall -o $@ $^
+	$(OCAMLOPT) -shared -linkall -o $@ $^
 
 syntax/pa_js.cmo: syntax/pa_js.ml
-	ocamlfind ocamlc $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
+	$(OCAMLC) -w -42 $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
 
 syntax/pa_js.cmx: syntax/pa_js.ml
-	ocamlfind ocamlopt $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
+	$(OCAMLOPT) -w -42 $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
 
 syntax/pa_js.cmxs: syntax/pa_js.cmx
-	ocamlfind ocamlopt -shared -linkall -o $@ $<
+	$(OCAMLOPT) -shared -linkall -o $@ $<
 
 syntax/pa_deriving_Json.cmo: syntax/pa_deriving_Json.ml syntax/pa_deriving_Json.cmi
-	ocamlfind ocamlc -I syntax $(SAFESTRING) -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
+	$(OCAMLC) -w -27 -I syntax $(SAFESTRING) -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
 
 syntax/pa_deriving_Json.cmi: syntax/pa_deriving_Json.mli
-	ocamlfind ocamlc $(SAFESTRING) -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
+	$(OCAMLC) $(SAFESTRING) -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
 
 syntax/pa_deriving_Json.cmx: syntax/pa_deriving_Json.ml
-	ocamlfind ocamlopt -I syntax $(SAFESTRING) -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
+	$(OCAMLOPT) -w -27 -I syntax $(SAFESTRING) -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
 
 syntax/pa_deriving_Json.cmxs: syntax/pa_deriving_Json.cmx
-	ocamlfind ocamlopt -I syntax -shared -linkall -o $@ $<
+	$(OCAMLOPT) -I syntax -shared -linkall -o $@ $<
 
 graphics/%.cmo: graphics/%.ml graphics/%.cmi syntax/pa_js.cmo
-	ocamlfind ocamlc -syntax camlp4o $(SAFESTRING) -package lwt,lwt.syntax,graphics -ppopt syntax/pa_js.cmo -I graphics -c $< -o $@
+	$(OCAMLC) -syntax camlp4o $(SAFESTRING) -package lwt,lwt.syntax,graphics -ppopt syntax/pa_js.cmo -I graphics -c $< -o $@
 
 graphics/%.cmi: graphics/%.mli
-	ocamlfind ocamlc $(SAFESTRING) -package lwt,graphics -I ./ $< -o $@
+	$(OCAMLC) $(SAFESTRING) -package lwt,graphics -I ./ $< -o $@
 
 graphics/graphics.cma: graphics/graphics_js.cmo
-	ocamlfind ocamlc -a -o $@ $^
+	$(OCAMLC) -a -o $@ $^
 
 tyxml/%.cmo: tyxml/%.ml tyxml/%.cmi tyxml/tyxml_cast_sigs.cmi syntax/pa_js.cmo
-	ocamlfind ocamlc -syntax camlp4o $(SAFESTRING) -package lwt,lwt.syntax,tyxml.functor,reactiveData,react -ppopt syntax/pa_js.cmo -I tyxml -c $< -o $@
+	$(OCAMLC) -syntax camlp4o $(SAFESTRING) -package lwt,lwt.syntax,tyxml.functor,reactiveData,react -ppopt syntax/pa_js.cmo -I tyxml -c $< -o $@
 
 tyxml/tyxml_cast_sig.cmi: tyxml/tyxml_cast_sig.mli
-	ocamlfind ocamlc $(SAFESTRING) -package lwt,tyxml.functor,reactiveData,react -I . -I tyxml $< -o $@
+	$(OCAMLC) $(SAFESTRING) -package lwt,tyxml.functor,reactiveData,react -I . -I tyxml $< -o $@
 
-tyxml/%.cmi: tyxml/%.mli tyxml/tyxml_cast_sigs.cmi
-	ocamlfind ocamlc $(SAFESTRING) -package lwt,tyxml.functor,reactiveData,react -I . -I tyxml $< -o $@
+tyxml/tyxml_cast.cmi: tyxml/tyxml_cast_sigs.cmi
+tyxml/tyxml_js.cmi: tyxml/tyxml_cast_sigs.cmi
+
+tyxml/%.cmi: tyxml/%.mli
+	$(OCAMLC) $(SAFESTRING) -package lwt,tyxml.functor,reactiveData,react -I . -I tyxml $< -o $@
 
 tyxml/tyxml.cma: tyxml/tyxml_cast.cmo tyxml/tyxml_js.cmo
-	ocamlfind ocamlc -a -o $@ $^
+	$(OCAMLC) -a -o $@ $^
 
 
 log/%.cmo: log/%.ml log/%.cmi syntax/pa_js.cmo
-	ocamlfind ocamlc -syntax camlp4o $(SAFESTRING) -package lwt,lwt.syntax,lwt.log -ppopt syntax/pa_js.cmo -I log -c $< -o $@
+	$(OCAMLC) -syntax camlp4o $(SAFESTRING) -package lwt,lwt.syntax,lwt.log -ppopt syntax/pa_js.cmo -I log -c $< -o $@
 
 log/%.cmi: log/%.mli
-	ocamlfind ocamlc $(SAFESTRING) -package lwt,lwt.log -I . -I log $< -o $@
+	$(OCAMLC) $(SAFESTRING) -package lwt,lwt.log -I . -I log $< -o $@
 
 log/logger.cma: log/lwt_log_js.cmo
-	ocamlfind ocamlc -a -o $@ $^
+	$(OCAMLC) -a -o $@ $^
 
 toplevel_lib: $(TOPLEVELLIB)
 
-toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo ../compiler/compiler.cma
-	ocamlfind ocamlc -syntax camlp4o \
+toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo ../compiler/lib/compiler.cma
+	$(OCAMLC) -syntax camlp4o \
 		$(SAFESTRING) -package lwt,lwt.syntax \
 		-ppopt syntax/pa_js.cmo \
-		-I toplevel -I ../compiler -I +compiler-libs \
+		-I toplevel -I ../compiler/lib -I +compiler-libs \
 		-c $< -o $@
 
 toplevel/jsooTop.cmi: toplevel/jsooTop.mli
-	ocamlfind ocamlc $(SAFESTRING) -package lwt -I . -I log $< -o $@
+	$(OCAMLC) $(SAFESTRING) -package lwt -I . -I log $< -o $@
 
 %.cmo: %.ml syntax/pa_js.cmo
-	ocamlfind ocamlc -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt -c -g $<
+	$(OCAMLC) -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt -c -g $<
 
 %.cmi: %.mli
-	ocamlfind ocamlc -package lwt -I deriving_json $(SAFESTRING) -c $<
+	$(OCAMLC) -package lwt -I deriving_json $(SAFESTRING) -c $<
 
 %.ml: %.mll
 	ocamllex $<
 
 ${JSON_OBJS}: %.cmo: %.ml ${PA_DERIVING}
-	ocamlfind ocamlc $(SAFESTRING) -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
+	$(OCAMLC) $(SAFESTRING) -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
 
 ${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml ${PA_DERIVING}
-	ocamlfind ocamlopt $(SAFESTRING) -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
+	$(OCAMLOPT) $(SAFESTRING) -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
 
 %$(OBJEXT): %.c
-	ocamlfind ocamlc -package lwt -c $<
+	$(OCAMLC) -package lwt -c $<
 
 stubs.c: $(MLOBJS:cmo=ml)
 	(echo "#include <stdlib.h>"; \

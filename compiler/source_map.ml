@@ -74,7 +74,7 @@ let string_of_mapping mapping =
       else begin
         if !gen_line <> c.gen_line then begin
           assert (!gen_line < c.gen_line);
-          for j = !gen_line to c.gen_line - 1 do
+          for _i = !gen_line to c.gen_line - 1 do
             Buffer.add_char buf ';';
           done;
           gen_col := 0; gen_line := c.gen_line

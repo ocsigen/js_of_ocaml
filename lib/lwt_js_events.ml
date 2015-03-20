@@ -59,7 +59,7 @@ let seq_loop evh ?(cancel_handler = false) ?use_capture target handler =
   let cur = ref (Lwt.fail (Failure "Lwt_js_event")) in
   (* Using Lwt.fail as default, to be polymorphic *)
   let cur_handler = ref (Lwt.return ()) in
-  let lt, lw = Lwt.task () in
+  let lt, _lw = Lwt.task () in
   Lwt.on_cancel lt
     (fun () ->
       Lwt.cancel !cur;
@@ -84,7 +84,7 @@ let seq_loop evh ?(cancel_handler = false) ?use_capture target handler =
 let async_loop evh ?use_capture target handler =
   let cancelled = ref false in
   let cur = ref (Lwt.fail (Failure "Lwt_js_event")) in
-  let lt, lw = Lwt.task () in
+  let lt, _lw = Lwt.task () in
   Lwt.on_cancel lt (fun () -> Lwt.cancel !cur; cancelled := true);
   let rec aux () =
     if not !cancelled then begin
@@ -105,7 +105,7 @@ let buffered_loop evh ?(cancel_handler = false) ?(cancel_queue = true)
   let queue = ref [] in
   let cur = ref (Lwt.fail (Failure "Lwt_js_event")) in
   let cur_handler = ref (Lwt.return ()) in
-  let lt, lw = Lwt.task () in
+  let lt, _lw = Lwt.task () in
   let spawn = Lwt_condition.create () in
   Lwt.on_cancel lt (fun () ->
     Lwt.cancel !cur ;
@@ -319,7 +319,7 @@ let transition_evn = lazy (
   let e = Dom_html.createDiv Dom_html.document in
   try
     snd (List.find
-           (fun (propname, evname) ->
+           (fun (propname, _evname) ->
               Js.Unsafe.get (e##style) propname != Js.undefined)
            [("WebkitTransition", [Dom.Event.make "webkitTransitionEnd"]);
             ("MozTransition", [Dom.Event.make "transitionend"]);
@@ -337,9 +337,6 @@ let transitionend elt =
          l) >>= fun _ ->
       Lwt.return ()
 
-let transitionends t =
-  seq_loop (fun ?use_capture e -> transitionend e) t
-
 let request_animation_frame () =
   let t, s = Lwt.wait () in
   Dom_html._requestAnimationFrame
@@ -356,7 +353,7 @@ let domContentLoaded =
      then Lwt.return_unit
      else
        let t,w = Lwt.task () in
-       let wakeup w x = if Lwt.is_sleeping t then Lwt.wakeup w () in
+       let wakeup w _ = if Lwt.is_sleeping t then Lwt.wakeup w () in
        let wakeup_exn w e = if Lwt.is_sleeping t then Lwt.wakeup_exn w e in
        (* https://github.com/dperini/ContentLoaded/blob/master/src/contentloaded.js *)
        let regular = make_event Dom_html.Event.domContentLoaded doc in
@@ -374,7 +371,7 @@ let domContentLoaded =
        let init = make_event Dom_html.Event.load Dom_html.window in
        Lwt.on_any init (wakeup w) (wakeup_exn w);
        (* clean and return *)
-       Lwt.bind t (fun e ->
+       Lwt.bind t (fun _e ->
            Lwt.cancel regular;
            Lwt.cancel readystatechange;
            Lwt.cancel init;
@@ -392,22 +389,22 @@ let onhashchange () = make_event Dom_html.Event.hashchange Dom_html.window
 let onorientationchange_or_onresize () =
   Lwt.pick [onresize (); onorientationchange ()]
 
-let onresizes t = seq_loop (fun ?use_capture () -> onresize ()) () t
+let onresizes t = seq_loop (fun ?use_capture:_ () -> onresize ()) () t
 let onorientationchanges t =
-  seq_loop (fun ?use_capture () -> onorientationchange ()) () t
-let onpopstates t = seq_loop (fun ?use_capture () -> onpopstate ()) () t
-let onhashchanges t = seq_loop (fun ?use_capture () -> onhashchange ()) () t
+  seq_loop (fun ?use_capture:_ () -> onorientationchange ()) () t
+let onpopstates t = seq_loop (fun ?use_capture:_ () -> onpopstate ()) () t
+let onhashchanges t = seq_loop (fun ?use_capture:_ () -> onhashchange ()) () t
 
 let onorientationchanges_or_onresizes t =
   seq_loop
-    (fun ?use_capture () -> onorientationchange_or_onresize ()) () t
+    (fun ?use_capture:_ () -> onorientationchange_or_onresize ()) () t
 
 let limited_onresizes ?elapsed_time t =
-  limited_loop (fun ?use_capture () -> onresize ()) ?elapsed_time () t
+  limited_loop (fun ?use_capture:_ () -> onresize ()) ?elapsed_time () t
 let limited_onorientationchanges ?elapsed_time t =
   limited_loop
-    (fun ?use_capture () -> onorientationchange ()) ?elapsed_time () t
+    (fun ?use_capture:_ () -> onorientationchange ()) ?elapsed_time () t
 let limited_onorientationchanges_or_onresizes ?elapsed_time t =
   limited_loop
-    (fun ?use_capture () -> onorientationchange_or_onresize ())
+    (fun ?use_capture:_ () -> onorientationchange_or_onresize ())
     ?elapsed_time () t

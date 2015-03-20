@@ -10,7 +10,7 @@ include Makefile.conf
 .PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build jsoo_tools toplevel_lib toplevel
 
 compiler:
-	$(MAKE) -C compiler all lib
+	$(MAKE) -C compiler all compilerlib
 library:
 	$(MAKE) -C lib
 runtime:

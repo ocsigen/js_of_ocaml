@@ -65,7 +65,7 @@ and mark_expr st e =
   | Prim (_, l) ->
       List.iter (fun x -> match x with Pv x -> mark_var st x | _ -> ()) l
 
-and mark_cont_reachable st (pc, param) = mark_reachable st pc
+and mark_cont_reachable st (pc, _param) = mark_reachable st pc
 
 and mark_reachable st pc =
   if not (AddrSet.mem pc st.reachable_blocks) then begin
@@ -201,7 +201,7 @@ let f ((pc, blocks, free_pc) as program) =
             match i with
               Let (x, e) ->
                 add_def defs x (Expr e)
-            | Set_field (x, _, _) | Array_set (x, _, _) | Offset_ref (x, _) ->
+            | Set_field (_, _, _) | Array_set (_, _, _) | Offset_ref (_, _) ->
                 ())
          block.body;
        Util.opt_iter

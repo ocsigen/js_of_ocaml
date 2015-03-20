@@ -45,8 +45,9 @@ let urldecode_js_string_string s =
 let urldecode s =
   Js.to_bytestring (Js.unescape (Js.bytestring (unescape_plus s)))
 
-let urlencode_js_string_string s =
-  Js.to_bytestring (Js.escape s)
+(*let urlencode_js_string_string s =
+  Js.to_bytestring (Js.escape s)*)
+
 let urlencode ?(with_plus=true) s =
   if with_plus
   then escape_plus (Js.to_bytestring (Js.escape (Js.bytestring s)))
@@ -246,7 +247,7 @@ let string_of_url = function
         fu_arguments = args;
         fu_fragment = frag;
       } ->  "file://"
-          ^ String.concat "/" (List.map urlencode path)
+          ^ String.concat "/" (List.map (fun x -> urlencode x) path)
           ^ (match args with
                | [] -> ""
                | l -> "?" ^ encode_arguments l
@@ -270,7 +271,7 @@ let string_of_url = function
                | n -> ":" ^ string_of_int n
             )
           ^ "/"
-          ^ String.concat "/" (List.map urlencode path)
+          ^ String.concat "/" (List.map (fun x -> urlencode x) path)
           ^ (match args with
                | [] -> ""
                | l -> "?" ^ encode_arguments l
@@ -294,7 +295,7 @@ let string_of_url = function
                | n -> ":" ^ string_of_int n
             )
           ^ "/"
-          ^ String.concat "/" (List.map urlencode path)
+          ^ String.concat "/" (List.map (fun x -> urlencode x) path)
           ^ (match args with
                | [] -> ""
                | l -> "?" ^ encode_arguments l

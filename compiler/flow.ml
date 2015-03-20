@@ -97,7 +97,7 @@ let program_deps (_, blocks, _) =
   let deps = Array.make nv VarSet.empty in
   let defs = Array.make nv undefined in
   AddrMap.iter
-    (fun pc block ->
+    (fun _ block ->
        List.iter
          (fun i ->
             match i with
@@ -193,7 +193,7 @@ let rec block_escape st x =
        end)
     (VarTbl.get st.known_origins x)
 
-let expr_escape st x e =
+let expr_escape st _x e =
   match e with
     Const _ | Constant _ | Closure _ | Block _ | Field _ ->
       ()
@@ -237,7 +237,7 @@ let program_escape defs known_origins (_, blocks, _) =
       possibly_mutable = possibly_mutable }
   in
   AddrMap.iter
-    (fun pc block ->
+    (fun _ block ->
        List.iter
          (fun i ->
             match i with
@@ -260,15 +260,6 @@ let program_escape defs known_origins (_, blocks, _) =
   possibly_mutable
 
 (****)
-
-type approx = Known | Maybe_unknown
-
-let a_max u v =
-  match u, v with
-    Known, Known    -> Known
-  | _               -> Maybe_unknown
-
-let approx_lift f s = VarSet.fold (fun y u -> a_max (f y) u) s Known
 
 let propagate2 ?(skip_param=false) defs known_origins possibly_mutable st x =
   match defs.(Var.idx x) with
@@ -310,7 +301,7 @@ let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
   in
   Solver2.f () g (propagate2 ?skip_param defs known_origins possibly_mutable)
 
-let get_approx {info_defs; info_known_origins;info_maybe_unknown} f top join x =
+let get_approx {info_defs=_; info_known_origins;info_maybe_unknown} f top join x =
   let s = VarTbl.get info_known_origins x in
   if VarTbl.get info_maybe_unknown x then top else
   match VarSet.cardinal s with
@@ -323,10 +314,10 @@ let the_def_of info x =
     | Pv x ->
       get_approx info
         (fun x -> match info.info_defs.(Var.idx x) with Expr e -> Some e | _ -> None)
-        None (fun u v -> None) x
+        None (fun _ _ -> None) x
     | Pc c -> Some (Constant c)
 
-let rec the_const_of info x =
+let the_const_of info x =
   match x with
   | Pv x ->
     get_approx info
@@ -393,7 +384,7 @@ let build_subst info  vars =
 
 (****)
 
-let f ?skip_param ((pc, blocks, free_pc) as p) =
+let f ?skip_param p =
   let t = Util.Timer.make () in
   let t1 = Util.Timer.make () in
   let (vars, deps, defs) = program_deps p in

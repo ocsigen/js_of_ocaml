@@ -24,6 +24,9 @@ module IntMap : Map.S with type key = int
 module StringSet : Set.S with type elt = string
 module StringMap : Map.S with type key = string
 
+val quiet : bool ref
+val warn : ('a,unit,string,unit) format4 -> 'a
+
 val opt_filter : ('a -> bool) -> 'a option -> 'a option
 val opt_map : ('a -> 'b) -> 'a option -> 'b option
 val opt_iter : ('a -> unit) -> 'a option -> unit
@@ -57,7 +60,7 @@ val split : string -> string -> string list
 val find : string -> Bytes.t -> int
 
 (* [normalize_argv argv] returns a new array of arguments where '-long-option' are replaced by '--long-option' *)
-val normalize_argv : ?warn:bool -> string array -> string array
+val normalize_argv : ?warn_:bool -> string array -> string array
 
 module Version : sig
   type t = int list

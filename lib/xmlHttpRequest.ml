@@ -23,6 +23,14 @@ open Js
 
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
+type _ response =
+    ArrayBuffer : Typed_array.arrayBuffer t Opt.t response
+  | Blob : #File.blob t Opt.t response
+  | Document : Dom.element Dom.document t Opt.t response
+  | JSON : 'a Opt.t response
+  | Text : js_string t response
+  | Default: string response
+
 class type xmlHttpRequest = object ('self)
   method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
   method readyState : readyState readonly_prop
@@ -41,8 +49,10 @@ class type xmlHttpRequest = object ('self)
   method statusText : js_string t readonly_prop
   method getResponseHeader : js_string t -> js_string t opt meth
   method getAllResponseHeaders : js_string t meth
+  method response : File.file_any readonly_prop
   method responseText : js_string t readonly_prop
   method responseXML : Dom.element Dom.document t opt readonly_prop
+  method responseType : js_string t prop
 
   inherit File.progressEventTarget
   method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
@@ -65,12 +75,6 @@ module Event = struct
   let loadend = Dom.Event.make "loadend"
 end
 
-class type xmlHttpRequest_binary = object
-  inherit xmlHttpRequest
-  method sendAsBinary : js_string t opt -> unit meth
-  method sendAsBinary_presence : unit optdef readonly_prop
-end
-
 let create () : xmlHttpRequest Js.t =
   try jsnew (Js.Unsafe.global##_XMLHttpRequest)() with _ ->
   try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Msxml2.XMLHTTP") with _ ->
@@ -79,42 +83,6 @@ let create () : xmlHttpRequest Js.t =
   assert false
 
 let encode = Url.encode_arguments
-let encode_url args =
-  let args = List.map (fun (n,v) -> to_string n,to_string v) args in
-    string (Url.encode_arguments args)
-
-let generateBoundary () =
-  let nine_digits () =
-    string_of_int (truncate (Js.math##random() *. 1000000000.))
-  in
-  "js_of_ocaml-------------------" ^ nine_digits () ^ nine_digits ()
-
-(* TODO: test with elements = [] *)
-let encode_multipart boundary elements =
-  let b = jsnew array_empty () in
-  (Lwt_list.iter_s
-     (fun v ->
-       ignore(b##push(Js.string ("--"^boundary^"\r\n")));
-       match v with
-	 | name, `String value ->
-	   ignore(b##push_3(Js.string ("Content-Disposition: form-data; name=\"" ^ name ^ "\"\r\n\r\n"),
-			    value,
-			    Js.string "\r\n"));
-	   return ()
-	 | name, `File value ->
-	   File.readAsBinaryString (value :> File.blob Js.t)
-	   >>= (fun file ->
-	     ignore(b##push_4(Js.string ("Content-Disposition: form-data; name=\"" ^ name ^ "\"; filename=\""),
-			      File.filename value,
-			      Js.string "\"\r\n",
-			      Js.string "Content-Type: application/octet-stream\r\n"));
-	     ignore(b##push_3(Js.string "\r\n",
-			      file,
-			      Js.string "\r\n"));
-	     return ())
-     )
-     elements)
-  >|= ( fun () -> ignore(b##push(Js.string ("--"^boundary^"--\r\n"))); b )
 
 let encode_url l =
   String.concat "&"
@@ -127,12 +95,12 @@ let encode_url l =
 (* Higher level interface: *)
 
 (** type of the http headers *)
-type http_frame =
+type 'response http_frame =
     {
       url: string;
       code: int;
       headers: string -> string option;
-      content: string;
+      content: 'response;
       content_xml: unit -> Dom.element Dom.document t option;
     }
 
@@ -149,7 +117,62 @@ let extract_get_param url =
       url.hu_arguments
     | _ -> url, []
 
-let perform_raw_url
+let default_response url code headers req =
+  { url = url;
+    code = code;
+    content = Js.to_string req##responseText;
+    content_xml =
+      (fun () ->
+	match Js.Opt.to_option (req##responseXML) with
+	  | None -> None
+	  | Some doc ->
+	    if (Js.some doc##documentElement) == Js.null
+	    then None
+	    else Some doc);
+    headers = headers
+  }
+
+let text_response url code headers req =
+  { url = url;
+    code = code;
+    content = req##responseText;
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
+let document_response url code headers req =
+  { url = url;
+    code = code;
+    content = File.CoerceTo.document (req##response);
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
+let json_response url code headers req =
+  { url = url;
+    code = code;
+    content = File.CoerceTo.json (req##response);
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
+let blob_response url code headers req =
+  { url = url;
+    code = code;
+    content = File.CoerceTo.blob (req##response);
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
+let arraybuffer_response url code headers req =
+  { url = url;
+    code = code;
+    content = File.CoerceTo.arrayBuffer (req##response);
+    content_xml = (fun () -> assert false);
+    headers = headers
+  }
+
+let perform_raw
     ?(headers = [])
     ?content_type
     ?(post_args:(string * Form.form_elt) list option)
@@ -159,6 +182,7 @@ let perform_raw_url
     ?progress
     ?upload_progress
     ?override_mime_type
+    (type resptype) ~(response_type:resptype response)
     url =
 
   let form_arg =
@@ -195,9 +219,9 @@ let perform_raw_url
       | None, ct -> "GET", ct
       | Some form_args, None ->
 	(match form_args with
-	  | `Fields strings ->
+	  | `Fields _strings ->
                "POST", Some "application/x-www-form-urlencoded"
-	  | `FormData f -> "POST", None)
+	  | `FormData _ -> "POST", None)
       | Some _, ct -> "POST", ct
   in
   let url, url_get = extract_get_param url in
@@ -206,12 +230,21 @@ let perform_raw_url
     | _::_ as l -> url ^ "?" ^ encode l
   in
 
-  let (res, w) = Lwt.task () in
+  let ((res : resptype http_frame Lwt.t), w) = Lwt.task () in
   let req = create () in
 
   begin match override_mime_type with
     None           -> ()
   | Some mime_type -> req ## overrideMimeType (Js.string mime_type)
+  end;
+
+  begin match response_type with
+  | ArrayBuffer -> req ## responseType <- (Js.string "arraybuffer")
+  | Blob        -> req ## responseType <- (Js.string "blob")
+  | Document    -> req ## responseType <- (Js.string "document")
+  | JSON        -> req ## responseType <- (Js.string "json")
+  | Text        -> req ## responseType <- (Js.string "text")
+  | Default     -> req ## responseType <- (Js.string "")
   end;
 
   req##_open (Js.string method_, Js.string url, Js._true);
@@ -248,20 +281,15 @@ let perform_raw_url
 	| DONE ->
           (* If we didn't catch a previous event, we check the header. *)
           do_check_headers ();
-	  Lwt.wakeup w
-            {url = url;
-	     code = req##status;
-             content = Js.to_string req##responseText;
-	     content_xml =
-		(fun () ->
-		  match Js.Opt.to_option (req##responseXML) with
-		    | None -> None
-		    | Some doc ->
-		      if (Js.some doc##documentElement) == Js.null
-		      then None
-		      else Some doc);
-             headers = headers
-            }
+	  let response : resptype http_frame =
+	    match response_type with
+	      ArrayBuffer -> arraybuffer_response url (req##status) headers req
+	    | Blob -> blob_response url (req##status) headers req
+	    | Document -> document_response url (req##status) headers req
+	    | JSON -> json_response url (req##status) headers req
+	    | Text -> text_response url (req##status) headers req
+	    | Default -> default_response url (req##status) headers req in
+	  Lwt.wakeup w response
 	| _ -> ()));
 
   begin match progress with
@@ -291,6 +319,21 @@ let perform_raw_url
   Lwt.on_cancel res (fun () -> req##abort ()) ;
   res
 
+let perform_raw_url
+    ?(headers = [])
+    ?content_type
+    ?post_args
+    ?(get_args=[])
+    ?form_arg
+    ?check_headers
+    ?progress
+    ?upload_progress
+    ?override_mime_type
+    url =
+  perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
+    ?check_headers ?progress ?upload_progress ?override_mime_type
+    ~response_type:Default url
+
 let perform
     ?(headers = [])
     ?content_type
@@ -302,8 +345,8 @@ let perform
     ?upload_progress
     ?override_mime_type
     url =
-  perform_raw_url ~headers ?content_type ?post_args ~get_args ?form_arg
+  perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    (Url.string_of_url url)
+    ~response_type:Default (Url.string_of_url url)
 
 let get s = perform_raw_url s

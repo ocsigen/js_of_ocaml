@@ -95,8 +95,8 @@ end) = struct
 
   let ident f = function
     | S {name;var=None} -> PP.string f name
-    | S {name;var=Some v} -> PP.string f name
-    | V v -> assert false
+    | S {name;var=Some _v} -> PP.string f name
+    | V _v -> assert false
 
   let opt_identifier f i =
     match i with
@@ -223,7 +223,7 @@ end) = struct
       | ECond (e, _, _) ->
         l <= 2 && need_paren 3 e
       | EBin (op, e, _) ->
-        let (out, lft, rght) = op_prec op in
+        let (out, lft, _rght) = op_prec op in
         l <= out && need_paren lft e
       | ECall (e, _, _) | EAccess (e, _) | EDot (e, _) ->
         l <= 15 && need_paren 15 e
@@ -1017,10 +1017,6 @@ let need_space a b =
   (* do not generate end_of_line_comment.
      handle the case of "num / /* coment */ b " *)
   (a = '/' && b = '/')
-
-
-let chop_extension s =
-  try Filename.chop_extension s with Invalid_argument _ -> s
 
 let program f ?source_map p =
   let smo = match source_map with

@@ -75,10 +75,11 @@ let f {
   in
   let () =
     if source_map <> None &&  Parse_bytecode.Debug.is_empty d
-    then Format.eprintf
-	   "Warning: '--source-map' is enabled but the bytecode program \
-	    was compiled with no debugging information.\n\
-	    Warning: Consider passing '-g' option to ocamlc.\n%!"
+    then
+      Util.warn
+	"Warning: '--source-map' is enabled but the bytecode program \
+	 was compiled with no debugging information.\n\
+	 Warning: Consider passing '-g' option to ocamlc.\n%!"
   in
   let cmis = if nocmis then Util.StringSet.empty else cmis in
   let p =
@@ -120,7 +121,7 @@ let main =
 
 let _ =
   Util.Timer.init Sys.time;
-  try Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn:true Sys.argv) main with
+  try Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn_:true Sys.argv) main with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
     let backtrace = Printexc.get_backtrace () in
     Format.eprintf

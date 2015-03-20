@@ -44,7 +44,7 @@ let iter_expr_free_vars f e =
 
 let iter_instr_free_vars f i =
   match i with
-    Let (x, e)          -> iter_expr_free_vars f e
+    Let (_, e)          -> iter_expr_free_vars f e
   | Set_field (x, _, y) -> f x; f y
   | Offset_ref (x, _)   -> f x
   | Array_set (x, y, z) -> f x; f y; f z
@@ -209,7 +209,7 @@ Format.eprintf ">> %d: %d@." pc (VarSet.cardinal fv))
 *)
   !freevars
 
-let f ((pc, blocks, free_pc) as p) =
+let f p =
   let t = Util.Timer.make () in
   let in_loop = find_loops p in
   let vars = mark_variables in_loop p in

@@ -60,7 +60,6 @@ while compiling the OCaml toplevel:
     unchanged)
 *)
 
-open Util
 open Javascript
 
 let debug = Option.Debug.find "shortvar"

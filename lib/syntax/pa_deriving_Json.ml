@@ -50,7 +50,6 @@ module Builder(Generator : Defs.Generator) = struct
 
   open Generator.Loc
   open Camlp4.PreCast
-  open Description
 
   module Helpers = Generator.AstHelpers
 

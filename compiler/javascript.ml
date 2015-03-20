@@ -20,7 +20,6 @@
 
 
 module Label = struct
-  open Util
   type t =
     | L of int
     | S of string

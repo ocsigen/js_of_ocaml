@@ -71,7 +71,7 @@ let rec format_ident x =
   else
     format_ident ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
 
-let format_var t i x =
+let format_var t _i x =
   let s = format_ident x in
   if t.pretty
   then Format.sprintf "_%s_" s

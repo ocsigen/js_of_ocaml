@@ -4,8 +4,8 @@ annot_parser.cmo : primitive.cmi annot_parser.cmi
 annot_parser.cmx : primitive.cmx annot_parser.cmi
 code.cmo : varPrinter.cmi util.cmi code.cmi
 code.cmx : varPrinter.cmx util.cmx code.cmi
-commonArg.cmo : option.cmi commonArg.cmi
-commonArg.cmx : option.cmx commonArg.cmi
+commonArg.cmo : util.cmi option.cmi commonArg.cmi
+commonArg.cmx : util.cmx option.cmx commonArg.cmi
 compile.cmo : util.cmi pseudoFs.cmi pretty_print.cmi parse_bytecode.cmi \
     option.cmi linker.cmi driver.cmi compileArg.cmi commonArg.cmi code.cmi
 compile.cmx : util.cmx pseudoFs.cmx pretty_print.cmx parse_bytecode.cmx \
@@ -50,10 +50,8 @@ inline.cmo : util.cmi option.cmi code.cmi inline.cmi
 inline.cmx : util.cmx option.cmx code.cmx inline.cmi
 instr.cmo : util.cmi instr.cmi
 instr.cmx : util.cmx instr.cmi
-javascript.cmo : varPrinter.cmi util.cmi parse_info.cmi code.cmi \
-    javascript.cmi
-javascript.cmx : varPrinter.cmx util.cmx parse_info.cmx code.cmx \
-    javascript.cmi
+javascript.cmo : varPrinter.cmi parse_info.cmi code.cmi javascript.cmi
+javascript.cmx : varPrinter.cmx parse_info.cmx code.cmx javascript.cmi
 js_assign.cmo : util.cmi option.cmi js_traverse.cmi javascript.cmi code.cmi \
     js_assign.cmi
 js_assign.cmx : util.cmx option.cmx js_traverse.cmx javascript.cmx code.cmx \
@@ -94,8 +92,8 @@ myfindlib.cppo.cmo :
 myfindlib.cppo.cmx :
 myfindlib.cmo :
 myfindlib.cmx :
-option.cmo : option.cmi
-option.cmx : option.cmi
+option.cmo : util.cmi option.cmi
+option.cmx : util.cmx option.cmi
 parse_bytecode.cmo : util.cmi primitive.cmi parse_info.cmi option.cmi \
     instr.cmi code.cmi parse_bytecode.cmi
 parse_bytecode.cmx : util.cmx primitive.cmx parse_info.cmx option.cmx \

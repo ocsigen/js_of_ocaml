@@ -27,11 +27,12 @@ module StringMap = Map.Make (String)
 
 let opt_map f x = match x with None -> None | Some v -> Some (f v)
 let opt_iter f x = match x with None -> () | Some v -> f v
-let opt_bind x f = match x with None -> None | Some v -> f v
 let opt_filter p x =
   match x with None -> None | Some v -> if p v then Some v else None
 
 (****)
+let quiet = ref false
+let warn fmt = Format.ksprintf (fun s -> if not !quiet then Format.eprintf "%s" s) fmt  
 
 let find_pkg_dir pkg = try Myfindlib.package_directory pkg with _ -> raise Not_found
 
@@ -244,7 +245,7 @@ module MagicNumber = struct
 
   let size = 12
 
-  let kind_of_string = function
+  let _kind_of_string = function
     | "Caml1999X" -> "exe"
     | "Caml1999I" -> "cmi"
     | "Caml1999O" -> "cmo"
@@ -255,7 +256,7 @@ module MagicNumber = struct
     | "Caml2012T" -> "cmt"
     | "Caml1999M" -> "impl"
     | "Caml1999N" -> "intf"
-    | s -> raise Not_found
+    | _ -> raise Not_found
 
   let of_string s =
     try
@@ -289,7 +290,7 @@ module MagicNumber = struct
 end
 
 
-let normalize_argv ?(warn=false) a =
+let normalize_argv ?(warn_=false) a =
   let bad = ref [] in
   let a = Array.map (fun s ->
     let size = String.length s in
@@ -302,7 +303,8 @@ let normalize_argv ?(warn=false) a =
     end
     else s
   ) a in
-  if (warn && !bad <> [])
-  then Format.eprintf
+  if (warn_ && !bad <> [])
+  then
+    warn
       "[Warning] long options with a single '-' are now deprecated.\ Please use '--' for the following options: %s@." (String.concat ", " !bad);
   a

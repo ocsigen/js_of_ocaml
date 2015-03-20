@@ -24,6 +24,14 @@ open Js
 
 type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
 
+type _ response =
+    ArrayBuffer : Typed_array.arrayBuffer t Opt.t response
+  | Blob : #File.blob t Opt.t response
+  | Document : Dom.element Dom.document t Opt.t response
+  | JSON : 'a Opt.t response
+  | Text : js_string t response
+  | Default : string response
+
 class type xmlHttpRequest = object ('self)
   method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
   method readyState : readyState readonly_prop
@@ -42,8 +50,10 @@ class type xmlHttpRequest = object ('self)
   method statusText : js_string t readonly_prop
   method getResponseHeader : js_string t -> js_string t opt meth
   method getAllResponseHeaders : js_string t meth
+  method response : File.file_any readonly_prop
   method responseText : js_string t readonly_prop
   method responseXML : Dom.element Dom.document t opt readonly_prop
+  method responseType : js_string t prop
 
   inherit File.progressEventTarget
   method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
@@ -71,12 +81,12 @@ module Event : sig
   val loadend : typ
 end
 
-type http_frame =
+type 'response http_frame =
     {
       url: string;
       code: int;
       headers: string -> string option;
-      content: string;
+      content: 'response;
       content_xml: unit -> Dom.element Dom.document t option;
     }
 (** The type for XHR results. The code field is the http status code of the
@@ -87,6 +97,24 @@ exception Wrong_headers of (int * (string -> string option))
 (** The exception raise by perform functions when the check_headers
     parameter returned false. The parameter of the exception is a
     function is like the [headers] function of [http_frame] *)
+
+val perform_raw :
+    ?headers:(string * string) list
+  -> ?content_type:string
+  -> ?post_args:((string * Form.form_elt) list)
+  -> ?get_args:((string * string) list)  (* [] *)
+  -> ?form_arg:Form.form_contents
+  -> ?check_headers:(int -> (string -> string option) -> bool)
+  -> ?progress:(int -> int -> unit)
+  -> ?upload_progress:(int -> int -> unit)
+  -> ?override_mime_type:string
+  -> response_type:('a response)
+  -> string
+  -> 'a http_frame Lwt.t
+  (** [perform_raw] is the same as {!perform_raw_url} except that an additional
+      response_type argument can be given to set the XMLHttpRequest
+      responseType, and hence return different types of data for GET
+      requests. *)
 
 val perform_raw_url :
     ?headers:(string * string) list
@@ -99,7 +127,7 @@ val perform_raw_url :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> string
-  -> http_frame Lwt.t
+  -> string http_frame Lwt.t
   (** [perform_raw_url ?headers ?content_type ?post_args ?get_args ?form_arg url]
       makes an asynchronous request to the specified [url] with
       specified options. The result is a cancelable thread returning
@@ -120,9 +148,9 @@ val perform :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> Url.url
-  -> http_frame Lwt.t
+  -> string http_frame Lwt.t
   (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
       {!Url.url}. *)
 
-val get : string -> http_frame Lwt.t
+val get : string -> string http_frame Lwt.t
   (** [get url] makes an asynchronous request to the specified [url] *)

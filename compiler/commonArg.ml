@@ -26,6 +26,7 @@ type 'a on_off = {
 type t = {
   debug : string list on_off;
   optim : string list on_off;
+  quiet : bool;
 }
 
 
@@ -59,8 +60,13 @@ let noinline =
   let doc = "Disable inlining." in
   Arg.(value & flag & info ["noinline";"no-inline"] ~doc)
 
+let quiet =
+  let doc = "suppress non-error messages." in
+  Arg.(value & flag & info ["quiet";"q"] ~doc)
+  
+
 let t = Term.(
-    pure (fun debug enable disable pretty debuginfo noinline ->
+    pure (fun debug enable disable pretty debuginfo noinline quiet ->
         let enable = if pretty then "pretty"::enable else enable in
         let enable = if debuginfo then "debuginfo"::enable else enable in
         let disable = if noinline then "inline"::disable else disable in
@@ -72,7 +78,8 @@ let t = Term.(
           optim = {
             enable;
             disable
-          }
+          };
+	  quiet
         }
       )
     $ debug
@@ -81,6 +88,7 @@ let t = Term.(
     $ pretty
     $ debuginfo
     $ noinline
+    $ quiet 
   )
 
 
@@ -90,4 +98,5 @@ let on_off on off t =
 
 let eval t =
   Option.Optim.(on_off enable disable t.optim);
-  Option.Debug.(on_off enable disable t.debug)
+  Option.Debug.(on_off enable disable t.debug);
+  Util.quiet := t.quiet

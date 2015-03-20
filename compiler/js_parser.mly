@@ -156,7 +156,7 @@ source_element:
 
 statement_no_semi:
  | block=curly_block(statement*)
-   { let statements, pi_start, pi_end = block in
+   { let statements, pi_start, _pi_end = block in
      J.Block statements, J.Pi pi_start }
  (* this is not allowed but some browsers accept it *)
  (* | function_declaration { *)
@@ -328,13 +328,13 @@ default_clause:
 function_declaration:
  | pi=T_FUNCTION name=variable args=parenthesised(separated_list(T_COMMA, variable))
    block=curly_block(source_element*)
-   { let elements, pi_start, pi_end = block in
+   { let elements, _pi_start, pi_end = block in
      (name, args, elements, J.Pi pi_end), J.Pi pi }
 
 function_expression:
  | pi=T_FUNCTION name=variable? args=parenthesised(separated_list(T_COMMA, variable))
    block=curly_block(source_element*)
-   { let elements, pi_start, pi_end = block in
+   { let elements, _pi_start, _pi_end = block in
      pi, J.EFun (name, args, elements, J.Pi pi) }
 
 (*************************************************************************)
@@ -561,9 +561,9 @@ element_list_rev:
 
 object_literal:
  | block=curly_block(empty)
-   { let pairs, pi_start, pi_end = block in pi_start, J.EObj [] }
+   { let _pairs, pi_start, _pi_end = block in pi_start, J.EObj [] }
  | block=curly_block(separated_or_terminated_list(T_COMMA, object_key_value))
-   { let pairs, pi_start, pi_end = block in pi_start, J.EObj pairs }
+   { let pairs, pi_start, _pi_end = block in pi_start, J.EObj pairs }
 
 object_key_value:
  | pair=separated_pair(property_name, T_COLON, assignment_expression) { pair }

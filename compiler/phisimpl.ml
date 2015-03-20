@@ -52,7 +52,7 @@ let expr_deps blocks vars deps defs x e =
   match e with
     Const _ | Constant _ | Apply _ | Prim _ ->
       ()
-  | Closure (l, cont) ->
+  | Closure (_, cont) ->
       cont_deps blocks vars deps defs cont
   | Block (_, a) ->
       Array.iter (fun y -> add_dep deps x y) a
@@ -65,7 +65,7 @@ let program_deps (_, blocks, _) =
   let deps = Array.make nv VarSet.empty in
   let defs = Array.make nv VarSet.empty in
   AddrMap.iter
-    (fun pc block ->
+    (fun _pc block ->
        List.iter
          (fun i ->
             match i with
@@ -76,7 +76,7 @@ let program_deps (_, blocks, _) =
                 ())
          block.body;
        Util.opt_iter
-         (fun (x, cont) ->
+         (fun (_, cont) ->
             cont_deps blocks vars deps defs cont)
          block.handler;
        match block.branch with
