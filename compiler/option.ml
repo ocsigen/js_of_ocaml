@@ -38,7 +38,7 @@ module Debug = struct
         debugs := (s, state) :: !debugs;
         state
     in
-    fun () -> !state
+    fun () -> not !Util.quiet && !state
 
   let enable s =
     try List.assoc s !debugs := true with Not_found ->
@@ -115,7 +115,7 @@ module Param = struct
     let state = ref default in
     let set : string -> unit = fun v ->
       try state := convert v with
-      | _ -> Format.eprintf "Warning: malformed option %s=%s. IGNORE@." name v
+      | _ -> Util.warn "Warning: malformed option %s=%s. IGNORE@." name v
     in
     params := (name, (set,desc)) :: !params;
     fun () -> !state

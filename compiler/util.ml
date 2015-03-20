@@ -32,6 +32,8 @@ let opt_filter p x =
   match x with None -> None | Some v -> if p v then Some v else None
 
 (****)
+let quiet = ref false
+let warn fmt = Format.ksprintf (fun s -> if not !quiet then Format.eprintf "%s" s) fmt  
 
 let find_pkg_dir pkg = try Myfindlib.package_directory pkg with _ -> raise Not_found
 
@@ -289,7 +291,7 @@ module MagicNumber = struct
 end
 
 
-let normalize_argv ?(warn=false) a =
+let normalize_argv ?(warn_=false) a =
   let bad = ref [] in
   let a = Array.map (fun s ->
     let size = String.length s in
@@ -302,7 +304,8 @@ let normalize_argv ?(warn=false) a =
     end
     else s
   ) a in
-  if (warn && !bad <> [])
-  then Format.eprintf
+  if (warn_ && !bad <> [])
+  then
+    warn
       "[Warning] long options with a single '-' are now deprecated.\ Please use '--' for the following options: %s@." (String.concat ", " !bad);
   a

@@ -110,7 +110,7 @@ class check_and_warn name pi = object(m)
     let diff = StringSet.remove name diff in
     let diff = StringSet.filter (fun s -> String.length s <> 0 && s.[0] <> '_') diff in
     if not (StringSet.is_empty diff)
-    then Format.eprintf "WARN unused for primitive %s at %s:@. %s@."
+    then Util.warn "WARN unused for primitive %s at %s:@. %s@."
         name (loc pi) (String.concat ", " (StringSet.elements diff));
     super#merge_info from
 end
@@ -166,12 +166,12 @@ let check_primitive name pi code req =
   let freename = StringSet.remove Option.global_object freename in
   if not(StringSet.mem name free#get_def_name)
   then begin
-    Format.eprintf "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)
+    Util.warn "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)
   end;
   if not(StringSet.is_empty freename)
   then begin
-    Format.eprintf "warning: free variables in primitive code %S (%s)@." name (loc pi);
-    Format.eprintf "vars: %s@." (String.concat ", " (StringSet.elements freename))
+    Util.warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
+    Util.warn "vars: %s@." (String.concat ", " (StringSet.elements freename))
   end
   (* ; *)
   (* return checks disabled *)
@@ -238,7 +238,7 @@ let add_file f =
             if Hashtbl.mem provided name
             then begin
               let ploc = snd(Hashtbl.find provided name) in
-              Format.eprintf "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
+	      Util.warn "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
             end;
 
             Hashtbl.add provided name (id,pi);
@@ -266,7 +266,7 @@ let check_deps () =
     then begin
       try
         let (name,ploc) = Hashtbl.find provided_rev id in
-        Format.eprintf "code providing %s (%s) may miss dependencies: %s\n"
+        Util.warn "code providing %s (%s) may miss dependencies: %s\n"
           name
           (loc ploc)
           (String.concat ", " (StringSet.elements missing))

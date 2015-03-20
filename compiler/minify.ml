@@ -89,7 +89,7 @@ let main =
 
 let _ =
   Util.Timer.init Sys.time;
-  try Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn:true Sys.argv) main with
+  try Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn_:true Sys.argv) main with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
     let backtrace = Printexc.get_backtrace () in
     Format.eprintf

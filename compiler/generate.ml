@@ -919,12 +919,12 @@ let ident_from_string s =
     | [] -> assert false
     | [x] ->
       if not (is_ident x)
-      then Format.eprintf "Warning: %S is not a valid identifier; the generated code might be incorrect.@." x;
+      then Util.warn "Warning: %S is not a valid identifier; the generated code might be incorrect.@." x;
       s_var x
     | (x::xs) as l ->
-      Format.eprintf "Warning: %S should be written (Js.Unsafe.variable %S)##%s@." s x (String.concat "##" xs);
+      warn "Warning: %S should be written (Js.Unsafe.variable %S)##%s@." s x (String.concat "##" xs);
       if not (List.for_all is_ident l)
-      then Format.eprintf "Warning: %S is not a valid identifier; the generated code might be incorrect.@." s;
+      then Util.warn "Warning: %S is not a valid identifier; the generated code might be incorrect.@." s;
       List.fold_left (fun e i -> J.EDot(e,i)) (s_var x) xs
 
 let rec group_closures_rec closures req =

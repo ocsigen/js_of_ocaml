@@ -335,7 +335,7 @@ end = struct
     Obj.field x 0 == Obj.field (Obj.repr y) 0
 
   let warn_overflow i i32 =
-    Format.eprintf
+    Util.warn
       "Warning: integer overflow: integer 0x%s truncated to 0x%lx; \
        the generated code might be incorrect.@." i i32
 
@@ -1755,7 +1755,7 @@ let fix_min_max_int code =
       let i = Util.find (Lazy.force orig_code) code in
       String.blit (Lazy.force fixed_code) 0 code (i + 16) (String.length (Lazy.force fixed_code))
     with Not_found ->
-      Format.eprintf
+      Util.warn
         "Warning: could not fix min_int/max_int definition \
          (bytecode not found).@."
   end

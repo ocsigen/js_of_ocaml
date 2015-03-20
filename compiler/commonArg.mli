@@ -24,6 +24,7 @@ type 'a on_off = {
 type t = {
   debug : string list on_off;
   optim : string list on_off;
+  quiet : bool;
 }
 
 val t : t Cmdliner.Term.t
