@@ -1089,9 +1089,9 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
       | Extern "caml_js_get", [Pv o; Pc (String f)] ->
         let ((po, co), queue) = access_queue queue o in
         (J.EDot (co, f), or_p po mutable_p, queue)
-      | Extern "caml_js_set", [Pv o; Pc (String f); Pv v] ->
+      | Extern "caml_js_set", [Pv o; Pc (String f); v] ->
         let ((po, co), queue) = access_queue queue o in
-        let ((pv, cv), queue) = access_queue queue v in
+        let ((pv, cv), queue) = access_queue' ~ctx queue v in
         (J.EBin (J.Eq, J.EDot (co, f), cv),
          or_p (or_p po pv) mutator_p, queue)
       | Extern "caml_js_delete", [Pv o; Pc (String f)] ->
