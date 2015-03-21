@@ -10,6 +10,10 @@ open Ast_convenience
 *)
 let exp_to_string = function
   | {pexp_desc= Pexp_ident {txt = Longident.Lident s}} -> s
+  | {pexp_desc= Pexp_construct ({txt = Longident.Lident s}, None)}
+    when String.length s > 0
+      && s.[0] >= 'A'
+      && s.[0] <= 'Z' -> "_"^s
   | {pexp_loc} ->
      Location.raise_errorf
        ~loc:pexp_loc
