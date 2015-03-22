@@ -307,9 +307,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
 
   let jsmeth = Gram.Entry.mk "jsmeth"
-
+  let opt_class_self_patt_jsoo = Gram.Entry.mk "opt_class_self_patt_jsoo"
   EXTEND Gram
     jsmeth: [["##"; lab = label -> (_loc, lab) ]];
+    opt_class_self_patt_jsoo:
+      [[ "("; p = patt; ")" -> p
+       | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
+       | -> <:patt<_>> ]];
+
     expr: BEFORE "."
     ["##" RIGHTA
      [ e = SELF; (lab_loc, lab) = jsmeth ->
@@ -346,14 +351,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
      | "jsnew"; e = expr LEVEL "label"; "("; l = comma_expr; ")" ->
          new_object _loc e (parse_comma_list l)
      | "jsobject"; "end" -> <:expr< ($js_u_id _loc "obj"$ [| |] : Js.t < > ) >>
-     | "jsobject"; self = opt_class_self_patt; l = class_structure ; "end" ->
+     | "jsobject"; self = opt_class_self_patt_jsoo; l = class_structure ; "end" ->
        let field_list = parse_class_str_list l in
        let fields = List.map parse_class_item field_list in
        literal_object _loc ~self fields
-     | "jsobject"; l = class_structure ; "end" ->
-       let field_list = parse_class_str_list l in
-       let fields = List.map (parse_class_item) field_list in
-       literal_object _loc fields
      | "{:"; ":}" -> <:expr< ($js_u_id _loc "obj"$ [| |] : Js.t < > ) >>
      | "{:"; l = field_expr_list; ":}" ->
        let field_list = parse_field_list l in
