@@ -117,9 +117,15 @@ let constrain_types obj res res_typ meth meth_typ args =
   ]
 
 
-
+(** arg1 -> arg2 -> ... -> ret *)
 let arrows args ret =
   List.fold_right (fun (l, ty) fun_ -> Typ.arrow l ty fun_)
+    args
+    ret
+
+(** fun arg1 arg2 ... -> ret *)
+let funs args ret =
+  List.fold_right (fun pat next_fun_ -> lam pat next_fun_)
     args
     ret
 
@@ -211,7 +217,8 @@ let preprocess_literal_object fields =
       Location.raise_errorf ~loc:exp.pcf_loc
         "This field is not valid inside a js literal object."
   in
-  try `Fields (snd @@ List.fold_left f (S.empty, []) fields)
+  try
+    `Fields (List.rev @@ snd @@ List.fold_left f (S.empty, []) fields)
   with Location.Error error -> `Error (extension_of_error error)
 
 (** Desugar something like this:
@@ -223,18 +230,19 @@ let preprocess_literal_object fields =
 
 to:
 
-  let bar
-    : ('self,'jsoo_173316d7 -> 'jsoo_32b5ee21) Js.meth_callback
-    = Js.wrap_meth_callback (fun self -> fun x -> 3 + x)
-  and foo
-    : 'jsoo_29529091 = 3
-  in
-  ( Js.Unsafe.obj
-      [| ("bar", (Js.Unsafe.inject bar)) ;
-         ("foo", (Js.Unsafe.inject foo)) |]
-   : < bar :'jsoo_173316d7 -> 'jsoo_32b5ee21 Js.meth ;
-       foo :'jsoo_29529091 Js.prop >
-     Js.t as 'self)
+  let make_obj foo bar =
+    (Js.Unsafe.obj
+       [|("foo", (Js.Unsafe.inject foo));("bar", (Js.Unsafe.inject bar))|]
+     : < foo :'jsoo_173316d7 Js.prop ;
+         bar :'jsoo_6d9ac43e -> 'jsoo_29529091 Js.meth >
+       Js.t as 'jsoo_32b5ee21)
+  and foo: 'jsoo_173316d7 = 3
+  and bar =
+    Js.wrap_meth_callback
+      (fun self  -> fun x -> 3 + x
+      : 'jsoo_32b5ee21 -> 'jsoo_6d9ac43e -> 'jsoo_29529091)
+  in make_obj foo bar
+
 
  *)
 
@@ -283,38 +291,41 @@ let literal_object ?loc self_id fields =
       [@metaloc body.pexp_loc]
 
     | `Meth (id, _, _, body, (fun_ty, ret_ty)) ->
-      (id.txt,
-       Exp.constraint_
-         (Js.fun_ "wrap_meth_callback" [ body ])
-         (Js.type_ "meth_callback" [
-           Typ.var self_type ;
-           arrows fun_ty ret_ty
-         ]))
+       (id.txt,
+        Js.fun_
+          "wrap_meth_callback"
+          [
+            Exp.constraint_
+              body
+              @@ arrows ((Nolabel,Typ.var self_type) :: fun_ty) ret_ty
+          ])
 
   in
 
   let values = List.map create_value fields in
 
-  let object_creation =
-    Js.unsafe
-      "obj"
-      [Exp.array (
-        List.map
-          (fun (name, _exp) ->
-           tuple [str name ; Js.unsafe "inject" [evar name] ]
-          )
-          values
-       )]
+  let make_obj =
+    funs (List.map (fun (name,_exp) -> pvar name) values) @@
+      Exp.constraint_
+        (Js.unsafe
+           "obj"
+           [Exp.array (
+                List.map
+                  (fun (name, _exp) ->
+                   tuple [str name ; Js.unsafe "inject" [evar name] ]
+                  )
+                  values
+              )])
+        (Typ.alias (Js.type_ "t" [obj_type]) self_type)
   in
 
   let value_declaration =
     Exp.let_
       Nonrecursive
-      (List.map (fun (name, exp) -> Vb.mk (pvar name) exp) values)
-      (Exp.constraint_
-         object_creation
-         (Typ.alias (Js.type_ "t" [obj_type]) self_type)
+      ( Vb.mk (pvar "make_obj") make_obj ::
+        List.map (fun (name, exp) -> Vb.mk (pvar name) exp) values
       )
+      (app (evar "make_obj") @@ List.map (fun (name,_) -> evar name) values)
   in
 
   value_declaration
