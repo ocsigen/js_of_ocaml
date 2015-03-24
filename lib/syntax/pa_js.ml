@@ -355,11 +355,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
        let field_list = parse_class_str_list l in
        let fields = List.map parse_class_item field_list in
        literal_object _loc ~self fields
-     | "{:"; ":}" -> <:expr< ($js_u_id _loc "obj"$ [| |] : Js.t < > ) >>
-     | "{:"; l = field_expr_list; ":}" ->
-       let field_list = parse_field_list l in
-       let fields = List.map parse_field field_list in
-       literal_object _loc fields ]];
+     (* | "{:"; ":}" -> <:expr< ($js_u_id _loc "obj"$ [| |] : Js.t < > ) >> *)
+     (* | "{:"; l = field_expr_list; ":}" -> *)
+     (*   let field_list = parse_field_list l in *)
+     (*   let fields = List.map parse_field field_list in *)
+     (*   literal_object _loc fields *)
+    ]];
     END
 
 (*XXX n-ary methods
