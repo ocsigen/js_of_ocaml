@@ -136,7 +136,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let ret_typ = fresh_type _loc in
     let method_type =
       arrows _loc (List.map (fun (_,_,ty) -> ty) args)
-	     <:ctyp< $js_t_id _loc "meth"$ $ret_typ$ >>
+             <:ctyp< $js_t_id _loc "meth"$ $ret_typ$ >>
     in
     let o = random_var () in
     let res = random_var () in
@@ -189,17 +189,17 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   type 'a loc = 'a * Loc.t
 
   type val_ = {
-    label    : string loc ;
-    mutabl : bool ;
-    body     : Ast.expr loc ;
-    typ    : Ast.ctyp ;
+    val_label    : string loc ;
+    val_mutabl : bool ;
+    val_body     : Ast.expr loc ;
+    val_typ    : Ast.ctyp ;
   }
 
   type meth_ = {
-    label    : string loc ;
-    body     : Ast.expr loc ;
-    fun_typ  : Ast.ctyp list ;
-    ret_typ    : Ast.ctyp ;
+    meth_label    : string loc ;
+    meth_body     : Ast.expr loc ;
+    meth_fun_typ  : Ast.ctyp list ;
+    meth_ret_typ    : Ast.ctyp ;
   }
 
   type val_and_meth = [`Val of val_ | `Meth of meth_]
@@ -212,10 +212,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           | _ -> assert false in
         let e_loc = Ast.loc_of_expr e in
         let t = fresh_type lab_loc in
-        `Val { label    = lab, lab_loc;
-	       mutabl   = false;
-	       body     = e,e_loc;
-	       typ      = t }
+        `Val { val_label    = lab, lab_loc;
+               val_mutabl   = false;
+               val_body     = e,e_loc;
+               val_typ      = t }
     | _ ->
         assert false
 
@@ -225,30 +225,30 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:class_str_item< value $lab$ = $e$ >> ->
        let e_loc = Ast.loc_of_expr e in
        let t = fresh_type _loc in
-        `Val { label    = lab, _loc ;
-	       mutabl   = false;
-	       body     = e,e_loc;
-	       typ      = t }
+        `Val { val_label    = lab, _loc ;
+               val_mutabl   = false;
+               val_body     = e,e_loc;
+               val_typ      = t }
     | <:class_str_item< value mutable $label$ = $e$ >> ->
        let e_loc = Ast.loc_of_expr e in
        let t = fresh_type _loc in
-        `Val { label    = label, _loc;
-	       mutabl   = true;
-	       body     = e,e_loc;
-	       typ      = t }
+        `Val { val_label    = label, _loc;
+               val_mutabl   = true;
+               val_body     = e,e_loc;
+               val_typ      = t }
     | <:class_str_item< method $label$ = $e$ >> ->
        let e_loc = Ast.loc_of_expr e in
 
        let rec get_arg x =
-	 match x with
-	 | <:expr< fun $_x$ -> $e$ >> -> (fresh_type e_loc )::get_arg e
-	 | _ -> [] in
+         match x with
+         | <:expr< fun $_x$ -> $e$ >> -> (fresh_type e_loc )::get_arg e
+         | _ -> [] in
        let _loc = e_loc in
        let t = fresh_type _loc in
-        `Meth { label    = label, _loc;
-	       body      = e,e_loc;
-	       fun_typ   = get_arg e;
-	       ret_typ   = t }
+        `Meth { meth_label     = label, _loc;
+                meth_body      = e,e_loc;
+                meth_fun_typ   = get_arg e;
+                meth_ret_typ   = t }
     | c ->
       let loc = Ast.loc_of_class_str_item c in
       Format.eprintf "This field is not valid inside a js literal object (%s)@."
@@ -259,7 +259,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
      let self_typ = fresh_type _loc in
 
-     let _ = List.fold_left (fun acc (`Val {label=lab,loc;typ=_}|`Meth{label=lab,loc;ret_typ=_}) ->
+     let _ = List.fold_left (
+                 fun acc
+                     ( `Val  {val_label=(lab,loc);_}
+                     | `Meth {meth_label=(lab,loc);_} ) ->
            if StringMap.mem lab acc
            then
              let loc' = StringMap.find lab acc in
@@ -269,23 +272,23 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
            else StringMap.add lab loc acc) StringMap.empty fields in
 
     let create_method_type = function
-      | `Val {label=(label,_loc); mutabl=true; typ} ->
-	 <:ctyp< $lid:label$ : ( $js_t_id _loc "prop"$ $typ$) >>
-      | `Val {label=(label,_loc); mutabl=false; typ} ->
-	 <:ctyp< $lid:label$ : ($js_t_id _loc "readonly_prop"$ $typ$) >>
-      | `Meth {label=(label,_loc); fun_typ; ret_typ} ->
-	 let all = arrows _loc fun_typ <:ctyp< $js_t_id _loc "meth"$ $ret_typ$ >> in
+      | `Val {val_label=(label,_loc); val_mutabl=true; val_typ} ->
+	 <:ctyp< $lid:label$ : ( $js_t_id _loc "prop"$ $val_typ$) >>
+      | `Val {val_label=(label,_loc); val_mutabl=false; val_typ} ->
+	 <:ctyp< $lid:label$ : ($js_t_id _loc "readonly_prop"$ $val_typ$) >>
+      | `Meth {meth_label=(label,_loc); meth_fun_typ; meth_ret_typ} ->
+	 let all = arrows _loc meth_fun_typ <:ctyp< $js_t_id _loc "meth"$ $meth_ret_typ$ >> in
 	 <:ctyp< $lid:label$ : $all$ >>
     in
 
     let obj_type = <:ctyp< < $list:List.map create_method_type fields$  > >> in
 
     let create_value = function
-      | `Val {label=(lab,_loc); body=(e,_);typ} ->
+      | `Val {val_label=(lab,_loc); val_body=(e,_);val_typ} ->
 	 <:expr< ($str:lab$,
-          $js_u_id _loc "inject"$ $with_type e typ$) >>
-      | `Meth {label=(lab,_loc); body=(e,_);fun_typ; ret_typ} ->
-	 let all = arrows _loc fun_typ ret_typ in
+          $js_u_id _loc "inject"$ $with_type e val_typ$) >>
+      | `Meth {meth_label=(lab,_loc); meth_body=(e,_);meth_fun_typ; meth_ret_typ} ->
+	 let all = arrows _loc meth_fun_typ meth_ret_typ in
 	 let typ = <:ctyp< $js_t_id _loc "meth_callback"$ $self_typ$ $all$ >> in
          let e,wrapper = match self with
            | None -> e,"wrap_callback"
