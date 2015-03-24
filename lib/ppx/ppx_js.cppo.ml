@@ -89,21 +89,21 @@ let unescape lab =
 (** Constraints for the various types.
     Synthesize new types and create dummy declaration with type constraints.
 *)
-let constrain_types obj res res_typ meth meth_typ args =
+let constrain_types ?loc obj res res_typ meth meth_typ args =
   let typ_var = fresh_type obj.pexp_loc in
 
   (* [($obj$ : <typ_var> Js.t)] *)
   let cstr =
     Exp.constraint_
-      obj
+      [%expr ([%e obj] : < .. > Js.t) ]
       (Js.type_ "t" [typ_var] )
   in
 
-  let x = evar "x" in
+  let e_x, p_x = mk_id ~loc:obj.pexp_loc "x" in
   (* [($x$#meth : $meth_typ$)] *)
   let body =
     Exp.constraint_
-      (Exp.send x meth)
+      (Exp.send ?loc e_x meth) (* TODO ajouter contraintes _ -> _ -> _ Js.meth *)
       meth_typ
   in
 
@@ -119,7 +119,7 @@ let constrain_types obj res res_typ meth meth_typ args =
     let module M = struct
       let res =
         let _ = [%e cstr] in
-        let _ = fun (x : [%t typ_var]) -> [%e body] in
+        let _ = fun ([%p p_x] : [%t typ_var]) -> [%e body] in
         [%e res_bindings];
     end in M.res
   ]
@@ -140,7 +140,7 @@ let funs args ret =
 let sequence l last =
   List.fold_right Exp.sequence l last
 
-let method_call obj meth args =
+let method_call ~loc obj meth args =
   let args =
     List.map
       (fun (l,e) ->
@@ -172,7 +172,7 @@ let method_call obj meth args =
      let [%p p_obj] = [%e obj] in
      let [%p p_res] = [%e meth_call]
      in
-     [%e constrain_types e_obj e_res ret_type meth method_type type_binders]
+     [%e constrain_types ~loc e_obj e_res ret_type meth method_type type_binders]
     ]
 
 (** Instantiation of a class, used by new%js. *)
@@ -189,7 +189,7 @@ let new_object constr args =
   let x = random_var () in
   let constr =
     Exp.constraint_
-      (Exp.ident constr)
+      (Exp.ident ~loc:constr.loc constr)
       (Js.type_ "constr" [constr_fun_type])
   in
   [%expr
@@ -302,6 +302,19 @@ let literal_object ?loc self_id fields =
     in Typ.object_ l Closed
   in
 
+  let rec annotate_body fun_ty ret_ty body = match fun_ty, body with
+    | (_,ty) :: types,
+      ({ pexp_desc = Pexp_fun (label, e_opt, pat, body)} as expr) ->
+       let constr = Pat.constraint_ pat ty in
+       {expr with
+         pexp_desc =
+           Pexp_fun (label, e_opt, constr,
+                     annotate_body types ret_ty body)
+       }
+    | [], body -> Exp.constraint_ ~loc:body.pexp_loc body ret_ty
+    | _ -> raise @@
+             Invalid_argument "Inconsistent number of arguments"
+  in
 
   let create_value = function
     | `Val (id, _, _, body, ty) ->
@@ -312,9 +325,7 @@ let literal_object ?loc self_id fields =
         Js.fun_
           "wrap_meth_callback"
           [
-            Exp.constraint_
-              body
-              @@ arrows ((Nolabel,Typ.var self_type) :: fun_ty) ret_ty
+            annotate_body ((Js.nolabel,Typ.var self_type) :: fun_ty) ret_ty body
           ])
 
   in
@@ -397,17 +408,17 @@ let js_mapper _args =
 
       (** obj##meth arg1 arg2 .. *)
       | {pexp_desc = Pexp_apply
-             ([%expr [%e? obj] ## [%e? meth]] , args)
+             (([%expr [%e? obj] ## [%e? meth]] as expr), args)
         } ->
         let meth = exp_to_string meth in
         let new_expr =
-          method_call obj meth args
+          method_call ~loc:expr.pexp_loc obj meth args
         in mapper.expr mapper { new_expr with pexp_attributes }
       (** obj##meth *)
-      | [%expr [%e? obj] ## [%e? meth]] ->
+      | ([%expr [%e? obj] ## [%e? meth]] as expr) ->
         let meth = exp_to_string meth in
         let new_expr =
-          method_call obj meth []
+          method_call ~loc:expr.pexp_loc obj meth []
         in mapper.expr mapper { new_expr with pexp_attributes }
 
 
