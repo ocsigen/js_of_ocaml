@@ -68,7 +68,7 @@ let list_files name paths =
       name,[] in
   let file =
     try
-      Util.find_in_paths paths name
+      Util.find_in_findlib_paths paths name
     with Not_found ->
       failwith (Printf.sprintf "file '%s' not found" name)
   in
@@ -79,10 +79,10 @@ let cmi_dir = "/cmis"
 let find_cmi paths base =
   try
     let name = String.uncapitalize base ^ ".cmi" in
-    Filename.concat cmi_dir name, Util.find_in_paths paths name
+    Filename.concat cmi_dir name, Util.find_in_findlib_paths paths name
   with Not_found ->
     let name = String.capitalize base ^ ".cmi" in
-    Filename.concat cmi_dir name, Util.find_in_paths paths name
+    Filename.concat cmi_dir name, Util.find_in_findlib_paths paths name
 
 
 open Util

@@ -41,7 +41,7 @@ let path_require_findlib path =
   then Some (String.sub  path 1 (String.length path - 1))
   else None
 
-let rec find_in_paths ?(pkg="stdlib") paths name =
+let rec find_in_findlib_paths ?(pkg="stdlib") paths name =
   match paths with
     | [] ->
       raise Not_found
@@ -53,8 +53,16 @@ let rec find_in_paths ?(pkg="stdlib") paths name =
           | None -> Filename.concat path name in
 
         if Sys.file_exists file then file else
-          find_in_paths rem name
-      with Not_found -> find_in_paths rem name
+          find_in_findlib_paths rem name
+      with Not_found -> find_in_findlib_paths rem name
+
+let rec find_in_path paths name =
+  match paths with
+  | [] -> raise Not_found
+  | path :: rem -> 
+     let file = Filename.concat path name in
+     if Sys.file_exists file then file else
+       find_in_path rem name
 
 let read_file f =
   let ic = open_in f in

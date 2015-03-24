@@ -77,7 +77,8 @@ let lexer_aux ?(rm_comment=true) lines_info lexbuf =
       match extra with
       | None -> pi
       | Some (file,offset) ->
-        { pi with Parse_info.name = file;
+	 let name = Parse_info.relative_path lines_info file in
+        { pi with Parse_info.name;
                   line = pi.Parse_info.line - offset } in
     let t = Js_lexer.initial tokinfo prev lexbuf in
     match t with

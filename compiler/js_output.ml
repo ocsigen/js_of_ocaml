@@ -1030,13 +1030,31 @@ let program f ?source_map p =
   (match source_map with
    | None -> ()
    | Some (out_file,sm) ->
-      let sm =
-       { sm with
-         Source_map.mappings = List.map (fun (pos,m) ->
-           {m with
-            Source_map.gen_line = pos.PP.p_line;
-            Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings} in
-
+      let sources =
+	List.map (fun file ->
+	 file
+	) sm.Source_map.sources
+      in
+      let sources_content =
+	match sm.Source_map.sources_content with
+	| None -> None
+	| Some [] ->
+	   Some (List.map
+	     (fun file ->
+	      if Sys.file_exists file
+	      then 
+		let content = Util.read_file file in
+		Some content
+	      else None) sources)
+	| Some _ -> assert false in
+      let mappings =
+	List.map
+	  (fun (pos,m) ->
+	   {m with
+	     Source_map.gen_line = pos.PP.p_line;
+	     Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings
+      in
+      let sm = { sm with Source_map.sources; sources_content; mappings } in
       let urlData =
 	match out_file with
 	| None ->

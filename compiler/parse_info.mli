@@ -33,4 +33,6 @@ val make_lineinfo_from_file : string -> lineinfo
 val make_lineinfo_from_string : string -> lineinfo
 val make_lineinfo_from_channel : in_channel -> lineinfo * string
 
+val relative_path : lineinfo -> string -> string
+
 val t_of_lexbuf : lineinfo -> Lexing.lexbuf -> t

@@ -33,7 +33,7 @@ type t = {
   file : string;
   sourceroot : string option;
   mutable sources : string list;
-  mutable sources_content : string option list;
+  mutable sources_content : string option list option;
   mutable names : string list;
   mutable mappings : mapping ;
 }

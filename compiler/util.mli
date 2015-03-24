@@ -35,7 +35,8 @@ val array_fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 
 val path_require_findlib : string -> string option
 val find_pkg_dir : string -> string
-val find_in_paths : ?pkg:string -> string list -> string -> string
+val find_in_findlib_paths : ?pkg:string -> string list -> string -> string
+val find_in_path : string list -> string -> string
 val read_file : string -> string
 
 val take : int -> 'a list -> 'a list * 'a list

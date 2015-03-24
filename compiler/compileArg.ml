@@ -78,6 +78,10 @@ let options =
     let doc = "Generate inlined source map." in
     Arg.(value & flag & info ["inlined-source-map"] ~doc)
   in
+  let sourcemap_content =
+    let doc = "Inline sources in source map." in
+    Arg.(value & flag & info ["source-map-content"] ~doc)
+  in
   let set_param =
     let doc = "Set compiler options." in
     let all = List.map (fun (x,_) ->
@@ -126,6 +130,7 @@ let options =
       noruntime
       sourcemap
       inlined_sourcemap
+      sourcemap_content
       output_file
       input_file
       js_files
@@ -148,7 +153,7 @@ let options =
         | Some _ -> output_file
         | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") input_file in
       let source_map =
-        if sourcemap || inlined_sourcemap
+        if sourcemap || inlined_sourcemap || sourcemap_content
         then
 	  let file, output_file =
 	    match output_file with
@@ -162,7 +167,9 @@ let options =
                 file;
                 sourceroot = None;
                 sources = [];
-                sources_content = [];
+                sources_content = if sourcemap_content
+				  then Some []
+				  else None;
                 names = [];
                 mappings = []
             })
@@ -208,7 +215,7 @@ let options =
           $ noruntime
           $ sourcemap
           $ inlined_sourcemap
-
+	  $ sourcemap_content
           $ output_file
 
           $ input_file

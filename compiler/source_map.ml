@@ -33,7 +33,7 @@ type t = {
   file : string;
   sourceroot : string option;
   mutable sources : string list;
-  mutable sources_content : string option list;
+  mutable sources_content : string option list option;
   mutable names : string list;
   mutable mappings : mapping ;
 }
@@ -111,10 +111,16 @@ let expression t =
     PNS "version", ENum (float_of_int t.version);
     PNS "file", EStr (t.file,`Bytes);
     PNS "sourceRoot", EStr ((match t.sourceroot with None -> "" | Some s -> s),`Bytes);
-    PNS "sources", EArr (List.map (fun s -> Some (EStr (s,`Bytes))) t.sources);
-    PNS "sources_content", EArr (List.map (function
-        | None -> Some (EVar (S {name="null";var=None}))
-        | Some s -> Some (EStr (s,`Bytes))) t. sources_content);
     PNS "names", EArr (List.map (fun s -> Some (EStr (s,`Bytes))) t.names);
-    PNS "mappings", EStr (string_of_mapping t.mappings,`Bytes)
-  ]
+    PNS "mappings", EStr (string_of_mapping t.mappings,`Bytes);
+    PNS "sources", EArr (List.map (fun s -> Some (EStr (s,`Bytes))) t.sources);
+    PNS "sourcesContent",
+    EArr
+      (match t.sources_content with
+       | None -> []
+       | Some l ->
+	  List.map
+	    (function
+	      | None -> Some (EVar (S {name="null";var=None}))
+	      | Some s -> Some (EStr (s,`Utf8))) l);
+    ]

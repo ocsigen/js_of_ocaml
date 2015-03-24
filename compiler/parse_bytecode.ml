@@ -81,43 +81,54 @@ type 'a numtable =
 
 (* Read and manipulate debug section *)
 module Debug : sig
+
+  (* instruct.ml *)
   type compilation_env =
     { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
       ce_heap: int Ident.tbl;  (* Structure of the heap-allocated env *)
       ce_rec: int Ident.tbl }  (* Functions bound by the same let rec *)
 
-  type pos =
+  (* lexing.ml *)
+  type position =
     { pos_fname: string;
       pos_lnum: int;
       pos_bol: int;
       pos_cnum: int }
 
-  type loc_info =
-    { li_start: pos;
-      li_end: pos;
-      li_ghost: unit }
+  (* location.ml *)
+  type location =
+    { loc_start: position;
+      loc_end: position;
+      loc_ghost: bool }
 
+  (* instruct.ml *)
   type debug_event =
     { mutable ev_pos: int;                (* Position in bytecode *)
       ev_module: string;                  (* Name of defining module *)
-      ev_loc: loc_info;                   (* Location in source file *)
+      ev_loc: location;                   (* Location in source file *)
       ev_kind: debug_event_kind;          (* Before/after event *)
       ev_info: debug_event_info;          (* Extra information *)
       ev_typenv: unit;                    (* Typing environment *)
       ev_typsubst: unit;                  (* Substitution over types *)
       ev_compenv: compilation_env;        (* Compilation environment *)
       ev_stacksize: int;                  (* Size of stack frame *)
-      ev_repr: unit }                     (* Position of the representative *)
+      ev_repr: debug_event_repr }         (* Position of the representative *)
 
   and debug_event_kind =
       Event_before
     | Event_after of unit
     | Event_pseudo
 
-  and debug_event_info = unit
-  (*   Event_function *)
-  (* | Event_return of int *)
-  (* | Event_other *)
+  and debug_event_info =
+    | Event_function
+    | Event_return of int
+    | Event_other
+
+  and debug_event_repr =
+    | Event_none
+    | Event_parent of int ref
+    | Event_child of int ref
+
 
   type data
   val is_empty : data -> bool
@@ -125,7 +136,8 @@ module Debug : sig
   val find : data -> Code.addr -> (int * string) list
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
   val mem : data -> Code.addr -> bool
-  val read : in_channel -> data
+  val paths : data -> string list
+  val read : crcs:(string * string option) list -> in_channel -> data
   val no_data : unit -> data
   val fold : data -> (Code.addr -> debug_event -> 'a -> 'a) -> 'a -> 'a
 end = struct
@@ -135,49 +147,73 @@ end = struct
       ce_heap: int Ident.tbl;  (* Structure of the heap-allocated env *)
       ce_rec: int Ident.tbl }  (* Functions bound by the same let rec *)
 
-  type pos =
+  type position =
     { pos_fname: string;
       pos_lnum: int;
       pos_bol: int;
       pos_cnum: int }
 
-  type loc_info =
-    { li_start: pos;
-      li_end: pos;
-      li_ghost: unit }
+  type location =
+    { loc_start: position;
+      loc_end: position;
+      loc_ghost: bool }
 
   type debug_event =
     { mutable ev_pos: int;                (* Position in bytecode *)
       ev_module: string;                  (* Name of defining module *)
-      ev_loc: loc_info;                   (* Location in source file *)
+      ev_loc: location;                   (* Location in source file *)
       ev_kind: debug_event_kind;          (* Before/after event *)
       ev_info: debug_event_info;          (* Extra information *)
       ev_typenv: unit;                    (* Typing environment *)
       ev_typsubst: unit;                  (* Substitution over types *)
       ev_compenv: compilation_env;        (* Compilation environment *)
       ev_stacksize: int;                  (* Size of stack frame *)
-      ev_repr: unit }                     (* Position of the representative *)
+      ev_repr: debug_event_repr }         (* Position of the representative *)
 
   and debug_event_kind =
-      Event_before
+    | Event_before
     | Event_after of unit
     | Event_pseudo
 
-  and debug_event_info = unit
-  (*   Event_function *)
-  (* | Event_return of int *)
-  (* | Event_other *)
+  and debug_event_info =
+    | Event_function
+    | Event_return of int
+    | Event_other
 
-  type data = (int, debug_event) Hashtbl.t
+  and debug_event_repr =
+    | Event_none
+    | Event_parent of int ref
+    | Event_child of int ref
+
+
+  type ml_unit = {
+    name   : string;
+    crc    : string option;
+    paths   : string list;
+    source : string option;
+  }
+	
+  type data = (int, debug_event) Hashtbl.t * (string, ml_unit) Hashtbl.t
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
-  let no_data () = Hashtbl.create 17
+  let no_data () = Hashtbl.create 17, Hashtbl.create 17
 
-  let is_empty a = Hashtbl.length a = 0
+  let is_empty (a,_) = Hashtbl.length a = 0
 
-  let read ic =
+  let find_ml_in_paths paths name =
+    let uname = String.uncapitalize name in
+    try
+      uname, Some (Util.find_in_path paths (uname^".ml"))
+    with Not_found ->
+      try
+	name, Some (Util.find_in_path paths (name^".ml"))
+      with Not_found ->
+	uname, None
+			   
+  let read ~crcs ic =
     let events_by_pc = Hashtbl.create 257 in
+    let units = Hashtbl.create 257 in
     let read_paths : unit -> string list =
       match Util.Version.v with
       | `V3 -> (fun () -> [])
@@ -195,29 +231,46 @@ end = struct
 
       (* save the current position *)
       let pos = pos_in ic in
-      let evl_is_valid = try
-          ignore(read_paths ());true
-        with Failure _ ->
+      let paths =
+	try Some (read_paths ())
+	with Failure _ ->
           (* restore position *)
-          seek_in ic pos; false in
-      if evl_is_valid then
-        List.iter
-          (fun ev ->
-             relocate_event orig ev; Hashtbl.add events_by_pc ev.ev_pos ev)
-          evl
+          seek_in ic pos; None in
+      match paths with
+      | None -> ()
+      | Some (paths : string list) ->
+         let u = List.map (fun {ev_module} -> ev_module) evl in
+         let u = Util.StringSet.(elements (of_list u)) in
+         let u =
+           List.map
+             (fun name ->
+	      let crc =
+		try List.assoc name crcs
+		with Not_found -> None in
+	      let name, source = find_ml_in_paths paths name in
+	      { name; crc; source; paths }) u
+         in
+         List.iter
+	   (fun unit ->
+	    Hashtbl.add units unit.name unit) u;
+         List.iter
+           (fun ev ->
+            relocate_event orig ev;
+            Hashtbl.add events_by_pc ev.ev_pos ev)
+           evl
     done;
-    events_by_pc
+    events_by_pc, units
 
-  let find events_by_pc pc =
+  let find (events_by_pc,_) pc =
     try
       let ev = Hashtbl.find events_by_pc pc in
       Ident.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
     with Not_found ->
       []
 
-  let mem = Hashtbl.mem
-
-  let find_loc events_by_pc ?(after = false) pc =
+  let mem (tbl,_) = Hashtbl.mem tbl
+ 
+  let find_loc (events_by_pc,units) ?(after = false) pc =
     try
       let (before, ev) =
         try false, Hashtbl.find events_by_pc pc with Not_found ->
@@ -228,10 +281,18 @@ end = struct
       in
       let loc = ev.ev_loc in
       let pos =
-        if after then loc.li_end else
-        if before then loc.li_start else
-        match ev.ev_kind with Event_after _ -> loc.li_end | _ -> loc.li_start in
-      Some {Parse_info.name = pos.pos_fname;
+        if after then loc.loc_end else
+        if before then loc.loc_start else
+        match ev.ev_kind with Event_after _ -> loc.loc_end | _ -> loc.loc_start in
+      let name =
+	let uname = Filename.(basename (chop_extension pos.pos_fname)) in  
+	try
+	  match (Hashtbl.find units uname).source with
+	  | None -> pos.pos_fname
+	  | Some name -> name
+	with Not_found -> pos.pos_fname
+      in
+      Some {Parse_info.name;
             line=pos.pos_lnum - 1;
             col=pos.pos_cnum - pos.pos_bol;
             (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
@@ -239,6 +300,9 @@ end = struct
             fol=None}
     with Not_found ->
       None
+
+  let paths ((_,units) : data) =
+    Hashtbl.fold (fun name _ acc -> name :: acc ) units []
 
   let rec propagate l1 l2 =
     match l1, l2 with
@@ -249,7 +313,7 @@ end = struct
 
 (*  let iter events_by_pc f = Hashtbl.iter f events_by_pc *)
 
-  let fold events_by_pc f acc = Hashtbl.fold f events_by_pc acc
+  let fold (events_by_pc,_) f acc = Hashtbl.fold f events_by_pc acc
 end
 
 (* Block analysis *)
@@ -1836,7 +1900,7 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
   let symbols = (input_value ic : Ident.t numtable) in
 
   ignore(seek_section toc ic "CRCS");
-  let crcs = (input_value ic : Obj.t) in
+  let crcs = (input_value ic : (string * Digest.t option) list) in
 
   let debug_data =
     if debug = `No then
@@ -1844,7 +1908,8 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
     else
       try
         ignore(seek_section toc ic "DBUG");
-        Debug.read ic
+        let debug = Debug.read ~crcs ic in
+	debug
       with Not_found ->
         Debug.no_data ()
   in
@@ -1898,7 +1963,7 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
         (* Include linking information *)
         let toc = [
           ("SYMB", Obj.repr symbols);
-          ("CRCS", crcs);
+          ("CRCS", Obj.repr crcs);
           ("PRIM", Obj.repr prim)
         ] in
         let gdata = Var.fresh () in

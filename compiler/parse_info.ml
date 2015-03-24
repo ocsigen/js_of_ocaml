@@ -121,6 +121,10 @@ end
 
 type lineinfo = Line_info.t
 
+let relative_path {Line_info.name} file =
+  if name = "" then file
+  else Filename.(concat (dirname name) file)
+
 let make_lineinfo_from_file file = Line_info.from_file file
 
 let make_lineinfo_from_string str = Line_info.from_string str
