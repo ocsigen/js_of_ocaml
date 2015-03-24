@@ -19,6 +19,16 @@ let exp_to_string = function
        ~loc:pexp_loc
        "Javascript methods or attributes can only be simple identifiers."
 
+let lid ?(loc= !default_loc) str =
+  Location.mkloc (Longident.parse str) loc
+
+let mk_loc ?(loc= !default_loc) x = Location.mkloc x loc
+
+let mk_id ?loc str =
+  let exp = Exp.ident ?loc (lid ?loc str)
+  and pat = Pat.var ?loc (mk_loc ?loc str) in
+  (exp, pat)
+
 
 let rnd = Random.State.make [|0x313511d4|]
 let random_var () =
@@ -48,14 +58,14 @@ module Js = struct
   let unsafe ?loc s args =
     let args = List.map (fun x -> nolabel,x) args in
     if Lazy.force inside_Js
-    then Exp.(apply (ident ?loc @@ lid ("Unsafe."^s)) args)
-    else Exp.(apply (ident ?loc @@ lid ("Js.Unsafe."^s)) args)
+    then Exp.(apply ?loc (ident ?loc @@ lid ?loc ("Unsafe."^s)) args)
+    else Exp.(apply ?loc (ident ?loc @@ lid ?loc ("Js.Unsafe."^s)) args)
 
   let fun_ ?loc s args =
     let args = List.map (fun x -> nolabel,x) args in
     if Lazy.force inside_Js
-    then Exp.(apply (ident ?loc @@ lid s) args)
-    else Exp.(apply (ident ?loc @@ lid ("Js."^s)) args)
+    then Exp.(apply ?loc (ident ?loc @@ lid ?loc s) args)
+    else Exp.(apply ?loc (ident ?loc @@ lid ?loc ("Js."^s)) args)
 
   let string ?loc arg = fun_ ?loc "string" [str arg]
 
@@ -80,8 +90,6 @@ let unescape lab =
     Synthesize new types and create dummy declaration with type constraints.
 *)
 let constrain_types obj res res_typ meth meth_typ args =
-  default_loc := obj.pexp_loc ;
-
   let typ_var = fresh_type obj.pexp_loc in
 
   (* [($obj$ : <typ_var> Js.t)] *)
@@ -99,11 +107,11 @@ let constrain_types obj res res_typ meth meth_typ args =
       meth_typ
   in
 
-  let res_constr = [%expr ([%e Exp.ident res] : [%t res_typ])][@metaloc res.loc] in
+  let res_constr = [%expr ([%e res] : [%t res_typ])] in
   let res_bindings =
     List.fold_right
-      (fun (e, x, (_,t)) e' ->
-         [%expr let _ = ([%e evar x] : [%t t]) in [%e e']])
+      (fun (ev, t) e' ->
+         [%expr let _ = ([%e ev] : [%t t]) in [%e e']])
       args
       res_constr
   in
@@ -133,29 +141,39 @@ let sequence l last =
   List.fold_right Exp.sequence l last
 
 let method_call obj meth args =
-  let args = List.map (fun (l,e) -> (e, random_var (), (l, fresh_type obj.pexp_loc))) args in
+  let args =
+    List.map
+      (fun (l,e) ->
+       let (ev, pv) = mk_id ~loc:e.pexp_loc @@ random_var () in
+       (e, ev, pv, (l, fresh_type obj.pexp_loc)))
+      args in
   let ret_type = fresh_type obj.pexp_loc in
   let method_type =
-    arrows (List.map (fun (_,_,x) -> x) args) @@ Js.type_ "meth" [ret_type] in
-  let o = random_var () in
-  let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
-  let res = random_var () in
-  let meth_args =
-    Exp.array @@
-    List.map
-      (fun (_, x, _) -> Js.unsafe "inject" [evar x])
-      args
+    arrows (List.map (fun (_,_,_,x) -> x) args) @@ Js.type_ "meth" [ret_type] in
+  let e_obj, p_obj = mk_id ~loc:obj.pexp_loc @@ "jsoo_self" in
+  let e_res, p_res = mk_id ~loc:obj.pexp_loc @@ "jsoo_res" in
+  let meth_call =
+    Js.unsafe "meth_call" [
+      e_obj ;
+      str @@ unescape meth ;
+      Exp.array @@
+        List.map
+          (fun (_, ev, _, _) -> Js.unsafe "inject" [ev])
+          args
+      ]
   in
-  List.fold_left
-    (fun e' (e, x, _) -> [%expr let [%p pvar x] = [%e e] in [%e e']])
+
+  let type_binders = List.map (fun (_,ev,_,(_,t)) -> (ev,t)) args in
+
+  Exp.let_
+    Nonrecursive
+    (List.map (fun (e, _, pv, _) -> Vb.mk pv e) args)
     [%expr
-      let [%p pvar o] = [%e obj] in
-      let [%p pvar res] =
-        [%e Js.unsafe "meth_call" [ evar o ; str @@ unescape meth ; meth_args] ]
-      in
-      [%e constrain_types obj' (lid res) ret_type meth method_type args]
+     let [%p p_obj] = [%e obj] in
+     let [%p p_res] = [%e meth_call]
+     in
+     [%e constrain_types e_obj e_res ret_type meth method_type type_binders]
     ]
-    args
 
 (** Instantiation of a class, used by new%js. *)
 let new_object constr args =
@@ -287,8 +305,7 @@ let literal_object ?loc self_id fields =
 
   let create_value = function
     | `Val (id, _, _, body, ty) ->
-      (id.txt, Exp.constraint_ body ty)
-      [@metaloc body.pexp_loc]
+      (id.txt, Exp.constraint_ ~loc:body.pexp_loc body ty)
 
     | `Meth (id, _, _, body, (fun_ty, ret_ty)) ->
        (id.txt,
@@ -340,43 +357,41 @@ let js_mapper _args =
       (** obj##.var *)
       | [%expr [%e? obj] ##. [%e? meth] ] ->
         let meth = exp_to_string meth in
-        let o = random_var () in
-        let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
-        let res = random_var () in
+        let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_obj" in
+        let e_res, p_res = mk_id ~loc:expr.pexp_loc "jsoo_res" in
         let new_expr =
           [%expr
-            let [%p pvar o] = [%e obj] in
-            let [%p pvar res] = [%e Js.unsafe "get" [obj' ; str @@ unescape meth]] in
+            let [%p p_obj] = [%e obj] in
+            let [%p p_res] = [%e Js.unsafe "get" [e_obj ; str @@ unescape meth]] in
             [%e
               constrain_types
-                obj'
-                (lid res) [%type: 'A]
-                meth (Js.type_ "gen_prop" [[%type: <get : 'A; ..> ]])
+                e_obj
+                e_res [%type: 'jsoo_res]
+                meth (Js.type_ "gen_prop" [[%type: <get : 'jsoo_res; ..> ]])
                 []
             ]
           ]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
       (** obj##.var := value *)
-      | [%expr [%e? obj] ##. [%e? meth] := [%e? value]] ->
+      | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as res] := [%e? value]] ->
+        default_loc := res.pexp_loc ;
         let meth = exp_to_string meth in
-        let o = random_var () in
-        let obj' = Exp.ident ~loc:obj.pexp_loc @@ lid o in
-        let v = random_var () in
-        let v_lid = lid v in
-        let value' = Exp.ident ~loc:value.pexp_loc v_lid in
+        let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_obj" in
+        let e_value, p_value = mk_id ~loc:value.pexp_loc "jsoo_arg" in
         let new_expr =
           [%expr
-            let [%p pvar v] = [%e value] in
-            let [%p pvar o] = [%e obj] in
+            let [%p p_obj] = [%e obj]
+            and [%p p_value] = [%e value] in
             let _ = [%e
               constrain_types
-                obj'
-                v_lid [%type: 'A]
-                meth (Js.type_ "gen_prop" [[%type: <set : 'A -> unit ; ..> ]])
+                e_obj
+                e_value [%type: 'jsoo_arg]
+                meth (Js.type_ "gen_prop" [[%type: <set : 'jsoo_arg -> unit ; ..> ]])
                 []
             ]
-            in [%e Js.unsafe "set" [ obj' ; str @@ unescape meth ; value']]
+            in
+            [%e Js.unsafe ~loc:expr.pexp_loc "set" [ e_obj ; str @@ unescape meth ; e_value]]
           ]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
