@@ -101,7 +101,7 @@ js_parser.mli: js_parser.mly javascript.cmi js_token.cmi
 	menhir --infer --external-tokens Js_token --explain $<
 
 %.ml: %.mll
-	ocamllex $<
+	ocamllex -q $<
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
 	rm -f compile.opt compile.byte minify.opt minify.byte
