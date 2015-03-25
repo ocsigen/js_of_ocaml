@@ -287,9 +287,12 @@ end = struct
       let name =
 	let uname = Filename.(basename (chop_extension pos.pos_fname)) in  
 	try
-	  match (Hashtbl.find units uname).source with
-	  | None -> pos.pos_fname
-	  | Some name -> name
+	  let unit = Hashtbl.find units uname in
+	  try Util.find_in_path unit.paths pos.pos_fname with
+	  | Not_found ->
+	     match unit.source with
+	     | Some x -> x
+	     | None   -> raise Not_found 
 	with Not_found -> pos.pos_fname
       in
       Some {Parse_info.name;
