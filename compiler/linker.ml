@@ -50,7 +50,10 @@ let parse_file f =
             | [f] -> "js_of_ocaml",f
             | pkg::l -> pkg, List.fold_left Filename.concat "" l in
           Filename.concat (Util.find_pkg_dir pkg)  f'
-        | None -> f
+        | None ->
+	   if Filename.is_relative f
+	   then Filename.concat (Sys.getcwd()) f
+	   else f
     with
       | Not_found ->
         error "cannot find file '%s'. @." f
