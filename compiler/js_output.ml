@@ -248,7 +248,10 @@ end) = struct
     Array.init 256 (fun i -> String.make 1 (Char.chr i))
   let array_conv =
     Array.init 16 (fun i -> String.make 1 (("0123456789abcdef").[i]))
-  let string_escape f quote ?(utf=false) s =
+  
+  let pp_string f ?(quote='"') ?(utf=false) s =
+    let quote_s = String.make 1 quote in
+    PP.string f quote_s;
     let l = String.length s in
     for i = 0 to l - 1 do
       let c = s.[i] in
@@ -279,7 +282,9 @@ end) = struct
           (PP.string f "\\"; PP.string f (Array.unsafe_get array_str1 (Char.code c)))
         else
           PP.string f (Array.unsafe_get array_str1 (Char.code c))
-    done
+    done;
+    PP.string f quote_s
+
 
   let rec expression l f e =
     match e with
@@ -329,10 +334,7 @@ end) = struct
         if l > 15 then begin PP.string f ")"; PP.end_group f end
       | EStr (s, kind) ->
         let quote = best_string_quote s in
-        let quote_s = String.make 1 quote in
-        PP.string f quote_s;
-        string_escape f ~utf:(kind = `Utf8) quote s;
-        PP.string f quote_s
+        pp_string f ~utf:(kind = `Utf8) ~quote s
       | EBool b ->
         PP.string f (if b then "true" else "false")
       | ENum v ->
@@ -504,10 +506,7 @@ end) = struct
         PNI s -> PP.string f s
       | PNS s ->
         let quote = best_string_quote s in
-        let quote_s = String.make 1 quote in
-        PP.string f quote_s;
-        string_escape f ~utf:true quote s;
-        PP.string f quote_s
+        pp_string f ~utf:true ~quote s;
       | PNN v -> expression 0 f (ENum v)
 
   and property_name_and_value_list f l =
@@ -1030,9 +1029,14 @@ let program f ?source_map p =
   (match source_map with
    | None -> ()
    | Some (out_file,sm) ->
+      (* let cwd = Sys.getcwd () ^ "/" in *)
+      (* let cwd_len = String.length cwd in *)
       let sources =
 	List.map (fun file ->
-	 file
+		  (* let l = String.length file in *)
+		  (* if l >= cwd_len && String.sub file 0 (cwd_len) = cwd *)
+		  (* then String.sub file cwd_len (l - cwd_len) *)
+		  (* else  *)file
 	) sm.Source_map.sources
       in
       let sources_content =
@@ -1060,16 +1064,16 @@ let program f ?source_map p =
 	| None ->
 	   let buf = Buffer.create 1024 in
 	   let pp = Pretty_print.to_buffer buf in 
-	   let e = Source_map.expression sm in
-	   O.expression 0 pp e;
+	   let json = Source_map.json sm in
+	   Json.pp pp json;
 	   let data = Buffer.contents buf in
 	   "data:application/json;base64,"^ (B64.encode data)
 	| Some out_file ->
 	   let oc = open_out out_file in
 	   let pp = Pretty_print.to_out_channel oc in
 	   Pretty_print.set_compact pp false;
-	   let e = Source_map.expression sm in
-	   O.expression 0 pp e;
+	   let json = Source_map.json sm in
+	   Json.pp pp json;
 	   close_out oc;
 	   Filename.basename out_file
       in

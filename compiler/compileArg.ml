@@ -82,6 +82,10 @@ let options =
     let doc = "Inline sources in source map." in
     Arg.(value & flag & info ["source-map-content"] ~doc)
   in
+  (* let sourcemap_root = *)
+  (*   let doc = "root dir for source map." in *)
+  (*   Arg.(value & opt (some string) None & info ["source-map-root"] ~doc) *)
+  (* in *)
   let set_param =
     let doc = "Set compiler options." in
     let all = List.map (fun (x,_) ->
@@ -131,6 +135,7 @@ let options =
       sourcemap
       inlined_sourcemap
       sourcemap_content
+      (*sourcemap_root*)
       output_file
       input_file
       js_files
@@ -165,7 +170,7 @@ let options =
               {
                 Source_map.version = 3;
                 file;
-                sourceroot = None;
+                sourceroot = None (* sourcemap_root *);
                 sources = [];
                 sources_content = if sourcemap_content
 				  then Some []
@@ -216,6 +221,7 @@ let options =
           $ sourcemap
           $ inlined_sourcemap
 	  $ sourcemap_content
+	  (*$ sourcemap_root*)
           $ output_file
 
           $ input_file

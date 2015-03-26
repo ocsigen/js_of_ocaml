@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2013 Hugo Heuzard
+ * Copyright (C) 2015 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,25 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type map = {
-  gen_line : int;
-  gen_col : int;
-  ori_source : int;
-  ori_line : int;
-  ori_col : int;
-  ori_name : int option
-}
+type t = 
+  [ `Null
+  | `Bool of bool
+  | `Float of float
+  | `String of string
+  | `A of t list
+  | `O of (string * t) list ]
 
-type mapping = map list
-
-type t = {
-  version : int;
-  file : string;
-  sourceroot : string option;
-  mutable sources : string list;
-  mutable sources_content : string option list option;
-  mutable names : string list;
-  mutable mappings : mapping ;
-}
-
-val json : t -> Json.t
+val pp : Pretty_print.t -> t -> unit
