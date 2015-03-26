@@ -137,7 +137,7 @@ module Debug : sig
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
   val mem : data -> Code.addr -> bool
   val paths : data -> string list
-  val read : crcs:(string * string option) list -> in_channel -> data
+  val read : crcs:(string * string option) list -> includes:string list -> in_channel -> data
   val no_data : unit -> data
   val fold : data -> (Code.addr -> debug_event -> 'a -> 'a) -> 'a -> 'a
 end = struct
@@ -192,7 +192,7 @@ end = struct
     paths   : string list;
     source : string option;
   }
-	
+
   type data = (int, debug_event) Hashtbl.t * (string, ml_unit) Hashtbl.t
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
@@ -210,8 +210,8 @@ end = struct
 	name, Some (Util.find_in_path paths (name^".ml"))
       with Not_found ->
 	uname, None
-			   
-  let read ~crcs ic =
+
+  let read ~crcs ~includes ic =
     let events_by_pc = Hashtbl.create 257 in
     let units = Hashtbl.create 257 in
     let read_paths : unit -> string list =
@@ -232,7 +232,7 @@ end = struct
       (* save the current position *)
       let pos = pos_in ic in
       let paths =
-	try Some (read_paths ())
+	try Some (read_paths () @ includes)
 	with Failure _ ->
           (* restore position *)
           seek_in ic pos; None in
@@ -269,7 +269,7 @@ end = struct
       []
 
   let mem (tbl,_) = Hashtbl.mem tbl
- 
+
   let find_loc (events_by_pc,units) ?(after = false) pc =
     try
       let (before, ev) =
@@ -285,14 +285,14 @@ end = struct
         if before then loc.loc_start else
         match ev.ev_kind with Event_after _ -> loc.loc_end | _ -> loc.loc_start in
       let name =
-	let uname = Filename.(basename (chop_extension pos.pos_fname)) in  
+	let uname = Filename.(basename (chop_extension pos.pos_fname)) in
 	try
 	  let unit = Hashtbl.find units uname in
 	  try Util.find_in_path unit.paths pos.pos_fname with
 	  | Not_found ->
 	     match unit.source with
 	     | Some x -> x
-	     | None   -> raise Not_found 
+	     | None   -> raise Not_found
 	with Not_found -> pos.pos_fname
       in
       Some {Parse_info.name;
@@ -1877,7 +1877,7 @@ let read_toc ic =
   done;
   !section_table
 
-let from_channel ?(toplevel=false) ?(debug=`No) ic =
+let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
 
   let toc = read_toc ic in
 
@@ -1911,7 +1911,7 @@ let from_channel ?(toplevel=false) ?(debug=`No) ic =
     else
       try
         ignore(seek_section toc ic "DBUG");
-        let debug = Debug.read ~crcs ic in
+        let debug = Debug.read ~crcs ~includes ic in
 	debug
       with Not_found ->
         Debug.no_data ()

@@ -66,10 +66,10 @@ let f {
   let p, cmis, d =
     match input_file with
       None ->
-        Parse_bytecode.from_channel ~toplevel ~debug:need_debug stdin
+        Parse_bytecode.from_channel ~includes:paths ~toplevel ~debug:need_debug stdin
     | Some f ->
         let ch = open_in_bin f in
-        let p,cmis,d = Parse_bytecode.from_channel ~toplevel ~debug:need_debug ch in
+        let p,cmis,d = Parse_bytecode.from_channel ~includes:paths ~toplevel ~debug:need_debug ch in
         close_in ch;
         p, cmis, d
   in

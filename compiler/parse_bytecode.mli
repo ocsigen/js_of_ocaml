@@ -27,6 +27,7 @@ module Debug : sig
 end
 
 val from_channel :
+  ?includes: string list ->
   ?toplevel:bool -> ?debug:[`Full | `Names | `No] -> in_channel ->
   Code.program * Util.StringSet.t * Debug.data
 
