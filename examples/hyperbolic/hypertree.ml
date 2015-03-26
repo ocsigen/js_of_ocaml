@@ -641,7 +641,7 @@ Firebug.console##time(Js.string "draw");
           done;
           !s
         in
-        if not (Lazy.lazy_is_val img) then begin
+        if not (Lazy.is_val img) then begin
           let s = min_scale l 1. 1. 1. in
           if s *. max rx ry > 1. then ignore (Lazy.force img)
         end else begin
