@@ -207,9 +207,9 @@ end = struct
       uname, Some (Util.find_in_path paths (uname^".ml"))
     with Not_found ->
       try
-	name, Some (Util.find_in_path paths (name^".ml"))
+        name, Some (Util.find_in_path paths (name^".ml"))
       with Not_found ->
-	uname, None
+        uname, None
 
   let read ~crcs ~includes ic =
     let events_by_pc = Hashtbl.create 257 in
@@ -232,8 +232,8 @@ end = struct
       (* save the current position *)
       let pos = pos_in ic in
       let paths =
-	try Some (read_paths () @ includes)
-	with Failure _ ->
+        try Some (read_paths () @ includes)
+        with Failure _ ->
           (* restore position *)
           seek_in ic pos; None in
       match paths with
@@ -244,15 +244,15 @@ end = struct
          let u =
            List.map
              (fun name ->
-	      let crc =
-		try List.assoc name crcs
-		with Not_found -> None in
-	      let name, source = find_ml_in_paths paths name in
-	      { name; crc; source; paths }) u
+              let crc =
+                try List.assoc name crcs
+                with Not_found -> None in
+              let name, source = find_ml_in_paths paths name in
+              { name; crc; source; paths }) u
          in
          List.iter
-	   (fun unit ->
-	    Hashtbl.add units unit.name unit) u;
+           (fun unit ->
+            Hashtbl.add units unit.name unit) u;
          List.iter
            (fun ev ->
             relocate_event orig ev;
@@ -274,26 +274,26 @@ end = struct
     try
       let (before, ev) =
         try false, Hashtbl.find events_by_pc pc with Not_found ->
-        true,
-        try Hashtbl.find events_by_pc (pc + 1) with Not_found ->
-        try Hashtbl.find events_by_pc (pc + 2) with Not_found ->
-        Hashtbl.find events_by_pc (pc + 3)
+          true,
+          try Hashtbl.find events_by_pc (pc + 1) with Not_found ->
+            try Hashtbl.find events_by_pc (pc + 2) with Not_found ->
+              Hashtbl.find events_by_pc (pc + 3)
       in
       let loc = ev.ev_loc in
       let pos =
         if after then loc.loc_end else
         if before then loc.loc_start else
-        match ev.ev_kind with Event_after _ -> loc.loc_end | _ -> loc.loc_start in
+          match ev.ev_kind with Event_after _ -> loc.loc_end | _ -> loc.loc_start in
       let name =
-	let uname = Filename.(basename (chop_extension pos.pos_fname)) in
-	try
-	  let unit = Hashtbl.find units uname in
-	  try Util.find_in_path unit.paths pos.pos_fname with
-	  | Not_found ->
-	     match unit.source with
-	     | Some x -> x
-	     | None   -> raise Not_found
-	with Not_found -> pos.pos_fname
+        let uname = Filename.(basename (chop_extension pos.pos_fname)) in
+        try
+          let unit = Hashtbl.find units uname in
+          try Util.absolute_path (Util.find_in_path unit.paths pos.pos_fname) with
+          | Not_found ->
+            match unit.source with
+            | Some x -> Util.absolute_path x
+            | None   -> raise Not_found
+          with Not_found -> pos.pos_fname
       in
       Some {Parse_info.name;
             line=pos.pos_lnum - 1;
@@ -1912,7 +1912,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
       try
         ignore(seek_section toc ic "DBUG");
         let debug = Debug.read ~crcs ~includes ic in
-	debug
+        debug
       with Not_found ->
         Debug.no_data ()
   in
