@@ -240,7 +240,7 @@ end = struct
       | None -> ()
       | Some (paths : string list) ->
          let u = List.map (fun {ev_module} -> ev_module) evl in
-         let u = List.sort_uniq String.compare u in
+         let u = Util.sort_uniq String.compare u in
          let u =
            List.map
              (fun name ->

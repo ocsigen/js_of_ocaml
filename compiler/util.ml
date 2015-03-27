@@ -83,6 +83,18 @@ let filter_map f l =
     | None -> acc) [] l
   in List.rev l
 
+let sort_uniq compare l =
+  let l = List.sort compare l in
+  match l with
+  | [] -> []
+  | [x] -> [x]
+  | x::xs ->
+    let rec loop prev = function
+      | [] -> []
+      | x::rest when compare x prev = 0 -> loop prev rest
+      | x::rest -> x :: loop x rest
+    in loop x xs
+
 let array_fold_right_i f a x =
   let r = ref x in
   for i = Array.length a - 1 downto 0 do
