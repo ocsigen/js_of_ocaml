@@ -63,20 +63,23 @@ end) = struct
   let output_debug_info f loc =
     if debug_enabled then begin
       match loc with
-        Pi {Parse_info.name = file; line; col} ->
+      | Pi {Parse_info.name = Some file; line; col}
+      | Pi {Parse_info.src  = Some file; line; col}->
         PP.non_breaking_space f;
         PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file (line + 1) col);
         PP.non_breaking_space f
       | N ->
           ()
-      | U ->
+      | U | Pi _ ->
         PP.non_breaking_space f; PP.string f "/*<<?>>*/"; PP.non_breaking_space f
+      
+      
     end;
     if source_map_enabled then
       match loc with
         N ->
           ()
-      | U ->
+      | U | Pi { Parse_info.src = None; _ } ->
           push_mapping (PP.pos f)
             { Source_map.gen_line = -1;
               gen_col = -1;
@@ -84,7 +87,7 @@ end) = struct
               ori_line = -1;
               ori_col = -1;
               ori_name = None }
-      | Pi { Parse_info.name=file; line; col } ->
+      | Pi { Parse_info.src = Some file; line; col } ->
           push_mapping (PP.pos f)
             { Source_map.gen_line = -1;
               gen_col = -1;
@@ -1029,16 +1032,7 @@ let program f ?source_map p =
   (match source_map with
    | None -> ()
    | Some (out_file,sm) ->
-      (* let cwd = Sys.getcwd () ^ "/" in *)
-      (* let cwd_len = String.length cwd in *)
-      let sources =
-	List.map (fun file ->
-		  (* let l = String.length file in *)
-		  (* if l >= cwd_len && String.sub file 0 (cwd_len) = cwd *)
-		  (* then String.sub file cwd_len (l - cwd_len) *)
-		  (* else  *)file
-	) sm.Source_map.sources
-      in
+      let sources = sm.Source_map.sources in
       let sources_content =
 	match sm.Source_map.sources_content with
 	| None -> None

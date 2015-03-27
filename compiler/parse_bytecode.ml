@@ -284,18 +284,20 @@ end = struct
         if after then loc.loc_end else
         if before then loc.loc_start else
           match ev.ev_kind with Event_after _ -> loc.loc_end | _ -> loc.loc_start in
-      let name =
+      let src =
         let uname = Filename.(basename (chop_extension pos.pos_fname)) in
         try
           let unit = Hashtbl.find units uname in
-          try Util.absolute_path (Util.find_in_path unit.paths pos.pos_fname) with
+          try Some (Util.absolute_path
+		      (Util.find_in_path unit.paths pos.pos_fname)) with
           | Not_found ->
             match unit.source with
-            | Some x -> Util.absolute_path x
+            | Some x -> Some (Util.absolute_path x)
             | None   -> raise Not_found
-          with Not_found -> pos.pos_fname
+          with Not_found -> None (* pos.pos_fname *)
       in
-      Some {Parse_info.name;
+      Some {Parse_info.name = Some pos.pos_fname;
+	    src;
             line=pos.pos_lnum - 1;
             col=pos.pos_cnum - pos.pos_bol;
             (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)

@@ -22,8 +22,11 @@
 open Util
 
 let loc pi = match pi with
-  | None -> "unknown location"
-  | Some pi -> Printf.sprintf "%s:%d" pi.Parse_info.name pi.Parse_info.line
+  | Some {Parse_info.src  = Some src; line}
+  | Some {Parse_info.name = Some src; line} ->
+     Printf.sprintf "%s:%d" src line
+  | None 
+  | Some _ -> "unknown location"
 
 let parse_annot loc s =
   let buf = Lexing.from_string s in
@@ -95,8 +98,12 @@ let parse_file f =
           ) ([],None,[]) annot in
         has_provide,req,versions,code
       with Parse_js.Parsing_error pi ->
+        let name = match pi with
+          | {Parse_info.src  = Some x; _}
+          | {Parse_info.name = Some x; _} -> x
+          | _ -> "??" in 
         error "cannot parse file %S (orig:%S from l:%d, c:%d)@."
-          f pi.Parse_info.name pi.Parse_info.line pi.Parse_info.col)
+          f name pi.Parse_info.line pi.Parse_info.col)
       lexs in
   res
 
