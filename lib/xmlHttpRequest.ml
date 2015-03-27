@@ -82,8 +82,6 @@ let create () : xmlHttpRequest Js.t =
   try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Microsoft.XMLHTTP") with _ ->
   assert false
 
-let encode = Url.encode_arguments
-
 let encode_url l =
   String.concat "&"
     (List.map
@@ -107,17 +105,6 @@ type 'response generic_http_frame =
 type http_frame = string generic_http_frame
 
 exception Wrong_headers of (int * (string -> string option))
-
-let extract_get_param url =
-  let open Url in
-  match url_of_string url with
-    | Some (Http url) ->
-      Url.string_of_url (Http { url with hu_arguments = [] }),
-      url.hu_arguments
-    | Some (Https url) ->
-      Url.string_of_url (Https { url with hu_arguments = [] }),
-      url.hu_arguments
-    | _ -> url, []
 
 let default_response url code headers req =
   { url = url;
@@ -174,6 +161,9 @@ let arraybuffer_response url code headers req =
     headers = headers
   }
 
+let has_get_args url =
+  try ignore (String.index url '?'); true with Not_found -> false
+
 let perform_raw
     ?(headers = [])
     ?content_type
@@ -226,10 +216,12 @@ let perform_raw
 	  | `FormData _ -> "POST", None)
       | Some _, ct -> "POST", ct
   in
-  let url, url_get = extract_get_param url in
-  let url = match url_get@get_args with
-    | [] -> url
-    | _::_ as l -> url ^ "?" ^ encode l
+  let url =
+    if get_args = [] then
+      url
+    else
+      url ^ (if has_get_args url then "&" else "?") ^
+      Url.encode_arguments get_args
   in
 
   let ((res : resptype generic_http_frame Lwt.t), w) = Lwt.task () in
