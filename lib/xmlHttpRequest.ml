@@ -235,6 +235,8 @@ let perform_raw
   let ((res : resptype generic_http_frame Lwt.t), w) = Lwt.task () in
   let req = create () in
 
+  req##_open (Js.string method_, Js.string url, Js._true);
+
   begin match override_mime_type with
     None           -> ()
   | Some mime_type -> req ## overrideMimeType (Js.string mime_type)
@@ -249,7 +251,6 @@ let perform_raw
   | Default     -> req ## responseType <- (Js.string "")
   end;
 
-  req##_open (Js.string method_, Js.string url, Js._true);
   (match content_type with
     | Some content_type ->
       req##setRequestHeader (Js.string "Content-type", Js.string content_type)
