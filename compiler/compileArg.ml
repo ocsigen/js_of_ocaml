@@ -82,10 +82,10 @@ let options =
     let doc = "Do not inline sources in source map." in
     Arg.(value & flag & info ["source-map-no-source"] ~doc)
   in
-  (* let sourcemap_root = *)
-  (*   let doc = "root dir for source map." in *)
-  (*   Arg.(value & opt (some string) None & info ["source-map-root"] ~doc) *)
-  (* in *)
+  let sourcemap_root =
+    let doc = "root dir for source map." in
+    Arg.(value & opt (some string) None & info ["source-map-root"] ~doc)
+  in
   let set_param =
     let doc = "Set compiler options." in
     let all = List.map (fun (x,_) ->
@@ -135,7 +135,7 @@ let options =
       sourcemap
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
-      (*sourcemap_root*)
+      sourcemap_root
       output_file
       input_file
       js_files
@@ -160,17 +160,17 @@ let options =
       let source_map =
         if sourcemap || sourcemap_inline_in_js
         then
-	  let file, output_file =
+	  let file, sm_output_file =
 	    match output_file with
             | Some file when sourcemap_inline_in_js -> file, None
 	    | Some file -> file, Some (chop_extension file ^ ".map")
 	    | None -> "STDIN", None in
           Some (
-              output_file,
+              sm_output_file,
               {
                 Source_map.version = 3;
                 file;
-                sourceroot = None (* sourcemap_root *);
+                sourceroot = sourcemap_root;
                 sources = [];
                 sources_content = if sourcemap_don't_inline_content
                                   then None
@@ -221,7 +221,7 @@ let options =
           $ sourcemap
           $ sourcemap_inline_in_js
           $ sourcemap_don't_inline_content
-	  (*$ sourcemap_root*)
+	  $ sourcemap_root
 
           $ output_file
 

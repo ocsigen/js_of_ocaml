@@ -1052,7 +1052,22 @@ let program f ?source_map p =
 	     Source_map.gen_line = pos.PP.p_line;
 	     Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings
       in
-      let sm = { sm with Source_map.sources; sources_content; mappings } in
+      let sources = match sm.Source_map.sourceroot with
+	| None -> sources
+	| Some root ->
+	   let script_file = (Filename.chop_extension sm.Source_map.file) ^ ".make-sourcemap-links.sh" in
+	   let oc = open_out script_file in
+	   let printf fmt = Printf.fprintf oc fmt  in
+	   let targets = List.map (fun src -> Filename.basename src) sources in
+	   printf "#! /bin/bash\n";
+	   printf "mkdir -p %s\n" root;
+	   List.iter2 (fun src tg ->
+		       printf "ln -s %s %s\n" src (Filename.concat root tg)) sources targets;
+	   close_out oc;
+	   Util.warn "Source-map info: run 'sh %s' to create links to sources in %s.\n%!" script_file root;
+	   targets
+      in	
+      let sm = { sm with Source_map.sources; sources_content; mappings} in
       let urlData =
 	match out_file with
 	| None ->

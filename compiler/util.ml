@@ -32,7 +32,7 @@ let opt_filter p x =
 
 (****)
 let quiet = ref false
-let warn fmt = Format.ksprintf (fun s -> if not !quiet then Format.eprintf "%s" s) fmt
+let warn fmt = Format.ksprintf (fun s -> if not !quiet then Format.eprintf "%s%!" s) fmt
 
 let find_pkg_dir pkg = try Myfindlib.package_directory pkg with _ -> raise Not_found
 
