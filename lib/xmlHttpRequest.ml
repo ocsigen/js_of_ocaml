@@ -264,14 +264,18 @@ let perform_raw
       (fun v -> Some (Js.to_string v))
   in
   let do_check_headers =
-    let checked = ref false in
+    let st = ref `Not_yet in
     fun () ->
-      if not (!checked) && not (check_headers (req##status) headers)
-      then begin
-        Lwt.wakeup_exn w (Wrong_headers ((req##status),headers));
-        req##abort ();
+      if !st = `Not_yet then begin
+        if check_headers (req##status) headers then
+          st := `Passed
+        else begin
+          Lwt.wakeup_exn w (Wrong_headers ((req##status),headers));
+          st := `Failed;
+          req##abort ()
+        end
       end;
-      checked := true
+      !st <> `Failed
   in
   req##onreadystatechange <- Js.wrap_callback
     (fun _ ->
@@ -279,21 +283,31 @@ let perform_raw
           (* IE doesn't have the same semantics for HEADERS_RECEIVED.
              so we wait til LOADING to check headers. See:
              http://msdn.microsoft.com/en-us/library/ms534361(v=vs.85).aspx *)
-        | HEADERS_RECEIVED when not Dom_html.onIE -> do_check_headers ()
-	| LOADING when Dom_html.onIE -> do_check_headers ()
-	| DONE ->
-          (* If we didn't catch a previous event, we check the header. *)
-          do_check_headers ();
-	  let response : resptype generic_http_frame =
-	    match response_type with
-	      ArrayBuffer -> arraybuffer_response url (req##status) headers req
-	    | Blob -> blob_response url (req##status) headers req
-	    | Document -> document_response url (req##status) headers req
-	    | JSON -> json_response url (req##status) headers req
-	    | Text -> text_response url (req##status) headers req
-	    | Default -> default_response url (req##status) headers req in
-	  Lwt.wakeup w response
-	| _ -> ()));
+        | HEADERS_RECEIVED when not Dom_html.onIE ->
+            ignore (do_check_headers ())
+        | LOADING when Dom_html.onIE ->
+            ignore (do_check_headers ())
+        | DONE ->
+            (* If we didn't catch a previous event, we check the header. *)
+            if do_check_headers () then begin
+              let response : resptype generic_http_frame =
+                match response_type with
+                  ArrayBuffer ->
+                    arraybuffer_response url (req##status) headers req
+                | Blob ->
+                    blob_response url (req##status) headers req
+                | Document ->
+                    document_response url (req##status) headers req
+                | JSON ->
+                    json_response url (req##status) headers req
+                | Text ->
+                    text_response url (req##status) headers req
+                | Default ->
+                    default_response url (req##status) headers req in
+              Lwt.wakeup w response
+            end
+        | _ ->
+            ()));
 
   begin match progress with
   | Some progress ->
