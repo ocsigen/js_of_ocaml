@@ -63,20 +63,23 @@ end) = struct
   let output_debug_info f loc =
     if debug_enabled then begin
       match loc with
-        Pi {Parse_info.name = file; line; col} ->
+      | Pi {Parse_info.name = Some file; line; col}
+      | Pi {Parse_info.src  = Some file; line; col}->
         PP.non_breaking_space f;
         PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file (line + 1) col);
         PP.non_breaking_space f
       | N ->
           ()
-      | U ->
+      | U | Pi _ ->
         PP.non_breaking_space f; PP.string f "/*<<?>>*/"; PP.non_breaking_space f
+      
+      
     end;
     if source_map_enabled then
       match loc with
         N ->
           ()
-      | U ->
+      | U | Pi { Parse_info.src = None; _ } ->
           push_mapping (PP.pos f)
             { Source_map.gen_line = -1;
               gen_col = -1;
@@ -84,7 +87,7 @@ end) = struct
               ori_line = -1;
               ori_col = -1;
               ori_name = None }
-      | Pi { Parse_info.name=file; line; col } ->
+      | Pi { Parse_info.src = Some file; line; col } ->
           push_mapping (PP.pos f)
             { Source_map.gen_line = -1;
               gen_col = -1;
@@ -248,7 +251,10 @@ end) = struct
     Array.init 256 (fun i -> String.make 1 (Char.chr i))
   let array_conv =
     Array.init 16 (fun i -> String.make 1 (("0123456789abcdef").[i]))
-  let string_escape f quote ?(utf=false) s =
+  
+  let pp_string f ?(quote='"') ?(utf=false) s =
+    let quote_s = String.make 1 quote in
+    PP.string f quote_s;
     let l = String.length s in
     for i = 0 to l - 1 do
       let c = s.[i] in
@@ -279,7 +285,9 @@ end) = struct
           (PP.string f "\\"; PP.string f (Array.unsafe_get array_str1 (Char.code c)))
         else
           PP.string f (Array.unsafe_get array_str1 (Char.code c))
-    done
+    done;
+    PP.string f quote_s
+
 
   let rec expression l f e =
     match e with
@@ -329,10 +337,7 @@ end) = struct
         if l > 15 then begin PP.string f ")"; PP.end_group f end
       | EStr (s, kind) ->
         let quote = best_string_quote s in
-        let quote_s = String.make 1 quote in
-        PP.string f quote_s;
-        string_escape f ~utf:(kind = `Utf8) quote s;
-        PP.string f quote_s
+        pp_string f ~utf:(kind = `Utf8) ~quote s
       | EBool b ->
         PP.string f (if b then "true" else "false")
       | ENum v ->
@@ -504,10 +509,7 @@ end) = struct
         PNI s -> PP.string f s
       | PNS s ->
         let quote = best_string_quote s in
-        let quote_s = String.make 1 quote in
-        PP.string f quote_s;
-        string_escape f ~utf:true quote s;
-        PP.string f quote_s
+        pp_string f ~utf:true ~quote s;
       | PNN v -> expression 0 f (ENum v)
 
   and property_name_and_value_list f l =
@@ -1030,28 +1032,57 @@ let program f ?source_map p =
   (match source_map with
    | None -> ()
    | Some (out_file,sm) ->
-      let sm =
-       { sm with
-         Source_map.mappings = List.map (fun (pos,m) ->
-           {m with
-            Source_map.gen_line = pos.PP.p_line;
-            Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings} in
-
+      let sources = sm.Source_map.sources in
+      let sources_content =
+	match sm.Source_map.sources_content with
+	| None -> None
+	| Some [] ->
+	   Some (List.map
+	     (fun file ->
+	      if Sys.file_exists file
+	      then 
+		let content = Util.read_file file in
+		Some content
+	      else None) sources)
+	| Some _ -> assert false in
+      let mappings =
+	List.map
+	  (fun (pos,m) ->
+	   {m with
+	     Source_map.gen_line = pos.PP.p_line;
+	     Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings
+      in
+      let sources = match sm.Source_map.sourceroot with
+	| None -> sources
+	| Some root ->
+	   let script_file = (Filename.chop_extension sm.Source_map.file) ^ ".make-sourcemap-links.sh" in
+	   let oc = open_out script_file in
+	   let printf fmt = Printf.fprintf oc fmt  in
+	   let targets = List.map (fun src -> Filename.basename src) sources in
+	   printf "#! /bin/bash\n";
+	   printf "mkdir -p %s\n" root;
+	   List.iter2 (fun src tg ->
+		       printf "ln -s %s %s\n" src (Filename.concat root tg)) sources targets;
+	   close_out oc;
+	   Util.warn "Source-map info: run 'sh %s' to create links to sources in %s.\n%!" script_file root;
+	   targets
+      in	
+      let sm = { sm with Source_map.sources; sources_content; mappings} in
       let urlData =
 	match out_file with
 	| None ->
 	   let buf = Buffer.create 1024 in
 	   let pp = Pretty_print.to_buffer buf in 
-	   let e = Source_map.expression sm in
-	   O.expression 0 pp e;
+	   let json = Source_map.json sm in
+	   Json.pp pp json;
 	   let data = Buffer.contents buf in
 	   "data:application/json;base64,"^ (B64.encode data)
 	| Some out_file ->
 	   let oc = open_out out_file in
 	   let pp = Pretty_print.to_out_channel oc in
 	   Pretty_print.set_compact pp false;
-	   let e = Source_map.expression sm in
-	   O.expression 0 pp e;
+	   let json = Source_map.json sm in
+	   Json.pp pp json;
 	   close_out oc;
 	   Filename.basename out_file
       in

@@ -74,9 +74,17 @@ let options =
     let doc = "Generate source map." in
     Arg.(value & flag & info ["sourcemap";"source-map"] ~doc)
   in
-  let inlined_sourcemap =
-    let doc = "Generate inlined source map." in
-    Arg.(value & flag & info ["inlined-source-map"] ~doc)
+  let sourcemap_inline_in_js =
+    let doc = "Inline sourcemap in the generated JavaScript." in
+    Arg.(value & flag & info ["source-map-inline"] ~doc)
+  in
+  let sourcemap_don't_inline_content =
+    let doc = "Do not inline sources in source map." in
+    Arg.(value & flag & info ["source-map-no-source"] ~doc)
+  in
+  let sourcemap_root =
+    let doc = "root dir for source map." in
+    Arg.(value & opt (some string) None & info ["source-map-root"] ~doc)
   in
   let set_param =
     let doc = "Set compiler options." in
@@ -125,7 +133,9 @@ let options =
       profile
       noruntime
       sourcemap
-      inlined_sourcemap
+      sourcemap_inline_in_js
+      sourcemap_don't_inline_content
+      sourcemap_root
       output_file
       input_file
       js_files
@@ -148,21 +158,23 @@ let options =
         | Some _ -> output_file
         | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") input_file in
       let source_map =
-        if sourcemap || inlined_sourcemap
+        if sourcemap || sourcemap_inline_in_js
         then
-	  let file, output_file =
+	  let file, sm_output_file =
 	    match output_file with
-            | Some file when inlined_sourcemap -> file, None
+            | Some file when sourcemap_inline_in_js -> file, None
 	    | Some file -> file, Some (chop_extension file ^ ".map")
 	    | None -> "STDIN", None in
           Some (
-              output_file,
+              sm_output_file,
               {
                 Source_map.version = 3;
                 file;
-                sourceroot = None;
+                sourceroot = sourcemap_root;
                 sources = [];
-                sources_content = [];
+                sources_content = if sourcemap_don't_inline_content
+                                  then None
+                                  else Some [];
                 names = [];
                 mappings = []
             })
@@ -207,7 +219,9 @@ let options =
 
           $ noruntime
           $ sourcemap
-          $ inlined_sourcemap
+          $ sourcemap_inline_in_js
+          $ sourcemap_don't_inline_content
+	  $ sourcemap_root
 
           $ output_file
 

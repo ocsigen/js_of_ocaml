@@ -1,7 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
+ * Copyright (C) 2015 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -18,17 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Debug : sig
-  type data
-  val no_data : unit -> data
-  val find_loc : data -> ?after:bool -> int -> Parse_info.t option
-  val paths    : data -> string list
-  val is_empty : data -> bool
-end
+type t = 
+  [ `Null
+  | `Bool of bool
+  | `Float of float
+  | `String of string
+  | `A of t list
+  | `O of (string * t) list ]
 
-val from_channel :
-  ?includes: string list ->
-  ?toplevel:bool -> ?debug:[`Full | `Names | `No] -> in_channel ->
-  Code.program * Util.StringSet.t * Debug.data
-
-val from_string : string array -> string -> Code.program * Debug.data
+val pp : Pretty_print.t -> t -> unit

@@ -17,22 +17,23 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type t = {
-  name : string;
-  col : int;
-  line : int;
-  idx : int;
-  fol : bool option;
-}
+type t =
+  { src  : string option
+  ; name : string option
+  ; col  : int
+  ; line : int
+  ; idx  : int
+  ; fol  : bool option;
+  }
 
-let zero = {
-  name = "";
-  col = 0;
-  line = 0;
-  idx = 0;
-  fol = None
-}
-
+let zero =
+  { src  = None
+  ; name = None
+  ; col  = 0
+  ; line = 0
+  ; idx  = 0
+  ; fol  = None
+  }
 
 module Line_info = struct
 
@@ -40,7 +41,8 @@ module Line_info = struct
     mutable acc_pos : int;
     mutable acc_line : int;
     lines : int array;
-    name : string;
+    name : string option;
+    src : string option
   }
 
   let rec compute lines acc line pos =
@@ -76,7 +78,8 @@ module Line_info = struct
       acc_pos = 0;
       acc_line = 0;
       lines;
-      name=file;
+      name = Some file;
+      src  = Some file;
     } in
     close_in ic;
     t
@@ -95,7 +98,8 @@ module Line_info = struct
     { acc_pos = 0;
       acc_line = 0;
       lines;
-      name=""}
+      name=None;
+      src =None}
 
   let from_channel ic =
     let buf = Buffer.create 1024 in
@@ -113,13 +117,19 @@ module Line_info = struct
       acc_pos = 0;
       acc_line = 0;
       lines;
-      name="";
+      name=None;
+      src=None;
     } in
     t,Buffer.contents buf
 
 end
 
 type lineinfo = Line_info.t
+
+let relative_path {Line_info.src} file =
+  match src with
+  | None -> None
+  | Some src -> Some (Filename.(concat (dirname src) file))
 
 let make_lineinfo_from_file file = Line_info.from_file file
 
@@ -130,10 +140,10 @@ let make_lineinfo_from_channel c = Line_info.from_channel c
 let t_of_lexbuf line_info lexbuf : t =
   let idx = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
   let line,col = Line_info.get line_info idx in
-  {
-    fol = None;
-    idx;
-    line;
-    col;
-    name = line_info.Line_info.name;
+  { fol = None
+  ; idx
+  ; line
+  ; col
+  ; name = line_info.Line_info.name
+  ; src  = line_info.Line_info.src
   }

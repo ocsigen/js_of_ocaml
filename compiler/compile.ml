@@ -53,6 +53,18 @@ let f {
   CommonArg.eval common;
   List.iter (fun (s,v) -> Option.Param.set s v) params;
   let t = Util.Timer.make () in
+
+  let include_dir = List.map (fun d ->
+    match Util.path_require_findlib d with
+    | Some d ->
+      let pkg,d' = match Util.split Filename.dir_sep d with
+        | [] -> assert false
+        | [d] -> "js_of_ocaml",d
+        | pkg::l -> pkg, List.fold_left Filename.concat "" l in
+      Filename.concat (Util.find_pkg_dir pkg) d'
+    | None -> d
+  ) include_dir in
+
   Linker.load_files runtime_files;
   let paths =
     try List.append include_dir [Util.find_pkg_dir "stdlib"]
@@ -66,10 +78,10 @@ let f {
   let p, cmis, d =
     match input_file with
       None ->
-        Parse_bytecode.from_channel ~toplevel ~debug:need_debug stdin
+        Parse_bytecode.from_channel ~includes:paths ~toplevel ~debug:need_debug stdin
     | Some f ->
         let ch = open_in_bin f in
-        let p,cmis,d = Parse_bytecode.from_channel ~toplevel ~debug:need_debug ch in
+        let p,cmis,d = Parse_bytecode.from_channel ~includes:paths ~toplevel ~debug:need_debug ch in
         close_in ch;
         p, cmis, d
   in

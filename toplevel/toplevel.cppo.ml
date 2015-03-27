@@ -19,7 +19,6 @@
  *)
 
 open Lwt
-open Compiler
 module Html = Dom_html
 
 module H = struct

@@ -58,10 +58,10 @@ js_assign.cmx : util.cmx option.cmx js_traverse.cmx javascript.cmx code.cmx \
     js_assign.cmi
 js_lexer.cmo : parse_info.cmi js_token.cmi js_lexer.cmi
 js_lexer.cmx : parse_info.cmx js_token.cmx js_lexer.cmi
-js_output.cmo : source_map.cmi pretty_print.cmi parse_info.cmi option.cmi \
-    javascript.cmi js_output.cmi
-js_output.cmx : source_map.cmx pretty_print.cmx parse_info.cmx option.cmx \
-    javascript.cmx js_output.cmi
+js_output.cmo : util.cmi source_map.cmi pretty_print.cmi parse_info.cmi \
+    option.cmi json.cmi javascript.cmi js_output.cmi
+js_output.cmx : util.cmx source_map.cmx pretty_print.cmx parse_info.cmx \
+    option.cmx json.cmx javascript.cmx js_output.cmi
 js_parser.cmo : parse_info.cmi js_token.cmi javascript.cmi js_parser.cmi
 js_parser.cmx : parse_info.cmx js_token.cmx javascript.cmx js_parser.cmi
 js_simpl.cmo : javascript.cmi code.cmi js_simpl.cmi
@@ -74,6 +74,8 @@ js_token.cmo : parse_info.cmi js_token.cmi
 js_token.cmx : parse_info.cmx js_token.cmi
 js_traverse.cmo : util.cmi javascript.cmi code.cmi js_traverse.cmi
 js_traverse.cmx : util.cmx javascript.cmx code.cmx js_traverse.cmi
+json.cmo : pretty_print.cmi javascript.cmi json.cmi
+json.cmx : pretty_print.cmx javascript.cmx json.cmi
 linker.cmo : util.cmi reserved.cmi primitive.cmi parse_js.cmi parse_info.cmi \
     option.cmi js_traverse.cmi js_token.cmi javascript.cmi annot_parser.cmi \
     annot_lexer.cmi linker.cmi
@@ -118,8 +120,8 @@ pure_fun.cmo : primitive.cmi code.cmi pure_fun.cmi
 pure_fun.cmx : primitive.cmx code.cmx pure_fun.cmi
 reserved.cmo : util.cmi reserved.cmi
 reserved.cmx : util.cmx reserved.cmi
-source_map.cmo : vlq64.cmi javascript.cmi source_map.cmi
-source_map.cmx : vlq64.cmx javascript.cmx source_map.cmi
+source_map.cmo : vlq64.cmi source_map.cmi
+source_map.cmx : vlq64.cmx source_map.cmi
 specialize.cmo : util.cmi option.cmi flow.cmi code.cmi specialize.cmi
 specialize.cmx : util.cmx option.cmx flow.cmx code.cmx specialize.cmi
 specialize_js.cmo : util.cmi primitive.cmi flow.cmi code.cmi \
@@ -161,6 +163,7 @@ js_simpl.cmi : javascript.cmi code.cmi
 js_tailcall.cmi : js_traverse.cmi javascript.cmi code.cmi
 js_token.cmi : parse_info.cmi
 js_traverse.cmi : util.cmi javascript.cmi code.cmi
+json.cmi : pretty_print.cmi
 linker.cmi : util.cmi primitive.cmi parse_info.cmi javascript.cmi
 minifyArg.cmi : commonArg.cmi
 option.cmi :
@@ -173,7 +176,7 @@ primitive.cmi : util.cmi parse_info.cmi
 pseudoFs.cmi : util.cmi code.cmi
 pure_fun.cmi : code.cmi
 reserved.cmi : util.cmi
-source_map.cmi : javascript.cmi
+source_map.cmi : json.cmi
 specialize.cmi : flow.cmi code.cmi
 specialize_js.cmi : flow.cmi code.cmi
 subst.cmi : code.cmi

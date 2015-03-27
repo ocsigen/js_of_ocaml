@@ -32,7 +32,7 @@ let opt_filter p x =
 
 (****)
 let quiet = ref false
-let warn fmt = Format.ksprintf (fun s -> if not !quiet then Format.eprintf "%s" s) fmt  
+let warn fmt = Format.ksprintf (fun s -> if not !quiet then Format.eprintf "%s%!" s) fmt
 
 let find_pkg_dir pkg = try Myfindlib.package_directory pkg with _ -> raise Not_found
 
@@ -41,7 +41,7 @@ let path_require_findlib path =
   then Some (String.sub  path 1 (String.length path - 1))
   else None
 
-let rec find_in_paths ?(pkg="stdlib") paths name =
+let rec find_in_findlib_paths ?(pkg="stdlib") paths name =
   match paths with
     | [] ->
       raise Not_found
@@ -53,8 +53,21 @@ let rec find_in_paths ?(pkg="stdlib") paths name =
           | None -> Filename.concat path name in
 
         if Sys.file_exists file then file else
-          find_in_paths rem name
-      with Not_found -> find_in_paths rem name
+          find_in_findlib_paths rem name
+      with Not_found -> find_in_findlib_paths rem name
+
+let rec find_in_path paths name =
+  match paths with
+  | [] -> raise Not_found
+  | path :: rem ->
+     let file = Filename.concat path name in
+     if Sys.file_exists file then file else
+       find_in_path rem name
+
+let absolute_path f =
+  if Filename.is_relative f
+  then Filename.concat (Sys.getcwd()) f
+  else f
 
 let read_file f =
   let ic = open_in f in

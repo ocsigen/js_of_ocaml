@@ -53,9 +53,13 @@ let f {
   Code.Var.set_pretty pretty;
 
   let error_of_pi pi =
-    if pi.Parse_info.name = ""
-    then error "error at l:%d col:%d" pi.Parse_info.line pi.Parse_info.col
-    else error "error at file:%S l:%d col:%d" pi.Parse_info.name pi.Parse_info.line pi.Parse_info.col in
+    match pi with
+    | {Parse_info.name = Some src; line; col; _ }
+    | {Parse_info.src  = Some src; line; col; _ } ->
+       error "error at file:%S l:%d col:%d" src line col
+    | {Parse_info.line; col; _ } ->
+       error "error at l:%d col:%d" line col
+  in
 
   let p = List.flatten (List.map (fun file ->
     let lex = Parse_js.lexer_from_file file in
