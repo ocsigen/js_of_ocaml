@@ -95,7 +95,7 @@ let encode_url l =
 (* Higher level interface: *)
 
 (** type of the http headers *)
-type 'response http_frame =
+type 'response generic_http_frame =
     {
       url: string;
       code: int;
@@ -103,6 +103,8 @@ type 'response http_frame =
       content: 'response;
       content_xml: unit -> Dom.element Dom.document t option;
     }
+
+type http_frame = string generic_http_frame
 
 exception Wrong_headers of (int * (string -> string option))
 
@@ -230,7 +232,7 @@ let perform_raw
     | _::_ as l -> url ^ "?" ^ encode l
   in
 
-  let ((res : resptype http_frame Lwt.t), w) = Lwt.task () in
+  let ((res : resptype generic_http_frame Lwt.t), w) = Lwt.task () in
   let req = create () in
 
   begin match override_mime_type with
@@ -281,7 +283,7 @@ let perform_raw
 	| DONE ->
           (* If we didn't catch a previous event, we check the header. *)
           do_check_headers ();
-	  let response : resptype http_frame =
+	  let response : resptype generic_http_frame =
 	    match response_type with
 	      ArrayBuffer -> arraybuffer_response url (req##status) headers req
 	    | Blob -> blob_response url (req##status) headers req

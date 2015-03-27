@@ -81,7 +81,7 @@ module Event : sig
   val loadend : typ
 end
 
-type 'response http_frame =
+type 'response generic_http_frame =
     {
       url: string;
       code: int;
@@ -92,6 +92,8 @@ type 'response http_frame =
 (** The type for XHR results. The code field is the http status code of the
     answer. The headers field is a function associating values to any header
     name. *)
+
+type http_frame = string generic_http_frame
 
 exception Wrong_headers of (int * (string -> string option))
 (** The exception raise by perform functions when the check_headers
@@ -110,7 +112,7 @@ val perform_raw :
   -> ?override_mime_type:string
   -> response_type:('a response)
   -> string
-  -> 'a http_frame Lwt.t
+  -> 'a generic_http_frame Lwt.t
   (** [perform_raw] is the same as {!perform_raw_url} except that an additional
       response_type argument can be given to set the XMLHttpRequest
       responseType, and hence return different types of data for GET
@@ -127,7 +129,7 @@ val perform_raw_url :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> string
-  -> string http_frame Lwt.t
+  -> http_frame Lwt.t
   (** [perform_raw_url ?headers ?content_type ?post_args ?get_args ?form_arg url]
       makes an asynchronous request to the specified [url] with
       specified options. The result is a cancelable thread returning
@@ -148,9 +150,9 @@ val perform :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> Url.url
-  -> string http_frame Lwt.t
+  -> http_frame Lwt.t
   (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
       {!Url.url}. *)
 
-val get : string -> string http_frame Lwt.t
+val get : string -> http_frame Lwt.t
   (** [get url] makes an asynchronous request to the specified [url] *)
