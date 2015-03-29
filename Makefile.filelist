@@ -31,14 +31,15 @@ INTF += lib/tyxml/*.cmi
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-IMPL += lib/toplevel/jsooTop.cmo
-INTF += lib/toplevel/jsooTop.cmi
+IMPL += lib/toplevel/jsooTop.cmo lib/toplevel/jsooTopError.cmo lib/toplevel/jsooTopCamlp4.cmo
+INTF += lib/toplevel/jsooTop.cmi lib/toplevel/jsooTopError.cmi
 endif
 
 
 OTHERS := runtime/runtime.js runtime/weak.js \
           runtime/polyfill/classlist.js \
           runtime/polyfill/array.js \
+          runtime/polyfill/string.js \
           runtime/toplevel.js \
           runtime/graphics.js \
           runtime/nat.js \

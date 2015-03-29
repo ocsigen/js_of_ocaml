@@ -93,7 +93,7 @@ package "toplevel" (
   exists_if = "jsooTop.cmo"
   description = "Js_of_ocaml toplevel library"
   version = "[distributed with js_of_ocaml]"
-  archive(byte) = "jsooTop.cmo"
+  archive(byte) = "jsooTopError.cmo jsooTop.cmo"
   requires = "bytes,compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel,js_of_ocaml,js_of_ocaml.compiler"
   linkopts(javascript) = "+js_of_ocaml/toplevel.js"
 )

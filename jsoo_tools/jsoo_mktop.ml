@@ -103,7 +103,7 @@ module Camlp4 : CAMLP4 = struct
 	      "Camlp4Parsers/Camlp4OCamlParser.cmo";
       ]
       @ all
-      @ ["Camlp4Top/Top.cmo"]
+      @ ["jsooTopCamlp4.cmo"]
 end
 
 let usage () =

@@ -31,7 +31,7 @@ TYXML_CMA=tyxml/tyxml.cma
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-TOPLEVELLIB= toplevel/jsooTop.cmo
+TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopCamlp4.cmo toplevel/jsooTopError.cmo
 endif
 
 PA_JS= syntax/pa_js.cmo
@@ -117,15 +117,21 @@ log/logger.cma: log/lwt_log_js.cmo
 
 toplevel_lib: $(TOPLEVELLIB)
 
-toplevel/jsooTop.cmo: toplevel/jsooTop.ml toplevel/jsooTop.cmi syntax/pa_js.cmo ../compiler/lib/compiler.cma
+toplevel/jsooTop.cmo: toplevel/jsooTop.ml syntax/pa_js.cmo ../compiler/lib/compiler.cma
 	$(OCAMLC) -syntax camlp4o \
 		$(SAFESTRING) -package lwt,lwt.syntax \
 		-ppopt syntax/pa_js.cmo \
 		-I toplevel -I ../compiler/lib -I +compiler-libs \
 		-c $< -o $@
 
-toplevel/jsooTop.cmi: toplevel/jsooTop.mli
-	$(OCAMLC) $(SAFESTRING) -package lwt -I . -I log $< -o $@
+toplevel/%.cmo: toplevel/%.ml
+	$(OCAMLC) $(SAFESTRING) \
+		-I toplevel -I +compiler-libs -I +camlp4 \
+		-c $< -o $@
+
+toplevel/%.cmi: toplevel/%.mli
+	$(OCAMLC) $(SAFESTRING) \
+	-I toplevel -I +compiler-libs $< -o $@
 
 %.cmo: %.ml syntax/pa_js.cmo
 	$(OCAMLC) -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt -c -g $<
@@ -164,18 +170,20 @@ clean:
 	rm -f deriving_json/deriving_Json_lexer.ml
 	rm -f stubs.c META
 	rm -f sys_js.ml
+	rm -f toplevel/jsooTopError.ml
 
-depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml
+depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml toplevel/jsooTopError.ml
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" log/*.ml log/*.mli >> .depend
-	ocamldep -pp "camlp4o syntax/pa_js.cmo" toplevel/*.ml toplevel/*.mli >> .depend
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I toplevel toplevel/jsooTop.ml toplevel/jsooTopCamlp4.ml toplevel/*.mli >> .depend
+	ocamldep toplevel/jsooTopError.ml -I toplevel >> .depend
 ifeq "${WITH_GRAPHICS}" "YES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" graphics/*.ml  >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)
 	ocamldep -I graphics graphics/graphics_js.mli  >> .depend
 endif
 ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
-	ocamldep -pp "camlp4o syntax/pa_js.cmo" tyxml/*.ml tyxml/*.mli >> .depend
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I tyxml tyxml/*.ml tyxml/*.mli >> .depend
 endif
 ifeq "${WITH_DERIVING}" "YES"
 	${MAKE} --no-print-directory deriving_json/deriving_Json_lexer.ml

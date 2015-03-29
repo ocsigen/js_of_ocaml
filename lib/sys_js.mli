@@ -34,6 +34,11 @@ val register_file: name:string -> content:string -> unit
       [register_file ~name ~content] register the file [name] with content [content]
       so it can be be opened with [Pervasives.open_in name] *)
 
+val register_autoload' :
+  path:string ->
+  ((Js.js_string Js.t * Js.js_string Js.t) -> Js.js_string Js.t option) ->
+  unit
+
 val register_autoload : path:string -> ((string * string) -> string option) -> unit
   (** Register a callback to the [path] to dynamicly load missing files.
       Whenever a file is missing in [path], the callback is used to optionally

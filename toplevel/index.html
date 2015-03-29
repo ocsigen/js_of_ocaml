@@ -6,6 +6,7 @@
     <title>OCaml toplevel</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" />
     <style>
 
       code, kbd, pre, samp {
@@ -92,6 +93,11 @@
       .stdout {
 
       }
+      .errorloc{
+      border-bottom-width: 3px;
+      border-bottom-style: solid;
+      border-bottom-color: red;
+      }
       canvas {
       border: 1px dashed black;
       float: left;
@@ -174,16 +180,13 @@
   </head>
   <body>
     <div id="toplevel-container">
+      <a href="http://ocsigen.org/js_of_ocaml" >
+	<img src="http://ocsigen.org/resources/logos/text_js_of_ocaml_with_shadow.png" alt="js_of_ocaml" />
+      </a>
       <pre id="output"></pre>
       <div>
         <div id="sharp" class="sharp"></div>
-        <textarea id="userinput"></textarea>
-        <!-- <button type="button" class="btn btn-default" -->
-        <!--         id="btn-execute">Execute</button> -->
-        <!-- <button type="button" class="btn btn-default" -->
-        <!--         id="btn-clear">Clear</button> -->
-        <!-- <button type="button" class="btn btn-default" -->
-        <!--         id="btn-reset">Reset</button> -->
+        <textarea id="userinput">Loading ...</textarea>
         <button type="button" class="btn btn-default"
                 id="btn-share">Share</button>
       </div>

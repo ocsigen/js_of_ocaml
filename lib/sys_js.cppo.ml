@@ -17,25 +17,34 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+external register_file_js: Js.js_string Js.t -> Js.js_string Js.t -> unit = "caml_fs_register"
 
-external register_file': string -> string -> unit = "caml_fs_register"
 external caml_fs_register_autoload : string -> (Js.js_string Js.t Js.js_array Js.t -> int -> bool Js.t) Js.callback -> unit = "caml_fs_register_autoload"
 
 external set_channel_output' : out_channel -> (Js.js_string Js.t -> unit) Js.callback -> unit = "caml_ml_set_channel_output"
 
-let register_file ~name ~content = register_file' name content
+let register_file ~name ~content =
+  register_file_js (Js.string name) (Js.string content)
 
-let register_autoload ~path f =
+let register_autoload' ~path f =
   let f' path pos =
-    let prefix = Js.to_string (path##slice(0,pos)##join(Js.string"/")) in
-    let suffix = Js.to_string (path##slice_end(pos)##join(Js.string"/")) in
-    match f (prefix, suffix)  with
+    let prefix = path##slice(0,pos)##join(Js.string"/") in
+    let suffix = path##slice_end(pos)##join(Js.string"/") in
+    match f (prefix, suffix) with
     | None -> Js._false
     | Some c ->
-      let filename = Filename.concat prefix suffix in
-      register_file ~name:filename ~content:c;
+      let filename = prefix##concat(Js.string "/")##concat(suffix) in
+      register_file_js filename c;
       Js._true in
   caml_fs_register_autoload path (Js.wrap_callback f')
+
+let register_autoload ~path f =
+  let f (p,s) =
+    match f (Js.to_string p,Js.to_string s) with
+    | None -> None
+    | Some c -> Some (Js.string c)
+  in
+  register_autoload' ~path f
 
 let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
   let f' : (Js.js_string Js.t -> unit) Js.callback = Js.wrap_callback (fun s -> f (Js.to_string s)) in

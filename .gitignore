@@ -22,6 +22,7 @@
 *.map
 lib/stubs.c
 lib/sys_js.ml
+lib/toplevel/jsooTopError.ml
 lib/META
 runtime/runtime.js
 toplevel/toplevel.js

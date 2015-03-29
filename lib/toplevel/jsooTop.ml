@@ -55,6 +55,9 @@ let setup = lazy (
     let output_program = Driver.from_string prims s in
     let b = Buffer.create 100 in
     output_program (Pretty_print.to_buffer b);
+    Format.(pp_print_flush std_formatter ());
+    Format.(pp_print_flush err_formatter ());
+    flush stdout; flush stderr;
     let res = Buffer.contents b in
     let res = String.concat "" !stubs ^ res in
     Js.Unsafe.global##toplevelEval(res)
@@ -87,7 +90,7 @@ let use ffp content =
   Sys_js.register_file ~name ~content;
   Toploop.use_silently ffp name
 
-let execute printval ?pp_code pp_answer s =
+let execute printval ?pp_code ?highlight_location  pp_answer s =
   let lb = Lexing.from_function (refill_lexbuf s (ref 0) pp_code) in
   try
     while true do
@@ -95,10 +98,22 @@ let execute printval ?pp_code pp_answer s =
         let phr = !Toploop.parse_toplevel_phrase lb in
         ignore(Toploop.execute_phrase printval pp_answer phr)
       with
-        End_of_file ->
+      | End_of_file ->
         raise End_of_file
+      | JsooTopError.Camlp4 (loc,_exn) -> 
+	 begin match highlight_location with
+	       | None -> () 
+	       | Some f -> f loc
+	 end;
       | x ->
-        Errors.report_error Format.err_formatter x
+	 begin match highlight_location with
+	       | None -> () 
+	       | Some f ->   
+		  match JsooTopError.loc x with
+		  | None -> ()
+		  | Some loc -> f loc
+	 end;
+         Errors.report_error Format.err_formatter x;
     done
   with End_of_file ->
     flush_all ()

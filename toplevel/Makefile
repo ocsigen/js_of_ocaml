@@ -51,11 +51,12 @@ endif
 MKTOP=jsoo_mktop -verbose $(SAFESTRING) \
 	${addprefix -top-syntax , ${SYNTAXES}} \
 	-dont-export-unit gc \
+	-jsopt "--disable shortvar" \
 	${addprefix -export-package , ${PACKAGES}} \
 	${addprefix -export-unit , html5_types html5_sigs xml_wrap } \
 
 TOPLEVEL_NAME=toplevel
-TOPLEVEL_OBJS=toplevel.cmo
+TOPLEVEL_OBJS=colorize.cmo indent.cmo toplevel.cmo 
 $(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS)
 	$(MKTOP) \
 	$(BER) \
@@ -79,13 +80,19 @@ $(EVAL_NAME).js: $(EVAL_OBJS)
 server.%: server.ml
 	ocamlbuild -use-ocamlfind -package findlib,cohttp.lwt server.$*
 
+indent.cmo: indent.cmi
+colorize.cmo: colorize.cmi
+
 %.ml: %.cppo.ml
 	cppo ${CPPO_OPT} $< -o $@
 
+%.cmi:%.mli
+	ocamlfind ocamlc -c -package js_of_ocaml,js_of_ocaml.tyxml $<
 %.cmo:%.ml
 	ocamlfind ocamlc -c -syntax camlp4o $(SAFESTRING) \
 		-package js_of_ocaml.syntax,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
 		-package base64 \
+		-I camlp4 \
 		$(OCPINDENT) $(HIGLO) \
 		$< -c $@
 clean::
