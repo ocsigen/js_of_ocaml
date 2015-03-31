@@ -30,6 +30,22 @@ let mk_id ?loc str =
   (exp, pat)
 
 
+(** arg1 -> arg2 -> ... -> ret *)
+let arrows args ret =
+  List.fold_right (fun (l, ty) fun_ -> Typ.arrow l ty fun_)
+    args
+    ret
+
+(** fun arg1 arg2 ... -> ret *)
+let funs args ret =
+  List.fold_right (fun pat next_fun_ -> lam pat next_fun_)
+    args
+    ret
+
+let sequence l last =
+  List.fold_right Exp.sequence l last
+
+
 let rnd = Random.State.make [|0x313511d4|]
 let random_var () =
   Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
@@ -92,6 +108,13 @@ let unescape lab =
 let constrain_types ?loc obj res res_typ meth meth_typ args =
   let typ_var = fresh_type obj.pexp_loc in
 
+
+  (* We occasionally use double constraints :
+     ( (jsoo_self : < .. > Js.t) : 'jsoo_ad7fbbdd Js.t)
+     It improves error messages by hiding the hairy type variable if jsoo_self
+     is not even of the right shape.
+  *)
+
   (* [($obj$ : <typ_var> Js.t)] *)
   let cstr =
     Exp.constraint_
@@ -124,21 +147,6 @@ let constrain_types ?loc obj res res_typ meth meth_typ args =
     end in M.res
   ]
 
-
-(** arg1 -> arg2 -> ... -> ret *)
-let arrows args ret =
-  List.fold_right (fun (l, ty) fun_ -> Typ.arrow l ty fun_)
-    args
-    ret
-
-(** fun arg1 arg2 ... -> ret *)
-let funs args ret =
-  List.fold_right (fun pat next_fun_ -> lam pat next_fun_)
-    args
-    ret
-
-let sequence l last =
-  List.fold_right Exp.sequence l last
 
 let method_call ~loc obj meth args =
   let args =
