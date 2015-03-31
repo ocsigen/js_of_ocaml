@@ -141,21 +141,21 @@ toplevel/%.cmi: toplevel/%.mli
 
 
 ppx/ppx_js.byte: ppx/ppx_js.cmo
-	ocamlfind ocamlc $(SAFESTRING) \
-		-linkpkg -package ppx_tools.metaquot ppx/ppx_js.cmo -o ppx/ppx_js.byte
+	$(OCAMLC) $(SAFESTRING) \
+		-linkpkg -package ppx_tools.metaquot $< -o ppx/ppx_js.byte
 
 ppx/ppx_js.opt: ppx/ppx_js.cmx
-	ocamlfind ocamlopt $(SAFESTRING) \
-		-linkpkg -package ppx_tools.metaquot ppx/ppx_js.cmx -o ppx/ppx_js.opt
+	$(OCAMLOPT) $(SAFESTRING) \
+		-linkpkg -package ppx_tools.metaquot $< -o ppx/ppx_js.opt
 
-ppx/ppx_js.cmx: ppx/ppx_js.ml
-	ocamlfind ocamlopt $(SAFESTRING) -package ppx_tools.metaquot -g -c $<
+ppx/ppx_js.cmx: ppx/ppx_js.ml ppx/ppx_js.cmi
+	$(OCAMLOPT) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -g -c $<
 
-ppx/ppx_js.cmo: ppx/ppx_js.ml
-	ocamlfind ocamlc $(SAFESTRING) -package ppx_tools.metaquot -c $<
+ppx/ppx_js.cmo: ppx/ppx_js.ml ppx/ppx_js.cmi
+	$(OCAMLC) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -c $<
 
 ppx/ppx_js.cmi: ppx/ppx_js.mli
-	ocamlfind ocamlc $(SAFESTRING) -package ppx_tools.metaquot -c $<
+	$(OCAMLC) $(SAFESTRING) -package ppx_tools.metaquot -c $< -o $@
 
 %.ml: %.cppo.ml
 	cppo $< -o $@ -V OCAML:`ocamlc -version`

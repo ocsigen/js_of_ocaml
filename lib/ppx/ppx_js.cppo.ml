@@ -1,3 +1,6 @@
+(* For implicit optional argument elimination. Annoying with Ast_helper. *)
+[@@@ocaml.warning "-48"]
+
 open Ast_mapper
 open Ast_helper
 open Asttypes
@@ -42,10 +45,6 @@ let funs args ret =
     args
     ret
 
-let sequence l last =
-  List.fold_right Exp.sequence l last
-
-
 let rnd = Random.State.make [|0x313511d4|]
 let random_var () =
   Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
@@ -82,8 +81,6 @@ module Js = struct
     if Lazy.force inside_Js
     then Exp.(apply ?loc (ident ?loc @@ lid ?loc s) args)
     else Exp.(apply ?loc (ident ?loc @@ lid ?loc ("Js."^s)) args)
-
-  let string ?loc arg = fun_ ?loc "string" [str arg]
 
 end
 
@@ -191,7 +188,7 @@ let new_object constr args =
   let args =
     Exp.array @@
     List.map
-      (fun (e, (l,t)) -> Js.unsafe "inject" [Exp.constraint_ e t])
+      (fun (e, (_l,t)) -> Js.unsafe "inject" [Exp.constraint_ e t])
       args
   in
   let x = random_var () in
@@ -272,7 +269,7 @@ to:
 
  *)
 
-let literal_object ?loc self_id fields =
+let literal_object self_id fields =
   let self_type = random_tvar () in
 
   let fields =
