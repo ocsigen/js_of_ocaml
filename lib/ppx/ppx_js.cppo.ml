@@ -415,9 +415,12 @@ let js_mapper _args =
         in mapper.expr mapper { new_expr with pexp_attributes }
 
       (** obj##meth arg1 arg2 .. *)
+      (** obj##(meth arg1 arg2) .. *)
       | {pexp_desc = Pexp_apply
              (([%expr [%e? obj] ## [%e? meth]] as expr), args)
-        } ->
+        }
+      | [%expr [%e? obj] ## [%e? {pexp_desc = Pexp_apply((meth as expr),args)}]]
+        ->
         let meth = exp_to_string meth in
         let new_expr =
           method_call ~loc:expr.pexp_loc obj meth args
