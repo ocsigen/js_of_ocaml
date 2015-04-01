@@ -43,6 +43,10 @@ endif
 
 ifeq "${WITH_PPX}" "YES"
 PPX_EX= ppx/$(PPX)
+PPX_LIB= ppx/ppx_js.cma ppx/ppx_js.cmxa
+ifeq "${NATDYNLINK}" "YES"
+PPX_LIB_NDL= ppx/ppx_js.cmxs
+endif
 endif
 
 all: $(LIBNAME).cma log/logger.cma \
@@ -51,7 +55,7 @@ all: $(LIBNAME).cma log/logger.cma \
 	${DERIVING_JSON} \
 	${GRAPHICS_CMA} \
 	${TYXML_CMA} \
-	$(PPX_EX) \
+	$(PPX_EX) $(PPX_LIB) $(PPX_LIB_NDL) \
 	META
 
 $(LIBNAME).cma: $(OBJS)
@@ -140,22 +144,29 @@ toplevel/%.cmi: toplevel/%.mli
 
 
 
-ppx/ppx_js.byte: ppx/ppx_js.cmo
+ppx/ppx_js.byte: ppx/ppx_js.cmo ppx/ppx_js_bin.cmo
 	$(OCAMLC) $(SAFESTRING) \
-		-linkpkg -package ppx_tools.metaquot $< -o ppx/ppx_js.byte
+		-linkpkg -package ppx_tools.metaquot $^ -o ppx/ppx_js.byte
 
-ppx/ppx_js.opt: ppx/ppx_js.cmx
+ppx/ppx_js.opt: ppx/ppx_js.cmx ppx/ppx_js_bin.cmx
 	$(OCAMLOPT) $(SAFESTRING) \
-		-linkpkg -package ppx_tools.metaquot $< -o ppx/ppx_js.opt
+		-linkpkg -package ppx_tools.metaquot $^ -o ppx/ppx_js.opt
 
-ppx/ppx_js.cmx: ppx/ppx_js.ml ppx/ppx_js.cmi
+ppx/%.cmx: ppx/%.ml
 	$(OCAMLOPT) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -g -c $<
 
-ppx/ppx_js.cmo: ppx/ppx_js.ml ppx/ppx_js.cmi
+ppx/%.cmo: ppx/%.ml
 	$(OCAMLC) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -c $<
 
 ppx/ppx_js.cmi: ppx/ppx_js.mli
 	$(OCAMLC) $(SAFESTRING) -package ppx_tools.metaquot -c $< -o $@
+
+ppx/ppx_js.cma: ppx/ppx_js.cmo
+	$(OCAMLC) -a -o $@ $^
+ppx/ppx_js.cmxa: ppx/ppx_js.cmx
+	$(OCAMLOPT) -a -o $@ $^
+ppx/ppx_js.cmxs: ppx/ppx_js.cmxa
+	$(OCAMLOPT) -shared -g -o $@ $^
 
 %.ml: %.cppo.ml
 	cppo $< -o $@ -V OCAML:`ocamlc -version`
@@ -206,9 +217,9 @@ clean:
 	rm -f sys_js.ml
 	rm -f toplevel/jsooTopError.ml
 
-depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml toplevel/jsooTopError.ml
+depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml toplevel/jsooTopError.ml ppx/ppx_js.ml
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
-	ocamldep -pp "camlp4o syntax/pa_js.cmo" log/*.ml log/*.mli >> .depend
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I log log/*.ml log/*.mli >> .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I toplevel toplevel/jsooTop.ml toplevel/jsooTopCamlp4.ml toplevel/*.mli >> .depend
 	ocamldep toplevel/jsooTopError.ml -I toplevel >> .depend
 ifeq "${WITH_GRAPHICS}" "YES"
@@ -220,7 +231,7 @@ ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I tyxml tyxml/*.ml tyxml/*.mli >> .depend
 endif
 ifeq "${WITH_PPX}" "YES"
-	ocamldep ppx/*.ml >> .depend
+	ocamldep -I ppx ppx/ppx_js.ml ppx/ppx_js_bin.ml ppx/ppx_js.mli >> .depend
 endif
 ifeq "${WITH_DERIVING}" "YES"
 	${MAKE} --no-print-directory deriving_json/deriving_Json_lexer.ml

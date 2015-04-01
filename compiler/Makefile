@@ -104,6 +104,7 @@ js_parser.mli: js_parser.mly javascript.cmi js_token.cmi
 	ocamllex -q $<
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
+	rm -f lib/*.cm[aiox] lib/*.cmxa lib/*.cmxs lib/*.o lib/*.a
 	rm -f compile.opt compile.byte minify.opt minify.byte
 	rm -f $(MINIFIER) $(COMPILER)
 	rm -f compiler_version.ml

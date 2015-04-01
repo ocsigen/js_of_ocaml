@@ -107,6 +107,11 @@ tyxml/tyxml_js.cmx : tyxml/tyxml_cast.cmx js.cmx dom_html.cmx dom.cmx \
 tyxml/tyxml_cast.cmi : tyxml/tyxml_cast_sigs.cmi js.cmi dom.cmi
 tyxml/tyxml_cast_sigs.cmi : js.cmi dom_html.cmi dom.cmi
 tyxml/tyxml_js.cmi : tyxml/tyxml_cast_sigs.cmi js.cmi dom_html.cmi dom.cmi
+ppx/ppx_js.cmo : ppx/ppx_js.cmi
+ppx/ppx_js.cmx : ppx/ppx_js.cmi
+ppx/ppx_js_bin.cmo : ppx/ppx_js.cmi
+ppx/ppx_js_bin.cmx : ppx/ppx_js.cmx
+ppx/ppx_js.cmi :
 deriving_json/deriving_Json_lexer.cmo : \
     deriving_json/deriving_Json_lexer.cmi
 deriving_json/deriving_Json_lexer.cmx : \

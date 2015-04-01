@@ -457,5 +457,3 @@ let js_mapper _args =
       | _ -> default_mapper.expr mapper expr
     )
   }
-
-let () = run_main js_mapper
