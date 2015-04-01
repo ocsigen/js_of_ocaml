@@ -21,6 +21,11 @@ ifeq "${WITH_TOPLEVEL}" "YES"
 OTHER += -package compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel -I ../lib/toplevel
 endif
 
+ifeq "${WITH_PPX}" "YES"
+OTHER += -I ../lib/ppx
+endif
+
+
 .PHONY: doc wikidoc
 doc: api/html/index.html
 api/html/index.html: ${MLIS} api/index

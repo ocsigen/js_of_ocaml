@@ -47,7 +47,7 @@ VERSION := $(shell head -n 1 VERSION)
 install: install-lib install-bin
 
 install-lib:
-	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(OTHERS) $(DOC) $(COMP_INTF) $(COMP_IMPL)
+	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(OTHERS) $(DOC) $(COMP_INTF) $(COMP_IMPL) ${OCAMLFIND_BIN}
 
 install-bin:
 	install -d -m 755 $(BINDIR)

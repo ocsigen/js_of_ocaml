@@ -30,6 +30,17 @@ IMPL += lib/tyxml/tyxml.cma
 INTF += lib/tyxml/*.cmi
 endif
 
+ifeq "${WITH_PPX}" "YES"
+OCAMLFIND_BIN += lib/ppx/${PPX}
+IMPL += lib/ppx/ppx_js.cma
+INTF += lib/ppx/*.cmi
+ifeq "${BEST}" "opt"
+ifeq "${NATDYNLINK}" "YES"
+IMPL += lib/ppx/ppx_js.cmx lib/ppx/ppx_js.cmxa lib/ppx/ppx_js.cmxs 
+endif
+endif
+endif
+
 ifeq "${WITH_TOPLEVEL}" "YES"
 IMPL += lib/toplevel/jsooTop.cmo lib/toplevel/jsooTopError.cmo lib/toplevel/jsooTopCamlp4.cmo
 INTF += lib/toplevel/jsooTop.cmi lib/toplevel/jsooTopError.cmi

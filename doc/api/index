@@ -24,6 +24,12 @@ WebGL
 WebSockets
 }
 
+{1 Ppx - API Reference}
+
+{!modules:
+Ppx_js
+}
+
 {1 Deriving - API Reference}
 
 {!modules:
