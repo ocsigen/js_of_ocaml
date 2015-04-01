@@ -42,8 +42,12 @@ endif
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-IMPL += lib/toplevel/jsooTop.cmo lib/toplevel/jsooTopError.cmo lib/toplevel/jsooTopCamlp4.cmo
+IMPL += lib/toplevel/jsooTop.cmo lib/toplevel/jsooTopError.cmo
 INTF += lib/toplevel/jsooTop.cmi lib/toplevel/jsooTopError.cmi
+ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
+exit 0
+lib/toplevel/jsooTopCamlp4.cmo
+endif
 endif
 
 
