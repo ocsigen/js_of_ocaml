@@ -25,7 +25,9 @@ package "ppx" (
     description = "Js_of_ocaml ppx mapper"
     version = "[distributed with js_of_ocaml]"
     archive(byte) = "ppx_js.cma"
+    archive(byte, plugin) = "ppx_js.cma"
     archive(native) = "ppx_js.cmxa"
+    archive(native, plugin) = "ppx_js.cmxs"
     requires = "ppx_tools"
   )
 )
