@@ -10,9 +10,11 @@ ifeq "${WITH_PPX}" "YES"
 TESTS_PPX=$(patsubst ppx/%.ml,ppx/test_%,$(wildcard ppx/*.ml))
 endif
 
+TESTS_CAMLP4=$(patsubst camlp4/%.ml,camlp4/test_%,$(wildcard camlp4/*.ml))
+
 COMMON=common.cmo
 
-all: $(COMMON) $(TESTS_CMO) $(TESTS_BYTE) $(TESTS_JS) tests.byte $(TESTS_PPX)
+all: $(COMMON) $(TESTS_CMO) $(TESTS_BYTE) $(TESTS_JS) tests.byte $(TESTS_PPX) $(TESTS_CAMLP4)
 
 phantom_check::
 	@which phantomjs || (echo "You need phantomjs in your PATH to run this" && false)
@@ -29,11 +31,19 @@ tests.byte: $(TESTS_CMO) $(COMMON)
 	@(phantomjs $^ > $@ && head -n 1 $@) || (echo "Error for " $^ "\n" && mv $@ $@.err && cat $@.err)
 
 clean:
-	rm -f *.cm[io] *.byte *.js dir/*.cm[io] dir/*.byte dir/*.js dir/*.log ppx/*.cm[io] ppx/*.result
-
+	rm -f *.cm[io] *.byte *.js dir/*.cm[io] dir/*.byte dir/*.js dir/*.log
+	rm -f ppx/*.cm[io] ppx/*.result
+	rm -f camlp4/*.cm[io] camlp4/*.result
 
 ppx/%.result: ppx/%.ml
 	TERM=dumb ocaml -noprompt -I ../lib -ppx ../lib/ppx/ppx_js < $< | tail -n +2 > $@
 
 ppx/test_%: ppx/%.result ppx/%.expected
 	diff $?
+
+
+camlp4/%.result: camlp4/%.ml
+	TERM=dumb ocaml -noprompt -I ../lib -init camlp4_init.ml < $< | tail -n +13 > $@
+
+camlp4/test_%: camlp4/%.result camlp4/%.expected
+	diff $? || true
