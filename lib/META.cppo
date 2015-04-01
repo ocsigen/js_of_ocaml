@@ -21,6 +21,13 @@ package "ppx" (
   ppx = "./ppx_js"
   requires = "js_of_ocaml"
   exists_if = "ppx_js"
+  package "internal" (
+    description = "Js_of_ocaml ppx mapper"
+    version = "[distributed with js_of_ocaml]"
+    archive(byte) = "ppx_js.cma"
+    archive(native) = "ppx_js.cmxa"
+    requires = "ppx_tools"
+  )
 )
 
 package "deriving" (
