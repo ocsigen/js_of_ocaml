@@ -6,9 +6,13 @@ TESTS_BYTE=$(TESTS_SRC:.ml=.byte)
 TESTS_JS=$(TESTS_SRC:.ml=.js)
 TESTS_LOG=$(TESTS_SRC:.ml=.log)
 
+ifeq "${WITH_PPX}" "YES"
+TESTS_PPX=$(patsubst ppx/%.ml,ppx/test_%,$(wildcard ppx/*.ml))
+endif
+
 COMMON=common.cmo
 
-all: $(COMMON) $(TESTS_CMO) $(TESTS_BYTE) $(TESTS_JS) tests.byte
+all: $(COMMON) $(TESTS_CMO) $(TESTS_BYTE) $(TESTS_JS) tests.byte $(TESTS_PPX)
 
 phantom_check::
 	@which phantomjs || (echo "You need phantomjs in your PATH to run this" && false)
@@ -25,4 +29,11 @@ tests.byte: $(TESTS_CMO) $(COMMON)
 	@(phantomjs $^ > $@ && head -n 1 $@) || (echo "Error for " $^ "\n" && mv $@ $@.err && cat $@.err)
 
 clean:
-	rm -f *.cm[io] *.byte *.js dir/*.cm[io] dir/*.byte dir/*.js dir/*.log
+	rm -f *.cm[io] *.byte *.js dir/*.cm[io] dir/*.byte dir/*.js dir/*.log ppx/*.cm[io] ppx/*.result
+
+
+ppx/%.result: ppx/%.ml
+	TERM=dumb ocaml -noprompt -I ../lib -ppx ../lib/ppx/ppx_js < $< | tail -n +2 > $@
+
+ppx/test_%: ppx/%.result ppx/%.expected
+	diff $?
