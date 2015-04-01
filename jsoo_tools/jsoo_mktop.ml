@@ -92,6 +92,16 @@ module Camlp4 : CAMLP4 = struct
         | Not_found -> []) all in
     List.flatten ll
 
+  let camlp4_pre4_02 =
+    try
+      let v = Sys.ocaml_version in
+      if v.[0] >= '4' &&
+         v.[1] =  '.' &&
+         v.[2] =  '0' &&
+         v.[3] >= '2'
+      then false
+      else true
+    with _ -> true
   let build pkgs mods =
     if pkgs = [] && mods = [] then [] else
       let all = resolve_syntaxes pkgs @ mods in
@@ -103,7 +113,7 @@ module Camlp4 : CAMLP4 = struct
 	      "Camlp4Parsers/Camlp4OCamlParser.cmo";
       ]
       @ all
-      @ ["jsooTopCamlp4.cmo"]
+      @ [if camlp4_pre4_02 then "Camlp4Top/Top.cmo" else "jsooTopCamlp4.cmo"]
 end
 
 let usage () =

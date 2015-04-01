@@ -31,7 +31,10 @@ TYXML_CMA=tyxml/tyxml.cma
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopCamlp4.cmo toplevel/jsooTopError.cmo
+TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
+ifeq ($(shell ocamlc -version | grep -q -E "4.02"; echo $$?),0)
+TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo 
+endif
 endif
 
 PA_JS= syntax/pa_js.cmo
