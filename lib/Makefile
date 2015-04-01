@@ -168,14 +168,8 @@ ppx/ppx_js.cmxa: ppx/ppx_js.cmx
 ppx/ppx_js.cmxs: ppx/ppx_js.cmxa
 	$(OCAMLOPT) -shared -g -o $@ $^
 
-%.ml: %.cppo.ml
-	cppo $< -o $@ -V OCAML:`ocamlc -version`
-
-
 $(PPX_EX): ppx/ppx_js.$(BEST)
 	mv -f $< $@
-
-
 
 %.cmo: %.ml syntax/pa_js.cmo
 	$(OCAMLC) -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt -c -g $<
