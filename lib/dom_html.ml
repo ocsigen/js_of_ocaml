@@ -1095,6 +1095,7 @@ end
 
 type interval_id
 type timeout_id
+type animation_frame_request_id
 
 class type location = object
   method href : js_string t prop
@@ -1199,6 +1200,10 @@ class type window = object
 
   method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
   method clearTimeout : timeout_id -> unit meth
+
+  method requestAnimationFrame :
+    (float -> unit) Js.callback -> animation_frame_request_id meth
+  method cancelAnimationFrame : animation_frame_request_id -> unit meth
 
   method screen : screen t readonly_prop
   method innerWidth : int optdef readonly_prop

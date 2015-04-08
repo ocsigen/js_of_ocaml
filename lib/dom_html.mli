@@ -1128,6 +1128,7 @@ end
 
 type interval_id
 type timeout_id
+type animation_frame_request_id
 
 (** Specification of window objects *)
 class type window = object
@@ -1167,6 +1168,10 @@ class type window = object
   method setTimeout : (unit -> unit) Js.callback -> float -> timeout_id meth
   method clearTimeout : timeout_id -> unit meth
 
+  method requestAnimationFrame :
+    (float -> unit) Js.callback -> animation_frame_request_id meth
+  method cancelAnimationFrame : animation_frame_request_id -> unit meth
+
   method screen : screen t readonly_prop
   method innerWidth : int optdef readonly_prop
   method innerHeight : int optdef readonly_prop
@@ -1189,14 +1194,6 @@ end
 
 val window : window t
   (** The current window *)
-
-val _requestAnimationFrame : (unit -> unit) Js.callback -> unit
-  (** Call the appropriate [requestAnimationFrame] method variant
-      (depending on the navigator), or sleep for a short amount
-      of time when there no such method is provided. We currently
-      prefix the function name with as underscore as the interface of
-      this function is not completely standardized yet. Thus, we leave
-      the room to a function with a possibly refined type. *)
 
 (* {2 Frames } *)
 
@@ -1612,10 +1609,23 @@ end
 
 type timeout_id_safe
 (** Same as [Dom_html.window##setTimeout(cb,ms)] but prevents overflow
-    with delay greater than 24 days. *)  
+    with delay greater than 24 days. *)
 val setTimeout : (unit -> unit) -> float -> timeout_id_safe
 val clearTimeout : timeout_id_safe -> unit
 
+
+(** {2 Deprecated function. *)
+
+val _requestAnimationFrame : (unit -> unit) Js.callback -> unit
+  (** Call the appropriate [requestAnimationFrame] method variant
+      (depending on the navigator), or sleep for a short amount
+      of time when there no such method is provided. We currently
+      prefix the function name with as underscore as the interface of
+      this function is not completely standardized yet. Thus, we leave
+      the room to a function with a possibly refined type.
+
+      This function is deprecated. Use the requestAnimationFrame of
+      the window object instead. *)
 
 (**/**)
 
