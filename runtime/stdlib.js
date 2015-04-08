@@ -220,7 +220,8 @@ function caml_lazy_make_forward (v) { return [250, v]; }
 //Provides: caml_mul const
 if (!Math.imul)
   Math.imul =
-    function (x,y) { return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0; };
+    function (x,y)
+    { y |= 0; return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0; };
 var caml_mul = Math.imul;
 
 //slightly slower
