@@ -454,6 +454,8 @@ function caml_float_of_string(s) {
     res = +s.substring(0,pidx);
     return res * Math.pow(2,exp);
   }
+  if(/^\+?inf(inity)?$/i.test(s)) return Infinity;
+  if(/^-inf(inity)?$/i.test(s)) return -Infinity;
   caml_failwith("float_of_string");
 }
 
