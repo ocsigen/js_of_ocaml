@@ -1614,7 +1614,7 @@ val setTimeout : (unit -> unit) -> float -> timeout_id_safe
 val clearTimeout : timeout_id_safe -> unit
 
 
-(** {2 Deprecated function. *)
+(** {2 Deprecated function.} *)
 
 val _requestAnimationFrame : (unit -> unit) Js.callback -> unit
   (** Call the appropriate [requestAnimationFrame] method variant
