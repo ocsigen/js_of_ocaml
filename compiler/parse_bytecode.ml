@@ -280,6 +280,7 @@ end = struct
               Hashtbl.find events_by_pc (pc + 3)
       in
       let loc = ev.ev_loc in
+      if loc.loc_ghost then None else
       let pos =
         if after then loc.loc_end else
         if before then loc.loc_start else
