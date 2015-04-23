@@ -105,24 +105,37 @@ update closure body to return to this location
 make current block continuation jump to closure body
 *)
 
+let is_identity blocks clos_pc =
+  match AddrMap.find clos_pc blocks with
+  | {params = [id1]; handler = _; body = []; branch = Return id2} ->
+    Var.compare id1 id2
+  | _ -> false
+
 let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
   let block = AddrMap.find pc blocks in
   let (body, (branch, blocks, free_pc)) =
     List.fold_right
       (fun i (rem, state) ->
          match i with
-           Let (x, Apply (f, args, true))
-               when live_vars.(Var.idx f) = 1
-                 && VarMap.mem f closures ->
-             let (params, (clos_pc, clos_args),f_optimizable) = VarMap.find f closures in
+           Let (x, Apply (f, args, true)) when VarMap.mem f closures ->
+
+           let (branch, blocks, free_pc) = state in
+           let (params, (clos_pc, clos_args),f_optimizable) = VarMap.find f closures in
+           if is_identity blocks clos_pc then
+             let blocks =
+               AddrMap.add free_pc
+                 { params = [x]; handler = block.handler;
+                   body = rem; branch = branch } blocks
+             in
+             ([], (Branch (free_pc, args), blocks, free_pc + 1))
+           else
+           if live_vars.(Var.idx f) = 1 && outer_optimizable = f_optimizable
              (* inlining the code of an optimizable function could make
                 this code unoptimized. (wrt to Jit compilers)
                 At the moment, V8 doesn't optimize function containing try..catch.
                 We disable inlining if the inner and outer funcitons don't have
                 the same "contain_try_catch" property *)
-             if outer_optimizable = f_optimizable
              then
-               let (branch, blocks, free_pc) = state in
                let (blocks, cont_pc) =
                  match rem, branch with
                    [], Return y when Var.compare x y = 0 ->
