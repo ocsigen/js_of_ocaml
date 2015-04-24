@@ -108,7 +108,7 @@ make current block continuation jump to closure body
 let is_identity blocks clos_pc =
   match AddrMap.find clos_pc blocks with
   | {params = [id1]; handler = _; body = []; branch = Return id2} ->
-    Var.compare id1 id2
+    Var.compare id1 id2 = 0
   | _ -> false
 
 let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
