@@ -99,7 +99,26 @@ module Xml = struct
   let cdata_style s = cdata s
 end
 
-module Svg = Svg_f.Make(Xml)
+module Xml_Svg = struct
+  include Xml
+
+  let leaf ?(a=[]) name =
+    let e =
+      Dom_html.document##createElementNS(Dom_svg.xmlns, Js.string name) in
+    attach_attribs e a;
+    (e :> Dom.node Js.t)
+
+  let node ?(a=[]) name children =
+    let e =
+      Dom_html.document##createElementNS(Dom_svg.xmlns, Js.string name) in
+    attach_attribs e a;
+    List.iter (fun c -> ignore (e##appendChild(c))) children;
+    (e :> Dom.node Js.t)
+
+end
+
+
+module Svg = Svg_f.Make(Xml_Svg)
 module Html5 = Html5_f.Make(Xml)(Svg)
 
 module Xml_wrap = struct
@@ -229,7 +248,18 @@ module R = struct
     let cdata_style = Xml.cdata_style
   end
 
-  module Svg = Svg_f.MakeWrapped(Xml_wrap)(Xml_wed)
+  module Xml_wed_svg = struct
+    include Xml_wed
+
+    let node ?(a=[]) name l =
+      let e =
+        Dom_html.document##createElementNS(Dom_svg.xmlns,Js.string name) in
+      Xml.attach_attribs e a;
+      Util.update_children (e :> Dom.node Js.t) l;
+      (e :> Dom.node Js.t)
+  end
+
+  module Svg = Svg_f.MakeWrapped(Xml_wrap)(Xml_wed_svg)
   module Html5 = Html5_f.MakeWrapped(Xml_wrap)(Xml_wed)(Svg)
 end
 
