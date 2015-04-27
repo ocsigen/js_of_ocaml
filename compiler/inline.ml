@@ -135,7 +135,6 @@ let simple blocks clos_pc clos_args clos_params f_args =
       | Prim (prim, args) -> `Exp (Prim (prim, List.map map_prim_arg args))
       | Block (tag, args) -> `Exp (Block (tag, Array.map map_var args))
       | Field (x, i) -> `Exp (Field (map_var x, i))
-      | Closure (args, k) -> `Exp (Closure (List.map map_var args, k))
       | _ -> `None
     end
   | _ -> `None
