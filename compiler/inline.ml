@@ -114,23 +114,29 @@ let rec find_mapping x src trg =
   | [], _ | _, [] -> assert false
 
 let simple blocks clos_pc clos_args clos_params f_args =
-  match AddrMap.find clos_pc blocks with
+  let clos = AddrMap.find clos_pc blocks in
+  let map_var x =
+    let arg = try find_mapping x clos.params clos_args with Not_found -> x in
+    find_mapping arg clos_params f_args
+  in
+  let map_prim_arg = function
+    | Pc c -> Pc c
+    | Pv x -> Pv (map_var x)
+  in
+  try match clos with
   | {params; handler = _; body = []; branch = Return ret} ->
-    begin
-      try
-        let arg = try find_mapping ret params clos_args with Not_found -> ret in
-        let arg = find_mapping arg clos_params f_args in
-        `Alias arg
-      with Not_found -> `None
-    end
-  | {params; handler = _;
-     body = [Let (x, exp)]; branch = Return ret} when Code.Var.compare ret x = 0 ->
+      `Alias (map_var ret)
+  | {params; handler = _; body = [Let (x, exp)]; branch = Return ret}
+    when Code.Var.compare ret x = 0 ->
     begin match exp with
       | Const _ -> `Exp exp
       | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
+      | Apply (f, args, true) -> `Exp (Apply (f, List.map map_var args, true))
+      | Prim (prim, args) -> `Exp (Prim (prim, List.map map_prim_arg args))
       | _ -> `None
     end
   | _ -> `None
+  with Not_found -> `None
 
 let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
   let block = AddrMap.find pc blocks in
