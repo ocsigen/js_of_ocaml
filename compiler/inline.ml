@@ -58,7 +58,7 @@ let get_closures (_, blocks, _) =
               let f_optimizable = optimizable blocks (fst cont) true in
               VarMap.add x (l, cont, f_optimizable) closures
             | _ ->
-                closures)
+              closures)
          closures block.body)
     blocks VarMap.empty
 
@@ -70,7 +70,7 @@ let rewrite_block (pc', handler) pc blocks =
   let block = { block with handler = handler } in
   let block =
     match block.branch, pc' with
-      Return y, Some pc' -> { block with branch = Branch (pc', [y]) }
+    | Return y, Some pc' -> { block with branch = Branch (pc', [y]) }
     | _                  -> block
   in
   AddrMap.add pc block blocks
@@ -81,17 +81,17 @@ let (>>) x f = f x
 let fold_children blocks pc f accu =
   let block = AddrMap.find pc blocks in
   match block.branch with
-    Return _ | Raise _ | Stop ->
-      accu
+  | Return _ | Raise _ | Stop ->
+    accu
   | Branch (pc', _) | Poptrap (pc', _) ->
-      f pc' accu
+    f pc' accu
   | Pushtrap (_, _, (pc1, _), pc2) ->
-      f pc1 (if pc2 >= 0 then f pc2 accu else accu)
+    f pc1 (if pc2 >= 0 then f pc2 accu else accu)
   | Cond (_, _, (pc1, _), (pc2, _)) ->
-      accu >> f pc1 >> f pc2
+    accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+    accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
+    >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
 
 let rewrite_closure blocks cont_pc clos_pc handler =
   Code.traverse fold_children (rewrite_block (cont_pc, handler)) clos_pc blocks blocks
@@ -105,11 +105,32 @@ update closure body to return to this location
 make current block continuation jump to closure body
 *)
 
-let is_identity blocks clos_pc =
+
+let rec find_mapping x src trg =
+  match src,trg with
+  | [], [] -> raise Not_found
+  | a::_ , b::_ when Code.Var.compare a x = 0 -> b
+  | _::ax, _::bx -> find_mapping x ax bx
+  | [], _ | _, [] -> assert false
+
+let simple blocks clos_pc clos_args clos_params f_args =
   match AddrMap.find clos_pc blocks with
-  | {params = [id1]; handler = _; body = []; branch = Return id2} ->
-    Var.compare id1 id2 = 0
-  | _ -> false
+  | {params; handler = _; body = []; branch = Return ret} ->
+    begin
+      try
+        let arg = try find_mapping ret params clos_args with Not_found -> ret in
+        let arg = find_mapping arg clos_params f_args in
+        `Alias arg
+      with Not_found -> `None
+    end
+  | {params; handler = _;
+     body = [Let (x, exp)]; branch = Return ret} when Code.Var.compare ret x = 0 ->
+    begin match exp with
+      | Const _ -> `Exp exp
+      | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
+      | _ -> `None
+    end
+  | _ -> `None
 
 let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
   let block = AddrMap.find pc blocks in
@@ -117,53 +138,62 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
     List.fold_right
       (fun i (rem, state) ->
          match i with
-           Let (x, Apply (f, args, true)) when VarMap.mem f closures ->
+         | Let (x, Apply (f, args, true)) when VarMap.mem f closures ->
 
            let (branch, blocks, free_pc) = state in
            let (params, (clos_pc, clos_args),f_optimizable) = VarMap.find f closures in
-           if is_identity blocks clos_pc then
-             let blocks =
-               AddrMap.add free_pc
-                 { params = [x]; handler = block.handler;
-                   body = rem; branch = branch } blocks
-             in
-             ([], (Branch (free_pc, args), blocks, free_pc + 1))
-           else
-           if live_vars.(Var.idx f) = 1 && outer_optimizable = f_optimizable
-             (* inlining the code of an optimizable function could make
-                this code unoptimized. (wrt to Jit compilers)
-                At the moment, V8 doesn't optimize function containing try..catch.
-                We disable inlining if the inner and outer funcitons don't have
-                the same "contain_try_catch" property *)
-             then
-               let (blocks, cont_pc) =
-                 match rem, branch with
-                   [], Return y when Var.compare x y = 0 ->
-                   (* We do not need a continuation block for tail calls *)
-                   (blocks, None)
+           begin match simple blocks clos_pc clos_args params args with
+             | `Alias arg ->
+               begin match rem, branch with
+                 | [], Return y when Var.compare x y = 0 ->
+                   ([], (Return arg, blocks, free_pc))
                  | _ ->
-                   (AddrMap.add free_pc
-                      { params = [x]; handler = block.handler;
-                        body = rem; branch = branch } blocks,
-                    Some free_pc)
-               in
-               let blocks =
-                 rewrite_closure blocks cont_pc clos_pc block.handler in
-               (* We do not really need this intermediate block.  It
-                  just avoid the need to find which function parameters
-                  are used in the function body. *)
-               let blocks =
-                 AddrMap.add (free_pc + 1)
-                   { params = params; handler = block.handler;
-                     body = []; branch = Branch (clos_pc, clos_args) } blocks
-               in
-               ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
-             else begin
-               (* Format.eprintf "Do not inline because inner:%b outer:%b@." f_has_handler outer_has_handler; *)
-               (i :: rem, state)
-             end
+                   let blocks =
+                     AddrMap.add free_pc
+                       { params = [x]; handler = block.handler;
+                         body = rem; branch = branch } blocks
+                   in
+                   ([], (Branch (free_pc, [arg]), blocks, free_pc + 1))
+               end
+             | `Exp exp ->
+               (Let (x,exp) :: rem, state)
+             | `None ->
+               if live_vars.(Var.idx f) = 1 && outer_optimizable = f_optimizable
+               (* inlining the code of an optimizable function could make
+                  this code unoptimized. (wrt to Jit compilers)
+                  At the moment, V8 doesn't optimize function containing try..catch.
+                  We disable inlining if the inner and outer funcitons don't have
+                  the same "contain_try_catch" property *)
+               then
+                 let (blocks, cont_pc) =
+                   match rem, branch with
+                     [], Return y when Var.compare x y = 0 ->
+                     (* We do not need a continuation block for tail calls *)
+                     (blocks, None)
+                   | _ ->
+                     (AddrMap.add free_pc
+                        { params = [x]; handler = block.handler;
+                          body = rem; branch = branch } blocks,
+                      Some free_pc)
+                 in
+                 let blocks =
+                   rewrite_closure blocks cont_pc clos_pc block.handler in
+                 (* We do not really need this intermediate block.  It
+                    just avoid the need to find which function parameters
+                    are used in the function body. *)
+                 let blocks =
+                   AddrMap.add (free_pc + 1)
+                     { params = params; handler = block.handler;
+                       body = []; branch = Branch (clos_pc, clos_args) } blocks
+                 in
+                 ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
+               else begin
+                 (* Format.eprintf "Do not inline because inner:%b outer:%b@." f_has_handler outer_has_handler; *)
+                 (i :: rem, state)
+               end
+           end
          | _ ->
-             (i :: rem, state))
+           (i :: rem, state))
       block.body ([], (block.branch, blocks, free_pc))
   in
   (AddrMap.add pc {block with body = body; branch = branch} blocks, free_pc)
