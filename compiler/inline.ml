@@ -46,6 +46,15 @@ let optimizable blocks pc _ =
           | _ -> true
         ) b.body )  pc blocks true
 
+let rec follow_branch blocks = function
+  | (pc, []) as k ->
+    begin try match AddrMap.find pc blocks with
+      | {body = []; branch = Branch (pc, [])} -> follow_branch blocks (pc, [])
+      | _ -> k
+    with Not_found -> k
+    end
+  | k -> k
+
 let get_closures (_, blocks, _) =
   AddrMap.fold
     (fun _ block closures ->
@@ -53,6 +62,7 @@ let get_closures (_, blocks, _) =
          (fun closures i ->
             match i with
               Let (x, Closure (l, cont)) ->
+              let cont = follow_branch blocks cont in
               (* we can compute this once during the pass
                  as the property won't change with inlining *)
               let f_optimizable = optimizable blocks (fst cont) true in
@@ -124,9 +134,9 @@ let simple blocks clos_pc clos_args clos_params f_args =
     | Pv x -> Pv (map_var x)
   in
   try match clos with
-  | {params; handler = _; body = []; branch = Return ret} ->
+  | {handler = _; body = []; branch = Return ret} ->
       `Alias (map_var ret)
-  | {params; handler = _; body = [Let (x, exp)]; branch = Return ret}
+  | {handler = _; body = [Let (x, exp)]; branch = Return ret}
     when Code.Var.compare ret x = 0 ->
     begin match exp with
       | Const _ -> `Exp exp
@@ -137,7 +147,7 @@ let simple blocks clos_pc clos_args clos_params f_args =
       | Field (x, i) -> `Exp (Field (map_var x, i))
       | _ -> `None
     end
-  | _ -> `None
+  | _ -> raise Not_found
   with Not_found -> `None
 
 let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
