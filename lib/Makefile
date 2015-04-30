@@ -32,7 +32,7 @@ endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
 TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
-ifeq ($(shell ocamlc -version | grep -q -E "4.02"; echo $$?),0)
+ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
 TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo 
 endif
 endif
