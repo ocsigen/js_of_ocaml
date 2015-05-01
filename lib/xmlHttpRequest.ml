@@ -174,6 +174,7 @@ let perform_raw
     ?progress
     ?upload_progress
     ?override_mime_type
+    ?override_method
     (type resptype) ~(response_type:resptype response)
     url =
 
@@ -215,6 +216,14 @@ let perform_raw
                "POST", Some "application/x-www-form-urlencoded"
 	  | `FormData _ -> "POST", None)
       | Some _, ct -> "POST", ct
+  in
+  let method_ =
+    match override_method with
+      | None -> method_
+      | Some m ->
+	(match m with
+	  | "" -> method_
+	  | _ -> m)
   in
   let url =
     if get_args = [] then
@@ -338,10 +347,11 @@ let perform_raw_url
     ?progress
     ?upload_progress
     ?override_mime_type
+    ?override_method
     url =
   perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ~response_type:Default url
+    ?override_method ~response_type:Default url
 
 let perform
     ?(headers = [])
@@ -353,9 +363,10 @@ let perform
     ?progress
     ?upload_progress
     ?override_mime_type
+    ?override_method
     url =
   perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ~response_type:Default (Url.string_of_url url)
+    ?override_method ~response_type:Default (Url.string_of_url url)
 
 let get s = perform_raw_url s

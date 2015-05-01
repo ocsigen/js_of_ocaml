@@ -110,6 +110,7 @@ val perform_raw :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
+  -> ?override_method:string
   -> response_type:('a response)
   -> string
   -> 'a generic_http_frame Lwt.t
@@ -128,12 +129,14 @@ val perform_raw_url :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
+  -> ?override_method:string
   -> string
   -> http_frame Lwt.t
   (** [perform_raw_url ?headers ?content_type ?post_args ?get_args ?form_arg url]
       makes an asynchronous request to the specified [url] with
       specified options. The result is a cancelable thread returning
-      an HTTP frame. If [post_args] and [form_arg] are [None], a GET request is
+      an HTTP frame. If [override_method] is not empty, the request method is set to this value.
+      Otherwise, if [post_args] and [form_arg] are [None], a GET request is
       used. If [post_args] or [form_arg] is [Some _] (even [Some []]) then a POST
       request is made. The [check_headers] argument is run as soon as the answer
       code and headers are available. If it returns false, the request is canceled
@@ -149,6 +152,7 @@ val perform :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
+  -> ?override_method:string
   -> Url.url
   -> http_frame Lwt.t
   (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
