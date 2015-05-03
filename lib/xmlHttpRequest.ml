@@ -209,21 +209,28 @@ let perform_raw
 
   let method_, content_type =
     match form_arg, content_type with
-      | None, ct -> "GET", ct
+      | None, ct -> `Get, ct
       | Some form_args, None ->
 	(match form_args with
 	  | `Fields _strings ->
-               "POST", Some "application/x-www-form-urlencoded"
-	  | `FormData _ -> "POST", None)
-      | Some _, ct -> "POST", ct
+              `Post, Some "application/x-www-form-urlencoded"
+	  | `FormData _ -> `Post, None)
+      | Some _, ct -> `Post, ct
   in
   let method_ =
     match override_method with
       | None -> method_
-      | Some m ->
-	(match m with
-	  | "" -> method_
-	  | _ -> m)
+      | Some m -> m
+  in
+  let method_to_string m =
+    match m with
+      | `Get -> "GET"
+      | `Post -> "POST"
+      | `Head -> "HEAD"
+      | `Put -> "PUT"
+      | `Delete -> "DELETE"
+      | `Options -> "OPTIONS"
+      | `Patch -> "PATCH"
   in
   let url =
     if get_args = [] then
@@ -236,7 +243,7 @@ let perform_raw
   let ((res : resptype generic_http_frame Lwt.t), w) = Lwt.task () in
   let req = create () in
 
-  req##_open (Js.string method_, Js.string url, Js._true);
+  req##_open (Js.string (method_to_string method_), Js.string url, Js._true);
 
   begin match override_mime_type with
     None           -> ()

@@ -110,7 +110,7 @@ val perform_raw :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
-  -> ?override_method:string
+  -> ?override_method:[< `Get | `Post | `Head | `Put | `Delete | `Options | `Patch > `Get `Post]
   -> response_type:('a response)
   -> string
   -> 'a generic_http_frame Lwt.t
@@ -129,16 +129,17 @@ val perform_raw_url :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
-  -> ?override_method:string
+  -> ?override_method:[< `Get | `Post | `Head | `Put | `Delete | `Options | `Patch > `Get `Post]
   -> string
   -> http_frame Lwt.t
-  (** [perform_raw_url ?headers ?content_type ?post_args ?get_args ?form_arg url]
-      makes an asynchronous request to the specified [url] with
+  (** [perform_raw_url] makes an asynchronous request to the specified [url] with
       specified options. The result is a cancelable thread returning
-      an HTTP frame. If [override_method] is not empty, the request method is set to this value.
-      Otherwise, if [post_args] and [form_arg] are [None], a GET request is
-      used. If [post_args] or [form_arg] is [Some _] (even [Some []]) then a POST
-      request is made. The [check_headers] argument is run as soon as the answer
+      an HTTP frame. By default, if [post_args] and [form_arg] are [None], a GET 
+      request is used. If [post_args] or [form_arg] is [Some _] (even [Some []]) then a POST
+      request is made. But if [override_method] is set, the request method is forced, 
+      no matter the [post_args] or [form_arg] value. For example, with [override_method]
+      set to [`Put] and [form_arg] set to [Some _] a PUT request including the form data
+      will be made. The [check_headers] argument is run as soon as the answer
       code and headers are available. If it returns false, the request is canceled
       and the functions raise the [Wrong_headers] exception *)
 
@@ -152,7 +153,7 @@ val perform :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
-  -> ?override_method:string
+  -> ?override_method:[< `Get | `Post | `Head | `Put | `Delete | `Options | `Patch > `Get `Post]
   -> Url.url
   -> http_frame Lwt.t
   (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
