@@ -1342,7 +1342,7 @@ and translate_instr ctx expr_queue loc instr =
       (st @ instrs, expr_queue)
 
 and compile_block st queue (pc : addr) frontier interm =
-if queue <> [] && AddrSet.mem pc st.loops then
+if queue <> [] && (AddrSet.mem pc st.loops || not (Option.Optim.inline ())) then
   flush_all queue (compile_block st [] pc frontier interm)
 else begin
   if pc >= 0 then begin
