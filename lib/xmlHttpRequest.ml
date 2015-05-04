@@ -209,13 +209,13 @@ let perform_raw
 
   let method_to_string m =
     match m with
-      | `Get -> "GET"
-      | `Post -> "POST"
-      | `Head -> "HEAD"
-      | `Put -> "PUT"
-      | `Delete -> "DELETE"
-      | `Options -> "OPTIONS"
-      | `Patch -> "PATCH"
+      | `GET -> "GET"
+      | `POST -> "POST"
+      | `HEAD -> "HEAD"
+      | `PUT -> "PUT"
+      | `DELETE -> "DELETE"
+      | `OPTIONS -> "OPTIONS"
+      | `PATCH -> "PATCH"
   in
   let method_, content_type =
     let override m =

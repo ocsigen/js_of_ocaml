@@ -110,7 +110,7 @@ val perform_raw :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
-  -> ?override_method:[< `Get | `Post | `Head | `Put | `Delete | `Options | `Patch ]
+  -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
   -> response_type:('a response)
   -> string
   -> 'a generic_http_frame Lwt.t
@@ -129,7 +129,7 @@ val perform_raw_url :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
-  -> ?override_method:[< `Get | `Post | `Head | `Put | `Delete | `Options | `Patch ]
+  -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
   -> string
   -> http_frame Lwt.t
   (** [perform_raw_url] makes an asynchronous request to the specified [url] with
@@ -153,7 +153,7 @@ val perform :
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
-  -> ?override_method:[< `Get | `Post | `Head | `Put | `Delete | `Options | `Patch ]
+  -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
   -> Url.url
   -> http_frame Lwt.t
   (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
