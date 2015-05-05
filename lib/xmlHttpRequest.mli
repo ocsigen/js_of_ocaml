@@ -138,7 +138,7 @@ val perform_raw_url :
       request is used. If [post_args] or [form_arg] is [Some _] (even [Some []]) then a POST
       request is made. But if [override_method] is set, the request method is forced, 
       no matter the [post_args] or [form_arg] value. For example, with [override_method]
-      set to [`Put] and [form_arg] set to [Some _] a PUT request including the form data
+      set to [`PUT] and [form_arg] set to [Some _] a PUT request including the form data
       will be made. The [check_headers] argument is run as soon as the answer
       code and headers are available. If it returns false, the request is canceled
       and the functions raise the [Wrong_headers] exception *)
