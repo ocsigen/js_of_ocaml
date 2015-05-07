@@ -20,4 +20,4 @@ $(NAME).byte: $(OBJS)
 	$(OCAMLC) -c $<
 
 clean::
-	rm -f *.cm[io] $(NAME).byte $(NAME).js
+	rm -f *.cm[io] $(NAME).byte $(NAME).js $(NAME).map
