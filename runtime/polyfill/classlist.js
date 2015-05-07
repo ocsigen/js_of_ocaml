@@ -1,27 +1,31 @@
 /*
  * classList.js: Cross-browser full element.classList implementation.
- * 2012-11-15
+ * 2015-03-12
  *
  * By Eli Grey, http://eligrey.com
- * Public Domain.
- * NO WARRANTY EXPRESSED OR IMPLIED. USE AT YOUR OWN RISK.
+ * License: Dedicated to the public domain.
+ *   See https://github.com/eligrey/classList.js/blob/master/LICENSE.md
  */
 
 /*global self, document, DOMException */
 //Version-IE: < 10
-/*! @source http://purl.eligrey.com/github/classList.js/blob/master/classList.js*/
-if (typeof document !== "undefined" && !("classList" in document.createElement("a"))) {
+/*! @source http://purl.eligrey.com/github/classList.js/blob/master/classList.js */
+
+if ("document" in self) {
+
+// Full polyfill for browsers with no classList support
+if (!("classList" in document.createElement("_"))) {
 
 (function (view) {
 
 "use strict";
 
-if (!('HTMLElement' in view) && !('Element' in view)) return;
+if (!('Element' in view)) return;
 
 var
 	  classListProp = "classList"
 	, protoProp = "prototype"
-	, elemCtrProto = (view.HTMLElement || view.Element)[protoProp]
+	, elemCtrProto = view.Element[protoProp]
 	, objCtr = Object
 	, strTrim = String[protoProp].trim || function () {
 		return this.replace(/^\s+|\s+$/g, "");
@@ -61,7 +65,7 @@ var
 	}
 	, ClassList = function (elem) {
 		var
-			  trimmedClasses = strTrim.call(elem.className)
+			  trimmedClasses = strTrim.call(elem.getAttribute("class") || "")
 			, classes = trimmedClasses ? trimmedClasses.split(/\s+/) : []
 			, i = 0
 			, len = classes.length
@@ -70,7 +74,7 @@ var
 			this.push(classes[i]);
 		}
 		this._updateClassName = function () {
-			elem.className = this.toString();
+			elem.setAttribute("class", this.toString());
 		};
 	}
 	, classListProto = ClassList[protoProp] = []
@@ -116,13 +120,15 @@ classListProto.remove = function () {
 		, l = tokens.length
 		, token
 		, updated = false
+		, index
 	;
 	do {
 		token = tokens[i] + "";
-		var index = checkTokenAndGetIndex(this, token);
-		if (index !== -1) {
+		index = checkTokenAndGetIndex(this, token);
+		while (index !== -1) {
 			this.splice(index, 1);
 			updated = true;
+			index = checkTokenAndGetIndex(this, token);
 		}
 	}
 	while (++i < l);
@@ -131,22 +137,26 @@ classListProto.remove = function () {
 		this._updateClassName();
 	}
 };
-classListProto.toggle = function (token, forse) {
+classListProto.toggle = function (token, force) {
 	token += "";
 
 	var
 		  result = this.contains(token)
 		, method = result ?
-			forse !== true && "remove"
+			force !== true && "remove"
 		:
-			forse !== false && "add"
+			force !== false && "add"
 	;
 
 	if (method) {
 		this[method](token);
 	}
 
-	return !result;
+	if (force === true || force === false) {
+		return force;
+	} else {
+		return !result;
+	}
 };
 classListProto.toString = function () {
 	return this.join(" ");
@@ -172,4 +182,57 @@ if (objCtr.defineProperty) {
 
 }(self));
 
+} else {
+// There is full or partial native classList support, so just check if we need
+// to normalize the add/remove and toggle APIs.
+
+(function () {
+	"use strict";
+
+	var testElement = document.createElement("_");
+
+	testElement.classList.add("c1", "c2");
+
+	// Polyfill for IE 10/11 and Firefox <26, where classList.add and
+	// classList.remove exist but support only one argument at a time.
+	if (!testElement.classList.contains("c2")) {
+		var createMethod = function(method) {
+			var original = DOMTokenList.prototype[method];
+
+			DOMTokenList.prototype[method] = function(token) {
+				var i, len = arguments.length;
+
+				for (i = 0; i < len; i++) {
+					token = arguments[i];
+					original.call(this, token);
+				}
+			};
+		};
+		createMethod('add');
+		createMethod('remove');
+	}
+
+	testElement.classList.toggle("c3", false);
+
+	// Polyfill for IE 10 and Firefox <24, where classList.toggle does not
+	// support the second argument.
+	if (testElement.classList.contains("c3")) {
+		var _toggle = DOMTokenList.prototype.toggle;
+
+		DOMTokenList.prototype.toggle = function(token, force) {
+			if (1 in arguments && !this.contains(token) === !force) {
+				return force;
+			} else {
+				return _toggle.call(this, token);
+			}
+		};
+
+	}
+
+	testElement = null;
+}());
+
 }
+
+}
+
