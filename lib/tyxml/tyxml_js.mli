@@ -25,16 +25,17 @@
 
    {[
      module T = Tyxml_js.Html5
-     let html =
-       T.div ~a:[T.a_class ["several"; "css"; "class"]; T.a_id "id-of-div"] [
-         T.ul ~a:[T.a_class ["one-css-class"]; T.a_id "id-of-ul"] [
-           T.li ~a:[] [
-             T.a ~a:[T.a_id "id-of-a"; T.a_href "/url/file.html"] [
-               T.pcdata "Go to /url/file.html"
+     let html = T.(
+       div ~a:[a_class ["several"; "css"; "class"]; a_id "id-of-div"] [
+         ul ~a:[a_class ["one-css-class"]; a_id "id-of-ul"] [
+           li [
+             a ~a:[a_id "id-of-a"; a_href "/url/file.html"] [
+               pcdata "Go to /url/file.html"
              ]
            ]
          ]
        ]
+     )
    ]}
 *)
 
