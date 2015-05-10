@@ -17,7 +17,26 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Tyxml interface *)
+(** Tyxml interface. Please consult the {{: https://ocsigen.org/tyxml/ } Tyxml project } 
+    website for more information.
+
+   Example of use for HTML (see {{: https://ocsigen.org/tyxml/dev/api/Html5_sigs.T } Html5_sigs.T }
+   to have a list of available functions):
+
+   {[
+     module T = Tyxml_js.Html5
+     let html =
+       T.div ~a:[T.a_class ["several"; "css"; "class"]; T.a_id "id-of-div"] [
+         T.ul ~a:[T.a_class ["one-css-class"]; T.a_id "id-of-ul"] [
+           T.li ~a:[] [
+             T.a ~a:[T.a_id "id-of-a"; T.a_href "/url/file.html"] [
+               T.pcdata "Go to /url/file.html"
+             ]
+           ]
+         ]
+       ]
+   ]}
+*)
 
 module Xml : Xml_sigs.T
   with type uri = string
