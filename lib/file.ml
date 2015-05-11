@@ -24,8 +24,8 @@ open Dom
 class type blob = object
   method size : int readonly_prop
   method _type : js_string t readonly_prop
-  method slice : int -> int -> blob meth
-  method slice_withContentType : int -> int -> js_string t -> blob meth
+  method slice : int -> int -> blob t meth
+  method slice_withContentType : int -> int -> js_string t -> blob t meth
 end
 
 class type file = object
