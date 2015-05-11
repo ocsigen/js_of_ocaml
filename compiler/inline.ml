@@ -46,6 +46,15 @@ let optimizable blocks pc _ =
           | _ -> true
         ) b.body )  pc blocks true
 
+let rec follow_branch blocks = function
+  | (pc, []) as k ->
+    begin try match AddrMap.find pc blocks with
+      | {body = []; branch = Branch (pc, [])} -> follow_branch blocks (pc, [])
+      | _ -> k
+    with Not_found -> k
+    end
+  | k -> k
+
 let get_closures (_, blocks, _) =
   AddrMap.fold
     (fun _ block closures ->
@@ -53,6 +62,7 @@ let get_closures (_, blocks, _) =
          (fun closures i ->
             match i with
               Let (x, Closure (l, cont)) ->
+              let cont = follow_branch blocks cont in
               (* we can compute this once during the pass
                  as the property won't change with inlining *)
               let f_optimizable = optimizable blocks (fst cont) true in
@@ -114,23 +124,31 @@ let rec find_mapping x src trg =
   | [], _ | _, [] -> assert false
 
 let simple blocks clos_pc clos_args clos_params f_args =
-  match AddrMap.find clos_pc blocks with
-  | {params; handler = _; body = []; branch = Return ret} ->
-    begin
-      try
-        let arg = try find_mapping ret params clos_args with Not_found -> ret in
-        let arg = find_mapping arg clos_params f_args in
-        `Alias arg
-      with Not_found -> `None
-    end
-  | {params; handler = _;
-     body = [Let (x, exp)]; branch = Return ret} when Code.Var.compare ret x = 0 ->
+  let clos = AddrMap.find clos_pc blocks in
+  let map_var x =
+    let arg = try find_mapping x clos.params clos_args with Not_found -> x in
+    find_mapping arg clos_params f_args
+  in
+  let map_prim_arg = function
+    | Pc c -> Pc c
+    | Pv x -> Pv (map_var x)
+  in
+  try match clos with
+  | {handler = _; body = []; branch = Return ret} ->
+      `Alias (map_var ret)
+  | {handler = _; body = [Let (x, exp)]; branch = Return ret}
+    when Code.Var.compare ret x = 0 ->
     begin match exp with
       | Const _ -> `Exp exp
       | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
+      | Apply (f, args, true) -> `Exp (Apply (map_var f, List.map map_var args, true))
+      | Prim (prim, args) -> `Exp (Prim (prim, List.map map_prim_arg args))
+      | Block (tag, args) -> `Exp (Block (tag, Array.map map_var args))
+      | Field (x, i) -> `Exp (Field (map_var x, i))
       | _ -> `None
     end
-  | _ -> `None
+  | _ -> raise Not_found
+  with Not_found -> `None
 
 let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
   let block = AddrMap.find pc blocks in
