@@ -141,7 +141,7 @@ let simple blocks clos_pc clos_args clos_params f_args =
     begin match exp with
       | Const _ -> `Exp exp
       | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
-      | Apply (f, args, true) -> `Exp (Apply (f, List.map map_var args, true))
+      | Apply (f, args, true) -> `Exp (Apply (map_var f, List.map map_var args, true))
       | Prim (prim, args) -> `Exp (Prim (prim, List.map map_prim_arg args))
       | Block (tag, args) -> `Exp (Block (tag, Array.map map_var args))
       | Field (x, i) -> `Exp (Field (map_var x, i))
