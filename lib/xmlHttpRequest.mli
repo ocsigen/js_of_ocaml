@@ -43,7 +43,7 @@ class type xmlHttpRequest = object ('self)
   method setRequestHeader : js_string t -> js_string t -> unit meth
   method overrideMimeType : js_string t -> unit meth
   method send : js_string t opt -> unit meth
-  method send_blob : File.blob t -> unit meth
+  method send_blob : #File.blob t -> unit meth
   method send_document : Dom.element Dom.document -> unit meth
   method send_formData : Form.formData t -> unit meth
   method abort : unit meth
