@@ -104,12 +104,15 @@ exception Wrong_headers of (int * (string -> string option))
 val perform_raw :
     ?headers:(string * string) list
   -> ?content_type:string
-  -> ?post_args:((string * Form.form_elt) list)
   -> ?get_args:((string * string) list)  (* [] *)
-  -> ?form_arg:Form.form_contents
   -> ?check_headers:(int -> (string -> string option) -> bool)
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
+  -> ?contents:
+    [< `POST_form of (string * Form.form_elt) list
+    | `Form_contents of Form.form_contents
+    | `String of string
+    | `Blob of #File.blob Js.t ]
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
   -> response_type:('a response)
@@ -123,12 +126,15 @@ val perform_raw :
 val perform_raw_url :
     ?headers:(string * string) list
   -> ?content_type:string
-  -> ?post_args:((string * Form.form_elt) list)
   -> ?get_args:((string * string) list)  (* [] *)
-  -> ?form_arg:Form.form_contents
   -> ?check_headers:(int -> (string -> string option) -> bool)
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
+  -> ?contents:
+    [< `POST_form of (string * Form.form_elt) list
+    | `Form_contents of Form.form_contents
+    | `String of string
+    | `Blob of #File.blob Js.t ]
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
   -> string
@@ -147,12 +153,15 @@ val perform_raw_url :
 val perform :
     ?headers:(string * string) list
   -> ?content_type:string
-  -> ?post_args:((string * Form.form_elt) list)
   -> ?get_args:((string * string) list)  (* [] *)
-  -> ?form_arg:Form.form_contents
   -> ?check_headers:(int -> (string -> string option) -> bool)
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
+  -> ?contents:
+    [< `POST_form of (string * Form.form_elt) list
+    | `Form_contents of Form.form_contents
+    | `String of string
+    | `Blob of #File.blob Js.t ]
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
   -> Url.url
