@@ -121,10 +121,6 @@ class type messages = object
   method ok : Js.js_string Js.t Js.optdef Js.readonly_prop
 end
 
-(*
-let messages : messages Js.t = option (Js.Unsafe.variable "window.hyp_msgs")
-*)
-
 let opt_style v default = Js.Optdef.get v (fun () -> default)
 
 (**** Complex numbers ****)
@@ -231,7 +227,7 @@ let lwt_wrap f =
 
 module Html = Dom_html
 
-let json : < parse : Js.js_string Js.t -> 'a> Js.t = Js.Unsafe.variable "JSON"
+let json : < parse : Js.js_string Js.t -> 'a> Js.t = Js.Unsafe.pure_js_expr "JSON"
 
 let http_get url =
   XmlHttpRequest.get url >>= fun r ->
@@ -476,7 +472,7 @@ let text_size font txt =
   res
 
 (******)
-    
+
 let default_language () =
   (Js.Optdef.get (Dom_html.window##navigator##language) (fun () ->
    Js.Optdef.get (Dom_html.window##navigator##userLanguage) (fun () ->

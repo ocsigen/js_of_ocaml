@@ -914,19 +914,6 @@ let is_ident =
       true
     with _ -> false
 
-let ident_from_string s =
-  match Util.split_char '.' s with
-    | [] -> assert false
-    | [x] ->
-      if not (is_ident x)
-      then Util.warn "Warning: %S is not a valid identifier; the generated code might be incorrect.@." x;
-      s_var x
-    | (x::xs) as l ->
-      warn "Warning: %S should be written (Js.Unsafe.variable %S)##%s@." s x (String.concat "##" xs);
-      if not (List.for_all is_ident l)
-      then Util.warn "Warning: %S is not a valid identifier; the generated code might be incorrect.@." s;
-      List.fold_left (fun e i -> J.EDot(e,i)) (s_var x) xs
-
 let rec group_closures_rec closures req =
   match closures with
     [] ->
@@ -1030,8 +1017,7 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
         let ((py, cy), queue) = access_queue' ~ctx queue y in
         (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
          or_p mutable_p (or_p px py), queue)
-      | Extern "caml_js_var", [Pc (String nm)] ->
-        (ident_from_string nm, const_p, queue)
+      | Extern "caml_js_var", [Pc (String nm)]
       | Extern ("caml_js_expr"|"caml_pure_js_expr"), [Pc (String nm)] ->
         begin
           try

@@ -4,7 +4,7 @@
 Write in .ml:
 
 <<code language="ocaml"|
-let v = (Js.Unsafe.variable "window")##document
+let v = (Js.Unsafe.js_expr "window")##document
 >>
 Alternatively, the global object can be used. In the browser, it refers to {{{window}}}.
 <<code language="ocaml"|
@@ -17,7 +17,7 @@ and in .mli:
 val v : ... Js.t
 >>
 
-Be careful the function <<a_api | val Js.Unsafe.variable >>
+Be careful the function <<a_api | val Js.Unsafe.js_expr >>
 and the value <<a_api | val Js.Unsafe.global >> are not typed.
 Verify the library documentation before writing the type.
 
@@ -26,7 +26,7 @@ Verify the library documentation before writing the type.
 Example from the Js module:
 <<code language="ocaml"|
 let decodeURI (s : js_string t) : js_string t =
-  Js.Unsafe.fun_call (Js.Unsafe.variable "decodeURI") [|Js.Unsafe.inject s|]
+  Js.Unsafe.fun_call (Js.Unsafe.js_expr "decodeURI") [|Js.Unsafe.inject s|]
 >>
 
 Have a look at the <<a_api | module Js.Unsafe >> module API.
@@ -128,7 +128,7 @@ end
 and in .ml:
 
 <<code language="ocaml"|
-let theclass = (Js.Unsafe.variable "thelib")##_Theclass
+let theclass = (Js.Unsafe.js_expr "thelib")##_Theclass
 >>
 
 and in .mli:
@@ -188,7 +188,7 @@ class type obj = object
   method prop : dom_or_string Js.t prop
 end
 
-let obj : obj Js.t = Js.Unsafe.variable "obj"
+let obj : obj Js.t = Js.Unsafe.js_expr "obj"
 
 let string_constr : Js.js_string Js.t Js.constr = Js.Unsafe.global##_String
 

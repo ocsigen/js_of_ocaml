@@ -548,10 +548,6 @@ external debugger : unit -> unit = "debugger"
 
 (** Unsafe Javascript operations *)
 module Unsafe : sig
-  external variable : string -> 'a = "caml_js_var"
-    (** Access a Javascript variable.  [variable "foo"] will
-        return the current value of variable [foo]. *)
-
   type any
     (** Top type.  Used for putting values of different types
         in a same array. *)
@@ -623,6 +619,12 @@ module Unsafe : sig
         [Js.wrap_meth_callback], partial application and
         over-application is not supported: missing arguments will be
         set to [undefined] and extra arguments are lost. *)
+
+  (** {3 Deprecated functions.} *)
+
+  external variable : string -> 'a = "caml_js_var"
+    (** Access a Javascript variable.  [variable "foo"] will
+        return the current value of variable [foo]. *)
 
 (*FIX also, array literals *)
 end

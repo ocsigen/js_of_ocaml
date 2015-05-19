@@ -50,7 +50,7 @@ let input_reviver =
   wrap_meth_callback reviver
 let unsafe_input s = json##parse_ (s, input_reviver)
 
-let mlString_constr = Unsafe.variable "MlString"
+let mlString_constr = Unsafe.pure_js_expr "MlString"
 let output_reviver _key value =
   if instanceof value mlString_constr then
     to_byte_jsstring (Unsafe.coerce value)

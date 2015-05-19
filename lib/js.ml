@@ -23,8 +23,6 @@ type +'a t
 type (-'a, +'b) meth_callback
 
 module Unsafe = struct
-  external variable : string -> 'a = "caml_js_var"
-
   type any
   external inject : 'a -> any = "%identity"
   external coerce : _ t -> _ t = "%identity"
@@ -49,10 +47,13 @@ module Unsafe = struct
 
   external pure_js_expr : string -> 'a = "caml_pure_js_expr"
 
-  let global = variable "joo_global_object"
+  let global = pure_js_expr "joo_global_object"
 
   external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "%identity"
   external meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback = "caml_js_wrap_meth_callback_unsafe"
+
+  (* DEPRECATED *)
+  external variable : string -> 'a = "caml_js_var"
 end
 
 (****)

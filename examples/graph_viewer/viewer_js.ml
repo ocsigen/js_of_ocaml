@@ -101,7 +101,7 @@ let redraw st s h v (canvas : Html.canvasElement Js.t) =
 ;Firebug.console##timeEnd (Js.string "draw")
 ;Firebug.console##log_2 (Js.string "draw", Js.date##now())
 *)
-let json : < parse : Js.js_string Js.t -> 'a> Js.t = Js.Unsafe.variable "JSON"
+let json : < parse : Js.js_string Js.t -> 'a> Js.t = Js.Unsafe.pure_js_expr "JSON"
 let (>>=) = Lwt.bind
 
 let http_get url =

@@ -224,7 +224,7 @@ class type ['a] event = object
 end
 
 let no_handler : ('a, 'b) event_listener = Js.null
-let window_event () : 'a #event t = Js.Unsafe.variable "event"
+let window_event () : 'a #event t = Js.Unsafe.pure_js_expr "event"
 (* The function preventDefault must be called explicitely when
    using addEventListener... *)
 let handler f =
