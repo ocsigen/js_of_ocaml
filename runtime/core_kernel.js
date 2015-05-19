@@ -8,7 +8,17 @@ function bigstring_alloc(_,size){
 ///////// CORE_KERNEL
 //Provides: int_math_int_pow_stub
 function int_math_int_pow_stub(base, exponent){
-    return Math.pow(base | 0, exponent | 0) | 0;
+    var one = 1;
+    var mul = [one, base, one, one];
+    var res = one;
+    while (!exponent==0) {
+      mul[1] = (mul[1] * mul[3]) | 0;
+      mul[2] = (mul[1] * mul[1]) | 0;
+      mul[3] = (mul[2] * mul[1]) | 0; 
+      res = (res * mul[exponent& 3]) | 0;
+      exponent = exponent >> 2;
+    }
+    return res;
 }
 
 //Provides: int_math_int64_pow_stub
