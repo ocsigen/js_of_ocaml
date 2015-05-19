@@ -1,6 +1,7 @@
 opam-version: "1"
 maintainer: "dev@ocsigen.org"
 homepage: "http://ocsigen.org/js_of_ocaml"
+dev-repo: "https://github.com/ocsigen/js_of_ocaml.git"
 version: "dev"
 build: [
   [make "build"]
