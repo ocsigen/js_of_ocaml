@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
 module Int = struct type t = int let compare (x : int) y = compare x y end
 module IntSet = Set.Make (Int)
@@ -43,26 +43,27 @@ let path_require_findlib path =
 
 let rec find_in_findlib_paths ?(pkg="stdlib") paths name =
   match paths with
-    | [] ->
-      raise Not_found
-    | path :: rem ->
-      try
-        let file = match path_require_findlib path with
-          | Some path ->
-            Filename.concat (Filename.concat (find_pkg_dir pkg) path) name
-          | None -> Filename.concat path name in
+  | [] ->
+    raise Not_found
+  | path :: rem ->
+    try
+      let file = match path_require_findlib path with
+        | Some path ->
+          Filename.concat (Filename.concat (find_pkg_dir pkg) path) name
+        | None -> Filename.concat path name in
 
-        if Sys.file_exists file then file else
-          find_in_findlib_paths rem name
-      with Not_found -> find_in_findlib_paths rem name
+      if Sys.file_exists file then file else
+        find_in_findlib_paths rem name
+    with Not_found -> find_in_findlib_paths rem name
 
 let rec find_in_path paths name =
   match paths with
   | [] -> raise Not_found
   | path :: rem ->
-     let file = Filename.concat path name in
-     if Sys.file_exists file then file else
-       find_in_path rem name
+    let file = Filename.concat path name in
+    if Sys.file_exists file
+    then file
+    else find_in_path rem name
 
 let absolute_path f =
   if Filename.is_relative f
@@ -90,9 +91,9 @@ let sort_uniq compare l =
   | [x] -> [x]
   | x::xs ->
     let rec loop prev = function
-      | [] -> []
+      | [] -> [prev]
       | x::rest when compare x prev = 0 -> loop prev rest
-      | x::rest -> x :: loop x rest
+      | x::rest -> prev :: loop x rest
     in loop x xs
 
 let array_fold_right_i f a x =
@@ -141,9 +142,9 @@ let fail = ref true
 
 let failwith_ fmt =
   Printf.ksprintf (fun s ->
-      if !fail
-      then failwith s
-      else Format.eprintf "%s@." s) fmt
+    if !fail
+    then failwith s
+    else Format.eprintf "%s@." s) fmt
 
 let raise_ exn =
   if !fail
@@ -171,43 +172,43 @@ let split sep s =
   if sep_len = 1
   then split_char sep.[0] s
   else
-  let sep_max = sep_len - 1 in
-  if sep_max < 0 then invalid_arg "String.split: empty separator" else
-    let s_max = String.length s - 1 in
-    if s_max < 0 then [""] else
-      let acc = ref [] in
-      let sub_start = ref 0 in
-      let k = ref 0 in
-      let i = ref 0 in
-      (* We build the substrings by running from the start of [s] to the
-         end with [i] trying to match the first character of [sep] in
-         [s]. If this matches, we verify that the whole [sep] is matched
-         using [k]. If this matches we extract a substring from the start
-         of the current substring [sub_start] to [!i - 1] (the position
-         before the [sep] we found).  We then continue to try to match
-         with [i] by starting after the [sep] we just found, this is also
-         becomes the start position of the next substring. If [i] is such
-         that no separator can be found we exit the loop and make a
-         substring from [sub_start] until the end of the string. *)
-      while (!i + sep_max <= s_max) do
-        if String.unsafe_get s !i <> String.unsafe_get sep 0 then incr i else
-          begin
-            (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
-               guaranteed by loop invariant. *)
-            k := 1;
-            while (!k <= sep_max && String.unsafe_get s (!i + !k) = String.unsafe_get sep !k)
-            do incr k done;
-            if !k <= sep_max then (* no match *) incr i else begin
-              let new_sub_start = !i + sep_max + 1 in
-              let sub_end = !i - 1 in
-              let sub_len = sub_end - !sub_start + 1 in
-              acc := String.sub s !sub_start sub_len :: !acc;
-              sub_start := new_sub_start;
-              i := new_sub_start;
+    let sep_max = sep_len - 1 in
+    if sep_max < 0 then invalid_arg "String.split: empty separator" else
+      let s_max = String.length s - 1 in
+      if s_max < 0 then [""] else
+        let acc = ref [] in
+        let sub_start = ref 0 in
+        let k = ref 0 in
+        let i = ref 0 in
+        (* We build the substrings by running from the start of [s] to the
+           end with [i] trying to match the first character of [sep] in
+           [s]. If this matches, we verify that the whole [sep] is matched
+           using [k]. If this matches we extract a substring from the start
+           of the current substring [sub_start] to [!i - 1] (the position
+           before the [sep] we found).  We then continue to try to match
+           with [i] by starting after the [sep] we just found, this is also
+           becomes the start position of the next substring. If [i] is such
+           that no separator can be found we exit the loop and make a
+           substring from [sub_start] until the end of the string. *)
+        while (!i + sep_max <= s_max) do
+          if String.unsafe_get s !i <> String.unsafe_get sep 0 then incr i else
+            begin
+              (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
+                 guaranteed by loop invariant. *)
+              k := 1;
+              while (!k <= sep_max && String.unsafe_get s (!i + !k) = String.unsafe_get sep !k)
+              do incr k done;
+              if !k <= sep_max then (* no match *) incr i else begin
+                let new_sub_start = !i + sep_max + 1 in
+                let sub_end = !i - 1 in
+                let sub_len = sub_end - !sub_start + 1 in
+                acc := String.sub s !sub_start sub_len :: !acc;
+                sub_start := new_sub_start;
+                i := new_sub_start;
+              end
             end
-          end
-      done;
-      List.rev (String.sub s !sub_start (s_max - !sub_start + 1) :: !acc)
+        done;
+        List.rev (String.sub s !sub_start (s_max - !sub_start + 1) :: !acc)
 
 exception Found of int
 let find sep s =

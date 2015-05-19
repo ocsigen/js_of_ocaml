@@ -4,7 +4,7 @@ include ../../Makefile.conf
 
 COMP=../../compiler/$(COMPILER)
 JSFILES=../../runtime/runtime.js
-OCAMLC=ocamlfind ocamlc -package lwt -pp "camlp4o ../../lib/syntax/pa_js.cmo" -I ../../lib -g
+OCAMLC=ocamlfind ocamlc -g -package lwt -pp "camlp4o ../../lib/syntax/pa_js.cmo" -I ../../lib
 STDLIB=$(LIBNAME).cma
 
 $(NAME).js: $(NAME).byte $(COMP) $(JSFILES)

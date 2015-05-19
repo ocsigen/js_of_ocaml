@@ -239,25 +239,25 @@ end = struct
       match paths with
       | None -> ()
       | Some (paths : string list) ->
-         let u = List.map (fun {ev_module} -> ev_module) evl in
-         let u = Util.sort_uniq String.compare u in
-         let u =
-           List.map
-             (fun name ->
-              let crc =
-                try List.assoc name crcs
-                with Not_found -> None in
-              let name, source = find_ml_in_paths paths name in
-              { name; crc; source; paths }) u
-         in
-         List.iter
-           (fun unit ->
-            Hashtbl.add units unit.name unit) u;
-         List.iter
-           (fun ev ->
-            relocate_event orig ev;
-            Hashtbl.add events_by_pc ev.ev_pos ev)
-           evl
+        let u = List.map (fun {ev_module} -> ev_module) evl in
+        let u = Util.sort_uniq String.compare u in
+        let u =
+          List.map
+            (fun name ->
+               let crc =
+                 try List.assoc name crcs
+                 with Not_found -> None in
+               let name, source = find_ml_in_paths paths name in
+               { name; crc; source; paths }) u
+        in
+        List.iter
+          (fun unit ->
+             Hashtbl.add units unit.name unit) u;
+        List.iter
+          (fun ev ->
+             relocate_event orig ev;
+             Hashtbl.add events_by_pc ev.ev_pos ev)
+          evl
     done;
     events_by_pc, units
 
@@ -281,29 +281,29 @@ end = struct
       in
       let loc = ev.ev_loc in
       if loc.loc_ghost then None else
-      let pos =
-        if after then loc.loc_end else
-        if before then loc.loc_start else
-          match ev.ev_kind with Event_after _ -> loc.loc_end | _ -> loc.loc_start in
-      let src =
-        let uname = Filename.(basename (chop_extension pos.pos_fname)) in
-        try
-          let unit = Hashtbl.find units uname in
-          try Some (Util.absolute_path
-		      (Util.find_in_path unit.paths pos.pos_fname)) with
-          | Not_found ->
-            match unit.source with
-            | Some x -> Some (Util.absolute_path x)
-            | None   -> raise Not_found
-          with Not_found -> None (* pos.pos_fname *)
-      in
-      Some {Parse_info.name = Some pos.pos_fname;
-	    src;
-            line=pos.pos_lnum - 1;
-            col=pos.pos_cnum - pos.pos_bol;
-            (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
-            idx=0;
-            fol=None}
+        let pos =
+          if after then loc.loc_end else
+          if before then loc.loc_start else
+            match ev.ev_kind with Event_after _ -> loc.loc_end | _ -> loc.loc_start in
+        let src =
+          let uname = Filename.(basename (chop_extension pos.pos_fname)) in
+          try
+            let unit = Hashtbl.find units uname in
+            try Some (Util.absolute_path
+                        (Util.find_in_path unit.paths pos.pos_fname)) with
+            | Not_found ->
+              match unit.source with
+              | Some x -> Some (Util.absolute_path x)
+              | None   -> raise Not_found
+          with Not_found -> None (* Some (pos.pos_fname) *)
+        in
+        Some {Parse_info.name = Some pos.pos_fname;
+              src;
+              line=pos.pos_lnum - 1;
+              col=pos.pos_cnum - pos.pos_bol;
+              (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
+              idx=0;
+              fol=None}
     with Not_found ->
       None
 
@@ -317,7 +317,7 @@ end = struct
       propagate r1 r2
     | _                  -> ()
 
-(*  let iter events_by_pc f = Hashtbl.iter f events_by_pc *)
+  (*  let iter events_by_pc f = Hashtbl.iter f events_by_pc *)
 
   let fold (events_by_pc,_) f acc = Hashtbl.fold f events_by_pc acc
 end
@@ -705,17 +705,17 @@ let rec compile_block blocks debug code pc state =
     compiled_blocks :=
       AddrMap.add pc (state, List.rev instr, last) !compiled_blocks;
     begin match last with
-      Branch (pc', _) | Poptrap (pc', _) ->
+        Branch (pc', _) | Poptrap (pc', _) ->
         compile_block blocks debug code pc' state'
-    | Cond (_, _, (pc1, _), (pc2, _)) ->
+      | Cond (_, _, (pc1, _), (pc2, _)) ->
         compile_block blocks debug code pc1 state';
         compile_block blocks debug code pc2 state'
-    | Switch (_, l1, l2) ->
+      | Switch (_, l1, l2) ->
         Array.iter
           (fun (pc', _) -> compile_block blocks debug code pc' state') l1;
         Array.iter
           (fun (pc', _) -> compile_block blocks debug code pc' state') l2
-    | Pushtrap _ | Raise _ | Return _ | Stop ->
+      | Pushtrap _ | Raise _ | Return _ | Stop ->
         ()
     end
   end
@@ -1832,14 +1832,14 @@ let override_global =
     Prim(Extern "%overrideMod",[Pc (String name);Pc (String func)]) in
   [
     "CamlinternalMod",(fun _orig instrs ->
-        let x = Var.fresh () in
-        Var.name x "internalMod";
-        let init_mod = Var.fresh () in
-        let update_mod = Var.fresh () in
-        x, Let(x,Block(0,[| init_mod; update_mod |]))::
-           Let(init_mod,jsmodule "CamlinternalMod" "init_mod")::
-           Let(update_mod,jsmodule "CamlinternalMod" "update_mod")::
-           instrs)
+      let x = Var.fresh () in
+      Var.name x "internalMod";
+      let init_mod = Var.fresh () in
+      let update_mod = Var.fresh () in
+      x, Let(x,Block(0,[| init_mod; update_mod |]))::
+         Let(init_mod,jsmodule "CamlinternalMod" "init_mod")::
+         Let(update_mod,jsmodule "CamlinternalMod" "update_mod")::
+         instrs)
   ]
 
 (* HACK 3 - really input string *)
@@ -1924,13 +1924,13 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
 
   (* Initialize module override mechanism *)
   List.iter (fun (name, v) ->
-      try
-        let nn = { Ident.stamp= 0; name; flags= 0 } in
-        let i = Tbl.find (fun x1 x2 -> String.compare x1.Ident.name x2.Ident.name) nn symbols.num_tbl in
-        globals.override.(i) <- Some v;
-        if debug_parser () then Format.eprintf "overriding global %s@." name
-      with Not_found -> ()
-    ) override_global;
+    try
+      let nn = { Ident.stamp= 0; name; flags= 0 } in
+      let i = Tbl.find (fun x1 x2 -> String.compare x1.Ident.name x2.Ident.name) nn symbols.num_tbl in
+      globals.override.(i) <- Some v;
+      if debug_parser () then Format.eprintf "overriding global %s@." name
+    with Not_found -> ()
+  ) override_global;
 
   if toplevel then
     begin
@@ -1955,11 +1955,11 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
     globals.is_exported.(i) <- false;
   done;
   let body = Util.array_fold_right_i (fun i _ l ->
-      match globals.vars.(i) with
-        Some x when globals.is_const.(i) ->
-        let l = register_global globals i l in
-        Let (x, Constant (Constants.parse globals.constants.(i))) :: l
-      | _ -> l) globals.constants !body in
+    match globals.vars.(i) with
+      Some x when globals.is_const.(i) ->
+      let l = register_global globals i l in
+      Let (x, Constant (Constants.parse globals.constants.(i))) :: l
+    | _ -> l) globals.constants !body in
 
 
   let body =
@@ -1977,11 +1977,11 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
           "toc",(Constants.parse (Obj.repr toc));
           "prim_count",(Int (Int32.of_int (Array.length globals.primitives)))] in
         let body = List.fold_left (fun rem (name,const) ->
-            let c = Var.fresh () in
-            Let (c, Constant const) ::
-            Let (Var.fresh (),
-                 Prim (Extern "caml_js_set", [Pv gdata; Pc (String name); Pv c])) ::
-            rem) body infos in
+          let c = Var.fresh () in
+          Let (c, Constant const) ::
+          Let (Var.fresh (),
+               Prim (Extern "caml_js_set", [Pv gdata; Pc (String name); Pv c])) ::
+          rem) body infos in
         Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
       end
     else body in
@@ -1990,9 +1990,9 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
   let cmis =
     if toplevel && Option.Optim.include_cmis ()
     then Tbl.fold (fun id _num acc ->
-        if id.Ident.flags = 1
-        then Util.StringSet.add id.Ident.name acc
-        else acc) symbols.num_tbl Util.StringSet.empty
+      if id.Ident.flags = 1
+      then Util.StringSet.add id.Ident.name acc
+      else acc) symbols.num_tbl Util.StringSet.empty
     else Util.StringSet.empty in
   prepend p body, cmis, debug_data
 
@@ -2004,10 +2004,10 @@ let from_bytes primitives (code : code) =
 
   let gdata = Var.fresh () in
   let body = Util.array_fold_right_i (fun i var l ->
-      match var with
-      | Some x when globals.is_const.(i) ->
-        Let (x, Field (gdata, i)) :: l
-      | _ -> l) globals.vars [] in
+    match var with
+    | Some x when globals.is_const.(i) ->
+      Let (x, Field (gdata, i)) :: l
+    | _ -> l) globals.vars [] in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   prepend p body, debug_data
 
