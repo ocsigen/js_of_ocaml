@@ -406,8 +406,8 @@ end = struct
 
   let warn_overflow i i32 =
     Util.warn
-      "Warning: integer overflow: integer 0x%s truncated to 0x%lx; \
-       the generated code might be incorrect.@." i i32
+      "Warning: integer overflow: integer %s truncated to 0x%lx (%ld); \
+       the generated code might be incorrect.@." i i32 i32
 
   let rec parse x =
     if Obj.is_block x then begin
@@ -424,7 +424,7 @@ end = struct
         let i : nativeint = Obj.magic x in
         let i32 = Nativeint.to_int32 i in
         let i' = Nativeint.of_int32 i32 in
-        if i' <> i then warn_overflow (Printf.sprintf "%nx" i) i32;
+        if i' <> i then warn_overflow (Printf.sprintf "0x%nx (%nd)" i i) i32;
         Int i32
       else if tag = Obj.custom_tag && same_custom x 0L then
         Int64 (Obj.magic x : int64)
@@ -437,7 +437,7 @@ end = struct
       let i : int = Obj.magic x in
       let i32 = Int32.of_int i in
       let i' = Int32.to_int i32 in
-      if i' <> i then warn_overflow (Printf.sprintf "%x" i) i32;
+      if i' <> i then warn_overflow (Printf.sprintf "0x%x (%d)" i i) i32;
       Int i32
 
   let inlined x =
