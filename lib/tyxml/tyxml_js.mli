@@ -17,13 +17,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Tyxml interface. Please consult the {{: https://ocsigen.org/tyxml/ } Tyxml project } 
-    website for more information.
-
-   Example of use for HTML (see {{: https://ocsigen.org/tyxml/dev/api/Html5_sigs.T } Html5_sigs.T }
-   to have a list of available functions):
-
-   {[
+(** Tyxml interface.
+    Example of use for HTML:
+    {[
      module T = Tyxml_js.Html5
      let html = T.(
        div ~a:[a_class ["several"; "css"; "class"]; a_id "id-of-div"] [
@@ -37,6 +33,8 @@
        ]
      )
    ]}
+   @see <https://ocsigen.org/tyxml/> the Tyxml project website.
+   @see <https://ocsigen.org/tyxml/dev/api/Html5_sigs.T> Html5_sigs.T to have a list of available functions to build HTML.
 *)
 
 module Xml : Xml_sigs.T
