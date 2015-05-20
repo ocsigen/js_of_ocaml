@@ -22,7 +22,7 @@ SYNTAXES= lwt.syntax \
 	js_of_ocaml.deriving.syntax deriving.syntax.std
 endif
 
-JSFILES= +weak.js +toplevel.js +nat.js
+JSFILES= +weak.js +toplevel.js +dynlink.js +nat.js
 
 PACKAGES= \
 	lwt bigarray tyxml.functor \
@@ -30,7 +30,8 @@ PACKAGES= \
 	js_of_ocaml \
 	js_of_ocaml.deriving \
 	js_of_ocaml.tyxml \
-	js_of_ocaml.toplevel
+	js_of_ocaml.toplevel \
+	dynlink
 
 ifeq ($(WITH_GRAPHICS),YES)
 JSFILES += +graphics.js
@@ -56,14 +57,15 @@ MKTOP=jsoo_mktop -verbose $(SAFESTRING) \
 	${addprefix -export-unit , html5_types html5_sigs xml_wrap } \
 
 TOPLEVEL_NAME=toplevel
-TOPLEVEL_OBJS=colorize.cmo indent.cmo toplevel.cmo 
-$(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS)
+TOPLEVEL_OBJS=colorize.cmo indent.cmo toplevel.cmo
+$(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS) examples.ml test_dynlink.cmo
 	$(MKTOP) \
 	$(BER) \
 	$(OCPINDENT) $(HIGLO) \
 	$(TOPLEVEL_OBJS) \
 	${addprefix -jsopt , ${JSFILES}} \
 	${addprefix -jsopt , -I ./ --file examples.ml} \
+	${addprefix -jsopt , -I ./ --file test_dynlink.cmo} \
 	-package base64 \
 	-o $(TOPLEVEL_NAME).byte
 

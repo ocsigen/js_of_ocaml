@@ -36,7 +36,7 @@ IMPL += lib/ppx/ppx_js.cma
 INTF += lib/ppx/*.cmi
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
-IMPL += lib/ppx/ppx_js.cmx lib/ppx/ppx_js.cmxa lib/ppx/ppx_js.cmxs 
+IMPL += lib/ppx/ppx_js.cmx lib/ppx/ppx_js.cmxa lib/ppx/ppx_js.cmxs
 endif
 endif
 endif
@@ -55,6 +55,7 @@ OTHERS := runtime/runtime.js runtime/weak.js \
           runtime/polyfill/array.js \
           runtime/polyfill/string.js \
           runtime/toplevel.js \
+          runtime/dynlink.js \
           runtime/graphics.js \
           runtime/nat.js \
 
