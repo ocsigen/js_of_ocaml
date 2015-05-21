@@ -20,11 +20,11 @@
 var current_libs = [0, joo_global_object]
 
 //Provides: caml_dynlink_open_lib
-//Requires: current_libs
+//Requires: current_libs, caml_failwith
 function caml_dynlink_open_lib (_mode,file) {
     var name = file.toString();
     joo_global_object.console.log("Dynlink: try to open ", name);
-    if(false) caml_failwith("file not found: "+name)
+    //caml_failwith("file not found: "+name)
     current_libs.push({});
     return current_libs.length;
 }
