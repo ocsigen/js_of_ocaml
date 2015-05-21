@@ -9,7 +9,6 @@
 // http://sjs.mit-license.org
 //
 
-//Provides: strftime
 ;(function() {
 
     var DefaultLocale = {
