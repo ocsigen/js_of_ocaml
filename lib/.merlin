@@ -2,3 +2,5 @@ B ./**
 S ./**
 PKG cmdliner
 PKG menhir
+
+EXT js
