@@ -1,6 +1,6 @@
 B ./**
 S ./**
 PKG cmdliner
-PKG menhir
+PKG menhirLib
 
 EXT js
