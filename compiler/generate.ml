@@ -897,24 +897,6 @@ let _ =
 
 let varset_disjoint s s' = not (VarSet.exists (fun x -> VarSet.mem x s') s)
 
-let is_ident =
-  let l = Array.init 256 (fun i ->
-    let c = Char.chr i in
-    if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c = '_' || c = '$'
-    then 1
-    else if (c >= '0' && c <='9')
-    then 2
-    else 0
-  ) in
-  fun s ->
-    try
-      for i = 0 to String.length s - 1 do
-        let code = l.(Char.code(s.[i])) in
-        if i = 0 then assert (code = 1) else assert (code >= 1)
-      done;
-      true
-    with _ -> false
-
 let rec group_closures_rec closures req =
   match closures with
     [] ->
