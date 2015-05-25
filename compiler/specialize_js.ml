@@ -21,6 +21,7 @@
 
 open Code
 open Flow
+module Primitive = Jsoo_primitive
 
 let specialize_instr info i rem =
   match i with

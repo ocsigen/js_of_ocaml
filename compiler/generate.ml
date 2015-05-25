@@ -38,7 +38,8 @@ let times = Option.Debug.find "times"
 
 open Code
 open Util
-
+module Primitive = Jsoo_primitive
+module Subst = Jsoo_subst
 module J = Javascript
 
 (****)

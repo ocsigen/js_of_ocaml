@@ -19,7 +19,7 @@
 *)
 
 val parse_file : string ->
-  ((Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option) option * (* provide *)
+  ((Parse_info.t option * string * Jsoo_primitive.kind * Jsoo_primitive.kind_arg list option) option * (* provide *)
    string list * (* require *)
    ((int -> int -> bool) * string) list list * (* version constraint *)
    Javascript.program) list

@@ -19,7 +19,7 @@
  *)
 
 open Code
-
+module Primitive = Jsoo_primitive
 (****)
 
 let pure_expr pure_funs e =

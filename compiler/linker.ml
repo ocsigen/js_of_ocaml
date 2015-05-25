@@ -20,12 +20,13 @@
 
 
 open Util
+module Primitive = Jsoo_primitive
 
 let loc pi = match pi with
   | Some {Parse_info.src  = Some src; line}
   | Some {Parse_info.name = Some src; line} ->
      Printf.sprintf "%s:%d" src line
-  | None 
+  | None
   | Some _ -> "unknown location"
 
 let parse_annot loc s =
@@ -101,7 +102,7 @@ let parse_file f =
         let name = match pi with
           | {Parse_info.src  = Some x; _}
           | {Parse_info.name = Some x; _} -> x
-          | _ -> "??" in 
+          | _ -> "??" in
         error "cannot parse file %S (orig:%S from l:%d, c:%d)@."
           f name pi.Parse_info.line pi.Parse_info.col)
       lexs in

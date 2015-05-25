@@ -21,6 +21,8 @@
 let debug = Option.Debug.find "flow"
 let times = Option.Debug.find "times"
 
+module Subst = Jsoo_subst
+module Primitive = Jsoo_primitive
 open Code
 
 (****)

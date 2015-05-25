@@ -21,6 +21,7 @@
 let debug = Option.Debug.find "main"
 let times = Option.Debug.find "times"
 
+module Primitive = Jsoo_primitive
 open Util
 
 let tailcall p =
@@ -29,7 +30,7 @@ let tailcall p =
 
 let deadcode' p =
   if debug () then Format.eprintf "Dead-code...@.";
-  Deadcode.f p
+  Jsoo_deadcode.f p
 
 let deadcode p =
   let r,_ = deadcode' p

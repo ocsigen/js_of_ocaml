@@ -19,7 +19,7 @@
  *)
 
 let times = Option.Debug.find "times"
-
+module Subst = Jsoo_subst
 open Code
 
 (* FIX: it should be possible to deal with tail-recursion in exception
