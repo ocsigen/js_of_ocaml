@@ -1042,6 +1042,7 @@ class type document = object
   method execCommand : js_string t -> bool t -> js_string t opt -> unit meth
   method createRange : range t meth
   method readyState : js_string t readonly_prop
+  method getElementsByClassName : js_string t -> 'element Dom.nodeList t meth
 
   inherit eventTarget
 end
