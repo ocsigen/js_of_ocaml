@@ -2075,7 +2075,18 @@ let from_compilation_units ~includes:_ ~debug:_ l =
   List.iter (fun (compunit, code) -> Reloc.step1 reloc compunit code) l;
   List.iter (fun (compunit, code) -> Reloc.step2 reloc compunit code) l;
   let globals = Reloc.make_globals reloc in
-  let code = List.map (fun (_,c) -> Bytes.to_string c) l |> String.concat "" in
+  begin match Util.Version.v with
+    | `V3 ->
+      (* We fix the bytecode to replace max_int/min_int *)
+      List.iter (fun (u,code) ->
+        if u.Cmo_format.cu_name = "Pervasives" then begin
+          fix_min_max_int code
+        end) l
+    | `V4_02 -> ()
+  end;
+  let code =
+    let l = List.map (fun (_,c) -> Bytes.to_string c) l in
+    String.concat "" l in
   let debug_data = Debug.no_data () in
   let prog = parse_bytecode code globals debug_data in
   let gdata = Var.fresh () in
