@@ -2057,6 +2057,14 @@ module Reloc = struct
     Hashtbl.iter (fun name i ->
       globals.named_value.(i) <- Some name;
     ) t.names;
+    (* Initialize module override mechanism *)
+    List.iter (fun (name, v) ->
+      try
+        let i = Hashtbl.find t.names name in
+        globals.override.(i) <- Some v;
+        if debug_parser () then Format.eprintf "overriding global %s@." name
+      with Not_found -> ()
+    ) override_global;
     globals
 
 
