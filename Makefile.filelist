@@ -58,6 +58,7 @@ OTHERS := runtime/runtime.js runtime/weak.js \
           runtime/dynlink.js \
           runtime/graphics.js \
           runtime/nat.js \
+          runtime/predefined_exceptions.js
 
 COMP_INTF := compiler/compiler.cmi
 COMP_IMPL := compiler/compiler.cma

@@ -22,6 +22,7 @@ type profile
 
 val f :
   ?standalone:bool ->
+  ?wrap_with_fun:bool ->
   ?profile:profile ->
   ?toplevel:bool ->
   ?linkall:bool ->

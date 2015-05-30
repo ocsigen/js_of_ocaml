@@ -271,7 +271,7 @@ module MagicNumber = struct
 
   let size = 12
 
-  let _kind_of_string = function
+  let kind_of_string = function
     | "Caml1999X" -> "exe"
     | "Caml1999I" -> "cmi"
     | "Caml1999O" -> "cmo"
@@ -290,8 +290,16 @@ module MagicNumber = struct
       then raise Not_found;
       let kind = String.sub s 0 9 in
       let v = String.sub s 9 3 in
+      let _ = kind_of_string kind in
       kind, int_of_string v
     with _ -> raise (Bad_magic_number s)
+
+  let kind (s,_) =
+    match kind_of_string s with
+    | "exe" -> `Exe
+    | "cmo" -> `Cmo
+    | "cma" -> `Cma
+    | other -> `Other other
 
   let to_string (k,v) = Printf.sprintf "%s%03d" k v
 
@@ -299,20 +307,23 @@ module MagicNumber = struct
     if p1 <> p2 then raise Not_found;
     compare n1 n2
 
-  let current =
+  let current_exe =
     let v = match Version.v with
       | `V3 -> 8
       | `V4_02 -> 11 in
     ("Caml1999X",v)
 
-  let assert_current h': unit =
-    let (t',v') as h = of_string h' in
-    let t,v = current in
-    if t <> t'
-    then raise_ (Bad_magic_number h')
-    else if v <> v'
-    then raise_ (Bad_magic_version h)
-    else ()
+  let current_cmo =
+    ("Caml1999O", 10)
+
+  let current_cma =
+    ("Caml1999A", 11)
+
+  let current = function
+    | `Exe -> current_exe
+    | `Cmo -> current_cmo
+    | `Cma -> current_cma
+
 end
 
 

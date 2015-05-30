@@ -341,7 +341,7 @@ let output formatter ?source_map js =
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Util.Timer.print t
 
-let pack ~standalone ?(toplevel=false) js =
+let pack ~wrap_with_fun ?(toplevel=false) js =
   let module J = Javascript in
   let t = Util.Timer.make () in
   if times ()
@@ -380,7 +380,7 @@ let pack ~standalone ?(toplevel=false) js =
         ], J.N), [], J.N) in
 
   let js =
-    if standalone then
+    if not wrap_with_fun then
       let f =
         J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js,
                 J.U) in
@@ -424,7 +424,7 @@ let configure formatter p =
 
 type profile = Code.program -> Code.program
 
-let f ?(standalone=true) ?(profile=o1) ?toplevel ?linkall ?source_map formatter d =
+let f ?(standalone=true) ?(wrap_with_fun=false) ?(profile=o1) ?toplevel ?linkall ?source_map formatter d =
   configure formatter >>
   profile >>
   deadcode' >>
@@ -432,7 +432,7 @@ let f ?(standalone=true) ?(profile=o1) ?toplevel ?linkall ?source_map formatter 
 
   link ~standalone ?linkall >>
 
-  pack ~standalone ?toplevel >>
+  pack ~wrap_with_fun ?toplevel >>
 
   coloring >>
 
@@ -442,7 +442,7 @@ let f ?(standalone=true) ?(profile=o1) ?toplevel ?linkall ?source_map formatter 
 
 let from_string prims s formatter =
   let (p,d) = Parse_bytecode.from_string prims s in
-  f ~standalone:false formatter d p
+  f ~standalone:false ~wrap_with_fun:true formatter d p
 
 
 let profiles = [1,o1;
