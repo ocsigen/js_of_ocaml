@@ -1953,31 +1953,6 @@ let from_bytes primitives (code : code) =
 let from_string primitives (code : string) =
   from_bytes primitives code
 
-let rec obj_of_const =
-  let open Lambda in
-  let open Asttypes in
-  function
-  | Const_base (Const_int i) -> Obj.repr i
-  | Const_base (Const_char c) -> Obj.repr c
-  | Const_base (Const_string (s,_)) -> Obj.repr s
-  | Const_base (Const_float s) -> Obj.repr (float_of_string s)
-  | Const_base (Const_int32 i) -> Obj.repr i
-  | Const_base (Const_int64 i) -> Obj.repr i
-  | Const_base (Const_nativeint i) -> Obj.repr i
-  | Const_immstring s -> Obj.repr s
-  | Const_float_array sl ->
-    List.map float_of_string sl
-    |> Array.of_list
-    |> Obj.repr
-  | Const_pointer i ->
-    Obj.repr i
-  | Const_block (tag,l) ->
-    let b = Obj.new_block tag (List.length l) in
-    List.iteri (fun i x ->
-      Obj.set_field b i (obj_of_const x)
-    ) l;
-    b
-
 module Reloc = struct
 
   let gen_patch_int buff pos n =
@@ -2005,7 +1980,7 @@ module Reloc = struct
     let open Cmo_format in
     List.iter (fun name -> Hashtbl.add t.primitives name (Hashtbl.length t.primitives)) compunit.cu_primitives;
     let slot_for_literal sc =
-      t.constants <- obj_of_const sc :: t.constants;
+      t.constants <- Util.obj_of_const sc :: t.constants;
       let pos = t.pos in
       t.pos <- succ t.pos;
       pos in
@@ -2047,7 +2022,7 @@ module Reloc = struct
     Hashtbl.iter (fun name i -> a.(i) <- name) t.primitives;
     a
 
-  let constants t = List.rev t.constants |> Array.of_list
+  let constants t = Array.of_list (List.rev t.constants)
 
   let make_globals t =
     let primitives = primitives t in

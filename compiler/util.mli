@@ -89,3 +89,5 @@ module MagicNumber : sig
   val current_cma : t
   val current : [ `Cmo | `Cma | `Exe ] -> t
 end
+
+val obj_of_const : Lambda.structured_constant -> Obj.t

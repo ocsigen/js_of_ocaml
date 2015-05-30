@@ -314,10 +314,16 @@ module MagicNumber = struct
     ("Caml1999X",v)
 
   let current_cmo =
-    ("Caml1999O", 10)
+    let v = match Version.v with
+      | `V3 -> 7
+      | `V4_02 -> 10 in
+    ("Caml1999O", v)
 
   let current_cma =
-    ("Caml1999A", 11)
+    let v = match Version.v with
+      | `V3 -> 8
+      | `V4_02 -> 11 in
+    ("Caml1999A", v)
 
   let current = function
     | `Exe -> current_exe
@@ -345,3 +351,31 @@ let normalize_argv ?(warn_=false) a =
     warn
       "[Warning] long options with a single '-' are now deprecated.\ Please use '--' for the following options: %s@." (String.concat ", " !bad);
   a
+
+let rec obj_of_const =
+  let open Lambda in
+  let open Asttypes in
+  function
+  | Const_base (Const_int i) -> Obj.repr i
+  | Const_base (Const_char c) -> Obj.repr c
+#if OCAML_VERSION < (4,02,0)
+  | Const_base (Const_string s) -> Obj.repr s
+#else
+  | Const_base (Const_string (s,_)) -> Obj.repr s
+#endif
+  | Const_base (Const_float s) -> Obj.repr (float_of_string s)
+  | Const_base (Const_int32 i) -> Obj.repr i
+  | Const_base (Const_int64 i) -> Obj.repr i
+  | Const_base (Const_nativeint i) -> Obj.repr i
+  | Const_immstring s -> Obj.repr s
+  | Const_float_array sl ->
+    let l = List.map float_of_string sl in
+    Obj.repr (Array.of_list l)
+  | Const_pointer i ->
+    Obj.repr i
+  | Const_block (tag,l) ->
+    let b = Obj.new_block tag (List.length l) in
+    List.iteri (fun i x ->
+      Obj.set_field b i (obj_of_const x)
+    ) l;
+    b
