@@ -29,6 +29,6 @@ end
 val from_channel :
   ?includes: string list ->
   ?toplevel:bool -> ?debug:[`Full | `Names | `No] -> in_channel ->
-  Code.program * Util.StringSet.t * Debug.data
+  Code.program * Util.StringSet.t * Debug.data * bool
 
 val from_string : string array -> string -> Code.program * Debug.data

@@ -93,7 +93,10 @@ var caml_global_data = [0];
 
 //Provides: caml_register_global(const,shallow)
 //Requires: caml_global_data
-function caml_register_global (n, v) { caml_global_data[n + 1] = v; }
+function caml_register_global (n, v, name_opt) {
+  caml_global_data[n + 1] = v;
+  if(name_opt) caml_global_data[name_opt] = v;
+}
 
 //Provides: caml_get_global_data mutable
 //Requires: caml_global_data

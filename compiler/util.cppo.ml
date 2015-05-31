@@ -271,7 +271,7 @@ module MagicNumber = struct
 
   let size = 12
 
-  let _kind_of_string = function
+  let kind_of_string = function
     | "Caml1999X" -> "exe"
     | "Caml1999I" -> "cmi"
     | "Caml1999O" -> "cmo"
@@ -290,8 +290,16 @@ module MagicNumber = struct
       then raise Not_found;
       let kind = String.sub s 0 9 in
       let v = String.sub s 9 3 in
+      let _ = kind_of_string kind in
       kind, int_of_string v
     with _ -> raise (Bad_magic_number s)
+
+  let kind (s,_) =
+    match kind_of_string s with
+    | "exe" -> `Exe
+    | "cmo" -> `Cmo
+    | "cma" -> `Cma
+    | other -> `Other other
 
   let to_string (k,v) = Printf.sprintf "%s%03d" k v
 
@@ -299,20 +307,29 @@ module MagicNumber = struct
     if p1 <> p2 then raise Not_found;
     compare n1 n2
 
-  let current =
+  let current_exe =
     let v = match Version.v with
       | `V3 -> 8
       | `V4_02 -> 11 in
     ("Caml1999X",v)
 
-  let assert_current h': unit =
-    let (t',v') as h = of_string h' in
-    let t,v = current in
-    if t <> t'
-    then raise_ (Bad_magic_number h')
-    else if v <> v'
-    then raise_ (Bad_magic_version h)
-    else ()
+  let current_cmo =
+    let v = match Version.v with
+      | `V3 -> 7
+      | `V4_02 -> 10 in
+    ("Caml1999O", v)
+
+  let current_cma =
+    let v = match Version.v with
+      | `V3 -> 8
+      | `V4_02 -> 11 in
+    ("Caml1999A", v)
+
+  let current = function
+    | `Exe -> current_exe
+    | `Cmo -> current_cmo
+    | `Cma -> current_cma
+
 end
 
 
@@ -334,3 +351,31 @@ let normalize_argv ?(warn_=false) a =
     warn
       "[Warning] long options with a single '-' are now deprecated.\ Please use '--' for the following options: %s@." (String.concat ", " !bad);
   a
+
+let rec obj_of_const =
+  let open Lambda in
+  let open Asttypes in
+  function
+  | Const_base (Const_int i) -> Obj.repr i
+  | Const_base (Const_char c) -> Obj.repr c
+#if OCAML_VERSION < (4,02,0)
+  | Const_base (Const_string s) -> Obj.repr s
+#else
+  | Const_base (Const_string (s,_)) -> Obj.repr s
+#endif
+  | Const_base (Const_float s) -> Obj.repr (float_of_string s)
+  | Const_base (Const_int32 i) -> Obj.repr i
+  | Const_base (Const_int64 i) -> Obj.repr i
+  | Const_base (Const_nativeint i) -> Obj.repr i
+  | Const_immstring s -> Obj.repr s
+  | Const_float_array sl ->
+    let l = List.map float_of_string sl in
+    Obj.repr (Array.of_list l)
+  | Const_pointer i ->
+    Obj.repr i
+  | Const_block (tag,l) ->
+    let b = Obj.new_block tag (List.length l) in
+    List.iteri (fun i x ->
+      Obj.set_field b i (obj_of_const x)
+    ) l;
+    b

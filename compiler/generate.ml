@@ -38,7 +38,8 @@ let times = Option.Debug.find "times"
 
 open Code
 open Util
-
+module Primitive = Jsoo_primitive
+module Subst = Jsoo_subst
 module J = Javascript
 
 (****)
@@ -896,24 +897,6 @@ let _ =
 
 let varset_disjoint s s' = not (VarSet.exists (fun x -> VarSet.mem x s') s)
 
-let is_ident =
-  let l = Array.init 256 (fun i ->
-    let c = Char.chr i in
-    if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c = '_' || c = '$'
-    then 1
-    else if (c >= '0' && c <='9')
-    then 2
-    else 0
-  ) in
-  fun s ->
-    try
-      for i = 0 to String.length s - 1 do
-        let code = l.(Char.code(s.[i])) in
-        if i = 0 then assert (code = 1) else assert (code >= 1)
-      done;
-      true
-    with _ -> false
-
 let rec group_closures_rec closures req =
   match closures with
     [] ->
@@ -1017,8 +1000,8 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
         let ((py, cy), queue) = access_queue' ~ctx queue y in
         (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
          or_p mutable_p (or_p px py), queue)
-      | Extern "caml_js_var", [Pc (String nm)]
-      | Extern ("caml_js_expr"|"caml_pure_js_expr"), [Pc (String nm)] ->
+      | Extern "caml_js_var", [Pc (String nm | IString nm)]
+      | Extern ("caml_js_expr"|"caml_pure_js_expr"), [Pc (String nm | IString nm)] ->
         begin
           try
             let lex = Parse_js.lexer_from_string nm in
@@ -1050,7 +1033,7 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
             l ([], mutator_p, queue)
         in
         (J.ECall (cf, args, loc), or_p pf prop, queue)
-      | Extern "%caml_js_opt_meth_call", Pv o :: Pc (String m) :: l ->
+      | Extern "%caml_js_opt_meth_call", Pv o :: Pc (String m | IString m) :: l ->
         let ((po, co), queue) = access_queue queue o in
         let (args, prop, queue) =
           List.fold_right
@@ -1072,18 +1055,18 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
         in
         (J.ENew (cc, if args = [] then None else Some args),
          or_p pc prop, queue)
-      | Extern "caml_js_get", [Pv o; Pc (String f)] ->
+      | Extern "caml_js_get", [Pv o; Pc (String f | IString f)] ->
         let ((po, co), queue) = access_queue queue o in
         (J.EDot (co, f), or_p po mutable_p, queue)
-      | Extern "caml_js_set", [Pv o; Pc (String f); v] ->
+      | Extern "caml_js_set", [Pv o; Pc (String f | IString f); v] ->
         let ((po, co), queue) = access_queue queue o in
         let ((pv, cv), queue) = access_queue' ~ctx queue v in
         (J.EBin (J.Eq, J.EDot (co, f), cv),
          or_p (or_p po pv) mutator_p, queue)
-      | Extern "caml_js_delete", [Pv o; Pc (String f)] ->
+      | Extern "caml_js_delete", [Pv o; Pc (String f | IString f)] ->
         let ((po, co), queue) = access_queue queue o in
         (J.EUn(J.Delete, J.EDot (co, f)), or_p po mutator_p, queue)
-      | Extern "%overrideMod", [Pc (String m);Pc (String f)] ->
+      | Extern "%overrideMod", [Pc (String m | IString m);Pc (String f | IString f)] ->
         s_var (Printf.sprintf "caml_%s_%s" m f), const_p,queue
       | Extern "%overrideMod", _ ->
         assert false
@@ -1092,7 +1075,7 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
           match l with
               [] ->
               (const_p, [], queue)
-            | Pc (String nm) :: x :: r ->
+            | Pc (String nm | IString nm) :: x :: r ->
               let ((prop, cx), queue) = access_queue' ~ctx queue x in
               let (prop', r', queue) = build_fields queue r in
               (or_p prop prop', (J.PNS nm, cx) :: r', queue)
@@ -1122,7 +1105,7 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
             | Some f -> f l queue ctx loc
             | None ->
               if name.[0] = '%'
-              then failwith (Printf.sprintf "Unresolved interal primitive: %s" name);
+              then failwith (Printf.sprintf "Unresolved internal primitive: %s" name);
               let prim = Share.get_prim s_var name ctx.Ctx.share in
               let prim_kind = kind (Primitive.kind name) in
               let (args, prop, queue) =

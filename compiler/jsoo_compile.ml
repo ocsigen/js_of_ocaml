@@ -75,15 +75,15 @@ let f {
     if source_map <> None || Option.Optim.debuginfo () then `Full else
     if Option.Optim.pretty () then `Names else `No
   in
-  let p, cmis, d =
+  let p, cmis, d, standalone =
     match input_file with
       None ->
         Parse_bytecode.from_channel ~includes:paths ~toplevel ~debug:need_debug stdin
     | Some f ->
         let ch = open_in_bin f in
-        let p,cmis,d = Parse_bytecode.from_channel ~includes:paths ~toplevel ~debug:need_debug ch in
+        let res = Parse_bytecode.from_channel ~includes:paths ~toplevel ~debug:need_debug ch in
         close_in ch;
-        p, cmis, d
+        res
   in
   let () =
     if source_map <> None &&  Parse_bytecode.Debug.is_empty d
@@ -107,7 +107,7 @@ let f {
     | None ->
       let p = PseudoFs.f p cmis fs_files paths in
       let fmt = Pretty_print.to_out_channel stdout in
-      Driver.f ?profile ~toplevel ~linkall ?source_map fmt d p
+      Driver.f ~standalone ?profile ~toplevel ~linkall ?source_map fmt d p
     | Some file ->
       gen_file file (fun chan ->
           let p =
@@ -115,13 +115,13 @@ let f {
             then PseudoFs.f p cmis fs_files paths
             else p in
           let fmt = Pretty_print.to_out_channel chan in
-          Driver.f ?profile ~toplevel ~linkall ?source_map fmt d p;
+          Driver.f ~standalone ?profile ~toplevel ~linkall ?source_map fmt d p;
         );
       Util.opt_iter (fun file ->
           gen_file file (fun chan ->
               let pfs = PseudoFs.f_empty cmis fs_files paths in
               let pfs_fmt = Pretty_print.to_out_channel chan in
-              Driver.f ?profile pfs_fmt d pfs
+              Driver.f ~standalone ?profile pfs_fmt d pfs
             )
         ) fs_output
   end;
@@ -144,21 +144,21 @@ let _ =
     prerr_string backtrace;
     exit 1
   | Util.MagicNumber.Bad_magic_number s ->
-    Format.eprintf "%s: Error: Not an ocaml executable bytecode@." Sys.argv.(0);
-    Format.eprintf "%s: Error: Invalid magic number %S, expecting %S@." Sys.argv.(0) s Util.MagicNumber.(to_string current);
+    Format.eprintf "%s: Error: Not an ocaml bytecode file@." Sys.argv.(0);
+    Format.eprintf "%s: Error: Invalid magic number %S@." Sys.argv.(0) s;
     exit 1
   | Util.MagicNumber.Bad_magic_version h ->
-    Format.eprintf "%s: Error: Bytecode version missmatch. Got version %S, expecting %S.@."
-      Sys.argv.(0)
-      Util.MagicNumber.(to_string h)
-      Util.MagicNumber.(to_string current);
+    Format.eprintf "%s: Error: Bytecode version missmatch.@." Sys.argv.(0);
+    let k = match Util.MagicNumber.kind h with
+      | (`Cmo | `Cma | `Exe as x) -> x
+      | `Other _ -> assert false in
     let comp =
-      if Util.MagicNumber.(compare h current) < 0
+      if Util.MagicNumber.compare h (Util.MagicNumber.current k) < 0
       then "an older"
       else "a newer" in
-    Format.eprintf "%s: Error: Your program and the js_of_ocaml compiler have to be compiled with the same version of ocaml.@." Sys.argv.(0);
+    Format.eprintf "%s: Error: Your ocaml bytecode and the js_of_ocaml compiler have to be compiled with the same version of ocaml.@." Sys.argv.(0);
     Format.eprintf "%s: Error: The Js_of_ocaml compiler has been compiled with ocaml version %s.@." Sys.argv.(0) Sys.ocaml_version;
-    Format.eprintf "%s: Error: Its seems that your program has been compiled with %s version of ocaml.@." Sys.argv.(0) comp;
+    Format.eprintf "%s: Error: Its seems that your ocaml bytecode has been compiled with %s version of ocaml.@." Sys.argv.(0) comp;
     exit 1
   | Failure s ->
     Format.eprintf "%s: Error: %s@." Sys.argv.(0) s;

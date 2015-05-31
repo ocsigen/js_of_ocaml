@@ -83,6 +83,11 @@ module MagicNumber : sig
   val compare : t -> t -> int
   val of_string : string -> t
   val to_string : t -> string
-  val current : t
-  val assert_current : string -> unit
+  val kind : t -> [ `Cmo | `Cma | `Exe | `Other of string]
+  val current_exe : t
+  val current_cmo : t
+  val current_cma : t
+  val current : [ `Cmo | `Cma | `Exe ] -> t
 end
+
+val obj_of_const : Lambda.structured_constant -> Obj.t

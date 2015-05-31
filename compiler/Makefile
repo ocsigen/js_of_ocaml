@@ -19,18 +19,18 @@ OBJS=compiler_version.cmx myfindlib.cmx \
      util.cmx pretty_print.cmx option.cmx reserved.cmx varPrinter.cmx \
      dgraph.cmx code.cmx javascript.cmx json.cmx vlq64.cmx source_map.cmx \
      js_output.cmx js_simpl.cmx parse_info.cmx js_token.cmx js_parser.cmx \
-     js_lexer.cmx parse_js.cmx primitive.cmx annot_parser.cmx annot_lexer.cmx \
-     instr.cmx subst.cmx pure_fun.cmx deadcode.cmx \
+     js_lexer.cmx parse_js.cmx jsoo_primitive.cmx annot_parser.cmx annot_lexer.cmx \
+     instr.cmx jsoo_subst.cmx pure_fun.cmx jsoo_deadcode.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
      js_traverse.cmx js_assign.cmx js_tailcall.cmx \
      linker.cmx parse_bytecode.cmx generate.cmx driver.cmx \
      pseudoFs.cmx
 
-COMPOBJS=$(OBJS) commonArg.cmx compileArg.cmx compile.cmx
+COMPOBJS=$(OBJS) commonArg.cmx compileArg.cmx jsoo_compile.cmx
 OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45
 OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
-$(COMPILER): compile.$(BEST)
+$(COMPILER): jsoo_compile.$(BEST)
 	mv -f $< $@
 
 $(MINIFIER): minify.$(BEST)
@@ -45,11 +45,11 @@ man/$(COMPILER).1: $(COMPILER)
 	mkdir -p man
 	./$(COMPILER) --help=groff >$@
 
-.INTERMEDIATE: compile.byte compile.opt minify.byte minify.opt
+.INTERMEDIATE: jsoo_compile.byte jsoo_compile.opt minify.byte minify.opt
 
-compile.byte: $(COMPOBJS:cmx=cmo)
+jsoo_compile.byte: $(COMPOBJS:cmx=cmo)
 	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
-compile.opt: $(COMPOBJS)
+jsoo_compile.opt: $(COMPOBJS)
 	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -g -o $@ $^
 
 minify.byte: $(OBJS:cmx=cmo) commonArg.cmo minifyArg.cmo minify.cmo
@@ -84,16 +84,16 @@ compiler_version.ml.tmp:
 	echo "let git_version = \"${VERSION_GIT}\"" >> $@
 
 %.cmx: %.ml
-	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -for-pack Compiler -g -c $<
+	$(OCAMLOPT) -I +compiler-libs $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -for-pack Compiler -g -c $<
 
 %.cmo: %.ml
-	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
+	$(OCAMLC) -I +compiler-libs $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 %.cmi: %.mli
-	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
+	$(OCAMLC) -I +compiler-libs $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 annot_parser.ml: annot_parser.mli
-annot_parser.mli: annot_parser.mly primitive.cmi
+annot_parser.mli: annot_parser.mly jsoo_primitive.cmi
 	menhir --infer --explain $<
 
 js_parser.ml: js_parser.mli
@@ -105,7 +105,7 @@ js_parser.mli: js_parser.mly javascript.cmi js_token.cmi
 clean:
 	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
 	rm -f lib/*.cm[aiox] lib/*.cmxa lib/*.cmxs lib/*.o lib/*.a
-	rm -f compile.opt compile.byte minify.opt minify.byte
+	rm -f *.opt *.byte
 	rm -f $(MINIFIER) $(COMPILER)
 	rm -f compiler_version.ml
 	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli

@@ -20,19 +20,20 @@
 
 open Code
 open Instr
-
+module Primitive = Jsoo_primitive
 let debug_parser = Option.Debug.find "parser"
 
 type code = string
 
 (* Copied from ocaml/typing/ident.ml *)
-module Ident = struct
-  type t = { stamp: int; name: string; mutable flags: int }
+module IdentTable = struct
+
   type 'a tbl =
-    | Empty
+      Empty
     | Node of 'a tbl * 'a data * 'a tbl * int
+
   and 'a data =
-    { ident: t;
+    { ident: Ident.t;
       data: 'a;
       previous: 'a data option }
 
@@ -42,11 +43,11 @@ module Ident = struct
       rem
     | Node (l, v, r, _) ->
       table_contents_rec sz l
-        ((sz - v.data, v.ident.name) :: table_contents_rec sz r rem)
+        ((sz - v.data, v.ident.Ident.name) :: table_contents_rec sz r rem)
 
   let table_contents sz t =
     List.sort (fun (i, _) (j, _) -> compare i j)
-      (table_contents_rec sz t [])
+      (table_contents_rec sz (Obj.magic (t : 'a Ident.tbl) : 'a tbl) [])
 end
 (* Copied from ocaml/utils/tbl.ml *)
 module Tbl = struct
@@ -74,6 +75,20 @@ module Tbl = struct
       fold f r (f v d (fold f l accu))
 end
 
+let predefined_exceptions =
+  [ 0, "Out_of_memory"
+  ; 1, "Sys_error"
+  ; 2, "Failure"
+  ; 3, "Invalid_argument"
+  ; 4, "End_of_file"
+  ; 5, "Division_by_zero"
+  ; 6, "Not_found"
+  ; 7, "Match_failure"
+  ; 8, "Stack_overflow"
+  ; 9, "Sys_blocked_io"
+  ; 10,"Assert_failure"
+  ; 11,"Undefined_recursive_module" ]
+
 (* Copied from ocaml/bytecomp/symtable.ml *)
 type 'a numtable =
   { num_cnt: int;
@@ -81,55 +96,6 @@ type 'a numtable =
 
 (* Read and manipulate debug section *)
 module Debug : sig
-
-  (* instruct.ml *)
-  type compilation_env =
-    { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
-      ce_heap: int Ident.tbl;  (* Structure of the heap-allocated env *)
-      ce_rec: int Ident.tbl }  (* Functions bound by the same let rec *)
-
-  (* lexing.ml *)
-  type position =
-    { pos_fname: string;
-      pos_lnum: int;
-      pos_bol: int;
-      pos_cnum: int }
-
-  (* location.ml *)
-  type location =
-    { loc_start: position;
-      loc_end: position;
-      loc_ghost: bool }
-
-  (* instruct.ml *)
-  type debug_event =
-    { mutable ev_pos: int;                (* Position in bytecode *)
-      ev_module: string;                  (* Name of defining module *)
-      ev_loc: location;                   (* Location in source file *)
-      ev_kind: debug_event_kind;          (* Before/after event *)
-      ev_info: debug_event_info;          (* Extra information *)
-      ev_typenv: unit;                    (* Typing environment *)
-      ev_typsubst: unit;                  (* Substitution over types *)
-      ev_compenv: compilation_env;        (* Compilation environment *)
-      ev_stacksize: int;                  (* Size of stack frame *)
-      ev_repr: debug_event_repr }         (* Position of the representative *)
-
-  and debug_event_kind =
-      Event_before
-    | Event_after of unit
-    | Event_pseudo
-
-  and debug_event_info =
-    | Event_function
-    | Event_return of int
-    | Event_other
-
-  and debug_event_repr =
-    | Event_none
-    | Event_parent of int ref
-    | Event_child of int ref
-
-
   type data
   val is_empty : data -> bool
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
@@ -139,53 +105,10 @@ module Debug : sig
   val paths : data -> string list
   val read : crcs:(string * string option) list -> includes:string list -> in_channel -> data
   val no_data : unit -> data
-  val fold : data -> (Code.addr -> debug_event -> 'a -> 'a) -> 'a -> 'a
+  val fold : data -> (Code.addr -> Instruct.debug_event -> 'a -> 'a) -> 'a -> 'a
 end = struct
 
-  type compilation_env =
-    { ce_stack: int Ident.tbl; (* Positions of variables in the stack *)
-      ce_heap: int Ident.tbl;  (* Structure of the heap-allocated env *)
-      ce_rec: int Ident.tbl }  (* Functions bound by the same let rec *)
-
-  type position =
-    { pos_fname: string;
-      pos_lnum: int;
-      pos_bol: int;
-      pos_cnum: int }
-
-  type location =
-    { loc_start: position;
-      loc_end: position;
-      loc_ghost: bool }
-
-  type debug_event =
-    { mutable ev_pos: int;                (* Position in bytecode *)
-      ev_module: string;                  (* Name of defining module *)
-      ev_loc: location;                   (* Location in source file *)
-      ev_kind: debug_event_kind;          (* Before/after event *)
-      ev_info: debug_event_info;          (* Extra information *)
-      ev_typenv: unit;                    (* Typing environment *)
-      ev_typsubst: unit;                  (* Substitution over types *)
-      ev_compenv: compilation_env;        (* Compilation environment *)
-      ev_stacksize: int;                  (* Size of stack frame *)
-      ev_repr: debug_event_repr }         (* Position of the representative *)
-
-  and debug_event_kind =
-    | Event_before
-    | Event_after of unit
-    | Event_pseudo
-
-  and debug_event_info =
-    | Event_function
-    | Event_return of int
-    | Event_other
-
-  and debug_event_repr =
-    | Event_none
-    | Event_parent of int ref
-    | Event_child of int ref
-
-
+  open Instruct
   type ml_unit = {
     name   : string;
     crc    : string option;
@@ -264,7 +187,7 @@ end = struct
   let find (events_by_pc,_) pc =
     try
       let ev = Hashtbl.find events_by_pc pc in
-      Ident.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
+      IdentTable.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
     with Not_found ->
       []
 
@@ -280,27 +203,29 @@ end = struct
               Hashtbl.find events_by_pc (pc + 3)
       in
       let loc = ev.ev_loc in
-      if loc.loc_ghost then None else
+      if loc.Location.loc_ghost then None else
         let pos =
-          if after then loc.loc_end else
-          if before then loc.loc_start else
-            match ev.ev_kind with Event_after _ -> loc.loc_end | _ -> loc.loc_start in
+          if after then loc.Location.loc_end else
+          if before then loc.Location.loc_start else
+            match ev.ev_kind with
+            | Event_after _ -> loc.Location.loc_end
+            | _ -> loc.Location.loc_start in
         let src =
-          let uname = Filename.(basename (chop_extension pos.pos_fname)) in
+          let uname = Filename.(basename (chop_extension pos.Lexing.pos_fname)) in
           try
             let unit = Hashtbl.find units uname in
             try Some (Util.absolute_path
-                        (Util.find_in_path unit.paths pos.pos_fname)) with
+                        (Util.find_in_path unit.paths pos.Lexing.pos_fname)) with
             | Not_found ->
               match unit.source with
               | Some x -> Some (Util.absolute_path x)
               | None   -> raise Not_found
-          with Not_found -> None (* Some (pos.pos_fname) *)
+          with Not_found -> None (* Some (pos.Lexing.pos_fname) *)
         in
-        Some {Parse_info.name = Some pos.pos_fname;
+        Some {Parse_info.name = Some pos.Lexing.pos_fname;
               src;
-              line=pos.pos_lnum - 1;
-              col=pos.pos_cnum - pos.pos_bol;
+              line=pos.Lexing.pos_lnum - 1;
+              col=pos.Lexing.pos_cnum - pos.Lexing.pos_bol;
               (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
               idx=0;
               fol=None}
@@ -454,6 +379,7 @@ type globals =
   { mutable vars : Var.t option array;
     mutable is_const : bool array;
     mutable is_exported : bool array;
+    mutable named_value :  string option array;
     mutable override : (Var.t -> Code.instr list -> (Var.t * Code.instr list)) option array;
     constants : Obj.t array;
     primitives : string array }
@@ -462,6 +388,7 @@ let make_globals size constants primitives =
   { vars = Array.make size None;
     is_const = Array.make size false;
     is_exported = Array.make size false;
+    named_value = Array.make size None;
     override = Array.make size None;
     constants = constants; primitives = primitives }
 
@@ -474,8 +401,8 @@ let resize_globals g size =
   g.vars <- resize_array g.vars size None;
   g.is_const <- resize_array g.is_const size false;
   g.is_exported <- resize_array g.is_exported size true;
+  g.named_value <- resize_array g.named_value size None;
   g.override <- resize_array g.override size None
-
 
 (* State of the VM *)
 module State = struct
@@ -657,10 +584,15 @@ let access_global g i =
 let register_global ?(force=false) g i rem =
   if force || g.is_exported.(i)
   then
+    let args =
+      match g.named_value.(i) with
+      | None -> []
+      | Some name -> [Pc (IString name)] in
     Let (Var.fresh (),
          Prim (Extern "caml_register_global",
-               [Pc (Int (Int32.of_int i)) ;
-                Pv (access_global g i)])) :: rem
+               (Pc (Int (Int32.of_int i)) ::
+                Pv (access_global g i) ::
+                args))) :: rem
   else rem
 
 let get_global state instrs i =
@@ -723,7 +655,18 @@ let rec compile_block blocks debug code pc state =
 and compile infos pc state instrs =
   if debug_parser () then State.print state;
   if pc = infos.limit then
-    (instrs, Branch (pc, State.stack_vars state), state)
+    begin
+      (* stop if we reach end_of_code (ie when compiling cmo) *)
+      if pc = String.length infos.code / 4
+      then begin
+        if debug_parser () then Format.eprintf "Stop@.";
+        (instrs, Stop, state)
+      end
+      else begin
+        if debug_parser () then Format.eprintf "Branch %d@." pc;
+        (instrs, Branch (pc, State.stack_vars state), state)
+      end
+    end
   else begin
     if debug_parser () then Format.eprintf "%4d " pc;
 
@@ -1776,7 +1719,6 @@ let parse_bytecode ?(debug=`No) code globals debug_data =
     then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks
     else blocks in
   compile_block blocks debug_data code 0 state;
-
   let blocks =
     AddrMap.mapi
       (fun _ (state, instr, last) ->
@@ -1869,8 +1811,6 @@ let read_toc ic =
   let pos_trailer = in_channel_length ic - 16 in
   seek_in ic pos_trailer;
   let num_sections = input_binary_int ic in
-  let header = really_input_string ic Util.MagicNumber.size in
-  Util.MagicNumber.assert_current header;
   seek_in ic (pos_trailer - 8 * num_sections);
   let section_table = ref [] in
   for _i = 1 to num_sections do
@@ -1880,7 +1820,7 @@ let read_toc ic =
   done;
   !section_table
 
-let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
+let exe_from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
 
   let toc = read_toc ic in
 
@@ -1949,17 +1889,16 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
   let p = parse_bytecode ~debug code globals debug_data in
 
   (* register predefined exception *)
-  let body = ref [] in
-  for i = 0 to 11 do (* see ocaml/byterun/fail.h *)
-    body := register_global ~force:true globals i !body;
+  let body = List.fold_left (fun body (i,_name) ->
+    let body = register_global ~force:true globals i body in
     globals.is_exported.(i) <- false;
-  done;
+    body) [] predefined_exceptions in
   let body = Util.array_fold_right_i (fun i _ l ->
     match globals.vars.(i) with
       Some x when globals.is_const.(i) ->
       let l = register_global globals i l in
       Let (x, Constant (Constants.parse globals.constants.(i))) :: l
-    | _ -> l) globals.constants !body in
+    | _ -> l) globals.constants body in
 
 
   let body =
@@ -1991,7 +1930,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
     if toplevel && Option.Optim.include_cmis ()
     then Tbl.fold (fun id _num acc ->
       if id.Ident.flags = 1
-      then Util.StringSet.add id.Ident.name acc
+      then Util.StringSet.add id.Ident.name  acc
       else acc) symbols.num_tbl Util.StringSet.empty
     else Util.StringSet.empty in
   prepend p body, cmis, debug_data
@@ -2013,3 +1952,184 @@ let from_bytes primitives (code : code) =
 
 let from_string primitives (code : string) =
   from_bytes primitives code
+
+module Reloc = struct
+
+  let gen_patch_int buff pos n =
+    Bytes.set buff (pos + 0) (Char.unsafe_chr n);
+    Bytes.set buff (pos + 1) (Char.unsafe_chr (n asr 8));
+    Bytes.set buff (pos + 2) (Char.unsafe_chr (n asr 16));
+    Bytes.set buff (pos + 3) (Char.unsafe_chr (n asr 24))
+
+  type t = {
+    mutable pos       : int;
+    mutable constants : Obj.t list;
+    names             : (string, int) Hashtbl.t;
+    primitives        : (string, int) Hashtbl.t;
+  }
+
+  let create () =
+    let constants = [] in
+    { pos = List.length constants;
+      constants;
+      names = Hashtbl.create 17;
+      primitives = Hashtbl.create 17
+    }
+
+  let step1 t compunit code =
+    let open Cmo_format in
+    List.iter (fun name -> Hashtbl.add t.primitives name (Hashtbl.length t.primitives)) compunit.cu_primitives;
+    let slot_for_literal sc =
+      t.constants <- Util.obj_of_const sc :: t.constants;
+      let pos = t.pos in
+      t.pos <- succ t.pos;
+      pos in
+    let num_of_prim name =
+      try Hashtbl.find t.primitives name with
+      | Not_found ->
+        let i = Hashtbl.length t.primitives in
+        Hashtbl.add t.primitives name i;
+        i in
+    List.iter (function
+      | (Reloc_literal sc, pos) ->
+        gen_patch_int code pos (slot_for_literal sc)
+      | (Reloc_primitive name, pos) ->
+        gen_patch_int code pos (num_of_prim name)
+      | _ -> ()) compunit.cu_reloc
+
+  let step2 t compunit code =
+    let open Cmo_format in
+    let next { Ident.name; _} =
+      try Hashtbl.find t.names name with
+      | Not_found ->
+        let x = t.pos in
+        t.pos <- succ t.pos;
+        Hashtbl.add t.names name x;
+        x in
+    let slot_for_getglobal id = next id in
+    let slot_for_setglobal id = next id in
+
+    List.iter (function
+      | (Reloc_getglobal id, pos) ->
+        gen_patch_int code pos (slot_for_getglobal id)
+      | (Reloc_setglobal id, pos) ->
+        gen_patch_int code pos (slot_for_setglobal id)
+      | _ -> ()) compunit.cu_reloc
+
+  let primitives t =
+    let l = Hashtbl.length t.primitives in
+    let a = Array.make l "" in
+    Hashtbl.iter (fun name i -> a.(i) <- name) t.primitives;
+    a
+
+  let constants t = Array.of_list (List.rev t.constants)
+
+  let make_globals t =
+    let primitives = primitives t in
+    let constants = constants t in
+    let globals = make_globals (Array.length constants) constants primitives in
+    resize_globals globals t.pos;
+    Hashtbl.iter (fun name i ->
+      globals.named_value.(i) <- Some name;
+    ) t.names;
+    (* Initialize module override mechanism *)
+    List.iter (fun (name, v) ->
+      try
+        let i = Hashtbl.find t.names name in
+        globals.override.(i) <- Some v;
+        if debug_parser () then Format.eprintf "overriding global %s@." name
+      with Not_found -> ()
+    ) override_global;
+    globals
+
+
+end
+
+let from_compilation_units ~includes:_ ~debug:_ l =
+  let reloc = Reloc.create () in
+  List.iter (fun (compunit, code) -> Reloc.step1 reloc compunit code) l;
+  List.iter (fun (compunit, code) -> Reloc.step2 reloc compunit code) l;
+  let globals = Reloc.make_globals reloc in
+  begin match Util.Version.v with
+    | `V3 ->
+      (* We fix the bytecode to replace max_int/min_int *)
+      List.iter (fun (u,code) ->
+        if u.Cmo_format.cu_name = "Pervasives" then begin
+          fix_min_max_int code
+        end) l
+    | `V4_02 -> ()
+  end;
+  let code =
+    let l = List.map (fun (_,c) -> Bytes.to_string c) l in
+    String.concat "" l in
+  let debug_data = Debug.no_data () in
+  let prog = parse_bytecode code globals debug_data in
+  let gdata = Var.fresh () in
+  let body = Util.array_fold_right_i (fun i var l ->
+    match var with
+    | Some x when globals.is_const.(i) ->
+      begin match globals.named_value.(i) with
+        | None ->
+          let l = register_global globals i l in
+          Let (x, Constant (Constants.parse globals.constants.(i))) :: l
+        | Some name ->
+          Let (x, Prim (Extern "caml_js_get",[Pv gdata; Pc (IString name)])) :: l
+      end
+    | _ -> l) globals.vars [] in
+  let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
+  prepend prog body,Util.StringSet.empty, debug_data
+
+let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
+  let format =
+    try
+      let header = really_input_string ic Util.MagicNumber.size in
+      `Pre (Util.MagicNumber.of_string header)
+    with _ ->
+      let pos_magic = in_channel_length ic - 12 in
+      seek_in ic pos_magic;
+      let header = really_input_string ic Util.MagicNumber.size in
+      `Post (Util.MagicNumber.of_string header)
+  in
+  match format with
+  | `Pre magic ->
+    begin match Util.MagicNumber.kind magic with
+      | `Cmo ->
+        if magic <> Util.MagicNumber.current_cmo
+        then raise Util.MagicNumber.(Bad_magic_version magic);
+        let compunit_pos = input_binary_int ic in
+        seek_in ic compunit_pos;
+        let compunit = (input_value ic : Cmo_format.compilation_unit) in
+        seek_in ic compunit.Cmo_format.cu_pos;
+        let code = Bytes.create compunit.Cmo_format.cu_codesize in
+        really_input ic code 0 compunit.Cmo_format.cu_codesize;
+        close_in ic;
+        let a,b,c = from_compilation_units ~includes ~debug [compunit, code] in
+        a,b,c,false
+      | `Cma ->
+        if magic <> Util.MagicNumber.current_cma
+        then raise Util.MagicNumber.(Bad_magic_version magic);
+        let pos_toc = input_binary_int ic in  (* Go to table of contents *)
+        seek_in ic pos_toc;
+        let lib = (input_value ic : Cmo_format.library) in
+        let units = List.map (fun compunit ->
+          seek_in ic compunit.Cmo_format.cu_pos;
+          let code = Bytes.create compunit.Cmo_format.cu_codesize in
+          really_input ic code 0 compunit.Cmo_format.cu_codesize;
+          compunit, code)
+          lib.Cmo_format.lib_units in
+        close_in ic;
+        let a,b,c = from_compilation_units ~includes ~debug units in
+        a,b,c,false
+      | _ ->
+        raise Util.MagicNumber.(Bad_magic_number (to_string magic))
+    end
+  | `Post magic ->
+    begin match Util.MagicNumber.kind magic with
+      | `Exe ->
+        if magic <> Util.MagicNumber.current_exe
+        then raise Util.MagicNumber.(Bad_magic_version magic);
+        let a,b,c = exe_from_channel ~includes ~toplevel ~debug ic in
+        a,b,c,true
+      | _ ->
+        raise Util.MagicNumber.(Bad_magic_number (to_string magic))
+    end

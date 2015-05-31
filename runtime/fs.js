@@ -22,11 +22,6 @@
 //Provides: caml_current_dir
 var caml_current_dir = "/";
 
-//Provides: caml_root_dir
-//Requires: MlDir
-var caml_root_dir = new MlDir();
-caml_root_dir.mk("",new MlDir());
-
 //Provides: MlDir
 function MlDir(){ this.content={};}
 MlDir.prototype = {
@@ -49,7 +44,10 @@ MlFile.prototype = {
   truncate:function(){ this.data = caml_create_string(0) }
 }
 
-
+//Provides: caml_root_dir
+//Requires: MlDir
+var caml_root_dir = new MlDir();
+caml_root_dir.mk("",new MlDir());
 
 //Provides: caml_sys_getcwd
 //Requires: caml_current_dir, caml_new_string
