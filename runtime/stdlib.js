@@ -125,13 +125,13 @@ function caml_raise_with_string (tag, msg) {
 //Provides: caml_raise_sys_error (const)
 //Requires: caml_raise_with_string, caml_global_data
 function caml_raise_sys_error (msg) {
-  caml_raise_with_string(caml_global_data[2], msg);
+  caml_raise_with_string(caml_global_data.Sys_error, msg);
 }
 
 //Provides: caml_failwith (const)
 //Requires: caml_raise_with_string, caml_global_data
 function caml_failwith (msg) {
-  caml_raise_with_string(caml_global_data[3], msg);
+  caml_raise_with_string(caml_global_data.Failure, msg);
 }
 //Provides: caml_wrap_exception const (const)
 //Requires: caml_global_data,caml_js_to_string,caml_named_value
@@ -142,42 +142,42 @@ function caml_wrap_exception(e) {
      && e instanceof joo_global_object.RangeError
      && e.message
      && e.message.match(/maximum call stack/i))
-    return [0,caml_global_data[9]];
+    return [0,caml_global_data.Stack_overflow];
   //Stack_overflow: firefox
   if(joo_global_object.InternalError
      && e instanceof joo_global_object.InternalError
      && e.message
      && e.message.match(/too much recursion/i))
-    return [0,caml_global_data[9]];
+    return [0,caml_global_data.Stack_overflow];
   //Wrap Error in Js.Error exception
   if(e instanceof joo_global_object.Error)
     return [0,caml_named_value("jsError"),e];
   //fallback: wrapped in Failure
-  return [0,caml_global_data[3],caml_js_to_string (String(e))];
+  return [0,caml_global_data.Failure,caml_js_to_string (String(e))];
 }
 
 //Provides: caml_invalid_argument (const)
 //Requires: caml_raise_with_string, caml_global_data
 function caml_invalid_argument (msg) {
-  caml_raise_with_string(caml_global_data[4], msg);
+  caml_raise_with_string(caml_global_data.Invalid_argument, msg);
 }
 
 //Provides: caml_raise_end_of_file
 //Requires: caml_raise_constant, caml_global_data
 function caml_raise_end_of_file () {
-  caml_raise_constant(caml_global_data[5]);
+  caml_raise_constant(caml_global_data.End_of_file);
 }
 
 //Provides: caml_raise_zero_divide
 //Requires: caml_raise_constant, caml_global_data
 function caml_raise_zero_divide () {
-  caml_raise_constant(caml_global_data[6]);
+  caml_raise_constant(caml_global_data.Division_by_zero);
 }
 
 //Provides: caml_raise_not_found
 //Requires: caml_raise_constant, caml_global_data
 function caml_raise_not_found () {
-  caml_raise_constant(caml_global_data[7]); }
+  caml_raise_constant(caml_global_data.Not_found); }
 
 
 //Provides: caml_array_bound_error

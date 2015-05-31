@@ -16,6 +16,5 @@ var predefined_exceptions =
 for(var i = 0; i < predefined_exceptions.length; i++){
   var info = predefined_exceptions[i];
   var exn = [248, caml_new_string(info.name), - info.index];
-  caml_global_data[info.index + 1] = exn;
-  caml_global_data[info.name] = exn;
+  caml_register_global(info.index, exn, info.name);
 }

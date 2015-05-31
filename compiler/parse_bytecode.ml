@@ -1889,7 +1889,8 @@ let exe_from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
   let p = parse_bytecode ~debug code globals debug_data in
 
   (* register predefined exception *)
-  let body = List.fold_left (fun body (i,_name) ->
+  let body = List.fold_left (fun body (i,name) ->
+    globals.named_value.(i) <- Some name;
     let body = register_global ~force:true globals i body in
     globals.is_exported.(i) <- false;
     body) [] predefined_exceptions in
