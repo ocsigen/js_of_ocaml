@@ -6,7 +6,7 @@ PACKAGES=cmdliner base64
 
 ifeq "${WITH_FINDLIB}" "YES"
 PACKAGES+= findlib
-FINDLIB_SUPPORT_OBJ=jsoo_findlib_support.cmx
+FINDLIB_SUPPORT_OBJ=jsoo_findlib_support_internal.cmx
 FINDLIB_SUPPORT=jsoo_findlib_support.cma \
                 jsoo_findlib_support.cmx \
                 jsoo_findlib_support.cmxa \
@@ -68,6 +68,8 @@ minify.opt: $(MINIOBJS:cmx=cmx)
 compiler.cmo: $(OBJS:cmx=cmo)
 	$(OCAMLC) -pack -o $@ $^
 
+compiler.cmi: compiler.cma
+
 compiler.cma: compiler.cmo
 	$(OCAMLC) -a -o $@ $^
 
@@ -80,6 +82,8 @@ compiler.cmxa: compiler.cmx
 compiler.cmxs: compiler.cmxa
 	$(OCAMLOPT) -shared -g -o $@ $^
 
+jsoo_findlib_support.cmo: compiler.cmi
+jsoo_findlib_support.cmx: compiler.cmi
 
 jsoo_findlib_support.cma: jsoo_findlib_support.cmo
 	$(OCAMLC) -a -o $@ $^

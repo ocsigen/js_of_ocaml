@@ -27,24 +27,24 @@ OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45
 OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
 
 %.byte: ../compiler/lib/compiler.cma ../compiler/jsoo_findlib_support.cma jsoo_common.cmo %.cmo
-	$(OCAMLC) -linkpkg -g $(SAFESTRING) \
+	$(OCAMLC) -linkpkg -linkall -g $(SAFESTRING) \
 	${addprefix -package , $(PACKAGES)} \
-	$^ -o $*.byte
+	$^ -o $@
 
 %.opt: ../compiler/lib/compiler.cmxa ../compiler/jsoo_findlib_support.cmxa jsoo_common.cmx %.cmx
-	$(OCAMLOPT) -linkpkg -g $(SAFESTRING) \
+	$(OCAMLOPT) -linkpkg -linkall -g $(SAFESTRING) \
 	${addprefix -package , $(PACKAGES)} \
-	$^ -o $*.opt
+	$^ -o $@
 
 %.cmo: %.ml
 	$(OCAMLC) -c -g $(SAFESTRING) \
 	${addprefix -package , $(PACKAGES)} \
-	-I ../compiler/lib/ $<
+	-I ../compiler/lib/ $< -o $@
 
 %.cmx: %.ml
 	$(OCAMLOPT) -c -g $(SAFESTRING) \
 	${addprefix -package , $(PACKAGES)} \
-	-I ../compiler/lib/ $<
+	-I ../compiler/lib/ $< -o $@
 
 clean:
 	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa] *.byte *.opt $(MKTOP) $(MKCMIS)

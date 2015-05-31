@@ -79,8 +79,8 @@ jsoo_deadcode.cmo : util.cmi pure_fun.cmi option.cmi code.cmi \
 jsoo_deadcode.cmx : util.cmx pure_fun.cmx option.cmx code.cmx \
     jsoo_deadcode.cmi
 jsoo_deadcode.cmi : code.cmi
-jsoo_findlib_support.cmo : util.cmi
-jsoo_findlib_support.cmx : util.cmx
+jsoo_findlib_support_internal.cmo : util.cmi
+jsoo_findlib_support_internal.cmx : util.cmx
 jsoo_primitive.cmo : util.cmi parse_info.cmi jsoo_primitive.cmi
 jsoo_primitive.cmx : util.cmx parse_info.cmx jsoo_primitive.cmi
 jsoo_primitive.cmi : util.cmi parse_info.cmi
