@@ -5,6 +5,8 @@ ifeq "${WITH_TOPLEVEL}${WITH_FINDLIB}" "YESYES"
 ALL= $(MKTOP) $(MKCMIS)
 endif
 
+PACKAGES=base64 compiler-libs.common findlib
+
 all: $(ALL)
 
 $(MKTOP): jsoo_mktop.$(BEST)
@@ -24,24 +26,24 @@ jsoo_common.cmo jsoo_common.cmx: ../compiler/lib/compiler.cmi
 OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45
 OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
 
-%.byte: ../compiler/lib/compiler.cma jsoo_common.cmo %.cmo
+%.byte: ../compiler/lib/compiler.cma ../compiler/jsoo_findlib_support.cma jsoo_common.cmo %.cmo
 	$(OCAMLC) -linkpkg -g $(SAFESTRING) \
-	-package base64,compiler-libs.common,findlib \
+	${addprefix -package , $(PACKAGES)} \
 	$^ -o $*.byte
 
-%.opt: ../compiler/lib/compiler.cmxa jsoo_common.cmx %.cmx
+%.opt: ../compiler/lib/compiler.cmxa ../compiler/jsoo_findlib_support.cmxa jsoo_common.cmx %.cmx
 	$(OCAMLOPT) -linkpkg -g $(SAFESTRING) \
-	-package base64,compiler-libs.common,findlib \
+	${addprefix -package , $(PACKAGES)} \
 	$^ -o $*.opt
 
 %.cmo: %.ml
 	$(OCAMLC) -c -g $(SAFESTRING) \
-	-package compiler-libs.common,findlib \
+	${addprefix -package , $(PACKAGES)} \
 	-I ../compiler/lib/ $<
 
 %.cmx: %.ml
 	$(OCAMLOPT) -c -g $(SAFESTRING) \
-	-package compiler-libs.common,findlib \
+	${addprefix -package , $(PACKAGES)} \
 	-I ../compiler/lib/ $<
 
 clean:
