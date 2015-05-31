@@ -38,6 +38,9 @@ type info = {
   info_possibly_mutable : bool array
 }
 
+let update_def {info_defs; _} x exp =
+  let idx = Code.Var.idx x in
+  info_defs.(idx) <- Expr exp
 
 let undefined = Phi VarSet.empty
 
@@ -201,11 +204,13 @@ let expr_escape st _x e =
       ()
   | Apply (_, l, _) ->
       List.iter (fun x -> block_escape st x) l
-  | Prim (prim, l) ->
-    let ka = match prim with
-      | Extern name -> Primitive.kind_args name
-      | _ -> None in
-    let ka = match ka with
+  | Prim ((Vectlength | Array_get
+          | Not | IsInt
+          | Eq | Neq | Lt | Le | Ult),
+          _ )->
+    ()
+  | Prim (Extern name, l) ->
+    let ka = match Primitive.kind_args name with
       | None -> []
       | Some l -> l in
     let rec loop args ka =

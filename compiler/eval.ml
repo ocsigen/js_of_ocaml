@@ -142,7 +142,9 @@ let eval_instr info i =
             if e1 = e2
             then 1l
             else 0l in
-          Let (x , Constant (Int c))
+          let c = Constant (Int c) in
+          Flow.update_def info x c;
+          Let (x, c)
         | _ -> i
       end
     | Let (x,Prim (Extern "caml_ml_string_length", [s])) ->
@@ -154,7 +156,10 @@ let eval_instr info i =
       in
       (match c with
         | None -> i
-        | Some c -> Let(x,Constant (Int c)))
+        | Some c ->
+          let c = Constant (Int c) in
+          Flow.update_def info x c;
+          Let(x,c))
     | Let (_, Prim (Extern
                       ("caml_array_unsafe_get"|"caml_array_unsafe_set"), _)) ->
         (* Fresh parameters can be introduced for these primitives
@@ -169,7 +174,10 @@ let eval_instr info i =
           then eval_prim (prim,List.map (function Some c -> c | None -> assert false) prim_args')
           else None in
         match res with
-          | Some c -> Let (x,Constant c)
+          | Some c ->
+            let c = Constant c in
+            Flow.update_def info x c;
+            Let (x,c)
           | _ -> Let(x, Prim(prim, (List.map2 (fun arg c ->
             match c with
               | Some ((Int _ | Float _) as c) -> Pc c
@@ -234,10 +242,11 @@ let f info (pc, blocks, free_pc) =
   let blocks =
     AddrMap.map
       (fun block ->
+         let body = List.map (eval_instr info) block.body in
+         let branch = eval_branch info block.branch in
          { block with
-           Code.body =
-             List.map (eval_instr info) block.body;
-           Code.branch = eval_branch info block.branch
+           Code.body;
+           Code.branch
          })
       blocks
   in

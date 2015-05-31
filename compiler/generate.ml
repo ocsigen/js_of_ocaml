@@ -234,6 +234,14 @@ let int32 n = J.ENum (Int32.to_float n)
 let unsigned x = J.EBin (J.Lsr,x,int 0)
 let one = int 1
 let zero = int 0
+let plus_int x y = match x, y with
+  | J.ENum 0., x
+  | x, J.ENum 0. -> x
+  | J.ENum x, J.ENum y ->
+    J.ENum (Int32.(to_float (add (of_float x) (of_float y))))
+  | x, y ->
+    J.EBin(J.Plus, x ,y)
+
 let bool e = J.ECond (e, one, zero)
 (*let boolnot e = J.ECond (e, zero, one)*)
 let val_float f = f (*J.EArr [Some (J.ENum 253.); Some f]*)
@@ -805,9 +813,9 @@ let _ =
       let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
       J.ECall (p, [J.EBin (J.Plus,str_js "",cx)], loc));
   register_bin_prim "caml_array_unsafe_get" `Mutable
-    (fun cx cy _ -> J.EAccess (cx, J.EBin (J.Plus, cy, one)));
+    (fun cx cy _ -> J.EAccess (cx, plus_int cy one));
   register_bin_prim "%int_add" `Pure
-    (fun cx cy _ -> to_int (J.EBin (J.Plus,cx,cy)));
+    (fun cx cy _ -> to_int (plus_int cx cy));
   register_bin_prim "%int_sub" `Pure
     (fun cx cy _ -> to_int (J.EBin (J.Minus,cx,cy)));
   register_bin_prim "%direct_int_mul" `Pure
@@ -856,7 +864,7 @@ let _ =
     (fun cx cy _ -> val_float (J.EBin (J.Mod, float_val cx, float_val cy)));
   register_tern_prim "caml_array_unsafe_set"
     (fun cx cy cz _ ->
-       J.EBin (J.Eq, J.EAccess (cx, J.EBin (J.Plus, cy, one)), cz));
+       J.EBin (J.Eq, J.EAccess (cx, plus_int cy one), cz));
   register_un_prim "caml_alloc_dummy" `Pure (fun _ _ -> J.EArr []);
   register_un_prim "caml_obj_dup" `Mutable
     (fun cx loc -> J.ECall (J.EDot (cx, "slice"), [], loc));
@@ -998,7 +1006,7 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
       | Array_get, [x; y] ->
         let ((px, cx), queue) = access_queue' ~ctx queue x in
         let ((py, cy), queue) = access_queue' ~ctx queue y in
-        (J.EAccess (cx, J.EBin (J.Plus, cy, one)),
+        (J.EAccess (cx, plus_int cy one),
          or_p mutable_p (or_p px py), queue)
       | Extern "caml_js_var", [Pc (String nm | IString nm)]
       | Extern ("caml_js_expr"|"caml_pure_js_expr"), [Pc (String nm | IString nm)] ->
@@ -1303,7 +1311,7 @@ and translate_instr ctx expr_queue loc instr =
             let ((_pz, cz), expr_queue) = access_queue expr_queue z in
             flush_queue expr_queue mutator_p
               [J.Expression_statement
-                  ((J.EBin (J.Eq, J.EAccess (cx, J.EBin(J.Plus, cy, one)),
+                  ((J.EBin (J.Eq, J.EAccess (cx, plus_int cy one),
                             cz))),
                loc]
       in

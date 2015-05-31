@@ -745,12 +745,15 @@ class simpl = object(m)
           EBin (Minus, e1, ENum (-. n))
         | _,ENum n when n < 0. ->
           EBin (Minus, e2, ENum (-. n))
+        | ENum 0., (ENum _ as x) -> x
+        | (ENum _ as x), ENum 0. -> x
         | _ -> e
       end
     | EBin (Minus,e1,e2) -> begin
         match e2,e1 with
         | ENum n,_  when n < 0. ->
           EBin (Plus, e1, ENum (-. n))
+        | (ENum _ as x), ENum 0. -> x
         | _ -> e
       end
     | _ -> e
