@@ -52,4 +52,7 @@ let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
 
 external file_content : string -> string = "caml_fs_file_content"
 
-let js_of_ocaml_version = Lib_version.s ^ "+" ^ Lib_version.git_version
+let js_of_ocaml_version =
+  if Lib_version.git_version = ""
+  then Lib_version.s
+  else Lib_version.s ^ "+" ^ Lib_version.git_version

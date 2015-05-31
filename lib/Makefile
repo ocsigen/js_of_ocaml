@@ -61,6 +61,8 @@ all: $(LIBNAME).cma log/logger.cma \
 	$(PPX_EX) $(PPX_LIB) $(PPX_LIB_NDL) \
 	META
 
+VERSION := $(shell head -n 1 ../VERSION)
+
 lib_version.ml: lib_version.ml.tmp
 	if cmp -s $^ $@; then rm $^; else mv $^ $@; fi
 

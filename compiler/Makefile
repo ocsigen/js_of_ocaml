@@ -82,8 +82,8 @@ compiler.cmxa: compiler.cmx
 compiler.cmxs: compiler.cmxa
 	$(OCAMLOPT) -shared -g -o $@ $^
 
-jsoo_findlib_support.cmo: compiler.cmi
-jsoo_findlib_support.cmx: compiler.cmi
+jsoo_findlib_support.cmo: compiler.cmo
+jsoo_findlib_support.cmx: compiler.cmx
 
 jsoo_findlib_support.cma: jsoo_findlib_support.cmo
 	$(OCAMLC) -a -o $@ $^
