@@ -17,14 +17,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* make ifdef else endif work *)
-#ifdef FINDLIB
-let findlib_init = lazy (Findlib.init ())
-let package_directory pkg =
-  Lazy.force findlib_init;
-  Findlib.package_directory pkg;;
-#endif
 
-#ifndef FINDLIB
-let package_directory _ = raise Not_found;;
-#endif
+let _ =
+  let findlib_init = lazy (Findlib.init ()) in
+  Util.set_find_pkg_dir (fun pkg ->
+    Lazy.force findlib_init;
+    Findlib.package_directory pkg)
+;;

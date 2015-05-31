@@ -34,8 +34,6 @@ lwt_js_events.cmx : lwt_js.cmx js.cmx firebug.cmx dom_html.cmx dom.cmx \
     lwt_js_events.cmi
 regexp.cmo : js.cmi regexp.cmi
 regexp.cmx : js.cmx regexp.cmi
-sys_js.cppo.cmo : js.cmi
-sys_js.cppo.cmx : js.cmx
 sys_js.cmo : js.cmi sys_js.cmi
 sys_js.cmx : js.cmx sys_js.cmi
 typed_array.cmo : js.cmi typed_array.cmi
@@ -100,10 +98,10 @@ tyxml/tyxml_cast.cmo : tyxml/tyxml_cast_sigs.cmi js.cmi dom.cmi \
     tyxml/tyxml_cast.cmi
 tyxml/tyxml_cast.cmx : tyxml/tyxml_cast_sigs.cmi js.cmx dom.cmx \
     tyxml/tyxml_cast.cmi
-tyxml/tyxml_js.cmo : tyxml/tyxml_cast.cmi js.cmi dom_html.cmi dom.cmi \
-    tyxml/tyxml_js.cmi
-tyxml/tyxml_js.cmx : tyxml/tyxml_cast.cmx js.cmx dom_html.cmx dom.cmx \
-    tyxml/tyxml_js.cmi
+tyxml/tyxml_js.cmo : tyxml/tyxml_cast.cmi js.cmi dom_svg.cmi dom_html.cmi \
+    dom.cmi tyxml/tyxml_js.cmi
+tyxml/tyxml_js.cmx : tyxml/tyxml_cast.cmx js.cmx dom_svg.cmx dom_html.cmx \
+    dom.cmx tyxml/tyxml_js.cmi
 tyxml/tyxml_cast.cmi : tyxml/tyxml_cast_sigs.cmi js.cmi dom.cmi
 tyxml/tyxml_cast_sigs.cmi : js.cmi dom_html.cmi dom.cmi
 tyxml/tyxml_js.cmi : tyxml/tyxml_cast_sigs.cmi js.cmi dom_html.cmi dom.cmi

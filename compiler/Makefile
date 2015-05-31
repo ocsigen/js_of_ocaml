@@ -3,11 +3,17 @@ include ../Makefile.conf
 
 PACKAGES=cmdliner base64
 
+
 ifeq "${WITH_FINDLIB}" "YES"
-PACKAGES+=findlib
+PACKAGES+= findlib
+FINDLIB_SUPPORT_OBJ=jsoo_findlib_support.cmx
+FINDLIB_SUPPORT=jsoo_findlib_support.cma \
+                jsoo_findlib_support.cmx \
+                jsoo_findlib_support.cmxa \
+                jsoo_findlib_support.cmxs
 endif
 
-all: $(COMPILER) $(MINIFIER) man
+all: $(COMPILER) $(MINIFIER) $(FINDLIB_SUPPORT) man
 
 compilerlib: lib/compiler.cma lib/compiler.cmxa lib/compiler.cmxs
 	cp compiler.cmi compiler.a lib/
@@ -15,7 +21,7 @@ compilerlib: lib/compiler.cma lib/compiler.cmxa lib/compiler.cmxs
 lib/%: %
 	cp $< $@
 
-OBJS=compiler_version.cmx myfindlib.cmx \
+OBJS=compiler_version.cmx \
      util.cmx pretty_print.cmx option.cmx reserved.cmx varPrinter.cmx \
      dgraph.cmx code.cmx javascript.cmx json.cmx vlq64.cmx source_map.cmx \
      js_output.cmx js_simpl.cmx parse_info.cmx js_token.cmx js_parser.cmx \
@@ -27,7 +33,8 @@ OBJS=compiler_version.cmx myfindlib.cmx \
      linker.cmx parse_bytecode.cmx generate.cmx driver.cmx \
      pseudoFs.cmx
 
-COMPOBJS=$(OBJS) commonArg.cmx compileArg.cmx jsoo_compile.cmx
+COMPOBJS=$(OBJS) $(FINDLIB_SUPPORT_OBJ) commonArg.cmx compileArg.cmx jsoo_compile.cmx
+MINIOBJS=$(OBJS) commonArg.cmx minifyArg.cmx minify.cmx
 OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45
 OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
 $(COMPILER): jsoo_compile.$(BEST)
@@ -52,9 +59,9 @@ jsoo_compile.byte: $(COMPOBJS:cmx=cmo)
 jsoo_compile.opt: $(COMPOBJS)
 	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -g -o $@ $^
 
-minify.byte: $(OBJS:cmx=cmo) commonArg.cmo minifyArg.cmo minify.cmo
+minify.byte: $(MINIOBJS:cmx=cmo)
 	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
-minify.opt: $(OBJS:cmx=cmx) commonArg.cmx minifyArg.cmx minify.cmx
+minify.opt: $(MINIOBJS:cmx=cmx)
 	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -g -o $@ $^
 
 
@@ -71,6 +78,16 @@ compiler.cmxa: compiler.cmx
 	$(OCAMLOPT) -a -o $@ $^
 
 compiler.cmxs: compiler.cmxa
+	$(OCAMLOPT) -shared -g -o $@ $^
+
+
+jsoo_findlib_support.cma: jsoo_findlib_support.cmo
+	$(OCAMLC) -a -o $@ $^
+
+jsoo_findlib_support.cmxa: jsoo_findlib_support.cmx
+	$(OCAMLOPT) -a -o $@ $^
+
+jsoo_findlib_support.cmxs: jsoo_findlib_support.cmxa
 	$(OCAMLOPT) -shared -g -o $@ $^
 
 VERSION := $(shell head -n 1 ../VERSION)
@@ -110,11 +127,11 @@ clean:
 	rm -f compiler_version.ml
 	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
-	rm -f myfindlib.ml
+	rm -f util.ml
 	rm -Rf man
 
 .PHONY: depend
-depend: compiler_version.ml annot_lexer.ml js_lexer.ml js_parser.ml annot_parser.ml myfindlib.ml
-	ocamldep *.ml *.mli > .depend
+depend: $(OBJS:cmx=mli) $(COMPOBJS:cmx=ml) $(MINIOBJS:cmx=ml)
+	echo $^ | xargs -n1 | sort -u | xargs ocamldep > .depend
 
 include .depend

@@ -65,6 +65,15 @@ COMP_IMPL := compiler/compiler.cma
 COMP_NAT_IMPL := compiler/compiler.cmxa compiler/compiler.a compiler/compiler.cmx
 COMP_NATDYN_IMPL := compiler/compiler.cmxs
 
+ifeq "${WITH_FINDLIB}" "YES"
+COMP_INTF += compiler/jsoo_findlib_support.cmi
+COMP_IMPL += compiler/jsoo_findlib_support.cma
+COMP_NAT_IMPL += compiler/jsoo_findlib_support.cmxa \
+                 compiler/jsoo_findlib_support.a \
+                 compiler/jsoo_findlib_support.cmx
+COMP_NATDYN_IMPL += compiler/jsoo_findlib_support.cmxs
+endif
+
 OCAMLBUILD_IMPL := ocamlbuild_js_of_ocaml.cma
 
 INTF += ocamlbuild/_build/ocamlbuild_js_of_ocaml.cmi

@@ -52,6 +52,4 @@ let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
 
 external file_content : string -> string = "caml_fs_file_content"
 
-(* The version string is found in file ../VERSION *)
-
-let js_of_ocaml_version = STRINGIFY(JSOO_VERSION)
+let js_of_ocaml_version = Lib_version.s ^ "+" ^ Lib_version.git_version

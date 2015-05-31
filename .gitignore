@@ -15,13 +15,15 @@
 
 # backup files
 *~
+*#
+.#*
 
 # Specific to Js_of_ocaml
 *.byte
 *.tmpjs
 *.map
 lib/stubs.c
-lib/sys_js.ml
+lib/lib_version.ml
 lib/toplevel/jsooTopError.ml
 lib/META
 runtime/runtime.js
@@ -50,7 +52,6 @@ compiler/annot_parser.ml
 compiler/annot_parser.mli
 compiler/*.conflicts
 compiler/lib/compier.*
-compiler/myfindlib.ml
 doc/api/html
 benchmarks/build
 benchmarks/results

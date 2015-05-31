@@ -34,7 +34,9 @@ let opt_filter p x =
 let quiet = ref false
 let warn fmt = Format.ksprintf (fun s -> if not !quiet then Format.eprintf "%s%!" s) fmt
 
-let find_pkg_dir pkg = try Myfindlib.package_directory pkg with _ -> raise Not_found
+let find_pkg_dir_ref = ref (fun _ -> raise Not_found)
+let set_find_pkg_dir f = find_pkg_dir_ref:=f
+let find_pkg_dir pkg = !find_pkg_dir_ref pkg
 
 let path_require_findlib path =
   if path <> "" && path.[0] = '+'

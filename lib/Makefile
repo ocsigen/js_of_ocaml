@@ -1,7 +1,7 @@
 MLOBJS= js.cmo dom.cmo typed_array.cmo dom_html.cmo dom_svg.cmo file.cmo dom_events.cmo firebug.cmo lwt_js.cmo sys_js.cmo regexp.cmo cSS.cmo url.cmo form.cmo xmlHttpRequest.cmo lwt_js_events.cmo json.cmo jsonp.cmo webGL.cmo webSockets.cmo keycode.cmo eventSource.cmo
 MLINTFS= $(MLOBJS:.cmo=.mli)
 COBJS= stubs$(OBJEXT)
-OBJS=$(MLOBJS) $(COBJS)
+OBJS=lib_version.cmo $(MLOBJS) $(COBJS)
 
 JSON_OBJS=$(addprefix deriving_json/,deriving_Json_lexer.cmo deriving_Json.cmo)
 
@@ -33,7 +33,7 @@ endif
 ifeq "${WITH_TOPLEVEL}" "YES"
 TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
-TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo 
+TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
 endif
 endif
 
@@ -60,6 +60,14 @@ all: $(LIBNAME).cma log/logger.cma \
 	${TYXML_CMA} \
 	$(PPX_EX) $(PPX_LIB) $(PPX_LIB_NDL) \
 	META
+
+lib_version.ml: lib_version.ml.tmp
+	if cmp -s $^ $@; then rm $^; else mv $^ $@; fi
+
+.PHONY: lib_version.ml.tmp
+lib_version.ml.tmp:
+	echo "let s = \"${VERSION}\"" > $@
+	echo "let git_version = \"${VERSION_GIT}\"" >> $@
 
 $(LIBNAME).cma: $(OBJS)
 	ocamlmklib -o $(LIBNAME) $(OBJS)
@@ -210,8 +218,8 @@ clean:
 	rm -f toplevel/*.cm[xioa] toplevel/*.[ao] toplevel/*.so toplevel/*.cmx[sa]
 	rm -f deriving_json/*.cm[xioa] deriving_json/*.[ao] deriving_json/*.so
 	rm -f deriving_json/deriving_Json_lexer.ml
-	rm -f stubs.c META
-	rm -f sys_js.ml
+	rm -f stubs.c
+	rm -f lib_version.ml
 	rm -f toplevel/jsooTopError.ml
 
 depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml toplevel/jsooTopError.ml ppx/ppx_js.ml
