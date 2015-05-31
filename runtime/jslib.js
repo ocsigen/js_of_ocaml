@@ -22,17 +22,17 @@
 //Provides: caml_js_pure_expr const
 function caml_js_pure_expr (f) { return f(); }
 
-//Provides: caml_js_set
+//Provides: caml_js_set (mutable, const, const)
 function caml_js_set(o,f,v) { o[f]=v;return 0}
-//Provides: caml_js_get mutable
+//Provides: caml_js_get mutable (const, const)
 function caml_js_get(o,f) { return o[f]; }
-//Provides: caml_js_delete
+//Provides: caml_js_delete (mutable, const)
 function caml_js_delete(o,f) { delete o[f]; return 0}
 
-//Provides: caml_js_instanceof
+//Provides: caml_js_instanceof (const, const)
 function caml_js_instanceof(o,c) { return o instanceof c; }
 
-//Provides: caml_js_typeof
+//Provides: caml_js_typeof (const)
 function caml_js_typeof(o) { return typeof o; }
 
 //Provides: caml_js_on_ie const
@@ -42,7 +42,7 @@ function caml_js_on_ie () {
   return ua.indexOf("MSIE") != -1 && ua.indexOf("Opera") != 0;
 }
 
-//Provides: caml_js_html_escape const
+//Provides: caml_js_html_escape const (const)
 var caml_js_regexps = { amp:/&/g, lt:/</g, quot:/\"/g, all:/[&<\"]/ };
 function caml_js_html_escape (s) {
   if (!caml_js_regexps.all.test(s)) return s;
@@ -51,7 +51,7 @@ function caml_js_html_escape (s) {
           .replace(caml_js_regexps.quot, "&quot;");
 }
 
-//Provides: caml_js_html_entities
+//Provides: caml_js_html_entities const (const)
 function caml_js_html_entities(s) {
     var str, temp = document.createElement('p');
     temp.innerHTML= s;
@@ -87,7 +87,7 @@ function caml_trampoline_return(f,args) {
   return {joo_tramp:f,joo_args:args};
 }
 
-//Provides: js_print_stdout
+//Provides: js_print_stdout (const)
 function js_print_stdout(s) {
   // Do not output the last \n if present
   // as console logging display a newline at the end
@@ -96,7 +96,7 @@ function js_print_stdout(s) {
   var v = joo_global_object.console;
   v  && v.log && v.log(s);
 }
-//Provides: js_print_stderr
+//Provides: js_print_stderr (const)
 function js_print_stderr(s) {
   // Do not output the last \n if present
   // as console logging display a newline at the end

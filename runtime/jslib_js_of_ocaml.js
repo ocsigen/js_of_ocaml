@@ -30,14 +30,14 @@ function caml_js_to_float(x) { return x; }
 //Provides: caml_js_from_string mutable
 //Requires: MlString
 function caml_js_from_string(s) { return s.toString(); }
-//Provides: caml_js_from_array mutable
+//Provides: caml_js_from_array mutable (shallow)
 //Requires: raw_array_sub
 function caml_js_from_array(a) { return raw_array_sub(a,1,a.length-1); }
-//Provides: caml_js_to_array mutable
+//Provides: caml_js_to_array mutable (shallow)
 //Requires: raw_array_cons
 function caml_js_to_array(a) { return raw_array_cons(a,0); }
 
-//Provides: caml_js_var mutable
+//Provides: caml_js_var mutable (const)
 //Requires: js_print_stderr
 //Requires: MlString
 function caml_js_var(x) {
@@ -49,19 +49,19 @@ function caml_js_var(x) {
   }
   return eval(x);
 }
-//Provides: caml_js_call
+//Provides: caml_js_call (const, mutable, shallow)
 //Requires: caml_js_from_array
 function caml_js_call(f, o, args) { return f.apply(o, caml_js_from_array(args)); }
-//Provides: caml_js_fun_call
+//Provides: caml_js_fun_call (const, shallow)
 //Requires: caml_js_from_array
 function caml_js_fun_call(f, args) { return f.apply(null, caml_js_from_array(args)); }
-//Provides: caml_js_meth_call
+//Provides: caml_js_meth_call (mutable, mutable, shallow)
 //Requires: MlString
 //Requires: caml_js_from_array
 function caml_js_meth_call(o, f, args) {
   return o[f.toString()].apply(o, caml_js_from_array(args));
 }
-//Provides: caml_js_new
+//Provides: caml_js_new (const, shallow)
 //Requires: caml_js_from_array
 function caml_js_new(c, a) {
   switch (a.length) {
@@ -125,7 +125,7 @@ function caml_pure_js_expr (s){
   js_print_stderr("caml_pure_js_expr: fallback to runtime evaluation");
   return eval(s.toString());}
 
-//Provides: caml_js_object
+//Provides: caml_js_object (shallow)
 //Requires: MlString
 function caml_js_object (a) {
   var o = {};
