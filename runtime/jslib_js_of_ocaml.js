@@ -19,15 +19,15 @@
 
 ///////////// Jslib: code specific to Js_of_ocaml
 
-//Provides: caml_js_from_bool const
+//Provides: caml_js_from_bool const (const)
 function caml_js_from_bool(x) { return !!x; }
-//Provides: caml_js_to_bool const
+//Provides: caml_js_to_bool const (const)
 function caml_js_to_bool(x) { return +x; }
-//Provides: caml_js_from_float const
+//Provides: caml_js_from_float const (const)
 function caml_js_from_float(x) { return x; }
-//Provides: caml_js_to_float const
+//Provides: caml_js_to_float const (const)
 function caml_js_to_float(x) { return x; }
-//Provides: caml_js_from_string mutable
+//Provides: caml_js_from_string mutable (const)
 //Requires: MlString
 function caml_js_from_string(s) { return s.toString(); }
 //Provides: caml_js_from_array mutable (shallow)
@@ -78,7 +78,7 @@ function caml_js_new(c, a) {
   F.prototype = c.prototype;
   return new F;
 }
-//Provides: caml_js_wrap_callback const
+//Provides: caml_js_wrap_callback const (const)
 //Requires: caml_call_gen,raw_array_copy
 function caml_js_wrap_callback(f) {
   return function () {
@@ -89,36 +89,36 @@ function caml_js_wrap_callback(f) {
     }
   }
 }
-//Provides: caml_js_wrap_meth_callback const
+//Provides: caml_js_wrap_meth_callback const (const)
 //Requires: caml_call_gen,raw_array_cons
 function caml_js_wrap_meth_callback(f) {
   return function () {
     return caml_call_gen(f,raw_array_cons(arguments,this));
   }
 }
-//Provides: caml_js_wrap_meth_callback_unsafe const
+//Provides: caml_js_wrap_meth_callback_unsafe const (const)
 //Requires: caml_call_gen,raw_array_cons
 function caml_js_wrap_meth_callback_unsafe(f) {
   return function () { f.apply(null, raw_array_cons(arguments,this)); }
 }
-//Provides: caml_js_equals mutable
+//Provides: caml_js_equals mutable (const, const)
 function caml_js_equals (x, y) { return +(x == y); }
 //Provides: caml_js_to_byte_string const
 //Requires: caml_new_string
 function caml_js_to_byte_string (s) {return caml_new_string (s);}
 
-//Provides: caml_js_eval_string
+//Provides: caml_js_eval_string (const)
 //Requires: MlString
 function caml_js_eval_string (s) {return eval(s.toString());}
 
-//Provides: caml_js_expr
+//Provides: caml_js_expr (const)
 //Requires: js_print_stderr
 //Requires: MlString
 function caml_js_expr(s) {
   js_print_stderr("caml_js_expr: fallback to runtime evaluation");
   return eval(s.toString());}
 
-//Provides: caml_pure_js_expr const
+//Provides: caml_pure_js_expr const (const)
 //Requires: js_print_stderr
 //Requires: MlString
 function caml_pure_js_expr (s){
