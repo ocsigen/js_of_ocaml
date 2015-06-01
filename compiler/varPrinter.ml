@@ -25,6 +25,7 @@ type t = {
   cache : (int*int,string) Hashtbl.t;
   mutable last : int;
   mutable pretty : bool;
+  mutable stable : bool;
 }
 
 let c1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
@@ -71,9 +72,11 @@ let rec format_ident x =
   else
     format_ident ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
 
-let format_var t _i x =
+let format_var t i x =
   let s = format_ident x in
-  if t.pretty
+  if t.stable
+  then Format.sprintf "v%d" i
+  else if t.pretty
   then Format.sprintf "_%s_" s
   else s
 
@@ -124,18 +127,19 @@ let rec to_string t ?origin i =
 
 
 let set_pretty t b = t.pretty <- b
-
+let set_stable t b = t.stable <- b
 
 let reset t =
   Hashtbl.clear t.names; Hashtbl.clear t.known; Hashtbl.clear t.cache;
   t.last <- -1
 
-let create ?(pretty=false) () =
+let create ?(pretty=false) ?(stable=false) () =
   let t = {
     names = Hashtbl.create 107;
     known = Hashtbl.create 1001;
     cache = Hashtbl.create 1001;
     last = -1;
     pretty;
+    stable;
   } in
   t

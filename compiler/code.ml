@@ -52,6 +52,7 @@ module Var : sig
 
   val reset : unit -> unit
   val set_pretty : bool -> unit
+  val set_stable : bool -> unit
 
   val dummy : t
 end = struct
@@ -84,6 +85,7 @@ end = struct
   let name i nm = VarPrinter.name printer i nm
   let propagate_name i j = VarPrinter.propagate_name printer i j
   let set_pretty b = VarPrinter.set_pretty printer b
+  let set_stable b = VarPrinter.set_stable printer b
 
   let fork o =
     let n = fresh () in

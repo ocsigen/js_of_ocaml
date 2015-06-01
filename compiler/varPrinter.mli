@@ -21,9 +21,10 @@ type t
 
 val add_reserved : string list -> unit
 val get_reserved : unit -> Util.StringSet.t
-val create : ?pretty:bool -> unit -> t
+val create : ?pretty:bool -> ?stable:bool -> unit -> t
 val reset : t -> unit
 val to_string : t -> ?origin:int -> int -> string
 val name : t -> int -> string -> unit
 val propagate_name : t -> int -> int -> unit
 val set_pretty : t -> bool -> unit
+val set_stable : t -> bool -> unit

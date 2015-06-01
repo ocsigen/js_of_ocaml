@@ -211,8 +211,11 @@ let expr_escape st _x e =
     ()
   | Prim (Extern name, l) ->
     let ka = match Primitive.kind_args name with
-      | None -> []
-      | Some l -> l in
+      | Some l -> l
+      | None -> match Primitive.kind name with
+        | `Mutable | `Mutator -> []
+        | `Pure -> List.map (fun _ -> `Const) l
+    in
     let rec loop args ka =
       match args,ka with
       | [], _ -> ()

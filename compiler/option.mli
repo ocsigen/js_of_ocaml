@@ -38,6 +38,7 @@ module Optim : sig
   val compact_vardecl : unit -> bool
   val debugger : unit -> bool
   val pretty : unit -> bool
+  val stable_var : unit -> bool
   val debuginfo : unit -> bool
   val excwrap : unit -> bool
   val include_cmis: unit -> bool

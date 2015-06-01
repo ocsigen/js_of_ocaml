@@ -82,6 +82,7 @@ module Optim = struct
       failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let pretty =     o ~name:"pretty" ~default:false
+  let stable_var = o ~name:"stable_var" ~default:false
   let debuginfo =  o ~name:"debuginfo" ~default:false
   let deadcode =   o ~name:"deadcode" ~default:true
   let shortvar =   o ~name:"shortvar" ~default:true
