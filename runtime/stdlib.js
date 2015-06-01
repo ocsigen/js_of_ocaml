@@ -75,7 +75,7 @@ function caml_call_gen(f, args) {
 //Provides: caml_named_values
 var caml_named_values = {};
 
-//Provides: caml_register_named_value
+//Provides: caml_register_named_value (const,const)
 //Requires: caml_named_values, caml_bytes_of_string
 function caml_register_named_value(nm,v) {
   caml_named_values[caml_bytes_of_string(nm)] = v;
@@ -551,7 +551,7 @@ function caml_finish_formatting(f, rawbuffer) {
   return caml_new_string (buffer);
 }
 
-//Provides: caml_format_int const
+//Provides: caml_format_int const (const, const)
 //Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
 //Requires: caml_new_string, caml_bytes_of_string
 function caml_format_int(fmt, i) {
