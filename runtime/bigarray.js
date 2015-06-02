@@ -498,6 +498,35 @@ function caml_ba_get_generic(ba, index) {
     return ba.get(caml_js_from_array(index));
 }
 
+//Provides: caml_ba_uint8_get16
+function caml_ba_uint8_get16(ba, i0) {
+    var b1 = ba.get1(i0);
+    var b2 = ba.get1(i0+1) << 8;
+    return (b1 | b2);
+}
+
+//Provides: caml_ba_uint8_get32
+function caml_ba_uint8_get32(ba, i0) {
+    var b1 = ba.get1(i0);
+    var b2 = ba.get1(i0+1) << 8;
+    var b3 = ba.get1(i0+2) << 16;
+    var b4 = ba.get1(i0+3) << 24;
+    return (b1 | b2 | b3 | b4);
+}
+
+//Provides: caml_ba_uint8_get64
+function caml_ba_uint8_get64(ba, i0) {
+    var b1 = ba.get1(i0);
+    var b2 = ba.get1(i0+1) << 8;
+    var b3 = ba.get1(i0+2) << 16;
+    var b4 = ba.get1(i0+3);
+    var b5 = ba.get1(i0+4) << 8;
+    var b6 = ba.get1(i0+5) << 16;
+    var b7 = ba.get1(i0+6);
+    var b8 = ba.get1(i0+7) << 8;
+    return [255, b1 | b2 | b3, b4 | b5 | b6, b7 | b8 ];
+}
+
 //Provides: caml_ba_get_1
 function caml_ba_get_1(ba, i0) {
     return ba.get1(i0);
@@ -517,6 +546,35 @@ function caml_ba_get_3(ba, i0, i1, i2) {
 //Requires: caml_js_from_array
 function caml_ba_set_generic(ba, index, v) {
     return ba.set(caml_js_from_array(index), v);
+}
+
+//Provides: caml_ba_uint8_set16
+function caml_ba_uint8_set16(ba, i0, v) {
+    ba.set1(i0, v & 0xff);
+    ba.set1(i0+1, (v >>> 8) & 0xff);
+    return 0;
+}
+
+//Provides: caml_ba_uint8_set32
+function caml_ba_uint8_set32(ba, i0, v) {
+    ba.set1(i0, v & 0xff);
+    ba.set1(i0+1, (v >>> 8) & 0xff);
+    ba.set1(i0+2, (v >>> 16) & 0xff);
+    ba.set1(i0+3, (v >>> 24) & 0xff);
+    return 0;
+}
+
+//Provides: caml_ba_uint8_set64
+function caml_ba_uint8_set64(ba, i0, v) {
+    ba.set1(i0, v[1] & 0xff);
+    ba.set1(i0+1, (v[1] >> 8) & 0xff);
+    ba.set1(i0+2, v[1] >> 16);
+    ba.set1(i0+3, v[2] & 0xff);
+    ba.set1(i0+4, (v[2] >> 8) & 0xff);
+    ba.set1(i0+5, v[2] >> 16);
+    ba.set1(i0+6, v[3] & 0xff);
+    ba.set1(i0+7, v[3] >> 8);
+    return 0;
 }
 
 //Provides: caml_ba_set_1
