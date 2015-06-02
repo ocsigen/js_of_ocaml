@@ -5,6 +5,10 @@ function bigstring_alloc(_,size){
   return caml_ba_create(12, 0, [0,size]);
 }
 
+// bigstring_blit_bigstring_string_stub
+// bigstring_blit_string_bigstring_stub
+// bigstring_blit_stub
+
 ///////// CORE_KERNEL
 //Provides: int_math_int_pow_stub
 function int_math_int_pow_stub(base, exponent){
@@ -171,12 +175,6 @@ function bin_prot_blit_string_buf_stub (v_src_pos, v_str, v_dst_pos, v_buf, v_le
   return 0
 }
 
-// bigstring_blit_bigstring_string_stub
-// bigstring_blit_string_bigstring_stub
-// bigstring_blit_stub
-// caml_ba_uint8_get16
-// caml_ba_uint8_get64
-// caml_ba_uint8_set16
-// caml_ba_uint8_set64
 // caml_bswap16
+// caml_int32_bswap
 // caml_int64_bswap
