@@ -279,6 +279,15 @@ function caml_make_vect (len, init) {
   return b;
 }
 
+//Provides: caml_make_float_vect const (const)
+function caml_make_float_vect(len){
+  var len = len + 1 | 0;
+  var b = new Array(len);
+  b[0]=254;
+  for (var i = 1; i < len; i++) b[i] = 0;
+  return b
+}
+
 //Provides: caml_compare_val (const, const, const)
 //Requires: MlString, caml_int64_compare, caml_int_compare, caml_string_compare
 //Requires: caml_invalid_argument
@@ -1001,3 +1010,7 @@ function caml_install_signal_handler(){return 0}
 function caml_convert_raw_backtrace_slot(){
   caml_failwith("caml_convert_raw_backtrace_slot");
 }
+
+// caml_bswap16
+// caml_int32_bswap
+// caml_int64_bswap
