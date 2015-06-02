@@ -1,14 +1,3 @@
-///////// BIGSTRING
-//Provides: bigstring_alloc
-//Requires: caml_ba_create
-function bigstring_alloc(_,size){
-  return caml_ba_create(12, 0, [0,size]);
-}
-
-// bigstring_blit_bigstring_string_stub
-// bigstring_blit_string_bigstring_stub
-// bigstring_blit_stub
-
 ///////// CORE_KERNEL
 //Provides: int_math_int_pow_stub
 function int_math_int_pow_stub(base, exponent){
@@ -41,13 +30,6 @@ function int_math_int64_pow_stub(base, exponent){
   return res;
 }
 
-//Provides: caml_make_float_vect
-function caml_make_float_vect(len){
-  var len = len + 1 | 0;
-  var b = new Array(len);
-  b[0]=254;
-  return b
-}
 //Provides: caml_hash_string
 //Requires: caml_hash
 function caml_hash_string(s) {
@@ -122,59 +104,3 @@ function caml_gc_stat() {
 //Provides: clear_caml_backtrace_pos
 function clear_caml_backtrace_pos () { return 0 }
 
-///////// BIN_PROT
-//Provides: bin_prot_get_float_offset
-//Requires: caml_float_of_bytes, caml_ba_get_1
-function bin_prot_get_float_offset(a,p){
-  var t = new Array(8);;
-  for (var i = 0;i < 8;i++) t[i] = caml_ba_get_1(a,p++);
-  var v = caml_float_of_bytes (t);
-  return [254,v];
-}
-
-
-//Provides: bin_prot_blit_buf_float_array_stub
-//Requires: caml_array_set, caml_ba_get_1
-function bin_prot_blit_buf_float_array_stub(v_src_pos, v_buf, v_dst_pos, v_arr, v_len){
-  var c;
-  var t = new Array(8);;
-  for(var i = 0; i < v_len; i++){
-    for (var j = 0;j < 8;j++) t[j] = caml_ba_get_1(v_buf,v_src_pos+j+(i*8));
-    caml_array_set(v_arr,v_dst_pos+i,c);
-  }
-  return 0
-}
-//Provides: bin_prot_blit_buf_string_stub
-//Requires: caml_ba_get_1, caml_string_unsafe_set
-function bin_prot_blit_buf_string_stub(v_src_pos, v_buf, v_dst_pos, v_str, v_len){
-  var c;
-  for(var i = 0; i < v_len; i++){
-    c = caml_ba_get_1(v_buf,v_src_pos+i);
-    caml_string_unsafe_set(v_str,v_dst_pos+i,c);
-  }
-  return 0
-}
-//Provides: bin_prot_blit_float_array_buf_stub
-//Requires: caml_array_get, caml_ba_set_1
-function bin_prot_blit_float_array_buf_stub(v_src_pos, v_arr, v_dst_pos, v_buf, v_len){
-  var c;
-  for(var i = 0; i < v_len; i++){
-    c = caml_array_get(v_arr,v_src_pos+i);
-    for (var j = 0;j < 8;j++) caml_ba_set_1(v_buf,v_dst_pos+j+(i*8));
-  }
-  return 0
-}
-//Provides: bin_prot_blit_string_buf_stub
-//Requires: caml_string_unsafe_get, caml_ba_set_1
-function bin_prot_blit_string_buf_stub (v_src_pos, v_str, v_dst_pos, v_buf, v_len){
-  var c;
-  for(var i = 0; i < v_len; i++){
-    c = caml_string_unsafe_get(v_str,v_src_pos+i);
-    caml_ba_set_1(v_buf,v_dst_pos+i,c);
-  }
-  return 0
-}
-
-// caml_bswap16
-// caml_int32_bswap
-// caml_int64_bswap
