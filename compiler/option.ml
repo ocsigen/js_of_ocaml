@@ -27,6 +27,9 @@ let extra_js_files =
   ; "+toplevel.js"
   ; "+nat.js"
   ; "+dynlink.js"
+  ; "+core_kernel.js"
+  ; "+bin_prot.js"
+  ; "+bigstring.js"
   ]
 
 (* Optimisation *)
