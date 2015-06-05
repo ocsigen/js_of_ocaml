@@ -326,7 +326,7 @@ let the_def_of info x =
         (fun x ->
            match info.info_defs.(Var.idx x) with
            | Expr (Const _ as e) -> Some e
-           | Expr (Constant (Float _| Int _) as e) -> Some e
+           | Expr (Constant (Float _| Int _ | IString _ ) as e) -> Some e
            | Expr e ->
              if info.info_possibly_mutable.(Var.idx x)
              then None
@@ -342,7 +342,7 @@ let the_const_of info x =
       (fun x ->
          match info.info_defs.(Var.idx x) with
          | Expr (Const i) -> Some (Int i)
-         | Expr (Constant ((Float _| Int _) as c)) -> Some c
+         | Expr (Constant ((Float _| Int _ | IString _) as c)) -> Some c
          | Expr (Constant c) ->
            if info.info_possibly_mutable.(Var.idx x)
            then None
@@ -361,7 +361,7 @@ let the_int info x =
 
 let the_string_of info x =
   match the_const_of info x with
-  | Some (String i) -> Some i
+  | Some (String i | IString i) -> Some i
   | _ -> None
 
 (*XXX Maybe we could iterate? *)
