@@ -324,8 +324,14 @@ let the_def_of info x =
     | Pv x ->
       get_approx info
         (fun x ->
-           if info.info_possibly_mutable.(Var.idx x) then None else
-           match info.info_defs.(Var.idx x) with Expr e -> Some e | _ -> None)
+           match info.info_defs.(Var.idx x) with
+           | Expr (Const _ as e) -> Some e
+           | Expr (Constant (Float _| Int _) as e) -> Some e
+           | Expr e ->
+             if info.info_possibly_mutable.(Var.idx x)
+             then None
+             else Some e
+           | _ -> None)
         None (fun _ _ -> None) x
     | Pc c -> Some (Constant c)
 
@@ -334,10 +340,13 @@ let the_const_of info x =
   | Pv x ->
     get_approx info
       (fun x ->
-         if info.info_possibly_mutable.(Var.idx x) then None else
          match info.info_defs.(Var.idx x) with
          | Expr (Const i) -> Some (Int i)
-         | Expr (Constant c) -> Some c
+         | Expr (Constant ((Float _| Int _) as c)) -> Some c
+         | Expr (Constant c) ->
+           if info.info_possibly_mutable.(Var.idx x)
+           then None
+           else Some c
          | _ -> None)
       None
       (fun u v -> match u, v with Some i, Some j when i = j -> u | _ -> None)
