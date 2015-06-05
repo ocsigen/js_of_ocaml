@@ -163,7 +163,10 @@ module Share = struct
     let count = List.fold_left (fun acc x ->
         add_special_prim_if_exists x acc)
         count
-        ["caml_trampoline";"caml_trampoline_return";"caml_wrap_exception"] in
+        ["caml_trampoline";
+         "caml_trampoline_return";
+         "caml_wrap_exception";
+         "caml_list_of_js_array"] in
     {count; vars = empty_aux; alias_strings; alias_prims; alias_apply}
 
   let get_string gen s t =
@@ -314,7 +317,25 @@ let rec constant_rec ~ctx x level instrs =
               Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))],
       instrs
   | Tuple (tag, a) ->
-      let split = level = Option.Param.constant_max_depth () in
+      let constant_max_depth = Option.Param.constant_max_depth () in
+      let rec detect_list n acc = function
+        | Tuple (0, [|x; l|]) -> detect_list (succ n) (x::acc) l
+        | Int 0l ->
+          if n > constant_max_depth
+          then Some acc
+          else None
+        | x -> None in
+      begin match detect_list 0 [] x with
+      | Some elts_rev ->
+        let arr,instrs =
+          List.fold_left (fun (arr,instrs) elt ->
+          let (js, instrs) = constant_rec ~ctx elt level instrs in
+          (Some js)::arr, instrs) ([], instrs) elts_rev
+        in
+        let p = Share.get_prim s_var "caml_list_of_js_array" ctx.Ctx.share in
+        J.ECall (p,[J.EArr arr],J.N), instrs
+      | None ->
+      let split = level = constant_max_depth in
       let level = if split then 0 else level + 1 in
       let (l, instrs) =
         List.fold_left
@@ -342,6 +363,7 @@ let rec constant_rec ~ctx x level instrs =
           List.rev_map (fun x -> Some x) l, instrs
       in
       J.EArr (Some (int tag) :: l), instrs
+    end
   | Int i-> int32 i, instrs
 
 let constant ~ctx x level =

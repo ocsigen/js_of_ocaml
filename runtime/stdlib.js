@@ -1037,5 +1037,12 @@ function caml_int64_bswap(x) {
      ((x[1] & 0x000000ff) << 8))]
 }
 
-
-
+//Provides: caml_list_of_js_array const (const)
+function caml_list_of_js_array(a){
+  var l = 0;
+  for(var i=a.length - 1; i>=0; i--){
+    var e = a[i];
+    l = [0,e,l];
+  }
+  return l
+}
