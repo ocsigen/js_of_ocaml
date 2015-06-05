@@ -272,11 +272,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
            else StringMap.add lab loc acc) StringMap.empty fields in
 
     let create_method_type = function
-      | `Val {val_label=(label,_loc); val_mutabl=true; val_typ} ->
+      | `Val {val_label=(label,_loc); val_mutabl=true; val_typ; _} ->
 	 <:ctyp< $lid:label$ : ( $js_t_id _loc "prop"$ $val_typ$) >>
-      | `Val {val_label=(label,_loc); val_mutabl=false; val_typ} ->
+      | `Val {val_label=(label,_loc); val_mutabl=false; val_typ; _} ->
 	 <:ctyp< $lid:label$ : ($js_t_id _loc "readonly_prop"$ $val_typ$) >>
-      | `Meth {meth_label=(label,_loc); meth_fun_typ; meth_ret_typ} ->
+      | `Meth {meth_label=(label,_loc); meth_fun_typ; meth_ret_typ; _} ->
 	 let all = arrows _loc meth_fun_typ <:ctyp< $js_t_id _loc "meth"$ $meth_ret_typ$ >> in
 	 <:ctyp< $lid:label$ : $all$ >>
     in
@@ -284,10 +284,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     let obj_type = <:ctyp< < $list:List.map create_method_type fields$  > >> in
 
     let create_value = function
-      | `Val {val_label=(lab,_loc); val_body=(e,_);val_typ} ->
+      | `Val {val_label=(lab,_loc); val_body=(e,_);val_typ; _} ->
 	 <:expr< ($str:lab$,
           $js_u_id _loc "inject"$ $with_type e val_typ$) >>
-      | `Meth {meth_label=(lab,_loc); meth_body=(e,_);meth_fun_typ; meth_ret_typ} ->
+      | `Meth {meth_label=(lab,_loc); meth_body=(e,_);meth_fun_typ; meth_ret_typ; _} ->
 	 let all = arrows _loc meth_fun_typ meth_ret_typ in
 	 let typ = <:ctyp< $js_t_id _loc "meth_callback"$ $self_typ$ $all$ >> in
          let e,wrapper = match self with
