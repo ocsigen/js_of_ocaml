@@ -1011,6 +1011,31 @@ function caml_convert_raw_backtrace_slot(){
   caml_failwith("caml_convert_raw_backtrace_slot");
 }
 
-// caml_bswap16
-// caml_int32_bswap
-// caml_int64_bswap
+//Provides: caml_bswap16
+function caml_bswap16(x) {
+  return ((((x & 0x00FF) << 8) |
+           ((x & 0xFF00) >> 8)));
+}
+//Provides: caml_int32_bswap
+function caml_int32_bswap(x) {
+  return (((x & 0x000000FF) << 24) |
+          ((x & 0x0000FF00) << 8) |
+          ((x & 0x00FF0000) >> 8) |
+          ((x & 0xFF000000) >> 24));
+}
+//Provides: caml_int64_bswap
+function caml_int64_bswap(x) {
+  return [
+    255,
+    (((x[3] & 0x0000ff00) >> 8) |
+     ((x[3] & 0x000000ff) << 8) |
+     ((x[2] & 0x00ff0000))),
+    (((x[2] & 0x0000ff00) >> 8) |
+     ((x[2] & 0x000000ff) << 8) |
+     ((x[1] & 0x00ff0000))),
+    (((x[1] & 0x0000ff00) >> 8) |
+     ((x[1] & 0x000000ff) << 8))]
+}
+
+
+
