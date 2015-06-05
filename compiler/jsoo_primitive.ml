@@ -43,6 +43,10 @@ let kind_args nm = try Some (Hashtbl.find kind_args_tbl (resolve nm)) with Not_f
 
 let arity nm = Hashtbl.find arities (resolve nm)
 
+let has_arity nm a =
+  try Hashtbl.find arities (resolve nm) = a
+  with Not_found -> false
+
 let is_pure nm = kind nm <> `Mutator
 
 let exists p = Hashtbl.mem kinds p

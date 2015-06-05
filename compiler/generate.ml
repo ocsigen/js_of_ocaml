@@ -139,6 +139,13 @@ module Share = struct
               | Let (_, Constant c) -> get_constant c share
               | Let (_, Apply (_,args,false)) ->
                 add_apply (List.length args) share
+              | Let (_, Prim (Extern "%closure", [Pc (IString name|String name)])) ->
+                let name = Primitive.resolve name in
+                let share =
+                  if Primitive.exists name
+                  then add_prim name share
+                  else share in
+                share
               | Let (_, Prim (Extern name, args)) ->
                 let name = Primitive.resolve name in
                 let share =
@@ -1018,6 +1025,9 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
           with Parse_js.Parsing_error pi ->
             failwith (Printf.sprintf "Parsing error %S at l:%d col:%d" nm (pi.Parse_info.line + 1) pi.Parse_info.col)
         end
+      | Extern "%closure", [Pc (IString name | String name)] ->
+         let prim = Share.get_prim s_var name ctx.Ctx.share in
+         prim, kind (Primitive.kind name), queue
       | Extern "%caml_js_opt_call", Pv f :: Pv o :: l ->
         let ((pf, cf), queue) = access_queue queue f in
         let ((po, co), queue) = access_queue queue o in

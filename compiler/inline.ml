@@ -150,6 +150,12 @@ let simple blocks clos_pc clos_args clos_params f_args =
   | _ -> raise Not_found
   with Not_found -> `None
 
+let rec args_equal xs ys = match xs, ys with
+  | [],[] -> true
+  | x::xs,Pv y::ys ->
+    Code.Var.compare x y = 0 && args_equal xs ys
+  | _ -> false
+
 let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
   let block = AddrMap.find pc blocks in
   let (body, (branch, blocks, free_pc)) =
@@ -209,6 +215,24 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
                  (* Format.eprintf "Do not inline because inner:%b outer:%b@." f_has_handler outer_has_handler; *)
                  (i :: rem, state)
                end
+           end
+         | Let (x, Closure (l, (pc,[]))) ->
+           let block = AddrMap.find pc blocks in
+           begin match block with
+           | { body=[Let (y, Prim (Extern prim,args))]
+             ; branch = Return y'
+             ; handler = None
+             ; params = []} ->
+             let len = List.length l in
+             if Code.Var.compare y y' = 0
+             && Jsoo_primitive.has_arity prim len
+             && args_equal l args
+             then
+               (Let (x, Prim (Extern "%closure", [Pc (IString prim)])) :: rem,
+               state)
+             else
+               (i :: rem, state)
+           | _ -> (i :: rem, state)
            end
          | _ ->
            (i :: rem, state))
