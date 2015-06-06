@@ -96,9 +96,6 @@ let setup_printers () =
 #endif
   exec'("let _print_error fmt e = Format.pp_print_string fmt (Js.string_of_error e)");
   Topdirs.dir_install_printer Format.std_formatter (Longident.(Lident "_print_error"));
-  exec'("let _print_jsobject fmt (o : _ Js.t) = \
-	 Format.pp_print_string fmt (try Js.to_string (Json.output o) with _ -> \"[object]\")");
-  Topdirs.dir_install_printer Format.std_formatter (Longident.(Lident "_print_jsobject"));
   exec'("let _print_unit fmt (_ : 'a) : 'a = Format.pp_print_string fmt \"()\"");
   Topdirs.dir_install_printer Format.std_formatter (Longident.(Lident "_print_unit"))
 
@@ -112,7 +109,7 @@ let setup_examples ~container ~textbox =
       match Regexp.string_match r line 0 with
       | Some res ->
 	 let name = match Regexp.matched_group res 1 with Some s -> s | None -> assert false in
-         all := `Title name :: !all 
+         all := `Title name :: !all
       | None -> all := `Content line :: !all
     done;
     assert false
@@ -218,7 +215,7 @@ let highlight_location loc =
        let from_ = if !x = line1 then `Pos col1 else `Pos 0 in
        let to_   = if !x = line2 then `Pos col2 else `Last in
        Colorize.highlight from_ to_ e)
-       
+
 
 let append colorize output cl s =
   Dom.appendChild output (Tyxml_js.To_dom.of_element (colorize ~a_class:cl s))
@@ -265,7 +262,7 @@ let run _ =
   let container = by_id "toplevel-container" in
   let output = by_id "output" in
   let textbox : 'a Js.t = by_id_coerce "userinput" Dom_html.CoerceTo.textarea in
-  
+
   let sharp_chan = open_out "/dev/null0" in
   let sharp_ppf = Format.formatter_of_out_channel sharp_chan in
 
