@@ -66,3 +66,13 @@ function caml_dynlink_get_current_libs () {
 function caml_register_code_fragment(code, codesize, digest){
   return 0
 }
+
+//Provides: caml_add_debug_info
+function caml_add_debug_info(code, size, events){
+  return 0
+}
+
+//Provides: caml_remove_debug_info
+function caml_remove_debug_info(code){
+  return 0
+}
