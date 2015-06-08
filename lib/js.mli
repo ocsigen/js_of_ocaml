@@ -423,7 +423,36 @@ val date : date_constr t
 
 (** Specification of Javascript math object. *)
 class type math = object
+  method _E : float readonly_prop
+  method _LN2 : float readonly_prop
+  method _LN10 : float readonly_prop
+  method _LOG2E : float readonly_prop
+  method _LOG10E : float readonly_prop
+  method _PI : float readonly_prop
+  method _SQRT1_2_ : float readonly_prop
+  method _SQRT2 : float readonly_prop
+  method abs : float -> float meth
+  method acos : float -> float meth
+  method asin : float -> float meth
+  method atan : float -> float meth
+  method atan2 : float -> float -> float meth
+  method ceil : float -> float meth
+  method cos : float -> float meth
+  method exp : float -> float meth
+  method floor : float -> float meth
+  method log : float -> float meth
+  method max : float -> float -> float meth
+  method max_3 : float -> float -> float -> float meth
+  method max_4 : float -> float -> float -> float -> float meth
+  method min : float -> float -> float meth
+  method min_3 : float -> float -> float -> float meth
+  method min_4 : float -> float -> float -> float -> float meth
+  method pow : float -> float -> float meth
   method random : float meth
+  method round : float -> float meth
+  method sin : float -> float meth
+  method sqrt : float -> float meth
+  method tan : float -> float meth
 end
 
 val math : math t
