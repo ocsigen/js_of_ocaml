@@ -324,7 +324,7 @@ let rec constant_rec ~ctx x level instrs =
           if n > constant_max_depth
           then Some acc
           else None
-        | x -> None in
+        | _ -> None in
       begin match detect_list 0 [] x with
       | Some elts_rev ->
         let arr,instrs =
