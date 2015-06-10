@@ -37,8 +37,10 @@ val open_graph : string -> unit
 
 val open_canvas : Dom_html.canvasElement Js.t -> unit
 (** use a canvas to setup the current context *)
+
 val get_context : unit -> context
 (** Get the current context *)
+
 val set_context : context -> unit
 (** Set the current context *)
 

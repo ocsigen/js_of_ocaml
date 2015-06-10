@@ -1238,12 +1238,16 @@ end
 
 val no_handler : ('a, 'b) event_listener
   (** see [Dom.no_handler] *)
+
 val handler : ((#event t as 'b) -> bool t) -> ('a, 'b) event_listener
   (** see [Dom.handler] *)
+
 val full_handler : ('a -> (#event t as 'b) -> bool t) -> ('a, 'b) event_listener
   (** see [Dom.full_handler] *)
+
 val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
   (** see [Dom.invoke_handler] *)
+
 val eventTarget : #event t -> element t
   (** see [Dom.eventTarget] *)
 
@@ -1340,8 +1344,10 @@ val buttonPressed : #mouseEvent Js.t -> mouse_button
 
 val eventAbsolutePosition : #mouseEvent t -> int * int
   (** Returns the absolute position of the mouse pointer. *)
+
 val elementClientPosition : #element t -> int * int
   (** Position of an element relative to the viewport *)
+
 val getDocumentScroll : unit -> int * int
   (** Viewport top/left position *)
 
@@ -1609,6 +1615,7 @@ module CoerceTo : sig
 end
 
 type timeout_id_safe
+
 (** Same as [Dom_html.window##setTimeout(cb,ms)] but prevents overflow
     with delay greater than 24 days. *)
 val setTimeout : (unit -> unit) -> float -> timeout_id_safe

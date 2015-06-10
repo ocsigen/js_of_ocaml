@@ -61,6 +61,7 @@ module DocumentPosition : sig
   val add : mask -> mask -> mask
   val (+) : mask -> mask -> mask
 end
+
 (** Specification of [Node] objects. *)
 class type node = object
   method nodeName : js_string t readonly_prop
@@ -173,16 +174,19 @@ val insertBefore : #node t -> #node t -> #node t opt -> unit
       The expression [insertBefore n c p] behave the same as
       [p##insertBefore(n, c)] but avoid the need of coercing the
       different objects to [node t]. *)
+
 val replaceChild : #node t -> #node t -> #node t -> unit
   (** The expression [replaceChild p n c] behave the same as
       [p##replaceChild(n, c)] (replace [c] by [n] in [p])
       but avoid the need of coercing the
       different objects to [node t]. *)
+
 val removeChild : #node t -> #node t -> unit
   (** The expression [removeChild n c] behave the same as
       [n##removeChild(c)] (remove [c] from [n])
       but avoid the need of coercing the
       different objects to [node t]. *)
+
 val appendChild : #node t -> #node t -> unit
   (** The expression [appendChild n c] behave the same as
       [n##appendChild(c)] (appends [c] to [n])
@@ -226,13 +230,16 @@ end
 
 val no_handler : ('a, 'b) event_listener
   (** Void event handler (Javascript [null] value). *)
+
 val handler : (('e #event t as 'b) -> bool t) -> ('a, 'b) event_listener
   (** Create an event handler that invokes the provided function.
       If the handler returns false, the default action is prevented. *)
+
 val full_handler : ('a -> ('e #event t as 'b) -> bool t) -> ('a, 'b) event_listener
   (** Create an event handler that invokes the provided function.
       The event target (implicit parameter [this]) is also passed as
       argument to the function.  *)
+
 val invoke_handler : ('a, 'b) event_listener -> 'a -> 'b -> bool t
   (** Invoke an existing handler.  Useful to chain event handlers. *)
 
