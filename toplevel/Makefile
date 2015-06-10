@@ -6,6 +6,7 @@ all: toplevel.js eval.js
 
 OCPINDENT=$(shell ocamlfind query ocp-indent -format "-package %p.lib" 2> /dev/null)
 HIGLO=$(shell ocamlfind query higlo.ocaml -format "-package %p -rectypes" 2> /dev/null)
+DERIVING=$(shell ocamlfind query js_of_ocaml.deriving -format "%p" 2> /dev/null)
 
 CPPO_OPT=
 ifneq ($(OCPINDENT),)
@@ -16,10 +17,12 @@ ifneq ($(HIGLO),)
 CPPO_OPT+= -D higlo
 endif
 
+ifneq ($(DERIVING),)
+DERIVING_SYNTAX = js_of_ocaml.deriving.syntax deriving.syntax.std
+endif
+
 ifneq ($(NO_SYNTAXES),1)
-SYNTAXES= lwt.syntax \
-	js_of_ocaml.syntax \
-	js_of_ocaml.deriving.syntax deriving.syntax.std
+SYNTAXES= lwt.syntax js_of_ocaml.syntax $(DERIVING_SYNTAX)
 endif
 
 JSFILES= +weak.js +toplevel.js +dynlink.js +nat.js
@@ -27,8 +30,7 @@ JSFILES= +weak.js +toplevel.js +dynlink.js +nat.js
 PACKAGES= \
 	lwt bigarray tyxml.functor \
 	react reactiveData \
-	js_of_ocaml \
-	js_of_ocaml.deriving \
+	js_of_ocaml $(DERIVING) \
 	js_of_ocaml.tyxml \
 	js_of_ocaml.toplevel \
 	dynlink
