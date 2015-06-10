@@ -370,7 +370,7 @@ let js_mapper _args =
       let { pexp_attributes } = expr in
       match expr with
 
-      (** obj##.var *)
+      (* obj##.var *)
       | [%expr [%e? obj] ##. [%e? meth] ] ->
         let meth = exp_to_string meth in
         let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_obj" in
@@ -389,7 +389,7 @@ let js_mapper _args =
           ]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
-      (** obj##.var := value *)
+      (* obj##.var := value *)
       | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as res] := [%e? value]] ->
         default_loc := res.pexp_loc ;
         let meth = exp_to_string meth in
@@ -411,8 +411,8 @@ let js_mapper _args =
           ]
         in mapper.expr mapper { new_expr with pexp_attributes }
 
-      (** obj##meth arg1 arg2 .. *)
-      (** obj##(meth arg1 arg2) .. *)
+      (* obj##meth arg1 arg2 .. *)
+      (* obj##(meth arg1 arg2) .. *)
       | {pexp_desc = Pexp_apply
              (([%expr [%e? obj] ## [%e? meth]] as expr), args)
         }
@@ -422,7 +422,7 @@ let js_mapper _args =
         let new_expr =
           method_call ~loc:expr.pexp_loc obj meth args
         in mapper.expr mapper { new_expr with pexp_attributes }
-      (** obj##meth *)
+      (* obj##meth *)
       | ([%expr [%e? obj] ## [%e? meth]] as expr) ->
         let meth = exp_to_string meth in
         let new_expr =
@@ -430,12 +430,12 @@ let js_mapper _args =
         in mapper.expr mapper { new_expr with pexp_attributes }
 
 
-      (** new%js constr] *)
+      (* new%js constr] *)
       | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]]] ->
         let new_expr =
           new_object constr []
         in mapper.expr mapper { new_expr with pexp_attributes }
-      (** new%js constr arg1 arg2 ..)] *)
+      (* new%js constr arg1 arg2 ..)] *)
       | {pexp_desc = Pexp_apply
              ([%expr [%js [%e? {pexp_desc = Pexp_new constr}]]]
              , args)
@@ -445,7 +445,7 @@ let js_mapper _args =
         in mapper.expr mapper { new_expr with pexp_attributes }
 
 
-      (** object%js ... end *)
+      (* object%js ... end *)
       | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct} ]]] ->
         let fields = preprocess_literal_object class_struct.pcstr_fields in
         let new_expr = match fields with
