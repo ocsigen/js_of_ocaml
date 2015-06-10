@@ -229,7 +229,7 @@ let gen_missing js missing =
       Util.warn "Dummy implementations (raising 'Failure' exception) ";
       Util.warn "will be used if they are not available at runtime.@.";
       Util.warn "You can prevent the generation of dummy implementations with ";
-      Util.warn "the commandline option '-disable genprim'@.";
+      Util.warn "the commandline option '--disable genprim'@.";
       report_missing_primitives missing;
     end;
     (Statement (Variable_statement miss), N) :: js
