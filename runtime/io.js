@@ -117,6 +117,7 @@ function caml_std_output(chan,s){
     chan.file.data = new_str;
   }
   chan.offset += slen;
+  chan.file.modified();
   return 0;
 }
 
@@ -209,12 +210,15 @@ function caml_ml_input (chan, s, i, l) {
 
 //Provides: caml_fs_file_content
 //Requires: caml_string_of_array, caml_fs_content, caml_make_path, MlFile
-//Requires: caml_raise_not_found
+//Requires: caml_raise_not_found, unix_time
 function caml_fs_file_content(name) {
   var path = caml_make_path(name);
   var f = caml_fs_content(path);
-  if(f instanceof MlFile)
+  if(f instanceof MlFile){
+    var now = unix_time();
+    f.atime = now;
     return f.data;
+  }
   caml_raise_not_found();
 }
 

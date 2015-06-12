@@ -21,9 +21,18 @@
 
 //Provides: caml_current_dir
 var caml_current_dir = "/";
+//Provides: file_inode
+var file_inode = 0
 
 //Provides: MlDir
-function MlDir(){ this.content={};}
+//Requires: file_inode, unix_time
+function MlDir(){ this.content={};
+                  this.inode = file_inode++;
+                  var now = unix_time();
+                  this.atime = now;
+                  this.mtime = now;
+                  this.ctime = now;
+                  }
 MlDir.prototype = {
   exists:function(name){return this.content[name]?1:0;},
   mk:function(name,c){this.content[name]=c},
@@ -38,10 +47,24 @@ MlDir.prototype = {
 }
 
 //Provides: MlFile
-//Requires: caml_create_string
-function MlFile(content){ this.data = content }
+//Requires: caml_create_string, file_inode, unix_time
+function MlFile(content){ this.data = content;
+                          this.inode = file_inode++;
+                          var now = unix_time();
+                          this.atime = now;
+                          this.mtime = now;
+                          this.ctime = now;
+}
 MlFile.prototype = {
-  truncate:function(){ this.data = caml_create_string(0) }
+  truncate:function(){
+    this.data = caml_create_string(0);
+    this.modified();
+  },
+  modified:function() {
+    var now = unix_time();
+    this.atime = now;
+    this.mtime = now;
+  }
 }
 
 //Provides: caml_root_dir
@@ -264,4 +287,50 @@ function caml_ba_map_file(vfd, kind, layout, shared, dims, pos) {
 //Requires: caml_ba_map_file
 function caml_ba_map_file_bytecode(argv,argn){
   return caml_ba_map_file(argv[0],argv[1],argv[2],argv[3],argv[4],argv[5]);
+}
+
+
+//Provides: unix_stat_file
+//Requires: caml_make_path, caml_fs_content, MlFile, MlDir,caml_ml_string_length
+function unix_stat_file(f){
+  if (f instanceof MlDir) {
+    var kind = 1; //S_DIR
+    var size = 0;
+  }
+  if (f instanceof MlFile) {
+    var kind = 0; //S_REG
+    var size = caml_ml_string_length(f.data);
+  }
+
+  return [0,
+   0, //st_dev
+   f.inode, // st_ino
+   kind, // st_kind
+   436, //st_perm 0o664
+   1, //st_nlink
+   1, //st_uid
+   1, //st_gid
+   0, //st_rdev
+   size,//st_size
+   +f.atime,
+   +f.mtime,
+   +f.ctime
+  ]
+}
+
+//Provides: unix_stat
+//Requires: caml_fs_content, caml_make_path, unix_stat_file
+function unix_stat(name){
+  var f = caml_fs_content(caml_make_path(name));
+  return unix_stat_file(f)
+}
+
+//Provides: unix_lstat
+//Requires: unix_stat
+var unix_lstat = unix_stat
+
+//Provides: unix_fstat
+//Requires: unix_stat_file, caml_global_data
+function unix_fstat(idx){
+  return unix_stat_file(caml_global_data.fds[idx].file)
 }
