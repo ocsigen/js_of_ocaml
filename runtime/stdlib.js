@@ -837,7 +837,9 @@ function caml_sys_get_config () {
 //The function needs to return an array since OCaml 4.0...
 function caml_sys_random_seed () {
   var x = new Date()^0xffffffff*Math.random();
-  return {valueOf:function(){return x;},0:0,1:x,length:2};
+  var res = [0,x];
+  res.valueOf = function(){return x};
+  return res;
 }
 //Provides: caml_sys_const_big_endian const
 function caml_sys_const_big_endian () { return 0; }
