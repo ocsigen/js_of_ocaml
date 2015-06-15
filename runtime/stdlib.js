@@ -215,7 +215,13 @@ function caml_obj_dup (x) {
   return a;
 }
 //Provides: caml_obj_truncate (mutable, const)
-function caml_obj_truncate (x, s) { x.length = s + 1; return 0; }
+//Requires: caml_invalid_argument
+function caml_obj_truncate (x, s) {
+  if (s<=0 || s + 1 > x.length)
+    caml_invalid_argument ("Obj.truncate");
+  if (x.length != s + 1) x.length = s + 1;
+  return 0;
+}
 
 //Provides: caml_lazy_make_forward const (const)
 function caml_lazy_make_forward (v) { return [250, v]; }
