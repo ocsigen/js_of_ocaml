@@ -834,13 +834,23 @@ function caml_sys_get_config () {
   return [0, caml_new_string("Unix"), 32, 0];
 }
 //Provides: caml_sys_random_seed mutable
+//Version: < 4.00
 //The function needs to return an array since OCaml 4.0...
 function caml_sys_random_seed () {
   var x = new Date()^0xffffffff*Math.random();
-  var res = [0,x];
-  res.valueOf = function(){return x};
-  return res;
+  return x;
 }
+
+//Provides: caml_sys_random_seed mutable
+//Version: >= 4.00
+//The function needs to return an array since OCaml 4.0...
+function caml_sys_random_seed () {
+  var x = new Date()^0xffffffff*Math.random();
+  return [0,x];
+}
+
+
+
 //Provides: caml_sys_const_big_endian const
 function caml_sys_const_big_endian () { return 0; }
 //Provides: caml_sys_const_word_size const
