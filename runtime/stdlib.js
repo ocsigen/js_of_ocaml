@@ -619,7 +619,7 @@ function caml_format_float (fmt, x) {
         var p = prec;
         if (exp < 0) { p -= exp + 1; s = x.toFixed(p); }
         else while (s = x.toFixed(p), s.length > prec + 1) p--;
-        if (p) {
+        if (p && ! (s.indexOf('e') > 0)) {
           // remove trailing zeroes
           var i = s.length - 1; while (s.charAt(i) == '0') i--;
           if (s.charAt(i) == '.') i--;
