@@ -91,7 +91,7 @@ let eq_nativeint (i: nativeint) (j: nativeint) = (i = j);;
 let eq_int32 (i: int32) (j: int32) = (i = j);;
 let eq_int64 (i: int64) (j: int64) = (i = j);;
 
-let sixtyfour = (1 lsl 31) <> 0;;
+let sixtyfour = Sys.word_size = 64;;
 
 let rec gcd_int i1 i2 =
   if i2 = 0 then abs i1 else gcd_int i2 (i1 mod i2);;
