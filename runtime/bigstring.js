@@ -19,14 +19,6 @@ function caml_blit_string_to_bigstring(v_str, v_src_pos, v_bstr, v_dst_pos, v_le
   return 0;
 }
 
-//Provides: caml_blit_string_to_bigstring
-//Requires: caml_string_get, caml_ba_set_1
-//function caml_blit_string_to_bigstring (val_buf1, val_ofs1, val_buf2, val_ofs2, val_len) {
-//  for (var i = 0; i < v_len; i++) {
-//    caml_ba_set_1(val_buf2, val_ofs2 + i, caml_string_get(val_buf1, val_ofs1 + i));
-//  }
-//}
-
 //Provides: bigstring_blit_stub
 //Requires: caml_ba_get_1, caml_ba_set_1
 function bigstring_blit_stub(s1, i1, s2, i2, len){
