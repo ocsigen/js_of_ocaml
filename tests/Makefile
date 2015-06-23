@@ -36,7 +36,7 @@ clean:
 	rm -f camlp4/*.cm[io] camlp4/*.result
 
 ppx/%.result: ppx/%.ml
-	TERM=dumb ocaml -noprompt -I ../lib -ppx ../lib/ppx/ppx_js < $< | tail -n +2 > $@
+	TERM=dumb ocaml -noinit -noprompt -I ../lib -ppx ../lib/ppx/ppx_js < $< | tail -n +2 > $@
 
 ppx/test_%: ppx/%.result ppx/%.expected
 	diff $?
