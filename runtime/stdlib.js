@@ -113,6 +113,14 @@ function caml_raise_constant (tag) { throw [0, tag]; }
 //Version: >= 4.02
 function caml_raise_constant (tag) { throw tag; }
 
+//Provides: caml_return_exn_constant (const)
+//Version: < 4.02
+function caml_return_exn_constant (tag) { return [0, tag]; }
+
+//Provides: caml_return_exn_constant (const)
+//Version: >= 4.02
+function caml_return_exn_constant (tag) { return tag; }
+
 //Provides: caml_raise_with_arg (const, const)
 function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
 
@@ -133,8 +141,10 @@ function caml_raise_sys_error (msg) {
 function caml_failwith (msg) {
   caml_raise_with_string(caml_global_data.Failure, msg);
 }
+
 //Provides: caml_wrap_exception const (const)
 //Requires: caml_global_data,caml_js_to_string,caml_named_value
+//Requires: caml_return_exn_constant
 function caml_wrap_exception(e) {
   if(e instanceof Array) return e;
   //Stack_overflow: chrome, safari
@@ -142,13 +152,13 @@ function caml_wrap_exception(e) {
      && e instanceof joo_global_object.RangeError
      && e.message
      && e.message.match(/maximum call stack/i))
-    return [0,caml_global_data.Stack_overflow];
+    return caml_return_exn_constant(caml_global_data.Stack_overflow);
   //Stack_overflow: firefox
   if(joo_global_object.InternalError
      && e instanceof joo_global_object.InternalError
      && e.message
      && e.message.match(/too much recursion/i))
-    return [0,caml_global_data.Stack_overflow];
+    return caml_return_exn_constant(caml_global_data.Stack_overflow);
   //Wrap Error in Js.Error exception
   if(e instanceof joo_global_object.Error)
     return [0,caml_named_value("jsError"),e];
