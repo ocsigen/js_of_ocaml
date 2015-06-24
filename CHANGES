@@ -1,3 +1,26 @@
+===== dev =====
+
+ * Features/Changes
+ ** Compiler: Findlib is optionnal
+ ** Compiler: improvement of sourcemap support (ie: inlinned sourcemap)
+ ** Compiler: Support for separate compilation (compile cm{o,a} -> js)
+ ** Compiler: more inlining
+ ** Syntax: new ppx syntax
+ ** Syntax: js object litteral (camlp4 + ppx)
+ ** Runtime: support for Dynlink
+ ** Runtime: Support for upcomming release of Bin_prot, Core_kernel, Async_kernel
+ ** Lib: add requestAnimationFrame
+ ** Lib: complete Js.Math
+ ** Lib: complete xmlHttpRequest
+
+ * Misc
+ ** Drop support for 3.12
+
+ * BugFixes
+ ** Runtime: Fix caml_hash
+ ** Lib: fix tyxml + svg
+ ** Lib: various Api fixes
+
 ===== 2.5 (2014-09-30) =====
 
  * Features/Changes
