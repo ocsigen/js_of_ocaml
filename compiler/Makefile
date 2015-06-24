@@ -135,7 +135,7 @@ clean:
 	rm -Rf man
 
 .PHONY: depend
-depend: $(OBJS:cmx=mli) $(COMPOBJS:cmx=ml) $(MINIOBJS:cmx=ml)
+depend: $(OBJS:cmx=mli) $(COMPOBJS:cmx=ml) $(MINIOBJS:cmx=ml) compileArg.mli
 	echo $^ | xargs -n1 | sort -u | xargs ocamldep > .depend
 
 include .depend

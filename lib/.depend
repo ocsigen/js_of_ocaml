@@ -1,11 +1,11 @@
 cSS.cmo : regexp.cmi js.cmi cSS.cmi
 cSS.cmx : regexp.cmx js.cmx cSS.cmi
-dom.cmo : js.cmi dom.cmi
-dom.cmx : js.cmx dom.cmi
 dom_events.cmo : js.cmi dom_html.cmi dom_events.cmi
 dom_events.cmx : js.cmx dom_html.cmx dom_events.cmi
 dom_html.cmo : js.cmi file.cmi dom.cmi dom_html.cmi
 dom_html.cmx : js.cmx file.cmx dom.cmx dom_html.cmi
+dom.cmo : js.cmi dom.cmi
+dom.cmx : js.cmx dom.cmi
 dom_svg.cmo : js.cmi dom_html.cmi dom.cmi dom_svg.cmi
 dom_svg.cmx : js.cmx dom_html.cmx dom.cmx dom_svg.cmi
 eventSource.cmo : js.cmi dom.cmi eventSource.cmi
@@ -26,16 +26,18 @@ jsonp.cmx : url.cmx lwt_js.cmx js.cmx firebug.cmx dom_html.cmx dom.cmx \
     jsonp.cmi
 keycode.cmo : keycode.cmi
 keycode.cmx : keycode.cmi
-lwt_js.cmo : js.cmi firebug.cmi dom_html.cmi lwt_js.cmi
-lwt_js.cmx : js.cmx firebug.cmx dom_html.cmx lwt_js.cmi
+lib_version.cmo :
+lib_version.cmx :
 lwt_js_events.cmo : lwt_js.cmi js.cmi firebug.cmi dom_html.cmi dom.cmi \
     lwt_js_events.cmi
 lwt_js_events.cmx : lwt_js.cmx js.cmx firebug.cmx dom_html.cmx dom.cmx \
     lwt_js_events.cmi
+lwt_js.cmo : js.cmi firebug.cmi dom_html.cmi lwt_js.cmi
+lwt_js.cmx : js.cmx firebug.cmx dom_html.cmx lwt_js.cmi
 regexp.cmo : js.cmi regexp.cmi
 regexp.cmx : js.cmx regexp.cmi
-sys_js.cmo : js.cmi sys_js.cmi
-sys_js.cmx : js.cmx sys_js.cmi
+sys_js.cmo : lib_version.cmo js.cmi sys_js.cmi
+sys_js.cmx : lib_version.cmx js.cmx sys_js.cmi
 typed_array.cmo : js.cmi typed_array.cmi
 typed_array.cmx : js.cmx typed_array.cmi
 url.cmo : regexp.cmi js.cmi dom_html.cmi url.cmi
@@ -51,9 +53,9 @@ xmlHttpRequest.cmo : url.cmi typed_array.cmi js.cmi form.cmi file.cmi \
 xmlHttpRequest.cmx : url.cmx typed_array.cmx js.cmx form.cmx file.cmx \
     dom_html.cmx dom.cmx xmlHttpRequest.cmi
 cSS.cmi : js.cmi
-dom.cmi : js.cmi
 dom_events.cmi : js.cmi dom_html.cmi
 dom_html.cmi : js.cmi file.cmi dom.cmi
+dom.cmi : js.cmi
 dom_svg.cmi : js.cmi dom_html.cmi dom.cmi
 eventSource.cmi : js.cmi dom.cmi
 file.cmi : typed_array.cmi js.cmi dom.cmi
@@ -63,8 +65,8 @@ js.cmi :
 json.cmi : js.cmi
 jsonp.cmi :
 keycode.cmi :
-lwt_js.cmi :
 lwt_js_events.cmi : js.cmi dom_html.cmi
+lwt_js.cmi :
 regexp.cmi :
 sys_js.cmi : js.cmi
 typed_array.cmi : js.cmi
@@ -84,9 +86,9 @@ toplevel/jsooTopCamlp4.cmo : toplevel/jsooTopError.cmi \
     toplevel/jsooTopCamlp4.cmi
 toplevel/jsooTopCamlp4.cmx : toplevel/jsooTopError.cmx \
     toplevel/jsooTopCamlp4.cmi
-toplevel/jsooTop.cmi :
 toplevel/jsooTopCamlp4.cmi :
 toplevel/jsooTopError.cmi :
+toplevel/jsooTop.cmi :
 toplevel/jsooTopError.cmo : toplevel/jsooTopError.cmi
 toplevel/jsooTopError.cmx : toplevel/jsooTopError.cmi
 graphics/graphics_js.cmo : lwt_js_events.cmi js.cmi dom_html.cmi \

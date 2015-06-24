@@ -13,6 +13,7 @@ compileArg.cmo : util.cmi source_map.cmi option.cmi driver.cmi \
     compiler_version.cmi commonArg.cmi compileArg.cmi
 compileArg.cmx : util.cmx source_map.cmx option.cmx driver.cmx \
     compiler_version.cmx commonArg.cmx compileArg.cmi
+compileArg.cmi : source_map.cmi driver.cmi commonArg.cmi
 compiler_version.cmo : compiler_version.cmi
 compiler_version.cmx : compiler_version.cmi
 compiler_version.cmi :
@@ -50,8 +51,8 @@ generate.cmx : util.cmx parse_js.cmx parse_info.cmx parse_bytecode.cmx \
     option.cmx jsoo_subst.cmx jsoo_primitive.cmx js_tailcall.cmx js_simpl.cmx \
     javascript.cmx freevars.cmx code.cmx generate.cmi
 generate.cmi : parse_bytecode.cmi javascript.cmi code.cmi
-inline.cmo : util.cmi option.cmi code.cmi inline.cmi
-inline.cmx : util.cmx option.cmx code.cmx inline.cmi
+inline.cmo : util.cmi option.cmi jsoo_primitive.cmi code.cmi inline.cmi
+inline.cmx : util.cmx option.cmx jsoo_primitive.cmx code.cmx inline.cmi
 inline.cmi : code.cmi
 instr.cmo : util.cmi instr.cmi
 instr.cmx : util.cmx instr.cmi
@@ -165,8 +166,10 @@ specialize_js.cmo : util.cmi jsoo_primitive.cmi flow.cmi code.cmi \
 specialize_js.cmx : util.cmx jsoo_primitive.cmx flow.cmx code.cmx \
     specialize_js.cmi
 specialize_js.cmi : flow.cmi code.cmi
-specialize.cmo : util.cmi option.cmi flow.cmi code.cmi specialize.cmi
-specialize.cmx : util.cmx option.cmx flow.cmx code.cmx specialize.cmi
+specialize.cmo : util.cmi option.cmi jsoo_primitive.cmi flow.cmi code.cmi \
+    specialize.cmi
+specialize.cmx : util.cmx option.cmx jsoo_primitive.cmx flow.cmx code.cmx \
+    specialize.cmi
 specialize.cmi : flow.cmi code.cmi
 tailcall.cmo : util.cmi option.cmi jsoo_subst.cmi code.cmi tailcall.cmi
 tailcall.cmx : util.cmx option.cmx jsoo_subst.cmx code.cmx tailcall.cmi
