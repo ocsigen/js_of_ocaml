@@ -5,15 +5,16 @@ function bigstring_alloc(_,size){
   return caml_ba_create(12, 0, [0,size]);
 }
 
-//Provides: bigstring_blit_bigstring_string_stub
+//Provides: caml_blit_bigstring_to_string
 //Requires: caml_string_set, caml_ba_get_1
-function bigstring_blit_bigstring_string_stub(v_bstr, v_src_pos, v_str, v_dst_pos, v_len){
+function caml_blit_bigstring_to_string(v_bstr, v_src_pos, v_str, v_dst_pos, v_len){
   for (var i = 0; i < v_len; i++) caml_string_set(v_str,v_dst_pos + i,caml_ba_get_1(v_bstr,v_src_pos + i));
   return 0;
 }
-//Provides: bigstring_blit_string_bigstring_stub
+
+//Provides: caml_blit_string_to_bigstring
 //Requires: caml_string_get, caml_ba_set_1
-function bigstring_blit_string_bigstring_stub(v_str, v_src_pos, v_bstr, v_dst_pos, v_len){
+function caml_blit_string_to_bigstring(v_str, v_src_pos, v_bstr, v_dst_pos, v_len){
   for (var i = 0; i < v_len; i++) caml_ba_set_1(v_bstr,v_dst_pos + i,caml_string_get(v_str,v_src_pos + i));
   return 0;
 }
