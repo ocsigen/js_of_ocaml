@@ -119,6 +119,7 @@ linker.cmx : util.cmx reserved.cmx parse_js.cmx parse_info.cmx option.cmx \
 linker.cmi : util.cmi parse_info.cmi jsoo_primitive.cmi javascript.cmi
 minifyArg.cmo : compiler_version.cmi commonArg.cmi minifyArg.cmi
 minifyArg.cmx : compiler_version.cmx commonArg.cmx minifyArg.cmi
+minifyArg.cmi : commonArg.cmi
 minify.cmo : util.cmi pretty_print.cmi parse_js.cmi parse_info.cmi \
     option.cmi minifyArg.cmi js_traverse.cmi js_output.cmi js_assign.cmi \
     commonArg.cmi code.cmi
