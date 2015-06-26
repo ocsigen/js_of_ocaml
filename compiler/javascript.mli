@@ -157,6 +157,6 @@ and source_element =
 
 val compare_ident : ident -> ident -> int
 val string_of_number : float -> string
-
+val is_ident : string -> bool
 module IdentSet : Set.S with type elt = ident
 module IdentMap : Map.S with type key = ident

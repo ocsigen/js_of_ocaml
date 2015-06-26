@@ -105,21 +105,21 @@ and statement =
     Block of block
   | Variable_statement of variable_declaration list
   | Empty_statement
-  | Expression_statement of expression 
-  | If_statement of expression * (statement * location) * (statement * location) option 
-  | Do_while_statement of (statement * location) * expression 
+  | Expression_statement of expression
+  | If_statement of expression * (statement * location) * (statement * location) option
+  | Do_while_statement of (statement * location) * expression
   | While_statement of expression * (statement * location)
   | For_statement of  (expression option,variable_declaration list) either * expression option * expression option * (statement * location)
   | ForIn_statement of  (expression,variable_declaration) either * expression * (statement * location)
-  | Continue_statement of Label.t option 
-  | Break_statement of Label.t option 
-  | Return_statement of expression option 
+  | Continue_statement of Label.t option
+  | Break_statement of Label.t option
+  | Return_statement of expression option
   (* | With_statement of expression * statement *)
   | Labelled_statement of Label.t * (statement * location)
   | Switch_statement of
       expression * case_clause list * statement_list option * case_clause list
-  | Throw_statement of expression 
-  | Try_statement of block * (ident * block) option * block option 
+  | Throw_statement of expression
+  | Try_statement of block * (ident * block) option * block option
   | Debugger_statement
 
 and ('left,'right) either =
@@ -204,6 +204,24 @@ let string_of_number v =
         if v = float_of_string s2
         then s2
         else  Printf.sprintf "%.18g" v
+
+let is_ident =
+  let l = Array.init 256 (fun i ->
+    let c = Char.chr i in
+    if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c = '_' || c = '$'
+    then 1
+    else if (c >= '0' && c <='9')
+    then 2
+    else 0
+  ) in
+  fun s ->
+    try
+      for i = 0 to String.length s - 1 do
+        let code = l.(Char.code(s.[i])) in
+        if i = 0 then assert (code = 1) else assert (code >= 1)
+      done;
+      true
+    with _ -> false
 
 module IdentSet = Set.Make(struct type t = ident let compare = compare_ident end)
 module IdentMap = Map.Make(struct type t = ident let compare = compare_ident end)
