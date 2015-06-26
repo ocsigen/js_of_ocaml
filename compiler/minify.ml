@@ -73,10 +73,14 @@ let f {
     else
       p in
 
+  let free = new Js_traverse.free in
+  let _pfree = free#program p in
+  let toplevel_def = free#get_def_name in
+  let () = VarPrinter.add_reserved (Util.StringSet.elements toplevel_def) in
   let true_ = (fun () -> true) in
   let open Option in
   let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
-    [ Optim.shortvar, (fun () -> ((new Js_traverse.rename_variable Util.StringSet.empty) :> Js_traverse.mapper) );
+    [ Optim.shortvar, (fun () -> ((new Js_traverse.rename_variable toplevel_def) :> Js_traverse.mapper) );
       Optim.share_constant, (fun () -> new Js_traverse.share_constant);
       true_, (fun () -> new Js_traverse.simpl);
       true_, (fun () -> new Js_traverse.clean);
