@@ -205,6 +205,7 @@ let string_of_number v =
         then s2
         else  Printf.sprintf "%.18g" v
 
+exception Not_an_ident
 let is_ident =
   let l = Array.init 256 (fun i ->
     let c = Char.chr i in
@@ -218,10 +219,12 @@ let is_ident =
     try
       for i = 0 to String.length s - 1 do
         let code = l.(Char.code(s.[i])) in
-        if i = 0 then assert (code = 1) else assert (code >= 1)
+        if i = 0
+        then (if code <> 1 then raise Not_an_ident)
+        else (if code <  1 then raise Not_an_ident)
       done;
       true
-    with _ -> false
+    with Not_an_ident -> false
 
 module IdentSet = Set.Make(struct type t = ident let compare = compare_ident end)
 module IdentMap = Map.Make(struct type t = ident let compare = compare_ident end)
