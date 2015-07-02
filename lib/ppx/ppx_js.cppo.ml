@@ -5,19 +5,18 @@ open Ast_mapper
 open Ast_helper
 open Asttypes
 open Parsetree
-
 open Ast_convenience
 
 (** Check if an expression is an identifier and returns it.
     Raise a Location.error if it's not.
 *)
 let exp_to_string = function
-  | {pexp_desc= Pexp_ident {txt = Longident.Lident s}} -> s
-  | {pexp_desc= Pexp_construct ({txt = Longident.Lident s}, None)}
+  | {pexp_desc= Pexp_ident {txt = Longident.Lident s; _}; _} -> s
+  | {pexp_desc= Pexp_construct ({txt = Longident.Lident s; _}, None); _}
     when String.length s > 0
       && s.[0] >= 'A'
       && s.[0] <= 'Z' -> "_"^s
-  | {pexp_loc} ->
+  | {pexp_loc; _} ->
      Location.raise_errorf
        ~loc:pexp_loc
        "Javascript methods or attributes can only be simple identifiers."
@@ -64,7 +63,7 @@ module Js = struct
     then Typ.constr ?loc (lid s) args
     else Typ.constr ?loc (lid @@ "Js."^s) args
 
-#if OCAML_VERSION < (4,03,0)
+#if OCAML_VERSION < (4, 03, 0)
   let nolabel = ""
 #else
   let nolabel = Nolabel
@@ -309,7 +308,7 @@ let literal_object self_id fields =
 
   let rec annotate_body fun_ty ret_ty body = match fun_ty, body with
     | (_,ty) :: types,
-      ({ pexp_desc = Pexp_fun (label, e_opt, pat, body)} as expr) ->
+      ({ pexp_desc = Pexp_fun (label, e_opt, pat, body); _} as expr) ->
        let constr = Pat.constraint_ pat ty in
        {expr with
          pexp_desc =
@@ -367,7 +366,7 @@ let js_mapper _args =
   { default_mapper with
     expr = (fun mapper expr ->
       default_loc := expr.pexp_loc;
-      let { pexp_attributes } = expr in
+      let { pexp_attributes; _ } = expr in
       match expr with
 
       (* obj##.var *)
@@ -414,9 +413,10 @@ let js_mapper _args =
       (* obj##meth arg1 arg2 .. *)
       (* obj##(meth arg1 arg2) .. *)
       | {pexp_desc = Pexp_apply
-             (([%expr [%e? obj] ## [%e? meth]] as expr), args)
+             (([%expr [%e? obj] ## [%e? meth]] as expr), args);
+         _
         }
-      | [%expr [%e? obj] ## [%e? {pexp_desc = Pexp_apply((meth as expr),args)}]]
+      | [%expr [%e? obj] ## [%e? {pexp_desc = Pexp_apply((meth as expr),args); _ }]]
         ->
         let meth = exp_to_string meth in
         let new_expr =
@@ -431,14 +431,15 @@ let js_mapper _args =
 
 
       (* new%js constr] *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_new constr}]]] ->
+      | [%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]] ->
         let new_expr =
           new_object constr []
         in mapper.expr mapper { new_expr with pexp_attributes }
       (* new%js constr arg1 arg2 ..)] *)
       | {pexp_desc = Pexp_apply
-             ([%expr [%js [%e? {pexp_desc = Pexp_new constr}]]]
-             , args)
+             ([%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]]
+             , args);
+         _
         } ->
         let new_expr =
           new_object constr args
@@ -446,7 +447,7 @@ let js_mapper _args =
 
 
       (* object%js ... end *)
-      | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct} ]]] ->
+      | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct; _} ]]] ->
         let fields = preprocess_literal_object class_struct.pcstr_fields in
         let new_expr = match fields with
           | `Fields fields ->
