@@ -81,7 +81,6 @@ let f {
   let open Option in
   let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
     [ Optim.shortvar, (fun () -> ((new Js_traverse.rename_variable toplevel_def) :> Js_traverse.mapper) );
-      Optim.share_constant, (fun () -> new Js_traverse.share_constant);
       true_, (fun () -> new Js_traverse.simpl);
       true_, (fun () -> new Js_traverse.clean);
     ] in
