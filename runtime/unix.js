@@ -42,3 +42,12 @@ function unix_mktime(tm){
     var tm2 = unix_localtime(t);
     return [0,t,tm2];
 }
+
+//Provides: win_startup const
+function win_startup() {}
+
+//Provides: win_cleanup const
+function win_cleanup() {}
+
+//Provides: win_handle_fd const
+function win_handle_fd(x) {return x;}
