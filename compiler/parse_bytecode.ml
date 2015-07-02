@@ -211,8 +211,8 @@ end = struct
             | Event_after _ -> loc.Location.loc_end
             | _ -> loc.Location.loc_start in
         let src =
-          let uname = Filename.(basename (chop_extension pos.Lexing.pos_fname)) in
           try
+            let uname = Filename.(basename (chop_extension pos.Lexing.pos_fname)) in
             let unit = Hashtbl.find units uname in
             try Some (Util.absolute_path
                         (Util.find_in_path unit.paths pos.Lexing.pos_fname)) with
@@ -220,7 +220,9 @@ end = struct
               match unit.source with
               | Some x -> Some (Util.absolute_path x)
               | None   -> raise Not_found
-          with Not_found -> None (* Some (pos.Lexing.pos_fname) *)
+          with
+          | Not_found
+          | Invalid_argument _ -> None (* Some (pos.Lexing.pos_fname) *)
         in
         Some {Parse_info.name = Some pos.Lexing.pos_fname;
               src;
