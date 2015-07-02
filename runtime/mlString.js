@@ -242,7 +242,7 @@ function caml_string_set (s, i, c) {
 function MlString (tag, contents, length) {
   this.t=tag; this.c=contents; this.l=length;
 }
-MlString.prototype = { toString:function(){return caml_to_js_string(this)} }
+MlString.prototype.toString = function(){return caml_to_js_string(this)};
 
 //Provides: caml_convert_string_to_bytes
 //Requires: caml_str_repeat, caml_subarray_to_string
