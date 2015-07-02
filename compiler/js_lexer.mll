@@ -181,7 +181,7 @@ rule initial tokinfo prev = parse
   | "0" ['X''x'] hexa+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_NUMBER (s, float_of_string s, info)
+      T_NUMBER (s, Int64.(to_float (of_string s)), info)
     }
   | '0'['0'-'7']+ {
       let s = tok lexbuf in
