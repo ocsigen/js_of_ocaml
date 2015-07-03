@@ -153,7 +153,8 @@ function caml_ml_open_descriptor_in (fd)  {
     file:data.file,
     offset:data.offset,
     fd:fd,
-    opened:true
+    opened:true,
+    refill:null
   };
 }
 
@@ -198,10 +199,45 @@ function caml_ml_set_channel_output(chan,f) {
   return 0;
 }
 
+//Provides: caml_ml_set_channel_refill
+function caml_ml_set_channel_refill(chan,f) {
+  chan.refill = f;
+  return 0;
+}
+
+//Provides: caml_ml_refill_input
+//Requires: caml_ml_string_length, caml_create_string, caml_blit_string
+function caml_ml_refill_input (chan) {
+  var str = chan.refill();
+  var str_len = caml_ml_string_length(str);
+  if (str_len == 0) chan.refill = null;
+  var old_len = caml_ml_string_length(chan.file.data) - chan.offset;
+  if (old_len == 0) {
+    chan.file.data = str;
+  } else {
+    var new_data = caml_create_string(old_len + str_len);
+    caml_blit_string(chan.file.data, chan.offset, new_data, 0, old_len);
+    caml_blit_string(str, 0, new_data, old_len, str_len);
+    chan.file.data = new_data;
+  }
+  chan.offset = 0;
+  return str_len;
+}
+
+//Provides: caml_ml_may_refill_input
+//Requires: caml_ml_string_length, caml_ml_refill_input
+function caml_ml_may_refill_input (chan) {
+  if (chan.refill == null) return;
+  if (caml_ml_string_length(chan.file.data) != chan.offset) return;
+  caml_ml_refill_input (chan);
+}
+
 //Provides: caml_ml_input
 //Requires: caml_blit_string, caml_string_of_array, caml_ml_string_length
+//Requires: caml_ml_refill_input
 function caml_ml_input (chan, s, i, l) {
   var l2 = caml_ml_string_length(chan.file.data) - chan.offset;
+  if (l2 == 0 && chan.refill != null) l2 = caml_ml_refill_input(chan);
   if (l2 < l) l = l2;
   caml_blit_string(chan.file.data, chan.offset, s, i, l);
   chan.offset += l;
@@ -235,8 +271,9 @@ function caml_input_value (chan) {
 
 //Provides: caml_ml_input_char
 //Requires: caml_raise_end_of_file, caml_array_bound_error
-//Requires: caml_ml_string_length, caml_string_get
+//Requires: caml_ml_string_length, caml_string_get, caml_ml_may_refill_input
 function caml_ml_input_char (chan) {
+  caml_ml_may_refill_input(chan);
   if (chan.offset >= caml_ml_string_length(chan.file.data))
     caml_raise_end_of_file();
   var c = caml_string_get(chan.file.data, chan.offset);
@@ -246,25 +283,32 @@ function caml_ml_input_char (chan) {
 
 //Provides: caml_ml_input_int
 //Requires: caml_raise_end_of_file
-//Requires: caml_ml_string_length, caml_string_unsafe_get
+//Requires: caml_ml_string_length, caml_string_unsafe_get, caml_ml_refill_input
 function caml_ml_input_int (chan) {
   var s = chan.file.data, o = chan.offset;
-  if ((o + 3) >= caml_ml_string_length(s))
-    caml_raise_end_of_file();
+  while ((o + 3) >= caml_ml_string_length(s)) {
+    var l = caml_ml_refill_input(chan);
+    if (l == 0) caml_raise_end_of_file();
+    s = chan.file.data;
+    o = chan.offset;
+  }
   var r = (caml_string_unsafe_get(s,o) << 24) | (caml_string_unsafe_get(s,o+1) << 16) | (caml_string_unsafe_get(s,o+2) << 8) | (caml_string_unsafe_get(s,o+3));
   chan.offset+=4;
   return r;
 }
 
 //Provides: caml_ml_seek_in
+//Requires: caml_raise_sys_error
 function caml_ml_seek_in(chan,pos){
+  if (chan.refill != null) caml_raise_sys_error("Illegal seek");
   chan.offset = pos;
   return 0;
 }
 
 //Provides: caml_ml_seek_in_64
-//Requires: caml_int64_to_float
+//Requires: caml_int64_to_float, caml_raise_sys_error
 function caml_ml_seek_in_64(chan,pos){
+  if (chan.refill != null) caml_raise_sys_error("Illegal seek");
   chan.offset = caml_int64_to_float(pos);
   return 0;
 }
@@ -278,7 +322,9 @@ function caml_ml_pos_in_64(chan) {return caml_int64_of_float(chan.offset)}
 
 //Provides: caml_ml_input_scan_line
 //Requires: caml_array_bound_error, caml_ml_string_length, caml_string_get
+//Requires: caml_ml_may_refill_input
 function caml_ml_input_scan_line(chan){
+  caml_ml_may_refill_input(chan);
   var p = chan.offset;
   var s = chan.file.data;
   var len = caml_ml_string_length(s);
