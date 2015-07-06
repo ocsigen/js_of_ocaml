@@ -30,6 +30,7 @@ rule initial = parse
   | "mutable" {TA_Mutable }
   | "mutator" {TA_Mutator }
   | "shallow" {TA_Shallow}
+  | "object_literal" {TA_Object_literal}
   | "Version" {TVersion}
   | ['a'-'z''A'-'Z''$''_']['a'-'z''A'-'Z''$''_''0'-'9']* {
       let x = Lexing.lexeme lexbuf in

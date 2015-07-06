@@ -20,7 +20,7 @@
 
 
 %token TProvides TRequires TVersion
-%token TA_Pure TA_Const TA_Mutable TA_Mutator TA_Shallow
+%token TA_Pure TA_Const TA_Mutable TA_Mutator TA_Shallow TA_Object_literal
 %token<string> TIdent TVNum
 %token TComma TSemi EOF EOL LE LT GE GT EQ LPARENT RPARENT
 %token<string> TOTHER
@@ -49,6 +49,7 @@ prim_annot:
 arg_annot:
   | TA_Const { `Const }
   | TA_Shallow { `Shallow_const}
+  | TA_Object_literal { `Object_literal}
   | TA_Mutable { `Mutable}
 
 op:

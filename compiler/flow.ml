@@ -230,8 +230,23 @@ let expr_escape st _x e =
               | Expr (Block (_, a)) ->
                 Array.iter (fun x -> block_escape st x) a
               | _ -> block_escape st v
+            end
+          | Pv v,`Object_literal ->
+            begin match st.defs.(Var.idx v) with
+              | Expr (Block (_, a)) ->
+                Array.iter
+                  (fun x ->
+                     begin match st.defs.(Var.idx x) with
+                       | Expr (Block (_, [|k; v|])) ->
+                         block_escape st v
+                       | _ ->
+                         block_escape st x
+                     end)
+                  a
+              | _ ->
+                block_escape st v
             end;
-          | Pv v, _ -> block_escape st v
+          | Pv v, `Mutable -> block_escape st v
         end;
         loop ax kx in
     loop l ka

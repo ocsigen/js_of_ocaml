@@ -125,7 +125,7 @@ function caml_pure_js_expr (s){
   js_print_stderr("caml_pure_js_expr: fallback to runtime evaluation");
   return eval(s.toString());}
 
-//Provides: caml_js_object (shallow)
+//Provides: caml_js_object (object_literal)
 //Requires: MlString
 function caml_js_object (a) {
   var o = {};

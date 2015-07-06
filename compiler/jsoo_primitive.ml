@@ -25,7 +25,7 @@ let rec resolve nm = try resolve (Hashtbl.find aliases nm) with Not_found -> nm
 (****)
 
 type kind = [ `Pure | `Mutable | `Mutator ]
-type kind_arg = [`Shallow_const | `Const | `Mutable]
+type kind_arg = [`Shallow_const | `Object_literal | `Const | `Mutable]
 type t = [
   | `Requires of Parse_info.t option * string list
   | `Provides of Parse_info.t option * string * kind * kind_arg list option
