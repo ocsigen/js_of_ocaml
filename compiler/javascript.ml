@@ -216,6 +216,7 @@ let is_ident =
     else 0
   ) in
   fun s ->
+    not (Util.StringSet.mem s Reserved.keyword) &&
     try
       for i = 0 to String.length s - 1 do
         let code = l.(Char.code(s.[i])) in

@@ -57,8 +57,10 @@ inline.cmi : code.cmi
 instr.cmo : util.cmi instr.cmi
 instr.cmx : util.cmx instr.cmi
 instr.cmi :
-javascript.cmo : varPrinter.cmi parse_info.cmi code.cmi javascript.cmi
-javascript.cmx : varPrinter.cmx parse_info.cmx code.cmx javascript.cmi
+javascript.cmo : varPrinter.cmi util.cmi reserved.cmi parse_info.cmi \
+    code.cmi javascript.cmi
+javascript.cmx : varPrinter.cmx util.cmx reserved.cmx parse_info.cmx \
+    code.cmx javascript.cmi
 javascript.cmi : parse_info.cmi code.cmi
 js_assign.cmo : util.cmi option.cmi js_traverse.cmi javascript.cmi code.cmi \
     js_assign.cmi
@@ -120,12 +122,12 @@ linker.cmi : util.cmi parse_info.cmi jsoo_primitive.cmi javascript.cmi
 minifyArg.cmo : compiler_version.cmi commonArg.cmi minifyArg.cmi
 minifyArg.cmx : compiler_version.cmx commonArg.cmx minifyArg.cmi
 minifyArg.cmi : commonArg.cmi
-minify.cmo : util.cmi pretty_print.cmi parse_js.cmi parse_info.cmi \
-    option.cmi minifyArg.cmi js_traverse.cmi js_output.cmi js_assign.cmi \
-    commonArg.cmi code.cmi
-minify.cmx : util.cmx pretty_print.cmx parse_js.cmx parse_info.cmx \
-    option.cmx minifyArg.cmx js_traverse.cmx js_output.cmx js_assign.cmx \
-    commonArg.cmx code.cmx
+minify.cmo : varPrinter.cmi util.cmi pretty_print.cmi parse_js.cmi \
+    parse_info.cmi option.cmi minifyArg.cmi js_traverse.cmi js_output.cmi \
+    js_assign.cmi commonArg.cmi code.cmi
+minify.cmx : varPrinter.cmx util.cmx pretty_print.cmx parse_js.cmx \
+    parse_info.cmx option.cmx minifyArg.cmx js_traverse.cmx js_output.cmx \
+    js_assign.cmx commonArg.cmx code.cmx
 option.cmo : util.cmi option.cmi
 option.cmx : util.cmx option.cmi
 option.cmi :
