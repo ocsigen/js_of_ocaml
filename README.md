@@ -28,6 +28,8 @@ OCaml programs run on Web browsers.
  * ocp-indent: needed to support indentation in the toplevel
  * higlo: needed to support Syntax highlighting in the toplevel
  * cohttp: needed to build the toplevel webserver
+ * tyxml
+ * reactiveData
 
 ## Installation
 
