@@ -3,7 +3,7 @@ Characters 45-48:
   fun (obj : int) -> obj##p;;
                      ^^^
 Error: This expression has type int but an expression was expected of type
-         'jsoo_32b5ee21 Js.t
+         < .. > Js.t
 Characters 25-28:
   fun (obj : < > Js.t) -> obj##p;;
                           ^^^

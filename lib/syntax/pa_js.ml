@@ -115,7 +115,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           _loc e_loc (e:string) v_loc (v:string) v_typ m_loc m m_typ args =
     let typ_var = fresh_type e_loc in
     let cstr =
-      let _loc = e_loc in <:expr<(($lid:e$ : $js_t_id _loc "t"$ $typ_var$) : $js_t_id _loc "t"$ < .. > )>> in
+      let _loc = e_loc in <:expr<(($lid:e$ : $js_t_id _loc "t"$ < .. >) : $js_t_id _loc "t"$ $typ_var$)>> in
     let x = let _loc = e_loc in <:expr<x>> in
     let body =
       let _loc = Syntax.Loc.merge e_loc m_loc in
