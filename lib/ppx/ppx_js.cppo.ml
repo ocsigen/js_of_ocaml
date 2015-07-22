@@ -363,95 +363,95 @@ let js_mapper _args =
       default_loc := expr.pexp_loc;
       let { pexp_attributes; _ } = expr in
       let new_expr = match expr with
-    (* obj##.var *)
-    | [%expr [%e? obj] ##. [%e? meth] ] ->
-      let obj = mapper.expr mapper obj in
-      let meth = exp_to_string meth in
-      let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_obj" in
-      let e_res, p_res = mk_id ~loc:expr.pexp_loc "jsoo_res" in
-      let new_expr =
-        [%expr
-          let [%p p_obj] = [%e obj] in
-          let [%p p_res] = [%e Js.unsafe "get" [e_obj ; str @@ unescape meth]] in
-          [%e
-            constrain_types
-              e_obj
-              e_res [%type: 'jsoo_res]
-              meth (Js.type_ "gen_prop" [[%type: <get : 'jsoo_res; ..> ]])
-              []
-          ]
-        ]
-      in
-      mapper.expr mapper  { new_expr with pexp_attributes }
-
-    (* obj##.var := value *)
-    | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as res] := [%e? value]] ->
-      default_loc := res.pexp_loc ;
-      let obj = mapper.expr mapper  obj in
-      let value = mapper.expr mapper  value in
-      let meth = exp_to_string meth in
-      let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_obj" in
-      let e_value, p_value = mk_id ~loc:value.pexp_loc "jsoo_arg" in
-      let new_expr =
-        [%expr
-          let [%p p_obj] = [%e obj]
-          and [%p p_value] = [%e value] in
-          let _ = [%e
-            constrain_types
-              e_obj
-              e_value [%type: 'jsoo_arg]
-              meth (Js.type_ "gen_prop" [[%type: <set : 'jsoo_arg -> unit ; ..> ]])
-              []
-          ]
+        (* obj##.var *)
+        | [%expr [%e? obj] ##. [%e? meth] ] ->
+          let obj = mapper.expr mapper obj in
+          let meth = exp_to_string meth in
+          let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_obj" in
+          let e_res, p_res = mk_id ~loc:expr.pexp_loc "jsoo_res" in
+          let new_expr =
+            [%expr
+              let [%p p_obj] = [%e obj] in
+              let [%p p_res] = [%e Js.unsafe "get" [e_obj ; str @@ unescape meth]] in
+              [%e
+                constrain_types
+                  e_obj
+                  e_res [%type: 'jsoo_res]
+                  meth (Js.type_ "gen_prop" [[%type: <get : 'jsoo_res; ..> ]])
+                  []
+              ]
+            ]
           in
-          [%e Js.unsafe ~loc:expr.pexp_loc "set" [ e_obj ; str @@ unescape meth ; e_value]]
-        ]
+          mapper.expr mapper  { new_expr with pexp_attributes }
+
+        (* obj##.var := value *)
+        | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as res] := [%e? value]] ->
+          default_loc := res.pexp_loc ;
+          let obj = mapper.expr mapper  obj in
+          let value = mapper.expr mapper  value in
+          let meth = exp_to_string meth in
+          let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_obj" in
+          let e_value, p_value = mk_id ~loc:value.pexp_loc "jsoo_arg" in
+          let new_expr =
+            [%expr
+              let [%p p_obj] = [%e obj]
+              and [%p p_value] = [%e value] in
+              let _ = [%e
+                constrain_types
+                  e_obj
+                  e_value [%type: 'jsoo_arg]
+                  meth (Js.type_ "gen_prop" [[%type: <set : 'jsoo_arg -> unit ; ..> ]])
+                  []
+              ]
+              in
+              [%e Js.unsafe ~loc:expr.pexp_loc "set" [ e_obj ; str @@ unescape meth ; e_value]]
+            ]
+          in
+          mapper.expr mapper  { new_expr with pexp_attributes }
+
+        (* obj##meth arg1 arg2 .. *)
+        (* obj##(meth arg1 arg2) .. *)
+        | {pexp_desc = Pexp_apply (([%expr [%e? obj] ## [%e? meth]] as expr), args); _}
+        | [%expr [%e? obj] ## [%e? {pexp_desc = Pexp_apply((meth as expr),args); _}]]
+          ->
+          let meth = exp_to_string meth in
+          let obj = mapper.expr mapper  obj in
+          let args = List.map (fun (s,e) -> s, mapper.expr mapper e) args in
+          let new_expr = method_call ~loc:expr.pexp_loc obj meth args in
+          mapper.expr mapper  { new_expr with pexp_attributes }
+        (* obj##meth *)
+        | ([%expr [%e? obj] ## [%e? meth]] as expr) ->
+          let obj = mapper.expr mapper  obj in
+          let meth = exp_to_string meth in
+          let new_expr = method_call ~loc:expr.pexp_loc obj meth [] in
+          mapper.expr mapper  { new_expr with pexp_attributes }
+
+        (* new%js constr] *)
+        | [%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]] ->
+          let new_expr = new_object constr [] in
+          mapper.expr mapper { new_expr with pexp_attributes }
+        (* new%js constr arg1 arg2 ..)] *)
+        | {pexp_desc = Pexp_apply
+                         ([%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]]
+                         , args); _ } ->
+          let args = List.map (fun (s,e) -> s, mapper.expr mapper e) args in
+          let new_expr =
+            new_object constr args
+          in
+          mapper.expr mapper  { new_expr with pexp_attributes }
+
+        (* object%js ... end *)
+        | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct; _} ]]] ->
+          let fields = preprocess_literal_object (mapper.expr mapper) class_struct.pcstr_fields in
+          let new_expr = match fields with
+            | `Fields fields ->
+              literal_object class_struct.pcstr_self fields
+            | `Error e -> Exp.extension e in
+          mapper.expr mapper  { new_expr with pexp_attributes }
+
+        | _ -> default_mapper.expr mapper expr
       in
-      mapper.expr mapper  { new_expr with pexp_attributes }
-
-    (* obj##meth arg1 arg2 .. *)
-    (* obj##(meth arg1 arg2) .. *)
-    | {pexp_desc = Pexp_apply (([%expr [%e? obj] ## [%e? meth]] as expr), args); _}
-    | [%expr [%e? obj] ## [%e? {pexp_desc = Pexp_apply((meth as expr),args); _}]]
-      ->
-      let meth = exp_to_string meth in
-      let obj = mapper.expr mapper  obj in
-      let args = List.map (fun (s,e) -> s, mapper.expr mapper e) args in
-      let new_expr = method_call ~loc:expr.pexp_loc obj meth args in
-      mapper.expr mapper  { new_expr with pexp_attributes }
-    (* obj##meth *)
-    | ([%expr [%e? obj] ## [%e? meth]] as expr) ->
-      let obj = mapper.expr mapper  obj in
-      let meth = exp_to_string meth in
-      let new_expr = method_call ~loc:expr.pexp_loc obj meth [] in
-      mapper.expr mapper  { new_expr with pexp_attributes }
-
-    (* new%js constr] *)
-    | [%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]] ->
-      let new_expr = new_object constr [] in
-      mapper.expr mapper { new_expr with pexp_attributes }
-    (* new%js constr arg1 arg2 ..)] *)
-    | {pexp_desc = Pexp_apply
-                     ([%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]]
-                     , args); _ } ->
-      let args = List.map (fun (s,e) -> s, mapper.expr mapper e) args in
-      let new_expr =
-        new_object constr args
-      in
-      mapper.expr mapper  { new_expr with pexp_attributes }
-
-    (* object%js ... end *)
-    | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct; _} ]]] ->
-      let fields = preprocess_literal_object (mapper.expr mapper) class_struct.pcstr_fields in
-      let new_expr = match fields with
-        | `Fields fields ->
-          literal_object class_struct.pcstr_self fields
-        | `Error e -> Exp.extension e in
-      mapper.expr mapper  { new_expr with pexp_attributes }
-
-    | _ -> default_mapper.expr mapper expr
-  in
-  default_loc := prev_default_loc;
-  new_expr
+      default_loc := prev_default_loc;
+      new_expr
     )
   }
