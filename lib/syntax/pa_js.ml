@@ -303,8 +303,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         (<:expr< fun $pat$ -> $body$ >>) ->
         <:expr< fun ($pat$ : $ty$) -> $annotate_body types ret_ty body$ >>
       | [], body -> <:expr< ($body$ : $ret_ty$) >>
-      | _ -> raise @@
-        Invalid_argument "Inconsistent number of arguments"
+      | _ -> raise (Invalid_argument "Inconsistent number of arguments")
     in
 
     let create_value = function

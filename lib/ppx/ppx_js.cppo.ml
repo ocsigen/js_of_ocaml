@@ -51,7 +51,7 @@ let random_tvar () =
 
 let inside_Js = lazy
   (try
-     Filename.basename @@ Filename.chop_extension !Location.input_name = "js"
+     Filename.basename (Filename.chop_extension !Location.input_name) = "js"
    with Invalid_argument _ -> false)
 
 module Js = struct
@@ -59,7 +59,7 @@ module Js = struct
   let type_ ?loc s args =
     if Lazy.force inside_Js
     then Typ.constr ?loc (lid s) args
-    else Typ.constr ?loc (lid @@ "Js."^s) args
+    else Typ.constr ?loc (lid ("Js."^s)) args
 
 #if OCAML_VERSION < (4, 03, 0)
   let nolabel = ""
@@ -70,19 +70,19 @@ module Js = struct
   let unsafe ?loc s args =
     let args = List.map (fun x -> nolabel,x) args in
     if Lazy.force inside_Js
-    then Exp.(apply ?loc (ident ?loc @@ lid ?loc ("Unsafe."^s)) args)
-    else Exp.(apply ?loc (ident ?loc @@ lid ?loc ("Js.Unsafe."^s)) args)
+    then Exp.(apply ?loc (ident ?loc (lid ?loc ("Unsafe."^s))) args)
+    else Exp.(apply ?loc (ident ?loc (lid ?loc ("Js.Unsafe."^s))) args)
 
   let fun_ ?loc s args =
     let args = List.map (fun x -> nolabel,x) args in
     if Lazy.force inside_Js
-    then Exp.(apply ?loc (ident ?loc @@ lid ?loc s) args)
-    else Exp.(apply ?loc (ident ?loc @@ lid ?loc ("Js."^s)) args)
+    then Exp.(apply ?loc (ident ?loc (lid ?loc s)) args)
+    else Exp.(apply ?loc (ident ?loc (lid ?loc ("Js."^s))) args)
 
 end
 
 
-let fresh_type loc = Typ.var ~loc @@ random_tvar ()
+let fresh_type loc = Typ.var ~loc (random_tvar ())
 
 let unescape lab =
   assert (lab <> "");
@@ -146,22 +146,22 @@ let method_call ~loc obj meth args =
   let args =
     List.map
       (fun (l,e) ->
-       let (ev, pv) = mk_id ~loc:e.pexp_loc @@ random_var () in
+       let (ev, pv) = mk_id ~loc:e.pexp_loc (random_var ()) in
        (e, ev, pv, (l, fresh_type obj.pexp_loc)))
       args in
   let ret_type = fresh_type obj.pexp_loc in
   let method_type =
-    arrows (List.map (fun (_,_,_,x) -> x) args) @@ Js.type_ "meth" [ret_type] in
-  let e_obj, p_obj = mk_id ~loc:obj.pexp_loc @@ "jsoo_self" in
-  let e_res, p_res = mk_id ~loc:obj.pexp_loc @@ "jsoo_res" in
+    arrows (List.map (fun (_,_,_,x) -> x) args) (Js.type_ "meth" [ret_type]) in
+  let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_self" in
+  let e_res, p_res = mk_id ~loc:obj.pexp_loc "jsoo_res" in
   let meth_call =
     Js.unsafe "meth_call" [
       e_obj ;
-      str @@ unescape meth ;
-      Exp.array @@
-        List.map
-          (fun (_, ev, _, _) -> Js.unsafe "inject" [ev])
-          args
+      str (unescape meth) ;
+      Exp.array
+        (List.map
+           (fun (_, ev, _, _) -> Js.unsafe "inject" [ev])
+           args)
       ]
   in
 
@@ -187,10 +187,10 @@ let new_object constr args =
   let obj_type = Js.type_ "t" [fresh_type constr.loc] in
   let constr_fun_type = arrows (List.map snd args) obj_type in
   let args =
-    Exp.array @@
-    List.map
-      (fun (e, (_l,t)) -> Js.unsafe "inject" [Exp.constraint_ e t])
-      args
+    Exp.array
+      (List.map
+         (fun (e, (_l,t)) -> Js.unsafe "inject" [Exp.constraint_ e t])
+         args)
   in
   let x = random_var () in
   let constr =
@@ -253,7 +253,7 @@ let preprocess_literal_object mappper fields =
         "This field is not valid inside a js literal object."
   in
   try
-    `Fields (List.rev @@ snd @@ List.fold_left f (S.empty, []) fields)
+    `Fields (List.rev (snd (List.fold_left f (S.empty, []) fields)))
   with Location.Error error -> `Error (extension_of_error error)
 
 (** Desugar something like this:
@@ -310,8 +310,7 @@ let literal_object self_id fields =
                      annotate_body types ret_ty body)
        }
     | [], body -> Exp.constraint_ ~loc:body.pexp_loc body ret_ty
-    | _ -> raise @@
-             Invalid_argument "Inconsistent number of arguments"
+    | _ -> raise (Invalid_argument "Inconsistent number of arguments")
   in
 
   let create_value = function
@@ -331,18 +330,19 @@ let literal_object self_id fields =
   let values = List.map create_value fields in
 
   let make_obj =
-    funs (List.map (fun (name,_exp) -> pvar name) values) @@
-      Exp.constraint_
-        (Js.unsafe
-           "obj"
-           [Exp.array (
-                List.map
-                  (fun (name, _exp) ->
-                   tuple [str name ; Js.unsafe "inject" [evar name] ]
-                  )
-                  values
-              )])
-        (Typ.alias (Js.type_ "t" [obj_type]) self_type)
+    funs
+      (List.map (fun (name,_exp) -> pvar name) values)
+      (Exp.constraint_
+         (Js.unsafe
+            "obj"
+            [Exp.array (
+               List.map
+                 (fun (name, _exp) ->
+                    tuple [str name ; Js.unsafe "inject" [evar name] ]
+                 )
+                 values
+             )])
+         (Typ.alias (Js.type_ "t" [obj_type]) self_type))
   in
 
   let value_declaration =
@@ -351,7 +351,7 @@ let literal_object self_id fields =
       ( Vb.mk (pvar "make_obj") make_obj ::
         List.map (fun (name, exp) -> Vb.mk (pvar name) exp) values
       )
-      (app (evar "make_obj") @@ List.map (fun (name,_) -> evar name) values)
+      (app (evar "make_obj") (List.map (fun (name,_) -> evar name) values))
   in
 
   value_declaration
@@ -372,7 +372,7 @@ let js_mapper _args =
           let new_expr =
             [%expr
               let [%p p_obj] = [%e obj] in
-              let [%p p_res] = [%e Js.unsafe "get" [e_obj ; str @@ unescape meth]] in
+              let [%p p_res] = [%e Js.unsafe "get" [e_obj ; str (unescape meth)]] in
               [%e
                 constrain_types
                   e_obj
@@ -404,7 +404,7 @@ let js_mapper _args =
                   []
               ]
               in
-              [%e Js.unsafe ~loc:expr.pexp_loc "set" [ e_obj ; str @@ unescape meth ; e_value]]
+              [%e Js.unsafe ~loc:expr.pexp_loc "set" [ e_obj ; str (unescape meth) ; e_value]]
             ]
           in
           mapper.expr mapper  { new_expr with pexp_attributes }
