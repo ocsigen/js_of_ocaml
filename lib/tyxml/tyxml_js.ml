@@ -78,6 +78,7 @@ module Xml = struct
       let n = Js.string n in
         match att with
         | Attr a ->
+          (* Note that once we have weak pointers working, we'll need to React.S.retain *) 
           let _ : unit React.S.t = React.S.map (function
           | Some v -> ignore(e##setAttribute(n, v))
           | None ->   ignore(e##removeAttribute(n))) a
@@ -192,6 +193,7 @@ module Util = struct
 
   let update_children (dom : Dom.node Js.t) (nodes : Dom.node Js.t t) =
     removeChildren dom;
+    (* Note that once we have weak pointers working, we'll need to React.S.retain *) 
     let _s : unit React.S.t = fold (fun () msg -> merge_msg dom msg) nodes ()
     in ()
 end
