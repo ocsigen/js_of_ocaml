@@ -42,13 +42,10 @@ module Xml = struct
   type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
   type attrib_k =
     | Event of biggest_event_handler
-    | Attr of Dom.attr Js.t
+    | Attr of Js.js_string Js.t option React.S.t
   type attrib = aname * attrib_k
 
-  let attr name v =
-    let a = Dom_html.document##createAttribute(Js.string name) in
-    a##value <- v;
-    name,Attr a
+  let attr name v = name,Attr (React.S.const (Some v))
 
   let float_attrib name value : attrib = attr name (js_string_of_float value)
   let int_attrib name value = attr name (js_string_of_int value)
@@ -78,9 +75,15 @@ module Xml = struct
 
   let attach_attribs e l =
     List.iter (fun (n,att) ->
+      let n = Js.string n in
         match att with
-        | Attr a -> ignore(e##setAttributeNode(a))
-        | Event h -> Js.Unsafe.set e (Js.string n) (fun ev -> Js.bool (h ev))
+        | Attr a ->
+          (* Note that once we have weak pointers working, we'll need to React.S.retain *) 
+          let _ : unit React.S.t = React.S.map (function
+          | Some v -> ignore(e##setAttribute(n, v))
+          | None ->   ignore(e##removeAttribute(n))) a
+          in ()
+        | Event h -> Js.Unsafe.set e n (fun ev -> Js.bool (h ev))
       ) l
 
   let leaf ?(a=[]) name =
@@ -190,6 +193,7 @@ module Util = struct
 
   let update_children (dom : Dom.node Js.t) (nodes : Dom.node Js.t t) =
     removeChildren dom;
+    (* Note that once we have weak pointers working, we'll need to React.S.retain *) 
     let _s : unit React.S.t = fold (fun () msg -> merge_msg dom msg) nodes ()
     in ()
 end
@@ -209,10 +213,7 @@ module R = struct
     type attrib = Xml.attrib
 
     let attr name f s =
-      let a = Dom_html.document##createAttribute(Js.string name) in
-      let _ = Xml_wrap.fmap (fun s -> match f s with
-          | None -> ()
-          | Some v -> a##value <- v) s in
+      let a = Xml_wrap.fmap f s in
       name,Xml.Attr a
 
     let float_attrib name s = attr name (fun f -> Some (js_string_of_float f)) s
@@ -263,6 +264,15 @@ module R = struct
 
   module Svg = Svg_f.MakeWrapped(Xml_wrap)(Xml_wed_svg)
   module Html5 = Html5_f.MakeWrapped(Xml_wrap)(Xml_wed)(Svg)
+  let filter_attrib (name,a) on =
+    match a with
+    | Xml.Event _ ->
+      raise (Invalid_argument "filter_attrib not implemented for event handler")
+    | Xml.Attr a ->
+      name,
+      Xml.Attr
+        (React.S.l2
+           (fun on a -> if on then a else None) on a)
 end
 
 module To_dom = Tyxml_cast.MakeTo(struct

@@ -63,6 +63,7 @@ module R : sig
   module Html5 : Html5_sigs.MakeWrapped(Xml_wrap)(Xml)(Svg).T
     with type +'a elt = 'a Html5.elt
      and type +'a attrib = 'a Html5.attrib
+  val filter_attrib : 'a Html5.attrib -> bool React.signal -> 'a Html5.attrib
 end
 
 module To_dom : Tyxml_cast_sigs.TO with type 'a elt = 'a Html5.elt
