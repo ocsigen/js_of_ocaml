@@ -237,7 +237,7 @@ let expr_escape st _x e =
                 Array.iter
                   (fun x ->
                      begin match st.defs.(Var.idx x) with
-                       | Expr (Block (_, [|k; v|])) ->
+                       | Expr (Block (_, [|_k; v|])) ->
                          block_escape st v
                        | _ ->
                          block_escape st x

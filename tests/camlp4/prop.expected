@@ -3,7 +3,7 @@ Characters 45-48:
   fun (obj : int) -> obj##p;;
                      ^^^
 Error: This expression has type int but an expression was expected of type
-         'a Js.t
+         < .. > Js.t
 Characters 25-28:
   fun (obj : < > Js.t) -> obj##p;;
                           ^^^
@@ -14,7 +14,8 @@ Characters 53-59:
                                                       ^^^^^^
 Error: This expression has type
          float Js.writeonly_prop = < set : float -> unit > Js.gen_prop
-       but an expression was expected of type < get : 'a; .. > Js.gen_prop
+       but an expression was expected of type
+         < get : 'jsoo_res; .. > Js.gen_prop
        The first object type has no method get
 Characters 43-49:
   fun (obj : < p : float Js.prop > Js.t) -> obj##p + 1;;

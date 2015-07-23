@@ -20,9 +20,9 @@
 
 let rnd = Random.State.make [|0x313511d4|]
 let random_var () =
-  Format.sprintf "x%08Lx" (Random.State.int64 rnd 0x100000000L)
+  Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
 let random_tvar () =
-  Format.sprintf "A%08Lx" (Random.State.int64 rnd 0x100000000L)
+  Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
 
 module StringMap = Map.Make(String)
 
@@ -103,11 +103,19 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       (fun arg_typ rem_typ -> <:ctyp< $arg_typ$ -> $rem_typ$ >>)
       args ret
 
+  let funs _loc args ret =
+    List.fold_right (fun x next_fun -> <:expr< fun $lid:x$ -> $next_fun$ >> ) args ret
+
+
+  let rec apply _loc init = function
+    | [] -> init
+    | x::xs -> apply _loc <:expr< $init$ $x$ >> xs
 
   let constrain_types
           _loc e_loc (e:string) v_loc (v:string) v_typ m_loc m m_typ args =
+    let typ_var = fresh_type e_loc in
     let cstr =
-      let _loc = e_loc in <:expr<($lid:e$ : $js_t_id _loc "t"$ 'B)>> in
+      let _loc = e_loc in <:expr<(($lid:e$ : $js_t_id _loc "t"$ < .. >) : $js_t_id _loc "t"$ $typ_var$)>> in
     let x = let _loc = e_loc in <:expr<x>> in
     let body =
       let _loc = Syntax.Loc.merge e_loc m_loc in
@@ -127,27 +135,30 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       let module M = struct
         value res =
           let _ = $cstr$ in
-          let _ = fun (x : 'B) -> $body$ in
+          let _ = fun (x : $typ_var$) -> $body$ in
           $res$;
       end in M.res >>
 
   let method_call _loc obj lab lab_loc args =
-    let args = List.map (fun e -> (e, random_var (), fresh_type _loc)) args in
+    let args = List.map (fun e ->
+      let my_var = random_var () in
+      let my_typ = fresh_type _loc in
+      (e, my_var, my_typ)) args in
     let ret_typ = fresh_type _loc in
     let method_type =
       arrows _loc (List.map (fun (_,_,ty) -> ty) args)
              <:ctyp< $js_t_id _loc "meth"$ $ret_typ$ >>
     in
-    let o = random_var () in
-    let res = random_var () in
+    let o = "jsoo_self" in
+    let res = "jsoo_res" in
     let meth_args =
       List.map (fun (_, x, _) -> <:expr< $js_u_id _loc "inject"$ $lid:x$ >>)
         args
     in
     let meth_args = make_array _loc meth_args in
     let o_loc = Ast.loc_of_expr obj in
-    List.fold_left
-      (fun e' (e, x, _) -> <:expr< let $lid:x$ = $e$ in $e'$>>)
+    let binding = List.map (fun (e, x, _) -> <:binding< $lid:x$ = $e$ >>) args in
+    let body =
       <:expr<
         let $lid:o$ = $obj$ in
         let $lid:res$ =
@@ -155,7 +166,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         $constrain_types _loc o_loc o _loc res ret_typ
            lab_loc lab method_type args$
       >>
-      args
+    in
+    match args with
+    | [] -> body
+    | _ -> <:expr< let $list:binding$ in $body$ >>
 
   let new_object _loc constructor args =
     let args = List.map (fun e -> (e, fresh_type _loc)) args in
@@ -166,6 +180,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         (fun (e, t) -> <:expr< $js_u_id _loc "inject"$ $with_type e t$ >>) args
     in
     let args = make_array _loc args in
+
     let x = random_var () in
     let constr =
       with_type constructor
@@ -283,29 +298,48 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
     let obj_type = <:ctyp< < $list:List.map create_method_type fields$  > >> in
 
+    let rec annotate_body fun_ty ret_ty body = match fun_ty, body with
+      | ty :: types,
+        (<:expr< fun $pat$ -> $body$ >>) ->
+        <:expr< fun ($pat$ : $ty$) -> $annotate_body types ret_ty body$ >>
+      | [], body -> <:expr< ($body$ : $ret_ty$) >>
+      | _ -> raise @@
+        Invalid_argument "Inconsistent number of arguments"
+    in
+
     let create_value = function
       | `Val {val_label=(lab,_loc); val_body=(e,_);val_typ; _} ->
-	 <:expr< ($str:lab$,
-          $js_u_id _loc "inject"$ $with_type e val_typ$) >>
+         lab,
+         <:expr< $with_type e val_typ$ >>
       | `Meth {meth_label=(lab,_loc); meth_body=(e,_);meth_fun_typ; meth_ret_typ; _} ->
-	 let all = arrows _loc meth_fun_typ meth_ret_typ in
-	 let typ = <:ctyp< $js_t_id _loc "meth_callback"$ $self_typ$ $all$ >> in
          let e,wrapper = match self with
            | None -> e,"wrap_callback"
-           | Some self_patt ->
-             <:expr<fun ($self_patt$ : $self_typ$) -> $e$  >>,
+           | Some self_pat ->
+             annotate_body
+               (self_typ :: meth_fun_typ)
+               meth_ret_typ
+               <:expr< fun $self_pat$ -> $e$ >>,
              "wrap_meth_callback" in
-	 <:expr< ($str:lab$,
-	  $js_u_id _loc "inject"$
-	  $with_type
-	  (<:expr< $js_id _loc wrapper$ $e$>>) typ$) >>
+	 lab,
+         <:expr< $js_id _loc wrapper$ $e$ >>
     in
     let args = List.map create_value fields in
-    let args = make_array _loc args in
-    let x = random_var () in
+    let make_obj =
+      funs _loc (List.map (fun (name, _expr) -> name) args)
+        (<:expr<
+          ( $js_u_id _loc "obj"$
+            $make_array _loc (List.map (fun (name,_) ->
+               <:expr< ($str:name$ , $js_u_id _loc "inject"$ $lid:name$) >>) args)$
+            : $js_t_id _loc "t"$ $obj_type$ as $self_typ$ )
+        >>)in
+    let bindings =
+      List.map
+        (fun (lab, expr) -> <:binding< $lid:lab$ = $expr$ >>)
+        (("make_obj",make_obj)::args)
+    in
     <:expr<
-      let $lid:x$ : (Js.t $obj_type$ as $self_typ$) = Js.Unsafe.obj $args$ in
-      $lid:x$
+      let $list:bindings$ in
+      $apply _loc <:expr< make_obj >> (List.map (fun (lab,_) -> <:expr< $lid:lab$ >>) args) $
     >>
 
 
@@ -321,25 +355,25 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     expr: BEFORE "."
     ["##" RIGHTA
      [ e = SELF; (lab_loc, lab) = jsmeth ->
-       let o = random_var () in
+       let o = "jsoo_obj" in
        let o_loc = Ast.loc_of_expr e in
-       let res = random_var () in
+       let res = "jsoo_res" in
        <:expr<
          let $lid:o$ = $e$ in
          let $lid:res$ = $js_u_id _loc "get"$ $lid:o$ $str:unescape lab$ in
-         $constrain_types _loc o_loc o _loc res <:ctyp< 'A >>
-            lab_loc lab <:ctyp< $js_t_id _loc "gen_prop"$ <get : 'A; ..> >> []$
+         $constrain_types _loc o_loc o _loc res <:ctyp< 'jsoo_res >>
+            lab_loc lab <:ctyp< $js_t_id _loc "gen_prop"$ <get : 'jsoo_res; ..> >> []$
        >>
      | e1 = SELF; (lab_loc, lab) = jsmeth; "<-"; e2 = expr LEVEL "top" ->
-       let o = random_var () in
+       let o = "jsoo_obj" in
        let o_loc = Ast.loc_of_expr e1 in
-       let v = random_var () in
+       let v = "jsoo_arg" in
        <:expr<
-         let $lid:v$ = $e2$ in
-         let $lid:o$ = $e1$ in
+         let $lid:o$ = $e1$
+         and $lid:v$ = $e2$ in
          let _ = $constrain_types _loc o_loc o (Ast.loc_of_expr e2) v
-                    <:ctyp< 'A >> lab_loc lab
-                    <:ctyp< $js_t_id _loc "gen_prop"$ <set : 'A -> unit; ..> >>
+                    <:ctyp< 'jsoo_arg >> lab_loc lab
+                    <:ctyp< $js_t_id _loc "gen_prop"$ <set : 'jsoo_arg -> unit; ..> >>
                     []$ in
          $js_u_id _loc "set"$ $lid:o$ $str:unescape lab$ ($lid:v$)
          >>
@@ -353,7 +387,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
          new_object _loc e []
      | "jsnew"; e = expr LEVEL "label"; "("; l = comma_expr; ")" ->
          new_object _loc e (parse_comma_list l)
-     | "jsobject"; "end" -> <:expr< ($js_u_id _loc "obj"$ [| |] : Js.t < > ) >>
+     | "jsobject"; "end" -> <:expr< ($js_u_id _loc "obj"$ [| |] : $js_t_id _loc "t"$ < > ) >>
      | "jsobject"; self = opt_class_self_patt_jsoo; l = class_structure ; "end" ->
        let field_list = parse_class_str_list l in
        let fields = List.map parse_class_item field_list in

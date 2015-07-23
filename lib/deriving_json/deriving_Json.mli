@@ -41,6 +41,7 @@ module type Json = sig
   val read: Deriving_Json_lexer.lexbuf -> a
   val to_string: a -> string
   val from_string: string -> a
+
   (**/**)
   val match_variant: [`Cst of int | `NCst of int] -> bool
   val read_variant: Deriving_Json_lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
