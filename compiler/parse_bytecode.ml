@@ -672,6 +672,7 @@ and compile infos pc state instrs =
         (instrs, Stop, state)
       end
       else begin
+        State.name_vars state (Debug.find infos.debug pc);
         if debug_parser () then Format.eprintf "Branch %d@." pc;
         (instrs, Branch (pc, State.stack_vars state), state)
       end
