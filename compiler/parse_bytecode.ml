@@ -103,8 +103,13 @@ module Debug : sig
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
   val mem : data -> Code.addr -> bool
   val paths : data -> string list
-  val read : crcs:(string * string option) list -> includes:string list -> in_channel -> data
-  val no_data : unit -> data
+  val read
+    : data -> crcs:(string * string option) list -> includes:string list
+    -> in_channel -> unit
+  val read_event_list
+    : data -> crcs:(string * string option) list -> includes:string list -> orig:int
+    -> in_channel -> unit
+  val create : unit -> data
   val fold : data -> (Code.addr -> Instruct.debug_event -> 'a -> 'a) -> 'a -> 'a
 end = struct
 
@@ -120,7 +125,7 @@ end = struct
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
-  let no_data () = Hashtbl.create 17, Hashtbl.create 17
+  let create () = Hashtbl.create 17, Hashtbl.create 17
 
   let is_empty (a,_) = Hashtbl.length a = 0
 
@@ -134,16 +139,13 @@ end = struct
       with Not_found ->
         uname, None
 
-  let read ~crcs ~includes ic =
-    let events_by_pc = Hashtbl.create 257 in
-    let units = Hashtbl.create 257 in
-    let read_paths : unit -> string list =
+
+  let read_event_list =
+    let read_paths : in_channel -> string list =
       match Util.Version.v with
-      | `V3 -> (fun () -> [])
-      | `V4_02 -> (fun () -> (input_value ic : string list)) in
-    let len = input_binary_int ic in
-    for _i = 0 to len - 1 do
-      let orig = input_binary_int ic in
+      | `V3 -> (fun _ -> [])
+      | `V4_02 -> (fun ic -> (input_value ic : string list)) in
+    fun (events_by_pc, units) ~crcs ~includes ~orig ic ->
       let evl : debug_event list = input_value ic in
 
       (* Work arround a bug in ocaml 4.02 *)
@@ -155,7 +157,7 @@ end = struct
       (* save the current position *)
       let pos = pos_in ic in
       let paths =
-        try Some (read_paths () @ includes)
+        try Some (read_paths ic @ includes)
         with Failure _ ->
           (* restore position *)
           seek_in ic pos; None in
@@ -167,22 +169,27 @@ end = struct
         let u =
           List.map
             (fun name ->
-               let crc =
-                 try List.assoc name crcs
-                 with Not_found -> None in
-               let name, source = find_ml_in_paths paths name in
-               { name; crc; source; paths }) u
+              let crc =
+                try List.assoc name crcs
+                with Not_found -> None in
+              let name, source = find_ml_in_paths paths name in
+              { name; crc; source; paths }) u
         in
         List.iter
           (fun unit ->
-             Hashtbl.add units unit.name unit) u;
+            Hashtbl.add units unit.name unit) u;
         List.iter
           (fun ev ->
-             relocate_event orig ev;
-             Hashtbl.add events_by_pc ev.ev_pos ev)
+            relocate_event orig ev;
+            Hashtbl.add events_by_pc ev.ev_pos ev)
           evl
-    done;
-    events_by_pc, units
+
+  let read (events_by_pc, units) ~crcs ~includes ic =
+    let len = input_binary_int ic in
+    for _i = 0 to len - 1 do
+      let orig = input_binary_int ic in
+      read_event_list (events_by_pc, units) ~crcs ~includes ~orig ic
+    done
 
   let find (events_by_pc,_) pc =
     try
@@ -1710,12 +1717,12 @@ let match_exn_traps ((_, blocks, _) as p) =
 
 (****)
 
-let parse_bytecode ?(debug=`No) code globals debug_data =
+let parse_bytecode ~debug code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
   let blocks =
     Blocks.analyse
-      (if debug = `Full then debug_data else Debug.no_data ()) code in
+      (if debug = `Full then debug_data else Debug.create ()) code in
   let blocks =
     if debug = `Full
     then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks
@@ -1822,7 +1829,7 @@ let read_toc ic =
   done;
   !section_table
 
-let exe_from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
+let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
 
   let toc = read_toc ic in
 
@@ -1850,17 +1857,14 @@ let exe_from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
   ignore(seek_section toc ic "CRCS");
   let crcs = (input_value ic : (string * Digest.t option) list) in
 
-  let debug_data =
-    if debug = `No then
-      Debug.no_data ()
+  begin
+    if debug = `No then ()
     else
       try
         ignore(seek_section toc ic "DBUG");
-        let debug = Debug.read ~crcs ~includes ic in
-        debug
-      with Not_found ->
-        Debug.no_data ()
-  in
+        Debug.read debug_data ~crcs ~includes ic
+      with Not_found -> ()
+  end;
 
   let globals = make_globals (Array.length init_data) init_data primitive_table in
 
@@ -1941,8 +1945,8 @@ let exe_from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
 (* As input: list of primitives + size of global table *)
 let from_bytes primitives (code : code) =
   let globals = make_globals 0 [||] primitives in
-  let debug_data = Debug.no_data () in
-  let p = parse_bytecode code globals debug_data in
+  let debug_data = Debug.create () in
+  let p = parse_bytecode ~debug:`No code globals debug_data in
 
   let gdata = Var.fresh () in
   let body = Util.array_fold_right_i (fun i var l ->
@@ -2048,7 +2052,7 @@ module Reloc = struct
 
 end
 
-let from_compilation_units ~includes:_ ~debug:_ l =
+let from_compilation_units ~includes:_ ~debug ~debug_data l =
   let reloc = Reloc.create () in
   List.iter (fun (compunit, code) -> Reloc.step1 reloc compunit code) l;
   List.iter (fun (compunit, code) -> Reloc.step2 reloc compunit code) l;
@@ -2065,8 +2069,7 @@ let from_compilation_units ~includes:_ ~debug:_ l =
   let code =
     let l = List.map (fun (_,c) -> Bytes.to_string c) l in
     String.concat "" l in
-  let debug_data = Debug.no_data () in
-  let prog = parse_bytecode code globals debug_data in
+  let prog = parse_bytecode ~debug code globals debug_data in
   let gdata = Var.fresh () in
   let body = Util.array_fold_right_i (fun i var l ->
     match var with
@@ -2083,6 +2086,7 @@ let from_compilation_units ~includes:_ ~debug:_ l =
   prepend prog body,Util.StringSet.empty, debug_data
 
 let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
+  let debug_data = Debug.create () in
   let format =
     try
       let header = really_input_string ic Util.MagicNumber.size in
@@ -2105,8 +2109,13 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
         seek_in ic compunit.Cmo_format.cu_pos;
         let code = Bytes.create compunit.Cmo_format.cu_codesize in
         really_input ic code 0 compunit.Cmo_format.cu_codesize;
-        close_in ic;
-        let a,b,c = from_compilation_units ~includes ~debug [compunit, code] in
+        if debug = `No || compunit.Cmo_format.cu_debug = 0 then ()
+        else
+          begin
+            seek_in ic compunit.Cmo_format.cu_debug;
+            Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic;
+          end;
+        let a,b,c = from_compilation_units ~includes ~debug ~debug_data [compunit, code] in
         a,b,c,false
       | `Cma ->
         if magic <> Util.MagicNumber.current_cma
@@ -2114,14 +2123,21 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
         let pos_toc = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic pos_toc;
         let lib = (input_value ic : Cmo_format.library) in
+        let orig = ref 0 in
         let units = List.map (fun compunit ->
           seek_in ic compunit.Cmo_format.cu_pos;
           let code = Bytes.create compunit.Cmo_format.cu_codesize in
           really_input ic code 0 compunit.Cmo_format.cu_codesize;
+          if debug = `No || compunit.Cmo_format.cu_debug = 0 then ()
+          else
+            begin
+              seek_in ic compunit.Cmo_format.cu_debug;
+              Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic;
+              orig := !orig + compunit.Cmo_format.cu_codesize
+            end;
           compunit, code)
           lib.Cmo_format.lib_units in
-        close_in ic;
-        let a,b,c = from_compilation_units ~includes ~debug units in
+        let a,b,c = from_compilation_units ~includes ~debug ~debug_data units in
         a,b,c,false
       | _ ->
         raise Util.MagicNumber.(Bad_magic_number (to_string magic))
@@ -2131,7 +2147,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
       | `Exe ->
         if magic <> Util.MagicNumber.current_exe
         then raise Util.MagicNumber.(Bad_magic_version magic);
-        let a,b,c = exe_from_channel ~includes ~toplevel ~debug ic in
+        let a,b,c = exe_from_channel ~includes ~toplevel ~debug ~debug_data ic in
         a,b,c,true
       | _ ->
         raise Util.MagicNumber.(Bad_magic_number (to_string magic))
