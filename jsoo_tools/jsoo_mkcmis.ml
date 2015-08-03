@@ -56,4 +56,4 @@ let args =
   Compiler.Linker.load_files ["+runtime.js"];
   let pfs_fmt = Compiler.Pretty_print.to_out_channel oc in
   Compiler.Option.Optim.enable "pretty";
-  Compiler.Driver.f pfs_fmt (Compiler.Parse_bytecode.Debug.no_data ()) program
+  Compiler.Driver.f pfs_fmt (Compiler.Parse_bytecode.Debug.create ()) program
