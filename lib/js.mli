@@ -345,7 +345,7 @@ class type number = object
   method toFixed : int -> js_string t meth
   method toExponential : js_string t meth
   method toExponential_digits : int -> js_string t meth
-  method toPrecision : int -> js_string meth t
+  method toPrecision : int -> js_string t meth
 end
 
 external number_of_float : float -> number t = "caml_js_from_float"
