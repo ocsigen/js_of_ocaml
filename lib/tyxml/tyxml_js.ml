@@ -73,17 +73,37 @@ module Xml = struct
     let entity = Dom_html.decode_html_entities (Js.string ("&" ^ e ^ ";")) in
     (Dom_html.document##createTextNode(entity) :> Dom.node Js.t)
 
-  let attach_attribs e l =
+  (* TODO: fix get_prop
+     it only work when html attribute and dom property names correspond.
+     find a way to get dom property name corresponding to html attribute
+  *)
+
+  let get_prop node name =
+    if Js.Optdef.test (Js.Unsafe.get node name)
+    then Some name
+    else None
+
+  let iter_prop node name f =
+    match get_prop node name with
+    | Some n -> f n
+    | None -> ()
+
+  let attach_attribs node l =
     List.iter (fun (n,att) ->
       let n = Js.string n in
         match att with
         | Attr a ->
-          (* Note that once we have weak pointers working, we'll need to React.S.retain *) 
+          (* Note that once we have weak pointers working, we'll need to React.S.retain *)
           let _ : unit React.S.t = React.S.map (function
-          | Some v -> ignore(e##setAttribute(n, v))
-          | None ->   ignore(e##removeAttribute(n))) a
+          | Some v ->
+            ignore(node##setAttribute(n, v));
+            iter_prop node n (fun name -> Js.Unsafe.set node name v)
+          | None ->
+            ignore(node##removeAttribute(n));
+            iter_prop node n (fun name -> Js.Unsafe.delete node name)
+          ) a
           in ()
-        | Event h -> Js.Unsafe.set e n (fun ev -> Js.bool (h ev))
+        | Event h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
       ) l
 
   let leaf ?(a=[]) name =
@@ -193,7 +213,7 @@ module Util = struct
 
   let update_children (dom : Dom.node Js.t) (nodes : Dom.node Js.t t) =
     removeChildren dom;
-    (* Note that once we have weak pointers working, we'll need to React.S.retain *) 
+    (* Note that once we have weak pointers working, we'll need to React.S.retain *)
     let _s : unit React.S.t = fold (fun () msg -> merge_msg dom msg) nodes ()
     in ()
 end
