@@ -37,12 +37,15 @@
    @see <https://ocsigen.org/tyxml/dev/api/Html5_sigs.T> Html5_sigs.T to have a list of available functions to build HTML.
 *)
 
-module Xml : Xml_sigs.T
+module type XML =
+  Xml_sigs.T
   with type uri = string
    and type event_handler = Dom_html.event Js.t -> bool
    and type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
    and type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
    and type elt = Dom.node Js.t
+
+module Xml : XML with module W = Xml_wrap.NoWrap
 
 module Xml_wrap : Xml_wrap.T
   with type 'a t = 'a React.signal
@@ -57,10 +60,13 @@ module Svg : Svg_sigs.Make(Xml).T
 module Html5 : Html5_sigs.Make(Xml)(Svg).T
 
 module R : sig
-  module Svg : Svg_sigs.MakeWrapped(Xml_wrap)(Xml).T
+  module Xml : XML with module W = Xml_wrap
+
+  module Svg : Svg_sigs.Make(Xml).T
     with type +'a elt = 'a Svg.elt
      and type +'a attrib = 'a Svg.attrib
-  module Html5 : Html5_sigs.MakeWrapped(Xml_wrap)(Xml)(Svg).T
+
+  module Html5 : Html5_sigs.Make(Xml)(Svg).T
     with type +'a elt = 'a Html5.elt
      and type +'a attrib = 'a Html5.attrib
   val filter_attrib : 'a Html5.attrib -> bool React.signal -> 'a Html5.attrib
