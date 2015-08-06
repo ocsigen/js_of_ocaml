@@ -1,4 +1,4 @@
-===== 2.5 (2015-07-15) =====
+===== 2.6 (2015-07-15) =====
 
  * Features/Changes
  ** Compiler: Findlib is optionnal
@@ -6,7 +6,7 @@
  ** Compiler: Support for separate compilation (compile cm{o,a} -> js)
  ** Compiler: more inlining
  ** Syntax: new ppx syntax
- ** Syntax: js object litteral (camlp4 + ppx)
+ ** Syntax: js object literal (camlp4 + ppx)
  ** Runtime: support for Dynlink
  ** Runtime: Support for upcomming release of Bin_prot, Core_kernel, Async_kernel
  ** Lib: add requestAnimationFrame
