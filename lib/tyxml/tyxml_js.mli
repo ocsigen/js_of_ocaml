@@ -50,6 +50,7 @@ module Xml : XML with module W = Xml_wrap.NoWrap
 module Xml_wrap : Xml_wrap.T
   with type 'a t = 'a React.signal
    and type 'a tlist = 'a ReactiveData.RList.t
+   and type ('a, 'b) ft = 'a -> 'b
 
 module Util : sig
   val update_children : Dom.node Js.t -> Dom.node Js.t ReactiveData.RList.t -> unit

@@ -164,6 +164,7 @@ module Html5 = Html5_f.Make(Xml)(Svg)
 module Xml_wrap = struct
   type 'a t = 'a React.signal
   type 'a tlist = 'a ReactiveData.RList.t
+  type ('a, 'b) ft = 'a -> 'b
   let return = React.S.const
   let fmap f = React.S.map f
   let nil () = ReactiveData.RList.nil
