@@ -89,18 +89,24 @@ module Xml = struct
     | None -> ()
 
   let attach_attribs node l =
-    List.iter (fun (n,att) ->
-      let n = Js.string n in
+    List.iter (fun (n',att) ->
+      let n = Js.string n' in
         match att with
         | Attr a ->
           (* Note that once we have weak pointers working, we'll need to React.S.retain *)
           let _ : unit React.S.t = React.S.map (function
           | Some v ->
             ignore(node##setAttribute(n, v));
-            iter_prop node n (fun name -> Js.Unsafe.set node name v)
+            begin match n' with
+            | "style" -> node##cssText <- v;
+            | _ -> iter_prop node n (fun name -> Js.Unsafe.set node name v)
+            end
           | None ->
             ignore(node##removeAttribute(n));
-            iter_prop node n (fun name -> Js.Unsafe.delete node name)
+            begin match n' with
+            | "style" -> node##cssText <- Js.string "";
+            | _ -> iter_prop node n (fun name -> Js.Unsafe.delete node name)
+            end
           ) a
           in ()
         | Event h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
