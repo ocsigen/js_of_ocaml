@@ -350,6 +350,14 @@ let run _ =
   Sys_js.set_channel_flusher stdout     (append Colorize.text  output "stdout");
   Sys_js.set_channel_flusher stderr     (append Colorize.text  output "stderr");
 
+  let readline () =
+    Js.Opt.case
+      (Dom_html.window##prompt
+         (Js.string "The toplevel expects inputs:", Js.string ""))
+      (fun () -> "")
+      (fun s -> Js.to_string s ^ "\n") in
+  Sys_js.set_channel_filler stdin readline;
+
   setup_share_button ~output;
   setup_examples ~container ~textbox;
   setup_pseudo_fs ();

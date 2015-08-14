@@ -26,6 +26,11 @@ val set_channel_flusher : out_channel -> (string -> unit) -> unit
       [set_channel_flusher chan cb] install the callback [cb] for [chan] out_channel.
       [cb] will be called with the string to flush. *)
 
+val set_channel_filler : in_channel -> (unit -> string) -> unit
+  (** Set a callback to be called when an in_channel wants to fill its
+      buffer. [set_channel_filler chan cb] install the called [cb] for
+      [chan] in_channel. The string returned by [cb] will be appended
+      to the channel buffer. *)
 
 (** {2 Pseudo filesystem.} *)
 

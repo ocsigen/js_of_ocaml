@@ -23,6 +23,8 @@ external caml_fs_register_autoload : string -> (Js.js_string Js.t Js.js_array Js
 
 external set_channel_output' : out_channel -> (Js.js_string Js.t -> unit) Js.callback -> unit = "caml_ml_set_channel_output"
 
+external set_channel_input' : in_channel -> (unit -> string) Js.callback -> unit = "caml_ml_set_channel_refill"
+
 let register_file ~name ~content =
   register_file_js (Js.string name) (Js.string content)
 
@@ -49,6 +51,10 @@ let register_autoload ~path f =
 let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
   let f' : (Js.js_string Js.t -> unit) Js.callback = Js.wrap_callback (fun s -> f (Js.to_string s)) in
   set_channel_output' out_channel f'
+
+let set_channel_filler (in_channel : in_channel) (f : unit -> string) =
+  let f' : (unit -> string) Js.callback = Js.wrap_callback f in
+  set_channel_input' in_channel f'
 
 external file_content : string -> string = "caml_fs_file_content"
 
