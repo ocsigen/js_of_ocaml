@@ -1,4 +1,8 @@
-(** Ppx syntax extension for Js_of_ocaml. *)
+(** Ppx syntax extension for Js_of_ocaml.
+
+    To migrate from the camlp4 extension, it is advised to use
+    {{: https://github.com/janestreet/camlp4-to-ppx}camlp4-to-ppx}.
+*)
 
 val js_mapper : string list -> Ast_mapper.mapper
 (**
