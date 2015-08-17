@@ -22,7 +22,7 @@ OTHER += -package compiler-libs.bytecomp,compiler-libs.common,compiler-libs.topl
 endif
 
 ifeq "${WITH_PPX}" "YES"
-OTHER += -I ../lib/ppx
+OTHER += -package ppx_tools -I ../lib/ppx
 endif
 
 
