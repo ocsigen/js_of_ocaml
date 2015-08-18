@@ -83,9 +83,9 @@ module Xml = struct
     then Some name
     else None
 
-  let iter_prop node name f =
+  let iter_prop_protected node name f =
     match get_prop node name with
-    | Some n -> f n
+    | Some n -> begin try f n with _ -> () end
     | None -> ()
 
   let attach_attribs node l =
@@ -99,13 +99,13 @@ module Xml = struct
             ignore(node##setAttribute(n, v));
             begin match n' with
             | "style" -> node##cssText <- v;
-            | _ -> iter_prop node n (fun name -> Js.Unsafe.set node name v)
+            | _ -> iter_prop_protected node n (fun name -> Js.Unsafe.set node name v)
             end
           | None ->
             ignore(node##removeAttribute(n));
             begin match n' with
             | "style" -> node##cssText <- Js.string "";
-            | _ -> iter_prop node n (fun name -> Js.Unsafe.delete node name)
+            | _ -> iter_prop_protected node n (fun name -> Js.Unsafe.delete node name)
             end
           ) a
           in ()
