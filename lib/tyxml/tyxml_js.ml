@@ -105,7 +105,7 @@ module Xml = struct
             ignore(node##removeAttribute(n));
             begin match n' with
             | "style" -> node##cssText <- Js.string "";
-            | _ -> iter_prop_protected node n (fun name -> Js.Unsafe.delete node name)
+            | _ -> iter_prop_protected node n (fun name -> Js.Unsafe.set node name Js.null)
             end
           ) a
           in ()
