@@ -62,7 +62,7 @@ function caml_gr_open_graph(info){
   h = h?parseInt(h):200;
   specs.push("height="+h);
 
-  var win = g.open("",target,specs.join(","));
+  var win = g.open("about:blank",target,specs.join(","));
   if(!win) {caml_failwith("Graphics.open_graph: cannot open the window")}
   var doc = win.document;
   var canvas = doc.createElement("canvas");
