@@ -18,7 +18,7 @@ depends: [
   "menhir"
   "cppo"
   "camlp4"
-  "base64"
+  "base64" {>= "2.0.0"}
   ( "base-no-ppx" | "ppx_tools" )
 ]
 depopts: ["deriving" "tyxml" "reactiveData" ]
