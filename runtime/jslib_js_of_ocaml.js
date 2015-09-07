@@ -55,7 +55,7 @@ function caml_js_call(f, o, args) { return f.apply(o, caml_js_from_array(args));
 //Provides: caml_js_fun_call (const, shallow)
 //Requires: caml_js_from_array
 function caml_js_fun_call(f, args) { return f.apply(null, caml_js_from_array(args)); }
-//Provides: caml_js_meth_call (mutable, mutable, shallow)
+//Provides: caml_js_meth_call (mutable, const, shallow)
 //Requires: MlString
 //Requires: caml_js_from_array
 function caml_js_meth_call(o, f, args) {
