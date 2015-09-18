@@ -260,13 +260,16 @@ end
 (* Detect each block *)
 module Blocks : sig
   type t
-  val add  : t -> int -> t
-  val next : t -> int -> int
   val analyse : Debug.data -> code -> t
+  val add  : t -> int -> t
+  type u
+  val finish_analysis : t -> u
+  val next : u -> int -> int
 end = struct
-  type t = AddrSet.t * int
+  type t = AddrSet.t
+  type u = int array
 
-  let add (blocks,len) pc =  AddrSet.add pc blocks,len
+  let add blocks pc =  AddrSet.add pc blocks
   let rec scan debug blocks code pc len =
     if pc < len then begin
       match (get_instr code pc).kind with
@@ -319,14 +322,23 @@ end = struct
     end
     else blocks
 
-  let rec next ((blocks,len) as info) pc =
-    let pc = pc + 1 in
-    if pc = len || AddrSet.mem pc blocks then pc else next info pc
+  let finish_analysis blocks = Array.of_list (AddrSet.elements blocks)
+
+  (* invariant: a.(i) <= x < a.(j) *)
+  let rec find a i j x =
+    if i + 1 = j then a.(j) else
+    let k = (i + j) / 2 in
+    if a.(k) <= x then
+      find a k j x
+    else
+      find a i k x
+
+  let next blocks pc = find blocks 0 (Array.length blocks - 1) pc
 
   let analyse debug_data code =
     let blocks = AddrSet.empty in
     let len = String.length code  / 4 in
-    (scan debug_data blocks code 0 len,len)
+    add (scan debug_data blocks code 0 len) len
 
 end
 
@@ -630,7 +642,7 @@ let compiled_blocks = ref AddrMap.empty
 let method_cache_id = ref 1
 
 type compile_info =
-  { blocks : Blocks.t;
+  { blocks : Blocks.u;
     code : string;
     limit : int;
     debug : Debug.data }
@@ -1728,6 +1740,7 @@ let parse_bytecode ~debug code globals debug_data =
     if debug = `Full
     then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks
     else blocks in
+  let blocks = Blocks.finish_analysis blocks in
   compile_block blocks debug_data code 0 state;
   let blocks =
     AddrMap.mapi
