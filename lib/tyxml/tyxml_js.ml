@@ -20,8 +20,19 @@
 let js_string_of_float f = (Js.number_of_float f)##toString()
 let js_string_of_int i = (Js.number_of_float (float_of_int i))##toString()
 
+
+module type XML =
+  Xml_sigs.T
+  with type uri = string
+   and type event_handler = Dom_html.event Js.t -> bool
+   and type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
+   and type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
+   and type elt = Dom.node Js.t
+
+
 module Xml = struct
 
+  module W = Xml_wrap.NoWrap
   type 'a wrap = 'a
   type 'a list_wrap = 'a list
 
@@ -153,6 +164,7 @@ module Html5 = Html5_f.Make(Xml)(Svg)
 module Xml_wrap = struct
   type 'a t = 'a React.signal
   type 'a tlist = 'a ReactiveData.RList.t
+  type ('a, 'b) ft = 'a -> 'b
   let return = React.S.const
   let fmap f = React.S.map f
   let nil () = ReactiveData.RList.nil
@@ -161,7 +173,6 @@ module Xml_wrap = struct
   let map f = ReactiveData.RList.map f
   let append x y = ReactiveData.RList.concat x y
 end
-
 
 module Util = struct
   open ReactiveData
@@ -226,9 +237,23 @@ end
 
 
 module R = struct
-  module Xml_wed = struct
-    type 'a wrap = 'a Xml_wrap.t
-    type 'a list_wrap = 'a Xml_wrap.tlist
+
+  let filter_attrib (name,a) on =
+    match a with
+    | Xml.Event _ ->
+      raise (Invalid_argument "filter_attrib not implemented for event handler")
+    | Xml.Attr a ->
+      name,
+      Xml.Attr
+        (React.S.l2
+           (fun on a -> if on then a else None) on a)
+
+  let attach_attribs = Xml.attach_attribs
+
+  module Xml = struct
+    module W = Xml_wrap
+    type 'a wrap = 'a W.t
+    type 'a list_wrap = 'a W.tlist
     type uri = Xml.uri
     let string_of_uri = Xml.string_of_uri
     let uri_of_string = Xml.uri_of_string
@@ -239,7 +264,7 @@ module R = struct
     type attrib = Xml.attrib
 
     let attr name f s =
-      let a = Xml_wrap.fmap f s in
+      let a = W.fmap f s in
       name,Xml.Attr a
 
     let float_attrib name s = attr name (fun f -> Some (js_string_of_float f)) s
@@ -267,7 +292,7 @@ module R = struct
     let leaf = Xml.leaf
     let node ?(a=[]) name l =
       let e = Dom_html.document##createElement(Js.string name) in
-      Xml.attach_attribs e a;
+      attach_attribs e a;
       Util.update_children (e :> Dom.node Js.t) l;
       (e :> Dom.node Js.t)
     let cdata = Xml.cdata
@@ -275,30 +300,22 @@ module R = struct
     let cdata_style = Xml.cdata_style
   end
 
-  module Xml_wed_svg = struct
-    include Xml_wed
+  module Xml_Svg = struct
+    include Xml
 
     let leaf = Xml_Svg.leaf
 
     let node ?(a = []) name l =
       let e =
         Dom_html.document##createElementNS(Dom_svg.xmlns,Js.string name) in
-      Xml.attach_attribs e a;
+      attach_attribs e a;
       Util.update_children (e :> Dom.node Js.t) l;
       (e :> Dom.node Js.t)
   end
 
-  module Svg = Svg_f.MakeWrapped(Xml_wrap)(Xml_wed_svg)
-  module Html5 = Html5_f.MakeWrapped(Xml_wrap)(Xml_wed)(Svg)
-  let filter_attrib (name,a) on =
-    match a with
-    | Xml.Event _ ->
-      raise (Invalid_argument "filter_attrib not implemented for event handler")
-    | Xml.Attr a ->
-      name,
-      Xml.Attr
-        (React.S.l2
-           (fun on a -> if on then a else None) on a)
+  module Svg = Svg_f.Make(Xml_Svg)
+  module Html5 = Html5_f.Make(Xml)(Svg)
+
 end
 
 module To_dom = Tyxml_cast.MakeTo(struct

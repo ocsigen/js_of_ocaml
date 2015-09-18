@@ -21,7 +21,7 @@ depends: [
   "base64" {>= "2.0.0"}
   ( "base-no-ppx" | "ppx_tools" )
 ]
-depopts: ["deriving" "tyxml" "reactiveData" ]
+depopts: ["deriving" "tyxml" {> "3.5.0"} "reactiveData" ]
 
 conflicts: [
   "deriving" {< "0.6"}
