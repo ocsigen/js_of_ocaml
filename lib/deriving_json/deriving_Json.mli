@@ -25,6 +25,15 @@
 (** The type of JSON parser/printer for value of type ['a]. *)
 type 'a t
 
+val make:
+  (Buffer.t -> 'a -> unit) ->
+  (Deriving_Json_lexer.lexbuf -> 'a) ->
+  'a t
+
+val write : 'a t -> Buffer.t -> 'a -> unit
+
+val read : 'a t -> Deriving_Json_lexer.lexbuf -> 'a
+
 (** [to_string Json.t<ty> v] marshal the [v] of type [ty] to a JSON string.*)
 val to_string: 'a t -> 'a -> string
 
@@ -141,3 +150,31 @@ module Json_list(A : Json) : Json with type a = A.a list
 module Json_ref(A : Json) : Json with type a = A.a ref
 module Json_option(A : Json) : Json with type a = A.a option
 module Json_array(A : Json) : Json with type a = A.a array
+
+val read_list :
+  (Deriving_Json_lexer.lexbuf -> 'a) ->
+  Deriving_Json_lexer.lexbuf -> 'a list
+
+val write_list :
+  (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a list -> unit
+
+val read_ref :
+  (Deriving_Json_lexer.lexbuf -> 'a) ->
+  Deriving_Json_lexer.lexbuf -> 'a ref
+
+val write_ref :
+  (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a ref -> unit
+
+val read_option :
+  (Deriving_Json_lexer.lexbuf -> 'a) ->
+  Deriving_Json_lexer.lexbuf -> 'a option
+
+val write_option :
+  (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a option -> unit
+
+val read_array :
+  (Deriving_Json_lexer.lexbuf -> 'a) ->
+  Deriving_Json_lexer.lexbuf -> 'a array
+
+val write_array :
+  (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a array -> unit
