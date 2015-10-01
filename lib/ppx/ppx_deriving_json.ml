@@ -19,6 +19,13 @@
 
 let deriver = "json"
 
+(* Copied (and adapted) this from ppx_deriving repo (commit
+   e2079fa8f3460055bf990461f295c6c4b391fafc) ; we get an empty set of
+   let bindings with ppx_deriving 3.0 *)
+let sanitize expr = [%expr
+  (let open! Ppx_deriving_runtime in [%e expr]) [@ocaml.warning "-A"]
+]
+
 let rec fresh_vars ?(acc = []) n =
   if n <= 0 then
     List.rev acc
@@ -469,7 +476,7 @@ let json_of_type ?decl y =
     [%expr Deriving_Json.make [%e write] [%e read]]
 
 let fun_str_wrap d e y ~f ~suffix =
-  let e = Ppx_deriving.poly_fun_of_type_decl d e
+  let e = Ppx_deriving.poly_fun_of_type_decl d e |> sanitize
   and v =
     Ppx_deriving.mangle_type_decl (`Suffix suffix) d |>
     Ast_convenience.pvar
@@ -531,7 +538,7 @@ let json_str_wrap d e =
   let v =
     Ppx_deriving.mangle_type_decl (`Suffix "json") d |>
     Ast_convenience.pvar
-  and e = Ppx_deriving.(poly_fun_of_type_decl d e |> sanitize)
+  and e = Ppx_deriving.(poly_fun_of_type_decl d e)
   and y = json_poly_type d in
   Ast_helper.(Vb.mk (Pat.constraint_ v y) e)
 
@@ -624,7 +631,7 @@ let _ =
        Deriving_Json_lexer.init_lexer (Lexing.from_string s)
      ] in
      [%expr fun s -> [%e r] [%e x]]) |>
-    Ppx_deriving.sanitize
+    sanitize
   in
   Ppx_deriving.(create "of_json" ~core_type () |> register)
 
@@ -636,12 +643,12 @@ let _ =
          [%e e] buf x;
          Buffer.contents buf
      ]) |>
-    Ppx_deriving.sanitize
+    sanitize
   in
   Ppx_deriving.(create "to_json" ~core_type () |> register)
 
 let _ =
-  let core_type y = json_of_type y |> Ppx_deriving.sanitize
+  let core_type y = json_of_type y |> sanitize
   and type_decl_str ~options ~path l =
     let lw, lr, lj, lp, lrv =
       let f d (lw, lr, lj, lp, lrv) =
