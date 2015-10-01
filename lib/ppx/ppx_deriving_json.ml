@@ -47,10 +47,6 @@ let wrap_write r ~pattern =
 
 let wrap_read r = [%expr fun buf -> [%e r]]
 
-let json_attr attrs =
-  Ppx_deriving.attr ~deriver "json" attrs |>
-  Ppx_deriving.Arg.(get_attr ~deriver expr)
-
 let seqlist = function
   | h :: l ->
     let f acc e = [%expr [%e acc]; [%e e]] in
@@ -196,14 +192,10 @@ and write_body_of_type y ~arg ~poly =
       deriver (Ppx_deriving.string_of_core_type y)
 
 and write_of_type y ~poly : Parsetree.expression =
-  match json_attr y.Parsetree.ptyp_attributes with
-  | Some fn ->
-    fn
-  | None ->
-    let v = "a" in
-    let arg = Ast_convenience.evar v
-    and pattern = Ast_convenience.pvar v in
-    wrap_write (write_body_of_type y ~arg ~poly) ~pattern
+  let v = "a" in
+  let arg = Ast_convenience.evar v
+  and pattern = Ast_convenience.pvar v in
+  wrap_write (write_body_of_type y ~arg ~poly) ~pattern
 
 and write_of_record l =
   check_record_fields l;
@@ -458,22 +450,14 @@ and read_of_variant l ~decl =
    Ast_helper.Exp.match_ e l) |> wrap_read
 
 and read_of_type ?decl y =
-  match json_attr y.Parsetree.ptyp_attributes with
-  | Some fn ->
-    fn
-  | None ->
-    wrap_read (read_body_of_type ?decl y)
+  wrap_read (read_body_of_type ?decl y)
 
 let json_of_type ?decl y =
-  match json_attr y.Parsetree.ptyp_attributes with
-  | Some fn ->
-    fn
-  | None ->
-    let read = read_of_type ?decl y
-    and write =
-      let poly = match decl with Some _ -> true | _ -> false in
-      write_of_type y ~poly in
-    [%expr Deriving_Json.make [%e write] [%e read]]
+  let read = read_of_type ?decl y
+  and write =
+    let poly = match decl with Some _ -> true | _ -> false in
+    write_of_type y ~poly in
+  [%expr Deriving_Json.make [%e write] [%e read]]
 
 let fun_str_wrap d e y ~f ~suffix =
   let e = Ppx_deriving.poly_fun_of_type_decl d e |> sanitize
@@ -658,8 +642,9 @@ let _ =
         (match rv with Some rv -> rv :: lrv | None -> lrv)
       and acc = [], [], [], [], [] in
       List.fold_right f l acc
-    and f l = Ast_helper.Str.value Asttypes.Recursive l
-    and f' l = Ast_helper.Str.value Asttypes.Nonrecursive l in
-    [f lp; f (lrv @ lr); f lw; f' lj]
+    and f = Ast_helper.Str.value Asttypes.Recursive
+    and f' = Ast_helper.Str.value Asttypes.Nonrecursive in
+    let l = [f (lrv @ lr); f lw; f' lj] in
+    match lp with [] -> l | _ -> f lp :: l
   in
   Ppx_deriving.(create "json" ~core_type ~type_decl_str () |> register)
