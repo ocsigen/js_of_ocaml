@@ -72,6 +72,10 @@ let check_record_fields =
     | _ ->
       ()) |> List.iter
 
+let maybe_tuple_type = function
+  | [y] -> y
+  | l -> Ast_helper.Typ.tuple l
+
 let rec write_tuple_contents l ly tag ~poly =
   let e =
     let f v y =
@@ -92,45 +96,29 @@ and write_body_of_tuple_type l ~arg ~poly ~tag =
   and p = var_ptuple vars in
   [%expr let [%p p] = [%e arg] in [%e e]]
 
-and write_case_of_constructor i f l =
-  let n = List.length l in
-  let vars = fresh_vars n in
-  let lhs =
-    (match vars with
-     | [] ->
-       None
-     | [v] ->
-       Some (Ast_convenience.pvar v)
-     | _ ->
-       Some (var_ptuple vars)) |> f
-  and rhs =
-    match l with
-    | [] ->
-      let e = Ast_convenience.int i in
-      [%expr Deriving_Json.Json_int.write buf [%e e]]
-    | _ ->
-      write_tuple_contents vars l i ~poly:true in
-  Ast_helper.Exp.case lhs rhs
-
-and write_of_variant l =
-  (let f i { Parsetree.pcd_name; pcd_args; pcd_loc = loc } =
-     let f = label_of_constructor pcd_name |> Ast_helper.Pat.construct in
-     write_case_of_constructor i f pcd_args
-   in
-   List.mapi f l) |> Ast_helper.Exp.function_ |> buf_expand
-
-and write_body_of_poly_variant l ~arg ~loc ~poly =
-  (let f i = function
-     | Parsetree.Rtag (label, _, _, l) ->
-       let i = Ppx_deriving.hash_variant label
-       and f = Ast_helper.Pat.variant label in
-       write_case_of_constructor i f l
-     | Rinherit
-         ({ptyp_desc = (Ptyp_constr (lid, _) as c)} as y) ->
-       Ast_helper.Exp.case (Ast_helper.Pat.type_ lid)
-         (write_body_of_type y ~arg ~poly)
-   in
-   List.mapi f l @ [unreachable_case ()]) |> Ast_helper.Exp.match_ arg
+and write_poly_case r ~arg ~poly =
+  match r with
+  | Parsetree.Rtag (label, _, _, l) ->
+    let i = Ppx_deriving.hash_variant label
+    and n = List.length l in
+    let v = Ppx_deriving.fresh_var [] in
+    let lhs =
+      (if n = 0 then None else Some (Ast_convenience.pvar v)) |>
+      Ast_helper.Pat.variant label
+    and rhs =
+      match l with
+      | [] ->
+        let e = Ast_convenience.int i in
+        [%expr Deriving_Json.Json_int.write buf [%e e]]
+      | _ ->
+        let l = [[%type: int]; maybe_tuple_type l]
+        and arg = Ast_helper.Exp.tuple Ast_convenience.[int i; evar v] in
+        write_body_of_tuple_type l ~arg ~poly ~tag:0
+    in
+    Ast_helper.Exp.case lhs rhs
+  | Rinherit ({ptyp_desc = (Ptyp_constr (lid, _) as c)} as y) ->
+    Ast_helper.Exp.case (Ast_helper.Pat.type_ lid)
+      (write_body_of_type y ~arg ~poly)
 
 and write_body_of_type y ~arg ~poly =
   match y with
@@ -171,7 +159,8 @@ and write_body_of_type y ~arg ~poly =
   | { Parsetree.ptyp_desc = Ptyp_tuple l } ->
     write_body_of_tuple_type l ~arg ~poly ~tag:0
   | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _); ptyp_loc = loc } ->
-    write_body_of_poly_variant l ~arg ~loc ~poly
+    List.map (write_poly_case ~arg ~poly) l @ [unreachable_case ()] |>
+    Ast_helper.Exp.match_ arg
   | { Parsetree.ptyp_desc = Ptyp_constr (lid, l) } ->
     let e = suffix_lid lid ~suffix:"to_json"
     and l = List.map (write_of_type ~poly) l in
@@ -243,22 +232,36 @@ let tag_error_case ?(typename="") () =
     [%pat? _]
     [%expr Deriving_Json_lexer.tag_error ~typename:[%e y] buf]
 
-let rec read_of_poly_variant ?decl l y ~loc =
-  let f = function
-    | Parsetree.Rtag (label, _, _, l) ->
-      let i = Ppx_deriving.hash_variant label
-      and f = Ast_helper.Exp.variant label in
-      read_case_of_constructor ?decl i f l
-    | Rinherit ({ptyp_desc = Ptyp_constr (lid, l)} as y') ->
-      let guard = [%expr [%e suffix_lid lid ~suffix:"recognize"] x]
-      and e =
-        let e = suffix_lid lid ~suffix:"of_json_with_tag"
-        and l = List.map (read_of_type ?decl) l in
-        [%expr ([%e Ast_convenience.app e l] buf x :> [%t y])]
-      in
-      Ast_helper.Exp.case ~guard [%pat? x] e
-  and default = tag_error_case () in
-  List.map f l @ [default] |> Ast_helper.Exp.function_ |> buf_expand
+let maybe_tuple_type = function
+  | [y] -> y
+  | l -> Ast_helper.Typ.tuple l
+
+let rec read_poly_case ?decl y = function
+  | Parsetree.Rtag (label, _, _, l) ->
+    let i = Ppx_deriving.hash_variant label |> Ast_convenience.pint in
+    (match l with
+     | [] ->
+       Ast_helper.Exp.case [%pat? `Cst [%p i]]
+         (Ast_helper.Exp.variant label None)
+     | l ->
+       Ast_helper.Exp.case [%pat? `NCst [%p i]] [%expr
+         Deriving_Json_lexer.read_comma buf;
+         let v = [%e read_body_of_type ?decl (maybe_tuple_type l)] in
+         Deriving_Json_lexer.read_rbracket buf;
+         [%e Ast_helper.Exp.variant label (Some [%expr v])]])
+  | Rinherit ({ptyp_desc = Ptyp_constr (lid, l)} as y') ->
+    let guard = [%expr [%e suffix_lid lid ~suffix:"recognize"] x]
+    and e =
+      let e = suffix_lid lid ~suffix:"of_json_with_tag"
+      and l = List.map (read_of_type ?decl) l in
+      [%expr ([%e Ast_convenience.app e l] buf x :> [%t y])]
+    in
+    Ast_helper.Exp.case ~guard [%pat? x] e
+
+and read_of_poly_variant ?decl l y ~loc =
+  List.map (read_poly_case ?decl y) l @ [tag_error_case ()] |>
+  Ast_helper.Exp.function_ |>
+  buf_expand
 
 and read_tuple_contents ?decl l ~f =
   let n = List.length l in
@@ -340,7 +343,7 @@ and read_body_of_type ?decl y =
          Ast_convenience.app e l
        | None ->
          read_of_poly_variant l y ~loc)
-    and tag = [%expr Deriving_Json_lexer.read_case buf] in
+    and tag = [%expr Deriving_Json_lexer.read_vcase buf] in
     [%expr [%e e] buf [%e tag]]
   | { Parsetree.ptyp_desc = Ptyp_var v } when poly ->
     [%expr [%e Ast_convenience.evar ("poly_" ^ v)] buf]
@@ -352,35 +355,6 @@ and read_body_of_type ?decl y =
     Location.raise_errorf ~loc:ptyp_loc
       "%s_read cannot be derived for %s" deriver
       (Ppx_deriving.string_of_core_type y)
-
-and read_case_of_constructor ?decl i f l =
-  match l with
-  | [] ->
-    Ast_helper.Exp.case
-      [%pat? `Cst [%p Ast_convenience.pint i]]
-      (f None)
-  | _ ->
-    (let f l =
-       (match l with
-        | [] ->  None
-        | [e] -> Some e
-        | l ->   Some (Ast_helper.Exp.tuple l)) |> f
-     in
-     read_tuple_contents ?decl l ~f) |>
-    Ast_helper.Exp.case [%pat? `NCst [%p Ast_convenience.pint i]]
-
-and read_of_variant l ~decl =
-  (let l =
-     let f i { Parsetree.pcd_name; pcd_args; pcd_loc = loc } =
-       let f =
-         let label = label_of_constructor pcd_name in
-         Ast_helper.Exp.construct label
-       in
-       read_case_of_constructor i f pcd_args ~decl
-     and default = tag_error_case () in
-     List.mapi f l @ [default]
-   and e = [%expr Deriving_Json_lexer.read_case buf] in
-   Ast_helper.Exp.match_ e l) |> buf_expand
 
 and read_of_type ?decl y =
   read_body_of_type ?decl y |> buf_expand
@@ -494,11 +468,54 @@ let json_decls_of_type decl y =
   json_str decl,
   recognize, read_tag
 
+let write_case i {Parsetree.pcd_name; pcd_args; pcd_loc} =
+  let n = List.length pcd_args in
+  let vars = fresh_vars n in
+  let lhs =
+    (match vars with
+     | [] ->
+       None
+     | [v] ->
+       Some (Ast_convenience.pvar v)
+     | _ ->
+       Some (var_ptuple vars)) |>
+    Ast_helper.Pat.construct (label_of_constructor pcd_name)
+  and rhs =
+    match vars with
+    | [] ->
+      let e = Ast_convenience.int i in
+      [%expr Deriving_Json.Json_int.write buf [%e e]]
+    | _ ->
+      write_tuple_contents vars pcd_args i ~poly:true in
+  Ast_helper.Exp.case lhs rhs
+
 let write_decl_of_variant d l =
-  write_of_variant l |> write_str_wrap d
+  List.mapi write_case l |> Ast_helper.Exp.function_ |> buf_expand |>
+  write_str_wrap d
+
+let read_case ?decl i {Parsetree.pcd_name; pcd_args; pcd_loc} =
+  match pcd_args with
+  | [] ->
+    Ast_helper.Exp.case
+      [%pat? `Cst [%p Ast_convenience.pint i]]
+      (Ast_helper.Exp.construct (label_of_constructor pcd_name) None)
+  | _ ->
+    (let f l =
+       (match l with
+        | [] ->  None
+        | [e] -> Some e
+        | l ->   Some (Ast_helper.Exp.tuple l)) |>
+       Ast_helper.Exp.construct (label_of_constructor pcd_name)
+     in
+     read_tuple_contents ?decl pcd_args ~f) |>
+    Ast_helper.Exp.case [%pat? `NCst [%p Ast_convenience.pint i]]
 
 let read_decl_of_variant decl l =
-  read_of_variant l ~decl |> read_str_wrap decl
+  (let l = List.mapi (read_case ~decl) l @ [tag_error_case ()]
+   and e = [%expr Deriving_Json_lexer.read_case buf] in
+   Ast_helper.Exp.match_ e l) |>
+  buf_expand |>
+  read_str_wrap decl
 
 let json_decls_of_variant d l =
   write_decl_of_variant d l, read_decl_of_variant d l, json_str d,
