@@ -28,9 +28,11 @@ let sanitize expr = [%expr
 let var_ptuple l =
   List.map Ast_convenience.pvar l |> Ast_helper.Pat.tuple
 
-let suffix_lid {Location.txt} ~suffix =
-  Ppx_deriving.mangle_lid (`Suffix suffix) txt |>
-  Location.mknoloc |>
+let map_loc f {Location.txt; loc} =
+  {Location.txt = f txt; loc}
+
+let suffix_lid lid ~suffix =
+  map_loc (Ppx_deriving.mangle_lid (`Suffix suffix)) lid |>
   Ast_helper.Exp.ident
 
 let suffix_decl d ~suffix =
@@ -47,8 +49,7 @@ let rec fresh_vars ?(acc = []) n =
 let unreachable_case () =
   Ast_helper.Exp.case [%pat? _ ] [%expr assert false]
 
-let label_of_constructor {Location.txt} =
-  Longident.Lident txt |> Location.mknoloc
+let label_of_constructor = map_loc (fun c -> Longident.Lident c)
 
 let wrap_write r ~pattern = [%expr fun buf [%p pattern] -> [%e r]]
 
@@ -180,8 +181,7 @@ and write_of_record d l =
   let pattern =
     let l =
       let f {Parsetree.pld_name} =
-        (let {Location.txt} = pld_name in
-         Location.mknoloc (Longident.Lident txt)),
+        label_of_constructor pld_name,
         Ast_helper.Pat.var pld_name
       in
       List.map f l
@@ -283,9 +283,7 @@ and read_body_of_tuple_type ?decl l = [%expr
 and read_of_record decl l =
   let e =
     let f =
-      let f {Parsetree.pld_name = {txt}} e =
-        (Longident.Lident txt |> Location.mknoloc), e
-      in
+      let f {Parsetree.pld_name} e = label_of_constructor pld_name, e in
       fun l' -> Ast_helper.Exp.record (List.map2 f l l') None
     and l =
       let f {Parsetree.pld_type} = pld_type in
@@ -544,35 +542,41 @@ let json_decls_of_record d l =
   write_decl_of_record d l, read_decl_of_record d l, json_str d,
   None, None
 
-let json_str_of_decl d =
-  match d with
-  | { Parsetree.ptype_manifest = Some y } ->
-    json_decls_of_type d y
-  | { ptype_kind = Ptype_variant l } ->
-    json_decls_of_variant d l
-  | { ptype_kind = Ptype_record l } ->
-    json_decls_of_record d l
-  | _ ->
-    Location.raise_errorf "%s cannot be derived" deriver
+let json_str_of_decl ({Parsetree.ptype_loc} as d) =
+  let f () =
+    match d with
+    | { Parsetree.ptype_manifest = Some y } ->
+      json_decls_of_type d y
+    | { ptype_kind = Ptype_variant l } ->
+      json_decls_of_variant d l
+    | { ptype_kind = Ptype_record l } ->
+      json_decls_of_record d l
+    | _ ->
+      Location.raise_errorf "%s cannot be derived" deriver
+  in
+  Ast_helper.with_default_loc ptype_loc f
+
+let register_for_expr s f =
+  let core_type ({Parsetree.ptyp_loc} as y) =
+    let f () = f y |> sanitize in
+    Ast_helper.with_default_loc ptyp_loc f
+  in
+  Ppx_deriving.(create s ~core_type () |> register)
 
 let _ =
-  let core_type y =
+  register_for_expr "of_json" (fun y ->
     [%expr
       fun s ->
         [%e read_of_type y]
-          (Deriving_Json_lexer.init_lexer (Lexing.from_string s))
-    ] |> sanitize
-  in
-  Ppx_deriving.(create "of_json" ~core_type () |> register)
+          (Deriving_Json_lexer.init_lexer (Lexing.from_string s))])
 
 let _ =
-  let core_type y = [%expr
-    fun x ->
-      let buf = Buffer.create 50 in
-      [%e write_of_type y ~poly:false] buf x;
-      Buffer.contents buf] |> sanitize
-  in
-  Ppx_deriving.(create "to_json" ~core_type () |> register)
+  register_for_expr "to_json" (fun y ->
+    [%expr
+      fun x ->
+        let buf = Buffer.create 50 in
+        [%e write_of_type y ~poly:false] buf x;
+        Buffer.contents buf])
 
 let _ =
   let core_type y = json_of_type y |> sanitize
