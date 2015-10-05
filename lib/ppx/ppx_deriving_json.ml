@@ -31,13 +31,20 @@ let var_ptuple l =
 let map_loc f {Location.txt; loc} =
   {Location.txt = f txt; loc}
 
-let suffix_lid lid ~suffix =
-  map_loc (Ppx_deriving.mangle_lid (`Suffix suffix)) lid |>
-  Ast_helper.Exp.ident
+let suffix_lid ({Location.txt; loc} as lid) ~suffix =
+  let txt = Ppx_deriving.mangle_lid (`Suffix suffix) txt in
+  Ast_helper.Exp.ident {txt; loc} ~loc
 
-let suffix_decl d ~suffix =
-  Ppx_deriving.mangle_type_decl (`Suffix suffix) d |>
-  Ast_convenience.evar
+let suffix_decl ({Parsetree.ptype_loc = loc} as d) ~suffix =
+  (let s =
+     Ppx_deriving.mangle_type_decl (`Suffix suffix) d |>
+     Longident.parse
+   in
+   Location.mkloc s loc) |> Ast_helper.Exp.ident ~loc
+
+let suffix_decl_p ({Parsetree.ptype_loc = loc} as d) ~suffix =
+  (let s = Ppx_deriving.mangle_type_decl (`Suffix suffix) d in
+   Location.mkloc s loc) |> Ast_helper.Pat.var ~loc
 
 let rec fresh_vars ?(acc = []) n =
   if n <= 0 then
@@ -186,7 +193,6 @@ and write_of_record d l =
       in
       List.map f l
     in
-    (* CHECKME: what is the closed_flag for? *)
     Ast_helper.Pat.record l Asttypes.Closed
   and e =
     let l =
@@ -366,9 +372,7 @@ let json_of_type ?decl y =
 
 let fun_str_wrap d e y ~f ~suffix =
   let e = Ppx_deriving.poly_fun_of_type_decl d e |> sanitize
-  and v =
-    Ppx_deriving.mangle_type_decl (`Suffix suffix) d |>
-    Ast_convenience.pvar
+  and v = suffix_decl_p d ~suffix
   and y = Ppx_deriving.poly_arrow_of_type_decl f d y in
   Ast_helper.(Vb.mk (Pat.constraint_ v y) e)
 
@@ -403,9 +407,7 @@ let write_str_wrap d e =
   fun_str_wrap d e y ~f ~suffix
 
 let recognize_str_wrap d e =
-  let v =
-    Ppx_deriving.mangle_type_decl (`Suffix "recognize") d |>
-    Ast_convenience.pvar
+  let v = suffix_decl_p d ~suffix:"recognize"
   and y = [%type: [`NCst of int | `Cst of int] -> bool] in
   Ast_helper.(Vb.mk (Pat.constraint_ v y) e)
 
@@ -415,9 +417,7 @@ let json_poly_type d =
   Ppx_deriving.poly_arrow_of_type_decl f d y
 
 let json_str_wrap d e =
-  let v =
-    Ppx_deriving.mangle_type_decl (`Suffix "json") d |>
-    Ast_convenience.pvar
+  let v = suffix_decl_p d ~suffix:"json"
   and e = Ppx_deriving.(poly_fun_of_type_decl d e)
   and y = json_poly_type d in
   Ast_helper.(Vb.mk (Pat.constraint_ v y) e)
@@ -552,7 +552,8 @@ let json_str_of_decl ({Parsetree.ptype_loc} as d) =
     | { ptype_kind = Ptype_record l } ->
       json_decls_of_record d l
     | _ ->
-      Location.raise_errorf "%s cannot be derived" deriver
+      Location.raise_errorf "%s cannot be derived for %s" deriver
+        (Ppx_deriving.mangle_type_decl (`Suffix "") d)
   in
   Ast_helper.with_default_loc ptype_loc f
 
@@ -579,7 +580,9 @@ let _ =
         Buffer.contents buf])
 
 let _ =
-  let core_type y = json_of_type y |> sanitize
+  let core_type ({Parsetree.ptyp_loc} as y) =
+    let f () = json_of_type y |> sanitize in
+    Ast_helper.with_default_loc ptyp_loc f
   and type_decl_str ~options ~path l =
     let lw, lr, lj, lp, lrv =
       let f d (lw, lr, lj, lp, lrv) =
