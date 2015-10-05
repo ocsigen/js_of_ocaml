@@ -176,7 +176,7 @@ and write_of_type y ~poly =
   and pattern = Ast_convenience.pvar v in
   wrap_write (write_body_of_type y ~arg ~poly) ~pattern
 
-and write_of_record l =
+and write_of_record d l =
   let pattern =
     let l =
       let f {Parsetree.pld_name} =
@@ -280,7 +280,7 @@ and read_body_of_tuple_type ?decl l = [%expr
   ignore (Deriving_Json_lexer.read_tag_1 0 buf);
   [%e read_tuple_contents ?decl l ~f:Ast_helper.Exp.tuple]]
 
-and read_of_record l =
+and read_of_record decl l =
   let e =
     let f =
       let f {Parsetree.pld_name = {txt}} e =
@@ -291,7 +291,7 @@ and read_of_record l =
       let f {Parsetree.pld_type} = pld_type in
       List.map f l
     in
-    read_tuple_contents l ~f
+    read_tuple_contents l ~decl ~f
   in [%expr
     Deriving_Json_lexer.read_lbracket buf;
     ignore (Deriving_Json_lexer.read_tag_2 0 254 buf);
@@ -522,10 +522,10 @@ let json_decls_of_variant d l =
   None, None
 
 let write_decl_of_record d l =
-  write_of_record l |> write_str_wrap d
+  write_of_record d l |> write_str_wrap d
 
 let read_decl_of_record d l =
-  read_of_record l |> read_str_wrap d
+  read_of_record d l |> read_str_wrap d
 
 let json_decls_of_record d l =
   check_record_fields l;
