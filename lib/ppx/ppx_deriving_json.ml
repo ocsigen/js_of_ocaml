@@ -468,52 +468,64 @@ let json_decls_of_type decl y =
   json_str decl,
   recognize, read_tag
 
-let write_case i {Parsetree.pcd_name; pcd_args; pcd_loc} =
+let write_case (i, i', l) {Parsetree.pcd_name; pcd_args; pcd_loc} =
   let n = List.length pcd_args in
   let vars = fresh_vars n in
-  let lhs =
-    (match vars with
-     | [] ->
-       None
-     | [v] ->
-       Some (Ast_convenience.pvar v)
-     | _ ->
-       Some (var_ptuple vars)) |>
-    Ast_helper.Pat.construct (label_of_constructor pcd_name)
-  and rhs =
+  let i, i', lhs, rhs =
     match vars with
     | [] ->
-      let e = Ast_convenience.int i in
-      [%expr Deriving_Json.Json_int.write buf [%e e]]
+      i + 1,
+      i',
+      None,
+      [%expr Deriving_Json.Json_int.write buf
+               [%e Ast_convenience.int i]]
+    | [v] ->
+      i,
+      i' + 1,
+      Some (Ast_convenience.pvar v),
+      write_tuple_contents vars pcd_args i' ~poly:true
     | _ ->
-      write_tuple_contents vars pcd_args i ~poly:true in
-  Ast_helper.Exp.case lhs rhs
+      i,
+      i' + 1,
+      Some (var_ptuple vars),
+      write_tuple_contents vars pcd_args i' ~poly:true
+  in
+  i, i',
+  Ast_helper.
+    (Exp.case (Pat.construct (label_of_constructor pcd_name) lhs)
+       rhs) :: l
 
 let write_decl_of_variant d l =
-  List.mapi write_case l |> Ast_helper.Exp.function_ |> buf_expand |>
+  (let _, _, l = List.fold_left write_case (0, 0, []) l in
+   Ast_helper.Exp.function_ l) |> buf_expand |>
   write_str_wrap d
 
-let read_case ?decl i {Parsetree.pcd_name; pcd_args; pcd_loc} =
+let read_case ?decl (i, i', l)
+    {Parsetree.pcd_name; pcd_args; pcd_loc} =
   match pcd_args with
   | [] ->
+    i + 1, i',
     Ast_helper.Exp.case
       [%pat? `Cst [%p Ast_convenience.pint i]]
       (Ast_helper.Exp.construct (label_of_constructor pcd_name) None)
+    :: l
   | _ ->
-    (let f l =
-       (match l with
-        | [] ->  None
-        | [e] -> Some e
-        | l ->   Some (Ast_helper.Exp.tuple l)) |>
-       Ast_helper.Exp.construct (label_of_constructor pcd_name)
-     in
-     read_tuple_contents ?decl pcd_args ~f) |>
-    Ast_helper.Exp.case [%pat? `NCst [%p Ast_convenience.pint i]]
+    i, i' + 1,
+    ((let f l =
+        (match l with
+         | [] ->  None
+         | [e] -> Some e
+         | l ->   Some (Ast_helper.Exp.tuple l)) |>
+        Ast_helper.Exp.construct (label_of_constructor pcd_name)
+      in
+      read_tuple_contents ?decl pcd_args ~f) |>
+     Ast_helper.Exp.case [%pat? `NCst [%p Ast_convenience.pint i']])
+    :: l
 
 let read_decl_of_variant decl l =
-  (let l = List.mapi (read_case ~decl) l @ [tag_error_case ()]
+  (let _, _, l = List.fold_left (read_case ~decl) (0, 0, []) l
    and e = [%expr Deriving_Json_lexer.read_case buf] in
-   Ast_helper.Exp.match_ e l) |>
+   Ast_helper.Exp.match_ e (l @ [tag_error_case ()])) |>
   buf_expand |>
   read_str_wrap decl
 
