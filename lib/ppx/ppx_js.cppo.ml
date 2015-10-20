@@ -85,16 +85,17 @@ end
 let fresh_type loc = Typ.var ~loc (random_tvar ())
 
 let unescape lab =
-  assert (lab <> "");
-  let lab =
-    if lab.[0] = '_' then String.sub lab 1 (String.length lab - 1) else lab
-  in
-  try
-    let i = String.rindex lab '_' in
-    if i = 0 then raise Not_found;
-    String.sub lab 0 i
-  with Not_found ->
-    lab
+  if lab = "" then lab
+  else
+    let lab =
+      if lab.[0] = '_' then String.sub lab 1 (String.length lab - 1) else lab
+    in
+    try
+      let i = String.rindex lab '_' in
+      if i = 0 then raise Not_found;
+      String.sub lab 0 i
+    with Not_found ->
+      lab
 
 (** Constraints for the various types.
     Synthesize new types and create dummy declaration with type constraints.
