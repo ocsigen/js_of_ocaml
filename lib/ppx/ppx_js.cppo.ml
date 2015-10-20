@@ -118,9 +118,14 @@ let constrain_types ?loc obj res res_typ meth meth_typ args =
 
   let e_x, p_x = mk_id ~loc:obj.pexp_loc "x" in
   (* [($x$#meth : $meth_typ$)] *)
+  let loc = match loc with
+    | None -> None
+    | Some l -> Some {l with Location.loc_ghost = true}
+  in
+  let interesting = (Location.mknoloc "merlin.teresting", PStr []) in
   let body =
-    Exp.constraint_
-      (Exp.send ?loc e_x meth) (* TODO ajouter contraintes _ -> _ -> _ Js.meth *)
+    Exp.constraint_ ?loc (Exp.send ~attrs:[interesting] ?loc e_x meth)
+      (* TODO ajouter contraintes _ -> _ -> _ Js.meth *)
       meth_typ
   in
 
