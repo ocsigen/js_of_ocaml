@@ -85,16 +85,17 @@ end
 let fresh_type loc = Typ.var ~loc (random_tvar ())
 
 let unescape lab =
-  assert (lab <> "");
-  let lab =
-    if lab.[0] = '_' then String.sub lab 1 (String.length lab - 1) else lab
-  in
-  try
-    let i = String.rindex lab '_' in
-    if i = 0 then raise Not_found;
-    String.sub lab 0 i
-  with Not_found ->
-    lab
+  if lab = "" then lab
+  else
+    let lab =
+      if lab.[0] = '_' then String.sub lab 1 (String.length lab - 1) else lab
+    in
+    try
+      let i = String.rindex lab '_' in
+      if i = 0 then raise Not_found;
+      String.sub lab 0 i
+    with Not_found ->
+      lab
 
 (** Constraints for the various types.
     Synthesize new types and create dummy declaration with type constraints.
@@ -118,9 +119,14 @@ let constrain_types ?loc obj res res_typ meth meth_typ args =
 
   let e_x, p_x = mk_id ~loc:obj.pexp_loc "x" in
   (* [($x$#meth : $meth_typ$)] *)
+  let gloc = match loc with
+    | None -> None
+    | Some l -> Some {l with Location.loc_ghost = true}
+  in
+  let interesting = (Location.mknoloc "merlin.teresting", PStr []) in
   let body =
-    Exp.constraint_
-      (Exp.send ?loc e_x meth) (* TODO ajouter contraintes _ -> _ -> _ Js.meth *)
+    Exp.constraint_ ?loc:gloc (Exp.send ~attrs:[interesting] ?loc e_x meth)
+      (* TODO ajouter contraintes _ -> _ -> _ Js.meth *)
       meth_typ
   in
 
@@ -152,6 +158,9 @@ let method_call ~loc obj meth args =
   let ret_type = fresh_type obj.pexp_loc in
   let method_type =
     arrows (List.map (fun (_,_,_,x) -> x) args) (Js.type_ "meth" [ret_type]) in
+  let method_type =
+    {method_type with ptyp_loc = {method_type.ptyp_loc with Location.loc_ghost = true}}
+  in
   let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_self" in
   let e_res, p_res = mk_id ~loc:obj.pexp_loc "jsoo_res" in
   let meth_call =
