@@ -147,48 +147,41 @@ let constrain_types ?loc obj res res_typ meth meth_typ args =
     end in M.res
   ]
 
+let invoker labels =
+  let arg i _ = "a" ^ string_of_int i in
+  let args = List.mapi arg labels in
+
+  let typ s = Typ.constr (lid s) [] in
+
+  let targs = List.map2 (fun l s -> l, typ s) labels args in
+  let eargs = List.map (fun s -> Js.unsafe "inject" [Exp.ident (lid s)]) args in
+
+  let tobj = typ "obj" and tres = typ "res" in
+  let tmeth = arrows targs (Js.type_ "meth" [tres]) in
+  let tfunc = arrows targs tres in
+
+  let ebody =
+    Js.unsafe "meth_call" [[%expr obj]; [%expr meth]; Exp.array eargs] in
+
+  let efun label arg expr =
+    Exp.fun_ label None (Pat.var (Location.mknoloc arg)) expr
+  in
+  let efun = List.fold_right2 efun labels args ebody in
+
+  let invoker = [%expr
+    ((fun obj meth _ -> [%e efun]) :
+       [%t tobj] Js.t -> string -> ([%t tobj] -> [%t tmeth]) -> [%t tfunc])
+  ] in
+
+  List.fold_right Exp.newtype ("obj" :: "res" :: args) invoker
 
 let method_call ~loc obj meth args =
-  let args =
-    List.map
-      (fun (l,e) ->
-       let (ev, pv) = mk_id ~loc:e.pexp_loc (random_var ()) in
-       (e, ev, pv, (l, fresh_type obj.pexp_loc)))
-      args in
-  let ret_type = fresh_type obj.pexp_loc in
-  let method_type =
-    arrows (List.map (fun (_,_,_,x) -> x) args) (Js.type_ "meth" [ret_type]) in
-  let method_type =
-    {method_type with ptyp_loc = {method_type.ptyp_loc with Location.loc_ghost = true}}
-  in
-  let e_obj, p_obj = mk_id ~loc:obj.pexp_loc "jsoo_self" in
-  let e_res, p_res = mk_id ~loc:obj.pexp_loc "jsoo_res" in
-  let meth_call =
-    Js.unsafe "meth_call" [
-      e_obj ;
-      str (unescape meth) ;
-      Exp.array
-        (List.map
-           (fun (_, ev, _, _) -> Js.unsafe "inject" [ev])
-           args)
-      ]
-  in
-
-  let type_binders = List.map (fun (_,ev,_,(_,t)) -> (ev,t)) args in
-
-  let bindings = List.map (fun (e, _, pv, _) -> Vb.mk pv e) args in
-
-  let body =
-    [%expr
-     let [%p p_obj] = [%e obj] in
-     let [%p p_res] = [%e meth_call]
-     in
-     [%e constrain_types ~loc e_obj e_res ret_type meth method_type type_binders]
-    ]
-  in
-  match bindings with
-  | [] -> body
-  | _  ->  Exp.let_ Nonrecursive bindings body
+  let invoker = invoker (List.map fst args) in
+  let arg e = Js.nolabel, e in
+  Exp.apply invoker (arg obj ::
+                     arg (str (unescape meth)) ::
+                     arg [%expr (fun x -> [%e Exp.send ~loc [%expr x] meth])] ::
+                     args)
 
 (** Instantiation of a class, used by new%js. *)
 let new_object constr args =
