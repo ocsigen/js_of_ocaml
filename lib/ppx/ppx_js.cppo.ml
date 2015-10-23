@@ -148,6 +148,8 @@ let constrain_types ?loc obj res res_typ meth meth_typ args =
   ]
 
 let invoker labels =
+  let default_loc' = !default_loc in
+  default_loc := Location.none;
   let arg i _ = "a" ^ string_of_int i in
   let args = List.mapi arg labels in
 
@@ -173,14 +175,23 @@ let invoker labels =
        [%t tobj] Js.t -> string -> ([%t tobj] -> [%t tmeth]) -> [%t tfunc])
   ] in
 
-  List.fold_right Exp.newtype ("obj" :: "res" :: args) invoker
+  let result =
+    List.fold_right Exp.newtype ("obj" :: "res" :: args) invoker
+  in
+
+  default_loc := default_loc';
+  result
 
 let method_call ~loc obj meth args =
   let invoker = invoker (List.map fst args) in
   let arg e = Js.nolabel, e in
+  let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
   Exp.apply invoker (arg obj ::
                      arg (str (unescape meth)) ::
-                     arg [%expr (fun x -> [%e Exp.send ~loc [%expr x] meth])] ::
+                     arg (Exp.fun_ ~loc Js.nolabel None
+                            (Pat.var ~loc:Location.none (Location.mknoloc "x"))
+                            (Exp.send ~loc (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) meth))
+                     ::
                      args)
 
 (** Instantiation of a class, used by new%js. *)
