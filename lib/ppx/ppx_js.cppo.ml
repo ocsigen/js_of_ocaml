@@ -183,9 +183,10 @@ let invoker labels =
   result
 
 let method_call ~loc obj meth args =
+  let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
+  let obj = [%expr ([%e obj] : [%t Js.type_ "t" [ [%type: < .. > ] ] ] ) ] in
   let invoker = invoker (List.map fst args) in
   let arg e = Js.nolabel, e in
-  let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
   Exp.apply invoker (arg obj ::
                      arg (str (unescape meth)) ::
                      arg (Exp.fun_ ~loc Js.nolabel None
