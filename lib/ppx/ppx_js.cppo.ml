@@ -205,10 +205,9 @@ let new_object constr args =
   let invoker = invoker
       (fun targs tres -> arrows targs (Js.type_ "t" [tres]))
       (fun targs tres ->
-         let lbl, tobj = List.hd targs and targs = List.tl targs in
-         arrows
-           ((lbl, Js.type_ "constr" [tobj]) :: targs)
-           (Js.type_ "t" [tres]))
+         let tres = Js.type_ "t" [tres] in
+         let arrow = arrows targs tres in
+         arrows [(Js.nolabel, Js.type_ "constr" [arrow])] arrow)
       (function
         | (constr :: args) ->
           Js.unsafe "new_obj" [constr; inject_args args]
