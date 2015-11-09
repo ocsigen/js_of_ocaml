@@ -103,6 +103,8 @@ module Optim = struct
 
   let inline_callgen = o ~name:"callgen" ~default:false
 
+  let check_magic = o ~name:"check-magic-number" ~default:true
+
   (* this does not optimize properly *)
   let compact_vardecl = o ~name:"vardecl" ~default:false
 end

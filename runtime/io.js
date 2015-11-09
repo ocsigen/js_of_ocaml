@@ -86,6 +86,11 @@ caml_sys_open_internal(2,new MlFile(caml_create_string(0))); //stderr
 
 // ocaml Channels
 
+//Provides: caml_ml_set_channel_name
+function caml_ml_set_channel_name() {
+  return 0
+}
+
 //Provides: caml_ml_out_channels
 var caml_ml_out_channels = new Array();
 

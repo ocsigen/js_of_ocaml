@@ -2115,7 +2115,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
   | `Pre magic ->
     begin match Util.MagicNumber.kind magic with
       | `Cmo ->
-        if magic <> Util.MagicNumber.current_cmo
+        if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_cmo
         then raise Util.MagicNumber.(Bad_magic_version magic);
         let compunit_pos = input_binary_int ic in
         seek_in ic compunit_pos;
@@ -2132,7 +2132,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
         let a,b,c = from_compilation_units ~includes ~debug ~debug_data [compunit, code] in
         a,b,c,false
       | `Cma ->
-        if magic <> Util.MagicNumber.current_cma
+        if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_cma
         then raise Util.MagicNumber.(Bad_magic_version magic);
         let pos_toc = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic pos_toc;
@@ -2159,7 +2159,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
   | `Post magic ->
     begin match Util.MagicNumber.kind magic with
       | `Exe ->
-        if magic <> Util.MagicNumber.current_exe
+        if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_exe
         then raise Util.MagicNumber.(Bad_magic_version magic);
         let a,b,c = exe_from_channel ~includes ~toplevel ~debug ~debug_data ic in
         a,b,c,true

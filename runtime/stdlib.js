@@ -1021,12 +1021,20 @@ function caml_sys_get_argv () {
 //Provides: unix_inet_addr_of_string
 function unix_inet_addr_of_string () {return 0;}
 
+//Provides: caml_oo_last_id
+var caml_oo_last_id = 0;
 
 //Provides: caml_set_oo_id
-var caml_oo_last_id = 0;
+//Requires: caml_oo_last_id
 function caml_set_oo_id (b) {
   b[2]=caml_oo_last_id++;
   return b;
+}
+
+//Provides: caml_fresh_oo_id
+//Requires: caml_oo_last_id
+function caml_fresh_oo_id() {
+  return caml_oo_last_id++;
 }
 
 //Provides: caml_install_signal_handler const

@@ -111,7 +111,9 @@ let lexer_from_file ?rm_comment file : lexer =
   let lines_info = Parse_info.make_lineinfo_from_file file in
   let ic = open_in file in
   let lexbuf = Lexing.from_channel ic in
-  lexer_aux ?rm_comment lines_info lexbuf
+  let lexer = lexer_aux ?rm_comment lines_info lexbuf in
+  close_in ic;
+  lexer
 
 let lexer_from_channel ?rm_comment ci : lexer =
   let lines_info,str = Parse_info.make_lineinfo_from_channel ci in
