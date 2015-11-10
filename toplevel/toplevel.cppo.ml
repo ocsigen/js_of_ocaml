@@ -76,6 +76,8 @@ let setup_toplevel () =
     exec' (Printf.sprintf "Format.printf \"%s@.@.\";;" header3));
   exec' ("#enable \"pretty\";;");
   exec' ("#enable \"shortvar\";;");
+  Hashtbl.add Toploop.directive_table "load_js" (Toploop.Directive_string (fun name ->
+    Js.Unsafe.global##load_script_(name)));
   Sys.interactive := true;
   ()
 

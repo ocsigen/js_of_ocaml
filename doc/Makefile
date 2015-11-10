@@ -45,7 +45,7 @@ api/wiki/index.wiki: ${MLIS} api/index
 	   -i $(shell ocamlfind query wikidoc) -g odoc_wiki.cma \
 	   ${MLIS}
 
-EX_TOPLEVEL:=index.html toplevel.js *.cmis.js
+EX_TOPLEVEL:=index.html toplevel.js test_dynlink.js *.cmis.js
 EX_BOULDER:=index.html boulderdash.js sprites
 EX_WEBGL:=index.html webgldemo.js
 EX_GRAPH:=index.html jsviewer.js

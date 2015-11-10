@@ -154,10 +154,10 @@ let o3 =
   loop 10 "flow" round2 1 >>
   print
 
-let generate d ?toplevel (p,live_vars) =
+let generate d ~exported_runtime ~toplevel (p,live_vars) =
   if times ()
   then Format.eprintf "Start Generation...@.";
-  Generate.f p ?toplevel live_vars d
+  Generate.f p ~toplevel ~exported_runtime live_vars d
 
 
 let header formatter ~standalone ~custom_header js =
@@ -242,7 +242,7 @@ let gen_missing js missing =
     (Statement (Variable_statement miss), N) :: js
 
 
-let link ~standalone ?linkall js =
+let link ~standalone ?linkall ~export_runtime js =
   if standalone
   then
     begin
@@ -275,6 +275,19 @@ let link ~standalone ?linkall js =
         then gen_missing js missing
         else js in
       if times () then Format.eprintf "  linking: %a@." Util.Timer.print t;
+      let js =
+        if export_runtime
+        then
+          let open Javascript in
+          let all = Linker.all linkinfos in
+          let all = List.map (fun name -> PNI name,EVar (S {name ;var=None})) all  in
+          (Statement (Expression_statement(
+             EBin(Eq,
+                  EDot(EVar (S {name=global_object;var=None}),"jsoo_runtime"),
+                  EObj all))),N)
+          :: js
+        else js
+      in
       Linker.link js linkinfos
     end
   else js
@@ -348,7 +361,7 @@ let output formatter ?source_map js =
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Util.Timer.print t
 
-let pack ~wrap_with_fun ?(toplevel=false) js =
+let pack ~wrap_with_fun ~toplevel js =
   let module J = Javascript in
   let t = Util.Timer.make () in
   if times ()
@@ -433,16 +446,17 @@ let configure formatter p =
 type profile = Code.program -> Code.program
 
 let f ?(standalone=true) ?(wrap_with_fun=false) ?(profile=o1)
-    ?toplevel ?linkall ?source_map ?custom_header formatter d =
+    ?(toplevel=false) ?linkall ?source_map ?custom_header formatter d =
+  let exported_runtime = not standalone in
   configure formatter >>
   profile >>
   Generate_closure.f >>
   deadcode' >>
-  generate d ?toplevel >>
+  generate d ~exported_runtime ~toplevel >>
 
-  link ~standalone ?linkall >>
+  link ~standalone ?linkall ~export_runtime:toplevel >>
 
-  pack ~wrap_with_fun ?toplevel >>
+  pack ~wrap_with_fun ~toplevel >>
 
   coloring >>
 
