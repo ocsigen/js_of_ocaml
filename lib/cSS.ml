@@ -550,6 +550,15 @@ let string_of_t = function
   | HSL (h,s,l)            -> Printf.sprintf "hsl(%d,%d%%,%d%%)"       h s l
   | HSLA (h,s,l,a)         -> Printf.sprintf "hsla(%d,%d%%,%d%%,%f)"   h s l a
 
+let hex_of_rgb (red, green, blue) =
+  let in_range i =
+    if i < 0 || i > 255
+    then
+      raise (Invalid_argument ((string_of_int i) ^ " is out of valid range"))
+  in
+  in_range red; in_range green; in_range blue;
+  Printf.sprintf "#%02X%02X%02X" red green blue
+
 (*Ocaml <-> JS representation*)
 type js_t = Js.js_string Js.t
 
