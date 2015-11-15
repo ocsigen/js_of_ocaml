@@ -54,7 +54,13 @@ let do_clean () =
       if Sys.file_exists x
       then Sys.remove x) !to_clean
 
-module type CAMLP4 = sig   val build : string list -> string list -> string list end
+module type CAMLP4 = sig
+  val build
+    :  all_pkgs:string list
+    -> syntax_pkgs:string list
+    -> syntax_mods:string list
+    -> string list
+end
 module Camlp4 : CAMLP4 = struct
 
   (* We do the same as Camlp4Bin
@@ -102,12 +108,17 @@ module Camlp4 : CAMLP4 = struct
       then false
       else true
     with _ -> true
-  let build pkgs mods =
-    if pkgs = [] && mods = [] then [] else
-      let all = resolve_syntaxes pkgs @ mods in
-      [
+  let build ~all_pkgs ~syntax_pkgs ~syntax_mods =
+    if syntax_pkgs = [] && syntax_mods = [] then [] else
+      let maybe_add_dynlink =
+        if List.mem "dynlink" all_pkgs
+        then []
+        else ["dynlink.cma"]
+      in
+      let all = resolve_syntaxes syntax_pkgs @ syntax_mods in
+      maybe_add_dynlink
+      @ [
         "-I";"+camlp4";
-        "dynlink.cma";
         "camlp4lib.cma";
 	      "Camlp4Parsers/Camlp4OCamlRevisedParser.cmo";
 	      "Camlp4Parsers/Camlp4OCamlParser.cmo";
@@ -161,7 +172,13 @@ let _ =
       | [] -> assert false
       | modules ->
         let tmp_output = !output ^ ".tmp" in
-        let cmd = base_cmd @ Camlp4.build !syntaxes !syntaxes_mod  @ jsoo_top @ args @ ["-o"; tmp_output] in
+        let cmd =
+          base_cmd
+          @ Camlp4.build
+            ~all_pkgs:!pkgs
+            ~syntax_pkgs:!syntaxes
+            ~syntax_mods:!syntaxes_mod
+          @ jsoo_top @ args @ ["-o"; tmp_output] in
         execute cmd;
         execute (["ocamlfind";"stdlib/expunge";tmp_output;!output] @ modules);
         clean (tmp_output)

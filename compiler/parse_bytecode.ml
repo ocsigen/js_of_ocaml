@@ -338,7 +338,9 @@ end = struct
   let analyse debug_data code =
     let blocks = AddrSet.empty in
     let len = String.length code  / 4 in
-    add (scan debug_data blocks code 0 len) len
+    let blocks = add blocks 0 in
+    let blocks = add blocks len in
+    scan debug_data blocks code 0 len
 
 end
 
