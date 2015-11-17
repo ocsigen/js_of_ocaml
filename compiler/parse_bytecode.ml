@@ -440,9 +440,21 @@ module State = struct
     (*    | Addr x  -> Format.fprintf f "[%d]" x*)
     | Dummy   -> Format.fprintf f "???"
 
-  type t =
-    { accu : elt; stack : elt list; env : elt array; env_offset : int;
-      handlers : (Var.t * addr * int) list; globals : globals }
+  type handler = {
+    var       : Var.t;
+    addr      : addr;
+    stack_len : int;
+    pop_addr  : (addr * addr) option ref
+  }
+
+  type t = {
+    accu       : elt;
+    stack      : elt list;
+    env        : elt array;
+    env_offset : int;
+    handlers   : handler list;
+    globals    : globals
+  }
 
   let fresh_var state =
     let x = Var.fresh () in
@@ -527,22 +539,39 @@ module State = struct
 
   let push_handler state x addr =
     { state
-      with handlers = (x, addr, List.length state.stack) :: state.handlers }
+    with handlers = {
+      var = x;
+      addr;
+      stack_len = List.length state.stack;
+      pop_addr =  ref None
+    } :: state.handlers }
 
   let pop_handler state =
     { state with handlers = List.tl state.handlers }
+
+  let normalize_return_addr_for_current_handler addr norm state =
+    match state.handlers with
+    | [] -> assert false
+    | {pop_addr;_}::_->
+       match !pop_addr with
+       | None ->
+          pop_addr:=Some (addr,norm);
+          addr
+       | Some (addr,norm') ->
+          assert (norm = norm');
+          addr
 
   let current_handler state =
     match state.handlers with
       [] ->
       None
-    | (x, addr, len) :: _ ->
+    | {var; addr; stack_len; _} :: _ ->
       let state =
         { state
-          with accu = Var x;
-               stack = st_pop (List.length state.stack - len) state.stack}
+          with accu = Var var;
+               stack = st_pop (List.length state.stack - stack_len) state.stack}
       in
-      Some (x, (addr, stack_vars state))
+      Some (var, (addr, stack_vars state))
 
   let initial g =
     { accu = Dummy; stack = []; env = [||]; env_offset = 0; handlers = [];
@@ -1268,9 +1297,14 @@ and compile infos pc state instrs =
        Pushtrap ((pc + 2, State.stack_vars state), x,
                  (addr, State.stack_vars state'), -1), state)
     | POPTRAP ->
-      compile_block infos.blocks infos.debug code
-        (pc + 1) (State.pop 4 (State.pop_handler state));
-      (instrs, Poptrap (pc + 1, State.stack_vars state), state)
+       let norm = match (get_instr code (pc + 1)).Instr.code with
+         | BRANCH -> gets code (pc + 2) + pc + 2
+         | _      -> pc + 1
+       in
+       let addr = State.normalize_return_addr_for_current_handler (pc + 1) norm state in
+       compile_block infos.blocks infos.debug code
+                     addr (State.pop 4 (State.pop_handler state));
+       (instrs, Poptrap (addr, State.stack_vars state), state)
     | RERAISE
     | RAISE_NOTRACE
     | RAISE ->
