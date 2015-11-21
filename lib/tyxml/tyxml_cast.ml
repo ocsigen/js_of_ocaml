@@ -112,6 +112,7 @@ module MakeTo( C : sig type 'a elt val elt : 'a elt -> Dom.node Js.t end) : Tyxm
   let of_i elt = rebuild_node "of_i" elt
   let of_kbd elt = rebuild_node "of_kbd" elt
   let of_keygen elt = rebuild_node "of_keygen" elt
+  let of_main elt = rebuild_node "of_main" elt
   let of_mark elt = rebuild_node "of_mark" elt
   let of_menu elt = rebuild_node "of_menu" elt
   let of_meter elt = rebuild_node "of_meter" elt
