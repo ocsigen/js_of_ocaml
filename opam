@@ -21,10 +21,10 @@ depends: [
   "base64" {>= "2.0.0"}
   ( "base-no-ppx" | "ppx_tools" )
 ]
-depopts: ["deriving" "tyxml" {> "3.5.0"} "reactiveData" ]
+depopts: ["deriving" "tyxml" "reactiveData" ]
 
 conflicts: [
   "deriving" {< "0.6"}
-  "tyxml"    {< "3.2.1"}
+  "tyxml"    {< "3.5.0"}
 ]
 available: [ ocaml-version >= "4.00.0" ]
