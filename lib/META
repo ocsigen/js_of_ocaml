@@ -58,7 +58,7 @@ package "deriving" (
     ppxopt(-ppx_driver) = "ppx_deriving,./ppx_deriving_json.cma"
     requires(ppx_driver) = "ppx_deriving.api"
     archive(ppx_driver, byte) = "ppx_deriving_json.cma"
-    archive(ppx_driver, native) = "ppx_deriving_json.cmxs"
+    archive(ppx_driver, native) = "ppx_deriving_json.cmxa"
   )
 
 )

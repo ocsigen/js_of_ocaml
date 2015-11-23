@@ -53,7 +53,10 @@ endif
 endif
 
 ifeq "${WITH_PPX_DERIVING}" "YES"
-PPX_DERIVING_LIB= ppx/ppx_deriving_json.cma ppx/ppx_deriving_json.cmxs
+PPX_DERIVING_LIB= ppx/ppx_deriving_json.cma \
+	ppx/ppx_deriving_json.a \
+	ppx/ppx_deriving_json.cmxa \
+	ppx/ppx_deriving_json.cmxs
 endif
 
 all: $(LIBNAME).cma log/logger.cma \
@@ -196,6 +199,8 @@ ppx/ppx_deriving_json.cma: ppx/ppx_deriving_json.cmo
 
 ppx/ppx_deriving_json.cmx: ppx/ppx_deriving_json.ml
 	$(OCAMLOPT) -w -27 -package ppx_deriving,ppx_tools.metaquot -c $<
+
+ppx/ppx_deriving_json.a: ppx/ppx_deriving_json.cmx
 
 ppx/ppx_deriving_json.cmxa: ppx/ppx_deriving_json.cmx
 	$(OCAMLOPT) -a -o $@ $^

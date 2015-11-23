@@ -42,7 +42,9 @@ endif
 endif
 
 ifeq "${WITH_PPX_DERIVING}" "YES"
+IMPL += lib/ppx/ppx_deriving_json.a
 IMPL += lib/ppx/ppx_deriving_json.cma
+IMPL += lib/ppx/ppx_deriving_json.cmxa
 IMPL += lib/ppx/ppx_deriving_json.cmxs
 endif
 
