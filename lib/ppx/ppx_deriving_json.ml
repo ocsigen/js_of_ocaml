@@ -70,15 +70,15 @@ let seqlist = function
     [%expr ()]
 
 let check_record_fields =
-  (function
-    | {Parsetree.pld_mutable = Mutable} ->
-      Location.raise_errorf
-        "%s cannot be derived for mutable records" deriver
-    | {pld_type = {ptyp_desc = Ptyp_poly _}} ->
-      Location.raise_errorf
-        "%s cannot be derived for polymorphic records" deriver
-    | _ ->
-      ()) |> List.iter
+  List.iter @@ function
+  | {Parsetree.pld_mutable = Mutable} ->
+    Location.raise_errorf
+      "%s cannot be derived for mutable records" deriver
+  | {pld_type = {ptyp_desc = Ptyp_poly _}} ->
+    Location.raise_errorf
+      "%s cannot be derived for polymorphic records" deriver
+  | _ ->
+    ()
 
 let maybe_tuple_type = function
   | [y] -> y
@@ -379,7 +379,7 @@ let fun_str_wrap d e y ~f ~suffix =
 let read_str_wrap d e =
   let f y = [%type: Deriving_Json_lexer.lexbuf -> [%t y]]
   and suffix = "of_json" in
-  let y = f (Ppx_deriving.core_type_of_type_decl d)in
+  let y = f (Ppx_deriving.core_type_of_type_decl d) in
   fun_str_wrap d e y ~f ~suffix
 
 let read_tag_str_wrap d e =
@@ -454,10 +454,10 @@ let json_decls_of_type decl y =
     match y with
     | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _);
         ptyp_loc = loc } ->
-      Some (recognize_body_of_poly_variant l ~loc |>
-            recognize_str_wrap decl),
-      Some (read_of_poly_variant l y ~decl ~loc |>
-            read_tag_str_wrap decl)
+      Some (recognize_body_of_poly_variant l ~loc
+            |> recognize_str_wrap decl),
+      Some (read_of_poly_variant l y ~decl ~loc
+            |> read_tag_str_wrap decl)
     | _ ->
       None, None
   in
@@ -543,19 +543,87 @@ let json_decls_of_record d l =
   None, None
 
 let json_str_of_decl ({Parsetree.ptype_loc} as d) =
-  let f () =
-    match d with
-    | { Parsetree.ptype_manifest = Some y } ->
-      json_decls_of_type d y
-    | { ptype_kind = Ptype_variant l } ->
-      json_decls_of_variant d l
-    | { ptype_kind = Ptype_record l } ->
-      json_decls_of_record d l
-    | _ ->
-      Location.raise_errorf "%s cannot be derived for %s" deriver
-        (Ppx_deriving.mangle_type_decl (`Suffix "") d)
-  in
-  Ast_helper.with_default_loc ptype_loc f
+  Ast_helper.with_default_loc ptype_loc @@ fun () ->
+  match d with
+  | { Parsetree.ptype_manifest = Some y } ->
+    json_decls_of_type d y
+  | { ptype_kind = Ptype_variant l } ->
+    json_decls_of_variant d l
+  | { ptype_kind = Ptype_record l } ->
+    json_decls_of_record d l
+  | _ ->
+    Location.raise_errorf "%s cannot be derived for %s" deriver
+      (Ppx_deriving.mangle_type_decl (`Suffix "") d)
+
+let read_sig_of_decl ({Parsetree.ptype_loc} as d) =
+  (let s =
+     let s = Ppx_deriving.mangle_type_decl (`Suffix "of_json") d in
+     Location.mkloc s ptype_loc
+   and y =
+     let f y = [%type: Deriving_Json_lexer.lexbuf -> [%t y]] in
+     let y = f (Ppx_deriving.core_type_of_type_decl d) in
+     Ppx_deriving.poly_arrow_of_type_decl f d y
+   in
+   Ast_helper.Val.mk s y) |> Ast_helper.Sig.value
+
+let recognize_sig_of_decl ({Parsetree.ptype_loc} as d) =
+  (let s =
+     let s = Ppx_deriving.mangle_type_decl (`Suffix "recognize") d in
+     Location.mkloc s ptype_loc
+   and y = [%type: [ `NCst of int  | `Cst of int ] -> bool] in
+   Ast_helper.Val.mk s y) |> Ast_helper.Sig.value
+
+let read_with_tag_sig_of_decl ({Parsetree.ptype_loc} as d) =
+  (let s =
+     let s =
+       Ppx_deriving.mangle_type_decl (`Suffix "of_json_with_tag") d
+     in
+     Location.mkloc s ptype_loc
+   and y =
+     let f y = [%type: Deriving_Json_lexer.lexbuf -> [%t y]] in
+     let y =
+       let y = Ppx_deriving.core_type_of_type_decl d in
+       f [%type: [ `NCst of int  | `Cst of int ] -> [%t y]]
+     in
+     Ppx_deriving.poly_arrow_of_type_decl f d y
+   in
+   Ast_helper.Val.mk s y) |> Ast_helper.Sig.value
+
+let write_sig_of_decl ({Parsetree.ptype_loc} as d) =
+  (let s =
+     let s = Ppx_deriving.mangle_type_decl (`Suffix "to_json") d in
+     Location.mkloc s ptype_loc
+   and y =
+     let f y = [%type: Buffer.t -> [%t y] -> unit] in
+     let y = f (Ppx_deriving.core_type_of_type_decl d) in
+     Ppx_deriving.poly_arrow_of_type_decl f d y
+   in
+   Ast_helper.Val.mk s y) |> Ast_helper.Sig.value
+
+let json_sig_of_decl ({Parsetree.ptype_loc} as d) =
+  (let s =
+     let s = Ppx_deriving.mangle_type_decl (`Suffix "json") d in
+     Location.mkloc s ptype_loc
+   and y =
+     let f y = [%type: [%t y] Deriving_Json.t] in
+     let y = f (Ppx_deriving.core_type_of_type_decl d) in
+     Ppx_deriving.poly_arrow_of_type_decl f d y
+   in
+   Ast_helper.Val.mk s y) |> Ast_helper.Sig.value
+
+let sigs_of_decl ({Parsetree.ptype_loc} as d) =
+  Ast_helper.with_default_loc ptype_loc @@ fun () ->
+  let l = [
+    read_sig_of_decl d;
+    write_sig_of_decl d;
+    json_sig_of_decl d
+  ] in
+  match d with
+  | { Parsetree.ptype_manifest =
+        Some {Parsetree.ptyp_desc = Parsetree.Ptyp_variant _}} ->
+    read_with_tag_sig_of_decl d :: recognize_sig_of_decl d :: l
+  | _ ->
+    l
 
 let register_for_expr s f =
   let core_type ({Parsetree.ptyp_loc} as y) =
@@ -565,19 +633,17 @@ let register_for_expr s f =
   Ppx_deriving.(create s ~core_type () |> register)
 
 let _ =
-  register_for_expr "of_json" (fun y ->
-    [%expr
-      fun s ->
-        [%e read_of_type y]
-          (Deriving_Json_lexer.init_lexer (Lexing.from_string s))])
+  register_for_expr "of_json" @@ fun y -> [%expr
+    fun s ->
+      [%e read_of_type y]
+        (Deriving_Json_lexer.init_lexer (Lexing.from_string s))]
 
 let _ =
-  register_for_expr "to_json" (fun y ->
-    [%expr
-      fun x ->
-        let buf = Buffer.create 50 in
-        [%e write_of_type y ~poly:false] buf x;
-        Buffer.contents buf])
+  register_for_expr "to_json" @@ fun y -> [%expr
+    fun x ->
+      let buf = Buffer.create 50 in
+      [%e write_of_type y ~poly:false] buf x;
+      Buffer.contents buf]
 
 let _ =
   let core_type ({Parsetree.ptyp_loc} as y) =
@@ -596,5 +662,9 @@ let _ =
     and f' = Ast_helper.Str.value Asttypes.Nonrecursive in
     let l = [f (lrv @ lr); f lw; f' lj] in
     match lp with [] -> l | _ -> f lp :: l
+  and type_decl_sig ~options ~path l =
+    List.map sigs_of_decl l |> List.flatten
   in
-  Ppx_deriving.(create "json" ~core_type ~type_decl_str () |> register)
+  Ppx_deriving.
+    (create "json" ~core_type ~type_decl_str ~type_decl_sig ()
+     |> register)
