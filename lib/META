@@ -49,6 +49,18 @@ package "deriving" (
     archive(syntax, toploop) = "pa_deriving_Json.cmo"
     requires(syntax) = "deriving.syntax.common"
   )
+
+  package "ppx" (
+    description = "[@@deriving json]"
+    version = "[distributed with js_of_ocaml]"
+    exists_if = "ppx_deriving_json.cma"
+    requires(-ppx_driver) = "ppx_deriving"
+    ppxopt(-ppx_driver) = "ppx_deriving,./ppx_deriving_json.cma"
+    requires(ppx_driver) = "ppx_deriving.api"
+    archive(ppx_driver, byte) = "ppx_deriving_json.cma"
+    archive(ppx_driver, native) = "ppx_deriving_json.cmxa"
+  )
+
 )
 
 package "graphics" (

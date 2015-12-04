@@ -52,13 +52,20 @@ PPX_LIB_NDL= ppx/ppx_js.cmxs
 endif
 endif
 
+ifeq "${WITH_PPX_DERIVING}" "YES"
+PPX_DERIVING_LIB= ppx/ppx_deriving_json.cma \
+	ppx/ppx_deriving_json.a \
+	ppx/ppx_deriving_json.cmxa \
+	ppx/ppx_deriving_json.cmxs
+endif
+
 all: $(LIBNAME).cma log/logger.cma \
 	${PA_JS} ${PA_JS_NDL} \
 	${PA_DERIVING} 	${PA_DERIVING_NDL} \
 	${DERIVING_JSON} \
 	${GRAPHICS_CMA} \
 	${TYXML_CMA} \
-	$(PPX_EX) $(PPX_LIB) $(PPX_LIB_NDL) \
+	$(PPX_EX) $(PPX_LIB) $(PPX_DERIVING_LIB) $(PPX_LIB_NDL) \
 	META
 
 VERSION := $(shell head -n 1 ../VERSION)
@@ -183,6 +190,23 @@ ppx/ppx_js.cmxs: ppx/ppx_js.cmxa
 
 $(PPX_EX): ppx/ppx_js.$(BEST)
 	mv -f $< $@
+
+ppx/ppx_deriving_json.cmo: ppx/ppx_deriving_json.ml
+	$(OCAMLC) -w -27 -package ppx_deriving,ppx_tools,ppx_tools.metaquot -c $<
+
+ppx/ppx_deriving_json.cma: ppx/ppx_deriving_json.cmo
+	$(OCAMLC) -a -o $@ $^
+
+ppx/ppx_deriving_json.cmx: ppx/ppx_deriving_json.ml
+	$(OCAMLOPT) -w -27 -package ppx_deriving,ppx_tools.metaquot -c $<
+
+ppx/ppx_deriving_json.a: ppx/ppx_deriving_json.cmx
+
+ppx/ppx_deriving_json.cmxa: ppx/ppx_deriving_json.cmx
+	$(OCAMLOPT) -a -o $@ $^
+
+ppx/ppx_deriving_json.cmxs: ppx/ppx_deriving_json.cmx
+	$(OCAMLOPT) -shared -o $@ $^
 
 %.cmo: %.ml syntax/pa_js.cmo
 	$(OCAMLC) -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt -c -g $<

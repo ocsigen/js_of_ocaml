@@ -24,6 +24,12 @@ type 'a t = {
     read: Deriving_Json_lexer.lexbuf -> 'a
 }
 
+let make write read = {write; read}
+
+let read {read} = read
+
+let write {write} = write
+
 let convert t f1 f2 = {
   write = (fun buf a -> t.write buf (f2 a));
   read = (fun buf -> f1 (t.read buf))
@@ -224,91 +230,115 @@ module Json_string = Defaults(struct
   let read buf = Deriving_Json_lexer.read_string buf
 end)
 
-module Json_list(A : Json) = Defaults(struct
-      type a = A.a list
-      let write buffer xs =
-	let rec aux l c =
-	  match l with
-	    | [] ->
-		Buffer.add_char buffer '0';
-		for _i = c downto 1 do
-		  Buffer.add_char buffer ']'
-		done
-	    | x::xs ->
-		Printf.bprintf buffer "[0,%a," A.write x;
-		aux xs (succ c)
-	in aux xs 0
+let read_list f buf =
+  let rec aux l c =
+    match Deriving_Json_lexer.read_case buf with
+    | `Cst 0 ->
+      for _i = c downto 1 do
+	Deriving_Json_lexer.read_rbracket buf
+      done;
+      List.rev l
+    | `NCst 0 ->
+      Deriving_Json_lexer.read_comma buf;
+      let x = f  buf in
+      Deriving_Json_lexer.read_comma buf;
+      aux (x::l) (succ c)
+    | _ -> Deriving_Json_lexer.tag_error ~typename:"list" buf
+  in
+  aux [] 0
 
-      let read buf =
- 	let rec aux l c =
-	  match Deriving_Json_lexer.read_case buf with
-	    | `Cst 0 ->
-		for _i = c downto 1 do
-		  Deriving_Json_lexer.read_rbracket buf
-		done;
-		List.rev l
-	    | `NCst 0 ->
-		Deriving_Json_lexer.read_comma buf;
-		let x = A.read buf in
-		Deriving_Json_lexer.read_comma buf;
-		aux (x::l) (succ c)
-	    | _ -> Deriving_Json_lexer.tag_error ~typename:"list" buf
-	in
-	aux [] 0
-    end)
-
-module Json_ref(A : Json) = Defaults(struct
-      type a = A.a ref
-      let write buffer r =
-	Printf.bprintf buffer "[0,%a]"
-	  A.write !r
-      let read buf =
-	match Deriving_Json_lexer.read_case buf with
-	| `NCst 0 ->
-	    Deriving_Json_lexer.read_comma buf;
-	    let x = A.read buf in
-	    Deriving_Json_lexer.read_rbracket buf;
-	    ref x
-	| _ -> Deriving_Json_lexer.tag_error ~typename:"ref" buf
-    end)
-
-module Json_option(A : Json) = Defaults(struct
-      type a = A.a option
-      let write buffer o =
-	match o with
-	| None -> Buffer.add_char buffer '0'
-	| Some x ->
-	    Printf.bprintf buffer "[0,%a]"
-	      A.write x
-      let read buf =
-	match Deriving_Json_lexer.read_case buf with
-	| `Cst 0 -> None
-	| `NCst 0 ->
-	    Deriving_Json_lexer.read_comma buf;
-	    let x = A.read buf in
-	    Deriving_Json_lexer.read_rbracket buf;
-	    Some x
-	| _ -> Deriving_Json_lexer.tag_error ~typename:"option" buf
-    end)
-
-module Json_array(A : Json) = Defaults(struct
-      type a = A.a array
-      let write buffer a =
-	Buffer.add_string buffer "[0";
-	for i = 0 to Array.length a - 1 do
-	  Buffer.add_char buffer ',';
-	  A.write buffer a.(i);
-	done;
+let write_list f buffer xs =
+  let rec aux l c =
+    match l with
+    | [] ->
+      Buffer.add_char buffer '0';
+      for _i = c downto 1 do
 	Buffer.add_char buffer ']'
-      let rec read_list acc buf =
-	match Deriving_Json_lexer.read_comma_or_rbracket buf with
-	| `RBracket -> acc
-	| `Comma ->
-	    let x = A.read buf in
-	    read_list (x :: acc) buf
-      let read buf =
-	match Deriving_Json_lexer.read_case buf with
-	(* We allow the tag 254 in case of float array *)
-	| `NCst 0 | `NCst 254 -> Array.of_list (List.rev (read_list [] buf))
-	| _ -> Deriving_Json_lexer.tag_error ~typename:"array" buf
-    end)
+      done
+    | x::xs ->
+      Printf.bprintf buffer "[0,%a," f x;
+      aux xs (succ c)
+  in aux xs 0
+
+module Json_list(A : Json) =
+  Defaults(struct
+    type a = A.a list
+    let read = read_list A.read
+    let write = write_list A.write
+  end)
+
+let read_ref f buf =
+  match Deriving_Json_lexer.read_case buf with
+  | `NCst 0 ->
+    Deriving_Json_lexer.read_comma buf;
+    let x = f buf in
+    Deriving_Json_lexer.read_rbracket buf;
+    ref x
+  | _ -> Deriving_Json_lexer.tag_error ~typename:"ref" buf
+
+let write_ref f buffer r =
+  Printf.bprintf buffer "[0,%a]" f !r
+
+module Json_ref(A : Json) =
+  Defaults(struct
+    type a = A.a ref
+    let write = write_ref A.write
+    let read = read_ref A.read
+  end)
+
+let read_option f buf =
+  match Deriving_Json_lexer.read_case buf with
+  | `Cst 0 ->
+    None
+  | `NCst 0 ->
+    Deriving_Json_lexer.read_comma buf;
+    let x = f buf in
+    Deriving_Json_lexer.read_rbracket buf;
+    Some x
+  | _ ->
+    Deriving_Json_lexer.tag_error ~typename:"option" buf
+
+let write_option f buffer o =
+  match o with
+  | None ->
+    Buffer.add_char buffer '0'
+  | Some x ->
+    Printf.bprintf buffer "[0,%a]" f x
+
+module Json_option(A : Json) =
+  Defaults(struct
+    type a = A.a option
+    let read = read_option A.read
+    let write = write_option A.write
+  end)
+
+let read_array f buf =
+  let rec read_list acc buf =
+    match Deriving_Json_lexer.read_comma_or_rbracket buf with
+    | `RBracket ->
+      acc
+    | `Comma ->
+      let x = f buf in
+      read_list (x :: acc) buf
+  in
+  match Deriving_Json_lexer.read_case buf with
+  (* We allow the tag 254 in case of float array *)
+  | `NCst 0 | `NCst 254 ->
+    Array.of_list (List.rev (read_list [] buf))
+  | _ ->
+    Deriving_Json_lexer.tag_error ~typename:"array" buf
+
+let write_array f buffer a =
+  Buffer.add_string buffer "[0";
+  for i = 0 to Array.length a - 1 do
+    Buffer.add_char buffer ',';
+    f buffer a.(i);
+  done;
+  Buffer.add_char buffer ']'
+
+module Json_array(A : Json) =
+  Defaults(struct
+    type a = A.a array
+    let read = read_array A.read
+    let write = write_array A.write
+  end)

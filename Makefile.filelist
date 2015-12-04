@@ -41,6 +41,13 @@ endif
 endif
 endif
 
+ifeq "${WITH_PPX_DERIVING}" "YES"
+IMPL += lib/ppx/ppx_deriving_json.a
+IMPL += lib/ppx/ppx_deriving_json.cma
+IMPL += lib/ppx/ppx_deriving_json.cmxa
+IMPL += lib/ppx/ppx_deriving_json.cmxs
+endif
+
 ifeq "${WITH_TOPLEVEL}" "YES"
 IMPL += lib/toplevel/jsooTop.cmo lib/toplevel/jsooTopError.cmo
 INTF += lib/toplevel/jsooTop.cmi lib/toplevel/jsooTopError.cmi
