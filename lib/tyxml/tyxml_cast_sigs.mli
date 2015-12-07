@@ -166,6 +166,7 @@ module type TO = sig
   val of_i : [> Html5_types.i] elt -> Dom_html.element Js.t
   val of_kbd : [> Html5_types.kbd] elt -> Dom_html.element Js.t
   val of_keygen : [> Html5_types.keygen] elt -> Dom_html.element Js.t
+  val of_main : [> Html5_types.main] elt -> Dom_html.element Js.t
   val of_mark : [> Html5_types.mark] elt -> Dom_html.element Js.t
   val of_menu : [> Html5_types.menu] elt -> Dom_html.element Js.t
   val of_meter : [> Html5_types.meter] elt -> Dom_html.element Js.t
