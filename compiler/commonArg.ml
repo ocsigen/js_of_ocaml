@@ -66,7 +66,10 @@ let quiet =
   Arg.(value & flag & info ["quiet";"q"] ~doc)
 
 let custom_header =
-  let doc = "Provide a custom header for generated JavaScript file" in
+  let doc = "Provide a custom header for the generated JavaScript file, \
+             useful for making the script an \
+             executable file with #!/usr/bin/env node"
+  in
   Arg.(value & opt (some string) None & info ["custom-header"] ~doc)
 
 let t = Term.(
