@@ -1886,3 +1886,7 @@ let clearTimeout (id : timeout_id_safe) =
   | Some x ->
      id:=None;
      window##clearTimeout(x)
+
+let js_array_of_collection (c : #element collection Js.t) :
+  #element Js.t Js.js_array Js.t =
+  Js.Unsafe.(meth_call (js_expr "[].slice") "call" [|inject c|])

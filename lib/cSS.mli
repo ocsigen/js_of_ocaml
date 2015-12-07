@@ -85,6 +85,9 @@ val string_of_name : name -> string
   Blue channels. Channel values are in between [0] and [255].*)
 val rgb_of_name : name -> (int * int * int)
 
+(** Convert a tuple of three integers between [0] and [255] into a hex
+    string *)
+val hex_of_rgb : (int * int * int) -> string
 
 (**The type of colors, either by name, by Red-Green-Blue constructor or by
    Hue-Saturation-Lightness constructors.*)
