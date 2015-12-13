@@ -51,12 +51,12 @@ class type positionError = object
 end
 
 class type geolocation = object
-  method getCurrentPosition : (position Js.t -> unit)
-    -> (positionError Js.t -> unit)
+  method getCurrentPosition : (position Js.t -> unit) Js.callback
+    -> (positionError Js.t -> unit) Js.callback
     -> positionOptions Js.t
     -> unit Js.meth
-  method watchPosition : (position Js.t -> unit)
-    -> (positionError Js.t -> unit)
+  method watchPosition : (position Js.t -> unit) Js.callback
+    -> (positionError Js.t -> unit) Js.callback
     -> positionOptions Js.t
     -> watchId Js.meth
   method clearWatch : watchId -> unit Js.meth
