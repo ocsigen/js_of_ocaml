@@ -192,13 +192,13 @@ $(PPX_EX): ppx/ppx_js.$(BEST)
 	mv -f $< $@
 
 ppx/ppx_deriving_json.cmo: ppx/ppx_deriving_json.ml
-	$(OCAMLC) -w -27 -package ppx_deriving,ppx_tools,ppx_tools.metaquot -c $<
+	$(OCAMLC) -w -40-42-48-27 -package ppx_deriving,ppx_tools,ppx_tools.metaquot -c $<
 
 ppx/ppx_deriving_json.cma: ppx/ppx_deriving_json.cmo
 	$(OCAMLC) -a -o $@ $^
 
 ppx/ppx_deriving_json.cmx: ppx/ppx_deriving_json.ml
-	$(OCAMLOPT) -w -27 -package ppx_deriving,ppx_tools.metaquot -c $<
+	$(OCAMLOPT) -w -40-42-48-27 -package ppx_deriving,ppx_tools.metaquot -c $<
 
 ppx/ppx_deriving_json.a: ppx/ppx_deriving_json.cmx
 

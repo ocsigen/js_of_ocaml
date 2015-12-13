@@ -1621,6 +1621,7 @@ type timeout_id_safe
     with delay greater than 24 days. *)
 val setTimeout : (unit -> unit) -> float -> timeout_id_safe
 val clearTimeout : timeout_id_safe -> unit
+
 (** Convert a [Dom_html.collection] to a Js array *)
 val js_array_of_collection : #element collection Js.t -> #element Js.t Js.js_array Js.t
 
