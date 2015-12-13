@@ -35,11 +35,9 @@
     let f_error err =
       let code = err##code in
       let msg = err##message in
-      match code with
-      | Geolocation.TIMEOUT -> Firebug.console##debug(msg)
-      | _ -> ()
+      if code = err##_TIMEOUT then Firebug.console##debug(msg)
     in
-    geo##getCurrentPosition(f_success, f_error, options) *)
+    geo##getCurrentPosition(Js.wrap_callback f_success, Js.wrap_callback f_error, options) *)
 
 type positionErrorCode
 type watchId
