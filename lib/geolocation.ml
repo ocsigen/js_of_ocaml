@@ -40,9 +40,9 @@ class type position = object
 end
 
 class type positionOptions = object
-  method enableHighAccuracy : bool Js.prop
-  method timeout : int Js.prop
-  method maximumAge : int Js.prop
+  method enableHighAccuracy : bool Js.writeonly_prop
+  method timeout : int Js.writeonly_prop
+  method maximumAge : int Js.writeonly_prop
 end
 
 class type positionError = object
