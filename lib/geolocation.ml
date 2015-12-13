@@ -22,6 +22,8 @@ type positionErrorCode =
   | POSITION_UNAVAILABLE
   | TIMEOUT
 
+type watchId
+
 class type coordinates = object
   method latitude : float Js.readonly_prop
   method longitude : float Js.readonly_prop
@@ -56,8 +58,8 @@ class type geolocation = object
   method watchPosition : (position Js.t -> unit)
     -> (positionError Js.t -> unit)
     -> positionOptions Js.t
-    -> int Js.meth
-  method clearWatch : int -> unit Js.meth
+    -> watchId Js.meth
+  method clearWatch : watchId -> unit Js.meth
 end
 
 let empty_position_options () = Js.Unsafe.obj [||]
