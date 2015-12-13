@@ -42,8 +42,8 @@ class type positionOptions = object
 end
 
 class type positionError = object
-  method _PERMISSION_DENIED : positionErrorCode Js.readonly_prop
-  method _POSITION_UNAVAILABLE : positionErrorCode Js.readonly_prop
+  method _PERMISSION_DENIED_ : positionErrorCode Js.readonly_prop
+  method _POSITION_UNAVAILABLE_ : positionErrorCode Js.readonly_prop
   method _TIMEOUT : positionErrorCode Js.readonly_prop
   method code : positionErrorCode Js.readonly_prop
   method message : Js.js_string Js.t Js.readonly_prop
