@@ -41,11 +41,7 @@
     in
     geo##getCurrentPosition(f_success, f_error, options) *)
 
-type positionErrorCode =
-    PERMISSION_DENIED
-  | POSITION_UNAVAILABLE
-  | TIMEOUT
-
+type positionErrorCode
 type watchId
 
 class type coordinates = object
@@ -70,6 +66,9 @@ class type positionOptions = object
 end
 
 class type positionError = object
+  method _PERMISSION_DENIED : positionErrorCode Js.readonly_prop
+  method _POSITION_UNAVAILABLE : positionErrorCode Js.readonly_prop
+  method _TIMEOUT : positionErrorCode Js.readonly_prop
   method code : positionErrorCode Js.readonly_prop
   method message : Js.js_string Js.t Js.readonly_prop
 end
