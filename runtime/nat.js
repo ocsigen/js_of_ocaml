@@ -210,7 +210,7 @@ function mult_nat(nat1, ofs1, len1, nat2, ofs2, len2, nat3, ofs3, len3) {
 //Requires: mult_nat, add_nat
 function square_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
 	var carry = 0;
-	carry += add_nat(nat1, ofs1, len1, nat1, ofs1, len1);
+	carry += add_nat(nat1, ofs1, len1, nat1, ofs1, len1, 0);
 	carry += mult_nat(nat1, ofs1, len1, nat2, ofs2, len2, nat2, ofs2, len2);
 	return carry;
 }
@@ -363,4 +363,3 @@ function lxor_digit_nat(nat1, ofs1, nat2, ofs2) {
 	if(nat1[ofs1] < 0) nat1[ofs1] += 4294967296;
 	return undefined;
 }
-
