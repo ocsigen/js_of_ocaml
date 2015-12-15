@@ -38,6 +38,8 @@ lwt_js_events.cmx : lwt_js.cmx js.cmx firebug.cmx dom_html.cmx dom.cmx \
     lwt_js_events.cmi
 lwt_js.cmo : js.cmi firebug.cmi dom_html.cmi lwt_js.cmi
 lwt_js.cmx : js.cmx firebug.cmx dom_html.cmx lwt_js.cmi
+mutationObserver.cmo : js.cmi dom.cmi mutationObserver.cmi
+mutationObserver.cmx : js.cmx dom.cmx mutationObserver.cmi
 regexp.cmo : js.cmi regexp.cmi
 regexp.cmx : js.cmx regexp.cmi
 sys_js.cmo : lib_version.cmo js.cmi sys_js.cmi
@@ -73,6 +75,7 @@ jstable.cmi : js.cmi
 keycode.cmi :
 lwt_js_events.cmi : js.cmi dom_html.cmi
 lwt_js.cmi :
+mutationObserver.cmi : js.cmi dom.cmi
 regexp.cmi :
 sys_js.cmi : js.cmi
 typed_array.cmi : js.cmi

@@ -24,6 +24,7 @@ WebGL
 WebSockets
 Geolocation
 Jstable
+MutationObserver
 }
 
 {1 Ppx - API Reference}
