@@ -31,7 +31,7 @@ let var_ptuple l =
 let map_loc f {Location.txt; loc} =
   {Location.txt = f txt; loc}
 
-let suffix_lid ({Location.txt; loc} as lid) ~suffix =
+let suffix_lid {Location.txt; loc} ~suffix =
   let txt = Ppx_deriving.mangle_lid (`Suffix suffix) txt in
   Ast_helper.Exp.ident {txt; loc} ~loc
 
@@ -124,9 +124,12 @@ and write_poly_case r ~arg ~poly =
         write_body_of_tuple_type l ~arg ~poly ~tag:0
     in
     Ast_helper.Exp.case lhs rhs
-  | Rinherit ({ptyp_desc = (Ptyp_constr (lid, _) as c)} as y) ->
+  | Rinherit ({ptyp_desc = Ptyp_constr (lid, _)} as y) ->
     Ast_helper.Exp.case (Ast_helper.Pat.type_ lid)
       (write_body_of_type y ~arg ~poly)
+  | Rinherit {ptyp_loc} ->
+    Location.raise_errorf ~loc:ptyp_loc
+      "%s write case cannot be derived" deriver
 
 and write_body_of_type y ~arg ~poly =
   match y with
@@ -218,8 +221,7 @@ let recognize_body_of_poly_variant l ~loc =
   let l =
     let f = function
       | Parsetree.Rtag (label, _, _, l) ->
-        let i = Ppx_deriving.hash_variant label
-        and f = Ast_helper.Exp.variant label in
+        let i = Ppx_deriving.hash_variant label in
         recognize_case_of_constructor i l
       | Rinherit {ptyp_desc = Ptyp_constr (lid, _)} ->
         let guard = [%expr [%e suffix_lid lid ~suffix:"recognize"] x] in
@@ -255,7 +257,7 @@ let rec read_poly_case ?decl y = function
          let v = [%e read_body_of_type ?decl (maybe_tuple_type l)] in
          Deriving_Json_lexer.read_rbracket buf;
          [%e Ast_helper.Exp.variant label (Some [%expr v])]])
-  | Rinherit ({ptyp_desc = Ptyp_constr (lid, l)} as y') ->
+  | Rinherit {ptyp_desc = Ptyp_constr (lid, l)} ->
     let guard = [%expr [%e suffix_lid lid ~suffix:"recognize"] x]
     and e =
       let e = suffix_lid lid ~suffix:"of_json_with_tag"
@@ -263,6 +265,9 @@ let rec read_poly_case ?decl y = function
       [%expr ([%e Ast_convenience.app e l] buf x :> [%t y])]
     in
     Ast_helper.Exp.case ~guard [%pat? x] e
+  | Rinherit {ptyp_loc} ->
+    Location.raise_errorf ~loc:ptyp_loc
+      "%s read case cannot be derived" deriver
 
 and read_of_poly_variant ?decl l y ~loc =
   List.map (read_poly_case ?decl y) l @ [tag_error_case ()] |>
