@@ -608,10 +608,10 @@ val coerce_opt : 'a Opt.t -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
 
 (** {2 Type checking operators.} *)
 
-external typeof : < .. > t -> js_string t = "caml_js_typeof"
+external typeof : _ t -> js_string t = "caml_js_typeof"
   (** Returns the type of a Javascript object. *)
 
-external instanceof : < .. > t -> _ constr -> bool = "caml_js_instanceof"
+external instanceof : _ t -> _ constr -> bool = "caml_js_instanceof"
   (** Tests whether a Javascript object is an instance of a given class. *)
 
 (** {2 Debugging operations.} *)
@@ -632,7 +632,7 @@ module Unsafe : sig
   external inject : 'a -> any = "%identity"
     (** Coercion to top type. *)
 
-  external coerce : < .. > t -> < ..> t = "%identity"
+  external coerce : _ t -> _ t = "%identity"
     (** Unsafe coercion between to Javascript objects. *)
 
   external get : 'a -> 'b -> 'c = "caml_js_get"

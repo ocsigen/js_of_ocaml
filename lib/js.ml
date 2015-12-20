@@ -422,8 +422,8 @@ external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
 external bytestring : string -> js_string t = "caml_bytes_of_string"
 external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
 
-external typeof : < .. > t -> js_string t = "caml_js_typeof"
-external instanceof : 'a -> 'b -> bool = "caml_js_instanceof"
+external typeof : _ t -> js_string t = "caml_js_typeof"
+external instanceof : _ t -> _ constr -> bool = "caml_js_instanceof"
 
 let isNaN (i : 'a) : bool =
   to_bool (Unsafe.fun_call (Unsafe.global##isNaN) [|Unsafe.inject i|])
@@ -446,8 +446,9 @@ let _ =
 let _ =
   Printexc.register_printer
     (fun e ->
+       let e : < .. > t = Obj.magic e in
        if instanceof e array_constructor then None
-       else Some (to_string ((Obj.magic e)##toString())))
+       else Some (to_string (e##toString())))
 
 let string_of_error e = to_string (e##toString())
 
