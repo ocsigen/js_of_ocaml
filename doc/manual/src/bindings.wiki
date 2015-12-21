@@ -193,15 +193,15 @@ let obj : obj Js.t = Js.Unsafe.js_expr "obj"
 let string_constr : Js.js_string Js.t Js.constr = Js.Unsafe.global##_String
 
 let cast_string (x:dom_or_string Js.t) : Js.js_string Js.t Js.opt =
-  if instanceof x string_constr
-  then Js.Unsafe.coerce x
+  if Js.instanceof x string_constr
+  then Js.some (Js.Unsafe.coerce x)
   else Js.null
 
 let node_constr : Dom.node Js.t Js.constr = Js.Unsafe.global##_Node
 
 let cast_node (x:dom_or_string Js.t) : Dom.node Js.t Js.opt =
-  if instanceof x node_constr
-  then Js.Unsafe.coerce x
+  if Js.instanceof x node_constr
+  then Js.some (Js.Unsafe.coerce x)
   else Js.null
 
 >>
