@@ -77,7 +77,7 @@ webGL.cmi : typed_array.cmi js.cmi dom_html.cmi
 webSockets.cmi : typed_array.cmi js.cmi file.cmi dom_html.cmi dom.cmi
 xmlHttpRequest.cmi : url.cmi typed_array.cmi js.cmi form.cmi file.cmi \
     dom.cmi
-geolocation.cmi : js.cmi geolocation.cmi
+geolocation.cmi : js.cmi
 log/lwt_log_js.cmo : js.cmi firebug.cmi log/lwt_log_js.cmi
 log/lwt_log_js.cmx : js.cmx firebug.cmx log/lwt_log_js.cmi
 log/lwt_log_js.cmi :

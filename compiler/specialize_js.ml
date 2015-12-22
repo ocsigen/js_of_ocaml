@@ -153,10 +153,12 @@ let specialize_instr info i rem =
       end :: rem
   | Let (x, Prim (Extern "%int_mul", [y; z])) ->
       begin match the_int info y, the_int info z with
-        Some j, _ | _, Some j when Int32.abs j < 0x200000l ->
-          Let (x, Prim (Extern "%direct_int_mul", [y; z]))
+      | Some j, _ when Int32.abs j < 0x200000l ->
+        Let (x, Prim (Extern "%direct_int_mul", [y; z]))
+      | _, Some j when Int32.abs j < 0x200000l ->
+        Let (x, Prim (Extern "%direct_int_mul", [y; z]))
       | _ ->
-          i
+        i
       end :: rem
   | Let (x, Prim (Extern "%int_div", [y; z])) ->
       begin match the_int info z with
