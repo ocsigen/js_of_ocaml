@@ -25,5 +25,6 @@ depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" ]
 conflicts: [
   "deriving" {< "0.6"}
   "tyxml"    {< "3.5.0"}
+  "ppx_deriving" {< "3.0"}
 ]
 available: [ ocaml-version >= "4.00.0" ]
