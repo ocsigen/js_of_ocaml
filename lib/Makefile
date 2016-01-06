@@ -155,7 +155,7 @@ toplevel/jsooTop.cmo: toplevel/jsooTop.ml syntax/pa_js.cmo ../compiler/lib/compi
 
 toplevel/%.cmo: toplevel/%.ml
 	$(OCAMLC) $(SAFESTRING) \
-		-I toplevel -I +compiler-libs -I +camlp4 \
+		-I toplevel -I +compiler-libs -package camlp4 \
 		-c $< -o $@
 
 toplevel/%.cmi: toplevel/%.mli
