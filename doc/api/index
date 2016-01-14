@@ -23,6 +23,7 @@ Typed_array
 WebGL
 WebSockets
 Geolocation
+Jstable
 }
 
 {1 Ppx - API Reference}
