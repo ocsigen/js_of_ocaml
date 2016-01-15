@@ -1040,7 +1040,11 @@ and translate_expr ctx queue loc _x e level : _ * J.statement_list =
       | Extern ("caml_js_expr"|"caml_pure_js_expr"), [Pc (String nm | IString nm)] ->
         begin
           try
-            let lex = Parse_js.lexer_from_string nm in
+            let offset = match loc with
+              | J.N | J.U -> None
+              | J.Pi pi -> Some pi
+            in
+            let lex = Parse_js.lexer_from_string ?offset nm in
             let e = Parse_js.parse_expr lex in
             (e, const_p, queue)
           with Parse_js.Parsing_error pi ->

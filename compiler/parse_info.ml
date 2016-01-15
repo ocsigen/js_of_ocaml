@@ -37,9 +37,11 @@ let zero =
 
 module Line_info = struct
 
+  type t_above = t
   type t = {
     mutable acc_pos : int;
     mutable acc_line : int;
+    offset : t_above option;
     lines : int array;
     name : string option;
     src : string option
@@ -77,6 +79,7 @@ module Line_info = struct
     let t = {
       acc_pos = 0;
       acc_line = 0;
+      offset = None;
       lines;
       name = Some file;
       src  = Some file;
@@ -84,7 +87,7 @@ module Line_info = struct
     close_in ic;
     t
 
-  let from_string str =
+  let from_string ?offset str =
     let pos = ref 0
     and lines = ref [] in
     (try
@@ -97,6 +100,7 @@ module Line_info = struct
     let lines = Array.of_list (List.rev !lines) in
     { acc_pos = 0;
       acc_line = 0;
+      offset;
       lines;
       name=None;
       src =None}
@@ -116,6 +120,7 @@ module Line_info = struct
     let t = {
       acc_pos = 0;
       acc_line = 0;
+      offset = None;
       lines;
       name=None;
       src=None;
@@ -133,17 +138,30 @@ let relative_path {Line_info.src} file =
 
 let make_lineinfo_from_file file = Line_info.from_file file
 
-let make_lineinfo_from_string str = Line_info.from_string str
+let make_lineinfo_from_string ?offset str = Line_info.from_string ?offset str
 
 let make_lineinfo_from_channel c = Line_info.from_channel c
 
 let t_of_lexbuf line_info lexbuf : t =
   let idx = lexbuf.Lexing.lex_start_p.Lexing.pos_cnum in
   let line,col = Line_info.get line_info idx in
+  let line,col = match line_info.Line_info.offset with
+    | None -> line, col
+    | Some {line = line_offset; col = col_offset; _} ->
+      line + line_offset, col + col_offset
+  in
+  let name = match line_info.Line_info.offset with
+    | Some { name = Some _ as name } -> name
+    | _ -> line_info.Line_info.name
+  in
+  let src = match line_info.Line_info.offset with
+    | Some {src = Some _ as src } -> src
+    | _ -> line_info.Line_info.src
+  in
   { fol = None
   ; idx
   ; line
   ; col
-  ; name = line_info.Line_info.name
-  ; src  = line_info.Line_info.src
+  ; name
+  ; src
   }
