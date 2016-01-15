@@ -102,7 +102,6 @@ module Debug : sig
   val find : data -> Code.addr -> (int * string) list
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
   val mem : data -> Code.addr -> bool
-  val paths : data -> string list
   val read
     : data -> crcs:(string * string option) list -> includes:string list
     -> in_channel -> unit
@@ -164,15 +163,26 @@ end = struct
       match paths with
       | None -> ()
       | Some (paths : string list) ->
-        let u = List.map (fun {ev_module} -> ev_module) evl in
-        let u = Util.sort_uniq String.compare u in
+        let u = List.map (
+          fun {ev_module;ev_loc = { Location.loc_start = { Lexing.pos_fname }}} ->
+            ev_module, pos_fname) evl in
+        let u = Util.sort_uniq (fun a b -> String.compare (fst a) (fst b)) u in
         let u =
           List.map
-            (fun name ->
+            (fun (name,filename) ->
               let crc =
                 try List.assoc name crcs
                 with Not_found -> None in
-              let name, source = find_ml_in_paths paths name in
+              let name, source =
+                 try
+                   let source = Util.find_in_path paths filename in
+                   String.uncapitalize name, Some source
+                 with Not_found ->
+                 try
+                   let source = Util.find_in_path paths (Filename.basename filename) in
+                   String.uncapitalize name, Some source
+                 with Not_found ->
+                   find_ml_in_paths paths name in
               { name; crc; source; paths }) u
         in
         List.iter
@@ -240,9 +250,6 @@ end = struct
               fol=None}
     with Not_found ->
       None
-
-  let paths ((_,units) : data) =
-    Hashtbl.fold (fun name _ acc -> name :: acc ) units []
 
   let rec propagate l1 l2 =
     match l1, l2 with
