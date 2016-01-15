@@ -98,6 +98,7 @@ module Optim = struct
   let debugger = o ~name:"debugger" ~default:true
   let genprim = o ~name:"genprim" ~default:true
   let excwrap = o ~name:"excwrap" ~default:true
+  let record_js_backtrace = o ~name:"jsbacktrace" ~default:false
   let include_cmis = o ~name:"withcmi" ~default: true
   let warn_unused = o ~name:"warn-unused"  ~default: false
 

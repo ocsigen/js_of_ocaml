@@ -211,9 +211,9 @@ module Share = struct
       gen s
 
 
-  let get_apply gen n t =
+  let get_apply gen loc n t =
     if not t.alias_apply
-    then gen n
+    then gen loc n
     else try
         J.EVar (IntMap.find n t.vars.applies)
       with Not_found ->
@@ -677,15 +677,15 @@ let parallel_renaming params args continuation queue =
 
 (****)
 
-let apply_fun_raw f params =
+let apply_fun_raw loc f params =
   let n = List.length params in
   J.ECond (J.EBin (J.EqEq, J.EDot (f, "length"),
                    J.ENum (float n)),
-           J.ECall (f, params, J.N),
+           J.ECall (f, params, loc),
            J.ECall (s_var "caml_call_gen",
-                    [f; J.EArr (List.map (fun x -> Some x) params)], J.N))
+                    [f; J.EArr (List.map (fun x -> Some x) params)], loc))
 
-let generate_apply_fun n =
+let generate_apply_fun loc n =
   let f' = Var.fresh () in
   let f = J.V f' in
   Code.Var.name f' "fun";
@@ -700,14 +700,14 @@ let generate_apply_fun n =
   J.EFun (None, f :: params,
           [J.Statement
               (J.Return_statement
-                 (Some (apply_fun_raw f' params'))), J.N],
-          J.N)
+                 (Some (apply_fun_raw loc f' params'))), loc],
+          loc)
 
 let apply_fun ctx f params loc =
   if Option.Optim.inline_callgen ()
-  then apply_fun_raw f params
+  then apply_fun_raw loc f params
   else
-    let y = Share.get_apply generate_apply_fun (List.length params) ctx.Ctx.share in
+    let y = Share.get_apply generate_apply_fun loc (List.length params) ctx.Ctx.share in
     J.ECall (y, f::params, loc)
 
 (****)
@@ -1432,7 +1432,10 @@ else begin
               J.Eq,
               J.EVar (J.V x),
               J.ECall (Share.get_prim s_var "caml_wrap_exception" st.ctx.Ctx.share,
-                       [J.EVar (J.V x)], J.N))),J.N)
+                       [J.EVar (J.V x);
+                        if Option.Optim.record_js_backtrace ()
+                        then one
+                        else zero ], J.N))),J.N)
             ::handler
           else handler in
         let x =
@@ -1680,6 +1683,11 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
       flush_all queue [J.Return_statement (Some cx), loc]
   | Raise x ->
       let ((_px, cx), queue) = access_queue queue x in
+      let cx =
+        if Option.Optim.record_js_backtrace ()
+        then J.ECall (s_var "caml_exn_with_js_error", [cx; zero], loc)
+        else cx
+      in
       flush_all queue [J.Throw_statement cx, loc]
   | Stop ->
       flush_all queue [J.Return_statement None, loc]
@@ -1871,7 +1879,7 @@ let generate_shared_value ctx =
   if not (Option.Optim.inline_callgen ())
   then
     let applies = List.map (fun (n,v) ->
-        match generate_apply_fun n with
+        match generate_apply_fun J.N n with
         | J.EFun (_,param,body,nid) ->
           J.Function_declaration (v,param,body,nid), J.U
         | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in

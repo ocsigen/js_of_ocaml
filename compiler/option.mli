@@ -41,6 +41,7 @@ module Optim : sig
   val stable_var : unit -> bool
   val debuginfo : unit -> bool
   val excwrap : unit -> bool
+  val record_js_backtrace : unit -> bool
   val include_cmis: unit -> bool
 
   val warn_unused : unit -> bool

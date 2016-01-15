@@ -392,6 +392,13 @@ exception Error of error t
 let error_constr = Unsafe.global##_Error
 let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
 
+external with_js_exn : exn -> bool -> exn = "caml_exn_with_js_error"
+external extract_js_exn  : exn -> error t optdef = "caml_js_error_of_exn"
+external raise_js_exn : error t -> 'a = "caml_js_error_raise"
+
+let record_js_exn ?(force=false) exn = with_js_exn exn force
+let extract_js_exn exn = Optdef.to_option (extract_js_exn exn)
+
 class type json = object
   method parse : js_string t -> 'a meth
   method stringify: 'a -> js_string t meth

@@ -509,6 +509,10 @@ val error_constr : (js_string t -> error t) constr
 
 val string_of_error : error t -> string
 
+val record_js_exn  : ?force:bool -> exn -> exn
+val extract_js_exn : exn -> error t option
+val raise_js_exn   : error t -> 'a
+
 exception Error of error t
   (** The [Error] exception wrap javascript exceptions when catched by ocaml code.
       In case the javascript exception is not an instance of javascript [Error],
