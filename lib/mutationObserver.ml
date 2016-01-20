@@ -51,3 +51,42 @@ let mutationObserver =
   Js.Unsafe.global##_MutationObserver
 
 let is_supported () = Js.Optdef.test mutationObserver
+
+let observe ~(node:Dom.node Js.t)
+  ~(f:_MutationRecord Js.t Js.js_array Js.t -> _MutationObserver Js.t -> unit)
+  ?(child_list:bool option) ?(attributes:bool option)
+  ?(character_data:bool option) ?(subtree:bool option)
+  ?(attribute_old_value:bool option) ?(character_data_old_value:bool option)
+  ?(attribute_filter:Js.js_string Js.t list option) () : _MutationObserver Js.t =
+  let obs = jsnew mutationObserver(Js.wrap_callback f) in
+  let cfg = empty_mutation_observer_init () in
+  let () =
+    match child_list with None -> () | Some v -> cfg##childList <- v
+  in
+  let () =
+    match attributes with None -> () | Some v -> cfg##attributes <- v
+  in
+  let () =
+    match character_data with None -> () | Some v -> cfg##characterData <- v
+  in
+  let () =
+    match subtree with None -> () | Some v -> cfg##subtree <- v
+  in
+  let () =
+    match attribute_old_value with None -> () | Some v -> cfg##attributeOldValue <- v
+  in
+  let () =
+    match character_data_old_value with None -> () | Some v -> cfg##characterDataOldValue <- v
+  in
+  let () =
+    match attribute_filter with
+    | None -> ()
+    | Some l ->
+      let a = jsnew Js.array_length (List.length l) in
+      let () =
+        List.iteri (fun i v -> Js.array_set a i v) l
+      in
+      cfg##attributeFilter <- a
+  in
+  let () = obs##observe(node, cfg) in
+  obs

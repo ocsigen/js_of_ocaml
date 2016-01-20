@@ -27,17 +27,14 @@
         Js.Opt.get (doc##getElementById(Js.string "observed"))
           (fun () -> assert false)
       in
-      let target' = (target :> Dom.node Js.t) in
+      let node = (target :> Dom.node Js.t) in
       let f records observer =
         Firebug.console##debug(records) ;
         Firebug.console##debug(observer)
       in
-      let observer = jsnew MutationObserver.mutationObserver(Js.wrap_callback f) in
-      let config = MutationObserver.empty_mutation_observer_init() in
-      config##attributes <- true ;
-      config##childList <- true ;
-      config##characterData <- true ;
-      observer##observe(target', config)
+      MutationObserver.observe ~node ~f
+        ~attributes:true ~child_list:true ~character_data:true
+        ()
   ]}
 
   @see <https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver> for API documentation.
@@ -76,3 +73,16 @@ val empty_mutation_observer_init : unit -> _MutationObserverInit Js.t
 val mutationObserver : ((_MutationRecord Js.t Js.js_array Js.t -> _MutationObserver Js.t -> unit) Js.callback -> _MutationObserver Js.t) Js.constr
 
 val is_supported : unit -> bool
+
+(** Helper to create a new observer and connect it to a node *)
+val observe : node:(Dom.node Js.t)
+  -> f:(_MutationRecord Js.t Js.js_array Js.t -> _MutationObserver Js.t -> unit)
+  -> ?child_list:bool
+  -> ?attributes:bool
+  -> ?character_data:bool
+  -> ?subtree:bool
+  -> ?attribute_old_value:bool
+  -> ?character_data_old_value:bool
+  -> ?attribute_filter:(Js.js_string Js.t list)
+  -> unit
+  -> _MutationObserver Js.t
