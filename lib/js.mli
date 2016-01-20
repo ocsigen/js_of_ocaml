@@ -509,9 +509,16 @@ val error_constr : (js_string t -> error t) constr
 
 val string_of_error : error t -> string
 
-val record_js_exn  : ?force:bool -> exn -> exn
-val extract_js_exn : exn -> error t option
-val raise_js_exn   : error t -> 'a
+val raise_js_error   : error t -> 'a
+val extract_js_error : exn -> error t option
+val record_js_error  : exn -> exn
+(** [record_js_error exn] records, inside the ocaml exception, a javascript [Error]
+    that contains the current javascript stacktrace.
+    This error can later be retrieved using [extract_js_error exn] to provide
+    a proper stacktrace (integrating well with sourcemap).
+    Note: You should probably not use this directly and rather use the js_of_ocaml
+    compiler flag [--enable with-js-error] that will wrap every thrown exception.
+*)
 
 exception Error of error t
   (** The [Error] exception wrap javascript exceptions when catched by ocaml code.

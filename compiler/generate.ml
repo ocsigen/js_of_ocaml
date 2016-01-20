@@ -166,7 +166,8 @@ module Share = struct
         ["caml_trampoline";
          "caml_trampoline_return";
          "caml_wrap_exception";
-         "caml_list_of_js_array"] in
+         "caml_list_of_js_array";
+         "caml_exn_with_js_backtrace" ] in
     {count; vars = empty_aux; alias_strings; alias_prims; alias_apply}
 
   let get_string gen s t =
@@ -931,6 +932,20 @@ let _ =
 
 (****)
 
+(* when raising ocaml exception and [improved_stacktrace] is enabled,
+   tag the ocaml exception with a Javascript error (that contain js stacktrace).
+   {[ throw e ]}
+   becomes
+   {[ throw (caml_exn_with_js_error(e,false)) ]}
+*)
+let throw_statement cx loc =
+  if not (Option.Optim.record_js_error ())
+  then
+    [J.Throw_statement cx,loc]
+  else
+    [J.Throw_statement (J.ECall (s_var "caml_exn_with_js_error",[cx;bool (J.ENum 0.)],loc)),loc]
+
+
 let varset_disjoint s s' = not (VarSet.exists (fun x -> VarSet.mem x s') s)
 
 let rec group_closures_rec closures req =
@@ -1433,7 +1448,7 @@ else begin
               J.EVar (J.V x),
               J.ECall (Share.get_prim s_var "caml_wrap_exception" st.ctx.Ctx.share,
                        [J.EVar (J.V x);
-                        if Option.Optim.record_js_backtrace ()
+                        if Option.Optim.record_js_error ()
                         then one
                         else zero ], J.N))),J.N)
             ::handler
@@ -1683,12 +1698,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
       flush_all queue [J.Return_statement (Some cx), loc]
   | Raise x ->
       let ((_px, cx), queue) = access_queue queue x in
-      let cx =
-        if Option.Optim.record_js_backtrace ()
-        then J.ECall (s_var "caml_exn_with_js_error", [cx; zero], loc)
-        else cx
-      in
-      flush_all queue [J.Throw_statement cx, loc]
+      flush_all queue (throw_statement cx loc)
   | Stop ->
       flush_all queue [J.Return_statement None, loc]
   | Branch cont ->

@@ -389,15 +389,17 @@ class type error = object
 end
 
 exception Error of error t
-let error_constr = Unsafe.global##_Error
+let error_constr : (js_string t -> error t) constr = Unsafe.global##_Error
 let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
 
-external with_js_exn : exn -> bool -> exn = "caml_exn_with_js_error"
-external extract_js_exn  : exn -> error t optdef = "caml_js_error_of_exn"
-external raise_js_exn : error t -> 'a = "caml_js_error_raise"
+external exn_with_js_error : exn -> bool -> exn = "caml_exn_with_js_error"
+external js_error_of_exception       : exn -> error t opt = "caml_js_error_of_exception"
+external raise_js_error : error t -> 'a = "caml_js_error_raise"
 
-let record_js_exn ?(force=false) exn = with_js_exn exn force
-let extract_js_exn exn = Optdef.to_option (extract_js_exn exn)
+let record_js_error exn = exn_with_js_error exn true
+
+let extract_js_error (exn : exn) : error t option =
+  Opt.to_option (js_error_of_exception exn)
 
 class type json = object
   method parse : js_string t -> 'a meth

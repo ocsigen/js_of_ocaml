@@ -177,7 +177,7 @@ function caml_wrap_exception(e,record_js_exn) {
 //Provides: caml_exn_with_js_error
 function caml_exn_with_js_error(exn, force) {
   if(!exn.js_exn || force)
-    exn.js_exn = new joo_global_object.Error("Exception with backstrace");
+    exn.js_exn = new joo_global_object.Error("Exception with backtrace");
   return exn
 }
 
