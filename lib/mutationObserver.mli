@@ -62,7 +62,7 @@ class type _MutationRecord = object
   method oldValue : Js.js_string Js.t Js.opt Js.readonly_prop
 end
 
-class type _MutationObserver = object
+class type mutationObserver = object
   method observe : Dom.node Js.t -> _MutationObserverInit Js.t -> unit Js.meth
   method disconnect : unit Js.meth
   method takeRecords : _MutationRecord Js.t Js.js_array Js.t Js.meth
@@ -70,13 +70,13 @@ end
 
 val empty_mutation_observer_init : unit -> _MutationObserverInit Js.t
 
-val mutationObserver : ((_MutationRecord Js.t Js.js_array Js.t -> _MutationObserver Js.t -> unit) Js.callback -> _MutationObserver Js.t) Js.constr
+val mutationObserver : ((_MutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit) Js.callback -> mutationObserver Js.t) Js.constr
 
 val is_supported : unit -> bool
 
 (** Helper to create a new observer and connect it to a node *)
 val observe : node:(Dom.node Js.t)
-  -> f:(_MutationRecord Js.t Js.js_array Js.t -> _MutationObserver Js.t -> unit)
+  -> f:(_MutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit)
   -> ?child_list:bool
   -> ?attributes:bool
   -> ?character_data:bool
@@ -85,4 +85,4 @@ val observe : node:(Dom.node Js.t)
   -> ?character_data_old_value:bool
   -> ?attribute_filter:(Js.js_string Js.t list)
   -> unit
-  -> _MutationObserver Js.t
+  -> mutationObserver Js.t

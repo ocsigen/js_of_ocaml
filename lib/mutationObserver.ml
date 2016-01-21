@@ -39,7 +39,7 @@ class type _MutationRecord = object
   method oldValue : Js.js_string Js.t Js.opt Js.readonly_prop
 end
 
-class type _MutationObserver = object
+class type mutationObserver = object
   method observe : Dom.node Js.t -> _MutationObserverInit Js.t -> unit Js.meth
   method disconnect : unit Js.meth
   method takeRecords : _MutationRecord Js.t Js.js_array Js.t Js.meth
@@ -53,11 +53,11 @@ let mutationObserver =
 let is_supported () = Js.Optdef.test mutationObserver
 
 let observe ~(node:Dom.node Js.t)
-  ~(f:_MutationRecord Js.t Js.js_array Js.t -> _MutationObserver Js.t -> unit)
+  ~(f:_MutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit)
   ?(child_list:bool option) ?(attributes:bool option)
   ?(character_data:bool option) ?(subtree:bool option)
   ?(attribute_old_value:bool option) ?(character_data_old_value:bool option)
-  ?(attribute_filter:Js.js_string Js.t list option) () : _MutationObserver Js.t =
+  ?(attribute_filter:Js.js_string Js.t list option) () : mutationObserver Js.t =
   let obs = jsnew mutationObserver(Js.wrap_callback f) in
   let cfg = empty_mutation_observer_init () in
   let () =
