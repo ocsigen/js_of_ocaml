@@ -1742,7 +1742,8 @@ let rec traverse blocks pc visited blocks' =
       (* Note that there is no matching poptrap when an exception is always
          raised in the [try ... with ...] body. *)
       match block.branch, path with
-        Pushtrap (cont1, x, cont2, _), pc3 :: rem ->
+        Pushtrap (cont1, x, cont2, pc3'), pc3 :: rem ->
+        assert (pc3' = -1);
         (AddrMap.add
            pc { block with branch = Pushtrap (cont1, x, cont2, pc3) }
            blocks',
