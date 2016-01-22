@@ -587,7 +587,6 @@ let rec build_graph st pc anc =
     Hashtbl.add st.all_succs pc s;
     let backs = AddrSet.inter s anc in
     Hashtbl.add st.backs pc backs;
-
     let s = fold_children st.blocks pc (fun x l -> x :: l) [] in
     let succs = List.filter (fun pc -> not (AddrSet.mem pc anc)) s in
     Hashtbl.add st.succs pc succs;
@@ -1356,7 +1355,7 @@ if queue <> [] && (AddrSet.mem pc st.loops || not (Option.Optim.inline ())) then
 else begin
   if pc >= 0 then begin
     if AddrSet.mem pc st.visited_blocks then begin
-      Format.eprintf "!!!! %d@." pc; assert false
+      Format.eprintf "Trying to compile a block twice !!!! %d@." pc; assert false
     end;
     st.visited_blocks <- AddrSet.add pc st.visited_blocks
   end;
@@ -1387,18 +1386,34 @@ else begin
     seq @
     match block.branch with
       Code.Pushtrap ((pc1, args1), x, (pc2, args2), pc3) ->
-  (* FIX: document this *)
+      (* FIX: document this *)
         let grey =  dominance_frontier st pc2 in
         let grey' = resolve_nodes interm grey in
+        assert (AddrSet.cardinal grey' <= 1);
         let limit_body =
           (* We need to make sure that pc3 is live (indeed, the
              continuation may have been optimized away by inlining) *)
-          AddrSet.is_empty grey' && pc3 >= 0 && Hashtbl.mem st.succs pc3 in
+          if pc3 >= 0 && Hashtbl.mem st.succs pc3
+          then
+            (* no need to limit body for simple flow with no instruction.
+               eg return and branch *)
+            let rec limit pc =
+              if pc < 0 || AddrSet.mem pc grey' then false else
+              let block = AddrMap.find pc st.blocks in
+              block.body <> [] ||
+              match block.branch with
+              | Return _ -> false
+              | Poptrap (pc',_) | Branch (pc', _) -> limit pc'
+              | _ -> true
+            in
+            limit pc3
+          else false
+        in
         let inner_frontier =
           if limit_body then AddrSet.add pc3 grey' else grey'
         in
+        let inner_frontier = AddrSet.union new_frontier inner_frontier in
         if limit_body then incr_preds st pc3;
-        assert (AddrSet.cardinal inner_frontier <= 1);
         if debug () then Format.eprintf "@[<2>try {@,";
         let body =
           compile_branch st [] (pc1, args1)
@@ -1423,7 +1438,7 @@ else begin
         in
         if debug () then Format.eprintf "}@]@ ";
         if limit_body then decr_preds st pc3;
-        let wrap s =
+        let _wrap s =
           (* We wrap [try ... catch ...] statements at toplevel inside
              an anonymous function, as V8 does not optimize functions
              that contain these statements *)
@@ -1456,21 +1471,58 @@ else begin
           else
             s
         in
+
+        let before_try_with, after_body, on_exn =
+          if limit_body
+          then
+            let frontier_of_body_after_poptrap =
+              AddrSet.union grey' new_frontier
+            in
+            match compile_block st [] pc3 frontier_of_body_after_poptrap interm with
+            | [] -> (J.Empty_statement, J.N), [], []
+            | block ->
+              if AddrSet.is_empty grey'
+              then
+                (* Single branch, no need to discriminate *)
+                (J.Empty_statement, J.N), block, []
+              else
+                let after_poptrap  = Code.Var.fresh () in
+                Code.Var.name after_poptrap "no_exn";
+                (J.Variable_statement [J.V after_poptrap,Some (J.ENum 1.,J.N)], J.N),
+                Js_simpl.if_statement (J.EVar (J.V after_poptrap)) J.N
+                  (J.Block block, J.N) false
+                  (J.Block [], J.N) false,
+                [J.Expression_statement (
+                   J.EBin (J.Eq, J.EVar (J.V after_poptrap), J.ENum 0.)), J.N]
+          else (J.Empty_statement, J.N), [], []
+        in
         flush_all queue
-          ((wrap
-              (J.Try_statement (body,
-                                Some (J.V x, handler),
-                                None)),
-            source_location st.ctx pc) ::
-           if AddrSet.is_empty inner_frontier then [] else begin
-             let pc = AddrSet.choose inner_frontier in
-             if AddrSet.mem pc frontier then [] else
-               compile_block st [] pc frontier interm
-           end)
+          (
+            before_try_with ::
+            ((J.Try_statement (
+               (* body *)
+               body,
+               (* handler *)
+               Some (J.V x,
+                     on_exn
+                     @ handler),
+               None)),
+             source_location st.ctx pc) ::
+            after_body
+            @
+            (if not (AddrSet.is_empty grey')
+             then
+               let pc = AddrSet.choose grey' in
+               if AddrSet.mem pc frontier then [] else
+                 compile_block st [] pc frontier interm
+             else []
+            )
+          )
     | _ ->
         let (new_frontier, new_interm) =
           if AddrSet.cardinal new_frontier > 1 then begin
             let x = Code.Var.fresh () in
+            Code.Var.name x "switch";
             let a = Array.of_list (AddrSet.elements new_frontier) in
             if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
             let idx = st.interm_idx in
