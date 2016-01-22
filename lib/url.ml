@@ -322,7 +322,11 @@ struct
 
   let path = path_of_path_string path_string
 
-  let arguments = decode_arguments_js_string l##search
+  let arguments =
+    decode_arguments_js_string
+      (if l##search##charAt(0) == Js.string "?"
+       then l##search##slice_end(1)
+       else l##search)
 
   let get_fragment () =
     (* location.hash doesn't have the same behavior depending on the browser
