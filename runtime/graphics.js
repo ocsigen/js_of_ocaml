@@ -399,10 +399,17 @@ function caml_gr_make_image(arr){
     for(var j=0;j<w;j++){
       var c = arr[i+1][j+1];
       var o = i*(w*4) + (j * 4);
-      im.data[o + 0] = c >> 16 & 0xff;
-      im.data[o + 1] = c >>  8 & 0xff;
-      im.data[o + 2] = c >>  0 & 0Xff;
-      im.data[o + 3] = 0xff;
+      if(c == -1) {
+        im.data[o + 0] = 0;
+        im.data[o + 1] = 0;
+        im.data[o + 2] = 0;
+        im.data[o + 3] = 0;
+      } else {
+        im.data[o + 0] = c >> 16 & 0xff;
+        im.data[o + 1] = c >>  8 & 0xff;
+        im.data[o + 2] = c >>  0 & 0Xff;
+        im.data[o + 3] = 0xff;
+      }
     }
   }
   return im
@@ -427,7 +434,20 @@ function caml_gr_dump_image(im){
 //Requires: caml_gr_state_get
 function caml_gr_draw_image(im,x,y){
   var s = caml_gr_state_get();
-  s.context.putImageData(im,x,s.height - im.height - y);
+  if(!im.image) {
+    var canvas = document.createElement("canvas");
+    canvas.width = s.width;
+    canvas.height = s.height;
+    canvas.getContext("2d").putImageData(im,0,0);
+    var image = new joo_global_object.Image();
+    image.onload = function () {
+      s.context.drawImage(image,x,s.height - im.height - y);
+      im.image = image;
+    }
+    image.src = canvas.toDataURL("image/png");
+  } else {
+  s.context.drawImage(im.image,x,s.height - im.height - y);
+  }
   return 0;
 }
 //Provides: caml_gr_create_image
