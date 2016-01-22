@@ -56,16 +56,22 @@ IMPL += lib/toplevel/jsooTopCamlp4.cmo
 endif
 endif
 
+JSOO_RUNTIME := mlString.js ieee_754.js int64.js md5.js marshal.js \
+	lexing.js parsing.js bigarray.js unix.js \
+	stdlib.js io.js fs.js jslib.js jslib_js_of_ocaml.js \
+	internalMod.js gc.js polyfill/json2.js
 
-OTHERS := runtime/runtime.js runtime/weak.js \
-          runtime/polyfill/classlist.js \
-          runtime/polyfill/array.js \
-          runtime/polyfill/string.js \
-          runtime/toplevel.js \
-          runtime/dynlink.js \
-          runtime/graphics.js \
-          runtime/nat.js \
-          runtime/predefined_exceptions.js
+JSOO_RUNTIME_EXTRA := weak.js \
+	polyfill/classlist.js \
+	polyfill/array.js \
+	polyfill/string.js \
+	toplevel.js \
+	dynlink.js \
+	graphics.js \
+	nat.js \
+	predefined_exceptions.js
+
+OTHERS := runtime/runtime.js $(addprefix runtime/,$(JSOO_RUNTIME)) $(addprefix runtime/,$(JSOO_RUNTIME_EXTRA))
 
 COMP_INTF := compiler/compiler.cmi
 COMP_IMPL := compiler/compiler.cma

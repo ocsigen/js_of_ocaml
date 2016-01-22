@@ -1,11 +1,8 @@
-FILES= 	mlString.js ieee_754.js int64.js md5.js marshal.js \
-	lexing.js parsing.js bigarray.js unix.js \
-	stdlib.js io.js fs.js jslib.js jslib_js_of_ocaml.js \
-	internalMod.js gc.js polyfill/json2.js
+include ../Makefile.filelist
 
-runtime.js: $(FILES)
-	echo "//concat $(FILES)" > runtime.js
-	for f in $(FILES) ; do \
+runtime.js: $(JSOO_RUNTIME)
+	echo "//concat $(JSOO_RUNTIME)" > runtime.js
+	for f in $(JSOO_RUNTIME) ; do \
 		 echo "//# 1 \"$$f\"" >> runtime.js; \
 	   cat $$f >> runtime.js; \
 	done
