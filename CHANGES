@@ -11,6 +11,7 @@
  ** Lib: Synchronized tyxml 3.6.0
  
  * BugFixes
+ ** Compiler: Fix compilation of the [match with exception] construct
  ** Tyxml_js: Discrepancy between Firefox and Chromium
  ** Ppx: fix for merlin
  ** Misc: fix compat with the upcoming ocaml 4.03
