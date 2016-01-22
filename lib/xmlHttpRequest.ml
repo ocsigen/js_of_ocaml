@@ -77,10 +77,12 @@ module Event = struct
 end
 
 let create () : xmlHttpRequest Js.t =
-  try jsnew (Js.Unsafe.global##_XMLHttpRequest)() with _ ->
-  try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Msxml2.XMLHTTP") with _ ->
-  try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Msxml3.XMLHTTP") with _ ->
-  try jsnew (Js.Unsafe.global##activeXObject)(Js.string "Microsoft.XMLHTTP") with _ ->
+  let xmlHttpRequest = Js.Unsafe.global##_XMLHttpRequest in
+  let activeXObject = Js.Unsafe.global##activeXObject in
+  try jsnew xmlHttpRequest() with _ ->
+  try jsnew activeXObject(Js.string "Msxml2.XMLHTTP") with _ ->
+  try jsnew activeXObject(Js.string "Msxml3.XMLHTTP") with _ ->
+  try jsnew activeXObject(Js.string "Microsoft.XMLHTTP") with _ ->
   assert false
 
 let encode_url l =
