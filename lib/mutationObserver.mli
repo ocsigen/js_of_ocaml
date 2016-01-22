@@ -40,7 +40,7 @@
   @see <https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver> for API documentation.
   @see <https://dom.spec.whatwg.org/#mutation-observers> for the Web Hypertext Application Technology Working Group (WHATWG) spec. *)
 
-class type _MutationObserverInit = object
+class type mutationObserverInit = object
   method childList : bool Js.writeonly_prop
   method attributes : bool Js.writeonly_prop
   method characterData : bool Js.writeonly_prop
@@ -50,7 +50,7 @@ class type _MutationObserverInit = object
   method attributeFilter : Js.js_string Js.t Js.js_array Js.t Js.writeonly_prop
 end
 
-class type _MutationRecord = object
+class type mutationRecord = object
   method _type : Js.js_string Js.t Js.readonly_prop
   method target : Dom.node Js.t Js.readonly_prop
   method addedNodes : Dom.node Js.t Dom.nodeList Js.t Js.readonly_prop
@@ -63,20 +63,20 @@ class type _MutationRecord = object
 end
 
 class type mutationObserver = object
-  method observe : Dom.node Js.t -> _MutationObserverInit Js.t -> unit Js.meth
+  method observe : Dom.node Js.t -> mutationObserverInit Js.t -> unit Js.meth
   method disconnect : unit Js.meth
-  method takeRecords : _MutationRecord Js.t Js.js_array Js.t Js.meth
+  method takeRecords : mutationRecord Js.t Js.js_array Js.t Js.meth
 end
 
-val empty_mutation_observer_init : unit -> _MutationObserverInit Js.t
+val empty_mutation_observer_init : unit -> mutationObserverInit Js.t
 
-val mutationObserver : ((_MutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit) Js.callback -> mutationObserver Js.t) Js.constr
+val mutationObserver : ((mutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit) Js.callback -> mutationObserver Js.t) Js.constr
 
 val is_supported : unit -> bool
 
 (** Helper to create a new observer and connect it to a node *)
 val observe : node:(Dom.node Js.t)
-  -> f:(_MutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit)
+  -> f:(mutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit)
   -> ?child_list:bool
   -> ?attributes:bool
   -> ?character_data:bool
