@@ -365,7 +365,7 @@ and document = object
   method referrer : js_string t readonly_prop
   method domain : js_string t prop
   method _URL : js_string t readonly_prop
-  method rootElement : svgElement t readonly_prop
+  method rootElement : svgElement t opt readonly_prop
 end
 
 (* interface SVGSVGElement *)
@@ -1533,8 +1533,12 @@ val createvkern : document t -> element t
 
 val svg_element : element t constr
 
-val getElementById : string -> element t
+val document : document t
+(** The current document *)
 
+val getElementById : string -> element t
+(** [getElementById id] returns the element with the id [id] in the
+    current document. It raises [Not_found] if there are no such element *)
 
 (** {2 Coercion functions} *)
 module CoerceTo : sig

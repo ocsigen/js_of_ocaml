@@ -361,7 +361,8 @@ and document = object
   method referrer : js_string t readonly_prop
   method domain : js_string t prop
   method _URL : js_string t readonly_prop
-  method rootElement : svgElement t readonly_prop
+  method rootElement : svgElement t opt readonly_prop
+  (* rootElement will be null or undefined in an html context *)
 end
 
 (* interface SVGSVGElement *)
@@ -1528,6 +1529,8 @@ let createvkern doc : element t = unsafeCreateElement doc "vkern"
 (****)
 
 let svg_element : element t constr = Js.Unsafe.global ## _SVGElement
+
+let document = Js.Unsafe.global##document
 
 let getElementById id : element t =
   Js.Opt.case (Js.Unsafe.global##document##getElementById (Js.string id))
