@@ -114,13 +114,14 @@ end = struct
 
   open Instruct
   type ml_unit = {
-    name   : string;
-    crc    : string option;
-    paths   : string list;
-    source : string option;
+    module_name   : string;
+    fname         : string;
+    crc           : string option;
+    paths         : string list;
+    source        : string option;
   }
 
-  type data = (int, debug_event) Hashtbl.t * (string, ml_unit) Hashtbl.t
+  type data = (int, (debug_event * ml_unit)) Hashtbl.t * ((string * string), ml_unit) Hashtbl.t
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
@@ -131,12 +132,12 @@ end = struct
   let find_ml_in_paths paths name =
     let uname = String.uncapitalize name in
     try
-      uname, Some (Util.find_in_path paths (uname^".ml"))
+      Some (Util.find_in_path paths (uname^".ml"))
     with Not_found ->
       try
-        name, Some (Util.find_in_path paths (name^".ml"))
+        Some (Util.find_in_path paths (name^".ml"))
       with Not_found ->
-        uname, None
+        None
 
 
   let read_event_list =
@@ -163,35 +164,25 @@ end = struct
       match paths with
       | None -> ()
       | Some (paths : string list) ->
-        let u = List.map (
-          fun {ev_module;ev_loc = { Location.loc_start = { Lexing.pos_fname }}} ->
-            ev_module, pos_fname) evl in
-        let u = Util.sort_uniq (fun a b -> String.compare (fst a) (fst b)) u in
-        let u =
-          List.map
-            (fun (name,filename) ->
-              let crc =
-                try List.assoc name crcs
-                with Not_found -> None in
-              let name, source =
-                 try
-                   let source = Util.find_in_path paths filename in
-                   String.uncapitalize name, Some source
-                 with Not_found ->
-                 try
-                   let source = Util.find_in_path paths (Filename.basename filename) in
-                   String.uncapitalize name, Some source
-                 with Not_found ->
-                   find_ml_in_paths paths name in
-              { name; crc; source; paths }) u
-        in
         List.iter
-          (fun unit ->
-            Hashtbl.add units unit.name unit) u;
-        List.iter
-          (fun ev ->
-            relocate_event orig ev;
-            Hashtbl.add events_by_pc ev.ev_pos ev)
+          (fun ({ev_module; ev_loc = { Location.loc_start = { Lexing.pos_fname }}} as ev) ->
+             let unit = try
+                 Hashtbl.find units (ev_module,pos_fname)
+               with  Not_found ->
+                 let crc =
+                   try List.assoc ev_module crcs
+                   with Not_found -> None in
+                 let source =
+                   try Some (Util.find_in_path paths pos_fname)
+                   with Not_found ->
+                   try Some (Util.find_in_path paths (Filename.basename pos_fname))
+                   with Not_found -> find_ml_in_paths paths ev_module in
+                 let u = { module_name = ev_module; fname = pos_fname; crc; source; paths } in
+                 Hashtbl.add units (ev_module,pos_fname) u;
+                 u
+             in
+             relocate_event orig ev;
+             Hashtbl.add events_by_pc ev.ev_pos (ev,unit))
           evl
 
   let read (events_by_pc, units) ~crcs ~includes ic =
@@ -203,16 +194,16 @@ end = struct
 
   let find (events_by_pc,_) pc =
     try
-      let ev = Hashtbl.find events_by_pc pc in
+      let (ev,_) = Hashtbl.find events_by_pc pc in
       IdentTable.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
     with Not_found ->
       []
 
   let mem (tbl,_) = Hashtbl.mem tbl
 
-  let find_loc (events_by_pc,units) ?(after = false) pc =
+  let find_loc (events_by_pc,_units) ?(after = false) pc =
     try
-      let (before, ev) =
+      let (before, (ev, unit)) =
         try false, Hashtbl.find events_by_pc pc with Not_found ->
           true,
           try Hashtbl.find events_by_pc (pc + 1) with Not_found ->
@@ -227,20 +218,7 @@ end = struct
             match ev.ev_kind with
             | Event_after _ -> loc.Location.loc_end
             | _ -> loc.Location.loc_start in
-        let src =
-          try
-            let uname = Filename.(basename (chop_extension pos.Lexing.pos_fname)) in
-            let unit = Hashtbl.find units uname in
-            try Some (Util.absolute_path
-                        (Util.find_in_path unit.paths pos.Lexing.pos_fname)) with
-            | Not_found ->
-              match unit.source with
-              | Some x -> Some (Util.absolute_path x)
-              | None   -> raise Not_found
-          with
-          | Not_found
-          | Invalid_argument _ -> None (* Some (pos.Lexing.pos_fname) *)
-        in
+        let src = unit.source in
         Some {Parse_info.name = Some pos.Lexing.pos_fname;
               src;
               line=pos.Lexing.pos_lnum - 1;
@@ -260,7 +238,7 @@ end = struct
 
   (*  let iter events_by_pc f = Hashtbl.iter f events_by_pc *)
 
-  let fold (events_by_pc,_) f acc = Hashtbl.fold f events_by_pc acc
+  let fold ((events_by_pc,_): data) f acc = Hashtbl.fold (fun k (e,_u) acc -> f k e acc) events_by_pc acc
 end
 
 (* Block analysis *)
