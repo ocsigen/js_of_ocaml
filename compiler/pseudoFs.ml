@@ -78,10 +78,10 @@ let cmi_dir = "/cmis"
 
 let find_cmi paths base =
   try
-    let name = String.uncapitalize base ^ ".cmi" in
+    let name = Util.uncapitalize_ascii base ^ ".cmi" in
     Filename.concat cmi_dir name, Util.find_in_findlib_paths paths name
   with Not_found ->
-    let name = String.capitalize base ^ ".cmi" in
+    let name = Util.capitalize_ascii base ^ ".cmi" in
     Filename.concat cmi_dir name, Util.find_in_findlib_paths paths name
 
 

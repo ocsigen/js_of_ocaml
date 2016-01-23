@@ -67,6 +67,13 @@ let rec find_in_path paths name =
     then file
     else find_in_path rem name
 
+let find_in_path paths name =
+  if Filename.is_relative name
+  then find_in_path paths name
+  else if Sys.file_exists name
+  then name
+  else raise Not_found
+
 let absolute_path f =
   if Filename.is_relative f
   then Filename.concat (Sys.getcwd()) f
@@ -381,3 +388,12 @@ let rec obj_of_const =
       Obj.set_field b i (obj_of_const x)
     ) l;
     b
+
+
+#if OCAML_VERSION < (4,03,0)
+let uncapitalize_ascii = String.uncapitalize
+let capitalize_ascii = String.capitalize
+#else
+let uncapitalize_ascii = String.uncapitalize_ascii
+let capitalize_ascii = String.capitalize_ascii
+#endif

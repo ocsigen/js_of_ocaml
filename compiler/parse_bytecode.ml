@@ -130,7 +130,7 @@ end = struct
   let is_empty (a,_) = Hashtbl.length a = 0
 
   let find_ml_in_paths paths name =
-    let uname = String.uncapitalize name in
+    let uname = Util.uncapitalize_ascii name in
     try
       Some (Util.find_in_path paths (uname^".ml"))
     with Not_found ->

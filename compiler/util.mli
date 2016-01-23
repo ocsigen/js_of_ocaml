@@ -92,3 +92,6 @@ module MagicNumber : sig
 end
 
 val obj_of_const : Lambda.structured_constant -> Obj.t
+
+val uncapitalize_ascii : string -> string
+val capitalize_ascii   : string -> string
