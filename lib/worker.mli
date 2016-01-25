@@ -53,7 +53,7 @@ end
 
 val create: string -> ('a, 'b) worker t
 
-(** Global function to be used by the worker *)
+(** {2 Global function to be used by the worker.} *)
 
 val import_scripts: string list -> unit
 val set_onmessage: ('a -> unit) -> unit

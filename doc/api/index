@@ -25,6 +25,7 @@ WebSockets
 Geolocation
 Jstable
 MutationObserver
+Worker
 }
 
 {1 Ppx - API Reference}
