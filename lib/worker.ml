@@ -49,7 +49,7 @@ let import_scripts scripts : unit =
     invalid_arg "Worker.import_scripts is undefined";
   Unsafe.fun_call
     (Unsafe.global##importScripts)
-    (Array.map (fun s -> Unsafe.inject @@ string s) (Array.of_list scripts))
+    (Array.map (fun s -> Unsafe.inject (string s)) (Array.of_list scripts))
 
 let set_onmessage handler =
   if Unsafe.global##onmessage == undefined then
