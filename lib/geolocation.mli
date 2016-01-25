@@ -24,18 +24,18 @@
   if (Geolocation.is_supported()) then
     let geo = Geolocation.geolocation in
     let options = Geolocation.empty_position_options() in
-    let () = options##enableHighAccuracy <- true in
+    let () = options##.enableHighAccuracy := true in
     let f_success pos =
-      let coords = pos##coords in
-      let latitude = coords##latitude in
-      Firebug.console##debug(latitude) ;
+      let coords = pos##.coords in
+      let latitude = coords##.latitude in
+      Firebug.console##debug latitude ;
     in
     let f_error err =
-      let code = err##code in
-      let msg = err##message in
-      if code = err##_TIMEOUT then Firebug.console##debug(msg)
+      let code = err##.code in
+      let msg = err##.message in
+      if code = err##._TIMEOUT then Firebug.console##debug(msg)
     in
-    geo##getCurrentPosition(Js.wrap_callback f_success, Js.wrap_callback f_error, options)
+    geo##getCurrentPosition (Js.wrap_callback f_success) (Js.wrap_callback f_error) options
   ]}
   @see <https://developer.mozilla.org/en-US/docs/Web/API/Geolocation> for API documentation.
   @see <http://www.w3.org/TR/geolocation-API/> for the W3C Recommendation. *)

@@ -4,11 +4,11 @@
 Write in .ml:
 
 <<code language="ocaml"|
-let v = (Js.Unsafe.js_expr "window")##document
+let v = (Js.Unsafe.js_expr "window")##.document
 >>
 Alternatively, the global object can be used. In the browser, it refers to {{{window}}}.
 <<code language="ocaml"|
-let v = Js.Unsafe.global##document
+let v = Js.Unsafe.global##.document
 >>
 
 and in .mli:
@@ -35,7 +35,7 @@ Have a look at the <<a_api | module Js.Unsafe >> module API.
 Write in .ml:
 
 <<code language="ocaml"|
-let f = Js.Unsafe.global##_F
+let f = Js.Unsafe.global##._F
 >>
 and in .mli:
 
@@ -57,12 +57,12 @@ it has been dynamically added by a library), you can access using unsafe
 features:
 
 <<code language="ocaml"|
-(Js.Unsafe.coerce elt)##blah
+(Js.Unsafe.coerce elt)##.blah
 >>
 
 If you want to add yourself a new property:
 <<code language="ocaml"|
-(Js.Unsafe.coerce elt)##blah <- v
+(Js.Unsafe.coerce elt)##.blah := v
 >>
 
 Here, {{{v}}} may be a JS value or an OCaml value.
@@ -77,10 +77,10 @@ Write in .ml and in .mli:
 <<code language="ocaml"|
 class type my_js_type = object
 
-  (* read only property, read value with t##prop1 *)
+  (* read only property, read value with t##.prop1 *)
   method prop1 : int readonly_prop
 
-  (* write only property, write value with t##prop2 <- 3.14 *)
+  (* write only property, write value with t##.prop2 := 3.14 *)
   method prop2 : float writeonly_prop
 
   (* both read and write *)
@@ -128,7 +128,7 @@ end
 and in .ml:
 
 <<code language="ocaml"|
-let theclass = (Js.Unsafe.js_expr "thelib")##_Theclass
+let theclass = (Js.Unsafe.js_expr "thelib")##._Theclass
 >>
 
 and in .mli:
@@ -139,29 +139,18 @@ val theclass : theclass t
 
 ==Constructing JS objects manually
 If you want to construct a JS object manually
-   (without calling a function or a constructor), use
-function {{{Js.Unsafe.obj}}}
-and create the corresponding object type.
+(without calling a function or a constructor), you can use
+the <<a_api text="Ppx"|module Ppx_js>> syntax extension.
 
-You can also create an empty object of this type ({{{Js.Unsafe.obj [||]}}})
-and set all fields manually using {{{o##prop <- ...}}}.
-
-For example, write in .mli:
-
+For example:
 <<code language="ocaml"|
-class type options = object
-  method propOne : int writeonly_prop
-  method propTwo : js_string t writeonly_prop
+let options = object%js
+  val x = 3 (* read-only prop *)
+  val mutable y = 4 (* read/write prop *)
 end
-
-val empty_options : unit -> options t
 >>
 
-and in the .ml file of your library:
-
-<<code language="ocaml"|
-let empty_options () = Js.Unsafe.obj [||]
->>
+You can also use the unsafe <<a_api |val Js.Unsafe.obj>>.
 
 == Set/get variables
 
@@ -170,8 +159,8 @@ You can access every variable through the global javascript object ({{{window}}}
 If the variable {{{var}}} has type {{{t Js.t}}}
 
 <<code language="ocaml"|
-let set (x:t Js.t) = Js.Unsafe.global##var <- x
-let get x : t Js.t = Js.Unsafe.global##var
+let set (x:t Js.t) = Js.Unsafe.global##.var := x
+let get x : t Js.t = Js.Unsafe.global##.var
 >>
 
 == Object property with multiple types
@@ -190,7 +179,7 @@ end
 
 let obj : obj Js.t = Js.Unsafe.js_expr "obj"
 
-let string_constr : Js.js_string Js.t Js.constr = Js.Unsafe.global##_String
+let string_constr : Js.js_string Js.t Js.constr = Js.Unsafe.global##._String
 
 let cast_string (x:dom_or_string Js.t) : Js.js_string Js.t Js.opt =
   if Js.instanceof x string_constr
@@ -213,5 +202,5 @@ It is frequent that some method are not to be implemented in some browser.
 To check the presence of method {{{met}}}:
 
 <<code language="ocaml"|
-let check_met obj = Js.Optdef.test ((Js.Unsafe.coerce obj)##met)
+let check_met obj = Js.Optdef.test ((Js.Unsafe.coerce obj)##.met)
 >>

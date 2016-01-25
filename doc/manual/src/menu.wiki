@@ -5,6 +5,7 @@
 ==[[linker|Link javascript code]]
 ==[[options|Command line options]]
 ==[[performances|Performances]]
+==[[camlp4|Camlp4 syntax extension]]
 ==Examples
 ===<<a_file src="toplevel/index.html"|An OCaml toplevel running in the browser>>
 ===<<a_file src="planet/index.html" |An animated 3D view of the Earth>>

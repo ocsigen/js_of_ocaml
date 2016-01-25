@@ -20,7 +20,7 @@
 
 (** This module provides functions for tampering with Url. It's main goal is to
     allow one to stay in the Ocaml realm without wandering into the
-    {!Dom_html.window}##location object. *)
+    {!Dom_html.window}##.location object. *)
 
 
 (** The first functions are mainly from and to string conversion functions for

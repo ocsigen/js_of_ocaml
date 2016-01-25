@@ -24,13 +24,13 @@
     if (MutationObserver.is_supported()) then
       let doc = Dom_html.document in
       let target =
-        Js.Opt.get (doc##getElementById(Js.string "observed"))
+        Js.Opt.get (doc##getElementById (Js.string "observed"))
           (fun () -> assert false)
       in
       let node = (target :> Dom.node Js.t) in
       let f records observer =
-        Firebug.console##debug(records) ;
-        Firebug.console##debug(observer)
+        Firebug.console##debug records ;
+        Firebug.console##debug observer
       in
       MutationObserver.observe ~node ~f
         ~attributes:true ~child_list:true ~character_data:true
