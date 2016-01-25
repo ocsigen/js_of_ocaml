@@ -19,8 +19,10 @@
 
 (** Low-level bindgins to javascript Web Workers.
 
-    See [https://developer.mozilla.org/en-US/docs/Web/API/Worker]
-    and [https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers].
+    See {{:https://developer.mozilla.org/en-US/docs/Web/API/Worker}
+    the documented Javascript API} and some more general documentation
+    {{:https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers}
+    about the usage of WebWorker}.
 
  *)
 
