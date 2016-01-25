@@ -1617,7 +1617,7 @@ end
 
 type timeout_id_safe
 
-(** Same as [Dom_html.window##setTimeout(cb,ms)] but prevents overflow
+(** Same as [Dom_html.window##setTimeout cb ms] but prevents overflow
     with delay greater than 24 days. *)
 val setTimeout : (unit -> unit) -> float -> timeout_id_safe
 val clearTimeout : timeout_id_safe -> unit

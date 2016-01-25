@@ -47,7 +47,7 @@
 
    {[let rec esc elt =
       lwt ev = keydown elt in
-      if ev##keyCode = 27
+      if ev##.keyCode = 27
       then Lwt.return ev
       else esc elt]}
 

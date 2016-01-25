@@ -172,24 +172,24 @@ val insertBefore : #node t -> #node t -> #node t opt -> unit
   (** [insertBefore p n c] inserts node [n] as child of node [p],
       just before node [c], or as last child if [p] is empty.
       The expression [insertBefore n c p] behave the same as
-      [p##insertBefore(n, c)] but avoid the need of coercing the
+      [p##insertBefore n c] but avoid the need of coercing the
       different objects to [node t]. *)
 
 val replaceChild : #node t -> #node t -> #node t -> unit
   (** The expression [replaceChild p n c] behave the same as
-      [p##replaceChild(n, c)] (replace [c] by [n] in [p])
+      [p##replaceChild n c] (replace [c] by [n] in [p])
       but avoid the need of coercing the
       different objects to [node t]. *)
 
 val removeChild : #node t -> #node t -> unit
   (** The expression [removeChild n c] behave the same as
-      [n##removeChild(c)] (remove [c] from [n])
+      [n##removeChild c] (remove [c] from [n])
       but avoid the need of coercing the
       different objects to [node t]. *)
 
 val appendChild : #node t -> #node t -> unit
   (** The expression [appendChild n c] behave the same as
-      [n##appendChild(c)] (appends [c] to [n])
+      [n##appendChild c] (appends [c] to [n])
       but avoid the need of coercing the
       different objects to [node t]. *)
 

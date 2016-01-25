@@ -603,7 +603,7 @@ val coerce_opt : 'a Opt.t -> ('a -> 'b Opt.t) -> ('a -> 'b) -> 'b
       If [v] is [null] or the coercion returns [null], function [f] is
       called.
       Typical usage is the following:
-      {[Js.coerce_opt (Dom_html.document##getElementById(id))
+      {[Js.coerce_opt (Dom_html.document##getElementById id)
       Dom_html.CoerceTo.div (fun _ -> assert false)]} *)
 
 (** {2 Type checking operators.} *)
