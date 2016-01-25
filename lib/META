@@ -72,10 +72,10 @@ package "graphics" (
 )
 
 package "tyxml" (
-  exists_if = "tyxml.cma"
+  exists_if = "tyxml_js.cma"
   description = "Tyxml for js_of_ocaml."
   version = "[distributed with js_of_ocaml]"
-  archive(byte) = "tyxml.cma"
+  archive(byte) = "tyxml_js.cma"
   requires = "tyxml.functor,reactiveData,react,js_of_ocaml,js_of_ocaml.weak"
 )
 

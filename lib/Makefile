@@ -27,7 +27,7 @@ GRAPHICS_CMA=graphics/graphics.cma
 endif
 
 ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
-TYXML_CMA=tyxml/tyxml.cma
+TYXML_CMA=tyxml/tyxml_js.cma
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
@@ -131,7 +131,7 @@ tyxml/tyxml_js.cmi: tyxml/tyxml_cast_sigs.cmi
 tyxml/%.cmi: tyxml/%.mli
 	$(OCAMLC) $(SAFESTRING) -package lwt,tyxml.functor,reactiveData,react -I . -I tyxml $< -o $@
 
-tyxml/tyxml.cma: tyxml/tyxml_cast.cmo tyxml/tyxml_js.cmo
+tyxml/tyxml_js.cma: tyxml/tyxml_cast.cmo tyxml/tyxml_js.cmo
 	$(OCAMLC) -a -o $@ $^
 
 

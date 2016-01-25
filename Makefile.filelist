@@ -26,7 +26,7 @@ INTF += lib/graphics/*.cmi
 endif
 
 ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
-IMPL += lib/tyxml/tyxml.cma
+IMPL += lib/tyxml/tyxml_js.cma
 INTF += lib/tyxml/*.cmi
 endif
 
