@@ -1,4 +1,4 @@
-===== dev (2016-01-XX) =====
+===== 2.7 (2016-01-25) =====
 
  * Features/Changes
  ** Syntax: ppx_deriving
@@ -7,17 +7,18 @@
  ** Lib: add geolocation API (Stéphane Legrand)
  ** Lib: add Mutation observers API (Stéphane Legrand)
  ** Lib: add Jstable module (Drup)
+ ** Lib: add WebWorker API (Grégoire Henry)
  ** Lib: Allow to customize 'in_channel' with specific 'refiller' (Grégoire Henry)
  ** Lib: Synchronized tyxml 3.6.0
  
  * BugFixes
  ** Compiler: Fix compilation of the [match with exception] construct
+ ** Compiler: fix compat with the upcoming ocaml 4.03
  ** Lib: Tyxml_js, discrepancy between Firefox and Chromium
- ** Ppx: fix for merlin
- ** Misc: fix compat with the upcoming ocaml 4.03
- ** Misc: various small fix in lib
+ ** Lib: various small fixes
  ** Runtime: Fix Big_int.square_big_int
  ** Runtime: graphics, fix draw_image with transparent pixel
+ ** Ppx: fix for merlin
  
 ===== 2.6 (2015-07-15) =====
 
