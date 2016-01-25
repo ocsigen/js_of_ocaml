@@ -5,6 +5,11 @@ function bigstring_alloc(_,size){
   return caml_ba_create(12, 0, [0,size]);
 }
 
+//Provides: bigstring_destroy_stub
+function bigstring_destroy_stub(_v) {
+  return 0; // noop
+}
+
 //Provides: bigstring_blit_bigstring_string_stub
 //Requires: caml_string_set, caml_ba_get_1
 function bigstring_blit_bigstring_string_stub(v_bstr, v_src_pos, v_str, v_dst_pos, v_len){
