@@ -350,6 +350,8 @@ and element = object
 
   method scrollIntoView: bool t -> unit meth
 
+  method click : unit meth
+
   inherit eventTarget
 end
 
@@ -501,7 +503,6 @@ class type inputElement = object ('self)
   method blur : unit meth
   method focus : unit meth
   method select : unit meth
-  method click : unit meth
   method files : File.fileList t optdef readonly_prop
   method placeholder : js_string t writeonly_prop (* Not supported by IE 9 *)
   method onselect : ('self t, event t) event_listener prop
