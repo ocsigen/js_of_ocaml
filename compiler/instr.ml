@@ -194,6 +194,7 @@ let ops,ops_rev =
     match Util.Version.v with
       `V3    -> (fun _ default -> default)
     | `V4_02 -> (fun k _ -> k)
+    | `V4_03 -> (fun k _ -> k)
   in
   let instrs =
     [| ACC0, KNullary, "ACC0";

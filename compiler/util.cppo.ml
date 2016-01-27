@@ -267,8 +267,10 @@ module Version = struct
   let v =
     if compare current [4;2] < 0 then
       `V3
-    else
+    else if compare current [4;3] < 0 then
       `V4_02
+    else
+      `V4_03
 
 end
 
@@ -319,19 +321,22 @@ module MagicNumber = struct
   let current_exe =
     let v = match Version.v with
       | `V3 -> 8
-      | `V4_02 -> 11 in
+      | `V4_02
+      | `V4_03 -> 11 in
     ("Caml1999X",v)
 
   let current_cmo =
     let v = match Version.v with
       | `V3 -> 7
-      | `V4_02 -> 10 in
+      | `V4_02 -> 10
+      | `V4_03 -> 11 in
     ("Caml1999O", v)
 
   let current_cma =
     let v = match Version.v with
       | `V3 -> 8
-      | `V4_02 -> 11 in
+      | `V4_02 -> 11
+      | `V4_03 -> 12 in
     ("Caml1999A", v)
 
   let current = function
