@@ -1214,7 +1214,7 @@ and translate_closures ctx expr_queue l loc =
           let l' = List.rev l in
           begin match l' with
           | (J.V x',Some (e,pc)) :: rem when x = x' ->
-              [J.Statement (J.Variable_statement (List.rev rem)), J.N;
+              [J.Statement (J.Variable_statement (List.rev rem)), loc;
                J.Statement (J.Return_statement (Some e)), pc]
           | _ -> [J.Statement sts, loc]
           end
@@ -1308,7 +1308,7 @@ and translate_instr ctx expr_queue loc instr =
             begin match ctx.Ctx.live.(Var.idx x),e with
             | 0,_ -> flush_queue expr_queue prop
                        (instrs @ [J.Expression_statement ce, loc])
-            | 1,_ -> enqueue expr_queue prop x ce loc 1 instrs
+            | 1,_ when Option.Optim.compact () -> enqueue expr_queue prop x ce loc 1 instrs
             (* We could inline more.
                size_v : length of the variable after serialization
                size_c : length of the constant after serialization

@@ -634,18 +634,22 @@ class clean = object(m)
       | (Block b, _) -> List.rev_append b l
       | x -> x::l in
     let l = super#statements l in
-    let vars_rev,instr_rev =
-      List.fold_left (fun (vars_rev,instr_rev) (x, loc) ->
+    let vars_rev,vars_loc,instr_rev =
+      List.fold_left (fun (vars_rev,vars_loc,instr_rev) (x, loc) ->
         match x with
-          | Variable_statement l -> (List.rev_append l vars_rev,instr_rev)
+          | Variable_statement l when Option.Optim.compact () ->
+            let vars_loc = match vars_loc with
+              | Pi _ as x -> x
+              | _           -> loc in
+            (List.rev_append l vars_rev,vars_loc,instr_rev)
           | Empty_statement
-          | Expression_statement (EVar _) -> vars_rev,instr_rev
-          | _ when vars_rev = [] -> ([],rev_append_st (x, loc) instr_rev)
-          | _ -> ([],rev_append_st (x, loc) ((Variable_statement (List.rev vars_rev), N)::instr_rev))
-      ) ([],[]) l in
+          | Expression_statement (EVar _) -> vars_rev,vars_loc,instr_rev
+          | _ when vars_rev = [] -> ([],vars_loc,rev_append_st (x, loc) instr_rev)
+          | _ -> ([],vars_loc,rev_append_st (x, loc) ((Variable_statement (List.rev vars_rev), vars_loc)::instr_rev))
+      ) ([],N,[]) l in
     let instr_rev = match vars_rev with
       | [] -> instr_rev
-      | vars_rev -> (Variable_statement (List.rev vars_rev), N) :: instr_rev
+      | vars_rev -> (Variable_statement (List.rev vars_rev), vars_loc) :: instr_rev
     in List.rev instr_rev
 
    method statement s =
@@ -781,11 +785,11 @@ class simpl = object(m)
 
         | Variable_statement l1 ->
           let x = List.map (function
-              | (ident,None) -> (Variable_statement [(ident,None)], N)
+              | (ident,None) -> (Variable_statement [(ident,None)], loc)
               | (ident,Some (exp,pc)) ->
               match assign_op (EVar ident,exp) with
-              | Some e -> (Expression_statement e, N)
-              | None -> (Variable_statement [(ident,Some (exp,pc))],N)) l1 in
+              | Some e -> (Expression_statement e, loc)
+              | None -> (Variable_statement [(ident,Some (exp,pc))],loc)) l1 in
           x@rem
         | _ -> (st, loc)::rem
       ) s []
