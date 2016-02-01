@@ -1105,6 +1105,7 @@ class type location = object
   method protocol : js_string t prop
   method host : js_string t prop
   method hostname : js_string t prop
+  method origin : js_string t prop
   method port : js_string t prop
   method pathname : js_string t prop
   method search : js_string t prop
