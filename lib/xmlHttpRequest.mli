@@ -42,6 +42,7 @@ class type xmlHttpRequest = object ('self)
     js_string t opt -> js_string t opt -> unit meth
   method setRequestHeader : js_string t -> js_string t -> unit meth
   method overrideMimeType : js_string t -> unit meth
+  method withCredentials : bool t prop
   method send : js_string t opt -> unit meth
   method send_blob : #File.blob t -> unit meth
   method send_document : Dom.element Dom.document t -> unit meth
@@ -112,6 +113,7 @@ val perform_raw :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
+  -> ?with_credentials: bool
   -> response_type:('a response)
   -> string
   -> 'a generic_http_frame Lwt.t
@@ -131,6 +133,7 @@ val perform_raw_url :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
+  -> ?with_credentials: bool
   -> string
   -> http_frame Lwt.t
   (** [perform_raw_url] makes an asynchronous request to the specified [url] with
@@ -155,6 +158,7 @@ val perform :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
+  -> ?with_credentials: bool
   -> Url.url
   -> http_frame Lwt.t
   (** [perform] is the same as {!perform_raw_url} except that the Url argument has type

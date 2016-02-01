@@ -41,6 +41,7 @@ class type xmlHttpRequest = object ('self)
     js_string t opt -> js_string t opt -> unit meth
   method setRequestHeader : js_string t -> js_string t -> unit meth
   method overrideMimeType : js_string t -> unit meth
+  method withCredentials : bool t prop
   method send : js_string t opt -> unit meth
   method send_blob : #File.blob t -> unit meth
   method send_document : Dom.element Dom.document t -> unit meth
@@ -178,6 +179,7 @@ let perform_raw
     ?upload_progress
     ?override_mime_type
     ?override_method
+    ?with_credentials
     (type resptype) ~(response_type:resptype response)
     url =
 
@@ -247,6 +249,12 @@ let perform_raw
   let req = create () in
 
   req##_open (Js.string method_, Js.string url, Js._true);
+
+  begin
+    match with_credentials with
+      None -> ()
+    | Some b -> req ## withCredentials <- (Js.bool b)
+  end;
 
   begin match override_mime_type with
     None           -> ()
@@ -358,10 +366,11 @@ let perform_raw_url
     ?upload_progress
     ?override_mime_type
     ?override_method
+    ?with_credentials
     url =
   perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ?override_method ~response_type:Default url
+    ?override_method ?with_credentials ~response_type:Default url
 
 let perform
     ?(headers = [])
@@ -374,9 +383,11 @@ let perform
     ?upload_progress
     ?override_mime_type
     ?override_method
+    ?with_credentials
     url =
   perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ?override_method ~response_type:Default (Url.string_of_url url)
+    ?override_method ?with_credentials
+    ~response_type:Default (Url.string_of_url url)
 
 let get s = perform_raw_url s
