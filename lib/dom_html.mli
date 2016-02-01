@@ -1064,7 +1064,7 @@ class type location = object
   method protocol : js_string t prop
   method host : js_string t prop
   method hostname : js_string t prop
-  method origin : js_string t prop
+  method origin : js_string t optdef prop
   method port : js_string t prop
   method pathname : js_string t prop
   method search : js_string t prop
@@ -1074,6 +1074,8 @@ class type location = object
   method replace : js_string t -> unit meth
   method reload : unit meth
 end
+
+val location_origin_safe : location t -> js_string t
 
 (** Browser history information *)
 class type history = object
