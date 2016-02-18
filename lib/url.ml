@@ -158,9 +158,9 @@ let url_re =
                                     |\\[[0-9a-zA-Z.-]+\\]\
                                     |\\[[0-9A-Fa-f:.]+\\])?\
                                    (:([0-9]+))?\
-                                   /([^\\?#]*)\
+                                   (/([^\\?#]*)\
                                    (\\?([^#]*))?\
-                                   (#(.*))?$"
+                                   (#(.*))?)?$"
                   )
 let file_re =
   jsnew Js.regExp (Js.bytestring "^([Ff][Ii][Ll][Ee])://\
@@ -206,7 +206,7 @@ let url_of_js_string s =
 
        let path_str =
          urldecode_js_string_string
-           (Js.Optdef.get (Js.array_get res 5) interrupt)
+           (Js.Optdef.get (Js.array_get res 6) (fun () -> Js.bytestring ""))
        in
        let url = {
          hu_host        = urldecode_js_string_string
@@ -223,13 +223,13 @@ let url_of_js_string s =
          hu_path_string = path_str ;
          hu_arguments   = decode_arguments_js_string
                             (Js.Optdef.get
-                               (Js.array_get res 7)
+                               (Js.array_get res 8)
                                (fun () -> Js.bytestring "")
                             )
                             ;
          hu_fragment    = urldecode_js_string_string
                             (Js.Optdef.get
-                               (Js.array_get res 9)
+                               (Js.array_get res 10)
                                (fun () -> Js.bytestring "")
                             )
                             ;
