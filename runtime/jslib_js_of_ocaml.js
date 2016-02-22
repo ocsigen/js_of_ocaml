@@ -28,8 +28,8 @@ function caml_js_from_float(x) { return x; }
 //Provides: caml_js_to_float const (const)
 function caml_js_to_float(x) { return x; }
 //Provides: caml_js_from_string mutable (const)
-//Requires: MlString
-function caml_js_from_string(s) { return s.toString(); }
+//Requires: caml_to_js_string
+function caml_js_from_string(s) { return caml_to_js_string(s); }
 //Provides: caml_js_from_array mutable (shallow)
 //Requires: raw_array_sub
 function caml_js_from_array(a) { return raw_array_sub(a,1,a.length-1); }
