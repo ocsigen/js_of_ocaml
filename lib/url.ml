@@ -94,20 +94,21 @@ let default_https_port = 443
 
 
 (* path *)
-let rec path_of_path_string s = (* inspired from: Ocsigen_lib *)
-  try
-    let length = String.length s in
-    if length = 0
-    then [""]
-    else
-      let pos_slash = String.index s '/' in
-      if pos_slash = 0
-      then "" :: path_of_path_string (String.sub s 1 (length-1))
-      else (String.sub s 0 pos_slash
-            :: (path_of_path_string
-                  (String.sub s (pos_slash+1) (length - pos_slash - 1)))
-           )
-  with Not_found -> [s]
+let path_of_path_string s =
+  let l = String.length s in
+  let rec aux i =
+    let j = try String.index_from s i '/'
+      with Not_found -> l
+    in
+    let word = String.sub s i (j-i) in
+    if j >= l
+    then [word]
+    else word :: aux (j+1)
+  in
+  match aux 0 with
+  | [ "" ] -> []
+  | [ "";"" ] -> [ "" ]
+  | a -> a
 
 
 (* Arguments *)
