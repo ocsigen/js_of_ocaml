@@ -914,8 +914,6 @@ let _ =
   register_un_prim "caml_js_from_bool" `Pure
     (fun cx _ -> J.EUn (J.Not, J.EUn (J.Not, cx)));
   register_un_prim "caml_js_to_bool" `Pure (fun cx _ -> to_int cx);
-  register_un_prim "caml_js_from_string" `Mutable
-    (fun cx loc -> J.ECall (J.EDot (cx, "toString"), [], loc));
   register_tern_prim "caml_js_set"
     (fun cx cy cz _ -> J.EBin (J.Eq, J.EAccess (cx, cy), cz));
   register_bin_prim "caml_js_get" `Mutable
