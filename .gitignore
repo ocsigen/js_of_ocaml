@@ -24,6 +24,7 @@
 *.map
 lib/stubs.c
 lib/lib_version.ml
+lib/toplevel/jsooTop.ml
 lib/toplevel/jsooTopError.ml
 lib/META
 runtime/runtime.js

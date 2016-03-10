@@ -142,7 +142,7 @@ module Wrapped = struct
 
   let warnings = ref []
 
-(* #if ocaml_full_version >= (4,02,2) *)
+#ifdef WITH_WARNINGS
   let () =
     Location.warning_printer :=
       (fun loc _fmt w ->
@@ -157,7 +157,7 @@ module Wrapped = struct
            let if_highlight = Buffer.contents buf in
            warnings := { msg; locs = [loc]; if_highlight } :: !warnings
          end)
-(* #endif *)
+#endif
 
   (* Workaround Marshal bug triggered by includemod.ml:607 *)
   let () = Clflags.error_size := 0

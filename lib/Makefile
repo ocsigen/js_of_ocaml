@@ -39,6 +39,9 @@ TOPLEVELLIB= toplevel/jsooTopPpx.cmo toplevel/jsooTop.cmo toplevel/jsooTopError.
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
 TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
 endif
+ifneq ($(shell ocamlc -version | grep -q -E "^(4.00|4.01|4.02.[01])"; echo $$?),0)
+CPPO_OPT+= -D WITH_WARNINGS
+endif
 endif
 
 PA_JS= syntax/pa_js.cmo

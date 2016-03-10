@@ -24,7 +24,6 @@ let () =
     (fun _ f -> ppx_rewriters := f :: !ppx_rewriters)
 
 let preprocess_structure str =
-  let open Parsetree in
   let open Ast_mapper in
   List.fold_right
     (fun ppx_rewriter str ->
@@ -34,7 +33,6 @@ let preprocess_structure str =
     str
 
 let preprocess_signature str =
-  let open Parsetree in
   let open Ast_mapper in
   List.fold_right
     (fun ppx_rewriter str ->
