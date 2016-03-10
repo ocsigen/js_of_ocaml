@@ -35,7 +35,7 @@ ASYNC_CMA=async/async_js.cma
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
+TOPLEVELLIB= toplevel/jsooTopPpx.cmo toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
 TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
 endif
@@ -263,11 +263,11 @@ clean:
 	rm -f lib_version.ml
 	rm -f toplevel/jsooTopError.ml
 
-depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml toplevel/jsooTopError.ml ppx/ppx_js.ml
+depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml toplevel/jsooTopPpx.ml toplevel/jsooTop.ml toplevel/jsooTopError.ml ppx/ppx_js.ml
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I async async/*.ml async/*.mli >> .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I log log/*.ml log/*.mli >> .depend
-	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I toplevel toplevel/jsooTop.ml toplevel/jsooTopCamlp4.ml toplevel/*.mli >> .depend
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I toplevel toplevel/jsooTopPpx.ml toplevel/jsooTop.ml toplevel/jsooTopCamlp4.ml toplevel/*.mli >> .depend
 	ocamldep toplevel/jsooTopError.ml -I toplevel >> .depend
 ifeq "${WITH_GRAPHICS}" "YES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" graphics/*.ml  >> .depend

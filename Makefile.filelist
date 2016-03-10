@@ -54,8 +54,8 @@ IMPL += lib/ppx/ppx_deriving_json.cmxs
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-IMPL += lib/toplevel/jsooTop.cmo lib/toplevel/jsooTopError.cmo
-INTF += lib/toplevel/jsooTop.cmi lib/toplevel/jsooTopError.cmi
+IMPL += lib/toplevel/jsooTopPpx.cmo lib/toplevel/jsooTop.cmo lib/toplevel/jsooTopError.cmo
+INTF += lib/toplevel/jsooTopPpx.cmi lib/toplevel/jsooTop.cmi lib/toplevel/jsooTopError.cmi
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
 IMPL += lib/toplevel/jsooTopCamlp4.cmo
 endif

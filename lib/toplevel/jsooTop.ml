@@ -1,6 +1,7 @@
 (* Js_of_ocaml library
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2014 Hugo Heuzard
+ * Copyright (C) 2016 OCamlPro
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -124,6 +125,237 @@ let initialize () =
   Toploop.initialize_toplevel_env ();
   Toploop.input_name := "//toplevel//";
   Sys.interactive := true
+
+module Wrapped = struct
+
+  type error = {
+    msg: string;
+    locs: Location.t list;
+    if_highlight: string;
+  }
+
+  type warning = error
+
+  type 'a result =
+    | Success of 'a * warning list
+    | Error of error * warning list
+
+  let warnings = ref []
+
+(* #if ocaml_full_version >= (4,02,2) *)
+  let () =
+    Location.warning_printer :=
+      (fun loc _fmt w ->
+         if Warnings.is_active w then begin
+           let buf = Buffer.create 503 in
+           let ppf = Format.formatter_of_buffer buf in
+           Location.print ppf loc;
+           Format.fprintf ppf "Warning %a@." Warnings.print w;
+           let msg = Buffer.contents buf in
+           Buffer.reset buf;
+           Format.fprintf ppf "Warning %a@." Warnings.print w;
+           let if_highlight = Buffer.contents buf in
+           warnings := { msg; locs = [loc]; if_highlight } :: !warnings
+         end)
+(* #endif *)
+
+  (* Workaround Marshal bug triggered by includemod.ml:607 *)
+  let () = Clflags.error_size := 0
+
+  (* Disable inlining of JSOO which may blow the JS stack *)
+  let () = Compiler.Option.Optim.disable "inline"
+
+  let return_success e = Success (e, !warnings)
+  let return_error e = Error (e, !warnings)
+  (* let return_unit_success = return_success () *)
+
+  (** Error handling *)
+  let dummy_ppf = Format.make_formatter (fun _ _ _ -> ()) (fun () -> ())
+
+  let rec report_error_rec hg_ppf ppf {Location.loc; msg; sub; if_highlight} =
+    Location.print ppf loc;
+    Format.pp_print_string ppf msg;
+    let hg_ppf =
+      if if_highlight <> "" then
+        (Format.pp_print_string hg_ppf if_highlight; dummy_ppf)
+      else
+        (Format.pp_print_string hg_ppf msg; hg_ppf) in
+    let locs =
+      List.concat @@
+      List.map
+        (fun err ->
+           Format.pp_force_newline ppf ();
+           Format.pp_open_box ppf 2;
+           let locs = report_error_rec hg_ppf ppf err in
+           Format.pp_close_box ppf ();
+           locs)
+        sub in
+    loc :: locs
+
+  let report_error err =
+    let buf = Buffer.create 503 in
+    let ppf = Format.formatter_of_buffer buf in
+    let hg_buf = Buffer.create 503 in
+    let hg_ppf = Format.formatter_of_buffer hg_buf in
+    let locs = report_error_rec hg_ppf ppf err in
+    Format.pp_print_flush ppf ();
+    Format.pp_print_flush hg_ppf ();
+    let msg = Buffer.contents buf in
+    let if_highlight = Buffer.contents hg_buf in
+    { msg; locs; if_highlight; }
+
+  let error_of_exn exn =
+    match Location.error_of_exn exn with
+    | None ->
+      let msg = Printexc.to_string exn in
+      { msg; locs = []; if_highlight = msg }
+    | Some error -> report_error error
+
+  let return_exn exn = return_error (error_of_exn exn)
+
+  (** Execution helpers *)
+
+  let trim_end s =
+    let ws c = c = ' ' || c = '\t' || c = '\n' in
+    let len = String.length s in
+    let stop = ref (len - 1) in
+    while !stop > 0 && (ws s.[!stop])
+    do decr stop done;
+    String.sub s 0 (!stop + 1)
+
+  let normalize code =
+    let content = trim_end code in
+    let len = String.length content in
+    if content = "" then
+      content
+    else if (len > 2
+             && content.[len - 2] = ';'
+             && content.[len - 1] = ';') then
+      content ^ "\n"
+    else
+      content ^ " ;;\n"
+
+  let init_loc lb filename =
+    Location.input_name := filename;
+    Location.input_lexbuf := Some lb;
+    Location.init lb filename
+
+  let execute ?ppf_code ?(print_outcome  = true) ~ppf_answer code =
+    let code = normalize code in
+    let lb =
+      match ppf_code with
+      | Some ppf_code ->
+        Lexing.from_function (refill_lexbuf code (ref 0) (Some ppf_code))
+      | None -> Lexing.from_string code in
+    init_loc lb "//toplevel//";
+    warnings := [];
+    let rec loop () =
+      let phr = !Toploop.parse_toplevel_phrase lb in
+      let phr = JsooTopPpx.preprocess_phrase phr in
+      let success = Toploop.execute_phrase print_outcome ppf_answer phr in
+      Format.pp_print_flush ppf_answer ();
+      if success then loop () else return_success false in
+    try let res = loop () in flush_all () ; res
+    with
+    | End_of_file ->
+        flush_all ();
+        return_success true
+    | exn ->
+        flush_all ();
+        return_error (error_of_exn exn)
+
+  let use_string
+      ?(filename = "//toplevel//") ?(print_outcome  = true) ~ppf_answer code =
+    let lb = Lexing.from_string code in
+    init_loc lb filename;
+    warnings := [];
+    try
+      List.iter
+        (fun phr ->
+           if not (Toploop.execute_phrase print_outcome ppf_answer phr) then
+             raise Exit
+           else
+             Format.pp_print_flush ppf_answer ())
+        (List.map JsooTopPpx.preprocess_phrase (!Toploop.parse_use_file lb)) ;
+      flush_all ();
+      return_success true
+    with
+    | Exit ->
+      flush_all ();
+      Format.pp_print_flush ppf_answer ();
+      return_success false
+    | exn ->
+      flush_all ();
+      return_error (error_of_exn exn)
+
+  let parse_mod_string modname sig_code impl_code =
+    let open Parsetree in
+    let open Ast_helper in
+    let str =
+      let impl_lb = Lexing.from_string impl_code in
+      init_loc impl_lb (String.uncapitalize modname ^ ".ml");
+      Parse.implementation impl_lb in
+    let m =
+      match sig_code with
+      | None -> (Mod.structure str)
+      | Some sig_code ->
+        let sig_lb = Lexing.from_string sig_code in
+        init_loc sig_lb (String.uncapitalize modname ^ ".mli");
+        let s = Parse.interface sig_lb in
+        Mod.constraint_ (Mod.structure str) (Mty.signature s) in
+    Ptop_def [ Str.module_ (Mb.mk (Location.mknoloc modname) m) ]
+
+  let use_mod_string
+      ?(print_outcome  = true) ~ppf_answer ~modname ?sig_code impl_code =
+    if String.capitalize modname <> modname then
+      invalid_arg
+        "Tryocaml_toploop.use_mod_string: \
+         the module name must start with a capital letter.";
+    warnings := [];
+    try
+      let phr =
+        JsooTopPpx.preprocess_phrase @@
+        parse_mod_string modname sig_code impl_code in
+      let res = Toploop.execute_phrase print_outcome ppf_answer phr in
+      Format.pp_print_flush ppf_answer ();
+      flush_all ();
+      return_success res
+    with exn ->
+      flush_all ();
+      return_error (error_of_exn exn)
+
+  (* Extracted from the "execute" function in "ocaml/toplevel/toploop.ml" *)
+  let check_phrase env = function
+    | Parsetree.Ptop_def sstr ->
+      Typecore.reset_delayed_checks ();
+      let (str, sg, newenv) = Typemod.type_toplevel_phrase env sstr in
+      let sg' = Typemod.simplify_signature sg in
+      ignore (Includemod.signatures env sg sg');
+      Typecore.force_delayed_checks ();
+      let _lam = Translmod.transl_toplevel_definition str in
+      Warnings.check_fatal ();
+      newenv
+    | Parsetree.Ptop_dir _ -> env
+
+  let check ?(setenv = false) code =
+    let lb = Lexing.from_string code in
+    init_loc lb "//toplevel//";
+    warnings := [];
+    try
+      let env =
+        List.fold_left
+          check_phrase
+          !Toploop.toplevel_env
+          (List.map
+             JsooTopPpx.preprocess_phrase
+             (!Toploop.parse_use_file lb)) in
+      if setenv then Toploop.toplevel_env := env;
+      return_success ()
+    with
+    | End_of_file -> return_success ()
+    | exn -> return_exn exn
+
+end
 
 let syntaxes = ref []
 let register_camlp4_syntax name f =
