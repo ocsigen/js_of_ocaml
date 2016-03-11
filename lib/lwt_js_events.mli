@@ -429,6 +429,22 @@ val selects :
   #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
+val loads :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.imageElement Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val errors :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.imageElement Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val aborts :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.imageElement Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+
 (** Returns when a repaint of the window by the browser starts.
     (see JS method [window.requestAnimationFrame]) *)
 val request_animation_frame : unit -> unit Lwt.t
