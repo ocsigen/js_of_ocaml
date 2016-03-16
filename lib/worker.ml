@@ -42,7 +42,8 @@ and ['a] messageEvent = object
   method data: 'a readonly_prop
 end
 
-let create script = jsnew (Unsafe.global##_Worker) (string script)
+let worker = Unsafe.global##_Worker
+let create script = jsnew worker (string script)
 
 let import_scripts scripts : unit =
   if Unsafe.global##importScripts == undefined then
