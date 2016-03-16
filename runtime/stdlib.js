@@ -367,6 +367,8 @@ function caml_compare_val (a, b, total) {
         return -1;
       } else if (typeof a != "number" && a && a.compare) {
         return a.compare(b,total);
+      } else if (typeof a == "function") {
+        caml_invalid_argument("equal: functional value");
       } else {
         if (a < b) return -1;
         if (a > b) return 1;
@@ -964,13 +966,13 @@ function caml_backtrace_status () { return 0; }
 //Provides: caml_get_exception_backtrace const
 function caml_get_exception_backtrace () { return 0; }
 //Provides: caml_get_exception_raw_backtrace const
-function caml_get_exception_raw_backtrace () { return 0; }
+function caml_get_exception_raw_backtrace () { return [0]; }
 //Provides: caml_record_backtrace
 function caml_record_backtrace () { return 0; }
 //Provides: caml_convert_raw_backtrace const
 function caml_convert_raw_backtrace () { return 0; }
 //Provides: caml_get_current_callstack const
-function caml_get_current_callstack () { return 0; }
+function caml_get_current_callstack () { return [0]; }
 //Provides: caml_sys_getenv
 //Requires: caml_raise_not_found
 //Requires: caml_js_to_string
