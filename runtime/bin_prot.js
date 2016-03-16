@@ -56,3 +56,14 @@ function bin_prot_blit_string_buf_stub (v_src_pos, v_str, v_dst_pos, v_buf, v_le
   }
   return 0
 }
+
+//Provides: bin_prot_blit_buf_stub
+//Requires: caml_ba_get_1, caml_ba_set_1
+function bin_prot_blit_buf_stub (v_src_pos, v_src, v_dst_pos, v_dst, v_len){
+  var c;
+  for(var i = 0; i < v_len; i++){
+    c = caml_ba_get_1(v_src,v_src_pos+i);
+    caml_ba_set_1(v_dst,v_dst_pos+i,c);
+  }
+  return 0
+}
