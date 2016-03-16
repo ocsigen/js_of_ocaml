@@ -21,15 +21,10 @@
 (** Programming mouse or keyboard events handlers using Lwt *)
 
 (**
-
    Reminder:
    Event capturing starts with the outer most element in the DOM and
    works inwards to the HTML element the event took place on (capture phase)
    and then out again (bubbling phase).
-
-*)
-
-(**
 
    Examples of use:
 
@@ -58,12 +53,7 @@
                  (lwt _ = click Dom_html.document in Lwt.return ())]
      in ...]}
 
-
-*)
-
-
-
-(**  {2 Create Lwt threads for events} *)
+  {2 Create Lwt threads for events} *)
 
 (** [make_event ev target] creates a Lwt thread that waits
     for the event [ev] to happen on [target] (once).
