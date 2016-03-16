@@ -182,6 +182,9 @@ let string_of_number v =
   then "-Infinity"
   else if v <> v
   then "NaN"
+  (* [1/-0] = -inf seems to be the only way to detect -0 in JavaScript *)
+  else if v = 0. && (1. /. v) = neg_infinity
+  then "-0"
   else
     let vint = int_of_float v in
     (* compiler 1000 into 1e3 *)
