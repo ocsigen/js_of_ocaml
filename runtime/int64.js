@@ -229,7 +229,7 @@ function caml_int64_div (x, y)
 function caml_int64_mod (x, y)
 {
   if (caml_int64_is_zero (y)) caml_raise_zero_divide ();
-  var sign = x[3] ^ y[3];
+  var sign = x[3];
   if (x[3] & 0x8000) x = caml_int64_neg(x);
   if (y[3] & 0x8000) y = caml_int64_neg(y);
   var r = caml_int64_udivmod(x, y)[2];

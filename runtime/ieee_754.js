@@ -17,22 +17,38 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+//Provides: jsoo_floor_log2
+var log2_ok = Math.log2 && Math.log2(1.1235582092889474E+307) == 1020
+function jsoo_floor_log2(x) {
+    if(log2_ok) return Math.floor(Math.log2(x)) 
+    var i = 0;
+    if (x == 0) return -Infinity;
+    if(x>=1) {while (x>=2) {x/=2; i++} }
+    else {while (x < 1) {x*=2; i--} };
+    return i;
+}
+
 //Provides: caml_int64_bits_of_float const
+//Requires: jsoo_floor_log2
 function caml_int64_bits_of_float (x) {
   if (!isFinite(x)) {
     if (isNaN(x)) return [255, 1, 0, 0xfff0];
     return (x > 0)?[255,0,0,0x7ff0]:[255,0,0,0xfff0];
   }
-  var sign = (x>=0)?0:0x8000;
+  var sign = (x==0 && 1/x == -Infinity)?0x8000:(x>=0)?0:0x8000;
   if (sign) x = -x;
-  var exp = Math.floor(Math.LOG2E*Math.log(x)) + 1023;
+  // Int64.bits_of_float 1.1235582092889474E+307 = 0x7fb0000000000000L
+  // using Math.LOG2E*Math.log(x) in place of Math.log2 result in precision lost
+  var exp = jsoo_floor_log2(x) + 1023;
   if (exp <= 0) {
     exp = 0;
     x /= Math.pow(2,-1026);
   } else {
     x /= Math.pow(2,exp-1027);
-    if (x < 16) { x *= 2; exp -=1; }
-    if (exp == 0) { x /= 2; }
+    if (x < 16) {
+      x *= 2; exp -=1; }
+    if (exp == 0) {
+      x /= 2; }
   }
   var k = Math.pow(2,24);
   var r3 = x|0;
@@ -103,11 +119,12 @@ function caml_ldexp_float (x,exp) {
   return x;
 }
 //Provides: caml_frexp_float const
+//Requires: jsoo_floor_log2
 function caml_frexp_float (x) {
   if ((x == 0) || !isFinite(x)) return [0, x, 0];
   var neg = x < 0;
   if (neg) x = - x;
-  var exp = Math.floor(Math.LOG2E*Math.log(x)) + 1;
+  var exp = jsoo_floor_log2(x) + 1;
   x *= Math.pow(2,-exp);
   if (x < 0.5) { x *= 2; exp -= 1; }
   if (neg) x = - x;
