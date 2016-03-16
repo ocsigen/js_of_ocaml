@@ -89,19 +89,29 @@ function caml_trampoline_return(f,args) {
 
 //Provides: js_print_stdout (const)
 function js_print_stdout(s) {
+  var g = joo_global_object;
+  if (g.process && g.process.stdout && g.process.stdout.write) {
+    g.process.stdout.write(s)
+  } else {
   // Do not output the last \n if present
   // as console logging display a newline at the end
   if(s.charCodeAt(s.length - 1) == 10)
     s = s.substr(0,s.length - 1 );
-  var v = joo_global_object.console;
+  var v = g.console;
   v  && v.log && v.log(s);
+  }
 }
 //Provides: js_print_stderr (const)
 function js_print_stderr(s) {
+  var g = joo_global_object;
+  if (g.process && g.process.stdout && g.process.stdout.write) {
+    g.process.stderr.write(s)
+  } else {
   // Do not output the last \n if present
   // as console logging display a newline at the end
   if(s.charCodeAt(s.length - 1) == 10)
     s = s.substr(0,s.length - 1 );
-  var v = joo_global_object.console;
+  var v = g.console;
   v && v.error && v.error(s);
+  }
 }
