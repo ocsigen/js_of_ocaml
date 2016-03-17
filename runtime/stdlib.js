@@ -599,7 +599,7 @@ function caml_format_int(fmt, i) {
 function caml_format_float (fmt, x) {
   var s, f = caml_parse_format(fmt);
   var prec = (f.prec < 0)?6:f.prec;
-  if (x < 0) { f.sign = -1; x = -x; }
+  if (x < 0 || (x == 0 && 1/x == -Infinity)) { f.sign = -1; x = -x; }
   if (isNaN(x)) { s = "nan"; f.filler = ' '; }
   else if (!isFinite(x)) { s = "inf"; f.filler = ' '; }
   else
