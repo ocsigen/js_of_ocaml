@@ -347,7 +347,7 @@ let literal_object self_id fields =
             [Exp.array (
                List.map
                  (fun (name, _exp) ->
-                    tuple [str name ; Js.unsafe "inject" [evar name] ]
+                    tuple [str (unescape name); Js.unsafe "inject" [evar name] ]
                  )
                  values
              )])

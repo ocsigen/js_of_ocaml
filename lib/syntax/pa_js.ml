@@ -328,7 +328,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         (<:expr<
           ( $js_u_id _loc "obj"$
             $make_array _loc (List.map (fun (name,_) ->
-               <:expr< ($str:name$ , $js_u_id _loc "inject"$ $lid:name$) >>) args)$
+               <:expr< ($str:unescape name$ , $js_u_id _loc "inject"$ $lid:name$) >>) args)$
             : $js_t_id _loc "t"$ $obj_type$ as $self_typ$ )
         >>)in
     let bindings =
