@@ -231,13 +231,21 @@ let format_meth body =
 let preprocess_literal_object mappper fields =
 
   let check_name id names =
-    if S.mem id.txt names then
-      let id' = S.find id.txt names in
+    let txt = unescape id.txt in
+    if S.mem txt names then
+      let id' = S.find txt names in
       (* We point out both definitions in locations (more convenient for the user). *)
-      let sub = [Location.errorf ~loc:id'.loc "Duplicated val or method %S." id'.txt] in
-      Location.raise_errorf ~loc:id.loc ~sub "Duplicated val or method %S." id.txt
+      let details id =
+        if id.txt <> txt
+        then Printf.sprintf " (normalized to %S)" txt
+        else ""
+      in
+      let sub = [Location.errorf ~loc:id'.loc
+                   "Duplicated val or method %S%s." id'.txt (details id')] in
+      Location.raise_errorf ~loc:id.loc ~sub
+        "Duplicated val or method %S%s." id.txt (details id)
     else
-      S.add id.txt id names
+      S.add txt id names
   in
 
   let f (names, fields) exp = match exp.pcf_desc with
@@ -347,7 +355,7 @@ let literal_object self_id fields =
             [Exp.array (
                List.map
                  (fun (name, _exp) ->
-                    tuple [str name ; Js.unsafe "inject" [evar name] ]
+                    tuple [str (unescape name); Js.unsafe "inject" [evar name] ]
                  )
                  values
              )])

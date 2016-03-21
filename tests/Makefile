@@ -36,14 +36,14 @@ clean:
 	rm -f camlp4/*.cm[io] camlp4/*.result
 
 ppx/%.result: ppx/%.ml
-	TERM=dumb ocaml -noinit -noprompt -I ../lib -ppx ../lib/ppx/ppx_js < $< | tail -n +2 > $@
+	TERM=dumb ocaml -noinit -noprompt -I ../lib -ppx ../lib/ppx/ppx_js < $< 2>&1 | tail -n +2 > $@
 
 ppx/test_%: ppx/%.result ppx/%.expected
 	diff $?
 
 
 camlp4/%.result: camlp4/%.ml
-	TERM=dumb ocaml -noprompt -I ../lib -init camlp4_init.ml < $< | tail -n +13 > $@
+	TERM=dumb ocaml -noprompt -I ../lib -init camlp4_init.ml < $< 2>&1 | tail -n +16 > $@
 
 camlp4/test_%: camlp4/%.result camlp4/%.expected
-	diff $? || true
+	diff $?

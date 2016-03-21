@@ -278,13 +278,20 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                  fun acc
                      ( `Val  {val_label=(lab,loc);_}
                      | `Meth {meth_label=(lab,loc);_} ) ->
-           if StringMap.mem lab acc
+           let txt = unescape lab in
+           if StringMap.mem txt acc
            then
-             let loc' = StringMap.find lab acc in
-             Format.eprintf "Duplicated label %S at %s@.%S previously seen at %s@."
-               lab (Loc.to_string loc) lab (Loc.to_string loc');
+             let details name =
+               if name <> txt
+               then Printf.sprintf " (normalized to %S)" txt
+               else ""
+             in
+
+             let (loc',name') = StringMap.find txt acc in
+             Format.eprintf "Duplicated label %S%s at %s@.%S%s previously seen at %s@."
+               lab (details lab) (Loc.to_string loc) name' (details name') (Loc.to_string loc');
              failwith "Error while preprocessing with with Js_of_ocaml extention syntax"
-           else StringMap.add lab loc acc) StringMap.empty fields in
+           else StringMap.add txt (loc,lab) acc) StringMap.empty fields in
 
     let create_method_type = function
       | `Val {val_label=(label,_loc); val_mutabl=true; val_typ; _} ->
@@ -328,7 +335,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         (<:expr<
           ( $js_u_id _loc "obj"$
             $make_array _loc (List.map (fun (name,_) ->
-               <:expr< ($str:name$ , $js_u_id _loc "inject"$ $lid:name$) >>) args)$
+               <:expr< ($str:unescape name$ , $js_u_id _loc "inject"$ $lid:name$) >>) args)$
             : $js_t_id _loc "t"$ $obj_type$ as $self_typ$ )
         >>)in
     let bindings =
