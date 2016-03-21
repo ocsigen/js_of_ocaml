@@ -35,7 +35,7 @@ ASYNC_CMA=async/async_js.cma
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-TOPLEVELLIB= toplevel/jsooTopPpx.cmo toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
+TOPLEVELLIB= toplevel/jsooTopPpx.cmo toplevel/jsooTop.cmo toplevel/jsooTopError.cmo toplevel/jsooTopWorker.cmo toplevel/jsooTopAsynchronous.cmo
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
 TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
 endif
@@ -169,6 +169,14 @@ toplevel/jsooTop.cmo: toplevel/jsooTop.ml syntax/pa_js.cmo ../compiler/lib/compi
 		-ppopt syntax/pa_js.cmo \
 		-I toplevel -I ../compiler/lib -I +compiler-libs \
 		-c $< -o $@
+toplevel/jsooTopAsynchronous.cmo: toplevel/jsooTopAsynchronous.ml
+	$(OCAMLC) -syntax camlp4o \
+		$(SAFESTRING) -package lwt,lwt.syntax \
+		-ppopt syntax/pa_js.cmo \
+		-I toplevel -I ../compiler/lib -I +compiler-libs \
+		-c $< -o $@
+toplevel/jsooTopAsynchronous.cmi: toplevel/jsooTopAsynchronous.mli
+	$(OCAMLC) $(SAFESTRING) -I toplevel -package lwt -c $< -o $@
 
 toplevel/%.cmo: toplevel/%.ml
 	$(OCAMLC) $(SAFESTRING) \
@@ -264,14 +272,14 @@ clean:
 	rm -f deriving_json/deriving_Json_lexer.ml
 	rm -f stubs.c
 	rm -f lib_version.ml
-	rm -f toplevel/jsooTopError.ml
+	rm -f $(patsubst %.cppo.ml,%.ml,$(wildcard toplevel/*.cppo.ml))
 
 depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml toplevel/jsooTopPpx.ml toplevel/jsooTop.ml toplevel/jsooTopError.ml ppx/ppx_js.ml
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I async async/*.ml async/*.mli >> .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I log log/*.ml log/*.mli >> .depend
-	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I toplevel toplevel/jsooTopPpx.ml toplevel/jsooTop.ml toplevel/jsooTopCamlp4.ml toplevel/*.mli >> .depend
-	ocamldep toplevel/jsooTopError.ml -I toplevel >> .depend
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I toplevel toplevel/jsooTop.ml toplevel/jsooTopCamlp4.ml toplevel/jsooTopAsynchronous.ml toplevel/*.mli >> .depend
+	ocamldep -I toplevel toplevel/jsooTopError.ml toplevel/jsooTopPpx.ml toplevel/jsooTopWorker.ml >> .depend
 ifeq "${WITH_GRAPHICS}" "YES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" graphics/*.ml  >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)

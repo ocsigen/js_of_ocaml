@@ -93,8 +93,6 @@ async/async_js.cmi :
 log/lwt_log_js.cmo : js.cmi firebug.cmi log/lwt_log_js.cmi
 log/lwt_log_js.cmx : js.cmx firebug.cmx log/lwt_log_js.cmi
 log/lwt_log_js.cmi :
-toplevel/jsooTopPpx.cmo : toplevel/jsooTopPpx.cmi
-toplevel/jsooTopPpx.cmx : toplevel/jsooTopPpx.cmi
 toplevel/jsooTop.cmo : sys_js.cmi toplevel/jsooTopPpx.cmi \
     toplevel/jsooTopError.cmi js.cmi toplevel/jsooTop.cmi
 toplevel/jsooTop.cmx : sys_js.cmx toplevel/jsooTopPpx.cmx \
@@ -103,12 +101,31 @@ toplevel/jsooTopCamlp4.cmo : toplevel/jsooTopError.cmi \
     toplevel/jsooTopCamlp4.cmi
 toplevel/jsooTopCamlp4.cmx : toplevel/jsooTopError.cmx \
     toplevel/jsooTopCamlp4.cmi
-toplevel/jsooTop.cmi :
+toplevel/jsooTopAsynchronous.cmo : worker.cmi toplevel/jsooTopWorkerIntf.cmi \
+    toplevel/jsooTop.cmi json.cmi js.cmi firebug.cmi \
+    toplevel/jsooTopAsynchronous.cmi
+toplevel/jsooTopAsynchronous.cmx : worker.cmx toplevel/jsooTopWorkerIntf.cmi \
+    toplevel/jsooTop.cmx json.cmx js.cmx firebug.cmx \
+    toplevel/jsooTopAsynchronous.cmi
+toplevel/jsooTop.cmi : toplevel/jsooTopIntf.cmi
+toplevel/jsooTopAsynchronous.cmi : toplevel/jsooTopIntf.cmi \
+    toplevel/jsooTop.cmi
 toplevel/jsooTopCamlp4.cmi :
 toplevel/jsooTopError.cmi :
+toplevel/jsooTopIntf.cmi :
 toplevel/jsooTopPpx.cmi :
+toplevel/jsooTopWorker.cmi :
+toplevel/jsooTopWorkerIntf.cmi : toplevel/jsooTop.cmi js.cmi
 toplevel/jsooTopError.cmo : toplevel/jsooTopError.cmi
 toplevel/jsooTopError.cmx : toplevel/jsooTopError.cmi
+toplevel/jsooTopPpx.cmo : toplevel/jsooTopPpx.cmi
+toplevel/jsooTopPpx.cmx : toplevel/jsooTopPpx.cmi
+toplevel/jsooTopWorker.cmo : worker.cmi sys_js.cmi \
+    toplevel/jsooTopWorkerIntf.cmi toplevel/jsooTop.cmi json.cmi \
+    toplevel/jsooTopWorker.cmi
+toplevel/jsooTopWorker.cmx : worker.cmx sys_js.cmx \
+    toplevel/jsooTopWorkerIntf.cmi toplevel/jsooTop.cmx json.cmx \
+    toplevel/jsooTopWorker.cmi
 graphics/graphics_js.cmo : lwt_js_events.cmi js.cmi dom_html.cmi \
     graphics/graphics_js.cmi
 graphics/graphics_js.cmx : lwt_js_events.cmx js.cmx dom_html.cmx \

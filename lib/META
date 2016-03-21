@@ -137,4 +137,13 @@ package "toplevel" (
   archive(byte) = "jsooTopError.cmo jsooTopPpx.cmo jsooTop.cmo"
   requires = "bytes,compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel,js_of_ocaml,js_of_ocaml.compiler"
   linkopts(javascript) = "+js_of_ocaml/toplevel.js"
+
+  package "asynchronous" (
+    exists_if = "jsooTopAsynchronous.cmo"
+    description = "Js_of_ocaml asynchronous toplevel library"
+    version = "[distributed with js_of_ocaml]"
+    archive(byte) = "jsooTopAsynchronous.cmo"
+    requires = "lwt,js_of_ocaml"
+  )
+
 )

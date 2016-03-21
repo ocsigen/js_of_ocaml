@@ -128,9 +128,14 @@ let initialize () =
 
 module Wrapped = struct
 
+  type loc = {
+    loc_start: int * int;
+    loc_end: int * int;
+  }
+
   type error = {
     msg: string;
-    locs: Location.t list;
+    locs: loc list;
     if_highlight: string;
   }
 
@@ -141,6 +146,11 @@ module Wrapped = struct
     | Error of error * warning list
 
   let warnings = ref []
+
+  let convert_loc loc =
+    let _file1,line1,col1 = Location.get_pos_info (loc.Location.loc_start) in
+    let _file2,line2,col2 = Location.get_pos_info (loc.Location.loc_end) in
+    { loc_start = (line1, col1) ; loc_end = (line2, col2) }
 
 #ifdef WITH_WARNINGS
   let () =
@@ -155,6 +165,7 @@ module Wrapped = struct
            Buffer.reset buf;
            Format.fprintf ppf "Warning %a@." Warnings.print w;
            let if_highlight = Buffer.contents buf in
+           let loc = convert_loc loc in
            warnings := { msg; locs = [loc]; if_highlight } :: !warnings
          end)
 #endif
@@ -190,7 +201,7 @@ module Wrapped = struct
            Format.pp_close_box ppf ();
            locs)
         sub in
-    loc :: locs
+    convert_loc loc :: locs
 
   let report_error err =
     let buf = Buffer.create 503 in
@@ -240,7 +251,7 @@ module Wrapped = struct
     Location.input_lexbuf := Some lb;
     Location.init lb filename
 
-  let execute ?ppf_code ?(print_outcome  = true) ~ppf_answer code =
+  let execute () ?ppf_code ?(print_outcome  = true) ~ppf_answer code =
     let code = normalize code in
     let lb =
       match ppf_code with
@@ -265,7 +276,7 @@ module Wrapped = struct
         return_error (error_of_exn exn)
 
   let use_string
-      ?(filename = "//toplevel//") ?(print_outcome  = true) ~ppf_answer code =
+      () ?(filename = "//toplevel//") ?(print_outcome  = true) ~ppf_answer code =
     let lb = Lexing.from_string code in
     init_loc lb filename;
     warnings := [];
@@ -306,7 +317,7 @@ module Wrapped = struct
     Ptop_def [ Str.module_ (Mb.mk (Location.mknoloc modname) m) ]
 
   let use_mod_string
-      ?(print_outcome  = true) ~ppf_answer ~modname ?sig_code impl_code =
+      () ?(print_outcome  = true) ~ppf_answer ~modname ?sig_code impl_code =
     if String.capitalize modname <> modname then
       invalid_arg
         "Tryocaml_toploop.use_mod_string: \
@@ -337,7 +348,7 @@ module Wrapped = struct
       newenv
     | Parsetree.Ptop_dir _ -> env
 
-  let check ?(setenv = false) code =
+  let check () ?(setenv = false) code =
     let lb = Lexing.from_string code in
     init_loc lb "//toplevel//";
     warnings := [];
