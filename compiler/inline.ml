@@ -46,14 +46,18 @@ let optimizable blocks pc _ =
           | _ -> true
         ) b.body )  pc blocks true
 
-let rec follow_branch blocks = function
+let rec follow_branch_rec seen blocks = function
   | (pc, []) as k ->
+    let seen = AddrSet.add pc seen in
     begin try match AddrMap.find pc blocks with
-      | {body = []; branch = Branch (pc, [])} -> follow_branch blocks (pc, [])
+      | {body = []; branch = Branch (pc, [])} when not (AddrSet.mem pc seen) ->
+        follow_branch_rec seen blocks (pc, [])
       | _ -> k
     with Not_found -> k
     end
   | k -> k
+
+let follow_branch = follow_branch_rec AddrSet.empty
 
 let get_closures (_, blocks, _) =
   AddrMap.fold
