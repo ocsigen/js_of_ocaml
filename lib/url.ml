@@ -23,6 +23,11 @@
 let split c s =
   Js.str_array (s##split (Js.string (String.make 1 c)))
 
+let split_2 c s =
+  let index = s##indexOf(Js.string (String.make 1 c)) in
+  if index < 0 then Js.undefined
+  else Js.def (s##slice(0,index),s##slice_end(index + 1) )
+
 exception Local_exn
 let interrupt () = raise Local_exn
 
@@ -122,12 +127,7 @@ let encode_arguments l =
 let decode_arguments_js_string s =
   let arr = split '&' s in
   let len = arr##length in
-  let name_value_split s =
-    let arr_bis = split '=' s in
-    match arr_bis##length with
-      | 2 -> Js.def (Js.array_get arr_bis 0, Js.array_get arr_bis 1)
-      | _ -> Js.undefined
-  in
+  let name_value_split s = split_2 '=' s in
   let rec aux acc idx =
     if idx < 0
     then acc
@@ -137,10 +137,7 @@ let decode_arguments_js_string s =
                     (fun s -> Js.Optdef.case (name_value_split s)
                                 interrupt
                                 (fun (x, y) ->
-                                  let get t =
-                                    urldecode_js_string_string
-                                      (Js.Optdef.get t interrupt)
-                                  in
+                                  let get = urldecode_js_string_string in
                                   (get x, get y)
                                 )
                     )
