@@ -141,3 +141,10 @@ end
 
 val dataView : (arrayBuffer t -> dataView t) constr
 val dataView_inBuffer : (arrayBuffer t -> int -> int -> dataView t) constr
+
+
+module Bigstring : sig
+  type t = (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  val to_arrayBuffer : t -> arrayBuffer Js.t
+  val of_arrayBuffer : arrayBuffer Js.t -> t
+end

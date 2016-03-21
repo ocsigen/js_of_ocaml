@@ -50,3 +50,16 @@ function bigstring_memcmp_stub(v_s1, v_s1_pos, v_s2, v_s2_pos, v_len){
   }
   return 0;
 }
+
+
+//Provides: bigstring_to_array_buffer
+function bigstring_to_array_buffer(bs) {
+  return bs.data.buffer
+}
+
+//Provides: bigstring_of_array_buffer
+//Requires: caml_ba_create_from
+function bigstring_of_array_buffer(ab) {
+  var ta = new joo_global_object.Uint8Array(ab);
+  return caml_ba_create_from(ta, null, 0, 12, 0, [ta.length])
+}
