@@ -1,0 +1,64 @@
+
+Characters 51-74:
+  fun (obj : < > Js.t) -> obj = jsobject val m = () end;;
+                                ^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type < m : unit Js.readonly_prop > Js.t
+       but an expression was expected of type <  > Js.t
+       The second object type has no method m
+Characters 49-79:
+  fun (obj : < m : float Js.prop > Js.t) -> obj = jsobject val mutable m = 0 end;;
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type < m : int Js.prop > Js.t
+       but an expression was expected of type < m : float Js.prop > Js.t
+       Type int Js.prop = < get : int; set : int -> unit > Js.gen_prop
+       is not compatible with type
+         float Js.prop = < get : float; set : float -> unit > Js.gen_prop 
+       Types for method get are incompatible
+Characters 14-83:
+  ...jsobject
+      val r = 2
+      val mutable w = 3.
+      method m = ""
+    end..................................
+Error: This expression has type
+         < m : string Js.meth; r : int Js.readonly_prop; w : float Js.prop >
+         Js.t
+       but an expression was expected of type < m : int Js.meth; .. > Js.t
+       Types for method m are incompatible
+Duplicated label "_r" (normalized to "r") at File "//toplevel//", line 15, characters 4-14
+"r" previously seen at File "//toplevel//", line 14, characters 4-13
+Characters 54-57:
+    end;;
+    ^^^
+Error: Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+Duplicated label "_r_b" (normalized to "r") at File "//toplevel//", line 20, characters 4-16
+"_r_a" (normalized to "r") previously seen at File "//toplevel//", line 19, characters 4-16
+Characters 59-62:
+    end : <_r_a : int Js.readonly_prop > Js.t);;
+    ^^^
+Error: Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+Duplicated label "_w" (normalized to "w") at File "//toplevel//", line 25, characters 4-22
+"w" previously seen at File "//toplevel//", line 24, characters 4-21
+Characters 69-72:
+    end;;
+    ^^^
+Error: Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+Duplicated label "_w_b" (normalized to "w") at File "//toplevel//", line 30, characters 4-24
+"_w_a" (normalized to "w") previously seen at File "//toplevel//", line 29, characters 4-24
+Characters 75-78:
+    end : <_r_a : int Js.prop > Js.t);;
+    ^^^
+Error: Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+Duplicated label "_m" (normalized to "m") at File "//toplevel//", line 35, characters 16-18
+"m" previously seen at File "//toplevel//", line 34, characters 15-17
+Characters 61-64:
+    end;;
+    ^^^
+Error: Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+Duplicated label "_m_b" (normalized to "m") at File "//toplevel//", line 40, characters 18-20
+"_m_a" (normalized to "m") previously seen at File "//toplevel//", line 39, characters 18-20
+Characters 67-70:
+    end : <_m_a : string Js.meth; .. > Js.t);;
+    ^^^
+Error: Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+
