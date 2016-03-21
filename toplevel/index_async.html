@@ -174,18 +174,7 @@
         fileref.setAttribute("src", prefix+(version==""?"":(version+"/"))+url);
         document.getElementsByTagName("head")[0].appendChild(fileref);
       }
-      load_script("stdlib.cmis.js");
-      load_script("js_of_ocaml.cmis.js");
-      load_script("js_of_ocaml.toplevel.cmis.js");
-      load_script("js_of_ocaml.deriving.cmis.js");
-      load_script("js_of_ocaml.tyxml.cmis.js");
-      load_script("js_of_ocaml.graphics.cmis.js");
-      load_script("lwt.cmis.js");
-      load_script("react.cmis.js");
-      load_script("reactiveData.cmis.js");
-      load_script("dynlink.cmis.js");
-      load_script("bigarray.cmis.js");
-      load_script("toplevel.js");
+      load_script("toplevel_async.js");
       load_script("strftime.js");
     </script>
   </head>

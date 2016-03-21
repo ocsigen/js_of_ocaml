@@ -25,7 +25,7 @@ let ocaml = text
 
 
 #ifdef higlo
-let highlight (`Pos from_) to_ e =
+let highlight (`Pos from_) to_ cl e =
   let _ =
     List.fold_left (fun pos e ->
       match Js.Opt.to_option (Dom_html.CoerceTo.element e) with
@@ -33,11 +33,11 @@ let highlight (`Pos from_) to_ e =
       | Some e ->
 	 let size = Js.Opt.case (e##textContent) (fun () -> 0) (fun t -> t##length) in
 	 if pos + size > from_ && (to_ = `Last || `Pos pos < to_)
-	 then e##classList##add(Js.string "errorloc");
+	 then e##classList##add(Js.string cl);
 	 pos + size) 0 (Dom.list_of_nodeList (e##childNodes)) in
   ();;
 #else
-let highlight from_ to_ e =
+let highlight from_ to_ cl e =
   match Js.Opt.to_option e##textContent with
   | None -> assert false
   | Some x ->
@@ -51,6 +51,6 @@ let highlight from_ to_ e =
          let span = Tyxml_js.Html5.(span ~a:[a_class [kind]] [pcdata s]) in
          Dom.appendChild e (Tyxml_js.To_dom.of_element span) in
      span "normal"   (String.sub x 0 from_);
-     span "errorloc" (String.sub x from_ (to_ - from_));
+     span cl (String.sub x from_ (to_ - from_));
      span "normal"   (String.sub x to_ (String.length x - to_))
 #endif

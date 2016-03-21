@@ -31,6 +31,8 @@ runtime/runtime.js
 toplevel/toplevel.js
 toplevel/eval.js
 toplevel/toplevel-fs.js
+toplevel/toplevel_async.js
+toplevel/toplevel_worker.js
 toplevel/*.cmis.js
 toplevel/server
 toplevel/toplevel.ml

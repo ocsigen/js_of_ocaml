@@ -1,7 +1,7 @@
 include ../Makefile.conf
 -include ../Makefile.local
 
-all: toplevel.js eval.js
+all: toplevel.js eval.js toplevel_async.js toplevel_worker.js
 
 
 OCPINDENT=$(shell ocamlfind query ocp-indent -format "-package %p.lib" 2> /dev/null)
@@ -59,7 +59,7 @@ MKTOP=jsoo_mktop -verbose $(SAFESTRING) \
 	${addprefix -export-unit , html5_types html5_sigs xml_wrap } \
 
 TOPLEVEL_NAME=toplevel
-TOPLEVEL_OBJS=colorize.cmo indent.cmo toplevel.cmo
+TOPLEVEL_OBJS=colorize.cmo indent.cmo toplevel_setup.cmo toplevel_ui.cmo toplevel.cmo
 $(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS) examples.ml test_dynlink.cmo
 	$(MKTOP) \
 	$(BER) \
@@ -70,6 +70,27 @@ $(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS) examples.ml test_dynlink.cmo
 	${addprefix -jsopt , -I ./ --file test_dynlink.cmo} \
 	-package base64 \
 	-o $(TOPLEVEL_NAME).byte
+
+WORKER_NAME= toplevel_worker
+WORKER_OBJS=$(shell ocamlfind query js_of_ocaml)/jsooTopWorker.cmo
+$(WORKER_NAME).js: $(WORKER_OBJS) examples.ml test_dynlink.cmo
+	$(MKTOP) \
+	$(BER) \
+	$(WORKER_OBJS) \
+	${addprefix -jsopt , ${JSFILES}} \
+	${addprefix -jsopt , -I ./ --file examples.ml} \
+	${addprefix -jsopt , -I ./ --file test_dynlink.cmo} \
+	-package base64 \
+	-o $(WORKER_NAME).byte
+
+toplevel_async.byte: colorize.cmo indent.cmo toplevel_ui.cmo toplevel_async.cmo
+	ocamlfind ocamlc -package js_of_ocaml.toplevel.asynchronous,base64,ocp-indent.lib,js_of_ocaml.tyxml $(BER) $(OCPINDENT) $(HIGLO) -linkpkg -o $@ $^
+
+toplevel_async.js: toplevel_async.byte
+	js_of_ocaml +weak.js toplevel_async.byte
+
+toplevel_async.cmo: toplevel_ui.cmi
+toplevel.cmo: toplevel_ui.cmi toplevel_setup.cmi
 
 EVAL_NAME=eval
 EVAL_OBJS=eval.cmo

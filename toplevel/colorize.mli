@@ -6,4 +6,4 @@ val ocaml : a_class:string -> string
 
 
 val highlight : [`Pos of int] -> [`Last | `Pos of int]
-		-> Dom_html.element Js.t -> unit
+		-> string -> Dom_html.element Js.t -> unit
