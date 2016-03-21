@@ -1,6 +1,6 @@
 # Js_of_ocaml (jsoo)
 
-Js_of_ocaml is a compiler from OCaml bytecode to Javascript. It makes
+Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes
 OCaml programs run on Web browsers.
   * It is easy to install and use as it works with an existing
     installation of OCaml, with no need to recompile any library.
@@ -51,14 +51,14 @@ toplevel as well. [Try the toplevel](http://ocsigen.github.io/js_of_ocaml/)
 ## Usage
 
 Your program must first be compiled using the OCaml bytecode compiler
-`ocamlc`.  Javascript bindings are provided by the `js_of_ocaml` package.
+`ocamlc`. JavaScript bindings are provided by the `js_of_ocaml` package.
 The syntax extension is provided by `js_of_ocaml.syntax` package.
 
 ```
 ocamlfind ocamlc -package js_of_ocaml -syntax camlp4o -package js_of_ocaml.syntax -linkpkg -o cubes.byte cubes.ml
 ```
 
-Then, run the `js_of_ocaml` compiler to produce Javascript code:
+Then, run the `js_of_ocaml` compiler to produce JavaScript code:
 
 ```
 js_of_ocaml cubes.byte
@@ -67,7 +67,7 @@ js_of_ocaml cubes.byte
 ## Features
 
 Most of the OCaml standard library is supported. However,
-  * Weak semantic cannot be implemented using javascript.
+  * Weak semantic cannot be implemented using JavaScript.
     A dummy implementation is available (use `+weak.js` option)
   * Most of the Sys module is not supported.
 
@@ -106,6 +106,6 @@ functions can yield results different from usual:
 | README    | this file                                    |
 | compiler/ | compiler                                     |
 | examples/ | small examples                               |
-| lib/      | library for interfacing with Javascript APIs |
+| lib/      | library for interfacing with JavaScript APIs |
 | runtime/  | runtime system                               |
 | toplevel/ | web-based OCaml toplevel                     |
