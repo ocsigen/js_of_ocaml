@@ -54,6 +54,7 @@ class type xmlHttpRequest = object ('self)
   method responseText : js_string t readonly_prop
   method responseXML : Dom.element Dom.document t opt readonly_prop
   method responseType : js_string t prop
+  method withCredentials : bool t writeonly_prop
 
   inherit File.progressEventTarget
   method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
@@ -178,6 +179,7 @@ let perform_raw
     ?upload_progress
     ?override_mime_type
     ?override_method
+    ?with_credentials
     (type resptype) ~(response_type:resptype response)
     url =
 
@@ -260,6 +262,11 @@ let perform_raw
   | JSON        -> req ## responseType <- (Js.string "json")
   | Text        -> req ## responseType <- (Js.string "text")
   | Default     -> req ## responseType <- (Js.string "")
+  end;
+
+  begin match with_credentials with
+    Some c -> req ## withCredentials <- Js.bool c
+  | None   -> ()
   end;
 
   (match content_type with
@@ -358,10 +365,11 @@ let perform_raw_url
     ?upload_progress
     ?override_mime_type
     ?override_method
+    ?with_credentials
     url =
   perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ?override_method ~response_type:Default url
+    ?override_method ?with_credentials ~response_type:Default url
 
 let perform
     ?(headers = [])
@@ -374,9 +382,11 @@ let perform
     ?upload_progress
     ?override_mime_type
     ?override_method
+    ?with_credentials
     url =
   perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
     ?check_headers ?progress ?upload_progress ?override_mime_type
-    ?override_method ~response_type:Default (Url.string_of_url url)
+    ?override_method ?with_credentials
+    ~response_type:Default (Url.string_of_url url)
 
 let get s = perform_raw_url s

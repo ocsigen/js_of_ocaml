@@ -55,6 +55,7 @@ class type xmlHttpRequest = object ('self)
   method responseText : js_string t readonly_prop
   method responseXML : Dom.element Dom.document t opt readonly_prop
   method responseType : js_string t prop
+  method withCredentials : bool t writeonly_prop
 
   inherit File.progressEventTarget
   method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
@@ -112,6 +113,7 @@ val perform_raw :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
+  -> ?with_credentials:bool
   -> response_type:('a response)
   -> string
   -> 'a generic_http_frame Lwt.t
@@ -131,6 +133,7 @@ val perform_raw_url :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
+  -> ?with_credentials:bool
   -> string
   -> http_frame Lwt.t
   (** [perform_raw_url] makes an asynchronous request to the specified [url] with
@@ -155,6 +158,7 @@ val perform :
   -> ?upload_progress:(int -> int -> unit)
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH ]
+  -> ?with_credentials:bool
   -> Url.url
   -> http_frame Lwt.t
   (** [perform] is the same as {!perform_raw_url} except that the Url argument has type
