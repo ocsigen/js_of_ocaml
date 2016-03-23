@@ -91,7 +91,8 @@ function caml_hexstring_of_float (x, prec, style) {
   }
   if (prec >= 0 && prec < 13) {
     /* If a precision is given, and is small, round mantissa accordingly */
-    // TODO
+      var cst = Math.pow(2,prec * 4);
+      x = Math.round(x * cst) / cst;
   }
   var x_str = x.toString(16);
   if(prec >= 0){
