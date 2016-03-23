@@ -63,6 +63,14 @@ package "deriving" (
 
 )
 
+package "async" (
+  exists_if = "async_js.cma"
+  description = "Async_kernel for js_of_ocaml."
+  version = "[distributed with js_of_ocaml]"
+  archive(byte) = "async_js.cma"
+  requires = "async_kernel,js_of_ocaml"
+)
+
 package "graphics" (
   exists_if = "graphics.cma"
   description = "Graphics for js_of_ocaml."

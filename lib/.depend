@@ -87,6 +87,9 @@ webSockets.cmi : typed_array.cmi js.cmi file.cmi dom_html.cmi dom.cmi
 worker.cmi : js.cmi dom_html.cmi
 xmlHttpRequest.cmi : url.cmi typed_array.cmi js.cmi form.cmi file.cmi \
     dom.cmi
+async/async_js.cmo : js.cmi firebug.cmi dom_html.cmi async/async_js.cmi
+async/async_js.cmx : js.cmx firebug.cmx dom_html.cmx async/async_js.cmi
+async/async_js.cmi :
 log/lwt_log_js.cmo : js.cmi firebug.cmi log/lwt_log_js.cmi
 log/lwt_log_js.cmx : js.cmx firebug.cmx log/lwt_log_js.cmi
 log/lwt_log_js.cmi :

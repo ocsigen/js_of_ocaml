@@ -201,8 +201,11 @@ let report_missing_primitives missing =
       end
       else missing
     ) missing (Lazy.force extra_js_files) in
-  Util.warn "Missing primitives:@.";
-  StringSet.iter (fun nm -> Util.warn "  %s@." nm) missing
+  if not (StringSet.is_empty missing)
+  then begin
+    Util.warn "Missing primitives:@.";
+    StringSet.iter (fun nm -> Util.warn "  %s@." nm) missing
+  end
 
 let gen_missing js missing =
     let open Javascript in

@@ -30,6 +30,11 @@ IMPL += lib/tyxml/tyxml_js.cma
 INTF += lib/tyxml/*.cmi
 endif
 
+ifeq "${WITH_ASYNC}" "YES"
+IMPL += lib/async/async_js.cma
+INTF += lib/async/*.cmi
+endif
+
 ifeq "${WITH_PPX}" "YES"
 OCAMLFIND_BIN += lib/ppx/${PPX}
 IMPL += lib/ppx/ppx_js.cma
@@ -69,6 +74,8 @@ JSOO_RUNTIME_EXTRA := weak.js \
 	dynlink.js \
 	graphics.js \
 	nat.js \
+	core_kernel.js \
+	bin_prot.js \
 	predefined_exceptions.js
 
 OTHERS := runtime/runtime.js $(addprefix runtime/,$(JSOO_RUNTIME)) $(addprefix runtime/,$(JSOO_RUNTIME_EXTRA))
