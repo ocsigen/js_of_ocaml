@@ -59,6 +59,30 @@ function caml_int64_bits_of_float (x) {
   r3 = (r3 &0xf) | sign | exp << 4;
   return [255, r1, r2, r3];
 }
+
+//FP literals can be written using the hexadecimal
+//notation 0x<mantissa in hex>p<exponent> from ISO C99.
+//https://github.com/dankogai/js-hexfloat/blob/master/hexfloat.js
+//Provides: caml_hexstring_of_float const
+//Requires: jsoo_floor_log2, caml_js_to_string
+function caml_hexstring_of_float (x) {
+
+  if (!isFinite(x)) {
+    if (isNaN(x)) return caml_js_to_string("nan");
+    return caml_js_to_string ((x > 0)?"infinity":"-infinity");
+  }
+  var sign = (x==0 && 1/x == -Infinity)?1:(x>=0)?0:1;
+  if(sign) x = -x;
+  var exp = 0;
+  if (x < 1) {
+    while (x < 1)  { x *= 2; exp-- }
+  } else {
+    while (x >= 2) { x /= 2; exp++ }
+  }
+  var exp_sign = exp < 0 ? '' : '+';
+  return caml_js_to_string ((sign?'-':'') + '0x' + x.toString(16) + 'p' + exp_sign + exp.toString(10));
+}
+
 //Provides: caml_int64_float_of_bits const
 function caml_int64_float_of_bits (x) {
   var exp = (x[3] & 0x7fff) >> 4;
