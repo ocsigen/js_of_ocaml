@@ -20,7 +20,7 @@
 //Provides: jsoo_floor_log2
 var log2_ok = Math.log2 && Math.log2(1.1235582092889474E+307) == 1020
 function jsoo_floor_log2(x) {
-    if(log2_ok) return Math.floor(Math.log2(x)) 
+    if(log2_ok) return Math.floor(Math.log2(x))
     var i = 0;
     if (x == 0) return -Infinity;
     if(x>=1) {while (x>=2) {x/=2; i++} }
@@ -64,9 +64,8 @@ function caml_int64_bits_of_float (x) {
 //notation 0x<mantissa in hex>p<exponent> from ISO C99.
 //https://github.com/dankogai/js-hexfloat/blob/master/hexfloat.js
 //Provides: caml_hexstring_of_float const
-//Requires: jsoo_floor_log2, caml_js_to_string
-function caml_hexstring_of_float (x) {
-
+//Requires: caml_js_to_string, caml_str_repeat
+function caml_hexstring_of_float (x, prec, style) {
   if (!isFinite(x)) {
     if (isNaN(x)) return caml_js_to_string("nan");
     return caml_js_to_string ((x > 0)?"infinity":"-infinity");
@@ -74,13 +73,41 @@ function caml_hexstring_of_float (x) {
   var sign = (x==0 && 1/x == -Infinity)?1:(x>=0)?0:1;
   if(sign) x = -x;
   var exp = 0;
-  if (x < 1) {
+  if (x == 0) { }
+  else if (x < 1) {
     while (x < 1)  { x *= 2; exp-- }
   } else {
     while (x >= 2) { x /= 2; exp++ }
   }
   var exp_sign = exp < 0 ? '' : '+';
-  return caml_js_to_string ((sign?'-':'') + '0x' + x.toString(16) + 'p' + exp_sign + exp.toString(10));
+  var sign_str = '';
+  if (sign) sign_str = '-'
+  else {
+    switch(style){
+    case 43 /* '+' */: sign_str = '+'; break;
+    case 32 /* ' ' */: sign_str = ' '; break;
+    default: break;
+    }
+  }
+  if (prec >= 0 && prec < 13) {
+    /* If a precision is given, and is small, round mantissa accordingly */
+    // TODO
+  }
+  var x_str = x.toString(16);
+  if(prec >= 0){
+      var idx = x_str.indexOf('.');
+    if(idx<0) {
+      x_str += '.' + caml_str_repeat(prec, '0');
+    }
+    else {
+      var size = idx+1+prec;
+      if(x_str.length < size)
+        x_str += caml_str_repeat(size - x_str.length, '0');
+      else
+        x_str = x_str.substr(0,size);
+    }
+  }
+  return caml_js_to_string (sign_str + '0x' + x_str + 'p' + exp_sign + exp.toString(10));
 }
 
 //Provides: caml_int64_float_of_bits const

@@ -477,12 +477,13 @@ function caml_float_of_string(s) {
   s = s.replace(/_/g,"");
   res = +s;
   if (((s.length > 0) && (res === res)) || /^[+-]?nan$/i.test(s)) return res;
-  if(/^ *0x[0-9a-f_]+p[+-]?[0-9_]+/i.test(s)){
-    var pidx = s.indexOf('p');
-    pidx = (pidx==-1)?s.indexOf('P'):pidx;
-    var exp = +s.substring(pidx + 1);
-    res = +s.substring(0,pidx);
-    return res * Math.pow(2,exp);
+  var m = /^ *([+-]?)0x([0-9a-f]+)\.?([0-9a-f]*)p([+-]?[0-9]+)/i.exec(s);
+//            1        2             3           4
+  if(m){
+    var mantissa = parseInt(m[1] + m[2] + m[3], 16);
+    var exponent = (m[4]|0) - 4*m[3].length;
+    res = mantissa * Math.pow(2, exponent);
+    return res;
   }
   if(/^\+?inf(inity)?$/i.test(s)) return Infinity;
   if(/^-inf(inity)?$/i.test(s)) return -Infinity;
