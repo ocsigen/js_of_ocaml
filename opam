@@ -3,7 +3,7 @@ maintainer:   "dev@ocsigen.org"
 authors:      "Ocsigen team"
 bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
 homepage:     "http://ocsigen.org/js_of_ocaml"
-dev-repo:     "https://github.com/ocsigen/js_of_ocaml.git"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 
 version: "dev"
 
