@@ -75,7 +75,7 @@ function caml_hexstring_of_float (x, prec, style) {
   var exp = 0;
   if (x == 0) { }
   else if (x < 1) {
-    while (x < 1)  { x *= 2; exp-- }
+    while (x < 1 && exp > -1022)  { x *= 2; exp-- }
   } else {
     while (x >= 2) { x /= 2; exp++ }
   }
