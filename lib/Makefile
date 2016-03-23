@@ -30,6 +30,10 @@ ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
 TYXML_CMA=tyxml/tyxml_js.cma
 endif
 
+ifeq "${WITH_ASYNC}" "YES"
+ASYNC_CMA=async/async_js.cma
+endif
+
 ifeq "${WITH_TOPLEVEL}" "YES"
 TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
@@ -65,6 +69,7 @@ all: $(LIBNAME).cma log/logger.cma \
 	${DERIVING_JSON} \
 	${GRAPHICS_CMA} \
 	${TYXML_CMA} \
+	${ASYNC_CMA} \
 	$(PPX_EX) $(PPX_LIB) $(PPX_DERIVING_LIB) $(PPX_LIB_NDL) \
 	META
 
@@ -134,6 +139,15 @@ tyxml/%.cmi: tyxml/%.mli
 tyxml/tyxml_js.cma: tyxml/tyxml_cast.cmo tyxml/tyxml_js.cmo
 	$(OCAMLC) -a -o $@ $^
 
+
+async/async_js.cma: async/async_js.cmo
+	ocamlfind ocamlc -a -o $@ $^
+
+async/%.cmo: async/%.ml async/%.cmi syntax/pa_js.cmo
+	ocamlfind ocamlc $(SAFESTRING) -package async_kernel -I async -c $< -o $@
+
+async/%.cmi: async/%.mli
+	ocamlfind ocamlc $(SAFESTRING) -package async_kernel -I . -I async $< -o $@
 
 log/%.cmo: log/%.ml log/%.cmi syntax/pa_js.cmo
 	$(OCAMLC) -syntax camlp4o $(SAFESTRING) -package lwt,lwt.syntax,lwt.log -ppopt syntax/pa_js.cmo -I log -c $< -o $@
@@ -238,6 +252,7 @@ clean:
 	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa]
 	rm -f syntax/*.cm[xioa] syntax/*.[ao] syntax/*.so syntax/*.cmx[sa]
 	rm -f ppx/*.cm[xioa] ppx/*.[ao] ppx/*.so ppx/*.cmx[sa]
+	rm -f async/*.cm[xioa] log/*.[ao] log/*.so log/*.cmx[sa]
 	rm -f log/*.cm[xioa] log/*.[ao] log/*.so log/*.cmx[sa]
 	rm -f tyxml/*.cm[xioa] tyxml/*.[ao] tyxml/*.so tyxml/*.cmx[sa]
 	rm -f graphics/*.cm[xioa] graphics/*.[ao] graphics/*.so graphics/*.cmx[sa]
@@ -250,6 +265,7 @@ clean:
 
 depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml toplevel/jsooTopError.ml ppx/ppx_js.ml
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" *.ml *.mli > .depend
+	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I async async/*.ml async/*.mli >> .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I log log/*.ml log/*.mli >> .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I toplevel toplevel/jsooTop.ml toplevel/jsooTopCamlp4.ml toplevel/*.mli >> .depend
 	ocamldep toplevel/jsooTopError.ml -I toplevel >> .depend
