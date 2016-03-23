@@ -90,17 +90,6 @@ function core_kernel_gc_minor_words () { return 0 }
 function core_kernel_gc_promoted_words () { return 0 }
 //Provides: core_kernel_gc_top_heap_words
 function core_kernel_gc_top_heap_words () { return 0 }
-//Provides: caml_gc_counters
-function caml_gc_counters() { return [254,0,0,0] }
-//Provides: caml_gc_quick_stat
-function caml_gc_quick_stat(){
-  return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-}
-//Provides: caml_gc_stat
-function caml_gc_stat() {
-  return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-}
-
 //Provides: clear_caml_backtrace_pos
 function clear_caml_backtrace_pos () { return 0 }
 

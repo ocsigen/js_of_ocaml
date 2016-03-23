@@ -8,3 +8,13 @@ function caml_gc_major(){ return 0}
 function caml_gc_full_major(){ return 0}
 //Provides: caml_gc_compaction
 function caml_gc_compaction(){ return 0}
+//Provides: caml_gc_counters
+function caml_gc_counters() { return [254,0,0,0] }
+//Provides: caml_gc_quick_stat
+function caml_gc_quick_stat(){
+  return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+}
+//Provides: caml_gc_stat
+function caml_gc_stat() {
+  return [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+}
