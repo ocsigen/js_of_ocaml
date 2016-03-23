@@ -144,10 +144,10 @@ async/async_js.cma: async/async_js.cmo
 	ocamlfind ocamlc -a -o $@ $^
 
 async/%.cmo: async/%.ml async/%.cmi syntax/pa_js.cmo
-	ocamlfind ocamlc $(SAFESTRING) -package async_kernel -I async -c $< -o $@
+	$(OCAMLC) -syntax camlp4o $(SAFESTRING) -package lwt.syntax,async_kernel -ppopt syntax/pa_js.cmo -I async -c $< -o $@
 
 async/%.cmi: async/%.mli
-	ocamlfind ocamlc $(SAFESTRING) -package async_kernel -I . -I async $< -o $@
+	$(OCAMLC) -syntax camlp4o $(SAFESTRING) -package lwt.syntax,async_kernel -ppopt syntax/pa_js.cmo -I . -I async $< -o $@
 
 log/%.cmo: log/%.ml log/%.cmi syntax/pa_js.cmo
 	$(OCAMLC) -syntax camlp4o $(SAFESTRING) -package lwt,lwt.syntax,lwt.log -ppopt syntax/pa_js.cmo -I log -c $< -o $@
