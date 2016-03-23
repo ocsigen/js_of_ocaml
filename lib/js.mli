@@ -508,6 +508,7 @@ val error_constr : (js_string t -> error t) constr
       returns an [Error] object with the message [msg]. *)
 
 val string_of_error : error t -> string
+val raise_js_error  : error t -> 'a
 
 exception Error of error t
   (** The [Error] exception wrap javascript exceptions when catched by ocaml code.

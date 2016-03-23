@@ -392,6 +392,8 @@ exception Error of error t
 let error_constr = Unsafe.global##_Error
 let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
 
+let raise_js_error = ((Unsafe.js_expr "(function (exn) { throw exn })") : error t -> 'a)
+
 class type json = object
   method parse : js_string t -> 'a meth
   method stringify: 'a -> js_string t meth
