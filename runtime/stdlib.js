@@ -142,28 +142,53 @@ function caml_failwith (msg) {
   caml_raise_with_string(caml_global_data.Failure, msg);
 }
 
-//Provides: caml_wrap_exception const (const)
+//Provides: caml_wrap_exception const (const, const)
 //Requires: caml_global_data,caml_js_to_string,caml_named_value
 //Requires: caml_return_exn_constant
-function caml_wrap_exception(e) {
+function caml_wrap_exception(e,record_js_exn) {
   if(e instanceof Array) return e;
+  var exn;
   //Stack_overflow: chrome, safari
   if(joo_global_object.RangeError
      && e instanceof joo_global_object.RangeError
      && e.message
-     && e.message.match(/maximum call stack/i))
-    return caml_return_exn_constant(caml_global_data.Stack_overflow);
+     && e.message.match(/maximum call stack/i)) {
+    exn = caml_return_exn_constant(caml_global_data.Stack_overflow);
+  }
   //Stack_overflow: firefox
-  if(joo_global_object.InternalError
+  else if(joo_global_object.InternalError
      && e instanceof joo_global_object.InternalError
      && e.message
-     && e.message.match(/too much recursion/i))
-    return caml_return_exn_constant(caml_global_data.Stack_overflow);
+     && e.message.match(/too much recursion/i)) {
+    exn = caml_return_exn_constant(caml_global_data.Stack_overflow);
+  }
   //Wrap Error in Js.Error exception
-  if(e instanceof joo_global_object.Error)
-    return [0,caml_named_value("jsError"),e];
+  else if(e instanceof joo_global_object.Error) {
+    exn = [0,caml_named_value("jsError"),e];
+  }
   //fallback: wrapped in Failure
-  return [0,caml_global_data.Failure,caml_js_to_string (String(e))];
+  else {
+    exn = [0,caml_global_data.Failure,caml_js_to_string (String(e))];
+  }
+  if(record_js_exn) exn.js_exn = e;
+  return exn
+}
+
+//Provides: caml_exn_with_js_error
+function caml_exn_with_js_error(exn, force) {
+  if(!exn.js_exn || force)
+    exn.js_exn = new joo_global_object.Error("Exception with backtrace");
+  return exn
+}
+
+//Provides: caml_js_error_of_exn
+function caml_js_error_of_exn(exn) {
+  return exn.js_exn
+}
+
+//Provides: caml_js_error_raise
+function caml_js_error_raise(exn) {
+  throw exn
 }
 
 //Provides: caml_invalid_argument (const)
