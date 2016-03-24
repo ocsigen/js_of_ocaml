@@ -17,6 +17,10 @@ ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
 OTHER += -package tyxml.functor,react,reactiveData -I ../lib/tyxml
 endif
 
+ifeq "${WITH_ASYNC}" "YES"
+OTHER += -package async_kernel -I ../lib/async
+endif
+
 ifeq "${WITH_TOPLEVEL}" "YES"
 OTHER += -package compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel -I ../lib/toplevel
 endif
