@@ -306,7 +306,25 @@ let string_of_url = function
 module Current =
 struct
 
-  let l = Dom_html.window##location
+  let l =
+    if Js.Optdef.test (Js.Optdef.return (Dom_html.window##location))
+    then Dom_html.window##location
+    else
+      let empty = Js.string "" in
+      jsobject
+        val mutable href = empty
+        val mutable protocol = empty
+        val mutable host = empty
+        val mutable hostname = empty
+        val mutable port = empty
+        val mutable pathname = empty
+        val mutable search = empty
+        val mutable hash = empty
+
+        method reload = ()
+        method replace _ = ()
+        method assign _ = ()
+      end
 
   let host = urldecode_js_string_string l##hostname
 
