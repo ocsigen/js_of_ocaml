@@ -246,6 +246,14 @@ let array_length = array_constructor
 let array_get : 'a #js_array t -> int -> 'a optdef = Unsafe.get
 let array_set : 'a #js_array t -> int -> 'a -> unit = Unsafe.set
 
+let array_map_poly :
+  'a #js_array t  ->
+  ('a -> int -> 'a #js_array t -> 'b) callback ->
+  'b #js_array t = fun a cb -> (Obj.magic a)##map(cb)
+
+let array_map  f a = array_map_poly a (wrap_callback (fun x _idx _ -> f x))
+let array_mapi f a = array_map_poly a (wrap_callback (fun x idx _  -> f idx x))
+
 class type match_result = object
   inherit [js_string t] js_array
   method index : int readonly_prop

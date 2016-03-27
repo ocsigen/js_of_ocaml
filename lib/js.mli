@@ -320,6 +320,12 @@ val array_set : 'a #js_array t -> int -> 'a -> unit
   (** Array update: [array_set a i v] puts [v] at index [i] in
       array [a]. *)
 
+val array_map  : ('a -> 'b) ->        'a #js_array t -> 'b #js_array t
+  (** Array map: [array_map f a] is [a##map(wrap_callback (fun idx elt arr -> f a))]. *)
+
+val array_mapi : (int -> 'a -> 'b) -> 'a #js_array t -> 'b #js_array t
+  (** Array mapi: [array_mapi f a] is [a##map(wrap_callback (fun idx elt arr -> f idx a))]. *)
+
 (** Specification of match result objects *)
 class type match_result = object
   inherit [js_string t] js_array
