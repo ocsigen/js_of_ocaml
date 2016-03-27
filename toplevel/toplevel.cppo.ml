@@ -287,7 +287,7 @@ let run _ =
 
   let history_down e =
     let txt = Js.to_string textbox##value in
-    let pos = (Obj.magic textbox)##selectionStart in
+    let pos = textbox##selectionStart in
     try
       (if String.length txt = pos  then raise Not_found);
       let _ = String.index_from txt pos '\n' in
@@ -299,7 +299,7 @@ let run _ =
   in
   let history_up   e =
     let txt = Js.to_string textbox##value in
-    let pos = (Obj.magic textbox)##selectionStart - 1  in
+    let pos = textbox##selectionStart - 1  in
     try
       (if pos < 0  then raise Not_found);
       let _ = String.rindex_from txt pos '\n' in

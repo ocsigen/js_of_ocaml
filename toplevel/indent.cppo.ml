@@ -30,8 +30,8 @@ let textarea textbox =
     | (_,(lo,up))::rem -> find rem c in
   let v = textbox##value in
   let pos =
-    let c1 = (Obj.magic textbox)##selectionStart
-    and c2 = (Obj.magic textbox)##selectionEnd in
+    let c1 = textbox##selectionStart
+    and c2 = textbox##selectionEnd in
     if Js.Opt.test (Obj.magic c1) && Js.Opt.test (Obj.magic c2)
     then begin
 	let l = loop (Js.to_string v) [] (0,0) in
