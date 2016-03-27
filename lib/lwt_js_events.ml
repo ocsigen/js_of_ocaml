@@ -315,6 +315,13 @@ let submits ?cancel_handler ?use_capture t =
 let selects ?cancel_handler ?use_capture t =
   seq_loop select ?cancel_handler ?use_capture t
 
+let aborts ?cancel_handler ?use_capture t =
+  seq_loop abort ?cancel_handler ?use_capture t
+let errors ?cancel_handler ?use_capture t =
+  seq_loop error ?cancel_handler ?use_capture t
+let loads ?cancel_handler ?use_capture t =
+  seq_loop load ?cancel_handler ?use_capture t
+
 let transition_evn = lazy (
   let e = Dom_html.createDiv Dom_html.document in
   try
