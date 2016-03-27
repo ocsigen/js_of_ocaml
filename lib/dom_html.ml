@@ -576,6 +576,9 @@ class type textAreaElement = object ('self)
   method name : js_string t readonly_prop
   method readOnly : bool t prop
   method rows : int prop
+  method selectionDirection : js_string t prop
+  method selectionEnd : int prop
+  method selectionStart : int prop
   method tabIndex : int prop
   method _type : js_string t readonly_prop
   method value : js_string t prop
