@@ -321,10 +321,10 @@ val array_set : 'a #js_array t -> int -> 'a -> unit
       array [a]. *)
 
 val array_map  : ('a -> 'b) ->        'a #js_array t -> 'b #js_array t
-  (** Array map: [array_map f a] is [a##map(wrap_callback (fun idx elt arr -> f a))]. *)
+  (** Array map: [array_map f a] is [a##map(wrap_callback (fun idx elt arr -> f elt))]. *)
 
 val array_mapi : (int -> 'a -> 'b) -> 'a #js_array t -> 'b #js_array t
-  (** Array mapi: [array_mapi f a] is [a##map(wrap_callback (fun idx elt arr -> f idx a))]. *)
+  (** Array mapi: [array_mapi f a] is [a##map(wrap_callback (fun idx elt arr -> f idx elt))]. *)
 
 (** Specification of match result objects *)
 class type match_result = object
