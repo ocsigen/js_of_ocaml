@@ -320,6 +320,7 @@ struct
         val mutable pathname = empty
         val mutable search = empty
         val mutable hash = empty
+        val origin = Js.undefined
 
         method reload = ()
         method replace _ = ()

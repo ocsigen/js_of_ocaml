@@ -1105,7 +1105,7 @@ class type location = object
   method protocol : js_string t prop
   method host : js_string t prop
   method hostname : js_string t prop
-  method origin : js_string t optdef prop
+  method origin : js_string t optdef readonly_prop
   method port : js_string t prop
   method pathname : js_string t prop
   method search : js_string t prop
@@ -1116,12 +1116,21 @@ class type location = object
   method reload : unit meth
 end
 
-let location_origin_safe (loc : location t) =
-  loc##protocol##concat_3
-    ((Js.string "//"), loc##hostname,
-     (let p = loc##port in
-      match Js.to_string p with "" -> p | s -> Js.string (":"^s))
+let location_origin (loc : location t) =
+  Optdef.case (loc##origin)
+    (fun () ->
+       let protocol = loc##protocol in
+       let hostname = loc##hostname in
+       let port     = loc##port in
+       if protocol##length = 0 && hostname##length = 0
+       then Js.string ""
+       else
+         let origin = protocol##concat_2 (Js.string "//", hostname) in
+         if port##length > 0
+         then origin##concat_2 (Js.string ":", loc##port)
+         else origin
     )
+    (fun o -> o)
 
 class type history = object
   method length : int readonly_prop
