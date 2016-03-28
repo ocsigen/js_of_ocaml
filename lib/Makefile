@@ -259,6 +259,8 @@ clean:
 	rm -f toplevel/*.cm[xioa] toplevel/*.[ao] toplevel/*.so toplevel/*.cmx[sa]
 	rm -f deriving_json/*.cm[xioa] deriving_json/*.[ao] deriving_json/*.so
 	rm -f deriving_json/deriving_Json_lexer.ml
+	rm -f ppx/ppx_js.ml
+	rm -f ppx/ppx_deriving_json.ml
 	rm -f stubs.c
 	rm -f lib_version.ml
 	rm -f toplevel/jsooTopError.ml
