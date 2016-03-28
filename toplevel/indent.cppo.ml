@@ -32,7 +32,7 @@ let textarea textbox =
   let pos =
     let c1 = textbox##selectionStart
     and c2 = textbox##selectionEnd in
-    if Js.Opt.test (Obj.magic c1) && Js.Opt.test (Obj.magic c2)
+    if Js.Opt.test (Js.Opt.return c1) && Js.Opt.test (Js.Opt.return c2)
     then begin
 	let l = loop (Js.to_string v) [] (0,0) in
 	Some (find l c1,find l c2)

@@ -249,7 +249,7 @@ let array_set : 'a #js_array t -> int -> 'a -> unit = Unsafe.set
 let array_map_poly :
   'a #js_array t  ->
   ('a -> int -> 'a #js_array t -> 'b) callback ->
-  'b #js_array t = fun a cb -> (Obj.magic a)##map(cb)
+  'b #js_array t = fun a cb -> (Unsafe.coerce a)##map(cb)
 
 let array_map  f a = array_map_poly a (wrap_callback (fun x _idx _ -> f x))
 let array_mapi f a = array_map_poly a (wrap_callback (fun x idx _  -> f idx x))
