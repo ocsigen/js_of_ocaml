@@ -15,7 +15,7 @@ endif
 
 all: $(COMPILER) $(MINIFIER) $(FINDLIB_SUPPORT) man
 
-compilerlib: lib/compiler.cma lib/compiler.cmxa lib/compiler.cmxs
+compilerlib: lib/compiler.cma lib/compiler.cmxa lib/compiler.cmxs lib/compiler.cmx
 	cp compiler.cmi compiler.a lib/
 
 lib/%: %

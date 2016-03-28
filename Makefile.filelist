@@ -131,7 +131,7 @@ NATIMPL += lib/syntax/pa_deriving_Json.cmx \
 COMP_IMPL += $(COMP_NATDYN_IMPL)
 endif
 
-ifeq "$(BEST)" "opt"
+ifeq "${BEST}" "opt"
 IMPL += $(NATIMPL)
 COMP_IMPL += $(COMP_NAT_IMPL)
 endif
