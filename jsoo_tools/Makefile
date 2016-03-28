@@ -23,8 +23,8 @@ jsoo_mktop.cmo jsoo_mkcmis.cmo: jsoo_common.cmo
 jsoo_mktop.cmx jsoo_mkcmis.cmx: jsoo_common.cmx
 jsoo_common.cmo jsoo_common.cmx: ../compiler/lib/compiler.cmi
 
-OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45
-OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
+OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45-58
+OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45-58
 
 %.byte: ../compiler/lib/compiler.cma ../compiler/jsoo_findlib_support.cma jsoo_common.cmo %.cmo
 	$(OCAMLC) -linkpkg -linkall -g $(SAFESTRING) \

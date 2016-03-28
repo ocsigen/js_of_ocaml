@@ -95,10 +95,10 @@ deriving_json.cmxs: deriving_json.cmxa
 	$(OCAMLOPT) -shared -linkall -o $@ $^
 
 syntax/pa_js.cmo: syntax/pa_js.ml
-	$(OCAMLC) -w -42 $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
+	$(OCAMLC) -w -42-58 $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
 
 syntax/pa_js.cmx: syntax/pa_js.ml
-	$(OCAMLOPT) -w -42 $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
+	$(OCAMLOPT) -w -42-58 $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
 
 syntax/pa_js.cmxs: syntax/pa_js.cmx
 	$(OCAMLOPT) -shared -linkall -o $@ $<
