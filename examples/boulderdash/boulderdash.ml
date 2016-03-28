@@ -198,7 +198,7 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
       let (x'', y'') = next pos' in
 	if (try
 	      state.map.(y').(x') = Boulder && state.map.(y'').(x'') = Empty
-	    with Invalid_argument "index out of bounds" -> false) then (
+	    with Invalid_argument _ -> false) then (
 	  let over () =
 	    state.imgs.(y).(x)##src <- img_guy;
 	    state.imgs.(y').(x')##src <- img;
@@ -294,6 +294,8 @@ let getfile f =
   with Not_found ->
     http_get f
 
+exception Eos
+
 let start _ =
   let body =
     Js.Opt.get (document##getElementById(js"boulderdash"))
@@ -324,7 +326,7 @@ let start _ =
          let sz = String.length txt in
          let rec find_string_start s =
            if s >= sz then
-             failwith "eos"
+             raise Eos
            else
              if txt.[s] == '"' then
       	 find_string_end (s + 1) (s + 2)
@@ -332,7 +334,7 @@ let start _ =
       	 find_string_start (s + 1)
          and find_string_end s e =
            if s >= sz then
-             failwith "eos"
+             raise Eos
            else
              if txt.[e] == '"' then
       	 (String.sub txt s (e - s), e + 1)
@@ -345,8 +347,8 @@ let start _ =
            try
              let fst, st = find_string st in
              let snd, st = find_string st in
-      	 Some ((fst, snd), st)
-           with Failure "eos" -> None
+      	     Some ((fst, snd), st)
+           with Eos -> None
          with
            | Some (elt, st) -> scan_pairs st (elt :: acc)
            | None -> acc
