@@ -243,7 +243,7 @@ ${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml ${PA_DERIVING}
 stubs.c: $(MLOBJS:cmo=ml)
 	(echo "#include <stdlib.h>"; \
 	 echo "#include <stdio.h>"; \
-	 echo "#define D(f) void f () { fprintf(stderr, \"Unimplemented Javascript primitive %s!\\n\", #f); exit(1); }"; \
+	 echo "#define D(f) void f () { fprintf(stderr, \"Unimplemented Javascript primitive %s!\\\\n\", #f); exit(1); }"; \
 	 (sed -n -e 's/.*external.*"\([^"%]*\)".*/D(\1)/p' $(MLOBJS:cmo=ml) | \
 	  sort | uniq)) \
         > stubs.c
