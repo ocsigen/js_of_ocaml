@@ -1086,3 +1086,25 @@ function caml_list_of_js_array(a){
   }
   return l
 }
+
+//Provides: caml_runtime_warnings
+var caml_runtime_warnings = 0;
+
+//Provides: caml_ml_enable_runtime_warnings
+//Requires: caml_runtime_warnings
+function caml_ml_enable_runtime_warnings (bool) {
+  caml_runtime_warnings = bool;
+  return 0;
+}
+
+//Provides: caml_ml_runtime_warnings_enabled
+//Requires: caml_runtime_warnings
+function caml_ml_runtime_warnings_enabled (_unit) {
+  return caml_runtime_warnings;
+}
+
+
+//Provides: caml_sys_isatty
+function caml_sys_isatty(_chan) {
+  return 0;
+}
