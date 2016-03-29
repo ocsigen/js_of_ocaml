@@ -30,7 +30,7 @@
 
    Waiting for a click on [elt1] before continuing:
 
-   {[lwt _ = Lwt_js_events.click elt1 in]}
+   {[let%lwt _ = Lwt_js_events.click elt1 in]}
 
    Doing some operation for each value change in input element [inp]:
 
@@ -41,16 +41,16 @@
    Defining a thread that waits for ESC key on an element:
 
    {[let rec esc elt =
-      lwt ev = keydown elt in
+      let%lwt ev = keydown elt in
       if ev##.keyCode = 27
       then Lwt.return ev
       else esc elt]}
 
    Waiting for a click or escape key before continuing:
 
-   {[lwt () =
-       Lwt.pick [(lwt _ = esc Dom_html.document in Lwt.return ());
-                 (lwt _ = click Dom_html.document in Lwt.return ())]
+   {[let%lwt () =
+       Lwt.pick [(let%lwt _ = esc Dom_html.document in Lwt.return ());
+                 (let%lwt _ = click Dom_html.document in Lwt.return ())]
      in ...]}
 
   {2 Create Lwt threads for events} *)
