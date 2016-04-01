@@ -42,7 +42,7 @@ let add_syntax_mod p =
 
 let execute cmd =
   let s = String.concat " " cmd in
-  if !Jsoo_common.verbose then Printf.printf "+ %s\n" s;
+  if !Jsoo_common.verbose then Printf.printf "+ %s\n%!" s;
   let ret = Sys.command s in
   if ret <> 0
   then failwith (Printf.sprintf "Error: %s" s)
