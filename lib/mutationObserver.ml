@@ -30,8 +30,8 @@ end
 class type mutationRecord = object
   method _type : Js.js_string Js.t Js.readonly_prop
   method target : Dom.node Js.t Js.readonly_prop
-  method addedNodes : Dom.node Js.t Dom.nodeList Js.t Js.readonly_prop
-  method removedNodes : Dom.node Js.t Dom.nodeList Js.t Js.readonly_prop
+  method addedNodes : Dom.node Dom.nodeList Js.t Js.readonly_prop
+  method removedNodes : Dom.node Dom.nodeList Js.t Js.readonly_prop
   method previousSibling : Dom.node Js.t Js.opt Js.readonly_prop
   method nextSibling : Dom.node Js.t Js.opt Js.readonly_prop
   method attributeName : Js.js_string Js.t Js.opt Js.readonly_prop
