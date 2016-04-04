@@ -405,9 +405,9 @@ and svgElement = object
   method getCurrentTime : float meth
   method setCurrentTime : int -> unit meth
   method getIntersectionList :
-    rect t -> element t -> element t Dom.nodeList t meth
+    rect t -> element t -> element Dom.nodeList t meth
   method getEnclosureList :
-    rect t -> element t -> element t Dom.nodeList t meth
+    rect t -> element t -> element Dom.nodeList t meth
   method checkIntersection : element t -> rect t -> bool t
   method checkEnclosure : element t -> rect t -> bool t
   method deselectAll : unit meth
