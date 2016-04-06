@@ -107,13 +107,20 @@ let program_of_files l =
   Code.prepend p body
 
 let make_body prim cmis files paths =
-  let fs = StringSet.fold (fun s acc ->
+  let fs, missing = StringSet.fold (fun s (acc,missing) ->
       try
         let name, filename = find_cmi paths s in
-        read name filename :: acc
+        read name filename :: acc, missing
       with Not_found ->
-        failwith (Printf.sprintf "interface file '%s' not found" s)
-    ) cmis [] in
+        acc, s :: missing
+  ) cmis ([],[]) in
+  begin if missing <> [] then (
+    Util.warn "Some OCaml interface files were not found.@.";
+    Util.warn "Use [-I dir_of_cmis] option to bring them into scope@.";
+    (* [`ocamlc -where`/expunge in.byte out.byte moduleA moduleB ... moduleN] *)
+    List.iter (fun nm -> Util.warn "  %s@." nm) missing
+  )
+  end;
   let fs = List.fold_left (fun acc f ->
       let l = list_files f paths in
       List.fold_left (fun acc (n,fn) -> read n fn :: acc) acc l
