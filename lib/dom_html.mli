@@ -1187,6 +1187,10 @@ class type window = object
   method outerWidth : int optdef readonly_prop
   method outerHeight : int optdef readonly_prop
 
+  method getComputedStyle : #element t -> cssStyleDeclaration t meth
+  method getComputedStyle_pseudoElt :
+    #element t -> js_string t -> cssStyleDeclaration t meth
+
   method onload : (window t, event t) event_listener prop
   method onunload : (window t, event t) event_listener prop
   method onbeforeunload : (window t, event t) event_listener prop
