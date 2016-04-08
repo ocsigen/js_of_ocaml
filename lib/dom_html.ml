@@ -898,6 +898,8 @@ class type canvasElement = object
   method width : int prop
   method height : int prop
   method toDataURL : js_string t meth
+  method toDataURL_type : js_string t -> js_string t meth
+  method toDataURL_type_compression : js_string t -> float -> js_string t meth
   method getContext : js_string t -> canvasRenderingContext2D t meth
 end
 
@@ -1241,6 +1243,9 @@ class type window = object
   method getComputedStyle : #element t -> cssStyleDeclaration t meth
   method getComputedStyle_pseudoElt :
     #element t -> js_string t -> cssStyleDeclaration t meth
+
+  method atob : js_string t -> js_string t meth
+  method btoa : js_string t -> js_string t meth
 
   method onload : (window t, event t) event_listener prop
   method onunload : (window t, event t) event_listener prop
