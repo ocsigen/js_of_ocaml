@@ -203,7 +203,7 @@ ppx/ppx_js.cmxs: ppx/ppx_js.cmxa
 	$(OCAMLOPT) -shared -g -o $@ $^
 
 $(PPX_EX): ppx/ppx_js.$(BEST)
-	mv -f $< $@
+	cp $< $@
 
 ppx/ppx_deriving_json.cmo: ppx/ppx_deriving_json.ml
 	$(OCAMLC) -w -40-42-48-27 -package ppx_deriving,ppx_tools,ppx_tools.metaquot -c $<
