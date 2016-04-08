@@ -63,7 +63,7 @@ class type mutationRecord = object
 end
 
 class type mutationObserver = object
-  method observe : Dom.node Js.t -> mutationObserverInit Js.t -> unit Js.meth
+  method observe : #Dom.node Js.t -> mutationObserverInit Js.t -> unit Js.meth
   method disconnect : unit Js.meth
   method takeRecords : mutationRecord Js.t Js.js_array Js.t Js.meth
 end
@@ -75,7 +75,7 @@ val mutationObserver : ((mutationRecord Js.t Js.js_array Js.t -> mutationObserve
 val is_supported : unit -> bool
 
 (** Helper to create a new observer and connect it to a node *)
-val observe : node:(Dom.node Js.t)
+val observe : node:(#Dom.node Js.t)
   -> f:(mutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit)
   -> ?child_list:bool
   -> ?attributes:bool

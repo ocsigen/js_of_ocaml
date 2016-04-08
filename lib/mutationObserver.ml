@@ -40,19 +40,23 @@ class type mutationRecord = object
 end
 
 class type mutationObserver = object
-  method observe : Dom.node Js.t -> mutationObserverInit Js.t -> unit Js.meth
+  method observe : #Dom.node Js.t -> mutationObserverInit Js.t -> unit Js.meth
   method disconnect : unit Js.meth
   method takeRecords : mutationRecord Js.t Js.js_array Js.t Js.meth
 end
 
 let empty_mutation_observer_init () : mutationObserverInit Js.t = Js.Unsafe.obj [||]
 
-let mutationObserver =
-  Js.Unsafe.global##_MutationObserver
+let mutationObserver = Js.Unsafe.global##_MutationObserver
 
 let is_supported () = Js.Optdef.test mutationObserver
 
-let observe ~(node:Dom.node Js.t)
+let mutationObserver :
+  ((mutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit)
+     Js.callback -> mutationObserver Js.t) Js.constr =
+  mutationObserver
+
+let observe ~(node:#Dom.node Js.t)
   ~(f:mutationRecord Js.t Js.js_array Js.t -> mutationObserver Js.t -> unit)
   ?(child_list:bool option) ?(attributes:bool option)
   ?(character_data:bool option) ?(subtree:bool option)
