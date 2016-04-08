@@ -1139,6 +1139,11 @@ type interval_id
 type timeout_id
 type animation_frame_request_id
 
+class type _URL = object
+  method createObjectURL : #File.blob t -> js_string t meth
+  method revokeObjectURL : js_string t -> unit meth
+end
+
 (** Specification of window objects *)
 class type window = object
   inherit eventTarget
@@ -1203,6 +1208,8 @@ class type window = object
 
   method ononline : (window t, event t) event_listener writeonly_prop
   method onoffline : (window t, event t) event_listener writeonly_prop
+
+  method _URL : _URL t readonly_prop
 end
 
 val window : window t
