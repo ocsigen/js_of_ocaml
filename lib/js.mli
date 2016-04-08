@@ -303,6 +303,9 @@ class type ['a] js_array = object
   method length : int prop
 end
 
+val object_keys : 'a t -> js_string js_array t
+  (** Returns jsarray containing keys of the object as Object.keys does. *)
+
 val array_empty : 'a js_array t constr
   (** Constructor of [Array] objects.  The expression
       [jsnew array_empty ()] returns an empty array. *)
