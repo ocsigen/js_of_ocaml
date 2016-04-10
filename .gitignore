@@ -60,6 +60,7 @@ lib/deriving_json/deriving_Json_lexer.ml
 lib/ppx/ppx_js.ml
 lib/ppx/ppx_deriving_json.ml
 lib/ppx/ppx_js
+lib/ppx/ppx_js.opt
 Makefile.local
 
 # OCamlbuild dir
