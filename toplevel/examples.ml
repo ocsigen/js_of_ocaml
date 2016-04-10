@@ -115,3 +115,19 @@ let pong x y dx dy = pong_aux x y dx dy
 let _ = pong 111 87 2 3
 let _ = pong 28  57 5 3
 let _ = start ()
+
+
+(** Async_kernel *)
+open Core_kernel.Std
+open Async_kernel.Std
+let rec countdown span =
+  if Time_ns.Span.(span < zero)
+  then begin
+      print_endline "done";
+      Deferred.unit
+    end
+  else begin
+      Printf.printf "%fsec" (Time_ns.Span.to_sec span);
+      let delay = Time_ns.Span.of_sec 1. in
+      Clock_ns.after delay >>= fun () -> countdown Time_ns.Span.(span - delay)
+    end;;
