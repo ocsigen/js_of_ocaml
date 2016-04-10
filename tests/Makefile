@@ -43,7 +43,7 @@ ppx/test_%: ppx/%.result ppx/%.expected
 
 
 camlp4/%.result: camlp4/%.ml
-	TERM=dumb ocaml -noprompt -I ../lib -init camlp4_init.ml < $< 2>&1 | tail -n +16 > $@
+	TERM=dumb ocaml -noprompt -I ../lib -init camlp4_init.ml < $< 2>&1 | tail -n +20 > $@
 
 camlp4/test_%: camlp4/%.result camlp4/%.expected
 	diff $?
