@@ -42,9 +42,11 @@ PACKAGES += graphics js_of_ocaml.graphics
 CPPO_OPT+= -D graphics
 endif
 
+ifeq ($(ARCH_32BIT),YES)
 ifneq ($(ASYNC),)
 ASYNC_PKG=core_kernel async_kernel js_of_ocaml.async
 JSFILES += +bin_prot.js +core_kernel.js
+endif
 endif
 
 ifeq ($(METAOCAML),1)
