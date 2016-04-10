@@ -51,6 +51,16 @@ function bigstring_memcmp_stub(v_s1, v_s1_pos, v_s2, v_s2_pos, v_len){
   return 0;
 }
 
+//Provides: bigstring_find
+//Requires: caml_ba_get_1
+function bigstring_find(bs, chr, pos, len){
+  while(len > 0){
+    if(caml_ba_get_1(bs,pos) == chr) return pos;
+    pos++;
+    len--;
+  }
+  return -1;
+}
 
 //Provides: bigstring_to_array_buffer
 function bigstring_to_array_buffer(bs) {
