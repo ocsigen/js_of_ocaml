@@ -12,9 +12,14 @@ endif
 
 TESTS_CAMLP4=$(patsubst camlp4/%.ml,camlp4/test_%,$(wildcard camlp4/*.ml))
 
+PPX_DERIVING=$(shell opam config var lib)/ppx_deriving
 COMMON=common.cmo
 
 all: $(COMMON) $(TESTS_CMO) $(TESTS_BYTE) $(TESTS_JS) tests.byte $(TESTS_PPX) $(TESTS_CAMLP4)
+
+test-ppx: $(TESTS_PPX)
+
+test-camlp4: $(TESTS_CAMLP4)
 
 phantom_check::
 	@which phantomjs || (echo "You need phantomjs in your PATH to run this" && false)
@@ -35,15 +40,16 @@ clean:
 	rm -f ppx/*.cm[io] ppx/*.result
 	rm -f camlp4/*.cm[io] camlp4/*.result
 
+TEST_COMMON= -noprompt -I ../lib -I ../lib/deriving_json
+
 ppx/%.result: ppx/%.ml
-	TERM=dumb ocaml -noinit -noprompt -I ../lib -ppx ../lib/ppx/ppx_js < $< 2>&1 | tail -n +2 > $@
+	TERM=dumb ocaml $(TEST_COMMON) -init ppx_init.ml -ppx ../lib/ppx/ppx_js -ppx "$(PPX_DERIVING)/ppx_deriving ../lib/ppx/ppx_deriving_json.cma" < $< 2>&1 | tail -n +15 > $@
 
 ppx/test_%: ppx/%.result ppx/%.expected
 	diff $?
 
-
 camlp4/%.result: camlp4/%.ml
-	TERM=dumb ocaml -noprompt -I ../lib -init camlp4_init.ml < $< 2>&1 | tail -n +20 > $@
+	TERM=dumb ocaml $(TEST_COMMON) -init camlp4_init.ml < $< 2>&1 | tail -n +20 > $@
 
 camlp4/test_%: camlp4/%.result camlp4/%.expected
 	diff $?

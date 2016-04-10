@@ -1,5 +1,3 @@
-#directory "../lib"
-#directory "../lib/deriving_json"
 #use "topfind";;
 #camlp4o;;
 #load "syntax/pa_js.cmo";;
