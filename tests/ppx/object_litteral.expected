@@ -1,4 +1,3 @@
-
 Characters 51-75:
   fun (obj : < > Js.t) -> obj = object%js val m = () end
                                 ^^^^^^^^^^^^^^^^^^^^^^^^

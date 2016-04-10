@@ -1,0 +1,119 @@
+char = 52
+bool = 1
+bool = 0
+unit = 0
+int = 42
+int32 = 42
+int64 = [255,42,0,0]
+float = 4.242000e+01
+string = "42"
+int_list = [0,4,[0,2,[0,42,0]]]
+int_ref = [0,42]
+int_option = [0,42]
+int_option = 0
+int_array = [0,4,2,42,24]
+val test : string -> string -> unit = <fun>
+val test' : (Buffer.t -> 'a -> unit) -> 'b -> string -> 'a -> unit = <fun>
+module Int_list :
+  sig
+    type a = Deriving_Json.Json_int.a list
+    val t : a Deriving_Json.t
+    val write : Buffer.t -> a -> unit
+    val read : Deriving_Json_lexer.lexbuf -> a
+    val to_string : a -> string
+    val from_string : string -> a
+    val match_variant : [ `Cst of int | `NCst of int ] -> bool
+    val read_variant :
+      Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+  end
+module Int_ref :
+  sig
+    type a = Deriving_Json.Json_int.a ref
+    val t : a Deriving_Json.t
+    val write : Buffer.t -> a -> unit
+    val read : Deriving_Json_lexer.lexbuf -> a
+    val to_string : a -> string
+    val from_string : string -> a
+    val match_variant : [ `Cst of int | `NCst of int ] -> bool
+    val read_variant :
+      Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+  end
+module Int_option :
+  sig
+    type a = Deriving_Json.Json_int.a option
+    val t : a Deriving_Json.t
+    val write : Buffer.t -> a -> unit
+    val read : Deriving_Json_lexer.lexbuf -> a
+    val to_string : a -> string
+    val from_string : string -> a
+    val match_variant : [ `Cst of int | `NCst of int ] -> bool
+    val read_variant :
+      Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+  end
+module Int_array :
+  sig
+    type a = Deriving_Json.Json_int.a array
+    val t : a Deriving_Json.t
+    val write : Buffer.t -> a -> unit
+    val read : Deriving_Json_lexer.lexbuf -> a
+    val to_string : a -> string
+    val from_string : string -> a
+    val match_variant : [ `Cst of int | `NCst of int ] -> bool
+    val read_variant :
+      Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+  end
+type tuple1 = int * string
+val tuple1_of_json : Deriving_Json_lexer.lexbuf -> tuple1 = <fun>
+val tuple1_to_json : Buffer.t -> tuple1 -> unit = <fun>
+val tuple1_json : tuple1 Deriving_Json.t = <abstr>
+type variant1 = A | B | C | D of variant1
+val variant1_of_json : Deriving_Json_lexer.lexbuf -> variant1 = <fun>
+val variant1_to_json : Buffer.t -> variant1 -> unit = <fun>
+val variant1_json : variant1 Deriving_Json.t = <abstr>
+type variant2 = D of string | E of variant1
+val variant2_of_json : Deriving_Json_lexer.lexbuf -> variant2 = <fun>
+val variant2_to_json : Buffer.t -> variant2 -> unit = <fun>
+val variant2_json : variant2 Deriving_Json.t = <abstr>
+type record1 = { f : variant1; g : variant2; h : record1 option; }
+val record1_of_json : Deriving_Json_lexer.lexbuf -> record1 = <fun>
+val record1_to_json : Buffer.t -> record1 -> unit = <fun>
+val record1_json : record1 Deriving_Json.t = <abstr>
+type poly1 = [ `A | `B of string ]
+val poly1_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly1_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly1 =
+  <fun>
+val poly1_of_json : Deriving_Json_lexer.lexbuf -> poly1 = <fun>
+val poly1_to_json : Buffer.t -> [> poly1 ] -> unit = <fun>
+val poly1_json : poly1 Deriving_Json.t = <abstr>
+type poly2 = [ `A | `B of string | `C of int ]
+val poly2_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly2_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly2 =
+  <fun>
+val poly2_of_json : Deriving_Json_lexer.lexbuf -> poly2 = <fun>
+val poly2_to_json : Buffer.t -> [> poly2 ] -> unit = <fun>
+val poly2_json : poly2 Deriving_Json.t = <abstr>
+tuple1 = [0,42,"42"]
+variant1 A = 0
+variant1 B = 1
+variant1 C = 2
+variant2 D 'hello' = [0,"hello"]
+variant2 E A = [1,0]
+record1 = [0,0,[0,"d"],0]
+record1 = [0,0,[0,"d"],[0,[0,1,[1,[0,1]],0]]]
+poly1 `A = 65
+poly1 `B str = [0,66,"str"]
+poly2 `A = 65
+poly2 `B str = [0,66,"str"]
+poly2 `C 42 = [0,67,42]
+inline_record 1 = [0,"bob",0]
+inline_record 2 = [1,0]
+type inline_record =
+    I of { name : string; age : int; }
+  | J of { empty : unit; }
+val inline_record_of_json : Deriving_Json_lexer.lexbuf -> inline_record =
+  <fun>
+val inline_record_to_json : Buffer.t -> inline_record -> unit = <fun>
+val inline_record_json : inline_record Deriving_Json.t = <abstr>
+

@@ -11,9 +11,9 @@ OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
 include ../Makefile.conf
 -include ../Makefile.local
 
+DERIVING_JSON=deriving_json.cma
 ifeq "${WITH_DERIVING}" "YES"
 PA_DERIVING=syntax/pa_deriving_Json.cmo
-DERIVING_JSON=deriving_json.cma
 ifeq "$(BEST)" "opt"
 DERIVING_JSON += deriving_json.cmxs
 ifeq "${NATDYNLINK}" "YES"
@@ -232,10 +232,10 @@ ppx/ppx_deriving_json.cmxs: ppx/ppx_deriving_json.cmx
 	ocamllex $<
 
 ${JSON_OBJS}: %.cmo: %.ml ${PA_DERIVING}
-	$(OCAMLC) $(SAFESTRING) -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
+	$(OCAMLC) $(SAFESTRING) -I deriving_json -c $<
 
 ${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml ${PA_DERIVING}
-	$(OCAMLOPT) $(SAFESTRING) -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} -I deriving_json -c $<
+	$(OCAMLOPT) $(SAFESTRING) -I deriving_json -c $<
 
 %$(OBJEXT): %.c
 	$(OCAMLC) -package lwt -c $<
@@ -259,6 +259,8 @@ clean:
 	rm -f toplevel/*.cm[xioa] toplevel/*.[ao] toplevel/*.so toplevel/*.cmx[sa]
 	rm -f deriving_json/*.cm[xioa] deriving_json/*.[ao] deriving_json/*.so
 	rm -f deriving_json/deriving_Json_lexer.ml
+	rm -f ppx/ppx_js.ml
+	rm -f ppx/ppx_deriving_json.ml
 	rm -f stubs.c
 	rm -f lib_version.ml
 	rm -f toplevel/jsooTopError.ml

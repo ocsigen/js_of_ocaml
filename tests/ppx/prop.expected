@@ -1,4 +1,3 @@
-
 Characters 45-48:
   fun (obj : int) -> obj##.p
                      ^^^

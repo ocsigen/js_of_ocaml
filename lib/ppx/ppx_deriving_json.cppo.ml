@@ -84,7 +84,17 @@ let maybe_tuple_type = function
   | [y] -> y
   | l -> Ast_helper.Typ.tuple l
 
-let rec write_tuple_contents l ly tag ~poly =
+let pattern_of_record l =
+  let l =
+    let f {Parsetree.pld_name} =
+      label_of_constructor pld_name,
+      Ast_helper.Pat.var pld_name
+    in
+    List.map f l
+  in
+  Ast_helper.Pat.record l Asttypes.Closed
+
+let rec write_tuple_contents l ly ~tag ~poly =
   let e =
     let f v y =
       let arg = Ast_convenience.evar v in
@@ -100,7 +110,7 @@ let rec write_tuple_contents l ly tag ~poly =
 and write_body_of_tuple_type l ~arg ~poly ~tag =
   let n = List.length l in
   let vars = fresh_vars n in
-  let e = write_tuple_contents vars l tag ~poly
+  let e = write_tuple_contents vars l ~tag ~poly
   and p = var_ptuple vars in
   [%expr let [%p p] = [%e arg] in [%e e]]
 
@@ -187,26 +197,19 @@ and write_of_type y ~poly =
   and pattern = Ast_convenience.pvar v in
   wrap_write (write_body_of_type y ~arg ~poly) ~pattern
 
-and write_of_record d l =
-  let pattern =
-    let l =
-      let f {Parsetree.pld_name} =
-        label_of_constructor pld_name,
-        Ast_helper.Pat.var pld_name
-      in
-      List.map f l
-    in
-    Ast_helper.Pat.record l Asttypes.Closed
-  and e =
-    let l =
-      let f {Parsetree.pld_name = {txt}} = txt in
-      List.map f l
-    and ly =
-      let f {Parsetree.pld_type} = pld_type in
-      List.map f l
-    in
-    write_tuple_contents l ly 0 ~poly:true
+and write_body_of_record ~tag l =
+  let l =
+    let f {Parsetree.pld_name = {txt}} = txt in
+    List.map f l
+  and ly =
+    let f {Parsetree.pld_type} = pld_type in
+    List.map f l
   in
+  write_tuple_contents l ly ~tag ~poly:true
+
+and write_of_record ?(tag=0) d l =
+  let pattern = pattern_of_record l
+  and e = write_body_of_record ~tag l in
   wrap_write e ~pattern
 
 let recognize_case_of_constructor i l =
@@ -291,20 +294,22 @@ and read_body_of_tuple_type ?decl l = [%expr
   ignore (Deriving_Json_lexer.read_tag_1 0 buf);
   [%e read_tuple_contents ?decl l ~f:Ast_helper.Exp.tuple]]
 
+and read_of_record_raw ?decl ?(return = (fun x -> x)) l =
+  let f =
+    let f {Parsetree.pld_name} e = label_of_constructor pld_name, e in
+    fun l' -> return (Ast_helper.Exp.record (List.map2 f l l') None)
+  and l =
+    let f {Parsetree.pld_type} = pld_type in
+    List.map f l
+  in
+  read_tuple_contents l ?decl ~f
+
 and read_of_record decl l =
-  let e =
-    let f =
-      let f {Parsetree.pld_name} e = label_of_constructor pld_name, e in
-      fun l' -> Ast_helper.Exp.record (List.map2 f l l') None
-    and l =
-      let f {Parsetree.pld_type} = pld_type in
-      List.map f l
-    in
-    read_tuple_contents l ~decl ~f
-  in [%expr
-    Deriving_Json_lexer.read_lbracket buf;
-    ignore (Deriving_Json_lexer.read_tag_2 0 254 buf);
-    [%e e]] |> buf_expand
+  let e = read_of_record_raw ~decl l in
+  [%expr
+      Deriving_Json_lexer.read_lbracket buf;
+      ignore (Deriving_Json_lexer.read_tag_2 0 254 buf);
+      [%e e]] |> buf_expand
 
 and read_body_of_type ?decl y =
   let poly = match decl with Some _ -> true | _ -> false in
@@ -472,26 +477,46 @@ let json_decls_of_type decl y =
   recognize, read_tag
 
 let write_case (i, i', l) {Parsetree.pcd_name; pcd_args; pcd_loc} =
-  let n = List.length pcd_args in
-  let vars = fresh_vars n in
   let i, i', lhs, rhs =
-    match vars with
+    match pcd_args with
+#if OCAML_VERSION >= (4, 03, 0)
+    | Pcstr_tuple [] | Pcstr_record [] ->
+#else
     | [] ->
+#endif
       i + 1,
       i',
       None,
       [%expr Deriving_Json.Json_int.write buf
                [%e Ast_convenience.int i]]
-    | [v] ->
+#if OCAML_VERSION >= (4, 03, 0)
+    | Pcstr_tuple ([ _ ] as args) ->
+#else
+    | [ _ ] as args ->
+#endif
+      let v = Ppx_deriving.fresh_var [] in
       i,
       i' + 1,
       Some (Ast_convenience.pvar v),
-      write_tuple_contents vars pcd_args i' ~poly:true
-    | _ ->
+      write_tuple_contents [v] args ~tag:i' ~poly:true
+#if OCAML_VERSION >= (4, 03, 0)
+    | Pcstr_tuple args ->
+#else
+    | args ->
+#endif
+      let vars = fresh_vars (List.length args) in
       i,
       i' + 1,
       Some (var_ptuple vars),
-      write_tuple_contents vars pcd_args i' ~poly:true
+      write_tuple_contents vars args ~tag:i' ~poly:true
+#if OCAML_VERSION >= (4, 03, 0)
+    | Pcstr_record args ->
+      let vars = fresh_vars (List.length args) in
+      i,
+      i' + 1,
+      Some (pattern_of_record args),
+      write_body_of_record args ~tag:i'
+#endif
   in
   i, i',
   Ast_helper.
@@ -505,25 +530,46 @@ let write_decl_of_variant d l =
 
 let read_case ?decl (i, i', l)
     {Parsetree.pcd_name; pcd_args; pcd_loc} =
+  let f l =
+    Ast_helper.Exp.construct
+      (label_of_constructor pcd_name)
+      (match l with
+       | [] ->  None
+       | [e] -> Some e
+       | l ->   Some (Ast_helper.Exp.tuple l))
+  in
   match pcd_args with
+#if OCAML_VERSION >= (4, 03, 0)
+  | Pcstr_tuple [] | Pcstr_record [] ->
+#else
   | [] ->
+#endif
     i + 1, i',
     Ast_helper.Exp.case
       [%pat? `Cst [%p Ast_convenience.pint i]]
       (Ast_helper.Exp.construct (label_of_constructor pcd_name) None)
     :: l
-  | _ ->
-    i, i' + 1,
-    ((let f l =
-        (match l with
-         | [] ->  None
-         | [e] -> Some e
-         | l ->   Some (Ast_helper.Exp.tuple l)) |>
-        Ast_helper.Exp.construct (label_of_constructor pcd_name)
+#if OCAML_VERSION >= (4, 03, 0)
+  | Pcstr_tuple pcd_args ->
+#else
+  | pcd_args ->
+#endif
+    let expr = read_tuple_contents ?decl pcd_args ~f in
+    let case = Ast_helper.Exp.case [%pat? `NCst [%p Ast_convenience.pint i']] expr in
+    i, i' + 1, case :: l
+#if OCAML_VERSION >= (4, 03, 0)
+  | Pcstr_record pcd_args ->
+    let patt = [%pat? `NCst [%p Ast_convenience.pint i']]
+    and expr =
+      let return e =
+        Ast_helper.Exp.construct
+          (label_of_constructor pcd_name)
+          (Some e)
       in
-      read_tuple_contents ?decl pcd_args ~f) |>
-     Ast_helper.Exp.case [%pat? `NCst [%p Ast_convenience.pint i']])
-    :: l
+      read_of_record_raw ?decl pcd_args ~return
+    in
+    i, i' + 1, Ast_helper.Exp.case patt expr :: l
+#endif
 
 let read_decl_of_variant decl l =
   (let _, _, l = List.fold_left (read_case ~decl) (0, 0, []) l
