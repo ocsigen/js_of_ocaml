@@ -60,6 +60,15 @@ function caml_int64_bits_of_float (x) {
   return [255, r1, r2, r3];
 }
 
+//Provides: caml_int32_bits_of_float const
+//Requires: jsoo_floor_log2
+function caml_int32_bits_of_float (x) {
+  var float32a = new joo_global_object.Float32Array(1);
+  float32a[0] = x;
+  var int32a = new joo_global_object.Int32Array(float32a.buffer);
+  return int32a[0] | 0;
+}
+
 //FP literals can be written using the hexadecimal
 //notation 0x<mantissa in hex>p<exponent> from ISO C99.
 //https://github.com/dankogai/js-hexfloat/blob/master/hexfloat.js
@@ -130,6 +139,15 @@ function caml_int64_float_of_bits (x) {
   if (x[3] & 0x8000) res = - res;
   return res;
 }
+
+//Provides: caml_int32_float_of_bits const
+function caml_int32_float_of_bits (x) {
+  var int32a = new joo_global_object.Int32Array(1);
+  int32a[0] = x;
+  var float32a = new joo_global_object.Float32Array(int32a.buffer);
+  return float32a[0];
+}
+
 //Provides: caml_classify_float const
 function caml_classify_float (x) {
   if (isFinite (x)) {
