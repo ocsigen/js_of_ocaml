@@ -109,13 +109,13 @@ module Xml = struct
           | Some v ->
             ignore(node##setAttribute(n, v));
             begin match n' with
-            | "style" -> node##cssText <- v;
+            | "style" -> node##style##cssText <- v;
             | _ -> iter_prop_protected node n (fun name -> Js.Unsafe.set node name v)
             end
           | None ->
             ignore(node##removeAttribute(n));
             begin match n' with
-            | "style" -> node##cssText <- Js.string "";
+            | "style" -> node##style##cssText <- Js.string "";
             | _ -> iter_prop_protected node n (fun name -> Js.Unsafe.set node name Js.null)
             end
           ) a

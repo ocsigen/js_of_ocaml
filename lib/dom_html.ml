@@ -310,7 +310,6 @@ and element = object
   method dir : js_string t prop
   method className : js_string t prop
   method classList : tokenList t readonly_prop
-  method cssText : js_string t prop
   method style : cssStyleDeclaration t prop
 
   method innerHTML : js_string t prop
