@@ -80,6 +80,47 @@ MlStringReader.prototype = {
   }
 }
 
+//Provides: BigStringReader
+//Requires: caml_string_of_array, caml_ba_get_1
+function BigStringReader (bs, i) { this.s = bs; this.i = i; }
+BigStringReader.prototype = {
+  read8u:function () { return caml_ba_get_1(this.s,this.i++); },
+  read8s:function () { return caml_ba_get_1(this.s,this.i++) << 24 >> 24; },
+  read16u:function () {
+    var s = this.s, i = this.i;
+    this.i = i + 2;
+    return (caml_ba_get_1(s,i) << 8) | caml_ba_get_1(s,i + 1)
+  },
+  read16s:function () {
+    var s = this.s, i = this.i;
+    this.i = i + 2;
+    return (caml_ba_get_1(s,i) << 24 >> 16) | caml_ba_get_1(s,i + 1);
+  },
+  read32u:function () {
+    var s = this.s, i = this.i;
+    this.i = i + 4;
+    return (caml_ba_get_1((s,i) << 24) | (caml_ba_get_1(s,i+1) << 16) |
+            (caml_ba_get_1(s,i+2) << 8) | caml_ba_get_1(s,i+3)) >>> 0;
+  },
+  read32s:function () {
+    var s = this.s, i = this.i;
+    this.i = i + 4;
+    return (caml_ba_get_1(s,i) << 24) | (caml_ba_get_1(s,i+1) << 16) |
+      (caml_ba_get_1(s,i+2) << 8) | caml_ba_get_1(s,i+3);
+  },
+  readstr:function (len) {
+    var i = this.i;
+    var arr = new Array(len)
+    for(var j = 0; j < len; j++){
+      arr[j] = caml_ba_get_1(this.s, i+j);
+    }
+    this.i = i + len;
+    return caml_string_of_array(arr);
+  }
+}
+
+
+
 //Provides: caml_float_of_bytes
 //Requires: caml_int64_float_of_bits, caml_int64_of_bytes
 function caml_float_of_bytes (a) {
@@ -87,12 +128,18 @@ function caml_float_of_bytes (a) {
 }
 
 //Provides: caml_input_value_from_string mutable
+//Requires: MlStringReader, caml_input_value_from_reader
+function caml_input_value_from_string(s,ofs) {
+  var reader = new MlStringReader (s, typeof ofs=="number"?ofs:ofs[0]);
+  return caml_input_value_from_reader(reader, ofs)
+}
+
+//Provides: caml_input_value_from_reader mutable
 //Requires: caml_failwith
 //Requires: caml_float_of_bytes, caml_int64_of_bytes
-//Requires: MlStringReader
-function caml_input_value_from_string(s, ofs) {
-  var reader = new MlStringReader (s, typeof ofs=="number"?ofs:ofs[0]);
-  var _magic = reader.read32u ();
+
+function caml_input_value_from_reader(reader, ofs) {
+  var _magic = reader.read32u ()
   var _block_len = reader.read32u ();
   var num_objects = reader.read32u ();
   var _size_32 = reader.read32u ();
@@ -131,14 +178,14 @@ function caml_input_value_from_string(s, ofs) {
           caml_failwith("input_value: integer too large");
           break;
         case 0x04: //cst.CODE_SHARED8:
-          var ofs = reader.read8u ();
-          return intern_obj_table[obj_counter - ofs];
+          var offset = reader.read8u ();
+          return intern_obj_table[obj_counter - offset];
         case 0x05: //cst.CODE_SHARED16:
-          var ofs = reader.read16u ();
-          return intern_obj_table[obj_counter - ofs];
+          var offset = reader.read16u ();
+          return intern_obj_table[obj_counter - offset];
         case 0x06: //cst.CODE_SHARED32:
-          var ofs = reader.read32u ();
-          return intern_obj_table[obj_counter - ofs];
+          var offset = reader.read32u ();
+          return intern_obj_table[obj_counter - offset];
         case 0x08: //cst.CODE_BLOCK32:
           var header = reader.read32u ();
           var tag = header & 0xFF;

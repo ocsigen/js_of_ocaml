@@ -73,3 +73,43 @@ function bigstring_of_array_buffer(ab) {
   var ta = new joo_global_object.Uint8Array(ab);
   return caml_ba_create_from(ta, null, 0, 12, 0, [ta.length])
 }
+
+//Provides: bigstring_marshal_data_size_stub mutable
+//Requires: caml_failwith, caml_ba_uint8_get32
+function bigstring_marshal_data_size_stub (s, ofs) {
+  if (caml_ba_uint8_get32(s, ofs) != (0x8495A6BE|0))
+    caml_failwith("Marshal.data_size: bad object");
+  return (caml_ba_uint8_get32(s, ofs + 4));
+}
+
+//Provides: bigstring_unmarshal_stub mutable
+//Requires: BigStringReader, caml_input_value_from_reader
+function bigstring_unmarshal_stub(s,ofs) {
+  var reader = new BigStringReader (s, typeof ofs=="number"?ofs:ofs[0]);
+  return caml_input_value_from_reader(reader, ofs)
+}
+
+
+//Provides: bigstring_marshal_stub mutable
+//Requires: caml_output_val, bigstring_alloc, caml_ba_set_1
+function bigstring_marshal_stub (v, _fl) {
+  /* ignores flags... */
+  var arr = caml_output_val (v);
+  var bs  = bigstring_alloc(0,arr.length);
+  for(var i = 0; i < arr.length; i++){
+    caml_ba_set_1(bs, i, arr[i]);
+  }
+  return bs;
+}
+
+//Provides: bigstring_marshal_blit_stub
+//Requires: caml_output_val, caml_failwith, caml_ba_set_1
+function bigstring_marshal_blit_stub (s, ofs, len, v, _fl) {
+  /* ignores flags... */
+  var t = caml_output_val (v);
+  if (t.length > len) caml_failwith ("Marshal.to_buffer: buffer overflow");
+  for(var i = 0; i < t.length; i++){
+    caml_ba_set_1(s, (i + ofs), t[i]);
+  }
+  return t.length;
+}
