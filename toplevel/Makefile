@@ -63,7 +63,6 @@ MKTOP=jsoo_mktop -verbose $(SAFESTRING) \
 	${addprefix -top-syntax , ${SYNTAXES}} \
 	-dont-export-unit gc \
 	-jsopt "--disable shortvar" \
-	-jsopt "--pretty" \
 	${addprefix -export-package , ${PACKAGES}} \
 	${addprefix -export-unit , html5_types html5_sigs xml_wrap } \
 
