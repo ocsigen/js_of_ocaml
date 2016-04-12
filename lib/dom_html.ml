@@ -898,6 +898,8 @@ class type canvasElement = object
   method width : int prop
   method height : int prop
   method toDataURL : js_string t meth
+  method toDataURL_type : js_string t -> js_string t meth
+  method toDataURL_type_compression : js_string t -> float -> js_string t meth
   method getContext : js_string t -> canvasRenderingContext2D t meth
 end
 
@@ -1186,6 +1188,11 @@ class type applicationCache = object
 
 end
 
+class type _URL = object
+  method createObjectURL : #File.blob t -> js_string t meth
+  method revokeObjectURL : js_string t -> unit meth
+end
+
 class type window = object
   inherit eventTarget
 
@@ -1237,6 +1244,9 @@ class type window = object
   method getComputedStyle_pseudoElt :
     #element t -> js_string t -> cssStyleDeclaration t meth
 
+  method atob : js_string t -> js_string t meth
+  method btoa : js_string t -> js_string t meth
+
   method onload : (window t, event t) event_listener prop
   method onunload : (window t, event t) event_listener prop
   method onbeforeunload : (window t, event t) event_listener prop
@@ -1249,7 +1259,10 @@ class type window = object
 
   method ononline : (window t, event t) event_listener writeonly_prop
   method onoffline : (window t, event t) event_listener writeonly_prop
+
+  method _URL : _URL t readonly_prop
 end
+
 
 let window : window t = Js.Unsafe.global (* The toplevel object *)
 
