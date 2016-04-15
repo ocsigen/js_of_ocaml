@@ -5,6 +5,7 @@ bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
 homepage:     "http://ocsigen.org/js_of_ocaml"
 dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 
+name: "js_of_ocaml"
 version: "dev"
 
 build:   [make "build"]
