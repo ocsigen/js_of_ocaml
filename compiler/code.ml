@@ -49,6 +49,7 @@ module Var : sig
   val compare : t -> t -> int
 
   val name : t -> string -> unit
+  val get_name : t -> string option
   val propagate_name : t -> t -> unit
 
   val reset : unit -> unit
@@ -88,6 +89,8 @@ end = struct
   let of_idx v = v
 
   let compare v1 v2 = v1 - v2
+
+  let get_name i = VarPrinter.get_name printer i
 
   let propagate_name i j = VarPrinter.propagate_name printer i j
   let set_pretty b = VarPrinter.set_pretty printer b
