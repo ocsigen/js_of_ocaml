@@ -42,6 +42,7 @@ module Var : sig
 
   val compare : t -> t -> int
 
+  val get_name : t -> string option
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
   val reset : unit -> unit
