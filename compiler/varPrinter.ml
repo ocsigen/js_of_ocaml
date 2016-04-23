@@ -64,8 +64,6 @@ let name t v nm_orig =
     then name_raw t v str
   end
 
-let get_name t v = try Some (Hashtbl.find t.names v) with Not_found -> None
-
 let rec format_ident x =
   assert (x >= 0);
   let char c x = String.make 1 (c.[x]) in

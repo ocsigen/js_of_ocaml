@@ -424,7 +424,7 @@ let pack ~wrap_with_fun ?(toplevel=false) js =
 let configure formatter p =
   let pretty = Option.Optim.pretty () in
   Pretty_print.set_compact formatter (not pretty);
-  Code.Var.set_pretty (pretty && not (Option.Optim.shortvar ()));
+  Code.Var.set_pretty pretty;
   Code.Var.set_stable (Option.Optim.stable_var ());
   p
 
