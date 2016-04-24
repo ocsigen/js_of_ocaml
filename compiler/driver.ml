@@ -434,6 +434,7 @@ let f ?(standalone=true) ?(wrap_with_fun=false) ?(profile=o1)
     ?toplevel ?linkall ?source_map ?custom_header formatter d =
   configure formatter >>
   profile >>
+  Generate_closure.f >>
   deadcode' >>
   generate d ?toplevel >>
 

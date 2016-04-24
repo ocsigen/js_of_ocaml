@@ -20,6 +20,8 @@
 
 open Code
 
+let subst_cont s (pc, arg) = (pc, List.map (fun x -> s x) arg)
+
 let expr s e =
   match e with
     Const _ | Constant _ ->
@@ -31,7 +33,7 @@ let expr s e =
   | Field (x, n) ->
       Field (s x, n)
   | Closure (l, pc) ->
-      Closure (l, pc)
+      Closure (l, subst_cont s pc)
   | Prim (p, l) ->
       Prim (p, List.map (fun x -> match x with Pv x -> Pv (s x) | Pc _ -> x) l)
 
@@ -47,8 +49,6 @@ let instr s i =
       Array_set (s x, s y, s z)
 
 let instrs s l = List.map (fun i -> instr s i) l
-
-let subst_cont s (pc, arg) = (pc, List.map (fun x -> s x) arg)
 
 let last s l =
   match l with
@@ -69,20 +69,41 @@ let last s l =
               Array.map (fun cont -> subst_cont s cont) a1,
               Array.map (fun cont -> subst_cont s cont) a2)
   | Poptrap cont ->
-      Poptrap (subst_cont s cont)
+    Poptrap (subst_cont s cont)
+
+let block s block =
+  { params = block.params;
+    handler = Util.opt_map
+                (fun (x, cont) -> (x, subst_cont s cont)) block.handler;
+    body = instrs s block.body;
+    branch = last s block.branch }
 
 let program s (pc, blocks, free_pc) =
-  let blocks =
-    AddrMap.map
-      (fun block ->
-         { params = block.params;
-           handler = Util.opt_map
-                       (fun (x, cont) -> (x, subst_cont s cont)) block.handler;
-           body = instrs s block.body;
-           branch = last s block.branch }) blocks
-  in
+  let blocks = AddrMap.map (fun b -> block s b) blocks in
   (pc, blocks, free_pc)
 
+let rec cont' s pc blocks visited =
+  if AddrSet.mem pc visited
+  then blocks, visited
+  else
+    let visited = AddrSet.add pc visited in
+    let b = AddrMap.find pc blocks in
+    let b = block s b in
+    let blocks = AddrMap.add pc b blocks in
+    let blocks,visited =
+      List.fold_left (fun (blocks, visited) instr ->
+        match instr with
+        | Let (_, Closure (_, (pc,_))) -> cont' s pc blocks visited
+        | _ -> blocks, visited
+      ) (blocks, visited) b.body
+    in
+    Code.fold_children blocks pc
+      (fun pc (blocks,visited) -> cont' s pc blocks visited)
+      (blocks, visited)
+
+let cont s addr (pc, blocks, free_pc) =
+  let blocks,_ = cont' s addr blocks AddrSet.empty in
+  (pc, blocks, free_pc)
 (****)
 
 let from_array s =

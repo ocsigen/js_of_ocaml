@@ -30,7 +30,7 @@ OBJS=compiler_version.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
      js_traverse.cmx js_assign.cmx js_tailcall.cmx \
-     linker.cmx parse_bytecode.cmx generate.cmx driver.cmx \
+     linker.cmx parse_bytecode.cmx generate_closure.cmx generate.cmx driver.cmx \
      pseudoFs.cmx
 
 COMPOBJS=$(OBJS) $(FINDLIB_SUPPORT_OBJ) commonArg.cmx compileArg.cmx jsoo_compile.cmx

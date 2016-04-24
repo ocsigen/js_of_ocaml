@@ -24,14 +24,14 @@ driver.cmo : varPrinter.cmi util.cmi tailcall.cmi specialize_js.cmi \
     specialize.cmi reserved.cmi pretty_print.cmi phisimpl.cmi \
     parse_bytecode.cmi option.cmi linker.cmi jsoo_primitive.cmi \
     jsoo_deadcode.cmi js_traverse.cmi js_output.cmi js_assign.cmi \
-    javascript.cmi inline.cmi generate.cmi flow.cmi eval.cmi \
-    compiler_version.cmi code.cmi driver.cmi
+    javascript.cmi inline.cmi generate_closure.cmi generate.cmi flow.cmi \
+    eval.cmi compiler_version.cmi code.cmi driver.cmi
 driver.cmx : varPrinter.cmx util.cmx tailcall.cmx specialize_js.cmx \
     specialize.cmx reserved.cmx pretty_print.cmx phisimpl.cmx \
     parse_bytecode.cmx option.cmx linker.cmx jsoo_primitive.cmx \
     jsoo_deadcode.cmx js_traverse.cmx js_output.cmx js_assign.cmx \
-    javascript.cmx inline.cmx generate.cmx flow.cmx eval.cmx \
-    compiler_version.cmx code.cmx driver.cmi
+    javascript.cmx inline.cmx generate_closure.cmx generate.cmx flow.cmx \
+    eval.cmx compiler_version.cmx code.cmx driver.cmi
 driver.cmi : source_map.cmi pretty_print.cmi parse_bytecode.cmi code.cmi
 eval.cmo : jsoo_primitive.cmi flow.cmi code.cmi eval.cmi
 eval.cmx : jsoo_primitive.cmx flow.cmx code.cmx eval.cmi
@@ -44,6 +44,11 @@ flow.cmi : code.cmi
 freevars.cmo : util.cmi option.cmi code.cmi freevars.cmi
 freevars.cmx : util.cmx option.cmx code.cmx freevars.cmi
 freevars.cmi : util.cmi code.cmi
+generate_closure.cmo : jsoo_subst.cmi freevars.cmi code.cmi \
+    generate_closure.cmi
+generate_closure.cmx : jsoo_subst.cmx freevars.cmx code.cmx \
+    generate_closure.cmi
+generate_closure.cmi : code.cmi
 generate.cmo : util.cmi parse_js.cmi parse_info.cmi parse_bytecode.cmi \
     option.cmi jsoo_subst.cmi jsoo_primitive.cmi js_tailcall.cmi js_simpl.cmi \
     javascript.cmi freevars.cmi code.cmi generate.cmi
@@ -109,8 +114,10 @@ js_tailcall.cmi : js_traverse.cmi javascript.cmi code.cmi
 js_token.cmo : parse_info.cmi js_token.cmi
 js_token.cmx : parse_info.cmx js_token.cmi
 js_token.cmi : parse_info.cmi
-js_traverse.cmo : util.cmi javascript.cmi code.cmi js_traverse.cmi
-js_traverse.cmx : util.cmx javascript.cmx code.cmx js_traverse.cmi
+js_traverse.cmo : util.cmi option.cmi javascript.cmi code.cmi \
+    js_traverse.cmi
+js_traverse.cmx : util.cmx option.cmx javascript.cmx code.cmx \
+    js_traverse.cmi
 js_traverse.cmi : util.cmi javascript.cmi code.cmi
 linker.cmo : util.cmi reserved.cmi parse_js.cmi parse_info.cmi option.cmi \
     jsoo_primitive.cmi js_traverse.cmi js_token.cmi javascript.cmi \
