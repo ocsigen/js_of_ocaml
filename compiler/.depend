@@ -44,17 +44,17 @@ flow.cmi : code.cmi
 freevars.cmo : util.cmi option.cmi code.cmi freevars.cmi
 freevars.cmx : util.cmx option.cmx code.cmx freevars.cmi
 freevars.cmi : util.cmi code.cmi
-generate_closure.cmo : jsoo_subst.cmi freevars.cmi code.cmi \
-    generate_closure.cmi
-generate_closure.cmx : jsoo_subst.cmx freevars.cmx code.cmx \
-    generate_closure.cmi
+generate_closure.cmo : util.cmi strongly_connected_components.cmi \
+    jsoo_subst.cmi freevars.cmi code.cmi generate_closure.cmi
+generate_closure.cmx : util.cmx strongly_connected_components.cmx \
+    jsoo_subst.cmx freevars.cmx code.cmx generate_closure.cmi
 generate_closure.cmi : code.cmi
 generate.cmo : util.cmi parse_js.cmi parse_info.cmi parse_bytecode.cmi \
-    option.cmi jsoo_subst.cmi jsoo_primitive.cmi js_tailcall.cmi js_simpl.cmi \
-    javascript.cmi freevars.cmi code.cmi generate.cmi
+    option.cmi jsoo_subst.cmi jsoo_primitive.cmi js_simpl.cmi javascript.cmi \
+    code.cmi generate.cmi
 generate.cmx : util.cmx parse_js.cmx parse_info.cmx parse_bytecode.cmx \
-    option.cmx jsoo_subst.cmx jsoo_primitive.cmx js_tailcall.cmx js_simpl.cmx \
-    javascript.cmx freevars.cmx code.cmx generate.cmi
+    option.cmx jsoo_subst.cmx jsoo_primitive.cmx js_simpl.cmx javascript.cmx \
+    code.cmx generate.cmi
 generate.cmi : parse_bytecode.cmi javascript.cmi code.cmi
 inline.cmo : util.cmi option.cmi jsoo_primitive.cmi code.cmi inline.cmi
 inline.cmx : util.cmx option.cmx jsoo_primitive.cmx code.cmx inline.cmi
@@ -181,6 +181,9 @@ specialize.cmo : util.cmi option.cmi jsoo_primitive.cmi flow.cmi code.cmi \
 specialize.cmx : util.cmx option.cmx jsoo_primitive.cmx flow.cmx code.cmx \
     specialize.cmi
 specialize.cmi : flow.cmi code.cmi
+strongly_connected_components.cmo : strongly_connected_components.cmi
+strongly_connected_components.cmx : strongly_connected_components.cmi
+strongly_connected_components.cmi :
 tailcall.cmo : util.cmi option.cmi jsoo_subst.cmi code.cmi tailcall.cmi
 tailcall.cmx : util.cmx option.cmx jsoo_subst.cmx code.cmx tailcall.cmi
 tailcall.cmi : code.cmi

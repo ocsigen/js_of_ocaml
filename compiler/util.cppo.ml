@@ -123,6 +123,11 @@ let take n l =
   let x,xs = take' [] n l in
   List.rev x, xs
 
+let rec last = function
+  | [] -> None
+  | [x] -> Some x
+  | _ :: xs -> last xs
+
 module Timer = struct
   type t = float
   let timer = ref (fun _ -> 0.)

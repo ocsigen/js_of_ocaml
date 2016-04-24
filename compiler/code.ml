@@ -41,6 +41,7 @@ module Var : sig
   val to_string : ?origin:t -> t -> string
 
   val fresh : unit -> t
+  val fresh_n : string -> t
   val fork : t -> t
 
   val count : unit -> int
@@ -70,9 +71,15 @@ end = struct
   let to_string ?origin i = VarPrinter.to_string printer ?origin i
 
   let print f x = Format.fprintf f "v%d" x
-    (* Format.fprintf f "%s" (to_string x) *)
+  (* Format.fprintf f "%s" (to_string x) *)
+
+  let name i nm = VarPrinter.name printer i nm
 
   let fresh () = incr last_var; !last_var
+  let fresh_n nm =
+    incr last_var;
+    name !last_var nm;
+    !last_var
 
   let count () = !last_var + 1
 
@@ -82,7 +89,6 @@ end = struct
 
   let compare v1 v2 = v1 - v2
 
-  let name i nm = VarPrinter.name printer i nm
   let propagate_name i j = VarPrinter.propagate_name printer i j
   let set_pretty b = VarPrinter.set_pretty printer b
   let set_stable b = VarPrinter.set_stable printer b

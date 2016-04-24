@@ -1010,6 +1010,15 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
           with Parse_js.Parsing_error pi ->
             failwith (Printf.sprintf "Parsing error %S at l:%d col:%d" nm (pi.Parse_info.line + 1) pi.Parse_info.col)
         end
+      | Extern "%js_array", l ->
+        let (args, prop, queue) =
+          List.fold_right
+            (fun x (args, prop, queue) ->
+               let ((prop', cx), queue) = access_queue' ~ctx queue x in
+               (cx :: args, or_p prop prop', queue))
+            l ([], const_p, queue)
+        in
+        J.EArr (List.map (fun x -> Some x) args), prop, queue
       | Extern "%closure", [Pc (IString name | String name)] ->
          let prim = Share.get_prim s_var name ctx.Ctx.share in
          prim, kind (Primitive.kind name), queue

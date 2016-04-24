@@ -292,7 +292,7 @@ let program p =
       if S.cardinal (coloring#get_free) <> 0
       then begin
         Util.failwith_ "Some variables escaped (#%d)" (S.cardinal (coloring#get_free))
-        (* S.iter(fun s -> (Format.eprintf "%s@." (Code.Var.to_string s))) coloring#get_free *)
+        (*S.iter(fun s -> (Format.eprintf "%s@." (Code.Var.to_string s))) coloring#get_free *)
       end;
       let name = allocate_variables state nv coloring#state.Js_traverse.count in
       if debug () then output_debug_information state coloring#state.Js_traverse.count;
