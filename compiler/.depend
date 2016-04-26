@@ -44,9 +44,9 @@ flow.cmi : code.cmi
 freevars.cmo : util.cmi option.cmi code.cmi freevars.cmi
 freevars.cmx : util.cmx option.cmx code.cmx freevars.cmi
 freevars.cmi : util.cmi code.cmi
-generate_closure.cmo : util.cmi strongly_connected_components.cmi \
+generate_closure.cmo : util.cmi strongly_connected_components.cmi option.cmi \
     jsoo_subst.cmi freevars.cmi code.cmi generate_closure.cmi
-generate_closure.cmx : util.cmx strongly_connected_components.cmx \
+generate_closure.cmx : util.cmx strongly_connected_components.cmx option.cmx \
     jsoo_subst.cmx freevars.cmx code.cmx generate_closure.cmi
 generate_closure.cmi : code.cmi
 generate.cmo : util.cmi parse_js.cmi parse_info.cmi parse_bytecode.cmi \
@@ -67,10 +67,10 @@ javascript.cmo : varPrinter.cmi util.cmi reserved.cmi parse_info.cmi \
 javascript.cmx : varPrinter.cmx util.cmx reserved.cmx parse_info.cmx \
     code.cmx javascript.cmi
 javascript.cmi : parse_info.cmi code.cmi
-js_assign.cmo : util.cmi option.cmi js_traverse.cmi javascript.cmi code.cmi \
-    js_assign.cmi
-js_assign.cmx : util.cmx option.cmx js_traverse.cmx javascript.cmx code.cmx \
-    js_assign.cmi
+js_assign.cmo : util.cmi reserved.cmi option.cmi js_traverse.cmi \
+    javascript.cmi code.cmi js_assign.cmi
+js_assign.cmx : util.cmx reserved.cmx option.cmx js_traverse.cmx \
+    javascript.cmx code.cmx js_assign.cmi
 js_assign.cmi : javascript.cmi
 js_lexer.cmo : parse_info.cmi js_token.cmi js_lexer.cmi
 js_lexer.cmx : parse_info.cmx js_token.cmx js_lexer.cmi
@@ -106,11 +106,6 @@ js_parser.cmi : js_token.cmi javascript.cmi
 js_simpl.cmo : javascript.cmi code.cmi js_simpl.cmi
 js_simpl.cmx : javascript.cmx code.cmx js_simpl.cmi
 js_simpl.cmi : javascript.cmi code.cmi
-js_tailcall.cmo : option.cmi js_traverse.cmi javascript.cmi code.cmi \
-    js_tailcall.cmi
-js_tailcall.cmx : option.cmx js_traverse.cmx javascript.cmx code.cmx \
-    js_tailcall.cmi
-js_tailcall.cmi : js_traverse.cmi javascript.cmi code.cmi
 js_token.cmo : parse_info.cmi js_token.cmi
 js_token.cmx : parse_info.cmx js_token.cmi
 js_token.cmi : parse_info.cmi
