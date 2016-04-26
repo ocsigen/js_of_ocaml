@@ -510,8 +510,7 @@ module State = struct
              Dummy ->
              Dummy :: stack
            | Var x ->
-             let y = Var.fresh () in
-             Var.propagate_name x y;
+             let y = Var.fork x in
              Var y :: stack)
         state.stack []
     in
@@ -1820,10 +1819,9 @@ let override_global =
     Prim(Extern "%overrideMod",[Pc (String name);Pc (String func)]) in
   [
     "CamlinternalMod",(fun _orig instrs ->
-      let x = Var.fresh () in
-      Var.name x "internalMod";
-      let init_mod = Var.fresh () in
-      let update_mod = Var.fresh () in
+      let x          = Var.fresh_n "internalMod" in
+      let init_mod   = Var.fresh_n "init_mod" in
+      let update_mod = Var.fresh_n "update_mod" in
       x, Let(x,Block(0,[| init_mod; update_mod |]))::
          Let(init_mod,jsmodule "CamlinternalMod" "init_mod")::
          Let(update_mod,jsmodule "CamlinternalMod" "update_mod")::

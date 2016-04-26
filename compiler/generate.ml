@@ -179,8 +179,7 @@ module Share = struct
         try
           J.EVar (StringMap.find s t.vars.strings)
         with Not_found ->
-          let x = Var.fresh() in
-          Var.name x "str";
+          let x = Var.fresh_n "str" in
           let v = J.V x in
           t.vars <- { t.vars with strings = StringMap.add s v t.vars.strings };
           J.EVar v
@@ -200,8 +199,7 @@ module Share = struct
         try
           J.EVar (StringMap.find s t.vars.prims)
         with Not_found ->
-          let x = Var.fresh() in
-          Code.Var.name x s;
+          let x = Var.fresh_n s in
           let v = J.V x in
           t.vars <- { t.vars with prims = StringMap.add s v t.vars.prims };
           J.EVar v
@@ -217,8 +215,7 @@ module Share = struct
     else try
         J.EVar (IntMap.find n t.vars.applies)
       with Not_found ->
-        let x = Var.fresh() in
-        Code.Var.name x (Printf.sprintf "caml_call_gen%d" n);
+        let x = Var.fresh_n (Printf.sprintf "caml_call_gen%d" n) in
         let v = J.V x in
         t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
         J.EVar v
@@ -349,8 +346,7 @@ let rec constant_rec ~ctx x level instrs =
             (fun (acc,instrs) js ->
                match js with
                | J.EArr _ ->
-                   let v = Code.Var.fresh () in
-                   Var.name v "partial";
+                   let v = Code.Var.fresh_n "partial" in
                    let instrs =
                      (J.Variable_statement [J.V v, Some (js,J.N)],J.N) :: instrs
                    in
@@ -685,13 +681,11 @@ let apply_fun_raw f params =
                     [f; J.EArr (List.map (fun x -> Some x) params)], J.N))
 
 let generate_apply_fun n =
-  let f' = Var.fresh () in
+  let f' = Var.fresh_n "fun" in
   let f = J.V f' in
-  Code.Var.name f' "fun";
   let params =
     Array.to_list (Array.init n (fun i ->
-      let a = Var.fresh () in
-      Var.name a ("var"^(string_of_int i));
+      let a = Var.fresh_n (Printf.sprintf "var%d" i) in
       J.V a))
   in
   let f' = J.EVar f in
@@ -1360,8 +1354,7 @@ else begin
                 (* Single branch, no need to discriminate *)
                 (J.Empty_statement, J.N), block, []
               else
-                let after_poptrap  = Code.Var.fresh () in
-                Code.Var.name after_poptrap "no_exn";
+                let after_poptrap  = Code.Var.fresh_n "no_exn" in
                 (J.Variable_statement [J.V after_poptrap,Some (J.ENum 1.,J.N)], J.N),
                 Js_simpl.if_statement (J.EVar (J.V after_poptrap)) J.N
                   (J.Block block, J.N) false
@@ -1395,8 +1388,7 @@ else begin
     | _ ->
         let (new_frontier, new_interm) =
           if AddrSet.cardinal new_frontier > 1 then begin
-            let x = Code.Var.fresh () in
-            Code.Var.name x "switch";
+            let x = Code.Var.fresh_n "switch" in
             let a = Array.of_list (AddrSet.elements new_frontier) in
             if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
             let idx = st.interm_idx in
