@@ -54,6 +54,10 @@ let keyword = List.fold_left (fun acc x -> StringSet.add x acc)
     "undefined";
     "this";
 
+    (* Unexpected eval or arguments in strict mode *)
+    "eval";
+    "arguments";
+
     (* also reserved in ECMAScript 3 *)
     "abstract"; "boolean"; "byte"; "char"; "const"; "double";
     "final"; "float"; "goto"; "int"; "long"; "native"; "short";
