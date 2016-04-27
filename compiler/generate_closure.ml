@@ -28,7 +28,7 @@ type closure_info = {
   tc      : Code.AddrSet.t Code.VarMap.t
 }
 
-module SCC = Strongly_connected_components.Make(struct
+module SCC = Jsoo_strongly_connected_components.Make(struct
     include Var
     module Map = VarMap
     module Set = VarSet
@@ -226,27 +226,6 @@ let rewrite_tc closures blocks free_pc =
   | TcNone -> Ident.f closures blocks free_pc
   | TcTrampoline -> Trampoline.f closures blocks free_pc
 
-
-(* let varset_disjoint s s' = not (VarSet.exists (fun x -> VarSet.mem x s') s)
- *
- * let rec group_closures_rec closures req =
- *   match closures with
- *   | [] ->
- *     ([], VarSet.empty)
- *   | elt :: rem ->
- *     let req = VarSet.union req elt.mutated in
- *     let req = VarMap.fold (fun k _ set ->  VarSet.add k set) elt.tc req in
- *     let (closures', prov) = group_closures_rec rem req in
- *     match closures' with
- *     | [] ->
- *       ([elt] :: closures', VarSet.singleton elt.f_name)
- *     | _ when varset_disjoint prov req ->
- *       ([elt] :: closures', VarSet.singleton elt.f_name)
- *     | l :: r -> ((elt :: l) :: r, VarSet.add elt.f_name prov)
- *
- * let group_closures l = fst (group_closures_rec l VarSet.empty) *)
-
-
 let f ((pc, blocks, free_pc) as p) : Code.program =
   let mutated_vars = Freevars.f p in
   let rewrite_list = ref [] in
@@ -256,7 +235,6 @@ let f ((pc, blocks, free_pc) as p) : Code.program =
          let closures,rem = collect_closures mutated_vars blocks block.body in
          let closures, blocks, free_pc = rewrite_tc closures blocks free_pc in
          let body = closures @ rem in
-         (* TODO: group_closures *)
          let body_rev, blocks, free_pc =
            List.fold_left
              (fun (body_rev, blocks, free_pc) i ->

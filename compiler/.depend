@@ -44,10 +44,12 @@ flow.cmi : code.cmi
 freevars.cmo : util.cmi option.cmi code.cmi freevars.cmi
 freevars.cmx : util.cmx option.cmx code.cmx freevars.cmi
 freevars.cmi : util.cmi code.cmi
-generate_closure.cmo : util.cmi strongly_connected_components.cmi option.cmi \
-    jsoo_subst.cmi freevars.cmi code.cmi generate_closure.cmi
-generate_closure.cmx : util.cmx strongly_connected_components.cmx option.cmx \
-    jsoo_subst.cmx freevars.cmx code.cmx generate_closure.cmi
+generate_closure.cmo : util.cmi option.cmi jsoo_subst.cmi \
+    jsoo_strongly_connected_components.cmi freevars.cmi code.cmi \
+    generate_closure.cmi
+generate_closure.cmx : util.cmx option.cmx jsoo_subst.cmx \
+    jsoo_strongly_connected_components.cmx freevars.cmx code.cmx \
+    generate_closure.cmi
 generate_closure.cmi : code.cmi
 generate.cmo : util.cmi parse_js.cmi parse_info.cmi parse_bytecode.cmi \
     option.cmi jsoo_subst.cmi jsoo_primitive.cmi js_simpl.cmi javascript.cmi \
@@ -92,6 +94,11 @@ jsoo_findlib_support_internal.cmx : util.cmx
 jsoo_primitive.cmo : util.cmi parse_info.cmi jsoo_primitive.cmi
 jsoo_primitive.cmx : util.cmx parse_info.cmx jsoo_primitive.cmi
 jsoo_primitive.cmi : util.cmi parse_info.cmi
+jsoo_strongly_connected_components.cmo : \
+    jsoo_strongly_connected_components.cmi
+jsoo_strongly_connected_components.cmx : \
+    jsoo_strongly_connected_components.cmi
+jsoo_strongly_connected_components.cmi :
 jsoo_subst.cmo : util.cmi code.cmi jsoo_subst.cmi
 jsoo_subst.cmx : util.cmx code.cmx jsoo_subst.cmi
 jsoo_subst.cmi : code.cmi
@@ -176,9 +183,6 @@ specialize.cmo : util.cmi option.cmi jsoo_primitive.cmi flow.cmi code.cmi \
 specialize.cmx : util.cmx option.cmx jsoo_primitive.cmx flow.cmx code.cmx \
     specialize.cmi
 specialize.cmi : flow.cmi code.cmi
-strongly_connected_components.cmo : strongly_connected_components.cmi
-strongly_connected_components.cmx : strongly_connected_components.cmi
-strongly_connected_components.cmi :
 tailcall.cmo : util.cmi option.cmi jsoo_subst.cmi code.cmi tailcall.cmi
 tailcall.cmx : util.cmx option.cmx jsoo_subst.cmx code.cmx tailcall.cmi
 tailcall.cmi : code.cmi
