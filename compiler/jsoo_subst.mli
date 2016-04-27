@@ -26,6 +26,7 @@ val instr : (Var.t -> Var.t) -> instr -> instr
 val instrs : (Var.t -> Var.t) -> instr list -> instr list
 val last : (Var.t -> Var.t) -> last -> last
 
+val cont : (Var.t -> Var.t) -> int -> program -> program
 val from_array : Var.t option array -> Var.t -> Var.t
 
 val build_mapping : Var.t list -> Var.t list -> Var.t VarMap.t

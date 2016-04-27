@@ -1,6 +1,7 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2014 Hugo Heuzard
+ * Copyright (C) 2010 Jérôme Vouillon
+ * Laboratoire PPS - CNRS Université Paris Diderot
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,13 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-class tailcall : object
-  inherit Js_traverse.mapper
-  method clear : unit
-  method get : Code.VarSet.t
-end
+open Code
 
-val rewrite :
-  (Code.Var.t * Javascript.expression * Javascript.location * Code.VarSet.t)
-  list ->
-  (string -> Javascript.expression) -> Javascript.statement_list
+val f : program -> program

@@ -36,12 +36,14 @@ module Var : sig
   val to_string : ?origin:t -> t -> string
 
   val fresh : unit -> t
+  val fresh_n : string -> t
   val fork : t -> t
 
   val count : unit -> int
 
   val compare : t -> t -> int
 
+  val get_name : t -> string option
   val name : t -> string -> unit
   val propagate_name : t -> t -> unit
   val reset : unit -> unit

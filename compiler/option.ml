@@ -159,11 +159,11 @@ module Param = struct
   type tc =
     | TcNone
     | TcTrampoline
-    | TcWhile
+    (* | TcWhile *)
 
   let tc_default = TcTrampoline
 
-  let _tc_all = tc_default :: List.filter ((<>) tc_default) [TcNone;TcTrampoline(* ;TcWhile *)]
+  let _tc_all = tc_default :: List.filter ((<>) tc_default) [TcNone;TcTrampoline]
 
   let tailcall_optim = p
       ~name:"tc"

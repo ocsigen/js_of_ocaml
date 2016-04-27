@@ -246,8 +246,7 @@ class share_constant = object(m)
           | _ -> None in
         match shareit with
         | Some name ->
-          let v = Code.Var.fresh () in
-          Code.Var.name v name;
+          let v = Code.Var.fresh_n name in
           Hashtbl.add all x (V v)
         | _ -> ()
       ) count ;
@@ -454,8 +453,7 @@ class rename_variable keeps = object
         if StringSet.mem name keeps
         then ()
         else
-          let v = Code.Var.fresh () in
-          Code.Var.name v name;
+          let v = Code.Var.fresh_n name in
           Hashtbl.add h name v) from#state.def_name in
     let f = function
       | (S {name}) when Hashtbl.mem h name -> V (Hashtbl.find h name)
@@ -476,8 +474,7 @@ class rename_variable keeps = object
       | Try_statement (b,w,f) ->
         let w = match w with
           | Some(S {name},block) ->
-            let v = Code.Var.fresh () in
-            Code.Var.name v name;
+            let v = Code.Var.fresh_n name in
             let sub = function
               | S {name=name'} when name' = name -> V v
               | x -> x in

@@ -24,14 +24,14 @@ driver.cmo : varPrinter.cmi util.cmi tailcall.cmi specialize_js.cmi \
     specialize.cmi reserved.cmi pretty_print.cmi phisimpl.cmi \
     parse_bytecode.cmi option.cmi linker.cmi jsoo_primitive.cmi \
     jsoo_deadcode.cmi js_traverse.cmi js_output.cmi js_assign.cmi \
-    javascript.cmi inline.cmi generate.cmi flow.cmi eval.cmi \
-    compiler_version.cmi code.cmi driver.cmi
+    javascript.cmi inline.cmi generate_closure.cmi generate.cmi flow.cmi \
+    eval.cmi compiler_version.cmi code.cmi driver.cmi
 driver.cmx : varPrinter.cmx util.cmx tailcall.cmx specialize_js.cmx \
     specialize.cmx reserved.cmx pretty_print.cmx phisimpl.cmx \
     parse_bytecode.cmx option.cmx linker.cmx jsoo_primitive.cmx \
     jsoo_deadcode.cmx js_traverse.cmx js_output.cmx js_assign.cmx \
-    javascript.cmx inline.cmx generate.cmx flow.cmx eval.cmx \
-    compiler_version.cmx code.cmx driver.cmi
+    javascript.cmx inline.cmx generate_closure.cmx generate.cmx flow.cmx \
+    eval.cmx compiler_version.cmx code.cmx driver.cmi
 driver.cmi : source_map.cmi pretty_print.cmi parse_bytecode.cmi code.cmi
 eval.cmo : jsoo_primitive.cmi flow.cmi code.cmi eval.cmi
 eval.cmx : jsoo_primitive.cmx flow.cmx code.cmx eval.cmi
@@ -44,12 +44,19 @@ flow.cmi : code.cmi
 freevars.cmo : util.cmi option.cmi code.cmi freevars.cmi
 freevars.cmx : util.cmx option.cmx code.cmx freevars.cmi
 freevars.cmi : util.cmi code.cmi
+generate_closure.cmo : util.cmi option.cmi jsoo_subst.cmi \
+    jsoo_strongly_connected_components.cmi freevars.cmi code.cmi \
+    generate_closure.cmi
+generate_closure.cmx : util.cmx option.cmx jsoo_subst.cmx \
+    jsoo_strongly_connected_components.cmx freevars.cmx code.cmx \
+    generate_closure.cmi
+generate_closure.cmi : code.cmi
 generate.cmo : util.cmi parse_js.cmi parse_info.cmi parse_bytecode.cmi \
-    option.cmi jsoo_subst.cmi jsoo_primitive.cmi js_tailcall.cmi js_simpl.cmi \
-    javascript.cmi freevars.cmi code.cmi generate.cmi
+    option.cmi jsoo_subst.cmi jsoo_primitive.cmi js_simpl.cmi javascript.cmi \
+    code.cmi generate.cmi
 generate.cmx : util.cmx parse_js.cmx parse_info.cmx parse_bytecode.cmx \
-    option.cmx jsoo_subst.cmx jsoo_primitive.cmx js_tailcall.cmx js_simpl.cmx \
-    javascript.cmx freevars.cmx code.cmx generate.cmi
+    option.cmx jsoo_subst.cmx jsoo_primitive.cmx js_simpl.cmx javascript.cmx \
+    code.cmx generate.cmi
 generate.cmi : parse_bytecode.cmi javascript.cmi code.cmi
 inline.cmo : util.cmi option.cmi jsoo_primitive.cmi code.cmi inline.cmi
 inline.cmx : util.cmx option.cmx jsoo_primitive.cmx code.cmx inline.cmi
@@ -62,10 +69,10 @@ javascript.cmo : varPrinter.cmi util.cmi reserved.cmi parse_info.cmi \
 javascript.cmx : varPrinter.cmx util.cmx reserved.cmx parse_info.cmx \
     code.cmx javascript.cmi
 javascript.cmi : parse_info.cmi code.cmi
-js_assign.cmo : util.cmi option.cmi js_traverse.cmi javascript.cmi code.cmi \
-    js_assign.cmi
-js_assign.cmx : util.cmx option.cmx js_traverse.cmx javascript.cmx code.cmx \
-    js_assign.cmi
+js_assign.cmo : util.cmi reserved.cmi option.cmi js_traverse.cmi \
+    javascript.cmi code.cmi js_assign.cmi
+js_assign.cmx : util.cmx reserved.cmx option.cmx js_traverse.cmx \
+    javascript.cmx code.cmx js_assign.cmi
 js_assign.cmi : javascript.cmi
 js_lexer.cmo : parse_info.cmi js_token.cmi js_lexer.cmi
 js_lexer.cmx : parse_info.cmx js_token.cmx js_lexer.cmi
@@ -87,6 +94,11 @@ jsoo_findlib_support_internal.cmx : util.cmx
 jsoo_primitive.cmo : util.cmi parse_info.cmi jsoo_primitive.cmi
 jsoo_primitive.cmx : util.cmx parse_info.cmx jsoo_primitive.cmi
 jsoo_primitive.cmi : util.cmi parse_info.cmi
+jsoo_strongly_connected_components.cmo : \
+    jsoo_strongly_connected_components.cmi
+jsoo_strongly_connected_components.cmx : \
+    jsoo_strongly_connected_components.cmi
+jsoo_strongly_connected_components.cmi :
 jsoo_subst.cmo : util.cmi code.cmi jsoo_subst.cmi
 jsoo_subst.cmx : util.cmx code.cmx jsoo_subst.cmi
 jsoo_subst.cmi : code.cmi
@@ -101,16 +113,13 @@ js_parser.cmi : js_token.cmi javascript.cmi
 js_simpl.cmo : javascript.cmi code.cmi js_simpl.cmi
 js_simpl.cmx : javascript.cmx code.cmx js_simpl.cmi
 js_simpl.cmi : javascript.cmi code.cmi
-js_tailcall.cmo : option.cmi js_traverse.cmi javascript.cmi code.cmi \
-    js_tailcall.cmi
-js_tailcall.cmx : option.cmx js_traverse.cmx javascript.cmx code.cmx \
-    js_tailcall.cmi
-js_tailcall.cmi : js_traverse.cmi javascript.cmi code.cmi
 js_token.cmo : parse_info.cmi js_token.cmi
 js_token.cmx : parse_info.cmx js_token.cmi
 js_token.cmi : parse_info.cmi
-js_traverse.cmo : util.cmi javascript.cmi code.cmi js_traverse.cmi
-js_traverse.cmx : util.cmx javascript.cmx code.cmx js_traverse.cmi
+js_traverse.cmo : util.cmi option.cmi javascript.cmi code.cmi \
+    js_traverse.cmi
+js_traverse.cmx : util.cmx option.cmx javascript.cmx code.cmx \
+    js_traverse.cmi
 js_traverse.cmi : util.cmi javascript.cmi code.cmi
 linker.cmo : util.cmi reserved.cmi parse_js.cmi parse_info.cmi option.cmi \
     jsoo_primitive.cmi js_traverse.cmi js_token.cmi javascript.cmi \

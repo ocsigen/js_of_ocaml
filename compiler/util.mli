@@ -43,6 +43,7 @@ val absolute_path : string -> string
 val read_file : string -> string
 
 val take : int -> 'a list -> 'a list * 'a list
+val last : 'a list -> 'a option
 
 val is_ascii : string -> bool
 val has_backslash : string -> bool

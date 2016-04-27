@@ -33,7 +33,15 @@ let c2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
 
 let name_raw t v nm = Hashtbl.add t.names v nm
 let propagate_name t v v' =
-  try name_raw t v' (Hashtbl.find t.names v) with Not_found -> ()
+  try
+    let name = Hashtbl.find t.names v in
+    name_raw t v' name(* ;
+     * (try
+     *    let n = Hashtbl.find t.names v' in
+     *    if n <> name
+     *    then Printf.eprintf "erasing name %s by %s\n%!" n name
+     *  with _ -> ()) *)
+  with Not_found -> ()
 
 let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 let is_num c = (c >= '0' && c <= '9')
@@ -63,6 +71,8 @@ let name t v nm_orig =
     if String.length str > 0
     then name_raw t v str
   end
+
+let get_name t v = try Some (Hashtbl.find t.names v) with Not_found -> None
 
 let rec format_ident x =
   assert (x >= 0);

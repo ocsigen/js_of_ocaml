@@ -62,7 +62,7 @@ module Param : sig
   type tc =
      | TcNone
      | TcTrampoline
-     | TcWhile
+     (* | TcWhile *)
   val tailcall_optim : unit -> tc
 end
 

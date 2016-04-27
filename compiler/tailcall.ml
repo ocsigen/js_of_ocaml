@@ -44,22 +44,23 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
   (*Format.eprintf "%d@." pc;*)
   let block = AddrMap.find pc blocks in
   match block.branch with
-    | Return x ->
-        begin match tail_call x f block.body with
-            Some f_args when List.length f_params = List.length f_args ->
-            let m = Subst.build_mapping f_params f_args in
-            AddrMap.add pc
-              { params = block.params;
-                handler = block.handler;
-                body = remove_last block.body;
-                branch =
-                  Branch (f_pc, List.map (fun x -> VarMap.find x m) args) }
-              blocks
-          | _ ->
-            blocks
-        end
+  | Return x ->
+    begin match tail_call x f block.body with
+      Some f_args when List.length f_params = List.length f_args ->
+      let m = Subst.build_mapping f_params f_args in
+      List.iter2 (fun p a -> Code.Var.propagate_name p a) f_params f_args;
+      AddrMap.add pc
+        { params = block.params;
+          handler = block.handler;
+          body = remove_last block.body;
+          branch =
+            Branch (f_pc, List.map (fun x -> VarMap.find x m) args) }
+        blocks
     | _ ->
       blocks
+    end
+  | _ ->
+    blocks
 
 let (>>) x f = f x
 

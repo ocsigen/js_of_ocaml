@@ -29,8 +29,9 @@ OBJS=compiler_version.cmx \
      instr.cmx jsoo_subst.cmx pure_fun.cmx jsoo_deadcode.cmx \
      flow.cmx specialize.cmx specialize_js.cmx eval.cmx inline.cmx \
      tailcall.cmx freevars.cmx phisimpl.cmx \
-     js_traverse.cmx js_assign.cmx js_tailcall.cmx \
-     linker.cmx parse_bytecode.cmx generate.cmx driver.cmx \
+     js_traverse.cmx js_assign.cmx \
+     linker.cmx parse_bytecode.cmx jsoo_strongly_connected_components.cmx \
+     generate_closure.cmx generate.cmx driver.cmx \
      pseudoFs.cmx
 
 COMPOBJS=$(OBJS) $(FINDLIB_SUPPORT_OBJ) commonArg.cmx compileArg.cmx jsoo_compile.cmx
