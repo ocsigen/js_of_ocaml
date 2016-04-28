@@ -20,6 +20,8 @@
 
 open Code
 
+let debug_tc = Option.Debug.find "gen_tc"
+
 type closure_info = {
   f_name  : Code.Var.t;
   args    : Code.Var.t list;
@@ -138,20 +140,27 @@ module Trampoline = struct
         VarMap.add x.f_name tc graph) VarMap.empty closures
     in
     let components = SCC.connected_components_sorted_from_roots_to_leaf graph in
-    let (blocks, free_pc, instrs) =
-      Array.fold_left (fun (blocks, free_pc, instrs) component ->
+    let (blocks, free_pc, instrs, instrs_wrapper) =
+      Array.fold_left (fun (blocks, free_pc, instrs, instrs_wrapper) component ->
         match component with
         | SCC.No_loop id ->
           let ci = VarMap.find id closures_map in
           let instr = Let (ci.f_name, Closure (ci.args, ci.cont)) in
-          blocks, free_pc, instr :: instrs
+          blocks, free_pc, instr :: instrs, instrs_wrapper
         | SCC.Has_loop all ->
+          if debug_tc ()
+          then begin
+            Format.eprintf "Detect cycles of size (%d).\n%!" (List.length all);
+            Format.eprintf "%s\n%!" (String.concat ", " (List.map Var.to_string all));
+          end;
           let all = List.map (fun id ->
             Code.Var.fresh_n "counter",
             VarMap.find id closures_map
           ) all in
-          let blocks, free_pc, instrs =
-            List.fold_left (fun (blocks, free_pc, instrs) (counter, ci) ->
+          let blocks, free_pc, instrs, instrs_wrapper =
+            List.fold_left (fun (blocks, free_pc, instrs, instrs_wrapper) (counter, ci) ->
+              if debug_tc ()
+              then Format.eprintf "Rewriting for %s\n%!" (Var.to_string ci.f_name);
               let new_f      = Code.Var.fork ci.f_name in
               let new_args   = List.map Code.Var.fork ci.args in
               let wrapper_pc = free_pc in
@@ -174,6 +183,8 @@ module Trampoline = struct
               in
               let blocks, free_pc =
                 List.fold_left (fun (blocks, free_pc) (counter, pc) ->
+                  if debug_tc ()
+                  then Format.eprintf "Rewriting tc in %d\n%!" pc;
                   let block = AddrMap.find pc blocks in
                   let direct_call_pc = free_pc in
                   let bounce_call_pc = free_pc + 1 in
@@ -197,17 +208,18 @@ module Trampoline = struct
                                           Pc (Int (Int32.of_int (Option.Param.tailcall_max_depth ())))]))
                     in
                     let block = { block with body = List.rev (last :: rem_rev); branch = branch } in
+                    let blocks = AddrMap.remove pc blocks in
                     AddrMap.add pc block blocks, free_pc
                   | _ -> assert false
                 ) (blocks, free_pc) counter_and_pc
               in
-              blocks, free_pc, instr_real :: instr_wrapper :: instrs
-            ) (blocks, free_pc, instrs) all
+              blocks, free_pc, instr_real :: instrs, instr_wrapper :: instrs_wrapper
+            ) (blocks, free_pc, instrs, instrs_wrapper) all
           in
-          blocks, free_pc, instrs
-      ) (blocks, free_pc, []) components
+          blocks, free_pc, instrs, instrs_wrapper
+      ) (blocks, free_pc, [], []) components
     in
-    instrs, blocks, free_pc
+    instrs @ instrs_wrapper, blocks, free_pc
 end
 
 module Ident = struct
@@ -231,7 +243,9 @@ let f ((pc, blocks, free_pc) as p) : Code.program =
   let rewrite_list = ref [] in
   let blocks,free_pc =
     AddrMap.fold
-      (fun pc block (blocks,free_pc) ->
+      (fun pc _ (blocks,free_pc) ->
+         (* make sure we have the latest version *)
+         let block = AddrMap.find pc blocks in
          let closures,rem = collect_closures mutated_vars blocks block.body in
          let closures, blocks, free_pc = rewrite_tc closures blocks free_pc in
          let body = closures @ rem in
