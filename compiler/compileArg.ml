@@ -237,7 +237,8 @@ let info =
   let man = [
     `S "DESCRIPTION";
     `P "Js_of_ocaml is a compiler from OCaml bytecode to Javascript. \
-        It makes OCaml programs run on Web browsers.";
+        It makes it possible to run pure OCaml programs in \
+        JavaScript environments like web browsers and Node.js.";
     `S "BUGS";
     `P "Bugs are tracked on github at \
         $(i,https://github.com/ocsigen/js_of_ocaml/issues).";
