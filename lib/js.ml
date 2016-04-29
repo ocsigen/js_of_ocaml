@@ -239,6 +239,10 @@ class type ['a] js_array = object
   method length : int prop
 end
 
+let object_keys o =
+  let obj = Unsafe.get Unsafe.global "Object" in
+  Unsafe.meth_call obj "keys" [|Unsafe.inject o|]
+
 let array_constructor = Unsafe.global##_Array
 let array_empty = array_constructor
 let array_length = array_constructor
