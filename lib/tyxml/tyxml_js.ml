@@ -161,6 +161,51 @@ end
 module Svg = Svg_f.Make(Xml_Svg)
 module Html5 = Html5_f.Make(Xml)(Svg)
 
+
+module To_dom = Tyxml_cast.MakeTo(struct
+    type 'a elt = 'a Html5.elt
+    let elt = Html5.toelt
+  end)
+
+module Of_dom = Tyxml_cast.MakeOf(struct
+    type 'a elt = 'a Html5.elt
+    let elt = Html5.tot
+  end)
+
+module Register = struct
+
+  let removeChildren (node : #Dom.element Js.t) =
+    let l = node##childNodes in
+    for i = 0 to (l##length) - 1 do
+      Js.Opt.iter l##item(i) (fun x -> ignore node##removeChild(x))
+    done
+
+  let add_to ?(keep=true) node content =
+    if not keep then removeChildren node ;
+    List.iter
+      (fun x -> Dom.appendChild node (To_dom.of_element x))
+      content
+
+  let id ?keep id content =
+    let node = Dom_html.getElementById id in
+    add_to ?keep node content
+
+  let body ?keep content =
+    add_to ?keep Dom_html.document##body content
+
+  let head ?keep content =
+    add_to ?keep Dom_html.document##head content
+
+  let html ?head body =
+    begin match head with
+      | Some h -> Dom_html.document##head <- (To_dom.of_head h)
+      | None -> ()
+    end ;
+    Dom_html.document##body <- (To_dom.of_body body) ;
+    ()
+
+end
+
 module Xml_wrap = struct
   type 'a t = 'a React.signal
   type 'a tlist = 'a ReactiveData.RList.t
@@ -317,13 +362,3 @@ module R = struct
   module Html5 = Html5_f.Make(Xml)(Svg)
 
 end
-
-module To_dom = Tyxml_cast.MakeTo(struct
-    type 'a elt = 'a Html5.elt
-    let elt = Html5.toelt
-  end)
-
-module Of_dom = Tyxml_cast.MakeOf(struct
-    type 'a elt = 'a Html5.elt
-    let elt = Html5.tot
-  end)
