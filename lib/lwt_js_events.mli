@@ -265,6 +265,11 @@ val touchcancel :
 (** Returns when a CSS transition terminates on the element. *)
 val transitionend : #Dom_html.eventTarget Js.t -> unit Lwt.t
 
+val transitionends :
+  ?cancel_handler:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+
 val load : ?use_capture:bool ->
   #Dom_html.imageElement Js.t -> Dom_html.event Js.t Lwt.t
 val error : ?use_capture:bool ->

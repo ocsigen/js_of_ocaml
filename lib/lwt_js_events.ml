@@ -344,6 +344,11 @@ let transitionend elt =
          l) >>= fun _ ->
       Lwt.return ()
 
+let transitionends ?cancel_handler elt f =
+  seq_loop
+    (fun ?use_capture:_ target -> transitionend target)
+    ?cancel_handler elt (fun _ cancel -> f cancel)
+
 let request_animation_frame () =
   let t, s = Lwt.wait () in
   Dom_html._requestAnimationFrame
