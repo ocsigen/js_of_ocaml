@@ -2,5 +2,4 @@ B ./**
 S ./**
 PKG cmdliner
 PKG menhirLib
-
-EXT js
+PKG compiler-libs.common

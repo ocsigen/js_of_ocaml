@@ -43,10 +43,10 @@ module IdentTable = struct
       rem
     | Node (l, v, r, _) ->
       table_contents_rec sz l
-        ((sz - v.data, v.ident.Ident.name) :: table_contents_rec sz r rem)
+        ((sz - v.data, v.ident.Ident.name, v.ident) :: table_contents_rec sz r rem)
 
   let table_contents sz t =
-    List.sort (fun (i, _) (j, _) -> compare i j)
+    List.sort (fun (i, _, _) (j, _, _) -> compare i j)
       (table_contents_rec sz (Obj.magic (t : 'a Ident.tbl) : 'a tbl) [])
 end
 (* Copied from ocaml/utils/tbl.ml *)
@@ -99,7 +99,7 @@ module Debug : sig
   type data
   val is_empty : data -> bool
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
-  val find : data -> Code.addr -> (int * string) list
+  val find : data -> Code.addr -> (int * string * Ident.t) list * Env.summary
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
   val mem : data -> Code.addr -> bool
   val read
@@ -196,9 +196,9 @@ end = struct
   let find (events_by_pc,_) pc =
     try
       let (ev,_) = Hashtbl.find events_by_pc pc in
-      IdentTable.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
+      IdentTable.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack, ev.ev_typenv
     with Not_found ->
-      []
+      [], Env.Env_empty
 
   let mem (tbl,_) = Hashtbl.mem tbl
 
@@ -229,6 +229,8 @@ end = struct
               fol=None}
     with Not_found ->
       None
+
+
 
   let rec propagate l1 l2 =
     match l1, l2 with
@@ -577,18 +579,47 @@ module State = struct
     Format.eprintf "{ %a | %a | (%d) %a }@."
       print_elt st.accu print_stack st.stack st.env_offset print_env st.env
 
-  let rec name_rec i l s =
+  let pi_of_loc location =
+    let pos = location.Location.loc_start in
+    let src = pos.Lexing.pos_fname in
+    {Parse_info.name = Some pos.Lexing.pos_fname;
+     src = Some pos.Lexing.pos_fname;
+     line=pos.Lexing.pos_lnum - 1;
+     col=pos.Lexing.pos_cnum - pos.Lexing.pos_bol;
+     (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
+     idx=0;
+     fol=None}
+
+  let rec find_value name ident' = function
+      Env.Env_empty -> None
+    | Env.Env_value (_summary, ident, description) when ident = ident' ->
+      Some description.Types.val_loc
+    | Env.Env_value (summary,_,_)
+    | Env.Env_type (summary, _, _)
+    | Env.Env_extension (summary, _, _)
+    | Env.Env_module (summary, _, _)
+    | Env.Env_modtype (summary, _, _)
+    | Env.Env_class (summary, _, _)
+    | Env.Env_cltype (summary, _, _)
+    | Env.Env_open (summary, _)
+    | Env.Env_functor_arg (summary, _) -> find_value name ident' summary
+
+  let rec name_rec i l s summary =
     match l, s with
       [], _ ->
       ()
-    | (j, nm) :: lrem, Var v :: srem when i = j ->
-      Var.name v nm; name_rec (i + 1) lrem srem
-    | (j, _) :: _, _ :: srem when i < j ->
-      name_rec (i + 1) l srem
+    | (j, nm,ident) :: lrem, Var v :: srem when i = j ->
+       begin match find_value nm ident summary with
+             | None -> ()
+             | Some loc -> Var.loc v (pi_of_loc loc)
+       end;
+      Var.name v nm; name_rec (i + 1) lrem srem summary
+    | (j, _, _) :: _, _ :: srem when i < j ->
+      name_rec (i + 1) l srem summary
     | _ ->
       assert false
 
-  let name_vars st l = name_rec 0 l st.stack
+  let name_vars st (l,summary) = name_rec 0 l st.stack summary
 
   let rec make_stack i state =
     if i = 0

@@ -41,21 +41,31 @@ module Make(D : sig
 
   let temp_mappings = ref []
 
-  let push_mapping,get_file_index,source_map_enabled =
-    let idx = ref 0 in
+  let push_mapping,get_file_index,get_name_index,source_map_enabled =
+    let idx_files = ref 0 in
+    let idx_names = ref 0 in
     let files = Hashtbl.create 17 in
+    let names = Hashtbl.create 17 in
     match D.source_map with
-    | None -> (fun _ _ -> ()),(fun _ -> -1),false
+    | None -> (fun _ _ -> ()),(fun _ -> -1),(fun _ -> -1),false
     | Some sm ->
-      List.iter (fun f -> Hashtbl.add files f !idx; incr idx) sm.Source_map.sources;
+      List.iter (fun f -> Hashtbl.add files f !idx_files; incr idx_files) (List.rev sm.Source_map.sources);
       (fun pos m -> temp_mappings := (pos,m)::!temp_mappings),
       (fun file ->
          try Hashtbl.find files file with
          | Not_found ->
-           let pos = !idx in
+           let pos = !idx_files in
            Hashtbl.add files file pos;
-           incr idx;
-           sm.Source_map.sources <- sm.Source_map.sources @ [file];
+           incr idx_files;
+           sm.Source_map.sources <- file :: sm.Source_map.sources;
+           pos),
+      (fun name ->
+         try Hashtbl.find names name with
+         | Not_found ->
+           let pos = !idx_names in
+           Hashtbl.add names name pos;
+           incr idx_names;
+           sm.Source_map.names <- name :: sm.Source_map.names;
            pos),
       true
 
@@ -72,8 +82,6 @@ module Make(D : sig
         ()
       | U | Pi _ ->
         PP.non_breaking_space f; PP.string f "/*<<?>>*/"; PP.non_breaking_space f
-
-
     end;
     if source_map_enabled then
       match loc with
@@ -96,9 +104,25 @@ module Make(D : sig
             ori_col = col;
             ori_name = None }
 
+  let output_debug_info_ident f nm v =
+    if source_map_enabled then
+      match Code.Var.get_loc v with
+      | None -> ()
+      | Some { Parse_info.src = Some file; line; col } ->
+         push_mapping (PP.pos f)
+                      { Source_map.gen_line = -1;
+                        gen_col = -1;
+                        ori_source = get_file_index file;
+                        ori_line = line;
+                        ori_col = col;
+                        ori_name = Some (get_name_index nm) }
+      | Some _ -> ()
+
   let ident f = function
     | S {name;var=None} -> PP.string f name
-    | S {name;var=Some _v} -> PP.string f name
+    | S {name;var=Some v} ->
+       output_debug_info_ident f name v;
+       PP.string f name
     | V _v -> assert false
 
   let opt_identifier f i =
@@ -1032,6 +1056,10 @@ let program f ?source_map p =
   (match source_map with
    | None -> ()
    | Some (out_file,sm) ->
+      let sm = { sm with Source_map.sources = List.rev sm.Source_map.sources;
+                         Source_map.names   = List.rev sm.Source_map.names;
+               }
+      in
      let sources = sm.Source_map.sources in
      let sources_content =
        match sm.Source_map.sources_content with

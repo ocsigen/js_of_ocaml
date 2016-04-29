@@ -47,7 +47,8 @@ module Var : sig
   val count : unit -> int
 
   val compare : t -> t -> int
-
+  val get_loc : t -> Parse_info.t option
+  val loc : t -> Parse_info.t -> unit
   val name : t -> string -> unit
   val get_name : t -> string option
   val propagate_name : t -> t -> unit
@@ -62,11 +63,13 @@ end = struct
   type t = int
 
   let printer = VarPrinter.create ()
+  let locations = Hashtbl.create 17
 
   let last_var = ref 0
 
   let reset () =
     last_var := 0;
+    Hashtbl.clear locations;
     VarPrinter.reset printer
 
   let to_string ?origin i = VarPrinter.to_string printer ?origin i
@@ -75,8 +78,18 @@ end = struct
   (* Format.fprintf f "%s" (to_string x) *)
 
   let name i nm = VarPrinter.name printer i nm
+  let loc i pi =
+    Hashtbl.add locations i pi(*;
+    Format.eprintf "loc for %d : %d-%d\n%!"
+                   i pi.Parse_info.line pi.Parse_info.col
+                               *)
+  let get_loc i=
+    try Some (Hashtbl.find locations i)
+    with Not_found -> None
 
-  let fresh () = incr last_var; !last_var
+  let fresh () =
+    incr last_var;
+    !last_var
   let fresh_n nm =
     incr last_var;
     name !last_var nm;
@@ -92,7 +105,14 @@ end = struct
 
   let get_name i = VarPrinter.get_name printer i
 
-  let propagate_name i j = VarPrinter.propagate_name printer i j
+  let propagate_name i j =
+    VarPrinter.propagate_name printer i j;
+    match get_loc i with
+    | None -> ()
+    | Some l ->
+       (*       Format.eprintf "propagate loc\n%!";*)
+       loc j l
+
   let set_pretty b = VarPrinter.set_pretty printer b
   let set_stable b = VarPrinter.set_stable printer b
 
