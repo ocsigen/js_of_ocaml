@@ -1930,7 +1930,13 @@ let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
       try
         ignore(seek_section toc ic "DBUG");
         Debug.read debug_data ~crcs ~includes ic
-      with Not_found -> ()
+      with Not_found ->
+      match debug with
+      | `Names -> ()
+      | `Full ->
+        Util.warn
+          "Warning: Program not linked with -g, original \
+           variable names and locations not availalbe.@."
   end;
 
   let globals = make_globals (Array.length init_data) init_data primitive_table in
