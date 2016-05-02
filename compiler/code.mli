@@ -128,8 +128,8 @@ type last =
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * Var.t * cont * addr
-  | Poptrap of cont
+  | Pushtrap of cont * Var.t * cont * AddrSet.t
+  | Poptrap of cont * addr
 
 type block =
   { params : Var.t list;
@@ -145,7 +145,8 @@ val print_var_list : Format.formatter -> Var.t list -> unit
 val print_instr : Format.formatter -> instr -> unit
 val print_block : (AddrMap.key -> xinstr -> string) -> int -> block -> unit
 val print_program : (AddrMap.key -> xinstr -> string) -> program -> unit
-
+val print_last : Format.formatter -> last -> unit
+val print_cont : Format.formatter -> cont -> unit
 val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 val fold_children :
@@ -159,3 +160,5 @@ val traverse :
 val prepend : program -> instr list -> program
 
 val eq : program -> program -> bool
+
+val invariant : program -> unit

@@ -88,7 +88,7 @@ and mark_reachable st pc =
         mark_var st x
     | Stop ->
         ()
-    | Branch cont | Poptrap cont ->
+    | Branch cont | Poptrap (cont,_) ->
         mark_cont_reachable st cont
     | Cond (_, x, cont1, cont2) ->
         mark_var st x;
@@ -145,12 +145,12 @@ let filter_live_last blocks st l =
       Switch (x,
               Array.map (fun cont -> filter_cont blocks st cont) a1,
               Array.map (fun cont -> filter_cont blocks st cont) a2)
-  | Pushtrap (cont1, x, cont2, pc) ->
+  | Pushtrap (cont1, x, cont2, pcs) ->
       Pushtrap (filter_cont blocks st cont1,
                 x, filter_cont blocks st cont2,
-                if AddrSet.mem pc st.reachable_blocks then pc else -1)
-  | Poptrap cont ->
-      Poptrap (filter_cont blocks st cont)
+                AddrSet.inter pcs st.reachable_blocks)
+  | Poptrap (cont,addr) ->
+      Poptrap (filter_cont blocks st cont, addr)
 
 (****)
 
@@ -200,27 +200,27 @@ let f ((pc, blocks, free_pc) as program) =
          (fun i ->
             match i with
               Let (x, e) ->
-                add_def defs x (Expr e)
+              add_def defs x (Expr e)
             | Set_field (_, _, _) | Array_set (_, _, _) | Offset_ref (_, _) ->
-                ())
+              ())
          block.body;
        Util.opt_iter
          (fun (_, cont) -> add_cont_dep blocks defs cont) block.handler;
        match block.branch with
          Return _ | Raise _ | Stop ->
-           ()
+         ()
        | Branch cont ->
-           add_cont_dep blocks defs cont
+         add_cont_dep blocks defs cont
        | Cond (_, _, cont1, cont2) ->
-           add_cont_dep blocks defs cont1;
-           add_cont_dep blocks defs cont2
+         add_cont_dep blocks defs cont1;
+         add_cont_dep blocks defs cont2
        | Switch (_, a1, a2) ->
-           Array.iter (fun cont -> add_cont_dep blocks defs cont) a1;
-           Array.iter (fun cont -> add_cont_dep blocks defs cont) a2
+         Array.iter (fun cont -> add_cont_dep blocks defs cont) a1;
+         Array.iter (fun cont -> add_cont_dep blocks defs cont) a2
        | Pushtrap (cont, _, _, _) ->
-           add_cont_dep blocks defs cont
-       | Poptrap cont ->
-           add_cont_dep blocks defs cont)
+         add_cont_dep blocks defs cont
+       | Poptrap (cont,_) ->
+         add_cont_dep blocks defs cont)
     blocks;
   let st =
     { live = live; defs = defs; blocks = blocks;

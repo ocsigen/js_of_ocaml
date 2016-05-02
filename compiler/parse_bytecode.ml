@@ -432,7 +432,7 @@ module State = struct
     var       : Var.t;
     addr      : addr;
     stack_len : int;
-    pop_addr  : (addr * addr) option ref
+    block_pc  : addr
   }
 
   type t = {
@@ -441,7 +441,8 @@ module State = struct
     env        : elt array;
     env_offset : int;
     handlers   : handler list;
-    globals    : globals
+    globals    : globals;
+    current_pc : addr;
   }
 
   let fresh_var state =
@@ -504,7 +505,7 @@ module State = struct
     {state with accu = Dummy; stack = []; env = env; env_offset = offset;
                 handlers = []}
 
-  let start_block state =
+  let start_block current_pc state =
     let stack =
       List.fold_right
         (fun e stack ->
@@ -516,7 +517,8 @@ module State = struct
              Var y :: stack)
         state.stack []
     in
-    let state = { state with stack = stack } in
+    let state = { state with stack = stack;
+                             current_pc } in
     match state.accu with
       Dummy -> state
     | Var x ->
@@ -527,26 +529,19 @@ module State = struct
   let push_handler state x addr =
     { state
     with handlers = {
+      block_pc = state.current_pc;
       var = x;
       addr;
-      stack_len = List.length state.stack;
-      pop_addr =  ref None
+      stack_len = List.length state.stack
     } :: state.handlers }
 
   let pop_handler state =
     { state with handlers = List.tl state.handlers }
 
-  let normalize_return_addr_for_current_handler addr norm state =
+  let addr_of_current_handler state =
     match state.handlers with
     | [] -> assert false
-    | {pop_addr;_}::_->
-       match !pop_addr with
-       | None ->
-          pop_addr:=Some (addr,norm);
-          addr
-       | Some (addr,norm') ->
-          assert (norm = norm');
-          addr
+    | x::_ -> x.block_pc
 
   let current_handler state =
     match state.handlers with
@@ -562,7 +557,7 @@ module State = struct
 
   let initial g =
     { accu = Dummy; stack = []; env = [||]; env_offset = 0; handlers = [];
-      globals = g }
+      globals = g; current_pc = -1 }
 
   let rec print_stack f l =
     match l with
@@ -580,10 +575,11 @@ module State = struct
       print_elt st.accu print_stack st.stack st.env_offset print_env st.env
 
   let pi_of_loc location =
+    (* FIXME *)
     let pos = location.Location.loc_start in
     let src = pos.Lexing.pos_fname in
-    {Parse_info.name = Some pos.Lexing.pos_fname;
-     src = Some pos.Lexing.pos_fname;
+    {Parse_info.name = None;
+     src = Some src;
      line=pos.Lexing.pos_lnum - 1;
      col=pos.Lexing.pos_cnum - pos.Lexing.pos_bol;
      (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
@@ -697,15 +693,29 @@ type compile_info =
 let rec compile_block blocks debug code pc state =
   if not (AddrSet.mem pc !tagged_blocks) then begin
     let limit = Blocks.next blocks pc in
-    if debug_parser () then Format.eprintf "Compiling from %d to %d@." pc (limit - 1);
-    let state = State.start_block state in
+    let string_of_addr addr =
+      match Debug.find_loc debug addr with
+      | None -> string_of_int addr
+      | Some loc ->
+        match loc.Parse_info.src with
+        | None -> string_of_int addr
+        | Some file ->
+          Printf.sprintf "%s:%d:%d-%d"
+            file loc.Parse_info.line loc.Parse_info.col (addr + 2)
+    in
+    if debug_parser () then
+      Format.eprintf "Compiling from %s to %d@."
+        (string_of_addr pc)
+        (limit - 1);
+    let state = State.start_block pc state in
     tagged_blocks := AddrSet.add pc !tagged_blocks;
     let (instr, last, state') =
       compile {blocks; code; limit; debug} pc state [] in
+    assert (not (AddrMap.mem pc !compiled_blocks));
     compiled_blocks :=
       AddrMap.add pc (state, List.rev instr, last) !compiled_blocks;
     begin match last with
-        Branch (pc', _) | Poptrap (pc', _) ->
+      | Branch (pc', _) | Poptrap ((pc', _),_) ->
         compile_block blocks debug code pc' state'
       | Cond (_, _, (pc1, _), (pc2, _)) ->
         compile_block blocks debug code pc1 state';
@@ -732,8 +742,9 @@ and compile infos pc state instrs =
       end
       else begin
         State.name_vars state (Debug.find infos.debug pc);
-        if debug_parser () then Format.eprintf "Branch %d@." pc;
-        (instrs, Branch (pc, State.stack_vars state), state)
+        let stack = State.stack_vars state in
+        if debug_parser () then Format.eprintf "Branch %d (%a) @." pc print_var_list stack;
+        (instrs, Branch (pc, stack), state)
       end
     end
   else begin
@@ -1311,16 +1322,13 @@ and compile infos pc state instrs =
                 state.State.stack};
       (instrs,
        Pushtrap ((pc + 2, State.stack_vars state), x,
-                 (addr, State.stack_vars state'), -1), state)
+                 (addr, State.stack_vars state'), AddrSet.empty), state)
     | POPTRAP ->
-       let norm = match (get_instr code (pc + 1)).Instr.code with
-         | BRANCH -> gets code (pc + 2) + pc + 2
-         | _      -> pc + 1
-       in
-       let addr = State.normalize_return_addr_for_current_handler (pc + 1) norm state in
-       compile_block infos.blocks infos.debug code
-                     addr (State.pop 4 (State.pop_handler state));
-       (instrs, Poptrap (addr, State.stack_vars state), state)
+      let addr = pc + 1 in
+      let handler_addr = State.addr_of_current_handler state in
+      compile_block infos.blocks infos.debug code
+        addr (State.pop 4 (State.pop_handler state));
+      (instrs, Poptrap ((addr, State.stack_vars state), handler_addr), state)
     | RERAISE
     | RAISE_NOTRACE
     | RAISE ->
@@ -1721,65 +1729,36 @@ and compile infos pc state instrs =
 
 (****)
 
-let merge_path p1 p2 =
-  match p1, p2 with
-    [], _ -> p2
-  | _, [] -> p1
-  | _     -> assert (p1 = p2); p1
-
-let (>>) x f = f x
-
-let fold_children blocks pc f accu =
-  let block = AddrMap.find pc blocks in
-  match block.branch with
-    Return _ | Raise _ | Stop ->
-    accu
-  | Branch (pc', _) | Poptrap (pc', _) ->
-    f pc' accu
-  | Cond (_, _, (pc1, _), (pc2, _)) | Pushtrap ((pc1, _), _, (pc2, _), _) ->
-    f pc1 accu >> f pc1 >> f pc2
-  | Switch (_, a1, a2) ->
-    accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-    >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
-
-let rec traverse blocks pc visited blocks' =
-  if not (AddrSet.mem pc visited) then begin
-    let visited = AddrSet.add pc visited in
-    let (visited, blocks', path) =
-      fold_children blocks pc
-        (fun pc (visited, blocks', path) ->
-           let (visited, blocks', path') =
-             traverse blocks pc visited blocks' in
-           (visited, blocks', merge_path path path'))
-        (visited, blocks', [])
-    in
-    let block = AddrMap.find pc blocks in
-    let (blocks', path) =
-      (* Note that there is no matching poptrap when an exception is always
-         raised in the [try ... with ...] body. *)
-      match block.branch, path with
-        Pushtrap (cont1, x, cont2, pc3'), pc3 :: rem ->
-        assert (pc3' = -1);
-        (AddrMap.add
-           pc { block with branch = Pushtrap (cont1, x, cont2, pc3) }
-           blocks',
-         rem)
-      | Poptrap (pc, _), _ ->
-        (blocks', pc :: path)
-      | _ ->
-        (blocks', path)
-    in
-    (visited, blocks', path)
-  end else
-    (visited, blocks', [])
-
-let match_exn_traps ((_, blocks, _) as p) =
-  fold_closures p
-    (fun _ _ (pc, _) blocks' ->
-       let (_, blocks', path) = traverse blocks pc AddrSet.empty blocks' in
-       assert (path = []);
-       blocks')
-    blocks
+let match_exn_traps (blocks : 'a AddrMap.t) =
+  let map =
+    AddrMap.fold
+      (fun pc block map ->
+         match block.branch with
+         | Poptrap ((cont,_),addr_push) ->
+           let map_cont = try
+               AddrMap.find addr_push map
+             with Not_found -> AddrMap.empty
+           in
+           let set_pop_pc =
+             try AddrSet.add pc (AddrMap.find cont map_cont)
+             with Not_found -> AddrSet.singleton pc
+           in
+           let map_cont = AddrMap.add cont set_pop_pc map_cont in
+           AddrMap.add addr_push map_cont map
+         | _ -> map) blocks AddrMap.empty
+  in
+  AddrMap.fold (fun pc map (blocks) ->
+    match AddrMap.find pc blocks with
+    | {branch = Pushtrap (cont1, x, cont2, conts); _ } as block ->
+      assert (conts = AddrSet.empty);
+      let conts = AddrMap.bindings map |> List.map fst |> AddrSet.of_list in
+      let len = AddrSet.cardinal conts in
+      if len > 2 then Format.eprintf "More than 2 => %d\n%!" len;
+      let branch = Pushtrap(cont1,x,cont2,conts) in
+      AddrMap.add pc {block with branch} blocks
+    | _ -> assert false
+  ) map blocks
+;;
 
 (****)
 
@@ -1807,7 +1786,7 @@ let parse_bytecode ~debug code globals debug_data =
   tagged_blocks := AddrSet.empty;
 
   let free_pc = String.length code / 4 in
-  let blocks = match_exn_traps (0, blocks, free_pc) in
+  let blocks = match_exn_traps blocks in
   (0, blocks, free_pc)
 
 
@@ -1932,6 +1911,7 @@ let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
         Debug.read debug_data ~crcs ~includes ic
       with Not_found ->
       match debug with
+      | `No -> assert false
       | `Names -> ()
       | `Full ->
         Util.warn
@@ -2221,6 +2201,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
         if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_exe
         then raise Util.MagicNumber.(Bad_magic_version magic);
         let a,b,c = exe_from_channel ~includes ~toplevel ~debug ~debug_data ic in
+        Code.invariant a;
         a,b,c,true
       | _ ->
         raise Util.MagicNumber.(Bad_magic_number (to_string magic))

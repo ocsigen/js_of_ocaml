@@ -83,6 +83,7 @@ module Trampoline = struct
     let counter_plus_1 = Code.Var.fork counter in
     let return = Code.Var.fork x in
     { block with
+      params = [];
       body =
         [
           Let (counter_plus_1,
@@ -97,6 +98,7 @@ module Trampoline = struct
     let return = Code.Var.fork x in
     let new_args = Code.Var.fresh () in
     { block with
+      params = [];
       body =
         [
           Let (new_args,
@@ -151,7 +153,9 @@ module Trampoline = struct
           if debug_tc ()
           then begin
             Format.eprintf "Detect cycles of size (%d).\n%!" (List.length all);
-            Format.eprintf "%s\n%!" (String.concat ", " (List.map Var.to_string all));
+            Format.eprintf "%s\n%!"
+              (String.concat ", "
+                 (List.map (fun x -> Var.to_string x) all));
           end;
           let all = List.map (fun id ->
             Code.Var.fresh_n "counter",
@@ -239,6 +243,7 @@ let rewrite_tc closures blocks free_pc =
   | TcTrampoline -> Trampoline.f closures blocks free_pc
 
 let f ((pc, blocks, free_pc) as p) : Code.program =
+  Code.invariant p;
   let mutated_vars = Freevars.f p in
   let rewrite_list = ref [] in
   let blocks,free_pc =
@@ -294,6 +299,10 @@ let f ((pc, blocks, free_pc) as p) : Code.program =
       )
       blocks (blocks,free_pc)
   in
-  List.fold_left (fun program (mapping,pc) ->
+  (* Code.invariant (pc, blocks, free_pc); *)
+  let p = List.fold_left (fun program (mapping,pc) ->
     Jsoo_subst.cont mapping pc program
   ) (pc, blocks, free_pc) !rewrite_list
+  in
+  Code.invariant p;
+  p

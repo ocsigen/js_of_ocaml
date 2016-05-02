@@ -563,7 +563,7 @@ let fold_children blocks pc f accu =
   match block.branch with
     Return _ | Raise _ | Stop ->
     accu
-  | Branch (pc', _) | Poptrap (pc', _) ->
+  | Branch (pc', _) | Poptrap ((pc', _),_) ->
     f pc' accu
   | Pushtrap ((pc1, _), _, (pc2, _), _) ->
     accu >> f pc1 >> f pc2
@@ -1253,35 +1253,59 @@ else begin
   let body =
     seq @
     match block.branch with
-      Code.Pushtrap ((pc1, args1), x, (pc2, args2), pc3) ->
+      Code.Pushtrap ((pc1, args1), x, (pc2, args2), pc3s) ->
       (* FIX: document this *)
         let grey =  dominance_frontier st pc2 in
         let grey' = resolve_nodes interm grey in
         assert (AddrSet.cardinal grey' <= 1);
-        let limit_body =
-          (* We need to make sure that pc3 is live (indeed, the
-             continuation may have been optimized away by inlining) *)
-          if pc3 >= 0 && Hashtbl.mem st.succs pc3
-          then
-            (* no need to limit body for simple flow with no instruction.
-               eg return and branch *)
-            let rec limit pc =
-              if pc < 0 || AddrSet.mem pc grey' then false else
-              let block = AddrMap.find pc st.blocks in
-              block.body <> [] ||
-              match block.branch with
-              | Return _ -> false
-              | Poptrap (pc',_) | Branch (pc', _) -> limit pc'
-              | _ -> true
-            in
-            limit pc3
-          else false
+        let limit_body_with =
+          AddrSet.fold (fun pc3 acc ->
+            (* We need to make sure that pc3 is live (indeed, the
+               continuation may have been optimized away by inlining) *)
+            if Hashtbl.mem st.succs pc3
+            then
+              (* no need to limit body for simple flow with no instruction.
+                 eg return and branch *)
+              let rec limit pc =
+                if AddrSet.mem pc grey' then false else
+                  let block = AddrMap.find pc st.blocks in
+                  block.body <> [] ||
+                  match block.branch with
+                  | Return _ -> false
+                  | Poptrap ((pc',_),_) | Branch (pc', _) -> limit pc'
+                  | _ -> true
+              in
+              if limit pc3
+              then AddrSet.add pc3 acc
+              else acc
+            else acc) pc3s AddrSet.empty
         in
-        let inner_frontier =
-          if limit_body then AddrSet.add pc3 grey' else grey'
+        let limit_body_with =
+          match AddrSet.elements limit_body_with with
+          | [] | [ _ ] -> limit_body_with
+          | x::xs ->
+            try
+              (* Hack to handle multiple poptrap
+                 for the same pushtrap *)
+              let get_direct_branch pc =
+                match AddrMap.find pc st.blocks with
+                | { body = []; branch = Branch (pc,_) ; _ } -> pc
+                | _ -> raise Not_found
+              in
+              let pc1 = get_direct_branch x in
+              if List.for_all (fun pc ->
+                get_direct_branch pc = pc1) xs
+              then AddrSet.singleton pc1
+              else raise Not_found
+            with Not_found ->
+              (* List.iter (fun pc ->
+               *   let block = AddrMap.find pc st.blocks in
+               *   Code.print_block (fun _ _ -> "") pc block) (x::xs); *)
+              assert false
         in
+        let inner_frontier = AddrSet.union limit_body_with grey' in
         let inner_frontier = AddrSet.union new_frontier inner_frontier in
-        if limit_body then incr_preds st pc3;
+        AddrSet.iter (incr_preds st) limit_body_with;
         if debug () then Format.eprintf "@[<2>try {@,";
         let body =
           compile_branch st [] (pc1, args1)
@@ -1305,7 +1329,7 @@ else begin
           try VarMap.find x m with Not_found -> x
         in
         if debug () then Format.eprintf "}@]@ ";
-        if limit_body then decr_preds st pc3;
+        AddrSet.iter (decr_preds st) limit_body_with;
         let _wrap s =
           (* We wrap [try ... catch ...] statements at toplevel inside
              an anonymous function, as V8 does not optimize functions
@@ -1341,11 +1365,12 @@ else begin
         in
 
         let before_try_with, after_body, on_exn =
-          if limit_body
+          if not (AddrSet.is_empty limit_body_with)
           then
             let frontier_of_body_after_poptrap =
               AddrSet.union grey' new_frontier
             in
+            let pc3 = AddrSet.choose limit_body_with in
             match compile_block st [] pc3 frontier_of_body_after_poptrap interm with
             | [] -> (J.Empty_statement, J.N), [], []
             | block ->
@@ -1549,7 +1574,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
     compile_branch st queue cont handler backs frontier interm
   | Pushtrap _ ->
     assert false
-  | Poptrap cont ->
+  | Poptrap (cont,_) ->
     flush_all queue
       (compile_branch st [] cont None backs frontier interm)
   | Cond (cond,x,c1,c2) ->

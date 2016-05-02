@@ -56,8 +56,8 @@ let last s l =
       l
   | Branch cont ->
       Branch (subst_cont s cont)
-  | Pushtrap (cont1, x, cont2, pc) ->
-      Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pc)
+  | Pushtrap (cont1, x, cont2, pcs) ->
+      Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pcs)
   | Return x ->
       Return (s x)
   | Raise x ->
@@ -68,8 +68,8 @@ let last s l =
       Switch (s x,
               Array.map (fun cont -> subst_cont s cont) a1,
               Array.map (fun cont -> subst_cont s cont) a2)
-  | Poptrap cont ->
-    Poptrap (subst_cont s cont)
+  | Poptrap (cont,addr) ->
+    Poptrap (subst_cont s cont, addr)
 
 let block s block =
   { params = block.params;
@@ -115,7 +115,7 @@ let rec build_mapping params args =
   match params, args with
     x :: params, y :: args ->
       VarMap.add x y (build_mapping params args)
-  | [], _ ->
+  | [], [] ->
       VarMap.empty
   | _ ->
       assert false

@@ -70,10 +70,10 @@ let fold_children blocks pc f accu =
   match block.branch with
     Return _ | Raise _ | Stop ->
       accu
-  | Branch (pc', _) | Poptrap (pc', _) ->
+  | Branch (pc', _) | Poptrap ((pc', _),_) ->
       f pc' accu
-  | Pushtrap (_, _, (pc1, _), pc2) ->
-      f pc1 (if pc2 >= 0 then f pc2 accu else accu)
+  | Pushtrap (_, _, (pc1, _), pcs) ->
+      f pc1 (AddrSet.fold f pcs accu)
   | Cond (_, _, (pc1, _), (pc2, _)) ->
       accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->

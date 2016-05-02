@@ -97,10 +97,10 @@ let fold_children blocks pc f accu =
   match block.branch with
   | Return _ | Raise _ | Stop ->
     accu
-  | Branch (pc', _) | Poptrap (pc', _) ->
+  | Branch (pc', _) | Poptrap ((pc', _),_) ->
     f pc' accu
-  | Pushtrap (_, _, (pc1, _), pc2) ->
-    f pc1 (if pc2 >= 0 then f pc2 accu else accu)
+  | Pushtrap (_, _, (pc1, _), pcs) ->
+    f pc1 (AddrSet.fold f pcs accu)
   | Cond (_, _, (pc1, _), (pc2, _)) ->
     accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
@@ -248,6 +248,7 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
 
 let times = Option.Debug.find "times"
 let f ((pc, blocks, free_pc) as p) live_vars =
+  Code.invariant p;
   let t = Util.Timer.make () in
   let closures = get_closures p in
   let (blocks, free_pc) =
@@ -260,4 +261,6 @@ let f ((pc, blocks, free_pc) as p) live_vars =
     ) (blocks, free_pc)
   in
   if times () then Format.eprintf "  inlining: %a@." Util.Timer.print t;
-  (pc, blocks, free_pc)
+  let p = (pc, blocks, free_pc) in
+  Code.invariant p;
+  p

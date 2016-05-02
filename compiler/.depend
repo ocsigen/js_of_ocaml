@@ -4,9 +4,9 @@ annot_lexer.cmi : annot_parser.cmi
 annot_parser.cmo : jsoo_primitive.cmi annot_parser.cmi
 annot_parser.cmx : jsoo_primitive.cmx annot_parser.cmi
 annot_parser.cmi : jsoo_primitive.cmi
-code.cmo : varPrinter.cmi util.cmi code.cmi
-code.cmx : varPrinter.cmx util.cmx code.cmi
-code.cmi : util.cmi
+code.cmo : varPrinter.cmi util.cmi parse_info.cmi option.cmi code.cmi
+code.cmx : varPrinter.cmx util.cmx parse_info.cmx option.cmx code.cmi
+code.cmi : util.cmi parse_info.cmi
 commonArg.cmo : util.cmi option.cmi commonArg.cmi
 commonArg.cmx : util.cmx option.cmx commonArg.cmi
 compileArg.cmo : util.cmi source_map.cmi option.cmi driver.cmi \
@@ -103,9 +103,9 @@ jsoo_subst.cmo : util.cmi code.cmi jsoo_subst.cmi
 jsoo_subst.cmx : util.cmx code.cmx jsoo_subst.cmi
 jsoo_subst.cmi : code.cmi
 js_output.cmo : util.cmi source_map.cmi pretty_print.cmi parse_info.cmi \
-    option.cmi json.cmi javascript.cmi js_output.cmi
+    option.cmi json.cmi javascript.cmi code.cmi js_output.cmi
 js_output.cmx : util.cmx source_map.cmx pretty_print.cmx parse_info.cmx \
-    option.cmx json.cmx javascript.cmx js_output.cmi
+    option.cmx json.cmx javascript.cmx code.cmx js_output.cmi
 js_output.cmi : source_map.cmi pretty_print.cmi javascript.cmi
 js_parser.cmo : parse_info.cmi js_token.cmi javascript.cmi js_parser.cmi
 js_parser.cmx : parse_info.cmx js_token.cmx javascript.cmx js_parser.cmi

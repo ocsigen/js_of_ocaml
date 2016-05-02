@@ -93,7 +93,7 @@ let program_deps (_, blocks, _) =
            Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a2
        | Pushtrap (cont, _, _, _) ->
            cont_deps blocks vars deps defs cont
-       | Poptrap cont ->
+       | Poptrap (cont,_) ->
            cont_deps blocks vars deps defs cont)
     blocks;
   (vars, deps, defs)

@@ -56,7 +56,7 @@ let iter_last_free_var f l =
       f x
   | Stop ->
       ()
-  | Branch cont | Poptrap cont ->
+  | Branch cont | Poptrap (cont,_) ->
       iter_cont_free_vars f cont
   | Cond (_, x, cont1, cont2) ->
       f x; iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
@@ -210,6 +210,7 @@ Format.eprintf ">> %d: %d@." pc (VarSet.cardinal fv))
   !freevars
 
 let f p =
+  Code.invariant p;
   let t = Util.Timer.make () in
   let in_loop = find_loops p in
   let vars = mark_variables in_loop p in
