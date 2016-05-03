@@ -407,3 +407,27 @@ let capitalize_ascii = String.capitalize
 let uncapitalize_ascii = String.uncapitalize_ascii
 let capitalize_ascii = String.capitalize_ascii
 #endif
+
+
+let rec find_loc_in_summary name ident' = function
+  | Env.Env_empty -> None
+  | Env.Env_value (_summary, ident, description)
+    when ident = ident' ->
+    Some description.Types.val_loc
+  | Env.Env_value (summary,_,_)
+  | Env.Env_type (summary, _, _)
+#if OCAML_VERSION < (4,0,2)
+  | Env.Env_exception (summary, _,_)
+#else
+  | Env.Env_extension (summary, _, _)
+#endif
+  | Env.Env_module (summary, _, _)
+  | Env.Env_modtype (summary, _, _)
+  | Env.Env_class (summary, _, _)
+  | Env.Env_cltype (summary, _, _)
+  | Env.Env_open (summary, _)
+  | Env.Env_functor_arg (summary, _)
+#if OCAML_VERSION < (4,0,2)
+  | Env.Env_functor_arg (summary, _)
+#endif
+   -> find_loc_in_summary name ident' summary

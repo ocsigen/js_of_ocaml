@@ -586,26 +586,12 @@ module State = struct
      idx=0;
      fol=None}
 
-  let rec find_value name ident' = function
-      Env.Env_empty -> None
-    | Env.Env_value (_summary, ident, description) when ident = ident' ->
-      Some description.Types.val_loc
-    | Env.Env_value (summary,_,_)
-    | Env.Env_type (summary, _, _)
-    | Env.Env_extension (summary, _, _)
-    | Env.Env_module (summary, _, _)
-    | Env.Env_modtype (summary, _, _)
-    | Env.Env_class (summary, _, _)
-    | Env.Env_cltype (summary, _, _)
-    | Env.Env_open (summary, _)
-    | Env.Env_functor_arg (summary, _) -> find_value name ident' summary
-
   let rec name_rec i l s summary =
     match l, s with
       [], _ ->
       ()
     | (j, nm,ident) :: lrem, Var v :: srem when i = j ->
-       begin match find_value nm ident summary with
+       begin match Util.find_loc_in_summary nm ident summary with
              | None -> ()
              | Some loc -> Var.loc v (pi_of_loc loc)
        end;
