@@ -64,12 +64,13 @@ endif
 JSOO_RUNTIME := mlString.js ieee_754.js int64.js md5.js marshal.js \
 	lexing.js parsing.js bigarray.js unix.js \
 	stdlib.js io.js fs.js jslib.js jslib_js_of_ocaml.js \
-	internalMod.js gc.js polyfill/json2.js polyfill/object.js bigstring.js
+	internalMod.js gc.js polyfill/json2.js bigstring.js
 
 JSOO_RUNTIME_EXTRA := weak.js \
 	polyfill/classlist.js \
 	polyfill/array.js \
 	polyfill/string.js \
+	polyfill/object.js \
 	toplevel.js \
 	dynlink.js \
 	graphics.js \
