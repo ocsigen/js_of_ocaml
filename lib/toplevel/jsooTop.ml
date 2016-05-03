@@ -100,20 +100,20 @@ let execute printval ?pp_code ?highlight_location  pp_answer s =
       with
       | End_of_file ->
         raise End_of_file
-      | JsooTopError.Camlp4 (loc,_exn) -> 
-	 begin match highlight_location with
-	       | None -> () 
-	       | Some f -> f loc
-	 end;
+      | JsooTopError.Camlp4 (loc,_exn) ->
+	begin match highlight_location with
+	| None -> ()
+	| Some f -> f loc
+	end;
       | x ->
-	 begin match highlight_location with
-	       | None -> () 
-	       | Some f ->   
-		  match JsooTopError.loc x with
-		  | None -> ()
-		  | Some loc -> f loc
-	 end;
-         Errors.report_error Format.err_formatter x;
+	begin match highlight_location with
+	| None -> ()
+	| Some f ->
+	  match JsooTopError.loc x with
+	  | None -> ()
+	  | Some loc -> f loc
+	end;
+        Errors.report_error Format.err_formatter x;
     done
   with End_of_file ->
     flush_all ()
@@ -129,6 +129,6 @@ let syntaxes = ref []
 let register_camlp4_syntax name f =
   syntaxes := name :: !syntaxes;
   f (fun (_name,cb) ->
-      (* Format.eprintf "execute callback for %s@." name; *)
-      cb ())
+    (* Format.eprintf "execute callback for %s@." name; *)
+    cb ())
 let get_camlp4_syntaxes () = List.rev !syntaxes
