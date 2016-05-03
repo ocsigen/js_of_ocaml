@@ -100,6 +100,7 @@ let provided = List.fold_left (fun acc x -> StringSet.add x acc)
   "DOMException";
   "Error";
   "SyntaxError";
+  "TypeError";
   "arguments";
 
   "decodeURI";
