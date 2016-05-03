@@ -19,19 +19,36 @@
 
 // Weak API, but without the weak semantics
 
+//Provides: caml_weak_additional_values
+//Version: < 4.03
+var caml_weak_additional_values = 1
+
+//Provides: caml_weak_additional_values
+//Version: >= 4.03
+var caml_weak_additional_values = 2
+
 //Provides: caml_weak_create
+//Requires: caml_weak_additional_values
 function caml_weak_create (n) {
   var x = [251];
-  x.length = n + 2;
+  x.length = n + 1 + caml_weak_additional_values;
   return x;
 }
 //Provides: caml_weak_set
-function caml_weak_set(x, i, v) { x[i + 1] = v; return 0; }
+//Requires: caml_weak_additional_values
+function caml_weak_set(x, i, v) {
+    x[i + caml_weak_additional_values] = v;
+    return 0;
+}
 //Provides: caml_weak_get mutable
-function caml_weak_get(x, i) { return (x[i + 1]===undefined)?0:x[i + 1]; }
+//Requires: caml_weak_additional_values
+function caml_weak_get(x, i) {
+    return (x[i + caml_weak_additional_values]===undefined)?0:x[i + caml_weak_additional_values];
+}
 //Provides: caml_weak_get_copy mutable
 //Requires: caml_weak_get
 //Requires: caml_obj_dup
+//Requires: caml_weak_additional_values
 function caml_weak_get_copy(x, i) {
   var y = caml_weak_get(x, i);
   if (y === 0) return y;
@@ -40,8 +57,9 @@ function caml_weak_get_copy(x, i) {
   return y;
 }
 //Provides: caml_weak_check mutable
+//Requires: caml_weak_additional_values
 function caml_weak_check(x, i) {
-  return x[i + 1]!==undefined && x[i + 1] !==0;
+  return x[i + caml_weak_additional_values]!==undefined && x[i + caml_weak_additional_values] !==0;
 }
 //Provides: caml_weak_blit
 //Requires: caml_array_blit
