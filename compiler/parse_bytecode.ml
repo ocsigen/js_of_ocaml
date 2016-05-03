@@ -1737,7 +1737,7 @@ let match_exn_traps (blocks : 'a AddrMap.t) =
     match AddrMap.find pc blocks with
     | {branch = Pushtrap (cont1, x, cont2, conts); _ } as block ->
       assert (conts = AddrSet.empty);
-      let conts = AddrMap.bindings map |> List.map fst |> AddrSet.of_list in
+      let conts = AddrSet.of_list (List.map fst (AddrMap.bindings map)) in
       let len = AddrSet.cardinal conts in
       if len > 2 then Format.eprintf "More than 2 => %d\n%!" len;
       let branch = Pushtrap(cont1,x,cont2,conts) in
