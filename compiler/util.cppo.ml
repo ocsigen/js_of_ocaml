@@ -426,7 +426,7 @@ let rec find_loc_in_summary name ident' = function
   | Env.Env_class (summary, _, _)
   | Env.Env_cltype (summary, _, _)
   | Env.Env_open (summary, _)
-#if OCAML_VERSION < (4,0,2)
+#if OCAML_VERSION >= (4,0,2)
   | Env.Env_functor_arg (summary, _)
 #endif
    -> find_loc_in_summary name ident' summary
