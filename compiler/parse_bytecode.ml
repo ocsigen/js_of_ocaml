@@ -1718,29 +1718,21 @@ and compile infos pc state instrs =
 let match_exn_traps (blocks : 'a AddrMap.t) =
   let map =
     AddrMap.fold
-      (fun pc block map ->
+      (fun _ block map ->
          match block.branch with
          | Poptrap ((cont,_),addr_push) ->
-           let map_cont = try
-               AddrMap.find addr_push map
-             with Not_found -> AddrMap.empty
+           let set = try
+               AddrSet.add cont (AddrMap.find addr_push map)
+             with Not_found -> AddrSet.singleton cont
            in
-           let set_pop_pc =
-             try AddrSet.add pc (AddrMap.find cont map_cont)
-             with Not_found -> AddrSet.singleton pc
-           in
-           let map_cont = AddrMap.add cont set_pop_pc map_cont in
-           AddrMap.add addr_push map_cont map
+           AddrMap.add addr_push set map
          | _ -> map) blocks AddrMap.empty
   in
-  AddrMap.fold (fun pc map (blocks) ->
+  AddrMap.fold (fun pc conts' (blocks) ->
     match AddrMap.find pc blocks with
     | {branch = Pushtrap (cont1, x, cont2, conts); _ } as block ->
       assert (conts = AddrSet.empty);
-      let conts = AddrSet.of_list (List.map fst (AddrMap.bindings map)) in
-      let len = AddrSet.cardinal conts in
-      if len > 2 then Format.eprintf "More than 2 => %d\n%!" len;
-      let branch = Pushtrap(cont1,x,cont2,conts) in
+      let branch = Pushtrap(cont1,x,cont2,conts') in
       AddrMap.add pc {block with branch} blocks
     | _ -> assert false
   ) map blocks
