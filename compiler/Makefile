@@ -1,8 +1,7 @@
 
 include ../Makefile.conf
 
-PACKAGES=cmdliner base64 yojson
-
+PACKAGES=compiler-libs.common cmdliner base64 yojson
 
 ifeq "${WITH_FINDLIB}" "YES"
 PACKAGES+= findlib
