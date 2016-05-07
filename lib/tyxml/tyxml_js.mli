@@ -65,6 +65,8 @@ module Html : Html_sigs.Make(Xml)(Svg).T
 (** @deprecated Use {!Tyxml_js.Html}. *)
 module Html5 : Html_sigs.Make(Xml)(Svg).T
   with module Xml.W = Xml_wrap.NoWrap
+   and type 'a elt = 'a Html.elt
+   and type +'a attrib = 'a Html.attrib
 
 module Register : sig
 
