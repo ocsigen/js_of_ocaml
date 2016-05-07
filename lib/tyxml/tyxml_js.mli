@@ -47,7 +47,7 @@ module type XML =
 
 module Xml : XML with module W = Xml_wrap.NoWrap
 
-module Xml_wrap : Xml_wrap.T
+module Wrap : Xml_wrap.T
   with type 'a t = 'a React.signal
    and type 'a tlist = 'a ReactiveData.RList.t
    and type ('a, 'b) ft = 'a -> 'b
@@ -57,11 +57,14 @@ module Util : sig
 end
 
 module Svg : Svg_sigs.Make(Xml).T
+  with module Xml.W = Xml_wrap.NoWrap
 
 module Html : Html_sigs.Make(Xml)(Svg).T
+  with module Xml.W = Xml_wrap.NoWrap
 
 (** @deprecated Use {!Tyxml_js.Html}. *)
 module Html5 : Html_sigs.Make(Xml)(Svg).T
+  with module Xml.W = Xml_wrap.NoWrap
 
 module Register : sig
 
@@ -98,7 +101,7 @@ module Register : sig
 end
 
 module R : sig
-  module Xml : XML with module W = Xml_wrap
+  module Xml : XML with module W = Wrap
 
   module Svg : Svg_sigs.Make(Xml).T
     with type +'a elt = 'a Svg.elt

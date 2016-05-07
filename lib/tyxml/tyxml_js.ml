@@ -206,7 +206,7 @@ module Register = struct
 
 end
 
-module Xml_wrap = struct
+module Wrap = struct
   type 'a t = 'a React.signal
   type 'a tlist = 'a ReactiveData.RList.t
   type ('a, 'b) ft = 'a -> 'b
@@ -296,7 +296,7 @@ module R = struct
   let attach_attribs = Xml.attach_attribs
 
   module Xml = struct
-    module W = Xml_wrap
+    module W = Wrap
     type 'a wrap = 'a W.t
     type 'a list_wrap = 'a W.tlist
     type uri = Xml.uri
