@@ -30,6 +30,13 @@ function int_math_int64_pow_stub(base, exponent){
   return res;
 }
 
+//Provides: int_math_int_popcount
+function int_math_int_popcount(v) {
+  v = v - ((v >>> 1) & 0x55555555);
+  v = (v & 0x33333333) + ((v >>> 2) & 0x33333333);
+  return ((v + (v >>> 4) & 0xF0F0F0F) * 0x1010101) >>> 24;
+}
+
 //Provides: caml_hash_string
 //Requires: caml_hash
 function caml_hash_string(s) {
