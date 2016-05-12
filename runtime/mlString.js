@@ -310,7 +310,7 @@ function caml_string_compare(s1, s2) {
   return (s1.c < s2.c)?-1:(s1.c > s2.c)?1:0;
 }
 
-//Provides: caml_string_equal mutable
+//Provides: caml_string_equal mutable (const, const)
 //Requires: caml_convert_string_to_bytes
 function caml_string_equal(s1, s2) {
   (s1.t & 6) && caml_convert_string_to_bytes(s1);
@@ -318,7 +318,7 @@ function caml_string_equal(s1, s2) {
   return (s1.c == s2.c)?1:0;
 }
 
-//Provides: caml_string_notequal mutable
+//Provides: caml_string_notequal mutable (const, const)
 //Requires: caml_string_equal
 function caml_string_notequal(s1, s2) { return 1-caml_string_equal(s1, s2); }
 

@@ -21,6 +21,10 @@ module Primitive = Jsoo_primitive
 open Code
 open Flow
 
+let static_env = Hashtbl.create 17
+let clear_static_env () = Hashtbl.clear static_env
+let set_static_env s value = Hashtbl.add static_env s value
+let get_static_env s = try Some (Hashtbl.find static_env s) with Not_found -> None
 
 module Int = Int32
 let int_binop l f = match l with
@@ -112,6 +116,18 @@ let eval_prim x =
      | "caml_sin_float",_ -> float_unop l sin
      | "caml_sqrt_float",_ -> float_unop l sqrt
      | "caml_tan_float",_ -> float_unop l tan
+
+
+     | "caml_string_equal", [String s1; String s2] ->
+       bool (s1 = s2)
+     | "caml_string_notequal", [String s1; String s2] ->
+       bool (s1 <> s2)
+     | "caml_sys_getenv", [String s] ->
+       begin match get_static_env s with
+       | Some env ->
+         Some (String env)
+       | None -> None
+       end
      | _ -> None)
   | _ -> None
 
@@ -236,9 +252,74 @@ let eval_branch info = function
     end
   | _ as b -> b
 
+exception May_raise
 
+let rec do_not_raise pc visited blocks =
+  if AddrSet.mem pc visited then visited
+  else
+  let visited = AddrSet.add pc visited in
+  let b = AddrMap.find pc blocks in
+  List.iter (function
+    | Array_set (_,_,_)
+    | Offset_ref (_,_)
+    | Set_field (_,_,_) -> ()
+    | Let (_, e) ->
+      match e with
+      | Const _
+      | Block (_,_)
+      | Field (_,_)
+      | Constant _
+      | Closure _ -> ()
+      | Apply (_,_,_) -> raise May_raise
+      | Prim (Extern name, _) when Jsoo_primitive.is_pure name -> ()
+      | Prim (Extern _, _) -> raise May_raise
+      | Prim (_,_) -> ()
+  ) b.body;
+  match b.branch with
+  | Raise _ -> raise May_raise
+  | Stop
+  | Return _
+  | Poptrap _ -> visited
+  | Branch (pc,_) -> do_not_raise pc visited blocks
+  | Cond (_,_,(pc1,_),(pc2,_)) ->
+    let visited = do_not_raise pc1 visited blocks in
+    let visited = do_not_raise pc2 visited blocks in
+    visited
+  | Switch (_, a1, a2) ->
+    let visited = Array.fold_left (fun visited (pc,_) -> do_not_raise pc visited blocks) visited a1 in
+    let visited = Array.fold_left (fun visited (pc,_) -> do_not_raise pc visited blocks) visited a2 in
+    visited
+  | Pushtrap _ -> raise May_raise
+
+let drop_exception_handler blocks =
+  AddrMap.fold (fun pc _ blocks ->
+    match AddrMap.find pc blocks with
+    | { branch = Pushtrap ((addr,_) as cont1,_x,_cont2,_); _}  as b ->
+      begin
+        match do_not_raise addr AddrSet.empty blocks with
+        | visited ->
+          let parent_hander = b.handler in
+          let b = { b with branch = Branch cont1 } in
+          let blocks = AddrMap.add pc b blocks in
+          let blocks = AddrSet.fold (fun pc blocks ->
+            let b = AddrMap.find pc blocks in
+            let branch =
+              match b.branch with
+              | Poptrap (cont,_) -> Branch cont
+              | x -> x
+            in
+            let b = { b with branch; handler = parent_hander } in
+            AddrMap.add pc b blocks
+          ) visited blocks
+          in
+          blocks
+        | exception May_raise ->
+          blocks
+      end
+    | _ -> blocks) blocks blocks
 
 let f info (pc, blocks, free_pc) =
+  let blocks = drop_exception_handler blocks in
   let blocks =
     AddrMap.map
       (fun block ->
