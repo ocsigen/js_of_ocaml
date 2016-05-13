@@ -296,8 +296,8 @@ let drop_exception_handler blocks =
     match AddrMap.find pc blocks with
     | { branch = Pushtrap ((addr,_) as cont1,_x,_cont2,_); _}  as b ->
       begin
-        match do_not_raise addr AddrSet.empty blocks with
-        | visited ->
+        try
+          let visited = do_not_raise addr AddrSet.empty blocks in
           let parent_hander = b.handler in
           let b = { b with branch = Branch cont1 } in
           let blocks = AddrMap.add pc b blocks in
@@ -313,8 +313,7 @@ let drop_exception_handler blocks =
           ) visited blocks
           in
           blocks
-        | exception May_raise ->
-          blocks
+        with May_raise -> blocks
       end
     | _ -> blocks) blocks blocks
 
