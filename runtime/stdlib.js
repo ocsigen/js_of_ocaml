@@ -851,7 +851,7 @@ function caml_sys_get_config () {
 //Provides: caml_sys_const_backend_type const
 //Requires: caml_new_string
 function caml_sys_const_backend_type () {
-  return [0, caml_new_string("jsoo")];
+  return [0, caml_new_string("js_of_ocaml")];
 }
 
 
