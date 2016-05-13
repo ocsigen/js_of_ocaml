@@ -47,12 +47,13 @@ let gen_file file f =
 let f {
     CompileArg.common;
     profile; source_map; runtime_files; input_file; output_file;
-    params ;
+    params ; static_env;
     linkall; toplevel; nocmis;
     include_dir; fs_files; fs_output; fs_external } =
   let custom_header = common.CommonArg.custom_header in
   CommonArg.eval common;
   List.iter (fun (s,v) -> Option.Param.set s v) params;
+  List.iter (fun (s,v) -> Eval.set_static_env s v) static_env;
   let t = Util.Timer.make () in
 
   let include_dir = List.map (fun d ->

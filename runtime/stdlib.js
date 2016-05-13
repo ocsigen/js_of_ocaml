@@ -975,7 +975,7 @@ function caml_record_backtrace () { return 0; }
 function caml_convert_raw_backtrace () { return 0; }
 //Provides: caml_get_current_callstack const
 function caml_get_current_callstack () { return [0]; }
-//Provides: caml_sys_getenv
+//Provides: caml_sys_getenv (const)
 //Requires: caml_raise_not_found
 //Requires: caml_js_to_string
 function caml_sys_getenv (name) {

@@ -108,12 +108,14 @@ let o1 : 'a -> 'a=
   tailcall >>
   phi >>
   flow >>
-  specialize >>
+  specialize' >>
+  eval >>
   inline >>
   deadcode >>
   print >>
   flow >>
-  specialize >>
+  specialize' >>
+  eval >>
   inline >>
   deadcode >>
   phi >>
