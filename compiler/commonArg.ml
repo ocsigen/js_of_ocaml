@@ -77,6 +77,13 @@ let t = Term.(
         let enable = if pretty then "pretty"::enable else enable in
         let enable = if debuginfo then "debuginfo"::enable else enable in
         let disable = if noinline then "inline"::disable else disable in
+        let disable_if_pretty name disable =
+          if pretty && not (List.mem name enable)
+          then name :: disable
+          else disable
+        in
+        let disable = disable_if_pretty "shortvar" disable in
+        let disable = disable_if_pretty "share" disable in
         {
           debug = {
             enable = debug;

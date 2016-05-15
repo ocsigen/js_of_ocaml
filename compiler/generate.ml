@@ -215,7 +215,7 @@ module Share = struct
     else try
         J.EVar (IntMap.find n t.vars.applies)
       with Not_found ->
-        let x = Var.fresh_n (Printf.sprintf "caml_call_gen%d" n) in
+        let x = Var.fresh_n (Printf.sprintf "caml_call%d" n) in
         let v = J.V x in
         t.vars <- { t.vars with applies = IntMap.add n v t.vars.applies };
         J.EVar v
@@ -396,14 +396,14 @@ let access_queue' ~ctx queue x =
 let access_queue_may_flush queue v x =
   let tx,queue = access_queue queue x in
   let _,instrs,queue = List.fold_left (fun (deps,instrs,queue) ((y,elt) as eq) ->
-      if Code.VarSet.exists (fun p -> Code.VarSet.mem p deps) elt.deps then
-        (Code.VarSet.add y deps,
-         (J.Variable_statement [J.V y, Some (elt.ce, elt.loc)], elt.loc)
-         :: instrs,
-         queue)
-      else
-        (deps, instrs, eq::queue))
-    (Code.VarSet.singleton ( v),[],[]) queue
+    if Code.VarSet.exists (fun p -> Code.VarSet.mem p deps) elt.deps then
+      (Code.VarSet.add y deps,
+       (J.Variable_statement [J.V y, Some (elt.ce, elt.loc)], elt.loc)
+       :: instrs,
+       queue)
+    else
+      (deps, instrs, eq::queue))
+    (Code.VarSet.singleton v,[],[]) queue
   in instrs,(tx,List.rev queue)
 
 
@@ -681,11 +681,11 @@ let apply_fun_raw f params =
                     [f; J.EArr (List.map (fun x -> Some x) params)], J.N))
 
 let generate_apply_fun n =
-  let f' = Var.fresh_n "fun" in
+  let f' = Var.fresh_n "f" in
   let f = J.V f' in
   let params =
     Array.to_list (Array.init n (fun i ->
-      let a = Var.fresh_n (Printf.sprintf "var%d" i) in
+      let a = Var.fresh_n (Printf.sprintf "a%d" i) in
       J.V a))
   in
   let f' = J.EVar f in
@@ -1015,7 +1015,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         J.EArr (List.map (fun x -> Some x) args), prop, queue
       | Extern "%closure", [Pc (IString name | String name)] ->
          let prim = Share.get_prim s_var name ctx.Ctx.share in
-         prim, kind (Primitive.kind name), queue
+         prim, const_p, queue
       | Extern "%caml_js_opt_call", Pv f :: Pv o :: l ->
         let ((pf, cf), queue) = access_queue queue f in
         let ((po, co), queue) = access_queue queue o in
@@ -1167,7 +1167,10 @@ and translate_instr ctx expr_queue loc instr =
     begin match ctx.Ctx.live.(Var.idx x),e with
     | 0,_ -> (* deadcode is off *)
       flush_queue expr_queue prop (instrs @ [J.Expression_statement ce, loc])
-    | 1,_ when Option.Optim.compact () -> enqueue expr_queue prop x ce loc 1 instrs
+    | 1,_ when Option.Optim.compact ()
+            && (not ( Option.Optim.pretty ())
+                || Code.Var.get_name x = None) ->
+      enqueue expr_queue prop x ce loc 1 instrs
     (* We could inline more.
        size_v : length of the variable after serialization
        size_c : length of the constant after serialization
