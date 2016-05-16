@@ -228,7 +228,7 @@ module Ctx = struct
       live : int array;
       share: Share.t;
       debug : Parse_bytecode.Debug.data;
-      exported_runtime : bool }
+      exported_runtime : Code.Var.t option }
 
   let initial ~exported_runtime blocks live share debug =
     { blocks; live; share; debug; exported_runtime }
@@ -268,9 +268,10 @@ let float_const f = val_float (J.ENum f)
 let s_var name = J.EVar (J.S {J.name=name; J.var = None})
 
 let runtime_fun ctx name =
-  if ctx.Ctx.exported_runtime
-  then J.EDot (J.EDot (s_var Option.global_object, "jsoo_runtime"), name)
-  else s_var name
+  match ctx.Ctx.exported_runtime with
+  | Some runtime ->
+    J.EDot (J.EVar (J.V runtime), name)
+  | None -> s_var name
 
 let str_js s = J.EStr (s,`Bytes)
 
@@ -1770,7 +1771,12 @@ let generate_shared_value ctx =
   let strings =
     J.Statement (
       J.Variable_statement (
-        List.map (fun (s,v) ->
+        (match ctx.Ctx.exported_runtime with
+        | None -> []
+        | Some v ->
+          [J.V v,
+           Some (J.EDot (s_var Option.global_object, "jsoo_runtime"),J.N)])
+        @ List.map (fun (s,v) ->
           v,
           Some (str_js s,J.N))
           (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
@@ -1780,7 +1786,6 @@ let generate_shared_value ctx =
           (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims))),
     J.U
   in
-
   if not (Option.Optim.inline_callgen ())
   then
     let applies = List.map (fun (n,v) ->
@@ -1800,6 +1805,11 @@ let compile_program ctx pc =
 let f ((pc, blocks, _) as p) ~toplevel ~exported_runtime live_vars debug =
   let t' = Util.Timer.make () in
   let share = Share.get ~alias_prims:(toplevel && Option.Optim.shortvar ()) p in
+  let exported_runtime =
+    if exported_runtime
+    then Some (Code.Var.fresh_n "runtime")
+    else None
+  in
   let ctx = Ctx.initial ~exported_runtime blocks live_vars share debug  in
   let p = compile_program ctx pc in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
