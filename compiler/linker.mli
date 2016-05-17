@@ -31,3 +31,4 @@ val init : unit -> state
 val resolve_deps : ?linkall:bool -> state -> Util.StringSet.t -> state * Util.StringSet.t
 val link : Javascript.program -> state -> Javascript.program
 val get_provided : unit -> Util.StringSet.t
+val all : state -> string list

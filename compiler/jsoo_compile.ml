@@ -91,9 +91,9 @@ let f {
     if source_map <> None &&  Parse_bytecode.Debug.is_empty d
     then
       Util.warn
-	"Warning: '--source-map' is enabled but the bytecode program \
-	 was compiled with no debugging information.\n\
-	 Warning: Consider passing '-g' option to ocamlc.\n%!"
+        "Warning: '--source-map' is enabled but the bytecode program \
+         was compiled with no debugging information.\n\
+         Warning: Consider passing '-g' option to ocamlc.\n%!"
   in
   let cmis = if nocmis then Util.StringSet.empty else cmis in
   let p =

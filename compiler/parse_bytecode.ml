@@ -1915,7 +1915,9 @@ let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
   if toplevel then
     begin
       (* export globals *)
-      Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
+      Tbl.iter (fun id n ->
+        globals.named_value.(n) <- Some id.Ident.name;
+        globals.is_exported.(n) <- true) symbols.num_tbl;
       (* @vouillon: *)
       (* we should then use the -linkall option to build the toplevel. *)
       (* The OCaml compiler can generate code using this primitive but *)

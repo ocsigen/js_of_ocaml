@@ -227,10 +227,11 @@ module Ctx = struct
     { mutable blocks : block AddrMap.t;
       live : int array;
       share: Share.t;
-      debug : Parse_bytecode.Debug.data }
+      debug : Parse_bytecode.Debug.data;
+      exported_runtime : Code.Var.t option }
 
-  let initial blocks live share debug =
-    { blocks; live; share; debug }
+  let initial ~exported_runtime blocks live share debug =
+    { blocks; live; share; debug; exported_runtime }
 
 end
 
@@ -266,6 +267,12 @@ let float_const f = val_float (J.ENum f)
 
 let s_var name = J.EVar (J.S {J.name=name; J.var = None})
 
+let runtime_fun ctx name =
+  match ctx.Ctx.exported_runtime with
+  | Some runtime ->
+    J.EDot (J.EVar (J.V runtime), name)
+  | None -> s_var name
+
 let str_js s = J.EStr (s,`Bytes)
 
 
@@ -296,7 +303,7 @@ let rec constant_rec ~ctx x level instrs =
   match x with
     String s ->
       let e = Share.get_string str_js s ctx.Ctx.share in
-      let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
+      let p = Share.get_prim (runtime_fun ctx) "caml_new_string" ctx.Ctx.share in
       J.ECall (p,[e],J.N), instrs
   | IString s ->
       Share.get_string str_js s ctx.Ctx.share, instrs
@@ -328,7 +335,7 @@ let rec constant_rec ~ctx x level instrs =
           let (js, instrs) = constant_rec ~ctx elt level instrs in
           (Some js)::arr, instrs) ([], instrs) elts_rev
         in
-        let p = Share.get_prim s_var "caml_list_of_js_array" ctx.Ctx.share in
+        let p = Share.get_prim (runtime_fun ctx) "caml_list_of_js_array" ctx.Ctx.share in
         J.ECall (p,[J.EArr arr],J.N), instrs
       | None ->
       let split = level = constant_max_depth in
@@ -672,15 +679,15 @@ let parallel_renaming params args continuation queue =
 
 (****)
 
-let apply_fun_raw f params =
+let apply_fun_raw ctx f params =
   let n = List.length params in
   J.ECond (J.EBin (J.EqEq, J.EDot (f, "length"),
                    J.ENum (float n)),
            J.ECall (f, params, J.N),
-           J.ECall (s_var "caml_call_gen",
+           J.ECall (runtime_fun ctx "caml_call_gen",
                     [f; J.EArr (List.map (fun x -> Some x) params)], J.N))
 
-let generate_apply_fun n =
+let generate_apply_fun ctx n =
   let f' = Var.fresh_n "f" in
   let f = J.V f' in
   let params =
@@ -693,14 +700,14 @@ let generate_apply_fun n =
   J.EFun (None, f :: params,
           [J.Statement
               (J.Return_statement
-                 (Some (apply_fun_raw f' params'))), J.N],
+                 (Some (apply_fun_raw ctx f' params'))), J.N],
           J.N)
 
 let apply_fun ctx f params loc =
   if Option.Optim.inline_callgen ()
-  then apply_fun_raw f params
+  then apply_fun_raw ctx f params
   else
-    let y = Share.get_apply generate_apply_fun (List.length params) ctx.Ctx.share in
+    let y = Share.get_apply (generate_apply_fun ctx) (List.length params) ctx.Ctx.share in
     J.ECall (y, f::params, loc)
 
 (****)
@@ -831,7 +838,7 @@ let register_bin_math_prim name prim =
 let _ =
   register_un_prim_ctx  "%caml_format_int_special" `Pure
     (fun ctx cx loc ->
-      let p = Share.get_prim s_var "caml_new_string" ctx.Ctx.share in
+      let p = Share.get_prim (runtime_fun ctx) "caml_new_string" ctx.Ctx.share in
       J.ECall (p, [J.EBin (J.Plus,str_js "",cx)], loc));
   register_bin_prim "caml_array_unsafe_get" `Mutable
     (fun cx cy _ -> J.EAccess (cx, plus_int cy one));
@@ -1014,7 +1021,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         in
         J.EArr (List.map (fun x -> Some x) args), prop, queue
       | Extern "%closure", [Pc (IString name | String name)] ->
-         let prim = Share.get_prim s_var name ctx.Ctx.share in
+         let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
          prim, const_p, queue
       | Extern "%caml_js_opt_call", Pv f :: Pv o :: l ->
         let ((pf, cf), queue) = access_queue queue f in
@@ -1073,7 +1080,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         let ((po, co), queue) = access_queue queue o in
         (J.EUn(J.Delete, J.EDot (co, f)), or_p po mutator_p, queue)
       | Extern "%overrideMod", [Pc (String m | IString m);Pc (String f | IString f)] ->
-        s_var (Printf.sprintf "caml_%s_%s" m f), const_p,queue
+        runtime_fun ctx (Printf.sprintf "caml_%s_%s" m f), const_p,queue
       | Extern "%overrideMod", _ ->
         assert false
       | Extern "%caml_js_opt_object", fields ->
@@ -1112,7 +1119,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             | None ->
               if name.[0] = '%'
               then failwith (Printf.sprintf "Unresolved internal primitive: %s" name);
-              let prim = Share.get_prim s_var name ctx.Ctx.share in
+              let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
               let prim_kind = kind (Primitive.kind name) in
               let (args, prop, queue) =
                 List.fold_right
@@ -1164,12 +1171,23 @@ and translate_instr ctx expr_queue loc instr =
   | Let (x, e) ->
     let (ce, prop, expr_queue),instrs =
       translate_expr ctx expr_queue loc x e 0 in
+    let keep_name x =
+      match Code.Var.get_name x with
+      | None -> false
+      | Some s ->
+        not (String.length s >= 5
+             && s.[0] = 'j'
+             && s.[1] = 's'
+             && s.[2] = 'o'
+             && s.[3] = 'o'
+             && s.[4] = '_')
+    in
     begin match ctx.Ctx.live.(Var.idx x),e with
     | 0,_ -> (* deadcode is off *)
       flush_queue expr_queue prop (instrs @ [J.Expression_statement ce, loc])
     | 1,_ when Option.Optim.compact ()
             && (not ( Option.Optim.pretty ())
-                || Code.Var.get_name x = None) ->
+                || not (keep_name x)) ->
       enqueue expr_queue prop x ce loc 1 instrs
     (* We could inline more.
        size_v : length of the variable after serialization
@@ -1322,7 +1340,7 @@ else begin
             J.EBin(
               J.Eq,
               J.EVar (J.V x),
-              J.ECall (Share.get_prim s_var "caml_wrap_exception" st.ctx.Ctx.share,
+              J.ECall (Share.get_prim (runtime_fun st.ctx) "caml_wrap_exception" st.ctx.Ctx.share,
                        [J.EVar (J.V x)], J.N))),J.N)
             ::handler
           else handler in
@@ -1753,15 +1771,25 @@ let generate_shared_value ctx =
   let strings =
     J.Statement (
       J.Variable_statement (
-        List.map (fun (s,v) -> v, Some (str_js s,J.N)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
-        @ List.map (fun (s,v) -> v, Some (s_var s,J.N)) (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims))),
+        (match ctx.Ctx.exported_runtime with
+        | None -> []
+        | Some v ->
+          [J.V v,
+           Some (J.EDot (s_var Option.global_object, "jsoo_runtime"),J.N)])
+        @ List.map (fun (s,v) ->
+          v,
+          Some (str_js s,J.N))
+          (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
+        @ List.map (fun (s,v) ->
+          v,
+          Some (runtime_fun ctx s,J.N))
+          (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims))),
     J.U
   in
-
   if not (Option.Optim.inline_callgen ())
   then
     let applies = List.map (fun (n,v) ->
-        match generate_apply_fun n with
+        match generate_apply_fun ctx n with
         | J.EFun (_,param,body,nid) ->
           J.Function_declaration (v,param,body,nid), J.U
         | _ -> assert false) (IntMap.bindings ctx.Ctx.share.Share.vars.Share.applies) in
@@ -1774,10 +1802,15 @@ let compile_program ctx pc =
   if debug () then Format.eprintf "@.@.";
   res
 
-let f ((pc, blocks, _) as p) ?toplevel live_vars debug =
+let f ((pc, blocks, _) as p) ~toplevel ~exported_runtime live_vars debug =
   let t' = Util.Timer.make () in
-  let share = Share.get ?alias_prims:toplevel p in
-  let ctx = Ctx.initial blocks live_vars share debug  in
+  let share = Share.get ~alias_prims:(toplevel && Option.Optim.shortvar ()) p in
+  let exported_runtime =
+    if exported_runtime
+    then Some (Code.Var.fresh_n "runtime")
+    else None
+  in
+  let ctx = Ctx.initial ~exported_runtime blocks live_vars share debug  in
   let p = compile_program ctx pc in
   if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
   p

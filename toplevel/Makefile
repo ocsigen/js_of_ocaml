@@ -68,7 +68,7 @@ MKTOP=jsoo_mktop -verbose $(SAFESTRING) \
 
 TOPLEVEL_NAME=toplevel
 TOPLEVEL_OBJS=colorize.cmo indent.cmo toplevel.cmo
-$(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS) examples.ml test_dynlink.cmo
+$(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS) examples.ml test_dynlink.cmo test_dynlink.js
 	$(MKTOP) \
 	$(BER) \
 	$(OCPINDENT) $(HIGLO) \
@@ -76,8 +76,12 @@ $(TOPLEVEL_NAME).js: $(TOPLEVEL_OBJS) examples.ml test_dynlink.cmo
 	${addprefix -jsopt , ${JSFILES}} \
 	${addprefix -jsopt , -I ./ --file examples.ml} \
 	${addprefix -jsopt , -I ./ --file test_dynlink.cmo} \
+	${addprefix -jsopt , -I ./ --file test_dynlink.js} \
 	-package base64 \
 	-o $(TOPLEVEL_NAME).byte
+
+test_dynlink.js: test_dynlink.cmo
+	js_of_ocaml test_dynlink.cmo --pretty
 
 EVAL_NAME=eval
 EVAL_OBJS=eval.cmo
