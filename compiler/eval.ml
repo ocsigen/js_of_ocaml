@@ -128,6 +128,11 @@ let eval_prim x =
          Some (String env)
        | None -> None
        end
+     | "caml_sys_const_word_size" , [_] -> Some (Int 32l)
+     | "caml_sys_const_int_size"  , [_] -> Some (Int 32l)
+     | "caml_sys_const_big_endian", [_] -> Some (Int 0l)
+       
+       
      | _ -> None)
   | _ -> None
 
