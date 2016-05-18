@@ -1969,10 +1969,32 @@ let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
     else body in
 
   (* List interface files *)
+  let is_module =
+    let is_ident_char = function
+      | 'A' .. 'Z'
+      | 'a' .. 'z'
+      | '_' | '\''
+      | '0' .. '9' -> true
+      | _ -> false
+    in
+    let is_uppercase = function
+      | 'A' .. 'Z' -> true
+      | _ -> false
+    in
+    fun name ->
+      try
+        if String.length name = 0 then raise Exit;
+        if not (is_uppercase name.[0]) then raise Exit;
+        for i = 1 to String.length name - 1 do
+          if not (is_ident_char name.[i]) then raise Exit
+        done;
+        true
+      with Exit -> false
+  in
   let cmis =
     if toplevel && Option.Optim.include_cmis ()
     then Tbl.fold (fun id _num acc ->
-      if id.Ident.flags = 1
+      if id.Ident.flags = 1 && is_module id.Ident.name
       then Util.StringSet.add id.Ident.name  acc
       else acc) symbols.num_tbl Util.StringSet.empty
     else Util.StringSet.empty in
