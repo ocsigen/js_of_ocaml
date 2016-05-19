@@ -67,7 +67,6 @@ let eval_prim x =
   | Le,  [Int i; Int j ] -> bool (i <= j)
   | Eq,  [Int i; Int j ] -> bool (i = j)
   | Neq, [Int i; Int j ] -> bool (i <> j)
-  | IsInt, [Int _] -> bool true
   | Ult, [Int i; Int j ] -> bool (j < 0l || i < j)
   | Extern name, l ->
     let name = Primitive.resolve name in
@@ -131,8 +130,8 @@ let eval_prim x =
      | "caml_sys_const_word_size" , [_] -> Some (Int 32l)
      | "caml_sys_const_int_size"  , [_] -> Some (Int 32l)
      | "caml_sys_const_big_endian", [_] -> Some (Int 0l)
-       
-       
+
+
      | _ -> None)
   | _ -> None
 
@@ -153,6 +152,30 @@ let the_length_of info x =
        | _ -> None)
     x
 
+type is_int = Empty | Y | N | Unknown
+
+let is_int info x =
+  match x with
+  | Pv x ->
+    get_approx info
+      (fun x -> match info.info_defs.(Var.idx x) with
+         | Expr (Const _)
+         | Expr (Constant (Int _)) -> Y
+         | Expr (Block (_,_))
+         | Expr (Constant _) -> N
+         | _ -> Unknown)
+      Empty
+      (fun u v ->
+         match u, v with
+         | Empty, x
+         | x, Empty -> x
+         | Y, Y      -> Y
+         | N, N      -> N
+         | _         -> Unknown
+      )
+      x
+  | Pc (Int _) -> Y
+  | Pc _ -> N
 
 let eval_instr info i =
   match i with
@@ -186,7 +209,17 @@ let eval_instr info i =
         (* Fresh parameters can be introduced for these primitives
            in Specialize_js, which would make the call to [the_const_of]
            below fail. *)
-        i
+      i
+    | Let (x,Prim (IsInt, [y])) ->
+      begin
+        match is_int info y with
+        | Unknown | Empty -> i
+        | Y | N as b ->
+          let b = if b = N then 0l else 1l in
+          let c = Constant (Int b) in
+          Flow.update_def info x c;
+          Let (x,c)
+      end
     | Let (x,Prim (prim, prim_args)) ->
       begin
         let prim_args' = List.map (fun x -> the_const_of info x) prim_args in
@@ -299,22 +332,24 @@ let rec do_not_raise pc visited blocks =
 let drop_exception_handler blocks =
   AddrMap.fold (fun pc _ blocks ->
     match AddrMap.find pc blocks with
-    | { branch = Pushtrap ((addr,_) as cont1,_x,_cont2,_); _}  as b ->
+    | { branch = Pushtrap ((addr,_) as cont1,_x,_cont2,_); handler = parent_hander; _}  as b ->
       begin
         try
           let visited = do_not_raise addr AddrSet.empty blocks in
-          let parent_hander = b.handler in
           let b = { b with branch = Branch cont1 } in
           let blocks = AddrMap.add pc b blocks in
-          let blocks = AddrSet.fold (fun pc blocks ->
-            let b = AddrMap.find pc blocks in
+          let blocks = AddrSet.fold (fun pc2 blocks ->
+            let b = AddrMap.find pc2 blocks in
+            assert(b.handler <> parent_hander);
             let branch =
               match b.branch with
-              | Poptrap (cont,_) -> Branch cont
+              | Poptrap (cont,pushtrap) ->
+                assert(pc = pushtrap);
+                Branch cont
               | x -> x
             in
             let b = { b with branch; handler = parent_hander } in
-            AddrMap.add pc b blocks
+            AddrMap.add pc2 b blocks
           ) visited blocks
           in
           blocks
@@ -322,17 +357,19 @@ let drop_exception_handler blocks =
       end
     | _ -> blocks) blocks blocks
 
+let eval info blocks =
+  AddrMap.map
+    (fun block ->
+       let body = List.map (eval_instr info) block.body in
+       let branch = eval_branch info block.branch in
+       { block with
+         Code.body;
+         Code.branch
+       })
+    blocks
+
 let f info (pc, blocks, free_pc) =
+  let blocks = eval info blocks in
   let blocks = drop_exception_handler blocks in
-  let blocks =
-    AddrMap.map
-      (fun block ->
-         let body = List.map (eval_instr info) block.body in
-         let branch = eval_branch info block.branch in
-         { block with
-           Code.body;
-           Code.branch
-         })
-      blocks
-  in
   (pc, blocks, free_pc)
+

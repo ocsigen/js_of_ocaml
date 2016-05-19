@@ -131,7 +131,7 @@ let rec find_mapping mapping x =
 let simple blocks cont mapping =
   let map_var mapping x =
     let x' = find_mapping mapping x in
-    if x = x' || false
+    if x = x'
     then raise Not_found
     else x'
   in
