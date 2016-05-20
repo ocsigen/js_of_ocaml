@@ -28,6 +28,7 @@ type t = {
   params : (string * string) list;
   static_env : (string * string) list;
   (* toplevel *)
+  dynlink : bool;
   linkall : bool;
   toplevel : bool;
   nocmis : bool;

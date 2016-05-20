@@ -1855,7 +1855,7 @@ let read_toc ic =
   done;
   !section_table
 
-let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
+let exe_from_channel ~includes ?(toplevel=false) ?(dynlink=false) ~debug ~debug_data ic =
 
   let toc = read_toc ic in
 
@@ -1912,10 +1912,11 @@ let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
     with Not_found -> ()
   ) override_global;
 
-  if toplevel then
+  if toplevel || dynlink then
     begin
       (* export globals *)
       Tbl.iter (fun id n ->
+        (* Format.eprintf "export %d %d %s@." id.Ident.flags id.Ident.stamp id.Ident.name; *)
         globals.named_value.(n) <- Some id.Ident.name;
         globals.is_exported.(n) <- true) symbols.num_tbl;
       (* @vouillon: *)
@@ -2149,7 +2150,7 @@ let from_compilation_units ~includes:_ ~debug ~debug_data l =
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   prepend prog body,Util.StringSet.empty, debug_data
 
-let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
+let from_channel ?(includes=[]) ?(toplevel=false) ?(dynlink=false) ?(debug=`No) ic =
   let debug_data = Debug.create () in
   let format =
     try
@@ -2211,7 +2212,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
       | `Exe ->
         if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_exe
         then raise Util.MagicNumber.(Bad_magic_version magic);
-        let a,b,c = exe_from_channel ~includes ~toplevel ~debug ~debug_data ic in
+        let a,b,c = exe_from_channel ~includes ~toplevel ~dynlink ~debug ~debug_data ic in
         Code.invariant a;
         a,b,c,true
       | _ ->

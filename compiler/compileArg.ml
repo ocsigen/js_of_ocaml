@@ -30,6 +30,7 @@ type t = {
   params : (string * string) list;
   static_env : (string * string) list;
  (* toplevel *)
+  dynlink : bool;
   linkall : bool;
   toplevel : bool;
   nocmis : bool;
@@ -103,7 +104,11 @@ let options =
   in
   let linkall =
     let doc = "Link all primitives." in
-    Arg.(value & flag & info ["linkall"] ~docs:toplevel_section ~doc)
+    Arg.(value & flag & info ["linkall"] ~doc)
+  in
+  let dynlink =
+    let doc = "Enable dynlink." in
+    Arg.(value & flag & info ["dynlink"] ~doc)
   in
   let nocmis =
     let doc = "Do not include cmis when compiling toplevel." in
@@ -129,6 +134,7 @@ let options =
       common
       set_param
       set_env
+      dynlink
       linkall
       toplevel
       include_dir
@@ -193,6 +199,7 @@ let options =
         profile;
         static_env;
 
+        dynlink;
         linkall;
         toplevel;
 
@@ -215,6 +222,7 @@ let options =
           $ CommonArg.t
           $ set_param
           $ set_env
+          $ dynlink
           $ linkall
           $ toplevel
 
