@@ -31,24 +31,29 @@ let by_id_coerce s f  = Js.Opt.get (f (Dom_html.getElementById s)) (fun () -> ra
 let do_by_id s f = try f (Dom_html.getElementById s) with Not_found -> ()
 
 (* load file using a synchronous XMLHttpRequest *)
-let load_resource_aux url =
-  try
-    let xml = XmlHttpRequest.create () in
-    xml##_open(Js.string "GET", url, Js._false);
-    xml##send(Js.null);
-    if xml##status = 200 then Some (xml##responseText) else None
-  with _ -> None
+let load_resource_aux filename url =
+  XmlHttpRequest.perform_raw ~response_type:XmlHttpRequest.ArrayBuffer url
+  >|= fun frame ->
+  if frame.XmlHttpRequest.code = 200
+  then
+    Js.Opt.case frame.XmlHttpRequest.content
+      (fun () -> Printf.eprintf "Could not load %s\n" filename)
+      (fun b  ->
+         Sys_js.update_file ~name:filename ~content:(Typed_array.String.of_arrayBuffer b))
+  else ()
 
-let load_resource scheme (_,suffix) =
-  let url = (Js.string scheme)##concat(suffix) in
-  load_resource_aux url
+let load_resource scheme (prefix,suffix) =
+  let url = scheme ^ suffix in
+  let filename = Filename.concat prefix suffix in
+  Lwt.async (fun () -> load_resource_aux filename url);
+  Some ""
 
 let setup_pseudo_fs () =
-  Sys_js.register_autoload' "/dev/" (fun s -> Some (Js.string ""));
-  Sys_js.register_autoload' "/http/"  (fun s -> load_resource "http://" s);
-  Sys_js.register_autoload' "/https/" (fun s -> load_resource "https://" s);
-  Sys_js.register_autoload' "/ftp/"   (fun s -> load_resource "ftp://" s);
-  Sys_js.register_autoload' "/" (fun (_,s) -> load_resource_aux ((Js.string "filesys/")##concat(s)))
+  Sys_js.register_autoload "/dev/"   (fun s -> None);
+  Sys_js.register_autoload "/http/"  (fun s -> load_resource "http://" s);
+  Sys_js.register_autoload "/https/" (fun s -> load_resource "https://" s);
+  Sys_js.register_autoload "/ftp/"   (fun s -> load_resource "ftp://" s);
+  Sys_js.register_autoload "/"       (fun s -> load_resource "filesys/" s)
 
 let exec' s =
   let res : bool = JsooTop.use Format.std_formatter s in
