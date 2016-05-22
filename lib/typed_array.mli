@@ -148,3 +148,8 @@ module Bigstring : sig
   val to_arrayBuffer : t -> arrayBuffer Js.t
   val of_arrayBuffer : arrayBuffer Js.t -> t
 end
+
+
+module String : sig
+  val of_arrayBuffer : arrayBuffer Js.t -> string
+end
