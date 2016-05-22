@@ -258,7 +258,10 @@ function caml_convert_string_to_bytes (s) {
 //Provides: caml_convert_string_to_array
 function caml_convert_string_to_array (s) {
   /* Assumes not ARRAY */
-  var a = new Array(s.l), b = s.c, l = b.length, i = 0;
+  // TODO use typed array
+  // var a = new joo_global_object.Uint8Array(s.l);
+  var a = new Array(s.l);
+  var b = s.c, l = b.length, i = 0;
   for (; i < l; i++) a[i] = b.charCodeAt(i);
   for (l = s.l; i < l; i++) a[i] = 0;
   s.c = a;

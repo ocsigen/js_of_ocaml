@@ -39,6 +39,10 @@ val register_file: name:string -> content:string -> unit
       [register_file ~name ~content] register the file [name] with content [content]
       so it can be be opened with [Pervasives.open_in name] *)
 
+val update_file: name:string -> content:string -> unit
+  (** Update a file in the Pseudo Filesystem.
+      [update_file ~name ~content] update the file [name] with content [content] *)
+
 val register_autoload' :
   path:string ->
   ((Js.js_string Js.t * Js.js_string Js.t) -> Js.js_string Js.t option) ->
