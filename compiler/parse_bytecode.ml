@@ -637,7 +637,9 @@ let register_global ?(force=false) g i rem =
     let args =
       match g.named_value.(i) with
       | None -> []
-      | Some name -> [Pc (IString name)] in
+      | Some name ->
+        Code.Var.name (access_global g i) name;
+        [Pc (IString name)] in
     Let (Var.fresh (),
          Prim (Extern "caml_register_global",
                (Pc (Int (Int32.of_int i)) ::
@@ -657,7 +659,8 @@ let get_global state instrs i =
       i < Array.length g.constants && Constants.inlined g.constants.(i)
     then begin
       let (x, state) = State.fresh_var state in
-      (x, state, Let (x, Constant (Constants.parse g.constants.(i))) :: instrs)
+      let cst = Constants.parse g.constants.(i) in
+      (x, state, Let (x, Constant cst) :: instrs)
     end else begin
       g.is_const.(i) <- true;
       let (x, state) = State.fresh_var state in
@@ -1852,7 +1855,7 @@ let read_toc ic =
   done;
   !section_table
 
-let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
+let exe_from_channel ~includes ?(toplevel=false) ?(dynlink=false) ~debug ~debug_data ic =
 
   let toc = read_toc ic in
 
@@ -1909,10 +1912,13 @@ let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
     with Not_found -> ()
   ) override_global;
 
-  if toplevel then
+  if toplevel || dynlink then
     begin
       (* export globals *)
-      Tbl.iter (fun _ n -> globals.is_exported.(n) <- true) symbols.num_tbl;
+      Tbl.iter (fun id n ->
+        (* Format.eprintf "export %d %d %s@." id.Ident.flags id.Ident.stamp id.Ident.name; *)
+        globals.named_value.(n) <- Some id.Ident.name;
+        globals.is_exported.(n) <- true) symbols.num_tbl;
       (* @vouillon: *)
       (* we should then use the -linkall option to build the toplevel. *)
       (* The OCaml compiler can generate code using this primitive but *)
@@ -1964,10 +1970,32 @@ let exe_from_channel ~includes ?(toplevel=false) ~debug ~debug_data ic =
     else body in
 
   (* List interface files *)
+  let is_module =
+    let is_ident_char = function
+      | 'A' .. 'Z'
+      | 'a' .. 'z'
+      | '_' | '\''
+      | '0' .. '9' -> true
+      | _ -> false
+    in
+    let is_uppercase = function
+      | 'A' .. 'Z' -> true
+      | _ -> false
+    in
+    fun name ->
+      try
+        if String.length name = 0 then raise Exit;
+        if not (is_uppercase name.[0]) then raise Exit;
+        for i = 1 to String.length name - 1 do
+          if not (is_ident_char name.[i]) then raise Exit
+        done;
+        true
+      with Exit -> false
+  in
   let cmis =
     if toplevel && Option.Optim.include_cmis ()
     then Tbl.fold (fun id _num acc ->
-      if id.Ident.flags = 1
+      if id.Ident.flags = 1 && is_module id.Ident.name
       then Util.StringSet.add id.Ident.name  acc
       else acc) symbols.num_tbl Util.StringSet.empty
     else Util.StringSet.empty in
@@ -2101,22 +2129,28 @@ let from_compilation_units ~includes:_ ~debug ~debug_data l =
     let l = List.map (fun (_,c) -> Bytes.to_string c) l in
     String.concat "" l in
   let prog = parse_bytecode ~debug code globals debug_data in
-  let gdata = Var.fresh () in
+  let gdata = Var.fresh_n "global_data" in
   let body = Util.array_fold_right_i (fun i var l ->
     match var with
     | Some x when globals.is_const.(i) ->
       begin match globals.named_value.(i) with
         | None ->
           let l = register_global globals i l in
-          Let (x, Constant (Constants.parse globals.constants.(i))) :: l
+          let cst = Constants.parse globals.constants.(i) in
+          begin match cst, Code.Var.get_name x with
+            | String str, None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
+            | _ -> ()
+          end;
+          Let (x, Constant cst) :: l
         | Some name ->
+          Var.name x name;
           Let (x, Prim (Extern "caml_js_get",[Pv gdata; Pc (IString name)])) :: l
       end
     | _ -> l) globals.vars [] in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   prepend prog body,Util.StringSet.empty, debug_data
 
-let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
+let from_channel ?(includes=[]) ?(toplevel=false) ?(dynlink=false) ?(debug=`No) ic =
   let debug_data = Debug.create () in
   let format =
     try
@@ -2178,7 +2212,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(debug=`No) ic =
       | `Exe ->
         if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_exe
         then raise Util.MagicNumber.(Bad_magic_version magic);
-        let a,b,c = exe_from_channel ~includes ~toplevel ~debug ~debug_data ic in
+        let a,b,c = exe_from_channel ~includes ~toplevel ~dynlink ~debug ~debug_data ic in
         Code.invariant a;
         a,b,c,true
       | _ ->

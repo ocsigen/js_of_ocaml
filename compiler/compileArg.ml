@@ -28,7 +28,9 @@ type t = {
   output_file : string option;
   input_file : string option;
   params : (string * string) list;
-  (* toplevel *)
+  static_env : (string * string) list;
+ (* toplevel *)
+  dynlink : bool;
   linkall : bool;
   toplevel : bool;
   nocmis : bool;
@@ -92,13 +94,21 @@ let options =
       x, x) (Option.Param.all ()) in
     Arg.(value & opt_all (list (pair ~sep:'=' (enum all) string)) [] & info ["set"] ~docv:"PARAM=VALUE"~doc)
   in
+  let set_env =
+    let doc = "Set environment variable statically." in
+    Arg.(value & opt_all (list (pair ~sep:'=' string string)) [] & info ["setenv"] ~docv:"PARAM=VALUE"~doc)
+  in
   let toplevel =
     let doc = "Compile a toplevel." in
     Arg.(value & flag & info ["toplevel"] ~docs:toplevel_section ~doc)
   in
   let linkall =
     let doc = "Link all primitives." in
-    Arg.(value & flag & info ["linkall"] ~docs:toplevel_section ~doc)
+    Arg.(value & flag & info ["linkall"] ~doc)
+  in
+  let dynlink =
+    let doc = "Enable dynlink." in
+    Arg.(value & flag & info ["dynlink"] ~doc)
   in
   let nocmis =
     let doc = "Do not include cmis when compiling toplevel." in
@@ -123,6 +133,8 @@ let options =
   let build_t
       common
       set_param
+      set_env
+      dynlink
       linkall
       toplevel
       include_dir
@@ -180,11 +192,14 @@ let options =
             })
         else None in
       let params : (string * string) list = List.flatten set_param in
+      let static_env : (string * string) list = List.flatten set_env in
       `Ok {
         common;
         params;
         profile;
+        static_env;
 
+        dynlink;
         linkall;
         toplevel;
 
@@ -206,6 +221,8 @@ let options =
     Term.(pure build_t
           $ CommonArg.t
           $ set_param
+          $ set_env
+          $ dynlink
           $ linkall
           $ toplevel
 

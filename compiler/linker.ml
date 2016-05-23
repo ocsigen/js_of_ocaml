@@ -224,15 +224,16 @@ let find_named_value code =
 let add_file f =
   List.iter
     (fun (provide,req,versions,(code:Javascript.program)) ->
-       incr last_code_id;
-       let id = !last_code_id in
        let vmatch = match versions with
          | [] -> true
          | l -> List.exists version_match l in
        if vmatch
        then begin
+         incr last_code_id;
+         let id = !last_code_id in
          (match provide with
-          | None -> always_included := id :: !always_included
+          | None ->
+            always_included := id :: !always_included
           | Some (pi,name,kind,ka) ->
             let module J = Javascript in
             let rec find = function
@@ -329,6 +330,7 @@ let resolve_deps ?(linkall = false) visited_rev used =
     then
       begin
         (* link all primitives *)
+
         let prog,set =
           Hashtbl.fold (fun nm (_id,_) (visited,set) ->
               resolve_dep_name_rev visited [] nm,
@@ -350,3 +352,12 @@ let resolve_deps ?(linkall = false) visited_rev used =
   visited_rev, missing
 
 let link program state = List.flatten (List.rev (program::state.codes))
+
+let all state =
+  IntSet.fold (fun id acc ->
+    try
+      let name,_ = Hashtbl.find provided_rev id in
+      name :: acc
+    with Not_found ->
+      acc
+  ) state.ids []

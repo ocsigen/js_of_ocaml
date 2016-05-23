@@ -494,3 +494,21 @@ function caml_gr_remember_mode () {
 function caml_gr_display_mode() {
   caml_failwith("caml_gr_display_mode not Implemented");
 }
+
+//Provides: caml_gr_window_id
+//Requires: caml_failwith
+function caml_gr_window_id(a) {
+  caml_failwith("caml_gr_window_id not Implemented");
+}
+
+//Provides: caml_gr_open_subwindow
+//Requires: caml_failwith
+function caml_gr_open_subwindow(a,b,c,d) {
+  caml_failwith("caml_gr_open_subwindow not Implemented");
+}
+
+//Provides: caml_gr_close_subwindow
+//Requires: caml_failwith
+function caml_gr_close_subwindow(a) {
+  caml_failwith("caml_gr_close_subwindow not Implemented");
+}

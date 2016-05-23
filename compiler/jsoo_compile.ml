@@ -47,12 +47,14 @@ let gen_file file f =
 let f {
     CompileArg.common;
     profile; source_map; runtime_files; input_file; output_file;
-    params ;
-    linkall; toplevel; nocmis;
+    params ; static_env;
+    dynlink; linkall; toplevel; nocmis;
     include_dir; fs_files; fs_output; fs_external } =
+  let dynlink = dynlink || toplevel in
   let custom_header = common.CommonArg.custom_header in
   CommonArg.eval common;
   List.iter (fun (s,v) -> Option.Param.set s v) params;
+  List.iter (fun (s,v) -> Eval.set_static_env s v) static_env;
   let t = Util.Timer.make () in
 
   let include_dir = List.map (fun d ->
@@ -79,10 +81,10 @@ let f {
   let p, cmis, d, standalone =
     match input_file with
       None ->
-        Parse_bytecode.from_channel ~includes:paths ~toplevel ~debug:need_debug stdin
+        Parse_bytecode.from_channel ~includes:paths ~toplevel ~dynlink ~debug:need_debug stdin
     | Some f ->
         let ch = open_in_bin f in
-        let res = Parse_bytecode.from_channel ~includes:paths ~toplevel ~debug:need_debug ch in
+        let res = Parse_bytecode.from_channel ~includes:paths ~toplevel ~dynlink ~debug:need_debug ch in
         close_in ch;
         res
   in
@@ -90,9 +92,9 @@ let f {
     if source_map <> None &&  Parse_bytecode.Debug.is_empty d
     then
       Util.warn
-	"Warning: '--source-map' is enabled but the bytecode program \
-	 was compiled with no debugging information.\n\
-	 Warning: Consider passing '-g' option to ocamlc.\n%!"
+        "Warning: '--source-map' is enabled but the bytecode program \
+         was compiled with no debugging information.\n\
+         Warning: Consider passing '-g' option to ocamlc.\n%!"
   in
   let cmis = if nocmis then Util.StringSet.empty else cmis in
   let p =
@@ -108,7 +110,7 @@ let f {
     | None ->
       let p = PseudoFs.f p cmis fs_files paths in
       let fmt = Pretty_print.to_out_channel stdout in
-      Driver.f ~standalone ?profile ~toplevel ~linkall
+      Driver.f ~standalone ?profile ~linkall ~dynlink
         ?source_map ?custom_header fmt d p
     | Some file ->
       gen_file file (fun chan ->
@@ -117,7 +119,7 @@ let f {
             then PseudoFs.f p cmis fs_files paths
             else p in
           let fmt = Pretty_print.to_out_channel chan in
-          Driver.f ~standalone ?profile ~toplevel ~linkall
+          Driver.f ~standalone ?profile ~linkall ~dynlink
             ?source_map ?custom_header fmt d p;
         );
       Util.opt_iter (fun file ->

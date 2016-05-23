@@ -119,40 +119,61 @@ update closure body to return to this location
 make current block continuation jump to closure body
 *)
 
+let rec find_mapping mapping x =
+  match mapping with
+  | [] -> x
+  | ([],[])::rest -> find_mapping rest x
+  | (a::_ , b::_) :: rest when Code.Var.compare a x = 0 ->
+    find_mapping rest b
+  | (_::ax, _::bx) :: rest  -> find_mapping ((ax,bx)::rest) x
+  | ([], _ | _, [])::_ -> assert false
 
-let rec find_mapping x src trg =
-  match src,trg with
-  | [], [] -> raise Not_found
-  | a::_ , b::_ when Code.Var.compare a x = 0 -> b
-  | _::ax, _::bx -> find_mapping x ax bx
-  | [], _ | _, [] -> assert false
-
-let simple blocks clos_pc clos_args clos_params f_args =
-  let clos = AddrMap.find clos_pc blocks in
-  let map_var x =
-    let arg = try find_mapping x clos.params clos_args with Not_found -> x in
-    find_mapping arg clos_params f_args
+let simple blocks cont mapping =
+  let map_var mapping x =
+    let x' = find_mapping mapping x in
+    if x = x'
+    then raise Not_found
+    else x'
   in
-  let map_prim_arg = function
+  let map_prim_arg mapping = function
     | Pc c -> Pc c
-    | Pv x -> Pv (map_var x)
+    | Pv x -> Pv (map_var mapping x)
   in
-  try match clos with
-  | {handler = _; body = []; branch = Return ret} ->
-      `Alias (map_var ret)
-  | {handler = _; body = [Let (x, exp)]; branch = Return ret}
-    when Code.Var.compare ret x = 0 ->
-    begin match exp with
+  let rec follow (pc,args) (instr : [`Empty | `Ok of 'a ]) mapping =
+    let b = AddrMap.find pc blocks in
+    let mapping = (b.params, args) :: mapping in
+    let instr : [`Empty | `Ok of 'a | `Fail ] =
+      match b.body, instr with
+      | []            , _      -> (instr :> [`Empty | `Ok of 'a | `Fail ])
+      | [Let (y, exp)], `Empty -> `Ok (y,exp)
+      | _             , _      -> `Fail
+    in
+    match instr, b.branch with
+    | `Fail        , _ -> `Fail
+    | `Empty       , Return ret ->
+      `Alias (map_var mapping ret)
+    | `Ok (x,exp), Return ret when Code.Var.compare x (find_mapping mapping ret) = 0 ->
+      begin match exp with
       | Const _ -> `Exp exp
-      | Constant (Float _ | Int64 _ | Int _ | IString _) -> `Exp exp
-      | Apply (f, args, true) -> `Exp (Apply (map_var f, List.map map_var args, true))
-      | Prim (prim, args) -> `Exp (Prim (prim, List.map map_prim_arg args))
-      | Block (tag, args) -> `Exp (Block (tag, Array.map map_var args))
-      | Field (x, i) -> `Exp (Field (map_var x, i))
-      | _ -> `None
-    end
-  | _ -> raise Not_found
-  with Not_found -> `None
+      | Constant (Float _ | Int64 _ | Int _ | IString _) ->
+        `Exp exp
+      | Apply (f, args, true) ->
+        `Exp (Apply (map_var mapping f, List.map (map_var mapping) args, true))
+      | Prim (prim, args) ->
+        `Exp (Prim (prim, List.map (map_prim_arg mapping) args))
+      | Block (tag, args) ->
+        `Exp (Block (tag, Array.map (map_var mapping) args))
+      | Field (x, i) -> `Exp (Field (map_var mapping x, i))
+      | Closure _ -> `Fail
+      | Constant _ -> `Fail
+      | Apply _ -> `Fail
+      end
+    | (`Empty | `Ok _) as instr, Branch cont ->
+      follow cont instr mapping
+    | (`Empty | `Ok _), _ -> `Fail
+  in
+  try follow cont `Empty mapping
+  with Not_found -> `Fail
 
 let rec args_equal xs ys = match xs, ys with
   | [],[] -> true
@@ -169,8 +190,8 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
          | Let (x, Apply (f, args, true)) when VarMap.mem f closures ->
 
            let (branch, blocks, free_pc) = state in
-           let (params, (clos_pc, clos_args),f_optimizable) = VarMap.find f closures in
-           begin match simple blocks clos_pc clos_args params args with
+           let (params, clos_cont,f_optimizable) = VarMap.find f closures in
+           begin match simple blocks clos_cont [params, args] with
              | `Alias arg ->
                begin match rem, branch with
                  | [], Return y when Var.compare x y = 0 ->
@@ -185,7 +206,7 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
                end
              | `Exp exp ->
                (Let (x,exp) :: rem, state)
-             | `None ->
+             | `Fail ->
                if live_vars.(Var.idx f) = 1 && outer_optimizable = f_optimizable
                (* inlining the code of an optimizable function could make
                   this code unoptimized. (wrt to Jit compilers)
@@ -205,14 +226,14 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
                       Some free_pc)
                  in
                  let blocks =
-                   rewrite_closure blocks cont_pc clos_pc block.handler in
+                   rewrite_closure blocks cont_pc (fst clos_cont) block.handler in
                  (* We do not really need this intermediate block.  It
                     just avoid the need to find which function parameters
                     are used in the function body. *)
                  let blocks =
                    AddrMap.add (free_pc + 1)
                      { params = params; handler = block.handler;
-                       body = []; branch = Branch (clos_pc, clos_args) } blocks
+                       body = []; branch = Branch clos_cont } blocks
                  in
                  ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
                else begin

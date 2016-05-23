@@ -62,12 +62,12 @@ function bigstring_find(bs, chr, pos, len){
   return -1;
 }
 
-//Provides: bigstring_to_array_buffer
+//Provides: bigstring_to_array_buffer mutable
 function bigstring_to_array_buffer(bs) {
   return bs.data.buffer
 }
 
-//Provides: bigstring_of_array_buffer
+//Provides: bigstring_of_array_buffer mutable
 //Requires: caml_ba_create_from
 function bigstring_of_array_buffer(ab) {
   var ta = new joo_global_object.Uint8Array(ab);

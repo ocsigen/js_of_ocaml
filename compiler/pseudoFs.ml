@@ -39,24 +39,27 @@ let expand_path exts real virt =
         else acc
       with exc ->
 	Util.warn "ignoring %s: %s@." realfile (Printexc.to_string exc);
-        acc
+ acc
   in loop real virt []
 
 let list_files name paths =
-  let name,dir = try
-      let i = String.index name ':' in
-      let d = String.sub name (i + 1) (String.length name - i - 1) in
-      let n = String.sub name 0 i in
-      if String.length d > 0 && d.[0] <> '/'
-      then failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" d n);
-      let d =
-        if d.[String.length d - 1] <> '/'
-        then d^Filename.dir_sep
-        else d in
-      n,d
-    with Not_found ->
-      (* by default, files are store in /static/ directory *)
-      name,"/static/" in
+  let name,virtname =
+      let i = try Some (String.index name ':') with Not_found -> None in
+      match i with
+      | Some i ->
+        let dest = String.sub name (i + 1) (String.length name - i - 1) in
+        let src  = String.sub name 0 i in
+        if String.length dest > 0 && dest.[0] <> '/'
+        then failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" dest src);
+        let virtname =
+          if dest.[String.length dest - 1] = '/'
+          then dest ^ (Filename.basename src)
+          else dest in
+        src,virtname
+      | None  ->
+        (* by default, files are store in /static/ directory *)
+        name,"/static/"^(Filename.basename name)
+  in
   let name, exts (* extensions filter *) =
     try
       let i = String.index name '=' in
@@ -72,7 +75,7 @@ let list_files name paths =
     with Not_found ->
       failwith (Printf.sprintf "file '%s' not found" name)
   in
-  expand_path exts file (Filename.concat dir name)
+  expand_path exts file virtname
 
 let cmi_dir = "/cmis"
 

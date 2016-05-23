@@ -847,6 +847,14 @@ function caml_sys_time () { return new Date() * 0.001 - caml_initial_time; }
 function caml_sys_get_config () {
   return [0, caml_new_string("Unix"), 32, 0];
 }
+
+//Provides: caml_sys_const_backend_type const
+//Requires: caml_new_string
+function caml_sys_const_backend_type () {
+  return [0, caml_new_string("js_of_ocaml")];
+}
+
+
 //Provides: caml_sys_random_seed mutable
 //Version: < 4.00
 //The function needs to return an array since OCaml 4.0...
@@ -975,7 +983,7 @@ function caml_record_backtrace () { return 0; }
 function caml_convert_raw_backtrace () { return 0; }
 //Provides: caml_get_current_callstack const
 function caml_get_current_callstack () { return [0]; }
-//Provides: caml_sys_getenv
+//Provides: caml_sys_getenv (const)
 //Requires: caml_raise_not_found
 //Requires: caml_js_to_string
 function caml_sys_getenv (name) {

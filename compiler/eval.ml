@@ -21,6 +21,10 @@ module Primitive = Jsoo_primitive
 open Code
 open Flow
 
+let static_env = Hashtbl.create 17
+let clear_static_env () = Hashtbl.clear static_env
+let set_static_env s value = Hashtbl.add static_env s value
+let get_static_env s = try Some (Hashtbl.find static_env s) with Not_found -> None
 
 module Int = Int32
 let int_binop l f = match l with
@@ -63,7 +67,6 @@ let eval_prim x =
   | Le,  [Int i; Int j ] -> bool (i <= j)
   | Eq,  [Int i; Int j ] -> bool (i = j)
   | Neq, [Int i; Int j ] -> bool (i <> j)
-  | IsInt, [Int _] -> bool true
   | Ult, [Int i; Int j ] -> bool (j < 0l || i < j)
   | Extern name, l ->
     let name = Primitive.resolve name in
@@ -112,6 +115,23 @@ let eval_prim x =
      | "caml_sin_float",_ -> float_unop l sin
      | "caml_sqrt_float",_ -> float_unop l sqrt
      | "caml_tan_float",_ -> float_unop l tan
+
+
+     | "caml_string_equal", [String s1; String s2] ->
+       bool (s1 = s2)
+     | "caml_string_notequal", [String s1; String s2] ->
+       bool (s1 <> s2)
+     | "caml_sys_getenv", [String s] ->
+       begin match get_static_env s with
+       | Some env ->
+         Some (String env)
+       | None -> None
+       end
+     | "caml_sys_const_word_size" , [_] -> Some (Int 32l)
+     | "caml_sys_const_int_size"  , [_] -> Some (Int 32l)
+     | "caml_sys_const_big_endian", [_] -> Some (Int 0l)
+
+
      | _ -> None)
   | _ -> None
 
@@ -132,6 +152,30 @@ let the_length_of info x =
        | _ -> None)
     x
 
+type is_int = Empty | Y | N | Unknown
+
+let is_int info x =
+  match x with
+  | Pv x ->
+    get_approx info
+      (fun x -> match info.info_defs.(Var.idx x) with
+         | Expr (Const _)
+         | Expr (Constant (Int _)) -> Y
+         | Expr (Block (_,_))
+         | Expr (Constant _) -> N
+         | _ -> Unknown)
+      Empty
+      (fun u v ->
+         match u, v with
+         | Empty, x
+         | x, Empty -> x
+         | Y, Y      -> Y
+         | N, N      -> N
+         | _         -> Unknown
+      )
+      x
+  | Pc (Int _) -> Y
+  | Pc _ -> N
 
 let eval_instr info i =
   match i with
@@ -165,7 +209,17 @@ let eval_instr info i =
         (* Fresh parameters can be introduced for these primitives
            in Specialize_js, which would make the call to [the_const_of]
            below fail. *)
-        i
+      i
+    | Let (x,Prim (IsInt, [y])) ->
+      begin
+        match is_int info y with
+        | Unknown | Empty -> i
+        | Y | N as b ->
+          let b = if b = N then 0l else 1l in
+          let c = Constant (Int b) in
+          Flow.update_def info x c;
+          Let (x,c)
+      end
     | Let (x,Prim (prim, prim_args)) ->
       begin
         let prim_args' = List.map (fun x -> the_const_of info x) prim_args in
@@ -236,18 +290,86 @@ let eval_branch info = function
     end
   | _ as b -> b
 
+exception May_raise
 
+let rec do_not_raise pc visited blocks =
+  if AddrSet.mem pc visited then visited
+  else
+  let visited = AddrSet.add pc visited in
+  let b = AddrMap.find pc blocks in
+  List.iter (function
+    | Array_set (_,_,_)
+    | Offset_ref (_,_)
+    | Set_field (_,_,_) -> ()
+    | Let (_, e) ->
+      match e with
+      | Const _
+      | Block (_,_)
+      | Field (_,_)
+      | Constant _
+      | Closure _ -> ()
+      | Apply (_,_,_) -> raise May_raise
+      | Prim (Extern name, _) when Jsoo_primitive.is_pure name -> ()
+      | Prim (Extern _, _) -> raise May_raise
+      | Prim (_,_) -> ()
+  ) b.body;
+  match b.branch with
+  | Raise _ -> raise May_raise
+  | Stop
+  | Return _
+  | Poptrap _ -> visited
+  | Branch (pc,_) -> do_not_raise pc visited blocks
+  | Cond (_,_,(pc1,_),(pc2,_)) ->
+    let visited = do_not_raise pc1 visited blocks in
+    let visited = do_not_raise pc2 visited blocks in
+    visited
+  | Switch (_, a1, a2) ->
+    let visited = Array.fold_left (fun visited (pc,_) -> do_not_raise pc visited blocks) visited a1 in
+    let visited = Array.fold_left (fun visited (pc,_) -> do_not_raise pc visited blocks) visited a2 in
+    visited
+  | Pushtrap _ -> raise May_raise
+
+let drop_exception_handler blocks =
+  AddrMap.fold (fun pc _ blocks ->
+    match AddrMap.find pc blocks with
+    | { branch = Pushtrap ((addr,_) as cont1,_x,_cont2,_); handler = parent_hander; _}  as b ->
+      begin
+        try
+          let visited = do_not_raise addr AddrSet.empty blocks in
+          let b = { b with branch = Branch cont1 } in
+          let blocks = AddrMap.add pc b blocks in
+          let blocks = AddrSet.fold (fun pc2 blocks ->
+            let b = AddrMap.find pc2 blocks in
+            assert(b.handler <> parent_hander);
+            let branch =
+              match b.branch with
+              | Poptrap (cont,pushtrap) ->
+                assert(pc = pushtrap);
+                Branch cont
+              | x -> x
+            in
+            let b = { b with branch; handler = parent_hander } in
+            AddrMap.add pc2 b blocks
+          ) visited blocks
+          in
+          blocks
+        with May_raise -> blocks
+      end
+    | _ -> blocks) blocks blocks
+
+let eval info blocks =
+  AddrMap.map
+    (fun block ->
+       let body = List.map (eval_instr info) block.body in
+       let branch = eval_branch info block.branch in
+       { block with
+         Code.body;
+         Code.branch
+       })
+    blocks
 
 let f info (pc, blocks, free_pc) =
-  let blocks =
-    AddrMap.map
-      (fun block ->
-         let body = List.map (eval_instr info) block.body in
-         let branch = eval_branch info block.branch in
-         { block with
-           Code.body;
-           Code.branch
-         })
-      blocks
-  in
+  let blocks = eval info blocks in
+  let blocks = drop_exception_handler blocks in
   (pc, blocks, free_pc)
+

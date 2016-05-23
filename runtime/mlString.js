@@ -258,7 +258,12 @@ function caml_convert_string_to_bytes (s) {
 //Provides: caml_convert_string_to_array
 function caml_convert_string_to_array (s) {
   /* Assumes not ARRAY */
-  var a = new Array(s.l), b = s.c, l = b.length, i = 0;
+  if(joo_global_object.Uint8Array) {
+    var a = new joo_global_object.Uint8Array(s.l);
+  } else {
+    var a = new Array(s.l);
+  }
+  var b = s.c, l = b.length, i = 0;
   for (; i < l; i++) a[i] = b.charCodeAt(i);
   for (l = s.l; i < l; i++) a[i] = 0;
   s.c = a;
@@ -310,7 +315,7 @@ function caml_string_compare(s1, s2) {
   return (s1.c < s2.c)?-1:(s1.c > s2.c)?1:0;
 }
 
-//Provides: caml_string_equal mutable
+//Provides: caml_string_equal mutable (const, const)
 //Requires: caml_convert_string_to_bytes
 function caml_string_equal(s1, s2) {
   (s1.t & 6) && caml_convert_string_to_bytes(s1);
@@ -318,7 +323,7 @@ function caml_string_equal(s1, s2) {
   return (s1.c == s2.c)?1:0;
 }
 
-//Provides: caml_string_notequal mutable
+//Provides: caml_string_notequal mutable (const, const)
 //Requires: caml_string_equal
 function caml_string_notequal(s1, s2) { return 1-caml_string_equal(s1, s2); }
 

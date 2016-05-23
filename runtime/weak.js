@@ -27,6 +27,10 @@ var caml_weak_additional_values = 1
 //Version: >= 4.03
 var caml_weak_additional_values = 2
 
+//Provides: caml_ephe_data_offset
+//Version: >= 4.03
+var caml_ephe_data_offset = 1
+
 //Provides: caml_weak_create
 //Requires: caml_weak_additional_values
 function caml_weak_create (n) {
@@ -64,3 +68,85 @@ function caml_weak_check(x, i) {
 //Provides: caml_weak_blit
 //Requires: caml_array_blit
 var caml_weak_blit = caml_array_blit;
+
+
+//Provides: caml_ephe_create
+//Requires: caml_weak_create
+var caml_ephe_create = caml_weak_create
+
+//Provides: caml_ephe_blit_key
+//Requires: caml_weak_blit
+var caml_ephe_blit_key = caml_weak_blit
+
+//Provides: caml_ephe_get_key
+//Requires: caml_weak_get
+var caml_ephe_get_key = caml_weak_get
+
+//Provides: caml_ephe_get_key_copy
+//Requires: caml_weak_get_copy
+var caml_ephe_get_key_copy = caml_weak_get_copy
+
+//Provides: caml_ephe_check_key
+//Requires: caml_weak_check
+var caml_ephe_check_key = caml_weak_check
+
+//Provides: caml_ephe_set_key
+//Requires: caml_weak_set
+function caml_ephe_set_key(x, i, v) {
+  return caml_weak_set(x, i, [0, v])
+}
+
+//Provides: caml_ephe_unset_key
+//Requires: caml_weak_set
+function caml_ephe_unset_key(x, i) {
+  return caml_weak_set(x, i, 0)
+}
+
+//Provides: caml_ephe_blit_data
+//Requires: caml_ephe_data_offset
+function caml_ephe_blit_data(src, dst){
+  dst[caml_ephe_data_offset] = src[caml_ephe_data_offset];
+  return 0;
+}
+
+//Provides: caml_ephe_get_data
+//Requires: caml_ephe_data_offset
+function caml_ephe_get_data(x){
+  if(x[caml_ephe_data_offset] === undefined)
+    return 0;
+  else
+    return [0, x[caml_ephe_data_offset]];
+}
+
+//Provides: caml_ephe_get_data_copy
+//Requires: caml_ephe_data_offset
+//Requires: caml_obj_dup
+function caml_ephe_get_data_copy(x){
+  if(x[caml_ephe_data_offset] === undefined)
+    return 0;
+  else
+    return [0, caml_obj_dup(x[caml_ephe_data_offset])];
+}
+
+//Provides: caml_ephe_set_data
+//Requires: caml_ephe_data_offset
+function caml_ephe_set_data(x, data){
+  x[caml_ephe_data_offset] = data;
+  return 0;
+}
+
+//Provides: caml_ephe_unset_data
+//Requires: caml_ephe_data_offset
+function caml_ephe_unset_data(x, data){
+  x[caml_ephe_data_offset] = undefined;
+  return 0;
+}
+
+//Provides: caml_ephe_check_data
+//Requires: caml_ephe_data_offset
+function caml_ephe_check_data(x){
+  if(x[caml_ephe_data_offset] === undefined)
+    return 0;
+  else
+    return 1;
+}

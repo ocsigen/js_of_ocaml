@@ -26,7 +26,9 @@ type t = {
   output_file : string option;
   input_file : string option;
   params : (string * string) list;
+  static_env : (string * string) list;
   (* toplevel *)
+  dynlink : bool;
   linkall : bool;
   toplevel : bool;
   nocmis : bool;

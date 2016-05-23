@@ -147,8 +147,37 @@ function caml_fs_register(name,content) {
   else if(content instanceof MlFile) dir.mk(d,content);
   else if(content instanceof MlString) dir.mk(d,new MlFile(content));
   else if(content instanceof Array) dir.mk(d,new MlFile(caml_string_of_array(content)));
-  else if(content.toString) dir.mk(d,new MlFile((caml_new_string(content.toString()))));
+  else if(content.toString) {
+    var mlstring = caml_new_string(content.toString());
+    //caml_array_of_string(mlstring);
+    dir.mk(d,new MlFile(mlstring));
+  }
   else caml_invalid_argument("caml_fs_register");
+  return 0;
+}
+
+//Provides: caml_fs_update_inode
+//Requires: MlDir, caml_root_dir, caml_make_path, caml_raise_sys_error
+//Requires: MlString
+//Requires: caml_invalid_argument
+function caml_fs_update_inode(name,content) {
+  var path = caml_make_path(name);
+  var dir = caml_root_dir;
+  for(var i=0;i<path.length-1;i++){
+    var d = path[i];
+    if(!(dir.exists(d)))
+      dir.mk(d,new MlDir());
+    dir = dir.get(d);
+    if(!(dir instanceof MlDir))
+      caml_raise_sys_error (path.orig + " : file does not exists");
+  }
+  var d = path[path.length-1];
+  if(!dir.exists(d)) caml_raise_sys_error (path.orig + " : file does not exists");
+  if(content instanceof MlString) {
+    var inode = dir.get(d);
+    inode.data = content;
+  }
+  else caml_invalid_argument("caml_fs_update_inode");
   return 0;
 }
 

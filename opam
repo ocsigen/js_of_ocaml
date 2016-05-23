@@ -18,7 +18,7 @@ depends: [
   "ocamlfind" {>= "1.5.1"}
   "lwt" {>= "2.4.4"}
   "menhir"
-  "cppo"
+  "cppo" {>= "1.1.0"}
   "camlp4"
   "base64" {>= "2.0.0"}
   ("base-no-ppx" | "ppx_tools")
