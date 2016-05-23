@@ -59,12 +59,12 @@ CPPO_OPT+= -D metaocaml
 endif
 
 #-jsopt "--pretty"
-MKTOP=jsoo_mktop -verbose $(SAFESTRING) \
+MKTOP=jsoo_mktop -verbose $(SAFESTRING) -g \
 	${addprefix -top-syntax , ${SYNTAXES}} \
 	-dont-export-unit gc \
 	-jsopt "--disable shortvar" \
 	${addprefix -export-package , ${PACKAGES}} \
-	${addprefix -export-unit , html5_types html5_sigs xml_wrap } \
+	${addprefix -export-unit , html_types html_sigs xml_wrap } \
 
 TOPLEVEL_NAME=toplevel
 TOPLEVEL_OBJS=colorize.cmo indent.cmo toplevel.cmo
@@ -103,9 +103,9 @@ colorize.cmo: colorize.cmi
 	cppo ${CPPO_OPT} $< -o $@
 
 %.cmi:%.mli
-	ocamlfind ocamlc -c -package js_of_ocaml,js_of_ocaml.tyxml $<
+	ocamlfind ocamlc -g -c -package js_of_ocaml,js_of_ocaml.tyxml $<
 %.cmo:%.ml
-	ocamlfind ocamlc -c -syntax camlp4o $(SAFESTRING) \
+	ocamlfind ocamlc -g -c -syntax camlp4o $(SAFESTRING) \
 		-package js_of_ocaml.syntax,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
 		-package base64 \
 		-I camlp4 \

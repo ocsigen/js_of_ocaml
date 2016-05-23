@@ -126,7 +126,7 @@ let setup_examples ~container ~textbox =
       match tok with
       | `Content line -> line ^ "\n" ^ acc
       | `Title   name ->
-      let a = Tyxml_js.Html5.(a ~a:[
+      let a = Tyxml_js.Html.(a ~a:[
         a_class ["list-group-item"];
         a_onclick (fun _ ->
           textbox##value <- (Js.string acc)##trim();
@@ -178,7 +178,7 @@ let setup_share_button ~output =
         Url.encode_arguments frags in
       let uri = Url.string_of_url url ^ "#" ^ frag in
       let append_url str =
-        let dom = Tyxml_js.Html5.(
+        let dom = Tyxml_js.Html.(
             p [ pcdata "Share this url : "; a ~a:[a_href str] [ pcdata str ]]) in
         Dom.appendChild output (Tyxml_js.To_dom.of_element dom)
       in
