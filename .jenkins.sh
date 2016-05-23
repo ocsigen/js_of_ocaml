@@ -2,7 +2,7 @@
 opam pin add --no-action js_of_ocaml .
 opam install async_kernel.113.33.00 || true
 opam install deriving || true
-opam pin add tyxml --dev-repo
+opam pin add tyxml.4.0.0 || true
 opam install reactiveData cppo base64
 
 case $(opam switch show) in
