@@ -20,7 +20,7 @@
 (** Tyxml interface.
     Example of use for HTML:
     {[
-     module T = Tyxml_js.Html5
+     module T = Tyxml_js.Html
      let html = T.(
        div ~a:[a_class ["several"; "css"; "class"]; a_id "id-of-div"] [
          ul ~a:[a_class ["one-css-class"]; a_id "id-of-ul"] [
@@ -34,7 +34,7 @@
      )
    ]}
    @see <https://ocsigen.org/tyxml/> the Tyxml project website.
-   @see <https://ocsigen.org/tyxml/dev/api/Html5_sigs.T> Html5_sigs.T to have a list of available functions to build HTML.
+   @see <https://ocsigen.org/tyxml/dev/api/Html_sigs.T> Html_sigs.T to have a list of available functions to build HTML.
 *)
 
 module type XML =
@@ -47,7 +47,7 @@ module type XML =
 
 module Xml : XML with module W = Xml_wrap.NoWrap
 
-module Xml_wrap : Xml_wrap.T
+module Wrap : Xml_wrap.T
   with type 'a t = 'a React.signal
    and type 'a tlist = 'a ReactiveData.RList.t
    and type ('a, 'b) ft = 'a -> 'b
@@ -57,33 +57,41 @@ module Util : sig
 end
 
 module Svg : Svg_sigs.Make(Xml).T
+  with module Xml.W = Xml_wrap.NoWrap
 
-module Html5 : Html5_sigs.Make(Xml)(Svg).T
+module Html : Html_sigs.Make(Xml)(Svg).T
+  with module Xml.W = Xml_wrap.NoWrap
+
+(** @deprecated Use {!Tyxml_js.Html}. *)
+module Html5 : Html_sigs.Make(Xml)(Svg).T
+  with module Xml.W = Xml_wrap.NoWrap
+   and type 'a elt = 'a Html.elt
+   and type +'a attrib = 'a Html.attrib
 
 module Register : sig
 
   val html :
-    ?head:Html5_types.head Html5.elt ->
-    Html5_types.body Html5.elt -> unit
+    ?head:Html_types.head Html.elt ->
+    Html_types.body Html.elt -> unit
   (** [Register.html head body] uses the given head and body elements
       as document. It replaces the previous body and head.
 
       [head] and [body] can be reactive.
   *)
 
-  val body : ?keep:bool -> [< Html5_types.body_content] Html5.elt list -> unit
+  val body : ?keep:bool -> [< Html_types.body_content] Html.elt list -> unit
   (** [Register.body elements] add [elements] as children of [body].
       If [keep] is false (default is true), the children of the body are
       removed before adding the new elements.
   *)
 
-  val head : ?keep:bool -> [< Html5_types.head_content] Html5.elt list -> unit
+  val head : ?keep:bool -> [< Html_types.head_content] Html.elt list -> unit
   (** [Register.head elements] add [elements] as children of [body].
       If [keep] is false (default is true), the children of the head are
       removed before adding the new elements.
   *)
 
-  val id : ?keep:bool -> string -> 'a Html5.elt list -> unit
+  val id : ?keep:bool -> string -> 'a Html.elt list -> unit
   (** [Register.id "some_id" elements] add [elements] as children of the node
       with the id ["some_id"].
       If [keep] is false (default is true), the children of the node are
@@ -95,17 +103,23 @@ module Register : sig
 end
 
 module R : sig
-  module Xml : XML with module W = Xml_wrap
+  module Xml : XML with module W = Wrap
 
   module Svg : Svg_sigs.Make(Xml).T
     with type +'a elt = 'a Svg.elt
      and type +'a attrib = 'a Svg.attrib
 
-  module Html5 : Html5_sigs.Make(Xml)(Svg).T
-    with type +'a elt = 'a Html5.elt
-     and type +'a attrib = 'a Html5.attrib
-  val filter_attrib : 'a Html5.attrib -> bool React.signal -> 'a Html5.attrib
+  module Html : Html_sigs.Make(Xml)(Svg).T
+    with type +'a elt = 'a Html.elt
+     and type +'a attrib = 'a Html.attrib
+  val filter_attrib : 'a Html.attrib -> bool React.signal -> 'a Html.attrib
+
+  (** @deprecated Use {!Tyxml_js.R.Html}. *)
+  module Html5 : Html_sigs.Make(Xml)(Svg).T
+    with type +'a elt = 'a Html.elt
+     and type +'a attrib = 'a Html.attrib
+
 end
 
-module To_dom : Tyxml_cast_sigs.TO with type 'a elt = 'a Html5.elt
-module Of_dom : Tyxml_cast_sigs.OF with type 'a elt = 'a Html5.elt
+module To_dom : Tyxml_cast_sigs.TO with type 'a elt = 'a Html.elt
+module Of_dom : Tyxml_cast_sigs.OF with type 'a elt = 'a Html.elt

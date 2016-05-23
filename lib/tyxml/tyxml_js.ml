@@ -159,17 +159,17 @@ end
 
 
 module Svg = Svg_f.Make(Xml_Svg)
-module Html5 = Html5_f.Make(Xml)(Svg)
-
+module Html = Html_f.Make(Xml)(Svg)
+module Html5 = Html
 
 module To_dom = Tyxml_cast.MakeTo(struct
-    type 'a elt = 'a Html5.elt
-    let elt = Html5.toelt
+    type 'a elt = 'a Html.elt
+    let elt = Html.toelt
   end)
 
 module Of_dom = Tyxml_cast.MakeOf(struct
-    type 'a elt = 'a Html5.elt
-    let elt = Html5.tot
+    type 'a elt = 'a Html.elt
+    let elt = Html.tot
   end)
 
 module Register = struct
@@ -206,7 +206,7 @@ module Register = struct
 
 end
 
-module Xml_wrap = struct
+module Wrap = struct
   type 'a t = 'a React.signal
   type 'a tlist = 'a ReactiveData.RList.t
   type ('a, 'b) ft = 'a -> 'b
@@ -296,7 +296,7 @@ module R = struct
   let attach_attribs = Xml.attach_attribs
 
   module Xml = struct
-    module W = Xml_wrap
+    module W = Wrap
     type 'a wrap = 'a W.t
     type 'a list_wrap = 'a W.tlist
     type uri = Xml.uri
@@ -359,6 +359,7 @@ module R = struct
   end
 
   module Svg = Svg_f.Make(Xml_Svg)
-  module Html5 = Html5_f.Make(Xml)(Svg)
+  module Html = Html_f.Make(Xml)(Svg)
+  module Html5 = Html
 
 end

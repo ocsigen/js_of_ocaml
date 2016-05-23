@@ -1,11 +1,11 @@
 
 let text ~a_class:cl s =
-  Tyxml_js.Html5.(span ~a:[a_class [cl]] [pcdata s])
+  Tyxml_js.Html.(span ~a:[a_class [cl]] [pcdata s])
 
 #ifdef higlo
 let ocaml ~a_class:cl s =
   let tks = Higlo.parse ~lang:"ocaml" s in
-  let span' cl s = Tyxml_js.Html5.(span ~a:[a_class [cl]] [pcdata s]) in
+  let span' cl s = Tyxml_js.Html.(span ~a:[a_class [cl]] [pcdata s]) in
   let make_span = function
     | Higlo.Bcomment s -> span' "comment" s
     | Higlo.Constant s -> span' "constant" s
@@ -18,7 +18,7 @@ let ocaml ~a_class:cl s =
     | Higlo.String s -> span' "string" s
     | Higlo.Symbol (level,s) -> span' (Printf.sprintf "sym%d" level) s
     | Higlo.Text s -> span' "text" s in
-  Tyxml_js.Html5.(div ~a:[a_class [cl]] (List.map make_span tks))
+  Tyxml_js.Html.(div ~a:[a_class [cl]] (List.map make_span tks))
 #else
 let ocaml = text
 #endif
@@ -48,7 +48,7 @@ let highlight from_ to_ e =
      let span kind s =
        if s <> ""
        then
-         let span = Tyxml_js.Html5.(span ~a:[a_class [kind]] [pcdata s]) in
+         let span = Tyxml_js.Html.(span ~a:[a_class [kind]] [pcdata s]) in
          Dom.appendChild e (Tyxml_js.To_dom.of_element span) in
      span "normal"   (String.sub x 0 from_);
      span "errorloc" (String.sub x from_ (to_ - from_));

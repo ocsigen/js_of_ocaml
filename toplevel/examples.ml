@@ -34,17 +34,17 @@ let display x =
     (Dom_html.getElementById "output")
     (Tyxml_js.To_dom.of_element x)
 module RList = ReactiveData.RList
-let rl,rhandle = RList.make []
-let li_rl = RList.map (fun x -> Tyxml_js.Html5.(li [pcdata x])) rl
+let rl,rhandle = RList.create []
+let li_rl = RList.map (fun x -> Tyxml_js.Html.(li [pcdata x])) rl
 
-let ul_elt = Tyxml_js.R.Html5.ul li_rl
+let ul_elt = Tyxml_js.R.Html.ul li_rl
 let init =
-  let _ = RList.append "# cons \"some string\"" rhandle in
-  let _ = RList.append "# append \"some other\"" rhandle in
-  let _ = RList.append "# insert \"anywhere\" 1"  rhandle in
-  let _ = RList.append "# remove 1" rhandle in
+  let _ = RList.snoc "# cons \"some string\"" rhandle in
+  let _ = RList.snoc "# snoc \"some other\"" rhandle in
+  let _ = RList.snoc "# insert \"anywhere\" 1"  rhandle in
+  let _ = RList.snoc "# remove 1" rhandle in
   ()
-let append s = RList.append s rhandle
+let snoc s = RList.snoc s rhandle
 let cons s = RList.cons s rhandle
 let insert s pos = RList.insert s pos rhandle
 let remove pos = RList.remove pos rhandle
@@ -56,10 +56,10 @@ let time_signal =
   Lwt.async loop;
   s
 let div_elt =
-  Tyxml_js.(Html5.(
+  Tyxml_js.(Html.(
     div [
       h4 [pcdata "Uptime is ";
-	  R.Html5.pcdata (React.S.map (fun s -> string_of_int (int_of_float s)) time_signal);
+	  R.Html.pcdata (React.S.map (fun s -> string_of_int (int_of_float s)) time_signal);
 	  pcdata " s"];
       ul_elt
     ]))
