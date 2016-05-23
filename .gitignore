@@ -28,6 +28,7 @@ lib/toplevel/jsooTopError.ml
 lib/META
 runtime/runtime.js
 toplevel/toplevel.js
+toplevel/test_dynlink.js
 toplevel/eval.js
 toplevel/toplevel-fs.js
 toplevel/*.cmis.js
