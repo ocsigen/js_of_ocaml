@@ -113,7 +113,7 @@ let f {
     | None ->
       let p = PseudoFs.f p cmis fs_files paths in
       let fmt = Pretty_print.to_out_channel stdout in
-      Driver.f ~standalone ?profile ~linkall ~dynlink
+      Driver.f ~standalone ?profile ~toplevel ~linkall ~dynlink
         ?source_map ?custom_header fmt d p
     | Some file ->
       gen_file file (fun chan ->
@@ -122,14 +122,14 @@ let f {
             then PseudoFs.f p cmis fs_files paths
             else p in
           let fmt = Pretty_print.to_out_channel chan in
-          Driver.f ~standalone ?profile ~linkall ~dynlink
+          Driver.f ~standalone ?profile ~toplevel ~linkall ~dynlink
             ?source_map ?custom_header fmt d p;
         );
       Util.opt_iter (fun file ->
           gen_file file (fun chan ->
               let pfs = PseudoFs.f_empty cmis fs_files paths in
               let pfs_fmt = Pretty_print.to_out_channel chan in
-              Driver.f ~standalone ?profile ?custom_header pfs_fmt d pfs
+              Driver.f ~standalone ?profile ~toplevel ?custom_header pfs_fmt d pfs
             )
         ) fs_output
   end;

@@ -346,7 +346,7 @@ let output formatter ~standalone ~custom_header ?source_map () js =
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Util.Timer.print t
 
-let pack ~wrap_with_fun js =
+let pack ~toplevel ~wrap_with_fun js =
   let module J = Javascript in
   let t = Util.Timer.make () in
   if times ()
@@ -407,7 +407,12 @@ let pack ~wrap_with_fun js =
     if (Option.Optim.shortvar ())
     then
       let t5 = Util.Timer.make () in
-      let js = (new Js_traverse.rename_variable StringSet.empty)#program js in
+      let keep =
+        if toplevel
+        then StringSet.singleton global_object
+        else StringSet.empty
+      in
+      let js = (new Js_traverse.rename_variable keep)#program js in
       if times () then Format.eprintf "    shortten vars: %a@." Util.Timer.print t5;
       js
     else js in
@@ -426,7 +431,7 @@ let configure formatter p =
 type profile = Code.program -> Code.program
 
 let f ?(standalone=true) ?(wrap_with_fun=false) ?(profile=o1)
-    ?(dynlink=false) ?(linkall=false) ?source_map ?custom_header formatter d =
+    ?(dynlink=false) ?(toplevel=false) ?(linkall=false) ?source_map ?custom_header formatter d =
   let exported_runtime = not standalone in
   let linkall = linkall || dynlink in
   configure formatter >>
@@ -437,7 +442,7 @@ let f ?(standalone=true) ?(wrap_with_fun=false) ?(profile=o1)
 
   link ~standalone ~linkall ~export_runtime:dynlink >>
 
-  pack ~wrap_with_fun >>
+  pack ~toplevel ~wrap_with_fun >>
 
   coloring >>
 

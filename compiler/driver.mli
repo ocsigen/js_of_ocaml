@@ -25,6 +25,7 @@ val f :
   ?wrap_with_fun:bool ->
   ?profile:profile ->
   ?dynlink:bool ->
+  ?toplevel:bool ->
   ?linkall:bool ->
   ?source_map:(string option * Source_map.t) ->
   ?custom_header:string ->
