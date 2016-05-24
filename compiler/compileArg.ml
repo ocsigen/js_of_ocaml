@@ -25,6 +25,7 @@ type t = {
   profile : Driver.profile option;
   source_map : (string option * Source_map.t) option;
   runtime_files : string list;
+  runtime_only : bool;
   output_file : string option;
   input_file : string option;
   params : (string * string) list;
@@ -71,6 +72,10 @@ let options =
   let noruntime =
     let doc = "Do not include the standard runtime." in
     Arg.(value & flag & info ["noruntime";"no-runtime"] ~doc)
+  in
+  let runtime_only  =
+    let doc = "Generate a JavaScript file containing/exporting the runtime only." in
+    Arg.(value & flag & info ["runtime-only"] ~doc)
   in
   let sourcemap =
     let doc = "Generate source map." in
@@ -144,6 +149,7 @@ let options =
       nocmis
       profile
       noruntime
+      runtime_only
       sourcemap
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
@@ -161,8 +167,13 @@ let options =
         if noruntime
         then runtime_files
         else "+runtime.js"::runtime_files in
-      let linkall = linkall || toplevel in
-      let fs_external = fs_external || (toplevel && nocmis) in
+      let runtime_files =
+        if not noruntime && runtime_only
+        then "+predefined_exceptions.js" :: runtime_files
+        else runtime_files
+      in
+      let linkall = linkall || toplevel || runtime_only in
+      let fs_external = fs_external || (toplevel && nocmis) || runtime_only in
       let input_file = match input_file with
         | "-" -> None
         | x -> Some x in
@@ -205,6 +216,7 @@ let options =
 
         include_dir;
         runtime_files;
+        runtime_only;
 
         fs_files;
         fs_output;
@@ -235,6 +247,7 @@ let options =
           $ profile
 
           $ noruntime
+          $ runtime_only
           $ sourcemap
           $ sourcemap_inline_in_js
           $ sourcemap_don't_inline_content

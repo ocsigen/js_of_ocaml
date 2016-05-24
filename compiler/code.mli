@@ -159,6 +159,8 @@ val traverse :
 
 val prepend : program -> instr list -> program
 
+val empty : program
+
 val eq : program -> program -> bool
 
 val invariant : program -> unit

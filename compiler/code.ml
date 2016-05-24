@@ -429,6 +429,18 @@ let prepend (start, blocks, free_pc) body =
   let free_pc = free_pc + 1 in
   (new_start, blocks, free_pc)
 
+let empty =
+  let start = 0 in
+  let free = 1  in
+  let blocks =
+    AddrMap.singleton start
+      { params = [];
+        handler = None;
+        body = [];
+        branch = Stop
+      }
+  in
+  start, blocks, free
 
 let (>>) x f = f x
 

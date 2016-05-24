@@ -48,9 +48,9 @@ let f {
     CompileArg.common;
     profile; source_map; runtime_files; input_file; output_file;
     params ; static_env;
-    dynlink; linkall; toplevel; nocmis;
+    dynlink; linkall; toplevel; nocmis; runtime_only;
     include_dir; fs_files; fs_output; fs_external } =
-  let dynlink = dynlink || toplevel in
+  let dynlink = dynlink || toplevel || runtime_only in
   let custom_header = common.CommonArg.custom_header in
   CommonArg.eval common;
   List.iter (fun (s,v) -> Option.Param.set s v) params;
@@ -79,6 +79,9 @@ let f {
     if Option.Optim.pretty () then `Names else `No
   in
   let p, cmis, d, standalone =
+    if runtime_only
+    then Code.empty, Util.StringSet.empty, Parse_bytecode.Debug.create (), true
+    else
     match input_file with
       None ->
         Parse_bytecode.from_channel ~includes:paths ~toplevel ~dynlink ~debug:need_debug stdin
@@ -89,7 +92,7 @@ let f {
         res
   in
   let () =
-    if source_map <> None &&  Parse_bytecode.Debug.is_empty d
+    if not runtime_only && source_map <> None &&  Parse_bytecode.Debug.is_empty d
     then
       Util.warn
         "Warning: '--source-map' is enabled but the bytecode program \

@@ -81,9 +81,11 @@ json.cmo : pretty_print.cmi javascript.cmi json.cmi
 json.cmx : pretty_print.cmx javascript.cmx json.cmi
 json.cmi : pretty_print.cmi
 jsoo_compile.cmo : util.cmi pseudoFs.cmi pretty_print.cmi parse_bytecode.cmi \
-    option.cmi linker.cmi driver.cmi compileArg.cmi commonArg.cmi code.cmi
+    option.cmi linker.cmi eval.cmi driver.cmi compileArg.cmi commonArg.cmi \
+    code.cmi
 jsoo_compile.cmx : util.cmx pseudoFs.cmx pretty_print.cmx parse_bytecode.cmx \
-    option.cmx linker.cmx driver.cmx compileArg.cmx commonArg.cmx code.cmx
+    option.cmx linker.cmx eval.cmx driver.cmx compileArg.cmx commonArg.cmx \
+    code.cmx
 jsoo_deadcode.cmo : util.cmi pure_fun.cmi option.cmi code.cmi \
     jsoo_deadcode.cmi
 jsoo_deadcode.cmx : util.cmx pure_fun.cmx option.cmx code.cmx \

@@ -23,6 +23,7 @@ type t = {
   profile : Driver.profile option;
   source_map : (string option * Source_map.t) option;
   runtime_files : string list;
+  runtime_only : bool;
   output_file : string option;
   input_file : string option;
   params : (string * string) list;
