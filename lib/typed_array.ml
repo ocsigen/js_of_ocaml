@@ -152,6 +152,6 @@ end
 module String = struct
   external of_uint8Array : uint8Array Js.t -> string = "caml_string_of_array"
   let of_arrayBuffer ab =
-    let uint8 = jsnew int8Array_fromBuffer(ab) in
+    let uint8 = jsnew uint8Array_fromBuffer(ab) in
     of_uint8Array uint8
 end
