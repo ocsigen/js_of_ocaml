@@ -388,6 +388,7 @@ class type linkElement = object
   inherit element
   method disabled : bool t prop
   method charset : js_string t prop
+  method crossorigin : js_string t prop
   method href : js_string t prop
   method hreflang : js_string t prop
   method media : js_string t prop
