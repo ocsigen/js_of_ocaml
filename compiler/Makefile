@@ -37,7 +37,7 @@ OBJS=compiler_version.cmx \
 COMPOBJS=$(OBJS) $(FINDLIB_SUPPORT_OBJ) commonArg.cmx compileArg.cmx jsoo_compile.cmx
 MINIOBJS=$(OBJS) commonArg.cmx minifyArg.cmx minify.cmx
 OCAMLC=ocamlfind ocamlc -g  -w +A-4-7-9-37-38-41-44-45-58
-OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45-58
+OCAMLOPT=ocamlfind ocamlopt -g -w +A-4-7-9-37-38-41-44-45-58
 $(COMPILER): jsoo_compile.$(BEST)
 	mv -f $< $@
 
