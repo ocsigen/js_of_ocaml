@@ -101,6 +101,7 @@ module Debug : sig
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
   val find : data -> Code.addr -> (int * string * Ident.t) list * Env.summary
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
+  val find_source : data -> string -> string
   val mem : data -> Code.addr -> bool
   val read
     : data -> crcs:(string * string option) list -> includes:string list
@@ -185,6 +186,20 @@ end = struct
              relocate_event orig ev;
              Hashtbl.add events_by_pc ev.ev_pos (ev,unit))
           evl
+
+  let find_source (events_by_pc, units) pos_fname =
+    let set =
+      Hashtbl.fold (fun (_m,p) unit acc ->
+        if p = pos_fname
+        then match unit.source with
+          | None -> acc
+          | Some src -> Util.StringSet.add src acc
+        else acc
+      ) units Util.StringSet.empty
+    in
+    if Util.StringSet.cardinal set = 1
+    then Util.StringSet.choose set
+    else pos_fname
 
   let read (events_by_pc, units) ~crcs ~includes ic =
     let len = input_binary_int ic in
@@ -574,10 +589,9 @@ module State = struct
     Format.eprintf "{ %a | %a | (%d) %a }@."
       print_elt st.accu print_stack st.stack st.env_offset print_env st.env
 
-  let pi_of_loc location =
-    (* FIXME *)
+  let pi_of_loc debug location =
     let pos = location.Location.loc_start in
-    let src = pos.Lexing.pos_fname in
+    let src = Debug.find_source debug pos.Lexing.pos_fname in
     {Parse_info.name = None;
      src = Some src;
      line=pos.Lexing.pos_lnum - 1;
@@ -586,22 +600,24 @@ module State = struct
      idx=0;
      fol=None}
 
-  let rec name_rec i l s summary =
+  let rec name_rec debug i l s summary =
     match l, s with
       [], _ ->
       ()
     | (j, nm,ident) :: lrem, Var v :: srem when i = j ->
        begin match Util.find_loc_in_summary nm ident summary with
              | None -> ()
-             | Some loc -> Var.loc v (pi_of_loc loc)
+             | Some loc -> Var.loc v (pi_of_loc debug loc)
        end;
-      Var.name v nm; name_rec (i + 1) lrem srem summary
+      Var.name v nm; name_rec debug (i + 1) lrem srem summary
     | (j, _, _) :: _, _ :: srem when i < j ->
-      name_rec (i + 1) l srem summary
+      name_rec debug (i + 1) l srem summary
     | _ ->
       assert false
 
-  let name_vars st (l,summary) = name_rec 0 l st.stack summary
+  let name_vars st debug pc =
+    let (l,summary) = Debug.find debug pc in
+    name_rec debug 0 l st.stack summary
 
   let rec make_stack i state =
     if i = 0
@@ -730,7 +746,7 @@ and compile infos pc state instrs =
         (instrs, Stop, state)
       end
       else begin
-        State.name_vars state (Debug.find infos.debug pc);
+        State.name_vars state infos.debug pc;
         let stack = State.stack_vars state in
         if debug_parser () then Format.eprintf "Branch %d (%a) @." pc print_var_list stack;
         (instrs, Branch (pc, stack), state)
@@ -739,7 +755,7 @@ and compile infos pc state instrs =
   else begin
     if debug_parser () then Format.eprintf "%4d " pc;
 
-    State.name_vars state (Debug.find infos.debug pc);
+    State.name_vars state infos.debug pc;
 
     let code = infos.code in
     let instr =
