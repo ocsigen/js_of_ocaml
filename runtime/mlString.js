@@ -223,7 +223,7 @@ function caml_string_bound_error () {
   caml_invalid_argument ("index out of bounds");
 }
 
-//Provides: caml_string_get mutable
+//Provides: caml_string_get
 //Requires: caml_string_bound_error, caml_string_unsafe_get
 function caml_string_get (s, i) {
   if (i >>> 0 >= s.l) caml_string_bound_error();
