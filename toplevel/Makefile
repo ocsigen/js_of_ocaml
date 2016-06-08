@@ -34,8 +34,12 @@ PACKAGES= \
 	js_of_ocaml $(DERIVING) $(ASYNC_PKG) \
 	js_of_ocaml.tyxml \
 	js_of_ocaml.toplevel \
-	dynlink \
-	js_of_ocaml.ppx.internal
+	dynlink
+
+ifeq ($(WITH_PPX),YES)
+PACKAGES += js_of_ocaml.ppx.internal
+CPPO_OPT+= -D ppx
+endif
 
 ifeq ($(WITH_GRAPHICS),YES)
 JSFILES += +graphics.js
