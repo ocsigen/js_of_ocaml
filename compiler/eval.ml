@@ -152,7 +152,7 @@ let the_length_of info x =
        | _ -> None)
     x
 
-type is_int = Empty | Y | N | Unknown
+type is_int = Y | N | Unknown
 
 let is_int info x =
   match x with
@@ -164,11 +164,9 @@ let is_int info x =
          | Expr (Block (_,_))
          | Expr (Constant _) -> N
          | _ -> Unknown)
-      Empty
+      Unknown
       (fun u v ->
          match u, v with
-         | Empty, x
-         | x, Empty -> x
          | Y, Y      -> Y
          | N, N      -> N
          | _         -> Unknown
@@ -213,7 +211,7 @@ let eval_instr info i =
     | Let (x,Prim (IsInt, [y])) ->
       begin
         match is_int info y with
-        | Unknown | Empty -> i
+        | Unknown -> i
         | Y | N as b ->
           let b = if b = N then 0l else 1l in
           let c = Constant (Int b) in
@@ -241,7 +239,7 @@ let eval_instr info i =
       end
     | _ -> i
 
-type case_of = CConst of int | CTag of int | N
+type case_of = CConst of int | CTag of int | Unknown
 
 let the_case_of info x =
   match x with
@@ -249,19 +247,22 @@ let the_case_of info x =
       get_approx info
         (fun x -> match info.info_defs.(Var.idx x) with
                   | Expr (Const i)
-                  | Expr (Constant (Int i)) -> CConst (Int32.to_int i)
-                  | Expr (Block (j,_))
+                  | Expr (Constant (Int i))       -> CConst (Int32.to_int i)
+                  | Expr (Block (j,_))            ->
+                    if info.info_possibly_mutable.(Var.idx x)
+                    then Unknown
+                    else  CTag j
                   | Expr (Constant (Tuple (j,_))) -> CTag j
-                  | _ -> N)
-        N
+                  | _ -> Unknown)
+        Unknown
         (fun u v -> match u, v with
            | CTag i, CTag j when i = j -> u
            | CConst i, CConst j when i = j -> u
-           | _ -> N)
+           | _ -> Unknown)
         x
     | Pc (Int i) -> CConst (Int32.to_int i)
     | Pc (Tuple (j,_)) -> CTag j
-    | _ -> N
+    | _ -> Unknown
 
 
 let eval_branch info = function
@@ -283,10 +284,14 @@ let eval_branch info = function
     end
   | Switch (x,const,tags) as b ->
     begin
+      (* [the_case_of info (Pv x)] might be meaningless when we're inside a dead code.
+         The proper fix would be to remove the deadcode entirely.
+         Meanwhile, add guards to prevent Invalid_argument("index out of bounds")
+         see https://github.com/ocsigen/js_of_ocaml/issues/485 *)
       match the_case_of info (Pv x) with
-      | CConst j -> Branch const.(j)
-      | CTag j -> Branch tags.(j)
-      | N -> b
+      | CConst j when j < Array.length const -> Branch const.(j)
+      | CTag j   when j < Array.length tags  -> Branch tags.(j)
+      | CConst _ | CTag _ | Unknown -> b
     end
   | _ as b -> b
 
