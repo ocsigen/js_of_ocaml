@@ -35,7 +35,7 @@ ASYNC_CMA=async/async_js.cma
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
+TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo toplevel/jsooTopPpx.cmo
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
 TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
 endif
@@ -270,7 +270,7 @@ depend: syntax/pa_js.cmo ${PA_DERIVING} sys_js.ml toplevel/jsooTopError.ml ppx/p
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I async async/*.ml async/*.mli >> .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I log log/*.ml log/*.mli >> .depend
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" -I toplevel toplevel/jsooTop.ml toplevel/jsooTopCamlp4.ml toplevel/*.mli >> .depend
-	ocamldep toplevel/jsooTopError.ml -I toplevel >> .depend
+	ocamldep toplevel/jsooTopError.ml toplevel/jsooTopPpx.ml -I toplevel >> .depend
 ifeq "${WITH_GRAPHICS}" "YES"
 	ocamldep -pp "camlp4o syntax/pa_js.cmo" graphics/*.ml  >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)
@@ -290,5 +290,4 @@ ifeq "${WITH_DERIVING}" "YES"
 	@# camlp4 3.12.0 fails on (module type of ...)
 	ocamldep -I deriving_json deriving_json/deriving_Json_stdlib.mli  >> .depend
 endif
-
 include .depend

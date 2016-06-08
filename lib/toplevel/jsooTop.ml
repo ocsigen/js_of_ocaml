@@ -96,6 +96,7 @@ let execute printval ?pp_code ?highlight_location  pp_answer s =
     while true do
       try
         let phr = !Toploop.parse_toplevel_phrase lb in
+        let phr = JsooTopPpx.preprocess_phrase phr in
         ignore(Toploop.execute_phrase printval pp_answer phr)
       with
       | End_of_file ->

@@ -30,8 +30,6 @@ jstable.cmo : js.cmi jstable.cmi
 jstable.cmx : js.cmx jstable.cmi
 keycode.cmo : keycode.cmi
 keycode.cmx : keycode.cmi
-lib_version.cmo :
-lib_version.cmx :
 lwt_js_events.cmo : lwt_js.cmi js.cmi firebug.cmi dom_html.cmi dom.cmi \
     lwt_js_events.cmi
 lwt_js_events.cmx : lwt_js.cmx js.cmx firebug.cmx dom_html.cmx dom.cmx \
@@ -42,8 +40,8 @@ mutationObserver.cmo : js.cmi dom.cmi mutationObserver.cmi
 mutationObserver.cmx : js.cmx dom.cmx mutationObserver.cmi
 regexp.cmo : js.cmi regexp.cmi
 regexp.cmx : js.cmx regexp.cmi
-sys_js.cmo : lib_version.cmo js.cmi sys_js.cmi
-sys_js.cmx : lib_version.cmx js.cmx sys_js.cmi
+sys_js.cmo : js.cmi sys_js.cmi
+sys_js.cmx : js.cmx sys_js.cmi
 typed_array.cmo : js.cmi typed_array.cmi
 typed_array.cmx : js.cmx typed_array.cmi
 url.cmo : regexp.cmi js.cmi dom_html.cmi url.cmi
@@ -93,10 +91,10 @@ async/async_js.cmi :
 log/lwt_log_js.cmo : js.cmi firebug.cmi log/lwt_log_js.cmi
 log/lwt_log_js.cmx : js.cmx firebug.cmx log/lwt_log_js.cmi
 log/lwt_log_js.cmi :
-toplevel/jsooTop.cmo : sys_js.cmi toplevel/jsooTopError.cmi js.cmi \
-    toplevel/jsooTop.cmi
-toplevel/jsooTop.cmx : sys_js.cmx toplevel/jsooTopError.cmx js.cmx \
-    toplevel/jsooTop.cmi
+toplevel/jsooTop.cmo : sys_js.cmi toplevel/jsooTopPpx.cmi \
+    toplevel/jsooTopError.cmi js.cmi toplevel/jsooTop.cmi
+toplevel/jsooTop.cmx : sys_js.cmx toplevel/jsooTopPpx.cmx \
+    toplevel/jsooTopError.cmx js.cmx toplevel/jsooTop.cmi
 toplevel/jsooTopCamlp4.cmo : toplevel/jsooTopError.cmi \
     toplevel/jsooTopCamlp4.cmi
 toplevel/jsooTopCamlp4.cmx : toplevel/jsooTopError.cmx \
@@ -104,8 +102,11 @@ toplevel/jsooTopCamlp4.cmx : toplevel/jsooTopError.cmx \
 toplevel/jsooTopCamlp4.cmi :
 toplevel/jsooTopError.cmi :
 toplevel/jsooTop.cmi :
+toplevel/jsooTopPpx.cmi :
 toplevel/jsooTopError.cmo : toplevel/jsooTopError.cmi
 toplevel/jsooTopError.cmx : toplevel/jsooTopError.cmi
+toplevel/jsooTopPpx.cmo : toplevel/jsooTopPpx.cmi
+toplevel/jsooTopPpx.cmx : toplevel/jsooTopPpx.cmi
 graphics/graphics_js.cmo : lwt_js_events.cmi js.cmi dom_html.cmi \
     graphics/graphics_js.cmi
 graphics/graphics_js.cmx : lwt_js_events.cmx js.cmx dom_html.cmx \
