@@ -27,7 +27,7 @@ depends: [
 depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" ]
 conflicts: [
   "deriving"     {< "0.6"}
-  "tyxml"        {<= "3.6.0"}
+  "tyxml"        {< "4.0.0"}
   "ppx_deriving" {< "3.0"}
   "reactiveData" {< "0.2"}
   "async_kernel" {< "113.33.00"}

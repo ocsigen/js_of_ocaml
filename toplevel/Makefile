@@ -22,7 +22,7 @@ ifneq ($(DERIVING),)
 DERIVING_SYNTAX = js_of_ocaml.deriving.syntax deriving.syntax.std
 endif
 
-ifneq ($(NO_SYNTAXES),1)
+ifneq ($(CAMLP4_SYNTAXES),)
 SYNTAXES= lwt.syntax js_of_ocaml.syntax $(DERIVING_SYNTAX)
 endif
 
@@ -34,7 +34,8 @@ PACKAGES= \
 	js_of_ocaml $(DERIVING) $(ASYNC_PKG) \
 	js_of_ocaml.tyxml \
 	js_of_ocaml.toplevel \
-	dynlink
+	dynlink \
+	js_of_ocaml.ppx.internal
 
 ifeq ($(WITH_GRAPHICS),YES)
 JSFILES += +graphics.js
