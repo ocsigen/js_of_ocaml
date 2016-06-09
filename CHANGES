@@ -1,3 +1,28 @@
+===== 2.8 (2016-05-??) =====
+ * Features/Changes
+ ** Compiler: allow dynlink of precompiled javascript file
+ ** Compiler: Improve tailcall optimization
+ ** Compiler: Improve pretty mode
+ ** Compiler: More inlining and static evaluation
+ ** Compiler: Better source map support, to leverage resolve_variable_names
+   in chrome DevTools
+ ** Compiler: preserve as much as possible the initial OCaml variable names
+ ** Lib: synchronize with tyxml 4.0.0
+ ** Lib: convert string/bigstring to/from typed_array
+ ** Lib: add Tyxml_js.Register API.
+ ** Lib: Support for Core_kernel and Async_kernel (32bit only).
+ ** Lib: Mutation observer.
+ ** Runtime: bigstring, caml_int32_bits_of_float, ..
+ ** Runtime: better nodejs integration
+
+ * Misc
+ ** Support for OCaml 4.03
+ ** Toplevel with ppx syntax
+
+ * Bug fixes
+ ** Compiler: Fix float printing
+ ** Compiler: fix separate compilation
+
 ===== 2.7 (2016-01-25) =====
 
  * Features/Changes
@@ -10,7 +35,7 @@
  ** Lib: add WebWorker API (Grégoire Henry)
  ** Lib: Allow to customize 'in_channel' with specific 'refiller' (Grégoire Henry)
  ** Lib: Synchronized tyxml 3.6.0
- 
+
  * BugFixes
  ** Compiler: Fix compilation of the [match with exception] construct
  ** Compiler: fix compat with the upcoming ocaml 4.03
@@ -19,7 +44,7 @@
  ** Runtime: Fix Big_int.square_big_int
  ** Runtime: graphics, fix draw_image with transparent pixel
  ** Ppx: fix for merlin
- 
+
 ===== 2.6 (2015-07-15) =====
 
  * Features/Changes
