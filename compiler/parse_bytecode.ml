@@ -101,7 +101,7 @@ module Debug : sig
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
   val find : data -> Code.addr -> (int * string * Ident.t) list * Env.summary
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
-  val find_source : data -> string -> string
+  val find_source : data -> string -> string option
   val mem : data -> Code.addr -> bool
   val read
     : data -> crcs:(string * string option) list -> includes:string list
@@ -187,7 +187,7 @@ end = struct
              Hashtbl.add events_by_pc ev.ev_pos (ev,unit))
           evl
 
-  let find_source (events_by_pc, units) pos_fname =
+  let find_source (_events_by_pc, units) pos_fname =
     let set =
       Hashtbl.fold (fun (_m,p) unit acc ->
         if p = pos_fname
@@ -198,8 +198,8 @@ end = struct
       ) units Util.StringSet.empty
     in
     if Util.StringSet.cardinal set = 1
-    then Util.StringSet.choose set
-    else pos_fname
+    then Some (Util.StringSet.choose set)
+    else None
 
   let read (events_by_pc, units) ~crcs ~includes ic =
     let len = input_binary_int ic in
@@ -592,8 +592,8 @@ module State = struct
   let pi_of_loc debug location =
     let pos = location.Location.loc_start in
     let src = Debug.find_source debug pos.Lexing.pos_fname in
-    {Parse_info.name = None;
-     src = Some src;
+    {Parse_info.name = Some pos.Lexing.pos_fname;
+     src;
      line=pos.Lexing.pos_lnum - 1;
      col=pos.Lexing.pos_cnum - pos.Lexing.pos_bol;
      (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
