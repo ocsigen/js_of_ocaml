@@ -68,7 +68,9 @@ let rec find_in_path paths name =
     else find_in_path rem name
 
 let find_in_path paths name =
-  if Filename.is_relative name
+  if name = "" || name = "."
+  then raise Not_found
+  else if Filename.is_relative name
   then find_in_path paths name
   else if Sys.file_exists name
   then name

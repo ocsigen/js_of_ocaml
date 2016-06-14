@@ -22,6 +22,7 @@ open Code
 open Instr
 module Primitive = Jsoo_primitive
 let debug_parser = Option.Debug.find "parser"
+let debug_sourcemap = Option.Debug.find "sourcemap"
 
 type code = string
 
@@ -179,6 +180,13 @@ end = struct
                    with Not_found ->
                    try Some (Util.find_in_path paths (Filename.basename pos_fname))
                    with Not_found -> find_ml_in_paths paths ev_module in
+                 if debug_sourcemap ()
+                 then
+                   Format.eprintf "module:%s - source:%s - name:%s\n%!"
+                     ev_module
+                     (match source with None -> "NONE" | Some x -> x)
+                     pos_fname
+                 ;
                  let u = { module_name = ev_module; fname = pos_fname; crc; source; paths } in
                  Hashtbl.add units (ev_module,pos_fname) u;
                  u
