@@ -13,14 +13,15 @@ believe this compiler will prove much easier to maintain than a
 retargeted OCaml compiler, as the bytecode provides a very stable API.
 
 == Requirements ==
+Findlib, Lwt, Menhir, Cmdliner, cppo, base64.
+See https://github.com/ocsigen/js_of_ocaml/blob/master/opam file for version constraints.
 
-  * Findlib
-  * Lwt (**version 2.3.0** at least)
-  * Menhir
-
-  [optional]
-  * deriving (**version 0.6** at least
-              see: https://github.com/ocsigen/deriving)
+Optional dependencies:
+  * deriving(see https://github.com/ocsigen/deriving)
+  * ppx_deriving(see https://github.com/whitequark/ppx_deriving)
+  * tyxml(see https://github.com/ocsigen/tyxml)
+  * reactiveData(see https://github.com/ocsigen/reactiveData)
+  * async_kernel(see https://github.com/janestreet/async_kernel): tested with **version 113.33.00**
 
 == Installation ==
   * run {{{make}}} to compile everything
@@ -64,6 +65,7 @@ functions are optimized:
   * self recursive functions (when the tail calls are the function itself) are
     compiled using a loop.
   * trampolines are used otherwise.
+<<a_manual chapter="tailcall" |More about tail call optimization>>.
 
 Data representation differs from the usual one. Most notably,
 integers are 32 bits (rather than 31 bits or 63 bits), wich is their
@@ -93,3 +95,4 @@ option, Js_of_ocaml will attempt to preserve variable names as well.
 You can also use {{{Js.debugger()}}} which inserts a JavaScript {{{debugger}}}
 statement. When the JavaScript debugger is active, this statement
 pauses the execution of the program.
+<<a_manual chapter="debug" |More about debugging with Js_of_ocaml>>.

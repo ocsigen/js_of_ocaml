@@ -1,7 +1,8 @@
 # Js_of_ocaml (jsoo)
 
 Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes
-OCaml programs run on Web browsers.
+it possible to run pure OCaml programs in JavaScript environment
+like browsers and Node.js.
   * It is easy to install and use as it works with an existing
     installation of OCaml, with no need to recompile any library.
   * It comes with bindings for a large part of the browser APIs.
@@ -12,30 +13,27 @@ OCaml programs run on Web browsers.
     API.
 
 ## Requirements
-
-  * Findlib: **version 1.5.1** at least
-  * Lwt: **version 2.3.0** at least
-  * Menhir
-  * Cmdliner
-  * cppo
-  * base64 (version 2.0.0 at least)
+  Findlib, Lwt, Menhir, Cmdliner, cppo, base64.
+  See [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/opam) file for version constraints.
 
 ### optional
-  * [deriving](https://github.com/ocsigen/deriving): **version 0.6** at least
+  * [deriving](https://github.com/ocsigen/deriving)
+  * [ppx_deriving](https://github.com/whitequark/ppx_deriving)
+  * [tyxml](https://github.com/ocsigen/tyxml)
+  * [reactiveData](https://github.com/ocsigen/reactiveData)
+  * [async_kernel](https://github.com/janestreet/async_kernel): tested with **version 113.33.00**
 
 ### Toplevel requirements
- * base64 (version 2.0.0 at least)
+ * base64, tyxml, reactiveData
  * ocp-indent: needed to support indentation in the toplevel
  * higlo: needed to support Syntax highlighting in the toplevel
  * cohttp: needed to build the toplevel webserver
- * tyxml
- * reactiveData
 
 ## Installation
 
 ###Opam
 ```
-opam install deriving js_of_ocaml
+opam install js_of_ocaml
 ```
 
 ###Manual
@@ -75,7 +73,7 @@ Extra libraries distributed with Ocaml (such as Thread or Str) are not
 supported in general. However,
   * Bigarray: bigarrays are supported using Typed Arrays
   * Num: supported using `+nat.js` option
-  * Graphics: partially supported using canvas (see also js_of_ocaml.graphics)
+  * Graphics: partially supported using canvas (see js_of_ocaml.graphics)
   * Unix: time related functions are supported
 
 Tail call is not optimized in general. However, mutually recursive
@@ -83,6 +81,7 @@ functions are optimized:
   * self recursive functions (when the tail calls are the function itself) are
     compiled using a loop.
   * trampolines are used otherwise.
+[More](http://ocsigen.org/js_of_ocaml/dev/manual/tailcall) about tail call optimization.
 
 Data representation differs from the usual one.  Most notably,
 integers are 32 bits (rather than 31 bits or 63 bits), which is their
