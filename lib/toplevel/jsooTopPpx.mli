@@ -17,7 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
-(** Helpers to embed PPX into the toplevel. *)
+(** One can add a ppx rewriter to a toplevel by registering it
+    {[ Ast_mapper.register "js_of_ocaml" Ppx_js.js_mapper ]}
+*)
+
+(** Helpers to embed PPX into the toplevel.
+*)
 
 val preprocess_structure: Parsetree.structure       -> Parsetree.structure
 val preprocess_signature: Parsetree.signature       -> Parsetree.signature
