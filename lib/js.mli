@@ -631,6 +631,26 @@ external debugger : unit -> unit = "debugger"
       If no debugging functionality is available, it has no effect.
       In practice, it will insert a "debugger;" statement in the generated javascript. *)
 
+(** {2 Export functionality.}
+    Export values to {[module.exports]} if it exists or to the global
+    object otherwise.
+*)
+
+(** [export n v] export the value [v] with the name [n] *)
+val export : string -> 'a -> unit
+
+(** [export_all obj] export every key of [obj] object.
+    {[ export_all
+         (object%js
+           method add x y = x +. y
+           method abs x = abs_float x
+           val zero = 0.
+         end)
+    ]}
+*)
+val export_all : 'a t -> unit
+
+
 (** {2 Unsafe operations.} *)
 
 (** Unsafe Javascript operations *)
