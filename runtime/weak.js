@@ -19,40 +19,39 @@
 
 // Weak API, but without the weak semantics
 
-//Provides: caml_weak_additional_values
+//Provides: caml_ephe_key_offset
 //Version: < 4.03
-var caml_weak_additional_values = 1
+var caml_ephe_key_offset = 1
 
-//Provides: caml_weak_additional_values
+//Provides: caml_ephe_key_offset
 //Version: >= 4.03
-var caml_weak_additional_values = 2
+var caml_ephe_key_offset = 2
 
 //Provides: caml_ephe_data_offset
 //Version: >= 4.03
 var caml_ephe_data_offset = 1
 
 //Provides: caml_weak_create
-//Requires: caml_weak_additional_values
+//Requires: caml_ephe_key_offset
 function caml_weak_create (n) {
   var x = [251];
-  x.length = n + 1 + caml_weak_additional_values;
+  x.length = caml_ephe_key_offset + n;
   return x;
 }
 //Provides: caml_weak_set
-//Requires: caml_weak_additional_values
+//Requires: caml_ephe_key_offset
 function caml_weak_set(x, i, v) {
-    x[i + caml_weak_additional_values] = v;
+    x[caml_ephe_key_offset + i] = v;
     return 0;
 }
 //Provides: caml_weak_get mutable
-//Requires: caml_weak_additional_values
+//Requires: caml_ephe_key_offset
 function caml_weak_get(x, i) {
-    return (x[i + caml_weak_additional_values]===undefined)?0:x[i + caml_weak_additional_values];
+    return (x[caml_ephe_key_offset + i ]===undefined)?0:x[caml_ephe_key_offset + i];
 }
 //Provides: caml_weak_get_copy mutable
 //Requires: caml_weak_get
 //Requires: caml_obj_dup
-//Requires: caml_weak_additional_values
 function caml_weak_get_copy(x, i) {
   var y = caml_weak_get(x, i);
   if (y === 0) return y;
@@ -61,14 +60,20 @@ function caml_weak_get_copy(x, i) {
   return y;
 }
 //Provides: caml_weak_check mutable
-//Requires: caml_weak_additional_values
+//Requires: caml_ephe_key_offset
 function caml_weak_check(x, i) {
-  return x[i + caml_weak_additional_values]!==undefined && x[i + caml_weak_additional_values] !==0;
+  return x[caml_ephe_key_offset + i]!==undefined && x[caml_ephe_key_offset + i] !==0;
 }
+
 //Provides: caml_weak_blit
 //Requires: caml_array_blit
-var caml_weak_blit = caml_array_blit;
-
+//Requires: caml_ephe_key_offset
+function caml_weak_blit(a1, i1, a2, i2, len) {
+  caml_array_blit(a1, caml_ephe_key_offset - i1,
+                  a2, caml_ephe_key_offset - i2,
+                  len);
+  return 0;
+}
 
 //Provides: caml_ephe_create
 //Requires: caml_weak_create
