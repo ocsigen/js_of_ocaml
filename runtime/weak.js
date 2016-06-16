@@ -34,7 +34,7 @@ var caml_ephe_data_offset = 2
 //Provides: caml_weak_create
 //Requires: caml_ephe_key_offset
 function caml_weak_create (n) {
-  var x = [251];
+  var x = [251,"caml_ephe_list_head"];
   x.length = caml_ephe_key_offset + n;
   return x;
 }
@@ -62,15 +62,19 @@ function caml_weak_get_copy(x, i) {
 //Provides: caml_weak_check mutable
 //Requires: caml_ephe_key_offset
 function caml_weak_check(x, i) {
-  return x[caml_ephe_key_offset + i]!==undefined && x[caml_ephe_key_offset + i] !==0;
+  if(x[caml_ephe_key_offset + i]!==undefined && x[caml_ephe_key_offset + i] !==0)
+    return 1;
+  else
+    return 0;
 }
 
 //Provides: caml_weak_blit
 //Requires: caml_array_blit
 //Requires: caml_ephe_key_offset
 function caml_weak_blit(a1, i1, a2, i2, len) {
-  caml_array_blit(a1, caml_ephe_key_offset + i1,
-                  a2, caml_ephe_key_offset + i2,
+  // minus one because caml_array_blit works on ocaml array  
+  caml_array_blit(a1, caml_ephe_key_offset + i1 - 1,
+                  a2, caml_ephe_key_offset + i2 - 1,
                   len);
   return 0;
 }
