@@ -14,6 +14,7 @@ retargeted OCaml compiler, as the bytecode provides a very stable API.
 
 == Requirements ==
 Findlib, Lwt, Menhir, Cmdliner, cppo, base64.
+
 See https://github.com/ocsigen/js_of_ocaml/blob/master/opam file for version constraints.
 
 Optional dependencies:

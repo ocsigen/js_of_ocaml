@@ -1,14 +1,9 @@
 = Export OCaml code to JavaScript
 
 The easiest way to export ocaml values (e.g functions) to JavaScript is to
-create a JavaScript object (using {{{object%js ... end}}}) containing all values to export
-and make the object reachable in the global scope.
+create a JavaScript object containing all values to export
+and make the object reachable.
 
-The following code creates a JavaScript object with
-two methods ({{{add}}} and {{{abs}}}) and the value {{{zero}}.
-This methods can later be called from JavaScript code with {{{myMathLib.add(3,4)}}
-
-<<code language="ocaml"|
 let _ =
   Js.export "myMathLib"
     object%js
@@ -18,21 +13,27 @@ let _ =
     end
 >>
 
+<<code language="javascript"|
+myMathLib.add(3,4)
+>>
+
 == Using Node.js module system
 {{{Js.export}}} and {{{Js.export_all}}} will export value to {{{module.exports}}} if it exists.
 
 {{{
-        # echo math.ml
-        let _ =
-          Js.export_all
-            object%js
-              method add x y = x +. y
-              method abs x = abs_float x
-              val zero = 0.
-            end
-        # ocamlfind ocamlcc -verbose -package js_of_ocaml -package js_of_ocaml.ppx -linkpkg math.ml -o math.byte
-        # js_of_ocaml math.byte
-        # node
-        # > var math = require("./math.js");
-        # > math.add(2,3)
+# echo math.ml
+let _ =
+  Js.export_all
+    object%js
+      method add x y = x +. y
+      method abs x = abs_float x
+      val zero = 0.
+    end
+# ocamlfind ocamlcc -verbose \
+  -package js_of_ocaml -package js_of_ocaml.ppx \
+  -linkpkg math.ml -o math.byte
+# js_of_ocaml math.byte
+# node
+# > var math = require("./math.js");
+# > math.add(2,3)
 }}}

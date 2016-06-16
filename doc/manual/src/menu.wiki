@@ -4,7 +4,6 @@
 ==[[bindings|Binding a JS library]]
 ==[[export|Export OCaml code to JavaScript]]
 ==[[core_async_kernel|With Core_kernel and Async_kernel]]
-==[[dynlink|Dynlink]]
 ==[[linker|Link javascript code]]
 ==[[options|Command line options]]
 ==[[performances|Performances]]

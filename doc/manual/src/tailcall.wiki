@@ -3,8 +3,6 @@ JavaScript does not (yet) support tail call optimization.
 To circumvent this limitation, and mitigate stack overflows, the Js_of_ocaml
 compiler optimize some common tail call patterns.
 
-== Current tail call optimization
-
 === Self tail recursive
 Self tail recursive function are compiled into a loop.
 
@@ -74,11 +72,9 @@ function odd(n){return caml_trampoline(odd$0(0,n))}
 >>
 
 
-== Possible future optimizations (not yet implemented)
-More tail call optimizations could be perform with function specialization and
-better inlining
+== Examples of pattern not optimized
 
-* Recursive function where the tail call is made inside an intermediate function
+Recursive function where the tail call is made inside an intermediate function.
 <<code language="ocaml"|
 let rec f x =
   let g delta = f (x - delta) in
@@ -88,10 +84,14 @@ let rec f x =
   else g 1;;
 >>
 
-* tail call of a function given as argument
+Tail call of a function given as argument
 <<code language="ocaml"|
 let bind x f =
   match x with
   | None -> None
   | Some x -> f x
 >>
+
+Note that in the future, more tail call optimizations could be perform with function specialization and
+better inlining.
+

@@ -632,21 +632,22 @@ external debugger : unit -> unit = "debugger"
       In practice, it will insert a "debugger;" statement in the generated javascript. *)
 
 (** {2 Export functionality.}
-    Export values to {[module.exports]} if it exists or to the global
+    Export values to [module.exports] if it exists or to the global
     object otherwise.
 *)
 
-(** [export n v] export the value [v] with the name [n] *)
+(** [export name value] export [name] *)
 val export : string -> 'a -> unit
 
 (** [export_all obj] export every key of [obj] object.
-    {[ export_all
-         (object%js
-           method add x y = x +. y
-           method abs x = abs_float x
-           val zero = 0.
-         end)
-    ]}
+{[
+export_all
+  object%js
+    method add x y = x +. y
+    method abs x = abs_float x
+    val zero = 0.
+  end
+]}
 *)
 val export_all : 'a t -> unit
 
