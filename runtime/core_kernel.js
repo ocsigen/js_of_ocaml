@@ -100,3 +100,21 @@ function core_kernel_gc_top_heap_words () { return 0 }
 //Provides: clear_caml_backtrace_pos
 function clear_caml_backtrace_pos () { return 0 }
 
+//Provides: internalhash_fold_int64
+//Requires: caml_hash_mix_int64
+var internalhash_fold_int64 = caml_hash_mix_int64
+//Provides: internalhash_fold_int
+//Requires: caml_hash_mix_int
+var internalhash_fold_int = caml_hash_mix_int
+//Provides: internalhash_fold_float
+//Requires: caml_hash_mix_float
+var internalhash_fold_float = caml_hash_mix_float
+//Provides: internalhash_fold_string
+//Requires: caml_hash_mix_string
+var internalhash_fold_string = caml_hash_mix_string
+//Provides: internalhash_get_hash_value
+//Requires: caml_hash_mix_final
+function internalhash_get_hash_value (seed) {
+  var h = caml_hash_mix_final(seed);
+  return h & 0x3FFFFFFF;
+}
