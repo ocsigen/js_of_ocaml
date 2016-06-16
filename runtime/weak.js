@@ -69,8 +69,8 @@ function caml_weak_check(x, i) {
 //Requires: caml_array_blit
 //Requires: caml_ephe_key_offset
 function caml_weak_blit(a1, i1, a2, i2, len) {
-  caml_array_blit(a1, caml_ephe_key_offset - i1,
-                  a2, caml_ephe_key_offset - i2,
+  caml_array_blit(a1, caml_ephe_key_offset + i1,
+                  a2, caml_ephe_key_offset + i2,
                   len);
   return 0;
 }
