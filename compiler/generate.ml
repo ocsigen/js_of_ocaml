@@ -167,7 +167,8 @@ module Share = struct
         ["caml_trampoline";
          "caml_trampoline_return";
          "caml_wrap_exception";
-         "caml_list_of_js_array"] in
+         "caml_list_of_js_array";
+         "caml_exn_with_js_backtrace"] in
     {count; vars = empty_aux; alias_strings; alias_prims; alias_apply}
 
   let get_string gen s t =
@@ -931,6 +932,18 @@ let _ =
     (fun cx _ -> J.EUn(J.Typeof, cx))
 
 (****)
+(* when raising ocaml exception and [improved_stacktrace] is enabled,
+   tag the ocaml exception with a Javascript error (that contain js stacktrace).
+   {[ throw e ]}
+   becomes
+   {[ throw (caml_exn_with_js_backtrace(e,false)) ]}
+*)
+let throw_statement cx loc =
+  if not (Option.Optim.improved_stacktrace ())
+  then
+    [J.Throw_statement cx,loc]
+  else
+    [J.Throw_statement (J.ECall (s_var "caml_exn_with_js_backtrace",[cx;bool (J.ENum 0.)],loc)),loc]
 
 let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
   match e with
@@ -1589,7 +1602,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
       flush_all queue [J.Return_statement (Some cx), loc]
   | Raise x ->
       let ((_px, cx), queue) = access_queue queue x in
-      flush_all queue [J.Throw_statement cx, loc]
+      flush_all queue (throw_statement cx loc)
   | Stop ->
       flush_all queue [J.Return_statement None, loc]
   | Branch cont ->
