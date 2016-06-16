@@ -1,4 +1,4 @@
-===== 2.8 (2016-05-??) =====
+===== 2.8 (2016-06-16) =====
  * Features/Changes
  ** Compiler: allow dynlink of precompiled javascript file
  ** Compiler: Improve tailcall optimization
