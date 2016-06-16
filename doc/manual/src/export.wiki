@@ -4,6 +4,7 @@ The easiest way to export ocaml values (e.g functions) to JavaScript is to
 create a JavaScript object containing all values to export
 and make the object reachable.
 
+<<code language="ocaml"|
 let _ =
   Js.export "myMathLib"
     object%js
