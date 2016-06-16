@@ -21,15 +21,15 @@
 
 //Provides: caml_ephe_key_offset
 //Version: < 4.03
-var caml_ephe_key_offset = 1
+var caml_ephe_key_offset = 2
 
 //Provides: caml_ephe_key_offset
 //Version: >= 4.03
-var caml_ephe_key_offset = 2
+var caml_ephe_key_offset = 3
 
 //Provides: caml_ephe_data_offset
 //Version: >= 4.03
-var caml_ephe_data_offset = 1
+var caml_ephe_data_offset = 2
 
 //Provides: caml_weak_create
 //Requires: caml_ephe_key_offset
