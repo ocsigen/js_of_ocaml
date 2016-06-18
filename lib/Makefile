@@ -35,7 +35,10 @@ ASYNC_CMA=async/async_js.cma
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo toplevel/jsooTopPpx.cmo
+TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
+ifeq "${WITH_PPX}" "YES"
+TOPLEVELLIB+= toplevel/jsooTopPpx.cmo
+endif
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
 TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
 endif
