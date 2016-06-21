@@ -240,7 +240,7 @@ class type ['a] js_array = object
 end
 
 let object_constructor = Unsafe.global##_Object
-let object_keys o = object_constructor##keys(o)
+let object_keys o : js_string t js_array t = object_constructor##keys(o)
 
 let array_constructor = Unsafe.global##_Array
 let array_empty = array_constructor

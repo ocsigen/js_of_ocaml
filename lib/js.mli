@@ -303,7 +303,7 @@ class type ['a] js_array = object
   method length : int prop
 end
 
-val object_keys : 'a t -> js_string js_array t
+val object_keys : 'a t -> js_string t js_array t
   (** Returns jsarray containing keys of the object as Object.keys does. *)
 
 val array_empty : 'a js_array t constr
