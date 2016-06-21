@@ -79,11 +79,11 @@ function caml_js_new(c, a) {
   return new F;
 }
 //Provides: caml_js_wrap_callback const (const)
-//Requires: caml_call_gen,raw_array_copy
+//Requires: caml_call_gen
 function caml_js_wrap_callback(f) {
   return function () {
     if(arguments.length > 0){
-      return caml_call_gen(f, raw_array_copy(arguments));
+      return caml_call_gen(f, arguments);
     } else {
       return caml_call_gen(f, [undefined]);
     }
