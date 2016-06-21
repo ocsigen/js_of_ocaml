@@ -48,10 +48,12 @@ let f {
     CompileArg.common;
     profile; source_map; runtime_files; input_file; output_file;
     params ; static_env;
+    wrap_with_fun;
     dynlink; linkall; toplevel; nocmis; runtime_only;
     include_dir; fs_files; fs_output; fs_external } =
   let dynlink = dynlink || toplevel || runtime_only in
   let custom_header = common.CommonArg.custom_header in
+  let global = if wrap_with_fun then `Function else `Auto in
   CommonArg.eval common;
   List.iter (fun (s,v) -> Option.Param.set s v) params;
   List.iter (fun (s,v) -> Eval.set_static_env s v) static_env;
@@ -113,7 +115,7 @@ let f {
     | None ->
       let p = PseudoFs.f p cmis fs_files paths in
       let fmt = Pretty_print.to_out_channel stdout in
-      Driver.f ~standalone ?profile ~toplevel ~linkall ~dynlink
+      Driver.f ~standalone ?profile ~linkall ~global ~dynlink
         ?source_map ?custom_header fmt d p
     | Some file ->
       gen_file file (fun chan ->
@@ -122,14 +124,14 @@ let f {
             then PseudoFs.f p cmis fs_files paths
             else p in
           let fmt = Pretty_print.to_out_channel chan in
-          Driver.f ~standalone ?profile ~toplevel ~linkall ~dynlink
+          Driver.f ~standalone ?profile ~linkall ~global ~dynlink
             ?source_map ?custom_header fmt d p;
         );
       Util.opt_iter (fun file ->
           gen_file file (fun chan ->
               let pfs = PseudoFs.f_empty cmis fs_files paths in
               let pfs_fmt = Pretty_print.to_out_channel chan in
-              Driver.f ~standalone ?profile ~toplevel ?custom_header pfs_fmt d pfs
+              Driver.f ~standalone ?profile ?custom_header ~global pfs_fmt d pfs
             )
         ) fs_output
   end;

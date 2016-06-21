@@ -346,7 +346,7 @@ let output formatter ~standalone ~custom_header ?source_map () js =
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Util.Timer.print t
 
-let pack ~toplevel ~wrap_with_fun js =
+let pack ~global js =
   let module J = Javascript in
   let t = Util.Timer.make () in
   if times ()
@@ -375,27 +375,26 @@ let pack ~toplevel ~wrap_with_fun js =
     then (J.Statement (J.Expression_statement (J.EStr ("use strict", `Utf8))), J.N) :: js
     else js in
 
-  let global =
-    J.ECall (
-      J.EFun (None, [], [
-          J.Statement (
-            J.Return_statement(
-              Some (J.EVar (J.S {J.name="this";var=None})))),
-          J.N
-        ], J.N), [], J.N) in
-
   let js =
-    if not wrap_with_fun then
-      let f =
-        J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js,
-                J.U) in
-      [J.Statement (
-        J.Expression_statement
-          ((J.ECall (f, [global], J.N)))), J.N]
-    else
-      let f = J.EFun (None, [J.V (Code.Var.fresh ())], js, J.N) in
-      [J.Statement (J.Expression_statement f), J.N] in
-
+    let f = J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js, J.U) in
+    let expr =
+      match global with
+      | `Function -> f
+      | `Custom name ->
+        J.ECall (f, [J.EVar (J.S {J.name;var=None})], J.N)
+      | `Auto ->
+        let global =
+          J.ECall (
+            J.EFun (None, [], [
+              J.Statement (
+                J.Return_statement(
+                  Some (J.EVar (J.S {J.name="this";var=None})))),
+              J.N
+            ], J.N), [], J.N) in
+        J.ECall (f, [global], J.N)
+    in
+    [J.Statement (J.Expression_statement expr), J.N]
+  in
   (* post pack optim *)
   let t3 = Util.Timer.make () in
   let js = (new Js_traverse.simpl)#program js in
@@ -407,11 +406,7 @@ let pack ~toplevel ~wrap_with_fun js =
     if (Option.Optim.shortvar ())
     then
       let t5 = Util.Timer.make () in
-      let keep =
-        if toplevel
-        then StringSet.singleton global_object
-        else StringSet.empty
-      in
+      let keep = StringSet.empty in
       let js = (new Js_traverse.rename_variable keep)#program js in
       if times () then Format.eprintf "    shortten vars: %a@." Util.Timer.print t5;
       js
@@ -430,8 +425,8 @@ let configure formatter p =
 
 type profile = Code.program -> Code.program
 
-let f ?(standalone=true) ?(wrap_with_fun=false) ?(profile=o1)
-    ?(dynlink=false) ?(toplevel=false) ?(linkall=false) ?source_map ?custom_header formatter d =
+let f ?(standalone=true) ?(global=`Auto) ?(profile=o1)
+    ?(dynlink=false) ?(linkall=false) ?source_map ?custom_header formatter d =
   let exported_runtime = not standalone in
   let linkall = linkall || dynlink in
   configure formatter >>
@@ -442,7 +437,7 @@ let f ?(standalone=true) ?(wrap_with_fun=false) ?(profile=o1)
 
   link ~standalone ~linkall ~export_runtime:dynlink >>
 
-  pack ~toplevel ~wrap_with_fun >>
+  pack ~global >>
 
   coloring >>
 
@@ -452,7 +447,7 @@ let f ?(standalone=true) ?(wrap_with_fun=false) ?(profile=o1)
 
 let from_string prims s formatter =
   let (p,d) = Parse_bytecode.from_string prims s in
-  f ~standalone:false ~wrap_with_fun:true formatter d p
+  f ~standalone:false ~global:`Function formatter d p
 
 
 let profiles = [1,o1;

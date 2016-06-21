@@ -30,6 +30,7 @@ type t = {
   input_file : string option;
   params : (string * string) list;
   static_env : (string * string) list;
+  wrap_with_fun : bool;
  (* toplevel *)
   dynlink : bool;
   linkall : bool;
@@ -93,6 +94,10 @@ let options =
     let doc = "root dir for source map." in
     Arg.(value & opt (some string) None & info ["source-map-root"] ~doc)
   in
+  let wrap_with_function =
+    let doc = "Wrap the generated JavaScript code inside a function that needs to be applied with the global object." in
+    Arg.(value & flag & info ["wrap-with-fun"] ~doc)
+  in
   let set_param =
     let doc = "Set compiler options." in
     let all = List.map (fun (x,_) ->
@@ -142,6 +147,7 @@ let options =
       dynlink
       linkall
       toplevel
+      wrap_with_fun
       include_dir
       fs_files
       fs_output
@@ -210,6 +216,8 @@ let options =
         profile;
         static_env;
 
+        wrap_with_fun;
+
         dynlink;
         linkall;
         toplevel;
@@ -237,6 +245,7 @@ let options =
           $ dynlink
           $ linkall
           $ toplevel
+          $ wrap_with_function
 
           $ include_dir
           $ fs_files

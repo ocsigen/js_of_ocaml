@@ -63,7 +63,10 @@ let setup = lazy (
     Js.Unsafe.global##toplevelEval(res)
   in
   Js.Unsafe.global##toplevelCompile <- compile (*XXX HACK!*);
-  Js.Unsafe.global##toplevelEval <- (fun x -> Js.Unsafe.eval_string x);
+  Js.Unsafe.global##toplevelEval <- (fun x ->
+    let f : < .. > Js.t -> unit = Js.Unsafe.eval_string x in
+    (fun () -> f Js.Unsafe.global)
+  );
   ())
 
 let refill_lexbuf s p ppf buffer len =

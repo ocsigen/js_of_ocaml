@@ -22,10 +22,9 @@ type profile
 
 val f :
   ?standalone:bool ->
-  ?wrap_with_fun:bool ->
+  ?global:[`Auto | `Function | `Custom of string] ->
   ?profile:profile ->
   ?dynlink:bool ->
-  ?toplevel:bool ->
   ?linkall:bool ->
   ?source_map:(string option * Source_map.t) ->
   ?custom_header:string ->
