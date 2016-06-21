@@ -54,7 +54,19 @@ function caml_js_var(x) {
 function caml_js_call(f, o, args) { return f.apply(o, caml_js_from_array(args)); }
 //Provides: caml_js_fun_call (const, shallow)
 //Requires: caml_js_from_array
-function caml_js_fun_call(f, args) { return f.apply(null, caml_js_from_array(args)); }
+function caml_js_fun_call(f, a) {
+  switch (a.length) {
+  case 1: return f();
+  case 2: return f (a[1]);
+  case 3: return f (a[1],a[2]);
+  case 4: return f (a[1],a[2],a[3]);
+  case 5: return f (a[1],a[2],a[3],a[4]);
+  case 6: return f (a[1],a[2],a[3],a[4],a[5]);
+  case 7: return f (a[1],a[2],a[3],a[4],a[5],a[6]);
+  case 8: return f (a[1],a[2],a[3],a[4],a[5],a[6],a[7]);
+  }
+  return f.apply(null, caml_js_from_array(a));
+}
 //Provides: caml_js_meth_call (mutable, const, shallow)
 //Requires: MlString
 //Requires: caml_js_from_array
@@ -72,7 +84,7 @@ function caml_js_new(c, a) {
   case 5: return new c (a[1],a[2],a[3],a[4]);
   case 6: return new c (a[1],a[2],a[3],a[4],a[5]);
   case 7: return new c (a[1],a[2],a[3],a[4],a[5],a[6]);
-  case 8: return new c (a[1],a[2],a[3],a[4],a[5],a[6], a[7]);
+  case 8: return new c (a[1],a[2],a[3],a[4],a[5],a[6],a[7]);
   }
   function F() { return c.apply(this, caml_js_from_array(a)); }
   F.prototype = c.prototype;
