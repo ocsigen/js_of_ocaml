@@ -56,14 +56,14 @@ let raw_call name uri error_cb user_cb =
   let init () = ignore (Dom.appendChild (Dom_html.document##body) script) in
   init, finalize
 
-let call_ make_uri error_cb user_cb =
-  let name = random_identifier 10 in
+let call_ prefix make_uri error_cb user_cb =
+  let name = prefix ^ (random_identifier 10) in
   let uri = make_uri name in
   raw_call name uri error_cb user_cb
 
-let call_custom_url ?timeout make_uri =
+let call_custom_url ?timeout ?(prefix="") make_uri =
   let t,w = Lwt.task () in
-  let init, finalize = call_ make_uri (fun _ -> Lwt.cancel t) (Lwt.wakeup w) in
+  let init, finalize = call_ prefix make_uri (fun _ -> Lwt.cancel t) (Lwt.wakeup w) in
   Lwt.on_cancel t finalize;
   let new_t = match timeout with
     | None -> t
@@ -78,7 +78,7 @@ let add_param name value l =
   let l = List.filter (fun (x,_) -> x <> name) l in
   (name,value) :: l
 
-let call ?timeout ?(param="callback") url =
+let call ?timeout ?(param="callback") ?(prefix="") url =
   let make_uri cbname =
     match Url.url_of_string url with
     | None -> failwith "Jsonp.call: Cannot parse url"
@@ -93,4 +93,4 @@ let call ?timeout ?(param="callback") url =
                                      Url.fu_arguments = add_param param cbname file.Url.fu_arguments}
       in Url.string_of_url new_url
   in
-  call_custom_url ?timeout make_uri
+  call_custom_url ?timeout ~prefix make_uri
