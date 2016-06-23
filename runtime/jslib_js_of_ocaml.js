@@ -90,6 +90,23 @@ function caml_js_new(c, a) {
   F.prototype = c.prototype;
   return new F;
 }
+//Provides: caml_ojs_new_arr (const, shallow)
+//Requires: caml_js_from_array
+function caml_ojs_new_arr(c, a) {
+  switch (a.length) {
+  case 1: return new c;
+  case 2: return new c (a[0]);
+  case 3: return new c (a[0],a[1]);
+  case 4: return new c (a[0],a[1],a[2]);
+  case 5: return new c (a[0],a[1],a[2],a[3]);
+  case 6: return new c (a[0],a[1],a[2],a[3],a[4]);
+  case 7: return new c (a[0],a[1],a[2],a[3],a[4],a[5]);
+  case 8: return new c (a[0],a[1],a[2],a[3],a[4],a[5],a[6]);
+  }
+  function F() { return c.apply(this, a); }
+  F.prototype = c.prototype;
+  return new F;
+}
 //Provides: caml_js_wrap_callback const (const)
 //Requires: caml_call_gen
 function caml_js_wrap_callback(f) {

@@ -698,6 +698,11 @@ module Unsafe : sig
         creates a Javascript object with constructor [c] using the
         arguments given by the array [a]. *)
 
+  external new_obj_arr : 'a -> any -> 'b = "caml_ojs_new_arr"
+    (** Same Create a Javascript object.  The expression [new_obj_arr c a]
+        creates a Javascript object with constructor [c] using the
+        arguments given by the Javascript array [a]. *)
+
   external obj : (string * any) array -> 'a = "caml_js_object"
     (** Creates a Javascript literal object.  The expression
         [obj a] creates a Javascript object whose fields are given by
