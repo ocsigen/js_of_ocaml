@@ -25,12 +25,12 @@ myMathLib.add(3,4)
 # echo math.ml
 let _ =
   Js.export_all
-    object%js
+    (object%js
       method add x y = x +. y
       method abs x = abs_float x
       val zero = 0.
-    end
-# ocamlfind ocamlcc -verbose \
+     end)
+# ocamlfind ocamlc -verbose \
   -package js_of_ocaml -package js_of_ocaml.ppx \
   -linkpkg math.ml -o math.byte
 # js_of_ocaml math.byte
