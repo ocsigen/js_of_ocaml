@@ -135,3 +135,12 @@ function caml_js_object (a) {
   }
   return o;
 }
+
+
+//Provides: caml_js_export_var
+function caml_js_export_var (){
+  if(typeof module !== 'undefined' && module && module.exports)
+    return module.exports
+  else
+    return joo_global_object;
+}

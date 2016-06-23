@@ -113,4 +113,6 @@ let provided = List.fold_left (fun acc x -> StringSet.add x acc)
   "isNaN";
   "parseFloat";
   "parseInt";
+
+  "module";
 ]
