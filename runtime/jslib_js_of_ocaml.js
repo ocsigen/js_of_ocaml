@@ -118,11 +118,27 @@ function caml_js_wrap_callback(f) {
     }
   }
 }
+
+//Provides: caml_js_wrap_callback_arguments
+//Requires: caml_js_wrap_callback
+function caml_js_wrap_callback_arguments(f) {
+  return function() {
+    return caml_js_wrap_callback(f)(arguments);
+  }
+}
+
 //Provides: caml_js_wrap_meth_callback const (const)
 //Requires: caml_call_gen,raw_array_cons
 function caml_js_wrap_meth_callback(f) {
   return function () {
     return caml_call_gen(f,raw_array_cons(arguments,this));
+  }
+}
+//Provides: caml_js_wrap_meth_callback_arguments const (const)
+//Requires: caml_call_gen,raw_array_cons
+function caml_js_wrap_meth_callback_arguments(f) {
+  return function () {
+    return caml_call_gen(f,[this,arguments]);
   }
 }
 //Provides: caml_js_wrap_meth_callback_unsafe const (const)

@@ -660,6 +660,8 @@ module Unsafe : sig
     (** Top type.  Used for putting values of different types
         in a same array. *)
 
+  type any_js_array = any
+
   external inject : 'a -> any = "%identity"
     (** Coercion to top type. *)
 
@@ -698,7 +700,7 @@ module Unsafe : sig
         creates a Javascript object with constructor [c] using the
         arguments given by the array [a]. *)
 
-  external new_obj_arr : 'a -> any -> 'b = "caml_ojs_new_arr"
+  external new_obj_arr : 'a -> any_js_array -> 'b = "caml_ojs_new_arr"
     (** Same Create a Javascript object.  The expression [new_obj_arr c a]
         creates a Javascript object with constructor [c] using the
         arguments given by the Javascript array [a]. *)
@@ -733,14 +735,25 @@ module Unsafe : sig
         arguments will be set to [undefined] and extra arguments are
         lost. *)
 
+  external callback_with_arguments : (any_js_array -> 'b) -> ('c, any_js_array -> 'b) meth_callback =
+    "caml_js_wrap_callback_arguments"
+      (** Wrap an OCaml function so that it can be invoked from
+        Javascript. The first parameter of the function will be bound
+        to the [arguments] JavaScript *)
+
   external meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback =
       "caml_js_wrap_meth_callback_unsafe"
     (** Wrap an OCaml function so that it can be invoked from
-        Javascript.  The first parameter of the function will be bound
+        Javascript. The first parameter of the function will be bound
         to the value of the [this] implicit parameter. Contrary to
         [Js.wrap_meth_callback], partial application and
         over-application is not supported: missing arguments will be
         set to [undefined] and extra arguments are lost. *)
+  external meth_callback_with_arguments : ('b -> any_js_array -> 'a) -> ('b, any_js_array -> 'a) meth_callback =
+    "caml_js_wrap_meth_callback_arguments"
+  (** Wrap an OCaml function so that it can be invoked from Javascript.
+      The first parameter of the function will be bound to the value of the [this] implicit parameter.
+      The second parameter of the function with be bound to the value of the [arguments]. *)
 
   (** {3 Deprecated functions.} *)
 
