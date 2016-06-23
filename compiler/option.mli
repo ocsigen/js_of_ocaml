@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
+val stop_profiling : unit -> unit
+val start_profiling : string -> unit
 module Debug : sig
   val available : unit -> string list
   val find : string -> unit -> bool

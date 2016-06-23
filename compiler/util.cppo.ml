@@ -255,6 +255,78 @@ let find sep s =
     raise Not_found
   with Found i -> i
 
+
+let int_num_bits =
+  let size = ref 0 in
+  let i = ref (-1) in
+  while !i <> 0 do i:= !i lsl 1; incr size done;
+  !size
+
+module BitSet : sig
+  type t
+  val create : unit -> t
+  val mem : t -> int -> bool
+  val set : t -> int -> unit
+  val unset : t -> int -> unit
+  val copy : t -> t
+  val iter : (int -> unit) -> t -> unit
+  val size : t -> int
+  val next_free : t -> int -> int
+  val next_mem : t -> int -> int
+end = struct
+  type t =
+    { mutable arr : int array;
+    }
+  let create () = { arr = Array.make 1 0 }
+
+  let size t =
+    Array.length t.arr * int_num_bits
+
+  let mem { arr } i =
+    let idx = i / int_num_bits in
+    let off = i mod int_num_bits in
+    idx < Array.length arr && Array.unsafe_get arr idx land (1 lsl off) <> 0
+
+  let set t i =
+    let idx = i / int_num_bits in
+    let off = i mod int_num_bits in
+    let size = ref (Array.length t.arr) in
+    while idx >= !size do size := !size * 2 done;
+    if !size <> Array.length t.arr
+    then begin
+      let a = Array.make !size 0 in
+      Array.blit t.arr 0 a 0 (Array.length t.arr);
+      t.arr <- a
+    end;
+    Array.unsafe_set t.arr idx (Array.unsafe_get t.arr idx lor (1 lsl off))
+
+  let unset t i =
+    let idx = i / int_num_bits in
+    let off = i mod int_num_bits in
+    let size = Array.length t.arr in
+    if idx >= size then ()
+    else if Array.unsafe_get t.arr idx land (1 lsl off) <> 0
+    then Array.unsafe_set t.arr idx (Array.unsafe_get t.arr idx lxor (1 lsl off))
+
+  let next_free t i =
+    let x = ref i in
+    while mem t !x do incr x done;
+    !x
+
+  let next_mem t i =
+    let x = ref i in
+    while not (mem t !x) do incr x done;
+    !x
+
+  let copy t = { arr = Array.copy t.arr }
+
+  let iter f t =
+    for i = 0 to size t do
+      if mem t i then f i
+    done;;
+end
+
+
 module Version = struct
   type t = int list
   let split v =

@@ -19,7 +19,7 @@
  *)
 
 let times = Option.Debug.find "times"
-
+let debug_mem = Option.Debug.find "mem"
 let _ = Sys.catch_break true
 
 let temp_file_name =
@@ -55,6 +55,10 @@ let f {
   let custom_header = common.CommonArg.custom_header in
   let global = if wrap_with_fun then `Function else `Auto in
   CommonArg.eval common;
+  begin match output_file with
+  | None | Some "" | Some "-" -> ()
+  | Some name when debug_mem () -> Option.start_profiling name
+  | Some _ -> () end;
   List.iter (fun (s,v) -> Option.Param.set s v) params;
   List.iter (fun (s,v) -> Eval.set_static_env s v) static_env;
   let t = Util.Timer.make () in
@@ -135,7 +139,8 @@ let f {
             )
         ) fs_output
   end;
-  if times () then Format.eprintf "compilation: %a@." Util.Timer.print t
+  if times () then Format.eprintf "compilation: %a@." Util.Timer.print t;
+  Option.stop_profiling ()
 
 let main =
   Cmdliner.Term.(pure f $ CompileArg.options),

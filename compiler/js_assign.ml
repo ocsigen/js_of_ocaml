@@ -80,45 +80,32 @@ while compiling the OCaml toplevel:
 
   type alloc =
     { mutable first_free : int;
-      mutable used : bool array }
+      mutable used : BitSet.t }
 
   let make_alloc_table () =
     { first_free = 0;
-      used = Array.make 32 false }
+      used = BitSet.create () }
 
   let next_available a i =
-    let i = ref (max i a.first_free) in
-    let len = Array.length a.used in
-    while !i < len && a.used.(!i) do incr i done;
-    !i
+    BitSet.next_free a.used (max i a.first_free)
 
   let allocate a i =
-    let len = Array.length a.used in
-    if i >= len then begin
-      let l = ref len in
-      while l := 2 * !l; i >= !l do () done;
-      let u = Array.make !l false in
-      Array.blit a.used 0 u 0 len;
-      a.used <- u
-    end;
-    assert (not a.used.(i));
-    a.used.(i) <- true;
+    BitSet.set a.used i;
     if a.first_free = i then begin
-      let i = ref a.first_free in
-      let len = Array.length a.used in
-      while !i < len && a.used.(!i) do incr i done;
-      a.first_free <- !i
+      a.first_free <- BitSet.next_free a.used a.first_free
     end
 
   let is_available l i =
-    List.for_all (fun a -> Array.length a.used <= i || not a.used.(i)) l
+    List.for_all (fun a -> BitSet.mem a.used i) l
+
+
 
   let first_available l =
-    let rec find_rec n =
-      let n' = List.fold_left (fun n a -> next_available a n) n l in
-      if n = n' then n else find_rec n'
+    let rec find_rec n l =
+      let n' = List.fold_left (fun n a -> next_available a n) n l  in
+      if n = n' then n else find_rec n' l
     in
-    find_rec 0
+    find_rec 0 l
 
   let mark_allocated l i = List.iter (fun a -> allocate a i) l
 

@@ -24,6 +24,19 @@ module IntMap : Map.S with type key = int
 module StringSet : Set.S with type elt = string
 module StringMap : Map.S with type key = string
 
+module BitSet : sig
+  type t
+  val create : unit -> t
+  val mem : t -> int -> bool
+  val set : t -> int -> unit
+  val unset : t -> int -> unit
+  val next_free : t -> int -> int
+  val next_mem : t -> int -> int
+  val iter : (int -> unit) -> t -> unit
+  val copy : t -> t
+  val size : t -> int
+end
+
 val quiet : bool ref
 val warn : ('a,unit,string,unit) format4 -> 'a
 
