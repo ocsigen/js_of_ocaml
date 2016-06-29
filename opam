@@ -24,7 +24,7 @@ depends: [
   ("base-no-ppx" | "ppx_tools")
   "ocamlbuild"
 ]
-depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" ]
+depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" "ppx_driver"]
 conflicts: [
   "deriving"     {< "0.6"}
   "tyxml"        {< "4.0.0"}
