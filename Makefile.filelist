@@ -40,6 +40,7 @@ OCAMLFIND_BIN += lib/ppx/${PPX}
 IMPL += lib/ppx/ppx_js.cma
 INTF += lib/ppx/*.cmi
 IMPL += lib/ppx/ppx_js.cmx lib/ppx/ppx_js.cmxa
+IMPL += lib/ppx/ppx_js.a
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
 IMPL += lib/ppx/ppx_js.cmxs
@@ -49,6 +50,7 @@ endif
 
 ifeq "${WITH_PPX}${WITH_PPX_DRIVER}" "YESYES"
 IMPL += lib/ppx_driver/ppx_js_driver.cma lib/ppx_driver/ppx_js_driver.cmx lib/ppx_driver/ppx_js_driver.cmxa
+IMPL += lib/ppx_driver/ppx_js_driver.a
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
 IMPL += lib/ppx_driver/ppx_js_driver.cmxs
