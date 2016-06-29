@@ -499,7 +499,7 @@ let eq (pc1, blocks1, _) (pc2, blocks2, _) =
 let with_invariant = Option.Debug.find "invariant"
 let check_defs=false
 let invariant  (_, blocks, _) =
-  if with_invariant () || true
+  if with_invariant ()
   then begin
     let defs = Array.make (Var.count ()) false in
     let check_cont (cont, args) =
