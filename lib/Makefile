@@ -214,11 +214,11 @@ ppx_driver/%.cmx: ppx_driver/%.ml ppx/ppx_js.cmi
 ppx_driver/%.cmo: ppx_driver/%.ml ppx/ppx_js.cmi
 	$(OCAMLC) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -package ppx_driver -c $<
 ppx_driver/ppx_js_driver.cma: ppx_driver/ppx_js_driver.cmo
-	$(OCAMLC) -I ppx -a -o $@ $^
+	$(OCAMLC) -linkall -I ppx -a -o $@ $^
 ppx_driver/ppx_js_driver.cmxa: ppx_driver/ppx_js_driver.cmx
-	$(OCAMLOPT) -I ppx -a -o $@ $^
+	$(OCAMLOPT) -linkall -I ppx -a -o $@ $^
 ppx_driver/ppx_js_driver.cmxs: ppx_driver/ppx_js_driver.cmxa
-	$(OCAMLOPT) -I ppx -shared -g -o $@ $^
+	$(OCAMLOPT) -linkall -I ppx -shared -g -o $@ $^
 
 $(PPX_EX): ppx/ppx_js.$(BEST)
 	cp $< $@
@@ -270,6 +270,7 @@ clean:
 	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa]
 	rm -f syntax/*.cm[xioa] syntax/*.[ao] syntax/*.so syntax/*.cmx[sa]
 	rm -f ppx/*.cm[xioa] ppx/*.[ao] ppx/*.so ppx/*.cmx[sa]
+	rm -f ppx_driver/*.cm[xioa] ppx_driver/*.[ao] ppx_driver/*.so ppx_driver/*.cmx[sa]
 	rm -f async/*.cm[xioa] async/*.[ao] async/*.so async/*.cmx[sa]
 	rm -f log/*.cm[xioa] log/*.[ao] log/*.so log/*.cmx[sa]
 	rm -f tyxml/*.cm[xioa] tyxml/*.[ao] tyxml/*.so tyxml/*.cmx[sa]
