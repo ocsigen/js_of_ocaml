@@ -30,6 +30,16 @@ package "ppx" (
     archive(native, plugin) = "ppx_js.cmxs"
     requires = "ppx_tools"
   )
+  package "driver" (
+    description = "Js_of_ocaml ppx driver"
+    version = "[distributed with js_of_ocaml]"
+    requires = "ppx_driver ppx_tools js_of_ocaml.ppx.internal"
+    requires(ppx_driver) = "ppx_driver ppx_tools js_of_ocaml.ppx.internal"
+    archive(ppx_driver, byte          ) = "ppx_js_driver.cma"
+    archive(ppx_driver, native        ) = "ppx_js_driver.cmxa"
+    archive(ppx_driver, native, plugin) = "ppx_js_driver.cmxs"
+    exists_if = "ppx_js_driver.cma"
+  )
 )
 
 package "deriving" (

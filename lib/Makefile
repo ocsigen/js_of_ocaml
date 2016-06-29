@@ -52,8 +52,14 @@ endif
 ifeq "${WITH_PPX}" "YES"
 PPX_EX= ppx/$(PPX)
 PPX_LIB= ppx/ppx_js.cma ppx/ppx_js.cmxa
+ifeq "${WITH_PPX_DRIVER}" "YES"
+PPX_LIB+= ppx_driver/ppx_js_driver.cma ppx_driver/ppx_js_driver.cmxa
+endif
 ifeq "${NATDYNLINK}" "YES"
 PPX_LIB_NDL= ppx/ppx_js.cmxs
+ifeq "${WITH_PPX_DRIVER}" "YES"
+PPX_LIB_NDL+= ppx_driver/ppx_js_driver.cmxs
+endif
 endif
 endif
 
@@ -202,6 +208,17 @@ ppx/ppx_js.cmxa: ppx/ppx_js.cmx
 	$(OCAMLOPT) -a -o $@ $^
 ppx/ppx_js.cmxs: ppx/ppx_js.cmxa
 	$(OCAMLOPT) -shared -g -o $@ $^
+
+ppx_driver/%.cmx: ppx_driver/%.ml ppx/ppx_js.cmi
+	$(OCAMLOPT) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -package ppx_driver -g -c $<
+ppx_driver/%.cmo: ppx_driver/%.ml ppx/ppx_js.cmi
+	$(OCAMLC) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -package ppx_driver -c $<
+ppx_driver/ppx_js_driver.cma: ppx_driver/ppx_js_driver.cmo
+	$(OCAMLC) -I ppx -a -o $@ $^
+ppx_driver/ppx_js_driver.cmxa: ppx_driver/ppx_js_driver.cmx
+	$(OCAMLOPT) -I ppx -a -o $@ $^
+ppx_driver/ppx_js_driver.cmxs: ppx_driver/ppx_js_driver.cmxa
+	$(OCAMLOPT) -I ppx -shared -g -o $@ $^
 
 $(PPX_EX): ppx/ppx_js.$(BEST)
 	cp $< $@
