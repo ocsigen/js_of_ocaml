@@ -7,6 +7,7 @@ case $(opam switch show) in
 esac
 opam install deriving || true
 opam install async_kernel.113.33.00 || true
+opam install ppx_driver || true
 opam install reactiveData cppo base64
 
 # case $(opam switch show) in
