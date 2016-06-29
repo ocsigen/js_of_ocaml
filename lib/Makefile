@@ -52,8 +52,14 @@ endif
 ifeq "${WITH_PPX}" "YES"
 PPX_EX= ppx/$(PPX)
 PPX_LIB= ppx/ppx_js.cma ppx/ppx_js.cmxa
+ifeq "${WITH_PPX_DRIVER}" "YES"
+PPX_LIB+= ppx_driver/ppx_js_driver.cma ppx_driver/ppx_js_driver.cmxa
+endif
 ifeq "${NATDYNLINK}" "YES"
 PPX_LIB_NDL= ppx/ppx_js.cmxs
+ifeq "${WITH_PPX_DRIVER}" "YES"
+PPX_LIB_NDL+= ppx_driver/ppx_js_driver.cmxs
+endif
 endif
 endif
 
@@ -203,6 +209,17 @@ ppx/ppx_js.cmxa: ppx/ppx_js.cmx
 ppx/ppx_js.cmxs: ppx/ppx_js.cmxa
 	$(OCAMLOPT) -shared -g -o $@ $^
 
+ppx_driver/%.cmx: ppx_driver/%.ml ppx/ppx_js.cmi
+	$(OCAMLOPT) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -package ppx_driver -g -c $<
+ppx_driver/%.cmo: ppx_driver/%.ml ppx/ppx_js.cmi
+	$(OCAMLC) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -package ppx_driver -c $<
+ppx_driver/ppx_js_driver.cma: ppx_driver/ppx_js_driver.cmo
+	$(OCAMLC) -linkall -I ppx -a -o $@ $^
+ppx_driver/ppx_js_driver.cmxa: ppx_driver/ppx_js_driver.cmx
+	$(OCAMLOPT) -linkall -I ppx -a -o $@ $^
+ppx_driver/ppx_js_driver.cmxs: ppx_driver/ppx_js_driver.cmxa
+	$(OCAMLOPT) -linkall -I ppx -shared -g -o $@ $^
+
 $(PPX_EX): ppx/ppx_js.$(BEST)
 	cp $< $@
 
@@ -253,6 +270,7 @@ clean:
 	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa]
 	rm -f syntax/*.cm[xioa] syntax/*.[ao] syntax/*.so syntax/*.cmx[sa]
 	rm -f ppx/*.cm[xioa] ppx/*.[ao] ppx/*.so ppx/*.cmx[sa]
+	rm -f ppx_driver/*.cm[xioa] ppx_driver/*.[ao] ppx_driver/*.so ppx_driver/*.cmx[sa]
 	rm -f async/*.cm[xioa] async/*.[ao] async/*.so async/*.cmx[sa]
 	rm -f log/*.cm[xioa] log/*.[ao] log/*.so log/*.cmx[sa]
 	rm -f tyxml/*.cm[xioa] tyxml/*.[ao] tyxml/*.so tyxml/*.cmx[sa]
