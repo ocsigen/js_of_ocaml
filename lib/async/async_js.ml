@@ -64,15 +64,25 @@ let run =
     | State.Idle -> run_after 0.; state := State.Will_run_soon
     | State.Running | State.Will_run_soon -> ()
 
+let log name exn =
+  let exn =
+    match Async_kernel.Monitor.extract_exn exn with
+    | Js.Error err -> `Js err
+    | exn -> `Exn exn
+  in
+  match exn with
+  | `Js err ->               Firebug.console##error_2 (Js.string name, err);
+  | `Exn exn ->              Firebug.console##error_2 (Js.string name, Js.string (Exn.to_string exn));
+  | `Js_and_exn (exn,err) -> Firebug.console##error_3 (Js.string name, Js.string (Exn.to_string exn), err)
+
 let initialization = lazy (
   let t = Scheduler.t () in
   Scheduler.set_job_queued_hook t (fun _ -> run ());
   Scheduler.set_event_added_hook t (fun _ -> run ());
   Scheduler.set_thread_safe_external_job_hook t run;
-  Async_kernel.Monitor0.try_with_log_exn := (fun exn ->
-    Firebug.console##error_2 (
-      Js.string "Async_kernel.Monitor0.try_with_log_exn",
-      exn));
+  Async_kernel.Monitor0.try_with_log_exn := log "Async_kernel: Monitor.try_with";
+  Async_kernel.Monitor.detach_and_iter_errors
+    Async_kernel.Monitor.main ~f:(log "Async_kernel: Unhandled exception");
   run ()
 )
 
