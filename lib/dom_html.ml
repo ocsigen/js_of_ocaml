@@ -558,6 +558,7 @@ class type inputElement = object ('self)
   method select : unit meth
   method files : File.fileList t optdef readonly_prop
   method placeholder : js_string t writeonly_prop
+  method selectionDirection : js_string t prop
   method selectionStart : int prop
   method selectionEnd : int prop
   method onselect : ('self t, event t) event_listener prop
