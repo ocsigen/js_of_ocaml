@@ -588,8 +588,6 @@ class type textAreaElement = object ('self)
   method select : unit meth
   method required : bool t writeonly_prop
   method placeholder : js_string t writeonly_prop
-  method selectionStart : int prop
-  method selectionEnd : int prop
   method onselect : ('self t, event t) event_listener prop
   method onchange : ('self t, event t) event_listener prop
   method oninput : ('self t, event t) event_listener prop
