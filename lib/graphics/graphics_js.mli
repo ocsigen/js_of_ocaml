@@ -32,7 +32,7 @@ val open_graph : string -> unit
     information on the desired graphics mode, the graphics window
     size, and so on. Specification can be found at
     http://www.w3schools.com/jsref/met_win_open.asp.
-    Note: an extra specification is availble, "target",
+    Note: an extra specification is available, "target",
     to specifies the target attribute or the name of the window. *)
 
 val open_canvas : Dom_html.canvasElement Js.t -> unit

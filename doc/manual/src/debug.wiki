@@ -21,6 +21,6 @@ After compiling with sourcemap enabled, using developers tools, one can set brea
 step through the code, and inspect variable directly in OCaml sources.
 
 == About Chrome DevTools
-Usefull setting Chrome DevTools:
+Useful setting Chrome DevTools:
 * Display variable values inline while debugging
 * Resolve variable names (hiddden DevTools Experiments, see http://islegend.com/development/how-to-enable-devtools-experiments-within-google-chrome)

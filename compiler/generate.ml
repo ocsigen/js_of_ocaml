@@ -63,7 +63,7 @@ let list_group f g l =
     list_group_rec f g r (f a) [g a] []
 
 (* like [List.map] except that it calls the function with
-   an additional argument to indicate wether we're mapping
+   an additional argument to indicate whether we're mapping
    over the last element of the list *)
 let rec map_last f l = match l with
   | [] -> assert false
@@ -1206,7 +1206,7 @@ and translate_instr ctx expr_queue loc instr =
     (* We could inline more.
        size_v : length of the variable after serialization
        size_c : length of the constant after serialization
-       num : number of occurence
+       num : number of occurrence
        size_c * n < size_v * n + size_v + 1 + size_c
     *)
     | n,(Const _| Constant (Int _|Float _)) ->

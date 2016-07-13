@@ -151,7 +151,7 @@ end = struct
     fun (events_by_pc, units) ~crcs ~includes ~orig ic ->
       let evl : debug_event list = input_value ic in
 
-      (* Work arround a bug in ocaml 4.02 *)
+      (* Work around a bug in ocaml 4.02 *)
       (* debug section in pack module may be wrong *)
       (* containing no debug_info. *)
       (* In this case, evl in not a debug_info list but a *)

@@ -59,7 +59,7 @@
 ===== 2.6 (2015-07-15) =====
 
  * Features/Changes
- ** Compiler: Findlib is optionnal
+ ** Compiler: Findlib is optional
  ** Compiler: improvement of sourcemap support (ie: inlinned sourcemap)
  ** Compiler: Support for separate compilation (compile cm{o,a} -> js)
  ** Compiler: more inlining
@@ -166,7 +166,7 @@
  * Features/Changes
  ** Runtime: bigarray comparison
  ** Compiler: allow to embed directory with -file dir_name=ext1,ext2:dest_path
- ** Compiler: can now output embeded files in a differant js file
+ ** Compiler: can now output embedded files in a differant js file
  ** Lib: js_of_ocaml.graphics
  ** Lib: Js.Unsafe.expr to embed JavasScript expression
     to be used instead of Js.Unsafe.variable (or eval_string)
@@ -308,7 +308,7 @@
 
  * Compiler:
  ** Add -I option to select directories containing cmi files
- ** Fix compilation of mutually recursive functions occuring in loops
+ ** Fix compilation of mutually recursive functions occurring in loops
  ** In Javascript output, parenthesize numbers when followed by a dot
  ** Fix order of evaluation bug
  ** Fix compilation of loops in 'try ... with' body (close #263)
@@ -398,7 +398,7 @@
    ** API to generate a function instead of a standalone program
    ** option to compile an OCaml toplevel
  * Libraries:
-   ** Add an optionnal JSON deriving class
+   ** Add an optional JSON deriving class
    ** Add Math.random binding
    ** Add scrollWidth/scrollHeight element methods to the DOM
    ** Add coercion function Dom_html.CoerceTo.element

@@ -24,7 +24,7 @@
     from the syntax used by the [Str] module from the OCaml standard
     library.
 
-    @see <https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/RegExp#section_5> Regexp object on Mozilla Developper Network.
+    @see <https://developer.mozilla.org/en/JavaScript/Reference/Global_Objects/RegExp#section_5> Regexp object on Mozilla Developer Network.
 
  *)
 

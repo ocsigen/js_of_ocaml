@@ -1041,7 +1041,7 @@ let need_space a b =
   (* do not concat 2 differant identifier *)
   (part_of_ident a && part_of_ident b) ||
   (* do not generate end_of_line_comment.
-     handle the case of "num / /* coment */ b " *)
+     handle the case of "num / /* comment */ b " *)
   (a = '/' && b = '/')
 
 let program f ?source_map p =
