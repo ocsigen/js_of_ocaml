@@ -211,7 +211,7 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
                (* inlining the code of an optimizable function could make
                   this code unoptimized. (wrt to Jit compilers)
                   At the moment, V8 doesn't optimize function containing try..catch.
-                  We disable inlining if the inner and outer funcitons don't have
+                  We disable inlining if the inner and outer functions don't have
                   the same "contain_try_catch" property *)
                then
                  let (blocks, cont_pc) =

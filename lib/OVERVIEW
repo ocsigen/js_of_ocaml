@@ -5,7 +5,7 @@
 Base values are not represented the same way in OCaml and Javascript.
 In particular, OCaml strings are mutable arrays of bytes, while
 Javascript strings are constant arrays of UTF-16 code points.  We list
-here the correspondance between base types.  Conversion functions are
+here the correspondence between base types.  Conversion functions are
 provided.
 
 |= OCaml values |= Ocaml type of Javascript values |= Actual Javascript type |

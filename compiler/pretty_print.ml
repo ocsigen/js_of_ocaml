@@ -222,7 +222,7 @@ let newline st =
 
 (* hack on*)
 let output_substring = Pervasives.output
-(* for ocaml <  4.02, output_substring will be Pervasives.ouput (above)
+(* for ocaml <  4.02, output_substring will be Pervasives.output (above)
    for ocaml >= 4.02, output_substring will be taken from the locally
                       open Pervasives module *)
 let _ = output_substring

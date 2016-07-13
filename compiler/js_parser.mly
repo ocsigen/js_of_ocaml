@@ -312,7 +312,7 @@ finally:
  | T_FINALLY block { $2 }
 
 (*----------------------------*)
-(* 2 auxillary statements     *)
+(* 2 auxiliary statements     *)
 (*----------------------------*)
 
 case_clause:
@@ -580,7 +580,7 @@ arguments:
  | args=parenthesised(separated_list(T_COMMA, assignment_expression)) { args }
 
 (*----------------------------*)
-(* 2 auxillary bis            *)
+(* 2 auxiliary bis            *)
 (*----------------------------*)
 
 (*************************************************************************)

@@ -252,7 +252,7 @@ function div_helper(a, b, c) {
 //Requires: div_helper
 function div_digit_nat(natq, ofsq, natr, ofsr, nat1, ofs1, len, nat2, ofs2) {
 	var rem = nat1[ofs1+len-1];
-	// natq[ofsq+len-1] is guarenteed to be zero (due to the MSD requirement),
+	// natq[ofsq+len-1] is guaranteed to be zero (due to the MSD requirement),
 	// and should not be written to.
 	for(var i = len-2; i >= 0; i--) {
 			var x = div_helper(rem, nat1[ofs1+i], nat2[ofs2]);
