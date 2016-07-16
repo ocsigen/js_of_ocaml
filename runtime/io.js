@@ -98,8 +98,8 @@ var caml_ml_out_channels = new Array();
 //Requires: caml_ml_out_channels
 function caml_ml_out_channels_list () {
   var l = 0;
-  for(var c in caml_ml_out_channels){
-    if(caml_ml_out_channels[c].opened)
+  for(var c = 0; c < caml_ml_out_channels.length; c++){
+    if(caml_ml_out_channels[c] && caml_ml_out_channels[c].opened)
       l=[0,caml_ml_out_channels[c],l];
   }
   return l;
