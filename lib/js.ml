@@ -477,6 +477,8 @@ let export_all obj =
     export_js key (Unsafe.get obj key)
   ))
 
+let is_null (js_thing : _ t) = Opt.(return js_thing |> test)
+
 (****)
 
 (* DEPRECATED *)

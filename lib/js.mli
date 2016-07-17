@@ -746,6 +746,11 @@ module Unsafe : sig
 (*FIX also, array literals *)
 end
 
+(** {2 Helper functions. } *)
+
+val is_null : 'a t -> bool
+  (** Tests whether a JavaScript object is null. *)
+
 (** {2 Deprecated functions and types.} *)
 
 external float : float -> float = "%identity"
