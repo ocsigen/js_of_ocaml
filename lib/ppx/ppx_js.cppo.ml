@@ -29,15 +29,8 @@ let arrows args ret =
     args
     ret
 
-(** fun arg1 arg2 ... -> ret *)
-let funs args ret =
-  List.fold_right (fun pat next_fun_ -> lam pat next_fun_)
-    args
-    ret
-
-let rnd = Random.State.make [|0x313511d4|]
-let random_tvar () =
-  Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
+let targs_arrows targs =
+  List.map (fun (l,args,res) -> l, arrows args res) targs
 
 let inside_Js = lazy
   (try
@@ -71,9 +64,6 @@ module Js = struct
 
 end
 
-
-let fresh_type loc = Typ.var ~loc (random_tvar ())
-
 let unescape lab =
   if lab = "" then lab
   else
@@ -95,10 +85,11 @@ let inject_args args =
   Exp.array (List.map (fun e -> Js.unsafe "inject" [e]) args)
 
 let obj_arrows targs tres =
-  let lbl, tobj = List.hd targs and targs = List.tl targs in
-  arrows ((lbl, Js.type_ "t" [tobj]) :: targs) tres
+  let lbl, tobj, tobjres = List.hd targs and targs = List.tl targs in
+  arrows ((lbl, Js.type_ "t" [arrows tobj tobjres]) :: (targs_arrows targs)) tres
 
-let invoker uplift downlift body labels =
+let invoker uplift downlift body desc =
+  let labels = List.map fst desc in
   let default_loc' = !default_loc in
   default_loc := Location.none;
   let arg i _ = "a" ^ string_of_int i in
@@ -106,9 +97,17 @@ let invoker uplift downlift body labels =
 
   let typ s = Typ.constr (lid s) [] in
 
-  let targs = List.map2 (fun l s -> l, typ s) labels args in
+  let argi s i = s ^ "_" ^ string_of_int i
+  in
+  let targs = List.map2 (fun (l,args) s -> l, List.mapi (fun i l -> l, typ (argi s i)) args, typ (s ^ "_ret") ) desc args in
 
-  let tres = typ "res" in
+  let ntargs =
+    List.map2 (fun (_l,args) s -> (s ^ "_ret") :: List.mapi (fun i _l -> argi s i) args) desc args
+    |> List.concat
+  in
+
+  let res = "res" in
+  let tres = typ res in
 
   let twrap = uplift targs tres in
   let tfunc = downlift targs tres in
@@ -122,7 +121,7 @@ let invoker uplift downlift body labels =
 
   let invoker = [%expr ((fun _ -> [%e efun]) : [%t twrap] -> [%t tfunc]) ] in
 
-  let result = List.fold_right Exp.newtype ("res" :: args) invoker in
+  let result = List.fold_right Exp.newtype (res :: ntargs) invoker in
 
   default_loc := default_loc';
   result
@@ -132,13 +131,13 @@ let method_call ~loc obj meth args =
   let obj = [%expr ([%e obj] : [%t Js.type_ "t" [ [%type: < .. > ] ] ] ) ] in
   let invoker = invoker
       (fun targs tres ->
-         arrows targs (Js.type_ "meth" [tres]))
+         arrows (targs_arrows targs) (Js.type_ "meth" [tres]))
       obj_arrows
       (fun eargs ->
          let eobj = List.hd eargs in
          let eargs = inject_args (List.tl eargs) in
          Js.unsafe "meth_call" [eobj; str (unescape meth); eargs])
-      (Js.nolabel :: List.map fst args)
+      ((Js.nolabel,[]) :: List.map (fun (l,_) -> l,[]) args)
   in
   Exp.apply invoker (
     app_arg
@@ -153,10 +152,10 @@ let prop_get ~loc obj prop =
   let obj = [%expr ([%e obj] : [%t Js.type_ "t" [ [%type: < .. > ] ] ] ) ] in
   let invoker = invoker
       (fun targs tres ->
-         arrows targs (Js.type_ "gen_prop" [[%type: <get: [%t tres]; ..> ]]))
+         arrows (targs_arrows targs) (Js.type_ "gen_prop" [[%type: <get: [%t tres]; ..> ]]))
       obj_arrows
       (fun eargs -> Js.unsafe "get" [List.hd eargs; str (unescape prop)])
-      [Js.nolabel]
+      [Js.nolabel,[]]
   in
   Exp.apply invoker (
     app_arg
@@ -171,8 +170,8 @@ let prop_set ~loc obj prop value =
   let obj = [%expr ([%e obj] : [%t Js.type_ "t" [ [%type: < .. > ] ] ] ) ] in
   let invoker = invoker
       (fun targs _tres -> match targs with
-         | [tobj; (_, targ)] ->
-           arrows [tobj]
+         | [_,[],tobj; _,[],targ] ->
+           arrows [Js.nolabel,tobj]
              (Js.type_ "gen_prop" [[%type: <set: [%t targ] -> unit; ..> ]])
          | _ -> assert false)
       (fun targs _tres -> obj_arrows targs [%type: unit])
@@ -180,7 +179,7 @@ let prop_set ~loc obj prop value =
         | [obj; arg] ->
           Js.unsafe "set" [obj; str (unescape prop); inject_arg arg]
         | _ -> assert false)
-      [Js.nolabel; Js.nolabel]
+      [Js.nolabel, []; Js.nolabel, []]
   in
   Exp.apply invoker (
     app_arg
@@ -195,19 +194,18 @@ let new_object constr args =
   let invoker = invoker
       (fun _targs _tres -> [%type: unit])
       (fun targs tres ->
-         let _lbl, _tobj = List.hd targs and targs = List.tl targs in
+         let _unit = List.hd targs and targs = List.tl targs in
          let tres = Js.type_ "t" [tres] in
-         let arrow = arrows targs tres in
+         let arrow = arrows (targs_arrows targs) tres in
          arrows [(Js.nolabel, Js.type_ "constr" [arrow])] arrow)
       (function
         | (constr :: args) ->
           Js.unsafe "new_obj" [constr; inject_args args]
         | _ -> assert false)
-      (Js.nolabel :: List.map fst args)
+      ((Js.nolabel,[]) :: List.map (fun (l,_) -> l, []) args)
   in
   Exp.apply invoker (
-    app_arg
-      [%expr ()] :: app_arg (Exp.ident ~loc:constr.loc constr) :: args
+    app_arg [%expr ()] :: app_arg (Exp.ident ~loc:constr.loc constr) :: args
   )
 
 
@@ -224,8 +222,12 @@ let format_meth body =
     - No duplicated declaration
     - Only relevant declarations (val and method, for now).
 *)
+type field_desc =
+  [ `Meth of string Asttypes.loc * Asttypes.private_flag * Asttypes.override_flag * Parsetree.expression * Asttypes.arg_label list
+  | `Val  of string Asttypes.loc * Asttypes.mutable_flag * Asttypes.override_flag * Parsetree.expression ]
 
-let preprocess_literal_object mappper fields =
+
+let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `Error of _ ] =
 
   let check_name id names =
     let txt = unescape id.txt in
@@ -247,21 +249,19 @@ let preprocess_literal_object mappper fields =
 
   let f (names, fields) exp = match exp.pcf_desc with
     | Pcf_val (id, mut, Cfk_concrete (bang, body)) ->
-      let ty = fresh_type id.loc in
       let names = check_name id names in
       let body = mappper body in
-      names, (`Val (id, mut, bang, body, ty) :: fields)
+      names, (`Val (id, mut, bang, body) :: fields)
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
       let names = check_name id names in
       let body = format_meth (mappper body) in
       let rec create_meth_ty exp = match exp.pexp_desc with
           | Pexp_fun (label,_,_,body) ->
-            (label, fresh_type exp.pexp_loc) :: create_meth_ty body
+            label :: create_meth_ty body
           | _ -> []
       in
-      let ret_ty = fresh_type body.pexp_loc in
       let fun_ty = create_meth_ty body in
-      names, (`Meth (id, priv, bang, body, (fun_ty, ret_ty)) :: fields)
+      names, (`Meth (id, priv, bang, body, fun_ty) :: fields)
     | _ ->
       Location.raise_errorf ~loc:exp.pcf_loc
         "This field is not valid inside a js literal object."
@@ -270,105 +270,123 @@ let preprocess_literal_object mappper fields =
     `Fields (List.rev (snd (List.fold_left f (S.empty, []) fields)))
   with Location.Error error -> `Error (extension_of_error error)
 
-(** Desugar something like this:
+let literal_object ~loc self_id ( fields : field_desc list) =
 
-  object%js (self)
-    val mutable foo = 3
-    method bar x = 3 + x
-  end
-
-to:
-
-  let make_obj foo bar =
-    (Js.Unsafe.obj
-       [|("foo", (Js.Unsafe.inject foo));("bar", (Js.Unsafe.inject bar))|]
-     : < foo :'jsoo_173316d7 Js.prop ;
-         bar :'jsoo_6d9ac43e -> 'jsoo_29529091 Js.meth >
-       Js.t as 'jsoo_32b5ee21)
-  and foo: 'jsoo_173316d7 = 3
-  and bar =
-    Js.wrap_meth_callback
-      (fun self  -> fun x -> 3 + x
-      : 'jsoo_32b5ee21 -> 'jsoo_6d9ac43e -> 'jsoo_29529091)
-  in make_obj foo bar
-
-
- *)
-
-let literal_object self_id fields =
-  let self_type = random_tvar () in
-
-  let create_method_type = function
-    | `Val  (id, Mutable, _, _body, ty) ->
-      (id.txt, [], Js.type_ "prop" [ty])
-
-    | `Val  (id, Immutable, _, _body, ty) ->
-      (id.txt, [], Js.type_ "readonly_prop" [ty])
-
-    | `Meth (id, _, _, _body, (fun_ty, ret_ty)) ->
-      (id.txt, [], arrows fun_ty (Js.type_ "meth" [ret_ty]))
+  let create_method_type f (_l,args,ret_ty) =
+    match f with
+    | `Val  (_id, Mutable, _,   _body)    -> Js.type_ "prop" [ret_ty]
+    | `Val  (_id, Immutable, _, _body)    -> Js.type_ "readonly_prop" [ret_ty]
+    | `Meth (_id, _, _,         _body, _) -> arrows (List.tl args) (Js.type_ "meth" [ret_ty])
   in
 
-  let obj_type =
-    let l = List.map create_method_type fields
-    in Typ.object_ l Closed
+  let name = function
+    | `Val  (id, _, _, _body)          -> id.txt
+    | `Meth (id, _, _, _body, _fun_ty) -> id.txt
   in
 
-  let rec annotate_body fun_ty ret_ty body = match fun_ty, body with
-    | (_,ty) :: types,
-      ({ pexp_desc = Pexp_fun (label, e_opt, pat, body); _} as expr) ->
-       let constr = Pat.constraint_ pat ty in
-       {expr with
-         pexp_desc =
-           Pexp_fun (label, e_opt, constr,
-                     annotate_body types ret_ty body)
-       }
-    | [], body -> Exp.constraint_ ~loc:body.pexp_loc body ret_ty
-    | _ -> raise (Invalid_argument "Inconsistent number of arguments")
+  let get_loc = function
+    | `Val  (id, _, _, _body)          -> id.loc
+    | `Meth (id, _, _, _body, _fun_ty) -> id.loc
   in
 
-  let create_value = function
-    | `Val (id, _, _, body, ty) ->
-      (id.txt, Exp.constraint_ ~loc:body.pexp_loc body ty)
-
-    | `Meth (id, _, _, body, (fun_ty, ret_ty)) ->
-       (id.txt,
-        Js.fun_
-          "wrap_meth_callback"
-          [
-            annotate_body ((Js.nolabel,Typ.var self_type) :: fun_ty) ret_ty [%expr fun [%p self_id] -> [%e body]]
-          ])
-
+  let name_loc = function
+    | `Val  (id, _, _, _body)          -> id
+    | `Meth (id, _, _, _body, _fun_ty) -> id
   in
 
-  let values = List.map create_value fields in
-
-  let make_obj =
-    funs
-      (List.map (fun (name,_exp) -> pvar name) values)
-      (Exp.constraint_
-         (Js.unsafe
-            "obj"
-            [Exp.array (
-               List.map
-                 (fun (name, _exp) ->
-                    tuple [str (unescape name); Js.unsafe "inject" [evar name] ]
-                 )
-                 values
-             )])
-         (Typ.alias (Js.type_ "t" [obj_type]) self_type))
+  let obj_type args =
+    let tys = List.map2 create_method_type fields args in
+    let l = List.map2 (fun f ty ->
+      name f, [], ty) fields tys
+    in
+    Typ.object_ l Closed
   in
 
-  let value_declaration =
-    Exp.let_
-      Nonrecursive
-      ( Vb.mk (pvar "make_obj") make_obj ::
-        List.map (fun (name, exp) -> Vb.mk (pvar name) exp) values
+  let body = function
+    | `Val  (_id, _, _, body)          -> body
+    | `Meth (_id, _, _, body, _fun_ty) -> [%expr fun [%p self_id] -> [%e body] ]
+  in
+
+  let wrap arg = function
+    | `Val  (_id, _, _, _body)          -> arg
+    | `Meth (_id, _, _, _body, _fun_ty) -> Js.fun_ "wrap_meth_callback" [ arg ]
+  in
+
+  let invoker = invoker
+
+      (fun targs tres ->
+         let targs' =
+           List.map2 (fun f ((l,_,_) as a) ->
+             let ty = create_method_type f a in
+             let ty = match f with
+               | `Val _  -> ty
+               | `Meth _ -> Typ.arrow Js.nolabel tres ty
+             in
+             l, ty) fields targs
+         in
+         arrows targs' (obj_type targs))
+      (fun targs tres ->
+         arrows
+           (targs_arrows
+              (List.map (fun (l,args,ret) ->
+                 let args =
+                   match args with
+                   | [] as x -> x
+                   | _::xs   -> (Js.nolabel, tres)::xs
+                 in
+                 l,args,ret)
+                 targs
+              )
+           )
+           tres
       )
-      (app (evar "make_obj") (List.map (fun (name,_) -> evar name) values))
+      (fun args ->
+         Js.unsafe
+           "obj"
+           [Exp.array (
+              List.map2
+                (fun arg f ->
+                   tuple [str (unescape (name f)); Js.unsafe "inject" [wrap arg f] ]
+                )
+                args fields
+            )]
+      )
+      (List.map (function
+         | `Val _ -> Js.nolabel, []
+         | `Meth (_id, _, _, _body, fun_ty) -> Js.nolabel, Js.nolabel :: fun_ty) fields)
   in
 
-  value_declaration
+  let fake_object =
+    Exp.object_ ~loc:loc
+      { pcstr_self = (Pat.var ~loc:Location.none (Location.mknoloc "self"));
+        pcstr_fields =
+          (List.map
+             (fun f ->
+                let gloc = { (get_loc f) with Location.loc_ghost = true} in
+                let apply e = match f with
+                  | `Val _ -> e
+                  | `Meth _ -> Exp.apply e [Js.nolabel, [%expr ((fun x -> assert false) : 'a -> 'a Js.t) self ] ]
+                in
+                { pcf_loc = get_loc f;
+                  pcf_attributes = [];
+                  pcf_desc =
+                    Pcf_method
+                      (name_loc f,
+                       Public,
+                       Cfk_concrete (Fresh, apply (Exp.ident ~loc:gloc (lid ~loc:gloc (name f))))
+                      )
+                })
+             fields)
+      }
+  in
+  Exp.apply invoker (
+    app_arg (List.fold_right (fun f fun_ ->
+      (Exp.fun_ ~loc Js.nolabel None
+         (Pat.var ~loc:Location.none (Location.mknoloc (name f)))
+         fun_))
+      fields
+      fake_object
+    ) :: (List.map (fun f -> app_arg (body f)) fields))
 
 let js_mapper _args =
   { default_mapper with
@@ -425,11 +443,12 @@ let js_mapper _args =
           mapper.expr mapper  { new_expr with pexp_attributes }
 
         (* object%js ... end *)
-        | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct; _} ]]] ->
+        | [%expr [%js [%e? {pexp_desc = Pexp_object class_struct; _} ]]] as expr ->
+          let loc = expr.pexp_loc in
           let fields = preprocess_literal_object (mapper.expr mapper) class_struct.pcstr_fields in
           let new_expr = match fields with
             | `Fields fields ->
-              literal_object class_struct.pcstr_self fields
+              literal_object ~loc class_struct.pcstr_self fields
             | `Error e -> Exp.extension e in
           mapper.expr mapper  { new_expr with pexp_attributes }
 
