@@ -23,14 +23,6 @@ let exp_to_string = function
 let lid ?(loc= !default_loc) str =
   Location.mkloc (Longident.parse str) loc
 
-let mk_loc ?(loc= !default_loc) x = Location.mkloc x loc
-
-let mk_id ?loc str =
-  let exp = Exp.ident ?loc (lid ?loc str)
-  and pat = Pat.var ?loc (mk_loc ?loc str) in
-  (exp, pat)
-
-
 (** arg1 -> arg2 -> ... -> ret *)
 let arrows args ret =
   List.fold_right (fun (l, ty) fun_ -> Typ.arrow l ty fun_)
@@ -44,8 +36,6 @@ let funs args ret =
     ret
 
 let rnd = Random.State.make [|0x313511d4|]
-let random_var () =
-  Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
 let random_tvar () =
   Format.sprintf "jsoo_%08Lx" (Random.State.int64 rnd 0x100000000L)
 
@@ -203,8 +193,9 @@ let prop_set ~loc obj prop value =
 (** Instantiation of a class, used by new%js. *)
 let new_object constr args =
   let invoker = invoker
-      (fun targs tres -> arrows targs (Js.type_ "t" [tres]))
+      (fun _targs _tres -> [%type: unit])
       (fun targs tres ->
+         let _lbl, _tobj = List.hd targs and targs = List.tl targs in
          let tres = Js.type_ "t" [tres] in
          let arrow = arrows targs tres in
          arrows [(Js.nolabel, Js.type_ "constr" [arrow])] arrow)
@@ -216,10 +207,7 @@ let new_object constr args =
   in
   Exp.apply invoker (
     app_arg
-      (Exp.fun_ ~loc:Location.none Js.nolabel None
-         (Pat.var ~loc:Location.none (Location.mknoloc "x"))
-         (Exp.ident ~loc:Location.none (lid ~loc:Location.none "x"))) ::
-    app_arg (Exp.ident ~loc:constr.loc constr) :: args
+      [%expr ()] :: app_arg (Exp.ident ~loc:constr.loc constr) :: args
   )
 
 
@@ -399,8 +387,8 @@ let js_mapper _args =
         (* obj##.var := value *)
         | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as res] := [%e? value]] ->
           default_loc := res.pexp_loc ;
-          let obj = mapper.expr mapper  obj in
-          let value = mapper.expr mapper  value in
+          let obj = mapper.expr mapper obj in
+          let value = mapper.expr mapper value in
           let prop = exp_to_string meth in
           let new_expr = prop_set ~loc:meth.pexp_loc obj prop value in
           mapper.expr mapper  { new_expr with pexp_attributes }
