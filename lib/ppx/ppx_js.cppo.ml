@@ -128,7 +128,7 @@ let invoker uplift downlift body desc =
 
 let method_call ~loc obj meth args =
   let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
-  let obj = [%expr ([%e obj] : [%t Js.type_ "t" [ [%type: < .. > ] ] ] ) ] in
+  let obj = Exp.constraint_ ~loc:gloc obj (Js.type_ "t" [ [%type: < .. > ] ]) in
   let invoker = invoker
       (fun targs tres ->
          arrows (targs_arrows targs) (Js.type_ "meth" [tres]))
@@ -149,7 +149,7 @@ let method_call ~loc obj meth args =
 
 let prop_get ~loc obj prop =
   let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
-  let obj = [%expr ([%e obj] : [%t Js.type_ "t" [ [%type: < .. > ] ] ] ) ] in
+  let obj = Exp.constraint_ ~loc:gloc obj (Js.type_ "t" [ [%type: < .. > ] ]) in
   let invoker = invoker
       (fun targs tres ->
          arrows (targs_arrows targs) (Js.type_ "gen_prop" [[%type: <get: [%t tres]; ..> ]]))
@@ -167,7 +167,7 @@ let prop_get ~loc obj prop =
 
 let prop_set ~loc obj prop value =
   let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
-  let obj = [%expr ([%e obj] : [%t Js.type_ "t" [ [%type: < .. > ] ] ] ) ] in
+  let obj = Exp.constraint_ ~loc:gloc obj (Js.type_ "t" [ [%type: < .. > ] ]) in
   let invoker = invoker
       (fun targs _tres -> match targs with
          | [_,[],tobj; _,[],targ] ->
@@ -346,7 +346,7 @@ let literal_object ~loc self_id ( fields : field_desc list) =
            [Exp.array (
               List.map2
                 (fun arg f ->
-                   tuple [str (unescape (name f)); Js.unsafe "inject" [wrap arg f] ]
+                   tuple [str (unescape (name f)); inject_arg (wrap arg f) ]
                 )
                 args fields
             )]
@@ -404,11 +404,10 @@ let js_mapper _args =
 
         (* obj##.var := value *)
         | [%expr [%e? [%expr [%e? obj] ##. [%e? meth]] as res] := [%e? value]] ->
-          default_loc := res.pexp_loc ;
           let obj = mapper.expr mapper obj in
           let value = mapper.expr mapper value in
           let prop = exp_to_string meth in
-          let new_expr = prop_set ~loc:meth.pexp_loc obj prop value in
+          let new_expr = prop_set ~loc:res.pexp_loc obj prop value in
           mapper.expr mapper  { new_expr with pexp_attributes }
 
         (* obj##meth arg1 arg2 .. *)

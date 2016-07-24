@@ -56,4 +56,3 @@ fun () ->
     method _m_b = ""
   end : <_m_a : string Js.meth; .. > Js.t)
 ;;
-
