@@ -294,14 +294,6 @@ let literal_object ~loc self_id ( fields : field_desc list) =
     | `Meth (id, _, _, _body, _fun_ty) -> id
   in
 
-  let obj_type args =
-    let tys = List.map2 create_method_type fields args in
-    let l = List.map2 (fun f ty ->
-      name f, [], ty) fields tys
-    in
-    Typ.object_ l Closed
-  in
-
   let body = function
     | `Val  (_id, _, _, body)          -> body
     | `Meth (_id, _, _, body, _fun_ty) -> [%expr fun [%p self_id] -> [%e body] ]
@@ -320,11 +312,11 @@ let literal_object ~loc self_id ( fields : field_desc list) =
              let ty = create_method_type f a in
              let ty = match f with
                | `Val _  -> ty
-               | `Meth _ -> Typ.arrow Js.nolabel tres ty
+               | `Meth _ -> Typ.arrow Js.nolabel (Js.type_ "t" [tres]) ty
              in
              l, ty) fields targs
          in
-         arrows targs' (obj_type targs))
+         arrows targs' tres)
       (fun targs tres ->
          arrows
            (targs_arrows
@@ -332,13 +324,13 @@ let literal_object ~loc self_id ( fields : field_desc list) =
                  let args =
                    match args with
                    | [] as x -> x
-                   | _::xs   -> (Js.nolabel, tres)::xs
+                   | _::xs   -> (Js.nolabel, Js.type_ "t" [tres])::xs
                  in
                  l,args,ret)
                  targs
               )
            )
-           tres
+           (Js.type_ "t" [tres])
       )
       (fun args ->
          Js.unsafe
