@@ -6,24 +6,24 @@ Error: This expression has type int but an expression was expected of type
 Characters 25-28:
   fun (obj : < > Js.t) -> obj##.p := 2
                           ^^^
-Error: This expression has type <  > Js.t
-       but an expression was expected of type
-         < p : < set : 'a -> unit; .. > Js.gen_prop; .. > Js.t
-       The first object type has no method p
-Characters 52-55:
+Error: This expression has type <  >
+       It has no method p
+Characters 52-59:
   fun (obj : < p : float Js.readonly_prop > Js.t) -> obj##.p := 1
-                                                     ^^^
-Error: This expression has type < p : float Js.readonly_prop > Js.t
+                                                     ^^^^^^^
+Error: This expression has type
+         float Js.readonly_prop = < get : float > Js.gen_prop
        but an expression was expected of type
-         < p : (< set : 'b -> unit; .. > as 'a) Js.gen_prop; .. > Js.t
-       Type float Js.readonly_prop = < get : float > Js.gen_prop
-       is not compatible with type 'a Js.gen_prop 
+         < set : int -> unit; .. > Js.gen_prop
        The first object type has no method set
-Characters 54-55:
+Characters 43-50:
   fun (obj : < p : float Js.prop > Js.t) -> obj##.p := 1
-                                                       ^
-Error: This expression has type int but an expression was expected of type
-         float
+                                            ^^^^^^^
+Error: This expression has type
+         float Js.prop = < get : float; set : float -> unit > Js.gen_prop
+       but an expression was expected of type
+         < set : int -> unit; .. > Js.gen_prop
+       Types for method set are incompatible
 Characters 41-55:
   fun (obj : < p : int Js.prop > Js.t) -> (obj##.p := 1) + 1
                                           ^^^^^^^^^^^^^^
