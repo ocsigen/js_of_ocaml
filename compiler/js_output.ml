@@ -441,8 +441,9 @@ module Make(D : sig
       let (out, lft, rght) = op_prec op in
       if l > out then begin PP.start_group f 1; PP.string f "(" end;
       expression lft f e1;
+      PP.space f;
       PP.string f (op_str op);
-      PP.break f;
+      PP.space f;
       expression rght f e2;
       if l > out then begin PP.string f ")"; PP.end_group f end
     | EArr el ->
@@ -1042,7 +1043,9 @@ let need_space a b =
   (part_of_ident a && part_of_ident b) ||
   (* do not generate end_of_line_comment.
      handle the case of "num / /* comment */ b " *)
-  (a = '/' && b = '/')
+  (a = '/' && b = '/') ||
+  (* https://github.com/ocsigen/js_of_ocaml/issues/507 *)
+  (a = '-' && b = '-')
 
 let program f ?source_map p =
   let smo = match source_map with
