@@ -44,6 +44,13 @@ let parse_annot loc s =
 
 let error s = Format.ksprintf (fun s -> failwith s) s
 
+let is_file_directive cmt =
+  let lexbuf = Lexing.from_string cmt in
+  try
+    let _file,_line = Js_lexer.pos lexbuf in
+    true
+  with _ -> false
+
 let parse_file f =
   let file =
     try
@@ -65,6 +72,11 @@ let parse_file f =
   let lex = Parse_js.lexer_from_file ~rm_comment:false file in
   let status,lexs = Parse_js.lexer_fold (fun (status,lexs) t ->
       match t with
+      | Js_token.TComment (_info,str) when is_file_directive str -> begin
+          match status with
+          | `Annot _ -> `Annot [],lexs
+          | `Code (an,co) -> `Annot [], ((List.rev an,List.rev co)::lexs)
+        end
       | Js_token.TComment (info,str) -> begin
           match parse_annot info str with
           | None -> (status,lexs)
