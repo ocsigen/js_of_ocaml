@@ -1055,7 +1055,7 @@ function caml_sys_get_argv () {
 
   if(g.process
      && g.process.argv
-     && g.process.argv.length > 0) {
+     && g.process.argv.length > 1) {
     var argv = g.process.argv
     //nodejs
     main = argv[1];
