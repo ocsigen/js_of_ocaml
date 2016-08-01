@@ -22,14 +22,14 @@ open Js
 class type json = object
     method parse: 'a. js_string t -> 'a meth
     method parse_:
-	'a 'b 'c 'd. js_string t ->
-	  ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
+      'a 'b 'c 'd. js_string t ->
+      ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
     method stringify: 'a. 'a -> js_string t meth
     (* Beware that this is only works when the function argument
        expects exactly two arguments (no curryfication is performed). *)
     method stringify_:
-	'a 'b 'c 'd. 'a ->
-	(js_string t -> 'c -> 'd) -> js_string t meth
+      'a 'b 'c 'd. 'a ->
+      (js_string t -> 'c -> 'd) -> js_string t meth
 end
 
 external get_json : unit -> json t = "caml_json"
@@ -50,7 +50,15 @@ let input_reviver =
   wrap_meth_callback reviver
 let unsafe_input s = json##parse_ (s, input_reviver)
 
-let mlString_constr = Unsafe.pure_js_expr "MlString"
+class type obj = object
+  method constructor : 'a. 'a constr Js.readonly_prop
+end
+
+let mlString_constr =
+  let dummy_string = "" in
+  let dummy_obj : obj t = Obj.magic dummy_string in
+  dummy_obj##constructor
+
 let output_reviver _key value =
   if instanceof value mlString_constr then
     to_byte_jsstring (Unsafe.coerce value)
