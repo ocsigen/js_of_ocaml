@@ -448,6 +448,7 @@ class rename_variable keeps = object
   val mutable sub_ = new subst (fun x -> x)
 
   method merge_info from =
+    super#merge_info from;
     let h = Hashtbl.create 17 in
     let _ = StringSet.iter (fun name ->
         if StringSet.mem name keeps
