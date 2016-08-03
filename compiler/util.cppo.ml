@@ -353,8 +353,10 @@ module Version = struct
       `V3
     else if compare current [4;3] < 0 then
       `V4_02
-    else
+    else if compare current [4;4] < 0 then
       `V4_03
+    else
+      `V4_04
 
 end
 
@@ -406,21 +408,24 @@ module MagicNumber = struct
     let v = match Version.v with
       | `V3 -> 8
       | `V4_02
-      | `V4_03 -> 11 in
+      | `V4_03 | `V4_04 -> 11
+    in
     ("Caml1999X",v)
 
   let current_cmo =
     let v = match Version.v with
       | `V3 -> 7
       | `V4_02 -> 10
-      | `V4_03 -> 11 in
+      | `V4_03 | `V4_04 -> 11
+    in
     ("Caml1999O", v)
 
   let current_cma =
     let v = match Version.v with
       | `V3 -> 8
       | `V4_02 -> 11
-      | `V4_03 -> 12 in
+      | `V4_03 | `V4_04 -> 12
+    in
     ("Caml1999A", v)
 
   let current = function
@@ -507,5 +512,8 @@ let rec find_loc_in_summary name ident' = function
   | Env.Env_open (summary, _)
 #if OCAML_VERSION >= (4,2,0)
   | Env.Env_functor_arg (summary, _)
+#endif
+#if OCAML_VERSION >= (4,4,0)
+  | Env.Env_constraints (summary, _)
 #endif
    -> find_loc_in_summary name ident' summary

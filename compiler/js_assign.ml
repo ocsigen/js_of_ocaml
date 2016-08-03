@@ -23,7 +23,6 @@ open Util
 let debug = Option.Debug.find "shortvar"
 
 module S = Code.VarSet
-module VM = Code.VarMap
 
 module Var = Code.Var
 

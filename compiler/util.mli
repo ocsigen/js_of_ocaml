@@ -87,7 +87,9 @@ module Version : sig
   val split : string -> t
   val v : [ `V3      (* OCaml 3.12 to 4.01 *)
           | `V4_02   (* OCaml 4.02 *)
-          | `V4_03 ] (* OCaml 4.03 *)
+          | `V4_03   (* OCaml 4.03 *)
+          | `V4_04   (* OCaml 4.04 *)
+          ]
 end
 
 module MagicNumber : sig
