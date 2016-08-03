@@ -7,16 +7,18 @@ endif
 INTF := lib/*.cmi
 
 IMPL := lib/$(LIBNAME).cma   \
-        lib/syntax/pa_js.cmo \
         lib/dll$(LIBNAME)$(DLLEXT) \
         lib/lib$(LIBNAME)$(LIBEXT)
 
 INTF += lib/log/*.cmi
 IMPL += lib/log/logger.cma
 
+ifeq "${WITH_CAMLP4}" "YES"
+IMPL += lib/syntax/pa_js.cmo
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
 IMPL += lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs
+endif
 endif
 endif
 
@@ -122,17 +124,12 @@ endif
 
 IMPL += $(addprefix ocamlbuild/_build/,$(OCAMLBUILD_IMPL))
 
-ifeq "${WITH_DERIVING}" "YES"
-
 JSON := lib/deriving_json/deriving_Json.cmi       \
         lib/deriving_json/deriving_Json_lexer.cmi
 
 INTF += $(JSON)
-INTF += lib/syntax/pa_deriving_Json.cmi
 
-IMPL += lib/syntax/pa_deriving_Json.cmo \
-        lib/syntax/pa_deriving_Json.cmi \
-        lib/deriving_json.cma
+IMPL += lib/deriving_json.cma
 
 NATIMPL := lib/deriving_json.cmxa     \
 	   lib/deriving_json.cmxs     \
@@ -140,17 +137,24 @@ NATIMPL := lib/deriving_json.cmxa     \
 
 NATIMPL += $(JSON:.cmi=.cmx)
 
+ifeq "${WITH_CAMLP4}${WITH_DERIVING}" "YESYES"
+
+INTF += lib/syntax/pa_deriving_Json.cmi
+
+IMPL += lib/syntax/pa_deriving_Json.cmo \
+        lib/syntax/pa_deriving_Json.cmi
+
 ifeq "${NATDYNLINK}" "YES"
 NATIMPL += lib/syntax/pa_deriving_Json.cmx \
            lib/syntax/pa_deriving_Json.cmxs
 COMP_IMPL += $(COMP_NATDYN_IMPL)
 endif
 
+endif
+
 ifeq "${BEST}" "opt"
 IMPL += $(NATIMPL)
 COMP_IMPL += $(COMP_NAT_IMPL)
-endif
-
 endif
 
 DOC := ${INTF:.cmi=.mli}
