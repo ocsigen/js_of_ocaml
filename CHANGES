@@ -1,4 +1,13 @@
-===== 2.8.1 (2016-07-01) =====
+===== 2.8.2 (2016-08-??) =====
+
+ * Bug fixes
+ ** Compiler: fix js output for x - -1
+ ** Compiler: fix parsing of annotations in the runtime
+ ** Compiler: fix javascript minifier
+ ** Misc: fix lib and runtime to work better with non browser environment
+ ** Misc: initial support for 4.04
+
+===== 2.1 (2016-07-01) =====
 
  * Features/Changes
  ** Compiler: reduce memory usage for shortvar
@@ -7,7 +16,7 @@
 
  * Bug fixes
  ** Lib: fix Js.object_keys, Js.export
- ** Lib: Async, do not ignore unhandled exceptions 
+ ** Lib: Async, do not ignore unhandled exceptions
 
 ===== 2.8 (2016-06-16) =====
  * Features/Changes
