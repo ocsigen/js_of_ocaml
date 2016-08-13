@@ -381,6 +381,11 @@ function caml_ml_output (oc,buffer,offset,len) {
     }
     return 0;
 }
+
+//Provides: caml_ml_output_bytes
+//Requires: caml_ml_output
+var caml_ml_output_bytes = caml_ml_output
+
 //Provides: caml_ml_output_char
 //Requires: caml_ml_output
 //Requires: caml_new_string

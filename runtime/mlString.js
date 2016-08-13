@@ -200,9 +200,38 @@ function caml_string_unsafe_get (s, i) {
   }
 }
 
+//Provides: caml_bytes_unsafe_get mutable
+function caml_bytes_unsafe_get (s, i) {
+  switch (s.t & 6) {
+  default: /* PARTIAL */
+    if (i >= s.c.length) return 0;
+  case 0: /* BYTES */
+    return s.c.charCodeAt(i);
+  case 4: /* ARRAY */
+    return s.c[i]
+  }
+}
+
 //Provides: caml_string_unsafe_set
 //Requires: caml_convert_string_to_array
 function caml_string_unsafe_set (s, i, c) {
+  // The OCaml compiler uses Char.unsafe_chr on integers larger than 255!
+  c &= 0xff;
+  if (s.t != 4 /* ARRAY */) {
+    if (i == s.c.length) {
+      s.c += String.fromCharCode (c);
+      if (i + 1 == s.l) s.t = 0; /*BYTES | UNKOWN*/
+      return 0;
+    }
+    caml_convert_string_to_array (s);
+  }
+  s.c[i] = c;
+  return 0;
+}
+
+//Provides: caml_bytes_unsafe_set
+//Requires: caml_convert_string_to_array
+function caml_bytes_unsafe_set (s, i, c) {
   // The OCaml compiler uses Char.unsafe_chr on integers larger than 255!
   c &= 0xff;
   if (s.t != 4 /* ARRAY */) {
@@ -230,11 +259,24 @@ function caml_string_get (s, i) {
   return caml_string_unsafe_get (s, i);
 }
 
+//Provides: caml_bytes_get
+//Requires: caml_string_bound_error, caml_bytes_unsafe_get
+function caml_bytes_get (s, i) {
+  if (i >>> 0 >= s.l) caml_string_bound_error();
+  return caml_bytes_unsafe_get (s, i);
+}
+
 //Provides: caml_string_set
 //Requires: caml_string_bound_error, caml_string_unsafe_set
 function caml_string_set (s, i, c) {
   if (i >>> 0 >= s.l) caml_string_bound_error();
   return caml_string_unsafe_set (s, i, c);
+}
+//Provides: caml_bytes_set
+//Requires: caml_string_bound_error, caml_bytes_unsafe_set
+function caml_bytes_set (s, i, c) {
+  if (i >>> 0 >= s.l) caml_string_bound_error();
+  return caml_bytes_unsafe_set (s, i, c);
 }
 
 //Provides: MlString
@@ -300,6 +342,13 @@ function caml_create_string(len) {
   if (len < 0) caml_invalid_argument("String.create");
   return new MlString(len?2:9,"",len);
 }
+//Provides: caml_create_bytes const
+//Requires: MlString,caml_invalid_argument
+function caml_create_bytes(len) {
+  if (len < 0) caml_invalid_argument("Bytes.create");
+  return new MlString(len?2:9,"",len);
+}
+
 //Provides: caml_new_string
 //Requires: MlString
 function caml_new_string (s) { return new MlString(0,s,s.length); }
@@ -315,9 +364,26 @@ function caml_string_compare(s1, s2) {
   return (s1.c < s2.c)?-1:(s1.c > s2.c)?1:0;
 }
 
+
+//Provides: caml_bytes_compare mutable
+//Requires: caml_convert_string_to_bytes
+function caml_bytes_compare(s1, s2) {
+  (s1.t & 6) && caml_convert_string_to_bytes(s1);
+  (s2.t & 6) && caml_convert_string_to_bytes(s2);
+  return (s1.c < s2.c)?-1:(s1.c > s2.c)?1:0;
+}
+
 //Provides: caml_string_equal mutable (const, const)
 //Requires: caml_convert_string_to_bytes
 function caml_string_equal(s1, s2) {
+  (s1.t & 6) && caml_convert_string_to_bytes(s1);
+  (s2.t & 6) && caml_convert_string_to_bytes(s2);
+  return (s1.c == s2.c)?1:0;
+}
+
+//Provides: caml_bytes_equal mutable (const, const)
+//Requires: caml_convert_string_to_bytes
+function caml_bytes_equal(s1, s2) {
   (s1.t & 6) && caml_convert_string_to_bytes(s1);
   (s2.t & 6) && caml_convert_string_to_bytes(s2);
   return (s1.c == s2.c)?1:0;
@@ -327,9 +393,21 @@ function caml_string_equal(s1, s2) {
 //Requires: caml_string_equal
 function caml_string_notequal(s1, s2) { return 1-caml_string_equal(s1, s2); }
 
+//Provides: caml_bytes_notequal mutable (const, const)
+//Requires: caml_string_equal
+function caml_bytes_notequal(s1, s2) { return 1-caml_string_equal(s1, s2); }
+
 //Provides: caml_string_lessequal mutable
 //Requires: caml_convert_string_to_bytes
 function caml_string_lessequal(s1, s2) {
+  (s1.t & 6) && caml_convert_string_to_bytes(s1);
+  (s2.t & 6) && caml_convert_string_to_bytes(s2);
+  return (s1.c <= s2.c)?1:0;
+}
+
+//Provides: caml_bytes_lessequal mutable
+//Requires: caml_convert_string_to_bytes
+function caml_bytes_lessequal(s1, s2) {
   (s1.t & 6) && caml_convert_string_to_bytes(s1);
   (s2.t & 6) && caml_convert_string_to_bytes(s2);
   return (s1.c <= s2.c)?1:0;
@@ -343,16 +421,35 @@ function caml_string_lessthan(s1, s2) {
   return (s1.c < s2.c)?1:0;
 }
 
+//Provides: caml_bytes_lessthan mutable
+//Requires: caml_convert_string_to_bytes
+function caml_bytes_lessthan(s1, s2) {
+  (s1.t & 6) && caml_convert_string_to_bytes(s1);
+  (s2.t & 6) && caml_convert_string_to_bytes(s2);
+  return (s1.c < s2.c)?1:0;
+}
+
 //Provides: caml_string_greaterequal
 //Requires: caml_string_lessequal
 function caml_string_greaterequal(s1, s2) {
   return caml_string_lessequal(s2,s1);
+}
+//Provides: caml_bytes_greaterequal
+//Requires: caml_bytes_lessequal
+function caml_bytes_greaterequal(s1, s2) {
+  return caml_bytes_lessequal(s2,s1);
 }
 
 //Provides: caml_string_greaterthan
 //Requires: caml_string_lessthan
 function caml_string_greaterthan(s1, s2) {
   return caml_string_lessthan(s2, s1);
+}
+
+//Provides: caml_bytes_greaterthan
+//Requires: caml_bytes_lessthan
+function caml_bytes_greaterthan(s1, s2) {
+  return caml_bytes_lessthan(s2, s1);
 }
 
 //Provides: caml_fill_string
@@ -374,6 +471,10 @@ function caml_fill_string(s, i, l, c) {
   }
   return 0;
 }
+
+//Provides: caml_fill_bytes
+//Requires: caml_fill_string
+var caml_fill_bytes = caml_fill_string
 
 //Provides: caml_blit_string
 //Requires: caml_subarray_to_string, caml_convert_string_to_array
@@ -404,5 +505,12 @@ function caml_blit_string(s1, i1, s2, i2, len) {
   return 0;
 }
 
+//Provides: caml_blit_bytes
+//Requires: caml_blit_string
+var caml_blit_bytes = caml_blit_string
+
 //Provides: caml_ml_string_length const
 function caml_ml_string_length(s) { return s.l }
+
+//Provides: caml_ml_bytes_length const
+function caml_ml_bytes_length(s) { return s.l }
