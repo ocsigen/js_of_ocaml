@@ -171,13 +171,21 @@ end
 
 and keyboardEvent = object
   inherit event
-  method charCode : int optdef readonly_prop
-  method keyCode : int readonly_prop
-  method keyIdentifier : js_string t optdef readonly_prop
   method altKey : bool t readonly_prop
   method shiftKey : bool t readonly_prop
   method ctrlKey : bool t readonly_prop
   method metaKey : bool t readonly_prop
+  method location : int readonly_prop
+
+  (* Standardized but not fully supported properties *)
+  method key : js_string t optdef readonly_prop
+  method code : js_string t optdef readonly_prop
+
+  (* Deprecated properties *)
+  method which : int optdef readonly_prop
+  method charCode : int optdef readonly_prop
+  method keyCode : int optdef readonly_prop
+  method keyIdentifier : js_string t optdef readonly_prop
 end
 
 and mousewheelEvent = object (* All browsers but Firefox *)
@@ -1379,6 +1387,81 @@ val elementClientPosition : #element t -> int * int
 
 val getDocumentScroll : unit -> int * int
   (** Viewport top/left position *)
+
+(** {2 Key event helper functions} *)
+
+(** Use [Keyboard_code] when you want to identify a key that the user pressed. This should
+    be invoked for keydown and keyup events, not keypress events.
+
+    If the browser supports the standardized [key] and [code] properties, then [of_event]
+    on a keypress event will have the correct behavior. Otherwise, it might not identify
+    or might mis-identify which key was pressed. This occurs because the keypress event is
+    designed for printable characters while keydown and keyup are designed for physical
+    keys. Thus, the older properties of [keyEvent] change behavior between keydown and
+    keypress events. This change in behavior is what causes the mapping to be incorrect.
+*)
+module Keyboard_code : sig
+  type t =
+    | Unidentified
+    (* Alphabetic Characters *)
+    | KeyA                | KeyB                | KeyC                | KeyD
+    | KeyE                | KeyF                | KeyG                | KeyH
+    | KeyI                | KeyJ                | KeyK                | KeyL
+    | KeyM                | KeyN                | KeyO                | KeyP
+    | KeyQ                | KeyR                | KeyS                | KeyT
+    | KeyU                | KeyV                | KeyW                | KeyX
+    | KeyY                | KeyZ
+    (* Digits *)
+    | Digit0              | Digit1              | Digit2              | Digit3
+    | Digit4              | Digit5              | Digit6              | Digit7
+    | Digit8              | Digit9              | Minus               | Equal
+    (* Whitespace *)
+    | Tab                 | Enter               | Space
+    (* Editing *)
+    | Escape              | Backspace           | Insert              | Delete
+    | CapsLock
+    (* Misc Printable *)
+    | BracketLeft         | BracketRight        | Semicolon           | Quote
+    | Backquote           | Backslash           | Comma               | Period
+    | Slash
+    (* Function keys *)
+    | F1                  | F2                  | F3                  | F4
+    | F5                  | F6                  | F7                  | F8
+    | F9                  | F10                 | F11                 | F12
+    (* Numpad keys *)
+    | Numpad0             | Numpad1             | Numpad2             | Numpad3
+    | Numpad4             | Numpad5             | Numpad6             | Numpad7
+    | Numpad8             | Numpad9             | NumpadMultiply      | NumpadSubtract
+    | NumpadAdd           | NumpadDecimal       | NumpadEqual         | NumpadEnter
+    | NumpadDivide        | NumLock
+    (* Modifier keys *)
+    | ControlLeft         | ControlRight        | MetaLeft            | MetaRight
+    | ShiftLeft           | ShiftRight          | AltLeft             | AltRight
+    (* Arrow keys *)
+    | ArrowLeft           | ArrowRight          | ArrowUp             | ArrowDown
+    (* Navigation *)
+    | PageUp              | PageDown            | Home                | End
+    (* Sound *)
+    | VolumeMute          | VolumeDown          | VolumeUp
+    (* Media *)
+    | MediaTrackPrevious  | MediaTrackNext      | MediaPlayPause      | MediaStop
+    (* Browser special *)
+    | ContextMenu         | BrowserSearch       | BrowserHome         | BrowserFavorites
+    | BrowserRefresh      | BrowserStop         | BrowserForward      | BrowserBack
+    (* Misc *)
+    | OSLeft              | OSRight             | ScrollLock          | PrintScreen
+    | IntlBackslash       | IntlYen             | Pause
+
+  val of_event : keyboardEvent Js.t -> t
+end
+
+(** Use [Keyboard_key] when you want to identify the character that the user typed. This
+   should only be invoked on keypress events, not keydown or keyup events. *)
+module Keyboard_key : sig
+  type t = Uchar.t option
+
+  val of_event : keyboardEvent Js.t -> t
+end
 
 (****)
 

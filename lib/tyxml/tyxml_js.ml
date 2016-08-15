@@ -41,18 +41,13 @@ module Xml = struct
   let string_of_uri s = s
   type aname = string
 
-  class type biggest_event = object
-    inherit Dom_html.event
-    inherit Dom_html.mouseEvent
-    inherit Dom_html.keyboardEvent
-  end
-
-  type biggest_event_handler = biggest_event Js.t -> bool
   type event_handler = Dom_html.event Js.t -> bool
   type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
   type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
   type attrib_k =
-    | Event of biggest_event_handler
+    | Event of event_handler
+    | MouseEvent of mouse_event_handler
+    | KeyboardEvent of keyboard_event_handler
     | Attr of Js.js_string Js.t option React.S.t
   type attrib = aname * attrib_k
 
@@ -63,9 +58,9 @@ module Xml = struct
   let string_attrib name value = attr name (Js.string value)
   let space_sep_attrib name values = attr name (Js.string (String.concat " " values))
   let comma_sep_attrib name values = attr name (Js.string (String.concat "," values))
-  let event_handler_attrib name (value : event_handler) =       name,Event (value :> (biggest_event_handler))
-  let mouse_event_handler_attrib name (value : mouse_event_handler) = name,Event (value :> (biggest_event_handler))
-  let keyboard_event_handler_attrib name (value : keyboard_event_handler) = name,Event (value :> (biggest_event_handler))
+  let event_handler_attrib name (value : event_handler) = name,Event value
+  let mouse_event_handler_attrib name (value : mouse_event_handler) = name,MouseEvent value
+  let keyboard_event_handler_attrib name (value : keyboard_event_handler) = name,KeyboardEvent value
   let uri_attrib name value = attr name (Js.string value)
   let uris_attrib name values = attr name (Js.string (String.concat " " values))
 
@@ -121,6 +116,8 @@ module Xml = struct
           ) a
           in ()
         | Event h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
+        | MouseEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
+        | KeyboardEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
       ) l
 
   let leaf ?(a=[]) name =
