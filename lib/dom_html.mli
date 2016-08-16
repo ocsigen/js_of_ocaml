@@ -184,7 +184,7 @@ and keyboardEvent = object
   (* Deprecated properties *)
   method which : int optdef readonly_prop
   method charCode : int optdef readonly_prop
-  method keyCode : int optdef readonly_prop
+  method keyCode : int readonly_prop
   method keyIdentifier : js_string t optdef readonly_prop
 end
 

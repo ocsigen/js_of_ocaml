@@ -177,7 +177,7 @@ and keyboardEvent = object
 
   method which : int optdef readonly_prop
   method charCode : int optdef readonly_prop
-  method keyCode : int optdef readonly_prop
+  method keyCode : int readonly_prop
   method keyIdentifier : js_string t optdef readonly_prop
 end
 
@@ -1636,12 +1636,6 @@ let addMousewheelEventListener e h capt =
 
 (*****)
 
-let get_key_code evt =
-  if Optdef.test evt##keyCode then
-    evt##keyCode
-  else
-    evt##which
-
 module Keyboard_code = struct
   type t =
     | Unidentified
@@ -1904,22 +1898,28 @@ module Keyboard_code = struct
 
   let make_unidentified _ = Unidentified
 
-  let run_try value f = function
+  let try_next value f = function
     | Unidentified -> Optdef.case value make_unidentified f
     | v -> v
 
+  let run_next value f = function
+    | Unidentified -> f value
+    | v -> v
+
+  let get_key_code evt = evt##keyCode
+
   let try_key_location evt =
     match evt##location with
-    | 1 -> run_try (get_key_code evt) try_key_code_left
-    | 2 -> run_try (get_key_code evt) try_key_code_right
-    | 3 -> run_try (get_key_code evt) try_key_code_numpad
+    | 1 -> run_next (get_key_code evt) try_key_code_left
+    | 2 -> run_next (get_key_code evt) try_key_code_right
+    | 3 -> run_next (get_key_code evt) try_key_code_numpad
     | _ -> make_unidentified
 
   let of_event evt =
     Unidentified
-    |> run_try (evt##code) try_code
+    |> try_next (evt##code) try_code
     |> try_key_location evt
-    |> run_try (get_key_code evt) try_key_code_normal
+    |> run_next (get_key_code evt) try_key_code_normal
 end
 
 module Keyboard_key = struct
