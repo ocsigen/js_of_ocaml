@@ -240,6 +240,12 @@ ppx/ppx_deriving_json.cmxa: ppx/ppx_deriving_json.cmx
 ppx/ppx_deriving_json.cmxs: ppx/ppx_deriving_json.cmx
 	$(OCAMLOPT) -shared -o $@ $^
 
+dom_html.cmo: dom_html.ml syntax/pa_js.cmo
+	$(OCAMLC) -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt,uchar -c -g dom_html.ml
+
+dom_html.cmi: dom_html.mli
+	$(OCAMLC) -package lwt,uchar -I deriving_json $(SAFESTRING) -c dom_html.mli
+
 %.cmo: %.ml syntax/pa_js.cmo
 	$(OCAMLC) -pp "camlp4o syntax/pa_js.cmo" $(SAFESTRING) -package lwt -c -g $<
 

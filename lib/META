@@ -1,7 +1,7 @@
 description = "Js_of_ocaml library"
 version = "dev"
 archive(byte) = "js_of_ocaml.cma"
-requires = "lwt"
+requires = "lwt,uchar"
 
 linkopts(javascript,-jsoo_noruntime) = "+js_of_ocaml/runtime.js"
 linkopts(javascript,jsoo_classlist) += "+js_of_ocaml/classlist.js"
