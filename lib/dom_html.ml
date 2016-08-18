@@ -1916,6 +1916,7 @@ module Keyboard_code = struct
     | 3 -> run_next (get_key_code evt) try_key_code_numpad
     | _ -> make_unidentified
 
+  let (|>) x f = f x
   let of_event evt =
     Unidentified
     |> try_next (evt##code) try_code
