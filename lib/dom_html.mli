@@ -123,6 +123,7 @@ class type cssStyleDeclaration = object
   method textIndent : js_string t prop
   method textTransform : js_string t prop
   method top : js_string t prop
+  method transform : js_string t prop
   method verticalAlign : js_string t prop
   method visibility : js_string t prop
   method whiteSpace : js_string t prop
