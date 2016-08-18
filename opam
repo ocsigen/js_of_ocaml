@@ -23,6 +23,7 @@ depends: [
   "base64" {>= "2.0.0"}
   ("base-no-ppx" | "ppx_tools")
   "ocamlbuild"
+  "uchar"
 ]
 depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" "ppx_driver"]
 conflicts: [
