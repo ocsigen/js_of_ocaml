@@ -45,12 +45,6 @@ let inside_Js = lazy
 *)
 let merlin_noloc = { txt = "merlin.loc"; loc = Location.none }, PStr []
 
-#if OCAML_VERSION < (4, 03, 0)
-let nolabel = ""
-#else
-let nolabel = Nolabel
-#endif
-
 module Js : sig
   val type_  : ?loc:Ast_helper.loc -> string -> Parsetree.core_type list  -> Parsetree.core_type
   val unsafe : ?loc:Ast_helper.loc -> string -> Parsetree.expression list -> Parsetree.expression
@@ -68,7 +62,7 @@ end = struct
     Typ.constr ?loc (lid (js_dot s)) args
 
   let apply_ ~where ?loc s args =
-    let args = List.map (fun x -> nolabel,x) args in
+    let args = List.map (fun x -> Label.nolabel,x) args in
     Exp.(apply ?loc (ident ?loc (lid ?loc (where s))) args)
   let unsafe = apply_ ~where:js_unsafe_dot
   let fun_ = apply_ ~where:js_dot
@@ -87,7 +81,7 @@ let unescape lab =
     with Not_found ->
       lab
 
-let app_arg e = (nolabel, e)
+let app_arg e = (Label.nolabel, e)
 
 let inject_arg e = Js.unsafe "inject" [e]
 
@@ -139,7 +133,7 @@ let invoker uplift downlift body desc =
   in
   let invoker =
     fold3 efun labels pats tfunc_args
-      (efun nolabel (Pat.any ()) (nolabel,twrap) ebody)
+      (efun Label.nolabel (Pat.any ()) (Label.nolabel,twrap) ebody)
   in
   let result = List.fold_right Exp.newtype (res :: ntargs) invoker in
 
@@ -159,12 +153,12 @@ let method_call ~loc obj meth args =
          let eobj = List.hd eargs in
          let eargs = inject_args (List.tl eargs) in
          Js.unsafe "meth_call" [eobj; str (unescape meth); eargs])
-      ((nolabel,[]) :: List.map (fun (l,_) -> l,[]) args)
+      ((Label.nolabel,[]) :: List.map (fun (l,_) -> l,[]) args)
   in
   Exp.apply invoker (
     app_arg obj :: args
     @ [app_arg
-         (Exp.fun_ ~loc ~attrs:[merlin_noloc] nolabel None
+         (Exp.fun_ ~loc ~attrs:[merlin_noloc] Label.nolabel None
             (Pat.var ~loc ~attrs:[merlin_noloc] (Location.mknoloc "x"))
             (Exp.send ~loc ~attrs:[merlin_noloc]
                (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) meth))]
@@ -179,12 +173,12 @@ let prop_get ~loc:_ ~prop_loc obj prop =
          targs_arrows targs,Js.type_ "gen_prop" [[%type: <get: [%t tres]; ..> ]])
       obj_arrows
       (fun eargs -> Js.unsafe "get" [List.hd eargs; str (unescape prop)])
-      [nolabel,[]]
+      [Label.nolabel,[]]
   in
   Exp.apply invoker (
     [ app_arg obj
     ; app_arg
-        (Exp.fun_ ~loc:gloc nolabel None
+        (Exp.fun_ ~loc:gloc Label.nolabel None
            (Pat.var ~loc:gloc ~attrs:[merlin_noloc] (Location.mknoloc "x"))
            (Exp.send ~loc:prop_loc ~attrs:[merlin_noloc]
               (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) prop))
@@ -198,7 +192,7 @@ let prop_set ~loc ~prop_loc obj prop value =
     invoker
       (fun targs _tres -> match targs with
          | [_,[],tobj; _,[],targ] ->
-           [nolabel,tobj],
+           [Label.nolabel,tobj],
            Js.type_ "gen_prop" [[%type: <set: [%t targ] -> unit; ..> ]]
          | _ -> assert false)
       (fun targs _tres -> obj_arrows targs [%type: unit])
@@ -206,13 +200,13 @@ let prop_set ~loc ~prop_loc obj prop value =
         | [obj; arg] ->
           Js.unsafe "set" [obj; str (unescape prop); inject_arg arg]
         | _ -> assert false)
-      [nolabel, []; nolabel, []]
+      [Label.nolabel, []; Label.nolabel, []]
   in
   Exp.apply invoker (
     [ app_arg obj
     ; app_arg value
     ; app_arg
-        (Exp.fun_ ~loc nolabel None
+        (Exp.fun_ ~loc Label.nolabel None
            (Pat.var ~loc:gloc ~attrs:[merlin_noloc] (Location.mknoloc "x"))
            (Exp.send ~loc:prop_loc ~attrs:[merlin_noloc]
               (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) prop))
@@ -228,12 +222,12 @@ let new_object constr args =
          let _unit = List.hd targs and targs = List.tl targs in
          let tres = Js.type_ "t" [tres] in
          let args = targs_arrows targs in
-         (nolabel, Js.type_ "constr" [arrows args tres]) :: args, tres)
+         (Label.nolabel, Js.type_ "constr" [arrows args tres]) :: args, tres)
       (function
         | (constr :: args) ->
           Js.unsafe "new_obj" [constr; inject_args args]
         | _ -> assert false)
-      ((nolabel,[]) :: List.map (fun (l,_) -> l, []) args)
+      ((Label.nolabel,[]) :: List.map (fun (l,_) -> l, []) args)
   in
   Exp.apply invoker (
     app_arg (Exp.ident ~loc:constr.loc constr) :: args
@@ -325,18 +319,18 @@ let literal_object self_id ( fields : field_desc list) =
                l, Js.type_ "readonly_prop" [ret_ty]
              | `Meth (_, _,         _, _, _) ->
                l, arrows (
-                 (nolabel,Js.type_ "t" [tres]) :: List.tl args)
+                 (Label.nolabel,Js.type_ "t" [tres]) :: List.tl args)
                  (Js.type_ "meth" [ret_ty])
            ) fields targs
          in
-         ((nolabel, Js.type_ "t" [tres]) :: targs),
+         ((Label.nolabel, Js.type_ "t" [tres]) :: targs),
          tres)
       (fun targs tres ->
          let targs =
            List.map2 (fun f (l,args,ret) ->
              match f with
              | `Val _  -> l, args, ret
-             | `Meth _ -> l, (nolabel, Js.type_ "t" [tres])::List.tl args, ret
+             | `Meth _ -> l, (Label.nolabel, Js.type_ "t" [tres])::List.tl args, ret
            ) fields targs
          in
          targs_arrows targs, Js.type_ "t" [tres]
@@ -355,8 +349,8 @@ let literal_object self_id ( fields : field_desc list) =
             )]
       )
       (List.map (function
-         | `Val _ -> nolabel, []
-         | `Meth (_, _, _, _, fun_ty) -> nolabel, nolabel :: fun_ty) fields)
+         | `Val _ -> Label.nolabel, []
+         | `Meth (_, _, _, _, fun_ty) -> Label.nolabel, Label.nolabel :: fun_ty) fields)
   in
 
   let self = "self" in
@@ -372,7 +366,7 @@ let literal_object self_id ( fields : field_desc list) =
                 let loc = (name f).loc in
                 let apply e = match f with
                   | `Val _ -> e
-                  | `Meth _ -> Exp.apply e [nolabel, Exp.ident (lid ~loc:Location.none self) ]
+                  | `Meth _ -> Exp.apply e [Label.nolabel, Exp.ident (lid ~loc:Location.none self) ]
                 in
                 { pcf_loc = loc;
                   pcf_attributes = [];
@@ -390,7 +384,7 @@ let literal_object self_id ( fields : field_desc list) =
     (List.map (fun f -> app_arg (body f)) fields)
     @ [
       app_arg (List.fold_right (fun name fun_ ->
-        (Exp.fun_ ~loc:gloc nolabel None
+        (Exp.fun_ ~loc:gloc Label.nolabel None
            (Pat.var ~loc:gloc (Location.mknoloc name))
            fun_))
         (self :: List.map (fun f -> (name f).txt) fields)
