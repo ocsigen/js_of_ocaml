@@ -63,6 +63,10 @@ end
 
 let empty_position_options () = Js.Unsafe.obj [||]
 
-let geolocation = Js.Unsafe.global##navigator##geolocation
+let geolocation =
+  let x = Js.Unsafe.global##navigator in
+  if Js.Optdef.test x
+  then x##geolocation
+  else x (* undefined *)
 
 let is_supported () = Js.Optdef.test geolocation
