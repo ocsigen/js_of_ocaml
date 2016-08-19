@@ -282,7 +282,9 @@ module R = struct
 
   let filter_attrib (name,a) on =
     match a with
-    | Xml.Event _ ->
+    | Xml.Event _
+    | Xml.MouseEvent _
+    | Xml.KeyboardEvent _ ->
       raise (Invalid_argument "filter_attrib not implemented for event handler")
     | Xml.Attr a ->
       name,

@@ -511,7 +511,6 @@ let write_case (i, i', l) {Parsetree.pcd_name; pcd_args; pcd_loc} =
       write_tuple_contents vars args ~tag:i' ~poly:true
 #if OCAML_VERSION >= (4, 03, 0)
     | Pcstr_record args ->
-      let vars = fresh_vars (List.length args) in
       i,
       i' + 1,
       Some (pattern_of_record args),
