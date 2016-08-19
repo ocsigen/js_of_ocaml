@@ -938,12 +938,12 @@ let _ =
    becomes
    {[ throw (caml_exn_with_js_backtrace(e,false)) ]}
 *)
-let throw_statement cx loc =
+let throw_statement ctx cx loc =
   if not (Option.Optim.improved_stacktrace ())
   then
     [J.Throw_statement cx,loc]
   else
-    [J.Throw_statement (J.ECall (s_var "caml_exn_with_js_backtrace",[cx;bool (J.ENum 0.)],loc)),loc]
+    [J.Throw_statement (J.ECall (runtime_fun ctx "caml_exn_with_js_backtrace",[cx;bool (J.ENum 0.)],loc)),loc]
 
 let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
   match e with
@@ -1602,7 +1602,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
       flush_all queue [J.Return_statement (Some cx), loc]
   | Raise x ->
       let ((_px, cx), queue) = access_queue queue x in
-      flush_all queue (throw_statement cx loc)
+      flush_all queue (throw_statement st.ctx cx loc)
   | Stop ->
       flush_all queue [J.Return_statement None, loc]
   | Branch cont ->
