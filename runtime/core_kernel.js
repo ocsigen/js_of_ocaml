@@ -112,6 +112,9 @@ var internalhash_fold_float = caml_hash_mix_float
 //Provides: internalhash_fold_string
 //Requires: caml_hash_mix_string
 var internalhash_fold_string = caml_hash_mix_string
+//Provides: internalhash_fold_bigstring
+//Requires: caml_hash_mix_bigstring
+var internalhash_fold_bigstring = caml_hash_mix_bigstring
 //Provides: internalhash_get_hash_value
 //Requires: caml_hash_mix_final
 function internalhash_get_hash_value (seed) {

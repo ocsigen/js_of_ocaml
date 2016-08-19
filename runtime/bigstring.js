@@ -113,3 +113,9 @@ function bigstring_marshal_blit_stub (s, ofs, len, v, _fl) {
   }
   return t.length;
 }
+
+//Provides: caml_hash_mix_bigstring
+//Requires: caml_hash_mix_string_arr
+function caml_hash_mix_bigstring(h, bs) {
+    return caml_hash_mix_string_arr(h,bs.data);
+}
