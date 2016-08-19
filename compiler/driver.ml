@@ -297,6 +297,7 @@ let check_js js =
   let all_external = StringSet.union prim prov in
 
   let missing = StringSet.inter free all_external in
+  let missing = StringSet.diff missing Reserved.provided in
 
   let other =  StringSet.diff free missing in
 
