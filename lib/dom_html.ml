@@ -1222,6 +1222,7 @@ class type window = object
   method focus : unit meth
   method blur : unit meth
   method scroll : int -> int -> unit meth
+  method scrollBy : int -> int -> unit meth
 
   method sessionStorage : storage t optdef readonly_prop
   method localStorage : storage t optdef readonly_prop
