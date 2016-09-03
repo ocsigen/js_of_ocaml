@@ -2113,8 +2113,15 @@ module Reloc = struct
     Hashtbl.iter (fun name i -> a.(i) <- name) t.primitives;
     a
 
-  let constants t = Array.of_list (List.rev t.constants)
-
+  let constants t =
+    let len = List.length t.constants in
+    let a = Array.make len (Obj.repr 0) in
+    List.iteri (fun i o -> a.(len - 1 - i) <- o) t.constants;
+    (* WARNING: [Obj.t array] is dangerous.
+       Make sure we don't end up with an unboxed float array. *)
+    assert(Obj.tag (Obj.repr a) = 0);
+    a
+    
   let make_globals t =
     let primitives = primitives t in
     let constants = constants t in
