@@ -29,9 +29,6 @@ let arrows args ret =
     args
     ret
 
-let targs_arrows targs =
-  List.map (fun (l,args,res) -> l, arrows args res) targs
-
 let inside_Js = lazy
   (try
      Filename.basename (Filename.chop_extension !Location.input_name) = "js"
@@ -88,54 +85,89 @@ let inject_arg e = Js.unsafe "inject" [e]
 let inject_args args =
   Exp.array (List.map (fun e -> Js.unsafe "inject" [e]) args)
 
-let obj_arrows targs tres =
-  let lbl, tobj, tobjres = List.hd targs and targs = List.tl targs in
-  ((lbl, Js.type_ "t" [arrows tobj tobjres]) :: (targs_arrows targs)), tres
+let typ s = Typ.constr (lid s) []
 
-let invoker uplift downlift body desc =
-  let labels = List.map fst desc in
+module Arg : sig
+  type t
+  val make  : ?label:arg_label -> unit -> t
+  val name  : t -> string
+  val typ   : t -> core_type
+  val label : t -> arg_label
+  val args  : t list -> (arg_label * core_type) list
+end = struct
+  type arg = { label : arg_label;
+               name  : string }
+
+  type t = arg
+  let count = ref 0
+  let make ?(label = Label.nolabel) () =
+    let c = !count in
+    incr count;
+    { label; name = "t"^string_of_int c}
+
+  let label arg = arg.label
+  let name arg = arg.name
+  let typ arg = typ (name arg)
+  let args l = List.map (fun x -> label x, typ x) l
+end
+
+let js_dot_t_the_first_arg args =
+  match args with
+  | [] -> assert false
+  | x :: xs -> (Arg.label x, Js.type_ "t" [Arg.typ x]) :: Arg.args xs
+
+(* uplift   : type of the unused value - ties all types together
+   downlift : types of individual components (arguments and result)
+   body     : implementation
+   desc     : description of arguments
+*)
+let invoker ?(extra_types = []) uplift downlift body desc =
   let default_loc' = !default_loc in
   default_loc := Location.none;
-  let arg i _ = "a" ^ string_of_int i in
-  let args = List.mapi arg labels in
-
-  let typ s = Typ.constr (lid s) [] in
-
-  let argi s i = s ^ "_" ^ string_of_int i
-  in
-  let targs = List.map2 (fun (l,args) s -> l, List.mapi (fun i l -> l, typ (argi s i)) args, typ (s ^ "_ret") ) desc args in
-
-  let ntargs =
-    List.map2 (fun (_l,args) s -> (s ^ "_ret") :: List.mapi (fun i _l -> argi s i) args) desc args
-    |> List.concat
-  in
-
   let res = "res" in
   let tres = typ res in
 
-  let twrap_args,twrap_res = uplift targs tres in
-  let twrap = arrows twrap_args twrap_res in
-  let tfunc_args,tfunc_res = downlift targs tres in
+  let twrap = uplift desc tres in
+  let tfunc_args,tfunc_res = downlift desc tres in
 
-  let ebody = Exp.constraint_ (body (List.map (fun s -> Exp.ident (lid s)) args)) tfunc_res in
+  (* Build the main body *)
+  let ebody =
+    let args = List.map (fun d ->
+      let s = Arg.name d in
+      Exp.ident (lid s)) desc
+    in
+    body args
+  in
+  let annotated_ebody = Exp.constraint_ ebody tfunc_res in
 
-  let pats = List.map (fun arg -> (Pat.var (Location.mknoloc arg))) args in
+  (* Build the function.
+     The last arguments is just used to tie all types together.
+     It's unused in the implementation.
+     {[ fun (t1 : type_of_t1) (t2 : type_of_t2) (_ : uplift_type) -> e]}
+  *)
+  let labels_and_pats = List.map (fun d ->
+    let label = Arg.label d in
+    let s = Arg.name d in
+    label, (Pat.var (Location.mknoloc s))) desc in
 
-  let efun label pat (label',typ) expr =
+  let make_fun (label, pat) (label',typ) expr =
     assert(label' = label);
     Exp.fun_ label None (Pat.constraint_ pat typ) expr
   in
-  let rec fold3 f l a t acc =
-    match l,a,t with
-    | [],[],[] -> acc
-    | [],_,_ | _,[],_ | _,_,[] -> assert false
-    | l::lx, a::ax, t::tx -> f l a t (fold3 f lx ax tx acc)
-  in
   let invoker =
-    fold3 efun labels pats tfunc_args
-      (efun Label.nolabel (Pat.any ()) (Label.nolabel,twrap) ebody)
+    List.fold_right2 make_fun labels_and_pats tfunc_args
+      (make_fun
+         (Label.nolabel, Pat.any ())
+         (Label.nolabel,twrap)
+         annotated_ebody)
   in
-  let result = List.fold_right Exp.newtype (res :: ntargs) invoker in
+  (* Introduce all local types:
+     {[ fun (type res t0 t1 ..) arg1 arg2 -> e ]}
+  *)
+  let local_types =
+    res :: List.map Arg.name (extra_types @ desc)
+  in
+  let result = List.fold_right Exp.newtype local_types invoker in
 
   default_loc := default_loc';
   result
@@ -147,13 +179,15 @@ let method_call ~loc obj meth args =
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
   let invoker =
     invoker
-      (fun targs tres -> targs_arrows targs, Js.type_ "meth" [tres])
-      obj_arrows
+      (fun args tres -> arrows (Arg.args args) (Js.type_ "meth" [tres]))
+      (fun args tres -> js_dot_t_the_first_arg args, tres)
       (fun eargs ->
-         let eobj = List.hd eargs in
-         let eargs = inject_args (List.tl eargs) in
-         Js.unsafe "meth_call" [eobj; str (unescape meth); eargs])
-      ((Label.nolabel,[]) :: List.map (fun (l,_) -> l,[]) args)
+         match eargs with
+         | [] -> assert false
+         | eobj :: eargs ->
+           let eargs = inject_args eargs in
+           Js.unsafe "meth_call" [eobj; str (unescape meth); eargs])
+      (Arg.make () :: List.map (fun (label,_) -> Arg.make ~label ()) args)
   in
   Exp.apply invoker (
     app_arg obj :: args
@@ -169,11 +203,14 @@ let prop_get ~loc:_ ~prop_loc obj prop =
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
   let invoker =
     invoker
-      (fun targs tres ->
-         targs_arrows targs,Js.type_ "gen_prop" [[%type: <get: [%t tres]; ..> ]])
-      obj_arrows
-      (fun eargs -> Js.unsafe "get" [List.hd eargs; str (unescape prop)])
-      [Label.nolabel,[]]
+      (fun args tres ->
+         arrows (Arg.args args) (Js.type_ "gen_prop" [[%type: <get: [%t tres]; ..> ]]))
+      (fun args tres -> js_dot_t_the_first_arg args, tres)
+      (fun eargs ->
+         match eargs with
+         | ([] | _ :: _ :: _) -> assert false
+         | [only_arg] -> Js.unsafe "get" [only_arg; str (unescape prop)])
+      [Arg.make ()]
   in
   Exp.apply invoker (
     [ app_arg obj
@@ -190,17 +227,21 @@ let prop_set ~loc ~prop_loc obj prop value =
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
   let invoker =
     invoker
-      (fun targs _tres -> match targs with
-         | [_,[],tobj; _,[],targ] ->
-           [Label.nolabel,tobj],
-           Js.type_ "gen_prop" [[%type: <set: [%t targ] -> unit; ..> ]]
+      (fun args _tres ->
+         match args with
+         | [obj; arg] ->
+           assert (Arg.label obj = Label.nolabel);
+           assert (Arg.label arg = Label.nolabel);
+           arrows
+             [Label.nolabel,Arg.typ obj]
+             (Js.type_ "gen_prop" [[%type: <set: [%t Arg.typ arg] -> unit; ..> ]])
          | _ -> assert false)
-      (fun targs _tres -> obj_arrows targs [%type: unit])
+      (fun args _tres -> js_dot_t_the_first_arg args, [%type: unit])
       (function
         | [obj; arg] ->
           Js.unsafe "set" [obj; str (unescape prop); inject_arg arg]
         | _ -> assert false)
-      [Label.nolabel, []; Label.nolabel, []]
+      [Arg.make (); Arg.make ()]
   in
   Exp.apply invoker (
     [ app_arg obj
@@ -217,17 +258,20 @@ let prop_set ~loc ~prop_loc obj prop value =
 let new_object constr args =
   let invoker =
     invoker
-      (fun _targs _tres -> [],[%type: unit])
-      (fun targs tres ->
-         let _unit = List.hd targs and targs = List.tl targs in
+      (fun _args _tres -> [%type: unit])
+      (fun args tres ->
          let tres = Js.type_ "t" [tres] in
-         let args = targs_arrows targs in
-         (Label.nolabel, Js.type_ "constr" [arrows args tres]) :: args, tres)
+         match args with
+         | [] -> assert false
+         | unit :: args ->
+           assert (Arg.label unit = Label.nolabel);
+           let args = Arg.args args in
+           (Label.nolabel, Js.type_ "constr" [arrows args tres]) :: args, tres)
       (function
         | (constr :: args) ->
           Js.unsafe "new_obj" [constr; inject_args args]
         | _ -> assert false)
-      ((Label.nolabel,[]) :: List.map (fun (l,_) -> l, []) args)
+      (Arg.make ()  :: List.map (fun (label,_) -> Arg.make ~label ()) args)
   in
   Exp.apply invoker (
     app_arg (Exp.ident ~loc:constr.loc constr) :: args
@@ -248,7 +292,7 @@ let format_meth body =
     - Only relevant declarations (val and method, for now).
 *)
 type field_desc =
-  [ `Meth of string Asttypes.loc * Asttypes.private_flag * Asttypes.override_flag * Parsetree.expression * Asttypes.arg_label list
+  [ `Meth of string Asttypes.loc * Asttypes.private_flag * Asttypes.override_flag * Parsetree.expression * Arg.t list
   | `Val  of string Asttypes.loc * Asttypes.mutable_flag * Asttypes.override_flag * Parsetree.expression ]
 
 
@@ -282,7 +326,7 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
       let body = format_meth (mappper body) in
       let rec create_meth_ty exp = match exp.pexp_desc with
           | Pexp_fun (label,_,_,body) ->
-            label :: create_meth_ty body
+            Arg.make ~label () :: create_meth_ty body
           | _ -> []
       in
       let fun_ty = create_meth_ty body in
@@ -306,34 +350,49 @@ let literal_object self_id ( fields : field_desc list) =
     | `Val  (_, _, _, body)    -> body
     | `Meth (_, _, _, body, _) -> [%expr fun [%p self_id] -> [%e body] ]
   in
-
+  let extra_types =
+    List.concat (
+      List.map (function
+        | `Val _ -> []
+        | `Meth (_,_,_,_,l) -> l
+      ) fields
+    )
+  in
   let invoker =
-    invoker
-      (fun targs tres ->
-         let targs =
-           List.map2 (fun f (l,args,ret_ty) ->
+    invoker ~extra_types
+      (fun args tres ->
+         let args =
+           List.map2 (fun f desc ->
+             let ret_ty = Arg.typ desc in
+             let label  = Arg.label desc in
              match f with
              | `Val  (_, Mutable,   _, _)    ->
-               l, Js.type_ "prop" [ret_ty]
+               label, Js.type_ "prop" [ret_ty]
              | `Val  (_, Immutable, _, _)    ->
-               l, Js.type_ "readonly_prop" [ret_ty]
-             | `Meth (_, _,         _, _, _) ->
-               l, arrows (
-                 (Label.nolabel,Js.type_ "t" [tres]) :: List.tl args)
+               label, Js.type_ "readonly_prop" [ret_ty]
+             | `Meth (_, _,         _, _, args) ->
+               label,
+               arrows
+                 ((Label.nolabel,Js.type_ "t" [tres]) :: Arg.args args)
                  (Js.type_ "meth" [ret_ty])
-           ) fields targs
+           ) fields args
          in
-         ((Label.nolabel, Js.type_ "t" [tres]) :: targs),
-         tres)
-      (fun targs tres ->
-         let targs =
-           List.map2 (fun f (l,args,ret) ->
+         arrows ((Label.nolabel, Js.type_ "t" [tres]) :: args) tres)
+      (fun args tres ->
+         let args =
+           List.map2 (fun f desc ->
+             let ret_ty = Arg.typ desc in
+             let label  = Arg.label desc in
              match f with
-             | `Val _  -> l, args, ret
-             | `Meth _ -> l, (Label.nolabel, Js.type_ "t" [tres])::List.tl args, ret
-           ) fields targs
+             | `Val _  -> label, ret_ty
+             | `Meth (_, _,         _, _, args) ->
+               label,
+               arrows
+                 ((Label.nolabel, Js.type_ "t" [tres]) :: Arg.args args)
+                 ret_ty
+           ) fields args
          in
-         targs_arrows targs, Js.type_ "t" [tres]
+         args, Js.type_ "t" [tres]
       )
       (fun args ->
          Js.unsafe
@@ -349,8 +408,8 @@ let literal_object self_id ( fields : field_desc list) =
             )]
       )
       (List.map (function
-         | `Val _ -> Label.nolabel, []
-         | `Meth (_, _, _, _, fun_ty) -> Label.nolabel, Label.nolabel :: fun_ty) fields)
+         | `Val _ -> Arg.make ()
+         | `Meth (_, _, _, _, _fun_ty) -> Arg.make ()) fields)
   in
 
   let self = "self" in
