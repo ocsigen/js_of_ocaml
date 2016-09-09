@@ -494,9 +494,13 @@ function caml_blit_string(s1, i1, s2, i2, len) {
   } else {
     if (s2.t != 4 /* ARRAY */) caml_convert_string_to_array(s2);
     var c1 = s1.c, c2 = s2.c;
-    if (s1.t == 4 /* ARRAY */)
-      for (var i = 0; i < len; i++) c2 [i2 + i] = c1 [i1 + i];
-    else {
+    if (s1.t == 4 /* ARRAY */) {
+        if (i2 <= i1) {
+          for (var i = 0; i < len; i++) c2 [i2 + i] = c1 [i1 + i];
+        } else {
+          for (var i = len - 1; i >= 0; i--) c2 [i2 + i] = c1 [i1 + i];
+        }
+   } else {
       var l = Math.min (len, c1.length - i1);
       for (var i = 0; i < l; i++) c2 [i2 + i] = c1.charCodeAt(i1 + i);
       for (; i < len; i++) c2 [i2 + i] = 0;
