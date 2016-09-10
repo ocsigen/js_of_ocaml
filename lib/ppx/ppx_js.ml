@@ -89,13 +89,13 @@ let inject_args args =
 
 module Arg : sig
   type t
-  val make  : ?label:arg_label -> unit -> t
+  val make  : ?label:Label.t -> unit -> t
   val name  : t -> string
   val typ   : t -> core_type
-  val label : t -> arg_label
-  val args  : t list -> (arg_label * core_type) list
+  val label : t -> Label.t
+  val args  : t list -> (Label.t * core_type) list
 end = struct
-  type arg = { label : arg_label;
+  type arg = { label : Label.t;
                name  : string }
 
   type t = arg
