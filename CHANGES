@@ -1,13 +1,17 @@
-===== 2.8.2 (2016-08-??) =====
+===== 2.8.2 (2016-09-??) =====
+
+ * Features/Changes
+ ** Lib: add Dom_html.Keyboard_code & Dom_html.Keyboard_key (Corwin de Boor)
 
  * Bug fixes
  ** Compiler: fix js output for x - -1
  ** Compiler: fix parsing of annotations in the runtime
  ** Compiler: fix javascript minifier
+ ** Compiler: various fixes for separate compilation.
  ** Misc: fix lib and runtime to work better with non browser environment
  ** Misc: initial support for 4.04
 
-===== 2.1 (2016-07-01) =====
+===== 2.8.1 (2016-07-01) =====
 
  * Features/Changes
  ** Compiler: reduce memory usage for shortvar
