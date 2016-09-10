@@ -23,6 +23,8 @@ let exp_to_string = function
 let lid ?(loc= !default_loc) str =
   Location.mkloc (Longident.parse str) loc
 
+let typ s = Typ.constr (lid s) []
+
 (** arg1 -> arg2 -> ... -> ret *)
 let arrows args ret =
   List.fold_right (fun (l, ty) fun_ -> Typ.arrow l ty fun_)
@@ -85,8 +87,6 @@ let inject_arg e = Js.unsafe "inject" [e]
 let inject_args args =
   Exp.array (List.map (fun e -> Js.unsafe "inject" [e]) args)
 
-let typ s = Typ.constr (lid s) []
-
 module Arg : sig
   type t
   val make  : ?label:arg_label -> unit -> t
@@ -116,26 +116,22 @@ let js_dot_t_the_first_arg args =
   | [] -> assert false
   | x :: xs -> (Arg.label x, Js.type_ "t" [Arg.typ x]) :: Arg.args xs
 
-(* uplift   : type of the unused value - ties all types together
-   downlift : types of individual components (arguments and result)
-   body     : implementation
-   desc     : description of arguments
+(* uplift    : type of the unused value - ties all types together
+   downlift  : types of individual components (arguments and result)
 *)
-let invoker ?(extra_types = []) uplift downlift body desc =
+let invoker ?(extra_types = []) uplift downlift body arguments =
   let default_loc' = !default_loc in
   default_loc := Location.none;
   let res = "res" in
-  let tres = typ res in
+  let typ_res = typ res in
 
-  let twrap = uplift desc tres in
-  let tfunc_args,tfunc_res = downlift desc tres in
+  let twrap = uplift arguments typ_res in
+  let tfunc_args,tfunc_res = downlift arguments typ_res in
 
   (* Build the main body *)
   let ebody =
-    let args = List.map (fun d ->
-      let s = Arg.name d in
-      Exp.ident (lid s)) desc
-    in
+    let ident d = Exp.ident (lid (Arg.name d)) in
+    let args = List.map ident arguments in
     body args
   in
   let annotated_ebody = Exp.constraint_ ebody tfunc_res in
@@ -147,8 +143,9 @@ let invoker ?(extra_types = []) uplift downlift body desc =
   *)
   let labels_and_pats = List.map (fun d ->
     let label = Arg.label d in
-    let s = Arg.name d in
-    label, (Pat.var (Location.mknoloc s))) desc in
+    let patt = Pat.var (Location.mknoloc (Arg.name d)) in
+    label, patt) arguments
+  in
 
   let make_fun (label, pat) (label',typ) expr =
     assert(label' = label);
@@ -165,7 +162,7 @@ let invoker ?(extra_types = []) uplift downlift body desc =
      {[ fun (type res t0 t1 ..) arg1 arg2 -> e ]}
   *)
   let local_types =
-    res :: List.map Arg.name (extra_types @ desc)
+    res :: List.map Arg.name (extra_types @ arguments)
   in
   let result = List.fold_right Exp.newtype local_types invoker in
 
