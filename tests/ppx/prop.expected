@@ -13,8 +13,7 @@ Characters 53-60:
                                                       ^^^^^^^
 Error: This expression has type
          float Js.writeonly_prop = < set : float -> unit > Js.gen_prop
-       but an expression was expected of type
-         < get : 'jsoo_res; .. > Js.gen_prop
+       but an expression was expected of type < get : 'a; .. > Js.gen_prop
        The first object type has no method get
 Characters 43-50:
   fun (obj : < p : float Js.prop > Js.t) -> obj##.p + 1

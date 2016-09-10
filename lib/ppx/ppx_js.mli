@@ -44,7 +44,7 @@ e_i : t_i               (1 <= i <= n)
 constr : (t_1 -> ... -> t_n -> u Js.t) Js.constr
    e_i : t_i               (1 <= i <= n)
 ------------------------------------------------
-          new%js constr e1 ... en : u
+          new%js constr e1 ... en : u Js.t
    ]}
    [ constr ] here must be an identifier. For constructors
    that are not identifiers, bind them first:

@@ -20,3 +20,6 @@ fun (obj : < m : int Js.meth > Js.t) -> obj##m 1
 
 fun (obj : < m : int -> float Js.meth > Js.t) -> obj##m 1 + 1
 ;;
+
+fun (obj : < m : 'a. 'a -> unit Js.meth > Js.t) -> obj##m "string"; obj##m (); obj##w
+;;
