@@ -171,6 +171,24 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
 
 let open_t loc = Js.type_ ~loc "t" [Typ.object_ ~loc [] Open]
 
+(* {[ obj##meth x y ]} generates
+   {[
+     (
+       fun (type res a2 a0 a1) ->
+       fun (a2 : a2 Js.t)  ->
+       fun (a0 : a0)  ->
+       fun (a1 : a1)  ->
+       fun (_ : a2 -> a0 -> a1 -> res Js.meth)  ->
+         (Js.Unsafe.meth_call a2 "meth"
+            [|(Js.Unsafe.inject a0);
+              (Js.Unsafe.inject a1)
+            |] : res)
+     )
+       (obj : < .. > Js.t)
+       x
+       y
+       (fun x  -> x#meth)
+   ]} *)
 let method_call ~loc obj meth args =
   let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
@@ -195,6 +213,17 @@ let method_call ~loc obj meth args =
                (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) meth))]
   )
 
+(* {[ obj##.prop ]} generates
+   {[
+     (
+       fun (type res a0) ->
+       fun (a0 : a0 Js.t)  ->
+       fun (_ : a0 -> < get :res  ;.. > Js.gen_prop)  ->
+         (Js.Unsafe.get a0 "prop" : res)
+     )
+       (obj : < .. > Js.t)
+       (fun x -> x#prop)
+   ]} *)
 let prop_get ~loc:_ ~prop_loc obj prop =
   let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
@@ -219,6 +248,19 @@ let prop_get ~loc:_ ~prop_loc obj prop =
     ]
   )
 
+(* {[ obj##.prop := expr ]} generates
+   {[
+     (
+       fun (type res a1  a0) ->
+       fun (a1 : a1 Js.t)  ->
+       fun (a0 : a0)  ->
+       fun (_ : a1 -> < set :a0 -> unit  ;.. > Js.gen_prop)  ->
+         (Js.Unsafe.set a1 "prop" (Js.Unsafe.inject a0) : unit)
+     )
+       (obj : < .. > Js.t)
+       expr
+       (fun x -> x#prop)
+   ]} *)
 let prop_set ~loc ~prop_loc obj prop value =
   let gloc = {obj.pexp_loc with Location.loc_ghost = true} in
   let obj = Exp.constraint_ ~loc:gloc obj (open_t gloc) in
@@ -252,6 +294,22 @@ let prop_set ~loc ~prop_loc obj prop value =
   )
 
 (** Instantiation of a class, used by new%js. *)
+(* {[ new%js constr x y ]} generates
+   {[
+     (
+       fun (type res a2 a0 a1) ->
+       fun (a2 : (a0 -> a1 -> res Js.t) Js.constr)  ->
+       fun (a0 : a0)  ->
+       fun (a1 : a1)  ->
+       fun (_ : unit)  ->
+         (Js.Unsafe.new_obj a2
+               [|(Js.Unsafe.inject a0);
+                 (Js.Unsafe.inject a1)
+               |] : res Js.t)
+     )
+       constr x y ()
+   ]}
+*)
 let new_object constr args =
   let invoker =
     invoker
@@ -336,6 +394,42 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
     `Fields (List.rev (snd (List.fold_left f (S.empty, []) fields)))
   with Location.Error error -> `Error (extension_of_error error)
 
+
+(* {[ object%js (self)
+     val readonlyprop = e1
+     val prop = e2
+     method meth x = e3
+   end ]} generates
+   {[
+     (
+       fun (type res a6 a7 a8 a9) ->
+       fun (a7 : a7)  ->
+       fun (a8 : a8)  ->
+       fun (a9 : res Js.t -> a6 -> a9)  ->
+       fun
+         (_ :
+            res Js.t ->
+          a7 Js.readonly_prop ->
+          a8 Js.prop ->
+          (res Js.t -> a6 -> a9 Js.meth) ->
+          res)
+         ->
+           (Js.Unsafe.obj
+              [|("readonlyprop", (Js.Unsafe.inject a7));
+                ("prop", (Js.Unsafe.inject a8));
+                ("meth", (Js.Unsafe.inject (Js.wrap_meth_callback a9)))
+              |] : res Js.t)
+     )
+       e1
+       e2
+       (fun self -> fun x  -> e3)
+     (fun self read_only_prop prop meth  ->
+          object
+            method read_only_prop = read_only_prop
+            method prop = prop
+            method meth = meth self
+          end)
+   ]} *)
 let literal_object self_id ( fields : field_desc list) =
 
   let name = function
