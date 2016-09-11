@@ -40,11 +40,12 @@
     if (isCommonJS) {
         namespace = module.exports = adaptedStrftime;
         namespace.strftime = deprecatedStrftime;
+        if(joo_global_object) joo_global_object.strftime = adaptedStrftime;
     }
     // Browsers and other environments
     else {
         // Get the global object. Works in ES3, ES5, and ES5 strict mode.
-        namespace = (function() { return this || (1,eval)('this'); }());
+        namespace = joo_global_object || (function() { return this || (1,eval)('this'); }());
         namespace.strftime = adaptedStrftime;
     }
 
