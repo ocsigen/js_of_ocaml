@@ -105,8 +105,16 @@ module Xml = struct
   let encodedpcdata s =
     (Dom_html.document##createTextNode (Js.string s) :> Dom.node Js.t)
 
+  let entities = Hashtbl.create 17
+
   let entity e =
-    let entity = Dom_html.decode_html_entities (Js.string ("&" ^ e ^ ";")) in
+    let entity =
+      try Hashtbl.find entities e
+      with Not_found ->
+        let e' = Dom_html.decode_html_entities (Js.string ("&" ^ e ^ ";")) in
+        Hashtbl.add entities e e';
+        e'
+    in
     (Dom_html.document##createTextNode entity :> Dom.node Js.t)
 
   (* TODO: fix get_prop
