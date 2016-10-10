@@ -333,7 +333,7 @@ and resolve_dep_id_rev visited path id =
 let init () =
   List.fold_left
     (fun visited id -> resolve_dep_id_rev visited [] id)
-    {ids=IntSet.empty; codes=[]} !always_included
+    {ids=IntSet.empty; codes=[]} (List.rev !always_included)
 
 let resolve_deps ?(linkall = false) visited_rev used =
   (* link the special files *)
