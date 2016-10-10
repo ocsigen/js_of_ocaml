@@ -284,6 +284,7 @@ and string_quote q buf = parse
     if q = q'
     then ()
     else (Buffer.add_char buf q'; string_quote q buf lexbuf) }
+  | "\\\n" { string_quote q buf lexbuf }
   | '\\' {
       string_escape q buf lexbuf;
       string_quote q buf lexbuf
