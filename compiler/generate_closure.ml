@@ -270,10 +270,11 @@ let f ((pc, blocks, free_pc) as p) : Code.program =
                     let new_pc = free_pc in
                     let free_pc = free_pc + 1 in
                     let closure = Code.Var.fork x in
+                    let new_x = Code.Var.fork x in
                     let args = List.map Code.Var.fork vars in
                     let mapping =
                       Jsoo_subst.from_map
-                        (Jsoo_subst.build_mapping vars args)
+                        (Jsoo_subst.build_mapping (x :: vars) (new_x :: args))
                     in
                     rewrite_list := (mapping, pc) :: !rewrite_list;
                     let body_rev =
@@ -282,11 +283,10 @@ let f ((pc, blocks, free_pc) as p) : Code.program =
                       :: body_rev
                     in
                     let new_block =
-                      let x = Code.Var.fork x in
                       { params = [];
                         handler = None;
-                        body = [Let (x, Closure (params, (pc, List.map mapping pc_args)))];
-                        branch = Return x }
+                        body = [Let (new_x, Closure (params, (pc, List.map mapping pc_args)))];
+                        branch = Return new_x }
                     in
                     let blocks = AddrMap.add new_pc new_block blocks in
                     body_rev, blocks, free_pc
