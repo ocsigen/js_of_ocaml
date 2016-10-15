@@ -1,3 +1,10 @@
+===== 2.8.3 (2016-10-??) =====
+
+ * Bug fixes
+ ** Compiler: fix order of javascript files
+ ** Compiler: fix Javascript lexer (newline inside strings)
+ ** Compiler: fix bug in closure generation
+
 ===== 2.8.2 (2016-09-10) =====
 
  * Features/Changes
