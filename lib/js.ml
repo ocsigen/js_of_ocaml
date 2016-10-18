@@ -87,7 +87,7 @@ module Opt : OPT with type 'a t = 'a opt = struct
   type 'a t = 'a opt
   let empty = null
   let return = some
-  let map x f = if Unsafe.equals x null then null else some (f x)
+  let map x f = if Unsafe.equals x null then null else return (f x)
   let bind x f = if Unsafe.equals x null then null else f x
   let test x = not (Unsafe.equals x null)
   let iter x f = if not (Unsafe.equals x null) then f x
@@ -98,10 +98,10 @@ module Opt : OPT with type 'a t = 'a opt = struct
 end
 
 module Optdef : OPT with type 'a t = 'a optdef = struct
-  type 'a t = 'a opt
+  type 'a t = 'a optdef
   let empty = undefined
   let return = def
-  let map x f = if x == undefined then undefined else some (f x)
+  let map x f = if x == undefined then undefined else return (f x)
   let bind x f = if x == undefined then undefined else f x
   let test x = x != undefined
   let iter x f = if x != undefined then f x
