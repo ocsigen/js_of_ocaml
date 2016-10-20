@@ -259,6 +259,10 @@ function caml_string_get (s, i) {
   return caml_string_unsafe_get (s, i);
 }
 
+//Provides: caml_string_get32
+//Requires: caml_string_get
+var caml_string_get32 = caml_string_get 
+
 //Provides: caml_bytes_get
 //Requires: caml_string_bound_error, caml_bytes_unsafe_get
 function caml_bytes_get (s, i) {
@@ -272,6 +276,11 @@ function caml_string_set (s, i, c) {
   if (i >>> 0 >= s.l) caml_string_bound_error();
   return caml_string_unsafe_set (s, i, c);
 }
+
+//Provides: caml_string_set32
+//Requires: caml_string_set
+var caml_string_set32 = caml_string_set
+
 //Provides: caml_bytes_set
 //Requires: caml_string_bound_error, caml_bytes_unsafe_set
 function caml_bytes_set (s, i, c) {
@@ -376,6 +385,7 @@ function caml_bytes_compare(s1, s2) {
 //Provides: caml_string_equal mutable (const, const)
 //Requires: caml_convert_string_to_bytes
 function caml_string_equal(s1, s2) {
+  if(s1 === s2) return 1;
   (s1.t & 6) && caml_convert_string_to_bytes(s1);
   (s2.t & 6) && caml_convert_string_to_bytes(s2);
   return (s1.c == s2.c)?1:0;
@@ -384,6 +394,7 @@ function caml_string_equal(s1, s2) {
 //Provides: caml_bytes_equal mutable (const, const)
 //Requires: caml_convert_string_to_bytes
 function caml_bytes_equal(s1, s2) {
+  if(s1 === s2) return 1;
   (s1.t & 6) && caml_convert_string_to_bytes(s1);
   (s2.t & 6) && caml_convert_string_to_bytes(s2);
   return (s1.c == s2.c)?1:0;
