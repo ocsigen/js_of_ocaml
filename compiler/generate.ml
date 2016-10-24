@@ -1115,7 +1115,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         let i,queue =
           let ((_px, cx), queue) = access_queue' ~ctx queue size in
           match cx with
-          | ENum i -> Int32.of_float i, queue
+          | J.ENum i -> Int32.of_float i, queue
           | _ -> assert false
         in
         let args = Array.to_list (
