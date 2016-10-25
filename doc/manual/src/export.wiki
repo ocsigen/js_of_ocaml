@@ -22,7 +22,7 @@ myMathLib.add(3,4)
 {{{Js.export}}} and {{{Js.export_all}}} will export value to {{{module.exports}}} if it exists.
 
 {{{
-# echo math.ml
+# cat math.ml
 let _ =
   Js.export_all
     (object%js
