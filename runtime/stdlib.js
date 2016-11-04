@@ -1008,6 +1008,8 @@ function caml_get_public_method (obj, tag, cacheid) {
 
 //Provides: caml_final_register const
 function caml_final_register () { return 0; }
+//Provides: caml_final_register_called_without_value const
+function caml_final_register_called_without_value () { return 0; }
 //Provides: caml_final_release const
 function caml_final_release () { return 0; }
 //Provides: caml_backtrace_status const
@@ -1020,6 +1022,15 @@ function caml_get_exception_raw_backtrace () { return [0]; }
 function caml_record_backtrace () { return 0; }
 //Provides: caml_convert_raw_backtrace const
 function caml_convert_raw_backtrace () { return 0; }
+//Provides: caml_raw_backtrace_length
+function caml_raw_backtrace_length() { return 0; }
+//Provides: caml_raw_backtrace_next_slot
+function caml_raw_backtrace_next_slot() { return 0 }
+//Provides: caml_raw_backtrace_slot
+//Requires: caml_invalid_argument
+function caml_raw_backtrace_slot () {
+  caml_invalid_argument("Printexc.get_raw_backtrace_slot: index out of bounds");
+}
 //Provides: caml_get_current_callstack const
 function caml_get_current_callstack () { return [0]; }
 //Provides: caml_sys_getenv (const)
@@ -1154,4 +1165,20 @@ function caml_ml_runtime_warnings_enabled (_unit) {
 //Provides: caml_sys_isatty
 function caml_sys_isatty(_chan) {
   return 0;
+}
+
+//Provides: caml_spacetime_enabled const (const)
+function caml_spacetime_enabled(_unit) {
+  return 0;
+}
+
+//Provides: caml_register_channel_for_spacetime const (const)
+function caml_register_channel_for_spacetime(_channel) {
+  return 0;
+}
+
+//Provides: caml_spacetime_only_works_for_native_code
+//Requires: caml_failwith
+function caml_spacetime_only_works_for_native_code() {
+  caml_failwith("Spacetime profiling only works for native code");
 }
