@@ -186,7 +186,7 @@ let cast_string (x:dom_or_string Js.t) : Js.js_string Js.t Js.opt =
   then Js.some (Js.Unsafe.coerce x)
   else Js.null
 
-let node_constr : Dom.node Js.t Js.constr = Js.Unsafe.global##_Node
+let node_constr : Dom.node Js.t Js.constr = Js.Unsafe.global##._Node
 
 let cast_node (x:dom_or_string Js.t) : Dom.node Js.t Js.opt =
   if Js.instanceof x node_constr
