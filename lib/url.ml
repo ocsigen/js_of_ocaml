@@ -21,12 +21,12 @@
 (* Url tampering. *)
 
 let split c s =
-  Js.str_array (s##split (Js.string (String.make 1 c)))
+  Js.str_array (s##(split (Js.string (String.make 1 c))))
 
 let split_2 c s =
-  let index = s##indexOf(Js.string (String.make 1 c)) in
+  let index = s##(indexOf (Js.string (String.make 1 c))) in
   if index < 0 then Js.undefined
-  else Js.def (s##slice(0,index),s##slice_end(index + 1) )
+  else Js.def (s##(slice (0) index),s##(slice_end (index + 1)) )
 
 exception Local_exn
 let interrupt () = raise Local_exn
@@ -39,10 +39,10 @@ let escape_plus s = Regexp.global_replace plus_re s "%2B"
 let unescape_plus s = Regexp.global_replace plus_re s " "
 
 let plus_re_js_string =
-  jsnew Js.regExp_withFlags (Js.string "\\+", Js.string "g")
+  new%js Js.regExp_withFlags (Js.string "\\+") (Js.string "g")
 let unescape_plus_js_string s =
-  plus_re_js_string##lastIndex <- 0;
-  s##replace(plus_re_js_string, Js.string " ")
+  plus_re_js_string##.lastIndex := 0;
+  s##(replace plus_re_js_string (Js.string " "))
 
 
 let urldecode_js_string_string s =
@@ -87,7 +87,7 @@ type url =
 
 exception Not_an_http_protocol
 let is_secure prot_string =
-  match Js.to_bytestring (prot_string##toLowerCase ()) with
+  match Js.to_bytestring (prot_string##toLowerCase) with
   | "https:" | "https" -> true
   | "http:"  | "http"  -> false
   | "file:"  | "file"
@@ -126,7 +126,7 @@ let encode_arguments l =
 
 let decode_arguments_js_string s =
   let arr = split '&' s in
-  let len = arr##length in
+  let len = arr##.length in
   let name_value_split s = split_2 '=' s in
   let rec aux acc idx =
     if idx < 0
@@ -151,25 +151,25 @@ let decode_arguments s =
   decode_arguments_js_string (Js.bytestring s)
 
 let url_re =
-  jsnew Js.regExp (Js.bytestring "^([Hh][Tt][Tt][Pp][Ss]?)://\
+  new%js Js.regExp (Js.bytestring "^([Hh][Tt][Tt][Pp][Ss]?)://\
                                    ([0-9a-zA-Z.-]+\
                                     |\\[[0-9a-zA-Z.-]+\\]\
                                     |\\[[0-9A-Fa-f:.]+\\])?\
                                    (:([0-9]+))?\
                                    (/([^\\?#]*)\
                                    (\\?([^#]*))?\
-                                   (#(.*))?)?$"
-                  )
+                                   (#(.*))?)?$")
+                  
 let file_re =
-  jsnew Js.regExp (Js.bytestring "^([Ff][Ii][Ll][Ee])://\
+  new%js Js.regExp (Js.bytestring "^([Ff][Ii][Ll][Ee])://\
                                    ([^\\?#]*)\
                                    (\\?([^#]*))?\
-                                   (#(.*))?$"
-                  )
+                                   (#(.*))?$")
+                  
 
 let url_of_js_string s =
-  Js.Opt.case (url_re##exec (s))
-    (fun () -> Js.Opt.case (file_re##exec (s))
+  Js.Opt.case (url_re##(exec s))
+    (fun () -> Js.Opt.case (file_re##(exec s))
        (fun () -> None)
        (fun handle ->
           let res = Js.match_result handle in
@@ -307,11 +307,11 @@ module Current =
 struct
 
   let l =
-    if Js.Optdef.test (Js.Optdef.return (Dom_html.window##location))
-    then Dom_html.window##location
+    if Js.Optdef.test (Js.Optdef.return (Dom_html.window##.location))
+    then Dom_html.window##.location
     else
       let empty = Js.string "" in
-      jsobject
+      object%js
         val mutable href = empty
         val mutable protocol = empty
         val mutable host = empty
@@ -327,23 +327,23 @@ struct
         method assign _ = ()
       end
 
-  let host = urldecode_js_string_string l##hostname
+  let host = urldecode_js_string_string l##.hostname
 
-  let protocol = urldecode_js_string_string l##protocol
+  let protocol = urldecode_js_string_string l##.protocol
 
   let port = (fun () ->
-    try Some (int_of_string (Js.to_bytestring l##port))
+    try Some (int_of_string (Js.to_bytestring l##.port))
     with Failure _ -> None) ()
 
-  let path_string = urldecode_js_string_string l##pathname
+  let path_string = urldecode_js_string_string l##.pathname
 
   let path = path_of_path_string path_string
 
   let arguments =
     decode_arguments_js_string
-      (if l##search##charAt(0) == Js.string "?"
-       then l##search##slice_end(1)
-       else l##search)
+      (if l##.search##(charAt (0)) == Js.string "?"
+       then l##.search##(slice_end (1))
+       else l##.search)
 
   let get_fragment () =
     (* location.hash doesn't have the same behavior depending on the browser
@@ -353,19 +353,19 @@ struct
     (* then String.sub s 1 (String.length s - 1) *)
     (* else s; *)
     Js.Opt.case (
-      l##href##_match (
-        jsnew Js.regExp (Js.string "#(.*)")))
+      l##.href##(_match 
+        (new%js Js.regExp (Js.string "#(.*)"))))
       (fun () -> "")
       (fun res ->
          let res = Js.match_result res in
          Js.to_string (Js.Unsafe.get res 1)
       )
-  let set_fragment s = l##hash <- Js.bytestring (urlencode s)
+  let set_fragment s = l##.hash := Js.bytestring (urlencode s)
 
-  let get () = url_of_js_string l##href
+  let get () = url_of_js_string l##.href
 
-  let set u = l##href <- (Js.bytestring (string_of_url u))
+  let set u = l##.href := (Js.bytestring (string_of_url u))
 
-  let as_string = urldecode_js_string_string l##href
+  let as_string = urldecode_js_string_string l##.href
 
 end

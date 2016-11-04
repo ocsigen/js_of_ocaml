@@ -51,10 +51,10 @@ end
 
 let withCredentials b : options t =
   let init = Js.Unsafe.obj [||] in
-  init##withCredentials <- Js.bool b;
+  init##.withCredentials := Js.bool b;
   init
 
-let eventSource         = Js.Unsafe.global##_EventSource
-let eventSource_options = Js.Unsafe.global##_EventSource
+let eventSource         = Js.Unsafe.global##._EventSource
+let eventSource_options = Js.Unsafe.global##._EventSource
 
 let addEventListener = Dom.addEventListener

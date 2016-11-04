@@ -789,11 +789,11 @@ end
 
 let getContext (c : Dom_html.canvasElement t) =
   let c : canvasElement t = Js.Unsafe.coerce c in
-  let ctx = c##getContext (Js.string "webgl") in
-  if Opt.test ctx then ctx else c##getContext (Js.string "experimental-webgl")
+  let ctx = c##(getContext (Js.string "webgl")) in
+  if Opt.test ctx then ctx else c##(getContext (Js.string "experimental-webgl"))
 
 let getContextWithAttributes (c : Dom_html.canvasElement t) attribs =
   let c : canvasElement t = Js.Unsafe.coerce c in
-  let ctx = c##getContext_ (Js.string "webgl", attribs) in
+  let ctx = c##(getContext_ (Js.string "webgl") attribs) in
   if Opt.test ctx then ctx else
-  c##getContext_ (Js.string "experimental-webgl", attribs)
+  c##(getContext_ (Js.string "experimental-webgl") attribs)

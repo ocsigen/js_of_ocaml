@@ -33,27 +33,27 @@ let raw_call name uri error_cb user_cb =
   let script = Dom_html.(createScript document) in
   let finalize () =
     Js.Unsafe.delete (Dom_html.window) (Js.string name);
-    Js.Opt.iter (script##parentNode) (fun parent -> Dom.removeChild parent script) in
+    Js.Opt.iter (script##.parentNode) (fun parent -> Dom.removeChild parent script) in
   let executed = ref false in
   Js.Unsafe.set
     (Dom_html.window)
     (Js.string name)
     (fun x -> executed:=true; finalize (); user_cb x);
-  script##src <- Js.string uri;
-  script##_type <- Js.string ("text/javascript");
-  script##async <- Js._true;
-  (Js.Unsafe.coerce script)##onerror <- (fun x -> finalize (); error_cb x);
-  (Js.Unsafe.coerce script)##onload <- (fun x ->
+  script##.src := Js.string uri;
+  script##._type := Js.string ("text/javascript");
+  script##.async := Js._true;
+  (Js.Unsafe.coerce script)##.onerror := (fun x -> finalize (); error_cb x);
+  (Js.Unsafe.coerce script)##.onload := (fun x ->
       Lwt.async (fun () ->
           Lwt.bind (Lwt_js.sleep 1.) (fun () ->
               if !executed
               then Lwt.return_unit
               else (
-                Firebug.console##warn(Js.string "Jsonp: script loaded but callback not executed");
+                Firebug.console##(warn (Js.string "Jsonp: script loaded but callback not executed"));
                 finalize (); error_cb x; Lwt.return_unit))
         )
     );
-  let init () = ignore (Dom.appendChild (Dom_html.document##body) script) in
+  let init () = ignore (Dom.appendChild (Dom_html.document##.body) script) in
   init, finalize
 
 let call_ prefix make_uri error_cb user_cb =

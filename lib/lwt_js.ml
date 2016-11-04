@@ -27,14 +27,14 @@ let sleep d =
 let yield () = sleep 0.
 
 let wakeup = function
-  | 1 -> ignore (Dom_html.window##setTimeout
-		  (Js.wrap_callback Lwt.wakeup_paused , 0.))
+  | 1 -> ignore (Dom_html.window##(setTimeout
+		  (Js.wrap_callback Lwt.wakeup_paused)  (0.)))
   | _ -> ()
 
 let () = Lwt.register_pause_notifier wakeup
 
 
-let prerr_string s = Firebug.console##log(Js.string s)
+let prerr_string s = Firebug.console##(log (Js.string s))
 
 let _ =
   Lwt.async_exception_hook := (fun exn ->

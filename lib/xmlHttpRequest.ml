@@ -78,12 +78,12 @@ module Event = struct
 end
 
 let create () : xmlHttpRequest Js.t =
-  let xmlHttpRequest = Js.Unsafe.global##_XMLHttpRequest in
-  let activeXObject = Js.Unsafe.global##activeXObject in
-  try jsnew xmlHttpRequest() with _ ->
-  try jsnew activeXObject(Js.string "Msxml2.XMLHTTP") with _ ->
-  try jsnew activeXObject(Js.string "Msxml3.XMLHTTP") with _ ->
-  try jsnew activeXObject(Js.string "Microsoft.XMLHTTP") with _ ->
+  let xmlHttpRequest = Js.Unsafe.global##._XMLHttpRequest in
+  let activeXObject = Js.Unsafe.global##.activeXObject in
+  try new%js xmlHttpRequest with _ ->
+  try new%js activeXObject (Js.string "Msxml2.XMLHTTP") with _ ->
+  try new%js activeXObject (Js.string "Msxml3.XMLHTTP") with _ ->
+  try new%js activeXObject (Js.string "Microsoft.XMLHTTP") with _ ->
   assert false
 
 let encode_url l =
@@ -91,7 +91,7 @@ let encode_url l =
     (List.map
        (function
 	 | name,`String s -> ((Url.urlencode name) ^ "=" ^ (Url.urlencode (to_string s)))
-	 | name,`File s -> ((Url.urlencode name) ^ "=" ^ (Url.urlencode (to_string (s##name))))
+	 | name,`File s -> ((Url.urlencode name) ^ "=" ^ (Url.urlencode (to_string (s##.name))))
 ) l)
 
 (* Higher level interface: *)
@@ -113,13 +113,13 @@ exception Wrong_headers of (int * (string -> string option))
 let default_response url code headers req =
   { url = url;
     code = code;
-    content = Js.to_string req##responseText;
+    content = Js.to_string req##.responseText;
     content_xml =
       (fun () ->
-	match Js.Opt.to_option (req##responseXML) with
+	match Js.Opt.to_option (req##.responseXML) with
 	  | None -> None
 	  | Some doc ->
-	    if (Js.some doc##documentElement) == Js.null
+	    if (Js.some doc##.documentElement) == Js.null
 	    then None
 	    else Some doc);
     headers = headers
@@ -128,7 +128,7 @@ let default_response url code headers req =
 let text_response url code headers req =
   { url = url;
     code = code;
-    content = req##responseText;
+    content = req##.responseText;
     content_xml = (fun () -> assert false);
     headers = headers
   }
@@ -136,7 +136,7 @@ let text_response url code headers req =
 let document_response url code headers req =
   { url = url;
     code = code;
-    content = File.CoerceTo.document (req##response);
+    content = File.CoerceTo.document (req##.response);
     content_xml = (fun () -> assert false);
     headers = headers
   }
@@ -144,7 +144,7 @@ let document_response url code headers req =
 let json_response url code headers req =
   { url = url;
     code = code;
-    content = File.CoerceTo.json (req##response);
+    content = File.CoerceTo.json (req##.response);
     content_xml = (fun () -> assert false);
     headers = headers
   }
@@ -152,7 +152,7 @@ let json_response url code headers req =
 let blob_response url code headers req =
   { url = url;
     code = code;
-    content = File.CoerceTo.blob (req##response);
+    content = File.CoerceTo.blob (req##.response);
     content_xml = (fun () -> assert false);
     headers = headers
   }
@@ -160,7 +160,7 @@ let blob_response url code headers req =
 let arraybuffer_response url code headers req =
   { url = url;
     code = code;
-    content = File.CoerceTo.arrayBuffer (req##response);
+    content = File.CoerceTo.arrayBuffer (req##.response);
     content_xml = (fun () -> assert false);
     headers = headers
   }
@@ -248,36 +248,36 @@ let perform_raw
   let ((res : resptype generic_http_frame Lwt.t), w) = Lwt.task () in
   let req = create () in
 
-  req##_open (Js.string method_, Js.string url, Js._true);
+  req##(_open (Js.string method_) (Js.string url) (Js._true));
 
   begin match override_mime_type with
     None           -> ()
-  | Some mime_type -> req ## overrideMimeType (Js.string mime_type)
+  | Some mime_type -> req ## (overrideMimeType (Js.string mime_type))
   end;
 
   begin match response_type with
-  | ArrayBuffer -> req ## responseType <- (Js.string "arraybuffer")
-  | Blob        -> req ## responseType <- (Js.string "blob")
-  | Document    -> req ## responseType <- (Js.string "document")
-  | JSON        -> req ## responseType <- (Js.string "json")
-  | Text        -> req ## responseType <- (Js.string "text")
-  | Default     -> req ## responseType <- (Js.string "")
+  | ArrayBuffer -> req ##. responseType := (Js.string "arraybuffer")
+  | Blob        -> req ##. responseType := (Js.string "blob")
+  | Document    -> req ##. responseType := (Js.string "document")
+  | JSON        -> req ##. responseType := (Js.string "json")
+  | Text        -> req ##. responseType := (Js.string "text")
+  | Default     -> req ##. responseType := (Js.string "")
   end;
 
   begin match with_credentials with
-    Some c -> req ## withCredentials <- Js.bool c
+    Some c -> req ##. withCredentials := Js.bool c
   | None   -> ()
   end;
 
   (match content_type with
     | Some content_type ->
-      req##setRequestHeader (Js.string "Content-type", Js.string content_type)
+      req##(setRequestHeader (Js.string "Content-type") (Js.string content_type))
     | _ -> ());
-  List.iter (fun (n, v) -> req##setRequestHeader (Js.string n, Js.string v))
+  List.iter (fun (n, v) -> req##(setRequestHeader (Js.string n) (Js.string v)))
     headers;
   let headers s =
     Opt.case
-      (req##getResponseHeader (Js.bytestring s))
+      (req##(getResponseHeader (Js.bytestring s)))
       (fun () -> None)
       (fun v -> Some (Js.to_string v))
   in
@@ -285,19 +285,19 @@ let perform_raw
     let st = ref `Not_yet in
     fun () ->
       if !st = `Not_yet then begin
-        if check_headers (req##status) headers then
+        if check_headers (req##.status) headers then
           st := `Passed
         else begin
-          Lwt.wakeup_exn w (Wrong_headers ((req##status),headers));
+          Lwt.wakeup_exn w (Wrong_headers ((req##.status),headers));
           st := `Failed;
-          req##abort ()
+          req##abort
         end
       end;
       !st <> `Failed
   in
-  req##onreadystatechange <- Js.wrap_callback
+  req##.onreadystatechange := Js.wrap_callback
     (fun _ ->
-       (match req##readyState with
+       (match req##.readyState with
           (* IE doesn't have the same semantics for HEADERS_RECEIVED.
              so we wait til LOADING to check headers. See:
              http://msdn.microsoft.com/en-us/library/ms534361(v=vs.85).aspx *)
@@ -311,17 +311,17 @@ let perform_raw
               let response : resptype generic_http_frame =
                 match response_type with
                   ArrayBuffer ->
-                    arraybuffer_response url (req##status) headers req
+                    arraybuffer_response url (req##.status) headers req
                 | Blob ->
-                    blob_response url (req##status) headers req
+                    blob_response url (req##.status) headers req
                 | Document ->
-                    document_response url (req##status) headers req
+                    document_response url (req##.status) headers req
                 | JSON ->
-                    json_response url (req##status) headers req
+                    json_response url (req##.status) headers req
                 | Text ->
-                    text_response url (req##status) headers req
+                    text_response url (req##.status) headers req
                 | Default ->
-                    default_response url (req##status) headers req in
+                    default_response url (req##.status) headers req in
               Lwt.wakeup w response
             end
         | _ ->
@@ -329,29 +329,29 @@ let perform_raw
 
   begin match progress with
   | Some progress ->
-    req##onprogress <- Dom.handler
+    req##.onprogress := Dom.handler
       (fun e ->
-        progress e##loaded e##total;
+        progress e##.loaded e##.total;
         Js._true)
   | None -> ()
   end;
-  Optdef.iter (req##upload) (fun upload ->
+  Optdef.iter (req##.upload) (fun upload ->
     match upload_progress with
     | Some upload_progress ->
-      upload##onprogress <- Dom.handler
+      upload##.onprogress := Dom.handler
         (fun e ->
-          upload_progress e##loaded e##total;
+          upload_progress e##.loaded e##.total;
           Js._true)
     | None -> ()
   );
 
   (match form_arg with
-     | None -> req##send (Js.null)
+     | None -> req##(send (Js.null))
      | Some (`Fields l) ->
-         ignore (req##send(Js.some (string (encode_url !l)));return ())
-     | Some (`FormData f) -> req##send_formData(f));
+         ignore (req##(send (Js.some (string (encode_url !l))));return ())
+     | Some (`FormData f) -> req##(send_formData f));
 
-  Lwt.on_cancel res (fun () -> req##abort ()) ;
+  Lwt.on_cancel res (fun () -> req##abort) ;
   res
 
 let perform_raw_url

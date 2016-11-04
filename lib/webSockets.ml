@@ -69,7 +69,7 @@ class type webSocket = object ('self)
   method send_blob : File.blob Js.t -> unit Js.meth
 end
 
-let webSocket = Js.Unsafe.global##_WebSocket
+let webSocket = Js.Unsafe.global##._WebSocket
 
 let webSocket_withProtocol = webSocket
 

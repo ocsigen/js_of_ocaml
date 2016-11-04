@@ -29,12 +29,12 @@ external set_channel_input' : in_channel -> (unit -> string) Js.callback -> unit
 
 let register_autoload_aux ~path f register =
   let f' path pos =
-    let prefix = path##slice(0,pos)##join(Js.string"/") in
-    let suffix = path##slice_end(pos)##join(Js.string"/") in
+    let prefix = path##(slice (0) pos)##(join (Js.string"/")) in
+    let suffix = path##(slice_end pos)##(join (Js.string"/")) in
     match f (prefix, suffix) with
     | None -> Js._false
     | Some c ->
-      let filename = prefix##concat(Js.string "/")##concat(suffix) in
+      let filename = prefix##(concat (Js.string "/"))##(concat suffix) in
       register ~name:filename ~content:c;
       Js._true in
   caml_fs_register_autoload path (Js.wrap_callback f')
