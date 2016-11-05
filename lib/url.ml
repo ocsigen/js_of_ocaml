@@ -21,12 +21,12 @@
 (* Url tampering. *)
 
 let split c s =
-  Js.str_array (s##(split (Js.string (String.make 1 c))))
+  Js.str_array (s##split (Js.string (String.make 1 c)))
 
 let split_2 c s =
-  let index = s##(indexOf (Js.string (String.make 1 c))) in
+  let index = s##indexOf (Js.string (String.make 1 c)) in
   if index < 0 then Js.undefined
-  else Js.def (s##(slice (0) index),s##(slice_end (index + 1)) )
+  else Js.def (s##slice 0 index,s##slice_end (index + 1) )
 
 exception Local_exn
 let interrupt () = raise Local_exn
@@ -42,7 +42,7 @@ let plus_re_js_string =
   new%js Js.regExp_withFlags (Js.string "\\+") (Js.string "g")
 let unescape_plus_js_string s =
   plus_re_js_string##.lastIndex := 0;
-  s##(replace plus_re_js_string (Js.string " "))
+  s##replace plus_re_js_string (Js.string " ")
 
 
 let urldecode_js_string_string s =
@@ -159,17 +159,17 @@ let url_re =
                                    (/([^\\?#]*)\
                                    (\\?([^#]*))?\
                                    (#(.*))?)?$")
-                  
+
 let file_re =
   new%js Js.regExp (Js.bytestring "^([Ff][Ii][Ll][Ee])://\
                                    ([^\\?#]*)\
                                    (\\?([^#]*))?\
                                    (#(.*))?$")
-                  
+
 
 let url_of_js_string s =
-  Js.Opt.case (url_re##(exec s))
-    (fun () -> Js.Opt.case (file_re##(exec s))
+  Js.Opt.case (url_re##exec s)
+    (fun () -> Js.Opt.case (file_re##exec s)
        (fun () -> None)
        (fun handle ->
           let res = Js.match_result handle in
@@ -341,8 +341,8 @@ struct
 
   let arguments =
     decode_arguments_js_string
-      (if l##.search##(charAt (0)) == Js.string "?"
-       then l##.search##(slice_end (1))
+      (if l##.search##charAt (0) == Js.string "?"
+       then l##.search##slice_end (1)
        else l##.search)
 
   let get_fragment () =

@@ -68,8 +68,8 @@ let get_select_val (elt:selectElement t) =
     let name = to_string (elt##.name) in
     if to_bool (elt##.multiple)
     then
-      let options = Array.init ( elt##.options##.length )
-	(fun i -> Opt.to_option elt##.options##(item i)) in
+      let options = Array.init elt##.options##.length
+	(fun i -> Opt.to_option (elt##.options##item i)) in
       filter_map (function
 	| None -> None
 	| Some e ->
@@ -115,7 +115,7 @@ let get_input_val ?(get=false) (elt:inputElement t) =
 		match Optdef.to_option (elt##.multiple) with
 		  | None
 		  | Some false ->
-		    (match Opt.to_option (list##(item (0))) with
+		    (match Opt.to_option (list##item 0) with
 		      | None -> []
 		      | Some file -> [name,`File file])
 		  | Some true ->
@@ -124,7 +124,7 @@ let get_input_val ?(get=false) (elt:inputElement t) =
 			| None -> None
 			| Some file -> Some (name,`File file))
 		      (Array.to_list (Array.init (list##.length)
-					(fun i -> list##(item i)))))
+					(fun i -> list##item i))))
       | _ -> [name,`String value]
   else []
 
@@ -132,7 +132,7 @@ let form_elements ?get (form:formElement t) =
   let length = form##.elements##.length in
   let elements = Array.to_list
     (Array.init length
-       (fun i -> Opt.to_option (form##.elements##(item i)))) in
+       (fun i -> Opt.to_option (form##.elements##item i))) in
   let contents =
     List.flatten
       (List.map
@@ -153,8 +153,8 @@ let append (form_contents:form_contents) (form_elt:string * form_elt) =
     | `Fields list -> list := form_elt::!list
     | `FormData f ->
       match form_elt with
-	| name, `String s -> f##(append (string name) s)
-	| name, `File file -> f##(append_blob (string name) ((file :> File.blob t)))
+	| name, `String s -> f##append (string name) s
+	| name, `File file -> f##append_blob (string name) ((file :> File.blob t))
 
 let empty_form_contents () =
   match Optdef.to_option (Js.def formData) with

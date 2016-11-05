@@ -51,7 +51,7 @@ let catch_cancel f x =
 let with_error_log f x =
   Lwt.catch
     (fun () -> f x)
-    (fun e -> (Firebug.console##(log (Js.string (Printexc.to_string e)));
+    (fun e -> (Firebug.console##log (Js.string (Printexc.to_string e));
                Lwt.return ()))
 
 let seq_loop evh ?(cancel_handler = false) ?use_capture target handler =
@@ -224,7 +224,7 @@ let mousewheel ?(use_capture=false) target =
     (Dom_html.addMousewheelEventListener
        target
        (fun (ev : #Dom_html.event Js.t) ~dx ~dy ->
-         Firebug.console##(log ev);
+         Firebug.console##log ev;
          cancel ();
          Lwt.wakeup w (ev, (dx, dy));
          Js.bool true) (* true because we do not want to prevent default ->

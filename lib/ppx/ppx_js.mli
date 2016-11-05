@@ -4,7 +4,7 @@
     {{:https://github.com/janestreet/camlp4-to-ppx}camlp4-to-ppx},
     which provides built-in support for Js_of_ocaml syntax.
 *)
-
+val wrapper : string option ref
 val js_mapper : string list -> Ast_mapper.mapper
 (**
    A syntax extension is available for manipulating object properties,

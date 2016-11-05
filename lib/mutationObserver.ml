@@ -72,5 +72,5 @@ let observe ~(node:#Dom.node Js.t)
   let () = opt_iter attribute_old_value (fun v -> cfg##.attributeOldValue := v) in
   let () = opt_iter character_data_old_value (fun v -> cfg##.characterDataOldValue := v) in
   let () = opt_iter attribute_filter (fun l -> cfg##.attributeFilter := Js.array (Array.of_list l)) in
-  let () = obs##(observe node cfg) in
+  let () = obs##observe node cfg in
   obs

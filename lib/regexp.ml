@@ -36,12 +36,12 @@ let blunt_str_array_get a i =
 
 let string_match r s i =
   r##.lastIndex := i;
-  Js.Opt.to_option (Js.Opt.map (r##(exec (Js.bytestring s))) Js.match_result)
+  Js.Opt.to_option (Js.Opt.map (r##exec (Js.bytestring s)) Js.match_result)
 
 let search r s i =
   r##.lastIndex := i;
   Js.Opt.to_option
-    (Js.Opt.map (r##(exec (Js.bytestring s)))
+    (Js.Opt.map (r##exec (Js.bytestring s))
        (fun res_pre -> let res = Js.match_result res_pre in (res##.index, res)))
 
 let search_forward = search
@@ -53,7 +53,7 @@ let matched_group r i =
 
 let quote_repl_re = new%js Js.regExp_withFlags (Js.string "[$]") (Js.string "g")
 let quote_repl s =
-  (Js.bytestring s)##(replace quote_repl_re (Js.string "$$$$"))
+  (Js.bytestring s)##replace quote_repl_re (Js.string "$$$$")
 
 let global_replace r s s_by =
   r##.lastIndex := 0;

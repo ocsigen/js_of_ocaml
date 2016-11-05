@@ -248,11 +248,11 @@ let perform_raw
   let ((res : resptype generic_http_frame Lwt.t), w) = Lwt.task () in
   let req = create () in
 
-  req##(_open (Js.string method_) (Js.string url) (Js._true));
+  req##_open (Js.string method_) (Js.string url) (Js._true);
 
   begin match override_mime_type with
     None           -> ()
-  | Some mime_type -> req ## (overrideMimeType (Js.string mime_type))
+  | Some mime_type -> req ## overrideMimeType (Js.string mime_type)
   end;
 
   begin match response_type with
@@ -271,13 +271,13 @@ let perform_raw
 
   (match content_type with
     | Some content_type ->
-      req##(setRequestHeader (Js.string "Content-type") (Js.string content_type))
+      req##setRequestHeader (Js.string "Content-type") (Js.string content_type)
     | _ -> ());
-  List.iter (fun (n, v) -> req##(setRequestHeader (Js.string n) (Js.string v)))
+  List.iter (fun (n, v) -> req##setRequestHeader (Js.string n) (Js.string v))
     headers;
   let headers s =
     Opt.case
-      (req##(getResponseHeader (Js.bytestring s)))
+      (req##getResponseHeader (Js.bytestring s))
       (fun () -> None)
       (fun v -> Some (Js.to_string v))
   in
@@ -346,10 +346,10 @@ let perform_raw
   );
 
   (match form_arg with
-     | None -> req##(send (Js.null))
+     | None -> req##send (Js.null)
      | Some (`Fields l) ->
-         ignore (req##(send (Js.some (string (encode_url !l))));return ())
-     | Some (`FormData f) -> req##(send_formData f));
+         ignore (req##send (Js.some (string (encode_url !l)));return ())
+     | Some (`FormData f) -> req##send_formData f);
 
   Lwt.on_cancel res (fun () -> req##abort) ;
   res

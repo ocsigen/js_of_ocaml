@@ -61,4 +61,4 @@ let set_onmessage handler =
 let post_message msg =
   if Unsafe.global##.postMessage == undefined then
     invalid_arg "Worker.onmessage is undefined";
-  Unsafe.global##(postMessage msg)
+  Unsafe.global##postMessage msg

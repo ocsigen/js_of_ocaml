@@ -1141,9 +1141,9 @@ let location_origin (loc : location t) =
        if protocol##.length = 0 && hostname##.length = 0
        then Js.string ""
        else
-         let origin = protocol##(concat_2 (Js.string "//") hostname) in
+         let origin = protocol##concat_2 (Js.string "//") hostname in
          if port##.length > 0
-         then origin##(concat_2 (Js.string ":") loc##.port)
+         then origin##concat_2 (Js.string ":") loc##.port
          else origin
     )
     (fun o -> o)
@@ -1281,7 +1281,7 @@ let window : window t = Js.Unsafe.global (* The toplevel object *)
 
 let document = window##.document
 let getElementById id =
-  Js.Opt.case (document##(getElementById (Js.string id)))
+  Js.Opt.case (document##getElementById (Js.string id))
     (fun () -> raise Not_found)
     (fun pnode -> pnode)
 
@@ -1327,7 +1327,7 @@ end
 
 let opt_iter x f = match x with None -> () | Some v -> f v
 
-let createElement (doc : document t) name = doc##(createElement (Js.string name))
+let createElement (doc : document t) name = doc##createElement (Js.string name)
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 
 let createElementSyntax = ref `Unknown
@@ -1344,22 +1344,22 @@ let rec unsafeCreateElementEx ?_type ?name doc elt =
         res
     | `Extended ->
         let a = new%js Js.array_empty in
-        ignore (a##(push_2 (Js.string "<") (Js.string elt)));
+        ignore (a##push_2 (Js.string "<") (Js.string elt));
         opt_iter _type (fun t ->
           ignore
-            (a##(push_3 (Js.string " type=\"") (html_escape t) (Js.string "\""))));
+            (a##push_3 (Js.string " type=\"") (html_escape t) (Js.string "\"")));
         opt_iter name (fun n ->
           ignore
-            (a##(push_3 (Js.string " name=\"") (html_escape n) (Js.string "\""))));
-        ignore (a##(push (Js.string ">")));
-        Js.Unsafe.coerce (doc##(createElement (a##(join (Js.string "")))))
+            (a##push_3 (Js.string " name=\"") (html_escape n) (Js.string "\"")));
+        ignore (a##push (Js.string ">"));
+        Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
     | `Unknown ->
         createElementSyntax :=
           if
             try
               let el : inputElement Js.t =
                 Js.Unsafe.coerce
-                  (document##(createElement (Js.string "<input name=\"x\">"))) in
+                  (document##createElement (Js.string "<input name=\"x\">")) in
               el##.tagName##toLowerCase == Js.string "input" &&
               el##.name == Js.string "x"
             with _ ->
@@ -1611,7 +1611,7 @@ let buttonPressed (ev : #mouseEvent Js.t) =
 
 let hasMousewheelEvents () =
   let d = createDiv document in
-  d##(setAttribute (Js.string "onmousewheel") (Js.string "return;"));
+  d##setAttribute (Js.string "onmousewheel") (Js.string "return;");
   Js.typeof (Js.Unsafe.get d (Js.string "onmousewheel")) ==
   Js.string "function"
 
@@ -1941,7 +1941,7 @@ module Keyboard_key = struct
     let key = Optdef.get evt##.key empty_string in
     match key##.length with
     | 0 -> Optdef.case evt##.charCode none char_of_int
-    | 1 -> char_of_int (int_of_float (key##(charCodeAt (0))))
+    | 1 -> char_of_int (int_of_float (key##charCodeAt 0))
     | _ -> None
 end
 
@@ -2207,7 +2207,7 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
            let dt = !last +. 1000. /. 60. -. t in
            let dt = if dt < 0. then 0. else dt in
            last := t;
-           ignore (window##(setTimeout callback dt)))
+           ignore (window##setTimeout callback dt))
 
 (****)
 
@@ -2236,7 +2236,7 @@ let setTimeout callback d : timeout_id_safe =
       if remain = 0.
       then callback
       else loop remain in
-    id := Some (window##(setTimeout (Js.wrap_callback cb) step))
+    id := Some (window##setTimeout (Js.wrap_callback cb) step)
   in
   loop d ();
   id
@@ -2246,7 +2246,7 @@ let clearTimeout (id : timeout_id_safe) =
   | None -> ()
   | Some x ->
      id:=None;
-     window##(clearTimeout x)
+     window##clearTimeout x
 
 let js_array_of_collection (c : #element collection Js.t) :
   #element Js.t Js.js_array Js.t =

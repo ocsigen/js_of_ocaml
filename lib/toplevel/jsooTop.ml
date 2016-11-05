@@ -60,7 +60,7 @@ let setup = lazy (
     flush stdout; flush stderr;
     let res = Buffer.contents b in
     let res = String.concat "" !stubs ^ res in
-    Js.Unsafe.global##(toplevelEval res)
+    Js.Unsafe.global##toplevelEval res
   in
   Js.Unsafe.global##.toplevelCompile := compile (*XXX HACK!*);
   Js.Unsafe.global##.toplevelEval := (fun x ->

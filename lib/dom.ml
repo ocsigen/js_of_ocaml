@@ -30,7 +30,7 @@ let list_of_nodeList (nodeList:'a nodeList t) =
   let rec add_item acc i =
     if i < length
     then
-      match Opt.to_option (nodeList##(item i)) with
+      match Opt.to_option (nodeList##item i) with
 	| None -> add_item acc (i+1)
 	| Some e -> add_item (e::acc) (i+1)
     else List.rev acc
@@ -91,16 +91,16 @@ class type node = object
 end
 
 let appendChild (p : #node t) (n : #node t) =
-  ignore (p##(appendChild ((n :> node t))))
+  ignore (p##appendChild (n :> node t))
 
 let removeChild (p : #node t) (n : #node t) =
-  ignore (p##(removeChild ((n :> node t))))
+  ignore (p##removeChild (n :> node t))
 
 let replaceChild (p : #node t) (n : #node t) (o : #node t) =
-  ignore (p##(replaceChild ((n :> node t)) ((o :> node t))))
+  ignore (p##replaceChild (n :> node t) (o :> node t))
 
 let insertBefore (p : #node t) (n : #node t) (o : #node t opt) =
-  ignore (p##(insertBefore ((n :> node t)) ((o :> node t opt))))
+  ignore (p##insertBefore (n :> node t) (o :> node t opt))
 
 (** Specification of [Attr] objects. *)
 class type attr = object
@@ -241,7 +241,7 @@ let handler f =
       else
 	let res = f e in
         if not (Js.to_bool res) then
-          ((Js.Unsafe.coerce e))##preventDefault;
+          (Js.Unsafe.coerce e)##preventDefault;
         res))
 let full_handler f =
   Js.some (Js.Unsafe.meth_callback
@@ -257,7 +257,7 @@ let full_handler f =
       else
         let res = f this e in
         if not (Js.to_bool res) then
-          ((Js.Unsafe.coerce e))##preventDefault;
+          (Js.Unsafe.coerce e)##preventDefault;
         res))
 let invoke_handler
   (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
@@ -287,20 +287,20 @@ type event_listener_id = unit -> unit
 
 let addEventListener (e : (< .. > as 'a) t) typ h capt =
   if (Js.Unsafe.coerce e)##.addEventListener == Js.undefined then begin
-    let ev = (Js.string "on")##(concat typ) in
+    let ev = (Js.string "on")##concat typ in
     let callback = fun e -> Js.Unsafe.call (h, e, [||]) in
-    let () = (Js.Unsafe.coerce e)##(attachEvent ev callback) in
-    fun () -> (Js.Unsafe.coerce e)##(detachEvent ev callback)
+    let () = (Js.Unsafe.coerce e)##attachEvent ev callback in
+    fun () -> (Js.Unsafe.coerce e)##detachEvent ev callback
   end else begin
-    let () = (Js.Unsafe.coerce e)##(addEventListener typ h capt) in
-    fun () -> (Js.Unsafe.coerce e)##(removeEventListener typ h capt)
+    let () = (Js.Unsafe.coerce e)##addEventListener typ h capt in
+    fun () -> (Js.Unsafe.coerce e)##removeEventListener typ h capt
   end
 
 let removeEventListener id = id ()
 
 let preventDefault ev =
   if Js.Optdef.test ((Js.Unsafe.coerce ev)##.preventDefault) (* IE hack *)
-  then ((Js.Unsafe.coerce ev))##preventDefault
+  then (Js.Unsafe.coerce ev)##preventDefault
   else (Js.Unsafe.coerce ev)##.returnValue := Js.bool false (* IE < 9 *)
 
 class type stringList = object

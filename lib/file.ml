@@ -148,10 +148,10 @@ let read_with_filereader (fileReader : fileReader t constr) kind file =
       Js._false);
   Lwt.on_cancel res (fun () -> reader##abort);
   (match kind with
-    | `BinaryString -> reader##(readAsBinaryString file)
-    | `Text -> reader##(readAsText file)
-    | `Text_withEncoding e -> reader##(readAsText_withEncoding file e)
-    | `DataURL -> reader##(readAsDataURL file));
+    | `BinaryString -> reader##readAsBinaryString file
+    | `Text -> reader##readAsText file
+    | `Text_withEncoding e -> reader##readAsText_withEncoding file e
+    | `DataURL -> reader##readAsDataURL file);
   res
 
 let reader kind file = read_with_filereader fileReader kind file

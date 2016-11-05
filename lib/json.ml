@@ -48,7 +48,7 @@ let input_reviver =
     else
       value in
   wrap_meth_callback reviver
-let unsafe_input s = json##(parse_ s input_reviver)
+let unsafe_input s = json##parse_ s input_reviver
 
 class type obj = object
   method constructor : 'a. 'a constr Js.readonly_prop
@@ -64,4 +64,4 @@ let output_reviver _key value =
     to_byte_jsstring (Unsafe.coerce value)
   else
     value
-let output obj = json##(stringify_ obj output_reviver)
+let output obj = json##stringify_ obj output_reviver

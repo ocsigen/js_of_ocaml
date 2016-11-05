@@ -240,7 +240,7 @@ class type ['a] js_array = object
 end
 
 let object_constructor = Unsafe.global##._Object
-let object_keys o : js_string t js_array t = object_constructor##(keys o)
+let object_keys o : js_string t js_array t = object_constructor##keys o
 
 let array_constructor = Unsafe.global##._Array
 let array_empty = array_constructor
@@ -252,7 +252,7 @@ let array_set : 'a #js_array t -> int -> 'a -> unit = Unsafe.set
 let array_map_poly :
   'a #js_array t  ->
   ('a -> int -> 'a #js_array t -> 'b) callback ->
-  'b #js_array t = fun a cb -> (Unsafe.coerce a)##(map cb)
+  'b #js_array t = fun a cb -> (Unsafe.coerce a)##map cb
 
 let array_map  f a = array_map_poly a (wrap_callback (fun x _idx _ -> f x))
 let array_mapi f a = array_map_poly a (wrap_callback (fun x idx _  -> f idx x))
@@ -473,9 +473,9 @@ let export_js (field : js_string t) x =
 let export field x = export_js (string field) x
 let export_all obj =
   let keys = object_keys obj in
-  keys##(forEach (wrap_callback (fun (key : js_string t) _ _ ->
+  keys##forEach (wrap_callback (fun (key : js_string t) _ _ ->
     export_js key (Unsafe.get obj key)
-  )))
+  ))
 
 (****)
 

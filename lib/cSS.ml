@@ -584,9 +584,9 @@ let js_t_of_js_string s =
   let hsla_re = new%js Js.regExp
     (Js.bytestring "^hsla\\(\\s*\\d*,\\s*\\d*%,\\s*\\d*%,\\d*\\.?\\d*\\)$")
   in
-  if Js.to_bool (rgb_re##(test s)) || Js.to_bool (rgba_re##(test s))
-    || Js.to_bool (rgb_pct_re##(test s)) || Js.to_bool (rgba_pct_re##(test s))
-    || Js.to_bool (hsl_re##(test s)) || Js.to_bool (hsla_re##(test s))
+  if Js.to_bool (rgb_re##test s) || Js.to_bool (rgba_re##test s)
+    || Js.to_bool (rgb_pct_re##test s) || Js.to_bool (rgba_pct_re##test s)
+    || Js.to_bool (hsl_re##test s) || Js.to_bool (hsla_re##test s)
   then
     s
   else
