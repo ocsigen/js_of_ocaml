@@ -326,7 +326,7 @@ let handle_touch_events element move stop cancel click =
   let fuzz = 4 in
   ignore (Html.addEventListener element Html.Event.touchstart
     (Html.handler (fun ev ->
-       Js.Optdef.iter (ev##.changedTouches##(item (0))) (fun touch ->
+       Js.Optdef.iter (ev##.changedTouches##item 0) (fun touch ->
        let id = touch##.identifier in
        let x0 = touch##.clientX and y0 = touch##.clientY in
 (*
@@ -338,7 +338,7 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
            (Html.handler
               (fun ev ->
                  for i = 0 to ev##.changedTouches##.length - 1 do
-                   Js.Optdef.iter (ev##.changedTouches##(item i)) (fun touch ->
+                   Js.Optdef.iter (ev##.changedTouches##item i) (fun touch ->
                    if touch##.identifier = id then begin
                      let x = touch##.clientX and y = touch##.clientY in
 (*
@@ -365,7 +365,7 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
             (Html.handler
                (fun ev ->
                   for i = 0 to ev##.changedTouches##.length - 1 do
-                    Js.Optdef.iter (ev##.changedTouches##(item i)) (fun touch ->
+                    Js.Optdef.iter (ev##.changedTouches##item i) (fun touch ->
                     if touch##.identifier = id then begin
                       let x = touch##.clientX and y = touch##.clientY in
 (*
@@ -388,7 +388,7 @@ debug_msg (Format.sprintf "Touch end %d %d %d %d" x0 y0 x y);
             (Html.handler
                (fun ev ->
                   for i = 0 to ev##.changedTouches##.length - 1 do
-                    Js.Optdef.iter (ev##.changedTouches##(item i)) (fun touch ->
+                    Js.Optdef.iter (ev##.changedTouches##item i) (fun touch ->
                     if touch##.identifier = id then begin
                       let x = touch##.clientX and y = touch##.clientY in
 (*
@@ -445,11 +445,11 @@ debug_msg (Format.sprintf "Touch end");
 let roundRectPath c x y w h r =
   let r = min r (min w h /. 2.) in
   c##beginPath;
-  c##(moveTo (x +. r) y);
-  c##(arcTo (x +. w) y (x +. w) (y +. r) r);
-  c##(arcTo (x +. w) (y +. h) (x +. w -. r) (y +. h) r);
-  c##(arcTo x (y +. h) x (y +. h -. r) r);
-  c##(arcTo x y (x +. r) y r)
+  c##moveTo (x +. r) y;
+  c##arcTo (x +. w) y (x +. w) (y +. r) r;
+  c##arcTo (x +. w) (y +. h) (x +. w -. r) (y +. h) r;
+  c##arcTo x (y +. h) x (y +. h -. r) r;
+  c##arcTo x y (x +. r) y r
 
 let text_size_div =
   let doc = Html.document in
@@ -465,7 +465,7 @@ let text_size font txt =
   let doc = Html.document in
   let d = Lazy.force text_size_div in
   d##.style##.font := font;
-  let txt = doc##(createTextNode (Js.string txt)) in
+  let txt = doc##createTextNode (Js.string txt) in
   Dom.appendChild d txt;
   let res = (d##.clientWidth, d##.clientHeight) in
   Dom.removeChild d txt;
@@ -476,24 +476,24 @@ let text_size font txt =
 let default_language () =
   (Js.Optdef.get (Dom_html.window##.navigator##.language) (fun () ->
    Js.Optdef.get (Dom_html.window##.navigator##.userLanguage) (fun () ->
-   Js.string "en")))##(substring (0) (2))
+   Js.string "en")))##substring 0 2
 
 let language =
   ref (Js.Optdef.case (Html.window##.localStorage)
          default_language
          (fun st ->
-            Js.Opt.get (st##(getItem (Js.string "hyp_lang"))) default_language))
+            Js.Opt.get (st##getItem (Js.string "hyp_lang")) default_language))
 
-let _ = Firebug.console##(log (!language))
+let _ = Firebug.console##log (!language)
 
 let set_language lang =
   Js.Optdef.iter (Html.window##.localStorage)
-    (fun st -> st##(setItem (Js.string "hyp_lang") lang));
+    (fun st -> st##setItem (Js.string "hyp_lang") lang);
   language := lang
 
 let load_messages () =
   getfile "messages.json" >>= fun s ->
-  Lwt.return (json##(parse (Js.string s)))
+  Lwt.return (json##parse (Js.string s))
 
 let local_messages msgs : messages Js.t = option (Js.Unsafe.get msgs !language)
 
@@ -529,9 +529,9 @@ let pi = 4. *. atan 1.
 
 let ellipse_arc c cx cy rx ry start fin clock_wise =
  c##save;
- c##(translate cx cy);
- c##(scale rx ry);
- c##(arc (0.) (0.) (1.) start fin clock_wise);
+ c##translate cx cy;
+ c##scale rx ry;
+ c##arc (0.) (0.) (1.) start fin clock_wise;
  c##restore
 
 let arc c (rx, ry, dx, dy) z0 z1 z2 =
@@ -544,8 +544,8 @@ let arc c (rx, ry, dx, dy) z0 z1 z2 =
 Firebug.console##log_4(start, fin, alpha, (alpha > pi));
 *)
   if rx = ry then
-    c##(arc (z0.x *. rx +. dx) (z0.y *. rx +. dy) (rd *. rx)
-            start fin (Js.bool (alpha > pi)))
+    c##arc (z0.x *. rx +. dx) (z0.y *. rx +. dy) (rd *. rx)
+            start fin (Js.bool (alpha > pi))
   else
     ellipse_arc c (z0.x *. rx +. dx) (z0.y *. ry +. dy) (rd *. rx) (rd *. ry)
       start fin (Js.bool (alpha > pi));
@@ -553,8 +553,8 @@ Firebug.console##log_4(start, fin, alpha, (alpha > pi));
 
 let line c (rx, ry, dx, dy) z1 z2 =
   c##beginPath;
-  c##(moveTo (z1.x *. rx +. dx) (z1.y *. ry +. dy));
-  c##(lineTo (z2.x *. rx +. dx) (z2.y *. ry +. dy));
+  c##moveTo (z1.x *. rx +. dx) (z1.y *. ry +. dy);
+  c##lineTo (z2.x *. rx +. dx) (z2.y *. ry +. dy);
   c##stroke
 
 (*
@@ -584,10 +584,10 @@ type boxes =
 let shadow = false
 
 let draw canvas vertices edges nodes boxes =
-Firebug.console##(time (Js.string "draw"));
-  let c = canvas##(getContext (Html._2d_)) in
+Firebug.console##time (Js.string "draw");
+  let c = canvas##getContext Html._2d_ in
   let (rx, ry, dx, dy) as transf = screen_transform canvas in
-  c##(clearRect (0.) (0.) (float canvas##.width) (float canvas##.height));
+  c##clearRect (0.) (0.) (float canvas##.width) (float canvas##.height);
 
   let padding = opt_style style##.padding 0. in
   c##beginPath;
@@ -678,7 +678,7 @@ Firebug.console##(time (Js.string "draw"));
               end;
               let x = z.x *. rx +. dx in
               let y = z.y *. ry +. dy in
-              c##(drawImage_withSize img (x -. w) (y -. h) (2. *. w) (2. *. h));
+              c##drawImage_withSize img (x -. w) (y -. h) (2. *. w) (2. *. h);
 (*
               c##drawImage_fromCanvasWithSize
                    (img, x -. w, y -. h, 2. *. w, 2. *. h);
@@ -711,18 +711,18 @@ end
          if circle then begin
            c##beginPath;
            c##.fillStyle := opt_style (style##.nodeBackgroundColor) tree_color;
-           c##(arc (z.x *. rx +. dx) (z.y *. ry +. dy)
+           c##arc (z.x *. rx +. dx) (z.y *. ry +. dy)
                   (sqrt (w *. w +. h *. h))
-                  (0.) (7.) (Js._false));
+                  (0.) (7.) (Js._false);
            c##fill
          end;
-         c##(drawImage_fromCanvasWithSize
-           txt (z.x *. rx +. dx -. w) (z.y *. ry +. dy -. h) (2. *. w) (2. *. h))
+         c##drawImage_fromCanvasWithSize
+           txt (z.x *. rx +. dx -. w) (z.y *. ry +. dy -. h) (2. *. w) (2. *. h)
     | `Txt (_, None, _) | `None ->
         ()
   done;
-Firebug.console##(timeEnd (Js.string "draw"));
-Firebug.console##(log_2 (!image_count) (!large_image_count))
+Firebug.console##timeEnd (Js.string "draw");
+Firebug.console##log_2 (!image_count) (!large_image_count)
 
 let default_img = "frog.jpg"
 let tree_url = "tree.json"
@@ -804,7 +804,7 @@ let compute_text_node info =
   let w = w + 8 in
   let h = h + 8 in
   let canvas = create_canvas w h in
-  let c = canvas##(getContext (Html._2d_)) in
+  let c = canvas##getContext Html._2d_ in
   c##.fillStyle := opt_style (style##.nodeBackgroundColor) tree_color;
   roundRectPath c 0. 0. (float w) (float h) 4.;
   c##fill;
@@ -812,7 +812,7 @@ let compute_text_node info =
   c##.fillStyle := opt_style (style##.nodeColor) (Js.string "black");
   c##.textAlign := Js.string "center";
   c##.textBaseline := Js.string "middle";
-  c##(fillText (Js.string info) (float w /. 2.) (float h /. 2.));
+  c##fillText (Js.string info) (float w /. 2.) (float h /. 2.);
   canvas
 
 let compute_text_nodes node_names nodes =
@@ -1014,7 +1014,7 @@ let load_tree () =
     : Js.js_string Js.t tree *
       (Js.js_string Js.t * (Js.js_string Js.t * Js.js_string Js.t) array *
        Js.js_string Js.t) array
-    = json##(parse (Js.string s))
+    = json##parse (Js.string s)
   in
   let (tree, node_names) = info in
   randomize_tree tree;
@@ -1045,7 +1045,7 @@ type info =
 
 let load_image_info () : info array Lwt.t =
   getfile "image_info.json" >>= fun s ->
-  Lwt.return (json##(parse (Js.string s)))
+  Lwt.return (json##parse (Js.string s))
 
 let close_button over =
   let color = opt_style (style##.buttonColor) (Js.string "#888888") in
@@ -1053,7 +1053,7 @@ let close_button over =
   let offset = 4. in
   let lw = 4. in
   let canvas = create_canvas size size in
-  let c = canvas##(getContext (Html._2d_)) in
+  let c = canvas##getContext Html._2d_ in
   c##save;
   c##.lineWidth := 2.;
   c##.strokeStyle := color;
@@ -1064,10 +1064,10 @@ let close_button over =
   c##beginPath;
   let a = offset +. lw /. sqrt 2. in
   let b = float size -. offset -. lw /. sqrt 2. in
-  c##(moveTo a a);
-  c##(lineTo b b);
-  c##(moveTo a b);
-  c##(lineTo b a);
+  c##moveTo a a;
+  c##lineTo b b;
+  c##moveTo a b;
+  c##lineTo b a;
   c##stroke;
   c##restore;
   canvas##.className := Js.string (if over then "on" else "off");
@@ -1163,7 +1163,7 @@ let show_image all_messages image_info name small_image =
   done;
   if !i >= 0 then begin
     let info = image_info.(!i) in
-Firebug.console##(log_2 name (!i));
+Firebug.console##log_2 name (!i);
     let d = Html.document in
 
     let container = Html.createDiv d in
@@ -1203,9 +1203,9 @@ Firebug.console##(log_2 name (!i));
     begin match Lwt.poll (Lazy.force small_image) with
       Some small_image ->
         let canvas = create_canvas info.width info.height in
-        let c = canvas##(getContext (Html._2d_)) in
-        c##(drawImage_withSize
-          small_image (0.) (0.) (float info.width) (float info.height));
+        let c = canvas##getContext Html._2d_ in
+        c##drawImage_withSize
+          small_image 0. 0. (float info.width) (float info.height);
         canvas##.style##.display := Js.string "block";
         canvas##.style##.height := Js.string "auto";
         canvas##.style##.width := Js.string "auto";
@@ -1329,7 +1329,7 @@ Firebug.console##(log_2 name (!i));
            if lang' == lang then begin
              empty := false;
              let a = Html.createA d in
-             Dom.appendChild a (d##(createTextNode name));
+             Dom.appendChild a (d##createTextNode name);
              a##.target := Js.string "_blank";
              let refer = Js.to_string refer in
              let url =
@@ -1345,7 +1345,7 @@ Firebug.console##(log_2 name (!i));
       if not !empty then begin
         incr count;
         let dd = Html.createDd d in
-        Dom.appendChild dd (d##(createTextNode title));
+        Dom.appendChild dd (d##createTextNode title);
         Dom.appendChild dl dd;
         let dt = Html.createDt d in
         Dom.appendChild dt ul;
@@ -1359,8 +1359,8 @@ Firebug.console##(log_2 name (!i));
       Dom.appendChild txt dl
     else
       Dom.appendChild txt
-        (d##(createTextNode
-            (opt_style (messages##.noRef) (Js.string "No reference found."))));
+        (d##createTextNode
+            (opt_style (messages##.noRef) (Js.string "No reference found.")));
     txt##.className := Js.string "text on";
     txt##.style##.position := Js.string "absolute";
     txt##.style##.left := Js.string "48px";
@@ -1440,7 +1440,7 @@ let show_information_page messages tree_i18n =
 
   let button = Html.createButton doc in
   Dom.appendChild button
-    (doc##(createTextNode (opt_style (messages##.ok) (Js.string "OK"))));
+    (doc##createTextNode (opt_style (messages##.ok) (Js.string "OK")));
   button##.onclick := Html.handler (fun _ -> close_info (); Js._false);
   let button_div = Html.createDiv doc in
   button_div##.style##.textAlign := Js.string "center";
@@ -1508,7 +1508,7 @@ let start _ =
      redraw_funct :=
        (fun () ->
           need_redraw := false;
-          Firebug.console##(time (Js.string "transform"));
+          Firebug.console##time (Js.string "transform");
 (*
           let transf = hyp_transf !tr' in
           for i = 0 to Array.length vertices - 1 do
@@ -1522,7 +1522,7 @@ let start _ =
             canvas##.height := h
           end;
           hyp_transf_vect !tr' vertices vertices';
-          Firebug.console##(timeEnd (Js.string "transform"));
+          Firebug.console##timeEnd (Js.string "transform");
           draw canvas vertices' edges nodes boxes);
      perform_redraw ();
 
@@ -1620,7 +1620,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
 
      handle_touch_events canvas
       (fun x0 y0 x1 y1 ->
-   Firebug.console##(time (Js.string "transform"));
+   Firebug.console##time (Js.string "transform");
          let z0 = from_screen canvas x0 y0 in
          let z1 = from_screen canvas x1 y1 in
 (*
@@ -1735,7 +1735,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
        List.iter
          (fun (name, id) ->
             let a = Html.createA doc in
-            Dom.appendChild a (doc##(createTextNode (Js.string name)));
+            Dom.appendChild a (doc##createTextNode (Js.string name));
             a##.href := Js.string "#";
             a##.onclick := Html.handler
               (fun _ ->
@@ -1750,8 +1750,8 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
          languages;
        let dd = Html.createDd doc in
        Dom.appendChild dd
-         (doc##(createTextNode ((opt_style (messages##.languages)
-                                 (Js.string "Languages")))));
+         (doc##createTextNode ((opt_style (messages##.languages)
+                                 (Js.string "Languages"))));
        Dom.appendChild dl dd;
        let dt = Html.createDt doc in
        Dom.appendChild dt ul;

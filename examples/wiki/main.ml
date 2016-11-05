@@ -29,7 +29,7 @@ let replace_child p n =
 let onload _ =
   let d = Html.document in
   let body =
-    Js.Opt.get (d##(getElementById (Js.string "wiki_demo")))
+    Js.Opt.get (d##getElementById (Js.string "wiki_demo"))
       (fun () -> assert false) in
   let textbox = Html.createTextarea d in
   textbox##.rows := 20; textbox##.cols := 80;

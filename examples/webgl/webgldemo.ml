@@ -20,9 +20,9 @@
 open Lwt
 open Js
 
-let error f = Printf.ksprintf (fun s -> Firebug.console##(error (Js.string s)); failwith s) f
-let debug f = Printf.ksprintf (fun s -> Firebug.console##(log (Js.string s))) f
-let alert f = Printf.ksprintf (fun s -> Dom_html.window##(alert (Js.string s)); failwith s) f
+let error f = Printf.ksprintf (fun s -> Firebug.console##error (Js.string s); failwith s) f
+let debug f = Printf.ksprintf (fun s -> Firebug.console##log (Js.string s)) f
+let alert f = Printf.ksprintf (fun s -> Dom_html.window##alert (Js.string s); failwith s) f
 
 let check_error gl =
   if gl##getError <> gl##._NO_ERROR_
@@ -31,7 +31,7 @@ let check_error gl =
 let init_canvas canvas_id =
   let canvas =
     Opt.get
-      (Opt.bind ( Dom_html.document##(getElementById (string canvas_id)) )
+      (Opt.bind ( Dom_html.document##getElementById (string canvas_id) )
          Dom_html.CoerceTo.canvas)
       (fun () -> error "can't find canvas element %s" canvas_id) in
   let gl =
@@ -40,29 +40,29 @@ let init_canvas canvas_id =
   canvas, gl
 
 let load_shader (gl:WebGL.renderingContext t) shader text =
-  gl##(shaderSource shader text);
-  gl##(compileShader shader);
-  if not (to_bool gl##(getShaderParameter shader gl##._COMPILE_STATUS_))
+  gl##shaderSource shader text;
+  gl##compileShader shader;
+  if not (to_bool (gl##getShaderParameter shader gl##._COMPILE_STATUS_))
   then error "An error occurred compiling the shaders: \n%s\n%s"
     (to_string text)
-    (to_string gl##(getShaderInfoLog shader))
+    (to_string (gl##getShaderInfoLog shader))
 
 let create_program (gl:WebGL.renderingContext t) vert_src frag_src =
-  let vertexShader = gl##(createShader gl##._VERTEX_SHADER_) in
-  let fragmentShader = gl##(createShader gl##._FRAGMENT_SHADER_) in
+  let vertexShader = gl##createShader gl##._VERTEX_SHADER_ in
+  let fragmentShader = gl##createShader gl##._FRAGMENT_SHADER_ in
   load_shader gl vertexShader vert_src;
   load_shader gl fragmentShader frag_src;
   let prog = gl##createProgram in
-  gl##(attachShader prog vertexShader);
-  gl##(attachShader prog fragmentShader);
-  gl##(linkProgram prog);
-  if not (to_bool gl##(getProgramParameter prog gl##._LINK_STATUS_))
+  gl##attachShader prog vertexShader;
+  gl##attachShader prog fragmentShader;
+  gl##linkProgram prog;
+  if not (to_bool (gl##getProgramParameter prog gl##._LINK_STATUS_))
   then error "Unable to link the shader program.";
   prog
 
 let get_source src_id =
   let script = Opt.get
-    (Opt.bind ( Dom_html.document##(getElementById (string src_id)) )
+    (Opt.bind ( Dom_html.document##getElementById (string src_id) )
        Dom_html.CoerceTo.script)
     (fun () -> error "can't find script element %s" src_id) in
   script##.text
@@ -219,9 +219,9 @@ let fetch_model s =
 let pi = 4. *. (atan 1.)
 
 let start (pos,norm) =
-  let fps_text = Dom_html.document##(createTextNode (Js.string "loading")) in
+  let fps_text = Dom_html.document##createTextNode (Js.string "loading") in
   Opt.iter
-    (Opt.bind ( Dom_html.document##(getElementById (string "fps")) )
+    (Opt.bind ( Dom_html.document##getElementById (string "fps") )
        Dom_html.CoerceTo.element)
     (fun span -> Dom.appendChild span fps_text);
   debug "init canvas";
@@ -231,39 +231,39 @@ let start (pos,norm) =
     (get_source "vertex-shader")
     (get_source "fragment-shader") in
   debug "use program";
-  gl##(useProgram prog);
+  gl##useProgram prog;
 
   check_error gl;
   debug "program loaded";
 
-  gl##(enable gl##._DEPTH_TEST_);
-  gl##(depthFunc gl##._LESS);
+  gl##enable gl##._DEPTH_TEST_;
+  gl##depthFunc gl##._LESS;
 
-  let proj_loc = gl##(getUniformLocation prog (string "u_proj")) in
-  let lightPos_loc = gl##(getUniformLocation prog (string "u_lightPos")) in
-  let ambientLight_loc = gl##(getUniformLocation prog (string "u_ambientLight")) in
+  let proj_loc = gl##getUniformLocation prog (string "u_proj") in
+  let lightPos_loc = gl##getUniformLocation prog (string "u_lightPos") in
+  let ambientLight_loc = gl##getUniformLocation prog (string "u_ambientLight") in
 
   let lightPos = float32array [| 3.; 0.; -. 1. |] in
   let ambientLight = float32array [| 0.1; 0.1; 0.1 |] in
 
-  gl##(uniform3fv_typed lightPos_loc lightPos);
-  gl##(uniform3fv_typed ambientLight_loc ambientLight);
+  gl##uniform3fv_typed lightPos_loc lightPos;
+  gl##uniform3fv_typed ambientLight_loc ambientLight;
 
-  let pos_attr = gl##(getAttribLocation prog (string "a_position")) in
-  gl##(enableVertexAttribArray pos_attr);
+  let pos_attr = gl##getAttribLocation prog (string "a_position") in
+  gl##enableVertexAttribArray pos_attr;
 
   let array_buffer = gl##createBuffer in
-  gl##(bindBuffer gl##._ARRAY_BUFFER_ array_buffer);
-  gl##(bufferData gl##._ARRAY_BUFFER_ pos gl##._STATIC_DRAW_);
-  gl##(vertexAttribPointer pos_attr (3) gl##._FLOAT _false (0) (0));
+  gl##bindBuffer gl##._ARRAY_BUFFER_ array_buffer;
+  gl##bufferData gl##._ARRAY_BUFFER_ pos gl##._STATIC_DRAW_;
+  gl##vertexAttribPointer pos_attr (3) gl##._FLOAT _false (0) (0);
 
-  let norm_attr = gl##(getAttribLocation prog (string "a_normal")) in
-  gl##(enableVertexAttribArray norm_attr);
+  let norm_attr = gl##getAttribLocation prog (string "a_normal") in
+  gl##enableVertexAttribArray norm_attr;
 
   let norm_buffer = gl##createBuffer in
-  gl##(bindBuffer gl##._ARRAY_BUFFER_ norm_buffer);
-  gl##(bufferData gl##._ARRAY_BUFFER_ norm gl##._STATIC_DRAW_);
-  gl##(vertexAttribPointer norm_attr (3) gl##._FLOAT _false (0) (0));
+  gl##bindBuffer gl##._ARRAY_BUFFER_ norm_buffer;
+  gl##bufferData gl##._ARRAY_BUFFER_ norm gl##._STATIC_DRAW_;
+  gl##vertexAttribPointer norm_attr 3 gl##._FLOAT _false 0 0;
 
   let mat =
     Proj3D.(
@@ -282,10 +282,10 @@ let start (pos,norm) =
   let rec f () =
     let t = ((new%js date_now))##getTime /. 1000. in
     let mat' = Proj3D.mult mat (Proj3D.rotate_y (1. *. t)) in
-    gl##(uniformMatrix4fv_typed proj_loc _false (Proj3D.array mat'));
+    gl##uniformMatrix4fv_typed proj_loc _false (Proj3D.array mat');
 
-    gl##(clear (gl##._DEPTH_BUFFER_BIT_ lor gl##._COLOR_BUFFER_BIT_));
-    gl##(drawArrays gl##._TRIANGLES (0) (pos##.length / 3));
+    gl##clear (gl##._DEPTH_BUFFER_BIT_ lor gl##._COLOR_BUFFER_BIT_);
+    gl##drawArrays gl##._TRIANGLES 0 (pos##.length / 3);
     check_error gl;
 
     let now = get_time () in

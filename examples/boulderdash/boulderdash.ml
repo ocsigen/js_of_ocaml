@@ -12,7 +12,7 @@ module Html = Dom_html
 let js = Js.string
 let document = Html.window##.document
 
-let append_text e s = Dom.appendChild e (document##(createTextNode (js s)))
+let append_text e s = Dom.appendChild e (document##createTextNode (js s))
 let replace_child p n =
   Js.Opt.iter (p##.firstChild) (fun c -> Dom.removeChild p c);
   Dom.appendChild p n
@@ -234,10 +234,10 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 	)
     in
       if state.pos = state.endpos then (
-	clock_stop () ; Html.window##(alert (js"YOU WIN !"))
+	clock_stop () ; Html.window##alert (js"YOU WIN !")
       ) else
 	if state.dead then (
-	  clock_stop () ; Html.window##(alert (js"YOU LOSE !"))
+	  clock_stop () ; Html.window##alert (js"YOU LOSE !")
 	) else (
 	  if state.rem = 0 then (
 	    let x,y = state.endpos in
@@ -272,10 +272,10 @@ let build_table ?style ?tr_style ?td_style f t =
   let m = Html.createTable document in
   opt_style m style;
   for y = 0 to Array.length t - 1 do
-    let tr = m##(insertRow (-1)) in
+    let tr = m##insertRow (-1) in
     opt_style tr tr_style;
     for x = 0 to Array.length t.(y) - 1 do
-      let td = tr##(insertCell (-1)) in
+      let td = tr##insertCell (-1) in
       opt_style td td_style;
       Dom.appendChild td (f y x t.(y).(x));
       Dom.appendChild tr td
@@ -302,7 +302,7 @@ exception Eos
 
 let start _ =
   let body =
-    Js.Opt.get (document##(getElementById (js"boulderdash")))
+    Js.Opt.get (document##getElementById (js"boulderdash"))
       (fun () -> assert false)
   in
   let board_div = Html.createDiv document in
@@ -321,7 +321,7 @@ let start _ =
     (div,
      fun v ->
        replace_child div
-         (document##(createTextNode (Js.string (string_of_int v)))))
+         (document##createTextNode (Js.string (string_of_int v))))
   in
   load_data
     "maps.txt"

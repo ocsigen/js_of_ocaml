@@ -85,7 +85,7 @@ let checkbox txt checked action =
     Dom_html.handler (fun _ -> action (Js.to_bool b##.checked); Js._true);
   let lab = Dom_html.createLabel doc in
   Dom.appendChild lab b;
-  Dom.appendChild lab (doc##(createTextNode (Js.string txt)));
+  Dom.appendChild lab (doc##createTextNode (Js.string txt));
   lab
 
 let radio txt name checked action =
@@ -97,7 +97,7 @@ let radio txt name checked action =
     Dom_html.handler (fun _ -> action (); Js._true);
   let lab = Dom_html.createLabel doc in
   Dom.appendChild lab b;
-  Dom.appendChild lab (doc##(createTextNode (Js.string txt)));
+  Dom.appendChild lab (doc##createTextNode (Js.string txt));
   lab
 
 (****)
@@ -331,9 +331,9 @@ let shadow texture =
   let w = texture##.width in
   let h = texture##.height in
   let canvas = create_canvas w h in
-  let ctx = canvas##(getContext (Html._2d_)) in
+  let ctx = canvas##getContext Html._2d_ in
   let (w, h) = (w / 8, h / 8) in
-  let img = ctx##(getImageData (0.) (0.) (float w) (float h)) in
+  let img = ctx##getImageData 0. 0. (float w) (float h) in
   let data = img##.data in
   let inv_gamma  = 1. /. gamma in
   let update_shadow obliquity =
@@ -367,12 +367,12 @@ let shadow texture =
         Html.pixel_set data (k' + 3) c
       done
     done;
-    ctx##(putImageData img (0.) (0.));
+    ctx##putImageData img (0.) (0.);
     ctx##.globalCompositeOperation := Js.string "copy";
     ctx##save;
-    ctx##(scale (8. *. float (w + 2) /. float w) (8. *. float (h + 2) /. float h));
-    ctx##(translate (-1.) (-1.));
-    ctx##(drawImage_fromCanvas canvas (0.) (0.));
+    ctx##scale (8. *. float (w + 2) /. float w) (8. *. float (h + 2) /. float h);
+    ctx##translate (-1.) (-1.);
+    ctx##drawImage_fromCanvas canvas (0.) (0.);
     ctx##restore
   in
   update_shadow obliquity;
@@ -380,7 +380,7 @@ let shadow texture =
   let w = texture##.width in
   let h = texture##.height in
   let canvas' = create_canvas w h in
-  let ctx' = canvas'##(getContext (Html._2d_)) in
+  let ctx' = canvas'##getContext Html._2d_ in
 
   let no_lighting = ref false in
 
@@ -388,13 +388,13 @@ let shadow texture =
     if lighting then begin
       no_lighting := false;
       let phi = mod_float phi (2. *. pi) in
-      ctx'##(drawImage texture (0.) (0.));
+      ctx'##drawImage texture (0.) (0.);
       let i = truncate (mod_float ((2. *. pi -. phi) *. float w /. 2. /. pi)
                           (float w)) in
-      ctx'##(drawImage_fromCanvas canvas (float i) (0.));
-      ctx'##(drawImage_fromCanvas canvas (float i -. float w) (0.))
+      ctx'##drawImage_fromCanvas canvas (float i) (0.);
+      ctx'##drawImage_fromCanvas canvas (float i -. float w) (0.)
     end else if not !no_lighting then begin
-      ctx'##(drawImage texture (0.) (0.));
+      ctx'##drawImage texture (0.) (0.);
       no_lighting := true
     end
   in
@@ -474,9 +474,9 @@ let draw ctx img shd o uv normals face_info dir =
 
        if dot_product normals.(i) dir >= 0. then begin
          ctx##beginPath;
-         ctx##(moveTo x1 y1);
-         ctx##(lineTo x2 y2);
-         ctx##(lineTo x3 y3);
+         ctx##moveTo x1 y1;
+         ctx##lineTo x2 y2;
+         ctx##lineTo x3 y3;
          ctx##closePath;
          ctx##save;
          ctx##clip;
@@ -492,7 +492,7 @@ let c = x1 -. a *. u1 -. b *. v1 in
 let d = dy2*.dv3-.dy3*.dv2 in
 let e = dy2*.du3-.dy3*.du2 in
 let f = y1 -. d *. u1 -. e *. v1 in
-ctx##(transform a d b e c f);
+ctx##transform a d b e c f;
 (*
 let (u1, v1) = uv.(v1) in
 let (u2, v2) = uv.(v2) in
@@ -540,7 +540,7 @@ let v' = min th (max v1 (max v2 v3) +. 4.) in
 let du = u' -. u in
 let dv = v' -. v in
 *)
-ctx##(drawImage_fullFromCanvas shd u v du dv u v du dv);
+ctx##drawImage_fullFromCanvas shd u v du dv u v du dv;
 ctx##restore
        end
     )
@@ -571,8 +571,8 @@ let start _ =
   let canvas = create_canvas width height in
   let canvas' = create_canvas width height in
   Dom.appendChild Html.document##.body canvas;
-  let ctx = canvas##(getContext (Html._2d_)) in
-  let ctx' = canvas'##(getContext (Html._2d_)) in
+  let ctx = canvas##getContext Html._2d_ in
+  let ctx' = canvas'##getContext Html._2d_ in
   let r = float width /. 2. in
   let tw = float texture##.width in
   let th = float texture##.height in
@@ -599,12 +599,12 @@ let start _ =
   let m = ref matrix_identity in
   let phi_rot = ref 0. in
 
-  let rateText = doc##(createTextNode (Js.string "")) in
+  let rateText = doc##createTextNode (Js.string "") in
   let add = Dom.appendChild in
   let ctrl = Html.createDiv doc in
   ctrl##.className := Js.string "controls";
   let d = Html.createDiv doc in
-  add d (doc##(createTextNode (Js.string "Click and drag mouse to rotate.")));
+  add d (doc##createTextNode (Js.string "Click and drag mouse to rotate."));
   add ctrl d;
   let form = Html.createDiv doc in
   let br () = Html.createBr doc in
@@ -619,13 +619,13 @@ let start _ =
                            m_obliq := xy_rotation (-. !obl)));
     add form (br ());
     let lab = Html.createLabel doc in
-    add lab (doc##(createTextNode (Js.string "Date:")));
+    add lab (doc##createTextNode (Js.string "Date:"));
     let s = Html.createSelect doc in
     List.iter
       (fun txt ->
          let o = Html.createOption doc in
-         add o (doc##(createTextNode (Js.string txt)));
-         s##(add o (Js.null)))
+         add o (doc##createTextNode (Js.string txt));
+         s##add o (Js.null))
       ["December solstice"; "Equinox"; "June solstice"];
     s##.onchange :=
       Html.handler
@@ -649,7 +649,7 @@ let start _ =
     add form (br ());
     add form (checkbox "Clip" true (fun l -> clipped := l));
     add form (br ());
-    add form (doc##(createTextNode (Js.string "Frames per second: ")));
+    add form (doc##createTextNode (Js.string "Frames per second: "));
     add form rateText
   end;
   add ctrl form;
@@ -700,22 +700,22 @@ let start _ =
     let o' = rotate_object m o in
     let v' = rotate_normal m v in
 
-    ctx'##(clearRect (0.) (0.) (float width) (float height));
+    ctx'##clearRect (0.) (0.) (float width) (float height);
     ctx'##save;
     if !clipped then begin
       ctx'##beginPath;
-      ctx'##(arc r r (r *. 0.95) (0.) (-. 2. *. pi) (Js._true));
+      ctx'##arc r r (r *. 0.95) (0.) (-. 2. *. pi) (Js._true);
       ctx'##clip
     end;
 
-    ctx'##(setTransform (r -. 2.) (0.) (0.) (r -. 2.) r r);
+    ctx'##setTransform (r -. 2.) (0.) (0.) (r -. 2.) r r;
     ctx'##.globalCompositeOperation := Js.string "lighter";
     draw ctx' texture shd o' uv normals face_info v';
     ctx'##restore;
 
     ctx##.globalCompositeOperation := Js.string "copy";
-    ctx##(drawImage_fromCanvas canvas' (0.) (0.));
-    begin try ignore (ctx##(getImageData (0.) (0.) (1.) (1.))) with _ -> () end;
+    ctx##drawImage_fromCanvas canvas' (0.) (0.);
+    begin try ignore (ctx##getImageData (0.) (0.) (1.) (1.)) with _ -> () end;
     let t' = ((new%js Js.date_now))##getTime in
     fps :=
       (let hz = 1000. /. (t' -. !ti) in

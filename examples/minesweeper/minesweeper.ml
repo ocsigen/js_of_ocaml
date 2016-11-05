@@ -141,7 +141,7 @@ let disable_events d =
   for y = 0 to d.cf.nbrows - 1 do
     for x = 0 to d.cf.nbcols - 1 do
       d.dom.(y).(x)##.onclick := Html.handler
-        (fun _ -> Html.window##(alert (js"GAME OVER")); Js._false)
+        (fun _ -> Html.window##alert (js"GAME OVER"); Js._false)
     done
   done
 
@@ -163,7 +163,7 @@ let reveal d i j =
   if d.nb_hidden_cells = 0 then (
     draw_board d ;
     disable_events d ;
-    Html.window##(alert (js"YOU WIN"))
+    Html.window##alert (js"YOU WIN")
   )
 
 let create_demin nb_c nb_r nb_m =
@@ -184,7 +184,7 @@ type mode = Normal | Flag
 let init_table d board_div =
   let mode = ref Normal in
   let buf = document##createDocumentFragment in
-  Dom.appendChild buf (document##(createTextNode (js"Mode : ")));
+  Dom.appendChild buf (document##createTextNode (js"Mode : "));
   let img = Html.createImg document in
   Dom.appendChild buf img;
   img##.src := js"sprites/bomb.png" ;
@@ -213,7 +213,7 @@ let init_table d board_div =
                 else if d.bd.(x).(y).mined then (
                   draw_board d ;
                   disable_events d ;
-                  Html.window##(alert (js"YOU LOSE"))
+                  Html.window##alert (js"YOU LOSE")
                 ) else reveal d x y
             | Flag ->
                 d.bd.(x).(y).flag <- not d.bd.(x).(y).flag ;

@@ -13,7 +13,7 @@ let document = Html.window##.document
 
 let int_input name value =
   let res = document##createDocumentFragment in
-  Dom.appendChild res (document##(createTextNode (js name)));
+  Dom.appendChild res (document##createTextNode (js name));
   let input = Html.createInput ~_type:(js"text") document in
   input##.value := js (string_of_int !value);
   input##.onchange := Html.handler
@@ -38,7 +38,7 @@ let button name callback =
 
 let onload _ =
   let main =
-    Js.Opt.get (document##(getElementById (js"main")))
+    Js.Opt.get (document##getElementById (js"main"))
       (fun () -> assert false)
   in
   let nbr, nbc, nbm = ref 10, ref 12, ref 15 in

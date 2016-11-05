@@ -23,31 +23,31 @@ let (>>=) = Lwt.bind
 let ( |> ) x f = f x
 exception Break of bool
 
-let is_visible_text s = 
+let is_visible_text s =
   (* TODO: rewrite with regexps. *)
   let len = String.length s in
   let rec loop i =
-    if i >= len then () else 
+    if i >= len then () else
     if (s.[i] = '\\') && (i<len-1) && (s.[i+1]='\\') then loop (i+2)
     else match  s.[i] with
 	| '\n' -> loop (i+1)
-	| _   -> raise (Break true)	  
-  in 
-  try 
+	| _   -> raise (Break true)
+  in
+  try
     loop 0;
     false
   with Break b -> b
 
 open Dom
 
-let rec html2wiki ?inH:(inH=false) body = 
+let rec html2wiki ?inH:(inH=false) body =
   let ans = Buffer.create 10 in
-  let add_str ?surr:(surr="") s = 
+  let add_str ?surr:(surr="") s =
     if is_visible_text s then Buffer.add_string ans (surr^s^surr)
     else () in
   let childNodes = body##.childNodes in
   for i=0 to childNodes##.length-1 do
-    Js.Opt.iter (childNodes##(item i)) (fun node ->
+    Js.Opt.iter (childNodes##item i) (fun node ->
       match Js.to_string node##.nodeName with
 	| "B" -> let inner = html2wiki node in
 		 add_str inner ~surr:"**"
@@ -61,21 +61,21 @@ let rec html2wiki ?inH:(inH=false) body =
 	| "BR"  -> Buffer.add_string ans "\\\\"
 	| "HR"  -> Buffer.add_string ans "----"
 	| "DIV" -> let inner = html2wiki node in
-		   Buffer.add_string ans inner		     
+		   Buffer.add_string ans inner
 	| "A"   ->
 	  let x  : element Js.t Js.opt = Js.some (Js.Unsafe.coerce node) in
 	  let el = Js.Opt.get x (fun _ -> assert false)  in
 
-	  Js.Opt.case (el##(getAttribute (Js.string "wysitype")))
+	  Js.Opt.case (el##getAttribute (Js.string "wysitype"))
 	    (fun () -> Buffer.add_string ans "^error_in_anchor^")
-	    (fun s -> 
-	      let url = Js.Opt.get (el##(getAttribute (Js.string "href"))) (fun _ -> assert false) 
+	    (fun s ->
+	      let url = Js.Opt.get (el##getAttribute (Js.string "href")) (fun _ -> assert false)
 		|> Js.to_string in
 	      match Js.to_string s with
-	      | "global" -> 
+	      | "global" ->
 		let desc = html2wiki node in
-		Buffer.add_string ans (String.concat "" ["[[";url;"|";desc;"]]"]) 
-	      | "wiki"   -> String.concat "" ["[[";url;"]]"] |> Buffer.add_string ans 
+		Buffer.add_string ans (String.concat "" ["[[";url;"|";desc;"]]"])
+	      | "wiki"   -> String.concat "" ["[[";url;"]]"] |> Buffer.add_string ans
 	      | _        -> Buffer.add_string ans "^error2_in_anchor^"
 	    )
 	| ("H1" | "H2" | "H3") as hh ->
@@ -83,7 +83,7 @@ let rec html2wiki ?inH:(inH=false) body =
 	  let prefix = String.make n '=' in
 	  let inner = html2wiki node in
 	  Buffer.add_string ans (prefix^inner^"\n\n")
-	| _ as name -> 
+	| _ as name ->
 	  Buffer.add_string ans ("^"^ name^"^")
     )
   done;
@@ -92,7 +92,7 @@ let rec html2wiki ?inH:(inH=false) body =
 let onload _ =
   let d = Html.document in
   let body =
-    Js.Opt.get (d##(getElementById (Js.string "wiki_demo")))
+    Js.Opt.get (d##getElementById (Js.string "wiki_demo"))
       (fun () -> assert false) in
 
   let iframe = Html.createIframe d in
@@ -103,26 +103,26 @@ let onload _ =
 
   Js.Opt.iter (iframe##.contentDocument) (fun iDoc ->
     iDoc##open_;
-    iDoc##(write (Js.string "<html><body><p><b>Camelus</b><i>bactrianus</i></p></body></html>"));
+    iDoc##write (Js.string "<html><body><p><b>Camelus</b><i>bactrianus</i></p></body></html>");
     iDoc##close;
     iDoc##.designMode := Js.string "On";
 
     let iWin  = iframe##.contentWindow in
     Dom.appendChild body (Html.createBr d);
 
-    (* see http://www.quirksmode.org/dom/execCommand.html 
+    (* see http://www.quirksmode.org/dom/execCommand.html
      * http://www.mozilla.org/editor/midas-spec.html
      *)
-    let createButton ?show:(show=Js._false) ?value:(value=None) title action = 
+    let createButton ?show:(show=Js._false) ?value:(value=None) title action =
       let but = Html.createInput ?_type:(Some (Js.string "submit")) d in
       but##.value := Js.string title;
       let wrap s = match s with
 	| None -> Js.null | Some s -> Js.some (Js.string s) in
-      
-      but##.onclick := Html.handler 
-	(fun _ -> 
+
+      but##.onclick := Html.handler
+	(fun _ ->
 	  iWin##focus;
-	  iDoc##(execCommand (Js.string action) show (wrap value)); 
+	  iDoc##execCommand (Js.string action) show (wrap value);
 	  Js._true);
       Dom.appendChild body but;
       but
@@ -139,24 +139,24 @@ let onload _ =
     ignore (createButton "h3" "formatblock" ~value:(Some "h3"));
 
     let prompt query default =
-      Js.Opt.get (iWin##(prompt (Js.string query) (Js.string default)))
+      Js.Opt.get (iWin##prompt (Js.string query) (Js.string default))
         (fun () -> Js.string default)
       |> Js.to_string
     in
     (createButton "link" "inserthtml")##.onclick := Html.handler (fun _ ->
-      let link = prompt "Enter a link" "http://google.ru" in 
+      let link = prompt "Enter a link" "http://google.ru" in
       let desc = prompt "Enter description" "desc" in
       let link = String.concat "" ["<a href=\""; link; "\" wysitype=\"global\">"; desc; "</a>"] in
-      iWin##(alert (Js.string link)); 
-      iDoc##(execCommand (Js.string "inserthtml") (Js._false) (Js.some (Js.string link)) );
+      iWin##alert (Js.string link);
+      iDoc##execCommand (Js.string "inserthtml") Js._false (Js.some (Js.string link));
       Js._true
      );
     (createButton "link2wiki" "inserthtml")##.onclick := Html.handler (fun _ ->
       let link = prompt "Enter a wikipage" "lololo" in
-      let link = ["<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>"] 
+      let link = ["<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>"]
 		 |> String.concat "" in
-      iWin##(alert (Js.string link)); 
-      iDoc##(execCommand (Js.string "inserthtml") (Js._false) (Js.some (Js.string link)) );
+      iWin##alert (Js.string link);
+      iDoc##execCommand (Js.string "inserthtml") Js._false (Js.some (Js.string link));
       Js._true
      );
     Dom.appendChild body (Html.createBr d);

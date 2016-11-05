@@ -36,20 +36,20 @@ module Common = Viewer_common.F (struct
   let save ctx = ctx##save
   let restore ctx = ctx##restore
 
-  let scale ctx ~sx ~sy = ctx##(scale sx sy)
-  let translate ctx ~tx ~ty = ctx##(translate tx ty)
+  let scale ctx ~sx ~sy = ctx##scale sx sy
+  let translate ctx ~tx ~ty = ctx##translate tx ty
 
   let set_line_width ctx w = ctx##.lineWidth := w
 
   let begin_path ctx = ctx##beginPath
   let close_path ctx = ctx##closePath
-  let move_to ctx ~x ~y = ctx##(moveTo x y)
-  let line_to ctx ~x ~y = ctx##(lineTo x y)
+  let move_to ctx ~x ~y = ctx##moveTo x y
+  let line_to ctx ~x ~y = ctx##lineTo x y
   let curve_to ctx ~x1 ~y1 ~x2 ~y2 ~x3 ~y3 =
-    ctx##(bezierCurveTo x1 y1 x2 y2 x3 y3)
+    ctx##bezierCurveTo x1 y1 x2 y2 x3 y3
   let arc ctx ~xc ~yc ~radius ~angle1 ~angle2 =
-    ctx##(arc xc yc radius angle1 angle2 (Js._true))
-  let rectangle ctx ~x ~y ~width ~height = ctx##(rect x y width height)
+    ctx##arc xc yc radius angle1 angle2 Js._true
+  let rectangle ctx ~x ~y ~width ~height = ctx##rect x y width height
 
   let fill ctx c = ctx##.fillStyle := c; ctx##fill
   let stroke ctx c = ctx##.strokeStyle := c; ctx##stroke
@@ -60,11 +60,11 @@ module Common = Viewer_common.F (struct
      ctx##.textAlign := Js.string "center";
      ctx##.textBaseline := Js.string "middle";
      begin match fill_color with
-       Some c -> ctx##.fillStyle := c; ctx##(fillText txt x y)
+       Some c -> ctx##.fillStyle := c; ctx##fillText txt x y
      | None   -> ()
      end;
      begin match stroke_color with
-       Some c -> ctx##.strokeStyle := c; ctx##(strokeText txt x y)
+       Some c -> ctx##.strokeStyle := c; ctx##strokeText txt x y
      | None   -> ()
      end
 
@@ -72,7 +72,7 @@ module Common = Viewer_common.F (struct
   type drawable = window * ctx
   type pixmap = drawable
   let get_drawable w =
-    let ctx = w##(getContext (Html._2d_)) in
+    let ctx = w##getContext Html._2d_ in
     ctx##.lineWidth := 2.;
     (w, ctx)
   let make_pixmap _ width height =
@@ -82,7 +82,7 @@ module Common = Viewer_common.F (struct
   let drawable_of_pixmap p = p
   let get_context (p, c) = c
   let put_pixmap ~dst:((p, c) :drawable) ~x ~y ~xsrc ~ysrc ~width ~height ((p, _) : pixmap)=
-    c##(drawImage_fullFromCanvas p (float xsrc) (float ysrc) (float width) (float height) (float x) (float y) (float width) (float height))
+    c##drawImage_fullFromCanvas p (float xsrc) (float ysrc) (float width) (float height) (float x) (float y) (float width) (float height)
 
   (****)
 
@@ -194,7 +194,7 @@ let start () =
   Firebug.console##timeEnd(Js.string "loading");
   Firebug.console##time(Js.string "parsing");
 *)
-  let ((x1, y1, x2, y2), bboxes, scene) = json##(parse (Js.string s)) in
+  let ((x1, y1, x2, y2), bboxes, scene) = json##parse (Js.string s) in
 (*
   Firebug.console##timeEnd(Js.string "parsing");
   Firebug.console##time(Js.string "init");
