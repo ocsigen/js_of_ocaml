@@ -36,70 +36,70 @@ let node x = (x : #Dom.node Js.t :> Dom.node Js.t)
 let (<|) e l = List.iter (fun c -> Dom.appendChild e c) l; node e
 
 let list_builder d tag c =
-  d##createElement (Js.string tag) <|
+  d##(createElement (Js.string tag)) <|
     (List.map
        (fun (c, l) ->
-          d##createElement (Js.string "li") <|
+          d##(createElement (Js.string "li")) <|
             (c @ match l with Some v -> [v] | None -> []))
        c)
 
 let builder =
   let d = Html.document in
-  { W.chars = (fun s -> node (d##createTextNode (Js.string s)));
-    W.strong_elem = (fun s -> d##createElement (Js.string "strong") <| s);
-    W.em_elem = (fun s -> d##createElement (Js.string "em") <| s);
+  { W.chars = (fun s -> node (d##(createTextNode (Js.string s))));
+    W.strong_elem = (fun s -> d##(createElement (Js.string "strong")) <| s);
+    W.em_elem = (fun s -> d##(createElement (Js.string "em")) <| s);
     W.a_elem =
       (fun addr s ->
-         let a = Html.createA d in a##href <- Js.string addr; a <| s);
+         let a = Html.createA d in a##.href := Js.string addr; a <| s);
 
     W.youtube_elem = (fun addr s ->
         let i = Html.createIframe d in
-        i##width <- Js.string "480";
-        i##height <- Js.string "360";
+        i##.width := Js.string "480";
+        i##.height := Js.string "360";
         let video_link =
           "http://youtube.com/embed/" ^
           Js.to_string (Js.encodeURI (Js.string addr)) in
-        i##src <- Js.string video_link;
-        i##frameBorder <- Js.string "0";
+        i##.src := Js.string video_link;
+        i##.frameBorder := Js.string "0";
         node i);
-    W.br_elem = (fun () -> node (d##createElement (Js.string "br")));
+    W.br_elem = (fun () -> node (d##(createElement (Js.string "br"))));
     W.img_elem =
       (fun addr alt ->
          let i = Html.createImg d in
-         i##src <- Js.string addr; i##alt <- Js.string alt;
+         i##.src := Js.string addr; i##.alt := Js.string alt;
          node i);
-    W.tt_elem = (fun s -> d##createElement (Js.string "tt") <| s);
-    W.p_elem = (fun s -> d##createElement (Js.string "p") <| s);
+    W.tt_elem = (fun s -> d##(createElement (Js.string "tt")) <| s);
+    W.p_elem = (fun s -> d##(createElement (Js.string "p")) <| s);
     W.pre_elem =
       (fun s ->
-         let p = d##createElement (Js.string "pre") in
+         let p = d##(createElement (Js.string "pre")) in
          Dom.appendChild p
-           (d##createTextNode (Js.string (String.concat "" s)));
+           (d##(createTextNode (Js.string (String.concat "" s))));
          node p);
-    W.h1_elem = (fun s -> d##createElement (Js.string "h1") <| s);
-    W.h2_elem = (fun s -> d##createElement (Js.string "h2") <| s);
-    W.h3_elem = (fun s -> d##createElement (Js.string "h3") <| s);
-    W.h4_elem = (fun s -> d##createElement (Js.string "h4") <| s);
-    W.h5_elem = (fun s -> d##createElement (Js.string "h5") <| s);
-    W.h6_elem = (fun s -> d##createElement (Js.string "h6") <| s);
+    W.h1_elem = (fun s -> d##(createElement (Js.string "h1")) <| s);
+    W.h2_elem = (fun s -> d##(createElement (Js.string "h2")) <| s);
+    W.h3_elem = (fun s -> d##(createElement (Js.string "h3")) <| s);
+    W.h4_elem = (fun s -> d##(createElement (Js.string "h4")) <| s);
+    W.h5_elem = (fun s -> d##(createElement (Js.string "h5")) <| s);
+    W.h6_elem = (fun s -> d##(createElement (Js.string "h6")) <| s);
     W.ul_elem = (fun s -> list_builder d "ul" s);
     W.ol_elem = (fun s -> list_builder d "ol" s);
-    W.hr_elem = (fun () -> node (d##createElement (Js.string "hr")));
+    W.hr_elem = (fun () -> node (d##(createElement (Js.string "hr"))));
     W.table_elem =
       (fun rows ->
          let rows =
            List.map
              (fun entries ->
-                d##createElement (Js.string "tr") <|
+                d##(createElement (Js.string "tr")) <|
                   (List.map
                      (fun (h, c) ->
                         let kind = if h then "th" else "td" in
-                        d##createElement (Js.string kind) <| c)
+                        d##(createElement (Js.string kind)) <| c)
                      entries))
              rows
          in
-         d##createElement (Js.string "table") <|
-           [d##createElement (Js.string "tbody") <| rows]);
+         d##(createElement (Js.string "table")) <|
+           [d##(createElement (Js.string "tbody")) <| rows]);
     W.inline = (fun x -> x)
   }
 
