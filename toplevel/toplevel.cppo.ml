@@ -85,15 +85,15 @@ let setup_toplevel () =
   Ast_mapper.register "js_of_ocaml" Ppx_js.js_mapper;
 #endif
   Hashtbl.add Toploop.directive_table "load_js" (Toploop.Directive_string (fun name ->
-    Js.Unsafe.global##load_script_(name)));
+    Js.Unsafe.global##load_script_ name));
   Sys.interactive := true;
   ()
 
 let resize ~container ~textbox ()  =
   Lwt.pause () >>= fun () ->
-  textbox##style##height <- Js.string "auto";
-  textbox##style##height <- Js.string (Printf.sprintf "%dpx" (max 18 textbox##scrollHeight));
-  container##scrollTop <- container##scrollHeight;
+  textbox##.style##.height := Js.string "auto";
+  textbox##.style##.height := Js.string (Printf.sprintf "%dpx" (max 18 textbox##.scrollHeight));
+  container##.scrollTop := container##.scrollHeight;
   Lwt.return ()
 
 let setup_printers () =
@@ -132,10 +132,10 @@ let setup_examples ~container ~textbox =
       let a = Tyxml_js.Html.(a ~a:[
         a_class ["list-group-item"];
         a_onclick (fun _ ->
-          textbox##value <- (Js.string acc)##trim();
+          textbox##.value := (Js.string acc)##trim;
             Lwt.async(fun () ->
               resize ~container ~textbox ()  >>= fun () ->
-              textbox##focus();
+              textbox##focus;
               Lwt.return_unit);
             true
 	 )] [pcdata name]) in
@@ -152,21 +152,21 @@ let parse_hash () =
 
 let rec iter_on_sharp ~f x =
   Js.Opt.iter (Dom_html.CoerceTo.element x)
-	      (fun e -> if Js.to_bool (e##classList##contains(Js.string "sharp")) then f e);
-  match Js.Opt.to_option x##nextSibling with
+	      (fun e -> if Js.to_bool (e##.classList##contains (Js.string "sharp")) then f e);
+  match Js.Opt.to_option x##.nextSibling with
   | None -> ()
   | Some n -> iter_on_sharp ~f n
 
 let setup_share_button ~output =
   do_by_id "btn-share" (fun e ->
-    e##style##display <- Js.string "block";
-    e##onclick <- Dom_html.handler (fun _ ->
+    e##.style##.display := Js.string "block";
+    e##.onclick := Dom_html.handler (fun _ ->
       (* get all ocaml code *)
       let code = ref [] in
       Js.Opt.iter
-	(output##firstChild)
+	(output##.firstChild)
 	(iter_on_sharp ~f:(fun e ->
-          code := Js.Opt.case (e##textContent)
+          code := Js.Opt.case (e##.textContent)
                     (fun () -> "")
                     (Js.to_string) :: !code));
       let code_encoded = B64.encode (String.concat "" (List.rev !code)) in
@@ -192,7 +192,7 @@ let setup_share_button ~output =
         else
 	  let uri = Printf.sprintf "http://is.gd/create.php?format=json&url=%s" (Url.urlencode uri) in
           Lwt.bind (Jsonp.call uri) (fun o ->
-	    let str = Js.to_string o##shorturl in
+	    let str = Js.to_string o##.shorturl in
             append_url str;
             Lwt.return_unit)
       )
@@ -204,9 +204,9 @@ let setup_share_button ~output =
 
 let setup_js_preview () =
   let ph = by_id "last-js" in
-  let runcode : (string -> 'a) = Js.Unsafe.global##toplevelEval in
-  Js.Unsafe.global##toplevelEval <- (fun bc ->
-      ph##innerHTML <- Js.string bc;
+  let runcode : (string -> 'a) = Js.Unsafe.global##.toplevelEval in
+  Js.Unsafe.global##.toplevelEval := (fun bc ->
+      ph##.innerHTML := Js.string bc;
       runcode bc
     )
 
@@ -214,7 +214,7 @@ let current_position = ref 0
 let highlight_location loc =
   let x = ref 0 in
   let output = by_id "output" in
-  let first = Js.Opt.get (output##childNodes##item(!current_position)) (fun _ -> assert false) in
+  let first = Js.Opt.get (output##.childNodes##item(!current_position)) (fun _ -> assert false) in
   iter_on_sharp first
     ~f:(fun e ->
      incr x;
@@ -234,14 +234,14 @@ module History = struct
   let data = ref [|""|]
   let idx = ref 0
   let get_storage () =
-    match Js.Optdef.to_option Dom_html.window##localStorage with
+    match Js.Optdef.to_option Dom_html.window##.localStorage with
     | None -> raise Not_found
     | Some t -> t
 
   let setup () =
     try
       let s = get_storage () in
-      match Js.Opt.to_option (s##getItem(Js.string "history")) with
+      match Js.Opt.to_option (s##getItem (Js.string "history")) with
       | None -> raise Not_found
       | Some s -> let a = Json.unsafe_input s in
 		  data:=a; idx:=Array.length a - 1
@@ -256,16 +256,16 @@ module History = struct
     try
       let s = get_storage () in
       let str = Json.output !data in
-      s##setItem(Js.string "history", str)
+      s##setItem (Js.string "history") str
     with Not_found -> ()
 
   let current text = !data.(!idx) <- text
   let previous textbox =
     if !idx > 0
-    then begin decr idx; textbox##value <- Js.string (!data.(!idx)) end
+    then begin decr idx; textbox##.value := Js.string (!data.(!idx)) end
   let next textbox =
     if !idx < Array.length !data - 1
-    then begin incr idx; textbox##value <- Js.string (!data.(!idx)) end
+    then begin incr idx; textbox##.value := Js.string (!data.(!idx)) end
 end
 
 let run _ =
@@ -280,24 +280,24 @@ let run _ =
   let caml_ppf = Format.formatter_of_out_channel caml_chan in
 
   let execute () =
-    let content = Js.to_string (textbox##value##trim()) in
+    let content = Js.to_string (textbox##.value##trim) in
     let content' =
       let len = String.length content in
       if try content <> "" && content.[len-1] <> ';' && content.[len-2] <> ';' with _ -> true
       then content ^ ";;"
       else content in
-    current_position := output##childNodes##length;
-    textbox##value <- Js.string "";
+    current_position := output##.childNodes##.length;
+    textbox##.value := Js.string "";
     History.push content;
     JsooTop.execute true ~pp_code:sharp_ppf ~highlight_location caml_ppf content';
     resize ~container ~textbox () >>= fun () ->
-    container##scrollTop <- container##scrollHeight;
-    textbox##focus();
+    container##.scrollTop := container##.scrollHeight;
+    textbox##focus;
     Lwt.return_unit in
 
   let history_down e =
-    let txt = Js.to_string textbox##value in
-    let pos = textbox##selectionStart in
+    let txt = Js.to_string textbox##.value in
+    let pos = textbox##.selectionStart in
     try
       (if String.length txt = pos  then raise Not_found);
       let _ = String.index_from txt pos '\n' in
@@ -308,8 +308,8 @@ let run _ =
       Js._false
   in
   let history_up   e =
-    let txt = Js.to_string textbox##value in
-    let pos = textbox##selectionStart - 1  in
+    let txt = Js.to_string textbox##.value in
+    let pos = textbox##.selectionStart - 1  in
     try
       (if pos < 0  then raise Not_found);
       let _ = String.rindex_from txt pos '\n' in
@@ -322,17 +322,17 @@ let run _ =
 
   let meta e =
     let b = Js.to_bool in
-    b e##ctrlKey || b e##shiftKey || b e##altKey || b e##metaKey in
+    b e##.ctrlKey || b e##.shiftKey || b e##.altKey || b e##.metaKey in
 
   begin (* setup handlers *)
-    textbox##onkeyup <-   Dom_html.handler (fun _ -> Lwt.async (resize ~container ~textbox); Js._true);
-    textbox##onchange <-  Dom_html.handler (fun _ -> Lwt.async (resize ~container ~textbox); Js._true);
-    textbox##onkeydown <- Dom_html.handler (fun e ->
-        match e##keyCode with
+    textbox##.onkeyup :=   Dom_html.handler (fun _ -> Lwt.async (resize ~container ~textbox); Js._true);
+    textbox##.onchange :=  Dom_html.handler (fun _ -> Lwt.async (resize ~container ~textbox); Js._true);
+    textbox##.onkeydown := Dom_html.handler (fun e ->
+        match e##.keyCode with
         | 13 when not (meta e) -> Lwt.async execute; Js._false
         | 13 -> Lwt.async (resize ~container ~textbox); Js._true
         | 09 -> Indent.textarea textbox; Js._false
-        | 76 when meta e -> output##innerHTML <- Js.string ""; Js._true
+        | 76 when meta e -> output##.innerHTML := Js.string ""; Js._true
         | 75 when meta e -> setup_toplevel (); Js._false
         | 38 -> history_up e
         | 40 -> history_down e
@@ -343,12 +343,12 @@ let run _ =
   Lwt.async_exception_hook:=(fun exc ->
     Format.eprintf "exc during Lwt.async: %s@." (Printexc.to_string exc);
     match exc with
-    | Js.Error e -> Firebug.console##log(e##stack)
+    | Js.Error e -> Firebug.console##log (e##.stack)
     | _ -> ());
 
   Lwt.async (fun () ->
     resize ~container ~textbox () >>= fun () ->
-    textbox##focus ();
+    textbox##focus;
     Lwt.return_unit);
 
 #ifdef graphics
@@ -363,7 +363,7 @@ let run _ =
   let readline () =
     Js.Opt.case
       (Dom_html.window##prompt
-         (Js.string "The toplevel expects inputs:", Js.string ""))
+         (Js.string "The toplevel expects inputs:") (Js.string ""))
       (fun () -> "")
       (fun s -> Js.to_string s ^ "\n") in
   Sys_js.set_channel_filler stdin readline;
@@ -376,14 +376,14 @@ let run _ =
   setup_printers ();
   History.setup ();
 
-  textbox##value <- Js.string "";
+  textbox##.value := Js.string "";
   (* Run initial code if any *)
   try
     let code = List.assoc "code" (parse_hash ()) in
-    textbox##value <- Js.string (B64.decode code);
+    textbox##.value := Js.string (B64.decode code);
     Lwt.async execute
   with
   | Not_found -> ()
-  | exc -> Firebug.console##log_3(Js.string "exception", Js.string (Printexc.to_string exc), exc)
+  | exc -> Firebug.console##log_3 (Js.string "exception") (Js.string (Printexc.to_string exc)) exc
 
-let _ = Dom_html.window##onload <- Dom_html.handler (fun _ -> run (); Js._false)
+let _ = Dom_html.window##.onload := Dom_html.handler (fun _ -> run (); Js._false)

@@ -110,8 +110,8 @@ colorize.cmo: colorize.cmi
 %.cmi:%.mli
 	ocamlfind ocamlc -g -c -package js_of_ocaml,js_of_ocaml.tyxml $<
 %.cmo:%.ml
-	ocamlfind ocamlc -g -c -syntax camlp4o $(SAFESTRING) \
-		-package js_of_ocaml.syntax,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
+	ocamlfind ocamlc -g -c $(SAFESTRING) \
+		-package js_of_ocaml.ppx,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
 		-package base64 \
 		-I camlp4 \
 		$(OCPINDENT) $(HIGLO) \
