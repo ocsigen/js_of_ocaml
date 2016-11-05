@@ -57,7 +57,7 @@ end = struct
     then name
     else match !wrapper with
       | None -> "Js." ^ name
-      | Some m -> String.capitalize_ascii m ^ ".Js." ^ name
+      | Some m -> m ^ ".Js." ^ name
 
   let js_unsafe_dot name = js_dot ("Unsafe." ^ name)
 
