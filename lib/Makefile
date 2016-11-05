@@ -12,12 +12,14 @@ include ../Makefile.conf
 -include ../Makefile.local
 
 DERIVING_JSON=deriving_json.cma
+ifeq "${WITH_CAMLP4}" "YES"
 ifeq "${WITH_DERIVING}" "YES"
 PA_DERIVING=syntax/pa_deriving_Json.cmo
 ifeq "$(BEST)" "opt"
 DERIVING_JSON += deriving_json.cmxs
 ifeq "${NATDYNLINK}" "YES"
 PA_DERIVING_NDL= syntax/pa_deriving_Json.cmx syntax/pa_deriving_Json.cmxs
+endif
 endif
 endif
 endif
@@ -42,10 +44,14 @@ TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
 endif
 endif
 
+
+PA_JS=
+ifeq "${WITH_CAMLP4}" "YES"
 PA_JS= syntax/pa_js.cmo
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
 PA_JS_NDL= syntax/pa_js.cmx syntax/pa_js.cmxs
+endif
 endif
 endif
 
