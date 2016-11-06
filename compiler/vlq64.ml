@@ -19,7 +19,7 @@
 
 let code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
 let code_rev =
-  let a = Array.make 127 (-1) in
+  let a = Array.make 255 (-1) in
   for i = 0 to String.length code - 1 do
     a.(Char.code code.[i]) <- i;
   done;
@@ -73,6 +73,7 @@ let encode_l b l = List.iter (encode b) l
 
 let rec decode' acc s start pos =
   let digit = code_rev.(Char.code s.[pos]) in
+  if digit = -1 then invalid_arg "Vql64.decode'";
   let cont = digit land vlq_continuation_bit = vlq_continuation_bit in
   let digit = digit land vlq_base_mask in
   let acc = acc + (digit lsl ((pos - start) * vlq_base_shift)) in
@@ -84,17 +85,15 @@ let decode s p =
   let d,i = decode' 0 s p p in
   fromVLQSigned d,i
 
-let decode_pos s =
-  let sl = String.length s in
-  let rec aux pos acc =
-    if List.length acc > 10 then assert false;
-    let d,i = decode s pos in
-    if i = sl
-    then List.rev (d::acc)
-    else aux i (d::acc)
-  in aux 0 []
-
-let _ = decode_pos
-(* let _ = assert ( *)
-(*   let l = [0;0;16;1] in *)
-(*   decode_pos (encode_pos l) = l); *)
+let decode_l s ~pos ~len =
+  let rec aux pos acc len =
+    if len = 0
+    then List.rev acc
+    else if len < 0
+    then invalid_arg "Vlq64.decode_l"
+    else
+      let d,i = decode s pos in
+      let len = len - (i - pos) in
+      aux i (d::acc) len
+  in
+  aux pos [] len

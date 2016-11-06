@@ -1,4 +1,4 @@
-BIN := compiler/${COMPILER} compiler/${MINIFIER}
+BIN := compiler/${COMPILER} compiler/${MINIFIER} compiler/${LINKER}
 
 ifeq "${WITH_TOPLEVEL}" "YES"
 BIN += jsoo_tools/${MKTOP} jsoo_tools/${MKCMIS}

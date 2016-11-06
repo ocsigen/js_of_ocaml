@@ -77,9 +77,6 @@ js_assign.cmi : javascript.cmi
 js_lexer.cmo : parse_info.cmi js_token.cmi js_lexer.cmi
 js_lexer.cmx : parse_info.cmx js_token.cmx js_lexer.cmi
 js_lexer.cmi : parse_info.cmi js_token.cmi
-json.cmo : pretty_print.cmi javascript.cmi json.cmi
-json.cmx : pretty_print.cmx javascript.cmx json.cmi
-json.cmi : pretty_print.cmi
 jsoo_compile.cmo : util.cmi pseudoFs.cmi pretty_print.cmi parse_bytecode.cmi \
     option.cmi linker.cmi eval.cmi driver.cmi compileArg.cmi commonArg.cmi \
     code.cmi
@@ -93,6 +90,8 @@ jsoo_deadcode.cmx : util.cmx pure_fun.cmx option.cmx code.cmx \
 jsoo_deadcode.cmi : code.cmi
 jsoo_findlib_support_internal.cmo : util.cmi
 jsoo_findlib_support_internal.cmx : util.cmx
+jsoo_link.cmo : util.cmi linkerArg.cmo link_js.cmi
+jsoo_link.cmx : util.cmx linkerArg.cmx link_js.cmx
 jsoo_primitive.cmo : util.cmi parse_info.cmi jsoo_primitive.cmi
 jsoo_primitive.cmx : util.cmx parse_info.cmx jsoo_primitive.cmi
 jsoo_primitive.cmi : util.cmi parse_info.cmi
@@ -105,9 +104,9 @@ jsoo_subst.cmo : util.cmi code.cmi jsoo_subst.cmi
 jsoo_subst.cmx : util.cmx code.cmx jsoo_subst.cmi
 jsoo_subst.cmi : code.cmi
 js_output.cmo : util.cmi source_map.cmi pretty_print.cmi parse_info.cmi \
-    option.cmi json.cmi javascript.cmi code.cmi js_output.cmi
+    option.cmi javascript.cmi code.cmi js_output.cmi
 js_output.cmx : util.cmx source_map.cmx pretty_print.cmx parse_info.cmx \
-    option.cmx json.cmx javascript.cmx code.cmx js_output.cmi
+    option.cmx javascript.cmx code.cmx js_output.cmi
 js_output.cmi : source_map.cmi pretty_print.cmi javascript.cmi
 js_parser.cmo : parse_info.cmi js_token.cmi javascript.cmi js_parser.cmi
 js_parser.cmx : parse_info.cmx js_token.cmx javascript.cmx js_parser.cmi
@@ -123,13 +122,17 @@ js_traverse.cmo : util.cmi option.cmi javascript.cmi code.cmi \
 js_traverse.cmx : util.cmx option.cmx javascript.cmx code.cmx \
     js_traverse.cmi
 js_traverse.cmi : util.cmi javascript.cmi code.cmi
+linkerArg.cmo : source_map.cmi compiler_version.cmi
+linkerArg.cmx : source_map.cmx compiler_version.cmx
 linker.cmo : util.cmi reserved.cmi parse_js.cmi parse_info.cmi option.cmi \
-    jsoo_primitive.cmi js_traverse.cmi js_token.cmi javascript.cmi \
-    annot_parser.cmi annot_lexer.cmi linker.cmi
+    jsoo_primitive.cmi js_traverse.cmi js_token.cmi js_lexer.cmi \
+    javascript.cmi annot_parser.cmi annot_lexer.cmi linker.cmi
 linker.cmx : util.cmx reserved.cmx parse_js.cmx parse_info.cmx option.cmx \
-    jsoo_primitive.cmx js_traverse.cmx js_token.cmx javascript.cmx \
-    annot_parser.cmx annot_lexer.cmx linker.cmi
+    jsoo_primitive.cmx js_traverse.cmx js_token.cmx js_lexer.cmx \
+    javascript.cmx annot_parser.cmx annot_lexer.cmx linker.cmi
 linker.cmi : util.cmi parse_info.cmi jsoo_primitive.cmi javascript.cmi
+link_js.cmo : source_map.cmi link_js.cmi
+link_js.cmx : source_map.cmx link_js.cmi
 minifyArg.cmo : compiler_version.cmi commonArg.cmi minifyArg.cmi
 minifyArg.cmx : compiler_version.cmx commonArg.cmx minifyArg.cmi
 minifyArg.cmi : commonArg.cmi
@@ -174,7 +177,7 @@ reserved.cmx : util.cmx reserved.cmi
 reserved.cmi : util.cmi
 source_map.cmo : vlq64.cmi source_map.cmi
 source_map.cmx : vlq64.cmx source_map.cmi
-source_map.cmi : json.cmi
+source_map.cmi :
 specialize_js.cmo : util.cmi jsoo_primitive.cmi flow.cmi code.cmi \
     specialize_js.cmi
 specialize_js.cmx : util.cmx jsoo_primitive.cmx flow.cmx code.cmx \

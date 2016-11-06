@@ -18,3 +18,4 @@
  *)
 
 val encode_l : Buffer.t -> int list -> unit
+val decode_l : string -> pos:int -> len:int -> int list
