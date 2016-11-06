@@ -1102,19 +1102,12 @@ let program f ?source_map p =
      let urlData =
        match out_file with
        | None ->
-         let buf = Buffer.create 1024 in
-         let pp = Pretty_print.to_buffer buf in
          let json = Source_map.json sm in
-         Json.pp pp json;
-         let data = Buffer.contents buf in
+         let data = Yojson.Basic.to_string json in
          "data:application/json;base64,"^ (B64.encode data)
        | Some out_file ->
-         let oc = open_out out_file in
-         let pp = Pretty_print.to_out_channel oc in
-         Pretty_print.set_compact pp false;
          let json = Source_map.json sm in
-         Json.pp pp json;
-         close_out oc;
+         Yojson.Basic.to_file out_file json;
          Filename.basename out_file
      in
      PP.newline f;

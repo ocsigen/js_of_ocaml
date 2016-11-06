@@ -38,6 +38,7 @@ examples/wiki/wikicreole.ml
 examples/*/*.js
 compiler/js_of_ocaml
 compiler/jsoo_minify
+compiler/jsoo_link
 compiler/js_lexer.ml
 compiler/js_parser.ml
 compiler/js_parser.mli

@@ -5,7 +5,7 @@ ifeq "${WITH_TOPLEVEL}${WITH_FINDLIB}" "YESYES"
 ALL= $(MKTOP) $(MKCMIS)
 endif
 
-PACKAGES=base64 compiler-libs.common findlib
+PACKAGES=base64 compiler-libs.common findlib yojson
 
 all: $(ALL)
 

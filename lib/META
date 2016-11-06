@@ -129,7 +129,7 @@ package "compiler" (
   archive(byte, plugin) = "compiler.cma"
   archive(native) = "compiler.cmxa"
   archive(native, plugin) = "compiler.cmxs"
-  requires = "base64,bytes"
+  requires = "base64,bytes,yojson"
   package "with_findlib" (
     exists_if = "jsoo_findlib_support.cma"
     archive(byte) = "jsoo_findlib_support.cma"

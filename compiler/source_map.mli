@@ -38,4 +38,6 @@ type t = {
   mutable mappings : mapping ;
 }
 
-val json : t -> Json.t
+val json : t -> Yojson.Basic.json
+val of_json : Yojson.Basic.json -> t
+val merge : (int * string * t) list -> t option

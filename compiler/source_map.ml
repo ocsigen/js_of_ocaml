@@ -105,15 +105,99 @@ let string_of_mapping mapping =
   loop (-1) 0;
   Buffer.contents buf
 
+let mapping_of_string str =
+  let total_len = String.length str in
+
+  let gen_col = ref 0 in
+  let ori_source = ref 0 in
+  let ori_line = ref 0 in
+  let ori_col = ref 0 in
+  let ori_name = ref 0 in
+
+  let rec readline line pos acc =
+    if pos >= total_len
+    then acc
+    else
+      let last =
+        try
+          String.index_from str pos ';'
+        with Not_found -> total_len
+      in
+      gen_col := 0;
+      let pos, acc = read_tokens line  pos last acc in
+      readline (succ line) pos acc
+  and read_tokens line start stop acc =
+    let last =
+      try
+        min (String.index_from str start ',') stop
+      with Not_found -> stop
+    in
+    let v = Vlq64.decode_l str ~pos:start ~len:(last - start)  in
+    match v with
+    | [] -> last + 1 , acc
+    | v ->
+      let v =
+        match v with
+        | [g] ->
+          gen_col:= !gen_col + g;
+          { gen_line = line;
+            gen_col  = !gen_col;
+            ori_source = -1;
+            ori_line = -1;
+            ori_col = -1;
+            ori_name = None
+          }
+        | [g;os;ol;oc] ->
+          gen_col:= !gen_col + g;
+          ori_source := !ori_source + os;
+          ori_line := !ori_line + ol;
+          ori_col := !ori_col + oc;
+          { gen_line = line;
+            gen_col  = !gen_col;
+            ori_source = !ori_source;
+            ori_line = !ori_line;
+            ori_col = !ori_col;
+            ori_name = None
+          }
+        | [g;os;ol;oc;on] ->
+          gen_col:= !gen_col + g;
+          ori_source := !ori_source + os;
+          ori_line := !ori_line + ol;
+          ori_col := !ori_col + oc;
+          ori_name := !ori_name + on;
+          { gen_line = line;
+            gen_col  = !gen_col;
+            ori_source = !ori_source;
+            ori_line = !ori_line;
+            ori_col = !ori_col;
+            ori_name = Some !ori_name
+          }
+        | _  -> invalid_arg "Source_map.mapping_of_string"
+      in
+      let acc = v :: acc in
+      if last = stop
+      then (last + 1, acc)
+      else read_tokens line (last + 1) stop acc
+  in
+  readline 0 0 []
+;;
+
+let () =
+  let map_str = ";;;;EAEE,EAAE,EAAC,CAAE;ECQY,UACC" in
+  let map = mapping_of_string map_str in
+  let map_str' = string_of_mapping map in
+  (* let map' = mapping_of_string map_str' in *)
+  assert (map_str = map_str')
+
 let json t =
-  `O [
+  `Assoc [
      "version",       `Float  (float_of_int t.version);
      "file",          `String t.file;
      "sourceRoot",    `String (match t.sourceroot with None -> "" | Some s -> s);
-     "names",         `A (List.map (fun s -> `String s) t.names);
+     "names",         `List (List.map (fun s -> `String s) t.names);
      "mappings",      `String (string_of_mapping t.mappings);
-     "sources",       `A (List.map (fun s -> `String s) t.sources);
-     "sourcesContent",`A
+     "sources",       `List (List.map (fun s -> `String s) t.sources);
+     "sourcesContent",`List
 		     (match t.sources_content with
 		      | None -> []
 		      | Some l ->
@@ -121,4 +205,156 @@ let json t =
 			   (function
 			     | None -> `Null
 			     | Some s -> `String s) l);
-   ]
+  ]
+
+let invalid () = invalid_arg "Source_map.of_json"
+
+let string name rest =
+  try
+    match List.assoc name rest with
+    | `String s -> Some s
+    | `Null -> None
+    | _ -> invalid ()
+  with Not_found -> None
+
+let list_string name rest =
+  try
+    match List.assoc name rest with
+    | `List l -> Some (
+      List.map (function
+        | `String s -> s
+        | _ -> invalid ()) l)
+    | _ -> invalid ()
+  with Not_found -> None
+
+let list_string_opt name rest =
+  try
+    match List.assoc name rest with
+    | `List l -> Some (List.map (function
+      | `String s -> Some s
+      | `Null     -> None
+      | _         -> invalid ()) l)
+    | _ -> invalid ()
+  with Not_found -> None
+
+
+let of_json json =
+  match json with
+  | `Assoc (("version", `Float version)
+        :: rest) when int_of_float version = 3 ->
+    let def v d =
+      match v with None -> d | Some v -> v
+    in
+    let file = string "file" rest in
+    let sourceroot = string "sourceRoot" rest in
+    let names = list_string "names" rest in
+    let sources = list_string "sources" rest in
+    let sources_content = list_string_opt "sourcesContent" rest in
+    let mappings = string "mappings" rest in
+    { version = int_of_float version;
+      file = def file "";
+      sourceroot;
+      names = def names [];
+      sources_content = sources_content;
+      sources = def sources [];
+      mappings = mapping_of_string (def mappings "");
+    }
+  | _ -> invalid ()
+
+let merge_sources_content a b =
+  match a, b with
+  | Some a, Some b -> Some (a @ b)
+  | _ -> None
+
+let maps ~gen_line_offset ~sources_offset ~names_offset x =
+  let gen_line = x.gen_line + gen_line_offset in
+  let ori_source = x.ori_source + sources_offset in
+  let ori_name = match x.ori_name with
+    | None -> None
+    | Some ori_name -> Some (ori_name + names_offset)
+  in
+  { x with
+    gen_line;
+    ori_source;
+    ori_name }
+
+let merge = function
+  | [] -> None
+  | (gen_line_offset,_file,x)::rest ->
+    let rec loop acc ~sources_offset ~names_offset l =
+      match l with
+      | [] -> acc
+      | (gen_line_offset, _,sm) :: rest  ->
+        let acc =
+          { acc with
+            sources = acc.sources @ sm.sources;
+            names   = acc.names @ sm.names;
+            sources_content = merge_sources_content acc.sources_content sm.sources_content;
+            mappings = acc.mappings
+                       @ List.map (maps ~gen_line_offset ~sources_offset ~names_offset) sm.mappings
+          }
+        in
+        loop
+          acc
+          ~sources_offset:(sources_offset + List.length sm.sources)
+          ~names_offset:(names_offset + List.length sm.names)
+          rest
+    in
+    let acc =
+      { x with
+        mappings = List.map (maps ~gen_line_offset ~sources_offset:0 ~names_offset:0) x.mappings
+      }
+    in
+    Some (loop
+            acc
+            ~sources_offset:(List.length x.sources)
+            ~names_offset:(List.length x.names)
+            rest)
+
+
+let empty = {
+  version = 3;
+  file = "file";
+  sourceroot = None;
+  sources = [];
+  sources_content = None;
+  names = [];
+  mappings = []
+}
+
+let gen (gen_line, gen_col) (ori_line, ori_col) ori_source =
+  { gen_line;
+    gen_col;
+    ori_source;
+    ori_line;
+    ori_col;
+    ori_name = None;
+  }
+
+let s1 =
+  { empty with
+    names = ["na";"nb";"nc"];
+    sources = ["sa";"sb"];
+    mappings = [
+      gen (1,1) (10,10) 1;
+      gen (3,3) (20,20) 2;
+    ]
+  }
+
+let s2 =
+  { empty with
+    names = ["na2";"nb2"];
+    sources = ["sa2"];
+    mappings = [
+      gen (3,3) (5,5) 1;
+    ]
+  }
+
+let () =
+  let m = merge [(0,"",s1);(20,"",s2)] in
+  begin
+    match m with
+    | None -> ()
+    | Some sm ->
+      assert (string_of_mapping sm.mappings = ";CCUU;;GCUU;;;;;;;;;;;;;;;;;;;;GCff")
+  end;
