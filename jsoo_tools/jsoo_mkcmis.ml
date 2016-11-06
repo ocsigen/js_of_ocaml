@@ -48,12 +48,12 @@ let args =
   let args = scan_args [] args in
   let all = Jsoo_common.cmis_of_packages args in
   let all = List.map (fun x -> Filename.(concat !prefix (basename x)), x) all in
-  let program = Compiler.PseudoFs.program_of_files all in
+  let program = Js_of_ocaml_compiler.PseudoFs.program_of_files all in
   let oc = match !output,args with
     | Some x,_ -> open_out x
     | None, [x] -> open_out (x ^ ".cmis.js")
     | None,_ -> failwith "-o <name> needed" in
-  Compiler.Linker.load_files ["+runtime.js"];
-  let pfs_fmt = Compiler.Pretty_print.to_out_channel oc in
-  Compiler.Option.Optim.enable "pretty";
-  Compiler.Driver.f pfs_fmt (Compiler.Parse_bytecode.Debug.create ()) program
+  Js_of_ocaml_compiler.Linker.load_files ["+runtime.js"];
+  let pfs_fmt = Js_of_ocaml_compiler.Pretty_print.to_out_channel oc in
+  Js_of_ocaml_compiler.Option.Optim.enable "pretty";
+  Js_of_ocaml_compiler.Driver.f pfs_fmt (Js_of_ocaml_compiler.Parse_bytecode.Debug.create ()) program

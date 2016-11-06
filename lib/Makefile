@@ -173,7 +173,7 @@ log/logger.cma: log/lwt_log_js.cmo
 
 toplevel_lib: $(TOPLEVELLIB)
 
-toplevel/jsooTop.cmo: toplevel/jsooTop.ml ppx/ppx_js.byte ../compiler/lib/compiler.cma
+toplevel/jsooTop.cmo: toplevel/jsooTop.ml ppx/ppx_js.byte ../compiler/lib/js_of_ocaml_compiler.cma
 	$(OCAMLC) \
 		$(SAFESTRING) -package lwt,lwt.syntax \
 		-ppx ppx/ppx_js.byte \

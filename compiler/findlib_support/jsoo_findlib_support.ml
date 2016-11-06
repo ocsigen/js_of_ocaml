@@ -20,7 +20,7 @@
 
 let _ =
   let findlib_init = lazy (Findlib.init ()) in
-  Compiler.Util.set_find_pkg_dir (fun pkg ->
+  Js_of_ocaml_compiler.Util.set_find_pkg_dir (fun pkg ->
     Lazy.force findlib_init;
     Findlib.package_directory pkg)
 ;;

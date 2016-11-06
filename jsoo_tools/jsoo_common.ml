@@ -64,7 +64,7 @@ let cmis_of_package pkg =
         if pkg = "stdlib"
         then "stdlib.cma"
         else raise exc in
-    let l = Compiler.Util.split_char ' ' archive in
+    let l = Js_of_ocaml_compiler.Util.split_char ' ' archive in
     List.iter (fun x ->
         if Filename.check_suffix x ".cmo"
         then
