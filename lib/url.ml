@@ -353,8 +353,8 @@ struct
     (* then String.sub s 1 (String.length s - 1) *)
     (* else s; *)
     Js.Opt.case (
-      l##.href##(_match 
-        (new%js Js.regExp (Js.string "#(.*)"))))
+      l##.href##_match
+        (new%js Js.regExp (Js.string "#(.*)")))
       (fun () -> "")
       (fun res ->
          let res = Js.match_result res in
