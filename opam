@@ -24,6 +24,7 @@ depends: [
   ("base-no-ppx" | "ppx_tools")
   "ocamlbuild"
   "uchar"
+  "yojson"
 ]
 depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" "ppx_driver"]
 conflicts: [
