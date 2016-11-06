@@ -10,11 +10,11 @@
 let (>>=) = Lwt.bind
 module Html = Dom_html
 let js = Js.string
-let document = Html.window##document
+let document = Html.window##.document
 
 let append_text e s = Dom.appendChild e (document##createTextNode (js s))
 let replace_child p n =
-  Js.Opt.iter (p##firstChild) (fun c -> Dom.removeChild p c);
+  Js.Opt.iter (p##.firstChild) (fun c -> Dom.removeChild p c);
   Dom.appendChild p n
 
 let box_style =
@@ -26,7 +26,7 @@ let loading_style =
 
 let loading parent =
   let div = Html.createDiv document in
-  div##style##cssText <- loading_style;
+  div##.style##.cssText := loading_style;
   append_text div "LOADING...";
   Dom.appendChild parent div;
   (fun () -> Dom.removeChild parent div)
@@ -34,20 +34,24 @@ let loading parent =
 let clock_div () =
   let t0 = ref (Sys.time ()) in
   let div = Html.createDiv document in
-  div##style##cssText <- box_style;
+  div##.style##.cssText := box_style;
   append_text div "--:--:--";
   let stopped = ref true in
   let rec update_cb () =
     let dt = Sys.time () -. !t0 in
-    if not !stopped then begin
-      let txt =
-	document##createTextNode
-	  (let secs = int_of_float dt in
-             js (Printf.sprintf "%02d:%02d:%02d"
-                   (secs / 3600) ((secs / 60) mod 60) (secs mod 60)))
-      in
-      replace_child div txt
-    end;
+    if not !stopped
+    then begin
+        let str =
+          let secs = int_of_float dt in
+          js (Printf.sprintf
+                "%02d:%02d:%02d"
+                (secs / 3600)
+                ((secs / 60) mod 60)
+                (secs mod 60))
+        in
+        let txt = document##createTextNode str in
+        replace_child div txt
+      end;
     Lwt_js.sleep 1. >>= fun () ->
     update_cb ()
   in
@@ -80,7 +84,7 @@ let img_assoc v =
 
 let set_cell state x y v =
   state.map.(y).(x) <- v ;
-  state.imgs.(y).(x)##src <- img_assoc v
+  state.imgs.(y).(x)##.src := img_assoc v
 
 let walkable = function | Empty | Grass | Diamond | End -> true | _-> false
 
@@ -128,9 +132,9 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
   Lwt_mutex.lock state.map_mutex >>= fun () ->
     for y = 0 to Array.length state.map - 1 do
       for x = 0 to Array.length state.map.(y) - 1 do
-	state.imgs.(y).(x)##onmouseover <- Html.no_handler;
-	state.imgs.(y).(x)##onmouseout <- Html.no_handler;
-	state.imgs.(y).(x)##onclick <- Html.no_handler
+	state.imgs.(y).(x)##.onmouseover := Html.no_handler;
+	state.imgs.(y).(x)##.onmouseout := Html.no_handler;
+	state.imgs.(y).(x)##.onclick := Html.no_handler
       done
     done ;
     let inhibit f _x =
@@ -152,12 +156,12 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
     in
     let rec update (x, y) next img over_cont out_cont click_cont =
       if walkable state.map.(y).(x) then (
-	let cur_img = state.imgs.(y).(x)##src in
+	let cur_img = state.imgs.(y).(x)##.src in
 	let over () =
-          state.imgs.(y).(x)##src <- img;
+          state.imgs.(y).(x)##.src := img;
           over_cont ()
 	and out () =
-          state.imgs.(y).(x)##src <- cur_img;
+          state.imgs.(y).(x)##.src := cur_img;
           out_cont ()
 	and click' () =
 	  click_cont () >>= fun () ->
@@ -183,11 +187,11 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
                   | _     -> Lwt.fail e)) >>= fun () ->
 	    build_interaction state show_rem clock
 	in
-	  state.imgs.(y).(x)##onmouseover <- Html.handler
+	  state.imgs.(y).(x)##.onmouseover := Html.handler
 	    (inhibit (set_pending_out (with_pending_out over) out)) ;
-	  state.imgs.(y).(x)##onmouseout <- Html.handler
+	  state.imgs.(y).(x)##.onmouseout := Html.handler
 	    (inhibit (with_pending_out (fun () -> Lwt.return ()))) ;
-	  state.imgs.(y).(x)##onclick <- Html.handler
+	  state.imgs.(y).(x)##.onclick := Html.handler
 	    (inhibit (with_pending_out click)) ;
 	  if state.map.(y).(x) <> End then
 	    update (next (x,y)) next img over out click'
@@ -200,13 +204,13 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 	      state.map.(y').(x') = Boulder && state.map.(y'').(x'') = Empty
 	    with Invalid_argument _ -> false) then (
 	  let over () =
-	    state.imgs.(y).(x)##src <- img_guy;
-	    state.imgs.(y').(x')##src <- img;
+	    state.imgs.(y).(x)##.src := img_guy;
+	    state.imgs.(y').(x')##.src := img;
             Lwt.return ()
 	  in
 	  let out () =
-	    state.imgs.(y).(x)##src <- js"sprites/guy.png";
-	    state.imgs.(y').(x')##src <- js"sprites/boulder.png"
+	    state.imgs.(y).(x)##.src := js"sprites/guy.png";
+	    state.imgs.(y').(x')##.src := js"sprites/boulder.png"
 	  in
 	  let click () =
 	    set_cell state x y Empty ;
@@ -221,11 +225,11 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
                  | e     -> Lwt.fail e) >>= fun () ->
 	    build_interaction state show_rem clock
 	  in
-	    state.imgs.(y').(x')##onmouseover <- Html.handler
+	    state.imgs.(y').(x')##.onmouseover := Html.handler
 	      (inhibit (set_pending_out (with_pending_out over) out));
-	    state.imgs.(y').(x')##onmouseout <- Html.handler
+	    state.imgs.(y').(x')##.onmouseout := Html.handler
 	      (inhibit (with_pending_out (fun () -> Lwt.return ())));
-	    state.imgs.(y').(x')##onclick <- Html.handler
+	    state.imgs.(y').(x')##.onclick := Html.handler
 	      (inhibit (with_pending_out click))
 	)
     in
@@ -237,7 +241,7 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
 	) else (
 	  if state.rem = 0 then (
 	    let x,y = state.endpos in
-	      state.imgs.(y).(x)##src <- js"sprites/end.png";
+	      state.imgs.(y).(x)##.src := js"sprites/end.png";
 	      state.map.(y).(x) <- End
 	  ) ;
 	  let r (x, y) = succ x, y and l (x, y) = pred x, y in
@@ -262,7 +266,7 @@ let rec build_interaction state show_rem ((_,_, clock_stop) as clock) =
       Lwt.return ()
 
 let opt_style e style =
-  match style with Some s -> e##style##cssText <- s | None -> ()
+  match style with Some s -> e##.style##.cssText := s | None -> ()
 
 let build_table ?style ?tr_style ?td_style f t =
   let m = Html.createTable document in
@@ -298,7 +302,7 @@ exception Eos
 
 let start _ =
   let body =
-    Js.Opt.get (document##getElementById(js"boulderdash"))
+    Js.Opt.get (document##getElementById (js"boulderdash"))
       (fun () -> assert false)
   in
   let board_div = Html.createDiv document in
@@ -312,7 +316,7 @@ let start _ =
   in
   let rem_div, show_rem =
     let div = Html.createDiv document in
-    div##style##cssText <- box_style;
+    div##.style##.cssText := box_style;
     append_text div "--";
     (div,
      fun v ->
@@ -375,7 +379,7 @@ let start _ =
 	       map, Array.map (Array.map
 				 (fun c ->
                                     let img = Html.createImg document in
-                                    img##src <- img_assoc c;
+                                    img##.src := img_assoc c;
                                     img)) map
 	 in
 	 let gx = ref 0 and gy = ref 0 and ex = ref 0 and ey = ref 0 and rem = ref 0 in
@@ -406,18 +410,18 @@ let start _ =
 	   let rec fade () =
 	     let t = Sys.time () in
 	       if t -. t0 >= 1. then (
-		 table##style##opacity <- Js.def (js"1");
+		 table##.style##.opacity := Js.def (js"1");
                  Lwt.return ()
 	       ) else (
 		 Lwt_js.sleep 0.05 >>= fun () ->
-		 table##style##opacity <- Js.def
+		 table##.style##.opacity := Js.def
 		   (js (Printf.sprintf "%g" (t -. t0))) ;
 		 fade ()
 	       )
 	   in fade () >>= fun () -> clock_start (); Lwt.return ()
       )
   in
-    body##style##cssText <-
+    body##.style##.cssText :=
       js"font-family: sans-serif; text-align: center; \
          background-color: #e8e8e8;" ;
     let h1 = Html.createH1 document in
@@ -443,9 +447,9 @@ let start _ =
 *)
          Dom.appendChild select option)
       levels;
-    select##onchange <- Html.handler
+    select##.onchange := Html.handler
       (fun _ ->
-         let i = select##selectedIndex - 1 in
+         let i = select##.selectedIndex - 1 in
          if i >= 0 && i < List.length levels then
            ignore (load_level (fst (List.nth levels i)));
          Js._false);
@@ -457,4 +461,4 @@ let start _ =
     Lwt.return ()
 
 let _ =
-Html.window##onload <- Html.handler (fun _ -> ignore (start ()); Js._false)
+Html.window##.onload := Html.handler (fun _ -> ignore (start ()); Js._false)

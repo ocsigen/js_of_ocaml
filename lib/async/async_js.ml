@@ -71,9 +71,9 @@ let log name exn =
     | exn -> `Exn exn
   in
   match exn with
-  | `Js err ->               Firebug.console##error_2 (Js.string name, err);
-  | `Exn exn ->              Firebug.console##error_2 (Js.string name, Js.string (Exn.to_string exn));
-  | `Js_and_exn (exn,err) -> Firebug.console##error_3 (Js.string name, Js.string (Exn.to_string exn), err)
+  | `Js err ->               Firebug.console##error_2 (Js.string name) err;
+  | `Exn exn ->              Firebug.console##error_2 (Js.string name) (Js.string (Exn.to_string exn));
+  | `Js_and_exn (exn,err) -> Firebug.console##error_3 (Js.string name) (Js.string (Exn.to_string exn)) err
 
 let initialization = lazy (
   let t = Scheduler.t () in

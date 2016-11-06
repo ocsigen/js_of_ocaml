@@ -37,8 +37,8 @@ Optional dependencies:
   corresponding syntax extension, are provided by the
   {{{js_of_ocaml}}} package.
 {{{
-      ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml.syntax \
-          -syntax camlp4o -linkpkg -o cubes.byte cubes.ml
+      ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml.ppx \
+          -linkpkg -o cubes.byte cubes.ml
 }}}
   Then, run the {{{js_of_ocaml}}} compiler to produce JavaScript code:
 {{{

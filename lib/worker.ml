@@ -42,23 +42,23 @@ and ['a] messageEvent = object
   method data: 'a readonly_prop
 end
 
-let worker = Unsafe.global##_Worker
-let create script = jsnew worker (string script)
+let worker = Unsafe.global##._Worker
+let create script = new%js worker (string script)
 
 let import_scripts scripts : unit =
-  if Unsafe.global##importScripts == undefined then
+  if Unsafe.global##.importScripts == undefined then
     invalid_arg "Worker.import_scripts is undefined";
   Unsafe.fun_call
-    (Unsafe.global##importScripts)
+    (Unsafe.global##.importScripts)
     (Array.map (fun s -> Unsafe.inject (string s)) (Array.of_list scripts))
 
 let set_onmessage handler =
-  if Unsafe.global##onmessage == undefined then
+  if Unsafe.global##.onmessage == undefined then
     invalid_arg "Worker.onmessage is undefined";
-  let js_handler (ev : 'a messageEvent Js.t) = handler (ev##data) in
-  Unsafe.global##onmessage <- wrap_callback js_handler
+  let js_handler (ev : 'a messageEvent Js.t) = handler (ev##.data) in
+  Unsafe.global##.onmessage := wrap_callback js_handler
 
 let post_message msg =
-  if Unsafe.global##postMessage == undefined then
+  if Unsafe.global##.postMessage == undefined then
     invalid_arg "Worker.onmessage is undefined";
-  Unsafe.global##postMessage (msg)
+  Unsafe.global##postMessage msg

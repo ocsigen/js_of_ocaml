@@ -50,23 +50,23 @@ let builder =
     W.em_elem = (fun s -> d##createElement (Js.string "em") <| s);
     W.a_elem =
       (fun addr s ->
-         let a = Html.createA d in a##href <- Js.string addr; a <| s);
+         let a = Html.createA d in a##.href := Js.string addr; a <| s);
 
     W.youtube_elem = (fun addr s ->
         let i = Html.createIframe d in
-        i##width <- Js.string "480";
-        i##height <- Js.string "360";
+        i##.width := Js.string "480";
+        i##.height := Js.string "360";
         let video_link =
           "http://youtube.com/embed/" ^
           Js.to_string (Js.encodeURI (Js.string addr)) in
-        i##src <- Js.string video_link;
-        i##frameBorder <- Js.string "0";
+        i##.src := Js.string video_link;
+        i##.frameBorder := Js.string "0";
         node i);
     W.br_elem = (fun () -> node (d##createElement (Js.string "br")));
     W.img_elem =
       (fun addr alt ->
          let i = Html.createImg d in
-         i##src <- Js.string addr; i##alt <- Js.string alt;
+         i##.src := Js.string addr; i##.alt := Js.string alt;
          node i);
     W.tt_elem = (fun s -> d##createElement (Js.string "tt") <| s);
     W.p_elem = (fun s -> d##createElement (Js.string "p") <| s);

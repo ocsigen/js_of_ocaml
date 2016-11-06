@@ -194,9 +194,9 @@ class type string_constr = object
   method fromCharCode : int -> js_string t meth
 end
 
-let string_constr = Unsafe.global##_String
+let string_constr = Unsafe.global##._String
 
-let regExp = Unsafe.global##_RegExp
+let regExp = Unsafe.global##._RegExp
 let regExp_copy = regExp
 let regExp_withFlags = regExp
 
@@ -239,10 +239,10 @@ class type ['a] js_array = object
   method length : int prop
 end
 
-let object_constructor = Unsafe.global##_Object
-let object_keys o : js_string t js_array t = object_constructor##keys(o)
+let object_constructor = Unsafe.global##._Object
+let object_keys o : js_string t js_array t = object_constructor##keys o
 
-let array_constructor = Unsafe.global##_Array
+let array_constructor = Unsafe.global##._Array
 let array_empty = array_constructor
 let array_length = array_constructor
 
@@ -252,7 +252,7 @@ let array_set : 'a #js_array t -> int -> 'a -> unit = Unsafe.set
 let array_map_poly :
   'a #js_array t  ->
   ('a -> int -> 'a #js_array t -> 'b) callback ->
-  'b #js_array t = fun a cb -> (Unsafe.coerce a)##map(cb)
+  'b #js_array t = fun a cb -> (Unsafe.coerce a)##map cb
 
 let array_map  f a = array_map_poly a (wrap_callback (fun x _idx _ -> f x))
 let array_mapi f a = array_map_poly a (wrap_callback (fun x idx _  -> f idx x))
@@ -342,7 +342,7 @@ class type date_constr = object
 *)
 end
 
-let date_constr = Unsafe.global##_Date
+let date_constr = Unsafe.global##._Date
 let date : date_constr t = date_constr
 let date_now : date t constr = date_constr
 let date_fromTimeValue : (float -> date t) constr = date_constr
@@ -389,7 +389,7 @@ class type math = object
   method tan : float -> float meth
 end
 
-let math = Unsafe.global##_Math
+let math = Unsafe.global##._Math
 
 
 class type error = object
@@ -400,7 +400,7 @@ class type error = object
 end
 
 exception Error of error t
-let error_constr = Unsafe.global##_Error
+let error_constr = Unsafe.global##._Error
 let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
 
 let raise_js_error = ((Unsafe.js_expr "(function (exn) { throw exn })") : error t -> 'a)
@@ -410,21 +410,21 @@ class type json = object
   method stringify: 'a -> js_string t meth
 end
 
-let _JSON : json t = Unsafe.global##_JSON
+let _JSON : json t = Unsafe.global##._JSON
 
 
 let decodeURI (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.global##decodeURI) [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##.decodeURI) [|Unsafe.inject s|]
 let decodeURIComponent (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.global##decodeURIComponent) [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##.decodeURIComponent) [|Unsafe.inject s|]
 let encodeURI (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.global##encodeURI) [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##.encodeURI) [|Unsafe.inject s|]
 let encodeURIComponent (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.global##encodeURIComponent) [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##.encodeURIComponent) [|Unsafe.inject s|]
 let escape (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.global##escape) [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##.escape) [|Unsafe.inject s|]
 let unescape (s : js_string t) : js_string t =
-  Unsafe.fun_call (Unsafe.global##unescape) [|Unsafe.inject s|]
+  Unsafe.fun_call (Unsafe.global##.unescape) [|Unsafe.inject s|]
 
 external bool : bool -> bool t = "caml_js_from_bool"
 external to_bool : bool t -> bool = "caml_js_to_bool"
@@ -439,31 +439,31 @@ external typeof : _ t -> js_string t = "caml_js_typeof"
 external instanceof : _ t -> _ constr -> bool = "caml_js_instanceof"
 
 let isNaN (i : 'a) : bool =
-  to_bool (Unsafe.fun_call (Unsafe.global##isNaN) [|Unsafe.inject i|])
+  to_bool (Unsafe.fun_call (Unsafe.global##.isNaN) [|Unsafe.inject i|])
 
 let parseInt (s : js_string t) : int =
-  let s = Unsafe.fun_call (Unsafe.global##parseInt) [|Unsafe.inject s|] in
+  let s = Unsafe.fun_call (Unsafe.global##.parseInt) [|Unsafe.inject s|] in
   if isNaN s
   then failwith "parseInt"
   else s
 
 let parseFloat (s : js_string t) : float =
-  let s = Unsafe.fun_call (Unsafe.global##parseFloat) [|Unsafe.inject s|] in
+  let s = Unsafe.fun_call (Unsafe.global##.parseFloat) [|Unsafe.inject s|] in
   if isNaN s
   then failwith "parseFloat"
   else s
 
 let _ =
   Printexc.register_printer
-    (function Error e -> Some (to_string (e##toString ())) | _ -> None)
+    (function Error e -> Some (to_string (e##toString)) | _ -> None)
 let _ =
   Printexc.register_printer
     (fun e ->
        let e : < .. > t = Obj.magic e in
        if instanceof e array_constructor then None
-       else Some (to_string (e##toString())))
+       else Some (to_string (e##toString)))
 
-let string_of_error e = to_string (e##toString())
+let string_of_error e = to_string (e##toString)
 
 external get_export_var : unit -> < .. > t = "caml_js_export_var"
 

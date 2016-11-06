@@ -564,29 +564,29 @@ type js_t = Js.js_string Js.t
 
 (*TODO? be more restrictive, clip values into standard range*)
 let js_t_of_js_string s =
-  let rgb_re = jsnew Js.regExp
+  let rgb_re = new%js Js.regExp
     (Js.bytestring "^rgb\\(\\s*\\d*,\\s*\\d*,\\s*\\d*\\)$")
   in
-  let rgb_pct_re = jsnew Js.regExp
+  let rgb_pct_re = new%js Js.regExp
     (Js.bytestring "^rgb\\(\\s*\\d*%,\\s*\\d*%,\\s*\\d*%\\)$")
   in
-  let rgba_re = jsnew Js.regExp
+  let rgba_re = new%js Js.regExp
     (Js.bytestring
       "^rgba\\(\\s*\\d*,\\s*\\d*,\\s*\\d*,\\d*\\.?\\d*\\)$")
   in
-  let rgba_pct_re = jsnew Js.regExp
+  let rgba_pct_re = new%js Js.regExp
     (Js.bytestring
       "^rgba\\(\\s*\\d*%,\\s*\\d*%,\\s*\\d*%,\\d*\\.?\\d*\\)$")
   in
-  let hsl_re = jsnew Js.regExp
+  let hsl_re = new%js Js.regExp
     (Js.bytestring "^hsl\\(\\s*\\d*,\\s*\\d*%,\\s*\\d*%\\)$")
   in
-  let hsla_re = jsnew Js.regExp
+  let hsla_re = new%js Js.regExp
     (Js.bytestring "^hsla\\(\\s*\\d*,\\s*\\d*%,\\s*\\d*%,\\d*\\.?\\d*\\)$")
   in
-  if Js.to_bool (rgb_re##test(s)) || Js.to_bool (rgba_re##test(s))
-    || Js.to_bool (rgb_pct_re##test(s)) || Js.to_bool (rgba_pct_re##test(s))
-    || Js.to_bool (hsl_re##test(s)) || Js.to_bool (hsla_re##test(s))
+  if Js.to_bool (rgb_re##test s) || Js.to_bool (rgba_re##test s)
+    || Js.to_bool (rgb_pct_re##test s) || Js.to_bool (rgba_pct_re##test s)
+    || Js.to_bool (hsl_re##test s) || Js.to_bool (hsla_re##test s)
   then
     s
   else

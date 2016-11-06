@@ -19,13 +19,13 @@ depends: [
   "lwt" {>= "2.4.4"}
   "menhir"
   "cppo" {>= "1.1.0"}
-  "camlp4"
   "base64" {>= "2.0.0"}
-  ("base-no-ppx" | "ppx_tools")
+  "ppx_tools"
   "ocamlbuild"
   "uchar"
 ]
-depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" "ppx_driver"]
+
+depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" "ppx_driver" " "camlp4"]
 conflicts: [
   "deriving"     {< "0.6"}
   "tyxml"        {< "4.0.0"}
@@ -33,4 +33,4 @@ conflicts: [
   "reactiveData" {< "0.2"}
   "async_kernel" {< "113.33.00"}
 ]
-available: [ ocaml-version >= "4.00.0" ]
+available: [ ocaml-version >= "4.02.0" ]

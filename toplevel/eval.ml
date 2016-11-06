@@ -19,9 +19,9 @@
  *)
 
 let append_string output cl s =
-  let d = Dom_html.window##document in
+  let d = Dom_html.window##.document in
   let span = Dom_html.createDiv d in
-  span##classList##add(Js.string cl);
+  span##.classList##add (Js.string cl);
   Dom.appendChild span (d##createTextNode (Js.string s));
   Dom.appendChild output span
 
@@ -41,18 +41,18 @@ let _ = Lwt.bind (Lwt_js_events.domContentLoaded ()) (fun () ->
     let toploop_ppf = Format.formatter_of_out_channel toploop_ in
     Lwt.async_exception_hook:= (fun exc -> Format.eprintf "exc during Lwt.async: %s@." (Printexc.to_string exc));
     JsooTop.initialize ();
-    let scripts = Dom_html.window##document##getElementsByTagName(Js.string "script") in
+    let scripts = Dom_html.window##.document##getElementsByTagName(Js.string "script") in
     let default_stdout = Format.printf  "%s@." in
     let default_stderr = Format.eprintf "%s@." in
     let default_toploop x = () in
-    for i = 0 to scripts##length - 1 do
-      let item_opt = scripts##item(i) in
+    for i = 0 to scripts##.length - 1 do
+      let item_opt = scripts##item i in
       let elt_opt = Js.Opt.bind item_opt Dom_html.CoerceTo.element in
       match Dom_html.opt_tagged elt_opt with
       | Some (Dom_html.Script script) ->
-        if script##_type = Js.string "text/ocaml"
+        if script##._type = Js.string "text/ocaml"
         then begin
-          let txt = Js.to_string script##text in
+          let txt = Js.to_string script##.text in
           configure script stdout "stdout" default_stdout;
           configure script stderr "stderr" default_stderr;
           configure script toploop_ "toploop" default_toploop;

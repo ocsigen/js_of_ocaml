@@ -10,7 +10,7 @@
 module Html = Dom_html
 
 let js = Js.string
-let document = Html.window##document
+let document = Html.window##.document
 
 type config = {
   nbcols  : int ;
@@ -121,7 +121,7 @@ type demin_cf =
       mutable flag_switch_on : bool }
 
 let draw_cell dom bd =
-  dom##src <-
+  dom##.src :=
     js (if bd.flag then "sprites/flag.png"
         else if bd.mined then "sprites/bomb.png"
         else if bd.seen then (
@@ -140,7 +140,7 @@ let draw_board d =
 let disable_events d =
   for y = 0 to d.cf.nbrows - 1 do
     for x = 0 to d.cf.nbcols - 1 do
-      d.dom.(y).(x)##onclick <- Html.handler
+      d.dom.(y).(x)##.onclick := Html.handler
         (fun _ -> Html.window##alert (js"GAME OVER"); Js._false)
     done
   done
@@ -183,16 +183,16 @@ type mode = Normal | Flag
 
 let init_table d board_div =
   let mode = ref Normal in
-  let buf = document##createDocumentFragment() in
-  Dom.appendChild buf (document##createTextNode(js"Mode : "));
+  let buf = document##createDocumentFragment in
+  Dom.appendChild buf (document##createTextNode (js"Mode : "));
   let img = Html.createImg document in
   Dom.appendChild buf img;
-  img##src <- js"sprites/bomb.png" ;
-  img##onclick <- Html.handler
+  img##.src := js"sprites/bomb.png" ;
+  img##.onclick := Html.handler
     (fun _ ->
        begin match !mode with
-         | Normal -> mode := Flag ; img##src <- js"sprites/flag.png"
-         | Flag   -> mode := Normal ; img##src <- js"sprites/bomb.png"
+         | Normal -> mode := Flag ; img##.src := js"sprites/flag.png"
+         | Flag   -> mode := Normal ; img##.src := js"sprites/bomb.png"
        end;
        Js._false
     ) ;
@@ -202,8 +202,8 @@ let init_table d board_div =
     for x = 0 to d.cf.nbcols - 1 do
       let img = Html.createImg document in
       imgs := img :: !imgs ;
-      img##src <- js"sprites/normal.png";
-      img##onclick <- Html.handler
+      img##.src := js"sprites/normal.png";
+      img##.onclick := Html.handler
         (fun _ ->
           (match !mode with
             | Normal ->
@@ -224,7 +224,7 @@ let init_table d board_div =
     Dom.appendChild buf (Html.createBr document);
     d.dom.(y) <- Array.of_list (List.rev !imgs)
   done ;
-  board_div##style##lineHeight <- js"0";
+  board_div##.style##.lineHeight := js"0";
   Dom.appendChild board_div buf
 
 let run div nbc nbr nbm =

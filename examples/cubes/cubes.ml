@@ -66,66 +66,66 @@ let edge = Js.string "#000000"
 let on_cube c i j k f =
   let x = float (i - k + n - 1) *. w in
   let y = float (n - 1 - j) *. h +. float (i + k) *. h /. 2. in
-  c##save ();
-  c##translate (x, y);
+  c##save;
+  c##translate x y;
   f c;
-  c##restore ()
+  c##restore
 
 let draw_top c =
-  c##fillStyle <- top;
-  c##beginPath ();
-  c##moveTo (w, 0.);
-  c##lineTo (2. *. w, h /. 2.);
-  c##lineTo (w, h);
-  c##lineTo (0., h /. 2.);
-  c##fill ()
+  c##.fillStyle := top;
+  c##beginPath;
+  c##moveTo w (0.);
+  c##lineTo (2. *. w) (h /. 2.);
+  c##lineTo w h;
+  c##lineTo (0.) (h /. 2.);
+  c##fill
 
 let top_edges c =
-  c##beginPath ();
-  c##moveTo (0., h /. 2.);
-  c##lineTo (w, 0.);
-  c##lineTo (2. *. w, h /. 2.);
-  c##stroke ()
+  c##beginPath;
+  c##moveTo (0.) (h /. 2.);
+  c##lineTo w (0.);
+  c##lineTo (2. *. w) (h /. 2.);
+  c##stroke
 
 let draw_right c =
-  c##fillStyle <- right;
-  c##beginPath ();
-  c##moveTo (w, h);
-  c##lineTo (w, 2. *. h);
-  c##lineTo (2. *. w, 1.5 *. h);
-  c##lineTo (2. *. w, h /. 2.);
-  c##fill ()
+  c##.fillStyle := right;
+  c##beginPath;
+  c##moveTo w h;
+  c##lineTo w (2. *. h);
+  c##lineTo (2. *. w) (1.5 *. h);
+  c##lineTo (2. *. w) (h /. 2.);
+  c##fill
 
 let right_edges c =
-  c##beginPath ();
-  c##moveTo (w, 2. *. h);
-  c##lineTo (w, h);
-  c##lineTo (2. *. w, h /. 2.);
-  c##stroke ()
+  c##beginPath;
+  c##moveTo w (2. *. h);
+  c##lineTo w h;
+  c##lineTo (2. *. w) (h /. 2.);
+  c##stroke
 
 let draw_left c =
-  c##fillStyle <- left;
-  c##beginPath ();
-  c##moveTo (w, h);
-  c##lineTo (w, 2. *. h);
-  c##lineTo (0., 1.5 *. h);
-  c##lineTo (0., h /. 2.);
-  c##fill ()
+  c##.fillStyle := left;
+  c##beginPath;
+  c##moveTo w h;
+  c##lineTo w (2. *. h);
+  c##lineTo (0.) (1.5 *. h);
+  c##lineTo (0.) (h /. 2.);
+  c##fill
 
 let left_edges c =
-  c##beginPath ();
-  c##moveTo (w, h);
-  c##lineTo (0., h /. 2.);
-  c##lineTo (0., 1.5 *. h);
-  c##stroke ()
+  c##beginPath;
+  c##moveTo w h;
+  c##lineTo (0.) (h /. 2.);
+  c##lineTo (0.) (1.5 *. h);
+  c##stroke
 
 let remaining_edges c =
-  c##beginPath ();
-  c##moveTo (0., float n *. 1.5 *. h);
-  c##lineTo (float n *. w, float n *. 2. *. h);
-  c##lineTo (float n *. 2. *. w, float n *. 1.5 *. h);
-  c##lineTo (float n *. 2. *. w, float n *. 0.5 *. h);
-  c##stroke ()
+  c##beginPath;
+  c##moveTo (0.) (float n *. 1.5 *. h);
+  c##lineTo (float n *. w) (float n *. 2. *. h);
+  c##lineTo (float n *. 2. *. w) (float n *. 1.5 *. h);
+  c##lineTo (float n *. 2. *. w) (float n *. 0.5 *. h);
+  c##stroke
 
 let tile c a (top, right, left) =
   for i = 0 to n - 1 do
@@ -151,23 +151,23 @@ let tile c a (top, right, left) =
   done
 
 let create_canvas () =
-  let d = Html.window##document in
+  let d = Html.window##.document in
   let c = Html.createCanvas d in
-  c##width <- n * 2 * truncate w + 1;
-  c##height <- n * 2 * truncate h + 1;
+  c##.width := n * 2 * truncate w + 1;
+  c##.height := n * 2 * truncate h + 1;
   c
 
 let redraw ctx canvas a =
   let c = canvas##getContext (Html._2d_) in
-  c##setTransform (1., 0., 0., 1., 0., 0.);
-  c##clearRect (0., 0., float canvas##width, float canvas##height);
-  c##setTransform (1., 0., 0., 1., 0.5, 0.5);
-  c##globalCompositeOperation <- Js.string "lighter";
+  c##setTransform 1. 0. 0. 1. 0. 0.;
+  c##clearRect 0. 0. (float canvas##.width) (float canvas##.height);
+  c##setTransform 1. 0. 0. 1. 0.5 0.5;
+  c##.globalCompositeOperation := Js.string "lighter";
   tile c a (draw_top, draw_right, draw_left);
-  c##globalCompositeOperation <- Js.string "source-over";
+  c##.globalCompositeOperation := Js.string "source-over";
   tile c a (top_edges, right_edges, left_edges);
   remaining_edges c;
-  ctx##drawImage_fromCanvas (canvas, 0., 0.)
+  ctx##drawImage_fromCanvas canvas 0. 0.
 
 let (>>=) = Lwt.bind
 
@@ -183,13 +183,13 @@ let rec loop c c' a =
 let start _ =
   let c = create_canvas () in
   let c' = create_canvas () in
-  Dom.appendChild Html.window##document##body c;
-  let c = c##getContext (Html._2d_) in
-  c##globalCompositeOperation <- Js.string "copy";
+  Dom.appendChild Html.window##.document##.body c;
+  let c = c##getContext Html._2d_ in
+  c##.globalCompositeOperation := Js.string "copy";
   let a = create_cubes true in
   redraw c c' a;
   ignore (loop c c' a);
   Js._false
 
 let _ =
-Html.window##onload <- Html.handler start
+Html.window##.onload := Html.handler start

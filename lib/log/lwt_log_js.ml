@@ -29,21 +29,21 @@ let console = make
              (Printf.sprintf "[%s] %s" (Section.name section) (String.concat "\n" logs)))
         in
         (match level,Lwt.get js_val with
-         | Debug,None -> Firebug.console##debug(str)
-         | Debug,Some v -> Firebug.console##debug_2(str,v)
+         | Debug,None -> Firebug.console##debug str
+         | Debug,Some v -> Firebug.console##debug_2 str v
 
          | Info,None
-         | Notice,None ->  Firebug.console##info(str)
+         | Notice,None ->  Firebug.console##info str
          | Info,Some v
-         | Notice,Some v ->  Firebug.console##info_2(str,v)
+         | Notice,Some v ->  Firebug.console##info_2 str v
 
-         | Warning,None -> Firebug.console##warn(str)
-         | Warning,Some v -> Firebug.console##warn_2(str,v)
+         | Warning,None -> Firebug.console##warn str
+         | Warning,Some v -> Firebug.console##warn_2 str v
 
          | Error,None
-         | Fatal,None ->   Firebug.console##error(str)
+         | Fatal,None ->   Firebug.console##error str
          | Error,Some v
-         | Fatal,Some v ->   Firebug.console##error_2(str,v)
+         | Fatal,Some v ->   Firebug.console##error_2 str v
         );
         Lwt.return_unit
       )

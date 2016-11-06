@@ -93,7 +93,7 @@ let outside_color = Js.string (*"#0c1a0d"*) "#070718"
 *)
 
 let option var =
-  Js.Optdef.get var (fun () -> Js.Unsafe.coerce (jsnew Js.array_empty ()))
+  Js.Optdef.get var (fun () -> Js.Unsafe.coerce (new%js Js.array_empty))
 
 class type style = object
   method border : float Js.optdef Js.readonly_prop
@@ -107,7 +107,7 @@ class type style = object
   method buttonColor : Js.js_string Js.t Js.optdef Js.readonly_prop
 end
 
-let style : style Js.t = option (Js.Unsafe.global##hyp_style)
+let style : style Js.t = option (Js.Unsafe.global##.hyp_style)
 
 class type messages = object
   method info : Js.js_string Js.t Js.optdef Js.readonly_prop
@@ -247,24 +247,24 @@ let load_image src =
   let img = Html.createImg Html.document in
   lwt_wrap
     (fun c ->
-       img##onload <- Html.handler (fun _ -> c (); Js._false); img##src <- src)
+       img##.onload := Html.handler (fun _ -> c (); Js._false); img##.src := src)
     >>= fun () ->
   Lwt.return img
 
 let create_canvas w h =
-  let d = Html.window##document in
+  let d = Html.window##.document in
   let c = Html.createCanvas d in
-  c##width <- w;
-  c##height <- h;
+  c##.width := w;
+  c##.height := h;
   c
 
 let debug_widget =
   let d = Html.document in
   let w = Html.createDiv d in
-  w##style##position <- Js.string "absolute";
-  w##style##bottom <- Js.string "0";
-  w##style##left <- Js.string "0";
-  w##style##lineHeight <- Js.string "0.9em";
+  w##.style##.position := Js.string "absolute";
+  w##.style##.bottom := Js.string "0";
+  w##.style##.left := Js.string "0";
+  w##.style##.lineHeight := Js.string "0.9em";
   w
 
 let debug_msg s = ()(*
@@ -277,9 +277,9 @@ let debug_msg s = ()(*
 
 let handle_drag element move stop click =
   let fuzz = 4 in
-  element##onmousedown <- Html.handler
+  element##.onmousedown := Html.handler
     (fun ev ->
-       let x0 = ev##clientX and y0 = ev##clientY in
+       let x0 = ev##.clientX and y0 = ev##.clientY in
 (*
 debug_msg (Format.sprintf "Mouse down %d %d" x0 y0);
 *)
@@ -288,7 +288,7 @@ debug_msg (Format.sprintf "Mouse down %d %d" x0 y0);
          Html.addEventListener Html.document Html.Event.mousemove
            (Html.handler
               (fun ev ->
-                 let x = ev##clientX and y = ev##clientY in
+                 let x = ev##.clientX and y = ev##.clientY in
 (*
 debug_msg (Format.sprintf "Mouse move %d %d %d %d" x0 y0 x y);
 *)
@@ -296,7 +296,7 @@ debug_msg (Format.sprintf "Mouse move %d %d %d %d" x0 y0 x y);
                    not !started && (abs (x - x0) > fuzz || abs (y - y0) > fuzz)
                  then begin
                    started := true;
-                   element##style##cursor <- Js.string "move"
+                   element##.style##.cursor := Js.string "move"
                  end;
                  if !started then move x0 y0 x y;
                  Html.stopPropagation ev;
@@ -314,10 +314,10 @@ debug_msg (Format.sprintf "Mouse up %d %d %d %d" x0 y0 ev##clientX ev##clientY);
                   Html.removeEventListener c1;
                   Js.Opt.iter !c2 Html.removeEventListener;
                   if !started then begin
-                    element##style##cursor <- Js.string "";
-                    stop ev##clientX ev##clientY
+                    element##.style##.cursor := Js.string "";
+                    stop ev##.clientX ev##.clientY
                   end else
-                    click ev##clientX ev##clientY;
+                    click ev##.clientX ev##.clientY;
                   Js._true))
             Js._true);
        Js._true)
@@ -326,9 +326,9 @@ let handle_touch_events element move stop cancel click =
   let fuzz = 4 in
   ignore (Html.addEventListener element Html.Event.touchstart
     (Html.handler (fun ev ->
-       Js.Optdef.iter (ev##changedTouches##item(0)) (fun touch ->
-       let id = touch##identifier in
-       let x0 = touch##clientX and y0 = touch##clientY in
+       Js.Optdef.iter (ev##.changedTouches##item 0) (fun touch ->
+       let id = touch##.identifier in
+       let x0 = touch##.clientX and y0 = touch##.clientY in
 (*
 debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
 *)
@@ -337,10 +337,10 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
          Html.addEventListener Html.document Html.Event.touchmove
            (Html.handler
               (fun ev ->
-                 for i = 0 to ev##changedTouches##length - 1 do
-                   Js.Optdef.iter (ev##changedTouches##item(i)) (fun touch ->
-                   if touch##identifier = id then begin
-                     let x = touch##clientX and y = touch##clientY in
+                 for i = 0 to ev##.changedTouches##.length - 1 do
+                   Js.Optdef.iter (ev##.changedTouches##item i) (fun touch ->
+                   if touch##.identifier = id then begin
+                     let x = touch##.clientX and y = touch##.clientY in
 (*
   debug_msg (Format.sprintf "Touch move %d %d %d %d" x0 y0 x y);
 *)
@@ -349,7 +349,7 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
                        (abs (x - x0) > fuzz || abs (y - y0) > fuzz)
                      then begin
                        started := true;
-                       element##style##cursor <- Js.string "move"
+                       element##.style##.cursor := Js.string "move"
                      end;
                      if !started then move x0 y0 x y
                    end)
@@ -364,10 +364,10 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
          (Html.addEventListener Html.document Html.Event.touchend
             (Html.handler
                (fun ev ->
-                  for i = 0 to ev##changedTouches##length - 1 do
-                    Js.Optdef.iter (ev##changedTouches##item(i)) (fun touch ->
-                    if touch##identifier = id then begin
-                      let x = touch##clientX and y = touch##clientY in
+                  for i = 0 to ev##.changedTouches##.length - 1 do
+                    Js.Optdef.iter (ev##.changedTouches##item i) (fun touch ->
+                    if touch##.identifier = id then begin
+                      let x = touch##.clientX and y = touch##.clientY in
 (*
 debug_msg (Format.sprintf "Touch end %d %d %d %d" x0 y0 x y);
 *)
@@ -375,7 +375,7 @@ debug_msg (Format.sprintf "Touch end %d %d %d %d" x0 y0 x y);
                       Js.Opt.iter !c2 Html.removeEventListener;
                       Js.Opt.iter !c3 Html.removeEventListener;
                       if !started then begin
-                        element##style##cursor <- Js.string "";
+                        element##.style##.cursor := Js.string "";
                         stop x y
                       end else
                         click x y
@@ -387,17 +387,17 @@ debug_msg (Format.sprintf "Touch end %d %d %d %d" x0 y0 x y);
          (Html.addEventListener Html.document Html.Event.touchend
             (Html.handler
                (fun ev ->
-                  for i = 0 to ev##changedTouches##length - 1 do
-                    Js.Optdef.iter (ev##changedTouches##item(i)) (fun touch ->
-                    if touch##identifier = id then begin
-                      let x = touch##clientX and y = touch##clientY in
+                  for i = 0 to ev##.changedTouches##.length - 1 do
+                    Js.Optdef.iter (ev##.changedTouches##item i) (fun touch ->
+                    if touch##.identifier = id then begin
+                      let x = touch##.clientX and y = touch##.clientY in
 (*
 debug_msg (Format.sprintf "Touch cancel %d %d %d %d" x0 y0 x y);
 *)
                       Html.removeEventListener c1;
                       Js.Opt.iter !c2 Html.removeEventListener;
                       Js.Opt.iter !c3 Html.removeEventListener;
-                      if !started then element##style##cursor <- Js.string "";
+                      if !started then element##.style##.cursor := Js.string "";
                       cancel x y
                     end)
                   done;
@@ -444,51 +444,51 @@ debug_msg (Format.sprintf "Touch end");
 
 let roundRectPath c x y w h r =
   let r = min r (min w h /. 2.) in
-  c##beginPath ();
-  c##moveTo (x +. r, y);
-  c##arcTo (x +. w, y, x +. w, y +. r, r);
-  c##arcTo (x +. w, y +. h, x +. w -. r, y +. h, r);
-  c##arcTo (x, y +. h, x, y +. h -. r, r);
-  c##arcTo (x, y, x +. r, y, r)
+  c##beginPath;
+  c##moveTo (x +. r) y;
+  c##arcTo (x +. w) y (x +. w) (y +. r) r;
+  c##arcTo (x +. w) (y +. h) (x +. w -. r) (y +. h) r;
+  c##arcTo x (y +. h) x (y +. h -. r) r;
+  c##arcTo x y (x +. r) y r
 
 let text_size_div =
   let doc = Html.document in
   lazy
     (let d = Html.createDiv doc in
-     d##style##visibility <- Js.string "hidden";
-     d##style##position <- Js.string "absolute";
-     d##style##whiteSpace <- Js.string "nowrap";
-     Dom.appendChild (doc##body) d;
+     d##.style##.visibility := Js.string "hidden";
+     d##.style##.position := Js.string "absolute";
+     d##.style##.whiteSpace := Js.string "nowrap";
+     Dom.appendChild (doc##.body) d;
      d)
 
 let text_size font txt =
   let doc = Html.document in
   let d = Lazy.force text_size_div in
-  d##style##font <- font;
+  d##.style##.font := font;
   let txt = doc##createTextNode (Js.string txt) in
   Dom.appendChild d txt;
-  let res = (d##clientWidth, d##clientHeight) in
+  let res = (d##.clientWidth, d##.clientHeight) in
   Dom.removeChild d txt;
   res
 
 (******)
 
 let default_language () =
-  (Js.Optdef.get (Dom_html.window##navigator##language) (fun () ->
-   Js.Optdef.get (Dom_html.window##navigator##userLanguage) (fun () ->
-   Js.string "en")))##substring(0,2)
+  (Js.Optdef.get (Dom_html.window##.navigator##.language) (fun () ->
+   Js.Optdef.get (Dom_html.window##.navigator##.userLanguage) (fun () ->
+   Js.string "en")))##substring 0 2
 
 let language =
-  ref (Js.Optdef.case (Html.window##localStorage)
+  ref (Js.Optdef.case (Html.window##.localStorage)
          default_language
          (fun st ->
-            Js.Opt.get (st##getItem(Js.string "hyp_lang")) default_language))
+            Js.Opt.get (st##getItem (Js.string "hyp_lang")) default_language))
 
 let _ = Firebug.console##log (!language)
 
 let set_language lang =
-  Js.Optdef.iter (Html.window##localStorage)
-    (fun st -> st##setItem(Js.string "hyp_lang", lang));
+  Js.Optdef.iter (Html.window##.localStorage)
+    (fun st -> st##setItem (Js.string "hyp_lang") lang);
   language := lang
 
 let load_messages () =
@@ -500,9 +500,9 @@ let local_messages msgs : messages Js.t = option (Js.Unsafe.get msgs !language)
 (******)
 
 let screen_transform canvas =
-  let offset = opt_style style##border 0.5 +. opt_style style##padding 0. in
-  let w = canvas##width in
-  let h = canvas##height in
+  let offset = opt_style style##.border 0.5 +. opt_style style##.padding 0. in
+  let w = canvas##.width in
+  let h = canvas##.height in
 (*
   let r = float (min  w h) /. 2. in
 *)
@@ -528,34 +528,34 @@ let pi = 4. *. atan 1.
 
 
 let ellipse_arc c cx cy rx ry start fin clock_wise =
- c##save ();
- c##translate (cx, cy);
- c##scale (rx, ry);
- c##arc (0., 0., 1., start, fin, clock_wise);
- c##restore ()
+ c##save;
+ c##translate cx cy;
+ c##scale rx ry;
+ c##arc (0.) (0.) (1.) start fin clock_wise;
+ c##restore
 
 let arc c (rx, ry, dx, dy) z0 z1 z2 =
   let rd = norm (sub z1 z0) in
   let start = atan2 (z1.y-.z0.y) (z1.x-.z0.x) in
   let fin = atan2 (z2.y-.z0.y) (z2.x-.z0.x) in
-  c##beginPath ();
+  c##beginPath;
   let alpha = mod_float (fin -. start +. 2. *. pi) (2. *. pi) in
 (*
 Firebug.console##log_4(start, fin, alpha, (alpha > pi));
 *)
   if rx = ry then
-    c##arc (z0.x *. rx +. dx, z0.y *. rx +. dy, rd *. rx,
-            start, fin, Js.bool (alpha > pi))
+    c##arc (z0.x *. rx +. dx) (z0.y *. rx +. dy) (rd *. rx)
+            start fin (Js.bool (alpha > pi))
   else
     ellipse_arc c (z0.x *. rx +. dx) (z0.y *. ry +. dy) (rd *. rx) (rd *. ry)
       start fin (Js.bool (alpha > pi));
-  c##stroke ()
+  c##stroke
 
 let line c (rx, ry, dx, dy) z1 z2 =
-  c##beginPath ();
-  c##moveTo (z1.x *. rx +. dx, z1.y *. ry +. dy);
-  c##lineTo (z2.x *. rx +. dx, z2.y *. ry +. dy);
-  c##stroke ()
+  c##beginPath;
+  c##moveTo (z1.x *. rx +. dx) (z1.y *. ry +. dy);
+  c##lineTo (z2.x *. rx +. dx) (z2.y *. ry +. dy);
+  c##stroke
 
 (*
 We have
@@ -584,34 +584,34 @@ type boxes =
 let shadow = false
 
 let draw canvas vertices edges nodes boxes =
-Firebug.console##time(Js.string "draw");
-  let c = canvas##getContext (Html._2d_) in
+Firebug.console##time (Js.string "draw");
+  let c = canvas##getContext Html._2d_ in
   let (rx, ry, dx, dy) as transf = screen_transform canvas in
-  c##clearRect (0., 0., float canvas##width, float canvas##height);
+  c##clearRect (0.) (0.) (float canvas##.width) (float canvas##.height);
 
-  let padding = opt_style style##padding 0. in
-  c##beginPath ();
+  let padding = opt_style style##.padding 0. in
+  c##beginPath;
   ellipse_arc c dx dy (rx +. padding) (ry +. padding) 0. 7. Js._false;
-  Js.Optdef.iter (style##backgroundColor)
+  Js.Optdef.iter (style##.backgroundColor)
     (fun color ->
-       c##fillStyle <- color;
-       c##fill ());
-  Js.Optdef.iter (style##boundaryColor)
+       c##.fillStyle := color;
+       c##fill);
+  Js.Optdef.iter (style##.boundaryColor)
     (fun color ->
-       c##lineWidth <- 1.;
-       c##strokeStyle <- color;
-       c##stroke ());
+       c##.lineWidth := 1.;
+       c##.strokeStyle := color;
+       c##stroke);
 
-  c##lineWidth <- 2.;
-  c##lineCap <- Js.string "round";
-  c##strokeStyle <- opt_style (style##treeColor) tree_color;
+  c##.lineWidth := 2.;
+  c##.lineCap := Js.string "round";
+  c##.strokeStyle := opt_style (style##.treeColor) tree_color;
   let (rx, ry, _, _) = transf in
   for i = 0 to Array.length edges - 1 do
     let (j, j', w) = edges.(i) in
     let z = vertices.(j) in
     let z' = vertices.(j') in
     if rx *. ry *. sq_norm_sub z z' > 4. then begin
-      c##lineWidth <- w;
+      c##.lineWidth := w;
       segment c transf z z'
     end
   done;
@@ -646,8 +646,8 @@ Firebug.console##time(Js.string "draw");
 (*
         if min_w *. r > 1. && min_h *. r > 1. then begin
 *)
-              let w = float (img##width) in
-              let h = float (img##height) in
+              let w = float (img##.width) in
+              let h = float (img##.height) in
 
 (*
               let s = min_scale l w h (1. /. min w h) in
@@ -664,26 +664,26 @@ Firebug.console##time(Js.string "draw");
               let h = h *. ratio in
 *)
               if shadow then begin
-                c##save();
+                c##save;
 (*
                 let blur = 7. /. img_r *. rd in
                 let offset = 5. /. img_r *. rd in
 *)
                 let blur = 7. *. scale in
                 let offset = 5. *. scale in
-                c##shadowBlur <- if blur < 1. then 0. else blur;
-                c##shadowOffsetX <- if blur < 1. then 0. else offset;
-                c##shadowOffsetY <- if blur < 1. then 0. else offset;
-                c##shadowColor <- Js.string "black"
+                c##.shadowBlur := if blur < 1. then 0. else blur;
+                c##.shadowOffsetX := if blur < 1. then 0. else offset;
+                c##.shadowOffsetY := if blur < 1. then 0. else offset;
+                c##.shadowColor := Js.string "black"
               end;
               let x = z.x *. rx +. dx in
               let y = z.y *. ry +. dy in
-              c##drawImage_withSize (img, x -. w, y -. h, 2. *. w, 2. *. h);
+              c##drawImage_withSize img (x -. w) (y -. h) (2. *. w) (2. *. h);
 (*
               c##drawImage_fromCanvasWithSize
                    (img, x -. w, y -. h, 2. *. w, 2. *. h);
 *)
-              if shadow then c##restore();
+              if shadow then c##restore;
               boxes.bx.(i) <- x;
               boxes.by.(i) <- y;
               boxes.bw.(i) <- w;
@@ -701,28 +701,28 @@ end
            Array.fold_left
              (fun r2 (j, _) -> min r2 (sq_norm (sub vertices.(j) z))) 1. l
          in
-         let w = float (txt##width) in
-         let h = float (txt##height) in
+         let w = float (txt##.width) in
+         let h = float (txt##.height) in
          let img_d = sqrt (w *. w +. h *. h) in
          let rd = sqrt (r2 *. rx *. ry) *. 0.5 in
          let rd = if rd > img_d /. 2. then img_d /. 2. else rd in
          let w = w /. img_d *. rd in
          let h = h /. img_d *. rd in
          if circle then begin
-           c##beginPath ();
-           c##fillStyle <- opt_style (style##nodeBackgroundColor) tree_color;
-           c##arc(z.x *. rx +. dx, z.y *. ry +. dy,
-                  sqrt (w *. w +. h *. h),
-                  0., 7., Js._false);
-           c##fill ()
+           c##beginPath;
+           c##.fillStyle := opt_style (style##.nodeBackgroundColor) tree_color;
+           c##arc (z.x *. rx +. dx) (z.y *. ry +. dy)
+                  (sqrt (w *. w +. h *. h))
+                  (0.) (7.) (Js._false);
+           c##fill
          end;
          c##drawImage_fromCanvasWithSize
-           (txt, z.x *. rx +. dx -. w, z.y *. ry +. dy -. h, 2. *. w, 2. *. h)
+           txt (z.x *. rx +. dx -. w) (z.y *. ry +. dy -. h) (2. *. w) (2. *. h)
     | `Txt (_, None, _) | `None ->
         ()
   done;
-Firebug.console##timeEnd(Js.string "draw");
-Firebug.console##log_2(!image_count, !large_image_count)
+Firebug.console##timeEnd (Js.string "draw");
+Firebug.console##log_2 (!image_count) (!large_image_count)
 
 let default_img = "frog.jpg"
 let tree_url = "tree.json"
@@ -743,7 +743,7 @@ let rec randomize_tree n =
   let Node (info, ch) = n in
   for i = Array.length ch - 1 downto 0 do
     let v = ch.(i) in
-    let j = truncate (Js.math##random() *. float (i + 1)) in
+    let j = truncate ((Js.math)##random *. float (i + 1)) in
     ch.(i) <- ch.(j);
     ch.(j) <- v
   done;
@@ -799,20 +799,20 @@ let not_space_re = Regexp.regexp "[^ ]"
 let pipe_re = Regexp.regexp "[|]"
 
 let compute_text_node info =
-  let font = opt_style (style##nodeFont) (Js.string "20px sans-serif") in
+  let font = opt_style (style##.nodeFont) (Js.string "20px sans-serif") in
   let (w, h) = text_size font info in
   let w = w + 8 in
   let h = h + 8 in
   let canvas = create_canvas w h in
-  let c = canvas##getContext (Html._2d_) in
-  c##fillStyle <- opt_style (style##nodeBackgroundColor) tree_color;
+  let c = canvas##getContext Html._2d_ in
+  c##.fillStyle := opt_style (style##.nodeBackgroundColor) tree_color;
   roundRectPath c 0. 0. (float w) (float h) 4.;
-  c##fill ();
-  c##font <- font;
-  c##fillStyle <- opt_style (style##nodeColor) (Js.string "black");
-  c##textAlign <- Js.string "center";
-  c##textBaseline <- Js.string "middle";
-  c##fillText(Js.string info, float w /. 2., float h /. 2.);
+  c##fill;
+  c##.font := font;
+  c##.fillStyle := opt_style (style##.nodeColor) (Js.string "black");
+  c##.textAlign := Js.string "center";
+  c##.textBaseline := Js.string "middle";
+  c##fillText (Js.string info) (float w /. 2.) (float h /. 2.);
   canvas
 
 let compute_text_nodes node_names nodes =
@@ -821,7 +821,7 @@ let compute_text_nodes node_names nodes =
     try fst (List.assq (Js.string "en") node_names) with Not_found ->
     Hashtbl.create 11
   in
-  Html.document##title <- Js.string
+  Html.document##.title := Js.string
     (try Hashtbl.find names "<TITLE>" with Not_found -> "");
   for i = 0 to Array.length nodes - 1 do
     match nodes.(i) with
@@ -1048,69 +1048,69 @@ let load_image_info () : info array Lwt.t =
   Lwt.return (json##parse (Js.string s))
 
 let close_button over =
-  let color = opt_style (style##buttonColor) (Js.string "#888888") in
+  let color = opt_style (style##.buttonColor) (Js.string "#888888") in
   let size = 32 in
   let offset = 4. in
   let lw = 4. in
   let canvas = create_canvas size size in
-  let c = canvas##getContext (Html._2d_) in
-  c##save ();
-  c##lineWidth <- 2.;
-  c##strokeStyle <- color;
+  let c = canvas##getContext Html._2d_ in
+  c##save;
+  c##.lineWidth := 2.;
+  c##.strokeStyle := color;
   if over then begin
-    c##shadowBlur <- offset;
-    c##shadowColor <- color
+    c##.shadowBlur := offset;
+    c##.shadowColor := color
   end;
-  c##beginPath ();
+  c##beginPath;
   let a = offset +. lw /. sqrt 2. in
   let b = float size -. offset -. lw /. sqrt 2. in
-  c##moveTo (a, a);
-  c##lineTo (b, b);
-  c##moveTo (a, b);
-  c##lineTo (b, a);
-  c##stroke ();
-  c##restore ();
-  canvas##className <- Js.string (if over then "on" else "off");
-  canvas##style##position <- Js.string "absolute";
-  canvas##style##top <- Js.string "0";
-  canvas##style##right <- Js.string "0";
+  c##moveTo a a;
+  c##lineTo b b;
+  c##moveTo a b;
+  c##lineTo b a;
+  c##stroke;
+  c##restore;
+  canvas##.className := Js.string (if over then "on" else "off");
+  canvas##.style##.position := Js.string "absolute";
+  canvas##.style##.top := Js.string "0";
+  canvas##.style##.right := Js.string "0";
   canvas
 
 let img_button ?href h src =
   let doc = Html.document in
   let decoration over =
     let img = Html.createImg doc in
-    img##src <- icon src;
+    img##.src := icon src;
     let div = Html.createDiv doc in
-    div##style##position <- Js.string "absolute";
-    div##style##width <- Js.string "38px";
-    div##style##height <- Js.string (string_of_int (max 38 h) ^ "px");
-    div##style##margin <- Js.string "2px";
-    (Js.Unsafe.coerce div##style)##borderRadius <- Js.string "2px";
+    div##.style##.position := Js.string "absolute";
+    div##.style##.width := Js.string "38px";
+    div##.style##.height := Js.string (string_of_int (max 38 h) ^ "px");
+    div##.style##.margin := Js.string "2px";
+    (Js.Unsafe.coerce div##.style)##.borderRadius := Js.string "2px";
     let extra = max 6 (44 - h) in
-    div##style##padding <- Js.string
+    div##.style##.padding := Js.string
 (*
       (Format.sprintf "%dpx 3px %dpx 3px" (extra / 2) (extra - extra / 2));
 *)
       (string_of_int (extra / 2) ^ "px 3px " ^
        string_of_int (extra - extra / 2) ^ "px 3px");
-    div##className <- Js.string
+    div##.className := Js.string
       ("filled_button " ^ if over then "on" else "off");
     Dom.appendChild div img;
     div
   in
   let button = Html.createDiv doc in
-  button##className <- Js.string "button";
-  button##style##width <- Js.string "48px";
-  button##style##height <- Js.string (string_of_int (8 + max 38 h) ^ "px");
+  button##.className := Js.string "button";
+  button##.style##.width := Js.string "48px";
+  button##.style##.height := Js.string (string_of_int (8 + max 38 h) ^ "px");
   let container =
     match href with
      None ->
        (button :> Html.element Js.t)
    | Some url ->
        let a = Html.createA doc in
-       a##target <- Js.string "_blank";
-       a##href <- url;
+       a##.target := Js.string "_blank";
+       a##.href := url;
        Dom.appendChild button a;
        (a :> Html.element Js.t)
   in
@@ -1120,14 +1120,14 @@ let img_button ?href h src =
 
 let tooltip txt =
   let tooltip = Html.createDiv Html.document in
-  tooltip##style##position <- Js.string "absolute";
-  tooltip##className <- Js.string "tooltip on";
-  tooltip##innerHTML <- txt;
+  tooltip##.style##.position := Js.string "absolute";
+  tooltip##.className := Js.string "tooltip on";
+  tooltip##.innerHTML := txt;
   tooltip
 
 let show_on_click button txt =
   let activated = ref false in
-  button##onclick <-
+  button##.onclick :=
     Html.handler
       (fun ev ->
          if not !activated then begin
@@ -1140,12 +1140,12 @@ let show_on_click button txt =
                       ignore
                         (Lwt_js.yield () >>= fun () ->
                          Js.Opt.iter !c Html.removeEventListener;
-                         txt##className <- Js.string "text on";
+                         txt##.className := Js.string "text on";
                          activated := false;
                          Lwt.return ());
                       Js._true))
                 Js._true);
-           txt##className <- Js.string "text";
+           txt##.className := Js.string "text";
          end;
          Html.stopPropagation ev; Js._false)
 
@@ -1163,38 +1163,38 @@ let show_image all_messages image_info name small_image =
   done;
   if !i >= 0 then begin
     let info = image_info.(!i) in
-Firebug.console##log_2(name, !i);
+Firebug.console##log_2 name (!i);
     let d = Html.document in
 
     let container = Html.createDiv d in
-    container##style##margin <- Js.string "10px";
-    container##style##position <- Js.string "absolute";
-    container##style##top <- Js.string "0";
-    container##style##bottom <- Js.string "0";
-    container##style##left <- Js.string "0";
-    container##style##right <- Js.string "0";
+    container##.style##.margin := Js.string "10px";
+    container##.style##.position := Js.string "absolute";
+    container##.style##.top := Js.string "0";
+    container##.style##.bottom := Js.string "0";
+    container##.style##.left := Js.string "0";
+    container##.style##.right := Js.string "0";
 
     let img_container = Html.createDiv d in
-    img_container##style##position <- Js.string "absolute";
-    img_container##style##top <- Js.string "0";
-    img_container##style##bottom <- Js.string "4em";
-    img_container##style##left <- Js.string "38px";
-    img_container##style##right <- Js.string "38px";
+    img_container##.style##.position := Js.string "absolute";
+    img_container##.style##.top := Js.string "0";
+    img_container##.style##.bottom := Js.string "4em";
+    img_container##.style##.left := Js.string "38px";
+    img_container##.style##.right := Js.string "38px";
 
     let wrap elt =
       let w = Html.createDiv d in
-      w##style##position <- Js.string "absolute";
-      w##style##top <- Js.string "0";
-      w##style##bottom <- Js.string "0";
-      w##style##left <- Js.string "0";
-      w##style##right <- Js.string "0";
-      w##style##margin <- Js.string "auto";
+      w##.style##.position := Js.string "absolute";
+      w##.style##.top := Js.string "0";
+      w##.style##.bottom := Js.string "0";
+      w##.style##.left := Js.string "0";
+      w##.style##.right := Js.string "0";
+      w##.style##.margin := Js.string "auto";
 (*
       w##style##width <- Js.string "100%";
       w##style##height <- Js.string "100%";
       w##style##maxWidth <- Js.string (string_of_int info.width ^ "px");
 *)
-      w##style##maxHeight <- Js.string (string_of_int info.height ^ "px");
+      w##.style##.maxHeight := Js.string (string_of_int info.height ^ "px");
       Dom.appendChild w elt;
       w
     in
@@ -1203,19 +1203,19 @@ Firebug.console##log_2(name, !i);
     begin match Lwt.poll (Lazy.force small_image) with
       Some small_image ->
         let canvas = create_canvas info.width info.height in
-        let c = canvas##getContext (Html._2d_) in
+        let c = canvas##getContext Html._2d_ in
         c##drawImage_withSize
-          (small_image, 0., 0., float info.width, float info.height);
-        canvas##style##display <- Js.string "block";
-        canvas##style##height <- Js.string "auto";
-        canvas##style##width <- Js.string "auto";
-        canvas##style##maxWidth <- Js.string "100%";
-        canvas##style##maxHeight <- Js.string "100%";
-        canvas##style##marginLeft <- Js.string "auto";
-        canvas##style##marginRight <- Js.string "auto";
+          small_image 0. 0. (float info.width) (float info.height);
+        canvas##.style##.display := Js.string "block";
+        canvas##.style##.height := Js.string "auto";
+        canvas##.style##.width := Js.string "auto";
+        canvas##.style##.maxWidth := Js.string "100%";
+        canvas##.style##.maxHeight := Js.string "100%";
+        canvas##.style##.marginLeft := Js.string "auto";
+        canvas##.style##.marginRight := Js.string "auto";
         let w = wrap canvas in
         Dom.appendChild img_container w;
-        img##onload <-
+        img##.onload :=
           Html.handler
             (fun _ ->
                Dom.removeChild img_container w;
@@ -1223,32 +1223,32 @@ Firebug.console##log_2(name, !i);
     | None ->
         ()
     end;
-    img##src <-
+    img##.src :=
       (match info.img_url with
          None     -> Js.string ("images/" ^ name ^ ".jpg")
        | Some url -> url);
-    img##width <- info.width;
-    img##height <- info.height;
-    img##style##display <- Js.string "block";
-    img##style##height <- Js.string "auto";
-    img##style##width <- Js.string "auto";
-    img##style##maxWidth <- Js.string "100%";
-    img##style##maxHeight <- Js.string "100%";
-    img##style##marginLeft <- Js.string "auto";
-    img##style##marginRight <- Js.string "auto";
+    img##.width := info.width;
+    img##.height := info.height;
+    img##.style##.display := Js.string "block";
+    img##.style##.height := Js.string "auto";
+    img##.style##.width := Js.string "auto";
+    img##.style##.maxWidth := Js.string "100%";
+    img##.style##.maxHeight := Js.string "100%";
+    img##.style##.marginLeft := Js.string "auto";
+    img##.style##.marginRight := Js.string "auto";
     let w = wrap img in
     let handle_error _ =
       Dom.removeChild img_container w;
       Js._false
     in
-    img##onerror <- Html.handler handle_error;
-    img##onabort <- Html.handler handle_error;
+    img##.onerror := Html.handler handle_error;
+    img##.onabort := Html.handler handle_error;
     Dom.appendChild img_container w;
 
     Dom.appendChild container img_container;
 
     let legend = Html.createDiv d in
-    legend##innerHTML <- info.attribution;
+    legend##.innerHTML := info.attribution;
 (*
     let p = Html.createP d in
     p##innerHTML <-
@@ -1258,48 +1258,48 @@ Firebug.console##log_2(name, !i);
                   information.");
     Dom.appendChild legend p;
 *)
-    legend##onclick <-
+    legend##.onclick :=
       Html.handler
         (fun ev -> Html.stopPropagation ev; Js._true);
-    legend##className <- Js.string "text";
-    legend##style##position <- Js.string "absolute";
-    legend##style##bottom <- Js.string "0";
-    legend##style##marginRight <- Js.string "auto";
-    legend##style##marginLeft <- Js.string "auto";
+    legend##.className := Js.string "text";
+    legend##.style##.position := Js.string "absolute";
+    legend##.style##.bottom := Js.string "0";
+    legend##.style##.marginRight := Js.string "auto";
+    legend##.style##.marginLeft := Js.string "auto";
     Dom.appendChild container legend;
 
     let background = Html.createDiv d in
     Dom.appendChild background container;
-    background##className <- Js.string "overlay";
-    background##style##width <- Js.string "100%";
-    background##style##height <- Js.string "100%";
-    background##style##position <- Js.string "absolute";
-    background##style##top <- Js.string "0";
-    background##style##left <- Js.string "0";
-    background##style##zIndex <- Js.string "1";
+    background##.className := Js.string "overlay";
+    background##.style##.width := Js.string "100%";
+    background##.style##.height := Js.string "100%";
+    background##.style##.position := Js.string "absolute";
+    background##.style##.top := Js.string "0";
+    background##.style##.left := Js.string "0";
+    background##.style##.zIndex := Js.string "1";
 
     let button = Html.createDiv d in
-    button##className <- Js.string "button";
-    button##style##position <- Js.string "absolute";
-    button##style##top <- Js.string "0";
-    button##style##right <- Js.string "0";
-    button##style##cursor <- Js.string "pointer";
+    button##.className := Js.string "button";
+    button##.style##.position := Js.string "absolute";
+    button##.style##.top := Js.string "0";
+    button##.style##.right := Js.string "0";
+    button##.style##.cursor := Js.string "pointer";
 
     Dom.appendChild button (close_button true);
     Dom.appendChild button (close_button false);
     let tt =
-      tooltip (opt_style (messages##close)
+      tooltip (opt_style (messages##.close)
                  (Js.string "Click anywhere to return to the tree"))
     in
-    tt##style##right <- Js.string "32px";
-    tt##style##top <- Js.string "20px";
+    tt##.style##.right := Js.string "32px";
+    tt##.style##.top := Js.string "20px";
     Dom.appendChild button tt;
     Dom.appendChild background button;
 
     let buttons = Html.createDiv d in
-    buttons##style##position <- Js.string "absolute";
-    buttons##style##top <- Js.string "0";
-    buttons##style##left <- Js.string "0";
+    buttons##.style##.position := Js.string "absolute";
+    buttons##.style##.top := Js.string "0";
+    buttons##.style##.left := Js.string "0";
     let url =
       let suffix =
         if !language == Js.string "en" then "" else
@@ -1310,11 +1310,11 @@ Firebug.console##log_2(name, !i);
     in
     let commons = img_button ~href:(Js.string url) 52 "commons-38.png" in
     let tt =
-      tooltip (opt_style (messages##wikimediaCommons)
+      tooltip (opt_style (messages##.wikimediaCommons)
                  (Js.string "See image description on Wikimedia Commons"))
     in
-    tt##style##left <- Js.string "48px";
-    tt##style##top <- Js.string "12px";
+    tt##.style##.left := Js.string "48px";
+    tt##.style##.top := Js.string "12px";
     Dom.appendChild commons tt;
     Dom.appendChild buttons commons;
     let wikipedia = img_button 34 "wikipedia-38.png" in
@@ -1329,14 +1329,14 @@ Firebug.console##log_2(name, !i);
            if lang' == lang then begin
              empty := false;
              let a = Html.createA d in
-             Dom.appendChild a (d##createTextNode (name));
-             a##target <- Js.string "_blank";
+             Dom.appendChild a (d##createTextNode name);
+             a##.target := Js.string "_blank";
              let refer = Js.to_string refer in
              let url =
                "http://" ^ Js.to_string lang ^ ".wikipedia.org/wiki/" ^
                if String.length refer = 0 then Js.to_string name else refer
              in
-             a##href <- Js.string url;
+             a##.href := Js.string url;
              let li = Html.createLi d in
              Dom.appendChild li a;
              Dom.appendChild ul li
@@ -1345,14 +1345,14 @@ Firebug.console##log_2(name, !i);
       if not !empty then begin
         incr count;
         let dd = Html.createDd d in
-        Dom.appendChild dd (d##createTextNode (title));
+        Dom.appendChild dd (d##createTextNode title);
         Dom.appendChild dl dd;
         let dt = Html.createDt d in
         Dom.appendChild dt ul;
         Dom.appendChild dl dt;
       end
     in
-    list (opt_style (messages##language) (Js.string "In English")) !language;
+    list (opt_style (messages##.language) (Js.string "In English")) !language;
     if !language != Js.string "en" then
       list (Js.string "In English") (Js.string "en");
     if !count > 0 then
@@ -1360,26 +1360,26 @@ Firebug.console##log_2(name, !i);
     else
       Dom.appendChild txt
         (d##createTextNode
-            (opt_style (messages##noRef) (Js.string "No reference found.")));
-    txt##className <- Js.string "text on";
-    txt##style##position <- Js.string "absolute";
-    txt##style##left <- Js.string "48px";
-    txt##style##top <- Js.string "62px";
-    txt##style##whiteSpace <- Js.string "nowrap";
+            (opt_style (messages##.noRef) (Js.string "No reference found.")));
+    txt##.className := Js.string "text on";
+    txt##.style##.position := Js.string "absolute";
+    txt##.style##.left := Js.string "48px";
+    txt##.style##.top := Js.string "62px";
+    txt##.style##.whiteSpace := Js.string "nowrap";
     Dom.appendChild wikipedia txt;
     Dom.appendChild buttons wikipedia;
 
-    txt##onclick <- Html.handler (fun ev -> Html.stopPropagation ev; Js._true);
+    txt##.onclick := Html.handler (fun ev -> Html.stopPropagation ev; Js._true);
     show_on_click wikipedia txt;
 
-    buttons##onclick <-
+    buttons##.onclick :=
       Html.handler (fun ev -> Html.stopPropagation ev; Js._true);
     Dom.appendChild background buttons;
 
-    Dom.appendChild d##body background;
-    background##onclick <-
+    Dom.appendChild d##.body background;
+    background##.onclick :=
       Html.handler
-        (fun _ -> Dom.removeChild d##body background; Js._true)
+        (fun _ -> Dom.removeChild d##.body background; Js._true)
   end;
   Lwt.return 0
 
@@ -1408,72 +1408,72 @@ let show_information_page messages tree_i18n =
   in
   let doc = Html.document in
   let txt = Html.createDiv doc in
-  txt##className <- Js.string "text";
-  txt##style##width <- Js.string "80%";
-  txt##style##margin <- Js.string "auto";
-  txt##innerHTML <- info;
+  txt##.className := Js.string "text";
+  txt##.style##.width := Js.string "80%";
+  txt##.style##.margin := Js.string "auto";
+  txt##.innerHTML := info;
   let cell = Html.createDiv doc in
-  cell##style##display <- Js.string "table-cell";
-  cell##style##verticalAlign <- Js.string "middle";
+  cell##.style##.display := Js.string "table-cell";
+  cell##.style##.verticalAlign := Js.string "middle";
   Dom.appendChild cell txt;
   let table = Html.createDiv doc in
-  table##style##width <- Js.string "100%";
-  table##style##height <- Js.string "100%";
-  table##style##display <- Js.string "table";
+  table##.style##.width := Js.string "100%";
+  table##.style##.height := Js.string "100%";
+  table##.style##.display := Js.string "table";
   Dom.appendChild table cell;
   let overlay = Html.createDiv doc in
-  overlay##className <- Js.string "overlay translucent";
+  overlay##.className := Js.string "overlay translucent";
   Dom.appendChild overlay table;
   let c = ref Js.null in
   let close_info () =
-    Dom.removeChild (doc##body) overlay;
+    Dom.removeChild (doc##.body) overlay;
     Js.Opt.iter !c Html.removeEventListener
   in
   c := Js.some
     (Html.addEventListener Html.document Html.Event.keydown
        (Html.handler
           (fun e ->
-             match e##keyCode with
+             match e##.keyCode with
              | 27 | 13 -> close_info (); Js._false
              | _       -> Js._true))
        Js._true);
 
   let button = Html.createButton doc in
   Dom.appendChild button
-    (doc##createTextNode (opt_style (messages##ok) (Js.string "OK")));
-  button##onclick <- Html.handler (fun _ -> close_info (); Js._false);
+    (doc##createTextNode (opt_style (messages##.ok) (Js.string "OK")));
+  button##.onclick := Html.handler (fun _ -> close_info (); Js._false);
   let button_div = Html.createDiv doc in
-  button_div##style##textAlign <- Js.string "center";
-  button_div##style##margin <- Js.string "2em auto";
+  button_div##.style##.textAlign := Js.string "center";
+  button_div##.style##.margin := Js.string "2em auto";
   Dom.appendChild button_div button;
   Dom.appendChild txt button_div;
-  Dom.appendChild (doc##body) overlay
+  Dom.appendChild (doc##.body) overlay
 
 let unsupported_messages () =
   let doc = Html.document in
   let txt = Html.createDiv doc in
-  txt##className <- Js.string "text";
-  txt##style##width <- Js.string "80%";
-  txt##style##margin <- Js.string "auto";
-  txt##innerHTML <- Js.string
+  txt##.className := Js.string "text";
+  txt##.style##.width := Js.string "80%";
+  txt##.style##.margin := Js.string "auto";
+  txt##.innerHTML := Js.string
     "Unfortunately, this browser is not supported. \
      Please try again with another browser, \
      such as <a href=\"http://www.mozilla.org/firefox/\">Firefox</a>, \
      <a href=\"http://www.google.com/chrome/\">Chrome</a> or \
      <a href=\"http://www.opera.com/\">Opera</a>.";
   let cell = Html.createDiv doc in
-  cell##style##display <- Js.string "table-cell";
-  cell##style##verticalAlign <- Js.string "middle";
+  cell##.style##.display := Js.string "table-cell";
+  cell##.style##.verticalAlign := Js.string "middle";
   Dom.appendChild cell txt;
   let table = Html.createDiv doc in
-  table##style##width <- Js.string "100%";
-  table##style##height <- Js.string "100%";
-  table##style##display <- Js.string "table";
+  table##.style##.width := Js.string "100%";
+  table##.style##.height := Js.string "100%";
+  table##.style##.display := Js.string "table";
   Dom.appendChild table cell;
   let overlay = Html.createDiv doc in
-  overlay##className <- Js.string "overlay";
+  overlay##.className := Js.string "overlay";
   Dom.appendChild overlay table;
-  Dom.appendChild (doc##body) overlay
+  Dom.appendChild (doc##.body) overlay
 
 let _ =
 (*
@@ -1491,16 +1491,16 @@ let start _ =
     (tree_info >>= fun ((vertices, edges, nodes, boxes), tree_i18n) ->
      all_messages >>= fun all_messages ->
      let doc = Html.document in
-     let page = doc##documentElement in
-     page##style##overflow <- Js.string "hidden";
-     page##style##height <- Js.string "100%";
-     doc##body##style##overflow <- Js.string "hidden";
-     doc##body##style##margin <- Js.string "0px";
-     doc##body##style##height <- Js.string "100%";
-     let w = page##clientWidth in
-     let h = page##clientHeight in
+     let page = doc##.documentElement in
+     page##.style##.overflow := Js.string "hidden";
+     page##.style##.height := Js.string "100%";
+     doc##.body##.style##.overflow := Js.string "hidden";
+     doc##.body##.style##.margin := Js.string "0px";
+     doc##.body##.style##.height := Js.string "100%";
+     let w = page##.clientWidth in
+     let h = page##.clientHeight in
      let canvas = create_canvas w h in
-     Dom.appendChild doc##body canvas;
+     Dom.appendChild doc##.body canvas;
 
      let tr = ref (zero, one) in
      let tr' = ref !tr in
@@ -1508,33 +1508,33 @@ let start _ =
      redraw_funct :=
        (fun () ->
           need_redraw := false;
-          Firebug.console##time(Js.string "transform");
+          Firebug.console##time (Js.string "transform");
 (*
           let transf = hyp_transf !tr' in
           for i = 0 to Array.length vertices - 1 do
             vertices'.(i) <- transf vertices.(i)
           done;
 *)
-          let w = page##clientWidth in
-          let h = page##clientHeight in
-          if w <> canvas##width || h <> canvas##height then begin
-            canvas##width <- w;
-            canvas##height <- h
+          let w = page##.clientWidth in
+          let h = page##.clientHeight in
+          if w <> canvas##.width || h <> canvas##.height then begin
+            canvas##.width := w;
+            canvas##.height := h
           end;
           hyp_transf_vect !tr' vertices vertices';
-          Firebug.console##timeEnd(Js.string "transform");
+          Firebug.console##timeEnd (Js.string "transform");
           draw canvas vertices' edges nodes boxes);
      perform_redraw ();
 
-     Html.window##onresize <- Html.handler
+     Html.window##.onresize := Html.handler
        (fun _ ->
-          let page = doc##documentElement in
-          let w = page##clientWidth in
-          let h = page##clientHeight in
+          let page = doc##.documentElement in
+          let w = page##.clientWidth in
+          let h = page##.clientHeight in
 (*
 debug_msg (Format.sprintf "Resize %d %d" w h);
 *)
-          if w <> canvas##width || h <> canvas##height then begin
+          if w <> canvas##.width || h <> canvas##.height then begin
 (*
             canvas##width <- w;
             canvas##height <- h;
@@ -1580,16 +1580,16 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
        let i = find_box boxes x y in
        if i <> -1 then begin
          if not !on_image then begin
-           canvas##style##cursor <- Js.string "pointer";
+           canvas##.style##.cursor := Js.string "pointer";
            on_image := true
          end
        end else if !on_image then begin
-         canvas##style##cursor <- Js.string "";
+         canvas##.style##.cursor := Js.string "";
          on_image := false
        end
      in
-     canvas##onmousemove <- Html.handler
-       (fun ev -> update_cursor (ev##clientX) (ev##clientY); Js._false);
+     canvas##.onmousemove := Html.handler
+       (fun ev -> update_cursor (ev##.clientX) (ev##.clientY); Js._false);
 
      handle_drag canvas
       (fun x0 y0 x1 y1 ->
@@ -1620,7 +1620,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
 
      handle_touch_events canvas
       (fun x0 y0 x1 y1 ->
-   Firebug.console##time(Js.string "transform");
+   Firebug.console##time (Js.string "transform");
          let z0 = from_screen canvas x0 y0 in
          let z1 = from_screen canvas x1 y1 in
 (*
@@ -1647,7 +1647,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
            | _                 -> ());
 
      let handle_key_event ev =
-       match ev##keyCode with
+       match ev##.keyCode with
           37 -> (* left *)
             let z0 = {x = 0.; y = 0.} in
             let z1 = {x = 0.1; y = 0.} in
@@ -1698,36 +1698,36 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
      let rec make_buttons () =
        begin match !prev_buttons with
          None         -> ()
-       | Some buttons -> Dom.removeChild doc##body buttons
+       | Some buttons -> Dom.removeChild doc##.body buttons
        end;
 
        let buttons = Html.createDiv doc in
-       buttons##style##position <- Js.string "absolute";
-       buttons##style##right <- Js.string "0";
-       buttons##style##bottom <- Js.string "0";
+       buttons##.style##.position := Js.string "absolute";
+       buttons##.style##.right := Js.string "0";
+       buttons##.style##.bottom := Js.string "0";
 
        let messages = local_messages all_messages in
 
        let info = img_button 38 "info-38.png" in
-       info##style##position <- Js.string "absolute";
-       info##style##bottom <- Js.string "2px";
-       info##style##right <- Js.string "0";
-       info##style##cursor <- Js.string "pointer";
-       info##onclick <-
+       info##.style##.position := Js.string "absolute";
+       info##.style##.bottom := Js.string "2px";
+       info##.style##.right := Js.string "0";
+       info##.style##.cursor := Js.string "pointer";
+       info##.onclick :=
          Html.handler
            (fun _ -> show_information_page messages tree_i18n; Js._false);
        let tt =
-         tooltip (opt_style (messages##info) (Js.string "Information")) in
-       tt##style##right <- Js.string "36px";
-       tt##style##bottom <- Js.string "36px";
+         tooltip (opt_style (messages##.info) (Js.string "Information")) in
+       tt##.style##.right := Js.string "36px";
+       tt##.style##.bottom := Js.string "36px";
        Dom.appendChild info tt;
        Dom.appendChild buttons info;
 
        let lang = img_button 38 "globe-38.png" in
-       lang##style##position <- Js.string "absolute";
-       lang##style##bottom <- Js.string "2px";
-       lang##style##right <- Js.string "48px";
-       lang##style##cursor <- Js.string "pointer";
+       lang##.style##.position := Js.string "absolute";
+       lang##.style##.bottom := Js.string "2px";
+       lang##.style##.right := Js.string "48px";
+       lang##.style##.cursor := Js.string "pointer";
        let languages = ["Français", "fr"; "English", "en"] in
        let txt = Html.createDiv doc in
        let dl = Html.createDl doc in
@@ -1736,8 +1736,8 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
          (fun (name, id) ->
             let a = Html.createA doc in
             Dom.appendChild a (doc##createTextNode (Js.string name));
-            a##href <- Js.string "#";
-            a##onclick <- Html.handler
+            a##.href := Js.string "#";
+            a##.onclick := Html.handler
               (fun _ ->
                  set_language (Js.string id);
                  make_buttons ();
@@ -1750,67 +1750,67 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
          languages;
        let dd = Html.createDd doc in
        Dom.appendChild dd
-         (doc##createTextNode((opt_style (messages##languages)
+         (doc##createTextNode ((opt_style (messages##.languages)
                                  (Js.string "Languages"))));
        Dom.appendChild dl dd;
        let dt = Html.createDt doc in
        Dom.appendChild dt ul;
        Dom.appendChild dl dt;
        Dom.appendChild txt dl;
-       txt##className <- Js.string "text on";
-       txt##style##position <- Js.string "absolute";
-       txt##style##right <- Js.string "0px";
-       txt##style##bottom <- Js.string "46px";
-       txt##style##whiteSpace <- Js.string "nowrap";
+       txt##.className := Js.string "text on";
+       txt##.style##.position := Js.string "absolute";
+       txt##.style##.right := Js.string "0px";
+       txt##.style##.bottom := Js.string "46px";
+       txt##.style##.whiteSpace := Js.string "nowrap";
        Dom.appendChild lang txt;
        show_on_click lang txt;
        Dom.appendChild buttons lang;
 
        let recenter = img_button 38 "meeting-point-38.png" in
-       recenter##style##position <- Js.string "absolute";
-       recenter##style##bottom <- Js.string "2px";
-       recenter##style##right <- Js.string "96px";
-       recenter##style##cursor <- Js.string "pointer";
-       recenter##onclick <-
+       recenter##.style##.position := Js.string "absolute";
+       recenter##.style##.bottom := Js.string "2px";
+       recenter##.style##.right := Js.string "96px";
+       recenter##.style##.cursor := Js.string "pointer";
+       recenter##.onclick :=
          Html.handler (fun _ ->
            tr' := (zero, one);
            tr := !tr';
            schedule_redraw true;
            Js._false);
        let tt =
-         tooltip (opt_style (messages##recenter) (Js.string "Recenter")) in
-       tt##style##right <- Js.string "36px";
-       tt##style##bottom <- Js.string "36px";
+         tooltip (opt_style (messages##.recenter) (Js.string "Recenter")) in
+       tt##.style##.right := Js.string "36px";
+       tt##.style##.bottom := Js.string "36px";
        Dom.appendChild recenter tt;
        Dom.appendChild buttons recenter;
-       Dom.appendChild doc##body buttons;
+       Dom.appendChild doc##.body buttons;
        prev_buttons := Some buttons
      in
      make_buttons ();
 
      let img = Html.createImg doc in
-     img##src <- icon "ocsigen-powered.png";
+     img##.src := icon "ocsigen-powered.png";
      let a = Html.createA doc in
-     a##target <- Js.string "_blank";
-     a##href <- Js.string "http://ocsigen.org/";
+     a##.target := Js.string "_blank";
+     a##.href := Js.string "http://ocsigen.org/";
      Dom.appendChild a img;
      let logo = Html.createDiv doc in
-     logo##style##position <- Js.string "absolute";
-     logo##style##left <- Js.string "0";
-     logo##style##bottom <- Js.string "0";
+     logo##.style##.position := Js.string "absolute";
+     logo##.style##.left := Js.string "0";
+     logo##.style##.bottom := Js.string "0";
      Dom.appendChild logo a;
-     Dom.appendChild doc##body logo;
+     Dom.appendChild doc##.body logo;
 
      Lwt.return ());
   Js._false
 
 let start _ =
   try
-    ignore (Html.createCanvas (Html.window##document));
+    ignore (Html.createCanvas (Html.window##.document));
     start ()
   with Html.Canvas_not_available ->
     unsupported_messages ();
     Js._false
 
 let _ =
-Html.window##onload <- Html.handler start
+Html.window##.onload := Html.handler start

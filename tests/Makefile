@@ -43,7 +43,7 @@ clean:
 TEST_COMMON= -noprompt -I ../lib -I ../lib/deriving_json
 
 ppx/%.result: ppx/%.ml
-	TERM=dumb ocaml $(TEST_COMMON) -init ppx_init.ml -ppx ../lib/ppx/ppx_js -ppx "$(PPX_DERIVING)/ppx_deriving ../lib/ppx/ppx_deriving_json.cma" < $< 2>&1 | tail -n +15 > $@
+	TERM=dumb ocaml $(TEST_COMMON) -init ppx_init.ml -ppx ../lib/ppx/ppx_js -ppx "$(PPX_DERIVING)/ppx_deriving ../lib/ppx/ppx_deriving_json.cma" < $< 2>&1 | tail -n +17 > $@
 
 ppx/test_%: ppx/%.result ppx/%.expected
 	diff $?

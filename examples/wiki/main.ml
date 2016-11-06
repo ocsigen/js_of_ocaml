@@ -23,25 +23,25 @@ module Html = Dom_html
 let (>>=) = Lwt.bind
 
 let replace_child p n =
-  Js.Opt.iter (p##firstChild) (fun c -> Dom.removeChild p c);
+  Js.Opt.iter (p##.firstChild) (fun c -> Dom.removeChild p c);
   Dom.appendChild p n
 
 let onload _ =
   let d = Html.document in
   let body =
-    Js.Opt.get (d##getElementById(Js.string "wiki_demo"))
+    Js.Opt.get (d##getElementById (Js.string "wiki_demo"))
       (fun () -> assert false) in
   let textbox = Html.createTextarea d in
-  textbox##rows <- 20; textbox##cols <- 80;
-  textbox##value <- Js.string Test.test1;
+  textbox##.rows := 20; textbox##.cols := 80;
+  textbox##.value := Js.string Test.test1;
   let preview = Html.createDiv d in
-  preview##style##border <- Js.string "1px black dashed";
-  preview##style##padding <- Js.string "5px";
+  preview##.style##.border := Js.string "1px black dashed";
+  preview##.style##.padding := Js.string "5px";
   Dom.appendChild body textbox;
   Dom.appendChild body (Html.createBr d);
   Dom.appendChild body preview;
   let rec dyn_preview old_text n =
-    let text = Js.to_string (textbox##value) in
+    let text = Js.to_string (textbox##.value) in
     let n =
       if text <> old_text then begin
         begin try
@@ -59,4 +59,4 @@ let onload _ =
   Js._false
 
 let _ =
-  Html.window##onload <- Html.handler onload
+  Html.window##.onload := Html.handler onload

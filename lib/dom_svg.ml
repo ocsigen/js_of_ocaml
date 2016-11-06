@@ -1448,7 +1448,7 @@ class type foreignObjectElement = object
 end
 
 let createElement (doc : document t) name =
-  doc##createElementNS(xmlns, Js.string name)
+  doc##createElementNS xmlns (Js.string name)
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 
 let createA doc : aElement t = unsafeCreateElement doc "a"
@@ -1528,12 +1528,12 @@ let createvkern doc : element t = unsafeCreateElement doc "vkern"
 
 (****)
 
-let svg_element : element t constr = Js.Unsafe.global ## _SVGElement
+let svg_element : element t constr = Js.Unsafe.global ##. _SVGElement
 
-let document = Js.Unsafe.global##document
+let document = Js.Unsafe.global##.document
 
 let getElementById id : element t =
-  Js.Opt.case (Js.Unsafe.global##document##getElementById (Js.string id))
+  Js.Opt.case (Js.Unsafe.global##.document##getElementById (Js.string id))
     (fun () -> raise Not_found)
     (fun e -> if Js.instanceof e svg_element then e else raise Not_found)
 
@@ -1545,7 +1545,7 @@ module CoerceTo = struct
       Js.null
 
   let unsafeCoerce (e : #element t) tag =
-    if e##tagName##toLowerCase() == Js.string tag then
+    if e##.tagName##toLowerCase == Js.string tag then
       Js.some (Js.Unsafe.coerce e)
     else
       Js.null

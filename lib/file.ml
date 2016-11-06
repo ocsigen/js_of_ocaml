@@ -42,10 +42,10 @@ end
 
 let filename file =
   let file = (Js.Unsafe.coerce file:file_name_only t) in
-  match Optdef.to_option (file##name) with
+  match Optdef.to_option (file##.name) with
     | None ->
       begin
-	match Optdef.to_option (file##fileName) with
+	match Optdef.to_option (file##.fileName) with
 	  | None -> failwith "can't retrieve file name: not implemented"
 	  | Some name -> name
       end
@@ -53,9 +53,9 @@ let filename file =
 
 type file_any = < > t
 
-let blob_constr = Unsafe.global##_Blob
+let blob_constr = Unsafe.global##._Blob
 
-let doc_constr = Unsafe.global##_Document
+let doc_constr = Unsafe.global##._Document
 
 module CoerceTo = struct
   external json : file_any -> 'a Opt.t = "%identity"
@@ -132,26 +132,26 @@ module ReaderEvent = struct
   let loadend = Event.make "loadend"
 end
 
-let fileReader : fileReader t constr = Js.Unsafe.global ## _FileReader
+let fileReader : fileReader t constr = Js.Unsafe.global ##. _FileReader
 
 let read_with_filereader (fileReader : fileReader t constr) kind file =
-  let reader = jsnew fileReader () in
+  let reader = new%js fileReader in
   let (res, w) = Lwt.task () in
-  reader##onloadend <- handler
+  reader##.onloadend := handler
     (fun _ ->
-      if reader##readyState = DONE then
+      if reader##.readyState = DONE then
         Lwt.wakeup w
-	  (match Opt.to_option (CoerceTo.string (reader##result)) with
+	  (match Opt.to_option (CoerceTo.string (reader##.result)) with
 	    | None -> assert false (* can't happen: called with good readAs_ *)
 	    | Some s -> s)
       else (); (* CCC TODO: handle errors *)
       Js._false);
-  Lwt.on_cancel res (fun () -> reader##abort ());
+  Lwt.on_cancel res (fun () -> reader##abort);
   (match kind with
-    | `BinaryString -> reader##readAsBinaryString(file)
-    | `Text -> reader##readAsText(file)
-    | `Text_withEncoding e -> reader##readAsText_withEncoding(file,e)
-    | `DataURL -> reader##readAsDataURL(file));
+    | `BinaryString -> reader##readAsBinaryString file
+    | `Text -> reader##readAsText file
+    | `Text_withEncoding e -> reader##readAsText_withEncoding file e
+    | `DataURL -> reader##readAsDataURL file);
   res
 
 let reader kind file = read_with_filereader fileReader kind file

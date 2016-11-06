@@ -3,7 +3,7 @@ include ../Makefile.conf
 
 COMP=../compiler/$(COMPILER)
 JSFILES=../runtime/runtime.js file/unix.js
-OCAMLC=ocamlfind ocamlc $(SAFESTRING) -package lwt,deriving -ppopt ../lib/syntax/pa_js.cmo -ppopt ../lib/syntax/pa_deriving_Json.cmo -I ../lib -I ../lib/deriving_json
+OCAMLC=ocamlfind ocamlc $(SAFESTRING) -package lwt,deriving -ppx ../lib/ppx/ppx_js.byte ../lib/syntax/pa_deriving_Json.cmo -I ../lib -I ../lib/deriving_json
 STDLIB=$(LIBNAME).cma
 
 
@@ -14,4 +14,4 @@ STDLIB=$(LIBNAME).cma
 	@$(OCAMLC) -linkpkg -o $@ $(STDLIB) ../lib/deriving_json.cma common.cmo -package unix $^
 
 %.cmo: %.ml ../lib/$(STDLIB)
-	@$(OCAMLC) -syntax camlp4o -g -c $<
+	@$(OCAMLC) -g -c $<

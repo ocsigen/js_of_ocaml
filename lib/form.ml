@@ -26,10 +26,10 @@ class type formData = object
   method append_blob : js_string t -> File.blob t -> unit meth
 end
 
-let formData : formData t constr = Js.Unsafe.global ## _FormData
+let formData : formData t constr = Js.Unsafe.global ##. _FormData
 
 let formData_form : (formElement t -> formData t) constr =
-  Js.Unsafe.global ## _FormData
+  Js.Unsafe.global ##. _FormData
 
 type form_elt =
   [ `String of js_string t
@@ -53,31 +53,31 @@ class type submittableElement = object
 end
 
 let have_content (elt:submittableElement t) =
-  elt##name##length > 0 && not (Js.to_bool (elt##disabled))
+  elt##.name##.length > 0 && not (Js.to_bool (elt##.disabled))
 
 let get_textarea_val (elt:textAreaElement t) =
   if have_content (elt:>submittableElement t)
   then
-    let name = to_string (elt##name) in
-    [name,`String (elt##value)]
+    let name = to_string (elt##.name) in
+    [name,`String (elt##.value)]
   else []
 
 let get_select_val (elt:selectElement t) =
   if have_content (elt:>submittableElement t)
   then
-    let name = to_string (elt##name) in
-    if to_bool (elt##multiple)
+    let name = to_string (elt##.name) in
+    if to_bool (elt##.multiple)
     then
-      let options = Array.init ( elt##options##length )
-	(fun i -> Opt.to_option elt##options##item(i)) in
+      let options = Array.init elt##.options##.length
+	(fun i -> Opt.to_option (elt##.options##item i)) in
       filter_map (function
 	| None -> None
 	| Some e ->
-	  if Js.to_bool e##selected
-	  then Some (name,`String (e##value))
+	  if Js.to_bool e##.selected
+	  then Some (name,`String (e##.value))
 	  else None)
 	(Array.to_list options)
-    else [name,`String (elt##value)]
+    else [name,`String (elt##.value)]
   else []
 
 class type file_input = object
@@ -89,12 +89,12 @@ end
 let get_input_val ?(get=false) (elt:inputElement t) =
   if have_content (elt:>submittableElement t)
   then
-    let name = to_string (elt##name) in
-    let value = elt##value in
-    match to_bytestring (elt##_type##toLowerCase ()) with
+    let name = to_string (elt##.name) in
+    let value = elt##.value in
+    match to_bytestring (elt##._type##toLowerCase) with
       | "checkbox"
       | "radio" ->
-	if to_bool (elt##checked)
+	if to_bool (elt##.checked)
 	then [name,`String value]
 	else []
       | "submit"
@@ -106,16 +106,16 @@ let get_input_val ?(get=false) (elt:inputElement t) =
 	then [name,`String value]
 	else
 	  let elt = (Unsafe.coerce elt:file_input t) in
-	  (match Optdef.to_option (elt##files) with
+	  (match Optdef.to_option (elt##.files) with
 	    | None -> []
 	    | Some list ->
-	      if list##length = 0
+	      if list##.length = 0
 	      then [name,`String (Js.string "")]
 	      else
-		match Optdef.to_option (elt##multiple) with
+		match Optdef.to_option (elt##.multiple) with
 		  | None
 		  | Some false ->
-		    (match Opt.to_option (list##item(0)) with
+		    (match Opt.to_option (list##item 0) with
 		      | None -> []
 		      | Some file -> [name,`File file])
 		  | Some true ->
@@ -123,16 +123,16 @@ let get_input_val ?(get=false) (elt:inputElement t) =
 		      match Opt.to_option f with
 			| None -> None
 			| Some file -> Some (name,`File file))
-		      (Array.to_list (Array.init (list##length)
-					(fun i -> list##item(i)))))
+		      (Array.to_list (Array.init (list##.length)
+					(fun i -> list##item i))))
       | _ -> [name,`String value]
   else []
 
 let form_elements ?get (form:formElement t) =
-  let length = form##elements##length in
+  let length = form##.elements##.length in
   let elements = Array.to_list
     (Array.init length
-       (fun i -> Opt.to_option (form##elements##item(i)))) in
+       (fun i -> Opt.to_option (form##.elements##item i))) in
   let contents =
     List.flatten
       (List.map
@@ -153,13 +153,13 @@ let append (form_contents:form_contents) (form_elt:string * form_elt) =
     | `Fields list -> list := form_elt::!list
     | `FormData f ->
       match form_elt with
-	| name, `String s -> f##append(string name, s)
-	| name, `File file -> f##append_blob(string name, (file :> File.blob t))
+	| name, `String s -> f##append (string name) s
+	| name, `File file -> f##append_blob (string name) ((file :> File.blob t))
 
 let empty_form_contents () =
   match Optdef.to_option (Js.def formData) with
     | None -> `Fields (ref [])
-    | Some constr -> `FormData ( jsnew constr() )
+    | Some constr -> `FormData ( new%js constr )
 
 let post_form_contents form =
   let contents = empty_form_contents () in

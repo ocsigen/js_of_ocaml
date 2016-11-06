@@ -31,6 +31,8 @@ let arrows args ret =
     args
     ret
 
+let wrapper = ref None
+
 let inside_Js = lazy
   (try
      Filename.basename (Filename.chop_extension !Location.input_name) = "js"
@@ -53,7 +55,9 @@ end = struct
   let js_dot name =
     if Lazy.force inside_Js
     then name
-    else "Js." ^ name
+    else match !wrapper with
+      | None -> "Js." ^ name
+      | Some m -> m ^ ".Js." ^ name
 
   let js_unsafe_dot name = js_dot ("Unsafe." ^ name)
 

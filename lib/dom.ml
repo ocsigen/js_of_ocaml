@@ -26,11 +26,11 @@ class type ['node] nodeList = object
 end
 
 let list_of_nodeList (nodeList:'a nodeList t) =
-  let length = nodeList##length in
+  let length = nodeList##.length in
   let rec add_item acc i =
     if i < length
     then
-      match Opt.to_option (nodeList##item(i)) with
+      match Opt.to_option (nodeList##item i) with
 	| None -> add_item acc (i+1)
 	| Some e -> add_item (e::acc) (i+1)
     else List.rev acc
@@ -91,16 +91,16 @@ class type node = object
 end
 
 let appendChild (p : #node t) (n : #node t) =
-  ignore (p##appendChild ((n :> node t)))
+  ignore (p##appendChild (n :> node t))
 
 let removeChild (p : #node t) (n : #node t) =
-  ignore (p##removeChild ((n :> node t)))
+  ignore (p##removeChild (n :> node t))
 
 let replaceChild (p : #node t) (n : #node t) (o : #node t) =
-  ignore (p##replaceChild ((n :> node t), (o :> node t)))
+  ignore (p##replaceChild (n :> node t) (o :> node t))
 
 let insertBefore (p : #node t) (n : #node t) (o : #node t opt) =
-  ignore (p##insertBefore ((n :> node t), (o :> node t opt)))
+  ignore (p##insertBefore (n :> node t) (o :> node t opt))
 
 (** Specification of [Attr] objects. *)
 class type attr = object
@@ -184,7 +184,7 @@ type node_type =
   | Other of node t
 
 let nodeType e =
-  match e##nodeType with
+  match e##.nodeType with
     | ELEMENT -> Element (Js.Unsafe.coerce e)
     | ATTRIBUTE -> Attr (Js.Unsafe.coerce e)
     | CDATA_SECTION
@@ -194,14 +194,14 @@ let nodeType e =
 module CoerceTo = struct
 
   let cast (e:#node Js.t) t =
-    if e##nodeType = t
+    if e##.nodeType = t
     then Js.some (Js.Unsafe.coerce e)
     else Js.null
 
   let element e : element Js.t Js.opt = cast e ELEMENT
 
   let text e : text Js.t Js.opt =
-    if e##nodeType == TEXT || e##nodeType == CDATA_SECTION
+    if e##.nodeType == TEXT || e##.nodeType == CDATA_SECTION
     then Js.some (Js.Unsafe.coerce e)
     else Js.null
 
@@ -236,12 +236,12 @@ let handler f =
         let e = window_event () in
         let res = f e in
         if not (Js.to_bool res)
-        then e##returnValue <- res;
+        then e##.returnValue := res;
 	res
       else
 	let res = f e in
         if not (Js.to_bool res) then
-          (Js.Unsafe.coerce e)##preventDefault ();
+          (Js.Unsafe.coerce e)##preventDefault;
         res))
 let full_handler f =
   Js.some (Js.Unsafe.meth_callback
@@ -252,12 +252,12 @@ let full_handler f =
         let e = window_event () in
         let res = f this e in
         if not (Js.to_bool res)
-        then e##returnValue <- res;
+        then e##.returnValue := res;
         res
       else
         let res = f this e in
         if not (Js.to_bool res) then
-          (Js.Unsafe.coerce e)##preventDefault ();
+          (Js.Unsafe.coerce e)##preventDefault;
         res))
 let invoke_handler
   (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
@@ -265,15 +265,15 @@ let invoke_handler
 
 let eventTarget (e: (< .. > as 'a) #event t) : 'a t =
   let target =
-    Opt.get (e##target) (fun () ->
-    Opt.get (e##srcElement) (fun () -> raise Not_found))
+    Opt.get (e##.target) (fun () ->
+    Opt.get (e##.srcElement) (fun () -> raise Not_found))
   in
-  if Js.instanceof target (Js.Unsafe.global ## _Node)
+  if Js.instanceof target (Js.Unsafe.global ##. _Node)
   then
     (* Workaround for Safari bug *)
     let target' : node Js.t = Js.Unsafe.coerce target in
-    if target'##nodeType == TEXT then
-      Js.Unsafe.coerce (Opt.get (target'##parentNode) (fun () -> assert false))
+    if target'##.nodeType == TEXT then
+      Js.Unsafe.coerce (Opt.get (target'##.parentNode) (fun () -> assert false))
     else
       target
   else target
@@ -286,22 +286,22 @@ end
 type event_listener_id = unit -> unit
 
 let addEventListener (e : (< .. > as 'a) t) typ h capt =
-  if (Js.Unsafe.coerce e)##addEventListener == Js.undefined then begin
-    let ev = (Js.string "on")##concat(typ) in
+  if (Js.Unsafe.coerce e)##.addEventListener == Js.undefined then begin
+    let ev = (Js.string "on")##concat typ in
     let callback = fun e -> Js.Unsafe.call (h, e, [||]) in
-    let () = (Js.Unsafe.coerce e)##attachEvent(ev, callback) in
-    fun () -> (Js.Unsafe.coerce e)##detachEvent(ev, callback)
+    let () = (Js.Unsafe.coerce e)##attachEvent ev callback in
+    fun () -> (Js.Unsafe.coerce e)##detachEvent ev callback
   end else begin
-    let () = (Js.Unsafe.coerce e)##addEventListener(typ, h, capt) in
-    fun () -> (Js.Unsafe.coerce e)##removeEventListener (typ, h, capt)
+    let () = (Js.Unsafe.coerce e)##addEventListener typ h capt in
+    fun () -> (Js.Unsafe.coerce e)##removeEventListener typ h capt
   end
 
 let removeEventListener id = id ()
 
 let preventDefault ev =
-  if Js.Optdef.test ((Js.Unsafe.coerce ev)##preventDefault) (* IE hack *)
-  then (Js.Unsafe.coerce ev)##preventDefault()
-  else (Js.Unsafe.coerce ev)##returnValue <- Js.bool false (* IE < 9 *)
+  if Js.Optdef.test ((Js.Unsafe.coerce ev)##.preventDefault) (* IE hack *)
+  then (Js.Unsafe.coerce ev)##preventDefault
+  else (Js.Unsafe.coerce ev)##.returnValue := Js.bool false (* IE < 9 *)
 
 class type stringList = object
   method item : int -> js_string t opt meth

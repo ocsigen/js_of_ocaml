@@ -38,29 +38,29 @@ let document_of_context ctx =
   Js.Unsafe.(fun_call (variable "caml_gr_doc_of_state") [| inject ctx |])
 
 let open_canvas x =
-  let ctx = create_context x x##width x##height in
+  let ctx = create_context x x##.width x##.height in
   set_context ctx
 
 let compute_real_pos elt =
   let rec loop elt left top =
-    let top = elt##offsetTop - elt##scrollTop + top
-    and left = elt##offsetLeft - elt##scrollLeft + left in
-    match Js.Opt.to_option elt##offsetParent with
+    let top = elt##.offsetTop - elt##.scrollTop + top
+    and left = elt##.offsetLeft - elt##.scrollLeft + left in
+    match Js.Opt.to_option elt##.offsetParent with
     | None -> top,left
     | Some p -> loop p left top
   in loop elt 0 0
 
 let mouse_pos () =
   let ctx = get_context() in
-  let elt = ctx##canvas in
+  let elt = ctx##.canvas in
   Lwt_js_events.mousemove elt >>= fun ev ->
   let top,left = compute_real_pos elt in
-  Lwt.return ((Js.Optdef.get (ev##pageX) (fun _ -> 0)) - left,
-              elt##height - ((Js.Optdef.get (ev##pageY) (fun _ -> 0)) - top))
+  Lwt.return ((Js.Optdef.get (ev##.pageX) (fun _ -> 0)) - left,
+              elt##.height - ((Js.Optdef.get (ev##.pageY) (fun _ -> 0)) - top))
 
 let button_down () =
   let ctx = get_context() in
-  let elt = ctx##canvas in
+  let elt = ctx##.canvas in
   Lwt_js_events.mousedown elt >>= fun _ev ->
   Lwt.return true
 
@@ -69,11 +69,11 @@ let read_key () =
   (* let elt = ctx##canvas in *)
   let doc = document_of_context (get_context ()) in
   Lwt_js_events.keypress doc >>= fun ev ->
-  Lwt.return (Char.chr ev##keyCode)
+  Lwt.return (Char.chr ev##.keyCode)
 
 let loop elist f : unit =
   let ctx = get_context() in
-  let elt = ctx##canvas in
+  let elt = ctx##.canvas in
   let doc = document_of_context (get_context ()) in
   let button = ref false in
   let null = char_of_int 0 in
@@ -82,7 +82,7 @@ let loop elist f : unit =
   let get_pos_mouse () = !mouse_x, !mouse_y in
 
   if List.mem Button_down elist then
-    elt##onmousedown <- Dom_html.handler (fun _ev ->
+    elt##.onmousedown := Dom_html.handler (fun _ev ->
         let mouse_x, mouse_y = get_pos_mouse () in
         button := true;
         let s = { mouse_x ; mouse_y ; button=true ;
@@ -91,7 +91,7 @@ let loop elist f : unit =
         Js._true);
 
   if List.mem Button_up elist then
-    elt##onmouseup <- Dom_html.handler (fun _ev ->
+    elt##.onmouseup := Dom_html.handler (fun _ev ->
         let mouse_x, mouse_y = get_pos_mouse () in
         button := false;
         let s = { mouse_x ; mouse_y ; button=false ;
@@ -100,10 +100,10 @@ let loop elist f : unit =
         Js._true);
 
 
-  elt##onmousemove <- Dom_html.handler (fun ev ->
+  elt##.onmousemove := Dom_html.handler (fun ev ->
       let cy,cx = compute_real_pos elt in
-      mouse_x := (Js.Optdef.get (ev##pageX) (fun _ -> 0)) - cx;
-      mouse_y := elt##height - (Js.Optdef.get (ev##pageY) (fun _ -> 0) - cy);
+      mouse_x := (Js.Optdef.get (ev##.pageX) (fun _ -> 0)) - cx;
+      mouse_y := elt##.height - (Js.Optdef.get (ev##.pageY) (fun _ -> 0) - cy);
       if List.mem Mouse_motion elist then
         (let mouse_x, mouse_y = get_pos_mouse () in
          let s = { mouse_x ; mouse_y ; button=(!button) ;
@@ -114,10 +114,10 @@ let loop elist f : unit =
   (* EventListener sur le doc car pas de moyen simple de le faire
      sur un canvasElement *)
   if List.mem Key_pressed elist then
-    doc##onkeypress <- Dom_html.handler (fun ev ->
+    doc##.onkeypress := Dom_html.handler (fun ev ->
         (* Uncaught Invalid_argument char_of_int with key € for example *)
         let key =
-          try char_of_int (Js.Optdef.get (ev##charCode) (fun _ -> 0))
+          try char_of_int (Js.Optdef.get (ev##.charCode) (fun _ -> 0))
           with Invalid_argument _ -> null in
         let mouse_x, mouse_y = get_pos_mouse () in
         let s = { mouse_x ; mouse_y ; button=(!button) ;

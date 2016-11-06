@@ -51,7 +51,7 @@ let catch_cancel f x =
 let with_error_log f x =
   Lwt.catch
     (fun () -> f x)
-    (fun e -> (Firebug.console##log(Js.string (Printexc.to_string e));
+    (fun e -> (Firebug.console##log (Js.string (Printexc.to_string e));
                Lwt.return ()))
 
 let seq_loop evh ?(cancel_handler = false) ?use_capture target handler =
@@ -224,7 +224,7 @@ let mousewheel ?(use_capture=false) target =
     (Dom_html.addMousewheelEventListener
        target
        (fun (ev : #Dom_html.event Js.t) ~dx ~dy ->
-         Firebug.console##log(ev);
+         Firebug.console##log ev;
          cancel ();
          Lwt.wakeup w (ev, (dx, dy));
          Js.bool true) (* true because we do not want to prevent default ->
@@ -327,7 +327,7 @@ let transition_evn = lazy (
   try
     snd (List.find
            (fun (propname, _evname) ->
-              Js.Unsafe.get (e##style) propname != Js.undefined)
+              Js.Unsafe.get (e##.style) propname != Js.undefined)
            [("WebkitTransition", [Dom.Event.make "webkitTransitionEnd"]);
             ("MozTransition", [Dom.Event.make "transitionend"]);
             ("OTransition", [Dom.Event.make "oTransitionEnd";
@@ -359,9 +359,9 @@ let onload () = make_event Dom_html.Event.load Dom_html.window
 
 let domContentLoaded =
   let complete = Js.string "complete" in
-  let doc = Dom_html.window##document in
+  let doc = Dom_html.window##.document in
   (fun () ->
-     if doc##readyState = complete
+     if doc##.readyState = complete
      then Lwt.return_unit
      else
        let t,w = Lwt.task () in
@@ -375,7 +375,7 @@ let domContentLoaded =
            (make_event (Dom.Event.make "readystatechange"))
            doc
            (fun e _ ->
-              if doc##readyState = complete
+              if doc##.readyState = complete
               then wakeup w e;
               Lwt.return_unit
            ) in

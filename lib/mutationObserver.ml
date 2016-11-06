@@ -47,7 +47,7 @@ end
 
 let empty_mutation_observer_init () : mutationObserverInit Js.t = Js.Unsafe.obj [||]
 
-let mutationObserver = Js.Unsafe.global##_MutationObserver
+let mutationObserver = Js.Unsafe.global##._MutationObserver
 
 let is_supported () = Js.Optdef.test mutationObserver
 
@@ -63,14 +63,14 @@ let observe ~(node:#Dom.node Js.t)
   ?(attribute_old_value:bool option) ?(character_data_old_value:bool option)
   ?(attribute_filter:Js.js_string Js.t list option) () : mutationObserver Js.t =
   let opt_iter x f = match x with None -> () | Some x -> f x in
-  let obs = jsnew mutationObserver(Js.wrap_callback f) in
+  let obs = new%js mutationObserver (Js.wrap_callback f) in
   let cfg = empty_mutation_observer_init () in
-  let () = opt_iter child_list (fun v -> cfg##childList <- v) in
-  let () = opt_iter attributes (fun v -> cfg##attributes <- v) in
-  let () = opt_iter character_data (fun v -> cfg##characterData <- v) in
-  let () = opt_iter subtree (fun v -> cfg##subtree <- v) in
-  let () = opt_iter attribute_old_value (fun v -> cfg##attributeOldValue <- v) in
-  let () = opt_iter character_data_old_value (fun v -> cfg##characterDataOldValue <- v) in
-  let () = opt_iter attribute_filter (fun l -> cfg##attributeFilter <- Js.array (Array.of_list l)) in
-  let () = obs##observe(node, cfg) in
+  let () = opt_iter child_list (fun v -> cfg##.childList := v) in
+  let () = opt_iter attributes (fun v -> cfg##.attributes := v) in
+  let () = opt_iter character_data (fun v -> cfg##.characterData := v) in
+  let () = opt_iter subtree (fun v -> cfg##.subtree := v) in
+  let () = opt_iter attribute_old_value (fun v -> cfg##.attributeOldValue := v) in
+  let () = opt_iter character_data_old_value (fun v -> cfg##.characterDataOldValue := v) in
+  let () = opt_iter attribute_filter (fun l -> cfg##.attributeFilter := Js.array (Array.of_list l)) in
+  let () = obs##observe node cfg in
   obs

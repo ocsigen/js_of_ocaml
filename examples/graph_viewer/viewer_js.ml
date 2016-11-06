@@ -23,7 +23,7 @@ module Html = Dom_html
 
 let create_canvas w h =
   let c = Html.createCanvas Html.document in
-  c##width <- w; c##height <- h; c
+  c##.width := w; c##.height := h; c
 
 module Common = Viewer_common.F (struct
   type font = Js.js_string Js.t
@@ -33,38 +33,38 @@ module Common = Viewer_common.F (struct
 
   type ctx = Html.canvasRenderingContext2D Js.t
 
-  let save ctx = ctx##save ()
-  let restore ctx = ctx##restore ()
+  let save ctx = ctx##save
+  let restore ctx = ctx##restore
 
-  let scale ctx ~sx ~sy = ctx##scale (sx, sy)
-  let translate ctx ~tx ~ty = ctx##translate (tx, ty)
+  let scale ctx ~sx ~sy = ctx##scale sx sy
+  let translate ctx ~tx ~ty = ctx##translate tx ty
 
-  let set_line_width ctx w = ctx##lineWidth <- w
+  let set_line_width ctx w = ctx##.lineWidth := w
 
-  let begin_path ctx = ctx##beginPath ()
-  let close_path ctx = ctx##closePath ()
-  let move_to ctx ~x ~y = ctx##moveTo (x, y)
-  let line_to ctx ~x ~y = ctx##lineTo (x, y)
+  let begin_path ctx = ctx##beginPath
+  let close_path ctx = ctx##closePath
+  let move_to ctx ~x ~y = ctx##moveTo x y
+  let line_to ctx ~x ~y = ctx##lineTo x y
   let curve_to ctx ~x1 ~y1 ~x2 ~y2 ~x3 ~y3 =
-    ctx##bezierCurveTo (x1, y1, x2, y2, x3, y3)
+    ctx##bezierCurveTo x1 y1 x2 y2 x3 y3
   let arc ctx ~xc ~yc ~radius ~angle1 ~angle2 =
-    ctx##arc (xc, yc, radius, angle1, angle2, Js._true)
-  let rectangle ctx ~x ~y ~width ~height = ctx##rect (x, y, width, height)
+    ctx##arc xc yc radius angle1 angle2 Js._true
+  let rectangle ctx ~x ~y ~width ~height = ctx##rect x y width height
 
-  let fill ctx c = ctx##fillStyle <- c; ctx##fill ()
-  let stroke ctx c = ctx##strokeStyle <- c; ctx##stroke ()
-  let clip ctx = ctx##clip ()
+  let fill ctx c = ctx##.fillStyle := c; ctx##fill
+  let stroke ctx c = ctx##.strokeStyle := c; ctx##stroke
+  let clip ctx = ctx##clip
 
   let draw_text (ctx:ctx) x y txt font fill_color stroke_color =
-     ctx##font <- font;
-     ctx##textAlign <- Js.string "center";
-     ctx##textBaseline <- Js.string "middle";
+     ctx##.font := font;
+     ctx##.textAlign := Js.string "center";
+     ctx##.textBaseline := Js.string "middle";
      begin match fill_color with
-       Some c -> ctx##fillStyle <- c; ctx##fillText (txt, x, y)
+       Some c -> ctx##.fillStyle := c; ctx##fillText txt x y
      | None   -> ()
      end;
      begin match stroke_color with
-       Some c -> ctx##strokeStyle <- c; ctx##strokeText (txt, x, y)
+       Some c -> ctx##.strokeStyle := c; ctx##strokeText txt x y
      | None   -> ()
      end
 
@@ -72,17 +72,17 @@ module Common = Viewer_common.F (struct
   type drawable = window * ctx
   type pixmap = drawable
   let get_drawable w =
-    let ctx = w##getContext(Html._2d_) in
-    ctx##lineWidth <- 2.;
+    let ctx = w##getContext Html._2d_ in
+    ctx##.lineWidth := 2.;
     (w, ctx)
   let make_pixmap _ width height =
     let c = Html.createCanvas Html.document in
-    c##width <- width; c##height <- height;
+    c##.width := width; c##.height := height;
     get_drawable c
   let drawable_of_pixmap p = p
   let get_context (p, c) = c
   let put_pixmap ~dst:((p, c) :drawable) ~x ~y ~xsrc ~ysrc ~width ~height ((p, _) : pixmap)=
-    c##drawImage_fullFromCanvas (p, float xsrc, float ysrc, float width, float height, float x, float y, float width, float height)
+    c##drawImage_fullFromCanvas p (float xsrc) (float ysrc) (float width) (float height) (float x) (float y) (float width) (float height)
 
   (****)
 
@@ -92,8 +92,8 @@ end)
 open Common
 
 let redraw st s h v (canvas : Html.canvasElement Js.t) =
-  let width = canvas##width in
-  let height = canvas##height in
+  let width = canvas##.width in
+  let height = canvas##.height in
 (*Firebug.console##time (Js.string "draw");*)
   redraw st s h v canvas
     {x = 0; y = 0; width = width; height = height} 0 0 width height
@@ -139,15 +139,15 @@ class adjustment
 let handle_drag element f =
   let mx = ref 0 in
   let my = ref 0 in
-  element##onmousedown <- Html.handler
+  element##.onmousedown := Html.handler
     (fun ev ->
-       mx := ev##clientX; my := ev##clientY;
-       element##style##cursor <- Js.string "move";
+       mx := ev##.clientX; my := ev##.clientY;
+       element##.style##.cursor := Js.string "move";
        let c1 =
          Html.addEventListener Html.document Html.Event.mousemove
            (Html.handler
               (fun ev ->
-                 let x = ev##clientX and y = ev##clientY in
+                 let x = ev##.clientX and y = ev##.clientY in
                  let x' = !mx and y' = !my in
                  mx := x; my := y;
                  f (x -  x') (y - y');
@@ -161,7 +161,7 @@ let handle_drag element f =
                (fun _ ->
                   Html.removeEventListener c1;
                   Js.Opt.iter !c2 Html.removeEventListener;
-                  element##style##cursor <- Js.string "";
+                  element##.style##.cursor := Js.string "";
                   Js._true))
             Js._true);
        (* We do not want to disable the default action on mouse down
@@ -171,19 +171,19 @@ let handle_drag element f =
 
 let start () =
   let doc = Html.document in
-  let page = doc##documentElement in
-  page##style##overflow <- Js.string "hidden";
-  doc##body##style##overflow <- Js.string "hidden";
-  doc##body##style##margin <- Js.string "0px";
+  let page = doc##.documentElement in
+  page##.style##.overflow := Js.string "hidden";
+  doc##.body##.style##.overflow := Js.string "hidden";
+  doc##.body##.style##.margin := Js.string "0px";
 
   let started = ref false in
   let p = Html.createP doc in
-  p##innerHTML <- Js.string "Loading graph...";
-  p##style##display <- Js.string "none";
-  Dom.appendChild doc##body p;
+  p##.innerHTML := Js.string "Loading graph...";
+  p##.style##.display := Js.string "none";
+  Dom.appendChild doc##.body p;
   ignore
     (Lwt_js.sleep 0.5 >>= fun () ->
-     if not !started then p##style##display <- Js.string "inline";
+     if not !started then p##.style##.display := Js.string "inline";
      Lwt.return ());
 
 (*
@@ -201,7 +201,7 @@ let start () =
 *)
 
   started := true;
-  Dom.removeChild doc##body p;
+  Dom.removeChild doc##.body p;
 
   let st =
     { bboxes = bboxes;
@@ -211,10 +211,10 @@ let start () =
       st_pixmap = Common.make_pixmap () }
   in
 
-  let canvas = create_canvas (page##clientWidth) (page##clientHeight) in
-  Dom.appendChild doc##body canvas;
+  let canvas = create_canvas (page##.clientWidth) (page##.clientHeight) in
+  Dom.appendChild doc##.body canvas;
   let allocation () =
-    {x = 0; y = 0; width = canvas##width; height = canvas##height} in
+    {x = 0; y = 0; width = canvas##.width; height = canvas##.height} in
 
   let hadj = new adjustment () in
   let vadj = new adjustment () in
@@ -294,28 +294,28 @@ Firebug.console##log(Js.string "sleep");
   let size_px = points size in
   let pos = ref height in
   let thumb = Html.createDiv doc in
-  let style = thumb##style in
-  style##position <- Js.string "absolute";
-  style##width <- size_px;
-  style##height <- size_px;
-  style##top <- points !pos;
-  style##left <- Js.string "0px";
-  style##margin <- Js.string "1px";
-  style##backgroundColor <- Js.string "black";
+  let style = thumb##.style in
+  style##.position := Js.string "absolute";
+  style##.width := size_px;
+  style##.height := size_px;
+  style##.top := points !pos;
+  style##.left := Js.string "0px";
+  style##.margin := Js.string "1px";
+  style##.backgroundColor := Js.string "black";
   let slider = Html.createDiv doc in
-  let style = slider##style in
-  style##position <- Js.string "absolute";
-  style##width <- size_px;
-  style##height <- points (height + size);
-  style##border <- Js.string "2px solid black";
-  style##padding <- Js.string "1px";
-  style##top <- Js.string "10px";
-  style##left <- Js.string "10px";
+  let style = slider##.style in
+  style##.position := Js.string "absolute";
+  style##.width := size_px;
+  style##.height := points (height + size);
+  style##.border := Js.string "2px solid black";
+  style##.padding := Js.string "1px";
+  style##.top := Js.string "10px";
+  style##.left := Js.string "10px";
   Dom.appendChild slider thumb;
-  Dom.appendChild doc##body slider;
+  Dom.appendChild doc##.body slider;
   let set_slider_position pos' =
     if pos' <> !pos then begin
-      thumb##style##top <- points pos';
+      thumb##.style##.top := points pos';
       pos := pos';
       sadj#set_value (float (height - pos') *. sadj#upper /. float height);
       rescale 0.5 0.5
@@ -324,24 +324,24 @@ Firebug.console##log(Js.string "sleep");
   handle_drag thumb
     (fun dx dy ->
        set_slider_position (min height (max 0 (!pos + dy))));
-  slider##onmousedown <- Html.handler
+  slider##.onmousedown := Html.handler
     (fun ev ->
-       let ey = ev##clientY in
+       let ey = ev##.clientY in
        let (_, sy) = Dom_html.elementClientPosition slider in
        set_slider_position (max 0 (min height (ey - sy - size / 2)));
        Js._false);
   let adjust_slider () =
     let pos' =
       height - truncate (sadj#value *. float height /. sadj#upper +. 0.5) in
-    thumb##style##top <- points pos';
+    thumb##.style##.top := points pos';
     pos := pos'
   in
 
-  Html.window##onresize <- Html.handler
+  Html.window##.onresize := Html.handler
     (fun _ ->
-       let page = doc##documentElement in
-       canvas##width <- page##clientWidth;
-       canvas##height <- page##clientHeight;
+       let page = doc##.documentElement in
+       canvas##.width := page##.clientWidth;
+       canvas##.height := page##.clientHeight;
        update_view true;
        Js._true);
 
@@ -378,8 +378,8 @@ Firebug.console##log(Js.string "sleep");
   ignore (Html.addMousewheelEventListener canvas
     (fun ev ~dx ~dy ->
        let (ex, ey) = Dom_html.elementClientPosition canvas in
-       let x = float (ev##clientX - ex) in
-       let y = float (ev##clientY - ey) in
+       let x = float (ev##.clientX - ex) in
+       let y = float (ev##.clientY - ey) in
        if dy < 0 then
          bump_scale x y 1.
        else if dy > 0 then
@@ -415,7 +415,7 @@ Firebug.console##log(Js.string "sleep");
     Js._true;
 *)
   let handle_key_event ev =
-    match ev##keyCode with
+    match ev##.keyCode with
       37 -> (* left *)
         hadj#set_value (hadj#value -. hadj#step_increment);
         update_view false;
@@ -439,17 +439,17 @@ Firebug.console##log(Js.string "sleep");
         Js._true
   in
   let ignored_keycode = ref (-1) in
-  Html.document##onkeydown <-
+  Html.document##.onkeydown :=
       (Html.handler
          (fun e ->
-            ignored_keycode := e##keyCode;
+            ignored_keycode := e##.keyCode;
             handle_key_event e));
-  Html.document##onkeypress <-
+  Html.document##.onkeypress :=
       (Html.handler
          (fun e ->
             let k = !ignored_keycode in
             ignored_keycode := -1;
-             if e##keyCode = k then Js._true else handle_key_event e));
+             if e##.keyCode = k then Js._true else handle_key_event e));
 
 
 (*
@@ -464,4 +464,4 @@ Firebug.console##timeEnd(Js.string "init");
   Lwt.return ()
 
 let _ =
-Html.window##onload <- Html.handler (fun _ -> ignore (start ()); Js._false)
+Html.window##.onload := Html.handler (fun _ -> ignore (start ()); Js._false)
