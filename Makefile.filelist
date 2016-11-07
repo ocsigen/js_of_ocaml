@@ -82,7 +82,7 @@ JSOO_RUNTIME_EXTRA := weak.js \
 	bin_prot.js \
 	predefined_exceptions.js
 
-OTHERS := runtime/runtime.js $(addprefix runtime/,$(JSOO_RUNTIME)) $(addprefix runtime/,$(JSOO_RUNTIME_EXTRA))
+RUNTIME := runtime/runtime.js $(addprefix runtime/,$(JSOO_RUNTIME)) $(addprefix runtime/,$(JSOO_RUNTIME_EXTRA))
 
 COMP_INTF := compiler/lib/js_of_ocaml_compiler.cmi
 COMP_IMPL := compiler/lib/js_of_ocaml_compiler.cma
