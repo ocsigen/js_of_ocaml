@@ -39,9 +39,6 @@ examples/*/*.js
 compiler/js_of_ocaml
 compiler/jsoo_minify
 compiler/jsoo_link
-compiler/lib/js_lexer.ml
-compiler/lib/js_parser.ml
-compiler/lib/js_parser.mli
 compiler/lib/compiler_version.ml
 compiler/man
 jsoo_tools/jsoo_mktop
@@ -51,10 +48,6 @@ jsoo_tools/jsoo_mktop.opt
 jsoo_tools/jsoo_mkcmis.opt
 jsoo_tools/jsoo_listunits.opt
 compiler/lib/util.ml
-compiler/lib/annot_lexer.ml
-compiler/lib/annot_parser.ml
-compiler/lib/annot_parser.mli
-compiler/lib/*.conflicts
 doc/api/html
 benchmarks/build
 benchmarks/results

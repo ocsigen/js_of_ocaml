@@ -1,0 +1,512 @@
+
+** Conflict (shift/reduce) in state 487.
+** Tokens involved: T_LPAREN T_LBRACKET
+** The following explanations concentrate on token T_LPAREN.
+** This state is reached from program after reading:
+
+T_VOID T_NEW member_expression 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 487, looking ahead at T_LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+expression_statement 
+expression_no_statement 
+assignment_expression_no_statement 
+conditional_expression_no_statement 
+post_in_expression_no_statement 
+pre_in_expression_no_statement 
+T_VOID pre_in_expression 
+       left_hand_side_expression 
+       new_expression 
+       member_expression 
+       T_NEW member_expression arguments 
+                               . T_LPAREN loption(separated_nonempty_list(T_COMMA,assignment_expression)) T_RPAREN 
+
+** In state 487, looking ahead at T_LPAREN, reducing production
+** new_expression -> member_expression 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_LPAREN
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+expression_statement // lookahead token is inherited
+expression_no_statement // lookahead token is inherited
+assignment_expression_no_statement // lookahead token is inherited
+conditional_expression_no_statement // lookahead token is inherited
+post_in_expression_no_statement // lookahead token is inherited
+pre_in_expression_no_statement // lookahead token is inherited
+T_VOID pre_in_expression // lookahead token is inherited
+       left_hand_side_expression // lookahead token is inherited
+       new_expression // lookahead token is inherited
+       T_NEW new_expression // lookahead token is inherited
+             member_expression . 
+
+** Conflict (shift/reduce) in state 377.
+** Tokens involved: T_LPAREN T_LBRACKET
+** The following explanations concentrate on token T_LPAREN.
+** This state is reached from program after reading:
+
+call_expression_no_statement 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 377, looking ahead at T_LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+expression_statement 
+expression_no_statement 
+assignment_expression_no_statement 
+left_hand_side_expression_no_statement assignment_operator assignment_expression 
+call_expression_no_statement 
+call_expression_no_statement arguments 
+                             . T_LPAREN loption(separated_nonempty_list(T_COMMA,assignment_expression)) T_RPAREN 
+
+** In state 377, looking ahead at T_LPAREN, reducing production
+** left_hand_side_expression_no_statement -> call_expression_no_statement 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_LPAREN
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+expression_statement // lookahead token is inherited
+expression_no_statement // lookahead token is inherited
+assignment_expression_no_statement // lookahead token is inherited
+conditional_expression_no_statement // lookahead token is inherited
+post_in_expression_no_statement // lookahead token is inherited
+pre_in_expression_no_statement // lookahead token is inherited
+left_hand_side_expression_no_statement // lookahead token is inherited
+call_expression_no_statement . 
+
+** Conflict (shift/reduce) in state 350.
+** Tokens involved: T_LPAREN T_LBRACKET
+** The following explanations concentrate on token T_LPAREN.
+** This state is reached from program after reading:
+
+member_expression_no_statement 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 350, looking ahead at T_LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+expression_statement 
+expression_no_statement 
+assignment_expression_no_statement 
+left_hand_side_expression_no_statement assignment_operator assignment_expression 
+call_expression_no_statement 
+member_expression_no_statement arguments 
+                               . T_LPAREN loption(separated_nonempty_list(T_COMMA,assignment_expression)) T_RPAREN 
+
+** In state 350, looking ahead at T_LPAREN, reducing production
+** new_expression_no_statement -> member_expression_no_statement 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_LPAREN
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+expression_statement // lookahead token is inherited
+expression_no_statement // lookahead token is inherited
+assignment_expression_no_statement // lookahead token is inherited
+conditional_expression_no_statement // lookahead token is inherited
+post_in_expression_no_statement // lookahead token is inherited
+pre_in_expression_no_statement // lookahead token is inherited
+left_hand_side_expression_no_statement // lookahead token is inherited
+new_expression_no_statement // lookahead token is inherited
+member_expression_no_statement . 
+
+** Conflict (shift/reduce) in state 296.
+** Tokens involved: T_PLUS T_MINUS T_INCR_NB T_DECR_NB
+** The following explanations concentrate on token T_PLUS.
+** This state is reached from program after reading:
+
+pre_in_expression_no_statement 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 296, looking ahead at T_PLUS, reducing production
+** post_in_expression_no_statement -> pre_in_expression_no_statement 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_PLUS
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+expression_statement // lookahead token is inherited
+expression_no_statement // lookahead token is inherited
+assignment_expression_no_statement // lookahead token is inherited
+conditional_expression_no_statement // lookahead token is inherited
+post_in_expression_no_statement // lookahead token is inherited
+pre_in_expression_no_statement . 
+
+** In state 296, looking ahead at T_PLUS, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+expression_statement 
+expression_no_statement 
+assignment_expression_no_statement 
+conditional_expression_no_statement 
+post_in_expression_no_statement 
+pre_in_expression_no_statement 
+pre_in_expression_no_statement . T_PLUS pre_in_expression 
+
+** Conflict (shift/reduce) in state 285.
+** Token involved: T_SEMICOLON
+** This state is reached from program after reading:
+
+statement_need_semi 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 285, looking ahead at T_SEMICOLON, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+                    . T_SEMICOLON 
+
+** In state 285, looking ahead at T_SEMICOLON, reducing production
+** statement -> statement_need_semi 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_SEMICOLON
+statement // lookahead token is inherited
+statement_need_semi . 
+
+** Conflict (shift/reduce) in state 273.
+** Token involved: T_IDENTIFIER
+** This state is reached from program after reading:
+
+T_BREAK 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 273, looking ahead at T_IDENTIFIER, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+break_statement 
+T_BREAK option(label) 
+        label 
+        identifier 
+        . T_IDENTIFIER 
+
+** In state 273, looking ahead at T_IDENTIFIER, reducing production
+** option(label) -> 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_IDENTIFIER
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+break_statement // lookahead token is inherited
+T_BREAK option(label) // lookahead token is inherited
+        . 
+
+** Conflict (shift/reduce) in state 269.
+** Token involved: T_IDENTIFIER
+** This state is reached from program after reading:
+
+T_CONTINUE 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 269, looking ahead at T_IDENTIFIER, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+continue_statement 
+T_CONTINUE option(label) 
+           label 
+           identifier 
+           . T_IDENTIFIER 
+
+** In state 269, looking ahead at T_IDENTIFIER, reducing production
+** option(label) -> 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_IDENTIFIER
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+continue_statement // lookahead token is inherited
+T_CONTINUE option(label) // lookahead token is inherited
+           . 
+
+** Conflict (shift/reduce) in state 199.
+** Tokens involved: T_LPAREN T_LBRACKET
+** The following explanations concentrate on token T_LPAREN.
+** This state is reached from program after reading:
+
+T_NEW member_expression 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 199, looking ahead at T_LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+expression_statement 
+expression_no_statement 
+assignment_expression_no_statement 
+left_hand_side_expression_no_statement assignment_operator assignment_expression 
+new_expression_no_statement 
+member_expression_no_statement 
+T_NEW member_expression arguments 
+                        . T_LPAREN loption(separated_nonempty_list(T_COMMA,assignment_expression)) T_RPAREN 
+
+** In state 199, looking ahead at T_LPAREN, reducing production
+** new_expression -> member_expression 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_LPAREN
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+expression_statement // lookahead token is inherited
+expression_no_statement // lookahead token is inherited
+assignment_expression_no_statement // lookahead token is inherited
+conditional_expression_no_statement // lookahead token is inherited
+post_in_expression_no_statement // lookahead token is inherited
+pre_in_expression_no_statement // lookahead token is inherited
+left_hand_side_expression_no_statement // lookahead token is inherited
+new_expression_no_statement // lookahead token is inherited
+T_NEW new_expression // lookahead token is inherited
+      member_expression . 
+
+** Conflict (shift/reduce) in state 190.
+** Tokens involved: T_VOID T_TYPEOF T_TRUE T_THIS T_STRING T_REGEX T_PLUS T_NUMBER T_NULL T_NOT T_NEW T_MINUS T_LPAREN T_LCURLY T_LBRACKET T_INCR_NB T_INCR T_IDENTIFIER T_FUNCTION T_FALSE T_DELETE T_DECR_NB T_DECR T_BIT_NOT
+** The following explanations concentrate on token T_VOID.
+** This state is reached from program after reading:
+
+T_RETURN 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 190, looking ahead at T_VOID, reducing production
+** option(expression) -> 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_VOID
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+return_statement // lookahead token is inherited
+T_RETURN option(expression) // lookahead token is inherited
+         . 
+
+** In state 190, looking ahead at T_VOID, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+return_statement 
+T_RETURN option(expression) 
+         expression 
+         assignment_expression 
+         conditional_expression 
+         post_in_expression 
+         pre_in_expression 
+         . T_VOID pre_in_expression 
+
+** Conflict (shift/reduce) in state 77.
+** Tokens involved: T_LPAREN T_LBRACKET
+** The following explanations concentrate on token T_LPAREN.
+** This state is reached from program after reading:
+
+T_VOID call_expression 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 77, looking ahead at T_LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+expression_statement 
+expression_no_statement 
+assignment_expression_no_statement 
+conditional_expression_no_statement 
+post_in_expression_no_statement 
+pre_in_expression_no_statement 
+T_VOID pre_in_expression 
+       left_hand_side_expression 
+       call_expression 
+       call_expression arguments 
+                       . T_LPAREN loption(separated_nonempty_list(T_COMMA,assignment_expression)) T_RPAREN 
+
+** In state 77, looking ahead at T_LPAREN, reducing production
+** left_hand_side_expression -> call_expression 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_LPAREN
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+expression_statement // lookahead token is inherited
+expression_no_statement // lookahead token is inherited
+assignment_expression_no_statement // lookahead token is inherited
+conditional_expression_no_statement // lookahead token is inherited
+post_in_expression_no_statement // lookahead token is inherited
+pre_in_expression_no_statement // lookahead token is inherited
+T_VOID pre_in_expression // lookahead token is inherited
+       left_hand_side_expression // lookahead token is inherited
+       call_expression . 
+
+** Conflict (shift/reduce) in state 66.
+** Tokens involved: T_PLUS T_MINUS T_INCR_NB T_DECR_NB
+** The following explanations concentrate on token T_PLUS.
+** This state is reached from program after reading:
+
+T_THROW pre_in_expression 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 66, looking ahead at T_PLUS, reducing production
+** post_in_expression -> pre_in_expression 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_PLUS
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+throw_statement // lookahead token is inherited
+T_THROW expression // lookahead token is inherited
+        assignment_expression // lookahead token is inherited
+        conditional_expression // lookahead token is inherited
+        post_in_expression // lookahead token is inherited
+        pre_in_expression . 
+
+** In state 66, looking ahead at T_PLUS, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+throw_statement 
+T_THROW expression 
+        assignment_expression 
+        conditional_expression 
+        post_in_expression 
+        pre_in_expression 
+        pre_in_expression . T_PLUS pre_in_expression 
+
+** Conflict (shift/reduce) in state 60.
+** Tokens involved: T_LPAREN T_LBRACKET
+** The following explanations concentrate on token T_LPAREN.
+** This state is reached from program after reading:
+
+T_VOID member_expression 
+
+** The derivations that appear below have the following common factor:
+** (The question mark symbol (?) represents the spot where the derivations begin to differ.)
+
+program 
+list(source_element) EOF 
+(?)
+
+** In state 60, looking ahead at T_LPAREN, shifting is permitted
+** because of the following sub-derivation:
+
+source_element list(source_element) 
+statement 
+statement_need_semi either(T_SEMICOLON,T_VIRTUAL_SEMICOLON) 
+expression_statement 
+expression_no_statement 
+assignment_expression_no_statement 
+conditional_expression_no_statement 
+post_in_expression_no_statement 
+pre_in_expression_no_statement 
+T_VOID pre_in_expression 
+       left_hand_side_expression 
+       call_expression 
+       member_expression arguments 
+                         . T_LPAREN loption(separated_nonempty_list(T_COMMA,assignment_expression)) T_RPAREN 
+
+** In state 60, looking ahead at T_LPAREN, reducing production
+** new_expression -> member_expression 
+** is permitted because of the following sub-derivation:
+
+source_element list(source_element) // lookahead token appears because list(source_element) can begin with T_LPAREN
+statement // lookahead token is inherited
+statement_need_semi // lookahead token is inherited
+expression_statement // lookahead token is inherited
+expression_no_statement // lookahead token is inherited
+assignment_expression_no_statement // lookahead token is inherited
+conditional_expression_no_statement // lookahead token is inherited
+post_in_expression_no_statement // lookahead token is inherited
+pre_in_expression_no_statement // lookahead token is inherited
+T_VOID pre_in_expression // lookahead token is inherited
+       left_hand_side_expression // lookahead token is inherited
+       new_expression // lookahead token is inherited
+       member_expression . 
