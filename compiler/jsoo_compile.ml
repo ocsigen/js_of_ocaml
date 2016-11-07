@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Js_of_ocaml_compiler
+
 let times = Option.Debug.find "times"
 let debug_mem = Option.Debug.find "mem"
 let _ = Sys.catch_break true

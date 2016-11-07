@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Compiler
+open Js_of_ocaml_compiler
 let split_primitives p =
   let len = String.length p in
   let rec split beg cur =
