@@ -3,10 +3,10 @@ version = "dev"
 archive(byte) = "js_of_ocaml.cma"
 requires = "lwt,uchar"
 
-linkopts(javascript,-jsoo_noruntime) = "+js_of_ocaml/runtime.js"
-linkopts(javascript,jsoo_classlist) += "+js_of_ocaml/classlist.js"
-linkopts(javascript,pkg_graphics) += "+js_of_ocaml/graphics.js"
-linkopts(javascript,pkg_num) += "+js_of_ocaml/nat.js"
+linkopts(javascript,-jsoo_noruntime) = "+js_of_ocaml-compiler/runtime.js"
+linkopts(javascript,jsoo_classlist) += "+js_of_ocaml-compiler/classlist.js"
+linkopts(javascript,pkg_graphics) += "+js_of_ocaml-compiler/graphics.js"
+linkopts(javascript,pkg_num) += "+js_of_ocaml-compiler/nat.js"
 
 package "syntax" (
   description = "Js_of_ocaml syntax extension"
@@ -109,7 +109,7 @@ package "weak" (
   exists_if = "weak.js"
   description = "weak emulation for js_of_ocaml."
   version = "[distributed with js_of_ocaml]"
-  linkopts(javascript) = "+js_of_ocaml/weak.js"
+  linkopts(javascript) = "+js_of_ocaml-compiler/weak.js"
 )
 
 package "ocamlbuild" (
@@ -126,5 +126,5 @@ package "toplevel" (
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "jsooTopError.cmo jsooTopPpx.cmo jsooTop.cmo"
   requires = "bytes,compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel,js_of_ocaml,js_of_ocaml.compiler"
-  linkopts(javascript) = "+js_of_ocaml/toplevel.js"
+  linkopts(javascript) = "+js_of_ocaml-compiler/toplevel.js"
 )

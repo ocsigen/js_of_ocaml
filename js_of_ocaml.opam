@@ -13,17 +13,12 @@ install: [make "install-lib" "BINDIR=%{bin}%"]
 remove:  ["ocamlfind" "remove" "js_of_ocaml"]
 
 depends: [
-  "cmdliner"
-  "base-unix"
   "ocamlfind" {>= "1.5.1"}
   "lwt" {>= "2.4.4"}
-  "menhir"
   "cppo" {>= "1.1.0"}
-  "base64" {>= "2.0.0"}
   "ppx_tools"
-  "ocamlbuild"
   "uchar"
-  "yojson"
+  "js_of_ocaml-compiler"
   "toplevel_expect_test" {test}
 ]
 
