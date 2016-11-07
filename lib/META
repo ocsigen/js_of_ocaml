@@ -50,9 +50,9 @@ package "deriving" (
   archive(byte) = "deriving_json.cma"
   archive(native) = "deriving_json.cmxa"
   requires = "bytes"
-  requires(syntax) = "js_of_ocaml.deriving.syntax"
 
   package "syntax" (
+    exists_if = "pa_deriving_Json.cmo pa_deriving_Json.cmxs"
     description = "Safe \"IO in JSON\" class for deriving."
     version = "[distributed with js_of_ocaml]"
     archive(syntax, preprocessor) = "pa_deriving_Json.cmo"
