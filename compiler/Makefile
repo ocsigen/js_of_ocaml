@@ -1,5 +1,5 @@
-
 include ../Makefile.conf
+include ../Makefile.filelist
 
 PACKAGES=compiler-libs.common cmdliner base64 yojson
 
@@ -14,6 +14,11 @@ endif
 all: $(COMPILER) $(MINIFIER) $(LINKER) $(FINDLIB_SUPPORT) man
 
 compilerlib: lib/js_of_ocaml_compiler.cma lib/js_of_ocaml_compiler.cmxa lib/js_of_ocaml_compiler.cmxs lib/js_of_ocaml_compiler.cmx
+
+VERSION := $(shell head -n 1 ../VERSION)
+
+install-lib:
+	ocamlfind install -patch-version ${VERSION} js_of_ocaml-compiler META ${addprefix ../,$(COMP_INTF) $(COMP_IMPL) $(RUNTIME)}
 
 
 COMPOBJS=commonArg.cmx compileArg.cmx jsoo_compile.cmx

@@ -1,11 +1,5 @@
 bin: [
-  "compiler/js_of_ocaml"
-  "compiler/jsoo_minify"
   "?jsoo_tools/jsoo_mktop"
   "?jsoo_tools/jsoo_mkcmis"
   "?jsoo_tools/jsoo_listunits"
-]
-man: [
-  "compiler/man/js_of_ocaml.1" {"man1/js_of_ocaml.1"}
-  "compiler/man/jsoo_minify.1" {"man1/jsoo_minify.1"}
 ]

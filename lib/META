@@ -117,21 +117,7 @@ package "ocamlbuild" (
 )
 
 package "compiler" (
-  description = "Js_of_ocaml compiler library"
-  version = "[distributed with js_of_ocaml]"
-  archive(byte) = "js_of_ocaml_compiler.cma"
-  archive(byte, plugin) = "js_of_ocaml_compiler.cma"
-  archive(native) = "js_of_ocaml_compiler.cmxa"
-  archive(native, plugin) = "js_of_ocaml_compiler.cmxs"
-  requires = "base64,bytes,yojson"
-  package "with_findlib" (
-    exists_if = "jsoo_findlib_support.cma"
-    archive(byte) = "jsoo_findlib_support.cma"
-    archive(byte, plugin) = "jsoo_findlib_support.cma"
-    archive(native) = "jsoo_findlib_support.cmxa"
-    archive(native, plugin) = "jsoo_findlib_support.cmxs"
-    requires = "findlib,js_of_ocaml.compiler"
-  )
+  requires = "js_of_ocaml-compiler"
 )
 
 package "toplevel" (

@@ -1,0 +1,25 @@
+opam-version: "1.2"
+maintainer:   "dev@ocsigen.org"
+authors:      "Ocsigen team"
+bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
+homepage:     "http://ocsigen.org/js_of_ocaml"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
+
+name: "js_of_ocaml-compiler"
+version: "dev"
+
+build:   [ make "-C" "compiler" ]
+install: [ make "-C" "compiler" "install-lib" "BINDIR=%{bin}%" ]
+remove:  [ "ocamlfind" "remove" "js_of_ocaml-compiler" ]
+
+depends: [
+  "cmdliner"
+  "base-unix"
+  "ocamlfind" {>= "1.5.1"}
+  "menhir"
+  "cppo" {>= "1.1.0"}
+  "base64" {>= "2.0.0"}
+  "yojson"
+]
+
+available: [ ocaml-version >= "4.02.0" ]

@@ -1,0 +1,10 @@
+bin: [
+  "compiler/js_of_ocaml"
+  "compiler/jsoo_minify"
+  "compiler/jsoo_link"
+]
+man: [
+  "compiler/man/js_of_ocaml.1" {"man1/js_of_ocaml.1"}
+  "compiler/man/jsoo_minify.1" {"man1/jsoo_minify.1"}
+  "compiler/man/jsoo_link.1"   {"man1/jsoo_link.1"}
+]
