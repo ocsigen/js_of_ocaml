@@ -88,6 +88,8 @@ clean:
 	rm -f js_lexer.ml js_parser.ml js_parser.mli
 	rm -f util.ml
 	rm -Rf man
+	$(MAKE) -C lib clean
+	$(MAKE) -C findlib_support clean
 
 .PHONY: depend
 depend: $(COMPOBJS:cmx=ml) $(MINIOBJS:cmx=ml) $(LINKEROBJS:cmx=ml) compileArg.mli minifyArg.mli

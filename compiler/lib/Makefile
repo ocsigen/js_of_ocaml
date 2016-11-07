@@ -1,6 +1,6 @@
 include ../../Makefile.conf
 
-PACKAGES=base64 yojson
+PACKAGES=compiler-libs base64 yojson
 
 OBJS=compiler_version.cmx \
      util.cmx pretty_print.cmx option.cmx reserved.cmx varPrinter.cmx \
@@ -48,13 +48,13 @@ compiler_version.ml.tmp:
 	echo "let git_version = \"${VERSION_GIT}\"" >> $@
 
 %.cmx: %.ml
-	$(OCAMLOPT) -I +compiler-libs $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -for-pack Js_of_ocaml_compiler -g -c $<
+	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -for-pack Js_of_ocaml_compiler -g -c $<
 
 %.cmo: %.ml
-	$(OCAMLC) -I +compiler-libs $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
+	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 %.cmi: %.mli
-	$(OCAMLC) -I +compiler-libs $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
+	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 annot_parser.ml: annot_parser.mli
 annot_parser.mli: annot_parser.mly jsoo_primitive.cmi
