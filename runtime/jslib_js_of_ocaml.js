@@ -54,7 +54,19 @@ function caml_js_var(x) {
 function caml_js_call(f, o, args) { return f.apply(o, caml_js_from_array(args)); }
 //Provides: caml_js_fun_call (const, shallow)
 //Requires: caml_js_from_array
-function caml_js_fun_call(f, args) { return f.apply(null, caml_js_from_array(args)); }
+function caml_js_fun_call(f, a) {
+  switch (a.length) {
+  case 1: return f();
+  case 2: return f (a[1]);
+  case 3: return f (a[1],a[2]);
+  case 4: return f (a[1],a[2],a[3]);
+  case 5: return f (a[1],a[2],a[3],a[4]);
+  case 6: return f (a[1],a[2],a[3],a[4],a[5]);
+  case 7: return f (a[1],a[2],a[3],a[4],a[5],a[6]);
+  case 8: return f (a[1],a[2],a[3],a[4],a[5],a[6],a[7]);
+  }
+  return f.apply(null, caml_js_from_array(a));
+}
 //Provides: caml_js_meth_call (mutable, const, shallow)
 //Requires: MlString
 //Requires: caml_js_from_array
@@ -72,22 +84,58 @@ function caml_js_new(c, a) {
   case 5: return new c (a[1],a[2],a[3],a[4]);
   case 6: return new c (a[1],a[2],a[3],a[4],a[5]);
   case 7: return new c (a[1],a[2],a[3],a[4],a[5],a[6]);
-  case 8: return new c (a[1],a[2],a[3],a[4],a[5],a[6], a[7]);
+  case 8: return new c (a[1],a[2],a[3],a[4],a[5],a[6],a[7]);
   }
   function F() { return c.apply(this, caml_js_from_array(a)); }
   F.prototype = c.prototype;
   return new F;
 }
+//Provides: caml_ojs_new_arr (const, shallow)
+//Requires: caml_js_from_array
+function caml_ojs_new_arr(c, a) {
+  switch (a.length) {
+  case 1: return new c;
+  case 2: return new c (a[0]);
+  case 3: return new c (a[0],a[1]);
+  case 4: return new c (a[0],a[1],a[2]);
+  case 5: return new c (a[0],a[1],a[2],a[3]);
+  case 6: return new c (a[0],a[1],a[2],a[3],a[4]);
+  case 7: return new c (a[0],a[1],a[2],a[3],a[4],a[5]);
+  case 8: return new c (a[0],a[1],a[2],a[3],a[4],a[5],a[6]);
+  }
+  function F() { return c.apply(this, a); }
+  F.prototype = c.prototype;
+  return new F;
+}
 //Provides: caml_js_wrap_callback const (const)
-//Requires: caml_call_gen,raw_array_copy
+//Requires: caml_call_gen
 function caml_js_wrap_callback(f) {
   return function () {
     if(arguments.length > 0){
-      return caml_call_gen(f, raw_array_copy(arguments));
+      return caml_call_gen(f, arguments);
     } else {
       return caml_call_gen(f, [undefined]);
     }
   }
+}
+
+//Provides: caml_js_wrap_callback_arguments
+//Requires: caml_js_wrap_callback
+function caml_js_wrap_callback_arguments(f) {
+  return function() {
+    return caml_js_wrap_callback(f)(arguments);
+  }
+}
+//Provides: caml_js_wrap_callback_strict const
+//Requires: caml_call_gen
+function caml_js_wrap_callback_strict(arity, f) {
+  return function () {
+    var n = arguments.length;
+    if(n == arity) return caml_call_gen(f, arguments);
+    var args = new Array(arity);
+    for (var i = 0; i < n && i < arity; i++) args[i] = arguments[i];
+    return caml_call_gen(f, args);
+  };
 }
 //Provides: caml_js_wrap_meth_callback const (const)
 //Requires: caml_call_gen,raw_array_cons
@@ -95,6 +143,25 @@ function caml_js_wrap_meth_callback(f) {
   return function () {
     return caml_call_gen(f,raw_array_cons(arguments,this));
   }
+}
+//Provides: caml_js_wrap_meth_callback_arguments const (const)
+//Requires: caml_call_gen,raw_array_cons
+function caml_js_wrap_meth_callback_arguments(f) {
+  return function () {
+    return caml_call_gen(f,[this,arguments]);
+  }
+}
+//Provides: caml_js_wrap_meth_callback_strict const
+//Requires: caml_call_gen, raw_array_cons
+function caml_js_wrap_meth_callback_strict(arity, f) {
+  return function () {
+    var n = arguments.length;
+    if(n == arity) return caml_call_gen(f, raw_array_cons(arguments,this));
+    var args = new Array(arity + 1);
+    args[0] = this;
+    for (var i = 1; i < n && i <= arity; i++) args[i] = arguments[i];
+    return caml_call_gen(f, args);
+  };
 }
 //Provides: caml_js_wrap_meth_callback_unsafe const (const)
 //Requires: caml_call_gen,raw_array_cons

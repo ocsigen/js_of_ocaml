@@ -24,6 +24,7 @@ type (-'a, +'b) meth_callback
 
 module Unsafe = struct
   type any
+  type any_js_array = any
   external inject : 'a -> any = "%identity"
   external coerce : _ t -> _ t = "%identity"
 
@@ -34,6 +35,7 @@ module Unsafe = struct
   external fun_call : 'a -> any array -> 'b = "caml_js_fun_call"
   external meth_call : 'a -> string -> any array -> 'b = "caml_js_meth_call"
   external new_obj : 'a -> any array -> 'b = "caml_js_new"
+  external new_obj_arr : 'a -> any_js_array -> 'b = "caml_ojs_new_arr"
 
   external obj : (string * any) array -> 'a = "caml_js_object"
 
@@ -50,7 +52,12 @@ module Unsafe = struct
   let global = pure_js_expr "joo_global_object"
 
   external callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "%identity"
+  external callback_with_arguments : (any_js_array -> 'b) -> ('c, any_js_array -> 'b) meth_callback = "caml_js_wrap_callback_arguments"
+  external callback_with_arity : int -> ('a -> 'b) -> ('c, 'a -> 'b) meth_callback = "caml_js_wrap_callback_strict"
+
   external meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback = "caml_js_wrap_meth_callback_unsafe"
+  external meth_callback_with_arity : int -> ('b -> 'a) -> ('b, 'a) meth_callback = "caml_js_wrap_meth_callback_strict"
+  external meth_callback_with_arguments : ('b -> any_js_array -> 'a) -> ('b, any_js_array -> 'a) meth_callback = "caml_js_wrap_meth_callback_arguments"
 
   (* DEPRECATED *)
   external variable : string -> 'a = "caml_js_var"
