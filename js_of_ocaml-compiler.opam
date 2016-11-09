@@ -14,9 +14,7 @@ remove:  [ "ocamlfind" "remove" "js_of_ocaml-compiler" ]
 
 depends: [
   "cmdliner"
-  "base-unix"
   "ocamlfind" {>= "1.5.1"}
-  "menhir"
   "cppo" {>= "1.1.0"}
   "base64" {>= "2.0.0"}
   "yojson"
