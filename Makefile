@@ -1,63 +1,44 @@
-
-all: no_examples examples
-no_examples: build doc
-
-build: check_lwt compiler library ocamlbuild runtime toplevel_bin toplevel_lib
-
 include Makefile.conf
--include Makefile.local
-
-.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build toplevel_bin toplevel_lib toplevel
-
-compiler:
-	$(MAKE) -C compiler all compilerlib
-library:
-	$(MAKE) -C lib
-runtime:
-	$(MAKE) -C runtime
-toplevel_bin: compiler
-	$(MAKE) -C toplevel/bin
-toplevel_lib: compiler
-	$(MAKE) -C toplevel/lib
-ocamlbuild:
-	$(MAKE) -C ocamlbuild
-examples: compiler library runtime
-	$(MAKE) -C examples
-doc: library ocamlbuild
-	$(MAKE) -C doc
-
-toplevel:
-	$(MAKE) -C toplevel/examples
-
-tests: compiler library runtime
-	$(MAKE) -C tests
-phantomtests: compiler library runtime
-	$(MAKE) -C tests phantom
-
-LWTERROR="Js_of_ocaml requires Lwt version 2.3.0 at least.  Please upgrade."
-check_lwt:
-	@if ocamlfind query lwt -l | ocaml tools/check_version.ml 2.3.0; then \
-	  echo $(LWTERROR); exit 1; \
-	fi
-
 include Makefile.filelist
 
 VERSION := $(shell head -n 1 VERSION)
 
-install: install-lib install-bin
+all: no_examples examples
+no_examples: build doc
 
-install-lib:
-	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(OTHERS) $(DOC) $(COMP_INTF) $(COMP_IMPL) ${OCAMLFIND_BIN}
+build: build-compiler build-library build-ocamlbuild build-runtime \
+       build-toplevel build-camlp4
 
-install-bin:
+examples: build-compiler build-library build-runtime
+	$(MAKE) -C examples
+
+doc: build-library build-ocamlbuild build-toplevel build-camlp4
+	$(MAKE) -C doc
+
+toplevel-examples:
+	$(MAKE) -C toplevel/examples
+
+tests: build-compiler build-library build-runtime
+	$(MAKE) -C tests
+
+phantomtests: build-compiler build-library build-runtime
+	$(MAKE) -C tests phantom
+
+reinstall: uninstall install
+install: install-libs install-bins
+install-libs: install-library install-camlp4 install-compiler install-toplevel install-ocamlbuild
+install-bins:
 	install -d -m 755 $(BINDIR)
-	install $(BIN) $(BINDIR)
+	install $(COMPILER_BIN) $(BINDIR)
+	install $(TOPLEVEL_BIN) $(BINDIR)
 
-uninstall: uninstall-lib uninstall-bin
-
-uninstall-lib:
+uninstall: uninstall-libs uninstall-bin
+uninstall-libs:
 	ocamlfind remove $(LIBRARY)
-
+	ocamlfind remove $(LIBRARY)-camlp4
+	ocamlfind remove $(LIBRARY)-compiler
+	ocamlfind remove $(LIBRARY)-toplevel
+	ocamlfind remove $(LIBRARY)-ocamlbuild
 uninstall-bin:
 	rm -f $(BINDIR)/$(COMPILER)
 	rm -f $(BINDIR)/$(MINIFIER)
@@ -66,11 +47,51 @@ uninstall-bin:
 	rm -f $(BINDIR)/$(MKCMIS)
 	rm -f $(BINDIR)/$(LISTUNITS)
 
-reinstall: uninstall install
+build-compiler:
+	$(MAKE) -C compiler
+build-runtime:
+	$(MAKE) -C runtime
+build-ocamlbuild:
+	$(MAKE) -C ocamlbuild
+build-camlp4:
+	$(MAKE) -C camlp4
+build-toplevel:
+	$(MAKE) -C toplevel/lib
+	$(MAKE) -C toplevel/bin
+build-library:
+	$(MAKE) -C lib
+
+install-compiler:
+	ocamlfind install -patch-version ${VERSION} js_of_ocaml-compiler \
+	compiler/META \
+	$(addprefix compiler/lib/, $(COMPILER_INSTALL)) \
+	$(addprefix compiler/findlib_support/, $(FINDLIB_INSTALL)) \
+	$(addprefix runtime/,runtime.js $(JSOO_RUNTIME) $(JSOO_RUNTIME_EXTRA))
+install-ocamlbuild:
+	ocamlfind install -patch-version ${VERSION} js_of_ocaml-ocamlbuild \
+	ocamlbuild/META \
+	$(addprefix ocamlbuild/_build/, $(OCAMLBUILD_INSTALL))
+install-camlp4:
+	ocamlfind install -patch-version $(VERSION) js_of_ocaml-camlp4 \
+	$(addprefix camlp4/, META $(CAMLP4_INSTALL))
+install-toplevel:
+	ocamlfind install -patch-version ${VERSION} js_of_ocaml-toplevel \
+	$(addprefix toplevel/lib/, META $(TOPLEVEL_INSTALL))
+install-library:
+	ocamlfind install -patch-version ${VERSION} $(LIBRARY) \
+	$(addprefix lib/, META $(LIBRARY_INSTALL)) \
+	$(addprefix lib/, $(PPX_INSTALL)) \
+	$(addprefix lib/, $(PPX_DRIVER_INSTALL)) \
+	$(addprefix lib/, $(PPX_DERIVING_INSTALL))
+
+
+install-doc:
+	echo $(DOC)
 
 depend:
 	$(MAKE) -C compiler depend
 	$(MAKE) -C lib depend
+	$(MAKE) -C toplevel/lib depend
 
 clean:
 	$(MAKE) -C compiler clean
@@ -91,6 +112,8 @@ realclean: clean
 	find . -name "*~" -print | xargs rm -f
 	find . -name "*.tmpjs" -print | xargs rm -f
 	find . -name "#*" -print | xargs rm -f
+
+.PHONY: all no_examples compiler library ocamlbuild runtime examples doc build toplevel_bin toplevel_lib toplevel
 
 dist:
 	rm -rf /tmp/js_of_ocaml-${VERSION} &&\
