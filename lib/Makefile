@@ -1,5 +1,7 @@
-MLOBJS= js.cmo dom.cmo typed_array.cmo dom_html.cmo dom_svg.cmo file.cmo dom_events.cmo firebug.cmo lwt_js.cmo sys_js.cmo regexp.cmo cSS.cmo url.cmo form.cmo xmlHttpRequest.cmo lwt_js_events.cmo json.cmo jsonp.cmo webGL.cmo webSockets.cmo keycode.cmo eventSource.cmo geolocation.cmo jstable.cmo mutationObserver.cmo worker.cmo
-MLINTFS= $(MLOBJS:.cmo=.mli)
+include ../Makefile.conf
+include ../Makefile.filelist
+
+MLOBJS= $(LIBRARY_INTF:cmi=cmo)
 COBJS= stubs$(OBJEXT)
 OBJS=lib_version.cmo $(MLOBJS) $(COBJS)
 
@@ -7,68 +9,25 @@ JSON_OBJS=$(addprefix deriving_json/,deriving_Json_lexer.cmo deriving_Json.cmo)
 
 OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45
 OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45
-
-include ../Makefile.conf
--include ../Makefile.local
-
-DERIVING_JSON=deriving_json.cma
-ifeq "$(BEST)" "opt"
-DERIVING_JSON += deriving_json.cmxs
-endif
-
-ifeq "${WITH_GRAPHICS}" "YES"
-GRAPHICS_CMA=graphics/graphics.cma
-endif
-
-ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
-TYXML_CMA=tyxml/tyxml_js.cma
-endif
-
-ifeq "${WITH_ASYNC}" "YES"
-ASYNC_CMA=async/async_js.cma
-endif
-
-ifeq "${WITH_PPX}" "YES"
-PPX_EX= ppx/$(PPX)
-PPX_LIB= ppx/ppx_js.cma ppx/ppx_js.cmxa
-ifeq "${WITH_PPX_DRIVER}" "YES"
-PPX_LIB+= ppx_driver/ppx_js_driver.cma ppx_driver/ppx_js_driver.cmxa
-endif
-ifeq "${NATDYNLINK}" "YES"
-PPX_LIB_NDL= ppx/ppx_js.cmxs
-ifeq "${WITH_PPX_DRIVER}" "YES"
-PPX_LIB_NDL+= ppx_driver/ppx_js_driver.cmxs
-endif
-endif
-endif
-
-ifeq "${WITH_PPX_DERIVING}" "YES"
-PPX_DERIVING_LIB= ppx/ppx_deriving_json.cma \
-	ppx/ppx_deriving_json.a \
-	ppx/ppx_deriving_json.cmxa \
-	ppx/ppx_deriving_json.cmxs
-endif
-
-all: $(LIBNAME).cma log/logger.cma \
-	${DERIVING_JSON} \
-	${GRAPHICS_CMA} \
-	${TYXML_CMA} \
-	${ASYNC_CMA} \
-	$(PPX_EX) $(PPX_LIB) $(PPX_DERIVING_LIB) $(PPX_LIB_NDL) \
-	META
-
 VERSION := $(shell head -n 1 ../VERSION)
+
+
+
+all: $(LIBRARY).cma \
+     $(PPX_INSTALL) $(PPX_DRIVER_INSTALL) \
+     $(PPX_DERIVING_INSTALL) \
+     META
 
 lib_version.ml: lib_version.ml.tmp
 	if cmp -s $^ $@; then rm $^; else mv $^ $@; fi
 
 .PHONY: lib_version.ml.tmp
-lib_version.ml.tmp:
-	echo "let s = \"${VERSION}\"" > $@
-	echo "let git_version = \"${VERSION_GIT}\"" >> $@
 
-$(LIBNAME).cma: $(OBJS)
-	ocamlmklib -o $(LIBNAME) $(OBJS)
+lib_version.ml.tmp:
+	echo "let s = \"${VERSION}\" let git_version = \"${VERSION_GIT}\"" > $@
+
+$(LIBRARY).cma: $(OBJS)
+	ocamlmklib -o $(LIBRARY) $(OBJS)
 
 deriving_json.cma: $(JSON_OBJS)
 	$(OCAMLC) -a -o $@ $^
@@ -158,7 +117,7 @@ ppx_driver/ppx_js_driver.cmxa: ppx_driver/ppx_js_driver.cmx
 ppx_driver/ppx_js_driver.cmxs: ppx_driver/ppx_js_driver.cmxa
 	$(OCAMLOPT) -linkall -I ppx -shared -g -o $@ $^
 
-$(PPX_EX): ppx/ppx_js.$(BEST)
+ppx/$(PPX): ppx/ppx_js.$(BEST)
 	cp $< $@
 
 ppx/ppx_deriving_json.cmo: ppx/ppx_deriving_json.ml

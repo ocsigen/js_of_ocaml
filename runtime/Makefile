@@ -1,3 +1,4 @@
+include ../Makefile.conf
 include ../Makefile.filelist
 
 runtime.js: $(JSOO_RUNTIME)

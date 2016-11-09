@@ -8,11 +8,8 @@ dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 name: "js_of_ocaml-toplevel"
 version: "dev"
 
-build:   [
-          [ make "-C" "toplevel/lib" ]
-          [ make "-C" "toplevel/bin" ]
-         ]
-install: [  make "-C" "toplevel/lib" "install" "BINDIR=%{bin}%" ]
+build:   [ make "build-toplevel" ]
+install: [ make "install-toplevel" "BINDIR=%{bin}%" ]
 remove:  [ "ocamlfind" "remove" "js_of_ocaml-toplevel" ]
 
 depends: [
@@ -20,7 +17,6 @@ depends: [
   "js_of_ocaml-compiler"
   "js_of_ocaml"
   "cppo" {>= "1.1.0"}
-
 ]
 
 available: [ ocaml-version >= "4.02.0" ]

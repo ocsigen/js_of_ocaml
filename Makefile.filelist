@@ -1,81 +1,36 @@
-BIN := compiler/${COMPILER} compiler/${MINIFIER} compiler/${LINKER}
+#Compiler
 
-ifeq "${WITH_TOPLEVEL}" "YES"
-BIN += jsoo_tools/${MKTOP} jsoo_tools/${MKCMIS} jsoo_tools/${LISTUNITS}
+COMPILER_BIN := compiler/${COMPILER} compiler/${MINIFIER} compiler/${LINKER}
+
+COMPILER_INTF := js_of_ocaml_compiler.cmi
+COMPILER_INSTALL := js_of_ocaml_compiler.cma \
+                    js_of_ocaml_compiler.cmi
+ifeq "$(NATIVE)" "YES"
+COMPILER_INSTALL += js_of_ocaml_compiler.cmxa \
+                    js_of_ocaml_compiler.a \
+                    js_of_ocaml_compiler.cmx
+endif
+ifeq "$(NATIVE_DYN)" "YES"
+COMPILER_INSTALL += js_of_ocaml_compiler.cmxs
 endif
 
-INTF := lib/*.cmi
+#Compiler and findlib
 
-IMPL := lib/$(LIBNAME).cma   \
-        lib/dll$(LIBNAME)$(DLLEXT) \
-        lib/lib$(LIBNAME)$(LIBEXT)
-
-INTF += lib/log/*.cmi
-IMPL += lib/log/logger.cma
-
-ifeq "${WITH_CAMLP4}" "YES"
-IMPL += camlp4/pa_js.cmo
-ifeq "${BEST}" "opt"
-ifeq "${NATDYNLINK}" "YES"
-IMPL += camlp4/pa_js.cmx camlp4/pa_js.cmxs
+ifeq "${WITH_FINDLIB}" "YES"
+FINDLIB_INTF :=
+FINDLIB_INSTALL := jsoo_findlib_support.cma \
+                   jsoo_findlib_support.cmi
+ifeq "$(NATIVE)" "YES"
+FINDLIB_INSTALL += jsoo_findlib_support.cmxa \
+                   jsoo_findlib_support.a \
+                   jsoo_findlib_support.cmx
 endif
-endif
-endif
-
-ifeq "${WITH_GRAPHICS}" "YES"
-IMPL += lib/graphics/graphics.cma
-INTF += lib/graphics/*.cmi
-endif
-
-ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
-IMPL += lib/tyxml/tyxml_js.cma
-INTF += lib/tyxml/*.cmi
-endif
-
-ifeq "${WITH_ASYNC}" "YES"
-IMPL += lib/async/async_js.cma
-INTF += lib/async/*.cmi
-endif
-
-ifeq "${WITH_PPX}" "YES"
-OCAMLFIND_BIN += lib/ppx/${PPX}
-IMPL += lib/ppx/ppx_js.cma
-INTF += lib/ppx/*.cmi
-IMPL += lib/ppx/ppx_js.cmx lib/ppx/ppx_js.cmxa
-IMPL += lib/ppx/ppx_js.a
-ifeq "${BEST}" "opt"
-ifeq "${NATDYNLINK}" "YES"
-IMPL += lib/ppx/ppx_js.cmxs
-endif
+ifeq "$(NATIVE_DYN)" "YES"
+FINDLIB_INSTALL += jsoo_findlib_support.cmxs
 endif
 endif
 
-ifeq "${WITH_PPX}${WITH_PPX_DRIVER}" "YESYES"
-IMPL += lib/ppx_driver/ppx_js_driver.cma lib/ppx_driver/ppx_js_driver.cmx lib/ppx_driver/ppx_js_driver.cmxa
-IMPL += lib/ppx_driver/ppx_js_driver.a
-ifeq "${BEST}" "opt"
-ifeq "${NATDYNLINK}" "YES"
-IMPL += lib/ppx_driver/ppx_js_driver.cmxs
-endif
-endif
-endif
-
-ifeq "${WITH_PPX_DERIVING}" "YES"
-IMPL += lib/ppx/ppx_deriving_json.a
-IMPL += lib/ppx/ppx_deriving_json.cma
-IMPL += lib/ppx/ppx_deriving_json.cmxa
-IMPL += lib/ppx/ppx_deriving_json.cmxs
-endif
-
-ifeq "${WITH_TOPLEVEL}" "YES"
-IMPL += lib/toplevel/jsooTop.cmo lib/toplevel/jsooTopError.cmo
-INTF += lib/toplevel/jsooTop.cmi lib/toplevel/jsooTopError.cmi
-IMPL += lib/toplevel/jsooTopPpx.cmo
-INTF += lib/toplevel/jsooTopPpx.cmi
-ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
-IMPL += lib/toplevel/jsooTopCamlp4.cmo
-endif
-endif
+#Runtime
 
 JSOO_RUNTIME := mlString.js ieee_754.js int64.js md5.js marshal.js \
 	lexing.js parsing.js bigarray.js unix.js \
@@ -95,66 +50,157 @@ JSOO_RUNTIME_EXTRA := weak.js \
 	bin_prot.js \
 	predefined_exceptions.js
 
-RUNTIME := runtime/runtime.js $(addprefix runtime/,$(JSOO_RUNTIME)) $(addprefix runtime/,$(JSOO_RUNTIME_EXTRA))
+RUNTIME := $(addprefix runtime/,runtime.js $(JSOO_RUNTIME) $(JSOO_RUNTIME_EXTRA))
 
-COMP_INTF := compiler/lib/js_of_ocaml_compiler.cmi
-COMP_IMPL := compiler/lib/js_of_ocaml_compiler.cma
-COMP_NAT_IMPL := compiler/lib/js_of_ocaml_compiler.cmxa compiler/lib/js_of_ocaml_compiler.a compiler/lib/js_of_ocaml_compiler.cmx
-COMP_NATDYN_IMPL := compiler/lib/js_of_ocaml_compiler.cmxs
+#Toplevel
 
-ifeq "${WITH_FINDLIB}" "YES"
-COMP_INTF += compiler/findlib_support/jsoo_findlib_support.cmi
-COMP_IMPL += compiler/findlib_support/jsoo_findlib_support.cma
-COMP_NAT_IMPL += compiler/findlib_support/jsoo_findlib_support.cmxa \
-                 compiler/findlib_support/jsoo_findlib_support.a \
-                 compiler/findlib_support/jsoo_findlib_support.cmx
-COMP_NATDYN_IMPL += compiler/findlib_support/jsoo_findlib_support.cmxs
-endif
-
-OCAMLBUILD_IMPL := ocamlbuild_js_of_ocaml.cma
-
-INTF += ocamlbuild/_build/ocamlbuild_js_of_ocaml.cmi
-
-ifeq "${BEST}" "opt"
-OCAMLBUILD_IMPL += ocamlbuild_js_of_ocaml.cmxa ocamlbuild_js_of_ocaml.a
-ifeq "${NATDYNLINK}" "YES"
-OCAMLBUILD_IMPL += ocamlbuild_js_of_ocaml.cmxs
-endif
-endif
-
-IMPL += $(addprefix ocamlbuild/_build/,$(OCAMLBUILD_IMPL))
-
-JSON := lib/deriving_json/deriving_Json.cmi       \
-        lib/deriving_json/deriving_Json_lexer.cmi
-
-INTF += $(JSON)
-
-IMPL += lib/deriving_json.cma
-
-NATIMPL := lib/deriving_json.cmxa     \
-	   lib/deriving_json.cmxs     \
-	   lib/deriving_json$(LIBEXT) \
-
-NATIMPL += $(JSON:.cmi=.cmx)
-
-ifeq "${WITH_CAMLP4}${WITH_DERIVING}" "YESYES"
-
-INTF += camlp4/pa_deriving_Json.cmi
-
-IMPL += camlp4/pa_deriving_Json.cmo \
-        camlp4/pa_deriving_Json.cmi
-
-ifeq "${NATDYNLINK}" "YES"
-NATIMPL += camlp4/pa_deriving_Json.cmx \
-           camlp4/pa_deriving_Json.cmxs
-COMP_IMPL += $(COMP_NATDYN_IMPL)
-endif
+ifeq "${WITH_TOPLEVEL}" "YES"
+TOPLEVEL_BIN := $(addprefix toplevel/bin/, ${MKTOP} ${MKCMIS} ${LISTUNITS})
+TOPLEVEL_INTF := jsooTop.cmi \
+                 jsooTopError.cmi \
+                 jsooTopPpx.cmi \
+                 jsooTopCamlp4.cmi
+TOPLEVEL_INSTALL := $(TOPLEVEL_INTF) \
+                    $(TOPLEVEL_INTF:.cmi=.cmo)
 
 endif
 
-ifeq "${BEST}" "opt"
-IMPL += $(NATIMPL)
-COMP_IMPL += $(COMP_NAT_IMPL)
+#Lib
+
+LIBRARY_INTF := \
+js.cmi dom.cmi typed_array.cmi dom_html.cmi \
+dom_svg.cmi file.cmi dom_events.cmi firebug.cmi lwt_js.cmi sys_js.cmi \
+regexp.cmi cSS.cmi url.cmi form.cmi xmlHttpRequest.cmi \
+lwt_js_events.cmi json.cmi jsonp.cmi webGL.cmi webSockets.cmi \
+keycode.cmi eventSource.cmi geolocation.cmi jstable.cmi \
+mutationObserver.cmi worker.cmi
+
+LIBRARY_INSTALL := $(LIBRARY).cma   \
+                   dll$(LIBRARY)$(DLLEXT) \
+                   lib$(LIBRARY)$(LIBEXT)
+
+ifeq "${WITH_LWT}" "YES"
+LIBRARY_INTF += log/lwt_log_js.cmi
+LIBRARY_INSTALL += log/logger.cma
 endif
 
-DOC := ${INTF:.cmi=.mli}
+ifeq "${WITH_GRAPHICS}" "YES"
+LIBRARY_INTF += graphics/graphics_js.cmi
+LIBRARY_INSTALL += graphics/graphics.cma
+endif
+
+ifeq "${WITH_TYXML}${WITH_REACT}" "YESYES"
+LIBRARY_INTF += tyxml/tyxml_cast.cmi tyxml/tyxml_cast_sigs.cmi tyxml/tyxml_js.cmi
+LIBRARY_INSTALL += tyxml/tyxml_js.cma
+endif
+
+ifeq "${WITH_ASYNC}" "YES"
+LIBRARY_INTF += async/async_js.cmi
+LIBRARY_INSTALL += async/async_js.cma
+endif
+
+LIBRARY_INTF += deriving_json/deriving_Json.cmi       \
+                deriving_json/deriving_Json_lexer.cmi
+LIBRARY_INSTALL  += deriving_json.cma
+
+LIBRARY_INSTALL += $(LIBRARY_INTF)
+#PPX
+
+ifeq "${WITH_PPX}" "YES"
+PPX_INTF := ppx/ppx_js.cmi
+PPX_INSTALL := ppx/${PPX} ppx/ppx_js.cma ppx/ppx_js.cmi
+ifeq "$(NATIVE)" "YES"
+PPX_INSTALL += ppx/ppx_js.cmxa \
+               ppx/ppx_js.a \
+               ppx/ppx_js.cmx
+endif
+ifeq "$(NATIVE_DYN)" "YES"
+PPX_INSTALL += ppx/ppx_js.cmxs
+endif
+
+
+ifeq "${WITH_PPX_DRIVER}" "YES"
+PPX_DRIVER_INTF :=
+PPX_DRIVER_INSTALL := ppx_driver/ppx_js_driver.cma
+ifeq "$(NATIVE)" "YES"
+PPX_DRIVER_INSTALL += ppx_driver/ppx_js_driver.cmxa \
+                      ppx_driver/ppx_js_driver.a \
+                      ppx_driver/ppx_js_driver.cmx
+endif
+ifeq "$(NATIVE_DYN)" "YES"
+PPX_DRIVER_INSTALL += ppx_driver/ppx_js_driver.cmxs
+endif
+
+endif
+
+ifeq "${WITH_PPX_DERIVING}" "YES"
+PPX_DERIVING_INTF :=
+PPX_DERIVING_INSTALL := ppx/ppx_deriving_json.cma
+ifeq "$(NATIVE)" "YES"
+PPX_DERIVING_INSTALL += ppx/ppx_deriving_json.cmxa \
+                     ppx/ppx_deriving_json.a \
+                     ppx/ppx_deriving_json.cmx
+endif
+ifeq "$(NATIVE_DYN)" "YES"
+PPX_DERIVING_INSTALL += ppx/ppx_deriving_json.cmxs
+endif
+endif
+
+endif # WITH_PPX
+
+#CamlP4
+
+ifeq "${WITH_CAMLP4}" "YES"
+CAMLP4_INTF :=
+CAMLP4_INSTALL := pa_js.cmi pa_js.cmo
+ifeq "$(NATIVE)" "YES"
+CAMLP4_INSTALL += pa_js.cmx
+endif
+ifeq "$(NATIVE_DYN)" "YES"
+CAMLP4_INSTALL += pa_js.cmxs
+endif
+
+ifeq "${WITH_DERIVING}" "YES"
+CAMLP4_INTF += pa_deriving_Json.cmi
+CAMLP4_INSTALL += pa_deriving_Json.cmi pa_deriving_Json.cmo
+ifeq "$(NATIVE)" "YES"
+CAMLP4_INSTALL += pa_deriving_Json.cmx
+endif
+ifeq "$(NATIVE_DYN)" "YES"
+CAMLP4_INSTALL += pa_deriving_Json.cmxs
+endif
+endif
+
+endif # WITH CAMLP4
+
+#OCamlbuild
+
+OCAMLBUILD_INTF := ocamlbuild_js_of_ocaml.cmi
+OCAMLBUILD_INSTALL := \
+  ocamlbuild_js_of_ocaml.cma \
+  ocamlbuild_js_of_ocaml.cmi \
+  ocamlbuild_js_of_ocaml.ml \
+  ocamlbuild_js_of_ocaml.mli
+ifeq "$(NATIVE)" "YES"
+OCAMLBUILD_INSTALL += \
+  ocamlbuild_js_of_ocaml.cmxa \
+  ocamlbuild_js_of_ocaml.a
+endif
+ifeq "$(NATIVE_DYN)" "YES"
+OCAMLBUILD_INSTALL += \
+  ocamlbuild_js_of_ocaml.cmxs
+endif
+
+#Misc
+
+# TODO: add compiler-libs after we move to namespaces
+#${addprefix compiler/lib/, ${COMPILER_INTF}}
+
+INTF := ${addprefix lib/, ${LIBRARY_INTF}} \
+        ${addprefix lib/, ${PPX_INTF}} \
+        ${addprefix lib/, ${PPX_DRIVER_INTF}} \
+        ${addprefix lib/, ${PPX_DERIVING_INTF}} \
+        ${addprefix toplevel/lib/, ${TOPLEVEL_INTF}} \
+        ${addprefix camlp4/, ${CAMLP4_INTF}} \
+        ${addprefix ocamlbuild/, ${OCAMLBUILD_INTF}} \
+        ${addprefix compiler/findlib_support/, ${FINDLIB_INTF}}

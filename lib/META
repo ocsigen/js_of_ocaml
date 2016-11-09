@@ -8,10 +8,6 @@ linkopts(javascript,jsoo_classlist) += "+js_of_ocaml-compiler/classlist.js"
 linkopts(javascript,pkg_graphics) += "+js_of_ocaml-compiler/graphics.js"
 linkopts(javascript,pkg_num) += "+js_of_ocaml-compiler/nat.js"
 
-package "syntax" (
-  requires(syntax,preprocessor) = "js_of_ocaml-camlp4"
-)
-
 package "ppx" (
   description = "Js_of_ocaml ppx"
   version = "[distributed with js_of_ocaml]"
@@ -48,10 +44,6 @@ package "deriving" (
   archive(native) = "deriving_json.cmxa"
   requires = "bytes"
 
-  package "syntax" (
-    requires(syntax) = "js_of_ocaml-camlp4.deriving"
-  )
-
   package "ppx" (
     description = "[@@deriving json]"
     version = "[distributed with js_of_ocaml]"
@@ -63,6 +55,26 @@ package "deriving" (
     archive(ppx_driver, native) = "ppx_deriving_json.cmxa"
   )
 
+  package "syntax" (
+    archive(syntax, preprocessor) = "-ignore dummy"
+    archive(syntax, toploop) = "-ignore dummy"
+    requires(syntax) = "js_of_ocaml-camlp4.deriving"
+  )
+)
+
+package "tyxml" (
+  exists_if = "tyxml_js.cma"
+  description = "Tyxml for js_of_ocaml."
+  version = "[distributed with js_of_ocaml]"
+  archive(byte) = "tyxml_js.cma"
+  requires = "tyxml.functor,reactiveData,react,js_of_ocaml,js_of_ocaml.weak"
+)
+
+package "weak" (
+  exists_if = "weak.js"
+  description = "weak emulation for js_of_ocaml."
+  version = "[distributed with js_of_ocaml]"
+  linkopts(javascript) = "+js_of_ocaml-compiler/weak.js"
 )
 
 package "async" (
@@ -81,27 +93,12 @@ package "graphics" (
   requires = "lwt,graphics,js_of_ocaml"
 )
 
-package "tyxml" (
-  exists_if = "tyxml_js.cma"
-  description = "Tyxml for js_of_ocaml."
-  version = "[distributed with js_of_ocaml]"
-  archive(byte) = "tyxml_js.cma"
-  requires = "tyxml.functor,reactiveData,react,js_of_ocaml,js_of_ocaml.weak"
-)
-
 package "log" (
   exists_if = "logger.cma"
   description = "Lwt logger for js_of_ocaml."
   version = "[distributed with js_of_ocaml]"
   archive(byte) = "logger.cma"
   requires = "lwt,lwt.log,js_of_ocaml,js_of_ocaml.weak"
-)
-
-package "weak" (
-  exists_if = "weak.js"
-  description = "weak emulation for js_of_ocaml."
-  version = "[distributed with js_of_ocaml]"
-  linkopts(javascript) = "+js_of_ocaml-compiler/weak.js"
 )
 
 package "ocamlbuild" (
@@ -112,11 +109,12 @@ package "compiler" (
   requires = "js_of_ocaml-compiler"
 )
 
+package "syntax" (
+  archive(syntax, preprocessor) = "-ignore dummy"
+  archive(syntax, toploop) = "-ignore dummy"
+  requires(syntax) = "js_of_ocaml-camlp4"
+)
+
 package "toplevel" (
-  exists_if = "jsooTop.cmo"
-  description = "Js_of_ocaml toplevel library"
-  version = "[distributed with js_of_ocaml]"
-  archive(byte) = "jsooTopError.cmo jsooTopPpx.cmo jsooTop.cmo"
-  requires = "bytes,compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel,js_of_ocaml,js_of_ocaml.compiler"
-  linkopts(javascript) = "+js_of_ocaml-compiler/toplevel.js"
+  requires = "js_of_ocaml-toplevel"
 )

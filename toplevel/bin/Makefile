@@ -1,20 +1,22 @@
 include ../../Makefile.conf
--include ../../Makefile.local
+include ../../Makefile.filelist
 
 ifeq "${WITH_TOPLEVEL}${WITH_FINDLIB}" "YESYES"
 ALL= $(MKTOP) $(MKCMIS) $(LISTUNITS)
 endif
 
 PACKAGES=base64 compiler-libs.common findlib yojson
+OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45-58
+OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45-58
 
 all: $(ALL)
 
 $(MKTOP): jsoo_mktop.$(BEST)
-	cp $< $@
+	@if cmp -s $^ $@; then true; else cp $^ $@; fi
 $(MKCMIS): jsoo_mkcmis.$(BEST)
-	cp $< $@
+	@if cmp -s $^ $@; then true; else cp $^ $@; fi
 $(LISTUNITS): jsoo_listunits.$(BEST)
-	cp $< $@
+	@if cmp -s $^ $@; then true; else cp $^ $@; fi
 
 byte: jsoo_mkcmis.byte jsoo_mktop.byte jsoo_listunits.byte
 opt: jsoo_mkcmis.opt jsoo_mktop.opt jsoo_listunits.opt
@@ -26,15 +28,24 @@ jsoo_mktop.cmo jsoo_mkcmis.cmo jsoo_listunits.cmo: jsoo_common.cmo
 jsoo_mktop.cmx jsoo_mkcmis.cmx jsoo_listunits.cmx: jsoo_common.cmx
 jsoo_common.cmo jsoo_common.cmx: ../../compiler/lib/js_of_ocaml_compiler.cmi
 
-OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45-58
-OCAMLOPT=ocamlfind ocamlopt -w +A-4-7-9-37-38-41-44-45-58
+.PHONY: other
 
-%.byte: ../../compiler/lib/js_of_ocaml_compiler.cma ../../compiler/findlib_support/jsoo_findlib_support.cma jsoo_common.cmo %.cmo
+../../compiler/lib/%: ../../compiler/lib
+	make -C ../../compiler/lib $*
+
+../../compiler/findlib_support/%: ../../compiler/findlib_support ../../compiler/lib
+	make -C ../../compiler/findlib_support $*
+
+%.byte: ../../compiler/lib/js_of_ocaml_compiler.cma \
+        ../../compiler/findlib_support/jsoo_findlib_support.cma \
+        jsoo_common.cmo %.cmo
 	$(OCAMLC) -linkpkg -linkall -g $(SAFESTRING) \
 	${addprefix -package , $(PACKAGES)} \
 	$^ -o $@
 
-%.opt: ../../compiler/lib/js_of_ocaml_compiler.cmxa ../../compiler/findlib_support/jsoo_findlib_support.cmxa jsoo_common.cmx %.cmx
+%.opt: ../../compiler/lib/js_of_ocaml_compiler.cmxa \
+       ../../compiler/findlib_support/jsoo_findlib_support.cmxa \
+       jsoo_common.cmx %.cmx
 	$(OCAMLOPT) -linkpkg -linkall -g $(SAFESTRING) \
 	${addprefix -package , $(PACKAGES)} \
 	$^ -o $@

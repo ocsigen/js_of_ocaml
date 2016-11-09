@@ -8,8 +8,8 @@ dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 name: "js_of_ocaml"
 version: "dev"
 
-build:   [make "build"]
-install: [make "install-lib" "BINDIR=%{bin}%"]
+build:   [make "build-library"]
+install: [make "install-library" "BINDIR=%{bin}%"]
 remove:  ["ocamlfind" "remove" "js_of_ocaml"]
 
 depends: [

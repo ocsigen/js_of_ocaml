@@ -9,8 +9,8 @@ jsoo_link.cmo : linkerArg.cmo
 jsoo_link.cmx : linkerArg.cmx
 linkerArg.cmo :
 linkerArg.cmx :
+minify.cmo : minifyArg.cmi commonArg.cmi
+minify.cmx : minifyArg.cmx commonArg.cmx
 minifyArg.cmo : commonArg.cmi minifyArg.cmi
 minifyArg.cmx : commonArg.cmx minifyArg.cmi
 minifyArg.cmi : commonArg.cmi
-minify.cmo : minifyArg.cmi commonArg.cmi
-minify.cmx : minifyArg.cmx commonArg.cmx

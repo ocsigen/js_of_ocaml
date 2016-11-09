@@ -9,11 +9,14 @@ opam install reactiveData cppo base64
 
 opam install tyxml || true
 opam install deriving || true
-opam install async_kernel.113.33.00 || true
 opam install ppx_driver || true
 
-opam install --deps-only js_of_ocaml
+opam install --deps-only js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ocamlbuild js_of_ocaml-camlp4 js_of_ocaml-toplevel
+opam install --verbose js_of_ocaml-compiler
+opam install --verbose js_of_ocaml-ocamlbuild
+opam install --verbose js_of_ocaml-camlp4
 opam install --verbose js_of_ocaml
+opam install --verbose js_of_ocaml-toplevel
 
 do_build_doc () {
   opam install ocp-indent cppo higlo base64
@@ -26,5 +29,5 @@ do_build_doc () {
 }
 
 do_remove () {
-  opam remove --verbose js_of_ocaml
+  opam remove --verbose js_of_ocaml js_of_ocaml-compiler js_of_ocaml-ocamlbuild js_of_ocaml-camlp4 js_of_ocaml-toplevel
 }

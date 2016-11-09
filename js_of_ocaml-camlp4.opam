@@ -8,8 +8,8 @@ dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 name: "js_of_ocaml-camlp4"
 version: "dev"
 
-build:   [make "-C" "camlp4"]
-install: [make "-C" "camlp4" "install"]
+build:   [make "build-camlp4"]
+install: [make "install-camlp4"]
 remove:  ["ocamlfind" "remove" "js_of_ocaml-camlp4"]
 
 depends: [

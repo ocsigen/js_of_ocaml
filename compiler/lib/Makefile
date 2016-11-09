@@ -1,4 +1,5 @@
 include ../../Makefile.conf
+include ../../Makefile.filelist
 
 PACKAGES=compiler-libs base64 yojson
 
@@ -15,10 +16,15 @@ OBJS=compiler_version.cmx \
      generate_closure.cmx generate.cmx driver.cmx \
      pseudoFs.cmx link_js.cmx
 
+COMPILER_LIB=lib/js_of_ocaml_compiler.cma \
+	     lib/js_of_ocaml_compiler.cmxa \
+             lib/js_of_ocaml_compiler.cmxs \
+             lib/js_of_ocaml_compiler.cmx
+
 OCAMLC=ocamlfind ocamlc -g  -w +A-4-7-9-37-38-41-44-45-58
 OCAMLOPT=ocamlfind ocamlopt -g -w +A-4-7-9-37-38-41-44-45-58
 
-all:
+all: js_of_ocaml_compiler.cma
 
 js_of_ocaml_compiler.cmo: $(OBJS:cmx=cmo)
 	$(OCAMLC) -pack -o $@ $^
@@ -39,13 +45,12 @@ js_of_ocaml_compiler.cmxs: js_of_ocaml_compiler.cmxa
 
 VERSION := $(shell head -n 1 ../../VERSION)
 
-compiler_version.ml: compiler_version.ml.tmp
-	if cmp -s $^ $@; then rm $^; else mv $^ $@; fi
+compiler_version.ml: ../../compiler_version.ml.tmp
+	@if cmp -s $^ $@; then rm $^; else mv $^ $@; fi
 
-.PHONY: compiler_version.ml.tmp
-compiler_version.ml.tmp:
-	echo "let s = \"${VERSION}\"" > $@
-	echo "let git_version = \"${VERSION_GIT}\"" >> $@
+.PHONY: ../../compiler_version.ml.tmp
+../../compiler_version.ml.tmp:
+	@echo "let s = \"${VERSION}\" let git_version = \"${VERSION_GIT}\"" > $@
 
 %.cmx: %.ml
 	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -for-pack Js_of_ocaml_compiler -g -c $<
@@ -57,25 +62,24 @@ compiler_version.ml.tmp:
 	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 annot_parser.ml: annot_parser.mli
-annot_parser.mli: annot_parser.mly jsoo_primitive.cmi
-	menhir --infer --explain $<
 
 js_parser.ml: js_parser.mli
-js_parser.mli: js_parser.mly javascript.cmi js_token.cmi
-	menhir --infer --external-tokens Js_token --explain $<
+
+clean:
+	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a
+	rm -f compiler_version.ml util.ml
+
+clean-parser-and-lexer: annot_parser.mly jsoo_primitive.cmi js_parser.mly javascript.cmi js_token.cmi
+	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
+	rm -f js_lexer.ml js_parser.ml js_parser.mli
+	menhir --infer --explain annot_parser.mly
+	menhir --infer --external-tokens Js_token --explain js_parser.mly
+	ocamllex -q annot_lexer.mll
+	ocamllex -q js_lexer.mll
 
 %.ml: %.mll
 	ocamllex -q $<
-clean:
-	rm -f *.cm[aiox] *.cmxa *.cmxs *.o *.a *.conflicts
-	rm -f lib/*.cm[aiox] lib/*.cmxa lib/*.cmxs lib/*.o lib/*.a
-	rm -f *.opt *.byte
-	rm -f $(MINIFIER) $(COMPILER) $(LINKER)
-	rm -f compiler_version.ml
-	rm -f annot_lexer.ml annot_parser.ml annot_parser.mli
-	rm -f js_lexer.ml js_parser.ml js_parser.mli
-	rm -f util.ml
-	rm -Rf man
+
 
 .PHONY: depend
 depend: $(OBJS:cmx=mli) $(OBJS:cmx=ml)

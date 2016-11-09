@@ -1,5 +1,5 @@
-include ../Makefile.conf
--include ../Makefile.local
+include ../../Makefile.conf
+include ../../Makefile.filelist
 
 all: toplevel.js eval.js
 
