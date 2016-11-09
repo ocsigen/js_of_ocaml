@@ -1,19 +1,16 @@
 
+opam pin add --no-action js_of_ocaml-compiler .
+opam pin add --no-action js_of_ocaml-ocamlbuild .
+opam pin add --no-action js_of_ocaml-camlp4 .
 opam pin add --no-action js_of_ocaml .
-case $(opam switch show) in
-    4.00*) ;;
-    4.01*) ;;
-    *) opam install tyxml || true
-esac
+opam pin add --no-action js_of_ocaml-toplevel .
+
+opam install reactiveData cppo base64
+
+opam install tyxml || true
 opam install deriving || true
 opam install async_kernel.113.33.00 || true
 opam install ppx_driver || true
-opam install reactiveData cppo base64
-
-# case $(opam switch show) in
-#     4.03*) opam pin add lwt https://github.com/Drup/lwt.git#4.03.0-no-oasis ;;
-#     *) ;;
-# esac
 
 opam install --deps-only js_of_ocaml
 opam install --verbose js_of_ocaml
