@@ -1,9 +1,0 @@
-lib: [
-  "ocamlbuild/_build/ocamlbuild_js_of_ocaml.cma"
-  "ocamlbuild/_build/ocamlbuild_js_of_ocaml.cmi"
-  "ocamlbuild/_build/ocamlbuild_js_of_ocaml.ml"
-  "ocamlbuild/_build/ocamlbuild_js_of_ocaml.mli"
-  "?ocamlbuild/_build/ocamlbuild_js_of_ocaml.cmxa"
-  "?ocamlbuild/_build/ocamlbuild_js_of_ocaml.a" 
-  "?ocamlbuild/_build/ocamlbuild_js_of_ocaml.cmxs"
-]

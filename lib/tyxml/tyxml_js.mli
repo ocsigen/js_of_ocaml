@@ -37,6 +37,8 @@
    @see <https://ocsigen.org/tyxml/dev/api/Html_sigs.T> Html_sigs.T to have a list of available functions to build HTML.
 *)
 
+open Js_of_ocaml
+
 module type XML =
   Xml_sigs.T
   with type uri = string
@@ -46,15 +48,6 @@ module type XML =
    and type elt = Dom.node Js.t
 
 module Xml : XML with module W = Xml_wrap.NoWrap
-
-module Wrap : Xml_wrap.T
-  with type 'a t = 'a React.signal
-   and type 'a tlist = 'a ReactiveData.RList.t
-   and type ('a, 'b) ft = 'a -> 'b
-
-module Util : sig
-  val update_children : Dom.node Js.t -> Dom.node Js.t ReactiveData.RList.t -> unit
-end
 
 module Svg : Svg_sigs.Make(Xml).T
   with module Xml.W = Xml_wrap.NoWrap
@@ -100,6 +93,16 @@ module Register : sig
       Beware, this function ignores tyxml's type information.
   *)
 
+end
+
+
+module Wrap : Xml_wrap.T
+  with type 'a t = 'a React.signal
+   and type 'a tlist = 'a ReactiveData.RList.t
+   and type ('a, 'b) ft = 'a -> 'b
+
+module Util : sig
+  val update_children : Dom.node Js.t -> Dom.node Js.t ReactiveData.RList.t -> unit
 end
 
 module R : sig

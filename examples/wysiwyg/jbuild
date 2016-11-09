@@ -1,0 +1,17 @@
+(jbuild_version 1)
+(executables
+ ((names (main))
+  (libraries (js_of_ocaml-lwt))
+  (preprocess (pps (js_of_ocaml-ppx)))
+  ))
+
+(rule
+ ((targets (main.js))
+  (deps (main.bc))
+  (action
+    (run ${bin:js_of_ocaml} --noruntime ${lib:js_of_ocaml-compiler:runtime.js}
+         --source-map ${<} -o ${@} --pretty))))
+
+(alias
+ ((name DEFAULT)
+  (deps (main.js index.html))))

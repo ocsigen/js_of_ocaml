@@ -1,0 +1,43 @@
+
+(rule
+ ((targets (main.js))
+  (deps (main.bc))
+  (action
+    (run ${bin:js_of_ocaml} --noruntime ${lib:js_of_ocaml-compiler:runtime.js}
+         --source-map ${<} -o ${@} --pretty))))
+
+(rule
+ ((targets (module1.cmo module1.cmi))
+  (deps (module1.ml))
+  (action (run ocamlc -g -c module1.ml))))
+
+(rule
+ ((targets (module2.cmo module2.cmi))
+  (deps (module2.ml module1.cmi))
+  (action (run ocamlc -g -c module2.ml))))
+
+(rule
+ ((targets (module1.js))
+  (deps (module1.cmo))
+  (action (run ${bin:js_of_ocaml} --noruntime --pretty --source-map ${<} -o ${@}))))
+
+(rule
+ ((targets (module2.js))
+  (deps (module2.cmo))
+  (action (run ${bin:js_of_ocaml} --noruntime --pretty --source-map ${<} -o ${@}))))
+
+(rule
+ ((targets (stdlib.js))
+  (action (run ${bin:js_of_ocaml} --noruntime --pretty --source-map ${lib:stdlib:stdlib.cma} -o ${@}))))
+
+(rule
+ ((targets (myruntime.js))
+  (action (run ${bin:js_of_ocaml} --noruntime --pretty --source-map --runtime-only
+           ${lib:js_of_ocaml-compiler:runtime.js}
+           ${lib:js_of_ocaml-compiler:predefined_exceptions.js}
+           empty -o ${@}))))
+
+
+(alias
+ ((name DEFAULT)
+  (deps (myruntime.js stdlib.js module1.js module2.js index.html))))

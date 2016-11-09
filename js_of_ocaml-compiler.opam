@@ -8,11 +8,12 @@ dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 name: "js_of_ocaml-compiler"
 version: "dev"
 
-build:   [ make "-C" "compiler" ]
-install: [ make "-C" "compiler" "install-lib" "BINDIR=%{bin}%" ]
-remove:  [ "ocamlfind" "remove" "js_of_ocaml-compiler" ]
+build: [
+  ["jbuilder" "build" "--only-packages" "js_of_ocaml-compiler" "-j" jobs "@install"]
+]
 
 depends: [
+  "jbuilder" {build & >= "1.0+beta3"}
   "cmdliner"
   "base-unix"
   "ocamlfind" {>= "1.5.1"}

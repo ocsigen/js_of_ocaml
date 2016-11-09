@@ -8,26 +8,17 @@ dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 name: "js_of_ocaml"
 version: "dev"
 
-build:   [make "build"]
-install: [make "install-lib" "BINDIR=%{bin}%"]
-remove:  ["ocamlfind" "remove" "js_of_ocaml"]
+build: [
+  ["jbuilder" "build" "--only-packages" "js_of_ocaml" "-j" jobs "@install"]
+]
 
 depends: [
-  "ocamlfind" {>= "1.5.1"}
-  "lwt" {>= "2.4.4"}
-  "cppo" {>= "1.1.0"}
-  "ppx_tools"
+  "jbuilder" {build & >= "1.0+beta3"}
+  "ocaml-migrate-parsetree"
+  "ppx_tools_versioned"
   "uchar"
   "js_of_ocaml-compiler"
   "toplevel_expect_test" {test}
 ]
 
-depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "ppx_driver" "camlp4"]
-conflicts: [
-  "deriving"     {< "0.6"}
-  "tyxml"        {< "4.0.0"}
-  "ppx_deriving" {< "3.0"}
-  "reactiveData" {< "0.2"}
-  "ppx_driver"   {< "113.33.04"}
-]
 available: [ ocaml-version >= "4.02.0" ]

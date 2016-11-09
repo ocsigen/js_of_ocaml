@@ -1,0 +1,7 @@
+(jbuild_version 1)
+(library
+ ((name js_of_ocaml_lwt)
+  (public_name js_of_ocaml-lwt)
+  (libraries (js_of_ocaml lwt))
+  (wrapped false)
+  (preprocess (pps (js_of_ocaml-ppx)))))

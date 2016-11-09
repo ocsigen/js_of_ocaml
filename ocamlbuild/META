@@ -1,7 +1,0 @@
-description = "Js_of_ocaml ocamlbuild plugin"
-requires = "ocamlbuild,str"
-version = "dev"
-archive(byte) = "ocamlbuild_js_of_ocaml.cma"
-archive(byte, plugin) = "ocamlbuild_js_of_ocaml.cma"
-archive(native) = "ocamlbuild_js_of_ocaml.cmxa"
-archive(native, plugin) = "ocamlbuild_js_of_ocaml.cmxs"

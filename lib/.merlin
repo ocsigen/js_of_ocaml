@@ -1,6 +1,0 @@
-B ./**
-S ./**
-PKG cmdliner
-PKG menhirLib
-
-EXT js

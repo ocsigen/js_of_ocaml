@@ -8,9 +8,12 @@ dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 name: "js_of_ocaml-ocamlbuild"
 version: "dev"
 
-build:   [ make "-C" "ocamlbuild" ]
-install: [ make "-C" "ocamlbuild" "install-meta" ]
-remove:  [ "ocamlfind" "remove" "js_of_ocaml-ocamlbuild" ]
+build: [
+  ["jbuilder" "build" "--only-packages" "js_of_ocaml-ocamlbuild" "-j" jobs "@install"]
+]
 
-depends: [ "ocamlbuild" ]
+depends: [
+  "jbuilder" {build & >= "1.0+beta3"}
+  "ocamlbuild"
+]
 available: [ ocaml-version >= "4.00.0" ]

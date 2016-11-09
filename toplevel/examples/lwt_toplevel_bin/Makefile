@@ -1,0 +1,81 @@
+include ../../../Makefile.conf
+
+all: toplevel.js eval.js
+
+DERIVING=$(shell ocamlfind query js_of_ocaml.deriving -format "%p" 2> /dev/null)
+
+ifneq ($(DERIVING),)
+DERIVING_SYNTAX = js_of_ocaml-camlp4.deriving deriving.syntax.std
+endif
+
+ifneq ($(CAMLP4_SYNTAXES),)
+SYNTAXES= lwt.syntax js_of_ocaml-camlp4 $(DERIVING_SYNTAX)
+endif
+
+JSFILES= +weak.js +toplevel.js +dynlink.js +nat.js
+
+PACKAGES= \
+	lwt bigarray tyxml.functor \
+	react reactiveData \
+	js_of_ocaml js_of_ocaml-lwt $(DERIVING) \
+	js_of_ocaml-tyxml \
+	js_of_ocaml-toplevel \
+	dynlink
+
+ifeq ($(WITH_PPX),YES)
+PACKAGES += js_of_ocaml-ppx.as-lib
+endif
+
+ifeq ($(WITH_GRAPHICS),YES)
+JSFILES += +graphics.js
+PACKAGES += graphics js_of_ocaml-lwt.graphics
+endif
+
+ifeq ($(METAOCAML),1)
+BER_EXPORT=trx runcode print_code
+BER=metalib.cma bertop.cmo \
+	${addprefix -export-unit , ${BER_EXPORT}}
+#METAOCAML DOES NOT WORK WITH CAMLP4
+SYNTAXES=
+#CPPO_OPT+= -D metaocaml
+endif
+
+TYXML_DIR=$(shell ocamlfind query tyxml)
+
+#-jsopt "--pretty"
+MKTOP=jsoo_mktop -verbose $(SAFESTRING) -g \
+	${addprefix -top-syntax , ${SYNTAXES}} \
+	-jsopt "--disable shortvar --pretty" \
+	${addprefix -export-package , ${PACKAGES}} \
+	${addprefix -export-unit $(TYXML_DIR)/, html_types.cmi html_sigs.cmi xml_wrap.cmi } \
+
+TOPLEVEL_NAME=toplevel
+$(TOPLEVEL_NAME).js: examples.ml test_dynlink.cmo test_dynlink.js
+	$(MKTOP) \
+	$(BER) \
+	${addprefix -jsopt , ${JSFILES}} \
+	${addprefix -jsopt , -I ./ --file examples.ml} \
+	${addprefix -jsopt , -I ./ --file test_dynlink.cmo} \
+	${addprefix -jsopt , -I ./ --file test_dynlink.js} \
+	-package base64,js_of_ocaml-toplevel.lwt_toplevel_example \
+	-o $(TOPLEVEL_NAME).byte
+
+test_dynlink.js: test_dynlink.cmo
+	js_of_ocaml test_dynlink.cmo --pretty
+
+test_dynlink.cmo: test_dynlink.ml
+	ocamlc -c test_dynlink.ml
+
+EVAL_NAME=eval
+EVAL_OBJS=eval.cmo
+
+eval.cmo: eval.ml
+	ocamlfind ocamlc -c eval.ml -package lwt,js_of_ocaml,js_of_ocaml-lwt,js_of_ocaml-toplevel,js_of_ocaml.ppx
+
+$(EVAL_NAME).js: $(EVAL_OBJS)
+	$(MKTOP) $(EVAL_OBJS) \
+	${addprefix -jsopt , ${JSFILES}} \
+	-o $(EVAL_NAME).byte
+
+clean::
+	rm -f *.cm[io] *.byte *.native *.js

@@ -1,0 +1,5 @@
+open Migrate_parsetree
+
+module Converter = Migrate_parsetree.Versions.Convert(OCaml_405)(Migrate_parsetree.Versions.OCaml_current)
+
+let init () = Compiler_libs.Ast_mapper.register "js_of_ocaml" Ppx_js.js_mapper

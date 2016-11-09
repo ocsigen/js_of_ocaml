@@ -1,5 +1,0 @@
-B ./**
-S ./**
-PKG cmdliner
-PKG menhirLib
-PKG compiler-libs.common

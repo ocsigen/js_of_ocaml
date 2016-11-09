@@ -1,0 +1,8 @@
+(jbuild_version 1)
+(library
+ ((name js_of_ocaml_tyxml)
+  (public_name js_of_ocaml-tyxml)
+  (synopsis "Tyxml for js_of_ocaml.")
+  (libraries (js_of_ocaml tyxml react reactiveData))
+  (wrapped false)
+  (preprocess (pps (js_of_ocaml-ppx)))))

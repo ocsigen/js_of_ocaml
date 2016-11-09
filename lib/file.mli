@@ -115,11 +115,6 @@ val fileReader : fileReader t constr
 (* be carefull, this might not be implemented in all browser.
    To check availability, use [Js.Optdef.to_option (Js.def fileReader)] *)
 
-val readAsBinaryString : #blob t -> js_string t Lwt.t
-val readAsText : #blob t -> js_string t Lwt.t
-val readAsText_withEncoding  : #blob t -> js_string t -> js_string t Lwt.t
-val readAsDataURL : #blob t -> js_string t Lwt.t
-
 val addEventListener :
   (#progressEventTarget t as 'a) -> 'b Event.typ ->
   ('a, 'b) event_listener -> bool t -> event_listener_id

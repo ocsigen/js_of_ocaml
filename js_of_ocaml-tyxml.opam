@@ -1,0 +1,23 @@
+opam-version: "1.2"
+maintainer:   "dev@ocsigen.org"
+authors:      "Ocsigen team"
+bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
+homepage:     "http://ocsigen.org/js_of_ocaml"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
+
+name: "js_of_ocaml-tyxml"
+version: "dev"
+
+build: [
+  ["jbuilder" "build" "--only-packages" "js_of_ocaml-tyxml" "-j" jobs "@install"]
+]
+
+depends: [
+  "jbuilder" {build & >= "1.0+beta3"}
+  "tyxml" {>= "4.0.0"}
+  "reactiveData" {>= "0.2"}
+  "js_of_ocaml"
+  "js_of_ocaml-ppx"
+]
+
+available: [ ocaml-version >= "4.02.0" ]

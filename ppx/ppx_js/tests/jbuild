@@ -1,0 +1,13 @@
+(jbuild_version 1)
+
+(executables
+ ((names (expect_test))
+  (libraries (compiler-libs.common compiler-libs.toplevel js_of_ocaml-ppx ocaml-migrate-parsetree))
+  ))
+
+;; tests/expect: tests/main.ml
+;; 	ocamlfind ocamlc -verbose -linkpkg -linkall -predicates create_toploop,ppx_driver \
+;; 	-package toplevel_expect_test,ppx_tools lib/ppx_js.cma driver/ppx_js_driver.cma tests/main.ml -o $@
+
+;; tests: tests/expect tests/ppx.mlt
+;; 	./tests/expect tests/ppx.mlt

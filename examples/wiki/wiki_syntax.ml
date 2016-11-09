@@ -20,7 +20,7 @@
    Pretty print wiki to DOM elements
    @author Vincent Balat
 *)
-
+open Js_of_ocaml
 module Html = Dom_html
 
 module W = Wikicreole

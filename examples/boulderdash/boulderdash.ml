@@ -7,6 +7,8 @@
  *
  *)
 
+open Js_of_ocaml
+open Js_of_ocaml_lwt
 let (>>=) = Lwt.bind
 module Html = Dom_html
 let js = Js.string
