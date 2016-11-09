@@ -28,14 +28,6 @@ ifeq "${WITH_ASYNC}" "YES"
 ASYNC_CMA=async/async_js.cma
 endif
 
-ifeq "${WITH_TOPLEVEL}" "YES"
-TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
-TOPLEVELLIB+= toplevel/jsooTopPpx.cmo
-ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
-TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
-endif
-endif
-
 ifeq "${WITH_PPX}" "YES"
 PPX_EX= ppx/$(PPX)
 PPX_LIB= ppx/ppx_js.cma ppx/ppx_js.cmxa
@@ -130,25 +122,6 @@ log/%.cmi: log/%.mli
 log/logger.cma: log/lwt_log_js.cmo
 	$(OCAMLC) -a -o $@ $^
 
-toplevel_lib: $(TOPLEVELLIB)
-
-toplevel/jsooTop.cmo: toplevel/jsooTop.ml ppx/ppx_js.byte ../compiler/lib/js_of_ocaml_compiler.cma
-	$(OCAMLC) \
-		$(SAFESTRING) -package lwt,lwt.syntax \
-		-ppx ppx/ppx_js.byte \
-		-I toplevel -I ../compiler/lib -I +compiler-libs \
-		-c $< -o $@
-
-toplevel/%.cmo: toplevel/%.ml
-	$(OCAMLC) $(SAFESTRING) \
-		-I toplevel -I +compiler-libs -package camlp4 \
-		-c $< -o $@
-
-toplevel/%.cmi: toplevel/%.mli
-	$(OCAMLC) $(SAFESTRING) \
-	-I toplevel -I +compiler-libs $< -o $@
-
-
 
 ppx/ppx_js.byte: ppx/ppx_js.cmo ppx/ppx_js_bin.cmo
 	$(OCAMLC) $(SAFESTRING) \
@@ -239,20 +212,17 @@ clean:
 	rm -f log/*.cm[xioa] log/*.[ao] log/*.so log/*.cmx[sa]
 	rm -f tyxml/*.cm[xioa] tyxml/*.[ao] tyxml/*.so tyxml/*.cmx[sa]
 	rm -f graphics/*.cm[xioa] graphics/*.[ao] graphics/*.so graphics/*.cmx[sa]
-	rm -f toplevel/*.cm[xioa] toplevel/*.[ao] toplevel/*.so toplevel/*.cmx[sa]
 	rm -f deriving_json/*.cm[xioa] deriving_json/*.[ao] deriving_json/*.so
 	rm -f deriving_json/deriving_Json_lexer.ml
 	rm -f ppx/ppx_deriving_json.ml
 	rm -f stubs.c
 	rm -f lib_version.ml
-	rm -f toplevel/jsooTopError.ml
 
-depend: ppx/ppx_js.byte sys_js.ml toplevel/jsooTopError.ml ppx/ppx_js.ml
+
+depend: ppx/ppx_js.byte sys_js.ml ppx/ppx_js.ml
 	ocamldep -ppx ppx/ppx_js.byte *.ml *.mli > .depend
 	ocamldep -ppx ppx/ppx_js.byte -I async async/*.ml async/*.mli >> .depend
 	ocamldep -ppx ppx/ppx_js.byte -I log log/*.ml log/*.mli >> .depend
-	ocamldep -ppx ppx/ppx_js.byte -I toplevel toplevel/jsooTop.ml toplevel/jsooTopCamlp4.ml toplevel/*.mli >> .depend
-	ocamldep toplevel/jsooTopError.ml toplevel/jsooTopPpx.ml -I toplevel >> .depend
 ifeq "${WITH_GRAPHICS}" "YES"
 	ocamldep -ppx ppx/ppx_js.byte graphics/*.ml  >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)

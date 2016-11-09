@@ -1,5 +1,0 @@
-bin: [
-  "?jsoo_tools/jsoo_mktop"
-  "?jsoo_tools/jsoo_mkcmis"
-  "?jsoo_tools/jsoo_listunits"
-]

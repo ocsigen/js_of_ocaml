@@ -1,0 +1,5 @@
+bin: [
+  "?toplevel/bin/jsoo_mktop"
+  "?toplevel/bin/jsoo_mkcmis"
+  "?toplevel/bin/jsoo_listunits"
+]
