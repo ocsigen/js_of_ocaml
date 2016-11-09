@@ -15,16 +15,6 @@ DERIVING_JSON=deriving_json.cma
 ifeq "$(BEST)" "opt"
 DERIVING_JSON += deriving_json.cmxs
 endif
-ifeq "${WITH_CAMLP4}" "YES"
-ifeq "${WITH_DERIVING}" "YES"
-PA_DERIVING=syntax/pa_deriving_Json.cmo
-ifeq "$(BEST)" "opt"
-ifeq "${NATDYNLINK}" "YES"
-PA_DERIVING_NDL= syntax/pa_deriving_Json.cmx syntax/pa_deriving_Json.cmxs
-endif
-endif
-endif
-endif
 
 ifeq "${WITH_GRAPHICS}" "YES"
 GRAPHICS_CMA=graphics/graphics.cma
@@ -43,17 +33,6 @@ TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
 TOPLEVELLIB+= toplevel/jsooTopPpx.cmo
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
 TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
-endif
-endif
-
-
-PA_JS=
-ifeq "${WITH_CAMLP4}" "YES"
-PA_JS= syntax/pa_js.cmo
-ifeq "${BEST}" "opt"
-ifeq "${NATDYNLINK}" "YES"
-PA_JS_NDL= syntax/pa_js.cmx syntax/pa_js.cmxs
-endif
 endif
 endif
 
@@ -79,8 +58,6 @@ PPX_DERIVING_LIB= ppx/ppx_deriving_json.cma \
 endif
 
 all: $(LIBNAME).cma log/logger.cma \
-	${PA_JS} ${PA_JS_NDL} \
-	${PA_DERIVING} 	${PA_DERIVING_NDL} \
 	${DERIVING_JSON} \
 	${GRAPHICS_CMA} \
 	${TYXML_CMA} \
@@ -109,26 +86,6 @@ deriving_json.cmxa: $(JSON_OBJS:.cmo=.cmx)
 deriving_json.cmxs: deriving_json.cmxa
 	$(OCAMLOPT) -shared -linkall -o $@ $^
 
-syntax/pa_js.cmo: syntax/pa_js.ml
-	$(OCAMLC) -w -42-58 $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
-
-syntax/pa_js.cmx: syntax/pa_js.ml
-	$(OCAMLOPT) -w -42-58 $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
-
-syntax/pa_js.cmxs: syntax/pa_js.cmx
-	$(OCAMLOPT) -shared -linkall -o $@ $<
-
-syntax/pa_deriving_Json.cmo: syntax/pa_deriving_Json.ml syntax/pa_deriving_Json.cmi
-	$(OCAMLC) -w -27 -I syntax $(SAFESTRING) -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
-
-syntax/pa_deriving_Json.cmi: syntax/pa_deriving_Json.mli
-	$(OCAMLC) $(SAFESTRING) -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
-
-syntax/pa_deriving_Json.cmx: syntax/pa_deriving_Json.ml
-	$(OCAMLOPT) -w -27 -I syntax $(SAFESTRING) -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
-
-syntax/pa_deriving_Json.cmxs: syntax/pa_deriving_Json.cmx
-	$(OCAMLOPT) -I syntax -shared -linkall -o $@ $<
 
 graphics/%.cmo: graphics/%.ml graphics/%.cmi ppx/ppx_js.byte
 	$(OCAMLC) $(SAFESTRING) -package lwt,lwt.syntax,graphics -ppx ppx/ppx_js.byte -I graphics -c $< -o $@
@@ -257,10 +214,10 @@ ppx/ppx_deriving_json.cmxs: ppx/ppx_deriving_json.cmx
 %.ml: %.mll
 	ocamllex $<
 
-${JSON_OBJS}: %.cmo: %.ml ${PA_DERIVING}
+${JSON_OBJS}: %.cmo: %.ml
 	$(OCAMLC) $(SAFESTRING) -I deriving_json -c $<
 
-${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml ${PA_DERIVING}
+${JSON_OBJS:.cmo=.cmx}: %.cmx: %.ml
 	$(OCAMLOPT) $(SAFESTRING) -I deriving_json -c $<
 
 %$(OBJEXT): %.c
@@ -276,7 +233,6 @@ stubs.c: $(MLOBJS:cmo=ml)
 
 clean:
 	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa]
-	rm -f syntax/*.cm[xioa] syntax/*.[ao] syntax/*.so syntax/*.cmx[sa]
 	rm -f ppx/*.cm[xioa] ppx/*.[ao] ppx/*.so ppx/*.cmx[sa]
 	rm -f ppx_driver/*.cm[xioa] ppx_driver/*.[ao] ppx_driver/*.so ppx_driver/*.cmx[sa]
 	rm -f async/*.cm[xioa] async/*.[ao] async/*.so async/*.cmx[sa]
@@ -291,7 +247,7 @@ clean:
 	rm -f lib_version.ml
 	rm -f toplevel/jsooTopError.ml
 
-depend: ppx/ppx_js.byte ${PA_DERIVING} sys_js.ml toplevel/jsooTopError.ml ppx/ppx_js.ml
+depend: ppx/ppx_js.byte sys_js.ml toplevel/jsooTopError.ml ppx/ppx_js.ml
 	ocamldep -ppx ppx/ppx_js.byte *.ml *.mli > .depend
 	ocamldep -ppx ppx/ppx_js.byte -I async async/*.ml async/*.mli >> .depend
 	ocamldep -ppx ppx/ppx_js.byte -I log log/*.ml log/*.mli >> .depend

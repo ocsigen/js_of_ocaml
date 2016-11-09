@@ -73,6 +73,7 @@ depend:
 
 clean:
 	$(MAKE) -C compiler clean
+	$(MAKE) -C camlp4 clean
 	$(MAKE) -C jsoo_tools clean
 	$(MAKE) -C lib clean
 	$(MAKE) -C ocamlbuild clean
