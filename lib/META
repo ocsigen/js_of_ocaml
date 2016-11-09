@@ -9,10 +9,7 @@ linkopts(javascript,pkg_graphics) += "+js_of_ocaml-compiler/graphics.js"
 linkopts(javascript,pkg_num) += "+js_of_ocaml-compiler/nat.js"
 
 package "syntax" (
-  description = "Js_of_ocaml syntax extension"
-  version = "[distributed with js_of_ocaml]"
-  requires(syntax) = "camlp4"
-  archive(syntax,preprocessor) = "pa_js.cmo"
+  requires(syntax,preprocessor) = "js_of_ocaml-camlp4"
 )
 
 package "ppx" (
@@ -52,12 +49,7 @@ package "deriving" (
   requires = "bytes"
 
   package "syntax" (
-    exists_if = "pa_deriving_Json.cmo pa_deriving_Json.cmxs"
-    description = "Safe \"IO in JSON\" class for deriving."
-    version = "[distributed with js_of_ocaml]"
-    archive(syntax, preprocessor) = "pa_deriving_Json.cmo"
-    archive(syntax, toploop) = "pa_deriving_Json.cmo"
-    requires(syntax) = "deriving.syntax.common"
+    requires(syntax) = "js_of_ocaml-camlp4.deriving"
   )
 
   package "ppx" (

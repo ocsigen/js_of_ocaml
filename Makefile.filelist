@@ -14,10 +14,10 @@ INTF += lib/log/*.cmi
 IMPL += lib/log/logger.cma
 
 ifeq "${WITH_CAMLP4}" "YES"
-IMPL += lib/syntax/pa_js.cmo
+IMPL += camlp4/pa_js.cmo
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
-IMPL += lib/syntax/pa_js.cmx lib/syntax/pa_js.cmxs
+IMPL += camlp4/pa_js.cmx camlp4/pa_js.cmxs
 endif
 endif
 endif
@@ -141,14 +141,14 @@ NATIMPL += $(JSON:.cmi=.cmx)
 
 ifeq "${WITH_CAMLP4}${WITH_DERIVING}" "YESYES"
 
-INTF += lib/syntax/pa_deriving_Json.cmi
+INTF += camlp4/pa_deriving_Json.cmi
 
-IMPL += lib/syntax/pa_deriving_Json.cmo \
-        lib/syntax/pa_deriving_Json.cmi
+IMPL += camlp4/pa_deriving_Json.cmo \
+        camlp4/pa_deriving_Json.cmi
 
 ifeq "${NATDYNLINK}" "YES"
-NATIMPL += lib/syntax/pa_deriving_Json.cmx \
-           lib/syntax/pa_deriving_Json.cmxs
+NATIMPL += camlp4/pa_deriving_Json.cmx \
+           camlp4/pa_deriving_Json.cmxs
 COMP_IMPL += $(COMP_NATDYN_IMPL)
 endif
 
