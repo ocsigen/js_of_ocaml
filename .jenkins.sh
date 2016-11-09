@@ -1,11 +1,15 @@
 
+opam pin add --no-action js_of_ocaml-compiler .
+opam pin add --no-action js_of_ocaml-ocamlbuild .
+opam pin add --no-action js_of_ocaml-camlp4 .
 opam pin add --no-action js_of_ocaml .
-case $(opam switch show) in
-    4.00*) ;;
-    4.01*) ;;
-    *) opam install tyxml || true
-esac
+opam pin add --no-action js_of_ocaml-toplevel .
+
+opam install reactiveData cppo base64
+
+opam install tyxml || true
 opam install deriving || true
+
 # opam install async_kernel.113.33.00 || true
 opam install ppx_driver.113.33.04 || true
 opam install reactiveData cppo base64
