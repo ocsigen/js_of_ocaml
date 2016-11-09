@@ -37,7 +37,9 @@ let kind ~resolve_sourcemap_url file line =
     let base = Filename.dirname file in
     let ic = open_in (Filename.concat base url) in
     let l = in_channel_length ic in
-    `Source_map (Yojson.Basic.from_string (really_input_string ic l))
+    let content = really_input_string ic l in
+    close_in ic;
+    `Source_map (Yojson.Basic.from_string content)
 ;;
 
 let link ~output ~files ~resolve_sourcemap_url ~source_map =
