@@ -1,0 +1,6 @@
+exists_if = "jsooTop.cmo"
+description = "Js_of_ocaml toplevel library"
+version = "dev"
+archive(byte) = "jsooTopError.cmo jsooTopPpx.cmo jsooTop.cmo"
+requires = "bytes,compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel,js_of_ocaml,js_of_ocaml-compiler"
+linkopts(javascript) = "+js_of_ocaml-compiler/toplevel.js"

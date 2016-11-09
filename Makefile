@@ -2,12 +2,12 @@
 all: no_examples examples
 no_examples: build doc
 
-build: check_lwt compiler library ocamlbuild runtime jsoo_tools toplevel_lib
+build: check_lwt compiler library ocamlbuild runtime toplevel_bin toplevel_lib
 
 include Makefile.conf
 -include Makefile.local
 
-.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build jsoo_tools toplevel_lib toplevel
+.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build toplevel_bin toplevel_lib toplevel
 
 compiler:
 	$(MAKE) -C compiler all compilerlib
@@ -15,10 +15,10 @@ library:
 	$(MAKE) -C lib
 runtime:
 	$(MAKE) -C runtime
-jsoo_tools: compiler
-	$(MAKE) -C jsoo_tools
+toplevel_bin: compiler
+	$(MAKE) -C toplevel/bin
 toplevel_lib: compiler
-	$(MAKE) -C lib toplevel_lib
+	$(MAKE) -C toplevel/lib
 ocamlbuild:
 	$(MAKE) -C ocamlbuild
 examples: compiler library runtime
@@ -27,7 +27,7 @@ doc: library ocamlbuild
 	$(MAKE) -C doc
 
 toplevel:
-	$(MAKE) -C toplevel
+	$(MAKE) -C toplevel/examples
 
 tests: compiler library runtime
 	$(MAKE) -C tests
@@ -74,12 +74,13 @@ depend:
 
 clean:
 	$(MAKE) -C compiler clean
-	$(MAKE) -C camlp4 clean
-	$(MAKE) -C jsoo_tools clean
-	$(MAKE) -C lib clean
-	$(MAKE) -C ocamlbuild clean
 	$(MAKE) -C runtime clean
-	$(MAKE) -C toplevel clean
+	$(MAKE) -C camlp4 clean
+	$(MAKE) -C ocamlbuild clean
+	$(MAKE) -C toplevel/lib clean
+	$(MAKE) -C toplevel/bin clean
+	$(MAKE) -C toplevel/examples clean
+	$(MAKE) -C lib clean
 	$(MAKE) -C examples clean
 ifeq ($(wildcard tests),tests)
 	$(MAKE) -C tests clean
