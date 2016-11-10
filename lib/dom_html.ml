@@ -1231,7 +1231,7 @@ class type window = object
   method parent : window t readonly_prop
   method frameElement : element t opt readonly_prop
 
-  method open_ : js_string t -> js_string t -> js_string t opt -> window t meth
+  method open_ : js_string t -> js_string t -> js_string t opt -> window t opt meth
   method alert : js_string t -> unit meth
   method confirm : js_string t -> bool t meth
   method prompt : js_string t -> js_string t -> js_string t opt meth
