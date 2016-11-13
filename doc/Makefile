@@ -60,7 +60,7 @@ EX_MINE:=index.html minesweeper.js sprites
 EX_CUBE:=index.html cubes.js
 
 cp-examples:
-	$(MAKE) -C .. toplevel examples
+	$(MAKE) -C .. toplevel-examples examples
 	mkdir -p ${addprefix manual/files/, toplevel/ boulderdash/ webgl/ graph_viewer/ planet/ wiki/ wysiwyg/ minesweeper/ cubes/ hyperbolic/}
 	cp -R ${addprefix ../toplevel/examples/, ${EX_TOPLEVEL}} manual/files/toplevel/
 	cp -R ${addprefix ../examples/boulderdash/, ${EX_BOULDER}} manual/files/boulderdash/

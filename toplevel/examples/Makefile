@@ -23,7 +23,7 @@ DERIVING_SYNTAX = js_of_ocaml.deriving.syntax deriving.syntax.std
 endif
 
 ifneq ($(CAMLP4_SYNTAXES),)
-SYNTAXES= lwt.syntax js_of_ocaml.syntax $(DERIVING_SYNTAX)
+SYNTAXES= lwt.syntax js_of_ocaml-camlp4 $(DERIVING_SYNTAX)
 endif
 
 JSFILES= +weak.js +toplevel.js +dynlink.js +nat.js
@@ -33,7 +33,7 @@ PACKAGES= \
 	react reactiveData \
 	js_of_ocaml $(DERIVING) $(ASYNC_PKG) \
 	js_of_ocaml.tyxml \
-	js_of_ocaml.toplevel \
+	js_of_ocaml-toplevel \
 	dynlink
 
 ifeq ($(WITH_PPX),YES)
@@ -112,7 +112,7 @@ colorize.cmo: colorize.cmi
 	ocamlfind ocamlc -g -c -package js_of_ocaml,js_of_ocaml.tyxml $<
 %.cmo:%.ml
 	ocamlfind ocamlc -g -c $(SAFESTRING) \
-		-package js_of_ocaml.ppx,lwt,js_of_ocaml.tyxml,js_of_ocaml.toplevel \
+		-package js_of_ocaml.ppx,lwt,js_of_ocaml.tyxml,js_of_ocaml-toplevel \
 		-package base64 \
 		-I camlp4 \
 		$(OCPINDENT) $(HIGLO) \

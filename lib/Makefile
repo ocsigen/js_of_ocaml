@@ -1,7 +1,7 @@
 include ../Makefile.conf
 include ../Makefile.filelist
 
-MLOBJS= $(LIBRARY_INTF:cmi=cmo)
+MLOBJS= $(LIBRARY_BASE_INTF:cmi=cmo)
 COBJS= stubs$(OBJEXT)
 OBJS=lib_version.cmo $(MLOBJS) $(COBJS)
 
@@ -13,7 +13,7 @@ VERSION := $(shell head -n 1 ../VERSION)
 
 
 
-all: $(LIBRARY).cma \
+all: $(LIBRARY_INSTALL) \
      $(PPX_INSTALL) $(PPX_DRIVER_INSTALL) \
      $(PPX_DERIVING_INSTALL) \
      META
