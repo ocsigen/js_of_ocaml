@@ -67,7 +67,7 @@ endif
 
 #Lib
 
-LIBRARY_INTF := \
+LIBRARY_BASE_INTF := \
 js.cmi dom.cmi typed_array.cmi dom_html.cmi \
 dom_svg.cmi file.cmi dom_events.cmi firebug.cmi lwt_js.cmi sys_js.cmi \
 regexp.cmi cSS.cmi url.cmi form.cmi xmlHttpRequest.cmi \
@@ -75,7 +75,9 @@ lwt_js_events.cmi json.cmi jsonp.cmi webGL.cmi webSockets.cmi \
 keycode.cmi eventSource.cmi geolocation.cmi jstable.cmi \
 mutationObserver.cmi worker.cmi js_of_ocaml.cmi 
 
-LIBRARY_INSTALL := $(LIBRARY).cma   \
+LIBRARY_INTF := $(LIBRARY_BASE_INTF)
+
+LIBRARY_INSTALL := $(LIBRARY).cma lib_version.cmi   \
                    dll$(LIBRARY)$(DLLEXT) \
                    lib$(LIBRARY)$(LIBEXT)
 

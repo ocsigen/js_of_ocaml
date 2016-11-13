@@ -80,7 +80,7 @@ module Camlp4 : CAMLP4 = struct
       clean name_ml;
       output_string oc (flush_str pkg_name);
       close_out oc;
-      execute ["ocamlfind";"ocamlc";"-c";"-I";"+camlp4";"-package";"js_of_ocaml.toplevel";name_ml];
+      execute ["ocamlfind";"ocamlc";"-c";"-I";"+camlp4";"-package";"js_of_ocaml-toplevel";name_ml];
       clean (name ^ ".cmo");
       clean (name ^ ".cmi");
       (name^".cmo")
@@ -154,7 +154,7 @@ let rec scan_args acc = function
 
 let _ =
   try
-    let jsoo_top = ["-package";"js_of_ocaml.toplevel"] in
+    let jsoo_top = ["-package";"js_of_ocaml-toplevel"] in
     let base_cmd = ["ocamlfind";"ocamlc";"-linkall";"-linkpkg"] in
     let args = List.tl (Array.to_list (Sys.argv)) in
     let args = scan_args [] args in

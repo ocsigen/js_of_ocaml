@@ -71,7 +71,6 @@ package "tyxml" (
 )
 
 package "weak" (
-  exists_if = "weak.js"
   description = "weak emulation for js_of_ocaml."
   version = "[distributed with js_of_ocaml]"
   linkopts(javascript) = "+js_of_ocaml-compiler/weak.js"
