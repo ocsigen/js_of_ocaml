@@ -53,10 +53,6 @@ benchmarks/build
 benchmarks/results
 benchmarks/config
 lib/deriving_json/deriving_Json_lexer.ml
-lib/ppx/ppx_js.ml
-lib/ppx/ppx_deriving_json.ml
-lib/ppx/ppx_js
-lib/ppx/ppx_js.opt
 Makefile.local
 
 # OCamlbuild dir
@@ -74,6 +70,14 @@ doc/manual/files/toplevel/
 doc/manual/files/webgl/
 doc/manual/files/wiki/
 doc/manual/files/wysiwyg/
+
+ppx/ppx_js/bin/ppx_js
+ppx/ppx_js/bin/ppx_js.byte
+ppx/ppx_js/bin/ppx_js.opt
+ppx/ppx_js/tests/expect
+
+ppx/ppx_deriving_json/lib/ppx_deriving_json.ml
+ppx/ppx_deriving_json/tests/expect
 
 tests/ppx/expect
 tests/ppx/expect_deriving
