@@ -154,22 +154,22 @@ endif # WITH_PPX
 
 ifeq "${WITH_CAMLP4}" "YES"
 CAMLP4_INTF :=
-CAMLP4_INSTALL := pa_js/lib/pa_js.cmi pa_js/lib/pa_js.cmo
+CAMLP4_INSTALL := lib/pa_js.cmi lib/pa_js.cmo
 ifeq "$(NATIVE)" "YES"
-CAMLP4_INSTALL += pa_js/lib/pa_js.cmx
+CAMLP4_INSTALL += lib/pa_js.cmx
 endif
 ifeq "$(NATIVE_DYN)" "YES"
-CAMLP4_INSTALL += pa_js/lib/pa_js.cmxs
+CAMLP4_INSTALL += lib/pa_js.cmxs
 endif
 
 ifeq "${WITH_DERIVING}" "YES"
-CAMLP4_INTF += pa_deriving_json/lib/pa_deriving_Json.cmi
-CAMLP4_INSTALL += pa_deriving_json/lib/pa_deriving_Json.cmi pa_deriving_json/lib/pa_deriving_Json.cmo
+CAMLP4_DERIVING_INTF := lib/pa_deriving_Json.cmi
+CAMLP4_DERIVING_INSTALL := lib/pa_deriving_Json.cmi lib/pa_deriving_Json.cmo
 ifeq "$(NATIVE)" "YES"
-CAMLP4_INSTALL += pa_deriving_json/lib/pa_deriving_Json.cmx
+CAMLP4_DERIVING_INSTALL += lib/pa_deriving_Json.cmx
 endif
 ifeq "$(NATIVE_DYN)" "YES"
-CAMLP4_INSTALL += pa_deriving_json/lib/pa_deriving_Json.cmxs
+CAMLP4_DERIVING_INSTALL += lib/pa_deriving_Json.cmxs
 endif
 endif
 
@@ -203,6 +203,7 @@ INTF := ${addprefix lib/, ${LIBRARY_INTF}} \
         ${addprefix ppx/ppx_js/, ${PPX_DRIVER_INTF}} \
         ${addprefix ppx/ppx_js/ppx_deriving_json/, ${PPX_DERIVING_INTF}} \
         ${addprefix toplevel/lib/, ${TOPLEVEL_INTF}} \
-        ${addprefix camlp4/, ${CAMLP4_INTF}} \
+        ${addprefix camlp4/pa_js/, ${CAMLP4_INTF}} \
+        ${addprefix camlp4/pa_deriving_json/, ${CAMLP4_DERIVING_INTF}} \
         ${addprefix ocamlbuild/, ${OCAMLBUILD_INTF}} \
         ${addprefix compiler/findlib_support/, ${FINDLIB_INTF}}

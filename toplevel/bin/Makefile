@@ -61,4 +61,4 @@ jsoo_common.cmo jsoo_common.cmx: ../../compiler/lib/js_of_ocaml_compiler.cmi
 	-I ../../compiler/lib/ $< -o $@
 
 clean:
-	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa] *.byte *.opt $(MKTOP) $(MKCMIS)
+	rm -f *.cm[xioa] *.[ao] *.so *.cmx[sa] *.byte *.opt $(MKTOP) $(MKCMIS) $(LISTUNITS)

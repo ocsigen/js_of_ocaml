@@ -18,6 +18,9 @@ all: $(LIBRARY_INSTALL) META
 lib_version.ml: lib_version.ml.tmp
 	if cmp -s $^ $@; then rm $^; else mv $^ $@; fi
 
+$(PPX_JS):
+	$(MAKE) -C ../ppx/ppx_js/ bin/ppx_js.byte
+
 .PHONY: lib_version.ml.tmp
 
 lib_version.ml.tmp:

@@ -5,6 +5,8 @@ OCAMLC=ocamlfind ocamlc     -w +A-3-4-7-9-37-38-41-44-45
 OCAMLOPT=ocamlfind ocamlopt -w +A-3-4-7-9-37-38-41-44-45-58
 VERSION := $(shell head -n 1 ../../VERSION)
 
+all: $(CAMLP4_DERIVING_INSTALL)
+
 lib/pa_deriving_Json.cmo: lib/pa_deriving_Json.ml lib/pa_deriving_Json.cmi
 	$(OCAMLC) -w -27 $(SAFESTRING) -I lib/ -package deriving.syntax.common,camlp4.quotations.o -syntax camlp4o -c $<
 
