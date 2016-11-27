@@ -19,10 +19,11 @@ toplevel-examples:
 	$(MAKE) -C toplevel/examples
 
 tests: build-compiler build-library build-runtime
-	$(MAKE) -C tests
-
-phantomtests: build-compiler build-library build-runtime
-	$(MAKE) -C tests phantom
+	$(MAKE) -C lib/tests test-with-node
+	$(MAKE) -C camlp4/pa_js tests
+	$(MAKE) -C camlp4/pa_deriving_json tests
+	$(MAKE) -C ppx/ppx_js tests
+	$(MAKE) -C ppx/ppx_deriving_json tests
 
 reinstall: uninstall install
 install: install-libs install-bins
@@ -103,10 +104,7 @@ clean:
 	$(MAKE) -C toplevel/examples clean
 	$(MAKE) -C lib clean
 	$(MAKE) -C examples clean
-ifeq ($(wildcard tests),tests)
-	$(MAKE) -C tests clean
 	$(MAKE) -C doc clean
-endif
 
 realclean: clean
 	find . -name "*~" -print | xargs rm -f
@@ -120,4 +118,4 @@ dist:
         cd /tmp &&\
 	git clone https://github.com/ocsigen/js_of_ocaml.git js_of_ocaml-${VERSION} &&\
 	(cd js_of_ocaml-${VERSION}; git checkout ${VERSION}) &&\
-	tar zcvf js_of_ocaml-${VERSION}.tar.gz js_of_ocaml-${VERSION} --exclude benchmarks --exclude .git --exclude tests
+	tar zcvf js_of_ocaml-${VERSION}.tar.gz js_of_ocaml-${VERSION} --exclude benchmarks --exclude .git
