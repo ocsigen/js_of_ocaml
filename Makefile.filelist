@@ -109,42 +109,42 @@ LIBRARY_INSTALL += $(LIBRARY_INTF)
 #PPX
 
 ifeq "${WITH_PPX}" "YES"
-PPX_INTF := ppx/ppx_js.cmi
-PPX_INSTALL := ppx/${PPX} ppx/ppx_js.cma ppx/ppx_js.cmi
+PPX_INTF := lib/ppx_js.cmi
+PPX_INSTALL := bin/${PPX} lib/ppx_js.cma lib/ppx_js.cmi
 ifeq "$(NATIVE)" "YES"
-PPX_INSTALL += ppx/ppx_js.cmxa \
-               ppx/ppx_js.a \
-               ppx/ppx_js.cmx
+PPX_INSTALL += lib/ppx_js.cmxa \
+               lib/ppx_js.a \
+               lib/ppx_js.cmx
 endif
 ifeq "$(NATIVE_DYN)" "YES"
-PPX_INSTALL += ppx/ppx_js.cmxs
+PPX_INSTALL += lib/ppx_js.cmxs
 endif
 
 
 ifeq "${WITH_PPX_DRIVER}" "YES"
 PPX_DRIVER_INTF :=
-PPX_DRIVER_INSTALL := ppx_driver/ppx_js_driver.cma
+PPX_DRIVER_INSTALL := driver/ppx_js_driver.cma
 ifeq "$(NATIVE)" "YES"
-PPX_DRIVER_INSTALL += ppx_driver/ppx_js_driver.cmxa \
-                      ppx_driver/ppx_js_driver.a \
-                      ppx_driver/ppx_js_driver.cmx
+PPX_DRIVER_INSTALL += driver/ppx_js_driver.cmxa \
+                      driver/ppx_js_driver.a \
+                      driver/ppx_js_driver.cmx
 endif
 ifeq "$(NATIVE_DYN)" "YES"
-PPX_DRIVER_INSTALL += ppx_driver/ppx_js_driver.cmxs
+PPX_DRIVER_INSTALL += driver/ppx_js_driver.cmxs
 endif
 
 endif
 
 ifeq "${WITH_PPX_DERIVING}" "YES"
 PPX_DERIVING_INTF :=
-PPX_DERIVING_INSTALL := ppx/ppx_deriving_json.cma
+PPX_DERIVING_INSTALL := lib/ppx_deriving_json.cma
 ifeq "$(NATIVE)" "YES"
-PPX_DERIVING_INSTALL += ppx/ppx_deriving_json.cmxa \
-                     ppx/ppx_deriving_json.a \
-                     ppx/ppx_deriving_json.cmx
+PPX_DERIVING_INSTALL += lib/ppx_deriving_json.cmxa \
+                     lib/ppx_deriving_json.a \
+                     lib/ppx_deriving_json.cmx
 endif
 ifeq "$(NATIVE_DYN)" "YES"
-PPX_DERIVING_INSTALL += ppx/ppx_deriving_json.cmxs
+PPX_DERIVING_INSTALL += lib/ppx_deriving_json.cmxs
 endif
 endif
 
@@ -199,9 +199,9 @@ endif
 #${addprefix compiler/lib/, ${COMPILER_INTF}}
 
 INTF := ${addprefix lib/, ${LIBRARY_INTF}} \
-        ${addprefix lib/, ${PPX_INTF}} \
-        ${addprefix lib/, ${PPX_DRIVER_INTF}} \
-        ${addprefix lib/, ${PPX_DERIVING_INTF}} \
+        ${addprefix ppx/ppx_js/, ${PPX_INTF}} \
+        ${addprefix ppx/ppx_js/, ${PPX_DRIVER_INTF}} \
+        ${addprefix ppx/ppx_js/ppx_deriving_json/, ${PPX_DERIVING_INTF}} \
         ${addprefix toplevel/lib/, ${TOPLEVEL_INTF}} \
         ${addprefix camlp4/, ${CAMLP4_INTF}} \
         ${addprefix ocamlbuild/, ${OCAMLBUILD_INTF}} \
