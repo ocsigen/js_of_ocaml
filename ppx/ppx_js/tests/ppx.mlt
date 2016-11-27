@@ -38,9 +38,6 @@ module Js = struct
 
 end;;
 
-
-
-
 (* Test methods. *)
 
 fun (obj : int) -> obj##m

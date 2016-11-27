@@ -1,4 +1,5 @@
-(* Test methods. *)
+(* Test object litteral. *)
+
 
 fun (obj : < > Js.t) -> obj = jsobject val m = () end;;
 
@@ -10,7 +11,6 @@ fun () ->
     val mutable w = 3.
     method m = ""
   end : < m : int Js.meth; .. > Js.t);;
-
 
 fun () ->
   jsobject
@@ -47,4 +47,3 @@ fun () ->
     method _m_a = ""
     method _m_b = ""
   end : <_m_a : string Js.meth; .. > Js.t);;
-

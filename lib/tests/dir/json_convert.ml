@@ -20,7 +20,7 @@
 
 (* Json conversion *)
 open Common
-
+(*
 let log_stop = log_start "Json"
 
 let str =
@@ -30,7 +30,7 @@ let str =
   done;
   Buffer.contents b
 
-type t = int list * float option * string deriving (Json)
+type t = int list * float option * string [@@deriving json]
 
 let test t v =
   if v = Json.unsafe_input (Json.output v)
@@ -48,18 +48,18 @@ let test t v =
 
 let _ = test Json.t<t> ([1;2;3], Some 1., str)
 
-type intseq = Z | S of int * intseq deriving (Json)
+type intseq = Z | S of int * intseq [@@deriving json]
 
 let _ = test Json.t<intseq> (S (1, S (2, S (3, Z))))
 
-type 'a seq = ZZ | SS of 'a * 'a seq deriving (Json)
+type 'a seq = ZZ | SS of 'a * 'a seq [@@deriving json]
 
 let _ = test Json.t<int seq> (SS (1, SS (2, SS (3, ZZ))))
 
 
 module T = struct
 
-  type 'a t = (string * 'a) array deriving (Json)
+  type 'a t = (string * 'a) array [@@deriving json]
 
   module StringMap = Map.Make(String)
   module Json_string_map_t(A : Deriving_Json.Json) : Deriving_Json.Json = struct
@@ -78,7 +78,8 @@ module T = struct
   end
 end
 
-module T2 = T.Json_string_map_t(Json_t);;
+(* module T2 = T.Json_string_map_t(Json_t);; *)
 (* type u = int StringMap.t deriving (Json) *)
 
 let () = log_stop()
+*)

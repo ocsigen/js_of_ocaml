@@ -18,25 +18,37 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Common
+let success_count_all = ref 0
+let test_count_all = ref 0
 
-let log_stop = log_start "Url test suite"
-let url_string_url u = Url.url_of_string (Url.string_of_url u)
-let () = match Url.Current.get () with
-  | None -> log_failure "can't parse current url"
-  | Some u -> match url_string_url u with
-    | None -> log_failure "can't parse pretty-printed url"
-    | Some v ->
-       if u = v then
-         log_success ()
-       else
-         log_failure "no fixpoint"
-let () =
-  let t1 = Url.urlencode "/toto+ blah&tutu" in
-  let t2 = Url.urlencode ~with_plus:false "/toto+ blah&tutu" in
-  if t1 = "/toto%2B%20blah%26tutu" && t2 = "/toto+%20blah%26tutu" then
-    log_success ()
-  else
-    log_failure "escaping error"
+let success_count = ref 0
+let test_count = ref 0
 
-let () = log_stop ()
+let log_success () = incr success_count; incr test_count
+let log_failure s =
+  incr test_count;
+  Firebug.console##log_2 (Js.string "\tFAILURE: ") (Js.string s)
+
+let log_start s =
+  Firebug.console##log_2 (Js.string "START: ") (Js.string s);
+  let log_stop () : unit =
+    success_count_all := !success_count_all + !success_count;
+    test_count_all := !test_count_all + !test_count;
+    Firebug.console##log_2 (Js.string "STOP: ") (Js.string s)
+  in log_stop
+
+let raw_log x =
+  Firebug.console##log_2 (Js.string "\t\t") x
+
+let log s = raw_log (Js.string s)
+
+
+
+let () = at_exit(fun () ->
+    Firebug.console##log(
+      Js.string (
+        Printf.sprintf "Test results: %d successes out of %d tests"
+          !success_count !test_count
+      )
+    )
+  )

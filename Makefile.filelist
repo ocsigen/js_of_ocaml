@@ -154,22 +154,22 @@ endif # WITH_PPX
 
 ifeq "${WITH_CAMLP4}" "YES"
 CAMLP4_INTF :=
-CAMLP4_INSTALL := pa_js.cmi pa_js.cmo
+CAMLP4_INSTALL := pa_js/lib/pa_js.cmi pa_js/lib/pa_js.cmo
 ifeq "$(NATIVE)" "YES"
-CAMLP4_INSTALL += pa_js.cmx
+CAMLP4_INSTALL += pa_js/lib/pa_js.cmx
 endif
 ifeq "$(NATIVE_DYN)" "YES"
-CAMLP4_INSTALL += pa_js.cmxs
+CAMLP4_INSTALL += pa_js/lib/pa_js.cmxs
 endif
 
 ifeq "${WITH_DERIVING}" "YES"
-CAMLP4_INTF += pa_deriving_Json.cmi
-CAMLP4_INSTALL += pa_deriving_Json.cmi pa_deriving_Json.cmo
+CAMLP4_INTF += pa_deriving_json/lib/pa_deriving_Json.cmi
+CAMLP4_INSTALL += pa_deriving_json/lib/pa_deriving_Json.cmi pa_deriving_json/lib/pa_deriving_Json.cmo
 ifeq "$(NATIVE)" "YES"
-CAMLP4_INSTALL += pa_deriving_Json.cmx
+CAMLP4_INSTALL += pa_deriving_json/lib/pa_deriving_Json.cmx
 endif
 ifeq "$(NATIVE_DYN)" "YES"
-CAMLP4_INSTALL += pa_deriving_Json.cmxs
+CAMLP4_INSTALL += pa_deriving_json/lib/pa_deriving_Json.cmxs
 endif
 endif
 
