@@ -24,6 +24,7 @@ depends: [
   "ocamlbuild"
   "uchar"
   "yojson"
+  "toplevel_expect_test" {test}
 ]
 
 depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" "ppx_driver" "camlp4"]

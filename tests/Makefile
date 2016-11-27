@@ -7,7 +7,7 @@ TESTS_JS=$(TESTS_SRC:.ml=.js)
 TESTS_LOG=$(TESTS_SRC:.ml=.log)
 
 ifeq "${WITH_PPX}" "YES"
-TESTS_PPX=$(patsubst ppx/%.ml,ppx/test_%,$(wildcard ppx/*.ml))
+TESTS_PPX=test-ppx
 endif
 
 TESTS_CAMLP4=$(patsubst camlp4/%.ml,camlp4/test_%,$(wildcard camlp4/*.ml))
@@ -17,7 +17,8 @@ COMMON=common.cmo
 
 all: $(COMMON) $(TESTS_CMO) $(TESTS_BYTE) $(TESTS_JS) tests.byte $(TESTS_PPX) $(TESTS_CAMLP4)
 
-test-ppx: $(TESTS_PPX)
+test-ppx:
+	$(MAKE) -C ppx
 
 test-camlp4: $(TESTS_CAMLP4)
 

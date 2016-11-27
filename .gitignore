@@ -80,4 +80,7 @@ doc/manual/files/webgl/
 doc/manual/files/wiki/
 doc/manual/files/wysiwyg/
 
+tests/ppx/expect
+tests/ppx/expect_deriving
+
 _opam
