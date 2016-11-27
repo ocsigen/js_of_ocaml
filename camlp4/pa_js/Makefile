@@ -6,6 +6,8 @@ OCAMLOPT=ocamlfind ocamlopt -w +A-3-4-7-9-37-38-41-44-45-58
 VERSION := $(shell head -n 1 ../../VERSION)
 
 
+all: $(CAMLP4_INSTALL)
+
 lib/pa_js.cmo lib/pa_js.cmi: lib/pa_js.ml
 	$(OCAMLC) -w -42-58 $(SAFESTRING) -package camlp4.extend,camlp4.quotations -syntax camlp4o -c $<
 

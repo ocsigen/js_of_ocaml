@@ -20,10 +20,10 @@ bin/%.cmx: bin/%.ml
 bin/%.cmo: bin/%.ml
 	$(OCAMLC) $(SAFESTRING) -I lib -package ppx_tools.metaquot -c $<
 
-lib/%.cmx: lib/%.ml
+lib/%.cmx: lib/%.ml lib/%.cmi
 	$(OCAMLOPT) $(SAFESTRING) -I lib -package ppx_tools.metaquot -g -c $<
 
-lib/%.cmo: lib/%.ml
+lib/%.cmo: lib/%.ml lib/%.cmi
 	$(OCAMLC) $(SAFESTRING) -I lib -package ppx_tools.metaquot -c $<
 
 lib/ppx_js.cmi: lib/ppx_js.mli
@@ -36,16 +36,16 @@ lib/ppx_js.cmxa: lib/ppx_js.cmx
 lib/ppx_js.cmxs: lib/ppx_js.cmxa
 	$(OCAMLOPT) -shared -g -o $@ $^
 
-driver/%.cmx: ppx_driver/%.ml lib/ppx_js.cmi
-	$(OCAMLOPT) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -package ppx_driver -g -c $<
-driver/%.cmo: ppx_driver/%.ml lib/ppx_js.cmi
-	$(OCAMLC) $(SAFESTRING) -I ppx -package ppx_tools.metaquot -package ppx_driver -c $<
-driver/ppx_js_driver.cma: ppx_driver/ppx_js_driver.cmo
-	$(OCAMLC) -linkall -I ppx -a -o $@ $^
-driver/ppx_js_driver.cmxa: ppx_driver/ppx_js_driver.cmx
-	$(OCAMLOPT) -linkall -I ppx -a -o $@ $^
-driver/ppx_js_driver.cmxs: ppx_driver/ppx_js_driver.cmxa
-	$(OCAMLOPT) -linkall -I ppx -shared -g -o $@ $^
+driver/%.cmx: driver/%.ml lib/ppx_js.cmi
+	$(OCAMLOPT) $(SAFESTRING) -I lib -package ppx_tools.metaquot -package ppx_driver -g -c $<
+driver/%.cmo: driver/%.ml lib/ppx_js.cmi
+	$(OCAMLC) $(SAFESTRING) -I lib -package ppx_tools.metaquot -package ppx_driver -c $<
+driver/ppx_js_driver.cma: driver/ppx_js_driver.cmo
+	$(OCAMLC) -linkall -I lib -a -o $@ $^
+driver/ppx_js_driver.cmxa: driver/ppx_js_driver.cmx
+	$(OCAMLOPT) -linkall -I lib -a -o $@ $^
+driver/ppx_js_driver.cmxs: driver/ppx_js_driver.cmxa
+	$(OCAMLOPT) -linkall -I lib -shared -g -o $@ $^
 
 bin/$(PPX): bin/ppx_js.$(BEST)
 	cp $< $@

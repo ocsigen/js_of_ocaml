@@ -55,12 +55,15 @@ build-runtime:
 build-ocamlbuild:
 	$(MAKE) -C ocamlbuild
 build-camlp4:
-	$(MAKE) -C camlp4
+	$(MAKE) -C camlp4/pa_js
+	$(MAKE) -C camlp4/pa_deriving_json
 build-toplevel:
 	$(MAKE) -C toplevel/lib
 	$(MAKE) -C toplevel/bin
 build-library:
 	$(MAKE) -C lib
+	$(MAKE) -C ppx/ppx_js
+	$(MAKE) -C ppx/ppx_deriving_json
 
 install-compiler:
 	ocamlfind install -patch-version ${VERSION} js_of_ocaml-compiler \
@@ -73,17 +76,18 @@ install-ocamlbuild:
 	ocamlbuild/META \
 	$(addprefix ocamlbuild/_build/, $(OCAMLBUILD_INSTALL))
 install-camlp4:
-	ocamlfind install -patch-version $(VERSION) js_of_ocaml-camlp4 \
-	$(addprefix camlp4/, META $(CAMLP4_INSTALL))
+	ocamlfind install -patch-version $(VERSION) js_of_ocaml-camlp4 camlp4/META \
+	$(addprefix camlp4/pa_js/, $(CAMLP4_INSTALL)) \
+	$(addprefix camlp4/pa_deriving_json/, $(CAMLP4_DERIVING_INSTALL))
 install-toplevel:
 	ocamlfind install -patch-version ${VERSION} js_of_ocaml-toplevel \
 	$(addprefix toplevel/lib/, META $(TOPLEVEL_INSTALL))
 install-library:
 	ocamlfind install -patch-version ${VERSION} $(LIBRARY) \
 	$(addprefix lib/, META $(LIBRARY_INSTALL)) \
-	$(addprefix lib/, $(PPX_INSTALL)) \
-	$(addprefix lib/, $(PPX_DRIVER_INSTALL)) \
-	$(addprefix lib/, $(PPX_DERIVING_INSTALL))
+	$(addprefix ppx/ppx_js/, $(PPX_INSTALL)) \
+	$(addprefix ppx/ppx_js/, $(PPX_DRIVER_INSTALL)) \
+	$(addprefix ppx/ppx_deriving_json/, $(PPX_DERIVING_INSTALL))
 
 
 install-doc:
@@ -97,7 +101,8 @@ depend:
 clean:
 	$(MAKE) -C compiler clean
 	$(MAKE) -C runtime clean
-	$(MAKE) -C camlp4 clean
+	$(MAKE) -C camlp4/pa_js clean
+	$(MAKE) -C camlp4/pa_deriving_json clean
 	$(MAKE) -C ocamlbuild clean
 	$(MAKE) -C toplevel/lib clean
 	$(MAKE) -C toplevel/bin clean
