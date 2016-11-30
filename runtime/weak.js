@@ -56,7 +56,7 @@ function caml_weak_get(x, i) {
 }
 //Provides: caml_weak_get_copy mutable
 //Requires: caml_weak_get
-//Requires: caml_obj_dup
+//Requires: caml_obj_dup, caml_invalid_argument
 function caml_weak_get_copy(x, i) {
   if(i < 0 || caml_ephe_key_offset + i >= x.length)
     caml_invalid_argument ("Weak.get_copy");
