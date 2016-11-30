@@ -1118,8 +1118,8 @@ function caml_bswap16(x) {
 function caml_int32_bswap(x) {
   return (((x & 0x000000FF) << 24) |
           ((x & 0x0000FF00) << 8) |
-          ((x & 0x00FF0000) >> 8) |
-          ((x & 0xFF000000) >> 24));
+          ((x & 0x00FF0000) >>> 8) |
+          ((x & 0xFF000000) >>> 24));
 }
 //Provides: caml_int64_bswap
 function caml_int64_bswap(x) {
