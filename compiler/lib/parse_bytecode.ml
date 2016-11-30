@@ -2122,7 +2122,7 @@ module Reloc = struct
        Make sure we don't end up with an unboxed float array. *)
     assert(Obj.tag (Obj.repr a) = 0);
     a
-    
+
   let make_globals t =
     let primitives = primitives t in
     let constants = constants t in
@@ -2231,8 +2231,8 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(dynlink=false) ?(debug=`No) 
             begin
               seek_in ic compunit.Cmo_format.cu_debug;
               Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic;
-              orig := !orig + compunit.Cmo_format.cu_codesize
             end;
+          orig := !orig + compunit.Cmo_format.cu_codesize
           compunit, code)
           lib.Cmo_format.lib_units in
         let a,b,c = from_compilation_units ~includes ~debug ~debug_data units in
