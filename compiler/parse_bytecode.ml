@@ -1775,7 +1775,8 @@ let parse_bytecode ~debug code globals debug_data =
     Blocks.analyse
       (if debug = `Full then debug_data else Debug.create ()) code in
   let blocks =
-    if debug = `Full
+    (* Disabled. [pc] might not be an appropriate place to split blocks *)
+    if false && debug = `Full
     then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks
     else blocks in
   let blocks = Blocks.finish_analysis blocks in
