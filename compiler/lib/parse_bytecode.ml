@@ -2230,9 +2230,9 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(dynlink=false) ?(debug=`No) 
           else
             begin
               seek_in ic compunit.Cmo_format.cu_debug;
-              Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic;
+              Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic
             end;
-          orig := !orig + compunit.Cmo_format.cu_codesize
+          orig := !orig + compunit.Cmo_format.cu_codesize;
           compunit, code)
           lib.Cmo_format.lib_units in
         let a,b,c = from_compilation_units ~includes ~debug ~debug_data units in
