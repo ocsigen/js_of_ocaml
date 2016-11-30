@@ -32,7 +32,7 @@ function jsoo_floor_log2(x) {
 //Requires: jsoo_floor_log2
 function caml_int64_bits_of_float (x) {
   if (!isFinite(x)) {
-    if (isNaN(x)) return [255, 1, 0, 0xfff0];
+    if (isNaN(x)) return [255, 1, 0, 0x7ff0];
     return (x > 0)?[255,0,0,0x7ff0]:[255,0,0,0xfff0];
   }
   var sign = (x==0 && 1/x == -Infinity)?0x8000:(x>=0)?0:0x8000;
