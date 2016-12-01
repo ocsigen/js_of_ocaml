@@ -36,28 +36,38 @@ let unit_of_cma filename =
   close_in ic;
   List.map (fun u -> u.Cmo_format.cu_name) lib.Cmo_format.lib_units
 
-let cmis_of_package pkg =
+let read_cmi ~dir cmi =
+  let with_name file =
+    let cmi_path =
+      if Filename.is_relative file
+      then Filename.concat dir file
+      else file in
+    if Sys.file_exists cmi_path
+    then
+      begin
+        (* if !verbose then Format.eprintf "include %s@." cmi_path; *)
+        cmi_path
+      end
+    else raise Not_found
+  in
+  try with_name (String.uncapitalize_ascii cmi)
+  with Not_found ->
+  try with_name (String.capitalize_ascii cmi)
+  with Not_found ->
+    Format.eprintf "Not_found: %s in %s@." cmi dir;
+    raise Not_found
+
+let cmis_of_cma cma_path =
+  let contains = unit_of_cma cma_path in
+  let dir = Filename.dirname cma_path in
+  List.map (fun s -> read_cmi ~dir (s ^ ".cmi")) contains
+
+
+let cmis_of_package pkg : string list =
   try
     let dir = Findlib.package_directory pkg in
-    let fs = ref [] in
+    let fs : string list ref = ref [] in
     let add filename = fs:=filename::!fs in
-    let read_cmi unit =
-      let with_name file =
-        let cmi_path = Filename.concat dir file ^ ".cmi" in
-        if Sys.file_exists cmi_path
-        then
-          begin
-            (* if !verbose then Format.eprintf "include %s@." cmi_path; *)
-            add cmi_path
-          end
-        else raise Not_found
-      in
-      try with_name (String.uncapitalize unit)
-      with Not_found ->
-        try with_name (String.capitalize unit)
-        with Not_found ->
-          Format.eprintf "Not_found: %s in %s@." unit dir
-    in
     let archive = try
         Findlib.package_property ["byte"] pkg "archive"
       with exc ->
@@ -69,19 +79,30 @@ let cmis_of_package pkg =
         if Filename.check_suffix x ".cmo"
         then
           let u = Filename.chop_suffix x ".cmo" in
-          read_cmi u
+          add (read_cmi ~dir (u ^ ".cmi"))
         else if Filename.check_suffix x ".cma"
-        then
-          let cma_path = Filename.concat dir x in
-          let contains = unit_of_cma cma_path in
-          List.iter (read_cmi) contains
+        then List.iter add (cmis_of_cma x)
         else if Filename.check_suffix x ".cmi"
-        then read_cmi (Filename.chop_suffix x ".cmi")
+        then add (read_cmi ~dir (Filename.chop_suffix x ".cmi"))
         else Format.eprintf "Wrong extention for archive %s@." x
       ) l;
     !fs
   with exn -> Format.eprintf "Error for package %s@." pkg;
     raise exn
 
-let cmis_of_packages pkgs =
-  List.fold_left (fun fs pkg -> cmis_of_package pkg @ fs ) [] pkgs
+
+let kind s =
+  if Filename.check_suffix s ".cmi"
+  then `Cmi s
+  else if Filename.check_suffix s ".cmo"
+  then `Cmi s
+  else if Filename.check_suffix s ".cma"
+  then `Cma s
+  else `Pkg s
+
+let cmis files =
+  List.fold_left (fun fs file ->
+    match kind file with
+    | `Pkg pkg -> cmis_of_package pkg @ fs
+    | `Cmi s -> read_cmi ~dir:"." s :: fs
+    | `Cma s -> cmis_of_cma s) [] files
