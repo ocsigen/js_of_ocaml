@@ -3,6 +3,7 @@ bin: [
   "compiler/jsoo_minify"
   "?jsoo_tools/jsoo_mktop"
   "?jsoo_tools/jsoo_mkcmis"
+  "?jsoo_tools/jsoo_listunits"
 ]
 man: [
   "compiler/man/js_of_ocaml.1" {"man1/js_of_ocaml.1"}

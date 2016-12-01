@@ -63,13 +63,14 @@ SYNTAXES=
 CPPO_OPT+= -D metaocaml
 endif
 
+TYXML_DIR=$(shell ocamlfind query tyxml)
+
 #-jsopt "--pretty"
 MKTOP=jsoo_mktop -verbose $(SAFESTRING) -g \
 	${addprefix -top-syntax , ${SYNTAXES}} \
-	-dont-export-unit gc \
 	-jsopt "--disable shortvar" \
 	${addprefix -export-package , ${PACKAGES}} \
-	${addprefix -export-unit , html_types html_sigs xml_wrap } \
+	${addprefix -export-unit $(TYXML_DIR)/, html_types.cmi html_sigs.cmi xml_wrap.cmi } \
 
 TOPLEVEL_NAME=toplevel
 TOPLEVEL_OBJS=colorize.cmo indent.cmo toplevel.cmo

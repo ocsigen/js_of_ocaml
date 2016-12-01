@@ -27,7 +27,8 @@ end
 
 val from_channel :
   ?includes: string list ->
-  ?toplevel:bool -> ?dynlink:bool -> ?debug:[`Full | `Names | `No] -> in_channel ->
+  ?toplevel:bool -> ?expunge:(string -> [`Keep | `Skip]) ->
+  ?dynlink:bool -> ?debug:[`Full | `Names | `No] -> in_channel ->
   Code.program * Util.StringSet.t * Debug.data * bool
 
 val from_string : string array -> string -> Code.program * Debug.data

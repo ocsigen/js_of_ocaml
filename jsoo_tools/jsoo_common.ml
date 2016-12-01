@@ -54,17 +54,23 @@ let read_cmi ~dir cmi =
   with Not_found ->
   try with_name (String.capitalize_ascii cmi)
   with Not_found ->
-    Format.eprintf "Not_found: %s in %s@." cmi dir;
+    Format.eprintf "Could not find cmi %s or %s in %s@."
+      (String.capitalize_ascii cmi) (String.uncapitalize_ascii cmi) dir;
     raise Not_found
 
-let cmis_of_cma cma_path =
+let cmis_of_cma ~dir cma_path =
+  let cma_path =
+    if Filename.is_relative cma_path
+    then Filename.concat dir cma_path
+    else cma_path
+  in
   let contains = unit_of_cma cma_path in
   let dir = Filename.dirname cma_path in
-  List.map (fun s -> read_cmi ~dir (s ^ ".cmi")) contains
+  Js_of_ocaml_compiler.Util.filter_map (fun s -> try Some (read_cmi ~dir (s ^ ".cmi")) with Not_found -> None) contains
 
 
 let cmis_of_package pkg : string list =
-  try
+  (* try *)
     let dir = Findlib.package_directory pkg in
     let fs : string list ref = ref [] in
     let add filename = fs:=filename::!fs in
@@ -74,21 +80,22 @@ let cmis_of_package pkg : string list =
         if pkg = "stdlib"
         then "stdlib.cma"
         else raise exc in
+
     let l = Js_of_ocaml_compiler.Util.split_char ' ' archive in
     List.iter (fun x ->
-        if Filename.check_suffix x ".cmo"
-        then
-          let u = Filename.chop_suffix x ".cmo" in
-          add (read_cmi ~dir (u ^ ".cmi"))
-        else if Filename.check_suffix x ".cma"
-        then List.iter add (cmis_of_cma x)
-        else if Filename.check_suffix x ".cmi"
-        then add (read_cmi ~dir (Filename.chop_suffix x ".cmi"))
-        else Format.eprintf "Wrong extention for archive %s@." x
-      ) l;
+      if Filename.check_suffix x ".cmo"
+      then
+        let u = Filename.chop_suffix x ".cmo" in
+        add (read_cmi ~dir (u ^ ".cmi"))
+      else if Filename.check_suffix x ".cma"
+      then List.iter add (cmis_of_cma ~dir x)
+      else if Filename.check_suffix x ".cmi"
+      then add (read_cmi ~dir (Filename.chop_suffix x ".cmi"))
+      else Format.eprintf "Wrong extention for archive %s@." x
+    ) l;
     !fs
-  with exn -> Format.eprintf "Error for package %s@." pkg;
-    raise exn
+  (* with exn -> Format.eprintf "Error for package %s@." pkg;
+   *   reraise exn *)
 
 
 let kind s =
@@ -105,4 +112,4 @@ let cmis files =
     match kind file with
     | `Pkg pkg -> cmis_of_package pkg @ fs
     | `Cmi s -> read_cmi ~dir:"." s :: fs
-    | `Cma s -> cmis_of_cma s) [] files
+    | `Cma s -> cmis_of_cma ~dir:"." s @ fs) [] files

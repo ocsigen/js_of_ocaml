@@ -36,6 +36,7 @@ type t = {
   dynlink : bool;
   linkall : bool;
   toplevel : bool;
+  export_file : string option;
   nocmis : bool;
   (* filesystem *)
   include_dir : string list;
@@ -113,6 +114,10 @@ let options =
     let doc = "Compile a toplevel." in
     Arg.(value & flag & info ["toplevel"] ~docs:toplevel_section ~doc)
   in
+  let export_file =
+    let doc = "File containing the list of unit to export in a toplevel." in
+    Arg.(value & opt (some string) None & info ["export"] ~docs:toplevel_section ~doc)
+  in
   let linkall =
     let doc = "Link all primitives." in
     Arg.(value & flag & info ["linkall"] ~doc)
@@ -148,6 +153,7 @@ let options =
       dynlink
       linkall
       toplevel
+      export_file
       wrap_with_fun
       include_dir
       fs_files
@@ -222,6 +228,7 @@ let options =
         dynlink;
         linkall;
         toplevel;
+        export_file;
 
         include_dir;
         runtime_files;
@@ -246,6 +253,7 @@ let options =
           $ dynlink
           $ linkall
           $ toplevel
+          $ export_file
           $ wrap_with_function
 
           $ include_dir

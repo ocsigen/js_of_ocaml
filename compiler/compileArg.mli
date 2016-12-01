@@ -35,6 +35,7 @@ type t = {
   dynlink : bool;
   linkall : bool;
   toplevel : bool;
+  export_file : string option;
   nocmis : bool;
   (* filesystem *)
   include_dir : string list;

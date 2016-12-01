@@ -56,6 +56,47 @@ module Tbl = struct
     | Empty
     | Node of ('a, 'b) t * 'a * 'b * ('a, 'b) t * int
 
+  let empty = Empty
+
+  let height = function
+      Empty -> 0
+    | Node(_,_,_,_,h) -> h
+
+  let create l x d r =
+    let hl = height l and hr = height r in
+    Node(l, x, d, r, (if hl >= hr then hl + 1 else hr + 1))
+
+  let bal l x d r =
+    let hl = height l and hr = height r in
+    if hl > hr + 1 then
+      match l with
+      | Node (ll, lv, ld, lr, _) when height ll >= height lr ->
+        create ll lv ld (create lr x d r)
+      | Node (ll, lv, ld, Node (lrl, lrv, lrd, lrr, _), _) ->
+        create (create ll lv ld lrl) lrv lrd (create lrr x d r)
+      | _ -> assert false
+    else if hr > hl + 1 then
+      match r with
+      | Node (rl, rv, rd, rr, _) when height rr >= height rl ->
+        create (create l x d rl) rv rd rr
+      | Node (Node (rll, rlv, rld, rlr, _), rv, rd, rr, _) ->
+        create (create l x d rll) rlv rld (create rlr rv rd rr)
+      | _ -> assert false
+    else
+      create l x d r
+
+  let rec add x data = function
+      Empty ->
+      Node(Empty, x, data, Empty, 1)
+    | Node(l, v, d, r, h) ->
+      let c = compare x v in
+      if c = 0 then
+        Node(l, x, data, r, h)
+      else if c < 0 then
+        bal (add x data l) v d r
+      else
+        bal l v d (add x data r)
+
   let rec iter f = function
       Empty -> ()
     | Node(l, v, d, r, _) ->
@@ -94,6 +135,13 @@ let predefined_exceptions =
 type 'a numtable =
   { num_cnt: int;
     num_tbl: ('a, int) Tbl.t }
+
+let filter_global_map p gmap =
+  let newtbl = ref Tbl.empty in
+  Tbl.iter
+    (fun id num -> if p id then newtbl := Tbl.add id num !newtbl)
+    gmap.num_tbl;
+  {num_cnt = gmap.num_cnt; num_tbl = !newtbl}
 
 (* Read and manipulate debug section *)
 module Debug : sig
@@ -150,7 +198,12 @@ end = struct
       | `V4_03
       | `V4_04 -> (fun ic -> (input_value ic : string list)) in
     fun (events_by_pc, units) ~crcs ~includes ~orig ic ->
-      let evl : debug_event list = input_value ic in
+       let crcs =
+         let t = Hashtbl.create 17 in
+         List.iter (fun (m,crc) -> Hashtbl.add t m crc) crcs;
+         t
+       in
+       let evl : debug_event list = input_value ic in
 
       (* Work around a bug in ocaml 4.02 *)
       (* debug section in pack module may be wrong *)
@@ -174,7 +227,7 @@ end = struct
                  Hashtbl.find units (ev_module,pos_fname)
                with  Not_found ->
                  let crc =
-                   try List.assoc ev_module crcs
+                   try Hashtbl.find crcs ev_module
                    with Not_found -> None in
                  let source =
                    try Some (Util.find_in_path paths pos_fname)
@@ -193,7 +246,9 @@ end = struct
                  u
              in
              relocate_event orig ev;
-             Hashtbl.add events_by_pc ev.ev_pos (ev,unit))
+             Hashtbl.add events_by_pc ev.ev_pos (ev,unit);
+             ()
+          )
           evl
 
   let find_source (_events_by_pc, units) pos_fname =
@@ -1886,7 +1941,7 @@ let read_toc ic =
   done;
   !section_table
 
-let exe_from_channel ~includes ?(toplevel=false) ?(dynlink=false) ~debug ~debug_data ic =
+let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dynlink=false) ~debug ~debug_data ic =
 
   let toc = read_toc ic in
 
@@ -1910,10 +1965,28 @@ let exe_from_channel ~includes ?(toplevel=false) ?(dynlink=false) ~debug ~debug_
   let init_data = (input_value ic : Obj.t array) in
 
   ignore(seek_section toc ic "SYMB");
-  let symbols = (input_value ic : Ident.t numtable) in
+  let orig_symbols = (input_value ic : Ident.t numtable) in
 
   ignore(seek_section toc ic "CRCS");
-  let crcs = (input_value ic : (string * Digest.t option) list) in
+  let orig_crcs = (input_value ic : (string * Digest.t option) list) in
+
+  let keeps =
+    let t = Hashtbl.create 17 in
+    List.iter (fun (_,s) -> Hashtbl.add t s ()) predefined_exceptions;
+    List.iter (fun s     -> Hashtbl.add t s ()) ["Outcometree";"Topdirs";"Toploop"];
+    t
+  in
+  let keep s =
+    try Hashtbl.find keeps s; true with
+    | Not_found ->
+      match expunge s with
+      | `Keep -> true
+      | `Skip -> false
+  in
+
+  let crcs = List.filter (fun (unit, _crc) -> keep unit) orig_crcs in
+
+  let symbols = filter_global_map (fun id -> keep (Ident.name id)) orig_symbols in
 
   begin
     if debug = `No then ()
@@ -1937,7 +2010,7 @@ let exe_from_channel ~includes ?(toplevel=false) ?(dynlink=false) ~debug ~debug_
   List.iter (fun (name, v) ->
     try
       let nn = Ident.create_persistent name in
-      let i = Tbl.find (fun x1 x2 -> String.compare (Ident.name x1) (Ident.name x2)) nn symbols.num_tbl in
+      let i = Tbl.find (fun x1 x2 -> String.compare (Ident.name x1) (Ident.name x2)) nn orig_symbols.num_tbl in
       globals.override.(i) <- Some v;
       if debug_parser () then Format.eprintf "overriding global %s@." name
     with Not_found -> ()
@@ -2189,7 +2262,8 @@ let from_compilation_units ~includes:_ ~debug ~debug_data l =
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   prepend prog body,Util.StringSet.empty, debug_data
 
-let from_channel ?(includes=[]) ?(toplevel=false) ?(dynlink=false) ?(debug=`No) ic =
+let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
+      ?(dynlink=false) ?(debug=`No) ic =
   let debug_data = Debug.create () in
   let format =
     try
@@ -2251,7 +2325,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?(dynlink=false) ?(debug=`No) 
       | `Exe ->
         if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_exe
         then raise Util.MagicNumber.(Bad_magic_version magic);
-        let a,b,c = exe_from_channel ~includes ~toplevel ~dynlink ~debug ~debug_data ic in
+        let a,b,c = exe_from_channel ~includes ~toplevel ?expunge ~dynlink ~debug ~debug_data ic in
         Code.invariant a;
         a,b,c,true
       | _ ->

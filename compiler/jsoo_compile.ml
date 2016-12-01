@@ -47,12 +47,12 @@ let gen_file file f =
     raise exc
 
 let f {
-    CompileArg.common;
-    profile; source_map; runtime_files; input_file; output_file;
-    params ; static_env;
-    wrap_with_fun;
-    dynlink; linkall; toplevel; nocmis; runtime_only;
-    include_dir; fs_files; fs_output; fs_external } =
+  CompileArg.common;
+  profile; source_map; runtime_files; input_file; output_file;
+  params ; static_env;
+  wrap_with_fun;
+  dynlink; linkall; toplevel; nocmis; runtime_only;
+  include_dir; fs_files; fs_output; fs_external; export_file } =
   let dynlink = dynlink || toplevel || runtime_only in
   let custom_header = common.CommonArg.custom_header in
   let global = if wrap_with_fun then `Function else `Auto in
@@ -76,6 +76,24 @@ let f {
     | None -> d
   ) include_dir in
 
+  let expunge = match export_file with
+    | None -> None
+    | Some file ->
+      if not (Sys.file_exists file)
+      then failwith (Printf.sprintf "export file %S does not exists" file);
+      let ic = open_in file in
+      let t = Hashtbl.create 17 in
+      begin try
+        while true do Hashtbl.add t (input_line ic) () done;
+        assert false
+      with End_of_file -> ()
+      end;
+      close_in ic;
+      Some (fun s ->
+        try Hashtbl.find t s; `Keep
+        with Not_found -> `Skip)
+  in
+
   Linker.load_files runtime_files;
   let paths =
     try List.append include_dir [Util.find_pkg_dir "stdlib"]
@@ -90,12 +108,12 @@ let f {
     if runtime_only
     then Code.empty, Util.StringSet.empty, Parse_bytecode.Debug.create (), true
     else
-    match input_file with
-      None ->
-        Parse_bytecode.from_channel ~includes:paths ~toplevel ~dynlink ~debug:need_debug stdin
-    | Some f ->
+      match input_file with
+      | None ->
+        Parse_bytecode.from_channel ~includes:paths ~toplevel ?expunge ~dynlink ~debug:need_debug stdin
+      | Some f ->
         let ch = open_in_bin f in
-        let res = Parse_bytecode.from_channel ~includes:paths ~toplevel ~dynlink ~debug:need_debug ch in
+        let res = Parse_bytecode.from_channel ~includes:paths ~toplevel ?expunge ~dynlink ~debug:need_debug ch in
         close_in ch;
         res
   in
@@ -118,28 +136,28 @@ let f {
     else p in
   if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
   begin match output_file with
-    | None ->
-      let p = PseudoFs.f p cmis fs_files paths in
-      let fmt = Pretty_print.to_out_channel stdout in
+  | None ->
+    let p = PseudoFs.f p cmis fs_files paths in
+    let fmt = Pretty_print.to_out_channel stdout in
+    Driver.f ~standalone ?profile ~linkall ~global ~dynlink
+      ?source_map ?custom_header fmt d p
+  | Some file ->
+    gen_file file (fun chan ->
+      let p =
+        if fs_output = None
+        then PseudoFs.f p cmis fs_files paths
+        else p in
+      let fmt = Pretty_print.to_out_channel chan in
       Driver.f ~standalone ?profile ~linkall ~global ~dynlink
-        ?source_map ?custom_header fmt d p
-    | Some file ->
+        ?source_map ?custom_header fmt d p;
+    );
+    Util.opt_iter (fun file ->
       gen_file file (fun chan ->
-          let p =
-            if fs_output = None
-            then PseudoFs.f p cmis fs_files paths
-            else p in
-          let fmt = Pretty_print.to_out_channel chan in
-          Driver.f ~standalone ?profile ~linkall ~global ~dynlink
-            ?source_map ?custom_header fmt d p;
-        );
-      Util.opt_iter (fun file ->
-          gen_file file (fun chan ->
-              let pfs = PseudoFs.f_empty cmis fs_files paths in
-              let pfs_fmt = Pretty_print.to_out_channel chan in
-              Driver.f ~standalone ?profile ?custom_header ~global pfs_fmt d pfs
-            )
-        ) fs_output
+        let pfs = PseudoFs.f_empty cmis fs_files paths in
+        let pfs_fmt = Pretty_print.to_out_channel chan in
+        Driver.f ~standalone ?profile ?custom_header ~global pfs_fmt d pfs
+      )
+    ) fs_output
   end;
   if times () then Format.eprintf "compilation: %a@." Util.Timer.print t;
   Option.stop_profiling ()

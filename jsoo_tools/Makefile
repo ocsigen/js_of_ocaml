@@ -2,7 +2,7 @@ include ../Makefile.conf
 -include ../Makefile.local
 
 ifeq "${WITH_TOPLEVEL}${WITH_FINDLIB}" "YESYES"
-ALL= $(MKTOP) $(MKCMIS)
+ALL= $(MKTOP) $(MKCMIS) $(LISTUNITS)
 endif
 
 PACKAGES=base64 compiler-libs.common findlib yojson
@@ -13,14 +13,16 @@ $(MKTOP): jsoo_mktop.$(BEST)
 	cp $< $@
 $(MKCMIS): jsoo_mkcmis.$(BEST)
 	cp $< $@
+$(LISTUNITS): jsoo_listunits.$(BEST)
+	cp $< $@
 
-byte: jsoo_mkcmis.byte jsoo_mktop.byte
-opt: jsoo_mkcmis.opt jsoo_mktop.opt
+byte: jsoo_mkcmis.byte jsoo_mktop.byte jsoo_listunits.byte
+opt: jsoo_mkcmis.opt jsoo_mktop.opt jsoo_listunits.opt
 
 %.cmo: %.ml
 %.cmx: %.ml
-jsoo_mktop.cmo jsoo_mkcmis.cmo: jsoo_common.cmo
-jsoo_mktop.cmx jsoo_mkcmis.cmx: jsoo_common.cmx
+jsoo_mktop.cmo jsoo_mkcmis.cmo jsoo_listunits.cmo: jsoo_common.cmo
+jsoo_mktop.cmx jsoo_mkcmis.cmx jsoo_listunits.cmx: jsoo_common.cmx
 jsoo_common.cmo jsoo_common.cmx: ../compiler/lib/js_of_ocaml_compiler.cmi
 
 OCAMLC=ocamlfind ocamlc     -w +A-4-7-9-37-38-41-44-45-58

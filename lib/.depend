@@ -130,13 +130,12 @@ ppx/ppx_js.cmx : ppx/ppx_js.cmi
 ppx/ppx_js_bin.cmo : ppx/ppx_js.cmi
 ppx/ppx_js_bin.cmx : ppx/ppx_js.cmx
 ppx/ppx_js.cmi :
+deriving_json/deriving_Json.cmo : deriving_json/deriving_Json_lexer.cmi \
+    deriving_json/deriving_Json.cmi
+deriving_json/deriving_Json.cmx : deriving_json/deriving_Json_lexer.cmx \
+    deriving_json/deriving_Json.cmi
 deriving_json/deriving_Json_lexer.cmo : \
     deriving_json/deriving_Json_lexer.cmi
 deriving_json/deriving_Json_lexer.cmx : \
     deriving_json/deriving_Json_lexer.cmi
 deriving_json/deriving_Json_lexer.cmi :
-deriving_json/deriving_Json.cmo : deriving_json/deriving_Json_lexer.cmi \
-    deriving_json/deriving_Json.cmi
-deriving_json/deriving_Json.cmx : deriving_json/deriving_Json_lexer.cmx \
-    deriving_json/deriving_Json.cmi
-deriving_json/deriving_Json.cmi : deriving_json/deriving_Json_lexer.cmi
