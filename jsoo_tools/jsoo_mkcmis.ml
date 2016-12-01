@@ -26,6 +26,7 @@
 
 let prefix = ref "/cmis"
 let output = ref None
+let runtime = ref true
 let usage () =
   Format.eprintf "Usage: jsoo_mkcmis [options] [find packages] @.";
   Format.eprintf " -verbose@.";
@@ -39,6 +40,7 @@ let rec scan_args acc = function
   | ("--verbose"|"-verbose")::xs -> Jsoo_common.verbose:=true; scan_args acc xs
   | "-prefix"::y :: xs -> prefix := y; scan_args acc xs
   | "-o"::name::xs -> output := Some name; scan_args acc xs
+  | ("--no-runtime"|"--noruntime")::xs -> runtime := false; scan_args acc xs
   | ("--help"|"-help"|"-h")::_ -> usage ()
   | x :: xs -> scan_args (x::acc) xs
   | [] -> List.rev acc
@@ -46,14 +48,16 @@ let rec scan_args acc = function
 let args =
   let args = List.tl (Array.to_list (Sys.argv)) in
   let args = scan_args [] args in
-  let all = Jsoo_common.cmis_of_packages args in
+  let js, args = List.partition (fun s -> Filename.check_suffix s ".js") args in
+  let js = if !runtime then "+runtime.js" :: js else js in
+  let all = Jsoo_common.cmis args in
   let all = List.map (fun x -> Filename.(concat !prefix (basename x)), x) all in
   let program = Js_of_ocaml_compiler.PseudoFs.program_of_files all in
   let oc = match !output,args with
     | Some x,_ -> open_out x
     | None, [x] -> open_out (x ^ ".cmis.js")
     | None,_ -> failwith "-o <name> needed" in
-  Js_of_ocaml_compiler.Linker.load_files ["+runtime.js"];
+  Js_of_ocaml_compiler.Linker.load_files js;
   let pfs_fmt = Js_of_ocaml_compiler.Pretty_print.to_out_channel oc in
   Js_of_ocaml_compiler.Option.Optim.enable "pretty";
   Js_of_ocaml_compiler.Driver.f pfs_fmt (Js_of_ocaml_compiler.Parse_bytecode.Debug.create ()) program

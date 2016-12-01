@@ -162,7 +162,7 @@ let _ =
     let base_cmd = ["ocamlfind";"ocamlc";"-linkall";"-linkpkg"] in
     let args = List.tl (Array.to_list (Sys.argv)) in
     let args = scan_args [] args in
-    let cmis = Jsoo_common.cmis_of_packages !pkgs in
+    let cmis = Jsoo_common.cmis !pkgs in
     List.iter (fun pkg ->
       execute ["jsoo_mkcmis";pkg] ) !pkgs;
     let modules = List.map (fun x -> Filename.(chop_extension (basename x))) cmis in
