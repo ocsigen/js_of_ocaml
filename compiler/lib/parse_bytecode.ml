@@ -332,7 +332,10 @@ end = struct
         scan debug blocks code (pc + n + 1) len
       | K_will_not_happen -> assert false
     end
-    else blocks
+    else begin
+      assert (pc = len);
+      blocks
+    end
 
   let finish_analysis blocks = Array.of_list (AddrSet.elements blocks)
 
@@ -481,7 +484,7 @@ module State = struct
   let rec list_start n l =
     if n = 0 then [] else
       match l with
-        []     -> assert false
+      | []     -> assert false
       | v :: r -> v :: list_start (n - 1) r
 
   let rec st_pop n st =
@@ -706,6 +709,7 @@ type compile_info =
 
 let rec compile_block blocks debug code pc state =
   if not (AddrSet.mem pc !tagged_blocks) then begin
+    assert(limit > pc);
     let limit = Blocks.next blocks pc in
     let string_of_addr addr =
       match Debug.find_loc debug addr with
@@ -746,6 +750,7 @@ let rec compile_block blocks debug code pc state =
 
 and compile infos pc state instrs =
   if debug_parser () then State.print state;
+  assert (pc <= infos.limit);
   if pc = infos.limit then
     begin
       (* stop if we reach end_of_code (ie when compiling cmo) *)
