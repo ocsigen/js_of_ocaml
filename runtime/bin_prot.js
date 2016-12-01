@@ -58,12 +58,14 @@ function bin_prot_blit_string_buf_stub (v_src_pos, v_str, v_dst_pos, v_buf, v_le
 }
 
 //Provides: bin_prot_blit_buf_stub
-//Requires: caml_ba_get_1, caml_ba_set_1
+//Requires: caml_ba_get_1, caml_ba_set_1, bigstring_of_array_buffer
 function bin_prot_blit_buf_stub (v_src_pos, v_src, v_dst_pos, v_dst, v_len){
+  var v_src2 = bigstring_of_array_buffer(v_src.data.buffer);
+  var v_dst2 = bigstring_of_array_buffer(v_dst.data.buffer);
   var c;
   for(var i = 0; i < v_len; i++){
-    c = caml_ba_get_1(v_src,v_src_pos+i);
-    caml_ba_set_1(v_dst,v_dst_pos+i,c);
+    c = caml_ba_get_1(v_src2,v_src_pos+i);
+    caml_ba_set_1(v_dst2,v_dst_pos+i,c);
   }
   return 0
 }
