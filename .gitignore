@@ -46,8 +46,10 @@ compiler/compiler_version.ml
 compiler/man
 jsoo_tools/jsoo_mktop
 jsoo_tools/jsoo_mkcmis
+jsoo_tools/jsoo_listunits
 jsoo_tools/jsoo_mktop.opt
 jsoo_tools/jsoo_mkcmis.opt
+jsoo_tools/jsoo_listunits.opt
 compiler/util.ml
 compiler/annot_lexer.ml
 compiler/annot_parser.ml

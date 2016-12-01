@@ -63,6 +63,7 @@ uninstall-bin:
 	rm -f $(BINDIR)/$(MINIFIER)
 	rm -f $(BINDIR)/$(MKTOP)
 	rm -f $(BINDIR)/$(MKCMIS)
+	rm -f $(BINDIR)/$(LISTUNITS)
 
 reinstall: uninstall install
 

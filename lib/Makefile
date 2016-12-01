@@ -300,7 +300,6 @@ endif
 ifeq "${WITH_PPX}" "YES"
 	ocamldep -I ppx ppx/ppx_js.ml ppx/ppx_js_bin.ml ppx/ppx_js.mli >> .depend
 endif
-ifeq "${WITH_DERIVING}" "YES"
 	${MAKE} --no-print-directory deriving_json/deriving_Json_lexer.ml
 	ls deriving_json/*.mli deriving_json/*.ml | \
 	  grep -v deriving_Json_stdlib.mli | \
