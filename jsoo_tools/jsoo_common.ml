@@ -70,7 +70,7 @@ let cmis_of_cma ~dir cma_path =
 
 
 let cmis_of_package pkg : string list =
-  (* try *)
+  try
     let dir = Findlib.package_directory pkg in
     let fs : string list ref = ref [] in
     let add filename = fs:=filename::!fs in
@@ -94,8 +94,8 @@ let cmis_of_package pkg : string list =
       else Format.eprintf "Wrong extention for archive %s@." x
     ) l;
     !fs
-  (* with exn -> Format.eprintf "Error for package %s@." pkg;
-   *   reraise exn *)
+  with exn -> Format.eprintf "Error for package %s@." pkg;
+    raise exn
 
 
 let kind s =

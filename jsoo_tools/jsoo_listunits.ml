@@ -19,7 +19,7 @@
 
 let output = ref None
 let usage () =
-  Format.eprintf "Usage: jsoo_listcmis [options] [findlib packages|*.cmi|*.cma] @.";
+  Format.eprintf "Usage: jsoo_listunits [options] [findlib packages|*.cmi|*.cma] @.";
   Format.eprintf " -verbose@.";
   Format.eprintf " -help\t\t\tDisplay usage@.";
   Format.eprintf " -o [name]\t\tSet output filename@.";
