@@ -1,8 +1,7 @@
-
 include ../Makefile.conf
--include ../Makefile.local
 include ../Makefile.filelist
 
+DOC := ${INTF:.cmi=.mli}
 MLIS := ${addprefix ../, ${DOC}}
 
 ifeq "${WITH_GRAPHICS}" "YES"
@@ -22,11 +21,15 @@ OTHER += -package async_kernel -I ../lib/async
 endif
 
 ifeq "${WITH_TOPLEVEL}" "YES"
-OTHER += -package compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel -I ../lib/toplevel
+OTHER += -package compiler-libs.bytecomp,compiler-libs.common,compiler-libs.toplevel -I ../toplevel/lib
 endif
 
 ifeq "${WITH_PPX}" "YES"
 OTHER += -package ppx_tools -I ../lib/ppx
+endif
+
+ifeq "${WITH_LWT}" "YES"
+OTHER += -package lwt
 endif
 
 
@@ -34,13 +37,13 @@ endif
 doc: api/html/index.html
 api/html/index.html: ${MLIS} api/index
 	mkdir -p api/html
-	ocamlfind ocamldoc ${DOCOPT} -package lwt,ocamlbuild,uchar ${OTHER} -intro api/index -html \
+	ocamlfind ocamldoc ${DOCOPT} -package ocamlbuild,uchar ${OTHER} -intro api/index -html \
 	   -d api/html -I ../lib -I ../lib/deriving_json ${MLIS}
 
 wikidoc: api/wiki/index.wiki cp-examples
 api/wiki/index.wiki: ${MLIS} api/index
 	mkdir -p api/wiki
-	ocamlfind ocamldoc ${DOCOPT} -package lwt,ocamlbuild,uchar ${OTHER} -intro api/index \
+	ocamlfind ocamldoc ${DOCOPT} -package ocamlbuild,uchar ${OTHER} -intro api/index \
 	   -d api/wiki -I ../lib -I ../lib/deriving_json -I ../lib/syntax \
 	   -i $(shell ocamlfind query wikidoc) -g odoc_wiki.cma \
 	   ${MLIS}
@@ -57,9 +60,9 @@ EX_MINE:=index.html minesweeper.js sprites
 EX_CUBE:=index.html cubes.js
 
 cp-examples:
-	$(MAKE) -C .. toplevel examples
+	$(MAKE) -C .. toplevel-examples examples
 	mkdir -p ${addprefix manual/files/, toplevel/ boulderdash/ webgl/ graph_viewer/ planet/ wiki/ wysiwyg/ minesweeper/ cubes/ hyperbolic/}
-	cp -R ${addprefix ../toplevel/, ${EX_TOPLEVEL}} manual/files/toplevel/
+	cp -R ${addprefix ../toplevel/examples/, ${EX_TOPLEVEL}} manual/files/toplevel/
 	cp -R ${addprefix ../examples/boulderdash/, ${EX_BOULDER}} manual/files/boulderdash/
 	cp -R ${addprefix ../examples/webgl/, ${EX_WEBGL}} manual/files/webgl/
 	cp -R ${addprefix ../examples/graph_viewer/, ${EX_GRAPH}} manual/files/graph_viewer/

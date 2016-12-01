@@ -1,0 +1,22 @@
+opam-version: "1.2"
+maintainer:   "dev@ocsigen.org"
+authors:      "Ocsigen team"
+bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
+homepage:     "http://ocsigen.org/js_of_ocaml"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
+
+name: "js_of_ocaml-toplevel"
+version: "dev"
+
+build:   [ make "build-toplevel" ]
+install: [ make "install-toplevel" "BINDIR=%{bin}%" ]
+remove:  [ "ocamlfind" "remove" "js_of_ocaml-toplevel" ]
+
+depends: [
+  "ocamlfind" {>= "1.5.1"}
+  "js_of_ocaml-compiler"
+  "js_of_ocaml"
+  "cppo" {>= "1.1.0"}
+]
+
+available: [ ocaml-version >= "4.02.0" ]

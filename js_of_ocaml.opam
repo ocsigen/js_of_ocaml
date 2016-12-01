@@ -1,0 +1,33 @@
+opam-version: "1.2"
+maintainer:   "dev@ocsigen.org"
+authors:      "Ocsigen team"
+bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
+homepage:     "http://ocsigen.org/js_of_ocaml"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
+
+name: "js_of_ocaml"
+version: "dev"
+
+build:   [make "build-library"]
+install: [make "install-library" "BINDIR=%{bin}%"]
+remove:  ["ocamlfind" "remove" "js_of_ocaml"]
+
+depends: [
+  "ocamlfind" {>= "1.5.1"}
+  "lwt" {>= "2.4.4"}
+  "cppo" {>= "1.1.0"}
+  "ppx_tools"
+  "uchar"
+  "js_of_ocaml-compiler"
+  "toplevel_expect_test" {test}
+]
+
+depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" "ppx_driver" "camlp4"]
+conflicts: [
+  "deriving"     {< "0.6"}
+  "tyxml"        {< "4.0.0"}
+  "ppx_deriving" {< "3.0"}
+  "reactiveData" {< "0.2"}
+  "async_kernel" {< "113.33.00"}
+]
+available: [ ocaml-version >= "4.02.0" ]

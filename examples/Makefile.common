@@ -1,11 +1,11 @@
 
 include ../../Makefile.conf
--include ../../Makefile.local
+include ../../Makefile.filelist
 
 COMP=../../compiler/$(COMPILER)
 JSFILES=../../runtime/runtime.js
-OCAMLC=ocamlfind ocamlc -g -package lwt,uchar -ppx ../../lib/ppx/ppx_js.byte -I ../../lib
-STDLIB=$(LIBNAME).cma
+OCAMLC=ocamlfind ocamlc -g -package lwt,uchar -ppx ../../ppx/ppx_js/bin/ppx_js.byte -I ../../lib
+STDLIB=$(LIBRARY).cma
 
 $(NAME).js: $(NAME).byte $(COMP) $(JSFILES)
 	$(COMP) --noruntime $(JSFILES) $(OPTIONS) --source-map $(NAME).byte --pretty -I ../../../lwt

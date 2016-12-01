@@ -1,0 +1,23 @@
+opam-version: "1.2"
+maintainer:   "dev@ocsigen.org"
+authors:      "Ocsigen team"
+bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
+homepage:     "http://ocsigen.org/js_of_ocaml"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
+
+name: "js_of_ocaml-camlp4"
+version: "dev"
+
+build:   [make "build-camlp4"]
+install: [make "install-camlp4"]
+remove:  ["ocamlfind" "remove" "js_of_ocaml-camlp4"]
+
+depends: [
+  "ocamlfind" {>= "1.5.1"}
+  "camlp4" {>= "2.4.4"}
+]
+depopts: ["deriving"]
+conflicts: [
+  "deriving"     {< "0.6"}
+]
+available: [ ocaml-version >= "4.02.0" ]

@@ -58,7 +58,7 @@ let parse_file f =
         | Some f ->
           let pkg,f' = match Util.split Filename.dir_sep f with
             | [] -> assert false
-            | [f] -> "js_of_ocaml",f
+            | [f] -> "js_of_ocaml-compiler",f
             | pkg::l -> pkg, List.fold_left Filename.concat "" l in
           Util.absolute_path (Filename.concat (Util.find_pkg_dir pkg)  f')
         | None -> Util.absolute_path f
