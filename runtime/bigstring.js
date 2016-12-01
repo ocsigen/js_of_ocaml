@@ -13,7 +13,10 @@ function bigstring_destroy_stub(_v) {
 //Provides: bigstring_blit_bigstring_string_stub
 //Requires: caml_string_set, caml_ba_get_1
 function bigstring_blit_bigstring_string_stub(v_bstr, v_src_pos, v_str, v_dst_pos, v_len){
-  for (var i = 0; i < v_len; i++) caml_string_set(v_str,v_dst_pos + i,caml_ba_get_1(v_bstr,v_src_pos + i));
+  for(var i = 0; i < v_len; i++){
+    var c = caml_ba_get_1(v_bstr,v_src_pos + i);
+    caml_string_set(v_str,v_dst_pos + i,c);
+  }
   return 0;
 }
 
