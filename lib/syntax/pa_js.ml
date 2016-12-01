@@ -40,9 +40,11 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   let inside_Js = lazy
     (try
-       String.lowercase (
-         Filename.basename (
-           Filename.chop_extension (!Camlp4_config.current_input_file))) = "js"
+       match Filename.basename (
+         Filename.chop_extension (!Camlp4_config.current_input_file))
+       with
+       | "js" | "Js" -> true
+       | _ -> false
      with Invalid_argument _ -> false)
 
   let js_t_id _loc s = if Lazy.force inside_Js then <:ctyp< $lid:s$ >> else <:ctyp< Js.$lid:s$ >>
