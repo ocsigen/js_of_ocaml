@@ -50,12 +50,13 @@ let read_cmi ~dir cmi =
       end
     else raise Not_found
   in
-  try with_name (String.uncapitalize_ascii cmi)
+  try with_name (Js_of_ocaml_compiler.Util.uncapitalize_ascii cmi)
   with Not_found ->
-  try with_name (String.capitalize_ascii cmi)
+  try with_name (Js_of_ocaml_compiler.Util.capitalize_ascii cmi)
   with Not_found ->
     Format.eprintf "Could not find cmi %s or %s in %s@."
-      (String.capitalize_ascii cmi) (String.uncapitalize_ascii cmi) dir;
+      (Js_of_ocaml_compiler.Util.capitalize_ascii cmi)
+      (Js_of_ocaml_compiler.Util.uncapitalize_ascii cmi) dir;
     raise Not_found
 
 let cmis_of_cma ~dir cma_path =
