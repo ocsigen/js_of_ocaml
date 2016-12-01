@@ -707,6 +707,7 @@ type compile_info =
 let rec compile_block blocks debug code pc state =
   if not (AddrSet.mem pc !tagged_blocks) then begin
     let limit = Blocks.next blocks pc in
+    assert(limit > pc);
     let string_of_addr addr =
       match Debug.find_loc debug addr with
       | None -> string_of_int addr
