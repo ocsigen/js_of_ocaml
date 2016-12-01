@@ -259,9 +259,37 @@ function caml_string_get (s, i) {
   return caml_string_unsafe_get (s, i);
 }
 
+//Provides: caml_string_get16
+//Requires: caml_string_unsafe_get, caml_string_bound_error
+function caml_string_get16(s,i) {
+  if (i >>> 0 >= s.l + 1) caml_string_bound_error();
+  var b1 = caml_string_unsafe_get (s, i),
+      b2 = caml_string_unsafe_get (s, i + 1);
+  return (b2 << 8 | b1);
+}
+
 //Provides: caml_string_get32
-//Requires: caml_string_get
-var caml_string_get32 = caml_string_get 
+//Requires: caml_string_unsafe_get, caml_string_bound_error
+function caml_string_get32(s,i) {
+  if (i >>> 0 >= s.l + 3) caml_string_bound_error();
+  var b1 = caml_string_unsafe_get (s, i),
+      b2 = caml_string_unsafe_get (s, i + 1),
+      b3 = caml_string_unsafe_get (s, i + 2),
+      b4 = caml_string_unsafe_get (s, i + 3);
+  return (b4 << 24 | b3 << 16 | b2 << 8 | b1);
+}
+
+//Provides: caml_string_get64
+//Requires: caml_string_unsafe_get, caml_string_bound_error
+//Requires: caml_int64_of_bytes
+function caml_string_get64(s,i) {
+  if (i >>> 0 >= s.l + 7) caml_string_bound_error();
+  var a = new Array(8);
+  for(var j = 0; j < 8; j++){
+    a[7 - j] = caml_string_unsafe_get (s, i + j);
+  }
+  return caml_int64_of_bytes(a);
+}
 
 //Provides: caml_bytes_get
 //Requires: caml_string_bound_error, caml_bytes_unsafe_get
@@ -277,9 +305,45 @@ function caml_string_set (s, i, c) {
   return caml_string_unsafe_set (s, i, c);
 }
 
+//Provides: caml_string_set16
+//Requires: caml_string_bound_error, caml_string_unsafe_set
+function caml_string_set16(s,i,i16){
+  if (i >>> 0 >= s.l + 1) caml_string_bound_error();
+  var b2 = 0xFF & i16 >> 8,
+      b1 = 0xFF & i16;
+  caml_string_unsafe_set (s, i + 0, b1);
+  caml_string_unsafe_set (s, i + 1, b2);
+  return 0
+}
+
 //Provides: caml_string_set32
-//Requires: caml_string_set
-var caml_string_set32 = caml_string_set
+//Requires: caml_string_bound_error, caml_string_unsafe_set
+function caml_string_set32(s,i,i32){
+  if (i >>> 0 >= s.l + 3) caml_string_bound_error();
+  var b4 = 0xFF & i32 >> 24,
+      b3 = 0xFF & i32 >> 16,
+      b2 = 0xFF & i32 >> 8,
+      b1 = 0xFF & i32;
+  caml_string_unsafe_set (s, i + 0, b1);
+  caml_string_unsafe_set (s, i + 1, b2);
+  caml_string_unsafe_set (s, i + 2, b3);
+  caml_string_unsafe_set (s, i + 3, b4);
+  return 0
+}
+
+//Provides: caml_string_set64
+//Requires: caml_string_bound_error, caml_string_unsafe_set
+//Requires: caml_int64_to_bytes
+function caml_string_set64(s,i,i64){
+  if (i >>> 0 >= s.l + 7) caml_string_bound_error();
+  var a = caml_int64_to_bytes(i64);
+  for(var j = 0; j < 8; j++) {
+    caml_string_unsafe_set (s, i + 7 - j, a[j]);
+  }
+  return 0
+}
+
+
 
 //Provides: caml_bytes_set
 //Requires: caml_string_bound_error, caml_bytes_unsafe_set
