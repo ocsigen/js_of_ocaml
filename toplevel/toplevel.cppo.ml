@@ -42,18 +42,18 @@ let load_resource_aux filename url =
          Sys_js.update_file ~name:filename ~content:(Typed_array.String.of_arrayBuffer b))
   else ()
 
-let load_resource scheme (prefix,suffix) =
+let load_resource scheme ~prefix ~path:suffix =
   let url = scheme ^ suffix in
   let filename = Filename.concat prefix suffix in
   Lwt.async (fun () -> load_resource_aux filename url);
   Some ""
 
 let setup_pseudo_fs () =
-  Sys_js.register_autoload "/dev/"   (fun s -> None);
-  Sys_js.register_autoload "/http/"  (fun s -> load_resource "http://" s);
-  Sys_js.register_autoload "/https/" (fun s -> load_resource "https://" s);
-  Sys_js.register_autoload "/ftp/"   (fun s -> load_resource "ftp://" s);
-  Sys_js.register_autoload "/"       (fun s -> load_resource "filesys/" s)
+  Sys_js.mount ~path:"/dev/"   (fun ~prefix:_ ~path:_ -> None);
+  Sys_js.mount ~path:"/http/"  (load_resource "http://");
+  Sys_js.mount ~path:"/https/" (load_resource "https://");
+  Sys_js.mount ~path:"/ftp/"   (load_resource "ftp://");
+  Sys_js.mount ~path:"/home/"  (load_resource "filesys/")
 
 let exec' s =
   let res : bool = JsooTop.use Format.std_formatter s in

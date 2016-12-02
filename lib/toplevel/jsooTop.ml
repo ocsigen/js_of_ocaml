@@ -90,7 +90,7 @@ let refill_lexbuf s p ppf buffer len =
 let use ffp content =
   let name = "/dev/fake_stdin" in
   if Sys.file_exists name then Sys.remove name;
-  Sys_js.register_file ~name ~content;
+  Sys_js.create_file ~name ~content;
   Toploop.use_silently ffp name
 
 let execute printval ?pp_code ?highlight_location  pp_answer s =

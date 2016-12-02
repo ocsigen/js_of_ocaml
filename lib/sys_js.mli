@@ -34,21 +34,10 @@ val set_channel_filler : in_channel -> (unit -> string) -> unit
 
 (** {2 Pseudo filesystem.} *)
 
-val register_file: name:string -> content:string -> unit
-  (** Register a file to a Pseudo Filesystem.
-      [register_file ~name ~content] register the file [name] with content [content]
-      so it can be be opened with [Pervasives.open_in name] *)
+val mount_point : unit -> string list
 
-val update_file: name:string -> content:string -> unit
-  (** Update a file in the Pseudo Filesystem.
-      [update_file ~name ~content] update the file [name] with content [content] *)
-
-val register_autoload' :
-  path:string ->
-  ((Js.js_string Js.t * Js.js_string Js.t) -> Js.js_string Js.t option) ->
-  unit
-
-val register_autoload : path:string -> ((string * string) -> string option) -> unit
+val unmount : path:string -> unit
+val mount   : path:string -> (prefix:string -> path:string -> string option) -> unit
   (** Register a callback to the [path] to dynamicly load missing files.
       Whenever a file is missing in [path], the callback is used to optionally
       get the content of the file.
@@ -57,9 +46,20 @@ val register_autoload : path:string -> ((string * string) -> string option) -> u
        - [prefix] is the path the function has been registered to.
        - [Filename.contact prefix suffix] is the absolute filename .*)
 
-external file_content : string -> string = "caml_fs_file_content"
-  (** [file_content name] returns the content of the file [name].
+val read_file   : name:string -> string
+  (** [read_file name] returns the content of the file [name].
       Raise [Not_found] if the file does not exists. *)
+
+val create_file : name:string -> content:string -> unit
+  (** Register a file to a Pseudo Filesystem.
+      [create_file ~name ~content] register the file [name] with content [content]
+      so it can be be opened with [Pervasives.open_in name] *)
+
+val update_file : name:string -> content:string -> unit
+  (** Update a file in the Pseudo Filesystem.
+      [update_file ~name ~content] update the file [name] with content [content] *)
+
+
 
 (** {2 Information.} *)
 

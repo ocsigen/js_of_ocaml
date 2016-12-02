@@ -17,38 +17,16 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-external register_file_js: name:Js.js_string Js.t -> content:Js.js_string Js.t -> unit = "caml_fs_register"
-external register_file : name:string -> content:string -> unit = "caml_fs_register"
-external update_file   : name:string -> content:string -> unit = "caml_fs_update_inode"
-
-external caml_fs_register_autoload : string -> (Js.js_string Js.t Js.js_array Js.t -> int -> bool Js.t) Js.callback -> unit = "caml_fs_register_autoload"
+external create_file : name:string -> content:string -> unit = "caml_create_file"
+external read_file   : name:string -> string = "caml_read_file_content"
+let update_file ~name ~content =
+  let oc = open_out name in
+  output_string oc content;
+  close_out oc
 
 external set_channel_output' : out_channel -> (Js.js_string Js.t -> unit) Js.callback -> unit = "caml_ml_set_channel_output"
 
 external set_channel_input' : in_channel -> (unit -> string) Js.callback -> unit = "caml_ml_set_channel_refill"
-
-let register_autoload_aux ~path f register =
-  let f' path pos =
-    let prefix = path##(slice (0) pos)##join (Js.string"/") in
-    let suffix = path##(slice_end pos)##join (Js.string"/") in
-    match f (prefix, suffix) with
-    | None -> Js._false
-    | Some c ->
-      let filename = prefix##(concat (Js.string "/"))##concat suffix in
-      register ~name:filename ~content:c;
-      Js._true in
-  caml_fs_register_autoload path (Js.wrap_callback f')
-
-let register_autoload' ~path f =
-  register_autoload_aux ~path f register_file_js
-
-let register_autoload ~path f =
-  let f (p,s) =
-    match f (Js.to_string p,Js.to_string s) with
-    | None -> None
-    | Some c -> Some c
-  in
-  register_autoload_aux ~path f (fun ~name ~content -> register_file ~name:(Js.to_string name) ~content)
 
 let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
   let f' : (Js.js_string Js.t -> unit) Js.callback = Js.wrap_callback (fun s -> f (Js.to_string s)) in
@@ -58,7 +36,13 @@ let set_channel_filler (in_channel : in_channel) (f : unit -> string) =
   let f' : (unit -> string) Js.callback = Js.wrap_callback f in
   set_channel_input' in_channel f'
 
-external file_content : string -> string = "caml_fs_file_content"
+
+external mount_point : unit -> string list = "caml_list_mount_point"
+external mount_autoload : string -> (string -> string -> string option) Js.callback -> unit = "caml_mount_autoload"
+external unmount : string -> unit = "caml_unmount"
+
+let mount ~path f = mount_autoload path (Js.wrap_callback (fun prefix path -> f ~prefix ~path))
+let unmount ~path = unmount path
 
 let js_of_ocaml_version =
   if Lib_version.git_version = ""
