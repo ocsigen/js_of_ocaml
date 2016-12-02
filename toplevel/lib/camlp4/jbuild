@@ -1,0 +1,8 @@
+(library
+ ((name js_of_ocaml_toplevel_camlp4)
+  (public_name js_of_ocaml-toplevel.camlp4)
+  (libraries (js_of_ocaml-toplevel camlp4))
+  (js_of_ocaml ())
+  ;; CR: better support for cppo
+  (flags (-linkall))
+  (preprocess (pps (ppx_js_driver)))))

@@ -83,3 +83,4 @@ tests/ppx/expect
 tests/ppx/expect_deriving
 
 _opam
+_build

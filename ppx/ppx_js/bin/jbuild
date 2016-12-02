@@ -1,0 +1,18 @@
+(executables
+ ((names (ppx_js_bin))
+  (libraries (ppx_js))
+  (preprocess (no_preprocessing))
+  ))
+
+(rule
+ ((targets (ppx_js))
+  (deps (ppx_js_bin.exe))
+  (action "cp ${<} ${@}")))
+
+(provides ppx_js)
+
+(install
+ ((section lib)
+  (package js_of_ocaml-ppx)
+  (files ((ppx_js_bin.exe as ppx_js)
+          ))))

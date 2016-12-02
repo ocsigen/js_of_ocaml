@@ -46,7 +46,7 @@ let wrap parse_fun lb =
       | Loc.Exc_located (loc, x) ->
         let loc = Loc.to_ocaml_location loc in
         Toploop.print_location Format.err_formatter loc;
-        x, JsooTopError.Camlp4 (loc, x)
+        x, Js_of_ocaml_toplevel.JsooTopError.Camlp4 (loc, x)
       | x ->
         x, x
     in

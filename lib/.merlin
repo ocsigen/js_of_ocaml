@@ -1,6 +1,6 @@
-B ./**
-S ./**
-PKG cmdliner
-PKG menhirLib
-
-EXT js
+B ../_build/default/lib
+FLG -open Js_of_ocaml
+PKG bytes
+PKG lwt
+PKG result
+S .

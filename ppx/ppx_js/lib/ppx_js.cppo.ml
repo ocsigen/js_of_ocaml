@@ -31,7 +31,7 @@ let arrows args ret =
     args
     ret
 
-let wrapper = ref None
+let wrapper = ref (Some "Js_of_ocaml")
 
 let make_str ?loc s =
 #if OCAML_VERSION >= (4, 05, 0)

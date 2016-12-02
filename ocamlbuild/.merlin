@@ -1,3 +1,4 @@
-S .
-B _build
+B ../_build/default/ocamlbuild
 PKG ocamlbuild
+PKG unix
+S .

@@ -1,0 +1,7 @@
+(library
+ ((name js_of_ocaml_compiler_findlib_support)
+  (libraries (js_of_ocaml_compiler findlib))
+  (public_name js_of_ocaml-compiler.findlib_support)
+  (js_of_ocaml ())
+  (preprocess (no_preprocessing))
+  ))

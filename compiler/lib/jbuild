@@ -1,0 +1,36 @@
+(library
+ ((name js_of_ocaml_compiler)
+  (libraries (compiler-libs.common cmdliner base64 yojson))
+  (js_of_ocaml ())
+  (public_name js_of_ocaml-compiler)
+  (preprocess (no_preprocessing))
+  (modules (:standard \ control util.cppo))
+  ))
+
+(ocamllex (js_lexer annot_lexer))
+
+;; menhir is just noisy, both because this parser has conflicts, or
+;; because we don't use --infer (to avoid having to write  manually and
+;; badly specified dependencieds), so we just discard stderr.
+(rule
+ ((targets (js_parser.mli js_parser.ml))
+  (deps (js_parser.mly))
+  (action "menhir --external-tokens Js_token --explain ${<} 2>/dev/null")))
+
+(rule
+ ((targets (annot_parser.mli annot_parser.ml))
+  (deps (annot_parser.mly))
+  (action "menhir --explain ${<} 2>/dev/null")))
+
+(rule
+ ((targets (util.ml))
+  (deps (util.cppo.ml))
+  (action "cppo -V OCAML:${ocaml_version} util.cppo.ml -o util.ml")
+  ))
+
+(rule
+ ((targets (compiler_version.ml))
+  (deps (../../VERSION))
+  (action "
+	echo \"let s = \\\"2.8.2\\\"\" > compiler_version.ml
+	echo \"let git_version = \\\"\\\"\" >> compiler_version.ml")))

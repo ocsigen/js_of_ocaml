@@ -1,0 +1,5 @@
+(library
+  ((name pa_deriving_Json)
+   (public_name js_of_ocaml-camlp4.deriving)
+   (libraries (camlp4.quotations deriving.syntax.common))
+   (preprocess (command camlp4of))))

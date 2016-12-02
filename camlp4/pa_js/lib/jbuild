@@ -1,0 +1,5 @@
+(library
+  ((name pa_js)
+   (public_name js_of_ocaml-camlp4)
+   (libraries (camlp4.extend camlp4.quotations))
+   (preprocess (command camlp4orf))))

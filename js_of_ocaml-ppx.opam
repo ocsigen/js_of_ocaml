@@ -5,18 +5,17 @@ bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
 homepage:     "http://ocsigen.org/js_of_ocaml"
 dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 
-name: "js_of_ocaml-toplevel"
+name: "js_of_ocaml-ppx"
 version: "dev"
 
-build:   [
-  ["jbuilder" "build-package" "js_of_ocaml-toplevel" "-j" jobs]
+build: [
+  ["jbuilder" "build-package" "js_of_ocaml-ppx" "-j" jobs]
 ]
 
 depends: [
-  "ocamlfind" {>= "1.5.1"}
-  "js_of_ocaml-compiler"
-  "js_of_ocaml"
-  "cppo" {>= "1.1.0"}
+  "jbuilder"
+  "metaquot"
+  "ppx_tools"
 ]
 
 available: [ ocaml-version >= "4.02.0" ]

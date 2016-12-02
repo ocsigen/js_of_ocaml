@@ -1,0 +1,15 @@
+(library
+ ((name js_of_ocaml_toplevel)
+  (public_name js_of_ocaml-toplevel)
+  (libraries (js_of_ocaml-compiler js_of_ocaml))
+  (js_of_ocaml ())
+  ;; CR: better support for cppo
+  (modules (:standard \ jsooTopError.cppo))
+  (preprocess (pps (ppx_js_driver)))))
+
+
+(rule
+ ((targets (jsooTopError.ml))
+  (deps (jsooTopError.cppo.ml))
+  (action "cppo -V OCAML:${ocaml_version} jsooTopError.cppo.ml -o jsooTopError.ml")
+  ))

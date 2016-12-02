@@ -1,0 +1,6 @@
+(library
+ ((name ppx_js_driver)
+  (public_name js_of_ocaml-ppx_driver)
+  (libraries (compiler-libs.common ppx_js ppx_driver))
+  (kind ppx_rewriter)
+  (preprocess (no_preprocessing))))

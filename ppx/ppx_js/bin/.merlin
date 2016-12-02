@@ -1,3 +1,4 @@
+B ../../../_build/default/ppx/ppx_js/bin
 B ../../../_build/default/ppx/ppx_js/lib
 PKG compiler-libs
 PKG compiler-libs.common

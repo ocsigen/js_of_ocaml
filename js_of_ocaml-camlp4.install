@@ -1,0 +1,26 @@
+lib: [
+  "_build/default/camlp4/pa_js/lib/pa_js.cmxs"
+  "_build/default/camlp4/pa_js/lib/pa_js.a"
+  "_build/default/camlp4/pa_js/lib/pa_js.cmxa"
+  "_build/default/camlp4/pa_js/lib/pa_js.cma"
+  "_build/default/camlp4/pa_js/lib/pa_js.pp.ml"
+  "_build/default/camlp4/pa_js/lib/pa_js.cmt"
+  "_build/default/camlp4/pa_js/lib/pa_js.cmx"
+  "_build/default/camlp4/pa_js/lib/pa_js.cmi"
+  "_build/default/camlp4/pa_deriving_json/lib/pa_deriving_Json.cmxs"
+  "_build/default/camlp4/pa_deriving_json/lib/pa_deriving_Json.a"
+  "_build/default/camlp4/pa_deriving_json/lib/pa_deriving_Json.cmxa"
+  "_build/default/camlp4/pa_deriving_json/lib/pa_deriving_Json.cma"
+  "_build/default/camlp4/pa_deriving_json/lib/pa_deriving_Json.pp.mli"
+  "_build/default/camlp4/pa_deriving_json/lib/pa_deriving_Json.cmti"
+  "_build/default/camlp4/pa_deriving_json/lib/pa_deriving_Json.cmt"
+  "_build/default/camlp4/pa_deriving_json/lib/pa_deriving_Json.cmx"
+  "_build/default/camlp4/pa_deriving_json/lib/pa_deriving_Json.cmi"
+  "js_of_ocaml-camlp4.opam" {"opam"}
+  "_build/default/META.js_of_ocaml-camlp4" {"META"}
+]
+doc: [
+  "_build/default/CHANGES"
+  "_build/default/LICENSE"
+  "_build/default/README.md"
+]

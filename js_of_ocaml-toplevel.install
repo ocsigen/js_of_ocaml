@@ -1,5 +1,46 @@
+lib: [
+  "_build/default/toplevel/lib/camlp4/js_of_ocaml_toplevel_camlp4.cmxs"
+  "_build/default/toplevel/lib/camlp4/js_of_ocaml_toplevel_camlp4.a"
+  "_build/default/toplevel/lib/camlp4/js_of_ocaml_toplevel_camlp4.cmxa"
+  "_build/default/toplevel/lib/camlp4/js_of_ocaml_toplevel_camlp4.cma"
+  "_build/default/toplevel/lib/camlp4/js_of_ocaml_toplevel_camlp4.pp.mli"
+  "_build/default/toplevel/lib/camlp4/js_of_ocaml_toplevel_camlp4.cmti"
+  "_build/default/toplevel/lib/camlp4/js_of_ocaml_toplevel_camlp4.cmt"
+  "_build/default/toplevel/lib/camlp4/js_of_ocaml_toplevel_camlp4.cmx"
+  "_build/default/toplevel/lib/camlp4/js_of_ocaml_toplevel_camlp4.cmi"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel.cmxs"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel.a"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel.cmxa"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel.cma"
+  "_build/default/toplevel/lib/jsooTopPpx.pp.mli"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTopPpx.cmti"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTopPpx.cmt"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTopPpx.cmx"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTopPpx.cmi"
+  "_build/default/toplevel/lib/jsooTopError.pp.mli"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTopError.cmti"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTopError.cmt"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTopError.cmx"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTopError.cmi"
+  "_build/default/toplevel/lib/jsooTop.pp.mli"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTop.cmti"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTop.cmt"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTop.cmx"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel__JsooTop.cmi"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel.ml-gen"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel.cmt"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel.cmx"
+  "_build/default/toplevel/lib/js_of_ocaml_toplevel.cmi"
+  "js_of_ocaml-toplevel.opam" {"opam"}
+  "_build/default/META.js_of_ocaml-toplevel" {"META"}
+]
 bin: [
-  "?toplevel/bin/jsoo_mktop"
-  "?toplevel/bin/jsoo_mkcmis"
-  "?toplevel/bin/jsoo_listunits"
+  "_build/default/toplevel/bin/jsoo_listunits.exe" {"jsoo_listunits"}
+  "_build/default/toplevel/bin/jsoo_mkcmis.exe" {"jsoo_mkcmis"}
+  "_build/default/toplevel/bin/jsoo_mktop.exe" {"jsoo_mktop"}
+]
+doc: [
+  "_build/default/CHANGES"
+  "_build/default/LICENSE"
+  "_build/default/README.md"
 ]

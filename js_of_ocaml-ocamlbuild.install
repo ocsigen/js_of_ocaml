@@ -1,0 +1,18 @@
+lib: [
+  "_build/default/ocamlbuild/ocamlbuild_js_of_ocaml.cmxs"
+  "_build/default/ocamlbuild/ocamlbuild_js_of_ocaml.a"
+  "_build/default/ocamlbuild/ocamlbuild_js_of_ocaml.cmxa"
+  "_build/default/ocamlbuild/ocamlbuild_js_of_ocaml.cma"
+  "_build/default/ocamlbuild/ocamlbuild_js_of_ocaml.mli"
+  "_build/default/ocamlbuild/ocamlbuild_js_of_ocaml.cmti"
+  "_build/default/ocamlbuild/ocamlbuild_js_of_ocaml.cmt"
+  "_build/default/ocamlbuild/ocamlbuild_js_of_ocaml.cmx"
+  "_build/default/ocamlbuild/ocamlbuild_js_of_ocaml.cmi"
+  "js_of_ocaml-ocamlbuild.opam" {"opam"}
+  "_build/default/META.js_of_ocaml-ocamlbuild" {"META"}
+]
+doc: [
+  "_build/default/CHANGES"
+  "_build/default/LICENSE"
+  "_build/default/README.md"
+]

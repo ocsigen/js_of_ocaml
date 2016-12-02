@@ -1,0 +1,6 @@
+B ../../../_build/default/camlp4/pa_deriving_json/lib
+PKG camlp4
+PKG camlp4.quotations
+PKG camlp4.quotations.r
+PKG deriving.syntax.common
+S .

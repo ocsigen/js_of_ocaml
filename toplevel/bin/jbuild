@@ -1,0 +1,17 @@
+(executables
+ ((names (jsoo_mkcmis jsoo_mktop jsoo_listunits))
+  (libraries
+   (
+    js_of_ocaml_compiler
+    js_of_ocaml_compiler_findlib_support
+    ))
+  (preprocess (no_preprocessing))
+  ))
+
+(install
+ ((section bin)
+  (package js_of_ocaml-toplevel)
+  (files ((jsoo_mktop.exe as jsoo_mktop)
+          (jsoo_mkcmis.exe as jsoo_mkcmis)
+          (jsoo_listunits.exe as jsoo_listunits)
+          ))))

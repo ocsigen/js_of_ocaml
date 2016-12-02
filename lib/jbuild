@@ -1,0 +1,21 @@
+(library
+ ((name js_of_ocaml)
+  (public_name js_of_ocaml)
+  (libraries (lwt))
+  (c_names (js_of_ocaml_stubs))
+  (js_of_ocaml ())
+  (preprocess (pps (ppx_js_driver -no-js-of-ocaml-wrapper)))))
+
+;; (rule
+;;  ((targets (js_of_ocaml_stubs.c))
+;; CR: check glob in jbuilder
+;;   (deps ((file generate_stubs.sh)(glob_files webSocket.ml)))
+;;   (action "./generate_stubs.sh > js_of_ocaml_stubs.c")
+;;   ))
+
+(rule
+ ((targets (lib_version.ml))
+  (deps (../VERSION))
+  (action "
+	echo \"let s = \\\"2.8.3\\\"\" > lib_version.ml
+	echo \"let git_version = \\\"\\\"\" >> lib_version.ml")))

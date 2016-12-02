@@ -1,0 +1,5 @@
+(library
+  ((name ocamlbuild_js_of_ocaml)
+   (public_name js_of_ocaml-ocamlbuild)
+   (libraries (ocamlbuild))
+   (preprocess no_preprocessing)))

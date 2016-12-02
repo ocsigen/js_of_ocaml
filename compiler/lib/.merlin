@@ -1,6 +1,5 @@
-B ../_build/default/compiler
-B ../_build/default/compiler/findlib_support
-B ../_build/default/compiler/lib
+B ../../_build/default/compiler/lib
+FLG -open Js_of_ocaml_compiler
 PKG base64
 PKG biniou
 PKG bytes
@@ -8,6 +7,5 @@ PKG cmdliner
 PKG compiler-libs
 PKG compiler-libs.common
 PKG easy-format
-PKG findlib
 PKG yojson
 S .
