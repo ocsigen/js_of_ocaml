@@ -77,7 +77,7 @@ let list_files name paths =
   in
   expand_path exts file virtname
 
-let cmi_dir = "/cmis"
+let cmi_dir = "/static/cmis"
 
 let find_cmi paths base =
   try

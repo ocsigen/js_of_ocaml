@@ -24,14 +24,14 @@
 (* #require "js_of_ocaml.compiler" *)
 (* #require "compiler-libs.common" *)
 
-let prefix = ref "/cmis"
+let prefix = ref "/static/cmis"
 let output = ref None
 let runtime = ref true
 let usage () =
   Format.eprintf "Usage: jsoo_mkcmis [options] [find packages] @.";
   Format.eprintf " -verbose@.";
   Format.eprintf " -help\t\t\tDisplay usage@.";
-  Format.eprintf " -prefix [dir]\t\tStore cmi files in [dir] (default /cmis)@.";
+  Format.eprintf " -prefix [dir]\t\tStore cmi files in [dir] (default /static/cmis)@.";
   Format.eprintf " -o [name]\t\tSet output filename@.";
   exit 1
 
