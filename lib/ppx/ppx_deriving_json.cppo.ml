@@ -53,9 +53,6 @@ let rec fresh_vars ?(acc = []) n =
     let acc = Ppx_deriving.fresh_var acc :: acc in
     fresh_vars ~acc (n - 1)
 
-let unreachable_case () =
-  Ast_helper.Exp.case [%pat? _ ] [%expr assert false]
-
 let label_of_constructor = map_loc (fun c -> Longident.Lident c)
 
 let wrap_write r ~pattern = [%expr fun buf [%p pattern] -> [%e r]]
@@ -96,8 +93,7 @@ let pattern_of_record l =
 
 let rec write_tuple_contents l ly ~tag ~poly =
   let e =
-    let f v y =
-      let arg = Ast_convenience.evar v in
+    let f arg y =
       let e = write_body_of_type y ~arg ~poly in
       [%expr Buffer.add_string buf ","; [%e e]]
     in
@@ -134,14 +130,17 @@ and write_poly_case r ~arg ~poly =
         write_body_of_tuple_type l ~arg ~poly ~tag:0
     in
     Ast_helper.Exp.case lhs rhs
-  | Rinherit ({ptyp_desc = Ptyp_constr (lid, _)} as y) ->
-    Ast_helper.Exp.case (Ast_helper.Pat.type_ lid)
+  | Rinherit ({ptyp_desc = Ptyp_constr (lid, _); ptyp_loc} as y) ->
+    Ast_helper.Exp.case
+      (Ast_helper.Pat.(alias (type_ lid)) (Location.mkloc arg ptyp_loc))
       (write_body_of_type y ~arg ~poly)
   | Rinherit {ptyp_loc} ->
     Location.raise_errorf ~loc:ptyp_loc
       "%s write case cannot be derived" deriver
 
-and write_body_of_type y ~arg ~poly =
+and write_body_of_type y ~(arg : string) ~poly =
+  let arg = Ast_convenience.evar arg
+  and arg' = arg in
   match y with
   | [%type: unit] ->
     [%expr Deriving_Json.Json_unit.write buf [%e arg]]
@@ -180,8 +179,8 @@ and write_body_of_type y ~arg ~poly =
   | { Parsetree.ptyp_desc = Ptyp_tuple l } ->
     write_body_of_tuple_type l ~arg ~poly ~tag:0
   | { Parsetree.ptyp_desc = Ptyp_variant (l, _, _); ptyp_loc = loc } ->
-    List.map (write_poly_case ~arg ~poly) l @ [unreachable_case ()] |>
     Ast_helper.Exp.match_ arg
+      (List.map (write_poly_case ~arg:arg' ~poly) l)
   | { Parsetree.ptyp_desc = Ptyp_constr (lid, l) } ->
     let e = suffix_lid lid ~suffix:"to_json"
     and l = List.map (write_of_type ~poly) l in
@@ -192,9 +191,8 @@ and write_body_of_type y ~arg ~poly =
       deriver (Ppx_deriving.string_of_core_type y)
 
 and write_of_type y ~poly =
-  let v = "a" in
-  let arg = Ast_convenience.evar v
-  and pattern = Ast_convenience.pvar v in
+  let arg = "a" in
+  let pattern = Ast_convenience.pvar arg in
   wrap_write (write_body_of_type y ~arg ~poly) ~pattern
 
 and write_body_of_record ~tag l =
@@ -450,10 +448,7 @@ let json_str d =
   json_str_wrap d
 
 let write_decl_of_type d y =
-  (let e =
-     let arg = Ast_convenience.evar "a" in
-     write_body_of_type y ~arg ~poly:true
-   in
+  (let e = write_body_of_type y ~arg:"a" ~poly:true in
    [%expr fun buf a -> [%e e]]) |> write_str_wrap d
 
 let read_decl_of_type decl y =
