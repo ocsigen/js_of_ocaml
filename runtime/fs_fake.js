@@ -21,14 +21,22 @@
 //Requires: MlFakeFile, caml_create_string
 //Requires: caml_raise_sys_error, caml_raise_no_such_file, caml_new_string, caml_string_of_array
 //Requires: MlString
-function MlFakeDevice (root) {
+function MlFakeDevice (root, f) {
   this.content={};
-  this.root = root
+  this.root = root;
+  this.lookupFun = f;
 }
 MlFakeDevice.prototype.nm = function(name) {
   return (this.root + name);
 }
+MlFakeDevice.prototype.lookup = function(name) {
+  if(!this.content[name] && this.lookupFun) {
+    var res = this.lookupFun(caml_new_string(this.root), caml_new_string(name));
+    if(res != 0) this.content[name]=new MlFakeFile(res[1]);
+  }    
+}
 MlFakeDevice.prototype.exists = function(name) {
+  this.lookup(name);
   return this.content[name]?1:0;
 }
 MlFakeDevice.prototype.readdir = function(name) {
@@ -62,6 +70,7 @@ MlFakeDevice.prototype.open = function(name, f) {
     caml_raise_sys_error(this.nm(name) + " : flags Open_rdonly and Open_wronly are not compatible");
   if(f.text && f.binary)
     caml_raise_sys_error(this.nm(name) + " : flags Open_text and Open_binary are not compatible");
+  this.lookup(name);
   if (this.content[name]) {
     if (this.is_dir(name)) caml_raise_sys_error(this.nm(name) + " : is a directory");
     if (f.create && f.excl) caml_raise_sys_error(this.nm(name) + " : file already exists");
@@ -69,20 +78,22 @@ MlFakeDevice.prototype.open = function(name, f) {
     if(f.truncate) file.truncate();
     return file;
   } else if (f.create) {
-    return new MlFakeFile(caml_create_string(0));
+    this.content[name] = new MlFakeFile(caml_create_string(0));
+    return this.content[name];
   } else {
     caml_raise_no_such_file (this.nm(name));
   }
 }
 
 MlFakeDevice.prototype.register= function (name,content){
-    if(content instanceof MlString)
-        this.content[name] = new MlFakeFile(content);
-    else if(content instanceof Array)
-        this.content[name] = new MlFakeFile(caml_string_of_array(content));
-    else if(content.toString) {
-        var mlstring = caml_new_string(content.toString());
-        this.content[name] = new MlFakeFile(mlstring);
+  if(this.content[name]) caml_raise_sys_error(this.nm(name) + " : file already exists");
+  if(content instanceof MlString)
+    this.content[name] = new MlFakeFile(content);
+  else if(content instanceof Array)
+    this.content[name] = new MlFakeFile(caml_string_of_array(content));
+  else if(content.toString) {
+    var mlstring = caml_new_string(content.toString());
+    this.content[name] = new MlFakeFile(mlstring);
   }
 }
 
