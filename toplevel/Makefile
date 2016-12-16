@@ -68,7 +68,7 @@ TYXML_DIR=$(shell ocamlfind query tyxml)
 #-jsopt "--pretty"
 MKTOP=jsoo_mktop -verbose $(SAFESTRING) -g \
 	${addprefix -top-syntax , ${SYNTAXES}} \
-	-jsopt "--disable shortvar" \
+	-jsopt "--disable shortvar --pretty" \
 	${addprefix -export-package , ${PACKAGES}} \
 	${addprefix -export-unit $(TYXML_DIR)/, html_types.cmi html_sigs.cmi xml_wrap.cmi } \
 

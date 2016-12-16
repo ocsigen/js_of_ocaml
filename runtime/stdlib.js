@@ -932,8 +932,16 @@ function caml_sys_const_ostype_unix () { return 1; }
 function caml_sys_const_ostype_win32 () { return 0; }
 
 //Provides: caml_sys_system_command
-function caml_sys_system_command(_cmd){
-  return 127;
+function caml_sys_system_command(cmd){
+  var cmd = cmd.toString();
+  joo_global_object.console.log(cmd);
+  if (typeof require != "undefined"
+      && require('child_process')
+      && require('child_process').execSync) {
+    try {require('child_process').execSync(cmd); return 0}
+    catch (e) {return 1}
+  }
+  else return 127;
 }
 
 ///////////// Array
@@ -991,10 +999,8 @@ function caml_get_public_method (obj, tag, cacheid) {
     for (var i = caml_method_cache.length; i < cacheid; i++)
       caml_method_cache[i] = 0;
   } else if (meths[ofs] === tag) {
-//      console.log("cache hit");
     return meths[ofs - 1];
   }
-//  console.log("cache miss");
   var li = 3, hi = meths[1] * 2 + 1, mi;
   while (li < hi) {
     mi = ((li+hi) >> 1) | 1;
@@ -1052,7 +1058,8 @@ function caml_sys_exit (code) {
   var g = joo_global_object;
   if(g.quit) g.quit(code);
   //nodejs
-  if(g.process && g.process.exit) g.process.exit(code);
+  if(g.process && g.process.exit)
+    g.process.exit(code);
   caml_invalid_argument("Function 'exit' not implemented");
 }
 

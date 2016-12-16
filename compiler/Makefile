@@ -24,10 +24,10 @@ OCAMLOPT=ocamlfind ocamlopt -g -w +A-4-7-9-37-38-41-44-45-58
 BYTE_COMP=lib/js_of_ocaml_compiler.cmo
 NAT_COMP=lib/js_of_ocaml_compiler.cmx
 
-lib/%:
+lib/%:lib/
 	make -C lib $*
 
-findlib_support/%:
+findlib_support/%:findlib_support/
 	make -C findlib_support $*
 
 $(COMPILER): jsoo_compile.$(BEST)
@@ -54,28 +54,28 @@ man/$(LINKER).1: $(LINKER)
 
 .INTERMEDIATE: jsoo_compile.byte jsoo_compile.opt minify.byte minify.opt jsoo_link.byte jsoo_link.opt
 
-jsoo_compile.byte: $(BYTE_COMP) findlib_support/jsoo_findlib_support.cma $(COMPOBJS:cmx=cmo) 
+jsoo_compile.byte: $(BYTE_COMP) findlib_support/jsoo_findlib_support.cma $(COMPOBJS:cmx=cmo)
 	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
-jsoo_compile.opt: $(NAT_COMP) findlib_support/jsoo_findlib_support.cmxa $(COMPOBJS) 
+jsoo_compile.opt: $(NAT_COMP) findlib_support/jsoo_findlib_support.cmxa $(COMPOBJS)
 	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
 
-minify.byte: $(BYTE_COMP) $(MINIOBJS:cmx=cmo) 
+minify.byte: $(BYTE_COMP) $(MINIOBJS:cmx=cmo)
 	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
-minify.opt: $(NAT_COMP) $(MINIOBJS:cmx=cmx) 
+minify.opt: $(NAT_COMP) $(MINIOBJS:cmx=cmx)
 	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
 
-jsoo_link.byte: $(BYTE_COMP) $(LINKEROBJS:cmx=cmo) 
+jsoo_link.byte: $(BYTE_COMP) $(LINKEROBJS:cmx=cmo)
 	$(OCAMLC) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
-jsoo_link.opt: $(NAT_COMP) $(LINKEROBJS:cmx=cmx) 
+jsoo_link.opt: $(NAT_COMP) $(LINKEROBJS:cmx=cmx)
 	$(OCAMLOPT) $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -linkpkg -o $@ $^
 
-%.cmx: %.ml
+%.cmx: %.ml lib/ findlib_support/
 	$(OCAMLOPT) -I lib $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 %.cmo: %.ml
 	$(OCAMLC) -I lib $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
-%.cmi: %.mli
+%.cmi: %.mli lib/ findlib_support/
 	$(OCAMLC) -I lib $(SAFESTRING) ${addprefix -package , $(PACKAGES)} -c $<
 
 clean:

@@ -115,4 +115,5 @@ let provided = List.fold_left (fun acc x -> StringSet.add x acc)
   "parseInt";
 
   "module";
+  "require";
 ]

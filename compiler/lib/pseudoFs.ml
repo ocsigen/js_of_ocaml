@@ -77,7 +77,7 @@ let list_files name paths =
   in
   expand_path exts file virtname
 
-let cmi_dir = "/cmis"
+let cmi_dir = "/static/cmis"
 
 let find_cmi paths base =
   try
@@ -100,7 +100,7 @@ let program_of_files l =
       read name filename) l in
   let body =
     List.map (fun (n, c) ->
-        Let(Var.fresh (), Prim(Extern "caml_fs_register_extern", [n;c]))) fs in
+        Let(Var.fresh (), Prim(Extern "caml_create_file_extern", [n;c]))) fs in
   let pc = 0 in
   let blocks = AddrMap.add pc {params=[];
                                handler=None;
@@ -133,11 +133,11 @@ let make_body prim cmis files paths =
   body
 
 let f p cmis files paths =
-  let body = make_body "caml_fs_register" cmis files paths in
+  let body = make_body "caml_create_file" cmis files paths in
   Code.prepend p body
 
 let f_empty cmis files paths =
-  let body = make_body "caml_fs_register_extern" cmis files paths in
+  let body = make_body "caml_create_file_extern" cmis files paths in
   let pc = 0 in
   let blocks = AddrMap.add pc {params=[];
                           handler=None;

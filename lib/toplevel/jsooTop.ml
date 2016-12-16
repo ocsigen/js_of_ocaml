@@ -34,7 +34,7 @@ let setup = lazy (
   Hashtbl.add Toploop.directive_table "debug_on" (Toploop.Directive_string Option.Debug.enable);
   Hashtbl.add Toploop.directive_table "debug_off" (Toploop.Directive_string Option.Debug.disable);
   Hashtbl.add Toploop.directive_table "tailcall" (Toploop.Directive_string (Option.Param.set "tc"));
-  Topdirs.dir_directory "/cmis";
+  Topdirs.dir_directory "/static/cmis";
   let initial_primitive_count =
     Array.length (split_primitives (Symtable.data_primitive_names ())) in
 
@@ -90,7 +90,7 @@ let refill_lexbuf s p ppf buffer len =
 let use ffp content =
   let name = "/dev/fake_stdin" in
   if Sys.file_exists name then Sys.remove name;
-  Sys_js.register_file ~name ~content;
+  Sys_js.create_file ~name ~content;
   Toploop.use_silently ffp name
 
 let execute printval ?pp_code ?highlight_location  pp_answer s =

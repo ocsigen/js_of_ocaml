@@ -113,7 +113,7 @@ let http_get url =
 
 let getfile f =
   try
-    Lwt.return (Sys_js.file_content f)
+    Lwt.return (Sys_js.read_file f)
   with Not_found ->
     http_get f
 

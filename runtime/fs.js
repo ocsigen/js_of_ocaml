@@ -20,87 +20,13 @@
 ///////////// Dummy filesystem
 
 //Provides: caml_current_dir
-var caml_current_dir = "/";
-//Provides: file_inode
-var file_inode = 0
-
-//Provides: MlDir
-//Requires: file_inode, unix_time
-function MlDir(){ this.content={};
-                  this.inode = file_inode++;
-                  var now = unix_time();
-                  this.atime = now;
-                  this.mtime = now;
-                  this.ctime = now;
-                  }
-MlDir.prototype = {
-  exists:function(name){return this.content[name]?1:0;},
-  mk:function(name,c){this.content[name]=c},
-  get:function(name){return this.content[name]},
-  list:function(){
-    var a = [];
-    for(var n in this.content)
-      a.push(n);
-    return a;
-  },
-  remove:function(name){delete this.content[name];}
-}
+if(joo_global_object.process && joo_global_object.process.cwd)
+  var caml_current_dir = joo_global_object.process.cwd();
+else
+  var caml_current_dir =  "/static/";
 
 //Provides: MlFile
-//Requires: caml_create_string, file_inode, unix_time
-function MlFile(content){ this.data = content;
-                          this.inode = file_inode++;
-                          var now = unix_time();
-                          this.atime = now;
-                          this.mtime = now;
-                          this.ctime = now;
-}
-MlFile.prototype = {
-  truncate:function(){
-    this.data = caml_create_string(0);
-    this.modified();
-  },
-  modified:function() {
-    var now = unix_time();
-    this.atime = now;
-    this.mtime = now;
-  }
-}
-
-//Provides: caml_root_dir
-//Requires: MlDir
-var caml_root_dir = new MlDir();
-caml_root_dir.mk("",new MlDir());
-
-//Provides: caml_sys_getcwd
-//Requires: caml_current_dir, caml_new_string
-function caml_sys_getcwd() { return caml_new_string(caml_current_dir); }
-//Provides: caml_sys_chdir
-//Requires: caml_current_dir, caml_make_path
-//Requires: caml_sys_file_exists, caml_sys_is_directory,caml_raise_no_such_file
-function caml_sys_chdir(dir) {
-  if(caml_sys_file_exists(dir) && caml_sys_is_directory(dir)){
-    var name = caml_make_path(dir);
-    name.push(""); // we want the slash a the end
-    caml_current_dir = name.join("/");
-    return 0;
-  }
-  else
-    caml_raise_no_such_file(dir);
-}
-//Provides: caml_raise_no_such_file
-//Requires: MlString, caml_raise_sys_error
-function caml_raise_no_such_file(name){
-  name = (name instanceof MlString)?name.toString():name;
-  caml_raise_sys_error (name + ": No such file or directory");
-}
-
-//Provides: caml_raise_not_a_dir
-//Requires: MlString, caml_raise_sys_error
-function caml_raise_not_a_dir(name){
-  name = (name instanceof MlString)?name.toString():name;
-  caml_raise_sys_error (name + ": Not a directory");
-}
+function MlFile(){  }
 
 //Provides: caml_make_path
 //Requires: caml_current_dir,MlString
@@ -120,196 +46,153 @@ function caml_make_path (name) {
   }
   ncomp.orig = name;
   return ncomp;
-
 }
 
-
-//Provides: caml_fs_register
-//Requires: MlDir, MlFile, caml_root_dir, caml_make_path, caml_raise_sys_error
-//Requires: MlString, caml_array_of_string
-//Requires: caml_invalid_argument, caml_new_string
-//Requires: caml_string_of_array
-// content can be : MlDIr,MlFile,MlString,Array, string
-function caml_fs_register(name,content) {
-  var path = caml_make_path(name);
-  var dir = caml_root_dir;
-  for(var i=0;i<path.length-1;i++){
-    var d = path[i];
-    if(!(dir.exists(d)))
-      dir.mk(d,new MlDir());
-    dir = dir.get(d);
-    if(!(dir instanceof MlDir))
-      caml_raise_sys_error (path.orig + " : file already exists");
-  }
-  var d = path[path.length-1];
-  if(dir.exists(d)) caml_raise_sys_error (path.orig + " : file already exists");
-  if(content instanceof MlDir) dir.mk(d,content);
-  else if(content instanceof MlFile) dir.mk(d,content);
-  else if(content instanceof MlString) dir.mk(d,new MlFile(content));
-  else if(content instanceof Array) dir.mk(d,new MlFile(caml_string_of_array(content)));
-  else if(content.toString) {
-    var mlstring = caml_new_string(content.toString());
-    //caml_array_of_string(mlstring);
-    dir.mk(d,new MlFile(mlstring));
-  }
-  else caml_invalid_argument("caml_fs_register");
-  return 0;
+//Provides:jsoo_mount_point
+//Requires: MlFakeDevice, MlNodeDevice
+var jsoo_mount_point = []
+if (typeof require == "undefined") {
+    jsoo_mount_point.push({path:"/",device:new MlFakeDevice("/")});
+} else {
+    jsoo_mount_point.push({path:"/",device:new MlNodeDevice("/")});
 }
+jsoo_mount_point.push({path:"/static/", device:new MlFakeDevice("/static/")});
 
-//Provides: caml_fs_update_inode
-//Requires: MlDir, caml_root_dir, caml_make_path, caml_raise_sys_error
-//Requires: MlString
-//Requires: caml_invalid_argument
-function caml_fs_update_inode(name,content) {
-  var path = caml_make_path(name);
-  var dir = caml_root_dir;
-  for(var i=0;i<path.length-1;i++){
-    var d = path[i];
-    if(!(dir.exists(d)))
-      dir.mk(d,new MlDir());
-    dir = dir.get(d);
-    if(!(dir instanceof MlDir))
-      caml_raise_sys_error (path.orig + " : file does not exists");
-  }
-  var d = path[path.length-1];
-  if(!dir.exists(d)) caml_raise_sys_error (path.orig + " : file does not exists");
-  if(content instanceof MlString) {
-    var inode = dir.get(d);
-    inode.data = content;
-  }
-  else caml_invalid_argument("caml_fs_update_inode");
-  return 0;
-}
-
-//Provides: caml_fs_init
-//Requires: caml_fs_register
-function caml_fs_init (){
-  var tmp=joo_global_object.caml_fs_tmp
-  if(tmp){
-    for(var i = 0; i < tmp.length; i++){
-      caml_fs_register(tmp[i].name,tmp[i].content);
+//Provides:caml_list_mount_point
+//Requires: jsoo_mount_point, caml_new_string
+function caml_list_mount_point(){
+    var prev = 0
+    for(var i = 0; i < jsoo_mount_point.length; i++){
+        var old = prev;
+        prev = [0, caml_new_string(jsoo_mount_point[i].path), old]
     }
+    return prev;
+}
+
+//Provides: resolve_fs_device
+//Requires: caml_make_path, jsoo_mount_point
+function resolve_fs_device(name){
+  var path = caml_make_path(name);
+  var name = path.join("/");
+  var name_slash = name + "/";
+  var res;
+  for(var i = 0; i < jsoo_mount_point.length; i++) {
+    var m = jsoo_mount_point[i];
+    if(name_slash.search(m.path) == 0
+       && (!res || res.path.length < m.path.length))
+        res = {path:m.path,device:m.device,rest:name.substring(m.path.length,name.length)};
   }
-  joo_global_object.caml_fs_register = caml_fs_register;
+  return res;
+}
+
+//Provides: caml_mount_autoload
+//Requires: MlFakeDevice, caml_make_path, jsoo_mount_point
+function caml_mount_autoload(name,f){
+  var path = caml_make_path(name);
+  var name = path.join("/") + "/";
+  jsoo_mount_point.push({path:name,device:new MlFakeDevice(name,f)})
   return 0;
 }
 
-//Provides: caml_fs_register_extern
-function caml_fs_register_extern(name,content){
-  if(joo_global_object.caml_fs_register)
-    joo_global_object.caml_fs_register(name,content);
+//Provides: caml_unmount
+//Requires: jsoo_mount_point, caml_make_path
+function caml_unmount(name){
+  var path = caml_make_path(name);
+  var name = path.join("/") + "/";
+  var idx = -1;
+  for(var i = 0; i < jsoo_mount_point.length; i++)
+    if(jsoo_mount_point[i].path == name) idx = i;
+  if(idx > -1) jsoo_mount_point.splice(idx,1);
+  return 0
+}
+
+//Provides: caml_sys_getcwd
+//Requires: caml_current_dir, caml_new_string
+function caml_sys_getcwd() {
+  return caml_new_string(caml_current_dir);
+}
+
+//Provides: caml_sys_chdir
+//Requires: caml_current_dir, caml_raise_no_such_file, resolve_fs_device
+function caml_sys_chdir(dir) {
+  var root = resolve_fs_device(dir);
+  if(root.device.exists(root.rest)) {
+    caml_current_dir = root.base + dir.rest + "/"
+    return 0;
+  }
   else {
-    if(!joo_global_object.caml_fs_tmp) joo_global_object.caml_fs_tmp = [];
-    joo_global_object.caml_fs_tmp.push({name:name,content:content});
+    caml_raise_no_such_file(dir);
   }
-  return 0;
 }
 
-//Provides: caml_fs_content
-//Requires: caml_root_dir, caml_raise_no_such_file
-function caml_fs_content(path){
-  var dir = caml_root_dir;
-  for(var i=0;i<path.length;i++){
-    if(!(dir.exists && dir.exists(path[i]))) caml_raise_no_such_file(path.orig);
-    dir=dir.get(path[i]);
-  }
-  return dir
+//Provides: caml_raise_no_such_file
+//Requires: MlString, caml_raise_sys_error
+function caml_raise_no_such_file(name){
+  name = (name instanceof MlString)?name.toString():name;
+  caml_raise_sys_error (name + ": No such file or directory");
+}
+
+//Provides: caml_raise_not_a_dir
+//Requires: MlString, caml_raise_sys_error
+function caml_raise_not_a_dir(name){
+  name = (name instanceof MlString)?name.toString():name;
+  caml_raise_sys_error (name + ": Not a directory");
 }
 
 //Provides: caml_sys_file_exists
-//Requires: caml_root_dir, caml_make_path
+//Requires: resolve_fs_device
 function caml_sys_file_exists (name) {
-  var dir = caml_root_dir;
-  var path = caml_make_path(name);
-  var auto_load;
-  var pos;
-  for(var i=0;i<path.length;i++){
-    if(dir.auto) { auto_load = dir.auto; pos = i}
-    if(!(dir.exists && dir.exists(path[i]))) {
-      if(auto_load) {
-        return auto_load(path,pos);
-      }
-      else return 0;
-    }
-    dir=dir.get(path[i]);
-  }
-  return 1;
-}
-
-//Provides: caml_fs_register_autoload
-//Requires: MlDir, caml_make_path, caml_raise_sys_error, caml_root_dir
-function caml_fs_register_autoload(path,f){
-  var path = caml_make_path(path);
-  var dir = caml_root_dir;
-  for(var i=0;i<path.length;i++){
-    var d = path[i];
-    if(!(dir.exists(d)))
-      dir.mk(d,new MlDir());
-    dir = dir.get(d);
-    if(!(dir instanceof MlDir))
-      caml_raise_sys_error (path.orig + " : not a directory");
-  }
-  dir.auto = f;
-  return 0;
+  var root = resolve_fs_device(name);
+  return root.device.exists(root.rest);
 }
 
 //Provides: caml_sys_read_directory
-//Requires: caml_new_string, MlDir
-//Requires: caml_fs_content, caml_make_path, caml_raise_not_a_dir
+//Requires: caml_new_string
+//Requires: caml_raise_not_a_dir, resolve_fs_device
 function caml_sys_read_directory(name){
-  var dir = caml_fs_content(caml_make_path(name));
-  if(!(dir instanceof MlDir)){
-    caml_raise_not_a_dir(name);
-  }
-  var list = dir.list();
-  var l = new Array(list.length + 1);
+  var root = resolve_fs_device(name);
+  var a = root.device.readdir(root.rest);
+  var l = new Array(a.length + 1);
   l[0] = 0;
-  for(var i=0;i<list.length;i++)
-    l[i+1] = caml_new_string(list[i]);
+  for(var i=0;i<a.length;i++)
+    l[i+1] = caml_new_string(a[i]);
   return l;
 }
 
 //Provides: caml_sys_remove
-//Requires: caml_make_path, caml_fs_content, caml_raise_no_such_file
+//Requires: caml_raise_no_such_file, resolve_fs_device
 function caml_sys_remove(name){
-  var path = caml_make_path(name);
-  var dir = caml_fs_content(path.slice(0,-1))
-  if(dir.exists(path[path.length-1]))
-    dir.remove(path[path.length-1]);
-  else caml_raise_no_such_file(name);
+  var root = resolve_fs_device(name);
+  var ok = root.device.unlink(root.rest);
+  if(ok == 0) caml_raise_no_such_file(name);
   return 0;
 }
 
 //Provides: caml_sys_is_directory
-//Requires: caml_make_path, caml_fs_content, MlDir
+//Requires: resolve_fs_device
 function caml_sys_is_directory(name){
-  var path = caml_make_path(name);
-  var dir = caml_fs_content(path);
-  return (dir instanceof MlDir)?1:0;
+  var root = resolve_fs_device(name);
+  var a = root.device.is_dir(root.rest);
+  return a?1:0;
 }
 
 //Provides: caml_sys_rename
-//Requires: caml_fs_register,caml_sys_remove
-//Requires: caml_make_path,caml_fs_content
-//Requires: caml_sys_file_exists, caml_sys_is_directory, caml_raise_sys_error
+//Requires: caml_failwith, resolve_fs_device
 function caml_sys_rename(o,n){
-  var path = caml_make_path(o);
-  var content = caml_fs_content(path);
-  if(caml_sys_file_exists(n)){
-    if(caml_sys_is_directory(n)) caml_raise_sys_error(n.toString() + " : is a directory");
-    caml_sys_remove(n);
-  }
-  caml_fs_register(n, content);
-  caml_sys_remove(o);
-  return 0;
+  var o_root = resolve_fs_device(o);
+  var n_root = resolve_fs_device(n);
+  if(o_root != n_root)
+    caml_failwith("caml_sys_rename: cannot move file between two filesystem");
+  caml_failwith("caml_sys_rename: no implemented");
+  //fixme
 }
 
 
 //Provides: caml_ba_map_file
 //Requires: caml_failwith
 function caml_ba_map_file(vfd, kind, layout, shared, dims, pos) {
-    // var data = caml_global_data.fds[vfd];
-    caml_failwith("caml_ba_map_file not Implemented");
+  // var data = caml_global_data.fds[vfd];
+  caml_failwith("caml_ba_map_file not implemented");
 }
 
 //Provides: caml_ba_map_file_bytecode
@@ -318,48 +201,49 @@ function caml_ba_map_file_bytecode(argv,argn){
   return caml_ba_map_file(argv[0],argv[1],argv[2],argv[3],argv[4],argv[5]);
 }
 
-
-//Provides: unix_stat_file
-//Requires: caml_make_path, caml_fs_content, MlFile, MlDir,caml_ml_string_length
-function unix_stat_file(f){
-  if (f instanceof MlDir) {
-    var kind = 1; //S_DIR
-    var size = 0;
+//Provides: caml_create_file_extern
+function caml_create_file_extern(name,content){
+  if(joo_global_object.caml_create_file)
+    joo_global_object.caml_create_file(name,content);
+  else {
+    if(!joo_global_object.caml_fs_tmp) joo_global_object.caml_fs_tmp = [];
+    joo_global_object.caml_fs_tmp.push({name:name,content:content});
   }
-  if (f instanceof MlFile) {
-    var kind = 0; //S_REG
-    var size = caml_ml_string_length(f.data);
-  }
-
-  return [0,
-   0, //st_dev
-   f.inode, // st_ino
-   kind, // st_kind
-   436, //st_perm 0o664
-   1, //st_nlink
-   1, //st_uid
-   1, //st_gid
-   0, //st_rdev
-   size,//st_size
-   +f.atime,
-   +f.mtime,
-   +f.ctime
-  ]
+  return 0;
 }
 
-//Provides: unix_stat
-//Requires: caml_fs_content, caml_make_path, unix_stat_file
-function unix_stat(name){
-  var f = caml_fs_content(caml_make_path(name));
-  return unix_stat_file(f)
+//Provides: caml_fs_init
+//Requires: caml_create_file
+function caml_fs_init (){
+  var tmp=joo_global_object.caml_fs_tmp
+  if(tmp){
+    for(var i = 0; i < tmp.length; i++){
+      caml_create_file(tmp[i].name,tmp[i].content);
+    }
+  }
+  joo_global_object.caml_create_file = caml_create_file;
+  return 0;
 }
 
-//Provides: unix_lstat
-//Requires: unix_stat
-var unix_lstat = unix_stat
+//Provides: caml_create_file
+//Requires: caml_failwith, resolve_fs_device
+function caml_create_file(name,content) {
+  var root = resolve_fs_device(name);
+  if(! root.device.register) caml_failwith("cannot register file");
+  root.device.register(root.rest,content);
+  return 0;
+}
 
-//Provides: unix_fstat
-//Requires: unix_stat_file, caml_global_data
-function unix_fstat(idx){
-  return unix_stat_file(caml_global_data.fds[idx].file)
+//Provides: caml_read_file_content
+//Requires: resolve_fs_device, caml_raise_no_such_file, caml_create_string
+function caml_read_file_content (name) {
+  var root = resolve_fs_device(name);
+  if(root.device.exists(root.rest)) {
+    var file = root.device.open(root.rest,{rdonly:1});
+    var len  = file.length();
+    var buf  = caml_create_string(len);
+    file.read(0,buf,0,len);
+    return buf
+  }
+  caml_raise_no_such_file(name);
 }

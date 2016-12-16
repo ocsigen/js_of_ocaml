@@ -78,7 +78,6 @@ function caml_trampoline(res) {
     res = res.joo_tramp.apply(null, res.joo_args);
     c++;
   }
-  //if(c>10) joo_global_object.console.log("trampoline ", c, "times")
   return res;
 }
 

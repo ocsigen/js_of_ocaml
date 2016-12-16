@@ -47,15 +47,15 @@ function caml_weak_set(x, i, v) {
     x[caml_ephe_key_offset + i] = v;
     return 0;
 }
-//Provides: caml_weak_get mutable
+//Provides: caml_weak_get
 //Requires: caml_ephe_key_offset, caml_invalid_argument
 function caml_weak_get(x, i) {
     if(i < 0 || caml_ephe_key_offset + i >= x.length)
       caml_invalid_argument ("Weak.get_key");
     return (x[caml_ephe_key_offset + i ]===undefined)?0:x[caml_ephe_key_offset + i];
 }
-//Provides: caml_weak_get_copy mutable
-//Requires: caml_weak_get, caml_ephe_key_offset
+//Provides: caml_weak_get_copy
+//Requires: caml_weak_get,caml_ephe_key_offset
 //Requires: caml_obj_dup, caml_invalid_argument
 function caml_weak_get_copy(x, i) {
   if(i < 0 || caml_ephe_key_offset + i >= x.length)
