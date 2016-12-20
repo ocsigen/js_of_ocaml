@@ -3,6 +3,21 @@
  * Features/Changes
  ** Misc: use ppx instead of camlp4
 
+===== 2.8.4 (2016-12-21) =====
+
+ * Features/Changes
+ ** Compiler: new jsoo_link binary to link multiple javascript files
+    together and merging sourcemaps.
+ ** Toplevel: improve genaration of toplevels, one can now pass a
+    an export file containing units to export. (see jsoo_listunits)
+ ** Lib: Provide a Js_of_ocaml (namespace) module to ease transition
+    with future version of js_of_ocaml
+
+ * Bug fixes
+ ** Compiler: fix separate compilation when facing empty unit inside a library
+ ** Runtime:  fix many javascript stubs
+ ** Syntac: fix ppx deriving json
+
 ===== 2.8.3 (2016-11-04) =====
 
  * Features/Changes
@@ -14,7 +29,7 @@
  ** Compiler: fix bug in closure generation
  ** Compiler: fix regression in closure generation (introduced in 2.8) (#531)
  ** Compiler: fix code generation when static evaluation is disabled
- 
+
 ===== 2.8.2 (2016-09-10) =====
 
  * Features/Changes
