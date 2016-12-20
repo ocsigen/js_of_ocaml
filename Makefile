@@ -61,6 +61,7 @@ uninstall-lib:
 uninstall-bin:
 	rm -f $(BINDIR)/$(COMPILER)
 	rm -f $(BINDIR)/$(MINIFIER)
+	rm -f $(BINDIR)/$(LINKER)
 	rm -f $(BINDIR)/$(MKTOP)
 	rm -f $(BINDIR)/$(MKCMIS)
 	rm -f $(BINDIR)/$(LISTUNITS)

@@ -49,13 +49,16 @@ $(LINKER): jsoo_link.$(BEST)
 	mv -f $< $@
 
 
-man: man/$(MINIFIER).1 man/$(COMPILER).1
+man: man/$(MINIFIER).1 man/$(COMPILER).1 man/$(LINKER).1
 man/$(MINIFIER).1: $(MINIFIER)
 	mkdir -p man
 	./$(MINIFIER) --help=groff >$@
 man/$(COMPILER).1: $(COMPILER)
 	mkdir -p man
 	./$(COMPILER) --help=groff >$@
+man/$(LINKER).1: $(LINKER)
+	mkdir -p man
+	./$(LINKER) --help=groff >$@
 
 .INTERMEDIATE: jsoo_compile.byte jsoo_compile.opt minify.byte minify.opt jsoo_link.byte jsoo_link.opt
 
