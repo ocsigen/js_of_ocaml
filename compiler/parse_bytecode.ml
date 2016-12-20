@@ -1982,7 +1982,7 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
 
   let crcs = List.filter (fun (unit, _crc) -> keep unit) orig_crcs in
 
-  let symbols = filter_global_map (fun id -> keep (Ident.name id)) orig_symbols in
+  let symbols = filter_global_map (fun id -> keep id.Ident.name) orig_symbols in
 
   begin
     if debug = `No then ()

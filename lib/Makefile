@@ -306,5 +306,4 @@ endif
 	  xargs ocamlfind ocamldep -I deriving_json -package deriving.syntax.common -syntax camlp4o -ppopt ${PA_DERIVING} >> .depend
 	@# camlp4 3.12.0 fails on (module type of ...)
 	ocamldep -I deriving_json deriving_json/deriving_Json_stdlib.mli  >> .depend
-endif
 include .depend
