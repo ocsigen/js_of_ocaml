@@ -51,7 +51,6 @@ man/$(LINKER).1: $(LINKER)
 	mkdir -p man
 	./$(LINKER) --help=groff >$@
 
-
 .INTERMEDIATE: jsoo_compile.byte jsoo_compile.opt minify.byte minify.opt jsoo_link.byte jsoo_link.opt
 
 jsoo_compile.byte: $(BYTE_COMP) findlib_support/jsoo_findlib_support.cma $(COMPOBJS:cmx=cmo)
