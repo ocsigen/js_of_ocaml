@@ -41,7 +41,7 @@ let args =
     | Some x -> open_out x
     | None -> failwith "-o <name> needed" in
   let to_unit s =
-    String.capitalize_ascii (
+    Compiler.Util.capitalize_ascii (
       Filename.basename (Filename.chop_suffix s ".cmi")
     )
   in
