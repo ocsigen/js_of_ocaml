@@ -1,6 +1,7 @@
 bin: [
   "compiler/js_of_ocaml"
   "compiler/jsoo_minify"
+  "?lib/ppx/ppx_js"
   "?jsoo_tools/jsoo_mktop"
   "?jsoo_tools/jsoo_mkcmis"
   "?jsoo_tools/jsoo_listunits"
