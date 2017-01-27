@@ -33,6 +33,15 @@ let arrows args ret =
 
 let wrapper = ref None
 
+let make_str ?loc s =
+#if OCAML_VERSION >= (4, 05, 0)
+  match loc with
+  | None -> Location.mknoloc s
+  | Some loc -> Location.mkloc s loc
+#else
+  ignore loc; s
+#endif
+
 let inside_Js = lazy
   (try
      Filename.basename (Filename.chop_extension !Location.input_name) = "js"
@@ -166,7 +175,7 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
      {[ fun (type res t0 t1 ..) arg1 arg2 -> e ]}
   *)
   let local_types =
-    res :: List.map Arg.name (extra_types @ arguments)
+    make_str res :: List.map (fun x -> make_str (Arg.name x)) (extra_types @ arguments)
   in
   let result = List.fold_right Exp.newtype local_types invoker in
 
@@ -214,7 +223,7 @@ let method_call ~loc obj meth args =
          (Exp.fun_ ~loc ~attrs:[merlin_noloc] Label.nolabel None
             (Pat.var ~loc ~attrs:[merlin_noloc] (Location.mknoloc "x"))
             (Exp.send ~loc ~attrs:[merlin_noloc]
-               (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) meth))]
+               (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) (make_str ~loc meth)))]
   )
 
 (* {[ obj##.prop ]} generates
@@ -248,7 +257,7 @@ let prop_get ~loc:_ ~prop_loc obj prop =
         (Exp.fun_ ~loc:gloc Label.nolabel None
            (Pat.var ~loc:gloc ~attrs:[merlin_noloc] (Location.mknoloc "x"))
            (Exp.send ~loc:prop_loc ~attrs:[merlin_noloc]
-              (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) prop))
+              (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) (make_str ~loc:prop_loc prop)))
     ]
   )
 
@@ -293,7 +302,7 @@ let prop_set ~loc ~prop_loc obj prop value =
         (Exp.fun_ ~loc Label.nolabel None
            (Pat.var ~loc:gloc ~attrs:[merlin_noloc] (Location.mknoloc "x"))
            (Exp.send ~loc:prop_loc ~attrs:[merlin_noloc]
-              (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) prop))
+              (Exp.ident ~loc:gloc (lid ~loc:gloc "x")) (make_str ~loc:prop_loc prop)))
     ]
   )
 
