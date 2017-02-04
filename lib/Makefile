@@ -42,7 +42,9 @@ ifeq "${WITH_TOPLEVEL}" "YES"
 TOPLEVELLIB= toplevel/jsooTop.cmo toplevel/jsooTopError.cmo
 TOPLEVELLIB+= toplevel/jsooTopPpx.cmo
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
+ifeq "${WITH_CAMLP4}" "YES"
 TOPLEVELLIB+= toplevel/jsooTopCamlp4.cmo
+endif
 endif
 endif
 
@@ -131,7 +133,7 @@ syntax/pa_deriving_Json.cmxs: syntax/pa_deriving_Json.cmx
 	$(OCAMLOPT) -I syntax -shared -linkall -o $@ $<
 
 graphics/%.cmo: graphics/%.ml graphics/%.cmi ppx/ppx_js.byte
-	$(OCAMLC) $(SAFESTRING) -package lwt,lwt.syntax,graphics -ppx ppx/ppx_js.byte -I graphics -c $< -o $@
+	$(OCAMLC) $(SAFESTRING) -package lwt,graphics -ppx ppx/ppx_js.byte -I graphics -c $< -o $@
 
 graphics/%.cmi: graphics/%.mli
 	$(OCAMLC) $(SAFESTRING) -package lwt,graphics -I ./ $< -o $@
@@ -140,7 +142,7 @@ graphics/graphics.cma: graphics/graphics_js.cmo
 	$(OCAMLC) -a -o $@ $^
 
 tyxml/%.cmo: tyxml/%.ml tyxml/%.cmi tyxml/tyxml_cast_sigs.cmi ppx/ppx_js.byte
-	$(OCAMLC) $(SAFESTRING) -package lwt,lwt.syntax,tyxml.functor,reactiveData,react -ppx ppx/ppx_js.byte -I tyxml -c $< -o $@
+	$(OCAMLC) $(SAFESTRING) -package lwt,tyxml.functor,reactiveData,react -ppx ppx/ppx_js.byte -I tyxml -c $< -o $@
 
 tyxml/tyxml_cast_sig.cmi: tyxml/tyxml_cast_sig.mli
 	$(OCAMLC) $(SAFESTRING) -package lwt,tyxml.functor,reactiveData,react -I . -I tyxml $< -o $@
@@ -159,13 +161,13 @@ async/async_js.cma: async/async_js.cmo
 	ocamlfind ocamlc -a -o $@ $^
 
 async/%.cmo: async/%.ml async/%.cmi ppx/ppx_js.byte
-	$(OCAMLC) $(SAFESTRING) -package lwt.syntax,async_kernel -ppx ppx/ppx_js.byte -I async -c $< -o $@
+	$(OCAMLC) $(SAFESTRING) -package async_kernel -ppx ppx/ppx_js.byte -I async -c $< -o $@
 
 async/%.cmi: async/%.mli
-	$(OCAMLC) $(SAFESTRING) -package lwt.syntax,async_kernel -ppx ppx/ppx_js.byte -I . -I async $< -o $@
+	$(OCAMLC) $(SAFESTRING) -package async_kernel -ppx ppx/ppx_js.byte -I . -I async $< -o $@
 
 log/%.cmo: log/%.ml log/%.cmi ppx/ppx_js.byte
-	$(OCAMLC) $(SAFESTRING) -package lwt,lwt.syntax,lwt.log -ppx ppx/ppx_js.byte -I log -c $< -o $@
+	$(OCAMLC) $(SAFESTRING) -package lwt,lwt.log -ppx ppx/ppx_js.byte -I log -c $< -o $@
 
 log/%.cmi: log/%.mli
 	$(OCAMLC) $(SAFESTRING) -package lwt,lwt.log -I . -I log $< -o $@
@@ -177,7 +179,7 @@ toplevel_lib: $(TOPLEVELLIB)
 
 toplevel/jsooTop.cmo: toplevel/jsooTop.ml ppx/ppx_js.byte ../compiler/lib/js_of_ocaml_compiler.cma
 	$(OCAMLC) \
-		$(SAFESTRING) -package lwt,lwt.syntax \
+		$(SAFESTRING) -package lwt \
 		-ppx ppx/ppx_js.byte \
 		-I toplevel -I ../compiler/lib -I +compiler-libs \
 		-c $< -o $@
