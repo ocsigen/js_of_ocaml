@@ -33,7 +33,6 @@ conflicts: [
   "tyxml"        {< "4.0.0"}
   "ppx_deriving" {< "3.0"}
   "reactiveData" {< "0.2"}
-  "async_kernel" {< "113.33.00"}
   "ppx_driver"   {< "113.33.04"}
 ]
 available: [ ocaml-version >= "4.02.0" ]
