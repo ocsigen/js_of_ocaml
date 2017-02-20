@@ -27,7 +27,7 @@ depends: [
   "toplevel_expect_test" {test}
 ]
 
-depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "async_kernel" "ppx_driver" "camlp4"]
+depopts: ["deriving" "ppx_deriving" "tyxml" "reactiveData" "ppx_driver" "camlp4"]
 conflicts: [
   "deriving"     {< "0.6"}
   "tyxml"        {< "4.0.0"}
