@@ -247,5 +247,5 @@ function caml_sinh_float (x) { return (Math.exp(x) - Math.exp(-x)) / 2; }
 //Provides: caml_tanh_float const
 function caml_tanh_float (x) {
   var y = Math.exp(x), z = Math.exp(-x);
-  return (y + z) / (y - z);
+  return (y - z) / (y + z);
 }
