@@ -370,7 +370,7 @@ class free =
       m#def_var id;
       m#merge_info tbody;
       Function_declaration (id,params, body, nid)
-    | _ -> super#source x
+    | Statement _ -> super#source x
 
   method block ?catch:_ _ = ()
 
@@ -491,7 +491,7 @@ class rename_variable keeps = object
     match x with
       | Function_declaration (id,params,body,nid) ->
         Function_declaration (id,List.map sub_#ident params,sub_#sources body,nid)
-      | _ -> x
+      | Statement _ -> x
 
 end
 
@@ -597,7 +597,7 @@ class compact_vardecl = object(m)
           let body = m#pack all body in
           m#except id;
           Function_declaration (id,params, body, nid)
-        | _ -> x
+        | Statement _ -> x
 
     method expression x =
       let x = super#expression x in
@@ -671,7 +671,6 @@ class clean = object(m)
     | s -> s
 
   method sources l =
-    let l = super#sources l in
     let append_st st_rev sources_rev =
       let st = m#statements (List.rev st_rev) in
       let st = List.map (fun (s, loc) -> (Statement s, loc)) st in
@@ -680,8 +679,8 @@ class clean = object(m)
     let (st_rev,sources_rev) = List.fold_left (fun (st_rev,sources_rev) (x, loc) ->
         match x with
           | Statement s -> (s, loc)::st_rev,sources_rev
-          | x when st_rev = [] -> [],(x, loc)::sources_rev
-          | x -> [],((x, loc)::(append_st st_rev sources_rev))
+          | Function_declaration _ as x when st_rev = [] -> [],(m#source x, loc)::sources_rev
+          | Function_declaration _ as x -> [],((m#source x, loc)::(append_st st_rev sources_rev))
       ) ([],[]) l in
     let sources_rev = match st_rev with
       | [] -> sources_rev
@@ -794,7 +793,6 @@ class simpl = object(m)
 
 
   method sources l =
-    let l = super#sources l in
     let append_st st_rev sources_rev =
       let st = m#statements (List.rev st_rev) in
       let st = List.map (function
@@ -806,10 +804,12 @@ class simpl = object(m)
 
     let (st_rev,sources_rev) = List.fold_left (fun (st_rev,sources_rev) x ->
         match x with
-          | (Statement s, loc) -> (s, loc)::st_rev,sources_rev
-          | x when st_rev = [] -> [],x::sources_rev
-          | x -> [],(x::(append_st st_rev sources_rev))
-      ) ([],[]) l in
+        | (Statement s, loc) -> (s, loc)::st_rev,sources_rev
+        | (Function_declaration _ as x,loc) when st_rev = [] ->
+          [],(m#source x, loc) :: sources_rev
+        | (Function_declaration _ as x,loc) ->
+          [],((m#source x, loc) :: (append_st st_rev sources_rev))
+    ) ([],[]) l in
     let sources_rev = match st_rev with
       | [] -> sources_rev
       | st_rev -> append_st st_rev sources_rev in
