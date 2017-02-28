@@ -15,6 +15,8 @@ opam install reactiveData cppo base64
 #     *) ;;
 # esac
 
+opam pin add lwt https://github.com/ocsigen/lwt.git#pull/322/head ;;
+
 opam install --deps-only js_of_ocaml
 opam install --verbose js_of_ocaml
 
