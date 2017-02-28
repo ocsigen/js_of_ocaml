@@ -52,6 +52,7 @@ endif
 PA_JS=
 ifeq "${WITH_CAMLP4}" "YES"
 PA_JS= syntax/pa_js.cmo
+CAMLP4_PACKAGE= -package camlp4
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
 PA_JS_NDL= syntax/pa_js.cmx syntax/pa_js.cmxs
@@ -186,7 +187,7 @@ toplevel/jsooTop.cmo: toplevel/jsooTop.ml ppx/ppx_js.byte ../compiler/lib/js_of_
 
 toplevel/%.cmo: toplevel/%.ml
 	$(OCAMLC) $(SAFESTRING) \
-		-I toplevel -I +compiler-libs -package camlp4 \
+		-I toplevel -I +compiler-libs $(CAMLP4_PACKAGE) \
 		-c $< -o $@
 
 toplevel/%.cmi: toplevel/%.mli
