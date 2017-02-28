@@ -73,7 +73,9 @@ INTF += lib/toplevel/jsooTop.cmi lib/toplevel/jsooTopError.cmi
 IMPL += lib/toplevel/jsooTopPpx.cmo
 INTF += lib/toplevel/jsooTopPpx.cmi
 ifeq ($(shell ocamlc -version | grep -q -E "4.0[^01]"; echo $$?),0)
+ifeq "${WITH_CAMLP4}" "YES"
 IMPL += lib/toplevel/jsooTopCamlp4.cmo
+endif
 endif
 endif
 
