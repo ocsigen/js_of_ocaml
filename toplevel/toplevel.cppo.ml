@@ -322,14 +322,15 @@ let run _ =
 
   let meta e =
     let b = Js.to_bool in
-    b e##.ctrlKey || b e##.shiftKey || b e##.altKey || b e##.metaKey in
+    b e##.ctrlKey || b e##.altKey || b e##.metaKey in
 
+  let shift e = Js.to_bool e##.shiftKey in
   begin (* setup handlers *)
     textbox##.onkeyup :=   Dom_html.handler (fun _ -> Lwt.async (resize ~container ~textbox); Js._true);
     textbox##.onchange :=  Dom_html.handler (fun _ -> Lwt.async (resize ~container ~textbox); Js._true);
     textbox##.onkeydown := Dom_html.handler (fun e ->
         match e##.keyCode with
-        | 13 when not (meta e) -> Lwt.async execute; Js._false
+        | 13 when not (meta e || shift e) -> Lwt.async execute; Js._false
         | 13 -> Lwt.async (resize ~container ~textbox); Js._true
         | 09 -> Indent.textarea textbox; Js._false
         | 76 when meta e -> output##.innerHTML := Js.string ""; Js._true
