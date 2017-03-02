@@ -9,8 +9,6 @@
   (deps (ppx_js_bin.exe))
   (action "cp ${<} ${@}")))
 
-(provides ppx_js)
-
 (install
  ((section lib)
   (package js_of_ocaml-ppx)

@@ -1,4 +1,4 @@
-B ../_build/default/lib
+B ../../_build/default/js_of_ocaml/lib
 FLG -open Js_of_ocaml
 PKG bytes
 PKG lwt

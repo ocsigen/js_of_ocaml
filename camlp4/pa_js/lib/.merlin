@@ -1,4 +1,4 @@
-B ../../../_build/default/camlp4/pa_js/lib
+B ../../../../_build/default/js_of_ocaml/camlp4/pa_js/lib
 PKG camlp4
 PKG camlp4.extend
 PKG camlp4.quotations

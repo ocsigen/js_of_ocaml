@@ -1,18 +1,13 @@
 lib: [
-  "_build/default/ppx/ppx_js/lib/ppx_js.cmxs"
-  "_build/default/ppx/ppx_js/lib/ppx_js.a"
-  "_build/default/ppx/ppx_js/lib/ppx_js.cmxa"
-  "_build/default/ppx/ppx_js/lib/ppx_js.cma"
-  "_build/default/ppx/ppx_js/lib/ppx_js.pp.ml"
-  "_build/default/ppx/ppx_js/lib/ppx_js.cmt"
-  "_build/default/ppx/ppx_js/lib/ppx_js.cmx"
-  "_build/default/ppx/ppx_js/lib/ppx_js.cmi"
-  "_build/default/ppx/ppx_js/bin/ppx_js_bin.exe" {"ppx_js"}
-  "js_of_ocaml-ppx.opam" {"opam"}
-  "_build/default/META.js_of_ocaml-ppx" {"META"}
-]
-doc: [
-  "_build/default/CHANGES"
-  "_build/default/LICENSE"
-  "_build/default/README.md"
+  "_build/install/default/lib/js_of_ocaml-ppx/ppx_js.cmxs"
+  "_build/install/default/lib/js_of_ocaml-ppx/ppx_js.a"
+  "_build/install/default/lib/js_of_ocaml-ppx/ppx_js.cmxa"
+  "_build/install/default/lib/js_of_ocaml-ppx/ppx_js.cma"
+  "_build/install/default/lib/js_of_ocaml-ppx/ppx_js.ml"
+  "_build/install/default/lib/js_of_ocaml-ppx/ppx_js.cmt"
+  "_build/install/default/lib/js_of_ocaml-ppx/ppx_js.cmx"
+  "_build/install/default/lib/js_of_ocaml-ppx/ppx_js.cmi"
+  "_build/install/default/lib/js_of_ocaml-ppx/ppx_js" {"ppx_js"}
+  "_build/install/default/lib/js_of_ocaml-ppx/opam" {"opam"}
+  "_build/install/default/lib/js_of_ocaml-ppx/META" {"META"}
 ]

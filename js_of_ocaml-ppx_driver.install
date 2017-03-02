@@ -1,20 +1,4 @@
 lib: [
-  "_build/default/ppx/ppx_js/driver/ppx_js_driver.cmxs"
-  "_build/default/ppx/ppx_js/driver/ppx_js_driver.a"
-  "_build/default/ppx/ppx_js/driver/ppx_js_driver.cmxa"
-  "_build/default/ppx/ppx_js/driver/ppx_js_driver.cma"
-  "_build/default/ppx/ppx_js/driver/ppx_js_driver.ml"
-  "_build/default/ppx/ppx_js/driver/ppx_js_driver.cmt"
-  "_build/default/ppx/ppx_js/driver/ppx_js_driver.cmx"
-  "_build/default/ppx/ppx_js/driver/ppx_js_driver.cmi"
-  "js_of_ocaml-ppx_driver.opam" {"opam"}
-  "_build/default/META.js_of_ocaml-ppx_driver" {"META"}
-]
-libexec: [
-  "_build/default/ppx/ppx_js/driver/as-ppx.exe"
-]
-doc: [
-  "_build/default/CHANGES"
-  "_build/default/LICENSE"
-  "_build/default/README.md"
+  "_build/install/default/lib/js_of_ocaml-ppx_driver/opam" {"opam"}
+  "_build/install/default/lib/js_of_ocaml-ppx_driver/META" {"META"}
 ]

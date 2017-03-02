@@ -28,10 +28,6 @@
  ((name DEFAULT)
   (deps (js_of_ocaml jsoo_minify jsoo_link))))
 
-(provides js_of_ocaml)
-(provides jsoo_minify)
-(provides jsoo_link)
-
 (rule
  ((targets (js_of_ocaml.1))
   (deps (jsoo_compile.exe))

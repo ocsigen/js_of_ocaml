@@ -19,18 +19,34 @@
  ((section lib)
   (package js_of_ocaml-compiler)
   (files (
-    runtime.js
+    bigarray.js
     bigstring.js
     bin_prot.js
     core_kernel.js
-    weak.js
-    nat.js
-    graphics.js
-    strftime.js
-    predefined_exceptions.js
-    toplevel.js
     dynlink.js
-mlString.js ieee_754.js int64.js md5.js marshal.js
-	lexing.js parsing.js bigarray.js unix.js
-	stdlib.js io.js fs.js fs_node.js fs_fake.js jslib.js jslib_js_of_ocaml.js
-	internalMod.js gc.js polyfill/json2.js bigstring.js    ))))
+    fs.js
+    fs_fake.js
+    fs_node.js
+    gc.js
+    graphics.js
+    ieee_754.js
+    int64.js
+    internalMod.js
+    io.js
+    jslib.js
+    jslib_js_of_ocaml.js
+    lexing.js
+    marshal.js
+    md5.js
+    mlString.js
+    nat.js
+    parsing.js
+    polyfill/json2.js
+    predefined_exceptions.js
+    runtime.js
+    stdlib.js
+    strftime.js
+    toplevel.js
+    unix.js
+    weak.js
+    ))))
