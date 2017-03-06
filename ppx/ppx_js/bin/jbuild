@@ -7,7 +7,7 @@
 (rule
  ((targets (ppx_js))
   (deps (ppx_js_bin.exe))
-  (action "cp ${<} ${@}")))
+  (action (copy ${<} ${@}))))
 
 (install
  ((section lib)

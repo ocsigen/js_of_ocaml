@@ -3,12 +3,14 @@
   (public_name js_of_ocaml-ppx)
   (libraries (compiler-libs.common ppx_tools))
   ;; (flags -ppx ${libexec:ppx_tools:ppx_metaquot}
-  (preprocess (command "x=`ocamlfind query ppx_tools`; $x/rewriter $x/ppx_metaquot"))
+  (preprocess (action
+               (system
+                "x=`ocamlfind query ppx_tools`; $x/rewriter $x/ppx_metaquot ${<}")))
   (modules (:standard \ ppx_js.cppo))
   ))
 
 (rule
  ((targets (ppx_js.ml))
   (deps (ppx_js.cppo.ml))
-  (action "cppo -V OCAML:${ocaml_version} ppx_js.cppo.ml -o ppx_js.ml")
+  (action (run cppo -V OCAML:${ocaml_version} ${<} -o ${@}))
   ))

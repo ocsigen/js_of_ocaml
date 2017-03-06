@@ -3,4 +3,4 @@
    (public_name js_of_ocaml-camlp4.deriving)
    (optional)
    (libraries (camlp4.quotations deriving.syntax.common))
-   (preprocess (command camlp4of))))
+   (preprocess (action (run camlp4of ${<})))))

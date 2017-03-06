@@ -3,4 +3,4 @@
    (public_name js_of_ocaml-camlp4)
    (optional)
    (libraries (camlp4.extend camlp4.quotations))
-   (preprocess (command camlp4orf))))
+   (preprocess (action (run camlp4orf ${<})))))

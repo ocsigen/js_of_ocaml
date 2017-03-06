@@ -11,5 +11,5 @@
 (rule
  ((targets (jsooTopError.ml))
   (deps (jsooTopError.cppo.ml))
-  (action "cppo -V OCAML:${ocaml_version} jsooTopError.cppo.ml -o jsooTopError.ml")
+  (action (run cppo -V OCAML:${ocaml_version} ${<} -o ${@}))
   ))

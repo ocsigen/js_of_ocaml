@@ -1,4 +1,5 @@
-B ../../_build/default/js_of_ocaml/ocamlbuild
+B ../_build/default/ocamlbuild
+FLG -w -40
 PKG ocamlbuild
 PKG unix
 S .

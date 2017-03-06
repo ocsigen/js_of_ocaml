@@ -11,3 +11,8 @@ lib: [
   "_build/install/default/lib/js_of_ocaml-ocamlbuild/opam" {"opam"}
   "_build/install/default/lib/js_of_ocaml-ocamlbuild/META" {"META"}
 ]
+doc: [
+  "_build/install/default/doc/js_of_ocaml-ocamlbuild/CHANGES"
+  "_build/install/default/doc/js_of_ocaml-ocamlbuild/LICENSE"
+  "_build/install/default/doc/js_of_ocaml-ocamlbuild/README.md"
+]

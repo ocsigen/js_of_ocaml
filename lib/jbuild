@@ -16,6 +16,7 @@
 (rule
  ((targets (lib_version.ml))
   (deps (../VERSION))
-  (action "
-	echo \"let s = \\\"2.8.3\\\"\" > lib_version.ml
-	echo \"let git_version = \\\"\\\"\" >> lib_version.ml")))
+  (action (with-stdout-to ${@}
+           (progn
+            (echo "let s = \"2.8.3\"\n")
+            (echo "let git_version = \"\""))))))

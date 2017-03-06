@@ -15,22 +15,23 @@
 (rule
  ((targets (js_parser.mli js_parser.ml))
   (deps (js_parser.mly))
-  (action "menhir --external-tokens Js_token --explain ${<} 2>/dev/null")))
+  (action (system "menhir --external-tokens Js_token --explain ${<} 2>/dev/null"))))
 
 (rule
  ((targets (annot_parser.mli annot_parser.ml))
   (deps (annot_parser.mly))
-  (action "menhir --explain ${<} 2>/dev/null")))
+  (action (system "menhir --explain ${<} 2>/dev/null"))))
 
 (rule
  ((targets (util.ml))
-  (deps (util.cppo.ml))
-  (action "cppo -V OCAML:${ocaml_version} util.cppo.ml -o util.ml")
+  (deps    (util.cppo.ml))
+  (action  (run ${bin:cppo} -V OCAML:${ocaml_version} ${<} -o ${@}))
   ))
 
 (rule
  ((targets (compiler_version.ml))
   (deps (../../VERSION))
-  (action "
-	echo \"let s = \\\"2.8.2\\\"\" > compiler_version.ml
-	echo \"let git_version = \\\"\\\"\" >> compiler_version.ml")))
+  (action (with-stdout-to ${@}
+           (progn
+            (echo "let s = \"2.8.2\"\n")
+            (echo "let git_version = \"\""))))))

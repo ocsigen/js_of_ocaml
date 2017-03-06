@@ -2,3 +2,8 @@ lib: [
   "_build/install/default/lib/js_of_ocaml-ppx_driver/opam" {"opam"}
   "_build/install/default/lib/js_of_ocaml-ppx_driver/META" {"META"}
 ]
+doc: [
+  "_build/install/default/doc/js_of_ocaml-ppx_driver/CHANGES"
+  "_build/install/default/doc/js_of_ocaml-ppx_driver/LICENSE"
+  "_build/install/default/doc/js_of_ocaml-ppx_driver/README.md"
+]

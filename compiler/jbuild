@@ -12,17 +12,17 @@
 (rule
  ((targets (js_of_ocaml))
   (deps (jsoo_compile.exe))
-  (action "cp ${<} ${@}")))
+  (action (copy ${<} ${@}))))
 
 (rule
  ((targets (jsoo_minify))
   (deps (minify.exe))
-  (action "cp ${<} ${@}")))
+  (action (copy ${<} ${@}))))
 
 (rule
  ((targets (jsoo_link))
   (deps (jsoo_link.exe))
-  (action "cp ${<} ${@}")))
+  (action (copy ${<} ${@}))))
 
 (alias
  ((name DEFAULT)
@@ -31,17 +31,17 @@
 (rule
  ((targets (js_of_ocaml.1))
   (deps (jsoo_compile.exe))
-  (action "./${<} --help=groff > ${@}")))
+  (action (with-stdout-to ${@} (run ${<} --help=groff)))))
 
 (rule
  ((targets (jsoo_link.1))
   (deps (jsoo_link.exe))
-  (action "./${<} --help=groff > ${@}")))
+  (action (with-stdout-to ${@} (run ${<} --help=groff)))))
 
 (rule
  ((targets (jsoo_minify.1))
   (deps (minify.exe))
-  (action "./${<} --help=groff > ${@}")))
+  (action (with-stdout-to ${@} (run ${<} --help=groff)))))
 
 (install
  ((section bin)
