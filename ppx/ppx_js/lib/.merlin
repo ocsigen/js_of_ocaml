@@ -1,6 +1,0 @@
-B ../../../_build/default/ppx/ppx_js/lib
-FLG -w -40
-PKG compiler-libs
-PKG compiler-libs.common
-PKG ppx_tools
-S .

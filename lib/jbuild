@@ -4,7 +4,7 @@
   (libraries (lwt))
   (c_names (js_of_ocaml_stubs))
   (js_of_ocaml ())
-  (preprocess (pps (ppx_js_driver -no-js-of-ocaml-wrapper)))))
+  (preprocess (pps (ppx_js_driver -no-js-of-ocaml-wrapper ppx_driver.runner)))))
 
 ;; (rule
 ;;  ((targets (js_of_ocaml_stubs.c))

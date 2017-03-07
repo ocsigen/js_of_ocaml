@@ -1,5 +1,0 @@
-B ../_build/default/ocamlbuild
-FLG -w -40
-PKG ocamlbuild
-PKG unix
-S .

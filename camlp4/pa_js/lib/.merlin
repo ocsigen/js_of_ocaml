@@ -1,7 +1,0 @@
-B ../../../_build/default/camlp4/pa_js/lib
-FLG -w -40
-PKG camlp4
-PKG camlp4.extend
-PKG camlp4.quotations
-PKG camlp4.quotations.r
-S .

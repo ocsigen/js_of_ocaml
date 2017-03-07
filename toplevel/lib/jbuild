@@ -5,7 +5,7 @@
   (js_of_ocaml ())
   ;; CR: better support for cppo
   (modules (:standard \ jsooTopError.cppo))
-  (preprocess (pps (ppx_js_driver)))))
+  (preprocess (pps (ppx_js_driver ppx_driver.runner)))))
 
 
 (rule

@@ -1,7 +1,0 @@
-B ../_build/default/lib
-FLG -open Js_of_ocaml -w -40
-FLG -ppx "../_build/.ppx/default/ppx_js_driver/ppx.exe --as-ppx -no-js-of-ocaml-wrapper"
-PKG bytes
-PKG lwt
-PKG result
-S .
