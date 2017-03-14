@@ -22,6 +22,7 @@ val parse_file : string ->
   ((Parse_info.t option * string * Jsoo_primitive.kind * Jsoo_primitive.kind_arg list option) option * (* provide *)
    string list * (* require *)
    ((int -> int -> bool) * string) list list * (* version constraint *)
+   bool *
    Javascript.program) list
 
 val load_files : string list -> unit

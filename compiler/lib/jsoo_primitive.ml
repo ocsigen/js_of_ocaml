@@ -30,6 +30,7 @@ type t = [
   | `Requires of Parse_info.t option * string list
   | `Provides of Parse_info.t option * string * kind * kind_arg list option
   | `Version of Parse_info.t option * ((int -> int -> bool) * string) list
+  | `Weakdef of Parse_info.t option
 ]
 
 let kinds = Hashtbl.create 37

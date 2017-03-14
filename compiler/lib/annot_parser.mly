@@ -19,7 +19,7 @@
 
 
 
-%token TProvides TRequires TVersion
+%token TProvides TRequires TVersion TWeakdef
 %token TA_Pure TA_Const TA_Mutable TA_Mutator TA_Shallow TA_Object_literal
 %token<string> TIdent TVNum
 %token TComma TSemi EOF EOL LE LT GE GT EQ LPARENT RPARENT
@@ -39,6 +39,7 @@ annot:
     { `Requires (None,l) }
   | TVersion TSemi l=separated_nonempty_list(TComma,version) endline
     { `Version (None,l) }
+  | TWeakdef { `Weakdef None }
 
 prim_annot:
   | TA_Pure {`Pure}

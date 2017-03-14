@@ -26,7 +26,9 @@ type kind_arg = [`Shallow_const | `Object_literal | `Const | `Mutable]
 type t =
   [ `Requires of Parse_info.t option * string list
   | `Provides of Parse_info.t option * string * kind * kind_arg list option
-  | `Version of Parse_info.t option * ((int -> int -> bool) * string) list ]
+  | `Version of Parse_info.t option * ((int -> int -> bool) * string) list
+  | `Weakdef of Parse_info.t option
+  ]
 
 val kind : string -> kind
 val kind_args : string -> kind_arg list option

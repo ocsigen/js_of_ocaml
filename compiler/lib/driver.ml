@@ -176,7 +176,7 @@ let global_object = Option.global_object
 let extra_js_files = lazy (
   List.fold_left (fun acc file ->
       try
-        let ss = List.fold_left (fun ss (prov,_,_,_) ->
+        let ss = List.fold_left (fun ss (prov,_,_,_,_) ->
             match prov with
             | Some (_,name,_,_) -> StringSet.add name ss
             | _ -> ss

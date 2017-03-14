@@ -36,6 +36,7 @@ let parse_annot loc s =
       | `Requires (_,l) -> Some (`Requires (Some loc,l))
       | `Provides (_,n,k,ka) -> Some (`Provides (Some loc,n,k,ka))
       | `Version (_,l) -> Some (`Version  (Some loc, l))
+      | `Weakdef _ -> Some (`Weakdef (Some loc))
   with
     | Not_found -> None
     | _exc ->
@@ -103,13 +104,15 @@ let parse_file f =
       let lex = Parse_js.lexer_from_list code in
       try
         let code = Parse_js.parse lex in
-        let req,has_provide,versions = List.fold_left (fun (req,has_provide,versions) a -> match a with
+        let req,has_provide,versions,weakdef =
+          List.fold_left (fun (req,has_provide,versions, weakdef) a -> match a with
             | `Provides (pi,name,kind,ka) ->
-              req,Some (pi,name,kind,ka),versions
-            | `Requires (_,mn) -> (mn@req),has_provide,versions
-            | `Version (_,l) -> req,has_provide,l::versions
-          ) ([],None,[]) annot in
-        has_provide,req,versions,code
+              req,Some (pi,name,kind,ka),versions, weakdef
+            | `Requires (_,mn) -> (mn@req),has_provide,versions, weakdef
+            | `Version (_,l) -> req,has_provide,l::versions, weakdef
+            | `Weakdef _ -> req, has_provide, versions, true
+          ) ([],None,[],false) annot in
+        has_provide,req,versions,weakdef,code
       with Parse_js.Parsing_error pi ->
         let name = match pi with
           | {Parse_info.src  = Some x; _}
@@ -235,7 +238,7 @@ let find_named_value code =
 
 let add_file f =
   List.iter
-    (fun (provide,req,versions,(code:Javascript.program)) ->
+    (fun (provide,req,versions,weakdef,(code:Javascript.program)) ->
        let vmatch = match versions with
          | [] -> true
          | l -> List.exists version_match l in
@@ -258,11 +261,13 @@ let add_file f =
             StringSet.iter Primitive.register_named_value named_values;
             if Hashtbl.mem provided name
             then begin
-              let ploc = snd(Hashtbl.find provided name) in
-	      Util.warn "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
+              let _,ploc,weakdef = Hashtbl.find provided name in
+              if not weakdef
+              then
+	        Util.warn "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
             end;
 
-            Hashtbl.add provided name (id,pi);
+            Hashtbl.add provided name (id,pi,weakdef);
             Hashtbl.add provided_rev id (name,pi);
             check_primitive name pi code req
          );
@@ -306,7 +311,8 @@ let load_files l =
 let rec resolve_dep_name_rev visited path nm =
   let id =
     try
-      fst(Hashtbl.find provided nm)
+      let x, _, _ = Hashtbl.find provided nm in
+      x
     with Not_found ->
       error "missing dependency '%s'@." nm
   in
@@ -344,7 +350,7 @@ let resolve_deps ?(linkall = false) visited_rev used =
         (* link all primitives *)
 
         let prog,set =
-          Hashtbl.fold (fun nm (_id,_) (visited,set) ->
+          Hashtbl.fold (fun nm (_id,_,_) (visited,set) ->
               resolve_dep_name_rev visited [] nm,
               StringSet.add nm set
             )
