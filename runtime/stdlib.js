@@ -1168,6 +1168,17 @@ function caml_ml_runtime_warnings_enabled (_unit) {
   return caml_runtime_warnings;
 }
 
+//Provides: caml_runtime_variant
+//Requires: caml_new_string
+function caml_runtime_variant(_unit) {
+  return caml_new_string("");
+}
+//Provides: caml_runtime_parameters
+//Requires: caml_new_string
+function caml_runtime_parameters(_unit) {
+  return caml_new_string("");
+}
+
 
 //Provides: caml_sys_isatty
 function caml_sys_isatty(_chan) {
