@@ -23,8 +23,8 @@
 if(joo_global_object.process && joo_global_object.process.cwd)
   var caml_current_dir = joo_global_object.process.cwd();
 else
-  var caml_current_dir =  "/static/";
-
+  var caml_current_dir =  "/static";
+if(caml_current_dir.slice(-1) !== "/") caml_current_dir += "/"
 //Provides: MlFile
 function MlFile(){  }
 

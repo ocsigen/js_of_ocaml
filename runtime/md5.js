@@ -27,7 +27,7 @@ function caml_md5_chan(chanid,len){
   if(len<0) len = chan_len - chan.offset;
   if(chan.offset + len >= chan_len) caml_raise_end_of_file;
   var buf = caml_create_string(len);
-  chan.file.readdir(chan.offset,buf,0,len);
+  chan.file.read(chan.offset,buf,0,len);
   return caml_md5_string(buf,0,len);
 }
 
