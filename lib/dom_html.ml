@@ -262,6 +262,14 @@ and eventTarget = object ('self)
   method ondragleave : ('self t, dragEvent t) event_listener writeonly_prop
   method ondrag : ('self t, dragEvent t) event_listener writeonly_prop
   method ondrop : ('self t, dragEvent t) event_listener writeonly_prop
+  method onanimationstart :
+    ('self t, animationEvent t) event_listener writeonly_prop
+  method onanimationend :
+    ('self t, animationEvent t) event_listener writeonly_prop
+  method onanimationiteration :
+    ('self t, animationEvent t) event_listener writeonly_prop
+  method onanimationcancel :
+    ('self t, animationEvent t) event_listener writeonly_prop
 end
 
 and popStateEvent = object
@@ -291,6 +299,13 @@ and hashChangeEvent = object
   inherit event
   method oldURL : js_string t readonly_prop
   method newURL : js_string t readonly_prop
+end
+
+and animationEvent = object
+  inherit event
+  method animationName : js_string t readonly_prop
+  method elapsedTime : float readonly_prop
+  method pseudoElement : js_string t readonly_prop
 end
 
 and nodeSelector = object
@@ -421,6 +436,11 @@ module Event = struct
   let obsolete = Dom.Event.make "obsolete"
 
   let domContentLoaded = Dom.Event.make "DOMContentLoaded"
+
+  let animationstart = Dom.Event.make "animationstart"
+  let animationend = Dom.Event.make "animationend"
+  let animationiteration = Dom.Event.make "animationiteration"
+  let animationcancel = Dom.Event.make "animationcancel"
 
   let make = Dom.Event.make
 end

@@ -271,6 +271,14 @@ and eventTarget = object ('self)
   method ondragleave : ('self t, dragEvent t) event_listener writeonly_prop
   method ondrag : ('self t, dragEvent t) event_listener writeonly_prop
   method ondrop : ('self t, dragEvent t) event_listener writeonly_prop
+  method onanimationstart :
+    ('self t, animationEvent t) event_listener writeonly_prop
+  method onanimationend :
+    ('self t, animationEvent t) event_listener writeonly_prop
+  method onanimationiteration :
+    ('self t, animationEvent t) event_listener writeonly_prop
+  method onanimationcancel :
+    ('self t, animationEvent t) event_listener writeonly_prop
 end
 
 and popStateEvent = object
@@ -303,6 +311,12 @@ and hashChangeEvent = object
   method newURL : js_string t readonly_prop
 end
 
+and animationEvent = object
+  inherit event
+  method animationName : js_string t readonly_prop
+  method elapsedTime : float readonly_prop
+  method pseudoElement : js_string t readonly_prop
+end
 
 (** {2 HTML elements} *)
 
@@ -1349,6 +1363,11 @@ module Event : sig
   val obsolete : event t typ
 
   val domContentLoaded : event t typ
+
+  val animationstart : animationEvent t typ
+  val animationend : animationEvent t typ
+  val animationiteration : animationEvent t typ
+  val animationcancel : animationEvent t typ
 
   val make : string -> 'a typ
 end
