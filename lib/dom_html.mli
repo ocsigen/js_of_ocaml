@@ -28,6 +28,15 @@ open Js
 (** {2 CSS style declaration} *)
 
 class type cssStyleDeclaration = object
+  method animation : js_string t prop
+  method animationDelay : js_string t prop
+  method animationDirection : js_string t prop
+  method animationDuration : js_string t prop
+  method animationFillMode : js_string t prop
+  method animationIterationCount : js_string t prop
+  method animationName : js_string t prop
+  method animationPlayState : js_string t prop
+  method animationTimingFunction : js_string t prop
   method background : js_string t prop
   method backgroundAttachment : js_string t prop
   method backgroundColor : js_string t prop
