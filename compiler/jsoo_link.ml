@@ -19,7 +19,7 @@
 
 open Js_of_ocaml_compiler
 
-let f {LinkerArg.output_file; source_map; resolve_sourcemap_url; js_files; } =
+let f {LinkerArg.output_file; source_map; resolve_sourcemap_url; js_files} =
   let output =
     match output_file with
     | None -> stdout
