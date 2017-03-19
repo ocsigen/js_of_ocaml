@@ -15,12 +15,13 @@ build: [
 depends: [
   "jbuilder" {build & >= "1.0+beta3"}
   "cmdliner"
-  "base-unix"
-  "ocamlfind" {>= "1.5.1"}
-  "menhir"
   "cppo" {>= "1.1.0"}
-  "base64" {>= "2.0.0"}
-  "yojson"
+]
+
+depopts: [ "ocamlfind" "yojson" ]
+
+conflicts: [
+  "ocamlfind" {< "1.5.1"}
 ]
 
 available: [ ocaml-version >= "4.02.0" ]
