@@ -67,7 +67,7 @@ module Builder(Generator : Defs.Generator) = struct
 
     inherit Generator.generator
 
-    method proxy unit =
+    method proxy _unit =
       None, [ <:ident< t >>;
 	      <:ident< write >>;
 	      <:ident< read >>;
@@ -138,7 +138,7 @@ module Builder(Generator : Defs.Generator) = struct
 	    <:match_case< `NCst $int:string_of_int ncst_tag$ -> $reader$ >> in
 	  (cst_tag, succ ncst_tag, dumper::dumpers, reader::readers)
 
-    method sum ?eq ctxt name params _ summands =
+    method sum ?eq:_ ctxt name _params _ summands =
       let failover = <:match_case< _ -> Deriving_Json_lexer.tag_error ~typename:$str:name$ buf >> in
       let _, _, dumpers, readers =
 	List.fold_left (self#case ctxt) (0,0,[],[failover]) summands in
@@ -147,7 +147,7 @@ module Builder(Generator : Defs.Generator) = struct
 	$list:readers$ >> in
       wrap ~write:dumpers ~read ()
 
-    method record ?eq ctxt name params _ fields =
+    method record ?eq:_ ctxt _name _params _ fields =
       if List.exists (fun (_, _, mut) -> mut = `Mutable) fields then
 	failwith "Can't derive Json serializer for mutable records.";
       if List.exists (fun (_, (vars, _), _) -> vars <> []) fields then
@@ -214,7 +214,7 @@ module Builder(Generator : Defs.Generator) = struct
             ($self#call_expr ctxt t "read_variant"$ buf hash :> a) >>,
           <:expr< $self#call_expr ctxt t "match_variant"$ hash >>
 
-    method variant ctxt name params _ (_,tags) =
+    method variant ctxt name _params _ (_,tags) =
       let failover = <:match_case< _ -> Deriving_Json_lexer.tag_error ~typename:$str:name$ buf >> in
       let dumpers, readers, hashes = List.split3 (List.map (self#polycase ctxt) tags) in
       let read = <:expr< read_variant buf (Deriving_Json_lexer.read_vcase buf) >> in
