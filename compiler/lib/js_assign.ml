@@ -336,7 +336,7 @@ end
 
 class traverse record_block = object(m)
   inherit Js_traverse.free as super
-  method block ?(catch=false) params =
+  method! block ?(catch=false) params =
     record_block m#state ~catch params;
     super#block params
 end

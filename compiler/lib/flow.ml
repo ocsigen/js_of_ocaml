@@ -326,7 +326,7 @@ let solver2 ?skip_param vars deps defs known_origins possibly_mutable =
   in
   Solver2.f () g (propagate2 ?skip_param defs known_origins possibly_mutable)
 
-let get_approx {info_defs=_; info_known_origins;info_maybe_unknown} f top join x =
+let get_approx {info_defs=_; info_known_origins;info_maybe_unknown; _} f top join x =
   let s = VarTbl.get info_known_origins x in
   if VarTbl.get info_maybe_unknown x then top else
   match VarSet.cardinal s with

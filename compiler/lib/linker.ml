@@ -23,8 +23,8 @@ open Util
 module Primitive = Jsoo_primitive
 
 let loc pi = match pi with
-  | Some {Parse_info.src  = Some src; line}
-  | Some {Parse_info.name = Some src; line} ->
+  | Some {Parse_info.src  = Some src; line; _}
+  | Some {Parse_info.name = Some src; line; _} ->
      Printf.sprintf "%s:%d" src line
   | None
   | Some _ -> "unknown location"
@@ -138,9 +138,9 @@ class check_and_warn name pi = object
     super#merge_info from
 end
 
+(*
 exception May_not_return
 
-(*
 let all_return p =
   let open Javascript in
   let rec loop_st = function
@@ -223,7 +223,7 @@ class traverse_and_find_named_values all =
     method expression x =
       let open Javascript in
       (match x with
-        | ECall(EVar (S {name="caml_named_value"}),[EStr (v,_)],_) ->
+        | ECall(EVar (S {name="caml_named_value"; _}),[EStr (v,_)],_) ->
           all:=StringSet.add v !all
         | _ -> ()
       );
@@ -253,7 +253,8 @@ let add_file f =
             let module J = Javascript in
             let rec find = function
               | [] -> None
-              | (J.Function_declaration (J.S{J.name=n},l,_,_), _)::_ when name=n -> Some(List.length l)
+              | (J.Function_declaration (J.S{J.name=n; _},l,_,_), _)::_ when name=n ->
+                Some(List.length l)
               | _::rem -> find rem in
             let arity = find code in
             let named_values = find_named_value code in

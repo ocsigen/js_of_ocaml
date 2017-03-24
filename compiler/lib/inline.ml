@@ -27,9 +27,9 @@ let optimizable blocks pc _ =
     else
       let b = AddrMap.find pc blocks in
       match b with
-      | {handler = Some _}
-      | {branch = Pushtrap _ }
-      | {branch = Poptrap _ } -> false
+      | {handler = Some _; _}
+      | {branch = Pushtrap _; _}
+      | {branch = Poptrap _; _}  -> false
       | _ ->
         List.for_all (function
           | Let (_, Prim (Extern "caml_js_eval_string",_)) -> false
@@ -50,7 +50,7 @@ let rec follow_branch_rec seen blocks = function
   | (pc, []) as k ->
     let seen = AddrSet.add pc seen in
     begin try match AddrMap.find pc blocks with
-      | {body = []; branch = Branch (pc, [])} when not (AddrSet.mem pc seen) ->
+      | {body = []; branch = Branch (pc, []); _} when not (AddrSet.mem pc seen) ->
         follow_branch_rec seen blocks (pc, [])
       | _ -> k
     with Not_found -> k

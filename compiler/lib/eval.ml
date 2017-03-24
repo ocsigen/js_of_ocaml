@@ -135,8 +135,6 @@ let eval_prim x =
      | _ -> None)
   | _ -> None
 
-exception Not_constant
-
 let the_length_of info x =
   get_approx info
     (fun x ->
@@ -377,4 +375,3 @@ let f info (pc, blocks, free_pc) =
   let blocks = eval info blocks in
   let blocks = drop_exception_handler blocks in
   (pc, blocks, free_pc)
-

@@ -332,7 +332,7 @@ class free =
     let n = try IdentMap.find x state_.count with Not_found -> 0 in
     let count = IdentMap.add x (succ n) state_.count in
     match x with
-      | S {name}  ->
+      | S {name; _}  ->
         state_ <- { state_ with use_name = StringSet.add name state_.use_name;count }
       | V v ->
         state_ <- { state_ with use = S.add v state_.use;count  }
@@ -340,7 +340,7 @@ class free =
     let n = try IdentMap.find x state_.count with Not_found -> 0 in
     let count = IdentMap.add x (succ n) state_.count in
     match x with
-    | S {name} ->
+    | S {name; _} ->
       state_ <- { state_ with def_name = StringSet.add name state_.def_name;count }
     | V v ->
       state_ <- { state_ with def = S.add v state_.def;count  }
@@ -353,7 +353,7 @@ class free =
       let body = tbody#sources body in
       let ident = match ident with
         | Some (V v) when not(S.mem v tbody#state.use) -> None
-        | Some (S {name})when not(StringSet.mem name tbody#state.use_name) -> None
+        | Some (S {name; _})when not(StringSet.mem name tbody#state.use_name) -> None
         | Some id -> tbody#def_var id;ident
         | None -> None in
       tbody#block params;
@@ -416,7 +416,7 @@ class free =
           (* we need to propagate both def and use .. *)
           (* .. except 'id' because its scope is limitied to 'block' *)
           let clean set sets = match id with
-            | S {name} -> set,StringSet.remove name sets
+            | S {name; _} -> set,StringSet.remove name sets
             | V i -> S.remove i set, sets in
           let def,def_name = clean tbody#state.def tbody#state.def_name in
           let use,use_name = clean tbody#state.use tbody#state.use_name in
@@ -457,7 +457,7 @@ class rename_variable keeps = object
           let v = Code.Var.fresh_n name in
           Hashtbl.add h name v) from#state.def_name in
     let f = function
-      | (S {name}) when Hashtbl.mem h name -> V (Hashtbl.find h name)
+      | (S {name; _}) when Hashtbl.mem h name -> V (Hashtbl.find h name)
       | s -> s in
     sub_ <- new subst f
 
@@ -474,10 +474,10 @@ class rename_variable keeps = object
     match x with
       | Try_statement (b,w,f) ->
         let w = match w with
-          | Some(S {name},block) ->
+          | Some(S {name;_},block) ->
             let v = Code.Var.fresh_n name in
             let sub = function
-              | S {name=name'} when name' = name -> V v
+              | S {name=name';_} when name' = name -> V v
               | x -> x in
             let s = new subst sub in
             Some(V v ,s#statements block)

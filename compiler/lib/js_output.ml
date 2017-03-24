@@ -73,8 +73,8 @@ module Make(D : sig
   let output_debug_info f loc =
     if debug_enabled then begin
       match loc with
-      | Pi {Parse_info.name = Some file; line; col}
-      | Pi {Parse_info.src  = Some file; line; col}->
+      | Pi {Parse_info.name = Some file; line; col; _}
+      | Pi {Parse_info.src  = Some file; line; col; _} ->
         PP.non_breaking_space f;
         PP.string f (Format.sprintf "/*<<%s %d %d>>*/" file (line + 1) col);
         PP.non_breaking_space f
@@ -95,7 +95,7 @@ module Make(D : sig
             ori_line = -1;
             ori_col = -1;
             ori_name = None }
-      | Pi { Parse_info.src = Some file; line; col } ->
+      | Pi { Parse_info.src = Some file; line; col; _ } ->
         push_mapping (PP.pos f)
           { Source_map.gen_line = -1;
             gen_col = -1;
@@ -108,7 +108,7 @@ module Make(D : sig
     if source_map_enabled then
       match Code.Var.get_loc v with
       | None -> ()
-      | Some { Parse_info.src = Some file; line; col } ->
+      | Some { Parse_info.src = Some file; line; col; _ } ->
          push_mapping (PP.pos f)
                       { Source_map.gen_line = -1;
                         gen_col = -1;

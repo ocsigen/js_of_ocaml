@@ -45,9 +45,6 @@ type t = {
   fs_external : bool;
 }
 
-exception Error of (bool * string)
-
-
 let options =
   let toplevel_section = "OPTIONS (TOPLEVEL)" in
   let filesystem_section = "OPTIONS (FILESYSTEM)" in
@@ -174,7 +171,6 @@ let options =
     =
     let chop_extension s =
       try Filename.chop_extension s with Invalid_argument _ -> s in
-    try
       let runtime_files = js_files in
       let runtime_files =
         if noruntime
@@ -243,7 +239,6 @@ let options =
         input_file;
         source_map
       }
-    with Error (b,str) -> `Error (b,str)
   in
   let t =
     Term.(pure build_t

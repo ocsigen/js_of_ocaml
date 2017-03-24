@@ -131,7 +131,7 @@ end
 
 type lineinfo = Line_info.t
 
-let relative_path {Line_info.src} file =
+let relative_path {Line_info.src; _} file =
   match src with
   | None -> None
   | Some src -> Some (Filename.(concat (dirname src) file))
@@ -151,11 +151,11 @@ let t_of_lexbuf line_info lexbuf : t =
       line + line_offset, col + col_offset
   in
   let name = match line_info.Line_info.offset with
-    | Some { name = Some _ as name } -> name
+    | Some { name = Some _ as name; _ } -> name
     | _ -> line_info.Line_info.name
   in
   let src = match line_info.Line_info.offset with
-    | Some {src = Some _ as src } -> src
+    | Some {src = Some _ as src; _ } -> src
     | _ -> line_info.Line_info.src
   in
   { fol = None
