@@ -26,9 +26,9 @@ type 'a t = {
 
 let make write read = {write; read}
 
-let read {read} = read
+let read t = t.read
 
-let write {write} = write
+let write t = t.write
 
 let convert t f1 f2 = {
   write = (fun buf a -> t.write buf (f2 a));

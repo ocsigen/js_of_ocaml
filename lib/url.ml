@@ -243,7 +243,7 @@ let string_of_url = function
       {
         fu_path = path;
         fu_arguments = args;
-        fu_fragment = frag;
+        fu_fragment = frag; _
       } ->  "file://"
           ^ String.concat "/" (List.map (fun x -> urlencode x) path)
           ^ (match args with
@@ -261,7 +261,7 @@ let string_of_url = function
         hu_port = port;
         hu_path = path;
         hu_arguments = args;
-        hu_fragment = frag;
+        hu_fragment = frag; _
       } ->  "http://"
           ^ urlencode host
           ^ (match port with
@@ -285,7 +285,7 @@ let string_of_url = function
         hu_port = port;
         hu_path = path;
         hu_arguments = args;
-        hu_fragment = frag;
+        hu_fragment = frag; _
       } ->  "https://"
           ^ urlencode host
           ^ (match port with
