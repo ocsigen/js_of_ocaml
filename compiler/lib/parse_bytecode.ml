@@ -672,7 +672,7 @@ module State = struct
       [], _ ->
       ()
     | (j, nm,ident) :: lrem, Var v :: srem when i = j ->
-       begin match Util.find_loc_in_summary nm ident summary with
+       begin match Util.find_loc_in_summary ident summary with
              | None -> ()
              | Some loc -> Var.loc v (pi_of_loc debug loc)
        end;

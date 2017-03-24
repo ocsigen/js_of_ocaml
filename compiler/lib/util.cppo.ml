@@ -461,11 +461,7 @@ let rec obj_of_const =
   function
   | Const_base (Const_int i) -> Obj.repr i
   | Const_base (Const_char c) -> Obj.repr c
-#if OCAML_VERSION < (4,02,0)
-  | Const_base (Const_string s) -> Obj.repr s
-#else
   | Const_base (Const_string (s,_)) -> Obj.repr s
-#endif
   | Const_base (Const_float s) -> Obj.repr (float_of_string s)
   | Const_base (Const_int32 i) -> Obj.repr i
   | Const_base (Const_int64 i) -> Obj.repr i
@@ -483,37 +479,31 @@ let rec obj_of_const =
     ) l;
     b
 
+let apply1 f (s : string) : string =
+  let b = Bytes.of_string s in
+  if Bytes.length b = 0 then s else begin
+    Bytes.unsafe_set b 0 (f (Bytes.unsafe_get b 0));
+    Bytes.to_string b
+  end
 
-#if OCAML_VERSION < (4,03,0)
-let uncapitalize_ascii = String.uncapitalize
-let capitalize_ascii = String.capitalize
-#else
-let uncapitalize_ascii = String.uncapitalize_ascii
-let capitalize_ascii = String.capitalize_ascii
-#endif
+let capitalize_ascii s = apply1 Char.uppercase_ascii s
+let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
 
-
-let rec find_loc_in_summary name ident' = function
+let rec find_loc_in_summary ident' = function
   | Env.Env_empty -> None
   | Env.Env_value (_summary, ident, description)
     when ident = ident' ->
     Some description.Types.val_loc
   | Env.Env_value (summary,_,_)
   | Env.Env_type (summary, _, _)
-#if OCAML_VERSION < (4,2,0)
-  | Env.Env_exception (summary, _,_)
-#else
   | Env.Env_extension (summary, _, _)
-#endif
   | Env.Env_module (summary, _, _)
   | Env.Env_modtype (summary, _, _)
   | Env.Env_class (summary, _, _)
   | Env.Env_cltype (summary, _, _)
   | Env.Env_open (summary, _)
-#if OCAML_VERSION >= (4,2,0)
   | Env.Env_functor_arg (summary, _)
-#endif
 #if OCAML_VERSION >= (4,4,0)
   | Env.Env_constraints (summary, _)
 #endif
-   -> find_loc_in_summary name ident' summary
+   -> find_loc_in_summary ident' summary

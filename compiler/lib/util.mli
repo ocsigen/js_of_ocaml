@@ -114,4 +114,4 @@ val uncapitalize_ascii : string -> string
 val capitalize_ascii   : string -> string
 
 
-val find_loc_in_summary : string -> Ident.t -> Env.summary -> Location.t option
+val find_loc_in_summary : Ident.t -> Env.summary -> Location.t option
