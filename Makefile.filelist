@@ -32,11 +32,6 @@ IMPL += lib/tyxml/tyxml_js.cma
 INTF += lib/tyxml/*.cmi
 endif
 
-ifeq "${WITH_ASYNC}" "YES"
-IMPL += lib/async/async_js.cma
-INTF += lib/async/*.cmi
-endif
-
 ifeq "${WITH_PPX}" "YES"
 OCAMLFIND_BIN += lib/ppx/${PPX}
 IMPL += lib/ppx/ppx_js.cma
@@ -46,16 +41,6 @@ IMPL += lib/ppx/ppx_js.a
 ifeq "${BEST}" "opt"
 ifeq "${NATDYNLINK}" "YES"
 IMPL += lib/ppx/ppx_js.cmxs
-endif
-endif
-endif
-
-ifeq "${WITH_PPX}${WITH_PPX_DRIVER}" "YESYES"
-IMPL += lib/ppx_driver/ppx_js_driver.cma lib/ppx_driver/ppx_js_driver.cmx lib/ppx_driver/ppx_js_driver.cmxa
-IMPL += lib/ppx_driver/ppx_js_driver.a
-ifeq "${BEST}" "opt"
-ifeq "${NATDYNLINK}" "YES"
-IMPL += lib/ppx_driver/ppx_js_driver.cmxs
 endif
 endif
 endif

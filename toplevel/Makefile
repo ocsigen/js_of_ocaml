@@ -7,7 +7,6 @@ all: toplevel.js eval.js
 OCPINDENT=$(shell ocamlfind query ocp-indent -format "-package %p.lib" 2> /dev/null)
 HIGLO=$(shell ocamlfind query higlo.ocaml -format "-package %p -rectypes" 2> /dev/null)
 DERIVING=$(shell ocamlfind query js_of_ocaml.deriving -format "%p" 2> /dev/null)
-ASYNC=$(shell ocamlfind query js_of_ocaml.async -format "%p" 2> /dev/null)
 
 CPPO_OPT=
 ifneq ($(OCPINDENT),)
@@ -31,7 +30,7 @@ JSFILES= +weak.js +toplevel.js +dynlink.js +nat.js
 PACKAGES= \
 	lwt bigarray tyxml.functor \
 	react reactiveData \
-	js_of_ocaml $(DERIVING) $(ASYNC_PKG) \
+	js_of_ocaml $(DERIVING)
 	js_of_ocaml.tyxml \
 	js_of_ocaml.toplevel \
 	dynlink
@@ -48,10 +47,6 @@ CPPO_OPT+= -D graphics
 endif
 
 ifeq ($(ARCH_32BIT),YES)
-ifneq ($(ASYNC),)
-ASYNC_PKG=core_kernel async_kernel js_of_ocaml.async
-JSFILES += +bin_prot.js +core_kernel.js
-endif
 endif
 
 ifeq ($(METAOCAML),1)
