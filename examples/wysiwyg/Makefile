@@ -1,5 +1,5 @@
 OBJS=main.cmo
-NAME=wiki
+NAME=main
 
 include ../Makefile.common
 

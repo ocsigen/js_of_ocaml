@@ -48,12 +48,12 @@ api/wiki/index.wiki: ${MLIS} api/index
 EX_TOPLEVEL:=index.html toplevel.js test_dynlink.js *.cmis.js
 EX_BOULDER:=index.html boulderdash.js sprites
 EX_WEBGL:=index.html webgldemo.js
-EX_GRAPH:=index.html jsviewer.js
+EX_GRAPH:=index.html viewer_js.js
 EX_PLANET:=index.html texture.jpg planet.js
-EX_WIKI:=index.html wiki.js
-EX_WYSIWYG:=index.html wiki.js
-EX_HYPER:=index.html hypertree.js icons thumbnails svg_icons
-EX_MINE:=index.html minesweeper.js sprites
+EX_WIKI:=index.html main.js
+EX_WYSIWYG:=index.html main.js
+EX_HYPER:=index.html hypertree.js icons thumbnails
+EX_MINE:=index.html main.js sprites
 EX_CUBE:=index.html cubes.js
 
 cp-examples:

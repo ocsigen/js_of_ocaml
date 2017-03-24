@@ -1,5 +1,5 @@
 OBJS=test.cmo wikicreole.cmo wiki_syntax.cmo main.cmo
-NAME=wiki
+NAME=main
 
 include ../Makefile.common
 

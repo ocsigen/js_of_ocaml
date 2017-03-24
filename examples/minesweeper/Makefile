@@ -1,5 +1,5 @@
 OBJS=minesweeper.cmo main.cmo
-NAME=minesweeper
+NAME=main
 
 include ../Makefile.common
 
