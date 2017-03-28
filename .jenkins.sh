@@ -9,8 +9,8 @@ opam pin add --no-action js_of_ocaml-lwt .
 opam pin add --no-action js_of_ocaml-tyxml .
 opam pin add --no-action js_of_ocaml-toplevel .
 
-opam pin add ocaml-migrate-parsetree https://github.com/let-def/ocaml-migrate-parsetree.git
-opam pin add ppx_tools_versioned https://github.com/let-def/ppx_tools_versioned.git
+#opam pin add ocaml-migrate-parsetree https://github.com/let-def/ocaml-migrate-parsetree.git
+#opam pin add ppx_tools_versioned https://github.com/let-def/ppx_tools_versioned.git
 
 opam install ppx_tools_versioned reactiveData cppo base64
 
