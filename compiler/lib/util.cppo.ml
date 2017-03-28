@@ -486,6 +486,18 @@ let apply1 f (s : string) : string =
     Bytes.to_string b
   end
 
+module Char = struct
+  let lowercase_ascii c =
+    if (c >= 'A' && c <= 'Z')
+    then Char.unsafe_chr(Char.code c + 32)
+    else c
+
+  let uppercase_ascii c =
+    if (c >= 'a' && c <= 'z')
+    then Char.unsafe_chr(Char.code c - 32)
+    else c
+end
+
 let capitalize_ascii s = apply1 Char.uppercase_ascii s
 let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
 
