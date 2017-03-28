@@ -30,7 +30,7 @@ JSFILES= +weak.js +toplevel.js +dynlink.js +nat.js
 PACKAGES= \
 	lwt bigarray tyxml.functor \
 	react reactiveData \
-	js_of_ocaml $(DERIVING)
+	js_of_ocaml $(DERIVING) \
 	js_of_ocaml.tyxml \
 	js_of_ocaml.toplevel \
 	dynlink
