@@ -26,7 +26,7 @@ let fold f =
   (try while true do l @:= [f ()] done with _ -> ());
   !l
 
-let split_comma = Str.split_delim (Str.regexp ",")
+let split_comma = Str.split_delim (Str.regexp " *[, ] *")
 
 let fold_pflag scan =
   List.fold_left
