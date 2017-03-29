@@ -3,7 +3,7 @@
  ((names (jsoo_compile minify jsoo_link))
   (libraries
    (js_of_ocaml-compiler
-    cmdliner base64
+    cmdliner
     (select findlib.ml from
      ;; Only link js_of_ocaml-compiler.findlib-support if it exists
      (js_of_ocaml-compiler.findlib-support -> findlib.ml.in)
