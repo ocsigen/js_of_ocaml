@@ -1,0 +1,17 @@
+(jbuild_version 1)
+(library
+ ((name ppx_deriving_json)
+  (public_name js_of_ocaml-ppx.deriving)
+  (synopsis "[@@deriving json]")
+  (optional)
+  (ppx_runtime_libraries (js_of_ocaml.deriving))
+  (kind ppx_deriver)
+  (libraries (ppx_deriving compiler-libs ppx_tools))
+  (preprocess (action (run ${lib:ppx_tools:rewriter} ${lib:ppx_tools:ppx_metaquot} ${<})))
+  ))
+
+(rule
+ ((targets (ppx_deriving_json.ml))
+  (deps (ppx_deriving_json.cppo.ml))
+  (action (run ${bin:cppo} -V OCAML:${ocaml_version} ${<} -o ${@}))
+  ))

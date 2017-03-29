@@ -1,0 +1,8 @@
+(jbuild_version 1)
+(library
+  ((name pa_js)
+   (public_name js_of_ocaml-camlp4)
+   (synopsis "Js_of_ocaml syntax extension")
+   (libraries (camlp4.extend camlp4.quotations))
+   (library_flags (-linkall))
+   (preprocess (action (run camlp4orf ${<})))))

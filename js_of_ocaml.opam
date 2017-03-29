@@ -1,0 +1,28 @@
+opam-version: "1.2"
+maintainer:   "dev@ocsigen.org"
+authors:      "Ocsigen team"
+bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
+homepage:     "http://ocsigen.org/js_of_ocaml"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
+
+name: "js_of_ocaml"
+version: "dev"
+
+build: [
+  ["jbuilder" "build" "--only-packages" "js_of_ocaml" "-j" jobs "@install"]
+]
+
+depends: [
+  "jbuilder" {build & >= "1.0+beta3"}
+  "ocaml-migrate-parsetree"
+  "ppx_tools_versioned"
+  "uchar"
+  "js_of_ocaml-compiler"
+  "toplevel_expect_test" {test}
+]
+
+conflicts: [
+  "ppx_tools_versioned"     {(= "5.0alpha"& ="5.0beta0")}
+]
+
+available: [ ocaml-version >= "4.02.0" ]

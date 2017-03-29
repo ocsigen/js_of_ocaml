@@ -1,0 +1,33 @@
+open Js_of_ocaml
+
+let text ~a_class:cl s =
+  Tyxml_js.Html.(span ~a:[a_class [cl]] [pcdata s])
+
+let ocaml ~a_class:cl s =
+  let tks = Higlo.parse ~lang:"ocaml" s in
+  let span' cl s = Tyxml_js.Html.(span ~a:[a_class [cl]] [pcdata s]) in
+  let make_span = function
+    | Higlo.Bcomment s -> span' "comment" s
+    | Higlo.Constant s -> span' "constant" s
+    | Higlo.Directive s -> span' "directive" s
+    | Higlo.Escape s -> span' "escape" s
+    | Higlo.Id s -> span' "id" s
+    | Higlo.Keyword (level,s) -> span' (Printf.sprintf "kw%d" level) s
+    | Higlo.Lcomment s -> span' "comment" s
+    | Higlo.Numeric s -> span' "numeric" s
+    | Higlo.String s -> span' "string" s
+    | Higlo.Symbol (level,s) -> span' (Printf.sprintf "sym%d" level) s
+    | Higlo.Text s -> span' "text" s in
+  Tyxml_js.Html.(div ~a:[a_class [cl]] (List.map make_span tks))
+
+let highlight (`Pos from_) to_ e =
+  let _ =
+    List.fold_left (fun pos e ->
+      match Js.Opt.to_option (Dom_html.CoerceTo.element e) with
+      | None -> pos
+      | Some e ->
+	 let size = Js.Opt.case (e##.textContent) (fun () -> 0) (fun t -> t##.length) in
+	 if pos + size > from_ && (to_ = `Last || `Pos pos < to_)
+	 then e##.classList##add (Js.string "errorloc");
+	 pos + size) 0 (Dom.list_of_nodeList (e##.childNodes)) in
+  ();;

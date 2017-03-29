@@ -1,0 +1,24 @@
+opam-version: "1.2"
+maintainer:   "dev@ocsigen.org"
+authors:      "Ocsigen team"
+bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
+homepage:     "http://ocsigen.org/js_of_ocaml"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
+
+name: "js_of_ocaml-toplevel"
+version: "dev"
+
+build: [
+  ["jbuilder" "build" "--only-packages" "js_of_ocaml-toplevel" "-j" jobs "@install"]
+]
+
+depends: [
+  "jbuilder" {build & >= "1.0+beta3"}
+  "ocamlfind" {>= "1.5.1"}
+  "js_of_ocaml-compiler"
+  "js_of_ocaml"
+]
+
+depopts: [ "camlp4" ]
+
+available: [ ocaml-version >= "4.02.0" ]

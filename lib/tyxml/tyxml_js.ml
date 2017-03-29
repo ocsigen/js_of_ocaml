@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Js_of_ocaml
+
 let js_string_of_float f = (Js.number_of_float f)##toString
 let js_string_of_int i = (Js.number_of_float (float_of_int i))##toString
 

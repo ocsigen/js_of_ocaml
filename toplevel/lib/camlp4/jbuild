@@ -1,0 +1,8 @@
+(jbuild_version 1)
+(library
+ ((name js_of_ocaml_toplevel_camlp4)
+  (public_name js_of_ocaml-toplevel.camlp4)
+  (libraries (js_of_ocaml-toplevel camlp4))
+  (optional)
+  (library_flags (-linkall))
+  (preprocess (pps (js_of_ocaml-ppx)))))

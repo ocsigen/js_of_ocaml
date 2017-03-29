@@ -1,0 +1,8 @@
+(jbuild_version 1)
+(library
+ ((name jsoo_findlib_support)
+  (libraries (js_of_ocaml-compiler findlib))
+  (optional)
+  (public_name js_of_ocaml-compiler.findlib-support)
+  (library_flags (-linkall))
+  ))

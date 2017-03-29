@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
+open Js_of_ocaml
 module MakeTo( C : sig type 'a elt val elt : 'a elt -> Dom.node Js.t end) : Tyxml_cast_sigs.TO with type 'a elt = 'a C.elt = struct
   type 'a elt = 'a C.elt
   let rebuild_node _ x = Js.Unsafe.coerce (C.elt x)

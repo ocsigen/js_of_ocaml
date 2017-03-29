@@ -1,0 +1,19 @@
+opam-version: "1.2"
+maintainer:   "dev@ocsigen.org"
+authors:      "Ocsigen team"
+bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
+homepage:     "http://ocsigen.org/js_of_ocaml"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
+
+name: "js_of_ocaml-ocamlbuild"
+version: "dev"
+
+build: [
+  ["jbuilder" "build" "--only-packages" "js_of_ocaml-ocamlbuild" "-j" jobs "@install"]
+]
+
+depends: [
+  "jbuilder" {build & >= "1.0+beta3"}
+  "ocamlbuild"
+]
+available: [ ocaml-version >= "4.00.0" ]

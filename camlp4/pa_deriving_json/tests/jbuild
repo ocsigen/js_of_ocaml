@@ -1,0 +1,6 @@
+;; tests/%.result: tests/%.ml tests/init.ml
+;; 	(TERM=dumb ocaml -init tests/init.ml < $< 2>&1) | grep -v version > $@
+;; 	patdiff tests/$*.expected $@ || true
+;; 	rm $@
+
+;; tests: tests/deriving.result

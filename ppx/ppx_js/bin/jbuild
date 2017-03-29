@@ -1,0 +1,11 @@
+(jbuild_version 1)
+
+(executables
+ ((names (main))
+  (libraries (ppx_js ocaml-migrate-parsetree))
+  ))
+
+(install
+ ((section lib)
+  (package js_of_ocaml-ppx)
+  (files ((main.exe as ppx_js)))))

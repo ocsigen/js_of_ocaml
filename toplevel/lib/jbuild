@@ -1,0 +1,10 @@
+(jbuild_version 1)
+(library
+ ((name js_of_ocaml_toplevel)
+  (public_name js_of_ocaml-toplevel)
+  (synopsis "Js_of_ocaml toplevel library")
+  (wrapped false)
+  (libraries (
+    js_of_ocaml-compiler js_of_ocaml bytes
+    compiler-libs.bytecomp compiler-libs.toplevel))
+  (preprocess (pps (js_of_ocaml-ppx)))))

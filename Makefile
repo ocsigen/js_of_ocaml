@@ -1,98 +1,38 @@
-
-all: no_examples examples
-no_examples: build doc
-
-build: check_lwt compiler library ocamlbuild runtime jsoo_tools toplevel_lib
-
 include Makefile.conf
--include Makefile.local
-
-.PHONY: all no_examples compiler library ocamlbuild runtime examples check_lwt doc build jsoo_tools toplevel_lib toplevel
-
-compiler:
-	$(MAKE) -C compiler all compilerlib
-library:
-	$(MAKE) -C lib
-runtime:
-	$(MAKE) -C runtime
-jsoo_tools: compiler
-	$(MAKE) -C jsoo_tools
-toplevel_lib: compiler
-	$(MAKE) -C lib toplevel_lib
-ocamlbuild:
-	$(MAKE) -C ocamlbuild
-examples: compiler library runtime
-	$(MAKE) -C examples
-doc: library ocamlbuild
-	$(MAKE) -C doc
-
-toplevel:
-	$(MAKE) -C toplevel
-
-tests: compiler library runtime
-	$(MAKE) -C tests
-phantomtests: compiler library runtime
-	$(MAKE) -C tests phantom
-
-LWTERROR="Js_of_ocaml requires Lwt version 2.3.0 at least.  Please upgrade."
-check_lwt:
-	@if ocamlfind query lwt -l | ocaml tools/check_version.ml 2.3.0; then \
-	  echo $(LWTERROR); exit 1; \
-	fi
-
-include Makefile.filelist
 
 VERSION := $(shell head -n 1 VERSION)
 
-install: install-lib install-bin
+all:
+	jbuilder build @install @DEFAULT -j 8
 
-install-lib:
-	ocamlfind install -patch-version ${VERSION} $(LIBRARY) lib/META $(INTF) $(IMPL) $(OTHERS) $(DOC) $(COMP_INTF) $(COMP_IMPL) ${OCAMLFIND_BIN}
+tests: all
+	$(MAKE) -C lib/tests test-with-node
+	$(MAKE) -C camlp4/pa_js tests
+	$(MAKE) -C camlp4/pa_deriving_json tests
+	$(MAKE) -C ppx/ppx_js tests
+	$(MAKE) -C ppx/ppx_deriving_json tests
 
-install-bin:
-	install -d -m 755 $(BINDIR)
-	install $(BIN) $(BINDIR)
+doc: all
+	$(MAKE) -C doc
 
-uninstall: uninstall-lib uninstall-bin
-
-uninstall-lib:
-	ocamlfind remove $(LIBRARY)
-
-uninstall-bin:
-	rm -f $(BINDIR)/$(COMPILER)
-	rm -f $(BINDIR)/$(MINIFIER)
-	rm -f $(BINDIR)/$(LINKER)
-	rm -f $(BINDIR)/$(MKTOP)
-	rm -f $(BINDIR)/$(MKCMIS)
-	rm -f $(BINDIR)/$(LISTUNITS)
-
-reinstall: uninstall install
-
-depend:
-	$(MAKE) -C compiler depend
-	$(MAKE) -C lib depend
+toplevel-examples: all
+	jbuilder exec -- make -C toplevel/examples/lwt_toplevel_bin
 
 clean:
-	$(MAKE) -C compiler clean
-	$(MAKE) -C jsoo_tools clean
-	$(MAKE) -C lib clean
-	$(MAKE) -C ocamlbuild clean
-	$(MAKE) -C runtime clean
-	$(MAKE) -C toplevel clean
-	$(MAKE) -C examples clean
-ifeq ($(wildcard tests),tests)
-	$(MAKE) -C tests clean
+	rm -rf _build
+	$(MAKE) -C toplevel/examples/lwt_toplevel_bin clean
 	$(MAKE) -C doc clean
-endif
 
-realclean: clean
-	find . -name "*~" -print | xargs rm -f
-	find . -name "*.tmpjs" -print | xargs rm -f
-	find . -name "#*" -print | xargs rm -f
+remove-lexer-and-parser:
+	rm compiler/lib/{annot_parser,js_parser}.{ml,mli}
+promote-lexer-and-parser:
+	cp  _build/default/compiler/lib/{annot_parser,js_parser}.{ml,mli} compiler/lib/
+
+.PHONY: all doc clean toplevel-examples tests dist
 
 dist:
 	rm -rf /tmp/js_of_ocaml-${VERSION} &&\
         cd /tmp &&\
 	git clone https://github.com/ocsigen/js_of_ocaml.git js_of_ocaml-${VERSION} &&\
 	(cd js_of_ocaml-${VERSION}; git checkout ${VERSION}) &&\
-	tar zcvf js_of_ocaml-${VERSION}.tar.gz js_of_ocaml-${VERSION} --exclude benchmarks --exclude .git --exclude tests
+	tar zcvf js_of_ocaml-${VERSION}.tar.gz js_of_ocaml-${VERSION} --exclude benchmarks --exclude .git

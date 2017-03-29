@@ -1,0 +1,9 @@
+(jbuild_version 1)
+(library
+  ((name pa_deriving_Json)
+   (public_name js_of_ocaml-camlp4.deriving)
+   (synopsis "Safe \"IO in JSON\" class for deriving.")
+   (optional)
+   (library_flags (-linkall))
+   (libraries (camlp4.quotations deriving.syntax.common))
+   (preprocess (action (run camlp4of ${<})))))

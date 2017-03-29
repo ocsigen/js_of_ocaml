@@ -19,6 +19,8 @@
 
 (** Cast to and from Tyxml types *)
 
+open Js_of_ocaml
+
 module MakeTo( C : sig type 'a elt val elt : 'a elt -> Dom.node Js.t end) :
   Tyxml_cast_sigs.TO with type 'a elt = 'a C.elt
 

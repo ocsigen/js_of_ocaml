@@ -1,0 +1,23 @@
+opam-version: "1.2"
+maintainer:   "dev@ocsigen.org"
+authors:      "Ocsigen team"
+bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
+homepage:     "http://ocsigen.org/js_of_ocaml"
+dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
+
+name: "js_of_ocaml-lwt"
+version: "dev"
+
+build: [
+  ["jbuilder" "build" "--only-packages" "js_of_ocaml-lwt" "-j" jobs "@install"]
+]
+
+depends: [
+  "jbuilder" {build & >= "1.0+beta3"}
+  "lwt" {>= "2.4.4"}
+  "js_of_ocaml"
+  "js_of_ocaml-ppx"
+]
+
+depopts: [ "graphics" ]
+available: [ ocaml-version >= "4.02.0" ]

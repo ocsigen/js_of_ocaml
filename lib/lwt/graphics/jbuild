@@ -1,0 +1,8 @@
+(jbuild_version 1)
+(library
+ ((name graphics_js)
+  (public_name js_of_ocaml-lwt.graphics)
+  (synopsis "Graphics for js_of_ocaml.")
+  (optional)
+  (libraries (js_of_ocaml-lwt lwt graphics))
+  (preprocess (pps (js_of_ocaml-ppx)))))

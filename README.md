@@ -13,15 +13,16 @@ like browsers and Node.js.
     API.
 
 ## Requirements
-  Findlib, Lwt, Menhir, Cmdliner, cppo, base64.
-  See [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/opam) file for version constraints.
+  Findlib, Cmdliner, cppo, base64, yojson.
+  See [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam) file for version constraints.
 
 ### optional
+  * [camlp4](https://github.com/ocaml/camlp4)
+  * [lwt](https://github.com/ocsigen/lwt)
   * [deriving](https://github.com/ocsigen/deriving)
   * [ppx_deriving](https://github.com/whitequark/ppx_deriving)
   * [tyxml](https://github.com/ocsigen/tyxml)
   * [reactiveData](https://github.com/ocsigen/reactiveData)
-  * [async_kernel](https://github.com/janestreet/async_kernel): tested with **version 113.33.00**
 
 ### Toplevel requirements
  * base64, tyxml, reactiveData
@@ -33,17 +34,17 @@ like browsers and Node.js.
 
 ###Opam
 ```
-opam install js_of_ocaml
+opam install js_of_ocaml js_of_ocaml-ppx
 ```
 
 ###Manual
   * edit `Makefile.conf` to change the default configuration
-  * run `make` to compile
+  * run `make all` to compile
   * run `make install` as root to install the compiler
     and its libraries
   * run `make uninstall` as root to uninstall them
 
-You can run `make toplevel` if you want to build a Web-based OCaml
+You can run `make toplevel-examples` if you want to build a Web-based OCaml
 toplevel as well. [Try the toplevel](http://ocsigen.github.io/js_of_ocaml/)
 
 ## Usage
@@ -98,12 +99,15 @@ functions can yield results different from usual:
   * [Ocaml 4.03.0](http://ocsigen.github.io/js_of_ocaml/#version=4.03.0)
 
 ## Contents of the distribution
-| Filename  | Description                                  |
-|-----------|----------------------------------------------|
-| LICENSE   | license and copyright notice                 |
-| README    | this file                                    |
-| compiler/ | compiler                                     |
-| examples/ | small examples                               |
-| lib/      | library for interfacing with JavaScript APIs |
-| runtime/  | runtime system                               |
-| toplevel/ | web-based OCaml toplevel                     |
+| Filename    | Description                                  |
+|-----------  |----------------------------------------------|
+| LICENSE     | license and copyright notice                 |
+| README      | this file                                    |
+| compiler/   | compiler                                     |
+| examples/   | small examples                               |
+| lib/        | library for interfacing with JavaScript APIs |
+| ppx/        | ppx syntax extensions                        |
+| camlp4/     | camlp4 syntax extensions                     |
+| runtime/    | runtime system                               |
+| toplevel/   | web-based OCaml toplevel                     |
+| ocamlbuild/ | ocamlbuild plugin for js_of_ocaml            |

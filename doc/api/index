@@ -7,15 +7,12 @@ Dom_html
 Dom_svg
 Dom_events
 CSS
-Lwt_js
-Lwt_js_events
 EventSource
 Firebug
 Regexp
 Url
 XmlHttpRequest
 Json
-Jsonp
 File
 Form
 Sys_js
@@ -26,6 +23,16 @@ Geolocation
 Jstable
 MutationObserver
 Worker
+}
+
+{1 Js_of_ocaml_lwt – API Reference}
+
+{!modules:
+Lwt_jsonp
+Lwt_xmlHttpRequest
+Lwt_file
+Lwt_js_events
+Lwt_js
 }
 
 {1 Ppx - API Reference}
