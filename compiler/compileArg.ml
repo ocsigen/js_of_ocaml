@@ -211,6 +211,16 @@ let options =
                 mappings = []
             })
         else None in
+      let source_map =
+        if source_map <> None && not Source_map_io.enabled
+        then begin
+          Util.warn
+            "Warning: '--source-map' flag ignored because js_of_ocaml was compiled without \
+             sourcemap support.\n%!";
+          None
+        end
+        else source_map
+      in
       let params : (string * string) list = List.flatten set_param in
       let static_env : (string * string) list = List.flatten set_env in
       `Ok {

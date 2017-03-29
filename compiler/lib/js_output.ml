@@ -1059,10 +1059,10 @@ let program f ?source_map p =
   (match source_map with
    | None -> ()
    | Some (out_file,sm) ->
-      let sm = { sm with Source_map.sources = List.rev sm.Source_map.sources;
-                         Source_map.names   = List.rev sm.Source_map.names;
-               }
-      in
+     let sm = { sm with Source_map.sources = List.rev sm.Source_map.sources;
+                        Source_map.names   = List.rev sm.Source_map.names;
+              }
+     in
      let sources = sm.Source_map.sources in
      let sources_content =
        match sm.Source_map.sources_content with
@@ -1102,12 +1102,10 @@ let program f ?source_map p =
      let urlData =
        match out_file with
        | None ->
-         let json = Source_map.json sm in
-         let data = Yojson.Basic.to_string json in
+         let data = Source_map_io.to_string sm in
          "data:application/json;base64,"^ (B64.encode data)
        | Some out_file ->
-         let json = Source_map.json sm in
-         Yojson.Basic.to_file out_file json;
+         Source_map_io.to_file sm out_file;
          Filename.basename out_file
      in
      PP.newline f;

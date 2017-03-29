@@ -3,7 +3,11 @@
  ((name js_of_ocaml_compiler)
   (public_name js_of_ocaml-compiler)
   (synopsis "Js_of_ocaml compiler library")
-  (libraries (compiler-libs.common base64 yojson bytes))
+  (libraries (compiler-libs.common bytes
+   (select source_map_io.ml from
+    (yojson -> source_map_yojson.ml.in)
+    (       -> source_map_unsupported.ml.in))
+  ))
   (flags (:standard -w -7-37 -safe-string))
   (modules (:standard \ control))
   ))

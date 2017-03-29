@@ -30,7 +30,7 @@ let kind ~resolve_sourcemap_url file line =
   match s with
   | `Other -> `Other
   | `Json_base64 base64->
-    `Source_map (Yojson.Basic.from_string (B64.decode base64))
+    `Source_map (Source_map_io.of_string (B64.decode base64))
   | `Url _ when not resolve_sourcemap_url ->
     `Drop
   | `Url url ->
@@ -39,7 +39,7 @@ let kind ~resolve_sourcemap_url file line =
     let l = in_channel_length ic in
     let content = really_input_string ic l in
     close_in ic;
-    `Source_map (Yojson.Basic.from_string content)
+    `Source_map (Source_map_io.of_string content)
 ;;
 
 let link ~output ~files ~resolve_sourcemap_url ~source_map =
@@ -65,8 +65,7 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
          | `Drop, _ -> ()
          | `Source_map _, None ->
            ()
-         | `Source_map x, Some _->
-           let x = Source_map.of_json x in
+         | `Source_map x, Some _ ->
            source_offset := List.length x.Source_map.sources;
            sm := (start_line, file, x) :: !sm
        done;
@@ -82,12 +81,10 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
     | Some sm ->
       match file with
       | None ->
-        let json = Source_map.json sm in
-        let data = Yojson.Basic.to_string json in
+        let data = Source_map_io.to_string sm in
         let s = sourceMappingURL_base64 ^ (B64.encode data) in
         output_string output s
       | Some file ->
-        let json = Source_map.json sm in
-        Yojson.Basic.to_file file json;
+        Source_map_io.to_file sm file;
         let s = sourceMappingURL ^ file in
         output_string output s
