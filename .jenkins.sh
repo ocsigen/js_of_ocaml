@@ -1,4 +1,4 @@
-opam pin add jbuilder https://github.com/janestreet/jbuilder.git
+#opam pin add jbuilder https://github.com/janestreet/jbuilder.git
 
 opam pin add --no-action js_of_ocaml .
 opam pin add --no-action js_of_ocaml-compiler .

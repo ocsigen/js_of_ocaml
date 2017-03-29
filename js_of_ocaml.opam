@@ -22,7 +22,7 @@ depends: [
 ]
 
 conflicts: [
-  "ppx_tools_versioned"     {(= "5.0alpha"| ="5.0beta0")}
+  "ppx_tools_versioned"     {(= "5.0alpha"& ="5.0beta0")}
 ]
 
 available: [ ocaml-version >= "4.02.0" ]
