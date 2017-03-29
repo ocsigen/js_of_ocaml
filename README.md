@@ -13,7 +13,7 @@ like browsers and Node.js.
     API.
 
 ## Requirements
-  Findlib, Cmdliner, cppo, base64, yojson.
+  Findlib, cppo
   See [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam) file for version constraints.
 
 ### optional
@@ -23,6 +23,7 @@ like browsers and Node.js.
   * [ppx_deriving](https://github.com/whitequark/ppx_deriving)
   * [tyxml](https://github.com/ocsigen/tyxml)
   * [reactiveData](https://github.com/ocsigen/reactiveData)
+  * [yojson](https://github.com/mjambon/yojson)
 
 ### Toplevel requirements
  * base64, tyxml, reactiveData
