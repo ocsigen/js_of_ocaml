@@ -20,11 +20,11 @@ package "tyxml" (
 )
 
 package "graphics" (
-  requires = "js_of_ocaml-ppx.graphics"
+  requires = "js_of_ocaml-lwt.graphics"
 )
 
 package "log" (
-  requires = "js_of_ocaml-ppx.log"
+  requires = "js_of_ocaml-lwt.logger"
 )
 
 package "ocamlbuild" (
