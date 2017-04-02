@@ -57,7 +57,7 @@ module type Json = sig
 end
 
 (**/**)
-(** {2 Convertion } *)
+(** {2 Conversion } *)
 
 (** [convert (t : 'a t) (from_ : 'a -> 'b) (to_ : 'b -> 'a)]
     generate a JSON parser/printer for value of type ['b] using the parser/printer of type ['a]
