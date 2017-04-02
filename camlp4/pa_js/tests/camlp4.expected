@@ -1,0 +1,204 @@
+# - : unit = ()
+# - : unit = ()
+- : unit = ()
+# # #                                                                                   module Js_of_ocaml :
+  sig
+    module Js :
+      sig
+        type +'a t
+        type (-'a, +'b) meth_callback
+        type 'a opt = 'a
+        type 'a optdef = 'a
+        type +'a meth
+        type +'a gen_prop
+        type 'a readonly_prop = < get : 'a > gen_prop
+        type 'a writeonly_prop = < set : 'a -> unit > gen_prop
+        type 'a prop = < get : 'a; set : 'a -> unit > gen_prop
+        type 'a optdef_prop = < get : 'a optdef; set : 'a -> unit > gen_prop
+        type +'a constr
+        type 'a callback = (unit, 'a) meth_callback
+        module Unsafe :
+          sig
+            type any
+            type any_js_array = any
+            val inject : 'a -> any
+            val get : 'a -> 'b -> 'c
+            val set : 'a -> 'b -> 'c -> unit
+            val meth_call : 'a -> string -> any array -> 'b
+            val obj : (string * any) array -> 'a
+          end
+        val wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
+      end
+  end
+# - : unit = ()
+#     Characters 40-43:
+  fun (obj : int) -> obj##m();;
+                     ^^^
+Error: This expression has type int but an expression was expected of type
+         < .. > Js_of_ocaml.Js.t
+#   Characters 25-28:
+  fun (obj : < > Js.t) -> obj##m();;
+                          ^^^
+Error: This expression has type <  >
+       It has no method m
+#   Characters 43-49:
+  fun (obj : < m : float Js.prop > Js.t) -> obj##m();;
+                                            ^^^^^^
+Error: This expression has type
+         float Js_of_ocaml.Js.prop =
+           < get : float; set : float -> unit > Js_of_ocaml.Js.gen_prop
+       but an expression was expected of type
+         'jsoo_22f22ba7 Js_of_ocaml.Js.meth
+#   Characters 43-51:
+  fun (obj : < m : float Js.meth > Js.t) -> obj##m() + 1;;
+                                            ^^^^^^^^
+Error: This expression has type float but an expression was expected of type
+         int
+#   Characters 48-54:
+  fun (obj : < m : int -> int Js.meth > Js.t) -> obj##m() + 1;;
+                                                 ^^^^^^
+Error: This expression has type int -> int Js_of_ocaml.Js.meth
+       but an expression was expected of type
+         'jsoo_32f94eb9 Js_of_ocaml.Js.meth
+#   Characters 41-47:
+  fun (obj : < m : int Js.meth > Js.t) -> obj##m(1);;
+                                          ^^^^^^
+Error: This expression has type int Js_of_ocaml.Js.meth
+       but an expression was expected of type
+         'jsoo_776737d4 -> 'jsoo_593685be Js_of_ocaml.Js.meth
+#   Characters 50-59:
+  fun (obj : < m : int -> float Js.meth > Js.t) -> obj##m(1) + 1;;
+                                                   ^^^^^^^^^
+Error: This expression has type float but an expression was expected of type
+         int
+#   Characters 70-76:
+  fun (obj : < m : 'a. 'a -> unit Js.meth > Js.t) -> obj##m("string"); obj##m(); obj##w();;
+                                                                       ^^^^^^
+Error: This expression has type 'a -> unit Js_of_ocaml.Js.meth
+       but an expression was expected of type
+         'jsoo_26523dec Js_of_ocaml.Js.meth
+#         Characters 47-50:
+  fun (obj : int) -> obj##p;;
+                     ^^^
+Error: This expression has type int but an expression was expected of type
+         < .. > Js_of_ocaml.Js.t
+#   Characters 25-28:
+  fun (obj : < > Js.t) -> obj##p;;
+                          ^^^
+Error: This expression has type <  >
+       It has no method p
+#   Characters 53-59:
+  fun (obj : < p : float Js.writeonly_prop > Js.t) -> obj##p + 1;;
+                                                      ^^^^^^
+Error: This expression has type
+         float Js_of_ocaml.Js.writeonly_prop =
+           < set : float -> unit > Js_of_ocaml.Js.gen_prop
+       but an expression was expected of type
+         < get : 'jsoo_res; .. > Js_of_ocaml.Js.gen_prop
+       The first object type has no method get
+#   Characters 43-49:
+  fun (obj : < p : float Js.prop > Js.t) -> obj##p + 1;;
+                                            ^^^^^^
+Error: This expression has type float but an expression was expected of type
+         int
+#         Characters 47-50:
+  fun (obj : int) -> obj##p <- 2;;
+                     ^^^
+Error: This expression has type int but an expression was expected of type
+         < .. > Js_of_ocaml.Js.t
+#   Characters 25-28:
+  fun (obj : < > Js.t) -> obj##p <- 2;;
+                          ^^^
+Error: This expression has type <  >
+       It has no method p
+#   Characters 52-58:
+  fun (obj : < p : float Js.readonly_prop > Js.t) -> obj##p <- 1;;
+                                                     ^^^^^^
+Error: This expression has type
+         float Js_of_ocaml.Js.readonly_prop =
+           < get : float > Js_of_ocaml.Js.gen_prop
+       but an expression was expected of type
+         < set : 'jsoo_arg -> unit; .. > Js_of_ocaml.Js.gen_prop
+       The first object type has no method set
+#   Characters 53-54:
+  fun (obj : < p : float Js.prop > Js.t) -> obj##p <- 1;;
+                                                      ^
+Error: This expression has type int but an expression was expected of type
+         float
+#   Characters 42-53:
+  fun (obj : < p : int Js.prop > Js.t) -> (obj##p <- 1) + 1;;
+                                           ^^^^^^^^^^^
+Error: This expression has type unit but an expression was expected of type
+         int
+#         Characters 53-76:
+  fun (obj : < > Js.t) -> obj = jsobject val m = () end;;
+                                ^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type
+         < m : unit Js_of_ocaml.Js.readonly_prop > Js_of_ocaml.Js.t
+       but an expression was expected of type <  > Js_of_ocaml.Js.t
+       The second object type has no method m
+#   Characters 49-79:
+  fun (obj : < m : float Js.prop > Js.t) -> obj = jsobject val mutable m = 0 end;;
+                                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Error: This expression has type
+         < m : int Js_of_ocaml.Js.prop > Js_of_ocaml.Js.t
+       but an expression was expected of type
+         < m : float Js_of_ocaml.Js.prop > Js_of_ocaml.Js.t
+       Type
+         int Js_of_ocaml.Js.prop =
+           < get : int; set : int -> unit > Js_of_ocaml.Js.gen_prop
+       is not compatible with type
+         float Js_of_ocaml.Js.prop =
+           < get : float; set : float -> unit > Js_of_ocaml.Js.gen_prop 
+       Types for method get are incompatible
+#             Characters 14-83:
+  ...jsobject
+      val r = 2
+      val mutable w = 3.
+      method m = ""
+    end..................................
+Error: This expression has type
+         < m : string Js_of_ocaml.Js.meth;
+           r : int Js_of_ocaml.Js.readonly_prop;
+           w : float Js_of_ocaml.Js.prop >
+         Js_of_ocaml.Js.t
+       but an expression was expected of type
+         < m : int Js_of_ocaml.Js.meth; .. > Js_of_ocaml.Js.t
+       Types for method m are incompatible
+#           Duplicated label "_r" (normalized to "r") at File "//toplevel//", line 81, characters 4-14
+"r" previously seen at File "//toplevel//", line 80, characters 4-13
+Characters 53-56:
+    end;;
+    ^^^
+Error:Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+#           Duplicated label "_r_b" (normalized to "r") at File "//toplevel//", line 86, characters 4-16
+"_r_a" (normalized to "r") previously seen at File "//toplevel//", line 85, characters 4-16
+Characters 59-62:
+    end : <_r_a : int Js.readonly_prop > Js.t);;
+    ^^^
+Error:Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+#           Duplicated label "_w" (normalized to "w") at File "//toplevel//", line 91, characters 4-22
+"w" previously seen at File "//toplevel//", line 90, characters 4-21
+Characters 69-72:
+    end;;
+    ^^^
+Error:Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+#           Duplicated label "_w_b" (normalized to "w") at File "//toplevel//", line 96, characters 4-24
+"_w_a" (normalized to "w") previously seen at File "//toplevel//", line 95, characters 4-24
+Characters 75-78:
+    end : <_r_a : int Js.prop > Js.t);;
+    ^^^
+Error:Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+#           Duplicated label "_m" (normalized to "m") at File "//toplevel//", line 101, characters 16-18
+"m" previously seen at File "//toplevel//", line 100, characters 15-17
+Characters 61-64:
+    end;;
+    ^^^
+Error:Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+#           Duplicated label "_m_bc" (normalized to "m") at File "//toplevel//", line 106, characters 19-21
+"_m_a" (normalized to "m") previously seen at File "//toplevel//", line 105, characters 18-20
+Characters 68-71:
+    end : <_m_a : string Js.meth; .. > Js.t);;
+    ^^^
+Error:Failure: "Error while preprocessing with with Js_of_ocaml extention syntax"
+# 

@@ -1,8 +1,5 @@
 (jbuild_version 1)
 (library
  ((name expect_test_404)
-  (libraries (
-  compiler-libs.common
-  compiler-libs.toplevel
-  ocaml-migrate-parsetree))
+  (libraries ( compiler-libs.common compiler-libs.toplevel))
   ))
