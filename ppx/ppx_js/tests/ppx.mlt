@@ -1,3 +1,4 @@
+module Js_of_ocaml = struct
 module Js = struct
   type +'a t
   type (-'a, +'b) meth_callback
@@ -35,16 +36,47 @@ module Js = struct
   end
   let wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback =
     fun _ -> assert false
-
-end;;
-
+end
+end
+open Js_of_ocaml;;
+[%%expect {|
+module Js_of_ocaml :
+  sig
+    module Js :
+      sig
+        type +'a t
+        type (-'a, +'b) meth_callback
+        type 'a opt = 'a
+        type 'a optdef = 'a
+        type +'a meth
+        type +'a gen_prop
+        type 'a readonly_prop = < get : 'a > gen_prop
+        type 'a writeonly_prop = < set : 'a -> unit > gen_prop
+        type 'a prop = < get : 'a; set : 'a -> unit > gen_prop
+        type 'a optdef_prop = < get : 'a optdef; set : 'a -> unit > gen_prop
+        type +'a constr
+        type 'a callback = (unit, 'a) meth_callback
+        module Unsafe :
+          sig
+            type any
+            type any_js_array = any
+            val inject : 'a -> any
+            val get : 'a -> 'b -> 'c
+            val set : 'a -> 'b -> 'c -> unit
+            val meth_call : 'a -> string -> any array -> 'b
+            val obj : (string * any) array -> 'a
+          end
+        val wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
+      end
+  end
+|}];;
 (* Test methods. *)
 
 fun (obj : int) -> obj##m
 [%%expect {|
 Line _, characters 19-22:
 Error: This expression has type int but an expression was expected of type
-         < .. > Js.t
+         < .. > Js_of_ocaml.Js.t
 |}]
 ;;
 
@@ -60,8 +92,9 @@ fun (obj : < m : float Js.prop > Js.t) -> obj##m
 [%%expect {|
 Line _, characters 42-48:
 Error: This expression has type
-         float Js.prop = < get : float; set : float -> unit > Js.gen_prop
-       but an expression was expected of type 'a Js.meth
+         float Js_of_ocaml.Js.prop =
+           < get : float; set : float -> unit > Js_of_ocaml.Js.gen_prop
+       but an expression was expected of type 'a Js_of_ocaml.Js.meth
 |}]
 ;;
 
@@ -76,16 +109,16 @@ Error: This expression has type float but an expression was expected of type
 fun (obj : < m : int -> int Js.meth > Js.t) -> obj##m + 1
 [%%expect {|
 Line _, characters 47-53:
-Error: This expression has type int -> int Js.meth
-       but an expression was expected of type 'a Js.meth
+Error: This expression has type int -> int Js_of_ocaml.Js.meth
+       but an expression was expected of type 'a Js_of_ocaml.Js.meth
 |}]
 ;;
 
 fun (obj : < m : int Js.meth > Js.t) -> obj##m 1
 [%%expect {|
 Line _, characters 40-46:
-Error: This expression has type int Js.meth
-       but an expression was expected of type int -> 'a Js.meth
+Error: This expression has type int Js_of_ocaml.Js.meth
+       but an expression was expected of type int -> 'a Js_of_ocaml.Js.meth
 |}]
 ;;
 
@@ -100,7 +133,7 @@ Error: This expression has type float but an expression was expected of type
 fun (obj : < m : 'a. 'a -> unit Js.meth > Js.t) -> obj##m "string"; obj##m (); obj##w
 [%%expect {|
 Line _, characters 79-82:
-Error: This expression has type < m : 'a. 'a -> unit Js.meth >
+Error: This expression has type < m : 'a. 'a -> unit Js_of_ocaml.Js.meth >
        It has no method w
 |}]
 ;;
@@ -112,7 +145,7 @@ fun (obj : int) -> obj##.p
 [%%expect {|
 Line _, characters 19-22:
 Error: This expression has type int but an expression was expected of type
-         < .. > Js.t
+         < .. > Js_of_ocaml.Js.t
 |}]
 ;;
 
@@ -128,8 +161,10 @@ fun (obj : < p : float Js.writeonly_prop > Js.t) -> obj##.p + 1
 [%%expect {|
 Line _, characters 52-59:
 Error: This expression has type
-         float Js.writeonly_prop = < set : float -> unit > Js.gen_prop
-       but an expression was expected of type < get : 'a; .. > Js.gen_prop
+         float Js_of_ocaml.Js.writeonly_prop =
+           < set : float -> unit > Js_of_ocaml.Js.gen_prop
+       but an expression was expected of type
+         < get : 'a; .. > Js_of_ocaml.Js.gen_prop
        The first object type has no method get
 |}]
 ;;
@@ -149,7 +184,7 @@ fun (obj : int) -> obj##.p := 2
 [%%expect {|
 Line _, characters 19-22:
 Error: This expression has type int but an expression was expected of type
-         < .. > Js.t
+         < .. > Js_of_ocaml.Js.t
 |}]
 ;;
 
@@ -165,9 +200,10 @@ fun (obj : < p : float Js.readonly_prop > Js.t) -> obj##.p := 1
 [%%expect {|
 Line _, characters 51-58:
 Error: This expression has type
-         float Js.readonly_prop = < get : float > Js.gen_prop
+         float Js_of_ocaml.Js.readonly_prop =
+           < get : float > Js_of_ocaml.Js.gen_prop
        but an expression was expected of type
-         < set : int -> unit; .. > Js.gen_prop
+         < set : int -> unit; .. > Js_of_ocaml.Js.gen_prop
        The first object type has no method set
 |}]
 ;;
@@ -176,9 +212,10 @@ fun (obj : < p : float Js.prop > Js.t) -> obj##.p := 1
 [%%expect {|
 Line _, characters 42-49:
 Error: This expression has type
-         float Js.prop = < get : float; set : float -> unit > Js.gen_prop
+         float Js_of_ocaml.Js.prop =
+           < get : float; set : float -> unit > Js_of_ocaml.Js.gen_prop
        but an expression was expected of type
-         < set : int -> unit; .. > Js.gen_prop
+         < set : int -> unit; .. > Js_of_ocaml.Js.gen_prop
        Types for method set are incompatible
 |}]
 ;;
@@ -197,8 +234,9 @@ Error: This expression has type unit but an expression was expected of type
 fun (obj : < > Js.t) -> obj = object%js val m = () end
 [%%expect {|
 Line _, characters 30-54:
-Error: This expression has type < m : unit Js.readonly_prop > Js.t
-       but an expression was expected of type <  > Js.t
+Error: This expression has type
+         < m : unit Js_of_ocaml.Js.readonly_prop > Js_of_ocaml.Js.t
+       but an expression was expected of type <  > Js_of_ocaml.Js.t
        The second object type has no method m
 |}]
 ;;
@@ -206,11 +244,16 @@ Error: This expression has type < m : unit Js.readonly_prop > Js.t
 fun (obj : < m : float Js.prop > Js.t) -> obj = object%js val mutable m = 0 end
 [%%expect {|
 Line _, characters 48-79:
-Error: This expression has type < m : int Js.prop > Js.t
-       but an expression was expected of type < m : float Js.prop > Js.t
-       Type int Js.prop = < get : int; set : int -> unit > Js.gen_prop
+Error: This expression has type
+         < m : int Js_of_ocaml.Js.prop > Js_of_ocaml.Js.t
+       but an expression was expected of type
+         < m : float Js_of_ocaml.Js.prop > Js_of_ocaml.Js.t
+       Type
+         int Js_of_ocaml.Js.prop =
+           < get : int; set : int -> unit > Js_of_ocaml.Js.gen_prop
        is not compatible with type
-         float Js.prop = < get : float; set : float -> unit > Js.gen_prop
+         float Js_of_ocaml.Js.prop =
+           < get : float; set : float -> unit > Js_of_ocaml.Js.gen_prop
        Types for method get are incompatible
 |}]
   ;;
@@ -224,9 +267,12 @@ fun () ->
 [%%expect {|
 Line _, characters 3-73:
 Error: This expression has type
-         < m : string Js.meth; r : int Js.readonly_prop; w : float Js.prop >
-         Js.t
-       but an expression was expected of type < m : int Js.meth; .. > Js.t
+         < m : string Js_of_ocaml.Js.meth;
+           r : int Js_of_ocaml.Js.readonly_prop;
+           w : float Js_of_ocaml.Js.prop >
+         Js_of_ocaml.Js.t
+       but an expression was expected of type
+         < m : int Js_of_ocaml.Js.meth; .. > Js_of_ocaml.Js.t
        Types for method m are incompatible
 |}]
 ;;
@@ -238,9 +284,9 @@ fun () ->
   end
 [%%expect {|
 Line _, characters 8-10:
-Duplicated val or method "_r" (normalized to "r").
+Error: Duplicated val or method "_r" (normalized to "r").
 Line _, characters 8-9:
-Duplicated val or method "r".
+Error: Duplicated val or method "r".
 |}]
 ;;
 
@@ -251,9 +297,9 @@ fun () ->
   end : <_r_a : int Js.readonly_prop > Js.t)
 [%%expect {|
 Line _, characters 8-12:
-Duplicated val or method "_r_b" (normalized to "r").
+Error: Duplicated val or method "_r_b" (normalized to "r").
 Line _, characters 8-12:
-Duplicated val or method "_r_a" (normalized to "r").
+Error: Duplicated val or method "_r_a" (normalized to "r").
 |}]
 ;;
 
@@ -264,9 +310,9 @@ fun () ->
   end
 [%%expect {|
 Line _, characters 16-18:
-Duplicated val or method "_w" (normalized to "w").
+Error: Duplicated val or method "_w" (normalized to "w").
 Line _, characters 16-17:
-Duplicated val or method "w".
+Error: Duplicated val or method "w".
 |}]
 ;;
 
@@ -277,9 +323,9 @@ fun () ->
   end : <_r_a : int Js.prop > Js.t)
 [%%expect {|
 Line _, characters 16-20:
-Duplicated val or method "_w_b" (normalized to "w").
+Error: Duplicated val or method "_w_b" (normalized to "w").
 Line _, characters 16-20:
-Duplicated val or method "_w_a" (normalized to "w").
+Error: Duplicated val or method "_w_a" (normalized to "w").
 |}]
 ;;
 
@@ -290,9 +336,9 @@ fun () ->
   end
 [%%expect {|
 Line _, characters 11-13:
-Duplicated val or method "_m" (normalized to "m").
+Error: Duplicated val or method "_m" (normalized to "m").
 Line _, characters 11-12:
-Duplicated val or method "m".
+Error: Duplicated val or method "m".
 |}]
 ;;
 
@@ -303,8 +349,8 @@ fun () ->
   end : <_m_a : string Js.meth; .. > Js.t)
 [%%expect {|
 Line _, characters 11-16:
-Duplicated val or method "_m_bc" (normalized to "m").
+Error: Duplicated val or method "_m_bc" (normalized to "m").
 Line _, characters 11-15:
-Duplicated val or method "_m_a" (normalized to "m").
+Error: Duplicated val or method "_m_a" (normalized to "m").
 |}]
 ;;

@@ -1,9 +1,23 @@
 (jbuild_version 1)
 
-;; tests/expect: tests/main.ml
-;; 	ocamlfind ocamlc -verbose -linkpkg -linkall -predicates create_toploop,ppx_driver \
-;; 	-package toplevel_expect_test,ppx_type_conv,js_of_ocaml.deriving.ppx,js_of_ocaml.deriving  \
-;; 	tests/main.ml -o $@
+(executables
+ ((names (main))
+  (libraries (
+    expect_test_404
+    js_of_ocaml.deriving
+    js_of_ocaml-ppx.deriving
+    ppx_deriving.api
+  ))
+  (link_flags (-linkall))
+  ))
 
-;; tests: tests/expect tests/ppx.mlt
-;; 	./tests/expect tests/ppx.mlt
+(rule
+ ((targets (ppx.mlt.corrected))
+  (deps    (ppx.mlt ../../../lib/deriving_json/deriving_Json.cmi))
+  (action  (run ${exe:main.bc} ppx.mlt))
+ ))
+
+(alias
+  ((name   runtest)
+   (deps (ppx.mlt ppx.mlt.corrected))
+   (action (run patdiff ppx.mlt ppx.mlt.corrected))))

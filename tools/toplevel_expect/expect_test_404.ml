@@ -219,7 +219,23 @@ let eval_expectation expectation ~output =
         { expectation with normal = s }
     )
 
-let shift_lines delta phrases =
+let preprocess_structure mappers str =
+  let open Ast_mapper in
+  List.fold_right
+    ~f:(fun ppx_rewriter str  ->
+       let mapper : Ast_mapper.mapper = ppx_rewriter [] in
+       mapper.structure mapper str)
+    mappers
+    ~init:str
+
+let preprocess_phrase mappers phrase =
+  let open Parsetree in
+  match phrase with
+  | Ptop_def str -> Ptop_def (preprocess_structure mappers str)
+  | Ptop_dir _ as x -> x
+
+
+let shift_lines delta =
   let position (pos : Lexing.position) =
     { pos with pos_lnum = pos.pos_lnum + delta }
   in
@@ -229,11 +245,7 @@ let shift_lines delta phrases =
     ; loc_end   = position loc.loc_end
     }
   in
-  let mapper = { Ast_mapper.default_mapper with location } in
-  List.map phrases ~f:(function
-    | Parsetree.Ptop_dir _ as p -> p
-    | Parsetree.Ptop_def st ->
-      Parsetree.Ptop_def (mapper.structure mapper st))
+  fun _ -> { Ast_mapper.default_mapper with location }
 
 let rec min_line_number : Parsetree.toplevel_phrase list -> int option =
 function
@@ -241,19 +253,26 @@ function
   | (Ptop_dir _  | Ptop_def []) :: l -> min_line_number l
   | Ptop_def (st :: _) :: _ -> Some st.pstr_loc.loc_start.pos_lnum
 
-let eval_expect_file _fname ~file_contents =
+let eval_expect_file mapper fname ~file_contents =
   Warnings.reset_fatal ();
   let chunks, trailing_code =
-    parse_contents ~fname:"" file_contents |> split_chunks
+    parse_contents ~fname:fname file_contents |> split_chunks
   in
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
+  let out_fun = Format.pp_get_formatter_out_functions ppf in
+  Format.pp_set_formatter_out_functions Format.std_formatter;
+
   let exec_phrases phrases =
-    let phrases =
+
+    let mappers =
       match min_line_number phrases with
-      | None -> phrases
-      | Some lnum -> shift_lines (1 - lnum) phrases
+      | None -> []
+      | Some lnum -> [shift_lines (1 - lnum)]
     in
+    let mappers = mapper :: mappers in
+    let phrases = List.map (preprocess_phrase mappers) phrases in
+
     (* For formatting purposes *)
     Buffer.add_char buf '\n';
     let _ : bool =
@@ -303,7 +322,7 @@ let output_corrected oc ~file_contents correction =
       ~f:(fun ofs c ->
         output_slice oc file_contents ofs c.payload_loc.loc_start.pos_cnum;
         output_body oc c.normal;
-        if c.normal.str <> c.principal.str then begin
+        if !Clflags.principal && c.normal.str <> c.principal.str then begin
           output_string oc ", Principal";
           output_body oc c.principal
         end;
@@ -319,7 +338,7 @@ let write_corrected ~file ~file_contents correction =
   output_corrected oc ~file_contents correction;
   close_out oc
 
-let process_expect_file fname =
+let process_expect_file mapper fname =
   let corrected_fname = fname ^ ".corrected" in
   let file_contents =
     let ic = open_in_bin fname in
@@ -327,12 +346,12 @@ let process_expect_file fname =
     | s           -> close_in ic; Misc.normalise_eol s
     | exception e -> close_in ic; raise e
   in
-  let correction = eval_expect_file fname ~file_contents in
+  let correction = eval_expect_file mapper fname ~file_contents in
   write_corrected ~file:corrected_fname ~file_contents correction
 
 let repo_root = ref ""
 
-let main fname =
+let main mapper fname =
   Toploop.override_sys_argv
     (Array.sub Sys.argv ~pos:!Arg.current
        ~len:(Array.length Sys.argv - !Arg.current));
@@ -342,7 +361,7 @@ let main fname =
     Topdirs.dir_directory (Filename.concat !repo_root s));
   Toploop.initialize_toplevel_env ();
   Sys.interactive := false;
-  process_expect_file fname;
+  process_expect_file mapper fname;
   exit 0
 
 let args =
@@ -356,9 +375,9 @@ let args =
 let usage = "Usage: expect_test <options> [script-file [arguments]]\n\
              options are:"
 
-let () =
+let run mapper =
   try
-    Arg.parse args main usage;
+    Arg.parse args (main mapper) usage;
     Printf.eprintf "expect_test: no input file\n";
     exit 2
   with exn ->

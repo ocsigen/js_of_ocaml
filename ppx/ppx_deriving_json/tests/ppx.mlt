@@ -1,41 +1,21 @@
-#use "topfind"
-[%%expect {|
-- : unit = ()
-Findlib has been successfully loaded. Additional directives:
-  #require "package";;      to load a package
-  #list;;                   to list the available packages
-  #camlp4o;;                to load camlp4 (standard syntax)
-  #camlp4r;;                to load camlp4 (revised syntax)
-  #predicates "p,q,...";;   to set these predicates
-  Topfind.reset();;         to force that packages will be reloaded
-  #thread;;                 to enable threads
-
-- : unit = ()
-|}];;
-#directory "../../lib/deriving_json/"
-[%%expect {||}];;
-#load "deriving_Json_lexer.cmo"
-[%%expect {||}];;
-#load "deriving_Json.cmo"
-[%%expect {||}];;
-#require "ppx_deriving"
-[%%expect {||}]
-#require "ppx_deriving.api"
-[%%expect {||}];;
-
+#directory "../../../lib/deriving_Json/"
+#directory "+/../../lib/ppx_deriving/"
 [@@@warning "-39"]
 
 let test name v =
-  Printf.printf "%s = %s\n%!" name v
+  Format.printf "%s = %s\n%!" name v
 
 let test' _to _from name  v =
   let b = Buffer.create 17 in
   let () = _to b v in
   let str = Buffer.contents b in
-  Printf.printf "%s = %s\n%!" name str
+  Format.printf "%s = %s\n%!" name str
 
 open Deriving_Json
-[%%expect {||}];;
+[%%expect {|
+val test : string -> string -> unit = <fun>
+val test' : (Buffer.t -> 'a -> unit) -> 'b -> string -> 'a -> unit = <fun>
+|}];;
 
 let () = test "char" (Json_char.to_string '4')
 [%%expect {|
@@ -94,6 +74,54 @@ module Int_array  = Json_array(Json_int)
 
 let () = test "int_list" (Int_list.to_string  [4;2;42])
 [%%expect {|
+module Int_list :
+  sig
+    type a = Deriving_Json.Json_int.a list
+    val t : a Deriving_Json.t
+    val write : Buffer.t -> a -> unit
+    val read : Deriving_Json_lexer.lexbuf -> a
+    val to_string : a -> string
+    val from_string : string -> a
+    val match_variant : [ `Cst of int | `NCst of int ] -> bool
+    val read_variant :
+      Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+  end
+module Int_ref :
+  sig
+    type a = Deriving_Json.Json_int.a ref
+    val t : a Deriving_Json.t
+    val write : Buffer.t -> a -> unit
+    val read : Deriving_Json_lexer.lexbuf -> a
+    val to_string : a -> string
+    val from_string : string -> a
+    val match_variant : [ `Cst of int | `NCst of int ] -> bool
+    val read_variant :
+      Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+  end
+module Int_option :
+  sig
+    type a = Deriving_Json.Json_int.a option
+    val t : a Deriving_Json.t
+    val write : Buffer.t -> a -> unit
+    val read : Deriving_Json_lexer.lexbuf -> a
+    val to_string : a -> string
+    val from_string : string -> a
+    val match_variant : [ `Cst of int | `NCst of int ] -> bool
+    val read_variant :
+      Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+  end
+module Int_array :
+  sig
+    type a = Deriving_Json.Json_int.a array
+    val t : a Deriving_Json.t
+    val write : Buffer.t -> a -> unit
+    val read : Deriving_Json_lexer.lexbuf -> a
+    val to_string : a -> string
+    val from_string : string -> a
+    val match_variant : [ `Cst of int | `NCst of int ] -> bool
+    val read_variant :
+      Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+  end
 int_list = [0,4,[0,2,[0,42,0]]]
 |}]
 
@@ -118,22 +146,60 @@ int_array = [0,4,2,42,24]
 |}]
 
 type tuple1 = (int * string) [@@deriving json]
-[%%expect {||}]
+[%%expect {|
+type tuple1 = int * string
+val tuple1_of_json : Deriving_Json_lexer.lexbuf -> tuple1 = <fun>
+val tuple1_to_json : Buffer.t -> tuple1 -> unit = <fun>
+val tuple1_json : tuple1 Deriving_Json.t = <abstr>
+|}]
 
 type variant1 = A | B | C | D of variant1 [@@deriving json]
-[%%expect {||}]
+[%%expect {|
+type variant1 = A | B | C | D of variant1
+val variant1_of_json : Deriving_Json_lexer.lexbuf -> variant1 = <fun>
+val variant1_to_json : Buffer.t -> variant1 -> unit = <fun>
+val variant1_json : variant1 Deriving_Json.t = <abstr>
+|}]
 
 type variant2 = D of string | E of variant1 [@@deriving json]
-[%%expect {||}]
+[%%expect {|
+type variant2 = D of string | E of variant1
+val variant2_of_json : Deriving_Json_lexer.lexbuf -> variant2 = <fun>
+val variant2_to_json : Buffer.t -> variant2 -> unit = <fun>
+val variant2_json : variant2 Deriving_Json.t = <abstr>
+|}]
 
 type record1 = { f : variant1; g : variant2; h : record1 option } [@@deriving json]
-[%%expect {||}]
+[%%expect {|
+type record1 = { f : variant1; g : variant2; h : record1 option; }
+val record1_of_json : Deriving_Json_lexer.lexbuf -> record1 = <fun>
+val record1_to_json : Buffer.t -> record1 -> unit = <fun>
+val record1_json : record1 Deriving_Json.t = <abstr>
+|}]
 
 type poly1 = [`A | `B of string] [@@deriving json]
-[%%expect {||}]
+[%%expect {|
+type poly1 = [ `A | `B of string ]
+val poly1_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly1_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly1 =
+  <fun>
+val poly1_of_json : Deriving_Json_lexer.lexbuf -> poly1 = <fun>
+val poly1_to_json : Buffer.t -> poly1 -> unit = <fun>
+val poly1_json : poly1 Deriving_Json.t = <abstr>
+|}]
 
 type poly2 = [poly1 | `C of int] [@@deriving json];;
-[%%expect {||}]
+[%%expect {|
+type poly2 = [ `A | `B of string | `C of int ]
+val poly2_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly2_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly2 =
+  <fun>
+val poly2_of_json : Deriving_Json_lexer.lexbuf -> poly2 = <fun>
+val poly2_to_json : Buffer.t -> poly2 -> unit = <fun>
+val poly2_json : poly2 Deriving_Json.t = <abstr>
+|}]
 
 let () = test' tuple1_to_json tuple1_of_json "tuple1" ((42,"42"))
 [%%expect {|
@@ -212,6 +278,13 @@ type inline_record = | I of {name: string; age : int} | J of {empty : unit} [@@d
 let () = test' inline_record_to_json inline_record_of_json "inline_record 1"
            (I {name="bob"; age = 0})
 [%%expect {|
+type inline_record =
+    I of { name : string; age : int; }
+  | J of { empty : unit; }
+val inline_record_of_json : Deriving_Json_lexer.lexbuf -> inline_record =
+  <fun>
+val inline_record_to_json : Buffer.t -> inline_record -> unit = <fun>
+val inline_record_json : inline_record Deriving_Json.t = <abstr>
 inline_record 1 = [0,"bob",0]
 |}]
 
