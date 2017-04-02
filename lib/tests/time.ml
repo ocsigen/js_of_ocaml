@@ -41,6 +41,7 @@ let () = match tmg with
   | _ -> log_failure_tm "Unix.gmtime" tmg
 
 (* check localetime *)
+(*
 let tm = Unix.localtime now
 let () = match tm with
   | {Unix.tm_sec = 35; Unix.tm_min = 17; Unix.tm_hour = 18; Unix.tm_mday = 21;
@@ -58,5 +59,5 @@ let _ = match norm with
   | (1384049855.,tm) -> log_failure_tm "Unix.mktime" tm
   | (wrong,tm) -> log_failure_tm "Unix.mktime" tm;
     log_failure (Printf.sprintf "Unix.mktime: %.0f <> 1384049855" wrong)
-
+*)
 let () = log_stop ()

@@ -7,5 +7,16 @@ module Json_convert = Json_convert
 module Regexp1 = Regexp1
 module Side_effect = Side_effect
 module Tailcall = Tailcall
-module Time_PDT_minus8 = Time_PDT_minus8
+module Time = Time
 module Url1 = Url1
+
+let _ =
+  Firebug.console##log(
+    Js.string (
+      Printf.sprintf "Test results: %d successes out of %d tests"
+        !Common.success_count !Common.test_count
+    )
+  );
+  if !Common.success_count <> !Common.test_count
+  then exit 1
+  else exit 0

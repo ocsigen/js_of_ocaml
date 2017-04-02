@@ -41,14 +41,3 @@ let raw_log x =
   Firebug.console##log_2 (Js.string "\t\t") x
 
 let log s = raw_log (Js.string s)
-
-
-
-let () = at_exit(fun () ->
-    Firebug.console##log(
-      Js.string (
-        Printf.sprintf "Test results: %d successes out of %d tests"
-          !success_count !test_count
-      )
-    )
-  )
