@@ -1,0 +1,21 @@
+(jbuild_version 1)
+(executables
+ ((names (main))
+  (libraries
+   (js_of_ocaml unix))
+  (preprocess (pps (js_of_ocaml-ppx)))
+  ))
+
+(rule
+ ((targets (main.bc.js))
+  (deps    (main.bc unix.js ../../runtime/runtime.js ../../compiler/js_of_ocaml))
+  (action  (run ../../compiler/js_of_ocaml
+                  --no-runtime ../../runtime/runtime.js
+                  unix.js
+                  main.bc -o main.bc.js))
+ ))
+
+(alias
+  ((name runtest)
+   (deps (main.bc.js))
+   (action (run node main.bc.js))))
