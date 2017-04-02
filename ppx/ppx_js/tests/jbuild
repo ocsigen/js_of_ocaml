@@ -2,7 +2,7 @@
 
 (executables
  ((names (main))
-  (libraries (expect_test_404 js_of_ocaml-ppx))
+  (libraries (toplevel_expect_test js_of_ocaml-ppx))
   ))
 
 (rule

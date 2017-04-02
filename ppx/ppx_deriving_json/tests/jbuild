@@ -3,7 +3,7 @@
 (executables
  ((names (main))
   (libraries (
-    expect_test_404
+    toplevel_expect_test
     js_of_ocaml.deriving
     js_of_ocaml-ppx.deriving
     ppx_deriving.api
