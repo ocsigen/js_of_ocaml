@@ -1,6 +1,9 @@
-
-
-#                                                                                                               char = 52
+# - : unit = ()
+# - : unit = ()
+- : unit = ()
+# # # # # # - : unit = ()
+#   #   val test : string -> string -> unit = <fun>
+#                       char = 52
 bool = 1
 bool = 0
 unit = 0
@@ -9,13 +12,7 @@ int32 = 42
 int64 = [255,42,0,0]
 float = 4.242000e+01
 string = "42"
-int_list = [0,4,[0,2,[0,42,0]]]
-int_ref = [0,42]
-int_option = [0,42]
-int_option = 0
-int_array = [0,4,2,42,24]
-val test : string -> string -> unit = <fun>
-module Int_list :
+#   module Int_list :
   sig
     type a = Deriving_Json.Json_int.a list
     val t : a Deriving_Json.t
@@ -27,7 +24,7 @@ module Int_list :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-module Int_ref :
+#   module Int_ref :
   sig
     type a = Deriving_Json.Json_int.a ref
     val t : a Deriving_Json.t
@@ -39,7 +36,7 @@ module Int_ref :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-module Int_option :
+#   module Int_option :
   sig
     type a = Deriving_Json.Json_int.a option
     val t : a Deriving_Json.t
@@ -51,7 +48,7 @@ module Int_option :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-module Int_array :
+#   module Int_array :
   sig
     type a = Deriving_Json.Json_int.a array
     val t : a Deriving_Json.t
@@ -63,7 +60,12 @@ module Int_array :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type tuple1 = int * string
+#             int_list = [0,4,[0,2,[0,42,0]]]
+int_ref = [0,42]
+int_option = [0,42]
+int_option = 0
+int_array = [0,4,2,42,24]
+#   type tuple1 = int * string
 module Json_tuple1 :
   sig
     type a = tuple1
@@ -76,7 +78,7 @@ module Json_tuple1 :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type variant1 = A | B | C | D of variant1
+#   type variant1 = A | B | C | D of variant1
 module Json_tdL9PCNdWpVcu7uA6UmEiRfTGowsbaZR :
   sig
     val make_variant1_1 :
@@ -94,7 +96,7 @@ module Json_variant1 :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type variant2 = D of string | E of variant1
+#   type variant2 = D of string | E of variant1
 module Json_variant2 :
   sig
     type a = variant2
@@ -107,7 +109,7 @@ module Json_variant2 :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type record1 = { f : variant1; g : variant2; h : record1 option; }
+#   type record1 = { f : variant1; g : variant2; h : record1 option; }
 module Json_XfaHIZqeC7h4bbB6H_eBvyzvX5Drp4_d :
   sig
     val make_record1_1 :
@@ -125,7 +127,7 @@ module Json_record1 :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type poly1 = [ `A | `B of string ]
+#   type poly1 = [ `A | `B of string ]
 module Json_poly1 :
   sig
     type a = poly1
@@ -138,7 +140,7 @@ module Json_poly1 :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type poly2 = [ `A | `B of string | `C of int ]
+#   type poly2 = [ `A | `B of string | `C of int ]
 module Json_poly2 :
   sig
     type a = poly2
@@ -151,7 +153,20 @@ module Json_poly2 :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-#                                                                   
+#                               
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   
   
   

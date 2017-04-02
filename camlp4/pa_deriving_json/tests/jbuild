@@ -1,6 +1,14 @@
-;; tests/%.result: tests/%.ml tests/init.ml
-;; 	(TERM=dumb ocaml -init tests/init.ml < $< 2>&1) | grep -v version > $@
-;; 	patdiff tests/$*.expected $@ || true
-;; 	rm $@
+(jbuild_version 1)
 
-;; tests: tests/deriving.result
+(rule
+ ((targets (deriving.result))
+  (deps    (deriving.ml ../lib/pa_deriving_Json.cma
+                        ../../../lib/deriving_json/js_of_ocaml_deriving.cma))
+  (action  (bash
+    "(OCAMLPARAM='_' TERM=dumb ocaml -no-version < deriving.ml) 2>&1 | cat > deriving.result"))
+ ))
+
+(alias
+  ((name   runtest)
+   (deps   (deriving.expected deriving.result))
+   (action (run patdiff deriving.expected deriving.result))))
