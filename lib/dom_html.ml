@@ -846,7 +846,7 @@ class type tableElement = object
   inherit element
   method caption : tableCaptionElement t prop
   method tHead : tableSectionElement t prop
-  method tFood : tableSectionElement t prop
+  method tFoot : tableSectionElement t prop
   method rows : tableRowElement collection t readonly_prop
   method tBodies : tableSectionElement collection t readonly_prop
   method align : js_string t prop
