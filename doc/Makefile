@@ -44,6 +44,7 @@ MLIS+=$(wildcard ${SRC_DIR}ppx/ppx_js/lib/*.mli)
 OTHER += -package ppx_tools_versioned -I ${CMI_DIR}ppx/ppx_js/lib
 endif
 
+DOCOPT := -colorize-code -short-functors -charset utf-8
 
 .PHONY: doc wikidoc
 doc: api/html/index.html

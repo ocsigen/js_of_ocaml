@@ -2,6 +2,14 @@ include ../../../Makefile.conf
 
 all: toplevel.js eval.js
 
+ifeq ($(shell ocamlc -safe-string 2> /dev/null ; echo $$?),0)
+SAFESTRING=-safe-string
+else
+SAFESTRING=-package bytes
+endif
+
+METAOCAML ?= 0
+
 DERIVING=$(shell ocamlfind query js_of_ocaml.deriving -format "%p" 2> /dev/null)
 
 ifneq ($(DERIVING),)
