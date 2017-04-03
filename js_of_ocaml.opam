@@ -18,7 +18,6 @@ depends: [
   "ppx_tools_versioned"
   "uchar"
   "js_of_ocaml-compiler"
-  "toplevel_expect_test" {test}
 ]
 
 conflicts: [
