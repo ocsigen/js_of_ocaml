@@ -1,7 +1,24 @@
-===== dev =====
+===== 3.0.0 (2017-04-**) =====
 
  * Features/Changes
- ** Misc: use ppx instead of camlp4
+ ** Misc: switch to ppx instead of camlp4
+ ** Misc: always install deriving_json
+ ** Misc: remove support for async_kernel, bin_prot
+ ** Misc: remove support for ppx_driver
+ ** Misc: split js_of_ocaml in multiple packages
+ ** Misc: switch to jbuilder
+ ** Misc: new pseudo filesystem support with better node support
+ ** Compiler: sourcemap support is now optional
+ ** Compiler: no more dep on yojson, b64, menhir, ocamllex
+ ** Runtime: add support for weakdef
+ ** Syntaxes: add expect tests
+ ** Syntaxes: switch to ocaml-migrate-parsetree and ppx_tools_versioned
+ ** Lib: Add primitives in [Js.Unsafe]
+
+ * Bug fixes:
+ ** Runtime: fix many stubs
+ ** Lib: fix many signatures
+ ** Compiler: fix performance of compilation passes (simpl,clean)
 
 ===== 2.8.4 (2016-12-21) =====
 
