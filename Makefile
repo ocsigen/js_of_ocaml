@@ -22,4 +22,4 @@ remove-lexer-and-parser:
 promote-lexer-and-parser:
 	cp  _build/default/compiler/lib/{annot_parser,js_parser}.{ml,mli} compiler/lib/
 
-.PHONY: all doc clean toplevel-examples tests remove-lexer-and-parser promote-lexer-and-parser
+.PHONY: all tests doc toplevel-examples clean remove-lexer-and-parser promote-lexer-and-parser
