@@ -13,7 +13,7 @@ build: [
 ]
 
 depends: [
-  "jbuilder" {build & >= "1.0+beta3"}
+  "jbuilder" {build}
   "tyxml" {>= "4.0.0"}
   "reactiveData" {>= "0.2"}
   "js_of_ocaml"

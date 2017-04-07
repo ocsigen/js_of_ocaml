@@ -13,9 +13,10 @@ build: [
 ]
 
 depends: [
-  "jbuilder" {build & >= "1.0+beta3"}
+  "jbuilder" {build}
   "ocamlfind" {>= "1.5.1"}
   "js_of_ocaml-compiler"
+  "js_of_ocaml-ppx"
   "js_of_ocaml"
 ]
 

@@ -13,7 +13,7 @@ build: [
 ]
 
 depends: [
-  "jbuilder" {build & >= "1.0+beta3"}
+  "jbuilder" {build}
   "ocaml-migrate-parsetree"
   "ppx_tools_versioned"
   "uchar"
@@ -21,7 +21,7 @@ depends: [
 ]
 
 conflicts: [
-  "ppx_tools_versioned"     {(= "5.0alpha"& ="5.0beta0")}
+  "ppx_tools_versioned"     {<= "5.0beta0"}
 ]
 
 available: [ ocaml-version >= "4.02.0" ]
