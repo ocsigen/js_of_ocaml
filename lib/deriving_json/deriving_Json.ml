@@ -197,7 +197,13 @@ module Json_nativeint = Json_undef(struct type a = nativeint end)
 (* module Json_num = Json_undef(struct type a = Num.num end) *)
 module Json_float = Defaults(struct
     type a = float
-    let write buffer f = Printf.bprintf buffer "%e" f
+    let write buffer f =
+      (* "%.15g" can be (much) shorter; "%.17g" is round-trippable *)
+      let s = Printf.sprintf "%.15g" f in
+      if float_of_string s = f then
+        Buffer.add_string buffer s
+      else
+        Printf.bprintf buffer "%.17g" f
     let read buf = Deriving_Json_lexer.read_number buf
 end)
 module Json_string = Defaults(struct
