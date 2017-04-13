@@ -383,6 +383,8 @@ and element = object
   method scrollIntoView: bool t -> unit meth
 
   method click : unit meth
+  method focus : unit meth
+  method blur  : unit meth
 
   inherit eventTarget
 end
@@ -504,8 +506,6 @@ class type selectElement = object ('self)
   method tabIndex : int prop
   method add : #optGroupElement t -> #optGroupElement t opt -> unit meth
   method remove : int -> unit meth
-  method blur : unit meth
-  method focus : unit meth
   method required : bool t writeonly_prop (* Not supported by IE 9/Safari *)
 
   method onchange : ('self t, event t) event_listener prop
@@ -533,8 +533,6 @@ class type inputElement = object ('self)
   method _type : js_string t readonly_prop (* Cannot be changed under IE *)
   method useMap : js_string t prop
   method value : js_string t prop
-  method blur : unit meth
-  method focus : unit meth
   method select : unit meth
   method files : File.fileList t optdef readonly_prop
   method placeholder : js_string t writeonly_prop (* Not supported by IE 9 *)
@@ -564,8 +562,6 @@ class type textAreaElement = object ('self)
   method tabIndex : int prop
   method _type : js_string t readonly_prop (* Cannot be changed under IE *)
   method value : js_string t prop
-  method blur : unit meth
-  method focus : unit meth
   method select : unit meth
   method required : bool t writeonly_prop (* Not supported by IE 9/Safari *)
   method placeholder : js_string t writeonly_prop (* Not supported by IE 9 *)
@@ -651,8 +647,6 @@ class type anchorElement = object
   method tabIndex : int prop
   method target : js_string t prop
   method _type : js_string t prop
-  method blur : unit meth
-  method focus : unit meth
 end
 
 class type imageElement = object ('self)
