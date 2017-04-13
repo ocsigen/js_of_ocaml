@@ -23,15 +23,15 @@
    RFE to the mailing list.
 
    This module contain submodules each with a signature similar to:
+   {[
      type t            (*type the module is focused on*)
      type js_t         (*valid js representation of values of type t*)
      val js: t -> js_t (*conversion*)
      val ml: js_t -> t (*conversion*)
-
-    Additional functions (string conversion, standard operation, etc.) are
-    sometime available. Some module have several different types instead of just
-    one.
-
+   ]}
+   Additional functions (string conversion, standard operation, etc.) are
+   sometime available. Some module have several different types instead of just
+   one.
 *)
 
 module Color : sig
