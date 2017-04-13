@@ -1037,9 +1037,9 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
       | Extern "%closure", [Pc (IString name | String name)] ->
          let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
          prim, const_p, queue
-      | Extern "%caml_js_opt_call", Pv f :: Pv o :: l ->
-        let ((pf, cf), queue) = access_queue queue f in
-        let ((po, co), queue) = access_queue queue o in
+      | Extern "%caml_js_opt_call", f :: o :: l ->
+        let ((pf, cf), queue) = access_queue' ~ctx queue f in
+        let ((po, co), queue) = access_queue' ~ctx queue o in
         let (args, prop, queue) =
           List.fold_right
             (fun x (args, prop, queue) ->
@@ -1050,8 +1050,8 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         in
         (J.ECall (J.EDot (cf, "call"), co :: args, loc),
          or_p (or_p pf po) prop, queue)
-      | Extern "%caml_js_opt_fun_call", Pv f :: l ->
-        let ((pf, cf), queue) = access_queue queue f in
+      | Extern "%caml_js_opt_fun_call", f :: l ->
+        let ((pf, cf), queue) = access_queue' ~ctx queue f in
         let (args, prop, queue) =
           List.fold_right
             (fun x (args, prop, queue) ->
@@ -1060,8 +1060,8 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             l ([], mutator_p, queue)
         in
         (J.ECall (cf, args, loc), or_p pf prop, queue)
-      | Extern "%caml_js_opt_meth_call", Pv o :: Pc (String m | IString m) :: l ->
-        let ((po, co), queue) = access_queue queue o in
+      | Extern "%caml_js_opt_meth_call", o :: Pc (String m | IString m) :: l ->
+        let ((po, co), queue) = access_queue' ~ctx queue o in
         let (args, prop, queue) =
           List.fold_right
             (fun x (args, prop, queue) ->
@@ -1071,8 +1071,8 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         in
         (J.ECall (J.EDot (co, m), args, loc),
          or_p po prop, queue)
-      | Extern "%caml_js_opt_new", Pv c :: l ->
-        let ((pc, cc), queue) = access_queue queue c in
+      | Extern "%caml_js_opt_new", c :: l ->
+        let ((pc, cc), queue) = access_queue' ~ctx queue c in
         let (args, prop, queue) =
           List.fold_right
             (fun x (args, prop, queue) ->
