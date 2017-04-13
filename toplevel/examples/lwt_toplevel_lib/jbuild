@@ -9,6 +9,7 @@
     js_of_ocaml-toplevel
     lwt
     js_of_ocaml-lwt
+    base64
    (select ocp_indent.ml from
     (ocp-indent.lib -> ocp_indent.ml.in)
     (               -> ocp_indent_fake.ml.in))

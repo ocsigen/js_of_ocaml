@@ -5,6 +5,6 @@
   (synopsis "Js_of_ocaml toplevel library")
   (wrapped false)
   (libraries (
-    js_of_ocaml-compiler js_of_ocaml bytes base64
+    js_of_ocaml-compiler js_of_ocaml bytes
     compiler-libs.bytecomp compiler-libs.toplevel))
   (preprocess (pps (js_of_ocaml-ppx)))))
