@@ -1,17 +1,13 @@
 (jbuild_version 1)
-(executables
- ((names (main))
-  (libraries
-   (js_of_ocaml unix))
-  (preprocess (pps (js_of_ocaml-ppx)))
+(executable
+ ((name main)
   ))
 
 (rule
  ((targets (main.bc.js))
-  (deps    (main.bc unix.js ../../runtime/runtime.js ../../compiler/js_of_ocaml.exe))
+  (deps    (main.bc ../../runtime/runtime.js ../../compiler/js_of_ocaml.exe))
   (action  (run ../../compiler/js_of_ocaml.exe
                   --no-runtime ../../runtime/runtime.js
-                  unix.js
                   main.bc -o main.bc.js))
  ))
 
