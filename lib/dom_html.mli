@@ -1088,6 +1088,27 @@ end
 val document : document t
 (** The current document *)
 
+val getElementById_opt : string -> element Js.t option
+(** [getElementById_opt id] returns the element with the id [id] in the
+    current document. It returns [None] if there are no such element *)
+
+val getElementById_exn : string -> element Js.t
+(** [getElementById_exn id] returns the element with the id [id] in the
+    current document. It raises if there are no such element *)
+
+val getElementById_coerce : string -> (element t -> 'a opt) -> 'a option
+(** [getElementById_coerce id coerce] returns the element with the id [id] in the
+    current document and attempt to coerce it using the provided [coerce] function.
+    It returns [None] if there are no such element or if the [coerce] function
+    returns [Js.none].
+    Typical usage is the following:
+    {[
+      match Dom_html.getElementById_coerce "myinput" Dom_html.CoerceTo.input with
+      | None -> ..
+      | Some input -> ..
+    ]}
+*)
+
 val getElementById : string -> element Js.t
 (** [getElementById id] returns the element with the id [id] in the
     current document. It raises [Not_found] if there are no such element *)

@@ -1303,10 +1303,24 @@ end
 let window : window t = Js.Unsafe.global (* The toplevel object *)
 
 let document = window##.document
+
 let getElementById id =
   Js.Opt.case (document##getElementById (Js.string id))
     (fun () -> raise Not_found)
     (fun pnode -> pnode)
+
+let getElementById_exn id =
+  Js.Opt.case (document##getElementById (Js.string id))
+    (fun () -> failwith (Printf.sprintf "getElementById_exn: %S not found" id))
+    (fun pnode -> pnode)
+
+let getElementById_opt id = Js.Opt.to_option (document##getElementById (Js.string id))
+
+let getElementById_coerce id coerce =
+  Js.Opt.case
+    (document##getElementById (Js.string id))
+    (fun () -> None)
+    (fun e -> Js.Opt.to_option (coerce e))
 
 (****)
 
