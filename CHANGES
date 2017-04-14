@@ -14,6 +14,7 @@
  ** Syntaxes: add expect tests
  ** Syntaxes: switch to ocaml-migrate-parsetree and ppx_tools_versioned
  ** Lib: Add primitives in [Js.Unsafe]
+ ** Lib: remove keycode module, replaced by Dom_html.Keyboard_code
 
  * Bug fixes:
  ** Runtime: fix many stubs
