@@ -10,3 +10,8 @@
     js_of_ocaml-compiler.findlib-support
     ))
   ))
+
+(install
+ ((section bin)
+  (package js_of_ocaml-toplevel)
+  (files (jsoo_mkcmis.exe jsoo_mktop.exe jsoo_listunits.exe))))
