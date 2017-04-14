@@ -24,8 +24,6 @@
   (files (
     bigarray.js
     bigstring.js
-    bin_prot.js
-    core_kernel.js
     dynlink.js
     fs.js
     fs_fake.js
