@@ -18,20 +18,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(**This module contains a few types and values to ease the use of CSS properties
-   and such. If you think a feature is missing, consider sending a patch or an
-   RFE to the mailing list.
+(** This module contains a few types and values to ease the use of CSS properties
+    and such. If you think a feature is missing, consider sending a patch or an
+    RFE to the mailing list.
 
-   This module contain submodules each with a signature similar to:
-   {[
-     type t            (*type the module is focused on*)
-     type js_t         (*valid js representation of values of type t*)
-     val js: t -> js_t (*conversion*)
-     val ml: js_t -> t (*conversion*)
-   ]}
-   Additional functions (string conversion, standard operation, etc.) are
-   sometime available. Some module have several different types instead of just
-   one.
+    This module contain submodules each with a signature similar to:
+    {[
+      type t            (* type the module is focused on *)
+      type js_t         (* valid js representation of values of type t *)
+      val js: t -> js_t (* conversion *)
+      val ml: js_t -> t (* conversion *)
+    ]}
+    Additional functions (string conversion, standard operation, etc.) are
+    sometime available. Some module have several different types instead of just
+    one.
 *)
 
 module Color : sig
