@@ -3,7 +3,6 @@
 ==[[library|Library overview]]
 ==[[bindings|Binding a JS library]]
 ==[[export|Export OCaml code to JavaScript]]
-==[[core_async_kernel|Core_kernel and Async_kernel]]
 ==[[linker|Link javascript code]]
 ==[[options|Command line options]]
 ==[[performances|Performances]]

@@ -13,7 +13,7 @@ believe this compiler will prove much easier to maintain than a
 retargeted OCaml compiler, as the bytecode provides a very stable API.
 
 == Requirements ==
-Findlib, Lwt, Menhir, Cmdliner, cppo, base64.
+Cmdliner, cppo, Jbuilder.
 
 See https://github.com/ocsigen/js_of_ocaml/blob/master/opam file for version constraints.
 
@@ -22,13 +22,9 @@ Optional dependencies:
   * ppx_deriving(see https://github.com/whitequark/ppx_deriving)
   * tyxml(see https://github.com/ocsigen/tyxml)
   * reactiveData(see https://github.com/ocsigen/reactiveData)
-  * async_kernel(see https://github.com/janestreet/async_kernel): tested with **version 113.33.00**
 
 == Installation ==
-  * run {{{make}}} to compile everything
-  * run {{{make install}}} as root to install the compiler
-    and its libraries
-  * run {{{make uninstall}}} as root to uninstall them
+  {{{opam install js_of_ocaml}}}
 
 == Usage ==
 
