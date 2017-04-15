@@ -18,4 +18,4 @@
 
 include Ppx_js_internal
 
-let () = wrapper := Some "Js_of_ocaml"
+let () = wrapper := Some "Js_of_ocaml_core"

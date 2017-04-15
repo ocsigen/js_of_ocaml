@@ -3,9 +3,10 @@
  ((name js_of_ocaml)
   (public_name js_of_ocaml)
   (libraries (uchar bytes js_of_ocaml-core))
+  (flags (-open Js_of_ocaml_core))
   (wrapped false)
   (c_names (js_of_ocaml_stubs))
-  (preprocess (pps (ppx_js_internal)))))
+  (preprocess (pps (ppx_js)))))
 
 (rule
  ((targets (js_of_ocaml_stubs.c))
