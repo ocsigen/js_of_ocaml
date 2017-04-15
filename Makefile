@@ -1,7 +1,7 @@
 VERSION := $(shell head -n 1 VERSION)
 
 all:
-	jbuilder build @install @DEFAULT -j 8
+	jbuilder build @install @DEFAULT -j 8 --dev
 
 tests:
 	jbuilder runtest

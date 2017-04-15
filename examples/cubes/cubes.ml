@@ -18,7 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml_lwt
 let n = 12
 
 let h = 20.
@@ -175,7 +174,7 @@ let (>>=) = Lwt.bind
 let rec loop c c' a =
   Lwt_js.sleep 0.2 >>= fun () ->
   let need_redraw = ref false in
-  for i = 0 to 99 do
+  for _i = 0 to 99 do
     need_redraw := update a || !need_redraw
   done;
   if !need_redraw then redraw c c' a;

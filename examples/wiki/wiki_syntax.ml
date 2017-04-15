@@ -52,7 +52,7 @@ let builder =
       (fun addr s ->
          let a = Html.createA d in a##.href := Js.string addr; a <| s);
 
-    W.youtube_elem = (fun addr s ->
+    W.youtube_elem = (fun addr _s ->
         let i = Html.createIframe d in
         i##.width := Js.string "480";
         i##.height := Js.string "360";

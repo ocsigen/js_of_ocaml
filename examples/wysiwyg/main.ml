@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml_lwt
 module Html = Dom_html
 
 let (>>=) = Lwt.bind
@@ -41,7 +40,7 @@ let is_visible_text s =
 
 open Dom
 
-let rec html2wiki ?inH:(inH=false) body =
+let rec html2wiki body =
   let ans = Buffer.create 10 in
   let add_str ?surr:(surr="") s =
     if is_visible_text s then Buffer.add_string ans (surr^s^surr)

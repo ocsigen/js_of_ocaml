@@ -35,7 +35,7 @@ let init_canvas canvas_id =
          Dom_html.CoerceTo.canvas)
       (fun () -> error "can't find canvas element %s" canvas_id) in
   let gl =
-    Opt.get (try WebGL.getContext canvas with e -> null)
+    Opt.get (try WebGL.getContext canvas with _ -> null)
       (fun () -> alert "can't initialise webgl context") in
   canvas, gl
 
@@ -147,7 +147,7 @@ let read_line l =
           (match List.map read_coord_couple [x;y;z] with
             | [ Some x; Some y; Some z ] ->
               Some (F (x,y,z))
-            | r -> None)
+            | _ -> None)
         | _ -> None
 
 let concat a =
@@ -166,14 +166,14 @@ let concat a =
 let make_model vertex norm face =
   let vertex' =
     Array.init (Array.length face) (fun i ->
-      let ((av,an),(bv,bn),(cv,cn)) = face.(i) in
+      let ((av,_an),(bv,_bn),(cv,_cn)) = face.(i) in
       let (a1,a2,a3) = vertex.(av-1) in
       let (b1,b2,b3) = vertex.(bv-1) in
       let (c1,c2,c3) = vertex.(cv-1) in
       [a1;a2;a3;b1;b2;b3;c1;c2;c3]) in
   let norm' =
     Array.init (Array.length face) (fun i ->
-      let ((av,an),(bv,bn),(cv,cn)) = face.(i) in
+      let ((_av,an),(_bv,bn),(_cv,cn)) = face.(i) in
       let (a1,a2,a3) = norm.(an-1) in
       let (b1,b2,b3) = norm.(bn-1) in
       let (c1,c2,c3) = norm.(cn-1) in
@@ -207,7 +207,7 @@ let http_get url =
 
 let getfile f =
   try
-    Lwt.return (Sys_js.read_file f)
+    Lwt.return (Sys_js.read_file ~name:f)
   with Not_found ->
     http_get f >|= (fun s -> s)
 
@@ -225,7 +225,7 @@ let start (pos,norm) =
        Dom_html.CoerceTo.element)
     (fun span -> Dom.appendChild span fps_text);
   debug "init canvas";
-  let canvas, gl = init_canvas "canvas" in
+  let _canvas, gl = init_canvas "canvas" in
   debug "create program";
   let prog = create_program gl
     (get_source "vertex-shader")

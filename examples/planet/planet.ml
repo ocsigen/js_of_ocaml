@@ -47,7 +47,6 @@ http://visibleearth.nasa.gov/view_rec.php?id=2431
 http://maps.jpl.nasa.gov/
 *)
 
-open Js_of_ocaml_lwt
 
 let width = 600
 let height = width
@@ -353,7 +352,7 @@ let shadow texture =
   (*
         let z = sin phi *. cos theta in
   *)
-        let (x, y) =
+        let (x, _y) =
           (x *. cos_obl +. y *. sin_obl,
            -. x *. sin_obl +. y *. cos_obl)
         in
@@ -467,12 +466,12 @@ let du = u' -. u in
 let dv = v' -. v in
 (u1, v1, du2, dv2, du3, dv3, u, v, du, dv)
 
-let draw ctx img shd o uv normals face_info dir =
+let draw ctx _img shd o _uv normals face_info dir =
   Array.iteri
     (fun i { v1 = v1; v2 = v2; v3 = v3 } ->
-       let {x = x1; y = y1; z = z1} = o.vertices.(v1) in
-       let {x = x2; y = y2; z = z2} = o.vertices.(v2) in
-       let {x = x3; y = y3; z = z3} = o.vertices.(v3) in
+       let {x = x1; y = y1; z = _z1} = o.vertices.(v1) in
+       let {x = x2; y = y2; z = _z2} = o.vertices.(v2) in
+       let {x = x3; y = y3; z = _z3} = o.vertices.(v3) in
 
        if dot_product normals.(i) dir >= 0. then begin
          ctx##beginPath;
@@ -561,8 +560,8 @@ let o = octahedron >> divide true >> divide true >> divide true
 *)
 let v = {x = 0.; y = 0.; z = 1.}
 
-let texture = Js.string "black.jpg"
-let texture = Js.string "../planet/land_ocean_ice_cloud_2048.jpg"
+let _texture = Js.string "black.jpg"
+let _texture = Js.string "../planet/land_ocean_ice_cloud_2048.jpg"
 let texture = Js.string "../planet/texture.jpg"
 
 let start _ =
@@ -722,7 +721,7 @@ let start _ =
     fps :=
       (let hz = 1000. /. (t' -. !ti) in
        if !fps = 0. then hz else 0.9 *. !fps +. 0.1 *. hz);
-    rateText##.data := Js.string (Printf.sprintf "% 2.f" !fps);
+    rateText##.data := Js.string (Printf.sprintf "%.2f" !fps);
     ti := t';
     Lwt_js.sleep 0.01 >>= fun () ->
     let t' = ((new%js Js.date_now))##getTime in

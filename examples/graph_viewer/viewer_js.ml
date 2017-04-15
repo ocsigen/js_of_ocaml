@@ -41,8 +41,6 @@ module Common = Viewer_common.F (struct
   let scale ctx ~sx ~sy = ctx##scale sx sy
   let translate ctx ~tx ~ty = ctx##translate tx ty
 
-  let set_line_width ctx w = ctx##.lineWidth := w
-
   let begin_path ctx = ctx##beginPath
   let close_path ctx = ctx##closePath
   let move_to ctx ~x ~y = ctx##moveTo x y
@@ -82,8 +80,8 @@ module Common = Viewer_common.F (struct
     c##.width := width; c##.height := height;
     get_drawable c
   let drawable_of_pixmap p = p
-  let get_context (p, c) = c
-  let put_pixmap ~dst:((p, c) :drawable) ~x ~y ~xsrc ~ysrc ~width ~height ((p, _) : pixmap)=
+  let get_context (_p, c) = c
+  let put_pixmap ~dst:((_p, c) :drawable) ~x ~y ~xsrc ~ysrc ~width ~height ((p, _) : pixmap)=
     c##drawImage_fullFromCanvas p (float xsrc) (float ysrc) (float width) (float height) (float x) (float y) (float width) (float height)
 
   (****)
@@ -107,15 +105,14 @@ let json : < parse : Js.js_string Js.t -> 'a> Js.t = Js.Unsafe.pure_js_expr "JSO
 let (>>=) = Lwt.bind
 
 let http_get url =
-  XmlHttpRequest.get url
-    >>= fun {XmlHttpRequest.code = cod; content = msg} ->
+  XmlHttpRequest.get url >>= fun {XmlHttpRequest.code = cod; content = msg; _} ->
   if cod = 0 || cod = 200
   then Lwt.return msg
   else fst (Lwt.wait ())
 
 let getfile f =
   try
-    Lwt.return (Sys_js.read_file f)
+    Lwt.return (Sys_js.read_file ~name:f)
   with Not_found ->
     http_get f
 
@@ -232,7 +229,7 @@ let start () =
   let get_scale () = 2. ** (sadj#value /. zoom_steps) /. st.zoom_factor in
 
   let redraw_queued = ref false in
-  let update_view force =
+  let update_view _force =
 (*
 Firebug.console##log_2(Js.string "update", Js.date##now());
 *)
@@ -324,7 +321,7 @@ Firebug.console##log(Js.string "sleep");
     end
   in
   handle_drag thumb
-    (fun dx dy ->
+    (fun _dx dy ->
        set_slider_position (min height (max 0 (!pos + dy))));
   slider##.onmousedown := Html.handler
     (fun ev ->
@@ -378,7 +375,7 @@ Firebug.console##log(Js.string "sleep");
 
   (* Zoom using the mouse wheel *)
   ignore (Html.addMousewheelEventListener canvas
-    (fun ev ~dx ~dy ->
+    (fun ev ~dx:_ ~dy ->
        let (ex, ey) = Dom_html.elementClientPosition canvas in
        let x = float (ev##.clientX - ex) in
        let y = float (ev##.clientY - ey) in

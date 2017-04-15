@@ -296,7 +296,7 @@ let http_get url =
 
 let getfile f =
   try
-    Lwt.return (Sys_js.read_file f)
+    Lwt.return (Sys_js.read_file ~name:f)
   with Not_found ->
     http_get f
 
@@ -440,7 +440,7 @@ let start _ =
     append_text option "Choose a level";
     Dom.appendChild select option;
     List.iter
-      (fun (f, n) ->
+      (fun (_f, n) ->
          let option = Html.createOption document in
          append_text option n;
 (*

@@ -150,22 +150,22 @@ let draw_element ctx e =
         (fun c ->
            match c with
              Move_to (x, y) ->
-               move_to ctx x y
+               move_to ctx ~x ~y
            | Curve_to (x1, y1, x2, y2, x3, y3) ->
-               curve_to ctx x1 y1 x2 y2 x3 y3)
+               curve_to ctx ~x1 ~y1 ~x2 ~y2 ~x3 ~y3)
         cmd;
       perform_draw ctx fill stroke
   | Ellipse (cx, cy, rx, ry, fill, stroke) ->
       save ctx;
-      translate ctx cx cy;
-      scale ctx rx ry;
-      arc ctx 0. 0. 1. 0. (2. *. pi);
+      translate ctx ~tx:cx ~ty:cy;
+      scale ctx ~sx:rx ~sy:ry;
+      arc ctx ~xc:0. ~yc:0. ~radius:1. ~angle1:0. ~angle2:(2. *. pi);
       restore ctx;
       perform_draw ctx fill stroke
   | Polygon (points, fill, stroke) ->
       Array.iteri
         (fun i (x, y) ->
-           if i = 0 then move_to ctx x y else line_to ctx x y)
+           if i = 0 then move_to ctx ~x ~y else line_to ctx ~x ~y)
         points;
       close_path ctx;
       perform_draw ctx fill stroke
@@ -176,9 +176,6 @@ let intersects
       ((x1, y1, x2, y2) : float * float * float * float) (x3, y3, x4, y4) =
   x1 <= x4 && y1 <= y4 && x3 <= x2 && y3 <= y2
 
-let compute_scale st range =
-  st.zoom_factor ** range#adjustment#value /. st.zoom_factor
-
 let redraw st scale x y x' y' w h =
 (*
 Format.eprintf "REDRAW %d %d %d %d@." x' y' w h;
@@ -188,13 +185,13 @@ Format.eprintf "REDRAW %d %d %d %d@." x' y' w h;
   if Array.length st.bboxes = 0 && Array.length st.scene > 0 then
     st.bboxes <- compute_extents ctx st.scene;
   begin_path ctx;
-  rectangle ctx (float x') (float y') (float w) (float h);
+  rectangle ctx ~x:(float x') ~y:(float y') ~width:(float w) ~height:(float h);
   M.fill ctx M.white;
   clip ctx;
   let x = float x /. scale in
   let y = float y /. scale in
-  M.scale ctx scale scale;
-  translate ctx (-. st.st_x -. x) (-. st.st_y -. y);
+  M.scale ctx ~sx:scale ~sy:scale;
+  translate ctx ~tx:(-. st.st_x -. x) ~ty:(-. st.st_y -. y);
   let bbox =
     let x = st.st_x +. x +. float x' /. scale in
     let y = st.st_y +. y +. float y' /. scale in

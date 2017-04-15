@@ -171,7 +171,6 @@ let add_mul a z b =
   { x = a.x *. z.x -. a.y *. z.y +. b.x;
     y = a.x *. z.y +. a.y *. z.x +. b.y }
 
-let div z t = sdiv (mul z (conj t)) (sq_norm t)
 let div z t =
   let n = sq_norm t in
   { x = (z.x *. t.x +. z.y *. t.y) /. n;
@@ -242,7 +241,7 @@ let http_get url =
 
 let getfile f =
   try
-    Lwt.return (Sys_js.read_file f)
+    Lwt.return (Sys_js.read_file ~name:f)
   with Not_found ->
     http_get f
 
@@ -270,7 +269,7 @@ let debug_widget =
   w##.style##.lineHeight := Js.string "0.9em";
   w
 
-let debug_msg s = ()(*
+let _debug_msg _s = ()(*
   let d = Html.document in
   Dom.appendChild d##body debug_widget;
   let p = Html.createP d in
@@ -628,7 +627,7 @@ Firebug.console##time (Js.string "draw");
         boxes.bw.(i) <- 0.;  (* Invalidate image location. *)
         let z = vertices.(i) in
 
-        let rec min_scale l w h s =
+        let min_scale l w h s =
           let s = ref s in
           for i = 0 to Array.length l - 1 do
             let (j, large) = l.(i) in
@@ -743,7 +742,7 @@ let rec tree_edge_count n =
   Array.fold_left (fun s n -> s + 1 + tree_edge_count n) 0 l
 
 let rec randomize_tree n =
-  let Node (info, ch) = n in
+  let Node (_info, ch) = n in
   for i = Array.length ch - 1 downto 0 do
     let v = ch.(i) in
     let j = truncate ((Js.math)##random *. float (i + 1)) in
@@ -759,16 +758,7 @@ let perform_redraw () =
   need_redraw := false;
   !redraw_funct ()
 
-let schedule_redraw now =
-  if not !need_redraw then begin
-    need_redraw := true;
-    ignore
-      (Lwt_js.sleep (if now then 0. else 0.1) >>= fun () ->
-       if !need_redraw then perform_redraw ();
-       Lwt.return ())
-  end
-
-let schedule_redraw now =
+let schedule_redraw () =
   if not !need_redraw then begin
     need_redraw := true;
     Html._requestAnimationFrame
@@ -794,7 +784,7 @@ let load_image src =
 let image_node img =
   `Img (lazy (Lwt_js.yield () >>= fun () ->
               load_image (Js.string ("thumbnails/" ^ img ^ ".jpg")) >>=
-              fun img -> schedule_redraw false; Lwt.return img),
+              fun img -> schedule_redraw (); Lwt.return img),
         img)
 
 let nl_re = Regexp.regexp "\n"
@@ -840,7 +830,7 @@ let compute_text_nodes node_names nodes =
         ()
   done
 
-let make_node info is_root children =
+let make_node info is_root _children =
   if String.length info = 0 then
     `None
   else if info.[0] = '|' then
@@ -910,7 +900,7 @@ let compute_neighbors nodes tree =
   in
   compute_neigh tree [||] [||] [||];
   for i = 0 to Array.length nodes - 1 do
-    let (l, info) = nodes.(i) in
+    let (_l, info) = nodes.(i) in
     nodes.(i) <- (neighboors.(i), info)
   done
 
@@ -1139,7 +1129,7 @@ let show_on_click button txt =
            c := Js.some
              (Html.addEventListener Html.document Html.Event.click
                 (Html.handler
-                   (fun ev ->
+                   (fun _ev ->
                       ignore
                         (Lwt_js.yield () >>= fun () ->
                          Js.Opt.iter !c Html.removeEventListener;
@@ -1543,7 +1533,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
             canvas##height <- h;
             perform_redraw ()
 *)
-            schedule_redraw true
+            schedule_redraw ()
           end;
           Js._true);
 
@@ -1611,7 +1601,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
          let z0' = transl (neg p) z0 in
          let p' = compute_translation z0' z1 in
          tr' := (p', one);
-         schedule_redraw true
+         schedule_redraw ()
          (*perform_redraw ()*))
       (fun x y -> tr := !tr'; on_image := false; update_cursor x y)
       (fun x y ->
@@ -1639,7 +1629,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
          let z0' = transl (neg p) z0 in
          let p' = compute_translation z0' z1 in
          tr' := (p', one);
-         schedule_redraw true)
+         schedule_redraw ())
       (fun _ _ -> tr := !tr')
       (fun _ _ -> tr := !tr')
       (fun x y ->
@@ -1659,7 +1649,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
             let p' = compute_translation z0' z1 in
             tr' := (p', one);
             tr := !tr';
-            schedule_redraw true;
+            schedule_redraw ();
             Js._false
        | 38 -> (* up *)
             let z0 = {x = 0.; y = 0.} in
@@ -1669,7 +1659,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
             let p' = compute_translation z0' z1 in
             tr' := (p', one);
             tr := !tr';
-            schedule_redraw true;
+            schedule_redraw ();
            Js._false
        | 39 -> (* right *)
             let z0 = {x = 0.; y = 0.} in
@@ -1679,7 +1669,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
             let p' = compute_translation z0' z1 in
             tr' := (p', one);
             tr := !tr';
-            schedule_redraw true;
+            schedule_redraw ();
            Js._false
        | 40 -> (* down *)
             let z0 = {x = 0.; y = 0.} in
@@ -1689,7 +1679,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
             let p' = compute_translation z0' z1 in
             tr' := (p', one);
             tr := !tr';
-            schedule_redraw true;
+            schedule_redraw ();
            Js._false
        | _ ->
            Js._true
@@ -1745,7 +1735,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
                  set_language (Js.string id);
                  make_buttons ();
                  compute_text_nodes tree_i18n nodes;
-                 schedule_redraw true;
+                 schedule_redraw ();
                  Js._false);
             let li = Html.createLi doc in
             Dom.appendChild li a;
@@ -1778,7 +1768,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
          Html.handler (fun _ ->
            tr' := (zero, one);
            tr := !tr';
-           schedule_redraw true;
+           schedule_redraw ();
            Js._false);
        let tt =
          tooltip (opt_style (messages##.recenter) (Js.string "Recenter")) in

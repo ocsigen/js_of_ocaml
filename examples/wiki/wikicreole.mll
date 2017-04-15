@@ -222,7 +222,7 @@ let rec correct_kind_rec stack kind n =
   match stack with
     List_item stack ->
       correct_kind_rec stack kind n
-  | List (k, lst, stack) ->
+  | List (k, _lst, stack) ->
       if n = 0 then k = kind else
       correct_kind_rec stack kind (n - 1)
   | Style (_, _, stack) ->
@@ -293,7 +293,7 @@ rule parse_bol c =
         let s = Lexing.lexeme lexbuf in
         let l = String.length s - lev in
         if l > 0 then push_string c (String.sub s 0 l);
-        for i = 1 to lev / 2 do
+        for _i = 1 to lev / 2 do
           style_change c Bold
         done;
         if lev land 1 = 1 then push_string c "*"
