@@ -19,11 +19,3 @@
 include Ppx_js_internal
 
 let () = wrapper := Some "Js_of_ocaml"
-
-let js_mapper _ =
-  let module Converter =
-    Migrate_parsetree.Versions.Convert
-      (Migrate_parsetree.OCaml_405)
-      (Migrate_parsetree.OCaml_current)
-  in
-  Converter.copy_mapper mapper
