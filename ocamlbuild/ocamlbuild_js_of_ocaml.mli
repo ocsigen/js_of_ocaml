@@ -21,8 +21,6 @@
 (** Ocamlbuild plugin to build with js_of_ocaml *)
 
 (**
-   Js_of_ocaml comes with a support for OCamlbuild.
-
    {2 Initialize}
 
    Initialize the js_of_ocaml ocamlbuild plugin with the following
