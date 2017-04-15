@@ -16,7 +16,6 @@ module XmlHttpRequest = XmlHttpRequest
 module Json = Json
 module WebGL = WebGL
 module WebSockets = WebSockets
-module Keycode = Keycode
 module EventSource = EventSource
 module Geolocation = Geolocation
 module Jstable = Jstable
