@@ -140,7 +140,7 @@ val theclass : theclass t
 ==Constructing JS objects manually
 If you want to construct a JS object manually
 (without calling a function or a constructor), you can use
-the <<a_api text="Ppx"|module Ppx_js>> syntax extension.
+the <<a_manual chapter="Ppx"|Ppx>> syntax extension.
 
 For example:
 <<code language="ocaml"|

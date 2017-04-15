@@ -1,11 +1,11 @@
-=[[quickstart|Js_of_ocaml - quick start]]
-
-=Js_of_ocaml - Manual
-
+=Js_of_ocaml - Reference Manual
 ==[[overview|Overview]]
+==[[quickstart|quick start]]
 ==[[library|Library overview]]
 ==[[bindings|Binding a JS library]]
-==[[export|Export OCaml code to JavaScript]]
+==[[rev-bindings|Export OCaml code to JavaScript]]
+
+=Js_of_ocaml_lwt - Reference Manual
 ==[[lwt|Lwt support]]
 
 ==Syntaxes
@@ -16,13 +16,12 @@
 ===[[options|Command line options]]
 ===[[linker|Link javascript code]]
 ===[[separate-compilation|Separate compilation]]
+===[[tailcall|About tailcall optimization]]
 
 ==Misc
+==[[debug|How to debug a program]]
+==[[contribute|How to contribute]]
 ==[[performances|Performances]]
-==[[debug|Debug with js_of_ocaml]]
-==[[tailcall|About tailcall optimization]]
-
-
 
 =Js_of_ocaml examples
 ==<<a_file src="toplevel/index.html"|An OCaml toplevel running in the browser>>

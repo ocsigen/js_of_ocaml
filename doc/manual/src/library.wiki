@@ -52,7 +52,7 @@ instance, these three types correspond to the same Javascript method
         canvasElement t -> float -> float -> unit meth
 }}}
 This trick can also be used to refer to Javascript fields {{{type}}} or
-{{{URL}}}, for instance as {{{_type}}} and {{{_URL}}}.
+{{{Uppercase}}}, for instance as {{{_type}}} and {{{_Uppercase}}}.
 
 ==== Example
 
@@ -82,7 +82,7 @@ end
 
 == Syntax extension ==
 
-Two syntax extensions are provided: the <<a_api text="Ppx"|module Ppx_js>>
+Two syntax extensions are provided: the <<a_manual chapter="Ppx"|Ppx_js>>
 one and the <<a_manual chapter="camlp4"|Camlp4>> one. This manual is written
 using the ppx extension, which we advise.
 
@@ -120,27 +120,6 @@ Javascript function is appropriately wrapped by the system.
 
 Refer to <<a_manual chapter="linker" |the linker manual>>
 to link your program with javascript stubs.
-
-
-=== Using OCaml functions from JS  ===
-
-You should use function {{{Js.wrap_callback}}} or function
-{{{Js.wrap_meth_callback}}} to wrap an OCaml function so that
-it can be called from Javascript.
-
-To call an OCaml function from Javascript, follow this example:
-<<code language="ocaml"|
-
-Js.Unsafe.global##.plop := Js.wrap_callback f
->>
-
-Or, to create a JS object with OCaml methods:
-<<code language="ocaml"|
-Js.Unsafe.global##.plop := object%js
-    method f i = print_int i
-    method g x y = g x +. y
-  end
->>
 
 == IO ==
 

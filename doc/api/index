@@ -2,27 +2,30 @@
 
 {!modules:
 Js
-Dom
-Dom_html
-Dom_svg
-Dom_events
-CSS
-EventSource
-Firebug
-Regexp
-Url
-XmlHttpRequest
-Json
-File
-Form
+Jstable
 Sys_js
 Typed_array
+}
+
+{!modules:
+CSS
+Dom
+Dom_events
+Dom_html
+Dom_svg
+EventSource
+File
+Firebug
+Form
+Geolocation
+Json
+MutationObserver
+Regexp
+Url
 WebGL
 WebSockets
-Geolocation
-Jstable
-MutationObserver
 Worker
+XmlHttpRequest
 }
 
 {1 Js_of_ocaml_lwt – API Reference}
