@@ -16,14 +16,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-include Ppx_js_internal
-
-let () = wrapper := Some "Js_of_ocaml"
-
-let js_mapper _ =
-  let module Converter =
-    Migrate_parsetree.Versions.Convert
-      (Migrate_parsetree.OCaml_405)
-      (Migrate_parsetree.OCaml_current)
-  in
-  Converter.copy_mapper mapper
+(**/**)
+val wrapper : string option ref
+val mapper : Migrate_parsetree.OCaml_405.Ast.Ast_mapper.mapper
