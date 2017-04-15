@@ -1,6 +1,7 @@
 opam update
 
 opam pin add --no-action js_of_ocaml .
+opam pin add --no-action js_of_ocaml-core .
 opam pin add --no-action js_of_ocaml-compiler .
 opam pin add --no-action js_of_ocaml-ocamlbuild .
 opam pin add --no-action js_of_ocaml-camlp4 .
@@ -30,6 +31,7 @@ opam install --verbose js_of_ocaml-compiler
 opam install --verbose js_of_ocaml-ocamlbuild
 opam install --verbose js_of_ocaml-camlp4
 opam install --verbose js_of_ocaml
+opam install --verbose js_of_ocaml-core
 opam install --verbose js_of_ocaml-ppx
 opam install --verbose js_of_ocaml-lwt
 opam install --verbose js_of_ocaml-tyxml
@@ -49,6 +51,7 @@ do_build_doc () {
 do_remove () {
     opam remove --verbose \
          js_of_ocaml \
+         js_of_ocaml-core \
          js_of_ocaml-compiler \
          js_of_ocaml-ocamlbuild \
          js_of_ocaml-camlp4 \

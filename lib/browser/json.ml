@@ -36,15 +36,10 @@ external get_json : unit -> json t = "caml_json"
 
 let json = get_json ()
 
-external unsafe_equals: 'a -> 'b -> bool = "caml_js_equals"
-
-external to_byte_MlString: js_string t -> 'a t = "caml_js_to_byte_string"
-external to_byte_jsstring: 'a t -> js_string t = "caml_bytes_of_string"
-
 let input_reviver =
   let reviver _this _key value =
-    if unsafe_equals (typeof value) (typeof (string "foo")) then
-      to_byte_MlString (Unsafe.coerce value)
+    if Unsafe.equals (typeof value) (typeof (string "foo")) then
+      (Obj.magic (to_bytestring (Obj.magic value : js_string t)) : 'a t)
     else
       value in
   wrap_meth_callback reviver
@@ -61,7 +56,7 @@ let mlString_constr =
 
 let output_reviver _key value =
   if instanceof value mlString_constr then
-    to_byte_jsstring (Unsafe.coerce value)
+    Js.bytestring (Obj.magic value : string)
   else
     value
 let output obj = json##stringify_ obj output_reviver

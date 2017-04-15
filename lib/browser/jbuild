@@ -2,19 +2,14 @@
 (library
  ((name js_of_ocaml)
   (public_name js_of_ocaml)
-  (libraries (uchar bytes))
+  (libraries (uchar bytes js_of_ocaml-core))
   (wrapped false)
   (c_names (js_of_ocaml_stubs))
   (preprocess (pps (ppx_js_internal)))))
 
 (rule
  ((targets (js_of_ocaml_stubs.c))
-  (deps ((file generate_stubs.sh)(glob_files *.ml)))
+  (deps ((file ../../tools/generate_stubs.sh)(glob_files *.ml)))
   (action (with-stdout-to ${@}
-           (run ./generate_stubs.sh)))
+           (run ../../tools/generate_stubs.sh)))
   ))
-
-(rule
- ((targets (lib_version.ml))
-  (deps (../version.ml.in))
-  (action (copy ${<} ${@}))))
