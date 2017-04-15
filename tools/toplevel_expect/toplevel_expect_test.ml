@@ -260,8 +260,8 @@ let eval_expect_file mapper fname ~file_contents =
   in
   let buf = Buffer.create 1024 in
   let ppf = Format.formatter_of_buffer buf in
-  let out_fun = Format.pp_get_formatter_out_functions ppf in
-  Format.pp_set_formatter_out_functions Format.std_formatter;
+  let out_fun = Format.pp_get_formatter_out_functions ppf () in
+  Format.pp_set_formatter_out_functions Format.std_formatter out_fun;
 
   let exec_phrases phrases =
 
