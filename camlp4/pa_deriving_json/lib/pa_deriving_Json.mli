@@ -1,5 +1,5 @@
-(* Js_of_ocaml
- * http://www.ocsigen.org
+(* Js_of_ocaml library
+ * http://www.ocsigen.org/js_of_ocaml/
  * Copyright Hugo Heuzard 2014.
  *
  * This program is free software; you can redistribute it and/or modify

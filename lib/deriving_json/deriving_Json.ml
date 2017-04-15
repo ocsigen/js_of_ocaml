@@ -1,5 +1,5 @@
-(* Js_of_ocaml
- * http://www.ocsigen.org
+(* Js_of_ocaml library
+ * http://www.ocsigen.org/js_of_ocaml/
  * Copyright Grégoire Henry 2010.
  *
  * This program is free software; you can redistribute it and/or modify

@@ -1,4 +1,3 @@
-
 (* Js_of_ocaml example
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2013 Hugo Heuzard

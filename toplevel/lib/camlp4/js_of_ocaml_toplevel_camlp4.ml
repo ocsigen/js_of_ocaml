@@ -1,16 +1,21 @@
-(****************************************************************************)
-(*                                                                          *)
-(*                                   OCaml                                  *)
-(*                                                                          *)
-(*                            INRIA Rocquencourt                            *)
-(*                                                                          *)
-(*  Copyright 2002-2006 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  All rights reserved.  This file is distributed under   *)
-(*  the terms of the GNU Library General Public License, with the special   *)
-(*  exception on linking described in LICENSE at the top of the Camlp4      *)
-(*  source tree.                                                            *)
-(*                                                                          *)
-(****************************************************************************)
+(* Js_of_ocaml library
+ * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2014 Hugo Heuzard
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+*)
 open Camlp4
 
 open PreCast
