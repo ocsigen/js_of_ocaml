@@ -8,33 +8,33 @@ The syntax and typing rules are as follows:
 
 * Getting a property
 {{{
-            obj : <m : u prop> Js.t
-            -----------------------
-                 obj##m : u
+obj : <m : u prop> Js.t
+-----------------------
+     obj##m : u
 }}}
 
 * Setting a property
 {{{
-            obj : <m : u prop> Js.t
-              e : u
-            -----------------------
-               obj##m <- e : unit
+obj : <m : u prop> Js.t
+  e : u
+-----------------------
+   obj##m <- e : unit
 }}}
 
 * Invoking a method
 {{{
-            obj : <m : t_1 -> ... -> t_n -> u meth; ..> Js.t
-                e_i : t_i               (1 <= i <= n)
-            -------------------------------------------------
-                      obj##m(e_1, ..., e_n) : u
+obj : <m : t_1 -> ... -> t_n -> u meth; ..> Js.t
+    e_i : t_i               (1 <= i <= n)
+-------------------------------------------------
+          obj##m(e_1, ..., e_n) : u
 }}}
 
 * Using an object constructor
 {{{
-            constr : (t_1 -> ... -> t_n -> u Js.t) Js.constr
-            e_i : t_i               (1 <= i <= n)
-            ------------------------------------------------
-                    jsnew constr (e1, ..., en) : u Js.t
+constr : (t_1 -> ... -> t_n -> u Js.t) Js.constr
+e_i : t_i               (1 <= i <= n)
+------------------------------------------------
+        jsnew constr (e1, ..., en) : u Js.t
 }}}
 
 * Creating a literal object
