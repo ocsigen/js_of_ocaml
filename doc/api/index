@@ -35,6 +35,18 @@ Lwt_js_events
 Lwt_js
 }
 
+{2 Lwt logger - API Reference}
+
+{!modules:
+Lwt_log_js
+}
+
+{2 Graphics - API Reference}
+
+{!modules:
+Graphics_js
+}
+
 {1 Deriving - API Reference}
 
 {!modules:
@@ -42,11 +54,6 @@ Deriving_Json
 Pa_deriving_Json
 }
 
-{1 Logger - API Reference}
-
-{!modules:
-Lwt_log_js
-}
 
 {1 Tyxml - API Reference}
 
@@ -54,12 +61,6 @@ Lwt_log_js
 Tyxml_js
 Tyxml_cast
 Tyxml_cast_sigs
-}
-
-{1 Graphics - API Reference}
-
-{!modules:
-Graphics_js
 }
 
 {1 Toplevel - API Reference}
