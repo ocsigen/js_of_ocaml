@@ -9,10 +9,9 @@ opam pin add --no-action js_of_ocaml-lwt .
 opam pin add --no-action js_of_ocaml-tyxml .
 opam pin add --no-action js_of_ocaml-toplevel .
 
-opam install ppx_tools_versioned reactiveData cppo base64
-
-opam install tyxml || true
-opam install deriving || true
+opam install lwt reactiveData tyxml || true
+opam install camlp4 deriving || true
+opam install ppx_tools ppx_deriving || true
 
 opam pin add lwt https://github.com/ocsigen/lwt.git#pull/322/head
 
@@ -36,7 +35,7 @@ opam install --verbose js_of_ocaml-tyxml
 opam install --verbose js_of_ocaml-toplevel
 
 do_build_doc () {
-  opam install ocp-indent cppo higlo base64
+  opam install ocp-indent higlo base64
   make clean
   make all
   make -C doc doc
