@@ -1,0 +1,19 @@
+(jbuild_version 1)
+(library
+ ((name js_of_ocaml_core)
+  (public_name js_of_ocaml-core)
+  (libraries (uchar bytes))
+  (c_names (js_of_ocaml_core_stubs))
+  (preprocess (pps (ppx_js_internal)))))
+
+(rule
+ ((targets (js_of_ocaml_core_stubs.c))
+  (deps ((file ../../tools/generate_stubs.sh)(glob_files *.ml)))
+  (action (with-stdout-to ${@}
+           (run ../../tools/generate_stubs.sh)))
+  ))
+
+(rule
+ ((targets (lib_version.ml))
+  (deps (../../version.ml.in))
+  (action (copy ${<} ${@}))))

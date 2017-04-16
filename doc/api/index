@@ -1,4 +1,4 @@
-{1 Js_of_ocaml – API Reference}
+{1 Js_of_ocaml-core – API Reference}
 
 {!modules:
 Js
@@ -6,6 +6,8 @@ Jstable
 Sys_js
 Typed_array
 }
+
+{1 Js_of_ocaml – API Reference}
 
 {!modules:
 CSS
@@ -28,7 +30,7 @@ Worker
 XmlHttpRequest
 }
 
-{1 Js_of_ocaml_lwt – API Reference}
+{1 Js_of_ocaml-lwt – API Reference}
 
 {!modules:
 Lwt_jsonp

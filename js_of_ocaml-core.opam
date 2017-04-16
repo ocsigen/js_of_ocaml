@@ -5,11 +5,11 @@ bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
 homepage:     "http://ocsigen.org/js_of_ocaml"
 dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 
-name: "js_of_ocaml"
+name: "js_of_ocaml-core"
 version: "dev"
 
 build: [
-  ["jbuilder" "build" "--only-packages" "js_of_ocaml" "-j" jobs "@install"]
+  ["jbuilder" "build" "--only-packages" "js_of_ocaml-core" "-j" jobs "@install"]
 ]
 
 depends: [
@@ -17,8 +17,6 @@ depends: [
   "ocaml-migrate-parsetree"
   "ppx_tools_versioned"
   "uchar"
-  "js_of_ocaml-ppx"
-  "js_of_ocaml-core"
   "js_of_ocaml-compiler"
 ]
 

@@ -5,9 +5,10 @@ MLIS=
 CMI_DIR=../_build/default/
 SRC_DIR=../
 
-MLIS+=$(wildcard ${SRC_DIR}lib/*.mli)
+MLIS+=$(wildcard ${SRC_DIR}lib/core/*.mli)
+MLIS+=$(wildcard ${SRC_DIR}lib/browser/*.mli)
 MLIS+=$(wildcard ${SRC_DIR}ocamlbuild/*.mli)
-OTHER+=-I ${CMI_DIR}lib  -package ocamlbuild -I ${CMI_DIR}ocamlbuild
+OTHER+=-I ${CMI_DIR}lib/core -I ${CMI_DIR}lib/browser  -package ocamlbuild -I ${CMI_DIR}ocamlbuild
 
 ifeq "${WITH_LWT}" "YES"
 OTHER += -package lwt -I ${CMI_DIR}lib/lwt -I ${CMI_DIR}lib/lwt/log

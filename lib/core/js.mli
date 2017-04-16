@@ -762,6 +762,8 @@ module Unsafe : sig
   external meth_callback_with_arity : int -> ('b -> 'a) -> ('b, 'a) meth_callback =
     "caml_js_wrap_meth_callback_strict"
 
+  external equals : 'a -> 'b -> bool = "caml_js_equals"
+
   (** {3 Deprecated functions.} *)
 
   external variable : string -> 'a = "caml_js_var"

@@ -47,6 +47,7 @@ http://visibleearth.nasa.gov/view_rec.php?id=2431
 http://maps.jpl.nasa.gov/
 *)
 
+open Js_of_ocaml
 
 let width = 600
 let height = width
