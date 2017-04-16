@@ -18,7 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Lwt
 open Js_of_ocaml
 open Js
 open XmlHttpRequest
@@ -108,45 +107,39 @@ let has_get_args url =
 let perform_raw
     ?(headers = [])
     ?content_type
-    ?(post_args:(string * Form.form_elt) list option)
     ?(get_args=[])
-    ?(form_arg:Form.form_contents option)
     ?(check_headers=(fun _ _ -> true))
     ?progress
     ?upload_progress
+    ?contents
     ?override_mime_type
     ?override_method
     ?with_credentials
     (type resptype) ~(response_type:resptype response)
     url =
 
-  let form_arg =
-    match form_arg with
-      | None ->
-	(match post_args with
-	  | None -> None
-	  | Some post_args ->
-            let only_strings =
-              List.for_all
-                (fun x -> match x with (_, `String _) ->  true | _ -> false)
-                post_args
-            in
-	    let contents =
-              if only_strings then `Fields (ref []) else
-              Form.empty_form_contents ()
-            in
-	    List.iter (fun (name, value) ->
-              Form.append contents (name, value))
-              post_args;
-	    Some contents)
-      | Some form_arg ->
-	(match post_args with
-	  | None -> ()
-	  | Some post_args ->
-	    List.iter (fun (name, value) ->
-              Form.append form_arg (name, value))
-              post_args);
-	Some form_arg
+  let contents_normalization = function
+    | `POST_form args ->
+      let only_strings =
+        List.for_all
+          (fun x -> match x with (_, `String _) ->  true | _ -> false)
+          args
+      in
+      let form_contents =
+        if only_strings then `Fields (ref [])
+        else Form.empty_form_contents ()
+      in
+      List.iter
+        (fun (name, value) -> Form.append form_contents (name, value))
+        args ;
+      `Form_contents form_contents
+    | (`String  _ | `Form_contents _) as x -> x
+    | `Blob b -> `Blob (b : #File.blob Js.t :> File.blob Js.t)
+  in
+
+  let contents = match contents with
+    | None -> None
+    | Some c -> Some (contents_normalization c)
   in
 
   let method_to_string m =
@@ -160,19 +153,28 @@ let perform_raw
       | `PATCH -> "PATCH"
   in
   let method_, content_type =
-    let override m =
+    let override_method m =
       match override_method with
         | None -> m
         | Some v -> method_to_string v
     in
-    match form_arg, content_type with
-      | None, ct -> override "GET", ct
-      | Some form_args, None ->
-	(match form_args with
-	  | `Fields _strings ->
-              override "POST", Some "application/x-www-form-urlencoded"
-	  | `FormData _ -> override "POST", None)
-      | Some _, ct -> override "POST", ct
+    let override_content_type c =
+      match content_type with
+        | None -> Some c
+        | Some _ -> content_type
+    in
+    match contents with
+    | None -> override_method "GET", content_type
+    | Some (`Form_contents form) -> (
+        match form with
+        | `Fields _strings ->
+          override_method "POST",
+          override_content_type "application/x-www-form-urlencoded"
+        | `FormData _ ->
+          override_method "POST",
+          override_content_type "multipart/form-data"
+      )
+    | Some (`String _ | `Blob _) -> override_method "POST", content_type
   in
   let url =
     if get_args = [] then
@@ -282,11 +284,17 @@ let perform_raw
     | None -> ()
   );
 
-  (match form_arg with
-     | None -> req##send (Js.null)
-     | Some (`Fields l) ->
-         ignore (req##send (Js.some (string (encode_url !l)));return ())
-     | Some (`FormData f) -> req##send_formData f);
+  (match contents with
+   | None ->
+     req##send (Js.null)
+   | Some (`Form_contents (`Fields l)) ->
+     req##send(Js.some (string (encode_url !l)))
+   | Some (`Form_contents (`FormData f)) ->
+     req##send_formData f
+   | Some (`String s) ->
+     req##send (Js.some (Js.string s))
+   | Some (`Blob b) ->
+     req##send_blob b) ;
 
   Lwt.on_cancel res (fun () -> req##abort) ;
   res
@@ -294,34 +302,32 @@ let perform_raw
 let perform_raw_url
     ?(headers = [])
     ?content_type
-    ?post_args
     ?(get_args=[])
-    ?form_arg
     ?check_headers
     ?progress
     ?upload_progress
+    ?contents
     ?override_mime_type
     ?override_method
     ?with_credentials
     url =
-  perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
+  perform_raw ~headers ?content_type ~get_args ?contents
     ?check_headers ?progress ?upload_progress ?override_mime_type
     ?override_method ?with_credentials ~response_type:Default url
 
 let perform
     ?(headers = [])
     ?content_type
-    ?post_args
     ?(get_args=[])
-    ?form_arg
     ?check_headers
     ?progress
     ?upload_progress
+    ?contents
     ?override_mime_type
     ?override_method
     ?with_credentials
     url =
-  perform_raw ~headers ?content_type ?post_args ~get_args ?form_arg
+  perform_raw ~headers ?content_type ~get_args ?contents
     ?check_headers ?progress ?upload_progress ?override_mime_type
     ?override_method ?with_credentials
     ~response_type:Default (Url.string_of_url url)
