@@ -1961,6 +1961,8 @@ module Keyboard_code = struct
     |> try_next (evt##.code) try_code
     |> try_key_location evt
     |> run_next (get_key_code evt) try_key_code_normal
+
+  let of_key_code = try_key_code_normal
 end
 
 module Keyboard_key = struct

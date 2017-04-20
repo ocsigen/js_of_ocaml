@@ -1499,6 +1499,7 @@ module Keyboard_code : sig
     | IntlBackslash       | IntlYen             | Pause
 
   val of_event : keyboardEvent Js.t -> t
+  val of_key_code : int -> t
 end
 
 (** Use [Keyboard_key] when you want to identify the character that the user typed. This
