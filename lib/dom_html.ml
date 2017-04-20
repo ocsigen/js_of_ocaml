@@ -1130,6 +1130,7 @@ class type document = object
   method createRange : range t meth
   method readyState : js_string t readonly_prop
   method getElementsByClassName : js_string t -> element Dom.nodeList t meth
+  method getElementsByName : js_string t -> element Dom.nodeList t meth
   method activeElement : element t opt readonly_prop
 
   inherit eventTarget
