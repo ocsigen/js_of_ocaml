@@ -13,8 +13,6 @@ opam install lwt reactiveData tyxml || true
 opam install camlp4 deriving || true
 opam install ppx_tools ppx_deriving || true
 
-opam pin add lwt https://github.com/ocsigen/lwt.git#pull/322/head
-
 opam install --deps-only \
      js_of_ocaml \
      js_of_ocaml-lwt \
