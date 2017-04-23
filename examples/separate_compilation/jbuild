@@ -35,7 +35,7 @@
   (action (run ${bin:js_of_ocaml} --noruntime --pretty --source-map --runtime-only
            ${lib:js_of_ocaml-compiler:runtime.js}
            ${lib:js_of_ocaml-compiler:predefined_exceptions.js}
-           empty -o ${@}))))
+           -o ${@}))))
 
 
 (alias

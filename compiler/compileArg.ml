@@ -32,7 +32,7 @@ type t = {
   params : (string * string) list;
   static_env : (string * string) list;
   wrap_with_fun : bool;
- (* toplevel *)
+  (* toplevel *)
   dynlink : bool;
   linkall : bool;
   toplevel : bool;
@@ -171,84 +171,91 @@ let options =
     =
     let chop_extension s =
       try Filename.chop_extension s with Invalid_argument _ -> s in
-      let runtime_files = js_files in
-      let runtime_files =
-        if noruntime
-        then runtime_files
-        else "+runtime.js"::runtime_files in
-      let runtime_files =
-        if not noruntime && runtime_only
-        then "+predefined_exceptions.js" :: runtime_files
-        else runtime_files
-      in
-      let linkall = linkall || toplevel || runtime_only in
-      let fs_external = fs_external || (toplevel && nocmis) || runtime_only in
-      let input_file = match input_file with
-        | "-" -> None
-        | x -> Some x in
-      let output_file = match output_file with
-        | Some _ -> output_file
-        | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") input_file in
-      let source_map =
-        if sourcemap || sourcemap_inline_in_js
-        then
-	  let file, sm_output_file =
-	    match output_file with
-            | Some file when sourcemap_inline_in_js -> file, None
-	    | Some file -> file, Some (chop_extension file ^ ".map")
-	    | None -> "STDIN", None in
-          Some (
-              sm_output_file,
-              {
-                Source_map.version = 3;
-                file;
-                sourceroot = sourcemap_root;
-                sources = [];
-                sources_content = if sourcemap_don't_inline_content
-                                  then None
-                                  else Some [];
-                names = [];
-                mappings = []
-            })
-        else None in
-      let source_map =
-        if source_map <> None && not Source_map_io.enabled
-        then begin
-          Util.warn
-            "Warning: '--source-map' flag ignored because js_of_ocaml was compiled without \
-             sourcemap support.\n%!";
-          None
-        end
-        else source_map
-      in
-      let params : (string * string) list = List.flatten set_param in
-      let static_env : (string * string) list = List.flatten set_env in
-      `Ok {
-        common;
-        params;
-        profile;
-        static_env;
+    let runtime_files = js_files in
+    let runtime_files =
+      if noruntime
+      then runtime_files
+      else "+runtime.js"::runtime_files in
+    let runtime_files =
+      if not noruntime && runtime_only
+      then "+predefined_exceptions.js" :: runtime_files
+      else runtime_files
+    in
+    let runtime_files =
+      if runtime_only && Filename.check_suffix input_file ".js"
+      then runtime_files @ [input_file]
+      else runtime_files
+    in
 
-        wrap_with_fun;
+    let linkall = linkall || toplevel || runtime_only in
+    let fs_external = fs_external || (toplevel && nocmis) || runtime_only in
+    let input_file = match input_file,runtime_only with
+      | "-",_
+      | _,true  -> None
+      | x,false -> Some x in
+    let output_file = match output_file with
+      | Some _ -> output_file
+      | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") input_file in
+    let source_map =
+      if sourcemap || sourcemap_inline_in_js
+      then
+	      let file, sm_output_file =
+	        match output_file with
+          | Some file when sourcemap_inline_in_js -> file, None
+	        | Some file -> file, Some (chop_extension file ^ ".map")
+	        | None -> "STDIN", None in
+        Some (
+          sm_output_file,
+          {
+            Source_map.version = 3;
+            file;
+            sourceroot = sourcemap_root;
+            sources = [];
+            sources_content = if sourcemap_don't_inline_content
+              then None
+              else Some [];
+            names = [];
+            mappings = []
+          })
+      else None in
+    let source_map =
+      if source_map <> None && not Source_map_io.enabled
+      then begin
+        Util.warn
+          "Warning: '--source-map' flag ignored because js_of_ocaml was compiled without \
+           sourcemap support.\n%!";
+        None
+      end
+      else source_map
+    in
+    let params : (string * string) list = List.flatten set_param in
+    let static_env : (string * string) list = List.flatten set_env in
+    `Ok {
+      common;
+      params;
+      profile;
+      static_env;
 
-        dynlink;
-        linkall;
-        toplevel;
-        export_file;
+      wrap_with_fun;
 
-        include_dir;
-        runtime_files;
-        runtime_only;
+      dynlink;
+      linkall;
+      toplevel;
+      export_file;
 
-        fs_files;
-        fs_output;
-        fs_external;
-        nocmis;
+      include_dir;
+      runtime_files;
+      runtime_only;
 
-        output_file;
-        input_file;
-        source_map
-      }
+      fs_files;
+      fs_output;
+      fs_external;
+      nocmis;
+
+      output_file;
+      input_file;
+      source_map
+    }
   in
   let t =
     Term.(pure build_t
@@ -274,7 +281,7 @@ let options =
           $ sourcemap
           $ sourcemap_inline_in_js
           $ sourcemap_don't_inline_content
-	  $ sourcemap_root
+	        $ sourcemap_root
 
           $ output_file
 
