@@ -177,11 +177,6 @@ let options =
       then runtime_files
       else "+runtime.js"::runtime_files in
     let runtime_files =
-      if not noruntime && runtime_only
-      then "+predefined_exceptions.js" :: runtime_files
-      else runtime_files
-    in
-    let runtime_files =
       if runtime_only && Filename.check_suffix input_file ".js"
       then runtime_files @ [input_file]
       else runtime_files

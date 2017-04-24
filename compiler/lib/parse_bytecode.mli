@@ -32,3 +32,5 @@ val from_channel :
   Code.program * Util.StringSet.t * Debug.data * bool
 
 val from_string : string array -> string -> Code.program * Debug.data
+
+val predefined_exceptions : unit -> Code.program

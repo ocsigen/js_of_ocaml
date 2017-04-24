@@ -43,7 +43,6 @@
     nat.js
     parsing.js
     polyfill/json2.js
-    predefined_exceptions.js
     runtime.js
     stdlib.js
     strftime.js

@@ -2331,3 +2331,33 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
       | _ ->
         raise Util.MagicNumber.(Bad_magic_number (to_string magic))
     end
+
+let predefined_exceptions () =
+  let body =
+    let open Code in
+    List.map (fun (index,name) ->
+      let exn = Var.fresh () in
+      let v_name = Var.fresh () in
+      let v_name_js = Var.fresh () in
+      let v_index = Var.fresh () in
+      [ Let (v_name,  Constant (String name))
+      ; Let (v_name_js,
+             Prim (Extern "caml_js_from_string",
+                   [ Pc (IString name)]))
+      ; Let (v_index, Constant (Int (Int32.of_int (- index))))
+      ; Let (exn, Block (248, [|v_name; v_index|]))
+      ; Let (Var.fresh (),
+             Prim (Extern "caml_register_global",
+                   [ Pc (Int (Int32.of_int index))
+                   ; Pv exn
+                   ; Pv v_name_js]))
+      ]) predefined_exceptions
+    |> List.concat
+  in
+  let block =
+    { params = []
+    ; handler = None
+    ; body
+    ; branch = Stop }
+  in
+  0, AddrMap.singleton 0 block, 1

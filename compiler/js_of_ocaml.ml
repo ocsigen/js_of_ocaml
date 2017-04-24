@@ -106,7 +106,10 @@ let f {
   in
   let p, cmis, d, standalone =
     if runtime_only
-    then Code.empty, Util.StringSet.empty, Parse_bytecode.Debug.create (), true
+    then Parse_bytecode.predefined_exceptions (),
+         Util.StringSet.empty,
+         Parse_bytecode.Debug.create (),
+         true
     else
       match input_file with
       | None ->
