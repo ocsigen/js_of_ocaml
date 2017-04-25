@@ -38,6 +38,7 @@
 
 (rule
  ((targets (bin.js))
+  (deps (myruntime.js stdlib.js module1.js module2.js))
   (action (run ${bin:jsoo_link} myruntime.js stdlib.js module1.js module2.js -o bin.js))))
 
 (alias
