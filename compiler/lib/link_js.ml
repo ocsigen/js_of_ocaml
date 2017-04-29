@@ -104,5 +104,5 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
         output_string output s
       | Some file ->
         Source_map_io.to_file sm file;
-        let s = sourceMappingURL ^ file in
+        let s = sourceMappingURL ^ (Filename.basename file) in
         output_string output s
