@@ -1,4 +1,4 @@
-===== 3.0.0 (2017-04-**) =====
+===== 3.0.0 (2017-05-**) =====
 
  * Features/Changes
  ** Misc: switch to ppx instead of camlp4
@@ -9,12 +9,14 @@
  ** Misc: switch to jbuilder
  ** Misc: new pseudo filesystem support with better node support
  ** Compiler: sourcemap support is now optional
- ** Compiler: no more dep on yojson, b64, menhir, ocamllex
+ ** Compiler: no more strong dep on yojson, b64, menhir, ocamllex
+ ** Compiler: improve separate compilation workflow
  ** Runtime: add support for weakdef
  ** Syntaxes: add expect tests
  ** Syntaxes: switch to ocaml-migrate-parsetree and ppx_tools_versioned
  ** Lib: Add primitives in [Js.Unsafe]
  ** Lib: remove keycode module, replaced by Dom_html.Keyboard_code
+ ** Lib: XmlHttpRequest, API change for perform functions.
 
  * Bug fixes:
  ** Runtime: fix many stubs

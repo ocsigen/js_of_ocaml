@@ -6,11 +6,8 @@ homepage:     "http://ocsigen.org/js_of_ocaml"
 dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 
 name: "js_of_ocaml"
-version: "dev"
 
-build: [
-  ["jbuilder" "build" "--only-packages" "js_of_ocaml" "-j" jobs "@install"]
-]
+build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
   "jbuilder" {build}
