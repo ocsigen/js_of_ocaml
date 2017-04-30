@@ -16,6 +16,5 @@ depends: [
 depopts: ["deriving"]
 conflicts: [
   "deriving"     {< "0.6"}
-  "js_of_ocaml"  {<"3.0"}
 ]
 available: [ ocaml-version >= "4.02.0" ]

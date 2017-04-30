@@ -1,13 +1,13 @@
-platform:
-  - x86
-
-environment:
-  FORK_USER: ocaml
-  FORK_BRANCH: master
-  CYG_ROOT: C:\cygwin64
+# AppVeyor config using https://github.com/Chris00/ocaml-appveyor
 
 install:
-  - ps: iex ((new-object net.webclient).DownloadString("https://raw.githubusercontent.com/$env:FORK_USER/ocaml-ci-scripts/$env:FORK_BRANCH/appveyor-install.ps1"))
+  - appveyor DownloadFile "https://raw.githubusercontent.com/Chris00/ocaml-appveyor/master/install_ocaml.cmd" -FileName "C:\install_ocaml.cmd"
+  - C:\install_ocaml.cmd
 
 build_script:
-  - call %CYG_ROOT%\bin\bash.exe -l %APPVEYOR_BUILD_FOLDER%\appveyor-opam.sh
+  - cd "%APPVEYOR_BUILD_FOLDER%"
+  - jbuilder build @install @DEFAULT -j 8 --dev
+
+artifacts:
+  - path: _build/log
+    name: build-log

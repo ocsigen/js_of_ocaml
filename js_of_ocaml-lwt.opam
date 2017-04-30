@@ -18,8 +18,4 @@ depends: [
 
 depopts: [ "graphics" ]
 
-conflicts: [
-  "js_of_ocaml"             {<"3.0"}
-]
-
 available: [ ocaml-version >= "4.02.0" ]

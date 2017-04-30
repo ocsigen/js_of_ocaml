@@ -20,7 +20,6 @@ depopts: ["ppx_deriving" "ppx_tools"]
 
 conflicts: [
   "ppx_tools_versioned"     {<="5.0beta0"}
-  "js_of_ocaml"             {<"3.0"}
 ]
 
 available: [ ocaml-version >= "4.02.0" ]
