@@ -10,7 +10,7 @@ name: "js_of_ocaml"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build}
+  "jbuilder" {build & >= "1.0+beta7"}
   "ocaml-migrate-parsetree"
   "ppx_tools_versioned"
   "uchar"

@@ -1,13 +1,13 @@
 opam update
 
-opam pin add --no-action js_of_ocaml .
-opam pin add --no-action js_of_ocaml-compiler .
-opam pin add --no-action js_of_ocaml-ocamlbuild .
-opam pin add --no-action js_of_ocaml-camlp4 .
-opam pin add --no-action js_of_ocaml-ppx .
-opam pin add --no-action js_of_ocaml-lwt .
-opam pin add --no-action js_of_ocaml-tyxml .
-opam pin add --no-action js_of_ocaml-toplevel .
+opam pin add --no-action js_of_ocaml.3.0 .
+opam pin add --no-action js_of_ocaml-compiler.3.0 .
+opam pin add --no-action js_of_ocaml-ocamlbuild.3.0 .
+opam pin add --no-action js_of_ocaml-camlp4.3.0 .
+opam pin add --no-action js_of_ocaml-ppx.3.0 .
+opam pin add --no-action js_of_ocaml-lwt.3.0 .
+opam pin add --no-action js_of_ocaml-tyxml.3.0 .
+opam pin add --no-action js_of_ocaml-toplevel.3.0 .
 
 opam install lwt reactiveData tyxml || true
 opam install camlp4 deriving || true
