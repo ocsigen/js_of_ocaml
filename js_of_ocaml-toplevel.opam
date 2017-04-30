@@ -10,7 +10,7 @@ name: "js_of_ocaml-toplevel"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build}
+  "jbuilder" {build & >= "1.0+beta7"}
   "ocamlfind" {>= "1.5.1"}
   "js_of_ocaml-compiler"
   "js_of_ocaml-ppx"
@@ -18,5 +18,9 @@ depends: [
 ]
 
 depopts: [ "camlp4" ]
+
+conflicts: [
+  "js_of_ocaml"             {<"3.0"}
+]
 
 available: [ ocaml-version >= "4.02.0" ]

@@ -10,7 +10,12 @@ name: "js_of_ocaml-ocamlbuild"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build}
+  "jbuilder" {build & >= "1.0+beta7"}
   "ocamlbuild"
 ]
+
+conflicts: [
+  "js_of_ocaml"             {<"3.0"}
+]
+
 available: [ ocaml-version >= "4.00.0" ]

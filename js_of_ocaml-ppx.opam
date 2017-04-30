@@ -10,7 +10,7 @@ name: "js_of_ocaml-ppx"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build}
+  "jbuilder" {build & >= "1.0+beta7"}
   "ocaml-migrate-parsetree"
   "ppx_tools_versioned"
   "js_of_ocaml"
@@ -20,6 +20,7 @@ depopts: ["ppx_deriving" "ppx_tools"]
 
 conflicts: [
   "ppx_tools_versioned"     {<="5.0beta0"}
+  "js_of_ocaml"             {<"3.0"}
 ]
 
 available: [ ocaml-version >= "4.02.0" ]

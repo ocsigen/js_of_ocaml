@@ -10,7 +10,7 @@ name: "js_of_ocaml-compiler"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build}
+  "jbuilder" {build & >= "1.0+beta7"}
   "cmdliner"
   "cppo" {>= "1.1.0"}
 ]
@@ -18,7 +18,8 @@ depends: [
 depopts: [ "ocamlfind" "yojson" ]
 
 conflicts: [
-  "ocamlfind" {< "1.5.1"}
+  "ocamlfind"   {< "1.5.1"}
+  "js_of_ocaml" {<"3.0"}
 ]
 
 available: [ ocaml-version >= "4.02.0" ]

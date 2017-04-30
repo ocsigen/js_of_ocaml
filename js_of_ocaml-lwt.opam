@@ -10,11 +10,16 @@ name: "js_of_ocaml-lwt"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build}
+  "jbuilder" {build & >= "1.0+beta7"}
   "lwt" {>= "2.4.4"}
   "js_of_ocaml"
   "js_of_ocaml-ppx"
 ]
 
 depopts: [ "graphics" ]
+
+conflicts: [
+  "js_of_ocaml"             {<"3.0"}
+]
+
 available: [ ocaml-version >= "4.02.0" ]

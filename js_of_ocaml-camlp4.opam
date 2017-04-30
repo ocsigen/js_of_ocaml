@@ -10,11 +10,12 @@ name: "js_of_ocaml-camlp4"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build}
+  "jbuilder" {build & >= "1.0+beta7"}
   "camlp4" {>= "2.4.4"}
 ]
 depopts: ["deriving"]
 conflicts: [
   "deriving"     {< "0.6"}
+  "js_of_ocaml"  {<"3.0"}
 ]
 available: [ ocaml-version >= "4.02.0" ]

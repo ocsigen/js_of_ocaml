@@ -10,11 +10,15 @@ name: "js_of_ocaml-tyxml"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build}
+  "jbuilder" {build & >= "1.0+beta7"}
   "tyxml" {>= "4.0.0"}
   "reactiveData" {>= "0.2"}
   "js_of_ocaml"
   "js_of_ocaml-ppx"
+]
+
+conflicts: [
+  "js_of_ocaml"             {<"3.0"}
 ]
 
 available: [ ocaml-version >= "4.02.0" ]
