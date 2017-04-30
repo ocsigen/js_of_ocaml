@@ -6,6 +6,7 @@ homepage:     "http://ocsigen.org/js_of_ocaml"
 dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 
 name: "js_of_ocaml-tyxml"
+version: "3.0"
 
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
