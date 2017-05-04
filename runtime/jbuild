@@ -45,7 +45,6 @@
     polyfill/json2.js
     runtime.js
     stdlib.js
-    strftime.js
     toplevel.js
     unix.js
     weak.js
