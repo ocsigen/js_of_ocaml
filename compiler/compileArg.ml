@@ -77,6 +77,10 @@ let options =
     let doc = "Generate a JavaScript file containing/exporting the runtime only." in
     Arg.(value & flag & info ["runtime-only"] ~doc)
   in
+  let no_sourcemap =
+    let doc = "Don't generate source map. All other source map related flags will be be ignored." in
+    Arg.(value & flag & info ["no-sourcemap";"no-source-map"] ~doc)
+  in
   let sourcemap =
     let doc = "Generate source map." in
     Arg.(value & flag & info ["sourcemap";"source-map"] ~doc)
@@ -160,6 +164,7 @@ let options =
       profile
       noruntime
       runtime_only
+      no_sourcemap
       sourcemap
       sourcemap_inline_in_js
       sourcemap_don't_inline_content
@@ -192,7 +197,7 @@ let options =
       | Some _ -> output_file
       | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") input_file in
     let source_map =
-      if sourcemap || sourcemap_inline_in_js
+      if not no_sourcemap && sourcemap || sourcemap_inline_in_js
       then
 	      let file, sm_output_file =
 	        match output_file with
@@ -273,10 +278,11 @@ let options =
 
           $ noruntime
           $ runtime_only
+          $ no_sourcemap
           $ sourcemap
           $ sourcemap_inline_in_js
           $ sourcemap_don't_inline_content
-	        $ sourcemap_root
+          $ sourcemap_root
 
           $ output_file
 
