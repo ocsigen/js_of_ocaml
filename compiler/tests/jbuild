@@ -4,14 +4,14 @@
   ))
 
 (rule
- ((targets (main.bc.js))
+ ((targets (main.js))
   (deps    (main.bc ../../runtime/runtime.js ../../compiler/js_of_ocaml.exe))
   (action  (run ../../compiler/js_of_ocaml.exe
                   --no-runtime ../../runtime/runtime.js
-                  main.bc -o main.bc.js))
+                  main.bc -o main.js))
  ))
 
 (alias
   ((name runtest)
-   (deps (main.bc.js))
-   (action (run node main.bc.js))))
+   (deps (main.js))
+   (action (run node main.js))))
