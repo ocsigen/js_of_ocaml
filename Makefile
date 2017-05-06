@@ -5,6 +5,7 @@ all:
 
 tests:
 	jbuilder runtest
+test runtest runtests: tests
 
 doc: all
 	$(MAKE) -C doc
@@ -22,4 +23,4 @@ remove-lexer-and-parser:
 promote-lexer-and-parser:
 	cp  _build/default/compiler/lib/{annot_parser,js_parser}.{ml,mli} compiler/lib/
 
-.PHONY: all tests doc toplevel-examples clean remove-lexer-and-parser promote-lexer-and-parser
+.PHONY: all tests test runtest runtests doc toplevel-examples clean remove-lexer-and-parser promote-lexer-and-parser
