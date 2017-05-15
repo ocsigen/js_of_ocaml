@@ -288,7 +288,7 @@ end
 
 and storageEvent = object
   inherit event
-  method key : js_string t readonly_prop
+  method key : js_string t opt readonly_prop
   method oldValue : js_string t opt readonly_prop
   method keynewValue : js_string t opt readonly_prop
   method url : js_string t readonly_prop
