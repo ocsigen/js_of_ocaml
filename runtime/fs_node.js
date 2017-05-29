@@ -62,6 +62,10 @@ MlNodeDevice.prototype.open = function(name, f) {
   return new MlNodeFile(fd);
 }
 
+MlNodeDevice.prototype.rename = function(o,n) {
+  this.fs.renameSync(this.nm(o), this.nm(n));
+}
+
 MlNodeDevice.prototype.constructor = MlNodeDevice
 
 //Provides: MlNodeFile
