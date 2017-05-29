@@ -1027,7 +1027,7 @@ function caml_get_exception_raw_backtrace () { return [0]; }
 //Provides: caml_record_backtrace
 function caml_record_backtrace () { return 0; }
 //Provides: caml_convert_raw_backtrace const
-function caml_convert_raw_backtrace () { return 0; }
+function caml_convert_raw_backtrace () { return [0]; }
 //Provides: caml_raw_backtrace_length
 function caml_raw_backtrace_length() { return 0; }
 //Provides: caml_raw_backtrace_next_slot
