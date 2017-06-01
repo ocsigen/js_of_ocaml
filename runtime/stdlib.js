@@ -160,7 +160,7 @@ function caml_wrap_exception(e) {
      && e.message.match(/too much recursion/i))
     return caml_return_exn_constant(caml_global_data.Stack_overflow);
   //Wrap Error in Js.Error exception
-  if(e instanceof joo_global_object.Error)
+  if(e instanceof joo_global_object.Error && caml_named_value("jsError"))
     return [0,caml_named_value("jsError"),e];
   //fallback: wrapped in Failure
   return [0,caml_global_data.Failure,caml_js_to_string (String(e))];
