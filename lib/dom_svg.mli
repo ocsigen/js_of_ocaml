@@ -229,7 +229,7 @@ and length = object
 end
 
 (* interface SVGAnimatedLength *)
-and animatedLength =  [length] animated
+and animatedLength =  [length t] animated
 
 (* interface SVGLengthList *)
 and lengthList = [length t] list
