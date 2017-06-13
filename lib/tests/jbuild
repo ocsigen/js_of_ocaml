@@ -3,7 +3,7 @@
  ((names (main))
   (libraries
    (js_of_ocaml unix))
-  (preprocess (pps (js_of_ocaml-ppx)))
+  (preprocess (pps (ppx_js_internal)))
   ))
 
 (rule
@@ -17,5 +17,6 @@
 
 (alias
   ((name runtest)
+   (package js_of_ocaml)
    (deps (main.js))
    (action (run node main.js))))
