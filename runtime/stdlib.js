@@ -381,7 +381,7 @@ function caml_compare_val (a, b, total) {
       } else if (typeof a != "number" && a && a.compare) {
         return a.compare(b,total);
       } else if (typeof a == "function") {
-        caml_invalid_argument("equal: functional value");
+        caml_invalid_argument("compare: functional value");
       } else {
         if (a < b) return -1;
         if (a > b) return 1;
