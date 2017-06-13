@@ -173,7 +173,7 @@ let _ =
           ~syntax_mods:!syntaxes_mod
       @ jsoo_top @ args @ ["-o"; !output] in
     execute cmd;
-    execute (["jsoo_listunits";"-o";export_output] @ !pkgs);
+    execute (["jsoo_listunits";"-o";export_output] @ !pkgs @ !export );
     clean (export_output);
     execute (["js_of_ocaml";"--toplevel";"--no-cmis";"--export"; export_output]
              @ !js_opt @ [!output]);
