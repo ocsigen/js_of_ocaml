@@ -61,12 +61,18 @@ let setup = lazy (
     flush stdout; flush stderr;
     let res = Buffer.contents b in
     let res = String.concat "" !stubs ^ res in
-    Js.Unsafe.global##toplevelEval res
+    let res : unit -> _ = Js.Unsafe.global##toplevelEval res in
+    res
   in
   Js.Unsafe.global##.toplevelCompile := compile (*XXX HACK!*);
   Js.Unsafe.global##.toplevelEval := (fun x ->
-    let f : < .. > Js.t -> unit = Js.Unsafe.eval_string x in
-    (fun () -> f Js.Unsafe.global)
+    let f : < .. > Js.t -> < .. > Js.t = Js.Unsafe.eval_string x in
+    (fun () ->
+       let res = f Js.Unsafe.global in
+       Format.(pp_print_flush std_formatter ());
+       Format.(pp_print_flush err_formatter ());
+       flush stdout; flush stderr;
+       res)
   );
   ())
 
@@ -96,32 +102,33 @@ let use ffp content =
 
 let execute printval ?pp_code ?highlight_location  pp_answer s =
   let lb = Lexing.from_function (refill_lexbuf s (ref 0) pp_code) in
-  try
-    while true do
-      try
-        let phr = !Toploop.parse_toplevel_phrase lb in
-        let phr = JsooTopPpx.preprocess_phrase phr in
-        ignore(Toploop.execute_phrase printval pp_answer phr)
-      with
-      | End_of_file ->
-        raise End_of_file
-      | JsooTopError.Camlp4 (loc,_exn) ->
-	begin match highlight_location with
-	| None -> ()
-	| Some f -> f loc
-	end;
-      | x ->
-	begin match highlight_location with
-	| None -> ()
-	| Some f ->
-	  match JsooTopError.loc x with
-	  | None -> ()
-	  | Some loc -> f loc
-	end;
-        Errors.report_error Format.err_formatter x;
-    done
-  with End_of_file ->
-    flush_all ()
+  begin try
+      while true do
+        try
+          let phr = !Toploop.parse_toplevel_phrase lb in
+          let phr = JsooTopPpx.preprocess_phrase phr in
+          ignore(Toploop.execute_phrase printval pp_answer phr : bool)
+        with
+        | End_of_file ->
+          raise End_of_file
+        | JsooTopError.Camlp4 (loc,_exn) ->
+	        begin match highlight_location with
+	          | None -> ()
+	          | Some f -> f loc
+	        end;
+        | x ->
+	        begin match highlight_location with
+	          | None -> ()
+	          | Some f ->
+	            match JsooTopError.loc x with
+	            | None -> ()
+	            | Some loc -> f loc
+	        end;
+          Errors.report_error Format.err_formatter x;
+      done
+    with End_of_file -> ()
+  end;
+  flush_all ()
 
 let initialize () =
   Sys.interactive := false;
