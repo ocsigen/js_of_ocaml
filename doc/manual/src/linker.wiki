@@ -19,7 +19,7 @@ Or load it from a findlib package
 js_of_ocaml +mypackage/jsfile.js a.byte
 >>
 The file **jsfile.js** will be looked up inside **mypackage** lib directory.
-When no package is provided, the compiler will look inside js_of_ocaml lib directory.
+When no package is provided, the compiler will look inside js_of_ocaml-compiler lib directory.
 
 == Provide your own JavaScript
 You may need to provide extra JavaScript files to provide missing primitives or to override existing ones.

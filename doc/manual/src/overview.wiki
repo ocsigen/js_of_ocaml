@@ -3,23 +3,35 @@
 == Overview ==
 
 Js_of_ocaml is a compiler from OCaml bytecode programs to JavaScript.
-It makes it possible to write OCaml programs that run on Web browsers.
-It is easy to install as it works with an existing installation of
-OCaml, with no need to recompile any library.  It comes with bindings
-for a large part of the browser APIs.  According to our benchmarks,
-the generated programs <<a_manual chapter="performances" |runs
-typically faster>> than with the OCaml bytecode interpreter.  We
-believe this compiler will prove much easier to maintain than a
-retargeted OCaml compiler, as the bytecode provides a very stable API.
+It makes it possible to run pure OCaml programs in JavaScript environment
+like browsers and Node.js. It is easy to install as it works with an
+existing installation of OCaml, with no need to recompile any library.
+It comes with bindings for a large part of the browser APIs.
+According to our benchmarks, the generated programs
+<<a_manual chapter="performances" |runs typically faster>> than with
+the OCaml bytecode interpreter.  We believe this compiler will prove
+much easier to maintain than a retargeted OCaml compiler, as the
+bytecode provides a very stable API.
 
+Js_of_ocaml is composed of multiple packages:
+  * js_of_ocaml-compiler, the compiler.
+  * js_of_ocaml-ppx, the ppx syntax extension (recommended).
+  * js_of_ocaml-camlp4, the camlp4 syntax extension (deprecated).
+  * js_of_ocaml, the base library.
+  * js_of_ocaml-ocamlbuild, an ocamlbuild pluging to compile to
+    javascript.
+  * js_of_ocaml-lwt, lwt support.
+  * js_of_ocaml-tyxml, tyxml support.
+  * js_of_ocaml-toplevel, lib and tools to build an ocaml toplevel to
+    javascript.
 
 == Installation ==
 === Requirements ==
 * Jbuilder
-* Cmdliner, cppo (for the compiler) 
+* Cmdliner, cppo (for the compiler)
 * ppx_tools_versioned, ocaml-migrate-parsetree (for the js_of_ocaml base library)
 
-See opam file at the root of the repository for version constraints.
+See opam files at the root of the repository for version constraints.
 
 Optional dependencies:
   * deriving(see https://github.com/ocsigen/deriving)
@@ -29,13 +41,14 @@ Optional dependencies:
   * yojson(see https://github.com/mjambon/yojson)
 
 === Install from opam
-{{{opam install js_of_ocaml}}}
+{{{opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt}}}
 
 === Build and install from source
 {{{make}}}
 {{{opam-installer js_of_ocaml-compiler}}}
-{{{opam-installer js_of_ocaml-lwt}}}
 {{{opam-installer js_of_ocaml}}}
+{{{opam-installer js_of_ocaml-ppx}}}
+{{{opam-installer js_of_ocaml-lwt}}}
 
 == Usage ==
 
@@ -52,7 +65,17 @@ Optional dependencies:
       js_of_ocaml cubes.byte
 }}}
 
-  See also the plugin <<a_api | module Ocamlbuild_js_of_ocaml >>.
+=== with ocamlbuild ===
+  Js_of_ocaml also provide an ocamlbuild plugin.
+  See <<a_api | module Ocamlbuild_js_of_ocaml >>.
+
+=== with oasis ===
+  TODO
+
+=== with jbuilder ===
+  Jbuider has native support for js_of_ocaml.
+  It support both standard and separate compilation of javascript
+  files. See http://jbuilder.readthedocs.io/en/latest/usage.html?highlight=js_of_ocaml
 
 See also <<a_manual chapter="quickstart" |Quickstart>>.
 
