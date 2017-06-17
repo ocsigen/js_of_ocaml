@@ -6,9 +6,11 @@ linkopts(javascript,pkg_graphics) += "+js_of_ocaml-compiler/graphics.js"
 linkopts(javascript,pkg_num) += "+js_of_ocaml-compiler/nat.js"
 
 package "weak" (
-  description = "weak emulation for js_of_ocaml."
-  version = "[distributed with js_of_ocaml]"
-  linkopts(javascript) = "+js_of_ocaml-compiler/weak.js"
+  requires = "js_of_ocaml-compiler.runtime.weak"
+)
+
+package "num" (
+  requires = "js_of_ocaml-compiler.runtime.num"
 )
 
 package "ppx" (
