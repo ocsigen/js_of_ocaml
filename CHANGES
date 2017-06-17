@@ -1,4 +1,4 @@
-===== 3.0.0 (2017-05-**) =====
+===== 3.0.0 (2017-06-**) =====
 
  * Features/Changes
  ** Misc: switch to ppx instead of camlp4
@@ -22,6 +22,9 @@
  ** Runtime: fix many stubs
  ** Lib: fix many signatures
  ** Compiler: fix performance of compilation passes (simpl,clean)
+ ** Compiler: fix compat with OCaml 4.06
+ ** Toplevel: flush channels after execution.
+ ** Toplevel: fix toplevel generation when using -export-unit
 
 ===== 2.8.4 (2016-12-21) =====
 
