@@ -35,7 +35,8 @@ type info = {
   info_defs:def array;
   info_known_origins : Code.VarSet.t Code.VarTbl.t;
   info_maybe_unknown : bool Code.VarTbl.t;
-  info_possibly_mutable : bool array
+  info_possibly_mutable : bool array;
+  info_returns : Code.VarSet.t Code.VarMap.t
 }
 
 let update_def {info_defs; _} x exp =
@@ -350,6 +351,23 @@ let the_def_of info x =
         None (fun _ _ -> None) x
     | Pc c -> Some (Constant c)
 
+let compute_returns ((_,blocs,_) as p) =
+  Code.fold_closures p (fun name _ (pc,_) acc ->
+    match name with
+    | None -> acc
+    | Some name ->
+      let set =
+        traverse Code.fold_children (fun pc acc ->
+          let bloc = AddrMap.find pc blocs in
+          match bloc.branch with
+          | Return x ->
+            Code.VarSet.add x acc
+          | _ -> acc
+        ) pc blocs Code.VarSet.empty
+      in
+      Code.VarMap.add name set acc
+  ) Code.VarMap.empty
+
 let the_const_of info x =
   match x with
   | Pv x ->
@@ -451,11 +469,13 @@ let f ?skip_param p =
   end;
 
   let t5 = Util.Timer.make () in
+  let info_returns = compute_returns p in
   let info = {
     info_defs = defs;
     info_known_origins = known_origins;
     info_maybe_unknown = maybe_unknown;
     info_possibly_mutable = possibly_mutable;
+    info_returns
   } in
   let s = build_subst info vars in
   let p = Subst.program (Subst.from_array s) p in

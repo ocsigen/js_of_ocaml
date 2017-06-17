@@ -29,18 +29,31 @@ let rec function_cardinality info x acc =
            Some (List.length l)
        | Expr (Prim (Extern "%closure", [Pc (IString prim)])) ->
          (try Some (Jsoo_primitive.arity prim) with Not_found -> None)
-       | Expr (Apply (f, l, _)) ->
-         if List.mem f acc
-         then None
-         else begin match function_cardinality info f (f::acc) with
-             Some n ->
-             let diff = n - List.length l in
-             if diff > 0 then Some diff else None
-           | None ->
-             None
+       | Expr (Apply (f, l, _)) -> begin
+           if List.mem f acc
+           then None
+           else
+             let args_len = List.length l in
+             match function_cardinality info f (f::acc) with
+             | Some n when n > args_len -> Some (n - args_len)
+             | Some n when n = args_len ->
+               begin try
+                   let set = VarMap.find f info.info_returns in
+                   match VarSet.cardinal set with
+                   | 0 -> None
+                   | 1 -> function_cardinality info (VarSet.choose set) (f :: acc)
+                   | _ ->
+                     match function_cardinality info (VarSet.choose set) (f :: acc) with
+                     | None -> None
+                     | Some arity ->
+                       if VarSet.for_all (fun x -> function_cardinality info x (f :: acc) = Some arity) set
+                       then Some arity
+                       else None
+                 with Not_found -> None
+               end
+             | Some _ | None -> None
          end
-       | _ ->
-         None)
+       | _ -> None)
     None
     (fun u v -> match u, v with Some n, Some m when n = m -> u | _ -> None)
     x

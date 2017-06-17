@@ -44,6 +44,7 @@ type info = {
   info_known_origins : Code.VarSet.t Code.VarTbl.t;
   info_maybe_unknown : bool Code.VarTbl.t;
   info_possibly_mutable : bool array;
+  info_returns : Code.VarSet.t Code.VarMap.t
 }
 
 val get_approx : info -> (Code.VarSet.elt -> 'b) ->
