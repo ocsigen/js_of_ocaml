@@ -20,6 +20,8 @@
 
 open Js_of_ocaml
 open Js_of_ocaml_lwt
+open Js_of_ocaml_tyxml
+open Js_of_ocaml_toplevel
 open Lwt
 
 let compiler_name = "OCaml"

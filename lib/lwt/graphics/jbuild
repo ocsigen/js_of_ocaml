@@ -4,5 +4,5 @@
   (public_name js_of_ocaml-lwt.graphics)
   (synopsis "Graphics for js_of_ocaml.")
   (optional)
-  (libraries (js_of_ocaml-lwt lwt graphics))
+  (libraries (js_of_ocaml js_of_ocaml-lwt lwt graphics))
   (preprocess (pps (js_of_ocaml-ppx)))))

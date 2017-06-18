@@ -17,18 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module XmlHttpRequest = struct
-  include Js_of_ocaml.XmlHttpRequest
-  include Lwt_xmlHttpRequest
+module JsooTop = JsooTop
+module For_js_of_ocaml_toplevel_camlp4 = struct
+  let camlp4_exception (loc, exn) = JsooTopError.Camlp4 (loc, exn)
 end
-
-module File = struct
-  include Js_of_ocaml.File
-  include Lwt_file
-end
-
-module Jsonp = Lwt_jsonp
-
-module Lwt_js = Lwt_js
-
-module Lwt_js_events = Lwt_js_events
