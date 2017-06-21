@@ -1,8 +1,28 @@
-(jbuild_version 1)
+(* -*- tuareg -*- *)
+#require "unix"
+let camlp4_exists =
+  try
+    let ic = Unix.open_process_in "ocamlfind query -a-format -predicates byte camlp4.lib" in
+    let path = input_line ic in
+    close_in ic;
+    Sys.file_exists path
+  with _ -> false
+
+let () =
+  let jbuild =
+    if camlp4_exists
+    then {|
 (library
  ((name js_of_ocaml_toplevel_camlp4)
   (public_name js_of_ocaml-toplevel.camlp4)
-  (libraries (js_of_ocaml-toplevel camlp4))
+  (libraries (js_of_ocaml-toplevel camlp4.lib))
   (optional)
   (library_flags (-linkall))
   (preprocess (pps (js_of_ocaml-ppx)))))
+|}
+    else {||}
+  in
+  Printf.ksprintf Jbuild_plugin.V1.send {|
+(jbuild_version 1)
+%s
+|} jbuild
