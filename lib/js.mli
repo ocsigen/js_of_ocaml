@@ -719,7 +719,7 @@ module Unsafe : sig
 
   external js_expr : string -> 'a = "caml_js_expr"
     (** [js_expr e] will parse the JavaScript expression [e] if [e]
-        is available at compile time or will failback to a
+        is available at compile time or will fallback to a
         runtime evaluation. See [eval_string] *)
 
   external pure_js_expr : string -> 'a = "caml_pure_js_expr"
