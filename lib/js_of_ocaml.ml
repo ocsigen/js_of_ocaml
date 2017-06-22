@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Lib_version = Lib_version
 module Js = Js
 module Dom = Dom
 module Typed_array = Typed_array
