@@ -31,7 +31,7 @@ type t = {
   input_file : string option;
   params : (string * string) list;
   static_env : (string * string) list;
-  wrap_with_fun : bool;
+  wrap_with_fun : string option;
   (* toplevel *)
   dynlink : bool;
   linkall : bool;
@@ -99,7 +99,7 @@ let options =
   in
   let wrap_with_function =
     let doc = "Wrap the generated JavaScript code inside a function that needs to be applied with the global object." in
-    Arg.(value & flag & info ["wrap-with-fun"] ~doc)
+    Arg.(value & opt (some string) None & info ["wrap-with-fun"] ~doc)
   in
   let set_param =
     let doc = "Set compiler options." in

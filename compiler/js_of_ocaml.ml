@@ -55,7 +55,10 @@ let f {
   include_dir; fs_files; fs_output; fs_external; export_file } =
   let dynlink = dynlink || toplevel || runtime_only in
   let custom_header = common.CommonArg.custom_header in
-  let global = if wrap_with_fun then `Function else `Auto in
+  let global = match wrap_with_fun with
+    | Some fun_name -> `Bind_to fun_name
+    | None          -> `Auto
+  in
   CommonArg.eval common;
   begin match output_file with
   | None | Some "" | Some "-" -> ()
