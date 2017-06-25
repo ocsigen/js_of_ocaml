@@ -33,9 +33,18 @@ MlFakeDevice.prototype.lookup = function(name) {
   if(!this.content[name] && this.lookupFun) {
     var res = this.lookupFun(caml_new_string(this.root), caml_new_string(name));
     if(res != 0) this.content[name]=new MlFakeFile(res[1]);
-  }    
+  }
 }
 MlFakeDevice.prototype.exists = function(name) {
+  // The root of the device exists
+  if(name == "") return 1;
+  // Check if a directory exists
+  var name_slash = (name + "/");
+  var r = new RegExp("^" + name_slash);
+  for(var n in this.content) {
+    if (n.match(r)) return 1
+  }
+  // Check if a file exists
   this.lookup(name);
   return this.content[name]?1:0;
 }
