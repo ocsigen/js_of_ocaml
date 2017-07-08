@@ -33,12 +33,12 @@ like browsers and Node.js.
 
 ## Installation
 
-###Opam
+### Opam
 ```
 opam install js_of_ocaml js_of_ocaml-ppx
 ```
 
-###Manual
+### Manual
   * edit `Makefile.conf` to change the default configuration
   * run `make all` to compile
   * run `make install` as root to install the compiler
