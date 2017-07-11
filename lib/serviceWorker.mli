@@ -105,7 +105,8 @@ class type ['a,'b] serviceWorker = object ('self)
 
   method scriptURL : js_string t readonly_prop
   method state : js_string t readonly_prop
-  method onstatechange : ('self t, statechangeEvent) event_listener readonly_prop  
+  method onstatechange : 
+    ('self t, statechangeEvent) event_listener readonly_prop  
 end
 
 class type ['a,'b] serviceWorkerRegistration = object ('self)
@@ -156,9 +157,12 @@ class type ['a,'b] serviceWorkerContainer = object ('self)
   method oncontrollerchange : 
     ('self t, controllerchangeEvent t) event_listener writeonly_prop
   method onerror: ('self t, Worker.errorEvent t) event_listener writeonly_prop
-  method onmessage: ('self t, 'b Worker.messageEvent t) event_listener writeonly_prop
-  method register : js_string t -> ('a,'b) serviceWorkerRegistration t promise t meth 
-  method getRegistration : ('a,'b) serviceWorkerRegistration t Optdef.t promise t meth
+  method onmessage: 
+    ('self t, 'b Worker.messageEvent t) event_listener writeonly_prop
+  method register : 
+    js_string t -> ('a,'b) serviceWorkerRegistration t promise t meth 
+  method getRegistration : 
+    ('a,'b) serviceWorkerRegistration t Optdef.t promise t meth
   method getRegistration_withScope : 
     js_string t -> ('a,'b) serviceWorkerRegistration t Optdef.t promise t meth
   method getRegistrations : 
@@ -323,9 +327,9 @@ module Client : sig
   val post_message : client -> ?transfer:'a -> 'b -> unit
 
   val matchAll_withOptions :
-      ?includeUncontrolled:bool t ->
-      ?_type:js_string t ->
-      clients -> client t js_array t Promise.promise t
+    ?includeUncontrolled:bool t ->
+    ?_type:js_string t ->
+    clients -> client t js_array t Promise.promise t
 
 end
 
@@ -354,13 +358,15 @@ class type ['a,'b] serviceWorkerGlobalScope = object ('self)
   method onactivate : ('self t, activateEvent t) event_listener writeonly_prop
   method onfetch : ('self t, fetchEvent t) event_listener writeonly_prop
   method oninstall : ('self t, installEvent t) event_listener writeonly_prop
-  method onmessage : ('self t, 'b Worker.messageEvent t) event_listener writeonly_prop
+  method onmessage : 
+    ('self t, 'b Worker.messageEvent t) event_listener writeonly_prop
   method onnotificationclick : 
     ('self t, Notification.notificationEvent t) event_listener writeonly_prop
   method onnotificationclose :
     ('self t, Notification.notificationEvent t) event_listener writeonly_prop
   method onpush : ('self t , Push.pushEvent t) event_listener writeonly_prop
-  method onpushsubscriptionchange :('self t, event t) event_listener writeonly_prop
+  method onpushsubscriptionchange :
+    ('self t, event t) event_listener writeonly_prop
   method skipWaiting : unit promise t meth
   method fetch : Fetch.request t -> Fetch.response t promise t meth
   method fetch_withUrl : js_string t -> Fetch.response t promise t meth
@@ -369,8 +375,11 @@ end
 val get_self : unit -> ('a, 'b) serviceWorkerGlobalScope t
 
 val addInstallListener :
-  (('a, 'b) serviceWorkerGlobalScope t, installEvent t) event_listener -> event_listener_id
+  (('a, 'b) serviceWorkerGlobalScope t, installEvent t) event_listener -> 
+  event_listener_id
 val addActivateListener :
-  (('a, 'b) serviceWorkerGlobalScope t, installEvent t) event_listener -> event_listener_id
+  (('a, 'b) serviceWorkerGlobalScope t, installEvent t) event_listener -> 
+  event_listener_id
 val addFetchListener :
-  (('a, 'b) serviceWorkerGlobalScope t, fetchEvent t) event_listener -> event_listener_id
+  (('a, 'b) serviceWorkerGlobalScope t, fetchEvent t) event_listener -> 
+  event_listener_id

@@ -88,8 +88,8 @@ module Notification = struct
   let create_notification (title: js_string t) =
     create_fun_with_notification_options
       ~f:(fun l ->
-          let _Notification = Unsafe.global##._Notification in
-          new%js _Notification title l) 
+        let _Notification = Unsafe.global##._Notification in
+        new%js _Notification title l) 
 end
 
 module Push = struct
@@ -149,7 +149,8 @@ class type ['a,'b] serviceWorker = object ('self)
 
   method scriptURL : js_string t readonly_prop
   method state : js_string t readonly_prop
-  method onstatechange : ('self t, statechangeEvent) event_listener readonly_prop  
+  method onstatechange : 
+    ('self t, statechangeEvent) event_listener readonly_prop  
 end
 
 class type ['a,'b] serviceWorkerRegistration = object ('self)
@@ -173,8 +174,8 @@ let showNotification_withOptions
     (title : js_string t) =
   Notification.create_fun_with_notification_options
     ~f:(fun l -> 
-        Unsafe.meth_call sw_registration "showNotification" 
-          [|Unsafe.inject title; Unsafe.inject l|])
+      Unsafe.meth_call sw_registration "showNotification" 
+        [|Unsafe.inject title; Unsafe.inject l|])
 
 class type controllerchangeEvent = event
 
@@ -185,10 +186,14 @@ class type ['a,'b] serviceWorkerContainer = object ('self)
   method ready: ('a,'b) serviceWorkerRegistration t promise t meth
   method oncontrollerchange : 
     ('self t, controllerchangeEvent t) event_listener writeonly_prop
-  method onerror: ('self t, Worker.errorEvent t) event_listener writeonly_prop
-  method onmessage: ('self t, 'b Worker.messageEvent t) event_listener writeonly_prop
-  method register : js_string t -> ('a,'b) serviceWorkerRegistration t promise t meth 
-  method getRegistration : ('a,'b) serviceWorkerRegistration t Optdef.t promise t meth
+  method onerror: 
+    ('self t, Worker.errorEvent t) event_listener writeonly_prop
+  method onmessage: 
+    ('self t, 'b Worker.messageEvent t) event_listener writeonly_prop
+  method register : 
+    js_string t -> ('a,'b) serviceWorkerRegistration t promise t meth 
+  method getRegistration : 
+    ('a,'b) serviceWorkerRegistration t Optdef.t promise t meth
   method getRegistration_withScope : 
     js_string t -> ('a,'b) serviceWorkerRegistration t Optdef.t promise t meth
   method getRegistrations : 
@@ -205,7 +210,8 @@ let register_withOptions
       |None -> undefined
       |Some scope -> def scope
   end in
-  Unsafe.meth_call sw_container "register" [|Unsafe.inject scriptURL ; Unsafe.inject l|]
+  Unsafe.meth_call 
+    sw_container "register" [|Unsafe.inject scriptURL ; Unsafe.inject l|]
 
 module Fetch = struct
 
@@ -370,7 +376,9 @@ module Client = struct
       Unsafe.meth_call 
         client "postMessage" [|Unsafe.inject message; Unsafe.inject transfer|]
 
-  let matchAll_withOptions ?(includeUncontrolled=_false) ?(_type = string "all")
+  let matchAll_withOptions 
+      ?(includeUncontrolled=_false) 
+      ?(_type = string "all")
       (clients:clients): client t js_array t promise t =
     Unsafe.meth_call clients "matchAll" 
       [|Unsafe.inject includeUncontrolled; Unsafe.inject _type|]
@@ -402,13 +410,15 @@ class type ['a,'b] serviceWorkerGlobalScope = object ('self)
   method onactivate : ('self t, activateEvent t) event_listener writeonly_prop
   method onfetch : ('self t, fetchEvent t) event_listener writeonly_prop
   method oninstall : ('self t, installEvent t) event_listener writeonly_prop
-  method onmessage : ('self t, 'b Worker.messageEvent t) event_listener writeonly_prop
+  method onmessage : 
+    ('self t, 'b Worker.messageEvent t) event_listener writeonly_prop
   method onnotificationclick : 
     ('self t, Notification.notificationEvent t) event_listener writeonly_prop
   method onnotificationclose :
     ('self t, Notification.notificationEvent t) event_listener writeonly_prop
   method onpush : ('self t , Push.pushEvent t) event_listener writeonly_prop
-  method onpushsubscriptionchange :('self t, event t) event_listener writeonly_prop
+  method onpushsubscriptionchange :
+    ('self t, event t) event_listener writeonly_prop
   method skipWaiting : unit promise t meth
   method fetch : Fetch.request t -> Fetch.response t promise t meth
   method fetch_withUrl : js_string t -> Fetch.response t promise t meth
