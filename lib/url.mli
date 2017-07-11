@@ -140,3 +140,17 @@ module Current :
 
 
   end
+
+class type urlSearchParams = object
+  method append : Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+  method delete : Js.js_string Js.t -> unit Js.meth
+  method get : Js.js_string Js.t -> Js.js_string Js.t Js.Opt.t Js.meth
+  method getAll : Js.js_string Js.t Js.js_array Js.t Js.meth
+  method has : Js.js_string Js.t -> bool Js.t Js.meth
+  method set : Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+  method sort : unit Js.meth
+  method toString : Js.js_string Js.t Js.meth
+end
+
+val create_URLSearchParams :
+  ?init:Js.js_string Js.t -> unit -> urlSearchParams Js.t

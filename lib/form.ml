@@ -21,19 +21,29 @@
 open Js
 open Dom_html
 
+type form_elt =
+  [ `String of js_string t
+  | `File of File.file t ]
+
 class type formData = object
   method append : js_string t -> js_string t -> unit meth
   method append_blob : js_string t -> File.blob t -> unit meth
+  method append_blobwithFileName : 
+    js_string t -> File.blob t -> js_string t -> unit meth
+  method delete: js_string t -> unit meth
+  method get : js_string t -> form_elt Opt.t meth
+  method getAll : form_elt js_array t meth
+  method has : js_string t -> bool t meth
+  method set : js_string t -> js_string t -> unit meth
+  method set_blob : js_string t -> File.blob t -> unit meth
+  method set_blobwithFileName : 
+    js_string t -> File.blob t -> js_string t -> unit meth
 end
 
 let formData : formData t constr = Js.Unsafe.global ##. _FormData
 
 let formData_form : (formElement t -> formData t) constr =
   Js.Unsafe.global ##. _FormData
-
-type form_elt =
-  [ `String of js_string t
-  | `File of File.file t ]
 
 type form_contents =
   [ `Fields of (string * form_elt) list ref
