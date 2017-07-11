@@ -377,6 +377,15 @@ module Client = struct
 
 end
 
+class type installEvent = extendableEvent
+class type activateEvent = extendableEvent
+class type fetchEvent = object
+  inherit extendableEvent
+
+  method respondWith : Fetch.response t promise t -> unit meth
+  method request: Fetch.request t readonly_prop
+end
+
 class type sw_navigator = object
   inherit navigator
 
@@ -403,15 +412,6 @@ class type ['a,'b] serviceWorkerGlobalScope = object ('self)
   method skipWaiting : unit promise t meth
   method fetch : Fetch.request t -> Fetch.response t promise t meth
   method fetch_withUrl : js_string t -> Fetch.response t promise t meth
-end
-
-class type installEvent = extendableEvent
-class type activateEvent = extendableEvent
-class type fetchEvent = object
-  inherit extendableEvent
-
-  method respondWith : Fetch.response t promise t -> unit meth
-  method request: Fetch.request t readonly_prop
 end
 
 let get_self () : ('a,'b) serviceWorkerGlobalScope t = Unsafe.global##.self

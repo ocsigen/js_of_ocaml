@@ -329,6 +329,15 @@ module Client : sig
 
 end
 
+class type installEvent = extendableEvent
+class type activateEvent = extendableEvent
+class type fetchEvent = object
+  inherit extendableEvent
+
+  method respondWith : Fetch.response t promise t -> unit meth
+  method request: Fetch.request t readonly_prop
+end
+
 class type sw_navigator = object
   inherit navigator
 
@@ -359,18 +368,9 @@ end
 
 val get_self : unit -> ('a, 'b) serviceWorkerGlobalScope t
 
-class type installEvent = extendableEvent
-class type activateEvent = extendableEvent
-class type fetchEvent = object
-  inherit extendableEvent
-
-  method respondWith : Fetch.response t promise t -> unit meth
-  method request: Fetch.request t readonly_prop
-end
-
 val addInstallListener :
-  (window t, installEvent t) event_listener -> event_listener_id
+  (('a, 'b) serviceWorkerGlobalScope t, installEvent t) event_listener -> event_listener_id
 val addActivateListener :
-  (window t, installEvent t) event_listener -> event_listener_id
+  (('a, 'b) serviceWorkerGlobalScope t, installEvent t) event_listener -> event_listener_id
 val addFetchListener :
-  (window t, fetchEvent t) event_listener -> event_listener_id
+  (('a, 'b) serviceWorkerGlobalScope t, fetchEvent t) event_listener -> event_listener_id
