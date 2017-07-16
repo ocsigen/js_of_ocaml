@@ -269,19 +269,29 @@ module Fetch = struct
 
   let create_response 
       ?(body:response_elt option)
-      ?(status: int option)
-      ?(statusText : js_string t option)
+      ?(status = 200)
+      ?(statusText= string "OK")
       ?(headers : headers t option)
       () =
     let _Response = Unsafe.global##._Response in 
     let l = object%js 
       val status = status
       val statusText = statusText
-      val headers = headers
+      val headers = 
+        match headers with
+        |None -> undefined
+        |Some headers -> def headers
     end in
     match body with
     | None -> new%js _Response l
-    | Some body -> new%js _Response body l
+    | Some body -> 
+      match body with
+      | `Blob body -> new%js _Response body l
+      | `ArrayBuffer body -> new%js _Response body l
+      | `BufferSource body  -> new%js _Response body l
+      | `FormData body -> new%js _Response body l
+      | `URLSearchParams body -> new%js _Response body l
+      | `String body -> new%js _Response body l
 
 end
 
