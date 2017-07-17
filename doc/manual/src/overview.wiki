@@ -101,7 +101,7 @@ functions are optimized:
 <<a_manual chapter="tailcall" |More about tail call optimization>>.
 
 Data representation differs from the usual one. Most notably,
-integers are 32 bits (rather than 31 bits or 63 bits), wich is their
+integers are 32 bits (rather than 31 bits or 63 bits), which is their
 natural size in JavaScript, and floats are not boxed.  As a
 consequence, marshalling, polymorphic comparison, and hashing
 functions can yield results different from usual:
