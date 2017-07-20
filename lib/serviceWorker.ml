@@ -249,6 +249,9 @@ module Fetch = struct
   end
 
   and request = object
+    inherit _body
+
+    method clone : request t meth
     method _method: js_string t readonly_prop
     method url: js_string t readonly_prop
     method headers : headers t readonly_prop
@@ -266,6 +269,15 @@ module Fetch = struct
      `URLSearchParams of Url.urlSearchParams t |
      `String of js_string t
     ]
+
+  let create_headers ?init () : headers t=
+    let _Headers = Unsafe.global##._Headers in
+    match init with
+    | None -> new%js _Headers
+    | Some init -> 
+      try 
+        new%js _Headers init 
+      with _ -> new%js _Headers
 
   let create_response 
       ?(body:response_elt option)

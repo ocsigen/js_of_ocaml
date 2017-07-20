@@ -211,6 +211,9 @@ module Fetch : sig
   end
 
   and request = object
+    inherit _body
+    
+    method clone : request t meth
     method _method: js_string t readonly_prop
     method url: js_string t readonly_prop
     method headers : headers t readonly_prop
@@ -228,6 +231,9 @@ module Fetch : sig
      `URLSearchParams of Url.urlSearchParams t |
      `String of js_string t
     ]
+
+  val create_headers :
+   ?init : 'a -> unit -> headers t
 
   val create_response :
     ?body:response_elt ->
