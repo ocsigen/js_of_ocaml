@@ -170,9 +170,7 @@ let perform_raw
         | `Fields _strings ->
           override_method "POST",
           override_content_type "application/x-www-form-urlencoded"
-        | `FormData _ ->
-          override_method "POST",
-          override_content_type "multipart/form-data"
+        | `FormData _ -> override_method "POST", content_type
       )
     | Some (`String _ | `Blob _) -> override_method "POST", content_type
   in
