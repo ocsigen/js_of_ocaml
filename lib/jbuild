@@ -11,7 +11,7 @@
  ((targets (js_of_ocaml_stubs.c))
   (deps ((file generate_stubs.sh)(glob_files *.ml)))
   (action (with-stdout-to ${@}
-           (run ./generate_stubs.sh)))
+           (bash ./generate_stubs.sh)))
   ))
 
 (rule

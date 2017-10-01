@@ -1,5 +1,3 @@
-#!/bin/bash
-
 set -e -u -o pipefail
 shopt -s extglob
 
