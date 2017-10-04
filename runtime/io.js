@@ -102,7 +102,7 @@ function caml_ml_out_channels_list () {
   var l = 0;
   for(var c = 0; c < caml_ml_channels.length; c++){
     if(caml_ml_channels[c] && caml_ml_channels[c].opened && caml_ml_channels[c].out)
-      l=[0,caml_ml_channels[c],l];
+      l=[0,caml_ml_channels[c].fd,l];
   }
   return l;
 }
