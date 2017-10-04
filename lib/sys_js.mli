@@ -41,7 +41,7 @@ val mount   : path:string -> (prefix:string -> path:string -> string option) -> 
   (** Register a callback to the [path] to dynamicly load missing files.
       Whenever a file is missing in [path], the callback is used to optionally
       get the content of the file.
-      [register_autoload ~path f] register the callback [f] to the path [path].
+      [mount ~path f] register the callback [f] to the path [path].
       The callback [f] receives [(prefix,suffix)] where:
        - [prefix] is the path the function has been registered to.
        - [Filename.contact prefix suffix] is the absolute filename .*)
