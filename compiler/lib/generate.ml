@@ -760,6 +760,7 @@ let _ =
      "caml_nativeint_format", "caml_format_int";
      "caml_nativeint_of_string", "caml_int_of_string";
      "caml_nativeint_compare", "caml_int_compare";
+     "caml_nativeint_bswap", "caml_int32_bswap";
      "caml_int64_of_int", "caml_int64_of_int32";
      "caml_int64_to_int", "caml_int64_to_int32";
      "caml_int64_of_nativeint", "caml_int64_of_int32";
