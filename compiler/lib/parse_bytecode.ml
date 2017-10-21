@@ -196,7 +196,8 @@ end = struct
       | `V3 -> (fun _ -> [])
       | `V4_02
       | `V4_03
-      | `V4_04 -> (fun ic -> (input_value ic : string list)) in
+      | `V4_04
+      | `V4_06 -> (fun ic -> (input_value ic : string list)) in
     fun (events_by_pc, units) ~crcs ~includes ~orig ic ->
        let crcs =
          let t = Hashtbl.create 17 in
@@ -1958,7 +1959,7 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
       (* We fix the bytecode to replace max_int/min_int *)
       fix_min_max_int code;
       Bytes.to_string code
-    | `V4_02 | `V4_03 | `V4_04 ->
+    | `V4_02 | `V4_03 | `V4_04 | `V4_06 ->
       really_input_string ic code_size in
 
   ignore(seek_section toc ic "DATA");
@@ -2235,7 +2236,7 @@ let from_compilation_units ~includes:_ ~debug ~debug_data l =
         if u.Cmo_format.cu_name = "Pervasives" then begin
           fix_min_max_int code
         end) l
-    | `V4_02 | `V4_03 | `V4_04 -> ()
+    | `V4_02 | `V4_03 | `V4_04 | `V4_06 -> ()
   end;
   let code =
     let l = List.map (fun (_,c) -> Bytes.to_string c) l in
