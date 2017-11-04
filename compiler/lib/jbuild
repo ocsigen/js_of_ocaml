@@ -12,7 +12,17 @@
   (modules (:standard \ control))
   ))
 
-(ocamllex (js_lexer annot_lexer))
+(rule
+  ((targets (js_lexer.ml))
+   (deps    (js_lexer.mll))
+   (fallback)
+   (action  (chdir ${ROOT} (run ${bin:ocamllex} -q -o ${<})))))
+
+(rule
+  ((targets (annot_lexer.ml))
+   (deps    (annot_lexer.mll))
+   (fallback)
+   (action  (chdir ${ROOT} (run ${bin:ocamllex} -q -o ${<})))))
 
 ;; menhir is just noisy, both because this parser has conflicts, or
 ;; because we don't use --infer (to avoid having to write  manually and
@@ -20,11 +30,13 @@
 (rule
  ((targets (js_parser.mli js_parser.ml))
   (deps (js_parser.mly))
+  (fallback)
   (action (ignore-stderr (run menhir --external-tokens Js_token --explain ${<})))))
 
 (rule
  ((targets (annot_parser.mli annot_parser.ml))
   (deps (annot_parser.mly))
+  (fallback)
   (action (ignore-stderr (run menhir --explain ${<})))))
 
 (rule
