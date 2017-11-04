@@ -1,19 +1,13 @@
 # Example projects
 
-## Building from source
-
-### Building all example projects
-
+Build all projects:
 ```
-$> jbuilder build @DEFAULT
+$> jbuilder build @examples/DEFAULT
 ```
 
-This will create a build artifact directory at the root of the this
-repository. Each individual project can be found at `./_build/default/examples/`.
-
-### Building an individual project
-
+Or a single one:
 ```
-$> cd <path-to-example-project>
-$> jbuilder build @DEFAULT
+$> jbuilder build @examples/<path-to-example-project>/DEFAULT
 ```
+
+Compilation artifacts can be found in `${REPO_ROOT}/_build/default/examples/`.
