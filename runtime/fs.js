@@ -51,10 +51,10 @@ function caml_make_path (name) {
 //Provides:jsoo_mount_point
 //Requires: MlFakeDevice, MlNodeDevice
 var jsoo_mount_point = []
-if (typeof require == "undefined") {
-    jsoo_mount_point.push({path:"/",device:new MlFakeDevice("/")});
-} else {
+if (typeof module !== 'undefined' && module.exports && typeof require !== "undefined") {
     jsoo_mount_point.push({path:"/",device:new MlNodeDevice("/")});
+} else {
+    jsoo_mount_point.push({path:"/",device:new MlFakeDevice("/")});
 }
 jsoo_mount_point.push({path:"/static/", device:new MlFakeDevice("/static/")});
 
