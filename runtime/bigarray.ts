@@ -456,6 +456,16 @@ function caml_ba_create(kind: number, layout: number, dims_ml: any) : Bigarray {
   return caml_ba_create_from(data, data2, data_type, kind, layout, dims);
 }
 
+//Provides: caml_ba_change_layout
+//Requires: caml_ba_create_from
+function caml_ba_change_layout(ba : Bigarray, layout : number) {
+  if(ba.layout == layout) return ba;
+  var dims = [];
+  for(var i = 0; i < ba.num_dims; i++)
+    dims[i] = ba.nth_dim(i);
+  return caml_ba_create_from(ba.data, ba.data2, ba.data_type, ba.kind, layout, dims);
+}
+
 //Provides: caml_ba_kind
 function caml_ba_kind(ba: Bigarray) { return ba.kind; }
 
