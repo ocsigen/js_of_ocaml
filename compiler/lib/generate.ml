@@ -767,11 +767,15 @@ let _ =
      "caml_int64_to_nativeint", "caml_int64_to_int32";
      "caml_float_of_int", "%identity";
      "caml_array_get_float", "caml_array_get";
+     "caml_floatarray_get", "caml_array_get";
      "caml_array_get_addr", "caml_array_get";
      "caml_array_set_float", "caml_array_set";
+     "caml_floatarray_set", "caml_array_set";
      "caml_array_set_addr", "caml_array_set";
      "caml_array_unsafe_get_float", "caml_array_unsafe_get";
+     "caml_floatarray_unsafe_get", "caml_array_unsafe_get";
      "caml_array_unsafe_set_float", "caml_array_unsafe_set";
+     "caml_floatarray_unsafe_set", "caml_array_unsafe_set";
      "caml_alloc_dummy_float", "caml_alloc_dummy";
      "caml_make_array", "%identity";
      "caml_ensure_stack_capacity", "%identity";
