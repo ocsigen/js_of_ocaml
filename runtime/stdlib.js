@@ -316,6 +316,14 @@ function caml_make_float_vect(len){
   for (var i = 1; i < len; i++) b[i] = 0;
   return b
 }
+//Provides: caml_floatarray_create const (const)
+function caml_floatarray_create(len){
+  var len = len + 1 | 0;
+  var b = new Array(len);
+  b[0]=254;
+  for (var i = 1; i < len; i++) b[i] = 0;
+  return b
+}
 
 //Provides: caml_compare_val (const, const, const)
 //Requires: MlString, caml_int64_compare, caml_int_compare, caml_string_compare
