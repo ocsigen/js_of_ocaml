@@ -14,7 +14,7 @@ toplevel-examples: all
 	jbuilder exec -- make -C toplevel/examples/lwt_toplevel_bin
 
 clean:
-	rm -rf _build
+	jbuilder clean
 	$(MAKE) -C toplevel/examples/lwt_toplevel_bin clean
 	$(MAKE) -C doc clean
 
