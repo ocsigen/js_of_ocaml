@@ -30,11 +30,6 @@
   (action (with-stdout-to ${@} (run ${<} --help=groff)))))
 
 (install
- ((section bin)
-  (package js_of_ocaml-compiler)
-  (files (js_of_ocaml.exe jsoo_minify.exe jsoo_link.exe))))
-
-(install
  ((section man)
   (package js_of_ocaml-compiler)
   (files (js_of_ocaml.1

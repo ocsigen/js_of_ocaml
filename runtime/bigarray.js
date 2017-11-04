@@ -457,6 +457,16 @@ function caml_ba_create(kind, layout, dims_ml) {
     return caml_ba_create_from(data, data2, data_type, kind, layout, dims);
 }
 
+//Provides: caml_ba_change_layout
+//Requires: caml_ba_create_from
+function caml_ba_change_layout(ba, layout) {
+  if(ba.layout == layout) return ba;
+  var dims = [];
+  for(var i = 0; i < ba.num_dims; i++)
+    dims[i] = ba.nth_dim(i);
+  return caml_ba_create_from(ba.data, ba.data2, ba.data_type, ba.kind, layout, dims);
+}
+
 //Provides: caml_ba_kind
 function caml_ba_kind(ba) {
     return ba.kind;
