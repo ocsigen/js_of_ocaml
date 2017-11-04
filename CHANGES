@@ -1,3 +1,15 @@
+===== 3.0.1 (2017-11-04) - London =====
+ * Features/Changes:
+ ** Lib: add Jstable.remove (Cedric Cellier)
+ ** Build: use recent version of jbuilder (>= 1.0+beta12)
+
+ * Bug fixes:
+ ** Runtime: fix Sys.file_exists for the in-memory filesystem.
+ ** Runtime: implement missing primitives: caml_nativeint_bswap, caml_floatarray_*,
+    caml_ba_change_layout
+ ** Runtime: few other bugfixes.
+ ** Compiler: fix compat with OCaml 4.06
+
 ===== 3.0.0 (2017-06-23) - Hong Kong =====
 
  * Features/Changes
