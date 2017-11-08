@@ -184,7 +184,7 @@ class type renderingContext = object
   method framebufferRenderbuffer :
     fbTarget -> attachmentPoint -> rbTarget -> renderbuffer t -> unit meth
   method framebufferTexture2D :
-    fbTarget -> attachmentPoint -> texTarget -> texture -> int -> unit meth
+    fbTarget -> attachmentPoint -> texTarget -> texture t -> int -> unit meth
   method getFramebufferAttachmentParameter :
     'a . fbTarget -> attachmentPoint -> 'a attachParam -> 'a meth
   method isFramebuffer : framebuffer t -> bool t meth
