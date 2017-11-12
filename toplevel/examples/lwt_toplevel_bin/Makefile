@@ -30,6 +30,11 @@ PACKAGES= \
 	js_of_ocaml-toplevel \
 	dynlink
 
+ifeq ($(WITH_ASYNC_JS),YES)
+PACKAGES += async_js core_kernel async_kernel base
+JSFILES += +base/runtime.js +core_kernel/runtime.js +bin_prot/runtime.js +ppx_expect/collector/runtime.js
+endif
+
 ifeq ($(WITH_PPX),YES)
 PACKAGES += js_of_ocaml-ppx.as-lib
 endif
@@ -40,9 +45,10 @@ PACKAGES += graphics js_of_ocaml-lwt.graphics
 endif
 
 ifeq ($(METAOCAML),1)
-BER_EXPORT=trx runcode print_code
+METAOCAML_DIR=$(shell ocamlfind query stdlib)
+BER_EXPORT=trx.cmi runcode.cmi print_code.cmi compiler-libs/asttypes.cmi
 BER=metalib.cma bertop.cmo \
-	${addprefix -export-unit , ${BER_EXPORT}}
+	${addprefix -export-unit ${METAOCAML_DIR}/, ${BER_EXPORT}}
 #METAOCAML DOES NOT WORK WITH CAMLP4
 SYNTAXES=
 #CPPO_OPT+= -D metaocaml

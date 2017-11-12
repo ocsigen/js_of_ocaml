@@ -14,8 +14,8 @@
     (ocp-indent.lib -> ocp_indent.ml.in)
     (               -> ocp_indent_fake.ml.in))
    (select colorize.ml from
-    (higlo      -> colorize_higlo.ml.in)
-    (           -> colorize_fake.ml.in))
+    (higlo higlo.ocaml   -> colorize_higlo.ml.in)
+    (!higlo              -> colorize_fake.ml.in))
    (select graphics_support.ml from
     (js_of_ocaml-lwt.graphics -> graphics_enabled.ml.in)
     (                         -> graphics_disabled.ml.in))
