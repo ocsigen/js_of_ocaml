@@ -4,7 +4,7 @@
      runtime=joo_global_object.jsoo_runtime,
      caml_new_string=runtime.caml_new_string;
     function caml_call1(f,a0)
-     {return f.length==1?f(a0):runtime.caml_call_gen(f,[a0])}
+     {return f.length == 1?f(a0):runtime.caml_call_gen(f,[a0])}
     var
      global_data=runtime.caml_get_global_data(),
      cst_Dynlink_OK=caml_new_string("Dynlink OK"),
