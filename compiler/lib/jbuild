@@ -42,7 +42,10 @@
 (rule
  ((targets (util.ml))
   (deps (util.cppo.ml))
-  (action (run ${bin:cppo} -V OCAML:${ocaml_version} ${<} -o ${@}))
+  (action (run ${bin:cppo} -V OCAML:${ocaml_version}
+           ;; Uncomment for bucklescript support
+           ;; -D BUCKLESCRIPT
+           ${<} -o ${@}))
   ))
 
 (rule

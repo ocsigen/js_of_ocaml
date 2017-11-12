@@ -1208,3 +1208,9 @@ function caml_register_channel_for_spacetime(_channel) {
 function caml_spacetime_only_works_for_native_code() {
   caml_failwith("Spacetime profiling only works for native code");
 }
+
+
+//Provides: caml_is_js
+function caml_is_js() {
+  return 1;
+}

@@ -475,6 +475,16 @@ let rec obj_of_const =
   | Const_float_array sl ->
     let l = List.map float_of_string sl in
     Obj.repr (Array.of_list l)
+#ifdef BUCKLESCRIPT
+  | Const_pointer (i,_) ->
+    Obj.repr i
+  | Const_block (tag,_,l) ->
+    let b = Obj.new_block tag (List.length l) in
+    List.iteri (fun i x ->
+      Obj.set_field b i (obj_of_const x)
+    ) l;
+    b
+#else
   | Const_pointer i ->
     Obj.repr i
   | Const_block (tag,l) ->
@@ -483,6 +493,8 @@ let rec obj_of_const =
       Obj.set_field b i (obj_of_const x)
     ) l;
     b
+#endif
+
 
 let apply1 f (s : string) : string =
   let b = Bytes.of_string s in
