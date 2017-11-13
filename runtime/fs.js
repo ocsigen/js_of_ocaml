@@ -21,10 +21,16 @@
 
 //Provides: caml_current_dir
 if(joo_global_object.process && joo_global_object.process.cwd)
-  var caml_current_dir = joo_global_object.process.cwd();
+  var caml_current_dir = joo_global_object.process.cwd().replace(/\\/g,'/');
 else
   var caml_current_dir =  "/static";
 if(caml_current_dir.slice(-1) !== "/") caml_current_dir += "/"
+
+//Provides: caml_root
+//Requires: caml_current_dir
+var caml_root = caml_current_dir.match(/[^\/]*\//)[0];
+
+
 //Provides: MlFile
 function MlFile(){  }
 
@@ -49,14 +55,14 @@ function caml_make_path (name) {
 }
 
 //Provides:jsoo_mount_point
-//Requires: MlFakeDevice, MlNodeDevice
+//Requires: MlFakeDevice, MlNodeDevice, caml_root
 var jsoo_mount_point = []
 if (typeof module !== 'undefined' && module.exports && typeof require !== "undefined") {
-    jsoo_mount_point.push({path:"/",device:new MlNodeDevice("/")});
+    jsoo_mount_point.push({path:caml_root,device:new MlNodeDevice(caml_root)});
 } else {
-    jsoo_mount_point.push({path:"/",device:new MlFakeDevice("/")});
+    jsoo_mount_point.push({path:caml_root,device:new MlFakeDevice(caml_root)});
 }
-jsoo_mount_point.push({path:"/static/", device:new MlFakeDevice("/static/")});
+jsoo_mount_point.push({path:caml_root+"static/", device:new MlFakeDevice(caml_root+"static/")});
 
 //Provides:caml_list_mount_point
 //Requires: jsoo_mount_point, caml_new_string
