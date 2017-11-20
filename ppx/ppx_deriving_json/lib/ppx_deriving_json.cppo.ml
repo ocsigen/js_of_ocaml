@@ -113,12 +113,12 @@ and write_body_of_tuple_type l ~arg ~poly ~tag =
 and write_poly_case r ~arg ~poly =
   match r with
   | Parsetree.Rtag (label, _, _, l) ->
-    let i = Ppx_deriving.hash_variant label
+    let i = Ppx_deriving.hash_variant label.txt
     and n = List.length l in
     let v = Ppx_deriving.fresh_var [] in
     let lhs =
       (if n = 0 then None else Some (Ast_convenience.pvar v)) |>
-      Ast_helper.Pat.variant label
+      Ast_helper.Pat.variant label.txt
     and rhs =
       match l with
       | [] ->
@@ -222,7 +222,7 @@ let recognize_body_of_poly_variant l ~loc =
   let l =
     let f = function
       | Parsetree.Rtag (label, _, _, l) ->
-        let i = Ppx_deriving.hash_variant label in
+        let i = Ppx_deriving.hash_variant label.txt in
         recognize_case_of_constructor i l
       | Rinherit {ptyp_desc = Ptyp_constr (lid, _); _} ->
         let guard = [%expr [%e suffix_lid lid ~suffix:"recognize"] x] in
@@ -247,17 +247,17 @@ let maybe_tuple_type = function
 
 let rec read_poly_case ?decl y = function
   | Parsetree.Rtag (label, _, _, l) ->
-    let i = Ppx_deriving.hash_variant label |> Ast_convenience.pint in
+    let i = Ppx_deriving.hash_variant label.txt |> Ast_convenience.pint in
     (match l with
      | [] ->
        Ast_helper.Exp.case [%pat? `Cst [%p i]]
-         (Ast_helper.Exp.variant label None)
+         (Ast_helper.Exp.variant label.txt None)
      | l ->
        Ast_helper.Exp.case [%pat? `NCst [%p i]] [%expr
          Deriving_Json_lexer.read_comma buf;
          let v = [%e read_body_of_type ?decl (maybe_tuple_type l)] in
          Deriving_Json_lexer.read_rbracket buf;
-         [%e Ast_helper.Exp.variant label (Some [%expr v])]])
+         [%e Ast_helper.Exp.variant label.txt (Some [%expr v])]])
   | Rinherit {ptyp_desc = Ptyp_constr (lid, l); _} ->
     let guard = [%expr [%e suffix_lid lid ~suffix:"recognize"] x]
     and e =
