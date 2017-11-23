@@ -445,7 +445,7 @@ let json_str_wrap d e =
 let json_str d =
   let write =
     let f acc id =
-#if OCAML_VERSION < (4, 06, 0)
+#if OCAML_VERSION < (4, 05, 0)
       let id = id in
 #else
       let id = id.Location.txt in
@@ -456,7 +456,7 @@ let json_str d =
     Ppx_deriving.fold_left_type_decl f acc d
   and read =
     let f acc id =
-#if OCAML_VERSION < (4, 06, 0)
+#if OCAML_VERSION < (4, 05, 0)
       let id = id in
 #else
       let id = id.Location.txt in
