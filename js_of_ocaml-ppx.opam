@@ -21,6 +21,7 @@ depopts: ["ppx_deriving" "ppx_tools"]
 
 conflicts: [
   "ppx_tools_versioned"     {<="5.0beta0"}
+  "ppx_deriving"            {<="4.2.0"}
 ]
 
 available: [ ocaml-version >= "4.02.0" ]
