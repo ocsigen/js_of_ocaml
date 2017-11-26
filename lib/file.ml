@@ -28,6 +28,53 @@ class type blob = object
   method slice_withContentType : int -> int -> js_string t -> blob t meth
 end
 
+let blob_constr = Unsafe.global##._Blob
+
+type 'a make_blob = ?contentType:string -> ?endings:[`Transparent|`Native] -> 'a -> blob t
+
+let rec filter_map f = function
+  | [] -> []
+  | v::q ->
+    match f v with
+      | None -> filter_map f q
+      | Some v' -> v' :: (filter_map f q)
+
+let make_blob_options contentType endings =
+  let options =
+    filter_map
+      (fun (name,v) ->
+         match v with
+         | None -> None
+         | Some v -> Some (name, Unsafe.inject (string v)))
+      [ "type", contentType
+      ; "endings",
+        match endings with
+        | None -> None
+        | Some `Transparent -> Some "transparent"
+        | Some `Native -> Some "native" ]
+  in
+  match options with
+  | [] -> undefined
+  | l  -> Unsafe.obj (Array.of_list l)
+
+let blob_raw ?contentType ?endings a =
+  let options = make_blob_options contentType endings in
+  new%js blob_constr (array a) options
+
+let blob_from_string ?contentType ?endings s =
+  blob_raw ?contentType ?endings [| string s |]
+
+let blob_from_any ?contentType ?endings l =
+  let l = List.map (function
+    | `arrayBuffer a -> Unsafe.inject a
+    | `arrayBufferView a -> Unsafe.inject a
+    | `string s -> Unsafe.inject (string s)
+    | `js_string s -> Unsafe.inject s
+    | `blob b -> Unsafe.inject b)
+    l
+  in
+  blob_raw ?contentType ?endings (Array.of_list l)
+
 class type file = object
   inherit blob
   method name : js_string t readonly_prop
@@ -52,8 +99,6 @@ let filename file =
     | Some name -> name
 
 type file_any = < > t
-
-let blob_constr = Unsafe.global##._Blob
 
 let doc_constr = Unsafe.global##._Document
 
