@@ -123,7 +123,8 @@ function caml_sys_getcwd() {
 function caml_sys_chdir(dir) {
   var root = resolve_fs_device(dir);
   if(root.device.exists(root.rest)) {
-    caml_current_dir = root.base + dir.rest + "/"
+    if(root.rest) caml_current_dir = root.path + root.rest + "/";
+    else caml_current_dir = root.path;
     return 0;
   }
   else {
