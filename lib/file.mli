@@ -30,6 +30,14 @@ class type blob = object
   method slice_withContentType : int -> int -> js_string t -> blob t meth
 end
 
+type 'a make_blob = ?contentType:string -> ?endings:[`Transparent|`Native] -> 'a -> blob t
+val blob_from_string : string make_blob
+val blob_from_any : [ `blob of blob t
+                    | `arrayBuffer of Typed_array.arrayBuffer t
+                    | `arrayBufferView of Typed_array.arrayBufferView t
+                    | `string of string
+                    | `js_string of js_string t] list make_blob
+
 class type file = object
   inherit blob
   method name : js_string t readonly_prop
