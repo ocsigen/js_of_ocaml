@@ -458,9 +458,7 @@ class type date_constr = object
   method _UTC_sec : int -> int -> int -> int -> int -> int -> float meth
   method _UTC_ms :
     int -> int -> int -> int -> int -> int -> int -> float meth
-(* This method is not available on Internet Explorer...
   method now : float meth
-*)
 end
 
 val date : date_constr t
