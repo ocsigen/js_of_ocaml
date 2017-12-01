@@ -1,3 +1,12 @@
+===== 3.0.2 (2017-12-01) - Strasbourg =====
+ * Features/Changes:
+ ** Runtime: support for latest core_kernel
+ * Bug fixes:
+ ** Runtime: fix sys_chdir
+ ** Runtime: fix fs support on windows
+ ** Ppx: fix ppx_deriving_json for ocaml 4.05
+ 
+
 ===== 3.0.1 (2017-11-04) - London =====
  * Features/Changes:
  ** Lib: add Jstable.remove (Cedric Cellier)
