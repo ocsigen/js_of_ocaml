@@ -22,7 +22,7 @@ type profile
 
 val f :
   ?standalone:bool ->
-  ?global:[`Auto | `Function | `Custom of string] ->
+  ?global:[`Auto | `Function | `Bind_to of string | `Custom of string ] ->
   ?profile:profile ->
   ?dynlink:bool ->
   ?linkall:bool ->

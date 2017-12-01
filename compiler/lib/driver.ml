@@ -381,6 +381,7 @@ let pack ~global js =
     let expr =
       match global with
       | `Function -> f
+      | `Bind_to _ -> f
       | `Custom name ->
         J.ECall (f, [J.EVar (J.S {J.name;var=None})], J.N)
       | `Auto ->
@@ -394,7 +395,15 @@ let pack ~global js =
             ], J.N), [], J.N) in
         J.ECall (f, [global], J.N)
     in
-    [J.Statement (J.Expression_statement expr), J.N]
+    match global with
+    | `Bind_to name ->
+      [J.Statement (
+         J.Variable_statement
+           [ J.S {J.name=name;var=None},
+             Some (expr,J.N)])
+      , J.N]
+    | _ ->
+      [J.Statement (J.Expression_statement expr), J.N]
   in
   (* post pack optim *)
   let t3 = Util.Timer.make () in
