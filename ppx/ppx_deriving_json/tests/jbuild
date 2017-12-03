@@ -5,7 +5,7 @@
   (libraries (
     toplevel_expect_test
     js_of_ocaml.deriving
-    js_of_ocaml-ppx.deriving
+    js_of_ocaml-ppx_deriving_json
     ppx_deriving.api
   ))
   (link_flags (-linkall))

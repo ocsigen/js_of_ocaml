@@ -1,5 +1,10 @@
 # JBUILDER_GEN
 
+package "deriving" (
+  description = "deprecated alias. use js_of_ocaml-ppx_deriving_json directly"
+  requires "js_of_ocaml-ppx_deriving_json"
+)
+
 package "as-lib" (
   archive(byte) = "ppx_js.cma"
   archive(native) = "ppx_js.cmxa"
