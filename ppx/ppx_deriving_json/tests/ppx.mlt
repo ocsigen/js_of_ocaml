@@ -1,4 +1,4 @@
-#directory "../../../lib/deriving_Json/"
+#directory "../../../lib/deriving_json/"
 #directory "+/../../lib/ppx_deriving/"
 [@@@warning "-39"]
 
@@ -56,7 +56,7 @@ int64 = [255,42,0,0]
 
 let () = test "float" (Json_float.to_string  42.42)
 [%%expect {|
-float = 4.242000e+01
+float = 42.42
 |}]
 
 let () = test "string" (Json_string.to_string  "42")
