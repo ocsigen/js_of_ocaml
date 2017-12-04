@@ -29,6 +29,7 @@ end = struct
 end
 
 (** Reactive dom *)
+open Js_of_ocaml
 let display x =
   Dom.appendChild
     (Dom_html.getElementById "output")

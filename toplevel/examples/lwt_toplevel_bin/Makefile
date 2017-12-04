@@ -1,6 +1,6 @@
 include ../../../Makefile.conf
 
-all: toplevel.js eval.js
+all: toplevel.js
 
 ifeq ($(shell ocamlc -safe-string 2> /dev/null ; echo $$?),0)
 SAFESTRING=-safe-string
@@ -79,17 +79,6 @@ test_dynlink.js: test_dynlink.cmo
 
 test_dynlink.cmo: test_dynlink.ml
 	ocamlc -c test_dynlink.ml
-
-EVAL_NAME=eval
-EVAL_OBJS=eval.cmo
-
-eval.cmo: eval.ml
-	ocamlfind ocamlc -c eval.ml -package lwt,js_of_ocaml,js_of_ocaml-lwt,js_of_ocaml-toplevel,js_of_ocaml.ppx
-
-$(EVAL_NAME).js: $(EVAL_OBJS)
-	$(MKTOP) $(EVAL_OBJS) \
-	${addprefix -jsopt , ${JSFILES}} \
-	-o $(EVAL_NAME).byte
 
 clean::
 	rm -f *.cm[io] *.byte *.native *.js

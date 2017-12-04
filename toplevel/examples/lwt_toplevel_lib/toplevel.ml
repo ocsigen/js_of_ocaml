@@ -95,7 +95,7 @@ let resize ~container ~textbox ()  =
   Lwt.return ()
 
 let setup_printers () =
-  exec'("let _print_error fmt e = Format.pp_print_string fmt (Js.string_of_error e)");
+  exec'("let _print_error fmt e = Format.pp_print_string fmt (Js_of_ocaml.Js.string_of_error e)");
   Topdirs.dir_install_printer Format.std_formatter (Longident.(Lident "_print_error"));
   exec'("let _print_unit fmt (_ : 'a) : 'a = Format.pp_print_string fmt \"()\"");
   Topdirs.dir_install_printer Format.std_formatter (Longident.(Lident "_print_unit"))
