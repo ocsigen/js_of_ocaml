@@ -2098,9 +2098,12 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
       with Exit -> false
   in
   let cmis =
+    let exception_ids =
+      List.fold_left (fun acc (i,_) -> max acc i) (-1) predefined_exceptions
+    in
     if toplevel && Option.Optim.include_cmis ()
-    then Tbl.fold (fun id _num acc ->
-      if Ident.global id && is_module (Ident.name id)
+    then Tbl.fold (fun id num acc ->
+      if num > exception_ids && Ident.global id && is_module (Ident.name id)
       then Util.StringSet.add (Ident.name id)  acc
       else acc) symbols.num_tbl Util.StringSet.empty
     else Util.StringSet.empty in
