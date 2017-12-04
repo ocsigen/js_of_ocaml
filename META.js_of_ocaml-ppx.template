@@ -2,7 +2,7 @@
 
 package "deriving" (
   description = "deprecated alias. use js_of_ocaml-ppx_deriving_json directly"
-  requires "js_of_ocaml-ppx_deriving_json"
+  requires = "js_of_ocaml-ppx_deriving_json"
 )
 
 package "as-lib" (
