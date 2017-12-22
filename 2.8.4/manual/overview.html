@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title> Js_of_ocaml </title><meta charset="utf8"/><link rel="stylesheet" href="/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="/client.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script></head><body><h1> Js_of_ocaml </h1><h2> Overview </h2><p>Js_of_ocaml is a compiler from OCaml bytecode programs to JavaScript.
+It makes it possible to write OCaml programs that run on Web browsers.
+It is easy to install as it works with an existing installation of
+OCaml, with no need to recompile any library.  It comes with bindings
+for a large part of the browser APIs.  According to our benchmarks,
+the generated programs <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/manual/performances.html">runs
+typically faster</a></span> than with the OCaml bytecode interpreter.  We
+believe this compiler will prove much easier to maintain than a
+retargeted OCaml compiler, as the bytecode provides a very stable API.
+</p><h2> Requirements </h2><p>Findlib, Lwt, Menhir, Cmdliner, cppo, base64.
+</p><p>See <a href="https://github.com/ocsigen/js_of_ocaml/blob/master/opam" class="ocsimore_phrasing_link">https://github.com/ocsigen/js_of_ocaml/blob/master/opam</a> file for version constraints.
+</p><p>Optional dependencies:
+</p><ul><li> deriving(see <a href="https://github.com/ocsigen/deriving)" class="ocsimore_phrasing_link">https://github.com/ocsigen/deriving)</a>
+</li><li> ppx_deriving(see <a href="https://github.com/whitequark/ppx_deriving)" class="ocsimore_phrasing_link">https://github.com/whitequark/ppx_deriving)</a>
+</li><li> tyxml(see <a href="https://github.com/ocsigen/tyxml)" class="ocsimore_phrasing_link">https://github.com/ocsigen/tyxml)</a>
+</li><li> reactiveData(see <a href="https://github.com/ocsigen/reactiveData)" class="ocsimore_phrasing_link">https://github.com/ocsigen/reactiveData)</a>
+</li><li> async_kernel(see <a href="https://github.com/janestreet/async_kernel)" class="ocsimore_phrasing_link">https://github.com/janestreet/async_kernel)</a>: tested with <strong>version 113.33.00</strong>
+</li></ul><h2> Installation </h2><ul><li> run <span class="teletype">make</span> to compile everything
+</li><li> run <span class="teletype">make install</span> as root to install the compiler
+and its libraries
+</li><li> run <span class="teletype">make uninstall</span> as root to uninstall them
+</li></ul><h2> Usage </h2><p>Your program must first be compiled using the OCaml bytecode
+compiler <span class="teletype">ocamlc</span>.  JavaScript bindings, as well as a
+corresponding syntax extension, are provided by the
+<span class="teletype">js_of_ocaml</span> package.
+</p><pre>      ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml.syntax \
+          -syntax camlp4o -linkpkg -o cubes.byte cubes.ml
+</pre><p>Then, run the <span class="teletype">js_of_ocaml</span> compiler to produce JavaScript code:
+</p><pre>      js_of_ocaml cubes.byte
+</pre><p>See also the plugin <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Ocamlbuild_js_of_ocaml.html">Ocamlbuild_js_of_ocaml</a></span>.
+</p><h2> Features </h2><p>Most of the OCaml standard library is supported. However,
+</p><ul><li> Weak semantic cannot be implemented using JavaScript.
+A dummy implemtation is available (use `+weak.js` option)
+</li><li> Most of Sys module is not supported.
+</li></ul><p>Extra libraries distributed with Ocaml (such as Thread or Str) are not
+supported in general. However,
+</p><ul><li> Bigarray: bigarray are supported using Typed Arrays
+</li><li> Num: supported using `+nat.js` option
+</li><li> Graphics: partially supported using canvas (see also js_of_ocaml.graphics)
+</li><li> Unix: time related functions are supported
+</li></ul><p>Tail call is not optimized in general. However, mutually recursive
+functions are optimized:
+</p><ul><li> self recursive functions (when the tail calls are the function itself) are
+compiled using a loop.
+</li><li> trampolines are used otherwise.
+<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/manual/tailcall.html">More about tail call optimization</a></span>.
+</li></ul><p>Data representation differs from the usual one. Most notably,
+integers are 32 bits (rather than 31 bits or 63 bits), wich is their
+natural size in JavaScript, and floats are not boxed.  As a
+consequence, marshalling, polymorphic comparison, and hashing
+functions can yield results different from usual:
+</p><ul><li> marshalling of floats is not supported (unmarshalling works);
+</li><li> the polymorphic hash function will not give the same results on
+datastructures containing floats;
+</li><li> these functions may be more prone to stack overflow.
+</li></ul><h2> Contents of the distribution </h2><table><tr><td>    LICENSE     </td><td>   license and copyright notice                   </td></tr><tr><td>    README      </td><td>   this file                                      </td></tr><tr><td>    compiler/   </td><td>   compiler                                       </td></tr><tr><td>    examples/   </td><td>   small examples                                 </td></tr><tr><td>    lib/        </td><td>   library for interfacing with JavaScript APIs   </td></tr><tr><td>    runtime/    </td><td>   runtime system                                 </td></tr></table><h2> Debugging programs </h2><p>To help debugging your programs, use the &quot;-pretty&quot; and &quot;-noinline&quot;
+options of Js_of_ocaml. If the bytecode is build with ocaml &quot;-g&quot;
+option, Js_of_ocaml will attempt to preserve variable names as well.
+You can also use <span class="teletype">Js.debugger()</span> which inserts a JavaScript <span class="teletype">debugger</span>
+statement. When the JavaScript debugger is active, this statement
+pauses the execution of the program.
+<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/manual/debug.html">More about debugging with Js_of_ocaml</a></span>.
+</p></body></html>

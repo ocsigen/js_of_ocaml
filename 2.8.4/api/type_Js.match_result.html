@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Ocsigen</title><meta charset="utf8"/><link rel="stylesheet" href="/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="/client.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script></head><body><pre class=""><code class="language-ocaml translatable">object
+  method concat : js_string t js_array t -&gt; js_string t js_array t meth
+  method every :
+    (js_string t -&gt; int -&gt; js_string t js_array t -&gt; bool t) callback -&gt;
+    bool t meth
+  method filter :
+    (js_string t -&gt; int -&gt; js_string t js_array t -&gt; bool t) callback -&gt;
+    js_string t js_array t meth
+  method forEach :
+    (js_string t -&gt; int -&gt; js_string t js_array t -&gt; unit) callback -&gt;
+    unit meth
+  method index : int Js.readonly_prop
+  method input : Js.js_string Js.t Js.readonly_prop
+  method join : js_string t -&gt; js_string t meth
+  method length : int prop
+  method map :
+    (js_string t -&gt; int -&gt; js_string t js_array t -&gt; js_string t) callback -&gt;
+    js_string t js_array t meth
+  method pop : js_string t optdef meth
+  method push : js_string t -&gt; int meth
+  method push_2 : js_string t -&gt; js_string t -&gt; int meth
+  method push_3 : js_string t -&gt; js_string t -&gt; js_string t -&gt; int meth
+  method push_4 :
+    js_string t -&gt; js_string t -&gt; js_string t -&gt; js_string t -&gt; int meth
+  method reduce :
+    (js_string t -&gt;
+     js_string t -&gt; int -&gt; js_string t js_array t -&gt; js_string t)
+    callback -&gt; js_string t meth
+  method reduceRight :
+    (js_string t -&gt;
+     js_string t -&gt; int -&gt; js_string t js_array t -&gt; js_string t)
+    callback -&gt; js_string t meth
+  method reduceRight_init :
+    ('b -&gt; js_string t -&gt; int -&gt; js_string t js_array t -&gt; 'b) callback -&gt;
+    'b -&gt; 'b meth
+  method reduce_init :
+    ('b -&gt; js_string t -&gt; int -&gt; js_string t js_array t -&gt; 'b) callback -&gt;
+    'b -&gt; 'b meth
+  method reverse : js_string t js_array t meth
+  method shift : js_string t optdef meth
+  method slice : int -&gt; int -&gt; js_string t js_array t meth
+  method slice_end : int -&gt; js_string t js_array t meth
+  method some :
+    (js_string t -&gt; int -&gt; js_string t js_array t -&gt; bool t) callback -&gt;
+    bool t meth
+  method sort :
+    (js_string t -&gt; js_string t -&gt; float) callback -&gt;
+    js_string t js_array t meth
+  method sort_asStrings : js_string t js_array t meth
+  method splice : int -&gt; int -&gt; js_string t js_array t meth
+  method splice_1 : int -&gt; int -&gt; js_string t -&gt; js_string t js_array t meth
+  method splice_2 :
+    int -&gt; int -&gt; js_string t -&gt; js_string t -&gt; js_string t js_array t meth
+  method splice_3 :
+    int -&gt;
+    int -&gt;
+    js_string t -&gt; js_string t -&gt; js_string t -&gt; js_string t js_array t meth
+  method splice_4 :
+    int -&gt;
+    int -&gt;
+    js_string t -&gt;
+    js_string t -&gt; js_string t -&gt; js_string t -&gt; js_string t js_array t meth
+  method toLocaleString : js_string t meth
+  method toString : js_string t meth
+  method unshift : js_string t -&gt; int meth
+  method unshift_2 : js_string t -&gt; js_string t -&gt; int meth
+  method unshift_3 : js_string t -&gt; js_string t -&gt; js_string t -&gt; int meth
+  method unshift_4 :
+    js_string t -&gt; js_string t -&gt; js_string t -&gt; js_string t -&gt; int meth
+end</code></pre></body></html>

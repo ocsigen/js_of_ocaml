@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Ocsigen</title><meta charset="utf8"/><link rel="stylesheet" href="/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="/client.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script></head><body><pre class=""><code class="language-ocaml translatable">object
+  method back : unit Js.meth
+  method forward : unit Js.meth
+  method go : int Js.opt -&gt; unit Js.meth
+  method length : int Js.readonly_prop
+  method pushState :
+    'a -&gt; Js.js_string Js.t -&gt; Js.js_string Js.t Js.opt -&gt; unit Js.meth
+  method replaceState :
+    'a -&gt; Js.js_string Js.t -&gt; Js.js_string Js.t Js.opt -&gt; unit Js.meth
+  method state : Js.Unsafe.any Js.readonly_prop
+end</code></pre></body></html>

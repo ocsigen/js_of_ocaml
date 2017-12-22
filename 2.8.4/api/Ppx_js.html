@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title>Module Ppx_js </title><meta charset="utf8"/><link rel="stylesheet" href="/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="/client.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script></head><body><h1>Module <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Ppx_js.html">Ppx_js</a></span> </h1><pre class="ocsforge_color odocwiki_code"><span class="ocsforge_color_keyword">module</span> <span class="ocsforge_color_uid"><span class="ocsforge_color_uid">Ppx_js</span></span> <span class="ocsforge_color_delimiter">:</span> <span class="ocsforge_color_keyword">sig</span><span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Ppx_js.html">..</a></span><span class="ocsforge_color_keyword">end</span></pre><p>Ppx syntax extension for Js_of_ocaml.
+</p><p>To migrate from the camlp4 extension, it is advised to use
+<a href="https://github.com/janestreet/camlp4-to-ppx" class="ocsimore_phrasing_link">camlp4-to-ppx</a>,
+which provides built-in support for Js_of_ocaml syntax.
+</p><hr/><pre class="ocsforge_color odocwiki_code" id="VALjs_mapper"><span class="ocsforge_color_keyword">val</span> <span class="odocwiki_name">js_mapper</span> <span class="ocsforge_color_delimiter">:</span> <span class="odocwiki_type">string list <span class="ocsforge_color_delimiter">-&gt;</span> <span class="ocsforge_color_lid">Ast_mapper</span><span class="ocsforge_color_delimiter">.</span><span class="ocsforge_color_lid">mapper</span></span></pre><div class="odocwiki_info"><p>A syntax extension is available for manipulating object properties,
+invoking methods and creating objects.  The syntax and typing rules
+are as follows:
+</p><p>
+</p><ul><li> Getting a property
+
+</li></ul><pre class=""><code class="language-ocaml translatable">obj : &lt;m : u Js.prop&gt; Js.t
+--------------------------
+     obj##.m : u</code></pre><p>
+</p><ul><li> Setting a property
+
+</li></ul><pre class=""><code class="language-ocaml translatable">obj : &lt;m : u Js.prop&gt; Js.t
+  e : u
+--------------------------
+  obj##.m := e : unit</code></pre><p>
+</p><ul><li> Invoking a method
+
+</li></ul><pre class=""><code class="language-ocaml translatable">obj : &lt;m : t_1 -&gt; ... -&gt; t_n -&gt; u Js.meth; ..&gt; Js.t
+e_i : t_i               (1 &lt;= i &lt;= n)
+----------------------------------------------------
+        obj##m e_1 ... e_n : u</code></pre><p>For easier chaining, the following alternative syntax is also possible:
+<span class="odocwiki_inlinecode">obj##(m e_1 ... e_n)</span>.
+</p><p>Beware, partial application is not allowed.
+
+</p><ul><li> Using an object constructor
+
+</li></ul><pre class=""><code class="language-ocaml translatable">constr : (t_1 -&gt; ... -&gt; t_n -&gt; u Js.t) Js.constr
+   e_i : t_i               (1 &lt;= i &lt;= n)
+------------------------------------------------
+          new%js constr e1 ... en : u Js.t</code></pre><p><span class="odocwiki_inlinecode">constr</span> here must be an identifier. For constructors
+that are not identifiers, bind them first:
+
+</p><pre class=""><code class="language-ocaml translatable">let a = Js.Unsafe.global##.A in
+new%js a</code></pre><p>
+</p><ul><li> Creating a literal object
+
+</li></ul><pre class=""><code class="language-ocaml translatable">object%js (self) (* Equivalent of this *)
+  val x = 3 (* read-only prop *)
+  val mutable y = 4 (* read/write prop *)
+  method foo i = self##.y := self##.x + i
+end</code></pre><p>Properties are defined with the <span class="odocwiki_inlinecode">val</span> keyword. <span class="odocwiki_inlinecode">mutable</span> makes the
+property writable. <span class="odocwiki_inlinecode">self</span> can be any identifier and will be bind
+to <span class="odocwiki_inlinecode">this</span> in javascript.
+</p><p>In this case, the object has the following type:
+
+</p><pre class=""><code class="language-ocaml translatable">&lt; foo : int -&gt; unit Js.meth;
+    x : int Js.readonly_prop;
+    y : int Js.prop
+&gt; Js.t</code></pre></div></body></html>
