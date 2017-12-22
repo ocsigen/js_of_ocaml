@@ -4,7 +4,7 @@
 
 //Provides: initialize_nat
 function initialize_nat() {
-	return undefined;
+	return 0;
 }
 
 //Provides: create_nat
@@ -23,7 +23,7 @@ function set_to_zero_nat(nat, ofs, len) {
 	for(var i = 0; i < len; i++) {
 		nat[ofs+i] = 0;
 	}
-	return undefined;
+	return 0;
 }
 
 //Provides: blit_nat
@@ -31,14 +31,14 @@ function blit_nat(nat1, ofs1, nat2, ofs2, len) {
 	for(var i = 0; i < len; i++) {
 		nat1[ofs1+i] = nat2[ofs2+i];
 	}
-	return undefined;
+	return 0;
 }
 
 //Provides: set_digit_nat
 function set_digit_nat(nat, ofs, digit) {
 	nat[ofs] = digit;
 	if(nat[ofs] < 0) nat[ofs] += 4294967296;
-	return undefined;
+	return 0;
 }
 
 //Provides: nth_digit_nat
@@ -50,7 +50,7 @@ function nth_digit_nat(nat, ofs) {
 function set_digit_nat_native(nat, ofs, digit) {
 	nat[ofs] = digit;
 	if(nat[ofs] < 0) nat[ofs] += 4294967296;
-	return undefined;
+	return 0;
 }
 
 //Provides: nth_digit_nat_native
@@ -221,7 +221,7 @@ function square_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
 function shift_left_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
 	if(nbits == 0) {
 		nat2[ofs2] = 0;
-		return undefined;
+		return 0;
 	}
 
 	var wrap = 0;
@@ -234,7 +234,7 @@ function shift_left_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
 
 	nat2[ofs2] = wrap;
 	if(nat2[ofs2] < 0) nat2[ofs2] += 4294967296;
-	return undefined;
+	return 0;
 }
 
 // Assuming c > a, returns [quotient, remainder] of (a<<32 + b)/c
@@ -260,7 +260,7 @@ function div_digit_nat(natq, ofsq, natr, ofsr, nat1, ofs1, len, nat2, ofs2) {
 			rem = x[1];
 	}
 	natr[ofsr] = rem;
-	return undefined;
+	return 0;
 }
 
 // nat1[nat2:] := nat1 / nat2
@@ -271,7 +271,7 @@ function div_digit_nat(natq, ofsq, natr, ofsr, nat1, ofs1, len, nat2, ofs2) {
 function div_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
 	if(len2 == 1) {
 		div_digit_nat(nat1, ofs1+1, nat1, ofs1, nat1, ofs1, len1, nat2, ofs2);
-		return undefined;
+		return 0;
 	}
 
 	var s = num_leading_zero_bits_in_digit(nat2, ofs2+len2-1);
@@ -297,7 +297,7 @@ function div_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
 
 	shift_right_nat(nat1, ofs1, len2, [0], 0, s); // shift remainder
 	shift_right_nat(nat2, ofs2, len2, [0], 0, s); // restore
-	return undefined;
+	return 0;
 }
 
 
@@ -306,7 +306,7 @@ function div_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
 function shift_right_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
 	if(nbits == 0) {
 		nat2[ofs2] = 0;
-		return undefined;
+		return 0;
 	}
 
 	var wrap = 0;
@@ -319,7 +319,7 @@ function shift_right_nat(nat1, ofs1, len1, nat2, ofs2, nbits) {
 
 	nat2[ofs2] = wrap;
 	if(nat2[ofs2] < 0) nat2[ofs2] += 4294967296;
-	return undefined;
+	return 0;
 }
 
 //Provides: compare_digits_nat
@@ -347,19 +347,19 @@ function compare_nat(nat1, ofs1, len1, nat2, ofs2, len2) {
 function land_digit_nat(nat1, ofs1, nat2, ofs2) {
 	nat1[ofs1] &= nat2[ofs2];
 	if(nat1[ofs1] < 0) nat1[ofs1] += 4294967296;
-	return undefined;
+	return 0;
 }
 
 //Provides: lor_digit_nat
 function lor_digit_nat(nat1, ofs1, nat2, ofs2) {
 	nat1[ofs1] |= nat2[ofs2];
 	if(nat1[ofs1] < 0) nat1[ofs1] += 4294967296;
-	return undefined;
+	return 0;
 }
 
 //Provides: lxor_digit_nat
 function lxor_digit_nat(nat1, ofs1, nat2, ofs2) {
 	nat1[ofs1] ^= nat2[ofs2];
 	if(nat1[ofs1] < 0) nat1[ofs1] += 4294967296;
-	return undefined;
+	return 0;
 }
