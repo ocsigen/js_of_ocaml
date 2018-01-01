@@ -101,6 +101,7 @@ let eval_prim x =
      | "to_int",[Float f]  -> Some (Int (Int32.of_float f))
      | "to_int",[Int i] -> Some (Int i)
      (* Math *)
+     | "caml_neg_float",_ -> float_unop l (~-.)
      | "caml_abs_float",_ -> float_unop l abs_float
      | "caml_acos_float",_ -> float_unop l acos
      | "caml_asin_float",_ -> float_unop l asin
