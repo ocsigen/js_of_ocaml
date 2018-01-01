@@ -413,6 +413,7 @@ module Make(D : sig
     | EUn (op, e) ->
       if l > 13 then begin PP.start_group f 1; PP.string f "(" end;
       PP.string f (unop_str op);
+      PP.space f;
       expression 13 f e;
       if l > 13 then begin PP.string f ")"; PP.end_group f end
     | EBin (InstanceOf, e1, e2) ->
