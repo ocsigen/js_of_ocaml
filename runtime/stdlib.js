@@ -717,6 +717,9 @@ function caml_hash_univ_param (count, limit, obj) {
       count--;
       var p = caml_int64_to_bytes (caml_int64_bits_of_float (obj));
       for (var i = 7; i >= 0; i--) hash_accu = (hash_accu * 19 + p[i]) | 0;
+    } else if(obj && obj.hash) {
+	// Custom
+	hash_accu = (hash_accu * 65599 + obj.hash()) | 0;
     }
   }
   hash_aux (obj);
@@ -879,7 +882,10 @@ function caml_hash (count, limit, seed, obj) {
             // Float
             h = caml_hash_mix_float(h,v);
             num--;
-        }
+        } else if(v && v.hash) {
+	    // Custom
+	    h = caml_hash_mix_int(h, v.hash());
+	}
     }
     h = caml_hash_mix_final(h);
     return h & 0x3FFFFFFF;
