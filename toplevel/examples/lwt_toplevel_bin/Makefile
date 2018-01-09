@@ -20,7 +20,7 @@ ifneq ($(CAMLP4_SYNTAXES),)
 SYNTAXES= lwt.syntax js_of_ocaml-camlp4 $(DERIVING_SYNTAX)
 endif
 
-JSFILES= +weak.js +toplevel.js +dynlink.js +nat.js
+JSFILES= +toplevel.js +dynlink.js +nat.js
 
 PACKAGES= \
 	lwt bigarray tyxml.functor \

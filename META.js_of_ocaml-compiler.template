@@ -2,13 +2,6 @@
 
 package "runtime" (
 
-package "weak" (
-  description = "weak emulation for js_of_ocaml."
-  version = "[distributed with js_of_ocaml-compiler]"
-  jsoo_runtime = "weak.js"
-  linkopts(javascript) = "+js_of_ocaml-compiler/weak.js"
-)
-
 package "num" (
   description = "runtime support for the num library."
   version = "[distributed with js_of_ocaml-compiler]"

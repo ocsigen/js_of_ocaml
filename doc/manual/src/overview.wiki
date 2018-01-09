@@ -83,7 +83,7 @@ See also <<a_manual chapter="quickstart" |Quickstart>>.
 
 Most of the OCaml standard library is supported. However,
   * Weak semantic cannot be implemented using JavaScript.
-    A dummy implementation is available (use `+weak.js` option)
+    A dummy implementation is provided.
   * Most of Sys module is not supported.
 
 Extra libraries distributed with Ocaml (such as Thread or Str) are not
