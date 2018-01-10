@@ -270,7 +270,12 @@ let eval_branch info = function
       match the_int info (Pv x) with
         | Some j ->
           let res = match cond with
-            | IsTrue -> (match j with 0l -> false | 1l -> true | _ -> assert false)
+            | IsTrue ->
+              begin match j with
+                | 0l -> false
+                (* https://github.com/ocaml/ocaml/blob/trunk/byterun/interp.c#L798 *)
+                | _  -> true
+              end
             | CEq i -> i = j
             | CLt i -> i < j
             | CLe i -> i<= j
