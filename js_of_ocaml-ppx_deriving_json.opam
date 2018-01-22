@@ -17,7 +17,6 @@ depends: [
 ]
 
 conflicts: [
-  "ppx_tools_versioned"     {<="5.0beta0"}
   "ppx_deriving"            {<="4.2.0"}
 ]
 
