@@ -12,6 +12,7 @@
  * Bug fixes:
  ** Compiler: fix code generation of unary ops (missing space).
  ** Compiler: fix static eval of conditions (fix #616)
+ ** Compiler: fix code generation for OCaml GPR#1568
  ** Runtime: fix bug found using the closure compiler (#644)
 
 ===== 3.0.2 (2017-12-01) - Strasbourg =====
