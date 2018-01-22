@@ -5,6 +5,7 @@
  ** Runtime: weak.js loaded by default
  ** Compiler: compile an OCaml program into a named javascript function (fix #599)
  ** Misc: move ppx_deriving_json in its own opam package (Rudi Grinberg)
+ ** Misc: always use namespace for the js_of_ocaml library
  ** Compiler: static eval of float negation
  ** Compiler: improve constant sharing.
  ** Ppx: add support for writeonly_prop and optdef_prop in object litteral.
