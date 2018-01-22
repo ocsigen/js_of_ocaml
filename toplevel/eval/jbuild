@@ -1,12 +1,12 @@
 (executable
   ((name eval)
-   (js_of_ocaml ((flags (:standard --toplevel --linkall +weak.js +toplevel.js +dynlink.js))))
+   (js_of_ocaml ((flags (:standard --toplevel --linkall +toplevel.js +dynlink.js))))
    (preprocess (pps (js_of_ocaml-ppx)))
    (libraries (js_of_ocaml js_of_ocaml-compiler js_of_ocaml-toplevel compiler-libs))))
 
 (rule ((targets (eval.js))
        (deps (eval.bc stdlib.export))
-       (action (run js_of_ocaml --toplevel --linkall +weak.js +toplevel.js +dynlink.js
+       (action (run js_of_ocaml --toplevel --linkall +toplevel.js +dynlink.js
        	       --export stdlib.export eval.bc -I +stdlib/compiler-libs))))
 
 (rule ((targets (stdlib.export))
