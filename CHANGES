@@ -1,3 +1,16 @@
+===== 3.1.0 (2018-??-??) - ???? =====
+ * Features/Changes:
+ ** Lib: add missing File.blob constructor (fix #630)
+ ** Runtime: hash support for custom blocks
+ ** Runtime: weak.js loaded by default
+ ** Compiler: compile an OCaml program into a named javascript function (fix #599)
+ ** Misc: move ppx_deriving_json in its own opam package (Rudi Grinberg)
+ ** Compiler: static eval of float negation
+
+ * Bug fixes:
+ ** Compiler: fix code generation of unary ops (missing space).
+ ** Compiler: fix static eval of conditions (fix #616)
+
 ===== 3.0.2 (2017-12-01) - Strasbourg =====
  * Features/Changes:
  ** Runtime: support for latest core_kernel
