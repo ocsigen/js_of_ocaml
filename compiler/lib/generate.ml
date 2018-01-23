@@ -1302,10 +1302,8 @@ and compile_block st queue (pc : addr) frontier interm =
       match block.branch with
         Code.Pushtrap ((pc1, args1), x, (pc2, args2), pc3s) ->
         (* FIX: document this *)
-        let grey =  dominance_frontier st pc2 in
-        let grey' = resolve_nodes interm grey in
-        assert (AddrSet.cardinal grey' <= 1);
-        let limit_body_with =
+        let pc2s = resolve_nodes interm (dominance_frontier st pc2) in
+        let pc3s =
           AddrSet.fold (fun pc3 acc ->
             (* We need to make sure that pc3 is live (indeed, the
                continuation may have been optimized away by inlining) *)
@@ -1314,7 +1312,7 @@ and compile_block st queue (pc : addr) frontier interm =
               (* no need to limit body for simple flow with no instruction.
                  eg return and branch *)
               let rec limit pc =
-                if AddrSet.mem pc grey' then false else
+                if AddrSet.mem pc pc2s then false else
                   let block = AddrMap.find pc st.blocks in
                   block.body <> [] ||
                   match block.branch with
@@ -1327,95 +1325,39 @@ and compile_block st queue (pc : addr) frontier interm =
               else acc
             else acc) pc3s AddrSet.empty
         in
-        let limit_body_with =
-          match AddrSet.elements limit_body_with with
-          | [] | [ _ ] -> limit_body_with
-          | x::xs ->
-            try
-              (* Hack to handle multiple poptrap
-                 for the same pushtrap *)
-              let get_direct_branch pc =
-                match AddrMap.find pc st.blocks with
-                | { body = []; branch = Branch (pc,_) ; _ } -> pc
-                | _ -> raise Not_found
-              in
-              let pc1 = get_direct_branch x in
-              if List.for_all (fun pc ->
-                get_direct_branch pc = pc1) xs
-              then AddrSet.singleton pc1
-              else raise Not_found
-            with Not_found ->
-              (* List.iter (fun pc ->
-               *   let block = AddrMap.find pc st.blocks in
-               *   Code.print_block (fun _ _ -> "") pc block) (x::xs); *)
-              assert false
-        in
-        let inner_frontier = AddrSet.union limit_body_with grey' in
-        let inner_frontier = AddrSet.union new_frontier inner_frontier in
-        AddrSet.iter (incr_preds st) limit_body_with;
+        let grey = AddrSet.union pc2s pc3s in
+        AddrSet.iter (incr_preds st) grey;
+        let (grey', new_interm) = colapse_frontier st grey interm in
+        assert (AddrSet.cardinal grey' <= 1);
+        let inner_frontier = AddrSet.union new_frontier grey' in
         if debug () then Format.eprintf "@[<2>try {@,";
         let body =
           compile_branch st [] (pc1, args1)
-            None AddrSet.empty inner_frontier interm
+            None AddrSet.empty inner_frontier new_interm
         in
         if debug () then Format.eprintf "} catch {@,";
-        let handler = compile_block st [] pc2 inner_frontier interm in
-        let handler =
-          if st.ctx.Ctx.live.(Var.idx x) > 0 && Option.Optim.excwrap ()
-          then (J.Expression_statement (
-            J.EBin(
-              J.Eq,
-              J.EVar (J.V x),
-              J.ECall (Share.get_prim (runtime_fun st.ctx) "caml_wrap_exception" st.ctx.Ctx.share,
-                       [J.EVar (J.V x)], J.N))),J.N)
-               ::handler
-          else handler in
         let x =
           let block2 = AddrMap.find pc2 st.blocks in
           let m = Subst.build_mapping args2 block2.params in
           try VarMap.find x m with Not_found -> x
         in
+        let handler = compile_block st [] pc2 inner_frontier new_interm in
+        let handler =
+          if st.ctx.Ctx.live.(Var.idx x) > 0 && Option.Optim.excwrap ()
+          then  (J.Expression_statement (
+            J.EBin(
+              J.Eq,
+              J.EVar (J.V x),
+              J.ECall (Share.get_prim (runtime_fun st.ctx) "caml_wrap_exception" st.ctx.Ctx.share,
+                       [J.EVar (J.V x)], J.N))),J.N)
+                ::handler
+          else handler in
         if debug () then Format.eprintf "}@]@ ";
-        AddrSet.iter (decr_preds st) limit_body_with;
-
-        let before_try_with, after_body, on_exn =
-          if not (AddrSet.is_empty limit_body_with)
-          then
-            let frontier_of_body_after_poptrap =
-              AddrSet.union grey' new_frontier
-            in
-            let pc3 = AddrSet.choose limit_body_with in
-            match compile_block st [] pc3 frontier_of_body_after_poptrap interm with
-            | [] -> (J.Empty_statement, J.N), [], []
-            | block ->
-              if AddrSet.is_empty grey'
-              then
-                (* Single branch, no need to discriminate *)
-                (J.Empty_statement, J.N), block, []
-              else
-                let after_poptrap  = Code.Var.fresh_n "no_exn" in
-                (J.Variable_statement [J.V after_poptrap,Some (J.ENum 1.,J.N)], J.N),
-                Js_simpl.if_statement (J.EVar (J.V after_poptrap)) J.N
-                  (J.Block block, J.N) false
-                  (J.Block [], J.N) false,
-                [J.Expression_statement (
-                   J.EBin (J.Eq, J.EVar (J.V after_poptrap), J.ENum 0.)), J.N]
-          else (J.Empty_statement, J.N), [], []
-        in
+        AddrSet.iter (decr_preds st) grey;
         flush_all queue
           (
-            before_try_with ::
-            ((J.Try_statement (
-               (* body *)
-               body,
-               (* handler *)
-               Some (J.V x,
-                     on_exn
-                     @ handler),
-               None)),
+            (J.Try_statement (body, Some (J.V x, handler),None),
              source_location st.ctx pc) ::
-            after_body
-            @
             (if not (AddrSet.is_empty grey')
              then
                let pc = AddrSet.choose grey' in
