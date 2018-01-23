@@ -1423,41 +1423,7 @@ else begin
             )
           )
     | _ ->
-        let (new_frontier, new_interm) =
-          if AddrSet.cardinal new_frontier > 1 then begin
-            let x = Code.Var.fresh_n "switch" in
-            let a = Array.of_list (AddrSet.elements new_frontier) in
-            if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
-            let idx = st.interm_idx in
-            st.interm_idx <- idx - 1;
-            let cases = Array.map (fun pc -> (pc, [])) a in
-            let switch =
-              if Array.length cases > 2 then
-                Code.Switch (x, cases, [||])
-              else
-                Code.Cond (IsTrue, x, cases.(1), cases.(0))
-            in
-            st.blocks <-
-              AddrMap.add idx
-                { params = []; handler = None; body = []; branch = switch }
-              st.blocks;
-            (* There is a branch from this switch to the members
-               of the frontier. *)
-            AddrSet.iter (fun pc -> incr_preds st pc) new_frontier;
-            (* Put a limit: we are going to remove other branches
-               to the members of the frontier (in compile_conditional),
-               but they should remain in the frontier. *)
-            AddrSet.iter (fun pc -> protect_preds st pc) new_frontier;
-            Hashtbl.add st.succs idx (AddrSet.elements new_frontier);
-            Hashtbl.add st.all_succs idx new_frontier;
-            Hashtbl.add st.backs idx AddrSet.empty;
-            (AddrSet.singleton idx,
-             Array.fold_right
-               (fun (pc, i) interm -> (AddrMap.add pc (idx, (x, i)) interm))
-               (Array.mapi (fun i pc -> (pc, i)) a) interm)
-          end else
-            (new_frontier, interm)
-        in
+        let (new_frontier, new_interm) = colapse_frontier st new_frontier interm in
         assert (AddrSet.cardinal new_frontier <= 1);
         (* Beware evaluation order! *)
         let cond =
@@ -1498,6 +1464,41 @@ else begin
   end else
     body
 end
+
+and colapse_frontier st new_frontier interm =
+  if AddrSet.cardinal new_frontier > 1 then begin
+    let x = Code.Var.fresh_n "switch" in
+    let a = Array.of_list (AddrSet.elements new_frontier) in
+    if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
+    let idx = st.interm_idx in
+    st.interm_idx <- idx - 1;
+    let cases = Array.map (fun pc -> (pc, [])) a in
+    let switch =
+      if Array.length cases > 2 then
+        Code.Switch (x, cases, [||])
+      else
+        Code.Cond (IsTrue, x, cases.(1), cases.(0))
+    in
+    st.blocks <-
+      AddrMap.add idx
+        { params = []; handler = None; body = []; branch = switch }
+        st.blocks;
+    (* There is a branch from this switch to the members
+       of the frontier. *)
+    AddrSet.iter (fun pc -> incr_preds st pc) new_frontier;
+    (* Put a limit: we are going to remove other branches
+       to the members of the frontier (in compile_conditional),
+       but they should remain in the frontier. *)
+    AddrSet.iter (fun pc -> protect_preds st pc) new_frontier;
+    Hashtbl.add st.succs idx (AddrSet.elements new_frontier);
+    Hashtbl.add st.all_succs idx new_frontier;
+    Hashtbl.add st.backs idx AddrSet.empty;
+    (AddrSet.singleton idx,
+     Array.fold_right
+       (fun (pc, i) interm -> (AddrMap.add pc (idx, (x, i)) interm))
+       (Array.mapi (fun i pc -> (pc, i)) a) interm)
+  end else
+    (new_frontier, interm)
 
 and compile_decision_tree st _queue handler backs frontier interm succs loc cx dtree =
   (* Some changes here may require corresponding changes
