@@ -44,6 +44,8 @@ module J = Javascript
 
 (****)
 
+let string_of_set s = String.concat ", " (List.map string_of_int (AddrSet.elements s))
+
 let rec list_group_rec f g l b m n =
   match l with
     [] ->
@@ -1466,7 +1468,9 @@ and compile_block st queue (pc : addr) frontier interm =
   end
 
 and colapse_frontier st new_frontier interm =
+
   if AddrSet.cardinal new_frontier > 1 then begin
+    if debug () then Format.eprintf "colapse frontier into %d: %s@." st.interm_idx (string_of_set new_frontier);
     let x = Code.Var.fresh_n "switch" in
     let a = Array.of_list (AddrSet.elements new_frontier) in
     if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
@@ -1753,7 +1757,8 @@ and compile_closure ctx at_toplevel (pc, args) =
   if
     AddrSet.cardinal st.visited_blocks <> AddrSet.cardinal current_blocks
   then begin
-    Format.eprintf "Some blocks not compiled!@."; assert false
+    let missing = AddrSet.diff current_blocks st.visited_blocks in
+    Format.eprintf "Some blocks not compiled %s!@." (string_of_set missing);assert false
   end;
   if debug () then Format.eprintf "}@]@ ";
   List.map (fun (st, loc) -> (J.Statement st, loc)) res
