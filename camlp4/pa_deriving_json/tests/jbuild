@@ -11,4 +11,4 @@
 (alias
   ((name   runtest)
    (deps   (deriving.expected deriving.result))
-   (action (run patdiff deriving.expected deriving.result))))
+   (action (run diff deriving.expected deriving.result))))

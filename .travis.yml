@@ -1,0 +1,24 @@
+sudo: required
+
+language: c
+
+matrix:
+  include:
+    - os: linux
+      env: COMPILER=4.04
+    - os: linux
+      env: COMPILER=4.05
+    - os: linux
+      env: COMPILER=4.06
+
+  allow_failures:
+    - os: linux
+      env: COMPILER=4.02
+    - os: linux
+      env: COMPILER=4.03
+    - os: osx
+      env: COMPILER=system
+
+  fast_finish: true
+
+script: bash -e tools/travis.sh
