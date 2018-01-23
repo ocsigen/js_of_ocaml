@@ -6,7 +6,6 @@ linkopts(javascript,pkg_graphics) += "+js_of_ocaml-compiler/graphics.js"
 linkopts(javascript,pkg_num) += "+js_of_ocaml-compiler/nat.js"
 
 package "weak" (
-  requires = "js_of_ocaml-compiler.runtime.weak"
 )
 
 package "num" (
