@@ -10,4 +10,4 @@
 (alias
   ((name   runtest)
    (deps   (camlp4.expected camlp4.result))
-   (action (run patdiff camlp4.expected camlp4.result))))
+   (action (run diff camlp4.expected camlp4.result))))
