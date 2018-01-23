@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open Js_of_ocaml
 
 module Css_angle = Css_angle
 module Css_color = Css_color

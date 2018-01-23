@@ -19,6 +19,7 @@
  *)
 
 (* CSS.Length testing *)
+open Js_of_ocaml
 open Common
 let log_stop = log_start "CSS.Length test suite"
 

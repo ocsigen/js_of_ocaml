@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Js_of_ocaml
+
 let success_count_all = ref 0
 let test_count_all = ref 0
 

@@ -19,6 +19,7 @@
  *)
 
 (*CSS.Angle test suite*)
+open Js_of_ocaml
 open Common
 
 let log_stop = log_start "CSS.Angle test suite"
