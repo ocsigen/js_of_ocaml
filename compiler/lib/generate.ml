@@ -1375,39 +1375,6 @@ else begin
         in
         if debug () then Format.eprintf "}@]@ ";
         AddrSet.iter (decr_preds st) limit_body_with;
-        let _wrap s =
-          (* We wrap [try ... catch ...] statements at toplevel inside
-             an anonymous function, as V8 does not optimize functions
-             that contain these statements *)
-          if st.at_toplevel
-            && false (* DISABLED -> FIXME https://github.com/ocsigen/js_of_ocaml/issues/226*) then
-            try
-              let pc = AddrSet.choose inner_frontier in
-              let block = AddrMap.find pc st.blocks in
-              let x =
-                match block.params with
-                  [x] -> x
-                | []  -> raise Not_found
-                | _   -> assert false
-              in
-              J.Variable_statement
-                [J.V x,
-                 Some
-                   (J.ECall (J.EFun (None, [],
-                                     [J.Statement s, J.N;
-                                      J.Statement
-                                        (J.Return_statement
-                                           (Some (J.EVar (J.V x)))), J.N],
-                                     J.N),
-                             [], J.N),
-                    J.N)]
-            with Not_found ->
-              J.Expression_statement
-                (J.ECall (J.EFun (None, [], [J.Statement s, J.N], J.N),
-                          [], J.N))
-          else
-            s
-        in
 
         let before_try_with, after_body, on_exn =
           if not (AddrSet.is_empty limit_body_with)
