@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ocsigen/js_of_ocaml.png)](https://travis-ci.org/ocsigen/js_of_ocaml)
+
 # Js_of_ocaml (jsoo)
 
 Js_of_ocaml is a compiler from OCaml bytecode to JavaScript. It makes
@@ -11,7 +13,7 @@ like browsers and Node.js.
   * We believe this compiler will prove much easier to maintain than a
     retargeted OCaml compiler, as the bytecode provides a very stable
     API.
-
+    
 ## Requirements
   Findlib, cppo
   See [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam) file for version constraints.
