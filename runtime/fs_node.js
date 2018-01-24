@@ -87,7 +87,7 @@ MlNodeFile.prototype.length = function () {
 }
 MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
   var a = caml_array_of_string(buf);
-  if(! a instanceof joo_global_object.Uint8Array)
+  if(! (a instanceof joo_global_object.Uint8Array))
     a = new joo_global_object.Uint8Array(a);
   var buffer = new Buffer (a);
   this.fs.writeSync(this.fd, buffer, buf_offset, len, offset);

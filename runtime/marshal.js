@@ -99,14 +99,14 @@ BigStringReader.prototype = {
   read32u:function () {
     var s = this.s, i = this.i;
     this.i = i + 4;
-    return (caml_ba_get_1((s,i) << 24) | (caml_ba_get_1(s,i+1) << 16) |
-            (caml_ba_get_1(s,i+2) << 8) | caml_ba_get_1(s,i+3)) >>> 0;
+    return ((caml_ba_get_1(s,i)   << 24) | (caml_ba_get_1(s,i+1) << 16) |
+            (caml_ba_get_1(s,i+2) << 8)  | caml_ba_get_1(s,i+3)         ) >>> 0;
   },
   read32s:function () {
     var s = this.s, i = this.i;
     this.i = i + 4;
-    return (caml_ba_get_1(s,i) << 24) | (caml_ba_get_1(s,i+1) << 16) |
-      (caml_ba_get_1(s,i+2) << 8) | caml_ba_get_1(s,i+3);
+    return (caml_ba_get_1(s,i)   << 24) | (caml_ba_get_1(s,i+1) << 16) |
+	   (caml_ba_get_1(s,i+2) << 8)  | caml_ba_get_1(s,i+3);
   },
   readstr:function (len) {
     var i = this.i;
