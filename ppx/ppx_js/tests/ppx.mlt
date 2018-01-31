@@ -2,8 +2,8 @@ module Js_of_ocaml = struct
 module Js = struct
   type +'a t
   type (-'a, +'b) meth_callback
-  type 'a opt = 'a
-  type 'a optdef = 'a
+  type +'a opt
+  type +'a optdef
 
   type +'a meth
   type +'a gen_prop
@@ -36,6 +36,9 @@ module Js = struct
   end
   let wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback =
     fun _ -> assert false
+
+  let undefined : unit -> 'a optdef = fun () -> assert false
+  let some : 'a -> 'a optdef = fun _ -> assert false
 end
 end
 open Js_of_ocaml;;
@@ -46,8 +49,8 @@ module Js_of_ocaml :
       sig
         type +'a t
         type (-'a, +'b) meth_callback
-        type 'a opt = 'a
-        type 'a optdef = 'a
+        type +'a opt
+        type +'a optdef
         type +'a meth
         type +'a gen_prop
         type 'a readonly_prop = < get : 'a > gen_prop
@@ -67,6 +70,8 @@ module Js_of_ocaml :
             val obj : (string * any) array -> 'a
           end
         val wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
+        val undefined : unit -> 'a optdef
+        val some : 'a -> 'a optdef
       end
   end
 |}];;
@@ -352,5 +357,193 @@ Line _, characters 11-16:
 Error: Duplicated val or method "_m_bc" (normalized to "m").
 Line _, characters 11-15:
 Error: Duplicated val or method "_m_a" (normalized to "m").
+|}]
+;;
+
+
+fun () ->
+  (object%js
+    val r = 2 [@@jsoo.optdef_return]
+    val mutable w = 3.
+    method m = ""
+  end : < r : int Js.prop; .. > Js.t)
+[%%expect {|
+Line _, characters 3-96:
+Error: This expression has type
+         < m : string Js_of_ocaml.Js.meth;
+           r : int Js_of_ocaml.Js.optdef_prop;
+           w : float Js_of_ocaml.Js.prop >
+         Js_of_ocaml.Js.t
+       but an expression was expected of type
+         < r : int Js_of_ocaml.Js.prop; .. > Js_of_ocaml.Js.t
+       Type
+         int Js_of_ocaml.Js.optdef_prop =
+           < get : int Js_of_ocaml.Js.optdef; set : int -> unit >
+           Js_of_ocaml.Js.gen_prop
+       is not compatible with type
+         int Js_of_ocaml.Js.prop =
+           < get : int; set : int -> unit > Js_of_ocaml.Js.gen_prop
+       Types for method get are incompatible
+|}]
+;;
+
+fun () ->
+  (object%js
+    val r = 2 [@@jsoo.writeonly]
+    val mutable w = 3.
+    method m = ""
+  end : < r : int Js.prop; .. > Js.t)
+[%%expect {|
+Line _, characters 3-92:
+Error: This expression has type
+         < m : string Js_of_ocaml.Js.meth;
+           r : int Js_of_ocaml.Js.writeonly_prop;
+           w : float Js_of_ocaml.Js.prop >
+         Js_of_ocaml.Js.t
+       but an expression was expected of type
+         < r : int Js_of_ocaml.Js.prop; .. > Js_of_ocaml.Js.t
+       Type
+         int Js_of_ocaml.Js.writeonly_prop =
+           < set : int -> unit > Js_of_ocaml.Js.gen_prop
+       is not compatible with type
+         int Js_of_ocaml.Js.prop =
+           < get : int; set : int -> unit > Js_of_ocaml.Js.gen_prop
+       The first object type has no method get
+|}]
+;;
+
+fun () ->
+  (object%js
+    val mutable r = 2 [@@jsoo.readonly]
+    val mutable w = 3.
+    method m = ""
+  end : < r : int Js.prop; .. > Js.t)
+[%%expect {|
+Line _, characters 4-39:
+Error: A mutable field cannot be readonly.
+|}]
+;;
+
+fun () ->
+  (object%js
+    val r = 2 [@@jsoo.readonly]
+    val mutable w = 3.
+    method m = ""
+  end : < r : int Js.prop; .. > Js.t)
+[%%expect {|
+Line _, characters 3-91:
+Error: This expression has type
+         < m : string Js_of_ocaml.Js.meth;
+           r : int Js_of_ocaml.Js.readonly_prop;
+           w : float Js_of_ocaml.Js.prop >
+         Js_of_ocaml.Js.t
+       but an expression was expected of type
+         < r : int Js_of_ocaml.Js.prop; .. > Js_of_ocaml.Js.t
+       Type
+         int Js_of_ocaml.Js.readonly_prop =
+           < get : int > Js_of_ocaml.Js.gen_prop
+       is not compatible with type
+         int Js_of_ocaml.Js.prop =
+           < get : int; set : int -> unit > Js_of_ocaml.Js.gen_prop
+       The first object type has no method set
+|}]
+;;
+
+fun () ->
+  (object%js
+    val mutable r = 2 [@@jsoo.readonly][@@writeonly]
+    val mutable w = 3.
+    method m = ""
+  end : < r : int Js.prop; .. > Js.t)
+[%%expect {|
+Line _, characters 4-52:
+Error: Too many attributes.
+|}]
+;;
+
+fun () ->
+  (object%js
+    val mutable r = 2 [@@jsoo.wrong]
+    val mutable w = 3.
+    method m = ""
+  end : < r : int Js.prop; .. > Js.t)
+[%%expect {|
+Line _, characters 4-36:
+Error: Unkown jsoo attribute ([@@jsoo.wrong]).
+|}]
+;;
+
+fun () ->
+  (object%js
+    val r = 2 [@@jsoo.readonly]
+  end)
+[%%expect {|
+- : unit -> < r : int Js_of_ocaml.Js.readonly_prop > Js_of_ocaml.Js.t = <fun>
+|}]
+;;
+
+fun () ->
+  (object%js
+    val r = 2 [@@jsoo.writeonly]
+  end)
+[%%expect {|
+- : unit -> < r : int Js_of_ocaml.Js.writeonly_prop > Js_of_ocaml.Js.t =
+<fun>
+|}]
+;;
+
+fun () ->
+  (object%js
+    val r = 2 [@@jsoo.readwrite]
+  end)
+[%%expect {|
+- : unit -> < r : int Js_of_ocaml.Js.prop > Js_of_ocaml.Js.t = <fun>
+|}]
+;;
+
+fun () ->
+  (object%js
+    val r = 2 [@@jsoo.optdef_return]
+  end)
+[%%expect {|
+- : unit -> < r : int Js_of_ocaml.Js.optdef_prop > Js_of_ocaml.Js.t = <fun>
+|}]
+;;
+
+fun () ->
+  (object%js
+    val r = Js.some 2 [@@jsoo.optdef]
+  end)
+[%%expect {|
+- : unit -> < r : int Js_of_ocaml.Js.optdef_prop > Js_of_ocaml.Js.t = <fun>
+|}]
+;;
+
+fun () ->
+object%js (self) (* Equivalent of this *)
+  val x1 = 3 (* read-only prop *)
+  val x2 = 3 [@@readonly] (* read-only prop *)
+
+  val mutable y1 = 4 (* read/write prop *)
+  val y2 = 4 [@@readwrite] (* read/write prop *)
+
+  val z = 5 [@@writeonly] (* write-only prop *)
+
+  val t1 = 6 [@@optdef_return] (* optdef prop *)
+
+  val t2 = Js.undefined () [@@jsoo.optdef] (* optdef prop *)
+
+  method foo i = self##.y1 := self##.x1 + i
+end
+[%%expect {|
+- : unit ->
+    < foo : int -> unit Js_of_ocaml.Js.meth;
+      t1 : int Js_of_ocaml.Js.optdef_prop;
+      t2 : 'a Js_of_ocaml.Js.optdef_prop;
+      x1 : int Js_of_ocaml.Js.readonly_prop;
+      x2 : int Js_of_ocaml.Js.readonly_prop; y1 : int Js_of_ocaml.Js.prop;
+      y2 : int Js_of_ocaml.Js.prop; z : int Js_of_ocaml.Js.writeonly_prop >
+    Js_of_ocaml.Js.t
+= <fun>
 |}]
 ;;
