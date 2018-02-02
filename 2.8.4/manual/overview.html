@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title> Js_of_ocaml </title><meta charset="utf8"/><link rel="stylesheet" href="/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="/client.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script></head><body><h1> Js_of_ocaml </h1><h2> Overview </h2><p>Js_of_ocaml is a compiler from OCaml bytecode programs to JavaScript.
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title> Js_of_ocaml </title><meta charset="utf8"/><link rel="stylesheet" href="file:///home/balat/ocsigen/ocsigen.github.io/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="/client.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script></head><body><h1> Js_of_ocaml </h1><h2> Overview </h2><p>Js_of_ocaml is a compiler from OCaml bytecode programs to JavaScript.
 It makes it possible to write OCaml programs that run on Web browsers.
 It is easy to install as it works with an existing installation of
 OCaml, with no need to recompile any library.  It comes with bindings
 for a large part of the browser APIs.  According to our benchmarks,
-the generated programs <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/manual/performances.html">runs
+the generated programs <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/manual/performances">runs
 typically faster</a></span> than with the OCaml bytecode interpreter.  We
 believe this compiler will prove much easier to maintain than a
 retargeted OCaml compiler, as the bytecode provides a very stable API.
@@ -28,7 +28,7 @@ corresponding syntax extension, are provided by the
           -syntax camlp4o -linkpkg -o cubes.byte cubes.ml
 </pre><p>Then, run the <span class="teletype">js_of_ocaml</span> compiler to produce JavaScript code:
 </p><pre>      js_of_ocaml cubes.byte
-</pre><p>See also the plugin <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Ocamlbuild_js_of_ocaml.html">Ocamlbuild_js_of_ocaml</a></span>.
+</pre><p>See also the plugin <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Ocamlbuild_js_of_ocaml">Ocamlbuild_js_of_ocaml</a></span>.
 </p><h2> Features </h2><p>Most of the OCaml standard library is supported. However,
 </p><ul><li> Weak semantic cannot be implemented using JavaScript.
 A dummy implemtation is available (use `+weak.js` option)
@@ -44,7 +44,7 @@ functions are optimized:
 </p><ul><li> self recursive functions (when the tail calls are the function itself) are
 compiled using a loop.
 </li><li> trampolines are used otherwise.
-<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/manual/tailcall.html">More about tail call optimization</a></span>.
+<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/manual/tailcall">More about tail call optimization</a></span>.
 </li></ul><p>Data representation differs from the usual one. Most notably,
 integers are 32 bits (rather than 31 bits or 63 bits), wich is their
 natural size in JavaScript, and floats are not boxed.  As a
@@ -60,5 +60,5 @@ option, Js_of_ocaml will attempt to preserve variable names as well.
 You can also use <span class="teletype">Js.debugger()</span> which inserts a JavaScript <span class="teletype">debugger</span>
 statement. When the JavaScript debugger is active, this statement
 pauses the execution of the program.
-<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/manual/debug.html">More about debugging with Js_of_ocaml</a></span>.
+<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/manual/debug">More about debugging with Js_of_ocaml</a></span>.
 </p></body></html>

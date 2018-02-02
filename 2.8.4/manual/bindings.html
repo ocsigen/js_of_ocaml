@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml"><head><title> How to bind a JS library for OCaml</title><meta charset="utf8"/><link rel="stylesheet" href="/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="/client.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script></head><body><h1> How to bind a JS library for OCaml</h1><h2>Accessing a JS variable, ex: <span class="teletype">document</span>:</h2><p>Write in .ml:
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title> How to bind a JS library for OCaml</title><meta charset="utf8"/><link rel="stylesheet" href="file:///home/balat/ocsigen/ocsigen.github.io/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="/client.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script></head><body><h1> How to bind a JS library for OCaml</h1><h2>Accessing a JS variable, ex: <span class="teletype">document</span>:</h2><p>Write in .ml:
 </p><pre class=""><code class="language-ocaml translatable">let v = (Js.Unsafe.js_expr &quot;window&quot;)##.document</code></pre><p>Alternatively, the global object can be used. In the browser, it refers to <span class="teletype">window</span>.
 </p><pre class=""><code class="language-ocaml translatable">let v = Js.Unsafe.global##.document</code></pre><p>and in .mli:
-</p><pre class=""><code class="language-ocaml translatable">val v : ... Js.t</code></pre><p>Be careful the function <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Js.Unsafe.html#VALjs_expr">Js.​Unsafe.​js_expr</a></span>
-and the value <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Js.Unsafe.html#VALglobal">Js.​Unsafe.​global</a></span> are not typed.
+</p><pre class=""><code class="language-ocaml translatable">val v : ... Js.t</code></pre><p>Be careful the function <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Js.Unsafe#VALjs_expr">Js.​Unsafe.​js_expr</a></span>
+and the value <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Js.Unsafe#VALglobal">Js.​Unsafe.​global</a></span> are not typed.
 Verify the library documentation before writing the type.
 </p><h2>Binding a JS function</h2><p>Example from the Js module:
 </p><pre class=""><code class="language-ocaml translatable">let decodeURI (s : js_string t) : js_string t =
-  Js.Unsafe.fun_call (Js.Unsafe.js_expr &quot;decodeURI&quot;) [|Js.Unsafe.inject s|]</code></pre><p>Have a look at the <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Js.Unsafe.html">Js.​Unsafe</a></span> module API.
+  Js.Unsafe.fun_call (Js.Unsafe.js_expr &quot;decodeURI&quot;) [|Js.Unsafe.inject s|]</code></pre><p>Have a look at the <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Js.Unsafe">Js.​Unsafe</a></span> module API.
 </p><h2>Using a JS constructor, ex: <span class="teletype">F</span>:</h2><p>Write in .ml:
 </p><pre class=""><code class="language-ocaml translatable">let f = Js.Unsafe.global##._F</code></pre><p>and in .mli:
 </p><pre class=""><code class="language-ocaml translatable">val f : (... -&gt; ... Js.t) Js.constr</code></pre><p>and if you want to use JS overloading, do, for example:
@@ -63,12 +63,12 @@ end</code></pre><p>and in .ml:
 </p><pre class=""><code class="language-ocaml translatable">let theclass = (Js.Unsafe.js_expr &quot;thelib&quot;)##._Theclass</code></pre><p>and in .mli:
 </p><pre class=""><code class="language-ocaml translatable">val theclass : theclass t</code></pre><h2>Constructing JS objects manually</h2><p>If you want to construct a JS object manually
 (without calling a function or a constructor), you can use
-the <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Ppx_js.html">Ppx</a></span> syntax extension.
+the <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Ppx_js">Ppx</a></span> syntax extension.
 </p><p>For example:
 </p><pre class=""><code class="language-ocaml translatable">let options = object%js
   val x = 3 (* read-only prop *)
   val mutable y = 4 (* read/write prop *)
-end</code></pre><p>You can also use the unsafe <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Js.Unsafe.html#VALobj">Js.​Unsafe.​obj</a></span>.
+end</code></pre><p>You can also use the unsafe <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.4/api/Js.Unsafe#VALobj">Js.​Unsafe.​obj</a></span>.
 </p><h2> Set/get variables</h2><p>You can access every variable through the global javascript object (<span class="teletype">window</span>):
 </p><p>If the variable <span class="teletype">var</span> has type <span class="teletype">t Js.t</span>
 </p><pre class=""><code class="language-ocaml translatable">let set (x:t Js.t) = Js.Unsafe.global##.var := x
