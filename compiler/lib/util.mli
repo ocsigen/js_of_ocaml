@@ -44,6 +44,7 @@ val opt_filter : ('a -> bool) -> 'a option -> 'a option
 val opt_map : ('a -> 'b) -> 'a option -> 'b option
 val opt_iter : ('a -> unit) -> 'a option -> unit
 val filter_map : ('a -> 'b option) -> 'a list -> 'b list
+val map_tc : ('a -> 'b) -> 'a list -> 'b list
 val sort_uniq : ('a -> 'a -> int) -> 'a list -> 'a list
 val array_fold_right_i : (int -> 'a -> 'b -> 'b) -> 'a array -> 'b -> 'b
 

@@ -94,6 +94,8 @@ let read_file f =
       (Printf.sprintf "Cannot read content of %s.\n%s"
          f (Printexc.to_string e))
 
+let map_tc f l = List.rev (List.rev_map f l)
+
 let filter_map f l =
   let l = List.fold_left (fun acc x -> match f x with
     | Some x -> x::acc

@@ -170,22 +170,48 @@ class subst sub = object
     method ident x = sub x
 end
 
-class replace_expr f = object(m)
+class map_for_share_constant = object(m)
   inherit map as super
-  method expression e = try EVar (f e) with Not_found -> super#expression e
+
+  method expression e =
+    match e with
+    (* JavaScript engines recognize the pattern
+       'typeof x==="number"'; if the string is shared,
+       less efficient code is generated. *)
+    | EBin (op,EUn (Typeof, e1), (EStr _ as e2)) ->
+      EBin (op,EUn (Typeof, super#expression e1), e2)
+    | EBin (op,(EStr _ as e1),EUn (Typeof, e2)) ->
+      EBin (op,EUn (Typeof, e1), super#expression e2)
+    (* Some js bundler get confused when the argument
+       of 'require' is not a litteral *)
+    | ECall(EVar (S {var = None; name = "require"}),[EStr _ ],_) ->
+      e
+    | _ -> super#expression e
 
   (* do not replace constant in switch case *)
   method switch_case e =
     match e with
     | ENum _ | EStr _ -> e
     | _ -> m#expression e
+
+  method sources l =
+    match l with
+    | [] -> []
+    | (Statement (Expression_statement (EStr _)), _) as prolog  :: rest ->
+      prolog :: Util.map_tc (fun (x,loc) -> m#source x, loc) rest
+    | rest -> Util.map_tc (fun (x,loc) -> m#source x, loc) rest
+end
+
+class replace_expr f = object
+  inherit map_for_share_constant as super
+  method expression e = try EVar (f e) with Not_found -> super#expression e
 end
 
 open Util
 
 (* this optimisation should be done at the lowest common scope *)
-class share_constant = object(m)
-  inherit map as super
+class share_constant = object
+  inherit map_for_share_constant as super
 
   val count = Hashtbl.create 17
 
@@ -204,35 +230,11 @@ class share_constant = object(m)
       | _ -> e in
     super#expression e
 
-  (* do not replace constant in switch case *)
-  method switch_case e =
-    match e with
-    | ENum _ | EStr _ -> e
-    | _ -> m#expression e
-
-  method sources l =
-    let (revl, _) =
-      List.fold_left
-        (fun (l,prolog) (x, loc) ->
-           match x with
-           | Statement (Expression_statement (EStr _)) when prolog ->
-               (x, loc) :: l, prolog
-           | x ->
-               (m#source x, loc)::l, false)
-        ([],true) l
-    in
-    List.rev revl
-
   method program p =
     let p = super#program p in
-
     let all = Hashtbl.create 17 in
     Hashtbl.iter (fun x n ->
         let shareit = match x with
-          (* JavaScript engines recognize the pattern
-             'typeof x==="number"'; if the string is shared,
-             less efficient code is generated. *)
-          | EStr ("number", _) -> None
           | EStr(s,_) when n > 1 ->
             if String.length s < 20
             then Some ("str_"^s)
