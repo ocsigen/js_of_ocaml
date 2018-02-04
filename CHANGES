@@ -6,10 +6,13 @@
  ** Compiler: compile an OCaml program into a named javascript function (fix #599)
  ** Misc: move ppx_deriving_json in its own opam package (Rudi Grinberg)
  ** Compiler: static eval of float negation
+ ** Compiler: improve constant sharing.
+ ** Ppx: add support for writeonly_prop and optdef_prop in object litteral.
 
  * Bug fixes:
  ** Compiler: fix code generation of unary ops (missing space).
  ** Compiler: fix static eval of conditions (fix #616)
+ ** Runtime: fix bug found using the closure compiler (#644)
 
 ===== 3.0.2 (2017-12-01) - Strasbourg =====
  * Features/Changes:
