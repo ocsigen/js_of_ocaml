@@ -52,19 +52,37 @@ that are not identifiers, bind them first:
 * Creating a literal object
 <<code language="ocaml"|
 object%js (self) (* Equivalent of this *)
-  val x = 3 (* read-only prop *)
-  val mutable y = 4 (* read/write prop *)
-  method foo i = self##.y := self##.x + i
+  val x1 = 3 (* read-only prop *)
+  val x2 = 3 [@@readonly] (* read-only prop *)
+
+  val mutable y1 = 4 (* read/write prop *)
+  val y2 = 4 [@@readwrite] (* read/write prop *)
+
+  val z = 5 [@@writeonly] (* write-only prop *)
+
+  val t1 = Js.undefined [@@jsoo.optdef] (* optdef prop *)
+
+  method foo i = self##.y1 := self##.x1 + i
 end
 >>
+
 Properties are defined with the [val] keyword. [mutable] makes the
-property writable. [self] can be any identifier and will be bind
+property writable. Properties can be annotated with attributes to change the
+default semantic.
+Attributes can be one of [readwrite], [readonly], [writeonly],
+[optdef].
+
+[self] can be any identifier and will be bind
 to [this] in javascript.
 
 In this case, the object has the following type:
 <<code language="ocaml"|
-< foo : int -> unit Js.meth;
-    x : int Js.readonly_prop;
-    y : int Js.prop
-> Js.t
+    < foo : int -> unit Js.meth;
+      t1 : 'a Js.optdef_prop;
+      x1 : int Js.readonly_prop;
+      x2 : int Js.readonly_prop;
+      y1 : int Js.prop;
+      y2 : int Js.prop;
+      z : int Js.writeonly_prop >
+    Js.t
 >>

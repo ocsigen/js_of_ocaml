@@ -2,7 +2,8 @@
 
 (executables
  ((names (main))
-  (libraries (toplevel_expect_test js_of_ocaml-ppx))
+  (libraries (toplevel_expect_test js_of_ocaml-ppx stdlib))
+  (flags (-linkall))
   ))
 
 (rule

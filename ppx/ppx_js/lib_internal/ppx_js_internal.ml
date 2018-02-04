@@ -376,10 +376,42 @@ let format_meth body =
     - No duplicated declaration
     - Only relevant declarations (val and method, for now).
 *)
-type field_desc =
-  [ `Meth of string Asttypes.loc * Asttypes.private_flag * Asttypes.override_flag * Parsetree.expression * Arg.t list
-  | `Val  of string Asttypes.loc * Asttypes.mutable_flag * Asttypes.override_flag * Parsetree.expression ]
 
+module Prop_kind = struct
+  type t =
+    [ `Readonly
+    | `Writeonly
+    | `Readwrite
+    | `Optdef ]
+
+  let prop_type constr ty =
+    let constr =
+      match constr with
+      | `Readonly -> "readonly_prop"
+      | `Writeonly -> "writeonly_prop"
+      | `Readwrite -> "prop"
+      | `Optdef -> "optdef_prop"
+    in
+    Js.type_ constr [ty]
+
+  let wrap_arg_type constr ty =
+    match constr with
+    | `Readonly
+    | `Writeonly
+    | `Readwrite -> ty
+    | `Optdef -> Js.type_ "optdef" [ty]
+end
+
+type field_desc =
+  | Meth of string Asttypes.loc * Asttypes.private_flag * Asttypes.override_flag * Parsetree.expression * Arg.t list
+  | Val  of string Asttypes.loc * Prop_kind.t * Asttypes.override_flag * Parsetree.expression
+
+
+let filter_map f l =
+  let l = List.fold_left (fun acc x -> match f x with
+    | Some x -> x::acc
+    | None -> acc) [] l
+  in List.rev l
 
 let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `Error of _ ] =
 
@@ -401,11 +433,50 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
       S.add txt id names
   in
 
+  let drop_prefix ~prefix s =
+    let prefix_len = String.length prefix in
+    if String.length s > prefix_len && String.sub s 0 prefix_len = prefix
+    then true, String.sub s prefix_len (String.length s - prefix_len)
+    else false, s
+  in
+
+  let parse_attribute x =
+    match drop_prefix ~prefix:"jsoo." x with
+    | _, "optdef" -> Some `Optdef
+    | _, "writeonly" -> Some `Writeonly
+    | _, "readonly" -> Some `Readonly
+    | _, "readwrite" -> Some `Readwrite
+    | false, _ -> None
+    | true , _ -> Some (`Unkown x)
+  in
+  let jsoo_attributes =
+    filter_map (fun ({txt; _}, _) -> parse_attribute txt)
+  in
+  
   let f (names, fields) exp = match exp.pcf_desc with
     | Pcf_val (id, mut, Cfk_concrete (bang, body)) ->
       let names = check_name id names in
       let body = mappper body in
-      names, (`Val (id, mut, bang, body) :: fields)
+      let kind =
+        match mut, jsoo_attributes exp.pcf_attributes with
+        | Immutable          , []           -> `Readonly
+        | Mutable            , []           -> `Readwrite
+        | Immutable          , [`Readonly]  -> `Readonly
+        | (Immutable|Mutable), [`Optdef]    -> `Optdef
+        | (Immutable|Mutable), [`Writeonly] -> `Writeonly
+        | (Immutable|Mutable), [`Readwrite] -> `Readwrite
+        | (Immutable|Mutable), [`Unkown s] ->
+          Location.raise_errorf ~loc:exp.pcf_loc
+            "Unkown jsoo attribute ([@@@@%s])." s
+        | Mutable            , [`Readonly]  ->
+          Location.raise_errorf ~loc:exp.pcf_loc
+            "A mutable field cannot be readonly."
+        | _, _ :: _ :: _ ->
+          Location.raise_errorf ~loc:exp.pcf_loc
+            "Too many attributes."
+            
+      in
+      names, (Val (id, kind, bang, body) :: fields)
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
       let names = check_name id names in
       let body = format_meth (mappper body) in
@@ -415,7 +486,7 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
           | _ -> []
       in
       let fun_ty = create_meth_ty body in
-      names, (`Meth (id, priv, bang, body, fun_ty) :: fields)
+      names, (Meth (id, priv, bang, body, fun_ty) :: fields)
     | _ ->
       Location.raise_errorf ~loc:exp.pcf_loc
         "This field is not valid inside a js literal object."
@@ -463,19 +534,19 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
 let literal_object self_id ( fields : field_desc list) =
 
   let name = function
-    | `Val  (id, _, _, _)    -> id
-    | `Meth (id, _, _, _, _) -> id
+    | Val  (id, _, _, _)    -> id
+    | Meth (id, _, _, _, _) -> id
   in
 
   let body = function
-    | `Val  (_, _, _, body)    -> body
-    | `Meth (_, _, _, body, _) -> [%expr fun [%p self_id] -> [%e body] ]
+    | Val  (_, _, _, body)    -> body
+    | Meth (_, _, _, body, _) -> [%expr fun [%p self_id] -> [%e body] ]
   in
   let extra_types =
     List.concat (
       List.map (function
-        | `Val _ -> []
-        | `Meth (_,_,_,_,l) -> l
+        | Val _ -> []
+        | Meth (_,_,_,_,l) -> l
       ) fields
     )
   in
@@ -487,11 +558,9 @@ let literal_object self_id ( fields : field_desc list) =
              let ret_ty = Arg.typ desc in
              let label  = Arg.label desc in
              match f with
-             | `Val  (_, Mutable,   _, _)    ->
-               label, Js.type_ "prop" [ret_ty]
-             | `Val  (_, Immutable, _, _)    ->
-               label, Js.type_ "readonly_prop" [ret_ty]
-             | `Meth (_, _,         _, _, args) ->
+             | Val  (_, constr,   _, _)    ->
+               label, Prop_kind.prop_type constr ret_ty
+             | Meth (_, _,         _, _, args) ->
                label,
                arrows
                  ((Label.nolabel,Js.type_ "t" [tres]) :: Arg.args args)
@@ -505,8 +574,9 @@ let literal_object self_id ( fields : field_desc list) =
              let ret_ty = Arg.typ desc in
              let label  = Arg.label desc in
              match f with
-             | `Val _  -> label, ret_ty
-             | `Meth (_, _,         _, _, args) ->
+             | Val (_, constr,   _, _)  ->
+               label, Prop_kind.wrap_arg_type constr ret_ty
+             | Meth (_, _,         _, _, args) ->
                label,
                arrows
                  ((Label.nolabel, Js.type_ "t" [tres]) :: Arg.args args)
@@ -523,14 +593,14 @@ let literal_object self_id ( fields : field_desc list) =
                 (fun f arg ->
                    tuple [str (unescape (name f).txt);
                           inject_arg (match f with
-                            | `Val  _ -> arg
-                            | `Meth _ -> Js.fun_ "wrap_meth_callback" [ arg ]) ]
+                            | Val  _ -> arg
+                            | Meth _ -> Js.fun_ "wrap_meth_callback" [ arg ]) ]
                 ) fields args
             )]
       )
       (List.map (function
-         | `Val _ -> Arg.make ()
-         | `Meth (_, _, _, _, _fun_ty) -> Arg.make ()) fields)
+         | Val _ -> Arg.make ()
+         | Meth (_, _, _, _, _fun_ty) -> Arg.make ()) fields)
   in
 
   let self = "self" in
@@ -545,8 +615,8 @@ let literal_object self_id ( fields : field_desc list) =
              (fun f ->
                 let loc = (name f).loc in
                 let apply e = match f with
-                  | `Val _ -> e
-                  | `Meth _ -> Exp.apply e [Label.nolabel, Exp.ident (lid ~loc:Location.none self) ]
+                  | Val _ -> e
+                  | Meth _ -> Exp.apply e [Label.nolabel, Exp.ident (lid ~loc:Location.none self) ]
                 in
                 { pcf_loc = loc;
                   pcf_attributes = [];
