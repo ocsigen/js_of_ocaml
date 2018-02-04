@@ -2274,7 +2274,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
       let header = really_input_string ic Util.MagicNumber.size in
       `Pre (Util.MagicNumber.of_string header)
     with _ ->
-      let pos_magic = in_channel_length ic - 12 in
+      let pos_magic = in_channel_length ic - Util.MagicNumber.size in
       seek_in ic pos_magic;
       let header = really_input_string ic Util.MagicNumber.size in
       `Post (Util.MagicNumber.of_string header)
