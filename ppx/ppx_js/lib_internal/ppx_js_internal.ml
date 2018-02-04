@@ -382,8 +382,7 @@ module Prop_kind = struct
     [ `Readonly
     | `Writeonly
     | `Readwrite
-    | `Optdef
-    | `Optdef_some ]
+    | `Optdef ]
 
   let prop_type constr ty =
     let constr =
@@ -391,7 +390,7 @@ module Prop_kind = struct
       | `Readonly -> "readonly_prop"
       | `Writeonly -> "writeonly_prop"
       | `Readwrite -> "prop"
-      | `Optdef_some | `Optdef -> "optdef_prop"
+      | `Optdef -> "optdef_prop"
     in
     Js.type_ constr [ty]
 
@@ -399,8 +398,7 @@ module Prop_kind = struct
     match constr with
     | `Readonly
     | `Writeonly
-    | `Readwrite
-    | `Optdef_some -> ty
+    | `Readwrite -> ty
     | `Optdef -> Js.type_ "optdef" [ty]
 end
 
@@ -444,7 +442,6 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
 
   let parse_attribute x =
     match drop_prefix ~prefix:"jsoo." x with
-    | _, "optdef_return" -> Some `Optdef_some
     | _, "optdef" -> Some `Optdef
     | _, "writeonly" -> Some `Writeonly
     | _, "readonly" -> Some `Readonly
@@ -466,7 +463,6 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
         | Mutable            , []           -> `Readwrite
         | Immutable          , [`Readonly]  -> `Readonly
         | (Immutable|Mutable), [`Optdef]    -> `Optdef
-        | (Immutable|Mutable), [`Optdef_some] -> `Optdef_some
         | (Immutable|Mutable), [`Writeonly] -> `Writeonly
         | (Immutable|Mutable), [`Readwrite] -> `Readwrite
         | (Immutable|Mutable), [`Unkown s] ->

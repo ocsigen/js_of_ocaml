@@ -38,7 +38,7 @@ module Js = struct
     fun _ -> assert false
 
   let undefined : unit -> 'a optdef = fun () -> assert false
-  let some : 'a -> 'a optdef = fun _ -> assert false
+  let def : 'a -> 'a optdef = fun _ -> assert false
 end
 end
 open Js_of_ocaml;;
@@ -71,7 +71,7 @@ module Js_of_ocaml :
           end
         val wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
         val undefined : unit -> 'a optdef
-        val some : 'a -> 'a optdef
+        val def : 'a -> 'a optdef
       end
   end
 |}];;
@@ -363,7 +363,7 @@ Error: Duplicated val or method "_m_a" (normalized to "m").
 
 fun () ->
   (object%js
-    val r = 2 [@@jsoo.optdef_return]
+    val r = Js.def 2 [@@jsoo.optdef]
     val mutable w = 3.
     method m = ""
   end : < r : int Js.prop; .. > Js.t)
@@ -503,7 +503,7 @@ fun () ->
 
 fun () ->
   (object%js
-    val r = 2 [@@jsoo.optdef_return]
+    val r = Js.def 2 [@@jsoo.optdef]
   end)
 [%%expect {|
 - : unit -> < r : int Js_of_ocaml.Js.optdef_prop > Js_of_ocaml.Js.t = <fun>
@@ -512,7 +512,7 @@ fun () ->
 
 fun () ->
   (object%js
-    val r = Js.some 2 [@@jsoo.optdef]
+    val r = Js.def 2 [@@jsoo.optdef]
   end)
 [%%expect {|
 - : unit -> < r : int Js_of_ocaml.Js.optdef_prop > Js_of_ocaml.Js.t = <fun>
@@ -529,7 +529,7 @@ object%js (self) (* Equivalent of this *)
 
   val z = 5 [@@writeonly] (* write-only prop *)
 
-  val t1 = 6 [@@optdef_return] (* optdef prop *)
+  val t1 = Js.def 6 [@@optdef] (* optdef prop *)
 
   val t2 = Js.undefined () [@@jsoo.optdef] (* optdef prop *)
 
