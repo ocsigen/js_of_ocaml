@@ -5,9 +5,10 @@
    (libraries (js_of_ocaml js_of_ocaml-compiler js_of_ocaml-toplevel compiler-libs))))
 
 (rule ((targets (eval.js))
-       (deps (eval.bc stdlib.export))
-       (action (run js_of_ocaml --toplevel --linkall +toplevel.js +dynlink.js
-       	       --export stdlib.export eval.bc -I +stdlib/compiler-libs))))
+       (action (run js_of_ocaml --toplevel --linkall
+               ${lib:js_of_ocaml-compiler:toplevel.js}
+               ${lib:js_of_ocaml-compiler:dynlink.js}
+               --export ${path:stdlib.export} ${path:eval.bc} -I +stdlib/compiler-libs))))
 
 (rule ((targets (stdlib.export))
        (action (run jsoo_listunits stdlib -o stdlib.export))))

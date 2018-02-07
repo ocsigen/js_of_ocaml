@@ -7,10 +7,9 @@
 
 (rule
  ((targets (cubes.js))
-  (deps (cubes.bc))
   (action
     (run ${bin:js_of_ocaml} --noruntime ${lib:js_of_ocaml-compiler:runtime.js}
-         --source-map ${<} -o ${@} --pretty))))
+         --source-map ${path:cubes.bc} -o ${@} --pretty))))
 
 (alias
  ((name DEFAULT)

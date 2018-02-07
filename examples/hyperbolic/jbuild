@@ -7,11 +7,10 @@
 
 (rule
  ((targets (hypertree.js))
-  (deps (hypertree.bc image_info.json messages.json tree.json))
   (action
     (run ${bin:js_of_ocaml} --noruntime ${lib:js_of_ocaml-compiler:runtime.js}
-         --source-map ${<} -o ${@} --pretty
-         -I ./ --file image_info.json --file messages.json --file tree.json))))
+         --source-map ${path:hypertree.bc} -o ${@} --pretty
+         -I ./ --file ${path:image_info.json} --file ${path:messages.json} --file ${path:tree.json}))))
 
 (alias
  ((name DEFAULT)

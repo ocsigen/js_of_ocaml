@@ -14,38 +14,33 @@
 
 (rule
   ((targets (js_lexer.ml))
-   (deps    (js_lexer.mll))
-   (fallback)
-   (action  (chdir ${ROOT} (run ${bin:ocamllex} -q -o ${<})))))
+   (mode fallback)
+   (action  (chdir ${ROOT} (run ${bin:ocamllex} -q -o ${path:js_lexer.mll})))))
 
 (rule
   ((targets (annot_lexer.ml))
-   (deps    (annot_lexer.mll))
-   (fallback)
-   (action  (chdir ${ROOT} (run ${bin:ocamllex} -q -o ${<})))))
+   (mode fallback)
+   (action  (chdir ${ROOT} (run ${bin:ocamllex} -q -o ${path:annot_lexer.mll})))))
 
 ;; menhir is just noisy, both because this parser has conflicts, or
 ;; because we don't use --infer (to avoid having to write  manually and
 ;; badly specified dependencieds), so we just discard stderr.
 (rule
  ((targets (js_parser.mli js_parser.ml))
-  (deps (js_parser.mly))
-  (fallback)
-  (action (ignore-stderr (run menhir --external-tokens Js_token --explain ${<})))))
+  (mode fallback)
+  (action (ignore-stderr (run menhir --external-tokens Js_token --explain ${path:js_parser.mly})))))
 
 (rule
  ((targets (annot_parser.mli annot_parser.ml))
-  (deps (annot_parser.mly))
-  (fallback)
-  (action (ignore-stderr (run menhir --explain ${<})))))
+  (mode fallback)
+  (action (ignore-stderr (run menhir --explain ${path:annot_parser.mly})))))
 
 (rule
  ((targets (util.ml))
-  (deps (util.cppo.ml))
   (action (run ${bin:cppo} -V OCAML:${ocaml_version}
            ;; Uncomment for bucklescript support
            ;; -D BUCKLESCRIPT
-           ${<} -o ${@}))
+           ${path:util.cppo.ml} -o ${@}))
   ))
 
 (rule

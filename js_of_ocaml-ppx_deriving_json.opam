@@ -10,7 +10,7 @@ version: "dev"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build & >= "1.0+beta12"}
+  "jbuilder" {build & >= "1.0+beta17"}
   "js_of_ocaml"
   "ppx_tools"
   "ppx_deriving"

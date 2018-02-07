@@ -11,6 +11,5 @@
 
 (rule
  ((targets (ppx_deriving_json.ml))
-  (deps (ppx_deriving_json.cppo.ml))
-  (action (run ${bin:cppo} -V OCAML:${ocaml_version} ${<} -o ${@}))
+  (action (run ${bin:cppo} -V OCAML:${ocaml_version} ${path:ppx_deriving_json.cppo.ml} -o ${@}))
   ))
