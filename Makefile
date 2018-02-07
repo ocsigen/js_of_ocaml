@@ -4,7 +4,8 @@ all:
 	jbuilder build @install @DEFAULT -j 8 --dev
 
 tests:
-	jbuilder runtest
+	jbuilder runtest --dev
+
 test runtest runtests: tests
 
 doc: all
