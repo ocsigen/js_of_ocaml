@@ -16,18 +16,15 @@
 
 (rule
  ((targets (js_of_ocaml.1))
-  (deps (js_of_ocaml.exe))
-  (action (with-stdout-to ${@} (run ${<} --help=groff)))))
+  (action (with-stdout-to ${@} (run ${bin:js_of_ocaml} --help=groff)))))
 
 (rule
  ((targets (jsoo_link.1))
-  (deps (jsoo_link.exe))
-  (action (with-stdout-to ${@} (run ${<} --help=groff)))))
+  (action (with-stdout-to ${@} (run ${bin:jsoo_link} --help=groff)))))
 
 (rule
  ((targets (jsoo_minify.1))
-  (deps (jsoo_minify.exe))
-  (action (with-stdout-to ${@} (run ${<} --help=groff)))))
+  (action (with-stdout-to ${@} (run ${bin:jsoo_minify} --help=groff)))))
 
 (install
  ((section man)

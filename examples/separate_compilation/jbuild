@@ -1,30 +1,26 @@
 
 (rule
  ((targets (main.js))
-  (deps (main.bc))
   (action
     (run ${bin:js_of_ocaml} --noruntime ${lib:js_of_ocaml-compiler:runtime.js}
-         --source-map ${<} -o ${@} --pretty))))
+         --source-map ${path:main.bc} -o ${@} --pretty))))
 
 (rule
  ((targets (module1.cmo module1.cmi))
-  (deps (module1.ml))
-  (action (run ocamlc -g -c module1.ml))))
+  (action (run ocamlc -g -c ${path:module1.ml}))))
 
 (rule
  ((targets (module2.cmo module2.cmi))
-  (deps (module2.ml module1.cmi))
-  (action (run ocamlc -g -c module2.ml))))
+  (deps (module1.cmi))
+  (action (run ocamlc -g -c ${path:module2.ml}))))
 
 (rule
  ((targets (module1.js))
-  (deps (module1.cmo))
-  (action (run ${bin:js_of_ocaml} --noruntime --pretty --source-map ${<} -o ${@}))))
+  (action (run ${bin:js_of_ocaml} --noruntime --pretty --source-map ${path:module1.cmo} -o ${@}))))
 
 (rule
  ((targets (module2.js))
-  (deps (module2.cmo))
-  (action (run ${bin:js_of_ocaml} --noruntime --pretty --source-map ${<} -o ${@}))))
+  (action (run ${bin:js_of_ocaml} --noruntime --pretty --source-map ${path:module2.cmo} -o ${@}))))
 
 (rule
  ((targets (stdlib.js))
@@ -38,8 +34,7 @@
 
 (rule
  ((targets (bin.js))
-  (deps (myruntime.js stdlib.js module1.js module2.js))
-  (action (run ${bin:jsoo_link} myruntime.js stdlib.js module1.js module2.js -o bin.js))))
+  (action (run ${bin:jsoo_link} ${path:myruntime.js} ${path:stdlib.js} ${path:module1.js} ${path:module2.js} -o ${@}))))
 
 (alias
  ((name DEFAULT)

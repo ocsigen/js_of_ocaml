@@ -11,7 +11,7 @@ version: "dev"
 build: [["jbuilder" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build & >= "1.0+beta12"}
+  "jbuilder" {build & >= "1.0+beta17"}
   "tyxml" {>= "4.0.0"}
   "reactiveData" {>= "0.2"}
   "js_of_ocaml"

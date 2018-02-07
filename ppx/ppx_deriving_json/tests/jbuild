@@ -13,12 +13,11 @@
 
 (rule
  ((targets (ppx.mlt.corrected))
-  (deps    (ppx.mlt ../../../lib/deriving_json/deriving_Json.cmi))
-  (action  (run ${exe:main.bc} ppx.mlt))
+  (deps    (../../../lib/deriving_json/deriving_Json.cmi))
+  (action  (run ${exe:main.bc} ${path:ppx.mlt}))
  ))
 
 (alias
   ((name   runtest)
 ;; (package js_of_ocaml-ppx)
-   (deps (ppx.mlt ppx.mlt.corrected))
-   (action (run diff ppx.mlt ppx.mlt.corrected))))
+   (action (diff ppx.mlt ppx.mlt.corrected))))

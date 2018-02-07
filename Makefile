@@ -10,6 +10,9 @@ test runtest runtests: tests
 doc: all
 	$(MAKE) -C doc
 
+promote:
+	jbuilder promote
+
 toplevel-examples: all
 	jbuilder exec -- make -C toplevel/examples/lwt_toplevel_bin
 

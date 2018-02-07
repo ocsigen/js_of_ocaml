@@ -18,7 +18,6 @@ let version =
 let () = Printf.ksprintf Jbuild_plugin.V1.send {|
 (rule
  ((targets (version.ml.in))
-  (deps ())
   (action (with-stdout-to ${@}
            (echo "let s = \"%s\"\nlet git_version = \"%s\"")))))
 |} version git_version

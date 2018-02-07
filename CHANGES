@@ -26,7 +26,7 @@
 ===== 3.0.1 (2017-11-04) - London =====
  * Features/Changes:
  ** Lib: add Jstable.remove (Cedric Cellier)
- ** Build: use recent version of jbuilder (>= 1.0+beta12)
+ ** Build: use recent version of jbuilder (>= 1.0+beta17)
 
  * Bug fixes:
  ** Runtime: fix Sys.file_exists for the in-memory filesystem.

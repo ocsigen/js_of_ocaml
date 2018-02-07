@@ -10,5 +10,4 @@
 
 (alias
   ((name   runtest)
-   (deps   (deriving.expected deriving.result))
-   (action (run diff deriving.expected deriving.result))))
+   (action (diff deriving.expected deriving.result))))

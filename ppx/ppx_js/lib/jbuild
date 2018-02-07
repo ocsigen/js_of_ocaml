@@ -14,5 +14,4 @@
 
 (rule
  ((targets (ppx_js_internal.ml))
-  (deps (../lib_internal/ppx_js_internal.ml))
-  (action (copy ${<} ${@}))))
+  (action (copy ${path:../lib_internal/ppx_js_internal.ml} ${@}))))

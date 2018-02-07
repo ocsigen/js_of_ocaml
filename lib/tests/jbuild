@@ -8,15 +8,13 @@
 
 (rule
  ((targets (main.js))
-  (deps    (main.bc unix.js ../../runtime/runtime.js ../../compiler/js_of_ocaml.exe))
-  (action  (run ../../compiler/js_of_ocaml.exe
-                  --no-runtime ../../runtime/runtime.js
-                  unix.js
-                  main.bc -o main.js))
+  (action  (run ${bin:js_of_ocaml}
+                  --no-runtime ${lib:js_of_ocaml-compiler:runtime.js}
+                  ${path:unix.js}
+                  ${path:main.bc} -o ${@}))
  ))
 
 (alias
   ((name runtest)
    (package js_of_ocaml)
-   (deps (main.js))
-   (action (run node main.js))))
+   (action (run node ${path:main.js}))))
