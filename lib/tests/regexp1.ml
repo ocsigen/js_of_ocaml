@@ -63,7 +63,7 @@ let () =
   end ;
   begin match Regexp.string_match re3 "(.)\\(.)" 0 with
     | None -> log_failure "Quote 3 3"
-    | Some x -> log_success ()
+    | Some _ -> log_success ()
   end
 
 let () = log_stop ()
