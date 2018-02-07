@@ -1,12 +1,3 @@
-Sys.interactive := false;;
-#use "topfind";;
-#directory "../../../lib/deriving_json/";;
-#load "js_of_ocaml_deriving.cma";;
-#camlp4o;;
-#require "deriving.syntax.std";;
-#load "../lib/pa_deriving_Json.cmo";;
-Sys.interactive := true;;
-
 open Deriving_Json;;
 
 let test name v = Printf.printf "%s = %s\n%!" name v;;

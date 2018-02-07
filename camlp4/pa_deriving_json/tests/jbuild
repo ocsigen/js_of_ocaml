@@ -2,11 +2,20 @@
 
 (rule
  ((targets (deriving.result))
-  (deps    (deriving.ml ../lib/pa_deriving_Json.cma
-                        ../../../lib/deriving_json/js_of_ocaml_deriving.cma))
-  (action  (bash
-    "(OCAMLPARAM='_' TERM=dumb ocaml -no-version < deriving.ml) 2>&1 | cat > deriving.result"))
+  (deps    (deriving.ml.pp ../../../lib/deriving_json/js_of_ocaml_deriving.cma))
+  (action  (with-stdout-to ${@}
+              (run ocaml -I ../../../lib/deriving_json/ js_of_ocaml_deriving.cma deriving.ml.pp)))
  ))
+
+(rule
+  ((targets (deriving.ml.pp))
+   (action
+     (with-stdout-to ${@}
+     (bash "camlp4o -printer o \
+            ${lib:deriving:pa_deriving_common.cma} ${lib:deriving:pa_deriving_std.cma} \
+            ${path:../lib/pa_deriving_Json.cma} \
+	    ${path:deriving.ml}"
+	    )))))
 
 (alias
   ((name   runtest)
