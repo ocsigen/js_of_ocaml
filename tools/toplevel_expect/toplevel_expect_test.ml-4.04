@@ -73,13 +73,13 @@ let match_expect_extension (ext : Parsetree.extension) =
     in
     let expectation =
       match payload with
-      | PStr [{ pstr_desc = Pstr_eval (e, []) }] ->
+      | PStr [{ pstr_desc = Pstr_eval (e, []); _ }] ->
         let normal, principal =
           match e.pexp_desc with
           | Pexp_tuple
               [ a
               ; { pexp_desc = Pexp_construct
-                                ({ txt = Lident "Principal"; _ }, Some b) }
+                                ({ txt = Lident "Principal"; _ }, Some b); _ }
               ] ->
             (string_constant a, string_constant b)
           | _ -> let s = string_constant e in (s, s)
@@ -114,7 +114,7 @@ let split_chunks phrases =
     | phrase :: phrases ->
       match phrase with
       | Ptop_def [] -> loop phrases code_acc acc
-      | Ptop_def [{pstr_desc = Pstr_extension(ext, [])}] -> begin
+      | Ptop_def [{pstr_desc = Pstr_extension(ext, []); _}] -> begin
           match match_expect_extension ext with
           | None -> loop phrases (phrase :: code_acc) acc
           | Some expectation ->
@@ -156,13 +156,13 @@ module Compiler_messages = struct
 end
 
 let collect_formatters buf pps ~f =
-  List.iter (fun pp -> Format.pp_print_flush pp ()) pps;
+  List.iter ~f:(fun pp -> Format.pp_print_flush pp ()) pps;
   let save =
-    List.map (fun pp -> Format.pp_get_formatter_out_functions pp ()) pps
+    List.map ~f:(fun pp -> Format.pp_get_formatter_out_functions pp ()) pps
   in
   let restore () =
     List.iter2
-      (fun pp out_functions ->
+      ~f:(fun pp out_functions ->
          Format.pp_print_flush pp ();
          Format.pp_set_formatter_out_functions pp out_functions)
       pps save
@@ -170,12 +170,12 @@ let collect_formatters buf pps ~f =
   let out_string str ofs len = Buffer.add_substring buf str ofs len
   and out_flush = ignore
   and out_newline () = Buffer.add_char buf '\n'
-  and out_spaces n = for i = 1 to n do Buffer.add_char buf ' ' done in
+  and out_spaces n = for _i = 1 to n do Buffer.add_char buf ' ' done in
   let out_functions =
     { Format.out_string; out_flush; out_newline; out_spaces }
   in
   List.iter
-    (fun pp -> Format.pp_set_formatter_out_functions pp out_functions)
+    ~f:(fun pp -> Format.pp_set_formatter_out_functions pp out_functions)
     pps;
   match f () with
   | x             -> restore (); x
@@ -267,7 +267,7 @@ let eval_expect_file mapper fname ~file_contents =
       | Some lnum -> [shift_lines (1 - lnum)]
     in
     let mappers = mapper :: mappers in
-    let phrases = List.map (preprocess_phrase mappers) phrases in
+    let phrases = List.map ~f:(preprocess_phrase mappers) phrases in
 
     (* For formatting purposes *)
     Buffer.add_char buf '\n';
