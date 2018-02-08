@@ -1,0 +1,13 @@
+(rule
+ ((targets (match_with_exn1.js))
+  (deps (match_with_exn1.cmo ../../../compiler/js_of_ocaml.exe))
+  (action (run ../../../compiler/js_of_ocaml.exe --disable check-magic-number --no-runtime --pretty match_with_exn1.cmo))))
+
+(rule
+ ((targets (match_with_exn2.js))
+  (deps (match_with_exn2.cmo ../../../compiler/js_of_ocaml.exe))
+  (action (run ../../../compiler/js_of_ocaml.exe --disable check-magic-number --no-runtime --pretty match_with_exn2.cmo))))
+
+(alias
+ ((name runtest)
+  (deps (match_with_exn1.js match_with_exn2.js))))
