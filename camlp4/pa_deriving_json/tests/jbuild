@@ -1,8 +1,11 @@
 (jbuild_version 1)
 
 (rule
- ((targets (deriving.result))
-  (deps    (deriving.ml.pp ../../../lib/deriving_json/js_of_ocaml_deriving.cma))
+ ((targets (deriving.corrected))
+  (deps    (deriving.ml.pp
+           ../../../lib/deriving_json/js_of_ocaml_deriving.cma
+           ../../../lib/deriving_json/deriving_Json.cmi
+           ../../../lib/deriving_json/deriving_Json_lexer.cmi))
   (action  (with-stdout-to ${@}
               (run ocaml -I ../../../lib/deriving_json/ js_of_ocaml_deriving.cma deriving.ml.pp)))
  ))
@@ -19,4 +22,4 @@
 
 (alias
   ((name   runtest)
-   (action (diff deriving.expected deriving.result))))
+   (action (diff deriving.expected deriving.corrected))))
