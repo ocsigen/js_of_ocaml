@@ -19,9 +19,11 @@
 
 (** Json **)
 
+module Lexer = Deriving_Json_lexer
+
 type 'a t = {
     write: Buffer.t -> 'a -> unit;
-    read: Deriving_Json_lexer.lexbuf -> 'a
+    read: Lexer.lexbuf -> 'a
 }
 
 let make write read = {write; read}
@@ -47,10 +49,10 @@ let to_string t v =
 *)
 
 let from_string t s =
-  t.read (Deriving_Json_lexer.init_lexer (Lexing.from_string s))
+  t.read (Lexer.init_lexer (Lexing.from_string s))
 (*
 let from_channel t ic =
-  t.read (Deriving_Json_lexer.init_lexer (Lexing.from_channel ic))
+  t.read (Lexer.init_lexer (Lexing.from_channel ic))
 *)
 
 (** Deriver **)
@@ -58,15 +60,15 @@ let from_channel t ic =
 module type Json_min = sig
   type a
   val write: Buffer.t -> a -> unit
-  val read: Deriving_Json_lexer.lexbuf -> a
+  val read: Lexer.lexbuf -> a
 end
 
 module type Json_min' = sig
   type a
   val write: Buffer.t -> a -> unit
-  val read: Deriving_Json_lexer.lexbuf -> a
+  val read: Lexer.lexbuf -> a
   val match_variant: [`Cst of int | `NCst of int] -> bool
-  val read_variant: Deriving_Json_lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
+  val read_variant: Lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
 end
 
 module type Json_min'' = sig
@@ -86,13 +88,13 @@ module type Json = sig
   type a
   val t: a t
   val write: Buffer.t -> a -> unit
-  val read: Deriving_Json_lexer.lexbuf -> a
+  val read: Lexer.lexbuf -> a
   val to_string: a -> string
   (* val to_channel: out_channel -> a -> unit *)
   val from_string: string -> a
   (* val from_channel: in_channel -> a *)
   val match_variant: [`Cst of int | `NCst of int] -> bool
-  val read_variant: Deriving_Json_lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
+  val read_variant: Lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
 end
 
 module Defaults(J : Json_min) : Json with type a = J.a = struct
@@ -147,29 +149,29 @@ module Json_char = Defaults(struct
     type a = char
     let write buffer c =
       Buffer.add_string buffer (string_of_int (int_of_char c))
-    let read buf = char_of_int (Deriving_Json_lexer.read_bounded_int ~max:255 buf)
+    let read buf = char_of_int (Lexer.read_bounded_int ~max:255 buf)
   end)
 
 module Json_bool =  Defaults(struct
   type a = bool
   let write buffer b =
     Buffer.add_char buffer (if b then '1' else '0')
-  let read buf = 1 = Deriving_Json_lexer.read_tag_2 0 1 buf
+  let read buf = 1 = Lexer.read_tag_2 0 1 buf
 end)
 module Json_unit = Defaults(struct
   type a = unit
   let write buffer () = Buffer.add_char buffer '0'
-  let read buf = ignore(Deriving_Json_lexer.read_tag_1 0 buf)
+  let read buf = ignore(Lexer.read_tag_1 0 buf)
 end)
 module Json_int =  Defaults(struct
     type a = int
     let write buffer i = Printf.bprintf buffer "%d" i
-    let read buf = Deriving_Json_lexer.read_int buf
+    let read buf = Lexer.read_int buf
 end)
 module Json_int32 =  Defaults(struct
     type a = int32
     let write buffer i = Printf.bprintf buffer "%ld" i
-    let read buf = Deriving_Json_lexer.read_int32 buf
+    let read buf = Lexer.read_int32 buf
 end)
 module Json_int64 =  Defaults(struct
   type a = int64
@@ -181,15 +183,15 @@ module Json_int64 =  Defaults(struct
       (Int64.logand (Int64.shift_right i 24) mask24)
       (Int64.logand (Int64.shift_right i 48) mask16)
   let read buf =
-    Deriving_Json_lexer.read_lbracket buf;
-    ignore(Deriving_Json_lexer.read_tag_1 255 buf);
-    Deriving_Json_lexer.read_comma buf;
-    let h1 = Deriving_Json_lexer.read_int64 buf in
-    Deriving_Json_lexer.read_comma buf;
-    let h2 = Int64.shift_left (Deriving_Json_lexer.read_int64 buf) 24 in
-    Deriving_Json_lexer.read_comma buf;
-    let h3 = Int64.shift_left (Deriving_Json_lexer.read_int64 buf) 48 in
-    Deriving_Json_lexer.read_rbracket buf;
+    Lexer.read_lbracket buf;
+    ignore(Lexer.read_tag_1 255 buf);
+    Lexer.read_comma buf;
+    let h1 = Lexer.read_int64 buf in
+    Lexer.read_comma buf;
+    let h2 = Int64.shift_left (Lexer.read_int64 buf) 24 in
+    Lexer.read_comma buf;
+    let h3 = Int64.shift_left (Lexer.read_int64 buf) 48 in
+    Lexer.read_rbracket buf;
     Int64.logor h3 (Int64.logor h2 h1)
 end)
 
@@ -204,7 +206,7 @@ module Json_float = Defaults(struct
         Buffer.add_string buffer s
       else
         Printf.bprintf buffer "%.17g" f
-    let read buf = Deriving_Json_lexer.read_number buf
+    let read buf = Lexer.read_number buf
 end)
 module Json_string = Defaults(struct
   (* Given that JSON must be valid UTF-8 and that OCaml string are
@@ -233,23 +235,23 @@ module Json_string = Defaults(struct
 	  Buffer.add_char buffer (Char.chr (0x80 lor (Char.code s.[i] land 0x3F)))
     done;
     Buffer.add_char buffer '\"'
-  let read buf = Deriving_Json_lexer.read_string buf
+  let read buf = Lexer.read_string buf
 end)
 
 let read_list f buf =
   let rec aux l c =
-    match Deriving_Json_lexer.read_case buf with
+    match Lexer.read_case buf with
     | `Cst 0 ->
       for _i = c downto 1 do
-	Deriving_Json_lexer.read_rbracket buf
+	Lexer.read_rbracket buf
       done;
       List.rev l
     | `NCst 0 ->
-      Deriving_Json_lexer.read_comma buf;
+      Lexer.read_comma buf;
       let x = f  buf in
-      Deriving_Json_lexer.read_comma buf;
+      Lexer.read_comma buf;
       aux (x::l) (succ c)
-    | _ -> Deriving_Json_lexer.tag_error ~typename:"list" buf
+    | _ -> Lexer.tag_error ~typename:"list" buf
   in
   aux [] 0
 
@@ -274,13 +276,13 @@ module Json_list(A : Json) =
   end)
 
 let read_ref f buf =
-  match Deriving_Json_lexer.read_case buf with
+  match Lexer.read_case buf with
   | `NCst 0 ->
-    Deriving_Json_lexer.read_comma buf;
+    Lexer.read_comma buf;
     let x = f buf in
-    Deriving_Json_lexer.read_rbracket buf;
+    Lexer.read_rbracket buf;
     ref x
-  | _ -> Deriving_Json_lexer.tag_error ~typename:"ref" buf
+  | _ -> Lexer.tag_error ~typename:"ref" buf
 
 let write_ref f buffer r =
   Printf.bprintf buffer "[0,%a]" f !r
@@ -293,16 +295,16 @@ module Json_ref(A : Json) =
   end)
 
 let read_option f buf =
-  match Deriving_Json_lexer.read_case buf with
+  match Lexer.read_case buf with
   | `Cst 0 ->
     None
   | `NCst 0 ->
-    Deriving_Json_lexer.read_comma buf;
+    Lexer.read_comma buf;
     let x = f buf in
-    Deriving_Json_lexer.read_rbracket buf;
+    Lexer.read_rbracket buf;
     Some x
   | _ ->
-    Deriving_Json_lexer.tag_error ~typename:"option" buf
+    Lexer.tag_error ~typename:"option" buf
 
 let write_option f buffer o =
   match o with
@@ -320,19 +322,19 @@ module Json_option(A : Json) =
 
 let read_array f buf =
   let rec read_list acc buf =
-    match Deriving_Json_lexer.read_comma_or_rbracket buf with
+    match Lexer.read_comma_or_rbracket buf with
     | `RBracket ->
       acc
     | `Comma ->
       let x = f buf in
       read_list (x :: acc) buf
   in
-  match Deriving_Json_lexer.read_case buf with
+  match Lexer.read_case buf with
   (* We allow the tag 254 in case of float array *)
   | `NCst 0 | `NCst 254 ->
     Array.of_list (List.rev (read_list [] buf))
   | _ ->
-    Deriving_Json_lexer.tag_error ~typename:"array" buf
+    Lexer.tag_error ~typename:"array" buf
 
 let write_array f buffer a =
   Buffer.add_string buffer "[0";
