@@ -27,21 +27,21 @@ module Description = struct
   let alpha = None
   let allow_private = false
   let predefs = [
-    ["int"      ], ["Deriving_Json";"int"];
-    ["bool"     ], ["Deriving_Json";"bool"];
-    ["unit"     ], ["Deriving_Json";"unit"];
-    ["char"     ], ["Deriving_Json";"char"];
-    ["int32"    ], ["Deriving_Json";"int32"];
-    ["Int32";"t"], ["Deriving_Json";"int32"];
-    ["int64"    ], ["Deriving_Json";"int64"];
-    ["Int64";"t"], ["Deriving_Json";"int64"];
-    ["nativeint"], ["Deriving_Json";"nativeint"];
-    ["float"    ], ["Deriving_Json";"float"];
-    ["string"   ], ["Deriving_Json";"string"];
-    ["list"     ], ["Deriving_Json";"list"];
-    ["ref"      ], ["Deriving_Json";"ref"];
-    ["option"   ], ["Deriving_Json";"option"];
-    ["array"    ], ["Deriving_Json";"array"];
+    ["int"      ], [runtimename;"int"];
+    ["bool"     ], [runtimename;"bool"];
+    ["unit"     ], [runtimename;"unit"];
+    ["char"     ], [runtimename;"char"];
+    ["int32"    ], [runtimename;"int32"];
+    ["Int32";"t"], [runtimename;"int32"];
+    ["int64"    ], [runtimename;"int64"];
+    ["Int64";"t"], [runtimename;"int64"];
+    ["nativeint"], [runtimename;"nativeint"];
+    ["float"    ], [runtimename;"float"];
+    ["string"   ], [runtimename;"string"];
+    ["list"     ], [runtimename;"list"];
+    ["ref"      ], [runtimename;"ref"];
+    ["option"   ], [runtimename;"option"];
+    ["array"    ], [runtimename;"array"];
   ]
   let depends = []
 end
@@ -53,6 +53,7 @@ module Builder(Generator : Defs.Generator) = struct
 
   module Helpers = Generator.AstHelpers
 
+  let lexer name = <:expr< Deriving_Json_lexer.$lid:name$ >>
   let wrap
       ?(read_variant = [ <:match_case< _ -> assert false >> ])
       ?(hashes = <:expr< assert false >>)
@@ -99,15 +100,15 @@ module Builder(Generator : Defs.Generator) = struct
       let readers =
 	List.fold_right2
 	  (fun var ty expr -> <:expr<
-	    Deriving_Json_lexer.read_comma buf;
+	    $lexer "read_comma"$ buf;
 	    let $lid:var$ = $self#call_expr ctxt ty "read"$ buf in $expr$ >>)
 	  vars tys
 	  <:expr<
-	    Deriving_Json_lexer.read_rbracket buf;
+	    $lexer "read_rbracket"$ buf;
             $expr$ >> in
       let read = <:expr<
-	Deriving_Json_lexer.read_lbracket buf;
-        ignore(Deriving_Json_lexer.read_tag_1 0 buf);
+	$lexer "read_lbracket"$ buf;
+        ignore($lexer "read_tag_1"$ 0 buf);
 	$readers$ >> in
       wrap ~write:[dumper] ~read ()
 
@@ -128,22 +129,22 @@ module Builder(Generator : Defs.Generator) = struct
 	  let reader =
 	    List.fold_right2
 	      (fun var ty expr -> <:expr<
-		Deriving_Json_lexer.read_comma buf;
+		$lexer "read_comma"$ buf;
 		let $lid:var$ = $self#call_expr ctxt ty "read"$ buf in $expr$ >>)
 	      vars tys
 	      <:expr<
-	        Deriving_Json_lexer.read_rbracket buf;
+	        $lexer "read_rbracket"$ buf;
 	        $uid:ctor$ $expr$ >> in
 	  let reader =
 	    <:match_case< `NCst $int:string_of_int ncst_tag$ -> $reader$ >> in
 	  (cst_tag, succ ncst_tag, dumper::dumpers, reader::readers)
 
     method sum ?eq:_ ctxt name _params _ summands =
-      let failover = <:match_case< _ -> Deriving_Json_lexer.tag_error ~typename:$str:name$ buf >> in
+      let failover = <:match_case< _ -> $lexer "tag_error"$ ~typename:$str:name$ buf >> in
       let _, _, dumpers, readers =
 	List.fold_left (self#case ctxt) (0,0,[],[failover]) summands in
       let read = <:expr<
-	match Deriving_Json_lexer.read_case buf with
+	match $lexer "read_case"$ buf with
 	$list:readers$ >> in
       wrap ~write:dumpers ~read ()
 
@@ -160,16 +161,16 @@ module Builder(Generator : Defs.Generator) = struct
 	List.fold_right
 	  (fun (var, ty, _) expr ->
 	    <:expr<
-	      Deriving_Json_lexer.read_comma buf;
+	      $lexer "read_comma"$ buf;
 	      let $lid:var$ = $self#call_poly_expr ctxt ty "read"$ buf in $expr$ >>)
 	  fields
 	  <:expr<
-            Deriving_Json_lexer.read_rbracket buf;
+            $lexer "read_rbracket"$ buf;
 	    $Helpers.record_expression fields$ >> in
       let read = <:expr<
-	Deriving_Json_lexer.read_lbracket buf;
+	$lexer "read_lbracket"$ buf;
         (* We allow the tag 254 in case of float record *)
-        ignore(Deriving_Json_lexer.read_tag_2 0 254 buf);
+        ignore($lexer "read_tag_2"$ 0 254 buf);
 	$readers$ >> in
       wrap ~write:[dumper] ~read ()
 
@@ -188,9 +189,9 @@ module Builder(Generator : Defs.Generator) = struct
 	    let tag = $int:string_of_int hash$ in
 	    $self#do_dump_blk ctxt 0 contents$ >>,
 	  <:match_case< `NCst $int:string_of_int hash$ ->
-	    Deriving_Json_lexer.read_comma buf;
+	    $lexer "read_comma"$ buf;
 	    let c = $self#call_expr ctxt ty "read"$ buf in
-	    Deriving_Json_lexer.read_rbracket buf;
+	    $lexer "read_rbracket"$ buf;
 	    `$name$ c >>,
 	    <:expr< hash = `NCst $int:string_of_int hash$ >>
       | Type.Tag (name, tys) ->
@@ -201,9 +202,9 @@ module Builder(Generator : Defs.Generator) = struct
 	    let tag = $int:string_of_int hash$ in
 	    $self#do_dump_blk ctxt 0 contents$ >>,
 	  <:match_case< `NCst $int:string_of_int hash$ ->
-	    Deriving_Json_lexer.read_comma buf;
+	    $lexer "read_comma"$ buf;
 	    let c = $self#call_expr ctxt ty "read"$ buf in
-	    Deriving_Json_lexer.read_rbracket buf;
+	    $lexer "read_rbracket"$ buf;
 	    `$name$ c >>,
 	    <:expr< hash = `NCst $int:string_of_int hash$ >>
       | Type.Extends t ->
@@ -215,9 +216,9 @@ module Builder(Generator : Defs.Generator) = struct
           <:expr< $self#call_expr ctxt t "match_variant"$ hash >>
 
     method variant ctxt name _params _ (_,tags) =
-      let failover = <:match_case< _ -> Deriving_Json_lexer.tag_error ~typename:$str:name$ buf >> in
+      let failover = <:match_case< _ -> $lexer "tag_error"$ ~typename:$str:name$ buf >> in
       let dumpers, readers, hashes = List.split3 (List.map (self#polycase ctxt) tags) in
-      let read = <:expr< read_variant buf (Deriving_Json_lexer.read_vcase buf) >> in
+      let read = <:expr< read_variant buf ($lexer "read_vcase"$ buf) >> in
       let hashes =
 	List.fold_right
 	  (fun e1 e2 -> <:expr< $e1$ || $e2$ >>)
