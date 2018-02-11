@@ -22,9 +22,4 @@ clean:
 	$(MAKE) -C toplevel/examples/lwt_toplevel_bin clean
 	$(MAKE) -C doc clean
 
-remove-lexer-and-parser:
-	rm compiler/lib/{annot_parser,js_parser}.{ml,mli}
-promote-lexer-and-parser:
-	cp  _build/default/compiler/lib/{annot_parser,js_parser}.{ml,mli} compiler/lib/
-
 .PHONY: all tests test runtest runtests doc toplevel-examples clean remove-lexer-and-parser promote-lexer-and-parser
