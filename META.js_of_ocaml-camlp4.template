@@ -1,0 +1,14 @@
+description = "Js_of_ocaml syntax extension"
+version = "dev"
+requires(syntax) = "camlp4"
+archive(syntax,preprocessor) = "pa_js.cma"
+
+package "deriving" (
+  directory = "deriving"
+  exists_if = "pa_deriving_Json.cma pa_deriving_Json.cmxs"
+  description = "Safe \"IO in JSON\" class for deriving."
+  version = "[distributed with js_of_ocaml-camlp4]"
+  archive(syntax, preprocessor) = "pa_deriving_Json.cma"
+  archive(syntax, toploop) = "pa_deriving_Json.cma"
+  requires(syntax) = "deriving.syntax.common"
+)
