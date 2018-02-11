@@ -5,7 +5,8 @@
    (libraries (js_of_ocaml js_of_ocaml-compiler js_of_ocaml-toplevel compiler-libs))))
 
 (rule ((targets (eval.js))
-       (action (run js_of_ocaml --toplevel --linkall
+       (action (run js_of_ocaml --toplevel --linkall --no-runtime
+               ${lib:js_of_ocaml-compiler:runtime.js}
                ${lib:js_of_ocaml-compiler:toplevel.js}
                ${lib:js_of_ocaml-compiler:dynlink.js}
                --export ${path:stdlib.export} ${path:eval.bc} -I +stdlib/compiler-libs))))
