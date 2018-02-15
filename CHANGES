@@ -1,5 +1,6 @@
-===== 3.1.0 (2018-??-??) - ???? =====
- * Features/Changes:
+===== 3.1.0 (2018-02-15) - Hong Kong =====
+
+* Features/Changes:
  ** Lib: add missing File.blob constructor (fix #630)
  ** Runtime: hash support for custom blocks
  ** Runtime: weak.js loaded by default
