@@ -76,9 +76,9 @@ function caml_call_gen(f, args) {
 var caml_named_values = {};
 
 //Provides: caml_register_named_value (const,const)
-//Requires: caml_named_values, caml_bytes_of_string
+//Requires: caml_named_values, caml_jsbytes_of_string
 function caml_register_named_value(nm,v) {
-  caml_named_values[caml_bytes_of_string(nm)] = v;
+  caml_named_values[caml_jsbytes_of_string(nm)] = v;
   return 0;
 }
 
@@ -495,10 +495,10 @@ function caml_int_of_string (s) {
 }
 
 //Provides: caml_float_of_string (const)
-//Requires: caml_failwith, caml_bytes_of_string
+//Requires: caml_failwith, caml_jsbytes_of_string
 function caml_float_of_string(s) {
   var res;
-  s = caml_bytes_of_string (s);
+  s = caml_jsbytes_of_string (s);
   res = +s;
   if ((s.length > 0) && (res === res)) return res;
   s = s.replace(/_/g,"");
@@ -523,9 +523,9 @@ function caml_is_printable(c) { return +(c > 31 && c < 127); }
 
 ///////////// Format
 //Provides: caml_parse_format
-//Requires: caml_bytes_of_string, caml_invalid_argument
+//Requires: caml_jsbytes_of_string, caml_invalid_argument
 function caml_parse_format (fmt) {
-  fmt = caml_bytes_of_string(fmt);
+  fmt = caml_jsbytes_of_string(fmt);
   var len = fmt.length;
   if (len > 31) caml_invalid_argument("format_int: format too long");
   var f =
@@ -609,9 +609,9 @@ function caml_finish_formatting(f, rawbuffer) {
 
 //Provides: caml_format_int const (const, const)
 //Requires: caml_parse_format, caml_finish_formatting, caml_str_repeat
-//Requires: caml_new_string, caml_bytes_of_string
+//Requires: caml_new_string, caml_jsbytes_of_string
 function caml_format_int(fmt, i) {
-  if (caml_bytes_of_string(fmt) == "%d") return caml_new_string(""+i);
+  if (caml_jsbytes_of_string(fmt) == "%d") return caml_new_string(""+i);
   var f = caml_parse_format(fmt);
   if (i < 0) { if (f.signedconv) { f.sign = -1; i = -i; } else i >>>= 0; }
   var s = i.toString(f.base);

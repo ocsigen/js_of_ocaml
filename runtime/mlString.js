@@ -430,9 +430,9 @@ function caml_array_of_string (s) {
   return s.c;
 }
 
-//Provides: caml_bytes_of_string mutable
+//Provides: caml_jsbytes_of_string mutable
 //Requires: caml_convert_string_to_bytes
-function caml_bytes_of_string (s) {
+function caml_jsbytes_of_string (s) {
   if ((s.t & 6) != 0 /* BYTES */) caml_convert_string_to_bytes(s);
   return s.c;
 }

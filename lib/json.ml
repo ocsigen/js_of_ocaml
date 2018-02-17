@@ -39,7 +39,7 @@ let json = get_json ()
 external unsafe_equals: 'a -> 'b -> bool = "caml_js_equals"
 
 external to_byte_MlString: js_string t -> 'a t = "caml_js_to_byte_string"
-external to_byte_jsstring: 'a t -> js_string t = "caml_bytes_of_string"
+external to_byte_jsstring: 'a t -> js_string t = "caml_jsbytes_of_string"
 
 let input_reviver =
   let reviver _this _key value =
