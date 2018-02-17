@@ -1326,16 +1326,16 @@ and compile infos pc state instrs =
       if debug_parser () then Format.printf "%a = 0@." Var.print x;
       compile infos (pc + 1) (State.pop 2 state)
         (Let (x, Const 0l) :: instrs)
-    | GETSTRINGCHAR ->
+    | GETBYTESCHAR ->
       let y = State.accu state in
       let z = State.peek 0 state in
       let (x, state) = State.fresh_var state in
       if debug_parser () then Format.printf "%a = %a[%a]@."
           Var.print x Var.print y Var.print z;
       compile infos (pc + 1) (State.pop 1 state)
-        (Let (x, Prim (Extern "caml_string_unsafe_get", [Pv y; Pv z])) ::
+        (Let (x, Prim (Extern "caml_bytes_unsafe_get", [Pv y; Pv z])) ::
          instrs)
-    | SETSTRINGCHAR ->
+    | SETBYTESCHAR ->
       if debug_parser () then Format.printf "%a[%a] = %a@." Var.print (State.accu state)
           Var.print (State.peek 0 state)
           Var.print (State.peek 1 state);
