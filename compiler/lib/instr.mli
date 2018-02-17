@@ -167,6 +167,7 @@ type t =
   | BREAK
   | RERAISE
   | RAISE_NOTRACE
+  | GETSTRINGCHAR
   | FIRST_UNIMPLEMENTED_OP
 
 type kind =
