@@ -49,6 +49,8 @@ module Optim : sig
   val warn_unused : unit -> bool
   val inline_callgen : unit -> bool
 
+  val safe_string  : unit -> bool
+
   val check_magic : unit -> bool
 
   val enable : string -> unit
