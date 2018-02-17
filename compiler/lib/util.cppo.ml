@@ -532,7 +532,11 @@ let rec find_loc_in_summary ident' = function
   | Env.Env_modtype (summary, _, _)
   | Env.Env_class (summary, _, _)
   | Env.Env_cltype (summary, _, _)
+#if OCAML_VERSION >= (4,7,0)
+  | Env.Env_open (summary, _, _)
+#else
   | Env.Env_open (summary, _)
+#endif
   | Env.Env_functor_arg (summary, _)
 #if OCAML_VERSION >= (4,4,0)
   | Env.Env_constraints (summary, _)
