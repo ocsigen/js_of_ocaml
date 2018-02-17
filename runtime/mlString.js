@@ -212,12 +212,6 @@ function caml_bytes_unsafe_get (s, i) {
   }
 }
 
-//Provides: caml_string_unsafe_set
-//Requires: caml_bytes_unsafe_set
-function caml_string_unsafe_set(s, i, c) {
-    return caml_bytes_unsafe_set(s, i, c)
-}
-
 //Provides: caml_bytes_unsafe_set
 //Requires: caml_convert_string_to_array
 function caml_bytes_unsafe_set (s, i, c) {
@@ -233,6 +227,12 @@ function caml_bytes_unsafe_set (s, i, c) {
   }
   s.c[i] = c;
   return 0;
+}
+
+//Provides: caml_string_unsafe_set
+//Requires: caml_bytes_unsafe_set
+function caml_string_unsafe_set (s, i, c) {
+    return caml_bytes_unsafe_set(s,i,c);
 }
 
 //Provides: caml_string_bound_error
@@ -257,9 +257,29 @@ function caml_string_get16(s,i) {
   return (b2 << 8 | b1);
 }
 
+//Provides: caml_bytes_get16
+//Requires: caml_string_unsafe_get, caml_string_bound_error
+function caml_bytes_get16(s,i) {
+  if (i >>> 0 >= s.l + 1) caml_string_bound_error();
+  var b1 = caml_string_unsafe_get (s, i),
+      b2 = caml_string_unsafe_get (s, i + 1);
+  return (b2 << 8 | b1);
+}
+
 //Provides: caml_string_get32
 //Requires: caml_string_unsafe_get, caml_string_bound_error
 function caml_string_get32(s,i) {
+  if (i >>> 0 >= s.l + 3) caml_string_bound_error();
+  var b1 = caml_string_unsafe_get (s, i),
+      b2 = caml_string_unsafe_get (s, i + 1),
+      b3 = caml_string_unsafe_get (s, i + 2),
+      b4 = caml_string_unsafe_get (s, i + 3);
+  return (b4 << 24 | b3 << 16 | b2 << 8 | b1);
+}
+
+//Provides: caml_bytes_get32
+//Requires: caml_string_unsafe_get, caml_string_bound_error
+function caml_bytes_get32(s,i) {
   if (i >>> 0 >= s.l + 3) caml_string_bound_error();
   var b1 = caml_string_unsafe_get (s, i),
       b2 = caml_string_unsafe_get (s, i + 1),
@@ -272,6 +292,18 @@ function caml_string_get32(s,i) {
 //Requires: caml_string_unsafe_get, caml_string_bound_error
 //Requires: caml_int64_of_bytes
 function caml_string_get64(s,i) {
+  if (i >>> 0 >= s.l + 7) caml_string_bound_error();
+  var a = new Array(8);
+  for(var j = 0; j < 8; j++){
+    a[7 - j] = caml_string_unsafe_get (s, i + j);
+  }
+  return caml_int64_of_bytes(a);
+}
+
+//Provides: caml_bytes_get64
+//Requires: caml_string_unsafe_get, caml_string_bound_error
+//Requires: caml_int64_of_bytes
+function caml_bytes_get64(s,i) {
   if (i >>> 0 >= s.l + 7) caml_string_bound_error();
   var a = new Array(8);
   for(var j = 0; j < 8; j++){
@@ -294,9 +326,9 @@ function caml_string_set (s, i, c) {
   return caml_string_unsafe_set (s, i, c);
 }
 
-//Provides: caml_string_set16
+//Provides: caml_bytes_set16
 //Requires: caml_string_bound_error, caml_string_unsafe_set
-function caml_string_set16(s,i,i16){
+function caml_bytes_set16(s,i,i16){
   if (i >>> 0 >= s.l + 1) caml_string_bound_error();
   var b2 = 0xFF & i16 >> 8,
       b1 = 0xFF & i16;
@@ -305,9 +337,15 @@ function caml_string_set16(s,i,i16){
   return 0
 }
 
-//Provides: caml_string_set32
+//Provides: caml_string_set16
+//Requires: caml_bytes_set16
+function caml_string_set16(s,i,i16){
+    return caml_bytes_set16(s,i,i16);
+}
+
+//Provides: caml_bytes_set32
 //Requires: caml_string_bound_error, caml_string_unsafe_set
-function caml_string_set32(s,i,i32){
+function caml_bytes_set32(s,i,i32){
   if (i >>> 0 >= s.l + 3) caml_string_bound_error();
   var b4 = 0xFF & i32 >> 24,
       b3 = 0xFF & i32 >> 16,
@@ -320,10 +358,16 @@ function caml_string_set32(s,i,i32){
   return 0
 }
 
-//Provides: caml_string_set64
+//Provides: caml_string_set32
+//Requires: caml_bytes_set32
+function caml_string_set32(s,i,i32){
+    return caml_bytes_set32(s,i,i32);
+}
+
+//Provides: caml_bytes_set64
 //Requires: caml_string_bound_error, caml_string_unsafe_set
 //Requires: caml_int64_to_bytes
-function caml_string_set64(s,i,i64){
+function caml_bytes_set64(s,i,i64){
   if (i >>> 0 >= s.l + 7) caml_string_bound_error();
   var a = caml_int64_to_bytes(i64);
   for(var j = 0; j < 8; j++) {
@@ -332,7 +376,11 @@ function caml_string_set64(s,i,i64){
   return 0
 }
 
-
+//Provides: caml_string_set64
+//Requires: caml_bytes_set64
+function caml_string_set64(s,i,i64){
+    return caml_bytes_set64(s,i,i64);
+}
 
 //Provides: caml_bytes_set
 //Requires: caml_string_bound_error, caml_bytes_unsafe_set
@@ -585,3 +633,9 @@ function caml_ml_string_length(s) { return s.l }
 
 //Provides: caml_ml_bytes_length const
 function caml_ml_bytes_length(s) { return s.l }
+
+//Provides: caml_string_of_bytes const
+function caml_string_of_bytes(s) { return s}
+
+//Provides: caml_bytes_of_string const
+function caml_bytes_of_string(s) { return s}
