@@ -1344,7 +1344,7 @@ and compile infos pc state instrs =
       let z = State.peek 1 state in
       let (t, state) = State.fresh_var state in
       let instrs =
-        Let (t, Prim (Extern "caml_string_unsafe_set", [Pv x; Pv y; Pv z])) ::
+        Let (t, Prim (Extern "caml_bytes_unsafe_set", [Pv x; Pv y; Pv z])) ::
         instrs in
       let (x, state) = State.fresh_var state in
       if debug_parser () then Format.printf "%a = 0@." Var.print x;
