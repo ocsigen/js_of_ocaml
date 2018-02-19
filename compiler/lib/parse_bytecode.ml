@@ -2270,7 +2270,7 @@ let from_compilation_units ~includes:_ ~debug ~debug_data l =
           let l = register_global globals i l in
           let cst = Constants.parse globals.constants.(i) in
           begin match cst, Code.Var.get_name x with
-            | String str, None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
+            | (String str|IString str), None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
             | _ -> ()
           end;
           Let (x, Constant cst) :: l
