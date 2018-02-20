@@ -220,8 +220,8 @@ function caml_update_dummy (x, y) {
 //Provides: caml_obj_is_block const (const)
 function caml_obj_is_block (x) { return +(x instanceof Array); }
 //Provides: caml_obj_tag const (const)
-//Requires: MlString
-function caml_obj_tag (x) { return (x instanceof Array)?x[0]:(x instanceof MlString)?252:1000; }
+//Requires: MlBytes
+function caml_obj_tag (x) { return (x instanceof Array)?x[0]:(x instanceof MlBytes)?252:1000; }
 //Provides: caml_obj_set_tag (mutable, const)
 function caml_obj_set_tag (x, tag) { x[0] = tag; return 0; }
 //Provides: caml_obj_block const (const,const)
@@ -327,14 +327,14 @@ function caml_floatarray_create(len){
 }
 
 //Provides: caml_compare_val (const, const, const)
-//Requires: MlString, caml_int64_compare, caml_int_compare, caml_string_compare
+//Requires: MlBytes, caml_int64_compare, caml_int_compare, caml_string_compare
 //Requires: caml_invalid_argument
 function caml_compare_val (a, b, total) {
   var stack = [];
   for(;;) {
     if (!(total && a === b)) {
-      if (a instanceof MlString) {
-        if (b instanceof MlString) {
+      if (a instanceof MlBytes) {
+        if (b instanceof MlBytes) {
             if (a !== b) {
 		var x = caml_string_compare(a, b);
 		if (x != 0) return x;
@@ -384,7 +384,7 @@ function caml_compare_val (a, b, total) {
           }
         } else
           return 1;
-      } else if (b instanceof MlString ||
+      } else if (b instanceof MlBytes ||
                  (b instanceof Array && b[0] === (b[0]|0))) {
         return -1;
       } else if (typeof a != "number" && a && a.compare) {
@@ -674,7 +674,7 @@ function caml_format_float (fmt, x) {
 
 ///////////// Hashtbl
 //Provides: caml_hash_univ_param mutable
-//Requires: MlString, caml_convert_string_to_bytes
+//Requires: MlBytes, caml_convert_string_to_bytes
 //Requires: caml_int64_to_bytes, caml_int64_bits_of_float
 function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
@@ -701,7 +701,7 @@ function caml_hash_univ_param (count, limit, obj) {
         hash_accu = (hash_accu * 19 + obj[0]) | 0;
         for (var i = obj.length - 1; i > 0; i--) hash_aux (obj[i]);
       }
-    } else if (obj instanceof MlString) {
+    } else if (obj instanceof MlBytes) {
       count --;
       switch (obj.t & 6) {
       default: /* PARTIAL */
@@ -839,7 +839,7 @@ function caml_hash_mix_string(h, v) {
 
 
 //Provides: caml_hash mutable
-//Requires: MlString
+//Requires: MlBytes
 //Requires: caml_int64_bits_of_float, caml_hash_mix_int, caml_hash_mix_final
 //Requires: caml_hash_mix_int64, caml_hash_mix_float, caml_hash_mix_string
 var HASH_QUEUE_SIZE = 256;
@@ -877,7 +877,7 @@ function caml_hash (count, limit, seed, obj) {
                 }
                 break;
             }
-        } else if (v instanceof MlString) {
+        } else if (v instanceof MlBytes) {
             h = caml_hash_mix_string(h,v)
             num--;
         } else if (v === (v|0)) {

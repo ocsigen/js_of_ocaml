@@ -389,12 +389,12 @@ function caml_bytes_set (s, i, c) {
   return caml_bytes_unsafe_set (s, i, c);
 }
 
-//Provides: MlString
+//Provides: MlBytes
 //Requires: caml_to_js_string
-function MlString (tag, contents, length) {
+function MlBytes (tag, contents, length) {
   this.t=tag; this.c=contents; this.l=length;
 }
-MlString.prototype.toString = function(){return caml_to_js_string(this)};
+MlBytes.prototype.toString = function(){return caml_to_js_string(this)};
 
 //Provides: caml_convert_string_to_bytes
 //Requires: caml_str_repeat, caml_subarray_to_string
@@ -438,33 +438,34 @@ function caml_jsbytes_of_string (s) {
 }
 
 //Provides: caml_js_to_string const
-//Requires: caml_is_ascii, caml_utf8_of_utf16, MlString
+//Requires: caml_is_ascii, caml_utf8_of_utf16, MlBytes
 function caml_js_to_string (s) {
   var tag = 9 /* BYTES | ASCII */;
   if (!caml_is_ascii(s))
     tag = 8 /* BYTES | NOT_ASCII */, s = caml_utf8_of_utf16(s);
-  return new MlString(tag, s, s.length);
+  return new MlBytes(tag, s, s.length);
 }
 
 //Provides: caml_create_string const
-//Requires: MlString,caml_invalid_argument
+//Requires: MlBytes,caml_invalid_argument
 function caml_create_string(len) {
   if (len < 0) caml_invalid_argument("String.create");
-  return new MlString(len?2:9,"",len);
+  return new MlBytes(len?2:9,"",len);
 }
 //Provides: caml_create_bytes const
-//Requires: MlString,caml_invalid_argument
+//Requires: MlBytes,caml_invalid_argument
 function caml_create_bytes(len) {
   if (len < 0) caml_invalid_argument("Bytes.create");
-  return new MlString(len?2:9,"",len);
+  return new MlBytes(len?2:9,"",len);
 }
 
-//Provides: caml_new_string
-//Requires: MlString
-function caml_new_string (s) { return new MlString(0,s,s.length); }
+//Provides: caml_new_string const (const)
+//Requires: MlBytes
+function caml_new_string (s) { return new MlBytes(0,s,s.length); }
+
 //Provides: caml_string_of_array
-//Requires: MlString
-function caml_string_of_array (a) { return new MlString(4,a,a.length); }
+//Requires: MlBytes
+function caml_string_of_array (a) { return new MlBytes(4,a,a.length); }
 
 //Provides: caml_string_compare mutable
 //Requires: caml_convert_string_to_bytes

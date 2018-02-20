@@ -35,9 +35,9 @@ var caml_root = caml_current_dir.match(/[^\/]*\//)[0];
 function MlFile(){  }
 
 //Provides: caml_make_path
-//Requires: caml_current_dir,MlString
+//Requires: caml_current_dir,MlBytes
 function caml_make_path (name) {
-  name=(name instanceof MlString)?name.toString():name;
+  name=(name instanceof MlBytes)?name.toString():name;
   if(name.charCodeAt(0) != 47)
     name = caml_current_dir + name;
   var comp = name.split("/");
@@ -133,16 +133,16 @@ function caml_sys_chdir(dir) {
 }
 
 //Provides: caml_raise_no_such_file
-//Requires: MlString, caml_raise_sys_error
+//Requires: MlBytes, caml_raise_sys_error
 function caml_raise_no_such_file(name){
-  name = (name instanceof MlString)?name.toString():name;
+  name = (name instanceof MlBytes)?name.toString():name;
   caml_raise_sys_error (name + ": No such file or directory");
 }
 
 //Provides: caml_raise_not_a_dir
-//Requires: MlString, caml_raise_sys_error
+//Requires: MlBytes, caml_raise_sys_error
 function caml_raise_not_a_dir(name){
-  name = (name instanceof MlString)?name.toString():name;
+  name = (name instanceof MlBytes)?name.toString():name;
   caml_raise_sys_error (name + ": Not a directory");
 }
 

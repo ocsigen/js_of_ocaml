@@ -20,7 +20,7 @@
 //Provides: MlFakeDevice
 //Requires: MlFakeFile, caml_create_bytes
 //Requires: caml_raise_sys_error, caml_raise_no_such_file, caml_new_string, caml_string_of_array
-//Requires: MlString
+//Requires: MlBytes
 function MlFakeDevice (root, f) {
   this.content={};
   this.root = root;
@@ -96,7 +96,7 @@ MlFakeDevice.prototype.open = function(name, f) {
 
 MlFakeDevice.prototype.register= function (name,content){
   if(this.content[name]) caml_raise_sys_error(this.nm(name) + " : file already exists");
-  if(content instanceof MlString)
+  if(content instanceof MlBytes)
     this.content[name] = new MlFakeFile(content);
   else if(content instanceof Array)
     this.content[name] = new MlFakeFile(caml_string_of_array(content));
