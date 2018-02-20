@@ -342,7 +342,7 @@ let the_def_of info x =
            match info.info_defs.(Var.idx x) with
            | Expr (Const _ as e) -> Some e
            | Expr (Constant (Float _| Int _ | IString _ ) as e) -> Some e
-           | Expr (constnat (String _) as e) when Option.Optim.safe_string () -> Some e
+           | Expr (Constant (String _) as e) when Option.Optim.safe_string () -> Some e
            | Expr e ->
              if info.info_possibly_mutable.(Var.idx x)
              then None
@@ -358,8 +358,8 @@ let the_const_of info x =
       (fun x ->
          match info.info_defs.(Var.idx x) with
          | Expr (Const i) -> Some (Int i)
-         | Expr (Constant ((Float _| Int _ | IString _) as c)) -> Some c
-         | Expr (constnat (String _) as c) when Option.Optim.safe_string () -> Some c
+         | Expr (Constant (Float _| Int _ | IString _ as c)) -> Some c
+         | Expr (Constant (String _ as c)) when Option.Optim.safe_string () -> Some c
          | Expr (Constant c) ->
            if info.info_possibly_mutable.(Var.idx x)
            then None

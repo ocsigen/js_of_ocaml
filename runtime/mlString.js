@@ -320,7 +320,7 @@ function caml_bytes_get (s, i) {
 }
 
 //Provides: caml_string_set
-//Requires: caml_string_unsafe_set
+//Requires: caml_string_unsafe_set, caml_string_bound_error
 function caml_string_set (s, i, c) {
   if (i >>> 0 >= s.l) caml_string_bound_error();
   return caml_string_unsafe_set (s, i, c);
@@ -625,7 +625,7 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
 //Provides: caml_blit_string
 //Requires: caml_blit_bytes
 function caml_blit_string(s1, i1, s2, i2, len) {
-  (* TODO: s1 -> string to bytes *)
+  // TODO: s1 -> string to bytes
   return caml_blit_bytes(s1, i1, s2, i2, len);
 }
 
