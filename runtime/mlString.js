@@ -527,9 +527,9 @@ function caml_bytes_greaterthan(s1, s2) {
   return caml_bytes_lessthan(s2, s1);
 }
 
-//Provides: caml_fill_string
+//Provides: caml_fill_bytes
 //Requires: caml_str_repeat, caml_convert_string_to_array
-function caml_fill_string(s, i, l, c) {
+function caml_fill_bytes(s, i, l, c) {
   if (l > 0) {
     if (i == 0 && (l >= s.l || (s.t == 2 /* PARTIAL */ && l >= s.c.length))) {
       if (c == 0) {
@@ -547,9 +547,9 @@ function caml_fill_string(s, i, l, c) {
   return 0;
 }
 
-//Provides: caml_fill_bytes
-//Requires: caml_fill_string
-var caml_fill_bytes = caml_fill_string
+//Provides: caml_fill_string
+//Requires: caml_fill_bytes
+var caml_fill_string = caml_fill_bytes
 
 //Provides: caml_blit_string
 //Requires: caml_subarray_to_string, caml_convert_string_to_array
