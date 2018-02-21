@@ -243,13 +243,13 @@ function caml_create_file(name,content) {
 }
 
 //Provides: caml_read_file_content
-//Requires: resolve_fs_device, caml_raise_no_such_file, caml_create_string
+//Requires: resolve_fs_device, caml_raise_no_such_file, caml_create_bytes
 function caml_read_file_content (name) {
   var root = resolve_fs_device(name);
   if(root.device.exists(root.rest)) {
     var file = root.device.open(root.rest,{rdonly:1});
     var len  = file.length();
-    var buf  = caml_create_string(len);
+    var buf  = caml_create_bytes(len);
     file.read(0,buf,0,len);
     return buf
   }

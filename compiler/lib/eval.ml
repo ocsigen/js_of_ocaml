@@ -142,7 +142,8 @@ let the_length_of info x =
        match info.info_defs.(Var.idx x) with
          | Expr (Constant (String s))
          | Expr (Constant (IString s)) -> Some (Int32.of_int (String.length s))
-         | Expr (Prim (Extern "caml_create_string",[arg])) ->
+         | Expr (Prim (Extern "caml_create_string",[arg]))
+         | Expr (Prim (Extern "caml_create_bytes",[arg])) ->
            the_int info arg
          | _ -> None)
     None

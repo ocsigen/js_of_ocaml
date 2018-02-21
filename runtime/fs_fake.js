@@ -18,7 +18,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: MlFakeDevice
-//Requires: MlFakeFile, caml_create_string
+//Requires: MlFakeFile, caml_create_bytes
 //Requires: caml_raise_sys_error, caml_raise_no_such_file, caml_new_string, caml_string_of_array
 //Requires: MlString
 function MlFakeDevice (root, f) {
@@ -87,7 +87,7 @@ MlFakeDevice.prototype.open = function(name, f) {
     if(f.truncate) file.truncate();
     return file;
   } else if (f.create) {
-    this.content[name] = new MlFakeFile(caml_create_string(0));
+    this.content[name] = new MlFakeFile(caml_create_bytes(0));
     return this.content[name];
   } else {
     caml_raise_no_such_file (this.nm(name));
@@ -110,7 +110,7 @@ MlFakeDevice.prototype.constructor = MlFakeDevice
 
 //Provides: MlFakeFile
 //Requires: MlFile
-//Requires: caml_create_string, caml_ml_string_length,caml_blit_string
+//Requires: caml_create_bytes, caml_ml_string_length,caml_blit_string
 //Requires: caml_string_get
 function MlFakeFile(content){
   this.data = content;
@@ -118,7 +118,7 @@ function MlFakeFile(content){
 MlFakeFile.prototype = new MlFile ();
 MlFakeFile.prototype.truncate = function(len){
   var old = this.data;
-  this.data = caml_create_string(len|0);
+  this.data = caml_create_bytes(len|0);
   caml_blit_string(old, 0, this.data, 0, len);
 }
 MlFakeFile.prototype.length = function () {
@@ -127,7 +127,7 @@ MlFakeFile.prototype.length = function () {
 MlFakeFile.prototype.write = function(offset,buf,pos,len){
   var clen = this.length();
   if(offset + len >= clen) {
-    var new_str = caml_create_string(offset + len);
+    var new_str = caml_create_bytes(offset + len);
     var old_data = this.data;
     this.data = new_str;
     caml_blit_string(old_data, 0, this.data, 0, clen);

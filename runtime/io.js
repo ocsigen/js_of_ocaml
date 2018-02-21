@@ -39,7 +39,7 @@ function caml_std_output(chanid,s){
 
 //Provides: caml_sys_open
 //Requires: caml_raise_sys_error, caml_global_data
-//Requires: caml_create_string,MlFakeFile
+//Requires: caml_create_bytes,MlFakeFile
 //Requires: js_print_stderr, js_print_stdout
 //Requires: caml_std_output
 //Requires: resolve_fs_device
@@ -81,9 +81,9 @@ function caml_sys_open (name, flags, _perms) {
   var idx = caml_global_data.fd_last_idx?caml_global_data.fd_last_idx:0;
   return caml_sys_open_internal (idx+1,caml_std_output,file,f);
 }
-caml_sys_open_internal(0,caml_std_output, new MlFakeFile(caml_create_string(0))); //stdin
-caml_sys_open_internal(1,js_print_stdout, new MlFakeFile(caml_create_string(0))); //stdout
-caml_sys_open_internal(2,js_print_stderr, new MlFakeFile(caml_create_string(0))); //stderr
+caml_sys_open_internal(0,caml_std_output, new MlFakeFile(caml_create_bytes(0))); //stdin
+caml_sys_open_internal(1,js_print_stdout, new MlFakeFile(caml_create_bytes(0))); //stdout
+caml_sys_open_internal(2,js_print_stderr, new MlFakeFile(caml_create_bytes(0))); //stderr
 
 
 // ocaml Channels
@@ -230,17 +230,17 @@ function caml_ml_input (chanid, s, i, l) {
 }
 
 //Provides: caml_input_value
-//Requires: caml_marshal_data_size, caml_input_value_from_string, caml_create_string, caml_ml_channels
+//Requires: caml_marshal_data_size, caml_input_value_from_string, caml_create_bytes, caml_ml_channels
 function caml_input_value (chanid) {
   var chan = caml_ml_channels[chanid];
 
-  var buf = caml_create_string(8);
+  var buf = caml_create_bytes(8);
   chan.file.read(chan.offset,buf,0,8);
 
   // Header is 20 bytes
   var len = caml_marshal_data_size (buf, 0) + 20;
 
-  var buf = caml_create_string(len);
+  var buf = caml_create_bytes(len);
   chan.file.read(chan.offset,buf,0,len);
 
   var offset = [0];
@@ -251,7 +251,7 @@ function caml_input_value (chanid) {
 
 //Provides: caml_ml_input_char
 //Requires: caml_raise_end_of_file, caml_array_bound_error
-//Requires: caml_ml_string_length, caml_string_get, caml_ml_may_refill_input, caml_ml_channels, caml_create_string
+//Requires: caml_ml_string_length, caml_string_get, caml_ml_may_refill_input, caml_ml_channels
 function caml_ml_input_char (chanid) {
   var chan = caml_ml_channels[chanid];
   caml_ml_may_refill_input(chanid);
@@ -265,7 +265,6 @@ function caml_ml_input_char (chanid) {
 //Provides: caml_ml_input_int
 //Requires: caml_raise_end_of_file
 //Requires: caml_ml_string_length, caml_string_unsafe_get, caml_ml_refill_input, caml_ml_channels
-//Requires: caml_create_string
 function caml_ml_input_int (chanid) {
   var chan = caml_ml_channels[chanid];
   var file = chan.file;
@@ -310,7 +309,7 @@ function caml_ml_pos_in_64(chanid) {return caml_int64_of_float(caml_ml_channels[
 
 //Provides: caml_ml_input_scan_line
 //Requires: caml_array_bound_error, caml_ml_string_length, caml_string_get
-//Requires: caml_ml_may_refill_input, caml_ml_channels, caml_create_string
+//Requires: caml_ml_may_refill_input, caml_ml_channels
 function caml_ml_input_scan_line(chanid){
   var chan = caml_ml_channels[chanid];
   caml_ml_may_refill_input(chanid);
@@ -347,7 +346,7 @@ function caml_ml_flush (chanid) {
 
 //Provides: caml_ml_output
 //Requires: caml_ml_flush,caml_ml_string_length
-//Requires: caml_create_string, caml_blit_string, caml_raise_sys_error, caml_ml_channels
+//Requires: caml_create_bytes, caml_blit_string, caml_raise_sys_error, caml_ml_channels
 function caml_ml_output (chanid,buffer,offset,len) {
     var chan = caml_ml_channels[chanid];
     if(! chan.opened) caml_raise_sys_error("Cannot output to a closed channel");
@@ -355,7 +354,7 @@ function caml_ml_output (chanid,buffer,offset,len) {
     if(offset == 0 && caml_ml_string_length(buffer) == len)
         string = buffer;
     else {
-        string = caml_create_string(len);
+        string = caml_create_bytes(len);
         caml_blit_string(buffer,offset,string,0,len);
     }
     var jsstring = string.toString();
