@@ -94,14 +94,14 @@ function caml_js_new(c, a) {
 //Requires: caml_js_from_array
 function caml_ojs_new_arr(c, a) {
   switch (a.length) {
-  case 1: return new c;
-  case 2: return new c (a[0]);
-  case 3: return new c (a[0],a[1]);
-  case 4: return new c (a[0],a[1],a[2]);
-  case 5: return new c (a[0],a[1],a[2],a[3]);
-  case 6: return new c (a[0],a[1],a[2],a[3],a[4]);
-  case 7: return new c (a[0],a[1],a[2],a[3],a[4],a[5]);
-  case 8: return new c (a[0],a[1],a[2],a[3],a[4],a[5],a[6]);
+  case 0: return new c;
+  case 1: return new c (a[0]);
+  case 2: return new c (a[0],a[1]);
+  case 3: return new c (a[0],a[1],a[2]);
+  case 4: return new c (a[0],a[1],a[2],a[3]);
+  case 5: return new c (a[0],a[1],a[2],a[3],a[4]);
+  case 6: return new c (a[0],a[1],a[2],a[3],a[4],a[5]);
+  case 7: return new c (a[0],a[1],a[2],a[3],a[4],a[5],a[6]);
   }
   function F() { return c.apply(this, a); }
   F.prototype = c.prototype;
