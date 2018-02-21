@@ -551,9 +551,9 @@ function caml_fill_bytes(s, i, l, c) {
 //Requires: caml_fill_bytes
 var caml_fill_string = caml_fill_bytes
 
-//Provides: caml_blit_string
+//Provides: caml_blit_bytes
 //Requires: caml_subarray_to_string, caml_convert_string_to_array
-function caml_blit_string(s1, i1, s2, i2, len) {
+function caml_blit_bytes(s1, i1, s2, i2, len) {
   if (len == 0) return 0;
   if ((i2 == 0) &&
       (len >= s2.l || (s2.t == 2 /* PARTIAL */ && len >= s2.c.length))) {
@@ -584,9 +584,12 @@ function caml_blit_string(s1, i1, s2, i2, len) {
   return 0;
 }
 
-//Provides: caml_blit_bytes
-//Requires: caml_blit_string
-var caml_blit_bytes = caml_blit_string
+//Provides: caml_blit_string
+//Requires: caml_blit_bytes
+function caml_blit_string(s1, i1, s2, i2, len) {
+  (* TODO: s1 -> string to bytes *)
+  return caml_blit_bytes(s1, i1, s2, i2, len);
+}
 
 //Provides: caml_ml_string_length const
 function caml_ml_string_length(s) { return s.l }
