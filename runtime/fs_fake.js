@@ -110,8 +110,8 @@ MlFakeDevice.prototype.constructor = MlFakeDevice
 
 //Provides: MlFakeFile
 //Requires: MlFile
-//Requires: caml_create_bytes, caml_ml_string_length,caml_blit_bytes
-//Requires: caml_string_get
+//Requires: caml_create_bytes, caml_ml_bytes_length,caml_blit_bytes
+//Requires: caml_bytes_get
 function MlFakeFile(content){
   this.data = content;
 }
@@ -122,7 +122,7 @@ MlFakeFile.prototype.truncate = function(len){
   caml_blit_bytes(old, 0, this.data, 0, len);
 }
 MlFakeFile.prototype.length = function () {
-  return caml_ml_string_length(this.data);
+  return caml_ml_bytes_length(this.data);
 }
 MlFakeFile.prototype.write = function(offset,buf,pos,len){
   var clen = this.length();
@@ -141,7 +141,7 @@ MlFakeFile.prototype.read = function(offset,buf,pos,len){
   return 0
 }
 MlFakeFile.prototype.read_one = function(offset){
-  return caml_string_get(this.data, offset);
+  return caml_bytes_get(this.data, offset);
 }
 MlFakeFile.prototype.close = function(){
 

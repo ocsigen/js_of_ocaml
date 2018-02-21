@@ -251,7 +251,7 @@ function caml_input_value (chanid) {
 
 //Provides: caml_ml_input_char
 //Requires: caml_raise_end_of_file, caml_array_bound_error
-//Requires: caml_ml_string_length, caml_string_get, caml_ml_may_refill_input, caml_ml_channels
+//Requires: caml_ml_string_length, caml_ml_may_refill_input, caml_ml_channels
 function caml_ml_input_char (chanid) {
   var chan = caml_ml_channels[chanid];
   caml_ml_may_refill_input(chanid);
@@ -308,7 +308,7 @@ function caml_ml_pos_in(chanid) {return caml_ml_channels[chanid].offset}
 function caml_ml_pos_in_64(chanid) {return caml_int64_of_float(caml_ml_channels[chanid].offset)}
 
 //Provides: caml_ml_input_scan_line
-//Requires: caml_array_bound_error, caml_ml_string_length, caml_string_get
+//Requires: caml_array_bound_error, caml_ml_string_length
 //Requires: caml_ml_may_refill_input, caml_ml_channels
 function caml_ml_input_scan_line(chanid){
   var chan = caml_ml_channels[chanid];
