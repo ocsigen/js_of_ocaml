@@ -443,11 +443,11 @@ function caml_output_value_to_string (v, _fl) {
 }
 
 //Provides: caml_output_value_to_buffer
-//Requires: caml_output_val, caml_failwith, caml_blit_string
+//Requires: caml_output_val, caml_failwith, caml_blit_bytes
 function caml_output_value_to_buffer (s, ofs, len, v, _fl) {
   /* ignores flags... */
   var t = caml_output_val (v);
   if (t.length > len) caml_failwith ("Marshal.to_buffer: buffer overflow");
-  caml_blit_string(t, 0, s, ofs, t.length);
+  caml_blit_bytes(t, 0, s, ofs, t.length);
   return 0;
 }

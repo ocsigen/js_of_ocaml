@@ -110,7 +110,7 @@ MlFakeDevice.prototype.constructor = MlFakeDevice
 
 //Provides: MlFakeFile
 //Requires: MlFile
-//Requires: caml_create_bytes, caml_ml_string_length,caml_blit_string
+//Requires: caml_create_bytes, caml_ml_string_length,caml_blit_bytes
 //Requires: caml_string_get
 function MlFakeFile(content){
   this.data = content;
@@ -119,7 +119,7 @@ MlFakeFile.prototype = new MlFile ();
 MlFakeFile.prototype.truncate = function(len){
   var old = this.data;
   this.data = caml_create_bytes(len|0);
-  caml_blit_string(old, 0, this.data, 0, len);
+  caml_blit_bytes(old, 0, this.data, 0, len);
 }
 MlFakeFile.prototype.length = function () {
   return caml_ml_string_length(this.data);
@@ -130,14 +130,14 @@ MlFakeFile.prototype.write = function(offset,buf,pos,len){
     var new_str = caml_create_bytes(offset + len);
     var old_data = this.data;
     this.data = new_str;
-    caml_blit_string(old_data, 0, this.data, 0, clen);
+    caml_blit_bytes(old_data, 0, this.data, 0, clen);
   }
-  caml_blit_string(buf, pos, this.data, offset, len);
+  caml_blit_bytes(buf, pos, this.data, offset, len);
   return 0
 }
 MlFakeFile.prototype.read = function(offset,buf,pos,len){
   var clen = this.length();
-  caml_blit_string(this.data, offset, buf, pos, len);
+  caml_blit_bytes(this.data, offset, buf, pos, len);
   return 0
 }
 MlFakeFile.prototype.read_one = function(offset){
