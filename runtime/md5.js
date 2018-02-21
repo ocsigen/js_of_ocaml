@@ -19,7 +19,7 @@
 
 
 //Provides: caml_md5_chan
-//Requires: caml_md5_string, caml_string_of_array,caml_ml_string_length, caml_ml_channels
+//Requires: caml_md5_string, caml_string_of_array,caml_ml_channels
 //Requires: caml_raise_end_of_file, caml_create_bytes  
 function caml_md5_chan(chanid,len){
   var chan = caml_ml_channels[chanid];

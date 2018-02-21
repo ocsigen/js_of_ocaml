@@ -317,13 +317,13 @@ function caml_input_value_from_reader(reader, ofs) {
 }
 
 //Provides: caml_marshal_data_size mutable
-//Requires: caml_failwith, caml_string_unsafe_get
+//Requires: caml_failwith, caml_bytes_unsafe_get
 function caml_marshal_data_size (s, ofs) {
   function get32(s,i) {
-    return (caml_string_unsafe_get(s, i) << 24) |
-           (caml_string_unsafe_get(s, i + 1) << 16) |
-           (caml_string_unsafe_get(s, i + 2) << 8) |
-            caml_string_unsafe_get(s, i + 3);
+    return (caml_bytes_unsafe_get(s, i) << 24) |
+           (caml_bytes_unsafe_get(s, i + 1) << 16) |
+           (caml_bytes_unsafe_get(s, i + 2) << 8) |
+            caml_bytes_unsafe_get(s, i + 3);
   }
   if (get32(s, ofs) != (0x8495A6BE|0))
     caml_failwith("Marshal.data_size: bad object");

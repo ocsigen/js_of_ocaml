@@ -213,20 +213,9 @@ function caml_bytes_unsafe_get (s, i) {
 }
 
 //Provides: caml_string_unsafe_set
-//Requires: caml_convert_string_to_array
-function caml_string_unsafe_set (s, i, c) {
-  // The OCaml compiler uses Char.unsafe_chr on integers larger than 255!
-  c &= 0xff;
-  if (s.t != 4 /* ARRAY */) {
-    if (i == s.c.length) {
-      s.c += String.fromCharCode (c);
-      if (i + 1 == s.l) s.t = 0; /*BYTES | UNKOWN*/
-      return 0;
-    }
-    caml_convert_string_to_array (s);
-  }
-  s.c[i] = c;
-  return 0;
+//Requires: caml_bytes_unsafe_set
+function caml_string_unsafe_set(s, i, c) {
+    return caml_bytes_unsafe_set(s, i, c)
 }
 
 //Provides: caml_bytes_unsafe_set
@@ -299,7 +288,7 @@ function caml_bytes_get (s, i) {
 }
 
 //Provides: caml_string_set
-//Requires: caml_string_bound_error, caml_string_unsafe_set
+//Requires: caml_string_unsafe_set
 function caml_string_set (s, i, c) {
   if (i >>> 0 >= s.l) caml_string_bound_error();
   return caml_string_unsafe_set (s, i, c);

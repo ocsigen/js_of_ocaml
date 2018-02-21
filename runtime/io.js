@@ -170,14 +170,14 @@ function caml_ml_close_channel (chanid) {
 }
 
 //Provides: caml_ml_channel_size
-//Requires: caml_ml_string_length, caml_ml_channels
+//Requires: caml_ml_channels
 function caml_ml_channel_size(chanid) {
   var chan = caml_ml_channels[chanid];
   return chan.file.length();
 }
 
 //Provides: caml_ml_channel_size_64
-//Requires: caml_ml_channel_size,caml_int64_of_float,caml_ml_string_length, caml_ml_channels
+//Requires: caml_int64_of_float,caml_ml_channels
 function caml_ml_channel_size_64(chanid) {
   var chan = caml_ml_channels[chanid];
   return caml_int64_of_float(chan.file.length ());
@@ -199,17 +199,17 @@ function caml_ml_set_channel_refill(chanid,f) {
 }
 
 //Provides: caml_ml_refill_input
-//Requires: caml_ml_string_length
+//Requires: caml_ml_bytes_length
 function caml_ml_refill_input (chan) {
   var str = chan.refill();
-  var str_len = caml_ml_string_length(str);
+  var str_len = caml_ml_bytes_length(str);
   if (str_len == 0) chan.refill = null;
   chan.file.write(chan.file.length(), str, 0, str_len);
   return str_len;
 }
 
 //Provides: caml_ml_may_refill_input
-//Requires: caml_ml_string_length, caml_ml_refill_input, caml_ml_channels
+//Requires: caml_ml_refill_input, caml_ml_channels
 function caml_ml_may_refill_input (chanid) {
   var chan = caml_ml_channels[chanid];
   if (chan.refill == null) return;
@@ -251,7 +251,7 @@ function caml_input_value (chanid) {
 
 //Provides: caml_ml_input_char
 //Requires: caml_raise_end_of_file, caml_array_bound_error
-//Requires: caml_ml_string_length, caml_ml_may_refill_input, caml_ml_channels
+//Requires: caml_ml_may_refill_input, caml_ml_channels
 function caml_ml_input_char (chanid) {
   var chan = caml_ml_channels[chanid];
   caml_ml_may_refill_input(chanid);
@@ -264,7 +264,7 @@ function caml_ml_input_char (chanid) {
 
 //Provides: caml_ml_input_int
 //Requires: caml_raise_end_of_file
-//Requires: caml_ml_string_length, caml_string_unsafe_get, caml_ml_refill_input, caml_ml_channels
+//Requires: caml_ml_refill_input, caml_ml_channels
 function caml_ml_input_int (chanid) {
   var chan = caml_ml_channels[chanid];
   var file = chan.file;
@@ -308,7 +308,7 @@ function caml_ml_pos_in(chanid) {return caml_ml_channels[chanid].offset}
 function caml_ml_pos_in_64(chanid) {return caml_int64_of_float(caml_ml_channels[chanid].offset)}
 
 //Provides: caml_ml_input_scan_line
-//Requires: caml_array_bound_error, caml_ml_string_length
+//Requires: caml_array_bound_error
 //Requires: caml_ml_may_refill_input, caml_ml_channels
 function caml_ml_input_scan_line(chanid){
   var chan = caml_ml_channels[chanid];
@@ -344,14 +344,14 @@ function caml_ml_flush (chanid) {
 
 //output to out_channel
 
-//Provides: caml_ml_output
-//Requires: caml_ml_flush,caml_ml_string_length
+//Provides: caml_ml_output_bytes
+//Requires: caml_ml_flush,caml_ml_bytes_length
 //Requires: caml_create_bytes, caml_blit_bytes, caml_raise_sys_error, caml_ml_channels
-function caml_ml_output (chanid,buffer,offset,len) {
+function caml_ml_output_bytes(chanid,buffer,offset,len) {
     var chan = caml_ml_channels[chanid];
     if(! chan.opened) caml_raise_sys_error("Cannot output to a closed channel");
     var string;
-    if(offset == 0 && caml_ml_string_length(buffer) == len)
+    if(offset == 0 && caml_ml_bytes_length(buffer) == len)
         string = buffer;
     else {
         string = caml_create_bytes(len);
@@ -369,13 +369,15 @@ function caml_ml_output (chanid,buffer,offset,len) {
     return 0;
 }
 
-//Provides: caml_ml_output_bytes
-//Requires: caml_ml_output
-var caml_ml_output_bytes = caml_ml_output
+//Provides: caml_ml_output
+//Requires: caml_ml_output_bytes
+function caml_ml_output(chanid,buffer,offset,len){
+    return caml_ml_output_bytes(chanid,buffer,offset,len);
+}
 
 //Provides: caml_ml_output_char
 //Requires: caml_ml_output
-//Requires: caml_new_string, caml_ml_channels
+//Requires: caml_new_string
 function caml_ml_output_char (chanid,c) {
     var s = caml_new_string(String.fromCharCode(c));
     caml_ml_output(chanid,s,0,1);
@@ -383,7 +385,7 @@ function caml_ml_output_char (chanid,c) {
 }
 
 //Provides: caml_output_value
-//Requires: caml_output_value_to_string, caml_ml_output,caml_ml_string_length, caml_ml_channels
+//Requires: caml_output_value_to_string, caml_ml_output,caml_ml_string_length
 function caml_output_value (chanid,v,_flags) {
   var s = caml_output_value_to_string(v);
   caml_ml_output(chanid,s,0,caml_ml_string_length(s));
