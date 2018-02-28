@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title> Tail call optimization</title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script><script src="/js/client.js"></script></head><body class="js_of_ocaml 2.8.2"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href="/" class="ocsimore_phrasing_link"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml
+</p><ul class="mainmenu"><li class="mainmenu-home"><a href="/" class="ocsimore_phrasing_link">Home</a>
+</li><li class="mainmenu-doc"><a href="/tuto/6.2/manual/intro" class="ocsimore_phrasing_link">Doc</a>
+</li><li><a href="/eliom/6.3/manual/intro" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="mainmenu-current"><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li><a href="/lwt/3.2.1/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
+</li><li><a href="/tyxml/4.1.0/manual/intro" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li><a href="/ocsigen-start/1.1.0/manual/intro" class="ocsimore_phrasing_link">Start</a>
+</li></ul><div class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href="/" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href="/tuto/6.2/manual/intro" class="ocsimore_phrasing_link">Doc</a>
+</li><li><a href="/eliom/6.3/manual/intro" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-current"><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li><a href="/ocsigenserver/2.9/manual/quickstart" class="ocsimore_phrasing_link">Server</a>
+</li><li><a href="/lwt/3.2.1/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
+</li><li><a href="/tyxml/4.1.0/manual/intro" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li><a href="/ocsigen-toolkit/1.1.0/manual/intro" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li><a href="/ocsigen-start/1.1.0/manual/intro" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-page"><a href="/projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href="/papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href="/credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li></ul><div class="how-doctree"><h1>Js_of_ocaml</h1><h2><a href="/js_of_ocaml/2.8.2/manual/overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/export" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/core_async_kernel" class="ocsimore_phrasing_link">Core_kernel and Async_kernel</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/performances" class="ocsimore_phrasing_link">Performances</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/debug" class="ocsimore_phrasing_link">Debug with js_of_ocaml</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/camlp4" class="ocsimore_phrasing_link">Camlp4 syntax extension</a></h2><h2>Examples</h2><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/toplevel/index.html" class="ocsforge_doclink_js_of_ocaml">An OCaml toplevel running in the browser</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/planet/index.html" class="ocsforge_doclink_js_of_ocaml">An animated 3D view of the Earth</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/graph_viewer/index.html" class="ocsforge_doclink_js_of_ocaml">A graph viewer</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/boulderdash/index.html" class="ocsforge_doclink_js_of_ocaml">A Boulder Dash game</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/wiki/index.html" class="ocsforge_doclink_js_of_ocaml">A realtime wiki editor</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/webgl/index.html" class="ocsforge_doclink_js_of_ocaml">A webgl demo</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/minesweeper/index.html" class="ocsforge_doclink_js_of_ocaml">A Minesweeper game</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/hyperbolic/index.html" class="ocsforge_doclink_js_of_ocaml">A hyperbolic tree viewer</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/cubes/index.html" class="ocsforge_doclink_js_of_ocaml">A random walk on lozenge tiling configurations</a></span></h3></div></nav></div></div><button id="reason">Switch to </button><div class="twocols"><div class="leftcol"><div class="how-versions"><input id="how-versions-toggle" type="checkbox"/><label for="how-versions-toggle" class="how-versions-current">Version 2.8.2</label><div class="how-versions-all"><a href="/js_of_ocaml/dev/manual/tailcall">dev</a><a href="/js_of_ocaml/3.1.0/manual/tailcall">3.1.0</a><a href="/js_of_ocaml/2.8.4/manual/tailcall">2.8.4</a><a href="/js_of_ocaml/2.8.3/manual/tailcall">2.8.3</a><span class="how-versions-all-current">2.8.2</span><a href="/js_of_ocaml/2.8.1/manual/tailcall">2.8.1</a><a href="/js_of_ocaml/2.8/manual/tailcall">2.8</a><a href="/js_of_ocaml/2.7/manual/tailcall">2.7</a><a href="/js_of_ocaml/2.6/manual/tailcall">2.6</a><a href="/js_of_ocaml/2.5/manual/tailcall">2.5</a><a href="/js_of_ocaml/2.4.1/manual/tailcall">2.4.1</a><a href="/js_of_ocaml/2.4/manual/tailcall">2.4</a><a href="/js_of_ocaml/2.3/manual/tailcall">2.3</a><a href="/js_of_ocaml/2.2/manual/tailcall">2.2</a><a href="/js_of_ocaml/2.1/manual/tailcall">2.1</a><a href="/js_of_ocaml/2.0/manual/tailcall">2.0</a><a href="/js_of_ocaml/1.4/manual/tailcall">1.4</a><a href="/js_of_ocaml/1.3/manual/tailcall">1.3</a><a href="/js_of_ocaml/1.2/manual/tailcall">1.2</a><a href="/js_of_ocaml/1.1.1/manual/tailcall">1.1.1</a><a href="/js_of_ocaml/1.0.9/manual/tailcall">1.0.9</a></div></div><form id="search"><input name="q" id="q" placeholder="search ..."/><button>Search</button></form><div class="how-doctree"><h1>Js_of_ocaml</h1><h2><a href="/js_of_ocaml/2.8.2/manual/overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/export" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/core_async_kernel" class="ocsimore_phrasing_link">Core_kernel and Async_kernel</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/performances" class="ocsimore_phrasing_link">Performances</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/debug" class="ocsimore_phrasing_link">Debug with js_of_ocaml</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h2><a href="/js_of_ocaml/2.8.2/manual/camlp4" class="ocsimore_phrasing_link">Camlp4 syntax extension</a></h2><h2>Examples</h2><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/toplevel/index.html" class="ocsforge_doclink_js_of_ocaml">An OCaml toplevel running in the browser</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/planet/index.html" class="ocsforge_doclink_js_of_ocaml">An animated 3D view of the Earth</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/graph_viewer/index.html" class="ocsforge_doclink_js_of_ocaml">A graph viewer</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/boulderdash/index.html" class="ocsforge_doclink_js_of_ocaml">A Boulder Dash game</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/wiki/index.html" class="ocsforge_doclink_js_of_ocaml">A realtime wiki editor</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/webgl/index.html" class="ocsforge_doclink_js_of_ocaml">A webgl demo</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/minesweeper/index.html" class="ocsforge_doclink_js_of_ocaml">A Minesweeper game</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/hyperbolic/index.html" class="ocsforge_doclink_js_of_ocaml">A hyperbolic tree viewer</a></span></h3><h3><span><a href="/js_of_ocaml/2.8.2/manual/files/cubes/index.html" class="ocsforge_doclink_js_of_ocaml">A random walk on lozenge tiling configurations</a></span></h3></div></div><div class="rightcol"><h1> Tail call optimization</h1><p>JavaScript does not (yet) support tail call optimization.
+To circumvent this limitation, and mitigate stack overflows, the Js_of_ocaml
+compiler optimize some common tail call patterns.
+</p><h3> Self tail recursive</h3><p>Self tail recursive function are compiled into a loop.
+</p><h4> OCaml</h4><pre class=""><code class="language-ocaml translatable">let rec fact x acc =
+  if x = 0
+  then acc
+  else fact (pred x) (acc * x)</code></pre><h4> JavaScript</h4><pre class="manually-translated"><code class="language-javascript">function fact(x,acc){
+  var x$0=x,acc$0=acc;
+  for(;;){
+    if(0===x$0) return acc$0;
+    var acc$1=caml_mul(acc$0,x$0),
+        x$1=x$0-1|0,
+        x$0=x$1,
+        acc$0=acc$1;
+    continue
+  }
+}</code></pre><h3> Mutually tail recursive functions</h3><p>Mutually tail recursive functions are compiled using a trampoline.
+Note that the generated code does not return to the trampoline at every
+recursive call to prevent too much slow down.
+</p><h4> OCaml</h4><pre class=""><code class="language-ocaml translatable">let rec even n =
+  match n with
+  | 0 -&gt; true
+  | x -&gt; odd (x-1)
+and odd n =
+  match n with
+  | 0 -&gt; false
+  | x -&gt; even (x-1);;</code></pre><h4> JavaScript</h4><pre class="manually-translated"><code class="language-javascript">function even$0(counter,n){
+  if(0===n)return 1;
+  var _e_=n-1|0;
+  if(counter&lt;50){
+    var counter$0=counter+1|0;
+    return odd$0(counter$0,_e_)
+  }
+  return caml_trampoline_return(odd$0,[0,_e_])
+}
+function odd$0(counter,n){
+  if(0===n)return 0;
+  var _d_=n-1|0;
+  if(counter&lt;50){
+    var counter$0=counter+1|0;
+    return even$0(counter$0,_d_)
+  }
+  return caml_trampoline_return(even$0,[0,_d_])
+}
+function even(n){return caml_trampoline(even$0(0,n))}
+function odd(n){return caml_trampoline(odd$0(0,n))}</code></pre><h2> Examples of pattern not optimized</h2><p>Recursive function where the tail call is made inside an intermediate function.
+</p><pre class=""><code class="language-ocaml translatable">let rec f x =
+  let g delta = f (x - delta) in
+  if x &lt; 0 then 0
+  else if x mod 2 = 0
+  then g 2
+  else g 1;;</code></pre><p>Tail call of a function given as argument
+</p><pre class=""><code class="language-ocaml translatable">let bind x f =
+  match x with
+  | None -&gt; None
+  | Some x -&gt; f x</code></pre><p>Note that in the future, more tail call optimizations could be perform with function specialization and
+better inlining.
+</p></div></div></div></body></html>

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title> The Js_of_ocaml library</title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script><script src="/js/client.js"></script></head><body class="js_of_ocaml dev"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href="/" class="ocsimore_phrasing_link"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml
+</p><ul class="mainmenu"><li class="mainmenu-home"><a href="/" class="ocsimore_phrasing_link">Home</a>
+</li><li class="mainmenu-doc"><a href="/tuto/6.2/manual/intro" class="ocsimore_phrasing_link">Doc</a>
+</li><li><a href="/eliom/6.3/manual/intro" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="mainmenu-current"><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li><a href="/lwt/3.2.1/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
+</li><li><a href="/tyxml/4.1.0/manual/intro" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li><a href="/ocsigen-start/1.1.0/manual/intro" class="ocsimore_phrasing_link">Start</a>
+</li></ul><div class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href="/" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href="/tuto/6.2/manual/intro" class="ocsimore_phrasing_link">Doc</a>
+</li><li><a href="/eliom/6.3/manual/intro" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-current"><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li><a href="/ocsigenserver/2.9/manual/quickstart" class="ocsimore_phrasing_link">Server</a>
+</li><li><a href="/lwt/3.2.1/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
+</li><li><a href="/tyxml/4.1.0/manual/intro" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li><a href="/ocsigen-toolkit/1.1.0/manual/intro" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li><a href="/ocsigen-start/1.1.0/manual/intro" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-page"><a href="/projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href="/papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href="/credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li></ul><div class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="/js_of_ocaml/dev/manual/overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="/js_of_ocaml/dev/manual/quickstart" class="ocsimore_phrasing_link">quick start</a></h2><h2><a href="/js_of_ocaml/dev/manual/library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="/js_of_ocaml/dev/manual/bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="/js_of_ocaml/dev/manual/rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="/js_of_ocaml/dev/manual/lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h1>Syntaxes</h1><h2><a href="/js_of_ocaml/dev/manual/ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="/js_of_ocaml/dev/manual/camlp4" class="ocsimore_phrasing_link">Camlp4 syntax extension</a></h2><h1>Compiler</h1><h2><a href="/js_of_ocaml/dev/manual/options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="/js_of_ocaml/dev/manual/linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="/js_of_ocaml/dev/manual/separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="/js_of_ocaml/dev/manual/tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h1>Misc</h1><h2><a href="/js_of_ocaml/dev/manual/debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="/js_of_ocaml/dev/manual/contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="/js_of_ocaml/dev/manual/performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href="/js_of_ocaml/dev/manual/files/toplevel/index.html" class="ocsforge_doclink_js_of_ocaml">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/planet/index.html" class="ocsforge_doclink_js_of_ocaml">An animated 3D view of the Earth</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/graph_viewer/index.html" class="ocsforge_doclink_js_of_ocaml">A graph viewer</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/boulderdash/index.html" class="ocsforge_doclink_js_of_ocaml">A Boulder Dash game</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/wiki/index.html" class="ocsforge_doclink_js_of_ocaml">A realtime wiki editor</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/webgl/index.html" class="ocsforge_doclink_js_of_ocaml">A webgl demo</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/minesweeper/index.html" class="ocsforge_doclink_js_of_ocaml">A Minesweeper game</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/hyperbolic/index.html" class="ocsforge_doclink_js_of_ocaml">A hyperbolic tree viewer</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/cubes/index.html" class="ocsforge_doclink_js_of_ocaml">A random walk on lozenge tiling configurations</a></span></h2></div></nav></div></div><button id="reason">Switch to </button><div class="twocols"><div class="leftcol"><div class="how-versions"><input id="how-versions-toggle" type="checkbox"/><label for="how-versions-toggle" class="how-versions-current">Version dev</label><div class="how-versions-all"><span class="how-versions-all-current">dev</span><a href="/js_of_ocaml/3.1.0/manual/library">3.1.0</a><a href="/js_of_ocaml/2.8.4/manual/library">2.8.4</a><a href="/js_of_ocaml/2.8.3/manual/library">2.8.3</a><a href="/js_of_ocaml/2.8.2/manual/library">2.8.2</a><a href="/js_of_ocaml/2.8.1/manual/library">2.8.1</a><a href="/js_of_ocaml/2.8/manual/library">2.8</a><a href="/js_of_ocaml/2.7/manual/library">2.7</a><a href="/js_of_ocaml/2.6/manual/library">2.6</a><a href="/js_of_ocaml/2.5/manual/library">2.5</a><a href="/js_of_ocaml/2.4.1/manual/library">2.4.1</a><a href="/js_of_ocaml/2.4/manual/library">2.4</a><a href="/js_of_ocaml/2.3/manual/library">2.3</a><a href="/js_of_ocaml/2.2/manual/library">2.2</a><a href="/js_of_ocaml/2.1/manual/library">2.1</a><a href="/js_of_ocaml/2.0/manual/library">2.0</a><a href="/js_of_ocaml/1.4/manual/library">1.4</a><a href="/js_of_ocaml/1.3/manual/library">1.3</a><a href="/js_of_ocaml/1.2/manual/library">1.2</a><a href="/js_of_ocaml/1.1.1/manual/library">1.1.1</a><a href="/js_of_ocaml/1.0.9/manual/library">1.0.9</a></div></div><form id="search"><input name="q" id="q" placeholder="search ..."/><button>Search</button></form><div class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="/js_of_ocaml/dev/manual/overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="/js_of_ocaml/dev/manual/quickstart" class="ocsimore_phrasing_link">quick start</a></h2><h2><a href="/js_of_ocaml/dev/manual/library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="/js_of_ocaml/dev/manual/bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="/js_of_ocaml/dev/manual/rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="/js_of_ocaml/dev/manual/lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h1>Syntaxes</h1><h2><a href="/js_of_ocaml/dev/manual/ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="/js_of_ocaml/dev/manual/camlp4" class="ocsimore_phrasing_link">Camlp4 syntax extension</a></h2><h1>Compiler</h1><h2><a href="/js_of_ocaml/dev/manual/options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="/js_of_ocaml/dev/manual/linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="/js_of_ocaml/dev/manual/separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="/js_of_ocaml/dev/manual/tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h1>Misc</h1><h2><a href="/js_of_ocaml/dev/manual/debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="/js_of_ocaml/dev/manual/contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="/js_of_ocaml/dev/manual/performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href="/js_of_ocaml/dev/manual/files/toplevel/index.html" class="ocsforge_doclink_js_of_ocaml">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/planet/index.html" class="ocsforge_doclink_js_of_ocaml">An animated 3D view of the Earth</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/graph_viewer/index.html" class="ocsforge_doclink_js_of_ocaml">A graph viewer</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/boulderdash/index.html" class="ocsforge_doclink_js_of_ocaml">A Boulder Dash game</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/wiki/index.html" class="ocsforge_doclink_js_of_ocaml">A realtime wiki editor</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/webgl/index.html" class="ocsforge_doclink_js_of_ocaml">A webgl demo</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/minesweeper/index.html" class="ocsforge_doclink_js_of_ocaml">A Minesweeper game</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/hyperbolic/index.html" class="ocsforge_doclink_js_of_ocaml">A hyperbolic tree viewer</a></span></h2><h2><span><a href="/js_of_ocaml/dev/manual/files/cubes/index.html" class="ocsforge_doclink_js_of_ocaml">A random walk on lozenge tiling configurations</a></span></h2></div></div><div class="rightcol"><h1> The Js_of_ocaml library</h1><h2> Base types </h2><p>Base values are not represented the same way in OCaml and Javascript.
+In particular, OCaml strings are mutable arrays of bytes, while
+Javascript strings are constant arrays of UTF-16 code points.  We list
+here the correspondence between base types.  Conversion functions are
+provided.
+</p><table><tr><th> OCaml values </th><th> Ocaml type of Javascript values </th><th> Actual Javascript type </th></tr><tr><td> <span class="teletype">int</span>     </td><td> <span class="teletype">int</span>                        </td><td> Number                  </td></tr><tr><td> <span class="teletype">float</span>   </td><td> <span class="teletype">float</span>                      </td><td> Number                  </td></tr><tr><td> <span class="teletype">bool</span>    </td><td> <span class="teletype">bool Js.t</span>                  </td><td> Boolean                 </td></tr><tr><td> <span class="teletype">string</span>  </td><td> <span class="teletype">Js.js_string Js.t</span>          </td><td> String                  </td></tr><tr><td> <span class="teletype">array</span>   </td><td> <span class="teletype">Js.js_array Js.t</span>           </td><td> Array                   </td></tr></table><p>Integers and floats are implemented as Javascript numbers.  They can
+thus be directly passed to and from Javascript.
+</p><h2> Typing Javascript objects </h2><p>Javascript objects are given types of the shape
+<span class="teletype">&lt;m_1 : t_1; ...; m_n : t_n&gt; Js.t</span>,
+using a phantom object type.  The methods <span class="teletype">m_i</span> stands for the
+field of the Javascript object.  For instance, a Javascript object of
+type:
+</p><pre>   &lt; data : js_string t Js.prop;
+     appendData : js_string t -&gt; unit Js.meth&gt; Js.t
+</pre><p>has a property <span class="teletype">data</span> containing a Javascript string, and a method
+<span class="teletype">appendData</span> taking a Javascript string as argument and returning
+no value.
+</p><h3> Method name and underscore</h3><p>Some overloading is possible using a syntactic trick: names
+<span class="teletype">_foo</span>, <span class="teletype">foo_abcd</span> and <span class="teletype">foo</span> are all mapped to a same
+Javascript field name <span class="teletype">foo</span>: when accessing a field of an object,
+the name given in the OCaml code is transformed by removing a leading
+underscore and then removing all characters starting from the last
+underscore; this yields the corresponding Javascript name.  For
+instance, these three types correspond to the same Javascript method
+<span class="teletype">drawImage</span>:
+</p><pre>    drawImage :
+        imageElement t -&gt; float -&gt; float -&gt; unit meth
+    drawImage_withSize :
+        imageElement t -&gt; float -&gt; float -&gt; float -&gt; float -&gt; unit meth
+    drawImage_fromCanvas :
+        canvasElement t -&gt; float -&gt; float -&gt; unit meth
+</pre><p>This trick can also be used to refer to Javascript fields <span class="teletype">type</span> or
+<span class="teletype">Uppercase</span>, for instance as <span class="teletype">_type</span> and <span class="teletype">_Uppercase</span>.
+</p><h4> Example</h4><pre class=""><code class="language-ocaml translatable">class type .. = object
+  (* Referer to [meth] *)
+  method meth : ..
+  method meth_int : ..
+  method _meth_ : ..
+  method _meth_aa : ..
+
+  (* Referer to  [meth_a] *)
+  method meth_a_int : ..
+  method _meth_a_ : ..
+  method _meth_a_b : ..
+
+  (* Referer to [Meth] *)
+  method _Meth : ..
+
+  (* Referer to [_meth] *)
+  method __meth : ..
+
+  (* Referer to [_] *)
+  method __ : ..
+end</code></pre><h2> Syntax extension </h2><p>Two syntax extensions are provided: the <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/dev/manual/Ppx">Ppx_js</a></span>
+one and the <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/dev/manual/camlp4">Camlp4</a></span> one. This manual is written
+using the ppx extension, which we advise.
+</p><h2> OCaml and Javascript functions </h2><p>OCaml and Javascript do not follow the same calling convention.  In
+OCaml, functions can be partially applied, returning a function
+closure.  In Javascript, when only some of the parameters are passed,
+the others are set to the <span class="teletype">undefined</span> value.  As a consequence, it
+is not possible to call a Javascript function from OCaml as if it was
+an OCaml function, and conversely.
+</p><h3> Calling Javascript functions </h3><p>At the moment, there is no syntactic sugar for calling Javascript
+functions.  You should use either <span class="teletype">Js.Unsafe.call</span> or
+<span class="teletype">Js.Unsafe.fun_call</span>, depending whether you want <span class="teletype">this</span> to be
+bound to some particular object in the function body or not.
+</p><p>You can also refer to a Javascript function using an OCaml external
+declaration. Then, you need to write stub functions in C so that the
+OCaml compiler accept the external declaration:
+</p><pre>   Ocaml file:
+      external foo : t1 -&gt; t2 = &quot;foo&quot;
+   C file:
+      #include &lt;stdlib.h&gt;
+      #define D(f) void f () { exit(1); }
+      D(foo)
+</pre><p>You can call this function as if it was an OCaml function, as the
+Javascript function is appropriately wrapped by the system.
+</p><p>Refer to <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/dev/manual/linker">the linker manual</a></span>
+to link your program with javascript stubs.
+</p><h2> IO </h2><p>The <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/dev/api/Json">Json</a></span> module allows to marshal and unmarshal the
+javascript representation of OCaml values into the corresponding JSON
+string. The unmarshaling is unsafe in the same way the OCaml
+<span class="teletype">Marshal.from_string</span> function is.
+</p><p>Type-safe unmarshaling may be achieved with the
+<span class="teletype">deriving</span> library using either the optional <span class="teletype">Json</span>
+class or the <span class="teletype">Pickle</span> class.
+</p><ul><li> The <span class="teletype">Json</span> class use a Json as external representation and do
+not preserve potential sharings in the data representation. See
+<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/dev/api/Deriving_Json">Deriving_Json</a></span> for more information.
+</li><li> The <span class="teletype">Pickle</span> class use a binary format as external
+representation and preserve sharings in the data representation.
+</li></ul></div></div></div></body></html>
