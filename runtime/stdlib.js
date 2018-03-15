@@ -438,8 +438,13 @@ function caml_lessthan (x, y) { return +(caml_compare_val(x,y,false) < 0); }
 //Provides: caml_parse_sign_and_base
 //Requires: caml_string_unsafe_get, caml_ml_string_length
 function caml_parse_sign_and_base (s) {
-  var i = 0, len = caml_ml_string_length(s), base = 10,
-     sign = (len > 0 && caml_string_unsafe_get(s,0) == 45)?(i++,-1):1;
+  var i = 0, len = caml_ml_string_length(s), base = 10, sign = 1;
+  if (len > 0) {
+    switch (caml_string_unsafe_get(s,i)) {
+    case 45: i++; sign = -1; break;
+    case 43: i++; sign = 1; break;
+    }
+  }
   if (i + 1 < len && caml_string_unsafe_get(s, i) == 48)
     switch (caml_string_unsafe_get(s, i + 1)) {
     case 120: case 88: base = 16; i += 2; break;
