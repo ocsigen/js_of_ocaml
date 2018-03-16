@@ -6,6 +6,7 @@
 (rule
  ((targets (main.js))
   (action  (run ${bin:js_of_ocaml}
+                  --enable with-js-error
                   --no-runtime ${lib:js_of_ocaml-compiler:runtime.js}
                   ${path:main.bc} -o ${@}))
  ))
