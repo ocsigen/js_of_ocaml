@@ -84,7 +84,7 @@ and mark_reachable st pc =
              mark_var st x)
       block.body;
     match block.branch with
-      Return x | Raise x ->
+      Return x | Raise (x,_) ->
         mark_var st x
     | Stop ->
         ()

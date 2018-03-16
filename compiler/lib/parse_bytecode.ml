@@ -1407,9 +1407,16 @@ and compile infos pc state instrs =
     | RERAISE
     | RAISE_NOTRACE
     | RAISE ->
+      let kind =
+        match instr.Instr.code with
+        | RERAISE -> `Reraise
+        | RAISE_NOTRACE -> `Notrace
+        | RAISE -> `Normal
+        | _ -> assert false
+      in
       if debug_parser () then
         Format.printf "throw(%a)@." Var.print (State.accu state);
-      (instrs, Raise (State.accu state), state)
+      (instrs, Raise (State.accu state, kind), state)
     | CHECK_SIGNALS ->
       compile infos (pc + 1) state instrs
     | C_CALL1 ->

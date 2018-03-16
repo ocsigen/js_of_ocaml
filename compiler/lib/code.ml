@@ -194,7 +194,7 @@ type cond = IsTrue | CEq of int32 | CLt of int32 | CLe of int32 | CUlt of int32
 
 type last =
     Return of Var.t
-  | Raise of Var.t
+  | Raise of Var.t * [`Normal|`Notrace|`Reraise]
   | Stop
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
@@ -355,8 +355,12 @@ let print_last f l =
   match l with
     Return x ->
       Format.fprintf f "return %a" Var.print x
-  | Raise x ->
+  | Raise (x, `Normal) ->
       Format.fprintf f "raise %a" Var.print x
+  | Raise (x, `Reraise) ->
+      Format.fprintf f "reraise %a" Var.print x
+  | Raise (x, `Notrace) ->
+      Format.fprintf f "raise_notrace %a" Var.print x
   | Stop ->
       Format.fprintf f "stop"
   | Branch cont ->

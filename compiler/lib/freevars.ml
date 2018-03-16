@@ -52,7 +52,7 @@ let iter_instr_free_vars f i =
 let iter_last_free_var f l =
   match l with
     Return x
-  | Raise x ->
+  | Raise (x,_) ->
       f x
   | Stop ->
       ()

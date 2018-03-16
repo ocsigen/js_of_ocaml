@@ -277,7 +277,7 @@ let program_escape defs known_origins (_, blocks, _) =
                   (VarTbl.get known_origins x))
          block.body;
        match block.branch with
-         Return x | Raise x ->
+         Return x | Raise (x,_) ->
            block_escape st x
        | Stop | Branch _ | Cond _ | Switch _ | Pushtrap _ | Poptrap _ ->
            ())

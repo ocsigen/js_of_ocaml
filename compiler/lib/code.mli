@@ -123,7 +123,7 @@ type cond = IsTrue | CEq of int32 | CLt of int32 | CLe of int32 | CUlt of int32
 
 type last =
     Return of Var.t
-  | Raise of Var.t
+  | Raise of Var.t * [`Normal|`Notrace|`Reraise]
   | Stop
   | Branch of cont
   | Cond of cond * Var.t * cont * cont

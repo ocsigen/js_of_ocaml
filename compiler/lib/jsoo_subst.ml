@@ -60,8 +60,8 @@ let last s l =
       Pushtrap (subst_cont s cont1, x, subst_cont s cont2, pcs)
   | Return x ->
       Return (s x)
-  | Raise x ->
-      Raise (s x)
+  | Raise (x, k) ->
+      Raise (s x, k)
   | Cond (c, x, cont1, cont2) ->
       Cond (c, s x, subst_cont s cont1, subst_cont s cont2)
   | Switch (x, a1, a2) ->
