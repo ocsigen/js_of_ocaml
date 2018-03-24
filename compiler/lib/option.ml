@@ -128,6 +128,8 @@ module Optim = struct
 
   let inline_callgen = o ~name:"callgen" ~default:false
 
+  let safe_string = o ~name:"safestring" ~default:true
+
   let check_magic = o ~name:"check-magic-number" ~default:true
 
   (* this does not optimize properly *)

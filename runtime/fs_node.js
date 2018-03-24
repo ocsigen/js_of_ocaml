@@ -69,7 +69,7 @@ MlNodeDevice.prototype.rename = function(o,n) {
 MlNodeDevice.prototype.constructor = MlNodeDevice
 
 //Provides: MlNodeFile
-//Requires: MlFile, caml_array_of_string, caml_string_get, caml_string_set
+//Requires: MlFile, caml_array_of_string, caml_bytes_set
 
 var Buffer = joo_global_object.Buffer
 
@@ -100,7 +100,7 @@ MlNodeFile.prototype.read = function(offset,buf,buf_offset,len){
   var buffer = new Buffer(a);
   this.fs.readSync(this.fd, buffer, buf_offset, len, offset);
   for(var i = 0; i < len; i++){
-    caml_string_set(buf,buf_offset + i,buffer[buf_offset+i]);
+    caml_bytes_set(buf,buf_offset + i,buffer[buf_offset+i]);
   }
   return 0
 }

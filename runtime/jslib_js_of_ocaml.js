@@ -28,7 +28,7 @@ function caml_js_from_float(x) { return x; }
 //Provides: caml_js_to_float const (const)
 function caml_js_to_float(x) { return x; }
 //Provides: caml_js_from_string mutable (const)
-//Requires: MlString
+//Requires: MlBytes
 function caml_js_from_string(s) { return s.toString(); }
 //Provides: caml_js_from_array mutable (shallow)
 //Requires: raw_array_sub
@@ -39,7 +39,7 @@ function caml_js_to_array(a) { return raw_array_cons(a,0); }
 
 //Provides: caml_js_var mutable (const)
 //Requires: js_print_stderr
-//Requires: MlString
+//Requires: MlBytes
 function caml_js_var(x) {
   var x = x.toString();
   //Checks that x has the form ident[.ident]*
@@ -68,7 +68,7 @@ function caml_js_fun_call(f, a) {
   return f.apply(null, caml_js_from_array(a));
 }
 //Provides: caml_js_meth_call (mutable, const, shallow)
-//Requires: MlString
+//Requires: MlBytes
 //Requires: caml_js_from_array
 function caml_js_meth_call(o, f, args) {
   return o[f.toString()].apply(o, caml_js_from_array(args));
@@ -175,25 +175,25 @@ function caml_js_equals (x, y) { return +(x == y); }
 function caml_js_to_byte_string (s) {return caml_new_string (s);}
 
 //Provides: caml_js_eval_string (const)
-//Requires: MlString
+//Requires: MlBytes
 function caml_js_eval_string (s) {return eval(s.toString());}
 
 //Provides: caml_js_expr (const)
 //Requires: js_print_stderr
-//Requires: MlString
+//Requires: MlBytes
 function caml_js_expr(s) {
   js_print_stderr("caml_js_expr: fallback to runtime evaluation");
   return eval(s.toString());}
 
 //Provides: caml_pure_js_expr const (const)
 //Requires: js_print_stderr
-//Requires: MlString
+//Requires: MlBytes
 function caml_pure_js_expr (s){
   js_print_stderr("caml_pure_js_expr: fallback to runtime evaluation");
   return eval(s.toString());}
 
 //Provides: caml_js_object (object_literal)
-//Requires: MlString
+//Requires: MlBytes
 function caml_js_object (a) {
   var o = {};
   for (var i = 1; i < a.length; i++) {

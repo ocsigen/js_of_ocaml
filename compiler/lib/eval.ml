@@ -116,8 +116,10 @@ let eval_prim x =
      | "caml_sin_float",_ -> float_unop l sin
      | "caml_sqrt_float",_ -> float_unop l sqrt
      | "caml_tan_float",_ -> float_unop l tan
-
-
+     | ("caml_string_get"|"caml_string_unsafe_get"), [(String s|IString s); Int pos] ->
+        if Option.Optim.safe_string () && String.length s > Int.to_int pos
+        then Some (Int (Int.of_int (Char.code (String.get s (Int.to_int pos)))))
+        else None
      | "caml_string_equal", [String s1; String s2] ->
        bool (s1 = s2)
      | "caml_string_notequal", [String s1; String s2] ->
@@ -142,7 +144,8 @@ let the_length_of info x =
        match info.info_defs.(Var.idx x) with
          | Expr (Constant (String s))
          | Expr (Constant (IString s)) -> Some (Int32.of_int (String.length s))
-         | Expr (Prim (Extern "caml_create_string",[arg])) ->
+         | Expr (Prim (Extern "caml_create_string",[arg]))
+         | Expr (Prim (Extern "caml_create_bytes",[arg])) ->
            the_int info arg
          | _ -> None)
     None

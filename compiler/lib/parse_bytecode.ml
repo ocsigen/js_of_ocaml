@@ -1326,6 +1326,15 @@ and compile infos pc state instrs =
       if debug_parser () then Format.printf "%a = 0@." Var.print x;
       compile infos (pc + 1) (State.pop 2 state)
         (Let (x, Const 0l) :: instrs)
+    | GETSTRINGCHAR ->
+      let y = State.accu state in
+      let z = State.peek 0 state in
+      let (x, state) = State.fresh_var state in
+      if debug_parser () then Format.printf "%a = %a[%a]@."
+          Var.print x Var.print y Var.print z;
+      compile infos (pc + 1) (State.pop 1 state)
+        (Let (x, Prim (Extern "caml_string_unsafe_get", [Pv y; Pv z])) ::
+         instrs)
     | GETBYTESCHAR ->
       let y = State.accu state in
       let z = State.peek 0 state in
@@ -2261,7 +2270,7 @@ let from_compilation_units ~includes:_ ~debug ~debug_data l =
           let l = register_global globals i l in
           let cst = Constants.parse globals.constants.(i) in
           begin match cst, Code.Var.get_name x with
-            | String str, None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
+            | (String str|IString str), None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
             | _ -> ()
           end;
           Let (x, Constant cst) :: l

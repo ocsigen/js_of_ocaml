@@ -11,11 +11,11 @@ function bigstring_destroy_stub(_v) {
 }
 
 //Provides: bigstring_blit_bigstring_bytes_stub
-//Requires: caml_string_set, caml_ba_get_1
+//Requires: caml_bytes_set, caml_ba_get_1
 function bigstring_blit_bigstring_bytes_stub(v_bstr, v_src_pos, v_str, v_dst_pos, v_len){
   for(var i = 0; i < v_len; i++){
     var c = caml_ba_get_1(v_bstr,v_src_pos + i);
-    caml_string_set(v_str,v_dst_pos + i,c);
+    caml_bytes_set(v_str,v_dst_pos + i,c);
   }
   return 0;
 }
@@ -36,9 +36,9 @@ function bigstring_blit_string_bigstring_stub(v_str, v_src_pos, v_bstr, v_dst_po
 }
 
 //Provides: bigstring_blit_bytes_bigstring_stub
-//Requires: caml_string_get, caml_ba_set_1
+//Requires: caml_bytes_get, caml_ba_set_1
 function bigstring_blit_bytes_bigstring_stub(v_str, v_src_pos, v_bstr, v_dst_pos, v_len){
-  for (var i = 0; i < v_len; i++) caml_ba_set_1(v_bstr,v_dst_pos + i,caml_string_get(v_str,v_src_pos + i));
+  for (var i = 0; i < v_len; i++) caml_ba_set_1(v_bstr,v_dst_pos + i,caml_bytes_get(v_str,v_src_pos + i));
   return 0;
 }
 //Provides: caml_blit_string_to_bigstring
