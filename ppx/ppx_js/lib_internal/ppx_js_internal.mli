@@ -18,4 +18,4 @@
 
 (**/**)
 val wrapper : string option ref
-val mapper : Migrate_parsetree.OCaml_405.Ast.Ast_mapper.mapper
+val mapper : Migrate_parsetree.OCaml_406.Ast.Ast_mapper.mapper

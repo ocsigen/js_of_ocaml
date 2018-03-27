@@ -17,7 +17,7 @@
  *)
 
 open Migrate_parsetree
-open OCaml_405.Ast
+open OCaml_406.Ast
 
 (* For implicit optional argument elimination. Annoying with Ast_helper. *)
 [@@@ocaml.warning "-48"]
@@ -25,7 +25,7 @@ open Ast_mapper
 open Ast_helper
 open Asttypes
 open Parsetree
-open Ast_convenience_405
+open Ast_convenience_406
 
 (** Check if an expression is an identifier and returns it.
     Raise a Location.error if it's not.
@@ -452,7 +452,7 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
   let jsoo_attributes =
     filter_map (fun ({txt; _}, _) -> parse_attribute txt)
   in
-  
+
   let f (names, fields) exp = match exp.pcf_desc with
     | Pcf_val (id, mut, Cfk_concrete (bang, body)) ->
       let names = check_name id names in
@@ -474,7 +474,7 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
         | _, _ :: _ :: _ ->
           Location.raise_errorf ~loc:exp.pcf_loc
             "Too many attributes."
-            
+
       in
       names, (Val (id, kind, bang, body) :: fields)
     | Pcf_method (id, priv, Cfk_concrete (bang, body)) ->
@@ -723,5 +723,5 @@ let mapper =
 let () =
   Driver.register
     ~name:"ppx_js"
-    Migrate_parsetree.Versions.ocaml_405
+    Migrate_parsetree.Versions.ocaml_406
     (fun _config _cookies -> mapper)
