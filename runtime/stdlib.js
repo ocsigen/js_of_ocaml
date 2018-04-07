@@ -388,7 +388,8 @@ function caml_compare_val (a, b, total) {
                  (b instanceof Array && b[0] === (b[0]|0))) {
         return -1;
       } else if (typeof a != "number" && a && a.compare) {
-        return a.compare(b,total);
+        var cmp = a.compare(b,total);
+        if (cmp != 0) return cmp;
       } else if (typeof a == "function") {
         caml_invalid_argument("compare: functional value");
       } else {
