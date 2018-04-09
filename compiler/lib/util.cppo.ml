@@ -487,10 +487,8 @@ let rec obj_of_const =
     ) l;
     b
 #else
-#if OCAML_VERSION < (4,7,0)
   | Const_pointer i ->
     Obj.repr i
-#endif
   | Const_block (tag,l) ->
     let b = Obj.new_block tag (List.length l) in
     List.iteri (fun i x ->
