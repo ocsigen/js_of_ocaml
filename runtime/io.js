@@ -346,7 +346,7 @@ function caml_ml_flush (chanid) {
 
 //Provides: caml_ml_output_bytes
 //Requires: caml_ml_flush,caml_ml_bytes_length
-//Requires: caml_create_bytes, caml_blit_bytes, caml_raise_sys_error, caml_ml_channels
+//Requires: caml_create_bytes, caml_blit_bytes, caml_raise_sys_error, caml_ml_channels, caml_jsbytes_of_string
 function caml_ml_output_bytes(chanid,buffer,offset,len) {
     var chan = caml_ml_channels[chanid];
     if(! chan.opened) caml_raise_sys_error("Cannot output to a closed channel");
@@ -357,7 +357,7 @@ function caml_ml_output_bytes(chanid,buffer,offset,len) {
         string = caml_create_bytes(len);
         caml_blit_bytes(buffer,offset,string,0,len);
     }
-    var jsstring = string.toString();
+    var jsstring = caml_jsbytes_of_string(string);
     var id = jsstring.lastIndexOf("\n");
     if(id < 0)
         chan.buffer+=jsstring;
