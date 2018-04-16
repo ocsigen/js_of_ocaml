@@ -279,6 +279,60 @@ val error : ?use_capture:bool ->
 val abort : ?use_capture:bool ->
   #Dom_html.imageElement Js.t -> Dom_html.event Js.t Lwt.t
 
+val canplay :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val canplaythrough :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val durationchange :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val emptied :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val ended :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val loadeddata :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val loadedmetadata :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val loadstart :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val pause :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val play :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val playing :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val ratechange :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val seeked :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val seeking :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val stalled :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val suspend :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val volumechange :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+val waiting :
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
 
 val clicks :
   ?cancel_handler:bool ->
@@ -450,6 +504,97 @@ val aborts :
   ?cancel_handler:bool ->
   ?use_capture:bool ->
   #Dom_html.imageElement Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+
+val canplays :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val canplaythroughs :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val durationchanges :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val emptieds :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val endeds :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val loadeddatas :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val loadedmetadatas :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val loadstarts :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val pauses :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val plays :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val playings :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val ratechanges :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val seekeds :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val seekings :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val stalleds :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val suspends :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val volumechanges :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
+  (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+val waitings :
+  ?cancel_handler:bool ->
+  ?use_capture:bool ->
+  #Dom_html.eventTarget Js.t ->
   (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 (** Returns when a repaint of the window by the browser starts.

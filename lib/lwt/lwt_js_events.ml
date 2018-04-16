@@ -214,7 +214,42 @@ let error ?use_capture target =
 let load ?use_capture target =
   make_event Dom_html.Event.load ?use_capture target
 
-
+let canplay ?use_capture target =
+  make_event Dom_html.Event.canplay ?use_capture target
+let canplaythrough ?use_capture target =
+  make_event Dom_html.Event.canplaythrough ?use_capture target
+let durationchange ?use_capture target =
+  make_event Dom_html.Event.durationchange ?use_capture target
+let emptied ?use_capture target =
+  make_event Dom_html.Event.emptied ?use_capture target
+let ended ?use_capture target =
+  make_event Dom_html.Event.ended ?use_capture target
+let loadeddata ?use_capture target =
+  make_event Dom_html.Event.loadeddata ?use_capture target
+let loadedmetadata ?use_capture target =
+  make_event Dom_html.Event.loadedmetadata ?use_capture target
+let loadstart ?use_capture target =
+  make_event Dom_html.Event.loadstart ?use_capture target
+let pause ?use_capture target =
+  make_event Dom_html.Event.pause ?use_capture target
+let play ?use_capture target =
+  make_event Dom_html.Event.play ?use_capture target
+let playing ?use_capture target =
+  make_event Dom_html.Event.playing ?use_capture target
+let ratechange ?use_capture target =
+  make_event Dom_html.Event.ratechange ?use_capture target
+let seeked ?use_capture target =
+  make_event Dom_html.Event.seeked ?use_capture target
+let seeking ?use_capture target =
+  make_event Dom_html.Event.seeking ?use_capture target
+let stalled ?use_capture target =
+  make_event Dom_html.Event.stalled ?use_capture target
+let suspend ?use_capture target =
+  make_event Dom_html.Event.suspend ?use_capture target
+let volumechange ?use_capture target =
+  make_event Dom_html.Event.volumechange ?use_capture target
+let waiting ?use_capture target =
+  make_event Dom_html.Event.waiting ?use_capture target
 
 (* special case for mousewheel, because it depends on the browser *)
 let mousewheel ?(use_capture=false) target =
@@ -323,6 +358,43 @@ let errors ?cancel_handler ?use_capture t =
   seq_loop error ?cancel_handler ?use_capture t
 let loads ?cancel_handler ?use_capture t =
   seq_loop load ?cancel_handler ?use_capture t
+
+let canplays ?cancel_handler ?use_capture t =
+  seq_loop canplay ?cancel_handler ?use_capture t
+let canplaythroughs ?cancel_handler ?use_capture t =
+  seq_loop canplaythrough ?cancel_handler ?use_capture t
+let durationchanges ?cancel_handler ?use_capture t =
+  seq_loop durationchange ?cancel_handler ?use_capture t
+let emptieds ?cancel_handler ?use_capture t =
+  seq_loop emptied ?cancel_handler ?use_capture t
+let endeds ?cancel_handler ?use_capture t =
+  seq_loop ended ?cancel_handler ?use_capture t
+let loadeddatas ?cancel_handler ?use_capture t =
+  seq_loop loadeddata ?cancel_handler ?use_capture t
+let loadedmetadatas ?cancel_handler ?use_capture t =
+  seq_loop loadedmetadata ?cancel_handler ?use_capture t
+let loadstarts ?cancel_handler ?use_capture t =
+  seq_loop loadstart ?cancel_handler ?use_capture t
+let pauses ?cancel_handler ?use_capture t =
+  seq_loop pause ?cancel_handler ?use_capture t
+let plays ?cancel_handler ?use_capture t =
+  seq_loop play ?cancel_handler ?use_capture t
+let playings ?cancel_handler ?use_capture t =
+  seq_loop playing ?cancel_handler ?use_capture t
+let ratechanges ?cancel_handler ?use_capture t =
+  seq_loop ratechange ?cancel_handler ?use_capture t
+let seekeds ?cancel_handler ?use_capture t =
+  seq_loop seeked ?cancel_handler ?use_capture t
+let seekings ?cancel_handler ?use_capture t =
+  seq_loop seeking ?cancel_handler ?use_capture t
+let stalleds ?cancel_handler ?use_capture t =
+  seq_loop stalled ?cancel_handler ?use_capture t
+let suspends ?cancel_handler ?use_capture t =
+  seq_loop suspend ?cancel_handler ?use_capture t
+let volumechanges ?cancel_handler ?use_capture t =
+  seq_loop volumechange ?cancel_handler ?use_capture t
+let waitings ?cancel_handler ?use_capture t =
+  seq_loop waiting ?cancel_handler ?use_capture t
 
 let transition_evn = lazy (
   let e = Dom_html.createDiv Dom_html.document in

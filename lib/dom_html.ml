@@ -317,6 +317,10 @@ and animationEvent = object
   method pseudoElement : js_string t readonly_prop
 end
 
+and mediaEvent = object
+  inherit event
+end
+
 and nodeSelector = object
   method querySelector : js_string t -> element t opt meth
   method querySelectorAll : js_string t -> element Dom.nodeList t meth
@@ -452,6 +456,25 @@ module Event = struct
   let animationend = Dom.Event.make "animationend"
   let animationiteration = Dom.Event.make "animationiteration"
   let animationcancel = Dom.Event.make "animationcancel"
+
+  let canplay = Dom.Event.make "canplay"
+  let canplaythrough = Dom.Event.make "canplaythrough"
+  let durationchange = Dom.Event.make "durationchange"
+  let emptied = Dom.Event.make "emptied"
+  let ended = Dom.Event.make "ended"
+  let loadeddata = Dom.Event.make "loadeddata"
+  let loadedmetadata = Dom.Event.make "loadedmetadata"
+  let loadstart = Dom.Event.make "loadstart"
+  let pause = Dom.Event.make "pause"
+  let play = Dom.Event.make "play"
+  let playing = Dom.Event.make "playing"
+  let ratechange = Dom.Event.make "ratechange"
+  let seeked = Dom.Event.make "seeked"
+  let seeking = Dom.Event.make "seeking"
+  let stalled = Dom.Event.make "stalled"
+  let suspend = Dom.Event.make "suspend"
+  let volumechange = Dom.Event.make "volumechange"
+  let waiting = Dom.Event.make "waiting"
 
   let make = Dom.Event.make
 end
@@ -911,6 +934,26 @@ class type mediaElement = object
   method seeking : bool t readonly_prop
   method src : js_string t prop
   method volume : float prop
+
+  method oncanplay : ('self t, mediaEvent t) event_listener writeonly_prop
+  method oncanplaythrough : ('self t, mediaEvent t) event_listener writeonly_prop
+  method ondurationchange : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onemptied : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onended : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onloadeddata : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onloadedmetadata : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onloadstart : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onpause : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onplay : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onplaying : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onratechange : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onseeked : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onseeking : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onstalled : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onsuspend : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onvolumechange : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onwaiting : ('self t, mediaEvent t) event_listener writeonly_prop
+
 end
 
 class type audioElement = object
