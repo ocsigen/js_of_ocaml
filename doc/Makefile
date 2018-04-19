@@ -7,7 +7,7 @@ SRC_DIR=../
 
 MLIS+=$(wildcard ${SRC_DIR}lib/*.mli)
 MLIS+=$(wildcard ${SRC_DIR}ocamlbuild/*.mli)
-OTHER+=-I ${CMI_DIR}lib  -package ocamlbuild -I ${CMI_DIR}ocamlbuild
+OTHER+=-I ${CMI_DIR}lib  -package ocamlbuild -I ${CMI_DIR}ocamlbuild -I ../_build/install/default/lib/js_of_ocaml -I ../_build/install/default/lib/js_of_ocaml/deriving -I ../_build/install/default/lib/js_of_ocaml-tyxml
 
 ifeq "${WITH_LWT}" "YES"
 OTHER += -package lwt -I ${CMI_DIR}lib/lwt -I ${CMI_DIR}lib/lwt/log
@@ -57,7 +57,7 @@ api/html/index.html: ${MLIS} api/index
 wikidoc: api/wiki/index.wiki cp-examples
 api/wiki/index.wiki: ${MLIS} api/index
 	mkdir -p api/wiki
-	ocamlfind ocamldoc ${DOCOPT} -package ocamlbuild,uchar ${OTHER} -intro api/index \
+	ocamlfind ocamldoc  ${DOCOPT} -package ocamlbuild,uchar ${OTHER} -intro api/index \
 	   -d api/wiki \
 	   -i $(shell ocamlfind query wikidoc) -g odoc_wiki.cma \
 	   ${MLIS}
