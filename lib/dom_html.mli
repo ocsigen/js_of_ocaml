@@ -327,6 +327,10 @@ and animationEvent = object
   method pseudoElement : js_string t readonly_prop
 end
 
+and mediaEvent = object
+  inherit event
+end
+
 (** {2 HTML elements} *)
 
 and nodeSelector = object
@@ -854,6 +858,26 @@ class type mediaElement = object
   method seeking : bool t readonly_prop
   method src : js_string t prop
   method volume : float prop
+
+  method oncanplay : ('self t, mediaEvent t) event_listener writeonly_prop
+  method oncanplaythrough : ('self t, mediaEvent t) event_listener writeonly_prop
+  method ondurationchange : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onemptied : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onended : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onloadeddata : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onloadedmetadata : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onloadstart : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onpause : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onplay : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onplaying : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onratechange : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onseeked : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onseeking : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onstalled : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onsuspend : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onvolumechange : ('self t, mediaEvent t) event_listener writeonly_prop
+  method onwaiting : ('self t, mediaEvent t) event_listener writeonly_prop
+
 end
 
 class type audioElement = object
@@ -1393,6 +1417,25 @@ module Event : sig
   val animationend : animationEvent t typ
   val animationiteration : animationEvent t typ
   val animationcancel : animationEvent t typ
+
+  val canplay : mediaEvent t typ
+  val canplaythrough : mediaEvent t typ
+  val durationchange : mediaEvent t typ
+  val emptied : mediaEvent t typ
+  val ended : mediaEvent t typ
+  val loadeddata : mediaEvent t typ
+  val loadedmetadata : mediaEvent t typ
+  val loadstart : mediaEvent t typ
+  val pause : mediaEvent t typ
+  val play : mediaEvent t typ
+  val playing : mediaEvent t typ
+  val ratechange : mediaEvent t typ
+  val seeked : mediaEvent t typ
+  val seeking : mediaEvent t typ
+  val stalled : mediaEvent t typ
+  val suspend : mediaEvent t typ
+  val volumechange : mediaEvent t typ
+  val waiting : mediaEvent t typ
 
   val make : string -> 'a typ
 end
