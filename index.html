@@ -1,254 +1,104 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-          "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-  <head>
-    <title>OCaml toplevel</title>
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" />
-    <style>
-
-      code, kbd, pre, samp {
-      font-family: Menlo,Monaco,Consolas,monospace;
-      }
-      body,html {
-      height: 100%;
-      background-color:#eee;
-      }
-
-      #toplevel-container {
-      width: 50%;
-      background-color: black;
-      color: #ccc;
-      overflow: auto;
-      overflow-x: hidden;
-      height: 100%;
-      float:left;
-      padding:10px;
-      padding-top: 20px;
-      }
-
-      #toplevel-container pre#output {
-      padding: 0px;
-      }
-
-      #toplevel-container #output {
-      background-color:transparent;
-      color: #ccc;
-      border: none;
-      line-height:18px;
-      font-size: 12px;
-      margin-bottom: 0px;
-      }
-
-      #toplevel-container textarea {
-      width:90%;
-      line-height:18px;
-      font-size: 12px;
-      background-color: transparent;
-      color: #fff;
-      border: 0;
-      resize: none;
-      outline: none;
-      font-family: Menlo,Monaco,Consolas,monospace;
-      font-weight: bold;
-      float:left;
-      margin: 0px;
-      padding:0px;
-      }
-      #toplevel-container #sharp {
-      float: left;
-      line-height:18px;
-      font-size: 12px;
-      font-family: Menlo,Monaco,Consolas,monospace;
-      white-space: pre;
-      }
-      .sharp:before{
-      content:"# ";
-      line-height:18px;
-      font-size: 12px;
-      font-family: Menlo,Monaco,Consolas,monospace;
-      }
-      .caml{
-      color:rgb(110, 110, 201);
-      }
-      #toplevel-side{
-      position:relative;
-      width:45%;
-      height: 100%;
-      overflow: auto;
-      text-align:justify;
-      float:left;
-      margin-left:30px;
-      }
-      #toplevel-side ul{
-      padding: 0px;
-      list-style-type: none;
-      }
-
-      .stderr {
-      color: #d9534f;
-      }
-      .stdout {
-
-      }
-      .errorloc{
-      border-bottom-width: 3px;
-      border-bottom-style: solid;
-      border-bottom-color: red;
-      }
-      canvas {
-      border: 1px dashed black;
-      float: left;
-      margin: 7px;
-      }
-      #output canvas {
-      background-color: #464646;
-      float: none;
-      display: block;
-      border: 1px dashed while;
-      margin: 7px;
-      }
-      #output img {
-      display:block;
-      }
-      #toplevel-examples {
-      width: 270px;
-      float: left;
-      }
-      #toplevel-examples .list-group-item{
-      padding: 5px 15px;
-      }
-      #btn-share {
-      float:right;
-      margin-top:-20px;
-      background-color:rgb(92, 129, 184);
-      border-color: rgb(70, 75, 128);
-      padding: 1px 5px;
-      display:none;
-      }
-      .clear { clear:both; }
-
-      .sharp .id { color: #59B65C ; font-style: italic }
-      .sharp .kw0 { color: rgb(64, 75, 190); font-weight: bold ;}
-      .sharp .kw1 { color: rgb(150, 0, 108); font-weight: bold ;}
-      .sharp .kw2 { color: rgb(23, 100, 42); font-weight: bold ;}
-      .sharp .kw3 { color: #59B65C; font-weight: bold ;}
-      .sharp .kw4 { color: #59B65C; font-weight: bold ;}
-      .sharp .comment { color: green ; font-style: italic ; }
-      .sharp .string { color: #6B6B6B; font-weight: bold ; }
-      .sharp .text { }
-      .sharp .numeric { color: #729AAF; }
-      .sharp .directive { font-style: italic ; color : #EB00FF; } ;
-      .sharp .escape { color: #409290 ; }
-      .sharp .symbol0 { color: orange ; font-weight: bold ; }
-      .sharp .symbol1 { color: #993300 ; font-weight: bold ; }
-      .sharp .constant { color: rgb(0, 152, 255); }
-    </style>
-    <script type="text/javascript">
-
-      window.onhashchange = function() { window.location.reload() }
-      var hash = window.location.hash.replace(/^#/,"");
-      var fields = hash.split(/&/);
-      var prefix = "v/";
-      var version = "4.05.0";
-      for(var f in fields){
-        var data = fields[f].split(/=/);
-        if(data[0] == "version"){
-          version = data[1].replace(/%20|%2B/g,"+");
-          break;
-        }
-      }
-      function load_script(url){
-        var fileref=document.createElement('script');
-        fileref.setAttribute("type","text/javascript");
-        fileref.setAttribute("src", prefix+(version==""?"":(version+"/"))+url);
-        document.getElementsByTagName("head")[0].appendChild(fileref);
-      }
-      load_script("exported-unit.cmis.js");
-      load_script("stdlib.cmis.js");
-      load_script("base.cmis.js");
-      load_script("base.md5.cmis.js");
-      load_script("base.caml.cmis.js");
-      load_script("base.shadow_stdlib.cmis.js");
-      load_script("sexplib.cmis.js");
-      load_script("stdio.cmis.js");
-      load_script("js_of_ocaml.cmis.js");
-      load_script("js_of_ocaml-lwt.cmis.js");
-      load_script("js_of_ocaml-ppx.as-lib.cmis.js");
-      load_script("js_of_ocaml-toplevel.cmis.js");
-      load_script("js_of_ocaml.deriving.cmis.js");
-      load_script("js_of_ocaml-tyxml.cmis.js");
-      load_script("js_of_ocaml-lwt.graphics.cmis.js");
-      load_script("lwt.cmis.js");
-      load_script("react.cmis.js");
-      load_script("reactiveData.cmis.js");
-      load_script("dynlink.cmis.js");
-      load_script("bigarray.cmis.js");
-      load_script("core_kernel.cmis.js");
-      load_script("async_kernel.cmis.js");
-      load_script("async_js.cmis.js");
-      load_script("toplevel.js");
-    </script>
-  </head>
-  <body>
-    <div id="toplevel-container">
-      <a href="http://ocsigen.org/js_of_ocaml" >
-	<img src="http://ocsigen.org/resources/logos/text_js_of_ocaml_with_shadow.png" alt="js_of_ocaml" />
-      </a>
-      <pre id="output"></pre>
-      <div>
-        <div id="sharp" class="sharp"></div>
-        <textarea id="userinput">Loading ...</textarea>
-        <button type="button" class="btn btn-default"
-                id="btn-share">Share</button>
-      </div>
-    </div>
-    <div id="toplevel-side">
-      <h3>Js_of_ocaml</h3>
-      <h4>A compiler from OCaml bytecode to Javascript.</h4>
-      <p>It makes OCaml programs that run on Web browsers. It is
-        easy to install as it works with an existing installation of OCaml,
-        with no need to recompile any library. It comes with bindings for a
-        large part of the browser APIs.</p>
-      <p>This web-based OCaml toplevel is compiled using Js_of_ocaml.</p>
-      <h4>Command</h4>
-      <table class="table table-striped table-condensed">
-        <tbody class>
-          <tr>
-            <td>Enter/Return</td>
-            <td>Submit code</td>
-          </tr>
-          <tr>
-            <td>Ctrl + Enter</td>
-            <td>Newline</td>
-          </tr>
-          <tr>
-            <td>Up / Down</td>
-            <td>Browse history</td>
-          </tr>
-          <tr>
-            <td>Ctrl + l</td>
-            <td>Clear display</td>
-          </tr>
-          <tr>
-            <td>Ctrl + k</td>
-            <td>Reset toplevel</td>
-          </tr>
-          <tr>
-            <td>Tab</td>
-            <td>Indent code</td>
-          </tr>
-
-        </tbody>
-      </table>
-      <h4>Try to execute samples</h4>
-      <div id="toplevel-examples" class="list-group"></div>
-      <canvas width=200 height=200 id="test-canvas"></canvas>
-      <h4 class="clear">See the generated javascript code</h4>
-      <pre id="last-js">
-      </pre>
-    </div>
-  </body>
-</html>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"><head><title> Js_of_ocaml </title><meta charset="utf8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><link rel="stylesheet" href="/css/style.css"/><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css"/><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js"></script><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js"></script><script src="/js/client.js"></script></head><body class="js_of_ocaml 3.1.0 overview"><div class="project-page"><div class="page-header"><p class="logo-ocsigen"><a href="/" class="ocsimore_phrasing_link"><img src="/img/ocsigen-white.svg" alt="Ocsigen"/></a>
+</p><p class="logo-subproject">Js_of_ocaml
+</p><ul class="mainmenu"><li class="mainmenu-home"><a href="/" class="ocsimore_phrasing_link">Home</a>
+</li><li class="mainmenu-doc"><a href="/tuto/6.2/manual/intro" class="ocsimore_phrasing_link">Doc</a>
+</li><li><a href="/eliom/6.3/manual/intro" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="mainmenu-current"><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li><a href="/lwt/3.2.1/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
+</li><li><a href="/tyxml/4.1.0/manual/intro" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li><a href="/ocsigen-start/1.1.0/manual/intro" class="ocsimore_phrasing_link">Start</a>
+</li></ul><aside class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href="/" class="ocsimore_phrasing_link">Home</a>
+</li><li class="drawermainmenu-doc"><a href="/tuto/6.2/manual/intro" class="ocsimore_phrasing_link">Doc</a>
+</li><li class="drawermainmenu-project"><a href="/eliom/6.3/manual/intro" class="ocsimore_phrasing_link">Eliom</a>
+</li><li class="drawermainmenu-current drawermainmenu-project"><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Js_of_ocaml</a>
+</li><li class="drawermainmenu-project"><a href="/ocsigenserver/2.9/manual/quickstart" class="ocsimore_phrasing_link">Server</a>
+</li><li class="drawermainmenu-project"><a href="/lwt/3.2.1/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
+</li><li class="drawermainmenu-project"><a href="/tyxml/4.1.0/manual/intro" class="ocsimore_phrasing_link">Tyxml</a>
+</li><li class="drawermainmenu-project"><a href="/ocsigen-toolkit/1.1.0/manual/intro" class="ocsimore_phrasing_link">Toolkit</a>
+</li><li class="drawermainmenu-project"><a href="/ocsigen-start/1.1.0/manual/intro" class="ocsimore_phrasing_link">Start</a>
+</li><li class="drawermainmenu-page"><a href="/projects" class="ocsimore_phrasing_link">Other projects</a>
+</li><li class="drawermainmenu-page"><a href="/papers" class="ocsimore_phrasing_link">Research papers</a>
+</li><li class="drawermainmenu-page"><a href="/credits" class="ocsimore_phrasing_link">Who does Ocsigen?</a>
+</li><li class="drawermainmenu-page"><a href="/blog" class="ocsimore_phrasing_link">Blog</a>
+</li><li class="drawermainmenu-page"><a href="https://github.com/ocsigen" class="ocsimore_phrasing_link">Source code</a>
+</li></ul><nav class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/quickstart" class="ocsimore_phrasing_link">quick start</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="/js_of_ocaml/3.1.0/manual/lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h1>Syntaxes</h1><h2><a href="/js_of_ocaml/3.1.0/manual/ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/camlp4" class="ocsimore_phrasing_link">Camlp4 syntax extension</a></h2><h1>Compiler</h1><h2><a href="/js_of_ocaml/3.1.0/manual/options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h1>Misc</h1><h2><a href="/js_of_ocaml/3.1.0/manual/debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/toplevel/index.html" class="ocsforge_doclink_js_of_ocaml">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/planet/index.html" class="ocsforge_doclink_js_of_ocaml">An animated 3D view of the Earth</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/graph_viewer/index.html" class="ocsforge_doclink_js_of_ocaml">A graph viewer</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/boulderdash/index.html" class="ocsforge_doclink_js_of_ocaml">A Boulder Dash game</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/wiki/index.html" class="ocsforge_doclink_js_of_ocaml">A realtime wiki editor</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/webgl/index.html" class="ocsforge_doclink_js_of_ocaml">A webgl demo</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/minesweeper/index.html" class="ocsforge_doclink_js_of_ocaml">A Minesweeper game</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/hyperbolic/index.html" class="ocsforge_doclink_js_of_ocaml">A hyperbolic tree viewer</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/cubes/index.html" class="ocsforge_doclink_js_of_ocaml">A random walk on lozenge tiling configurations</a></span></h2><h1>Js_of_ocaml – API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Js" class="ocsimore_phrasing_link">Js</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Jstable" class="ocsimore_phrasing_link">Jstable</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Sys_js" class="ocsimore_phrasing_link">Sys_js</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Typed_array" class="ocsimore_phrasing_link">Typed_array</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/CSS" class="ocsimore_phrasing_link">CSS</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Dom" class="ocsimore_phrasing_link">Dom</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Dom_events" class="ocsimore_phrasing_link">Dom_events</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Dom_html" class="ocsimore_phrasing_link">Dom_html</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Dom_svg" class="ocsimore_phrasing_link">Dom_svg</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/EventSource" class="ocsimore_phrasing_link">EventSource</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/File" class="ocsimore_phrasing_link">File</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Firebug" class="ocsimore_phrasing_link">Firebug</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Form" class="ocsimore_phrasing_link">Form</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Geolocation" class="ocsimore_phrasing_link">Geolocation</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Json" class="ocsimore_phrasing_link">Json</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/MutationObserver" class="ocsimore_phrasing_link">MutationObserver</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Regexp" class="ocsimore_phrasing_link">Regexp</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Url" class="ocsimore_phrasing_link">Url</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/WebGL" class="ocsimore_phrasing_link">WebGL</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/WebSockets" class="ocsimore_phrasing_link">WebSockets</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Worker" class="ocsimore_phrasing_link">Worker</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/XmlHttpRequest" class="ocsimore_phrasing_link">XmlHttpRequest</a></h2><h1>Js_of_ocaml_lwt – API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_jsonp" class="ocsimore_phrasing_link">Lwt_jsonp</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_xmlHttpRequest" class="ocsimore_phrasing_link">Lwt_xmlHttpRequest</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_file" class="ocsimore_phrasing_link">Lwt_file</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_js_events" class="ocsimore_phrasing_link">Lwt_js_events</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_js" class="ocsimore_phrasing_link">Lwt_js</a></h2><h2>Lwt logger - API Reference</h2><h3><a href="/js_of_ocaml/3.1.0/api/Lwt_log_js" class="ocsimore_phrasing_link">Lwt_log_js</a></h3><h2>Graphics - API Reference</h2><h3><a href="/js_of_ocaml/3.1.0/api/Graphics_js" class="ocsimore_phrasing_link">Graphics_js</a></h3><h1>Deriving - API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Deriving_Json" class="ocsimore_phrasing_link">Deriving_Json</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Pa_deriving_Json" class="ocsimore_phrasing_link">Pa_deriving_Json</a></h2><h1>Tyxml - API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Tyxml_js" class="ocsimore_phrasing_link">Tyxml_js</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Tyxml_cast" class="ocsimore_phrasing_link">Tyxml_cast</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Tyxml_cast_sigs" class="ocsimore_phrasing_link">Tyxml_cast_sigs</a></h2><h1>Toplevel - API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/JsooTop" class="ocsimore_phrasing_link">JsooTop</a></h2><h1>The ocamlbuild plugin - API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Ocamlbuild_js_of_ocaml" class="ocsimore_phrasing_link">Ocamlbuild_js_of_ocaml</a></h2><h1>Indexes</h1><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_types">Index of types</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_exceptions">Index of exceptions</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_values">Index of values</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_methods">Index of class methods</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_class_types">Index of class types</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_modules">Index of modules</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_module_types">Index of module types</a></span></h2></nav></nav></aside></div><p class="reasonwarning">Warning: Reason support is experimental.
+We are looking for beta-tester and contributors.
+</p><button id="reason">Switch to </button><div class="twocols"><nav class="leftcol">Version <select class="how-versions" onchange="location = this.value;"><option value="/js_of_ocaml/dev/manual/overview">dev</option><option selected="selected">3.1.0</option><option value="/js_of_ocaml/2.8.4/manual/overview">2.8.4</option><option value="/js_of_ocaml/2.8.3/manual/overview">2.8.3</option><option value="/js_of_ocaml/2.8.2/manual/overview">2.8.2</option><option value="/js_of_ocaml/2.8.1/manual/overview">2.8.1</option><option value="/js_of_ocaml/2.8/manual/overview">2.8</option><option value="/js_of_ocaml/2.7/manual/overview">2.7</option><option value="/js_of_ocaml/2.6/manual/overview">2.6</option><option value="/js_of_ocaml/2.5/manual/overview">2.5</option><option value="/js_of_ocaml/2.4.1/manual/overview">2.4.1</option><option value="/js_of_ocaml/2.4/manual/overview">2.4</option><option value="/js_of_ocaml/2.3/manual/overview">2.3</option><option value="/js_of_ocaml/2.2/manual/overview">2.2</option><option value="/js_of_ocaml/2.1/manual/overview">2.1</option><option value="/js_of_ocaml/2.0/manual/overview">2.0</option><option value="/js_of_ocaml/1.4/manual/overview">1.4</option><option value="/js_of_ocaml/1.3/manual/overview">1.3</option><option value="/js_of_ocaml/1.2/manual/overview">1.2</option><option value="/js_of_ocaml/1.1.1/manual/overview">1.1.1</option><option value="/js_of_ocaml/1.0.9/manual/overview">1.0.9</option></select><form id="search"><input name="q" id="q" placeholder="search ..."/><button>Search</button></form><nav class="how-doctree"><h1>Js_of_ocaml - Reference Manual</h1><h2><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Overview</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/quickstart" class="ocsimore_phrasing_link">quick start</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/library" class="ocsimore_phrasing_link">Library overview</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/bindings" class="ocsimore_phrasing_link">Binding a JS library</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/rev-bindings" class="ocsimore_phrasing_link">Export OCaml code to JavaScript</a></h2><h1>Js_of_ocaml_lwt - Reference Manual</h1><h2><a href="/js_of_ocaml/3.1.0/manual/lwt" class="ocsimore_phrasing_link">Lwt support</a></h2><h1>Syntaxes</h1><h2><a href="/js_of_ocaml/3.1.0/manual/ppx" class="ocsimore_phrasing_link">Ppx syntax extension</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/camlp4" class="ocsimore_phrasing_link">Camlp4 syntax extension</a></h2><h1>Compiler</h1><h2><a href="/js_of_ocaml/3.1.0/manual/options" class="ocsimore_phrasing_link">Command line options</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/linker" class="ocsimore_phrasing_link">Link javascript code</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/separate-compilation" class="ocsimore_phrasing_link">Separate compilation</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/tailcall" class="ocsimore_phrasing_link">About tailcall optimization</a></h2><h1>Misc</h1><h2><a href="/js_of_ocaml/3.1.0/manual/debug" class="ocsimore_phrasing_link">How to debug a program</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/contribute" class="ocsimore_phrasing_link">How to contribute</a></h2><h2><a href="/js_of_ocaml/3.1.0/manual/performances" class="ocsimore_phrasing_link">Performances</a></h2><h1>Js_of_ocaml examples</h1><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/toplevel/index.html" class="ocsforge_doclink_js_of_ocaml">An OCaml toplevel running in the browser</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/planet/index.html" class="ocsforge_doclink_js_of_ocaml">An animated 3D view of the Earth</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/graph_viewer/index.html" class="ocsforge_doclink_js_of_ocaml">A graph viewer</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/boulderdash/index.html" class="ocsforge_doclink_js_of_ocaml">A Boulder Dash game</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/wiki/index.html" class="ocsforge_doclink_js_of_ocaml">A realtime wiki editor</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/webgl/index.html" class="ocsforge_doclink_js_of_ocaml">A webgl demo</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/minesweeper/index.html" class="ocsforge_doclink_js_of_ocaml">A Minesweeper game</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/hyperbolic/index.html" class="ocsforge_doclink_js_of_ocaml">A hyperbolic tree viewer</a></span></h2><h2><span><a href="/js_of_ocaml/3.1.0/manual/files/cubes/index.html" class="ocsforge_doclink_js_of_ocaml">A random walk on lozenge tiling configurations</a></span></h2><h1>Js_of_ocaml – API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Js" class="ocsimore_phrasing_link">Js</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Jstable" class="ocsimore_phrasing_link">Jstable</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Sys_js" class="ocsimore_phrasing_link">Sys_js</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Typed_array" class="ocsimore_phrasing_link">Typed_array</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/CSS" class="ocsimore_phrasing_link">CSS</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Dom" class="ocsimore_phrasing_link">Dom</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Dom_events" class="ocsimore_phrasing_link">Dom_events</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Dom_html" class="ocsimore_phrasing_link">Dom_html</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Dom_svg" class="ocsimore_phrasing_link">Dom_svg</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/EventSource" class="ocsimore_phrasing_link">EventSource</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/File" class="ocsimore_phrasing_link">File</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Firebug" class="ocsimore_phrasing_link">Firebug</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Form" class="ocsimore_phrasing_link">Form</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Geolocation" class="ocsimore_phrasing_link">Geolocation</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Json" class="ocsimore_phrasing_link">Json</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/MutationObserver" class="ocsimore_phrasing_link">MutationObserver</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Regexp" class="ocsimore_phrasing_link">Regexp</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Url" class="ocsimore_phrasing_link">Url</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/WebGL" class="ocsimore_phrasing_link">WebGL</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/WebSockets" class="ocsimore_phrasing_link">WebSockets</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Worker" class="ocsimore_phrasing_link">Worker</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/XmlHttpRequest" class="ocsimore_phrasing_link">XmlHttpRequest</a></h2><h1>Js_of_ocaml_lwt – API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_jsonp" class="ocsimore_phrasing_link">Lwt_jsonp</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_xmlHttpRequest" class="ocsimore_phrasing_link">Lwt_xmlHttpRequest</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_file" class="ocsimore_phrasing_link">Lwt_file</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_js_events" class="ocsimore_phrasing_link">Lwt_js_events</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Lwt_js" class="ocsimore_phrasing_link">Lwt_js</a></h2><h2>Lwt logger - API Reference</h2><h3><a href="/js_of_ocaml/3.1.0/api/Lwt_log_js" class="ocsimore_phrasing_link">Lwt_log_js</a></h3><h2>Graphics - API Reference</h2><h3><a href="/js_of_ocaml/3.1.0/api/Graphics_js" class="ocsimore_phrasing_link">Graphics_js</a></h3><h1>Deriving - API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Deriving_Json" class="ocsimore_phrasing_link">Deriving_Json</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Pa_deriving_Json" class="ocsimore_phrasing_link">Pa_deriving_Json</a></h2><h1>Tyxml - API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Tyxml_js" class="ocsimore_phrasing_link">Tyxml_js</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Tyxml_cast" class="ocsimore_phrasing_link">Tyxml_cast</a></h2><h2><a href="/js_of_ocaml/3.1.0/api/Tyxml_cast_sigs" class="ocsimore_phrasing_link">Tyxml_cast_sigs</a></h2><h1>Toplevel - API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/JsooTop" class="ocsimore_phrasing_link">JsooTop</a></h2><h1>The ocamlbuild plugin - API Reference</h1><h2><a href="/js_of_ocaml/3.1.0/api/Ocamlbuild_js_of_ocaml" class="ocsimore_phrasing_link">Ocamlbuild_js_of_ocaml</a></h2><h1>Indexes</h1><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_types">Index of types</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_exceptions">Index of exceptions</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_values">Index of values</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_methods">Index of class methods</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_class_types">Index of class types</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_modules">Index of modules</a></span></h2><h2> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/index_module_types">Index of module types</a></span></h2></nav></nav><article class="rightcol"><h1> Js_of_ocaml </h1><h2> Overview </h2><p>Js_of_ocaml is a compiler from OCaml bytecode programs to JavaScript.
+It makes it possible to run pure OCaml programs in JavaScript environment
+like browsers and Node.js. It is easy to install as it works with an
+existing installation of OCaml, with no need to recompile any library.
+It comes with bindings for a large part of the browser APIs.
+According to our benchmarks, the generated programs
+<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/manual/performances">runs typically faster</a></span> than with
+the OCaml bytecode interpreter.  We believe this compiler will prove
+much easier to maintain than a retargeted OCaml compiler, as the
+bytecode provides a very stable API.
+</p><p>Js_of_ocaml is composed of multiple packages:
+</p><ul><li> js_of_ocaml-compiler, the compiler.
+</li><li> js_of_ocaml-ppx, the ppx syntax extension (recommended).
+</li><li> js_of_ocaml-camlp4, the camlp4 syntax extension (deprecated).
+</li><li> js_of_ocaml, the base library.
+</li><li> js_of_ocaml-ocamlbuild, an ocamlbuild pluging to compile to
+javascript.
+</li><li> js_of_ocaml-lwt, lwt support.
+</li><li> js_of_ocaml-tyxml, tyxml support.
+</li><li> js_of_ocaml-toplevel, lib and tools to build an ocaml toplevel to
+javascript.
+</li></ul><h2> Installation </h2><h3> Requirements </h3><ul><li> Jbuilder
+</li><li> Cmdliner, cppo (for the compiler)
+</li><li> ppx_tools_versioned, ocaml-migrate-parsetree (for the js_of_ocaml base library)
+</li></ul><p>See opam files at the root of the repository for version constraints.
+</p><p>Optional dependencies:
+</p><ul><li> deriving(see <a href="https://github.com/ocsigen/deriving)" class="ocsimore_phrasing_link">https://github.com/ocsigen/deriving)</a>
+</li><li> ppx_deriving(see <a href="https://github.com/whitequark/ppx_deriving)" class="ocsimore_phrasing_link">https://github.com/whitequark/ppx_deriving)</a>
+</li><li> tyxml(see <a href="https://github.com/ocsigen/tyxml)" class="ocsimore_phrasing_link">https://github.com/ocsigen/tyxml)</a>
+</li><li> reactiveData(see <a href="https://github.com/ocsigen/reactiveData)" class="ocsimore_phrasing_link">https://github.com/ocsigen/reactiveData)</a>
+</li><li> yojson(see <a href="https://github.com/mjambon/yojson)" class="ocsimore_phrasing_link">https://github.com/mjambon/yojson)</a>
+</li></ul><h3> Install from opam</h3><p><span class="teletype">opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt</span>
+</p><h3> Build and install from source</h3><p><span class="teletype">make</span>
+<span class="teletype">opam-installer js_of_ocaml-compiler</span>
+<span class="teletype">opam-installer js_of_ocaml</span>
+<span class="teletype">opam-installer js_of_ocaml-ppx</span>
+<span class="teletype">opam-installer js_of_ocaml-lwt</span>
+</p><h2> Usage </h2><p>Your program must first be compiled using the OCaml bytecode
+compiler <span class="teletype">ocamlc</span>.  JavaScript bindings are provided by the
+<span class="teletype">js_of_ocaml</span> package and the syntax extension by the
+<span class="teletype">js_of_ocaml-ppx</span> package (or <span class="teletype">js_of_ocaml-camlp4</span>)
+</p><pre>      ocamlfind ocamlc -package js_of_ocaml -package js_of_ocaml-ppx \
+          -linkpkg -o cubes.byte cubes.ml
+</pre><p>Then, run the <span class="teletype">js_of_ocaml</span> compiler to produce JavaScript code:
+</p><pre>      js_of_ocaml cubes.byte
+</pre><h3> with ocamlbuild </h3><p>Js_of_ocaml also provide an ocamlbuild plugin.
+See <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/api/Ocamlbuild_js_of_ocaml">Ocamlbuild_js_of_ocaml</a></span>.
+</p><h3> with oasis </h3><p>TODO
+</p><h3> with jbuilder </h3><p>Jbuider has native support for js_of_ocaml.
+It support both standard and separate compilation of javascript
+files. See <a href="http://jbuilder.readthedocs.io/en/latest/usage.html?highlight=js_of_ocaml" class="ocsimore_phrasing_link">http://jbuilder.readthedocs.io/en/latest/usage.html?highlight=js_of_ocaml</a>
+</p><p>See also <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/manual/quickstart">Quickstart</a></span>.
+</p><h2> Supported features </h2><p>Most of the OCaml standard library is supported. However,
+</p><ul><li> Weak semantic cannot be implemented using JavaScript.
+A dummy implementation is provided.
+</li><li> Most of Sys module is not supported.
+</li></ul><p>Extra libraries distributed with Ocaml (such as Thread or Str) are not
+supported in general. However,
+</p><ul><li> Bigarray: bigarray are supported using Typed Arrays
+</li><li> Num: supported using `+nat.js` option
+</li><li> Graphics: partially supported using canvas (see also js_of_ocaml-graphics)
+</li><li> Unix: time related functions are supported
+</li></ul><p>Tail call is not optimized in general. However, mutually recursive
+functions are optimized:
+</p><ul><li> self recursive functions (when the tail calls are the function itself) are
+compiled using a loop.
+</li><li> trampolines are used otherwise.
+<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/3.1.0/manual/tailcall">More about tail call optimization</a></span>.
+</li></ul><p>Data representation differs from the usual one. Most notably,
+integers are 32 bits (rather than 31 bits or 63 bits), which is their
+natural size in JavaScript, and floats are not boxed.  As a
+consequence, marshalling, polymorphic comparison, and hashing
+functions can yield results different from usual:
+</p><ul><li> marshalling of floats is not supported (unmarshalling works);
+</li><li> the polymorphic hash function will not give the same results on
+datastructures containing floats;
+</li><li> these functions may be more prone to stack overflow.
+</li></ul></article></div></div></body></html>
