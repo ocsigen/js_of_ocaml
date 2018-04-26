@@ -18,10 +18,12 @@
 *)
 
 (** Javascript binding for Graphics lib *)
+
 open Js_of_ocaml
 include module type of Graphics
 
 (** {6 Initializations} *)
+
 type context
 (** type of a graphic context *)
 
@@ -45,11 +47,13 @@ val set_context : context -> unit
 (** Set the current context *)
 
 (** {6 Mouse and keyboard events} *)
+
 val loop : event list -> (status -> unit) -> unit
 (** Loops forever and listen to the given events. Those events automatically
     returns a status record, which is used by the function given in argument. *)
 
 (** {6 Mouse and keyboard polling} *)
+
 val mouse_pos : unit -> (int * int) Lwt.t
 (** Return the position of the mouse cursor, relative to the
    graphics window. If the mouse cursor is outside of the graphics

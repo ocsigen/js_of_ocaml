@@ -766,7 +766,6 @@ module Unsafe : sig
     (** Access a Javascript variable.  [variable "foo"] will
         return the current value of variable [foo]. *)
 
-(*FIX also, array literals *)
 end
 
 (** {2 Deprecated functions and types.} *)

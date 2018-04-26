@@ -1172,7 +1172,7 @@ end
 
 (** Undo manager *)
 class type undoManager = object
-(*...*)
+
 end
 
 (** Navigator information *)
