@@ -77,7 +77,7 @@ Optional dependencies:
   It support both standard and separate compilation of javascript
   files. See http://jbuilder.readthedocs.io/en/latest/usage.html?highlight=js_of_ocaml
 
-See also <<a_manual chapter="quickstart" |Quickstart>>.
+You can find an OCaml toplevel runing in the browser <<a_file src="toplevel/index.html" |here>>. See also <<a_manual chapter="quickstart" |Quickstart>>.
 
 == Supported features ==
 
