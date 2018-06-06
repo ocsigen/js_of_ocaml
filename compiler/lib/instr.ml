@@ -193,11 +193,21 @@ let ops,ops_rev =
   let ops_rev = Hashtbl.create 17 in
   let if_v4 =
     match Util.Version.v with
-      `V3    -> (fun _ default -> default)
-    | `V4_02 -> (fun k _ -> k)
-    | `V4_03 -> (fun k _ -> k)
-    | `V4_04 -> (fun k _ -> k)
-    | `V4_06 -> (fun k _ -> k)
+      `V3    -> (fun _ -> K_will_not_happen)
+    | `V4_02
+    | `V4_03
+    | `V4_04
+    | `V4_06
+    | `V4_07 -> (fun k -> k)
+  in
+  let if_v407 =
+    match Util.Version.v with
+      `V3
+    | `V4_02
+    | `V4_03
+    | `V4_04
+    | `V4_06 -> (fun _ -> K_will_not_happen)
+    | `V4_07 -> (fun k -> k)
   in
   let instrs =
     [| ACC0, KNullary, "ACC0";
@@ -346,9 +356,9 @@ let ops,ops_rev =
        STOP, KStop 0, "STOP";
        EVENT, K_will_not_happen, "EVENT";
        BREAK, K_will_not_happen, "BREAK";
-       RERAISE, if_v4 (KStop 0) K_will_not_happen, "RERAISE";
-       RAISE_NOTRACE, if_v4 (KStop 0) K_will_not_happen, "RAISE_NOTRACE";
-       GETSTRINGCHAR, if_v4 KNullary K_will_not_happen, "GETSTRINGCHAR";
+       RERAISE, if_v4 (KStop 0), "RERAISE";
+       RAISE_NOTRACE, if_v4 (KStop 0), "RAISE_NOTRACE";
+       GETSTRINGCHAR, if_v407 KNullary, "GETSTRINGCHAR";
        FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"|] in
   let ops =
     Array.mapi

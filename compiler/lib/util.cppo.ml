@@ -359,8 +359,10 @@ module Version = struct
       `V4_03
     else if compare current [4;6] < 0 then
       `V4_04
-    else
+    else if compare current [4;7] < 0 then
       `V4_06
+    else
+      `V4_07
 
 end
 
@@ -414,6 +416,7 @@ module MagicNumber = struct
       | `V4_02
       | `V4_03 | `V4_04 -> 11
       | `V4_06 -> 11
+      | `V4_07 -> 23
     in
     ("Caml1999X",v)
 
@@ -423,6 +426,7 @@ module MagicNumber = struct
       | `V4_02 -> 10
       | `V4_03 | `V4_04 -> 11
       | `V4_06 -> 22
+      | `V4_07 -> 23
     in
     ("Caml1999O", v)
 
@@ -432,6 +436,7 @@ module MagicNumber = struct
       | `V4_02 -> 11
       | `V4_03 | `V4_04 -> 12
       | `V4_06 -> 22
+      | `V4_07 -> 23
     in
     ("Caml1999A", v)
 

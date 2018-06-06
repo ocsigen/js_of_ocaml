@@ -91,6 +91,7 @@ module Version : sig
           | `V4_03   (* OCaml 4.03 *)
           | `V4_04   (* OCaml 4.04 / OCaml 4.05 *)
           | `V4_06   (* OCaml 4.06 *)
+          | `V4_07   (* OCaml 4.07 *)
           ]
 end
 
