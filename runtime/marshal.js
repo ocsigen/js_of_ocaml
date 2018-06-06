@@ -134,6 +134,13 @@ function caml_input_value_from_string(s,ofs) {
   return caml_input_value_from_reader(reader, ofs)
 }
 
+//Provides: caml_input_value_from_bytes mutable
+//Requires: MlBytesReader, caml_input_value_from_reader
+function caml_input_value_from_bytes(s,ofs) {
+  var reader = new MlBytesReader (s, typeof ofs=="number"?ofs:ofs[0]);
+  return caml_input_value_from_reader(reader, ofs)
+}
+
 //Provides: caml_input_value_from_reader mutable
 //Requires: caml_failwith
 //Requires: caml_float_of_bytes, caml_int64_of_bytes
@@ -438,6 +445,13 @@ var caml_output_val = function (){
 //Provides: caml_output_value_to_string mutable
 //Requires: caml_output_val, caml_string_of_array
 function caml_output_value_to_string (v, _fl) {
+  /* ignores flags... */
+  return caml_string_of_array (caml_output_val (v));
+}
+
+//Provides: caml_output_value_to_bytes mutable
+//Requires: caml_output_val, caml_string_of_array
+function caml_output_value_to_bytes (v, _fl) {
   /* ignores flags... */
   return caml_string_of_array (caml_output_val (v));
 }

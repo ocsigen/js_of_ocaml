@@ -25,6 +25,8 @@ function caml_terminfo_backup () { return 0; }
 function caml_terminfo_standout () { return 0; }
 //Provides: caml_terminfo_resume
 function caml_terminfo_resume () { return 0; }
+//Provides: caml_terminfo_rows
+function caml_terminfo_rows () { return 0; }
 //Provides: caml_invoke_traced_function
 //Requires: caml_invalid_argument
 function caml_invoke_traced_function() {
