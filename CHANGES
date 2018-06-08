@@ -1,6 +1,18 @@
+===== 3.2.0 (2018-06-10) - Bergen =====
+ * Features/Changes:
+ ** Runime: improve stacktraces.
+ ** Ppx: ppx uses the OCaml 4.06 ast.
+ ** Misc: support for OCaml 4.07
+ ** Misc: start leveraging safe-string.
+
+ * Bug fixes:
+ ** Runtime: int_of_string accepts leading '+'
+ ** Runtime: fix polymorphic & hash compare on custom non-ocaml values.
+ ** Runtime: fix string encoding when writing to channels.
+
 ===== 3.1.0 (2018-02-15) - Hong Kong =====
 
-* Features/Changes:
+ * Features/Changes:
  ** Lib: add missing File.blob constructor (fix #630)
  ** Runtime: hash support for custom blocks
  ** Runtime: weak.js loaded by default
