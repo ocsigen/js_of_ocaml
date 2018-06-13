@@ -7,6 +7,7 @@
  ** Lib: Remove [js_of_ocaml-lwt.logger]. Use [logs.browser] instead.
  ** Lib: add support for Internationalization API.
  ** Lib: The js_of_ocaml library is name-spaced.
+ ** Lib: Added media events support.
 
  * Bug fixes:
  ** Runtime: int_of_string accepts leading '+'
