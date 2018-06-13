@@ -17,6 +17,14 @@
 // along with this program; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
+//Provides: fs_node_supported
+function fs_node_supported () {
+  return (
+    typeof joo_global_object.process !== 'undefined'
+      && typeof joo_global_object.process.versions !== 'undefined'
+      && typeof joo_global_object.process.versions.node !== 'undefined')
+}
+
 //Provides: MlNodeDevice
 //Requires: MlNodeFile
 function MlNodeDevice(root) {

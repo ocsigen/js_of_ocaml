@@ -55,9 +55,9 @@ function caml_make_path (name) {
 }
 
 //Provides:jsoo_mount_point
-//Requires: MlFakeDevice, MlNodeDevice, caml_root
+//Requires: MlFakeDevice, MlNodeDevice, caml_root, fs_node_supported
 var jsoo_mount_point = []
-if (typeof process !== 'undefined' && typeof process.versions !== 'undefined' && typeof process.versions.node !== 'undefined') {
+if (fs_node_supported()) {
     jsoo_mount_point.push({path:caml_root,device:new MlNodeDevice(caml_root)});
 } else {
     jsoo_mount_point.push({path:caml_root,device:new MlFakeDevice(caml_root)});
