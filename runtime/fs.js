@@ -57,7 +57,7 @@ function caml_make_path (name) {
 //Provides:jsoo_mount_point
 //Requires: MlFakeDevice, MlNodeDevice, caml_root
 var jsoo_mount_point = []
-if (typeof module !== 'undefined' && module.exports && typeof require !== "undefined") {
+if (typeof process !== 'undefined' && typeof process.versions !== 'undefined' && typeof process.versions.node !== 'undefined') {
     jsoo_mount_point.push({path:caml_root,device:new MlNodeDevice(caml_root)});
 } else {
     jsoo_mount_point.push({path:caml_root,device:new MlFakeDevice(caml_root)});
