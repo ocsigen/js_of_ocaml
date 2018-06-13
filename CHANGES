@@ -4,11 +4,15 @@
  ** Ppx: ppx uses the OCaml 4.06 ast.
  ** Misc: support for OCaml 4.07
  ** Misc: start leveraging safe-string.
+ ** Lib: Remove [js_of_ocaml-lwt.logger]. Use [logs.browser] instead.
+ ** Lib: add support for Internationalization API.
+ ** Lib: The js_of_ocaml library is name-spaced.
 
  * Bug fixes:
  ** Runtime: int_of_string accepts leading '+'
  ** Runtime: fix polymorphic & hash compare on custom non-ocaml values.
  ** Runtime: fix string encoding when writing to channels.
+ ** Runtime: improve mode js detection wrt filesystem. 
 
 ===== 3.1.0 (2018-02-15) - Hong Kong =====
 
