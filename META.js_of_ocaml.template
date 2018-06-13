@@ -24,10 +24,6 @@ package "graphics" (
   requires = "js_of_ocaml-lwt.graphics"
 )
 
-package "log" (
-  requires = "js_of_ocaml-lwt.logger"
-)
-
 package "ocamlbuild" (
   requires = "js_of_ocaml-ocamlbuild"
 )
