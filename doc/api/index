@@ -38,6 +38,12 @@ Lwt_js_events
 Lwt_js
 }
 
+{2 Lwt logger - API Reference}
+
+{!modules:
+Lwt_log_js
+}
+
 {2 Graphics - API Reference}
 
 {!modules:
