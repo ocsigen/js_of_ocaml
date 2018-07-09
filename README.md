@@ -98,12 +98,12 @@ functions can yield results different from usual:
   * these functions may be more prone to stack overflow.
 
 ## Toplevel
-  * [Ocaml 4.02.3](http://ocsigen.github.io/js_of_ocaml/#version=4.02.3)
-  * [Ocaml 4.03.0](http://ocsigen.github.io/js_of_ocaml/#version=4.03.0)
-  * [Ocaml 4.04.2](http://ocsigen.github.io/js_of_ocaml/#version=4.04.2) includes Base, Core_kernel, Async_kernel, Async_js
-  * [Ocaml 4.04.0+BER](http://ocsigen.github.io/js_of_ocaml/#version=4.04.0+BER) see http://okmij.org/ftp/ML/MetaOCaml.html
-  * [Ocaml 4.05.0](http://ocsigen.github.io/js_of_ocaml/#version=4.05.0) includes Base, Core_kernel, Async_kernel, Async_js
-  * [Ocaml 4.06.0](http://ocsigen.github.io/js_of_ocaml/#version=4.06.0) includes Base, Core_kernel, Async_kernel, Async_js
+  * [Ocaml 4.02.3](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.02.3)
+  * [Ocaml 4.03.0](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.03.0)
+  * [Ocaml 4.04.2](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.04.2) includes Base, Core_kernel, Async_kernel, Async_js
+  * [Ocaml 4.04.0+BER](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.04.0+BER) see http://okmij.org/ftp/ML/MetaOCaml.html
+  * [Ocaml 4.05.0](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.05.0) includes Base, Core_kernel, Async_kernel, Async_js
+  * [Ocaml 4.06.0](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.06.0) includes Base, Core_kernel, Async_kernel, Async_js
 
 ## Contents of the distribution
 | Filename    | Description                                  |
