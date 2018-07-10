@@ -6,8 +6,24 @@ function bigstring_alloc(_,size){
 }
 
 //Provides: bigstring_destroy_stub
-function bigstring_destroy_stub(_v) {
-  return 0; // noop
+//Requires: caml_invalid_argument, caml_ba_create_from
+function bigstring_destroy_stub(v_bstr) {
+  if (v_bstr.data2 != null) {
+      caml_invalid_argument("bigstring_destroy: unsupported kind");
+  }
+
+  if (v_bstr.hasOwnProperty('__is_deallocated')) {
+    caml_invalid_argument("bigstring_destroy: bigstring is already deallocated");
+  }
+
+  var destroyed_data = new v_bstr.data.__proto__.constructor(0);
+  var destroyed_bigstring =
+      caml_ba_create_from(destroyed_data, null, v_bstr.data_type, v_bstr.kind,
+                          v_bstr.layout, [0]);
+  destroyed_bigstring.__is_deallocated = true;
+
+  // Mutate the original bigstring in-place, to simulate what the C version does
+  Object.assign(v_bstr, destroyed_bigstring);
 }
 
 //Provides: bigstring_blit_bigstring_bytes_stub
