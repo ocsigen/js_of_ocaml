@@ -24,6 +24,8 @@ function bigstring_destroy_stub(v_bstr) {
 
   // Mutate the original bigstring in-place, to simulate what the C version does
   Object.assign(v_bstr, destroyed_bigstring);
+
+  return 0;
 }
 
 //Provides: bigstring_blit_bigstring_bytes_stub
