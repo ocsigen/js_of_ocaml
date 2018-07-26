@@ -1,3 +1,8 @@
+===== 3.2.1 (2018-07-26) - Bari =====
+ * Bug fixes:
+ ** Misc: Fix the dependencies of the Lwt logger
+ ** Runtime: fix semantic of bigstring_destroy_stub
+
 ===== 3.2.0 (2018-06-10) - Bergen =====
  * Features/Changes:
  ** Runime: improve stacktraces.
