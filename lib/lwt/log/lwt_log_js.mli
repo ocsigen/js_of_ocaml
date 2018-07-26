@@ -29,7 +29,7 @@ include module type of Lwt_log_core
 
 (** {2 Predefined logger} *)
 
-val console : Lwt_log.logger
+val console : Lwt_log_core.logger
 (** Logger that use the javascript console object. *)
 
 
