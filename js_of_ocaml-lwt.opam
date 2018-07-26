@@ -17,6 +17,6 @@ depends: [
   "js_of_ocaml-ppx"
 ]
 
-depopts: [ "graphics" ]
+depopts: [ "graphics" "lwt_log" ]
 
 available: [ ocaml-version >= "4.02.0" ]
