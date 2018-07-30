@@ -250,7 +250,7 @@ and dataTransfer = object
   method dropEffect : js_string t prop
   method effectAllowed : js_string t prop
   method files : File.fileList t readonly_prop
-  method types : Dom.stringList t readonly_prop
+  method types : js_string t js_array t readonly_prop
   method addElement : element t -> unit meth
   method clearData : js_string t -> unit meth
   method clearData_all : unit meth
