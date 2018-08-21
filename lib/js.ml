@@ -23,7 +23,8 @@ type +'a t
 type (-'a, +'b) meth_callback
 
 module Unsafe = struct
-  type any
+  type top
+  type any = top t
   type any_js_array = any
   external inject : 'a -> any = "%identity"
   external coerce : _ t -> _ t = "%identity"

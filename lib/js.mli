@@ -654,7 +654,8 @@ val export_all : 'a t -> unit
 
 (** Unsafe Javascript operations *)
 module Unsafe : sig
-  type any
+  type top
+  type any = top t
     (** Top type.  Used for putting values of different types
         in a same array. *)
 
