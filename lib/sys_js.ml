@@ -29,7 +29,7 @@ external set_channel_output' : out_channel -> (Js.js_string Js.t -> unit) Js.cal
 external set_channel_input' : in_channel -> (unit -> string) Js.callback -> unit = "caml_ml_set_channel_refill"
 
 let set_channel_flusher (out_channel : out_channel) (f : string -> unit) =
-  let f' : (Js.js_string Js.t -> unit) Js.callback = Js.wrap_callback (fun s -> f (Js.to_string s)) in
+  let f' : (Js.js_string Js.t -> unit) Js.callback = Js.wrap_callback (fun s -> f (Js.to_bytestring s)) in
   set_channel_output' out_channel f'
 
 let set_channel_filler (in_channel : in_channel) (f : unit -> string) =
