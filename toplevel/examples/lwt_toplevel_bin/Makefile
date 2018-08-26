@@ -64,7 +64,7 @@ MKTOP=jsoo_mktop -verbose $(SAFESTRING) -g \
 	${addprefix -export-unit $(TYXML_DIR)/, html_types.cmi html_sigs.cmi xml_wrap.cmi } \
 
 TOPLEVEL_NAME=toplevel
-$(TOPLEVEL_NAME).js: examples.ml test_dynlink.cmo test_dynlink.js
+$(TOPLEVEL_NAME).js: examples.ml test_dynlink.cmo test_dynlink.js test_dynlink.cmi.js
 	$(MKTOP) \
 	$(BER) \
 	${addprefix -jsopt , ${JSFILES}} \
@@ -77,7 +77,11 @@ $(TOPLEVEL_NAME).js: examples.ml test_dynlink.cmo test_dynlink.js
 test_dynlink.js: test_dynlink.cmo
 	js_of_ocaml test_dynlink.cmo --pretty
 
-test_dynlink.cmo: test_dynlink.ml
+test_dynlink.cmi.js: test_dynlink.cmi
+	jsoo_mkcmis test_dynlink.cmi -o test_dynlink.cmi.js
+
+
+test_dynlink.cmo test_dynlink.cmi: test_dynlink.ml
 	ocamlc -c test_dynlink.ml
 
 clean::
