@@ -2244,7 +2244,7 @@ module Reloc = struct
 
 end
 
-let from_compilation_units ~includes:_ ~debug ~debug_data l =
+let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
   let reloc = Reloc.create () in
   List.iter (fun (compunit, code) -> Reloc.step1 reloc compunit code) l;
   List.iter (fun (compunit, code) -> Reloc.step2 reloc compunit code) l;
@@ -2281,7 +2281,14 @@ let from_compilation_units ~includes:_ ~debug ~debug_data l =
       end
     | _ -> l) globals.vars [] in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
-  prepend prog body,Util.StringSet.empty, debug_data
+  let cmis =
+    if toplevel && Option.Optim.include_cmis ()
+    then
+      List.fold_left (fun acc (compunit,_) ->
+        Util.StringSet.add (compunit.Cmo_format.cu_name) acc
+      ) Util.StringSet.empty l
+    else Util.StringSet.empty in
+  prepend prog body,cmis, debug_data
 
 let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
       ?(dynlink=false) ?(debug=`No) ic =
@@ -2314,7 +2321,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
             seek_in ic compunit.Cmo_format.cu_debug;
             Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic;
           end;
-        let a,b,c = from_compilation_units ~includes ~debug ~debug_data [compunit, code] in
+        let a,b,c = from_compilation_units ~toplevel ~includes ~debug ~debug_data [compunit, code] in
         a,b,c,false
       | `Cma ->
         if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_cma
@@ -2336,7 +2343,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
           orig := !orig + compunit.Cmo_format.cu_codesize;
           compunit, code)
           lib.Cmo_format.lib_units in
-        let a,b,c = from_compilation_units ~includes ~debug ~debug_data units in
+        let a,b,c = from_compilation_units ~toplevel ~includes ~debug ~debug_data units in
         a,b,c,false
       | _ ->
         raise Util.MagicNumber.(Bad_magic_number (to_string magic))
