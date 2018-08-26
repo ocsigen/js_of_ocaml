@@ -94,6 +94,8 @@ var caml_global_data = [0];
 //Provides: caml_register_global (const, shallow, const)
 //Requires: caml_global_data
 function caml_register_global (n, v, name_opt) {
+  if(name_opt && joo_global_object.toplevelReloc)
+    n = joo_global_object.toplevelReloc(name_opt);
   caml_global_data[n + 1] = v;
   if(name_opt) caml_global_data[name_opt] = v;
 }

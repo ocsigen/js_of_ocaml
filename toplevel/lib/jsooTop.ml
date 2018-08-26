@@ -74,6 +74,16 @@ let setup = lazy (
        flush stdout; flush stderr;
        res)
   );
+  Js.Unsafe.global##.toplevelReloc := Js.Unsafe.callback (fun name ->
+    let name = Js.to_string name in
+    let buf = Bytes.create 4 in
+    Symtable.patch_object buf [Reloc_setglobal (Ident.create_persistent name), 0];
+    let i =
+      let get i = Char.code (Bytes.get buf i) in
+      get 0 + ((get 1) lsl 8) + ((get 2) lsl 16) + ((get 3) lsl 24)
+    in
+    i
+  );
   ())
 
 let refill_lexbuf s p ppf buffer len =
