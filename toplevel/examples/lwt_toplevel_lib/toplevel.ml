@@ -59,9 +59,48 @@ let exec' s =
   let res : bool = JsooTop.use Format.std_formatter s in
   if not res then Format.eprintf "error while evaluating %s@." s
 
+module Version = struct
+
+  let split_char sep p =
+    let len = String.length p in
+    let rec split beg cur =
+      if cur >= len then
+        if cur - beg > 0
+        then [String.sub p beg (cur - beg)]
+        else []
+      else if p.[cur] = sep then
+        String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
+      else
+        split beg (cur + 1) in
+    split 0 0
+
+  type t = int list
+
+  let split v =
+    match split_char '+' v with
+    | [] -> assert false
+    | x::_ -> List.map int_of_string (split_char '.' x)
+
+  let current = split Sys.ocaml_version
+
+  let compint (a : int) b = compare a b
+
+  let rec compare v v' = match v,v' with
+    | [x],[y] -> compint x y
+    | [],[] -> 0
+    | [],y::_ -> compint 0 y
+    | x::_,[] -> compint x 0
+    | x::xs,y::ys ->
+      match compint x y with
+      | 0 -> compare xs ys
+      | n -> n
+end
+
 let setup_toplevel () =
   JsooTop.initialize ();
   Sys.interactive := false;
+  if Version.compare Version.current [4;07] >= 0
+  then exec' ("open Stdlib");
   exec' ("module Lwt_main = struct
              let run t = match Lwt.state t with
                | Lwt.Return x -> x
