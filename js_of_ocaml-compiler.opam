@@ -14,9 +14,10 @@ depends: [
   "jbuilder" {build & >= "1.0+beta17"}
   "cmdliner"
   "cppo" {>= "1.1.0"}
+  "yojson" # It's optional, but we want users to be able to use source-map without pain.
 ]
 
-depopts: [ "ocamlfind" "yojson" ]
+depopts: [ "ocamlfind" ]
 
 conflicts: [
   "ocamlfind"   {< "1.5.1"}

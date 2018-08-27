@@ -223,7 +223,7 @@ let options =
       then begin
         Util.warn
           "Warning: '--source-map' flag ignored because js_of_ocaml was compiled without \
-           sourcemap support.\n%!";
+           sourcemap support (install yojson to enable support)\n%!";
         None
       end
       else source_map
