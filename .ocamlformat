@@ -1,1 +1,4 @@
-disable
+doc-comments=before
+if-then-else=keyword-first
+parens-tuple=multi-line-only
+wrap-comments=true
