@@ -91,7 +91,5 @@ type token =
   | EOF of Parse_info.t
 
 val info_of_tok : token -> Parse_info.t
-
 val string_of_tok : token -> string
-
 val is_comment : token -> bool

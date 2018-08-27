@@ -19,7 +19,6 @@
  *)
 
 let debug = Option.Debug.find "deadcode"
-
 let times = Option.Debug.find "times"
 
 open Code

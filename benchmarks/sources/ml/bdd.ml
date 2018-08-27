@@ -27,15 +27,10 @@ let getId bdd =
   match bdd with Node (_, _, id, _) -> id | Zero -> 0 | One -> 1
 
 let initSize_1 = (8 * 1024) - 1
-
 let nodeC = ref 1
-
 let sz_1 = ref initSize_1
-
 let htab = ref (Array.make (!sz_1 + 1) [])
-
 let n_items = ref 0
-
 let hashVal x y v = (x lsl 1) + y + (v lsl 2)
 
 let resize newSize =
@@ -103,29 +98,17 @@ let cmpVar (x : int) (y : int) =
   if x < y then LESS else if x > y then GREATER else EQUAL
 
 let zero = Zero
-
 let one = One
-
 let mkVar x = mkNode zero x one
-
 let cacheSize = 1999
-
 let andslot1 = Array.make cacheSize 0
-
 let andslot2 = Array.make cacheSize 0
-
 let andslot3 = Array.make cacheSize zero
-
 let xorslot1 = Array.make cacheSize 0
-
 let xorslot2 = Array.make cacheSize 0
-
 let xorslot3 = Array.make cacheSize zero
-
 let notslot1 = Array.make cacheSize 0
-
 let notslot2 = Array.make cacheSize one
-
 let hash x y = ((x lsl 1) + y) mod cacheSize
 
 let rec not n =

@@ -380,13 +380,8 @@ class type intl =
   end
 
 let intl = Js.Unsafe.global##._Intl
-
 let collator_constr = Js.Unsafe.global##._Intl##._Collator
-
 let dateTimeFormat_constr = Js.Unsafe.global##._Intl##._DateTimeFormat
-
 let numberFormat_constr = Js.Unsafe.global##._Intl##._NumberFormat
-
 let pluralRules_constr = Js.Unsafe.global##._Intl##._PluralRules
-
 let is_supported () = Js.Optdef.test intl

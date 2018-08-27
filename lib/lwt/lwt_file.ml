@@ -46,11 +46,7 @@ let read_with_filereader (fileReader : fileReader t constr) kind file =
   res
 
 let reader kind file = read_with_filereader fileReader kind file
-
 let readAsBinaryString file = reader `BinaryString file
-
 let readAsText file = reader `Text file
-
 let readAsText_withEncoding file e = reader (`Text_withEncoding e) file
-
 let readAsDataURL file = reader `DataURL file

@@ -28,9 +28,7 @@ type t =
   ; mutable stable: bool }
 
 let c1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
-
 let c2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
-
 let name_raw t v nm = Hashtbl.add t.names v nm
 
 let propagate_name t v v' =
@@ -42,7 +40,6 @@ let propagate_name t v v' =
   with Not_found -> ()
 
 let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-
 let is_num c = c >= '0' && c <= '9'
 
 let name t v nm_orig =
@@ -93,12 +90,10 @@ let add_reserved s =
   reserved := List.fold_left (fun acc x -> StringSet.add x acc) !reserved s
 
 let _ = reserved := StringSet.union !reserved Reserved.keyword
-
 (* ; *)
 (* add_reserved Reserved.provided *)
 
 let get_reserved () = !reserved
-
 let is_reserved s = StringSet.mem s !reserved
 
 let rec to_string t ?origin i =
@@ -126,7 +121,6 @@ let rec to_string t ?origin i =
     name
 
 let set_pretty t b = t.pretty <- b
-
 let set_stable t b = t.stable <- b
 
 let reset t =

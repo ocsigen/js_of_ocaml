@@ -24,9 +24,7 @@ module Lexer = Deriving_Json_lexer
 type 'a t = {write: Buffer.t -> 'a -> unit; read: Lexer.lexbuf -> 'a}
 
 let make write read = {write; read}
-
 let read t = t.read
-
 let write t = t.write
 
 let convert t f1 f2 =
@@ -49,7 +47,6 @@ module type Json_min = sig
   type a
 
   val write : Buffer.t -> a -> unit
-
   val read : Lexer.lexbuf -> a
 end
 
@@ -57,11 +54,8 @@ module type Json_min' = sig
   type a
 
   val write : Buffer.t -> a -> unit
-
   val read : Lexer.lexbuf -> a
-
   val match_variant : [`Cst of int | `NCst of int] -> bool
-
   val read_variant : Lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
 end
 
@@ -73,13 +67,10 @@ end
 
 module type Json_converter = sig
   type a
-
   type b
 
   val t : a t
-
   val from_ : a -> b
-
   val to_ : b -> a
 end
 
@@ -87,21 +78,15 @@ module type Json = sig
   type a
 
   val t : a t
-
   val write : Buffer.t -> a -> unit
-
   val read : Lexer.lexbuf -> a
-
   val to_string : a -> string
-
   (* val to_channel: out_channel -> a -> unit *)
 
   val from_string : string -> a
-
   (* val from_channel: in_channel -> a *)
 
   val match_variant : [`Cst of int | `NCst of int] -> bool
-
   val read_variant : Lexer.lexbuf -> [`Cst of int | `NCst of int] -> a
 end
 
@@ -109,15 +94,11 @@ module Defaults (J : Json_min) : Json with type a = J.a = struct
   include J
 
   let t = {write; read}
-
   let to_string v = to_string t v
-
   (* let to_channel oc v = to_channel t oc v *)
   let from_string s = from_string t s
-
   (* let from_channel ic = from_channel t ic *)
   let match_variant _hash = assert false
-
   let read_variant _buf _hash = assert false
 end
 
@@ -125,9 +106,7 @@ module Defaults' (J : Json_min') : Json with type a = J.a = struct
   include J
 
   let t = {write; read}
-
   let to_string v = to_string t v
-
   (* let to_channel oc v = to_channel t oc v *)
   let from_string s = from_string t s
 
@@ -138,17 +117,12 @@ module Defaults'' (J : Json_min'') : Json with type a = J.a = struct
   include J
 
   let read = t.read
-
   let write = t.write
-
   let to_string v = to_string t v
-
   (* let to_channel oc v = to_channel t oc v *)
   let from_string s = from_string t s
-
   (* let from_channel ic = from_channel t ic *)
   let match_variant _hash = assert false
-
   let read_variant _buf _hash = assert false
 end
 
@@ -171,7 +145,6 @@ Defaults (struct
   type a = T.a
 
   let write _buf _ = failwith "Unimplemented"
-
   let read _buf = failwith "Unimplemented"
 end)
 
@@ -179,7 +152,6 @@ module Json_char = Defaults (struct
   type a = char
 
   let write buffer c = Buffer.add_string buffer (string_of_int (int_of_char c))
-
   let read buf = char_of_int (Lexer.read_bounded_int ~max:255 buf)
 end)
 
@@ -187,7 +159,6 @@ module Json_bool = Defaults (struct
   type a = bool
 
   let write buffer b = Buffer.add_char buffer (if b then '1' else '0')
-
   let read buf = 1 = Lexer.read_tag_2 0 1 buf
 end)
 
@@ -195,7 +166,6 @@ module Json_unit = Defaults (struct
   type a = unit
 
   let write buffer () = Buffer.add_char buffer '0'
-
   let read buf = ignore (Lexer.read_tag_1 0 buf)
 end)
 
@@ -203,7 +173,6 @@ module Json_int = Defaults (struct
   type a = int
 
   let write buffer i = Printf.bprintf buffer "%d" i
-
   let read buf = Lexer.read_int buf
 end)
 
@@ -211,7 +180,6 @@ module Json_int32 = Defaults (struct
   type a = int32
 
   let write buffer i = Printf.bprintf buffer "%ld" i
-
   let read buf = Lexer.read_int32 buf
 end)
 
@@ -219,7 +187,6 @@ module Json_int64 = Defaults (struct
   type a = int64
 
   let mask24 = Int64.of_int 0xffffff
-
   let mask16 = Int64.of_int 0xffff
 
   let write buffer i =
@@ -327,7 +294,6 @@ module Json_list (A : Json) = Defaults (struct
   type a = A.a list
 
   let read = read_list A.read
-
   let write = write_list A.write
 end)
 
@@ -345,7 +311,6 @@ module Json_ref (A : Json) = Defaults (struct
   type a = A.a ref
 
   let write = write_ref A.write
-
   let read = read_ref A.read
 end)
 
@@ -367,7 +332,6 @@ module Json_option (A : Json) = Defaults (struct
   type a = A.a option
 
   let read = read_option A.read
-
   let write = write_option A.write
 end)
 
@@ -396,6 +360,5 @@ module Json_array (A : Json) = Defaults (struct
   type a = A.a array
 
   let read = read_array A.read
-
   let write = write_array A.write
 end)

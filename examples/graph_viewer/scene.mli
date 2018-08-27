@@ -40,11 +40,8 @@ val rectangle :
 (****)
 
 type ('color, 'font, 'text) t
-
 type cairo_t = (float * float * float, string * float, string) t
 
 val make : unit -> ('color, 'font, 'text) t
-
 val add : ('color, 'font, 'text) t -> ('color, 'font, 'text) element -> unit
-
 val get : ('color, 'font, 'text) t -> ('color, 'font, 'text) element array

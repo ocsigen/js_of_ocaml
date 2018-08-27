@@ -28,7 +28,6 @@
   - CLEAN UP!!! *)
 
 let debug = Option.Debug.find "gen"
-
 let times = Option.Debug.find "times"
 
 open Code
@@ -217,15 +216,10 @@ module Ctx = struct
 end
 
 let var x = J.EVar (J.V x)
-
 let int n = J.ENum (float n)
-
 let int32 n = J.ENum (Int32.to_float n)
-
 let unsigned x = J.EBin (J.Lsr, x, int 0)
-
 let one = int 1
-
 let zero = int 0
 
 let plus_int x y =
@@ -236,10 +230,8 @@ let plus_int x y =
   | x, y -> J.EBin (J.Plus, x, y)
 
 let bool e = J.ECond (e, one, zero)
-
 (*let boolnot e = J.ECond (e, zero, one)*)
 let val_float f = f
-
 (*J.EArr [Some (J.ENum 253.); Some f]*)
 let float_val e = e
 
@@ -255,7 +247,6 @@ let source_location ctx ?after pc =
 (****)
 
 let float_const f = val_float (J.ENum f)
-
 let s_var name = J.EVar (J.S {J.name; J.var= None})
 
 let runtime_fun ctx name =
@@ -264,7 +255,6 @@ let runtime_fun ctx name =
   | None -> s_var name
 
 let str_js s = J.EStr (s, `Bytes)
-
 (****)
 
 (* Some variables are constant: x = 1 Some may change after effectful
@@ -275,15 +265,10 @@ let str_js s = J.EStr (s, `Bytes)
    let (e, expr_queue) = ... in flush_queue expr_queue e *)
 
 let const_p = 0
-
 let mutable_p = 1
-
 let mutator_p = 2
-
 let flush_p = 3
-
 let or_p p q = max p q
-
 let is_mutable p = p >= mutable_p
 
 (*let is_mutator p = p >= mutator_p*)
@@ -472,9 +457,7 @@ type state =
   ; at_toplevel: bool }
 
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
-
 let incr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc + 1)
-
 let decr_preds st pc = Hashtbl.replace st.preds pc (get_preds st pc - 1)
 
 let protect_preds st pc =

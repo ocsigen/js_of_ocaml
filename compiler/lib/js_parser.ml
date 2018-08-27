@@ -258,7 +258,6 @@ module J = Javascript
 open Js_token
 
 let var name = J.S {J.name; J.var= None}
-
 (* This is need to fake menhir while using `--infer`. *)
 let _tok = EOF Parse_info.zero
 

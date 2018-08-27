@@ -95,19 +95,12 @@ module Event = struct
   type typ = xmlHttpRequest File.progressEvent t Dom.Event.typ
 
   let readystatechange = Dom.Event.make "readystatechange"
-
   let loadstart = Dom.Event.make "loadstart"
-
   let progress = Dom.Event.make "progress"
-
   let abort = Dom.Event.make "abort"
-
   let error = Dom.Event.make "error"
-
   let load = Dom.Event.make "load"
-
   let timeout = Dom.Event.make "timeout"
-
   let loadend = Dom.Event.make "loadend"
 end
 

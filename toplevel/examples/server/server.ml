@@ -4,7 +4,6 @@ open Cohttp_lwt_unix
 open Re
 
 let _ = Findlib.init ()
-
 let filesys = ref (Findlib.default_location ())
 
 let server () =

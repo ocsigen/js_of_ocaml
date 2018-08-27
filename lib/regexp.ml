@@ -19,7 +19,6 @@
  *)
 
 type regexp = Js.regExp Js.t
-
 type result = Js.match_result Js.t
 
 let regexp s = new%js Js.regExp_withFlags (Js.bytestring s) (Js.string "g")
@@ -47,7 +46,6 @@ let search r s i =
          res##.index, res ))
 
 let search_forward = search
-
 let matched_string r = blunt_str_array_get r 0
 
 let matched_group r i =
@@ -96,5 +94,4 @@ let quote s =
   Js.to_bytestring (Js.bytestring s) ## (replace quote_re (Js.string "\\$&"))
 
 let regexp_string s = regexp (quote s)
-
 let regexp_string_case_fold s = regexp_case_fold (quote s)

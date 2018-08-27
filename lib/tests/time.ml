@@ -30,7 +30,6 @@ let log_failure_tm name tmg =
        tmg.tm_wday tmg.tm_yday tmg.tm_isdst)
 
 let now = 1377134255.469
-
 (* +. 24. *. 60. *. 60. *. 1. *)
 
 (* check gmtime *)

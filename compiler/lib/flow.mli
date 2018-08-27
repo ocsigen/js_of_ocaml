@@ -49,13 +49,8 @@ val get_approx :
   -> 'b
 
 val the_def_of : info -> Code.prim_arg -> Code.expr option
-
 val the_const_of : info -> Code.prim_arg -> Code.constant option
-
 val the_string_of : info -> Code.prim_arg -> string option
-
 val the_int : info -> Code.prim_arg -> int32 option
-
 val update_def : info -> Code.Var.t -> Code.expr -> unit
-
 val f : ?skip_param:bool -> Code.program -> Code.program * info

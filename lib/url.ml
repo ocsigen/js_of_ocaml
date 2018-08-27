@@ -31,13 +31,10 @@ let split_2 c s =
 exception Local_exn
 
 let interrupt () = raise Local_exn
-
 (* url (AKA percent) encoding/decoding *)
 
 let plus_re = Regexp.regexp_string "+"
-
 let escape_plus s = Regexp.global_replace plus_re s "%2B"
-
 let unescape_plus s = Regexp.global_replace plus_re s " "
 
 let plus_re_js_string =
@@ -95,7 +92,6 @@ let is_secure prot_string =
 
 (* port number *)
 let default_http_port = 80
-
 let default_https_port = 443
 
 (* path *)
@@ -267,7 +263,6 @@ module Current = struct
       end
 
   let host = urldecode_js_string_string l##.hostname
-
   let protocol = urldecode_js_string_string l##.protocol
 
   let port =
@@ -277,7 +272,6 @@ module Current = struct
       ()
 
   let path_string = urldecode_js_string_string l##.pathname
-
   let path = path_of_path_string path_string
 
   let arguments =
@@ -301,10 +295,7 @@ module Current = struct
         Js.to_string (Js.Unsafe.get res 1) )
 
   let set_fragment s = l##.hash := Js.bytestring (urlencode s)
-
   let get () = url_of_js_string l##.href
-
   let set u = l##.href := Js.bytestring (string_of_url u)
-
   let as_string = urldecode_js_string_string l##.href
 end

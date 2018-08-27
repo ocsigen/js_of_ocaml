@@ -24,9 +24,7 @@ module DebugAddr : sig
   type dbg = private int
 
   val of_addr : addr -> dbg
-
   val to_addr : dbg -> addr
-
   val no : dbg
 end
 
@@ -34,78 +32,50 @@ module Var : sig
   type t
 
   val print : Format.formatter -> t -> unit
-
   val idx : t -> int
-
   val of_idx : int -> t
-
   val to_string : ?origin:t -> t -> string
-
   val fresh : unit -> t
-
   val fresh_n : string -> t
-
   val fork : t -> t
-
   val count : unit -> int
-
   val compare : t -> t -> int
-
   val loc : t -> Parse_info.t -> unit
-
   val get_loc : t -> Parse_info.t option
-
   val get_name : t -> string option
-
   val name : t -> string -> unit
-
   val propagate_name : t -> t -> unit
-
   val reset : unit -> unit
-
   val set_pretty : bool -> unit
-
   val set_stable : bool -> unit
 end
 
 module VarSet : Set.S with type elt = Var.t
-
 module VarMap : Map.S with type key = Var.t
 
 module VarTbl : sig
   type 'a t
-
   type key = Var.t
-
   type size = unit
 
   val get : 'a t -> key -> 'a
-
   val set : 'a t -> key -> 'a -> unit
-
   val make : size -> 'a -> 'a t
 end
 
 module VarISet : sig
   type t
-
   type elt = Var.t
 
   val empty : unit -> t
-
   val iter : (elt -> unit) -> t -> unit
-
   val mem : t -> elt -> bool
-
   val add : t -> elt -> unit
-
   val remove : t -> elt -> unit
-
   val copy : t -> t
 end
 
 module AddrSet : Set.S with type elt = addr and type t = Util.IntSet.t
-
 module AddrMap : Map.S with type key = addr and type 'a t = 'a Util.IntMap.t
 
 type cont = addr * Var.t list
@@ -178,19 +148,13 @@ type block =
   ; branch: last }
 
 type program = addr * block AddrMap.t * addr
-
 type xinstr = Instr of instr | Last of last
 
 val print_var_list : Format.formatter -> Var.t list -> unit
-
 val print_instr : Format.formatter -> instr -> unit
-
 val print_block : (AddrMap.key -> xinstr -> string) -> int -> block -> unit
-
 val print_program : (AddrMap.key -> xinstr -> string) -> program -> unit
-
 val print_last : Format.formatter -> last -> unit
-
 val print_cont : Format.formatter -> cont -> unit
 
 val fold_closures :
@@ -211,9 +175,6 @@ val traverse :
   -> 'c
 
 val prepend : program -> instr list -> program
-
 val empty : program
-
 val eq : program -> program -> bool
-
 val invariant : program -> unit

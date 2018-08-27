@@ -21,7 +21,6 @@ open Js_of_ocaml_lwt
 module Html = Dom_html
 
 let ( >>= ) = Lwt.bind
-
 let ( |> ) x f = f x
 
 exception Break of bool

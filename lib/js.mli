@@ -672,7 +672,6 @@ class type error =
 val error_constr : (js_string t -> error t) constr
 
 val string_of_error : error t -> string
-
 val raise_js_error : error t -> 'a
 
 (** The [Error] exception wrap javascript exceptions when catched by ocaml
@@ -718,9 +717,7 @@ val escape : js_string t -> js_string t
 val unescape : js_string t -> js_string t
 
 val isNaN : 'a -> bool
-
 val parseInt : js_string t -> int
-
 val parseFloat : js_string t -> float
 
 (** {2 Conversion functions between Javascript and OCaml types} *)

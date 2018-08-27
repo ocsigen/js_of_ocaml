@@ -81,7 +81,6 @@ let icons =
   ; "ocsigen-powered.png" ]
 
 let icon nm = Js.string ("icons/" ^ nm)
-
 let tree_color = Js.string "#794c0d"
 
 (* let outside_color = Js.string (*"#3d2606"*) "#1e1303" let outside_color =
@@ -141,33 +140,23 @@ let opt_style v default = Js.Optdef.get v (fun () -> default)
 type c = {x: float; y: float}
 
 let one = {x= 1.; y= 0.}
-
 let zero = {x= 0.; y= 0.}
-
 (* Scalar operations *)
 
 let sdiv z s = {x= z.x /. s; y= z.y /. s}
-
 let smul s z = {x= s *. z.x; y= s *. z.y}
-
 (* Norm *)
 
 let sq_norm c = (c.x *. c.x) +. (c.y *. c.y)
-
 let norm c = sqrt (sq_norm c)
-
 let normalize c = sdiv c (norm c)
-
 (* Conjugate and negation *)
 
 let conj z = {x= z.x; y= -.z.y}
-
 let neg z = {x= -.z.x; y= -.z.y}
-
 (* Addition, multiplication and division *)
 
 let add z t = {x= z.x +. t.x; y= z.y +. t.y}
-
 let sub z t = {x= z.x -. t.x; y= z.y -. t.y}
 
 let sq_norm_sub z t =
@@ -691,9 +680,7 @@ let draw canvas vertices edges nodes boxes =
   Firebug.console##log_2 !image_count !large_image_count
 
 let default_img = "frog.jpg"
-
 let tree_url = "tree.json"
-
 let ( >> ) x f = f x
 
 type 'a tree = Node of 'a * 'a tree array
@@ -717,7 +704,6 @@ let rec randomize_tree n =
   Array.iter randomize_tree ch
 
 let need_redraw = ref false
-
 let redraw_funct = ref (fun () -> ())
 
 let perform_redraw () =
@@ -747,9 +733,7 @@ let image_node img =
     , img )
 
 let nl_re = Regexp.regexp "\n"
-
 let not_space_re = Regexp.regexp "[^ ]"
-
 let pipe_re = Regexp.regexp "[|]"
 
 let compute_text_node info =
@@ -991,7 +975,6 @@ let load_tree () =
   Lwt.return (tree_layout node_names tree, node_names)
 
 let radius_of_length r = (exp r -. 1.) /. (exp r +. 1.)
-
 let length_of_radius r = log ((1. +. r) /. (1. -. r))
 
 type info =
@@ -1415,9 +1398,7 @@ let _ =
   List.iter (fun src -> ignore (load_image (icon src))) icons
 
 let all_messages = load_messages ()
-
 let tree_info = load_tree ()
-
 let image_info = load_image_info ()
 
 let start _ =

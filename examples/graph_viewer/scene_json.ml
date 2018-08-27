@@ -47,9 +47,7 @@ let command_stringify ch c =
         x3 y3
 
 let commands_stringify = array_stringify command_stringify
-
 let point_stringify ch (x, y) = Format.fprintf ch "@[<1>[0,@,%g,@,%g]@]" x y
-
 let points_stringify = array_stringify point_stringify
 
 let rect_stringify ch (x1, y1, x2, y2) =

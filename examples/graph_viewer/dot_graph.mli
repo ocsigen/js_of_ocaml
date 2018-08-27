@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 module StringMap : Map.S with type key = string
-
 module IntMap : Map.S with type key = int
 
 type id
@@ -42,5 +41,4 @@ type graph =
 type info = {kind: [`Graph | `Digraph]; strict: bool}
 
 val of_file_spec : Dot_file.t -> info * graph
-
 val of_channel : in_channel -> info * graph

@@ -10,7 +10,6 @@ open Js_of_ocaml
 module Html = Dom_html
 
 let js = Js.string
-
 let document = Html.window##.document
 
 type config = {nbcols: int; nbrows: int; nbmines: int}
@@ -106,27 +105,16 @@ let cells_to_see bd cf (i, j) =
   cells_to_see_rec [i, j]
 
 let b0 = 3
-
 let l1 = 15
-
 let l2 = l1
-
 let l4 = 20 + (2 * b0)
-
 let l3 = (l4 * default_config.nbcols) + (2 * b0)
-
 let l5 = 40 + (2 * b0)
-
 let h1 = l1
-
 let h2 = 30
-
 let h3 = l5 + 20 + (2 * b0)
-
 let h4 = h2
-
 let h5 = 20 + (2 * b0)
-
 let h6 = l5 + (2 * b0)
 
 type demin_cf =

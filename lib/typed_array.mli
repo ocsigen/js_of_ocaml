@@ -58,109 +58,68 @@ class type ['a, 'b] typedArray =
   end
 
 type int8Array = (int, [`Int8]) typedArray
-
 type uint8Array = (int, [`Uint8]) typedArray
-
 type int16Array = (int, [`Int16]) typedArray
-
 type uint16Array = (int, [`Uint16]) typedArray
-
 type int32Array = (int, [`Int32]) typedArray
-
 type uint32Array = (float, [`Uint32]) typedArray
-
 type float32Array = (float, [`Float32]) typedArray
-
 type float64Array = (float, [`Float64]) typedArray
 
 val int8Array : (int -> int8Array t) constr
-
 val int8Array_fromArray : (int js_array t -> int8Array t) constr
-
 val int8Array_fromTypedArray : (int8Array t -> int8Array t) constr
-
 val int8Array_fromBuffer : (arrayBuffer t -> int8Array t) constr
-
 val int8Array_inBuffer : (arrayBuffer t -> int -> int -> int8Array t) constr
-
 val uint8Array : (int -> uint8Array t) constr
-
 val uint8Array_fromArray : (int js_array t -> uint8Array t) constr
-
 val uint8Array_fromTypedArray : (uint8Array t -> uint8Array t) constr
-
 val uint8Array_fromBuffer : (arrayBuffer t -> uint8Array t) constr
-
 val uint8Array_inBuffer : (arrayBuffer t -> int -> int -> uint8Array t) constr
-
 val int16Array : (int -> int16Array t) constr
-
 val int16Array_fromArray : (int js_array t -> int16Array t) constr
-
 val int16Array_fromTypedArray : (int16Array t -> int16Array t) constr
-
 val int16Array_fromBuffer : (arrayBuffer t -> int16Array t) constr
-
 val int16Array_inBuffer : (arrayBuffer t -> int -> int -> int16Array t) constr
-
 val uint16Array : (int -> uint16Array t) constr
-
 val uint16Array_fromArray : (int js_array t -> uint16Array t) constr
-
 val uint16Array_fromTypedArray : (uint16Array t -> uint16Array t) constr
-
 val uint16Array_fromBuffer : (arrayBuffer t -> uint16Array t) constr
 
 val uint16Array_inBuffer :
   (arrayBuffer t -> int -> int -> uint16Array t) constr
 
 val int32Array : (int -> int32Array t) constr
-
 val int32Array_fromArray : (int js_array t -> int32Array t) constr
-
 val int32Array_fromTypedArray : (int32Array t -> int32Array t) constr
-
 val int32Array_fromBuffer : (arrayBuffer t -> int32Array t) constr
-
 val int32Array_inBuffer : (arrayBuffer t -> int -> int -> int32Array t) constr
-
 val uint32Array : (int -> uint32Array t) constr
-
 val uint32Array_fromArray : (float js_array t -> uint32Array t) constr
-
 val uint32Array_fromTypedArray : (uint32Array t -> uint32Array t) constr
-
 val uint32Array_fromBuffer : (arrayBuffer t -> uint32Array t) constr
 
 val uint32Array_inBuffer :
   (arrayBuffer t -> int -> int -> uint32Array t) constr
 
 val float32Array : (int -> float32Array t) constr
-
 val float32Array_fromArray : (float js_array t -> float32Array t) constr
-
 val float32Array_fromTypedArray : (float32Array t -> float32Array t) constr
-
 val float32Array_fromBuffer : (arrayBuffer t -> float32Array t) constr
 
 val float32Array_inBuffer :
   (arrayBuffer t -> int -> int -> float32Array t) constr
 
 val float64Array : (int -> float64Array t) constr
-
 val float64Array_fromArray : (float js_array t -> float64Array t) constr
-
 val float64Array_fromTypedArray : (float64Array t -> float64Array t) constr
-
 val float64Array_fromBuffer : (arrayBuffer t -> float64Array t) constr
 
 val float64Array_inBuffer :
   (arrayBuffer t -> int -> int -> float64Array t) constr
 
 val set : ('a, 'b) typedArray t -> int -> 'a -> unit
-
 val get : ('a, 'b) typedArray t -> int -> 'a optdef
-
 val unsafe_get : ('a, 'b) typedArray t -> int -> 'a
 
 class type dataView =
@@ -223,7 +182,6 @@ class type dataView =
   end
 
 val dataView : (arrayBuffer t -> dataView t) constr
-
 val dataView_inBuffer : (arrayBuffer t -> int -> int -> dataView t) constr
 
 module Bigstring : sig
@@ -231,7 +189,6 @@ module Bigstring : sig
     (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
   val to_arrayBuffer : t -> arrayBuffer Js.t
-
   val of_arrayBuffer : arrayBuffer Js.t -> t
 end
 

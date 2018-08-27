@@ -18,9 +18,7 @@
  *)
 module F (M : sig
   type color
-
   type font
-
   type text
 
   val white : color
@@ -28,19 +26,12 @@ module F (M : sig
   type ctx
 
   val save : ctx -> unit
-
   val restore : ctx -> unit
-
   val scale : ctx -> sx:float -> sy:float -> unit
-
   val translate : ctx -> tx:float -> ty:float -> unit
-
   val begin_path : ctx -> unit
-
   val close_path : ctx -> unit
-
   val move_to : ctx -> x:float -> y:float -> unit
-
   val line_to : ctx -> x:float -> y:float -> unit
 
   val curve_to :
@@ -66,9 +57,7 @@ module F (M : sig
     ctx -> x:float -> y:float -> width:float -> height:float -> unit
 
   val fill : ctx -> color -> unit
-
   val stroke : ctx -> color -> unit
-
   val clip : ctx -> unit
 
   val draw_text :
@@ -82,17 +71,12 @@ module F (M : sig
     -> unit
 
   type window
-
   type drawable
-
   type pixmap
 
   val get_drawable : window -> drawable
-
   val make_pixmap : window -> int -> int -> pixmap
-
   val drawable_of_pixmap : pixmap -> drawable
-
   val get_context : pixmap -> ctx
 
   val put_pixmap :
@@ -118,7 +102,6 @@ end) : sig
   type pixmap
 
   val make_pixmap : unit -> pixmap
-
   val invalidate_pixmap : pixmap -> unit
 
   type st =

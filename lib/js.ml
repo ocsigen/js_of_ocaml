@@ -19,46 +19,28 @@
  *)
 
 type +'a t
-
 type (-'a, +'b) meth_callback
 
 module Unsafe = struct
   type top
-
   type any = top t
-
   type any_js_array = any
 
   external inject : 'a -> any = "%identity"
-
   external coerce : _ t -> _ t = "%identity"
-
   external get : 'a -> 'b -> 'c = "caml_js_get"
-
   external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
-
   external delete : 'a -> 'b -> unit = "caml_js_delete"
-
   external call : 'a -> 'b -> any array -> 'c = "caml_js_call"
-
   external fun_call : 'a -> any array -> 'b = "caml_js_fun_call"
-
   external meth_call : 'a -> string -> any array -> 'b = "caml_js_meth_call"
-
   external new_obj : 'a -> any array -> 'b = "caml_js_new"
-
   external new_obj_arr : 'a -> any_js_array -> 'b = "caml_ojs_new_arr"
-
   external obj : (string * any) array -> 'a = "caml_js_object"
-
   external equals : 'a -> 'b -> bool = "caml_js_equals"
-
   external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
-
   external eval_string : string -> 'a = "caml_js_eval_string"
-
   external js_expr : string -> 'a = "caml_js_expr"
-
   external pure_js_expr : string -> 'a = "caml_pure_js_expr"
 
   let global = pure_js_expr "joo_global_object"
@@ -92,7 +74,6 @@ end
 (****)
 
 type 'a opt = 'a
-
 type 'a optdef = 'a
 
 external debugger : unit -> unit = "debugger"
@@ -109,23 +90,14 @@ module type OPT = sig
   type 'a t
 
   val empty : 'a t
-
   val return : 'a -> 'a t
-
   val map : 'a t -> ('a -> 'b) -> 'b t
-
   val bind : 'a t -> ('a -> 'b t) -> 'b t
-
   val test : 'a t -> bool
-
   val iter : 'a t -> ('a -> unit) -> unit
-
   val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
-
   val get : 'a t -> (unit -> 'a) -> 'a
-
   val option : 'a option -> 'a t
-
   val to_option : 'a t -> 'a option
 end
 
@@ -133,23 +105,14 @@ module Opt : OPT with type 'a t = 'a opt = struct
   type 'a t = 'a opt
 
   let empty = null
-
   let return = some
-
   let map x f = if Unsafe.equals x null then null else return (f x)
-
   let bind x f = if Unsafe.equals x null then null else f x
-
   let test x = not (Unsafe.equals x null)
-
   let iter x f = if not (Unsafe.equals x null) then f x
-
   let case x f g = if Unsafe.equals x null then f () else g x
-
   let get x f = if Unsafe.equals x null then f () else x
-
   let option x = match x with None -> empty | Some x -> return x
-
   let to_option x = case x (fun () -> None) (fun x -> Some x)
 end
 
@@ -157,48 +120,31 @@ module Optdef : OPT with type 'a t = 'a optdef = struct
   type 'a t = 'a optdef
 
   let empty = undefined
-
   let return = def
-
   let map x f = if x == undefined then undefined else return (f x)
-
   let bind x f = if x == undefined then undefined else f x
-
   let test x = x != undefined
-
   let iter x f = if x != undefined then f x
-
   let case x f g = if x == undefined then f () else g x
-
   let get x f = if x == undefined then f () else x
-
   let option x = match x with None -> empty | Some x -> return x
-
   let to_option x = case x (fun () -> None) (fun x -> Some x)
 end
 
 (****)
 
 let coerce x f g = Opt.get (f x) (fun () -> g x)
-
 let coerce_opt x f g = Opt.get (Opt.bind x f) (fun () -> g x)
 
 (****)
 
 type +'a meth
-
 type +'a gen_prop
-
 type 'a readonly_prop = < get: 'a > gen_prop
-
 type 'a writeonly_prop = < set: 'a -> unit > gen_prop
-
 type 'a prop = < get: 'a ; set: 'a -> unit > gen_prop
-
 type 'a optdef_prop = < get: 'a optdef ; set: 'a -> unit > gen_prop
-
 type +'a constr
-
 (****)
 
 type 'a callback = (unit, 'a) meth_callback
@@ -214,11 +160,9 @@ external wrap_meth_callback :
 (****)
 
 let _true = Unsafe.pure_js_expr "true"
-
 let _false = Unsafe.pure_js_expr "false"
 
 type match_result_handle
-
 type string_array
 
 class type js_string =
@@ -318,11 +262,8 @@ class type string_constr =
   end
 
 let string_constr = Unsafe.global##._String
-
 let regExp = Unsafe.global##._RegExp
-
 let regExp_copy = regExp
-
 let regExp_withFlags = regExp
 
 class type ['a] js_array =
@@ -405,17 +346,11 @@ class type ['a] js_array =
   end
 
 let object_constructor = Unsafe.global##._Object
-
 let object_keys o : js_string t js_array t = object_constructor##keys o
-
 let array_constructor = Unsafe.global##._Array
-
 let array_empty = array_constructor
-
 let array_length = array_constructor
-
 let array_get : 'a #js_array t -> int -> 'a optdef = Unsafe.get
-
 let array_set : 'a #js_array t -> int -> 'a -> unit = Unsafe.set
 
 let array_map_poly :
@@ -425,7 +360,6 @@ let array_map_poly :
  fun a cb -> (Unsafe.coerce a)##map cb
 
 let array_map f a = array_map_poly a (wrap_callback (fun x _idx _ -> f x))
-
 let array_mapi f a = array_map_poly a (wrap_callback (fun x idx _ -> f idx x))
 
 class type match_result =
@@ -438,7 +372,6 @@ class type match_result =
   end
 
 let str_array : string_array t -> js_string t js_array t = Unsafe.coerce
-
 let match_result : match_result_handle t -> match_result t = Unsafe.coerce
 
 class type number =
@@ -459,7 +392,6 @@ class type number =
   end
 
 external number_of_float : float -> number t = "caml_js_from_float"
-
 external float_of_number : number t -> float = "caml_js_to_float"
 
 class type date =
@@ -576,19 +508,12 @@ class type date_constr =
   end
 
 let date_constr = Unsafe.global##._Date
-
 let date : date_constr t = date_constr
-
 let date_now : date t constr = date_constr
-
 let date_fromTimeValue : (float -> date t) constr = date_constr
-
 let date_month : (int -> int -> date t) constr = date_constr
-
 let date_day : (int -> int -> int -> date t) constr = date_constr
-
 let date_hour : (int -> int -> int -> int -> date t) constr = date_constr
-
 let date_min : (int -> int -> int -> int -> int -> date t) constr = date_constr
 
 let date_sec : (int -> int -> int -> int -> int -> int -> date t) constr =
@@ -677,7 +602,6 @@ class type error =
 exception Error of error t
 
 let error_constr = Unsafe.global##._Error
-
 let _ = Callback.register_exception "jsError" (Error (Unsafe.obj [||]))
 
 let raise_js_error : error t -> 'a =
@@ -711,23 +635,14 @@ let unescape (s : js_string t) : js_string t =
   Unsafe.fun_call Unsafe.global##.unescape [|Unsafe.inject s|]
 
 external bool : bool -> bool t = "caml_js_from_bool"
-
 external to_bool : bool t -> bool = "caml_js_to_bool"
-
 external string : string -> js_string t = "caml_js_from_string"
-
 external to_string : js_string t -> string = "caml_js_to_string"
-
 external array : 'a array -> 'a js_array t = "caml_js_from_array"
-
 external to_array : 'a js_array t -> 'a array = "caml_js_to_array"
-
 external bytestring : string -> js_string t = "caml_jsbytes_of_string"
-
 external to_bytestring : js_string t -> string = "caml_js_to_byte_string"
-
 external typeof : _ t -> js_string t = "caml_js_typeof"
-
 external instanceof : _ t -> _ constr -> bool = "caml_js_instanceof"
 
 let isNaN (i : 'a) : bool =
@@ -758,7 +673,6 @@ let string_of_error e = to_string e##toString
 external get_export_var : unit -> < .. > t = "caml_js_export_var"
 
 let export_js (field : js_string t) x = Unsafe.set (get_export_var ()) field x
-
 let export field x = export_js (string field) x
 
 let export_all obj =
@@ -774,5 +688,4 @@ let export_all obj =
 type float_prop = float prop
 
 external float : float -> float = "%identity"
-
 external to_float : float -> float = "%identity"

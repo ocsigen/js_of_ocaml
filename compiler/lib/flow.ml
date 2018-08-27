@@ -19,7 +19,6 @@
  *)
 
 let debug = Option.Debug.find "flow"
-
 let times = Option.Debug.find "times"
 
 module Subst = Jsoo_subst
@@ -43,7 +42,6 @@ let update_def {info_defs; _} x exp =
   info_defs.(idx) <- Expr exp
 
 let undefined = Phi VarSet.empty
-
 let is_undefined d = match d with Phi s -> VarSet.is_empty s | _ -> false
 
 let add_expr_def defs x e =
@@ -151,7 +149,6 @@ module Domain1 = struct
   type t = VarSet.t
 
   let equal = VarSet.equal
-
   let bot = VarSet.empty
 end
 
@@ -281,7 +278,6 @@ module Domain2 = struct
   type t = bool
 
   let equal (u : bool) v = u = v
-
   let bot = false
 end
 

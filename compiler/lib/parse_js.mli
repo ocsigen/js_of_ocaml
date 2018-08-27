@@ -22,22 +22,15 @@ type lexer
 exception Parsing_error of Parse_info.t
 
 val strip_comment : lexer -> lexer
-
 val lexer_from_file : ?rm_comment:bool -> string -> lexer
 
 val lexer_from_string :
   ?rm_comment:bool -> ?offset:Parse_info.t -> string -> lexer
 
 val lexer_from_channel : ?rm_comment:bool -> in_channel -> lexer
-
 val lexer_map : (Js_token.token -> Js_token.token) -> lexer -> lexer
-
 val lexer_fold : ('a -> Js_token.token -> 'a) -> 'a -> lexer -> 'a
-
 val lexer_filter : (Js_token.token -> bool) -> lexer -> lexer
-
 val lexer_from_list : Js_token.token list -> lexer
-
 val parse : lexer -> Javascript.program
-
 val parse_expr : lexer -> Javascript.expression

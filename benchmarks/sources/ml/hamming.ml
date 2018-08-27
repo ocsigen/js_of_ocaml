@@ -16,25 +16,15 @@
    bit short, so we roll our own 37-digit numbers... *)
 
 let n0 = Int64.of_int 0
-
 let n1 = Int64.of_int 1
-
 let n2 = Int64.of_int 2
-
 let n3 = Int64.of_int 3
-
 let n5 = Int64.of_int 5
-
 let ( % ) = Int64.rem
-
 let ( * ) = Int64.mul
-
 let ( / ) = Int64.div
-
 let ( + ) = Int64.add
-
 let digit = Int64.of_string "1000000000000000000"
-
 let mul n (pl, ph) = n * pl % digit, (n * ph) + (n * pl / digit)
 
 let cmp (nl, nh) (pl, ph) =
@@ -49,11 +39,8 @@ let cmp (nl, nh) (pl, ph) =
   else 0
 
 let x2 p = mul n2 p
-
 let x3 p = mul n3 p
-
 let x5 p = mul n5 p
-
 let nn1 = n1, n0
 
 let pr (nl, nh) =
@@ -70,7 +57,6 @@ let pr (nl, nh) =
 open Lazy
 
 type 'a lcons = Cons of 'a * 'a lcons Lazy.t
-
 type 'a llist = 'a lcons Lazy.t
 
 let rec map f l =

@@ -21,9 +21,7 @@
 open Js_of_ocaml_compiler
 
 let times = Option.Debug.find "times"
-
 let debug_mem = Option.Debug.find "mem"
-
 let _ = Sys.catch_break true
 
 let temp_file_name =

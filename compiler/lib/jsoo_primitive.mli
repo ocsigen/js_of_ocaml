@@ -19,11 +19,9 @@
  *)
 
 val is_pure : string -> bool
-
 val exists : string -> bool
 
 type kind = [`Pure | `Mutable | `Mutator]
-
 type kind_arg = [`Shallow_const | `Object_literal | `Const | `Mutable]
 
 type t =
@@ -33,25 +31,14 @@ type t =
   | `Weakdef of Parse_info.t option ]
 
 val kind : string -> kind
-
 val kind_args : string -> kind_arg list option
-
 val register : string -> kind -> kind_arg list option -> int option -> unit
-
 val arity : string -> int
-
 val has_arity : string -> int -> bool
-
 val alias : string -> string -> unit
-
 val resolve : string -> string
-
 val add_external : string -> unit
-
 val is_external : string -> bool
-
 val get_external : unit -> Util.StringSet.t
-
 val need_named_value : string -> bool
-
 val register_named_value : string -> unit

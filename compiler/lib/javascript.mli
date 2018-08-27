@@ -21,11 +21,8 @@ module Label : sig
   type t
 
   val zero : t
-
   val succ : t -> t
-
   val to_string : t -> string
-
   val of_string : string -> t
 end
 
@@ -40,7 +37,6 @@ type location =
 (* A.3 Expressions *)
 
 type identifier = string
-
 type ident_string = {name: identifier; var: Code.Var.t option}
 
 type ident = S of ident_string | V of Code.Var.t
@@ -192,11 +188,8 @@ and source_element =
   | Function_declaration of function_declaration
 
 val compare_ident : ident -> ident -> int
-
 val string_of_number : float -> string
-
 val is_ident : string -> bool
 
 module IdentSet : Set.S with type elt = ident
-
 module IdentMap : Map.S with type key = ident

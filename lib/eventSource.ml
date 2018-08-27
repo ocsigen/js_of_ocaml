@@ -65,7 +65,5 @@ let withCredentials b : options t =
   init
 
 let eventSource = Js.Unsafe.global##._EventSource
-
 let eventSource_options = Js.Unsafe.global##._EventSource
-
 let addEventListener = Dom.addEventListener

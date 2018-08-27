@@ -15,9 +15,7 @@ let ( >>= ) = Lwt.bind
 module Html = Dom_html
 
 let js = Js.string
-
 let document = Html.window##.document
-
 let append_text e s = Dom.appendChild e (document##createTextNode (js s))
 
 let replace_child p n =

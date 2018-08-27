@@ -61,9 +61,7 @@ class type options =
   end
 
 val withCredentials : bool -> options t
-
 val eventSource : (js_string t -> eventSource t) constr
-
 val eventSource_options : (js_string t -> options t -> eventSource t) constr
 
 (** Add an event listener. This function matches the [addEventListener] DOM

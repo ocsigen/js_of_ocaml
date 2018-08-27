@@ -60,7 +60,6 @@ module Vector = struct
   type t = {x: float; mutable y: float; z: float}
 
   let make x y z = {x; y; z}
-
   (* let print ch v = Format.fprintf ch "%f %f %f" v.x v.y v.z *)
 
   let magnitude v = sqrt ((v.x *. v.x) +. (v.y *. v.y) +. (v.z *. v.z))
@@ -75,13 +74,9 @@ module Vector = struct
     ; z= (v.x *. w.y) -. (v.y *. w.x) }
 
   let dot v w = (v.x *. w.x) +. (v.y *. w.y) +. (v.z *. w.z)
-
   let add v w = {x= v.x +. w.x; y= v.y +. w.y; z= v.z +. w.z}
-
   let subtract v w = {x= v.x -. w.x; y= v.y -. w.y; z= v.z -. w.z}
-
   let multiply_vector v w = {x= v.x *. w.x; y= v.y *. w.y; z= v.z *. w.z}
-
   let multiply_scalar v w = {x= v.x *. w; y= v.y *. w; z= v.z *. w}
 end
 
@@ -171,7 +166,6 @@ end
 
 module Shape = struct
   type shape = Sphere of Vector.t * float | Plane of Vector.t * float
-
   type t = {shape: shape; material: Material.t}
 
   let make shape material = {shape; material}

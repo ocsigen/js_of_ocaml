@@ -38,7 +38,6 @@ let dir = [|{dx= 0; dy= 1}; {dx= 1; dy= 0}; {dx= 0; dy= -1}; {dx= -1; dy= 0}|]
 type move = {x1: int; y1: int; x2: int; y2: int}
 
 let moves = Array.make 31 {x1= 0; y1= 0; x2= 0; y2= 0}
-
 let counter = ref 0
 
 exception Found

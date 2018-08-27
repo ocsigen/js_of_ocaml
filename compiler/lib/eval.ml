@@ -22,9 +22,7 @@ open Code
 open Flow
 
 let static_env = Hashtbl.create 17
-
 let clear_static_env () = Hashtbl.clear static_env
-
 let set_static_env s value = Hashtbl.add static_env s value
 
 let get_static_env s =

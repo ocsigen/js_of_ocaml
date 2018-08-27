@@ -19,10 +19,8 @@ let equal_nat n1 n2 =
 
 ;;
 testing_function "num_digits_nat"
-
 ;;
 test (-1) eq (false, not true)
-
 ;;
 test 0 eq (true, not false)
 
@@ -50,13 +48,10 @@ test 1 equal_nat (zero_nat, zero_nat)
 
 ;;
 test 2 equal_nat (nat_of_int 1, nat_of_int 1)
-
 ;;
 test 3 equal_nat (nat_of_string "2", nat_of_string "2")
-
 ;;
 test 4 eq (equal_nat (nat_of_string "2") (nat_of_string "3"), false)
-
 ;;
 testing_function "incr_nat"
 
@@ -103,13 +98,10 @@ let n = make_nat 4
 
 ;;
 test 1 eq_string (string_of_nat n, "0")
-
 ;;
 complement_nat n 0 (if sixtyfour then 2 else 4)
-
 ;;
 test 2 eq_string (string_of_nat n, "340282366920938463463374607431768211455")
-
 ;;
 testing_function "string_of_nat && nat_of_string"
 
@@ -138,7 +130,6 @@ test 21 equal_nat
 
 ;;
 test 22 eq_string (string_of_nat (nat_of_string "1073741824"), "1073741824")
-
 ;;
 testing_function "gcd_nat"
 
@@ -152,7 +143,6 @@ done
 
 ;;
 testing_function "sqrt_nat"
-
 ;;
 test 1 equal_nat (sqrt_nat (nat_of_int 1) 0 1, nat_of_int 1)
 

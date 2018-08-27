@@ -27,7 +27,6 @@ let _ =
   Callback.register_exception "Graphics.Graphic_failure" (Graphic_failure "")
 
 let ( >>= ) = Lwt.bind
-
 let get_context () = Js.Unsafe.(fun_call (variable "caml_gr_state_get") [||])
 
 let set_context ctx =

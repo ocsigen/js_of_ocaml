@@ -52,25 +52,16 @@ type nodeType =
 
 module DocumentPosition : sig
   type t = private int
-
   type mask = private int
 
   val disconnected : mask
-
   val preceding : mask
-
   val following : mask
-
   val contains : mask
-
   val contained_by : mask
-
   val implementation_specific : mask
-
   val has : t -> mask -> bool
-
   val add : mask -> mask -> mask
-
   val ( + ) : mask -> mask -> mask
 end
 
@@ -275,9 +266,7 @@ val nodeType : #node t -> node_type
 
 module CoerceTo : sig
   val element : #node t -> element t opt
-
   val text : #node t -> text t opt
-
   val attr : #node t -> attr t opt
 end
 

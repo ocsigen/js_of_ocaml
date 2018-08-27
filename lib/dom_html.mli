@@ -1020,17 +1020,11 @@ class type legendElement =
   end
 
 class type uListElement = element
-
 class type oListElement = element
-
 class type dListElement = element
-
 class type liElement = element
-
 class type divElement = element
-
 class type paragraphElement = element
-
 class type headingElement = element
 
 class type quoteElement =
@@ -1041,9 +1035,7 @@ class type quoteElement =
   end
 
 class type preElement = element
-
 class type brElement = element
-
 class type hrElement = element
 
 class type modElement =
@@ -1726,7 +1718,6 @@ and canvasPixelArray =
   end
 
 external pixel_get : canvasPixelArray t -> int -> int = "caml_js_get"
-
 external pixel_set : canvasPixelArray t -> int -> int -> unit = "caml_js_set"
 
 (** Object representing a range **)
@@ -2015,9 +2006,7 @@ class type applicationCache =
   end
 
 type interval_id
-
 type timeout_id
-
 type animation_frame_request_id
 
 class type _URL =
@@ -2233,149 +2222,77 @@ module Event : sig
   type 'a typ = 'a Dom.Event.typ
 
   val click : mouseEvent t typ
-
   val dblclick : mouseEvent t typ
-
   val mousedown : mouseEvent t typ
-
   val mouseup : mouseEvent t typ
-
   val mouseover : mouseEvent t typ
-
   val mousemove : mouseEvent t typ
-
   val mouseout : mouseEvent t typ
-
   val keypress : keyboardEvent t typ
-
   val keydown : keyboardEvent t typ
-
   val keyup : keyboardEvent t typ
-
   val mousewheel : mousewheelEvent t typ
-
   val _DOMMouseScroll : mouseScrollEvent t typ
-
   val touchstart : touchEvent t typ
-
   val touchmove : touchEvent t typ
-
   val touchend : touchEvent t typ
-
   val touchcancel : touchEvent t typ
-
   val dragstart : dragEvent t typ
-
   val dragend : dragEvent t typ
-
   val dragenter : dragEvent t typ
-
   val dragover : dragEvent t typ
-
   val dragleave : dragEvent t typ
-
   val drag : dragEvent t typ
-
   val drop : dragEvent t typ
-
   val hashchange : hashChangeEvent t typ
-
   val change : event t typ
-
   val input : event t typ
-
   val timeupdate : event t typ
-
   val submit : event t typ
-
   val scroll : event t typ
-
   val focus : event t typ
-
   val blur : event t typ
-
   val load : event t typ
-
   val unload : event t typ
-
   val beforeunload : event t typ
-
   val resize : event t typ
-
   val orientationchange : event t typ
-
   val popstate : popStateEvent t typ
-
   val error : event t typ
-
   val abort : event t typ
-
   val select : event t typ
-
   val online : event t typ
-
   val offline : event t typ
-
   val checking : event t typ
-
   val noupdate : event t typ
-
   val downloading : event t typ
-
   val progress : event t typ
-
   val updateready : event t typ
-
   val cached : event t typ
-
   val obsolete : event t typ
-
   val domContentLoaded : event t typ
-
   val animationstart : animationEvent t typ
-
   val animationend : animationEvent t typ
-
   val animationiteration : animationEvent t typ
-
   val animationcancel : animationEvent t typ
-
   val canplay : mediaEvent t typ
-
   val canplaythrough : mediaEvent t typ
-
   val durationchange : mediaEvent t typ
-
   val emptied : mediaEvent t typ
-
   val ended : mediaEvent t typ
-
   val loadeddata : mediaEvent t typ
-
   val loadedmetadata : mediaEvent t typ
-
   val loadstart : mediaEvent t typ
-
   val pause : mediaEvent t typ
-
   val play : mediaEvent t typ
-
   val playing : mediaEvent t typ
-
   val ratechange : mediaEvent t typ
-
   val seeked : mediaEvent t typ
-
   val seeking : mediaEvent t typ
-
   val stalled : mediaEvent t typ
-
   val suspend : mediaEvent t typ
-
   val volumechange : mediaEvent t typ
-
   val waiting : mediaEvent t typ
-
   val make : string -> 'a typ
 end
 
@@ -2572,7 +2489,6 @@ module Keyboard_code : sig
     | Pause
 
   val of_event : keyboardEvent Js.t -> t
-
   val of_key_code : int -> t
 end
 
@@ -2590,25 +2506,15 @@ end
 (** {2 Helper functions for creating HTML elements} *)
 
 val createHtml : document t -> htmlElement t
-
 val createHead : document t -> headElement t
-
 val createLink : document t -> linkElement t
-
 val createTitle : document t -> titleElement t
-
 val createMeta : document t -> metaElement t
-
 val createBase : document t -> baseElement t
-
 val createStyle : document t -> styleElement t
-
 val createBody : document t -> bodyElement t
-
 val createForm : document t -> formElement t
-
 val createOptgroup : document t -> optGroupElement t
-
 val createOption : document t -> optionElement t
 
 val createSelect :
@@ -2624,135 +2530,70 @@ val createButton :
   ?_type:js_string t -> ?name:js_string t -> document t -> buttonElement t
 
 val createLabel : document t -> labelElement t
-
 val createFieldset : document t -> fieldSetElement t
-
 val createLegend : document t -> legendElement t
-
 val createUl : document t -> uListElement t
-
 val createOl : document t -> oListElement t
-
 val createDl : document t -> dListElement t
-
 val createLi : document t -> liElement t
-
 val createDiv : document t -> divElement t
-
 val createEmbed : document t -> embedElement t
-
 val createP : document t -> paragraphElement t
-
 val createH1 : document t -> headingElement t
-
 val createH2 : document t -> headingElement t
-
 val createH3 : document t -> headingElement t
-
 val createH4 : document t -> headingElement t
-
 val createH5 : document t -> headingElement t
-
 val createH6 : document t -> headingElement t
-
 val createQ : document t -> quoteElement t
-
 val createBlockquote : document t -> quoteElement t
-
 val createPre : document t -> preElement t
-
 val createBr : document t -> brElement t
-
 val createHr : document t -> hrElement t
-
 val createIns : document t -> modElement t
-
 val createDel : document t -> modElement t
-
 val createA : document t -> anchorElement t
-
 val createImg : document t -> imageElement t
-
 val createObject : document t -> objectElement t
-
 val createParam : document t -> paramElement t
-
 val createMap : document t -> mapElement t
-
 val createArea : document t -> areaElement t
-
 val createScript : document t -> scriptElement t
-
 val createTable : document t -> tableElement t
-
 val createCaption : document t -> tableCaptionElement t
-
 val createCol : document t -> tableColElement t
-
 val createColgroup : document t -> tableColElement t
-
 val createThead : document t -> tableSectionElement t
-
 val createTfoot : document t -> tableSectionElement t
-
 val createTbody : document t -> tableSectionElement t
-
 val createTr : document t -> tableRowElement t
-
 val createTh : document t -> tableCellElement t
-
 val createTd : document t -> tableCellElement t
-
 val createSub : document t -> element t
-
 val createSup : document t -> element t
-
 val createSpan : document t -> element t
-
 val createTt : document t -> element t
-
 val createI : document t -> element t
-
 val createB : document t -> element t
-
 val createBig : document t -> element t
-
 val createSmall : document t -> element t
-
 val createEm : document t -> element t
-
 val createStrong : document t -> element t
-
 val createCite : document t -> element t
-
 val createDfn : document t -> element t
-
 val createCode : document t -> element t
-
 val createSamp : document t -> element t
-
 val createKbd : document t -> element t
-
 val createVar : document t -> element t
-
 val createAbbr : document t -> element t
-
 val createDd : document t -> element t
-
 val createDt : document t -> element t
-
 val createNoscript : document t -> element t
-
 val createAddress : document t -> element t
-
 val createFrameset : document t -> frameSetElement t
-
 val createFrame : document t -> frameElement t
-
 val createIframe : document t -> iFrameElement t
-
 val createAudio : document t -> audioElement t
-
 val createVideo : document t -> videoElement t
 
 exception Canvas_not_available
@@ -2834,7 +2675,6 @@ type taggedElement =
   | Other of element t
 
 val tagged : #element t -> taggedElement
-
 val opt_tagged : #element t opt -> taggedElement option
 
 type taggedEvent =
@@ -2846,150 +2686,83 @@ type taggedEvent =
   | OtherEvent of event t
 
 val taggedEvent : #event t -> taggedEvent
-
 val opt_taggedEvent : #event t opt -> taggedEvent option
-
 val stopPropagation : #event t -> unit
 
 module CoerceTo : sig
   (** HTMLElement *)
 
   val element : #Dom.node t -> element t opt
-
   (* null if it is not an element *)
 
   val a : #element t -> anchorElement t opt
-
   val area : #element t -> areaElement t opt
-
   val audio : #element t -> audioElement t opt
-
   val base : #element t -> baseElement t opt
-
   val blockquote : #element t -> quoteElement t opt
-
   val body : #element t -> bodyElement t opt
-
   val br : #element t -> brElement t opt
-
   val button : #element t -> buttonElement t opt
-
   val canvas : #element t -> canvasElement t opt
-
   val caption : #element t -> tableCaptionElement t opt
-
   val col : #element t -> tableColElement t opt
-
   val colgroup : #element t -> tableColElement t opt
-
   val del : #element t -> modElement t opt
-
   val div : #element t -> divElement t opt
-
   val embed : #element t -> embedElement t opt
-
   val dl : #element t -> dListElement t opt
-
   val fieldset : #element t -> fieldSetElement t opt
-
   val form : #element t -> formElement t opt
-
   val frameset : #element t -> frameSetElement t opt
-
   val frame : #element t -> frameElement t opt
-
   val h1 : #element t -> headingElement t opt
-
   val h2 : #element t -> headingElement t opt
-
   val h3 : #element t -> headingElement t opt
-
   val h4 : #element t -> headingElement t opt
-
   val h5 : #element t -> headingElement t opt
-
   val h6 : #element t -> headingElement t opt
-
   val head : #element t -> headElement t opt
-
   val hr : #element t -> hrElement t opt
-
   val html : #element t -> htmlElement t opt
-
   val iframe : #element t -> iFrameElement t opt
-
   val img : #element t -> imageElement t opt
-
   val input : #element t -> inputElement t opt
-
   val ins : #element t -> modElement t opt
-
   val label : #element t -> labelElement t opt
-
   val legend : #element t -> legendElement t opt
-
   val li : #element t -> liElement t opt
-
   val link : #element t -> linkElement t opt
-
   val map : #element t -> mapElement t opt
-
   val meta : #element t -> metaElement t opt
-
   val _object : #element t -> objectElement t opt
-
   val ol : #element t -> oListElement t opt
-
   val optgroup : #element t -> optGroupElement t opt
-
   val option : #element t -> optionElement t opt
-
   val p : #element t -> paramElement t opt
-
   val param : #element t -> paramElement t opt
-
   val pre : #element t -> preElement t opt
-
   val q : #element t -> quoteElement t opt
-
   val script : #element t -> scriptElement t opt
-
   val select : #element t -> selectElement t opt
-
   val style : #element t -> styleElement t opt
-
   val table : #element t -> tableElement t opt
-
   val tbody : #element t -> tableSectionElement t opt
-
   val td : #element t -> tableCellElement t opt
-
   val textarea : #element t -> textAreaElement t opt
-
   val tfoot : #element t -> tableSectionElement t opt
-
   val th : #element t -> tableCellElement t opt
-
   val thead : #element t -> tableSectionElement t opt
-
   val title : #element t -> titleElement t opt
-
   val tr : #element t -> tableRowElement t opt
-
   val ul : #element t -> uListElement t opt
-
   val video : #element t -> videoElement t opt
 
   (** Event *)
 
   val mouseEvent : #event t -> mouseEvent t opt
-
   val keyboardEvent : #event t -> keyboardEvent t opt
-
   val wheelEvent : #event t -> mousewheelEvent t opt
-
   val mouseScrollEvent : #event t -> mouseScrollEvent t opt
-
   val popStateEvent : #event t -> popStateEvent t opt
 end
 
@@ -3020,11 +2793,7 @@ val _requestAnimationFrame : (unit -> unit) Js.callback -> unit
 (**/**)
 
 val decode_html_entities : js_string t -> js_string t
-
 val onIE : bool
-
 val hasPushState : unit -> bool
-
 val hasPlaceholder : unit -> bool
-
 val hasRequired : unit -> bool

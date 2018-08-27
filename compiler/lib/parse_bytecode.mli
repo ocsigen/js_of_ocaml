@@ -21,9 +21,7 @@ module Debug : sig
   type data
 
   val create : unit -> data
-
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
-
   val is_empty : data -> bool
 end
 
@@ -37,5 +35,4 @@ val from_channel :
   -> Code.program * Util.StringSet.t * Debug.data * bool
 
 val from_string : string array -> string -> Code.program * Debug.data
-
 val predefined_exceptions : unit -> Code.program

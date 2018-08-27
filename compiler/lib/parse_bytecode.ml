@@ -23,7 +23,6 @@ open Instr
 module Primitive = Jsoo_primitive
 
 let debug_parser = Option.Debug.find "parser"
-
 let debug_sourcemap = Option.Debug.find "sourcemap"
 
 type code = string
@@ -53,7 +52,6 @@ module Tbl = struct
   type ('a, 'b) t = Empty | Node of ('a, 'b) t * 'a * 'b * ('a, 'b) t * int
 
   let empty = Empty
-
   let height = function Empty -> 0 | Node (_, _, _, _, h) -> h
 
   let create l x d r =
@@ -135,15 +133,10 @@ module Debug : sig
   type data
 
   val is_empty : data -> bool
-
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
-
   val find : data -> Code.addr -> (int * string * Ident.t) list * Env.summary
-
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
-
   val find_source : data -> string -> string option
-
   val mem : data -> Code.addr -> bool
 
   val read :
@@ -180,9 +173,7 @@ end = struct
     * (string * string, ml_unit) Hashtbl.t
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
-
   let create () = Hashtbl.create 17, Hashtbl.create 17
-
   let is_empty (a, _) = Hashtbl.length a = 0
 
   let find_ml_in_paths paths name =
@@ -343,17 +334,14 @@ module Blocks : sig
   type t
 
   val analyse : Debug.data -> code -> t
-
   val add : t -> int -> t
 
   type u
 
   val finish_analysis : t -> u
-
   val next : u -> int -> int
 end = struct
   type t = AddrSet.t
-
   type u = int array
 
   let add blocks pc = AddrSet.add pc blocks
@@ -433,7 +421,6 @@ end
 (* Parse constants *)
 module Constants : sig
   val parse : Obj.t -> Code.constant
-
   val inlined : Obj.t -> bool
 end = struct
   let same_custom x y = Obj.field x 0 == Obj.field (Obj.repr y) 0
@@ -559,13 +546,9 @@ module State = struct
     else match st with [] -> assert false | _ :: r -> st_pop (n - 1) r
 
   let push st = {st with stack= st.accu :: st.stack}
-
   let pop n st = {st with stack= st_pop n st.stack}
-
   let acc n st = {st with accu= List.nth st.stack n}
-
   let env_acc n st = {st with accu= st.env.(st.env_offset + n)}
-
   let accu st = elt_to_var st.accu
 
   let stack_vars st =
@@ -574,11 +557,8 @@ module State = struct
       [] (st.accu :: st.stack)
 
   let set_accu st x = {st with accu= Var x}
-
   let clear_accu st = {st with accu= Dummy}
-
   let peek n st = elt_to_var (List.nth st.stack n)
-
   let grab n st = List.map elt_to_var (list_start n st.stack), pop n st
 
   let rec st_assign s n x =
@@ -752,9 +732,7 @@ let get_global state instrs i =
         x, state, instrs )
 
 let tagged_blocks = ref AddrSet.empty
-
 let compiled_blocks = ref AddrMap.empty
-
 let method_cache_id = ref 1
 
 type compile_info =
@@ -1939,9 +1917,7 @@ let orig_code_bytes =
   ; `I LSLINT ]
 
 let fixed_code_bytes = [`I CONSTINT; `C 31; `I BRANCH; `C 6; `I PUSHCONST1]
-
 let orig_code = lazy (Instr.compile_to_string orig_code_bytes)
-
 let fixed_code = lazy (Instr.compile_to_string fixed_code_bytes)
 
 let fix_min_max_int code =

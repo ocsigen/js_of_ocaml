@@ -25,9 +25,7 @@
 (* #require "compiler-libs.common" *)
 
 let prefix = ref "/static/cmis"
-
 let output = ref None
-
 let runtime = ref true
 
 let usage () =

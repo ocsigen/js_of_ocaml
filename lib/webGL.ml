@@ -24,97 +24,51 @@ open Js
 type sizei = int
 
 type sizeiptr = int
-
 type intptr = int
-
 type uint = int
-
 type clampf = float
-
 type void
-
 type clearBufferMask = int
-
 type beginMode
-
 type blendingFactor
-
 type blendMode
-
 type bufferTarget
-
 type bufferUsage
-
 type cullFaceMode
-
 type depthFunction
-
 type enableCap
-
 type errorCode
-
 type frontFaceDir
-
 type hintTarget
-
 type hintMode
-
 type textureUnit = int
-
 type 'a pixelStoreParam
-
 type stencilOp
-
 type fbTarget
-
 type attachmentPoint
-
 type rbTarget
-
 type texTarget
-
 type 'a parameter
-
 type 'a bufferParameter
-
 type 'a vertexAttribParam
-
 type vertexAttribPointerParam
-
 type 'a attachParam
-
 type framebufferStatus
-
 type 'a renderbufferParam
-
 type format
-
 type pixelFormat
-
 type pixelType
-
 type 'a texParam
-
 type dataType
-
 type shaderType
-
 type 'a programParam
-
 type 'a shaderParam
-
 type textureFilter
-
 type wrapMode
-
 type texFilter
-
 type uniformType
-
 type colorspaceConversion
-
 type shaderPrecisionType
-
 type objectType
 
 (** 5.2 WebGLContextAttributes *)
@@ -150,17 +104,11 @@ let defaultContextAttributes =
        ; "failIfMajorPerformanceCaveat", inject _false |])
 
 type buffer
-
 type framebuffer
-
 type program
-
 type renderbuffer
-
 type shader
-
 type texture
-
 type 'a uniformLocation
 
 class type activeInfo =
@@ -1409,7 +1357,6 @@ class type contextEvent =
 
 module Event = struct
   let webglcontextlost = Dom_html.Event.make "webglcontextlost"
-
   let webglcontextrestored = Dom_html.Event.make "webglcontextrestored"
 
   let webglcontextcreationerror =

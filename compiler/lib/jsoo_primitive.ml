@@ -26,7 +26,6 @@ let rec resolve nm =
 (****)
 
 type kind = [`Pure | `Mutable | `Mutator]
-
 type kind_arg = [`Shallow_const | `Object_literal | `Const | `Mutable]
 
 type t =
@@ -36,11 +35,8 @@ type t =
   | `Weakdef of Parse_info.t option ]
 
 let kinds = Hashtbl.create 37
-
 let kind_args_tbl = Hashtbl.create 37
-
 let arities = Hashtbl.create 37
-
 let kind nm = try Hashtbl.find kinds (resolve nm) with Not_found -> `Mutator
 
 let kind_args nm =
@@ -52,17 +48,13 @@ let has_arity nm a =
   try Hashtbl.find arities (resolve nm) = a with Not_found -> false
 
 let is_pure nm = kind nm <> `Mutator
-
 let exists p = Hashtbl.mem kinds p
 
 open Util
 
 let externals = ref StringSet.empty
-
 let add_external name = externals := StringSet.add name !externals
-
 let is_external name = StringSet.mem name !externals
-
 let get_external () = !externals
 
 let register p k kargs arity =
@@ -75,7 +67,5 @@ let alias nm nm' =
   add_external nm' ; add_external nm ; Hashtbl.add aliases nm nm'
 
 let named_values = ref StringSet.empty
-
 let need_named_value s = StringSet.mem s !named_values
-
 let register_named_value s = named_values := StringSet.add s !named_values

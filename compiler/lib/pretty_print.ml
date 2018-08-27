@@ -153,13 +153,9 @@ let string st (s : string) =
   else push st (Text s)
 
 let genbreak st s n = if not st.compact then push st (Break (s, n))
-
 let break_token = Break ("", 0)
-
 let break st = if not st.compact then push st break_token
-
 let break1 st = if not st.compact then push st (Break ("", 1))
-
 let non_breaking_space_token = Text " "
 
 let non_breaking_space st =
@@ -173,9 +169,7 @@ let space ?(indent = 0) st =
   else push st (Break (" ", indent))
 
 let start_group st n = if not st.compact then push st (Start_group n)
-
 let end_group st = if not st.compact then push st End_group
-
 (* let render l = let st = { indent = 0; box_indent = 0; prev_indents = [];
    limit = 78; cur = 0; l = []; n = 0; w = 0; output = fun s i l -> output
    stdout s i l } in push st (Start_group 0); List.iter (fun e -> push st e) l;
@@ -208,7 +202,6 @@ let newline st =
 
 (* hack on*)
 let output_substring = Pervasives.output
-
 (* for ocaml < 4.02, output_substring will be Pervasives.output (above) for
    ocaml >= 4.02, output_substring will be taken from the locally open
    Pervasives module *)
@@ -257,5 +250,4 @@ let to_buffer b =
   ; output= (fun s i l -> Buffer.add_substring b s i l) }
 
 let set_compact st v = st.compact <- v
-
 let set_needed_space_function st f = st.needed_space <- Some f

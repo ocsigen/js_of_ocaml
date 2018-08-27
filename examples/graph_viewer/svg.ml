@@ -33,13 +33,9 @@ type element =
 (****)
 
 let width = 16499.
-
 let height = 22807.
-
 let h = (*8192*) 2000
-
 let w = truncate ((width *. float h /. height) +. 0.5)
-
 let s = Cairo.image_surface_create Cairo.FORMAT_ARGB32 w h
 
 let perform_draw ctx fill stroke =
@@ -132,7 +128,6 @@ let compute_extent ctx e =
       , y +. ext.Cairo.y_bearing +. ext.Cairo.text_height )
 
 let ctx = Cairo.create s
-
 let scale = float h /. height
 
 let _ =
@@ -299,35 +294,20 @@ let named_colors =
   colors
 
 let svg_name nm = "http://www.w3.org/2000/svg", nm
-
 let d_attr = "", "d"
-
 let x_attr = "", "x"
-
 let y_attr = "", "y"
-
 let cx_attr = "", "cx"
-
 let cy_attr = "", "cy"
-
 let rx_attr = "", "rx"
-
 let ry_attr = "", "ry"
-
 let points_attr = "", "points"
-
 let taxt_anchor_attr = "", "text-anchor"
-
 let font_family_attr = "", "font-family"
-
 let font_size_attr = "", "font-size"
-
 let fill_attr = "", "fill"
-
 let stroke_attr = "", "stroke"
-
 let stack = ref []
-
 let push e = stack := e :: !stack
 
 let skip_whitespace i =
@@ -351,7 +331,6 @@ let rec text_tag i =
   | _ -> assert false
 
 let comma_wsp = Str.regexp "[\x20\x09\x0D\x0A,]+"
-
 let cmd = Str.regexp "[a-zA-Z]"
 
 let rec parse_curve_to args rem =
@@ -469,7 +448,6 @@ let _ =
   | _ -> assert false
 
 let l = List.rev !stack
-
 let bboxes = ref []
 
 let intersects (x1, y1, x2, y2) (x3, y3, x4, y4) =

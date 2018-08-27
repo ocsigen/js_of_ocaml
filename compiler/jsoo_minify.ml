@@ -20,7 +20,6 @@
 open Js_of_ocaml_compiler
 
 let error k = Format.ksprintf (fun s -> failwith s) k
-
 let _ = Sys.catch_break true
 
 let f {MinifyArg.common; output_file; stdin; files} =

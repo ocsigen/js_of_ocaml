@@ -138,11 +138,8 @@ let lexer_from_string ?rm_comment ?offset str : lexer =
   lexer_aux ?rm_comment lines_info lexbuf
 
 let lexer_map = List.map
-
 let lexer_fold f acc l = List.fold_left f acc l
-
 let lexer_filter f l = List.filter f l
-
 let lexer_from_list l = adjust_tokens l
 
 exception Parsing_error of Parse_info.t
@@ -183,5 +180,4 @@ let parse_aux the_parser toks =
       raise (Parsing_error pi)
 
 let parse lex = parse_aux Js_parser.program lex
-
 let parse_expr lex = parse_aux Js_parser.standalone_expression lex

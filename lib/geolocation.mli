@@ -33,7 +33,6 @@
     Recommendation. *)
 
 type positionErrorCode
-
 type watchId
 
 class type coordinates =
@@ -100,7 +99,5 @@ class type geolocation =
   end
 
 val empty_position_options : unit -> positionOptions Js.t
-
 val geolocation : geolocation Js.t
-
 val is_supported : unit -> bool

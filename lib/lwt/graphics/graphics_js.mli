@@ -20,7 +20,6 @@
 (** Javascript binding for Graphics lib *)
 
 open Js_of_ocaml
-
 include module type of Graphics
 
 (** {6 Initializations} *)

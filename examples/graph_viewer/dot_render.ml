@@ -377,11 +377,8 @@ let named_colors =
 (****)
 
 let comma_re = Str.regexp ","
-
 let semi_re = Str.regexp ";"
-
 let wsp_re = Str.regexp "[\x20\x09\x0D\x0A]+"
-
 let parse_float s = try float_of_string s with Failure _ -> raise Not_found
 
 let parse_rectangle s =
@@ -461,7 +458,6 @@ let parse_spline scene s color arrow_size =
     l
 
 let add_rect_margin (x1, y1, x2, y2) w = x1 -. w, y1 -. w, x2 +. w, y2 +. w
-
 let dpi = 72.
 
 let f g =

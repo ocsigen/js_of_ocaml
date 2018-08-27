@@ -93,9 +93,7 @@ class type freevar =
   end
 
 class free : freevar
-
 class rename_variable : Util.StringSet.t -> freevar
-
 class share_constant : mapper
 
 class compact_vardecl :
@@ -106,5 +104,4 @@ class compact_vardecl :
   end
 
 class clean : mapper
-
 class simpl : mapper

@@ -22,20 +22,14 @@ module Label = struct
   type t = L of int | S of string
 
   let printer = VarPrinter.create ()
-
   let zero = L 0
-
   let succ = function L t -> L (succ t) | S _ -> assert false
-
   let to_string = function L t -> VarPrinter.to_string printer t | S s -> s
-
   let of_string s = S s
 end
 
 type location = Pi of Parse_info.t | N | U
-
 type identifier = string
-
 type ident_string = {name: identifier; var: Code.Var.t option}
 
 type ident = S of ident_string | V of Code.Var.t

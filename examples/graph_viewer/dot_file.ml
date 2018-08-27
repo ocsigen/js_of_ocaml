@@ -18,11 +18,8 @@
  *)
 
 type kind = [`Graph | `Digraph]
-
 type attr_type = [`Graph | `Edge | `Node]
-
 type attributes = (string * string) list
-
 type node = {name: string; port: string option}
 
 type graph = {graph_name: string option; body: statement list}

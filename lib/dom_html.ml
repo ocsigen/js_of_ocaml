@@ -256,7 +256,6 @@ class type cssStyleDeclaration =
   end
 
 type ('a, 'b) event_listener = ('a, 'b) Dom.event_listener
-
 type mouse_button = No_button | Left_button | Middle_button | Right_button
 
 class type event =
@@ -657,167 +656,91 @@ and clientRectList =
   end
 
 let no_handler : ('a, 'b) event_listener = Dom.no_handler
-
 let handler = Dom.handler
-
 let full_handler = Dom.full_handler
-
 let invoke_handler = Dom.invoke_handler
 
 module Event = struct
   type 'a typ = 'a Dom.Event.typ
 
   let click = Dom.Event.make "click"
-
   let dblclick = Dom.Event.make "dblclick"
-
   let mousedown = Dom.Event.make "mousedown"
-
   let mouseup = Dom.Event.make "mouseup"
-
   let mouseover = Dom.Event.make "mouseover"
-
   let mousemove = Dom.Event.make "mousemove"
-
   let mouseout = Dom.Event.make "mouseout"
-
   let keypress = Dom.Event.make "keypress"
-
   let keydown = Dom.Event.make "keydown"
-
   let keyup = Dom.Event.make "keyup"
-
   let mousewheel = Dom.Event.make "mousewheel"
-
   let _DOMMouseScroll = Dom.Event.make "DOMMouseScroll"
-
   let touchstart = Dom.Event.make "touchstart"
-
   let touchmove = Dom.Event.make "touchmove"
-
   let touchend = Dom.Event.make "touchend"
-
   let touchcancel = Dom.Event.make "touchcancel"
-
   let dragstart = Dom.Event.make "dragstart"
-
   let dragend = Dom.Event.make "dragend"
-
   let dragenter = Dom.Event.make "dragenter"
-
   let dragover = Dom.Event.make "dragover"
-
   let dragleave = Dom.Event.make "dragleave"
-
   let drag = Dom.Event.make "drag"
-
   let drop = Dom.Event.make "drop"
-
   let hashchange = Dom.Event.make "hashchange"
-
   let change = Dom.Event.make "change"
-
   let input = Dom.Event.make "input"
-
   let timeupdate = Dom.Event.make "timeupdate"
-
   let submit = Dom.Event.make "submit"
-
   let scroll = Dom.Event.make "scroll"
-
   let focus = Dom.Event.make "focus"
-
   let blur = Dom.Event.make "blur"
-
   let load = Dom.Event.make "load"
-
   let unload = Dom.Event.make "unload"
-
   let beforeunload = Dom.Event.make "beforeunload"
-
   let resize = Dom.Event.make "resize"
-
   let orientationchange = Dom.Event.make "orientationchange"
-
   let popstate = Dom.Event.make "popstate"
-
   let error = Dom.Event.make "error"
-
   let abort = Dom.Event.make "abort"
-
   let select = Dom.Event.make "select"
-
   let online = Dom.Event.make "online"
-
   let offline = Dom.Event.make "offline"
-
   let checking = Dom.Event.make "checking"
-
   let noupdate = Dom.Event.make "noupdate"
-
   let downloading = Dom.Event.make "downloading"
-
   let progress = Dom.Event.make "progress"
-
   let updateready = Dom.Event.make "updateready"
-
   let cached = Dom.Event.make "cached"
-
   let obsolete = Dom.Event.make "obsolete"
-
   let domContentLoaded = Dom.Event.make "DOMContentLoaded"
-
   let animationstart = Dom.Event.make "animationstart"
-
   let animationend = Dom.Event.make "animationend"
-
   let animationiteration = Dom.Event.make "animationiteration"
-
   let animationcancel = Dom.Event.make "animationcancel"
-
   let canplay = Dom.Event.make "canplay"
-
   let canplaythrough = Dom.Event.make "canplaythrough"
-
   let durationchange = Dom.Event.make "durationchange"
-
   let emptied = Dom.Event.make "emptied"
-
   let ended = Dom.Event.make "ended"
-
   let loadeddata = Dom.Event.make "loadeddata"
-
   let loadedmetadata = Dom.Event.make "loadedmetadata"
-
   let loadstart = Dom.Event.make "loadstart"
-
   let pause = Dom.Event.make "pause"
-
   let play = Dom.Event.make "play"
-
   let playing = Dom.Event.make "playing"
-
   let ratechange = Dom.Event.make "ratechange"
-
   let seeked = Dom.Event.make "seeked"
-
   let seeking = Dom.Event.make "seeking"
-
   let stalled = Dom.Event.make "stalled"
-
   let suspend = Dom.Event.make "suspend"
-
   let volumechange = Dom.Event.make "volumechange"
-
   let waiting = Dom.Event.make "waiting"
-
   let make = Dom.Event.make
 end
 
 type event_listener_id = Dom.event_listener_id
 
 let addEventListener = Dom.addEventListener
-
 let removeEventListener = Dom.removeEventListener
 
 class type ['node] collection =
@@ -1154,17 +1077,11 @@ class type legendElement =
   end
 
 class type uListElement = element
-
 class type oListElement = element
-
 class type dListElement = element
-
 class type liElement = element
-
 class type divElement = element
-
 class type paragraphElement = element
-
 class type headingElement = element
 
 class type quoteElement =
@@ -1175,9 +1092,7 @@ class type quoteElement =
   end
 
 class type preElement = element
-
 class type brElement = element
-
 class type hrElement = element
 
 class type modElement =
@@ -1858,7 +1773,6 @@ and canvasPixelArray =
   end
 
 external pixel_get : canvasPixelArray t -> int -> int = "caml_js_get"
-
 external pixel_set : canvasPixelArray t -> int -> int -> unit = "caml_js_set"
 
 class type range =
@@ -2006,9 +1920,7 @@ class type document =
   end
 
 type interval_id
-
 type timeout_id
-
 type animation_frame_request_id
 
 class type location =
@@ -2254,7 +2166,6 @@ class type window =
   end
 
 let window : window t = Js.Unsafe.global
-
 (* The toplevel object *)
 
 let document = window##.document
@@ -2346,11 +2257,8 @@ class type iFrameElement =
 (*XXX Should provide creation functions a la lablgtk... *)
 
 let opt_iter x f = match x with None -> () | Some v -> f v
-
 let createElement (doc : document t) name = doc##createElement (Js.string name)
-
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
-
 let createElementSyntax = ref `Unknown
 
 let rec unsafeCreateElementEx ?_type ?name doc elt =
@@ -2391,25 +2299,15 @@ let rec unsafeCreateElementEx ?_type ?name doc elt =
         unsafeCreateElementEx ?_type ?name doc elt
 
 let createHtml doc : htmlElement t = unsafeCreateElement doc "html"
-
 let createHead doc : headElement t = unsafeCreateElement doc "head"
-
 let createLink doc : linkElement t = unsafeCreateElement doc "link"
-
 let createTitle doc : titleElement t = unsafeCreateElement doc "title"
-
 let createMeta doc : metaElement t = unsafeCreateElement doc "meta"
-
 let createBase doc : baseElement t = unsafeCreateElement doc "base"
-
 let createStyle doc : styleElement t = unsafeCreateElement doc "style"
-
 let createBody doc : bodyElement t = unsafeCreateElement doc "body"
-
 let createForm doc : formElement t = unsafeCreateElement doc "form"
-
 let createOptgroup doc : optGroupElement t = unsafeCreateElement doc "optgroup"
-
 let createOption doc : optionElement t = unsafeCreateElement doc "option"
 
 let createSelect ?_type ?name doc : selectElement t =
@@ -2425,137 +2323,76 @@ let createButton ?_type ?name doc : buttonElement t =
   unsafeCreateElementEx ?_type ?name doc "button"
 
 let createLabel doc : labelElement t = unsafeCreateElement doc "label"
-
 let createFieldset doc : fieldSetElement t = unsafeCreateElement doc "fieldset"
-
 let createLegend doc : legendElement t = unsafeCreateElement doc "legend"
-
 let createUl doc : uListElement t = unsafeCreateElement doc "ul"
-
 let createOl doc : oListElement t = unsafeCreateElement doc "ol"
-
 let createDl doc : dListElement t = unsafeCreateElement doc "dl"
-
 let createLi doc : liElement t = unsafeCreateElement doc "li"
-
 let createDiv doc : divElement t = unsafeCreateElement doc "div"
-
 let createEmbed doc : embedElement t = unsafeCreateElement doc "embed"
-
 let createP doc : paragraphElement t = unsafeCreateElement doc "p"
-
 let createH1 doc : headingElement t = unsafeCreateElement doc "h1"
-
 let createH2 doc : headingElement t = unsafeCreateElement doc "h2"
-
 let createH3 doc : headingElement t = unsafeCreateElement doc "h3"
-
 let createH4 doc : headingElement t = unsafeCreateElement doc "h4"
-
 let createH5 doc : headingElement t = unsafeCreateElement doc "h5"
-
 let createH6 doc : headingElement t = unsafeCreateElement doc "h6"
-
 let createQ doc : quoteElement t = unsafeCreateElement doc "q"
 
 let createBlockquote doc : quoteElement t =
   unsafeCreateElement doc "blockquote"
 
 let createPre doc : preElement t = unsafeCreateElement doc "pre"
-
 let createBr doc : brElement t = unsafeCreateElement doc "br"
-
 let createHr doc : hrElement t = unsafeCreateElement doc "hr"
-
 let createIns doc : modElement t = unsafeCreateElement doc "ins"
-
 let createDel doc : modElement t = unsafeCreateElement doc "del"
-
 let createA doc : anchorElement t = unsafeCreateElement doc "a"
-
 let createImg doc : imageElement t = unsafeCreateElement doc "img"
-
 let createObject doc : objectElement t = unsafeCreateElement doc "object"
-
 let createParam doc : paramElement t = unsafeCreateElement doc "param"
-
 let createMap doc : mapElement t = unsafeCreateElement doc "map"
-
 let createArea doc : areaElement t = unsafeCreateElement doc "area"
-
 let createScript doc : scriptElement t = unsafeCreateElement doc "script"
-
 let createTable doc : tableElement t = unsafeCreateElement doc "table"
 
 let createCaption doc : tableCaptionElement t =
   unsafeCreateElement doc "caption"
 
 let createCol doc : tableColElement t = unsafeCreateElement doc "col"
-
 let createColgroup doc : tableColElement t = unsafeCreateElement doc "colgroup"
-
 let createThead doc : tableSectionElement t = unsafeCreateElement doc "thead"
-
 let createTfoot doc : tableSectionElement t = unsafeCreateElement doc "tfoot"
-
 let createTbody doc : tableSectionElement t = unsafeCreateElement doc "tbody"
-
 let createTr doc : tableRowElement t = unsafeCreateElement doc "tr"
-
 let createTh doc : tableCellElement t = unsafeCreateElement doc "th"
-
 let createTd doc : tableCellElement t = unsafeCreateElement doc "td"
-
 let createSub doc = createElement doc "sub"
-
 let createSup doc = createElement doc "sup"
-
 let createSpan doc = createElement doc "span"
-
 let createTt doc = createElement doc "tt"
-
 let createI doc = createElement doc "i"
-
 let createB doc = createElement doc "b"
-
 let createBig doc = createElement doc "big"
-
 let createSmall doc = createElement doc "small"
-
 let createEm doc = createElement doc "em"
-
 let createStrong doc = createElement doc "strong"
-
 let createCite doc = createElement doc "cite"
-
 let createDfn doc = createElement doc "dfn"
-
 let createCode doc = createElement doc "code"
-
 let createSamp doc = createElement doc "samp"
-
 let createKbd doc = createElement doc "kbd"
-
 let createVar doc = createElement doc "var"
-
 let createAbbr doc = createElement doc "abbr"
-
 let createDd doc = createElement doc "dd"
-
 let createDt doc = createElement doc "dt"
-
 let createNoscript doc = createElement doc "noscript"
-
 let createAddress doc = createElement doc "address"
-
 let createFrameset doc : frameSetElement t = unsafeCreateElement doc "frameset"
-
 let createFrame doc : frameElement t = unsafeCreateElement doc "frame"
-
 let createIframe doc : iFrameElement t = unsafeCreateElement doc "iframe"
-
 let createAudio doc : audioElement t = unsafeCreateElement doc "audio"
-
 let createVideo doc : audioElement t = unsafeCreateElement doc "video"
 
 exception Canvas_not_available
@@ -2589,125 +2426,65 @@ module CoerceTo = struct
     else Js.null
 
   let a e = unsafeCoerce "a" e
-
   let area e = unsafeCoerce "area" e
-
   let base e = unsafeCoerce "base" e
-
   let blockquote e = unsafeCoerce "blockquote" e
-
   let body e = unsafeCoerce "body" e
-
   let br e = unsafeCoerce "br" e
-
   let button e = unsafeCoerce "button" e
-
   let canvas e = unsafeCoerce "canvas" e
-
   let caption e = unsafeCoerce "caption" e
-
   let col e = unsafeCoerce "col" e
-
   let colgroup e = unsafeCoerce "colgroup" e
-
   let del e = unsafeCoerce "del" e
-
   let div e = unsafeCoerce "div" e
-
   let dl e = unsafeCoerce "dl" e
-
   let fieldset e = unsafeCoerce "fieldset" e
-
   let embed e = unsafeCoerce "embed" e
-
   let form e = unsafeCoerce "form" e
-
   let frameset e = unsafeCoerce "frameset" e
-
   let frame e = unsafeCoerce "frame" e
-
   let h1 e = unsafeCoerce "h1" e
-
   let h2 e = unsafeCoerce "h2" e
-
   let h3 e = unsafeCoerce "h3" e
-
   let h4 e = unsafeCoerce "h4" e
-
   let h5 e = unsafeCoerce "h5" e
-
   let h6 e = unsafeCoerce "h6" e
-
   let head e = unsafeCoerce "head" e
-
   let hr e = unsafeCoerce "hr" e
-
   let html e = unsafeCoerce "html" e
-
   let iframe e = unsafeCoerce "iframe" e
-
   let img e = unsafeCoerce "img" e
-
   let input e = unsafeCoerce "input" e
-
   let ins e = unsafeCoerce "ins" e
-
   let label e = unsafeCoerce "label" e
-
   let legend e = unsafeCoerce "legend" e
-
   let li e = unsafeCoerce "li" e
-
   let link e = unsafeCoerce "link" e
-
   let map e = unsafeCoerce "map" e
-
   let meta e = unsafeCoerce "meta" e
-
   let _object e = unsafeCoerce "object" e
-
   let ol e = unsafeCoerce "ol" e
-
   let optgroup e = unsafeCoerce "optgroup" e
-
   let option e = unsafeCoerce "option" e
-
   let p e = unsafeCoerce "p" e
-
   let param e = unsafeCoerce "param" e
-
   let pre e = unsafeCoerce "pre" e
-
   let q e = unsafeCoerce "q" e
-
   let script e = unsafeCoerce "script" e
-
   let select e = unsafeCoerce "select" e
-
   let style e = unsafeCoerce "style" e
-
   let table e = unsafeCoerce "table" e
-
   let tbody e = unsafeCoerce "tbody" e
-
   let td e = unsafeCoerce "td" e
-
   let textarea e = unsafeCoerce "textarea" e
-
   let tfoot e = unsafeCoerce "tfoot" e
-
   let th e = unsafeCoerce "th" e
-
   let thead e = unsafeCoerce "thead" e
-
   let title e = unsafeCoerce "title" e
-
   let tr e = unsafeCoerce "tr" e
-
   let ul e = unsafeCoerce "ul" e
-
   let audio e = unsafeCoerce "audio" e
-
   let video e = unsafeCoerce "video" e
 
   let unsafeCoerceEvent constr (ev : #event t) =
@@ -2716,9 +2493,7 @@ module CoerceTo = struct
     else Js.null
 
   let mouseEvent ev = unsafeCoerceEvent Js.Unsafe.global##._MouseEvent ev
-
   let keyboardEvent ev = unsafeCoerceEvent Js.Unsafe.global##._KeyboardEvent ev
-
   let wheelEvent ev = unsafeCoerceEvent Js.Unsafe.global##._WheelEvent ev
 
   let mouseScrollEvent ev =
@@ -3216,7 +2991,6 @@ module Keyboard_code = struct
     | v -> v
 
   let run_next value f = function Unidentified -> f value | v -> v
-
   let get_key_code evt = evt##.keyCode
 
   let try_key_location evt =
@@ -3244,7 +3018,6 @@ module Keyboard_key = struct
     if 0 < value then try Some (Uchar.of_int value) with _ -> None else None
 
   let empty_string _ = Js.string ""
-
   let none _ = None
 
   let of_event evt =

@@ -102,18 +102,11 @@ module Event : sig
   type typ = xmlHttpRequest File.progressEvent t Dom.Event.typ
 
   val readystatechange : xmlHttpRequest Dom.event t Dom.Event.typ
-
   val loadstart : typ
-
   val progress : typ
-
   val abort : typ
-
   val error : typ
-
   val load : typ
-
   val timeout : typ
-
   val loadend : typ
 end

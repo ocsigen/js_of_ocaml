@@ -130,7 +130,6 @@ module Domain1 = struct
   type t = bool
 
   let equal x y = x = y
-
   let bot = false
 end
 

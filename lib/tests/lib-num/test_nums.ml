@@ -19,10 +19,8 @@ open Arith_status
 
 ;;
 testing_function "add_num"
-
 ;;
 test 1 eq_num (add_num (Int 1) (Int 3), Int 4)
-
 ;;
 test 2 eq_num (add_num (Int 1) (Big_int (big_int_of_int 3)), Int 4)
 
@@ -60,10 +58,8 @@ test 9 eq_num
 
 ;;
 testing_function "sub_num"
-
 ;;
 test 1 eq_num (sub_num (Int 1) (Int 3), Int (-2))
-
 ;;
 test 2 eq_num (sub_num (Int 1) (Big_int (big_int_of_int 3)), Int (-2))
 
@@ -93,13 +89,10 @@ test 8 eq_num
 
 ;;
 test 9 eq_num (sub_num (Int least_int) (Int (-1)), Int (-pred biggest_int))
-
 ;;
 test 10 eq_num (sub_num (Int (-1)) (Int biggest_int), pred_num (Int least_int))
-
 ;;
 testing_function "mult_num"
-
 ;;
 test 1 eq_num (mult_num (Int 2) (Int 3), Int 6)
 
@@ -141,7 +134,6 @@ test 9 eq_num
 
 ;;
 testing_function "div_num"
-
 ;;
 test 1 eq_num (div_num (Int 6) (Int 3), Int 2)
 
@@ -183,22 +175,16 @@ test 9 eq_num
 
 ;;
 testing_function "is_integer_num"
-
 ;;
 test 1 eq (is_integer_num (Int 3), true)
-
 ;;
 test 2 eq (is_integer_num (Big_int (big_int_of_string "1234567890")), true)
-
 ;;
 test 3 eq (not (is_integer_num (Ratio (ratio_of_string "1/2"))), true)
-
 ;;
 test 4 eq (is_integer_num (Ratio (ratio_of_string "1073774590/32770")), true)
-
 ;;
 testing_function "num_of_ratio"
-
 ;;
 test 1 eq_num (num_of_ratio (ratio_of_string "4/2"), Int 2)
 
@@ -214,7 +200,6 @@ test 3 eq_num
 
 ;;
 testing_function "num_of_string"
-
 ;;
 test 1 eq_num (num_of_string "123/3456", Ratio (ratio_of_string "123/3456"))
 
@@ -236,10 +221,8 @@ test 8 eq_num (num_of_string "12345", Int (int_of_string "12345"))
 (********* test 9 eq_num (num_of_string "0.23", Ratio (ratio_of_string
   "23/100"));; test 10 eq_num (num_of_string "0.23", Ratio (ratio_of_string
   "0.23/1"));; ********)
-
 ;;
 failwith_test 11 num_of_string "frlshjkurty" (Failure "num_of_string")
-
 ;;
 test 12 eq_num (num_of_string "0xAbCdEf", Big_int (big_int_of_int 0xabcdef))
 
@@ -249,7 +232,6 @@ test 13 eq_num
 
 ;;
 test 14 eq_num (num_of_string "-12_34_56", Big_int (big_int_of_int (-123456)))
-
 ;;
 test 15 eq_num (num_of_string "0B101010", Big_int (big_int_of_int 42))
 

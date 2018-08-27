@@ -36,21 +36,14 @@ open Js_of_ocaml
 open Js_of_ocaml_lwt
 
 let width = 600
-
 let height = width
-
 let pi = 4. *. atan 1.
-
 let obliquity = 23.5 *. pi /. 180.
-
 let gamma = 2.
-
 let dark = 0.2 ** gamma
-
 (****)
 
 let doc = Dom_html.document
-
 let button_type = Js.string "button"
 
 let button txt action =
@@ -161,7 +154,6 @@ let yz_rotation phi =
   ; r3= vertex 0. (-.sin_phi) cos_phi }
 
 let matrix_identity = xz_rotation 0.
-
 (* Assumes that m is orthogonal *)
 let rotate_normal m v = matrix_vect_mul (matrix_transp m) v
 
@@ -404,7 +396,6 @@ let to_uv tw th {x; y; z} =
   u, v
 
 let min (u : float) v = if u < v then u else v
-
 let max (u : float) v = if u < v then v else u
 
 let precompute_mapping_info tw th uv f =
@@ -507,18 +498,13 @@ let draw ctx _img shd o _uv normals face_info dir =
     o.faces
 
 let ( >> ) x f = f x
-
 (* let o = tesselate_sphere 8 6 let o = octahedron >> divide true >> divide
    true >> divide false *)
 let o = tesselate_sphere 12 8
-
 (* let o = octahedron >> divide true >> divide true >> divide true *)
 let v = {x= 0.; y= 0.; z= 1.}
-
 let _texture = Js.string "black.jpg"
-
 let _texture = Js.string "../planet/land_ocean_ice_cloud_2048.jpg"
-
 let texture = Js.string "../planet/texture.jpg"
 
 let start _ =

@@ -35,7 +35,6 @@ let wakeup = function
   | _ -> ()
 
 let () = Lwt.register_pause_notifier wakeup
-
 let prerr_string s = Firebug.console##log (Js.string s)
 
 let _ =

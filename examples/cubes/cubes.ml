@@ -21,11 +21,8 @@ open Js_of_ocaml
 open Js_of_ocaml_lwt
 
 let n = 12
-
 let h = 20.
-
 let w = floor ((h *. sqrt 3. /. 2.) +. 0.5)
-
 (****)
 
 let _ = Random.self_init ()
@@ -58,11 +55,8 @@ let update a =
 module Html = Dom_html
 
 let top = Js.string "#a8a8f6"
-
 let left = Js.string "#d9d9d9"
-
 let right = Js.string "#767676"
-
 let edge = Js.string "#000000"
 
 let on_cube c i j k f =

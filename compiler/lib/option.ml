@@ -18,9 +18,7 @@
  *)
 
 let global_object = "joo_global_object"
-
 let extra_js_files = ["+graphics.js"; "+toplevel.js"; "+nat.js"; "+dynlink.js"]
-
 (* Optimisation *)
 
 let series = ref None
@@ -46,7 +44,6 @@ let take_snapshot () =
 
 module Debug = struct
   let debugs : (string * bool ref) list ref = ref []
-
   let available () = List.map fst !debugs
 
   let find s =
@@ -73,7 +70,6 @@ end
 
 module Optim = struct
   let optims = ref []
-
   let available () = List.map fst !optims
 
   let o ~name ~default =
@@ -94,45 +90,25 @@ module Optim = struct
       failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let pretty = o ~name:"pretty" ~default:false
-
   let stable_var = o ~name:"stable_var" ~default:false
-
   let debuginfo = o ~name:"debuginfo" ~default:false
-
   let deadcode = o ~name:"deadcode" ~default:true
-
   let shortvar = o ~name:"shortvar" ~default:true
-
   let compact = o ~name:"compact" ~default:true
-
   let optcall = o ~name:"optcall" ~default:true
-
   let inline = o ~name:"inline" ~default:true
-
   let staticeval = o ~name:"staticeval" ~default:true
-
   let share_constant = o ~name:"share" ~default:true
-
   let strictmode = o ~name:"strict" ~default:true
-
   let debugger = o ~name:"debugger" ~default:true
-
   let genprim = o ~name:"genprim" ~default:true
-
   let excwrap = o ~name:"excwrap" ~default:true
-
   let improved_stacktrace = o ~name:"with-js-error" ~default:false
-
   let include_cmis = o ~name:"withcmi" ~default:true
-
   let warn_unused = o ~name:"warn-unused" ~default:false
-
   let inline_callgen = o ~name:"callgen" ~default:false
-
   let safe_string = o ~name:"safestring" ~default:true
-
   let check_magic = o ~name:"check-magic-number" ~default:true
-
   (* this does not optimize properly *)
   let compact_vardecl = o ~name:"vardecl" ~default:false
 end

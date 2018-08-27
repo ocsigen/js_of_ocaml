@@ -32,9 +32,7 @@ let create_canvas w h =
 
 module Common = Viewer_common.F (struct
   type font = Js.js_string Js.t
-
   type color = Js.js_string Js.t
-
   type text = Js.js_string Js.t
 
   let white = Js.string "white"
@@ -42,19 +40,12 @@ module Common = Viewer_common.F (struct
   type ctx = Html.canvasRenderingContext2D Js.t
 
   let save ctx = ctx##save
-
   let restore ctx = ctx##restore
-
   let scale ctx ~sx ~sy = ctx##scale sx sy
-
   let translate ctx ~tx ~ty = ctx##translate tx ty
-
   let begin_path ctx = ctx##beginPath
-
   let close_path ctx = ctx##closePath
-
   let move_to ctx ~x ~y = ctx##moveTo x y
-
   let line_to ctx ~x ~y = ctx##lineTo x y
 
   let curve_to ctx ~x1 ~y1 ~x2 ~y2 ~x3 ~y3 =
@@ -91,9 +82,7 @@ module Common = Viewer_common.F (struct
     | None -> ()
 
   type window = Html.canvasElement Js.t
-
   type drawable = window * ctx
-
   type pixmap = drawable
 
   let get_drawable w =
@@ -108,7 +97,6 @@ module Common = Viewer_common.F (struct
     get_drawable c
 
   let drawable_of_pixmap p = p
-
   let get_context (_p, c) = c
 
   let put_pixmap ~dst:((_p, c) : drawable) ~x ~y ~xsrc ~ysrc ~width ~height

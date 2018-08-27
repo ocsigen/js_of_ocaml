@@ -20,7 +20,6 @@
 open Js_of_ocaml
 
 let js_string_of_float f = (Js.number_of_float f)##toString
-
 let js_string_of_int i = (Js.number_of_float (float_of_int i))##toString
 
 module type XML =
@@ -35,21 +34,15 @@ module Xml = struct
   module W = Xml_wrap.NoWrap
 
   type 'a wrap = 'a
-
   type 'a list_wrap = 'a list
-
   type uri = string
 
   let uri_of_string s = s
-
   let string_of_uri s = s
 
   type aname = string
-
   type event_handler = Dom_html.event Js.t -> bool
-
   type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
-
   type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
 
   type attrib_k =
@@ -61,11 +54,8 @@ module Xml = struct
   type attrib = aname * attrib_k
 
   let attr name v = name, Attr (React.S.const (Some v))
-
   let float_attrib name value : attrib = attr name (js_string_of_float value)
-
   let int_attrib name value = attr name (js_string_of_int value)
-
   let string_attrib name value = attr name (Js.string value)
 
   let space_sep_attrib name values =
@@ -90,7 +80,6 @@ module Xml = struct
   (** Element *)
 
   type elt = Dom.node Js.t
-
   type ename = string
 
   let empty () = (Dom_html.document##createDocumentFragment :> Dom.node Js.t)
@@ -165,9 +154,7 @@ module Xml = struct
     (e :> Dom.node Js.t)
 
   let cdata s = pcdata s
-
   let cdata_script s = cdata s
-
   let cdata_style s = cdata s
 end
 
@@ -222,7 +209,6 @@ module Register = struct
     add_to ?keep node content
 
   let body ?keep content = add_to ?keep Dom_html.document##.body content
-
   let head ?keep content = add_to ?keep Dom_html.document##.head content
 
   let html ?head body =
@@ -235,23 +221,15 @@ end
 
 module Wrap = struct
   type 'a t = 'a React.signal
-
   type 'a tlist = 'a ReactiveData.RList.t
-
   type ('a, 'b) ft = 'a -> 'b
 
   let return = React.S.const
-
   let fmap f = React.S.map f
-
   let nil () = ReactiveData.RList.empty
-
   let singleton = ReactiveData.RList.singleton_s
-
   let cons x xs = ReactiveData.RList.concat (singleton x) xs
-
   let map f = ReactiveData.RList.map f
-
   let append x y = ReactiveData.RList.concat x y
 end
 
@@ -333,23 +311,16 @@ module R = struct
     module W = Wrap
 
     type 'a wrap = 'a W.t
-
     type 'a list_wrap = 'a W.tlist
-
     type uri = Xml.uri
 
     let string_of_uri = Xml.string_of_uri
-
     let uri_of_string = Xml.uri_of_string
 
     type aname = Xml.aname
-
     type event_handler = Xml.event_handler
-
     type mouse_event_handler = Xml.mouse_event_handler
-
     type keyboard_event_handler = Xml.keyboard_event_handler
-
     type attrib = Xml.attrib
 
     let attr name f s =
@@ -360,7 +331,6 @@ module R = struct
       attr name (fun f -> Some (js_string_of_float f)) s
 
     let int_attrib name s = attr name (fun f -> Some (js_string_of_int f)) s
-
     let string_attrib name s = attr name (fun f -> Some (Js.string f)) s
 
     let space_sep_attrib name s =
@@ -383,11 +353,9 @@ module R = struct
       attr name (fun f -> Some (Js.string (String.concat " " f))) s
 
     type elt = Xml.elt
-
     type ename = Xml.ename
 
     let empty = Xml.empty
-
     let comment = Xml.comment
 
     let pcdata s =
@@ -396,9 +364,7 @@ module R = struct
       (e :> Dom.node Js.t)
 
     let encodedpcdata s = pcdata s
-
     let entity s = Xml.entity s
-
     let leaf = Xml.leaf
 
     let node ?(a = []) name l =
@@ -408,9 +374,7 @@ module R = struct
       (e :> Dom.node Js.t)
 
     let cdata = Xml.cdata
-
     let cdata_script = Xml.cdata_script
-
     let cdata_style = Xml.cdata_style
   end
 

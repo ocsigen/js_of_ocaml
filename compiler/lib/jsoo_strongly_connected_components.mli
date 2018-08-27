@@ -21,7 +21,6 @@ module type S = sig
     type t
 
     module Map : Map.S with type key = t
-
     module Set : Set.S with type elt = t
   end
 
@@ -42,6 +41,5 @@ module Make (Id : sig
   type t
 
   module Map : Map.S with type key = t
-
   module Set : Set.S with type elt = t
 end) : S with module Id = Id

@@ -34,7 +34,6 @@ type id = int
 module IdMap = IntMap
 
 let last_id = ref (-1)
-
 let fresh_id () = incr last_id ; !last_id
 
 type 'a sequence =

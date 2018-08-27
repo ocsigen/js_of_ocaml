@@ -17,73 +17,50 @@ open List
 
 ;;
 testing_function "compare_big_int"
-
 ;;
 test 1 eq_int (compare_big_int zero_big_int zero_big_int, 0)
-
 ;;
 test 2 eq_int (compare_big_int zero_big_int (big_int_of_int 1), -1)
-
 ;;
 test 3 eq_int (compare_big_int zero_big_int (big_int_of_int (-1)), 1)
-
 ;;
 test 4 eq_int (compare_big_int (big_int_of_int 1) zero_big_int, 1)
-
 ;;
 test 5 eq_int (compare_big_int (big_int_of_int (-1)) zero_big_int, -1)
-
 ;;
 test 6 eq_int (compare_big_int (big_int_of_int 1) (big_int_of_int 1), 0)
-
 ;;
 test 7 eq_int (compare_big_int (big_int_of_int (-1)) (big_int_of_int (-1)), 0)
-
 ;;
 test 8 eq_int (compare_big_int (big_int_of_int 1) (big_int_of_int (-1)), 1)
-
 ;;
 test 9 eq_int (compare_big_int (big_int_of_int (-1)) (big_int_of_int 1), -1)
-
 ;;
 test 10 eq_int (compare_big_int (big_int_of_int 1) (big_int_of_int 2), -1)
-
 ;;
 test 11 eq_int (compare_big_int (big_int_of_int 2) (big_int_of_int 1), 1)
-
 ;;
 test 12 eq_int (compare_big_int (big_int_of_int (-1)) (big_int_of_int (-2)), 1)
-
 ;;
 test 13 eq_int (compare_big_int (big_int_of_int (-2)) (big_int_of_int (-1)), -1)
-
 ;;
 testing_function "pred_big_int"
-
 ;;
 test 1 eq_big_int (pred_big_int zero_big_int, big_int_of_int (-1))
-
 ;;
 test 2 eq_big_int (pred_big_int unit_big_int, zero_big_int)
-
 ;;
 test 3 eq_big_int (pred_big_int (big_int_of_int (-1)), big_int_of_int (-2))
-
 ;;
 testing_function "succ_big_int"
-
 ;;
 test 1 eq_big_int (succ_big_int zero_big_int, unit_big_int)
-
 ;;
 test 2 eq_big_int (succ_big_int unit_big_int, big_int_of_int 2)
-
 ;;
 test 3 eq_big_int (succ_big_int (big_int_of_int (-1)), zero_big_int)
-
 ;;
 testing_function "add_big_int"
-
 ;;
 test 1 eq_big_int (add_big_int zero_big_int zero_big_int, zero_big_int)
 
@@ -153,7 +130,6 @@ test 17 eq_big_int
 
 ;;
 testing_function "sub_big_int"
-
 ;;
 test 1 eq_big_int (sub_big_int zero_big_int zero_big_int, zero_big_int)
 
@@ -223,22 +199,16 @@ test 17 eq_big_int
 
 ;;
 testing_function "mult_int_big_int"
-
 ;;
 test 1 eq_big_int (mult_int_big_int 0 (big_int_of_int 3), zero_big_int)
-
 ;;
 test 2 eq_big_int (mult_int_big_int 1 (big_int_of_int 3), big_int_of_int 3)
-
 ;;
 test 3 eq_big_int (mult_int_big_int 1 zero_big_int, zero_big_int)
-
 ;;
 test 4 eq_big_int (mult_int_big_int 2 (big_int_of_int 3), big_int_of_int 6)
-
 ;;
 testing_function "mult_big_int"
-
 ;;
 test 1 eq_big_int (mult_big_int zero_big_int zero_big_int, zero_big_int)
 
@@ -350,7 +320,6 @@ test 24 eq_big_int (quotient, big_int_of_int 1)
 
 ;;
 testing_function "gcd_big_int"
-
 ;;
 test 1 eq_big_int (gcd_big_int zero_big_int zero_big_int, zero_big_int)
 
@@ -395,19 +364,14 @@ done
 
 ;;
 testing_function "int_of_big_int"
-
 ;;
 test 1 eq_int (int_of_big_int (big_int_of_int 1), 1)
-
 ;;
 test 2 eq_int (int_of_big_int (big_int_of_int (-1)), -1)
-
 ;;
 test 3 eq_int (int_of_big_int zero_big_int, 0)
-
 ;;
 test 4 eq_int (int_of_big_int (big_int_of_int max_int), max_int)
-
 ;;
 test 5 eq_int (int_of_big_int (big_int_of_int min_int), min_int)
 
@@ -430,33 +394,25 @@ failwith_test 8
 
 ;;
 testing_function "is_int_big_int"
-
 ;;
 test 1 eq (is_int_big_int (big_int_of_int 1), true)
-
 ;;
 test 2 eq (is_int_big_int (big_int_of_int (-1)), true)
-
 ;;
 test 3 eq (is_int_big_int (succ_big_int (big_int_of_int biggest_int)), false)
-
 ;;
 test 4 eq (int_of_big_int (big_int_of_int monster_int), monster_int)
 
 (* Should be true *)
-
 ;;
 test 5 eq (is_int_big_int (big_int_of_string (string_of_int biggest_int)), true)
-
 ;;
 test 6 eq (is_int_big_int (big_int_of_string (string_of_int least_int)), true)
-
 ;;
 test 7 eq (is_int_big_int (big_int_of_string (string_of_int monster_int)), true)
 
 (* Should be false *)
 (* Successor of biggest_int is not an int *)
-
 ;;
 test 8 eq (is_int_big_int (succ_big_int (big_int_of_int biggest_int)), false)
 
@@ -475,31 +431,22 @@ test 10 eq
 
 ;;
 testing_function "sys_string_of_big_int"
-
 ;;
 test 1 eq_string (string_of_big_int (big_int_of_int 1), "1")
-
 ;;
 testing_function "big_int_of_string"
-
 ;;
 test 1 eq_big_int (big_int_of_string "1", big_int_of_int 1)
-
 ;;
 test 2 eq_big_int (big_int_of_string "-1", big_int_of_int (-1))
-
 ;;
 test 4 eq_big_int (big_int_of_string "0", zero_big_int)
-
 ;;
 failwith_test 5 big_int_of_string "sdjdkfighdgf" (Failure "invalid digit")
-
 ;;
 test 6 eq_big_int (big_int_of_string "123", big_int_of_int 123)
-
 ;;
 test 7 eq_big_int (big_int_of_string "3456", big_int_of_int 3456)
-
 ;;
 test 9 eq_big_int (big_int_of_string "-3456", big_int_of_int (-3456))
 
@@ -554,19 +501,14 @@ test 10 eq_big_int
 
 ;;
 test 18 eq_big_int (big_int_of_string "0xAbC", big_int_of_int 0xABC)
-
 ;;
 test 19 eq_big_int (big_int_of_string "-0o452", big_int_of_int (-0o452))
-
 ;;
 test 20 eq_big_int (big_int_of_string "0B110101", big_int_of_int 53)
-
 ;;
 test 21 eq_big_int (big_int_of_string "0b11_01_01", big_int_of_int 53)
-
 ;;
 testing_function "power_base_int"
-
 ;;
 test 1 eq_big_int (big_int_of_nat (power_base_int 10 0), unit_big_int)
 
@@ -583,7 +525,6 @@ test 3 eq_big_int
 
 ;;
 testing_function "base_power_big_int"
-
 ;;
 test 1 eq_big_int (base_power_big_int 10 0 (big_int_of_int 2), big_int_of_int 2)
 
@@ -745,34 +686,24 @@ test 4 eq_big_int
 
 ;;
 testing_function "big_int_of_nativeint"
-
 ;;
 test 1 eq_big_int (big_int_of_nativeint 0n, zero_big_int)
-
 ;;
 test 2 eq_big_int (big_int_of_nativeint 1234n, big_int_of_string "1234")
-
 ;;
 test 3 eq_big_int (big_int_of_nativeint (-1234n), big_int_of_string "-1234")
-
 ;;
 testing_function "nativeint_of_big_int"
-
 ;;
 test 1 eq_nativeint (nativeint_of_big_int zero_big_int, 0n)
-
 ;;
 test 2 eq_nativeint (nativeint_of_big_int (big_int_of_string "1234"), 1234n)
-
 ;;
 test 2 eq_nativeint (nativeint_of_big_int (big_int_of_string "-1234"), -1234n)
-
 ;;
 testing_function "big_int_of_int32"
-
 ;;
 test 1 eq_big_int (big_int_of_int32 0l, zero_big_int)
-
 ;;
 test 2 eq_big_int (big_int_of_int32 2147483647l, big_int_of_string "2147483647")
 
@@ -782,10 +713,8 @@ test 3 eq_big_int
 
 ;;
 testing_function "int32_of_big_int"
-
 ;;
 test 1 eq_int32 (int32_of_big_int zero_big_int, 0l)
-
 ;;
 test 2 eq_int32 (int32_of_big_int (big_int_of_string "2147483647"), 2147483647l)
 
@@ -804,19 +733,14 @@ let should_fail s =
 
 ;;
 test 5 eq_int (should_fail "2147483648", 1)
-
 ;;
 test 6 eq_int (should_fail "-2147483649", 1)
-
 ;;
 test 7 eq_int (should_fail "4294967296", 1)
-
 ;;
 test 8 eq_int (should_fail "18446744073709551616", 1)
-
 ;;
 testing_function "big_int_of_int64"
-
 ;;
 test 1 eq_big_int (big_int_of_int64 0L, zero_big_int)
 
@@ -854,7 +778,6 @@ test 8 eq_big_int
 
 ;;
 testing_function "int64_of_big_int"
-
 ;;
 test 1 eq_int64 (int64_of_big_int zero_big_int, 0L)
 
@@ -885,10 +808,8 @@ let should_fail s =
 
 ;;
 test 6 eq_int (should_fail "9223372036854775808", 1)
-
 ;;
 test 7 eq_int (should_fail "-9223372036854775809", 1)
-
 ;;
 test 8 eq_int (should_fail "18446744073709551616", 1)
 
@@ -912,13 +833,10 @@ and h5 = 0x4f9bb0a19c543cb1L
 
 ;;
 testing_function "and_big_int"
-
 ;;
 test 1 eq_big_int (and_big_int unit_big_int zero_big_int, zero_big_int)
-
 ;;
 test 2 eq_big_int (and_big_int zero_big_int unit_big_int, zero_big_int)
-
 ;;
 test 3 eq_big_int (and_big_int unit_big_int unit_big_int, unit_big_int)
 
@@ -939,13 +857,10 @@ test 6 eq_big_int
 
 ;;
 testing_function "or_big_int"
-
 ;;
 test 1 eq_big_int (or_big_int unit_big_int zero_big_int, unit_big_int)
-
 ;;
 test 2 eq_big_int (or_big_int zero_big_int unit_big_int, unit_big_int)
-
 ;;
 test 3 eq_big_int (or_big_int unit_big_int unit_big_int, unit_big_int)
 
@@ -966,13 +881,10 @@ test 6 eq_big_int
 
 ;;
 testing_function "xor_big_int"
-
 ;;
 test 1 eq_big_int (xor_big_int unit_big_int zero_big_int, unit_big_int)
-
 ;;
 test 2 eq_big_int (xor_big_int zero_big_int unit_big_int, unit_big_int)
-
 ;;
 test 3 eq_big_int (xor_big_int unit_big_int unit_big_int, zero_big_int)
 
@@ -993,10 +905,8 @@ test 6 eq_big_int
 
 ;;
 testing_function "shift_left_big_int"
-
 ;;
 test 1 eq_big_int (shift_left_big_int unit_big_int 0, unit_big_int)
-
 ;;
 test 2 eq_big_int (shift_left_big_int unit_big_int 1, big_int_of_int 2)
 
@@ -1025,7 +935,6 @@ test 6 eq_big_int
 
 ;;
 testing_function "shift_right_big_int"
-
 ;;
 test 1 eq_big_int (shift_right_big_int unit_big_int 0, unit_big_int)
 
@@ -1121,16 +1030,12 @@ test 10 eq_big_int
 
 ;;
 testing_function "hashing of big integers"
-
 ;;
 test 1 eq_int (Hashtbl.hash zero_big_int, 955772237)
-
 ;;
 test 2 eq_int (Hashtbl.hash unit_big_int, 992063522)
-
 ;;
 test 3 eq_int (Hashtbl.hash (minus_big_int unit_big_int), 161678167)
-
 ;;
 test 4 eq_int (Hashtbl.hash (big_int_of_string "123456789123456789"), 755417385)
 

@@ -20,7 +20,6 @@
 open Common
 
 let log_stop = log_start "Side effect test suite"
-
 let i = ref 0
 
 let side_effect yes label =

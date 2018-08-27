@@ -37,11 +37,8 @@ let rectangle (x1, y1, x2, y2) fill stroke =
 (****)
 
 type ('color, 'font, 'text) t = ('color, 'font, 'text) element list ref
-
 type cairo_t = (float * float * float, string * float, string) t
 
 let make () = ref []
-
 let add sc e = sc := e :: !sc
-
 let get sc = Array.of_list (List.rev !sc)

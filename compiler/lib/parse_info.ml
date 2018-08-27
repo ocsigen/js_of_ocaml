@@ -116,9 +116,7 @@ let relative_path {Line_info.src; _} file =
   | Some src -> Some Filename.(concat (dirname src) file)
 
 let make_lineinfo_from_file file = Line_info.from_file file
-
 let make_lineinfo_from_string ?offset str = Line_info.from_string ?offset str
-
 let make_lineinfo_from_channel c = Line_info.from_channel c
 
 let t_of_lexbuf line_info lexbuf : t =

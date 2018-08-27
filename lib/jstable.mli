@@ -26,11 +26,7 @@
 type 'a t
 
 val create : unit -> 'a t
-
 val add : 'a t -> Js.js_string Js.t -> 'a -> unit
-
 val remove : 'a t -> Js.js_string Js.t -> unit
-
 val find : 'a t -> Js.js_string Js.t -> 'a Js.optdef
-
 val keys : 'a t -> Js.js_string Js.t list

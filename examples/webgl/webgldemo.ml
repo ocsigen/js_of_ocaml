@@ -142,7 +142,6 @@ module Proj3D = struct
      ; 1. |]
 
   let c i j = (i * 4) + j
-
   let o i = i / 4, i mod 4
 
   let mult m1 m2 =
@@ -164,7 +163,6 @@ type line =
   | F of ((int * int) * (int * int) * (int * int))
 
 let line_regexp = Regexp.regexp "(v|vn|f)\\ ([^\\ ]+)\\ ([^\\ ]+)\\ ([^\\ ]+)"
-
 let couple_regexp = Regexp.regexp "([0-9]+)//([0-9]+)"
 
 let read_coord_couple c =

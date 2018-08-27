@@ -29,7 +29,6 @@ val make :
   (Buffer.t -> 'a -> unit) -> (Deriving_Json_lexer.lexbuf -> 'a) -> 'a t
 
 val write : 'a t -> Buffer.t -> 'a -> unit
-
 val read : 'a t -> Deriving_Json_lexer.lexbuf -> 'a
 
 (** [to_string Json.t<ty> v] marshal the [v] of type [ty] to a JSON string.*)
@@ -45,13 +44,9 @@ module type Json = sig
   type a
 
   val t : a t
-
   val write : Buffer.t -> a -> unit
-
   val read : Deriving_Json_lexer.lexbuf -> a
-
   val to_string : a -> string
-
   val from_string : string -> a
 
   (**/**)
@@ -74,13 +69,10 @@ val convert : 'a t -> ('a -> 'b) -> ('b -> 'a) -> 'b t
 (** The signature of the Converter class. *)
 module type Json_converter = sig
   type a
-
   type b
 
   val t : a t
-
   val from_ : a -> b
-
   val to_ : b -> a
 end
 
@@ -115,7 +107,6 @@ module type Json_min = sig
   type a
 
   val write : Buffer.t -> a -> unit
-
   val read : Deriving_Json_lexer.lexbuf -> a
 end
 
@@ -123,9 +114,7 @@ module type Json_min' = sig
   type a
 
   val write : Buffer.t -> a -> unit
-
   val read : Deriving_Json_lexer.lexbuf -> a
-
   val match_variant : [`Cst of int | `NCst of int] -> bool
 
   val read_variant :
@@ -139,36 +128,21 @@ module type Json_min'' = sig
 end
 
 module Defaults (J : Json_min) : Json with type a = J.a
-
 module Defaults' (J : Json_min') : Json with type a = J.a
-
 module Defaults'' (J : Json_min'') : Json with type a = J.a
-
 module Json_char : Json with type a = char
-
 module Json_bool : Json with type a = bool
-
 module Json_unit : Json with type a = unit
-
 module Json_int : Json with type a = int
-
 module Json_int32 : Json with type a = int32
-
 module Json_int64 : Json with type a = int64
-
 module Json_nativeint : Json with type a = nativeint
-
 (* module Json_num : Json with type a = Num.num *)
 module Json_float : Json with type a = float
-
 module Json_string : Json with type a = string
-
 module Json_list (A : Json) : Json with type a = A.a list
-
 module Json_ref (A : Json) : Json with type a = A.a ref
-
 module Json_option (A : Json) : Json with type a = A.a option
-
 module Json_array (A : Json) : Json with type a = A.a array
 
 val read_list :

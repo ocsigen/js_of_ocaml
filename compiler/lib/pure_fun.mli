@@ -19,7 +19,5 @@
  *)
 
 val pure_expr : Code.VarSet.t -> Code.expr -> bool
-
 val pure_instr : Code.VarSet.t -> Code.instr -> bool
-
 val f : Code.program -> Code.VarSet.t

@@ -31,15 +31,11 @@
    Google v8 benchmark. *)
 
 let kSplayTreeSize = 8000
-
 let kSplayTreeModifications = 80
-
 let kSplayTreePayloadDepth = 5
 
 type content_leaf = {array: int array; string: string}
-
 type content = CLeaf of content_leaf | CNode of content * content
-
 type tree = Empty | Node of (tree * float * content * tree)
 
 (** * Perform the splay operation for the given key. Moves the node with * the
@@ -237,5 +233,4 @@ let splayRun t =
   aux 0 t
 
 let ( ++ ) a b = b a
-
 let () = splaySetup () ++ splayRun ++ splayTearDown

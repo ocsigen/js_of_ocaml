@@ -27,16 +27,12 @@ let code_rev =
   a
 
 let vlq_base_shift = 5
-
 (* binary: 100000 *)
 let vlq_base = 1 lsl vlq_base_shift
-
 (* binary: 011111 *)
 let vlq_base_mask = vlq_base - 1
-
 (* binary: 100000 *)
 let vlq_continuation_bit = vlq_base
-
 let toVLQSigned v = if v < 0 then (-v lsl 1) + 1 else v lsl 1
 
 (* assert (toVLQSigned 1 = 2); *)

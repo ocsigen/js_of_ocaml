@@ -114,7 +114,6 @@ test 2 eq_int
 
 ;;
 test 3 eq_int (sign_ratio (create_ratio zero_big_int (big_int_of_int (-3))), 0)
-
 ;;
 testing_function "normalize_ratio"
 
@@ -1012,7 +1011,6 @@ failwith_test 8 ratio_of_string "frlshjkurty" (Failure "invalid digit")
   "^infinite_failure) ;; failwith_test 17 msd_ratio (create_ratio
   (big_int_of_int 0) (big_int_of_int 0)) ("msd_ratio "^infinite_failure) ;;
   *************************)
-
 ;;
 testing_function "round_futur_last_digit"
 

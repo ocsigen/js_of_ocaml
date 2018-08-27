@@ -22,14 +22,11 @@ open Common
 let log_stop = log_start "match .. with exception"
 
 exception A
-
 exception B of int
 
 let a_exn () = raise A
-
 (* Make sure that [a] doesn't look constant *)
 let a () = if Random.int 1 + 1 = 0 then 2 else 4
-
 let b_exn () = raise (B 2)
 
 (* https://github.com/ocsigen/js_of_ocaml/issues/400

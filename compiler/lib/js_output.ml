@@ -237,7 +237,6 @@ struct
     if !simple < !double then '\'' else '"'
 
   let array_str1 = Array.init 256 (fun i -> String.make 1 (Char.chr i))
-
   let array_conv = Array.init 16 (fun i -> String.make 1 "0123456789abcdef".[i])
 
   let pp_string f ?(quote = '"') ?(utf = false) s =

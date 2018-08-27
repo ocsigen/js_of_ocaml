@@ -34,7 +34,6 @@ val set_channel_filler : in_channel -> (unit -> string) -> unit
 (** {2 Pseudo filesystem.} *)
 
 val mount_point : unit -> string list
-
 val unmount : path:string -> unit
 
 (** Register a callback to the [path] to dynamicly load missing files. Whenever

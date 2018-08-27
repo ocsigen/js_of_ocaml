@@ -70,7 +70,6 @@ let empty_mutation_observer_init () : mutationObserverInit Js.t =
   Js.Unsafe.obj [||]
 
 let mutationObserver = Js.Unsafe.global##._MutationObserver
-
 let is_supported () = Js.Optdef.test mutationObserver
 
 let mutationObserver :

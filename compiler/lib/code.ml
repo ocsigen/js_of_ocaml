@@ -24,17 +24,13 @@ module DebugAddr : sig
   type dbg = private addr
 
   val of_addr : addr -> dbg
-
   val to_addr : dbg -> addr
-
   val no : dbg
 end = struct
   type dbg = int
 
   let of_addr (x : addr) : dbg = x
-
   let no = 0
-
   let to_addr (x : dbg) : addr = x
 end
 
@@ -42,47 +38,28 @@ module Var : sig
   type t
 
   val print : Format.formatter -> t -> unit
-
   val idx : t -> int
-
   val of_idx : int -> t
-
   val to_string : ?origin:t -> t -> string
-
   val fresh : unit -> t
-
   val fresh_n : string -> t
-
   val fork : t -> t
-
   val count : unit -> int
-
   val compare : t -> t -> int
-
   val get_loc : t -> Parse_info.t option
-
   val loc : t -> Parse_info.t -> unit
-
   val name : t -> string -> unit
-
   val get_name : t -> string option
-
   val propagate_name : t -> t -> unit
-
   val reset : unit -> unit
-
   val set_pretty : bool -> unit
-
   val set_stable : bool -> unit
-
   val dummy : t
 end = struct
   type t = int
 
   let printer = VarPrinter.create ()
-
   let locations = Hashtbl.create 17
-
   let last_var = ref 0
 
   let reset () =
@@ -91,31 +68,20 @@ end = struct
     VarPrinter.reset printer
 
   let to_string ?origin i = VarPrinter.to_string printer ?origin i
-
   let print f x = Format.fprintf f "v%d" x
-
   (* Format.fprintf f "%s" (to_string x) *)
 
   let name i nm = VarPrinter.name printer i nm
-
   let loc i pi = Hashtbl.add locations i pi
-
   (*; Format.eprintf "loc for %d : %d-%d\n%!" i pi.Parse_info.line
     pi.Parse_info.col *)
   let get_loc i = try Some (Hashtbl.find locations i) with Not_found -> None
-
   let fresh () = incr last_var ; !last_var
-
   let fresh_n nm = incr last_var ; name !last_var nm ; !last_var
-
   let count () = !last_var + 1
-
   let idx v = v
-
   let of_idx v = v
-
   let compare v1 v2 = v1 - v2
-
   let get_name i = VarPrinter.get_name printer i
 
   let propagate_name i j =
@@ -126,7 +92,6 @@ end = struct
                 loc j l
 
   let set_pretty b = VarPrinter.set_pretty printer b
-
   let set_stable b = VarPrinter.set_stable printer b
 
   let fork o =
@@ -141,21 +106,16 @@ module VarMap = Map.Make (Var)
 
 module VarTbl = struct
   type 'a t = 'a array
-
   type key = Var.t
-
   type size = unit
 
   let get t x = t.(Var.idx x)
-
   let set t x v = t.(Var.idx x) <- v
-
   let make () v = Array.make (Var.count ()) v
 end
 
 module VarISet = struct
   type t = Var.t array
-
   type elt = Var.t
 
   let iter f t =
@@ -165,13 +125,9 @@ module VarISet = struct
     done
 
   let mem t x = Var.compare t.(Var.idx x) Var.dummy <> 0
-
   let add t x = t.(Var.idx x) <- x
-
   let remove t x = t.(Var.idx x) <- Var.dummy
-
   let copy = Array.copy
-
   let empty _v = Array.make (Var.count ()) Var.dummy
 end
 
@@ -252,7 +208,6 @@ let rec print_list pr f l =
   | x :: r -> Format.fprintf f "%a, %a" pr x (print_list pr) r
 
 let print_var_list = print_list Var.print
-
 let print_cont f (pc, args) = Format.fprintf f "%d (%a)" pc print_var_list args
 
 let rec print_constant f x =
@@ -494,7 +449,6 @@ let eq (pc1, blocks1, _) (pc2, blocks2, _) =
        blocks1 true
 
 let with_invariant = Option.Debug.find "invariant"
-
 let check_defs = false
 
 let invariant (_, blocks, _) =

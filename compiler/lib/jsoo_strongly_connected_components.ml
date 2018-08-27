@@ -108,12 +108,10 @@ module type S = sig
     type t
 
     module Map : Map.S with type key = t
-
     module Set : Set.S with type elt = t
   end
 
   type directed_graph = Id.Set.t Id.Map.t
-
   type component = Has_loop of Id.t list | No_loop of Id.t
 
   val connected_components_sorted_from_roots_to_leaf :
@@ -126,16 +124,13 @@ module Make (Id : sig
   type t
 
   module Map : Map.S with type key = t
-
   module Set : Set.S with type elt = t
 end) =
 struct
   module Id = Id
 
   type directed_graph = Id.Set.t Id.Map.t
-
   type component = Has_loop of Id.t list | No_loop of Id.t
-
   type numbering = {back: int Id.Map.t; forth: Id.t array}
 
   let number graph =

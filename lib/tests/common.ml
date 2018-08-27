@@ -21,13 +21,9 @@
 open Js_of_ocaml
 
 let success_count_all = ref 0
-
 let test_count_all = ref 0
-
 let success_count = ref 0
-
 let test_count = ref 0
-
 let log_success () = incr success_count ; incr test_count
 
 let log_failure s =
@@ -44,5 +40,4 @@ let log_start s =
   log_stop
 
 let raw_log x = Firebug.console##log_2 (Js.string "\t\t") x
-
 let log s = raw_log (Js.string s)

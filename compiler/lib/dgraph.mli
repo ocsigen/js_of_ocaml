@@ -31,7 +31,6 @@ end)
     type t
 
     val equal : t -> t -> bool
-
     val bot : t
   end
 
@@ -42,31 +41,22 @@ end
 
 module type ISet = sig
   type t
-
   type elt
 
   val iter : (elt -> unit) -> t -> unit
-
   val mem : t -> elt -> bool
-
   val add : t -> elt -> unit
-
   val remove : t -> elt -> unit
-
   val copy : t -> t
 end
 
 module type Tbl = sig
   type 'a t
-
   type key
-
   type size
 
   val get : 'a t -> key -> 'a
-
   val set : 'a t -> key -> 'a -> unit
-
   val make : size -> 'a -> 'a t
 end
 
@@ -83,7 +73,6 @@ end)
     type t
 
     val equal : t -> t -> bool
-
     val bot : t
   end
 

@@ -81,7 +81,6 @@ let fannkuch n =
   done
 
 let n = 10
-
 let pf = fannkuch n
 
 (* //print(pf[0] + "\n" + "Pfannkuchen(" + n + ") = " + pf[1]); *)

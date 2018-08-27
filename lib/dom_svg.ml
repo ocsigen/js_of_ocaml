@@ -1959,19 +1959,14 @@ and glyphElement =
 
 (* interface SVGFontFaceElement *)
 class type fontFaceElement = element
-
 (* interface SVGFontFaceSrcElement *)
 class type fontFaceSrcElement = element
-
 (* interface SVGFontFaceUriElement *)
 class type fontFaceUriElement = element
-
 (* interface SVGFontFaceFormatElement *)
 class type fontFaceFormatElement = element
-
 (* interface SVGFontFaceNameElement *)
 class type fontFaceNameElement = element
-
 (* interface SVGMetadataElement *)
 class type metadataElement = element
 
@@ -2003,9 +1998,7 @@ let createElement (doc : document t) name =
   doc##createElementNS xmlns (Js.string name)
 
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
-
 let createA doc : aElement t = unsafeCreateElement doc "a"
-
 let createAltGlyph doc : altGlyphElement t = unsafeCreateElement doc "altglyph"
 
 let createAltGlyphDef doc : altGlyphDefElement t =
@@ -2026,24 +2019,16 @@ let createAnimateTransform doc : animateTransformElement t =
   unsafeCreateElement doc "animatetransform"
 
 let createCircle doc : circleElement t = unsafeCreateElement doc "circle"
-
 let createClipPath doc : clipPathElement t = unsafeCreateElement doc "clippath"
-
 (* let createColorProfile doc : colorProfile t = unsafeCreateElement doc
    "color-profile" *)
 let createCursor doc : cursorElement t = unsafeCreateElement doc "cursor"
-
 let createDefs doc : defsElement t = unsafeCreateElement doc "defs"
-
 let createDesc doc : descElement t = unsafeCreateElement doc "desc"
-
 let createEllipse doc : ellipseElement t = unsafeCreateElement doc "ellipse"
-
 (* let createFe* *)
 let createFilter doc : filterElement t = unsafeCreateElement doc "filter"
-
 let createFont doc : fontElement t = unsafeCreateElement doc "font"
-
 let createFontFace doc : fontElement t = unsafeCreateElement doc "font-face"
 
 let createFontFaceFormat doc : fontElement t =
@@ -2062,15 +2047,10 @@ let createForeignObject doc : foreignObjectElement t =
   unsafeCreateElement doc "foreignobject"
 
 let createG doc : gElement t = unsafeCreateElement doc "g"
-
 let createGlyph doc : glyphElement t = unsafeCreateElement doc "glyph"
-
 let createGlyphRef doc : glyphElement t = unsafeCreateElement doc "glyphref"
-
 let createhkern doc : element t = unsafeCreateElement doc "hkern"
-
 let createImage doc : imageElement t = unsafeCreateElement doc "image"
-
 let createLineElement doc : lineElement t = unsafeCreateElement doc "line"
 
 let createLinearElement doc : linearGradientElement t =
@@ -2078,61 +2058,39 @@ let createLinearElement doc : linearGradientElement t =
 
 (* let createMarker doc : markerElement *)
 let createMask doc : maskElement t = unsafeCreateElement doc "mask"
-
 let createMetaData doc : metadataElement t = unsafeCreateElement doc "metadata"
 
 let createMissingGlyph doc : glyphElement t =
   unsafeCreateElement doc "missing-glyph"
 
 let createMPath doc : mPathElement t = unsafeCreateElement doc "mpath"
-
 let createPath doc : pathElement t = unsafeCreateElement doc "path"
-
 let createParttern doc : patternElement t = unsafeCreateElement doc "parttern"
-
 let createPolygon doc : polygonElement t = unsafeCreateElement doc "polygon"
-
 let createPolyline doc : polyLineElement t = unsafeCreateElement doc "polyline"
 
 let createRadialgradient doc : radialGradientElement t =
   unsafeCreateElement doc "radialgradient"
 
 let createRect doc : rectElement t = unsafeCreateElement doc "rect"
-
 let createScript doc : scriptElement t = unsafeCreateElement doc "script"
-
 let createSet doc : setElement t = unsafeCreateElement doc "set"
-
 let createStop doc : stopElement t = unsafeCreateElement doc "stop"
-
 let createStyle doc : styleElement t = unsafeCreateElement doc "style"
-
 let createSvg doc : svgElement t = unsafeCreateElement doc "svg"
-
 let createSwitch doc : switchElement t = unsafeCreateElement doc "switch"
-
 let createSymbol doc : symbolElement t = unsafeCreateElement doc "symbol"
-
 let createTextElement doc : textElement t = unsafeCreateElement doc "text"
-
 let createTextpath doc : textPathElement t = unsafeCreateElement doc "textpath"
-
 let createTitle doc : titleElement t = unsafeCreateElement doc "title"
-
 let createTref doc : trefElement t = unsafeCreateElement doc "tref"
-
 let createTspan doc : tspanElement t = unsafeCreateElement doc "tspan"
-
 let createUse doc : useElement t = unsafeCreateElement doc "use"
-
 let createView doc : viewElement t = unsafeCreateElement doc "view"
-
 let createvkern doc : element t = unsafeCreateElement doc "vkern"
-
 (****)
 
 let svg_element : element t constr = Js.Unsafe.global##._SVGElement
-
 let document = Js.Unsafe.global##.document
 
 let getElementById id : element t =
@@ -2153,9 +2111,7 @@ module CoerceTo = struct
     else Js.null
 
   let a e : aElement t opt = unsafeCoerce e "a"
-
   let altGlyph e : altGlyphElement t opt = unsafeCoerce e "altglyph"
-
   let altGlyphDef e : altGlyphDefElement t opt = unsafeCoerce e "altglyphdef"
 
   let altGlyphItem e : altGlyphItemElement t opt =
@@ -2173,46 +2129,29 @@ module CoerceTo = struct
     unsafeCoerce e "animatetransform"
 
   let circle e : circleElement t opt = unsafeCoerce e "circle"
-
   let clipPath e : clipPathElement t opt = unsafeCoerce e "clippath"
-
   (* let ColorProfile e : colorProfile t opt = unsafeCoerce e "color-profile" *)
   let cursor e : cursorElement t opt = unsafeCoerce e "cursor"
-
   let defs e : defsElement t opt = unsafeCoerce e "defs"
-
   let desc e : descElement t opt = unsafeCoerce e "desc"
-
   let ellipse e : ellipseElement t opt = unsafeCoerce e "ellipse"
-
   (* let Fe* *)
   let filter e : filterElement t opt = unsafeCoerce e "filter"
-
   let font e : fontElement t opt = unsafeCoerce e "font"
-
   let fontFace e : fontElement t opt = unsafeCoerce e "font-face"
-
   let fontFaceFormat e : fontElement t opt = unsafeCoerce e "font-face-format"
-
   let fontFaceName e : fontElement t opt = unsafeCoerce e "font-face-name"
-
   let fontFaceSrc e : fontElement t opt = unsafeCoerce e "font-face-src"
-
   let fontFaceUri e : fontElement t opt = unsafeCoerce e "font-face-uri"
 
   let foreignObject e : foreignObjectElement t opt =
     unsafeCoerce e "foreignobject"
 
   let g e : gElement t opt = unsafeCoerce e "g"
-
   let glyph e : glyphElement t opt = unsafeCoerce e "glyph"
-
   let glyphRef e : glyphElement t opt = unsafeCoerce e "glyphref"
-
   let hkern e : element t opt = unsafeCoerce e "hkern"
-
   let image e : imageElement t opt = unsafeCoerce e "image"
-
   let lineElement e : lineElement t opt = unsafeCoerce e "line"
 
   let linearElement e : linearGradientElement t opt =
@@ -2220,53 +2159,31 @@ module CoerceTo = struct
 
   (* let Marker e : markerElement *)
   let mask e : maskElement t opt = unsafeCoerce e "mask"
-
   let metaData e : metadataElement t opt = unsafeCoerce e "metadata"
-
   let missingGlyph e : glyphElement t opt = unsafeCoerce e "missing-glyph"
-
   let mPath e : mPathElement t opt = unsafeCoerce e "mpath"
-
   let path e : pathElement t opt = unsafeCoerce e "path"
-
   let parttern e : patternElement t opt = unsafeCoerce e "parttern"
-
   let polygon e : polygonElement t opt = unsafeCoerce e "polygon"
-
   let polyline e : polyLineElement t opt = unsafeCoerce e "polyline"
 
   let radialgradient e : radialGradientElement t opt =
     unsafeCoerce e "radialgradient"
 
   let rect e : rectElement t opt = unsafeCoerce e "rect"
-
   let script e : scriptElement t opt = unsafeCoerce e "script"
-
   let set e : setElement t opt = unsafeCoerce e "set"
-
   let stop e : stopElement t opt = unsafeCoerce e "stop"
-
   let style e : styleElement t opt = unsafeCoerce e "style"
-
   let svg e : svgElement t opt = unsafeCoerce e "svg"
-
   let switch e : switchElement t opt = unsafeCoerce e "switch"
-
   let symbol e : symbolElement t opt = unsafeCoerce e "symbol"
-
   let textElement e : textElement t opt = unsafeCoerce e "text"
-
   let textpath e : textPathElement t opt = unsafeCoerce e "textpath"
-
   let title e : titleElement t opt = unsafeCoerce e "title"
-
   let tref e : trefElement t opt = unsafeCoerce e "tref"
-
   let tspan e : tspanElement t opt = unsafeCoerce e "tspan"
-
   let use e : useElement t opt = unsafeCoerce e "use"
-
   let view e : viewElement t opt = unsafeCoerce e "view"
-
   let vkern e : element t opt = unsafeCoerce e "vkern"
 end

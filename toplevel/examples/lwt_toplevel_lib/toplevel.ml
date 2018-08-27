@@ -25,7 +25,6 @@ open Js_of_ocaml_toplevel
 open Lwt
 
 let compiler_name = "OCaml"
-
 let by_id s = Dom_html.getElementById s
 
 let by_id_coerce s f =
@@ -84,7 +83,6 @@ module Version = struct
     | x :: _ -> List.map int_of_string (split_char '.' x)
 
   let current = split Sys.ocaml_version
-
   let compint (a : int) b = compare a b
 
   let rec compare v v' =
@@ -302,7 +300,6 @@ let append colorize output cl s =
 
 module History = struct
   let data = ref [|""|]
-
   let idx = ref 0
 
   let get_storage () =

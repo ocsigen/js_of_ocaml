@@ -57,25 +57,16 @@ type nodeType =
 
 module DocumentPosition = struct
   type t = int
-
   type mask = int
 
   let disconnected = 0x01
-
   let preceding = 0x02
-
   let following = 0x04
-
   let contains = 0x08
-
   let contained_by = 0x10
-
   let implementation_specific = 0x20
-
   let has t mask = t land mask = mask
-
   let add x y = x lor y
-
   let ( + ) = add
 end
 
@@ -219,9 +210,7 @@ class type characterData =
   end
 
 class type comment = characterData
-
 class type text = characterData
-
 class type documentFragment = node
 
 class type ['element] document =
@@ -296,7 +285,6 @@ class type ['a] event =
   end
 
 let no_handler : ('a, 'b) event_listener = Js.null
-
 let window_event () : 'a #event t = Js.Unsafe.pure_js_expr "event"
 
 (* The function preventDefault must be called explicitly when using

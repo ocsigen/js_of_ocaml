@@ -73,7 +73,6 @@ module Min : Strategy = struct
   type alloc = {mutable first_free: int; mutable used: BitSet.t}
 
   let make_alloc_table () = {first_free= 0; used= BitSet.create ()}
-
   let next_available a i = BitSet.next_free a.used (max i a.first_free)
 
   let allocate a i =

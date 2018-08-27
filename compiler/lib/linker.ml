@@ -209,13 +209,9 @@ let version_match =
 type state = {ids: IntSet.t; codes: Javascript.program list}
 
 let last_code_id = ref 0
-
 let provided = Hashtbl.create 31
-
 let provided_rev = Hashtbl.create 31
-
 let code_pieces = Hashtbl.create 31
-
 let always_included = ref []
 
 class traverse_and_find_named_values all =

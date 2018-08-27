@@ -36,9 +36,7 @@ module type XML =
    and type elt = Dom.node Js.t
 
 module Xml : XML with module W = Xml_wrap.NoWrap
-
 module Svg : Svg_sigs.Make(Xml).T with module Xml.W = Xml_wrap.NoWrap
-
 module Html : Html_sigs.Make(Xml)(Svg).T with module Xml.W = Xml_wrap.NoWrap
 
 (** @deprecated Use {!Tyxml_js.Html}. *)
@@ -107,5 +105,4 @@ module R : sig
 end
 
 module To_dom : Tyxml_cast_sigs.TO with type 'a elt = 'a Html.elt
-
 module Of_dom : Tyxml_cast_sigs.OF with type 'a elt = 'a Html.elt

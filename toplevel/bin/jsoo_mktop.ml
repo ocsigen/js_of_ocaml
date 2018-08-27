@@ -24,23 +24,14 @@
 (* #require "findlib" *)
 
 let js_opt = ref []
-
 let add_js_opt x = js_opt := !js_opt @ [x]
-
 let pkgs = ref ["stdlib"]
-
 let add_pkgs x = pkgs := !pkgs @ [x]
-
 let export = ref []
-
 let add_export x = export := !export @ [x]
-
 let syntaxes = ref []
-
 let syntaxes_mod = ref []
-
 let add_syntax_pkg p = syntaxes := !syntaxes @ [p]
-
 let add_syntax_mod p = syntaxes_mod := !syntaxes_mod @ [p]
 
 let execute cmd =
@@ -50,7 +41,6 @@ let execute cmd =
   if ret <> 0 then failwith (Printf.sprintf "Error: %s" s)
 
 let to_clean = ref []
-
 let clean file = to_clean := file :: !to_clean
 
 let do_clean () =

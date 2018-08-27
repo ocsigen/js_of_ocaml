@@ -21,9 +21,7 @@ open Js_of_ocaml
 open Common
 
 let log_stop = log_start "Url test suite"
-
 let url_string_url u = Url.url_of_string (Url.string_of_url u)
-
 let url = "http://ocsigen.org/js_of_ocaml/"
 
 let () =

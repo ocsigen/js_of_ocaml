@@ -25,5 +25,4 @@ type t =
   ; files: string list }
 
 val options : t Cmdliner.Term.t
-
 val info : Cmdliner.Term.info

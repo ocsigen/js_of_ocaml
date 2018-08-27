@@ -15,21 +15,15 @@
 (* Use floating-point arithmetic *)
 
 external ( + ) : float -> float -> float = "%addfloat"
-
 external ( - ) : float -> float -> float = "%subfloat"
-
 external ( * ) : float -> float -> float = "%mulfloat"
-
 external ( / ) : float -> float -> float = "%divfloat"
 
 (* -- MATH UTILITIES --------------------------------------------------------*)
 
 let constant_pi = 3.14159265358979323846
-
 let constant_minus_pi = -3.14159265358979323846
-
 let constant_pi2 = 1.57079632679489661923
-
 let constant_minus_pi2 = -1.57079632679489661923
 
 (* -- POINTS ----------------------------------------------------------------*)
@@ -6393,9 +6387,7 @@ let rU' =
 type variable = {id: int; t: tfo; n: nuc}
 
 let mk_var i t n = {id= i; t; n}
-
 let absolute_pos v p = tfo_apply v.t p
-
 let atom_pos atom v = absolute_pos v (atom v.n)
 
 let rec get_var id = function
@@ -6981,11 +6973,8 @@ let var_most_distant_atom v =
   !max_dist
 
 let sol_most_distant_atom s = maximum (List.map var_most_distant_atom s)
-
 let most_distant_atom sols = maximum (List.map sol_most_distant_atom sols)
-
 let check () = List.length (pseudoknot ())
-
 let run () = most_distant_atom (pseudoknot ())
 
 let main () =

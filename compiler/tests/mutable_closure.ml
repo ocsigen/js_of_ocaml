@@ -20,9 +20,7 @@
 open Common
 
 let log_stop = log_start "Closure test suite (2)"
-
 let direct = ref []
-
 let indirect = ref []
 
 let () =

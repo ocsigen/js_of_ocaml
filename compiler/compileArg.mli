@@ -44,5 +44,4 @@ type t =
   ; fs_external: bool }
 
 val options : t Cmdliner.Term.t
-
 val info : Cmdliner.Term.info

@@ -730,21 +730,13 @@ val request_animation_frame : unit -> unit Lwt.t
 val onload : unit -> Dom_html.event Js.t Lwt.t
 
 val domContentLoaded : unit -> unit Lwt.t
-
 val onunload : unit -> Dom_html.event Js.t Lwt.t
-
 val onbeforeunload : unit -> Dom_html.event Js.t Lwt.t
-
 val onresize : unit -> Dom_html.event Js.t Lwt.t
-
 val onorientationchange : unit -> Dom_html.event Js.t Lwt.t
-
 val onpopstate : unit -> Dom_html.popStateEvent Js.t Lwt.t
-
 val onhashchange : unit -> Dom_html.hashChangeEvent Js.t Lwt.t
-
 val onorientationchange_or_onresize : unit -> Dom_html.event Js.t Lwt.t
-
 val onresizes : (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
 
 val onorientationchanges :

@@ -57,7 +57,6 @@ and ['a] messageEvent =
   end
 
 let worker = Unsafe.global##._Worker
-
 let create script = new%js worker (string script)
 
 let import_scripts scripts : unit =

@@ -40,7 +40,6 @@ let exp_to_string = function
         "Javascript methods or attributes can only be simple identifiers."
 
 let lid ?(loc = !default_loc) str = Location.mkloc (Longident.parse str) loc
-
 let typ s = Typ.constr (lid s) []
 
 (** arg1 -> arg2 -> ... -> ret *)
@@ -91,7 +90,6 @@ end = struct
       match !wrapper with None -> "Js." ^ name | Some m -> m ^ ".Js." ^ name
 
   let js_unsafe_dot name = js_dot ("Unsafe." ^ name)
-
   let type_ ?loc s args = Typ.constr ?loc (lid (js_dot s)) args
 
   let apply_ ~where ?loc s args =
@@ -99,7 +97,6 @@ end = struct
     Exp.(apply ?loc (ident ?loc (lid ?loc (where s))) args)
 
   let unsafe = apply_ ~where:js_unsafe_dot
-
   let fun_ = apply_ ~where:js_dot
 end
 
@@ -117,7 +114,6 @@ let unescape lab =
     with Not_found -> lab
 
 let app_arg e = Label.nolabel, e
-
 let inject_arg e = Js.unsafe "inject" [e]
 
 let inject_args args =
@@ -127,17 +123,12 @@ module Arg : sig
   type t
 
   val make : ?label:Label.t -> unit -> t
-
   val name : t -> string
-
   val typ : t -> core_type
-
   val label : t -> Label.t
-
   val args : t list -> (Label.t * core_type) list
 end = struct
   type arg = {label: Label.t; name: string}
-
   type t = arg
 
   let count = ref 0
@@ -148,11 +139,8 @@ end = struct
     {label; name= "t" ^ string_of_int c}
 
   let label arg = arg.label
-
   let name arg = arg.name
-
   let typ arg = typ (name arg)
-
   let args l = List.map (fun x -> label x, typ x) l
 end
 

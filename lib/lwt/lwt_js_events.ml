@@ -21,7 +21,6 @@
 open Js_of_ocaml
 
 let ( >>= ) = Lwt.bind
-
 let async f = Lwt.async (fun () -> Lwt_js.yield () >>= f)
 
 let make_event event_kind ?(use_capture = false) target =
@@ -545,16 +544,13 @@ let domContentLoaded =
           Lwt.return_unit )
 
 let onunload () = make_event Dom_html.Event.unload Dom_html.window
-
 let onbeforeunload () = make_event Dom_html.Event.beforeunload Dom_html.window
-
 let onresize () = make_event Dom_html.Event.resize Dom_html.window
 
 let onorientationchange () =
   make_event Dom_html.Event.orientationchange Dom_html.window
 
 let onpopstate () = make_event Dom_html.Event.popstate Dom_html.window
-
 let onhashchange () = make_event Dom_html.Event.hashchange Dom_html.window
 
 let onorientationchange_or_onresize () =
@@ -566,7 +562,6 @@ let onorientationchanges t =
   seq_loop (fun ?use_capture:_ () -> onorientationchange ()) () t
 
 let onpopstates t = seq_loop (fun ?use_capture:_ () -> onpopstate ()) () t
-
 let onhashchanges t = seq_loop (fun ?use_capture:_ () -> onhashchange ()) () t
 
 let onorientationchanges_or_onresizes t =

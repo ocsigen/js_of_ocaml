@@ -18,7 +18,6 @@
  *)
 
 type positionErrorCode
-
 type watchId
 
 class type coordinates =

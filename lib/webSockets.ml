@@ -85,9 +85,6 @@ class type webSocket =
   end
 
 let webSocket = Js.Unsafe.global##._WebSocket
-
 let webSocket_withProtocol = webSocket
-
 let webSocket_withProtocols = webSocket
-
 let is_supported () = Js.Optdef.test webSocket

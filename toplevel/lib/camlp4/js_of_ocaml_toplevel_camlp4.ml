@@ -95,7 +95,6 @@ let use_file token_stream =
   List.map Ast2pt.phrase (pl0 @ pl)
 
 let _ = Toploop.parse_toplevel_phrase := wrap toplevel_phrase
-
 let _ = Toploop.parse_use_file := wrap use_file
 
 let _ =

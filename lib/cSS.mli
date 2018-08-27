@@ -273,20 +273,15 @@ module Length : sig
   (**Conversion functions*)
 
   val string_of_t : t -> string
-
   val js : t -> js_t
-
   val ml : js_t -> t
 end
 
 module Angle : sig
   type t = Deg of float | Grad of float | Rad of float | Turns of float
-
   type js_t = private Js.js_string Js.t
 
   val string_of_t : t -> string
-
   val js : t -> js_t
-
   val ml : js_t -> t
 end

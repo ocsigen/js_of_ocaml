@@ -1,7 +1,5 @@
 let print_string _ = ()
-
 let print_int _ = ()
-
 let print_newline _ = ()
 
 (***********************************************************************)
@@ -99,9 +97,7 @@ let rec unify term1 term2 =
    obtained by parsing. We give arbitrary names v1,v2,... to their variables. *)
 
 let infixes = ["+"; "*"]
-
 let pretty_term _ = ()
-
 let pretty_close _ = ()
 
 (***********************************************************************)
@@ -155,7 +151,6 @@ let pretty_rule rule =
   print_newline ()
 
 let pretty_rules rules = List.iter pretty_rule rules
-
 (****************** Rewriting **************************)
 
 (* Top-level rewriting. Let eq:L=R be an equation, M be a term such that L<=M.
@@ -557,7 +552,6 @@ let group_precedence op1 op2 =
   if r1 = r2 then Equal else if r1 > r2 then Greater else NotGE
 
 let group_order = rpo group_precedence lex_ext
-
 let greater pair = match group_order pair with Greater -> true | _ -> false
 
 let _ =

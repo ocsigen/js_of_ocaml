@@ -1970,23 +1970,18 @@ and glyphElement =
 (* interface SVGFontFaceElement *)
 
 class type fontFaceElement = element
-
 (* interface SVGFontFaceSrcElement *)
 
 class type fontFaceSrcElement = element
-
 (* interface SVGFontFaceUriElement *)
 
 class type fontFaceUriElement = element
-
 (* interface SVGFontFaceFormatElement *)
 
 class type fontFaceFormatElement = element
-
 (* interface SVGFontFaceNameElement *)
 
 class type fontFaceNameElement = element
-
 (* interface SVGMetadataElement *)
 
 class type metadataElement = element
@@ -2019,121 +2014,66 @@ class type foreignObjectElement =
 (** {2 Helper functions for creating Svg elements} *)
 
 val createElement : document t -> string -> element t
-
 val createA : document t -> aElement t
-
 val createAltGlyph : document t -> altGlyphElement t
-
 val createAltGlyphDef : document t -> altGlyphDefElement t
-
 val createAltGlyphItem : document t -> altGlyphItemElement t
-
 val createAnimate : document t -> animateElement t
-
 val createAnimateColor : document t -> animateColorElement t
-
 val createAnimateMotion : document t -> animateMotionElement t
-
 val createAnimateTransform : document t -> animateTransformElement t
-
 val createCircle : document t -> circleElement t
-
 val createClipPath : document t -> clipPathElement t
-
 (* val createColorProfile : document t -> colorProfile t *)
 
 val createCursor : document t -> cursorElement t
-
 val createDefs : document t -> defsElement t
-
 val createDesc : document t -> descElement t
-
 val createEllipse : document t -> ellipseElement t
-
 (* val createFe* *)
 
 val createFilter : document t -> filterElement t
-
 val createFont : document t -> fontElement t
-
 val createFontFace : document t -> fontElement t
-
 val createFontFaceFormat : document t -> fontElement t
-
 val createFontFaceName : document t -> fontElement t
-
 val createFontFaceSrc : document t -> fontElement t
-
 val createFontFaceUri : document t -> fontElement t
-
 val createForeignObject : document t -> foreignObjectElement t
-
 val createG : document t -> gElement t
-
 val createGlyph : document t -> glyphElement t
-
 val createGlyphRef : document t -> glyphElement t
-
 val createhkern : document t -> element t
-
 val createImage : document t -> imageElement t
-
 val createLineElement : document t -> lineElement t
-
 val createLinearElement : document t -> linearGradientElement t
-
 (* val createMarker : document t -> markerElement *)
 
 val createMask : document t -> maskElement t
-
 val createMetaData : document t -> metadataElement t
-
 val createMissingGlyph : document t -> glyphElement t
-
 val createMPath : document t -> mPathElement t
-
 val createPath : document t -> pathElement t
-
 val createParttern : document t -> patternElement t
-
 val createPolygon : document t -> polygonElement t
-
 val createPolyline : document t -> polyLineElement t
-
 val createRadialgradient : document t -> radialGradientElement t
-
 val createRect : document t -> rectElement t
-
 val createScript : document t -> scriptElement t
-
 val createSet : document t -> setElement t
-
 val createStop : document t -> stopElement t
-
 val createStyle : document t -> styleElement t
-
 val createSvg : document t -> svgElement t
-
 val createSwitch : document t -> switchElement t
-
 val createSymbol : document t -> symbolElement t
-
 val createTextElement : document t -> textElement t
-
 val createTextpath : document t -> textPathElement t
-
 val createTitle : document t -> titleElement t
-
 val createTref : document t -> trefElement t
-
 val createTspan : document t -> tspanElement t
-
 val createUse : document t -> useElement t
-
 val createView : document t -> viewElement t
-
 val createvkern : document t -> element t
-
 (****)
 
 val svg_element : element t constr
@@ -2148,118 +2088,64 @@ val getElementById : string -> element t
 (** {2 Coercion functions} *)
 module CoerceTo : sig
   val element : #Dom.node t -> element t opt
-
   val a : #element t -> aElement t opt
-
   val altGlyph : #element t -> altGlyphElement t opt
-
   val altGlyphDef : #element t -> altGlyphDefElement t opt
-
   val altGlyphItem : #element t -> altGlyphItemElement t opt
-
   val animate : #element t -> animateElement t opt
-
   val animateColor : #element t -> animateColorElement t opt
-
   val animateMotion : #element t -> animateMotionElement t opt
-
   val animateTransform : #element t -> animateTransformElement t opt
-
   val circle : #element t -> circleElement t opt
-
   val clipPath : #element t -> clipPathElement t opt
-
   (* val ColorProfile : #element t -> colorProfile t opt *)
 
   val cursor : #element t -> cursorElement t opt
-
   val defs : #element t -> defsElement t opt
-
   val desc : #element t -> descElement t opt
-
   val ellipse : #element t -> ellipseElement t opt
-
   (* val Fe* *)
 
   val filter : #element t -> filterElement t opt
-
   val font : #element t -> fontElement t opt
-
   val fontFace : #element t -> fontElement t opt
-
   val fontFaceFormat : #element t -> fontElement t opt
-
   val fontFaceName : #element t -> fontElement t opt
-
   val fontFaceSrc : #element t -> fontElement t opt
-
   val fontFaceUri : #element t -> fontElement t opt
-
   val foreignObject : #element t -> foreignObjectElement t opt
-
   val g : #element t -> gElement t opt
-
   val glyph : #element t -> glyphElement t opt
-
   val glyphRef : #element t -> glyphElement t opt
-
   val hkern : #element t -> element t opt
-
   val image : #element t -> imageElement t opt
-
   val lineElement : #element t -> lineElement t opt
-
   val linearElement : #element t -> linearGradientElement t opt
-
   (* val Marker : #element t -> markerElement *)
 
   val mask : #element t -> maskElement t opt
-
   val metaData : #element t -> metadataElement t opt
-
   val missingGlyph : #element t -> glyphElement t opt
-
   val mPath : #element t -> mPathElement t opt
-
   val path : #element t -> pathElement t opt
-
   val parttern : #element t -> patternElement t opt
-
   val polygon : #element t -> polygonElement t opt
-
   val polyline : #element t -> polyLineElement t opt
-
   val radialgradient : #element t -> radialGradientElement t opt
-
   val rect : #element t -> rectElement t opt
-
   val script : #element t -> scriptElement t opt
-
   val set : #element t -> setElement t opt
-
   val stop : #element t -> stopElement t opt
-
   val style : #element t -> styleElement t opt
-
   val svg : #element t -> svgElement t opt
-
   val switch : #element t -> switchElement t opt
-
   val symbol : #element t -> symbolElement t opt
-
   val textElement : #element t -> textElement t opt
-
   val textpath : #element t -> textPathElement t opt
-
   val title : #element t -> titleElement t opt
-
   val tref : #element t -> trefElement t opt
-
   val tspan : #element t -> tspanElement t opt
-
   val use : #element t -> useElement t opt
-
   val view : #element t -> viewElement t opt
-
   val vkern : #element t -> element t opt
 end

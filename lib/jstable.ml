@@ -20,7 +20,6 @@
 type 'a t = < > Js.t
 
 let obj = Js.Unsafe.global##._Object
-
 let create () : 'a t = new%js obj
 
 let add (t : 'a t) (k : Js.js_string Js.t) (v : 'a) =
