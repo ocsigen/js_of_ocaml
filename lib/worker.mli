@@ -19,42 +19,56 @@
 
 (** Low-level bindgins to javascript Web Workers.
 
-    See {{:https://developer.mozilla.org/en-US/docs/Web/API/Worker}
-    the documented Javascript API} and some more general documentation
+    See {{:https://developer.mozilla.org/en-US/docs/Web/API/Worker} the
+    documented Javascript API} and some more general documentation
     {{:https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers}
-    about the usage of WebWorker}.
-
- *)
+    about the usage of WebWorker}. *)
 
 open Js
 open Dom_html
 
-class type ['a, 'b] worker = object ('self)
-  inherit eventTarget
-  method onerror: ('self t, errorEvent t) event_listener writeonly_prop
-  method onmessage: ('self t, 'b messageEvent t) event_listener writeonly_prop
-  method postMessage: 'a -> unit meth
-  method terminate: unit meth
-end
+class type ['a, 'b] worker =
+  object ('self)
+    inherit eventTarget
 
-and errorEvent = object
-  inherit event
-  method msg: js_string t readonly_prop
-  method filename: js_string t readonly_prop
-  method lineno: int t readonly_prop
-  method colno: int t readonly_prop
-  method error: Unsafe.any -> unit meth
-end
+    method onerror : ('self t, errorEvent t) event_listener writeonly_prop
 
-and ['a] messageEvent = object
-  inherit event
-  method data: 'a readonly_prop
-end
+    method onmessage :
+      ('self t, 'b messageEvent t) event_listener writeonly_prop
 
-val create: string -> ('a, 'b) worker t
+    method postMessage : 'a -> unit meth
+
+    method terminate : unit meth
+  end
+
+and errorEvent =
+  object
+    inherit event
+
+    method msg : js_string t readonly_prop
+
+    method filename : js_string t readonly_prop
+
+    method lineno : int t readonly_prop
+
+    method colno : int t readonly_prop
+
+    method error : Unsafe.any -> unit meth
+  end
+
+and ['a] messageEvent =
+  object
+    inherit event
+
+    method data : 'a readonly_prop
+  end
+
+val create : string -> ('a, 'b) worker t
 
 (** {2 Global function to be used by the worker.} *)
 
-val import_scripts: string list -> unit
-val set_onmessage: ('a -> unit) -> unit
-val post_message: 'a -> unit
+val import_scripts : string list -> unit
+
+val set_onmessage : ('a -> unit) -> unit
+
+val post_message : 'a -> unit

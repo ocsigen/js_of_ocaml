@@ -16,20 +16,35 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
+ *)
 
-val parse_file : string ->
-  ((Parse_info.t option * string * Jsoo_primitive.kind * Jsoo_primitive.kind_arg list option) option * (* provide *)
-   string list * (* require *)
-   ((int -> int -> bool) * string) list list * (* version constraint *)
-   bool *
-   Javascript.program) list
+val parse_file :
+     string
+  -> ( ( Parse_info.t option
+       * string
+       * Jsoo_primitive.kind
+       * Jsoo_primitive.kind_arg list option )
+       option
+     * (* provide *)
+     string list
+     * (* require *)
+     ((int -> int -> bool) * string) list list
+     * (* version constraint *)
+       bool
+     * Javascript.program )
+     list
 
 val load_files : string list -> unit
 
 type state
+
 val init : unit -> state
-val resolve_deps : ?linkall:bool -> state -> Util.StringSet.t -> state * Util.StringSet.t
+
+val resolve_deps :
+  ?linkall:bool -> state -> Util.StringSet.t -> state * Util.StringSet.t
+
 val link : Javascript.program -> state -> Javascript.program
+
 val get_provided : unit -> Util.StringSet.t
+
 val all : state -> string list

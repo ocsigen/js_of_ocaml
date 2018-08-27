@@ -18,36 +18,35 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*
-type 'a flat = Void | Known of 'a | Unknown
+(* type 'a flat = Void | Known of 'a | Unknown
 
-type v =
-  | Blk of t list
-  | Cst of int
+   type v = | Blk of t list | Cst of int
 
-and t = Code.Var.t flat * v flat
+   and t = Code.Var.t flat * v flat
 
-val approx_to_string : t -> string
+   val approx_to_string : t -> string
 
-val get_field : t -> int -> t
+   val get_field : t -> int -> t
 
-val get_const : t -> int option
+   val get_const : t -> int option
 
-val get_label : t -> Code.Var.t option
-
-*)
+   val get_label : t -> Code.Var.t option *)
 
 type def = Phi of Code.VarSet.t | Expr of Code.expr | Param
 
-type info = {
-  info_defs:def array;
-  info_known_origins : Code.VarSet.t Code.VarTbl.t;
-  info_maybe_unknown : bool Code.VarTbl.t;
-  info_possibly_mutable : bool array;
-}
+type info =
+  { info_defs: def array
+  ; info_known_origins: Code.VarSet.t Code.VarTbl.t
+  ; info_maybe_unknown: bool Code.VarTbl.t
+  ; info_possibly_mutable: bool array }
 
-val get_approx : info -> (Code.VarSet.elt -> 'b) ->
-           'b -> ('b -> 'b -> 'b) -> Code.VarTbl.key -> 'b
+val get_approx :
+     info
+  -> (Code.VarSet.elt -> 'b)
+  -> 'b
+  -> ('b -> 'b -> 'b)
+  -> Code.VarTbl.key
+  -> 'b
 
 val the_def_of : info -> Code.prim_arg -> Code.expr option
 

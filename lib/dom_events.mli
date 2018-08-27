@@ -20,14 +20,11 @@
 
 (** Javascript events *)
 
-module Typ :
-  sig
-    include module type of Dom_html.Event
-  end
-
+module Typ : sig
+  include module type of Dom_html.Event
+end
 
 type listener
-
 
 val listen :
      ?capture:bool
@@ -35,6 +32,5 @@ val listen :
   -> (#Dom_html.event as 'b) Js.t Typ.typ
   -> ('a Js.t -> 'b Js.t -> bool)
   -> listener
-
 
 val stop_listen : listener -> unit

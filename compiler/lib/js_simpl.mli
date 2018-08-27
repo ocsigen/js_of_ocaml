@@ -21,15 +21,18 @@
 open Javascript
 
 val if_statement :
-  expression -> location ->
-  statement * location -> bool -> statement * location -> bool ->
-  (statement * location) list
+     expression
+  -> location
+  -> statement * location
+  -> bool
+  -> statement * location
+  -> bool
+  -> (statement * location) list
 
 val get_variable : Code.VarSet.t -> expression -> Code.VarSet.t
 
 val block :
-  (Javascript.statement * location) list ->
-  Javascript.statement * location
+  (Javascript.statement * location) list -> Javascript.statement * location
+
 val unblock :
-  Javascript.statement * location ->
-  (Javascript.statement * location) list
+  Javascript.statement * location -> (Javascript.statement * location) list

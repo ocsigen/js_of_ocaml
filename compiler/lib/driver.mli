@@ -21,16 +21,20 @@
 type profile
 
 val f :
-  ?standalone:bool ->
-  ?global:[`Auto | `Function | `Bind_to of string | `Custom of string ] ->
-  ?profile:profile ->
-  ?dynlink:bool ->
-  ?linkall:bool ->
-  ?source_map:(string option * Source_map.t) ->
-  ?custom_header:string ->
-  Pretty_print.t -> Parse_bytecode.Debug.data -> Code.program -> unit
+     ?standalone:bool
+  -> ?global:[`Auto | `Function | `Bind_to of string | `Custom of string]
+  -> ?profile:profile
+  -> ?dynlink:bool
+  -> ?linkall:bool
+  -> ?source_map:string option * Source_map.t
+  -> ?custom_header:string
+  -> Pretty_print.t
+  -> Parse_bytecode.Debug.data
+  -> Code.program
+  -> unit
 
 val from_string : string array -> string -> Pretty_print.t -> unit
 
 val profiles : (int * profile) list
+
 val profile : int -> profile option

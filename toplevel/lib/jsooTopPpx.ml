@@ -21,25 +21,23 @@ let ppx_rewriters = ref []
 
 let () =
   Ast_mapper.register_function :=
-    (fun _ f -> ppx_rewriters := f :: !ppx_rewriters)
+    fun _ f -> ppx_rewriters := f :: !ppx_rewriters
 
 let preprocess_structure str =
   let open Ast_mapper in
   List.fold_right
     (fun ppx_rewriter str ->
-       let mapper = ppx_rewriter [] in
-       mapper.structure mapper str)
-    !ppx_rewriters
-    str
+      let mapper = ppx_rewriter [] in
+      mapper.structure mapper str )
+    !ppx_rewriters str
 
 let preprocess_signature str =
   let open Ast_mapper in
   List.fold_right
     (fun ppx_rewriter str ->
-       let mapper = ppx_rewriter [] in
-       mapper.signature mapper str)
-    !ppx_rewriters
-    str
+      let mapper = ppx_rewriter [] in
+      mapper.signature mapper str )
+    !ppx_rewriters str
 
 let preprocess_phrase phrase =
   let open Parsetree in

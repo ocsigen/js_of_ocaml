@@ -20,19 +20,27 @@
 (** Helper for Js_of_ocaml Toplevel. *)
 open Format
 
-(** [use fmt content] Execute commands [content]. It does not print types nor values. *)
+(** [use fmt content] Execute commands [content]. It does not print types nor
+    values. *)
 val use : formatter -> string -> bool
 
-(** [execute print fmt content] Execute [content].
-    [print] says whether the values and types of the results should be printed.
-    [pp_code] formatter can be use to output ocaml source during lexing. *)
-val execute : bool -> ?pp_code:formatter -> ?highlight_location:(Location.t -> unit) ->
-	      formatter -> string -> unit
+(** [execute print fmt content] Execute [content]. [print] says whether the
+    values and types of the results should be printed. [pp_code] formatter can
+    be use to output ocaml source during lexing. *)
+val execute :
+     bool
+  -> ?pp_code:formatter
+  -> ?highlight_location:(Location.t -> unit)
+  -> formatter
+  -> string
+  -> unit
 
 (** Initialize Js_of_ocaml toplevel. *)
 val initialize : unit -> unit
 
 (**/**)
+
 val get_camlp4_syntaxes : unit -> string list
-val register_camlp4_syntax : string ->
-  (((string * (unit -> unit)) -> unit) -> unit)-> unit
+
+val register_camlp4_syntax :
+  string -> ((string * (unit -> unit) -> unit) -> unit) -> unit

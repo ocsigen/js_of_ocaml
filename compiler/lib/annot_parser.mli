@@ -22,12 +22,12 @@
 type token =
   | TWeakdef
   | TVersion
-  | TVNum of (string)
+  | TVNum of string
   | TSemi
   | TRequires
   | TProvides
-  | TOTHER of (string)
-  | TIdent of (string)
+  | TOTHER of string
+  | TIdent of string
   | TComma
   | TA_Shallow
   | TA_Pure
@@ -51,4 +51,4 @@ exception Error
 
 (* The monolithic API. *)
 
-val annot: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Jsoo_primitive.t)
+val annot : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> Jsoo_primitive.t

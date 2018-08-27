@@ -15,54 +15,53 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
+ *)
 
 (** Javascript binding for Graphics lib *)
 
 open Js_of_ocaml
+
 include module type of Graphics
 
 (** {6 Initializations} *)
 
-type context
 (** type of a graphic context *)
+type context
 
+(** Open a graphics window. The graphics window is cleared and the current
+    point is set to (0, 0). The string argument is used to pass optional
+    information on the desired graphics mode, the graphics window size, and so
+    on. Specification can be found at
+    http://www.w3schools.com/jsref/met_win_open.asp. Note: an extra
+    specification is available, "target", to specifies the target attribute or
+    the name of the window. *)
 val open_graph : string -> unit
-(** Open a graphics window.
-    The graphics window is cleared and the current point is set
-    to (0, 0). The string argument is used to pass optional
-    information on the desired graphics mode, the graphics window
-    size, and so on. Specification can be found at
-    http://www.w3schools.com/jsref/met_win_open.asp.
-    Note: an extra specification is available, "target",
-    to specifies the target attribute or the name of the window. *)
 
-val open_canvas : Dom_html.canvasElement Js.t -> unit
 (** use a canvas to setup the current context *)
+val open_canvas : Dom_html.canvasElement Js.t -> unit
 
-val get_context : unit -> context
 (** Get the current context *)
+val get_context : unit -> context
 
-val set_context : context -> unit
 (** Set the current context *)
+val set_context : context -> unit
 
 (** {6 Mouse and keyboard events} *)
 
-val loop : event list -> (status -> unit) -> unit
 (** Loops forever and listen to the given events. Those events automatically
     returns a status record, which is used by the function given in argument. *)
+val loop : event list -> (status -> unit) -> unit
 
 (** {6 Mouse and keyboard polling} *)
 
+(** Return the position of the mouse cursor, relative to the graphics window.
+    If the mouse cursor is outside of the graphics window, [mouse_pos()]
+    returns a point outside of the range [0..size_x()-1, 0..size_y()-1]. *)
 val mouse_pos : unit -> (int * int) Lwt.t
-(** Return the position of the mouse cursor, relative to the
-   graphics window. If the mouse cursor is outside of the graphics
-   window, [mouse_pos()] returns a point outside of the range
-   [0..size_x()-1, 0..size_y()-1]. *)
 
-val button_down : unit -> bool Lwt.t
 (** Return [true] if the mouse button is pressed, [false] otherwise. *)
+val button_down : unit -> bool Lwt.t
 
+(** Wait for a key to be pressed, and return the corresponding character.
+    Keypresses are queued. *)
 val read_key : unit -> char Lwt.t
-(** Wait for a key to be pressed, and return the corresponding
-    character. Keypresses are queued. *)

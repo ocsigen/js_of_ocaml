@@ -17,19 +17,24 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
 module Debug : sig
   type data
+
   val create : unit -> data
+
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
+
   val is_empty : data -> bool
 end
 
 val from_channel :
-  ?includes: string list ->
-  ?toplevel:bool -> ?expunge:(string -> [`Keep | `Skip]) ->
-  ?dynlink:bool -> ?debug:[`Full | `Names | `No] -> in_channel ->
-  Code.program * Util.StringSet.t * Debug.data * bool
+     ?includes:string list
+  -> ?toplevel:bool
+  -> ?expunge:(string -> [`Keep | `Skip])
+  -> ?dynlink:bool
+  -> ?debug:[`Full | `Names | `No]
+  -> in_channel
+  -> Code.program * Util.StringSet.t * Debug.data * bool
 
 val from_string : string array -> string -> Code.program * Debug.data
 

@@ -18,7 +18,9 @@
  *)
 
 val initial :
-  (Lexing.lexbuf -> Parse_info.t) ->
-  Js_token.token option -> Lexing.lexbuf -> Js_token.token
+     (Lexing.lexbuf -> Parse_info.t)
+  -> Js_token.token option
+  -> Lexing.lexbuf
+  -> Js_token.token
 
 val pos : Lexing.lexbuf -> string * int

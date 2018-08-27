@@ -15,14 +15,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
+ *)
 
 (** Cast to and from Tyxml types *)
 
 open Js_of_ocaml
 
-module MakeTo( C : sig type 'a elt val elt : 'a elt -> Dom.node Js.t end) :
-  Tyxml_cast_sigs.TO with type 'a elt = 'a C.elt
+module MakeTo (C : sig
+  type 'a elt
 
-module MakeOf( C : sig type 'a elt val elt : Dom.node Js.t -> 'a elt end) :
-  Tyxml_cast_sigs.OF with type 'a elt = 'a C.elt
+  val elt : 'a elt -> Dom.node Js.t
+end) : Tyxml_cast_sigs.TO with type 'a elt = 'a C.elt
+
+module MakeOf (C : sig
+  type 'a elt
+
+  val elt : Dom.node Js.t -> 'a elt
+end) : Tyxml_cast_sigs.OF with type 'a elt = 'a C.elt

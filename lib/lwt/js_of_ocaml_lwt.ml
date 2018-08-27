@@ -28,7 +28,5 @@ module File = struct
 end
 
 module Jsonp = Lwt_jsonp
-
 module Lwt_js = Lwt_js
-
 module Lwt_js_events = Lwt_js_events

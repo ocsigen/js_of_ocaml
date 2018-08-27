@@ -17,10 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-
 let () =
   let findlib_init = lazy (Findlib.init ()) in
   Js_of_ocaml_compiler.Util.set_find_pkg_dir (fun pkg ->
-    Lazy.force findlib_init;
-    Findlib.package_directory pkg)
-;;
+      Lazy.force findlib_init ;
+      Findlib.package_directory pkg )

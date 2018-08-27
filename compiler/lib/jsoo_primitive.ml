@@ -20,33 +20,36 @@
 
 let aliases = Hashtbl.create 17
 
-let rec resolve nm = try resolve (Hashtbl.find aliases nm) with Not_found -> nm
+let rec resolve nm =
+  try resolve (Hashtbl.find aliases nm) with Not_found -> nm
 
 (****)
 
-type kind = [ `Pure | `Mutable | `Mutator ]
+type kind = [`Pure | `Mutable | `Mutator]
+
 type kind_arg = [`Shallow_const | `Object_literal | `Const | `Mutable]
-type t = [
-  | `Requires of Parse_info.t option * string list
+
+type t =
+  [ `Requires of Parse_info.t option * string list
   | `Provides of Parse_info.t option * string * kind * kind_arg list option
   | `Version of Parse_info.t option * ((int -> int -> bool) * string) list
-  | `Weakdef of Parse_info.t option
-]
+  | `Weakdef of Parse_info.t option ]
 
 let kinds = Hashtbl.create 37
-let kind_args_tbl = Hashtbl.create 37
-let arities = Hashtbl.create 37
 
+let kind_args_tbl = Hashtbl.create 37
+
+let arities = Hashtbl.create 37
 
 let kind nm = try Hashtbl.find kinds (resolve nm) with Not_found -> `Mutator
 
-let kind_args nm = try Some (Hashtbl.find kind_args_tbl (resolve nm)) with Not_found -> None
+let kind_args nm =
+  try Some (Hashtbl.find kind_args_tbl (resolve nm)) with Not_found -> None
 
 let arity nm = Hashtbl.find arities (resolve nm)
 
 let has_arity nm a =
-  try Hashtbl.find arities (resolve nm) = a
-  with Not_found -> false
+  try Hashtbl.find arities (resolve nm) = a with Not_found -> false
 
 let is_pure nm = kind nm <> `Mutator
 
@@ -63,16 +66,13 @@ let is_external name = StringSet.mem name !externals
 let get_external () = !externals
 
 let register p k kargs arity =
-  add_external p;
-  (match arity with Some a -> Hashtbl.add arities p a | _ -> ());
-  (match kargs with Some k -> Hashtbl.add kind_args_tbl p k | _ -> ());
+  add_external p ;
+  (match arity with Some a -> Hashtbl.add arities p a | _ -> ()) ;
+  (match kargs with Some k -> Hashtbl.add kind_args_tbl p k | _ -> ()) ;
   Hashtbl.add kinds p k
 
 let alias nm nm' =
-  add_external nm';
-  add_external nm;
-  Hashtbl.add aliases nm nm'
-
+  add_external nm' ; add_external nm ; Hashtbl.add aliases nm nm'
 
 let named_values = ref StringSet.empty
 

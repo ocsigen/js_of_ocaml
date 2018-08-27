@@ -24,7 +24,7 @@ module Typ = Dom_html.Event
 
 type listener = Dom_html.event_listener_id
 
-let listen ?(capture=false) target typ cb =
+let listen ?(capture = false) target typ cb =
   Dom_html.addEventListener target typ
     (Dom_html.full_handler (fun n e -> Js.bool (cb n e)))
     (Js.bool capture)

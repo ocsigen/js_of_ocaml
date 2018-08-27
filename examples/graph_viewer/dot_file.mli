@@ -23,13 +23,12 @@ type attr_type = [`Graph | `Edge | `Node]
 
 type attributes = (string * string) list
 
-type node = { name : string; port : string option }
+type node = {name: string; port: string option}
 
-type graph = { graph_name : string option; body : statement list }
+type graph = {graph_name: string option; body: statement list}
 
 and compound = [`Node of node | `Graph of graph] list * attributes
 
-and statement =
-  [`Attributes of attr_type * attributes | `Compound of compound]
+and statement = [`Attributes of attr_type * attributes | `Compound of compound]
 
-type t = { kind : kind; strict : bool; graph : graph }
+type t = {kind: kind; strict: bool; graph: graph}

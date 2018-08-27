@@ -1,4 +1,3 @@
-
 (* The type of tokens. *)
 
 type token = Js_token.token
@@ -9,6 +8,7 @@ exception Error
 
 (* The monolithic API. *)
 
-val standalone_expression: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Javascript.expression)
+val standalone_expression :
+  (Lexing.lexbuf -> token) -> Lexing.lexbuf -> Javascript.expression
 
-val program: (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (Javascript.program)
+val program : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> Javascript.program

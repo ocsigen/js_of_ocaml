@@ -109,23 +109,18 @@ type token =
   | TComment of (Parse_info.t * string)
   | EOF of Parse_info.t
 
-
-
 let info_of_tok = function
-  | TUnknown (ii,_) -> ii
-
-  | TCommentSpace (ii,_) -> ii
-  | TCommentNewline (ii,_) -> ii
-  | TComment (ii,_) -> ii
-  | TCommentML (ii,_) -> ii
+  | TUnknown (ii, _) -> ii
+  | TCommentSpace (ii, _) -> ii
+  | TCommentNewline (ii, _) -> ii
+  | TComment (ii, _) -> ii
+  | TCommentML (ii, _) -> ii
   | EOF ii -> ii
   | T_DEBUGGER ii -> ii
-
-  | T_NUMBER (_, _,ii) -> ii
+  | T_NUMBER (_, _, ii) -> ii
   | T_IDENTIFIER (_, ii) -> ii
   | T_STRING (_, ii) -> ii
   | T_REGEX (_, ii) -> ii
-
   | T_FUNCTION ii -> ii
   | T_IF ii -> ii
   | T_IN ii -> ii
@@ -206,23 +201,18 @@ let info_of_tok = function
   | T_VOID ii -> ii
   | T_VIRTUAL_SEMICOLON ii -> ii
 
-
 let string_of_tok = function
-  | TUnknown (_,_) -> "COMMENT"
-
-  | TCommentSpace (_,_) -> "COMMENT"
-  | TCommentNewline (_,_) -> "COMMENT"
-  | TComment (_,_) -> "COMMENT"
-  | TCommentML (_,_) -> "COMMENT"
+  | TUnknown (_, _) -> "COMMENT"
+  | TCommentSpace (_, _) -> "COMMENT"
+  | TCommentNewline (_, _) -> "COMMENT"
+  | TComment (_, _) -> "COMMENT"
+  | TCommentML (_, _) -> "COMMENT"
   | EOF _ -> "EOF"
-
   | T_DEBUGGER _ -> "DEBUGGER"
-
-  | T_NUMBER (_, _,_) -> "T_NUMBER"
+  | T_NUMBER (_, _, _) -> "T_NUMBER"
   | T_IDENTIFIER (_, _) -> "T_IDENTIFIER"
   | T_STRING (_, _) -> "T_STRING"
   | T_REGEX (_, _) -> "T_REGEX"
-
   | T_FUNCTION _ -> " T_FUNCTION"
   | T_IF _ -> "T_IF"
   | T_IN _ -> "T_IN"
@@ -304,8 +294,5 @@ let string_of_tok = function
   | T_VIRTUAL_SEMICOLON _ -> "T_VIRTUAL"
 
 let is_comment = function
-  | TCommentSpace _
-  | TCommentNewline _
-  | TComment _
-  | TCommentML _ -> true
+  | TCommentSpace _ | TCommentNewline _ | TComment _ | TCommentML _ -> true
   | _ -> false

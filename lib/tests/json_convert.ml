@@ -20,66 +20,44 @@
 
 (* Json conversion *)
 open! Common
-(*
-let log_stop = log_start "Json"
 
-let str =
-  let b = Buffer.create 256 in
-  for i = 0 to 255 do
-    Buffer.add_char b (Char.chr i)
-  done;
-  Buffer.contents b
+(* let log_stop = log_start "Json"
 
-type t = int list * float option * string [@@deriving json]
+   let str = let b = Buffer.create 256 in for i = 0 to 255 do Buffer.add_char b
+   (Char.chr i) done; Buffer.contents b
 
-let test t v =
-  if v = Json.unsafe_input (Json.output v)
-  then log_success ()
-  else log_failure "Not equal";
-  if v = Deriving_Json.from_string t (Js.to_string (Json.output v))
-  then log_success ()
-  else log_failure "Not equal";
-  if v = Json.unsafe_input (Js.string (Deriving_Json.to_string t v))
-  then log_success ()
-  else log_failure "Not equal";
-  if v = Deriving_Json.from_string t (Deriving_Json.to_string t v)
-  then log_success ()
-  else log_failure "Not equal"
+   type t = int list * float option * string [@@deriving json]
 
-let _ = test Json.t<t> ([1;2;3], Some 1., str)
+   let test t v = if v = Json.unsafe_input (Json.output v) then log_success ()
+   else log_failure "Not equal"; if v = Deriving_Json.from_string t
+   (Js.to_string (Json.output v)) then log_success () else log_failure "Not
+   equal"; if v = Json.unsafe_input (Js.string (Deriving_Json.to_string t v))
+   then log_success () else log_failure "Not equal"; if v =
+   Deriving_Json.from_string t (Deriving_Json.to_string t v) then log_success
+   () else log_failure "Not equal"
 
-type intseq = Z | S of int * intseq [@@deriving json]
+   let _ = test Json.t<t> ([1;2;3], Some 1., str)
 
-let _ = test Json.t<intseq> (S (1, S (2, S (3, Z))))
+   type intseq = Z | S of int * intseq [@@deriving json]
 
-type 'a seq = ZZ | SS of 'a * 'a seq [@@deriving json]
+   let _ = test Json.t<intseq> (S (1, S (2, S (3, Z))))
 
-let _ = test Json.t<int seq> (SS (1, SS (2, SS (3, ZZ))))
+   type 'a seq = ZZ | SS of 'a * 'a seq [@@deriving json]
 
+   let _ = test Json.t<int seq> (SS (1, SS (2, SS (3, ZZ))))
 
-module T = struct
+   module T = struct
 
-  type 'a t = (string * 'a) array [@@deriving json]
+   type 'a t = (string * 'a) array [@@deriving json]
 
-  module StringMap = Map.Make(String)
-  module Json_string_map_t(A : Deriving_Json.Json) : Deriving_Json.Json = struct
-    module S = Json_t(A)
-    include Deriving_Json.Convert(struct
-        type a = A.a t
-        type b = A.a StringMap.t
-        let t = S.t
-        let to_ : b -> A.a t = fun a -> Array.of_list (StringMap.bindings a)
-        let from_ : A.a t -> b = fun l ->
-          Array.fold_left
-            (fun map (x,v) -> StringMap.add x v map)
-            StringMap.empty
-            l
-      end)
-  end
-end
+   module StringMap = Map.Make(String) module Json_string_map_t(A :
+   Deriving_Json.Json) : Deriving_Json.Json = struct module S = Json_t(A)
+   include Deriving_Json.Convert(struct type a = A.a t type b = A.a StringMap.t
+   let t = S.t let to_ : b -> A.a t = fun a -> Array.of_list
+   (StringMap.bindings a) let from_ : A.a t -> b = fun l -> Array.fold_left
+   (fun map (x,v) -> StringMap.add x v map) StringMap.empty l end) end end
 
-(* module T2 = T.Json_string_map_t(Json_t);; *)
-(* type u = int StringMap.t deriving (Json) *)
+   (* module T2 = T.Json_string_map_t(Json_t);; *) (* type u = int StringMap.t
+   deriving (Json) *)
 
-let () = log_stop()
-*)
+   let () = log_stop() *)
