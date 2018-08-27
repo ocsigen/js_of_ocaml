@@ -67,6 +67,10 @@ function caml_str_repeat(n, s) {
 
 //Provides: caml_subarray_to_string
 //Requires: raw_array_sub
+//Weakdef
+// Pre ECMAScript 5, [apply] would not support array-like object.
+// In such setup, Typed_array would be implemented as polyfill, and [f.apply] would
+// fail here. Mark the primitive as Weakdef, so that people can override it easily.
 function caml_subarray_to_string (a, i, len) {
   var f = String.fromCharCode;
   if (i == 0 && len <= 4096 && len == a.length) return f.apply (null, a);
