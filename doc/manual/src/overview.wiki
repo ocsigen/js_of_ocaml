@@ -27,7 +27,7 @@ Js_of_ocaml is composed of multiple packages:
 
 == Installation ==
 === Requirements ==
-* Jbuilder
+* dune
 * Cmdliner, cppo (for the compiler)
 * ppx_tools_versioned, ocaml-migrate-parsetree (for the js_of_ocaml base library)
 
@@ -72,10 +72,10 @@ Optional dependencies:
 === with oasis ===
   TODO
 
-=== with jbuilder ===
+=== with dune ===
   Jbuider has native support for js_of_ocaml.
   It support both standard and separate compilation of javascript
-  files. See http://jbuilder.readthedocs.io/en/latest/usage.html?highlight=js_of_ocaml
+  files. See https://dune.readthedocs.io/en/latest/jsoo.html
 
 You can find an OCaml toplevel runing in the browser <<a_file src="toplevel/index.html" |here>>. See also <<a_manual chapter="quickstart" |Quickstart>>.
 

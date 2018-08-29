@@ -7,10 +7,10 @@ dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 
 version: "dev"
 
-build: [["jbuilder" "build" "-p" name "-j" jobs]]
+build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build & >= "1.0+beta17"}
+  "dune" {build}
   "js_of_ocaml"
   "ppx_tools"
   "ppx_deriving"

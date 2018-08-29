@@ -1,10 +1,10 @@
 VERSION := $(shell head -n 1 VERSION)
 
 all:
-	jbuilder build @install @DEFAULT -j 8 --dev
+	dune build @install @DEFAULT -j 8
 
 tests:
-	jbuilder runtest --dev
+	dune runtest
 
 test runtest runtests: tests
 
@@ -12,13 +12,13 @@ doc: all
 	$(MAKE) -C doc
 
 promote:
-	jbuilder promote
+	dune promote
 
 toplevel-examples: all
-	jbuilder exec -- make -C toplevel/examples/lwt_toplevel_bin
+	dune exec -- make -C toplevel/examples/lwt_toplevel_bin
 
 clean:
-	jbuilder clean
+	dune clean
 	$(MAKE) -C toplevel/examples/lwt_toplevel_bin clean
 	$(MAKE) -C doc clean
 

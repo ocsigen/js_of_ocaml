@@ -6,7 +6,7 @@ install:
 
 build_script:
   - cd "%APPVEYOR_BUILD_FOLDER%"
-  - jbuilder build @install @DEFAULT -j 8 --dev
+  - dune build @install @DEFAULT -j 8
 
 artifacts:
   - path: _build/log

@@ -8,10 +8,10 @@ dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 name: "js_of_ocaml"
 version: "dev"
 
-build: [["jbuilder" "build" "-p" name "-j" jobs]]
+build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "jbuilder" {build & >= "1.0+beta17"}
+  "dune" {build}
   "ocaml-migrate-parsetree"
   "ppx_tools_versioned"
   "uchar"

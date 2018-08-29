@@ -1,7 +1,7 @@
 ;; Install the following opam switches, copy this file as
 ;; jbuild-workspace and run:
 ;;
-;; $ jbuilder build @install
+;; $ dune build @install
 ;;
 ;; This will build js_of_ocaml against all these version of OCaml
 
