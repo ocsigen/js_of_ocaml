@@ -1,0 +1,15 @@
+(library
+  (name ppx_js)
+  (public_name js_of_ocaml-ppx)
+  (synopsis "Js_of_ocaml ppx")
+  (libraries compiler-libs.common
+             ocaml-migrate-parsetree
+             ppx_tools_versioned)
+  (ppx_runtime_libraries js_of_ocaml)
+  (kind ppx_rewriter)
+  (preprocess (pps ppx_tools_versioned.metaquot_406)))
+
+
+(rule
+  (targets ppx_js_internal.ml)
+  (action (copy %{dep:../lib_internal/ppx_js_internal.ml} %{targets})))

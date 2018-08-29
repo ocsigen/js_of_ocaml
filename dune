@@ -1,0 +1,22 @@
+(* -*- tuareg -*- *)
+open Jbuild_plugin.V1
+let git_version =
+  if not (try Sys.is_directory ".git" with _ -> false)
+  then ""
+  else
+    match run_and_read_lines "git log -n1 --pretty=format:%h" with
+    | version :: _ -> version
+    | [] -> ""
+
+let version =
+  let ic = open_in "VERSION" in
+  let version = input_line ic in
+  close_in ic;
+  version
+
+let () = send @@ Printf.sprintf {|
+(rule
+  (targets version.ml.in)
+  (action (with-stdout-to %%{targets}
+           (echo "let s = \"%s\"\nlet git_version = \"%s\""))))
+|} version git_version

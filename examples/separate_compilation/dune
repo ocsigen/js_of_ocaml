@@ -1,0 +1,40 @@
+(rule
+  (targets main.js)
+  (action
+    (run %{bin:js_of_ocaml} --noruntime %{lib:js_of_ocaml-compiler:runtime.js}
+         --source-map %{dep:main.bc} -o %{targets} --pretty)))
+
+(rule
+  (targets module1.cmo module1.cmi)
+  (action (run ocamlc -g -c %{dep:module1.ml})))
+
+(rule
+  (targets module2.cmo module2.cmi)
+  (deps module1.cmi)
+  (action (run ocamlc -g -c %{dep:module2.ml})))
+
+(rule
+  (targets module1.js)
+  (action (run %{bin:js_of_ocaml} --noruntime --pretty --source-map %{dep:module1.cmo} -o %{targets})))
+
+(rule
+  (targets module2.js)
+  (action (run %{bin:js_of_ocaml} --noruntime --pretty --source-map %{dep:module2.cmo} -o %{targets})))
+
+(rule
+  (targets stdlib.js)
+  (action (run %{bin:js_of_ocaml} --noruntime --pretty --source-map %{lib:stdlib:stdlib.cma} -o %{targets})))
+
+(rule
+  (targets myruntime.js)
+  (action (run %{bin:js_of_ocaml} --noruntime --pretty --source-map --runtime-only
+           %{lib:js_of_ocaml-compiler:runtime.js}
+           -o %{targets})))
+
+(rule
+  (targets bin.js)
+  (action (run %{bin:jsoo_link} %{dep:myruntime.js} %{dep:stdlib.js} %{dep:module1.js} %{dep:module2.js} -o %{targets})))
+
+(alias
+  (name DEFAULT)
+  (deps myruntime.js stdlib.js module1.js module2.js bin.js index.html))

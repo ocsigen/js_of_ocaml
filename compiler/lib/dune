@@ -1,0 +1,48 @@
+(library
+  (name js_of_ocaml_compiler)
+  (public_name js_of_ocaml-compiler)
+  (synopsis "Js_of_ocaml compiler library")
+  (libraries compiler-libs.common bytes
+   (select source_map_io.ml from
+    (yojson -> source_map_yojson.ml.in)
+    (       -> source_map_unsupported.ml.in))
+  )
+  (flags (:standard -w -7-37 -safe-string))
+  (modules (:standard \ control))
+  )
+
+(rule
+  (targets js_lexer.ml)
+  (mode fallback)
+  (action (chdir %{workspace_root} (run %{bin:ocamllex} -q -o %{dep:js_lexer.mll}))))
+
+(rule
+  (targets annot_lexer.ml)
+  (mode fallback)
+  (action  (chdir %{workspace_root} (run %{bin:ocamllex} -q -o %{dep:annot_lexer.mll}))))
+
+;; menhir is just noisy, both because this parser has conflicts, or
+;; because we don't use --infer (to avoid having to write  manually and
+;; badly specified dependencieds), so we just discard stderr.
+(rule
+ (targets js_parser.mli js_parser.ml)
+ (mode fallback)
+ (action (ignore-stderr (run menhir --external-tokens Js_token --explain %{dep:js_parser.mly}))))
+
+(rule
+ (targets annot_parser.mli annot_parser.ml)
+ (mode fallback)
+ (action (ignore-stderr (run menhir --explain %{dep:annot_parser.mly}))))
+
+(rule
+ (targets util.ml)
+ (action (run %{bin:cppo} -V OCAML:%{ocaml_version}
+          ;; Uncomment for bucklescript support
+          ;; -D BUCKLESCRIPT
+          %{dep:util.cppo.ml} -o %{targets}))
+ )
+
+(rule
+ (targets compiler_version.ml)
+ (deps (:input-file ../../version.ml.in))
+ (action (copy %{input-file} %{targets})))

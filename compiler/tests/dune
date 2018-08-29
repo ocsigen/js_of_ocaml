@@ -1,0 +1,14 @@
+(executable
+ (name main))
+
+(rule
+  (targets main.js)
+  (action  (run %{bin:js_of_ocaml}
+                  --enable with-js-error
+                  --no-runtime %{lib:js_of_ocaml-compiler:runtime.js}
+                  %{dep:main.bc} -o %{targets}))
+ )
+
+(alias
+  (name runtest)
+  (action (run node %{dep:main.js})))

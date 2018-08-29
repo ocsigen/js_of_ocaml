@@ -1,4 +1,4 @@
-# JBUILDER_GEN
+# DUNE_GEN
 
 linkopts(javascript,-jsoo_noruntime) = "+js_of_ocaml-compiler/runtime.js"
 linkopts(javascript,jsoo_classlist) += "+js_of_ocaml-compiler/classlist.js"

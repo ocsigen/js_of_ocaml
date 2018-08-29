@@ -1,9 +1,0 @@
-(jbuild_version 1)
-(library
- ((name ppx_js_internal)
-  (libraries (compiler-libs.common
-              ocaml-migrate-parsetree
-              ppx_tools_versioned))
-  (kind ppx_rewriter)
-  (preprocess (pps (ppx_tools_versioned.metaquot_406)))
-  ))

@@ -1,0 +1,45 @@
+(alias
+  (name DEFAULT)
+  (deps runtime.js))
+
+(rule
+  (targets runtime.js)
+  (action
+   (run %{bin:jsoo_link} -o %{targets}
+    %{dep:mlString.js} %{dep:ieee_754.js} %{dep:int64.js} %{dep:md5.js} %{dep:marshal.js}
+    %{dep:lexing.js} %{dep:parsing.js} %{dep:bigarray.js} %{dep:unix.js}
+    %{dep:stdlib.js} %{dep:io.js} %{dep:fs.js} %{dep:fs_fake.js} %{dep:fs_node.js} %{dep:jslib.js}
+    %{dep:jslib_js_of_ocaml.js}
+    %{dep:internalMod.js} %{dep:gc.js} %{dep:polyfill/json2.js} %{dep:bigstring.js} %{dep:weak.js})))
+
+(install
+  (section lib)
+  (package js_of_ocaml-compiler)
+  (files
+    bigarray.js
+    bigstring.js
+    dynlink.js
+    fs.js
+    fs_fake.js
+    fs_node.js
+    gc.js
+    graphics.js
+    ieee_754.js
+    int64.js
+    internalMod.js
+    io.js
+    jslib.js
+    jslib_js_of_ocaml.js
+    lexing.js
+    marshal.js
+    md5.js
+    mlString.js
+    nat.js
+    parsing.js
+    polyfill/json2.js
+    runtime.js
+    stdlib.js
+    toplevel.js
+    unix.js
+    weak.js
+    ))

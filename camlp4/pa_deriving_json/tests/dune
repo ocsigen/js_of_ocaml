@@ -1,0 +1,22 @@
+(rule
+  (targets deriving.corrected)
+  (deps    deriving.ml.pp
+           ../../../lib/deriving_json/js_of_ocaml_deriving.cma
+           ../../../lib/deriving_json/deriving_Json.cmi
+           ../../../lib/deriving_json/deriving_Json_lexer.cmi)
+  (action  (with-stdout-to %{targets}
+              (run ocaml -I ../../../lib/deriving_json/ js_of_ocaml_deriving.cma deriving.ml.pp))))
+
+(rule
+   (targets deriving.ml.pp)
+   (action
+     (with-stdout-to %{targets}
+     (bash "camlp4o -printer o \
+            %{lib:deriving:pa_deriving_common.cma} %{dep:deriving:pa_deriving_std.cma} \
+            %{dep:../lib/pa_deriving_Json.cma} \
+	    %{dep:deriving.ml}"
+	    ))))
+
+(alias
+   (name   runtest)
+   (action (diff deriving.expected deriving.corrected)))
