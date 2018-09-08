@@ -20,10 +20,6 @@ endif
 
 MLIS+=$(wildcard ${SRC_DIR}lib/deriving_json/*.mli)
 OTHER += -I ${CMI_DIR}lib/deriving_json
-ifeq "${WITH_DERIVING}" "YES"
-MLIS+=$(wildcard ${SRC_DIR}camlp4/pa_deriving_json/lib/*.mli)
-OTHER += -package deriving.syntax.common
-endif
 ifeq "${WITH_PPX_DERIVING}" "YES"
 MLIS+=$(wildcard ${SRC_DIR}ppx/ppx_deriving_json/lib/*.mli)
 OTHER += -package ppx_deriving

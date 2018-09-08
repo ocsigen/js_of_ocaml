@@ -1,5 +1,7 @@
 = Camlp4 syntax extension for Js_of_ocaml
 
+WARNING: The Camlp4 syntax extension is not longer part of the js_of_ocaml distribution.
+
 A Camlp4 syntax extension is available for manipulating object properties,
 invoking methods and creating objects.
 We advise to use the <<a_manual chapter="ppx" |Ppx>> syntax extension instead.

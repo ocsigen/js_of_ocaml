@@ -19,7 +19,6 @@ like browsers and Node.js.
   See [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam) file for version constraints.
 
 ### optional
-  * [camlp4](https://github.com/ocaml/camlp4)
   * [lwt](https://github.com/ocsigen/lwt)
   * [deriving](https://github.com/ocsigen/deriving)
   * [ppx_deriving](https://github.com/whitequark/ppx_deriving)
@@ -114,7 +113,6 @@ functions can yield results different from usual:
 | examples/   | small examples                               |
 | lib/        | library for interfacing with JavaScript APIs |
 | ppx/        | ppx syntax extensions                        |
-| camlp4/     | camlp4 syntax extensions                     |
 | runtime/    | runtime system                               |
 | toplevel/   | web-based OCaml toplevel                     |
 | ocamlbuild/ | ocamlbuild plugin for js_of_ocaml            |
