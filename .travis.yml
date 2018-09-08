@@ -10,6 +10,8 @@ matrix:
       env: COMPILER=4.05
     - os: linux
       env: COMPILER=4.06
+    - os: linux
+      env: COMPILER=4.07
 
   allow_failures:
     - os: linux
