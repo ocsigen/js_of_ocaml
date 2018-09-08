@@ -1,0 +1,27 @@
+(library
+  (name toplevel_example)
+  (public_name js_of_ocaml-toplevel.lwt_toplevel_example)
+  (optional)
+  (libraries
+    js_of_ocaml-compiler
+    js_of_ocaml-tyxml
+    js_of_ocaml-toplevel
+    lwt
+    js_of_ocaml-lwt
+    base64
+   (select ocp_indent.ml from
+    (ocp-indent.lib -> ocp_indent.ml.in)
+    (               -> ocp_indent_fake.ml.in))
+   (select colorize.ml from
+    (higlo higlo.ocaml   -> colorize_higlo.ml.in)
+    (!higlo              -> colorize_fake.ml.in))
+   (select graphics_support.ml from
+    (js_of_ocaml-lwt.graphics -> graphics_enabled.ml.in)
+    (                         -> graphics_disabled.ml.in))
+   (select ppx_support.ml from
+    (js_of_ocaml-ppx -> ppx_enabled.ml.in)
+    (                -> ppx_disabled.ml.in))
+    )
+  (flags (:standard -rectypes))
+  (library_flags (-linkall))
+  (preprocess (pps js_of_ocaml-ppx)))

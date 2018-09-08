@@ -1,3 +1,0 @@
-(alias
- ((name DEFAULT)
-  (deps (index.html (glob_files *.{png})))))

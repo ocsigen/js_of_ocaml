@@ -1,4 +1,4 @@
-# JBUILDER_GEN
+# DUNE_GEN
 
 package "deriving" (
   description = "deprecated alias. use js_of_ocaml-ppx_deriving_json directly"

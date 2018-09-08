@@ -2,7 +2,7 @@
  (name js_of_ocaml)
  (public_name js_of_ocaml)
  (libraries uchar bytes)
- (wrapped false)
+ ;; (wrapped (transition "Will be removed past 2019-01-01"))
  (c_names js_of_ocaml_stubs)
  (preprocess (pps ppx_js_internal)))
 
@@ -15,5 +15,5 @@
 
 (rule
  (targets lib_version.ml)
- (deps ../version.ml.in)
- (action (copy %{deps} %{targets})))
+ (deps (:input-file ../version.ml.in))
+ (action (copy %{input-file} %{targets})))

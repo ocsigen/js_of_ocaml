@@ -1,0 +1,34 @@
+(executables
+  (names        js_of_ocaml jsoo_minify jsoo_link)
+  (public_names js_of_ocaml jsoo_minify jsoo_link)
+  (package js_of_ocaml-compiler)
+  (libraries
+    js_of_ocaml-compiler
+    cmdliner
+    (select findlib.ml from
+     ;; Only link js_of_ocaml-compiler.findlib-support if it exists
+     (js_of_ocaml-compiler.findlib-support -> findlib.ml.in)
+     (                                     -> findlib.ml.in))
+    )
+  (flags (-safe-string))
+  )
+
+(rule
+  (targets js_of_ocaml.1)
+  (action (with-stdout-to %{targets} (run %{bin:js_of_ocaml} --help=groff))))
+
+(rule
+ (targets jsoo_link.1)
+ (action (with-stdout-to %{targets} (run %{bin:jsoo_link} --help=groff))))
+
+(rule
+ (targets jsoo_minify.1)
+ (action (with-stdout-to %{targets} (run %{bin:jsoo_minify} --help=groff))))
+
+(install
+  (section man)
+  (package js_of_ocaml-compiler)
+  (files js_of_ocaml.1
+         jsoo_link.1
+         jsoo_minify.1
+         ))

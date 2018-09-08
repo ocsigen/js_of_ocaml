@@ -1,9 +1,0 @@
-(jbuild_version 1)
-(executables
- ((names (server))
-  (libraries
-   (
-    bytes findlib cohttp.lwt
-    ))
-  ))
-
