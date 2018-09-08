@@ -113,11 +113,6 @@ let setup_toplevel () =
       "     Compiled with Js_of_ocaml version %s" Sys_js.js_of_ocaml_version in
   exec' (Printf.sprintf "Format.printf \"%s@.\" Sys.ocaml_version;;" header1);
   exec' (Printf.sprintf "Format.printf \"%s@.\";;" header2);
-  (if JsooTop.get_camlp4_syntaxes () <> []
-  then
-    let header3 = Printf.sprintf
-        "     'JsooTop.get_camlp4_syntaxes ()' to get loaded syntax extensions" in
-    exec' (Printf.sprintf "Format.printf \"%s@.@.\";;" header3));
   exec' ("#enable \"pretty\";;");
   exec' ("#disable \"shortvar\";;");
   Ppx_support.init ();

@@ -35,9 +35,3 @@ package "compiler" (
 package "toplevel" (
   requires = "js_of_ocaml-toplevel"
 )
-
-package "syntax" (
-  archive(syntax, preprocessor) = "-ignore dummy"
-  archive(syntax, toploop) = "-ignore dummy"
-  requires(syntax) = "js_of_ocaml-camlp4"
-)

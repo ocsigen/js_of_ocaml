@@ -17,7 +17,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-exception Camlp4 of (Location.t * exn)
 let loc = function
     | Syntaxerr.Error(x) -> Some(Syntaxerr.location_of_error x)
     | Lexer.Error(_, loc)
@@ -28,6 +27,5 @@ let loc = function
     | Typedecl.Error(loc, _)
     | Translcore.Error(loc, _)
     | Translclass.Error(loc, _)
-    | Translmod.Error(loc, _)
-    | Camlp4 (loc, _) -> Some loc
+    | Translmod.Error(loc, _) -> Some loc
     | _ -> None
