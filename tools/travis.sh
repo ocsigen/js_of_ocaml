@@ -104,7 +104,6 @@ fi
 opam pin add --no-action -y js_of_ocaml.dev .
 opam pin add --no-action -y js_of_ocaml-compiler.dev .
 opam pin add --no-action -y js_of_ocaml-ocamlbuild.dev .
-opam pin add --no-action -y js_of_ocaml-camlp4.dev .
 opam pin add --no-action -y js_of_ocaml-ppx.dev .
 opam pin add --no-action -y js_of_ocaml-ppx_deriving_json.dev .
 opam pin add --no-action -y js_of_ocaml-lwt.dev .
@@ -112,7 +111,6 @@ opam pin add --no-action -y js_of_ocaml-tyxml.dev .
 opam pin add --no-action -y js_of_ocaml-toplevel.dev .
 
 opam install -y lwt reactiveData tyxml || true
-opam install -y camlp4 deriving || true
 opam install -y ppx_tools ppx_deriving || true
 
 opam install -y --deps-only \
@@ -120,7 +118,6 @@ opam install -y --deps-only \
      js_of_ocaml-lwt \
      js_of_ocaml-compiler \
      js_of_ocaml-ocamlbuild \
-     js_of_ocaml-camlp4 \
      js_of_ocaml-toplevel \
      js_of_ocaml-ppx \
      js_of_ocaml-ppx_deriving_json \
@@ -128,17 +125,12 @@ opam install -y --deps-only \
 
 opam install --keep-build-dir --verbose js_of_ocaml-compiler
 opam install --keep-build-dir --verbose js_of_ocaml-ocamlbuild
-opam install --keep-build-dir --verbose js_of_ocaml-camlp4
 opam install --keep-build-dir --verbose js_of_ocaml
 opam install --keep-build-dir --verbose js_of_ocaml-ppx
 opam install --keep-build-dir --verbose js_of_ocaml-ppx_deriving_json
 opam install --keep-build-dir --verbose js_of_ocaml-lwt
 opam install --keep-build-dir --verbose js_of_ocaml-tyxml
 opam install --keep-build-dir --verbose js_of_ocaml-toplevel
-
-# don't test pa_deriving_json and pa_js
-rm -Rf camlp4/pa_js/tests
-rm -Rf camlp4/pa_deriving_json/tests
 
 make
 make test

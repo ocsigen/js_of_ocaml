@@ -121,11 +121,6 @@ let execute printval ?pp_code ?highlight_location  pp_answer s =
         with
         | End_of_file ->
           raise End_of_file
-        | JsooTopError.Camlp4 (loc,_exn) ->
-	        begin match highlight_location with
-	          | None -> ()
-	          | Some f -> f loc
-	        end;
         | x ->
 	        begin match highlight_location with
 	          | None -> ()
@@ -146,11 +141,3 @@ let initialize () =
   Toploop.initialize_toplevel_env ();
   Toploop.input_name := "//toplevel//";
   Sys.interactive := true
-
-let syntaxes = ref []
-let register_camlp4_syntax name f =
-  syntaxes := name :: !syntaxes;
-  f (fun (_name,cb) ->
-    (* Format.eprintf "execute callback for %s@." name; *)
-    cb ())
-let get_camlp4_syntaxes () = List.rev !syntaxes

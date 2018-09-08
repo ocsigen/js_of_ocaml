@@ -12,14 +12,6 @@ METAOCAML ?= 0
 
 DERIVING=$(shell ocamlfind query js_of_ocaml.deriving -format "%p" 2> /dev/null)
 
-ifneq ($(DERIVING),)
-DERIVING_SYNTAX = js_of_ocaml-camlp4.deriving deriving.syntax.std
-endif
-
-ifneq ($(CAMLP4_SYNTAXES),)
-SYNTAXES= lwt.syntax js_of_ocaml-camlp4 $(DERIVING_SYNTAX)
-endif
-
 JSFILES= +toplevel.js +dynlink.js +nat.js
 
 PACKAGES= \
@@ -49,8 +41,6 @@ METAOCAML_DIR=$(shell ocamlfind query stdlib)
 BER_EXPORT=trx.cmi runcode.cmi print_code.cmi compiler-libs/asttypes.cmi
 BER=metalib.cma bertop.cmo \
 	${addprefix -export-unit ${METAOCAML_DIR}/, ${BER_EXPORT}}
-#METAOCAML DOES NOT WORK WITH CAMLP4
-SYNTAXES=
 #CPPO_OPT+= -D metaocaml
 endif
 

@@ -17,8 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* Helper to compile js_of_ocaml toplevel
-   with support for camlp4 syntax extensions *)
+(* Helper to compile js_of_ocaml toplevel *)
 
 (* #use "topfind" *)
 (* #require "findlib" *)
@@ -51,79 +50,6 @@ let do_clean () =
   List.iter (fun x ->
       if Sys.file_exists x
       then Sys.remove x) !to_clean
-
-module type CAMLP4 = sig
-  val build
-    :  all_pkgs:string list
-    -> syntax_pkgs:string list
-    -> syntax_mods:string list
-    -> string list
-end
-module Camlp4 : CAMLP4 = struct
-
-  (* We do the same as Camlp4Bin
-     call Camlp4.Register.iter_and_take_callbacks
-     after Every load of syntax module to initialize them.
-     Camlp4 do it after dynlink;
-     Since we statically link modules, we have to
-     link dummy modules to trigger the callbacks *)
-  let flush_str = Printf.sprintf
-      "let _ = JsooTop.register_camlp4_syntax %S Camlp4.Register.iter_and_take_callbacks"
-
-  let make_flush_module =
-    let count = ref 0 in
-    fun pkg_name ->
-      incr count;
-      let name = Printf.sprintf "camlp4_flush_%d" !count in
-      let name_ml = name ^ ".ml" in
-      let oc = open_out name_ml in
-      clean name_ml;
-      output_string oc (flush_str pkg_name);
-      close_out oc;
-      execute ["ocamlfind";"ocamlc";"-c";"-I";"+camlp4";"-package";"js_of_ocaml-toplevel";name_ml];
-      clean (name ^ ".cmo");
-      clean (name ^ ".cmi");
-      (name^".cmo")
-
-  let with_flush x archive =
-    [ make_flush_module x ; archive]
-
-  let resolve_syntaxes all =
-    let preds = ["syntax";"preprocessor"] in
-    let all = Findlib.package_deep_ancestors preds all in
-    let ll = List.map (fun x ->
-        try "-I" :: (Findlib.package_directory x) :: with_flush x (Findlib.package_property preds x "archive") with
-        | Not_found -> []) all in
-    List.flatten ll
-
-  let camlp4_pre4_02 =
-    try
-      let v = Sys.ocaml_version in
-      if v.[0] >= '4' &&
-         v.[1] =  '.' &&
-         v.[2] =  '0' &&
-         v.[3] >= '2'
-      then false
-      else true
-    with _ -> true
-  let build ~all_pkgs ~syntax_pkgs ~syntax_mods =
-    if syntax_pkgs = [] && syntax_mods = [] then [] else
-      let maybe_add_dynlink =
-        if List.mem "dynlink" all_pkgs
-        then []
-        else ["dynlink.cma"]
-      in
-      let all = resolve_syntaxes syntax_pkgs @ syntax_mods in
-      maybe_add_dynlink
-      @ [
-        "-I";"+camlp4";
-        "camlp4lib.cma";
-	      "Camlp4Parsers/Camlp4OCamlRevisedParser.cmo";
-	      "Camlp4Parsers/Camlp4OCamlParser.cmo";
-      ]
-      @ all
-      @ [if camlp4_pre4_02 then "Camlp4Top/Top.cmo" else "jsooTopCamlp4.cmo"]
-end
 
 let usage () =
   Format.eprintf "Usage: jsoo_mktop [options] [ocamlfind arguments] @.";
@@ -167,10 +93,6 @@ let _ =
     let export_output = !output ^ ".export" in
     let cmd =
       base_cmd
-      @ Camlp4.build
-          ~all_pkgs:!pkgs
-          ~syntax_pkgs:!syntaxes
-          ~syntax_mods:!syntaxes_mod
       @ jsoo_top @ args @ ["-o"; !output] in
     execute cmd;
     execute (["jsoo_listunits";"-o";export_output] @ !pkgs @ !export );

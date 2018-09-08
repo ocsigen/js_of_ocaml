@@ -18,6 +18,3 @@
  *)
 
 module JsooTop = JsooTop
-module For_js_of_ocaml_toplevel_camlp4 = struct
-  let camlp4_exception (loc, exn) = JsooTopError.Camlp4 (loc, exn)
-end
