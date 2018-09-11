@@ -5,7 +5,7 @@
 </li><li class="mainmenu-doc"><a href="/tuto/6.2/manual/intro" class="ocsimore_phrasing_link">Doc</a>
 </li><li><a href="/eliom/6.3/manual/intro" class="ocsimore_phrasing_link">Eliom</a>
 </li><li class="mainmenu-current"><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Js_of_ocaml</a>
-</li><li><a href="/lwt/3.2.1/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
+</li><li><a href="/lwt/3.3.0/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
 </li><li><a href="/tyxml/4.1.0/manual/intro" class="ocsimore_phrasing_link">Tyxml</a>
 </li><li><a href="/ocsigen-start/1.1.0/manual/intro" class="ocsimore_phrasing_link">Start</a>
 </li></ul><aside class="how-drawer"><input id="how-drawer-toggle" type="checkbox"/><label for="how-drawer-toggle" id="how-drawer-label"><span class="how-drawer-icon"></span></label><nav class="how-drawer-content"><ul class="drawermainmenu"><li class="drawermainmenu-home"><a href="/" class="ocsimore_phrasing_link">Home</a>
@@ -13,7 +13,7 @@
 </li><li class="drawermainmenu-project"><a href="/eliom/6.3/manual/intro" class="ocsimore_phrasing_link">Eliom</a>
 </li><li class="drawermainmenu-current drawermainmenu-project"><a href="/js_of_ocaml/3.1.0/manual/overview" class="ocsimore_phrasing_link">Js_of_ocaml</a>
 </li><li class="drawermainmenu-project"><a href="/ocsigenserver/2.9/manual/quickstart" class="ocsimore_phrasing_link">Server</a>
-</li><li class="drawermainmenu-project"><a href="/lwt/3.2.1/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
+</li><li class="drawermainmenu-project"><a href="/lwt/3.3.0/manual/manual" class="ocsimore_phrasing_link">Lwt</a>
 </li><li class="drawermainmenu-project"><a href="/tyxml/4.1.0/manual/intro" class="ocsimore_phrasing_link">Tyxml</a>
 </li><li class="drawermainmenu-project"><a href="/ocsigen-toolkit/1.1.0/manual/intro" class="ocsimore_phrasing_link">Toolkit</a>
 </li><li class="drawermainmenu-project"><a href="/ocsigen-start/1.1.0/manual/intro" class="ocsimore_phrasing_link">Start</a>
@@ -51,7 +51,7 @@ and then out again (bubbling phase).
 </p><h2 id="2_CreateLwtthreadsforevents">Create Lwt threads for events <a class="backref" href="#2_CreateLwtthreadsforevents">&#182;</a></h2><pre class="ocsforge_color odocwiki_code" id="VALmake_event"><span class="ocsforge_color_keyword">val</span> <span class="odocwiki_name">make_event</span> <span class="ocsforge_color_delimiter">:</span> <span class="odocwiki_type"><br/>  <span class="ocsforge_color_delimiter">(</span>#<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.3/api/Dom_html.event-c">Dom_html.event</a></span> as 'a<span class="ocsforge_color_delimiter">)</span> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.3/api/Js#TYPEt">Js.t</a></span> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.3/api/Dom_html.Event#TYPEtyp">Dom_html.Event.typ</a></span> <span class="ocsforge_color_delimiter">-&gt;</span><br/>  <span class="ocsforge_color_label">?use_capture:</span>bool <span class="ocsforge_color_delimiter">-&gt;</span> #<span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.3/api/Dom_html.eventTarget-c">Dom_html.eventTarget</a></span> <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.3/api/Js#TYPEt">Js.t</a></span> <span class="ocsforge_color_delimiter">-&gt;</span> 'a <span><a class="ocsforge_doclink_js_of_ocaml" href="/js_of_ocaml/2.8.3/api/Js#TYPEt">Js.t</a></span> <span class="ocsforge_color_uid">Lwt</span><span class="ocsforge_color_delimiter">.</span><span class="ocsforge_color_lid">t</span></span></pre><div class="odocwiki_info"><p><span class="odocwiki_inlinecode">make_event ev target</span> creates a Lwt thread that waits
 for the event <span class="odocwiki_inlinecode">ev</span> to happen on <span class="odocwiki_inlinecode">target</span> (once).
 This thread is cancellable using
-<span><a class="ocsforge_doclink_lwt" href="/lwt/3.2.1/api/Lwt#VALcancel">Lwt.​cancel</a></span> .
+<span><a class="ocsforge_doclink_lwt" href="/lwt/3.3.0/api/Lwt#VALcancel">Lwt.​cancel</a></span> .
 If you set the optional parameter <span class="odocwiki_inlinecode">~use_capture:true</span>,
 the event will be caught during the capture phase,
 otherwise it is caught during the bubbling phase
@@ -63,7 +63,7 @@ happening during the execution of the handler are ignored. See
 </p><p>For example, the <span class="odocwiki_inlinecode">clicks</span> function below is defined by:
 </p><p><span class="odocwiki_inlinecode">let clicks ?use_capture t = seq_loop click ?use_capture t</span>
 </p><p>The thread returned is cancellable using
-<span><a class="ocsforge_doclink_lwt" href="/lwt/3.2.1/api/Lwt#VALcancel">Lwt.​cancel</a></span> .
+<span><a class="ocsforge_doclink_lwt" href="/lwt/3.3.0/api/Lwt#VALcancel">Lwt.​cancel</a></span> .
 In order for the loop thread to be canceled from within the handler,
 the latter receives the former as its second parameter.
 </p><p>By default, cancelling the loop will not cancel the potential
