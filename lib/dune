@@ -8,9 +8,9 @@
 
 (rule
  (targets js_of_ocaml_stubs.c.gen)
- (deps (file generate_stubs.sh)(glob_files *.ml))
+ (deps (glob_files *.ml))
  (action (with-stdout-to %{targets}
-          (bash ./generate_stubs.sh))))
+          (run ./gen_stubs/gen_stubs.exe %{deps}))))
 
 (alias
  (name runtest)

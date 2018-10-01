@@ -1,0 +1,4 @@
+(executable
+ (name gen_stubs))
+
+(ocamllex gen_stubs)
