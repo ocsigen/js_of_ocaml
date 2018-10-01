@@ -8,10 +8,10 @@
 
 (rule
  (targets js_of_ocaml_stubs.c)
- (deps (file generate_stubs.sh)(glob_files *.ml))
+ (deps (glob_files *.ml))
+ (mode promote)
  (action (with-stdout-to %{targets}
-          (bash ./generate_stubs.sh)))
- )
+          (run ./gen_stubs/gen_stubs.exe %{deps}))))
 
 (rule
  (targets lib_version.ml)
