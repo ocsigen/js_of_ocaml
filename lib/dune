@@ -7,14 +7,11 @@
  (preprocess (pps ppx_js_internal)))
 
 (rule
- (targets js_of_ocaml_stubs.c.gen)
+ (targets js_of_ocaml_stubs.c)
  (deps (glob_files *.ml))
+ (mode promote)
  (action (with-stdout-to %{targets}
           (run ./gen_stubs/gen_stubs.exe %{deps}))))
-
-(alias
- (name runtest)
- (action (diff js_of_ocaml_stubs.c js_of_ocaml_stubs.c.gen)))
 
 (rule
  (targets lib_version.ml)
