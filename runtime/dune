@@ -8,7 +8,7 @@
    (run %{bin:jsoo_link} -o %{targets}
     %{dep:mlString.js} %{dep:ieee_754.js} %{dep:int64.js} %{dep:md5.js} %{dep:marshal.js}
     %{dep:lexing.js} %{dep:parsing.js} %{dep:bigarray.js} %{dep:unix.js}
-    %{dep:stdlib.js} %{dep:io.js} %{dep:fs.js} %{dep:fs_fake.js} %{dep:fs_node.js} %{dep:jslib.js}
+    %{dep:stdlib.js} %{dep:io.js} %{dep:fs.js} %{dep:fs_fake.js} %{dep:fs_node.js} %{dep:fs_fss.js} %{dep:jslib.js}
     %{dep:jslib_js_of_ocaml.js}
     %{dep:internalMod.js} %{dep:gc.js} %{dep:polyfill/json2.js} %{dep:bigstring.js} %{dep:weak.js})))
 
@@ -22,6 +22,7 @@
     fs.js
     fs_fake.js
     fs_node.js
+    fs_fss.js
     gc.js
     graphics.js
     ieee_754.js
