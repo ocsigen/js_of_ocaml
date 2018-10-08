@@ -30,7 +30,7 @@ var MlFssDevice = function (root) {
     this.root = root ;
     this.fs =
         (joo_global_object.webkitRequestFileSystemSync
-         || joo_global_object.requestFileSystemSync) (joo_global_object.PERSISTENT, 0) ;
+         || joo_global_object.requestFileSystemSync) (joo_global_object.TEMPORARY, 0) ;
 }
 
 MlFssDevice.prototype.nm = function (name) {
