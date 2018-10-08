@@ -67,7 +67,7 @@ MlFssDevice.prototype.unlink = function (name) {
     }
 }
 
-//Requires: MlFssFile, caml_new_string, caml_string_of_array, caml_convert_string_to_array
+//Requires: MlFssFile, caml_new_string, caml_string_of_array
 MlFssDevice.prototype.open = function(name, flags) {
     var path = this.nm (name) ;
     var file = this.fs.root.getFile(path, {create:flags.create, exclusive:flags.excl }) ;
@@ -77,7 +77,8 @@ MlFssDevice.prototype.open = function(name, flags) {
     } else {
         var f = file.file () ;
         var reader = new joo_global_object.FileReaderSync () ;
-        contents = caml_string_of_array (Array.from (new Uint8Array (reader.readAsArrayBuffer(f) ) ) ) ;
+        // FIXME: Use reasAsArrayBuffer?
+        contents = caml_new_string(reader.readAsBinaryString(f)) ;
     }
     return new MlFssFile (file, contents) ;
 }
