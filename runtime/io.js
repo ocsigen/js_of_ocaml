@@ -273,6 +273,7 @@ function caml_ml_input_int (chanid) {
     if (l == 0) caml_raise_end_of_file();
   }
   var o = chan.offset;
+  joo_global_object.console.log (o) ;
   var r =(file.read_one(o  ) << 24)
       |  (file.read_one(o+1) << 16)
       |  (file.read_one(o+2) << 8)
