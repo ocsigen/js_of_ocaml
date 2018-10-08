@@ -105,14 +105,15 @@ MlFssFile.prototype.read = function (offset, buf, pos, len) {
 MlFssFile.prototype.read_one = function (offset) {
     this.fake.read_one (offset) ;
 }
-//Requires: caml_array_of_string
+//Requires: caml_jsbytes_of_string
 MlFssFile.prototype.close = function () {
     if (this.needSync) {
         // FIXME: marshalled data are corrupted (probably here but it could be on open() )
-        var data = caml_array_of_string (this.fake.data) ;
-        if(! (data instanceof joo_global_object.Uint8Array))
-            data = new joo_global_object.Uint8Array(data);
-        var blob = new joo_global_object.Blob ([ data ], {type:'application/octet-stream'}) ;
+        var bstr = caml_jsbytes_of_string(this.fake.data) ;
+        var len = bstr.length ;
+        var u8 = new joo_global_object.Uint8Array (len) ;
+        for (var i = 0; i < len; i++) { u8[i] = bstr.charCodeAt (i) }
+        var blob = new joo_global_object.Blob ([u8], {type:'application/octet-stream'}) ;
         (this.fileEntry.createWriter ()).write (blob) ;
     }
     return (this.fake.close ()) ;
