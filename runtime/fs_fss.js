@@ -60,7 +60,7 @@ MlFssDevice.prototype.is_dir = function (name) {
 MlFssDevice.prototype.unlink = function (name) {
     try {
         var path = this.nm (name) ;
-        this.fs.root.getFile(path, {create: false}).remove () ;
+        (this.fs.root.getFile(path, {create: false})).remove () ;
         return true ;
     } catch (e) {
         return false ;
@@ -70,17 +70,21 @@ MlFssDevice.prototype.unlink = function (name) {
 //Requires: MlFssFile, caml_new_string, caml_string_of_array
 MlFssDevice.prototype.open = function(name, flags) {
     var path = this.nm (name) ;
-    var file = this.fs.root.getFile(path, {create:flags.create, exclusive:flags.excl }) ;
-    var contents ;
-    if (flags.truncate) {
-        contents = caml_create_bytes(0) ;
-    } else {
-        var f = file.file () ;
-        var reader = new joo_global_object.FileReaderSync () ;
-        // FIXME: Use reasAsArrayBuffer?
-        contents = caml_new_string(reader.readAsBinaryString(f)) ;
+    try {
+        var file = this.fs.root.getFile(path, { create:flags.create, exclusive:flags.excl }) ;
+        var contents ;
+        if (flags.truncate) {
+            contents = caml_create_bytes(0) ;
+        } else {
+            var f = file.file () ;
+            var reader = new joo_global_object.FileReaderSync () ;
+            // FIXME: Use reasAsArrayBuffer?
+            contents = caml_new_string(reader.readAsBinaryString(f)) ;
+        }
+        return new MlFssFile (file, contents) ;
+    } catch (e) {
+        caml_raise_no_such_file (path) ;
     }
-    return new MlFssFile (file, contents) ;
 }
 
 MlFssDevice.prototype.constructor = MlFssDevice
