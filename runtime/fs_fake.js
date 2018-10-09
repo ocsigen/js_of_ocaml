@@ -19,7 +19,7 @@
 
 //Provides: MlFakeDevice
 //Requires: MlFakeFile, caml_create_bytes
-//Requires: caml_raise_sys_error, caml_raise_no_such_file, caml_new_string, caml_string_of_array
+//Requires: caml_raise_sys_error, caml_raise_no_such_file, caml_new_string, caml_string_of_array, caml_bytes_unsafe_set
 //Requires: MlBytes
 function MlFakeDevice (root, f) {
   this.content={};
@@ -90,10 +90,10 @@ MlFakeDevice.prototype.open = function(name, f) {
     this.content[name] = new MlFakeFile(caml_create_bytes(0));
     return this.content[name];
   } else {
-    caml_raise_no_such_file (this.nm(name));
+    this.content[name] = new MlFakeFile (this.xhr (this.nm (name)));
+    return this.content[name];
   }
 }
-
 MlFakeDevice.prototype.register= function (name,content){
   if(this.content[name]) caml_raise_sys_error(this.nm(name) + " : file already exists");
   if(content instanceof MlBytes)
@@ -104,6 +104,21 @@ MlFakeDevice.prototype.register= function (name,content){
     var mlstring = caml_new_string(content.toString());
     this.content[name] = new MlFakeFile(mlstring);
   }
+}
+MlFakeDevice.prototype.xhr = function (name) {
+    var url = "file://" + name.replace ("file://", "") ;
+    var xhr = new XMLHttpRequest () ;
+    xhr.open ('GET', url, false) ;
+    xhr.overrideMimeType ('text/plain; charset=x-user-defined') ;
+    xhr.send (null) ;
+    if (xhr.status != 200) { caml_raise_no_such_file (name) }
+    var res = xhr.responseText ;
+    var len = res.length ;
+    var str = caml_create_bytes (len) ;
+    for (var i = 0 ; i < len ; i++) {
+        caml_bytes_unsafe_set (str, i, res.charCodeAt (i) & 0xff)
+    }
+    return str ;
 }
 
 MlFakeDevice.prototype.constructor = MlFakeDevice
