@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module CSS = CSS
+module CSS = CSS0
 module Dom = Dom
 module Dom_events = Dom_events
 module Dom_html = Dom_html
