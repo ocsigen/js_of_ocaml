@@ -163,7 +163,7 @@ let setup_examples ~container ~textbox =
               textbox##focus;
               Lwt.return_unit);
             true
-	 )] [pcdata name]) in
+	 )] [txt name]) in
       Dom.appendChild example_container (Tyxml_js.To_dom.of_a a);
       ""
     ) "" !all in
@@ -207,7 +207,7 @@ let setup_share_button ~output =
       let uri = Url.string_of_url url ^ "#" ^ frag in
       let append_url str =
         let dom = Tyxml_js.Html.(
-            p [ pcdata "Share this url : "; a ~a:[a_href str] [ pcdata str ]]) in
+            p [ txt "Share this url : "; a ~a:[a_href str] [ txt str ]]) in
         Dom.appendChild output (Tyxml_js.To_dom.of_element dom)
       in
       Lwt.async (fun () ->
