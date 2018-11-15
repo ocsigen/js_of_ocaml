@@ -389,7 +389,7 @@ let pack ~global js =
             J.ECall (
               J.ECall (
                 (J.EVar (J.S {J.name="Function";var=None})),
-                [EStr ("return this", `Bytes)],
+                [EStr ("return this", `Utf8)],
                 J.N),
               [], J.N) in
         J.ECall (f, [global], J.N)
