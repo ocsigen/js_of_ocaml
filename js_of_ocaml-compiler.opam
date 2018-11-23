@@ -16,6 +16,7 @@ depends: [
   "cmdliner"
   "cppo" {>= "1.1.0"}
   "yojson" # It's optional, but we want users to be able to use source-map without pain.
+  "build_path_prefix_map"
 ]
 
 depopts: [ "ocamlfind" ]

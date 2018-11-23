@@ -19,14 +19,41 @@
 
 open Source_map
 
+(* copied from the OCaml distribution (utils/misc.ml) *)
+let get_build_path_prefix_map =
+  let init = ref false in
+  let map_cache = ref None in
+  fun () ->
+    if not !init then begin
+      init := true;
+      match Sys.getenv "BUILD_PATH_PREFIX_MAP" with
+      | exception Not_found -> ()
+      | encoded_map ->
+        match Build_path_prefix_map.decode_map encoded_map with
+          | Error err ->
+              failwith @@ Printf.sprintf
+                "Invalid value for the environment variable \
+                 BUILD_PATH_PREFIX_MAP: %s" err
+          | Ok map -> map_cache := Some map
+    end;
+    !map_cache
+
 let json t =
+  let rewrite_path path =
+    if Filename.is_relative path then
+      path
+    else
+      match get_build_path_prefix_map () with
+      | Some map -> Build_path_prefix_map.rewrite map path
+      | None -> path
+  in
   `Assoc [
      "version",       `Float  (float_of_int t.version);
      "file",          `String t.file;
      "sourceRoot",    `String (match t.sourceroot with None -> "" | Some s -> s);
      "names",         `List (List.map (fun s -> `String s) t.names);
      "mappings",      `String (string_of_mapping t.mappings);
-     "sources",       `List (List.map (fun s -> `String s) t.sources);
+     "sources",       `List (List.map (fun s -> `String (rewrite_path s)) t.sources);
      "sourcesContent",`List
 		     (match t.sources_content with
 		      | None -> []
