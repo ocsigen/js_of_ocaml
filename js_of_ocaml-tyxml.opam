@@ -12,7 +12,7 @@ build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
   "dune" {build}
-  "tyxml" {>= "4.0.0"}
+  "tyxml" {>= "4.3.0"}
   "reactiveData" {>= "0.2"}
   "js_of_ocaml"
   "js_of_ocaml-ppx"
