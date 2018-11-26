@@ -15,4 +15,4 @@ depends: [
   "ocamlbuild"
 ]
 
-available: [ ocaml-version >= "4.00.0" ]
+synopsis: "Compiler from OCaml bytecode to Javascript"

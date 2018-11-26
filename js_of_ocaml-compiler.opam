@@ -1,4 +1,4 @@
-opam-version: "1.2"
+opam-version: "2.0"
 maintainer:   "dev@ocsigen.org"
 authors:      "Ocsigen team"
 bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
@@ -11,7 +11,8 @@ version: "dev"
 build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "dune" {build}
+  "ocaml" {>= "4.02.0"}
+  "dune" {build & >= "1.2"}
   "cmdliner"
   "cppo" {>= "1.1.0"}
   "yojson" # It's optional, but we want users to be able to use source-map without pain.
@@ -24,4 +25,4 @@ conflicts: [
   "js_of_ocaml" {< "3.0"}
 ]
 
-available: [ ocaml-version >= "4.02.0" ]
+synopsis: "Compiler from OCaml bytecode to Javascript"

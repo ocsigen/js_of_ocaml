@@ -1,4 +1,4 @@
-opam-version: "1.2"
+opam-version: "2.0"
 maintainer:   "dev@ocsigen.org"
 authors:      "Ocsigen team"
 bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
@@ -6,16 +6,16 @@ homepage:     "http://ocsigen.org/js_of_ocaml"
 dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
 
 name: "js_of_ocaml-toplevel"
-version: "dev"
 
 build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "dune" {build}
+  "ocaml" {>= "4.02.0"}
+  "dune" {build & >= "1.2"}
   "ocamlfind" {>= "1.5.1"}
   "js_of_ocaml-compiler"
   "js_of_ocaml-ppx"
-  "js_of_ocaml"
+  "js_of_ocaml" {>= "3.0"}
 ]
 
-available: [ ocaml-version >= "4.02.0" ]
+synopsis: "Compiler from OCaml bytecode to Javascript"
