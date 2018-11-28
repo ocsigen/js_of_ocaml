@@ -2,7 +2,7 @@
   (name js_of_ocaml_compiler)
   (public_name js_of_ocaml-compiler)
   (synopsis "Js_of_ocaml compiler library")
-  (libraries compiler-libs.common bytes build_path_prefix_map
+  (libraries compiler-libs.common bytes
    (select source_map_io.ml from
     (yojson -> source_map_yojson.ml.in)
     (       -> source_map_unsupported.ml.in))
