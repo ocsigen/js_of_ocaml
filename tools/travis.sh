@@ -5,12 +5,12 @@ set -x
 # Install system packages.
 packages_apt () {
     case $COMPILER in
-        4.02) PPA=avsm/ocaml42+opam12;;
-        4.03) PPA=avsm/ocaml42+opam12; DO_SWITCH=yes;;
-        4.04) PPA=avsm/ocaml42+opam12; DO_SWITCH=yes;;
-        4.05) PPA=avsm/ocaml42+opam12; DO_SWITCH=yes;;
-        4.06) PPA=avsm/ocaml42+opam12; DO_SWITCH=yes;;
-	4.07) PPA=avsm/ocaml42+opam12; DO_SWITCH=yes;;
+        4.02) PPA=avsm/ppa;;
+        4.03) PPA=avsm/ppa; DO_SWITCH=yes;;
+        4.04) PPA=avsm/ppa; DO_SWITCH=yes;;
+        4.05) PPA=avsm/ppa; DO_SWITCH=yes;;
+        4.06) PPA=avsm/ppa; DO_SWITCH=yes;;
+        4.07) PPA=avsm/ppa; DO_SWITCH=yes;;
            *) echo Unsupported compiler $COMPILER; exit 1;;
     esac
 
