@@ -385,13 +385,14 @@ let pack ~global js =
       | `Custom name ->
         J.ECall (f, [J.EVar (J.S {J.name;var=None})], J.N)
       | `Auto ->
-          let global =
-            J.ECall (
-              J.ECall (
-                (J.EVar (J.S {J.name="Function";var=None})),
-                [EStr ("return this", `Bytes)],
-                J.N),
-              [], J.N) in
+        let global =
+          J.ECall (
+            J.EFun (None, [], [
+              J.Statement (
+                J.Return_statement(
+                  Some (J.EVar (J.S {J.name="this";var=None})))),
+              J.N
+            ], J.N), [], J.N) in
         J.ECall (f, [global], J.N)
     in
     match global with
