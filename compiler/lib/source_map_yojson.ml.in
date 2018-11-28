@@ -19,7 +19,7 @@
 
 open Source_map
 
-(* copied from the OCaml distribution (utils/misc.ml) *)
+(* copied from ocaml/utils/misc.ml *)
 let get_build_path_prefix_map =
   let init = ref false in
   let map_cache = ref None in
