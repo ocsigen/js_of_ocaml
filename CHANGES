@@ -3,7 +3,6 @@
  ** Toplevel: [--toplevel] is now taken account when compilig cmo and cma.
  ** Lib: make [Js.Unsafe.any] be [Js.Unsafe.top Js.t]
  ** Lib: Improve generation of dummy stubs (#700)
- ** Lib: Improve detection of global object (copy@github)
  ** Lib: Deprecate non namespaced module access
  ** Lib: Upgrade to Tyxml 4.3.0
  ** Misc: switch to dune
