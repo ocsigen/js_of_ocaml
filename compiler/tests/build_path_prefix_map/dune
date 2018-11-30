@@ -1,0 +1,13 @@
+(rule
+  (deps source.ml)
+  (targets source.cmo)
+  (action (run %{bin:ocamlc} -c -g source.ml -o source.cmo)))
+
+(rule
+  (deps source.cmo call_compiler.sh)
+  (targets generated.map)
+  (action (run ./call_compiler.sh %{bin:js_of_ocaml} source.cmo generated.js)))
+
+(alias
+  (name runtest)
+  (action (diff expected_map generated.map)))
