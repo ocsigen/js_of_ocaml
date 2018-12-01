@@ -1,0 +1,4 @@
+(alias
+  (name runtest)
+  (deps test1.js)
+  (action (run %{bin:jsoo_minify} test1.js -o /dev/null)))
