@@ -388,7 +388,7 @@ call_expression:
      { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
  | call_expression T_LBRACKET expression T_RBRACKET
      { let (start, e) = $1 in (start, J.EAccess (e, $3)) }
- | call_expression T_PERIOD identifier
+ | call_expression T_PERIOD identifier_or_kw
      { let (start, e) = $1 in (start, J.EDot (e, $3)) }
 
 new_expression:
@@ -400,7 +400,7 @@ member_expression:
      { e }
  | member_expression T_LBRACKET e2=expression T_RBRACKET
      { let (start, e1) = $1 in (start, J.EAccess (e1,e2)) }
- | member_expression T_PERIOD i=identifier
+ | member_expression T_PERIOD i=identifier_or_kw
      { let (start, e1) = $1 in (start, J.EDot(e1,i)) }
  | pi=T_NEW e1=member_expression a=arguments
      { (pi, J.ENew(snd e1, Some a)) }
@@ -496,7 +496,7 @@ call_expression_no_statement:
    { let (start, e) = $1 in (start, J.ECall(e, $2, J.Pi start)) }
  | call_expression_no_statement T_LBRACKET expression T_RBRACKET
    { let (start, e) = $1 in (start, J.EAccess(e, $3)) }
- | call_expression_no_statement T_PERIOD identifier
+ | call_expression_no_statement T_PERIOD identifier_or_kw
    { let (start, e) = $1 in (start, J.EDot(e,$3)) }
 
 member_expression_no_statement:
@@ -504,7 +504,7 @@ member_expression_no_statement:
    { e }
  | member_expression_no_statement T_LBRACKET e2=expression T_RBRACKET
    { let (start, e1) = $1 in (start, J.EAccess(e1, e2)) }
- | member_expression_no_statement T_PERIOD i=identifier
+ | member_expression_no_statement T_PERIOD i=identifier_or_kw
    { let (start, e1) = $1 in (start, J.EDot(e1,i)) }
  | pi=T_NEW e=member_expression a=arguments
    { (pi, J.ENew(snd e,Some a)) }
@@ -590,6 +590,39 @@ arguments:
 identifier:
  | T_IDENTIFIER { fst $1 }
 
+identifier_or_kw:
+   | T_IDENTIFIER { fst $1 }
+   | T_CATCH { "catch" }
+   | T_FINALLY { "finally" }
+   | T_IN { "in" }
+   | T_INSTANCEOF { "instanceof" }
+   | T_ELSE { "else" }
+   | T_WHILE { "while" }
+   | T_BREAK { "break" }
+   | T_CASE { "case" }
+   | T_CONTINUE { "continue" }
+   | T_DEFAULT { "default" }
+   | T_DELETE { "delete" }
+   | T_DO { "do" }
+   | T_FOR { "for" }
+   | T_FUNCTION { "function" }
+   | T_IF { "if" }
+   | T_NEW { "new" }
+   | T_RETURN { "return" }
+   | T_SWITCH { "switch" }
+   | T_THIS { "this" }
+   | T_THROW { "throw" }
+   | T_TRY { "try" }
+   | T_TYPEOF { "typeof" }
+   | T_VAR { "var" }
+   | T_VOID { "void" }
+   | T_WHILE { "while" }
+   | T_WITH { "with" }
+   | T_NULL { "null" }
+   | T_FALSE { "false" }
+   | T_TRUE { "true" }
+   | T_DEBUGGER { "debugger" }
+
 variable:
  | i=identifier { var i }
 
@@ -600,9 +633,9 @@ label:
  | identifier { J.Label.of_string $1 }
 
 property_name:
- | i=T_IDENTIFIER    { J.PNI (fst i) }
- | s=T_STRING        { J.PNS (fst s) }
- | n=numeric_literal { J.PNN (snd n) }
+ | i=identifier_or_kw { J.PNI i }
+ | s=T_STRING         { J.PNS (fst s) }
+ | n=numeric_literal  { J.PNN (snd n) }
 
 (*************************************************************************)
 (* 1 xxx_opt, xxx_list                                                   *)
