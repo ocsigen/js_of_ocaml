@@ -334,6 +334,7 @@ module Blocks : sig
   type u
   val finish_analysis : t -> u
   val next : u -> int -> int
+  val is_empty : u -> bool
 end = struct
   type t = AddrSet.t
   type u = int array
@@ -398,6 +399,7 @@ end = struct
 
   (* invariant: a.(i) <= x < a.(j) *)
   let rec find a i j x =
+    assert(i<j);
     if i + 1 = j then a.(j) else
     let k = (i + j) / 2 in
     if a.(k) <= x then
@@ -405,7 +407,10 @@ end = struct
     else
       find a i k x
 
-  let next blocks pc = find blocks 0 (Array.length blocks - 1) pc
+  let next blocks pc =
+    find blocks 0 (Array.length blocks - 1) pc
+
+  let is_empty x = Array.length x <= 1
 
   let analyse debug_data code =
     let blocks = AddrSet.empty in
@@ -1857,8 +1862,9 @@ let parse_bytecode ~debug code globals debug_data =
     if false && debug = `Full
     then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks
     else blocks in
-  let blocks = Blocks.finish_analysis blocks in
-  compile_block blocks debug_data code 0 state;
+  let blocks' = Blocks.finish_analysis blocks in
+  if not (Blocks.is_empty blocks') then
+    compile_block blocks' debug_data code 0 state;
   let blocks =
     AddrMap.mapi
       (fun _ (state, instr, last) ->

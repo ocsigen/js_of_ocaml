@@ -422,12 +422,17 @@ let fold_closures (pc, blocks, _) f accu =
 
 let prepend (start, blocks, free_pc) body =
   let new_start = free_pc in
+  let branch =
+    if AddrMap.mem start blocks
+    then Branch (start, [])
+    else Stop
+  in
   let blocks =
     AddrMap.add new_start
       { params = [];
         handler = None;
         body = body;
-        branch = Branch (start, []) }
+        branch}
       blocks
   in
   let free_pc = free_pc + 1 in
