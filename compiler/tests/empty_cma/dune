@@ -1,0 +1,10 @@
+(rule
+  (targets empty.js)
+  (action (progn
+            (run %{bin:ocamlc} -a -o empty.cma)
+            (run %{bin:js_of_ocaml} empty.cma --pretty -o empty.js))))
+
+(alias
+  (name runtest)
+  (deps empty.js)
+  (action (diff expected.js empty.js)))
