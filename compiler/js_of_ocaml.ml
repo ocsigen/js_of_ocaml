@@ -133,6 +133,20 @@ let f {
   in
   let cmis = if nocmis then Util.StringSet.empty else cmis in
   let p =
+    let l =
+      List.map
+        (fun (k,v) ->
+          Jsoo_primitive.add_external "caml_set_static_env";
+          let args =
+            [ Code.Pc (IString k)
+            ; Code.Pc (IString v) ]
+          in
+          Code.(Let(Var.fresh (), Prim (Extern "caml_set_static_env", args))))
+        static_env
+    in
+    Code.prepend p l
+  in
+  let p =
     if fs_external
     then
       let instrs = [
