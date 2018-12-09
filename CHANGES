@@ -1,3 +1,13 @@
+===== 3.4.0 (??????????) - ????????? =====
+ * Features/Changes
+ ** Compiler: Support reproducible builds by using BUILD_PATH_PREFIX_MAP
+
+ * Bug fixes:
+ ** Compiler: fix compilation of empty cma
+ ** Compiler: fix js parser with keyword as ident
+ ** Compiler, Runtime: make --setenv work with Sys.getenv_opt
+ ** Runtime: make obj_dup work on string/bytes
+
 ===== 3.3.0 (2018-11-26) - Hong Kong =====
  * Features/Changes
  ** Toplevel: [--toplevel] is now taken account when compilig cmo and cma.
