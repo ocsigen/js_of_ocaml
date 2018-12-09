@@ -399,6 +399,10 @@ function MlBytes (tag, contents, length) {
   this.t=tag; this.c=contents; this.l=length;
 }
 MlBytes.prototype.toString = function(){return caml_to_js_string(this)};
+MlBytes.prototype.slice = function (){
+  var content = this.t == 4 ? this.c.slice() : this.c;
+  return new MlBytes(this.t,content,this.l);
+}
 
 //Provides: caml_convert_string_to_bytes
 //Requires: caml_str_repeat, caml_subarray_to_string
