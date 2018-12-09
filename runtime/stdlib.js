@@ -1064,6 +1064,14 @@ function caml_raw_backtrace_slot () {
 function caml_restore_raw_backtrace(exn, bt) { return 0 }
 //Provides: caml_get_current_callstack const
 function caml_get_current_callstack () { return [0]; }
+
+//Provides: caml_set_static_env
+function caml_set_static_env(k,v){
+  if(!joo_global_object.jsoo_static_env)
+    joo_global_object.jsoo_static_env = {}
+  joo_global_object.jsoo_static_env[k] = v;
+  return 0;
+}
 //Provides: caml_sys_getenv (const)
 //Requires: caml_raise_not_found
 //Requires: caml_js_to_string
@@ -1075,6 +1083,9 @@ function caml_sys_getenv (name) {
      && g.process.env
      && g.process.env[n] != undefined)
     return caml_js_to_string(g.process.env[n]);
+  if(joo_global_object.jsoo_static_env
+     && joo_global_object.jsoo_static_env[n])
+    return caml_js_to_string(joo_global_object.jsoo_static_env[n])
   caml_raise_not_found ();
 }
 //Provides: caml_sys_exit

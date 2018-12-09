@@ -420,7 +420,10 @@ let fold_closures (pc, blocks, _) f accu =
 
 (****)
 
-let prepend (start, blocks, free_pc) body =
+let prepend ((start, blocks, free_pc) as p) body =
+  match body with
+  | [] -> p
+  | _ ->
   let new_start = free_pc in
   let branch =
     if AddrMap.mem start blocks
