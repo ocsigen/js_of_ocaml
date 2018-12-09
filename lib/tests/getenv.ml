@@ -26,4 +26,4 @@ let () =
   | Some _ -> assert false
 
 
-let () = assert("\u{00b1}" = (getenv "D"))
+let () = assert(Sys.ocaml_version < "4.07" || "\u{00b1}" = (getenv "D"))
