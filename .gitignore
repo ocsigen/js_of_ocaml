@@ -27,6 +27,7 @@
 *.tmpjs
 *.map
 
+gh-pages
 
 _opam
 _build
