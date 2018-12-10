@@ -1,6 +1,6 @@
 include ../Makefile.conf
 
-OTHER=
+OTHER= -open Js_of_ocaml
 MLIS=
 CMI_DIR=../_build/default/
 SRC_DIR=../
@@ -10,7 +10,7 @@ MLIS+=$(wildcard ${SRC_DIR}ocamlbuild/*.mli)
 OTHER+=-I ${CMI_DIR}lib  -package ocamlbuild -I ${CMI_DIR}ocamlbuild -I ../_build/install/default/lib/js_of_ocaml -I ../_build/install/default/lib/js_of_ocaml/deriving -I ../_build/install/default/lib/js_of_ocaml-tyxml
 
 ifeq "${WITH_LWT}" "YES"
-OTHER += -package lwt -I ${CMI_DIR}lib/lwt -I ${CMI_DIR}lib/lwt/log
+OTHER += -package lwt -package lwt_log -I ${CMI_DIR}lib/lwt -I ${CMI_DIR}lib/lwt/log
 MLIS+=$(wildcard ${SRC_DIR}lib/lwt/*.mli) $(wildcard ${SRC_DIR}lib/lwt/log/*.mli)
 ifeq "${WITH_GRAPHICS}" "YES"
 OTHER+=-package graphics -I ${CMI_DIR}lib/lwt/graphics

@@ -44,7 +44,7 @@ BER=metalib.cma bertop.cmo \
 #CPPO_OPT+= -D metaocaml
 endif
 
-TYXML_DIR=$(shell ocamlfind query tyxml)
+TYXML_DIR=$(shell ocamlfind query tyxml.functor)
 
 #-jsopt "--pretty"
 MKTOP=jsoo_mktop -verbose $(SAFESTRING) -g \
