@@ -1,0 +1,5 @@
+=Module <<a_api_type | module Ppx_js >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Ppx_js>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Ppx_js >><<span class="ocsforge_color_keyword"|end>>>>~/~*
+
+----
+<<pre id="VALmapper" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|mapper>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_uid"|Migrate_parsetree>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|OCaml_405>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|Ast>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|Ast_mapper>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|mapper>>>>>>

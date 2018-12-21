@@ -1,0 +1,27 @@
+<<code language="ocaml" | object
+  method appendChild : node Js.t -> node Js.t Js.meth
+  method attributes : Dom.attr Dom.namedNodeMap Js.t Js.readonly_prop
+  method childNodes : node nodeList Js.t Js.prop
+  method cloneNode : bool Js.t -> node Js.t Js.meth
+  method compareDocumentPosition : node Js.t -> DocumentPosition.t Js.meth
+  method firstChild : node Js.t Js.opt Js.prop
+  method getAttribute : Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+  method getElementsByTagName :
+    Js.js_string Js.t -> Dom.element Dom.nodeList Js.t Js.meth
+  method hasAttribute : Js.js_string Js.t -> bool Js.t Js.meth
+  method hasChildNodes : bool Js.t Js.meth
+  method insertBefore : node Js.t -> node Js.t Js.opt -> node Js.t Js.meth
+  method lastChild : node Js.t Js.opt Js.prop
+  method nextSibling : node Js.t Js.opt Js.prop
+  method nodeName : Js.js_string Js.t Js.readonly_prop
+  method nodeType : nodeType Js.readonly_prop
+  method nodeValue : Js.js_string Js.t Js.opt Js.readonly_prop
+  method parentNode : node Js.t Js.opt Js.prop
+  method previousSibling : node Js.t Js.opt Js.prop
+  method removeAttribute : Js.js_string Js.t -> unit Js.meth
+  method removeChild : node Js.t -> node Js.t Js.meth
+  method replaceChild : node Js.t -> node Js.t -> node Js.t Js.meth
+  method setAttribute :
+    Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+  method tagName : Js.js_string Js.t Js.readonly_prop
+end >>

@@ -1,0 +1,1 @@
+<<code language="ocaml" | object method fromCharCode : int -> Js.js_string Js.t Js.meth end >>

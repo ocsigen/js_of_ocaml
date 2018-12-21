@@ -1,0 +1,17 @@
+<<code language="ocaml" | sig
+  type t = private int
+  type mask = private int
+  val disconnected : Dom.DocumentPosition.mask
+  val preceding : Dom.DocumentPosition.mask
+  val following : Dom.DocumentPosition.mask
+  val contains : Dom.DocumentPosition.mask
+  val contained_by : Dom.DocumentPosition.mask
+  val implementation_specific : Dom.DocumentPosition.mask
+  val has : Dom.DocumentPosition.t -> Dom.DocumentPosition.mask -> bool
+  val add :
+    Dom.DocumentPosition.mask ->
+    Dom.DocumentPosition.mask -> Dom.DocumentPosition.mask
+  val ( + ) :
+    Dom.DocumentPosition.mask ->
+    Dom.DocumentPosition.mask -> Dom.DocumentPosition.mask
+end >>

@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method append : Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+  method append_blob : Js.js_string Js.t -> File.blob Js.t -> unit Js.meth
+end >>

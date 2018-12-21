@@ -1,0 +1,15 @@
+<<code language="ocaml" | sig
+  val set_channel_flusher :
+    Pervasives.out_channel -> (string -> unit) -> unit
+  val set_channel_filler : Pervasives.in_channel -> (unit -> string) -> unit
+  val register_file : name:string -> content:string -> unit
+  val update_file : name:string -> content:string -> unit
+  val register_autoload' :
+    path:string ->
+    (Js.js_string Js.t * Js.js_string Js.t -> Js.js_string Js.t option) ->
+    unit
+  val register_autoload :
+    path:string -> (string * string -> string option) -> unit
+  external file_content : string -> string = "caml_fs_file_content"
+  val js_of_ocaml_version : string
+end >>

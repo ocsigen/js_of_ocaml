@@ -1,0 +1,32 @@
+=Module <<a_api_type | module Pa_deriving_Json >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Pa_deriving_Json>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Pa_deriving_Json >><<span class="ocsforge_color_keyword"|end>>>>~Deriving~_json syntax extension ~(based on the //deriving// library~)~.
+**See also**
+* [[https://github.com/ocsigen/deriving|the source code of //deriving//]]
+* [[http://code.google.com/p/deriving/|the documentation of the original //deriving// library by ~Jeremy ~Yallop~.]]
+
+
+----
+
+<<span class="odocwiki_inlinecode"|type typ ~= ~.~. deriving ~(~Json~)>> with generate
+
+<<code language='ocaml'|module Json_typ : sig
+  type a = typ
+  val to_string : a -> string
+  val from_string : string -> a
+  ...
+end>>
+
+<<pre id="VALregister_predefs" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|register~_predefs>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|\\  <<span class="ocsforge_color_uid"|Pa_deriving_common>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Type>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|qname>> <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_uid"|Pa_deriving_common>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Type>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|qname>> <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|register~_predefs type~A type~B>> tells the syntax extension
+    that <<span class="odocwiki_inlinecode"|type~B>> is an alias for <<span class="odocwiki_inlinecode"|type~A>>~.
+    ~The extension syntax will then use the deriving~_json implementation
+    of <<span class="odocwiki_inlinecode"|type~B>> in place of <<span class="odocwiki_inlinecode"|type~A>>~'s one~.
+
+
+    ~Important note~: ~Type~B does ~N~O~T ~H~A~V~E ~T~O actually exists~.
+
+
+    ~In practive~, you may need to use this in the following cases~:
+* use deriving~_json on types from external libraries that do not use deriving
+* use deriving~_json on abstract types
+
+>>

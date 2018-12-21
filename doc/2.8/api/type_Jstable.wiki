@@ -1,0 +1,7 @@
+<<code language="ocaml" | sig
+  type 'a t
+  val create : unit -> 'a Jstable.t
+  val add : 'a Jstable.t -> Js.js_string Js.t -> 'a -> unit
+  val find : 'a Jstable.t -> Js.js_string Js.t -> 'a Js.optdef
+  val keys : 'a Jstable.t -> Js.js_string Js.t list
+end >>

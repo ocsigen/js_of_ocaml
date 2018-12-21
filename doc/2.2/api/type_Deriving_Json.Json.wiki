@@ -1,0 +1,12 @@
+<<code language="ocaml" | sig
+  type a
+  val t : Deriving_Json.Json.a Deriving_Json.t
+  val write : Buffer.t -> Deriving_Json.Json.a -> unit
+  val read : Deriving_Json_lexer.lexbuf -> Deriving_Json.Json.a
+  val to_string : Deriving_Json.Json.a -> string
+  val from_string : string -> Deriving_Json.Json.a
+  val match_variant : [ `Cst of int | `NCst of int ] -> bool
+  val read_variant :
+    Deriving_Json_lexer.lexbuf ->
+    [ `Cst of int | `NCst of int ] -> Deriving_Json.Json.a
+end >>

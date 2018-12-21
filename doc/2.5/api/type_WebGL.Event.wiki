@@ -1,0 +1,5 @@
+<<code language="ocaml" | sig
+  val webglcontextlost : WebGL.contextEvent Js.t Dom_html.Event.typ
+  val webglcontextrestored : WebGL.contextEvent Js.t Dom_html.Event.typ
+  val webglcontextcreationerror : WebGL.contextEvent Js.t Dom_html.Event.typ
+end >>

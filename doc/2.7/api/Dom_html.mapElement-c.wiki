@@ -1,0 +1,6 @@
+=Class type <<a_api_type | class type Dom_html.mapElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEmapElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|mapElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_html.mapElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_html.element >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODareas"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|areas>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="areaElement" | class type Dom_html.areaElement >> <<a_api text="collection" | class type Dom_html.collection >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="METHODname"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|name>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Js.js_string" | class type Js.js_string >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.prop" | type Js.prop >>>>>>

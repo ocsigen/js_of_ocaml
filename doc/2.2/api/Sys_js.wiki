@@ -1,0 +1,39 @@
+=Module <<a_api_type | module Sys_js >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Sys_js>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Sys_js >><<span class="ocsforge_color_keyword"|end>>>>~Javascript specific ~Sys functions~.
+
+----
+
+
+==@@id="2_Io"@@~Io~.==
+
+<<pre id="VALset_channel_flusher" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|set~_channel~_flusher>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|\\  <<span class="ocsforge_color_uid"|Pervasives>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|out_channel>> <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>string <<span class="ocsforge_color_delimiter"| -> >> unit<<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~Set a callback to be called when an out~_channel flush its buffer~.
+      <<span class="odocwiki_inlinecode"|set~_channel~_flusher chan cb>> install the callback <<span class="odocwiki_inlinecode"|cb>> for <<span class="odocwiki_inlinecode"|chan>> out~_channel~.
+      <<span class="odocwiki_inlinecode"|cb>> will be called with the string to flush~.
+>>
+
+
+==@@id="2_Pseudofilesystem"@@~Pseudo filesystem~.==
+
+<<pre id="VALregister_file" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|register~_file>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_label"| name: >>string <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_label"| content: >>string <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~Register a file to a ~Pseudo ~Filesystem~.
+      <<span class="odocwiki_inlinecode"|register~_file ~~name ~~content>> register the file <<span class="odocwiki_inlinecode"|name>> with content <<span class="odocwiki_inlinecode"|content>>
+      so it can be be opened with <<span class="odocwiki_inlinecode"|~Pervasives~.open~_in name>>
+>>
+<<pre id="VALregister_autoload" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|register~_autoload>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_label"| path: >>string <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>string <<span class="ocsforge_color_delimiter"| -> >> string option<<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~Register a callback to the <<span class="odocwiki_inlinecode"|path>> to dynamicly load missing files~.
+      ~Whenever a file is missing in <<span class="odocwiki_inlinecode"|path>>~, the callback is used to optionally
+      get the content of the file~.
+      <<span class="odocwiki_inlinecode"|register~_autoload ~~path f>> register the callback <<span class="odocwiki_inlinecode"|f>> to the path <<span class="odocwiki_inlinecode"|path>>~.
+      ~The callback <<span class="odocwiki_inlinecode"|f>> receives the absolute filename as arguement~.
+>>
+<<pre id="VALfile_content" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|file~_content>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> string>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|file~_content name>> returns the content of the file <<span class="odocwiki_inlinecode"|name>>~.
+      ~Raise <<span class="odocwiki_inlinecode"|~Not~_found>> if the file does not exists~.
+>>
+
+
+==@@id="2_Information"@@~Information~.==
+
+<<pre id="VALjs_of_ocaml_version" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|js~_of~_ocaml~_version>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|js~_of~_ocaml~_version>> is the version of ~Js~_of~_ocaml~.
+      ~It is a string of the form <<span class="odocwiki_inlinecode"|"major~.minor~[~.patchlevel~]~[~+additional~-info~]">>~,
+      where <<span class="odocwiki_inlinecode"|major>>~, <<span class="odocwiki_inlinecode"|minor>>~, and <<span class="odocwiki_inlinecode"|patchlevel>> are integers~, and
+      <<span class="odocwiki_inlinecode"|additional~-info>> is an arbitrary string~. ~The <<span class="odocwiki_inlinecode"|~[~.patchlevel~]>> and
+      <<span class="odocwiki_inlinecode"|~[~+additional~-info~]>> parts may be absent~.
+>>

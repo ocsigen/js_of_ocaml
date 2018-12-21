@@ -1,0 +1,6 @@
+<<code language="ocaml" | object
+  method availHeight : int Js.readonly_prop
+  method availWidth : int Js.readonly_prop
+  method height : int Js.readonly_prop
+  method width : int Js.readonly_prop
+end >>

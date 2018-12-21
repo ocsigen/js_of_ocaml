@@ -1,0 +1,11 @@
+=Class type <<a_api_type | class type Dom_svg.polygonElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEpolygonElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|polygonElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.polygonElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.element >>
+* <<a_api | class Dom_svg.tests >>
+* <<a_api | class Dom_svg.langSpace >>
+* <<a_api | class Dom_svg.externalResourcesRequired >>
+* <<a_api | class Dom_svg.stylable >>
+* <<a_api | class Dom_svg.transformable >>
+* <<a_api | class Dom_svg.animatedPoints >>
+
+----

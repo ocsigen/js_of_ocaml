@@ -1,0 +1,6 @@
+<<code language="ocaml" | sig
+  val dispatcher :
+    ?oasis_executables:Ocamlbuild_plugin.Pathname.t list ->
+    Ocamlbuild_plugin.hook -> unit
+  val oasis_support : executables:Ocamlbuild_plugin.Pathname.t list -> unit
+end >>

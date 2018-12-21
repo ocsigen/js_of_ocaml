@@ -1,0 +1,77 @@
+<<code language="ocaml" | object ('a)
+  method binaryType : Js.js_string Js.t Js.prop
+  method bufferedAmount : int Js.readonly_prop
+  method close : unit Js.meth
+  method close_withCode : int -> unit Js.meth
+  method close_withCodeAndReason : int -> Js.js_string Js.t -> unit Js.meth
+  method extensions : Js.js_string Js.t Js.readonly_prop
+  method onclick :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onclose :
+    ('a Js.t, 'a WebSockets.closeEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method ondblclick :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ondrag :
+    ('a Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ondragend :
+    ('a Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ondragenter :
+    ('a Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ondragleave :
+    ('a Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ondragover :
+    ('a Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ondragstart :
+    ('a Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ondrop :
+    ('a Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onerror :
+    ('a Js.t, 'a Dom.event Js.t) Dom.event_listener Js.writeonly_prop
+  method onkeydown :
+    ('a Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onkeypress :
+    ('a Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onkeyup :
+    ('a Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmessage :
+    ('a Js.t, 'a WebSockets.messageEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onmousedown :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmousemove :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmouseout :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmouseover :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmouseup :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onopen :
+    ('a Js.t, 'a Dom.event Js.t) Dom.event_listener Js.writeonly_prop
+  method onscroll :
+    ('a Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
+  method protocol : Js.js_string Js.t Js.readonly_prop
+  method readyState : WebSockets.readyState Js.readonly_prop
+  method send : Js.js_string Js.t -> unit Js.meth
+  method send_blob : File.blob Js.t -> unit Js.meth
+  method send_buffer : Typed_array.arrayBuffer Js.t -> unit Js.meth
+  method url : Js.js_string Js.t Js.readonly_prop
+end >>

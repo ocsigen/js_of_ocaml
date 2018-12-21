@@ -1,0 +1,6 @@
+<<code language="ocaml" | object
+  method message : Js.js_string Js.t Js.prop
+  method name : Js.js_string Js.t Js.prop
+  method stack : Js.js_string Js.t Js.optdef Js.prop
+  method toString : Js.js_string Js.t Js.meth
+end >>

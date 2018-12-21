@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method align : Dom_svg.alignmentType Js.readonly_prop
+  method meetOrSlice : Dom_svg.meetOrSliceType Js.readonly_prop
+end >>

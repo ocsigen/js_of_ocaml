@@ -1,0 +1,287 @@
+<<code language="ocaml" | sig
+  class type ['node] nodeList =
+    object
+      method item : int -> 'node Js.t Js.opt Js.meth
+      method length : int Js.readonly_prop
+    end
+  type nodeType =
+      OTHER
+    | ELEMENT
+    | ATTRIBUTE
+    | TEXT
+    | CDATA_SECTION
+    | ENTITY_REFERENCE
+    | ENTITY
+    | PROCESSING_INSTRUCTION
+    | COMMENT
+    | DOCUMENT
+    | DOCUMENT_TYPE
+    | DOCUMENT_FRAGMENT
+    | NOTATION
+  module DocumentPosition :
+    sig
+      type t = private int
+      type mask = private int
+      val disconnected : Dom.DocumentPosition.mask
+      val preceding : Dom.DocumentPosition.mask
+      val following : Dom.DocumentPosition.mask
+      val contains : Dom.DocumentPosition.mask
+      val contained_by : Dom.DocumentPosition.mask
+      val implementation_specific : Dom.DocumentPosition.mask
+      val has : Dom.DocumentPosition.t -> Dom.DocumentPosition.mask -> bool
+      val add :
+        Dom.DocumentPosition.mask ->
+        Dom.DocumentPosition.mask -> Dom.DocumentPosition.mask
+      val ( + ) :
+        Dom.DocumentPosition.mask ->
+        Dom.DocumentPosition.mask -> Dom.DocumentPosition.mask
+    end
+  class type node =
+    object
+      method appendChild : Dom.node Js.t -> Dom.node Js.t Js.meth
+      method childNodes : Dom.node Dom.nodeList Js.t Js.prop
+      method cloneNode : bool Js.t -> Dom.node Js.t Js.meth
+      method compareDocumentPosition :
+        Dom.node Js.t -> Dom.DocumentPosition.t Js.meth
+      method firstChild : Dom.node Js.t Js.opt Js.prop
+      method hasChildNodes : bool Js.t Js.meth
+      method insertBefore :
+        Dom.node Js.t -> Dom.node Js.t Js.opt -> Dom.node Js.t Js.meth
+      method lastChild : Dom.node Js.t Js.opt Js.prop
+      method lookupNamespaceURI :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method lookupPrefix :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method namespaceURI : Js.js_string Js.t Js.opt Js.prop
+      method nextSibling : Dom.node Js.t Js.opt Js.prop
+      method nodeName : Js.js_string Js.t Js.readonly_prop
+      method nodeType : Dom.nodeType Js.readonly_prop
+      method nodeValue : Js.js_string Js.t Js.opt Js.readonly_prop
+      method parentNode : Dom.node Js.t Js.opt Js.prop
+      method previousSibling : Dom.node Js.t Js.opt Js.prop
+      method removeChild : Dom.node Js.t -> Dom.node Js.t Js.meth
+      method replaceChild :
+        Dom.node Js.t -> Dom.node Js.t -> Dom.node Js.t Js.meth
+    end
+  class type attr =
+    object
+      method appendChild : node Js.t -> node Js.t Js.meth
+      method childNodes : node nodeList Js.t Js.prop
+      method cloneNode : bool Js.t -> node Js.t Js.meth
+      method compareDocumentPosition :
+        node Js.t -> DocumentPosition.t Js.meth
+      method firstChild : node Js.t Js.opt Js.prop
+      method hasChildNodes : bool Js.t Js.meth
+      method insertBefore :
+        node Js.t -> node Js.t Js.opt -> node Js.t Js.meth
+      method lastChild : node Js.t Js.opt Js.prop
+      method lookupNamespaceURI :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method lookupPrefix :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method name : Js.js_string Js.t Js.readonly_prop
+      method namespaceURI : Js.js_string Js.t Js.opt Js.prop
+      method nextSibling : node Js.t Js.opt Js.prop
+      method nodeName : Js.js_string Js.t Js.readonly_prop
+      method nodeType : nodeType Js.readonly_prop
+      method nodeValue : Js.js_string Js.t Js.opt Js.readonly_prop
+      method ownerElement : Dom.element Js.t Js.prop
+      method parentNode : node Js.t Js.opt Js.prop
+      method previousSibling : node Js.t Js.opt Js.prop
+      method removeChild : node Js.t -> node Js.t Js.meth
+      method replaceChild : node Js.t -> node Js.t -> node Js.t Js.meth
+      method specified : bool Js.t Js.readonly_prop
+      method value : Js.js_string Js.t Js.prop
+    end
+  and ['a] namedNodeMap =
+    object
+      constraint 'a = Dom.attr
+      method getNamedItem : Js.js_string Js.t -> 'a Js.t Js.opt Js.meth
+      method item : int -> 'a Js.t Js.opt Js.meth
+      method length : int Js.readonly_prop
+      method removeNamedItem : Js.js_string Js.t -> 'a Js.t Js.opt Js.meth
+      method setNamedItem : 'a Js.t -> 'a Js.t Js.opt Js.meth
+    end
+  and element =
+    object
+      method appendChild : node Js.t -> node Js.t Js.meth
+      method attributes : Dom.attr Dom.namedNodeMap Js.t Js.readonly_prop
+      method childNodes : node nodeList Js.t Js.prop
+      method cloneNode : bool Js.t -> node Js.t Js.meth
+      method compareDocumentPosition :
+        node Js.t -> DocumentPosition.t Js.meth
+      method firstChild : node Js.t Js.opt Js.prop
+      method getAttribute :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method getAttributeNS :
+        Js.js_string Js.t ->
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method getAttributeNode :
+        Js.js_string Js.t -> Dom.attr Js.t Js.opt Js.meth
+      method getAttributeNodeNS :
+        Js.js_string Js.t ->
+        Js.js_string Js.t -> Dom.attr Js.t Js.opt Js.meth
+      method getElementsByTagName :
+        Js.js_string Js.t -> Dom.element Dom.nodeList Js.t Js.meth
+      method hasAttribute : Js.js_string Js.t -> bool Js.t Js.meth
+      method hasAttributeNS :
+        Js.js_string Js.t -> Js.js_string Js.t -> bool Js.t Js.meth
+      method hasChildNodes : bool Js.t Js.meth
+      method insertBefore :
+        node Js.t -> node Js.t Js.opt -> node Js.t Js.meth
+      method lastChild : node Js.t Js.opt Js.prop
+      method lookupNamespaceURI :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method lookupPrefix :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method namespaceURI : Js.js_string Js.t Js.opt Js.prop
+      method nextSibling : node Js.t Js.opt Js.prop
+      method nodeName : Js.js_string Js.t Js.readonly_prop
+      method nodeType : nodeType Js.readonly_prop
+      method nodeValue : Js.js_string Js.t Js.opt Js.readonly_prop
+      method parentNode : node Js.t Js.opt Js.prop
+      method previousSibling : node Js.t Js.opt Js.prop
+      method removeAttribute : Js.js_string Js.t -> unit Js.meth
+      method removeAttributeNS :
+        Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+      method removeAttributeNode : Dom.attr Js.t -> Dom.attr Js.t Js.meth
+      method removeChild : node Js.t -> node Js.t Js.meth
+      method replaceChild : node Js.t -> node Js.t -> node Js.t Js.meth
+      method setAttribute :
+        Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+      method setAttributeNS :
+        Js.js_string Js.t ->
+        Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+      method setAttributeNode : Dom.attr Js.t -> Dom.attr Js.t Js.opt Js.meth
+      method setAttributeNodeNS :
+        Dom.attr Js.t -> Dom.attr Js.t Js.opt Js.meth
+      method tagName : Js.js_string Js.t Js.readonly_prop
+    end
+  class type characterData =
+    object
+      method appendChild : node Js.t -> node Js.t Js.meth
+      method appendData : Js.js_string Js.t -> unit Js.meth
+      method childNodes : node nodeList Js.t Js.prop
+      method cloneNode : bool Js.t -> node Js.t Js.meth
+      method compareDocumentPosition :
+        node Js.t -> DocumentPosition.t Js.meth
+      method data : Js.js_string Js.t Js.prop
+      method deleteData : int -> int -> unit Js.meth
+      method firstChild : node Js.t Js.opt Js.prop
+      method hasChildNodes : bool Js.t Js.meth
+      method insertBefore :
+        node Js.t -> node Js.t Js.opt -> node Js.t Js.meth
+      method insertData : int -> Js.js_string Js.t -> unit Js.meth
+      method lastChild : node Js.t Js.opt Js.prop
+      method length : int Js.readonly_prop
+      method lookupNamespaceURI :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method lookupPrefix :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method namespaceURI : Js.js_string Js.t Js.opt Js.prop
+      method nextSibling : node Js.t Js.opt Js.prop
+      method nodeName : Js.js_string Js.t Js.readonly_prop
+      method nodeType : nodeType Js.readonly_prop
+      method nodeValue : Js.js_string Js.t Js.opt Js.readonly_prop
+      method parentNode : node Js.t Js.opt Js.prop
+      method previousSibling : node Js.t Js.opt Js.prop
+      method removeChild : node Js.t -> node Js.t Js.meth
+      method replaceChild : node Js.t -> node Js.t -> node Js.t Js.meth
+      method replaceData : int -> int -> Js.js_string Js.t -> unit Js.meth
+      method subjs_stringData : int -> int -> Js.js_string Js.t Js.meth
+    end
+  class type comment = characterData
+  class type text = characterData
+  class type documentFragment = node
+  class type ['element] document =
+    object
+      method adoptNode : Dom.element Js.t -> 'element Js.t Js.meth
+      method appendChild : node Js.t -> node Js.t Js.meth
+      method childNodes : node nodeList Js.t Js.prop
+      method cloneNode : bool Js.t -> node Js.t Js.meth
+      method compareDocumentPosition :
+        node Js.t -> DocumentPosition.t Js.meth
+      method createAttribute : Js.js_string Js.t -> Dom.attr Js.t Js.meth
+      method createComment : Js.js_string Js.t -> Dom.comment Js.t Js.meth
+      method createDocumentFragment : Dom.documentFragment Js.t Js.meth
+      method createElement : Js.js_string Js.t -> 'element Js.t Js.meth
+      method createElementNS :
+        Js.js_string Js.t -> Js.js_string Js.t -> 'element Js.t Js.meth
+      method createTextNode : Js.js_string Js.t -> Dom.text Js.t Js.meth
+      method documentElement : 'element Js.t Js.readonly_prop
+      method firstChild : node Js.t Js.opt Js.prop
+      method getElementById :
+        Js.js_string Js.t -> 'element Js.t Js.opt Js.meth
+      method getElementsByTagName :
+        Js.js_string Js.t -> 'element Dom.nodeList Js.t Js.meth
+      method hasChildNodes : bool Js.t Js.meth
+      method importNode :
+        Dom.element Js.t -> bool Js.t -> 'element Js.t Js.meth
+      method insertBefore :
+        node Js.t -> node Js.t Js.opt -> node Js.t Js.meth
+      method lastChild : node Js.t Js.opt Js.prop
+      method lookupNamespaceURI :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method lookupPrefix :
+        Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+      method namespaceURI : Js.js_string Js.t Js.opt Js.prop
+      method nextSibling : node Js.t Js.opt Js.prop
+      method nodeName : Js.js_string Js.t Js.readonly_prop
+      method nodeType : nodeType Js.readonly_prop
+      method nodeValue : Js.js_string Js.t Js.opt Js.readonly_prop
+      method parentNode : node Js.t Js.opt Js.prop
+      method previousSibling : node Js.t Js.opt Js.prop
+      method removeChild : node Js.t -> node Js.t Js.meth
+      method replaceChild : node Js.t -> node Js.t -> node Js.t Js.meth
+    end
+  val insertBefore :
+    #Dom.node Js.t -> #Dom.node Js.t -> #Dom.node Js.t Js.opt -> unit
+  val replaceChild :
+    #Dom.node Js.t -> #Dom.node Js.t -> #Dom.node Js.t -> unit
+  val removeChild : #Dom.node Js.t -> #Dom.node Js.t -> unit
+  val appendChild : #Dom.node Js.t -> #Dom.node Js.t -> unit
+  val list_of_nodeList : 'a Dom.nodeList Js.t -> 'a Js.t list
+  type node_type =
+      Element of Dom.element Js.t
+    | Attr of Dom.attr Js.t
+    | Text of Dom.text Js.t
+    | Other of Dom.node Js.t
+  val nodeType : #Dom.node Js.t -> Dom.node_type
+  module CoerceTo :
+    sig
+      val element : #Dom.node Js.t -> Dom.element Js.t Js.opt
+      val text : #Dom.node Js.t -> Dom.text Js.t Js.opt
+      val attr : #Dom.node Js.t -> Dom.attr Js.t Js.opt
+    end
+  type (-'a, -'b) event_listener
+  class type ['a] event =
+    object
+      method _type : Js.js_string Js.t Js.readonly_prop
+      method currentTarget : 'a Js.t Js.opt Js.readonly_prop
+      method srcElement : 'a Js.t Js.opt Js.readonly_prop
+      method target : 'a Js.t Js.opt Js.readonly_prop
+    end
+  val no_handler : ('a, 'b) Dom.event_listener
+  val handler :
+    (('e #Dom.event as 'b) Js.t -> bool Js.t) ->
+    ('a, 'b Js.t) Dom.event_listener
+  val full_handler :
+    ('a -> ('e #Dom.event as 'b) Js.t -> bool Js.t) ->
+    ('a, 'b Js.t) Dom.event_listener
+  val invoke_handler : ('a, 'b) Dom.event_listener -> 'a -> 'b -> bool Js.t
+  val eventTarget : (< .. > as 'a) #Dom.event Js.t -> 'a Js.t
+  type event_listener_id
+  module Event : sig type 'a typ val make : string -> 'a Dom.Event.typ end
+  val addEventListener :
+    (< .. > as 'a) Js.t ->
+    'b Dom.Event.typ ->
+    ('a Js.t, 'b) Dom.event_listener -> bool Js.t -> Dom.event_listener_id
+  val removeEventListener : Dom.event_listener_id -> unit
+  val preventDefault : 'a #Dom.event Js.t -> unit
+  class type stringList =
+    object
+      method contains : Js.js_string Js.t -> bool Js.t Js.meth
+      method item : int -> Js.js_string Js.t Js.opt Js.meth
+      method length : int Js.readonly_prop
+    end
+end >>

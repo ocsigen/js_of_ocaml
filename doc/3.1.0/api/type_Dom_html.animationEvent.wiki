@@ -1,0 +1,9 @@
+<<code language="ocaml" | object
+  method _type : Js.js_string Js.t Js.readonly_prop
+  method animationName : Js.js_string Js.t Js.readonly_prop
+  method currentTarget : element Js.t Js.opt Js.readonly_prop
+  method elapsedTime : float Js.readonly_prop
+  method pseudoElement : Js.js_string Js.t Js.readonly_prop
+  method srcElement : element Js.t Js.opt Js.readonly_prop
+  method target : element Js.t Js.opt Js.readonly_prop
+end >>

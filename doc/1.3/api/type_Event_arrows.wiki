@@ -1,0 +1,138 @@
+<<code language="ocaml" | sig
+  type canceller
+  type ('a, 'b) t
+  val lwt_arr : ('a -> 'b Lwt.t) -> ('a, 'b) Event_arrows.t
+  val arr : ('a -> 'b) -> ('a, 'b) Event_arrows.t
+  val ( >>> ) :
+    ('a, 'b) Event_arrows.t ->
+    ('b, 'c) Event_arrows.t -> ('a, 'c) Event_arrows.t
+  val ( >>>| ) :
+    ('a, 'b) Event_arrows.t -> ('b -> 'c Lwt.t) -> ('a, 'c) Event_arrows.t
+  val run : ('a, unit) Event_arrows.t -> 'a -> Event_arrows.canceller
+  val cancel : Event_arrows.canceller -> unit
+  val first : ('a, 'b) Event_arrows.t list -> ('a, 'b) Event_arrows.t
+  val iter : ('a, 'b) Event_arrows.t list -> ('a, 'b) Event_arrows.t
+  val click :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.mouseEvent Js.t) Event_arrows.t
+  val dblclick :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.mouseEvent Js.t) Event_arrows.t
+  val mousedown :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.mouseEvent Js.t) Event_arrows.t
+  val mouseup :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.mouseEvent Js.t) Event_arrows.t
+  val mouseover :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.mouseEvent Js.t) Event_arrows.t
+  val mousemove :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.mouseEvent Js.t) Event_arrows.t
+  val mouseout :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.mouseEvent Js.t) Event_arrows.t
+  val keypress :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.keyboardEvent Js.t) Event_arrows.t
+  val keydown :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.keyboardEvent Js.t) Event_arrows.t
+  val keyup :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    ('a, Dom_html.keyboardEvent Js.t) Event_arrows.t
+  val clicks :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t, 'a) Event_arrows.t -> ('b, 'c) Event_arrows.t
+  val dblclicks :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t, 'a) Event_arrows.t -> ('b, 'c) Event_arrows.t
+  val mousedowns :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t, 'a) Event_arrows.t -> ('b, 'c) Event_arrows.t
+  val mouseups :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t, 'a) Event_arrows.t -> ('b, 'c) Event_arrows.t
+  val mouseovers :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t, 'a) Event_arrows.t -> ('b, 'c) Event_arrows.t
+  val mousemoves :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t, 'a) Event_arrows.t -> ('b, 'c) Event_arrows.t
+  val mouseouts :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t, 'a) Event_arrows.t -> ('b, 'c) Event_arrows.t
+  val keypresses :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.keyboardEvent Js.t, 'a) Event_arrows.t ->
+    ('b, 'c) Event_arrows.t
+  val keydowns :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.keyboardEvent Js.t, 'a) Event_arrows.t ->
+    ('b, 'c) Event_arrows.t
+  val keyups :
+    ?use_capture:bool ->
+    ?keep_default:bool ->
+    ?propagate:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.keyboardEvent Js.t, 'a) Event_arrows.t ->
+    ('b, 'c) Event_arrows.t
+end >>

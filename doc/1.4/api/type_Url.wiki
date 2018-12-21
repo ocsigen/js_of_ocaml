@@ -1,0 +1,42 @@
+<<code language="ocaml" | sig
+  val urldecode : string -> string
+  val urlencode : ?with_plus:bool -> string -> string
+  type http_url = {
+    hu_host : string;
+    hu_port : int;
+    hu_path : string list;
+    hu_path_string : string;
+    hu_arguments : (string * string) list;
+    hu_fragment : string;
+  }
+  type file_url = {
+    fu_path : string list;
+    fu_path_string : string;
+    fu_arguments : (string * string) list;
+    fu_fragment : string;
+  }
+  type url =
+      Http of Url.http_url
+    | Https of Url.http_url
+    | File of Url.file_url
+  val default_http_port : int
+  val default_https_port : int
+  val path_of_path_string : string -> string list
+  val encode_arguments : (string * string) list -> string
+  val decode_arguments : string -> (string * string) list
+  val url_of_string : string -> Url.url option
+  val string_of_url : Url.url -> string
+  module Current :
+    sig
+      val host : string
+      val port : int option
+      val path_string : string
+      val path : string list
+      val arguments : (string * string) list
+      val get_fragment : unit -> string
+      val set_fragment : string -> unit
+      val get : unit -> Url.url option
+      val set : Url.url -> unit
+      val as_string : string
+    end
+end >>

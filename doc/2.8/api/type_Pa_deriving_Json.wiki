@@ -1,0 +1,4 @@
+<<code language="ocaml" | sig
+  val register_predefs :
+    Pa_deriving_common.Type.qname -> Pa_deriving_common.Type.qname -> unit
+end >>

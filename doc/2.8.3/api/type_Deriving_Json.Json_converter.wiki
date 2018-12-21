@@ -1,0 +1,8 @@
+<<code language="ocaml" | sig
+  type a
+  type b
+  val t : Deriving_Json.Json_converter.a Deriving_Json.t
+  val from_ :
+    Deriving_Json.Json_converter.a -> Deriving_Json.Json_converter.b
+  val to_ : Deriving_Json.Json_converter.b -> Deriving_Json.Json_converter.a
+end >>

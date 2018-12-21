@@ -1,0 +1,6 @@
+=Class type <<a_api_type | class type Dom_svg.animateElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEanimateElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|animateElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.animateElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.animationElement >>
+* <<a_api | class Dom_svg.stylable >>
+
+----

@@ -1,0 +1,4 @@
+<<code language="ocaml" | sig
+  val string : File.file_any -> Js.js_string Js.t Js.Opt.t
+  val arrayBuffer : File.file_any -> Typed_array.arrayBuffer Js.t Js.Opt.t
+end >>

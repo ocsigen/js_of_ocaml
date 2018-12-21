@@ -1,0 +1,1 @@
+<<code language="ocaml" | sig type 'a typ val make : string -> 'a Dom.Event.typ end >>

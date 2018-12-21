@@ -1,0 +1,1 @@
+<<code language="ocaml" | [Dom_svg.preserveAspectRatio Js.t] Dom_svg.animated >>

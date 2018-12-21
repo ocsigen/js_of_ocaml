@@ -1,0 +1,39 @@
+<<code language="ocaml" | object
+  method _URL : Js.js_string Js.t Js.readonly_prop
+  method adoptNode : Dom.element Js.t -> element Js.t Js.meth
+  method appendChild : Dom.node Js.t -> Dom.node Js.t Js.meth
+  method childNodes : Dom.node Dom.nodeList Js.t Js.prop
+  method cloneNode : bool Js.t -> Dom.node Js.t Js.meth
+  method compareDocumentPosition :
+    Dom.node Js.t -> Dom.DocumentPosition.t Js.meth
+  method createAttribute : Js.js_string Js.t -> Dom.attr Js.t Js.meth
+  method createComment : Js.js_string Js.t -> Dom.comment Js.t Js.meth
+  method createDocumentFragment : Dom.documentFragment Js.t Js.meth
+  method createElement : Js.js_string Js.t -> element Js.t Js.meth
+  method createElementNS :
+    Js.js_string Js.t -> Js.js_string Js.t -> element Js.t Js.meth
+  method createTextNode : Js.js_string Js.t -> Dom.text Js.t Js.meth
+  method documentElement : element Js.t Js.readonly_prop
+  method domain : Js.js_string Js.t Js.prop
+  method firstChild : Dom.node Js.t Js.opt Js.prop
+  method getElementById : Js.js_string Js.t -> element Js.t Js.opt Js.meth
+  method getElementsByTagName :
+    Js.js_string Js.t -> element Dom.nodeList Js.t Js.meth
+  method hasChildNodes : bool Js.t Js.meth
+  method importNode : Dom.element Js.t -> bool Js.t -> element Js.t Js.meth
+  method insertBefore :
+    Dom.node Js.t -> Dom.node Js.t Js.opt -> Dom.node Js.t Js.meth
+  method lastChild : Dom.node Js.t Js.opt Js.prop
+  method nextSibling : Dom.node Js.t Js.opt Js.prop
+  method nodeName : Js.js_string Js.t Js.readonly_prop
+  method nodeType : Dom.nodeType Js.readonly_prop
+  method nodeValue : Js.js_string Js.t Js.opt Js.readonly_prop
+  method parentNode : Dom.node Js.t Js.opt Js.prop
+  method previousSibling : Dom.node Js.t Js.opt Js.prop
+  method referrer : Js.js_string Js.t Js.readonly_prop
+  method removeChild : Dom.node Js.t -> Dom.node Js.t Js.meth
+  method replaceChild :
+    Dom.node Js.t -> Dom.node Js.t -> Dom.node Js.t Js.meth
+  method rootElement : Dom_svg.svgElement Js.t Js.readonly_prop
+  method title : Js.js_string Js.t Js.prop
+end >>

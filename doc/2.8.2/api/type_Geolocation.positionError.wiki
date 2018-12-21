@@ -1,0 +1,8 @@
+<<code language="ocaml" | object
+  method _PERMISSION_DENIED_ : Geolocation.positionErrorCode Js.readonly_prop
+  method _POSITION_UNAVAILABLE_ :
+    Geolocation.positionErrorCode Js.readonly_prop
+  method _TIMEOUT : Geolocation.positionErrorCode Js.readonly_prop
+  method code : Geolocation.positionErrorCode Js.readonly_prop
+  method message : Js.js_string Js.t Js.readonly_prop
+end >>

@@ -1,0 +1,1 @@
+<<code language="ocaml" | object method animVal : 'a Js.prop method baseVal : 'a Js.prop end >>

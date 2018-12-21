@@ -1,0 +1,47 @@
+<<code language="ocaml" | object
+  method getDate : int Js.meth
+  method getDay : int Js.meth
+  method getFullYear : int Js.meth
+  method getHours : int Js.meth
+  method getMilliseconds : int Js.meth
+  method getMinutes : int Js.meth
+  method getMonth : int Js.meth
+  method getSeconds : int Js.meth
+  method getTime : float Js.meth
+  method getTimezoneOffset : int Js.meth
+  method getUTCDate : int Js.meth
+  method getUTCDay : int Js.meth
+  method getUTCFullYear : int Js.meth
+  method getUTCHours : int Js.meth
+  method getUTCMilliseconds : int Js.meth
+  method getUTCMinutes : int Js.meth
+  method getUTCMonth : int Js.meth
+  method getUTCSeconds : int Js.meth
+  method setDate : int -> float Js.meth
+  method setDay : int -> float Js.meth
+  method setFullYear : int -> float Js.meth
+  method setHours : int -> float Js.meth
+  method setMilliseconds : int -> float Js.meth
+  method setMinutes : int -> float Js.meth
+  method setMonth : int -> float Js.meth
+  method setSeconds : int -> float Js.meth
+  method setTime : float -> float Js.meth
+  method setUTCDate : int -> float Js.meth
+  method setUTCDay : int -> float Js.meth
+  method setUTCFullYear : int -> float Js.meth
+  method setUTCHours : int -> float Js.meth
+  method setUTCMilliseconds : int -> float Js.meth
+  method setUTCMinutes : int -> float Js.meth
+  method setUTCMonth : int -> float Js.meth
+  method setUTCSeconds : int -> float Js.meth
+  method toDateString : Js.js_string Js.t Js.meth
+  method toISOString : Js.js_string Js.t Js.meth
+  method toJSON : 'a -> Js.js_string Js.t Js.meth
+  method toLocaleDateString : Js.js_string Js.t Js.meth
+  method toLocaleString : Js.js_string Js.t Js.meth
+  method toLocaleTimeString : Js.js_string Js.t Js.meth
+  method toString : Js.js_string Js.t Js.meth
+  method toTimeString : Js.js_string Js.t Js.meth
+  method toUTCString : Js.js_string Js.t Js.meth
+  method valueOf : float Js.meth
+end >>

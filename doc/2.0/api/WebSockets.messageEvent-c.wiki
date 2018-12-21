@@ -1,0 +1,6 @@
+=Class type <<a_api_type | class type WebSockets.messageEvent >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEmessageEvent"|<<span class="ocsforge_color_keyword"|class type>> <<span class="odocwiki_type"|['a]>><<span class="ocsforge_color_name"|messageEvent>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type WebSockets.messageEvent >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom.event >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODdata"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|data>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Js.js_string" | class type Js.js_string >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>>

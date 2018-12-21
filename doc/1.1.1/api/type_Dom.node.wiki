@@ -1,0 +1,20 @@
+<<code language="ocaml" | object
+  method appendChild : Dom.node Js.t -> Dom.node Js.t Js.meth
+  method childNodes : Dom.node Dom.nodeList Js.t Js.prop
+  method cloneNode : bool Js.t -> Dom.node Js.t Js.meth
+  method compareDocumentPosition : Dom.node Js.t -> int Js.meth
+  method firstChild : Dom.node Js.t Js.opt Js.prop
+  method hasChildNodes : bool Js.t Js.meth
+  method insertBefore :
+    Dom.node Js.t -> Dom.node Js.t Js.opt -> Dom.node Js.t Js.meth
+  method lastChild : Dom.node Js.t Js.opt Js.prop
+  method nextSibling : Dom.node Js.t Js.opt Js.prop
+  method nodeName : Js.js_string Js.t Js.readonly_prop
+  method nodeType : Dom.nodeType Js.readonly_prop
+  method nodeValue : Js.js_string Js.t Js.opt Js.readonly_prop
+  method parentNode : Dom.node Js.t Js.opt Js.prop
+  method previousSibling : Dom.node Js.t Js.opt Js.prop
+  method removeChild : Dom.node Js.t -> Dom.node Js.t Js.meth
+  method replaceChild :
+    Dom.node Js.t -> Dom.node Js.t -> Dom.node Js.t Js.meth
+end >>

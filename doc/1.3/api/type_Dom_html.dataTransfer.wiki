@@ -1,0 +1,12 @@
+<<code language="ocaml" | object
+  method addElement : Dom_html.element Js.t -> unit Js.meth
+  method clearData : Js.js_string Js.t -> unit Js.meth
+  method clearData_all : unit Js.meth
+  method dropEffect : Js.js_string Js.t Js.prop
+  method effectAllowed : Js.js_string Js.t Js.prop
+  method files : File.fileList Js.t Js.readonly_prop
+  method getData : Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method setData : Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+  method setDragImage : Dom_html.element Js.t -> int -> int -> unit Js.meth
+  method types : Dom.stringList Js.t Js.readonly_prop
+end >>

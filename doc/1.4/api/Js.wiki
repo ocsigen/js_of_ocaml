@@ -1,0 +1,296 @@
+=Module <<a_api_type | module Js >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Js>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Js >><<span class="ocsforge_color_keyword"|end>>>>~Javascript binding
+
+
+    ~This module provides types and functions to interoperate with
+    ~Javascript values~, and gives access to ~Javascript standard
+    objects~.
+
+----
+
+
+==@@id="2_Dealingwithnullandundefinedvalues"@@~Dealing with <<span class="odocwiki_inlinecode"|null>> and <<span class="odocwiki_inlinecode"|undefined>> values~.==
+
+<<pre class="ocsforge_color odocwiki_code" id="TYPEopt"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|+'a>> <<span class="odocwiki_name"|opt>>>><<div class="odocwiki_info"|~Type of possibly null values~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEoptdef"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|+'a>> <<span class="odocwiki_name"|optdef>>>><<div class="odocwiki_info"|~Type of possibly undefined values~.
+>>
+<<pre id="VALnull" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|null>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<a_api text="opt" | type Js.opt >>>>>><<div class="odocwiki_info"|~The <<span class="odocwiki_inlinecode"|null>> value~.
+>>
+<<pre id="VALsome" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|some>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<span class="ocsforge_color_delimiter"| -> >> 'a <<a_api text="opt" | type Js.opt >>>>>><<div class="odocwiki_info"|~Consider a value into a possibly null value~.
+>>
+<<pre id="VALundefined" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|undefined>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<a_api text="optdef" | type Js.optdef >>>>>><<div class="odocwiki_info"|~The <<span class="odocwiki_inlinecode"|undefined>> value
+>>
+<<pre id="VALdef" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|def>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<span class="ocsforge_color_delimiter"| -> >> 'a <<a_api text="optdef" | type Js.optdef >>>>>><<div class="odocwiki_info"|~Consider a value into a possibly undefined value~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module type>> <<a_api text="OPT" | module type Js.OPT >> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module type Js.OPT >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Signatures of a set of standard functions for manipulating
+    optional values~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<a_api text="Opt" | module Js.Opt >> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="OPT" | module Js.OPT >>>><<span class="odocwiki_type"| with type 'a t = 'a opt>>>><<div class="odocwiki_info"|~Standard functions for manipulating possibly null values~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<a_api text="Optdef" | module Js.Optdef >> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="OPT" | module Js.OPT >>>><<span class="odocwiki_type"| with type 'a t = 'a optdef>>>><<div class="odocwiki_info"|~Standard functions for manipulating possibly undefined values~.
+>>
+
+
+==@@id="2_TypesforspecifyingmethodandpropertiesofJavascriptobjects"@@~Types for specifying method and properties of ~Javascript objects==
+
+<<pre class="ocsforge_color odocwiki_code" id="TYPEt"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|+'a>> <<span class="odocwiki_name"|t>>>><<div class="odocwiki_info"|~Type of ~Javascript objects~.  ~The type parameter is used to
+      specify more precisely an object~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEmeth"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|+'a>> <<span class="odocwiki_name"|meth>>>><<div class="odocwiki_info"|~Type used to specify method types~:
+      a ~Javascript object
+        <<span class="odocwiki_inlinecode"|~<m ~: t~1 ~-~> t~2 ~-~> ~.~.~. ~-~> tn ~-~> t ~Js~.meth~> ~Js~.t>>
+      has a ~Javascript method <<span class="odocwiki_inlinecode"|m>> expecting //n// arguments
+      of types <<span class="odocwiki_inlinecode"|t~1>> to <<span class="odocwiki_inlinecode"|tn>> and returns a value of type <<span class="odocwiki_inlinecode"|t>>~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEgen_prop"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|+'a>> <<span class="odocwiki_name"|gen~_prop>>>><<div class="odocwiki_info"|~Type used to specify the properties of ~Javascript
+      objects~.  ~In practice you should rarely need this type directly~,
+      but should rather use the type abbreviations below instead~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEreadonly_prop"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|'a>> <<span class="odocwiki_name"|readonly~_prop>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|< get : 'a > <<a_api text="gen_prop" | type Js.gen_prop >>>> >><<div class="odocwiki_info"|~Type of read~-only properties~:
+      a ~Javascript object
+        <<span class="odocwiki_inlinecode"|~<p ~: t ~Js~.readonly~_prop~> ~Js~.t>>
+      has a read~-only property <<span class="odocwiki_inlinecode"|p>> of type <<span class="odocwiki_inlinecode"|t>>~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEwriteonly_prop"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|'a>> <<span class="odocwiki_name"|writeonly~_prop>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|< set : 'a <<span class="ocsforge_color_delimiter"| -> >> unit > <<a_api text="gen_prop" | type Js.gen_prop >>>> >><<div class="odocwiki_info"|~Type of write~-only properties~:
+      a ~Javascript object
+        <<span class="odocwiki_inlinecode"|~<p ~: t ~Js~.writeonly~_prop~> ~Js~.t>>
+      has a write~-only property <<span class="odocwiki_inlinecode"|p>> of type <<span class="odocwiki_inlinecode"|t>>~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEprop"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|'a>> <<span class="odocwiki_name"|prop>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|< get : 'a; set : 'a <<span class="ocsforge_color_delimiter"| -> >> unit > <<a_api text="gen_prop" | type Js.gen_prop >>>> >><<div class="odocwiki_info"|~Type of read~/write properties~:
+      a ~Javascript object
+        <<span class="odocwiki_inlinecode"|~<p ~: t ~Js~.writeonly~_prop~> ~Js~.t>>
+      has a read~/write property <<span class="odocwiki_inlinecode"|p>> of type <<span class="odocwiki_inlinecode"|t>>~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEoptdef_prop"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|'a>> <<span class="odocwiki_name"|optdef~_prop>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|< get : 'a <<a_api text="optdef" | type Js.optdef >>; set : 'a <<span class="ocsforge_color_delimiter"| -> >> unit > <<a_api text="gen_prop" | type Js.gen_prop >>>> >><<div class="odocwiki_info"|~Type of read~/write properties that may be undefined~:
+      you can set them to a value of some type <<span class="odocwiki_inlinecode"|t>>~, but if you read
+      them~, you will get a value of type <<span class="odocwiki_inlinecode"|t optdef>> ~(that may be
+      <<span class="odocwiki_inlinecode"|undefined>>~)~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEfloat_prop"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_name"|float~_prop>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|< get : float <<a_api text="t" | type Js.t >>; set : float <<span class="ocsforge_color_delimiter"| -> >> unit > <<a_api text="gen_prop" | type Js.gen_prop >>>> >><<div class="odocwiki_info"|~Type of float properties~:
+      you can set them to an ~O~Caml <<span class="odocwiki_inlinecode"|float>>~, but you will get back a
+      native ~Javascript number of type <<span class="odocwiki_inlinecode"|float t>>~.
+>>
+
+
+==@@id="2_Objectconstructors"@@~Object constructors==
+
+<<pre class="ocsforge_color odocwiki_code" id="TYPEconstr"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|+'a>> <<span class="odocwiki_name"|constr>>>><<div class="odocwiki_info"|~A value of type <<span class="odocwiki_inlinecode"|~(t~1 ~-~> ~.~.~. ~-~> tn ~-~> t ~Js~.t~) ~Js~.constr>> is a
+      ~Javascript constructor expecting //n// arguments of types <<span class="odocwiki_inlinecode"|t~1>>
+      to <<span class="odocwiki_inlinecode"|tn>> and returning a ~Javascript object of type <<span class="odocwiki_inlinecode"|t ~Js~.t>>~.  ~Use
+      the syntax extension <<span class="odocwiki_inlinecode"|jsnew c ~(e~1~, ~.~.~.~, en~)>> to build an object
+      using constructor <<span class="odocwiki_inlinecode"|c>> and arguments <<span class="odocwiki_inlinecode"|e~1>> to <<span class="odocwiki_inlinecode"|en>>~.
+>>
+
+
+==@@id="2_CallbackstoOCaml"@@~Callbacks to ~O~Caml==
+
+<<pre class="ocsforge_color odocwiki_code" id="TYPEmeth_callback"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>-'a, +'b<<span class="ocsforge_color_delimiter"| ) >>>> <<span class="odocwiki_name"|meth~_callback>>>><<div class="odocwiki_info"|~Type of callback functions~.  ~A function of type
+       <<span class="odocwiki_inlinecode"|~(u~, t~1 ~-~> ~.~.~. ~-~> tn ~-~> t~) meth~_callback>> can be called
+       from ~Javascript with <<span class="odocwiki_inlinecode"|this>> bound to a value of type <<span class="odocwiki_inlinecode"|u>>
+       and up to //n// arguments of types <<span class="odocwiki_inlinecode"|t~1>> to <<span class="odocwiki_inlinecode"|tn>>~.  ~The system
+       takes care of currification~, so less than //n// arguments can
+       be provided~.  ~As a special case~, a callback of type
+       <<span class="odocwiki_inlinecode"|~(t~, unit ~-~> t~) meth~_callback>> can be called from ~Javascript
+       with no argument~.  ~It will behave as if it was called with a
+       single argument of type <<span class="odocwiki_inlinecode"|unit>>~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEcallback"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|'a>> <<span class="odocwiki_name"|callback>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>unit, 'a<<span class="ocsforge_color_delimiter"| ) >> <<a_api text="meth_callback" | type Js.meth_callback >>>> >><<div class="odocwiki_info"|~Type of callback functions intended to be called without a
+      meaningful <<span class="odocwiki_inlinecode"|this>> implicit parameter~.
+>>
+<<pre id="VALwrap_callback" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|wrap~_callback>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>'a <<span class="ocsforge_color_delimiter"| -> >> 'b<<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>'c, 'a <<span class="ocsforge_color_delimiter"| -> >> 'b<<span class="ocsforge_color_delimiter"| ) >> <<a_api text="meth_callback" | type Js.meth_callback >>>>>><<div class="odocwiki_info"|~Wrap an ~O~Caml function so that it can be invoked from
+      ~Javascript~.
+>>
+<<pre id="VALwrap_meth_callback" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|wrap~_meth~_callback>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>'c <<span class="ocsforge_color_delimiter"| -> >> 'a <<span class="ocsforge_color_delimiter"| -> >> 'b<<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>'c, 'a <<span class="ocsforge_color_delimiter"| -> >> 'b<<span class="ocsforge_color_delimiter"| ) >> <<a_api text="meth_callback" | type Js.meth_callback >>>>>><<div class="odocwiki_info"|~Wrap an ~O~Caml function so that it can be invoked from
+      ~Javascript~.  ~The first parameter of the function will be bound
+      to the value of the <<span class="odocwiki_inlinecode"|this>> implicit parameter~.
+>>
+
+
+==@@id="2_Javascriptstandardobjects"@@~Javascript standard objects==
+
+<<pre id="VAL_true" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|~_true>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|bool <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Javascript <<span class="odocwiki_inlinecode"|true>> boolean~.
+>>
+<<pre id="VAL_false" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|~_false>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|bool <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Javascript <<span class="odocwiki_inlinecode"|false>> boolean~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEmatch_result_handle"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_name"|match~_result~_handle>>>><<div class="odocwiki_info"|~A handle to a match result~.  ~Use function <<span class="odocwiki_inlinecode"|~Js~.match~_result>>
+      to get the corresponding <<span class="odocwiki_inlinecode"|~Match~Result>> object~.
+      ~(~This type is used to resolved the mutual dependency between
+       string and array type definitions~.~)
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEstring_array"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_name"|string~_array>>>><<div class="odocwiki_info"|~Opaque type for string arrays~.  ~You can get the actual <<span class="odocwiki_inlinecode"|~Array>>
+      object using function <<span class="odocwiki_inlinecode"|~Js~.str~_array>>~.
+      ~(~This type is used to resolved the mutual dependency between
+       string and array type definitions~.~)
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEjs_string"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="js_string" | class type Js.js_string >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.js_string >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Specification of ~Javascript string objects~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEregExp"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="regExp" | class type Js.regExp >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.regExp >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Specification of ~Javascript regular expression objects~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEstring_constr"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="string_constr" | class type Js.string_constr >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.string_constr >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Specification of the string constructor~, considered as an object~.
+>>
+<<pre id="VALstring" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|string>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~The string constructor~, as an object~.
+>>
+<<pre id="VALregExp" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|reg~Exp>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >><<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="regExp" | class type Js.regExp >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Reg~Exp>> objects~.  ~The expression <<span class="odocwiki_inlinecode"|jsnew reg~Exp ~(s~)>>
+      builds the regular expression specified by string <<span class="odocwiki_inlinecode"|s>>~.
+>>
+<<pre id="VALregExp_withFlags" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|reg~Exp~_with~Flags>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >><<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="regExp" | class type Js.regExp >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Reg~Exp>> objects~.  ~The expression
+      <<span class="odocwiki_inlinecode"|jsnew reg~Exp ~(s~, f~)>> builds the regular expression specified by
+      string <<span class="odocwiki_inlinecode"|s>> using flags <<span class="odocwiki_inlinecode"|f>>~.
+>>
+<<pre id="VALregExp_copy" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|reg~Exp~_copy>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >><<a_api text="regExp" | class type Js.regExp >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="regExp" | class type Js.regExp >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Reg~Exp>> objects~.  ~The expression
+      <<span class="odocwiki_inlinecode"|jsnew reg~Exp ~(r~)>> builds a copy of regular expression <<span class="odocwiki_inlinecode"|r>>~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEjs_array"|<<span class="ocsforge_color_keyword"|class type>> <<span class="odocwiki_type"|['a]>><<a_api text="js_array" | class type Js.js_array >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.js_array >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Specification of ~Javascript regular arrays~.
+>>
+<<pre id="VALarray_empty" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|array~_empty>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<a_api text="js_array" | class type Js.js_array >> <<a_api text="t" | type Js.t >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Array>> objects~.  ~The expression
+      <<span class="odocwiki_inlinecode"|jsnew array~_empty ~(~)>> returns an empty array~.
+>>
+<<pre id="VALarray_length" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|array~_length>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>int <<span class="ocsforge_color_delimiter"| -> >> 'a <<a_api text="js_array" | class type Js.js_array >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Array>> objects~.  ~The expression
+      <<span class="odocwiki_inlinecode"|jsnew array~_empty ~(l~)>> returns an array of length <<span class="odocwiki_inlinecode"|l>>~.
+>>
+<<pre id="VALarray_get" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|array~_get>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a ~#<<a_api text="js_array" | class type Js.js_array >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> 'a <<a_api text="optdef" | type Js.optdef >>>>>><<div class="odocwiki_info"|~Array access~: <<span class="odocwiki_inlinecode"|array~_get a i>> returns the element at index <<span class="odocwiki_inlinecode"|i>>
+      of array <<span class="odocwiki_inlinecode"|a>>~.  ~Returns <<span class="odocwiki_inlinecode"|undefined>> if there is no element at
+      this index~.
+>>
+<<pre id="VALarray_set" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|array~_set>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a ~#<<a_api text="js_array" | class type Js.js_array >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> 'a <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~Array update~: <<span class="odocwiki_inlinecode"|array~_set a i v>> puts <<span class="odocwiki_inlinecode"|v>> at index <<span class="odocwiki_inlinecode"|i>> in
+      array <<span class="odocwiki_inlinecode"|a>>~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEmatch_result"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="match_result" | class type Js.match_result >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.match_result >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Specification of match result objects
+>>
+<<pre id="VALstr_array" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|str~_array>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="string_array" | type Js.string_array >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<a_api text="js_array" | class type Js.js_array >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Convert an opaque <<span class="odocwiki_inlinecode"|string~_array t>> object into an array of
+      string~.  ~(~Used to resolved the mutual dependency between string
+      and array type definitions~.~)
+>>
+<<pre id="VALmatch_result" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|match~_result>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="match_result_handle" | type Js.match_result_handle >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="match_result" | class type Js.match_result >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Convert a match result handle into a <<span class="odocwiki_inlinecode"|~Match~Result>> object~.
+      ~(~Used to resolved the mutual dependency between string
+      and array type definitions~.~)
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEnumber"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="number" | class type Js.number >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.number >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Specification of ~Javascript number objects~.
+>>
+<<pre id="VALnumber_of_float" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|number~_of~_float>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|float <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="number" | class type Js.number >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Conversion of ~O~Caml floats to ~Javascript number objects~.
+>>
+<<pre id="VALfloat_of_number" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|float~_of~_number>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="number" | class type Js.number >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> float>>>><<div class="odocwiki_info"|~Conversion of ~Javascript number objects to ~O~Caml floats~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEdate"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="date" | class type Js.date >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.date >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Specification of ~Javascript date objects~.
+>>
+<<pre id="VALdate_now" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|date~_now>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="date" | class type Js.date >> <<a_api text="t" | type Js.t >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Date>> objects~: <<span class="odocwiki_inlinecode"|new date~_now ~(~)>> returns a
+      <<span class="odocwiki_inlinecode"|~Date>> object initialized with the current date~.
+>>
+<<pre id="VALdate_fromTimeValue" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|date~_from~Time~Value>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>float <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="date" | class type Js.date >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Date>> objects~: <<span class="odocwiki_inlinecode"|new date~_from~Time~Value ~(t~)>> returns a
+      <<span class="odocwiki_inlinecode"|~Date>> object initialized with the time value <<span class="odocwiki_inlinecode"|t>>~.
+>>
+<<pre id="VALdate_month" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|date~_month>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="date" | class type Js.date >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Date>> objects~: <<span class="odocwiki_inlinecode"|new date~_from~Time~Value ~(y~, m~)>>
+      returns a <<span class="odocwiki_inlinecode"|~Date>> object corresponding to year <<span class="odocwiki_inlinecode"|y>> and month <<span class="odocwiki_inlinecode"|m>>~.
+>>
+<<pre id="VALdate_day" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|date~_day>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="date" | class type Js.date >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Date>> objects~: <<span class="odocwiki_inlinecode"|new date~_from~Time~Value ~(y~, m~, d~)>>
+      returns a <<span class="odocwiki_inlinecode"|~Date>> object corresponding to year <<span class="odocwiki_inlinecode"|y>>~, month <<span class="odocwiki_inlinecode"|m>> and
+      day <<span class="odocwiki_inlinecode"|d>>~.
+>>
+<<pre id="VALdate_hour" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|date~_hour>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="date" | class type Js.date >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Date>> objects~: <<span class="odocwiki_inlinecode"|new date~_from~Time~Value ~(y~, m~, d~, h~)>>
+      returns a <<span class="odocwiki_inlinecode"|~Date>> object corresponding to year <<span class="odocwiki_inlinecode"|y>> to hour <<span class="odocwiki_inlinecode"|h>>~.
+>>
+<<pre id="VALdate_min" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|date~_min>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="date" | class type Js.date >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Date>> objects~: <<span class="odocwiki_inlinecode"|new date~_from~Time~Value ~(y~, m~, d~, h~, m~'~)>>
+      returns a <<span class="odocwiki_inlinecode"|~Date>> object corresponding to year <<span class="odocwiki_inlinecode"|y>> to minute <<span class="odocwiki_inlinecode"|m~'>>~.
+>>
+<<pre id="VALdate_sec" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|date~_sec>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="date" | class type Js.date >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >> <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Date>> objects~:
+      <<span class="odocwiki_inlinecode"|new date~_from~Time~Value ~(y~, m~, d~, h~, m~'~, s~)>>
+      returns a <<span class="odocwiki_inlinecode"|~Date>> object corresponding to year <<span class="odocwiki_inlinecode"|y>> to second <<span class="odocwiki_inlinecode"|s>>~.
+>>
+<<pre id="VALdate_ms" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|date~_ms>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|\\  <<span class="ocsforge_color_delimiter"| ( >>int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="date" | class type Js.date >> <<a_api text="t" | type Js.t >><<span class="ocsforge_color_delimiter"| ) >>\\  <<a_api text="constr" | type Js.constr >>>>>><<div class="odocwiki_info"|~Constructor of <<span class="odocwiki_inlinecode"|~Date>> objects~:
+      <<span class="odocwiki_inlinecode"|new date~_from~Time~Value ~(y~, m~, d~, h~, m~'~, s~, ms~)>>
+      returns a <<span class="odocwiki_inlinecode"|~Date>> object corresponding to year <<span class="odocwiki_inlinecode"|y>>
+      to millisecond <<span class="odocwiki_inlinecode"|ms>>~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEdate_constr"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="date_constr" | class type Js.date_constr >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.date_constr >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Specification of the date constructor~, considered as an object~.
+>>
+<<pre id="VALdate" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|date>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="date_constr" | class type Js.date_constr >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~The date constructor~, as an object~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEmath"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="math" | class type Js.math >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.math >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Specification of ~Javascript math object~.
+>>
+<<pre id="VALmath" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|math>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="math" | class type Js.math >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~The ~Math object
+>>
+
+
+==@@id="2_StandardJavascriptfunctions"@@~Standard ~Javascript functions==
+
+<<pre id="VALdecodeURI" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|decode~U~R~I>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Decode a ~U~R~I~: replace by the corresponding byte all escape
+      sequences but the ones corresponding to a ~U~R~I reserved character
+      and convert the string from ~U~T~F~-~8 to ~U~T~F~-~1~6~.
+>>
+<<pre id="VALdecodeURIComponent" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|decode~U~R~I~Component>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Decode a ~U~R~I~Component~: replace all escape sequences by the
+      corresponding byte and convert the string from ~U~T~F~-~8 to
+      ~U~T~F~-~1~6~.
+>>
+<<pre id="VALencodeURI" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|encode~U~R~I>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Encode a ~U~R~I~: convert the string to ~U~T~F~-~8 and replace all unsafe
+      bytes by the corresponding escape sequence~.
+>>
+<<pre id="VALencodeURIComponent" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|encode~U~R~I~Component>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Same as <<span class="odocwiki_inlinecode"|encode~U~R~I>>~, but also encode ~U~R~I reserved characters~.
+>>
+<<pre id="VALescape" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|escape>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Escape a string~: unsafe ~U~T~F~-~1~6 code points are replaced by
+      ~2~-digit and ~4~-digit escape sequences~.
+>>
+<<pre id="VALunescape" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|unescape>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Unescape a string~: ~2~-digit and ~4~-digit escape sequences are
+      replaced by the corresponding ~U~T~F~-~1~6 code point~.
+>>
+<<pre id="VALisNaN" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|is~Na~N>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<span class="ocsforge_color_delimiter"| -> >> bool>>>><<pre id="VALparseInt" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|parse~Int>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> int>>>><<pre id="VALparseFloat" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|parse~Float>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> float <<a_api text="t" | type Js.t >>>>>>
+
+==@@id="2_ConversionfunctionsbetweenJavascriptandOCamltypes"@@~Conversion functions between ~Javascript and ~O~Caml types==
+
+<<pre id="VALbool" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|bool>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|bool <<span class="ocsforge_color_delimiter"| -> >> bool <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Conversion of booleans from ~O~Caml to ~Javascript~.
+>>
+<<pre id="VALto_bool" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|to~_bool>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|bool <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> bool>>>><<div class="odocwiki_info"|~Conversion of booleans from ~Javascript to ~O~Caml~.
+>>
+<<pre id="VALstring" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|string>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Conversion of strings from ~O~Caml to ~Javascript~.  ~(~The ~O~Caml
+      string is considered to be encoded in ~U~T~F~-~8 and is converted to
+      ~U~T~F~-~1~6~.~)
+>>
+<<pre id="VALto_string" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|to~_string>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> string>>>><<div class="odocwiki_info"|~Conversion of strings from ~Javascript to ~O~Caml~.
+>>
+<<pre id="VALfloat" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|float>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|float <<span class="ocsforge_color_delimiter"| -> >> float <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Conversion of ~O~Caml floats to ~Javascript numbers~.
+>>
+<<pre id="VALto_float" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|to~_float>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|float <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> float>>>><<div class="odocwiki_info"|~Conversion of ~Javascript numbers to ~O~Caml floats~.
+>>
+<<pre id="VALarray" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|array>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a array <<span class="ocsforge_color_delimiter"| -> >> 'a <<a_api text="js_array" | class type Js.js_array >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Conversion of arrays from ~O~Caml to ~Javascript~.
+>>
+<<pre id="VALto_array" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|to~_array>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<a_api text="js_array" | class type Js.js_array >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> 'a array>>>><<div class="odocwiki_info"|~Conversion of arrays from ~Javascript to ~O~Caml~.
+>>
+<<pre id="VALbytestring" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|bytestring>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Conversion of strings of bytes from ~O~Caml to ~Javascript~.
+      ~(~Each byte will be converted in an ~U~T~F~-~1~6 code point~.~)
+>>
+<<pre id="VALto_bytestring" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|to~_bytestring>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> string>>>><<div class="odocwiki_info"|~Conversion of strings of bytes from ~Javascript to ~O~Caml~.  ~(~The
+      ~Javascript string should only contain ~U~T~F~-~1~6 code points below
+      ~2~5~5~.~)
+>>
+
+
+==@@id="2_Conveniencecoercionfunctions"@@~Convenience coercion functions==
+
+<<pre id="VALcoerce" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|coerce>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>'a <<span class="ocsforge_color_delimiter"| -> >> 'b <<span class="ocsforge_color_uid"|Opt>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>><<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>'a <<span class="ocsforge_color_delimiter"| -> >> 'b<<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_delimiter"| -> >> 'b>>>><<div class="odocwiki_info"|~Apply a possibly failing coercion function~.
+      <<span class="odocwiki_inlinecode"|coerce v c f>> attempts to apply coercion <<span class="odocwiki_inlinecode"|c>> to value <<span class="odocwiki_inlinecode"|v>>~.
+      ~If the coercion returns <<span class="odocwiki_inlinecode"|null>>~, function <<span class="odocwiki_inlinecode"|f>> is called~.
+>>
+<<pre id="VALcoerce_opt" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|coerce~_opt>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<span class="ocsforge_color_uid"|Opt>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>> <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>'a <<span class="ocsforge_color_delimiter"| -> >> 'b <<span class="ocsforge_color_uid"|Opt>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>><<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>'a <<span class="ocsforge_color_delimiter"| -> >> 'b<<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_delimiter"| -> >> 'b>>>><<div class="odocwiki_info"|~Apply a possibly failing coercion function~.
+      <<span class="odocwiki_inlinecode"|coerce~_opt v c f>> attempts to apply coercion <<span class="odocwiki_inlinecode"|c>> to value <<span class="odocwiki_inlinecode"|v>>~.
+      ~If <<span class="odocwiki_inlinecode"|v>> is <<span class="odocwiki_inlinecode"|null>> or the coercion returns <<span class="odocwiki_inlinecode"|null>>~, function <<span class="odocwiki_inlinecode"|f>> is
+      called~.
+      ~Typical usage is the following~:
+      
+{{{Js.coerce_opt (Dom_html.document##getElementById(id))
+      Dom_html.CoerceTo.div (fun _ -> assert false)}}}
+
+>>
+
+
+==@@id="2_Typecheckingoperators"@@~Type checking operators~.==
+
+<<pre id="VALtypeof" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|typeof>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|< .. > <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >>>>>><<div class="odocwiki_info"|~Returns the type of a ~Javascript object~.
+>>
+<<pre id="VALinstanceof" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|instanceof>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|< .. > <<a_api text="t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> 'a <<a_api text="constr" | type Js.constr >> <<span class="ocsforge_color_delimiter"| -> >> bool>>>><<div class="odocwiki_info"|~Tests whether a ~Javascript object is an instance of a given class~.
+>>
+
+
+==@@id="2_Unsafeoperations"@@~Unsafe operations~.==
+
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<a_api text="Unsafe" | module Js.Unsafe >> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Js.Unsafe >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~Unsafe ~Javascript operations
+>>

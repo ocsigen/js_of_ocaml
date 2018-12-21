@@ -1,0 +1,3 @@
+=Class type <<a_api_type | class type Dom_svg.fontFaceSrcElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEfontFaceSrcElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|fontFaceSrcElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|<<a_api text="element" | class type Dom_svg.element >>>>>>
+----

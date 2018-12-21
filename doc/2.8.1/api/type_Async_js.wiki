@@ -1,0 +1,5 @@
+<<code language="ocaml" | sig
+  val sleep : float -> unit Async_kernel.Std.Deferred.t
+  val yield : unit -> unit Async_kernel.Std.Deferred.t
+  val init : unit -> unit
+end >>

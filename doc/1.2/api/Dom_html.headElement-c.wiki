@@ -1,0 +1,6 @@
+=Class type <<a_api_type | class type Dom_html.headElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEheadElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|headElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_html.headElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_html.element >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODprofile"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|profile>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Js.js_string" | class type Js.js_string >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.prop" | type Js.prop >>>>>>

@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type Typed_array.arrayBuffer >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEarrayBuffer"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|arrayBuffer>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Typed_array.arrayBuffer >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODbyteLength"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|byteLength>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|int <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>>

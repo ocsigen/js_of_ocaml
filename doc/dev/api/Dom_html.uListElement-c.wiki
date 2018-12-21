@@ -1,0 +1,3 @@
+=Class type <<a_api_type | class type Dom_html.uListElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEuListElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|uListElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|<<a_api text="element" | class type Dom_html.element >>>>>>
+----

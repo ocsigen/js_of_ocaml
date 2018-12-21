@@ -1,0 +1,3 @@
+=Class type <<a_api_type | class type Dom_svg.rgbColor >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPErgbColor"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|rgbColor>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.rgbColor >><<span class="ocsforge_color_keyword"|end>>>>
+----

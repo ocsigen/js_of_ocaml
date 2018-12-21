@@ -1,0 +1,22 @@
+= Using js_of_ocaml with Core_kernel and Async_kernel
+From version 2.8, js_of_ocaml include support for core_kernel and async_kernel.
+
+In order to compile a program using core_kernel or async_kernel to javascript, one have to
+compile the program using a 32bit OCaml compiler. This is because core_kernel and async_kernel
+make strong assumption about the architecture at compile time and because JavaScript don't have
+support for 64bit.
+
+One can easily obtain a 32bit OCaml compiler using opam:
+{{{opam switch 4.03.0+32bit}}}
+
+
+== Core_Kernel support
+Core_kernel support is just about providing the right JavaScript runtime files to the js_of_ocaml compiler.
+{{{js_of_ocaml +core_kernel.js +bin_prot.js prog.byte}}}
+
+
+== Async_Kernel support
+In order to use Async_kernel, one need to initialize the scheduler by
+calling
+{{{Async_js.init ()}}}
+provided by the findlib package {{{js_of_ocaml.async}}}.

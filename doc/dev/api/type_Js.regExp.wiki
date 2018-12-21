@@ -1,0 +1,11 @@
+<<code language="ocaml" | object
+  method exec :
+    Js.js_string Js.t -> Js.match_result_handle Js.t Js.opt Js.meth
+  method global : bool Js.t Js.readonly_prop
+  method ignoreCase : bool Js.t Js.readonly_prop
+  method lastIndex : int Js.prop
+  method multiline : bool Js.t Js.readonly_prop
+  method source : Js.js_string Js.t Js.readonly_prop
+  method test : Js.js_string Js.t -> bool Js.t Js.meth
+  method toString : Js.js_string Js.t Js.meth
+end >>

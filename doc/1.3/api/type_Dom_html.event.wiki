@@ -1,0 +1,30 @@
+<<code language="ocaml" | sig
+  type 'a typ = 'a Dom.Event.typ
+  val click : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val dblclick : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mousedown : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mouseup : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mouseover : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mousemove : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mouseout : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val keypress : Dom_html.keyboardEvent Js.t Dom_html.Event.typ
+  val keydown : Dom_html.keyboardEvent Js.t Dom_html.Event.typ
+  val keyup : Dom_html.keyboardEvent Js.t Dom_html.Event.typ
+  val mousewheel : Dom_html.mousewheelEvent Js.t Dom_html.Event.typ
+  val _DOMMouseScroll : Dom_html.mouseScrollEvent Js.t Dom_html.Event.typ
+  val touchstart : Dom_html.touchEvent Js.t Dom_html.Event.typ
+  val touchmove : Dom_html.touchEvent Js.t Dom_html.Event.typ
+  val touchend : Dom_html.touchEvent Js.t Dom_html.Event.typ
+  val touchcancel : Dom_html.touchEvent Js.t Dom_html.Event.typ
+  val dragstart : Dom_html.dragEvent Js.t Dom_html.Event.typ
+  val dragend : Dom_html.dragEvent Js.t Dom_html.Event.typ
+  val dragenter : Dom_html.dragEvent Js.t Dom_html.Event.typ
+  val dragover : Dom_html.dragEvent Js.t Dom_html.Event.typ
+  val dragleave : Dom_html.dragEvent Js.t Dom_html.Event.typ
+  val drag : Dom_html.dragEvent Js.t Dom_html.Event.typ
+  val drop : Dom_html.dragEvent Js.t Dom_html.Event.typ
+  val hashchange : Dom_html.hashChangeEvent Js.t Dom_html.Event.typ
+  val change : Dom_html.event Js.t Dom_html.Event.typ
+  val input : Dom_html.event Js.t Dom_html.Event.typ
+  val make : string -> 'a Dom_html.Event.typ
+end >>

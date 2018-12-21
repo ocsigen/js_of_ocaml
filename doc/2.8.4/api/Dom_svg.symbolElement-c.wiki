@@ -1,0 +1,10 @@
+=Class type <<a_api_type | class type Dom_svg.symbolElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEsymbolElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|symbolElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.symbolElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.element >>
+* <<a_api | class Dom_svg.langSpace >>
+* <<a_api | class Dom_svg.externalResourcesRequired >>
+* <<a_api | class Dom_svg.stylable >>
+* <<a_api | class Dom_svg.fitToViewBox >>
+* <<a_api | class Dom_html.eventTarget >>
+
+----

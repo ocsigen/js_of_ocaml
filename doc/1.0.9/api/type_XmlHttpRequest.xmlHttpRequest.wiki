@@ -1,0 +1,25 @@
+<<code language="ocaml" | object ('a)
+  method _open :
+    Js.js_string Js.t -> Js.js_string Js.t -> bool Js.t -> unit Js.meth
+  method _open_full :
+    Js.js_string Js.t ->
+    Js.js_string Js.t ->
+    bool Js.t ->
+    Js.js_string Js.t Js.opt -> Js.js_string Js.t Js.opt -> unit Js.meth
+  method abort : unit Js.meth
+  method getAllResponseHeaders : Js.js_string Js.t Js.meth
+  method getResponseHeader :
+    Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+  method onreadystatechange :
+    ('a Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
+  method readyState : XmlHttpRequest.readyState Js.readonly_prop
+  method responseText : Js.js_string Js.t Js.readonly_prop
+  method responseXML : Dom.element Dom.document Js.t Js.opt Js.readonly_prop
+  method send : Js.js_string Js.t Js.opt -> unit Js.meth
+  method send_document : Dom.element Dom.document -> unit Js.meth
+  method send_formData : Form.formData Js.t -> unit Js.meth
+  method setRequestHeader :
+    Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+  method status : int Js.readonly_prop
+  method statusText : Js.js_string Js.t Js.readonly_prop
+end >>

@@ -1,0 +1,308 @@
+<<code language="ocaml" | sig
+  val make_event :
+    (#Dom_html.event as 'a) Js.t Dom_html.Event.typ ->
+    ?use_capture:bool -> #Dom_html.eventTarget Js.t -> 'a Js.t Lwt.t
+  val seq_loop :
+    (?use_capture:bool -> 'target -> 'event Lwt.t) ->
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val async_loop :
+    (?use_capture:bool -> 'target -> 'event Lwt.t) ->
+    ?use_capture:bool ->
+    'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val buffered_loop :
+    (?use_capture:bool -> 'target -> 'event Lwt.t) ->
+    ?cancel_handler:bool ->
+    ?cancel_queue:bool ->
+    ?use_capture:bool ->
+    'target -> ('event -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val async : (unit -> 'a Lwt.t) -> unit
+  val func_limited_loop :
+    (?use_capture:bool -> 'a -> 'b Lwt.t) ->
+    (unit -> 'a Lwt.t) ->
+    ?use_capture:bool -> 'a -> ('b -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val limited_loop :
+    (?use_capture:bool -> 'a -> 'b Lwt.t) ->
+    ?elapsed_time:float ->
+    ?use_capture:bool -> 'a -> ('b -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val click :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.mouseEvent Js.t Lwt.t
+  val dblclick :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.mouseEvent Js.t Lwt.t
+  val mousedown :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.mouseEvent Js.t Lwt.t
+  val mouseup :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.mouseEvent Js.t Lwt.t
+  val mouseover :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.mouseEvent Js.t Lwt.t
+  val mousemove :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.mouseEvent Js.t Lwt.t
+  val mouseout :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.mouseEvent Js.t Lwt.t
+  val keypress :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.keyboardEvent Js.t Lwt.t
+  val keydown :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.keyboardEvent Js.t Lwt.t
+  val keyup :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.keyboardEvent Js.t Lwt.t
+  val input :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+  val timeupdate :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+  val change :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+  val dragstart :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.dragEvent Js.t Lwt.t
+  val dragend :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.dragEvent Js.t Lwt.t
+  val dragenter :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.dragEvent Js.t Lwt.t
+  val dragover :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.dragEvent Js.t Lwt.t
+  val dragleave :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.dragEvent Js.t Lwt.t
+  val drag :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.dragEvent Js.t Lwt.t
+  val drop :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.dragEvent Js.t Lwt.t
+  val focus :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+  val blur :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+  val scroll :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+  val submit :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+  val select :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.event Js.t Lwt.t
+  val mousewheel :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t * (int * int)) Lwt.t
+  val touchstart :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.touchEvent Js.t Lwt.t
+  val touchmove :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.touchEvent Js.t Lwt.t
+  val touchend :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.touchEvent Js.t Lwt.t
+  val touchcancel :
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t -> Dom_html.touchEvent Js.t Lwt.t
+  val transitionend : #Dom_html.eventTarget Js.t -> unit Lwt.t
+  val load :
+    ?use_capture:bool ->
+    #Dom_html.imageElement Js.t -> Dom_html.event Js.t Lwt.t
+  val error :
+    ?use_capture:bool ->
+    #Dom_html.imageElement Js.t -> Dom_html.event Js.t Lwt.t
+  val abort :
+    ?use_capture:bool ->
+    #Dom_html.imageElement Js.t -> Dom_html.event Js.t Lwt.t
+  val clicks :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val dblclicks :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val mousedowns :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val mouseups :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val mouseovers :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val mousemoves :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val mouseouts :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val keypresses :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val keydowns :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val keyups :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.keyboardEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val inputs :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val timeupdates :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val changes :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val dragstarts :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val dragends :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val dragenters :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val dragovers :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val dragleaves :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val drags :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val drops :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.dragEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val mousewheels :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.mouseEvent Js.t * (int * int) -> unit Lwt.t -> unit Lwt.t) ->
+    unit Lwt.t
+  val touchstarts :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val touchmoves :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val touchends :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val touchcancels :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.touchEvent Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val focuses :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val blurs :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val scrolls :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val submits :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val selects :
+    ?cancel_handler:bool ->
+    ?use_capture:bool ->
+    #Dom_html.eventTarget Js.t ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val request_animation_frame : unit -> unit Lwt.t
+  val onload : unit -> Dom_html.event Js.t Lwt.t
+  val onbeforeunload : unit -> Dom_html.event Js.t Lwt.t
+  val onresize : unit -> Dom_html.event Js.t Lwt.t
+  val onorientationchange : unit -> Dom_html.event Js.t Lwt.t
+  val onpopstate : unit -> Dom_html.event Js.t Lwt.t
+  val onhashchange : unit -> Dom_html.event Js.t Lwt.t
+  val onorientationchange_or_onresize : unit -> Dom_html.event Js.t Lwt.t
+  val onresizes :
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val onorientationchanges :
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val onpopstates :
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val onhashchanges :
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val onorientationchanges_or_onresizes :
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val limited_onresizes :
+    ?elapsed_time:float ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val limited_onorientationchanges :
+    ?elapsed_time:float ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+  val limited_onorientationchanges_or_onresizes :
+    ?elapsed_time:float ->
+    (Dom_html.event Js.t -> unit Lwt.t -> unit Lwt.t) -> unit Lwt.t
+end >>

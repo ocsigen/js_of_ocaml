@@ -1,0 +1,235 @@
+<<code language="ocaml" | sig
+  type 'a t
+  val to_string : 'a Deriving_Json.t -> 'a -> string
+  val from_string : 'a Deriving_Json.t -> string -> 'a
+  module type Json =
+    sig
+      type a
+      val t : Deriving_Json.Json.a Deriving_Json.t
+      val write : Buffer.t -> Deriving_Json.Json.a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> Deriving_Json.Json.a
+      val to_string : Deriving_Json.Json.a -> string
+      val from_string : string -> Deriving_Json.Json.a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf ->
+        [ `Cst of int | `NCst of int ] -> Deriving_Json.Json.a
+    end
+  module type Json_min =
+    sig
+      type a
+      val write : Buffer.t -> Deriving_Json.Json_min.a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> Deriving_Json.Json_min.a
+    end
+  module type Json_min' =
+    sig
+      type a
+      val write : Buffer.t -> Deriving_Json.Json_min'.a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> Deriving_Json.Json_min'.a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf ->
+        [ `Cst of int | `NCst of int ] -> Deriving_Json.Json_min'.a
+    end
+  module type Json_min'' =
+    sig type a val t : Deriving_Json.Json_min''.a Deriving_Json.t end
+  module Defaults :
+    functor (J : Json_min) ->
+      sig
+        type a = J.a
+        val t : a t
+        val write : Buffer.t -> a -> unit
+        val read : Deriving_Json_lexer.lexbuf -> a
+        val to_string : a -> string
+        val from_string : string -> a
+        val match_variant : [ `Cst of int | `NCst of int ] -> bool
+        val read_variant :
+          Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+      end
+  module Defaults' :
+    functor (J : Json_min') ->
+      sig
+        type a = J.a
+        val t : a t
+        val write : Buffer.t -> a -> unit
+        val read : Deriving_Json_lexer.lexbuf -> a
+        val to_string : a -> string
+        val from_string : string -> a
+        val match_variant : [ `Cst of int | `NCst of int ] -> bool
+        val read_variant :
+          Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+      end
+  module Defaults'' :
+    functor (J : Json_min'') ->
+      sig
+        type a = J.a
+        val t : a t
+        val write : Buffer.t -> a -> unit
+        val read : Deriving_Json_lexer.lexbuf -> a
+        val to_string : a -> string
+        val from_string : string -> a
+        val match_variant : [ `Cst of int | `NCst of int ] -> bool
+        val read_variant :
+          Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+      end
+  module Json_char :
+    sig
+      type a = char
+      val t : a t
+      val write : Buffer.t -> a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> a
+      val to_string : a -> string
+      val from_string : string -> a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+    end
+  module Json_bool :
+    sig
+      type a = bool
+      val t : a t
+      val write : Buffer.t -> a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> a
+      val to_string : a -> string
+      val from_string : string -> a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+    end
+  module Json_unit :
+    sig
+      type a = unit
+      val t : a t
+      val write : Buffer.t -> a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> a
+      val to_string : a -> string
+      val from_string : string -> a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+    end
+  module Json_int :
+    sig
+      type a = int
+      val t : a t
+      val write : Buffer.t -> a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> a
+      val to_string : a -> string
+      val from_string : string -> a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+    end
+  module Json_int32 :
+    sig
+      type a = int32
+      val t : a t
+      val write : Buffer.t -> a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> a
+      val to_string : a -> string
+      val from_string : string -> a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+    end
+  module Json_int64 :
+    sig
+      type a = int64
+      val t : a t
+      val write : Buffer.t -> a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> a
+      val to_string : a -> string
+      val from_string : string -> a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+    end
+  module Json_nativeint :
+    sig
+      type a = nativeint
+      val t : a t
+      val write : Buffer.t -> a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> a
+      val to_string : a -> string
+      val from_string : string -> a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+    end
+  module Json_float :
+    sig
+      type a = float
+      val t : a t
+      val write : Buffer.t -> a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> a
+      val to_string : a -> string
+      val from_string : string -> a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+    end
+  module Json_string :
+    sig
+      type a = string
+      val t : a t
+      val write : Buffer.t -> a -> unit
+      val read : Deriving_Json_lexer.lexbuf -> a
+      val to_string : a -> string
+      val from_string : string -> a
+      val match_variant : [ `Cst of int | `NCst of int ] -> bool
+      val read_variant :
+        Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+    end
+  module Json_list :
+    functor (A : Json) ->
+      sig
+        type a = A.a list
+        val t : a t
+        val write : Buffer.t -> a -> unit
+        val read : Deriving_Json_lexer.lexbuf -> a
+        val to_string : a -> string
+        val from_string : string -> a
+        val match_variant : [ `Cst of int | `NCst of int ] -> bool
+        val read_variant :
+          Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+      end
+  module Json_ref :
+    functor (A : Json) ->
+      sig
+        type a = A.a ref
+        val t : a t
+        val write : Buffer.t -> a -> unit
+        val read : Deriving_Json_lexer.lexbuf -> a
+        val to_string : a -> string
+        val from_string : string -> a
+        val match_variant : [ `Cst of int | `NCst of int ] -> bool
+        val read_variant :
+          Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+      end
+  module Json_option :
+    functor (A : Json) ->
+      sig
+        type a = A.a option
+        val t : a t
+        val write : Buffer.t -> a -> unit
+        val read : Deriving_Json_lexer.lexbuf -> a
+        val to_string : a -> string
+        val from_string : string -> a
+        val match_variant : [ `Cst of int | `NCst of int ] -> bool
+        val read_variant :
+          Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+      end
+  module Json_array :
+    functor (A : Json) ->
+      sig
+        type a = A.a array
+        val t : a t
+        val write : Buffer.t -> a -> unit
+        val read : Deriving_Json_lexer.lexbuf -> a
+        val to_string : a -> string
+        val from_string : string -> a
+        val match_variant : [ `Cst of int | `NCst of int ] -> bool
+        val read_variant :
+          Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
+      end
+end >>

@@ -1,0 +1,1 @@
+<<code language="ocaml" | object method withCredentials : bool Js.t Js.writeonly_prop end >>

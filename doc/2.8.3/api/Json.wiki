@@ -1,0 +1,9 @@
+=Module <<a_api_type | module Json >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Json>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Json >><<span class="ocsforge_color_keyword"|end>>>>~Unsafe ~I~O~. ~(~See <<a_api | module Deriving_Json >> for typesafe ~I~O~)
+
+----
+<<pre id="VALoutput" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|output>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="Js.js_string" | class type Js.js_string >> <<a_api text="Js.t" | type Js.t >>>>>><<div class="odocwiki_info"|~Marshal any ~O~Caml value into this ~J~S~O~N representation~.
+>>
+<<pre id="VALunsafe_input" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|unsafe~_input>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Js.js_string" | class type Js.js_string >> <<a_api text="Js.t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> 'a>>>><<div class="odocwiki_info"|~Unmarshal a string in ~J~S~O~N format as an ~O~Caml value ~(unsafe but
+    fast !~)~.
+>>

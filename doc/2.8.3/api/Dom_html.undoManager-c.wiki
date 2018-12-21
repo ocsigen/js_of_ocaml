@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type Dom_html.undoManager >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEundoManager"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|undoManager>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_html.undoManager >><<span class="ocsforge_color_keyword"|end>>>>~Undo manager
+
+----

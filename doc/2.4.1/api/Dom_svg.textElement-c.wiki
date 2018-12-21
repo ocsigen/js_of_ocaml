@@ -1,0 +1,6 @@
+=Class type <<a_api_type | class type Dom_svg.textElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEtextElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|textElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.textElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.textPositioningElement >>
+* <<a_api | class Dom_svg.transformable >>
+
+----

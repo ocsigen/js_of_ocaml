@@ -1,0 +1,117 @@
+<<code language="ocaml" | sig
+  class type blob =
+    object
+      method _type : Js.js_string Js.t Js.readonly_prop
+      method size : int Js.readonly_prop
+      method slice : int -> int -> File.blob Js.meth
+      method slice_withContentType :
+        int -> int -> Js.js_string Js.t -> File.blob Js.meth
+    end
+  class type file =
+    object
+      method _type : Js.js_string Js.t Js.readonly_prop
+      method lastModifiedDate : Js.js_string Js.t Js.readonly_prop
+      method name : Js.js_string Js.t Js.readonly_prop
+      method size : int Js.readonly_prop
+      method slice : int -> int -> blob Js.meth
+      method slice_withContentType :
+        int -> int -> Js.js_string Js.t -> blob Js.meth
+    end
+  type file_any
+  module CoerceTo :
+    sig
+      val string : File.file_any -> Js.js_string Js.t Js.Opt.t
+      val arrayBuffer :
+        File.file_any -> Typed_array.arrayBuffer Js.t Js.Opt.t
+    end
+  class type fileList =
+    object
+      method item : int -> file Js.t Js.opt Js.meth
+      method length : int Js.readonly_prop
+    end
+  class type fileError = object method code : int Js.readonly_prop end
+  class type ['a] progressEvent =
+    object
+      method _type : Js.js_string Js.t Js.readonly_prop
+      method currentTarget : 'a Js.t Js.opt Js.readonly_prop
+      method lengthComputable : bool Js.t Js.readonly_prop
+      method loaded : int Js.readonly_prop
+      method srcElement : 'a Js.t Js.opt Js.readonly_prop
+      method target : 'a Js.t Js.opt Js.readonly_prop
+      method total : int Js.readonly_prop
+    end
+  class type progressEventTarget =
+    object ('a)
+      method onabort :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onerror :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onload :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onloadend :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onloadstart :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onprogress :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+    end
+  type readyState = EMPTY | LOADING | DONE
+  class type fileReader =
+    object ('a)
+      method abort : unit Js.meth
+      method error : File.fileError Js.t Js.readonly_prop
+      method onabort :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onerror :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onload :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onloadend :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onloadstart :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method onprogress :
+        ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+        Js.writeonly_prop
+      method readAsArrayBuffer : #File.blob Js.t -> unit Js.meth
+      method readAsBinaryString : #File.blob Js.t -> unit Js.meth
+      method readAsDataURL : #File.blob Js.t -> unit Js.meth
+      method readAsText : #File.blob Js.t -> unit Js.meth
+      method readAsText_withEncoding :
+        #File.blob Js.t -> Js.js_string Js.t -> unit Js.meth
+      method readyState : File.readyState Js.readonly_prop
+      method result : File.file_any Js.readonly_prop
+    end
+  module ReaderEvent :
+    sig
+      type typ = File.fileReader File.progressEvent Js.t Dom.Event.typ
+      val loadstart : File.ReaderEvent.typ
+      val progress : File.ReaderEvent.typ
+      val abort : File.ReaderEvent.typ
+      val error : File.ReaderEvent.typ
+      val load : File.ReaderEvent.typ
+      val loadend : File.ReaderEvent.typ
+    end
+  val filename : File.file Js.t -> Js.js_string Js.t
+  val fileReader : File.fileReader Js.t Js.constr
+  val readAsBinaryString : #File.blob Js.t -> Js.js_string Js.t Lwt.t
+  val readAsText : #File.blob Js.t -> Js.js_string Js.t Lwt.t
+  val readAsText_withEncoding :
+    #File.blob Js.t -> Js.js_string Js.t -> Js.js_string Js.t Lwt.t
+  val readAsDataURL : #File.blob Js.t -> Js.js_string Js.t Lwt.t
+  val addEventListener :
+    (#File.progressEventTarget as 'a) Js.t ->
+    'b Dom.Event.typ ->
+    ('a Js.t, 'b) Dom.event_listener -> bool Js.t -> Dom.event_listener_id
+end >>

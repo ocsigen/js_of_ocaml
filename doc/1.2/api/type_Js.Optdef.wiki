@@ -1,0 +1,13 @@
+<<code language="ocaml" | sig
+  type 'a t = 'a optdef
+  val empty : 'a t
+  val return : 'a -> 'a t
+  val map : 'a t -> ('a -> 'b) -> 'b t
+  val bind : 'a t -> ('a -> 'b t) -> 'b t
+  val test : 'a t -> bool
+  val iter : 'a t -> ('a -> unit) -> unit
+  val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
+  val get : 'a t -> (unit -> 'a) -> 'a
+  val option : 'a option -> 'a t
+  val to_option : 'a t -> 'a option
+end >>

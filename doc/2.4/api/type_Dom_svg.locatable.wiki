@@ -1,0 +1,9 @@
+<<code language="ocaml" | object
+  method farthestViewportElement : Dom_svg.element Js.t Js.readonly_prop
+  method getBBox : Dom_svg.rect Js.t Js.meth
+  method getCTM : Dom_svg.matrix Js.t Js.meth
+  method getScreenCTM : Dom_svg.matrix Js.t Js.meth
+  method getTransformToElement :
+    Dom_svg.element Js.t -> Dom_svg.matrix Js.t Js.meth
+  method nearestViewportElement : Dom_svg.element Js.t Js.readonly_prop
+end >>

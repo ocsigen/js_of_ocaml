@@ -1,0 +1,11 @@
+<<code language="ocaml" | object
+  method colorType : Dom_svg.colorType Js.readonly_prop
+  method iccColor : Dom_svg.iccColor Js.t Js.readonly_prop
+  method rgbColor : Dom_svg.rgbColor Js.t Js.readonly_prop
+  method setColor :
+    Dom_svg.colorType ->
+    Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+  method setRGBColor : Js.js_string Js.t -> unit Js.meth
+  method setRGBColorICCColor :
+    Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+end >>

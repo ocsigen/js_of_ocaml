@@ -1,0 +1,36 @@
+= The Camlp4 syntax extension
+
+A Camlp4 syntax extension is available for manipulating object properties,
+invoking methods and creating objects.
+We advise to use the <<a_api text="Ppx"|module Ppx_js>> syntax
+extension instead.
+
+The syntax and typing rules are as follows:
+
+        * Getting a property
+{{{
+            obj : <m : u prop> Js.t
+            -----------------------
+                 obj##m : u
+}}}
+        * Setting a property
+{{{
+            obj : <m : u prop> Js.t
+              e : u
+            -----------------------
+               obj##m <- e : unit
+}}}
+        * Invoking a method
+{{{
+            obj : <m : t_1 -> ... -> t_n -> u meth; ..> Js.t
+                e_i : t_i               (1 <= i <= n)
+            -------------------------------------------------
+                      obj##m(e_1, ..., e_n) : u
+}}}
+        * Creating an object
+{{{
+            constr : (t_1 -> ... -> t_n -> u Js.t) Js.constr
+            e_i : t_i               (1 <= i <= n)
+            ------------------------------------------------
+                    jsnew constr (e1, ..., en) : u Js.t
+}}}

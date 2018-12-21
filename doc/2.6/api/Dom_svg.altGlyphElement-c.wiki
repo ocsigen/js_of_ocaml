@@ -1,0 +1,7 @@
+=Class type <<a_api_type | class type Dom_svg.altGlyphElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEaltGlyphElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|altGlyphElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.altGlyphElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.textPositioningElement >>
+* <<a_api | class Dom_svg.uriReference >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODglyphRef"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|glyphRef>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Js.js_string" | class type Js.js_string >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.prop" | type Js.prop >>>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="METHODformat"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|format>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Js.js_string" | class type Js.js_string >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.prop" | type Js.prop >>>>>>

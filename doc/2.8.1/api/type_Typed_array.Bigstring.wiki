@@ -1,0 +1,8 @@
+<<code language="ocaml" | sig
+  type t =
+      (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+  val to_arrayBuffer :
+    Typed_array.Bigstring.t -> Typed_array.arrayBuffer Js.t
+  val of_arrayBuffer :
+    Typed_array.arrayBuffer Js.t -> Typed_array.Bigstring.t
+end >>

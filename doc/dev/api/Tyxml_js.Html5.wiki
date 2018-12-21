@@ -1,0 +1,4 @@
+=Module <<a_api_type | module Tyxml_js.Html5 >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Html5>>>> <<span class="ocsforge_color_delimiter"|~:>> \\  <<span class="odocwiki_type"|<<span class="ocsforge_color_uid"|Html_sigs.Make>>(Xml)(Svg).T>><<span class="odocwiki_type"| \\  with module <<span class="ocsforge_color_uid"|Xml.W>> = <<span class="ocsforge_color_uid"|Xml_wrap.NoWrap>>\\   and type 'a elt = 'a Html.elt\\   and type +'a attrib = 'a Html.attrib>>>><<span class="odocwiki_warning"|Deprecated.>>~Use <<a_api | module Tyxml_js.Html >>~.
+
+----

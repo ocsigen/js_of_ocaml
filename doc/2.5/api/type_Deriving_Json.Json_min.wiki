@@ -1,0 +1,5 @@
+<<code language="ocaml" | sig
+  type a
+  val write : Buffer.t -> Deriving_Json.Json_min.a -> unit
+  val read : Deriving_Json_lexer.lexbuf -> Deriving_Json.Json_min.a
+end >>

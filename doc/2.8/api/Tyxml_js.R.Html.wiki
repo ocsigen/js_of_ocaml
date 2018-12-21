@@ -1,0 +1,3 @@
+=Module <<a_api_type | module Tyxml_js.R.Html >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Html>>>> <<span class="ocsforge_color_delimiter"|~:>> \\  <<span class="odocwiki_type"|<<span class="ocsforge_color_uid"|Html_sigs.Make>>(Xml)(Svg).T>><<span class="odocwiki_type"| \\    with type +'a elt = 'a Html.elt\\     and type +'a attrib = 'a Html.attrib>>>>
+----

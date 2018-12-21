@@ -1,0 +1,4 @@
+=Module type <<a_api_type | module type Deriving_Json.Json_min'' >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module type>> <<span class="ocsforge_color_uid"|Json_min''>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module type Deriving_Json.Json_min'' >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre class="ocsforge_color odocwiki_code" id="TYPEa"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_name"|a>>>><<pre id="VALt" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|t>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="a" | type Deriving_Json.Json_min''.a >> <<a_api text="Deriving_Json.t" | type Deriving_Json.t >>>>>>

@@ -1,0 +1,12 @@
+=Module <<a_api_type | module JsooTop >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|JsooTop>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module JsooTop >><<span class="ocsforge_color_keyword"|end>>>>~Helper for ~Js~_of~_ocaml ~Toplevel~.
+
+----
+<<pre id="VALuse" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|use>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_uid"|Format>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|formatter>> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> bool>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|use fmt content>> ~Execute commands <<span class="odocwiki_inlinecode"|content>>~. ~It does not print types nor values~.
+>>
+<<pre id="VALexecute" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|execute>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|\\  bool <<span class="ocsforge_color_delimiter"| -> >>\\  <<span class="ocsforge_color_label"| ?pp_code: >><<span class="ocsforge_color_uid"|Format>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|formatter>> <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_uid"|Format>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|formatter>> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|execute print fmt content>> ~Execute <<span class="odocwiki_inlinecode"|content>>~.
+    <<span class="odocwiki_inlinecode"|print>> says whether the values and types of the results should be printed~.
+    <<span class="odocwiki_inlinecode"|pp~_code>> formatter can be use to output ocaml source during lexing~.
+>>
+<<pre id="VALinitialize" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|initialize>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~Initialize ~Js~_of~_ocaml toplevel~.
+>>

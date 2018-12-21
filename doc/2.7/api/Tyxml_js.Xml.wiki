@@ -1,0 +1,3 @@
+=Module <<a_api_type | module Tyxml_js.Xml >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Xml>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="XML" | module Tyxml_js.XML >>>><<span class="odocwiki_type"| with module W = <<span class="ocsforge_color_uid"|Xml_wrap.NoWrap>>>>>>
+----

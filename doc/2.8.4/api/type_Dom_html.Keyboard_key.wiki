@@ -1,0 +1,4 @@
+<<code language="ocaml" | sig
+  type t = Uchar.t option
+  val of_event : Dom_html.keyboardEvent Js.t -> Dom_html.Keyboard_key.t
+end >>

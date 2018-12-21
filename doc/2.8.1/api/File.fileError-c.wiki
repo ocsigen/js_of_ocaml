@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type File.fileError >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEfileError"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|fileError>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type File.fileError >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODcode"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|code>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|int <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>>

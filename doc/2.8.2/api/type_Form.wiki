@@ -1,0 +1,21 @@
+<<code language="ocaml" | sig
+  class type formData =
+    object
+      method append : Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+      method append_blob :
+        Js.js_string Js.t -> File.blob Js.t -> unit Js.meth
+    end
+  val formData : Form.formData Js.t Js.constr
+  val formData_form :
+    (Dom_html.formElement Js.t -> Form.formData Js.t) Js.constr
+  type form_elt = [ `File of File.file Js.t | `String of Js.js_string Js.t ]
+  type form_contents =
+      [ `Fields of (string * Form.form_elt) list Pervasives.ref
+      | `FormData of Form.formData Js.t ]
+  val append : Form.form_contents -> string * Form.form_elt -> unit
+  val post_form_contents : Dom_html.formElement Js.t -> Form.form_contents
+  val get_form_contents : Dom_html.formElement Js.t -> (string * string) list
+  val empty_form_contents : unit -> Form.form_contents
+  val form_elements :
+    ?get:bool -> Dom_html.formElement Js.t -> (string * Form.form_elt) list
+end >>

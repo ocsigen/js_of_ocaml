@@ -1,0 +1,15 @@
+=Index of module types=
+
+|@@ @style="tet-align: left;"@@\\J|
+|@@class="odocwiki_index"@ @@<<a_api text="Json"| module type Deriving_Json.Json >> ~[<<a_api | module Deriving_Json >>~]|<<div class="odocwiki_info"|~The signature of the ~J~S~O~N class~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Json_min"| module type Deriving_Json.Json_min >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_min'"| module type Deriving_Json.Json_min' >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_min''"| module type Deriving_Json.Json_min'' >> ~[<<a_api | module Deriving_Json >>~]||
+|@@ @style="tet-align: left;"@@\\O|
+|@@class="odocwiki_index"@ @@<<a_api text="OPT"| module type Js.OPT >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Signatures of a set of standard functions for manipulating
+    optional values~.
+>>
+|
+\\

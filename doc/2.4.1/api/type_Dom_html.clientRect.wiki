@@ -1,0 +1,8 @@
+<<code language="ocaml" | object
+  method bottom : float Js.readonly_prop
+  method height : float Js.optdef Js.readonly_prop
+  method left : float Js.readonly_prop
+  method right : float Js.readonly_prop
+  method top : float Js.readonly_prop
+  method width : float Js.optdef Js.readonly_prop
+end >>

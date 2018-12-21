@@ -1,0 +1,22 @@
+<<code language="ocaml" | sig
+  type t =
+      Zero
+    | Em of float
+    | Ex of float
+    | Px of float
+    | Gd of float
+    | Rem of float
+    | Vw of float
+    | Vh of float
+    | Vm of float
+    | Ch of float
+    | Mm of float
+    | Cm of float
+    | In of float
+    | Pt of float
+    | Pc of float
+  type js_t = private Js.js_string Js.t
+  val string_of_t : CSS.Length.t -> string
+  val js : CSS.Length.t -> CSS.Length.js_t
+  val ml : CSS.Length.js_t -> CSS.Length.t
+end >>

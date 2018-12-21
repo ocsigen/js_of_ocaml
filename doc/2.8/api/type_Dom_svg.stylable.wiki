@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method className : Dom_svg.animatedString Js.t Js.readonly_prop
+  method style : Dom_html.cssStyleDeclaration Js.t Js.readonly_prop
+end >>

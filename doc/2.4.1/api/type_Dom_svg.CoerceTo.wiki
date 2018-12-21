@@ -1,0 +1,67 @@
+<<code language="ocaml" | sig
+  val element : #Dom.node Js.t -> Dom_svg.element Js.t Js.opt
+  val a : #Dom_svg.element Js.t -> Dom_svg.aElement Js.t Js.opt
+  val altGlyph : #Dom_svg.element Js.t -> Dom_svg.altGlyphElement Js.t Js.opt
+  val altGlyphDef :
+    #Dom_svg.element Js.t -> Dom_svg.altGlyphDefElement Js.t Js.opt
+  val altGlyphItem :
+    #Dom_svg.element Js.t -> Dom_svg.altGlyphItemElement Js.t Js.opt
+  val animate : #Dom_svg.element Js.t -> Dom_svg.animateElement Js.t Js.opt
+  val animateColor :
+    #Dom_svg.element Js.t -> Dom_svg.animateColorElement Js.t Js.opt
+  val animateMotion :
+    #Dom_svg.element Js.t -> Dom_svg.animateMotionElement Js.t Js.opt
+  val animateTransform :
+    #Dom_svg.element Js.t -> Dom_svg.animateTransformElement Js.t Js.opt
+  val circle : #Dom_svg.element Js.t -> Dom_svg.circleElement Js.t Js.opt
+  val clipPath : #Dom_svg.element Js.t -> Dom_svg.clipPathElement Js.t Js.opt
+  val cursor : #Dom_svg.element Js.t -> Dom_svg.cursorElement Js.t Js.opt
+  val defs : #Dom_svg.element Js.t -> Dom_svg.defsElement Js.t Js.opt
+  val desc : #Dom_svg.element Js.t -> Dom_svg.descElement Js.t Js.opt
+  val ellipse : #Dom_svg.element Js.t -> Dom_svg.ellipseElement Js.t Js.opt
+  val filter : #Dom_svg.element Js.t -> Dom_svg.filterElement Js.t Js.opt
+  val font : #Dom_svg.element Js.t -> Dom_svg.fontElement Js.t Js.opt
+  val fontFace : #Dom_svg.element Js.t -> Dom_svg.fontElement Js.t Js.opt
+  val fontFaceFormat :
+    #Dom_svg.element Js.t -> Dom_svg.fontElement Js.t Js.opt
+  val fontFaceName : #Dom_svg.element Js.t -> Dom_svg.fontElement Js.t Js.opt
+  val fontFaceSrc : #Dom_svg.element Js.t -> Dom_svg.fontElement Js.t Js.opt
+  val fontFaceUri : #Dom_svg.element Js.t -> Dom_svg.fontElement Js.t Js.opt
+  val foreignObject :
+    #Dom_svg.element Js.t -> Dom_svg.foreignObjectElement Js.t Js.opt
+  val g : #Dom_svg.element Js.t -> Dom_svg.gElement Js.t Js.opt
+  val glyph : #Dom_svg.element Js.t -> Dom_svg.glyphElement Js.t Js.opt
+  val glyphRef : #Dom_svg.element Js.t -> Dom_svg.glyphElement Js.t Js.opt
+  val hkern : #Dom_svg.element Js.t -> Dom_svg.element Js.t Js.opt
+  val image : #Dom_svg.element Js.t -> Dom_svg.imageElement Js.t Js.opt
+  val lineElement : #Dom_svg.element Js.t -> Dom_svg.lineElement Js.t Js.opt
+  val linearElement :
+    #Dom_svg.element Js.t -> Dom_svg.linearGradientElement Js.t Js.opt
+  val mask : #Dom_svg.element Js.t -> Dom_svg.maskElement Js.t Js.opt
+  val metaData : #Dom_svg.element Js.t -> Dom_svg.metadataElement Js.t Js.opt
+  val missingGlyph :
+    #Dom_svg.element Js.t -> Dom_svg.glyphElement Js.t Js.opt
+  val mPath : #Dom_svg.element Js.t -> Dom_svg.mPathElement Js.t Js.opt
+  val path : #Dom_svg.element Js.t -> Dom_svg.pathElement Js.t Js.opt
+  val parttern : #Dom_svg.element Js.t -> Dom_svg.patternElement Js.t Js.opt
+  val polygon : #Dom_svg.element Js.t -> Dom_svg.polygonElement Js.t Js.opt
+  val polyline : #Dom_svg.element Js.t -> Dom_svg.polyLineElement Js.t Js.opt
+  val radialgradient :
+    #Dom_svg.element Js.t -> Dom_svg.radialGradientElement Js.t Js.opt
+  val rect : #Dom_svg.element Js.t -> Dom_svg.rectElement Js.t Js.opt
+  val script : #Dom_svg.element Js.t -> Dom_svg.scriptElement Js.t Js.opt
+  val set : #Dom_svg.element Js.t -> Dom_svg.setElement Js.t Js.opt
+  val stop : #Dom_svg.element Js.t -> Dom_svg.stopElement Js.t Js.opt
+  val style : #Dom_svg.element Js.t -> Dom_svg.styleElement Js.t Js.opt
+  val svg : #Dom_svg.element Js.t -> Dom_svg.svgElement Js.t Js.opt
+  val switch : #Dom_svg.element Js.t -> Dom_svg.switchElement Js.t Js.opt
+  val symbol : #Dom_svg.element Js.t -> Dom_svg.symbolElement Js.t Js.opt
+  val textElement : #Dom_svg.element Js.t -> Dom_svg.textElement Js.t Js.opt
+  val textpath : #Dom_svg.element Js.t -> Dom_svg.textPathElement Js.t Js.opt
+  val title : #Dom_svg.element Js.t -> Dom_svg.titleElement Js.t Js.opt
+  val tref : #Dom_svg.element Js.t -> Dom_svg.trefElement Js.t Js.opt
+  val tspan : #Dom_svg.element Js.t -> Dom_svg.tspanElement Js.t Js.opt
+  val use : #Dom_svg.element Js.t -> Dom_svg.useElement Js.t Js.opt
+  val view : #Dom_svg.element Js.t -> Dom_svg.viewElement Js.t Js.opt
+  val vkern : #Dom_svg.element Js.t -> Dom_svg.element Js.t Js.opt
+end >>

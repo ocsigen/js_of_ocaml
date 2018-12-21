@@ -1,0 +1,9 @@
+<<code language="ocaml" | object
+  method _type : Js.js_string Js.t Js.readonly_prop
+  method currentTarget : 'a Js.t Js.opt Js.readonly_prop
+  method data : Js.js_string Js.t Js.readonly_prop
+  method data_blob : File.blob Js.t Js.readonly_prop
+  method data_buffer : Typed_array.arrayBuffer Js.t Js.readonly_prop
+  method srcElement : 'a Js.t Js.opt Js.readonly_prop
+  method target : 'a Js.t Js.opt Js.readonly_prop
+end >>

@@ -1,0 +1,5 @@
+<<code language="ocaml" | object
+  method matrixTransform : Dom_svg.matrix Js.t -> Dom_svg.point Js.t Js.meth
+  method x : float Js.readonly_prop
+  method y : float Js.readonly_prop
+end >>

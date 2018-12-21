@@ -1,0 +1,7 @@
+<<code language="ocaml" | object
+  method _type : Js.js_string Js.t Js.readonly_prop
+  method size : int Js.readonly_prop
+  method slice : int -> int -> File.blob Js.meth
+  method slice_withContentType :
+    int -> int -> Js.js_string Js.t -> File.blob Js.meth
+end >>

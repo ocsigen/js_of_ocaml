@@ -1,0 +1,6 @@
+=Class type <<a_api_type | class type Dom_svg.transformList >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEtransformList"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|transformList>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.transformList >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.list >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODcreateSVGTransformFromMatrix"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|createSVGTransformFromMatrix>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="matrix" | class type Dom_svg.matrix >> <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="transform" | class type Dom_svg.transform >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.meth" | type Js.meth >>>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="METHODconsolidate"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|consolidate>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="transform" | class type Dom_svg.transform >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.meth" | type Js.meth >>>>>>

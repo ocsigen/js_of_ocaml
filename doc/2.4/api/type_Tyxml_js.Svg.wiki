@@ -1,0 +1,1 @@
+<<code language="ocaml" | Svg_sigs.Make(Xml).T >>

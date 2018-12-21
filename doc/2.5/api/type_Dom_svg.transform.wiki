@@ -1,0 +1,11 @@
+<<code language="ocaml" | object
+  method _type : Dom_svg.transformType Js.readonly_prop
+  method angle : float Js.readonly_prop
+  method matrix : Dom_svg.matrix Js.t Js.readonly_prop
+  method setMatrix : Dom_svg.matrix Js.t -> unit Js.meth
+  method setRotate : float -> float -> float -> unit Js.meth
+  method setScale : float -> float -> unit Js.meth
+  method setSkewX : float -> unit Js.meth
+  method setSkewY : float -> unit Js.meth
+  method setTranslate : float -> float -> unit Js.meth
+end >>

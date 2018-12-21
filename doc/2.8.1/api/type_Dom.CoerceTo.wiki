@@ -1,0 +1,5 @@
+<<code language="ocaml" | sig
+  val element : #Dom.node Js.t -> Dom.element Js.t Js.opt
+  val text : #Dom.node Js.t -> Dom.text Js.t Js.opt
+  val attr : #Dom.node Js.t -> Dom.attr Js.t Js.opt
+end >>

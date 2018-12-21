@@ -1,0 +1,1 @@
+<<code language="ocaml" | object method href : Dom_svg.animatedString Js.t Js.readonly_prop end >>

@@ -1,0 +1,20 @@
+<<code language="ocaml" | sig
+  type 'a typ = 'a Dom.Event.typ
+  val click : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val dblclick : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mousedown : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mouseup : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mouseover : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mousemove : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val mouseout : Dom_html.mouseEvent Js.t Dom_html.Event.typ
+  val keypress : Dom_html.keyboardEvent Js.t Dom_html.Event.typ
+  val keydown : Dom_html.keyboardEvent Js.t Dom_html.Event.typ
+  val keyup : Dom_html.keyboardEvent Js.t Dom_html.Event.typ
+  val mousewheel : Dom_html.wheelEvent Js.t Dom_html.Event.typ
+  val _DOMMouseScroll : Dom_html.mouseScrollEvent Js.t Dom_html.Event.typ
+  val touchstart : Dom_html.touchEvent Js.t Dom_html.Event.typ
+  val touchmove : Dom_html.touchEvent Js.t Dom_html.Event.typ
+  val touchend : Dom_html.touchEvent Js.t Dom_html.Event.typ
+  val touchcancel : Dom_html.touchEvent Js.t Dom_html.Event.typ
+  val make : string -> 'a Dom_html.Event.typ
+end >>

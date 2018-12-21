@@ -1,0 +1,43 @@
+<<code language="ocaml" | object
+  method _match :
+    Js.regExp Js.t -> Js.match_result_handle Js.t Js.opt Js.meth
+  method charAt : int -> Js.js_string Js.t Js.meth
+  method charCodeAt : int -> float Js.t Js.meth
+  method concat : Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method concat_2 :
+    Js.js_string Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method concat_3 :
+    Js.js_string Js.t ->
+    Js.js_string Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method concat_4 :
+    Js.js_string Js.t ->
+    Js.js_string Js.t ->
+    Js.js_string Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method indexOf : Js.js_string Js.t -> int Js.meth
+  method indexOf_from : Js.js_string Js.t -> int -> int Js.meth
+  method lastIndexOf : Js.js_string Js.t -> int Js.meth
+  method lastIndexOf_from : Js.js_string Js.t -> int -> int Js.meth
+  method length : int Js.readonly_prop
+  method localeCompare : Js.js_string Js.t -> float Js.t Js.meth
+  method replace :
+    Js.regExp Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method replace_string :
+    Js.js_string Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method search : Js.regExp Js.t -> int Js.meth
+  method slice : int -> int -> Js.js_string Js.t Js.meth
+  method slice_end : int -> Js.js_string Js.t Js.meth
+  method split : Js.js_string Js.t -> Js.string_array Js.t Js.meth
+  method split_limited :
+    Js.js_string Js.t -> int -> Js.string_array Js.t Js.meth
+  method split_regExp : Js.regExp Js.t -> Js.string_array Js.t Js.meth
+  method split_regExpLimited :
+    Js.regExp Js.t -> int -> Js.string_array Js.t Js.meth
+  method substring : int -> int -> Js.js_string Js.t Js.meth
+  method substring_toEnd : int -> Js.js_string Js.t Js.meth
+  method toLocaleLowerCase : Js.js_string Js.t Js.meth
+  method toLocaleUpperCase : Js.js_string Js.t Js.meth
+  method toLowerCase : Js.js_string Js.t Js.meth
+  method toString : Js.js_string Js.t Js.meth
+  method toUpperCase : Js.js_string Js.t Js.meth
+  method valueOf : Js.js_string Js.t Js.meth
+end >>

@@ -1,0 +1,5 @@
+<<code language="ocaml" | object
+  method _type : WebGL.uniformType Js.readonly_prop
+  method name : Js.js_string Js.t Js.readonly_prop
+  method size : int Js.readonly_prop
+end >>

@@ -1,0 +1,32 @@
+=Module <<a_api_type | module Url.Current >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Current>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Url.Current >><<span class="ocsforge_color_keyword"|end>>>>~This module can be used to handle the ~Url associated to the current
+    document~.
+
+----
+<<pre id="VALhost" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|host>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string>>>><<div class="odocwiki_info"|~The host part of the current url~.
+>>
+<<pre id="VALport" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|port>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|int option>>>><<div class="odocwiki_info"|~The port of the current url~.
+>>
+<<pre id="VALprotocol" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|protocol>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string>>>><<div class="odocwiki_info"|~The protocol of the current url~.
+>>
+<<pre id="VALpath_string" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|path~_string>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string>>>><<div class="odocwiki_info"|~The path of the current url as one long string~.
+>>
+<<pre id="VALpath" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|path>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string list>>>><<div class="odocwiki_info"|~The path of the current url as a list of small string~.
+>>
+<<pre id="VALarguments" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|arguments>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_delimiter"| ( >>string * string<<span class="ocsforge_color_delimiter"| ) >> list>>>><<div class="odocwiki_info"|~The arguments of the current url as an association list~.
+>>
+<<pre id="VALget_fragment" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|get~_fragment>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> string>>>><<div class="odocwiki_info"|~Because the <<span class="odocwiki_inlinecode"|fragment>> of the ~Url for the current document can change
+        dynamically~, we use a functional value here~.
+>>
+<<pre id="VALset_fragment" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|set~_fragment>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|set~_fragment s>> replaces the current fragment by <<span class="odocwiki_inlinecode"|s>>~.
+>>
+<<pre id="VALget" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|get>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="Url.url" | type Url.url >> option>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|get ~(~)>> returns a value of type <<a_api | type Url.url >> with fields reflecting the
+        state of the current ~Url~.
+>>
+<<pre id="VALset" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|set>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Url.url" | type Url.url >> <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|set u>> replaces the current ~Url for <<span class="odocwiki_inlinecode"|u>>~. **~W~A~R~N~I~N~G~:** ~Causes the
+        document to change~.
+>>
+<<pre id="VALas_string" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|as~_string>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|as~_string>> is the original string representation of the current ~Url~. ~It
+        is ~N~O~T necessarily equals to <<span class="odocwiki_inlinecode"|string~_of~_url ~(get ~(~)~)>> but
+        <<span class="odocwiki_inlinecode"|url~_of~_string as~_string ~= get ~(~)>> holds~.
+>>

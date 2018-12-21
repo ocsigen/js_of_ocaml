@@ -1,0 +1,5 @@
+=Class type <<a_api_type | class type XmlHttpRequest.xmlHttpRequestUpload >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPExmlHttpRequestUpload"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|xmlHttpRequestUpload>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type XmlHttpRequest.xmlHttpRequestUpload >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class File.progressEventTarget >>
+
+----

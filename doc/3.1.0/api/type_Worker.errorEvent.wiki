@@ -1,0 +1,11 @@
+<<code language="ocaml" | object
+  method _type : Js.js_string Js.t Js.readonly_prop
+  method colno : int Js.t Js.readonly_prop
+  method currentTarget : Dom_html.element Js.t Js.opt Js.readonly_prop
+  method error : Js.Unsafe.any -> unit Js.meth
+  method filename : Js.js_string Js.t Js.readonly_prop
+  method lineno : int Js.t Js.readonly_prop
+  method msg : Js.js_string Js.t Js.readonly_prop
+  method srcElement : Dom_html.element Js.t Js.opt Js.readonly_prop
+  method target : Dom_html.element Js.t Js.opt Js.readonly_prop
+end >>

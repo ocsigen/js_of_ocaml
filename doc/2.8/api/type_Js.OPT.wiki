@@ -1,0 +1,13 @@
+<<code language="ocaml" | sig
+  type 'a t
+  val empty : 'a Js.OPT.t
+  val return : 'a -> 'a Js.OPT.t
+  val map : 'a Js.OPT.t -> ('a -> 'b) -> 'b Js.OPT.t
+  val bind : 'a Js.OPT.t -> ('a -> 'b Js.OPT.t) -> 'b Js.OPT.t
+  val test : 'a Js.OPT.t -> bool
+  val iter : 'a Js.OPT.t -> ('a -> unit) -> unit
+  val case : 'a Js.OPT.t -> (unit -> 'b) -> ('a -> 'b) -> 'b
+  val get : 'a Js.OPT.t -> (unit -> 'a) -> 'a
+  val option : 'a option -> 'a Js.OPT.t
+  val to_option : 'a Js.OPT.t -> 'a option
+end >>

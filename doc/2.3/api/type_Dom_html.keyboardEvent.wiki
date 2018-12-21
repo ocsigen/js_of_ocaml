@@ -1,0 +1,13 @@
+<<code language="ocaml" | object
+  method _type : Js.js_string Js.t Js.readonly_prop
+  method altKey : bool Js.t Js.readonly_prop
+  method charCode : int Js.optdef Js.readonly_prop
+  method ctrlKey : bool Js.t Js.readonly_prop
+  method currentTarget : element Js.t Js.opt Js.readonly_prop
+  method keyCode : int Js.readonly_prop
+  method keyIdentifier : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method metaKey : bool Js.t Js.readonly_prop
+  method shiftKey : bool Js.t Js.readonly_prop
+  method srcElement : element Js.t Js.opt Js.readonly_prop
+  method target : element Js.t Js.opt Js.readonly_prop
+end >>

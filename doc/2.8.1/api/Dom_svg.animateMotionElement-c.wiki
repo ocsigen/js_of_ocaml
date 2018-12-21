@@ -1,0 +1,3 @@
+=Class type <<a_api_type | class type Dom_svg.animateMotionElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEanimateMotionElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|animateMotionElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|<<a_api text="animationElement" | class type Dom_svg.animationElement >>>>>>
+----

@@ -1,0 +1,1 @@
+<<code language="ocaml" | Html5_sigs.Make(Xml)(Svg).T >>

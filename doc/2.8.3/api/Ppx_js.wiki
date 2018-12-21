@@ -1,0 +1,87 @@
+=Module <<a_api_type | module Ppx_js >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Ppx_js>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Ppx_js >><<span class="ocsforge_color_keyword"|end>>>>~Ppx syntax extension for ~Js~_of~_ocaml~.
+
+
+    ~To migrate from the camlp~4 extension~, it is advised to use
+    [[https://github.com/janestreet/camlp4-to-ppx|camlp~4~-to~-ppx]]~,
+    which provides built~-in support for ~Js~_of~_ocaml syntax~.
+
+----
+<<pre id="VALjs_mapper" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|js~_mapper>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string list <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_lid"|Ast_mapper>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|mapper>>>>>><<div class="odocwiki_info"|~A syntax extension is available for manipulating object properties~,
+   invoking methods and creating objects~.  ~The syntax and typing rules
+   are as follows~:
+
+
+   
+* ~Getting a property
+   
+<<code language='ocaml'|obj : <m : u Js.prop> Js.t
+--------------------------
+     obj##.m : u
+   >>
+
+   
+* ~Setting a property
+   
+<<code language='ocaml'|obj : <m : u Js.prop> Js.t
+  e : u
+--------------------------
+  obj##.m := e : unit
+   >>
+
+   
+* ~Invoking a method
+   
+<<code language='ocaml'|obj : <m : t_1 -> ... -> t_n -> u Js.meth; ..> Js.t
+e_i : t_i               (1 <= i <= n)
+----------------------------------------------------
+        obj##m e_1 ... e_n : u
+   >>
+
+   ~For easier chaining~, the following alternative syntax is also possible~:
+   <<span class="odocwiki_inlinecode"| obj~#~#~(m e~_~1 ~.~.~. e~_n~) >>~.
+
+
+   ~Beware~, partial application is not allowed~.
+   
+* ~Using an object constructor
+   
+<<code language='ocaml'|constr : (t_1 -> ... -> t_n -> u Js.t) Js.constr
+   e_i : t_i               (1 <= i <= n)
+------------------------------------------------
+          new%js constr e1 ... en : u Js.t
+   >>
+
+   <<span class="odocwiki_inlinecode"| constr >> here must be an identifier~. ~For constructors
+   that are not identifiers~, bind them first~:
+   
+<<code language='ocaml'|let a = Js.Unsafe.global##.A in
+new%js a
+   >>
+
+   
+* ~Creating a literal object
+   
+<<code language='ocaml'|object%js (self) (* Equivalent of this *)
+  val x = 3 (* read-only prop *)
+  val mutable y = 4 (* read/write prop *)
+  method foo i = self##.y := self##.x + i
+end
+   >>
+
+   ~Properties are defined with the <<span class="odocwiki_inlinecode"|val>> keyword~. <<span class="odocwiki_inlinecode"|mutable>> makes the
+   property writable~. <<span class="odocwiki_inlinecode"|self>> can be any identifier and will be bind
+   to <<span class="odocwiki_inlinecode"|this>> in javascript~.
+
+
+   ~In this case~, the object has the following type~:
+   
+<<code language='ocaml'|< foo : int -> unit Js.meth;
+    x : int Js.readonly_prop;
+    y : int Js.prop
+> Js.t
+   >>
+
+   
+
+>>

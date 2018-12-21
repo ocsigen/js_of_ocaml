@@ -1,0 +1,13 @@
+<<code language="ocaml" | object
+  method appendItem : transform Js.t -> transform Js.t Js.meth
+  method clear : unit Js.meth
+  method consolidate : Dom_svg.transform Js.t Js.meth
+  method createSVGTransformFromMatrix :
+    Dom_svg.matrix -> Dom_svg.transform Js.t Js.meth
+  method getItem : int -> transform Js.t Js.meth
+  method initialize : transform Js.t -> transform Js.t Js.meth
+  method insertItemBefore : transform Js.t -> int -> transform Js.t Js.meth
+  method numberOfItems : int Js.readonly_prop
+  method removeItem : int -> transform Js.t Js.meth
+  method replaceItem : transform Js.t -> int -> transform Js.t Js.meth
+end >>

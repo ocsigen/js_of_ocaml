@@ -1,0 +1,30 @@
+=Module <<a_api_type | module Geolocation >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Geolocation>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Geolocation >><<span class="ocsforge_color_keyword"|end>>>>~Geolocation ~A~P~I
+
+
+  ~A code example~:
+  
+<<code language='ocaml'|  if (Geolocation.is_supported()) then
+    let geo = Geolocation.geolocation in
+    let options = Geolocation.empty_position_options() in
+    let () = options##.enableHighAccuracy := true in
+    let f_success pos =
+      let coords = pos##.coords in
+      let latitude = coords##.latitude in
+      Firebug.console##debug latitude ;
+    in
+    let f_error err =
+      let code = err##.code in
+      let msg = err##.message in
+      if code = err##._TIMEOUT then Firebug.console##debug(msg)
+    in
+    geo##getCurrentPosition (Js.wrap_callback f_success) (Js.wrap_callback f_error) options
+  >>
+
+**See also**
+* [[https://developer.mozilla.org/en-US/docs/Web/API/Geolocation|for ~A~P~I documentation~.]]
+* [[http://www.w3.org/TR/geolocation-API/|for the ~W~3~C ~Recommendation~.]]
+
+
+----
+<<pre class="ocsforge_color odocwiki_code" id="TYPEpositionErrorCode"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_name"|position~Error~Code>>>><<pre class="ocsforge_color odocwiki_code" id="TYPEwatchId"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_name"|watch~Id>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEcoordinates"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="coordinates" | class type Geolocation.coordinates >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Geolocation.coordinates >><<span class="ocsforge_color_keyword"|end>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEposition"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="position" | class type Geolocation.position >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Geolocation.position >><<span class="ocsforge_color_keyword"|end>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEpositionOptions"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="positionOptions" | class type Geolocation.positionOptions >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Geolocation.positionOptions >><<span class="ocsforge_color_keyword"|end>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEpositionError"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="positionError" | class type Geolocation.positionError >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Geolocation.positionError >><<span class="ocsforge_color_keyword"|end>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEgeolocation"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="geolocation" | class type Geolocation.geolocation >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Geolocation.geolocation >><<span class="ocsforge_color_keyword"|end>>>><<pre id="VALempty_position_options" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|empty~_position~_options>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="positionOptions" | class type Geolocation.positionOptions >> <<a_api text="Js.t" | type Js.t >>>>>><<pre id="VALgeolocation" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|geolocation>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="geolocation" | class type Geolocation.geolocation >> <<a_api text="Js.t" | type Js.t >>>>>><<pre id="VALis_supported" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|is~_supported>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> bool>>>>

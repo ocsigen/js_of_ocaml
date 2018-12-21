@@ -1,0 +1,6 @@
+<<code language="ocaml" | sig
+  val register_file : name:string -> content:string -> unit
+  val register_autoload : path:string -> (string -> string option) -> unit
+  val set_channel_flusher :
+    Pervasives.out_channel -> (string -> unit) -> unit
+end >>

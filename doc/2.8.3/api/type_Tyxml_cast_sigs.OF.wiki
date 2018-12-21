@@ -1,0 +1,129 @@
+<<code language="ocaml" | sig
+  type 'a elt
+  val of_element : Dom_html.element Js.t -> 'a Tyxml_cast_sigs.OF.elt
+  val of_html :
+    Dom_html.htmlElement Js.t -> [> Html_types.html ] Tyxml_cast_sigs.OF.elt
+  val of_head :
+    Dom_html.headElement Js.t -> [> Html_types.head ] Tyxml_cast_sigs.OF.elt
+  val of_link :
+    Dom_html.linkElement Js.t -> [> Html_types.link ] Tyxml_cast_sigs.OF.elt
+  val of_title :
+    Dom_html.titleElement Js.t ->
+    [> Html_types.title ] Tyxml_cast_sigs.OF.elt
+  val of_meta :
+    Dom_html.metaElement Js.t -> [> Html_types.meta ] Tyxml_cast_sigs.OF.elt
+  val of_base :
+    Dom_html.baseElement Js.t -> [> Html_types.base ] Tyxml_cast_sigs.OF.elt
+  val of_style :
+    Dom_html.styleElement Js.t ->
+    [> Html_types.style ] Tyxml_cast_sigs.OF.elt
+  val of_body :
+    Dom_html.bodyElement Js.t -> [> Html_types.body ] Tyxml_cast_sigs.OF.elt
+  val of_form :
+    Dom_html.formElement Js.t -> [> Html_types.form ] Tyxml_cast_sigs.OF.elt
+  val of_optGroup :
+    Dom_html.optGroupElement Js.t ->
+    [> Html_types.optgroup ] Tyxml_cast_sigs.OF.elt
+  val of_option :
+    Dom_html.optionElement Js.t ->
+    [> Html_types.selectoption ] Tyxml_cast_sigs.OF.elt
+  val of_select :
+    Dom_html.selectElement Js.t ->
+    [> Html_types.select ] Tyxml_cast_sigs.OF.elt
+  val of_input :
+    Dom_html.inputElement Js.t ->
+    [> Html_types.input ] Tyxml_cast_sigs.OF.elt
+  val of_textArea :
+    Dom_html.textAreaElement Js.t ->
+    [> Html_types.textarea ] Tyxml_cast_sigs.OF.elt
+  val of_button :
+    Dom_html.buttonElement Js.t ->
+    [> Html_types.button ] Tyxml_cast_sigs.OF.elt
+  val of_label :
+    Dom_html.labelElement Js.t ->
+    [> Html_types.label ] Tyxml_cast_sigs.OF.elt
+  val of_fieldSet :
+    Dom_html.fieldSetElement Js.t ->
+    [> Html_types.fieldset ] Tyxml_cast_sigs.OF.elt
+  val of_legend :
+    Dom_html.legendElement Js.t ->
+    [> Html_types.legend ] Tyxml_cast_sigs.OF.elt
+  val of_uList :
+    Dom_html.uListElement Js.t -> [> Html_types.ul ] Tyxml_cast_sigs.OF.elt
+  val of_oList :
+    Dom_html.oListElement Js.t -> [> Html_types.ol ] Tyxml_cast_sigs.OF.elt
+  val of_dList :
+    Dom_html.dListElement Js.t -> [> Html_types.dl ] Tyxml_cast_sigs.OF.elt
+  val of_li :
+    Dom_html.liElement Js.t -> [> Html_types.li ] Tyxml_cast_sigs.OF.elt
+  val of_div :
+    Dom_html.divElement Js.t -> [> Html_types.div ] Tyxml_cast_sigs.OF.elt
+  val of_paragraph :
+    Dom_html.paragraphElement Js.t ->
+    [> Html_types.p ] Tyxml_cast_sigs.OF.elt
+  val of_heading :
+    Dom_html.headingElement Js.t ->
+    [> Html_types.heading ] Tyxml_cast_sigs.OF.elt
+  val of_quote :
+    Dom_html.quoteElement Js.t ->
+    [> Html_types.blockquote ] Tyxml_cast_sigs.OF.elt
+  val of_pre :
+    Dom_html.preElement Js.t -> [> Html_types.pre ] Tyxml_cast_sigs.OF.elt
+  val of_br :
+    Dom_html.brElement Js.t -> [> Html_types.br ] Tyxml_cast_sigs.OF.elt
+  val of_hr :
+    Dom_html.hrElement Js.t -> [> Html_types.hr ] Tyxml_cast_sigs.OF.elt
+  val of_mod :
+    Dom_html.modElement Js.t ->
+    [> `Del of 'a | `Ins of 'a ] Tyxml_cast_sigs.OF.elt
+  val of_anchor :
+    Dom_html.anchorElement Js.t ->
+    [> 'a Html_types.a ] Tyxml_cast_sigs.OF.elt
+  val of_image :
+    Dom_html.imageElement Js.t -> [> Html_types.img ] Tyxml_cast_sigs.OF.elt
+  val of_object :
+    Dom_html.objectElement Js.t ->
+    [> 'a Html_types.object_ ] Tyxml_cast_sigs.OF.elt
+  val of_param :
+    Dom_html.paramElement Js.t ->
+    [> Html_types.param ] Tyxml_cast_sigs.OF.elt
+  val of_area :
+    Dom_html.areaElement Js.t -> [> Html_types.area ] Tyxml_cast_sigs.OF.elt
+  val of_map :
+    Dom_html.mapElement Js.t -> [> 'a Html_types.map ] Tyxml_cast_sigs.OF.elt
+  val of_script :
+    Dom_html.scriptElement Js.t ->
+    [> Html_types.script ] Tyxml_cast_sigs.OF.elt
+  val of_embed :
+    Dom_html.embedElement Js.t ->
+    [> Html_types.embed ] Tyxml_cast_sigs.OF.elt
+  val of_tableCell :
+    Dom_html.tableCellElement Js.t -> [> `Td | `Th ] Tyxml_cast_sigs.OF.elt
+  val of_tableRow :
+    Dom_html.tableRowElement Js.t ->
+    [> Html_types.tr ] Tyxml_cast_sigs.OF.elt
+  val of_tableCol :
+    Dom_html.tableColElement Js.t ->
+    [> Html_types.col ] Tyxml_cast_sigs.OF.elt
+  val of_tableSection :
+    Dom_html.tableSectionElement Js.t ->
+    [> `Tbody | `Tfoot | `Thead ] Tyxml_cast_sigs.OF.elt
+  val of_tableCaption :
+    Dom_html.tableCaptionElement Js.t ->
+    [> Html_types.caption ] Tyxml_cast_sigs.OF.elt
+  val of_table :
+    Dom_html.tableElement Js.t ->
+    [> Html_types.table ] Tyxml_cast_sigs.OF.elt
+  val of_canvas :
+    Dom_html.canvasElement Js.t ->
+    [> 'a Html_types.canvas ] Tyxml_cast_sigs.OF.elt
+  val of_iFrame :
+    Dom_html.iFrameElement Js.t ->
+    [> Html_types.iframe ] Tyxml_cast_sigs.OF.elt
+  val of_audio :
+    Dom_html.audioElement Js.t ->
+    [> 'a Html_types.audio ] Tyxml_cast_sigs.OF.elt
+  val of_video :
+    Dom_html.videoElement Js.t ->
+    [> 'a Html_types.video ] Tyxml_cast_sigs.OF.elt
+end >>

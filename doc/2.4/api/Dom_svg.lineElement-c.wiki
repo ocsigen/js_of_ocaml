@@ -1,0 +1,12 @@
+=Class type <<a_api_type | class type Dom_svg.lineElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPElineElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|lineElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.lineElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.element >>
+* <<a_api | class Dom_svg.tests >>
+* <<a_api | class Dom_svg.langSpace >>
+* <<a_api | class Dom_svg.externalResourcesRequired >>
+* <<a_api | class Dom_svg.stylable >>
+* <<a_api | class Dom_svg.transformable >>
+* <<a_api | class Dom_html.eventTarget >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODx1"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|x1>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="animatedLength" | class type Dom_svg.animatedLength >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="METHODy1"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|y1>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="animatedLength" | class type Dom_svg.animatedLength >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="METHODx2"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|x2>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="animatedLength" | class type Dom_svg.animatedLength >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="METHODy2"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|y2>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="animatedLength" | class type Dom_svg.animatedLength >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>>

@@ -1,0 +1,35 @@
+<<code language="ocaml" | sig
+  type 'a wrap = 'a
+  type 'a list_wrap = 'a list
+  type uri = string
+  val string_of_uri : uri -> string
+  val uri_of_string : string -> uri
+  type aname = string
+  type event_handler = Dom_html.event Js.t -> bool
+  type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
+  type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
+  type attrib
+  val float_attrib : aname -> float wrap -> attrib
+  val int_attrib : aname -> int wrap -> attrib
+  val string_attrib : aname -> string wrap -> attrib
+  val space_sep_attrib : aname -> string list wrap -> attrib
+  val comma_sep_attrib : aname -> string list wrap -> attrib
+  val event_handler_attrib : aname -> event_handler -> attrib
+  val mouse_event_handler_attrib : aname -> mouse_event_handler -> attrib
+  val keyboard_event_handler_attrib :
+    aname -> keyboard_event_handler -> attrib
+  val uri_attrib : aname -> uri wrap -> attrib
+  val uris_attrib : aname -> uri list wrap -> attrib
+  type elt = Dom.node Js.t
+  type ename = string
+  val empty : unit -> elt
+  val comment : string -> elt
+  val pcdata : string wrap -> elt
+  val encodedpcdata : string wrap -> elt
+  val entity : string -> elt
+  val leaf : ?a:attrib list -> ename -> elt
+  val node : ?a:attrib list -> ename -> elt list_wrap -> elt
+  val cdata : string -> elt
+  val cdata_script : string -> elt
+  val cdata_style : string -> elt
+end >>

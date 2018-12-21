@@ -1,0 +1,10 @@
+<<code language="ocaml" | object
+  method angle : float Js.prop
+  method largeArcFlag : bool Js.t Js.prop
+  method pathSegType : Dom_svg.pathSegmentType Js.readonly_prop
+  method pathSegTypeAsLetter : Js.js_string Js.t Js.readonly_prop
+  method r1 : float Js.prop
+  method r2 : float Js.prop
+  method sweepFlag : bool Js.t Js.prop
+  method y : float Js.prop
+end >>

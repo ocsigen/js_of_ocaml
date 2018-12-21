@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type Dom.documentFragment >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEdocumentFragment"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|documentFragment>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|<<a_api text="node" | class type Dom.node >>>>>>~Specification of <<span class="odocwiki_inlinecode"|~Document~Fragment>> objects~.
+
+----

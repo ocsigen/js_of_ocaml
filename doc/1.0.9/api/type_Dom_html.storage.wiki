@@ -1,0 +1,8 @@
+<<code language="ocaml" | object
+  method clear : unit Js.meth
+  method getItem : Js.js_string Js.t -> Js.js_string Js.t Js.optdef Js.meth
+  method key : int -> Js.js_string Js.t Js.optdef Js.meth
+  method length : int Js.readonly_prop
+  method removeItem : Js.js_string Js.t -> unit Js.meth
+  method setItem : Js.js_string Js.t -> unit Js.meth
+end >>

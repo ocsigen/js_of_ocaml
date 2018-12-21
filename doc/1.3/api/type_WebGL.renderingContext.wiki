@@ -1,0 +1,739 @@
+<<code language="ocaml" | object
+  method _ACTIVE_ATTRIBUTES_ : int WebGL.programParam Js.readonly_prop
+  method _ACTIVE_TEXTURE_ : int WebGL.parameter Js.readonly_prop
+  method _ACTIVE_UNIFORMS_ : int WebGL.programParam Js.readonly_prop
+  method _ALIASED_LINE_WIDTH_RANGE_ :
+    Typed_array.float32Array Js.t WebGL.parameter Js.readonly_prop
+  method _ALIASED_POINT_SIZE_RANGE_ :
+    Typed_array.float32Array Js.t WebGL.parameter Js.readonly_prop
+  method _ALPHA : WebGL.pixelFormat Js.readonly_prop
+  method _ALPHA_BITS_ : int WebGL.parameter Js.readonly_prop
+  method _ALWAYS : WebGL.depthFunction Js.readonly_prop
+  method _ARRAY_BUFFER_ : WebGL.bufferTarget Js.readonly_prop
+  method _ARRAY_BUFFER_BINDING_ :
+    WebGL.buffer Js.t Js.opt WebGL.parameter Js.readonly_prop
+  method _ATTACHED_SHADERS_ : int WebGL.programParam Js.readonly_prop
+  method _BACK : WebGL.cullFaceMode Js.readonly_prop
+  method _BLEND : WebGL.enableCap Js.readonly_prop
+  method _BLEND_COLOR_ :
+    Typed_array.float32Array Js.t WebGL.parameter Js.readonly_prop
+  method _BLEND_DST_ALPHA_ :
+    WebGL.blendingFactor WebGL.parameter Js.readonly_prop
+  method _BLEND_DST_RGB_ :
+    WebGL.blendingFactor WebGL.parameter Js.readonly_prop
+  method _BLEND_EQUATION_ : WebGL.blendMode WebGL.parameter Js.readonly_prop
+  method _BLEND_EQUATION_ALPHA_ :
+    WebGL.blendMode WebGL.parameter Js.readonly_prop
+  method _BLEND_EQUATION_RGB_ :
+    WebGL.blendMode WebGL.parameter Js.readonly_prop
+  method _BLEND_PARAM : bool Js.t WebGL.parameter Js.readonly_prop
+  method _BLEND_SRC_ALPHA_ :
+    WebGL.blendingFactor WebGL.parameter Js.readonly_prop
+  method _BLEND_SRC_RGB_ :
+    WebGL.blendingFactor WebGL.parameter Js.readonly_prop
+  method _BLUE_BITS_ : int WebGL.parameter Js.readonly_prop
+  method _BOOL : WebGL.uniformType Js.readonly_prop
+  method _BOOL_VEC2_ : WebGL.uniformType Js.readonly_prop
+  method _BOOL_VEC3_ : WebGL.uniformType Js.readonly_prop
+  method _BOOL_VEC4_ : WebGL.uniformType Js.readonly_prop
+  method _BROWSER_DEFAULT_WEBGL_ :
+    WebGL.colorspaceConversion Js.readonly_prop
+  method _BUFFER_SIZE_ : WebGL.bufferParameter Js.readonly_prop
+  method _BUFFER_USAGE_ : WebGL.bufferParameter Js.readonly_prop
+  method _BYTE : WebGL.dataType Js.readonly_prop
+  method _CCW : WebGL.frontFaceDir Js.readonly_prop
+  method _CLAMP_TO_EDGE_ : WebGL.wrapMode Js.readonly_prop
+  method _COLOR_ATTACHMENT0_ : WebGL.attachmentPoint Js.readonly_prop
+  method _COLOR_BUFFER_BIT_ : WebGL.clearBufferMask Js.readonly_prop
+  method _COLOR_CLEAR_VALUE_ :
+    Typed_array.float32Array Js.t WebGL.parameter Js.readonly_prop
+  method _COLOR_WRITEMASK_ :
+    bool Js.t Js.js_array Js.t WebGL.parameter Js.readonly_prop
+  method _COMPILE_STATUS_ : bool Js.t WebGL.shaderParam Js.readonly_prop
+  method _COMPRESSED_TEXTURE_FORMATS_ :
+    unit Js.opt WebGL.parameter Js.readonly_prop
+  method _CONSTANT_ALPHA_ : WebGL.blendMode Js.readonly_prop
+  method _CONSTANT_COLOR_ : WebGL.blendMode Js.readonly_prop
+  method _CONTEXT_LOST_WEBGL : WebGL.errorCode Js.readonly_prop
+  method _CULL_FACE_ : WebGL.enableCap Js.readonly_prop
+  method _CULL_FACE_MODE_ :
+    WebGL.cullFaceMode WebGL.parameter Js.readonly_prop
+  method _CULL_FACE_PARAM : bool Js.t WebGL.parameter Js.readonly_prop
+  method _CURRENT_PROGRAM_ :
+    WebGL.program Js.t Js.opt WebGL.parameter Js.readonly_prop
+  method _CURRENT_VERTEX_ATTRIB_ :
+    Typed_array.float32Array Js.t WebGL.vertexAttribParam Js.readonly_prop
+  method _CW : WebGL.frontFaceDir Js.readonly_prop
+  method _DECR : WebGL.stencilOp Js.readonly_prop
+  method _DECR_WRAP_ : WebGL.stencilOp Js.readonly_prop
+  method _DELETE_STATUS_ : bool Js.t WebGL.shaderParam Js.readonly_prop
+  method _DELETE_STATUS_PROG : bool Js.t WebGL.programParam Js.readonly_prop
+  method _DEPTH_ATTACHMENT_ : WebGL.attachmentPoint Js.readonly_prop
+  method _DEPTH_BITS_ : int WebGL.parameter Js.readonly_prop
+  method _DEPTH_BUFFER_BIT_ : WebGL.clearBufferMask Js.readonly_prop
+  method _DEPTH_CLEAR_VALUE_ : float WebGL.parameter Js.readonly_prop
+  method _DEPTH_COMPONENT16_ : WebGL.format Js.readonly_prop
+  method _DEPTH_COMPONENT_ : WebGL.pixelFormat Js.readonly_prop
+  method _DEPTH_FUNC_ : WebGL.depthFunction WebGL.parameter Js.readonly_prop
+  method _DEPTH_RANGE_ :
+    Typed_array.float32Array Js.t WebGL.parameter Js.readonly_prop
+  method _DEPTH_STENCIL_ : WebGL.pixelFormat Js.readonly_prop
+  method _DEPTH_STENCIL_ATTACHMENT_ : WebGL.attachmentPoint Js.readonly_prop
+  method _DEPTH_TEST_ : WebGL.enableCap Js.readonly_prop
+  method _DEPTH_TEST_PARAM : bool Js.t WebGL.parameter Js.readonly_prop
+  method _DEPTH_WRITEMASK_ : bool Js.t WebGL.parameter Js.readonly_prop
+  method _DITHER : WebGL.enableCap Js.readonly_prop
+  method _DITHER_PARAM : bool Js.t WebGL.parameter Js.readonly_prop
+  method _DONT_CARE : WebGL.hintMode Js.readonly_prop
+  method _DST_ALPHA_ : WebGL.blendingFactor Js.readonly_prop
+  method _DST_COLOR_ : WebGL.blendingFactor Js.readonly_prop
+  method _DYNAMIC_DRAW_ : WebGL.bufferUsage Js.readonly_prop
+  method _ELEMENT_ARRAY_BUFFER_ : WebGL.bufferTarget Js.readonly_prop
+  method _ELEMENT_ARRAY_BUFFER_BINDING_ :
+    WebGL.buffer Js.t Js.opt WebGL.parameter Js.readonly_prop
+  method _EQUAL : WebGL.depthFunction Js.readonly_prop
+  method _FASTEST : WebGL.hintMode Js.readonly_prop
+  method _FLOAT : WebGL.dataType Js.readonly_prop
+  method _FLOAT_ : WebGL.uniformType Js.readonly_prop
+  method _FLOAT_MAT2_ : WebGL.uniformType Js.readonly_prop
+  method _FLOAT_MAT3_ : WebGL.uniformType Js.readonly_prop
+  method _FLOAT_MAT4_ : WebGL.uniformType Js.readonly_prop
+  method _FLOAT_VEC2_ : WebGL.uniformType Js.readonly_prop
+  method _FLOAT_VEC3_ : WebGL.uniformType Js.readonly_prop
+  method _FLOAT_VEC4_ : WebGL.uniformType Js.readonly_prop
+  method _FRAGMENT_SHADER_ : WebGL.shaderType Js.readonly_prop
+  method _FRAMEBUFFER : WebGL.fbTarget Js.readonly_prop
+  method _FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_RENDERBUFFER :
+    WebGL.renderbuffer Js.t WebGL.attachParam Js.readonly_prop
+  method _FRAMEBUFFER_ATTACHMENT_OBJECT_NAME_TEXTURE :
+    WebGL.texture Js.t WebGL.attachParam Js.readonly_prop
+  method _FRAMEBUFFER_ATTACHMENT_OBJECT_TYPE_ :
+    int WebGL.attachParam Js.readonly_prop
+  method _FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE_ :
+    int WebGL.attachParam Js.readonly_prop
+  method _FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL_ :
+    int WebGL.attachParam Js.readonly_prop
+  method _FRAMEBUFFER_BINDING_ :
+    WebGL.framebuffer Js.t Js.opt WebGL.parameter Js.readonly_prop
+  method _FRAMEBUFFER_COMPLETE_ : WebGL.framebufferStatus Js.readonly_prop
+  method _FRAMEBUFFER_INCOMPLETE_ATTACHMENT_ :
+    WebGL.framebufferStatus Js.readonly_prop
+  method _FRAMEBUFFER_INCOMPLETE_DIMENSIONS_ :
+    WebGL.framebufferStatus Js.readonly_prop
+  method _FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_ :
+    WebGL.framebufferStatus Js.readonly_prop
+  method _FRAMEBUFFER_UNSUPPORTED_ : WebGL.framebufferStatus Js.readonly_prop
+  method _FRONT : WebGL.cullFaceMode Js.readonly_prop
+  method _FRONT_AND_BACK_ : WebGL.cullFaceMode Js.readonly_prop
+  method _FRONT_FACE_ : WebGL.frontFaceDir WebGL.parameter Js.readonly_prop
+  method _FUNC_ADD_ : WebGL.blendMode Js.readonly_prop
+  method _FUNC_REVERSE_SUBTRACT_ : WebGL.blendMode Js.readonly_prop
+  method _FUNC_SUBTRACT_ : WebGL.blendMode Js.readonly_prop
+  method _GENERATE_MIPMAP_HINT_ : WebGL.hintTarget Js.readonly_prop
+  method _GENERATE_MIPMAP_HINT_PARAM_ :
+    WebGL.hintMode WebGL.parameter Js.readonly_prop
+  method _GEQUAL : WebGL.depthFunction Js.readonly_prop
+  method _GREATER : WebGL.depthFunction Js.readonly_prop
+  method _GREEN_BITS_ : int WebGL.parameter Js.readonly_prop
+  method _INCR : WebGL.stencilOp Js.readonly_prop
+  method _INCR_WRAP_ : WebGL.stencilOp Js.readonly_prop
+  method _INT : WebGL.dataType Js.readonly_prop
+  method _INT_VEC2_ : WebGL.uniformType Js.readonly_prop
+  method _INT_VEC3_ : WebGL.uniformType Js.readonly_prop
+  method _INT_VEC4_ : WebGL.uniformType Js.readonly_prop
+  method _INVALID_ENUM : WebGL.errorCode Js.readonly_prop
+  method _INVALID_FRAMEBUFFER_OPERATION_ : WebGL.errorCode Js.readonly_prop
+  method _INVALID_OPERATION : WebGL.errorCode Js.readonly_prop
+  method _INVALID_VALUE : WebGL.errorCode Js.readonly_prop
+  method _INVERT : WebGL.stencilOp Js.readonly_prop
+  method _KEEP : WebGL.stencilOp Js.readonly_prop
+  method _LEQUAL : WebGL.depthFunction Js.readonly_prop
+  method _LESS : WebGL.depthFunction Js.readonly_prop
+  method _LINEAR : WebGL.texFilter Js.readonly_prop
+  method _LINEAR_MIPMAP_LINEAR_ : WebGL.texFilter Js.readonly_prop
+  method _LINEAR_MIPMAP_NEAREST_ : WebGL.texFilter Js.readonly_prop
+  method _LINES : WebGL.beginMode Js.readonly_prop
+  method _LINE_LOOP_ : WebGL.beginMode Js.readonly_prop
+  method _LINE_STRIP_ : WebGL.beginMode Js.readonly_prop
+  method _LINE_WIDTH_ : float WebGL.parameter Js.readonly_prop
+  method _LINK_STATUS_ : bool Js.t WebGL.programParam Js.readonly_prop
+  method _LUMINANCE : WebGL.pixelFormat Js.readonly_prop
+  method _LUMINANCE_ALPHA_ : WebGL.pixelFormat Js.readonly_prop
+  method _MAX_COMBINED_TEXTURE_IMAGE_UNITS_ :
+    int WebGL.parameter Js.readonly_prop
+  method _MAX_CUBE_MAP_TEXTURE_SIZE_ : int WebGL.parameter Js.readonly_prop
+  method _MAX_FRAGMENT_UNIFORM_VECTORS_ :
+    int WebGL.parameter Js.readonly_prop
+  method _MAX_RENDERBUFFER_SIZE : int WebGL.parameter Js.readonly_prop
+  method _MAX_TEXTURE_IMAGE_UNITS_ : int WebGL.parameter Js.readonly_prop
+  method _MAX_TEXTURE_SIZE_ : int WebGL.parameter Js.readonly_prop
+  method _MAX_VARYING_VECTORS_ : int WebGL.parameter Js.readonly_prop
+  method _MAX_VERTEX_ATTRIBS_ : int WebGL.parameter Js.readonly_prop
+  method _MAX_VERTEX_TEXTURE_IMAGE_UNITS_ :
+    int WebGL.parameter Js.readonly_prop
+  method _MAX_VERTEX_UNIFORM_VECTORS_ : int WebGL.parameter Js.readonly_prop
+  method _MAX_VIEWPORT_DIMS_ :
+    Typed_array.int32Array Js.t WebGL.parameter Js.readonly_prop
+  method _MIRRORED_REPEAT_ : WebGL.wrapMode Js.readonly_prop
+  method _NEAREST : WebGL.texFilter Js.readonly_prop
+  method _NEAREST_MIPMAP_LINEAR_ : WebGL.texFilter Js.readonly_prop
+  method _NEAREST_MIPMAP_NEAREST_ : WebGL.texFilter Js.readonly_prop
+  method _NEVER : WebGL.depthFunction Js.readonly_prop
+  method _NICEST : WebGL.hintMode Js.readonly_prop
+  method _NONE : WebGL.colorspaceConversion Js.readonly_prop
+  method _NOTEQUAL : WebGL.depthFunction Js.readonly_prop
+  method _NO_ERROR : WebGL.errorCode Js.readonly_prop
+  method _NUM_COMPRESSED_TEXTURE_FORMATS_ :
+    int WebGL.parameter Js.readonly_prop
+  method _ONE : WebGL.blendingFactor Js.readonly_prop
+  method _ONE_MINUS_CONSTANT_ALPHA_ : WebGL.blendMode Js.readonly_prop
+  method _ONE_MINUS_CONSTANT_COLOR_ : WebGL.blendMode Js.readonly_prop
+  method _ONE_MINUS_DST_ALPHA_ : WebGL.blendingFactor Js.readonly_prop
+  method _ONE_MINUS_DST_COLOR_ : WebGL.blendingFactor Js.readonly_prop
+  method _ONE_MINUS_SRC_ALPHA_ : WebGL.blendingFactor Js.readonly_prop
+  method _ONE_MINUS_SRC_COLOR_ : WebGL.blendingFactor Js.readonly_prop
+  method _OUT_OF_MEMORY : WebGL.errorCode Js.readonly_prop
+  method _PACK_ALIGNMENT_ : int WebGL.parameter Js.readonly_prop
+  method _POINTS : WebGL.beginMode Js.readonly_prop
+  method _POLYGON_OFFSET_FACTOR_ : float WebGL.parameter Js.readonly_prop
+  method _POLYGON_OFFSET_FILL_ : WebGL.enableCap Js.readonly_prop
+  method _POLYGON_OFFSET_FILL_PARAM :
+    bool Js.t WebGL.parameter Js.readonly_prop
+  method _POLYGON_OFFSET_UNITS_ : float WebGL.parameter Js.readonly_prop
+  method _RED_BITS_ : int WebGL.parameter Js.readonly_prop
+  method _RENDERBUFFER : WebGL.rbTarget Js.readonly_prop
+  method _RENDERBUFFER_ALPHA_SIZE_ : WebGL.renderbufferParam Js.readonly_prop
+  method _RENDERBUFFER_BINDING_ :
+    WebGL.renderbuffer Js.t Js.opt WebGL.parameter Js.readonly_prop
+  method _RENDERBUFFER_BLUE_SIZE_ : WebGL.renderbufferParam Js.readonly_prop
+  method _RENDERBUFFER_DEPTH_SIZE_ : WebGL.renderbufferParam Js.readonly_prop
+  method _RENDERBUFFER_GREEN_SIZE_ : WebGL.renderbufferParam Js.readonly_prop
+  method _RENDERBUFFER_HEIGHT_ : WebGL.renderbufferParam Js.readonly_prop
+  method _RENDERBUFFER_INTERNAL_FORMAT_ :
+    WebGL.renderbufferParam Js.readonly_prop
+  method _RENDERBUFFER_RED_SIZE_ : WebGL.renderbufferParam Js.readonly_prop
+  method _RENDERBUFFER_STENCIL_SIZE_ :
+    WebGL.renderbufferParam Js.readonly_prop
+  method _RENDERBUFFER_WIDTH_ : WebGL.renderbufferParam Js.readonly_prop
+  method _RENDERER : Js.js_string Js.t WebGL.parameter Js.readonly_prop
+  method _REPEAT : WebGL.wrapMode Js.readonly_prop
+  method _REPLACE : WebGL.stencilOp Js.readonly_prop
+  method _RGB : WebGL.pixelFormat Js.readonly_prop
+  method _RGB565 : WebGL.format Js.readonly_prop
+  method _RGB5_A1_ : WebGL.format Js.readonly_prop
+  method _RGBA : WebGL.pixelFormat Js.readonly_prop
+  method _RGBA4 : WebGL.format Js.readonly_prop
+  method _SAMPLER_2D_ : WebGL.uniformType Js.readonly_prop
+  method _SAMPLER_CUBE_ : WebGL.uniformType Js.readonly_prop
+  method _SAMPLES_ : int WebGL.parameter Js.readonly_prop
+  method _SAMPLE_ALPHA_TO_COVERAGE : WebGL.enableCap Js.readonly_prop
+  method _SAMPLE_BUFFERS_ : int WebGL.parameter Js.readonly_prop
+  method _SAMPLE_COVERAGE : WebGL.enableCap Js.readonly_prop
+  method _SAMPLE_COVERAGE_INVERT_ :
+    bool Js.t WebGL.parameter Js.readonly_prop
+  method _SAMPLE_COVERAGE_VALUE_ : float WebGL.parameter Js.readonly_prop
+  method _SCISSOR_BOX_ :
+    Typed_array.int32Array Js.t WebGL.parameter Js.readonly_prop
+  method _SCISSOR_TEST_ : WebGL.enableCap Js.readonly_prop
+  method _SCISSOR_TEST_PARAM : bool Js.t WebGL.parameter Js.readonly_prop
+  method _SHADER_TYPE_ : int WebGL.shaderParam Js.readonly_prop
+  method _SHADING_LANGUAGE_VERSION_ :
+    Js.js_string Js.t WebGL.parameter Js.readonly_prop
+  method _SHORT : WebGL.dataType Js.readonly_prop
+  method _SRC_ALPHA_ : WebGL.blendingFactor Js.readonly_prop
+  method _SRC_ALPHA_SATURATE_ : WebGL.blendingFactor Js.readonly_prop
+  method _SRC_COLOR_ : WebGL.blendingFactor Js.readonly_prop
+  method _STATIC_DRAW_ : WebGL.bufferUsage Js.readonly_prop
+  method _STENCIL_ATTACHMENT_ : WebGL.attachmentPoint Js.readonly_prop
+  method _STENCIL_BACK_FAIL_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_BACK_FUNC_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_BACK_PASS_DEPTH_FAIL_ :
+    int WebGL.parameter Js.readonly_prop
+  method _STENCIL_BACK_PASS_DEPTH_PASS_ :
+    int WebGL.parameter Js.readonly_prop
+  method _STENCIL_BACK_REF_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_BACK_VALUE_MASK_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_BACK_WRITEMASK_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_BITS_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_BUFFER_BIT_ : WebGL.clearBufferMask Js.readonly_prop
+  method _STENCIL_CLEAR_VALUE_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_FAIL_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_FUNC_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_INDEX8_ : WebGL.format Js.readonly_prop
+  method _STENCIL_INDEX_ : WebGL.pixelFormat Js.readonly_prop
+  method _STENCIL_PASS_DEPTH_FAIL_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_PASS_DEPTH_PASS_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_REF_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_TEST_ : WebGL.enableCap Js.readonly_prop
+  method _STENCIL_TEST_PARAM : bool Js.t WebGL.parameter Js.readonly_prop
+  method _STENCIL_VALUE_MASK_ : int WebGL.parameter Js.readonly_prop
+  method _STENCIL_WRITEMASK_ : int WebGL.parameter Js.readonly_prop
+  method _STREAM_DRAW_ : WebGL.bufferUsage Js.readonly_prop
+  method _SUBPIXEL_BITS_ : int WebGL.parameter Js.readonly_prop
+  method _TEXTURE0 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE1 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE10 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE11 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE12 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE13 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE14 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE15 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE16 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE17 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE18 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE19 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE2 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE20 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE21 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE22 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE23 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE24 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE25 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE26 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE27 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE28 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE29 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE3 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE30 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE31 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE4 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE5 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE6 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE7 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE8 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE9 : WebGL.textureUnit Js.readonly_prop
+  method _TEXTURE_2D_ : WebGL.texTarget Js.readonly_prop
+  method _TEXTURE_BINDING_2D_ :
+    WebGL.texture Js.t Js.opt WebGL.parameter Js.readonly_prop
+  method _TEXTURE_BINDING_CUBE_MAP_ :
+    WebGL.texture Js.t Js.opt WebGL.parameter Js.readonly_prop
+  method _TEXTURE_CUBE_MAP_ : WebGL.texTarget Js.readonly_prop
+  method _TEXTURE_CUBE_MAP_NEGATIVE_X_ : WebGL.texTarget Js.readonly_prop
+  method _TEXTURE_CUBE_MAP_NEGATIVE_Y_ : WebGL.texTarget Js.readonly_prop
+  method _TEXTURE_CUBE_MAP_NEGATIVE_Z_ : WebGL.texTarget Js.readonly_prop
+  method _TEXTURE_CUBE_MAP_POSITIVE_X_ : WebGL.texTarget Js.readonly_prop
+  method _TEXTURE_CUBE_MAP_POSITIVE_Y_ : WebGL.texTarget Js.readonly_prop
+  method _TEXTURE_CUBE_MAP_POSITIVE_Z_ : WebGL.texTarget Js.readonly_prop
+  method _TEXTURE_MAG_FILTER_ :
+    WebGL.texFilter WebGL.texParam Js.readonly_prop
+  method _TEXTURE_MIN_FILTER_ :
+    WebGL.texFilter WebGL.texParam Js.readonly_prop
+  method _TEXTURE_WRAP_S_ : WebGL.wrapMode WebGL.texParam Js.readonly_prop
+  method _TEXTURE_WRAP_T_ : WebGL.wrapMode WebGL.texParam Js.readonly_prop
+  method _TRIANGLES : WebGL.beginMode Js.readonly_prop
+  method _TRIANGLE_FAN_ : WebGL.beginMode Js.readonly_prop
+  method _TRIANGLE_STRIP_ : WebGL.beginMode Js.readonly_prop
+  method _UNPACK_ALIGNMENT_ : int WebGL.pixelStoreParam Js.readonly_prop
+  method _UNPACK_ALIGNMENT_PARAM : int WebGL.parameter Js.readonly_prop
+  method _UNPACK_COLORSPACE_CONVERSION_WEBGL_ :
+    int WebGL.pixelStoreParam Js.readonly_prop
+  method _UNPACK_COLORSPACE_CONVERSION_WEBGL_PARAM :
+    WebGL.colorspaceConversion WebGL.parameter Js.readonly_prop
+  method _UNPACK_FLIP_Y_WEBGL_ :
+    bool Js.t WebGL.pixelStoreParam Js.readonly_prop
+  method _UNPACK_FLIP_Y_WEBGL_PARAM :
+    bool Js.t WebGL.parameter Js.readonly_prop
+  method _UNPACK_PREMULTIPLY_ALPHA_WEBGL_ :
+    bool Js.t WebGL.pixelStoreParam Js.readonly_prop
+  method _UNPACK_PREMULTIPLY_ALPHA_WEBGL_PARAM :
+    bool Js.t WebGL.parameter Js.readonly_prop
+  method _UNSIGNED_BYTE_ : WebGL.pixelType Js.readonly_prop
+  method _UNSIGNED_BYTE_DT : WebGL.dataType Js.readonly_prop
+  method _UNSIGNED_INT_ : WebGL.dataType Js.readonly_prop
+  method _UNSIGNED_SHORT_ : WebGL.dataType Js.readonly_prop
+  method _UNSIGNED_SHORT_4_4_4_4_ : WebGL.pixelType Js.readonly_prop
+  method _UNSIGNED_SHORT_5_5_5_1_ : WebGL.pixelType Js.readonly_prop
+  method _UNSIGNED_SHORT_5_6_5_ : WebGL.pixelType Js.readonly_prop
+  method _VALIDATE_STATUS_ : bool Js.t WebGL.programParam Js.readonly_prop
+  method _VENDOR : Js.js_string Js.t WebGL.parameter Js.readonly_prop
+  method _VERSION : Js.js_string Js.t WebGL.parameter Js.readonly_prop
+  method _VERTEX_ATTRIB_ARRAY_BUFFER_BINDING_ :
+    WebGL.buffer Js.t Js.opt WebGL.vertexAttribParam Js.readonly_prop
+  method _VERTEX_ATTRIB_ARRAY_ENABLED_ :
+    bool Js.t WebGL.vertexAttribParam Js.readonly_prop
+  method _VERTEX_ATTRIB_ARRAY_NORMALIZED_ :
+    bool Js.t WebGL.vertexAttribParam Js.readonly_prop
+  method _VERTEX_ATTRIB_ARRAY_POINTER_ :
+    WebGL.vertexAttribPointerParam Js.readonly_prop
+  method _VERTEX_ATTRIB_ARRAY_SIZE_ :
+    int WebGL.vertexAttribParam Js.readonly_prop
+  method _VERTEX_ATTRIB_ARRAY_STRIDE_ :
+    int WebGL.vertexAttribParam Js.readonly_prop
+  method _VERTEX_ATTRIB_ARRAY_TYPE_ :
+    int WebGL.vertexAttribParam Js.readonly_prop
+  method _VERTEX_SHADER_ : WebGL.shaderType Js.readonly_prop
+  method _VIEWPORT :
+    Typed_array.int32Array Js.t WebGL.parameter Js.readonly_prop
+  method _ZERO : WebGL.blendingFactor Js.readonly_prop
+  method _ZERO_ : WebGL.stencilOp Js.readonly_prop
+  method activeTexture : WebGL.textureUnit -> unit Js.meth
+  method attachShader :
+    WebGL.program Js.t -> WebGL.shader Js.t -> unit Js.meth
+  method bindAttribLocation :
+    WebGL.program Js.t -> WebGL.uint -> Js.js_string Js.t -> unit Js.meth
+  method bindBuffer : WebGL.bufferTarget -> WebGL.buffer Js.t -> unit Js.meth
+  method bindBuffer_ :
+    WebGL.bufferTarget Js.opt -> WebGL.buffer Js.t -> unit Js.meth
+  method bindFramebuffer :
+    WebGL.fbTarget -> WebGL.framebuffer Js.t -> unit Js.meth
+  method bindFramebuffer_ :
+    WebGL.fbTarget Js.opt -> WebGL.framebuffer Js.t -> unit Js.meth
+  method bindRenderbuffer :
+    WebGL.rbTarget -> WebGL.renderbuffer Js.t -> unit Js.meth
+  method bindRenderbuffer_ :
+    WebGL.rbTarget Js.opt -> WebGL.renderbuffer Js.t -> unit Js.meth
+  method bindTexture : WebGL.texTarget -> WebGL.texture Js.t -> unit Js.meth
+  method bindTexture_ :
+    WebGL.texTarget Js.opt -> WebGL.texture Js.t -> unit Js.meth
+  method blendColor :
+    WebGL.clampf ->
+    WebGL.clampf -> WebGL.clampf -> WebGL.clampf -> unit Js.meth
+  method blendEquation : WebGL.blendMode -> unit Js.meth
+  method blendEquationSeparate :
+    WebGL.blendMode -> WebGL.blendMode -> unit Js.meth
+  method blendFunc :
+    WebGL.blendingFactor -> WebGL.blendingFactor -> unit Js.meth
+  method blendFuncSeparate :
+    WebGL.blendingFactor ->
+    WebGL.blendingFactor ->
+    WebGL.blendingFactor -> WebGL.blendingFactor -> unit Js.meth
+  method bufferData :
+    WebGL.bufferTarget ->
+    #Typed_array.arrayBufferView Js.t -> WebGL.bufferUsage -> unit Js.meth
+  method bufferData_create :
+    WebGL.bufferTarget -> WebGL.sizeiptr -> WebGL.bufferUsage -> unit Js.meth
+  method bufferData_raw :
+    WebGL.bufferTarget ->
+    Typed_array.arrayBuffer Js.t -> WebGL.bufferUsage -> unit Js.meth
+  method bufferSubData :
+    WebGL.bufferTarget ->
+    WebGL.intptr -> #Typed_array.arrayBufferView Js.t -> unit Js.meth
+  method bufferSubData_raw :
+    WebGL.bufferTarget ->
+    WebGL.intptr -> Typed_array.arrayBuffer Js.t -> unit Js.meth
+  method canvas : Dom_html.canvasElement Js.t Js.readonly_prop
+  method checkFramebufferStatus :
+    WebGL.fbTarget -> WebGL.framebufferStatus Js.meth
+  method clear : WebGL.clearBufferMask -> unit Js.meth
+  method clearColor :
+    WebGL.clampf ->
+    WebGL.clampf -> WebGL.clampf -> WebGL.clampf -> unit Js.meth
+  method clearDepth : WebGL.clampf -> unit Js.meth
+  method clearStencil : int -> unit Js.meth
+  method colorMask :
+    bool Js.t -> bool Js.t -> bool Js.t -> bool Js.t -> unit Js.meth
+  method compileShader : WebGL.shader Js.t -> unit Js.meth
+  method copyTexImage2D :
+    WebGL.texTarget ->
+    int ->
+    WebGL.pixelFormat ->
+    int -> int -> WebGL.sizei -> WebGL.sizei -> int -> unit Js.meth
+  method copyTexSubImage2D :
+    WebGL.texTarget ->
+    int ->
+    int -> int -> int -> int -> WebGL.sizei -> WebGL.sizei -> unit Js.meth
+  method createBuffer : WebGL.buffer Js.t Js.meth
+  method createFramebuffer : WebGL.framebuffer Js.t Js.meth
+  method createProgram : WebGL.program Js.t Js.meth
+  method createRenderbuffer : WebGL.renderbuffer Js.t Js.meth
+  method createShader : WebGL.shaderType -> WebGL.shader Js.t Js.meth
+  method createTexture : WebGL.texture Js.t Js.meth
+  method cullFace : WebGL.cullFaceMode -> unit Js.meth
+  method deleteBuffer : WebGL.buffer Js.t -> unit Js.meth
+  method deleteFramebuffer : WebGL.framebuffer Js.t -> unit Js.meth
+  method deleteProgram : WebGL.program Js.t -> unit Js.meth
+  method deleteRenderbuffer : WebGL.renderbuffer Js.t -> unit Js.meth
+  method deleteShader : WebGL.shader Js.t -> unit Js.meth
+  method deleteTexture : WebGL.texture Js.t -> unit Js.meth
+  method depthFunc : WebGL.depthFunction -> unit Js.meth
+  method depthMask : bool Js.t -> unit Js.meth
+  method depthRange : WebGL.clampf -> WebGL.clampf -> unit Js.meth
+  method detachShader :
+    WebGL.program Js.t -> WebGL.shader Js.t -> unit Js.meth
+  method disable : WebGL.enableCap -> unit Js.meth
+  method disableVertexAttribArray : WebGL.uint -> unit Js.meth
+  method drawArrays : WebGL.beginMode -> int -> WebGL.sizei -> unit Js.meth
+  method drawElements :
+    WebGL.beginMode ->
+    WebGL.sizei -> WebGL.dataType -> WebGL.intptr -> unit Js.meth
+  method drawingBufferHeight : WebGL.sizei Js.readonly_prop
+  method drawingBufferWidth : WebGL.sizei Js.readonly_prop
+  method enable : WebGL.enableCap -> unit Js.meth
+  method enableVertexAttribArray : WebGL.uint -> unit Js.meth
+  method finish : unit Js.meth
+  method flush : unit Js.meth
+  method framebufferRenderbuffer :
+    WebGL.fbTarget ->
+    WebGL.attachmentPoint ->
+    WebGL.rbTarget -> WebGL.renderbuffer Js.t -> unit Js.meth
+  method framebufferTexture2D :
+    WebGL.fbTarget ->
+    WebGL.attachmentPoint ->
+    WebGL.texTarget -> WebGL.texture -> int -> unit Js.meth
+  method frontFace : WebGL.frontFaceDir -> unit Js.meth
+  method generateMipmap : WebGL.texTarget -> unit Js.meth
+  method getActiveAttrib :
+    WebGL.program Js.t -> WebGL.uint -> WebGL.activeInfo Js.t Js.meth
+  method getActiveUniform :
+    WebGL.program Js.t -> WebGL.uint -> WebGL.activeInfo Js.t Js.meth
+  method getAttachedShaders :
+    WebGL.program Js.t -> WebGL.shader Js.t Js.js_array Js.t Js.meth
+  method getAttribLocation :
+    WebGL.program Js.t -> Js.js_string Js.t -> int Js.meth
+  method getBufferParameter :
+    WebGL.bufferTarget -> WebGL.bufferParameter -> int Js.meth
+  method getContextAttributes : WebGL.contextAttributes Js.t Js.meth
+  method getError : WebGL.errorCode Js.meth
+  method getExtension : Js.js_string Js.t -> 'a Js.t Js.meth
+  method getFramebufferAttachmentParameter :
+    WebGL.fbTarget ->
+    WebGL.attachmentPoint -> 'b WebGL.attachParam -> 'b Js.meth
+  method getParameter : 'c WebGL.parameter -> 'c Js.meth
+  method getProgramInfoLog : WebGL.program Js.t -> Js.js_string Js.t Js.meth
+  method getProgramParameter :
+    WebGL.program Js.t -> 'd WebGL.programParam -> 'd Js.meth
+  method getRenderbufferParameter :
+    WebGL.rbTarget -> WebGL.renderbufferParam -> int Js.meth
+  method getShaderInfoLog : WebGL.shader Js.t -> Js.js_string Js.t Js.meth
+  method getShaderParameter :
+    WebGL.shader Js.t -> 'e WebGL.shaderParam -> 'e Js.meth
+  method getShaderSource : WebGL.shader Js.t -> Js.js_string Js.t Js.meth
+  method getSupportedExtensions : Js.js_string Js.t Js.js_array Js.t Js.meth
+  method getTexParameter : WebGL.texTarget -> 'f WebGL.texParam -> 'f Js.meth
+  method getUniform :
+    WebGL.program Js.t -> 'g WebGL.uniformLocation Js.t -> 'h Js.meth
+  method getUniformLocation :
+    WebGL.program Js.t ->
+    Js.js_string Js.t -> 'i WebGL.uniformLocation Js.t Js.meth
+  method getVertexAttrib :
+    WebGL.uint -> 'j WebGL.vertexAttribParam -> 'j Js.meth
+  method getVertexAttribOffset :
+    WebGL.uint -> WebGL.vertexAttribPointerParam -> WebGL.sizeiptr Js.meth
+  method hint : WebGL.hintTarget -> WebGL.hintMode -> unit Js.meth
+  method isBuffer : WebGL.buffer Js.t -> bool Js.t Js.meth
+  method isContextLost : bool Js.t Js.meth
+  method isEnabled : WebGL.enableCap -> bool Js.t Js.meth
+  method isFramebuffer : WebGL.framebuffer Js.t -> bool Js.t Js.meth
+  method isProgram : WebGL.program Js.t -> bool Js.t Js.meth
+  method isRenderbuffer : WebGL.renderbuffer Js.t -> bool Js.t Js.meth
+  method isShader : WebGL.shader Js.t -> bool Js.t Js.meth
+  method isTexture : WebGL.texture Js.t -> bool Js.t Js.meth
+  method lineWidth : float -> unit Js.meth
+  method linkProgram : WebGL.program Js.t -> unit Js.meth
+  method pixelStorei : 'k WebGL.pixelStoreParam -> 'k -> unit Js.meth
+  method polygonOffset : float -> float -> unit Js.meth
+  method readPixels :
+    int ->
+    int ->
+    WebGL.sizei ->
+    WebGL.sizei ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> #Typed_array.arrayBufferView Js.t -> unit Js.meth
+  method renderbufferStorage :
+    WebGL.rbTarget ->
+    WebGL.format -> WebGL.sizei -> WebGL.sizei -> unit Js.meth
+  method sampleCoverage : WebGL.clampf -> bool Js.t -> unit Js.meth
+  method scissor : int -> int -> WebGL.sizei -> WebGL.sizei -> unit Js.meth
+  method shaderSource :
+    WebGL.shader Js.t -> Js.js_string Js.t -> unit Js.meth
+  method stencilFunc :
+    WebGL.depthFunction -> int -> WebGL.uint -> unit Js.meth
+  method stencilFuncSeparate :
+    WebGL.cullFaceMode ->
+    WebGL.depthFunction -> int -> WebGL.uint -> unit Js.meth
+  method stencilMask : WebGL.uint -> unit Js.meth
+  method stencilMaskSeparate :
+    WebGL.cullFaceMode -> WebGL.uint -> unit Js.meth
+  method stencilOp :
+    WebGL.stencilOp -> WebGL.stencilOp -> WebGL.stencilOp -> unit Js.meth
+  method stencilOpSeparate :
+    WebGL.cullFaceMode ->
+    WebGL.stencilOp -> WebGL.stencilOp -> WebGL.stencilOp -> unit Js.meth
+  method texImage2D_fromCanvas :
+    WebGL.texTarget ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> Dom_html.canvasElement Js.t -> unit Js.meth
+  method texImage2D_fromImage :
+    WebGL.texTarget ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> Dom_html.imageElement Js.t -> unit Js.meth
+  method texImage2D_fromImageData :
+    WebGL.texTarget ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> Dom_html.imageData Js.t -> unit Js.meth
+  method texImage2D_fromVideo :
+    WebGL.texTarget ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> Dom_html.videoElement Js.t -> unit Js.meth
+  method texImage2D_fromView :
+    WebGL.texTarget ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.sizei ->
+    WebGL.sizei ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> #Typed_array.arrayBufferView Js.t -> unit
+  method texParameteri :
+    WebGL.texTarget -> 'l WebGL.texParam -> 'l -> unit Js.meth
+  method texSubImage2D_fromCanvas :
+    WebGL.texTarget ->
+    int ->
+    int ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> Dom_html.canvasElement Js.t -> unit Js.meth
+  method texSubImage2D_fromImage :
+    WebGL.texTarget ->
+    int ->
+    int ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> Dom_html.imageElement Js.t -> unit Js.meth
+  method texSubImage2D_fromImageData :
+    WebGL.texTarget ->
+    int ->
+    int ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> Dom_html.imageData Js.t -> unit Js.meth
+  method texSubImage2D_fromVideo :
+    WebGL.texTarget ->
+    int ->
+    int ->
+    int ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> Dom_html.videoElement Js.t -> unit Js.meth
+  method texSubImage2D_fromView :
+    WebGL.texTarget ->
+    int ->
+    int ->
+    int ->
+    WebGL.sizei ->
+    WebGL.sizei ->
+    WebGL.pixelFormat ->
+    WebGL.pixelType -> #Typed_array.arrayBufferView Js.t -> unit Js.meth
+  method uniform1f :
+    float WebGL.uniformLocation Js.t -> float -> unit Js.meth
+  method uniform1fv :
+    float WebGL.uniformLocation Js.t ->
+    float Js.js_array Js.t -> unit Js.meth
+  method uniform1fv_typed :
+    float WebGL.uniformLocation Js.t ->
+    Typed_array.float32Array Js.t -> unit Js.meth
+  method uniform1i : int WebGL.uniformLocation Js.t -> int -> unit Js.meth
+  method uniform1iv :
+    int WebGL.uniformLocation Js.t -> int Js.js_array Js.t -> unit Js.meth
+  method uniform1iv_typed :
+    int WebGL.uniformLocation Js.t ->
+    Typed_array.int32Array Js.t -> unit Js.meth
+  method uniform2f :
+    [ `vec2 ] WebGL.uniformLocation Js.t -> float -> float -> unit Js.meth
+  method uniform2fv :
+    [ `vec2 ] WebGL.uniformLocation Js.t ->
+    float Js.js_array Js.t -> unit Js.meth
+  method uniform2fv_typed :
+    [ `vec2 ] WebGL.uniformLocation Js.t ->
+    Typed_array.float32Array Js.t -> unit Js.meth
+  method uniform2i :
+    [ `ivec2 ] WebGL.uniformLocation Js.t -> int -> int -> unit Js.meth
+  method uniform2iv :
+    [ `ivec2 ] WebGL.uniformLocation Js.t ->
+    int Js.js_array Js.t -> unit Js.meth
+  method uniform2iv_typed :
+    [ `ivec2 ] WebGL.uniformLocation Js.t ->
+    Typed_array.int32Array Js.t -> unit Js.meth
+  method uniform3f :
+    [ `vec3 ] WebGL.uniformLocation Js.t ->
+    float -> float -> float -> unit Js.meth
+  method uniform3fv :
+    [ `vec3 ] WebGL.uniformLocation Js.t ->
+    float Js.js_array Js.t -> unit Js.meth
+  method uniform3fv_typed :
+    [ `vec3 ] WebGL.uniformLocation Js.t ->
+    Typed_array.float32Array Js.t -> unit Js.meth
+  method uniform3i :
+    [ `ivec3 ] WebGL.uniformLocation Js.t ->
+    int -> int -> int -> unit Js.meth
+  method uniform3iv :
+    [ `ivec3 ] WebGL.uniformLocation Js.t ->
+    int Js.js_array Js.t -> unit Js.meth
+  method uniform3iv_typed :
+    [ `ivec3 ] WebGL.uniformLocation Js.t ->
+    Typed_array.int32Array Js.t -> unit Js.meth
+  method uniform4f :
+    [ `vec4 ] WebGL.uniformLocation Js.t ->
+    float -> float -> float -> float -> unit Js.meth
+  method uniform4fv :
+    [ `vec4 ] WebGL.uniformLocation Js.t ->
+    float Js.js_array Js.t -> unit Js.meth
+  method uniform4fv_typed :
+    [ `vec4 ] WebGL.uniformLocation Js.t ->
+    Typed_array.float32Array Js.t -> unit Js.meth
+  method uniform4i :
+    [ `ivec4 ] WebGL.uniformLocation Js.t ->
+    int -> int -> int -> int -> unit Js.meth
+  method uniform4iv :
+    [ `ivec4 ] WebGL.uniformLocation Js.t ->
+    int Js.js_array Js.t -> unit Js.meth
+  method uniform4iv_typed :
+    [ `ivec4 ] WebGL.uniformLocation Js.t ->
+    Typed_array.int32Array Js.t -> unit Js.meth
+  method uniformMatrix2fv :
+    [ `mat2 ] WebGL.uniformLocation Js.t ->
+    bool Js.t -> float Js.js_array Js.t -> unit Js.meth
+  method uniformMatrix2fv_typed :
+    [ `mat2 ] WebGL.uniformLocation Js.t ->
+    bool Js.t -> Typed_array.float32Array Js.t -> unit Js.meth
+  method uniformMatrix3fv :
+    [ `mat3 ] WebGL.uniformLocation Js.t ->
+    bool Js.t -> float Js.js_array Js.t -> unit Js.meth
+  method uniformMatrix3fv_typed :
+    [ `mat3 ] WebGL.uniformLocation Js.t ->
+    bool Js.t -> Typed_array.float32Array Js.t -> unit Js.meth
+  method uniformMatrix4fv :
+    [ `mat4 ] WebGL.uniformLocation Js.t ->
+    bool Js.t -> float Js.js_array Js.t -> unit Js.meth
+  method uniformMatrix4fv_typed :
+    [ `mat4 ] WebGL.uniformLocation Js.t ->
+    bool Js.t -> Typed_array.float32Array Js.t -> unit Js.meth
+  method useProgram : WebGL.program Js.t -> unit Js.meth
+  method useProgram_ : WebGL.program Js.t Js.opt -> unit Js.meth
+  method validateProgram : WebGL.program Js.t -> unit Js.meth
+  method vertexAttrib1f : WebGL.uint -> float -> unit Js.meth
+  method vertexAttrib1fv :
+    WebGL.uint -> float Js.js_array Js.t -> unit Js.meth
+  method vertexAttrib1fv_typed :
+    WebGL.uint -> Typed_array.float32Array Js.t -> unit Js.meth
+  method vertexAttrib2f : WebGL.uint -> float -> float -> unit Js.meth
+  method vertexAttrib2fv :
+    WebGL.uint -> float Js.js_array Js.t -> unit Js.meth
+  method vertexAttrib2fv_typed :
+    WebGL.uint -> Typed_array.float32Array Js.t -> unit Js.meth
+  method vertexAttrib3f :
+    WebGL.uint -> float -> float -> float -> unit Js.meth
+  method vertexAttrib3fv :
+    WebGL.uint -> float Js.js_array Js.t -> unit Js.meth
+  method vertexAttrib3fv_typed :
+    WebGL.uint -> Typed_array.float32Array Js.t -> unit Js.meth
+  method vertexAttrib4f :
+    WebGL.uint -> float -> float -> float -> float -> unit Js.meth
+  method vertexAttrib4fv :
+    WebGL.uint -> float Js.js_array Js.t -> unit Js.meth
+  method vertexAttrib4fv_typed :
+    WebGL.uint -> Typed_array.float32Array Js.t -> unit Js.meth
+  method vertexAttribPointer :
+    WebGL.uint ->
+    int ->
+    WebGL.dataType ->
+    bool Js.t -> WebGL.sizei -> WebGL.intptr -> unit Js.meth
+  method viewport : int -> int -> WebGL.sizei -> WebGL.sizei -> unit Js.meth
+end >>

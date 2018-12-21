@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method coords : Geolocation.coordinates Js.t Js.readonly_prop
+  method timestamp : Js.date Js.readonly_prop
+end >>

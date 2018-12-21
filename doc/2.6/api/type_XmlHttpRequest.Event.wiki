@@ -1,0 +1,13 @@
+<<code language="ocaml" | sig
+  type typ =
+      XmlHttpRequest.xmlHttpRequest File.progressEvent Js.t Dom.Event.typ
+  val readystatechange :
+    XmlHttpRequest.xmlHttpRequest Dom.event Js.t Dom.Event.typ
+  val loadstart : XmlHttpRequest.Event.typ
+  val progress : XmlHttpRequest.Event.typ
+  val abort : XmlHttpRequest.Event.typ
+  val error : XmlHttpRequest.Event.typ
+  val load : XmlHttpRequest.Event.typ
+  val timeout : XmlHttpRequest.Event.typ
+  val loadend : XmlHttpRequest.Event.typ
+end >>

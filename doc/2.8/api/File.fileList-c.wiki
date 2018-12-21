@@ -1,0 +1,5 @@
+=Class type <<a_api_type | class type File.fileList >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEfileList"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|fileList>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type File.fileList >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom.nodeList >>
+
+----

@@ -1,0 +1,19 @@
+=Module <<a_api_type | module CSS >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|CSS>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module CSS >><<span class="ocsforge_color_keyword"|end>>>>~This module contains a few types and values to ease the use of ~C~S~S properties
+   and such~. ~If you think a feature is missing~, consider sending a patch or an
+   ~R~F~E to the mailing list~.
+
+
+   ~This module contain submodules each with a signature similar to~:
+     type t            ~(~*type the module is focused on~*~)
+     type js~_t         ~(~*valid js representation of values of type t~*~)
+     val js~: t ~-~> js~_t ~(~*conversion~*~)
+     val ml~: js~_t ~-~> t ~(~*conversion~*~)
+
+
+    ~Additional functions ~(string conversion~, standard operation~, etc~.~) are
+    sometime available~. ~Some module have several different types instead of just
+    one~.
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<a_api text="Color" | module CSS.Color >> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module CSS.Color >><<span class="ocsforge_color_keyword"|end>>>><<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<a_api text="Length" | module CSS.Length >> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module CSS.Length >><<span class="ocsforge_color_keyword"|end>>>><<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<a_api text="Angle" | module CSS.Angle >> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module CSS.Angle >><<span class="ocsforge_color_keyword"|end>>>>

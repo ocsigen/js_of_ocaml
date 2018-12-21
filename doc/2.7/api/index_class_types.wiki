@@ -1,0 +1,362 @@
+=Index of class types=
+
+|@@ @style="tet-align: left;"@@\\A|
+|@@class="odocwiki_index"@ @@<<a_api text="aElement"| class type Dom_svg.aElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="activeInfo"| class type WebGL.activeInfo >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="altGlyphDefElement"| class type Dom_svg.altGlyphDefElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="altGlyphElement"| class type Dom_svg.altGlyphElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="altGlyphItemElement"| class type Dom_svg.altGlyphItemElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="anchorElement"| class type Dom_html.anchorElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="angle"| class type Dom_svg.angle >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animateColorElement"| class type Dom_svg.animateColorElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animateElement"| class type Dom_svg.animateElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animateMotionElement"| class type Dom_svg.animateMotionElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animateTransformElement"| class type Dom_svg.animateTransformElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animated"| class type Dom_svg.animated >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedAngle"| class type Dom_svg.animatedAngle >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedBoolean"| class type Dom_svg.animatedBoolean >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedEnumeration"| class type Dom_svg.animatedEnumeration >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedInteger"| class type Dom_svg.animatedInteger >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedLength"| class type Dom_svg.animatedLength >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedLengthList"| class type Dom_svg.animatedLengthList >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedNumber"| class type Dom_svg.animatedNumber >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedNumberList"| class type Dom_svg.animatedNumberList >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedPathData"| class type Dom_svg.animatedPathData >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedPoints"| class type Dom_svg.animatedPoints >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedPreserveAspectRatio"| class type Dom_svg.animatedPreserveAspectRatio >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedRect"| class type Dom_svg.animatedRect >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedSpreadMethod"| class type Dom_svg.animatedSpreadMethod >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedString"| class type Dom_svg.animatedString >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animatedTransformList"| class type Dom_svg.animatedTransformList >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="animationElement"| class type Dom_svg.animationElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="applicationCache"| class type Dom_html.applicationCache >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="areaElement"| class type Dom_html.areaElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="arrayBuffer"| class type Typed_array.arrayBuffer >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="arrayBufferView"| class type Typed_array.arrayBufferView >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="attr"| class type Dom.attr >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Attr>> objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="audioElement"| class type Dom_html.audioElement >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\B|
+|@@class="odocwiki_index"@ @@<<a_api text="baseElement"| class type Dom_html.baseElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="blob"| class type File.blob >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="bodyElement"| class type Dom_html.bodyElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="brElement"| class type Dom_html.brElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="buttonElement"| class type Dom_html.buttonElement >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\C|
+|@@class="odocwiki_index"@ @@<<a_api text="canvasElement"| class type Dom_html.canvasElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="canvasGradient"| class type Dom_html.canvasGradient >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="canvasPixelArray"| class type Dom_html.canvasPixelArray >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="canvasRenderingContext2D"| class type Dom_html.canvasRenderingContext2D >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="characterData"| class type Dom.characterData >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Character~Data>> objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="circleElement"| class type Dom_svg.circleElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="clientRect"| class type Dom_html.clientRect >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Rectangular box ~(used for element bounding boxes~)
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="clientRectList"| class type Dom_html.clientRectList >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="clipPathElement"| class type Dom_svg.clipPathElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="closeEvent"| class type WebSockets.closeEvent >> ~[<<a_api | module WebSockets >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="collection"| class type Dom_html.collection >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Collection of ~H~T~M~L elements
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="color"| class type Dom_svg.color >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="comment"| class type Dom.comment >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Comment>> objects
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="console"| class type Firebug.console >> ~[<<a_api | module Firebug >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="contextAttributes"| class type WebGL.contextAttributes >> ~[<<a_api | module WebGL >>~]|<<div class="odocwiki_info"|~5~.~2 ~Web~G~L~Context~Attributes
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="contextEvent"| class type WebGL.contextEvent >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="coordinates"| class type Geolocation.coordinates >> ~[<<a_api | module Geolocation >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="cssStyleDeclaration"| class type Dom_html.cssStyleDeclaration >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="cursorElement"| class type Dom_svg.cursorElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@ @style="tet-align: left;"@@\\D|
+|@@class="odocwiki_index"@ @@<<a_api text="dListElement"| class type Dom_html.dListElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="dataTransfer"| class type Dom_html.dataTransfer >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="dataView"| class type Typed_array.dataView >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="date"| class type Js.date >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of ~Javascript date objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="date_constr"| class type Js.date_constr >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of the date constructor~, considered as an object~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="defsElement"| class type Dom_svg.defsElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="descElement"| class type Dom_svg.descElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="divElement"| class type Dom_html.divElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="document"| class type Dom_svg.document >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="document"| class type Dom_html.document >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="document"| class type Dom.document >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Document>> objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="documentFragment"| class type Dom.documentFragment >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Document~Fragment>> objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="dragEvent"| class type Dom_html.dragEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\E|
+|@@class="odocwiki_index"@ @@<<a_api text="element"| class type Dom_svg.element >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="element"| class type Dom_html.element >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Properties common to all ~H~T~M~L elements
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="element"| class type Dom.element >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Element>> objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="elementInstance"| class type Dom_svg.elementInstance >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="elementInstanceList"| class type Dom_svg.elementInstanceList >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="ellipseElement"| class type Dom_svg.ellipseElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="embedElement"| class type Dom_html.embedElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="error"| class type Js.error >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of ~Javascript error object~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="errorEvent"| class type Worker.errorEvent >> ~[<<a_api | module Worker >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="event"| class type Dom_html.event >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="event"| class type Dom.event >> ~[<<a_api | module Dom >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="eventSource"| class type EventSource.eventSource >> ~[<<a_api | module EventSource >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="eventTarget"| class type Dom_html.eventTarget >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Common properties of event target objects~: <<span class="odocwiki_inlinecode"|onclick>>~,
+    <<span class="odocwiki_inlinecode"|onkeypress>>~, ~.~.~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="externalResourcesRequired"| class type Dom_svg.externalResourcesRequired >> ~[<<a_api | module Dom_svg >>~]||
+|@@ @style="tet-align: left;"@@\\F|
+|@@class="odocwiki_index"@ @@<<a_api text="fieldSetElement"| class type Dom_html.fieldSetElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="file"| class type File.file >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fileError"| class type File.fileError >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fileList"| class type File.fileList >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fileReader"| class type File.fileReader >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="filterElement"| class type Dom_svg.filterElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fitToViewBox"| class type Dom_svg.fitToViewBox >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fontElement"| class type Dom_svg.fontElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fontFaceElement"| class type Dom_svg.fontFaceElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fontFaceFormatElement"| class type Dom_svg.fontFaceFormatElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fontFaceNameElement"| class type Dom_svg.fontFaceNameElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fontFaceSrcElement"| class type Dom_svg.fontFaceSrcElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="fontFaceUriElement"| class type Dom_svg.fontFaceUriElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="foreignObjectElement"| class type Dom_svg.foreignObjectElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="formData"| class type Form.formData >> ~[<<a_api | module Form >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="formElement"| class type Dom_html.formElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="frameElement"| class type Dom_html.frameElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="frameSetElement"| class type Dom_html.frameSetElement >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\G|
+|@@class="odocwiki_index"@ @@<<a_api text="gElement"| class type Dom_svg.gElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="geolocation"| class type Geolocation.geolocation >> ~[<<a_api | module Geolocation >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="glyphElement"| class type Dom_svg.glyphElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="glyphRefElement"| class type Dom_svg.glyphRefElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="gradientElement"| class type Dom_svg.gradientElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@ @style="tet-align: left;"@@\\H|
+|@@class="odocwiki_index"@ @@<<a_api text="hashChangeEvent"| class type Dom_html.hashChangeEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="headElement"| class type Dom_html.headElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="headingElement"| class type Dom_html.headingElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="history"| class type Dom_html.history >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Browser history information
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="hrElement"| class type Dom_html.hrElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="htmlElement"| class type Dom_html.htmlElement >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\I|
+|@@class="odocwiki_index"@ @@<<a_api text="iFrameElement"| class type Dom_html.iFrameElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="iccColor"| class type Dom_svg.iccColor >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="imageData"| class type Dom_html.imageData >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="imageElement"| class type Dom_svg.imageElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="imageElement"| class type Dom_html.imageElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="inputElement"| class type Dom_html.inputElement >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\J|
+|@@class="odocwiki_index"@ @@<<a_api text="js_array"| class type Js.js_array >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of ~Javascript regular arrays~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="js_string"| class type Js.js_string >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of ~Javascript string objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="json"| class type Js.json >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of ~Javascript ~J~S~O~N object~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\K|
+|@@class="odocwiki_index"@ @@<<a_api text="keyboardEvent"| class type Dom_html.keyboardEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\L|
+|@@class="odocwiki_index"@ @@<<a_api text="labelElement"| class type Dom_html.labelElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="langSpace"| class type Dom_svg.langSpace >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="legendElement"| class type Dom_html.legendElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="length"| class type Dom_svg.length >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="lengthList"| class type Dom_svg.lengthList >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="liElement"| class type Dom_html.liElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="lineElement"| class type Dom_svg.lineElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="linearGradientElement"| class type Dom_svg.linearGradientElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="linkElement"| class type Dom_html.linkElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="list"| class type Dom_svg.list >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="locatable"| class type Dom_svg.locatable >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="location"| class type Dom_html.location >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Location information
+>>
+|
+|@@ @style="tet-align: left;"@@\\M|
+|@@class="odocwiki_index"@ @@<<a_api text="mPathElement"| class type Dom_svg.mPathElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="mapElement"| class type Dom_html.mapElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="maskElement"| class type Dom_svg.maskElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="match_result"| class type Js.match_result >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of match result objects
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="math"| class type Js.math >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of ~Javascript math object~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="matrix"| class type Dom_svg.matrix >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="mediaElement"| class type Dom_html.mediaElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="messageEvent"| class type Worker.messageEvent >> ~[<<a_api | module Worker >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="messageEvent"| class type WebSockets.messageEvent >> ~[<<a_api | module WebSockets >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="messageEvent"| class type EventSource.messageEvent >> ~[<<a_api | module EventSource >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="metaElement"| class type Dom_html.metaElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="metadataElement"| class type Dom_svg.metadataElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="modElement"| class type Dom_html.modElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="mouseEvent"| class type Dom_html.mouseEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="mouseScrollEvent"| class type Dom_html.mouseScrollEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="mousewheelEvent"| class type Dom_html.mousewheelEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="mutationObserver"| class type MutationObserver.mutationObserver >> ~[<<a_api | module MutationObserver >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="mutationObserverInit"| class type MutationObserver.mutationObserverInit >> ~[<<a_api | module MutationObserver >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="mutationRecord"| class type MutationObserver.mutationRecord >> ~[<<a_api | module MutationObserver >>~]||
+|@@ @style="tet-align: left;"@@\\N|
+|@@class="odocwiki_index"@ @@<<a_api text="namedNodeMap"| class type Dom.namedNodeMap >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Named~Node~Map>> objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="navigator"| class type Dom_html.navigator >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Navigator information
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="node"| class type Dom.node >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Node>> objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="nodeList"| class type Dom.nodeList >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Node~List>> objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="nodeSelector"| class type Dom_html.nodeSelector >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="number"| class type Js.number >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of ~Javascript number objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="numberList"| class type Dom_svg.numberList >> ~[<<a_api | module Dom_svg >>~]||
+|@@ @style="tet-align: left;"@@\\O|
+|@@class="odocwiki_index"@ @@<<a_api text="oListElement"| class type Dom_html.oListElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="objectElement"| class type Dom_html.objectElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="optGroupElement"| class type Dom_html.optGroupElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="optionElement"| class type Dom_html.optionElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="options"| class type EventSource.options >> ~[<<a_api | module EventSource >>~]||
+|@@ @style="tet-align: left;"@@\\P|
+|@@class="odocwiki_index"@ @@<<a_api text="paragraphElement"| class type Dom_html.paragraphElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="paramElement"| class type Dom_html.paramElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathElement"| class type Dom_svg.pathElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSeg"| class type Dom_svg.pathSeg >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegArc"| class type Dom_svg.pathSegArc >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegClosePath"| class type Dom_svg.pathSegClosePath >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegCurvetoCubic"| class type Dom_svg.pathSegCurvetoCubic >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegCurvetoCubicSmooth"| class type Dom_svg.pathSegCurvetoCubicSmooth >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegCurvetoQuadratic"| class type Dom_svg.pathSegCurvetoQuadratic >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegCurvetoQuadraticSmooth"| class type Dom_svg.pathSegCurvetoQuadraticSmooth >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegLineto"| class type Dom_svg.pathSegLineto >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegLinetoHorizontal"| class type Dom_svg.pathSegLinetoHorizontal >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegLinetoVertical"| class type Dom_svg.pathSegLinetoVertical >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegList"| class type Dom_svg.pathSegList >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pathSegMoveto"| class type Dom_svg.pathSegMoveto >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="patternElement"| class type Dom_svg.patternElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="point"| class type Dom_svg.point >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pointList"| class type Dom_svg.pointList >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="polyLineElement"| class type Dom_svg.polyLineElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="polygonElement"| class type Dom_svg.polygonElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="popStateEvent"| class type Dom_html.popStateEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="position"| class type Geolocation.position >> ~[<<a_api | module Geolocation >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="positionError"| class type Geolocation.positionError >> ~[<<a_api | module Geolocation >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="positionOptions"| class type Geolocation.positionOptions >> ~[<<a_api | module Geolocation >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="preElement"| class type Dom_html.preElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="preserveAspectRatio"| class type Dom_svg.preserveAspectRatio >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="progressEvent"| class type File.progressEvent >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="progressEventTarget"| class type File.progressEventTarget >> ~[<<a_api | module File >>~]||
+|@@ @style="tet-align: left;"@@\\Q|
+|@@class="odocwiki_index"@ @@<<a_api text="quoteElement"| class type Dom_html.quoteElement >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\R|
+|@@class="odocwiki_index"@ @@<<a_api text="radialGradientElement"| class type Dom_svg.radialGradientElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="range"| class type Dom_html.range >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Object representing a range ~*
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="rect"| class type Dom_svg.rect >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="rectElement"| class type Dom_svg.rectElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="regExp"| class type Js.regExp >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of ~Javascript regular expression objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="renderingContext"| class type WebGL.renderingContext >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="rgbColor"| class type Dom_svg.rgbColor >> ~[<<a_api | module Dom_svg >>~]||
+|@@ @style="tet-align: left;"@@\\S|
+|@@class="odocwiki_index"@ @@<<a_api text="screen"| class type Dom_html.screen >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="scriptElement"| class type Dom_svg.scriptElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="scriptElement"| class type Dom_html.scriptElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="selectElement"| class type Dom_html.selectElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="selection"| class type Dom_html.selection >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Information on current selection
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="setElement"| class type Dom_svg.setElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="shaderPrecisionFormat"| class type WebGL.shaderPrecisionFormat >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="stopElement"| class type Dom_svg.stopElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="storage"| class type Dom_html.storage >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Storage
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="storageEvent"| class type Dom_html.storageEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="stringList"| class type Dom_svg.stringList >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="stringList"| class type Dom.stringList >> ~[<<a_api | module Dom >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="string_constr"| class type Js.string_constr >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Specification of the string constructor~, considered as an object~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="stylable"| class type Dom_svg.stylable >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="styleElement"| class type Dom_svg.styleElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="styleElement"| class type Dom_html.styleElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="svgElement"| class type Dom_svg.svgElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="svg_error"| class type Dom_svg.svg_error >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="switchElement"| class type Dom_svg.switchElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="symbolElement"| class type Dom_svg.symbolElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@ @style="tet-align: left;"@@\\T|
+|@@class="odocwiki_index"@ @@<<a_api text="tableCaptionElement"| class type Dom_html.tableCaptionElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="tableCellElement"| class type Dom_html.tableCellElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="tableColElement"| class type Dom_html.tableColElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="tableElement"| class type Dom_html.tableElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="tableRowElement"| class type Dom_html.tableRowElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="tableSectionElement"| class type Dom_html.tableSectionElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="tests"| class type Dom_svg.tests >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="text"| class type Dom.text >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~Specification of <<span class="odocwiki_inlinecode"|~Text>> objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="textAreaElement"| class type Dom_html.textAreaElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="textContentElement"| class type Dom_svg.textContentElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="textElement"| class type Dom_svg.textElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="textMetrics"| class type Dom_html.textMetrics >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="textPathElement"| class type Dom_svg.textPathElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="textPathElementMethod"| class type Dom_svg.textPathElementMethod >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="textPathElementSpacing"| class type Dom_svg.textPathElementSpacing >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="textPositioningElement"| class type Dom_svg.textPositioningElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="timeRanges"| class type Dom_html.timeRanges >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="titleElement"| class type Dom_svg.titleElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="titleElement"| class type Dom_html.titleElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="tokenList"| class type Dom_html.tokenList >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="touch"| class type Dom_html.touch >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="touchEvent"| class type Dom_html.touchEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="touchList"| class type Dom_html.touchList >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="transform"| class type Dom_svg.transform >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="transformList"| class type Dom_svg.transformList >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="transformable"| class type Dom_svg.transformable >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="trefElement"| class type Dom_svg.trefElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="tspanElement"| class type Dom_svg.tspanElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="typedArray"| class type Typed_array.typedArray >> ~[<<a_api | module Typed_array >>~]||
+|@@ @style="tet-align: left;"@@\\U|
+|@@class="odocwiki_index"@ @@<<a_api text="uListElement"| class type Dom_html.uListElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="undoManager"| class type Dom_html.undoManager >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Undo manager
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="uriReference"| class type Dom_svg.uriReference >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="useElement"| class type Dom_svg.useElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@ @style="tet-align: left;"@@\\V|
+|@@class="odocwiki_index"@ @@<<a_api text="videoElement"| class type Dom_html.videoElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="viewElement"| class type Dom_svg.viewElement >> ~[<<a_api | module Dom_svg >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="viewSpec"| class type Dom_svg.viewSpec >> ~[<<a_api | module Dom_svg >>~]||
+|@@ @style="tet-align: left;"@@\\W|
+|@@class="odocwiki_index"@ @@<<a_api text="webSocket"| class type WebSockets.webSocket >> ~[<<a_api | module WebSockets >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="window"| class type Dom_html.window >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Specification of window objects
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="worker"| class type Worker.worker >> ~[<<a_api | module Worker >>~]||
+|@@ @style="tet-align: left;"@@\\X|
+|@@class="odocwiki_index"@ @@<<a_api text="xmlHttpRequest"| class type XmlHttpRequest.xmlHttpRequest >> ~[<<a_api | module XmlHttpRequest >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="xmlHttpRequestUpload"| class type XmlHttpRequest.xmlHttpRequestUpload >> ~[<<a_api | module XmlHttpRequest >>~]||
+|@@ @style="tet-align: left;"@@\\Z|
+|@@class="odocwiki_index"@ @@<<a_api text="zoomAndPan"| class type Dom_svg.zoomAndPan >> ~[<<a_api | module Dom_svg >>~]||
+\\

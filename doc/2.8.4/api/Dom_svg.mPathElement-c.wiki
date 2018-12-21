@@ -1,0 +1,7 @@
+=Class type <<a_api_type | class type Dom_svg.mPathElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEmPathElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|mPathElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.mPathElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.element >>
+* <<a_api | class Dom_svg.uriReference >>
+* <<a_api | class Dom_svg.externalResourcesRequired >>
+
+----

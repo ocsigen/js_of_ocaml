@@ -1,0 +1,1 @@
+<<code language="ocaml" | sig type a val t : Deriving_Json.Json_min''.a Deriving_Json.t end >>

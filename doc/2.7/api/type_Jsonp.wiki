@@ -1,0 +1,4 @@
+<<code language="ocaml" | sig
+  val call : ?timeout:float -> ?param:string -> string -> 'b Lwt.t
+  val call_custom_url : ?timeout:float -> (string -> string) -> 'b Lwt.t
+end >>

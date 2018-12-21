@@ -1,0 +1,6 @@
+<<code language="ocaml" | object
+  method hasExtension : Js.js_string Js.t -> bool Js.t Js.meth
+  method requiredExtensions : Dom_svg.stringList Js.t Js.readonly_prop
+  method requiredFeatures : Dom_svg.stringList Js.t Js.readonly_prop
+  method systemLanguage : Dom_svg.stringList Js.t Js.readonly_prop
+end >>

@@ -1,0 +1,15 @@
+<<code language="ocaml" | sig
+  type regexp
+  type result
+  val regexp : string -> Regexp.regexp
+  val quote : string -> string
+  val regexp_string : string -> Regexp.regexp
+  val string_match : Regexp.regexp -> string -> int -> Regexp.result option
+  val search : Regexp.regexp -> string -> int -> (int * Regexp.result) option
+  val matched_string : Regexp.result -> string
+  val matched_group : Regexp.result -> int -> string option
+  val global_replace : Regexp.regexp -> string -> string -> string
+  val replace_first : Regexp.regexp -> string -> string -> string
+  val split : Regexp.regexp -> string -> string list
+  val bounded_split : Regexp.regexp -> string -> int -> string list
+end >>

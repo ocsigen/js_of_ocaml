@@ -1,0 +1,445 @@
+<<code language="ocaml" | sig
+  module type OF =
+    sig
+      type 'a elt
+      val of_element : Dom_html.element Js.t -> 'a Tyxml_cast_sigs.OF.elt
+      val of_html :
+        Dom_html.htmlElement Js.t ->
+        [> Html5_types.html ] Tyxml_cast_sigs.OF.elt
+      val of_head :
+        Dom_html.headElement Js.t ->
+        [> Html5_types.head ] Tyxml_cast_sigs.OF.elt
+      val of_link :
+        Dom_html.linkElement Js.t ->
+        [> Html5_types.link ] Tyxml_cast_sigs.OF.elt
+      val of_title :
+        Dom_html.titleElement Js.t ->
+        [> Html5_types.title ] Tyxml_cast_sigs.OF.elt
+      val of_meta :
+        Dom_html.metaElement Js.t ->
+        [> Html5_types.meta ] Tyxml_cast_sigs.OF.elt
+      val of_base :
+        Dom_html.baseElement Js.t ->
+        [> Html5_types.base ] Tyxml_cast_sigs.OF.elt
+      val of_style :
+        Dom_html.styleElement Js.t ->
+        [> Html5_types.style ] Tyxml_cast_sigs.OF.elt
+      val of_body :
+        Dom_html.bodyElement Js.t ->
+        [> Html5_types.body ] Tyxml_cast_sigs.OF.elt
+      val of_form :
+        Dom_html.formElement Js.t ->
+        [> Html5_types.form ] Tyxml_cast_sigs.OF.elt
+      val of_optGroup :
+        Dom_html.optGroupElement Js.t ->
+        [> Html5_types.optgroup ] Tyxml_cast_sigs.OF.elt
+      val of_option :
+        Dom_html.optionElement Js.t ->
+        [> Html5_types.selectoption ] Tyxml_cast_sigs.OF.elt
+      val of_select :
+        Dom_html.selectElement Js.t ->
+        [> Html5_types.select ] Tyxml_cast_sigs.OF.elt
+      val of_input :
+        Dom_html.inputElement Js.t ->
+        [> Html5_types.input ] Tyxml_cast_sigs.OF.elt
+      val of_textArea :
+        Dom_html.textAreaElement Js.t ->
+        [> Html5_types.textarea ] Tyxml_cast_sigs.OF.elt
+      val of_button :
+        Dom_html.buttonElement Js.t ->
+        [> Html5_types.button ] Tyxml_cast_sigs.OF.elt
+      val of_label :
+        Dom_html.labelElement Js.t ->
+        [> Html5_types.label ] Tyxml_cast_sigs.OF.elt
+      val of_fieldSet :
+        Dom_html.fieldSetElement Js.t ->
+        [> Html5_types.fieldset ] Tyxml_cast_sigs.OF.elt
+      val of_legend :
+        Dom_html.legendElement Js.t ->
+        [> Html5_types.legend ] Tyxml_cast_sigs.OF.elt
+      val of_uList :
+        Dom_html.uListElement Js.t ->
+        [> Html5_types.ul ] Tyxml_cast_sigs.OF.elt
+      val of_oList :
+        Dom_html.oListElement Js.t ->
+        [> Html5_types.ol ] Tyxml_cast_sigs.OF.elt
+      val of_dList :
+        Dom_html.dListElement Js.t ->
+        [> Html5_types.dl ] Tyxml_cast_sigs.OF.elt
+      val of_li :
+        Dom_html.liElement Js.t -> [> Html5_types.li ] Tyxml_cast_sigs.OF.elt
+      val of_div :
+        Dom_html.divElement Js.t ->
+        [> Html5_types.div ] Tyxml_cast_sigs.OF.elt
+      val of_paragraph :
+        Dom_html.paragraphElement Js.t ->
+        [> Html5_types.p ] Tyxml_cast_sigs.OF.elt
+      val of_heading :
+        Dom_html.headingElement Js.t ->
+        [> Html5_types.heading ] Tyxml_cast_sigs.OF.elt
+      val of_quote :
+        Dom_html.quoteElement Js.t ->
+        [> Html5_types.blockquote ] Tyxml_cast_sigs.OF.elt
+      val of_pre :
+        Dom_html.preElement Js.t ->
+        [> Html5_types.pre ] Tyxml_cast_sigs.OF.elt
+      val of_br :
+        Dom_html.brElement Js.t -> [> Html5_types.br ] Tyxml_cast_sigs.OF.elt
+      val of_hr :
+        Dom_html.hrElement Js.t -> [> Html5_types.hr ] Tyxml_cast_sigs.OF.elt
+      val of_mod :
+        Dom_html.modElement Js.t ->
+        [> `Del of 'a | `Ins of 'a ] Tyxml_cast_sigs.OF.elt
+      val of_anchor :
+        Dom_html.anchorElement Js.t ->
+        [> 'a Html5_types.a ] Tyxml_cast_sigs.OF.elt
+      val of_image :
+        Dom_html.imageElement Js.t ->
+        [> Html5_types.img ] Tyxml_cast_sigs.OF.elt
+      val of_object :
+        Dom_html.objectElement Js.t ->
+        [> 'a Html5_types.object_ ] Tyxml_cast_sigs.OF.elt
+      val of_param :
+        Dom_html.paramElement Js.t ->
+        [> Html5_types.param ] Tyxml_cast_sigs.OF.elt
+      val of_area :
+        Dom_html.areaElement Js.t ->
+        [> Html5_types.area ] Tyxml_cast_sigs.OF.elt
+      val of_map :
+        Dom_html.mapElement Js.t ->
+        [> 'a Html5_types.map ] Tyxml_cast_sigs.OF.elt
+      val of_script :
+        Dom_html.scriptElement Js.t ->
+        [> Html5_types.script ] Tyxml_cast_sigs.OF.elt
+      val of_embed :
+        Dom_html.embedElement Js.t ->
+        [> Html5_types.embed ] Tyxml_cast_sigs.OF.elt
+      val of_tableCell :
+        Dom_html.tableCellElement Js.t ->
+        [> `Td | `Th ] Tyxml_cast_sigs.OF.elt
+      val of_tableRow :
+        Dom_html.tableRowElement Js.t ->
+        [> Html5_types.tr ] Tyxml_cast_sigs.OF.elt
+      val of_tableCol :
+        Dom_html.tableColElement Js.t ->
+        [> Html5_types.col ] Tyxml_cast_sigs.OF.elt
+      val of_tableSection :
+        Dom_html.tableSectionElement Js.t ->
+        [> `Tbody | `Tfoot | `Thead ] Tyxml_cast_sigs.OF.elt
+      val of_tableCaption :
+        Dom_html.tableCaptionElement Js.t ->
+        [> Html5_types.caption ] Tyxml_cast_sigs.OF.elt
+      val of_table :
+        Dom_html.tableElement Js.t ->
+        [> Html5_types.table ] Tyxml_cast_sigs.OF.elt
+      val of_canvas :
+        Dom_html.canvasElement Js.t ->
+        [> 'a Html5_types.canvas ] Tyxml_cast_sigs.OF.elt
+      val of_iFrame :
+        Dom_html.iFrameElement Js.t ->
+        [> Html5_types.iframe ] Tyxml_cast_sigs.OF.elt
+      val of_audio :
+        Dom_html.audioElement Js.t ->
+        [> 'a Html5_types.audio ] Tyxml_cast_sigs.OF.elt
+      val of_video :
+        Dom_html.videoElement Js.t ->
+        [> 'a Html5_types.video ] Tyxml_cast_sigs.OF.elt
+    end
+  module type TO =
+    sig
+      type 'a elt
+      val of_element : 'a Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_node : 'a Tyxml_cast_sigs.TO.elt -> Dom.node Js.t
+      val of_pcdata :
+        [< Html5_types.pcdata ] Tyxml_cast_sigs.TO.elt -> Dom.text Js.t
+      val of_html :
+        [< Html5_types.html ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.htmlElement Js.t
+      val of_head :
+        [< Html5_types.head ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.headElement Js.t
+      val of_link :
+        [< Html5_types.link ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.linkElement Js.t
+      val of_title :
+        [< Html5_types.title ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.titleElement Js.t
+      val of_meta :
+        [< Html5_types.meta ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.metaElement Js.t
+      val of_base :
+        [< Html5_types.base ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.baseElement Js.t
+      val of_style :
+        [< Html5_types.style ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.styleElement Js.t
+      val of_body :
+        [< Html5_types.body ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.bodyElement Js.t
+      val of_form :
+        [< Html5_types.form ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.formElement Js.t
+      val of_optgroup :
+        [< Html5_types.optgroup ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.optGroupElement Js.t
+      val of_option :
+        [< Html5_types.selectoption ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.optionElement Js.t
+      val of_select :
+        [< Html5_types.select ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.selectElement Js.t
+      val of_input :
+        [< Html5_types.input ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.inputElement Js.t
+      val of_textarea :
+        [< Html5_types.textarea ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.textAreaElement Js.t
+      val of_button :
+        [< Html5_types.button ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.buttonElement Js.t
+      val of_label :
+        [< Html5_types.label ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.labelElement Js.t
+      val of_fieldset :
+        [< Html5_types.fieldset ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.fieldSetElement Js.t
+      val of_legend :
+        [< Html5_types.legend ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.legendElement Js.t
+      val of_ul :
+        [< Html5_types.ul ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.uListElement Js.t
+      val of_ol :
+        [< Html5_types.ol ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.oListElement Js.t
+      val of_dl :
+        [< Html5_types.dl ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.dListElement Js.t
+      val of_li :
+        [< Html5_types.li ] Tyxml_cast_sigs.TO.elt -> Dom_html.liElement Js.t
+      val of_div :
+        [< Html5_types.div ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.divElement Js.t
+      val of_p :
+        [< Html5_types.p ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.paragraphElement Js.t
+      val of_heading :
+        [< Html5_types.heading ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.headingElement Js.t
+      val of_blockquote :
+        [< Html5_types.blockquote ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.quoteElement Js.t
+      val of_pre :
+        [< Html5_types.pre ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.preElement Js.t
+      val of_br :
+        [< Html5_types.br ] Tyxml_cast_sigs.TO.elt -> Dom_html.brElement Js.t
+      val of_hr :
+        [< Html5_types.hr ] Tyxml_cast_sigs.TO.elt -> Dom_html.hrElement Js.t
+      val of_del :
+        [< 'a Html5_types.del ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.modElement Js.t
+      val of_ins :
+        [< 'a Html5_types.ins ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.modElement Js.t
+      val of_a :
+        [< 'a Html5_types.a ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.anchorElement Js.t
+      val of_img :
+        [< Html5_types.img_interactive ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.imageElement Js.t
+      val of_object :
+        [< 'a Html5_types.object_ ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.objectElement Js.t
+      val of_param :
+        [< Html5_types.param ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.paramElement Js.t
+      val of_area :
+        [< Html5_types.area ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.areaElement Js.t
+      val of_map :
+        [< 'a Html5_types.map ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.mapElement Js.t
+      val of_script :
+        [< Html5_types.script ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.scriptElement Js.t
+      val of_td :
+        [< `Td ] Tyxml_cast_sigs.TO.elt -> Dom_html.tableCellElement Js.t
+      val of_tr :
+        [< Html5_types.tr ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.tableRowElement Js.t
+      val of_col :
+        [< Html5_types.col ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.tableColElement Js.t
+      val of_tfoot :
+        [< Html5_types.tfoot ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.tableSectionElement Js.t
+      val of_thead :
+        [< Html5_types.thead ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.tableSectionElement Js.t
+      val of_tbody :
+        [< Html5_types.tbody ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.tableSectionElement Js.t
+      val of_caption :
+        [< Html5_types.caption ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.tableCaptionElement Js.t
+      val of_table :
+        [< Html5_types.table ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.tableElement Js.t
+      val of_canvas :
+        [< 'a Html5_types.canvas ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.canvasElement Js.t
+      val of_iframe :
+        [< Html5_types.iframe ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.iFrameElement Js.t
+      val of_audio :
+        [< 'a Html5_types.audio_interactive ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.audioElement Js.t
+      val of_video :
+        [< 'a Html5_types.video_interactive ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.videoElement Js.t
+      val of_h1 :
+        Html5_types.heading Tyxml_cast_sigs.TO.elt ->
+        Dom_html.headingElement Js.t
+      val of_h2 :
+        Html5_types.heading Tyxml_cast_sigs.TO.elt ->
+        Dom_html.headingElement Js.t
+      val of_h3 :
+        Html5_types.heading Tyxml_cast_sigs.TO.elt ->
+        Dom_html.headingElement Js.t
+      val of_h4 :
+        Html5_types.heading Tyxml_cast_sigs.TO.elt ->
+        Dom_html.headingElement Js.t
+      val of_h5 :
+        Html5_types.heading Tyxml_cast_sigs.TO.elt ->
+        Dom_html.headingElement Js.t
+      val of_h6 :
+        Html5_types.heading Tyxml_cast_sigs.TO.elt ->
+        Dom_html.headingElement Js.t
+      val of_abbr :
+        [> Html5_types.abbr ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_address :
+        [> Html5_types.address ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_article :
+        [> Html5_types.article ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_aside :
+        [> Html5_types.aside ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_b :
+        [> Html5_types.b ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_bdo :
+        [> Html5_types.bdo ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_cite :
+        [> Html5_types.cite ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_code :
+        [> Html5_types.code ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_colgroup :
+        [> Html5_types.colgroup ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_command :
+        [> Html5_types.command ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_datalist :
+        [> Html5_types.datalist ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_dd :
+        [> Html5_types.dd ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_details :
+        [> Html5_types.details ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_dfn :
+        [> Html5_types.dfn ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_dt :
+        [> Html5_types.dt ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_em :
+        [> Html5_types.em ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_embed :
+        [> Html5_types.embed ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_figcaption :
+        [> Html5_types.figcaption ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_figure :
+        [> Html5_types.figure ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_footer :
+        [> Html5_types.footer ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_header :
+        [> Html5_types.header ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_hgroup :
+        [> Html5_types.hgroup ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_i :
+        [> Html5_types.i ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_kbd :
+        [> Html5_types.kbd ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_keygen :
+        [> Html5_types.keygen ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_main :
+        [> Html5_types.main ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_mark :
+        [> Html5_types.mark ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_menu :
+        [> Html5_types.menu ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_meter :
+        [> Html5_types.meter ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_nav :
+        [> Html5_types.nav ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_noscript :
+        [> Html5_types.noscript ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_output :
+        [> Html5_types.output_elt ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_progress :
+        [> Html5_types.progress ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_q :
+        [> Html5_types.q ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_rp :
+        [> Html5_types.rp ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_rt :
+        [> Html5_types.rt ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_ruby :
+        [> Html5_types.ruby ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_samp :
+        [> Html5_types.samp ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_section :
+        [> Html5_types.section ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_small :
+        [> Html5_types.small ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_source :
+        [> Html5_types.source ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_span :
+        [> Html5_types.span ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_strong :
+        [> Html5_types.strong ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_sub :
+        [> Html5_types.sub ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_summary :
+        [> Html5_types.summary ] Tyxml_cast_sigs.TO.elt ->
+        Dom_html.element Js.t
+      val of_sup :
+        [> Html5_types.sup ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_th :
+        [> Html5_types.th ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_time :
+        [> Html5_types.time ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_u :
+        [> Html5_types.u ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_var :
+        [> Html5_types.var ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+      val of_wbr :
+        [> Html5_types.wbr ] Tyxml_cast_sigs.TO.elt -> Dom_html.element Js.t
+    end
+end >>

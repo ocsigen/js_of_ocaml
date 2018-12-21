@@ -1,0 +1,13 @@
+<<code language="ocaml" | object
+  method back : unit Js.meth
+  method forward : unit Js.meth
+  method go : int Js.opt -> unit Js.meth
+  method length : int Js.readonly_prop
+  method pushState :
+    Js.Unsafe.any ->
+    Js.js_string Js.t -> Js.js_string Js.t Js.opt -> unit Js.meth
+  method replaceState :
+    Js.Unsafe.any ->
+    Js.js_string Js.t -> Js.js_string Js.t Js.opt -> unit Js.meth
+  method state : Js.Unsafe.any Js.readonly_prop
+end >>

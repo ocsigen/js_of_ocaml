@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method createObjectURL : #File.blob Js.t -> Js.js_string Js.t Js.meth
+  method revokeObjectURL : Js.js_string Js.t -> unit Js.meth
+end >>

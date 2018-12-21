@@ -1,0 +1,6 @@
+=Class type <<a_api_type | class type Dom_svg.pathSegMoveto >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEpathSegMoveto"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|pathSegMoveto>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.pathSegMoveto >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.pathSeg >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODx"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|x>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|float <<a_api text="Js.prop" | type Js.prop >>>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="METHODy"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|y>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|float <<a_api text="Js.prop" | type Js.prop >>>>>>

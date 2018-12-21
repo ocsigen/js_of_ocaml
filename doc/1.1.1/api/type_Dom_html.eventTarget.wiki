@@ -1,0 +1,32 @@
+<<code language="ocaml" | object ('a)
+  method onclick :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ondblclick :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onkeydown :
+    ('a Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onkeypress :
+    ('a Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onkeyup :
+    ('a Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmousedown :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmousemove :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmouseout :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmouseover :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmouseup :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+end >>
