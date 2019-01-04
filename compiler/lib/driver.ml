@@ -176,8 +176,8 @@ let global_object = Option.global_object
 let extra_js_files = lazy (
   List.fold_left (fun acc file ->
       try
-        let ss = List.fold_left (fun ss (prov,_,_,_,_) ->
-            match prov with
+        let ss = List.fold_left (fun ss {Linker.provides; _} ->
+            match provides with
             | Some (_,name,_,_) -> StringSet.add name ss
             | _ -> ss
           ) StringSet.empty (Linker.parse_file file) in
@@ -236,8 +236,8 @@ let gen_missing js missing =
     (Statement (Variable_statement miss), N) :: js
 
 
-let link ~standalone ~linkall ~export_runtime js =
-  if not standalone then js else
+let link ~standalone ~linkall ~export_runtime (js: Javascript.source_elements) : Linker.output =
+  if not standalone then { runtime_code = js; always_required_codes = [] } else
   let t = Util.Timer.make () in
   if times ()
   then Format.eprintf "Start Linking...@.";
@@ -347,7 +347,7 @@ let output formatter ~standalone ~custom_header ?source_map () js =
   Js_output.program formatter ?source_map js;
   if times () then Format.eprintf "  write: %a@." Util.Timer.print t
 
-let pack ~global js =
+let pack ~global {Linker.runtime_code=js; always_required_codes} =
   let module J = Javascript in
   let t = Util.Timer.make () in
   if times ()
@@ -371,13 +371,13 @@ let pack ~global js =
     else js in
 
   (* pack *)
-  let use_strict js =
-    if Option.Optim.strictmode ()
+  let use_strict js ~can_use_strict =
+    if Option.Optim.strictmode () && can_use_strict
     then (J.Statement (J.Expression_statement (J.EStr ("use strict", `Utf8))), J.N) :: js
     else js in
 
-  let js =
-    let f = J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js, J.U) in
+  let wrap_in_iifa ~can_use_strict js =
+    let f = J.EFun (None, [J.S {J.name = global_object; var=None }], use_strict js ~can_use_strict, J.U) in
     let expr =
       match global with
       | `Function -> f
@@ -405,6 +405,20 @@ let pack ~global js =
     | _ ->
       [J.Statement (J.Expression_statement expr), J.N]
   in
+  let always_required_js =
+    (* CR-someday hheuzard: consider adding a comments in the generated file with original
+       location. e.g.
+       {v
+          //# 1 polyfill/classlist.js
+       v}
+    *)
+    List.map
+      (fun {Linker.program; filename = _} -> wrap_in_iifa ~can_use_strict:false program)
+      always_required_codes
+  in
+  let runtime_js = wrap_in_iifa ~can_use_strict:true js in
+  let js = (List.flatten always_required_js) @ runtime_js in
+
   (* post pack optim *)
   let t3 = Util.Timer.make () in
   let js = (new Js_traverse.simpl)#program js in
