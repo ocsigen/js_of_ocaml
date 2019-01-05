@@ -22,6 +22,14 @@
 open Util
 module Primitive = Jsoo_primitive
 
+type fragment =
+  { provides : (Parse_info.t option * string * Jsoo_primitive.kind * Jsoo_primitive.kind_arg list option) option
+  ; requires : string list
+  ; version_constraint : ((int -> int -> bool) * string) list list
+  ; weakdef : bool
+  ; code : Javascript.program
+  }
+
 let loc pi = match pi with
   | Some {Parse_info.src  = Some src; line; _}
   | Some {Parse_info.name = Some src; line; _} ->
@@ -104,15 +112,23 @@ let parse_file f =
       let lex = Parse_js.lexer_from_list code in
       try
         let code = Parse_js.parse lex in
-        let req,has_provide,versions,weakdef =
-          List.fold_left (fun (req,has_provide,versions, weakdef) a -> match a with
-            | `Provides (pi,name,kind,ka) ->
-              req,Some (pi,name,kind,ka),versions, weakdef
-            | `Requires (_,mn) -> (mn@req),has_provide,versions, weakdef
-            | `Version (_,l) -> req,has_provide,l::versions, weakdef
-            | `Weakdef _ -> req, has_provide, versions, true
-          ) ([],None,[],false) annot in
-        has_provide,req,versions,weakdef,code
+        let fragment =
+          { provides = None
+          ; requires = []
+          ; version_constraint = []
+          ; weakdef = false
+          ; code }
+        in
+        List.fold_left (fun fragment a -> match a with
+          | `Provides (pi,name,kind,ka) ->
+            {fragment with provides = Some (pi,name,kind,ka)}
+          | `Requires (_,mn) ->
+            {fragment with requires = mn @ fragment.requires}
+          | `Version (_,l) ->
+            {fragment with version_constraint = l::fragment.version_constraint}
+          | `Weakdef _ ->
+            {fragment with weakdef = true}
+        ) fragment annot
       with Parse_js.Parsing_error pi ->
         let name = match pi with
           | {Parse_info.src  = Some x; _}
@@ -176,14 +192,14 @@ let all_return p =
   try loop_all_sources p; true with May_not_return -> false
 *)
 
-let check_primitive name pi code req =
+let check_primitive ~name pi ~code ~requires =
   let free =
     if Option.Optim.warn_unused ()
     then new check_and_warn name pi
     else new Js_traverse.free in
   let _code = free#program code in
   let freename = free#get_free_name in
-  let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename req in
+  let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename requires in
   let freename = StringSet.diff freename Reserved.keyword in
   let freename = StringSet.diff freename Reserved.provided in
   let freename = StringSet.remove Option.global_object freename in
@@ -206,9 +222,20 @@ let version_match =
       op (Util.Version.(compare current (split str))) 0
     )
 
+type always_required =
+  { filename : string;
+    program : Javascript.program }
+
+
 type state = {
   ids : IntSet.t;
+  always_required_codes : always_required list ;
   codes : Javascript.program list ;
+}
+
+type output = {
+  runtime_code: Javascript.program ;
+  always_required_codes: always_required list;
 }
 
 let last_code_id = ref 0
@@ -238,17 +265,17 @@ let find_named_value code =
 
 let add_file f =
   List.iter
-    (fun (provide,req,versions,weakdef,(code:Javascript.program)) ->
-       let vmatch = match versions with
+    (fun {provides; requires; version_constraint;weakdef;code} ->
+       let vmatch = match version_constraint with
          | [] -> true
          | l -> List.exists version_match l in
        if vmatch
        then begin
          incr last_code_id;
          let id = !last_code_id in
-         (match provide with
+         (match provides with
           | None ->
-            always_included := id :: !always_included
+            always_included := {filename = f; program = code} :: !always_included
           | Some (pi,name,kind,ka) ->
             let module J = Javascript in
             let rec find = function
@@ -265,14 +292,13 @@ let add_file f =
               let _,ploc,weakdef = Hashtbl.find provided name in
               if not weakdef
               then
-	        Util.warn "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
+            Util.warn "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
             end;
 
             Hashtbl.add provided name (id,pi,weakdef);
             Hashtbl.add provided_rev id (name,pi);
-            check_primitive name pi code req
-         );
-         Hashtbl.add code_pieces id (code, req)
+            check_primitive ~name pi ~code ~requires;
+            Hashtbl.add code_pieces id (code, requires))
        end
     )
     (parse_file f)
@@ -282,7 +308,7 @@ let get_provided () =
 
 let check_deps () =
   let provided = get_provided () in
-  Hashtbl.iter (fun id (code,requires) ->
+  Hashtbl.iter (fun id (code, requires) ->
     let traverse = new Js_traverse.free in
     let _js = traverse#program code in
     let free = traverse#get_free_name in
@@ -340,7 +366,7 @@ and resolve_dep_id_rev visited path id =
 let init () =
   List.fold_left
     (fun visited id -> resolve_dep_id_rev visited [] id)
-    {ids=IntSet.empty; codes=[]} (List.rev !always_included)
+    {ids=IntSet.empty; always_required_codes=List.rev !always_included; codes=[]} []
 
 let resolve_deps ?(linkall = false) visited_rev used =
   (* link the special files *)
@@ -370,7 +396,13 @@ let resolve_deps ?(linkall = false) visited_rev used =
         used (StringSet.empty, visited_rev) in
   visited_rev, missing
 
-let link program state = List.flatten (List.rev (program::state.codes))
+let link program state =
+  let runtime = List.flatten (List.rev (program::state.codes)) in
+  let always_required = state.always_required_codes in
+  {
+    runtime_code = runtime;
+    always_required_codes = always_required;
+  }
 
 let all state =
   IntSet.fold (fun id acc ->
