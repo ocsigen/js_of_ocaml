@@ -1,0 +1,55 @@
+# Update ocsigen.org using Github Actions
+
+name: Update Web site
+
+# Controls when the action will run.
+on:
+  # Triggers the workflow on push or pull request events but only for the wikidoc branch
+  push:
+    branches: [ wikidoc ]
+#  pull_request:
+#    branches: [ master ]
+
+  schedule:
+    - cron: '20 0,12 * * *'
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+    branches: [ wikidoc ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: wikidoc
+
+      - name: Install OCaml
+        uses: ocaml/setup-ocaml@v2
+        with:
+          ocaml-compiler: 4.14.x
+
+      - name: Install HOW
+        run: |
+          opam pin add -y html_of_wiki https://github.com/ocsigen/html_of_wiki.git
+          git clone --depth 1 https://github.com/ocsigen/ocsigen.github.io.git __ocsigen.github.io
+          mv __ocsigen.github.io/template how_template
+
+      - name: Generate doc
+        run: |
+          eval $(opam env)
+          ./build.sh
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          branch: gh-pages # The branch the action should deploy to.
+          folder: _doc # The folder the action should deploy.

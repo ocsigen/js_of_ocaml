@@ -1,0 +1,31 @@
+= Contributing to Js_of_ocaml
+
+== Reporting Issues
+
+If you encounter a problem when using js_of_ocaml or if you have any questions, please open a [[https://github.com/ocsigen/js_of_ocaml/issues/|GitHub issue]].
+
+1. Check first if your issue has already been [[https://github.com/ocsigen/js_of_ocaml/issues/|reported]].
+2. Include the version of ocaml and js_of_ocaml you are using ({{{ocamlc -version}}}, {{{js_of_ocaml --version}}}).
+3. Describe the expected and actual behavior.
+4. Do not unsubscribe from the issue until it is closed, the maintainers may ask for your feedback.
+
+== Pull Requests
+
+We actively welcome pull requests.
+
+1. Prior to investing a large amount of time into significant or invasive changes, it is likely more efficient to first open an issue for discussion and planning.
+2. Install all dependencies (see Install dependencies)
+3. Fork the repository and create your branch from {{{master}}}.
+4. If you have added code that should be tested, add tests.
+5. Ensure tests still pass (see Running the tests).
+
+
+=== Install dependencies
+{{{
+opam install --deps-only js_of_ocaml js_of_ocaml-lwt js_of_ocaml-compiler js_of_ocaml-toplevel js_of_ocaml-ppx js_of_ocaml-ppx_deriving_json js_of_ocaml-tyxml
+opam install lwt reactiveData tyxml ppxlib cohttp-lwt-unix menhir ppx_expect yojson sexplib
+}}}
+
+=== Running the tests
+
+Just run {{{make tests}}}.

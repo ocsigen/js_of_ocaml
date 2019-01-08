@@ -1,0 +1,111 @@
+= Separate compilation
+
+The js_of_ocaml compiler supports two compilation modes.  Whole program
+compilation that compiles a bytecode executable to a single JavaScript
+file and separate compilation that compiles individual compilation units
+(.cmo) and libraries (.cma) to one or more javascript files.
+
+== Why use separate compilation
+
+Separate compilation improves the overall compilation times and gives
+(many) incremental build opportunities.
+
+Theses improvements come at the cost of bigger executable and slower
+runtime.  In particular, separate compilation will disable most cross
+module and cross library optimisations and make the dead-code
+elimination almost useless.
+
+
+== Compilation scheme
+
+Js_of_ocaml separate compilation is somewhat similar to the OCaml
+separate compilation with some differences.
+
+The general idea is generate one JavaScript file containing the
+JavaScript runtime and JavaScript files for every compilation unit (or
+library) needed to run the program. One can then link (or
+"concatenate") all individual JavaScript files together, respecting
+the order induced by dependencies, into a single JavaScript file.
+
+=== 1. Build the runtime
+
+To build a standalone runtime:
+{{{
+js_of_ocaml build-runtime -o my-runtime.js
+}}}
+
+Additional runtime files are sometime needed and can be passed on the
+command line.  In particular, some packages/libraries come with their
+own runtime file.
+
+See the <<a_manual chapter="runtime-files" |runtime files>> chapter for how to
+discover these files.
+
+=== 2. Build compilation units
+
+In addition to bytecode executables, the js_of_ocaml compiler can
+process compilation units (.cmo) and libraries (.cma).
+
+One can specify the name of the generated file with {{{-o}}}. By
+default, the name will be inferred from the input file.
+
+By default, the js_of_ocaml compiler will generate a single JavaScript
+file when compiling an ocaml library (.cma). One can choose to
+generate one file per compilation unit by passing the
+{{{--keep-unit-names}}} flag. In that case, the name will be inferred
+from the compilation unit name and {{{-o}}} will be understood as a
+destination directory.
+
+{{{
+js_of_ocaml modname.cmo
+#generates modname.js
+
+js_of_ocaml libname.cma
+#generates libname.js
+
+js_of_ocaml libname.cma -o name.js
+#generates name.js
+
+mkdir libname
+js_of_ocaml libname.cma --keep-unit-names -o libname/
+#generates libname/Unit1.js libname/Unit2.js
+}}}
+
+=== 3. Link
+
+The final step is to link all individual JavaScript files into a
+single one.  The {{{link}}} command of the js_of_ocaml-compiler takes
+a list of JavaScript filename as input and concatenates them all
+(merging source-maps together if needed).
+
+{{{
+js_of_ocaml link my-runtime.js stdlib.js libname.js modname.js std_exit.js-o myexe.js
+}}}
+
+Note that, unlike the ocaml compiler, the ocaml stdlib and std_exit need to be
+passed explicitly (here, {stdlib.js} and {std_exit.js} are the result of compiling
+{stdlib.cma} and {std_exit.cmo}).
+
+== Support in dune
+
+Support for js_of_ocaml separate compilation has been added to dune
+(previously jbuilder). The separate compilation mode is selected when
+the build profile is dev, which is the default.  There is currently no
+other way to control this behaviour.
+
+See [[https://dune.readthedocs.io/en/latest/jsoo.html|dune documentation]]
+
+== Source-maps support
+
+Separate compilation can be used together with source-map.  The
+recommended way is to build all individual javascript files with
+inlined source-map by passing {{{--source-map-inline}}} to
+{{{js_of_ocaml}}}.
+
+Note that other configurations have not been well tested and might
+require additional tuning.
+
+== Building Toplevel
+
+Building a toplevel using separate compilation is not supported / has
+not been tested yet.
