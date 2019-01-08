@@ -1,0 +1,339 @@
+<<code language="ocaml" | sig
+  type +'a opt
+  type +'a optdef
+  val null : 'a Js.opt
+  val some : 'a -> 'a Js.opt
+  val undefined : 'a Js.optdef
+  val def : 'a -> 'a Js.optdef
+  module type OPT =
+    sig
+      type 'a t
+      val empty : 'a Js.OPT.t
+      val return : 'a -> 'a Js.OPT.t
+      val map : 'a Js.OPT.t -> ('a -> 'b) -> 'b Js.OPT.t
+      val bind : 'a Js.OPT.t -> ('a -> 'b Js.OPT.t) -> 'b Js.OPT.t
+      val test : 'a Js.OPT.t -> bool
+      val iter : 'a Js.OPT.t -> ('a -> unit) -> unit
+      val case : 'a Js.OPT.t -> (unit -> 'b) -> ('a -> 'b) -> 'b
+      val get : 'a Js.OPT.t -> (unit -> 'a) -> 'a
+      val option : 'a option -> 'a Js.OPT.t
+      val to_option : 'a Js.OPT.t -> 'a option
+    end
+  module Opt :
+    sig
+      type 'a t = 'a opt
+      val empty : 'a t
+      val return : 'a -> 'a t
+      val map : 'a t -> ('a -> 'b) -> 'b t
+      val bind : 'a t -> ('a -> 'b t) -> 'b t
+      val test : 'a t -> bool
+      val iter : 'a t -> ('a -> unit) -> unit
+      val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
+      val get : 'a t -> (unit -> 'a) -> 'a
+      val option : 'a option -> 'a t
+      val to_option : 'a t -> 'a option
+    end
+  module Optdef :
+    sig
+      type 'a t = 'a optdef
+      val empty : 'a t
+      val return : 'a -> 'a t
+      val map : 'a t -> ('a -> 'b) -> 'b t
+      val bind : 'a t -> ('a -> 'b t) -> 'b t
+      val test : 'a t -> bool
+      val iter : 'a t -> ('a -> unit) -> unit
+      val case : 'a t -> (unit -> 'b) -> ('a -> 'b) -> 'b
+      val get : 'a t -> (unit -> 'a) -> 'a
+      val option : 'a option -> 'a t
+      val to_option : 'a t -> 'a option
+    end
+  type +'a t
+  type +'a meth
+  type +'a gen_prop
+  type 'a readonly_prop = < get : 'a > Js.gen_prop
+  type 'a writeonly_prop = < set : 'a -> unit > Js.gen_prop
+  type 'a prop = < get : 'a; set : 'a -> unit > Js.gen_prop
+  type 'a optdef_prop = < get : 'a Js.optdef; set : 'a -> unit > Js.gen_prop
+  type float_prop = < get : float Js.t; set : float -> unit > Js.gen_prop
+  type +'a constr
+  type (-'a, +'b) meth_callback
+  type 'a callback = (unit, 'a) Js.meth_callback
+  external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) Js.meth_callback
+    = "caml_js_wrap_callback"
+  external wrap_meth_callback :
+    ('a -> 'b -> 'c) -> ('a, 'b -> 'c) Js.meth_callback
+    = "caml_js_wrap_meth_callback"
+  val _true : bool Js.t
+  val _false : bool Js.t
+  type match_result_handle
+  type string_array
+  class type js_string =
+    object
+      method _match :
+        Js.regExp Js.t -> Js.match_result_handle Js.t Js.opt Js.meth
+      method charAt : int -> Js.js_string Js.t Js.meth
+      method charCodeAt : int -> float Js.t Js.meth
+      method concat : Js.js_string Js.t -> Js.js_string Js.t Js.meth
+      method concat_2 :
+        Js.js_string Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+      method concat_3 :
+        Js.js_string Js.t ->
+        Js.js_string Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+      method concat_4 :
+        Js.js_string Js.t ->
+        Js.js_string Js.t ->
+        Js.js_string Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+      method indexOf : Js.js_string Js.t -> int Js.meth
+      method indexOf_from : Js.js_string Js.t -> int -> int Js.meth
+      method lastIndexOf : Js.js_string Js.t -> int Js.meth
+      method lastIndexOf_from : Js.js_string Js.t -> int -> int Js.meth
+      method length : int Js.readonly_prop
+      method localeCompare : Js.js_string Js.t -> float Js.t Js.meth
+      method replace :
+        Js.regExp Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+      method replace_string :
+        Js.js_string Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+      method search : Js.regExp Js.t -> int Js.meth
+      method slice : int -> int -> Js.js_string Js.t Js.meth
+      method slice_end : int -> Js.js_string Js.t Js.meth
+      method split : Js.js_string Js.t -> Js.string_array Js.t Js.meth
+      method split_limited :
+        Js.js_string Js.t -> int -> Js.string_array Js.t Js.meth
+      method split_regExp : Js.regExp Js.t -> Js.string_array Js.t Js.meth
+      method split_regExpLimited :
+        Js.regExp Js.t -> int -> Js.string_array Js.t Js.meth
+      method substring : int -> int -> Js.js_string Js.t Js.meth
+      method substring_toEnd : int -> Js.js_string Js.t Js.meth
+      method toLocaleLowerCase : Js.js_string Js.t Js.meth
+      method toLocaleUpperCase : Js.js_string Js.t Js.meth
+      method toLowerCase : Js.js_string Js.t Js.meth
+      method toString : Js.js_string Js.t Js.meth
+      method toUpperCase : Js.js_string Js.t Js.meth
+      method valueOf : Js.js_string Js.t Js.meth
+    end
+  and regExp =
+    object
+      method exec :
+        Js.js_string Js.t -> Js.match_result_handle Js.t Js.opt Js.meth
+      method global : bool Js.t Js.readonly_prop
+      method ignoreCase : bool Js.t Js.readonly_prop
+      method lastIndex : int Js.prop
+      method multiline : bool Js.t Js.readonly_prop
+      method source : Js.js_string Js.t Js.readonly_prop
+      method test : Js.js_string Js.t -> bool Js.t Js.meth
+      method toString : Js.js_string Js.t Js.meth
+    end
+  val regExp : (Js.js_string Js.t -> Js.regExp Js.t) Js.constr
+  val regExp_withFlags :
+    (Js.js_string Js.t -> Js.js_string Js.t -> Js.regExp Js.t) Js.constr
+  val regExp_copy : (Js.regExp Js.t -> Js.regExp Js.t) Js.constr
+  class type ['a] js_array =
+    object
+      method concat : 'a Js.js_array Js.t -> 'a Js.js_array Js.t Js.meth
+      method join : Js.js_string Js.t -> Js.js_string Js.t Js.meth
+      method length : int Js.prop
+      method pop : 'a Js.optdef Js.meth
+      method push : 'a -> int Js.meth
+      method push_2 : 'a -> 'a -> int Js.meth
+      method push_3 : 'a -> 'a -> 'a -> int Js.meth
+      method push_4 : 'a -> 'a -> 'a -> 'a -> int Js.meth
+      method reverse : 'a Js.js_array Js.t Js.meth
+      method shift : 'a Js.optdef Js.meth
+      method slice : int -> int -> 'a Js.js_array Js.t Js.meth
+      method slice_end : int -> 'a Js.js_array Js.t Js.meth
+      method sort :
+        ('a -> 'a -> float) Js.callback -> 'a Js.js_array Js.t Js.meth
+      method sort_asStrings : 'a Js.js_array Js.t Js.meth
+      method splice : int -> int -> 'a Js.js_array Js.t Js.meth
+      method splice_1 : int -> int -> 'a -> 'a Js.js_array Js.t Js.meth
+      method splice_2 : int -> int -> 'a -> 'a -> 'a Js.js_array Js.t Js.meth
+      method splice_3 :
+        int -> int -> 'a -> 'a -> 'a -> 'a Js.js_array Js.t Js.meth
+      method splice_4 :
+        int -> int -> 'a -> 'a -> 'a -> 'a -> 'a Js.js_array Js.t Js.meth
+      method toLocaleString : Js.js_string Js.t Js.meth
+      method toString : Js.js_string Js.t Js.meth
+      method unshift : 'a -> int Js.meth
+      method unshift_2 : 'a -> 'a -> int Js.meth
+      method unshift_3 : 'a -> 'a -> 'a -> int Js.meth
+      method unshift_4 : 'a -> 'a -> 'a -> 'a -> int Js.meth
+    end
+  val array_empty : 'a Js.js_array Js.t Js.constr
+  val array_length : (int -> 'a Js.js_array Js.t) Js.constr
+  val array_get : 'a #Js.js_array Js.t -> int -> 'a Js.optdef
+  val array_set : 'a #Js.js_array Js.t -> int -> 'a -> unit
+  class type match_result =
+    object
+      method concat : js_string t js_array t -> js_string t js_array t meth
+      method index : int Js.readonly_prop
+      method input : Js.js_string Js.t Js.readonly_prop
+      method join : js_string t -> js_string t meth
+      method length : int prop
+      method pop : js_string t optdef meth
+      method push : js_string t -> int meth
+      method push_2 : js_string t -> js_string t -> int meth
+      method push_3 : js_string t -> js_string t -> js_string t -> int meth
+      method push_4 :
+        js_string t -> js_string t -> js_string t -> js_string t -> int meth
+      method reverse : js_string t js_array t meth
+      method shift : js_string t optdef meth
+      method slice : int -> int -> js_string t js_array t meth
+      method slice_end : int -> js_string t js_array t meth
+      method sort :
+        (js_string t -> js_string t -> float) callback ->
+        js_string t js_array t meth
+      method sort_asStrings : js_string t js_array t meth
+      method splice : int -> int -> js_string t js_array t meth
+      method splice_1 :
+        int -> int -> js_string t -> js_string t js_array t meth
+      method splice_2 :
+        int ->
+        int -> js_string t -> js_string t -> js_string t js_array t meth
+      method splice_3 :
+        int ->
+        int ->
+        js_string t ->
+        js_string t -> js_string t -> js_string t js_array t meth
+      method splice_4 :
+        int ->
+        int ->
+        js_string t ->
+        js_string t ->
+        js_string t -> js_string t -> js_string t js_array t meth
+      method toLocaleString : js_string t meth
+      method toString : js_string t meth
+      method unshift : js_string t -> int meth
+      method unshift_2 : js_string t -> js_string t -> int meth
+      method unshift_3 :
+        js_string t -> js_string t -> js_string t -> int meth
+      method unshift_4 :
+        js_string t -> js_string t -> js_string t -> js_string t -> int meth
+    end
+  val str_array : Js.string_array Js.t -> Js.js_string Js.t Js.js_array Js.t
+  val match_result : Js.match_result_handle Js.t -> Js.match_result Js.t
+  class type number =
+    object
+      method toExponential : Js.js_string Js.t Js.meth
+      method toExponential_digits : int -> Js.js_string Js.t Js.meth
+      method toFixed : int -> Js.js_string Js.t Js.meth
+      method toLocaleString : Js.js_string Js.t Js.meth
+      method toPrecision : int -> Js.js_string Js.meth Js.t
+      method toString : Js.js_string Js.t Js.meth
+      method toString_radix : int -> Js.js_string Js.t Js.meth
+    end
+  external number_of_float : float -> Js.number Js.t = "caml_js_from_float"
+  external float_of_number : Js.number Js.t -> float = "caml_js_to_float"
+  class type date =
+    object
+      method getDate : int Js.meth
+      method getDay : int Js.meth
+      method getFullYear : int Js.meth
+      method getHours : int Js.meth
+      method getMilliseconds : int Js.meth
+      method getMinutes : int Js.meth
+      method getMonth : int Js.meth
+      method getSeconds : int Js.meth
+      method getTime : float Js.t Js.meth
+      method getTimezoneOffset : int Js.meth
+      method getUTCDate : int Js.meth
+      method getUTCDay : int Js.meth
+      method getUTCFullYear : int Js.meth
+      method getUTCHours : int Js.meth
+      method getUTCMilliseconds : int Js.meth
+      method getUTCMinutes : int Js.meth
+      method getUTCMonth : int Js.meth
+      method getUTCSeconds : int Js.meth
+      method setDate : int -> float Js.t Js.meth
+      method setDay : int -> float Js.t Js.meth
+      method setFullYear : int -> float Js.t Js.meth
+      method setHours : int -> float Js.t Js.meth
+      method setMilliseconds : int -> float Js.t Js.meth
+      method setMinutes : int -> float Js.t Js.meth
+      method setMonth : int -> float Js.t Js.meth
+      method setSeconds : int -> float Js.t Js.meth
+      method setTime : float -> float Js.t Js.meth
+      method setUTCDate : int -> float Js.t Js.meth
+      method setUTCDay : int -> float Js.t Js.meth
+      method setUTCFullYear : int -> float Js.t Js.meth
+      method setUTCHours : int -> float Js.t Js.meth
+      method setUTCMilliseconds : int -> float Js.t Js.meth
+      method setUTCMinutes : int -> float Js.t Js.meth
+      method setUTCMonth : int -> float Js.t Js.meth
+      method setUTCSeconds : int -> float Js.t Js.meth
+      method toDateString : Js.js_string Js.t Js.meth
+      method toISOString : Js.js_string Js.t Js.meth
+      method toJSON : 'a -> Js.js_string Js.t Js.meth
+      method toLocaleDateString : Js.js_string Js.t Js.meth
+      method toLocaleString : Js.js_string Js.t Js.meth
+      method toLocaleTimeString : Js.js_string Js.t Js.meth
+      method toString : Js.js_string Js.t Js.meth
+      method toTimeString : Js.js_string Js.t Js.meth
+      method toUTCString : Js.js_string Js.t Js.meth
+      method valueOf : float Js.t Js.meth
+    end
+  val date_now : Js.date Js.t Js.constr
+  val date_fromTimeValue : (float -> Js.date Js.t) Js.constr
+  val date_month : (int -> int -> Js.date Js.t) Js.constr
+  val date_day : (int -> int -> int -> Js.date Js.t) Js.constr
+  val date_hour : (int -> int -> int -> int -> Js.date Js.t) Js.constr
+  val date_min : (int -> int -> int -> int -> int -> Js.date Js.t) Js.constr
+  val date_sec :
+    (int -> int -> int -> int -> int -> int -> Js.date Js.t) Js.constr
+  val date_ms :
+    (int -> int -> int -> int -> int -> int -> int -> Js.date Js.t) Js.constr
+  class type date_constr =
+    object
+      method _UTC_day : int -> int -> float Js.t Js.meth
+      method _UTC_hour : int -> int -> int -> int -> float Js.t Js.meth
+      method _UTC_min : int -> int -> int -> int -> int -> float Js.t Js.meth
+      method _UTC_month : int -> int -> float Js.t Js.meth
+      method _UTC_ms :
+        int -> int -> int -> int -> int -> int -> int -> float Js.t Js.meth
+      method _UTC_sec :
+        int -> int -> int -> int -> int -> int -> float Js.t Js.meth
+      method parse : Js.js_string Js.t -> float Js.t Js.meth
+    end
+  val date : Js.date_constr Js.t
+  class type math = object method random : float Js.t Js.meth end
+  val math : Js.math Js.t
+  val decodeURI : Js.js_string Js.t -> Js.js_string Js.t
+  val decodeURIComponent : Js.js_string Js.t -> Js.js_string Js.t
+  val encodeURI : Js.js_string Js.t -> Js.js_string Js.t
+  val encodeURIComponent : Js.js_string Js.t -> Js.js_string Js.t
+  val escape : Js.js_string Js.t -> Js.js_string Js.t
+  val unescape : Js.js_string Js.t -> Js.js_string Js.t
+  external bool : bool -> bool Js.t = "caml_js_from_bool"
+  external to_bool : bool Js.t -> bool = "caml_js_to_bool"
+  external string : string -> Js.js_string Js.t = "caml_js_from_string"
+  external to_string : Js.js_string Js.t -> string = "caml_js_to_string"
+  external float : float -> float Js.t = "caml_js_from_float"
+  external to_float : float Js.t -> float = "caml_js_to_float"
+  external array : 'a array -> 'a Js.js_array Js.t = "caml_js_from_array"
+  external to_array : 'a Js.js_array Js.t -> 'a array = "caml_js_to_array"
+  external bytestring : string -> Js.js_string Js.t
+    = "caml_js_from_byte_string"
+  external to_bytestring : Js.js_string Js.t -> string
+    = "caml_js_to_byte_string"
+  val coerce : 'a -> ('a -> 'b Js.Opt.t) -> ('a -> 'b) -> 'b
+  val coerce_opt : 'a Js.Opt.t -> ('a -> 'b Js.Opt.t) -> ('a -> 'b) -> 'b
+  external typeof : < .. > Js.t -> Js.js_string Js.t = "caml_js_typeof"
+  external instanceof : < .. > Js.t -> 'a Js.constr -> bool
+    = "caml_js_instanceof"
+  module Unsafe :
+    sig
+      external variable : string -> 'a = "caml_js_var"
+      type any
+      external inject : 'a -> Js.Unsafe.any = "%identity"
+      external coerce : < .. > Js.t -> < .. > Js.t = "%identity"
+      external get : 'a -> 'b -> 'c = "caml_js_get"
+      external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
+      external call : 'a -> 'b -> Js.Unsafe.any array -> 'c = "caml_js_call"
+      external fun_call : 'a -> Js.Unsafe.any array -> 'b
+        = "caml_js_fun_call"
+      external meth_call : 'a -> string -> Js.Unsafe.any array -> 'b
+        = "caml_js_meth_call"
+      external new_obj : 'a -> Js.Unsafe.any array -> 'b = "caml_js_new"
+      external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
+      external eval_string : string -> 'a = "caml_js_eval_string"
+    end
+end >>

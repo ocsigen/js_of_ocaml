@@ -1,0 +1,12 @@
+=Module <<a_api_type | module Async_js >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Async_js>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Async_js >><<span class="ocsforge_color_keyword"|end>>>>~This is the javascript equivalent of ~Async~_unix~.~Scheduler~, ie a reimplementation of
+    the async scheduler for javascript ~(at least the part of it that makes sense~)~.
+
+----
+<<pre id="VALsleep" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|sleep>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|float <<span class="ocsforge_color_delimiter"| -> >> unit <<span class="ocsforge_color_lid"|Async_kernel>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Std>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Deferred>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>>>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|sleep d>> is a deferred which becomes determined in <<span class="odocwiki_inlinecode"|d>> seconds~.
+>>
+<<pre id="VALyield" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|yield>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> unit <<span class="ocsforge_color_lid"|Async_kernel>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Std>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Deferred>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>>>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|yield ~(~)>> returns a deferred that becomes determined after the current cycle
+    completes~.
+>>
+<<pre id="VALinit" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|init>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~Initialize the async scheduler
+>>

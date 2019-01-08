@@ -1,0 +1,15 @@
+<<code language="ocaml" | sig
+  val readAsBinaryString :
+    #Js_of_ocaml.File.blob Js_of_ocaml.Js.t ->
+    Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t Lwt.t
+  val readAsText :
+    #Js_of_ocaml.File.blob Js_of_ocaml.Js.t ->
+    Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t Lwt.t
+  val readAsText_withEncoding :
+    #Js_of_ocaml.File.blob Js_of_ocaml.Js.t ->
+    Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t ->
+    Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t Lwt.t
+  val readAsDataURL :
+    #Js_of_ocaml.File.blob Js_of_ocaml.Js.t ->
+    Js_of_ocaml.Js.js_string Js_of_ocaml.Js.t Lwt.t
+end >>

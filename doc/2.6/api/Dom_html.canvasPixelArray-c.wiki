@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type Dom_html.canvasPixelArray >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEcanvasPixelArray"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|canvasPixelArray>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_html.canvasPixelArray >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODlength"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|length>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|int <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>>

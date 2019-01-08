@@ -1,0 +1,6 @@
+=Class type <<a_api_type | class type Dom_html.popStateEvent >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEpopStateEvent"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|popStateEvent>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_html.popStateEvent >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_html.event >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODstate"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|state>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Js.Unsafe.any" | type Js.Unsafe.any >> <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>>

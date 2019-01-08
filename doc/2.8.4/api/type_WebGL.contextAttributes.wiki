@@ -1,0 +1,10 @@
+<<code language="ocaml" | object
+  method alpha : bool Js.t Js.prop
+  method antialias : bool Js.t Js.prop
+  method depth : bool Js.t Js.prop
+  method failIfMajorPerformanceCaveat : bool Js.t Js.prop
+  method preferLowPowerToHighPerformance : bool Js.t Js.prop
+  method premultipliedAlpha : bool Js.t Js.prop
+  method preserveDrawingBuffer : bool Js.t Js.prop
+  method stencil : bool Js.t Js.prop
+end >>

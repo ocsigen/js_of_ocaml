@@ -1,0 +1,6 @@
+<<code language="ocaml" | object
+  method animatedNormalizedPathSegList : Dom_svg.pathSegList Js.t Js.prop
+  method animatedPathSegList : Dom_svg.pathSegList Js.t Js.prop
+  method normalizedPathSegList : Dom_svg.pathSegList Js.t Js.prop
+  method pathSegList : Dom_svg.pathSegList Js.t Js.prop
+end >>

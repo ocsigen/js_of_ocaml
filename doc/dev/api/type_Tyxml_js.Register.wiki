@@ -1,0 +1,10 @@
+<<code language="ocaml" | sig
+  val html :
+    ?head:Html_types.head Tyxml_js.Html.elt ->
+    Html_types.body Tyxml_js.Html.elt -> unit
+  val body :
+    ?keep:bool -> [< Html_types.body_content ] Tyxml_js.Html.elt list -> unit
+  val head :
+    ?keep:bool -> [< Html_types.head_content ] Tyxml_js.Html.elt list -> unit
+  val id : ?keep:bool -> string -> 'a Tyxml_js.Html.elt list -> unit
+end >>

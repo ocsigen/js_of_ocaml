@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type Dom_html.canvasGradient >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEcanvasGradient"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|canvasGradient>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_html.canvasGradient >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODaddColorStop"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|addColorStop>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|float <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="Js.js_string" | class type Js.js_string >> <<a_api text="Js.t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> unit <<a_api text="Js.meth" | type Js.meth >>>>>>

@@ -1,0 +1,13 @@
+<<code language="ocaml" | object
+  method assign : Js.js_string Js.t -> unit Js.meth
+  method hash : Js.js_string Js.t Js.prop
+  method host : Js.js_string Js.t Js.prop
+  method hostname : Js.js_string Js.t Js.prop
+  method href : Js.js_string Js.t Js.prop
+  method pathname : Js.js_string Js.t Js.prop
+  method port : Js.js_string Js.t Js.prop
+  method protocol : Js.js_string Js.t Js.prop
+  method reload : unit Js.meth
+  method replace : Js.js_string Js.t -> unit Js.meth
+  method search : Js.js_string Js.t Js.prop
+end >>

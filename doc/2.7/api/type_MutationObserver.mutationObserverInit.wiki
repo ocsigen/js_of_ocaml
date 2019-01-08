@@ -1,0 +1,10 @@
+<<code language="ocaml" | object
+  method attributeFilter :
+    Js.js_string Js.t Js.js_array Js.t Js.writeonly_prop
+  method attributeOldValue : bool Js.writeonly_prop
+  method attributes : bool Js.writeonly_prop
+  method characterData : bool Js.writeonly_prop
+  method characterDataOldValue : bool Js.writeonly_prop
+  method childList : bool Js.writeonly_prop
+  method subtree : bool Js.writeonly_prop
+end >>

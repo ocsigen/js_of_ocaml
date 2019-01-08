@@ -1,0 +1,101 @@
+<<code language="ocaml" | object ('a)
+  method _URL : Js.js_string Js.t Js.readonly_prop
+  method adoptNode : Dom.element Js.t -> Dom_html.element Js.t Js.meth
+  method anchors : Dom_html.element Dom_html.collection Js.t Js.readonly_prop
+  method appendChild : Dom.node Js.t -> Dom.node Js.t Js.meth
+  method applets : Dom_html.element Dom_html.collection Js.t Js.readonly_prop
+  method body : Dom_html.bodyElement Js.t Js.prop
+  method childNodes : Dom.node Dom.nodeList Js.t Js.prop
+  method cloneNode : bool Js.t -> Dom.node Js.t Js.meth
+  method close : unit Js.meth
+  method compareDocumentPosition :
+    Dom.node Js.t -> Dom.DocumentPosition.t Js.meth
+  method cookie : Js.js_string Js.t Js.prop
+  method createAttribute : Js.js_string Js.t -> Dom.attr Js.t Js.meth
+  method createComment : Js.js_string Js.t -> Dom.comment Js.t Js.meth
+  method createDocumentFragment : Dom.documentFragment Js.t Js.meth
+  method createElement : Js.js_string Js.t -> Dom_html.element Js.t Js.meth
+  method createElementNS :
+    Js.js_string Js.t -> Js.js_string Js.t -> Dom_html.element Js.t Js.meth
+  method createRange : Dom_html.range Js.t Js.meth
+  method createTextNode : Js.js_string Js.t -> Dom.text Js.t Js.meth
+  method designMode : Js.js_string Js.t Js.prop
+  method documentElement : Dom_html.element Js.t Js.readonly_prop
+  method domain : Js.js_string Js.t Js.prop
+  method execCommand :
+    Js.js_string Js.t ->
+    bool Js.t -> Js.js_string Js.t Js.opt -> unit Js.meth
+  method firstChild : Dom.node Js.t Js.opt Js.prop
+  method forms :
+    Dom_html.formElement Dom_html.collection Js.t Js.readonly_prop
+  method getElementById :
+    Js.js_string Js.t -> Dom_html.element Js.t Js.opt Js.meth
+  method getElementsByClassName :
+    Js.js_string Js.t -> Dom_html.element Dom.nodeList Js.t Js.meth
+  method getElementsByTagName :
+    Js.js_string Js.t -> Dom_html.element Dom.nodeList Js.t Js.meth
+  method hasChildNodes : bool Js.t Js.meth
+  method head : Dom_html.headElement Js.t Js.prop
+  method images :
+    Dom_html.imageElement Dom_html.collection Js.t Js.readonly_prop
+  method importNode :
+    Dom.element Js.t -> bool Js.t -> Dom_html.element Js.t Js.meth
+  method insertBefore :
+    Dom.node Js.t -> Dom.node Js.t Js.opt -> Dom.node Js.t Js.meth
+  method lastChild : Dom.node Js.t Js.opt Js.prop
+  method links : Dom_html.element Dom_html.collection Js.t Js.readonly_prop
+  method lookupNamespaceURI :
+    Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+  method lookupPrefix : Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+  method namespaceURI : Js.js_string Js.t Js.opt Js.prop
+  method nextSibling : Dom.node Js.t Js.opt Js.prop
+  method nodeName : Js.js_string Js.t Js.readonly_prop
+  method nodeType : Dom.nodeType Js.readonly_prop
+  method nodeValue : Js.js_string Js.t Js.opt Js.readonly_prop
+  method onclick :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method ondblclick :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method ondrag : ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragend :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragenter :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragleave :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragover :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragstart :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondrop : ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method onkeydown :
+    ('a Js.t, keyboardEvent Js.t) event_listener Js.writeonly_prop
+  method onkeypress :
+    ('a Js.t, keyboardEvent Js.t) event_listener Js.writeonly_prop
+  method onkeyup :
+    ('a Js.t, keyboardEvent Js.t) event_listener Js.writeonly_prop
+  method onmousedown :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmousemove :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmouseout :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmouseover :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmouseup :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onscroll : ('a Js.t, event Js.t) event_listener Js.writeonly_prop
+  method open_ : unit Js.meth
+  method parentNode : Dom.node Js.t Js.opt Js.prop
+  method previousSibling : Dom.node Js.t Js.opt Js.prop
+  method querySelector : Js.js_string Js.t -> element Js.t Js.opt Js.meth
+  method querySelectorAll :
+    Js.js_string Js.t -> element Dom.nodeList Js.t Js.meth
+  method readyState : Js.js_string Js.t Js.readonly_prop
+  method referrer : Js.js_string Js.t Js.readonly_prop
+  method removeChild : Dom.node Js.t -> Dom.node Js.t Js.meth
+  method replaceChild :
+    Dom.node Js.t -> Dom.node Js.t -> Dom.node Js.t Js.meth
+  method title : Js.js_string Js.t Js.prop
+  method write : Js.js_string Js.t -> unit Js.meth
+end >>

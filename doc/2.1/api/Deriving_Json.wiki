@@ -1,0 +1,18 @@
+=Module <<a_api_type | module Deriving_Json >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Deriving_Json>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Deriving_Json >><<span class="ocsforge_color_keyword"|end>>>>~Typesafe ~I~O ~(based on the //deriving// library~)~.
+**See also**
+* [[https://github.com/ocsigen/deriving|the source code of //deriving//]]
+* [[http://code.google.com/p/deriving/|the documentation of the original //deriving// library by ~Jeremy ~Yallop~.]]
+
+
+----
+<<pre class="ocsforge_color odocwiki_code" id="TYPEt"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_type"|'a>> <<span class="odocwiki_name"|t>>>><<div class="odocwiki_info"|~The type of ~J~S~O~N parser~/printer for value of type <<span class="odocwiki_inlinecode"|~'a>>~.
+>>
+<<pre id="VALto_string" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|to~_string>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<a_api text="t" | type Deriving_Json.t >> <<span class="ocsforge_color_delimiter"| -> >> 'a <<span class="ocsforge_color_delimiter"| -> >> string>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|to~_string ~Json~.t~<ty~> v>> marshal the <<span class="odocwiki_inlinecode"|v>> of type <<span class="odocwiki_inlinecode"|ty>> to a ~J~S~O~N string~.
+>>
+<<pre id="VALfrom_string" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|from~_string>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|'a <<a_api text="t" | type Deriving_Json.t >> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> 'a>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|from~_string ~Json~.t~<ty~> s>> safely unmarshal the ~J~S~O~N <<span class="odocwiki_inlinecode"|s>> into an
+    ~O~Caml value of type <<span class="odocwiki_inlinecode"|ty>>~. ~Throws <<span class="odocwiki_inlinecode"|~Failure>> if the received value
+    isn~'t the javascript representation of a value of type <<span class="odocwiki_inlinecode"|ty>>~.
+>>
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module type>> <<a_api text="Json" | module type Deriving_Json.Json >> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module type Deriving_Json.Json >><<span class="ocsforge_color_keyword"|end>>>><<div class="odocwiki_info"|~The signature of the ~J~S~O~N class~.
+>>

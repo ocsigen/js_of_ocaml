@@ -1,0 +1,8 @@
+<<code language="ocaml" | object
+  method disconnect : unit Js.meth
+  method observe :
+    Dom.node Js.t ->
+    MutationObserver.mutationObserverInit Js.t -> unit Js.meth
+  method takeRecords :
+    MutationObserver.mutationRecord Js.t Js.js_array Js.t Js.meth
+end >>

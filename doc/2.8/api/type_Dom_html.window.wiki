@@ -1,0 +1,121 @@
+<<code language="ocaml" | object ('a)
+  method _URL : Dom_html._URL Js.t Js.readonly_prop
+  method alert : Js.js_string Js.t -> unit Js.meth
+  method applicationCache : Dom_html.applicationCache Js.t Js.readonly_prop
+  method atob : Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method blur : unit Js.meth
+  method btoa : Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method cancelAnimationFrame :
+    Dom_html.animation_frame_request_id -> unit Js.meth
+  method clearInterval : Dom_html.interval_id -> unit Js.meth
+  method clearTimeout : Dom_html.timeout_id -> unit Js.meth
+  method close : unit Js.meth
+  method closed : bool Js.t Js.readonly_prop
+  method confirm : Js.js_string Js.t -> bool Js.t Js.meth
+  method document : Dom_html.document Js.t Js.readonly_prop
+  method focus : unit Js.meth
+  method frameElement : Dom_html.element Js.t Js.opt Js.readonly_prop
+  method getComputedStyle :
+    #Dom_html.element Js.t -> Dom_html.cssStyleDeclaration Js.t Js.meth
+  method getComputedStyle_pseudoElt :
+    #Dom_html.element Js.t ->
+    Js.js_string Js.t -> Dom_html.cssStyleDeclaration Js.t Js.meth
+  method getSelection : Dom_html.selection Js.t Js.meth
+  method history : Dom_html.history Js.t Js.readonly_prop
+  method innerHeight : int Js.optdef Js.readonly_prop
+  method innerWidth : int Js.optdef Js.readonly_prop
+  method localStorage : Dom_html.storage Js.t Js.optdef Js.readonly_prop
+  method location : Dom_html.location Js.t Js.readonly_prop
+  method name : Js.js_string Js.t Js.prop
+  method navigator : Dom_html.navigator Js.t Js.readonly_prop
+  method onbeforeunload :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onblur :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onclick :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method ondblclick :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method ondrag : ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragend :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragenter :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragleave :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragover :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragstart :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondrop : ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method onfocus :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onhashchange :
+    (Dom_html.window Js.t, Dom_html.hashChangeEvent Js.t)
+    Dom_html.event_listener Js.prop
+  method onkeydown :
+    ('a Js.t, keyboardEvent Js.t) event_listener Js.writeonly_prop
+  method onkeypress :
+    ('a Js.t, keyboardEvent Js.t) event_listener Js.writeonly_prop
+  method onkeyup :
+    ('a Js.t, keyboardEvent Js.t) event_listener Js.writeonly_prop
+  method onload :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onmousedown :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmousemove :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmouseout :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmouseover :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmouseup :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onoffline :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ononline :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onorientationchange :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onpopstate :
+    (Dom_html.window Js.t, Dom_html.popStateEvent Js.t)
+    Dom_html.event_listener Js.prop
+  method onresize :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onscroll : ('a Js.t, event Js.t) event_listener Js.writeonly_prop
+  method onunload :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method open_ :
+    Js.js_string Js.t ->
+    Js.js_string Js.t ->
+    Js.js_string Js.t Js.opt -> Dom_html.window Js.t Js.meth
+  method outerHeight : int Js.optdef Js.readonly_prop
+  method outerWidth : int Js.optdef Js.readonly_prop
+  method parent : Dom_html.window Js.t Js.readonly_prop
+  method print : unit Js.meth
+  method prompt :
+    Js.js_string Js.t ->
+    Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+  method requestAnimationFrame :
+    (float -> unit) Js.callback ->
+    Dom_html.animation_frame_request_id Js.meth
+  method screen : Dom_html.screen Js.t Js.readonly_prop
+  method scroll : int -> int -> unit Js.meth
+  method sessionStorage : Dom_html.storage Js.t Js.optdef Js.readonly_prop
+  method setInterval :
+    (unit -> unit) Js.callback -> float -> Dom_html.interval_id Js.meth
+  method setTimeout :
+    (unit -> unit) Js.callback -> float -> Dom_html.timeout_id Js.meth
+  method stop : unit Js.meth
+  method top : Dom_html.window Js.t Js.readonly_prop
+  method undoManager : Dom_html.undoManager Js.t Js.readonly_prop
+end >>

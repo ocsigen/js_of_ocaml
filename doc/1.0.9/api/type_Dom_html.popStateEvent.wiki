@@ -1,0 +1,6 @@
+<<code language="ocaml" | object
+  method _type : Js.js_string Js.t Js.readonly_prop
+  method srcElement : Dom_html.element Js.t Js.optdef Js.readonly_prop
+  method state : Js.Unsafe.any Js.readonly_prop
+  method target : Dom_html.element Js.t Js.optdef Js.readonly_prop
+end >>

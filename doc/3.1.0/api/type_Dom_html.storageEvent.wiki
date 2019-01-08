@@ -1,0 +1,11 @@
+<<code language="ocaml" | object
+  method _type : Js.js_string Js.t Js.readonly_prop
+  method currentTarget : element Js.t Js.opt Js.readonly_prop
+  method key : Js.js_string Js.t Js.opt Js.readonly_prop
+  method newValue : Js.js_string Js.t Js.opt Js.readonly_prop
+  method oldValue : Js.js_string Js.t Js.opt Js.readonly_prop
+  method srcElement : element Js.t Js.opt Js.readonly_prop
+  method storageArea : Dom_html.storage Js.t Js.opt Js.readonly_prop
+  method target : element Js.t Js.opt Js.readonly_prop
+  method url : Js.js_string Js.t Js.readonly_prop
+end >>

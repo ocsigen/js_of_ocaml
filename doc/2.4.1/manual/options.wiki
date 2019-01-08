@@ -1,0 +1,48 @@
+= Main Command-Line options
+
+|= Option name            |= Description                           |
+| -version                | Display the version of the compiler    |
+| -vnum                   | Display the version number of
+                            the compiler                           |
+| -o <file>               | Set the output filename to <file>      |
+| -sourcemap              | Generate sourcemap                     |
+| -opt {0,1,2,3}          | Set the compilation profile
+                            (default 1). See **Optimization**
+                             section below.                        |
+| -tc {none,trampoline}   | Set the tailcall optimisation
+                            (default trampoline)                   |
+| -pretty                 | Pretty print javascript output         |
+| -noinline               | Disable code inlining                  |
+| -debuginfo              | Output debug information               |
+| -I dir                  | Add <dir> to the list of
+                            include directories                    |
+| -file file[:dir]        | Register <file> to the pseudo filesytem
+                            and choose the the destination
+                            directory <dir> (default /)            |
+| -noruntime              | Do not include the runtime             |
+| -linkall                | Link all primitives                    |
+| -toplevel               | Compile a toplevel                     |
+| -enable <option>        | Enable option <option>                 |
+| -disable <option>       | Disable option <option>                |
+
+=Optimizations
+==Predefined optimization profile
+ * For Debugging: "-opt 0". It is equivalent to "-pretty -disable inline -disable staticeval -disable share -debuginfo"
+ * For Production: "-opt 3". It minimize the generated javascript by applying
+   various optimizations until fix-point is reached
+==List of option to "-disable" or "-enable"
+
+|= Option name |= Default |= Description                           |
+| pretty       | false    | Pretty print the javascript output     |
+| debuginfo    | false    | Output debug information (location)    |
+| deadcode     | true     | Deadcode elimination                   |
+| inline       | true     | Code inlining                          |
+| shortvar     | true     | Shorten variable names                 |
+| staticeval   | true     | Static evaluation of constants         |
+| share        | true     | Share string and number constants      |
+| strict       | true     | Enable strict mode                     |
+| debugger     | true     | Keep debugger statements.
+                            Stripped otherwise                     |
+| genprim      | true     | Generate dummy primitives when missing |
+| excwrap      | true     | Wrap js exception into ocaml ones      |
+| optcall      | true     | Javascript optimizations               |

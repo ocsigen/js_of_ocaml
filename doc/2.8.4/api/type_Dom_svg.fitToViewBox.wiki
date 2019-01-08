@@ -1,0 +1,5 @@
+<<code language="ocaml" | object
+  method preserveAspectRatio :
+    Dom_svg.animatedPreserveAspectRatio Js.t Js.readonly_prop
+  method viewBox : Dom_svg.animatedRect Js.t Js.readonly_prop
+end >>

@@ -1,0 +1,103 @@
+<<code language="ocaml" | sig
+  class type ['a, 'a0] worker =
+    object ('b)
+      method onanimationcancel :
+        ('b Js.t, Dom_html.animationEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onanimationend :
+        ('b Js.t, Dom_html.animationEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onanimationiteration :
+        ('b Js.t, Dom_html.animationEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onanimationstart :
+        ('b Js.t, Dom_html.animationEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onclick :
+        ('b Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method ondblclick :
+        ('b Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method ondrag :
+        ('b Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method ondragend :
+        ('b Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method ondragenter :
+        ('b Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method ondragleave :
+        ('b Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method ondragover :
+        ('b Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method ondragstart :
+        ('b Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method ondrop :
+        ('b Js.t, Dom_html.dragEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onerror :
+        ('b Js.t, Worker.errorEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onkeydown :
+        ('b Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onkeypress :
+        ('b Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onkeyup :
+        ('b Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onmessage :
+        ('b Js.t, 'a0 Worker.messageEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onmousedown :
+        ('b Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onmousemove :
+        ('b Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onmouseout :
+        ('b Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onmouseover :
+        ('b Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onmouseup :
+        ('b Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method onscroll :
+        ('b Js.t, Dom_html.event Js.t) Dom_html.event_listener
+        Js.writeonly_prop
+      method postMessage : 'a -> unit Js.meth
+      method terminate : unit Js.meth
+    end
+  and errorEvent =
+    object
+      method _type : Js.js_string Js.t Js.readonly_prop
+      method colno : int Js.t Js.readonly_prop
+      method currentTarget : Dom_html.element Js.t Js.opt Js.readonly_prop
+      method error : Js.Unsafe.any -> unit Js.meth
+      method filename : Js.js_string Js.t Js.readonly_prop
+      method lineno : int Js.t Js.readonly_prop
+      method msg : Js.js_string Js.t Js.readonly_prop
+      method srcElement : Dom_html.element Js.t Js.opt Js.readonly_prop
+      method target : Dom_html.element Js.t Js.opt Js.readonly_prop
+    end
+  and ['a] messageEvent =
+    object
+      method _type : Js.js_string Js.t Js.readonly_prop
+      method currentTarget : Dom_html.element Js.t Js.opt Js.readonly_prop
+      method data : 'a Js.readonly_prop
+      method srcElement : Dom_html.element Js.t Js.opt Js.readonly_prop
+      method target : Dom_html.element Js.t Js.opt Js.readonly_prop
+    end
+  val create : string -> ('a, 'b) Worker.worker Js.t
+  val import_scripts : string list -> unit
+  val set_onmessage : ('a -> unit) -> unit
+  val post_message : 'a -> unit
+end >>

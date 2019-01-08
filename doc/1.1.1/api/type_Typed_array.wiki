@@ -1,0 +1,95 @@
+<<code language="ocaml" | sig
+  class type arrayBuffer =
+    object method byteLength : int Js.readonly_prop end
+  val arrayBuffer : (int -> Typed_array.arrayBuffer Js.t) Js.constr
+  class type arrayBufferView =
+    object
+      method buffer : Typed_array.arrayBuffer Js.t Js.readonly_prop
+      method byteLength : int Js.readonly_prop
+      method byteOffset : int Js.readonly_prop
+    end
+  class type ['a, 'b] typedArray =
+    object
+      method _BYTES_PER_ELEMENT : int Js.readonly_prop
+      method _content_type_ : 'b
+      method buffer : arrayBuffer Js.t Js.readonly_prop
+      method byteLength : int Js.readonly_prop
+      method byteOffset : int Js.readonly_prop
+      method get : int -> 'a Js.meth
+      method length : int Js.readonly_prop
+      method set : int -> 'a -> unit Js.meth
+      method set_fromArray : 'a Js.js_array Js.t -> int -> unit Js.meth
+      method set_fromTypedArray :
+        ('a, 'b) Typed_array.typedArray Js.t -> int -> unit Js.meth
+      method subarray :
+        int -> int -> ('a, 'b) Typed_array.typedArray Js.t Js.meth
+      method subarray_toEnd :
+        int -> ('a, 'b) Typed_array.typedArray Js.t Js.meth
+    end
+  type int8Array = (int, [ `Int8 ]) Typed_array.typedArray
+  type uint8Array = (int, [ `Uint8 ]) Typed_array.typedArray
+  type int16Array = (int, [ `Int16 ]) Typed_array.typedArray
+  type uint16Array = (int, [ `Uint16 ]) Typed_array.typedArray
+  type int32Array = (int, [ `Int32 ]) Typed_array.typedArray
+  type uint32Array = (int, [ `Uint32 ]) Typed_array.typedArray
+  type float32Array = (float, [ `Float32 ]) Typed_array.typedArray
+  type float64Array = (float, [ `Float64 ]) Typed_array.typedArray
+  val int8Array : (int -> Typed_array.int8Array Js.t) Js.constr
+  val int8Array_fromArray :
+    (int Js.js_array Js.t -> Typed_array.int8Array Js.t) Js.constr
+  val int8Array_fromTypedArray :
+    (Typed_array.int8Array Js.t -> Typed_array.int8Array Js.t) Js.constr
+  val int8Array_fromBuffer :
+    (Typed_array.arrayBuffer Js.t -> Typed_array.int8Array Js.t) Js.constr
+  val int8Array_inBuffer :
+    (Typed_array.arrayBuffer Js.t -> int -> int -> Typed_array.int8Array Js.t)
+    Js.constr
+  val int16Array : (int -> Typed_array.int16Array Js.t) Js.constr
+  val int16Array_fromArray :
+    (int Js.js_array Js.t -> Typed_array.int16Array Js.t) Js.constr
+  val int16Array_fromTypedArray :
+    (Typed_array.int16Array Js.t -> Typed_array.int16Array Js.t) Js.constr
+  val int16Array_fromBuffer :
+    (Typed_array.arrayBuffer Js.t -> Typed_array.int16Array Js.t) Js.constr
+  val int16Array_inBuffer :
+    (Typed_array.arrayBuffer Js.t ->
+     int -> int -> Typed_array.int16Array Js.t)
+    Js.constr
+  val int32Array : (int -> Typed_array.int32Array Js.t) Js.constr
+  val int32Array_fromArray :
+    (int Js.js_array Js.t -> Typed_array.int32Array Js.t) Js.constr
+  val int32Array_fromTypedArray :
+    (Typed_array.int32Array Js.t -> Typed_array.int32Array Js.t) Js.constr
+  val int32Array_fromBuffer :
+    (Typed_array.arrayBuffer Js.t -> Typed_array.int32Array Js.t) Js.constr
+  val int32Array_inBuffer :
+    (Typed_array.arrayBuffer Js.t ->
+     int -> int -> Typed_array.int32Array Js.t)
+    Js.constr
+  val float32Array : (int -> Typed_array.float32Array Js.t) Js.constr
+  val float32Array_fromArray :
+    (float Js.js_array Js.t -> Typed_array.float32Array Js.t) Js.constr
+  val float32Array_fromTypedArray :
+    (Typed_array.float32Array Js.t -> Typed_array.float32Array Js.t)
+    Js.constr
+  val float32Array_fromBuffer :
+    (Typed_array.arrayBuffer Js.t -> Typed_array.float32Array Js.t) Js.constr
+  val float32Array_inBuffer :
+    (Typed_array.arrayBuffer Js.t ->
+     float -> float -> Typed_array.float32Array Js.t)
+    Js.constr
+  val float64Array : (int -> Typed_array.float64Array Js.t) Js.constr
+  val float64Array_fromArray :
+    (float Js.js_array Js.t -> Typed_array.float64Array Js.t) Js.constr
+  val float64Array_fromTypedArray :
+    (Typed_array.float64Array Js.t -> Typed_array.float64Array Js.t)
+    Js.constr
+  val float64Array_fromBuffer :
+    (Typed_array.arrayBuffer Js.t -> Typed_array.float64Array Js.t) Js.constr
+  val float64Array_inBuffer :
+    (Typed_array.arrayBuffer Js.t ->
+     float -> float -> Typed_array.float64Array Js.t)
+    Js.constr
+  val set : ('a, 'b) Typed_array.typedArray Js.t -> int -> 'a -> unit
+  val get : ('a, 'b) Typed_array.typedArray Js.t -> int -> 'a Js.optdef
+end >>

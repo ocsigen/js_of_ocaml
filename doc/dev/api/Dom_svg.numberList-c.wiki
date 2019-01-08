@@ -1,0 +1,3 @@
+=Class type <<a_api_type | class type Dom_svg.numberList >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEnumberList"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|numberList>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|[<<a_api text="Js.number" | class type Js.number >> <<a_api text="Js.t" | type Js.t >>]>> <<span class="odocwiki_type"|<<a_api text="list" | class type Dom_svg.list >>>>>>
+----

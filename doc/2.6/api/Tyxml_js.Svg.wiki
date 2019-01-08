@@ -1,0 +1,3 @@
+=Module <<a_api_type | module Tyxml_js.Svg >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Svg>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_uid"|Svg_sigs.Make>>(Xml).T>><<span class="odocwiki_type"|>>>>
+----

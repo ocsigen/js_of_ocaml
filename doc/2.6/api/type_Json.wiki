@@ -1,0 +1,4 @@
+<<code language="ocaml" | sig
+  val output : 'a -> Js.js_string Js.t
+  val unsafe_input : Js.js_string Js.t -> 'a
+end >>

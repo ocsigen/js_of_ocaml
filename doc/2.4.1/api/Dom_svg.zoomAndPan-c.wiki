@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type Dom_svg.zoomAndPan >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEzoomAndPan"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|zoomAndPan>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.zoomAndPan >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODzoomAndPan"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|zoomAndPan>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="zoomAndPanType" | type Dom_svg.zoomAndPanType >> <<a_api text="Js.prop" | type Js.prop >>>>>>

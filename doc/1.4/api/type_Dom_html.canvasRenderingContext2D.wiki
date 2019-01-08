@@ -1,0 +1,110 @@
+<<code language="ocaml" | object
+  method arc :
+    float -> float -> float -> float -> float -> bool Js.t -> unit Js.meth
+  method arcTo : float -> float -> float -> float -> float -> unit Js.meth
+  method beginPath : unit Js.meth
+  method bezierCurveTo :
+    float -> float -> float -> float -> float -> float -> unit Js.meth
+  method canvas : Dom_html.canvasElement Js.t Js.readonly_prop
+  method clearRect : float -> float -> float -> float -> unit Js.meth
+  method clip : unit Js.meth
+  method closePath : unit Js.meth
+  method createImageData : int -> int -> Dom_html.imageData Js.t Js.meth
+  method createLinearGradient :
+    float -> float -> float -> float -> Dom_html.canvasGradient Js.t Js.meth
+  method createPattern :
+    Dom_html.imageElement Js.t ->
+    Js.js_string Js.t -> Dom_html.canvasPattern Js.t Js.meth
+  method createPattern_fromCanvas :
+    Dom_html.canvasElement Js.t ->
+    Js.js_string Js.t -> Dom_html.canvasPattern Js.t Js.meth
+  method createPattern_fromVideo :
+    Dom_html.videoElement Js.t ->
+    Js.js_string Js.t -> Dom_html.canvasPattern Js.t Js.meth
+  method createRadialGradient :
+    float ->
+    float ->
+    float -> float -> float -> float -> Dom_html.canvasGradient Js.t Js.meth
+  method drawFocusRing :
+    #Dom_html.element Js.t ->
+    float -> float -> bool Js.t -> bool Js.t Js.meth
+  method drawImage :
+    Dom_html.imageElement Js.t -> float -> float -> unit Js.meth
+  method drawImage_fromCanvas :
+    Dom_html.canvasElement Js.t -> float -> float -> unit Js.meth
+  method drawImage_fromCanvasWithSize :
+    Dom_html.canvasElement Js.t ->
+    float -> float -> float -> float -> unit Js.meth
+  method drawImage_fromVideoWithSize :
+    Dom_html.videoElement Js.t ->
+    float -> float -> float -> float -> unit Js.meth
+  method drawImage_fromVideoWithVideo :
+    Dom_html.videoElement Js.t -> float -> float -> unit Js.meth
+  method drawImage_full :
+    Dom_html.imageElement Js.t ->
+    float ->
+    float ->
+    float -> float -> float -> float -> float -> float -> unit Js.meth
+  method drawImage_fullFromCanvas :
+    Dom_html.canvasElement Js.t ->
+    float ->
+    float ->
+    float -> float -> float -> float -> float -> float -> unit Js.meth
+  method drawImage_fullFromVideo :
+    Dom_html.videoElement Js.t ->
+    float ->
+    float ->
+    float -> float -> float -> float -> float -> float -> unit Js.meth
+  method drawImage_withSize :
+    Dom_html.imageElement Js.t ->
+    float -> float -> float -> float -> unit Js.meth
+  method fill : unit Js.meth
+  method fillRect : float -> float -> float -> float -> unit Js.meth
+  method fillStyle : Js.js_string Js.t Js.writeonly_prop
+  method fillStyle_gradient : Dom_html.canvasGradient Js.t Js.writeonly_prop
+  method fillStyle_pattern : Dom_html.canvasPattern Js.t Js.writeonly_prop
+  method fillText : Js.js_string Js.t -> float -> float -> unit Js.meth
+  method fillText_withWidth :
+    Js.js_string Js.t -> float -> float -> float -> unit Js.meth
+  method font : Js.js_string Js.t Js.prop
+  method getImageData :
+    float -> float -> float -> float -> Dom_html.imageData Js.t Js.meth
+  method globalAlpha : Js.float_prop
+  method globalCompositeOperation : Js.js_string Js.t Js.prop
+  method isPointInPath : float -> float -> bool Js.t Js.meth
+  method lineCap : Js.js_string Js.t Js.prop
+  method lineJoin : Js.js_string Js.t Js.prop
+  method lineTo : float -> float -> unit Js.meth
+  method lineWidth : Js.float_prop
+  method measureText : Js.js_string Js.t -> Dom_html.textMetrics Js.t Js.meth
+  method miterLimit : Js.float_prop
+  method moveTo : float -> float -> unit Js.meth
+  method putImageData :
+    Dom_html.imageData Js.t -> float -> float -> unit Js.meth
+  method quadraticCurveTo : float -> float -> float -> float -> unit Js.meth
+  method rect : float -> float -> float -> float -> unit Js.meth
+  method restore : unit Js.meth
+  method rotate : float -> unit Js.meth
+  method save : unit Js.meth
+  method scale : float -> float -> unit Js.meth
+  method setTransform :
+    float -> float -> float -> float -> float -> float -> unit Js.meth
+  method shadowBlur : Js.float_prop
+  method shadowColor : Js.js_string Js.t Js.prop
+  method shadowOffsetX : Js.float_prop
+  method shadowOffsetY : Js.float_prop
+  method stroke : unit Js.meth
+  method strokeRect : float -> float -> float -> float -> unit Js.meth
+  method strokeStyle : Js.js_string Js.t Js.writeonly_prop
+  method strokeStyle_gradient :
+    Dom_html.canvasGradient Js.t Js.writeonly_prop
+  method strokeStyle_pattern : Dom_html.canvasPattern Js.t Js.writeonly_prop
+  method strokeText : Js.js_string Js.t -> float -> float -> unit Js.meth
+  method strokeText_withWidth :
+    Js.js_string Js.t -> float -> float -> float -> unit Js.meth
+  method textAlign : Js.js_string Js.t Js.prop
+  method textBaseline : Js.js_string Js.t Js.prop
+  method transform :
+    float -> float -> float -> float -> float -> float -> unit Js.meth
+  method translate : float -> float -> unit Js.meth
+end >>

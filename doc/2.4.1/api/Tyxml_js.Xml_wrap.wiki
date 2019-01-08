@@ -1,0 +1,3 @@
+=Module <<a_api_type | module Tyxml_js.Xml_wrap >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Xml_wrap>>>> <<span class="ocsforge_color_delimiter"|~:>> \\  <<span class="odocwiki_type"|<<span class="ocsforge_color_uid"|Xml_wrap.T>>>><<span class="odocwiki_type"|\\  with type 'a t = 'a React.signal\\   and type 'a tlist = 'a <<span class="ocsforge_color_uid"|ReactiveData.RList>>.t>>>>
+----

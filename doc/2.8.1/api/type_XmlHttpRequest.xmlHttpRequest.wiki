@@ -1,0 +1,52 @@
+<<code language="ocaml" | object ('a)
+  method _open :
+    Js.js_string Js.t -> Js.js_string Js.t -> bool Js.t -> unit Js.meth
+  method _open_full :
+    Js.js_string Js.t ->
+    Js.js_string Js.t ->
+    bool Js.t ->
+    Js.js_string Js.t Js.opt -> Js.js_string Js.t Js.opt -> unit Js.meth
+  method abort : unit Js.meth
+  method getAllResponseHeaders : Js.js_string Js.t Js.meth
+  method getResponseHeader :
+    Js.js_string Js.t -> Js.js_string Js.t Js.opt Js.meth
+  method onabort :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onerror :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onload :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onloadend :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onloadstart :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onprogress :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
+  method ontimeout :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method overrideMimeType : Js.js_string Js.t -> unit Js.meth
+  method readyState : XmlHttpRequest.readyState Js.readonly_prop
+  method response : File.file_any Js.readonly_prop
+  method responseText : Js.js_string Js.t Js.readonly_prop
+  method responseType : Js.js_string Js.t Js.prop
+  method responseXML : Dom.element Dom.document Js.t Js.opt Js.readonly_prop
+  method send : Js.js_string Js.t Js.opt -> unit Js.meth
+  method send_blob : #File.blob Js.t -> unit Js.meth
+  method send_document : Dom.element Dom.document Js.t -> unit Js.meth
+  method send_formData : Form.formData Js.t -> unit Js.meth
+  method setRequestHeader :
+    Js.js_string Js.t -> Js.js_string Js.t -> unit Js.meth
+  method status : int Js.readonly_prop
+  method statusText : Js.js_string Js.t Js.readonly_prop
+  method upload :
+    XmlHttpRequest.xmlHttpRequestUpload Js.t Js.optdef Js.readonly_prop
+  method withCredentials : bool Js.t Js.writeonly_prop
+end >>

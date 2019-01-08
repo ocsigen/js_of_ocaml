@@ -1,0 +1,217 @@
+=Index of modules=
+
+|@@ @style="tet-align: left;"@@\\A|
+|@@class="odocwiki_index"@ @@<<a_api text="Angle"| module CSS.Angle >> ~[<<a_api | module CSS >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Async_js"| module Async_js >> |<<div class="odocwiki_info"|~This is the javascript equivalent of ~Async~_unix~.~Scheduler~, ie a reimplementation of
+    the async scheduler for javascript ~(at least the part of it that makes sense~)~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\B|
+|@@class="odocwiki_index"@ @@<<a_api text="Bigstring"| module Typed_array.Bigstring >> ~[<<a_api | module Typed_array >>~]||
+|@@ @style="tet-align: left;"@@\\C|
+|@@class="odocwiki_index"@ @@<<a_api text="CSS"| module CSS >> |<<div class="odocwiki_info"|~This module contains a few types and values to ease the use of ~C~S~S properties
+   and such~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="CoerceTo"| module File.CoerceTo >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="CoerceTo"| module Dom_svg.CoerceTo >> ~[<<a_api | module Dom_svg >>~]|<<div class="odocwiki_info"|~Coercion functions
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="CoerceTo"| module Dom.CoerceTo >> ~[<<a_api | module Dom >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="CoerceTo"| module Dom_html.CoerceTo >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Color"| module CSS.Color >> ~[<<a_api | module CSS >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Current"| module Url.Current >> ~[<<a_api | module Url >>~]|<<div class="odocwiki_info"|~This module can be used to handle the ~Url associated to the current
+    document~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\D|
+|@@class="odocwiki_index"@ @@<<a_api text="Defaults"| module Deriving_Json.Defaults >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Defaults'"| module Deriving_Json.Defaults' >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Defaults''"| module Deriving_Json.Defaults'' >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Deriving_Json"| module Deriving_Json >> |<<div class="odocwiki_info"|~Typesafe ~I~O ~(based on the //deriving// library~)~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Deriving_Json_lexer"| module Deriving_Json_lexer >> |<<div class="odocwiki_info"|~Create a fresh lexbuf record~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="DocumentPosition"| module Dom.DocumentPosition >> ~[<<a_api | module Dom >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Dom"| module Dom >> |<<div class="odocwiki_info"|~D~O~M binding
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Dom_events"| module Dom_events >> |<<div class="odocwiki_info"|~Javascript events
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Dom_html"| module Dom_html >> |<<div class="odocwiki_info"|~D~O~M ~H~T~M~L binding
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Dom_svg"| module Dom_svg >> |<<div class="odocwiki_info"|~D~O~M ~S~V~G binding
+>>
+|
+|@@ @style="tet-align: left;"@@\\E|
+|@@class="odocwiki_index"@ @@<<a_api text="Event"| module XmlHttpRequest.Event >> ~[<<a_api | module XmlHttpRequest >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Event"| module WebGL.Event >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Event"| module Dom.Event >> ~[<<a_api | module Dom >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Event"| module Dom_html.Event >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Event types~: <<span class="odocwiki_inlinecode"|mousedown>>~, <<span class="odocwiki_inlinecode"|keypress>>~, ~.~.~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="EventSource"| module EventSource >> |<<div class="odocwiki_info"|~Event~Source binding
+>>
+|
+|@@ @style="tet-align: left;"@@\\F|
+|@@class="odocwiki_index"@ @@<<a_api text="File"| module File >> |<<div class="odocwiki_info"|~File ~A~P~I
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Firebug"| module Firebug >> |<<div class="odocwiki_info"|~Firebug ~A~P~I ~(debugging console~)~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Form"| module Form >> |<<div class="odocwiki_info"|~This module provides functions to manipulate forms~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\G|
+|@@class="odocwiki_index"@ @@<<a_api text="Geolocation"| module Geolocation >> |<<div class="odocwiki_info"|~Geolocation ~A~P~I
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Graphics_js"| module Graphics_js >> |<<div class="odocwiki_info"|~Javascript binding for ~Graphics lib
+>>
+|
+|@@ @style="tet-align: left;"@@\\H|
+|@@class="odocwiki_index"@ @@<<a_api text="Html"| module Tyxml_js.R.Html >> ~[<<a_api | module Tyxml_js.R >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Html"| module Tyxml_js.Html >> ~[<<a_api | module Tyxml_js >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Html5"| module Tyxml_js.R.Html5 >> ~[<<a_api | module Tyxml_js.R >>~]|<<div class="odocwiki_info"|<<span class="odocwiki_deprecated"|>>>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Html5"| module Tyxml_js.Html5 >> ~[<<a_api | module Tyxml_js >>~]|<<div class="odocwiki_info"|<<span class="odocwiki_deprecated"|>>>>
+|
+|@@ @style="tet-align: left;"@@\\J|
+|@@class="odocwiki_index"@ @@<<a_api text="Js"| module Js >> |<<div class="odocwiki_info"|~Javascript binding
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Json"| module Json >> |<<div class="odocwiki_info"|~Unsafe ~I~O~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Json_array"| module Deriving_Json.Json_array >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_bool"| module Deriving_Json.Json_bool >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_char"| module Deriving_Json.Json_char >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_float"| module Deriving_Json.Json_float >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_int"| module Deriving_Json.Json_int >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_int32"| module Deriving_Json.Json_int32 >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_int64"| module Deriving_Json.Json_int64 >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_list"| module Deriving_Json.Json_list >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_nativeint"| module Deriving_Json.Json_nativeint >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_option"| module Deriving_Json.Json_option >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_ref"| module Deriving_Json.Json_ref >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_string"| module Deriving_Json.Json_string >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Json_unit"| module Deriving_Json.Json_unit >> ~[<<a_api | module Deriving_Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Jsonp"| module Jsonp >> |<<div class="odocwiki_info"|~This module provides helpers to perform ~J~S~O~N~P calls
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="JsooTop"| module JsooTop >> |<<div class="odocwiki_info"|~Helper for ~Js~_of~_ocaml ~Toplevel~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="JsooTopError"| module JsooTopError >> ||
+|@@class="odocwiki_index"@ @@<<a_api text="JsooTopPpx"| module JsooTopPpx >> |<<div class="odocwiki_info"|~One can add a ppx rewriter to a toplevel by registering it
+    
+<<code language='ocaml'| Ast_mapper.register "js_of_ocaml" Ppx_js.js_mapper >>
+
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Jstable"| module Jstable >> |<<div class="odocwiki_info"|~A minimal table implementation specialized for <<a_api | class type Js.js_string >> keys~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\K|
+|@@class="odocwiki_index"@ @@<<a_api text="Keyboard_code"| module Dom_html.Keyboard_code >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Use <<span class="odocwiki_inlinecode"|~Keyboard~_code>> when you want to identify a key that the user pressed~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Keyboard_key"| module Dom_html.Keyboard_key >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Use <<span class="odocwiki_inlinecode"|~Keyboard~_key>> when you want to identify the character that the user typed~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Keycode"| module Keycode >> ||
+|@@ @style="tet-align: left;"@@\\L|
+|@@class="odocwiki_index"@ @@<<a_api text="Length"| module CSS.Length >> ~[<<a_api | module CSS >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Lwt_js"| module Lwt_js >> |<<div class="odocwiki_info"|~Javascript specific ~Lwt functions~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Lwt_js_events"| module Lwt_js_events >> |<<div class="odocwiki_info"|~Programming mouse or keyboard events handlers using ~Lwt
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Lwt_log_js"| module Lwt_log_js >> |<<div class="odocwiki_info"|~Lwt logger for js~_of~_ocaml
+>>
+|
+|@@ @style="tet-align: left;"@@\\M|
+|@@class="odocwiki_index"@ @@<<a_api text="MakeOf"| module Tyxml_cast.MakeOf >> ~[<<a_api | module Tyxml_cast >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="MakeTo"| module Tyxml_cast.MakeTo >> ~[<<a_api | module Tyxml_cast >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="MutationObserver"| module MutationObserver >> |<<div class="odocwiki_info"|~Mutation~Observer ~A~P~I
+>>
+|
+|@@ @style="tet-align: left;"@@\\O|
+|@@class="odocwiki_index"@ @@<<a_api text="Ocamlbuild_js_of_ocaml"| module Ocamlbuild_js_of_ocaml >> |<<div class="odocwiki_info"|~Ocamlbuild plugin to build with js~_of~_ocaml
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Of_dom"| module Tyxml_js.Of_dom >> ~[<<a_api | module Tyxml_js >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Opt"| module Js.Opt >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Standard functions for manipulating possibly null values~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Optdef"| module Js.Optdef >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Standard functions for manipulating possibly undefined values~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\P|
+|@@class="odocwiki_index"@ @@<<a_api text="Pa_deriving_Json"| module Pa_deriving_Json >> |<<div class="odocwiki_info"|~Deriving~_json syntax extension ~(based on the //deriving// library~)~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Ppx_js"| module Ppx_js >> |<<div class="odocwiki_info"|~Ppx syntax extension for ~Js~_of~_ocaml~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\R|
+|@@class="odocwiki_index"@ @@<<a_api text="R"| module Tyxml_js.R >> ~[<<a_api | module Tyxml_js >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="ReaderEvent"| module File.ReaderEvent >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Regexp"| module Regexp >> |<<div class="odocwiki_info"|~Types for regexps~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Register"| module Tyxml_js.Register >> ~[<<a_api | module Tyxml_js >>~]||
+|@@ @style="tet-align: left;"@@\\S|
+|@@class="odocwiki_index"@ @@<<a_api text="String"| module Typed_array.String >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Svg"| module Tyxml_js.R.Svg >> ~[<<a_api | module Tyxml_js.R >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Svg"| module Tyxml_js.Svg >> ~[<<a_api | module Tyxml_js >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Sys_js"| module Sys_js >> |<<div class="odocwiki_info"|~Javascript specific ~Sys functions~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\T|
+|@@class="odocwiki_index"@ @@<<a_api text="To_dom"| module Tyxml_js.To_dom >> ~[<<a_api | module Tyxml_js >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Typ"| module Dom_events.Typ >> ~[<<a_api | module Dom_events >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Typed_array"| module Typed_array >> |<<div class="odocwiki_info"|~Typed ~Array binding
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Tyxml_cast"| module Tyxml_cast >> |<<div class="odocwiki_info"|~Cast to and from ~Tyxml types
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Tyxml_cast_sigs"| module Tyxml_cast_sigs >> |<<div class="odocwiki_info"|~Signatures to cast to and from ~Tyxml types
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Tyxml_js"| module Tyxml_js >> |<<div class="odocwiki_info"|~Tyxml interface~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\U|
+|@@class="odocwiki_index"@ @@<<a_api text="Unsafe"| module Js.Unsafe >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Unsafe ~Javascript operations
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Url"| module Url >> |<<div class="odocwiki_info"|~This module provides functions for tampering with ~Url~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Util"| module Tyxml_js.Util >> ~[<<a_api | module Tyxml_js >>~]||
+|@@ @style="tet-align: left;"@@\\W|
+|@@class="odocwiki_index"@ @@<<a_api text="WebGL"| module WebGL >> |<<div class="odocwiki_info"|~Web~G~L binding
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="WebSockets"| module WebSockets >> |<<div class="odocwiki_info"|~Web~Socket binding
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Worker"| module Worker >> |<<div class="odocwiki_info"|~Low~-level bindgins to javascript ~Web ~Workers~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Wrap"| module Tyxml_js.Wrap >> ~[<<a_api | module Tyxml_js >>~]||
+|@@ @style="tet-align: left;"@@\\X|
+|@@class="odocwiki_index"@ @@<<a_api text="Xml"| module Tyxml_js.R.Xml >> ~[<<a_api | module Tyxml_js.R >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Xml"| module Tyxml_js.Xml >> ~[<<a_api | module Tyxml_js >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="XmlHttpRequest"| module XmlHttpRequest >> |<<div class="odocwiki_info"|~Xml~Http~Request object~.
+>>
+|
+\\

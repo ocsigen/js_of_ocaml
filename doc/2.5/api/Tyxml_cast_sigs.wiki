@@ -1,0 +1,5 @@
+=Module <<a_api_type | module Tyxml_cast_sigs >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Tyxml_cast_sigs>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Tyxml_cast_sigs >><<span class="ocsforge_color_keyword"|end>>>>~Signatures to cast to and from ~Tyxml types
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module type>> <<a_api text="OF" | module type Tyxml_cast_sigs.OF >> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module type Tyxml_cast_sigs.OF >><<span class="ocsforge_color_keyword"|end>>>><<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module type>> <<a_api text="TO" | module type Tyxml_cast_sigs.TO >> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module type Tyxml_cast_sigs.TO >><<span class="ocsforge_color_keyword"|end>>>>

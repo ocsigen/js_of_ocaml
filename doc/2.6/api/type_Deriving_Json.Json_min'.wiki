@@ -1,0 +1,9 @@
+<<code language="ocaml" | sig
+  type a
+  val write : Buffer.t -> Deriving_Json.Json_min'.a -> unit
+  val read : Deriving_Json_lexer.lexbuf -> Deriving_Json.Json_min'.a
+  val match_variant : [ `Cst of int | `NCst of int ] -> bool
+  val read_variant :
+    Deriving_Json_lexer.lexbuf ->
+    [ `Cst of int | `NCst of int ] -> Deriving_Json.Json_min'.a
+end >>

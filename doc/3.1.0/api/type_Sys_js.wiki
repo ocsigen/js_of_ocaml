@@ -1,0 +1,13 @@
+<<code language="ocaml" | sig
+  val set_channel_flusher :
+    Pervasives.out_channel -> (string -> unit) -> unit
+  val set_channel_filler : Pervasives.in_channel -> (unit -> string) -> unit
+  val mount_point : unit -> string list
+  val unmount : path:string -> unit
+  val mount :
+    path:string -> (prefix:string -> path:string -> string option) -> unit
+  val read_file : name:string -> string
+  val create_file : name:string -> content:string -> unit
+  val update_file : name:string -> content:string -> unit
+  val js_of_ocaml_version : string
+end >>

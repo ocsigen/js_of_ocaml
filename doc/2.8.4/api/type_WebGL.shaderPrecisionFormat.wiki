@@ -1,0 +1,5 @@
+<<code language="ocaml" | object
+  method precision : int Js.readonly_prop
+  method rangeMax : int Js.readonly_prop
+  method rangeMin : int Js.readonly_prop
+end >>

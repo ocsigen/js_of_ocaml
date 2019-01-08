@@ -1,0 +1,39 @@
+=Module <<a_api_type | module Ocamlbuild_js_of_ocaml >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Ocamlbuild_js_of_ocaml>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Ocamlbuild_js_of_ocaml >><<span class="ocsforge_color_keyword"|end>>>>~Ocamlbuild plugin to build with js~_of~_ocaml
+
+----
+
+
+======@@id="6_Dispatchers"@@~Dispatchers======
+
+<<pre id="VALdispatcher" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|dispatcher>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|\\  <<span class="ocsforge_color_label"| ?oasis_executables: >><<span class="ocsforge_color_uid"|Ocamlbuild_plugin>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Pathname>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>> list <<span class="ocsforge_color_delimiter"| -> >>\\  <<span class="ocsforge_color_uid"|Ocamlbuild_plugin>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|hook>> <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~The main dispatcher
+
+
+    ~The dispatcher should be used with <<span class="odocwiki_inlinecode"|~Ocamlbuild~_plugin~.dispatch>> as~:
+    <<span class="odocwiki_inlinecode"|~Ocamlbuild~_plugin~.dispatch ~Ocamlbuild~_js~_of~_ocaml~.dispatcher>>
+    or if you use oasis it would look like~:
+    <<span class="odocwiki_inlinecode"|~Ocamlbuild~_plugin~.dispatch
+       ~(fun hook ~-~>
+         dispatch~_default hook~;
+         ~Ocamlbuild~_js~_of~_ocaml~.dispatcher
+           ~~oasis~_executables~:~["src~/yourprogram~.byte"~]
+           hook~;
+       ~)
+    >>
+
+
+    <<span class="odocwiki_inlinecode"|~?oasis~_executables>> is the paths of the executables
+    ~(having the ~.byte extension~) you want to compile
+    as a javascript executable~. ~The former executables are still compiled~.
+
+
+    ~Side note~: <<span class="odocwiki_inlinecode"|~Ocamlbuild~_plugin~.dispatch>> should be used only once as
+    it record only one function for an ocamlbuild module~.
+>>
+
+
+======@@id="6_Lowlevelfunctions"@@~Low level functions======
+
+<<pre id="VALoasis_support" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|oasis~_support>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_label"| executables: >><<span class="ocsforge_color_uid"|Ocamlbuild_plugin>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Pathname>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>> list <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~Map each targets given as argument to ocamlbuild and replace each element
+    that exists in <<span class="odocwiki_inlinecode"|~~executables>> by its corresponding ~.js target~.
+>>

@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method xmllang : Js.js_string Js.t Js.prop
+  method xmlspace : Js.js_string Js.t Js.prop
+end >>

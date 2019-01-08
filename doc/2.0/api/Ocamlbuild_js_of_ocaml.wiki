@@ -1,0 +1,4 @@
+=Module <<a_api_type | module Ocamlbuild_js_of_ocaml >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Ocamlbuild_js_of_ocaml>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Ocamlbuild_js_of_ocaml >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre id="VALdispatcher" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|dispatcher>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_uid"|Ocamlbuild_plugin>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|hook>> <<span class="ocsforge_color_delimiter"| -> >> unit>>>>

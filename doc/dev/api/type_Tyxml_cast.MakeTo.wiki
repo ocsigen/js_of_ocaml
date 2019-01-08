@@ -1,0 +1,323 @@
+<<code language="ocaml" | functor
+  (C : sig
+         type 'a elt
+         val elt :
+           'a Tyxml_cast.MakeTo.elt -> Js_of_ocaml.Dom.node Js_of_ocaml.Js.t
+       end) ->
+  sig
+    type 'a elt = 'a C.elt
+    val of_element : 'a elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_node : 'a elt -> Js_of_ocaml.Dom.node Js_of_ocaml.Js.t
+    val of_pcdata :
+      [< Html_types.pcdata ] elt -> Js_of_ocaml.Dom.text Js_of_ocaml.Js.t
+    val of_html :
+      [< Html_types.html ] elt ->
+      Js_of_ocaml.Dom_html.htmlElement Js_of_ocaml.Js.t
+    val of_head :
+      [< Html_types.head ] elt ->
+      Js_of_ocaml.Dom_html.headElement Js_of_ocaml.Js.t
+    val of_link :
+      [< Html_types.link ] elt ->
+      Js_of_ocaml.Dom_html.linkElement Js_of_ocaml.Js.t
+    val of_title :
+      [< Html_types.title ] elt ->
+      Js_of_ocaml.Dom_html.titleElement Js_of_ocaml.Js.t
+    val of_meta :
+      [< Html_types.meta ] elt ->
+      Js_of_ocaml.Dom_html.metaElement Js_of_ocaml.Js.t
+    val of_base :
+      [< Html_types.base ] elt ->
+      Js_of_ocaml.Dom_html.baseElement Js_of_ocaml.Js.t
+    val of_style :
+      [< Html_types.style ] elt ->
+      Js_of_ocaml.Dom_html.styleElement Js_of_ocaml.Js.t
+    val of_body :
+      [< Html_types.body ] elt ->
+      Js_of_ocaml.Dom_html.bodyElement Js_of_ocaml.Js.t
+    val of_form :
+      [< Html_types.form ] elt ->
+      Js_of_ocaml.Dom_html.formElement Js_of_ocaml.Js.t
+    val of_optgroup :
+      [< Html_types.optgroup ] elt ->
+      Js_of_ocaml.Dom_html.optGroupElement Js_of_ocaml.Js.t
+    val of_option :
+      [< Html_types.selectoption ] elt ->
+      Js_of_ocaml.Dom_html.optionElement Js_of_ocaml.Js.t
+    val of_select :
+      [< Html_types.select ] elt ->
+      Js_of_ocaml.Dom_html.selectElement Js_of_ocaml.Js.t
+    val of_input :
+      [< Html_types.input ] elt ->
+      Js_of_ocaml.Dom_html.inputElement Js_of_ocaml.Js.t
+    val of_textarea :
+      [< Html_types.textarea ] elt ->
+      Js_of_ocaml.Dom_html.textAreaElement Js_of_ocaml.Js.t
+    val of_button :
+      [< Html_types.button ] elt ->
+      Js_of_ocaml.Dom_html.buttonElement Js_of_ocaml.Js.t
+    val of_label :
+      [< Html_types.label ] elt ->
+      Js_of_ocaml.Dom_html.labelElement Js_of_ocaml.Js.t
+    val of_fieldset :
+      [< Html_types.fieldset ] elt ->
+      Js_of_ocaml.Dom_html.fieldSetElement Js_of_ocaml.Js.t
+    val of_legend :
+      [< Html_types.legend ] elt ->
+      Js_of_ocaml.Dom_html.legendElement Js_of_ocaml.Js.t
+    val of_ul :
+      [< Html_types.ul ] elt ->
+      Js_of_ocaml.Dom_html.uListElement Js_of_ocaml.Js.t
+    val of_ol :
+      [< Html_types.ol ] elt ->
+      Js_of_ocaml.Dom_html.oListElement Js_of_ocaml.Js.t
+    val of_dl :
+      [< Html_types.dl ] elt ->
+      Js_of_ocaml.Dom_html.dListElement Js_of_ocaml.Js.t
+    val of_li :
+      [< Html_types.li ] elt ->
+      Js_of_ocaml.Dom_html.liElement Js_of_ocaml.Js.t
+    val of_div :
+      [< Html_types.div ] elt ->
+      Js_of_ocaml.Dom_html.divElement Js_of_ocaml.Js.t
+    val of_p :
+      [< Html_types.p ] elt ->
+      Js_of_ocaml.Dom_html.paragraphElement Js_of_ocaml.Js.t
+    val of_heading :
+      [< Html_types.heading ] elt ->
+      Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+    val of_blockquote :
+      [< Html_types.blockquote ] elt ->
+      Js_of_ocaml.Dom_html.quoteElement Js_of_ocaml.Js.t
+    val of_pre :
+      [< Html_types.pre ] elt ->
+      Js_of_ocaml.Dom_html.preElement Js_of_ocaml.Js.t
+    val of_br :
+      [< Html_types.br ] elt ->
+      Js_of_ocaml.Dom_html.brElement Js_of_ocaml.Js.t
+    val of_hr :
+      [< Html_types.hr ] elt ->
+      Js_of_ocaml.Dom_html.hrElement Js_of_ocaml.Js.t
+    val of_del :
+      [< 'a Html_types.del ] elt ->
+      Js_of_ocaml.Dom_html.modElement Js_of_ocaml.Js.t
+    val of_ins :
+      [< 'a Html_types.ins ] elt ->
+      Js_of_ocaml.Dom_html.modElement Js_of_ocaml.Js.t
+    val of_a :
+      [< 'a Html_types.a ] elt ->
+      Js_of_ocaml.Dom_html.anchorElement Js_of_ocaml.Js.t
+    val of_img :
+      [< Html_types.img_interactive ] elt ->
+      Js_of_ocaml.Dom_html.imageElement Js_of_ocaml.Js.t
+    val of_object :
+      [< 'a Html_types.object_ ] elt ->
+      Js_of_ocaml.Dom_html.objectElement Js_of_ocaml.Js.t
+    val of_param :
+      [< Html_types.param ] elt ->
+      Js_of_ocaml.Dom_html.paramElement Js_of_ocaml.Js.t
+    val of_area :
+      [< Html_types.area ] elt ->
+      Js_of_ocaml.Dom_html.areaElement Js_of_ocaml.Js.t
+    val of_map :
+      [< 'a Html_types.map ] elt ->
+      Js_of_ocaml.Dom_html.mapElement Js_of_ocaml.Js.t
+    val of_script :
+      [< Html_types.script ] elt ->
+      Js_of_ocaml.Dom_html.scriptElement Js_of_ocaml.Js.t
+    val of_td :
+      [< `Td ] elt -> Js_of_ocaml.Dom_html.tableCellElement Js_of_ocaml.Js.t
+    val of_tr :
+      [< Html_types.tr ] elt ->
+      Js_of_ocaml.Dom_html.tableRowElement Js_of_ocaml.Js.t
+    val of_col :
+      [< Html_types.col ] elt ->
+      Js_of_ocaml.Dom_html.tableColElement Js_of_ocaml.Js.t
+    val of_tfoot :
+      [< Html_types.tfoot ] elt ->
+      Js_of_ocaml.Dom_html.tableSectionElement Js_of_ocaml.Js.t
+    val of_thead :
+      [< Html_types.thead ] elt ->
+      Js_of_ocaml.Dom_html.tableSectionElement Js_of_ocaml.Js.t
+    val of_tbody :
+      [< Html_types.tbody ] elt ->
+      Js_of_ocaml.Dom_html.tableSectionElement Js_of_ocaml.Js.t
+    val of_caption :
+      [< Html_types.caption ] elt ->
+      Js_of_ocaml.Dom_html.tableCaptionElement Js_of_ocaml.Js.t
+    val of_table :
+      [< Html_types.table ] elt ->
+      Js_of_ocaml.Dom_html.tableElement Js_of_ocaml.Js.t
+    val of_canvas :
+      [< 'a Html_types.canvas ] elt ->
+      Js_of_ocaml.Dom_html.canvasElement Js_of_ocaml.Js.t
+    val of_iframe :
+      [< Html_types.iframe ] elt ->
+      Js_of_ocaml.Dom_html.iFrameElement Js_of_ocaml.Js.t
+    val of_audio :
+      [< 'a Html_types.audio_interactive ] elt ->
+      Js_of_ocaml.Dom_html.audioElement Js_of_ocaml.Js.t
+    val of_video :
+      [< 'a Html_types.video_interactive ] elt ->
+      Js_of_ocaml.Dom_html.videoElement Js_of_ocaml.Js.t
+    val of_h1 :
+      Html_types.heading elt ->
+      Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+    val of_h2 :
+      Html_types.heading elt ->
+      Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+    val of_h3 :
+      Html_types.heading elt ->
+      Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+    val of_h4 :
+      Html_types.heading elt ->
+      Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+    val of_h5 :
+      Html_types.heading elt ->
+      Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+    val of_h6 :
+      Html_types.heading elt ->
+      Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+    val of_abbr :
+      [> Html_types.abbr ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_address :
+      [> Html_types.address ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_article :
+      [> Html_types.article ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_aside :
+      [> Html_types.aside ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_b :
+      [> Html_types.b ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_bdo :
+      [> Html_types.bdo ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_cite :
+      [> Html_types.cite ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_code :
+      [> Html_types.code ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_colgroup :
+      [> Html_types.colgroup ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_command :
+      [> Html_types.command ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_datalist :
+      [> Html_types.datalist ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_dd :
+      [> Html_types.dd ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_details :
+      [> Html_types.details ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_dfn :
+      [> Html_types.dfn ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_dt :
+      [> Html_types.dt ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_em :
+      [> Html_types.em ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_embed :
+      [> Html_types.embed ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_figcaption :
+      [> Html_types.figcaption ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_figure :
+      [> Html_types.figure ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_footer :
+      [> Html_types.footer ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_header :
+      [> Html_types.header ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_hgroup :
+      [> Html_types.hgroup ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_i :
+      [> Html_types.i ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_kbd :
+      [> Html_types.kbd ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_keygen :
+      [> Html_types.keygen ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_main :
+      [> Html_types.main ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_mark :
+      [> Html_types.mark ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_menu :
+      [> Html_types.menu ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_meter :
+      [> Html_types.meter ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_nav :
+      [> Html_types.nav ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_noscript :
+      [> Html_types.noscript ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_output :
+      [> Html_types.output_elt ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_progress :
+      [> Html_types.progress ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_q :
+      [> Html_types.q ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_rp :
+      [> Html_types.rp ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_rt :
+      [> Html_types.rt ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_ruby :
+      [> Html_types.ruby ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_samp :
+      [> Html_types.samp ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_section :
+      [> Html_types.section ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_small :
+      [> Html_types.small ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_source :
+      [> Html_types.source ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_span :
+      [> Html_types.span ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_strong :
+      [> Html_types.strong ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_sub :
+      [> Html_types.sub ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_summary :
+      [> Html_types.summary ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_sup :
+      [> Html_types.sup ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_th :
+      [> Html_types.th ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_time :
+      [> Html_types.time ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_u :
+      [> Html_types.u ] elt -> Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_var :
+      [> Html_types.var ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+    val of_wbr :
+      [> Html_types.wbr ] elt ->
+      Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  end >>

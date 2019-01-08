@@ -1,0 +1,1 @@
+<<code language="ocaml" | object method width : float Js.readonly_prop end >>

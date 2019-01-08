@@ -1,0 +1,81 @@
+<<head-css href="https://ocsigen.org/js_of_ocaml/tmp/style.css">>
+<<head-css href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/themes/prism.min.css">>
+<<head-script src="https://ocsigen.org/js/client.js">>
+<<head-script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-core.min.js">>
+<<head-script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-ocaml.min.js">>
+<<head-script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-clike.min.js">>
+<<head-script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-reason.min.js">>
+<<head-script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.9.0/components/prism-javascript.min.js">>
+
+<<div class="project-page"|
+<<div class="page-header"|
+
+@@class="logo-ocsigen"@@[[site:/|{{site:/img/ocsigen-white.svg|Ocsigen}}]]
+
+<<when-project when="eliom"          | @@class="logo-subproject"@@Eliom>>
+<<when-project when="js_of_ocaml"    | @@class="logo-subproject"@@Js_of_ocaml>>
+<<when-project when="ocsigenserver"  | @@class="logo-subproject"@@Server>>
+<<when-project when="lwt"            | @@class="logo-subproject"@@Lwt>>
+<<when-project when="tyxml"          | @@class="logo-subproject"@@Tyxml>>
+<<when-project when="ocsigen-toolkit"| @@class="logo-subproject"@@Toolkit>>
+<<when-project when="ocsigen-start"  | @@class="logo-subproject"@@Start>>
+
+<<div class="mainmenu"|
+<<span class="mainmenu-home"|[[site:/|Home]]>>
+<<span class="mainmenu-doc" |[[wiki("tuto"):|Doc]]>>
+<<when-project   when="eliom"        | @@class="mainmenu-current"@@[[wiki("eliom"):|Eliom]]>>
+<<when-project unless="eliom"        |                             [[wiki("eliom"):|Eliom]]>>
+<<when-project   when="js_of_ocaml"  | @@class="mainmenu-current"@@[[wiki("js_of_ocaml"):|Js_of_ocaml]]>>
+<<when-project unless="js_of_ocaml"  |                             [[wiki("js_of_ocaml"):|Js_of_ocaml]]>>
+<<when-project   when="lwt"          | @@class="mainmenu-current"@@[[wiki("lwt"):|Lwt]]>>
+<<when-project unless="lwt"          |                             [[wiki("lwt"):|Lwt]]>>
+<<when-project   when="tyxml"        | @@class="mainmenu-current"@@[[wiki("tyxml"):|Tyxml]]>>
+<<when-project unless="tyxml"        |                             [[wiki("tyxml"):|Tyxml]]>>
+<<when-project   when="ocsigen-start"| @@class="mainmenu-current"@@[[wiki("ocsigen-start"):|Start]]>>
+<<when-project unless="ocsigen-start"|                             [[wiki("ocsigen-start"):|Start]]>>
+>>
+
+<<when-local  |<<googlesearch icon="https://ocsigen.org/img/search.svg" domain="ocsigen.org">>>>
+<<unless-local|<<googlesearch icon="https://ocsigen.org/js_of_ocaml/tmp/search.svg" domain="ocsigen.org">>>>
+
+<<drawer|
+*@@class="drawermainmenu"@class="drawermainmenu-home"@@[[site:/|Home]]
+*@@class="drawermainmenu-doc"@@[[wiki("tuto"):|Doc]]
+*@@class="drawermainmenu-project"@@[[wiki("eliom"):|Eliom]]
+*@@class="drawermainmenu-project"@@[[wiki("js_of_ocaml"):|Js_of_ocaml]]
+*@@class="drawermainmenu-project"@@[[wiki("ocsigenserver"):|Server]]
+*@@class="drawermainmenu-project"@@[[wiki("lwt"):|Lwt]]
+*@@class="drawermainmenu-project"@@[[wiki("tyxml"):|Tyxml]]
+*@@class="drawermainmenu-project"@@[[wiki("ocsigen-toolkit"):|Toolkit]]
+*@@class="drawermainmenu-project"@@[[wiki("ocsigen-start"):|Start]]
+*@@class="drawermainmenu-page"@@[[site:/projects|Other projects]]
+*@@class="drawermainmenu-page"@@[[site:/papers|Research papers]]
+*@@class="drawermainmenu-page"@@[[site:/credits|Who does Ocsigen?]]
+*@@class="drawermainmenu-page"@@[[site:/blog|Blog]]
+*@@class="drawermainmenu-page"@@[[https://github.com/ocsigen|Source code]]
+
+<<doctree>>
+
+
+>> <<|drawer>>
+
+>> <<|page-header>>
+
+@@class="reasonwarning"@@Warning: Reason support is experimental.
+We are looking for beta-tester and contributors.
+
+<<reason-switch>>
+
+<<div class="twocols" |
+<<nav class="leftcol" |
+<<docversion>>
+
+<<doctree>>
+>> <<|leftcol>>
+
+<<article class="rightcol" |
+<<client-server-switch|>>
+<<content>>
+>> <<|rightcol>>
+>> <<|twocols>>
+>> <<|project-page>>

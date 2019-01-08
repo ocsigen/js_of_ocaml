@@ -1,0 +1,12 @@
+<<code language="ocaml" | sig
+  val host : string
+  val port : int option
+  val path_string : string
+  val path : string list
+  val arguments : (string * string) list
+  val get_fragment : unit -> string
+  val set_fragment : string -> unit
+  val get : unit -> Url.url option
+  val set : Url.url -> unit
+  val as_string : string
+end >>

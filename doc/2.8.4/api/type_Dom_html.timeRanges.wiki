@@ -1,0 +1,5 @@
+<<code language="ocaml" | object
+  method end_ : int -> float Js.meth
+  method length : int Js.readonly_prop
+  method start : int -> float Js.meth
+end >>

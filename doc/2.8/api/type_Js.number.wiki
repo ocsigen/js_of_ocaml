@@ -1,0 +1,9 @@
+<<code language="ocaml" | object
+  method toExponential : Js.js_string Js.t Js.meth
+  method toExponential_digits : int -> Js.js_string Js.t Js.meth
+  method toFixed : int -> Js.js_string Js.t Js.meth
+  method toLocaleString : Js.js_string Js.t Js.meth
+  method toPrecision : int -> Js.js_string Js.t Js.meth
+  method toString : Js.js_string Js.t Js.meth
+  method toString_radix : int -> Js.js_string Js.t Js.meth
+end >>

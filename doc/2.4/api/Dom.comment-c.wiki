@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type Dom.comment >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEcomment"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|comment>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|<<a_api text="characterData" | class type Dom.characterData >>>>>>~Specification of <<span class="odocwiki_inlinecode"|~Comment>> objects
+
+----

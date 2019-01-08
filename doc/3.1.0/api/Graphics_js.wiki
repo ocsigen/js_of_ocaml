@@ -1,0 +1,47 @@
+=Module <<a_api_type | module Graphics_js >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Graphics_js>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Graphics_js >><<span class="ocsforge_color_keyword"|end>>>>~Javascript binding for ~Graphics lib
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|include>> Graphics>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEcontext"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_name"|context>>>><<div class="odocwiki_info"|
+======@@id="6_Initializations"@@~Initializations======
+
+
+type of a graphic context
+>>
+<<pre id="VALopen_graph" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|open~_graph>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~Open a graphics window~.
+    ~The graphics window is cleared and the current point is set
+    to ~(~0~, ~0~)~. ~The string argument is used to pass optional
+    information on the desired graphics mode~, the graphics window
+    size~, and so on~. ~Specification can be found at
+    http~:~/~/www~.w~3schools~.com~/jsref~/met~_win~_open~.asp~.
+    ~Note~: an extra specification is available~, "target"~,
+    to specifies the target attribute or the name of the window~.
+>>
+<<pre id="VALopen_canvas" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|open~_canvas>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|\\  <<span class="ocsforge_color_uid"|Js_of_ocaml>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Dom_html>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|canvasElement>> <<span class="ocsforge_color_uid"|Js_of_ocaml>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Js>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>> <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|use a canvas to setup the current context
+>>
+<<pre id="VALget_context" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|get~_context>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="context" | type Graphics_js.context >>>>>><<div class="odocwiki_info"|~Get the current context
+>>
+<<pre id="VALset_context" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|set~_context>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="context" | type Graphics_js.context >> <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|~Set the current context
+>>
+<<pre id="VALloop" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|loop>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|event list <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>status <<span class="ocsforge_color_delimiter"| -> >> unit<<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|
+======@@id="6_Mouseandkeyboardevents"@@~Mouse and keyboard events======
+
+
+~Loops forever and listen to the given events~. ~Those events automatically
+    returns a status record~, which is used by the function given in argument~.
+>>
+<<pre id="VALmouse_pos" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|mouse~_pos>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>int * int<<span class="ocsforge_color_delimiter"| ) >> <<span class="ocsforge_color_uid"|Lwt>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>>>>>><<div class="odocwiki_info"|
+======@@id="6_Mouseandkeyboardpolling"@@~Mouse and keyboard polling======
+
+
+~Return the position of the mouse cursor~, relative to the
+   graphics window~. ~If the mouse cursor is outside of the graphics
+   window~, <<span class="odocwiki_inlinecode"|mouse~_pos~(~)>> returns a point outside of the range
+   <<span class="odocwiki_inlinecode"|~0~.~.size~_x~(~)~-~1~, ~0~.~.size~_y~(~)~-~1>>~.
+>>
+<<pre id="VALbutton_down" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|button~_down>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> bool <<span class="ocsforge_color_uid"|Lwt>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>>>>>><<div class="odocwiki_info"|~Return <<span class="odocwiki_inlinecode"|true>> if the mouse button is pressed~, <<span class="odocwiki_inlinecode"|false>> otherwise~.
+>>
+<<pre id="VALread_key" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|read~_key>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|unit <<span class="ocsforge_color_delimiter"| -> >> char <<span class="ocsforge_color_uid"|Lwt>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|t>>>>>><<div class="odocwiki_info"|~Wait for a key to be pressed~, and return the corresponding
+    character~. ~Keypresses are queued~.
+>>

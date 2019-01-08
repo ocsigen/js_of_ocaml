@@ -1,0 +1,1 @@
+<<code language="ocaml" | object method byteLength : int Js.readonly_prop end >>

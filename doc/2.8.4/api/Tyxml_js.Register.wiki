@@ -1,0 +1,25 @@
+=Module <<a_api_type | module Tyxml_js.Register >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Register>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Tyxml_js.Register >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre id="VALhtml" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|html>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|\\  <<span class="ocsforge_color_label"| ?head: >><<span class="ocsforge_color_uid"|Html_types>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|head>> <<span class="ocsforge_color_uid"|Tyxml_js>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Html>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|elt>> <<span class="ocsforge_color_delimiter"| -> >>\\  <<span class="ocsforge_color_uid"|Html_types>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|body>> <<span class="ocsforge_color_uid"|Tyxml_js>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Html>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|elt>> <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|~Register~.html head body>> uses the given head and body elements
+      as document~. ~It replaces the previous body and head~.
+
+
+      <<span class="odocwiki_inlinecode"|head>> and <<span class="odocwiki_inlinecode"|body>> can be reactive~.
+>>
+<<pre id="VALbody" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|body>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|\\  <<span class="ocsforge_color_label"| ?keep: >>bool <<span class="ocsforge_color_delimiter"| -> >>\\  [< <<span class="ocsforge_color_uid"|Html_types>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|body_content>> ] <<span class="ocsforge_color_uid"|Tyxml_js>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Html>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|elt>> list <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|~Register~.body elements>> add <<span class="odocwiki_inlinecode"|elements>> as children of <<span class="odocwiki_inlinecode"|body>>~.
+      ~If <<span class="odocwiki_inlinecode"|keep>> is false ~(default is true~)~, the children of the body are
+      removed before adding the new elements~.
+>>
+<<pre id="VALhead" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|head>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|\\  <<span class="ocsforge_color_label"| ?keep: >>bool <<span class="ocsforge_color_delimiter"| -> >>\\  [< <<span class="ocsforge_color_uid"|Html_types>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|head_content>> ] <<span class="ocsforge_color_uid"|Tyxml_js>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Html>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|elt>> list <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|~Register~.head elements>> add <<span class="odocwiki_inlinecode"|elements>> as children of <<span class="odocwiki_inlinecode"|body>>~.
+      ~If <<span class="odocwiki_inlinecode"|keep>> is false ~(default is true~)~, the children of the head are
+      removed before adding the new elements~.
+>>
+<<pre id="VALid" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|id>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<span class="ocsforge_color_label"| ?keep: >>bool <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> 'a <<span class="ocsforge_color_uid"|Tyxml_js>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_uid"|Html>><<span class="ocsforge_color_delimiter"| . >><<span class="ocsforge_color_lid"|elt>> list <<span class="ocsforge_color_delimiter"| -> >> unit>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|~Register~.id "some~_id" elements>> add <<span class="odocwiki_inlinecode"|elements>> as children of the node
+      with the id <<span class="odocwiki_inlinecode"|"some~_id">>~.
+      ~If <<span class="odocwiki_inlinecode"|keep>> is false ~(default is true~)~, the children of the node are
+      removed before adding the new elements~.
+
+
+      ~Beware~, this function ignores tyxml~'s type information~.
+>>

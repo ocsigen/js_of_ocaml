@@ -1,0 +1,6 @@
+<<code language="ocaml" | object
+  method height : float Js.prop
+  method width : float Js.prop
+  method x : float Js.prop
+  method y : float Js.prop
+end >>

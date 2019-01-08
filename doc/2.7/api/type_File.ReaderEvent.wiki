@@ -1,0 +1,9 @@
+<<code language="ocaml" | sig
+  type typ = File.fileReader File.progressEvent Js.t Dom.Event.typ
+  val loadstart : File.ReaderEvent.typ
+  val progress : File.ReaderEvent.typ
+  val abort : File.ReaderEvent.typ
+  val error : File.ReaderEvent.typ
+  val load : File.ReaderEvent.typ
+  val loadend : File.ReaderEvent.typ
+end >>

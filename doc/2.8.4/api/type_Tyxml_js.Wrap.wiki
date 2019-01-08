@@ -1,0 +1,12 @@
+<<code language="ocaml" | sig
+  type 'a t = 'a React.signal
+  val return : 'a -> 'a t
+  type ('a, 'b) ft = 'a -> 'b
+  val fmap : ('a, 'b) ft -> 'a t -> 'b t
+  type 'a tlist = 'a ReactiveData.RList.t
+  val nil : unit -> 'a tlist
+  val singleton : 'a t -> 'a tlist
+  val cons : 'a t -> 'a tlist -> 'a tlist
+  val append : 'a tlist -> 'a tlist -> 'a tlist
+  val map : ('a, 'b) ft -> 'a tlist -> 'b tlist
+end >>

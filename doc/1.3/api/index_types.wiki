@@ -1,0 +1,230 @@
+=Index of types=
+
+|@@ @style="tet-align: left;"@@\\A|
+|@@class="odocwiki_index"@ @@<<a_api text="a"| type Deriving_Json.Json.a >> ~[<<a_api | module Deriving_Json.Json >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="any"| type Js.Unsafe.any >> ~[<<a_api | module Js.Unsafe >>~]|<<div class="odocwiki_info"|~Top type~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="attachParam"| type WebGL.attachParam >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="attachmentPoint"| type WebGL.attachmentPoint >> ~[<<a_api | module WebGL >>~]||
+|@@ @style="tet-align: left;"@@\\B|
+|@@class="odocwiki_index"@ @@<<a_api text="beginMode"| type WebGL.beginMode >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="blendMode"| type WebGL.blendMode >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="blendingFactor"| type WebGL.blendingFactor >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="buffer"| type WebGL.buffer >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="bufferParameter"| type WebGL.bufferParameter >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="bufferTarget"| type WebGL.bufferTarget >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="bufferUsage"| type WebGL.bufferUsage >> ~[<<a_api | module WebGL >>~]||
+|@@ @style="tet-align: left;"@@\\C|
+|@@class="odocwiki_index"@ @@<<a_api text="callback"| type Js.callback >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of callback functions intended to be called without a
+      meaningful <<span class="odocwiki_inlinecode"|this>> implicit parameter~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="canceller"| type Event_arrows.canceller >> ~[<<a_api | module Event_arrows >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="canvasPattern"| type Dom_html.canvasPattern >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="clampf"| type WebGL.clampf >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="clearBufferMask"| type WebGL.clearBufferMask >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="colorspaceConversion"| type WebGL.colorspaceConversion >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="constr"| type Js.constr >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~A value of type <<span class="odocwiki_inlinecode"|~(t~1 ~-~> ~.~.~. ~-~> tn ~-~> t ~Js~.t~) ~Js~.constr>> is a
+      ~Javascript constructor expecting //n// arguments of types <<span class="odocwiki_inlinecode"|t~1>>
+      to <<span class="odocwiki_inlinecode"|tn>> and returning a ~Javascript object of type <<span class="odocwiki_inlinecode"|t ~Js~.t>>~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="context"| type Dom_html.context >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="cullFaceMode"| type WebGL.cullFaceMode >> ~[<<a_api | module WebGL >>~]||
+|@@ @style="tet-align: left;"@@\\D|
+|@@class="odocwiki_index"@ @@<<a_api text="dataType"| type WebGL.dataType >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="depthFunction"| type WebGL.depthFunction >> ~[<<a_api | module WebGL >>~]||
+|@@ @style="tet-align: left;"@@\\E|
+|@@class="odocwiki_index"@ @@<<a_api text="enableCap"| type WebGL.enableCap >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="errorCode"| type WebGL.errorCode >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="event_listener"| type Dom_html.event_listener >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~The type of event listener functions~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="event_listener"| type Dom.event_listener >> ~[<<a_api | module Dom >>~]|<<div class="odocwiki_info"|~The type of event listener functions~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="event_listener_id"| type Dom_html.event_listener_id >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="event_listener_id"| type Dom.event_listener_id >> ~[<<a_api | module Dom >>~]||
+|@@ @style="tet-align: left;"@@\\F|
+|@@class="odocwiki_index"@ @@<<a_api text="fbTarget"| type WebGL.fbTarget >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="file_any"| type File.file_any >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="file_url"| type Url.file_url >> ~[<<a_api | module Url >>~]|<<div class="odocwiki_info"|~The type for local file urls~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="float32Array"| type Typed_array.float32Array >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="float64Array"| type Typed_array.float64Array >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="float_prop"| type Js.float_prop >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of float properties~:
+      you can set them to an ~O~Caml <<span class="odocwiki_inlinecode"|float>>~, but you will get back a
+      native ~Javascript number of type <<span class="odocwiki_inlinecode"|float t>>~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="form_contents"| type Form.form_contents >> ~[<<a_api | module Form >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="form_elt"| type Form.form_elt >> ~[<<a_api | module Form >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="format"| type WebGL.format >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="framebuffer"| type WebGL.framebuffer >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="framebufferStatus"| type WebGL.framebufferStatus >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="frontFaceDir"| type WebGL.frontFaceDir >> ~[<<a_api | module WebGL >>~]||
+|@@ @style="tet-align: left;"@@\\G|
+|@@class="odocwiki_index"@ @@<<a_api text="gen_prop"| type Js.gen_prop >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type used to specify the properties of ~Javascript
+      objects~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\H|
+|@@class="odocwiki_index"@ @@<<a_api text="hintMode"| type WebGL.hintMode >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="hintTarget"| type WebGL.hintTarget >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="http_frame"| type XmlHttpRequest.http_frame >> ~[<<a_api | module XmlHttpRequest >>~]|<<div class="odocwiki_info"|~The type for ~X~H~R results~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="http_url"| type Url.http_url >> ~[<<a_api | module Url >>~]|<<div class="odocwiki_info"|~The type for ~H~T~T~P~(s~) url~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\I|
+|@@class="odocwiki_index"@ @@<<a_api text="int16Array"| type Typed_array.int16Array >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="int32Array"| type Typed_array.int32Array >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="int8Array"| type Typed_array.int8Array >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="interval_id"| type Dom_html.interval_id >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="intptr"| type WebGL.intptr >> ~[<<a_api | module WebGL >>~]||
+|@@ @style="tet-align: left;"@@\\J|
+|@@class="odocwiki_index"@ @@<<a_api text="js_t"| type CSS.Angle.js_t >> ~[<<a_api | module CSS.Angle >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="js_t"| type CSS.Length.js_t >> ~[<<a_api | module CSS.Length >>~]|<<div class="odocwiki_info"|~Js representation of lengths~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="js_t"| type CSS.Color.js_t >> ~[<<a_api | module CSS.Color >>~]|<<div class="odocwiki_info"|~A <<span class="odocwiki_inlinecode"|js~_t>> is a valid string representation of a ~C~S~S color
+>>
+|
+|@@ @style="tet-align: left;"@@\\L|
+|@@class="odocwiki_index"@ @@<<a_api text="lexbuf"| type Deriving_Json_lexer.lexbuf >> ~[<<a_api | module Deriving_Json_lexer >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="listener"| type Dom_events.listener >> ~[<<a_api | module Dom_events >>~]||
+|@@ @style="tet-align: left;"@@\\M|
+|@@class="odocwiki_index"@ @@<<a_api text="match_result_handle"| type Js.match_result_handle >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~A handle to a match result~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="meth"| type Js.meth >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type used to specify method types~:
+      a ~Javascript object
+        <<span class="odocwiki_inlinecode"|~<m ~: t~1 ~-~> t~2 ~-~> ~.~.~. ~-~> tn ~-~> t ~Js~.meth~> ~Js~.t>>
+      has a ~Javascript method <<span class="odocwiki_inlinecode"|m>> expecting //n// arguments
+      of types <<span class="odocwiki_inlinecode"|t~1>> to <<span class="odocwiki_inlinecode"|tn>> and returns a value of type <<span class="odocwiki_inlinecode"|t>>~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="meth_callback"| type Js.meth_callback >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of callback functions~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="mouse_button"| type Dom_html.mouse_button >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\N|
+|@@class="odocwiki_index"@ @@<<a_api text="name"| type CSS.Color.name >> ~[<<a_api | module CSS.Color >>~]|<<div class="odocwiki_info"|~The colors by name~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="nodeType"| type Dom.nodeType >> ~[<<a_api | module Dom >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="node_type"| type Dom.node_type >> ~[<<a_api | module Dom >>~]||
+|@@ @style="tet-align: left;"@@\\O|
+|@@class="odocwiki_index"@ @@<<a_api text="opt"| type Js.opt >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of possibly null values~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="optdef"| type Js.optdef >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of possibly undefined values~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="optdef_prop"| type Js.optdef_prop >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of read~/write properties that may be undefined~:
+      you can set them to a value of some type <<span class="odocwiki_inlinecode"|t>>~, but if you read
+      them~, you will get a value of type <<span class="odocwiki_inlinecode"|t optdef>> ~(that may be
+      <<span class="odocwiki_inlinecode"|undefined>>~)~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\P|
+|@@class="odocwiki_index"@ @@<<a_api text="parameter"| type WebGL.parameter >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pixelFormat"| type WebGL.pixelFormat >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pixelStoreParam"| type WebGL.pixelStoreParam >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="pixelType"| type WebGL.pixelType >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="program"| type WebGL.program >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="programParam"| type WebGL.programParam >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="prop"| type Js.prop >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of read~/write properties~:
+      a ~Javascript object
+        <<span class="odocwiki_inlinecode"|~<p ~: t ~Js~.writeonly~_prop~> ~Js~.t>>
+      has a read~/write property <<span class="odocwiki_inlinecode"|p>> of type <<span class="odocwiki_inlinecode"|t>>~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\R|
+|@@class="odocwiki_index"@ @@<<a_api text="rbTarget"| type WebGL.rbTarget >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="readonly_prop"| type Js.readonly_prop >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of read~-only properties~:
+      a ~Javascript object
+        <<span class="odocwiki_inlinecode"|~<p ~: t ~Js~.readonly~_prop~> ~Js~.t>>
+      has a read~-only property <<span class="odocwiki_inlinecode"|p>> of type <<span class="odocwiki_inlinecode"|t>>~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="readyState"| type XmlHttpRequest.readyState >> ~[<<a_api | module XmlHttpRequest >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="readyState"| type WebSockets.readyState >> ~[<<a_api | module WebSockets >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="readyState"| type File.readyState >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="regexp"| type Regexp.regexp >> ~[<<a_api | module Regexp >>~]|<<div class="odocwiki_info"|~The type for regexps~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="renderbuffer"| type WebGL.renderbuffer >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="renderbufferParam"| type WebGL.renderbufferParam >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="result"| type Regexp.result >> ~[<<a_api | module Regexp >>~]|<<div class="odocwiki_info"|~The type for match result~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\S|
+|@@class="odocwiki_index"@ @@<<a_api text="shader"| type WebGL.shader >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="shaderParam"| type WebGL.shaderParam >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="shaderType"| type WebGL.shaderType >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="sizei"| type WebGL.sizei >> ~[<<a_api | module WebGL >>~]|<<div class="odocwiki_info"|~5~.~1 ~Types
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="sizeiptr"| type WebGL.sizeiptr >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="stencilOp"| type WebGL.stencilOp >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="string_array"| type Js.string_array >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Opaque type for string arrays~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\T|
+|@@class="odocwiki_index"@ @@<<a_api text="t"| type Deriving_Json.t >> ~[<<a_api | module Deriving_Json >>~]|<<div class="odocwiki_info"|~The type of ~J~S~O~N parser~/printer for value of type <<span class="odocwiki_inlinecode"|~'a>>~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="t"| type Js.OPT.t >> ~[<<a_api | module Js.OPT >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="t"| type Js.t >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of ~Javascript objects~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="t"| type Event_arrows.t >> ~[<<a_api | module Event_arrows >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="t"| type CSS.Angle.t >> ~[<<a_api | module CSS.Angle >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="t"| type CSS.Length.t >> ~[<<a_api | module CSS.Length >>~]|<<div class="odocwiki_info"|~The type of length attributes~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="t"| type CSS.Color.t >> ~[<<a_api | module CSS.Color >>~]|<<div class="odocwiki_info"|~The type of colors~, either by name~, by ~Red~-~Green~-~Blue constructor or by
+   ~Hue~-~Saturation~-~Lightness constructors~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="taggedElement"| type Dom_html.taggedElement >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="taggedEvent"| type Dom_html.taggedEvent >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="texFilter"| type WebGL.texFilter >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="texParam"| type WebGL.texParam >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="texTarget"| type WebGL.texTarget >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="texture"| type WebGL.texture >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="textureFilter"| type WebGL.textureFilter >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="textureUnit"| type WebGL.textureUnit >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="timeout_id"| type Dom_html.timeout_id >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="typ"| type XmlHttpRequest.Event.typ >> ~[<<a_api | module XmlHttpRequest.Event >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="typ"| type File.ReaderEvent.typ >> ~[<<a_api | module File.ReaderEvent >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="typ"| type Dom_html.Event.typ >> ~[<<a_api | module Dom_html.Event >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="typ"| type Dom_events.Typ.typ >> ~[<<a_api | module Dom_events.Typ >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="typ"| type Dom.Event.typ >> ~[<<a_api | module Dom.Event >>~]||
+|@@ @style="tet-align: left;"@@\\U|
+|@@class="odocwiki_index"@ @@<<a_api text="uint"| type WebGL.uint >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="uint16Array"| type Typed_array.uint16Array >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="uint32Array"| type Typed_array.uint32Array >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="uint8Array"| type Typed_array.uint8Array >> ~[<<a_api | module Typed_array >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="uniformLocation"| type WebGL.uniformLocation >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="uniformType"| type WebGL.uniformType >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="url"| type Url.url >> ~[<<a_api | module Url >>~]|<<div class="odocwiki_info"|~The type for urls~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\V|
+|@@class="odocwiki_index"@ @@<<a_api text="vertexAttribParam"| type WebGL.vertexAttribParam >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="vertexAttribPointerParam"| type WebGL.vertexAttribPointerParam >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="videoElement"| type Dom_html.videoElement >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\W|
+|@@class="odocwiki_index"@ @@<<a_api text="wrapMode"| type WebGL.wrapMode >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="writeonly_prop"| type Js.writeonly_prop >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Type of write~-only properties~:
+      a ~Javascript object
+        <<span class="odocwiki_inlinecode"|~<p ~: t ~Js~.writeonly~_prop~> ~Js~.t>>
+      has a write~-only property <<span class="odocwiki_inlinecode"|p>> of type <<span class="odocwiki_inlinecode"|t>>~.
+>>
+|
+\\

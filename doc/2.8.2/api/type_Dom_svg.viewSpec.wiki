@@ -1,0 +1,12 @@
+<<code language="ocaml" | object
+  method preserveAspectRatio :
+    Dom_svg.animatedPreserveAspectRatio Js.t Js.readonly_prop
+  method preserveAspectRatioString : Js.js_string Js.t Js.readonly_prop
+  method transform : Dom_svg.transformList Js.t Js.readonly_prop
+  method transformString : Js.js_string Js.t Js.readonly_prop
+  method viewBox : Dom_svg.animatedRect Js.t Js.readonly_prop
+  method viewBoxString : Js.js_string Js.t Js.readonly_prop
+  method viewTarget : Dom_svg.element Js.t Js.readonly_prop
+  method viewTargetString : Js.js_string Js.t Js.readonly_prop
+  method zoomAndPan : Dom_svg.zoomAndPanType Js.prop
+end >>

@@ -1,0 +1,100 @@
+=Index of modules=
+
+|@@ @style="tet-align: left;"@@\\A|
+|@@class="odocwiki_index"@ @@<<a_api text="Angle"| module CSS.Angle >> ~[<<a_api | module CSS >>~]||
+|@@ @style="tet-align: left;"@@\\C|
+|@@class="odocwiki_index"@ @@<<a_api text="CSS"| module CSS >> |<<div class="odocwiki_info"|~This module contains a few types and values to ease the use of ~C~S~S properties
+   and such~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="CoerceTo"| module File.CoerceTo >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="CoerceTo"| module Dom_html.CoerceTo >> ~[<<a_api | module Dom_html >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="CoerceTo"| module Dom.CoerceTo >> ~[<<a_api | module Dom >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Color"| module CSS.Color >> ~[<<a_api | module CSS >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Current"| module Url.Current >> ~[<<a_api | module Url >>~]|<<div class="odocwiki_info"|~This module can be used to handle the ~Url associated to the current
+    document~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\D|
+|@@class="odocwiki_index"@ @@<<a_api text="Deriving_Json"| module Deriving_Json >> |<<div class="odocwiki_info"|~Typesafe ~I~O ~(based on the //deriving~-ocsigen// library~)~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Deriving_Json_lexer"| module Deriving_Json_lexer >> |<<div class="odocwiki_info"|~Create a fresh lexbuf record~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Dom"| module Dom >> |<<div class="odocwiki_info"|~D~O~M binding
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Dom_events"| module Dom_events >> |<<div class="odocwiki_info"|~Javascript events
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Dom_html"| module Dom_html >> |<<div class="odocwiki_info"|~D~O~M ~H~T~M~L binding
+>>
+|
+|@@ @style="tet-align: left;"@@\\E|
+|@@class="odocwiki_index"@ @@<<a_api text="Event"| module XmlHttpRequest.Event >> ~[<<a_api | module XmlHttpRequest >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Event"| module WebGL.Event >> ~[<<a_api | module WebGL >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Event"| module Dom_html.Event >> ~[<<a_api | module Dom_html >>~]|<<div class="odocwiki_info"|~Event types~: <<span class="odocwiki_inlinecode"|mousedown>>~, <<span class="odocwiki_inlinecode"|keypress>>~, ~.~.~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Event"| module Dom.Event >> ~[<<a_api | module Dom >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Event_arrows"| module Event_arrows >> |<<div class="odocwiki_info"|~Warning~: this module is now deprecated~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\F|
+|@@class="odocwiki_index"@ @@<<a_api text="File"| module File >> |<<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|filename>> handles old firefox without name property
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Firebug"| module Firebug >> |<<div class="odocwiki_info"|~Firebug ~A~P~I ~(debugging console~)~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Form"| module Form >> ||
+|@@ @style="tet-align: left;"@@\\J|
+|@@class="odocwiki_index"@ @@<<a_api text="Js"| module Js >> |<<div class="odocwiki_info"|~Javascript binding
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Json"| module Json >> |<<div class="odocwiki_info"|~Unsafe ~I~O~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\K|
+|@@class="odocwiki_index"@ @@<<a_api text="Keycode"| module Keycode >> ||
+|@@ @style="tet-align: left;"@@\\L|
+|@@class="odocwiki_index"@ @@<<a_api text="Length"| module CSS.Length >> ~[<<a_api | module CSS >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Lwt_js"| module Lwt_js >> |<<div class="odocwiki_info"|~Javascript specific ~Lwt functions~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Lwt_js_events"| module Lwt_js_events >> |<<div class="odocwiki_info"|~Programming mouse or keyboard events handlers using ~Lwt
+>>
+|
+|@@ @style="tet-align: left;"@@\\O|
+|@@class="odocwiki_index"@ @@<<a_api text="Opt"| module Js.Opt >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Standard functions for manipulating possibly null values~.
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Optdef"| module Js.Optdef >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Standard functions for manipulating possibly undefined values~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\R|
+|@@class="odocwiki_index"@ @@<<a_api text="ReaderEvent"| module File.ReaderEvent >> ~[<<a_api | module File >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Regexp"| module Regexp >> |<<div class="odocwiki_info"|~Types for regexps~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\T|
+|@@class="odocwiki_index"@ @@<<a_api text="Typ"| module Dom_events.Typ >> ~[<<a_api | module Dom_events >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Typed_array"| module Typed_array >> ||
+|@@ @style="tet-align: left;"@@\\U|
+|@@class="odocwiki_index"@ @@<<a_api text="Unsafe"| module Js.Unsafe >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~Unsafe ~Javascript operations
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="Url"| module Url >> |<<div class="odocwiki_info"|~This module provides functions for tampering with ~Url~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\W|
+|@@class="odocwiki_index"@ @@<<a_api text="WebGL"| module WebGL >> |<<div class="odocwiki_info"|~5~.~1 ~Types
+>>
+|
+|@@class="odocwiki_index"@ @@<<a_api text="WebSockets"| module WebSockets >> ||
+|@@ @style="tet-align: left;"@@\\X|
+|@@class="odocwiki_index"@ @@<<a_api text="XmlHttpRequest"| module XmlHttpRequest >> |<<div class="odocwiki_info"|~Xml~Http~Request object~.
+>>
+|
+\\

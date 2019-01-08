@@ -1,0 +1,1 @@
+<<code language="ocaml" | sig val js_mapper : string list -> Ast_mapper.mapper end >>

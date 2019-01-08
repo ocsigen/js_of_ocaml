@@ -1,0 +1,7 @@
+<<code language="ocaml" | sig
+  type t = Deg of float | Grad of float | Rad of float | Turns of float
+  type js_t = private Js.js_string Js.t
+  val string_of_t : CSS.Angle.t -> string
+  val js : CSS.Angle.t -> CSS.Angle.js_t
+  val ml : CSS.Angle.js_t -> CSS.Angle.t
+end >>

@@ -1,0 +1,17 @@
+=Index of exceptions=
+
+|@@ @style="tet-align: left;"@@\\C|
+|@@class="odocwiki_index"@ @@<<a_api text="Camlp4"| exception JsooTopError.Camlp4 >> ~[<<a_api | module JsooTopError >>~]||
+|@@class="odocwiki_index"@ @@<<a_api text="Canvas_not_available"| exception Dom_html.Canvas_not_available >> ~[<<a_api | module Dom_html >>~]||
+|@@ @style="tet-align: left;"@@\\E|
+|@@class="odocwiki_index"@ @@<<a_api text="Error"| exception Js.Error >> ~[<<a_api | module Js >>~]|<<div class="odocwiki_info"|~The <<span class="odocwiki_inlinecode"|~Error>> exception wrap javascript exceptions when catched by ocaml code~.
+>>
+|
+|@@ @style="tet-align: left;"@@\\S|
+|@@class="odocwiki_index"@ @@<<a_api text="SVGError"| exception Dom_svg.SVGError >> ~[<<a_api | module Dom_svg >>~]||
+|@@ @style="tet-align: left;"@@\\W|
+|@@class="odocwiki_index"@ @@<<a_api text="Wrong_headers"| exception Lwt_xmlHttpRequest.Wrong_headers >> ~[<<a_api | module Lwt_xmlHttpRequest >>~]|<<div class="odocwiki_info"|~The exception raise by perform functions when the check~_headers
+    parameter returned false~.
+>>
+|
+\\

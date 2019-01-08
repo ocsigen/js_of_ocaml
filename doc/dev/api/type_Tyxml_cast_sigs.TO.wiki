@@ -1,0 +1,332 @@
+<<code language="ocaml" | sig
+  type 'a elt
+  val of_element :
+    'a Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_node :
+    'a Tyxml_cast_sigs.TO.elt -> Js_of_ocaml.Dom.node Js_of_ocaml.Js.t
+  val of_pcdata :
+    [< Html_types.pcdata ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom.text Js_of_ocaml.Js.t
+  val of_html :
+    [< Html_types.html ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.htmlElement Js_of_ocaml.Js.t
+  val of_head :
+    [< Html_types.head ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.headElement Js_of_ocaml.Js.t
+  val of_link :
+    [< Html_types.link ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.linkElement Js_of_ocaml.Js.t
+  val of_title :
+    [< Html_types.title ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.titleElement Js_of_ocaml.Js.t
+  val of_meta :
+    [< Html_types.meta ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.metaElement Js_of_ocaml.Js.t
+  val of_base :
+    [< Html_types.base ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.baseElement Js_of_ocaml.Js.t
+  val of_style :
+    [< Html_types.style ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.styleElement Js_of_ocaml.Js.t
+  val of_body :
+    [< Html_types.body ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.bodyElement Js_of_ocaml.Js.t
+  val of_form :
+    [< Html_types.form ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.formElement Js_of_ocaml.Js.t
+  val of_optgroup :
+    [< Html_types.optgroup ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.optGroupElement Js_of_ocaml.Js.t
+  val of_option :
+    [< Html_types.selectoption ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.optionElement Js_of_ocaml.Js.t
+  val of_select :
+    [< Html_types.select ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.selectElement Js_of_ocaml.Js.t
+  val of_input :
+    [< Html_types.input ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.inputElement Js_of_ocaml.Js.t
+  val of_textarea :
+    [< Html_types.textarea ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.textAreaElement Js_of_ocaml.Js.t
+  val of_button :
+    [< Html_types.button ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.buttonElement Js_of_ocaml.Js.t
+  val of_label :
+    [< Html_types.label ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.labelElement Js_of_ocaml.Js.t
+  val of_fieldset :
+    [< Html_types.fieldset ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.fieldSetElement Js_of_ocaml.Js.t
+  val of_legend :
+    [< Html_types.legend ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.legendElement Js_of_ocaml.Js.t
+  val of_ul :
+    [< Html_types.ul ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.uListElement Js_of_ocaml.Js.t
+  val of_ol :
+    [< Html_types.ol ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.oListElement Js_of_ocaml.Js.t
+  val of_dl :
+    [< Html_types.dl ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.dListElement Js_of_ocaml.Js.t
+  val of_li :
+    [< Html_types.li ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.liElement Js_of_ocaml.Js.t
+  val of_div :
+    [< Html_types.div ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.divElement Js_of_ocaml.Js.t
+  val of_p :
+    [< Html_types.p ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.paragraphElement Js_of_ocaml.Js.t
+  val of_heading :
+    [< Html_types.heading ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+  val of_blockquote :
+    [< Html_types.blockquote ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.quoteElement Js_of_ocaml.Js.t
+  val of_pre :
+    [< Html_types.pre ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.preElement Js_of_ocaml.Js.t
+  val of_br :
+    [< Html_types.br ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.brElement Js_of_ocaml.Js.t
+  val of_hr :
+    [< Html_types.hr ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.hrElement Js_of_ocaml.Js.t
+  val of_del :
+    [< 'a Html_types.del ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.modElement Js_of_ocaml.Js.t
+  val of_ins :
+    [< 'a Html_types.ins ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.modElement Js_of_ocaml.Js.t
+  val of_a :
+    [< 'a Html_types.a ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.anchorElement Js_of_ocaml.Js.t
+  val of_img :
+    [< Html_types.img_interactive ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.imageElement Js_of_ocaml.Js.t
+  val of_object :
+    [< 'a Html_types.object_ ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.objectElement Js_of_ocaml.Js.t
+  val of_param :
+    [< Html_types.param ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.paramElement Js_of_ocaml.Js.t
+  val of_area :
+    [< Html_types.area ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.areaElement Js_of_ocaml.Js.t
+  val of_map :
+    [< 'a Html_types.map ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.mapElement Js_of_ocaml.Js.t
+  val of_script :
+    [< Html_types.script ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.scriptElement Js_of_ocaml.Js.t
+  val of_td :
+    [< `Td ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.tableCellElement Js_of_ocaml.Js.t
+  val of_tr :
+    [< Html_types.tr ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.tableRowElement Js_of_ocaml.Js.t
+  val of_col :
+    [< Html_types.col ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.tableColElement Js_of_ocaml.Js.t
+  val of_tfoot :
+    [< Html_types.tfoot ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.tableSectionElement Js_of_ocaml.Js.t
+  val of_thead :
+    [< Html_types.thead ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.tableSectionElement Js_of_ocaml.Js.t
+  val of_tbody :
+    [< Html_types.tbody ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.tableSectionElement Js_of_ocaml.Js.t
+  val of_caption :
+    [< Html_types.caption ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.tableCaptionElement Js_of_ocaml.Js.t
+  val of_table :
+    [< Html_types.table ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.tableElement Js_of_ocaml.Js.t
+  val of_canvas :
+    [< 'a Html_types.canvas ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.canvasElement Js_of_ocaml.Js.t
+  val of_iframe :
+    [< Html_types.iframe ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.iFrameElement Js_of_ocaml.Js.t
+  val of_audio :
+    [< 'a Html_types.audio_interactive ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.audioElement Js_of_ocaml.Js.t
+  val of_video :
+    [< 'a Html_types.video_interactive ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.videoElement Js_of_ocaml.Js.t
+  val of_h1 :
+    Html_types.heading Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+  val of_h2 :
+    Html_types.heading Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+  val of_h3 :
+    Html_types.heading Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+  val of_h4 :
+    Html_types.heading Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+  val of_h5 :
+    Html_types.heading Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+  val of_h6 :
+    Html_types.heading Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.headingElement Js_of_ocaml.Js.t
+  val of_abbr :
+    [> Html_types.abbr ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_address :
+    [> Html_types.address ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_article :
+    [> Html_types.article ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_aside :
+    [> Html_types.aside ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_b :
+    [> Html_types.b ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_bdo :
+    [> Html_types.bdo ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_cite :
+    [> Html_types.cite ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_code :
+    [> Html_types.code ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_colgroup :
+    [> Html_types.colgroup ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_command :
+    [> Html_types.command ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_datalist :
+    [> Html_types.datalist ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_dd :
+    [> Html_types.dd ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_details :
+    [> Html_types.details ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_dfn :
+    [> Html_types.dfn ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_dt :
+    [> Html_types.dt ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_em :
+    [> Html_types.em ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_embed :
+    [> Html_types.embed ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_figcaption :
+    [> Html_types.figcaption ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_figure :
+    [> Html_types.figure ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_footer :
+    [> Html_types.footer ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_header :
+    [> Html_types.header ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_hgroup :
+    [> Html_types.hgroup ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_i :
+    [> Html_types.i ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_kbd :
+    [> Html_types.kbd ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_keygen :
+    [> Html_types.keygen ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_main :
+    [> Html_types.main ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_mark :
+    [> Html_types.mark ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_menu :
+    [> Html_types.menu ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_meter :
+    [> Html_types.meter ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_nav :
+    [> Html_types.nav ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_noscript :
+    [> Html_types.noscript ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_output :
+    [> Html_types.output_elt ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_progress :
+    [> Html_types.progress ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_q :
+    [> Html_types.q ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_rp :
+    [> Html_types.rp ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_rt :
+    [> Html_types.rt ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_ruby :
+    [> Html_types.ruby ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_samp :
+    [> Html_types.samp ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_section :
+    [> Html_types.section ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_small :
+    [> Html_types.small ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_source :
+    [> Html_types.source ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_span :
+    [> Html_types.span ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_strong :
+    [> Html_types.strong ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_sub :
+    [> Html_types.sub ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_summary :
+    [> Html_types.summary ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_sup :
+    [> Html_types.sup ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_th :
+    [> Html_types.th ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_time :
+    [> Html_types.time ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_u :
+    [> Html_types.u ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_var :
+    [> Html_types.var ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+  val of_wbr :
+    [> Html_types.wbr ] Tyxml_cast_sigs.TO.elt ->
+    Js_of_ocaml.Dom_html.element Js_of_ocaml.Js.t
+end >>

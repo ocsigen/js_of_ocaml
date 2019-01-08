@@ -1,0 +1,18 @@
+<<code language="ocaml" | sig
+  external variable : string -> 'a = "caml_js_var"
+  type any
+  external inject : 'a -> Js.Unsafe.any = "%identity"
+  external coerce : < .. > Js.t -> < .. > Js.t = "%identity"
+  external get : 'a -> 'b -> 'c = "caml_js_get"
+  external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
+  external delete : 'a -> 'b -> unit = "caml_js_delete"
+  external call : 'a -> 'b -> Js.Unsafe.any array -> 'c = "caml_js_call"
+  external fun_call : 'a -> Js.Unsafe.any array -> 'b = "caml_js_fun_call"
+  external meth_call : 'a -> string -> Js.Unsafe.any array -> 'b
+    = "caml_js_meth_call"
+  external new_obj : 'a -> Js.Unsafe.any array -> 'b = "caml_js_new"
+  external obj : (string * Js.Unsafe.any) array -> 'a = "caml_js_object"
+  external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
+  external eval_string : string -> 'a = "caml_js_eval_string"
+  val global : < .. > Js.t
+end >>

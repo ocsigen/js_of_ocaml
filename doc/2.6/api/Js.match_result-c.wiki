@@ -1,0 +1,7 @@
+=Class type <<a_api_type | class type Js.match_result >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEmatch_result"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|match_result>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Js.match_result >><<span class="ocsforge_color_keyword"|end>>>>~Specification of match result objects
+**~Inherits**
+* <<a_api | class Js.js_array >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODindex"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|index>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|int <<a_api text="readonly_prop" | type Js.readonly_prop >>>>>><<pre class="ocsforge_color odocwiki_code"|<<span id="METHODinput"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|input>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="js_string" | class type Js.js_string >> <<a_api text="t" | type Js.t >> <<a_api text="readonly_prop" | type Js.readonly_prop >>>>>>

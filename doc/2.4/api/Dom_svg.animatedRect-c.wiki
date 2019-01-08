@@ -1,0 +1,3 @@
+=Class type <<a_api_type | class type Dom_svg.animatedRect >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEanimatedRect"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|animatedRect>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="odocwiki_type"|[<<a_api text="rect" | class type Dom_svg.rect >> <<a_api text="Js.t" | type Js.t >>]>> <<span class="odocwiki_type"|<<a_api text="animated" | class type Dom_svg.animated >>>>>>
+----

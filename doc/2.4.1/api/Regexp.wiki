@@ -1,0 +1,56 @@
+=Module <<a_api_type | module Regexp >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Regexp>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Regexp >><<span class="ocsforge_color_keyword"|end>>>>~Types for regexps~.
+
+----
+
+//~Warning~:// the regexp syntax is the javascript one~. ~It differs
+    from the syntax used by the <<span class="odocwiki_inlinecode"|~Str>> module from the ~O~Caml standard
+    library~.
+<<pre class="ocsforge_color odocwiki_code" id="TYPEregexp"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_name"|regexp>>>><<div class="odocwiki_info"|~The type for regexps~.
+>>
+<<pre class="ocsforge_color odocwiki_code" id="TYPEresult"|<<span class="ocsforge_color_keyword"|type>> <<span class="odocwiki_name"|result>>>><<div class="odocwiki_info"|~The type for match result~.
+>>
+
+~Constructors
+<<pre id="VALregexp" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|regexp>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="regexp" | type Regexp.regexp >>>>>><<div class="odocwiki_info"|~Simple regexp constructor~.
+>>
+<<pre id="VALregexp_case_fold" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|regexp~_case~_fold>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="regexp" | type Regexp.regexp >>>>>><<div class="odocwiki_info"|~Same as <<span class="odocwiki_inlinecode"|regexp>> but matching will be performed in a case
+    insensitive way~.
+>>
+<<pre id="VALregexp_with_flag" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|regexp~_with~_flag>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="regexp" | type Regexp.regexp >>>>>><<div class="odocwiki_info"|~Regexp constructor with flag that allow for case~-insensitive search
+    or multiline search ~(the global flag is always set~)~.
+>>
+<<pre id="VALquote" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|quote>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> string>>>><<div class="odocwiki_info"|~Escapes characters with special meaning in the regexp context~.
+>>
+<<pre id="VALregexp_string" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|regexp~_string>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="regexp" | type Regexp.regexp >>>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|regexp~_string s>> creates a regexp matching the exact string <<span class="odocwiki_inlinecode"|s>>~.
+>>
+<<pre id="VALregexp_string_case_fold" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|regexp~_string~_case~_fold>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|string <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="regexp" | type Regexp.regexp >>>>>><<div class="odocwiki_info"|~Same as <<span class="odocwiki_inlinecode"|regexp~_string>> but matching will be performed in a case
+    insensitive way~.
+>>
+
+~Functions
+<<pre id="VALstring_match" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|string~_match>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="regexp" | type Regexp.regexp >> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> <<a_api text="result" | type Regexp.result >> option>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|string~_match r s i>> matches the string <<span class="odocwiki_inlinecode"|s>> starting from the <<span class="odocwiki_inlinecode"|i>>th
+    character~. ~Evaluates to <<span class="odocwiki_inlinecode"|~None>> if <<span class="odocwiki_inlinecode"|s>> ~(from the <<span class="odocwiki_inlinecode"|i>>th character~) doesn~'t
+    match <<span class="odocwiki_inlinecode"|r>>~.
+>>
+<<pre id="VALsearch" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|search>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="regexp" | type Regexp.regexp >> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>int * <<a_api text="result" | type Regexp.result >><<span class="ocsforge_color_delimiter"| ) >> option>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|search r s i>> evaluates to the index of the match and the match result or
+    <<span class="odocwiki_inlinecode"|~None>> if <<span class="odocwiki_inlinecode"|s>> ~(starting from <<span class="odocwiki_inlinecode"|i>>~) doesn~'t match <<span class="odocwiki_inlinecode"|r>>~.
+>>
+<<pre id="VALsearch_forward" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|search~_forward>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="regexp" | type Regexp.regexp >> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> <<span class="ocsforge_color_delimiter"| ( >>int * <<a_api text="result" | type Regexp.result >><<span class="ocsforge_color_delimiter"| ) >> option>>>><<div class="odocwiki_info"|~Same as <<span class="odocwiki_inlinecode"|search>>~.
+>>
+<<pre id="VALmatched_string" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|matched~_string>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="result" | type Regexp.result >> <<span class="ocsforge_color_delimiter"| -> >> string>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|matched~_string r>> return the exact substring that matched when evaluating
+    <<span class="odocwiki_inlinecode"|r>>~.
+>>
+<<pre id="VALmatched_group" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|matched~_group>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="result" | type Regexp.result >> <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> string option>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|matched~_group r i>> is the <<span class="odocwiki_inlinecode"|i>>th group matched~. ~Groups in matches are
+  ~* obtained with parentheses~. ~Groups are ~1~-based~.
+>>
+<<pre id="VALglobal_replace" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|global~_replace>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="regexp" | type Regexp.regexp >> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> string>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|global~_replace r s by>> replaces all of the matches of <<span class="odocwiki_inlinecode"|r>> in <<span class="odocwiki_inlinecode"|s>> by <<span class="odocwiki_inlinecode"|by>>~.
+>>
+<<pre id="VALreplace_first" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|replace~_first>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="regexp" | type Regexp.regexp >> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> string>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|replace~_first r s by>> replaces the first match of <<span class="odocwiki_inlinecode"|r>> in <<span class="odocwiki_inlinecode"|s>> by <<span class="odocwiki_inlinecode"|by>>~.
+>>
+<<pre id="VALsplit" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|split>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="regexp" | type Regexp.regexp >> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> string list>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|split r s>> splits the string <<span class="odocwiki_inlinecode"|s>> erasing matches with <<span class="odocwiki_inlinecode"|r>>~.
+    <<span class="odocwiki_inlinecode"|split ~(regexp " "~) "toto tutu tata">> is <<span class="odocwiki_inlinecode"|~["toto"~;"tutu"~;"tata"~]>>~.
+>>
+<<pre id="VALbounded_split" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|bounded~_split>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="regexp" | type Regexp.regexp >> <<span class="ocsforge_color_delimiter"| -> >> string <<span class="ocsforge_color_delimiter"| -> >> int <<span class="ocsforge_color_delimiter"| -> >> string list>>>><<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|bounded~_split r s i>> is like <<span class="odocwiki_inlinecode"|split r s>> except that the result~'s length is
+    less than <<span class="odocwiki_inlinecode"|i>>~.
+>>

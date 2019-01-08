@@ -1,0 +1,7 @@
+<<code language="ocaml" | object
+  method getNamedItem : Js.js_string Js.t -> Dom.attr Js.t Js.opt Js.meth
+  method item : int -> Dom.attr Js.t Js.opt Js.meth
+  method length : int Js.readonly_prop
+  method removeNamedItem : Js.js_string Js.t -> Dom.attr Js.t Js.opt Js.meth
+  method setNamedItem : Dom.attr Js.t -> Dom.attr Js.t Js.opt Js.meth
+end >>

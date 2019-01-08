@@ -1,0 +1,47 @@
+<<code language="ocaml" | object
+  method alert : Js.js_string Js.t -> unit Js.meth
+  method blur : unit Js.meth
+  method clearInterval : Dom_html.interval_id -> unit Js.meth
+  method clearTimeout : Dom_html.timeout_id -> unit Js.meth
+  method close : unit Js.meth
+  method confirm : Js.js_string Js.t -> bool Js.t Js.meth
+  method document : Dom_html.document Js.t Js.readonly_prop
+  method focus : unit Js.meth
+  method frameElement : Dom_html.element Js.t Js.opt Js.readonly_prop
+  method getSelection : Dom_html.selection Js.t Js.meth
+  method history : Dom_html.history Js.t Js.readonly_prop
+  method localStorage : Dom_html.storage Js.t Js.readonly_prop
+  method location : Dom_html.location Js.t Js.readonly_prop
+  method name : Js.js_string Js.t Js.prop
+  method onbeforeunload :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onblur :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onfocus :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onload :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method onpopstate :
+    (Dom_html.window Js.t, Dom_html.popStateEvent Js.t)
+    Dom_html.event_listener Js.prop
+  method onresize :
+    (Dom_html.window Js.t, Dom_html.event Js.t) Dom_html.event_listener
+    Js.prop
+  method parent : Dom_html.window Js.t Js.readonly_prop
+  method print : unit Js.meth
+  method prompt :
+    Js.js_string Js.t -> Js.js_string Js.t -> Js.js_string Js.t Js.meth
+  method scroll : int -> int -> unit Js.meth
+  method sessionStorage : Dom_html.storage Js.t Js.readonly_prop
+  method setInterval :
+    (unit -> unit) Js.callback -> float -> Dom_html.interval_id Js.meth
+  method setTimeout :
+    (unit -> unit) Js.callback -> float -> Dom_html.timeout_id Js.meth
+  method stop : unit Js.meth
+  method top : Dom_html.window Js.t Js.readonly_prop
+  method undoManager : Dom_html.undoManager Js.t Js.readonly_prop
+end >>

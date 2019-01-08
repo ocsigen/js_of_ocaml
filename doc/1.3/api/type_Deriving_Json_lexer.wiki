@@ -1,0 +1,23 @@
+<<code language="ocaml" | sig
+  type lexbuf
+  val init_lexer :
+    ?buf:Buffer.t -> Lexing.lexbuf -> Deriving_Json_lexer.lexbuf
+  val read_int : Deriving_Json_lexer.lexbuf -> int
+  val read_bounded_int :
+    ?min:int -> max:int -> Deriving_Json_lexer.lexbuf -> int
+  val read_tag_1 : int -> Deriving_Json_lexer.lexbuf -> int
+  val read_tag_2 : int -> int -> Deriving_Json_lexer.lexbuf -> int
+  val read_int32 : Deriving_Json_lexer.lexbuf -> int32
+  val read_int64 : Deriving_Json_lexer.lexbuf -> int64
+  val read_number : Deriving_Json_lexer.lexbuf -> float
+  val read_string : Deriving_Json_lexer.lexbuf -> string
+  val read_case :
+    Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ]
+  val read_vcase :
+    Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ]
+  val read_comma : Deriving_Json_lexer.lexbuf -> unit
+  val read_lbracket : Deriving_Json_lexer.lexbuf -> unit
+  val read_rbracket : Deriving_Json_lexer.lexbuf -> unit
+  val read_comma_or_rbracket :
+    Deriving_Json_lexer.lexbuf -> [ `Comma | `RBracket ]
+end >>

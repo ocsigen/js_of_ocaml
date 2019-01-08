@@ -1,0 +1,5 @@
+<<code language="ocaml" | object
+  method pathSegType : Dom_svg.pathSegmentType Js.readonly_prop
+  method pathSegTypeAsLetter : Js.js_string Js.t Js.readonly_prop
+  method x : float
+end >>

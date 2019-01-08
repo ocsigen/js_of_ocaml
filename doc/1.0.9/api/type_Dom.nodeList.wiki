@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method item : int -> 'a Js.t Js.opt Js.meth
+  method length : int Js.readonly_prop
+end >>

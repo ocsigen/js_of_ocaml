@@ -1,0 +1,19 @@
+<<code language="ocaml" | object
+  method a : float Js.readonly_prop
+  method b : float Js.readonly_prop
+  method c : float Js.readonly_prop
+  method d : float Js.readonly_prop
+  method e : float Js.readonly_prop
+  method f : float Js.readonly_prop
+  method flipX : Dom_svg.matrix Js.t Js.meth
+  method flipY : Dom_svg.matrix Js.t Js.meth
+  method inverse : Dom_svg.matrix Js.t Js.meth
+  method multiply : Dom_svg.matrix Js.t -> Dom_svg.matrix Js.t Js.meth
+  method rotate : float -> Dom_svg.matrix Js.t Js.meth
+  method rotateFromVector : float -> float -> Dom_svg.matrix Js.t Js.meth
+  method scale : float -> Dom_svg.matrix Js.t Js.meth
+  method scaleNonUniform : float -> float -> Dom_svg.matrix Js.t Js.meth
+  method skewX : float -> Dom_svg.matrix Js.t Js.meth
+  method skewY : float -> Dom_svg.matrix Js.t Js.meth
+  method translate : float -> float -> Dom_svg.matrix Js.t Js.meth
+end >>

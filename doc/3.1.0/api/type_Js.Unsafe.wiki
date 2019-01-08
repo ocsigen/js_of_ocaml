@@ -1,0 +1,41 @@
+<<code language="ocaml" | sig
+  type any
+  type any_js_array = Js.Unsafe.any
+  external inject : 'a -> Js.Unsafe.any = "%identity"
+  external coerce : 'a Js.t -> 'b Js.t = "%identity"
+  external get : 'a -> 'b -> 'c = "caml_js_get"
+  external set : 'a -> 'b -> 'c -> unit = "caml_js_set"
+  external delete : 'a -> 'b -> unit = "caml_js_delete"
+  external call : 'a -> 'b -> Js.Unsafe.any array -> 'c = "caml_js_call"
+  external fun_call : 'a -> Js.Unsafe.any array -> 'b = "caml_js_fun_call"
+  external meth_call : 'a -> string -> Js.Unsafe.any array -> 'b
+    = "caml_js_meth_call"
+  external new_obj : 'a -> Js.Unsafe.any array -> 'b = "caml_js_new"
+  external new_obj_arr : 'a -> Js.Unsafe.any_js_array -> 'b
+    = "caml_ojs_new_arr"
+  external obj : (string * Js.Unsafe.any) array -> 'a = "caml_js_object"
+  external pure_expr : (unit -> 'a) -> 'a = "caml_js_pure_expr"
+  external eval_string : string -> 'a = "caml_js_eval_string"
+  external js_expr : string -> 'a = "caml_js_expr"
+  external pure_js_expr : string -> 'a = "caml_pure_js_expr"
+  val global : < .. > Js.t
+  external callback : ('a -> 'b) -> ('c, 'a -> 'b) Js.meth_callback
+    = "%identity"
+  external callback_with_arguments :
+    (Js.Unsafe.any_js_array -> 'b) ->
+    ('c, Js.Unsafe.any_js_array -> 'b) Js.meth_callback
+    = "caml_js_wrap_callback_arguments"
+  external callback_with_arity :
+    int -> ('a -> 'b) -> ('c, 'a -> 'b) Js.meth_callback
+    = "caml_js_wrap_callback_strict"
+  external meth_callback : ('b -> 'a) -> ('b, 'a) Js.meth_callback
+    = "caml_js_wrap_meth_callback_unsafe"
+  external meth_callback_with_arguments :
+    ('b -> Js.Unsafe.any_js_array -> 'a) ->
+    ('b, Js.Unsafe.any_js_array -> 'a) Js.meth_callback
+    = "caml_js_wrap_meth_callback_arguments"
+  external meth_callback_with_arity :
+    int -> ('b -> 'a) -> ('b, 'a) Js.meth_callback
+    = "caml_js_wrap_meth_callback_strict"
+  external variable : string -> 'a = "caml_js_var"
+end >>

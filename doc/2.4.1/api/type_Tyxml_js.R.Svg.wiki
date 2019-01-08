@@ -1,0 +1,683 @@
+<<code language="ocaml" | sig
+  module Xml :
+    sig
+      type 'a wrap = 'a Xml_wrap.t
+      type 'a list_wrap = 'a Xml_wrap.tlist
+      type uri = Xml.uri
+      val string_of_uri : uri -> string
+      val uri_of_string : string -> uri
+      type aname = string
+      type event_handler = Xml.event_handler
+      type mouse_event_handler = Xml.mouse_event_handler
+      type keyboard_event_handler = Xml.keyboard_event_handler
+      type attrib = Xml.attrib
+      val float_attrib : aname -> float wrap -> attrib
+      val int_attrib : aname -> int wrap -> attrib
+      val string_attrib : aname -> string wrap -> attrib
+      val space_sep_attrib : aname -> string list wrap -> attrib
+      val comma_sep_attrib : aname -> string list wrap -> attrib
+      val event_handler_attrib : aname -> event_handler -> attrib
+      val mouse_event_handler_attrib : aname -> mouse_event_handler -> attrib
+      val keyboard_event_handler_attrib :
+        aname -> keyboard_event_handler -> attrib
+      val uri_attrib : aname -> uri wrap -> attrib
+      val uris_attrib : aname -> uri list wrap -> attrib
+      type elt = Xml.elt
+      type ename = string
+      val empty : unit -> elt
+      val comment : string -> elt
+      val pcdata : string wrap -> elt
+      val encodedpcdata : string wrap -> elt
+      val entity : string -> elt
+      val leaf : ?a:attrib list -> ename -> elt
+      val node : ?a:attrib list -> ename -> elt list_wrap -> elt
+      val cdata : string -> elt
+      val cdata_script : string -> elt
+      val cdata_style : string -> elt
+    end
+  module Info : Xml_sigs.Info
+  type uri = Xml.uri
+  val string_of_uri : uri -> string
+  val uri_of_string : string -> uri
+  type 'a attrib = 'a Svg.attrib
+  type 'a wrap = 'a Xml_wrap.t
+  type 'a list_wrap = 'a Xml_wrap.tlist
+  type 'a elt = 'a Svg.elt
+  type ('a, 'b) nullary = ?a:'a attrib list -> unit -> 'b elt
+  type ('a, 'b, 'c) unary = ?a:'a attrib list -> 'b elt wrap -> 'c elt
+  type ('a, 'b, 'c) star = ?a:'a attrib list -> 'b elt list_wrap -> 'c elt
+  type altglyphdef_content =
+      [ `Item of Svg_types.altglyphitem elt list
+      | `Ref of Svg_types.glyphref elt list ]
+  val pcdata : string wrap -> [> `PCDATA ] elt
+  val a_version : string wrap -> [> `Version ] attrib
+  val a_baseprofile : string wrap -> [> `BaseProfile ] attrib
+  val a_x : Svg_types.coord wrap -> [> `X ] attrib
+  val a_y : Svg_types.coord wrap -> [> `Y ] attrib
+  val a_width : Svg_types.Unit.length wrap -> [> `Width ] attrib
+  val a_height : Svg_types.Unit.length wrap -> [> `Height ] attrib
+  val a_preserveaspectratio : string wrap -> [> `PreserveAspectRatio ] attrib
+  val a_contentscripttype : string wrap -> [> `ContentScriptType ] attrib
+  val a_contentstyletype : string wrap -> [> `ContentStyleType ] attrib
+  val a_zoomAndPan :
+    [< `Disable | `Magnify ] wrap -> [> `ZoomAndSpan ] attrib
+  val a_xlink_href : Svg_types.iri wrap -> [> `Xlink_href ] attrib
+  val a_requiredfeatures :
+    Svg_types.spacestrings wrap -> [> `RequiredFeatures ] attrib
+  val a_requiredextensions :
+    Svg_types.spacestrings wrap -> [> `RequiredExtension ] attrib
+  val a_systemlanguage :
+    Svg_types.commastrings wrap -> [> `SystemLanguage ] attrib
+  val a_externalressourcesrequired :
+    bool wrap -> [> `ExternalRessourcesRequired ] attrib
+  val a_id : string wrap -> [> `Id ] attrib
+  val a_xml_base : Svg_types.iri wrap -> [> `Xml_Base ] attrib
+  val a_xml_lang : Svg_types.iri wrap -> [> `Xml_Lang ] attrib
+  val a_xml_space : [< `Default | `Preserve ] wrap -> [> `Xml_Space ] attrib
+  val a_type : string wrap -> [> `Type ] attrib
+  val a_media : Svg_types.commastrings wrap -> [> `Media ] attrib
+  val a_title : string wrap -> [> `Title ] attrib
+  val a_class : Svg_types.spacestrings wrap -> [> `Class ] attrib
+  val a_style : string wrap -> [> `Style ] attrib
+  val a_transform : Svg_types.transform wrap -> [> `Transform ] attrib
+  val a_viewbox : Svg_types.fourfloats wrap -> [> `ViewBox ] attrib
+  val a_d : string wrap -> [> `D ] attrib
+  val a_pathlength : float wrap -> [> `PathLength ] attrib
+  val a_rx : Svg_types.Unit.length wrap -> [> `Rx ] attrib
+  val a_ry : Svg_types.Unit.length wrap -> [> `Ry ] attrib
+  val a_cx : Svg_types.Unit.length wrap -> [> `Cx ] attrib
+  val a_cy : Svg_types.Unit.length wrap -> [> `Cy ] attrib
+  val a_r : Svg_types.Unit.length wrap -> [> `R ] attrib
+  val a_x1 : Svg_types.coord wrap -> [> `X1 ] attrib
+  val a_y1 : Svg_types.coord wrap -> [> `Y1 ] attrib
+  val a_x2 : Svg_types.coord wrap -> [> `X2 ] attrib
+  val a_y2 : Svg_types.coord wrap -> [> `Y2 ] attrib
+  val a_points : Svg_types.coords wrap -> [> `Points ] attrib
+  val a_x_list : Svg_types.lengths wrap -> [> `X_list ] attrib
+  val a_y_list : Svg_types.lengths wrap -> [> `Y_list ] attrib
+  val a_dx : Svg_types.number wrap -> [> `Dx ] attrib
+  val a_dy : Svg_types.number wrap -> [> `Dy ] attrib
+  val a_dx_list : Svg_types.lengths wrap -> [> `Dx_list ] attrib
+  val a_dy_list : Svg_types.lengths wrap -> [> `Dy_list ] attrib
+  val a_lengthadjust :
+    [< `Spacing | `SpacingAndGlyphs ] wrap -> [> `LengthAdjust ] attrib
+  val a_textlength : Svg_types.Unit.length wrap -> [> `TextLength ] attrib
+  val a_rotate : Svg_types.numbers wrap -> [> `Rotate ] attrib
+  val a_startoffset : Svg_types.Unit.length wrap -> [> `StartOffset ] attrib
+  val a_method : [< `Align | `Stretch ] wrap -> [> `Method ] attrib
+  val a_spacing : [< `Auto | `Exact ] wrap -> [> `Spacing ] attrib
+  val a_glyphref : string wrap -> [> `GlyphRef ] attrib
+  val a_format : string wrap -> [> `Format ] attrib
+  val a_markerunits :
+    [< `StrokeWidth | `UserSpaceOnUse ] wrap -> [> `MarkerUnits ] attrib
+  val a_refx : Svg_types.coord wrap -> [> `RefX ] attrib
+  val a_refy : Svg_types.coord wrap -> [> `RefY ] attrib
+  val a_markerwidth : Svg_types.Unit.length wrap -> [> `MarkerWidth ] attrib
+  val a_markerheight :
+    Svg_types.Unit.length wrap -> [> `MarkerHeight ] attrib
+  val a_orient :
+    [< `Angle of Svg_types.Unit.angle | `Auto ] wrap -> [> `Orient ] attrib
+  val a_local : string wrap -> [> `Local ] attrib
+  val a_renderingindent :
+    [< `Absolute_colorimetric
+     | `Auto
+     | `Perceptual
+     | `Relative_colorimetric
+     | `Saturation ]
+    wrap -> [> `Rendering_Indent ] attrib
+  val a_gradientunits :
+    [< `ObjectBoundingBox | `UserSpaceOnUse ] wrap ->
+    [ `GradientUnits ] attrib
+  val a_gradienttransform :
+    Svg_types.transforms wrap -> [> `Gradient_Transform ] attrib
+  val a_spreadmethod :
+    [< `Pad | `Reflect | `Repeat ] wrap -> [> `SpreadMethod ] attrib
+  val a_fx : Svg_types.coord wrap -> [> `Fx ] attrib
+  val a_fy : Svg_types.coord wrap -> [> `Fy ] attrib
+  val a_offset :
+    [< `Number of Svg_types.number | `Percentage of Svg_types.percentage ]
+    wrap -> [> `Offset ] attrib
+  val a_patternunits :
+    [< `ObjectBoundingBox | `UserSpaceOnUse ] wrap ->
+    [> `PatternUnits ] attrib
+  val a_patterncontentunits :
+    [< `ObjectBoundingBox | `UserSpaceOnUse ] wrap ->
+    [> `PatternContentUnits ] attrib
+  val a_patterntransform :
+    Svg_types.transforms wrap -> [> `PatternTransform ] attrib
+  val a_clippathunits :
+    [< `ObjectBoundingBox | `UserSpaceOnUse ] wrap ->
+    [> `ClipPathUnits ] attrib
+  val a_maskunits :
+    [< `ObjectBoundingBox | `UserSpaceOnUse ] wrap -> [> `MaskUnits ] attrib
+  val a_maskcontentunits :
+    [< `ObjectBoundingBox | `UserSpaceOnUse ] wrap ->
+    [> `MaskContentUnits ] attrib
+  val a_primitiveunits :
+    [< `ObjectBoundingBox | `UserSpaceOnUse ] wrap ->
+    [> `PrimitiveUnits ] attrib
+  val a_filterres :
+    Svg_types.number_optional_number wrap -> [> `FilterResUnits ] attrib
+  val a_result : string wrap -> [> `Result ] attrib
+  val a_in :
+    [< `BackgroundAlpha
+     | `BackgroundImage
+     | `FillPaint
+     | `Ref of string
+     | `SourceAlpha
+     | `SourceGraphic
+     | `StrokePaint ]
+    wrap -> [> `In ] attrib
+  val a_in2 :
+    [< `BackgroundAlpha
+     | `BackgroundImage
+     | `FillPaint
+     | `Ref of string
+     | `SourceAlpha
+     | `SourceGraphic
+     | `StrokePaint ]
+    wrap -> [> `In2 ] attrib
+  val a_aizmuth : float wrap -> [> `Azimuth ] attrib
+  val a_elevation : float wrap -> [> `Elevation ] attrib
+  val a_pointatx : float wrap -> [> `PointsAtX ] attrib
+  val a_pointaty : float wrap -> [> `PointsAtY ] attrib
+  val a_pointatz : float wrap -> [> `PointsAtZ ] attrib
+  val a_specularexponent : float wrap -> [> `SpecularExponent ] attrib
+  val a_specularconstant : float wrap -> [> `SpecularConstant ] attrib
+  val a_limitingconeangle : float wrap -> [> `LimitingConeAngle ] attrib
+  val a_mode :
+    [< `Darken | `Lighten | `Multiply | `Normal | `Screen ] wrap ->
+    [> `Mode ] attrib
+  val a_typefecolor :
+    [< `HueRotate | `LuminanceToAlpha | `Matrix | `Saturate ] wrap ->
+    [> `Typefecolor ] attrib
+  val a_values : Svg_types.numbers wrap -> [> `Values ] attrib
+  val a_transferttype :
+    [< `Discrete | `Gamma | `Identity | `Linear | `Table ] wrap ->
+    [> `Typetransfert ] attrib
+  val a_tablevalues : Svg_types.numbers wrap -> [> `TableValues ] attrib
+  val a_intercept : Svg_types.number wrap -> [> `Intercept ] attrib
+  val a_amplitude : Svg_types.number wrap -> [> `Amplitude ] attrib
+  val a_exponent : Svg_types.number wrap -> [> `Exponent ] attrib
+  val a_offsettransfer : Svg_types.number wrap -> [> `Offsettransfer ] attrib
+  val a_operator :
+    [< `Arithmetic | `Atop | `In | `Out | `Over | `Xor ] wrap ->
+    [> `Operator ] attrib
+  val a_k1 : Svg_types.number wrap -> [> `K1 ] attrib
+  val a_k2 : Svg_types.number wrap -> [> `K2 ] attrib
+  val a_k3 : Svg_types.number wrap -> [> `K3 ] attrib
+  val a_k4 : Svg_types.number wrap -> [> `K4 ] attrib
+  val a_order : Svg_types.number_optional_number wrap -> [> `Order ] attrib
+  val a_kernelmatrix : Svg_types.numbers wrap -> [> `KernelMatrix ] attrib
+  val a_divisor : Svg_types.number wrap -> [> `Divisor ] attrib
+  val a_bias : Svg_types.number wrap -> [> `Bias ] attrib
+  val a_kernelunitlength :
+    Svg_types.number_optional_number wrap -> [> `KernelUnitLength ] attrib
+  val a_targetX : int wrap -> [> `TargetX ] attrib
+  val a_targetY : int wrap -> [> `TargetY ] attrib
+  val a_edgemode :
+    [< `Duplicate | `None | `Wrap ] wrap -> [> `TargetY ] attrib
+  val a_preservealpha : bool wrap -> [> `TargetY ] attrib
+  val a_surfacescale : Svg_types.number wrap -> [> `SurfaceScale ] attrib
+  val a_diffuseconstant :
+    Svg_types.number wrap -> [> `DiffuseConstant ] attrib
+  val a_scale : Svg_types.number wrap -> [> `Scale ] attrib
+  val a_xchannelselector :
+    [< `A | `B | `G | `R ] wrap -> [> `XChannelSelector ] attrib
+  val a_ychannelselector :
+    [< `A | `B | `G | `R ] wrap -> [> `YChannelSelector ] attrib
+  val a_stddeviation :
+    Svg_types.number_optional_number wrap -> [> `StdDeviation ] attrib
+  val a_operatormorphology :
+    [< `Dilate | `Erode ] wrap -> [> `OperatorMorphology ] attrib
+  val a_radius : Svg_types.number_optional_number wrap -> [> `Radius ] attrib
+  val a_basefrenquency :
+    Svg_types.number_optional_number wrap -> [> `BaseFrequency ] attrib
+  val a_numoctaves : int wrap -> [> `NumOctaves ] attrib
+  val a_seed : Svg_types.number wrap -> [> `Seed ] attrib
+  val a_stitchtiles :
+    [< `NoStitch | `Stitch ] wrap -> [> `StitchTiles ] attrib
+  val a_stitchtype :
+    [< `FractalNoise | `Turbulence ] wrap -> [> `TypeStitch ] attrib
+  val a_xlinkshow : [< `New | `Replace ] wrap -> [> `Xlink_show ] attrib
+  val a_xlinkactuate : [< `OnRequest ] wrap -> [> `Xlink_actuate ] attrib
+  val a_target : string wrap -> [> `Xlink_target ] attrib
+  val a_viewtarget : string wrap -> [> `ViewTarget ] attrib
+  val a_attributename : string wrap -> [> `AttributeName ] attrib
+  val a_attributetype :
+    [< `Auto | `CSS | `XML ] wrap -> [> `AttributeType ] attrib
+  val a_begin : string wrap -> [> `Begin ] attrib
+  val a_dur : string wrap -> [> `Dur ] attrib
+  val a_min : string wrap -> [> `Min ] attrib
+  val a_max : string wrap -> [> `Max ] attrib
+  val a_restart :
+    [< `Always | `Never | `WhenNotActive ] wrap -> [> `Restart ] attrib
+  val a_repeatcount : string wrap -> [> `RepeatCount ] attrib
+  val a_repeatdur : string wrap -> [> `RepeatDur ] attrib
+  val a_fill : Svg_types.paint wrap -> [> `Fill ] attrib
+  val a_fill_animation :
+    [< `Freeze | `Remove ] wrap -> [> `Fill_Animation ] attrib
+  val a_calcmode :
+    [< `Discrete | `Linear | `Paced | `Spline ] wrap -> [> `CalcMode ] attrib
+  val a_values_anim : Svg_types.strings wrap -> [> `Valuesanim ] attrib
+  val a_keytimes : Svg_types.strings wrap -> [> `KeyTimes ] attrib
+  val a_keysplines : Svg_types.strings wrap -> [> `KeySplines ] attrib
+  val a_from : string wrap -> [> `From ] attrib
+  val a_to : string wrap -> [> `To ] attrib
+  val a_by : string wrap -> [> `By ] attrib
+  val a_additive : [< `Replace | `Sum ] wrap -> [> `Additive ] attrib
+  val a_accumulate : [< `None | `Sum ] wrap -> [> `Accumulate ] attrib
+  val a_keypoints :
+    Svg_types.numbers_semicolon wrap -> [> `KeyPoints ] attrib
+  val a_path : string wrap -> [> `Path ] attrib
+  val a_typeanimatecolor :
+    [ `Rotate | `Scale | `SkewX | `SkewY | `Translate ] wrap ->
+    [ `Typeanimatecolor ] attrib
+  val a_horiz_origin_x : Svg_types.number wrap -> [> `Horizoriginx ] attrib
+  val a_horiz_origin_y : Svg_types.number wrap -> [> `Horizoriginy ] attrib
+  val a_horiz_adv_x : Svg_types.number wrap -> [> `Horizadvx ] attrib
+  val a_vert_origin_x : Svg_types.number wrap -> [> `Vertoriginx ] attrib
+  val a_vert_origin_y : Svg_types.number wrap -> [> `Vertoriginy ] attrib
+  val a_vert_adv_y : Svg_types.number wrap -> [> `Vertadvy ] attrib
+  val a_unicode : string wrap -> [> `Unicode ] attrib
+  val a_glyphname : string wrap -> [> `glyphname ] attrib
+  val a_orientation : [< `H | `V ] wrap -> [> `Orientation ] attrib
+  val a_arabicform :
+    [< `Initial | `Isolated | `Medial | `Terminal ] wrap ->
+    [> `Arabicform ] attrib
+  val a_lang : string wrap -> [> `Lang ] attrib
+  val a_u1 : string wrap -> [> `U1 ] attrib
+  val a_u2 : string wrap -> [> `U2 ] attrib
+  val a_g1 : string wrap -> [> `G1 ] attrib
+  val a_g2 : string wrap -> [> `G2 ] attrib
+  val a_k : string wrap -> [> `K ] attrib
+  val a_fontfamily : string wrap -> [> `FontFamily ] attrib
+  val a_fontstyle : string wrap -> [> `FontStyle ] attrib
+  val a_fontvariant : string wrap -> [> `FontVariant ] attrib
+  val a_fontweight : string wrap -> [> `FontWeight ] attrib
+  val a_fontstretch : string wrap -> [> `FontStretch ] attrib
+  val a_fontsize : string wrap -> [> `FontSize ] attrib
+  val a_unicoderange : string wrap -> [> `UnicodeRange ] attrib
+  val a_unitsperem : string wrap -> [> `UnitsPerEm ] attrib
+  val a_stemv : Svg_types.number wrap -> [> `Stemv ] attrib
+  val a_stemh : Svg_types.number wrap -> [> `Stemh ] attrib
+  val a_slope : Svg_types.number wrap -> [> `Slope ] attrib
+  val a_capheight : Svg_types.number wrap -> [> `CapHeight ] attrib
+  val a_xheight : Svg_types.number wrap -> [> `XHeight ] attrib
+  val a_accentheight : Svg_types.number wrap -> [> `AccentHeight ] attrib
+  val a_ascent : Svg_types.number wrap -> [> `Ascent ] attrib
+  val a_widths : string wrap -> [> `Widths ] attrib
+  val a_bbox : string wrap -> [> `Bbox ] attrib
+  val a_ideographic : Svg_types.number wrap -> [> `Ideographic ] attrib
+  val a_alphabetic : Svg_types.number wrap -> [> `Alphabetic ] attrib
+  val a_mathematical : Svg_types.number wrap -> [> `Mathematical ] attrib
+  val a_hanging : Svg_types.number wrap -> [> `Hanging ] attrib
+  val a_videographic : Svg_types.number wrap -> [> `VIdeographic ] attrib
+  val a_valphabetic : Svg_types.number wrap -> [> `VAlphabetic ] attrib
+  val a_vmathematical : Svg_types.number wrap -> [> `VMathematical ] attrib
+  val a_vhanging : Svg_types.number wrap -> [> `VHanging ] attrib
+  val a_underlineposition :
+    Svg_types.number wrap -> [> `UnderlinePosition ] attrib
+  val a_underlinethickness :
+    Svg_types.number wrap -> [> `UnderlineThickness ] attrib
+  val a_strikethroughposition :
+    Svg_types.number wrap -> [> `StrikethroughPosition ] attrib
+  val a_strikethroughthickness :
+    Svg_types.number wrap -> [> `StrikethroughThickness ] attrib
+  val a_overlineposition :
+    Svg_types.number wrap -> [> `OverlinePosition ] attrib
+  val a_overlinethickness :
+    Svg_types.number wrap -> [> `OverlineThickness ] attrib
+  val a_string : string wrap -> [> `String ] attrib
+  val a_name : string wrap -> [> `Name ] attrib
+  val a_onabort : Xml.event_handler -> [> `OnAbort ] attrib
+  val a_onactivate : Xml.event_handler -> [> `OnActivate ] attrib
+  val a_onbegin : Xml.event_handler -> [> `OnBegin ] attrib
+  val a_onend : Xml.event_handler -> [> `OnEnd ] attrib
+  val a_onerror : Xml.event_handler -> [> `OnError ] attrib
+  val a_onfocusin : Xml.event_handler -> [> `OnFocusIn ] attrib
+  val a_onfocusout : Xml.event_handler -> [> `OnFocusOut ] attrib
+  val a_onload : Xml.event_handler -> [> `OnLoad ] attrib
+  val a_onrepeat : Xml.event_handler -> [> `OnRepeat ] attrib
+  val a_onresize : Xml.event_handler -> [> `OnResize ] attrib
+  val a_onscroll : Xml.event_handler -> [> `OnScroll ] attrib
+  val a_onunload : Xml.event_handler -> [> `OnUnload ] attrib
+  val a_onzoom : Xml.event_handler -> [> `OnZoom ] attrib
+  val a_onclick : Xml.mouse_event_handler -> [> `OnClick ] attrib
+  val a_onmousedown : Xml.mouse_event_handler -> [> `OnMouseDown ] attrib
+  val a_onmouseup : Xml.mouse_event_handler -> [> `OnMouseUp ] attrib
+  val a_onmouseover : Xml.mouse_event_handler -> [> `OnMouseOver ] attrib
+  val a_onmouseout : Xml.mouse_event_handler -> [> `OnMouseOut ] attrib
+  val a_onmousemove : Xml.mouse_event_handler -> [> `OnMouseMove ] attrib
+  val metadata :
+    ?a:Svg_types.metadata_attr attrib list ->
+    Xml.elt list_wrap -> [> Svg_types.metadata ] elt
+  val foreignobject :
+    ?a:Svg_types.foreignobject_attr attrib list ->
+    Xml.elt list_wrap -> [> Svg_types.foreignobject ] elt
+  val a_stopcolor : Svg_types.color wrap -> [> `Stop_Color ] attrib
+  val a_stopopacity : Svg_types.number wrap -> [> `Stop_Opacity ] attrib
+  val a_stroke : Svg_types.paint wrap -> [> `Stroke ] attrib
+  val a_strokewidth : Svg_types.Unit.length wrap -> [> `Stroke_Width ] attrib
+  val a_strokelinecap :
+    [< `Butt | `Round | `Square ] wrap -> [> `Stroke_Linecap ] attrib
+  val a_strokelinejoin :
+    [< `Bever | `Miter | `Round ] wrap -> [> `Stroke_Linejoin ] attrib
+  val a_strokemiterlimit : float wrap -> [> `Stroke_Miterlimit ] attrib
+  val a_strokedasharray :
+    Svg_types.Unit.length list wrap -> [> `Stroke_Dasharray ] attrib
+  val a_strokedashoffset :
+    Svg_types.Unit.length wrap -> [> `Stroke_Dashoffset ] attrib
+  val a_strokeopacity : float wrap -> [> `Stroke_Opacity ] attrib
+  val svg :
+    ([< Svg_types.svg_attr ], [< Svg_types.svg_content ], [> Svg_types.svg ])
+    star
+  val g :
+    ([< Svg_types.g_attr ], [< Svg_types.g_content ], [> Svg_types.g ]) star
+  val defs :
+    ([< Svg_types.defs_attr ], [< Svg_types.defs_content ],
+     [> Svg_types.defs ])
+    star
+  val desc :
+    ([< Svg_types.desc_attr ], [< Svg_types.desc_content ],
+     [> Svg_types.desc ])
+    unary
+  val title :
+    ([< Svg_types.title_attr ], [< Svg_types.title_content ],
+     [> Svg_types.title ])
+    unary
+  val symbol :
+    ([< Svg_types.symbol_attr ], [< Svg_types.symbol_content ],
+     [> Svg_types.symbol ])
+    star
+  val use :
+    ([< Svg_types.use_attr ], [< Svg_types.use_content ], [> Svg_types.use ])
+    star
+  val image :
+    ([< Svg_types.image_attr ], [< Svg_types.image_content ],
+     [> Svg_types.image ])
+    star
+  val switch :
+    ([< Svg_types.switch_attr ], [< Svg_types.switch_content ],
+     [> Svg_types.switch ])
+    star
+  val style :
+    ([< Svg_types.style_attr ], [< Svg_types.style_content ],
+     [> Svg_types.style ])
+    unary
+  val path :
+    ([< Svg_types.path_attr ], [< Svg_types.path_content ],
+     [> Svg_types.path ])
+    star
+  val rect :
+    ([< Svg_types.rect_attr ], [< Svg_types.rect_content ],
+     [> Svg_types.rect ])
+    star
+  val circle :
+    ([< Svg_types.circle_attr ], [< Svg_types.circle_content ],
+     [> Svg_types.circle ])
+    star
+  val ellipse :
+    ([< Svg_types.ellipse_attr ], [< Svg_types.ellipse_content ],
+     [> Svg_types.ellipse ])
+    star
+  val line :
+    ([< Svg_types.line_attr ], [< Svg_types.line_content ],
+     [> Svg_types.line ])
+    star
+  val polyline :
+    ([< Svg_types.polyline_attr ], [< Svg_types.polyline_content ],
+     [> Svg_types.polyline ])
+    star
+  val polygon :
+    ([< Svg_types.polygon_attr ], [< Svg_types.polygon_content ],
+     [> Svg_types.polygon ])
+    star
+  val text :
+    ([< Svg_types.text_attr ], [< Svg_types.text_content ],
+     [> Svg_types.text ])
+    star
+  val tspan :
+    ([< Svg_types.tspan_attr ], [< Svg_types.tspan_content ],
+     [> Svg_types.tspan ])
+    star
+  val tref :
+    ([< Svg_types.tref_attr ], [< Svg_types.tref_content ],
+     [> Svg_types.tref ])
+    star
+  val textpath :
+    ([< Svg_types.textpath_attr ], [< Svg_types.textpath_content ],
+     [> Svg_types.textpath ])
+    star
+  val altglyph :
+    ([< Svg_types.altglyph_attr ], [< Svg_types.altglyph_content ],
+     [> Svg_types.altglyph ])
+    unary
+  val altglyphdef :
+    ([< Svg_types.altglyphdef_attr ], [< altglyphdef_content ],
+     [> Svg_types.altglyphdef ])
+    unary
+  val altglyphitem :
+    ([< Svg_types.altglyphitem_attr ], [< Svg_types.altglyphitem_content ],
+     [> Svg_types.altglyphitem ])
+    star
+  val glyphref :
+    ([< Svg_types.glyphref_attr ], [> Svg_types.glyphref ]) nullary
+  val marker :
+    ([< Svg_types.marker_attr ], [< Svg_types.marker_content ],
+     [> Svg_types.marker ])
+    star
+  val colorprofile :
+    ([< Svg_types.colorprofile_attr ], [< Svg_types.colorprofile_content ],
+     [> Svg_types.colorprofile ])
+    star
+  val lineargradient :
+    ([< Svg_types.lineargradient_attr ],
+     [< Svg_types.lineargradient_content ], [> Svg_types.lineargradient ])
+    star
+  val radialgradient :
+    ([< Svg_types.radialgradient_attr ],
+     [< Svg_types.radialgradient_content ], [> Svg_types.radialgradient ])
+    star
+  val stop :
+    ([< Svg_types.stop_attr ], [< Svg_types.stop_content ],
+     [> Svg_types.stop ])
+    star
+  val pattern :
+    ([< Svg_types.pattern_attr ], [< Svg_types.pattern_content ],
+     [> Svg_types.pattern ])
+    star
+  val clippath :
+    ([< Svg_types.clippath_attr ], [< Svg_types.clippath_content ],
+     [> Svg_types.clippath ])
+    star
+  val filter :
+    ([< Svg_types.filter_attr ], [< Svg_types.filter_content ],
+     [> Svg_types.filter ])
+    star
+  val fedistantlight :
+    ([< Svg_types.fedistantlight_attr ],
+     [< Svg_types.fedistantlight_content ], [> Svg_types.fedistantlight ])
+    star
+  val fepointlight :
+    ([< Svg_types.fepointlight_attr ], [< Svg_types.fepointlight_content ],
+     [> Svg_types.fepointlight ])
+    star
+  val fespotlight :
+    ([< Svg_types.fespotlight_attr ], [< Svg_types.fespotlight_content ],
+     [> Svg_types.fespotlight ])
+    star
+  val feblend :
+    ([< Svg_types.feblend_attr ], [< Svg_types.feblend_content ],
+     [> Svg_types.feblend ])
+    star
+  val fecolormatrix :
+    ([< Svg_types.fecolormatrix_attr ], [< Svg_types.fecolormatrix_content ],
+     [> Svg_types.fecolormatrix ])
+    star
+  val fecomponenttransfer :
+    ([< Svg_types.fecomponenttransfer_attr ],
+     [< Svg_types.fecomponenttransfer_content ],
+     [> Svg_types.fecomponenttransfer ])
+    star
+  val fefunca :
+    ([< Svg_types.fefunca_attr ], [< Svg_types.fefunca_content ],
+     [> Svg_types.fefunca ])
+    star
+  val fefuncg :
+    ([< Svg_types.fefuncg_attr ], [< Svg_types.fefuncg_content ],
+     [> Svg_types.fefuncg ])
+    star
+  val fefuncb :
+    ([< Svg_types.fefuncb_attr ], [< Svg_types.fefuncb_content ],
+     [> Svg_types.fefuncb ])
+    star
+  val fefuncr :
+    ([< Svg_types.fefuncr_attr ], [< Svg_types.fefuncr_content ],
+     [> Svg_types.fefuncr ])
+    star
+  val fecomposite :
+    ([< Svg_types.fecomposite_attr ], [< Svg_types.fecomposite_content ],
+     [> Svg_types.fecomposite ])
+    star
+  val feconvolvematrix :
+    ([< Svg_types.feconvolvematrix_attr ],
+     [< Svg_types.feconvolvematrix_content ],
+     [> Svg_types.feconvolvematrix ])
+    star
+  val fediffuselighting :
+    ([< Svg_types.fediffuselighting_attr ],
+     [< Svg_types.fediffuselighting_content ],
+     [> Svg_types.fediffuselighting ])
+    star
+  val fedisplacementmap :
+    ([< Svg_types.fedisplacementmap_attr ],
+     [< Svg_types.fedisplacementmap_content ],
+     [> Svg_types.fedisplacementmap ])
+    star
+  val feflood :
+    ([< Svg_types.feflood_attr ], [< Svg_types.feflood_content ],
+     [> Svg_types.feflood ])
+    star
+  val fegaussianblur :
+    ([< Svg_types.fegaussianblur_attr ],
+     [< Svg_types.fegaussianblur_content ], [> Svg_types.fegaussianblur ])
+    star
+  val feimage :
+    ([< Svg_types.feimage_attr ], [< Svg_types.feimage_content ],
+     [> Svg_types.feimage ])
+    star
+  val femerge :
+    ([< Svg_types.femerge_attr ], [< Svg_types.femerge_content ],
+     [> Svg_types.femerge ])
+    star
+  val femorphology :
+    ([< Svg_types.femorphology_attr ], [< Svg_types.femorphology_content ],
+     [> Svg_types.femorphology ])
+    star
+  val feoffset :
+    ([< Svg_types.feoffset_attr ], [< Svg_types.feoffset_content ],
+     [> Svg_types.feoffset ])
+    star
+  val fespecularlighting :
+    ([< Svg_types.fespecularlighting_attr ],
+     [< Svg_types.fespecularlighting_content ],
+     [> Svg_types.fespecularlighting ])
+    star
+  val fetile :
+    ([< Svg_types.fetile_attr ], [< Svg_types.fetile_content ],
+     [> Svg_types.fetile ])
+    star
+  val feturbulence :
+    ([< Svg_types.feturbulence_attr ], [< Svg_types.feturbulence_content ],
+     [> Svg_types.feturbulence ])
+    star
+  val cursor :
+    ([< Svg_types.cursor_attr ], [< Svg_types.cursor_content ],
+     [> Svg_types.cursor ])
+    star
+  val a :
+    ([< Svg_types.a_attr ], [< Svg_types.a_content ], [> Svg_types.a ]) star
+  val view :
+    ([< Svg_types.view_attr ], [< Svg_types.view_content ],
+     [> Svg_types.view ])
+    star
+  val script :
+    ([< Svg_types.script_attr ], [< Svg_types.script_content ],
+     [> Svg_types.script ])
+    unary
+  val animation :
+    ([< Svg_types.animation_attr ], [< Svg_types.animation_content ],
+     [> Svg_types.animation ])
+    star
+  val set :
+    ([< Svg_types.set_attr ], [< Svg_types.set_content ], [> Svg_types.set ])
+    star
+  val animatemotion :
+    ([< Svg_types.animatemotion_attr ], [< Svg_types.animatemotion_content ],
+     [> Svg_types.animatemotion ])
+    star
+  val mpath :
+    ([< Svg_types.mpath_attr ], [< Svg_types.mpath_content ],
+     [> Svg_types.mpath ])
+    star
+  val animatecolor :
+    ([< Svg_types.animatecolor_attr ], [< Svg_types.animatecolor_content ],
+     [> Svg_types.animatecolor ])
+    star
+  val animatetransform :
+    ([< Svg_types.animatetransform_attr ],
+     [< Svg_types.animatetransform_content ],
+     [> Svg_types.animatetransform ])
+    star
+  val font :
+    ([< Svg_types.font_attr ], [< Svg_types.font_content ],
+     [> Svg_types.font ])
+    star
+  val glyph :
+    ([< Svg_types.glyph_attr ], [< Svg_types.glyph_content ],
+     [> Svg_types.glyph ])
+    star
+  val missingglyph :
+    ([< Svg_types.missingglyph_attr ], [< Svg_types.missingglyph_content ],
+     [> Svg_types.missingglyph ])
+    star
+  val hkern : ([< Svg_types.hkern_attr ], [> Svg_types.hkern ]) nullary
+  val vkern : ([< Svg_types.vkern_attr ], [> Svg_types.vkern ]) nullary
+  val fontface :
+    ([< Svg_types.fontface_attr ], [> Svg_types.fontface ]) nullary
+  val fontfacesrc :
+    ([< Svg_types.fontfacesrc_attr ], [< Svg_types.fontfacesrc_content ],
+     [> Svg_types.fontfacesrc ])
+    star
+  val fontfaceuri :
+    ([< Svg_types.fontfaceuri_attr ], [< Svg_types.fontfaceuri_content ],
+     [> Svg_types.fontfaceuri ])
+    star
+  val fontfaceformat :
+    ([< Svg_types.fontfaceformat_attr ], [> Svg_types.fontfaceformat ])
+    nullary
+  val fontfacename :
+    ([< Svg_types.fontfacename_attr ], [> Svg_types.fontfacename ]) nullary
+  val tot : Xml.elt -> 'a elt
+  val totl : Xml.elt list -> 'a elt list
+  val toelt : 'a elt -> Xml.elt
+  val toeltl : 'a elt list -> Xml.elt list
+  val to_xmlattribs : 'a attrib list -> Xml.attrib list
+  val to_attrib : Xml.attrib -> 'a attrib
+  module Unsafe :
+    sig
+      val data : string wrap -> 'a elt
+      val node : string -> ?a:'a attrib list -> 'b elt list_wrap -> 'c elt
+      val leaf : string -> ?a:'a attrib list -> unit -> 'b elt
+      val coerce_elt : 'a elt -> 'b elt
+      val string_attrib : string -> string wrap -> 'a attrib
+      val float_attrib : string -> float wrap -> 'a attrib
+      val int_attrib : string -> int wrap -> 'a attrib
+      val uri_attrib : string -> uri wrap -> 'a attrib
+      val space_sep_attrib : string -> string list wrap -> 'a attrib
+      val comma_sep_attrib : string -> string list wrap -> 'a attrib
+    end
+  type doc = [ `Svg ] elt
+  val doc_toelt : doc -> Xml.elt
+end >>

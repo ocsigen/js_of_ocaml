@@ -1,0 +1,54 @@
+<<code language="ocaml" | object ('a)
+  method abort : unit Js.meth
+  method error : File.fileError Js.t Js.readonly_prop
+  method onabort :
+    ('a Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
+  method onclick :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method ondblclick :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onerror :
+    ('a Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
+  method onkeydown :
+    ('a Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onkeypress :
+    ('a Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onkeyup :
+    ('a Js.t, Dom_html.keyboardEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onload :
+    ('a Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
+  method onloadend :
+    ('a Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
+  method onloadstart :
+    ('a Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
+  method onmousedown :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmousemove :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmouseout :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmouseover :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onmouseup :
+    ('a Js.t, Dom_html.mouseEvent Js.t) Dom_html.event_listener
+    Js.writeonly_prop
+  method onprogress :
+    ('a Js.t, Dom_html.event Js.t) Dom_html.event_listener Js.writeonly_prop
+  method readAsArrayBuffer : File.blob Js.t -> unit Js.meth
+  method readAsBinaryString : File.blob Js.t -> unit Js.meth
+  method readAsDataURL : File.blob Js.t -> unit Js.meth
+  method readAsText : File.blob Js.t -> unit Js.meth
+  method readAsText_withEncoding :
+    File.blob Js.t -> Js.js_string Js.t -> unit Js.meth
+  method readyState : File.readyState Js.readonly_prop
+  method result : File.file_any Js.readonly_prop
+end >>

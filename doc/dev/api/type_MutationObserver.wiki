@@ -1,0 +1,54 @@
+<<code language="ocaml" | sig
+  class type mutationObserverInit =
+    object
+      method attributeFilter :
+        Js.js_string Js.t Js.js_array Js.t Js.writeonly_prop
+      method attributeOldValue : bool Js.writeonly_prop
+      method attributes : bool Js.writeonly_prop
+      method characterData : bool Js.writeonly_prop
+      method characterDataOldValue : bool Js.writeonly_prop
+      method childList : bool Js.writeonly_prop
+      method subtree : bool Js.writeonly_prop
+    end
+  class type mutationRecord =
+    object
+      method _type : Js.js_string Js.t Js.readonly_prop
+      method addedNodes : Dom.node Dom.nodeList Js.t Js.readonly_prop
+      method attributeName : Js.js_string Js.t Js.opt Js.readonly_prop
+      method attributeNamespace : Js.js_string Js.t Js.opt Js.readonly_prop
+      method nextSibling : Dom.node Js.t Js.opt Js.readonly_prop
+      method oldValue : Js.js_string Js.t Js.opt Js.readonly_prop
+      method previousSibling : Dom.node Js.t Js.opt Js.readonly_prop
+      method removedNodes : Dom.node Dom.nodeList Js.t Js.readonly_prop
+      method target : Dom.node Js.t Js.readonly_prop
+    end
+  class type mutationObserver =
+    object
+      method disconnect : unit Js.meth
+      method observe :
+        #Dom.node Js.t ->
+        MutationObserver.mutationObserverInit Js.t -> unit Js.meth
+      method takeRecords :
+        MutationObserver.mutationRecord Js.t Js.js_array Js.t Js.meth
+    end
+  val empty_mutation_observer_init :
+    unit -> MutationObserver.mutationObserverInit Js.t
+  val mutationObserver :
+    ((MutationObserver.mutationRecord Js.t Js.js_array Js.t ->
+      MutationObserver.mutationObserver Js.t -> unit)
+     Js.callback -> MutationObserver.mutationObserver Js.t)
+    Js.constr
+  val is_supported : unit -> bool
+  val observe :
+    node:#Dom.node Js.t ->
+    f:(MutationObserver.mutationRecord Js.t Js.js_array Js.t ->
+       MutationObserver.mutationObserver Js.t -> unit) ->
+    ?child_list:bool ->
+    ?attributes:bool ->
+    ?character_data:bool ->
+    ?subtree:bool ->
+    ?attribute_old_value:bool ->
+    ?character_data_old_value:bool ->
+    ?attribute_filter:Js.js_string Js.t list ->
+    unit -> MutationObserver.mutationObserver Js.t
+end >>

@@ -1,0 +1,6 @@
+=Module <<a_api_type | module Firebug >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|Firebug>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Firebug >><<span class="ocsforge_color_keyword"|end>>>>~Firebug ~A~P~I ~(debugging console~)~.
+**See also** [[http://getfirebug.com/wiki/index.php/Console_API|the ~Firebug console ~A~P~I]]\\
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEconsole"|<<span class="ocsforge_color_keyword"|class type>> <<a_api text="console" | class type Firebug.console >>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Firebug.console >><<span class="ocsforge_color_keyword"|end>>>><<pre id="VALconsole" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|console>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="console" | class type Firebug.console >> <<a_api text="Js.t" | type Js.t >>>>>>

@@ -1,0 +1,15 @@
+<<code language="ocaml" | object ('a)
+  method close : unit Js.meth
+  method onerror :
+    ('a Js.t, 'a EventSource.messageEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onmessage :
+    ('a Js.t, 'a EventSource.messageEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onopen :
+    ('a Js.t, 'a EventSource.messageEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method readyState : EventSource.state Js.readonly_prop
+  method url : string Js.t Js.readonly_prop
+  method withCredentials : bool Js.t Js.readonly_prop
+end >>

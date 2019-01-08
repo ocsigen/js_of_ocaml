@@ -1,0 +1,200 @@
+<<code language="ocaml" | sig
+  type level =
+    Lwt_log_core.level =
+      Debug
+    | Info
+    | Notice
+    | Warning
+    | Error
+    | Fatal
+  type logger = Lwt_log_core.logger
+  type section = Lwt_log_core.section
+  val string_of_level : level -> string
+  val load_rules : string -> unit
+  val add_rule : string -> level -> unit
+  val append_rule : string -> level -> unit
+  module Section :
+    sig
+      type t = Lwt_log_core.section
+      val make : string -> Lwt_log_core.section
+      val name : Lwt_log_core.section -> string
+      val main : Lwt_log_core.section
+      val level : Lwt_log_core.section -> Lwt_log_core.level
+      val set_level : Lwt_log_core.section -> Lwt_log_core.level -> unit
+      val reset_level : Lwt_log_core.section -> unit
+    end
+  type template = Lwt_log_core.template
+  val render :
+    buffer:Buffer.t ->
+    template:template ->
+    section:section -> level:level -> message:string -> unit
+  val location_key : (string * int * int) Lwt.key
+  exception Logger_closed
+  val make :
+    output:(section -> level -> string list -> unit Lwt.t) ->
+    close:(unit -> unit Lwt.t) -> logger
+  val close : logger -> unit Lwt.t
+  val default : logger ref
+  val broadcast : logger list -> logger
+  val dispatch : (section -> level -> logger) -> logger
+  val null : logger
+  val console : Lwt_log.logger
+  val log :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> level:level -> string -> unit Lwt.t
+  val log_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger ->
+    level:level -> ('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a
+  val ign_log :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> level:level -> string -> unit
+  val ign_log_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger ->
+    level:level -> ('a, unit, string, unit) Pervasives.format4 -> 'a
+  val debug :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit Lwt.t
+  val debug_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a
+  val ign_debug :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit
+  val ign_debug_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit) Pervasives.format4 -> 'a
+  val info :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit Lwt.t
+  val info_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a
+  val ign_info :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit
+  val ign_info_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit) Pervasives.format4 -> 'a
+  val notice :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit Lwt.t
+  val notice_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a
+  val ign_notice :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit
+  val ign_notice_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit) Pervasives.format4 -> 'a
+  val warning :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit Lwt.t
+  val warning_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a
+  val ign_warning :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit
+  val ign_warning_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit) Pervasives.format4 -> 'a
+  val error :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit Lwt.t
+  val error_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a
+  val ign_error :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit
+  val ign_error_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit) Pervasives.format4 -> 'a
+  val fatal :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit Lwt.t
+  val fatal_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit Lwt.t) Pervasives.format4 -> 'a
+  val ign_fatal :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int -> ?logger:logger -> string -> unit
+  val ign_fatal_f :
+    ?inspect:'v ->
+    ?exn:exn ->
+    ?section:section ->
+    ?location:string * int * int ->
+    ?logger:logger -> ('a, unit, string, unit) Pervasives.format4 -> 'a
+end >>

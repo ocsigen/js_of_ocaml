@@ -1,0 +1,9 @@
+<<code language="ocaml" | object
+  method accuracy : float Js.readonly_prop
+  method altitude : float Js.opt Js.readonly_prop
+  method altitudeAccuracy : float Js.opt Js.readonly_prop
+  method heading : float Js.opt Js.readonly_prop
+  method latitude : float Js.readonly_prop
+  method longitude : float Js.readonly_prop
+  method speed : float Js.opt Js.readonly_prop
+end >>

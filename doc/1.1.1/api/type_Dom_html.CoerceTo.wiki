@@ -1,0 +1,79 @@
+<<code language="ocaml" | sig
+  val element : #Dom.node Js.t -> Dom_html.element Js.t Js.opt
+  val a : #Dom_html.element Js.t -> Dom_html.anchorElement Js.t Js.opt
+  val area : #Dom_html.element Js.t -> Dom_html.areaElement Js.t Js.opt
+  val base : #Dom_html.element Js.t -> Dom_html.baseElement Js.t Js.opt
+  val blockquote :
+    #Dom_html.element Js.t -> Dom_html.quoteElement Js.t Js.opt
+  val body : #Dom_html.element Js.t -> Dom_html.bodyElement Js.t Js.opt
+  val br : #Dom_html.element Js.t -> Dom_html.brElement Js.t Js.opt
+  val button : #Dom_html.element Js.t -> Dom_html.buttonElement Js.t Js.opt
+  val canvas : #Dom_html.element Js.t -> Dom_html.canvasElement Js.t Js.opt
+  val caption :
+    #Dom_html.element Js.t -> Dom_html.tableCaptionElement Js.t Js.opt
+  val col : #Dom_html.element Js.t -> Dom_html.tableColElement Js.t Js.opt
+  val colgroup :
+    #Dom_html.element Js.t -> Dom_html.tableColElement Js.t Js.opt
+  val del : #Dom_html.element Js.t -> Dom_html.modElement Js.t Js.opt
+  val div : #Dom_html.element Js.t -> Dom_html.divElement Js.t Js.opt
+  val dl : #Dom_html.element Js.t -> Dom_html.dListElement Js.t Js.opt
+  val fieldset :
+    #Dom_html.element Js.t -> Dom_html.fieldSetElement Js.t Js.opt
+  val form : #Dom_html.element Js.t -> Dom_html.formElement Js.t Js.opt
+  val frameset :
+    #Dom_html.element Js.t -> Dom_html.frameSetElement Js.t Js.opt
+  val frame : #Dom_html.element Js.t -> Dom_html.frameElement Js.t Js.opt
+  val h1 : #Dom_html.element Js.t -> Dom_html.headingElement Js.t Js.opt
+  val h2 : #Dom_html.element Js.t -> Dom_html.headingElement Js.t Js.opt
+  val h3 : #Dom_html.element Js.t -> Dom_html.headingElement Js.t Js.opt
+  val h4 : #Dom_html.element Js.t -> Dom_html.headingElement Js.t Js.opt
+  val h5 : #Dom_html.element Js.t -> Dom_html.headingElement Js.t Js.opt
+  val h6 : #Dom_html.element Js.t -> Dom_html.headingElement Js.t Js.opt
+  val head : #Dom_html.element Js.t -> Dom_html.headElement Js.t Js.opt
+  val hr : #Dom_html.element Js.t -> Dom_html.hrElement Js.t Js.opt
+  val html : #Dom_html.element Js.t -> Dom_html.htmlElement Js.t Js.opt
+  val iframe : #Dom_html.element Js.t -> Dom_html.iFrameElement Js.t Js.opt
+  val img : #Dom_html.element Js.t -> Dom_html.imageElement Js.t Js.opt
+  val input : #Dom_html.element Js.t -> Dom_html.inputElement Js.t Js.opt
+  val ins : #Dom_html.element Js.t -> Dom_html.modElement Js.t Js.opt
+  val label : #Dom_html.element Js.t -> Dom_html.labelElement Js.t Js.opt
+  val legend : #Dom_html.element Js.t -> Dom_html.legendElement Js.t Js.opt
+  val li : #Dom_html.element Js.t -> Dom_html.liElement Js.t Js.opt
+  val link : #Dom_html.element Js.t -> Dom_html.linkElement Js.t Js.opt
+  val map : #Dom_html.element Js.t -> Dom_html.mapElement Js.t Js.opt
+  val meta : #Dom_html.element Js.t -> Dom_html.metaElement Js.t Js.opt
+  val _object : #Dom_html.element Js.t -> Dom_html.objectElement Js.t Js.opt
+  val ol : #Dom_html.element Js.t -> Dom_html.oListElement Js.t Js.opt
+  val optgroup :
+    #Dom_html.element Js.t -> Dom_html.optGroupElement Js.t Js.opt
+  val option : #Dom_html.element Js.t -> Dom_html.optionElement Js.t Js.opt
+  val p : #Dom_html.element Js.t -> Dom_html.paramElement Js.t Js.opt
+  val param : #Dom_html.element Js.t -> Dom_html.paramElement Js.t Js.opt
+  val pre : #Dom_html.element Js.t -> Dom_html.preElement Js.t Js.opt
+  val q : #Dom_html.element Js.t -> Dom_html.quoteElement Js.t Js.opt
+  val script : #Dom_html.element Js.t -> Dom_html.scriptElement Js.t Js.opt
+  val select : #Dom_html.element Js.t -> Dom_html.selectElement Js.t Js.opt
+  val style : #Dom_html.element Js.t -> Dom_html.styleElement Js.t Js.opt
+  val table : #Dom_html.element Js.t -> Dom_html.tableElement Js.t Js.opt
+  val tbody :
+    #Dom_html.element Js.t -> Dom_html.tableSectionElement Js.t Js.opt
+  val td : #Dom_html.element Js.t -> Dom_html.tableColElement Js.t Js.opt
+  val textarea :
+    #Dom_html.element Js.t -> Dom_html.textAreaElement Js.t Js.opt
+  val tfoot :
+    #Dom_html.element Js.t -> Dom_html.tableSectionElement Js.t Js.opt
+  val th : #Dom_html.element Js.t -> Dom_html.tableColElement Js.t Js.opt
+  val thead :
+    #Dom_html.element Js.t -> Dom_html.tableSectionElement Js.t Js.opt
+  val title : #Dom_html.element Js.t -> Dom_html.titleElement Js.t Js.opt
+  val tr : #Dom_html.element Js.t -> Dom_html.tableRowElement Js.t Js.opt
+  val ul : #Dom_html.element Js.t -> Dom_html.uListElement Js.t Js.opt
+  val mouseEvent : #Dom_html.event Js.t -> Dom_html.mouseEvent Js.t Js.opt
+  val keyboardEvent :
+    #Dom_html.event Js.t -> Dom_html.keyboardEvent Js.t Js.opt
+  val wheelEvent : #Dom_html.event Js.t -> Dom_html.wheelEvent Js.t Js.opt
+  val mouseScrollEvent :
+    #Dom_html.event Js.t -> Dom_html.mouseScrollEvent Js.t Js.opt
+  val popStateEvent :
+    #Dom_html.event Js.t -> Dom_html.popStateEvent Js.t Js.opt
+end >>

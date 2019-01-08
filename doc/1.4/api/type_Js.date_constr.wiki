@@ -1,0 +1,11 @@
+<<code language="ocaml" | object
+  method _UTC_day : int -> int -> float Js.t Js.meth
+  method _UTC_hour : int -> int -> int -> int -> float Js.t Js.meth
+  method _UTC_min : int -> int -> int -> int -> int -> float Js.t Js.meth
+  method _UTC_month : int -> int -> float Js.t Js.meth
+  method _UTC_ms :
+    int -> int -> int -> int -> int -> int -> int -> float Js.t Js.meth
+  method _UTC_sec :
+    int -> int -> int -> int -> int -> int -> float Js.t Js.meth
+  method parse : Js.js_string Js.t -> float Js.t Js.meth
+end >>

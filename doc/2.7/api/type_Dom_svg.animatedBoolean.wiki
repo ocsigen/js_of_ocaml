@@ -1,0 +1,1 @@
+<<code language="ocaml" | [bool Js.t] Dom_svg.animated >>

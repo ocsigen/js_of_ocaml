@@ -1,0 +1,13 @@
+language: c
+
+install: true
+script: ./.howdocgen
+
+deploy:
+  provider: pages
+  keep-history: true
+  skip-cleanup: true
+  github-token: $GHP_TOKEN
+  local-dir: _doc
+  on:
+    branch: wikidoc

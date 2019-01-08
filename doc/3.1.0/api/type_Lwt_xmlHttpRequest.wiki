@@ -1,0 +1,78 @@
+<<code language="ocaml" | sig
+  type 'response generic_http_frame = {
+    url : string;
+    code : int;
+    headers : string -> string option;
+    content : 'response;
+    content_xml :
+      unit ->
+      Js_of_ocaml.Dom.element Js_of_ocaml.Dom.document Js_of_ocaml.Js.t
+      option;
+  }
+  type http_frame = string Lwt_xmlHttpRequest.generic_http_frame
+  exception Wrong_headers of (int * (string -> string option))
+  val perform_raw :
+    ?headers:(string * string) list ->
+    ?content_type:string ->
+    ?get_args:(string * string) list ->
+    ?check_headers:(int -> (string -> string option) -> bool) ->
+    ?progress:(int -> int -> unit) ->
+    ?upload_progress:(int -> int -> unit) ->
+    ?contents:[< `Blob of #Js_of_ocaml.File.blob Js_of_ocaml.Js.t
+               | `Form_contents of Js_of_ocaml.Form.form_contents
+               | `POST_form of (string * Js_of_ocaml.Form.form_elt) list
+               | `String of string ] ->
+    ?override_mime_type:string ->
+    ?override_method:[< `DELETE
+                      | `GET
+                      | `HEAD
+                      | `OPTIONS
+                      | `PATCH
+                      | `POST
+                      | `PUT ] ->
+    ?with_credentials:bool ->
+    response_type:'a Js_of_ocaml.XmlHttpRequest.response ->
+    string -> 'a Lwt_xmlHttpRequest.generic_http_frame Lwt.t
+  val perform_raw_url :
+    ?headers:(string * string) list ->
+    ?content_type:string ->
+    ?get_args:(string * string) list ->
+    ?check_headers:(int -> (string -> string option) -> bool) ->
+    ?progress:(int -> int -> unit) ->
+    ?upload_progress:(int -> int -> unit) ->
+    ?contents:[< `Blob of #Js_of_ocaml.File.blob Js_of_ocaml.Js.t
+               | `Form_contents of Js_of_ocaml.Form.form_contents
+               | `POST_form of (string * Js_of_ocaml.Form.form_elt) list
+               | `String of string ] ->
+    ?override_mime_type:string ->
+    ?override_method:[< `DELETE
+                      | `GET
+                      | `HEAD
+                      | `OPTIONS
+                      | `PATCH
+                      | `POST
+                      | `PUT ] ->
+    ?with_credentials:bool -> string -> Lwt_xmlHttpRequest.http_frame Lwt.t
+  val perform :
+    ?headers:(string * string) list ->
+    ?content_type:string ->
+    ?get_args:(string * string) list ->
+    ?check_headers:(int -> (string -> string option) -> bool) ->
+    ?progress:(int -> int -> unit) ->
+    ?upload_progress:(int -> int -> unit) ->
+    ?contents:[< `Blob of #Js_of_ocaml.File.blob Js_of_ocaml.Js.t
+               | `Form_contents of Js_of_ocaml.Form.form_contents
+               | `POST_form of (string * Js_of_ocaml.Form.form_elt) list
+               | `String of string ] ->
+    ?override_mime_type:string ->
+    ?override_method:[< `DELETE
+                      | `GET
+                      | `HEAD
+                      | `OPTIONS
+                      | `PATCH
+                      | `POST
+                      | `PUT ] ->
+    ?with_credentials:bool ->
+    Js_of_ocaml.Url.url -> Lwt_xmlHttpRequest.http_frame Lwt.t
+  val get : string -> Lwt_xmlHttpRequest.http_frame Lwt.t
+end >>

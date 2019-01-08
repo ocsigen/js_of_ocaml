@@ -1,0 +1,10 @@
+<<code language="ocaml" | object
+  method clientX : int Js.readonly_prop
+  method clientY : int Js.readonly_prop
+  method identifier : int Js.readonly_prop
+  method pageX : int Js.readonly_prop
+  method pageY : int Js.readonly_prop
+  method screenX : int Js.readonly_prop
+  method screenY : int Js.readonly_prop
+  method target : Dom_html.element Js.t Js.optdef Js.readonly_prop
+end >>

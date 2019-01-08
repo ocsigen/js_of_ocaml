@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type Dom_html.selection >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEselection"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|selection>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_html.selection >><<span class="ocsforge_color_keyword"|end>>>>~Information on current selection
+
+----

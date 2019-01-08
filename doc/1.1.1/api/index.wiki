@@ -1,0 +1,72 @@
+==
+
+=@@id="1_JsofocamlAPIReference"@@~Js~_of~_ocaml – ~A~P~I ~Reference=
+
+
+
+
+|<<a_api | module Js >>|<<div class="odocwiki_info"|~Javascript binding
+>>
+|
+|<<a_api | module Dom >>|<<div class="odocwiki_info"|~D~O~M binding
+>>
+|
+|<<a_api | module Dom_html >>|<<div class="odocwiki_info"|~D~O~M ~H~T~M~L binding
+>>
+|
+|<<a_api | module Dom_events >>|<<div class="odocwiki_info"|~Javascript events
+>>
+|
+|<<a_api | module CSS >>|<<div class="odocwiki_info"|~This module contains a few types and values to ease the use of ~C~S~S properties
+   and such~.
+>>
+|
+|<<a_api | module Lwt_js >>|<<div class="odocwiki_info"|~Javascript specific ~Lwt functions~.
+>>
+|
+|<<a_api | module Firebug >>|<<div class="odocwiki_info"|~Firebug ~A~P~I ~(debugging console~)~.
+>>
+|
+|<<a_api | module Regexp >>|<<div class="odocwiki_info"|~Types for regexps~.
+>>
+|
+|<<a_api | module Url >>|<<div class="odocwiki_info"|~This module provides functions for tampering with ~Url~.
+>>
+|
+|<<a_api | module XmlHttpRequest >>|<<div class="odocwiki_info"|~Xml~Http~Request object~.
+>>
+|
+|<<a_api | module Event_arrows >>|<<div class="odocwiki_info"|~W~A~R~N~I~N~G~: ~E~X~P~E~R~I~M~E~N~T~A~L
+>>
+|
+|<<a_api | module Json >>|<<div class="odocwiki_info"|~Unsafe ~I~O~.
+>>
+|
+|<<a_api | module Deriving_Json >>|<<div class="odocwiki_info"|~Typesafe ~I~O ~(based on the //deriving~-ocsigen// library~)~.
+>>
+|
+|<<a_api | module File >>|<<div class="odocwiki_info"|<<span class="odocwiki_inlinecode"|filename>> handles old firefox without name property
+>>
+|
+|<<a_api | module Form >>||
+|<<a_api | module Typed_array >>||
+|<<a_api | module WebGL >>|<<div class="odocwiki_info"|~5~.~1 ~Types
+>>
+|
+
+
+
+
+
+=@@id="1_Indexes"@@~Indexes=
+
+
+
+* <<a_api text="Index of types" | index types >>
+* <<a_api text="Index of exceptions" | index exceptions >>
+* <<a_api text="Index of values" | index values >>
+* <<a_api text="Index of class methods" | index methods >>
+* <<a_api text="Index of class types" | index class types >>
+* <<a_api text="Index of modules" | index modules >>
+* <<a_api text="Index of module types" | index module types >>
+

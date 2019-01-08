@@ -1,0 +1,20 @@
+<<code language="ocaml" | object ('a)
+  method onabort :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onerror :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onload :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onloadend :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onloadstart :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+  method onprogress :
+    ('a Js.t, 'a File.progressEvent Js.t) Dom.event_listener
+    Js.writeonly_prop
+end >>

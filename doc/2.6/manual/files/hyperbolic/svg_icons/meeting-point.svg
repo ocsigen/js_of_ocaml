@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="38"
+   height="38"
+   id="svg2"
+   version="1.1"
+   inkscape:version="0.48.1 r9760"
+   sodipodi:docname="meeting-point.svg"
+   inkscape:export-filename="/home/jerome/js_of_ocaml/examples/hyperbolic/meeting-point.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="21.123867"
+     inkscape:cx="10.346556"
+     inkscape:cy="12.19874"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     showgrid="true"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0"
+     inkscape:window-width="1593"
+     inkscape:window-height="900"
+     inkscape:window-x="207"
+     inkscape:window-y="573"
+     inkscape:window-maximized="0">
+    <inkscape:grid
+       type="xygrid"
+       id="grid3838"
+       empspacing="5"
+       visible="true"
+       enabled="true"
+       snapvisiblegridlinesonly="true" />
+  </sodipodi:namedview>
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Calque 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-1015.3622)">
+    <path
+       style="fill:#769cfe;fill-opacity:1;stroke:none"
+       d="m 1.2449262e-6,1032.3622 5.9999999550738,0 -3,-3 4,0 4.9999998,5 -4.9999998,5 -4,0 3,-3 -5.9999999550738,0 z"
+       id="path3028"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccccccc"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       sodipodi:type="arc"
+       style="fill:#ff3a3a;fill-opacity:1;stroke:none"
+       id="path3800"
+       sodipodi:cx="857.13263"
+       sodipodi:cy="329.78745"
+       sodipodi:rx="6.4617238"
+       sodipodi:ry="6.6960869"
+       d="m 863.59435,329.78745 a 6.4617238,6.6960869 0 1 1 -12.92344,0 6.4617238,6.6960869 0 1 1 12.92344,0 z"
+       transform="matrix(0.77378733,0,0,0.74670477,-644.23837,788.10834)" />
+    <path
+       style="fill:#769cfe;fill-opacity:1;stroke:none"
+       d="m 21.000001,1015.3622 0,6 3,-3 0,4 -5,5 -5,-5 0,-4 3,3 0,-6 z"
+       id="path3028-7"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccccccc"
+       inkscape:export-filename="/home/jerome/js_of_ocaml/examples/hyperbolic/path3028-2.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="fill:#769cfe;fill-opacity:1;stroke:none"
+       d="m 38.000001,1036.3622 -6,0 3,3 -4,0 -5,-5 5,-5 4,0 -3,3 6,0 z"
+       id="path3028-1"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccccccc"
+       inkscape:export-filename="/home/jerome/js_of_ocaml/examples/hyperbolic/path3028-2.png"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+    <path
+       style="fill:#769cfe;fill-opacity:1;stroke:none"
+       d="m 17,1053.3622 0,-6 -3,3 0,-4 5,-5 5,5 0,4 -3,-3 0,6 z"
+       id="path3028-2"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cccccccccc"
+       inkscape:export-xdpi="90"
+       inkscape:export-ydpi="90" />
+  </g>
+</svg>

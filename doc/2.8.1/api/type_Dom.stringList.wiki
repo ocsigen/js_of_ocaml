@@ -1,0 +1,5 @@
+<<code language="ocaml" | object
+  method contains : Js.js_string Js.t -> bool Js.t Js.meth
+  method item : int -> Js.js_string Js.t Js.opt Js.meth
+  method length : int Js.readonly_prop
+end >>

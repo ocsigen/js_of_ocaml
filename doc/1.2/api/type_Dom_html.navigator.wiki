@@ -1,0 +1,11 @@
+<<code language="ocaml" | object
+  method appCodeName : Js.js_string Js.t Js.readonly_prop
+  method appName : Js.js_string Js.t Js.readonly_prop
+  method appVersion : Js.js_string Js.t Js.readonly_prop
+  method cookieEnabled : bool Js.t Js.readonly_prop
+  method language : Js.js_string Js.t Js.optdef Js.readonly_prop
+  method online : bool Js.t Js.readonly_prop
+  method platform : Js.js_string Js.t Js.readonly_prop
+  method userAgent : Js.js_string Js.t Js.readonly_prop
+  method userLanguage : Js.js_string Js.t Js.optdef Js.readonly_prop
+end >>

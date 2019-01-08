@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method externalResourcesRequired :
+    Dom_svg.animatedBoolean Js.t Js.readonly_prop
+end >>

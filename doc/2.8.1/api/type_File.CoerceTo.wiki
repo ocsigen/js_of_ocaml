@@ -1,0 +1,7 @@
+<<code language="ocaml" | sig
+  val document : File.file_any -> Dom.element Dom.document Js.t Js.Opt.t
+  val blob : File.file_any -> #File.blob Js.t Js.Opt.t
+  val json : File.file_any -> 'a Js.Opt.t
+  val string : File.file_any -> Js.js_string Js.t Js.Opt.t
+  val arrayBuffer : File.file_any -> Typed_array.arrayBuffer Js.t Js.Opt.t
+end >>

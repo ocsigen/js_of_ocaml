@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method item : int -> Dom_html.touch Js.t Js.optdef Js.meth
+  method length : int Js.readonly_prop
+end >>

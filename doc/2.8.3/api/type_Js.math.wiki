@@ -1,0 +1,32 @@
+<<code language="ocaml" | object
+  method _E : float Js.readonly_prop
+  method _LN10 : float Js.readonly_prop
+  method _LN2 : float Js.readonly_prop
+  method _LOG10E : float Js.readonly_prop
+  method _LOG2E : float Js.readonly_prop
+  method _PI : float Js.readonly_prop
+  method _SQRT1_2_ : float Js.readonly_prop
+  method _SQRT2 : float Js.readonly_prop
+  method abs : float -> float Js.meth
+  method acos : float -> float Js.meth
+  method asin : float -> float Js.meth
+  method atan : float -> float Js.meth
+  method atan2 : float -> float -> float Js.meth
+  method ceil : float -> float Js.meth
+  method cos : float -> float Js.meth
+  method exp : float -> float Js.meth
+  method floor : float -> float Js.meth
+  method log : float -> float Js.meth
+  method max : float -> float -> float Js.meth
+  method max_3 : float -> float -> float -> float Js.meth
+  method max_4 : float -> float -> float -> float -> float Js.meth
+  method min : float -> float -> float Js.meth
+  method min_3 : float -> float -> float -> float Js.meth
+  method min_4 : float -> float -> float -> float -> float Js.meth
+  method pow : float -> float -> float Js.meth
+  method random : float Js.meth
+  method round : float -> float Js.meth
+  method sin : float -> float Js.meth
+  method sqrt : float -> float Js.meth
+  method tan : float -> float Js.meth
+end >>

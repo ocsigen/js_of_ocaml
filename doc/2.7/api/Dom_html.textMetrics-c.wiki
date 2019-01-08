@@ -1,0 +1,4 @@
+=Class type <<a_api_type | class type Dom_html.textMetrics >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEtextMetrics"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|textMetrics>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_html.textMetrics >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODwidth"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|width>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|float <<a_api text="Js.readonly_prop" | type Js.readonly_prop >>>>>>

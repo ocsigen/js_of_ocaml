@@ -1,0 +1,71 @@
+<<code language="ocaml" | object ('a)
+  method abort : unit Js.meth
+  method onanimationcancel :
+    ('a Js.t, animationEvent Js.t) event_listener Js.writeonly_prop
+  method onanimationend :
+    ('a Js.t, animationEvent Js.t) event_listener Js.writeonly_prop
+  method onanimationiteration :
+    ('a Js.t, animationEvent Js.t) event_listener Js.writeonly_prop
+  method onanimationstart :
+    ('a Js.t, animationEvent Js.t) event_listener Js.writeonly_prop
+  method oncached :
+    (Dom_html.applicationCache Js.t, Dom_html.event Js.t)
+    Dom_html.event_listener Js.prop
+  method onchecking :
+    (Dom_html.applicationCache Js.t, Dom_html.event Js.t)
+    Dom_html.event_listener Js.prop
+  method onclick :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method ondblclick :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method ondownloading :
+    (Dom_html.applicationCache Js.t, Dom_html.event Js.t)
+    Dom_html.event_listener Js.prop
+  method ondrag : ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragend :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragenter :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragleave :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragover :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondragstart :
+    ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method ondrop : ('a Js.t, dragEvent Js.t) event_listener Js.writeonly_prop
+  method onerror :
+    (Dom_html.applicationCache Js.t, Dom_html.event Js.t)
+    Dom_html.event_listener Js.prop
+  method onkeydown :
+    ('a Js.t, keyboardEvent Js.t) event_listener Js.writeonly_prop
+  method onkeypress :
+    ('a Js.t, keyboardEvent Js.t) event_listener Js.writeonly_prop
+  method onkeyup :
+    ('a Js.t, keyboardEvent Js.t) event_listener Js.writeonly_prop
+  method onmousedown :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmousemove :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmouseout :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmouseover :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onmouseup :
+    ('a Js.t, mouseEvent Js.t) event_listener Js.writeonly_prop
+  method onnoupdate :
+    (Dom_html.applicationCache Js.t, Dom_html.event Js.t)
+    Dom_html.event_listener Js.prop
+  method onobsolete :
+    (Dom_html.applicationCache Js.t, Dom_html.event Js.t)
+    Dom_html.event_listener Js.prop
+  method onprogress :
+    (Dom_html.applicationCache Js.t, Dom_html.event Js.t)
+    Dom_html.event_listener Js.prop
+  method onscroll : ('a Js.t, event Js.t) event_listener Js.writeonly_prop
+  method onupdateready :
+    (Dom_html.applicationCache Js.t, Dom_html.event Js.t)
+    Dom_html.event_listener Js.prop
+  method status : int Js.readonly_prop
+  method swapCache : unit Js.meth
+  method update : unit Js.meth
+end >>

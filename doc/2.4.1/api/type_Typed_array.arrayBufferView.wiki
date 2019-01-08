@@ -1,0 +1,5 @@
+<<code language="ocaml" | object
+  method buffer : Typed_array.arrayBuffer Js.t Js.readonly_prop
+  method byteLength : int Js.readonly_prop
+  method byteOffset : int Js.readonly_prop
+end >>

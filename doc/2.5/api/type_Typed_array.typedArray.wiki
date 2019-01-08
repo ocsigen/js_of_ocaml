@@ -1,0 +1,14 @@
+<<code language="ocaml" | object
+  method _BYTES_PER_ELEMENT : int Js.readonly_prop
+  method _content_type_ : 'b
+  method buffer : arrayBuffer Js.t Js.readonly_prop
+  method byteLength : int Js.readonly_prop
+  method byteOffset : int Js.readonly_prop
+  method length : int Js.readonly_prop
+  method set_fromArray : 'a Js.js_array Js.t -> int -> unit Js.meth
+  method set_fromTypedArray :
+    ('a, 'b) Typed_array.typedArray Js.t -> int -> unit Js.meth
+  method subarray :
+    int -> int -> ('a, 'b) Typed_array.typedArray Js.t Js.meth
+  method subarray_toEnd : int -> ('a, 'b) Typed_array.typedArray Js.t Js.meth
+end >>

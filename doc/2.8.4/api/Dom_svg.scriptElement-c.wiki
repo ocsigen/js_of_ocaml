@@ -1,0 +1,8 @@
+=Class type <<a_api_type | class type Dom_svg.scriptElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEscriptElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|scriptElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_svg.scriptElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_svg.element >>
+* <<a_api | class Dom_svg.uriReference >>
+* <<a_api | class Dom_svg.externalResourcesRequired >>
+
+----
+<<pre class="ocsforge_color odocwiki_code"|<<span id="METHODtype_"|<<span class="ocsforge_color_keyword"|method>> <<span class="odocwiki_name"|type_>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Js.js_string" | class type Js.js_string >> <<a_api text="Js.t" | type Js.t >> <<a_api text="Js.prop" | type Js.prop >>>>>>

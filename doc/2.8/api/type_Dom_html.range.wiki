@@ -1,0 +1,23 @@
+<<code language="ocaml" | object
+  method cloneContents : Dom.documentFragment Js.t Js.meth
+  method cloneRange : Dom_html.range Js.t Js.meth
+  method collapse : bool Js.t -> unit Js.meth
+  method collapsed : bool Js.t Js.readonly_prop
+  method deleteContents : unit Js.meth
+  method endContainer : Dom.node Js.t Js.readonly_prop
+  method endOffset : int Js.readonly_prop
+  method extractContents : Dom.documentFragment Js.t Js.meth
+  method insertNode : Dom.node Js.t -> unit Js.meth
+  method selectNode : Dom.node Js.t -> unit Js.meth
+  method selectNodeContents : Dom.node Js.t -> unit Js.meth
+  method setEnd : Dom.node Js.t -> int -> unit Js.meth
+  method setEndAfter : Dom.node Js.t -> unit Js.meth
+  method setEndBefore : Dom.node Js.t -> unit Js.meth
+  method setStart : Dom.node Js.t -> int -> unit Js.meth
+  method setStartAfter : Dom.node Js.t -> unit Js.meth
+  method setStartBefore : Dom.node Js.t -> unit Js.meth
+  method startContainer : Dom.node Js.t Js.readonly_prop
+  method startOffset : int Js.readonly_prop
+  method surroundContents : Dom.node Js.t -> unit Js.meth
+  method toString : Js.js_string Js.t Js.meth
+end >>

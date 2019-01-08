@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method parse : Js.js_string Js.t -> 'a Js.meth
+  method stringify : 'a -> Js.js_string Js.t Js.meth
+end >>

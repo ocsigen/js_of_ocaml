@@ -1,0 +1,4 @@
+=Module <<a_api_type | module Typed_array.String >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|module>> <<span class="ocsforge_color_uid"|<<span class="ocsforge_color_uid"|String>>>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="ocsforge_color_keyword"|sig>><<a_api text=".." | module Typed_array.String >><<span class="ocsforge_color_keyword"|end>>>>
+----
+<<pre id="VALof_arrayBuffer" class="ocsforge_color odocwiki_code"|<<span class="ocsforge_color_keyword"|val>> <<span class="odocwiki_name"|of~_array~Buffer>> <<span class="ocsforge_color_delimiter"|~:>> <<span class="odocwiki_type"|<<a_api text="Typed_array.arrayBuffer" | class type Typed_array.arrayBuffer >> <<a_api text="Js.t" | type Js.t >> <<span class="ocsforge_color_delimiter"| -> >> string>>>>

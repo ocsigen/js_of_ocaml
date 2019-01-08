@@ -1,0 +1,4 @@
+<<code language="ocaml" | object
+  method colorProfile : Js.js_string Js.t Js.prop
+  method colors : Dom_svg.numberList Js.t Js.readonly_prop
+end >>

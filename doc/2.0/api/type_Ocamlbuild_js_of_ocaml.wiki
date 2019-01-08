@@ -1,0 +1,1 @@
+<<code language="ocaml" | sig val dispatcher : Ocamlbuild_plugin.hook -> unit end >>

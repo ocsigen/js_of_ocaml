@@ -1,0 +1,5 @@
+=Class type <<a_api_type | class type Dom_html.audioElement >> =
+<<pre class="ocsforge_color odocwiki_code"|<<span id="TYPEaudioElement"|<<span class="ocsforge_color_keyword"|class type>> <<span class="ocsforge_color_name"|audioElement>>>> <<span class="ocsforge_color_delimiter"|~=>> <<span class="ocsforge_color_keyword"|object>><<a_api text=".." | class type Dom_html.audioElement >><<span class="ocsforge_color_keyword"|end>>>>**~Inherits**
+* <<a_api | class Dom_html.mediaElement >>
+
+----

@@ -1,0 +1,84 @@
+<<code language="ocaml" | sig
+  exception Graphic_failure of string
+  val close_graph : unit -> unit
+  val set_window_title : string -> unit
+  val resize_window : int -> int -> unit
+  external clear_graph : unit -> unit = "caml_gr_clear_graph"
+  external size_x : unit -> int = "caml_gr_size_x"
+  external size_y : unit -> int = "caml_gr_size_y"
+  type color = int
+  val rgb : int -> int -> int -> color
+  external set_color : color -> unit = "caml_gr_set_color"
+  val background : color
+  val foreground : color
+  val black : color
+  val white : color
+  val red : color
+  val green : color
+  val blue : color
+  val yellow : color
+  val cyan : color
+  val magenta : color
+  external plot : int -> int -> unit = "caml_gr_plot"
+  val plots : (int * int) array -> unit
+  external point_color : int -> int -> color = "caml_gr_point_color"
+  external moveto : int -> int -> unit = "caml_gr_moveto"
+  val rmoveto : int -> int -> unit
+  external current_x : unit -> int = "caml_gr_current_x"
+  external current_y : unit -> int = "caml_gr_current_y"
+  val current_point : unit -> int * int
+  external lineto : int -> int -> unit = "caml_gr_lineto"
+  val rlineto : int -> int -> unit
+  val curveto : int * int -> int * int -> int * int -> unit
+  val draw_rect : int -> int -> int -> int -> unit
+  val draw_poly_line : (int * int) array -> unit
+  val draw_poly : (int * int) array -> unit
+  val draw_segments : (int * int * int * int) array -> unit
+  val draw_arc : int -> int -> int -> int -> int -> int -> unit
+  val draw_ellipse : int -> int -> int -> int -> unit
+  val draw_circle : int -> int -> int -> unit
+  val set_line_width : int -> unit
+  external draw_char : char -> unit = "caml_gr_draw_char"
+  external draw_string : string -> unit = "caml_gr_draw_string"
+  external set_font : string -> unit = "caml_gr_set_font"
+  val set_text_size : int -> unit
+  external text_size : string -> int * int = "caml_gr_text_size"
+  val fill_rect : int -> int -> int -> int -> unit
+  external fill_poly : (int * int) array -> unit = "caml_gr_fill_poly"
+  val fill_arc : int -> int -> int -> int -> int -> int -> unit
+  val fill_ellipse : int -> int -> int -> int -> unit
+  val fill_circle : int -> int -> int -> unit
+  type image
+  val transp : color
+  external make_image : color array array -> image = "caml_gr_make_image"
+  external dump_image : image -> color array array = "caml_gr_dump_image"
+  external draw_image : image -> int -> int -> unit = "caml_gr_draw_image"
+  val get_image : int -> int -> int -> int -> image
+  external create_image : int -> int -> image = "caml_gr_create_image"
+  external blit_image : image -> int -> int -> unit = "caml_gr_blit_image"
+  type status = {
+    mouse_x : int;
+    mouse_y : int;
+    button : bool;
+    keypressed : bool;
+    key : char;
+  }
+  type event = Button_down | Button_up | Key_pressed | Mouse_motion | Poll
+  external wait_next_event : event list -> status = "caml_gr_wait_event"
+  val loop_at_exit : event list -> (status -> unit) -> unit
+  val key_pressed : unit -> bool
+  external sound : int -> int -> unit = "caml_gr_sound"
+  val auto_synchronize : bool -> unit
+  external synchronize : unit -> unit = "caml_gr_synchronize"
+  external display_mode : bool -> unit = "caml_gr_display_mode"
+  external remember_mode : bool -> unit = "caml_gr_remember_mode"
+  type context
+  val open_graph : string -> unit
+  val open_canvas : Dom_html.canvasElement Js.t -> unit
+  val get_context : unit -> Graphics_js.context
+  val set_context : Graphics_js.context -> unit
+  val loop : event list -> (status -> unit) -> unit
+  val mouse_pos : unit -> (int * int) Lwt.t
+  val button_down : unit -> bool Lwt.t
+  val read_key : unit -> char Lwt.t
+end >>
