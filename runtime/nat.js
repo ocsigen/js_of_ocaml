@@ -1,6 +1,5 @@
 // Requires that Sys.word_size == 32, which it is for js_of_ocaml
 // This issue is not avoidable without rolling a custom nums.cma
-"use strict";
 
 //Provides: initialize_nat
 function initialize_nat() {
