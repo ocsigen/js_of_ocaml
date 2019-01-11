@@ -1,0 +1,7 @@
+{
+    "project": "js_of_ocaml",
+    "api": "api",
+    "menu": true,
+    "templates": ["how_template/template.wiki"],
+    "manual": "manual"
+}
