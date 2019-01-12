@@ -47,7 +47,7 @@ module IdentTable = struct
         ((sz - v.data, Ident.name v.ident, v.ident) :: table_contents_rec sz r rem)
 
   let table_contents sz t =
-    List.sort (fun (i, _, _) (j, _, _) -> compare i j)
+    List.sort ~cmp:(fun (i, _, _) (j, _, _) -> compare i j)
       (table_contents_rec sz (Obj.magic (t : 'a Ident.tbl) : 'a tbl) [])
 end
 (* Copied from ocaml/utils/tbl.ml *)
@@ -194,40 +194,39 @@ end = struct
     fun (events_by_pc, units) ~crcs ~includes ~orig ic ->
       let crcs =
         let t = Hashtbl.create 17 in
-        List.iter (fun (m,crc) -> Hashtbl.add t m crc) crcs;
+        List.iter crcs ~f:(fun (m,crc) -> Hashtbl.add t m crc);
         t
       in
       let evl : debug_event list = input_value ic in
       let paths = read_paths ic @ includes in
-      List.iter
-        (fun ({ev_module; ev_loc = { Location.loc_start = { Lexing.pos_fname; _}; _}; _} as ev) ->
-           let unit = try
-               Hashtbl.find units (ev_module,pos_fname)
-             with  Not_found ->
-               let crc =
-                 try Hashtbl.find crcs ev_module
-                 with Not_found -> None in
-               let source =
-                 try Some (Fs.find_in_path paths pos_fname)
-                 with Not_found ->
-                 try Some (Fs.find_in_path paths (Filename.basename pos_fname))
-                 with Not_found -> find_ml_in_paths paths ev_module in
-               if debug_sourcemap ()
-               then
-                 Format.eprintf "module:%s - source:%s - name:%s\n%!"
-                   ev_module
-                   (match source with None -> "NONE" | Some x -> x)
-                   pos_fname
-               ;
-               let u = { module_name = ev_module; fname = pos_fname; crc; source; paths } in
-               Hashtbl.add units (ev_module,pos_fname) u;
-               u
-           in
-           relocate_event orig ev;
-           Hashtbl.add events_by_pc ev.ev_pos (ev,unit);
-           ()
+      List.iter evl
+        ~f:(fun ({ev_module; ev_loc = { Location.loc_start = { Lexing.pos_fname; _}; _}; _} as ev) ->
+          let unit = try
+              Hashtbl.find units (ev_module,pos_fname)
+            with  Not_found ->
+              let crc =
+                try Hashtbl.find crcs ev_module
+                with Not_found -> None in
+              let source =
+                try Some (Fs.find_in_path paths pos_fname)
+                with Not_found ->
+                try Some (Fs.find_in_path paths (Filename.basename pos_fname))
+                with Not_found -> find_ml_in_paths paths ev_module in
+              if debug_sourcemap ()
+              then
+                Format.eprintf "module:%s - source:%s - name:%s\n%!"
+                  ev_module
+                  (match source with None -> "NONE" | Some x -> x)
+                  pos_fname
+              ;
+              let u = { module_name = ev_module; fname = pos_fname; crc; source; paths } in
+              Hashtbl.add units (ev_module,pos_fname) u;
+              u
+          in
+          relocate_event orig ev;
+          Hashtbl.add events_by_pc ev.ev_pos (ev,unit);
+          ()
         )
-        evl
 
   let find_source (_events_by_pc, units) pos_fname =
     let set =
@@ -431,7 +430,7 @@ end = struct
         Int64 (Obj.magic x : int64)
       else if tag < Obj.no_scan_tag then
         Tuple (tag,
-               Array.init (Obj.size x) (fun i -> parse (Obj.field x i)))
+               Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i)))
       else
         assert false
     end else
@@ -470,7 +469,7 @@ let make_globals size constants primitives =
 
 let resize_array a len def =
   let b = Array.make len def in
-  Array.blit a 0 b 0 (Array.length a);
+  Array.blit ~src:a ~src_pos:0 ~dst:b ~dst_pos:0 ~len:(Array.length a);
   b
 
 let resize_globals g size =
@@ -544,9 +543,9 @@ module State = struct
   let accu st = elt_to_var st.accu
 
   let stack_vars st =
-    List.fold_left
-      (fun l e -> match e with Var x -> x :: l | Dummy -> l)
-      [] (st.accu :: st.stack)
+    List.fold_left (st.accu :: st.stack)
+      ~init:[]
+      ~f:(fun l e -> match e with Var x -> x :: l | Dummy -> l)
 
   let set_accu st x = {st with accu = Var x}
 
@@ -554,7 +553,7 @@ module State = struct
 
   let peek n st = elt_to_var (List.nth st.stack n)
 
-  let grab n st = (List.map elt_to_var (list_start n st.stack), pop n st)
+  let grab n st = (List.map (list_start n st.stack) ~f:elt_to_var , pop n st)
 
   let rec st_assign s n x =
     match s with
@@ -572,15 +571,16 @@ module State = struct
 
   let start_block current_pc state =
     let stack =
-      List.fold_right
-        (fun e stack ->
+      List.fold_right state.stack
+        ~init:[]
+        ~f:(fun e stack ->
            match e with
              Dummy ->
              Dummy :: stack
            | Var x ->
              let y = Var.fork x in
              Var y :: stack)
-        state.stack []
+        
     in
     let state = { state with stack = stack;
                              current_pc } in
@@ -630,10 +630,9 @@ module State = struct
     | v :: r -> Format.fprintf f "%a %a" print_elt v print_stack r
 
   let print_env f e =
-    Array.iteri
-      (fun i v ->
+    Array.iteri e ~f:(fun i v ->
          if i > 0 then Format.fprintf f " ";
-         Format.fprintf f "%a" print_elt v) e
+         Format.fprintf f "%a" print_elt v)
 
   let print st =
     Format.eprintf "{ %a | %a | (%d) %a }@."
@@ -777,10 +776,10 @@ let rec compile_block blocks debug code pc state =
         compile_block blocks debug code pc1 state';
         compile_block blocks debug code pc2 state'
       | Switch (_, l1, l2) ->
-        Array.iter
-          (fun (pc', _) -> compile_block blocks debug code pc' state') l1;
-        Array.iter
-          (fun (pc', _) -> compile_block blocks debug code pc' state') l2
+        Array.iter l1 ~f:(fun (pc', _) ->
+          compile_block blocks debug code pc' state');
+        Array.iter l2 ~f:(fun (pc', _) ->
+          compile_block blocks debug code pc' state')
       | Pushtrap _ | Raise _ | Return _ | Stop ->
         ()
     end
@@ -989,7 +988,7 @@ and compile infos pc state instrs =
       let (vals, state) = State.grab nvars state in
       let (x, state) = State.fresh_var state in
       let env =
-        Array.of_list (State.Dummy :: List.map (fun x -> State.Var x) vals) in
+        Array.of_list (State.Dummy :: List.map vals ~f:(fun x -> State.Var x)) in
       if debug_parser () then Format.printf "fun %a (" Var.print x;
       let nparams =
         match (get_instr_exn code addr).Instr.code with
@@ -1021,17 +1020,17 @@ and compile infos pc state instrs =
         vars := (i, x) :: !vars;
         state := State.push st
       done;
-      let env = ref (List.map (fun x -> State.Var x) vals) in
-      List.iter
-        (fun (i, x) ->
+      let env = ref (List.map vals ~f:(fun x -> State.Var x)) in
+      List.iter !vars
+        ~f:(fun (i, x) ->
            env := State.Var x :: !env;
-           if i > 0 then env := State.Dummy :: !env)
-        !vars;
+           if i > 0 then env := State.Dummy :: !env);
       let env = Array.of_list !env in
       let state = !state in
       let instrs =
-        List.fold_left
-          (fun instr (i, x) ->
+        List.fold_left (List.rev !vars) 
+          ~init:instrs
+          ~f:(fun instr (i, x) ->
              let addr = pc + 3 + gets code (pc + 3 + i) in
              if debug_parser () then Format.printf "fun %a (" Var.print x;
              let nparams =
@@ -1051,7 +1050,7 @@ and compile infos pc state instrs =
              Debug.propagate (State.stack_vars state'') args;
 
              Let (x, Closure (List.rev params, (addr, args))) :: instr)
-          instrs (List.rev !vars)
+          
       in
       compile infos (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
     | OFFSETCLOSUREM2 ->
@@ -1359,11 +1358,11 @@ and compile infos pc state instrs =
       let l = sz land 0xFFFF in
       let it =
         Array.init (sz land 0XFFFF)
-          (fun i -> (pc + 2 + gets code (pc + 2 + i), args))
+          ~f:(fun i -> (pc + 2 + gets code (pc + 2 + i), args))
       in
       let bt =
         Array.init (sz lsr 16)
-          (fun i -> (pc + 2 + gets code (pc + 2 + l + i), args))
+          ~f:(fun i -> (pc + 2 + gets code (pc + 2 + l + i), args))
       in
       (instrs, Switch (x, it, bt), state)
     | BOOLNOT ->
@@ -1451,7 +1450,7 @@ and compile infos pc state instrs =
         Format.printf ")@."
       end;
       compile infos (pc + 2) state
-        (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
+        (Let (x, Prim (Extern prim, List.map args ~f:(fun x -> Pv x))) :: instrs)
     | C_CALL5 ->
       let nargs = 5 in
       let prim = primitive_name state (getu code (pc + 1)) in
@@ -1467,7 +1466,7 @@ and compile infos pc state instrs =
         Format.printf ")@."
       end;
       compile infos (pc + 2) state
-        (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
+        (Let (x, Prim (Extern prim, List.map args ~f:(fun x -> Pv x))) :: instrs)
     | C_CALLN ->
       let nargs = getu code (pc + 1) in
       let prim = primitive_name state (getu code (pc + 2)) in
@@ -1483,7 +1482,7 @@ and compile infos pc state instrs =
         Format.printf ")@."
       end;
       compile infos (pc + 3) state
-        (Let (x, Prim (Extern prim, List.map (fun x -> Pv x) args)) :: instrs)
+        (Let (x, Prim (Extern prim, List.map args ~f:(fun x -> Pv x))) :: instrs)
     | ( CONST0 | CONST1 | CONST2 | CONST3 ) as cc ->
       let (x, state) = State.fresh_var state in
       let n = match cc with
@@ -1896,7 +1895,7 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
 
   let prim_size = seek_section toc ic "PRIM" in
   let prim = really_input_string ic prim_size in
-  let primitive_table = Array.of_list(String.split_char '\000' prim) in
+  let primitive_table = Array.of_list(String.split_char ~sep:'\000' prim) in
 
   let code_size = seek_section toc ic "CODE" in
   let code = really_input_string ic code_size in
@@ -1912,8 +1911,8 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
 
   let keeps =
     let t = Hashtbl.create 17 in
-    List.iter (fun (_,s) -> Hashtbl.add t s ()) predefined_exceptions;
-    List.iter (fun s     -> Hashtbl.add t s ()) ["Outcometree";"Topdirs";"Toploop"];
+    List.iter ~f:(fun (_,s) -> Hashtbl.add t s ()) predefined_exceptions;
+    List.iter ~f:(fun s     -> Hashtbl.add t s ()) ["Outcometree";"Topdirs";"Toploop"];
     t
   in
   let keep s =
@@ -1924,7 +1923,7 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
       | `Skip -> false
   in
 
-  let crcs = List.filter (fun (unit, _crc) -> keep unit) orig_crcs in
+  let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in
 
   let symbols = filter_global_map (fun id -> keep (Ident.name id)) orig_symbols in
 
@@ -1947,14 +1946,13 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
   let globals = make_globals (Array.length init_data) init_data primitive_table in
 
   (* Initialize module override mechanism *)
-  List.iter (fun (name, v) ->
+  List.iter override_global ~f:(fun (name, v) ->
     try
       let nn = Ident.create_persistent name in
       let i = Tbl.find (fun x1 x2 -> String.compare (Ident.name x1) (Ident.name x2)) nn orig_symbols.num_tbl in
       globals.override.(i) <- Some v;
       if debug_parser () then Format.eprintf "overriding global %s@." name
-    with Not_found -> ()
-  ) override_global;
+    with Not_found -> ());
 
   if toplevel || dynlink then
     begin
@@ -1976,18 +1974,24 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
   let p = parse_bytecode ~debug code globals debug_data in
 
   (* register predefined exception *)
-  let body = List.fold_left (fun body (i,name) ->
-    globals.named_value.(i) <- Some name;
+  let body =
+    List.fold_left predefined_exceptions
+      ~init:[]
+      ~f:(fun body (i,name) ->
+        globals.named_value.(i) <- Some name;
     let body = register_global ~force:true globals i body in
     globals.is_exported.(i) <- false;
-    body) [] predefined_exceptions in
-  let body = Array.fold_right_i (fun i _ l ->
+    body)
+  in
+  let body = Array.fold_right_i globals.constants
+      ~init:body
+      ~f:(fun i _ l ->
     match globals.vars.(i) with
       Some x when globals.is_const.(i) ->
       let l = register_global globals i l in
       Let (x, Constant (Constants.parse globals.constants.(i))) :: l
-    | _ -> l) globals.constants body in
-
+      | _ -> l)
+  in
 
   let body =
     if toplevel
@@ -2003,12 +2007,15 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
         let infos = [
           "toc",(Constants.parse (Obj.repr toc));
           "prim_count",(Int (Int32.of_int (Array.length globals.primitives)))] in
-        let body = List.fold_left (fun rem (name,const) ->
-          let c = Var.fresh () in
-          Let (c, Constant const) ::
-          Let (Var.fresh (),
-               Prim (Extern "caml_js_set", [Pv gdata; Pc (String name); Pv c])) ::
-          rem) body infos in
+        let body =
+          List.fold_left infos
+            ~init:body
+            ~f:(fun rem (name,const) ->
+            let c = Var.fresh () in
+            Let (c, Constant const) ::
+            Let (Var.fresh (),
+                 Prim (Extern "caml_js_set", [Pv gdata; Pc (String name); Pv c])) ::
+            rem)  in
         Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
       end
     else body in
@@ -2038,7 +2045,9 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
   in
   let cmis =
     let exception_ids =
-      List.fold_left (fun acc (i,_) -> max acc i) (-1) predefined_exceptions
+      List.fold_left predefined_exceptions
+        ~init:(-1)
+        ~f:(fun acc (i,_) -> max acc i)
     in
     if toplevel && Config.Flag.include_cmis ()
     then Tbl.fold (fun id num acc ->
@@ -2055,11 +2064,14 @@ let from_bytes primitives (code : code) =
   let p = parse_bytecode ~debug:`No code globals debug_data in
 
   let gdata = Var.fresh () in
-  let body = Array.fold_right_i (fun i var l ->
-    match var with
-    | Some x when globals.is_const.(i) ->
-      Let (x, Field (gdata, i)) :: l
-    | _ -> l) globals.vars [] in
+  let body = Array.fold_right_i globals.vars
+      ~init:[]
+      ~f:(fun i var l ->
+        match var with
+        | Some x when globals.is_const.(i) ->
+          Let (x, Field (gdata, i)) :: l
+        | _ -> l)
+  in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   prepend p body, debug_data
 
@@ -2091,7 +2103,8 @@ module Reloc = struct
 
   let step1 t compunit code =
     let open Cmo_format in
-    List.iter (fun name -> Hashtbl.add t.primitives name (Hashtbl.length t.primitives)) compunit.cu_primitives;
+    List.iter compunit.cu_primitives ~f:(fun name ->
+      Hashtbl.add t.primitives name (Hashtbl.length t.primitives)) ;
     let slot_for_literal sc =
       t.constants <- Ocaml_compiler.obj_of_const sc :: t.constants;
       let pos = t.pos in
@@ -2103,12 +2116,12 @@ module Reloc = struct
         let i = Hashtbl.length t.primitives in
         Hashtbl.add t.primitives name i;
         i in
-    List.iter (function
+    List.iter compunit.cu_reloc ~f:(function
       | (Reloc_literal sc, pos) ->
         gen_patch_int code pos (slot_for_literal sc)
       | (Reloc_primitive name, pos) ->
         gen_patch_int code pos (num_of_prim name)
-      | _ -> ()) compunit.cu_reloc
+      | _ -> ())
 
   let step2 t compunit code =
     let open Cmo_format in
@@ -2123,12 +2136,12 @@ module Reloc = struct
     let slot_for_getglobal id = next id in
     let slot_for_setglobal id = next id in
 
-    List.iter (function
+    List.iter compunit.cu_reloc ~f:(function
       | (Reloc_getglobal id, pos) ->
         gen_patch_int code pos (slot_for_getglobal id)
       | (Reloc_setglobal id, pos) ->
         gen_patch_int code pos (slot_for_setglobal id)
-      | _ -> ()) compunit.cu_reloc
+      | _ -> ())
 
   let primitives t =
     let l = Hashtbl.length t.primitives in
@@ -2139,7 +2152,7 @@ module Reloc = struct
   let constants t =
     let len = List.length t.constants in
     let a = Array.make len (Obj.repr 0) in
-    List.iteri (fun i o -> a.(len - 1 - i) <- o) t.constants;
+    List.iteri t.constants ~f:(fun i o -> a.(len - 1 - i) <- o);
     (* WARNING: [Obj.t array] is dangerous.
        Make sure we don't end up with an unboxed float array. *)
     assert(Obj.tag (Obj.repr a) = 0);
@@ -2154,13 +2167,12 @@ module Reloc = struct
       globals.named_value.(i) <- Some name;
     ) t.names;
     (* Initialize module override mechanism *)
-    List.iter (fun (name, v) ->
+    List.iter override_global ~f:(fun (name, v) ->
       try
         let i = Hashtbl.find t.names name in
         globals.override.(i) <- Some v;
         if debug_parser () then Format.eprintf "overriding global %s@." name
-      with Not_found -> ()
-    ) override_global;
+      with Not_found -> ());
     globals
 
 
@@ -2168,38 +2180,43 @@ end
 
 let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
   let reloc = Reloc.create () in
-  List.iter (fun (compunit, code) -> Reloc.step1 reloc compunit code) l;
-  List.iter (fun (compunit, code) -> Reloc.step2 reloc compunit code) l;
+  List.iter l ~f:(fun (compunit, code) -> Reloc.step1 reloc compunit code);
+  List.iter l ~f:(fun (compunit, code) -> Reloc.step2 reloc compunit code);
   let globals = Reloc.make_globals reloc in
   let code =
-    let l = List.map (fun (_,c) -> Bytes.to_string c) l in
-    String.concat "" l in
+    let l = List.map l ~f:(fun (_,c) -> Bytes.to_string c) in
+    String.concat ~sep:"" l in
   let prog = parse_bytecode ~debug code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
-  let body = Array.fold_right_i (fun i var l ->
-    match var with
-    | Some x when globals.is_const.(i) ->
-      begin match globals.named_value.(i) with
-        | None ->
-          let l = register_global globals i l in
-          let cst = Constants.parse globals.constants.(i) in
-          begin match cst, Code.Var.get_name x with
-            | (String str|IString str), None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
-            | _ -> ()
-          end;
-          Let (x, Constant cst) :: l
-        | Some name ->
-          Var.name x name;
-          Let (x, Prim (Extern "caml_js_get",[Pv gdata; Pc (IString name)])) :: l
-      end
-    | _ -> l) globals.vars [] in
+  let body = Array.fold_right_i globals.vars
+      ~init:[]
+      ~f:(fun i var l ->
+        match var with
+        | Some x when globals.is_const.(i) ->
+          begin match globals.named_value.(i) with
+            | None ->
+              let l = register_global globals i l in
+              let cst = Constants.parse globals.constants.(i) in
+              begin match cst, Code.Var.get_name x with
+                | (String str|IString str), None -> Code.Var.name x (Printf.sprintf "cst_%s" str)
+                | _ -> ()
+              end;
+              Let (x, Constant cst) :: l
+            | Some name ->
+              Var.name x name;
+              Let (x, Prim (Extern "caml_js_get",[Pv gdata; Pc (IString name)])) :: l
+          end
+        | _ -> l)
+  in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   let cmis =
     if toplevel && Config.Flag.include_cmis ()
     then
-      List.fold_left (fun acc (compunit,_) ->
+      List.fold_left l
+        ~init:StringSet.empty
+        ~f:(fun acc (compunit,_) ->
         StringSet.add (compunit.Cmo_format.cu_name) acc
-      ) StringSet.empty l
+      )
     else StringSet.empty in
   prepend prog body,cmis, debug_data
 
@@ -2243,19 +2260,20 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
         seek_in ic pos_toc;
         let lib = (input_value ic : Cmo_format.library) in
         let orig = ref 0 in
-        let units = List.map (fun compunit ->
-          seek_in ic compunit.Cmo_format.cu_pos;
-          let code = Bytes.create compunit.Cmo_format.cu_codesize in
-          really_input ic code 0 compunit.Cmo_format.cu_codesize;
-          if debug = `No || compunit.Cmo_format.cu_debug = 0 then ()
-          else
-            begin
-              seek_in ic compunit.Cmo_format.cu_debug;
-              Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic
-            end;
-          orig := !orig + compunit.Cmo_format.cu_codesize;
-          compunit, code)
-          lib.Cmo_format.lib_units in
+        let units =
+          List.map lib.Cmo_format.lib_units ~f:(fun compunit ->
+            seek_in ic compunit.Cmo_format.cu_pos;
+            let code = Bytes.create compunit.Cmo_format.cu_codesize in
+            really_input ic code 0 compunit.Cmo_format.cu_codesize;
+            if debug = `No || compunit.Cmo_format.cu_debug = 0 then ()
+            else
+              begin
+                seek_in ic compunit.Cmo_format.cu_debug;
+                Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic
+              end;
+            orig := !orig + compunit.Cmo_format.cu_codesize;
+            compunit, code)
+        in
         let a,b,c = from_compilation_units ~toplevel ~includes ~debug ~debug_data units in
         a,b,c,false
       | _ ->
@@ -2276,7 +2294,7 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
 let predefined_exceptions () =
   let body =
     let open Code in
-    List.map (fun (index,name) ->
+    List.map predefined_exceptions ~f:(fun (index,name) ->
       let exn = Var.fresh () in
       let v_name = Var.fresh () in
       let v_name_js = Var.fresh () in
@@ -2292,7 +2310,7 @@ let predefined_exceptions () =
                    [ Pc (Int (Int32.of_int index))
                    ; Pv exn
                    ; Pv v_name_js]))
-      ]) predefined_exceptions
+      ]) 
     |> List.concat
   in
   let block =

@@ -65,20 +65,21 @@ let f {
   | None | Some "" | Some "-" -> ()
   | Some name when debug_mem () -> Debug.start_profiling name
   | Some _ -> () end;
-  List.iter (fun (s,v) -> Config.Param.set s v) params;
-  List.iter (fun (s,v) -> Eval.set_static_env s v) static_env;
+  List.iter params ~f:(fun (s,v) -> Config.Param.set s v);
+  List.iter static_env ~f:(fun (s,v) -> Eval.set_static_env s v);
   let t = Timer.make () in
 
-  let include_dir = List.map (fun d ->
-    match Findlib.path_require_findlib d with
-    | Some d ->
-      let pkg,d' = match String.split Filename.dir_sep d with
-        | [] -> assert false
-        | [d] -> "js_of_ocaml",d
-        | pkg::l -> pkg, List.fold_left Filename.concat "" l in
-      Filename.concat (Findlib.find_pkg_dir pkg) d'
-    | None -> d
-  ) include_dir in
+  let include_dir =
+    List.map include_dir  ~f:(fun d ->
+      match Findlib.path_require_findlib d with
+      | Some d ->
+        let pkg,d' = match String.split Filename.dir_sep d with
+          | [] -> assert false
+          | [d] -> "js_of_ocaml",d
+          | pkg::l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat in
+        Filename.concat (Findlib.find_pkg_dir pkg) d'
+      | None -> d)
+  in
 
   let expunge = match export_file with
     | None -> None
@@ -135,15 +136,13 @@ let f {
   let cmis = if nocmis then StringSet.empty else cmis in
   let p =
     let l =
-      List.map
-        (fun (k,v) ->
+      List.map static_env ~f:(fun (k,v) ->
           Primitive.add_external "caml_set_static_env";
           let args =
             [ Code.Pc (IString k)
             ; Code.Pc (IString v) ]
           in
           Code.(Let(Var.fresh (), Prim (Extern "caml_set_static_env", args))))
-        static_env
     in
     Code.prepend p l
   in

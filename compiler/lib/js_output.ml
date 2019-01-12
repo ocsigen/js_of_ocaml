@@ -49,7 +49,8 @@ module Make(D : sig
     match D.source_map with
     | None -> (fun _ _ -> ()),(fun _ -> -1),(fun _ -> -1),false
     | Some sm ->
-      List.iter (fun f -> Hashtbl.add files f !idx_files; incr idx_files) (List.rev sm.Source_map.sources);
+      List.iter (List.rev sm.Source_map.sources)
+        ~f:(fun f -> Hashtbl.add files f !idx_files; incr idx_files);
       (fun pos m -> temp_mappings := (pos,m)::!temp_mappings),
       (fun file ->
          try Hashtbl.find files file with
@@ -272,9 +273,9 @@ module Make(D : sig
     else '"'
 
   let array_str1 =
-    Array.init 256 (fun i -> String.make 1 (Char.chr i))
+    Array.init 256 ~f:(fun i -> String.make 1 (Char.chr i))
   let array_conv =
-    Array.init 16 (fun i -> String.make 1 (("0123456789abcdef").[i]))
+    Array.init 16 ~f:(fun i -> String.make 1 (("0123456789abcdef").[i]))
 
   let pp_string f ?(quote='"') ?(utf=false) s =
     let quote_s = String.make 1 quote in
@@ -1033,7 +1034,7 @@ module Make(D : sig
 end
 
 let part_of_ident =
-  let a = Array.init 256 (fun i ->
+  let a = Array.init 256 ~f:(fun i ->
     let c = Char.chr i in
     (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c = '_' || c = '$'
   ) in
@@ -1069,20 +1070,18 @@ let program f ?source_map p =
        match sm.Source_map.sources_content with
        | None -> None
        | Some [] ->
-         Some (List.map
-                 (fun file ->
+         Some (List.map sources ~f:(fun file ->
                     if Sys.file_exists file
                     then
                       let content = Fs.read_file file in
                       Some content
-                    else None) sources)
+                    else None))
        | Some _ -> assert false in
      let mappings =
-       List.map
-         (fun (pos,m) ->
+       List.map !O.temp_mappings ~f:(fun (pos,m) ->
             {m with
              Source_map.gen_line = pos.PP.p_line;
-             Source_map.gen_col  = pos.PP.p_col}) !O.temp_mappings
+             Source_map.gen_col  = pos.PP.p_col}) 
      in
      let sources = match sm.Source_map.sourceroot with
        | None -> sources
@@ -1090,11 +1089,11 @@ let program f ?source_map p =
          let script_file = (Filename.chop_extension sm.Source_map.file) ^ ".make-sourcemap-links.sh" in
          let oc = open_out script_file in
          let printf fmt = Printf.fprintf oc fmt  in
-         let targets = List.map (fun src -> Filename.basename src) sources in
+         let targets = List.map sources ~f:(fun src -> Filename.basename src) in
          printf "#! /bin/bash\n";
          printf "mkdir -p %s\n" root;
-         List.iter2 (fun src tg ->
-           printf "ln -s %s %s\n" src (Filename.concat root tg)) sources targets;
+         List.iter2  sources targets ~f:(fun src tg ->
+           printf "ln -s %s %s\n" src (Filename.concat root tg));
          close_out oc;
          warn "Source-map info: run 'sh %s' to create links to sources in %s.\n%!" script_file root;
          targets

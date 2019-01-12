@@ -86,10 +86,10 @@ let expr_deps blocks vars deps defs x e =
     Const _ | Constant _ | Apply _ | Prim _ ->
       ()
   | Closure (l, cont) ->
-      List.iter (fun x -> add_param_def vars defs x) l;
+      List.iter l ~f:(fun x -> add_param_def vars defs x);
       cont_deps blocks vars deps defs cont
   | Block (_, a) ->
-      Array.iter (fun y -> add_dep deps x y) a
+      Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _) ->
       add_dep deps x y
 
@@ -100,21 +100,18 @@ let program_deps (_, blocks, _) =
   let defs = Array.make nv undefined in
   AddrMap.iter
     (fun _ block ->
-       List.iter
-         (fun i ->
-            match i with
-              Let (x, e) ->
-                add_var vars x;
-                add_expr_def defs x e;
-                expr_deps blocks vars deps defs x e
-            | Set_field _ | Array_set _ | Offset_ref _ ->
-                ())
-         block.body;
-       Option.iter
-         (fun (x, cont) ->
+       List.iter block.body ~f:(fun i ->
+         match i with
+           Let (x, e) ->
+           add_var vars x;
+           add_expr_def defs x e;
+           expr_deps blocks vars deps defs x e
+         | Set_field _ | Array_set _ | Offset_ref _ ->
+           ());
+       Option.iter block.handler ~f:(fun (x, cont) ->
             add_param_def vars defs x;
             cont_deps blocks vars deps defs cont)
-         block.handler;
+         ;
        match block.branch with
          Return _ | Raise _ | Stop ->
            ()
@@ -124,8 +121,8 @@ let program_deps (_, blocks, _) =
            cont_deps blocks vars deps defs cont1;
            cont_deps blocks vars deps defs cont2
        | Switch (_, a1, a2) ->
-           Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a1;
-           Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a2
+           Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont);
+           Array.iter a2 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
        | Pushtrap (cont, _, _, _) ->
            cont_deps blocks vars deps defs cont)
     blocks;
@@ -190,7 +187,7 @@ let rec block_escape st x =
          st.may_escape.(idx) <- true;
          st.possibly_mutable.(idx) <- true;
          match st.defs.(Var.idx y) with
-           Expr (Block (_, l)) -> Array.iter (fun z -> block_escape st z) l
+           Expr (Block (_, l)) -> Array.iter l ~f:(fun z -> block_escape st z)
          | _                   -> ()
        end)
     (VarTbl.get st.known_origins x)
@@ -200,7 +197,7 @@ let expr_escape st _x e =
     Const _ | Constant _ | Closure _ | Block _ | Field _ ->
       ()
   | Apply (_, l, _) ->
-      List.iter (fun x -> block_escape st x) l
+      List.iter l ~f:(fun x -> block_escape st x)
   | Prim ((Vectlength | Array_get
           | Not | IsInt
           | Eq | Neq | Lt | Le | Ult),
@@ -211,7 +208,7 @@ let expr_escape st _x e =
       | Some l -> l
       | None -> match Primitive.kind name with
         | `Mutable | `Mutator -> []
-        | `Pure -> List.map (fun _ -> `Const) l
+        | `Pure -> List.map l ~f:(fun _ -> `Const)
     in
     let rec loop args ka =
       match args,ka with
@@ -225,21 +222,18 @@ let expr_escape st _x e =
           | Pv v,`Shallow_const ->
             begin match st.defs.(Var.idx v) with
               | Expr (Block (_, a)) ->
-                Array.iter (fun x -> block_escape st x) a
+                Array.iter a ~f:(fun x -> block_escape st x)
               | _ -> block_escape st v
             end
           | Pv v,`Object_literal ->
             begin match st.defs.(Var.idx v) with
               | Expr (Block (_, a)) ->
-                Array.iter
-                  (fun x ->
-                     begin match st.defs.(Var.idx x) with
-                       | Expr (Block (_, [|_k; v|])) ->
-                         block_escape st v
-                       | _ ->
-                         block_escape st x
-                     end)
-                  a
+                Array.iter a ~f:(fun x ->
+                  match st.defs.(Var.idx x) with
+                  | Expr (Block (_, [|_k; v|])) ->
+                    block_escape st v
+                  | _ ->
+                    block_escape st x)
               | _ ->
                 block_escape st v
             end;
@@ -260,19 +254,17 @@ let program_escape defs known_origins (_, blocks, _) =
   in
   AddrMap.iter
     (fun _ block ->
-       List.iter
-         (fun i ->
-            match i with
-              Let (x, e) ->
-                expr_escape st x e
-            | Set_field (x, _, y) | Array_set (x, _, y) ->
-                VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
-                  (VarTbl.get known_origins x);
-                block_escape st y
-            | Offset_ref (x, _) ->
-                VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
-                  (VarTbl.get known_origins x))
-         block.body;
+       List.iter block.body ~f:(fun i ->
+         match i with
+           Let (x, e) ->
+           expr_escape st x e
+         | Set_field (x, _, y) | Array_set (x, _, y) ->
+           VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
+             (VarTbl.get known_origins x);
+           block_escape st y
+         | Offset_ref (x, _) ->
+           VarSet.iter (fun y -> possibly_mutable.(Var.idx y) <- true)
+             (VarTbl.get known_origins x));
        match block.branch with
          Return x | Raise (x,_) ->
            block_escape st x

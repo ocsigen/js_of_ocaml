@@ -30,7 +30,7 @@ let rec function_cardinality info x acc =
        | Expr (Prim (Extern "%closure", [Pc (IString prim)])) ->
          (try Some (Primitive.arity prim) with Not_found -> None)
        | Expr (Apply (f, l, _)) ->
-         if List.mem f acc
+         if List.mem f ~set:acc
          then None
          else begin match function_cardinality info f (f::acc) with
              Some n ->
@@ -59,10 +59,10 @@ let specialize_instr info (acc,free_pc,extra) i =
           ::(Let(x,Apply(v,rest,false)))
           ::acc,free_pc,extra
         | Some n when n > n' ->
-          let missing = Array.init (n - n') (fun _ -> Code.Var.fresh ()) in
+          let missing = Array.init (n - n') ~f:(fun _ -> Code.Var.fresh ()) in
           let missing = Array.to_list missing in
           let block =
-            let params' = Array.init (n - n') (fun _ -> Code.Var.fresh ()) in
+            let params' = Array.init (n - n') ~f:(fun _ -> Code.Var.fresh ()) in
             let params' = Array.to_list params' in
             let return' = Code.Var.fresh () in
             { params=params';
@@ -81,8 +81,15 @@ let specialize_instrs info (pc, blocks, free_pc) =
     AddrMap.fold
       (fun pc block (blocks,free_pc) ->
         let body,free_pc,extra =
-          List.fold_right (fun i acc -> specialize_instr info acc i) block.body ([],free_pc,[]) in
-        let blocks = List.fold_left (fun blocks (pc,b) -> AddrMap.add pc b blocks) blocks extra in
+          List.fold_right block.body
+            ~init:([],free_pc,[])
+            ~f:(fun i acc -> specialize_instr info acc i)
+        in
+        let blocks =
+          List.fold_left extra
+            ~init:blocks
+            ~f:(fun blocks (pc,b) -> AddrMap.add pc b blocks)
+        in
         (AddrMap.add pc { block with Code.body = body } blocks),free_pc)
       blocks (AddrMap.empty,free_pc)
   in

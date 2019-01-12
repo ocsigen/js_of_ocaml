@@ -222,22 +222,23 @@ let eval_instr info i =
       end
     | Let (x,Prim (prim, prim_args)) ->
       begin
-        let prim_args' = List.map (fun x -> the_const_of info x) prim_args in
+        let prim_args' = List.map prim_args ~f:(fun x -> the_const_of info x) in
         let res =
-          if List.for_all (function Some _ -> true | _ -> false) prim_args'
-          then eval_prim (prim,List.map (function Some c -> c | None -> assert false) prim_args')
+          if List.for_all prim_args' ~f:(function Some _ -> true | _ -> false) 
+          then eval_prim (prim,List.map prim_args' ~f:(function Some c -> c | None -> assert false))
           else None in
         match res with
           | Some c ->
             let c = Constant c in
             Flow.update_def info x c;
             Let (x,c)
-          | _ -> Let(x, Prim(prim, (List.map2 (fun arg c ->
-            match c with
+          | _ -> Let(x, Prim(prim, (
+            List.map2 prim_args prim_args' ~f:(fun arg c ->
+              match c with
               | Some ((Int _ | Float _) as c) -> Pc c
               | Some _ (* do not be duplicated other constant as
                           they're not represented with constant in javascript. *)
-              | None -> arg) prim_args prim_args')))
+              | None -> arg) )))
       end
     | _ -> i
 
@@ -309,7 +310,7 @@ let rec do_not_raise pc visited blocks =
   else
   let visited = AddrSet.add pc visited in
   let b = AddrMap.find pc blocks in
-  List.iter (function
+  List.iter b.body ~f:(function
     | Array_set (_,_,_)
     | Offset_ref (_,_)
     | Set_field (_,_,_) -> ()
@@ -324,7 +325,7 @@ let rec do_not_raise pc visited blocks =
       | Prim (Extern name, _) when Primitive.is_pure name -> ()
       | Prim (Extern _, _) -> raise May_raise
       | Prim (_,_) -> ()
-  ) b.body;
+  );
   match b.branch with
   | Raise _ -> raise May_raise
   | Stop
@@ -336,8 +337,10 @@ let rec do_not_raise pc visited blocks =
     let visited = do_not_raise pc2 visited blocks in
     visited
   | Switch (_, a1, a2) ->
-    let visited = Array.fold_left (fun visited (pc,_) -> do_not_raise pc visited blocks) visited a1 in
-    let visited = Array.fold_left (fun visited (pc,_) -> do_not_raise pc visited blocks) visited a2 in
+    let visited = Array.fold_left a1 ~init:visited ~f:(fun visited (pc,_) ->
+      do_not_raise pc visited blocks) in
+    let visited = Array.fold_left a2 ~init:visited ~f:(fun visited (pc,_) ->
+      do_not_raise pc visited blocks) in
     visited
   | Pushtrap _ -> raise May_raise
 
@@ -372,7 +375,7 @@ let drop_exception_handler blocks =
 let eval info blocks =
   AddrMap.map
     (fun block ->
-       let body = List.map (eval_instr info) block.body in
+       let body = List.map block.body ~f:(eval_instr info) in
        let branch = eval_branch info block.branch in
        { block with
          Code.body;

@@ -63,10 +63,10 @@ let parse_file f =
     try
       match Findlib.path_require_findlib f with
         | Some f ->
-          let pkg,f' = match String.split Filename.dir_sep f with
+          let pkg,f' = match String.split ~sep:Filename.dir_sep f with
             | [] -> assert false
             | [f] -> "js_of_ocaml-compiler",f
-            | pkg::l -> pkg, List.fold_left Filename.concat "" l in
+            | pkg::l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat in
           Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg)  f')
         | None -> Fs.absolute_path f
     with
@@ -106,7 +106,8 @@ let parse_file f =
     | `Annot _ -> lexs
     | `Code(annot,code) -> (List.rev annot,List.rev code)::lexs in
 
-  let res = List.rev_map (fun (annot,code) ->
+  let res =
+    List.rev_map lexs ~f:(fun (annot,code) ->
       let lex = Parse_js.lexer_from_list code in
       try
         let code = Parse_js.parse lex in
@@ -117,16 +118,17 @@ let parse_file f =
           ; weakdef = false
           ; code }
         in
-        List.fold_left (fun fragment a -> match a with
-          | `Provides (pi,name,kind,ka) ->
-            {fragment with provides = Some (pi,name,kind,ka)}
-          | `Requires (_,mn) ->
-            {fragment with requires = mn @ fragment.requires}
-          | `Version (_,l) ->
-            {fragment with version_constraint = l::fragment.version_constraint}
-          | `Weakdef _ ->
-            {fragment with weakdef = true}
-        ) fragment annot
+        List.fold_left annot
+          ~init:fragment
+          ~f:(fun fragment a -> match a with
+            | `Provides (pi,name,kind,ka) ->
+              {fragment with provides = Some (pi,name,kind,ka)}
+            | `Requires (_,mn) ->
+              {fragment with requires = mn @ fragment.requires}
+            | `Version (_,l) ->
+              {fragment with version_constraint = l::fragment.version_constraint}
+            | `Weakdef _ ->
+              {fragment with weakdef = true})
       with Parse_js.Parsing_error pi ->
         let name = match pi with
           | {Parse_info.src  = Some x; _}
@@ -134,7 +136,7 @@ let parse_file f =
           | _ -> "??" in
         error "cannot parse file %S (orig:%S from l:%d, c:%d)@."
           f name pi.Parse_info.line pi.Parse_info.col)
-      lexs in
+  in
   res
 
 
@@ -148,7 +150,7 @@ class check_and_warn name pi = object
     let diff = StringSet.filter (fun s -> String.length s <> 0 && s.[0] <> '_') diff in
     if not (StringSet.is_empty diff)
     then warn "WARN unused for primitive %s at %s:@. %s@."
-        name (loc pi) (String.concat ", " (StringSet.elements diff));
+        name (loc pi) (String.concat ~sep:", " (StringSet.elements diff));
     super#merge_info from
 end
 
@@ -197,7 +199,10 @@ let check_primitive ~name pi ~code ~requires =
     else new Js_traverse.free in
   let _code = free#program code in
   let freename = free#get_free_name in
-  let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename requires in
+  let freename = List.fold_left requires
+      ~init:freename
+      ~f:(fun freename x -> StringSet.remove x freename)
+  in
   let freename = StringSet.diff freename Reserved.keyword in
   let freename = StringSet.diff freename Reserved.provided in
   let freename = StringSet.remove Constant.global_object freename in
@@ -208,7 +213,7 @@ let check_primitive ~name pi ~code ~requires =
   if not(StringSet.is_empty freename)
   then begin
     warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
-    warn "vars: %s@." (String.concat ", " (StringSet.elements freename))
+    warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename))
   end
   (* ; *)
   (* return checks disabled *)
@@ -216,7 +221,7 @@ let check_primitive ~name pi ~code ~requires =
   (* then Format.eprintf "warning: returns may be missing for primitive code %S (%s)@." name (loc pi) *)
 
 let version_match =
-  List.for_all (fun (op,str) ->
+  List.for_all ~f:(fun (op,str) ->
       op (Ocaml_version.(compare current (split str))) 0
     )
 
@@ -262,11 +267,11 @@ let find_named_value code =
   !all
 
 let add_file f =
-  List.iter
-    (fun {provides; requires; version_constraint;weakdef;code} ->
+  List.iter (parse_file f)
+    ~f:(fun {provides; requires; version_constraint;weakdef;code} ->
        let vmatch = match version_constraint with
          | [] -> true
-         | l -> List.exists version_match l in
+         | l -> List.exists l ~f:version_match in
        if vmatch
        then begin
          incr last_code_id;
@@ -299,7 +304,6 @@ let add_file f =
             Hashtbl.add code_pieces id (code, requires))
        end
     )
-    (parse_file f)
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
@@ -310,7 +314,7 @@ let check_deps () =
     let traverse = new Js_traverse.free in
     let _js = traverse#program code in
     let free = traverse#get_free_name in
-    let requires = List.fold_right StringSet.add requires StringSet.empty in
+    let requires = List.fold_right requires ~init:StringSet.empty ~f:StringSet.add in
     let real = StringSet.inter free provided in
     let missing = StringSet.diff real requires in
     if not (StringSet.is_empty missing)
@@ -320,7 +324,7 @@ let check_deps () =
         warn "code providing %s (%s) may miss dependencies: %s\n"
           name
           (loc ploc)
-          (String.concat ", " (StringSet.elements missing))
+          (String.concat ~sep:", " (StringSet.elements missing))
       with Not_found ->
         (* there is no //Provides for this piece of code *)
         (* FIXME handle missing deps in this case *)
@@ -329,7 +333,7 @@ let check_deps () =
   ) code_pieces
 
 let load_files l =
-  List.iter add_file l;
+  List.iter l ~f:add_file;
   check_deps ()
 
 (* resolve *)
@@ -345,27 +349,31 @@ let rec resolve_dep_name_rev visited path nm =
 
 and resolve_dep_id_rev visited path id =
   if IntSet.mem id visited.ids then begin
-    if List.memq id path
-    then error  "circular dependency: %s" (String.concat ", " (List.map (fun id -> fst(Hashtbl.find provided_rev id)) path));
+    if List.memq id ~set:path
+    then error  "circular dependency: %s"
+        (String.concat ~sep:", "
+           (List.map path ~f:(fun id -> fst(Hashtbl.find provided_rev id))));
     visited
   end else begin
     let path = id :: path in
     let (code, req) = Hashtbl.find code_pieces id in
     let visited = {visited with ids = IntSet.add id visited.ids} in
     let visited =
-      List.fold_left
-        (fun visited nm -> resolve_dep_name_rev visited path nm)
-        visited req in
+      List.fold_left req
+        ~init:visited
+        ~f:(fun visited nm -> resolve_dep_name_rev visited path nm)
+    in
     let visited = {visited with codes = code::visited.codes} in
     visited
   end
 
 
 let init () =
-  List.fold_left
-    (fun visited id -> resolve_dep_id_rev visited [] id)
-    {ids=IntSet.empty; always_required_codes=List.rev !always_included; codes=[]} []
-
+  { ids=IntSet.empty
+  ; always_required_codes = List.rev !always_included
+  ; codes = []
+  }
+  
 let resolve_deps ?(linkall = false) visited_rev used =
   (* link the special files *)
   let missing,visited_rev =

@@ -23,7 +23,7 @@ module Flag = struct
 
   let optims = ref []
 
-  let available () = List.map fst !optims
+  let available () = List.map ~f:fst !optims
 
   let o ~name ~default =
     let state =
@@ -86,7 +86,7 @@ module Param = struct
   let params : (string * _) list ref = ref []
 
   let p ~name ~desc (default,convert) =
-    assert(not (List.mem_assoc name !params));
+    assert(not (List.mem_assoc name ~map:!params));
     let state = ref default in
     let set : string -> unit = fun v ->
       try state := convert v with
@@ -99,7 +99,7 @@ module Param = struct
     try fst (List.assoc s !params) v with Not_found ->
       failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
-  let all () = List.map (fun (n,(_,d)) -> n,d) !params
+  let all () = List.map !params ~f:(fun (n,(_,d)) -> n,d)
 
   (* V8 "optimize" switches with less than 128 case.
      60 seams to perform well. *)
@@ -126,7 +126,7 @@ module Param = struct
 
   let tc_default = TcTrampoline
 
-  let _tc_all = tc_default :: List.filter ((<>) tc_default) [TcNone;TcTrampoline]
+  let _tc_all = tc_default :: List.filter [TcNone;TcTrampoline] ~f:((<>) tc_default) 
 
   let tailcall_optim = p
       ~name:"tc"

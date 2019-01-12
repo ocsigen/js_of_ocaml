@@ -94,18 +94,18 @@ while compiling the OCaml toplevel:
     end
 
   let is_available l i =
-    List.for_all (fun a -> BitSet.mem a.used i) l
+    List.for_all l ~f:(fun a -> BitSet.mem a.used i)
 
 
 
   let first_available l =
     let rec find_rec n l =
-      let n' = List.fold_left (fun n a -> next_available a n) n l  in
+      let n' = List.fold_left l ~init:n ~f:(fun n a -> next_available a n) in
       if n = n' then n else find_rec n' l
     in
     find_rec 0 l
 
-  let mark_allocated l i = List.iter (fun a -> allocate a i) l
+  let mark_allocated l i = List.iter l ~f:(fun a -> allocate a i)
 
   type t = {
     constr : alloc list array; (* Constraints on variables *)
@@ -188,7 +188,7 @@ while compiling the OCaml toplevel:
     for i = 0 to len - 1 do
       idx.(i) <- i
     done;
-    Array.stable_sort (fun i j -> compare (weight j) (weight i)) idx;
+    Array.stable_sort idx ~cmp:(fun i j -> compare (weight j) (weight i));
     let name = Array.make len "" in
     let n0 = ref 0 in
     let n1 = ref 0 in
@@ -204,8 +204,8 @@ while compiling the OCaml toplevel:
     let total = ref 0 in
     let bad = ref 0 in
     for i = 0 to Array.length t.parameters - 1 do
-      List.iter
-        (fun x ->
+      List.iter (List.rev t.parameters.(i))
+        ~f:(fun x ->
            incr total;
            let idx = Var.idx x in
            let l = constr.(idx) in
@@ -215,7 +215,6 @@ while compiling the OCaml toplevel:
              stats idx i
            end else
              incr bad)
-        (List.rev t.parameters.(i))
     done;
     if debug () then
       Format.eprintf
@@ -249,7 +248,7 @@ while compiling the OCaml toplevel:
       let len_max = len + offset in
       if Array.length global.parameters < len_max then begin
         let a = Array.make (2 * len_max) [] in
-        Array.blit global.parameters 0 a 0 (Array.length global.parameters);
+        Array.blit ~src:global.parameters ~src_pos:0 ~dst:a ~dst_pos:0 ~len:(Array.length global.parameters);
         global.parameters <- a
       end;
       for i = 0 to len - 1 do
@@ -293,9 +292,9 @@ module Preserve : Strategy = struct
     t.scopes <- (defs,scope) :: t.scopes
   let allocate_variables t ~count:_ =
     let names = Array.make t.size "" in
-    List.iter (fun (defs, state) ->
+    List.iter t.scopes ~f:(fun (defs, state) ->
       let assigned =
-        List.fold_left StringSet.union StringSet.empty
+        List.fold_left ~f:StringSet.union ~init:StringSet.empty
           [
             state.Js_traverse.def_name;
             state.Js_traverse.use_name;
@@ -328,7 +327,7 @@ module Preserve : Strategy = struct
         StringSet.add name assigned
       ) defs assigned in
       ()
-    ) t.scopes;
+    );
     names
 
 end

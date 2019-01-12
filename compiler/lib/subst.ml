@@ -21,22 +21,22 @@
 open Stdlib
 open Code
 
-let subst_cont s (pc, arg) = (pc, List.map (fun x -> s x) arg)
+let subst_cont s (pc, arg) = (pc, List.map arg ~f:(fun x -> s x))
 
 let expr s e =
   match e with
     Const _ | Constant _ ->
       e
   | Apply (f, l, n) ->
-      Apply (s f, List.map (fun x -> s x) l, n)
+      Apply (s f, List.map l ~f:(fun x -> s x), n)
   | Block (n, a) ->
-      Block (n, Array.map (fun x -> s x) a)
+      Block (n, Array.map a ~f:(fun x -> s x))
   | Field (x, n) ->
       Field (s x, n)
   | Closure (l, pc) ->
       Closure (l, subst_cont s pc)
   | Prim (p, l) ->
-      Prim (p, List.map (fun x -> match x with Pv x -> Pv (s x) | Pc _ -> x) l)
+      Prim (p, List.map l ~f:(fun x -> match x with Pv x -> Pv (s x) | Pc _ -> x))
 
 let instr s i =
   match i with
@@ -49,7 +49,7 @@ let instr s i =
   | Array_set (x, y, z) ->
       Array_set (s x, s y, s z)
 
-let instrs s l = List.map (fun i -> instr s i) l
+let instrs s l = List.map l ~f:(fun i -> instr s i)
 
 let last s l =
   match l with
@@ -67,15 +67,14 @@ let last s l =
       Cond (c, s x, subst_cont s cont1, subst_cont s cont2)
   | Switch (x, a1, a2) ->
       Switch (s x,
-              Array.map (fun cont -> subst_cont s cont) a1,
-              Array.map (fun cont -> subst_cont s cont) a2)
+              Array.map a1 ~f:(fun cont -> subst_cont s cont),
+              Array.map a2 ~f:(fun cont -> subst_cont s cont))
   | Poptrap (cont,addr) ->
     Poptrap (subst_cont s cont, addr)
 
 let block s block =
   { params = block.params;
-    handler = Option.map
-                (fun (x, cont) -> (x, subst_cont s cont)) block.handler;
+    handler = Option.map block.handler ~f:(fun (x, cont) -> (x, subst_cont s cont));
     body = instrs s block.body;
     branch = last s block.branch }
 
@@ -92,11 +91,12 @@ let rec cont' s pc blocks visited =
     let b = block s b in
     let blocks = AddrMap.add pc b blocks in
     let blocks,visited =
-      List.fold_left (fun (blocks, visited) instr ->
+      List.fold_left b.body
+        ~init:(blocks, visited)
+        ~f:(fun (blocks, visited) instr ->
         match instr with
         | Let (_, Closure (_, (pc,_))) -> cont' s pc blocks visited
-        | _ -> blocks, visited
-      ) (blocks, visited) b.body
+        | _ -> blocks, visited) 
     in
     Code.fold_children blocks pc
       (fun pc (blocks,visited) -> cont' s pc blocks visited)
