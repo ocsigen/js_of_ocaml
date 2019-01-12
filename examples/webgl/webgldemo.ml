@@ -294,7 +294,7 @@ let start (pos,norm) =
     last_draw := now;
     if Queue.length draw_times > 50 then ignore (Queue.pop draw_times);
     let fps = (1. /. ( Queue.fold (+.) 0. draw_times ))
-      *. (Pervasives.float (Queue.length draw_times))
+      *. (float_of_int (Queue.length draw_times))
       *. 1000. in
     fps_text##.data := string (Printf.sprintf "%.1f" fps);
     Lwt_js.sleep 0.02 >>= f

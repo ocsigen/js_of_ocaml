@@ -26,7 +26,7 @@ let _ = Sys.catch_break true
 let f {
     MinifyArg.common;
     output_file;
-    stdin;
+    use_stdin;
     files
   } =
   CommonArg.eval common;
@@ -39,7 +39,7 @@ let f {
     | Some file ->
       let oc = open_out file in
       Pretty_print.to_out_channel oc, (fun _ -> close_out oc)
-    | None when not stdin ->
+    | None when not use_stdin ->
       let file =
         if List.length files = 1
         then chop_extension (List.hd files) ^ ".min.js"
@@ -67,9 +67,9 @@ let f {
     try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi) files) in
 
   let p =
-    if stdin
+    if use_stdin
     then
-      let lex = Parse_js.lexer_from_channel Pervasives.stdin in
+      let lex = Parse_js.lexer_from_channel stdin in
       try p@(Parse_js.parse lex) with Parse_js.Parsing_error pi -> error_of_pi pi;
     else
       p in

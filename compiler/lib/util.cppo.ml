@@ -351,9 +351,7 @@ module Version = struct
       | n -> n
 
   let v =
-    if compare current [4;2] < 0 then
-      `V3
-    else if compare current [4;3] < 0 then
+    if compare current [4;3] < 0 then
       `V4_02
     else if compare current [4;4] < 0 then
       `V4_03
@@ -412,7 +410,6 @@ module MagicNumber = struct
 
   let current_exe =
     let v = match Version.v with
-      | `V3 -> 8
       | `V4_02
       | `V4_03 | `V4_04 -> 11
       | `V4_06 -> 11
@@ -422,7 +419,6 @@ module MagicNumber = struct
 
   let current_cmo =
     let v = match Version.v with
-      | `V3 -> 7
       | `V4_02 -> 10
       | `V4_03 | `V4_04 -> 11
       | `V4_06 -> 22
@@ -432,7 +428,6 @@ module MagicNumber = struct
 
   let current_cma =
     let v = match Version.v with
-      | `V3 -> 8
       | `V4_02 -> 11
       | `V4_03 | `V4_04 -> 12
       | `V4_06 -> 22
@@ -533,7 +528,11 @@ let rec find_loc_in_summary ident' = function
   | Env.Env_value (summary,_,_)
   | Env.Env_type (summary, _, _)
   | Env.Env_extension (summary, _, _)
+#if OCAML_VERSION >= (4,8,0)
+  | Env.Env_module (summary, _, _,_)
+#else
   | Env.Env_module (summary, _, _)
+#endif
   | Env.Env_modtype (summary, _, _)
   | Env.Env_class (summary, _, _)
   | Env.Env_cltype (summary, _, _)

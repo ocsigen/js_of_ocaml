@@ -191,14 +191,7 @@ end = struct
 
 
   let read_event_list =
-    let read_paths : in_channel -> string list =
-      match Util.Version.v with
-      | `V3 -> (fun _ -> [])
-      | `V4_02
-      | `V4_03
-      | `V4_04
-      | `V4_06
-      | `V4_07 -> (fun ic -> (input_value ic : string list)) in
+    let read_paths ic = (input_value ic : string list) in
     fun (events_by_pc, units) ~crcs ~includes ~orig ic ->
        let crcs =
          let t = Hashtbl.create 17 in
@@ -1880,40 +1873,7 @@ let parse_bytecode ~debug code globals debug_data =
   let blocks = match_exn_traps blocks in
   (0, blocks, free_pc)
 
-
-(* HACK 1 - fix bytecode *)
-
-let orig_code_bytes =
-  [`I PUSHCONSTINT; `C 31;
-   `I PUSHCONST1;
-   `I LSLINT;
-   `I BNEQ; `C 0; `C 5; (* overwrite from here *)
-   `I CONSTINT; `C 30;
-   `I BRANCH; `C 3;
-   `I CONSTINT; `C 62;
-   `I PUSHCONST1;
-   `I LSLINT ]
-
-let fixed_code_bytes =
-  [`I CONSTINT; `C 31;
-   `I BRANCH; `C 6;
-   `I PUSHCONST1]
-
-let orig_code = lazy (Instr.compile_to_string orig_code_bytes)
-let fixed_code = lazy (Instr.compile_to_string fixed_code_bytes)
-
-let fix_min_max_int code =
-  begin
-    try
-      let i = Util.find (Lazy.force orig_code) code in
-      String.blit (Lazy.force fixed_code) 0 code (i + 16) (String.length (Lazy.force fixed_code))
-    with Not_found ->
-      Util.warn
-        "Warning: could not fix min_int/max_int definition \
-         (bytecode not found).@."
-  end
-
-(* HACK 2 - override module *)
+(* HACK - override module *)
 
 let override_global =
   let jsmodule name func =
@@ -1928,18 +1888,6 @@ let override_global =
          Let(update_mod,jsmodule "CamlinternalMod" "update_mod")::
          instrs)
   ]
-
-(* HACK 3 - really input string *)
-
-let really_input_string ic size =
-  let b = Bytes.create size in
-  really_input ic b 0 size;
-  Bytes.unsafe_to_string b
-
-let _ = really_input_string
-
-let really_input_string = (* the one above or the one in Pervasives *)
-  let open Pervasives in really_input_string
 
 (* HACK END *)
 
@@ -1974,16 +1922,7 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
   let primitive_table = Array.of_list(Util.split_char '\000' prim) in
 
   let code_size = seek_section toc ic "CODE" in
-  let code =
-    match Util.Version.v with
-    | `V3 ->
-      let code = Bytes.create code_size in
-      really_input ic code 0 code_size;
-      (* We fix the bytecode to replace max_int/min_int *)
-      fix_min_max_int code;
-      Bytes.to_string code
-    | `V4_02 | `V4_03 | `V4_04 | `V4_06 | `V4_07 ->
-      really_input_string ic code_size in
+  let code = really_input_string ic code_size in
 
   ignore(seek_section toc ic "DATA");
   let init_data = (input_value ic : Obj.t array) in
@@ -2255,15 +2194,6 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
   List.iter (fun (compunit, code) -> Reloc.step1 reloc compunit code) l;
   List.iter (fun (compunit, code) -> Reloc.step2 reloc compunit code) l;
   let globals = Reloc.make_globals reloc in
-  begin match Util.Version.v with
-    | `V3 ->
-      (* We fix the bytecode to replace max_int/min_int *)
-      List.iter (fun (u,code) ->
-        if u.Cmo_format.cu_name = "Pervasives" then begin
-          fix_min_max_int code
-        end) l
-    | `V4_02 | `V4_03 | `V4_04 | `V4_06 | `V4_07 -> ()
-  end;
   let code =
     let l = List.map (fun (_,c) -> Bytes.to_string c) l in
     String.concat "" l in
