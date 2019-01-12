@@ -189,62 +189,45 @@ end = struct
       with Not_found ->
         None
 
-
   let read_event_list =
     let read_paths ic = (input_value ic : string list) in
     fun (events_by_pc, units) ~crcs ~includes ~orig ic ->
-       let crcs =
-         let t = Hashtbl.create 17 in
-         List.iter (fun (m,crc) -> Hashtbl.add t m crc) crcs;
-         t
-       in
-       let evl : debug_event list = input_value ic in
-
-      (* Work around a bug in ocaml 4.02 *)
-      (* debug section in pack module may be wrong *)
-      (* containing no debug_info. *)
-      (* In this case, evl in not a debug_info list but a *)
-      (* string list (see read_paths) *)
-
-      (* save the current position *)
-      let pos = pos_in ic in
-      let paths =
-        try Some (read_paths ic @ includes)
-        with Failure _ ->
-          (* restore position *)
-          seek_in ic pos; None in
-      match paths with
-      | None -> ()
-      | Some (paths : string list) ->
-        List.iter
-          (fun ({ev_module; ev_loc = { Location.loc_start = { Lexing.pos_fname; _}; _}; _} as ev) ->
-             let unit = try
-                 Hashtbl.find units (ev_module,pos_fname)
-               with  Not_found ->
-                 let crc =
-                   try Hashtbl.find crcs ev_module
-                   with Not_found -> None in
-                 let source =
-                   try Some (Fs.find_in_path paths pos_fname)
-                   with Not_found ->
-                   try Some (Fs.find_in_path paths (Filename.basename pos_fname))
-                   with Not_found -> find_ml_in_paths paths ev_module in
-                 if debug_sourcemap ()
-                 then
-                   Format.eprintf "module:%s - source:%s - name:%s\n%!"
-                     ev_module
-                     (match source with None -> "NONE" | Some x -> x)
-                     pos_fname
-                 ;
-                 let u = { module_name = ev_module; fname = pos_fname; crc; source; paths } in
-                 Hashtbl.add units (ev_module,pos_fname) u;
-                 u
-             in
-             relocate_event orig ev;
-             Hashtbl.add events_by_pc ev.ev_pos (ev,unit);
-             ()
-          )
-          evl
+      let crcs =
+        let t = Hashtbl.create 17 in
+        List.iter (fun (m,crc) -> Hashtbl.add t m crc) crcs;
+        t
+      in
+      let evl : debug_event list = input_value ic in
+      let paths = read_paths ic @ includes in
+      List.iter
+        (fun ({ev_module; ev_loc = { Location.loc_start = { Lexing.pos_fname; _}; _}; _} as ev) ->
+           let unit = try
+               Hashtbl.find units (ev_module,pos_fname)
+             with  Not_found ->
+               let crc =
+                 try Hashtbl.find crcs ev_module
+                 with Not_found -> None in
+               let source =
+                 try Some (Fs.find_in_path paths pos_fname)
+                 with Not_found ->
+                 try Some (Fs.find_in_path paths (Filename.basename pos_fname))
+                 with Not_found -> find_ml_in_paths paths ev_module in
+               if debug_sourcemap ()
+               then
+                 Format.eprintf "module:%s - source:%s - name:%s\n%!"
+                   ev_module
+                   (match source with None -> "NONE" | Some x -> x)
+                   pos_fname
+               ;
+               let u = { module_name = ev_module; fname = pos_fname; crc; source; paths } in
+               Hashtbl.add units (ev_module,pos_fname) u;
+               u
+           in
+           relocate_event orig ev;
+           Hashtbl.add events_by_pc ev.ev_pos (ev,unit);
+           ()
+        )
+        evl
 
   let find_source (_events_by_pc, units) pos_fname =
     let set =
