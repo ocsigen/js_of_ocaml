@@ -335,7 +335,7 @@ end = struct
   let add blocks pc =  AddrSet.add pc blocks
   let rec scan debug blocks code pc len =
     if pc < len then begin
-      match (get_instr code pc).kind with
+      match (get_instr_exn code pc).kind with
         KNullary ->
         scan debug blocks code (pc + 1) len
       | KUnary ->
@@ -827,13 +827,7 @@ and compile infos pc state instrs =
     State.name_vars state infos.debug pc;
 
     let code = infos.code in
-    let instr =
-      try
-        get_instr code pc
-      with Bad_instruction op ->
-        if debug_parser () then Format.eprintf "%08x@." op;
-        assert false
-    in
+    let instr = get_instr_exn code pc in
     if debug_parser () then Format.eprintf "%08x %s@." instr.opcode instr.name;
     match instr.Instr.code with
     | ACC0 ->
@@ -1015,7 +1009,7 @@ and compile infos pc state instrs =
         Array.of_list (State.Dummy :: List.map (fun x -> State.Var x) vals) in
       if debug_parser () then Format.printf "fun %a (" Var.print x;
       let nparams =
-        match (get_instr code addr).Instr.code with
+        match (get_instr_exn code addr).Instr.code with
           GRAB -> getu code (addr + 1) + 1
         | _    -> 1
       in
@@ -1058,7 +1052,7 @@ and compile infos pc state instrs =
              let addr = pc + 3 + gets code (pc + 3 + i) in
              if debug_parser () then Format.printf "fun %a (" Var.print x;
              let nparams =
-               match (get_instr code addr).Instr.code with
+               match (get_instr_exn code addr).Instr.code with
                  GRAB -> getu code (addr + 1) + 1
                | _    -> 1
              in
