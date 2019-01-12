@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-module Primitive = Jsoo_primitive
+open Stdlib
 open Code
 open Flow
 
@@ -117,7 +117,7 @@ let eval_prim x =
      | "caml_sqrt_float",_ -> float_unop l sqrt
      | "caml_tan_float",_ -> float_unop l tan
      | ("caml_string_get"|"caml_string_unsafe_get"), [(String s|IString s); Int pos] ->
-        if Option.Optim.safe_string () && String.length s > Int.to_int pos
+        if Config.Flag.safe_string () && String.length s > Int.to_int pos
         then Some (Int (Int.of_int (Char.code (String.get s (Int.to_int pos)))))
         else None
      | "caml_string_equal", [String s1; String s2] ->
@@ -321,7 +321,7 @@ let rec do_not_raise pc visited blocks =
       | Constant _
       | Closure _ -> ()
       | Apply (_,_,_) -> raise May_raise
-      | Prim (Extern name, _) when Jsoo_primitive.is_pure name -> ()
+      | Prim (Extern name, _) when Primitive.is_pure name -> ()
       | Prim (Extern _, _) -> raise May_raise
       | Prim (_,_) -> ()
   ) b.body;

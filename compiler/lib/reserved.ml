@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Util
+open Stdlib
 
 let keyword = List.fold_left (fun acc x -> StringSet.add x acc)
  StringSet.empty

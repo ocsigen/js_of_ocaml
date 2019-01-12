@@ -17,70 +17,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
+open Stdlib
 
-
-let global_object = "joo_global_object"
-
-let extra_js_files =
-  [ "+graphics.js"
-  ; "+toplevel.js"
-  ; "+nat.js"
-  ; "+dynlink.js"
-  ]
-
-(* Optimisation *)
-
-let series = ref None
-
-let stop_profiling () = match !series with
-  | Some _x ->
-    (* Spacetime.Series.save_and_close x; *)
-    series:=None
-  | None -> ()
-
-let start_profiling name =
-  let path = name ^ ".spacetime" in
-  stop_profiling ();
-  Format.eprintf "Start profiling %s\n%!" path;
-  (* series := Some (Spacetime.Series.create ~path); *)
-  ()
-
-let take_snapshot () =
-  match !series with
-  | None -> ()
-  | Some _series ->
-    Gc.minor ();
-    (* Spacetime.Snapshot.take series; *)
-    ()
-module Debug = struct
-  let debugs : (string * bool ref) list ref = ref []
-
-  let available () = List.map fst !debugs
-
-  let find s =
-    let state =
-      try
-        List.assoc s !debugs
-      with Not_found ->
-        let state = ref false in
-        debugs := (s, state) :: !debugs;
-        state
-    in
-    fun () ->
-      if s = "times" then take_snapshot ();
-      not !Util.quiet && !state
-
-  let enable s =
-    try List.assoc s !debugs := true with Not_found ->
-      failwith (Printf.sprintf "The debug named %S doesn't exist" s)
-
-  let disable s =
-    try List.assoc s !debugs := false with Not_found ->
-      failwith (Printf.sprintf "The debug named %S doesn't exist" s)
-
-end
-
-module Optim = struct
+module Flag = struct
 
   let optims = ref []
 
@@ -151,7 +90,7 @@ module Param = struct
     let state = ref default in
     let set : string -> unit = fun v ->
       try state := convert v with
-      | _ -> Util.warn "Warning: malformed option %s=%s. IGNORE@." name v
+      | _ -> warn "Warning: malformed option %s=%s. IGNORE@." name v
     in
     params := (name, (set,desc)) :: !params;
     fun () -> !state

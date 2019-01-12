@@ -17,16 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
-val stop_profiling : unit -> unit
-val start_profiling : string -> unit
-module Debug : sig
-  val available : unit -> string list
-  val find : string -> unit -> bool
-  val enable : string -> unit
-  val disable : string -> unit
-end
 
-module Optim : sig
+module Flag : sig
   val available : unit -> string list
   val deadcode : unit -> bool
   val optcall : unit -> bool
@@ -70,6 +62,3 @@ module Param : sig
      (* | TcWhile *)
   val tailcall_optim : unit -> tc
 end
-
-val global_object : string
-val extra_js_files : string list

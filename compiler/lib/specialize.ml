@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 open Code
 open Flow
 
@@ -28,7 +28,7 @@ let rec function_cardinality info x acc =
        | Expr (Closure (l, _)) ->
            Some (List.length l)
        | Expr (Prim (Extern "%closure", [Pc (IString prim)])) ->
-         (try Some (Jsoo_primitive.arity prim) with Not_found -> None)
+         (try Some (Primitive.arity prim) with Not_found -> None)
        | Expr (Apply (f, l, _)) ->
          if List.mem f acc
          then None
@@ -47,14 +47,14 @@ let rec function_cardinality info x acc =
 
 let specialize_instr info (acc,free_pc,extra) i =
   match i with
-    | Let (x, Apply (f, l, _)) when Option.Optim.optcall () -> begin
+    | Let (x, Apply (f, l, _)) when Config.Flag.optcall () -> begin
       let n' = List.length l in
       match function_cardinality info f [] with
         | None -> i::acc,free_pc,extra
         | Some n when n = n' -> Let (x, Apply (f, l, true))::acc,free_pc,extra
         | Some n when n < n' ->
           let v = Code.Var.fresh () in
-          let args,rest = Util.take n l in
+          let args,rest = Stdlib.List.take n l in
           (Let(v, Apply(f,args,true)))
           ::(Let(x,Apply(v,rest,false)))
           ::acc,free_pc,extra

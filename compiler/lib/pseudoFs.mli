@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Util
+open Stdlib
 
 val f : Code.program -> StringSet.t -> string list -> string list -> Code.program
 val f_empty : StringSet.t -> string list -> string list -> Code.program

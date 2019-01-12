@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 type addr = int
 
 module DebugAddr : sig
@@ -150,8 +150,8 @@ module VarISet = struct
 end
 
 
-module AddrSet = Util.IntSet
-module AddrMap = Util.IntMap
+module AddrSet = IntSet
+module AddrMap = IntMap
 
 type cont = addr * Var.t list
 
@@ -508,7 +508,7 @@ let eq (pc1, blocks1, _) (pc2, blocks2, _) =
 
 
 
-let with_invariant = Option.Debug.find "invariant"
+let with_invariant = Debug.find "invariant"
 let check_defs=false
 let invariant  (_, blocks, _) =
   if with_invariant ()
@@ -562,7 +562,7 @@ let invariant  (_, blocks, _) =
     in
     AddrMap.iter (fun _pc block ->
       List.iter define block.params;
-      Util.opt_iter (fun (_,cont) ->
+      Option.iter (fun (_,cont) ->
         check_cont cont) block.handler;
       List.iter check_instr block.body;
       check_last block.branch

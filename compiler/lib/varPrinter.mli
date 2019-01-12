@@ -17,10 +17,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
+    
 type t
 
 val add_reserved : string list -> unit
-val get_reserved : unit -> Util.StringSet.t
+val get_reserved : unit -> StringSet.t
 val create : ?pretty:bool -> ?stable:bool -> unit -> t
 val reset : t -> unit
 val to_string : t -> ?origin:int -> int -> string

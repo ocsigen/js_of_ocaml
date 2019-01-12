@@ -16,7 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 open Javascript
 
 class type mapper = object
@@ -40,8 +40,6 @@ class subst : (ident -> ident) ->  object
     inherit mapper
   end
 
-open Util
-
 type t = {
   use_name : StringSet.t;
   def_name : StringSet.t;
@@ -60,17 +58,17 @@ class type freevar =
     method def_var : ident -> unit
     method use_var : ident -> unit
     method state : t
-    method get_free_name : Util.StringSet.t
+    method get_free_name : StringSet.t
     method get_free : Code.VarSet.t
-    method get_def_name : Util.StringSet.t
+    method get_def_name : StringSet.t
     method get_def : Code.VarSet.t
-    method get_use_name : Util.StringSet.t
+    method get_use_name : StringSet.t
     method get_use : Code.VarSet.t
   end
 
 class free : freevar
 
-class rename_variable : Util.StringSet.t -> freevar
+class rename_variable : StringSet.t -> freevar
 
 class share_constant : mapper
 

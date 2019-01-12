@@ -19,9 +19,10 @@
  *)
 
 open Js_of_ocaml_compiler
+open Js_of_ocaml_compiler.Stdlib
 
-let times = Option.Debug.find "times"
-let debug_mem = Option.Debug.find "mem"
+let times = Debug.find "times"
+let debug_mem = Debug.find "mem"
 let _ = Sys.catch_break true
 
 let temp_file_name =
@@ -62,20 +63,20 @@ let f {
   CommonArg.eval common;
   begin match output_file with
   | None | Some "" | Some "-" -> ()
-  | Some name when debug_mem () -> Option.start_profiling name
+  | Some name when debug_mem () -> Debug.start_profiling name
   | Some _ -> () end;
-  List.iter (fun (s,v) -> Option.Param.set s v) params;
+  List.iter (fun (s,v) -> Config.Param.set s v) params;
   List.iter (fun (s,v) -> Eval.set_static_env s v) static_env;
-  let t = Util.Timer.make () in
+  let t = Timer.make () in
 
   let include_dir = List.map (fun d ->
-    match Util.path_require_findlib d with
+    match Findlib.path_require_findlib d with
     | Some d ->
-      let pkg,d' = match Util.split Filename.dir_sep d with
+      let pkg,d' = match String.split Filename.dir_sep d with
         | [] -> assert false
         | [d] -> "js_of_ocaml",d
         | pkg::l -> pkg, List.fold_left Filename.concat "" l in
-      Filename.concat (Util.find_pkg_dir pkg) d'
+      Filename.concat (Findlib.find_pkg_dir pkg) d'
     | None -> d
   ) include_dir in
 
@@ -99,18 +100,18 @@ let f {
 
   Linker.load_files runtime_files;
   let paths =
-    try List.append include_dir [Util.find_pkg_dir "stdlib"]
+    try List.append include_dir [Findlib.find_pkg_dir "stdlib"]
     with Not_found -> include_dir in
-  let t1 = Util.Timer.make () in
+  let t1 = Timer.make () in
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug =
-    if source_map <> None || Option.Optim.debuginfo () then `Full else
-    if Option.Optim.pretty () then `Names else `No
+    if source_map <> None || Config.Flag.debuginfo () then `Full else
+    if Config.Flag.pretty () then `Names else `No
   in
   let p, cmis, d, standalone =
     if runtime_only
     then Parse_bytecode.predefined_exceptions (),
-         Util.StringSet.empty,
+         StringSet.empty,
          Parse_bytecode.Debug.create (),
          true
     else
@@ -126,17 +127,17 @@ let f {
   let () =
     if not runtime_only && source_map <> None &&  Parse_bytecode.Debug.is_empty d
     then
-      Util.warn
+      warn
         "Warning: '--source-map' is enabled but the bytecode program \
          was compiled with no debugging information.\n\
          Warning: Consider passing '-g' option to ocamlc.\n%!"
   in
-  let cmis = if nocmis then Util.StringSet.empty else cmis in
+  let cmis = if nocmis then StringSet.empty else cmis in
   let p =
     let l =
       List.map
         (fun (k,v) ->
-          Jsoo_primitive.add_external "caml_set_static_env";
+          Primitive.add_external "caml_set_static_env";
           let args =
             [ Code.Pc (IString k)
             ; Code.Pc (IString v) ]
@@ -154,7 +155,7 @@ let f {
       ] in
       Code.prepend p instrs
     else p in
-  if times () then Format.eprintf "  parsing: %a@." Util.Timer.print t1;
+  if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
   begin match output_file with
   | None ->
     let p = PseudoFs.f p cmis fs_files paths in
@@ -171,7 +172,7 @@ let f {
       Driver.f ~standalone ?profile ~linkall ~global ~dynlink
         ?source_map ?custom_header fmt d p;
     );
-    Util.opt_iter (fun file ->
+    Option.iter (fun file ->
       gen_file file (fun chan ->
         let pfs = PseudoFs.f_empty cmis fs_files paths in
         let pfs_fmt = Pretty_print.to_out_channel chan in
@@ -179,15 +180,15 @@ let f {
       )
     ) fs_output
   end;
-  if times () then Format.eprintf "compilation: %a@." Util.Timer.print t;
-  Option.stop_profiling ()
+  if times () then Format.eprintf "compilation: %a@." Timer.print t;
+  Debug.stop_profiling ()
 
 let main =
   Cmdliner.Term.(pure f $ CompileArg.options),
   CompileArg.info
 
 let _ =
-  Util.Timer.init Sys.time;
+  Timer.init Sys.time;
   try Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn_:true Sys.argv) main with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
     let backtrace = Printexc.get_backtrace () in
@@ -198,17 +199,17 @@ let _ =
     Format.eprintf "Error: %s@." (Printexc.to_string exc);
     prerr_string backtrace;
     exit 1
-  | Util.MagicNumber.Bad_magic_number s ->
+  | Magic_number.Bad_magic_number s ->
     Format.eprintf "%s: Error: Not an ocaml bytecode file@." Sys.argv.(0);
     Format.eprintf "%s: Error: Invalid magic number %S@." Sys.argv.(0) s;
     exit 1
-  | Util.MagicNumber.Bad_magic_version h ->
+  | Magic_number.Bad_magic_version h ->
     Format.eprintf "%s: Error: Bytecode version missmatch.@." Sys.argv.(0);
-    let k = match Util.MagicNumber.kind h with
+    let k = match Magic_number.kind h with
       | (`Cmo | `Cma | `Exe as x) -> x
       | `Other _ -> assert false in
     let comp =
-      if Util.MagicNumber.compare h (Util.MagicNumber.current k) < 0
+      if Magic_number.compare h (Magic_number.current k) < 0
       then "an older"
       else "a newer" in
     Format.eprintf "%s: Error: Your ocaml bytecode and the js_of_ocaml compiler have to be compiled with the same version of ocaml.@." Sys.argv.(0);

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 
 module Label = struct
   type t =
@@ -219,7 +219,7 @@ let is_ident =
     else 0
   ) in
   fun s ->
-    not (Util.StringSet.mem s Reserved.keyword) &&
+    not (StringSet.mem s Reserved.keyword) &&
     try
       for i = 0 to String.length s - 1 do
         let code = l.(Char.code(s.[i])) in

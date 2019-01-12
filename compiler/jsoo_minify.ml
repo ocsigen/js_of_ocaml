@@ -18,6 +18,7 @@
  *)
 
 open Js_of_ocaml_compiler
+open Js_of_ocaml_compiler.Stdlib
 
 let error k = Format.ksprintf (fun s -> failwith s) k
 
@@ -49,7 +50,7 @@ let f {
     | None (* when stdin *) -> Pretty_print.to_out_channel stdout,(fun _ -> ())
   in
 
-  let pretty = Option.Optim.pretty () in
+  let pretty = Config.Flag.pretty () in
   Pretty_print.set_compact pp (not pretty);
   Code.Var.set_pretty pretty;
 
@@ -77,11 +78,11 @@ let f {
   let free = new Js_traverse.free in
   let _pfree = free#program p in
   let toplevel_def = free#get_def_name in
-  let () = VarPrinter.add_reserved (Util.StringSet.elements toplevel_def) in
+  let () = VarPrinter.add_reserved (StringSet.elements toplevel_def) in
   let true_ = (fun () -> true) in
-  let open Option in
+  let open Config in
   let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
-    [ Optim.shortvar, (fun () -> ((new Js_traverse.rename_variable toplevel_def) :> Js_traverse.mapper) );
+    [ Flag.shortvar, (fun () -> ((new Js_traverse.rename_variable toplevel_def) :> Js_traverse.mapper) );
       true_, (fun () -> new Js_traverse.simpl);
       true_, (fun () -> new Js_traverse.clean);
     ] in
@@ -96,7 +97,7 @@ let main =
   MinifyArg.info
 
 let _ =
-  Util.Timer.init Sys.time;
+  Timer.init Sys.time;
   try Cmdliner.Term.eval ~catch:false ~argv:(Util.normalize_argv ~warn_:true Sys.argv) main with
   | (Match_failure _ | Assert_failure _ | Not_found) as exc ->
     let backtrace = Printexc.get_backtrace () in

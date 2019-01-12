@@ -18,6 +18,7 @@
  *)
 
 open Js_of_ocaml_compiler
+open Js_of_ocaml_compiler.Stdlib
 open Cmdliner
 
 type 'a on_off = {
@@ -34,19 +35,19 @@ type t = {
 
 let debug =
   let doc = "enable debug [$(docv)]." in
-  let all = List.map (fun s -> s,s) (Option.Debug.available ()) in
+  let all = List.map (fun s -> s,s) (Debug.available ()) in
   let arg = Arg.(value & opt_all (list (enum all)) [] & info ["debug"] ~docv:"SECTION" ~doc) in
   Term.(pure List.flatten $ arg)
 
 let enable =
   let doc = "Enable optimization [$(docv)]." in
-  let all = List.map (fun s -> s,s) (Option.Optim.available ()) in
+  let all = List.map (fun s -> s,s) (Config.Flag.available ()) in
   let arg = Arg.(value & opt_all (list (enum all)) [] & info ["enable"] ~docv:"OPT" ~doc) in
   Term.(pure List.flatten $ arg)
 
 let disable =
   let doc = "Disable optimization [$(docv)]." in
-  let all = List.map (fun s -> s,s) (Option.Optim.available ()) in
+  let all = List.map (fun s -> s,s) (Config.Flag.available ()) in
   let arg = Arg.(value & opt_all (list (enum all)) [] & info ["disable"] ~docv:"OPT" ~doc) in
   Term.(pure List.flatten $ arg)
 
@@ -62,7 +63,7 @@ let noinline =
   let doc = "Disable inlining." in
   Arg.(value & flag & info ["noinline";"no-inline"] ~doc)
 
-let quiet =
+let is_quiet =
   let doc = "suppress non-error messages." in
   Arg.(value & flag & info ["quiet";"q"] ~doc)
 
@@ -104,7 +105,7 @@ let t = Term.(
     $ pretty
     $ debuginfo
     $ noinline
-    $ quiet
+    $ is_quiet
     $ custom_header
   )
 
@@ -114,6 +115,6 @@ let on_off on off t =
   List.iter off t.disable
 
 let eval t =
-  Option.Optim.(on_off enable disable t.optim);
-  Option.Debug.(on_off enable disable t.debug);
-  Util.quiet := t.quiet
+  Config.Flag.(on_off enable disable t.optim);
+  Debug.(on_off enable disable t.debug);
+  quiet := t.quiet

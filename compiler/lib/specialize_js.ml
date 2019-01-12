@@ -18,10 +18,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 open Code
 open Flow
-module Primitive = Jsoo_primitive
 
 let specialize_instr info i rem =
   match i with
@@ -146,7 +145,7 @@ let specialize_instr info i rem =
       end :: rem
   | Let (x, Prim (Extern "caml_js_from_string", [y])) ->
       begin match the_string_of info y with
-        Some s when Util.is_ascii s ->
+        Some s when String.is_ascii s ->
           Let (x, Constant (IString s))
       | _ ->
           i

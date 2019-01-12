@@ -17,6 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
 open Javascript
 
 class type mapper = object
@@ -198,16 +199,14 @@ class map_for_share_constant = object(m)
     match l with
     | [] -> []
     | (Statement (Expression_statement (EStr _)), _) as prolog  :: rest ->
-      prolog :: Util.map_tc (fun (x,loc) -> m#source x, loc) rest
-    | rest -> Util.map_tc (fun (x,loc) -> m#source x, loc) rest
+      prolog :: List.map_tc (fun (x,loc) -> m#source x, loc) rest
+    | rest -> List.map_tc (fun (x,loc) -> m#source x, loc) rest
 end
 
 class replace_expr f = object
   inherit map_for_share_constant as super
   method expression e = try EVar (f e) with Not_found -> super#expression e
 end
-
-open Util
 
 (* this optimisation should be done at the lowest common scope *)
 class share_constant = object
@@ -217,7 +216,7 @@ class share_constant = object
 
   method expression e =
     let e = match e with
-      | EStr (s,`Utf8) when not(Util.has_backslash s) && Util.is_ascii s ->
+      | EStr (s,`Utf8) when not(String.has_backslash s) && String.is_ascii s ->
         let e = EStr (s,`Bytes) in
         let n = try Hashtbl.find count e with Not_found -> 0 in
         Hashtbl.replace count e (n+1);
@@ -290,11 +289,11 @@ class type freevar =
     method def_var : Javascript.ident -> unit
     method use_var : Javascript.ident -> unit
     method state : t
-    method get_free_name : Util.StringSet.t
+    method get_free_name : StringSet.t
     method get_free : Code.VarSet.t
-    method get_def_name : Util.StringSet.t
+    method get_def_name : StringSet.t
     method get_def : Code.VarSet.t
-    method get_use_name : Util.StringSet.t
+    method get_use_name : StringSet.t
     method get_use : Code.VarSet.t
   end
 
@@ -506,7 +505,7 @@ class compact_vardecl = object(m)
     method exc = exc_
 
     method private translate l =
-      Util.filter_map (fun (id,eopt) ->
+      List.filter_map (fun (id,eopt) ->
         match eopt with
           | None -> None
           | Some (e,_) -> Some (EBin (Eq,EVar id,e))) l
@@ -637,7 +636,7 @@ class clean = object(m)
     let vars_rev,vars_loc,instr_rev =
       List.fold_left (fun (vars_rev,vars_loc,instr_rev) (x, loc) ->
         match x with
-          | Variable_statement l when Option.Optim.compact () ->
+          | Variable_statement l when Config.Flag.compact () ->
             let vars_loc = match vars_loc with
               | Pi _ as x -> x
               | _           -> loc in

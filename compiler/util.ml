@@ -1,7 +1,5 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,5 +15,24 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
-val f : Code.program -> Code.VarSet.t IntMap.t
+
+open Js_of_ocaml_compiler.Stdlib
+
+let normalize_argv ?(warn_=false) a =
+  let bad = ref [] in
+  let a = Array.map (fun s ->
+    let size = String.length s in
+    if size <= 2 then s
+    else if s.[0] = '-' && s.[1] <> '-' && s.[2] <> '='
+    then begin
+      bad:=s::!bad;
+      (* long option with one dash lets double the dash *)
+      "-"^s
+    end
+    else s
+  ) a in
+  if (warn_ && !bad <> [])
+  then
+    warn
+      "[Warning] long options with a single '-' are now deprecated.\ Please use '--' for the following options: %s@." (String.concat ", " !bad);
+  a

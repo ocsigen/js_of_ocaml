@@ -191,7 +191,7 @@ type desc = { code : t; kind : kind; name : string; opcode : int }
 
 let ops =
   let if_v407 =
-    match Util.Version.v with
+    match Ocaml_version.v with
     | `V4_02
     | `V4_03
     | `V4_04

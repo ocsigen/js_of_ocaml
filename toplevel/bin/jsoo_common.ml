@@ -50,13 +50,13 @@ let read_cmi ~dir cmi =
       end
     else raise Not_found
   in
-  try with_name (Js_of_ocaml_compiler.Util.uncapitalize_ascii cmi)
+  try with_name (Js_of_ocaml_compiler.Stdlib.String.uncapitalize_ascii cmi)
   with Not_found ->
-  try with_name (Js_of_ocaml_compiler.Util.capitalize_ascii cmi)
+  try with_name (Js_of_ocaml_compiler.Stdlib.String.capitalize_ascii cmi)
   with Not_found ->
     Format.eprintf "Could not find cmi %s or %s in %s@."
-      (Js_of_ocaml_compiler.Util.capitalize_ascii cmi)
-      (Js_of_ocaml_compiler.Util.uncapitalize_ascii cmi) dir;
+      (Js_of_ocaml_compiler.Stdlib.String.capitalize_ascii cmi)
+      (Js_of_ocaml_compiler.Stdlib.String.uncapitalize_ascii cmi) dir;
     raise Not_found
 
 let cmis_of_cma ~dir cma_path =
@@ -67,7 +67,7 @@ let cmis_of_cma ~dir cma_path =
   in
   let contains = unit_of_cma cma_path in
   let dir = Filename.dirname cma_path in
-  Js_of_ocaml_compiler.Util.filter_map (fun s -> try Some (read_cmi ~dir (s ^ ".cmi")) with Not_found -> None) contains
+  Js_of_ocaml_compiler.Stdlib.List.filter_map (fun s -> try Some (read_cmi ~dir (s ^ ".cmi")) with Not_found -> None) contains
 
 
 let cmis_of_package pkg : string list =
@@ -82,7 +82,7 @@ let cmis_of_package pkg : string list =
         then "stdlib.cma"
         else raise exc in
 
-    let l = Js_of_ocaml_compiler.Util.split_char ' ' archive in
+    let l = Js_of_ocaml_compiler.Stdlib.String.split_char ' ' archive in
     List.iter (fun x ->
       if Filename.check_suffix x ".cmo"
       then

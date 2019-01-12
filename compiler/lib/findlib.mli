@@ -1,7 +1,5 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -17,5 +15,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
-val f : Code.program -> Code.VarSet.t IntMap.t
+
+val path_require_findlib : string -> string option
+val set_find_pkg_dir : (string -> string) -> unit
+val find_pkg_dir : string -> string
+val find_in_findlib_paths : ?pkg:string -> string list -> string -> string

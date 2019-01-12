@@ -33,13 +33,11 @@
   - CLEAN UP!!!
 *)
 
-let debug = Option.Debug.find "gen"
-let times = Option.Debug.find "times"
+open Stdlib
+let debug = Debug.find "gen"
+let times = Debug.find "times"
 
 open Code
-open Util
-module Primitive = Jsoo_primitive
-module Subst = Jsoo_subst
 module J = Javascript
 
 (****)
@@ -323,7 +321,7 @@ let rec constant_rec ~ctx x level instrs =
             Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff))],
     instrs
   | Tuple (tag, a) ->
-    let constant_max_depth = Option.Param.constant_max_depth () in
+    let constant_max_depth = Config.Param.constant_max_depth () in
     let rec detect_list n acc = function
       | Tuple (0, [|x; l|]) -> detect_list (succ n) (x::acc) l
       | Int 0l ->
@@ -398,7 +396,7 @@ let access_queue queue x =
 let access_queue' ~ctx queue x =
   match x with
   | Pc c ->
-    let js,instrs = constant ~ctx c (Option.Param.constant_max_depth ()) in
+    let js,instrs = constant ~ctx c (Config.Param.constant_max_depth ()) in
     assert (instrs = []); (* We only have simple constants here *)
     (const_p, js), queue
   | Pv x -> access_queue queue x
@@ -436,7 +434,7 @@ let flush_all expr_queue l = fst (flush_queue expr_queue flush_p l)
 
 let enqueue expr_queue prop x ce loc cardinal acc =
   let (instrs, expr_queue) =
-    if Option.Optim.compact () then
+    if Config.Flag.compact () then
       if is_mutable prop then
         flush_queue expr_queue prop []
       else
@@ -497,7 +495,7 @@ module DTree = struct
   let build_if cond b1 b2 = If(cond,Branch b1,Branch b2)
 
   let build_switch (a : cont array) : 'a t =
-    let m = Option.Param.switch_max_case () in
+    let m = Config.Param.switch_max_case () in
     let ai = Array.mapi (fun i x -> x, i) a in
     (* group the contiguous cases with the same continuation *)
     let ai : (Code.cont * int list) array = Array.of_list (list_group fst snd (Array.to_list ai)) in
@@ -707,7 +705,7 @@ let generate_apply_fun ctx n =
           J.N)
 
 let apply_fun ctx f params loc =
-  if Option.Optim.inline_callgen ()
+  if Config.Flag.inline_callgen ()
   then apply_fun_raw ctx f params
   else
     let y = Share.get_apply (generate_apply_fun ctx) (List.length params) ctx.Ctx.share in
@@ -946,7 +944,7 @@ let _ =
 *)
 let throw_statement ctx cx k loc =
   match (k : [`Normal|`Reraise|`Notrace]) with
-  | _ when not (Option.Optim.improved_stacktrace ()) ->
+  | _ when not (Config.Flag.improved_stacktrace ()) ->
     [J.Throw_statement cx,loc]
   | `Notrace ->
     [J.Throw_statement cx,loc]
@@ -1007,7 +1005,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
     (js, const_p, queue), instrs
   | Prim (Extern "debugger",_) ->
     let ins =
-      if Option.Optim.debugger ()
+      if Config.Flag.debugger ()
       then J.Debugger_statement
       else J.Empty_statement in
     (J.ENum 0., const_p,queue), [ins, loc]
@@ -1215,8 +1213,8 @@ and translate_instr ctx expr_queue loc instr =
     begin match ctx.Ctx.live.(Var.idx x),e with
       | 0,_ -> (* deadcode is off *)
         flush_queue expr_queue prop (instrs @ [J.Expression_statement ce, loc])
-      | 1,_ when Option.Optim.compact ()
-              && (not ( Option.Optim.pretty ())
+      | 1,_ when Config.Flag.compact ()
+              && (not ( Config.Flag.pretty ())
                   || not (keep_name x)) ->
         enqueue expr_queue prop x ce loc 1 instrs
       (* We could inline more.
@@ -1270,7 +1268,7 @@ and translate_instrs ctx expr_queue loc instr =
     (st @ instrs, expr_queue)
 
 and compile_block st queue (pc : addr) frontier interm =
-  if queue <> [] && (AddrSet.mem pc st.loops || not (Option.Optim.inline ())) then
+  if queue <> [] && (AddrSet.mem pc st.loops || not (Config.Flag.inline ())) then
     flush_all queue (compile_block st [] pc frontier interm)
   else begin
     if pc >= 0 then begin
@@ -1347,7 +1345,7 @@ and compile_block st queue (pc : addr) frontier interm =
         in
         let handler = compile_block st [] pc2 inner_frontier new_interm in
         let handler =
-          if st.ctx.Ctx.live.(Var.idx x) > 0 && Option.Optim.excwrap ()
+          if st.ctx.Ctx.live.(Var.idx x) > 0 && Config.Flag.excwrap ()
           then  (J.Expression_statement (
             J.EBin(
               J.Eq,
@@ -1718,7 +1716,7 @@ let generate_shared_value ctx =
          | None -> []
          | Some v ->
            [J.V v,
-            Some (J.EDot (s_var Option.global_object, "jsoo_runtime"),J.N)])
+            Some (J.EDot (s_var Constant.global_object, "jsoo_runtime"),J.N)])
         @ List.map (fun (s,v) ->
           v,
           Some (str_js s,J.N))
@@ -1729,7 +1727,7 @@ let generate_shared_value ctx =
           (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims))),
     J.U
   in
-  if not (Option.Optim.inline_callgen ())
+  if not (Config.Flag.inline_callgen ())
   then
     let applies = List.map (fun (n,v) ->
       match generate_apply_fun ctx n with
@@ -1746,7 +1744,7 @@ let compile_program ctx pc =
   res
 
 let f ((pc, blocks, _) as p) ~exported_runtime live_vars debug =
-  let t' = Util.Timer.make () in
+  let t' = Timer.make () in
   let share =
     Share.get ~alias_prims:exported_runtime p
   in
@@ -1757,5 +1755,5 @@ let f ((pc, blocks, _) as p) ~exported_runtime live_vars debug =
   in
   let ctx = Ctx.initial ~exported_runtime blocks live_vars share debug  in
   let p = compile_program ctx pc in
-  if times () then Format.eprintf "  code gen.: %a@." Util.Timer.print t';
+  if times () then Format.eprintf "  code gen.: %a@." Timer.print t';
   p
