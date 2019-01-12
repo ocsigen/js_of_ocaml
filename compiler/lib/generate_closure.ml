@@ -17,10 +17,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
-
+open Stdlib
 open Code
 
-let debug_tc = Option.Debug.find "gen_tc"
+let debug_tc = Debug.find "gen_tc"
 
 type closure_info = {
   f_name  : Code.Var.t;
@@ -34,7 +34,7 @@ type 'a int_ext = {
   ext : 'a;
 }
 
-module SCC = Jsoo_strongly_connected_components.Make(struct
+module SCC = Strongly_connected_components.Make(struct
     include Var
     module Map = VarMap
     module Set = VarSet
@@ -55,7 +55,7 @@ let rec tailcall pc blocks visited tc =
     let block = AddrMap.find pc blocks in
     let tc_opt = match block.branch with
       | Return x ->
-        begin match Util.last block.body with
+        begin match List.last block.body with
         | Some (Let (y, Apply (z, _, true))) when Code.Var.compare x y = 0 ->
           Some (add_multi z pc tc)
         | None -> None
@@ -210,7 +210,7 @@ module Trampoline = struct
                 let last =
                   Let (direct, Prim (Lt,
                                      [Pv counter;
-                                      Pc (Int (Int32.of_int (Option.Param.tailcall_max_depth ())))]))
+                                      Pc (Int (Int32.of_int (Config.Param.tailcall_max_depth ())))]))
                 in
                 let block = { block with body = List.rev (last :: rem_rev); branch = branch } in
                 let blocks = AddrMap.remove pc blocks in
@@ -243,7 +243,7 @@ module Ident = struct
 end
 
 let rewrite_tc free_pc blocks closures_map component =
-  let open Option.Param in
+  let open Config.Param in
   match tailcall_optim () with
   | TcNone       -> Ident.f      free_pc blocks closures_map component
   | TcTrampoline -> Trampoline.f free_pc blocks closures_map component
@@ -277,8 +277,8 @@ let rewrite_mutable free_pc blocks mutated_vars rewrite_list
 
       let new_x = Code.Var.fork x in
       let mapping =
-        Jsoo_subst.from_map
-          (Jsoo_subst.build_mapping (x :: vars) (new_x :: args))
+        Subst.from_map
+          (Subst.build_mapping (x :: vars) (new_x :: args))
       in
       rewrite_list := (mapping, pc) :: !rewrite_list;
       let new_block =
@@ -310,8 +310,8 @@ let rewrite_mutable free_pc blocks mutated_vars rewrite_list
         | _ -> assert false) closures_extern in
       let new_xs = List.map (Code.Var.fork) old_xs in
       let mapping =
-        Jsoo_subst.from_map
-          (Jsoo_subst.build_mapping (old_xs @ vars) (new_xs @ args))
+        Subst.from_map
+          (Subst.build_mapping (old_xs @ vars) (new_xs @ args))
       in
       rewrite_list := (List.map (fun pc -> (mapping, pc)) pcs) @ !rewrite_list;
 
@@ -383,7 +383,7 @@ let f ((pc, blocks, free_pc) as p) : Code.program =
   in
   (* Code.invariant (pc, blocks, free_pc); *)
   let p = List.fold_left (fun program (mapping,pc) ->
-    Jsoo_subst.cont mapping pc program
+    Subst.cont mapping pc program
   ) (pc, blocks, free_pc) !rewrite_list
   in
   Code.invariant p;

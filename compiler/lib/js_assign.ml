@@ -17,10 +17,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 open Javascript
-open Util
-let debug = Option.Debug.find "shortvar"
+let debug = Debug.find "shortvar"
 
 module S = Code.VarSet
 
@@ -239,7 +238,7 @@ while compiling the OCaml toplevel:
     name
 
   let add_constraints global u ?(offset=0) params =
-    if Option.Optim.shortvar () then begin
+    if Config.Flag.shortvar () then begin
 
       let constr = global.constr in
       let c = make_alloc_table () in
@@ -349,7 +348,7 @@ let program' (module Strategy : Strategy) p =
   mapper#block [];
   if S.cardinal (mapper#get_free) <> 0
   then begin
-    Util.failwith_ "Some variables escaped (#%d)" (S.cardinal (mapper#get_free))
+    failwith_ "Some variables escaped (#%d)" (S.cardinal (mapper#get_free))
     (* S.iter(fun s -> (Format.eprintf "%s@." (Var.to_string s))) coloring#get_free *)
   end;
   let names = Strategy.allocate_variables state ~count:mapper#state.Js_traverse.count in
@@ -365,6 +364,6 @@ let program' (module Strategy : Strategy) p =
 
 
 let program p =
-  if Option.Optim.shortvar ()
+  if Config.Flag.shortvar ()
   then program' (module Min) p
   else program' (module Preserve) p

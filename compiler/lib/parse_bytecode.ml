@@ -18,11 +18,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
+open Stdlib
 open Code
 open Instr
-module Primitive = Jsoo_primitive
-let debug_parser = Option.Debug.find "parser"
-let debug_sourcemap = Option.Debug.find "sourcemap"
+let debug_parser = Debug.find "parser"
+let debug_sourcemap = Debug.find "sourcemap"
 
 type code = string
 
@@ -180,12 +180,12 @@ end = struct
   let is_empty (a,_) = Hashtbl.length a = 0
 
   let find_ml_in_paths paths name =
-    let uname = Util.uncapitalize_ascii name in
+    let uname = String.uncapitalize_ascii name in
     try
-      Some (Util.find_in_path paths (uname^".ml"))
+      Some (Fs.find_in_path paths (uname^".ml"))
     with Not_found ->
       try
-        Some (Util.find_in_path paths (name^".ml"))
+        Some (Fs.find_in_path paths (name^".ml"))
       with Not_found ->
         None
 
@@ -225,9 +225,9 @@ end = struct
                    try Hashtbl.find crcs ev_module
                    with Not_found -> None in
                  let source =
-                   try Some (Util.find_in_path paths pos_fname)
+                   try Some (Fs.find_in_path paths pos_fname)
                    with Not_found ->
-                   try Some (Util.find_in_path paths (Filename.basename pos_fname))
+                   try Some (Fs.find_in_path paths (Filename.basename pos_fname))
                    with Not_found -> find_ml_in_paths paths ev_module in
                  if debug_sourcemap ()
                  then
@@ -252,12 +252,12 @@ end = struct
         if p = pos_fname
         then match unit.source with
           | None -> acc
-          | Some src -> Util.StringSet.add src acc
+          | Some src -> StringSet.add src acc
         else acc
-      ) units Util.StringSet.empty
+      ) units StringSet.empty
     in
-    if Util.StringSet.cardinal set = 1
-    then Some (Util.StringSet.choose set)
+    if StringSet.cardinal set = 1
+    then Some (StringSet.choose set)
     else None
 
   let read (events_by_pc, units) ~crcs ~includes ic =
@@ -423,7 +423,7 @@ end = struct
     Obj.field x 0 == Obj.field (Obj.repr y) 0
 
   let warn_overflow i i32 =
-    Util.warn
+    warn
       "Warning: integer overflow: integer %s truncated to 0x%lx (%ld); \
        the generated code might be incorrect.@." i i32 i32
 
@@ -672,7 +672,7 @@ module State = struct
       [], _ ->
       ()
     | (j, nm,ident) :: lrem, Var v :: srem when i = j ->
-       begin match Util.find_loc_in_summary ident summary with
+       begin match Ocaml_compiler.find_loc_in_summary ident summary with
              | None -> ()
              | Some loc -> Var.loc v (pi_of_loc debug loc)
        end;
@@ -1913,7 +1913,7 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
 
   let prim_size = seek_section toc ic "PRIM" in
   let prim = really_input_string ic prim_size in
-  let primitive_table = Array.of_list(Util.split_char '\000' prim) in
+  let primitive_table = Array.of_list(String.split_char '\000' prim) in
 
   let code_size = seek_section toc ic "CODE" in
   let code = really_input_string ic code_size in
@@ -1956,7 +1956,7 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
       | `No -> assert false
       | `Names -> ()
       | `Full ->
-        Util.warn
+        warn
           "Warning: Program not linked with -g, original \
            variable names and locations not availalbe.@."
   end;
@@ -1998,7 +1998,7 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
     let body = register_global ~force:true globals i body in
     globals.is_exported.(i) <- false;
     body) [] predefined_exceptions in
-  let body = Util.array_fold_right_i (fun i _ l ->
+  let body = Array.fold_right_i (fun i _ l ->
     match globals.vars.(i) with
       Some x when globals.is_const.(i) ->
       let l = register_global globals i l in
@@ -2057,12 +2057,12 @@ let exe_from_channel ~includes ?(toplevel=false) ?(expunge=fun _ -> `Keep) ?(dyn
     let exception_ids =
       List.fold_left (fun acc (i,_) -> max acc i) (-1) predefined_exceptions
     in
-    if toplevel && Option.Optim.include_cmis ()
+    if toplevel && Config.Flag.include_cmis ()
     then Tbl.fold (fun id num acc ->
       if num > exception_ids && Ident.global id && is_module (Ident.name id)
-      then Util.StringSet.add (Ident.name id)  acc
-      else acc) symbols.num_tbl Util.StringSet.empty
-    else Util.StringSet.empty in
+      then StringSet.add (Ident.name id)  acc
+      else acc) symbols.num_tbl StringSet.empty
+    else StringSet.empty in
   prepend p body, cmis, debug_data
 
 (* As input: list of primitives + size of global table *)
@@ -2072,7 +2072,7 @@ let from_bytes primitives (code : code) =
   let p = parse_bytecode ~debug:`No code globals debug_data in
 
   let gdata = Var.fresh () in
-  let body = Util.array_fold_right_i (fun i var l ->
+  let body = Array.fold_right_i (fun i var l ->
     match var with
     | Some x when globals.is_const.(i) ->
       Let (x, Field (gdata, i)) :: l
@@ -2110,7 +2110,7 @@ module Reloc = struct
     let open Cmo_format in
     List.iter (fun name -> Hashtbl.add t.primitives name (Hashtbl.length t.primitives)) compunit.cu_primitives;
     let slot_for_literal sc =
-      t.constants <- Util.obj_of_const sc :: t.constants;
+      t.constants <- Ocaml_compiler.obj_of_const sc :: t.constants;
       let pos = t.pos in
       t.pos <- succ t.pos;
       pos in
@@ -2193,7 +2193,7 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
     String.concat "" l in
   let prog = parse_bytecode ~debug code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
-  let body = Util.array_fold_right_i (fun i var l ->
+  let body = Array.fold_right_i (fun i var l ->
     match var with
     | Some x when globals.is_const.(i) ->
       begin match globals.named_value.(i) with
@@ -2212,12 +2212,12 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
     | _ -> l) globals.vars [] in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   let cmis =
-    if toplevel && Option.Optim.include_cmis ()
+    if toplevel && Config.Flag.include_cmis ()
     then
       List.fold_left (fun acc (compunit,_) ->
-        Util.StringSet.add (compunit.Cmo_format.cu_name) acc
-      ) Util.StringSet.empty l
-    else Util.StringSet.empty in
+        StringSet.add (compunit.Cmo_format.cu_name) acc
+      ) StringSet.empty l
+    else StringSet.empty in
   prepend prog body,cmis, debug_data
 
 let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
@@ -2225,20 +2225,20 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
   let debug_data = Debug.create () in
   let format =
     try
-      let header = really_input_string ic Util.MagicNumber.size in
-      `Pre (Util.MagicNumber.of_string header)
+      let header = really_input_string ic Magic_number.size in
+      `Pre (Magic_number.of_string header)
     with _ ->
-      let pos_magic = in_channel_length ic - Util.MagicNumber.size in
+      let pos_magic = in_channel_length ic - Magic_number.size in
       seek_in ic pos_magic;
-      let header = really_input_string ic Util.MagicNumber.size in
-      `Post (Util.MagicNumber.of_string header)
+      let header = really_input_string ic Magic_number.size in
+      `Post (Magic_number.of_string header)
   in
   match format with
   | `Pre magic ->
-    begin match Util.MagicNumber.kind magic with
+    begin match Magic_number.kind magic with
       | `Cmo ->
-        if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_cmo
-        then raise Util.MagicNumber.(Bad_magic_version magic);
+        if Config.Flag.check_magic () && magic <> Magic_number.current_cmo
+        then raise Magic_number.(Bad_magic_version magic);
         let compunit_pos = input_binary_int ic in
         seek_in ic compunit_pos;
         let compunit = (input_value ic : Cmo_format.compilation_unit) in
@@ -2254,8 +2254,8 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
         let a,b,c = from_compilation_units ~toplevel ~includes ~debug ~debug_data [compunit, code] in
         a,b,c,false
       | `Cma ->
-        if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_cma
-        then raise Util.MagicNumber.(Bad_magic_version magic);
+        if Config.Flag.check_magic () && magic <> Magic_number.current_cma
+        then raise Magic_number.(Bad_magic_version magic);
         let pos_toc = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic pos_toc;
         let lib = (input_value ic : Cmo_format.library) in
@@ -2276,18 +2276,18 @@ let from_channel ?(includes=[]) ?(toplevel=false) ?expunge
         let a,b,c = from_compilation_units ~toplevel ~includes ~debug ~debug_data units in
         a,b,c,false
       | _ ->
-        raise Util.MagicNumber.(Bad_magic_number (to_string magic))
+        raise Magic_number.(Bad_magic_number (to_string magic))
     end
   | `Post magic ->
-    begin match Util.MagicNumber.kind magic with
+    begin match Magic_number.kind magic with
       | `Exe ->
-        if Option.Optim.check_magic () && magic <> Util.MagicNumber.current_exe
-        then raise Util.MagicNumber.(Bad_magic_version magic);
+        if Config.Flag.check_magic () && magic <> Magic_number.current_exe
+        then raise Magic_number.(Bad_magic_version magic);
         let a,b,c = exe_from_channel ~includes ~toplevel ?expunge ~dynlink ~debug ~debug_data ic in
         Code.invariant a;
         a,b,c,true
       | _ ->
-        raise Util.MagicNumber.(Bad_magic_number (to_string magic))
+        raise Magic_number.(Bad_magic_number (to_string magic))
     end
 
 let predefined_exceptions () =

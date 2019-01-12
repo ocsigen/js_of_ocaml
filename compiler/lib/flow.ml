@@ -17,12 +17,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
-let debug = Option.Debug.find "flow"
-let times = Option.Debug.find "times"
-
-module Subst = Jsoo_subst
-module Primitive = Jsoo_primitive
+open Stdlib
+let debug = Debug.find "flow"
+let times = Debug.find "times"
 open Code
 
 (****)
@@ -113,7 +110,7 @@ let program_deps (_, blocks, _) =
             | Set_field _ | Array_set _ | Offset_ref _ ->
                 ())
          block.body;
-       Util.opt_iter
+       Option.iter
          (fun (x, cont) ->
             add_param_def vars defs x;
             cont_deps blocks vars deps defs cont)
@@ -342,7 +339,7 @@ let the_def_of info x =
            match info.info_defs.(Var.idx x) with
            | Expr (Const _ as e) -> Some e
            | Expr (Constant (Float _| Int _ | IString _ ) as e) -> Some e
-           | Expr (Constant (String _) as e) when Option.Optim.safe_string () -> Some e
+           | Expr (Constant (String _) as e) when Config.Flag.safe_string () -> Some e
            | Expr e ->
              if info.info_possibly_mutable.(Var.idx x)
              then None
@@ -359,7 +356,7 @@ let the_const_of info x =
          match info.info_defs.(Var.idx x) with
          | Expr (Const i) -> Some (Int i)
          | Expr (Constant (Float _| Int _ | IString _ as c)) -> Some c
-         | Expr (Constant (String _ as c)) when Option.Optim.safe_string () -> Some c
+         | Expr (Constant (String _ as c)) when Config.Flag.safe_string () -> Some c
          | Expr (Constant c) ->
            if info.info_possibly_mutable.(Var.idx x)
            then None
@@ -426,19 +423,19 @@ let build_subst info  vars =
 
 let f ?skip_param p =
   Code.invariant p;
-  let t = Util.Timer.make () in
-  let t1 = Util.Timer.make () in
+  let t = Timer.make () in
+  let t1 = Timer.make () in
   let (vars, deps, defs) = program_deps p in
-  if times () then Format.eprintf "    flow analysis 1: %a@." Util.Timer.print t1;
-  let t2 = Util.Timer.make () in
+  if times () then Format.eprintf "    flow analysis 1: %a@." Timer.print t1;
+  let t2 = Timer.make () in
   let known_origins = solver1 vars deps defs in
-  if times () then Format.eprintf "    flow analysis 2: %a@." Util.Timer.print t2;
-  let t3 = Util.Timer.make () in
+  if times () then Format.eprintf "    flow analysis 2: %a@." Timer.print t2;
+  let t3 = Timer.make () in
   let possibly_mutable = program_escape defs known_origins p in
-  if times () then Format.eprintf "    flow analysis 3: %a@." Util.Timer.print t3;
-  let t4 = Util.Timer.make () in
+  if times () then Format.eprintf "    flow analysis 3: %a@." Timer.print t3;
+  let t4 = Timer.make () in
   let maybe_unknown = solver2 ?skip_param vars deps defs known_origins possibly_mutable in
-  if times () then Format.eprintf "    flow analysis 4: %a@." Util.Timer.print t4;
+  if times () then Format.eprintf "    flow analysis 4: %a@." Timer.print t4;
 
   if debug () then begin
     VarISet.iter
@@ -452,7 +449,7 @@ let f ?skip_param p =
       vars
   end;
 
-  let t5 = Util.Timer.make () in
+  let t5 = Timer.make () in
   let info = {
     info_defs = defs;
     info_known_origins = known_origins;
@@ -461,7 +458,7 @@ let f ?skip_param p =
   } in
   let s = build_subst info vars in
   let p = Subst.program (Subst.from_array s) p in
-  if times () then Format.eprintf "    flow analysis 5: %a@." Util.Timer.print t5;
-  if times () then Format.eprintf "  flow analysis: %a@." Util.Timer.print t;
+  if times () then Format.eprintf "    flow analysis 5: %a@." Timer.print t5;
+  if times () then Format.eprintf "  flow analysis: %a@." Timer.print t;
   Code.invariant p;
   p, info

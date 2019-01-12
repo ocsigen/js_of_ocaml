@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 let aliases = Hashtbl.create 17
 
 let rec resolve nm = try resolve (Hashtbl.find aliases nm) with Not_found -> nm
@@ -51,8 +51,6 @@ let has_arity nm a =
 let is_pure nm = kind nm <> `Mutator
 
 let exists p = Hashtbl.mem kinds p
-
-open Util
 
 let externals = ref StringSet.empty
 

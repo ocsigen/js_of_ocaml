@@ -18,8 +18,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
+open Stdlib
 type fragment =
-  { provides : (Parse_info.t option * string * Jsoo_primitive.kind * Jsoo_primitive.kind_arg list option) option
+  { provides : (Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option) option
   ; requires : string list
   ; version_constraint : ((int -> int -> bool) * string) list list
   ; weakdef : bool
@@ -42,7 +43,7 @@ type output = {
 }
 
 val init : unit -> state
-val resolve_deps : ?linkall:bool -> state -> Util.StringSet.t -> state * Util.StringSet.t
+val resolve_deps : ?linkall:bool -> state -> StringSet.t -> state * StringSet.t
 val link : Javascript.program -> state -> output
-val get_provided : unit -> Util.StringSet.t
+val get_provided : unit -> StringSet.t
 val all : state -> string list

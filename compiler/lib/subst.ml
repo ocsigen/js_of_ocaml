@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
 open Code
 
 let subst_cont s (pc, arg) = (pc, List.map (fun x -> s x) arg)
@@ -73,7 +74,7 @@ let last s l =
 
 let block s block =
   { params = block.params;
-    handler = Util.opt_map
+    handler = Option.map
                 (fun (x, cont) -> (x, subst_cont s cont)) block.handler;
     body = instrs s block.body;
     branch = last s block.branch }

@@ -18,6 +18,7 @@
  *)
 
 open Js_of_ocaml_compiler
+open Js_of_ocaml_compiler.Stdlib
 open Cmdliner
 
 type t = {
@@ -104,7 +105,7 @@ let options =
   let set_param =
     let doc = "Set compiler options." in
     let all = List.map (fun (x,_) ->
-      x, x) (Option.Param.all ()) in
+      x, x) (Config.Param.all ()) in
     Arg.(value & opt_all (list (pair ~sep:'=' (enum all) string)) [] & info ["set"] ~docv:"PARAM=VALUE"~doc)
   in
   let set_env =
@@ -195,7 +196,7 @@ let options =
       | x,false -> Some x in
     let output_file = match output_file with
       | Some _ -> output_file
-      | None   -> Util.opt_map (fun s -> chop_extension s ^ ".js") input_file in
+      | None   -> Option.map (fun s -> chop_extension s ^ ".js") input_file in
     let source_map =
       if not no_sourcemap && sourcemap || sourcemap_inline_in_js
       then
@@ -221,7 +222,7 @@ let options =
     let source_map =
       if source_map <> None && not Source_map_io.enabled
       then begin
-        Util.warn
+        warn
           "Warning: '--source-map' flag ignored because js_of_ocaml was compiled without \
            sourcemap support (install yojson to enable support)\n%!";
         None

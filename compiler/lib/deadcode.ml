@@ -17,9 +17,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
-let debug = Option.Debug.find "deadcode"
-let times = Option.Debug.find "times"
+open Stdlib
+let debug = Debug.find "deadcode"
+let times = Debug.find "times"
 
 open Code
 
@@ -35,7 +35,7 @@ type t =
 (****)
 
 let pure_expr pure_funs e =
-  Pure_fun.pure_expr pure_funs e && Option.Optim.deadcode ()
+  Pure_fun.pure_expr pure_funs e && Config.Flag.deadcode ()
 
 (****)
 
@@ -189,7 +189,7 @@ let add_cont_dep blocks defs (pc, args) =
   | None       -> () (* Dead continuation *)
 
 let f ((pc, blocks, free_pc) as program) =
-  let t = Util.Timer.make () in
+  let t = Timer.make () in
   let nv = Var.count () in
   let defs = Array.make nv [] in
   let live = Array.make nv 0 in
@@ -204,7 +204,7 @@ let f ((pc, blocks, free_pc) as program) =
             | Set_field (_, _, _) | Array_set (_, _, _) | Offset_ref (_, _) ->
               ())
          block.body;
-       Util.opt_iter
+       Option.iter
          (fun (_, cont) -> add_cont_dep blocks defs cont) block.handler;
        match block.branch with
          Return _ | Raise _ | Stop ->
@@ -240,7 +240,7 @@ let f ((pc, blocks, free_pc) as program) =
            { params =
                List.filter (fun x -> st.live.(Var.idx x) > 0) block.params;
              handler =
-               Util.opt_map
+               Option.map
                  (fun (x, cont) -> (x, filter_cont all_blocks st cont))
                  block.handler;
              body =
@@ -251,5 +251,5 @@ let f ((pc, blocks, free_pc) as program) =
            blocks)
       blocks AddrMap.empty
   in
-  if times () then Format.eprintf "  dead code elim.: %a@." Util.Timer.print t;
+  if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   (pc, blocks, free_pc), st.live

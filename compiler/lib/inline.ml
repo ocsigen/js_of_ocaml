@@ -18,6 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
 open Code
 
 let optimizable blocks pc _ =
@@ -250,7 +251,7 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
              ; params = []} ->
              let len = List.length l in
              if Code.Var.compare y y' = 0
-             && Jsoo_primitive.has_arity prim len
+             && Primitive.has_arity prim len
              && args_equal l args
              then
                (Let (x, Prim (Extern "%closure", [Pc (IString prim)])) :: rem,
@@ -267,10 +268,10 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
 
 (****)
 
-let times = Option.Debug.find "times"
+let times = Debug.find "times"
 let f ((pc, blocks, free_pc) as p) live_vars =
   Code.invariant p;
-  let t = Util.Timer.make () in
+  let t = Timer.make () in
   let closures = get_closures p in
   let (blocks, free_pc) =
     Code.fold_closures p (fun name _ (pc,_) (blocks,free_pc) ->
@@ -281,7 +282,7 @@ let f ((pc, blocks, free_pc) as p) live_vars =
       Code.traverse Code.fold_children (inline closures live_vars outer_optimizable) pc blocks (blocks,free_pc)
     ) (blocks, free_pc)
   in
-  if times () then Format.eprintf "  inlining: %a@." Util.Timer.print t;
+  if times () then Format.eprintf "  inlining: %a@." Timer.print t;
   let p = (pc, blocks, free_pc) in
   Code.invariant p;
   p

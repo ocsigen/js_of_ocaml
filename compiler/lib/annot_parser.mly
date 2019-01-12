@@ -24,7 +24,7 @@
 %token<string> TOTHER
 
 %start annot
-%type <Jsoo_primitive.t> annot
+%type <Primitive.t> annot
 
 %%
 

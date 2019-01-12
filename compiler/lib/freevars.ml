@@ -17,9 +17,9 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open Stdlib
 
-
-let times = Option.Debug.find "times"
+let times = Debug.find "times"
 
 open Code
 
@@ -211,9 +211,9 @@ Format.eprintf ">> %d: %d@." pc (VarSet.cardinal fv))
 
 let f p =
   Code.invariant p;
-  let t = Util.Timer.make () in
+  let t = Timer.make () in
   let in_loop = find_loops p in
   let vars = mark_variables in_loop p in
   let free_vars = free_variables vars in_loop p in
-  if times () then Format.eprintf "  free vars: %a@." Util.Timer.print t;
+  if times () then Format.eprintf "  free vars: %a@." Timer.print t;
   free_vars

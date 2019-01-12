@@ -35,11 +35,11 @@
  (action (ignore-stderr (run menhir --explain %{dep:annot_parser.mly}))))
 
 (rule
- (targets util.ml)
+ (targets ocaml_compiler.ml)
  (action (run %{bin:cppo} -V OCAML:%{ocaml_version}
           ;; Uncomment for bucklescript support
           ;; -D BUCKLESCRIPT
-          %{dep:util.cppo.ml} -o %{targets}))
+          %{dep:ocaml_compiler.cppo.ml} -o %{targets}))
  )
 
 (rule

@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Stdlib
+    
 let expand_path exts real virt =
   let rec loop realfile virtfile acc =
     if try Sys.is_directory realfile with _ -> false
@@ -38,7 +40,7 @@ let expand_path exts real virt =
         then (virtfile, realfile) :: acc
         else acc
       with exc ->
-	Util.warn "ignoring %s: %s@." realfile (Printexc.to_string exc);
+	warn "ignoring %s: %s@." realfile (Printexc.to_string exc);
  acc
   in loop real virt []
 
@@ -65,13 +67,13 @@ let list_files name paths =
       let i = String.index name '=' in
       let exts = String.sub name (i + 1) (String.length name - i - 1) in
       let n = String.sub name 0 i in
-      let exts = Util.split_char ',' exts in
+      let exts = String.split_char ',' exts in
       n,exts
     with Not_found ->
       name,[] in
   let file =
     try
-      Util.find_in_findlib_paths paths name
+      Findlib.find_in_findlib_paths paths name
     with Not_found ->
       failwith (Printf.sprintf "file '%s' not found" name)
   in
@@ -81,18 +83,16 @@ let cmi_dir = "/static/cmis"
 
 let find_cmi paths base =
   try
-    let name = Util.uncapitalize_ascii base ^ ".cmi" in
-    Filename.concat cmi_dir name, Util.find_in_findlib_paths paths name
+    let name = String.uncapitalize_ascii base ^ ".cmi" in
+    Filename.concat cmi_dir name, Findlib.find_in_findlib_paths paths name
   with Not_found ->
-    let name = Util.capitalize_ascii base ^ ".cmi" in
-    Filename.concat cmi_dir name, Util.find_in_findlib_paths paths name
+    let name = String.capitalize_ascii base ^ ".cmi" in
+    Filename.concat cmi_dir name, Findlib.find_in_findlib_paths paths name
 
-
-open Util
 open Code
 
 let read name filename =
-  let content = Util.read_file filename in
+  let content = Fs.read_file filename in
   (Pc (IString name),Pc (IString content))
 
 let program_of_files l =
@@ -118,10 +118,10 @@ let make_body prim cmis files paths =
         acc, s :: missing
   ) cmis ([],[]) in
   begin if missing <> [] then (
-    Util.warn "Some OCaml interface files were not found.@.";
-    Util.warn "Use [-I dir_of_cmis] option to bring them into scope@.";
+    warn "Some OCaml interface files were not found.@.";
+    warn "Use [-I dir_of_cmis] option to bring them into scope@.";
     (* [`ocamlc -where`/expunge in.byte out.byte moduleA moduleB ... moduleN] *)
-    List.iter (fun nm -> Util.warn "  %s@." nm) missing
+    List.iter (fun nm -> warn "  %s@." nm) missing
   )
   end;
   let fs = List.fold_left (fun acc f ->

@@ -17,11 +17,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 open Code
-module Primitive = Jsoo_primitive
 (****)
-
+    
 let pure_expr pure_funs e =
   match e with
     Const _  | Block _ | Field _ | Closure _ | Constant _ ->

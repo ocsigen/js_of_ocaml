@@ -18,12 +18,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-
-open Util
-module Primitive = Jsoo_primitive
+open Stdlib
 
 type fragment =
-  { provides : (Parse_info.t option * string * Jsoo_primitive.kind * Jsoo_primitive.kind_arg list option) option
+  { provides : (Parse_info.t option * string * Primitive.kind * Primitive.kind_arg list option) option
   ; requires : string list
   ; version_constraint : ((int -> int -> bool) * string) list list
   ; weakdef : bool
@@ -63,14 +61,14 @@ let is_file_directive cmt =
 let parse_file f =
   let file =
     try
-      match Util.path_require_findlib f with
+      match Findlib.path_require_findlib f with
         | Some f ->
-          let pkg,f' = match Util.split Filename.dir_sep f with
+          let pkg,f' = match String.split Filename.dir_sep f with
             | [] -> assert false
             | [f] -> "js_of_ocaml-compiler",f
             | pkg::l -> pkg, List.fold_left Filename.concat "" l in
-          Util.absolute_path (Filename.concat (Util.find_pkg_dir pkg)  f')
-        | None -> Util.absolute_path f
+          Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg)  f')
+        | None -> Fs.absolute_path f
     with
       | Not_found ->
         error "cannot find file '%s'. @." f
@@ -149,7 +147,7 @@ class check_and_warn name pi = object
     let diff = StringSet.remove name diff in
     let diff = StringSet.filter (fun s -> String.length s <> 0 && s.[0] <> '_') diff in
     if not (StringSet.is_empty diff)
-    then Util.warn "WARN unused for primitive %s at %s:@. %s@."
+    then warn "WARN unused for primitive %s at %s:@. %s@."
         name (loc pi) (String.concat ", " (StringSet.elements diff));
     super#merge_info from
 end
@@ -194,7 +192,7 @@ let all_return p =
 
 let check_primitive ~name pi ~code ~requires =
   let free =
-    if Option.Optim.warn_unused ()
+    if Config.Flag.warn_unused ()
     then new check_and_warn name pi
     else new Js_traverse.free in
   let _code = free#program code in
@@ -202,15 +200,15 @@ let check_primitive ~name pi ~code ~requires =
   let freename = List.fold_left (fun freename x -> StringSet.remove x freename) freename requires in
   let freename = StringSet.diff freename Reserved.keyword in
   let freename = StringSet.diff freename Reserved.provided in
-  let freename = StringSet.remove Option.global_object freename in
+  let freename = StringSet.remove Constant.global_object freename in
   if not(StringSet.mem name free#get_def_name)
   then begin
-    Util.warn "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)
+    warn "warning: primitive code does not define value with the expected name: %s (%s)@." name (loc pi)
   end;
   if not(StringSet.is_empty freename)
   then begin
-    Util.warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
-    Util.warn "vars: %s@." (String.concat ", " (StringSet.elements freename))
+    warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
+    warn "vars: %s@." (String.concat ", " (StringSet.elements freename))
   end
   (* ; *)
   (* return checks disabled *)
@@ -219,7 +217,7 @@ let check_primitive ~name pi ~code ~requires =
 
 let version_match =
   List.for_all (fun (op,str) ->
-      op (Util.Version.(compare current (split str))) 0
+      op (Ocaml_version.(compare current (split str))) 0
     )
 
 type always_required =
@@ -292,7 +290,7 @@ let add_file f =
               let _,ploc,weakdef = Hashtbl.find provided name in
               if not weakdef
               then
-            Util.warn "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
+            warn "warning: overriding primitive %S\n  old: %s\n  new: %s@." name (loc ploc) (loc pi)
             end;
 
             Hashtbl.add provided name (id,pi,weakdef);
@@ -319,7 +317,7 @@ let check_deps () =
     then begin
       try
         let (name,ploc) = Hashtbl.find provided_rev id in
-        Util.warn "code providing %s (%s) may miss dependencies: %s\n"
+        warn "code providing %s (%s) may miss dependencies: %s\n"
           name
           (loc ploc)
           (String.concat ", " (StringSet.elements missing))

@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 val is_pure : string -> bool
 val exists : string -> bool
 
@@ -42,7 +42,7 @@ val resolve : string -> string
 
 val add_external : string -> unit
 val is_external : string -> bool
-val get_external : unit -> Util.StringSet.t
+val get_external : unit -> StringSet.t
 
 val need_named_value : string -> bool
 val register_named_value : string -> unit

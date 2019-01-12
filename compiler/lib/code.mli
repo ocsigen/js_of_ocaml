@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open Stdlib
 type addr = int
 
 module DebugAddr : sig
@@ -77,8 +77,8 @@ end
 
 
 
-module AddrSet : Set.S with type elt = addr and type t = Util.IntSet.t
-module AddrMap : Map.S with type key = addr and type 'a t = 'a Util.IntMap.t
+module AddrSet : Set.S with type elt = addr and type t = IntSet.t
+module AddrMap : Map.S with type key = addr and type 'a t = 'a IntMap.t
 
 type cont = addr * Var.t list
 

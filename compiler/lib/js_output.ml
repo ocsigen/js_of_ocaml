@@ -28,8 +28,8 @@ XXX Beware automatic semi-colon insertion...
      the space cannot be replaced by a newline in the following expressions:
        e ++, e --, continue e, break e, return e, throw e
 *)
-
-let stats = Option.Debug.find "output"
+open Stdlib
+let stats = Debug.find "output"
 
 open Javascript
 
@@ -69,7 +69,7 @@ module Make(D : sig
            pos),
       true
 
-  let debug_enabled = Option.Optim.debuginfo ()
+  let debug_enabled = Config.Flag.debuginfo ()
   let output_debug_info f loc =
     if debug_enabled then begin
       match loc with
@@ -1073,7 +1073,7 @@ let program f ?source_map p =
                  (fun file ->
                     if Sys.file_exists file
                     then
-                      let content = Util.read_file file in
+                      let content = Fs.read_file file in
                       Some content
                     else None) sources)
        | Some _ -> assert false in
@@ -1096,7 +1096,7 @@ let program f ?source_map p =
          List.iter2 (fun src tg ->
            printf "ln -s %s %s\n" src (Filename.concat root tg)) sources targets;
          close_out oc;
-         Util.warn "Source-map info: run 'sh %s' to create links to sources in %s.\n%!" script_file root;
+         warn "Source-map info: run 'sh %s' to create links to sources in %s.\n%!" script_file root;
          targets
      in
      let sm = { sm with Source_map.sources; sources_content; mappings} in

@@ -97,21 +97,21 @@ module Make (N : sig type t end)
     let f g f =
       n := 0; m := 0;
 (*
-let t1 = Util.Timer.make () in
+let t1 = Timer.make () in
 *)
       let v = NSet.fold (fun x v -> incr n; NMap.add x D.bot v) g.domain NMap.empty in
 (*
-let t1 = Util.Timer.get t1 in
-let t2 = Util.Timer.make () in
+let t1 = Timer.get t1 in
+let t2 = Timer.make () in
 *)
       let w = { set = g.domain; stack = traverse_all g } in
 (*
-let t2 = Util.Timer.get t2 in
-let t3 = Util.Timer.make () in
+let t2 = Timer.get t2 in
+let t3 = Timer.make () in
 *)
       let res = iterate g f v w in
 (*
-let t3 = Util.Timer.get t3 in
+let t3 = Timer.get t3 in
       Format.eprintf "YYY %.2f %.2f %.2f@." t1 t2 t3;
       Format.eprintf "YYY %d %d (%f)@." !m !n (float !m /. float !n);
 *)
@@ -207,21 +207,21 @@ struct
     let f size g f =
       n := 0; m := 0;
 (*
-let t1 = Util.Timer.make () in
+let t1 = Timer.make () in
 *)
       let v = NTbl.make size D.bot in
 (*
-let t1 = Util.Timer.get t1 in
-let t2 = Util.Timer.make () in
+let t1 = Timer.get t1 in
+let t2 = Timer.make () in
 *)
       let w = traverse_all g in
 (*
-let t2 = Util.Timer.get t2 in
-let t3 = Util.Timer.make () in
+let t2 = Timer.get t2 in
+let t3 = Timer.make () in
 *)
       let res = iterate g f v w in
 (*
-let t3 = Util.Timer.get t3 in
+let t3 = Timer.get t3 in
       Format.eprintf "YYY %.2f %.2f %.2f@." t1 t2 t3;
       Format.eprintf "YYY %d %d (%f)@." !m !n (float !m /. float !n);
 *)
