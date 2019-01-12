@@ -20,7 +20,7 @@
 type t = {
   common : CommonArg.t;
   (* minify option *)
-  stdin : bool;
+  use_stdin : bool;
   output_file : string option;
   files : string list
 }

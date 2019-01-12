@@ -78,9 +78,6 @@ module Debug = struct
     try List.assoc s !debugs := false with Not_found ->
       failwith (Printf.sprintf "The debug named %S doesn't exist" s)
 
-
-  let _ = find "mem"
-
 end
 
 module Optim = struct

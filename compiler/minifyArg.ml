@@ -23,7 +23,7 @@ open Cmdliner
 type t = {
   common : CommonArg.t;
   (* minify option *)
-  stdin : bool;
+  use_stdin : bool;
   output_file : string option;
   files : string list
 }
@@ -36,14 +36,14 @@ let options =
     let doc = "Set output file name to [$(docv)]." in
     Arg.(value & opt (some string) None & info ["o"] ~docv:"FILE" ~doc)
   in
-  let stdin =
+  let use_stdin =
     let doc = "Read from standard input." in
     Arg.(value & flag & info ["stdin"] ~doc)
   in
-  let build_t common files output_file stdin =
+  let build_t common files output_file use_stdin =
     `Ok {
       common;
-      stdin;
+      use_stdin;
       output_file;
       files
     }
@@ -53,7 +53,7 @@ let options =
           $ CommonArg.t
           $ files
           $ output_file
-          $ stdin)
+          $ use_stdin)
   in
   Term.ret t
 

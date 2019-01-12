@@ -189,20 +189,9 @@ type kind =
 
 type desc = { code : t; kind : kind; name : string; opcode : int }
 
-let ops,ops_rev =
-  let ops_rev = Hashtbl.create 17 in
-  let if_v4 =
-    match Util.Version.v with
-      `V3    -> (fun _ -> K_will_not_happen)
-    | `V4_02
-    | `V4_03
-    | `V4_04
-    | `V4_06
-    | `V4_07 -> (fun k -> k)
-  in
+let ops =
   let if_v407 =
     match Util.Version.v with
-      `V3
     | `V4_02
     | `V4_03
     | `V4_04
@@ -356,38 +345,17 @@ let ops,ops_rev =
        STOP, KStop 0, "STOP";
        EVENT, K_will_not_happen, "EVENT";
        BREAK, K_will_not_happen, "BREAK";
-       RERAISE, if_v4 (KStop 0), "RERAISE";
-       RAISE_NOTRACE, if_v4 (KStop 0), "RAISE_NOTRACE";
+       RERAISE, KStop 0, "RERAISE";
+       RAISE_NOTRACE, KStop 0, "RAISE_NOTRACE";
        GETSTRINGCHAR, if_v407 KNullary, "GETSTRINGCHAR";
        FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP"|] in
   let ops =
     Array.mapi
       (fun i (c, k, n) ->
-         Hashtbl.add ops_rev c i;
          {code = c; kind = k; name = n; opcode = i}
       ) instrs
   in
-  ops,ops_rev
-
-let to_int c = Hashtbl.find ops_rev c
-
-let int_to_buf buf i =
-  Buffer.add_char buf (Char.chr (i land 0xFF));
-  Buffer.add_char buf (Char.chr ((i lsr 8) land 0xFF));
-  Buffer.add_char buf (Char.chr ((i lsr 16) land 0xFF));
-  Buffer.add_char buf (Char.chr ((i lsr 24) land 0xFF))
-
-let compile b l =
-  List.iter (fun i ->
-      let i = match i with
-        | `C i -> i
-        | `I i -> to_int i in
-      int_to_buf b i) l
-
-let compile_to_string l =
-  let b = Buffer.create 50 in
-  compile b l;
-  Buffer.contents b
+  ops
 
 let get code i = Char.code (code.[i])
 

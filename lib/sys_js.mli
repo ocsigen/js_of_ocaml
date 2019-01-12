@@ -53,7 +53,7 @@ val read_file   : name:string -> string
 val create_file : name:string -> content:string -> unit
   (** Register a file to a Pseudo Filesystem.
       [create_file ~name ~content] register the file [name] with content [content]
-      so it can be be opened with [Pervasives.open_in name] *)
+      so it can be be opened with [open_in name] *)
 
 val update_file : name:string -> content:string -> unit
   (** Update a file in the Pseudo Filesystem.
