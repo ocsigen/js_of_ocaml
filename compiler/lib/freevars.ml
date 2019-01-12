@@ -25,22 +25,22 @@ open Code
 
 (****)
 
-let iter_cont_free_vars f (_, l) = List.iter f l
+let iter_cont_free_vars f (_, l) = List.iter ~f l
 
 let iter_expr_free_vars f e =
   match e with
     Const _ | Constant _ ->
       ()
   | Apply (x, l, _) ->
-      f x; List.iter f l
+      f x; List.iter ~f l
   | Block (_, a) ->
-      Array.iter f a
+      Array.iter ~f a
   | Field (x, _) ->
       f x
   | Closure _ ->
       ()
   | Prim (_, l) ->
-      List.iter (fun x -> match x with Pv x -> f x | Pc _ -> ()) l
+      List.iter l ~f:(fun x -> match x with Pv x -> f x | Pc _ -> ())
 
 let iter_instr_free_vars f i =
   match i with
@@ -62,13 +62,13 @@ let iter_last_free_var f l =
       f x; iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
   | Switch (x, a1, a2) ->
       f x;
-      Array.iter (fun c -> iter_cont_free_vars f c) a1;
-      Array.iter (fun c -> iter_cont_free_vars f c) a2
+      Array.iter a1 ~f:(fun c -> iter_cont_free_vars f c);
+      Array.iter a2 ~f:(fun c -> iter_cont_free_vars f c)
   | Pushtrap (cont1, _, cont2, _) ->
       iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
 
 let iter_block_free_vars f block =
-  List.iter (fun i -> iter_instr_free_vars f i) block.body;
+  List.iter block.body ~f:(fun i -> iter_instr_free_vars f i);
   iter_last_free_var f block.branch
 
 let iter_instr_bound_vars f i =
@@ -86,8 +86,8 @@ let iter_last_bound_vars f l =
       f x
 
 let iter_block_bound_vars f block =
-  List.iter f block.params;
-  List.iter (fun i -> iter_instr_bound_vars f i) block.body;
+  List.iter ~f block.params;
+  List.iter block.body ~f:(fun i -> iter_instr_bound_vars f i);
   iter_last_bound_vars f block.branch
 
 (****)
@@ -123,7 +123,7 @@ let find_loops ((_, blocks, _) as prog) =
         pc' <> pc
       do () done;
       if List.length !l > 1 then
-        List.iter (fun pc' -> in_loop := AddrMap.add pc' pc !in_loop) !l
+        List.iter !l ~f:(fun pc' -> in_loop := AddrMap.add pc' pc !in_loop)
     end
   in
   Code.fold_closures prog (fun _ _ (pc, _) () -> traverse pc) ();
@@ -144,12 +144,11 @@ Format.eprintf "!%a: %d@." Var.print x pc';
 *)
  VarTbl.set vars x pc') block
       with Not_found -> () end;
-      List.iter
-        (fun i ->
-           match i with
-             Let (_, Closure (_, (pc', _))) -> traverse pc'
-           | _                              -> ())
-        block.body;
+      List.iter block.body
+        ~f:(fun i ->
+          match i with
+          | Let (_, Closure (_, (pc', _))) -> traverse pc'
+          | _                              -> ());
       Code.fold_children blocks pc (fun pc' () -> traverse pc') ()
     end
   in
@@ -181,22 +180,20 @@ Format.eprintf "%a: %d@." Var.print x pc';
         let pc'' = AddrMap.find pc in_loop in
         all_freevars := AddrMap.remove pc'' !all_freevars
       with Not_found -> () end;
-      List.iter
-        (fun i ->
-           match i with
-             Let (_, Closure (_, (pc', _))) ->
-               traverse pc';
-               begin try
-                 let pc'' = AddrMap.find pc in_loop in
-                 let fv =
-                   try AddrMap.find pc'' !all_freevars with Not_found -> VarSet.empty in
-                 freevars := AddrMap.add pc' fv !freevars;
-                 all_freevars := AddrMap.remove pc'' !all_freevars
-               with Not_found ->
-                 freevars := AddrMap.add pc' VarSet.empty !freevars;
-               end
-           | _ -> ())
-        block.body;
+      List.iter block.body ~f:(fun i ->
+        match i with
+          Let (_, Closure (_, (pc', _))) ->
+          traverse pc';
+          begin try
+              let pc'' = AddrMap.find pc in_loop in
+              let fv =
+                try AddrMap.find pc'' !all_freevars with Not_found -> VarSet.empty in
+              freevars := AddrMap.add pc' fv !freevars;
+              all_freevars := AddrMap.remove pc'' !all_freevars
+            with Not_found ->
+              freevars := AddrMap.add pc' VarSet.empty !freevars;
+          end
+        | _ -> ());
       Code.fold_children blocks pc (fun pc' () -> traverse pc') ()
     end
   in

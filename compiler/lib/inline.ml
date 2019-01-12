@@ -32,7 +32,7 @@ let optimizable blocks pc _ =
       | {branch = Pushtrap _; _}
       | {branch = Poptrap _; _}  -> false
       | _ ->
-        List.for_all (function
+        List.for_all b.body ~f:(function
           | Let (_, Prim (Extern "caml_js_eval_string",_)) -> false
           | Let (_, Prim (Extern "debugger",_)) -> false
           | Let
@@ -45,7 +45,7 @@ let optimizable blocks pc _ =
             (* let's consider it this opmiziable *)
             true
           | _ -> true
-        ) b.body )  pc blocks true
+        ))  pc blocks true
 
 let rec follow_branch_rec seen blocks = function
   | (pc, []) as k ->
@@ -63,8 +63,9 @@ let follow_branch = follow_branch_rec AddrSet.empty
 let get_closures (_, blocks, _) =
   AddrMap.fold
     (fun _ block closures ->
-       List.fold_left
-         (fun closures i ->
+       List.fold_left block.body
+         ~init:closures 
+         ~f:(fun closures i ->
             match i with
               Let (x, Closure (l, cont)) ->
               let cont = follow_branch blocks cont in
@@ -74,7 +75,7 @@ let get_closures (_, blocks, _) =
               VarMap.add x (l, cont, f_optimizable) closures
             | _ ->
               closures)
-         closures block.body)
+         )
     blocks VarMap.empty
 
 (****)
@@ -105,8 +106,9 @@ let fold_children blocks pc f accu =
   | Cond (_, _, (pc1, _), (pc2, _)) ->
     accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
-    accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-    >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+    let accu = Array.fold_right a1 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
+    let accu = Array.fold_right a2 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
+    accu
 
 let rewrite_closure blocks cont_pc clos_pc handler =
   Code.traverse fold_children (rewrite_block (cont_pc, handler)) clos_pc blocks blocks
@@ -159,11 +161,11 @@ let simple blocks cont mapping =
       | Constant (Float _ | Int64 _ | Int _ | IString _) ->
         `Exp exp
       | Apply (f, args, true) ->
-        `Exp (Apply (map_var mapping f, List.map (map_var mapping) args, true))
+        `Exp (Apply (map_var mapping f, List.map args ~f:(map_var mapping), true))
       | Prim (prim, args) ->
-        `Exp (Prim (prim, List.map (map_prim_arg mapping) args))
+        `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
       | Block (tag, args) ->
-        `Exp (Block (tag, Array.map (map_var mapping) args))
+        `Exp (Block (tag, Array.map args ~f:(map_var mapping)))
       | Field (x, i) -> `Exp (Field (map_var mapping x, i))
       | Closure _ -> `Fail
       | Constant _ -> `Fail
@@ -185,84 +187,84 @@ let rec args_equal xs ys = match xs, ys with
 let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
   let block = AddrMap.find pc blocks in
   let (body, (branch, blocks, free_pc)) =
-    List.fold_right
-      (fun i (rem, state) ->
-         match i with
-         | Let (x, Apply (f, args, true)) when VarMap.mem f closures ->
+    List.fold_right block.body
+      ~init:([], (block.branch, blocks, free_pc))
+      ~f:(fun i (rem, state) ->
+        match i with
+        | Let (x, Apply (f, args, true)) when VarMap.mem f closures ->
 
-           let (branch, blocks, free_pc) = state in
-           let (params, clos_cont,f_optimizable) = VarMap.find f closures in
-           begin match simple blocks clos_cont [params, args] with
-             | `Alias arg ->
-               begin match rem, branch with
-                 | [], Return y when Var.compare x y = 0 ->
-                   ([], (Return arg, blocks, free_pc))
-                 | _ ->
-                   let blocks =
-                     AddrMap.add free_pc
+          let (branch, blocks, free_pc) = state in
+          let (params, clos_cont,f_optimizable) = VarMap.find f closures in
+          begin match simple blocks clos_cont [params, args] with
+            | `Alias arg ->
+              begin match rem, branch with
+                | [], Return y when Var.compare x y = 0 ->
+                  ([], (Return arg, blocks, free_pc))
+                | _ ->
+                  let blocks =
+                    AddrMap.add free_pc
+                      { params = [x]; handler = block.handler;
+                        body = rem; branch = branch } blocks
+                  in
+                  ([], (Branch (free_pc, [arg]), blocks, free_pc + 1))
+              end
+            | `Exp exp ->
+              (Let (x,exp) :: rem, state)
+            | `Fail ->
+              if live_vars.(Var.idx f) = 1 && outer_optimizable = f_optimizable
+              (* inlining the code of an optimizable function could make
+                 this code unoptimized. (wrt to Jit compilers)
+                 At the moment, V8 doesn't optimize function containing try..catch.
+                 We disable inlining if the inner and outer functions don't have
+                 the same "contain_try_catch" property *)
+              then
+                let (blocks, cont_pc) =
+                  match rem, branch with
+                    [], Return y when Var.compare x y = 0 ->
+                    (* We do not need a continuation block for tail calls *)
+                    (blocks, None)
+                  | _ ->
+                    (AddrMap.add free_pc
                        { params = [x]; handler = block.handler;
-                         body = rem; branch = branch } blocks
-                   in
-                   ([], (Branch (free_pc, [arg]), blocks, free_pc + 1))
-               end
-             | `Exp exp ->
-               (Let (x,exp) :: rem, state)
-             | `Fail ->
-               if live_vars.(Var.idx f) = 1 && outer_optimizable = f_optimizable
-               (* inlining the code of an optimizable function could make
-                  this code unoptimized. (wrt to Jit compilers)
-                  At the moment, V8 doesn't optimize function containing try..catch.
-                  We disable inlining if the inner and outer functions don't have
-                  the same "contain_try_catch" property *)
-               then
-                 let (blocks, cont_pc) =
-                   match rem, branch with
-                     [], Return y when Var.compare x y = 0 ->
-                     (* We do not need a continuation block for tail calls *)
-                     (blocks, None)
-                   | _ ->
-                     (AddrMap.add free_pc
-                        { params = [x]; handler = block.handler;
-                          body = rem; branch = branch } blocks,
-                      Some free_pc)
-                 in
-                 let blocks =
-                   rewrite_closure blocks cont_pc (fst clos_cont) block.handler in
-                 (* We do not really need this intermediate block.  It
-                    just avoid the need to find which function parameters
-                    are used in the function body. *)
-                 let blocks =
-                   AddrMap.add (free_pc + 1)
-                     { params = params; handler = block.handler;
-                       body = []; branch = Branch clos_cont } blocks
-                 in
-                 ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
-               else begin
-                 (* Format.eprintf "Do not inline because inner:%b outer:%b@." f_has_handler outer_has_handler; *)
-                 (i :: rem, state)
-               end
-           end
-         | Let (x, Closure (l, (pc,[]))) ->
-           let block = AddrMap.find pc blocks in
-           begin match block with
-           | { body=[Let (y, Prim (Extern prim,args))]
-             ; branch = Return y'
-             ; handler = None
-             ; params = []} ->
-             let len = List.length l in
-             if Code.Var.compare y y' = 0
-             && Primitive.has_arity prim len
-             && args_equal l args
-             then
-               (Let (x, Prim (Extern "%closure", [Pc (IString prim)])) :: rem,
-               state)
-             else
-               (i :: rem, state)
-           | _ -> (i :: rem, state)
-           end
-         | _ ->
-           (i :: rem, state))
-      block.body ([], (block.branch, blocks, free_pc))
+                         body = rem; branch = branch } blocks,
+                     Some free_pc)
+                in
+                let blocks =
+                  rewrite_closure blocks cont_pc (fst clos_cont) block.handler in
+                (* We do not really need this intermediate block.  It
+                   just avoid the need to find which function parameters
+                   are used in the function body. *)
+                let blocks =
+                  AddrMap.add (free_pc + 1)
+                    { params = params; handler = block.handler;
+                      body = []; branch = Branch clos_cont } blocks
+                in
+                ([], (Branch (free_pc + 1, args), blocks, free_pc + 2))
+              else begin
+                (* Format.eprintf "Do not inline because inner:%b outer:%b@." f_has_handler outer_has_handler; *)
+                (i :: rem, state)
+              end
+          end
+        | Let (x, Closure (l, (pc,[]))) ->
+          let block = AddrMap.find pc blocks in
+          begin match block with
+            | { body=[Let (y, Prim (Extern prim,args))]
+              ; branch = Return y'
+              ; handler = None
+              ; params = []} ->
+              let len = List.length l in
+              if Code.Var.compare y y' = 0
+              && Primitive.has_arity prim len
+              && args_equal l args
+              then
+                (Let (x, Prim (Extern "%closure", [Pc (IString prim)])) :: rem,
+                 state)
+              else
+                (i :: rem, state)
+            | _ -> (i :: rem, state)
+          end
+        | _ ->
+          (i :: rem, state))
   in
   (AddrMap.add pc {block with body = body; branch = branch} blocks, free_pc)
 

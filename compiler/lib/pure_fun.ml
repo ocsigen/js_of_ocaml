@@ -59,8 +59,9 @@ let rec traverse blocks pc visited funs =
 and block blocks pc pure visited funs =
   let b = AddrMap.find pc blocks in
   let pure = match b.branch with Raise _ -> false | _ -> pure in
-  List.fold_left
-    (fun (pure, visited, funs) i ->
+  List.fold_left b.body
+    ~init:(pure, visited, funs)
+    ~f:(fun (pure, visited, funs) i ->
        let (visited, funs) =
          match i with
            Let (x, Closure (_, (pc, _))) ->
@@ -70,7 +71,6 @@ and block blocks pc pure visited funs =
              (visited, funs)
        in
        (pure && pure_instr funs i, visited, funs))
-    (pure, visited, funs) b.body
 
 let f (pc, blocks, _) =
   let (_, _, funs) = traverse blocks pc AddrMap.empty VarSet.empty in

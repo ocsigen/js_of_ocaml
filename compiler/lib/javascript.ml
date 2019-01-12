@@ -210,7 +210,7 @@ let string_of_number v =
 
 exception Not_an_ident
 let is_ident =
-  let l = Array.init 256 (fun i ->
+  let l = Array.init 256 ~f:(fun i ->
     let c = Char.chr i in
     if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c = '_' || c = '$'
     then 1

@@ -41,14 +41,14 @@ let int_num_bits =
   !size
 
 module List = struct
-  include List
-  let filter_map f l =
+  include ListLabels
+  let filter_map ~f l =
     let l = List.fold_left (fun acc x -> match f x with
       | Some x -> x::acc
       | None -> acc) [] l
     in List.rev l
 
-  let map_tc f l = List.rev (List.rev_map f l)
+  let map_tc ~f l = List.rev (List.rev_map f l)
 
 
   let rec take' acc n l =
@@ -67,7 +67,7 @@ module List = struct
     | [x] -> Some x
     | _ :: xs -> last xs
 
-  let sort_uniq compare l =
+  let sort_uniq ~compare l =
     let l = List.sort compare l in
     match l with
     | [] | [ _ ] as l-> l
@@ -81,21 +81,21 @@ end
 
 module Option = struct
 
-  let map f x =
+  let map ~f x =
     match x with
     | None -> None
     | Some v -> Some (f v)
 
-  let iter f x =
+  let iter ~f x =
     match x with
     | None -> ()
     | Some v -> f v
 
-  let filter p x =
+  let filter ~f x =
     match x with
     | None -> None
     | Some v ->
-      if p v
+      if f v
       then Some v
       else None
 end
@@ -114,8 +114,10 @@ module Char = struct
     else c
 end
 
+module Bytes = BytesLabels
+
 module String = struct
-  include String
+  include StringLabels
   let is_ascii s =
     let res = ref true in
     for i = 0 to String.length s - 1 do
@@ -130,7 +132,7 @@ module String = struct
     done;
     !res
 
-  let split_char sep p =
+  let split_char ~sep p =
     let len = String.length p in
     let rec split beg cur =
       if cur >= len then
@@ -144,10 +146,10 @@ module String = struct
     split 0 0
 
   (* copied from https://github.com/ocaml/ocaml/pull/10 *)
-  let split sep s =
+  let split ~sep s =
     let sep_len = String.length sep in
     if sep_len = 1
-    then split_char sep.[0] s
+    then split_char ~sep:(sep.[0]) s
     else
       let sep_max = sep_len - 1 in
       if sep_max < 0 then invalid_arg "String.split: empty separator" else
@@ -214,7 +216,7 @@ module BitSet : sig
   val set : t -> int -> unit
   val unset : t -> int -> unit
   val copy : t -> t
-  val iter : (int -> unit) -> t -> unit
+  val iter : f:(int -> unit) -> t -> unit
   val size : t -> int
   val next_free : t -> int -> int
   val next_mem : t -> int -> int
@@ -265,15 +267,15 @@ end = struct
 
   let copy t = { arr = Array.copy t.arr }
 
-  let iter f t =
+  let iter ~f t =
     for i = 0 to size t do
       if mem t i then f i
     done;;
 end
 
 module Array = struct
-  include Array
-  let fold_right_i f a x =
+  include ArrayLabels
+  let fold_right_i a ~f ~init:x =
     let r = ref x in
     for i = Array.length a - 1 downto 0 do
       r := f i (Array.unsafe_get a i) !r

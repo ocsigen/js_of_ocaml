@@ -92,9 +92,11 @@ let format_var t i x =
 
 let reserved = ref StringSet.empty
 
-let add_reserved s = reserved := List.fold_left (fun acc x ->
-    StringSet.add x acc) !reserved s
-
+let add_reserved s =
+  reserved :=
+    List.fold_left s
+      ~init:!reserved
+      ~f:(fun acc x -> StringSet.add x acc)
 
 let _ = reserved := StringSet.union !reserved Reserved.keyword(* ; *)
 (* add_reserved Reserved.provided *)

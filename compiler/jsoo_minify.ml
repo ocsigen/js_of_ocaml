@@ -63,10 +63,12 @@ let f {
        error "error at l:%d col:%d" line col
   in
 
-  let p = List.flatten (List.map (fun file ->
-    let lex = Parse_js.lexer_from_file file in
-    try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi) files) in
-
+  let p = List.flatten (
+    List.map files ~f:(fun file ->
+      let lex = Parse_js.lexer_from_file file in
+      try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi))
+  in
+  
   let p =
     if use_stdin
     then
@@ -87,7 +89,7 @@ let f {
       true_, (fun () -> new Js_traverse.clean);
     ] in
 
-  let p = List.fold_left (fun p (t,m) -> if t() then (m())#program p else p) p passes in
+  let p = List.fold_left passes ~init:p ~f:(fun p (t,m) -> if t() then (m())#program p else p) in
   let p = Js_assign.program p in
   Js_output.program pp p;
   finalize()

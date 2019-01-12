@@ -370,15 +370,15 @@ let print_last f l =
         print_cont cont1 print_cont cont2
   | Switch (x, a1, a2) ->
       Format.fprintf f "switch %a {" Var.print x;
-      Array.iteri
-        (fun i cont -> Format.fprintf f "int %d -> %a; " i print_cont cont) a1;
-      Array.iteri
-        (fun i cont -> Format.fprintf f "tag %d -> %a; " i print_cont cont) a2;
+      Array.iteri a1
+        ~f:(fun i cont -> Format.fprintf f "int %d -> %a; " i print_cont cont);
+      Array.iteri a2
+        ~f:(fun i cont -> Format.fprintf f "tag %d -> %a; " i print_cont cont);
       Format.fprintf f "}"
   | Pushtrap (cont1, x, cont2, pcs) ->
       Format.fprintf f "pushtrap %a handler %a => %a continuation %s"
         print_cont cont1 Var.print x print_cont cont2
-        (String.concat ", " (List.map string_of_int (AddrSet.elements pcs)))
+        (String.concat ~sep:", " (List.map (AddrSet.elements pcs) ~f:string_of_int))
   | Poptrap (cont,_) ->
       Format.fprintf f "poptrap %a" print_cont cont
 
@@ -392,9 +392,8 @@ let print_block annot pc block =
   | None ->
       ()
   end;
-  List.iter
-    (fun i -> Format.eprintf " %s %a@." (annot pc (Instr i)) print_instr i)
-    block.body;
+  List.iter block.body ~f:(fun i ->
+    Format.eprintf " %s %a@." (annot pc (Instr i)) print_instr i);
   Format.eprintf " %s %a@." (annot pc (Last block.branch))
     print_last block.branch;
   Format.eprintf "@."
@@ -408,14 +407,14 @@ let print_program annot (pc, blocks, _) =
 let fold_closures (pc, blocks, _) f accu =
   AddrMap.fold
     (fun _ block accu ->
-       List.fold_left
-         (fun accu i ->
-            match i with
-              Let (x, Closure (params, cont)) ->
-                f (Some x) params cont accu
-            | _ ->
-                accu)
-         accu block.body)
+       List.fold_left block.body
+         ~init:accu
+         ~f:(fun accu i ->
+           match i with
+             Let (x, Closure (params, cont)) ->
+             f (Some x) params cont accu
+           | _ ->
+             accu))
     blocks (f None [] (pc, []) accu)
 
 (****)
@@ -471,8 +470,9 @@ let fold_children blocks pc f accu =
   | Cond (_, _, (pc1, _), (pc2, _)) ->
       f pc1 accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+    let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a1 in
+    let accu = Array.fold_right ~init:accu ~f:(fun (pc, _) accu -> f pc accu) a2 in
+    accu
 
 let rec traverse' fold f pc visited blocks acc =
   if not (AddrSet.mem pc visited) then begin
@@ -530,7 +530,7 @@ let invariant  (_, blocks, _) =
       | Block (_, _) -> ()
       | Field (_, _) -> ()
       | Closure (l, cont) ->
-        List.iter define l;
+        List.iter l ~f:define;
         check_cont  cont
       | Constant _ -> ()
       | Prim (_, _) -> ()
@@ -551,20 +551,20 @@ let invariant  (_, blocks, _) =
         check_cont cont1;
         check_cont cont2;
       | Switch (_x, a1, a2) ->
-        Array.iteri
-          (fun _ cont -> check_cont cont) a1;
-        Array.iteri
-          (fun _ cont -> check_cont cont) a2;
+        Array.iteri a1
+          ~f:(fun _ cont -> check_cont cont);
+        Array.iteri a2
+          ~f:(fun _ cont -> check_cont cont);
       | Pushtrap (cont1, _x, cont2, _pcs) ->
         check_cont cont1;
         check_cont cont2
       | Poptrap (cont,_) -> check_cont cont
     in
     AddrMap.iter (fun _pc block ->
-      List.iter define block.params;
-      Option.iter (fun (_,cont) ->
-        check_cont cont) block.handler;
-      List.iter check_instr block.body;
+      List.iter block.params ~f:define;
+      Option.iter block.handler ~f:(fun (_,cont) ->
+        check_cont cont);
+      List.iter block.body ~f:check_instr;
       check_last block.branch
     ) blocks
   end

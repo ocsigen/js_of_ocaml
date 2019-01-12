@@ -47,13 +47,13 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
     begin match tail_call x f block.body with
       Some f_args when List.length f_params = List.length f_args ->
       let m = Subst.build_mapping f_params f_args in
-      List.iter2 (fun p a -> Code.Var.propagate_name p a) f_params f_args;
+      List.iter2 f_params f_args ~f:(fun p a -> Code.Var.propagate_name p a);
       AddrMap.add pc
         { params = block.params;
           handler = block.handler;
           body = remove_last block.body;
           branch =
-            Branch (f_pc, List.map (fun x -> VarMap.find x m) args) }
+            Branch (f_pc, List.map args ~f:(fun x -> VarMap.find x m)) }
         blocks
     | _ ->
       blocks
@@ -76,8 +76,9 @@ let fold_children blocks pc f accu =
   | Cond (_, _, (pc1, _), (pc2, _)) ->
       accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
-      accu >> Array.fold_right (fun (pc, _) accu -> f pc accu) a1
-           >> Array.fold_right (fun (pc, _) accu -> f pc accu) a2
+      let accu = Array.fold_right a1 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
+      let accu = Array.fold_right a2 ~init:accu ~f:(fun (pc, _) accu -> f pc accu) in
+      accu
 
 let rec traverse f pc visited blocks =
   if not (AddrSet.mem pc visited) then begin

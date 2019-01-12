@@ -19,8 +19,9 @@
 
 open Stdlib
 
-let keyword = List.fold_left (fun acc x -> StringSet.add x acc)
- StringSet.empty
+let keyword = List.fold_left
+    ~f:(fun acc x -> StringSet.add x acc)
+    ~init:StringSet.empty
   [
     (* keywork *)
     "break";
@@ -68,8 +69,9 @@ let keyword = List.fold_left (fun acc x -> StringSet.add x acc)
 ]
 
 
-let provided = List.fold_left (fun acc x -> StringSet.add x acc)
- StringSet.empty
+let provided = List.fold_left
+    ~f:(fun acc x -> StringSet.add x acc)
+    ~init:StringSet.empty
  [
 
   "event";

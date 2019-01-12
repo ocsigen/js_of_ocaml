@@ -42,8 +42,8 @@ let of_string s =
   try
     if String.length s <> size
     then raise Not_found;
-    let kind = String.sub s 0 9 in
-    let v = String.sub s 9 3 in
+    let kind = String.sub s ~pos:0 ~len:9 in
+    let v = String.sub s ~pos:9 ~len:3 in
     let _ = kind_of_string kind in
     kind, int_of_string v
   with _ -> raise (Bad_magic_number s)

@@ -54,7 +54,7 @@ let expr_deps blocks vars deps defs x e =
   | Closure (_, cont) ->
       cont_deps blocks vars deps defs cont
   | Block (_, a) ->
-      Array.iter (fun y -> add_dep deps x y) a
+      Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _) ->
       add_dep deps x y
 
@@ -65,19 +65,16 @@ let program_deps (_, blocks, _) =
   let defs = Array.make nv VarSet.empty in
   AddrMap.iter
     (fun _pc block ->
-       List.iter
-         (fun i ->
+       List.iter block.body
+         ~f:(fun i ->
             match i with
               Let (x, e) ->
                 add_var vars x;
                 expr_deps blocks vars deps defs x e
             | Set_field _ | Array_set _ | Offset_ref _ ->
-                ())
-         block.body;
-       Option.iter
-         (fun (_, cont) ->
-            cont_deps blocks vars deps defs cont)
-         block.handler;
+                ());
+       Option.iter block.handler ~f:(fun (_, cont) ->
+            cont_deps blocks vars deps defs cont);
        match block.branch with
          Return _ | Raise _ | Stop ->
            ()
@@ -87,8 +84,8 @@ let program_deps (_, blocks, _) =
            cont_deps blocks vars deps defs cont1;
            cont_deps blocks vars deps defs cont2
        | Switch (_, a1, a2) ->
-           Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a1;
-           Array.iter (fun cont -> cont_deps blocks vars deps defs cont) a2
+           Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont);
+           Array.iter a2 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
        | Pushtrap (cont, _, _, _) ->
            cont_deps blocks vars deps defs cont
        | Poptrap (cont,_) ->
@@ -104,7 +101,7 @@ let rec repr' reprs x acc =
 
 let repr reprs x =
   let (last, l) = repr' reprs x [] in
-  List.iter (fun v -> reprs.(Var.idx v) <- Some last) l;
+  List.iter l ~f:(fun v -> reprs.(Var.idx v) <- Some last);
   last
 
 let replace deps reprs x y =
@@ -154,15 +151,14 @@ let solver1 vars deps defs =
       G.iter_children = fun f x -> VarSet.iter f deps.(Var.idx x) }
   in
   ignore (Solver1.f () g (propagate1 deps defs reprs));
-  Array.mapi
-    (fun idx y ->
-       match y with
-         Some y ->
-           let y = repr reprs y in
-           if Var.idx y = idx then None else Some y
-       | None ->
-           None)
-    reprs
+  Array.mapi reprs ~f:(fun idx y ->
+    match y with
+      Some y ->
+      let y = repr reprs y in
+      if Var.idx y = idx then None else Some y
+    | None ->
+      None)
+
 
 let f p =
   let t = Timer.make () in

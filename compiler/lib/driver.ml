@@ -171,29 +171,35 @@ let debug_linker = Debug.find "linker"
 let global_object = Constant.global_object
 
 let extra_js_files = lazy (
-  List.fold_left (fun acc file ->
+  List.fold_left Constant.extra_js_files
+    ~init:[]
+    ~f:(fun acc file ->
       try
-        let ss = List.fold_left (fun ss {Linker.provides; _} ->
-            match provides with
-            | Some (_,name,_,_) -> StringSet.add name ss
-            | _ -> ss
-          ) StringSet.empty (Linker.parse_file file) in
+        let ss = List.fold_left (Linker.parse_file file)
+            ~init:StringSet.empty
+            ~f:(fun ss {Linker.provides; _} ->
+              match provides with
+              | Some (_,name,_,_) -> StringSet.add name ss
+              | _ -> ss)
+        in
         (file,ss)::acc
-      with _ -> acc
-    ) [] Constant.extra_js_files
-)
+      with _ -> acc))
 
 let report_missing_primitives missing =
-  let missing =  List.fold_left (fun missing (file,pro) ->
-      let d = StringSet.inter missing pro in
-      if not (StringSet.is_empty d)
-      then begin
-        warn "Missing primitives provided by %s:@." file;
-        StringSet.iter (fun nm -> warn "  %s@." nm) d;
-        StringSet.diff missing pro
-      end
-      else missing
-    ) missing (Lazy.force extra_js_files) in
+  let missing =
+    List.fold_left (Lazy.force extra_js_files)
+      ~init:missing
+      ~f:(fun missing (file,pro) ->
+        let d = StringSet.inter missing pro in
+        if not (StringSet.is_empty d)
+        then begin
+          warn "Missing primitives provided by %s:@." file;
+          StringSet.iter (fun nm -> warn "  %s@." nm) d;
+          StringSet.diff missing pro
+        end
+        else missing
+      )
+  in
   if not (StringSet.is_empty missing)
   then begin
     warn "Missing primitives:@.";
@@ -269,7 +275,7 @@ let link ~standalone ~linkall ~export_runtime (js: Javascript.source_elements) :
     then
       let open Javascript in
       let all = Linker.all linkinfos in
-      let all = List.map (fun name -> PNI name,EVar (S {name ;var=None})) all  in
+      let all = List.map all ~f:(fun name -> PNI name,EVar (S {name ;var=None})) in
       (Statement (Expression_statement(
          EBin(Eq,
               EDot(EVar (S {name=global_object;var=None}),"jsoo_runtime"),
@@ -409,9 +415,9 @@ let pack ~global {Linker.runtime_code=js; always_required_codes} =
           //# 1 polyfill/classlist.js
        v}
     *)
-    List.map
-      (fun {Linker.program; filename = _} -> wrap_in_iifa ~can_use_strict:false program)
-      always_required_codes
+    List.map always_required_codes
+      ~f:(fun {Linker.program; filename = _} -> wrap_in_iifa ~can_use_strict:false program)
+      
   in
   let runtime_js = wrap_in_iifa ~can_use_strict:true js in
   let js = (List.flatten always_required_js) @ runtime_js in

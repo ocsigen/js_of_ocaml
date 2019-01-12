@@ -57,7 +57,7 @@ let specialize_instr info i rem =
   | Let (x, Prim (Extern "caml_js_call", [f; o; a])) ->
       begin match the_def_of info a with
         Some (Block (_, a)) ->
-          let a = Array.map (fun x -> Pv x) a in
+          let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_call",
                         f :: o :: Array.to_list a))
       | _ ->
@@ -66,7 +66,7 @@ let specialize_instr info i rem =
   | Let (x, Prim (Extern "caml_js_fun_call", [f; a])) ->
       begin match the_def_of info a with
         Some (Block (_, a)) ->
-          let a = Array.map (fun x -> Pv x) a in
+          let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_fun_call",
                         f :: Array.to_list a))
       | _ ->
@@ -77,7 +77,7 @@ let specialize_instr info i rem =
         Some m ->
           begin match the_def_of info a with
             Some (Block (_, a)) ->
-              let a = Array.map (fun x -> Pv x) a in
+              let a = Array.map a ~f:(fun x -> Pv x) in
               Let (x, Prim (Extern "%caml_js_opt_meth_call",
                             o :: Pc (String m) :: Array.to_list a))
           | _ ->
@@ -89,7 +89,7 @@ let specialize_instr info i rem =
   | Let (x, Prim (Extern "caml_js_new", [c; a])) ->
       begin match the_def_of info a with
         Some (Block (_, a)) ->
-          let a = Array.map (fun x -> Pv x) a in
+          let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_new",
                         c :: Array.to_list a))
       | _ ->
@@ -103,8 +103,7 @@ let specialize_instr info i rem =
           | _                   -> raise Exit
         in
         let a =
-          Array.map
-            (fun x ->
+          Array.map a ~f:(fun x ->
                match the_def_of info (Pv x) with
                  Some (Block (_, [|k; v|])) ->
                    let k =
@@ -115,7 +114,6 @@ let specialize_instr info i rem =
                    [k; Pv v]
                | _ ->
                    raise Exit)
-            a
         in
         Let (x, Prim (Extern "%caml_js_opt_object",
                       List.flatten (Array.to_list a)))
@@ -190,7 +188,7 @@ let rec specialize_instrs info checks l =
       | Let (x, Prim (Extern "caml_array_get_addr", [y;z])) ->
           let idx =
             match the_int info z with Some idx -> `Cst idx | None -> `Var z in
-          if List.mem (y, idx) checks then
+          if List.mem (y, idx) ~set:checks then
             Let (x, Prim (Extern "caml_array_unsafe_get", [y;z])) ::
             specialize_instrs info checks r
           else
@@ -203,7 +201,7 @@ let rec specialize_instrs info checks l =
       | Let (x, Prim (Extern "caml_array_set_addr", [y;z;t])) ->
           let idx =
             match the_int info z with Some idx -> `Cst idx | None -> `Var z in
-          if List.mem (y, idx) checks then
+          if List.mem (y, idx) ~set:checks then
             Let (x, Prim (Extern "caml_array_unsafe_set", [y;z;t])) ::
             specialize_instrs info checks r
           else
