@@ -26,7 +26,7 @@ let pure_expr pure_funs e =
     Const _  | Block _ | Field _ | Closure _ | Constant _ ->
       true
   | Apply (f, _l, exact) ->
-      exact && VarSet.mem f pure_funs
+      exact && Var.Set.mem f pure_funs
   | Prim (p, _l) ->
       match p with
         Extern f -> Primitive.is_pure f
@@ -43,9 +43,9 @@ let pure_instr pure_funs i =
 
 let rec traverse blocks pc visited funs =
   try
-    (AddrMap.find pc visited, visited, funs)
+    (Addr.Map.find pc visited, visited, funs)
   with Not_found ->
-    let visited = AddrMap.add pc false visited in
+    let visited = Addr.Map.add pc false visited in
     let (pure, visited, funs) =
       fold_children blocks pc
         (fun pc (pure, visited, funs) ->
@@ -54,10 +54,10 @@ let rec traverse blocks pc visited funs =
         (true, visited, funs)
     in
     let (pure, visited, funs) = block blocks pc pure visited funs in
-    (pure, AddrMap.add pc pure visited, funs)
+    (pure, Addr.Map.add pc pure visited, funs)
 
 and block blocks pc pure visited funs =
-  let b = AddrMap.find pc blocks in
+  let b = Addr.Map.find pc blocks in
   let pure = match b.branch with Raise _ -> false | _ -> pure in
   List.fold_left b.body
     ~init:(pure, visited, funs)
@@ -66,12 +66,12 @@ and block blocks pc pure visited funs =
          match i with
            Let (x, Closure (_, (pc, _))) ->
              let (pure, visited, funs) = traverse blocks pc visited funs in
-             (visited, if pure then VarSet.add x funs else funs)
+             (visited, if pure then Var.Set.add x funs else funs)
          | _ ->
              (visited, funs)
        in
        (pure && pure_instr funs i, visited, funs))
 
 let f (pc, blocks, _) =
-  let (_, _, funs) = traverse blocks pc AddrMap.empty VarSet.empty in
+  let (_, _, funs) = traverse blocks pc Addr.Map.empty Var.Set.empty in
   funs

@@ -26,11 +26,11 @@ open Code
 type def = Expr of expr | Var of Var.t
 
 type t =
-  { blocks : block AddrMap.t;
+  { blocks : block Addr.Map.t;
     live : int array;
     defs : def list array;
-    mutable reachable_blocks : AddrSet.t;
-    pure_funs : VarSet.t }
+    mutable reachable_blocks : Addr.Set.t;
+    pure_funs : Var.Set.t }
 
 (****)
 
@@ -68,9 +68,9 @@ and mark_expr st e =
 and mark_cont_reachable st (pc, _param) = mark_reachable st pc
 
 and mark_reachable st pc =
-  if not (AddrSet.mem pc st.reachable_blocks) then begin
-    st.reachable_blocks <- AddrSet.add pc st.reachable_blocks;
-    let block = AddrMap.find pc st.blocks in
+  if not (Addr.Set.mem pc st.reachable_blocks) then begin
+    st.reachable_blocks <- Addr.Set.add pc st.reachable_blocks;
+    let block = Addr.Map.find pc st.blocks in
     List.iter block.body
       ~f:(fun i ->
         match i with
@@ -122,7 +122,7 @@ let rec filter_args st pl al =
       assert false
 
 let filter_cont blocks st (pc, args) =
-  let params = (AddrMap.find pc blocks).params in
+  let params = (Addr.Map.find pc blocks).params in
   (pc, filter_args st params args)
 
 let filter_closure blocks st i =
@@ -147,7 +147,7 @@ let filter_live_last blocks st l =
   | Pushtrap (cont1, x, cont2, pcs) ->
       Pushtrap (filter_cont blocks st cont1,
                 x, filter_cont blocks st cont2,
-                AddrSet.inter pcs st.reachable_blocks)
+                Addr.Set.inter pcs st.reachable_blocks)
   | Poptrap (cont,addr) ->
       Poptrap (filter_cont blocks st cont, addr)
 
@@ -159,7 +159,7 @@ let ref_count st i =
   | _          -> 0
 
 let annot st pc xi =
-  if not (AddrSet.mem pc st.reachable_blocks) then "x" else
+  if not (Addr.Set.mem pc st.reachable_blocks) then "x" else
   match xi with
     Last _ ->
       " "
@@ -183,7 +183,7 @@ let rec add_arg_dep defs params args =
       ()
 
 let add_cont_dep blocks defs (pc, args) =
-  match try Some (AddrMap.find pc blocks) with Not_found -> None with
+  match try Some (Addr.Map.find pc blocks) with Not_found -> None with
     Some block -> add_arg_dep defs block.params args
   | None       -> () (* Dead continuation *)
 
@@ -193,7 +193,7 @@ let f ((pc, blocks, free_pc) as program) =
   let defs = Array.make nv [] in
   let live = Array.make nv 0 in
   let pure_funs = Pure_fun.f program in
-  AddrMap.iter
+  Addr.Map.iter
     (fun _ block ->
        List.iter block.body ~f:(fun i ->
          match i with
@@ -220,7 +220,7 @@ let f ((pc, blocks, free_pc) as program) =
     blocks;
   let st =
     { live = live; defs = defs; blocks = blocks;
-      reachable_blocks = AddrSet.empty; pure_funs = pure_funs }
+      reachable_blocks = Addr.Set.empty; pure_funs = pure_funs }
   in
   mark_reachable st pc;
 
@@ -229,10 +229,10 @@ let f ((pc, blocks, free_pc) as program) =
 
   let all_blocks = blocks in
   let blocks =
-    AddrMap.fold
+    Addr.Map.fold
       (fun pc block blocks ->
-         if not (AddrSet.mem pc st.reachable_blocks) then blocks else
-         AddrMap.add pc
+         if not (Addr.Set.mem pc st.reachable_blocks) then blocks else
+         Addr.Map.add pc
            { params =
                List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0);
              handler =
@@ -244,7 +244,7 @@ let f ((pc, blocks, free_pc) as program) =
              branch =
                filter_live_last all_blocks st block.branch }
            blocks)
-      blocks AddrMap.empty
+      blocks Addr.Map.empty
   in
   if times () then Format.eprintf "  dead code elim.: %a@." Timer.print t;
   (pc, blocks, free_pc), st.live

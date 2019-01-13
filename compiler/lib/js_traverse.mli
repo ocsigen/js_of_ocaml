@@ -43,8 +43,8 @@ class subst : (ident -> ident) ->  object
 type t = {
   use_name : StringSet.t;
   def_name : StringSet.t;
-  def : Code.VarSet.t;
-  use : Code.VarSet.t;
+  def : Code.Var.Set.t;
+  use : Code.Var.Set.t;
   count : int IdentMap.t;
 }
 
@@ -59,11 +59,11 @@ class type freevar =
     method use_var : ident -> unit
     method state : t
     method get_free_name : StringSet.t
-    method get_free : Code.VarSet.t
+    method get_free : Code.Var.Set.t
     method get_def_name : StringSet.t
-    method get_def : Code.VarSet.t
+    method get_def : Code.Var.Set.t
     method get_use_name : StringSet.t
-    method get_use : Code.VarSet.t
+    method get_use : Code.Var.Set.t
   end
 
 class free : freevar

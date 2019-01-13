@@ -21,7 +21,7 @@ open Stdlib
 open Javascript
 let debug = Debug.find "shortvar"
 
-module S = Code.VarSet
+module S = Code.Var.Set
 
 module Var = Code.Var
 

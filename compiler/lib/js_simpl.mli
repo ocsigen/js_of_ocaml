@@ -25,7 +25,7 @@ val if_statement :
   statement * location -> bool -> statement * location -> bool ->
   (statement * location) list
 
-val get_variable : Code.VarSet.t -> expression -> Code.VarSet.t
+val get_variable : Code.Var.Set.t -> expression -> Code.Var.Set.t
 
 val block :
   (Javascript.statement * location) list ->

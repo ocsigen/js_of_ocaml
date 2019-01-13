@@ -101,10 +101,10 @@ let program_of_files l =
     List.map fs ~f:(fun (n, c) ->
         Let(Var.fresh (), Prim(Extern "caml_create_file_extern", [n;c]))) in
   let pc = 0 in
-  let blocks = AddrMap.add pc {params=[];
+  let blocks = Addr.Map.add pc {params=[];
                                handler=None;
                                body=[];
-                               branch=Stop} AddrMap.empty in
+                               branch=Stop} Addr.Map.empty in
   let p = pc, blocks, pc+1 in
   Code.prepend p body
 
@@ -142,9 +142,9 @@ let f p cmis files paths =
 let f_empty cmis files paths =
   let body = make_body "caml_create_file_extern" cmis files paths in
   let pc = 0 in
-  let blocks = AddrMap.add pc {params=[];
+  let blocks = Addr.Map.add pc {params=[];
                           handler=None;
                           body=[];
-                               branch=Stop} AddrMap.empty in
+                               branch=Stop} Addr.Map.empty in
   let p = pc, blocks, pc+1 in
   Code.prepend p body
