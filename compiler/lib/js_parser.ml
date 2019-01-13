@@ -412,7 +412,7 @@ and _menhir_goto_expression_no_in : _menhir_env -> 'ttv_tail -> _menhir_state ->
         let (_menhir_stack : 'freshtv2131 * _menhir_state * 'tv_expression_no_in) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (x : 'tv_expression_no_in)) = _menhir_stack in
         let _v : 'tv_option_expression_no_in_ = 
-# 116 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 116 "./standard.mly"
     ( Some x )
 # 418 "js_parser.ml"
          in
@@ -638,7 +638,7 @@ and _menhir_goto_separated_nonempty_list_T_COMMA_assignment_expression_ : _menhi
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((x : 'tv_separated_nonempty_list_T_COMMA_assignment_expression_) : 'tv_separated_nonempty_list_T_COMMA_assignment_expression_) = _v in
         ((let _v : 'tv_loption_separated_nonempty_list_T_COMMA_assignment_expression__ = 
-# 144 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 144 "./standard.mly"
     ( x )
 # 644 "js_parser.ml"
          in
@@ -666,7 +666,7 @@ and _menhir_goto_separated_nonempty_list_T_COMMA_assignment_expression_ : _menhi
 # 667 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_separated_nonempty_list_T_COMMA_assignment_expression_ = 
-# 243 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 243 "./standard.mly"
     ( x :: xs )
 # 672 "js_parser.ml"
          in
@@ -1223,7 +1223,7 @@ and _menhir_goto_expression : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
             let (_menhir_stack : 'freshtv2007 * _menhir_state * 'tv_expression) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, (x : 'tv_expression)) = _menhir_stack in
             let _v : 'tv_option_expression_ = 
-# 116 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 116 "./standard.mly"
     ( Some x )
 # 1229 "js_parser.ml"
              in
@@ -2477,7 +2477,7 @@ and _menhir_goto_assignment_expression_no_in : _menhir_env -> 'ttv_tail -> _menh
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((x : 'tv_initializer_no_in) : 'tv_initializer_no_in) = _v in
         ((let _v : 'tv_option_initializer_no_in_ = 
-# 116 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 116 "./standard.mly"
     ( Some x )
 # 2483 "js_parser.ml"
          in
@@ -2790,7 +2790,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
             let (_menhir_stack : 'freshtv1837 * _menhir_state * 'tv_assignment_expression) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, (x : 'tv_assignment_expression)) = _menhir_stack in
             let _v : 'tv_separated_nonempty_list_T_COMMA_assignment_expression_ = 
-# 241 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 241 "./standard.mly"
     ( [ x ] )
 # 2796 "js_parser.ml"
              in
@@ -2835,7 +2835,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
         let (_menhir_stack : 'freshtv1843) = Obj.magic _menhir_stack in
         let ((x : 'tv_initializer_) : 'tv_initializer_) = _v in
         ((let _v : 'tv_option_initializer__ = 
-# 116 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 116 "./standard.mly"
     ( Some x )
 # 2841 "js_parser.ml"
          in
@@ -3073,7 +3073,7 @@ and _menhir_goto_assignment_expression : _menhir_env -> 'ttv_tail -> _menhir_sta
 # 3074 "js_parser.ml"
         ))), _, (y : 'tv_assignment_expression)) = _menhir_stack in
         let _v : 'tv_object_key_value = let pair = 
-# 175 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 175 "./standard.mly"
     ( (x, y) )
 # 3079 "js_parser.ml"
          in
@@ -11385,7 +11385,7 @@ and _menhir_goto_option_pair_default_clause_list_case_clause___ : _menhir_env ->
 # 11386 "js_parser.ml"
         ))), _, (x : 'tv_list_case_clause_)), (y : 'tv_option_pair_default_clause_list_case_clause___)) = _menhir_stack in
         let _v : 'tv_switch_statement = let pair = 
-# 167 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 167 "./standard.mly"
     ( (x, y) )
 # 11391 "js_parser.ml"
          in
@@ -11472,12 +11472,12 @@ and _menhir_goto_separated_nonempty_list_T_COMMA_pair_variable_option_initialize
 # 11473 "js_parser.ml"
         ))), _, (xs : 'tv_separated_nonempty_list_T_COMMA_pair_variable_option_initializer_no_in___)) = _menhir_stack in
         let _v : 'tv_separated_nonempty_list_T_COMMA_pair_variable_option_initializer_no_in___ = let x = 
-# 167 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 167 "./standard.mly"
     ( (x, y) )
 # 11478 "js_parser.ml"
          in
         
-# 243 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 243 "./standard.mly"
     ( x :: xs )
 # 11483 "js_parser.ml"
          in
@@ -12694,7 +12694,7 @@ and _menhir_goto_list_case_clause_ : _menhir_env -> 'ttv_tail -> _menhir_state -
             let (_menhir_env : _menhir_env) = _menhir_env in
             let (_menhir_stack : 'freshtv1205) = Obj.magic _menhir_stack in
             ((let _v : 'tv_option_pair_default_clause_list_case_clause___ = 
-# 114 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 114 "./standard.mly"
     ( None )
 # 12700 "js_parser.ml"
              in
@@ -12729,12 +12729,12 @@ and _menhir_goto_list_case_clause_ : _menhir_env -> 'ttv_tail -> _menhir_state -
         let (_menhir_stack : ('freshtv1211 * 'tv_default_clause) * _menhir_state * 'tv_list_case_clause_) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, (x : 'tv_default_clause)), _, (y : 'tv_list_case_clause_)) = _menhir_stack in
         let _v : 'tv_option_pair_default_clause_list_case_clause___ = let x = 
-# 167 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 167 "./standard.mly"
     ( (x, y) )
 # 12735 "js_parser.ml"
          in
         
-# 116 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 116 "./standard.mly"
     ( Some x )
 # 12740 "js_parser.ml"
          in
@@ -12746,7 +12746,7 @@ and _menhir_goto_list_case_clause_ : _menhir_env -> 'ttv_tail -> _menhir_state -
         let (_menhir_stack : ('freshtv1215 * _menhir_state * 'tv_case_clause) * _menhir_state * 'tv_list_case_clause_) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, (x : 'tv_case_clause)), _, (xs : 'tv_list_case_clause_)) = _menhir_stack in
         let _v : 'tv_list_case_clause_ = 
-# 213 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 213 "./standard.mly"
     ( x :: xs )
 # 12752 "js_parser.ml"
          in
@@ -12758,12 +12758,12 @@ and _menhir_reduce276 : _menhir_env -> ('ttv_tail * _menhir_state * 'tv_variable
   fun _menhir_env _menhir_stack ->
     let ((_menhir_stack, _menhir_s, (x : 'tv_variable)), _, (y : 'tv_option_initializer_no_in_)) = _menhir_stack in
     let _v : 'tv_separated_nonempty_list_T_COMMA_pair_variable_option_initializer_no_in___ = let x = 
-# 167 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 167 "./standard.mly"
     ( (x, y) )
 # 12764 "js_parser.ml"
      in
     
-# 241 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 241 "./standard.mly"
     ( [ x ] )
 # 12769 "js_parser.ml"
      in
@@ -12833,7 +12833,7 @@ and _menhir_goto_loption_separated_nonempty_list_T_COMMA_assignment_expression__
         ))), _, (xs : 'tv_loption_separated_nonempty_list_T_COMMA_assignment_expression__)) = _menhir_stack in
         let _v : 'tv_arguments = let args =
           let item = 
-# 232 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 232 "./standard.mly"
     ( xs )
 # 12839 "js_parser.ml"
            in
@@ -13569,7 +13569,7 @@ and _menhir_run464 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 and _menhir_reduce120 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s ->
     let _v : 'tv_list_case_clause_ = 
-# 211 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 211 "./standard.mly"
     ( [] )
 # 13575 "js_parser.ml"
      in
@@ -13805,12 +13805,12 @@ and _menhir_goto_separated_nonempty_list_T_COMMA_pair_variable_option_initialize
 # 13806 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_separated_nonempty_list_T_COMMA_pair_variable_option_initializer____ = let x = 
-# 167 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 167 "./standard.mly"
     ( (x, y) )
 # 13811 "js_parser.ml"
          in
         
-# 243 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 243 "./standard.mly"
     ( x :: xs )
 # 13816 "js_parser.ml"
          in
@@ -13994,7 +13994,7 @@ and _menhir_run92 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv1099) = Obj.magic _menhir_stack in
         let (_menhir_s : _menhir_state) = MenhirState92 in
         ((let _v : 'tv_loption_separated_nonempty_list_T_COMMA_assignment_expression__ = 
-# 142 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 142 "./standard.mly"
     ( [] )
 # 14000 "js_parser.ml"
          in
@@ -15364,7 +15364,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
         let (_menhir_stack : ('freshtv947 * _menhir_state * 'tv_statement) * _menhir_state * 'tv_list_statement_) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, (x : 'tv_statement)), _, (xs : 'tv_list_statement_)) = _menhir_stack in
         let _v : 'tv_list_statement_ = 
-# 213 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 213 "./standard.mly"
     ( x :: xs )
 # 15370 "js_parser.ml"
          in
@@ -15400,7 +15400,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 # 15401 "js_parser.ml"
         ))), _, (y : 'tv_list_statement_)) = _menhir_stack in
         let _v : 'tv_case_clause = let pair = 
-# 175 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 175 "./standard.mly"
     ( (x, y) )
 # 15406 "js_parser.ml"
          in
@@ -15696,7 +15696,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
                         let (_menhir_s : _menhir_state) = _menhir_s in
                         let ((x : 'tv_finally) : 'tv_finally) = _v in
                         ((let _v : 'tv_option_finally_ = 
-# 116 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 116 "./standard.mly"
     ( Some x )
 # 15702 "js_parser.ml"
                          in
@@ -15753,7 +15753,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 # 15754 "js_parser.ml"
                        in
                       
-# 167 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 167 "./standard.mly"
     ( (x, y) )
 # 15759 "js_parser.ml"
                       
@@ -15784,7 +15784,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
                         let (_menhir_stack : 'freshtv993) = Obj.magic _menhir_stack in
                         let (_menhir_s : _menhir_state) = MenhirState472 in
                         ((let _v : 'tv_option_finally_ = 
-# 114 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 114 "./standard.mly"
     ( None )
 # 15790 "js_parser.ml"
                          in
@@ -15814,7 +15814,7 @@ and _menhir_goto_list_statement_ : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 and _menhir_reduce155 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s ->
     let _v : 'tv_option_initializer_no_in_ = 
-# 114 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 114 "./standard.mly"
     ( None )
 # 15820 "js_parser.ml"
      in
@@ -15914,12 +15914,12 @@ and _menhir_goto_option_initializer__ : _menhir_env -> 'ttv_tail -> 'tv_option_i
         let (_menhir_stack : ('freshtv941 * _menhir_state * 'tv_variable) * 'tv_option_initializer__) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, (x : 'tv_variable)), (y : 'tv_option_initializer__)) = _menhir_stack in
         let _v : 'tv_separated_nonempty_list_T_COMMA_pair_variable_option_initializer____ = let x = 
-# 167 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 167 "./standard.mly"
     ( (x, y) )
 # 15920 "js_parser.ml"
          in
         
-# 241 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 241 "./standard.mly"
     ( [ x ] )
 # 15925 "js_parser.ml"
          in
@@ -15958,7 +15958,7 @@ and _menhir_goto_separated_nonempty_list_T_COMMA_variable_ : _menhir_env -> 'ttv
 # 15959 "js_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_separated_nonempty_list_T_COMMA_variable_ = 
-# 243 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 243 "./standard.mly"
     ( x :: xs )
 # 15964 "js_parser.ml"
          in
@@ -15973,7 +15973,7 @@ and _menhir_goto_separated_nonempty_list_T_COMMA_variable_ : _menhir_env -> 'ttv
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((x : 'tv_separated_nonempty_list_T_COMMA_variable_) : 'tv_separated_nonempty_list_T_COMMA_variable_) = _v in
         ((let _v : 'tv_loption_separated_nonempty_list_T_COMMA_variable__ = 
-# 144 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 144 "./standard.mly"
     ( x )
 # 15979 "js_parser.ml"
          in
@@ -16217,7 +16217,7 @@ and _menhir_goto_statement : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_st
 # 16218 "js_parser.ml"
         ))), _, (body : 'tv_statement)) = _menhir_stack in
         let _v : 'tv_for_in_statement = let left = 
-# 167 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 167 "./standard.mly"
     ( (x, y) )
 # 16223 "js_parser.ml"
          in
@@ -17491,7 +17491,7 @@ and _menhir_goto_elison_rev : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_e
 and _menhir_reduce128 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s ->
     let _v : 'tv_loption_separated_nonempty_list_T_COMMA_variable__ = 
-# 142 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 142 "./standard.mly"
     ( [] )
 # 17497 "js_parser.ml"
      in
@@ -17508,7 +17508,7 @@ and _menhir_goto_list_source_element_ : _menhir_env -> 'ttv_tail -> _menhir_stat
         let (_menhir_stack : ('freshtv743 * _menhir_state * 'tv_source_element) * _menhir_state * 'tv_list_source_element_) = Obj.magic _menhir_stack in
         ((let ((_menhir_stack, _menhir_s, (x : 'tv_source_element)), _, (xs : 'tv_list_source_element_)) = _menhir_stack in
         let _v : 'tv_list_source_element_ = 
-# 213 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 213 "./standard.mly"
     ( x :: xs )
 # 17514 "js_parser.ml"
          in
@@ -17614,7 +17614,7 @@ and _menhir_goto_list_source_element_ : _menhir_env -> 'ttv_tail -> _menhir_stat
                 ))) = _menhir_stack in
                 let _v : 'tv_function_declaration = let args =
                   let item = 
-# 232 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 232 "./standard.mly"
     ( xs )
 # 17620 "js_parser.ml"
                    in
@@ -17696,7 +17696,7 @@ and _menhir_goto_list_source_element_ : _menhir_env -> 'ttv_tail -> _menhir_stat
                 ))) = _menhir_stack in
                 let _v : 'tv_function_expression = let args =
                   let item = 
-# 232 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 232 "./standard.mly"
     ( xs )
 # 17702 "js_parser.ml"
                    in
@@ -17837,7 +17837,7 @@ and _menhir_goto_statement_no_semi : _menhir_env -> 'ttv_tail -> _menhir_state -
 and _menhir_reduce147 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s ->
     let _v : 'tv_option_expression_ = 
-# 114 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 114 "./standard.mly"
     ( None )
 # 17843 "js_parser.ml"
      in
@@ -17846,7 +17846,7 @@ and _menhir_reduce147 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return
 and _menhir_reduce124 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s ->
     let _v : 'tv_list_statement_ = 
-# 211 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 211 "./standard.mly"
     ( [] )
 # 17852 "js_parser.ml"
      in
@@ -17900,7 +17900,7 @@ and _menhir_reduce78 : _menhir_env -> 'ttv_tail * _menhir_state * (
             let (_menhir_stack : 'freshtv679 * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, (x : 'tv_variable)) = _menhir_stack in
             let _v : 'tv_option_variable_ = 
-# 116 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 116 "./standard.mly"
     ( Some x )
 # 17906 "js_parser.ml"
              in
@@ -17934,7 +17934,7 @@ and _menhir_reduce78 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 let (_menhir_stack : 'freshtv685 * _menhir_state * 'tv_variable) = Obj.magic _menhir_stack in
                 ((let (_menhir_stack, _menhir_s, (x : 'tv_variable)) = _menhir_stack in
                 let _v : 'tv_separated_nonempty_list_T_COMMA_variable_ = 
-# 241 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 241 "./standard.mly"
     ( [ x ] )
 # 17940 "js_parser.ml"
                  in
@@ -18020,7 +18020,7 @@ and _menhir_reduce78 : _menhir_env -> 'ttv_tail * _menhir_state * (
                 let (_menhir_env : _menhir_env) = _menhir_env in
                 let (_menhir_stack : 'freshtv693) = Obj.magic _menhir_stack in
                 ((let _v : 'tv_option_initializer__ = 
-# 114 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 114 "./standard.mly"
     ( None )
 # 18026 "js_parser.ml"
                  in
@@ -18201,7 +18201,7 @@ and _menhir_reduce78 : _menhir_env -> 'ttv_tail * _menhir_state * (
             let (_menhir_stack : 'freshtv721 * _menhir_state * 'tv_label) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, (x : 'tv_label)) = _menhir_stack in
             let _v : 'tv_option_label_ = 
-# 116 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 116 "./standard.mly"
     ( Some x )
 # 18207 "js_parser.ml"
              in
@@ -18539,7 +18539,7 @@ and _menhir_goto_statement_need_semi : _menhir_env -> 'ttv_tail -> _menhir_state
 and _menhir_reduce157 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s ->
     let _v : 'tv_option_label_ = 
-# 114 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 114 "./standard.mly"
     ( None )
 # 18545 "js_parser.ml"
      in
@@ -19645,7 +19645,7 @@ and _menhir_goto_boolean_literal : _menhir_env -> 'ttv_tail -> _menhir_state -> 
 and _menhir_reduce122 : _menhir_env -> 'ttv_tail -> _menhir_state -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s ->
     let _v : 'tv_list_source_element_ = 
-# 211 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 211 "./standard.mly"
     ( [] )
 # 19651 "js_parser.ml"
      in
@@ -20938,7 +20938,7 @@ and _menhir_run241 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
             let (_menhir_stack : 'freshtv525) = Obj.magic _menhir_stack in
             let (_menhir_s : _menhir_state) = MenhirState242 in
             ((let _v : 'tv_option_expression_no_in_ = 
-# 114 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 114 "./standard.mly"
     ( None )
 # 20944 "js_parser.ml"
              in
@@ -24684,7 +24684,7 @@ and _menhir_run57 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let (_menhir_stack : 'freshtv7) = Obj.magic _menhir_stack in
         let (_menhir_s : _menhir_state) = MenhirState57 in
         ((let _v : 'tv_option_variable_ = 
-# 114 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 114 "./standard.mly"
     ( None )
 # 24690 "js_parser.ml"
          in
@@ -25154,7 +25154,7 @@ and standalone_expression : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (
         _menhir_env._menhir_error <- true;
         _menhir_errorcase _menhir_env (Obj.magic _menhir_stack) MenhirState529) : 'freshtv2))
 
-# 269 "/home/hugo/.opam/4.07.1/lib/menhir/standard.mly"
+# 269 "./standard.mly"
   
 
 # 25161 "js_parser.ml"

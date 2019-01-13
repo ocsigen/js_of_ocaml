@@ -19,20 +19,24 @@
 (rule
   (targets annot_lexer.ml)
   (mode promote)
-  (action  (chdir %{workspace_root} (run %{bin:ocamllex} -q %{dep:annot_lexer.mll} -o %{targets}))))
+  (action (chdir %{workspace_root} (run %{bin:ocamllex} -q %{dep:annot_lexer.mll} -o %{targets}))))
+
+;; cp $(ocamlfind printconf path)/menhir/standard.mly standard.mly
 
 ;; menhir is just noisy, both because this parser has conflicts, or
 ;; because we don't use --infer (to avoid having to write  manually and
 ;; badly specified dependencieds), so we just discard stderr.
 (rule
  (targets js_parser.mli js_parser.ml)
+ (deps standard.mly)
  (mode promote)
- (action (ignore-stderr (run menhir --external-tokens Js_token --explain %{dep:js_parser.mly}))))
+ (action (ignore-stderr (run menhir --stdlib . --external-tokens Js_token --explain %{dep:js_parser.mly}))))
 
 (rule
  (targets annot_parser.mli annot_parser.ml)
+ (deps standard.mly)
  (mode promote)
- (action (ignore-stderr (run menhir --explain %{dep:annot_parser.mly}))))
+ (action (ignore-stderr (run menhir --stdlib . --explain %{dep:annot_parser.mly}))))
 
 (rule
  (targets ocaml_compiler.ml)
