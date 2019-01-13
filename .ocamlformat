@@ -1,1 +1,13 @@
-disable
+sequence-style=terminator
+margin=90
+if-then-else=keyword-first
+infix-precedence=parens
+parens-tuple=multi-line-only
+type-decl=sparse
+break-collection-expressions=fit-or-vertical
+break-infix=fit-or-vertical
+break-struct=force
+field-space=loose
+wrap-fun-args=false
+wrap-comments=false
+version=0.8
