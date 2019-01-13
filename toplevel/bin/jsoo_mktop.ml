@@ -30,12 +30,6 @@ let add_pkgs x = pkgs:=!pkgs@[x]
 
 let export = ref []
 let add_export x = export:=!export@[x]
-let syntaxes = ref []
-let syntaxes_mod = ref []
-let add_syntax_pkg p =
-  syntaxes:=!syntaxes @ [p]
-let add_syntax_mod p =
-  syntaxes_mod:=!syntaxes_mod @ [p]
 
 let execute cmd =
   let s = String.concat " " cmd in
@@ -55,8 +49,6 @@ let usage () =
   Format.eprintf "Usage: jsoo_mktop [options] [ocamlfind arguments] @.";
   Format.eprintf " -verbose\t\t\tOutput intermediate commands@.";
   Format.eprintf " -help\t\t\t\tDisplay usage@.";
-  Format.eprintf " -top-syntax [pkg]\t\tInclude syntax extension provided by [pkg] findlib package@.";
-  Format.eprintf " -top-syntax-mod [mod]\t\tInclude syntax extension provided by the module [mod]@.";
   Format.eprintf " -o [name]\t\t\tSet output filename@.";
   Format.eprintf " -jsopt [opt]\t\t\tPass [opt] option to js_of_ocaml compiler@.";
   Format.eprintf " -export-package [pkg]\t\tCompile toplevel with [pkg] package loaded@.";
@@ -67,8 +59,6 @@ let usage () =
 let output = ref "./a.out"
 
 let rec scan_args acc = function
-  | "-top-syntax" :: x :: xs -> add_syntax_pkg x; scan_args acc xs
-  | "-top-syntax-mod" :: x :: xs -> add_syntax_mod x; scan_args acc xs
   | ("--verbose"|"-verbose")::xs -> Jsoo_common.verbose:=true; scan_args ("-verbose"::acc) xs
   | ("--help"|"-help"|"-h")::_ -> usage ()
   | "-jsopt" :: x :: xs -> add_js_opt x; scan_args acc xs
