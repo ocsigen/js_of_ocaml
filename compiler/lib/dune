@@ -13,25 +13,25 @@
 
 (rule
   (targets js_lexer.ml)
-  (mode fallback)
-  (action (chdir %{workspace_root} (run %{bin:ocamllex} -q -o %{dep:js_lexer.mll}))))
+  (mode promote)
+  (action (chdir %{workspace_root} (run %{bin:ocamllex} -q %{dep:js_lexer.mll} -o %{targets}))))
 
 (rule
   (targets annot_lexer.ml)
-  (mode fallback)
-  (action  (chdir %{workspace_root} (run %{bin:ocamllex} -q -o %{dep:annot_lexer.mll}))))
+  (mode promote)
+  (action  (chdir %{workspace_root} (run %{bin:ocamllex} -q %{dep:annot_lexer.mll} -o %{targets}))))
 
 ;; menhir is just noisy, both because this parser has conflicts, or
 ;; because we don't use --infer (to avoid having to write  manually and
 ;; badly specified dependencieds), so we just discard stderr.
 (rule
  (targets js_parser.mli js_parser.ml)
- (mode fallback)
+ (mode promote)
  (action (ignore-stderr (run menhir --external-tokens Js_token --explain %{dep:js_parser.mly}))))
 
 (rule
  (targets annot_parser.mli annot_parser.ml)
- (mode fallback)
+ (mode promote)
  (action (ignore-stderr (run menhir --explain %{dep:annot_parser.mly}))))
 
 (rule
