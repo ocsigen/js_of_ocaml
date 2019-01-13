@@ -79,17 +79,17 @@ let block s block =
     branch = last s block.branch }
 
 let program s (pc, blocks, free_pc) =
-  let blocks = AddrMap.map (fun b -> block s b) blocks in
+  let blocks = Addr.Map.map (fun b -> block s b) blocks in
   (pc, blocks, free_pc)
 
 let rec cont' s pc blocks visited =
-  if AddrSet.mem pc visited
+  if Addr.Set.mem pc visited
   then blocks, visited
   else
-    let visited = AddrSet.add pc visited in
-    let b = AddrMap.find pc blocks in
+    let visited = Addr.Set.add pc visited in
+    let b = Addr.Map.find pc blocks in
     let b = block s b in
-    let blocks = AddrMap.add pc b blocks in
+    let blocks = Addr.Map.add pc b blocks in
     let blocks,visited =
       List.fold_left b.body
         ~init:(blocks, visited)
@@ -103,7 +103,7 @@ let rec cont' s pc blocks visited =
       (blocks, visited)
 
 let cont s addr (pc, blocks, free_pc) =
-  let blocks,_ = cont' s addr blocks AddrSet.empty in
+  let blocks,_ = cont' s addr blocks Addr.Set.empty in
   (pc, blocks, free_pc)
 (****)
 
@@ -115,11 +115,11 @@ let from_array s =
 let rec build_mapping params args =
   match params, args with
     x :: params, y :: args ->
-      VarMap.add x y (build_mapping params args)
+      Var.Map.add x y (build_mapping params args)
   | [], [] ->
-      VarMap.empty
+      Var.Map.empty
   | _ ->
       assert false
 
 let from_map m =
-  fun x -> try VarMap.find x m with Not_found -> x
+  fun x -> try Var.Map.find x m with Not_found -> x

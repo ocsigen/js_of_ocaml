@@ -306,10 +306,10 @@ let eval_branch info = function
 exception May_raise
 
 let rec do_not_raise pc visited blocks =
-  if AddrSet.mem pc visited then visited
+  if Addr.Set.mem pc visited then visited
   else
-  let visited = AddrSet.add pc visited in
-  let b = AddrMap.find pc blocks in
+  let visited = Addr.Set.add pc visited in
+  let b = Addr.Map.find pc blocks in
   List.iter b.body ~f:(function
     | Array_set (_,_,_)
     | Offset_ref (_,_)
@@ -345,16 +345,16 @@ let rec do_not_raise pc visited blocks =
   | Pushtrap _ -> raise May_raise
 
 let drop_exception_handler blocks =
-  AddrMap.fold (fun pc _ blocks ->
-    match AddrMap.find pc blocks with
+  Addr.Map.fold (fun pc _ blocks ->
+    match Addr.Map.find pc blocks with
     | { branch = Pushtrap ((addr,_) as cont1,_x,_cont2,_); handler = parent_hander; _}  as b ->
       begin
         try
-          let visited = do_not_raise addr AddrSet.empty blocks in
+          let visited = do_not_raise addr Addr.Set.empty blocks in
           let b = { b with branch = Branch cont1 } in
-          let blocks = AddrMap.add pc b blocks in
-          let blocks = AddrSet.fold (fun pc2 blocks ->
-            let b = AddrMap.find pc2 blocks in
+          let blocks = Addr.Map.add pc b blocks in
+          let blocks = Addr.Set.fold (fun pc2 blocks ->
+            let b = Addr.Map.find pc2 blocks in
             assert(b.handler <> parent_hander);
             let branch =
               match b.branch with
@@ -364,7 +364,7 @@ let drop_exception_handler blocks =
               | x -> x
             in
             let b = { b with branch; handler = parent_hander } in
-            AddrMap.add pc2 b blocks
+            Addr.Map.add pc2 b blocks
           ) visited blocks
           in
           blocks
@@ -373,7 +373,7 @@ let drop_exception_handler blocks =
     | _ -> blocks) blocks blocks
 
 let eval info blocks =
-  AddrMap.map
+  Addr.Map.map
     (fun block ->
        let body = List.map block.body ~f:(eval_instr info) in
        let branch = eval_branch info block.branch in

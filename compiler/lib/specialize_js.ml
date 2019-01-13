@@ -214,7 +214,7 @@ let rec specialize_instrs info checks l =
 
 let specialize_all_instrs info (pc, blocks, free_pc) =
   let blocks =
-    AddrMap.map
+    Addr.Map.map
       (fun block ->
          { block with Code.body = specialize_instrs info [] block.body })
       blocks

@@ -26,7 +26,7 @@ let optimizable blocks pc _ =
     if not acc
     then acc
     else
-      let b = AddrMap.find pc blocks in
+      let b = Addr.Map.find pc blocks in
       match b with
       | {handler = Some _; _}
       | {branch = Pushtrap _; _}
@@ -49,19 +49,19 @@ let optimizable blocks pc _ =
 
 let rec follow_branch_rec seen blocks = function
   | (pc, []) as k ->
-    let seen = AddrSet.add pc seen in
-    begin try match AddrMap.find pc blocks with
-      | {body = []; branch = Branch (pc, []); _} when not (AddrSet.mem pc seen) ->
+    let seen = Addr.Set.add pc seen in
+    begin try match Addr.Map.find pc blocks with
+      | {body = []; branch = Branch (pc, []); _} when not (Addr.Set.mem pc seen) ->
         follow_branch_rec seen blocks (pc, [])
       | _ -> k
     with Not_found -> k
     end
   | k -> k
 
-let follow_branch = follow_branch_rec AddrSet.empty
+let follow_branch = follow_branch_rec Addr.Set.empty
 
 let get_closures (_, blocks, _) =
-  AddrMap.fold
+  Addr.Map.fold
     (fun _ block closures ->
        List.fold_left block.body
          ~init:closures 
@@ -72,16 +72,16 @@ let get_closures (_, blocks, _) =
               (* we can compute this once during the pass
                  as the property won't change with inlining *)
               let f_optimizable = optimizable blocks (fst cont) true in
-              VarMap.add x (l, cont, f_optimizable) closures
+              Var.Map.add x (l, cont, f_optimizable) closures
             | _ ->
               closures)
          )
-    blocks VarMap.empty
+    blocks Var.Map.empty
 
 (****)
 
 let rewrite_block (pc', handler) pc blocks =
-  let block = AddrMap.find pc blocks in
+  let block = Addr.Map.find pc blocks in
   assert (block.handler = None);
   let block = { block with handler = handler } in
   let block =
@@ -89,20 +89,20 @@ let rewrite_block (pc', handler) pc blocks =
     | Return y, Some pc' -> { block with branch = Branch (pc', [y]) }
     | _                  -> block
   in
-  AddrMap.add pc block blocks
+  Addr.Map.add pc block blocks
 
 let (>>) x f = f x
 
 (* Skip try body *)
 let fold_children blocks pc f accu =
-  let block = AddrMap.find pc blocks in
+  let block = Addr.Map.find pc blocks in
   match block.branch with
   | Return _ | Raise _ | Stop ->
     accu
   | Branch (pc', _) | Poptrap ((pc', _),_) ->
     f pc' accu
   | Pushtrap (_, _, (pc1, _), pcs) ->
-    f pc1 (AddrSet.fold f pcs accu)
+    f pc1 (Addr.Set.fold f pcs accu)
   | Cond (_, _, (pc1, _), (pc2, _)) ->
     accu >> f pc1 >> f pc2
   | Switch (_, a1, a2) ->
@@ -143,7 +143,7 @@ let simple blocks cont mapping =
     | Pv x -> Pv (map_var mapping x)
   in
   let rec follow (pc,args) (instr : [`Empty | `Ok of 'a ]) mapping =
-    let b = AddrMap.find pc blocks in
+    let b = Addr.Map.find pc blocks in
     let mapping = (b.params, args) :: mapping in
     let instr : [`Empty | `Ok of 'a | `Fail ] =
       match b.body, instr with
@@ -185,16 +185,16 @@ let rec args_equal xs ys = match xs, ys with
   | _ -> false
 
 let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
-  let block = AddrMap.find pc blocks in
+  let block = Addr.Map.find pc blocks in
   let (body, (branch, blocks, free_pc)) =
     List.fold_right block.body
       ~init:([], (block.branch, blocks, free_pc))
       ~f:(fun i (rem, state) ->
         match i with
-        | Let (x, Apply (f, args, true)) when VarMap.mem f closures ->
+        | Let (x, Apply (f, args, true)) when Var.Map.mem f closures ->
 
           let (branch, blocks, free_pc) = state in
-          let (params, clos_cont,f_optimizable) = VarMap.find f closures in
+          let (params, clos_cont,f_optimizable) = Var.Map.find f closures in
           begin match simple blocks clos_cont [params, args] with
             | `Alias arg ->
               begin match rem, branch with
@@ -202,7 +202,7 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
                   ([], (Return arg, blocks, free_pc))
                 | _ ->
                   let blocks =
-                    AddrMap.add free_pc
+                    Addr.Map.add free_pc
                       { params = [x]; handler = block.handler;
                         body = rem; branch = branch } blocks
                   in
@@ -224,7 +224,7 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
                     (* We do not need a continuation block for tail calls *)
                     (blocks, None)
                   | _ ->
-                    (AddrMap.add free_pc
+                    (Addr.Map.add free_pc
                        { params = [x]; handler = block.handler;
                          body = rem; branch = branch } blocks,
                      Some free_pc)
@@ -235,7 +235,7 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
                    just avoid the need to find which function parameters
                    are used in the function body. *)
                 let blocks =
-                  AddrMap.add (free_pc + 1)
+                  Addr.Map.add (free_pc + 1)
                     { params = params; handler = block.handler;
                       body = []; branch = Branch clos_cont } blocks
                 in
@@ -246,7 +246,7 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
               end
           end
         | Let (x, Closure (l, (pc,[]))) ->
-          let block = AddrMap.find pc blocks in
+          let block = Addr.Map.find pc blocks in
           begin match block with
             | { body=[Let (y, Prim (Extern prim,args))]
               ; branch = Return y'
@@ -266,7 +266,7 @@ let inline closures live_vars outer_optimizable pc (blocks,free_pc)=
         | _ ->
           (i :: rem, state))
   in
-  (AddrMap.add pc {block with body = body; branch = branch} blocks, free_pc)
+  (Addr.Map.add pc {block with body = body; branch = branch} blocks, free_pc)
 
 (****)
 
@@ -279,7 +279,7 @@ let f ((pc, blocks, free_pc) as p) live_vars =
     Code.fold_closures p (fun name _ (pc,_) (blocks,free_pc) ->
       let outer_optimizable = match name with
         | None -> optimizable blocks pc true
-        | Some x -> let _,_,b = VarMap.find x closures in
+        | Some x -> let _,_,b = Var.Map.find x closures in
           b in
       Code.traverse Code.fold_children (inline closures live_vars outer_optimizable) pc blocks (blocks,free_pc)
     ) (blocks, free_pc)

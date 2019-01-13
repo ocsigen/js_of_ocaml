@@ -17,14 +17,23 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
-type addr = int
+open! Stdlib
+
+module Addr : sig
+  type t = int
+  val to_string : t -> string
+  val zero : t
+  val succ : t -> t
+  val pred : t -> t
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
+end
 
 module DebugAddr : sig
-  type dbg = private int
-  val of_addr : addr -> dbg
-  val to_addr : dbg -> addr
-  val no : dbg
+  type t = private int
+  val of_addr : Addr.t -> t
+  val to_addr : t -> Addr.t
+  val no : t
 end
 
 module Var : sig
@@ -50,37 +59,31 @@ module Var : sig
   val reset : unit -> unit
   val set_pretty : bool -> unit
   val set_stable : bool -> unit
+
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
+  module Tbl : sig
+    type key = t
+    type 'a t
+    type size = unit
+    val get : 'a t -> key -> 'a
+    val set : 'a t -> key -> 'a -> unit
+    val make : size -> 'a -> 'a t
+  end
+  module ISet : sig
+    type elt = t
+    type t
+
+    val empty : unit -> t
+    val iter : (elt -> unit) -> t -> unit
+    val mem : t -> elt -> bool
+    val add : t -> elt -> unit
+    val remove : t -> elt -> unit
+    val copy : t -> t
+  end
 end
 
-
-module VarSet : Set.S with type elt = Var.t
-module VarMap : Map.S with type key = Var.t
-module VarTbl : sig
-  type 'a t
-  type key = Var.t
-  type size = unit
-  val get : 'a t -> key -> 'a
-  val set : 'a t -> key -> 'a -> unit
-  val make : size -> 'a -> 'a t
-end
-module VarISet : sig
-  type t
-  type elt = Var.t
-
-  val empty : unit -> t
-  val iter : (elt -> unit) -> t -> unit
-  val mem : t -> elt -> bool
-  val add : t -> elt -> unit
-  val remove : t -> elt -> unit
-  val copy : t -> t
-end
-
-
-
-module AddrSet : Set.S with type elt = addr and type t = IntSet.t
-module AddrMap : Map.S with type key = addr and type 'a t = 'a IntMap.t
-
-type cont = addr * Var.t list
+type cont = Addr.t * Var.t list
 
 type prim =
     Vectlength
@@ -128,8 +131,8 @@ type last =
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * Var.t * cont * AddrSet.t
-  | Poptrap of cont * addr
+  | Pushtrap of cont * Var.t * cont * Addr.Set.t
+  | Poptrap of cont * Addr.t
 
 type block =
   { params : Var.t list;
@@ -137,25 +140,25 @@ type block =
     body : instr list;
     branch : last }
 
-type program = addr * block AddrMap.t * addr
+type program = Addr.t * block Addr.Map.t * Addr.t
 
 type xinstr = Instr of instr | Last of last
 
 val print_var_list : Format.formatter -> Var.t list -> unit
 val print_instr : Format.formatter -> instr -> unit
-val print_block : (AddrMap.key -> xinstr -> string) -> int -> block -> unit
-val print_program : (AddrMap.key -> xinstr -> string) -> program -> unit
+val print_block : (Addr.Map.key -> xinstr -> string) -> int -> block -> unit
+val print_program : (Addr.Map.key -> xinstr -> string) -> program -> unit
 val print_last : Format.formatter -> last -> unit
 val print_cont : Format.formatter -> cont -> unit
 val fold_closures :
   program -> (Var.t option -> Var.t list -> cont -> 'd -> 'd) -> 'd -> 'd
 val fold_children :
-  block AddrMap.t -> addr  -> (addr -> 'c -> 'c) -> 'c -> 'c
+  block Addr.Map.t -> Addr.t  -> (Addr.t -> 'c -> 'c) -> 'c -> 'c
 
 val traverse :
-  (block AddrMap.t -> addr  -> (addr -> (AddrSet.t * 'c) -> (AddrSet.t * 'c)) -> (AddrSet.t * 'c) -> (AddrSet.t * 'c)) ->
-  (addr -> 'c -> 'c) ->
-  addr -> block AddrMap.t -> 'c -> 'c
+  (block Addr.Map.t -> Addr.t  -> (Addr.t -> (Addr.Set.t * 'c) -> (Addr.Set.t * 'c)) -> (Addr.Set.t * 'c) -> (Addr.Set.t * 'c)) ->
+  (Addr.t -> 'c -> 'c) ->
+  Addr.t -> block Addr.Map.t -> 'c -> 'c
 
 val prepend : program -> instr list -> program
 

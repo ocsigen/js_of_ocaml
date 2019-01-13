@@ -23,16 +23,16 @@ open Code
 
 (****)
 
-let add_var = VarISet.add
+let add_var = Var.ISet.add
 
 let add_def vars defs x y =
   add_var vars x;
   let idx = Var.idx x in
-  defs.(idx) <- VarSet.add y defs.(idx)
+  defs.(idx) <- Var.Set.add y defs.(idx)
 
 let add_dep deps x y =
   let idx = Var.idx y in
-  deps.(idx) <- VarSet.add x deps.(idx)
+  deps.(idx) <- Var.Set.add x deps.(idx)
 
 let rec arg_deps vars deps defs params args =
   match params, args with
@@ -44,7 +44,7 @@ let rec arg_deps vars deps defs params args =
       ()
 
 let cont_deps blocks vars deps defs (pc, args) =
-  let block = AddrMap.find pc blocks in
+  let block = Addr.Map.find pc blocks in
   arg_deps vars deps defs block.params args
 
 let expr_deps blocks vars deps defs x e =
@@ -60,10 +60,10 @@ let expr_deps blocks vars deps defs x e =
 
 let program_deps (_, blocks, _) =
   let nv = Var.count () in
-  let vars = VarISet.empty () in
-  let deps = Array.make nv VarSet.empty in
-  let defs = Array.make nv VarSet.empty in
-  AddrMap.iter
+  let vars = Var.ISet.empty () in
+  let deps = Array.make nv Var.Set.empty in
+  let defs = Array.make nv Var.Set.empty in
+  Addr.Map.iter
     (fun _pc block ->
        List.iter block.body
          ~f:(fun i ->
@@ -107,24 +107,24 @@ let repr reprs x =
 let replace deps reprs x y =
   let yidx = Var.idx y in
   let xidx = Var.idx x in
-  deps.(yidx) <- VarSet.union deps.(yidx) deps.(xidx);
+  deps.(yidx) <- Var.Set.union deps.(yidx) deps.(xidx);
   reprs.(xidx) <- Some y;
   true
 
 let propagate1 deps defs reprs st x =
-  let prev = VarTbl.get st x in
+  let prev = Var.Tbl.get st x in
   if prev then prev else begin
     let idx = Var.idx x in
     let s =
-      VarSet.fold
-        (fun x s -> VarSet.add (repr reprs x) s) defs.(idx) VarSet.empty
+      Var.Set.fold
+        (fun x s -> Var.Set.add (repr reprs x) s) defs.(idx) Var.Set.empty
     in
     defs.(idx) <- s;
-    match VarSet.cardinal s with
+    match Var.Set.cardinal s with
       1 ->
-        replace deps reprs x (VarSet.choose s)
+        replace deps reprs x (Var.Set.choose s)
     | 2 ->
-        begin match VarSet.elements s with
+        begin match Var.Set.elements s with
           [y; z] when Var.compare x y = 0 -> replace deps reprs x z
         | [z; y] when Var.compare x y = 0 -> replace deps reprs x z
         | _                               -> false
@@ -133,7 +133,7 @@ let propagate1 deps defs reprs st x =
         false
   end
 
-module G = Dgraph.Make_Imperative (Var) (VarISet) (VarTbl)
+module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 
 module Domain1 = struct
   type t = bool
@@ -148,7 +148,7 @@ let solver1 vars deps defs =
   let reprs = Array.make nv None in
   let g =
     { G.domain = vars;
-      G.iter_children = fun f x -> VarSet.iter f deps.(Var.idx x) }
+      G.iter_children = fun f x -> Var.Set.iter f deps.(Var.idx x) }
   in
   ignore (Solver1.f () g (propagate1 deps defs reprs));
   Array.mapi reprs ~f:(fun idx y ->

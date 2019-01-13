@@ -148,10 +148,10 @@ module Debug : sig
   type data
   val is_empty : data -> bool
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
-  val find : data -> Code.addr -> (int * string * Ident.t) list * Env.summary
+  val find : data -> Code.Addr.t -> (int * string * Ident.t) list * Env.summary
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
   val find_source : data -> string -> string option
-  val mem : data -> Code.addr -> bool
+  val mem : data -> Code.Addr.t -> bool
   val read
     : data -> crcs:(string * string option) list -> includes:string list
     -> in_channel -> unit
@@ -159,7 +159,7 @@ module Debug : sig
     : data -> crcs:(string * string option) list -> includes:string list -> orig:int
     -> in_channel -> unit
   val create : unit -> data
-  val fold : data -> (Code.addr -> Instruct.debug_event -> 'a -> 'a) -> 'a -> 'a
+  val fold : data -> (Code.Addr.t -> Instruct.debug_event -> 'a -> 'a) -> 'a -> 'a
 end = struct
 
   open Instruct
@@ -311,10 +311,10 @@ module Blocks : sig
   val next : u -> int -> int
   val is_empty : u -> bool
 end = struct
-  type t = AddrSet.t
+  type t = Addr.Set.t
   type u = int array
 
-  let add blocks pc =  AddrSet.add pc blocks
+  let add blocks pc =  Addr.Set.add pc blocks
   let rec scan debug blocks code pc len =
     if pc < len then begin
       match (get_instr_exn code pc).kind with
@@ -326,34 +326,34 @@ end = struct
         scan debug blocks code (pc + 3) len
       | KNullaryCall ->
         let blocks =
-          if Debug.mem debug (pc + 1) then AddrSet.add pc blocks else blocks in
+          if Debug.mem debug (pc + 1) then Addr.Set.add pc blocks else blocks in
         scan debug blocks code (pc + 1) len
       | KUnaryCall ->
         let blocks =
-          if Debug.mem debug (pc + 2) then AddrSet.add pc blocks else blocks in
+          if Debug.mem debug (pc + 2) then Addr.Set.add pc blocks else blocks in
         scan debug blocks code (pc + 2) len
       | KBinaryCall ->
         let blocks =
-          if Debug.mem debug (pc + 3) then AddrSet.add pc blocks else blocks in
+          if Debug.mem debug (pc + 3) then Addr.Set.add pc blocks else blocks in
         scan debug blocks code (pc + 3) len
       | KJump ->
         let offset = gets code (pc + 1) in
-        let blocks = AddrSet.add (pc + offset + 1) blocks in
+        let blocks = Addr.Set.add (pc + offset + 1) blocks in
         scan debug blocks code (pc + 2) len
       | KCond_jump ->
         let offset = gets code (pc + 1) in
-        let blocks = AddrSet.add (pc + offset + 1) blocks in
+        let blocks = Addr.Set.add (pc + offset + 1) blocks in
         scan debug blocks code (pc + 2) len
       | KCmp_jump ->
         let offset = gets code (pc + 2) in
-        let blocks = AddrSet.add (pc + offset + 2) blocks in
+        let blocks = Addr.Set.add (pc + offset + 2) blocks in
         scan debug blocks code (pc + 3) len
       | KSwitch ->
         let sz = getu code (pc + 1) in
         let blocks = ref blocks in
         for i = 0 to sz land 0xffff + sz lsr 16 - 1 do
           let offset = gets code (pc + 2 + i) in
-          blocks := AddrSet.add (pc + offset + 2) !blocks
+          blocks := Addr.Set.add (pc + offset + 2) !blocks
         done;
         scan debug !blocks code (pc + 2 + sz land 0xffff + sz lsr 16) len
       | KClosurerec ->
@@ -370,7 +370,7 @@ end = struct
       blocks
     end
 
-  let finish_analysis blocks = Array.of_list (AddrSet.elements blocks)
+  let finish_analysis blocks = Array.of_list (Addr.Set.elements blocks)
 
   (* invariant: a.(i) <= x < a.(j) *)
   let rec find a i j x =
@@ -388,7 +388,7 @@ end = struct
   let is_empty x = Array.length x <= 1
 
   let analyse debug_data code =
-    let blocks = AddrSet.empty in
+    let blocks = Addr.Set.empty in
     let len = String.length code  / 4 in
     let blocks = add blocks 0 in
     let blocks = add blocks len in
@@ -494,9 +494,9 @@ module State = struct
 
   type handler = {
     var       : Var.t;
-    addr      : addr;
+    addr      : Addr.t;
     stack_len : int;
-    block_pc  : addr
+    block_pc  : Addr.t
   }
 
   type t = {
@@ -506,7 +506,7 @@ module State = struct
     env_offset : int;
     handlers   : handler list;
     globals    : globals;
-    current_pc : addr;
+    current_pc : Addr.t;
   }
 
   let fresh_var state =
@@ -734,8 +734,8 @@ let get_global state instrs i =
       (x, state, instrs)
     end
 
-let tagged_blocks = ref AddrSet.empty
-let compiled_blocks = ref AddrMap.empty
+let tagged_blocks = ref Addr.Set.empty
+let compiled_blocks = ref Addr.Map.empty
 let method_cache_id = ref 1
 
 type compile_info =
@@ -745,7 +745,7 @@ type compile_info =
     debug : Debug.data }
 
 let rec compile_block blocks debug code pc state =
-  if not (AddrSet.mem pc !tagged_blocks) then begin
+  if not (Addr.Set.mem pc !tagged_blocks) then begin
     let limit = Blocks.next blocks pc in
     assert(limit > pc);
     let string_of_addr addr =
@@ -763,12 +763,12 @@ let rec compile_block blocks debug code pc state =
         (string_of_addr pc)
         (limit - 1);
     let state = State.start_block pc state in
-    tagged_blocks := AddrSet.add pc !tagged_blocks;
+    tagged_blocks := Addr.Set.add pc !tagged_blocks;
     let (instr, last, state') =
       compile {blocks; code; limit; debug} pc state [] in
-    assert (not (AddrMap.mem pc !compiled_blocks));
+    assert (not (Addr.Map.mem pc !compiled_blocks));
     compiled_blocks :=
-      AddrMap.add pc (state, List.rev instr, last) !compiled_blocks;
+      Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
     begin match last with
       | Branch (pc', _) | Poptrap ((pc', _),_) ->
         compile_block blocks debug code pc' state'
@@ -1003,7 +1003,7 @@ and compile infos pc state instrs =
       if debug_parser () then Format.printf "}@.";
       let args = State.stack_vars state' in
 
-      let (state'', _, _) = AddrMap.find addr !compiled_blocks in
+      let (state'', _, _) = Addr.Map.find addr !compiled_blocks in
       Debug.propagate (State.stack_vars state'') args;
 
       compile infos (pc + 3) state
@@ -1046,7 +1046,7 @@ and compile infos pc state instrs =
              if debug_parser () then Format.printf "}@.";
              let args = State.stack_vars state' in
 
-             let (state'', _, _) = AddrMap.find addr !compiled_blocks in
+             let (state'', _, _) = Addr.Map.find addr !compiled_blocks in
              Debug.propagate (State.stack_vars state'') args;
 
              Let (x, Closure (List.rev params, (addr, args))) :: instr)
@@ -1381,7 +1381,7 @@ and compile infos pc state instrs =
                 state.State.stack};
       (instrs,
        Pushtrap ((pc + 2, State.stack_vars state), x,
-                 (addr, State.stack_vars state'), AddrSet.empty), state)
+                 (addr, State.stack_vars state'), Addr.Set.empty), state)
     | POPTRAP ->
       let addr = pc + 1 in
       let handler_addr = State.addr_of_current_handler state in
@@ -1795,25 +1795,25 @@ and compile infos pc state instrs =
 
 (****)
 
-let match_exn_traps (blocks : 'a AddrMap.t) =
+let match_exn_traps (blocks : 'a Addr.Map.t) =
   let map =
-    AddrMap.fold
+    Addr.Map.fold
       (fun _ block map ->
          match block.branch with
          | Poptrap ((cont,_),addr_push) ->
            let set = try
-               AddrSet.add cont (AddrMap.find addr_push map)
-             with Not_found -> AddrSet.singleton cont
+               Addr.Set.add cont (Addr.Map.find addr_push map)
+             with Not_found -> Addr.Set.singleton cont
            in
-           AddrMap.add addr_push set map
-         | _ -> map) blocks AddrMap.empty
+           Addr.Map.add addr_push set map
+         | _ -> map) blocks Addr.Map.empty
   in
-  AddrMap.fold (fun pc conts' (blocks) ->
-    match AddrMap.find pc blocks with
+  Addr.Map.fold (fun pc conts' (blocks) ->
+    match Addr.Map.find pc blocks with
     | {branch = Pushtrap (cont1, x, cont2, conts); _ } as block ->
-      assert (conts = AddrSet.empty);
+      assert (conts = Addr.Set.empty);
       let branch = Pushtrap(cont1,x,cont2,conts') in
-      AddrMap.add pc {block with branch} blocks
+      Addr.Map.add pc {block with branch} blocks
     | _ -> assert false
   ) map blocks
 ;;
@@ -1835,15 +1835,15 @@ let parse_bytecode ~debug code globals debug_data =
   if not (Blocks.is_empty blocks') then
     compile_block blocks' debug_data code 0 state;
   let blocks =
-    AddrMap.mapi
+    Addr.Map.mapi
       (fun _ (state, instr, last) ->
          { params = State.stack_vars state;
            handler = State.current_handler state;
            body = instr; branch = last })
       !compiled_blocks
   in
-  compiled_blocks := AddrMap.empty;
-  tagged_blocks := AddrSet.empty;
+  compiled_blocks := Addr.Map.empty;
+  tagged_blocks := Addr.Set.empty;
 
   let free_pc = String.length code / 4 in
   let blocks = match_exn_traps blocks in
@@ -2319,4 +2319,4 @@ let predefined_exceptions () =
     ; body
     ; branch = Stop }
   in
-  0, AddrMap.singleton 0 block, 1
+  0, Addr.Map.singleton 0 block, 1

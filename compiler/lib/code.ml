@@ -18,18 +18,27 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 open Stdlib
-type addr = int
+
+module Addr = struct
+  type t = int
+  module Set = Set.Make(Int)
+  module Map = Map.Make(Int)
+  let to_string = string_of_int
+  let zero = 0
+  let pred = pred
+  let succ = succ
+end
 
 module DebugAddr : sig
-  type dbg = private addr
-  val of_addr : addr -> dbg
-  val to_addr : dbg -> addr
-  val no : dbg
+  type t = private Addr.t
+  val of_addr : Addr.t -> t
+  val to_addr : t -> Addr.t
+  val no : t
 end = struct
-  type dbg = int
-  let of_addr (x : addr) = (x : dbg)
+  type t = int
+  let of_addr (x : Addr.t) = (x : t)
   let no = 0
-  let to_addr (x : dbg) = (x : addr)
+  let to_addr (x : t) = (x : Addr.t)
 end
 
 module Var : sig
@@ -57,11 +66,33 @@ module Var : sig
   val set_pretty : bool -> unit
   val set_stable : bool -> unit
 
-  val dummy : t
+  module Set : Set.S with type elt = t
+  module Map : Map.S with type key = t
+  module Tbl : sig
+    type key = t
+    type 'a t
+    type size = unit
+    val get : 'a t -> key -> 'a
+    val set : 'a t -> key -> 'a -> unit
+    val make : size -> 'a -> 'a t
+  end
+  module ISet : sig
+    type elt = t
+    type t
+
+    val empty : unit -> t
+    val iter : (elt -> unit) -> t -> unit
+    val mem : t -> elt -> bool
+    val add : t -> elt -> unit
+    val remove : t -> elt -> unit
+    val copy : t -> t
+  end
 end = struct
-
-  type t = int
-
+  module T = struct
+    type t = int
+    let compare v1 v2 = v1 - v2
+  end
+  include T
   let printer = VarPrinter.create ()
   let locations = Hashtbl.create 17
 
@@ -101,8 +132,6 @@ end = struct
 
   let of_idx v = v
 
-  let compare v1 v2 = v1 - v2
-
   let get_name i = VarPrinter.get_name printer i
 
   let propagate_name i j =
@@ -122,38 +151,34 @@ end = struct
     n
 
   let dummy = -1
+
+  module Set = Set.Make (T)
+  module Map = Map.Make (T)
+  module Tbl = struct
+    type 'a t = 'a array
+    type key = T.t
+    type size = unit
+    let get t x = t.(x)
+    let set t x v = t.(x) <- v
+    let make () v = Array.make (count ()) v
+  end
+  module ISet = struct
+    type t = T.t array
+    type elt = T.t
+    let iter f t =
+      for i = 0 to Array.length t - 1 do
+        let x = t.(i) in
+        if compare x dummy <> 0 then f x
+      done
+    let mem t x = compare t.(x) dummy <> 0
+    let add t x = t.(x) <- x
+    let remove t x = t.(x) <- dummy
+    let copy = Array.copy
+    let empty _v = Array.make (count ()) dummy
+  end
 end
 
-module VarSet = Set.Make (Var)
-module VarMap = Map.Make (Var)
-module VarTbl = struct
-  type 'a t = 'a array
-  type key = Var.t
-  type size = unit
-  let get t x = t.(Var.idx x)
-  let set t x v = t.(Var.idx x) <- v
-  let make () v = Array.make (Var.count ()) v
-end
-module VarISet = struct
-  type t = Var.t array
-  type elt = Var.t
-  let iter f t =
-    for i = 0 to Array.length t - 1 do
-      let x = t.(i) in
-      if Var.compare x Var.dummy <> 0 then f x
-    done
-  let mem t x = Var.compare t.(Var.idx x) Var.dummy <> 0
-  let add t x = t.(Var.idx x) <- x
-  let remove t x = t.(Var.idx x) <- Var.dummy
-  let copy = Array.copy
-  let empty _v = Array.make (Var.count ()) Var.dummy
-end
-
-
-module AddrSet = IntSet
-module AddrMap = IntMap
-
-type cont = addr * Var.t list
+type cont = Addr.t * Var.t list
 
 type prim =
     Vectlength
@@ -199,8 +224,8 @@ type last =
   | Branch of cont
   | Cond of cond * Var.t * cont * cont
   | Switch of Var.t * cont array * cont array
-  | Pushtrap of cont * Var.t * cont * AddrSet.t
-  | Poptrap of cont * addr
+  | Pushtrap of cont * Var.t * cont * Addr.Set.t
+  | Poptrap of cont * Addr.t
 
 type block =
   { params : Var.t list;
@@ -208,7 +233,7 @@ type block =
     body : instr list;
     branch : last }
 
-type program = addr * block AddrMap.t * addr
+type program = Addr.t * block Addr.Map.t * Addr.t
 
 (****)
 
@@ -378,7 +403,7 @@ let print_last f l =
   | Pushtrap (cont1, x, cont2, pcs) ->
       Format.fprintf f "pushtrap %a handler %a => %a continuation %s"
         print_cont cont1 Var.print x print_cont cont2
-        (String.concat ~sep:", " (List.map (AddrSet.elements pcs) ~f:string_of_int))
+        (String.concat ~sep:", " (List.map (Addr.Set.elements pcs) ~f:string_of_int))
   | Poptrap (cont,_) ->
       Format.fprintf f "poptrap %a" print_cont cont
 
@@ -400,12 +425,12 @@ let print_block annot pc block =
 
 let print_program annot (pc, blocks, _) =
   Format.eprintf "Entry point: %d@.@." pc;
-  AddrMap.iter (print_block annot) blocks
+  Addr.Map.iter (print_block annot) blocks
 
 (****)
 
 let fold_closures (pc, blocks, _) f accu =
-  AddrMap.fold
+  Addr.Map.fold
     (fun _ block accu ->
        List.fold_left block.body
          ~init:accu
@@ -425,12 +450,12 @@ let prepend ((start, blocks, free_pc) as p) body =
   | _ ->
   let new_start = free_pc in
   let branch =
-    if AddrMap.mem start blocks
+    if Addr.Map.mem start blocks
     then Branch (start, [])
     else Stop
   in
   let blocks =
-    AddrMap.add new_start
+    Addr.Map.add new_start
       { params = [];
         handler = None;
         body = body;
@@ -444,7 +469,7 @@ let empty =
   let start = 0 in
   let free = 1  in
   let blocks =
-    AddrMap.singleton start
+    Addr.Map.singleton start
       { params = [];
         handler = None;
         body = [];
@@ -456,7 +481,7 @@ let empty =
 let (>>) x f = f x
 
 let fold_children blocks pc f accu =
-  let block = AddrMap.find pc blocks in
+  let block = Addr.Map.find pc blocks in
   let accu =
     match block.handler with
       Some (_, (pc, _)) -> f pc accu
@@ -475,8 +500,8 @@ let fold_children blocks pc f accu =
     accu
 
 let rec traverse' fold f pc visited blocks acc =
-  if not (AddrSet.mem pc visited) then begin
-    let visited = AddrSet.add pc visited in
+  if not (Addr.Set.mem pc visited) then begin
+    let visited = Addr.Set.add pc visited in
     let (visited, acc) =
       fold blocks pc
         (fun pc (visited, acc) ->
@@ -491,15 +516,15 @@ let rec traverse' fold f pc visited blocks acc =
     (visited, acc)
 
 let traverse fold f pc blocks acc =
-  snd (traverse' fold f pc AddrSet.empty blocks acc)
+  snd (traverse' fold f pc Addr.Set.empty blocks acc)
 
 let eq (pc1, blocks1, _) (pc2, blocks2, _) =
   pc1 = pc2 &&
-  AddrMap.cardinal blocks1 = AddrMap.cardinal blocks2 &&
-  AddrMap.fold (fun pc block1 b ->
+  Addr.Map.cardinal blocks1 = Addr.Map.cardinal blocks2 &&
+  Addr.Map.fold (fun pc block1 b ->
     b &&
     try
-      let block2 = AddrMap.find pc blocks2 in
+      let block2 = Addr.Map.find pc blocks2 in
       block1.params = block2.params &&
       block1.branch = block2.branch &&
       block1.body   = block2.body
@@ -515,7 +540,7 @@ let invariant  (_, blocks, _) =
   then begin
     let defs = Array.make (Var.count ()) false in
     let check_cont (cont, args) =
-      let b = AddrMap.find cont blocks in
+      let b = Addr.Map.find cont blocks in
       assert (List.length args >= List.length b.params)
     in
     let define x = if check_defs then
@@ -560,7 +585,7 @@ let invariant  (_, blocks, _) =
         check_cont cont2
       | Poptrap (cont,_) -> check_cont cont
     in
-    AddrMap.iter (fun _pc block ->
+    Addr.Map.iter (fun _pc block ->
       List.iter block.params ~f:define;
       Option.iter block.handler ~f:(fun (_,cont) ->
         check_cont cont);

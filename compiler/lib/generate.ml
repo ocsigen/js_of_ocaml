@@ -44,7 +44,7 @@ module J = Javascript
 
 let string_of_set s =
   String.concat ~sep:", "
-    (List.map ~f:string_of_int (AddrSet.elements s))
+    (List.map ~f:Addr.to_string (Addr.Set.elements s))
 
 let rec list_group_rec f g l b m n =
   match l with
@@ -132,7 +132,7 @@ module Share = struct
       | _ -> t)
 
   let get ?(alias_strings=false) ?(alias_prims=false) ?(alias_apply=true) (_, blocks, _) : t =
-    let count = AddrMap.fold
+    let count = Addr.Map.fold
         (fun _ block share ->
            List.fold_left block.body
              ~init:share
@@ -230,7 +230,7 @@ end
 
 module Ctx = struct
   type t =
-    { mutable blocks : block AddrMap.t;
+    { mutable blocks : block Addr.Map.t;
       live : int array;
       share: Share.t;
       debug : Parse_bytecode.Debug.data;
@@ -387,7 +387,7 @@ type queue_elt = {
   cardinal : int;
   ce : J.expression;
   loc : J.location;
-  deps : Code.VarSet.t
+  deps : Code.Var.Set.t
 }
 
 let access_queue queue x =
@@ -415,11 +415,11 @@ let access_queue' ~ctx queue x =
 let access_queue_may_flush queue v x =
   let tx,queue = access_queue queue x in
   let _,instrs,queue = List.fold_left queue
-      ~init:(Code.VarSet.singleton v,[],[])
+      ~init:(Code.Var.Set.singleton v,[],[])
       ~f:(fun (deps,instrs,queue) ((y,elt) as eq) ->
-        if Code.VarSet.exists (fun p -> Code.VarSet.mem p deps) elt.deps
+        if Code.Var.Set.exists (fun p -> Code.Var.Set.mem p deps) elt.deps
         then
-          (Code.VarSet.add y deps,
+          (Code.Var.Set.add y deps,
            (J.Variable_statement [J.V y, Some (elt.ce, elt.loc)], elt.loc)
            :: instrs,
            queue)
@@ -454,10 +454,10 @@ let enqueue expr_queue prop x ce loc cardinal acc =
         [], expr_queue
     else flush_queue expr_queue flush_p []
   in
-  let deps = Js_simpl.get_variable Code.VarSet.empty ce in
+  let deps = Js_simpl.get_variable Code.Var.Set.empty ce in
   let deps = List.fold_left expr_queue ~init:deps ~f:(fun deps (x',elt) ->
-    if Code.VarSet.mem ( x') deps
-    then Code.VarSet.union elt.deps deps
+    if Code.Var.Set.mem ( x') deps
+    then Code.Var.Set.union elt.deps deps
     else deps) 
   in
   (instrs @ acc , (x, {prop; ce; loc; cardinal; deps}) :: expr_queue)
@@ -465,15 +465,15 @@ let enqueue expr_queue prop x ce loc cardinal acc =
 (****)
 
 type state =
-  { all_succs : (int, AddrSet.t) Hashtbl.t; (* not used *)
+  { all_succs : (int, Addr.Set.t) Hashtbl.t; (* not used *)
     succs : (int, int list) Hashtbl.t;
-    backs : (int, AddrSet.t) Hashtbl.t;
+    backs : (int, Addr.Set.t) Hashtbl.t;
     preds : (int, int) Hashtbl.t;
-    mutable loops : AddrSet.t;
-    mutable loop_stack : (addr * (J.Label.t * bool ref)) list;
-    mutable visited_blocks : AddrSet.t;
+    mutable loops : Addr.Set.t;
+    mutable loop_stack : (Addr.t * (J.Label.t * bool ref)) list;
+    mutable visited_blocks : Addr.Set.t;
     mutable interm_idx : int;
-    ctx : Ctx.t; mutable blocks : Code.block AddrMap.t;
+    ctx : Ctx.t; mutable blocks : Code.block Addr.Map.t;
     at_toplevel : bool }
 
 let get_preds st pc = try Hashtbl.find st.preds pc with Not_found -> 0
@@ -580,7 +580,7 @@ module DTree = struct
 end
 
 let fold_children blocks pc f accu =
-  let block = AddrMap.find pc blocks in
+  let block = Addr.Map.find pc blocks in
   match block.branch with
     Return _ | Raise _ | Stop ->
     accu
@@ -596,66 +596,66 @@ let fold_children blocks pc f accu =
     accu >> DTree.fold_cont f a1 >> DTree.fold_cont f a2
 
 let rec build_graph st pc anc =
-  if not (AddrSet.mem pc st.visited_blocks) then begin
-    st.visited_blocks <- AddrSet.add pc st.visited_blocks;
-    let anc = AddrSet.add pc anc in
-    let s = Code.fold_children st.blocks pc AddrSet.add AddrSet.empty in
+  if not (Addr.Set.mem pc st.visited_blocks) then begin
+    st.visited_blocks <- Addr.Set.add pc st.visited_blocks;
+    let anc = Addr.Set.add pc anc in
+    let s = Code.fold_children st.blocks pc Addr.Set.add Addr.Set.empty in
     Hashtbl.add st.all_succs pc s;
-    let backs = AddrSet.inter s anc in
+    let backs = Addr.Set.inter s anc in
     Hashtbl.add st.backs pc backs;
     let s = fold_children st.blocks pc (fun x l -> x :: l) [] in
-    let succs = List.filter s ~f:(fun pc -> not (AddrSet.mem pc anc)) in
+    let succs = List.filter s ~f:(fun pc -> not (Addr.Set.mem pc anc)) in
     Hashtbl.add st.succs pc succs;
-    AddrSet.iter (fun pc' -> st.loops <- AddrSet.add pc' st.loops) backs;
+    Addr.Set.iter (fun pc' -> st.loops <- Addr.Set.add pc' st.loops) backs;
     List.iter succs ~f:(fun pc' -> build_graph st pc' anc);
     List.iter succs ~f:(fun pc' -> incr_preds st pc')
   end
 
 let rec dominance_frontier_rec st pc visited grey =
   let n = get_preds st pc in
-  let v = try AddrMap.find pc visited with Not_found -> 0 in
+  let v = try Addr.Map.find pc visited with Not_found -> 0 in
   if v < n then begin
     let v = v + 1 in
-    let visited = AddrMap.add pc v visited in
+    let visited = Addr.Map.add pc v visited in
     if v = n then begin
-      let grey = AddrSet.remove pc grey in
+      let grey = Addr.Set.remove pc grey in
       let s = Hashtbl.find st.succs pc in
       List.fold_right s
         ~init:(visited, grey)
         ~f:(fun pc' (visited, grey) ->
           dominance_frontier_rec st pc' visited grey)
     end else begin
-      (visited, if v = 1 then AddrSet.add pc grey else grey)
+      (visited, if v = 1 then Addr.Set.add pc grey else grey)
     end
   end else
     (visited, grey)
 
 let dominance_frontier st pc =
-  snd (dominance_frontier_rec st pc AddrMap.empty AddrSet.empty)
+  snd (dominance_frontier_rec st pc Addr.Map.empty Addr.Set.empty)
 
 let rec resolve_node interm pc =
   try
-    resolve_node interm (fst (AddrMap.find pc interm))
+    resolve_node interm (fst (Addr.Map.find pc interm))
   with Not_found ->
     pc
 
 let resolve_nodes interm s =
-  AddrSet.fold (fun pc s' -> AddrSet.add (resolve_node interm pc) s')
-    s AddrSet.empty
+  Addr.Set.fold (fun pc s' -> Addr.Set.add (resolve_node interm pc) s')
+    s Addr.Set.empty
 
 (****)
 
 let rec visit visited prev s m x l =
-  if not (VarSet.mem x visited) then begin
-    let visited = VarSet.add x visited in
-    let y = VarMap.find x m in
+  if not (Var.Set.mem x visited) then begin
+    let visited = Var.Set.add x visited in
+    let y = Var.Map.find x m in
     if Code.Var.compare x y = 0 then
       (visited, None, l)
-    else if VarSet.mem y prev then begin
+    else if Var.Set.mem y prev then begin
       let t = Code.Var.fresh () in
       (visited, Some (y, t), (x, t) :: l)
-    end else if VarSet.mem y s then begin
-      let (visited, aliases, l) = visit visited (VarSet.add x prev) s m y l in
+    end else if Var.Set.mem y s then begin
+      let (visited, aliases, l) = visit visited (Var.Set.add x prev) s m y l in
       match aliases with
         Some (a, b) when Code.Var.compare a x = 0 ->
         (visited, None, (b, a) :: (x, y) :: l)
@@ -668,13 +668,13 @@ let rec visit visited prev s m x l =
 
 let visit_all params args =
   let m = Subst.build_mapping params args in
-  let s = List.fold_left params ~init:VarSet.empty ~f:(fun s x -> VarSet.add x s) in
+  let s = List.fold_left params ~init:Var.Set.empty ~f:(fun s x -> Var.Set.add x s) in
   let (_, l) =
-    VarSet.fold
+    Var.Set.fold
       (fun x (visited, l) ->
-         let (visited, _, l) = visit visited VarSet.empty s m x l in
+         let (visited, _, l) = visit visited Var.Set.empty s m x l in
          (visited, l))
-      s (VarSet.empty, [])
+      s (Var.Set.empty, [])
   in
   l
 
@@ -1280,21 +1280,21 @@ and translate_instrs ctx expr_queue loc instr =
     let (instrs, expr_queue) = translate_instrs ctx expr_queue loc rem in
     (st @ instrs, expr_queue)
 
-and compile_block st queue (pc : addr) frontier interm =
-  if queue <> [] && (AddrSet.mem pc st.loops || not (Config.Flag.inline ())) then
+and compile_block st queue (pc : Addr.t) frontier interm =
+  if queue <> [] && (Addr.Set.mem pc st.loops || not (Config.Flag.inline ())) then
     flush_all queue (compile_block st [] pc frontier interm)
   else begin
     if pc >= 0 then begin
-      if AddrSet.mem pc st.visited_blocks then begin
+      if Addr.Set.mem pc st.visited_blocks then begin
         Format.eprintf "Trying to compile a block twice !!!! %d@." pc; assert false
       end;
-      st.visited_blocks <- AddrSet.add pc st.visited_blocks
+      st.visited_blocks <- Addr.Set.add pc st.visited_blocks
     end;
     if debug () then begin
-      if AddrSet.mem pc st.loops then Format.eprintf "@[<2>for(;;){@,";
+      if Addr.Set.mem pc st.loops then Format.eprintf "@[<2>for(;;){@,";
       Format.eprintf "block %d;@ @?" pc
     end;
-    if AddrSet.mem pc st.loops then begin
+    if Addr.Set.mem pc st.loops then begin
       let lab =
         match st.loop_stack with (_, (l, _)) :: _ -> J.Label.succ l | [] -> J.Label.zero in
       st.loop_stack <- (pc, (lab, ref false)) :: st.loop_stack
@@ -1306,11 +1306,11 @@ and compile_block st queue (pc : addr) frontier interm =
     let succs = List.map succs ~f:(fun pc -> (pc, dominance_frontier st pc)) in
     let grey =
       List.fold_right
-        ~f:(fun (_, frontier) grey -> AddrSet.union frontier grey)
-        succs ~init:AddrSet.empty
+        ~f:(fun (_, frontier) grey -> Addr.Set.union frontier grey)
+        succs ~init:Addr.Set.empty
     in
     let new_frontier = resolve_nodes interm grey in
-    let block = AddrMap.find pc st.blocks in
+    let block = Addr.Map.find pc st.blocks in
     let (seq, queue) = translate_instrs st.ctx queue (source_location st.ctx pc) block.body in
     let body =
       seq @
@@ -1319,7 +1319,7 @@ and compile_block st queue (pc : addr) frontier interm =
         (* FIX: document this *)
         let pc2s = resolve_nodes interm (dominance_frontier st pc2) in
         let pc3s =
-          AddrSet.fold (fun pc3 acc ->
+          Addr.Set.fold (fun pc3 acc ->
             (* We need to make sure that pc3 is live (indeed, the
                continuation may have been optimized away by inlining) *)
             if Hashtbl.mem st.succs pc3
@@ -1327,8 +1327,8 @@ and compile_block st queue (pc : addr) frontier interm =
               (* no need to limit body for simple flow with no instruction.
                  eg return and branch *)
               let rec limit pc =
-                if AddrSet.mem pc pc2s then false else
-                  let block = AddrMap.find pc st.blocks in
+                if Addr.Set.mem pc pc2s then false else
+                  let block = Addr.Map.find pc st.blocks in
                   block.body <> [] ||
                   match block.branch with
                   | Return _ -> false
@@ -1336,25 +1336,25 @@ and compile_block st queue (pc : addr) frontier interm =
                   | _ -> true
               in
               if limit pc3
-              then AddrSet.add pc3 acc
+              then Addr.Set.add pc3 acc
               else acc
-            else acc) pc3s AddrSet.empty
+            else acc) pc3s Addr.Set.empty
         in
-        let grey = AddrSet.union pc2s pc3s in
-        AddrSet.iter (incr_preds st) grey;
+        let grey = Addr.Set.union pc2s pc3s in
+        Addr.Set.iter (incr_preds st) grey;
         let (grey', new_interm) = colapse_frontier st grey interm in
-        assert (AddrSet.cardinal grey' <= 1);
-        let inner_frontier = AddrSet.union new_frontier grey' in
+        assert (Addr.Set.cardinal grey' <= 1);
+        let inner_frontier = Addr.Set.union new_frontier grey' in
         if debug () then Format.eprintf "@[<2>try {@,";
         let body =
           compile_branch st [] (pc1, args1)
-            None AddrSet.empty inner_frontier new_interm
+            None Addr.Set.empty inner_frontier new_interm
         in
         if debug () then Format.eprintf "} catch {@,";
         let x =
-          let block2 = AddrMap.find pc2 st.blocks in
+          let block2 = Addr.Map.find pc2 st.blocks in
           let m = Subst.build_mapping args2 block2.params in
-          try VarMap.find x m with Not_found -> x
+          try Var.Map.find x m with Not_found -> x
         in
         let handler = compile_block st [] pc2 inner_frontier new_interm in
         let handler =
@@ -1368,35 +1368,35 @@ and compile_block st queue (pc : addr) frontier interm =
                 ::handler
           else handler in
         if debug () then Format.eprintf "}@]@ ";
-        AddrSet.iter (decr_preds st) grey;
+        Addr.Set.iter (decr_preds st) grey;
         flush_all queue
           (
             (J.Try_statement (body, Some (J.V x, handler),None),
              source_location st.ctx pc) ::
-            (if not (AddrSet.is_empty grey')
+            (if not (Addr.Set.is_empty grey')
              then
-               let pc = AddrSet.choose grey' in
-               if AddrSet.mem pc frontier then [] else
+               let pc = Addr.Set.choose grey' in
+               if Addr.Set.mem pc frontier then [] else
                  compile_block st [] pc frontier interm
              else []
             )
           )
       | _ ->
         let (new_frontier, new_interm) = colapse_frontier st new_frontier interm in
-        assert (AddrSet.cardinal new_frontier <= 1);
+        assert (Addr.Set.cardinal new_frontier <= 1);
         (* Beware evaluation order! *)
         let cond =
           compile_conditional
             st queue pc block.branch block.handler
             backs new_frontier new_interm succs in
         cond @
-        if AddrSet.cardinal new_frontier = 0 then [] else begin
-          let pc = AddrSet.choose new_frontier in
-          if AddrSet.mem pc frontier then [] else
+        if Addr.Set.cardinal new_frontier = 0 then [] else begin
+          let pc = Addr.Set.choose new_frontier in
+          if Addr.Set.mem pc frontier then [] else
             compile_block st [] pc frontier interm
         end
     in
-    if AddrSet.mem pc st.loops then begin
+    if Addr.Set.mem pc st.loops then begin
       let label =
         match st.loop_stack with
           (_, (l, used)) :: r -> st.loop_stack <- r; if !used then Some l else None
@@ -1406,10 +1406,10 @@ and compile_block st queue (pc : addr) frontier interm =
         (J.For_statement
            (J.Left None, None, None,
             (J.Block(
-               (if AddrSet.cardinal frontier > 0 then begin
+               (if Addr.Set.cardinal frontier > 0 then begin
                   if debug () then
                     Format.eprintf "@ break (%d); }@]"
-                      (AddrSet.choose new_frontier);
+                      (Addr.Set.choose new_frontier);
                   body @ [J.Break_statement None, J.N]
                 end else begin
                   if debug () then Format.eprintf "}@]";
@@ -1426,10 +1426,10 @@ and compile_block st queue (pc : addr) frontier interm =
 
 and colapse_frontier st new_frontier interm =
 
-  if AddrSet.cardinal new_frontier > 1 then begin
+  if Addr.Set.cardinal new_frontier > 1 then begin
     if debug () then Format.eprintf "colapse frontier into %d: %s@." st.interm_idx (string_of_set new_frontier);
     let x = Code.Var.fresh_n "switch" in
-    let a = Array.of_list (AddrSet.elements new_frontier) in
+    let a = Array.of_list (Addr.Set.elements new_frontier) in
     if debug () then Format.eprintf "@ var %a;" Code.Var.print x;
     let idx = st.interm_idx in
     st.interm_idx <- idx - 1;
@@ -1441,23 +1441,23 @@ and colapse_frontier st new_frontier interm =
         Code.Cond (IsTrue, x, cases.(1), cases.(0))
     in
     st.blocks <-
-      AddrMap.add idx
+      Addr.Map.add idx
         { params = []; handler = None; body = []; branch = switch }
         st.blocks;
     (* There is a branch from this switch to the members
        of the frontier. *)
-    AddrSet.iter (fun pc -> incr_preds st pc) new_frontier;
+    Addr.Set.iter (fun pc -> incr_preds st pc) new_frontier;
     (* Put a limit: we are going to remove other branches
        to the members of the frontier (in compile_conditional),
        but they should remain in the frontier. *)
-    AddrSet.iter (fun pc -> protect_preds st pc) new_frontier;
-    Hashtbl.add st.succs idx (AddrSet.elements new_frontier);
+    Addr.Set.iter (fun pc -> protect_preds st pc) new_frontier;
+    Hashtbl.add st.succs idx (Addr.Set.elements new_frontier);
     Hashtbl.add st.all_succs idx new_frontier;
-    Hashtbl.add st.backs idx AddrSet.empty;
-    (AddrSet.singleton idx,
+    Hashtbl.add st.backs idx Addr.Set.empty;
+    (Addr.Set.singleton idx,
      Array.fold_right (Array.mapi ~f:(fun i pc -> (pc, i)) a)
        ~init:interm
-       ~f:(fun (pc, i) interm -> (AddrMap.add pc (idx, (x, i)) interm)))
+       ~f:(fun (pc, i) interm -> (Addr.Map.add pc (idx, (x, i)) interm)))
   end else
     (new_frontier, interm)
 
@@ -1471,10 +1471,10 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
          or loops back) *)
       (* If not found in successors, this is a backward edge *)
       let never =
-        let d = try List.assoc pc succs with Not_found -> AddrSet.empty in
-        not (AddrSet.mem pc frontier || AddrMap.mem pc interm)
+        let d = try List.assoc pc succs with Not_found -> Addr.Set.empty in
+        not (Addr.Set.mem pc frontier || Addr.Map.mem pc interm)
         &&
-        AddrSet.is_empty d in
+        Addr.Set.is_empty d in
       never, compile_branch st [] cont handler backs frontier interm
     | DTree.If (cond,cont1,cont2) ->
       let never1, iftrue = loop cx cont1 in
@@ -1523,7 +1523,7 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
 
 and compile_conditional st queue pc last handler backs frontier interm succs =
   List.iter succs ~f:(fun (pc, _) ->
-    if AddrMap.mem pc interm then decr_preds st pc);
+    if Addr.Map.mem pc interm then decr_preds st pc);
   if debug () then begin
     match last with
       Branch _ | Poptrap _ | Pushtrap _ -> ()
@@ -1598,14 +1598,14 @@ and compile_argument_passing ctx queue (pc, args) _backs continuation =
   if args = [] then
     continuation queue
   else
-    let block = AddrMap.find pc ctx.Ctx.blocks in
+    let block = Addr.Map.find pc ctx.Ctx.blocks in
     parallel_renaming block.params args continuation queue
 
 and compile_exn_handling ctx queue (pc, args) handler continuation =
   if pc < 0 then
     continuation queue
   else
-    let block = AddrMap.find pc ctx.Ctx.blocks in
+    let block = Addr.Map.find pc ctx.Ctx.blocks in
     match block.handler with
       None ->
       continuation queue
@@ -1623,7 +1623,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
          args is [] *)
       let m =
         Subst.build_mapping (if args = [] then [] else block.params) args in
-      let h_block = AddrMap.find h_pc ctx.Ctx.blocks in
+      let h_block = Addr.Map.find h_pc ctx.Ctx.blocks in
       let rec loop continuation old args params queue =
         match args, params with
           [], [] ->
@@ -1633,7 +1633,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
             match old with [] -> (None, []) | z :: old -> (Some z, old)
           in
           let x' =
-            try Some (VarMap.find x m) with Not_found -> Some x in
+            try Some (Var.Map.find x m) with Not_found -> Some x in
           if Var.compare x x0 = 0 || x' = z then
             loop continuation old args params queue
           else begin
@@ -1659,7 +1659,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
 and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
   compile_argument_passing st.ctx queue cont backs (fun queue ->
     compile_exn_handling st.ctx queue cont handler (fun queue ->
-      if AddrSet.mem pc backs then begin
+      if Addr.Set.mem pc backs then begin
         let label =
           match st.loop_stack with
             [] ->
@@ -1680,7 +1680,7 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
             Format.eprintf "continue (%d);@ " pc
         end;
         flush_all queue [J.Continue_statement label, J.N]
-      end else if AddrSet.mem pc frontier || AddrMap.mem pc interm then begin
+      end else if Addr.Set.mem pc frontier || Addr.Map.mem pc interm then begin
         if debug () then Format.eprintf "(br %d)@ " pc;
         flush_all queue (compile_branch_selection pc interm)
       end else
@@ -1688,7 +1688,7 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
 
 and compile_branch_selection pc interm =
   try
-    let (pc, (x, i)) = AddrMap.find pc interm in
+    let (pc, (x, i)) = Addr.Map.find pc interm in
     if debug () then Format.eprintf "@ %a=%d;" Code.Var.print x i;
     (J.Variable_statement [J.V x, Some (int i, J.N)], J.N) ::
     compile_branch_selection pc interm
@@ -1697,24 +1697,24 @@ and compile_branch_selection pc interm =
 
 and compile_closure ctx at_toplevel (pc, args) =
   let st =
-    { visited_blocks = AddrSet.empty; loops = AddrSet.empty; loop_stack = [];
+    { visited_blocks = Addr.Set.empty; loops = Addr.Set.empty; loop_stack = [];
       all_succs = Hashtbl.create 17; succs = Hashtbl.create 17;
       backs = Hashtbl.create 17; preds = Hashtbl.create 17;
       interm_idx = -1; ctx = ctx; blocks = ctx.Ctx.blocks;
       at_toplevel }
   in
-  build_graph st pc AddrSet.empty;
+  build_graph st pc Addr.Set.empty;
   let current_blocks = st.visited_blocks in
-  st.visited_blocks <- AddrSet.empty;
+  st.visited_blocks <- Addr.Set.empty;
   if debug () then Format.eprintf "@[<hov 2>closure{@,";
   let res =
     compile_branch st [] (pc, args) None
-      AddrSet.empty AddrSet.empty AddrMap.empty
+      Addr.Set.empty Addr.Set.empty Addr.Map.empty
   in
   if
-    AddrSet.cardinal st.visited_blocks <> AddrSet.cardinal current_blocks
+    Addr.Set.cardinal st.visited_blocks <> Addr.Set.cardinal current_blocks
   then begin
-    let missing = AddrSet.diff current_blocks st.visited_blocks in
+    let missing = Addr.Set.diff current_blocks st.visited_blocks in
     Format.eprintf "Some blocks not compiled %s!@." (string_of_set missing);assert false
   end;
   if debug () then Format.eprintf "}@]@ ";

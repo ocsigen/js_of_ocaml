@@ -30,9 +30,9 @@ open Code
 
 let traverse blocks pc f accu =
   let rec traverse_rec visited pc accu =
-    if AddrSet.mem pc visited then (visited, accu) else begin
-      let visited = AddrSet.add pc visited in
-      let block = AddrMap.find pc blocks in
+    if Addr.Set.mem pc visited then (visited, accu) else begin
+      let visited = Addr.Set.add pc visited in
+      let block = Addr.Map.find pc blocks in
       let (visited, accu) =
         List.fold_left
           (fun ((visited, accu) as p) i ->
@@ -69,7 +69,7 @@ let traverse blocks pc f accu =
       (visited, f pc accu)
     end
   in
-  snd (traverse_rec AddrSet.empty pc accu)
+  snd (traverse_rec Addr.Set.empty pc accu)
 
 (****)
 
@@ -82,7 +82,7 @@ let is_trivial instr last =
   end
 
 let resolve_branch blocks (pc, args) =
-  match AddrMap.find pc blocks with
+  match Addr.Map.find pc blocks with
     {params = []; body = []; branch = Branch (pc', args')} ->
       Some (pc', args')
   | _ ->
@@ -101,20 +101,20 @@ let concat_blocks pc instr params handler args params' instr' last' =
 let rec block_simpl pc (preds, entries, blocks) =
 Format.eprintf "VV %d@." pc;
 (*
-Format.eprintf "RRRRRRRRRRRRRRR %d@." (AddrSet.cardinal (AddrMap.find 12644 preds));
+Format.eprintf "RRRRRRRRRRRRRRR %d@." (Addr.Set.cardinal (Addr.Map.find 12644 preds));
 *)
-  let block = AddrMap.find pc blocks in
+  let block = Addr.Map.find pc blocks in
     match block.branch with
         Return _ | Raise _ | Stop | Poptrap _ ->
           (preds, entries, blocks)
       | Branch (pc', args) ->
-          let block' = AddrMap.find pc' blocks in
+          let block' = Addr.Map.find pc' blocks in
           if
 false
 (*XXX FIX!
-            not (AddrSet.mem pc' entries)
+            not (Addr.Set.mem pc' entries)
               &&
-            AddrSet.cardinal (AddrMap.find pc' preds) = 1
+            Addr.Set.cardinal (Addr.Map.find pc' preds) = 1
               &&
             block'.params = [] && block'.handler = block.handler
 *)
@@ -122,15 +122,15 @@ false
 Format.eprintf "UU %d ==> %d@." pc pc';
             (preds,
              entries,
-             AddrMap.add pc
+             Addr.Map.add pc
                (concat_blocks pc block.body block.params block.handler args
                   block'.params block'.body block'.branch)
-               (AddrMap.remove pc' blocks))
+               (Addr.Map.remove pc' blocks))
           end else if false(*XXX args = [] && is_trivial block'.body block'.branch *)then begin
-            (AddrMap.add pc' (AddrSet.remove pc (AddrMap.find pc' preds))
+            (Addr.Map.add pc' (Addr.Set.remove pc (Addr.Map.find pc' preds))
                preds,
              entries,
-             AddrMap.add
+             Addr.Map.add
                pc (concat_blocks
                      pc block.body block.params block.handler args
                      block'.params block'.body block'.branch)
@@ -140,20 +140,20 @@ Format.eprintf "UU %d ==> %d@." pc pc';
       | Cond (c, x, cont1, cont2) ->
           if cont1 = cont2 then begin
             let blocks =
-              AddrMap.add pc {block with branch = Branch cont1 } blocks in
+              Addr.Map.add pc {block with branch = Branch cont1 } blocks in
             block_simpl pc (preds, entries, blocks)
           end else begin
             match resolve_branch blocks cont1 with
               Some cont1' ->
                 let pc1 = fst cont1 in let pc1' = fst cont1' in
                 let preds =
-                  AddrMap.add pc1'
-                    (AddrSet.add pc
-                       (AddrSet.remove pc1 (AddrMap.find pc1' preds)))
+                  Addr.Map.add pc1'
+                    (Addr.Set.add pc
+                       (Addr.Set.remove pc1 (Addr.Map.find pc1' preds)))
                     preds
                 in
                 let blocks =
-                  AddrMap.add pc
+                  Addr.Map.add pc
                     { block with branch = Cond (c, x, cont1', cont2) } blocks
                 in
                 block_simpl pc (preds, entries, blocks)
@@ -162,13 +162,13 @@ Format.eprintf "UU %d ==> %d@." pc pc';
                   Some cont2' ->
                     let pc2 = fst cont2 in let pc2' = fst cont2' in
                     let preds =
-                      AddrMap.add pc2'
-                        (AddrSet.add pc
-                           (AddrSet.remove pc2 (AddrMap.find pc2' preds)))
+                      Addr.Map.add pc2'
+                        (Addr.Set.add pc
+                           (Addr.Set.remove pc2 (Addr.Map.find pc2' preds)))
                         preds
                     in
                     let blocks =
-                      AddrMap.add pc
+                      Addr.Map.add pc
                         { block with branch = Cond (c, x, cont1, cont2') }
                         blocks
                     in
@@ -188,25 +188,25 @@ Format.eprintf "UU %d ==> %d@." pc pc';
                  match resolve_branch blocks pc with Some pc -> pc | None -> pc)
               a2 in
             (preds, entries,
-             AddrMap.add pc { block with branch = Switch (x, a1, a2) } blocks)
+             Addr.Map.add pc { block with branch = Switch (x, a1, a2) } blocks)
       | Pushtrap _ ->
           (preds, entries, blocks)
 
 let simpl (pc, blocks, free_pc) =
-  let preds = AddrMap.map (fun _ -> AddrSet.empty) blocks in
-  let entries = AddrSet.empty in
+  let preds = Addr.Map.map (fun _ -> Addr.Set.empty) blocks in
+  let entries = Addr.Set.empty in
   let add_pred pc (pc', _) preds =
 Format.eprintf "%d ==> %d@." pc pc';
-    AddrMap.add pc' (AddrSet.add pc (AddrMap.find pc' preds)) preds in
+    Addr.Map.add pc' (Addr.Set.add pc (Addr.Map.find pc' preds)) preds in
   let (preds, entries) =
-    AddrMap.fold
+    Addr.Map.fold
       (fun pc block (preds, entries) ->
          let entries =
            List.fold_left
              (fun entries i ->
                 match i with
                   Let (_, Closure (_, (pc, _))) ->
-                    AddrSet.add pc entries
+                    Addr.Set.add pc entries
                 | _ ->
                     entries)
              entries block.body
@@ -233,7 +233,7 @@ Format.eprintf "%d ==> %d@." pc pc';
       blocks (preds, entries)
   in
 (*
-Format.eprintf "RRRRRRRRRRRRRRR %d@." (AddrSet.cardinal (AddrMap.find 12644 preds));*)
+Format.eprintf "RRRRRRRRRRRRRRR %d@." (Addr.Set.cardinal (Addr.Map.find 12644 preds));*)
   let (_, _, blocks) =
     traverse blocks pc block_simpl (preds, entries, blocks) in
   (pc, blocks, free_pc)
