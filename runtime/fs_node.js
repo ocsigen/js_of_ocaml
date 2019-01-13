@@ -97,7 +97,7 @@ MlNodeFile.prototype.write = function(offset,buf,buf_offset,len){
   var a = caml_array_of_string(buf);
   if(! (a instanceof joo_global_object.Uint8Array))
     a = new joo_global_object.Uint8Array(a);
-  var buffer = new Buffer (a);
+  var buffer = Buffer.from(a);
   this.fs.writeSync(this.fd, buffer, buf_offset, len, offset);
   return 0;
 }
@@ -105,7 +105,7 @@ MlNodeFile.prototype.read = function(offset,buf,buf_offset,len){
   var a = caml_array_of_string(buf);
   if(! (a instanceof joo_global_object.Uint8Array))
     a = new joo_global_object.Uint8Array(a);
-  var buffer = new Buffer(a);
+  var buffer = Buffer.from(a);
   this.fs.readSync(this.fd, buffer, buf_offset, len, offset);
   for(var i = 0; i < len; i++){
     caml_bytes_set(buf,buf_offset + i,buffer[buf_offset+i]);
@@ -114,7 +114,7 @@ MlNodeFile.prototype.read = function(offset,buf,buf_offset,len){
 }
 MlNodeFile.prototype.read_one = function(offset){
   var a = new joo_global_object.Uint8Array(1);
-  var buffer = new Buffer(a);
+  var buffer = Buffer.from(a);
   this.fs.readSync(this.fd, buffer, 0, 1, offset);
   return buffer[0];
 }

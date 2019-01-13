@@ -1,5 +1,5 @@
 (executables
-  (names main getenv)
+  (names main getenv nodefs)
   (libraries js_of_ocaml unix)
   (preprocess (pps ppx_js_internal)))
 
@@ -13,7 +13,7 @@
 (alias
   (name runtest)
   (package js_of_ocaml)
-  (action (run node %{dep:main.js})))
+  (action (run node --pending-deprecation %{dep:main.js})))
 
 
 (rule
@@ -26,4 +26,16 @@
 (alias
   (name runtest)
   (package js_of_ocaml)
-  (action (run node %{dep:getenv.js})))
+  (action (run node --pending-deprecation %{dep:getenv.js})))
+
+(rule
+  (targets nodefs.js)
+  (action (run %{bin:js_of_ocaml}
+                  --no-runtime %{lib:js_of_ocaml-compiler:runtime.js}
+                  --setenv A=A --setenv C=C --setenv "D=±" --pretty
+                  %{dep:nodefs.bc} -o %{targets})))
+
+(alias
+  (name runtest)
+  (package js_of_ocaml)
+  (action (run node --pending-deprecation %{dep:nodefs.js})))
