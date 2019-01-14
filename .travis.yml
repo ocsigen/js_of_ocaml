@@ -22,3 +22,9 @@ matrix:
   fast_finish: true
 
 script: bash -e tools/travis.sh
+
+# safelist
+branches:
+  only:
+  - master
+  - wikidoc
