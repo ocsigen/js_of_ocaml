@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/ocsigen/js_of_ocaml.png)](https://travis-ci.org/ocsigen/js_of_ocaml)
+[![Build Status](https://travis-ci.org/ocsigen/js_of_ocaml.svg?branch=master)](https://travis-ci.org/ocsigen/js_of_ocaml)
 
 # Js_of_ocaml (jsoo)
 
