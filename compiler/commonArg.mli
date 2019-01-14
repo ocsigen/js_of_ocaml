@@ -17,16 +17,16 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type 'a on_off = {
-  enable : 'a;
-  disable : 'a;
-}
-type t = {
-  debug : string list on_off;
-  optim : string list on_off;
-  quiet : bool;
-  custom_header : string option;
-}
+type 'a on_off =
+  { enable : 'a
+  ; disable : 'a }
+
+type t =
+  { debug : string list on_off
+  ; optim : string list on_off
+  ; quiet : bool
+  ; custom_header : string option }
 
 val t : t Cmdliner.Term.t
+
 val eval : t -> unit

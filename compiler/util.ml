@@ -18,22 +18,26 @@
 
 open Js_of_ocaml_compiler.Stdlib
 
-let normalize_argv ?(warn_=false) a =
+let normalize_argv ?(warn_ = false) a =
   let bad = ref [] in
-  let a = Array.map ~f:(fun s ->
-    let size = String.length s in
-    if size <= 2 then s
-    else if s.[0] = '-' && s.[1] <> '-' && s.[2] <> '='
-    then begin
-      bad:=s::!bad;
-      (* long option with one dash lets double the dash *)
-      "-"^s
-    end
-    else s
-  ) a in
-  if (warn_ && !bad <> [])
+  let a =
+    Array.map
+      ~f:(fun s ->
+        let size = String.length s in
+        if size <= 2
+        then s
+        else if s.[0] = '-' && s.[1] <> '-' && s.[2] <> '='
+        then (
+          bad := s :: !bad;
+          (* long option with one dash lets double the dash *)
+          "-" ^ s )
+        else s )
+      a
+  in
+  if warn_ && !bad <> []
   then
     warn
-      "[Warning] long options with a single '-' are now deprecated.\ Please use '--' for the following options: %s@."
+      "[Warning] long options with a single '-' are now deprecated. Please use '--' for \
+       the following options: %s@."
       (String.concat ~sep:", " !bad);
   a

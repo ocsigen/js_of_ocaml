@@ -80,6 +80,8 @@
 
    {2 Dispatchers} *)
 
+val dispatcher :
+  ?oasis_executables:Ocamlbuild_plugin.Pathname.t list -> Ocamlbuild_plugin.hook -> unit
 (** The main dispatcher
 
     [?oasis_executables] is the paths of the executables
@@ -89,15 +91,10 @@
     Side note: {!Ocamlbuild_plugin.dispatch} should be used only once as
     it record only one function for an ocamlbuild module.
 *)
-val dispatcher :
-  ?oasis_executables:Ocamlbuild_plugin.Pathname.t list ->
-  Ocamlbuild_plugin.hook ->
-  unit
-
 
 (** {2 Low level functions} *)
 
+val oasis_support : executables:Ocamlbuild_plugin.Pathname.t list -> unit
 (** Map each targets given as argument to ocamlbuild and replace each element
     that exists in [~executables] by its corresponding .js target.
 *)
-val oasis_support : executables:Ocamlbuild_plugin.Pathname.t list -> unit

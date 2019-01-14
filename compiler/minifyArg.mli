@@ -17,13 +17,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type t = {
-  common : CommonArg.t;
-  (* minify option *)
-  use_stdin : bool;
-  output_file : string option;
-  files : string list
-}
+type t =
+  { common : CommonArg.t
+  ; (* minify option *)
+    use_stdin : bool
+  ; output_file : string option
+  ; files : string list }
 
 val options : t Cmdliner.Term.t
+
 val info : Cmdliner.Term.info

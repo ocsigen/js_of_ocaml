@@ -29,27 +29,35 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 type lexbuf
 
-val init_lexer:
-    ?buf: Buffer.t ->
-    Lexing.lexbuf -> lexbuf
-       (** Create a fresh lexbuf record. *)
+val init_lexer : ?buf:Buffer.t -> Lexing.lexbuf -> lexbuf
+(** Create a fresh lexbuf record. *)
 
-val tag_error: typename:string -> lexbuf -> 'a
+val tag_error : typename:string -> lexbuf -> 'a
 
-val read_int: lexbuf  -> int
-val read_bounded_int: ?min:int -> max:int -> lexbuf  -> int
+val read_int : lexbuf -> int
+
+val read_bounded_int : ?min:int -> max:int -> lexbuf -> int
+
 val read_tag_1 : int -> lexbuf -> int
+
 val read_tag_2 : int -> int -> lexbuf -> int
-val read_int32: lexbuf -> int32
-val read_int64: lexbuf -> int64
-val read_number: lexbuf -> float
-val read_string: lexbuf -> string
 
-val read_case: lexbuf -> [ `Cst of int | `NCst of int ]
-val read_vcase: lexbuf -> [ `Cst of int | `NCst of int ]
+val read_int32 : lexbuf -> int32
 
-val read_comma: lexbuf -> unit
-val read_lbracket: lexbuf -> unit
-val read_rbracket: lexbuf -> unit
+val read_int64 : lexbuf -> int64
 
-val read_comma_or_rbracket: lexbuf -> [ `Comma | `RBracket ]
+val read_number : lexbuf -> float
+
+val read_string : lexbuf -> string
+
+val read_case : lexbuf -> [`Cst of int | `NCst of int]
+
+val read_vcase : lexbuf -> [`Cst of int | `NCst of int]
+
+val read_comma : lexbuf -> unit
+
+val read_lbracket : lexbuf -> unit
+
+val read_rbracket : lexbuf -> unit
+
+val read_comma_or_rbracket : lexbuf -> [`Comma | `RBracket]

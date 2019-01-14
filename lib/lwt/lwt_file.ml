@@ -25,34 +25,33 @@ open File
 
 let read_with_filereader (fileReader : fileReader t constr) kind file =
   let reader = new%js fileReader in
-  let (res, w) = Lwt.task () in
-  reader##.onloadend := handler
-    (fun _ ->
-      if reader##.readyState = DONE then
-        Lwt.wakeup w
-         (match Opt.to_option (CoerceTo.string (reader##.result)) with
-           | None -> assert false (* can't happen: called with good readAs_ *)
-           | Some s -> s)
-      else (); (* CCC TODO: handle errors *)
-      Js._false);
+  let res, w = Lwt.task () in
+  reader##.onloadend :=
+    handler (fun _ ->
+        if reader##.readyState = DONE
+        then
+          Lwt.wakeup
+            w
+            ( match Opt.to_option (CoerceTo.string reader##.result) with
+            | None -> assert false (* can't happen: called with good readAs_ *)
+            | Some s -> s )
+        else ();
+        (* CCC TODO: handle errors *)
+        Js._false );
   Lwt.on_cancel res (fun () -> reader##abort);
-  (match kind with
-    | `BinaryString -> reader##readAsBinaryString file
-    | `Text -> reader##readAsText file
-    | `Text_withEncoding e -> reader##readAsText_withEncoding file e
-    | `DataURL -> reader##readAsDataURL file);
+  ( match kind with
+  | `BinaryString -> reader##readAsBinaryString file
+  | `Text -> reader##readAsText file
+  | `Text_withEncoding e -> reader##readAsText_withEncoding file e
+  | `DataURL -> reader##readAsDataURL file );
   res
 
 let reader kind file = read_with_filereader fileReader kind file
 
-let readAsBinaryString file =
-  reader `BinaryString file
+let readAsBinaryString file = reader `BinaryString file
 
-let readAsText file =
-  reader `Text file
+let readAsText file = reader `Text file
 
-let readAsText_withEncoding file e =
-  reader (`Text_withEncoding e) file
+let readAsText_withEncoding file e = reader (`Text_withEncoding e) file
 
-let readAsDataURL file =
-  reader `DataURL file
+let readAsDataURL file = reader `DataURL file

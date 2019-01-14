@@ -23,27 +23,28 @@
 (* #require "findlib" *)
 
 let js_opt = ref []
-let add_js_opt x = js_opt:=!js_opt@[x]
+
+let add_js_opt x = js_opt := !js_opt @ [x]
 
 let pkgs = ref ["stdlib"]
-let add_pkgs x = pkgs:=!pkgs@[x]
+
+let add_pkgs x = pkgs := !pkgs @ [x]
 
 let export = ref []
-let add_export x = export:=!export@[x]
+
+let add_export x = export := !export @ [x]
 
 let execute cmd =
   let s = String.concat " " cmd in
   if !Jsoo_common.verbose then Printf.printf "+ %s\n%!" s;
   let ret = Sys.command s in
-  if ret <> 0
-  then failwith (Printf.sprintf "Error: %s" s)
+  if ret <> 0 then failwith (Printf.sprintf "Error: %s" s)
 
 let to_clean = ref []
+
 let clean file = to_clean := file :: !to_clean
-let do_clean () =
-  List.iter (fun x ->
-      if Sys.file_exists x
-      then Sys.remove x) !to_clean
+
+let do_clean () = List.iter (fun x -> if Sys.file_exists x then Sys.remove x) !to_clean
 
 let usage () =
   Format.eprintf "Usage: jsoo_mktop [options] [ocamlfind arguments] @.";
@@ -55,39 +56,46 @@ let usage () =
   Format.eprintf " -export-unit [unit]\t\tExport [unit]@.";
   exit 1
 
-
 let output = ref "./a.out"
 
 let rec scan_args acc = function
-  | ("--verbose"|"-verbose")::xs -> Jsoo_common.verbose:=true; scan_args ("-verbose"::acc) xs
-  | ("--help"|"-help"|"-h")::_ -> usage ()
+  | ("--verbose" | "-verbose") :: xs ->
+      Jsoo_common.verbose := true;
+      scan_args ("-verbose" :: acc) xs
+  | ("--help" | "-help" | "-h") :: _ -> usage ()
   | "-jsopt" :: x :: xs -> add_js_opt x; scan_args acc xs
-  | "-o" :: x :: xs -> output:=x; scan_args acc xs
-  | "-export-package" :: x :: xs -> add_pkgs x; scan_args (x :: "-package" :: acc) xs
+  | "-o" :: x :: xs ->
+      output := x;
+      scan_args acc xs
+  | "-export-package" :: x :: xs ->
+      add_pkgs x;
+      scan_args (x :: "-package" :: acc) xs
   | "-export-unit" :: x :: xs -> add_export x; scan_args acc xs
-  | x :: xs -> scan_args (x::acc) xs
+  | x :: xs -> scan_args (x :: acc) xs
   | [] -> List.rev acc
 
 let _ =
   try
-    let jsoo_top = ["-package";"js_of_ocaml-toplevel"] in
-    let base_cmd = ["ocamlfind";"ocamlc";"-linkall";"-linkpkg"] in
-    let args = List.tl (Array.to_list (Sys.argv)) in
+    let jsoo_top = ["-package"; "js_of_ocaml-toplevel"] in
+    let base_cmd = ["ocamlfind"; "ocamlc"; "-linkall"; "-linkpkg"] in
+    let args = List.tl (Array.to_list Sys.argv) in
     let args = scan_args [] args in
-    List.iter (fun pkg -> execute ["jsoo_mkcmis";pkg]) !pkgs;
+    List.iter (fun pkg -> execute ["jsoo_mkcmis"; pkg]) !pkgs;
     let toplevel_unit =
       let dir = Findlib.package_directory "compiler-libs" in
-      List.map (fun x -> Filename.concat dir x ^ ".cmi") ["outcometree";"topdirs";"toploop"]
+      List.map
+        (fun x -> Filename.concat dir x ^ ".cmi")
+        ["outcometree"; "topdirs"; "toploop"]
     in
-    execute (["jsoo_mkcmis";"-o"; "exported-unit.cmis.js"] @ !export @ toplevel_unit);
+    execute (["jsoo_mkcmis"; "-o"; "exported-unit.cmis.js"] @ !export @ toplevel_unit);
     let export_output = !output ^ ".export" in
-    let cmd =
-      base_cmd
-      @ jsoo_top @ args @ ["-o"; !output] in
+    let cmd = base_cmd @ jsoo_top @ args @ ["-o"; !output] in
     execute cmd;
-    execute (["jsoo_listunits";"-o";export_output] @ !pkgs @ !export );
-    clean (export_output);
-    execute (["js_of_ocaml";"--toplevel";"--no-cmis";"--export"; export_output]
-             @ !js_opt @ [!output]);
+    execute (["jsoo_listunits"; "-o"; export_output] @ !pkgs @ !export);
+    clean export_output;
+    execute
+      ( ["js_of_ocaml"; "--toplevel"; "--no-cmis"; "--export"; export_output]
+      @ !js_opt
+      @ [!output] );
     do_clean ()
   with exn -> do_clean (); raise exn
