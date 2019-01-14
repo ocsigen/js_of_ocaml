@@ -1,0 +1,79 @@
+(executables
+  (names toplevel)
+  (libraries
+    js_of_ocaml-compiler
+    js_of_ocaml-tyxml
+    js_of_ocaml-toplevel
+    lwt
+    js_of_ocaml-lwt
+    base64
+    ;; not used directly
+    bigarray
+   (select ocp_indent.ml from
+    (ocp-indent.lib -> ocp_indent.ml.in)
+    (               -> ocp_indent_fake.ml.in))
+   (select colorize.ml from
+    (higlo higlo.ocaml   -> colorize_higlo.ml.in)
+    (!higlo              -> colorize_fake.ml.in))
+   (select graphics_support.ml from
+    (js_of_ocaml-lwt.graphics -> graphics_enabled.ml.in)
+    (                         -> graphics_disabled.ml.in))
+   (select ppx_support.ml from
+    (js_of_ocaml-ppx -> ppx_enabled.ml.in)
+    (                -> ppx_disabled.ml.in))
+    )
+  (flags (:standard -rectypes -linkall))
+  (modules (:standard \ test_dynlink))
+  (preprocess (pps js_of_ocaml-ppx)))
+
+(rule
+ (targets test_dynlink.cmo test_dynlink.cmi)
+ (action (run ocamlc -c %{dep:test_dynlink.ml})))
+
+(rule
+ (targets test_dynlink.js)
+ (action (run %{bin:js_of_ocaml} --toplevel %{dep:test_dynlink.cmo} --pretty -I ./)))
+
+(rule
+ (targets export.txt)
+ (action (run
+    jsoo_listunits -o %{targets}
+      stdlib
+      graphics
+      js_of_ocaml-lwt.graphics
+      js_of_ocaml-ppx.as-lib
+      js_of_ocaml.deriving
+      lwt bigarray
+      tyxml.functor
+      react reactiveData
+      js_of_ocaml js_of_ocaml-lwt
+      js_of_ocaml-tyxml
+      js_of_ocaml-toplevel
+      dynlink
+      )))
+
+(rule
+ (targets toplevel.js)
+ (action
+    (run %{bin:js_of_ocaml}
+          -I %{lib:reactiveData:.}
+          -I .
+          --file %{dep:examples.ml}
+          --file %{dep:test_dynlink.cmo}
+          --file %{dep:test_dynlink.js}
+	  --export %{dep:export.txt}
+          --toplevel
+	  --pretty
+          --noruntime
+	  %{lib:js_of_ocaml-compiler:runtime.js}
+	  %{lib:js_of_ocaml-compiler:toplevel.js}
+          %{lib:js_of_ocaml-compiler:dynlink.js}
+          %{lib:js_of_ocaml-compiler:nat.js}
+          %{lib:js_of_ocaml-compiler:graphics.js}
+	  %{dep:toplevel.bc}
+	  -o %{targets}
+          )))
+
+(alias
+  (name default)
+  (deps toplevel.js index.html))

@@ -1,6 +1,3 @@
 (executables
   (names server)
-  (libraries
-    bytes findlib cohttp.lwt
-    ))
-
+  (libraries bytes findlib cohttp.lwt))
