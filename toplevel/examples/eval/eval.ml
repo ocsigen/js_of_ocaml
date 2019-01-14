@@ -1,3 +1,4 @@
+open Js_of_ocaml_toplevel
 let () =
   JsooTop.initialize ()
 
