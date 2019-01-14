@@ -12,5 +12,5 @@
          -I ./ --file %{dep:maps.txt} --file maps)))
 
 (alias
-  (name DEFAULT)
+  (name default)
   (deps boulderdash.js index.html (glob_files sprites/*.{png,svg})))

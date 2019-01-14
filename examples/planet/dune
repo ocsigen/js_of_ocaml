@@ -11,5 +11,5 @@
          --source-map %{dep:planet.bc} -o %{targets} --pretty)))
 
 (alias
-  (name DEFAULT)
+  (name default)
   (deps planet.js index.html texture.jpg))

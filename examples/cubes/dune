@@ -10,5 +10,5 @@
          --source-map %{dep:cubes.bc} -o %{targets} --pretty)))
 
 (alias
-  (name DEFAULT)
+  (name default)
   (deps cubes.js index.html))

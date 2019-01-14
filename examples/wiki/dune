@@ -12,5 +12,5 @@
          --source-map %{dep:main.bc} -o %{targets} --pretty)))
 
 (alias
-  (name DEFAULT)
+  (name default)
   (deps main.js index.html))
