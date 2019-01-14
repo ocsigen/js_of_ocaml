@@ -17,12 +17,14 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+
 open Stdlib
 module Debug : sig
   type data
   val create : unit -> data
   val find_loc : data -> ?after:bool -> int -> Parse_info.t option
   val is_empty : data -> bool
+  val paths    : data -> units:StringSet.t -> StringSet.t
 end
 
 val from_channel :
