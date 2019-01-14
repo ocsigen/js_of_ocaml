@@ -67,7 +67,7 @@ let options =
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
-    let profile = List.map (fun (i,p) -> string_of_int i, p) Driver.profiles in
+    let profile = List.map Driver.profiles ~f:(fun (i,p) -> string_of_int i, p) in
     Arg.(value & opt (some (enum profile)) None & info ["opt"] ~docv:"NUM" ~doc)
   in
   let noruntime =
@@ -104,8 +104,7 @@ let options =
   in
   let set_param =
     let doc = "Set compiler options." in
-    let all = List.map (fun (x,_) ->
-      x, x) (Config.Param.all ()) in
+    let all = List.map (Config.Param.all ()) ~f:(fun (x,_) -> x, x)  in
     Arg.(value & opt_all (list (pair ~sep:'=' (enum all) string)) [] & info ["set"] ~docv:"PARAM=VALUE"~doc)
   in
   let set_env =
@@ -196,27 +195,27 @@ let options =
       | x,false -> Some x in
     let output_file = match output_file with
       | Some _ -> output_file
-      | None   -> Option.map (fun s -> chop_extension s ^ ".js") input_file in
+      | None   -> Option.map input_file ~f:(fun s -> chop_extension s ^ ".js") in
     let source_map =
       if not no_sourcemap && sourcemap || sourcemap_inline_in_js
       then
-	      let file, sm_output_file =
-	        match output_file with
+        let file, sm_output_file =
+          match output_file with
           | Some file when sourcemap_inline_in_js -> file, None
-	        | Some file -> file, Some (chop_extension file ^ ".map")
-	        | None -> "STDIN", None in
+          | Some file -> file, Some (chop_extension file ^ ".map")
+          | None -> "STDIN", None in
         Some (
-          sm_output_file,
-          {
-            Source_map.version = 3;
-            file;
-            sourceroot = sourcemap_root;
-            sources = [];
-            sources_content = if sourcemap_don't_inline_content
-              then None
-              else Some [];
-            names = [];
-            mappings = []
+            sm_output_file,
+            {
+              Source_map.version = 3;
+              file;
+              sourceroot = sourcemap_root;
+              sources = [];
+              sources_content = if sourcemap_don't_inline_content
+                                then None
+                                else Some [];
+              names = [];
+              mappings = []
           })
       else None in
     let source_map =

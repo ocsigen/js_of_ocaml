@@ -10,7 +10,7 @@
      (js_of_ocaml-compiler.findlib-support -> empty-findlib.ml.in)
      (                                     -> empty-findlib.ml.in))
     )
-  (flags (-safe-string))
+  (flags (:standard -safe-string))
   )
 
 (rule

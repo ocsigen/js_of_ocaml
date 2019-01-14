@@ -16,6 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open StdLabels
+
 open Migrate_parsetree
 open OCaml_406.Ast
 
@@ -48,9 +50,7 @@ let typ s = Typ.constr (lid s) []
 
 (** arg1 -> arg2 -> ... -> ret *)
 let arrows args ret =
-  List.fold_right (fun (l, ty) fun_ -> Typ.arrow l ty fun_)
-    args
-    ret
+  List.fold_right args ~init:ret ~f:(fun (l, ty) fun_ -> Typ.arrow l ty fun_)
 
 let wrapper = ref None
 
@@ -91,7 +91,7 @@ end = struct
     Typ.constr ?loc (lid (js_dot s)) args
 
   let apply_ ~where ?loc s args =
-    let args = List.map (fun x -> Label.nolabel,x) args in
+    let args = List.map ~f:(fun x -> Label.nolabel,x) args in
     Exp.(apply ?loc (ident ?loc (lid ?loc (where s))) args)
   let unsafe = apply_ ~where:js_unsafe_dot
   let fun_ = apply_ ~where:js_dot
@@ -101,12 +101,12 @@ let unescape lab =
   if lab = "" then lab
   else
     let lab =
-      if lab.[0] = '_' then String.sub lab 1 (String.length lab - 1) else lab
+      if lab.[0] = '_' then String.sub lab ~pos:1 ~len:(String.length lab - 1) else lab
     in
     try
       let i = String.rindex lab '_' in
       if i = 0 then raise Not_found;
-      String.sub lab 0 i
+      String.sub lab ~pos:0 ~len:i
     with Not_found ->
       lab
 
@@ -115,7 +115,7 @@ let app_arg e = (Label.nolabel, e)
 let inject_arg e = Js.unsafe "inject" [e]
 
 let inject_args args =
-  Exp.array (List.map (fun e -> Js.unsafe "inject" [e]) args)
+  Exp.array (List.map ~f:(fun e -> Js.unsafe "inject" [e]) args)
 
 module Arg : sig
   type t
@@ -138,7 +138,7 @@ end = struct
   let label arg = arg.label
   let name arg = arg.name
   let typ arg = typ (name arg)
-  let args l = List.map (fun x -> label x, typ x) l
+  let args l = List.map ~f:(fun x -> label x, typ x) l
 end
 
 let js_dot_t_the_first_arg args =
@@ -161,7 +161,7 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
   (* Build the main body *)
   let ebody =
     let ident d = Exp.ident (lid (Arg.name d)) in
-    let args = List.map ident arguments in
+    let args = List.map ~f:ident arguments in
     body args
   in
   let annotated_ebody = Exp.constraint_ ebody tfunc_res in
@@ -171,10 +171,11 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
      It's unused in the implementation.
      {[ fun (t1 : type_of_t1) (t2 : type_of_t2) (_ : uplift_type) -> e]}
   *)
-  let labels_and_pats = List.map (fun d ->
-    let label = Arg.label d in
-    let patt = Pat.var (Location.mknoloc (Arg.name d)) in
-    label, patt) arguments
+  let labels_and_pats =
+    List.map arguments ~f:(fun d ->
+        let label = Arg.label d in
+        let patt = Pat.var (Location.mknoloc (Arg.name d)) in
+        label, patt)
   in
 
   let make_fun (label, pat) (label',typ) expr =
@@ -182,19 +183,20 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
     Exp.fun_ label None (Pat.constraint_ pat typ) expr
   in
   let invoker =
-    List.fold_right2 make_fun labels_and_pats tfunc_args
-      (make_fun
-         (Label.nolabel, Pat.any ())
-         (Label.nolabel,twrap)
-         annotated_ebody)
+    List.fold_right2 labels_and_pats tfunc_args
+      ~f:make_fun 
+      ~init:(make_fun
+               (Label.nolabel, Pat.any ())
+               (Label.nolabel,twrap)
+               annotated_ebody)
   in
   (* Introduce all local types:
      {[ fun (type res t0 t1 ..) arg1 arg2 -> e ]}
   *)
   let local_types =
-    make_str res :: List.map (fun x -> make_str (Arg.name x)) (extra_types @ arguments)
+    make_str res :: List.map (extra_types @ arguments) ~f:(fun x -> make_str (Arg.name x))
   in
-  let result = List.fold_right Exp.newtype local_types invoker in
+  let result = List.fold_right local_types ~init:invoker ~f:Exp.newtype  in
 
   default_loc := default_loc';
   result
@@ -232,7 +234,7 @@ let method_call ~loc obj meth args =
          | eobj :: eargs ->
            let eargs = inject_args eargs in
            Js.unsafe "meth_call" [eobj; str (unescape meth); eargs])
-      (Arg.make () :: List.map (fun (label,_) -> Arg.make ~label ()) args)
+      (Arg.make () :: List.map args ~f:(fun (label,_) -> Arg.make ~label ()))
   in
   Exp.apply invoker (
     app_arg obj :: args
@@ -356,7 +358,7 @@ let new_object constr args =
         | (constr :: args) ->
           Js.unsafe "new_obj" [constr; inject_args args]
         | _ -> assert false)
-      (Arg.make ()  :: List.map (fun (label,_) -> Arg.make ~label ()) args)
+      (Arg.make ()  :: List.map args ~f:(fun (label,_) -> Arg.make ~label ()))
   in
   Exp.apply invoker (
     app_arg (Exp.ident ~loc:constr.loc constr) :: args
@@ -408,11 +410,15 @@ type field_desc =
 
 
 let filter_map f l =
-  let l = List.fold_left (fun acc x -> match f x with
-    | Some x -> x::acc
-    | None -> acc) [] l
+  let l =
+    List.fold_left l
+      ~init:[]
+      ~f:(fun acc x ->
+        match f x with
+        | Some x -> x::acc
+        | None -> acc) 
   in List.rev l
-
+   
 let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `Error of _ ] =
 
   let check_name id names =
@@ -435,8 +441,8 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
 
   let drop_prefix ~prefix s =
     let prefix_len = String.length prefix in
-    if String.length s > prefix_len && String.sub s 0 prefix_len = prefix
-    then true, String.sub s prefix_len (String.length s - prefix_len)
+    if String.length s > prefix_len && String.sub s ~pos:0 ~len:prefix_len = prefix
+    then true, String.sub s ~pos:prefix_len ~len:(String.length s - prefix_len)
     else false, s
   in
 
@@ -492,7 +498,7 @@ let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `E
         "This field is not valid inside a js literal object."
   in
   try
-    `Fields (List.rev (snd (List.fold_left f (S.empty, []) fields)))
+    `Fields (List.rev (snd (List.fold_left fields ~init:(S.empty, []) ~f)))
   with Location.Error error -> `Error (extension_of_error error)
 
 
@@ -544,17 +550,15 @@ let literal_object self_id ( fields : field_desc list) =
   in
   let extra_types =
     List.concat (
-      List.map (function
+      List.map fields ~f:(function
         | Val _ -> []
-        | Meth (_,_,_,_,l) -> l
-      ) fields
-    )
+        | Meth (_,_,_,_,l) -> l))
   in
   let invoker =
     invoker ~extra_types
       (fun args tres ->
          let args =
-           List.map2 (fun f desc ->
+           List.map2 fields args ~f:(fun f desc ->
              let ret_ty = Arg.typ desc in
              let label  = Arg.label desc in
              match f with
@@ -565,12 +569,12 @@ let literal_object self_id ( fields : field_desc list) =
                arrows
                  ((Label.nolabel,Js.type_ "t" [tres]) :: Arg.args args)
                  (Js.type_ "meth" [ret_ty])
-           ) fields args
+           )
          in
          arrows ((Label.nolabel, Js.type_ "t" [tres]) :: args) tres)
       (fun args tres ->
          let args =
-           List.map2 (fun f desc ->
+           List.map2 fields args ~f:(fun f desc ->
              let ret_ty = Arg.typ desc in
              let label  = Arg.label desc in
              match f with
@@ -581,7 +585,7 @@ let literal_object self_id ( fields : field_desc list) =
                arrows
                  ((Label.nolabel, Js.type_ "t" [tres]) :: Arg.args args)
                  ret_ty
-           ) fields args
+           )
          in
          args, Js.type_ "t" [tres]
       )
@@ -589,18 +593,17 @@ let literal_object self_id ( fields : field_desc list) =
          Js.unsafe
            "obj"
            [Exp.array (
-              List.map2
-                (fun f arg ->
+              List.map2 fields args ~f:(fun f arg ->
                    tuple [str (unescape (name f).txt);
                           inject_arg (match f with
                             | Val  _ -> arg
                             | Meth _ -> Js.fun_ "wrap_meth_callback" [ arg ]) ]
-                ) fields args
+                )
             )]
       )
-      (List.map (function
+      (List.map fields ~f:(function
          | Val _ -> Arg.make ()
-         | Meth (_, _, _, _, _fun_ty) -> Arg.make ()) fields)
+         | Meth (_, _, _, _, _fun_ty) -> Arg.make ()))
   in
 
   let self = "self" in
@@ -611,35 +614,34 @@ let literal_object self_id ( fields : field_desc list) =
     Exp.object_
       { pcstr_self = Pat.any ~loc:gloc ();
         pcstr_fields =
-          (List.map
-             (fun f ->
-                let loc = (name f).loc in
-                let apply e = match f with
-                  | Val _ -> e
-                  | Meth _ -> Exp.apply e [Label.nolabel, Exp.ident (lid ~loc:Location.none self) ]
-                in
-                { pcf_loc = loc;
-                  pcf_attributes = [];
-                  pcf_desc =
-                    Pcf_method
-                      (name f,
-                       Public,
-                       Cfk_concrete (Fresh, apply (Exp.ident ~loc (lid ~loc:Location.none (name f).txt)))
-                      )
-                })
-             fields)
+          (List.map fields ~f:(fun f ->
+               let loc = (name f).loc in
+               let apply e = match f with
+                 | Val _ -> e
+                 | Meth _ -> Exp.apply e [Label.nolabel, Exp.ident (lid ~loc:Location.none self) ]
+               in
+               { pcf_loc = loc;
+                 pcf_attributes = [];
+                 pcf_desc =
+                   Pcf_method
+                     (name f,
+                      Public,
+                      Cfk_concrete (Fresh, apply (Exp.ident ~loc (lid ~loc:Location.none (name f).txt)))
+                     )
+          }))
       }
   in
   Exp.apply invoker (
-    (List.map (fun f -> app_arg (body f)) fields)
+    (List.map fields ~f:(fun f -> app_arg (body f)))
     @ [
-      app_arg (List.fold_right (fun name fun_ ->
-        (Exp.fun_ ~loc:gloc Label.nolabel None
-           (Pat.var ~loc:gloc (Location.mknoloc name))
-           fun_))
-        (self :: List.map (fun f -> (name f).txt) fields)
-        fake_object
-      )] )
+      app_arg (List.fold_right
+                 (self :: List.map fields ~f:(fun f -> (name f).txt))
+                 ~init:fake_object
+                 ~f:(fun name fun_ ->
+                   (Exp.fun_ ~loc:gloc Label.nolabel None
+                      (Pat.var ~loc:gloc (Location.mknoloc name))
+                      fun_))
+    )] )
 
 let mapper =
   { default_mapper with
@@ -669,7 +671,7 @@ let mapper =
           ->
           let meth_str = exp_to_string meth in
           let obj = mapper.expr mapper  obj in
-          let args = List.map (fun (s,e) -> s, mapper.expr mapper e) args in
+          let args = List.map args ~f:(fun (s,e) -> s, mapper.expr mapper e) in
           let new_expr = method_call ~loc:meth.pexp_loc obj meth_str args in
           mapper.expr mapper  { new_expr with pexp_attributes }
 
@@ -678,7 +680,7 @@ let mapper =
           ->
           let meth_str = exp_to_string meth in
           let obj = mapper.expr mapper  obj in
-          let args = List.map (fun (s,e) -> s, mapper.expr mapper e) args in
+          let args = List.map args ~f:(fun (s,e) -> s, mapper.expr mapper e) in
           let new_expr = method_call ~loc:prop.pexp_loc obj meth_str args in
           mapper.expr mapper  { new_expr with pexp_attributes }
 
@@ -698,7 +700,7 @@ let mapper =
         | {pexp_desc = Pexp_apply
                          ([%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]]
                          , args); _ } ->
-          let args = List.map (fun (s,e) -> s, mapper.expr mapper e) args in
+          let args = List.map args ~f:(fun (s,e) -> s, mapper.expr mapper e) in
           let new_expr =
             new_object constr args
           in
