@@ -1,7 +1,7 @@
 (* The Computer Language Benchmarks Game
    http://shootout.alioth.debian.org/
 
-   contributed by Isaac Gouy, transliterated from Mike Pall's Lua program 
+   contributed by Isaac Gouy, transliterated from Mike Pall's Lua program
 *)
 
 let fannkuch n =

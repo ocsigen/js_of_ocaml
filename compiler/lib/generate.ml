@@ -122,7 +122,7 @@ module Share = struct
     | String s -> add_code_string s t
     | IString s -> add_code_istring s t
     | Tuple (_,args) -> Array.fold_left args ~init:t ~f:(fun t c ->
-      get_constant c t) 
+      get_constant c t)
     | _ -> t
 
   let add_args args t =
@@ -350,16 +350,16 @@ let rec constant_rec ~ctx x level instrs =
         let level = if split then 0 else level + 1 in
         let (l, instrs) =
           List.fold_left (Array.to_list a)
-            ~init:([], instrs) 
+            ~init:([], instrs)
             ~f:(fun (l, instrs) cc ->
                let (js, instrs) = constant_rec ~ctx cc level instrs in
                js::l, instrs)
-            
+    
         in
         let (l, instrs) =
           if split then
             List.fold_left l
-              ~init:([],instrs) 
+              ~init:([],instrs)
               ~f:(fun (acc,instrs) js ->
                 match js with
                 | J.EArr _ ->
@@ -439,7 +439,7 @@ let flush_queue expr_queue prop (l:J.statement_list) =
   let instrs =
     List.map instrs ~f:(fun (x, elt) ->
       (J.Variable_statement [J.V x, Some (elt.ce, elt.loc)], elt.loc))
-      
+
   in
   (List.rev_append instrs l, expr_queue)
 
@@ -458,7 +458,7 @@ let enqueue expr_queue prop x ce loc cardinal acc =
   let deps = List.fold_left expr_queue ~init:deps ~f:(fun deps (x',elt) ->
     if Code.Var.Set.mem ( x') deps
     then Code.Var.Set.union elt.deps deps
-    else deps) 
+    else deps)
   in
   (instrs @ acc , (x, {prop; ce; loc; cardinal; deps}) :: expr_queue)
 
@@ -1732,7 +1732,7 @@ let generate_shared_value ctx =
             Some (J.EDot (s_var Constant.global_object, "jsoo_runtime"),J.N)])
         @ List.map
           (StringMap.bindings ctx.Ctx.share.Share.vars.Share.strings)
-          ~f:(fun (s,v) -> v, Some (str_js s,J.N))          
+          ~f:(fun (s,v) -> v, Some (str_js s,J.N))  
         @ List.map
           (StringMap.bindings ctx.Ctx.share.Share.vars.Share.prims)
           ~f:(fun (s,v) -> v, Some (runtime_fun ctx s,J.N))

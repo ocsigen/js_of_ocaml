@@ -580,7 +580,7 @@ module State = struct
            | Var x ->
              let y = Var.fork x in
              Var y :: stack)
-        
+
     in
     let state = { state with stack = stack;
                              current_pc } in
@@ -1028,7 +1028,7 @@ and compile infos pc state instrs =
       let env = Array.of_list !env in
       let state = !state in
       let instrs =
-        List.fold_left (List.rev !vars) 
+        List.fold_left (List.rev !vars)
           ~init:instrs
           ~f:(fun instr (i, x) ->
              let addr = pc + 3 + gets code (pc + 3 + i) in
@@ -1050,7 +1050,7 @@ and compile infos pc state instrs =
              Debug.propagate (State.stack_vars state'') args;
 
              Let (x, Closure (List.rev params, (addr, args))) :: instr)
-          
+  
       in
       compile infos (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
     | OFFSETCLOSUREM2 ->
@@ -2310,7 +2310,7 @@ let predefined_exceptions () =
                    [ Pc (Int (Int32.of_int index))
                    ; Pv exn
                    ; Pv v_name_js]))
-      ]) 
+      ])
     |> List.concat
   in
   let block =

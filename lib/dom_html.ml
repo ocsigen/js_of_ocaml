@@ -1552,16 +1552,16 @@ module CoerceTo = struct
   let element : #Dom.node Js.t -> element Js.t Js.opt =
     if def html_element == undefined then
       (* ie < 9 does not have HTMLElement: we have to cheat to check
-	 that something is an html element *)
+        that something is an html element *)
       (fun e ->
-	if def ((Js.Unsafe.coerce e)##.innerHTML) == undefined then
-	  Js.null
-	else Js.some (Js.Unsafe.coerce e))
+       if def ((Js.Unsafe.coerce e)##.innerHTML) == undefined then
+         Js.null
+       else Js.some (Js.Unsafe.coerce e))
     else
       (fun e ->
-	if Js.instanceof e html_element then
-	  Js.some (Js.Unsafe.coerce e)
-	else Js.null)
+       if Js.instanceof e html_element then
+         Js.some (Js.Unsafe.coerce e)
+       else Js.null)
 
   let unsafeCoerce tag (e : #element t) =
     if e##.tagName##toLowerCase == Js.string tag then
@@ -1684,10 +1684,10 @@ let buttonPressed (ev : #mouseEvent Js.t) =
   Js.Optdef.case (ev##.which)
     (fun () ->
       match ev##.button with
-	| 1 -> Left_button
-	| 2 -> Right_button
-	| 4 -> Middle_button
-	| _ -> No_button)
+       | 1 -> Left_button
+       | 2 -> Right_button
+       | 4 -> Middle_button
+       | _ -> No_button)
     (fun x -> x)
 
 let hasMousewheelEvents () =
@@ -2250,12 +2250,12 @@ let taggedEvent (ev : #event Js.t) =
   Js.Opt.case (CoerceTo.mouseEvent ev)
     (fun () -> Js.Opt.case (CoerceTo.keyboardEvent ev)
       (fun () -> Js.Opt.case (CoerceTo.wheelEvent ev)
-	(fun () -> Js.Opt.case (CoerceTo.mouseScrollEvent ev)
-	  (fun () -> Js.Opt.case (CoerceTo.popStateEvent ev)
-	    (fun () -> OtherEvent (ev :> event t))
-	    (fun ev -> PopStateEvent ev))
-	  (fun ev -> MouseScrollEvent ev))
-	(fun ev -> MousewheelEvent ev))
+       (fun () -> Js.Opt.case (CoerceTo.mouseScrollEvent ev)
+         (fun () -> Js.Opt.case (CoerceTo.popStateEvent ev)
+           (fun () -> OtherEvent (ev :> event t))
+           (fun ev -> PopStateEvent ev))
+         (fun ev -> MouseScrollEvent ev))
+       (fun ev -> MousewheelEvent ev))
       (fun ev -> KeyboardEvent ev))
     (fun ev -> MouseEvent ev)
 

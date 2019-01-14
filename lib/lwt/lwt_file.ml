@@ -30,9 +30,9 @@ let read_with_filereader (fileReader : fileReader t constr) kind file =
     (fun _ ->
       if reader##.readyState = DONE then
         Lwt.wakeup w
-	  (match Opt.to_option (CoerceTo.string (reader##.result)) with
-	    | None -> assert false (* can't happen: called with good readAs_ *)
-	    | Some s -> s)
+         (match Opt.to_option (CoerceTo.string (reader##.result)) with
+           | None -> assert false (* can't happen: called with good readAs_ *)
+           | Some s -> s)
       else (); (* CCC TODO: handle errors *)
       Js._false);
   Lwt.on_cancel res (fun () -> reader##abort);

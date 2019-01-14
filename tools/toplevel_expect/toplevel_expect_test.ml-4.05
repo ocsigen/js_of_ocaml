@@ -146,7 +146,7 @@ module Compiler_messages = struct
     Format.fprintf ppf "@{<error>%s@}: %s" error_prefix msg;
     List.iter sub ~f:(fun err ->
         Format.fprintf ppf "@\n@[<2>%a@]" error_reporter err)
-  
+ 
   let capture ppf ~f =
     Misc.protect_refs
       [ R (Location.formatter_for_warnings , ppf            )

@@ -55,13 +55,13 @@ let json t =
      "mappings",      `String (string_of_mapping t.mappings);
      "sources",       `List (List.map (fun s -> `String (rewrite_path s)) t.sources);
      "sourcesContent",`List
-		     (match t.sources_content with
-		      | None -> []
-		      | Some l ->
-			 List.map
-			   (function
-			     | None -> `Null
-			     | Some s -> `String s) l);
+                   (match t.sources_content with
+                    | None -> []
+                    | Some l ->
+                      List.map
+                        (function
+                          | None -> `Null
+                          | Some s -> `String s) l);
   ]
 
 let invalid () = invalid_arg "Source_map.of_json"

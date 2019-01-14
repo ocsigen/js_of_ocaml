@@ -92,9 +92,9 @@ let filename file =
   match Optdef.to_option (file##.name) with
     | None ->
       begin
-	match Optdef.to_option (file##.fileName) with
-	  | None -> failwith "can't retrieve file name: not implemented"
-	  | Some name -> name
+       match Optdef.to_option (file##.fileName) with
+         | None -> failwith "can't retrieve file name: not implemented"
+         | Some name -> name
       end
     | Some name -> name
 

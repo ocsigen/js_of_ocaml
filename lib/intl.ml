@@ -88,7 +88,7 @@ end
 
 module DateTimeFormat =
 struct
-  
+
   include Shared
 
   class type resolved_options = object
@@ -157,7 +157,7 @@ end
 
 module NumberFormat =
 struct
-  
+
   include Shared
 
   class type resolved_options = object
@@ -215,7 +215,7 @@ end
 
 module PluralRules =
 struct
-  
+
   include Shared
 
   class type resolved_options = object

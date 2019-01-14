@@ -83,15 +83,15 @@ let group_closures closures =
   let closures_map =
     List.fold_left closures
       ~init:Var.Map.empty
-      ~f:(fun closures_map x -> Var.Map.add x.f_name x closures_map) 
+      ~f:(fun closures_map x -> Var.Map.add x.f_name x closures_map)
   in
   let graph =
     List.fold_left closures
-      ~init:Var.Map.empty 
+      ~init:Var.Map.empty
       ~f:(fun graph x ->
         let tc = Var.Map.fold (fun x _ tc -> Var.Set.add x tc) x.tc Var.Set.empty in
         let tc = Var.Set.inter names tc in
-        Var.Map.add x.f_name tc graph) 
+        Var.Map.add x.f_name tc graph)
   in
   closures_map, SCC.connected_components_sorted_from_roots_to_leaf graph
 
@@ -194,7 +194,7 @@ module Trampoline = struct
           in
           let blocks, free_pc =
             List.fold_left counter_and_pc
-              ~init:(blocks, free_pc) 
+              ~init:(blocks, free_pc)
               ~f:(fun (blocks, free_pc) (counter, pc) ->
               if debug_tc ()
               then Format.eprintf "Rewriting tc in %d\n%!" pc;
@@ -224,10 +224,10 @@ module Trampoline = struct
                 let blocks = Addr.Map.remove pc blocks in
                 Addr.Map.add pc block blocks, free_pc
               | _ -> assert false
-            ) 
+            )
           in
           blocks, free_pc, instr_real :: instrs, instr_wrapper :: instrs_wrapper
-        ) 
+        )
       in
       free_pc, blocks, {int = instrs; ext = instrs_wrapper}
 end
@@ -263,7 +263,7 @@ let rewrite_mutable free_pc blocks mutated_vars rewrite_list
   assert (closures_extern <> []);
   let all_mut, names =
     List.fold_left internal_and_external
-      ~init:(Var.Set.empty, Var.Set.empty) 
+      ~init:(Var.Set.empty, Var.Set.empty)
       ~f:(fun (all_mut, names) i ->
         match i with
         | Let (x, Closure (_, (pc, _))) ->
@@ -273,7 +273,7 @@ let rewrite_mutable free_pc blocks mutated_vars rewrite_list
           in
           let names = Var.Set.add x names in
           all_mut, names
-        | _ -> assert false) 
+        | _ -> assert false)
   in
   let vars = Var.Set.elements (Var.Set.diff all_mut names) in
   if vars = []
@@ -332,7 +332,7 @@ let rewrite_mutable free_pc blocks mutated_vars rewrite_list
             match cl with
             | Let (_, Closure (params, (pc, pc_args ))) ->
               Let (new_x, Closure (params, (pc, List.map pc_args ~f:mapping)))
-            | _ -> assert false) 
+            | _ -> assert false)
         in
         { params = [];
           handler = None;
@@ -366,11 +366,11 @@ let rec rewrite_closures mutated_vars rewrite_list free_pc blocks body : (int * 
     let closures_map, components = group_closures closures in
     let free_pc, blocks, closures =
       List.fold_left (Array.to_list components)
-        ~init:(free_pc, blocks, []) 
+        ~init:(free_pc, blocks, [])
         ~f:(fun (free_pc, blocks, acc) component ->
           let free_pc, blocks, closures = rewrite_tc free_pc blocks closures_map component in
           let free_pc, blocks, intrs = rewrite_mutable free_pc blocks mutated_vars rewrite_list closures in
-          free_pc, blocks, (intrs :: acc)) 
+          free_pc, blocks, (intrs :: acc))
     in
     let free_pc, blocks, rem = rewrite_closures mutated_vars rewrite_list free_pc blocks rem in
     free_pc, blocks, List.flatten closures @ rem
@@ -397,7 +397,7 @@ let f ((pc, blocks, free_pc) as p) : Code.program =
   in
   (* Code.invariant (pc, blocks, free_pc); *)
   let p = List.fold_left !rewrite_list
-      ~init:(pc, blocks, free_pc) 
+      ~init:(pc, blocks, free_pc)
       ~f:(fun program (mapping,pc) ->
         Subst.cont mapping pc program
       )

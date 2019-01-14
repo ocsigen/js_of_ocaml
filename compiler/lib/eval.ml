@@ -224,7 +224,7 @@ let eval_instr info i =
       begin
         let prim_args' = List.map prim_args ~f:(fun x -> the_const_of info x) in
         let res =
-          if List.for_all prim_args' ~f:(function Some _ -> true | _ -> false) 
+          if List.for_all prim_args' ~f:(function Some _ -> true | _ -> false)
           then eval_prim (prim,List.map prim_args' ~f:(function Some c -> c | None -> assert false))
           else None in
         match res with

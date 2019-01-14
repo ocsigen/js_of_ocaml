@@ -67,11 +67,11 @@ let options =
     let source_map =
         if sourcemap || sourcemap_inline_in_js
         then
-	  let file, sm_output_file =
-	    match output_file with
+         let file, sm_output_file =
+           match output_file with
             | Some file when sourcemap_inline_in_js -> file, None
-	    | Some file -> file, Some (chop_extension file ^ ".map")
-	    | None -> "STDIN", None in
+           | Some file -> file, Some (chop_extension file ^ ".map")
+           | None -> "STDIN", None in
           Some (
               sm_output_file,
               {

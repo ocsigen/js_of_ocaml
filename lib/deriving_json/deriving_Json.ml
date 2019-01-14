@@ -219,20 +219,20 @@ module Json_string = Defaults(struct
     Buffer.add_char buffer '\"';
     for i = 0 to String.length s - 1 do
       match s.[i] with
-	| '\"' -> Buffer.add_string buffer "\\\""
-	| '\\' -> Buffer.add_string buffer "\\\\"
-	| '\b' -> Buffer.add_string buffer "\\b"
-	| '\x0C' -> Buffer.add_string buffer "\\f"
-	| '\n' -> Buffer.add_string buffer "\\n"
-	| '\r' -> Buffer.add_string buffer "\\r"
-	| '\t' -> Buffer.add_string buffer "\\t"
-	| c when c <= '\x1F' -> (* Other control characters are escaped. *)
-	  Printf.bprintf buffer "\\u%04X" (int_of_char c)
+       | '\"' -> Buffer.add_string buffer "\\\""
+       | '\\' -> Buffer.add_string buffer "\\\\"
+       | '\b' -> Buffer.add_string buffer "\\b"
+       | '\x0C' -> Buffer.add_string buffer "\\f"
+       | '\n' -> Buffer.add_string buffer "\\n"
+       | '\r' -> Buffer.add_string buffer "\\r"
+       | '\t' -> Buffer.add_string buffer "\\t"
+       | c when c <= '\x1F' -> (* Other control characters are escaped. *)
+         Printf.bprintf buffer "\\u%04X" (int_of_char c)
       | c when c < '\x80' ->
-	  Buffer.add_char buffer s.[i]
+         Buffer.add_char buffer s.[i]
       | _c (* >= '\x80' *) -> (* Bytes greater than 127 are embedded in a UTF-8 sequence. *)
-	  Buffer.add_char buffer (Char.chr (0xC2 lor (Char.code s.[i] lsr 6)));
-	  Buffer.add_char buffer (Char.chr (0x80 lor (Char.code s.[i] land 0x3F)))
+         Buffer.add_char buffer (Char.chr (0xC2 lor (Char.code s.[i] lsr 6)));
+         Buffer.add_char buffer (Char.chr (0x80 lor (Char.code s.[i] land 0x3F)))
     done;
     Buffer.add_char buffer '\"'
   let read buf = Lexer.read_string buf
@@ -243,7 +243,7 @@ let read_list f buf =
     match Lexer.read_case buf with
     | `Cst 0 ->
       for _i = c downto 1 do
-	Lexer.read_rbracket buf
+       Lexer.read_rbracket buf
       done;
       List.rev l
     | `NCst 0 ->
@@ -261,7 +261,7 @@ let write_list f buffer xs =
     | [] ->
       Buffer.add_char buffer '0';
       for _i = c downto 1 do
-	Buffer.add_char buffer ']'
+       Buffer.add_char buffer ']'
       done
     | x::xs ->
       Printf.bprintf buffer "[0,%a," f x;

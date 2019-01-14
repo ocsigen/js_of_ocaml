@@ -131,7 +131,7 @@ let buffered_loop evh ?(cancel_handler = false) ?(cancel_queue = true)
       match !queue with
       | [] -> Lwt_condition.wait spawn >>= runner
       | e :: tl ->
-	queue := tl ;
+       queue := tl ;
         cur_handler := with_error_log (handler e) lt;
         !cur_handler >>= runner
     else Lwt.return ()
@@ -146,9 +146,9 @@ let func_limited_loop event limited_func ?use_capture target handler =
     (fun ev lt -> incr count;
       let nb = !count in
       limited_func () >>= (fun _ ->
-	if (!count = nb)
-	then handler ev lt
-	else Lwt.return ()))
+       if (!count = nb)
+       then handler ev lt
+       else Lwt.return ()))
 
 let limited_loop event ?(elapsed_time=0.1) =
   func_limited_loop event (fun () -> Lwt_js.sleep elapsed_time)

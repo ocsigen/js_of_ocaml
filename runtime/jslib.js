@@ -38,7 +38,7 @@ function caml_js_typeof(o) { return typeof o; }
 //Provides: caml_js_on_ie const
 function caml_js_on_ie () {
   var ua =
-    joo_global_object.navigator?joo_global_object.navigator.userAgent:"";
+      joo_global_object.navigator?joo_global_object.navigator.userAgent:"";
   return ua.indexOf("MSIE") != -1 && ua.indexOf("Opera") != 0;
 }
 
@@ -47,17 +47,17 @@ var caml_js_regexps = { amp:/&/g, lt:/</g, quot:/\"/g, all:/[&<\"]/ };
 function caml_js_html_escape (s) {
   if (!caml_js_regexps.all.test(s)) return s;
   return s.replace(caml_js_regexps.amp, "&amp;")
-          .replace(caml_js_regexps.lt, "&lt;")
-          .replace(caml_js_regexps.quot, "&quot;");
+    .replace(caml_js_regexps.lt, "&lt;")
+    .replace(caml_js_regexps.quot, "&quot;");
 }
 
 //Provides: caml_js_html_entities const (const)
 function caml_js_html_entities(s) {
-    var str, temp = document.createElement('p');
-    temp.innerHTML= s;
-    str= temp.textContent || temp.innerText;
-    temp=null;
-    return str;
+  var str, temp = document.createElement('p');
+  temp.innerHTML= s;
+  str= temp.textContent || temp.innerText;
+  temp=null;
+  return str;
 }
 
 /////////// Debugging console
@@ -92,12 +92,12 @@ function js_print_stdout(s) {
   if (g.process && g.process.stdout && g.process.stdout.write) {
     g.process.stdout.write(s)
   } else {
-  // Do not output the last \n if present
-  // as console logging display a newline at the end
-  if(s.charCodeAt(s.length - 1) == 10)
-    s = s.substr(0,s.length - 1 );
-  var v = g.console;
-  v  && v.log && v.log(s);
+    // Do not output the last \n if present
+    // as console logging display a newline at the end
+    if(s.charCodeAt(s.length - 1) == 10)
+      s = s.substr(0,s.length - 1 );
+    var v = g.console;
+    v  && v.log && v.log(s);
   }
 }
 //Provides: js_print_stderr (const)
@@ -106,11 +106,11 @@ function js_print_stderr(s) {
   if (g.process && g.process.stdout && g.process.stdout.write) {
     g.process.stderr.write(s)
   } else {
-  // Do not output the last \n if present
-  // as console logging display a newline at the end
-  if(s.charCodeAt(s.length - 1) == 10)
-    s = s.substr(0,s.length - 1 );
-  var v = g.console;
-  v && v.error && v.error(s);
+    // Do not output the last \n if present
+    // as console logging display a newline at the end
+    if(s.charCodeAt(s.length - 1) == 10)
+      s = s.substr(0,s.length - 1 );
+    var v = g.console;
+    v && v.error && v.error(s);
   }
 }

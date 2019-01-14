@@ -43,7 +43,7 @@ let rec mark_var st x =
   let x = Var.idx x in
   st.live.(x) <- st.live.(x) + 1;
   if st.live.(x) = 1 then
-    List.iter st.defs.(x) ~f:(fun e -> mark_def st e) 
+    List.iter st.defs.(x) ~f:(fun e -> mark_def st e)
 
 and mark_def st d =
   match d with

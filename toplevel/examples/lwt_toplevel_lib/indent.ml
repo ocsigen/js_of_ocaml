@@ -16,8 +16,8 @@ let textarea (textbox : Dom_html.textAreaElement Js.t) : unit =
     and c2 = textbox##.selectionEnd in
     if Js.Opt.test (Js.Opt.return c1) && Js.Opt.test (Js.Opt.return c2)
     then begin
-	let l = loop (Js.to_string v) [] (0,0) in
-	Some (find l c1,find l c2)
+       let l = loop (Js.to_string v) [] (0,0) in
+       Some (find l c1,find l c2)
       end
     else None in
   let f = match pos with

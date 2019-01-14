@@ -18,12 +18,12 @@
  *)
 
 type t = { src  : string option
-	 ; name : string option
-	 ; col  : int
-	 ; line : int
-	 ; idx  : int
-	 ; fol  : bool option
-	 }
+        ; name : string option
+        ; col  : int
+        ; line : int
+        ; idx  : int
+        ; fol  : bool option
+        }
 
 val zero : t
 

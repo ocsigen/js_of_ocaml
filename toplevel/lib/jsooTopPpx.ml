@@ -33,7 +33,7 @@ let preprocess_structure str =
     ~f:(fun ppx_rewriter str ->
        let mapper = ppx_rewriter [] in
        mapper.structure mapper str)
-    
+
 
 let preprocess_signature str =
   let open Ast_mapper in

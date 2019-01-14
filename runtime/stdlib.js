@@ -172,8 +172,8 @@ function caml_wrap_exception(e) {
 //Provides: caml_exn_with_js_backtrace
 //Requires: caml_global_data
 function caml_exn_with_js_backtrace(exn, force) {
-    //never reraise for constant exn
-    if(!exn.js_error || force || exn[0] == 248) exn.js_error = new joo_global_object.Error("Js exception containing backtrace");
+  //never reraise for constant exn
+  if(!exn.js_error || force || exn[0] == 248) exn.js_error = new joo_global_object.Error("Js exception containing backtrace");
   return exn;
 }
 //Provides: caml_js_error_of_exception
@@ -255,8 +255,10 @@ function caml_lazy_make_forward (v) { return [250, v]; }
 //Provides: caml_mul const
 if (!Math.imul)
   Math.imul =
-    function (x,y)
-    { y |= 0; return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0; };
+  function (x,y) {
+    y |= 0;
+    return ((((x >> 16) * y) << 16) + (x & 0xffff) * y)|0;
+  };
 var caml_mul = Math.imul;
 
 //slightly slower
@@ -337,10 +339,10 @@ function caml_compare_val (a, b, total) {
     if (!(total && a === b)) {
       if (a instanceof MlBytes) {
         if (b instanceof MlBytes) {
-            if (a !== b) {
-		var x = caml_string_compare(a, b);
-		if (x != 0) return x;
-	    }
+          if (a !== b) {
+            var x = caml_string_compare(a, b);
+            if (x != 0) return x;
+          }
         } else
           // Should not happen
           return 1;
@@ -365,20 +367,20 @@ function caml_compare_val (a, b, total) {
           } else {
             switch (ta) {
             case 248: {
-		// Object
-		var x = caml_int_compare(a[2], b[2]);
-		if (x != 0) return x;
-		break;
-	    }
+              // Object
+              var x = caml_int_compare(a[2], b[2]);
+              if (x != 0) return x;
+              break;
+            }
             case 251: {
-                caml_invalid_argument("equal: abstract value");
+              caml_invalid_argument("equal: abstract value");
             }
             case 255: {
-		// Int64
-		var x = caml_int64_compare(a, b);
-		if (x != 0) return x;
-		break;
-	    }
+              // Int64
+              var x = caml_int64_compare(a, b);
+              if (x != 0) return x;
+              break;
+            }
             default:
               if (a.length != b.length) return (a.length < b.length)?-1:1;
               if (a.length > 1) stack.push(a, b, 1);
@@ -508,7 +510,7 @@ function caml_float_of_string(s) {
   res = +s;
   if (((s.length > 0) && (res === res)) || /^[+-]?nan$/i.test(s)) return res;
   var m = /^ *([+-]?)0x([0-9a-f]+)\.?([0-9a-f]*)p([+-]?[0-9]+)/i.exec(s);
-//            1        2             3           4
+  //          1        2             3           4
   if(m){
     var m3 = m[3].replace(/0+$/,'');
     var mantissa = parseInt(m[1] + m[2] + m3, 16);
@@ -532,9 +534,9 @@ function caml_parse_format (fmt) {
   var len = fmt.length;
   if (len > 31) caml_invalid_argument("format_int: format too long");
   var f =
-    { justify:'+', signstyle:'-', filler:' ', alternate:false,
-      base:0, signedconv:false, width:0, uppercase:false,
-      sign:1, prec:-1, conv:'f' };
+      { justify:'+', signstyle:'-', filler:' ', alternate:false,
+        base:0, signedconv:false, width:0, uppercase:false,
+        sign:1, prec:-1, conv:'f' };
   for (var i = 0; i < len; i++) {
     var c = fmt.charAt(i);
     switch (c) {
@@ -553,7 +555,7 @@ function caml_parse_format (fmt) {
         f.width = f.width * 10 + c; i++
       }
       i--;
-     break;
+      break;
     case '.':
       f.prec = 0;
       i++;
@@ -727,8 +729,8 @@ function caml_hash_univ_param (count, limit, obj) {
       var p = caml_int64_to_bytes (caml_int64_bits_of_float (obj));
       for (var i = 7; i >= 0; i--) hash_accu = (hash_accu * 19 + p[i]) | 0;
     } else if(obj && obj.hash && typeof obj.hash === "function") {
-	// Custom
-	hash_accu = (hash_accu * 65599 + obj.hash()) | 0;
+      // Custom
+      hash_accu = (hash_accu * 65599 + obj.hash()) | 0;
     }
   }
   hash_aux (obj);
@@ -783,17 +785,18 @@ function caml_hash_mix_string_str(h, s) {
   var len = s.length, i, w;
   for (i = 0; i + 4 <= len; i += 4) {
     w = s.charCodeAt(i)
-        | (s.charCodeAt(i+1) << 8)
-        | (s.charCodeAt(i+2) << 16)
-        | (s.charCodeAt(i+3) << 24);
+      | (s.charCodeAt(i+1) << 8)
+      | (s.charCodeAt(i+2) << 16)
+      | (s.charCodeAt(i+3) << 24);
     h = caml_hash_mix_int(h, w);
   }
   w = 0;
   switch (len & 3) {
   case 3: w  = s.charCodeAt(i+2) << 16;
   case 2: w |= s.charCodeAt(i+1) << 8;
-  case 1: w |= s.charCodeAt(i);
-          h = caml_hash_mix_int(h, w);
+  case 1:
+    w |= s.charCodeAt(i);
+    h = caml_hash_mix_int(h, w);
   default:
   }
   h ^= len;
@@ -828,16 +831,16 @@ function caml_hash_mix_string_arr(h, s) {
 //Requires: caml_hash_mix_string_str
 //Requires: caml_hash_mix_string_arr
 function caml_hash_mix_string(h, v) {
-    switch (v.t & 6) {
-    default:
-        caml_convert_string_to_bytes (v);
-    case 0: /* BYTES */
-        h = caml_hash_mix_string_str(h, v.c);
-        break;
-    case 2: /* ARRAY */
-        h = caml_hash_mix_string_arr(h, v.c);
-    }
-    return h
+  switch (v.t & 6) {
+  default:
+    caml_convert_string_to_bytes (v);
+  case 0: /* BYTES */
+    h = caml_hash_mix_string_str(h, v.c);
+    break;
+  case 2: /* ARRAY */
+    h = caml_hash_mix_string_arr(h, v.c);
+  }
+  return h
 }
 
 
@@ -847,57 +850,57 @@ function caml_hash_mix_string(h, v) {
 //Requires: caml_hash_mix_int64, caml_hash_mix_float, caml_hash_mix_string
 var HASH_QUEUE_SIZE = 256;
 function caml_hash (count, limit, seed, obj) {
-    var queue, rd, wr, sz, num, h, v, i, len;
-    sz = limit;
-    if (sz < 0 || sz > HASH_QUEUE_SIZE) sz = HASH_QUEUE_SIZE;
-    num = count;
-    h = seed;
-    queue = [obj]; rd = 0; wr = 1;
-    while (rd < wr && num > 0) {
-        v = queue[rd++];
-        if (v instanceof Array && v[0] === (v[0]|0)) {
-            switch (v[0]) {
-            case 248:
-                // Object
-                h = caml_hash_mix_int(h, v[2]);
-                num--;
-                break;
-            case 250:
-                // Forward
-                queue[--rd] = v[1];
-                break;
-            case 255:
-                // Int64
-                h = caml_hash_mix_int64 (h, v);
-                num --;
-                break;
-            default:
-                var tag = ((v.length - 1) << 10) | v[0];
-                h = caml_hash_mix_int(h, tag);
-                for (i = 1, len = v.length; i < len; i++) {
-                    if (wr >= sz) break;
-                    queue[wr++] = v[i];
-                }
-                break;
-            }
-        } else if (v instanceof MlBytes) {
-            h = caml_hash_mix_string(h,v)
-            num--;
-        } else if (v === (v|0)) {
-            // Integer
-            h = caml_hash_mix_int(h, v+v+1);
-            num--;
-        } else if (v === +v) {
-            // Float
-            h = caml_hash_mix_float(h,v);
-            num--;
-        } else if(v && v.hash && typeof v.hash === "function") {
-	    // Custom
-	    h = caml_hash_mix_int(h, v.hash());
-	}
+  var queue, rd, wr, sz, num, h, v, i, len;
+  sz = limit;
+  if (sz < 0 || sz > HASH_QUEUE_SIZE) sz = HASH_QUEUE_SIZE;
+  num = count;
+  h = seed;
+  queue = [obj]; rd = 0; wr = 1;
+  while (rd < wr && num > 0) {
+    v = queue[rd++];
+    if (v instanceof Array && v[0] === (v[0]|0)) {
+      switch (v[0]) {
+      case 248:
+        // Object
+        h = caml_hash_mix_int(h, v[2]);
+        num--;
+        break;
+      case 250:
+        // Forward
+        queue[--rd] = v[1];
+        break;
+      case 255:
+        // Int64
+        h = caml_hash_mix_int64 (h, v);
+        num --;
+        break;
+      default:
+        var tag = ((v.length - 1) << 10) | v[0];
+        h = caml_hash_mix_int(h, tag);
+        for (i = 1, len = v.length; i < len; i++) {
+          if (wr >= sz) break;
+          queue[wr++] = v[i];
+        }
+        break;
+      }
+    } else if (v instanceof MlBytes) {
+      h = caml_hash_mix_string(h,v)
+      num--;
+    } else if (v === (v|0)) {
+      // Integer
+      h = caml_hash_mix_int(h, v+v+1);
+      num--;
+    } else if (v === +v) {
+      // Float
+      h = caml_hash_mix_float(h,v);
+      num--;
+    } else if(v && v.hash && typeof v.hash === "function") {
+      // Custom
+      h = caml_hash_mix_int(h, v.hash());
     }
-    h = caml_hash_mix_final(h);
-    return h & 0x3FFFFFFF;
+  }
+  h = caml_hash_mix_final(h);
+  return h & 0x3FFFFFFF;
 }
 
 ///////////// Sys

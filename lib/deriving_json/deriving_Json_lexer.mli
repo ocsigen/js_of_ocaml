@@ -32,7 +32,7 @@ type lexbuf
 val init_lexer:
     ?buf: Buffer.t ->
     Lexing.lexbuf -> lexbuf
-	(** Create a fresh lexbuf record. *)
+       (** Create a fresh lexbuf record. *)
 
 val tag_error: typename:string -> lexbuf -> 'a
 

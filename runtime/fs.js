@@ -58,21 +58,21 @@ function caml_make_path (name) {
 //Requires: MlFakeDevice, MlNodeDevice, caml_root, fs_node_supported
 var jsoo_mount_point = []
 if (fs_node_supported()) {
-    jsoo_mount_point.push({path:caml_root,device:new MlNodeDevice(caml_root)});
+  jsoo_mount_point.push({path:caml_root,device:new MlNodeDevice(caml_root)});
 } else {
-    jsoo_mount_point.push({path:caml_root,device:new MlFakeDevice(caml_root)});
+  jsoo_mount_point.push({path:caml_root,device:new MlFakeDevice(caml_root)});
 }
 jsoo_mount_point.push({path:caml_root+"static/", device:new MlFakeDevice(caml_root+"static/")});
 
 //Provides:caml_list_mount_point
 //Requires: jsoo_mount_point, caml_new_string
 function caml_list_mount_point(){
-    var prev = 0
-    for(var i = 0; i < jsoo_mount_point.length; i++){
-        var old = prev;
-        prev = [0, caml_new_string(jsoo_mount_point[i].path), old]
-    }
-    return prev;
+  var prev = 0
+  for(var i = 0; i < jsoo_mount_point.length; i++){
+    var old = prev;
+    prev = [0, caml_new_string(jsoo_mount_point[i].path), old]
+  }
+  return prev;
 }
 
 //Provides: resolve_fs_device
@@ -86,7 +86,7 @@ function resolve_fs_device(name){
     var m = jsoo_mount_point[i];
     if(name_slash.search(m.path) == 0
        && (!res || res.path.length < m.path.length))
-        res = {path:m.path,device:m.device,rest:name.substring(m.path.length,name.length)};
+      res = {path:m.path,device:m.device,rest:name.substring(m.path.length,name.length)};
   }
   return res;
 }

@@ -126,7 +126,7 @@ module Param = struct
 
   let tc_default = TcTrampoline
 
-  let _tc_all = tc_default :: List.filter [TcNone;TcTrampoline] ~f:((<>) tc_default) 
+  let _tc_all = tc_default :: List.filter [TcNone;TcTrampoline] ~f:((<>) tc_default)
 
   let tailcall_optim = p
       ~name:"tc"

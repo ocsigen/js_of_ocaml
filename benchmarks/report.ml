@@ -130,7 +130,7 @@ let merge_columns l old_table =
     | _, None -> l
     | (Some (h, c))::ll, Some o ->
       (Some (h, (merge (fun v1 v2 -> v1) c o)))::ll
-    | None::ll, Some o -> 
+    | None::ll, Some o ->
       (Some ([None], (List.map (fun (nm, _) -> (nm, [0.0, 0.0])) o)))::ll
   in
   let (nb_blanks, l) = remove_head_blank (List.rev l) in
@@ -252,15 +252,15 @@ let gnuplot_output ch no_header (h, t) =
 
 let filter (h, t) =
   let l1 = List.filter
-    (fun (nm, _) -> 
+    (fun (nm, _) ->
       not ((List.mem nm !appended) || (List.mem nm !omitted)))
     t
   in
   let app =
-    List.fold_left 
+    List.fold_left
       (fun beg nm -> try (nm, List.assoc nm t)::beg with Not_found -> beg)
       [] !appended
-  in 
+  in
   (h, l1 @ app)
 
 let output_table =
@@ -292,7 +292,7 @@ let output_tables r conf =
         (List.map
            (function
              | None -> read_blank_column ()
-             | Some (dir1, dir2, color, title, refe) -> 
+             | Some (dir1, dir2, color, title, refe) ->
                read_column ~title ~color dir1 (dir2, "") refe)
            conf)
         (output_function !no_header);

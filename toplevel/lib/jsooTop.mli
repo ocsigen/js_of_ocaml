@@ -27,7 +27,7 @@ val use : formatter -> string -> bool
     [print] says whether the values and types of the results should be printed.
     [pp_code] formatter can be use to output ocaml source during lexing. *)
 val execute : bool -> ?pp_code:formatter -> ?highlight_location:(Location.t -> unit) ->
-	      formatter -> string -> unit
+             formatter -> string -> unit
 
 (** Initialize Js_of_ocaml toplevel. *)
 val initialize : unit -> unit

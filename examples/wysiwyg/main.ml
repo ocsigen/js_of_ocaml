@@ -31,8 +31,8 @@ let is_visible_text s =
     if i >= len then () else
     if (s.[i] = '\\') && (i<len-1) && (s.[i+1]='\\') then loop (i+2)
     else match  s.[i] with
-	| '\n' -> loop (i+1)
-	| _   -> raise (Break true)
+       | '\n' -> loop (i+1)
+       | _   -> raise (Break true)
   in
   try
     loop 0;
@@ -50,42 +50,42 @@ let rec html2wiki body =
   for i=0 to childNodes##.length-1 do
     Js.Opt.iter (childNodes##item i) (fun node ->
       match Js.to_string node##.nodeName with
-	| "B" -> let inner = html2wiki node in
-		 add_str inner ~surr:"**"
-	| "I" -> let inner = html2wiki node in
-		 add_str inner ~surr:"//"
-	| "#text" -> (match Js.Opt.to_option  node##.nodeValue with
-			 | Some x -> Buffer.add_string ans (Js.to_string x)
-			 | None	-> ())
-	| "P" -> let inner = html2wiki node in
-		 add_str (inner ^ "\n\n")
-	| "BR"  -> Buffer.add_string ans "\\\\"
-	| "HR"  -> Buffer.add_string ans "----"
-	| "DIV" -> let inner = html2wiki node in
-		   Buffer.add_string ans inner
-	| "A"   ->
-	  let x  : element Js.t Js.opt = Js.some (Js.Unsafe.coerce node) in
-	  let el = Js.Opt.get x (fun _ -> assert false)  in
+       | "B" -> let inner = html2wiki node in
+               add_str inner ~surr:"**"
+       | "I" -> let inner = html2wiki node in
+               add_str inner ~surr:"//"
+       | "#text" -> (match Js.Opt.to_option  node##.nodeValue with
+                      | Some x -> Buffer.add_string ans (Js.to_string x)
+                      | None       -> ())
+       | "P" -> let inner = html2wiki node in
+               add_str (inner ^ "\n\n")
+       | "BR"  -> Buffer.add_string ans "\\\\"
+       | "HR"  -> Buffer.add_string ans "----"
+       | "DIV" -> let inner = html2wiki node in
+                 Buffer.add_string ans inner
+       | "A"   ->
+         let x  : element Js.t Js.opt = Js.some (Js.Unsafe.coerce node) in
+         let el = Js.Opt.get x (fun _ -> assert false)  in
 
-	  Js.Opt.case (el##getAttribute (Js.string "wysitype"))
-	    (fun () -> Buffer.add_string ans "^error_in_anchor^")
-	    (fun s ->
-	      let url = Js.Opt.get (el##getAttribute (Js.string "href")) (fun _ -> assert false)
-		|> Js.to_string in
-	      match Js.to_string s with
-	      | "global" ->
-		let desc = html2wiki node in
-		Buffer.add_string ans (String.concat "" ["[[";url;"|";desc;"]]"])
-	      | "wiki"   -> String.concat "" ["[[";url;"]]"] |> Buffer.add_string ans
-	      | _        -> Buffer.add_string ans "^error2_in_anchor^"
-	    )
-	| ("H1" | "H2" | "H3") as hh ->
-	  let n = int_of_char hh.[1] - (int_of_char '0') + 1 in
-	  let prefix = String.make n '=' in
-	  let inner = html2wiki node in
-	  Buffer.add_string ans (prefix^inner^"\n\n")
-	| _ as name ->
-	  Buffer.add_string ans ("^"^ name^"^")
+         Js.Opt.case (el##getAttribute (Js.string "wysitype"))
+           (fun () -> Buffer.add_string ans "^error_in_anchor^")
+           (fun s ->
+             let url = Js.Opt.get (el##getAttribute (Js.string "href")) (fun _ -> assert false)
+              |> Js.to_string in
+             match Js.to_string s with
+             | "global" ->
+              let desc = html2wiki node in
+              Buffer.add_string ans (String.concat "" ["[[";url;"|";desc;"]]"])
+             | "wiki"   -> String.concat "" ["[[";url;"]]"] |> Buffer.add_string ans
+             | _        -> Buffer.add_string ans "^error2_in_anchor^"
+           )
+       | ("H1" | "H2" | "H3") as hh ->
+         let n = int_of_char hh.[1] - (int_of_char '0') + 1 in
+         let prefix = String.make n '=' in
+         let inner = html2wiki node in
+         Buffer.add_string ans (prefix^inner^"\n\n")
+       | _ as name ->
+         Buffer.add_string ans ("^"^ name^"^")
     )
   done;
   Buffer.contents ans
@@ -118,13 +118,13 @@ let onload _ =
       let but = Html.createInput ?_type:(Some (Js.string "submit")) d in
       but##.value := Js.string title;
       let wrap s = match s with
-	| None -> Js.null | Some s -> Js.some (Js.string s) in
+       | None -> Js.null | Some s -> Js.some (Js.string s) in
 
       but##.onclick := Html.handler
-	(fun _ ->
-	  iWin##focus;
-	  iDoc##execCommand (Js.string action) show (wrap value);
-	  Js._true);
+       (fun _ ->
+         iWin##focus;
+         iDoc##execCommand (Js.string action) show (wrap value);
+         Js._true);
       Dom.appendChild body but;
       but
     in
@@ -155,7 +155,7 @@ let onload _ =
     (createButton "link2wiki" "inserthtml")##.onclick := Html.handler (fun _ ->
       let link = prompt "Enter a wikipage" "lololo" in
       let link = ["<a href=\""; link; "\" wysitype=\"wiki\">"; link; "</a>"]
-		 |> String.concat "" in
+               |> String.concat "" in
       iWin##alert (Js.string link);
       iDoc##execCommand (Js.string "inserthtml") Js._false (Js.some (Js.string link));
       Js._true
@@ -182,14 +182,14 @@ let onload _ =
     let rec dyn_preview old_text n =
       let text = Js.to_string iDoc##.body##.innerHTML in
       let n =
-	if text <> old_text then begin
-	  begin try
-		  preview##.value := Js.string text;
-		  wikiFrame##.value := Js.string (html2wiki (iDoc##.body :> Dom.node Js.t) )
-	    with _ -> () end;
-	  20
-	end else
-	  max 0 (n - 1)
+       if text <> old_text then begin
+         begin try
+                preview##.value := Js.string text;
+                wikiFrame##.value := Js.string (html2wiki (iDoc##.body :> Dom.node Js.t) )
+           with _ -> () end;
+         20
+       end else
+         max 0 (n - 1)
       in
       Lwt_js.sleep (if n = 0 then 0.5 else 0.1) >>= fun () ->
       dyn_preview text n

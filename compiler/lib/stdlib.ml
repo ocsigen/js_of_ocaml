@@ -280,5 +280,5 @@ module Array = struct
     for i = Array.length a - 1 downto 0 do
       r := f i (Array.unsafe_get a i) !r
     done;
-    !r   
+    !r
 end

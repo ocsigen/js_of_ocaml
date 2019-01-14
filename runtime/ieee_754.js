@@ -20,12 +20,12 @@
 //Provides: jsoo_floor_log2
 var log2_ok = Math.log2 && Math.log2(1.1235582092889474E+307) == 1020
 function jsoo_floor_log2(x) {
-    if(log2_ok) return Math.floor(Math.log2(x))
-    var i = 0;
-    if (x == 0) return -Infinity;
-    if(x>=1) {while (x>=2) {x/=2; i++} }
-    else {while (x < 1) {x*=2; i--} };
-    return i;
+  if(log2_ok) return Math.floor(Math.log2(x))
+  var i = 0;
+  if (x == 0) return -Infinity;
+  if(x>=1) {while (x>=2) {x/=2; i++} }
+  else {while (x < 1) {x*=2; i--} };
+  return i;
 }
 
 //Provides: caml_int64_bits_of_float const
@@ -100,12 +100,12 @@ function caml_hexstring_of_float (x, prec, style) {
   }
   if (prec >= 0 && prec < 13) {
     /* If a precision is given, and is small, round mantissa accordingly */
-      var cst = Math.pow(2,prec * 4);
-      x = Math.round(x * cst) / cst;
+    var cst = Math.pow(2,prec * 4);
+    x = Math.round(x * cst) / cst;
   }
   var x_str = x.toString(16);
   if(prec >= 0){
-      var idx = x_str.indexOf('.');
+    var idx = x_str.indexOf('.');
     if(idx<0) {
       x_str += '.' + caml_str_repeat(prec, '0');
     }
@@ -124,10 +124,10 @@ function caml_hexstring_of_float (x, prec, style) {
 function caml_int64_float_of_bits (x) {
   var exp = (x[3] & 0x7fff) >> 4;
   if (exp == 2047) {
-      if ((x[1]|x[2]|(x[3]&0xf)) == 0)
-        return (x[3] & 0x8000)?(-Infinity):Infinity;
-      else
-        return NaN;
+    if ((x[1]|x[2]|(x[3]&0xf)) == 0)
+      return (x[3] & 0x8000)?(-Infinity):Infinity;
+    else
+      return NaN;
   }
   var k = Math.pow(2,-24);
   var res = (x[1]*k+x[2])*k+(x[3]&0xf);

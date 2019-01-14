@@ -156,7 +156,7 @@ function caml_gr_clear_graph(){
   var s = caml_gr_state_get();
   s.canvas.width = s.width;
   s.canvas.height = s.height;
-//  s.context.strokeRect (0., 0., s.width, s.height);
+  //  s.context.strokeRect (0., 0., s.width, s.height);
   return 0;
 }
 
@@ -446,7 +446,7 @@ function caml_gr_draw_image(im,x,y){
     }
     image.src = canvas.toDataURL("image/png");
   } else {
-  s.context.drawImage(im.image,x,s.height - im.height - y);
+    s.context.drawImage(im.image,x,s.height - im.height - y);
   }
   return 0;
 }

@@ -184,7 +184,7 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
   in
   let invoker =
     List.fold_right2 labels_and_pats tfunc_args
-      ~f:make_fun 
+      ~f:make_fun
       ~init:(make_fun
                (Label.nolabel, Pat.any ())
                (Label.nolabel,twrap)
@@ -416,9 +416,9 @@ let filter_map f l =
       ~f:(fun acc x ->
         match f x with
         | Some x -> x::acc
-        | None -> acc) 
+        | None -> acc)
   in List.rev l
-   
+
 let preprocess_literal_object mappper fields : [ `Fields of field_desc list | `Error of _ ] =
 
   let check_name id names =

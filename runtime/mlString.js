@@ -140,12 +140,12 @@ function caml_utf16_of_utf8(s) {
             v = c - 0xe2080;
             if ((v < 0x800) || ((v >= 0xd7ff) && (v < 0xe000))) v = 2;
           } else {
-              v = 3;
-              if ((++i < l) && (((c2 = s.charCodeAt(i)) & -64) == 128) &&
-                  (c1 < 0xf5)) {
-                v = c2 - 0x3c82080 + (c << 6);
-                if (v < 0x10000 || v > 0x10ffff) v = 3;
-              }
+            v = 3;
+            if ((++i < l) && (((c2 = s.charCodeAt(i)) & -64) == 128) &&
+                (c1 < 0xf5)) {
+              v = c2 - 0x3c82080 + (c << 6);
+              if (v < 0x10000 || v > 0x10ffff) v = 3;
+            }
           }
         }
       }
@@ -236,7 +236,7 @@ function caml_bytes_unsafe_set (s, i, c) {
 //Provides: caml_string_unsafe_set
 //Requires: caml_bytes_unsafe_set
 function caml_string_unsafe_set (s, i, c) {
-    return caml_bytes_unsafe_set(s,i,c);
+  return caml_bytes_unsafe_set(s,i,c);
 }
 
 //Provides: caml_string_bound_error
@@ -344,7 +344,7 @@ function caml_bytes_set16(s,i,i16){
 //Provides: caml_string_set16
 //Requires: caml_bytes_set16
 function caml_string_set16(s,i,i16){
-    return caml_bytes_set16(s,i,i16);
+  return caml_bytes_set16(s,i,i16);
 }
 
 //Provides: caml_bytes_set32
@@ -365,7 +365,7 @@ function caml_bytes_set32(s,i,i32){
 //Provides: caml_string_set32
 //Requires: caml_bytes_set32
 function caml_string_set32(s,i,i32){
-    return caml_bytes_set32(s,i,i32);
+  return caml_bytes_set32(s,i,i32);
 }
 
 //Provides: caml_bytes_set64
@@ -383,7 +383,7 @@ function caml_bytes_set64(s,i,i64){
 //Provides: caml_string_set64
 //Requires: caml_bytes_set64
 function caml_string_set64(s,i,i64){
-    return caml_bytes_set64(s,i,i64);
+  return caml_bytes_set64(s,i,i64);
 }
 
 //Provides: caml_bytes_set
@@ -604,24 +604,24 @@ function caml_blit_bytes(s1, i1, s2, i2, len) {
   if ((i2 == 0) &&
       (len >= s2.l || (s2.t == 2 /* PARTIAL */ && len >= s2.c.length))) {
     s2.c = (s1.t == 4 /* ARRAY */)?
-             caml_subarray_to_string(s1.c, i1, len):
-             (i1 == 0 && s1.c.length == len)?s1.c:s1.c.substr(i1, len);
+      caml_subarray_to_string(s1.c, i1, len):
+      (i1 == 0 && s1.c.length == len)?s1.c:s1.c.substr(i1, len);
     s2.t = (s2.c.length == s2.l)?0 /* BYTES | UNKOWN */ :2; /* PARTIAL */
   } else if (s2.t == 2 /* PARTIAL */ && i2 == s2.c.length) {
     s2.c += (s1.t == 4 /* ARRAY */)?
-             caml_subarray_to_string(s1.c, i1, len):
-             (i1 == 0 && s1.c.length == len)?s1.c:s1.c.substr(i1, len);
+      caml_subarray_to_string(s1.c, i1, len):
+      (i1 == 0 && s1.c.length == len)?s1.c:s1.c.substr(i1, len);
     s2.t = (s2.c.length == s2.l)?0 /* BYTES | UNKOWN */ :2; /* PARTIAL */
   } else {
     if (s2.t != 4 /* ARRAY */) caml_convert_string_to_array(s2);
     var c1 = s1.c, c2 = s2.c;
     if (s1.t == 4 /* ARRAY */) {
-        if (i2 <= i1) {
-          for (var i = 0; i < len; i++) c2 [i2 + i] = c1 [i1 + i];
-        } else {
-          for (var i = len - 1; i >= 0; i--) c2 [i2 + i] = c1 [i1 + i];
-        }
-   } else {
+      if (i2 <= i1) {
+        for (var i = 0; i < len; i++) c2 [i2 + i] = c1 [i1 + i];
+      } else {
+        for (var i = len - 1; i >= 0; i--) c2 [i2 + i] = c1 [i1 + i];
+      }
+    } else {
       var l = Math.min (len, c1.length - i1);
       for (var i = 0; i < l; i++) c2 [i2 + i] = c1.charCodeAt(i1 + i);
       for (; i < len; i++) c2 [i2 + i] = 0;

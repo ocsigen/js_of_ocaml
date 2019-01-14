@@ -96,7 +96,7 @@ let rec cont' s pc blocks visited =
         ~f:(fun (blocks, visited) instr ->
         match instr with
         | Let (_, Closure (_, (pc,_))) -> cont' s pc blocks visited
-        | _ -> blocks, visited) 
+        | _ -> blocks, visited)
     in
     Code.fold_children blocks pc
       (fun pc (blocks,visited) -> cont' s pc blocks visited)

@@ -17,7 +17,7 @@
  *)
 
 open Stdlib
-    
+
 type t = string * int
 
 exception Bad_magic_number of string

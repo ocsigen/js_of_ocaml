@@ -571,7 +571,7 @@ let _ =
 
   ignore (area#event#connect#expose
             (redraw area slider)) ;
-  ignore (slider#connect#value_changed 
+  ignore (slider#connect#value_changed
             (slider_changed area)) ;
   ignore (button#connect#toggled
             (animate_toggled button slider)) ;

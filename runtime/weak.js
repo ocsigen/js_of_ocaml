@@ -39,20 +39,21 @@ function caml_weak_create (n) {
   x.length = caml_ephe_key_offset + n;
   return x;
 }
+
 //Provides: caml_weak_set
 //Requires: caml_ephe_key_offset, caml_invalid_argument
 function caml_weak_set(x, i, v) {
-    if(i < 0 || caml_ephe_key_offset + i >= x.length)
-      caml_invalid_argument ("Weak.set");
-    x[caml_ephe_key_offset + i] = v;
-    return 0;
+  if(i < 0 || caml_ephe_key_offset + i >= x.length)
+    caml_invalid_argument ("Weak.set");
+  x[caml_ephe_key_offset + i] = v;
+  return 0;
 }
 //Provides: caml_weak_get
 //Requires: caml_ephe_key_offset, caml_invalid_argument
 function caml_weak_get(x, i) {
-    if(i < 0 || caml_ephe_key_offset + i >= x.length)
-      caml_invalid_argument ("Weak.get_key");
-    return (x[caml_ephe_key_offset + i ]===undefined)?0:x[caml_ephe_key_offset + i];
+  if(i < 0 || caml_ephe_key_offset + i >= x.length)
+    caml_invalid_argument ("Weak.get_key");
+  return (x[caml_ephe_key_offset + i ]===undefined)?0:x[caml_ephe_key_offset + i];
 }
 //Provides: caml_weak_get_copy
 //Requires: caml_weak_get,caml_ephe_key_offset
@@ -66,6 +67,7 @@ function caml_weak_get_copy(x, i) {
   if (z instanceof Array) return [0, caml_obj_dup(z)];
   return y;
 }
+
 //Provides: caml_weak_check mutable
 //Requires: caml_ephe_key_offset
 function caml_weak_check(x, i) {

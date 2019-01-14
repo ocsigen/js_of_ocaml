@@ -1081,7 +1081,7 @@ let program f ?source_map p =
        List.map !O.temp_mappings ~f:(fun (pos,m) ->
             {m with
              Source_map.gen_line = pos.PP.p_line;
-             Source_map.gen_col  = pos.PP.p_col}) 
+             Source_map.gen_col  = pos.PP.p_col})
      in
      let sources = match sm.Source_map.sourceroot with
        | None -> sources
