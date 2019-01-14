@@ -47,5 +47,5 @@ opam install --keep-build-dir --verbose js_of_ocaml-lwt
 opam install --keep-build-dir --verbose js_of_ocaml-tyxml
 opam install --keep-build-dir --verbose js_of_ocaml-toplevel
 
-dune build @install @DEFAULT -j 8 --ignore-promoted-rules
+dune build @install @default -j 8 --ignore-promoted-rules
 dune runtest --ignore-promoted-rules
