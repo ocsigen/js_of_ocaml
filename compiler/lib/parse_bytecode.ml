@@ -160,6 +160,8 @@ module Debug : sig
     -> in_channel -> unit
   val create : unit -> data
   val fold : data -> (Code.Addr.t -> Instruct.debug_event -> 'a -> 'a) -> 'a -> 'a
+
+  val paths : data -> units:StringSet.t -> StringSet.t
 end = struct
 
   open Instruct
@@ -171,13 +173,19 @@ end = struct
     source        : string option;
   }
 
-  type data = (int, (debug_event * ml_unit)) Hashtbl.t * ((string * string), ml_unit) Hashtbl.t
+  type data =
+    { events_by_pc : (int, (debug_event * ml_unit)) Hashtbl.t
+    ; units : ((string * string), ml_unit) Hashtbl.t
+    }
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
-  let create () = Hashtbl.create 17, Hashtbl.create 17
+  let create () =
+    { events_by_pc = Hashtbl.create 17
+    ; units = Hashtbl.create 17
+    }
 
-  let is_empty (a,_) = Hashtbl.length a = 0
+  let is_empty t = Hashtbl.length t.events_by_pc = 0
 
   let find_ml_in_paths paths name =
     let uname = String.uncapitalize_ascii name in
@@ -191,7 +199,7 @@ end = struct
 
   let read_event_list =
     let read_paths ic = (input_value ic : string list) in
-    fun (events_by_pc, units) ~crcs ~includes ~orig ic ->
+    fun {events_by_pc; units} ~crcs ~includes ~orig ic ->
       let crcs =
         let t = Hashtbl.create 17 in
         List.iter crcs ~f:(fun (m,crc) -> Hashtbl.add t m crc);
@@ -228,7 +236,7 @@ end = struct
           ()
         )
 
-  let find_source (_events_by_pc, units) pos_fname =
+  let find_source {units;_} pos_fname =
     let set =
       Hashtbl.fold (fun (_m,p) unit acc ->
         if p = pos_fname
@@ -242,23 +250,23 @@ end = struct
     then Some (StringSet.choose set)
     else None
 
-  let read (events_by_pc, units) ~crcs ~includes ic =
+  let read t ~crcs ~includes ic =
     let len = input_binary_int ic in
     for _i = 0 to len - 1 do
       let orig = input_binary_int ic in
-      read_event_list (events_by_pc, units) ~crcs ~includes ~orig ic
+      read_event_list t ~crcs ~includes ~orig ic
     done
 
-  let find (events_by_pc,_) pc =
+  let find {events_by_pc;_} pc =
     try
       let (ev,_) = Hashtbl.find events_by_pc pc in
       IdentTable.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack, ev.ev_typenv
     with Not_found ->
       [], Env.Env_empty
 
-  let mem (tbl,_) = Hashtbl.mem tbl
+  let mem {events_by_pc;_} = Hashtbl.mem events_by_pc
 
-  let find_loc (events_by_pc,_units) ?(after = false) pc =
+  let find_loc {events_by_pc;_} ?(after = false) pc =
     try
       let (before, (ev, unit)) =
         try false, Hashtbl.find events_by_pc pc with Not_found ->
@@ -297,7 +305,17 @@ end = struct
 
   (*  let iter events_by_pc f = Hashtbl.iter f events_by_pc *)
 
-  let fold ((events_by_pc,_): data) f acc = Hashtbl.fold (fun k (e,_u) acc -> f k e acc) events_by_pc acc
+  let fold t f acc = Hashtbl.fold (fun k (e,_u) acc -> f k e acc) t.events_by_pc acc
+
+  let paths t ~units =
+    let paths =
+      Hashtbl.fold (fun _ u acc ->
+          if StringSet.mem u.module_name units
+          then u.paths :: acc
+          else acc)
+        t.units []
+    in
+    StringSet.of_list (List.concat paths)
 end
 
 (* Block analysis *)
@@ -1050,7 +1068,6 @@ and compile infos pc state instrs =
              Debug.propagate (State.stack_vars state'') args;
 
              Let (x, Closure (List.rev params, (addr, args))) :: instr)
-  
       in
       compile infos (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
     | OFFSETCLOSUREM2 ->

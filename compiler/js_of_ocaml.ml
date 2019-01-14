@@ -106,7 +106,7 @@ let f {
   let t1 = Timer.make () in
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug =
-    if source_map <> None || Config.Flag.debuginfo () then `Full else
+    if source_map <> None || Config.Flag.debuginfo () || toplevel then `Full else
     if Config.Flag.pretty () then `Names else `No
   in
   let p, cmis, d, standalone =
@@ -155,6 +155,7 @@ let f {
       Code.prepend p instrs
     else p in
   if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
+  let paths = paths @ StringSet.elements (Parse_bytecode.Debug.paths d ~units:cmis) in
   begin match output_file with
   | None ->
     let p = PseudoFs.f p cmis fs_files paths in
