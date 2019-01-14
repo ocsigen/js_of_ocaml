@@ -18,4 +18,3 @@
 
 (* [normalize_argv argv] returns a new array of arguments where '-long-option' are replaced by '--long-option' *)
 val normalize_argv : ?warn_:bool -> string array -> string array
-

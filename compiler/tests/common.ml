@@ -19,12 +19,15 @@
  *)
 
 let success_count_all = ref 0
+
 let test_count_all = ref 0
 
 let success_count = ref 0
+
 let test_count = ref 0
 
 let log_success () = incr success_count; incr test_count
+
 let log_failure s =
   incr test_count;
   Format.printf "\tFAILURE: %s" s
@@ -35,9 +38,9 @@ let log_start s =
     success_count_all := !success_count_all + !success_count;
     test_count_all := !test_count_all + !test_count;
     Format.printf "STOP: %s\n" s
-  in log_stop
+  in
+  log_stop
 
-let raw_log x =
-  Format.printf "\t\t %s" x
+let raw_log x = Format.printf "\t\t %s" x
 
 let log s = raw_log s

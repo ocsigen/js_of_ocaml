@@ -23,6 +23,6 @@ val rect_array_stringify :
   Format.formatter -> (float * float * float * float) array -> unit
 
 val stringify :
-  Format.formatter ->
-  (float * float * float, string * float, string) Scene.element array ->
-  unit
+     Format.formatter
+  -> (float * float * float, string * float, string) Scene.element array
+  -> unit

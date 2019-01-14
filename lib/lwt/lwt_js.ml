@@ -21,7 +21,7 @@
 open Js_of_ocaml
 
 let sleep d =
-  let (t, w) = Lwt.task () in
+  let t, w = Lwt.task () in
   let id = Dom_html.setTimeout (Lwt.wakeup w) (d *. 1000.) in
   Lwt.on_cancel t (fun () -> Dom_html.clearTimeout id);
   t
@@ -29,17 +29,16 @@ let sleep d =
 let yield () = sleep 0.
 
 let wakeup = function
-  | 1 -> ignore (Dom_html.window##setTimeout
-                 (Js.wrap_callback Lwt.wakeup_paused)  0.)
+  | 1 -> ignore (Dom_html.window##setTimeout (Js.wrap_callback Lwt.wakeup_paused) 0.)
   | _ -> ()
 
 let () = Lwt.register_pause_notifier wakeup
 
-
 let prerr_string s = Firebug.console##log (Js.string s)
 
 let _ =
-  Lwt.async_exception_hook := (fun exn ->
-    prerr_string "Exception during Lwt.async: ";
-    prerr_string (Printexc.to_string exn);
-    Printexc.print_backtrace stderr)
+  Lwt.async_exception_hook :=
+    fun exn ->
+      prerr_string "Exception during Lwt.async: ";
+      prerr_string (Printexc.to_string exn);
+      Printexc.print_backtrace stderr

@@ -20,12 +20,13 @@
 (** Javascript binding for Graphics lib *)
 
 open Js_of_ocaml
+
 include module type of Graphics
 
 (** {6 Initializations} *)
 
-type context
 (** type of a graphic context *)
+type context
 
 val open_graph : string -> unit
 (** Open a graphics window.

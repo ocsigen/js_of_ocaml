@@ -18,6 +18,7 @@
  *)
 
 let output = ref None
+
 let usage () =
   Format.eprintf "Usage: jsoo_listunits [options] [findlib packages|*.cmi|*.cma] @.";
   Format.eprintf " -verbose@.";
@@ -25,25 +26,31 @@ let usage () =
   Format.eprintf " -o [name]\t\tSet output filename@.";
   exit 1
 
-
 let rec scan_args acc = function
-  | ("--verbose"|"-verbose")::xs -> Jsoo_common.verbose:=true; scan_args acc xs
-  | "-o"::name::xs -> output := Some name; scan_args acc xs
-  | ("--help"|"-help"|"-h")::_ -> usage ()
-  | x :: xs -> scan_args (x::acc) xs
+  | ("--verbose" | "-verbose") :: xs ->
+      Jsoo_common.verbose := true;
+      scan_args acc xs
+  | "-o" :: name :: xs ->
+      output := Some name;
+      scan_args acc xs
+  | ("--help" | "-help" | "-h") :: _ -> usage ()
+  | x :: xs -> scan_args (x :: acc) xs
   | [] -> List.rev acc
 
 let args =
-  let args = List.tl (Array.to_list (Sys.argv)) in
+  let args = List.tl (Array.to_list Sys.argv) in
   let args = scan_args [] args in
   let all = Jsoo_common.cmis args in
-  let oc = match !output with
-    | Some x -> open_out x
-    | None -> failwith "-o <name> needed" in
-  let to_unit s =
-    Js_of_ocaml_compiler.Stdlib.String.capitalize_ascii (
-      Filename.basename (Filename.chop_suffix s ".cmi")
-    )
+  let oc =
+    match !output with Some x -> open_out x | None -> failwith "-o <name> needed"
   in
-  List.iter (fun c -> output_string oc (to_unit c); output_string oc "\n") all;
+  let to_unit s =
+    Js_of_ocaml_compiler.Stdlib.String.capitalize_ascii
+      (Filename.basename (Filename.chop_suffix s ".cmi"))
+  in
+  List.iter
+    (fun c ->
+      output_string oc (to_unit c);
+      output_string oc "\n" )
+    all;
   close_out oc
