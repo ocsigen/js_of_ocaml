@@ -35,19 +35,19 @@ type t = {
 
 let debug =
   let doc = "enable debug [$(docv)]." in
-  let all = List.map (fun s -> s,s) (Debug.available ()) in
+  let all = List.map (Debug.available ()) ~f:(fun s -> s,s) in
   let arg = Arg.(value & opt_all (list (enum all)) [] & info ["debug"] ~docv:"SECTION" ~doc) in
   Term.(pure List.flatten $ arg)
 
 let enable =
   let doc = "Enable optimization [$(docv)]." in
-  let all = List.map (fun s -> s,s) (Config.Flag.available ()) in
+  let all = List.map (Config.Flag.available ()) ~f:(fun s -> s,s) in
   let arg = Arg.(value & opt_all (list (enum all)) [] & info ["enable"] ~docv:"OPT" ~doc) in
   Term.(pure List.flatten $ arg)
 
 let disable =
   let doc = "Disable optimization [$(docv)]." in
-  let all = List.map (fun s -> s,s) (Config.Flag.available ()) in
+  let all = List.map (Config.Flag.available ()) ~f:(fun s -> s,s) in
   let arg = Arg.(value & opt_all (list (enum all)) [] & info ["disable"] ~docv:"OPT" ~doc) in
   Term.(pure List.flatten $ arg)
 
@@ -80,7 +80,7 @@ let t = Term.(
         let enable = if debuginfo then "debuginfo"::enable else enable in
         let disable = if noinline then "inline"::disable else disable in
         let disable_if_pretty name disable =
-          if pretty && not (List.mem name enable)
+          if pretty && not (List.mem name ~set:enable)
           then name :: disable
           else disable
         in
@@ -95,7 +95,7 @@ let t = Term.(
             enable;
             disable
           };
-	  quiet;
+          quiet;
           custom_header = c_header;
         }
       )
@@ -111,8 +111,8 @@ let t = Term.(
 
 
 let on_off on off t =
-  List.iter on t.enable;
-  List.iter off t.disable
+  List.iter ~f:on t.enable;
+  List.iter ~f:off t.disable
 
 let eval t =
   Config.Flag.(on_off enable disable t.optim);

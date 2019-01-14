@@ -1,7 +1,7 @@
 (executables
   (names main)
   (libraries toplevel_expect_test js_of_ocaml-ppx stdlib)
-  (flags (-linkall)))
+  (link_flags (-linkall)))
 
 (rule
   (targets ppx.mlt.corrected)

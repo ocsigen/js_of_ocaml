@@ -19,12 +19,13 @@
 
 open Js_of_ocaml
 open Js_of_ocaml_compiler
+open Js_of_ocaml_compiler.Stdlib
 let split_primitives p =
   let len = String.length p in
   let rec split beg cur =
     if cur >= len then []
     else if p.[cur] = '\000' then
-      String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
+      String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
     else
       split beg (cur + 1) in
   Array.of_list(split 0 0)
@@ -45,14 +46,12 @@ let setup = lazy (
     let unbound_primitive p =
       try ignore (Js.Unsafe.eval_string p); false with _ -> true in
     let stubs = ref [] in
-    Array.iteri
-      (fun i p ->
-         if i >= initial_primitive_count && unbound_primitive p then
-           stubs :=
-             Format.sprintf
-               "function %s(){caml_failwith(\"%s not implemented\")}" p p
-             :: !stubs)
-      prims;
+    Array.iteri prims ~f:(fun i p ->
+        if i >= initial_primitive_count && unbound_primitive p then
+          stubs :=
+            Format.sprintf
+              "function %s(){caml_failwith(\"%s not implemented\")}" p p
+            :: !stubs);
     let output_program = Driver.from_string prims s in
     let b = Buffer.create 100 in
     output_program (Pretty_print.to_buffer b);
@@ -60,7 +59,7 @@ let setup = lazy (
     Format.(pp_print_flush err_formatter ());
     flush stdout; flush stderr;
     let res = Buffer.contents b in
-    let res = String.concat "" !stubs ^ res in
+    let res = String.concat ~sep:"" !stubs ^ res in
     let res : unit -> _ = Js.Unsafe.global##toplevelEval res in
     res
   in
@@ -94,10 +93,10 @@ let refill_lexbuf s p ppf buffer len =
       try String.index_from s !p '\n' - !p + 1,false
       with _ -> String.length s - !p,true in
     let len'' = min len len' in
-    String.blit s !p buffer 0 len'';
+    String.blit ~src:s ~src_pos:!p ~dst:buffer ~dst_pos:0 ~len:len'';
     (match ppf with
      | Some ppf ->
-       Format.fprintf ppf "%s" (Bytes.sub_string buffer 0 len'');
+       Format.fprintf ppf "%s" (Bytes.sub_string buffer ~pos:0 ~len:len'');
        if nl then Format.pp_print_newline ppf ();
        Format.pp_print_flush ppf ()
      | None -> ());

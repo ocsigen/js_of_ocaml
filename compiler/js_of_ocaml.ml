@@ -73,7 +73,7 @@ let f {
     List.map include_dir  ~f:(fun d ->
       match Findlib.path_require_findlib d with
       | Some d ->
-        let pkg,d' = match String.split Filename.dir_sep d with
+        let pkg,d' = match String.split ~sep:Filename.dir_sep d with
           | [] -> assert false
           | [d] -> "js_of_ocaml",d
           | pkg::l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat in
@@ -171,13 +171,12 @@ let f {
       Driver.f ~standalone ?profile ~linkall ~global ~dynlink
         ?source_map ?custom_header fmt d p;
     );
-    Option.iter (fun file ->
+    Option.iter fs_output ~f:(fun file ->
       gen_file file (fun chan ->
         let pfs = PseudoFs.f_empty cmis fs_files paths in
         let pfs_fmt = Pretty_print.to_out_channel chan in
         Driver.f ~standalone ?profile ?custom_header ~global pfs_fmt d pfs
-      )
-    ) fs_output
+      ))
   end;
   if times () then Format.eprintf "compilation: %a@." Timer.print t;
   Debug.stop_profiling ()

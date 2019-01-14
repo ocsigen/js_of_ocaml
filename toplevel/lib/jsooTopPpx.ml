@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open Js_of_ocaml_compiler.Stdlib
+
 let ppx_rewriters = ref []
 
 let () =
@@ -26,20 +28,21 @@ let () =
 let preprocess_structure str =
   let open Ast_mapper in
   List.fold_right
-    (fun ppx_rewriter str ->
+    !ppx_rewriters
+    ~init:str
+    ~f:(fun ppx_rewriter str ->
        let mapper = ppx_rewriter [] in
        mapper.structure mapper str)
-    !ppx_rewriters
-    str
+    
 
 let preprocess_signature str =
   let open Ast_mapper in
   List.fold_right
-    (fun ppx_rewriter str ->
+    !ppx_rewriters
+    ~init:str
+    ~f:(fun ppx_rewriter str ->
        let mapper = ppx_rewriter [] in
        mapper.signature mapper str)
-    !ppx_rewriters
-    str
 
 let preprocess_phrase phrase =
   let open Parsetree in

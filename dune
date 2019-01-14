@@ -15,6 +15,12 @@ let version =
   version
 
 let () = send @@ Printf.sprintf {|
+
+(env
+ (dev
+  (flags
+   (:standard -w +a-4-40-41-42-44-48-58))))
+
 (rule
   (targets version.ml.in)
   (action (with-stdout-to %%{targets}
