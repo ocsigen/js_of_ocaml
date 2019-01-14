@@ -13,5 +13,5 @@
          -I ./ --file %{dep:scene.json} )))
 
 (alias
-  (name DEFAULT)
+  (name default)
   (deps viewer_js.js index.html))

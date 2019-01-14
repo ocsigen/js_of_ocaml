@@ -11,5 +11,5 @@
          -I ./ --file %{dep:image_info.json} --file %{dep:messages.json} --file %{dep:tree.json})))
 
 (alias
-  (name DEFAULT)
+  (name default)
   (deps hypertree.js index.html (glob_files icons/*.{png,jpg}) (glob_files thumbnails/*.{png,jpg}) ))

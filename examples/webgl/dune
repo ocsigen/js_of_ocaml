@@ -11,5 +11,5 @@
          -I ./ --file %{dep:monkey.model})))
 
 (alias
-  (name DEFAULT)
+  (name default)
   (deps webgldemo.js index.html))
