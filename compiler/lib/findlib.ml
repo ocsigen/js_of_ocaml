@@ -30,11 +30,11 @@ let rec find_in_findlib_paths ?(pkg="stdlib") paths name =
   | [] ->
     raise Not_found
   | path :: rem ->
-     let file = match path_require_findlib path with
-       | Some path ->
-          Filename.concat (Filename.concat (find_pkg_dir pkg) path) name
-       | None -> Filename.concat path name
-     in
-     if Sys.file_exists file
-     then file
-     else find_in_findlib_paths rem name
+    let file = match path_require_findlib path with
+      | Some path ->
+        Filename.concat (Filename.concat (find_pkg_dir pkg) path) name
+      | None -> Filename.concat path name
+    in
+    if Sys.file_exists file
+    then file
+    else find_in_findlib_paths rem name
