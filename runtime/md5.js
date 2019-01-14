@@ -20,7 +20,7 @@
 
 //Provides: caml_md5_chan
 //Requires: caml_md5_string, caml_string_of_array,caml_ml_channels
-//Requires: caml_raise_end_of_file, caml_create_bytes  
+//Requires: caml_raise_end_of_file, caml_create_bytes
 function caml_md5_chan(chanid,len){
   var chan = caml_ml_channels[chanid];
   var chan_len = chan.file.length();
@@ -33,8 +33,7 @@ function caml_md5_chan(chanid,len){
 
 //Provides: caml_md5_string
 //Requires: caml_string_of_array, caml_convert_string_to_bytes
-var caml_md5_string =
-function () {
+var caml_md5_string = function () {
   function add (x, y) { return (x + y) | 0; }
   function xx(q,a,b,x,s,t) {
     a = add(add(a, q), add(x, t));

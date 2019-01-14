@@ -373,7 +373,7 @@ let init () =
   ; always_required_codes = List.rev !always_included
   ; codes = []
   }
-  
+
 let resolve_deps ?(linkall = false) visited_rev used =
   (* link the special files *)
   let missing,visited_rev =

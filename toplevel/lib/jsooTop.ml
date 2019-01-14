@@ -121,13 +121,13 @@ let execute printval ?pp_code ?highlight_location  pp_answer s =
         | End_of_file ->
           raise End_of_file
         | x ->
-	        begin match highlight_location with
-	          | None -> ()
-	          | Some f ->
-	            match JsooTopError.loc x with
-	            | None -> ()
-	            | Some loc -> f loc
-	        end;
+               begin match highlight_location with
+                 | None -> ()
+                 | Some f ->
+                   match JsooTopError.loc x with
+                   | None -> ()
+                   | Some loc -> f loc
+               end;
           Errors.report_error Format.err_formatter x;
       done
     with End_of_file -> ()

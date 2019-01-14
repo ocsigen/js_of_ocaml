@@ -298,7 +298,7 @@ function caml_int64_of_string(s) {
   var i = r[0], sign = r[1], base = r[2];
   var base64 = caml_int64_of_int32(base);
   var threshold =
-    caml_int64_udivmod([255, 0xffffff, 0xfffffff, 0xffff], base64)[1];
+      caml_int64_udivmod([255, 0xffffff, 0xfffffff, 0xffff], base64)[1];
   var c = caml_string_unsafe_get(s, i);
   var d = caml_parse_digit(c);
   if (d < 0 || d >= base) caml_failwith("int_of_string");

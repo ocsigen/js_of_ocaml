@@ -68,7 +68,7 @@ let f {
       let lex = Parse_js.lexer_from_file file in
       try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi))
   in
-  
+
   let p =
     if use_stdin
     then

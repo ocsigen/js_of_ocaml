@@ -43,7 +43,7 @@ let take_snapshot () =
 
 let debugs : (string * bool ref) list ref = ref []
 
-let available () = List.map !debugs ~f:fst 
+let available () = List.map !debugs ~f:fst
 
 let find s =
   let state =

@@ -108,8 +108,8 @@ function caml_parse_engine(tables, env, cmd, arg)
       if (env[env_curr_char] >= 0) { cmd = testshift; break; }
       res = READ_TOKEN;
       break exit;
-                                  /* The ML code calls the lexer and updates */
-                                  /* symb_start and symb_end */
+      /* The ML code calls the lexer and updates */
+      /* symb_start and symb_end */
     case 1://TOKEN_READ:
       if (arg instanceof Array) {
         env[env_curr_char] = tables[tbl_transl_block][arg[0] + 1];
@@ -139,7 +139,7 @@ function caml_parse_engine(tables, env, cmd, arg)
         break exit;
       }
       // Fall through
-                                  /* The ML code calls the error function */
+      /* The ML code calls the error function */
     case 5://ERROR_DETECTED:
       if (errflag < 3) {
         errflag = 3;
@@ -152,13 +152,13 @@ function caml_parse_engine(tables, env, cmd, arg)
             cmd = shift_recover; break;
           } else {
             if (sp <= env[env_stackbase]) return RAISE_PARSE_ERROR;
-                                    /* The ML code raises Parse_error */
+            /* The ML code raises Parse_error */
             sp--;
           }
         }
       } else {
         if (env[env_curr_char] == 0) return RAISE_PARSE_ERROR;
-                                    /* The ML code raises Parse_error */
+        /* The ML code raises Parse_error */
         env[env_curr_char] = -1;
         cmd = loop; break;
       }
@@ -175,7 +175,7 @@ function caml_parse_engine(tables, env, cmd, arg)
         break exit;
       }
       // Fall through
-                                   /* The ML code resizes the stacks */
+      /* The ML code resizes the stacks */
     case 2://STACKS_GROWN_1:
       env[env_s_stack][sp + 1] = state;
       env[env_v_stack][sp + 1] = env[env_lval];
@@ -204,11 +204,11 @@ function caml_parse_engine(tables, env, cmd, arg)
         break exit;
       }
       // Fall through
-                                  /* The ML code resizes the stacks */
+      /* The ML code resizes the stacks */
     case 3://STACKS_GROWN_2:
       res = COMPUTE_SEMANTIC_ACTION;
       break exit;
-                                  /* The ML code calls the semantic action */
+      /* The ML code calls the semantic action */
     case 4://SEMANTIC_ACTION_COMPUTED:
       env[env_s_stack][sp + 1] = state;
       env[env_v_stack][sp + 1] = arg;
@@ -219,7 +219,7 @@ function caml_parse_engine(tables, env, cmd, arg)
         env[env_symb_start_stack][sp + 1] = env[env_symb_end_stack][asp + 1];
       }
       cmd = loop; break;
-                                  /* Should not happen */
+      /* Should not happen */
     default:
       return RAISE_PARSE_ERROR;
     }

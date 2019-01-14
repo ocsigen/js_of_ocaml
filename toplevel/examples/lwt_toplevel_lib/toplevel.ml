@@ -143,7 +143,7 @@ let setup_examples ~container ~textbox =
       let line = input_line ic in
       match Regexp.string_match r line 0 with
       | Some res ->
-	 let name = match Regexp.matched_group res 1 with Some s -> s | None -> assert false in
+        let name = match Regexp.matched_group res 1 with Some s -> s | None -> assert false in
          all := `Title name :: !all
       | None -> all := `Content line :: !all
     done;
@@ -163,7 +163,7 @@ let setup_examples ~container ~textbox =
               textbox##focus;
               Lwt.return_unit);
             true
-	 )] [txt name]) in
+        )] [txt name]) in
       Dom.appendChild example_container (Tyxml_js.To_dom.of_a a);
       ""
     ) "" !all in
@@ -177,7 +177,7 @@ let parse_hash () =
 
 let rec iter_on_sharp ~f x =
   Js.Opt.iter (Dom_html.CoerceTo.element x)
-	      (fun e -> if Js.to_bool (e##.classList##contains (Js.string "sharp")) then f e);
+             (fun e -> if Js.to_bool (e##.classList##contains (Js.string "sharp")) then f e);
   match Js.Opt.to_option x##.nextSibling with
   | None -> ()
   | Some n -> iter_on_sharp ~f n
@@ -189,8 +189,8 @@ let setup_share_button ~output =
       (* get all ocaml code *)
       let code = ref [] in
       Js.Opt.iter
-	(output##.firstChild)
-	(iter_on_sharp ~f:(fun e ->
+       (output##.firstChild)
+       (iter_on_sharp ~f:(fun e ->
           code := Js.Opt.case (e##.textContent)
                     (fun () -> "")
                     (Js.to_string) :: !code));
@@ -215,9 +215,9 @@ let setup_share_button ~output =
         if is_file
         then failwith "Cannot shorten url with file scheme"
         else
-	  let uri = Printf.sprintf "http://is.gd/create.php?format=json&url=%s" (Url.urlencode uri) in
+         let uri = Printf.sprintf "http://is.gd/create.php?format=json&url=%s" (Url.urlencode uri) in
           Lwt.bind (Js_of_ocaml_lwt.Jsonp.call uri) (fun o ->
-	    let str = Js.to_string o##.shorturl in
+           let str = Js.to_string o##.shorturl in
             append_url str;
             Lwt.return_unit)
       )
@@ -270,7 +270,7 @@ module History = struct
       match Js.Opt.to_option (s##getItem (Js.string "history")) with
       | None -> raise Not_found
       | Some s -> let a = Json.unsafe_input s in
-		  data:=a; idx:=Array.length a - 1
+                data:=a; idx:=Array.length a - 1
     with _ -> ()
 
   let push text =

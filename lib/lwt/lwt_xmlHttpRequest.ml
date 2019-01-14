@@ -26,8 +26,8 @@ let encode_url l =
   String.concat "&"
     (List.map
        (function
-	 | name,`String s -> ((Url.urlencode name) ^ "=" ^ (Url.urlencode (to_string s)))
-	 | name,`File s -> ((Url.urlencode name) ^ "=" ^ (Url.urlencode (to_string (s##.name))))
+        | name,`String s -> ((Url.urlencode name) ^ "=" ^ (Url.urlencode (to_string s)))
+        | name,`File s -> ((Url.urlencode name) ^ "=" ^ (Url.urlencode (to_string (s##.name))))
 ) l)
 
 (* Higher level interface: *)
@@ -52,12 +52,12 @@ let default_response url code headers req =
     content = Js.to_string req##.responseText;
     content_xml =
       (fun () ->
-	match Js.Opt.to_option (req##.responseXML) with
-	  | None -> None
-	  | Some doc ->
-	    if (Js.some doc##.documentElement) == Js.null
-	    then None
-	    else Some doc);
+       match Js.Opt.to_option (req##.responseXML) with
+         | None -> None
+         | Some doc ->
+           if (Js.some doc##.documentElement) == Js.null
+           then None
+           else Some doc);
     headers = headers
   }
 

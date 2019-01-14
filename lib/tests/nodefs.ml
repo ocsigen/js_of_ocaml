@@ -8,4 +8,4 @@ let () =
       done
     with End_of_file -> ()
   in
-  ()          
+  ()  

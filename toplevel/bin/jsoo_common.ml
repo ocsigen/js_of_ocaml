@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 open Js_of_ocaml_compiler.Stdlib
-  
+
 let verbose = ref false
 
 let input_s ic size =
@@ -118,4 +118,4 @@ let cmis files =
     match kind file with
     | `Pkg pkg -> cmis_of_package pkg @ fs
     | `Cmi s -> read_cmi ~dir:"." s :: fs
-    | `Cma s -> cmis_of_cma ~dir:"." s @ fs) 
+    | `Cma s -> cmis_of_cma ~dir:"." s @ fs)

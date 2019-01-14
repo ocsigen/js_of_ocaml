@@ -20,7 +20,7 @@
 open Stdlib
 open Code
 (****)
-    
+
 let pure_expr pure_funs e =
   match e with
     Const _  | Block _ | Field _ | Closure _ | Constant _ ->

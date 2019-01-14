@@ -60,8 +60,8 @@ let div_elt =
   Tyxml_js.(Html.(
     div [
       h4 [pcdata "Uptime is ";
-	  R.Html.pcdata (React.S.map (fun s -> string_of_int (int_of_float s)) time_signal);
-	  pcdata " s"];
+         R.Html.pcdata (React.S.map (fun s -> string_of_int (int_of_float s)) time_signal);
+         pcdata " s"];
       ul_elt
     ]))
 let _ = display div_elt

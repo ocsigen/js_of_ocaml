@@ -64,7 +64,7 @@ let get_closures (_, blocks, _) =
   Addr.Map.fold
     (fun _ block closures ->
        List.fold_left block.body
-         ~init:closures 
+         ~init:closures
          ~f:(fun closures i ->
             match i with
               Let (x, Closure (l, cont)) ->

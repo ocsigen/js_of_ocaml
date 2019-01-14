@@ -50,8 +50,8 @@
                 Date.prototype.toJSON = function (key) {
                     function f(n) {
                         // Format integers to have at least two digits.
-                        return n < 10 
-                            ? '0' + n 
+                        return n < 10
+                            ? '0' + n
                             : n;
                     }
 
@@ -98,8 +98,8 @@
             // text is '[\n\t"e",\n\t{\n\t\t"pluribus": "unum"\n\t}\n]'
 
             text = JSON.stringify([new Date()], function (key, value) {
-                return this[key] instanceof Date 
-                    ? 'Date(' + this[key] + ')' 
+                return this[key] instanceof Date
+                    ? 'Date(' + this[key] + ')'
                     : value;
             });
             // text is '["Date(---current time---)"]'
@@ -151,8 +151,8 @@
     redistribute.
 */
 
-/*jslint 
-    eval, for, this 
+/*jslint
+    eval, for, this
 */
 
 /*property
@@ -174,7 +174,7 @@ if (typeof JSON !== 'object') {
 
 (function () {
     'use strict';
-    
+ 
     var rx_one = /^[\],:{}\s]*$/,
         rx_two = /\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g,
         rx_three = /"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g,
@@ -184,11 +184,11 @@ if (typeof JSON !== 'object') {
 
     function f(n) {
         // Format integers to have at least two digits.
-        return n < 10 
-            ? '0' + n 
+        return n < 10
+            ? '0' + n
             : n;
     }
-    
+ 
     function this_value() {
         return this.valueOf();
     }
@@ -226,13 +226,13 @@ if (typeof JSON !== 'object') {
 // sequences.
 
         rx_escapable.lastIndex = 0;
-        return rx_escapable.test(string) 
+        return rx_escapable.test(string)
             ? '"' + string.replace(rx_escapable, function (a) {
                 var c = meta[a];
                 return typeof c === 'string'
                     ? c
                     : '\\u' + ('0000' + a.charCodeAt(0).toString(16)).slice(-4);
-            }) + '"' 
+            }) + '"'
             : '"' + string + '"';
     }
 
@@ -273,8 +273,8 @@ if (typeof JSON !== 'object') {
 
 // JSON numbers must be finite. Encode non-finite numbers as null.
 
-            return isFinite(value) 
-                ? String(value) 
+            return isFinite(value)
+                ? String(value)
                 : 'null';
 
         case 'boolean':
@@ -337,8 +337,8 @@ if (typeof JSON !== 'object') {
                         v = str(k, value);
                         if (v) {
                             partial.push(quote(k) + (
-                                gap 
-                                    ? ': ' 
+                                gap
+                                    ? ': '
                                     : ':'
                             ) + v);
                         }
@@ -353,8 +353,8 @@ if (typeof JSON !== 'object') {
                         v = str(k, value);
                         if (v) {
                             partial.push(quote(k) + (
-                                gap 
-                                    ? ': ' 
+                                gap
+                                    ? ': '
                                     : ':'
                             ) + v);
                         }

@@ -13,7 +13,7 @@ function bigstring_alloc(_,size){
 //Will be defined in Core_kernel
 function bigstring_destroy_stub(v_bstr) {
   if (v_bstr.data2 != null) {
-      caml_invalid_argument("bigstring_destroy: unsupported kind");
+    caml_invalid_argument("bigstring_destroy: unsupported kind");
   }
 
   if (v_bstr.hasOwnProperty('__is_deallocated')) {
@@ -128,5 +128,5 @@ function bigstring_of_array_buffer(ab) {
 //Provides: caml_hash_mix_bigstring
 //Requires: caml_hash_mix_string_arr
 function caml_hash_mix_bigstring(h, bs) {
-    return caml_hash_mix_string_arr(h,bs.data);
+  return caml_hash_mix_string_arr(h,bs.data);
 }

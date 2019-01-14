@@ -106,7 +106,7 @@ BigStringReader.prototype = {
     var s = this.s, i = this.i;
     this.i = i + 4;
     return (caml_ba_get_1(s,i)   << 24) | (caml_ba_get_1(s,i+1) << 16) |
-	   (caml_ba_get_1(s,i+2) << 8)  | caml_ba_get_1(s,i+3);
+      (caml_ba_get_1(s,i+2) << 8)  | caml_ba_get_1(s,i+3);
   },
   readstr:function (len) {
     var i = this.i;
@@ -328,9 +328,9 @@ function caml_input_value_from_reader(reader, ofs) {
 function caml_marshal_data_size (s, ofs) {
   function get32(s,i) {
     return (caml_bytes_unsafe_get(s, i) << 24) |
-           (caml_bytes_unsafe_get(s, i + 1) << 16) |
-           (caml_bytes_unsafe_get(s, i + 2) << 8) |
-            caml_bytes_unsafe_get(s, i + 3);
+      (caml_bytes_unsafe_get(s, i + 1) << 16) |
+      (caml_bytes_unsafe_get(s, i + 2) << 8) |
+      caml_bytes_unsafe_get(s, i + 3);
   }
   if (get32(s, ofs) != (0x8495A6BE|0))
     caml_failwith("Marshal.data_size: bad object");
@@ -405,18 +405,18 @@ var caml_output_val = function (){
       } else {
         if (v != (v|0)){
           var type_of_v = typeof v;
-//
-// If a float happens to be an integer it is serialized as an integer
-// (Js_of_ocaml cannot tell whether the type of an integer number is
-// float or integer.) This can result in unexpected crashes when
-// unmarshalling using the standard runtime. It seems better to
-// systematically fail on marshalling.
-//
-//          if(type_of_v != "number")
+          //
+          // If a float happens to be an integer it is serialized as an integer
+          // (Js_of_ocaml cannot tell whether the type of an integer number is
+          // float or integer.) This can result in unexpected crashes when
+          // unmarshalling using the standard runtime. It seems better to
+          // systematically fail on marshalling.
+          //
+          //          if(type_of_v != "number")
           caml_failwith("output_value: abstract value ("+type_of_v+")");
-//          var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
-//          writer.write (8, 0x0B /*cst.CODE_DOUBLE_BIG*/);
-//          for(var i = 0; i<8; i++){writer.write(8,t[i])}
+          //          var t = caml_int64_to_bytes(caml_int64_bits_of_float(v));
+          //          writer.write (8, 0x0B /*cst.CODE_DOUBLE_BIG*/);
+          //          for(var i = 0; i<8; i++){writer.write(8,t[i])}
         }
         else if (v >= 0 && v < 0x40) {
           writer.write (8, 0X40 /*cst.PREFIX_SMALL_INT*/ + v);

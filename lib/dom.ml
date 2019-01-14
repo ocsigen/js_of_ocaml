@@ -31,8 +31,8 @@ let list_of_nodeList (nodeList:'a nodeList t) =
     if i < length
     then
       match Opt.to_option (nodeList##item i) with
-	| None -> add_item acc (i+1)
-	| Some e -> add_item (e::acc) (i+1)
+       | None -> add_item acc (i+1)
+       | Some e -> add_item (e::acc) (i+1)
     else List.rev acc
   in
   add_item [] 0
@@ -237,9 +237,9 @@ let handler f =
         let res = f e in
         if not (Js.to_bool res)
         then e##.returnValue := res;
-	res
+       res
       else
-	let res = f e in
+       let res = f e in
         if not (Js.to_bool res) then
           (Js.Unsafe.coerce e)##preventDefault;
         res))

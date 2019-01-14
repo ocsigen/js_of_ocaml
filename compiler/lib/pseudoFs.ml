@@ -18,7 +18,7 @@
  *)
 
 open Stdlib
-    
+
 let expand_path exts real virt =
   let rec loop realfile virtfile acc =
     if try Sys.is_directory realfile with _ -> false
@@ -39,7 +39,7 @@ let expand_path exts real virt =
         then (virtfile, realfile) :: acc
         else acc
       with exc ->
-	warn "ignoring %s: %s@." realfile (Printexc.to_string exc);
+       warn "ignoring %s: %s@." realfile (Printexc.to_string exc);
  acc
   in loop real virt []
 

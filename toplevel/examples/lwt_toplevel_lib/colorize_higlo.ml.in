@@ -26,8 +26,8 @@ let highlight (`Pos from_) to_ e =
       match Js.Opt.to_option (Dom_html.CoerceTo.element e) with
       | None -> pos
       | Some e ->
-	 let size = Js.Opt.case (e##.textContent) (fun () -> 0) (fun t -> t##.length) in
-	 if pos + size > from_ && (to_ = `Last || `Pos pos < to_)
-	 then e##.classList##add (Js.string "errorloc");
-	 pos + size) 0 (Dom.list_of_nodeList (e##.childNodes)) in
+        let size = Js.Opt.case (e##.textContent) (fun () -> 0) (fun t -> t##.length) in
+        if pos + size > from_ && (to_ = `Last || `Pos pos < to_)
+        then e##.classList##add (Js.string "errorloc");
+        pos + size) 0 (Dom.list_of_nodeList (e##.childNodes)) in
   ();;
