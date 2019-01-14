@@ -32,10 +32,16 @@
 
 (rule
  (targets test_dynlink.js)
- (action (run %{bin:js_of_ocaml} --toplevel %{dep:test_dynlink.cmo} --pretty -I ./)))
+ (action (run %{bin:js_of_ocaml}
+          -I ./
+          --pretty
+          --toplevel
+          --noruntime %{lib:js_of_ocaml-compiler:runtime.js}
+          %{dep:test_dynlink.cmo})))
 
 (rule
  (targets export.txt)
+ (deps toplevel.bc)
  (action (run
     jsoo_listunits -o %{targets}
       stdlib
