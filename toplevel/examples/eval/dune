@@ -8,6 +8,7 @@
 
 (rule
  (targets export.txt)
+ (deps eval.bc)
  (action (run jsoo_listunits -o %{targets} stdlib)))
 
 (rule
