@@ -47,5 +47,9 @@ opam install --keep-build-dir --verbose js_of_ocaml-lwt
 opam install --keep-build-dir --verbose js_of_ocaml-tyxml
 opam install --keep-build-dir --verbose js_of_ocaml-toplevel
 
-dune build @install @default -j 8 --ignore-promoted-rules
-dune runtest --ignore-promoted-rules
+dune build @install -j 8 --ignore-promoted-rules
+
+opam install base64 cohttp-lwt-unix menhir
+
+dune build @default -j 8
+dune runtest

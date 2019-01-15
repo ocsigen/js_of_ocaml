@@ -8,7 +8,10 @@
     js_of_ocaml-lwt
     base64
     ;; not used directly
+    graphics
+    js_of_ocaml.deriving
     bigarray
+    react reactiveData
    (select ocp_indent.ml from
     (ocp-indent.lib -> ocp_indent.ml.in)
     (               -> ocp_indent_fake.ml.in))
