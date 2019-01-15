@@ -114,7 +114,11 @@ module Char = struct
     else c
 end
 
-module Bytes = BytesLabels
+module Bytes = struct
+  include BytesLabels
+  let sub_string b ~pos:ofs ~len = unsafe_to_string (Bytes.sub b ofs len)
+
+end
 
 module String = struct
   include StringLabels
