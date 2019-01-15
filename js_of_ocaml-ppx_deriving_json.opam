@@ -10,7 +10,7 @@ version: "dev"
 build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "ocaml" {>= "4.02.0"}
+  "ocaml" {> "4.03.0"}
   "dune" {build & >= "1.2"}
   "js_of_ocaml"
   "ppx_tools"

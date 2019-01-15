@@ -3,33 +3,30 @@ language: c
 matrix:
   include:
     - os: linux
-      env: OCAML_VERSION=4.02
+      env: OCAML_VERSION=4.02 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.03
+      env: OCAML_VERSION=4.03 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.04
+      env: OCAML_VERSION=4.04 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.05
+      env: OCAML_VERSION=4.05 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.06
+      env: OCAML_VERSION=4.06 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.07
+      env: OCAML_VERSION=4.07 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.07 ALL_TARGETS=yes
+      env: OCAML_VERSION=4.07 MODE=build
       name: "4.07 all targets"
     - os: osx
       env: OCAML_VERSION=system
 
   allow_failures:
     - os: linux
-      env: OCAML_VERSION=4.02
+      env: OCAML_VERSION=4.02 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.03
+      env: OCAML_VERSION=4.03 MODE=opam
     - os: osx
-      env: OCAML_VERSION=system
-    - os: linux
-      env: OCAML_VERSION=4.07 ALL_TARGETS=yes
-      name: "4.07 all targets"
+      env: OCAML_VERSION=system MODE=opam
 
   fast_finish: true
 
