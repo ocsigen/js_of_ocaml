@@ -12,8 +12,7 @@ then
     echo Expected OCaml $OCAML_VERSION, but $ACTUAL_COMPILER is installed
 fi
 
-PACKAGES=\
-        js_of_ocaml \
+PACKAGES= js_of_ocaml \
         js_of_ocaml-lwt \
         js_of_ocaml-compiler \
         js_of_ocaml-ocamlbuild \
@@ -21,7 +20,6 @@ PACKAGES=\
         js_of_ocaml-ppx \
         js_of_ocaml-ppx_deriving_json \
         js_of_ocaml-tyxml
-
 
 case $MODE in
     opam)
