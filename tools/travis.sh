@@ -38,17 +38,22 @@ opam install -y --deps-only \
      js_of_ocaml-ppx_deriving_json \
      js_of_ocaml-tyxml
 
-opam install --keep-build-dir --verbose js_of_ocaml-compiler
-opam install --keep-build-dir --verbose js_of_ocaml-ocamlbuild
-opam install --keep-build-dir --verbose js_of_ocaml
-opam install --keep-build-dir --verbose js_of_ocaml-ppx
-opam install --keep-build-dir --verbose js_of_ocaml-ppx_deriving_json
-opam install --keep-build-dir --verbose js_of_ocaml-lwt
-opam install --keep-build-dir --verbose js_of_ocaml-tyxml
-opam install --keep-build-dir --verbose js_of_ocaml-toplevel
+opam install -y \
+     js_of_ocaml \
+     js_of_ocaml-lwt \
+     js_of_ocaml-compiler \
+     js_of_ocaml-ocamlbuild \
+     js_of_ocaml-toplevel \
+     js_of_ocaml-ppx \
+     js_of_ocaml-ppx_deriving_json \
+     js_of_ocaml-tyxml
+
+opam install -y menhir
 
 dune build @install -j 8 --ignore-promoted-rules
 
-opam install -y base64 cohttp-lwt-unix menhir
-
+if [ "$ALL_TARGETS" == "true" ]
+then
+opam install -y base64 cohttp-lwt-unix
 dune build @runtest @default -j 8
+fi

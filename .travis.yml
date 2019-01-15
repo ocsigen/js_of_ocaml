@@ -3,6 +3,10 @@ language: c
 matrix:
   include:
     - os: linux
+      env: OCAML_VERSION=4.02
+    - os: linux
+      env: OCAML_VERSION=4.03
+    - os: linux
       env: OCAML_VERSION=4.04
     - os: linux
       env: OCAML_VERSION=4.05
@@ -10,6 +14,11 @@ matrix:
       env: OCAML_VERSION=4.06
     - os: linux
       env: OCAML_VERSION=4.07
+    - os: linux
+      env: OCAML_VERSION=4.07 ALL_TARGETS=yes
+      name: "4.07 all targets"
+    - os: osx
+      env: OCAML_VERSION=system
 
   allow_failures:
     - os: linux
@@ -18,6 +27,9 @@ matrix:
       env: OCAML_VERSION=4.03
     - os: osx
       env: OCAML_VERSION=system
+    - os: linux
+      env: OCAML_VERSION=4.07 ALL_TARGETS=yes
+      name: "4.07 all targets"
 
   fast_finish: true
 
