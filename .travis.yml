@@ -18,7 +18,7 @@ matrix:
       env: OCAML_VERSION=4.07 MODE=build
       name: "4.07 all targets"
     - os: osx
-      env: OCAML_VERSION=system
+      env: OCAML_VERSION=system MODE=opam
 
   allow_failures:
     - os: linux

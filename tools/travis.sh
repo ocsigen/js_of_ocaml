@@ -41,14 +41,6 @@ case $MODE in
         ;;
     build)
         opam install -y --deps-only $PACKAGES
-             js_of_ocaml \
-             js_of_ocaml-lwt \
-             js_of_ocaml-compiler \
-             js_of_ocaml-ocamlbuild \
-             js_of_ocaml-toplevel \
-             js_of_ocaml-ppx \
-             js_of_ocaml-ppx_deriving_json \
-             js_of_ocaml-tyxml
         opam install -y base64 cohttp-lwt-unix menhir
         dune build @runtest @default -j 8
         ;;
