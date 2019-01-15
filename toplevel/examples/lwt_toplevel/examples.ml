@@ -34,6 +34,8 @@ end
 (** Reactive dom *)
 open Js_of_ocaml
 
+open Js_of_ocaml_lwt
+
 let display x =
   Dom.appendChild (Dom_html.getElementById "output") (Tyxml_js.To_dom.of_element x)
 
@@ -94,6 +96,8 @@ let () =
       moveto x y; draw_char key )
 
 (** Graphics: PingPong *)
+open Js_of_ocaml_lwt
+
 open Graphics_js
 
 let c = 3
