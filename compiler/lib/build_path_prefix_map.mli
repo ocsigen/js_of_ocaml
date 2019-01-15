@@ -25,6 +25,8 @@ type path = string
 type path_prefix = string
 type error_message = string
 
+type ('a, 'b) result = Ok of 'a | Error of 'b
+
 val encode_prefix : path_prefix -> string
 val decode_prefix : string -> (path_prefix, error_message) result
 

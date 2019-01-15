@@ -17,6 +17,8 @@ type path = string
 type path_prefix = string
 type error_message = string
 
+type ('a, 'b) result = Ok of 'a | Error of 'b
+
 let errorf fmt = Printf.kprintf (fun err -> Error err) fmt
 
 let encode_prefix str =
@@ -80,8 +82,9 @@ let encode_map map =
   List.map encode_elem map
   |> String.concat ":"
 
+exception Shortcut of error_message
+
 let decode_map str =
-  let exception Shortcut of error_message in
   let decode_or_empty = function
     | "" -> None
     | pair ->
@@ -90,7 +93,7 @@ let decode_map str =
         | Error err -> raise (Shortcut err)
       end
   in
-  let pairs = String.split_on_char ':' str in
+  let pairs = Stdlib.String.split_char ~sep:':' str in
   match List.map decode_or_empty pairs with
   | exception (Shortcut err) -> Error err
   | map -> Ok map
@@ -100,7 +103,7 @@ let rewrite_opt prefix_map path =
     | None -> false
     | Some { target = _; source } ->
       String.length source <= String.length path
-      && String.equal source (String.sub path 0 (String.length source))
+      && Stdlib.String.equal source (String.sub path 0 (String.length source))
   in
   match
     List.find is_prefix

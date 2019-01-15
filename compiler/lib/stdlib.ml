@@ -121,6 +121,7 @@ module Bytes = struct
 end
 
 module String = struct
+  let equal (a : string) (b : string) = a = b [@@ocaml.warning "-32"]
   include StringLabels
   let is_ascii s =
     let res = ref true in
