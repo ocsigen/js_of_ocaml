@@ -44,7 +44,13 @@
 
 (rule
  (targets export.txt)
- (deps toplevel.bc)
+ (deps
+   (package js_of_ocaml-ppx)
+   (package js_of_ocaml)
+   (package js_of_ocaml-lwt)
+   (package js_of_ocaml-tyxml)
+   (package js_of_ocaml-toplevel)
+ )
  (action (run
     jsoo_listunits -o %{targets}
       stdlib
