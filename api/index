@@ -32,7 +32,7 @@ Js_of_ocaml_tyxml
 {1 Toplevel - API Reference}
 
 {!modules:
-Js_of_ocaml_compiler
+Js_of_ocaml_toplevel
 }
 
 {1 The ocamlbuild plugin - API Reference}

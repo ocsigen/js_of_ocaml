@@ -124,6 +124,11 @@ let _ =
         in
         let dune = Dune.read ~path in
         let mli = find_mli ~path |> ignore_pp in
+        let mk ext = Filename.concat path (dune.lib_name ^ ext) in
+        let ml =
+          let ml = mk ".ml" and mli = mk ".mli" in
+          if Sys.file_exists ml && not (Sys.file_exists mli) then [ml] else []
+        in
         let opn =
           if dune.wrapped
           then
@@ -135,7 +140,7 @@ let _ =
         in
         let objs = find_objs ~path in
         let packages_dir = List.map (dune.public_name :: dune.deps) ~f:find_package in
-        ocamldoc_args ~inc:(packages_dir @ objs) ?opn mli )
+        ocamldoc_args ~inc:(packages_dir @ objs) ?opn (mli @ ml) )
   in
   let command = List.flatten (ocamldoc @ args) |> String.concat ~sep:" " in
   print_endline command;
