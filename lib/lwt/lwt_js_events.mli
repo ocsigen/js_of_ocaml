@@ -64,8 +64,7 @@ val make_event :
   -> 'a Js.t Lwt.t
 (** [make_event ev target] creates a Lwt thread that waits
     for the event [ev] to happen on [target] (once).
-    This thread is cancellable using
-    {% <<a_api project="lwt" | val Lwt.cancel>> %}.
+    This thread isa cancellable using [Lwt.cancel].
     If you set the optional parameter [~use_capture:true],
     the event will be caught during the capture phase,
     otherwise it is caught during the bubbling phase
@@ -89,8 +88,7 @@ val seq_loop :
 
     [let clicks ?use_capture t = seq_loop click ?use_capture t]
 
-    The thread returned is cancellable using
-    {% <<a_api project="lwt" | val Lwt.cancel>> %}.
+    The thread returned is cancellable using [Lwt.cancel].
     In order for the loop thread to be canceled from within the handler,
     the latter receives the former as its second parameter.
 

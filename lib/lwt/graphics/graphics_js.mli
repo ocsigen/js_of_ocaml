@@ -23,7 +23,7 @@ open Js_of_ocaml
 
 include module type of Graphics
 
-(** {6 Initializations} *)
+(** {2 Initializations} *)
 
 (** type of a graphic context *)
 type context
@@ -47,13 +47,13 @@ val get_context : unit -> context
 val set_context : context -> unit
 (** Set the current context *)
 
-(** {6 Mouse and keyboard events} *)
+(** {2 Mouse and keyboard events} *)
 
 val loop : event list -> (status -> unit) -> unit
 (** Loops forever and listen to the given events. Those events automatically
     returns a status record, which is used by the function given in argument. *)
 
-(** {6 Mouse and keyboard polling} *)
+(** {2 Mouse and keyboard polling} *)
 
 val mouse_pos : unit -> (int * int) Lwt.t
 (** Return the position of the mouse cursor, relative to the
