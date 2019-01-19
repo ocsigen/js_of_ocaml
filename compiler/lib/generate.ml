@@ -1195,7 +1195,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
            'typeof x==="number"'; if the string is shared,
            less efficient code is generated. *)
         let ((px, cx), queue) = access_queue' ~ctx  queue x in
-        (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), str_js "number"),
+        (bool (J.EBin(J.EqEqEq, J.EUn (J.Typeof, cx), str_js "number")),
          px, queue)
       | Ult, [x; y] ->
         let ((px, cx), queue) = access_queue' ~ctx  queue x in

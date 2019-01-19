@@ -30,7 +30,7 @@ let log_success () = incr success_count; incr test_count
 
 let log_failure s =
   incr test_count;
-  Format.printf "\tFAILURE: %s" s
+  Format.printf "\tFAILURE: %s\n" s
 
 let log_start s =
   Format.printf "START: %s\n" s;

@@ -23,3 +23,4 @@ module GI507 = GI507
 module Match_with_exn = Match_with_exn
 module Mutable_closure = Mutable_closure
 module Obj_dup = Obj_dup
+module Is_int = Is_int
