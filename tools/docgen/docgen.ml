@@ -91,7 +91,8 @@ module Dune = struct
     {lib_name; wrapped; deps; public_name}
 end
 
-let ocamldoc ~generator ~output = [["ocamldoc.opt"]; ["-d"; output]; ["-g"; generator]]
+let ocamldoc ~generator ~output ~intro =
+  [["ocamldoc.opt"]; ["-d"; output]; ["-g"; generator]; ["-intro"; intro]]
 
 let ocamldoc_args ~inc ?opn files =
   [ List.map inc ~f:(fun i -> ["-I"; i]) |> List.concat
@@ -103,19 +104,19 @@ let paths = ref []
 
 let wikidoc = ref ""
 
-let index = ref ""
+let intro = ref ""
 
 let () =
   Arg.parse
-    ["-wikidoc", Set_string wikidoc, ""; "-index", Set_string index, ""]
+    ["-wikidoc", Set_string wikidoc, ""; "-intro", Set_string intro, ""]
     (fun s -> paths := !paths @ [s])
     "read source"
 
 let _ =
   if !wikidoc = "" then failwith "please provide -wikidoc";
   if not (Sys.file_exists !wikidoc) then failwith "wikidoc not found";
-  if !index = "" then failwith "please provide -index";
-  let ocamldoc = ocamldoc ~generator:!wikidoc ~output:"." in
+  if !intro = "" then failwith "please provide -intro";
+  let ocamldoc = ocamldoc ~generator:!wikidoc ~output:"." ~intro:!intro in
   let args =
     List.map !paths ~f:(fun path ->
         let path =

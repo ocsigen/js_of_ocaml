@@ -11,7 +11,7 @@
   (action (run
     %{dep:../tools/docgen/docgen.exe}
       -wikidoc %{dep:../tools/wikidoc/odoc_wiki.cmxs}
-      -index %{dep:index}
+      -intro %{dep:index}
       %{dep:../lib/js_of_ocaml/dune}
       %{dep:../lib/deriving_json/dune}
       %{dep:../lib/lwt/dune}
