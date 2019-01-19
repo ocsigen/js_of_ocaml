@@ -1,11 +1,20 @@
 ===== 3.4.0 (??????????) - ????????? =====
  * Features/Changes
  ** Compiler: Support reproducible builds by using BUILD_PATH_PREFIX_MAP
+ ** Compiler: Remove support for ocaml < 4.02.3
+ ** Compiler: use paths from debug info when looking to looking cmis to embed
+ ** Compiler: refactoring, renaming
+ ** Misc: format part of repo with ocamlformat
+ ** Misc: dunify the build of the toplevel
+ ** Lib: wrap js_of_ocaml-lwt, js_of_ocaml-tyxml, js_of_ocaml-toplevel, js_of_ocaml-compiler
+ ** Runtime: dont use deprecated [new Buffer] on nodejs (#726)
 
  * Bug fixes:
  ** Compiler: fix compilation of empty cma
  ** Compiler: fix js parser with keyword as ident
  ** Compiler, Runtime: make --setenv work with Sys.getenv_opt
+ ** Compiler: fix miscompilation of Obj.is_int
+ ** Compiler: fix quadratic behaviour in findlib.ml
  ** Runtime: make obj_dup work on string/bytes
 
 ===== 3.3.0 (2018-11-26) - Hong Kong =====
