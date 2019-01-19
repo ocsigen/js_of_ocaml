@@ -5,6 +5,8 @@
     (alias ../toplevel/examples/lwt_toplevel/default)
     (source_tree ../examples)
     (source_tree ../toplevel/examples/lwt_toplevel)
+    (glob_files *wiki)
+    (source_tree files)
   )
   (action (bash
 "function copy { \

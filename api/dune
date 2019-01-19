@@ -11,7 +11,7 @@
     (package js_of_ocaml-ocamlbuild)
   )
   (action (bash
-   "function path { echo -I $1/.*.objs $1/*[^p][^p].mli; }; \
+   "function path { echo -I $1/.*.objs $1/*[^p][^p].mli; };  \
     ocamlfind ocamldoc \
     -d ./ -intro index -g ../tools/wikidoc/odoc_wiki.cmxs -open Js_of_ocaml \
     -package tyxml -package react -package reactiveData -open Js_of_ocaml_tyxml \
