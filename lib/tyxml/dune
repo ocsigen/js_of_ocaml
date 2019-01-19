@@ -2,6 +2,6 @@
   (name js_of_ocaml_tyxml)
   (public_name js_of_ocaml-tyxml)
   (synopsis "Tyxml for js_of_ocaml.")
-  (libraries js_of_ocaml tyxml react reactiveData)
+  (libraries js_of_ocaml tyxml tyxml.functor react reactiveData)
   (wrapped (transition "Will be removed past 2019-04-01"))
   (preprocess (pps js_of_ocaml-ppx)))
