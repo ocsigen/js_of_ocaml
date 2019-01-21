@@ -775,7 +775,8 @@ function caml_hash_mix_float (h, v0) {
 function caml_hash_mix_int64 (h, v) {
   var lo = v[1] | (v[2] << 24);
   var hi = (v[2] >>> 8) | (v[3] << 16);
-  h = caml_hash_mix_int(h, hi ^ lo);
+  h = caml_hash_mix_int(h, lo);
+  h = caml_hash_mix_int(h, hi);
   return h;
 }
 
