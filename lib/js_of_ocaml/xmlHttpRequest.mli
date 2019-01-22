@@ -22,49 +22,81 @@
 
 open Js
 
-type readyState = UNSENT | OPENED | HEADERS_RECEIVED | LOADING | DONE
+type readyState =
+  | UNSENT
+  | OPENED
+  | HEADERS_RECEIVED
+  | LOADING
+  | DONE
 
 type _ response =
-    ArrayBuffer : Typed_array.arrayBuffer t Opt.t response
+  | ArrayBuffer : Typed_array.arrayBuffer t Opt.t response
   | Blob : #File.blob t Opt.t response
   | Document : Dom.element Dom.document t Opt.t response
   | JSON : 'a Opt.t response
   | Text : js_string t response
   | Default : string response
 
-class type xmlHttpRequest = object ('self)
-  method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
-  method readyState : readyState readonly_prop
-  method _open :
-    js_string t -> js_string t -> bool t -> unit meth
-  method _open_full :
-    js_string t -> js_string t -> bool t ->
-    js_string t opt -> js_string t opt -> unit meth
-  method setRequestHeader : js_string t -> js_string t -> unit meth
-  method overrideMimeType : js_string t -> unit meth
-  method send : js_string t opt -> unit meth
-  method send_blob : #File.blob t -> unit meth
-  method send_document : Dom.element Dom.document t -> unit meth
-  method send_formData : Form.formData t -> unit meth
-  method abort : unit meth
-  method status : int readonly_prop
-  method statusText : js_string t readonly_prop
-  method getResponseHeader : js_string t -> js_string t opt meth
-  method getAllResponseHeaders : js_string t meth
-  method response : File.file_any readonly_prop
-  method responseText : js_string t readonly_prop
-  method responseXML : Dom.element Dom.document t opt readonly_prop
-  method responseType : js_string t prop
-  method withCredentials : bool t writeonly_prop
+class type xmlHttpRequest =
+  object ('self)
+    method onreadystatechange : (unit -> unit) Js.callback Js.writeonly_prop
 
-  inherit File.progressEventTarget
-  method ontimeout : ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
-  method upload : xmlHttpRequestUpload t optdef readonly_prop
-end
+    method readyState : readyState readonly_prop
 
-and xmlHttpRequestUpload = object ('self)
-  inherit File.progressEventTarget
-end
+    method _open : js_string t -> js_string t -> bool t -> unit meth
+
+    method _open_full :
+         js_string t
+      -> js_string t
+      -> bool t
+      -> js_string t opt
+      -> js_string t opt
+      -> unit meth
+
+    method setRequestHeader : js_string t -> js_string t -> unit meth
+
+    method overrideMimeType : js_string t -> unit meth
+
+    method send : js_string t opt -> unit meth
+
+    method send_blob : #File.blob t -> unit meth
+
+    method send_document : Dom.element Dom.document t -> unit meth
+
+    method send_formData : Form.formData t -> unit meth
+
+    method abort : unit meth
+
+    method status : int readonly_prop
+
+    method statusText : js_string t readonly_prop
+
+    method getResponseHeader : js_string t -> js_string t opt meth
+
+    method getAllResponseHeaders : js_string t meth
+
+    method response : File.file_any readonly_prop
+
+    method responseText : js_string t readonly_prop
+
+    method responseXML : Dom.element Dom.document t opt readonly_prop
+
+    method responseType : js_string t prop
+
+    method withCredentials : bool t writeonly_prop
+
+    inherit File.progressEventTarget
+
+    method ontimeout :
+      ('self t, 'self File.progressEvent t) Dom.event_listener writeonly_prop
+
+    method upload : xmlHttpRequestUpload t optdef readonly_prop
+  end
+
+and xmlHttpRequestUpload =
+  object ('self)
+    inherit File.progressEventTarget
+  end
 
 val create : unit -> xmlHttpRequest t
 
@@ -73,12 +105,20 @@ val create : unit -> xmlHttpRequest t
 
 module Event : sig
   type typ = xmlHttpRequest File.progressEvent t Dom.Event.typ
+
   val readystatechange : xmlHttpRequest Dom.event t Dom.Event.typ
+
   val loadstart : typ
+
   val progress : typ
+
   val abort : typ
+
   val error : typ
+
   val load : typ
+
   val timeout : typ
+
   val loadend : typ
 end

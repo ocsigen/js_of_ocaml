@@ -30,10 +30,12 @@ type error_code =
   | INVALID_VALUE_ERR
   | MATRIX_NOT_INVERTABLE
 
-class type svg_error = object
-  inherit Js.error
-  method code : error_code t readonly_prop
-end
+class type svg_error =
+  object
+    inherit Js.error
+
+    method code : error_code t readonly_prop
+  end
 
 exception SVGError of svg_error
 
@@ -137,7 +139,6 @@ type pathSegmentType =
   | PATHSEG_CURVETO_QUADRATIC_SMOOTH_ABS
   | PATHSEG_CURVETO_QUADRATIC_SMOOTH_REL
 
-
 (* textPath Method Types *)
 type textPathMethodType =
   | TEXTPATH_METHODTYPE_UNKNOWN
@@ -150,7 +151,6 @@ type textPathSpacingType =
   | TEXTPATH_SPACINGTYPE_AUTO
   | TEXTPATH_SPACINGTYPE_EXACT
 
-
 (* Spread Method Types *)
 type spreadMethodType =
   | SPREADMETHOD_UNKNOWN
@@ -158,37 +158,51 @@ type spreadMethodType =
   | SPREADMETHOD_REFLECT
   | SPREADMETHOD_REPEAT
 
-
 type suspendHandleID
 
 (****)
 
-class type ['a] animated = object
-  method baseVal : 'a prop
-  method animVal : 'a prop
-end
+class type ['a] animated =
+  object
+    method baseVal : 'a prop
 
-class type ['a] list = object
-  method numberOfItems : int readonly_prop
-  method clear : unit meth
-  method initialize : 'a -> 'a meth
-  method getItem : int -> 'a meth
-  method insertItemBefore : 'a -> int -> 'a meth
-  method replaceItem : 'a -> int -> 'a meth
-  method removeItem : int -> 'a meth
-  method appendItem :  'a -> 'a meth
-end
+    method animVal : 'a prop
+  end
+
+class type ['a] list =
+  object
+    method numberOfItems : int readonly_prop
+
+    method clear : unit meth
+
+    method initialize : 'a -> 'a meth
+
+    method getItem : int -> 'a meth
+
+    method insertItemBefore : 'a -> int -> 'a meth
+
+    method replaceItem : 'a -> int -> 'a meth
+
+    method removeItem : int -> 'a meth
+
+    method appendItem : 'a -> 'a meth
+  end
 
 (****)
 
 (* interface SVGElement *)
-class type element = object
-  inherit Dom.element
-  method id : js_string t prop
-  method xmlbase : js_string t prop
-  method ownerSVGElement : svgElement t readonly_prop
-  method viewportElement : element t readonly_prop
-end
+class type element =
+  object
+    inherit Dom.element
+
+    method id : js_string t prop
+
+    method xmlbase : js_string t prop
+
+    method ownerSVGElement : svgElement t readonly_prop
+
+    method viewportElement : element t readonly_prop
+  end
 
 (* interface SVGAnimatedString *)
 and animatedString = [js_string t] animated
@@ -215,17 +229,23 @@ and numberList = [number t] list
 and animatedNumberList = [numberList t] animated
 
 (* interface SVGLength *)
-and length = object
-  method unitType : lengthUnitType readonly_prop
-  method value : float prop
-  method valueInSpecifiedUnits : float prop
-  method valueAsString : js_string t prop
-  method newValueSpecifiedUnits : lengthUnitType -> float -> unit meth
-  method convertToSpecifiedUnits : lengthUnitType -> unit meth
-end
+and length =
+  object
+    method unitType : lengthUnitType readonly_prop
+
+    method value : float prop
+
+    method valueInSpecifiedUnits : float prop
+
+    method valueAsString : js_string t prop
+
+    method newValueSpecifiedUnits : lengthUnitType -> float -> unit meth
+
+    method convertToSpecifiedUnits : lengthUnitType -> unit meth
+  end
 
 (* interface SVGAnimatedLength *)
-and animatedLength =  [length t] animated
+and animatedLength = [length t] animated
 
 (* interface SVGLengthList *)
 and lengthList = [length t] list
@@ -234,672 +254,1059 @@ and lengthList = [length t] list
 and animatedLengthList = [lengthList t] animated
 
 (* interface SVGAngle *)
-and angle = object
-  method unitType : angleUnitType readonly_prop
-  method value : float prop
-  method valueInSpecifiedUnits : float prop
-  method valueAsString : js_string t prop
-  method newValueSpecifiedUnits : angleUnitType -> float -> unit meth
-  method convertToSpecifiedUnits : angleUnitType -> unit meth
-end
+and angle =
+  object
+    method unitType : angleUnitType readonly_prop
+
+    method value : float prop
+
+    method valueInSpecifiedUnits : float prop
+
+    method valueAsString : js_string t prop
+
+    method newValueSpecifiedUnits : angleUnitType -> float -> unit meth
+
+    method convertToSpecifiedUnits : angleUnitType -> unit meth
+  end
 
 (* interface SVGAnimatedAngle *)
 and animatedAngle = [angle t] animated
 
 (* XXXXX Move it *)
 and rgbColor = object end
-(* interface SVGColor *)
-and color = object
-  (* XXX inherit cssValue *)
-  method colorType : colorType readonly_prop
-  method rgbColor : rgbColor t readonly_prop
-  method iccColor : iccColor t readonly_prop
 
-  method setRGBColor : js_string t -> unit meth
-  method setRGBColorICCColor : js_string t -> js_string t -> unit meth
-  method setColor : colorType -> js_string t -> js_string t -> unit meth
-end
+(* interface SVGColor *)
+and color =
+  object
+    (* XXX inherit cssValue *)
+    method colorType : colorType readonly_prop
+
+    method rgbColor : rgbColor t readonly_prop
+
+    method iccColor : iccColor t readonly_prop
+
+    method setRGBColor : js_string t -> unit meth
+
+    method setRGBColorICCColor : js_string t -> js_string t -> unit meth
+
+    method setColor : colorType -> js_string t -> js_string t -> unit meth
+  end
 
 (* interface SVGICCColor *)
-and iccColor = object
-  method colorProfile : js_string t prop
-  method colors : numberList t readonly_prop
-end
+and iccColor =
+  object
+    method colorProfile : js_string t prop
+
+    method colors : numberList t readonly_prop
+  end
 
 (* interface SVGRect *)
-and rect = object
-  method x : float prop
-  method y : float prop
-  method width : float prop
-  method height : float prop
-end
+and rect =
+  object
+    method x : float prop
+
+    method y : float prop
+
+    method width : float prop
+
+    method height : float prop
+  end
 
 (* interface SVGAnimatedRect *)
 and animatedRect = [rect t] animated
 
 (* interface SVGStylable *)
-and stylable = object
-  method className : animatedString t readonly_prop
-  method style : Dom_html.cssStyleDeclaration t readonly_prop
-  (*   CSSValue getPresentationAttribute(in DOMString name); *)
-end
+and stylable =
+  object
+    method className : animatedString t readonly_prop
+
+    method style : Dom_html.cssStyleDeclaration t readonly_prop
+    (*   CSSValue getPresentationAttribute(in DOMString name); *)
+  end
 
 (* interface SVGLocatable *)
-and locatable = object
-  method nearestViewportElement : element t readonly_prop
-  method farthestViewportElement : element t readonly_prop
-  method getBBox : rect t meth
-  method getCTM : matrix t meth
-  method getScreenCTM : matrix t meth
-  method getTransformToElement : element t -> matrix t meth
-end
+and locatable =
+  object
+    method nearestViewportElement : element t readonly_prop
+
+    method farthestViewportElement : element t readonly_prop
+
+    method getBBox : rect t meth
+
+    method getCTM : matrix t meth
+
+    method getScreenCTM : matrix t meth
+
+    method getTransformToElement : element t -> matrix t meth
+  end
 
 (* interface SVGTransformable *)
-and transformable = object
-  inherit locatable
-  method transform : animatedTransformList t readonly_prop
-end
+and transformable =
+  object
+    inherit locatable
+
+    method transform : animatedTransformList t readonly_prop
+  end
 
 (* interface SVGTests *)
-and tests = object
-  method requiredFeatures : stringList t readonly_prop
-  method requiredExtensions : stringList t readonly_prop
-  method systemLanguage : stringList t readonly_prop
-  method hasExtension : js_string t -> bool t meth
-end
+and tests =
+  object
+    method requiredFeatures : stringList t readonly_prop
+
+    method requiredExtensions : stringList t readonly_prop
+
+    method systemLanguage : stringList t readonly_prop
+
+    method hasExtension : js_string t -> bool t meth
+  end
 
 (* interface SVGLangSpace *)
-and langSpace = object
-  method xmllang : js_string t prop
-  method xmlspace : js_string t prop
-end
+and langSpace =
+  object
+    method xmllang : js_string t prop
+
+    method xmlspace : js_string t prop
+  end
 
 (* interface SVGExternalResourcesRequired *)
-and externalResourcesRequired = object
-  method externalResourcesRequired : animatedBoolean t readonly_prop
-end
+and externalResourcesRequired =
+  object
+    method externalResourcesRequired : animatedBoolean t readonly_prop
+  end
 
 (* interface SVGFitToViewBox *)
-and fitToViewBox = object
-  method viewBox : animatedRect t readonly_prop
-  method preserveAspectRatio : animatedPreserveAspectRatio t readonly_prop
-end
+and fitToViewBox =
+  object
+    method viewBox : animatedRect t readonly_prop
+
+    method preserveAspectRatio : animatedPreserveAspectRatio t readonly_prop
+  end
 
 (* interface SVGZoomAndPan *)
-and zoomAndPan = object
-  method zoomAndPan : zoomAndPanType prop
-end
+and zoomAndPan =
+  object
+    method zoomAndPan : zoomAndPanType prop
+  end
 
 (* interface SVGViewSpec *)
-and viewSpec = object
-  inherit zoomAndPan
-  inherit fitToViewBox
-  method transform : transformList t readonly_prop
-  method viewTarget : element t readonly_prop
-  method viewBoxString : js_string t readonly_prop
-  method preserveAspectRatioString : js_string t readonly_prop
-  method transformString : js_string t readonly_prop
-  method viewTargetString : js_string t readonly_prop
-end
+and viewSpec =
+  object
+    inherit zoomAndPan
+
+    inherit fitToViewBox
+
+    method transform : transformList t readonly_prop
+
+    method viewTarget : element t readonly_prop
+
+    method viewBoxString : js_string t readonly_prop
+
+    method preserveAspectRatioString : js_string t readonly_prop
+
+    method transformString : js_string t readonly_prop
+
+    method viewTargetString : js_string t readonly_prop
+  end
 
 (* interface SVGURIReference *)
-and uriReference = object
-  method href : animatedString t readonly_prop
-end
+and uriReference =
+  object
+    method href : animatedString t readonly_prop
+  end
 
 (* interface SVGCSSRule : CSSRule *)
 (*   const unsigned short COLOR_PROFILE_RULE = 7; *)
 (* }; *)
 
-
 (* interface SVGDocument *)
-and document = object
-  inherit [element] Dom.document
-  (*XXX inherit documentEvent *)
+and document =
+  object
+    inherit [element] Dom.document
 
-  method title : js_string t prop
-  method referrer : js_string t readonly_prop
-  method domain : js_string t prop
-  method _URL : js_string t readonly_prop
-  method rootElement : svgElement t opt readonly_prop
-  (* rootElement will be null or undefined in an html context *)
-end
+    (*XXX inherit documentEvent *)
+    method title : js_string t prop
+
+    method referrer : js_string t readonly_prop
+
+    method domain : js_string t prop
+
+    method _URL : js_string t readonly_prop
+
+    method rootElement : svgElement t opt readonly_prop
+    (* rootElement will be null or undefined in an html context *)
+  end
 
 (* interface SVGSVGElement *)
-and svgElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit locatable
-  inherit fitToViewBox
-  inherit zoomAndPan
-  (*XXX inherit documentevent, viewcss, documentcss *)
-  method x : animatedLength t readonly_prop
-  method y : animatedLength t readonly_prop
-  method width : animatedLength t readonly_prop
-  method height : animatedLength t readonly_prop
+and svgElement =
+  object
+    inherit element
 
-  method contentScriptType : js_string t prop
-  method contentStyleType : js_string t prop
-  method viewport : rect t readonly_prop
-  method pixelUnitToMillimeterX : float readonly_prop
-  method pixelUnitToMillimeterY : float readonly_prop
-  method screenPixelUnitToMillimeterX : float readonly_prop
-  method screenPixelUnitToMillimeterY : float readonly_prop
-  method useCurrentView : bool t readonly_prop
-  method currentView : viewSpec t readonly_prop
-  method currentScale : float prop
-  method currentTranslate : point t readonly_prop
-  method suspendRedraw : int -> suspendHandleID meth
-  method unsuspendRedraw : suspendHandleID -> unit meth
-  method unsuspendRedrawAll : unit meth
-  method forceRedraw : unit meth
-  method pauseAnimations : unit meth
-  method unpauseAnimations : unit meth
-  method animationsPaused : bool t meth
-  method getCurrentTime : float meth
-  method setCurrentTime : int -> unit meth
-  method getIntersectionList :
-    rect t -> element t -> element Dom.nodeList t meth
-  method getEnclosureList :
-    rect t -> element t -> element Dom.nodeList t meth
-  method checkIntersection : element t -> rect t -> bool t
-  method checkEnclosure : element t -> rect t -> bool t
-  method deselectAll : unit meth
-  method createSVGNumber : number t meth
-  method createSVGLength : length t meth
-  method createSVGAngle : angle t meth
-  method createSVGPoint : point t meth
-  method createSVGMatrix : matrix t meth
-  method createSVGRect : rect t meth
-  method createSVGTransform : transform t meth
-  method createSVGTransformFromMatrix : matrix t -> transform t meth
-  method getElementById : js_string t -> Dom.element t meth
-end
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit locatable
+
+    inherit fitToViewBox
+
+    inherit zoomAndPan
+
+    (*XXX inherit documentevent, viewcss, documentcss *)
+    method x : animatedLength t readonly_prop
+
+    method y : animatedLength t readonly_prop
+
+    method width : animatedLength t readonly_prop
+
+    method height : animatedLength t readonly_prop
+
+    method contentScriptType : js_string t prop
+
+    method contentStyleType : js_string t prop
+
+    method viewport : rect t readonly_prop
+
+    method pixelUnitToMillimeterX : float readonly_prop
+
+    method pixelUnitToMillimeterY : float readonly_prop
+
+    method screenPixelUnitToMillimeterX : float readonly_prop
+
+    method screenPixelUnitToMillimeterY : float readonly_prop
+
+    method useCurrentView : bool t readonly_prop
+
+    method currentView : viewSpec t readonly_prop
+
+    method currentScale : float prop
+
+    method currentTranslate : point t readonly_prop
+
+    method suspendRedraw : int -> suspendHandleID meth
+
+    method unsuspendRedraw : suspendHandleID -> unit meth
+
+    method unsuspendRedrawAll : unit meth
+
+    method forceRedraw : unit meth
+
+    method pauseAnimations : unit meth
+
+    method unpauseAnimations : unit meth
+
+    method animationsPaused : bool t meth
+
+    method getCurrentTime : float meth
+
+    method setCurrentTime : int -> unit meth
+
+    method getIntersectionList : rect t -> element t -> element Dom.nodeList t meth
+
+    method getEnclosureList : rect t -> element t -> element Dom.nodeList t meth
+
+    method checkIntersection : element t -> rect t -> bool t
+
+    method checkEnclosure : element t -> rect t -> bool t
+
+    method deselectAll : unit meth
+
+    method createSVGNumber : number t meth
+
+    method createSVGLength : length t meth
+
+    method createSVGAngle : angle t meth
+
+    method createSVGPoint : point t meth
+
+    method createSVGMatrix : matrix t meth
+
+    method createSVGRect : rect t meth
+
+    method createSVGTransform : transform t meth
+
+    method createSVGTransformFromMatrix : matrix t -> transform t meth
+
+    method getElementById : js_string t -> Dom.element t meth
+  end
 
 (* interface SVGGElement *)
-and gElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  inherit Dom_html.eventTarget
-end
+and gElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    inherit Dom_html.eventTarget
+  end
 
 (* interface SVGDefsElement *)
-and defsElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  (* XXXXXXX ? inherit Dom_html.eventTarget *)
-end
+and defsElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+    (* XXXXXXX ? inherit Dom_html.eventTarget *)
+  end
 
 (* interface SVGDescElement *)
-and descElement = object
-  inherit element
-  inherit langSpace
-  inherit stylable
-  (* XXXXXXX ? inherit Dom_html.eventTarget *)
-end
+and descElement =
+  object
+    inherit element
+
+    inherit langSpace
+
+    inherit stylable
+    (* XXXXXXX ? inherit Dom_html.eventTarget *)
+  end
 
 (* interface SVGTitleElement *)
-and titleElement = object
-  inherit element
-  inherit langSpace
-  inherit stylable
-end
+and titleElement =
+  object
+    inherit element
+
+    inherit langSpace
+
+    inherit stylable
+  end
 
 (* interface SVGSymbolElement *)
-and symbolElement = object
-  inherit element
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit fitToViewBox
-  inherit Dom_html.eventTarget
-end
+and symbolElement =
+  object
+    inherit element
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit fitToViewBox
+
+    inherit Dom_html.eventTarget
+  end
 
 (* interface SVGUseElement *)
-and useElement = object
-  inherit element
-  inherit uriReference
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
+and useElement =
+  object
+    inherit element
 
-  method x : animatedLength t readonly_prop
-  method y : animatedLength t readonly_prop
-  method width : animatedLength t readonly_prop
-  method height : animatedLength t readonly_prop
-  method instanceRoot : elementInstance t readonly_prop
-  method animatedInstanceRoot : elementInstance t readonly_prop
-end
+    inherit uriReference
 
-and elementInstance = object
-  inherit Dom_html.eventTarget
-  method correspondingElement : element t readonly_prop
-  method correspondingUseElement : useElement t readonly_prop
-  method parentNode : elementInstance t readonly_prop
-  method childNodes : elementInstanceList t readonly_prop
-  method firstChild : elementInstance t readonly_prop
-  method lastChild : elementInstance t readonly_prop
-  method previousSibling : elementInstance t readonly_prop
-  method nextSibling : elementInstance t readonly_prop
+    inherit tests
 
-end
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    method x : animatedLength t readonly_prop
+
+    method y : animatedLength t readonly_prop
+
+    method width : animatedLength t readonly_prop
+
+    method height : animatedLength t readonly_prop
+
+    method instanceRoot : elementInstance t readonly_prop
+
+    method animatedInstanceRoot : elementInstance t readonly_prop
+  end
+
+and elementInstance =
+  object
+    inherit Dom_html.eventTarget
+
+    method correspondingElement : element t readonly_prop
+
+    method correspondingUseElement : useElement t readonly_prop
+
+    method parentNode : elementInstance t readonly_prop
+
+    method childNodes : elementInstanceList t readonly_prop
+
+    method firstChild : elementInstance t readonly_prop
+
+    method lastChild : elementInstance t readonly_prop
+
+    method previousSibling : elementInstance t readonly_prop
+
+    method nextSibling : elementInstance t readonly_prop
+  end
 
 (* interface SVGElementInstanceList *)
-and elementInstanceList = object
-  method length : int readonly_prop
-  method item : int -> elementInstance t
-end
+and elementInstanceList =
+  object
+    method length : int readonly_prop
+
+    method item : int -> elementInstance t
+  end
 
 (* interface SVGImageElement *)
-and imageElement = object
-  inherit element
-  inherit uriReference
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  method x : animatedLength t readonly_prop
-  method y : animatedLength t readonly_prop
-  method width : animatedLength t readonly_prop
-  method height : animatedLength t readonly_prop
-  (* readonly attribute SVGAnimatedPreserveAspectRatio preserveAspectRatio *)
-end
+and imageElement =
+  object
+    inherit element
 
-and switchElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-end
+    inherit uriReference
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    method x : animatedLength t readonly_prop
+
+    method y : animatedLength t readonly_prop
+
+    method width : animatedLength t readonly_prop
+
+    method height : animatedLength t readonly_prop
+    (* readonly attribute SVGAnimatedPreserveAspectRatio preserveAspectRatio *)
+  end
+
+and switchElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+  end
 
 (* XXX deprecated => interface GetSVGDocument => SVGDocument getSVGDocument() *)
 
 (* interface SVGStyleElement *)
-and styleElement = object
-  inherit element
-  inherit langSpace
-  method type_ : js_string t prop
-  method media : js_string t prop
-  method title : js_string t prop
-end
+and styleElement =
+  object
+    inherit element
+
+    inherit langSpace
+
+    method type_ : js_string t prop
+
+    method media : js_string t prop
+
+    method title : js_string t prop
+  end
 
 (* interface SVGPoint *)
-and point = object
-  method x : float readonly_prop
-  method y : float readonly_prop
-  method matrixTransform : matrix t -> point t meth
-end
+and point =
+  object
+    method x : float readonly_prop
+
+    method y : float readonly_prop
+
+    method matrixTransform : matrix t -> point t meth
+  end
 
 (* interface SVGPointList *)
 and pointList = [point t] list
 
 (* interface SVGMatrix *)
-and matrix = object
-  method a : float readonly_prop
-  method b : float readonly_prop
-  method c : float readonly_prop
-  method d : float readonly_prop
-  method e : float readonly_prop
-  method f : float readonly_prop
+and matrix =
+  object
+    method a : float readonly_prop
 
-  method multiply : matrix t -> matrix t meth
-  method inverse : matrix t meth
-  method translate : float -> float -> matrix t meth
-  method scale : float -> matrix t meth
-  method scaleNonUniform : float -> float -> matrix t meth
-  method rotate : float -> matrix t meth
-  method rotateFromVector : float -> float -> matrix t meth
-  method flipX : matrix t meth
-  method flipY : matrix t meth
-  method skewX : float -> matrix t meth
-  method skewY : float -> matrix t meth
-end
+    method b : float readonly_prop
+
+    method c : float readonly_prop
+
+    method d : float readonly_prop
+
+    method e : float readonly_prop
+
+    method f : float readonly_prop
+
+    method multiply : matrix t -> matrix t meth
+
+    method inverse : matrix t meth
+
+    method translate : float -> float -> matrix t meth
+
+    method scale : float -> matrix t meth
+
+    method scaleNonUniform : float -> float -> matrix t meth
+
+    method rotate : float -> matrix t meth
+
+    method rotateFromVector : float -> float -> matrix t meth
+
+    method flipX : matrix t meth
+
+    method flipY : matrix t meth
+
+    method skewX : float -> matrix t meth
+
+    method skewY : float -> matrix t meth
+  end
 
 (* interface SVGTransform *)
-and transform = object
-  method _type : transformType readonly_prop
-  method matrix : matrix t readonly_prop
-  method angle : float readonly_prop
-  method setMatrix : matrix t -> unit meth
-  method setTranslate : float -> float -> unit meth
-  method setScale : float -> float -> unit meth
-  method setRotate : float -> float -> float -> unit meth
-  method setSkewX : float -> unit meth
-  method setSkewY : float -> unit meth
-end
+and transform =
+  object
+    method _type : transformType readonly_prop
+
+    method matrix : matrix t readonly_prop
+
+    method angle : float readonly_prop
+
+    method setMatrix : matrix t -> unit meth
+
+    method setTranslate : float -> float -> unit meth
+
+    method setScale : float -> float -> unit meth
+
+    method setRotate : float -> float -> float -> unit meth
+
+    method setSkewX : float -> unit meth
+
+    method setSkewY : float -> unit meth
+  end
 
 (* interface SVGTransformList *)
-and transformList = object
-  inherit [transform t] list
-  method createSVGTransformFromMatrix : matrix -> transform t meth
-  method consolidate : transform t meth
-end
+and transformList =
+  object
+    inherit [transform t] list
+
+    method createSVGTransformFromMatrix : matrix -> transform t meth
+
+    method consolidate : transform t meth
+  end
 
 (* interface SVGAnimatedTransformList *)
 and animatedTransformList = [transformList t] animated
 
 (* interface SVGPreserveAspectRatio *)
-and preserveAspectRatio = object
-  method align : alignmentType readonly_prop
-  method meetOrSlice : meetOrSliceType readonly_prop
-end
+and preserveAspectRatio =
+  object
+    method align : alignmentType readonly_prop
+
+    method meetOrSlice : meetOrSliceType readonly_prop
+  end
 
 (* interface SVGAnimatedPreserveAspectRatio *)
 and animatedPreserveAspectRatio = [preserveAspectRatio t] animated
 
 (* interface SVGPathSeg *)
-and pathSeg = object
-  method pathSegType : pathSegmentType readonly_prop
-  method pathSegTypeAsLetter : js_string t readonly_prop
-end
+and pathSeg =
+  object
+    method pathSegType : pathSegmentType readonly_prop
+
+    method pathSegTypeAsLetter : js_string t readonly_prop
+  end
 
 (* interface SVGPathSegClosePath *)
 and pathSegClosePath = pathSeg
 
-(* interface SVGPathSegMovetoAbs *) (* interface SVGPathSegMovetoRel *)
-and pathSegMoveto = object
-  inherit pathSeg
-  method x : float prop
-  method y : float prop
-end
+(* interface SVGPathSegMovetoAbs *)
+(* interface SVGPathSegMovetoRel *)
+and pathSegMoveto =
+  object
+    inherit pathSeg
 
-(* interface SVGPathSegLinetoAbs *) (* interface SVGPathSegLinetoRel *)
-and pathSegLineto = object
-  inherit pathSeg
-  method x : float prop
-  method y : float prop
-end
+    method x : float prop
 
+    method y : float prop
+  end
 
-(* interface SVGPathSegCurvetoCubicAbs *) (* interface SVGPathSegCurvetoCubicRel *)
-and pathSegCurvetoCubic = object
-  inherit pathSeg
-  method x : float prop
-  method y : float prop
-  method x1 : float prop
-  method y1 : float prop
-  method x2 : float prop
-  method y2 : float prop
-end
+(* interface SVGPathSegLinetoAbs *)
+(* interface SVGPathSegLinetoRel *)
+and pathSegLineto =
+  object
+    inherit pathSeg
 
-(* interface SVGPathSegCurvetoQuadraticAbs *) (* interface SVGPathSegCurvetoQuadraticRel *)
-and pathSegCurvetoQuadratic = object
-  inherit pathSeg
-  method x : float prop
-  method y : float prop
-  method x1 : float prop
-  method y1 : float prop
-end
+    method x : float prop
 
-(* interface SVGPathSegArcAbs *) (* interface SVGPathSegArcRel*)
-and pathSegArc = object
-  inherit pathSeg
-  method y : float prop
-  method r1 : float prop
-  method r2 : float prop
-  method angle : float prop
-  method largeArcFlag : bool t prop
-  method sweepFlag : bool t prop
-end
+    method y : float prop
+  end
 
-(* interface SVGPathSegLinetoHorizontalAbs *) (* interface SVGPathSegLinetoHorizontalRel *)
-and pathSegLinetoHorizontal = object
-  inherit pathSeg
-  method x : float
-end
+(* interface SVGPathSegCurvetoCubicAbs *)
+(* interface SVGPathSegCurvetoCubicRel *)
+and pathSegCurvetoCubic =
+  object
+    inherit pathSeg
 
-(* interface SVGPathSegLinetoVerticalAbs *) (* interface SVGPathSegLinetoVerticalRel *)
-and pathSegLinetoVertical = object
-  inherit pathSeg
-  method y : float
-end
+    method x : float prop
 
-and pathSegCurvetoCubicSmooth = object
-  inherit pathSeg
-  method x : float
-  method y : float
-  method x2 : float
-  method y2 : float
-end
+    method y : float prop
 
-(* interface SVGPathSegCurvetoQuadraticSmoothAbs *) (* interface SVGPathSegCurvetoQuadraticSmoothRel  *)
-and pathSegCurvetoQuadraticSmooth = object
-  inherit pathSeg
-  method x : float
-  method y : float
-end
+    method x1 : float prop
+
+    method y1 : float prop
+
+    method x2 : float prop
+
+    method y2 : float prop
+  end
+
+(* interface SVGPathSegCurvetoQuadraticAbs *)
+(* interface SVGPathSegCurvetoQuadraticRel *)
+and pathSegCurvetoQuadratic =
+  object
+    inherit pathSeg
+
+    method x : float prop
+
+    method y : float prop
+
+    method x1 : float prop
+
+    method y1 : float prop
+  end
+
+(* interface SVGPathSegArcAbs *)
+(* interface SVGPathSegArcRel*)
+and pathSegArc =
+  object
+    inherit pathSeg
+
+    method y : float prop
+
+    method r1 : float prop
+
+    method r2 : float prop
+
+    method angle : float prop
+
+    method largeArcFlag : bool t prop
+
+    method sweepFlag : bool t prop
+  end
+
+(* interface SVGPathSegLinetoHorizontalAbs *)
+(* interface SVGPathSegLinetoHorizontalRel *)
+and pathSegLinetoHorizontal =
+  object
+    inherit pathSeg
+
+    method x : float
+  end
+
+(* interface SVGPathSegLinetoVerticalAbs *)
+(* interface SVGPathSegLinetoVerticalRel *)
+and pathSegLinetoVertical =
+  object
+    inherit pathSeg
+
+    method y : float
+  end
+
+and pathSegCurvetoCubicSmooth =
+  object
+    inherit pathSeg
+
+    method x : float
+
+    method y : float
+
+    method x2 : float
+
+    method y2 : float
+  end
+
+(* interface SVGPathSegCurvetoQuadraticSmoothAbs *)
+(* interface SVGPathSegCurvetoQuadraticSmoothRel  *)
+and pathSegCurvetoQuadraticSmooth =
+  object
+    inherit pathSeg
+
+    method x : float
+
+    method y : float
+  end
 
 and pathSegList = [pathSeg t] list
 
 (* interface SVGAnimatedPathData *)
-and animatedPathData = object
-  method pathSegList : pathSegList t prop
-  method normalizedPathSegList : pathSegList t prop
-  method animatedPathSegList : pathSegList t prop
-  method animatedNormalizedPathSegList : pathSegList t prop
-end
+and animatedPathData =
+  object
+    method pathSegList : pathSegList t prop
 
-  (* interface SVGPathElement *)
-and pathElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  inherit animatedPathData
-  method pathLength : animatedNumber t readonly_prop
-  method getTotalLength : float meth
-  method getPointAtLength : float -> point t meth
-  method getPathSegAtLength : float -> int
+    method normalizedPathSegList : pathSegList t prop
 
-  method createSVGPathSegClosePath : pathSegClosePath meth
-  method createSVGPathSegMovetoAbs : float -> float -> pathSegMoveto meth
-  method createSVGPathSegMovetoRel : float -> float -> pathSegMoveto meth
-  method createSVGPathSegLinetoAbs : float -> float -> pathSegLineto meth
-  method createSVGPathSegLinetoRel : float -> float -> pathSegLineto meth
-  method createSVGPathSegCurvetoCubicAbs : float -> float -> float -> float -> float -> float -> pathSegCurvetoCubic meth
-  method createSVGPathSegCurvetoCubicRel : float -> float -> float -> float -> float -> float -> pathSegCurvetoCubic meth
-  method createSVGPathSegCurvetoQuadraticAbs : float -> float -> float -> float -> pathSegCurvetoQuadratic meth
-  method createSVGPathSegCurvetoQuadraticRel : float -> float -> float -> float -> pathSegCurvetoQuadratic meth
-  method createSVGPathSegArcAbs : float -> float -> float -> float -> float -> bool t -> bool t -> pathSegArc meth
-  method createSVGPathSegArcRel : float -> float -> float -> float -> float -> bool t -> bool t -> pathSegArc meth
-  method createSVGPathSegLinetoHorizontalAbs : float -> pathSegLinetoHorizontal meth
-  method createSVGPathSegLinetoHorizontalRel : float -> pathSegLinetoHorizontal meth
-  method createSVGPathSegLinetoVerticalAbs : float -> pathSegLinetoVertical meth
-  method createSVGPathSegLinetoVerticalRel : float -> pathSegLinetoVertical meth
-  method createSVGPathSegCurvetoCubicSmoothAbs : float -> float -> float -> float -> pathSegCurvetoCubicSmooth meth
-  method createSVGPathSegCurvetoCubicSmoothRel : float -> float -> float -> float -> pathSegCurvetoCubicSmooth meth
-  method createSVGPathSegCurvetoQuadraticSmoothAbs : float -> float -> pathSegCurvetoQuadraticSmooth meth
-  method createSVGPathSegCurvetoQuadraticSmoothRel : float -> float -> pathSegCurvetoQuadraticSmooth meth
-end
+    method animatedPathSegList : pathSegList t prop
+
+    method animatedNormalizedPathSegList : pathSegList t prop
+  end
+
+(* interface SVGPathElement *)
+and pathElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    inherit animatedPathData
+
+    method pathLength : animatedNumber t readonly_prop
+
+    method getTotalLength : float meth
+
+    method getPointAtLength : float -> point t meth
+
+    method getPathSegAtLength : float -> int
+
+    method createSVGPathSegClosePath : pathSegClosePath meth
+
+    method createSVGPathSegMovetoAbs : float -> float -> pathSegMoveto meth
+
+    method createSVGPathSegMovetoRel : float -> float -> pathSegMoveto meth
+
+    method createSVGPathSegLinetoAbs : float -> float -> pathSegLineto meth
+
+    method createSVGPathSegLinetoRel : float -> float -> pathSegLineto meth
+
+    method createSVGPathSegCurvetoCubicAbs :
+      float -> float -> float -> float -> float -> float -> pathSegCurvetoCubic meth
+
+    method createSVGPathSegCurvetoCubicRel :
+      float -> float -> float -> float -> float -> float -> pathSegCurvetoCubic meth
+
+    method createSVGPathSegCurvetoQuadraticAbs :
+      float -> float -> float -> float -> pathSegCurvetoQuadratic meth
+
+    method createSVGPathSegCurvetoQuadraticRel :
+      float -> float -> float -> float -> pathSegCurvetoQuadratic meth
+
+    method createSVGPathSegArcAbs :
+      float -> float -> float -> float -> float -> bool t -> bool t -> pathSegArc meth
+
+    method createSVGPathSegArcRel :
+      float -> float -> float -> float -> float -> bool t -> bool t -> pathSegArc meth
+
+    method createSVGPathSegLinetoHorizontalAbs : float -> pathSegLinetoHorizontal meth
+
+    method createSVGPathSegLinetoHorizontalRel : float -> pathSegLinetoHorizontal meth
+
+    method createSVGPathSegLinetoVerticalAbs : float -> pathSegLinetoVertical meth
+
+    method createSVGPathSegLinetoVerticalRel : float -> pathSegLinetoVertical meth
+
+    method createSVGPathSegCurvetoCubicSmoothAbs :
+      float -> float -> float -> float -> pathSegCurvetoCubicSmooth meth
+
+    method createSVGPathSegCurvetoCubicSmoothRel :
+      float -> float -> float -> float -> pathSegCurvetoCubicSmooth meth
+
+    method createSVGPathSegCurvetoQuadraticSmoothAbs :
+      float -> float -> pathSegCurvetoQuadraticSmooth meth
+
+    method createSVGPathSegCurvetoQuadraticSmoothRel :
+      float -> float -> pathSegCurvetoQuadraticSmooth meth
+  end
 
 (* interface SVGRectElement *)
-and rectElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  method x : animatedLength t readonly_prop
-  method y : animatedLength t readonly_prop
-  method width : animatedLength t readonly_prop
-  method height : animatedLength t readonly_prop
-  method rx : animatedLength t readonly_prop
-  method ry : animatedLength t readonly_prop
-end
+and rectElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    method x : animatedLength t readonly_prop
+
+    method y : animatedLength t readonly_prop
+
+    method width : animatedLength t readonly_prop
+
+    method height : animatedLength t readonly_prop
+
+    method rx : animatedLength t readonly_prop
+
+    method ry : animatedLength t readonly_prop
+  end
 
 (* interface SVGCircleElement *)
-and circleElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  method cx : animatedLength t readonly_prop
-  method cy : animatedLength t readonly_prop
-  method r : animatedLength t readonly_prop
-end
+and circleElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    method cx : animatedLength t readonly_prop
+
+    method cy : animatedLength t readonly_prop
+
+    method r : animatedLength t readonly_prop
+  end
 
 (* interface SVGEllipseElement *)
-and ellipseElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  method cx : animatedLength t readonly_prop
-  method cy : animatedLength t readonly_prop
-  method rx : animatedLength t readonly_prop
-  method ry : animatedLength t readonly_prop
-end
+and ellipseElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    method cx : animatedLength t readonly_prop
+
+    method cy : animatedLength t readonly_prop
+
+    method rx : animatedLength t readonly_prop
+
+    method ry : animatedLength t readonly_prop
+  end
 
 (* interface SVGLineElement *)
-class type lineElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  inherit Dom_html.eventTarget
-  method x1 : animatedLength t readonly_prop
-  method y1 : animatedLength t readonly_prop
-  method x2 : animatedLength t readonly_prop
-  method y2 : animatedLength t readonly_prop
-end
+class type lineElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    inherit Dom_html.eventTarget
+
+    method x1 : animatedLength t readonly_prop
+
+    method y1 : animatedLength t readonly_prop
+
+    method x2 : animatedLength t readonly_prop
+
+    method y2 : animatedLength t readonly_prop
+  end
 
 (* interface SVGAnimatedPoints *)
-and animatedPoints = object
-  method points : pointList t readonly_prop
-  method animatedpoints : pointList t readonly_prop
-end
+and animatedPoints =
+  object
+    method points : pointList t readonly_prop
+
+    method animatedpoints : pointList t readonly_prop
+  end
 
 (* interface SVGPolylineElement *)
-and polyLineElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  inherit animatedPoints
-end
+and polyLineElement =
+  object
+    inherit element
 
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    inherit animatedPoints
+  end
 
 (* interface SVGPolygonElement *)
-and polygonElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  inherit animatedPoints
-end
+and polygonElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    inherit animatedPoints
+  end
 
 (* interface SVGTextContentElement *)
-and textContentElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit Dom_html.eventTarget
-  method textLength : animatedLength t readonly_prop
-  method lengthAdjust : lengthAdjust animated t readonly_prop
-  method getNumberOfChars : int meth
-  method getComputedTextLength : float meth
-  method getSubStringLength : int -> int -> float meth
-  method getStartPositionOfChar : int -> point t meth
-  method getEndPositionOfChar : int -> point t meth
-  method getExtentOfChar : int -> rect t meth
-  method getRotationOfChar : int -> float meth
-  method getCharNumAtPosition : point -> int meth
-  method selectSubString : int -> int -> unit meth
-end
+and textContentElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit Dom_html.eventTarget
+
+    method textLength : animatedLength t readonly_prop
+
+    method lengthAdjust : lengthAdjust animated t readonly_prop
+
+    method getNumberOfChars : int meth
+
+    method getComputedTextLength : float meth
+
+    method getSubStringLength : int -> int -> float meth
+
+    method getStartPositionOfChar : int -> point t meth
+
+    method getEndPositionOfChar : int -> point t meth
+
+    method getExtentOfChar : int -> rect t meth
+
+    method getRotationOfChar : int -> float meth
+
+    method getCharNumAtPosition : point -> int meth
+
+    method selectSubString : int -> int -> unit meth
+  end
 
 (* interface SVGTextPositioningElement *)
-and textPositioningElement = object
-  inherit textContentElement
-  method x : animatedLengthList t readonly_prop
-  method y : animatedLengthList t readonly_prop
-  method dx : animatedLengthList t readonly_prop
-  method dy : animatedLengthList t readonly_prop
-  method rotate : animatedNumberList t readonly_prop
-end
+and textPositioningElement =
+  object
+    inherit textContentElement
+
+    method x : animatedLengthList t readonly_prop
+
+    method y : animatedLengthList t readonly_prop
+
+    method dx : animatedLengthList t readonly_prop
+
+    method dy : animatedLengthList t readonly_prop
+
+    method rotate : animatedNumberList t readonly_prop
+  end
 
 (* interface SVGTextElement *)
-and textElement = object
-  inherit textPositioningElement
-  inherit transformable
-end
+and textElement =
+  object
+    inherit textPositioningElement
+
+    inherit transformable
+  end
 
 and tspanElement = textPositioningElement
 
-and trefElement = object
-  inherit textPositioningElement
-  inherit uriReference
-end
+and trefElement =
+  object
+    inherit textPositioningElement
+
+    inherit uriReference
+  end
 
 (* interface SVGTextPathElement *)
 and textPathElementMethod = [textPathMethodType] animated
-and textPathElementSpacing = [textPathSpacingType] animated
-and textPathElement = object
-  inherit textContentElement
-  inherit uriReference
 
-  method startOffset : animatedLength t readonly_prop
-  method method_ : textPathElementMethod readonly_prop
-  method spacing : textPathElementSpacing readonly_prop
-end
+and textPathElementSpacing = [textPathSpacingType] animated
+
+and textPathElement =
+  object
+    inherit textContentElement
+
+    inherit uriReference
+
+    method startOffset : animatedLength t readonly_prop
+
+    method method_ : textPathElementMethod readonly_prop
+
+    method spacing : textPathElementSpacing readonly_prop
+  end
 
 (* interface SVGAltGlyphElement *)
-and altGlyphElement = object
-  inherit textPositioningElement
-  inherit uriReference
-  method glyphRef : js_string t prop
-  method format : js_string t prop
-end
+and altGlyphElement =
+  object
+    inherit textPositioningElement
 
-  (* interface SVGAltGlyphDefElement *)
+    inherit uriReference
+
+    method glyphRef : js_string t prop
+
+    method format : js_string t prop
+  end
+
+(* interface SVGAltGlyphDefElement *)
 and altGlyphDefElement = element
 
 (* interface SVGAltGlyphItemElement *)
 and altGlyphItemElement = element
 
 (* interface SVGGlyphRefElement *)
-and glyphRefElement = object
-  inherit element
-  inherit uriReference
-  inherit stylable
-  method glyphRef : js_string t prop
-  method format : js_string t prop
-  method x : float prop
-  method y : float prop
-  method dx : float prop
-  method dy : float prop
-end
+and glyphRefElement =
+  object
+    inherit element
 
+    inherit uriReference
+
+    inherit stylable
+
+    method glyphRef : js_string t prop
+
+    method format : js_string t prop
+
+    method x : float prop
+
+    method y : float prop
+
+    method dx : float prop
+
+    method dy : float prop
+  end
 
 (* interface SVGPaint : SVGColor { *)
 
@@ -967,102 +1374,161 @@ end
 
 (* interface SVGGradientElement *)
 and animatedSpreadMethod = [spreadMethodType] animated
-and gradientElement = object
-  inherit element
-  inherit uriReference
-  inherit stylable
-  (*   readonly attribute SVGAnimatedEnumeration gradientUnits; *)
-  method gradientTransform : animatedTransformList t readonly_prop
-  method spreadMethod : animatedSpreadMethod t readonly_prop
-end
+
+and gradientElement =
+  object
+    inherit element
+
+    inherit uriReference
+
+    inherit stylable
+
+    (*   readonly attribute SVGAnimatedEnumeration gradientUnits; *)
+    method gradientTransform : animatedTransformList t readonly_prop
+
+    method spreadMethod : animatedSpreadMethod t readonly_prop
+  end
+
 (* interface SVGLinearGradientElement *)
-and linearGradientElement = object
-  inherit gradientElement
-  method x1 : animatedLength t readonly_prop
-  method y1 : animatedLength t readonly_prop
-  method x2 : animatedLength t readonly_prop
-  method y2 : animatedLength t readonly_prop
-end
+and linearGradientElement =
+  object
+    inherit gradientElement
+
+    method x1 : animatedLength t readonly_prop
+
+    method y1 : animatedLength t readonly_prop
+
+    method x2 : animatedLength t readonly_prop
+
+    method y2 : animatedLength t readonly_prop
+  end
 
 (* interface SVGRadialGradientElement *)
-and radialGradientElement = object
-  inherit gradientElement
-  method cx : animatedLength t readonly_prop
-  method cy : animatedLength t readonly_prop
-  method r : animatedLength t readonly_prop
-  method fx : animatedLength t readonly_prop
-  method fy : animatedLength t readonly_prop
-end
+and radialGradientElement =
+  object
+    inherit gradientElement
+
+    method cx : animatedLength t readonly_prop
+
+    method cy : animatedLength t readonly_prop
+
+    method r : animatedLength t readonly_prop
+
+    method fx : animatedLength t readonly_prop
+
+    method fy : animatedLength t readonly_prop
+  end
 
 (* interface SVGStopElement *)
-and stopElement = object
-  inherit element
-  inherit stylable
-  method offset : animatedNumber t readonly_prop
-end
+and stopElement =
+  object
+    inherit element
+
+    inherit stylable
+
+    method offset : animatedNumber t readonly_prop
+  end
 
 (* interface SVGPatternElement *)
-and patternElement = object
-  inherit element
-  inherit uriReference
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit fitToViewBox
-  (*   readonly attribute SVGAnimatedEnumeration patternUnits; *)
-  (*   readonly attribute SVGAnimatedEnumeration patternContentUnits; *)
-  method patternTransform : animatedTransformList t readonly_prop
-  method x : animatedLength t readonly_prop
-  method y : animatedLength t readonly_prop
-  method width : animatedLength t readonly_prop
-  method height : animatedLength t readonly_prop
-end
+and patternElement =
+  object
+    inherit element
+
+    inherit uriReference
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit fitToViewBox
+
+    (*   readonly attribute SVGAnimatedEnumeration patternUnits; *)
+    (*   readonly attribute SVGAnimatedEnumeration patternContentUnits; *)
+    method patternTransform : animatedTransformList t readonly_prop
+
+    method x : animatedLength t readonly_prop
+
+    method y : animatedLength t readonly_prop
+
+    method width : animatedLength t readonly_prop
+
+    method height : animatedLength t readonly_prop
+  end
 
 (* interface SVGClipPathElement *)
-and clipPathElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  (*   readonly attribute SVGAnimatedEnumeration clipPathUnits; *)
-end
+and clipPathElement =
+  object
+    inherit element
 
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+    (*   readonly attribute SVGAnimatedEnumeration clipPathUnits; *)
+  end
 
 (* interface SVGMaskElement *)
-and maskElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  (*   readonly attribute SVGAnimatedEnumeration maskUnits; *)
-  (*   readonly attribute SVGAnimatedEnumeration maskContentUnits; *)
-  method x : animatedLength t readonly_prop
-  method y : animatedLength t readonly_prop
-  method width : animatedLength t readonly_prop
-  method height : animatedLength t readonly_prop
-end
+and maskElement =
+  object
+    inherit element
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    (*   readonly attribute SVGAnimatedEnumeration maskUnits; *)
+    (*   readonly attribute SVGAnimatedEnumeration maskContentUnits; *)
+    method x : animatedLength t readonly_prop
+
+    method y : animatedLength t readonly_prop
+
+    method width : animatedLength t readonly_prop
+
+    method height : animatedLength t readonly_prop
+  end
 
 (* interface SVGFilterElement *)
-and filterElement = object
-  inherit element
-  inherit uriReference
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  (*   readonly attribute SVGAnimatedEnumeration filterUnits; *)
-  (*   readonly attribute SVGAnimatedEnumeration primitiveUnits; *)
-  method x : animatedLength t readonly_prop
-  method y : animatedLength t readonly_prop
-  method width : animatedLength t readonly_prop
-  method height : animatedLength t readonly_prop
-  method filterResX : animatedInteger t readonly_prop
-  method filterResY : animatedInteger t readonly_prop
-  method setFilterRes : int -> int -> unit meth
-end
+and filterElement =
+  object
+    inherit element
+
+    inherit uriReference
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    (*   readonly attribute SVGAnimatedEnumeration filterUnits; *)
+    (*   readonly attribute SVGAnimatedEnumeration primitiveUnits; *)
+    method x : animatedLength t readonly_prop
+
+    method y : animatedLength t readonly_prop
+
+    method width : animatedLength t readonly_prop
+
+    method height : animatedLength t readonly_prop
+
+    method filterResX : animatedInteger t readonly_prop
+
+    method filterResY : animatedInteger t readonly_prop
+
+    method setFilterRes : int -> int -> unit meth
+  end
 
 (* interface SVGFilterPrimitiveStandardAttributes : SVGStylable { *)
 (*   readonly attribute SVGAnimatedLength x; *)
@@ -1319,43 +1785,66 @@ end
 (* }; *)
 
 (* interface SVGCursorElement *)
-and cursorElement = object
-  inherit element
-  inherit uriReference
-  inherit tests
-  inherit externalResourcesRequired
-  method x : animatedLength t readonly_prop
-  method y : animatedLength t readonly_prop
-end
+and cursorElement =
+  object
+    inherit element
 
-  (* interface SVGAElement *)
-and aElement = object
-  inherit element
-  inherit uriReference
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  method target : animatedString t readonly_prop
-end
+    inherit uriReference
+
+    inherit tests
+
+    inherit externalResourcesRequired
+
+    method x : animatedLength t readonly_prop
+
+    method y : animatedLength t readonly_prop
+  end
+
+(* interface SVGAElement *)
+and aElement =
+  object
+    inherit element
+
+    inherit uriReference
+
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    method target : animatedString t readonly_prop
+  end
 
 (* interface SVGViewElement *)
-and viewElement = object
-  inherit element
-  inherit externalResourcesRequired
-  inherit fitToViewBox
-  inherit zoomAndPan
-  method viewTarget : stringList t readonly_prop
-end
+and viewElement =
+  object
+    inherit element
+
+    inherit externalResourcesRequired
+
+    inherit fitToViewBox
+
+    inherit zoomAndPan
+
+    method viewTarget : stringList t readonly_prop
+  end
 
 (* interface SVGScriptElement *)
-and scriptElement = object
-  inherit element
-  inherit uriReference
-  inherit externalResourcesRequired
-  method type_ : js_string t prop
-end
+and scriptElement =
+  object
+    inherit element
+
+    inherit uriReference
+
+    inherit externalResourcesRequired
+
+    method type_ : js_string t prop
+  end
 
 (* interface SVGZoomEvent : UIEvent *)
 (*   readonly attribute SVGRect zoomRectScreen; *)
@@ -1366,22 +1855,31 @@ end
 (* }; *)
 
 (* interface SVGAnimationElement *)
-and animationElement = object
-  inherit element
-  inherit tests
-  inherit externalResourcesRequired
-  (* inherit elementTimeControl *)
-  method targetElement : element t readonly_prop
-  method getStartTime : float meth
-  method getCurrentTime : float meth
-  method getSimpleDuration : float meth
-end
+and animationElement =
+  object
+    inherit element
 
-  (* interface SVGAnimateElement *)
-and animateElement = object
-  inherit animationElement
-  inherit stylable
-end
+    inherit tests
+
+    inherit externalResourcesRequired
+
+    (* inherit elementTimeControl *)
+    method targetElement : element t readonly_prop
+
+    method getStartTime : float meth
+
+    method getCurrentTime : float meth
+
+    method getSimpleDuration : float meth
+  end
+
+(* interface SVGAnimateElement *)
+and animateElement =
+  object
+    inherit animationElement
+
+    inherit stylable
+  end
 
 (* interface SVGSetElement *)
 and setElement = animationElement
@@ -1389,99 +1887,148 @@ and setElement = animationElement
 (* interface SVGAnimateMotionElement *)
 and animateMotionElement = animationElement
 
-  (* interface SVGMPathElement *)
-and mPathElement = object
-  inherit element
-  inherit uriReference
-  inherit externalResourcesRequired
-end
+(* interface SVGMPathElement *)
+and mPathElement =
+  object
+    inherit element
 
-  (* interface SVGAnimateColorElement *)
-and animateColorElement = object
-  inherit animationElement
-  inherit stylable
-end
+    inherit uriReference
+
+    inherit externalResourcesRequired
+  end
+
+(* interface SVGAnimateColorElement *)
+and animateColorElement =
+  object
+    inherit animationElement
+
+    inherit stylable
+  end
 
 (* interface SVGAnimateTransformElement *)
 and animateTransformElement = animationElement
 
 (* interface SVGFontElement *)
-and fontElement = object
-  inherit element
-  inherit stylable
-end
+and fontElement =
+  object
+    inherit element
 
-(* interface SVGGlyphElement *) (* interface SVGMissingGlyphElement*)
-and glyphElement = object
-  inherit element
-  inherit stylable
-end
+    inherit stylable
+  end
+
+(* interface SVGGlyphElement *)
+(* interface SVGMissingGlyphElement*)
+and glyphElement =
+  object
+    inherit element
+
+    inherit stylable
+  end
 
 (* interface SVGHKernElement : SVGElement *)
 (* interface SVGVKernElement : SVGElement *)
 
 (* interface SVGFontFaceElement *)
 class type fontFaceElement = element
+
 (* interface SVGFontFaceSrcElement *)
 class type fontFaceSrcElement = element
+
 (* interface SVGFontFaceUriElement *)
 class type fontFaceUriElement = element
+
 (* interface SVGFontFaceFormatElement *)
 class type fontFaceFormatElement = element
+
 (* interface SVGFontFaceNameElement *)
 class type fontFaceNameElement = element
+
 (* interface SVGMetadataElement *)
 class type metadataElement = element
 
 (* interface SVGForeignObjectElement *)
-class type foreignObjectElement = object
-  inherit element
-  inherit tests
-  inherit langSpace
-  inherit externalResourcesRequired
-  inherit stylable
-  inherit transformable
-  method x : animatedLength t readonly_prop
-  method y : animatedLength t readonly_prop
-  method width : animatedLength t readonly_prop
-  method height : animatedLength t readonly_prop
-end
+class type foreignObjectElement =
+  object
+    inherit element
 
-let createElement (doc : document t) name =
-  doc##createElementNS xmlns (Js.string name)
+    inherit tests
+
+    inherit langSpace
+
+    inherit externalResourcesRequired
+
+    inherit stylable
+
+    inherit transformable
+
+    method x : animatedLength t readonly_prop
+
+    method y : animatedLength t readonly_prop
+
+    method width : animatedLength t readonly_prop
+
+    method height : animatedLength t readonly_prop
+  end
+
+let createElement (doc : document t) name = doc##createElementNS xmlns (Js.string name)
+
 let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 
 let createA doc : aElement t = unsafeCreateElement doc "a"
+
 let createAltGlyph doc : altGlyphElement t = unsafeCreateElement doc "altglyph"
+
 let createAltGlyphDef doc : altGlyphDefElement t = unsafeCreateElement doc "altglyphdef"
-let createAltGlyphItem doc : altGlyphItemElement t = unsafeCreateElement doc "altglyphitem"
+
+let createAltGlyphItem doc : altGlyphItemElement t =
+  unsafeCreateElement doc "altglyphitem"
+
 let createAnimate doc : animateElement t = unsafeCreateElement doc "animate"
-let createAnimateColor doc : animateColorElement t = unsafeCreateElement doc "animatecolor"
-let createAnimateMotion doc : animateMotionElement t = unsafeCreateElement doc "animatemotion"
-let createAnimateTransform doc : animateTransformElement t = unsafeCreateElement doc "animatetransform"
+
+let createAnimateColor doc : animateColorElement t =
+  unsafeCreateElement doc "animatecolor"
+
+let createAnimateMotion doc : animateMotionElement t =
+  unsafeCreateElement doc "animatemotion"
+
+let createAnimateTransform doc : animateTransformElement t =
+  unsafeCreateElement doc "animatetransform"
 
 let createCircle doc : circleElement t = unsafeCreateElement doc "circle"
+
 let createClipPath doc : clipPathElement t = unsafeCreateElement doc "clippath"
+
 (* let createColorProfile doc : colorProfile t = unsafeCreateElement doc "color-profile" *)
 let createCursor doc : cursorElement t = unsafeCreateElement doc "cursor"
 
 let createDefs doc : defsElement t = unsafeCreateElement doc "defs"
+
 let createDesc doc : descElement t = unsafeCreateElement doc "desc"
 
 let createEllipse doc : ellipseElement t = unsafeCreateElement doc "ellipse"
 
 (* let createFe* *)
 let createFilter doc : filterElement t = unsafeCreateElement doc "filter"
+
 let createFont doc : fontElement t = unsafeCreateElement doc "font"
+
 let createFontFace doc : fontElement t = unsafeCreateElement doc "font-face"
+
 let createFontFaceFormat doc : fontElement t = unsafeCreateElement doc "font-face-format"
+
 let createFontFaceName doc : fontElement t = unsafeCreateElement doc "font-face-name"
+
 let createFontFaceSrc doc : fontElement t = unsafeCreateElement doc "font-face-src"
+
 let createFontFaceUri doc : fontElement t = unsafeCreateElement doc "font-face-uri"
-let createForeignObject doc : foreignObjectElement t = unsafeCreateElement doc "foreignobject"
+
+let createForeignObject doc : foreignObjectElement t =
+  unsafeCreateElement doc "foreignobject"
 
 let createG doc : gElement t = unsafeCreateElement doc "g"
+
 let createGlyph doc : glyphElement t = unsafeCreateElement doc "glyph"
+
 let createGlyphRef doc : glyphElement t = unsafeCreateElement doc "glyphref"
 
 let createhkern doc : element t = unsafeCreateElement doc "hkern"
@@ -1489,98 +2036,134 @@ let createhkern doc : element t = unsafeCreateElement doc "hkern"
 let createImage doc : imageElement t = unsafeCreateElement doc "image"
 
 let createLineElement doc : lineElement t = unsafeCreateElement doc "line"
-let createLinearElement doc : linearGradientElement t = unsafeCreateElement doc "lineargradient"
+
+let createLinearElement doc : linearGradientElement t =
+  unsafeCreateElement doc "lineargradient"
 
 (* let createMarker doc : markerElement *)
 let createMask doc : maskElement t = unsafeCreateElement doc "mask"
+
 let createMetaData doc : metadataElement t = unsafeCreateElement doc "metadata"
+
 let createMissingGlyph doc : glyphElement t = unsafeCreateElement doc "missing-glyph"
+
 let createMPath doc : mPathElement t = unsafeCreateElement doc "mpath"
 
-
 let createPath doc : pathElement t = unsafeCreateElement doc "path"
+
 let createParttern doc : patternElement t = unsafeCreateElement doc "parttern"
+
 let createPolygon doc : polygonElement t = unsafeCreateElement doc "polygon"
+
 let createPolyline doc : polyLineElement t = unsafeCreateElement doc "polyline"
 
-let createRadialgradient doc : radialGradientElement t = unsafeCreateElement doc "radialgradient"
+let createRadialgradient doc : radialGradientElement t =
+  unsafeCreateElement doc "radialgradient"
+
 let createRect doc : rectElement t = unsafeCreateElement doc "rect"
 
 let createScript doc : scriptElement t = unsafeCreateElement doc "script"
+
 let createSet doc : setElement t = unsafeCreateElement doc "set"
+
 let createStop doc : stopElement t = unsafeCreateElement doc "stop"
+
 let createStyle doc : styleElement t = unsafeCreateElement doc "style"
+
 let createSvg doc : svgElement t = unsafeCreateElement doc "svg"
+
 let createSwitch doc : switchElement t = unsafeCreateElement doc "switch"
+
 let createSymbol doc : symbolElement t = unsafeCreateElement doc "symbol"
 
-
 let createTextElement doc : textElement t = unsafeCreateElement doc "text"
+
 let createTextpath doc : textPathElement t = unsafeCreateElement doc "textpath"
+
 let createTitle doc : titleElement t = unsafeCreateElement doc "title"
+
 let createTref doc : trefElement t = unsafeCreateElement doc "tref"
+
 let createTspan doc : tspanElement t = unsafeCreateElement doc "tspan"
 
 let createUse doc : useElement t = unsafeCreateElement doc "use"
 
 let createView doc : viewElement t = unsafeCreateElement doc "view"
+
 let createvkern doc : element t = unsafeCreateElement doc "vkern"
 
 (****)
 
-let svg_element : element t constr = Js.Unsafe.global ##. _SVGElement
+let svg_element : element t constr = Js.Unsafe.global##._SVGElement
 
 let document = Js.Unsafe.global##.document
 
 let getElementById id : element t =
-  Js.Opt.case (Js.Unsafe.global##.document##getElementById (Js.string id))
+  Js.Opt.case
+    (Js.Unsafe.global##.document##getElementById (Js.string id))
     (fun () -> raise Not_found)
     (fun e -> if Js.instanceof e svg_element then e else raise Not_found)
 
 module CoerceTo = struct
   let element (e : #Dom.node Js.t) : element Js.t Js.opt =
-    if Js.instanceof e svg_element then
-      Js.some (Js.Unsafe.coerce e)
-    else
-      Js.null
+    if Js.instanceof e svg_element then Js.some (Js.Unsafe.coerce e) else Js.null
 
   let unsafeCoerce (e : #element t) tag =
-    if e##.tagName##toLowerCase == Js.string tag then
-      Js.some (Js.Unsafe.coerce e)
-    else
-      Js.null
+    if e##.tagName##toLowerCase == Js.string tag
+    then Js.some (Js.Unsafe.coerce e)
+    else Js.null
 
   let a e : aElement t opt = unsafeCoerce e "a"
+
   let altGlyph e : altGlyphElement t opt = unsafeCoerce e "altglyph"
+
   let altGlyphDef e : altGlyphDefElement t opt = unsafeCoerce e "altglyphdef"
+
   let altGlyphItem e : altGlyphItemElement t opt = unsafeCoerce e "altglyphitem"
+
   let animate e : animateElement t opt = unsafeCoerce e "animate"
+
   let animateColor e : animateColorElement t opt = unsafeCoerce e "animatecolor"
+
   let animateMotion e : animateMotionElement t opt = unsafeCoerce e "animatemotion"
-  let animateTransform e : animateTransformElement t opt = unsafeCoerce e "animatetransform"
+
+  let animateTransform e : animateTransformElement t opt =
+    unsafeCoerce e "animatetransform"
 
   let circle e : circleElement t opt = unsafeCoerce e "circle"
+
   let clipPath e : clipPathElement t opt = unsafeCoerce e "clippath"
+
   (* let ColorProfile e : colorProfile t opt = unsafeCoerce e "color-profile" *)
   let cursor e : cursorElement t opt = unsafeCoerce e "cursor"
 
   let defs e : defsElement t opt = unsafeCoerce e "defs"
+
   let desc e : descElement t opt = unsafeCoerce e "desc"
 
   let ellipse e : ellipseElement t opt = unsafeCoerce e "ellipse"
 
   (* let Fe* *)
   let filter e : filterElement t opt = unsafeCoerce e "filter"
+
   let font e : fontElement t opt = unsafeCoerce e "font"
+
   let fontFace e : fontElement t opt = unsafeCoerce e "font-face"
+
   let fontFaceFormat e : fontElement t opt = unsafeCoerce e "font-face-format"
+
   let fontFaceName e : fontElement t opt = unsafeCoerce e "font-face-name"
+
   let fontFaceSrc e : fontElement t opt = unsafeCoerce e "font-face-src"
+
   let fontFaceUri e : fontElement t opt = unsafeCoerce e "font-face-uri"
+
   let foreignObject e : foreignObjectElement t opt = unsafeCoerce e "foreignobject"
 
   let g e : gElement t opt = unsafeCoerce e "g"
+
   let glyph e : glyphElement t opt = unsafeCoerce e "glyph"
+
   let glyphRef e : glyphElement t opt = unsafeCoerce e "glyphref"
 
   let hkern e : element t opt = unsafeCoerce e "hkern"
@@ -1588,41 +2171,57 @@ module CoerceTo = struct
   let image e : imageElement t opt = unsafeCoerce e "image"
 
   let lineElement e : lineElement t opt = unsafeCoerce e "line"
+
   let linearElement e : linearGradientElement t opt = unsafeCoerce e "lineargradient"
 
   (* let Marker e : markerElement *)
   let mask e : maskElement t opt = unsafeCoerce e "mask"
+
   let metaData e : metadataElement t opt = unsafeCoerce e "metadata"
+
   let missingGlyph e : glyphElement t opt = unsafeCoerce e "missing-glyph"
+
   let mPath e : mPathElement t opt = unsafeCoerce e "mpath"
 
-
   let path e : pathElement t opt = unsafeCoerce e "path"
+
   let parttern e : patternElement t opt = unsafeCoerce e "parttern"
+
   let polygon e : polygonElement t opt = unsafeCoerce e "polygon"
+
   let polyline e : polyLineElement t opt = unsafeCoerce e "polyline"
 
   let radialgradient e : radialGradientElement t opt = unsafeCoerce e "radialgradient"
+
   let rect e : rectElement t opt = unsafeCoerce e "rect"
 
   let script e : scriptElement t opt = unsafeCoerce e "script"
+
   let set e : setElement t opt = unsafeCoerce e "set"
+
   let stop e : stopElement t opt = unsafeCoerce e "stop"
+
   let style e : styleElement t opt = unsafeCoerce e "style"
+
   let svg e : svgElement t opt = unsafeCoerce e "svg"
+
   let switch e : switchElement t opt = unsafeCoerce e "switch"
+
   let symbol e : symbolElement t opt = unsafeCoerce e "symbol"
 
-
   let textElement e : textElement t opt = unsafeCoerce e "text"
+
   let textpath e : textPathElement t opt = unsafeCoerce e "textpath"
+
   let title e : titleElement t opt = unsafeCoerce e "title"
+
   let tref e : trefElement t opt = unsafeCoerce e "tref"
+
   let tspan e : tspanElement t opt = unsafeCoerce e "tspan"
 
   let use e : useElement t opt = unsafeCoerce e "use"
 
   let view e : viewElement t opt = unsafeCoerce e "view"
-  let vkern e : element t opt = unsafeCoerce e "vkern"
 
+  let vkern e : element t opt = unsafeCoerce e "vkern"
 end

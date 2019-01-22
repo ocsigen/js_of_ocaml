@@ -419,191 +419,301 @@ if (Intl.is_supported()) then (
     @see <https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl> for API documentation.
     @see <https://www.ecma-international.org/ecma-402/1.0/> for the ECMAScript specification. *)
 
-module type Shared =
-sig
-  class type object_options = object
-    method localeMatcher : Js.js_string Js.t Js.prop
-  end
+module type Shared = sig
+  class type object_options =
+    object
+      method localeMatcher : Js.js_string Js.t Js.prop
+    end
 
   val object_options : unit -> object_options Js.t
 
-  class type _object = object
-    method supportedLocalesOf : Js.js_string Js.t Js.js_array Js.t -> object_options Js.t Js.optdef -> Js.js_string Js.t Js.js_array Js.t Js.meth
-  end
+  class type _object =
+    object
+      method supportedLocalesOf :
+           Js.js_string Js.t Js.js_array Js.t
+        -> object_options Js.t Js.optdef
+        -> Js.js_string Js.t Js.js_array Js.t Js.meth
+    end
 end
 
-module Collator :
-sig
-
+module Collator : sig
   include Shared
 
-  class type resolved_options = object
-    method locale : Js.js_string Js.t Js.readonly_prop
-    method usage : Js.js_string Js.t Js.readonly_prop
-    method sensitivity : Js.js_string Js.t Js.readonly_prop
-    method ignorePunctuation : bool Js.t Js.readonly_prop
-    method collation : Js.js_string Js.t Js.readonly_prop
-    method numeric : bool Js.t Js.readonly_prop
-    method caseFirst : Js.js_string Js.t Js.readonly_prop
-  end
+  class type resolved_options =
+    object
+      method locale : Js.js_string Js.t Js.readonly_prop
 
-  class type options = object
-    method localeMatcher : Js.js_string Js.t Js.prop
-    method usage : Js.js_string Js.t Js.prop
-    method sensitivity : Js.js_string Js.t Js.prop
-    method ignorePunctuation : bool Js.t Js.prop
-    method numeric : bool Js.t Js.prop
-    method caseFirst : Js.js_string Js.t Js.prop
-  end
+      method usage : Js.js_string Js.t Js.readonly_prop
+
+      method sensitivity : Js.js_string Js.t Js.readonly_prop
+
+      method ignorePunctuation : bool Js.t Js.readonly_prop
+
+      method collation : Js.js_string Js.t Js.readonly_prop
+
+      method numeric : bool Js.t Js.readonly_prop
+
+      method caseFirst : Js.js_string Js.t Js.readonly_prop
+    end
+
+  class type options =
+    object
+      method localeMatcher : Js.js_string Js.t Js.prop
+
+      method usage : Js.js_string Js.t Js.prop
+
+      method sensitivity : Js.js_string Js.t Js.prop
+
+      method ignorePunctuation : bool Js.t Js.prop
+
+      method numeric : bool Js.t Js.prop
+
+      method caseFirst : Js.js_string Js.t Js.prop
+    end
 
   val options : unit -> options Js.t
 
-  class type t = object
-    method compare : (Js.js_string Js.t -> Js.js_string Js.t -> int) Js.readonly_prop
-    method resolvedOptions : unit -> resolved_options Js.t Js.meth
-  end
+  class type t =
+    object
+      method compare : (Js.js_string Js.t -> Js.js_string Js.t -> int) Js.readonly_prop
+
+      method resolvedOptions : unit -> resolved_options Js.t Js.meth
+    end
 end
 
-module DateTimeFormat :
-sig
-
+module DateTimeFormat : sig
   include Shared
 
-  class type resolved_options = object
-    method locale : Js.js_string Js.t Js.readonly_prop
-    method calendar : Js.js_string Js.t Js.readonly_prop
-    method numberingSystem : Js.js_string Js.t Js.readonly_prop
-    method timeZone : Js.js_string Js.t Js.readonly_prop
-    method hour12 : bool Js.t Js.readonly_prop
-    method weekday : Js.js_string Js.t Js.optdef_prop
-    method era : Js.js_string Js.t Js.optdef_prop
-    method year : Js.js_string Js.t Js.optdef_prop
-    method month : Js.js_string Js.t Js.optdef_prop
-    method day : Js.js_string Js.t Js.optdef_prop
-    method hour : Js.js_string Js.t Js.optdef_prop
-    method minute : Js.js_string Js.t Js.optdef_prop
-    method second : Js.js_string Js.t Js.optdef_prop
-    method timeZoneName : Js.js_string Js.t Js.optdef_prop
-  end
+  class type resolved_options =
+    object
+      method locale : Js.js_string Js.t Js.readonly_prop
 
-  class type options = object
-    method localeMatcher : Js.js_string Js.t Js.prop
-    method timeZone : Js.js_string Js.t Js.optdef Js.prop
-    method hour12 : bool Js.t Js.optdef Js.prop
-    method hourCycle : Js.js_string Js.t Js.optdef Js.prop
-    method formatMatcher : Js.js_string Js.t Js.prop
-    method weekday : Js.js_string Js.t Js.optdef Js.prop
-    method era : Js.js_string Js.t Js.optdef Js.prop
-    method year : Js.js_string Js.t Js.optdef Js.prop
-    method month : Js.js_string Js.t Js.optdef Js.prop
-    method day : Js.js_string Js.t Js.optdef Js.prop
-    method hour : Js.js_string Js.t Js.optdef Js.prop
-    method minute : Js.js_string Js.t Js.optdef Js.prop
-    method second : Js.js_string Js.t Js.optdef Js.prop
-    method timeZoneName : Js.js_string Js.t Js.optdef Js.prop
-  end
+      method calendar : Js.js_string Js.t Js.readonly_prop
+
+      method numberingSystem : Js.js_string Js.t Js.readonly_prop
+
+      method timeZone : Js.js_string Js.t Js.readonly_prop
+
+      method hour12 : bool Js.t Js.readonly_prop
+
+      method weekday : Js.js_string Js.t Js.optdef_prop
+
+      method era : Js.js_string Js.t Js.optdef_prop
+
+      method year : Js.js_string Js.t Js.optdef_prop
+
+      method month : Js.js_string Js.t Js.optdef_prop
+
+      method day : Js.js_string Js.t Js.optdef_prop
+
+      method hour : Js.js_string Js.t Js.optdef_prop
+
+      method minute : Js.js_string Js.t Js.optdef_prop
+
+      method second : Js.js_string Js.t Js.optdef_prop
+
+      method timeZoneName : Js.js_string Js.t Js.optdef_prop
+    end
+
+  class type options =
+    object
+      method localeMatcher : Js.js_string Js.t Js.prop
+
+      method timeZone : Js.js_string Js.t Js.optdef Js.prop
+
+      method hour12 : bool Js.t Js.optdef Js.prop
+
+      method hourCycle : Js.js_string Js.t Js.optdef Js.prop
+
+      method formatMatcher : Js.js_string Js.t Js.prop
+
+      method weekday : Js.js_string Js.t Js.optdef Js.prop
+
+      method era : Js.js_string Js.t Js.optdef Js.prop
+
+      method year : Js.js_string Js.t Js.optdef Js.prop
+
+      method month : Js.js_string Js.t Js.optdef Js.prop
+
+      method day : Js.js_string Js.t Js.optdef Js.prop
+
+      method hour : Js.js_string Js.t Js.optdef Js.prop
+
+      method minute : Js.js_string Js.t Js.optdef Js.prop
+
+      method second : Js.js_string Js.t Js.optdef Js.prop
+
+      method timeZoneName : Js.js_string Js.t Js.optdef Js.prop
+    end
 
   val options : unit -> options Js.t
 
-  class type format_part = object
-    method _type : Js.js_string Js.t Js.readonly_prop
-    method _value : Js.js_string Js.t Js.readonly_prop
-  end
+  class type format_part =
+    object
+      method _type : Js.js_string Js.t Js.readonly_prop
 
-  class type t = object
-    method format : (Js.date Js.t -> Js.js_string Js.t) Js.readonly_prop
-    method formatToParts : Js.date Js.t Js.optdef -> format_part Js.t Js.js_array Js.t Js.meth
-    method resolvedOptions : unit -> resolved_options Js.t Js.meth
-  end
+      method _value : Js.js_string Js.t Js.readonly_prop
+    end
+
+  class type t =
+    object
+      method format : (Js.date Js.t -> Js.js_string Js.t) Js.readonly_prop
+
+      method formatToParts :
+        Js.date Js.t Js.optdef -> format_part Js.t Js.js_array Js.t Js.meth
+
+      method resolvedOptions : unit -> resolved_options Js.t Js.meth
+    end
 end
 
-module NumberFormat :
-sig
-
+module NumberFormat : sig
   include Shared
 
-  class type resolved_options = object
-    method locale : Js.js_string Js.t Js.readonly_prop
-    method numberingSystem : Js.js_string Js.t Js.readonly_prop
-    method style : Js.js_string Js.t Js.readonly_prop
-    method currency : Js.js_string Js.t Js.optdef_prop
-    method currencyDisplay : Js.js_string Js.t Js.optdef_prop
-    method useGrouping : bool Js.t Js.readonly_prop
-    method minimumIntegerDigits : int Js.optdef_prop
-    method minimumFractionDigits : int Js.optdef_prop
-    method maximumFractionDigits : int Js.optdef_prop
-    method minimumSignificantDigits : int Js.optdef_prop
-    method maximumSignificantDigits : int Js.optdef_prop
-  end
+  class type resolved_options =
+    object
+      method locale : Js.js_string Js.t Js.readonly_prop
 
-  class type options = object
-    method localeMatcher : Js.js_string Js.t Js.prop
-    method style : Js.js_string Js.t Js.prop
-    method currency : Js.js_string Js.t Js.optdef Js.prop
-    method currencyDisplay : Js.js_string Js.t Js.optdef Js.prop
-    method useGrouping : bool Js.t Js.prop
-    method minimumIntegerDigits : int Js.optdef Js.prop
-    method minimumFractionDigits : int Js.optdef Js.prop
-    method maximumFractionDigits : int Js.optdef Js.prop
-    method minimumSignificantDigits : int Js.optdef Js.prop
-    method maximumSignificantDigits : int Js.optdef Js.prop
-  end
+      method numberingSystem : Js.js_string Js.t Js.readonly_prop
+
+      method style : Js.js_string Js.t Js.readonly_prop
+
+      method currency : Js.js_string Js.t Js.optdef_prop
+
+      method currencyDisplay : Js.js_string Js.t Js.optdef_prop
+
+      method useGrouping : bool Js.t Js.readonly_prop
+
+      method minimumIntegerDigits : int Js.optdef_prop
+
+      method minimumFractionDigits : int Js.optdef_prop
+
+      method maximumFractionDigits : int Js.optdef_prop
+
+      method minimumSignificantDigits : int Js.optdef_prop
+
+      method maximumSignificantDigits : int Js.optdef_prop
+    end
+
+  class type options =
+    object
+      method localeMatcher : Js.js_string Js.t Js.prop
+
+      method style : Js.js_string Js.t Js.prop
+
+      method currency : Js.js_string Js.t Js.optdef Js.prop
+
+      method currencyDisplay : Js.js_string Js.t Js.optdef Js.prop
+
+      method useGrouping : bool Js.t Js.prop
+
+      method minimumIntegerDigits : int Js.optdef Js.prop
+
+      method minimumFractionDigits : int Js.optdef Js.prop
+
+      method maximumFractionDigits : int Js.optdef Js.prop
+
+      method minimumSignificantDigits : int Js.optdef Js.prop
+
+      method maximumSignificantDigits : int Js.optdef Js.prop
+    end
 
   val options : unit -> options Js.t
 
-  class type format_part = object
-    method _type : Js.js_string Js.t Js.readonly_prop
-    method _value : Js.js_string Js.t Js.readonly_prop
-  end
+  class type format_part =
+    object
+      method _type : Js.js_string Js.t Js.readonly_prop
 
-  class type t = object
-    method format : (Js.number Js.t -> Js.js_string Js.t) Js.readonly_prop
-    method formatToParts : Js.number Js.t Js.optdef -> format_part Js.t Js.js_array Js.t Js.meth
-    method resolvedOptions : unit -> resolved_options Js.t Js.meth
-  end
+      method _value : Js.js_string Js.t Js.readonly_prop
+    end
+
+  class type t =
+    object
+      method format : (Js.number Js.t -> Js.js_string Js.t) Js.readonly_prop
+
+      method formatToParts :
+        Js.number Js.t Js.optdef -> format_part Js.t Js.js_array Js.t Js.meth
+
+      method resolvedOptions : unit -> resolved_options Js.t Js.meth
+    end
 end
 
-module PluralRules :
-sig
-
+module PluralRules : sig
   include Shared
 
-  class type resolved_options = object
-    method locale : Js.js_string Js.t Js.readonly_prop
-    method pluralCategories : Js.js_string Js.t Js.js_array Js.t Js.readonly_prop
-    method _type : Js.js_string Js.t Js.readonly_prop
-    method minimumIntegerDigits : int Js.optdef_prop
-    method minimumFractionDigits : int Js.optdef_prop
-    method maximumFractionDigits : int Js.optdef_prop
-    method minimumSignificantDigits : int Js.optdef_prop
-    method maximumSignificantDigits : int Js.optdef_prop
-  end
+  class type resolved_options =
+    object
+      method locale : Js.js_string Js.t Js.readonly_prop
 
-  class type options = object
-    method localeMatcher : Js.js_string Js.t Js.prop
-    method _type : Js.js_string Js.t Js.prop
-  end
+      method pluralCategories : Js.js_string Js.t Js.js_array Js.t Js.readonly_prop
+
+      method _type : Js.js_string Js.t Js.readonly_prop
+
+      method minimumIntegerDigits : int Js.optdef_prop
+
+      method minimumFractionDigits : int Js.optdef_prop
+
+      method maximumFractionDigits : int Js.optdef_prop
+
+      method minimumSignificantDigits : int Js.optdef_prop
+
+      method maximumSignificantDigits : int Js.optdef_prop
+    end
+
+  class type options =
+    object
+      method localeMatcher : Js.js_string Js.t Js.prop
+
+      method _type : Js.js_string Js.t Js.prop
+    end
 
   val options : unit -> options Js.t
 
-  class type t = object
-    method select : Js.number Js.t -> Js.js_string Js.t Js.meth
-    method resolvedOptions : unit -> resolved_options Js.t Js.meth
-  end
+  class type t =
+    object
+      method select : Js.number Js.t -> Js.js_string Js.t Js.meth
+
+      method resolvedOptions : unit -> resolved_options Js.t Js.meth
+    end
 end
 
-class type intl = object
-  method _Collator : Collator._object Js.t Js.readonly_prop
-  method _DateTimeFormat : DateTimeFormat._object Js.t Js.readonly_prop
-  method _NumberFormat : NumberFormat._object Js.t Js.readonly_prop
-  method _PluralRules : PluralRules._object Js.t Js.readonly_prop
-  method getCanonicalLocales : Js.js_string Js.t Js.js_array Js.t -> Js.js_string Js.t Js.js_array Js.t Js.meth
-end
+class type intl =
+  object
+    method _Collator : Collator._object Js.t Js.readonly_prop
+
+    method _DateTimeFormat : DateTimeFormat._object Js.t Js.readonly_prop
+
+    method _NumberFormat : NumberFormat._object Js.t Js.readonly_prop
+
+    method _PluralRules : PluralRules._object Js.t Js.readonly_prop
+
+    method getCanonicalLocales :
+      Js.js_string Js.t Js.js_array Js.t -> Js.js_string Js.t Js.js_array Js.t Js.meth
+  end
 
 val intl : intl Js.t
-val collator_constr : (Js.js_string Js.t Js.js_array Js.t Js.optdef -> Collator.options Js.t Js.optdef -> Collator.t Js.t) Js.constr
-val dateTimeFormat_constr : (Js.js_string Js.t Js.js_array Js.t Js.optdef -> DateTimeFormat.options Js.t Js.optdef -> DateTimeFormat.t Js.t) Js.constr
-val numberFormat_constr : (Js.js_string Js.t Js.js_array Js.t Js.optdef -> NumberFormat.options Js.t Js.optdef -> NumberFormat.t Js.t) Js.constr
-val pluralRules_constr : (Js.js_string Js.t Js.js_array Js.t Js.optdef -> PluralRules.options Js.t Js.optdef -> PluralRules.t Js.t) Js.constr
+
+val collator_constr :
+  (   Js.js_string Js.t Js.js_array Js.t Js.optdef
+   -> Collator.options Js.t Js.optdef
+   -> Collator.t Js.t)
+  Js.constr
+
+val dateTimeFormat_constr :
+  (   Js.js_string Js.t Js.js_array Js.t Js.optdef
+   -> DateTimeFormat.options Js.t Js.optdef
+   -> DateTimeFormat.t Js.t)
+  Js.constr
+
+val numberFormat_constr :
+  (   Js.js_string Js.t Js.js_array Js.t Js.optdef
+   -> NumberFormat.options Js.t Js.optdef
+   -> NumberFormat.t Js.t)
+  Js.constr
+
+val pluralRules_constr :
+  (   Js.js_string Js.t Js.js_array Js.t Js.optdef
+   -> PluralRules.options Js.t Js.optdef
+   -> PluralRules.t Js.t)
+  Js.constr
 
 val is_supported : unit -> bool

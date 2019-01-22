@@ -21,41 +21,58 @@
 
 open Js
 open Dom
+
 type state =
   | CONNECTING
   | OPEN
   | CLOSED
 
-class type ['a] messageEvent = object
-  inherit ['a] Dom.event
-  method data : js_string t readonly_prop
-  method origin : js_string t readonly_prop
-  method lastEventId : js_string t readonly_prop
-  (* method source : unit *)
-end
+class type ['a] messageEvent =
+  object
+    inherit ['a] Dom.event
 
-class type eventSource = object('self)
-  method url : string t readonly_prop
-  method withCredentials : bool t readonly_prop
-  method readyState : state readonly_prop
-  method close : unit meth
+    method data : js_string t readonly_prop
 
-  method onopen : ('self t, 'self messageEvent t) event_listener writeonly_prop
-  method onmessage : ('self t, 'self messageEvent t) event_listener writeonly_prop
-  method onerror : ('self t, 'self messageEvent t) event_listener writeonly_prop
-end
+    method origin : js_string t readonly_prop
 
-class type options = object
-  method withCredentials : bool t writeonly_prop
-end
+    method lastEventId : js_string t readonly_prop
+    (* method source : unit *)
+  end
+
+class type eventSource =
+  object ('self)
+    method url : string t readonly_prop
+
+    method withCredentials : bool t readonly_prop
+
+    method readyState : state readonly_prop
+
+    method close : unit meth
+
+    method onopen : ('self t, 'self messageEvent t) event_listener writeonly_prop
+
+    method onmessage : ('self t, 'self messageEvent t) event_listener writeonly_prop
+
+    method onerror : ('self t, 'self messageEvent t) event_listener writeonly_prop
+  end
+
+class type options =
+  object
+    method withCredentials : bool t writeonly_prop
+  end
 
 val withCredentials : bool -> options t
+
 val eventSource : (js_string t -> eventSource t) constr
+
 val eventSource_options : (js_string t -> options t -> eventSource t) constr
 
 val addEventListener :
-  (#eventSource t as 'a) -> 'b Event.typ ->
-  ('a, 'b) event_listener -> bool t -> event_listener_id
-  (** Add an event listener.  This function matches the
+     (#eventSource t as 'a)
+  -> 'b Event.typ
+  -> ('a, 'b) event_listener
+  -> bool t
+  -> event_listener_id
+(** Add an event listener.  This function matches the
       [addEventListener] DOM method, except that it returns
       an id for removing the listener. *)
