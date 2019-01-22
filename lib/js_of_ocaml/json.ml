@@ -19,40 +19,45 @@
 
 open Js
 
-class type json = object
-    method parse: 'a. js_string t -> 'a meth
-    method parse_:
-      'a 'b 'c 'd. js_string t ->
-      ('b t, js_string t -> 'c -> 'd) meth_callback -> 'a meth
-    method stringify: 'a. 'a -> js_string t meth
+class type json =
+  object
+    method parse : 'a. js_string t -> 'a meth
+
+    method parse_ :
+      'a 'b 'c 'd.    js_string t -> ('b t, js_string t -> 'c -> 'd) meth_callback
+      -> 'a meth
+
+    method stringify : 'a. 'a -> js_string t meth
+
     (* Beware that this is only works when the function argument
        expects exactly two arguments (no curryfication is performed). *)
-    method stringify_:
-      'a 'b 'c 'd. 'a ->
-      (js_string t -> 'c -> 'd) -> js_string t meth
-end
+    method stringify_ : 'a 'b 'c 'd. 'a -> (js_string t -> 'c -> 'd) -> js_string t meth
+  end
 
 external get_json : unit -> json t = "caml_json"
 
 let json = get_json ()
 
-external unsafe_equals: 'a -> 'b -> bool = "caml_js_equals"
+external unsafe_equals : 'a -> 'b -> bool = "caml_js_equals"
 
-external to_byte_MlBytes: js_string t -> 'a t = "caml_js_to_byte_string"
-external to_byte_jsstring: 'a t -> js_string t = "caml_jsbytes_of_string"
+external to_byte_MlBytes : js_string t -> 'a t = "caml_js_to_byte_string"
+
+external to_byte_jsstring : 'a t -> js_string t = "caml_jsbytes_of_string"
 
 let input_reviver =
   let reviver _this _key value =
-    if unsafe_equals (typeof value) (typeof (string "foo")) then
-      to_byte_MlBytes (Unsafe.coerce value)
-    else
-      value in
+    if unsafe_equals (typeof value) (typeof (string "foo"))
+    then to_byte_MlBytes (Unsafe.coerce value)
+    else value
+  in
   wrap_meth_callback reviver
+
 let unsafe_input s = json##parse_ s input_reviver
 
-class type obj = object
-  method constructor : 'a. 'a constr Js.readonly_prop
-end
+class type obj =
+  object
+    method constructor : 'a. 'a constr Js.readonly_prop
+  end
 
 let mlString_constr =
   let dummy_string = "" in
@@ -60,8 +65,8 @@ let mlString_constr =
   dummy_obj##.constructor
 
 let output_reviver _key value =
-  if instanceof value mlString_constr then
-    to_byte_jsstring (Unsafe.coerce value)
-  else
-    value
+  if instanceof value mlString_constr
+  then to_byte_jsstring (Unsafe.coerce value)
+  else value
+
 let output obj = json##stringify_ obj output_reviver
