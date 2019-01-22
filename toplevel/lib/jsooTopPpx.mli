@@ -34,6 +34,8 @@
 
 (** Helpers to embed PPX into the toplevel. *)
 
-val preprocess_structure: Parsetree.structure       -> Parsetree.structure
-val preprocess_signature: Parsetree.signature       -> Parsetree.signature
-val preprocess_phrase   : Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase
+val preprocess_structure : Parsetree.structure -> Parsetree.structure
+
+val preprocess_signature : Parsetree.signature -> Parsetree.signature
+
+val preprocess_phrase : Parsetree.toplevel_phrase -> Parsetree.toplevel_phrase

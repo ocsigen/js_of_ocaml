@@ -18,4 +18,3 @@
  *)
 
 val loc : exn -> Location.t option
-
