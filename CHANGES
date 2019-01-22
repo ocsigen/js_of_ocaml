@@ -13,9 +13,10 @@
  ** Compiler: fix compilation of empty cma
  ** Compiler: fix js parser with keyword as ident
  ** Compiler, Runtime: make --setenv work with Sys.getenv_opt
- ** Compiler: fix miscompilation of Obj.is_int
+ ** Compiler: fix miscompilation of Obj.is_int with a match expression
  ** Compiler: fix quadratic behaviour in findlib.ml
  ** Runtime: make obj_dup work on string/bytes
+ ** Runtime: fix bad hash function on int64
 
 ===== 3.3.0 (2018-11-26) - Hong Kong =====
  * Features/Changes
