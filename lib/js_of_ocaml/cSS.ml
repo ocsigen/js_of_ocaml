@@ -856,7 +856,8 @@ module Color = struct
 
   let ml c =
     let s = Js.to_string c in
-    try Name (name_of_string s) with Invalid_argument _ -> (
+    try Name (name_of_string s)
+    with Invalid_argument _ -> (
       let fail () = raise (Invalid_argument (s ^ " is not a valid color")) in
       let re_rgb =
         Regexp.regexp "(rgba?)\\((?:(\\d*),(\\d*),(\\d*)(?:,(\\d*(?:\\.\\d*)?))?)\\)"
@@ -870,14 +871,14 @@ module Color = struct
       let i_of_s_o = function
         | None -> fail ()
         | Some i -> (
-          try int_of_string i with
-          | Invalid_argument s | Failure s ->
-              raise (Invalid_argument ("color conversion error (" ^ i ^ "): " ^ s)) )
+          try int_of_string i
+          with Invalid_argument s | Failure s ->
+            raise (Invalid_argument ("color conversion error (" ^ i ^ "): " ^ s)) )
       in
       let f_of_s f =
-        try float_of_string f with
-        | Invalid_argument s | Failure s ->
-            raise (Invalid_argument ("color conversion error (" ^ f ^ "): " ^ s))
+        try float_of_string f
+        with Invalid_argument s | Failure s ->
+          raise (Invalid_argument ("color conversion error (" ^ f ^ "): " ^ s))
       in
       match Regexp.string_match re_rgb s 0 with
       | Some r -> (
@@ -936,7 +937,7 @@ end
 
 module Length = struct
   (* http://www.w3.org/TR/css3-values/#lengths *)
-  
+
   (*TODO:
   type js_t = private Js.string Js.t
   val js_t_of_t
@@ -998,7 +999,8 @@ module Length = struct
             match Regexp.matched_group r 1 with
             | None -> fail ()
             | Some f -> (
-              try float_of_string f with Invalid_argument s ->
+              try float_of_string f
+              with Invalid_argument s ->
                 raise (Invalid_argument ("length conversion error: " ^ s)) )
           in
           match Regexp.matched_group r 2 with
@@ -1048,7 +1050,8 @@ module Angle = struct
           match Regexp.matched_group r 1 with
           | None -> fail ()
           | Some f -> (
-            try float_of_string f with Invalid_argument s ->
+            try float_of_string f
+            with Invalid_argument s ->
               raise (Invalid_argument ("length conversion error: " ^ s)) )
         in
         match Regexp.matched_group r 2 with

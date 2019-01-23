@@ -185,7 +185,8 @@ let rec mreduce rules m =
    with multiple rules. Fails if no redex is found *)
 
 let rec mrewrite1 rules m =
-  try mreduce rules m with Failure _ -> (
+  try mreduce rules m
+  with Failure _ -> (
     match m with
     | Var _ -> failwith "mrewrite1"
     | Term (f, sons) -> Term (f, mrewrite1_sons rules sons) )
@@ -235,7 +236,8 @@ let diff_eq equiv (x, y) =
   let rec diffrec = function
     | ([], _) as p -> p
     | h :: t, y -> (
-      try diffrec (t, rem_eq equiv h y) with Failure _ ->
+      try diffrec (t, rem_eq equiv h y)
+      with Failure _ ->
         let x', y' = diffrec (t, y) in
         h :: x', y' )
   in

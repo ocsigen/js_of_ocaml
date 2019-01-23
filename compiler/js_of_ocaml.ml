@@ -112,8 +112,8 @@ let f
   in
   Linker.load_files runtime_files;
   let paths =
-    try List.append include_dir [Findlib.find_pkg_dir "stdlib"] with Not_found ->
-      include_dir
+    try List.append include_dir [Findlib.find_pkg_dir "stdlib"]
+    with Not_found -> include_dir
   in
   let t1 = Timer.make () in
   if times () then Format.eprintf "Start parsing...@.";

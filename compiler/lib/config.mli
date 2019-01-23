@@ -16,49 +16,71 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
-
-
 module Flag : sig
   val available : unit -> string list
+
   val deadcode : unit -> bool
+
   val optcall : unit -> bool
+
   val shortvar : unit -> bool
+
   val compact : unit -> bool
+
   val inline : unit -> bool
+
   val share_constant : unit -> bool
+
   val staticeval : unit -> bool
+
   val genprim : unit -> bool
+
   val strictmode : unit -> bool
+
   val compact_vardecl : unit -> bool
+
   val debugger : unit -> bool
+
   val pretty : unit -> bool
+
   val stable_var : unit -> bool
+
   val debuginfo : unit -> bool
+
   val excwrap : unit -> bool
-  val include_cmis: unit -> bool
+
+  val include_cmis : unit -> bool
+
   val improved_stacktrace : unit -> bool
 
   val warn_unused : unit -> bool
+
   val inline_callgen : unit -> bool
 
-  val safe_string  : unit -> bool
+  val safe_string : unit -> bool
 
   val check_magic : unit -> bool
 
   val enable : string -> unit
+
   val disable : string -> unit
 end
 
 module Param : sig
   val set : string -> string -> unit
+
   val all : unit -> (string * string) list
+
   val switch_max_case : unit -> int
+
   val tailcall_max_depth : unit -> int
+
   val constant_max_depth : unit -> int
 
   type tc =
-     | TcNone
-     | TcTrampoline
-     (* | TcWhile *)
+    | TcNone
+    | TcTrampoline
+
+  (* | TcWhile *)
   val tailcall_optim : unit -> tc
 end

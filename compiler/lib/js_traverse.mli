@@ -19,50 +19,73 @@
 open Stdlib
 open Javascript
 
-class type mapper = object
-  method expression : expression -> expression
-  method expression_o : expression option -> expression option
-  method switch_case : expression -> expression
-  method initialiser : (expression * location) -> (expression * location)
-  method initialiser_o : (expression * location) option -> (expression * location) option
-  method statement : statement -> statement
-  method statements : statement_list -> statement_list
-  method statement_o : (statement * location) option -> (statement * location) option
-  method source : source_element -> source_element
-  method sources : source_elements -> source_elements
-  method ident : ident -> ident
-  method program : program -> program
-end
+class type mapper =
+  object
+    method expression : expression -> expression
+
+    method expression_o : expression option -> expression option
+
+    method switch_case : expression -> expression
+
+    method initialiser : expression * location -> expression * location
+
+    method initialiser_o :
+      (expression * location) option -> (expression * location) option
+
+    method statement : statement -> statement
+
+    method statements : statement_list -> statement_list
+
+    method statement_o : (statement * location) option -> (statement * location) option
+
+    method source : source_element -> source_element
+
+    method sources : source_elements -> source_elements
+
+    method ident : ident -> ident
+
+    method program : program -> program
+  end
 
 class map : mapper
 
-class subst : (ident -> ident) ->  object
-    inherit mapper
-  end
+class subst :
+  (ident -> ident)
+  -> object
+       inherit mapper
+     end
 
-type t = {
-  use_name : StringSet.t;
-  def_name : StringSet.t;
-  def : Code.Var.Set.t;
-  use : Code.Var.Set.t;
-  count : int IdentMap.t;
-}
-
+type t =
+  { use_name : StringSet.t
+  ; def_name : StringSet.t
+  ; def : Code.Var.Set.t
+  ; use : Code.Var.Set.t
+  ; count : int IdentMap.t }
 
 class type freevar =
-  object('a)
+  object ('a)
     inherit mapper
+
     method merge_info : 'a -> unit
+
     method block : ?catch:bool -> ident list -> unit
 
     method def_var : ident -> unit
+
     method use_var : ident -> unit
+
     method state : t
+
     method get_free_name : StringSet.t
+
     method get_free : Code.Var.Set.t
+
     method get_def_name : StringSet.t
+
     method get_def : Code.Var.Set.t
+
     method get_use_name : StringSet.t
+
     method get_use : Code.Var.Set.t
   end
 
@@ -72,10 +95,13 @@ class rename_variable : StringSet.t -> freevar
 
 class share_constant : mapper
 
-class compact_vardecl : object('a)
-  inherit free
-  method exc  : IdentSet.t
-end
+class compact_vardecl :
+  object ('a)
+    inherit free
+
+    method exc : IdentSet.t
+  end
 
 class clean : mapper
+
 class simpl : mapper

@@ -208,12 +208,13 @@ let parse_color c =
     let c = conv (String.sub c 1 2), conv (String.sub c 3 2), conv (String.sub c 5 2) in
     Some (convert c)
   else
-    try Scanf.sscanf c "%f,%f,%f" (fun h s v -> Some (rgb_of_hsv h s v)) with
-    | Scanf.Scan_failure _ | Failure _ | End_of_file | Invalid_argument _ ->
-        Some
-          ( try Hashtbl.find named_colors c with Not_found ->
-              Format.eprintf "%s@." c;
-              assert false )
+    try Scanf.sscanf c "%f,%f,%f" (fun h s v -> Some (rgb_of_hsv h s v))
+    with Scanf.Scan_failure _ | Failure _ | End_of_file | Invalid_argument _ ->
+      Some
+        ( try Hashtbl.find named_colors c
+          with Not_found ->
+            Format.eprintf "%s@." c;
+            assert false )
 
 let convert (r, g, b) =
   let c i = float i /. 255.99 in
@@ -486,8 +487,8 @@ let f g =
         if style <> "filled"
         then None
         else
-          try parse_color (StringMap.find "fillcolor" n.G.node_attr) with Not_found ->
-            color
+          try parse_color (StringMap.find "fillcolor" n.G.node_attr)
+          with Not_found -> color
       in
       ( match shape with
       | "box" | "rect" | "rectangle" ->

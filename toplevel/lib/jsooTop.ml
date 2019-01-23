@@ -111,8 +111,8 @@ let refill_lexbuf s p ppf buffer len =
   then 0
   else
     let len', nl =
-      try String.index_from s !p '\n' - !p + 1, false with _ ->
-        String.length s - !p, true
+      try String.index_from s !p '\n' - !p + 1, false
+      with _ -> String.length s - !p, true
     in
     let len'' = min len len' in
     String.blit ~src:s ~src_pos:!p ~dst:buffer ~dst_pos:0 ~len:len'';

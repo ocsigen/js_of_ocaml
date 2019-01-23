@@ -97,8 +97,8 @@ and rewrite_with_lemmas term lemmas =
   match lemmas with
   | [] -> term
   | (t1, t2) :: rest -> (
-    try rewrite (apply_subst (unify term t1) t2) with Unify ->
-      rewrite_with_lemmas term rest )
+    try rewrite (apply_subst (unify term t1) t2)
+    with Unify -> rewrite_with_lemmas term rest )
 
 type cterm =
   | CVar of int

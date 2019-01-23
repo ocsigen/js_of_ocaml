@@ -19,103 +19,122 @@
 
 open Stdlib
 
-let keyword = List.fold_left
+let keyword =
+  List.fold_left
     ~f:(fun acc x -> StringSet.add x acc)
     ~init:StringSet.empty
-  [
-    (* keywork *)
-    "break";
-    "case"; "catch"; "continue";
-    "debugger";"default";"delete";"do";
-    "else";
-    "finally";"for";"function";
-    "if"; "in";"instanceof";
-    "new";
-    "return";
-    "switch";
-    "this"; "throw"; "try"; "typeof";
-    "var"; "void"; "while"; "with";
+    [ (* keywork *)
+      "break"
+    ; "case"
+    ; "catch"
+    ; "continue"
+    ; "debugger"
+    ; "default"
+    ; "delete"
+    ; "do"
+    ; "else"
+    ; "finally"
+    ; "for"
+    ; "function"
+    ; "if"
+    ; "in"
+    ; "instanceof"
+    ; "new"
+    ; "return"
+    ; "switch"
+    ; "this"
+    ; "throw"
+    ; "try"
+    ; "typeof"
+    ; "var"
+    ; "void"
+    ; "while"
+    ; "with"
+    ; (* reserved in ECMAScript 5 *)
+      "class"
+    ; "enum"
+    ; "export"
+    ; "extends"
+    ; "import"
+    ; "super"
+    ; "implements"
+    ; "interface"
+    ; "let"
+    ; "package"
+    ; "private"
+    ; "protected"
+    ; "public"
+    ; "static"
+    ; "yield"
+    ; (* other *)
+      "null"
+    ; "true"
+    ; "false"
+    ; "NaN"
+    ; "undefined"
+    ; "this"
+    ; (* Unexpected eval or arguments in strict mode *)
+      "eval"
+    ; "arguments"
+    ; (* also reserved in ECMAScript 3 *)
+      "abstract"
+    ; "boolean"
+    ; "byte"
+    ; "char"
+    ; "const"
+    ; "double"
+    ; "final"
+    ; "float"
+    ; "goto"
+    ; "int"
+    ; "long"
+    ; "native"
+    ; "short"
+    ; "synchronized"
+    ; "throws"
+    ; "transient"
+    ; "volatile"
+    ; (* also reserved in ECMAScript 6 *)
+      "await" ]
 
-    (* reserved in ECMAScript 5 *)
-    "class"; "enum"; "export"; "extends"; "import"; "super";
-
-    "implements";"interface";
-    "let";
-    "package";"private";"protected";"public";
-    "static";
-    "yield";
-
-    (* other *)
-    "null";
-    "true";
-    "false";
-    "NaN";
-
-
-    "undefined";
-    "this";
-
-    (* Unexpected eval or arguments in strict mode *)
-    "eval";
-    "arguments";
-
-    (* also reserved in ECMAScript 3 *)
-    "abstract"; "boolean"; "byte"; "char"; "const"; "double";
-    "final"; "float"; "goto"; "int"; "long"; "native"; "short";
-    "synchronized"; "throws"; "transient"; "volatile";
-
-    (* also reserved in ECMAScript 6 *)
-    "await"
-]
-
-
-let provided = List.fold_left
+let provided =
+  List.fold_left
     ~f:(fun acc x -> StringSet.add x acc)
     ~init:StringSet.empty
- [
-
-  "event";
-  "location";
-  "window";
-  "document";
-  "eval";
-  "navigator";
-  "self";
-
-  "Array";
-  "Date";
-  "Math";
-  "JSON";
-  "Object";
-  "RegExp";
-  "String";
-  "Boolean";
-  "Number";
-
-  "Infinity";
-  "isFinite";
-
-  "ActiveXObject";
-  "XMLHttpRequest";
-  "XDomainRequest";
-
-  "DOMException";
-  "Error";
-  "SyntaxError";
-  "TypeError";
-  "arguments";
-
-  "decodeURI";
-  "decodeURIComponent";
-  "encodeURI";
-  "encodeURIComponent";
-  "escape";
-  "unescape";
-
-  "isNaN";
-  "parseFloat";
-  "parseInt";
-
-  "module";
-  "require";
-]
+    [ "event"
+    ; "location"
+    ; "window"
+    ; "document"
+    ; "eval"
+    ; "navigator"
+    ; "self"
+    ; "Array"
+    ; "Date"
+    ; "Math"
+    ; "JSON"
+    ; "Object"
+    ; "RegExp"
+    ; "String"
+    ; "Boolean"
+    ; "Number"
+    ; "Infinity"
+    ; "isFinite"
+    ; "ActiveXObject"
+    ; "XMLHttpRequest"
+    ; "XDomainRequest"
+    ; "DOMException"
+    ; "Error"
+    ; "SyntaxError"
+    ; "TypeError"
+    ; "arguments"
+    ; "decodeURI"
+    ; "decodeURIComponent"
+    ; "encodeURI"
+    ; "encodeURIComponent"
+    ; "escape"
+    ; "unescape"
+    ; "isNaN"
+    ; "parseFloat"
+    ; "parseInt"
+    ; "module"
+    ; "require" ]

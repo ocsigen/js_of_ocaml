@@ -119,8 +119,8 @@ let measure param code meas spec cmd =
       let cmd = if cmd = "" then cmd else cmd ^ " " in
       let cmd = Format.sprintf "%s%s" cmd (Spec.file ~root:code spec nm) in
       Format.eprintf "Measure %s@." cmd;
-      try ignore (measure_one param code meas spec nm cmd) with Failure s ->
-        Format.eprintf "Failure: %s@." s )
+      try ignore (measure_one param code meas spec nm cmd)
+      with Failure s -> Format.eprintf "Failure: %s@." s )
 
 (****)
 

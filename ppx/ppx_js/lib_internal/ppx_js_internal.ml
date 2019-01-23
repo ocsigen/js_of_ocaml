@@ -703,8 +703,8 @@ let mapper =
               mapper.expr mapper {new_expr with pexp_attributes}
           (* new%js constr arg1 arg2 ..)] *)
           | { pexp_desc =
-                Pexp_apply ([%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]], args); _
-            } ->
+                Pexp_apply ([%expr [%js [%e? {pexp_desc = Pexp_new constr; _}]]], args)
+            ; _ } ->
               let args = List.map args ~f:(fun (s, e) -> s, mapper.expr mapper e) in
               let new_expr = new_object constr args in
               mapper.expr mapper {new_expr with pexp_attributes}

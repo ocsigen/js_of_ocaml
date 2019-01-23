@@ -418,7 +418,7 @@ area#misc#set_has_tooltip true;
 ignore (area#misc#connect#query_tooltip (fun ~x ~y ~kbd tooltip ->
 Format.eprintf "%d %d %b@." x y kbd; false));
 *)
-  
+
   (* Full screen mode *)
   let fullscreen = ref false in
   let toggle_fullscreen () =

@@ -29,7 +29,7 @@ let () =
           Location.input_name := ml;
           let lex = Lexing.from_channel in_ in
           let impl = Parse.implementation lex in
-          let _ : Parsetree.structure = mapper.structure mapper impl in
+          let (_ : Parsetree.structure) = mapper.structure mapper impl in
           ()
         with exn -> Location.report_exception Format.std_formatter exn );
       close_in_noerr in_ )

@@ -71,8 +71,8 @@ let cmis_of_package pkg : string list =
     let fs : string list ref = ref [] in
     let add filename = fs := filename :: !fs in
     let archive =
-      try Findlib.package_property ["byte"] pkg "archive" with exc ->
-        if pkg = "stdlib" then "stdlib.cma" else raise exc
+      try Findlib.package_property ["byte"] pkg "archive"
+      with exc -> if pkg = "stdlib" then "stdlib.cma" else raise exc
     in
     let l = String.split_char ~sep:' ' archive in
     List.iter l ~f:(fun x ->

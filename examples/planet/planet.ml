@@ -267,7 +267,8 @@ let divide all o =
   let midpoints = Hashtbl.create 17 in
   let midpoint v1 v2 =
     let p = if v1 < v2 then v1, v2 else v2, v1 in
-    try Hashtbl.find midpoints p with Not_found ->
+    try Hashtbl.find midpoints p
+    with Not_found ->
       let v1 = o.vertices.(v1) in
       let v2 = o.vertices.(v2) in
       let v =

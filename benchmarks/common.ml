@@ -169,7 +169,7 @@ end = struct
     |> Array.to_list
     |> List.filter ~f:(fun nm ->
            match Unix.stat (dir ^ "/" ^ nm) with
-           | Unix.({st_kind = S_REG | S_LNK; _}) -> true
+           | Unix.{st_kind = S_REG | S_LNK; _} -> true
            | _ -> false )
     |> ( if spec.ext = ""
        then fun x -> x

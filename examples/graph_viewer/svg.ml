@@ -380,7 +380,8 @@ let parse_color c =
     Some (convert c)
   else
     Some
-      ( try Hashtbl.find named_colors c with Not_found ->
+      ( try Hashtbl.find named_colors c
+        with Not_found ->
           Format.eprintf "%s@." c;
           assert false )
 

@@ -205,7 +205,8 @@ let string_of_url = function
       ; hu_port = port
       ; hu_path = path
       ; hu_arguments = args
-      ; hu_fragment = frag; _ } -> (
+      ; hu_fragment = frag
+      ; _ } -> (
       "http://"
       ^ urlencode host
       ^ (match port with 80 -> "" | n -> ":" ^ string_of_int n)
@@ -218,7 +219,8 @@ let string_of_url = function
       ; hu_port = port
       ; hu_path = path
       ; hu_arguments = args
-      ; hu_fragment = frag; _ } -> (
+      ; hu_fragment = frag
+      ; _ } -> (
       "https://"
       ^ urlencode host
       ^ (match port with 443 -> "" | n -> ":" ^ string_of_int n)

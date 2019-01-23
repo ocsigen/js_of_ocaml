@@ -29,35 +29,25 @@ let iter_cont_free_vars f (_, l) = List.iter ~f l
 
 let iter_expr_free_vars f e =
   match e with
-    Const _ | Constant _ ->
-      ()
-  | Apply (x, l, _) ->
-      f x; List.iter ~f l
-  | Block (_, a) ->
-      Array.iter ~f a
-  | Field (x, _) ->
-      f x
-  | Closure _ ->
-      ()
-  | Prim (_, l) ->
-      List.iter l ~f:(fun x -> match x with Pv x -> f x | Pc _ -> ())
+  | Const _ | Constant _ -> ()
+  | Apply (x, l, _) -> f x; List.iter ~f l
+  | Block (_, a) -> Array.iter ~f a
+  | Field (x, _) -> f x
+  | Closure _ -> ()
+  | Prim (_, l) -> List.iter l ~f:(fun x -> match x with Pv x -> f x | Pc _ -> ())
 
 let iter_instr_free_vars f i =
   match i with
-    Let (_, e)          -> iter_expr_free_vars f e
+  | Let (_, e) -> iter_expr_free_vars f e
   | Set_field (x, _, y) -> f x; f y
-  | Offset_ref (x, _)   -> f x
+  | Offset_ref (x, _) -> f x
   | Array_set (x, y, z) -> f x; f y; f z
 
 let iter_last_free_var f l =
   match l with
-    Return x
-  | Raise (x,_) ->
-      f x
-  | Stop ->
-      ()
-  | Branch cont | Poptrap (cont,_) ->
-      iter_cont_free_vars f cont
+  | Return x | Raise (x, _) -> f x
+  | Stop -> ()
+  | Branch cont | Poptrap (cont, _) -> iter_cont_free_vars f cont
   | Cond (_, x, cont1, cont2) ->
       f x; iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
   | Switch (x, a1, a2) ->
@@ -72,18 +62,12 @@ let iter_block_free_vars f block =
   iter_last_free_var f block.branch
 
 let iter_instr_bound_vars f i =
-  match i with
-    Let (x, _) ->
-      f x
-  | Set_field _ | Offset_ref _ | Array_set _ ->
-      ()
+  match i with Let (x, _) -> f x | Set_field _ | Offset_ref _ | Array_set _ -> ()
 
 let iter_last_bound_vars f l =
   match l with
-    Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ ->
-      ()
-  | Pushtrap (_, x, _, _) ->
-      f x
+  | Return _ | Raise _ | Stop | Branch _ | Cond _ | Switch _ | Poptrap _ -> ()
+  | Pushtrap (_, x, _, _) -> f x
 
 let iter_block_bound_vars f block =
   List.iter ~f block.params;
@@ -92,7 +76,10 @@ let iter_block_bound_vars f block =
 
 (****)
 
-type st = { index : int; mutable lowlink : int; mutable in_stack : bool }
+type st =
+  { index : int
+  ; mutable lowlink : int
+  ; mutable in_stack : bool }
 
 let find_loops ((_, blocks, _) as prog) =
   let in_loop = ref Addr.Map.empty in
@@ -100,31 +87,35 @@ let find_loops ((_, blocks, _) as prog) =
   let state = ref Addr.Map.empty in
   let stack = Stack.create () in
   let rec traverse pc =
-    let st = {index = !index; lowlink = !index; in_stack = true } in
+    let st = {index = !index; lowlink = !index; in_stack = true} in
     state := Addr.Map.add pc st !state;
     incr index;
     Stack.push pc stack;
-    Code.fold_children blocks pc
+    Code.fold_children
+      blocks
+      pc
       (fun pc' () ->
-         try
-           let st' = Addr.Map.find pc' !state in
-           if st'.in_stack then st.lowlink <- min st.lowlink st'.index
-         with Not_found ->
-           traverse pc';
-           let st' = Addr.Map.find pc' !state in
-           st.lowlink <- min st.lowlink st'.lowlink)
+        try
+          let st' = Addr.Map.find pc' !state in
+          if st'.in_stack then st.lowlink <- min st.lowlink st'.index
+        with Not_found ->
+          traverse pc';
+          let st' = Addr.Map.find pc' !state in
+          st.lowlink <- min st.lowlink st'.lowlink )
       ();
-    if st.index = st.lowlink then begin
+    if st.index = st.lowlink
+    then (
       let l = ref [] in
       while
         let pc' = Stack.pop stack in
         l := pc' :: !l;
         (Addr.Map.find pc' !state).in_stack <- false;
         pc' <> pc
-      do () done;
-      if List.length !l > 1 then
-        List.iter !l ~f:(fun pc' -> in_loop := Addr.Map.add pc' pc !in_loop)
-    end
+      do
+        ()
+      done;
+      if List.length !l > 1
+      then List.iter !l ~f:(fun pc' -> in_loop := Addr.Map.add pc' pc !in_loop) )
   in
   Code.fold_closures prog (fun _ _ (pc, _) () -> traverse pc) ();
   !in_loop
@@ -133,72 +124,70 @@ let mark_variables in_loop (pc, blocks, free_pc) =
   let vars = Var.Tbl.make () (-1) in
   let visited = Array.make free_pc false in
   let rec traverse pc =
-    if not visited.(pc) then begin
+    if not visited.(pc)
+    then (
       visited.(pc) <- true;
       let block = Addr.Map.find pc blocks in
-      begin try
-        let pc' = Addr.Map.find pc in_loop in
-        iter_block_bound_vars (fun x ->
-(*
+      ( try
+          let pc' = Addr.Map.find pc in_loop in
+          iter_block_bound_vars
+            (fun x ->
+              (*
 Format.eprintf "!%a: %d@." Var.print x pc';
 *)
- Var.Tbl.set vars x pc') block
-      with Not_found -> () end;
-      List.iter block.body
-        ~f:(fun i ->
-          match i with
-          | Let (_, Closure (_, (pc', _))) -> traverse pc'
-          | _                              -> ());
-      Code.fold_children blocks pc (fun pc' () -> traverse pc') ()
-    end
+              Var.Tbl.set vars x pc' )
+            block
+        with Not_found -> () );
+      List.iter block.body ~f:(fun i ->
+          match i with Let (_, Closure (_, (pc', _))) -> traverse pc' | _ -> () );
+      Code.fold_children blocks pc (fun pc' () -> traverse pc') () )
   in
-  traverse pc;
-  vars
+  traverse pc; vars
 
 let free_variables vars in_loop (pc, blocks, free_pc) =
   let all_freevars = ref Addr.Map.empty in
   let freevars = ref Addr.Map.empty in
   let visited = Array.make free_pc false in
   let rec traverse pc =
-    if not visited.(pc) then begin
+    if not visited.(pc)
+    then (
       visited.(pc) <- true;
       let block = Addr.Map.find pc blocks in
       iter_block_free_vars
         (fun x ->
-           let pc' = Var.Tbl.get vars x in
-(*
+          let pc' = Var.Tbl.get vars x in
+          (*
 Format.eprintf "%a: %d@." Var.print x pc';
 *)
-           if pc' <> -1 then begin
-             let fv =
-               try Addr.Map.find pc' !all_freevars with Not_found -> Var.Set.empty in
-             let s = Var.Set.add x fv in
-             all_freevars := Addr.Map.add pc' s !all_freevars
-           end)
+          if pc' <> -1
+          then
+            let fv =
+              try Addr.Map.find pc' !all_freevars with Not_found -> Var.Set.empty
+            in
+            let s = Var.Set.add x fv in
+            all_freevars := Addr.Map.add pc' s !all_freevars )
         block;
-      begin try
-        let pc'' = Addr.Map.find pc in_loop in
-        all_freevars := Addr.Map.remove pc'' !all_freevars
-      with Not_found -> () end;
+      ( try
+          let pc'' = Addr.Map.find pc in_loop in
+          all_freevars := Addr.Map.remove pc'' !all_freevars
+        with Not_found -> () );
       List.iter block.body ~f:(fun i ->
-        match i with
-          Let (_, Closure (_, (pc', _))) ->
-          traverse pc';
-          begin try
-              let pc'' = Addr.Map.find pc in_loop in
-              let fv =
-                try Addr.Map.find pc'' !all_freevars with Not_found -> Var.Set.empty in
-              freevars := Addr.Map.add pc' fv !freevars;
-              all_freevars := Addr.Map.remove pc'' !all_freevars
-            with Not_found ->
-              freevars := Addr.Map.add pc' Var.Set.empty !freevars;
-          end
-        | _ -> ());
-      Code.fold_children blocks pc (fun pc' () -> traverse pc') ()
-    end
+          match i with
+          | Let (_, Closure (_, (pc', _))) -> (
+              traverse pc';
+              try
+                let pc'' = Addr.Map.find pc in_loop in
+                let fv =
+                  try Addr.Map.find pc'' !all_freevars with Not_found -> Var.Set.empty
+                in
+                freevars := Addr.Map.add pc' fv !freevars;
+                all_freevars := Addr.Map.remove pc'' !all_freevars
+              with Not_found -> freevars := Addr.Map.add pc' Var.Set.empty !freevars )
+          | _ -> () );
+      Code.fold_children blocks pc (fun pc' () -> traverse pc') () )
   in
-   traverse pc;
-(*
+  traverse pc;
+  (*
 Addr.Map.iter
 (fun pc fv -> if Var.Set.cardinal fv > 0 then
 Format.eprintf ">> %d: %d@." pc (Var.Set.cardinal fv))

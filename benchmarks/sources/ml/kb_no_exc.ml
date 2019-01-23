@@ -260,7 +260,8 @@ let diff_eq equiv (x, y) =
   let rec diffrec = function
     | ([], _) as p -> p
     | h :: t, y -> (
-      try diffrec (t, rem_eq equiv h y) with Failure _ ->
+      try diffrec (t, rem_eq equiv h y)
+      with Failure _ ->
         let x', y' = diffrec (t, y) in
         h :: x', y' )
   in

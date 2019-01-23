@@ -861,8 +861,10 @@ let compute_text_node info =
 
 let compute_text_nodes node_names nodes =
   let names =
-    try fst (List.assq !language node_names) with Not_found -> (
-      try fst (List.assq (Js.string "en") node_names) with Not_found -> Hashtbl.create 11 )
+    try fst (List.assq !language node_names)
+    with Not_found -> (
+      try fst (List.assq (Js.string "en") node_names)
+      with Not_found -> Hashtbl.create 11 )
   in
   Html.document##.title :=
     Js.string (try Hashtbl.find names "<TITLE>" with Not_found -> "");
@@ -1426,7 +1428,8 @@ let information_en =
 
 let show_information_page messages tree_i18n =
   let info =
-    try snd (List.assq !language tree_i18n) with Not_found -> (
+    try snd (List.assq !language tree_i18n)
+    with Not_found -> (
       try snd (List.assq (Js.string "en") tree_i18n) with Not_found -> information_en )
   in
   let doc = Html.document in

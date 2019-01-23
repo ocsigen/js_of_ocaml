@@ -126,7 +126,7 @@ module Xml = struct
         match att with
         | Attr a ->
             (* Note that once we have weak pointers working, we'll need to React.S.retain *)
-            let _ : unit React.S.t =
+            let (_ : unit React.S.t) =
               React.S.map
                 (function
                   | Some v -> (

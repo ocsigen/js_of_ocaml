@@ -119,7 +119,10 @@ end
 let create () : xmlHttpRequest Js.t =
   let xmlHttpRequest = Js.Unsafe.global##._XMLHttpRequest in
   let activeXObject = Js.Unsafe.global##.activeXObject in
-  try new%js xmlHttpRequest with _ -> (
-    try new%js activeXObject (Js.string "Msxml2.XMLHTTP") with _ -> (
-      try new%js activeXObject (Js.string "Msxml3.XMLHTTP") with _ -> (
+  try new%js xmlHttpRequest
+  with _ -> (
+    try new%js activeXObject (Js.string "Msxml2.XMLHTTP")
+    with _ -> (
+      try new%js activeXObject (Js.string "Msxml3.XMLHTTP")
+      with _ -> (
         try new%js activeXObject (Js.string "Microsoft.XMLHTTP") with _ -> assert false ) ) )

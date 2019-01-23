@@ -87,7 +87,8 @@ let rec map f l = lazy (match force l with Cons (x, ll) -> Cons (f x, map f ll))
 
 let rec merge cmp l1 l2 =
   lazy
-    ( match force l1, force l2 with Cons (x1, ll1), Cons (x2, ll2) ->
+    ( match force l1, force l2 with
+    | Cons (x1, ll1), Cons (x2, ll2) ->
         let c = cmp x1 x2 in
         if c = 0
         then Cons (x1, merge cmp ll1 ll2)
@@ -99,9 +100,10 @@ let rec iter_interval f l (start, stop) =
   if stop = 0
   then ()
   else
-    match force l with Cons (x, ll) ->
-      if start <= 0 then f x;
-      iter_interval f ll (start - 1, stop - 1)
+    match force l with
+    | Cons (x, ll) ->
+        if start <= 0 then f x;
+        iter_interval f ll (start - 1, stop - 1)
 
 let rec hamming = lazy (Cons (nn1, merge cmp ham2 (merge cmp ham3 ham5)))
 
