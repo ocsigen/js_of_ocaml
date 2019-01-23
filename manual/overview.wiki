@@ -44,11 +44,21 @@ Optional dependencies:
 {{{opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt}}}
 
 === Build and install from source
-{{{make}}}
-{{{opam-installer js_of_ocaml-compiler}}}
-{{{opam-installer js_of_ocaml}}}
-{{{opam-installer js_of_ocaml-ppx}}}
-{{{opam-installer js_of_ocaml-lwt}}}
+{{{
+make
+}}}
+{{{
+opam-installer js_of_ocaml-compiler
+}}}
+{{{
+opam-installer js_of_ocaml
+}}}
+{{{
+opam-installer js_of_ocaml-ppx
+}}}
+{{{
+opam-installer js_of_ocaml-lwt
+}}}
 
 == Usage ==
 
@@ -65,15 +75,12 @@ Optional dependencies:
       js_of_ocaml cubes.byte
 }}}
 
-=== with ocamlbuild ===
+=== with ocamlbuild and oasis ===
   Js_of_ocaml also provide an ocamlbuild plugin.
   See <<a_api | module Ocamlbuild_js_of_ocaml >>.
 
-=== with oasis ===
-  TODO
-
 === with dune ===
-  Jbuider has native support for js_of_ocaml.
+  Dune has native support for js_of_ocaml.
   It support both standard and separate compilation of javascript
   files. See https://dune.readthedocs.io/en/latest/jsoo.html
 
