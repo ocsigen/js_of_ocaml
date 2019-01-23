@@ -1,45 +1,12 @@
-{1 Js_of_ocaml – API Reference}
+{1 API Reference}
 
 {!modules:
 Js_of_ocaml
-}
-
-{1 Js_of_ocaml_lwt – API Reference}
-
-{!modules:
 Js_of_ocaml_lwt
-}
-
-{2 Graphics - API Reference}
-
-{!modules:
 Graphics_js
-}
-
-{1 Deriving - API Reference}
-
-{!modules:
 Deriving_Json
-}
-
-
-{1 Tyxml - API Reference}
-
-{!modules:
 Js_of_ocaml_tyxml
-}
-
-{1 Toplevel - API Reference}
-
-{!modules:
 Js_of_ocaml_toplevel
-}
-
-{1 The ocamlbuild plugin - API Reference}
-
-{!modules:
-Ocamlbuild_js_of_ocaml
-}
 
 {1 Indexes}
 
