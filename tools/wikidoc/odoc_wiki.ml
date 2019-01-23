@@ -230,6 +230,10 @@ class virtual text =
             None -> String.sub s first 1
           | Some last -> String.sub s first ((last-first)+1)
       in
+      let whitespace = function
+        | ' ' | '\t' -> true
+        | _ -> false
+      in
       fun b code ->
         if !Conf.colorize_code
         then begin
@@ -238,6 +242,11 @@ class virtual text =
           bs b ">>\n"
         end
         else begin
+          let r = ref (String.length code) in
+          while !r > 1 && whitespace code.[!r - 1] do
+            decr r
+          done;
+          let code = String.sub code 0 !r in
           bs b "\n{{{";
           bs b code; (* no escape *)
           bs b "}}}\n"
