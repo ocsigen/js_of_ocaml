@@ -41,7 +41,7 @@ case $MODE in
         ;;
     build)
         opam install -y --deps-only $PACKAGES
-        opam install -y base64 cohttp-lwt-unix menhir
+        opam install -y cohttp-lwt-unix menhir
         dune build @runtest @default @ocsigen-doc -j 8
         ;;
 esac

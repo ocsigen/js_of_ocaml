@@ -27,7 +27,7 @@ like browsers and Node.js.
   * [yojson](https://github.com/mjambon/yojson)
 
 ### Toplevel requirements
- * base64, tyxml, reactiveData
+ * tyxml, reactiveData
  * ocp-indent: needed to support indentation in the toplevel
  * higlo: needed to support Syntax highlighting in the toplevel
  * cohttp: needed to build the toplevel webserver

@@ -6,7 +6,6 @@
     js_of_ocaml-toplevel
     lwt
     js_of_ocaml-lwt
-    base64
     ;; not used directly
     graphics
     js_of_ocaml.deriving
