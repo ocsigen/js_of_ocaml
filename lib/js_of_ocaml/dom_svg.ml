@@ -2051,7 +2051,7 @@ let createMPath doc : mPathElement t = unsafeCreateElement doc "mpath"
 
 let createPath doc : pathElement t = unsafeCreateElement doc "path"
 
-let createParttern doc : patternElement t = unsafeCreateElement doc "parttern"
+let createPattern doc : patternElement t = unsafeCreateElement doc "pattern"
 
 let createPolygon doc : polygonElement t = unsafeCreateElement doc "polygon"
 
@@ -2185,7 +2185,7 @@ module CoerceTo = struct
 
   let path e : pathElement t opt = unsafeCoerce e "path"
 
-  let parttern e : patternElement t opt = unsafeCoerce e "parttern"
+  let pattern e : patternElement t opt = unsafeCoerce e "pattern"
 
   let polygon e : polygonElement t opt = unsafeCoerce e "polygon"
 

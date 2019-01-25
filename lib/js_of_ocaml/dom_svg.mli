@@ -2048,7 +2048,7 @@ val createMPath : document t -> mPathElement t
 
 val createPath : document t -> pathElement t
 
-val createParttern : document t -> patternElement t
+val createPattern : document t -> patternElement t
 
 val createPolygon : document t -> polygonElement t
 
@@ -2174,7 +2174,7 @@ module CoerceTo : sig
 
   val path : #element t -> pathElement t opt
 
-  val parttern : #element t -> patternElement t opt
+  val pattern : #element t -> patternElement t opt
 
   val polygon : #element t -> polygonElement t opt
 
