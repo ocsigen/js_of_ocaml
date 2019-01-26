@@ -1,8 +1,8 @@
 # graphs without precompiled programs:
-GRAPHSNOPR = time.pdf time-optim.pdf time-ocamljs.pdf nativejs.pdf
+GRAPHSNOPR = time.pdf time-optim.pdf nativejs.pdf
 
 # graphs with precompiled programs:
-GRAPHSPR = size.pdf size-ocamljs.pdf size-optim.pdf compiletime.pdf
+GRAPHSPR = size.pdf size-optim.pdf compiletime.pdf
 
 # For full benchs:
 all: _perf graphsnopr graphspr _noperf
@@ -19,8 +19,7 @@ exes= $(wildcard programs/*)
 exesnames = $(exes:programs/%=%)
 
 missingsizesml = $(exesnames:%=results/sizes/ml/%)
-missingsizesocamljs = $(exesnames:%=results/sizes/ocamljs/%)
-missingsizes=$(missingsizesml) $(missingsizesocamljs)
+missingsizes=$(missingsizesml)
 
 missingcompiletimes = $(exesnames:%=results/compiletimes/`hostname`/byte/%) $(exesnames:%=results/compiletimes/`hostname`/opt/%)
 possiblymissingbenchs = results/times/`hostname`/nitro/js_of_ocaml/kb results/times/`hostname`/tm/js_of_ocaml/hamming results/times/`hostname`/tm/js_of_ocaml/splay
@@ -146,32 +145,6 @@ size-optim.svg: __run __missingsizes
 	 -append ocamlc \
 	 -append unison \
 	 -max 2.5 -svg 7 650 150 -edgecaption -ylabel Size \
-	 > $@
-
-time-ocamljs.svg: __run
-	$(REPORT) -config report-time-ocamljs.config \
-	 -omit binary_trees -omit fannkuch_redux -omit loop \
-	 -omit fannkuch_redux_2 \
-	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel "Execution time" \
-	 > $@
-
-size-ocamljs.svg: __run __precomp
-	$(REPORT) -config report-size-ocamljs.config -omit loop \
-	 -omit binary_trees -omit fannkuch_redux \
-	 -omit fannkuch_redux_2 \
-	 -omit spectral_norm \
-	 -omit boyer_no_exc -omit kb_no_exc \
-	 -omit boulderdash \
-	 -omit canvas \
-	 -omit cubes \
-	 -omit minesweeper \
-	 -omit planet \
-	 -omit sudoku \
-	 -omit js_of_ocaml \
-	 -omit ocsigen_server \
-	 -omit ocamlc \
-	 -omit unison \
-	 -max 5.5 -svg 7 500 150 -edgecaption -ylabel Size \
 	 > $@
 
 compiletime.svg: __run __precomp __missingcompiletimes
