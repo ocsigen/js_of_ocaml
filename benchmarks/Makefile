@@ -25,7 +25,7 @@ missingsizes=$(missingsizesml) $(missingsizesocamljs)
 missingcompiletimes = $(exesnames:%=results/compiletimes/`hostname`/byte/%) $(exesnames:%=results/compiletimes/`hostname`/opt/%)
 possiblymissingbenchs = results/times/`hostname`/nitro/js_of_ocaml/kb results/times/`hostname`/tm/js_of_ocaml/hamming results/times/`hostname`/tm/js_of_ocaml/splay
 
-RUN=dune exec ./run.exe --
+RUN=dune exec ./run.exe -- -verbose
 REPORT=dune exec ./report.exe --
 
 .PHONY: $(GRAPHSNOPR:.pdf=.svg) $(GRAPHSPR:.pdf=.svg) size.gpl _noprecomp
