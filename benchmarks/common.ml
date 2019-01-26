@@ -140,7 +140,7 @@ let no_ext (dir, _) = dir, ""
 
 let file dir1 (dir2, ext) nm = Format.sprintf "%s/%s/%s%s" dir1 dir2 nm ext
 
-let dir dir1 (dir2, ext) = Format.sprintf "%s/%s" dir1 dir2
+let dir dir1 (dir2, _ext) = Format.sprintf "%s/%s" dir1 dir2
 
 let sub_spec (dir, ext) loc = Format.sprintf "%s/%s" dir loc, ext
 
