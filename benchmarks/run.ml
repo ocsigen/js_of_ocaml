@@ -16,12 +16,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
-let verbose = ref true
-
-(****)
+open StdLabels
 open Common
+
+let verbose = ref false
 
 let run_command cmd =
   if !verbose then Format.printf "+ %s@." cmd;
@@ -44,8 +44,7 @@ let time cmd =
 
 let compile_gen ~comptime prog src_dir src_spec dst_dir dst_spec =
   mkdir (dir dst_dir dst_spec);
-  List.iter
-    (fun nm ->
+  List.iter (benchs src_dir src_spec) ~f:(fun nm ->
       let src = file src_dir src_spec nm in
       let dst = file dst_dir dst_spec nm in
       if need_update src dst
@@ -56,7 +55,6 @@ let compile_gen ~comptime prog src_dir src_spec dst_dir dst_spec =
           then write_measures compiletimes dst_spec nm [time cmd]
           else run_command cmd
         with Exit -> () )
-    (benchs src_dir src_spec)
 
 let compile ~comptime prog = compile_gen ~comptime (Format.sprintf "%s %s -o %s" prog)
 
@@ -112,11 +110,9 @@ let measure_one code meas spec nm cmd =
   else l
 
 let measure code meas spec cmd =
-  List.iter
-    (fun nm ->
+  List.iter (benchs code spec) ~f:(fun nm ->
       let cmd = cmd ^ file code spec nm in
       try ignore (measure_one code meas spec nm cmd) with Exit -> () )
-    (benchs code spec)
 
 (****)
 
@@ -168,7 +164,7 @@ let read_config () =
   let ch = open_in f in
   let split_at_space l =
     let i = String.index l ' ' in
-    String.sub l 0 i, String.sub l (i + 1) (String.length l - i - 1)
+    String.sub l ~pos:0 ~len:i, String.sub l ~pos:(i + 1) ~len:(String.length l - i - 1)
   in
   ( try
       while true do
@@ -199,6 +195,7 @@ let _ =
     ; "-config", Arg.Set_string conf, "<file> use <file> as a config file"
     ; "-fast", Arg.Unit fast_run, " perform less iterations"
     ; "-ffast", Arg.Unit ffast_run, " perform very few iterations"
+    ; "-verbose", Arg.Set verbose, " verbose"
     ; "-noocamljs", Arg.Clear do_ocamljs, " do not run ocamljs"
     ; ( "-nobyteopt"
       , Arg.Set nobyteopt
@@ -261,9 +258,7 @@ let _ =
         ; ocamljs_unsafe ] )
     else (match !interpreters with i :: _r -> [i] | [] -> []), [js_of_ocaml]
   in
-  List.iter
-    (fun (comp, dir) ->
+  List.iter compilers ~f:(fun (comp, dir) ->
       measure src (Filename.concat times dir) js comp;
-      List.iter (fun suite -> measure code (Filename.concat times dir) suite comp) suites
-      )
-    compilers
+      List.iter suites ~f:(fun suite ->
+          measure code (Filename.concat times dir) suite comp ) )
