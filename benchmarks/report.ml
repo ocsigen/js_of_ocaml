@@ -19,7 +19,7 @@
  *)
 
 (****)
-
+open StdLabels
 open Common
 
 let reference = ref None
@@ -62,11 +62,11 @@ let str_split s c =
   ( try
       while true do
         let j = String.rindex_from s (!i - 1) c in
-        r := String.sub s (j + 1) (!i - j - 1) :: !r;
+        r := String.sub s ~pos:(j + 1) ~len:(!i - j - 1) :: !r;
         i := j
       done
     with Not_found -> () );
-  String.sub s 0 !i :: !r
+  String.sub s ~pos:0 ~len:!i :: !r
 
 (****)
 
@@ -80,17 +80,17 @@ let rec merge f l1 l2 =
       then merge f l1 r2
       else (n1, f v1 v2) :: merge f r1 r2
 
-let merge_blank l2 = List.map (fun (n2, v2) -> n2, (0.0, 0.0) :: v2) l2
+let merge_blank = List.map ~f:(fun (n2, v2) -> n2, (0.0, 0.0) :: v2)
 
 let read_column ?title ?color meas spec refe =
   let l =
     List.map
-      (fun nm ->
+      (benchs meas (no_ext spec))
+      ~f:(fun nm ->
         let l = read_measures meas spec nm in
         let a = Array.of_list l in
         let m, i = mean_with_confidence a in
         nm, [m, i] )
-      (benchs meas (no_ext spec))
   in
   let nm = match title with Some nm -> nm | None -> dir meas (no_ext spec) in
   if refe then reference := Some l;
@@ -125,7 +125,7 @@ let merge_columns l old_table =
       let zeros = list_create n (0.0, 0.0) in
       (*VVV utile ? *)
       let nodisplays = list_create n None in
-      h @ nodisplays, List.map (fun (a, l) -> a, l @ zeros) t
+      h @ nodisplays, List.map t ~f:(fun (a, l) -> a, l @ zeros)
   in
   (* if there was an old table, we keep only the lines corresponding
      to entries in that table *)
@@ -135,7 +135,7 @@ let merge_columns l old_table =
     | _, None -> l
     | Some (h, c) :: ll, Some o -> Some (h, merge (fun v1 _v2 -> v1) c o) :: ll
     | None :: ll, Some o ->
-        Some ([None], List.map (fun (nm, _) -> nm, [0.0, 0.0]) o) :: ll
+        Some ([None], List.map o ~f:(fun (nm, _) -> nm, [0.0, 0.0])) :: ll
   in
   let nb_blanks, l = remove_head_blank (List.rev l) in
   let l = List.rev l in
@@ -146,24 +146,22 @@ let normalize (h, t) =
   | None -> h, t
   | Some rr ->
       ( h
-      , List.map
-          (fun (nm, l) ->
+      , List.map t ~f:(fun (nm, l) ->
             let r, _ = List.hd (List.assoc nm rr) in
             if r <> r
             then (
               Format.eprintf "No reference available for '%s'@." nm;
               exit 1 );
-            nm, List.map (fun (v, i) -> v /. r, i /. r) l )
-          t )
+            nm, List.map l ~f:(fun (v, i) -> v /. r, i /. r) ) )
 
 let stats (h, t) =
   for i = 0 to List.length h - 1 do
     match List.nth h i with
     | Some (nm, _) ->
-        let l = List.map (fun (_, l) -> fst (List.nth l i)) t in
+        let l = List.map t ~f:(fun (_, l) -> fst (List.nth l i)) in
         let a = Array.of_list l in
-        Array.sort compare a;
-        let p = List.fold_right (fun x p -> x *. p) l 1. in
+        Array.sort a ~cmp:compare;
+        let p = List.fold_right l ~f:(fun x p -> x *. p) ~init:1. in
         Format.eprintf
           "%s:@.  %f %f@."
           nm
@@ -174,18 +172,14 @@ let stats (h, t) =
 
 let text_output _no_header (h, t) =
   Format.printf "-";
-  List.iter
-    (fun v ->
+  List.iter h ~f:(fun v ->
       let nm = match v with Some (nm, _) -> nm | None -> "" in
-      Format.printf " - \"%s\"" nm )
-    h;
+      Format.printf " - \"%s\"" nm );
   Format.printf "@.";
-  List.iter
-    (fun (nm, l) ->
+  List.iter t ~f:(fun (nm, l) ->
       Format.printf "%s" nm;
-      List.iter (fun (m, i) -> Format.printf " %f %f" m i) l;
+      List.iter l ~f:(fun (m, i) -> Format.printf " %f %f" m i);
       Format.printf "@." )
-    t
 
 let gnuplot_output ch no_header (h, t) =
   let n = List.length (snd (List.hd t)) in
@@ -216,8 +210,7 @@ let gnuplot_output ch no_header (h, t) =
   (* labels *)
   for i = 0 to n - 1 do
     let nn = ref 0. in
-    List.iter
-      (fun (_nm, l) ->
+    List.iter t ~f:(fun (_nm, l) ->
         let v, _ii = List.nth l i in
         if !maximum > 0. && v > !maximum
         then
@@ -228,7 +221,6 @@ let gnuplot_output ch no_header (h, t) =
             (!nn +. (float i /. float n) -. 0.5 (* why? *))
             ((!maximum *. 1.04) +. 0.1);
         nn := !nn +. 1. )
-      t
   done;
   Printf.fprintf ch "plot";
   for i = 0 to n - 1 do
@@ -248,23 +240,20 @@ let gnuplot_output ch no_header (h, t) =
   for i = 0 to n - 1 do
     let nm = match List.nth h i with Some (nm, _) -> nm | None -> "" in
     Printf.fprintf ch "- - \"%s\"\n" nm;
-    List.iter
-      (fun (nm, l) ->
+    List.iter t ~f:(fun (nm, l) ->
         let v, ii = List.nth l i in
-        Printf.fprintf ch "\"%s\" %f %f\n" nm v (if ii <> ii then 0. else ii) )
-      t;
+        Printf.fprintf ch "\"%s\" %f %f\n" nm v (if ii <> ii then 0. else ii) );
     Printf.fprintf ch "e\n"
   done
 
 let filter (h, t) =
   let l1 =
-    List.filter (fun (nm, _) -> not (List.mem nm !appended || List.mem nm !omitted)) t
+    List.filter t ~f:(fun (nm, _) ->
+        not (List.mem nm ~set:!appended || List.mem nm ~set:!omitted) )
   in
   let app =
-    List.fold_left
-      (fun beg nm -> try (nm, List.assoc nm t) :: beg with Not_found -> beg)
-      []
-      !appended
+    List.fold_left !appended ~init:[] ~f:(fun beg nm ->
+        try (nm, List.assoc nm t) :: beg with Not_found -> beg )
   in
   h, l1 @ app
 
@@ -288,19 +277,15 @@ let output_tables r conf =
       gnuplot_output ch, fun () -> close_out ch
   in
   let no_header = ref false in
-  List.iter
-    (fun conf ->
+  List.iter conf ~f:(fun conf ->
       output_table
         r
-        (List.map
-           (function
-             | None -> read_blank_column ()
-             | Some (dir1, dir2, color, title, refe) ->
-                 read_column ~title ~color dir1 (dir2, "") refe)
-           conf)
+        (List.map conf ~f:(function
+            | None -> read_blank_column ()
+            | Some (dir1, dir2, color, title, refe) ->
+                read_column ~title ~color dir1 (dir2, "") refe ))
         (output_function !no_header);
-      no_header := true )
-    conf;
+      no_header := true );
   close ()
 
 (*
@@ -394,7 +379,7 @@ let read_config () =
   let split_at_space l =
     try
       let i = String.index l ' ' in
-      String.sub l 0 i, String.sub l (i + 1) (String.length l - i - 1)
+      String.sub l ~pos:0 ~len:i, String.sub l ~pos:(i + 1) ~len:(String.length l - i - 1)
     with Not_found -> l, ""
   in
   let get_info dir0 rem refe =

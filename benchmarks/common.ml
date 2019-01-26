@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open StdLabels
+
 let ( >> ) x f = f x
 
 (****)
@@ -187,7 +189,7 @@ let write_measures meas spec nm l =
   let tmp = file meas (no_ext spec) "_tmp_" in
   mkdir (dir meas spec);
   let ch = open_out tmp in
-  List.iter (fun t -> Printf.fprintf ch "%f\n" t) (List.rev l);
+  List.iter ~f:(fun t -> Printf.fprintf ch "%f\n" t) (List.rev l);
   close_out ch;
   Sys.rename tmp m
 
@@ -197,9 +199,9 @@ let benchs loc ((_, ext) as spec) =
   let dir = dir loc spec in
   Sys.readdir dir
   >> Array.to_list
-  >> List.filter (fun nm ->
+  >> List.filter ~f:(fun nm ->
          let k = (Unix.stat (dir ^ "/" ^ nm)).Unix.st_kind in
          k = Unix.S_REG || k = Unix.S_LNK )
-  >> List.filter (fun nm -> ext = "" || Filename.check_suffix nm ext)
-  >> (if ext = "" then fun x -> x else List.map Filename.chop_extension)
-  >> List.sort compare
+  >> List.filter ~f:(fun nm -> ext = "" || Filename.check_suffix nm ext)
+  >> (if ext = "" then fun x -> x else List.map ~f:Filename.chop_extension)
+  >> List.sort ~cmp:compare
