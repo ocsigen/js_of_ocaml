@@ -212,22 +212,22 @@ let _ =
   compile ~comptime:true "ocamlc" src ml code byte;
   compile ~comptime:true "ocamlopt" src ml code opt;
   compile ~comptime:true "js_of_ocaml" code byte code js_of_ocaml;
-  compile ~comptime:true "js_of_ocaml -disable inline" code byte code js_of_ocaml_inline;
+  compile ~comptime:true "js_of_ocaml --disable inline" code byte code js_of_ocaml_inline;
   compile
     ~comptime:true
-    "js_of_ocaml -disable deadcode"
+    "js_of_ocaml --disable deadcode"
     code
     byte
     code
     js_of_ocaml_deadcode;
   compile
     ~comptime:true
-    "js_of_ocaml -disable compact"
+    "js_of_ocaml --disable compact"
     code
     byte
     code
     js_of_ocaml_compact;
-  compile ~comptime:true "js_of_ocaml -disable optcall" code byte code js_of_ocaml_call;
+  compile ~comptime:true "js_of_ocaml --disable optcall" code byte code js_of_ocaml_call;
   if run_ocamljs () then compile ~comptime:true "ocamljs" src ml code ocamljs;
   compile ~comptime:true "ocamlc -unsafe" src ml code byte_unsafe;
   compile ~comptime:true "ocamlopt" src ml code opt_unsafe;

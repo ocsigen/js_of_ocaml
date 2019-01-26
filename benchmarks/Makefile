@@ -25,9 +25,8 @@ missingsizes=$(missingsizesml) $(missingsizesocamljs)
 missingcompiletimes = $(exesnames:%=results/compiletimes/`hostname`/byte/%) $(exesnames:%=results/compiletimes/`hostname`/opt/%)
 possiblymissingbenchs = results/times/`hostname`/nitro/js_of_ocaml/kb results/times/`hostname`/tm/js_of_ocaml/hamming results/times/`hostname`/tm/js_of_ocaml/splay
 
-OCAML=ocaml unix.cma
-RUN=$(OCAML) ./run.ml
-REPORT=$(OCAML) ./report.ml
+RUN=dune exec ./run.exe --
+REPORT=dune exec ./report.exe --
 
 .PHONY: $(GRAPHSNOPR:.pdf=.svg) $(GRAPHSPR:.pdf=.svg) size.gpl _noprecomp
 
@@ -195,7 +194,7 @@ _perf:
 	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo performance > $$i/cpufreq/scaling_governor" ; fi ;done
 
 _noperf:
-	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo ondemand > $$i/cpufreq/scaling_governor" ; fi ; done
+	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo powersave > $$i/cpufreq/scaling_governor" ; fi ; done
 
 
 clean: _noperf
