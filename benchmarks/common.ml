@@ -38,7 +38,7 @@ let mean_variance a =
     let d = a.(i) -. m in
     s := !s +. (d *. d)
   done;
-  m, !s /. float (Array.length a - 1)
+  m, !s /. float (Array.length a)
 
 (*90%    95%    98%    99%    99.5%  99.8%  99.9%*)
 let tinv_table =
