@@ -40,8 +40,6 @@ let time cmd =
   let t2 = (Unix.times ()).Unix.tms_cutime in
   t2 -. t1
 
-(****)
-
 let compile_gen ~comptime prog src_dir src_spec dst_dir dst_spec =
   mkdir (dir dst_dir dst_spec);
   List.iter (benchs src_dir src_spec) ~f:(fun nm ->
@@ -49,14 +47,15 @@ let compile_gen ~comptime prog src_dir src_spec dst_dir dst_spec =
       let dst = file dst_dir dst_spec nm in
       if need_update src dst
       then
-        let cmd = prog src dst in
+        let cmd = prog ~src ~dst in
         try
           if comptime
           then write_measures compiletimes dst_spec nm [time cmd]
           else run_command cmd
         with Exit -> () )
 
-let compile ~comptime prog = compile_gen ~comptime (Format.sprintf "%s %s -o %s" prog)
+let compile ~comptime prog =
+  compile_gen ~comptime (fun ~src ~dst -> Format.sprintf "%s %s -o %s" prog src dst)
 
 let warm_up_time = 1.0
 
@@ -120,21 +119,26 @@ let compile_no_ext ~comptime prog src_dir src_spec dst_dir dst_spec =
   compile_gen ~comptime prog src_dir src_spec dst_dir (no_ext dst_spec)
 
 let ml_size =
-  compile_no_ext
-    ~comptime:false
-    (Format.sprintf "perl ./utils/remove_comments.pl %s | sed 's/^ *//g' | wc -c > %s")
+  compile_no_ext ~comptime:false (fun ~src ~dst ->
+      Format.sprintf
+        "perl ./utils/remove_comments.pl %s | sed 's/^ *//g' | wc -c > %s"
+        src
+        dst )
 
-let file_size = compile_no_ext ~comptime:false (Format.sprintf "wc -c < %s > %s")
+let file_size =
+  compile_no_ext ~comptime:false (fun ~src ~dst ->
+      Format.sprintf "wc -c < %s > %s" src dst )
 
 let compr_file_size =
-  compile_no_ext
-    ~comptime:false
-    (Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s")
+  compile_no_ext ~comptime:false (fun ~src ~dst ->
+      Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s" src dst )
 
 (* let runtime_size = *)
 (*   compile_no_ext ~comptime:false (Format.sprintf "head -n -1 %s | wc -c > %s") *)
 
-let gen_size = compile_no_ext ~comptime:false (Format.sprintf "tail -1 %s | wc -c > %s")
+let gen_size =
+  compile_no_ext ~comptime:false (fun ~src ~dst ->
+      Format.sprintf "tail -1 %s | wc -c > %s" src dst )
 
 (****)
 
