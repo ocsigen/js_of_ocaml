@@ -85,14 +85,16 @@ let merge_blank = List.map ~f:(fun (n2, v2) -> n2, (0.0, 0.0) :: v2)
 let read_column ?title ?color meas spec refe =
   let l =
     List.map
-      (benchs meas (no_ext spec))
+      (Spec.find_names ~root:meas (Spec.no_ext spec))
       ~f:(fun nm ->
         let l = read_measures meas spec nm in
         let a = Array.of_list l in
         let m, i = mean_with_confidence a in
         nm, [m, i] )
   in
-  let nm = match title with Some nm -> nm | None -> dir meas (no_ext spec) in
+  let nm =
+    match title with Some nm -> nm | None -> Spec.dir ~root:meas (Spec.no_ext spec)
+  in
   if refe then reference := Some l;
   Some ([Some (nm, color)], l)
 
@@ -283,7 +285,7 @@ let output_tables r conf =
         (List.map conf ~f:(function
             | None -> read_blank_column ()
             | Some (dir1, dir2, color, title, refe) ->
-                read_column ~title ~color dir1 (dir2, "") refe ))
+                read_column ~title ~color dir1 (Spec.create dir2 "") refe ))
         (output_function !no_header);
       no_header := true );
   close ()

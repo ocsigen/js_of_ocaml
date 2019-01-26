@@ -102,49 +102,118 @@ let src = "sources"
 
 let code = "build"
 
-let times = Filename.concat "results/times" (Unix.gethostname ())
+let hostname = Unix.gethostname ()
+
+let times = Filename.concat "results/times" hostname
 
 let sizes = "results/sizes"
 
-let compiletimes = Filename.concat "results/compiletimes" (Unix.gethostname ())
+let compiletimes = Filename.concat "results/compiletimes" hostname
 
-let ml = "ml", ".ml"
+module Spec : sig
+  type t
 
-let js = "js", ".js"
+  val create : string -> string -> t
 
-let byte = "byte", ""
+  val dir : root:string -> t -> string
 
-let opt = "opt", ""
+  val file : root:string -> t -> string -> string
 
-let js_of_ocaml = "js_of_ocaml", ".js"
+  val no_ext : t -> t
 
-let ocamljs = "ocamljs", ".js"
+  val sub_spec : t -> string -> t
 
-let byte_unsafe = "unsafe/byte", ""
+  val find_names : root:string -> t -> string list
 
-let opt_unsafe = "unsafe/opt", ""
+  val ml : t
 
-let js_of_ocaml_unsafe = "unsafe/js_of_ocaml", ".js"
+  val js : t
 
-let js_of_ocaml_inline = "noinline", ".js"
+  val byte : t
 
-let js_of_ocaml_deadcode = "nodeadcode", ".js"
+  val opt : t
 
-let js_of_ocaml_compact = "notcompact", ".js"
+  val js_of_ocaml : t
 
-let js_of_ocaml_call = "nooptcall", ".js"
+  val ocamljs : t
 
-let ocamljs_unsafe = "unsafe/ocamljs", ".js"
+  val byte_unsafe : t
+
+  val opt_unsafe : t
+
+  val js_of_ocaml_unsafe : t
+
+  val js_of_ocaml_inline : t
+
+  val js_of_ocaml_deadcode : t
+
+  val js_of_ocaml_compact : t
+
+  val js_of_ocaml_call : t
+
+  val ocamljs_unsafe : t
+end = struct
+  type t =
+    { dir : string
+    ; ext : string }
+
+  let create dir ext = {dir; ext}
+
+  let no_ext {dir; _} = {dir; ext = ""}
+
+  let file ~root {dir; ext} nm = Format.sprintf "%s/%s/%s%s" root dir nm ext
+
+  let dir ~root {dir; _} = Format.sprintf "%s/%s" root dir
+
+  let sub_spec {dir; ext} loc = {dir = Format.sprintf "%s/%s" dir loc; ext}
+
+  let find_names ~root spec =
+    let dir = dir ~root spec in
+    Sys.readdir dir
+    >> Array.to_list
+    >> List.filter ~f:(fun nm ->
+           match Unix.stat (dir ^ "/" ^ nm) with
+           | Unix.({st_kind = S_REG | S_LNK; _}) -> true
+           | _ -> false )
+    >> ( if spec.ext = ""
+       then fun x -> x
+       else
+         fun x ->
+         x
+         |> List.filter ~f:(fun nm -> Filename.check_suffix nm spec.ext)
+         |> List.map ~f:Filename.chop_extension )
+    >> List.sort ~cmp:compare
+
+  let ml = create "ml" ".ml"
+
+  let js = create "js" ".js"
+
+  let byte = create "byte" ""
+
+  let opt = create "opt" ""
+
+  let js_of_ocaml = create "js_of_ocaml" ".js"
+
+  let ocamljs = create "ocamljs" ".js"
+
+  let byte_unsafe = create "unsafe/byte" ""
+
+  let opt_unsafe = create "unsafe/opt" ""
+
+  let js_of_ocaml_unsafe = create "unsafe/js_of_ocaml" ".js"
+
+  let js_of_ocaml_inline = create "noinline" ".js"
+
+  let js_of_ocaml_deadcode = create "nodeadcode" ".js"
+
+  let js_of_ocaml_compact = create "notcompact" ".js"
+
+  let js_of_ocaml_call = create "nooptcall" ".js"
+
+  let ocamljs_unsafe = create "unsafe/ocamljs" ".js"
+end
 
 (****)
-
-let no_ext (dir, _) = dir, ""
-
-let file dir1 (dir2, ext) nm = Format.sprintf "%s/%s/%s%s" dir1 dir2 nm ext
-
-let dir dir1 (dir2, _ext) = Format.sprintf "%s/%s" dir1 dir2
-
-let sub_spec (dir, ext) loc = Format.sprintf "%s/%s" dir loc, ext
 
 (****)
 
@@ -166,12 +235,12 @@ let need_update src dst =
 (****)
 
 let measures_need_update code meas spec nm =
-  let p = file code spec nm in
-  let m = file meas (no_ext spec) nm in
+  let p = Spec.file ~root:code spec nm in
+  let m = Spec.file ~root:meas (Spec.no_ext spec) nm in
   need_update p m
 
 let read_measures meas spec nm =
-  let m = file meas (no_ext spec) nm in
+  let m = Spec.file ~root:meas (Spec.no_ext spec) nm in
   let l = ref [] in
   if Sys.file_exists m
   then (
@@ -185,23 +254,12 @@ let read_measures meas spec nm =
   else []
 
 let write_measures meas spec nm l =
-  let m = file meas (no_ext spec) nm in
-  let tmp = file meas (no_ext spec) "_tmp_" in
-  mkdir (dir meas spec);
+  let m = Spec.file ~root:meas (Spec.no_ext spec) nm in
+  let tmp = Spec.file ~root:meas (Spec.no_ext spec) "_tmp_" in
+  mkdir (Spec.dir ~root:meas spec);
   let ch = open_out tmp in
   List.iter ~f:(fun t -> Printf.fprintf ch "%f\n" t) (List.rev l);
   close_out ch;
   Sys.rename tmp m
 
 (****)
-
-let benchs loc ((_, ext) as spec) =
-  let dir = dir loc spec in
-  Sys.readdir dir
-  >> Array.to_list
-  >> List.filter ~f:(fun nm ->
-         let k = (Unix.stat (dir ^ "/" ^ nm)).Unix.st_kind in
-         k = Unix.S_REG || k = Unix.S_LNK )
-  >> List.filter ~f:(fun nm -> ext = "" || Filename.check_suffix nm ext)
-  >> (if ext = "" then fun x -> x else List.map ~f:Filename.chop_extension)
-  >> List.sort ~cmp:compare
