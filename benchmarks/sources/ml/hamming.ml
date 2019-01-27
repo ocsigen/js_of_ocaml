@@ -57,7 +57,7 @@ let x5 p = mul n5 p
 
 let nn1 = n1, n0
 
-let pr (nl, nh) =
+let pr (_nl, _nh) =
   ( (*
   if compare nh n0 = 0
   then Printf.printf "%Ld\n" nl

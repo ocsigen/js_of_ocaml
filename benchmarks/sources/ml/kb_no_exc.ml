@@ -212,7 +212,7 @@ let rec mrewrite1 rules m =
   | Some v -> v
   | None -> (
     match m with
-    | Var n -> failwith "mrewrite1"
+    | Var _ -> failwith "mrewrite1"
     | Term (f, sons) -> Term (f, mrewrite1_sons rules sons) )
 
 and mrewrite1_sons rules = function
@@ -306,7 +306,7 @@ let rpo op_order ext =
     then Equal
     else
       match m with
-      | Var vm -> NotGE
+      | Var _ -> NotGE
       | Term (op1, sons1) -> (
         match n with
         | Var vn -> if occurs vn m then Greater else NotGE
@@ -583,6 +583,6 @@ let group_order = rpo group_precedence lex_ext
 let greater pair = match group_order pair with Greater -> true | _ -> false
 
 let _ =
-  for i = 1 to 20 do
+  for _ = 1 to 20 do
     kb_complete greater [] geom_rules
   done

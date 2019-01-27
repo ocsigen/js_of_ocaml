@@ -112,7 +112,7 @@ let rec splay_ ((left, key, value, right) as a) k =
               let rlleft, rlk, rlv, rlright = splay_ n k in
               Node (left, key, value, rlleft), rlk, rlv, Node (rlright, rk, rv, rright) )
 
-let rec splay t key = match t with Empty -> t | Node n -> Node (splay_ n key)
+let splay t key = match t with Empty -> t | Node n -> Node (splay_ n key)
 
 let insert key value t =
   (*  Splay on the key to move the last node on the search path for
@@ -145,7 +145,7 @@ let find key t =
 let rec findMax = function
   (* here we do not splay (but that's what the original program does) *)
   | Empty -> raise Not_found
-  | Node (_, k, v, Empty) -> k
+  | Node (_, k, _, Empty) -> k
   | Node (_, _, _, right) -> findMax right
 
 let findGreatestLessThan key t =
@@ -156,8 +156,8 @@ let findGreatestLessThan key t =
   let t = splay t key in
   match t with
   | Empty -> None, t
-  | Node (left, k, v, right) when k < key -> Some k, t
-  | Node (Empty, k, v, right) -> None, t
+  | Node (_, k, _, _) when k < key -> Some k, t
+  | Node (Empty, _, _, _) -> None, t
   | Node (left, _, _, _) -> Some (findMax left), t
 
 let exportKeys t =

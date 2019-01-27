@@ -992,7 +992,7 @@ let term =
 
 let _ =
   let ok = ref true in
-  for i = 1 to 50 do
+  for _ = 1 to 50 do
     if not (tautp (apply_subst subst term)) then ok := false
   done;
   assert !ok
