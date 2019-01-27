@@ -35,7 +35,7 @@ let fft px py np =
 *)
     done;
   let n2 = ref (n + n) in
-  for k = 1 to !m - 1 do
+  for _ = 1 to !m - 1 do
     n2 := !n2 / 2;
     let n4 = !n2 / 4 in
     let e = tpi /. float !n2 in
@@ -173,7 +173,7 @@ let test np =
 
 let _ =
   let np = ref 16 in
-  for i = 1 to 16 do
+  for _ = 1 to 16 do
     test !np;
     np := !np * 2
   done

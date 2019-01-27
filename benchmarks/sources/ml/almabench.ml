@@ -348,10 +348,10 @@ let _ =
     (*    Printf.printf "%d %.2f %.2f\n%!" p position.(0) position.(1)*)
   done;
   (* Benchmark *)
-  for i = 0 to test_loops - 1 do
+  for _ = 0 to test_loops - 1 do
     jd.(0) <- j2000;
     jd.(1) <- 0.0;
-    for n = 0 to test_length - 1 do
+    for _ = 0 to test_length - 1 do
       jd.(0) <- jd.(0) +. 1.0;
       for p = 0 to 7 do
         planetpv jd p pv; radecdist pv position

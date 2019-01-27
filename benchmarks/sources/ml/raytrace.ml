@@ -321,7 +321,7 @@ module Engine = struct
             match
               test_intersection reflection_ray scene info.Intersection_info.shape
             with
-            | Some ({Intersection_info.distance = d} as info) when d > 0. ->
+            | Some ({Intersection_info.distance = d; _} as info) when d > 0. ->
                 ray_trace options info reflection_ray scene (depth + 1)
             | _ -> scene.Scene.background.Background.color
           in
@@ -376,7 +376,7 @@ module Engine = struct
       if shape != exclude
       then
         match Shape.intersect shape ray with
-        | Some {Intersection_info.distance = d} as v when d >= 0. && d < !dist ->
+        | Some {Intersection_info.distance = d; _} as v when d >= 0. && d < !dist ->
             best := v;
             dist := d
         | _ -> ()
@@ -388,7 +388,7 @@ module Engine = struct
     | Some info -> ray_trace options info ray scene 0
     | None -> scene.Scene.background.Background.color
 
-  let set_pixel options x y color =
+  let set_pixel _options x y color =
     if x == y then check_number := !check_number + Color.brightness color;
     ( (*
     let pxw = options.pixel_width in
@@ -396,7 +396,7 @@ module Engine = struct
     Format.eprintf "%d %d %d %d %d %a@." (x * pxw) (y * pxh) pxw pxh !check_number Color.print color;
 *) )
 
-  let render_scene options scene canvas =
+  let render_scene options scene _canvas =
     check_number := 0;
     (*XXX canvas *)
     let canvas_height = options.canvas_height in
@@ -484,6 +484,6 @@ let render_scene () =
   Engine.render_scene engine scene None
 
 let _ =
-  for i = 0 to 99 do
+  for _ = 0 to 99 do
     render_scene ()
   done

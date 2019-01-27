@@ -61,7 +61,7 @@ let resize newSize =
   htab := newArr;
   sz_1 := newSz_1
 
-let rec insert idl idh v ind bucket newNode =
+let insert idl idh v ind bucket newNode =
   if !n_items <= !sz_1
   then (
     !htab.(ind) <- newNode :: bucket;
@@ -93,7 +93,7 @@ let mkNode low v high =
           n
       | n :: ns -> (
         match n with
-        | Node (l, v', id, h) ->
+        | Node (l, v', _id, h) ->
             if v = v' && idl = getId l && idh = getId h then n else lookup ns
         | _ -> assert false )
     in
@@ -228,7 +228,7 @@ let main () =
   let ntests = if Array.length Sys.argv >= 3 then int_of_string Sys.argv.(2) else 100 in
   let bdd = hwb n in
   let succeeded = ref true in
-  for i = 1 to ntests do
+  for _ = 1 to ntests do
     succeeded := !succeeded && test_hwb bdd (random_vars n)
   done;
   assert !succeeded

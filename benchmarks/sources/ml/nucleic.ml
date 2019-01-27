@@ -12,6 +12,8 @@
 
 (* $Id: nucleic.ml 7017 2005-08-12 09:22:04Z xleroy $ *)
 
+[@@@ocaml.warning "-27"]
+
 (* Use floating-point arithmetic *)
 
 external ( + ) : float -> float -> float = "%addfloat"
@@ -6683,7 +6685,7 @@ let anticodon_domains =
 (* Anticodon constraint *)
 
 let anticodon_constraint v partial_inst =
-  let rec dist j =
+  let dist j =
     let p = atom_pos nuc_P (get_var j partial_inst) in
     let o3' = atom_pos nuc_O3' v in
     pt_dist p o3'
@@ -6744,7 +6746,7 @@ let pseudoknot_domains =
 (* Pseudoknot constraint *)
 
 let pseudoknot_constraint v partial_inst =
-  let rec dist j =
+  let dist j =
     let p = atom_pos nuc_P (get_var j partial_inst) in
     let o3' = atom_pos nuc_O3' v in
     pt_dist p o3'
@@ -7037,7 +7039,7 @@ let check () = List.length (pseudoknot ())
 let run () = most_distant_atom (pseudoknot ())
 
 let main () =
-  for i = 1 to 50 do
+  for _ = 1 to 50 do
     ignore (run ())
   done;
   assert (abs_float (run () -. 33.7976) < 0.0002)
