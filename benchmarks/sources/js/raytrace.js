@@ -903,6 +903,4 @@ function renderScene(){
   raytracer.renderScene(scene, null, 0);
 }
 
-var d = Date.now ();
 for (var i = 1; i <= 100; i++) { renderScene(); };
-print(Date.now() - d);

@@ -33,12 +33,12 @@ module Param = struct
     { warm_up_time = 1.0
     ; min_measures = 10
     ; max_confidence = 0.03
-    ; max_duration = 1200.
+    ; max_duration = 5.
     ; verbose = false }
 
-  let fast x = {x with min_measures = 5; max_confidence = 0.15; max_duration = 30.}
+  let fast x = {x with min_measures = 5; max_confidence = 0.15}
 
-  let ffast x = {x with min_measures = 2; max_confidence = 42.; max_duration = 30.}
+  let ffast x = {x with min_measures = 2; max_confidence = 42.}
 
   let verbose x = {x with verbose = true}
 end
@@ -47,11 +47,9 @@ let run_command ~verbose cmd =
   if verbose then Format.printf "+ %s@." cmd;
   match Unix.system cmd with
   | Unix.WEXITED res when res <> 0 ->
-      Format.eprintf "Command '%s' failed with exit code %d.@." cmd res;
-      raise Exit
+      failwith (Printf.sprintf "Command '%s' failed with exit code %d." cmd res)
   | Unix.WSIGNALED s ->
-      Format.eprintf "Command '%s' killed with signal %d.@." cmd s;
-      raise Exit
+      failwith (Format.sprintf "Command '%s' killed with signal %d." cmd s)
   | _ -> ()
 
 let time ~verbose cmd =
@@ -73,52 +71,56 @@ let compile_gen
           if comptime
           then write_measures compiletimes dst_spec nm [time ~verbose:param.verbose cmd]
           else run_command ~verbose:param.verbose cmd
-        with Exit -> () )
+        with Failure s -> Format.eprintf "Failure: %s@." s )
 
 let compile param ~comptime prog =
-  compile_gen param ~comptime (fun ~src ~dst -> Format.sprintf "%s %s -o %s" prog src dst)
+  compile_gen param ~comptime (fun ~src ~dst -> Printf.sprintf "%s %s -o %s" prog src dst)
 
 (****)
 
-let need_more (param : Param.t) l =
+let need_more ~print (param : Param.t) l =
   let a = Array.of_list l in
   let n = Array.length a in
   if n = 0
   then true
   else
     let m, i = mean_with_confidence a in
-    Format.eprintf "==> %f +/- %f / %f %d@." m i (i /. m) n;
+    if print then Format.eprintf "==> %f +/- %f / %f %d\r%!" m i (i /. m) n;
     n < param.min_measures || i /. m > param.max_confidence /. 2.
 
 let warm_up (param : Param.t) cmd =
   let t = ref 0. in
   while !t < param.warm_up_time do
     let t' = time ~verbose:param.verbose cmd in
-    if t' > param.max_duration then raise Exit;
+    if t' > param.max_duration
+    then failwith (Printf.sprintf "Warmup took too long %.1fs" t');
     t := !t +. t'
   done
 
-let rec measure_rec (param : Param.t) cmd l =
+let rec measure_rec ~print (param : Param.t) cmd l =
   let t = time ~verbose:param.verbose cmd in
   let l = t :: l in
-  if need_more param l then measure_rec param cmd l else l
+  if need_more ~print param l then measure_rec ~print param cmd l else l
 
 let measure_one param code meas spec nm cmd =
   let l =
     if measures_need_update code meas spec nm then [] else read_measures meas spec nm
   in
-  if need_more param l
+  if need_more ~print:false param l
   then (
+    Format.eprintf "warming up ...\r%!";
     warm_up param cmd;
-    let l = measure_rec param cmd l in
-    write_measures meas spec nm l; l )
+    let l = measure_rec ~print:true param cmd l in
+    write_measures meas spec nm l; Format.eprintf "\n%!"; l )
   else l
 
 let measure param code meas spec cmd =
   List.iter (Spec.find_names ~root:code spec) ~f:(fun nm ->
-      Format.eprintf "Measure %s %s@." nm cmd;
-      let cmd = Format.sprintf "%s %s" cmd (Spec.file ~root:code spec nm) in
-      try ignore (measure_one param code meas spec nm cmd) with Exit -> () )
+      let cmd = if cmd = "" then cmd else cmd ^ " " in
+      let cmd = Format.sprintf "%s%s" cmd (Spec.file ~root:code spec nm) in
+      Format.eprintf "Measure %s@." cmd;
+      try ignore (measure_one param code meas spec nm cmd) with Failure s ->
+        Format.eprintf "Failure: %s@." s )
 
 (****)
 
@@ -222,7 +224,7 @@ let _ =
   compile_jsoo "--disable inline" code Spec.byte code Spec.js_of_ocaml_inline;
   compile_jsoo "--disable deadcode" code Spec.byte code Spec.js_of_ocaml_deadcode;
   compile_jsoo "--disable compact" code Spec.byte code Spec.js_of_ocaml_compact;
-  compile_jsoo "--disable optcall " code Spec.byte code Spec.js_of_ocaml_call;
+  compile_jsoo "--disable optcall" code Spec.byte code Spec.js_of_ocaml_call;
   if run_ocamljs then compile "ocamljs" src Spec.ml code Spec.ocamljs;
   compile "ocamlc -unsafe" src Spec.ml code Spec.byte_unsafe;
   compile "ocamlopt" src Spec.ml code Spec.opt_unsafe;
@@ -255,17 +257,18 @@ let _ =
     if full
     then
       ( interpreters
-      , [ Spec.js_of_ocaml
-        ; Spec.js_of_ocaml_unsafe
-        ; Spec.js_of_ocaml_inline
-        ; Spec.js_of_ocaml_deadcode
-        ; Spec.js_of_ocaml_compact
-        ; Spec.js_of_ocaml_call
-        ; Spec.ocamljs
-        ; Spec.ocamljs_unsafe ] )
-    else (match interpreters with i :: _ -> [i] | [] -> []), [Spec.js_of_ocaml]
+      , [ Some Spec.js_of_ocaml
+        ; Some Spec.js_of_ocaml_unsafe
+        ; Some Spec.js_of_ocaml_inline
+        ; Some Spec.js_of_ocaml_deadcode
+        ; Some Spec.js_of_ocaml_compact
+        ; Some Spec.js_of_ocaml_call
+        ; (if run_ocamljs then Some Spec.ocamljs else None)
+        ; (if run_ocamljs then Some Spec.ocamljs_unsafe else None) ] )
+    else (match interpreters with i :: _ -> [i] | [] -> []), [Some Spec.js_of_ocaml]
   in
   List.iter compilers ~f:(fun (comp, dir) ->
       measure param src (Filename.concat times dir) Spec.js comp;
-      List.iter suites ~f:(fun suite ->
-          measure param code (Filename.concat times dir) suite comp ) )
+      List.iter suites ~f:(function
+          | None -> ()
+          | Some suite -> measure param code (Filename.concat times dir) suite comp ) )

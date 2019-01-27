@@ -22,9 +22,8 @@ missingsizesml = $(exesnames:%=results/sizes/ml/%)
 missingsizes=$(missingsizesml)
 
 missingcompiletimes = $(exesnames:%=results/compiletimes/`hostname`/byte/%) $(exesnames:%=results/compiletimes/`hostname`/opt/%)
-possiblymissingbenchs = results/times/`hostname`/nitro/js_of_ocaml/kb results/times/`hostname`/tm/js_of_ocaml/hamming results/times/`hostname`/tm/js_of_ocaml/splay
 
-RUN=dune exec ./run.exe -- -verbose
+RUN=dune exec ./run.exe --
 REPORT=dune exec ./report.exe --
 
 .PHONY: $(GRAPHSNOPR:.pdf=.svg) $(GRAPHSPR:.pdf=.svg) size.gpl _noprecomp
@@ -41,14 +40,12 @@ __precomp:
 __run:
 	make _noprecomp
 	$(RUN) -all
-	make __possiblymissingbenchs
 	touch __run
 
 fastrun:
 	make _noprecomp
 	echo "======================== WARNING: fast benchs!"
 	$(RUN) -ffast -all
-	make __possiblymissingbenchs
 	touch __run
 
 _noprecomp:
@@ -71,10 +68,6 @@ __missingcompiletimes:
 	for i in $(missingcompiletimes) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
 	touch __missingcompiletimes
 
-__possiblymissingbenchs:
-	for i in $(possiblymissingbenchs) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
-	touch __possiblymissingbenchs
-
 __missingsizes: __precomp
 	for i in $(missingsizes) ; do if [ ! -f $$i ] ; then echo 0 > $$i ; fi ; done
 	if [ -f results/sizes/ml/unison ] ; then echo 828471 > results/sizes/ml/unison ; fi
@@ -88,8 +81,6 @@ __missingsizes: __precomp
 	if [ -f results/sizes/ml/planet ] ; then echo 16488 > results/sizes/ml/planet ; fi
 	if [ -f results/sizes/ml/sudoku ] ; then echo 2837 > results/sizes/ml/sudoku ; fi
 	touch __missingsizes
-# file sizes (without comments and spaces)
-# find ../examples/sudoku/ -name "*.ml" -exec cat {} \; | perl /home/balat/kroko/js_of_ocaml/benchmarks/lib/remove_comments.pl | sed 's/^ *//g' | wc -c
 
 # To generate SVG, we first need to run the benchs,
 # then to add data for precompiled programs
@@ -164,11 +155,21 @@ nativejs.svg: __run
 	inkscape -D --export-pdf="$@" -w 210 -h 297 $<
 
 _perf:
-	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo performance > $$i/cpufreq/scaling_governor" ; fi ;done
+	for i in /sys/devices/system/cpu/cpu* ; \
+	do \
+	if [ -f $$i/cpufreq/scaling_governor ] ; then \
+		sudo bash -c "echo performance > $$i/cpufreq/scaling_governor" ; \
+	fi ; \
+	done
 
 _noperf:
-	for i in /sys/devices/system/cpu/cpu* ; do if [ -f $$i/cpufreq/scaling_governor ] ; then sudo bash -c "echo powersave > $$i/cpufreq/scaling_governor" ; fi ; done
+	for i in /sys/devices/system/cpu/cpu* ; \
+	do \
+	if [ -f $$i/cpufreq/scaling_governor ] ; then \
+		sudo bash -c "echo powersave > $$i/cpufreq/scaling_governor" ; \
+	fi ; \
+	done
 
 
 clean: _noperf
-	rm -rf results build __precomp __run *.svg *.pdf *~ precomptmp __missingsizes __missingcompiletimes __possiblymissingbenchs
+	rm -rf results build __precomp __run *.svg *.pdf *~ precomptmp __missingsizes __missingcompiletimes
