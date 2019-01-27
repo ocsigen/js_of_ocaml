@@ -3,12 +3,17 @@
   (targets source.cmo)
   (action (run %{bin:ocamlc} -c -g source.ml -o source.cmo)))
 
+(executables
+  (names setup_env)
+  (libraries unix))
+
+
 (rule
-  (deps source.cmo setup-env.sh)
-  (targets generated.map)
-  (action (run ./setup-env.sh
-     %{bin:js_of_ocaml} --source-map --no-runtime --source-map-no-source
-    source.cmo -o generated.js)))
+  (targets generated.map generated.js)
+  (action (run
+     %{dep:./setup_env.exe}
+     %{bin:js_of_ocaml} --source-map --no-runtime --source-map-no-source --debug sourcemap
+     %{dep:source.cmo} -o generated.js)))
 
 (alias
   (name runtest)
