@@ -70,7 +70,7 @@ let fannkuch n =
             raise Exit );
           if i = n - 1
           then (
-            Format.eprintf "%d %d@." !sum !maxflips;
+            if false then Format.eprintf "%d %d@." !sum !maxflips;
             exit 0 );
           s.(i) <- i;
           let t = p.(0) in

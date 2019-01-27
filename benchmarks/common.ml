@@ -20,10 +20,6 @@
 
 open StdLabels
 
-let ( >> ) x f = f x
-
-(****)
-
 let mean a =
   let s = ref 0. in
   for i = 0 to Array.length a - 1 do
@@ -40,7 +36,7 @@ let mean_variance a =
   done;
   m, !s /. float (Array.length a)
 
-(*90%    95%    98%    99%    99.5%  99.8%  99.9%*)
+(*        90%    95%    98%    99%    99.5%  99.8%  99.9%*)
 let tinv_table =
   [| 1, [|6.314; 12.71; 31.82; 63.66; 127.3; 318.3; 636.6|]
    ; 2, [|2.920; 4.303; 6.965; 9.925; 14.09; 22.33; 31.60|]
@@ -89,14 +85,14 @@ let tinv_row n =
 
 let tinv95 n = (tinv_row n).(1)
 
+let tinv98 n = (tinv_row n).(2)
+
 let tinv99 n = (tinv_row n).(3)
 
 let mean_with_confidence a =
   let m, v = mean_variance a in
   let l = Array.length a in
-  m, sqrt v /. sqrt (float l) *. tinv99 (l - 1)
-
-(****)
+  m, sqrt v /. sqrt (float l) *. tinv98 (l - 1)
 
 let src = "sources"
 
@@ -170,19 +166,19 @@ end = struct
   let find_names ~root spec =
     let dir = dir ~root spec in
     Sys.readdir dir
-    >> Array.to_list
-    >> List.filter ~f:(fun nm ->
+    |> Array.to_list
+    |> List.filter ~f:(fun nm ->
            match Unix.stat (dir ^ "/" ^ nm) with
            | Unix.({st_kind = S_REG | S_LNK; _}) -> true
            | _ -> false )
-    >> ( if spec.ext = ""
+    |> ( if spec.ext = ""
        then fun x -> x
        else
          fun x ->
          x
          |> List.filter ~f:(fun nm -> Filename.check_suffix nm spec.ext)
          |> List.map ~f:Filename.chop_extension )
-    >> List.sort ~cmp:compare
+    |> List.sort ~cmp:compare
 
   let ml = create "ml" ".ml"
 
@@ -213,10 +209,6 @@ end = struct
   let ocamljs_unsafe = create "unsafe/ocamljs" ".js"
 end
 
-(****)
-
-(****)
-
 let rec mkdir d =
   if not (Sys.file_exists d)
   then (
@@ -231,8 +223,6 @@ let need_update src dst =
     let s = Unix.stat src in
     d.Unix.st_mtime < s.Unix.st_mtime
   with Unix.Unix_error (Unix.ENOENT, _, _) -> true
-
-(****)
 
 let measures_need_update code meas spec nm =
   let p = Spec.file ~root:code spec nm in
@@ -261,5 +251,3 @@ let write_measures meas spec nm l =
   List.iter ~f:(fun t -> Printf.fprintf ch "%f\n" t) (List.rev l);
   close_out ch;
   Sys.rename tmp m
-
-(****)

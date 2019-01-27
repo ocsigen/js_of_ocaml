@@ -21,14 +21,14 @@ function arr(size,v) {
   return t;
 }
 
-function eval(bdd, vars) {
+function eval2(bdd, vars) {
   switch (bdd.id) {
   case 0:
     return false;
   case 1:
     return true;
   default:
-    return vars[bdd.v]?eval(bdd.h,vars):eval(bdd.l,vars);
+    return vars[bdd.v]?eval2(bdd.h,vars):eval2(bdd.l,vars);
   }
 }
 
@@ -269,7 +269,7 @@ function test_hwb(bdd,vars) {
   for (var i = 0; i < vars.length; i++) {
     if (vars[i]) ntrue++;
   };
-  return (eval(bdd,vars) == ((ntrue > 0) ? vars[ntrue-1] : false))
+  return (eval2(bdd,vars) == ((ntrue > 0) ? vars[ntrue-1] : false))
 };
 
 var n = 22;

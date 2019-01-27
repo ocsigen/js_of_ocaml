@@ -174,7 +174,7 @@ let gnuplot_output ch no_header (h, t) =
     then
       Printf.fprintf
         ch
-        "set terminal svg fsize %d size %d %d\n"
+        "set terminal svg size %d %d font 'Arial,%d'\n"
         !svgfontsize
         !svgwidth
         !svgheight;
@@ -273,83 +273,6 @@ let output_tables r conf =
       no_header := true );
   close ()
 
-(*
-let f _ =
-  let c1 = read_column (times ^ "/v8") js_of_ocaml in
-  let c2 = read_column (times ^ "/v8") ocamljs in
-  output_table 1 [c1; c2]
-*)
-
-(*
-let f _ =
-  let c1 = read_column times opt in
-  let c2 = read_column times byte in
-  let c3 = read_column (times ^ "/v8") js_of_ocaml in
-  output_table 1 [c3; c2; c1]
-*)
-
-(*
-let f _ =
-  let c1 = read_column (times ^ "/v8") js_of_ocaml in
-  let c2 = read_column (times ^ "/v8") js_of_ocaml_unsafe in
-  output_table 1 [c1; c2]
-
-let f _ =
-  let o = read_column ~title:"ocamlopt" ~color:"#729fcf" times opt in
-  let b = read_column ~title:"ocamlc" ~color:"#204a87" times byte in
-  let c0 = read_column ~title:"old V8 (august?)" ~color:"#fbaf4f" (times ^ "/oldv8") js_of_ocaml in
-  let c1 = read_column ~title:"V8" ~color:"#d98e2d" (times ^ "/v8") js_of_ocaml in
-  let c2 = read_column ~title:"Nitro" ~color:"#a75f0c" (times ^ "/nitro") js_of_ocaml in
-  let c3 = read_column ~title:"TraceMonkey" ~color:"#a40000" (times ^ "/tm") js_of_ocaml in
-  output_table 2 [o; b; c0; c1; c2; c3]
-*)
-
-(*
-
-let f _ =
-  let o = read_column ~title:"ocamlopt" ~color:"#729fcf" times opt in
-  let b = read_column ~title:"ocamlc" ~color:"#326bbe" times byte in
-  let c1 = read_column ~title:"V8" ~color:"#d98e2d" (times ^ "/v8") js_of_ocaml in
-  let c2 = read_column ~title:"Nitro" ~color:"#a75f0c" (times ^ "/nitro") js_of_ocaml in
-  output_table 2 [o; b; c1; c2]
-*)
-
-(*
-let f _ =
-  let engine = "v8" in
-  let c1 = read_column (times ^ "/" ^ engine) js in
-  let c2 = read_column (times ^ "/" ^ engine) js_of_ocaml in
-  output_table 2 [c1; c2]
-*)
-
-(*
-let f _ =
-  let c1 = read_column sizes ml in
-  let c2 = read_column sizes byte in
-  let c3 = read_column sizes (sub_spec js_of_ocaml "full") in
-  let c4 = read_column sizes (sub_spec js_of_ocaml "generated") in
-  let c5 = read_column sizes ocamljs in
-  output_table 3 [c1; c2; c3; c4; c5]
-*)
-
-(*
-let f _ =
-  let c1 = read_column sizes (sub_spec js_of_ocaml "generated") in
-  let c2 = read_column sizes js_of_ocaml_compact in
-  let c3 = read_column sizes js_of_ocaml_inline in
-  let c4 = read_column sizes js_of_ocaml_deadcode in
-  output_table 1 [c1; c2; c3; c4]
-*)
-
-(*
-let f _ =
-  let c2 = read_column ~title:"bytecode" ~color:"#326bbe" sizes byte in
-  let c3 = read_column ~title:"Javascript" ~color:"#a75f0c" sizes (sub_spec js_of_ocaml "full") in
-  output_table 1 [c2; c3]
-*)
-
-(****)
-
 let read_config () =
   let f = !conf in
   if not (Sys.file_exists f)
@@ -441,13 +364,7 @@ let _ =
   let r, conf = read_config () in
   output_tables r conf
 
-(* f () *)
-
 (*
 http://hacks.mozilla.org/2009/07/tracemonkey-overview/
 http://weblogs.mozillazine.org/bz/archives/020732.html
-*)
-
-(*
-./report.ml -max 4 -omit hamming
 *)
