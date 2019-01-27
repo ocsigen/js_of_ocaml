@@ -18,7 +18,6 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(****)
 open StdLabels
 open Common
 
@@ -53,22 +52,6 @@ let svgheight = ref 150
 let edgecaption = ref false
 
 let ylabel = ref ""
-
-(****)
-
-let str_split s c =
-  let i = ref (String.length s) in
-  let r = ref [] in
-  ( try
-      while true do
-        let j = String.rindex_from s (!i - 1) c in
-        r := String.sub s ~pos:(j + 1) ~len:(!i - j - 1) :: !r;
-        i := j
-      done
-    with Not_found -> () );
-  String.sub s ~pos:0 ~len:!i :: !r
-
-(****)
 
 let rec merge f l1 l2 =
   match l1, l2 with
@@ -433,10 +416,10 @@ let _ =
     ; "-max", Arg.Set_float maximum, "<m> truncate graph at level <max>"
     ; "-table", Arg.Set table, " output a text table"
     ; ( "-omit"
-      , Arg.String (fun s -> omitted := str_split s ',' @ !omitted)
+      , Arg.String (fun s -> omitted := String.split_on_char s ~sep:',' @ !omitted)
       , " omit the given benchmark" )
     ; ( "-append"
-      , Arg.String (fun s -> appended := str_split s ',' @ !appended)
+      , Arg.String (fun s -> appended := String.split_on_char s ~sep:',' @ !appended)
       , " append the given benchmark at the end" )
     ; "-errors", Arg.Set errors, " display error bars"
     ; "-config", Arg.Set_string conf, "<file> use <file> as a config file"
