@@ -1,0 +1,18 @@
+(executables
+  (names main)
+  (libraries num))
+
+(rule
+  (targets ./main.js)
+  (deps main.bc)
+  (action
+    (run %{bin:js_of_ocaml}
+      --noruntime %{lib:js_of_ocaml-compiler:runtime.js}
+      %{lib:js_of_ocaml-compiler:nat.js}
+      main.bc
+      -o main.js)))
+
+(alias
+  (name failing-runtest)
+  (deps ./main.js)
+  (action (run node ./main.js)))

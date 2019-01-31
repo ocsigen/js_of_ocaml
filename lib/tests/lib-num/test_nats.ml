@@ -118,8 +118,9 @@ testing_function "string_of_nat && nat_of_string"
 
 ;;
 for i = 1 to 20 do
-  let s = String.make i '0' in
-  s.[0] <- '1';
+  let s = Bytes.make i '0' in
+  Bytes.set s 0 '1';
+  let s = Bytes.to_string s in
   ignore (test i eq_string (string_of_nat (nat_of_string s), s))
 done
 

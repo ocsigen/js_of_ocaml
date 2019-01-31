@@ -1271,6 +1271,8 @@ msd_ratio (create_ratio (big_int_of_int 0) (big_int_of_int 0))
 ;;
 testing_function "round_futur_last_digit"
 
+let round_futur_last_digit s = round_futur_last_digit (Bytes.of_string s)
+
 ;;
 let s = "+123456" in
 test 1 eq (round_futur_last_digit s 1 (pred (String.length s)), false)
