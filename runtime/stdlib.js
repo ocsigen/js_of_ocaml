@@ -896,8 +896,12 @@ function caml_hash (count, limit, seed, obj) {
 
 ///////////// Sys
 //Provides: caml_sys_time mutable
-var caml_initial_time = new Date() * 0.001;
-function caml_sys_time () { return new Date() * 0.001 - caml_initial_time; }
+var caml_initial_time = (new Date()).getTime() * 0.001;
+function caml_sys_time () {
+  var now = (new Date()).getTime();
+  return now * 0.001 - caml_initial_time;
+}
+
 //Provides: caml_sys_get_config const
 //Requires: caml_new_string
 function caml_sys_get_config () {
@@ -913,7 +917,8 @@ function caml_sys_const_backend_type () {
 //Provides: caml_sys_random_seed mutable
 //The function needs to return an array since OCaml 4.0...
 function caml_sys_random_seed () {
-  var x = new Date()^0xffffffff*Math.random();
+  var now = (new Date()).getTime();
+  var x = now^0xffffffff*Math.random();
   return [0,x];
 }
 
