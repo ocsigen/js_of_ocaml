@@ -136,39 +136,35 @@ let f
     then `Names
     else `No
   in
-  let p, cmis, d, standalone =
+  let result =
     if runtime_only
     then
-      ( Parse_bytecode.predefined_exceptions ()
-      , StringSet.empty
-      , Parse_bytecode.Debug.create ()
-      , true )
+      Parse_bytecode.Standalone
+        { code = Parse_bytecode.predefined_exceptions ()
+        ; cmis = StringSet.empty
+        ; debug = Parse_bytecode.Debug.create () }
     else
-      match input_file with
-      | None ->
+      let with_channel ~f =
+        match input_file with
+        | None -> f stdin
+        | Some fn ->
+            let ch = open_in_bin fn in
+            let res = f ch in
+            close_in ch;
+            res
+      in
+      with_channel ~f:(fun ch ->
           Parse_bytecode.from_channel
             ~includes:paths
             ~toplevel
             ?expunge
             ~dynlink
             ~debug:need_debug
-            stdin
-      | Some f ->
-          let ch = open_in_bin f in
-          let res =
-            Parse_bytecode.from_channel
-              ~includes:paths
-              ~toplevel
-              ?expunge
-              ~dynlink
-              ~debug:need_debug
-              ch
-          in
-          close_in ch;
-          res
+            ch)
   in
-  let () =
-    if (not runtime_only) && source_map <> None && Parse_bytecode.Debug.is_empty d
+  if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
+  let check_debug debug =
+    if (not runtime_only) && source_map <> None && Parse_bytecode.Debug.is_empty debug
     then
       warn
         "Warning: '--source-map' is enabled but the bytecode program was compiled with \
@@ -176,61 +172,82 @@ let f
          Warning: Consider passing '-g' option to ocamlc.\n\
          %!"
   in
-  let cmis = if nocmis then StringSet.empty else cmis in
-  let p =
-    let l =
-      List.map static_env ~f:(fun (k, v) ->
-          Primitive.add_external "caml_set_static_env";
-          let args = [Code.Pc (IString k); Code.Pc (IString v)] in
-          Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
+  let pseudo_fs_instr prim debug cmis =
+    let cmis = if nocmis then StringSet.empty else cmis in
+    let paths =
+      paths @ StringSet.elements (Parse_bytecode.Debug.paths debug ~units:cmis)
     in
-    Code.prepend p l
+    PseudoFs.f ~prim ~cmis ~files:fs_files ~paths
   in
-  let p =
-    if fs_external
-    then
-      let instrs = [Code.(Let (Var.fresh (), Prim (Extern "caml_fs_init", [])))] in
-      Code.prepend p instrs
-    else p
+  let env_instr =
+    List.map static_env ~f:(fun (k, v) ->
+        Primitive.add_external "caml_set_static_env";
+        let args = [Code.Pc (IString k); Code.Pc (IString v)] in
+        Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
   in
-  if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-  let paths = paths @ StringSet.elements (Parse_bytecode.Debug.paths d ~units:cmis) in
-  (match output_file with
-  | None ->
-      let p = PseudoFs.f p cmis fs_files paths in
-      let fmt = Pretty_print.to_out_channel stdout in
-      Driver.f
-        ~standalone
-        ?profile
-        ~linkall
-        ~global
-        ~dynlink
-        ?source_map
-        ?custom_header
-        fmt
-        d
-        p
-  | Some file ->
-      gen_file file (fun chan ->
-          let p = if fs_output = None then PseudoFs.f p cmis fs_files paths else p in
-          let fmt = Pretty_print.to_out_channel chan in
-          Driver.f
-            ~standalone
-            ?profile
-            ~linkall
-            ~global
-            ~dynlink
-            ?source_map
-            ?custom_header
-            fmt
-            d
-            p);
-      Option.iter fs_output ~f:(fun file ->
-          gen_file file (fun chan ->
-              let pfs = PseudoFs.f_empty cmis fs_files paths in
-              let pfs_fmt = Pretty_print.to_out_channel chan in
-              Driver.f ~standalone ?profile ?custom_header ~global pfs_fmt d pfs)));
-  if times () then Format.eprintf "compilation: %a@." Timer.print t;
+  let pseudo_fs_init_instr = if fs_external then [PseudoFs.init ()] else [] in
+  let output (one : Parse_bytecode.one) standalone output_file =
+    check_debug one.debug;
+    (match output_file with
+    | None ->
+        let instr =
+          List.concat
+            [ pseudo_fs_instr `caml_create_file one.debug one.cmis
+            ; pseudo_fs_init_instr
+            ; env_instr ]
+        in
+        let code = Code.prepend one.code instr in
+        let fmt = Pretty_print.to_out_channel stdout in
+        Driver.f
+          ~standalone
+          ?profile
+          ~linkall
+          ~global
+          ~dynlink
+          ?source_map
+          ?custom_header
+          fmt
+          one.debug
+          code
+    | Some file ->
+        let fs_instr1, fs_instr2 =
+          match fs_output with
+          | None -> pseudo_fs_instr `caml_create_file one.debug one.cmis, []
+          | Some _ -> [], pseudo_fs_instr `caml_create_file_extern one.debug one.cmis
+        in
+        gen_file file (fun chan ->
+            let instr = List.concat [fs_instr1; pseudo_fs_init_instr; env_instr] in
+            let code = Code.prepend one.code instr in
+            let fmt = Pretty_print.to_out_channel chan in
+            Driver.f
+              ~standalone
+              ?profile
+              ~linkall
+              ~global
+              ~dynlink
+              ?source_map
+              ?custom_header
+              fmt
+              one.debug
+              code);
+        Option.iter fs_output ~f:(fun file ->
+            gen_file file (fun chan ->
+                let instr = fs_instr2 in
+                let code = Code.prepend Code.empty instr in
+                let pfs_fmt = Pretty_print.to_out_channel chan in
+                Driver.f
+                  ~standalone
+                  ?profile
+                  ?custom_header
+                  ~global
+                  pfs_fmt
+                  one.debug
+                  code)));
+    if times () then Format.eprintf "compilation: %a@." Timer.print t
+  in
+  (match result with
+  | Standalone code -> output code true output_file
+  | Partial code -> output code false output_file);
   Debug.stop_profiling ()
 
 let main = Cmdliner.Term.(pure f $ CompileArg.options), CompileArg.info

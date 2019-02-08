@@ -19,8 +19,13 @@
 
 open Stdlib
 
-val f : Code.program -> StringSet.t -> string list -> string list -> Code.program
+val f :
+     prim:[`caml_create_file | `caml_create_file_extern]
+  -> cmis:StringSet.t
+  -> files:string list
+  -> paths:string list
+  -> Code.instr list
 
-val f_empty : StringSet.t -> string list -> string list -> Code.program
+val embed_file : name:string -> filename:string -> Code.instr
 
-val program_of_files : (string * string) list -> Code.program
+val init : unit -> Code.instr

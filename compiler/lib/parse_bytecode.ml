@@ -26,7 +26,7 @@ let debug_parser = Debug.find "parser"
 
 let debug_sourcemap = Debug.find "sourcemap"
 
-type code = string
+type bytecode = string
 
 let predefined_exceptions =
   [ 0, "Out_of_memory"
@@ -236,7 +236,7 @@ end
 module Blocks : sig
   type t
 
-  val analyse : Debug.data -> code -> t
+  val analyse : Debug.data -> bytecode -> t
 
   val add : t -> int -> t
 
@@ -1955,6 +1955,15 @@ let match_exn_traps (blocks : 'a Addr.Map.t) =
 
 (****)
 
+type one =
+  { code : Code.program
+  ; cmis : StringSet.t
+  ; debug : Debug.data }
+
+type result =
+  | Standalone of one
+  | Partial of one
+
 let parse_bytecode ~debug code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
@@ -2184,10 +2193,10 @@ let exe_from_channel
         StringSet.empty
     else StringSet.empty
   in
-  prepend p body, cmis, debug_data
+  {code = prepend p body; cmis; debug = debug_data}
 
 (* As input: list of primitives + size of global table *)
-let from_bytes primitives (code : code) =
+let from_bytes primitives (code : bytecode) =
   let globals = make_globals 0 [||] primitives in
   let debug_data = Debug.create () in
   let p = parse_bytecode ~debug:`No code globals debug_data in
@@ -2331,7 +2340,7 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
           StringSet.add compunit.Cmo_format.cu_name acc)
     else StringSet.empty
   in
-  prepend prog body, cmis, debug_data
+  {code = prepend prog body; cmis; debug = debug_data}
 
 let from_channel
     ?(includes = [])
@@ -2368,10 +2377,10 @@ let from_channel
         else (
           seek_in ic compunit.Cmo_format.cu_debug;
           Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
-        let a, b, c =
+        let x =
           from_compilation_units ~toplevel ~includes ~debug ~debug_data [compunit, code]
         in
-        a, b, c, false
+        Partial x
     | `Cma ->
         if Config.Flag.check_magic () && magic <> Magic_number.current_cma
         then raise Magic_number.(Bad_magic_version magic);
@@ -2393,21 +2402,19 @@ let from_channel
               orig := !orig + compunit.Cmo_format.cu_codesize;
               compunit, code)
         in
-        let a, b, c =
-          from_compilation_units ~toplevel ~includes ~debug ~debug_data units
-        in
-        a, b, c, false
+        let x = from_compilation_units ~toplevel ~includes ~debug ~debug_data units in
+        Partial x
     | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
   | `Post magic -> (
     match Magic_number.kind magic with
     | `Exe ->
         if Config.Flag.check_magic () && magic <> Magic_number.current_exe
         then raise Magic_number.(Bad_magic_version magic);
-        let a, b, c =
+        let x =
           exe_from_channel ~includes ~toplevel ?expunge ~dynlink ~debug ~debug_data ic
         in
-        Code.invariant a;
-        a, b, c, true
+        Code.invariant x.code;
+        Standalone x
     | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
 
 let predefined_exceptions () =
