@@ -12,8 +12,9 @@ function unix_time () {
 //Provides: unix_gmtime
 function unix_gmtime (t) {
   var d = new Date (t * 1000);
-  var januaryfirst = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  var doy = Math.floor((d - januaryfirst) / 86400000);
+  var d_num = d.getTime();
+  var januaryfirst = (new Date(Date.UTC(d.getUTCFullYear(), 0, 1))).getTime();
+  var doy = Math.floor((d_num - januaryfirst) / 86400000);
   return [0, d.getUTCSeconds(), d.getUTCMinutes(), d.getUTCHours(),
           d.getUTCDate(), d.getUTCMonth(), d.getUTCFullYear() - 1900,
           d.getUTCDay(), doy,
@@ -23,8 +24,9 @@ function unix_gmtime (t) {
 //Provides: unix_localtime
 function unix_localtime (t) {
   var d = new Date (t * 1000);
-  var januaryfirst = new Date(d.getFullYear(), 0, 1);
-  var doy = Math.floor((d - januaryfirst) / 86400000);
+  var d_num = d.getTime();
+  var januaryfirst = (new Date(d.getFullYear(), 0, 1)).getTime();
+  var doy = Math.floor((d_num - januaryfirst) / 86400000);
   var jan = new Date(d.getFullYear(), 0, 1);
   var jul = new Date(d.getFullYear(), 6, 1);
   var stdTimezoneOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
@@ -37,8 +39,8 @@ function unix_localtime (t) {
 //Provides: unix_mktime
 //Requires: unix_localtime
 function unix_mktime(tm){
-  var d = new Date(tm[6]+1900,tm[5],tm[4],tm[3],tm[2],tm[1]);
-  var t = Math.floor(d.getTime() / 1000);
+  var d = (new Date(tm[6]+1900,tm[5],tm[4],tm[3],tm[2],tm[1])).getTime();
+  var t = Math.floor(d / 1000);
   var tm2 = unix_localtime(t);
   return [0,t,tm2];
 }
