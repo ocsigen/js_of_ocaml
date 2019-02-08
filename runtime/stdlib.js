@@ -108,19 +108,9 @@ function caml_get_global_data () { return caml_global_data; }
 
 
 //Provides: caml_raise_constant (const)
-//Version: < 4.02
-function caml_raise_constant (tag) { throw [0, tag]; }
-
-//Provides: caml_raise_constant (const)
-//Version: >= 4.02
 function caml_raise_constant (tag) { throw tag; }
 
 //Provides: caml_return_exn_constant (const)
-//Version: < 4.02
-function caml_return_exn_constant (tag) { return [0, tag]; }
-
-//Provides: caml_return_exn_constant (const)
-//Version: >= 4.02
 function caml_return_exn_constant (tag) { return tag; }
 
 //Provides: caml_raise_with_arg (const, const)
@@ -920,17 +910,7 @@ function caml_sys_const_backend_type () {
   return [0, caml_new_string("js_of_ocaml")];
 }
 
-
 //Provides: caml_sys_random_seed mutable
-//Version: < 4.00
-//The function needs to return an array since OCaml 4.0...
-function caml_sys_random_seed () {
-  var x = new Date()^0xffffffff*Math.random();
-  return x;
-}
-
-//Provides: caml_sys_random_seed mutable
-//Version: >= 4.00
 //The function needs to return an array since OCaml 4.0...
 function caml_sys_random_seed () {
   var x = new Date()^0xffffffff*Math.random();
