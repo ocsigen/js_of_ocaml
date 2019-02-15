@@ -17,6 +17,9 @@
  *)
 
 val path_require_findlib : string -> string option
+
 val set_find_pkg_dir : (string -> string) -> unit
+
 val find_pkg_dir : string -> string
+
 val find_in_findlib_paths : ?pkg:string -> string list -> string -> string

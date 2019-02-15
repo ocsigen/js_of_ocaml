@@ -20,10 +20,8 @@ let rec find_in_path paths name =
   match paths with
   | [] -> raise Not_found
   | path :: rem ->
-    let file = Filename.concat path name in
-    if Sys.file_exists file
-    then file
-    else find_in_path rem name
+      let file = Filename.concat path name in
+      if Sys.file_exists file then file else find_in_path rem name
 
 let find_in_path paths name =
   if name = "" || name = "."
@@ -35,19 +33,13 @@ let find_in_path paths name =
   else raise Not_found
 
 let absolute_path f =
-  if Filename.is_relative f
-  then Filename.concat (Sys.getcwd()) f
-  else f
+  if Filename.is_relative f then Filename.concat (Sys.getcwd ()) f else f
 
 let read_file f =
   try
     let ic = open_in_bin f in
     let n = in_channel_length ic in
     let s = Bytes.create n in
-    really_input ic s 0 n;
-    close_in ic;
-    Bytes.unsafe_to_string s
+    really_input ic s 0 n; close_in ic; Bytes.unsafe_to_string s
   with e ->
-    failwith
-      (Printf.sprintf "Cannot read content of %s.\n%s"
-         f (Printexc.to_string e))
+    failwith (Printf.sprintf "Cannot read content of %s.\n%s" f (Printexc.to_string e))

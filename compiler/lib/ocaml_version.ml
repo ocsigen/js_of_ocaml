@@ -17,35 +17,33 @@
  *)
 
 open Stdlib
+
 type t = int list
+
 let split v =
   match String.split_char ~sep:'+' v with
   | [] -> assert false
-  | x::_ -> List.map (String.split_char ~sep:'.' x) ~f:int_of_string
+  | x :: _ -> List.map (String.split_char ~sep:'.' x) ~f:int_of_string
 
 let current = split Sys.ocaml_version
 
 let compint (a : int) b = compare a b
 
-let rec compare v v' = match v,v' with
-  | [x],[y] -> compint x y
-  | [],[] -> 0
-  | [],y::_ -> compint 0 y
-  | x::_,[] -> compint x 0
-  | x::xs,y::ys ->
-    match compint x y with
-    | 0 -> compare xs ys
-    | n -> n
+let rec compare v v' =
+  match v, v' with
+  | [x], [y] -> compint x y
+  | [], [] -> 0
+  | [], y :: _ -> compint 0 y
+  | x :: _, [] -> compint x 0
+  | x :: xs, y :: ys -> ( match compint x y with 0 -> compare xs ys | n -> n )
 
 let v =
-  if compare current [4;3] < 0 then
-    `V4_02
-  else if compare current [4;4] < 0 then
-    `V4_03
-  else if compare current [4;6] < 0 then
-    `V4_04
-  else if compare current [4;7] < 0 then
-    `V4_06
-  else
-    `V4_07
-
+  if compare current [4; 3] < 0
+  then `V4_02
+  else if compare current [4; 4] < 0
+  then `V4_03
+  else if compare current [4; 6] < 0
+  then `V4_04
+  else if compare current [4; 7] < 0
+  then `V4_06
+  else `V4_07

@@ -21,6 +21,7 @@ open Stdlib
 type t = string * int
 
 exception Bad_magic_number of string
+
 exception Bad_magic_version of t
 
 let size = 12
@@ -40,55 +41,53 @@ let kind_of_string = function
 
 let of_string s =
   try
-    if String.length s <> size
-    then raise Not_found;
+    if String.length s <> size then raise Not_found;
     let kind = String.sub s ~pos:0 ~len:9 in
     let v = String.sub s ~pos:9 ~len:3 in
     let _ = kind_of_string kind in
     kind, int_of_string v
   with _ -> raise (Bad_magic_number s)
 
-let kind (s,_) =
+let kind (s, _) =
   match kind_of_string s with
   | "exe" -> `Exe
   | "cmo" -> `Cmo
   | "cma" -> `Cma
   | other -> `Other other
 
-let to_string (k,v) = Printf.sprintf "%s%03d" k v
+let to_string (k, v) = Printf.sprintf "%s%03d" k v
 
-let compare (p1,n1) (p2,n2) =
+let compare (p1, n1) (p2, n2) =
   if p1 <> p2 then raise Not_found;
   compare n1 n2
 
 let current_exe =
-  let v = match Ocaml_version.v with
-    | `V4_02
-    | `V4_03 | `V4_04 -> 11
+  let v =
+    match Ocaml_version.v with
+    | `V4_02 | `V4_03 | `V4_04 -> 11
     | `V4_06 -> 11
     | `V4_07 -> 23
   in
-  ("Caml1999X",v)
+  "Caml1999X", v
 
 let current_cmo =
-  let v = match Ocaml_version.v with
+  let v =
+    match Ocaml_version.v with
     | `V4_02 -> 10
     | `V4_03 | `V4_04 -> 11
     | `V4_06 -> 22
     | `V4_07 -> 23
   in
-  ("Caml1999O", v)
+  "Caml1999O", v
 
 let current_cma =
-  let v = match Ocaml_version.v with
+  let v =
+    match Ocaml_version.v with
     | `V4_02 -> 11
     | `V4_03 | `V4_04 -> 12
     | `V4_06 -> 22
     | `V4_07 -> 23
   in
-  ("Caml1999A", v)
+  "Caml1999A", v
 
-let current = function
-  | `Exe -> current_exe
-  | `Cmo -> current_cmo
-  | `Cma -> current_cma
+let current = function `Exe -> current_exe | `Cmo -> current_cmo | `Cma -> current_cma

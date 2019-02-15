@@ -17,6 +17,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-val link : output:out_channel -> files:string list ->
-  resolve_sourcemap_url:bool ->
-  source_map: (string option * Source_map.t) option -> unit
+val link :
+     output:out_channel
+  -> files:string list
+  -> resolve_sourcemap_url:bool
+  -> source_map:(string option * Source_map.t) option
+  -> unit

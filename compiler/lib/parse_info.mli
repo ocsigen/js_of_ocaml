@@ -17,20 +17,22 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type t = { src  : string option
-        ; name : string option
-        ; col  : int
-        ; line : int
-        ; idx  : int
-        ; fol  : bool option
-        }
+type t =
+  { src : string option
+  ; name : string option
+  ; col : int
+  ; line : int
+  ; idx : int
+  ; fol : bool option }
 
 val zero : t
 
 type lineinfo
 
 val make_lineinfo_from_file : string -> lineinfo
+
 val make_lineinfo_from_string : ?offset:t -> string -> lineinfo
+
 val make_lineinfo_from_channel : in_channel -> lineinfo * string
 
 val relative_path : lineinfo -> string -> string option
