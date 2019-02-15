@@ -23,20 +23,20 @@
     binary data in an ASCII string format by translating it into a radix-64
     representation.  It is specified in RFC 4648. *)
 
-(** A 64-character string specifying the regular Base64 alphabet. *)
 val default_alphabet : string
+(** A 64-character string specifying the regular Base64 alphabet. *)
 
+val uri_safe_alphabet : string
 (** A 64-character string specifying the URI- and filename-safe Base64
     alphabet. *)
-val uri_safe_alphabet : string
 
+val decode : ?alphabet:string -> string -> string
 (** [decode s] decodes the string [s] that is encoded in Base64 format.
     Will leave trailing NULLs on the string, padding it out to a multiple
     of 3 characters. [alphabet] defaults to {!default_alphabet}.
     @raise Not_found if [s] is not a valid Base64 string.  *)
-val decode : ?alphabet:string -> string -> string
 
+val encode : ?pad:bool -> ?alphabet:string -> string -> string
 (** [encode s] encodes the string [s] into base64. If [pad] is false,
     no trailing padding is added.
     [pad] defaults to [true], and [alphabet] to {!default_alphabet}. *)
-val encode : ?pad:bool -> ?alphabet:string -> string -> string

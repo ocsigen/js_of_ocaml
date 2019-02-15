@@ -186,11 +186,18 @@ type kind =
   | KStop of int
   | K_will_not_happen
 
-type desc = { code : t; kind : kind; name : string; opcode : int }
+type desc =
+  { code : t
+  ; kind : kind
+  ; name : string
+  ; opcode : int }
 
 val get_instr_exn : string -> int -> desc
 
 val gets : string -> int -> int
+
 val getu : string -> int -> int
+
 val gets32 : string -> int -> int32
+
 val getu32 : string -> int -> int32

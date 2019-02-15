@@ -20,10 +20,10 @@ open Stdlib
 
 let series = ref None
 
-let stop_profiling () = match !series with
-  | Some _x ->
-    (* Spacetime.Series.save_and_close x; *)
-    series:=None
+let stop_profiling () =
+  match !series with
+  | Some _x -> (* Spacetime.Series.save_and_close x; *)
+               series := None
   | None -> ()
 
 let start_profiling name =
@@ -36,10 +36,8 @@ let start_profiling name =
 let take_snapshot () =
   match !series with
   | None -> ()
-  | Some _series ->
-    Gc.minor ();
-    (* Spacetime.Snapshot.take series; *)
-    ()
+  | Some _series -> Gc.minor (); (* Spacetime.Snapshot.take series; *)
+                                 ()
 
 let debugs : (string * bool ref) list ref = ref []
 
@@ -47,16 +45,14 @@ let available () = List.map !debugs ~f:fst
 
 let find s =
   let state =
-    try
-      List.assoc s !debugs
-    with Not_found ->
+    try List.assoc s !debugs with Not_found ->
       let state = ref false in
       debugs := (s, state) :: !debugs;
       state
   in
   fun () ->
     if s = "times" then take_snapshot ();
-    not !quiet && !state
+    (not !quiet) && !state
 
 let enable s =
   try List.assoc s !debugs := true with Not_found ->
@@ -65,5 +61,3 @@ let enable s =
 let disable s =
   try List.assoc s !debugs := false with Not_found ->
     failwith (Printf.sprintf "The debug named %S doesn't exist" s)
-
-

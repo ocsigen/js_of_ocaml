@@ -17,5 +17,7 @@
  *)
 
 val find_in_path : string list -> string -> string
+
 val absolute_path : string -> string
+
 val read_file : string -> string

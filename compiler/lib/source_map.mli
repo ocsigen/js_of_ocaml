@@ -17,28 +17,27 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type map = {
-  gen_line : int;
-  gen_col : int;
-  ori_source : int;
-  ori_line : int;
-  ori_col : int;
-  ori_name : int option
-}
+type map =
+  { gen_line : int
+  ; gen_col : int
+  ; ori_source : int
+  ; ori_line : int
+  ; ori_col : int
+  ; ori_name : int option }
 
 type mapping = map list
 
-type t = {
-  version : int;
-  file : string;
-  sourceroot : string option;
-  mutable sources : string list;
-  mutable sources_content : string option list option;
-  mutable names : string list;
-  mutable mappings : mapping ;
-}
+type t =
+  { version : int
+  ; file : string
+  ; sourceroot : string option
+  ; mutable sources : string list
+  ; mutable sources_content : string option list option
+  ; mutable names : string list
+  ; mutable mappings : mapping }
 
 val merge : (int * string * t) list -> t option
 
 val mapping_of_string : string -> mapping
+
 val string_of_mapping : mapping -> string

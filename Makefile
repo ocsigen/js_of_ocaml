@@ -12,6 +12,10 @@ doc:
 promote:
 	dune promote
 
+fmt:
+	dune build @fmt --auto-promote || true
+	cat compiler/lib/.ocamlformat-ignore | xargs -n 1 -I {} -- git checkout compiler/lib/{}
+
 clean:
 	dune clean
 

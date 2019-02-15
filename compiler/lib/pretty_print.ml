@@ -18,54 +18,49 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-type pos = {
-  mutable p_line : int;
-  mutable p_col : int
-}
+type pos =
+  { mutable p_line : int
+  ; mutable p_col : int }
 
 type elt =
-    Text of string
+  | Text of string
   | Break of string * int
   | Start_group of int
   | End_group
   | Set_pos of pos
 
 type t =
-  { mutable indent : int;
-    mutable box_indent : int;
-    mutable prev_indents : (int * int) list;
-    mutable limit : int;
-    mutable cur : int;
-
-    mutable l : elt list;
-
-    mutable n : int;
-    mutable w : int;
-
-    mutable compact : bool;
-
-    mutable needed_space : (char -> char -> bool) option;
-    mutable pending_space : string option;
-    mutable last_char : char option;
-    mutable line : int;
-    mutable col : int;
-    mutable total : int;
-    output : string -> int -> int -> unit }
+  { mutable indent : int
+  ; mutable box_indent : int
+  ; mutable prev_indents : (int * int) list
+  ; mutable limit : int
+  ; mutable cur : int
+  ; mutable l : elt list
+  ; mutable n : int
+  ; mutable w : int
+  ; mutable compact : bool
+  ; mutable needed_space : (char -> char -> bool) option
+  ; mutable pending_space : string option
+  ; mutable last_char : char option
+  ; mutable line : int
+  ; mutable col : int
+  ; mutable total : int
+  ; output : string -> int -> int -> unit }
 
 let spaces = String.make 80 ' '
+
 let output st (s : string) l =
-  (try
-     let last = String.rindex_from s (l-1) '\n' + 1 in
-     let line = ref 0 in
-     for i = 0 to l-1 do
-       if String.get s i = '\n' then incr line;
-     done;
-     st.line <- st.line + !line;
-     st.col <- l - last
-   with Not_found -> st.col <- l + st.col);
+  ( try
+      let last = String.rindex_from s (l - 1) '\n' + 1 in
+      let line = ref 0 in
+      for i = 0 to l - 1 do
+        if s.[i] = '\n' then incr line
+      done;
+      st.line <- st.line + !line;
+      st.col <- l - last
+    with Not_found -> st.col <- l + st.col );
   st.total <- st.total + String.length s;
   st.output s 0 l
-
 
 let rec output_spaces st n =
   output st spaces (min n 80);
@@ -76,26 +71,26 @@ let output_newline st = output st "\n" 1
 let rec flat_render st l =
   match l with
   | Text s :: r | Break (s, _) :: r ->
-      output st s (String.length s); flat_render st r
+      output st s (String.length s);
+      flat_render st r
   | Set_pos p :: r ->
-    p.p_line <- st.line;
-    p.p_col  <- st.col;
-    flat_render st r
-  | (Start_group _| End_group) :: r ->
-     flat_render st r
-  | [] ->
-      ()
+      p.p_line <- st.line;
+      p.p_col <- st.col;
+      flat_render st r
+  | (Start_group _ | End_group) :: r -> flat_render st r
+  | [] -> ()
 
 let rec push st e =
-  if st.n = 0 then begin
+  if st.n = 0
+  then (
     (* Vertical rendering *)
     match e with
-      Text s ->
+    | Text s ->
         output st s (String.length s);
         st.cur <- st.cur + String.length s
     | Set_pos p ->
-      p.p_line <- st.line;
-      p.p_col  <- st.col
+        p.p_line <- st.line;
+        p.p_col <- st.col
     | Break (_, offs) ->
         output_newline st;
         let indent = st.box_indent + offs in
@@ -112,73 +107,71 @@ let rec push st e =
     | End_group ->
         st.box_indent <- fst (List.hd st.prev_indents);
         st.indent <- snd (List.hd st.prev_indents);
-        st.prev_indents <- List.tl st.prev_indents
-  end else begin
+        st.prev_indents <- List.tl st.prev_indents )
+  else (
     (* Fits? *)
     st.l <- e :: st.l;
     match e with
-      Text s | Break (s, _) ->
+    | Text s | Break (s, _) ->
         let w = st.w - String.length s in
         st.w <- w;
-        if w < 0 then begin
+        if w < 0
+        then (
           let l = List.rev st.l in
           st.l <- [];
           st.n <- 0;
-          List.iter (fun e -> push st e) l
-        end
+          List.iter (fun e -> push st e) l )
     | Set_pos _ -> ()
-    | Start_group _ ->
-        st.n <- st.n + 1
+    | Start_group _ -> st.n <- st.n + 1
     | End_group ->
         st.n <- st.n - 1;
-        if st.n = 0 then begin
+        if st.n = 0
+        then (
           flat_render st (List.rev st.l);
           st.box_indent <- fst (List.hd st.prev_indents);
           st.indent <- snd (List.hd st.prev_indents);
           st.prev_indents <- List.tl st.prev_indents;
           st.cur <- st.cur + st.w;
-          st.l <- []
-        end
-  end
+          st.l <- [] ) )
 
 (****)
 
 let string st (s : string) =
-  if st.compact then (
-    let len = (String.length s) in
+  if st.compact
+  then (
+    let len = String.length s in
     if len <> 0
-    then begin
-      (match st.pending_space with
-        | None -> ()
-        | Some sp ->
-          begin
-            st.pending_space <- None;
-            match st.last_char,st.needed_space with
-              | Some last,Some f ->
-                if  f last s.[0]
-                then output st sp 1
-              | _, None -> output st sp 1
-              | _ ->()
-          end);
-
+    then (
+      ( match st.pending_space with
+      | None -> ()
+      | Some sp -> (
+          st.pending_space <- None;
+          match st.last_char, st.needed_space with
+          | Some last, Some f -> if f last s.[0] then output st sp 1
+          | _, None -> output st sp 1
+          | _ -> () ) );
       output st s len;
-      st.last_char <- Some (s.[len-1])
-    end
-  )
+      st.last_char <- Some s.[len - 1] ) )
   else push st (Text s)
 
-let genbreak st s n =
-  if not st.compact then push st (Break (s, n))
+let genbreak st s n = if not st.compact then push st (Break (s, n))
 
 let break_token = Break ("", 0)
+
 let break st = if not st.compact then push st break_token
+
 let break1 st = if not st.compact then push st (Break ("", 1))
 
 let non_breaking_space_token = Text " "
-let non_breaking_space st = if st.compact then st.pending_space <- Some " " else push st non_breaking_space_token
-let space ?(indent=0) st = if st.compact then st.pending_space <- Some "\n" else push st (Break (" ", indent))
+
+let non_breaking_space st =
+  if st.compact then st.pending_space <- Some " " else push st non_breaking_space_token
+
+let space ?(indent = 0) st =
+  if st.compact then st.pending_space <- Some "\n" else push st (Break (" ", indent))
 
 let start_group st n = if not st.compact then push st (Start_group n)
+
 let end_group st = if not st.compact then push st End_group
 
 (*
@@ -206,34 +199,56 @@ let total t = t.total
 
 let pos t =
   if t.compact
-  then {
-    p_line = t.line;
-    p_col  = t.col
-  }
+  then {p_line = t.line; p_col = t.col}
   else
-    let p = { p_line = -1 ; p_col = -1 } in
-    push t (Set_pos p);
-    p
+    let p = {p_line = -1; p_col = -1} in
+    push t (Set_pos p); p
 
 let newline st =
   output_newline st;
-  st.indent <- 0; st.box_indent <- 0; st.prev_indents <- [];
-  st.cur <- 0; st.l <- []; st.n <- 0; st.w <- 0
+  st.indent <- 0;
+  st.box_indent <- 0;
+  st.prev_indents <- [];
+  st.cur <- 0;
+  st.l <- [];
+  st.n <- 0;
+  st.w <- 0
 
 let to_out_channel ch =
-  { indent = 0; box_indent = 0; prev_indents = [];
-    limit = 78; cur = 0; l = []; n = 0; w = 0;
-    col = 0; line = 0; total = 0;
-    compact = false; pending_space = None; last_char = None; needed_space = None;
-    output = output_substring ch
-  }
+  { indent = 0
+  ; box_indent = 0
+  ; prev_indents = []
+  ; limit = 78
+  ; cur = 0
+  ; l = []
+  ; n = 0
+  ; w = 0
+  ; col = 0
+  ; line = 0
+  ; total = 0
+  ; compact = false
+  ; pending_space = None
+  ; last_char = None
+  ; needed_space = None
+  ; output = output_substring ch }
 
 let to_buffer b =
-  { indent = 0; box_indent = 0; prev_indents = [];
-    limit = 78; cur = 0; l = []; n = 0; w = 0;
-    col = 0; line = 0; total = 0;
-    compact = false; pending_space = None; last_char = None; needed_space = None;
-    output = fun s i l -> Buffer.add_substring b s i l }
+  { indent = 0
+  ; box_indent = 0
+  ; prev_indents = []
+  ; limit = 78
+  ; cur = 0
+  ; l = []
+  ; n = 0
+  ; w = 0
+  ; col = 0
+  ; line = 0
+  ; total = 0
+  ; compact = false
+  ; pending_space = None
+  ; last_char = None
+  ; needed_space = None
+  ; output = (fun s i l -> Buffer.add_substring b s i l) }
 
 let set_compact st v = st.compact <- v
 

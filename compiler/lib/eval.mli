@@ -18,6 +18,7 @@
  *)
 
 val clear_static_env : unit -> unit
-val set_static_env   : string -> string -> unit
+
+val set_static_env : string -> string -> unit
 
 val f : Flow.info -> Code.program -> Code.program

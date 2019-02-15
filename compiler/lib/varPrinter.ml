@@ -19,23 +19,25 @@
 
 open Stdlib
 
-type t = {
-  names : (int,string) Hashtbl.t;
-  known : (int,string) Hashtbl.t;
-  cache : (int*int,string) Hashtbl.t;
-  mutable last : int;
-  mutable pretty : bool;
-  mutable stable : bool;
-}
+type t =
+  { names : (int, string) Hashtbl.t
+  ; known : (int, string) Hashtbl.t
+  ; cache : (int * int, string) Hashtbl.t
+  ; mutable last : int
+  ; mutable pretty : bool
+  ; mutable stable : bool }
 
 let c1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
+
 let c2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
 
 let name_raw t v nm = Hashtbl.add t.names v nm
+
 let propagate_name t v v' =
   try
     let name = Hashtbl.find t.names v in
-    name_raw t v' name(* ;
+    name_raw t v' name
+    (* ;
      * (try
      *    let n = Hashtbl.find t.names v' in
      *    if n <> name
@@ -44,43 +46,40 @@ let propagate_name t v v' =
   with Not_found -> ()
 
 let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-let is_num c = (c >= '0' && c <= '9')
+
+let is_num c = c >= '0' && c <= '9'
 
 let name t v nm_orig =
   let len = String.length nm_orig in
-  if len > 0 then begin
+  if len > 0
+  then (
     let buf = Buffer.create (String.length nm_orig) in
     let idx = ref 0 in
-    while (!idx < len && not (is_alpha nm_orig.[!idx])) do incr idx done;
+    while !idx < len && not (is_alpha nm_orig.[!idx]) do
+      incr idx
+    done;
     let pending = ref false in
-    if(!idx >= len) then begin
+    if !idx >= len
+    then (
       pending := true;
-      idx := 0
-    end;
+      idx := 0 );
     for i = !idx to len - 1 do
       if is_alpha nm_orig.[i] || is_num nm_orig.[i]
-      then begin
-        if !pending
-        then Buffer.add_char buf '_';
+      then (
+        if !pending then Buffer.add_char buf '_';
         Buffer.add_char buf nm_orig.[i];
-        pending:=false
-      end
+        pending := false )
       else pending := true
     done;
     let str = Buffer.contents buf in
-    if String.length str > 0
-    then name_raw t v str
-  end
+    if String.length str > 0 then name_raw t v str )
 
 let get_name t v = try Some (Hashtbl.find t.names v) with Not_found -> None
 
 let rec format_ident x =
   assert (x >= 0);
-  let char c x = String.make 1 (c.[x]) in
-  if x < 54 then
-    char c1 x
-  else
-    format_ident ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
+  let char c x = String.make 1 c.[x] in
+  if x < 54 then char c1 x else format_ident ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
 
 let format_var t i x =
   let s = format_ident x in
@@ -93,12 +92,11 @@ let format_var t i x =
 let reserved = ref StringSet.empty
 
 let add_reserved s =
-  reserved :=
-    List.fold_left s
-      ~init:!reserved
-      ~f:(fun acc x -> StringSet.add x acc)
+  reserved := List.fold_left s ~init:!reserved ~f:(fun acc x -> StringSet.add x acc)
 
-let _ = reserved := StringSet.union !reserved Reserved.keyword(* ; *)
+let _ = reserved := StringSet.union !reserved Reserved.keyword
+
+(* ; *)
 (* add_reserved Reserved.provided *)
 
 let get_reserved () = !reserved
@@ -106,25 +104,15 @@ let get_reserved () = !reserved
 let is_reserved s = StringSet.mem s !reserved
 
 let rec to_string t ?origin i =
-  let origin = match origin with
-    | Some i when t.pretty -> i
-    | _ -> i in
-  try
-    Hashtbl.find t.cache (i,origin)
-  with Not_found ->
+  let origin = match origin with Some i when t.pretty -> i | _ -> i in
+  try Hashtbl.find t.cache (i, origin) with Not_found ->
     let name =
-      try
-        Hashtbl.find t.known i
-      with Not_found ->
+      try Hashtbl.find t.known i with Not_found ->
         t.last <- t.last + 1;
         let j = t.last in
         let s = format_var t i j in
-        if is_reserved s then
-          to_string t i
-        else begin
-          Hashtbl.add t.known i s;
-          s
-        end in
+        if is_reserved s then to_string t i else ( Hashtbl.add t.known i s; s )
+    in
     let name =
       if t.pretty
       then
@@ -134,24 +122,26 @@ let rec to_string t ?origin i =
         with Not_found -> name
       else name
     in
-    Hashtbl.add t.cache (i,origin) name;
+    Hashtbl.add t.cache (i, origin) name;
     name
 
-
 let set_pretty t b = t.pretty <- b
+
 let set_stable t b = t.stable <- b
 
 let reset t =
-  Hashtbl.clear t.names; Hashtbl.clear t.known; Hashtbl.clear t.cache;
+  Hashtbl.clear t.names;
+  Hashtbl.clear t.known;
+  Hashtbl.clear t.cache;
   t.last <- -1
 
-let create ?(pretty=false) ?(stable=false) () =
-  let t = {
-    names = Hashtbl.create 107;
-    known = Hashtbl.create 1001;
-    cache = Hashtbl.create 1001;
-    last = -1;
-    pretty;
-    stable;
-  } in
+let create ?(pretty = false) ?(stable = false) () =
+  let t =
+    { names = Hashtbl.create 107
+    ; known = Hashtbl.create 1001
+    ; cache = Hashtbl.create 1001
+    ; last = -1
+    ; pretty
+    ; stable }
+  in
   t
