@@ -1,5 +1,17 @@
 (* -*- tuareg -*- *)
+open StdLabels
 open Jbuild_plugin.V1
+
+let split_on_char ~sep s =
+  let r = ref [] in
+  let j = ref (String.length s) in
+  for i = String.length s - 1 downto 0 do
+    if String.unsafe_get s i = sep
+    then (
+      r := String.sub s ~pos:(i + 1) ~len:(!j - i - 1) :: !r;
+      j := i )
+  done;
+  String.sub s ~pos:0 ~len:!j :: !r
 
 let git_version =
   if not (try Sys.is_directory ".git" with _ -> false)
@@ -14,6 +26,10 @@ let version =
   let version = input_line ic in
   close_in ic; version
 
+let extra_warnings =
+  let v = split_on_char ~sep:'.' ocaml_version in
+  if v < ["4"; "03"] then "-45" else ""
+
 let () =
   send
   @@ Printf.sprintf
@@ -22,12 +38,13 @@ let () =
 (env
  (dev
   (flags
-   (:standard -w +a-4-40-41-42-44-48-58))))
+   (:standard -w +a-4-40-41-42-44-48-58%s))))
 
 (rule
   (targets version.ml.in)
   (action (with-stdout-to %%{targets}
            (echo "let s = \"%s\"\nlet git_version = \"%s\""))))
 |}
+       extra_warnings
        version
        git_version
