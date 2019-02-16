@@ -1,5 +1,6 @@
 #directory "../../../lib/deriving_json/"
 #directory "../../../lib/deriving_json/.js_of_ocaml_deriving.objs"
+#directory "../../../lib/deriving_json/.js_of_ocaml_deriving.objs/byte/"
 #directory "+/../../lib/ppx_deriving/"
 [@@@warning "-39"]
 
