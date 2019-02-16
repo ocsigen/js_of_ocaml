@@ -428,7 +428,7 @@ class free =
           ForIn_statement (Right r, m#expression e2, (m#statement s, loc))
       | Try_statement (b, w, f) ->
           let b = m#statements b in
-          let tbody = {<state_ = empty; level>} in
+          let tbody = {<state_ = empty; level = level>} [@ocamlformat "disable"] in
           let w =
             match w with
             | None -> None

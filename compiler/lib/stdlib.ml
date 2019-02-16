@@ -100,7 +100,9 @@ module Bytes = struct
 end
 
 module String = struct
-  let[@ocaml.warning "-32"] equal (a : string) (b : string) = a = b
+  let equal (a : string) (b : string) = a = b
+
+  let _ = equal
 
   include StringLabels
 

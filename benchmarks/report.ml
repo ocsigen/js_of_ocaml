@@ -339,10 +339,10 @@ let _ =
     ; "-max", Arg.Set_float maximum, "<m> truncate graph at level <max>"
     ; "-table", Arg.Set table, " output a text table"
     ; ( "-omit"
-      , Arg.String (fun s -> omitted := String.split_on_char s ~sep:',' @ !omitted)
+      , Arg.String (fun s -> omitted := split_on_char s ~sep:',' @ !omitted)
       , " omit the given benchmark" )
     ; ( "-append"
-      , Arg.String (fun s -> appended := String.split_on_char s ~sep:',' @ !appended)
+      , Arg.String (fun s -> appended := split_on_char s ~sep:',' @ !appended)
       , " append the given benchmark at the end" )
     ; "-errors", Arg.Set errors, " display error bars"
     ; "-config", Arg.Set_string conf, "<file> use <file> as a config file"

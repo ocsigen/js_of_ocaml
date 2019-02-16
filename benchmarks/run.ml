@@ -166,7 +166,7 @@ let read_config file =
           match
             List.filter
               ~f:(function "" -> false | _ -> true)
-              (String.split_on_char line ~sep:' ')
+              (split_on_char line ~sep:' ')
           with
           | "interpreter" :: nm :: rem -> i := (String.concat ~sep:" " rem, nm) :: !i
           | ["interpreter"] ->

@@ -20,6 +20,17 @@
 
 open StdLabels
 
+let split_on_char ~sep s =
+  let r = ref [] in
+  let j = ref (String.length s) in
+  for i = String.length s - 1 downto 0 do
+    if String.unsafe_get s i = sep
+    then (
+      r := String.sub s ~pos:(i + 1) ~len:(!j - i - 1) :: !r;
+      j := i )
+  done;
+  String.sub s ~pos:0 ~len:!j :: !r
+
 let mean a =
   let s = ref 0. in
   for i = 0 to Array.length a - 1 do
@@ -168,8 +179,9 @@ end = struct
     Sys.readdir dir
     |> Array.to_list
     |> List.filter ~f:(fun nm ->
-           match Unix.stat (dir ^ "/" ^ nm) with
-           | Unix.({st_kind = S_REG | S_LNK; _}) -> true
+           let open Unix in
+           match stat (dir ^ "/" ^ nm) with
+           | {st_kind = S_REG | S_LNK; _} -> true
            | _ -> false )
     |> ( if spec.ext = ""
        then fun x -> x
