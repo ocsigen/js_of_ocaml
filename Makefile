@@ -15,6 +15,7 @@ promote:
 fmt:
 	dune build @fmt --auto-promote || true
 	cat compiler/lib/.ocamlformat-ignore | xargs -n 1 -I {} -- git checkout compiler/lib/{}
+	git diff --exit-code
 
 clean:
 	dune clean
