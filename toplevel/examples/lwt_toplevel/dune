@@ -64,6 +64,8 @@
       js_of_ocaml-tyxml
       js_of_ocaml-toplevel
       dynlink
+;;    FIX: html_types is missing
+;;    html_types.cmi
       )))
 
 (rule
