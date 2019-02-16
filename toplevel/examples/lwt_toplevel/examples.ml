@@ -32,9 +32,10 @@ end = struct
 end
 
 (** Reactive dom *)
-open Js_of_ocaml
 
+open Js_of_ocaml
 open Js_of_ocaml_lwt
+open Js_of_ocaml_tyxml
 
 let display x =
   Dom.appendChild (Dom_html.getElementById "output") (Tyxml_js.To_dom.of_element x)
@@ -43,7 +44,7 @@ module RList = ReactiveData.RList
 
 let rl, rhandle = RList.create []
 
-let li_rl = RList.map (fun x -> Tyxml_js.Html.(li [pcdata x])) rl
+let li_rl = RList.map (fun x -> Tyxml_js.Html.(li [txt x])) rl
 
 let ul_elt = Tyxml_js.R.Html.ul li_rl
 
@@ -75,10 +76,10 @@ let div_elt =
     Html.(
       div
         [ h4
-            [ pcdata "Uptime is "
-            ; R.Html.pcdata
+            [ txt "Uptime is "
+            ; R.Html.txt
                 (React.S.map (fun s -> string_of_int (int_of_float s)) time_signal)
-            ; pcdata " s" ]
+            ; txt " s" ]
         ; ul_elt ]))
 
 let _ = display div_elt
