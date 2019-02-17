@@ -13,6 +13,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open Stdlib
+
 type path = string
 
 type path_prefix = string
@@ -33,7 +35,7 @@ let encode_prefix str =
     | ':' -> Buffer.add_string buf "%."
     | c -> Buffer.add_char buf c
   in
-  String.iter push_char str; Buffer.contents buf
+  String.iter ~f:push_char str; Buffer.contents buf
 
 let decode_prefix str =
   let buf = Buffer.create (String.length str) in
@@ -67,15 +69,15 @@ type pair =
   ; source : path_prefix }
 
 let encode_pair {target; source} =
-  String.concat "=" [encode_prefix target; encode_prefix source]
+  String.concat ~sep:"=" [encode_prefix target; encode_prefix source]
 
 let decode_pair str =
   match String.index str '=' with
   | exception Not_found -> errorf "invalid key/value pair %S, no '=' separator" str
   | equal_pos -> (
-      let encoded_target = String.sub str 0 equal_pos in
+      let encoded_target = String.sub str ~pos:0 ~len:equal_pos in
       let encoded_source =
-        String.sub str (equal_pos + 1) (String.length str - equal_pos - 1)
+        String.sub str ~pos:(equal_pos + 1) ~len:(String.length str - equal_pos - 1)
       in
       match decode_prefix encoded_target, decode_prefix encoded_source with
       | Ok target, Ok source -> Ok {target; source}
@@ -85,7 +87,7 @@ type map = pair option list
 
 let encode_map map =
   let encode_elem = function None -> "" | Some pair -> encode_pair pair in
-  List.map encode_elem map |> String.concat ":"
+  List.map ~f:encode_elem map |> String.concat ~sep:":"
 
 exception Shortcut of error_message
 
@@ -98,7 +100,7 @@ let decode_map str =
       | Error err -> raise (Shortcut err) )
   in
   let pairs = Stdlib.String.split_char ~sep:':' str in
-  match List.map decode_or_empty pairs with
+  match List.map ~f:decode_or_empty pairs with
   | exception Shortcut err -> Error err
   | map -> Ok map
 
@@ -107,11 +109,13 @@ let rewrite_opt prefix_map path =
     | None -> false
     | Some {target = _; source} ->
         String.length source <= String.length path
-        && Stdlib.String.equal source (String.sub path 0 (String.length source))
+        && Stdlib.String.equal
+             source
+             (String.sub path ~pos:0 ~len:(String.length source))
   in
   match
     List.find
-      is_prefix
+      ~f:is_prefix
       (* read key/value pairs from right to left, as the spec demands *)
       (List.rev prefix_map)
   with
@@ -122,8 +126,8 @@ let rewrite_opt prefix_map path =
         ( target
         ^ String.sub
             path
-            (String.length source)
-            (String.length path - String.length source) )
+            ~pos:(String.length source)
+            ~len:(String.length path - String.length source) )
 
 let rewrite prefix_map path =
   match rewrite_opt prefix_map path with None -> path | Some path -> path
