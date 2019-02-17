@@ -2222,6 +2222,7 @@ module Reloc = struct
   type t =
     { mutable pos : int
     ; mutable constants : Obj.t list
+    ; mutable step2_started : bool
     ; names : (string, int) Hashtbl.t
     ; primitives : (string, int) Hashtbl.t }
 
@@ -2229,10 +2230,13 @@ module Reloc = struct
     let constants = [] in
     { pos = List.length constants
     ; constants
+    ; step2_started = false
     ; names = Hashtbl.create 17
     ; primitives = Hashtbl.create 17 }
 
+  (* We currently rely on constants to be relocated before globals. *)
   let step1 t compunit code =
+    if t.step2_started then assert false;
     let open Cmo_format in
     List.iter compunit.cu_primitives ~f:(fun name ->
         Hashtbl.add t.primitives name (Hashtbl.length t.primitives));
@@ -2255,15 +2259,16 @@ module Reloc = struct
         | _ -> ())
 
   let step2 t compunit code =
+    t.step2_started <- true;
     let open Cmo_format in
     let next id =
       let name = Ident.name id in
       try Hashtbl.find t.names name
       with Not_found ->
-        let x = t.pos in
+        let pos = t.pos in
         t.pos <- succ t.pos;
-        Hashtbl.add t.names name x;
-        x
+        Hashtbl.add t.names name pos;
+        pos
     in
     let slot_for_getglobal id = next id in
     let slot_for_setglobal id = next id in
