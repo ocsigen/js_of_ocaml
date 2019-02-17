@@ -24,7 +24,7 @@ module Label = struct
     | L of int
     | S of string
 
-  let printer = VarPrinter.create ()
+  let printer = VarPrinter.create VarPrinter.Alphabet.javascript
 
   let zero = L 0
 

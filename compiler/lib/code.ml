@@ -133,7 +133,7 @@ end = struct
 
   include T
 
-  let printer = VarPrinter.create ()
+  let printer = VarPrinter.create VarPrinter.Alphabet.javascript
 
   let locations = Hashtbl.create 17
 

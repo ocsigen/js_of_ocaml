@@ -19,13 +19,19 @@
 
 open Stdlib
 
+module Alphabet : sig
+  type t
+
+  val javascript : t
+end
+
 type t
 
 val add_reserved : string list -> unit
 
 val get_reserved : unit -> StringSet.t
 
-val create : ?pretty:bool -> ?stable:bool -> unit -> t
+val create : ?pretty:bool -> ?stable:bool -> Alphabet.t -> t
 
 val reset : t -> unit
 
