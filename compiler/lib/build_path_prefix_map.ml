@@ -72,16 +72,12 @@ let encode_pair {target; source} =
   String.concat ~sep:"=" [encode_prefix target; encode_prefix source]
 
 let decode_pair str =
-  match String.index str '=' with
-  | exception Not_found -> errorf "invalid key/value pair %S, no '=' separator" str
-  | equal_pos -> (
-      let encoded_target = String.sub str ~pos:0 ~len:equal_pos in
-      let encoded_source =
-        String.sub str ~pos:(equal_pos + 1) ~len:(String.length str - equal_pos - 1)
-      in
-      match decode_prefix encoded_target, decode_prefix encoded_source with
-      | Ok target, Ok source -> Ok {target; source}
-      | (Error _ as err), _ | _, (Error _ as err) -> err )
+  match String.lsplit2 str ~on:'=' with
+  | None -> errorf "invalid key/value pair %S, no '=' separator" str
+  | Some (encoded_target, encoded_source) -> (
+    match decode_prefix encoded_target, decode_prefix encoded_source with
+    | Ok target, Ok source -> Ok {target; source}
+    | (Error _ as err), _ | _, (Error _ as err) -> err )
 
 type map = pair option list
 

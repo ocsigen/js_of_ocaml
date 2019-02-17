@@ -44,11 +44,8 @@ let expand_path exts real virt =
 
 let list_files name paths =
   let name, virtname =
-    let i = try Some (String.index name ':') with Not_found -> None in
-    match i with
-    | Some i ->
-        let dest = String.sub name ~pos:(i + 1) ~len:(String.length name - i - 1) in
-        let src = String.sub name ~pos:0 ~len:i in
+    match String.lsplit2 name ~on:':' with
+    | Some (src, dest) ->
         if String.length dest > 0 && dest.[0] <> '/'
         then
           failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" dest src);
@@ -63,13 +60,9 @@ let list_files name paths =
         name, "/static/" ^ Filename.basename name
   in
   let name, exts (* extensions filter *) =
-    try
-      let i = String.index name '=' in
-      let exts = String.sub name ~pos:(i + 1) ~len:(String.length name - i - 1) in
-      let n = String.sub name ~pos:0 ~len:i in
-      let exts = String.split_char ~sep:',' exts in
-      n, exts
-    with Not_found -> name, []
+    match String.lsplit2 name ~on:'=' with
+    | Some (name, exts) -> name, String.split_char ~sep:',' exts
+    | None -> name, []
   in
   let file =
     try Findlib.find_in_findlib_paths paths name with Not_found ->

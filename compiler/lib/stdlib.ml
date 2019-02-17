@@ -191,6 +191,13 @@ module String = struct
       Bytes.unsafe_set b 0 (f (Bytes.unsafe_get b 0));
       Bytes.to_string b )
 
+  let lsplit2 line ~on:delim =
+    try
+      let pos = index line delim in
+      Some
+        (sub line ~pos:0 ~len:pos, sub line ~pos:(pos + 1) ~len:(length line - pos - 1))
+    with Not_found -> None
+
   let capitalize_ascii s = apply1 Char.uppercase_ascii s
 
   let uncapitalize_ascii s = apply1 Char.lowercase_ascii s
