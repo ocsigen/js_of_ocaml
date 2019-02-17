@@ -19,17 +19,48 @@
 
 open Stdlib
 
+module Alphabet = struct
+  type t =
+    { c1 : string
+    ; c1_len : int
+    ; cn : string
+    ; cn_len : int }
+
+  let create ~c1 ~cn = {c1; c1_len = String.length c1; cn; cn_len = String.length cn}
+
+  let javascript =
+    create
+      ~c1:"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
+      ~cn:"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
+
+  let rec size t x acc =
+    if x < t.c1_len then 1 + acc else size t ((x - t.c1_len) / t.cn_len) (acc + 1)
+
+  let to_string (t : t) (x : int) =
+    let size = size t x 0 in
+    let buf = Bytes.create size in
+    let rec loop i x =
+      match i with
+      | 0 ->
+          assert (x < t.c1_len);
+          Bytes.set buf i t.c1.[x];
+          Bytes.unsafe_to_string buf
+      | i ->
+          let x = x - t.c1_len in
+          Bytes.set buf i t.cn.[x mod t.cn_len];
+          loop (pred i) (x / t.cn_len)
+    in
+    loop (size - 1) x
+end
+
 type t =
   { names : (int, string) Hashtbl.t
   ; known : (int, string) Hashtbl.t
   ; cache : (int * int, string) Hashtbl.t
+  ; alphabet : Alphabet.t
   ; mutable last : int
   ; mutable pretty : bool
   ; mutable stable : bool }
-
-let c1 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_$"
-
-let c2 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_$"
 
 let name_raw t v nm = Hashtbl.add t.names v nm
 
@@ -76,13 +107,8 @@ let name t v nm_orig =
 
 let get_name t v = try Some (Hashtbl.find t.names v) with Not_found -> None
 
-let rec format_ident x =
-  assert (x >= 0);
-  let char c x = String.make 1 c.[x] in
-  if x < 54 then char c1 x else format_ident ((x - 54) / 64) ^ char c2 ((x - 54) mod 64)
-
 let format_var t i x =
-  let s = format_ident x in
+  let s = Alphabet.to_string t.alphabet x in
   if t.stable
   then Format.sprintf "v%d" i
   else if t.pretty
@@ -135,11 +161,12 @@ let reset t =
   Hashtbl.clear t.cache;
   t.last <- -1
 
-let create ?(pretty = false) ?(stable = false) () =
+let create ?(pretty = false) ?(stable = false) alphabet =
   let t =
     { names = Hashtbl.create 107
     ; known = Hashtbl.create 1001
     ; cache = Hashtbl.create 1001
+    ; alphabet
     ; last = -1
     ; pretty
     ; stable }
