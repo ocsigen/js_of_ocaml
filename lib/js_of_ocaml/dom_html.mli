@@ -480,6 +480,11 @@ and eventTarget =
     method ondrag : ('self t, dragEvent t) event_listener writeonly_prop
 
     method ondrop : ('self t, dragEvent t) event_listener writeonly_prop
+  end
+
+and htmlEventTarget =
+  object
+    inherit eventTarget
 
     method onanimationstart : ('self t, animationEvent t) event_listener writeonly_prop
 
@@ -648,7 +653,7 @@ and element =
 
     method blur : unit meth
 
-    inherit eventTarget
+    inherit htmlEventTarget
   end
 
 (** Rectangular box (used for element bounding boxes) *)
