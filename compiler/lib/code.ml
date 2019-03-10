@@ -174,10 +174,7 @@ end = struct
 
   let propagate_name i j =
     VarPrinter.propagate_name printer i j;
-    match get_loc i with
-    | None -> ()
-    | Some l -> (*       Format.eprintf "propagate loc\n%!";*)
-                loc j l
+    match get_loc i with None -> () | Some l -> loc j l
 
   let set_pretty b = VarPrinter.set_pretty printer b
 

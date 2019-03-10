@@ -293,8 +293,7 @@ end = struct
           ; src
           ; line = pos.Lexing.pos_lnum - 1
           ; col = pos.Lexing.pos_cnum - pos.Lexing.pos_bol
-          ; (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
-            idx = 0
+          ; idx = 0
           ; fol = None }
     with Not_found -> None
 
@@ -302,8 +301,6 @@ end = struct
     match l1, l2 with
     | v1 :: r1, v2 :: r2 -> Var.propagate_name v1 v2; propagate r1 r2
     | _ -> ()
-
-  (*  let iter events_by_pc f = Hashtbl.iter f events_by_pc *)
 
   let fold t f acc = Hashtbl.fold (fun k (e, _u) acc -> f k e acc) t.events_by_pc acc
 
@@ -512,7 +509,6 @@ module State = struct
   let print_elt f v =
     match v with
     | Var x -> Format.fprintf f "%a" Var.print x
-    (*    | Addr x  -> Format.fprintf f "[%d]" x*)
     | Dummy -> Format.fprintf f "???"
 
   type handler =
@@ -654,8 +650,7 @@ module State = struct
     ; src
     ; line = pos.Lexing.pos_lnum - 1
     ; col = pos.Lexing.pos_cnum - pos.Lexing.pos_bol
-    ; (* loc.li_end.pos_cnum - loc.li_end.pos_bol *)
-      idx = 0
+    ; idx = 0
     ; fol = None }
 
   let rec name_rec debug i l s summary =
@@ -2160,7 +2155,6 @@ let exe_from_channel
     (* export globals *)
     Tbl.iter
       (fun id n ->
-        (* Format.eprintf "export %d %d %s@." id.Ident.flags id.Ident.stamp id.Ident.name; *)
         globals.named_value.(n) <- Some (Ident.name id);
         globals.is_exported.(n) <- true )
       symbols.num_tbl

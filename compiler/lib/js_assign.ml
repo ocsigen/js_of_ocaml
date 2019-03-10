@@ -235,34 +235,32 @@ while compiling the OCaml toplevel:
     name
 
   let add_constraints global u ?(offset = 0) params =
-    if Config.Flag.shortvar ()
+    let constr = global.constr in
+    let c = make_alloc_table () in
+    S.iter
+      (fun v ->
+        let i = Var.idx v in
+        constr.(i) <- c :: constr.(i) )
+      u;
+    let params = Array.of_list params in
+    let len = Array.length params in
+    let len_max = len + offset in
+    if Array.length global.parameters < len_max
     then (
-      let constr = global.constr in
-      let c = make_alloc_table () in
-      S.iter
-        (fun v ->
-          let i = Var.idx v in
-          constr.(i) <- c :: constr.(i) )
-        u;
-      let params = Array.of_list params in
-      let len = Array.length params in
-      let len_max = len + offset in
-      if Array.length global.parameters < len_max
-      then (
-        let a = Array.make (2 * len_max) [] in
-        Array.blit
-          ~src:global.parameters
-          ~src_pos:0
-          ~dst:a
-          ~dst_pos:0
-          ~len:(Array.length global.parameters);
-        global.parameters <- a );
-      for i = 0 to len - 1 do
-        match params.(i) with
-        | V x -> global.parameters.(i + offset) <- x :: global.parameters.(i + offset)
-        | _ -> ()
-      done;
-      global.constraints <- u :: global.constraints )
+      let a = Array.make (2 * len_max) [] in
+      Array.blit
+        ~src:global.parameters
+        ~src_pos:0
+        ~dst:a
+        ~dst_pos:0
+        ~len:(Array.length global.parameters);
+      global.parameters <- a );
+    for i = 0 to len - 1 do
+      match params.(i) with
+      | V x -> global.parameters.(i + offset) <- x :: global.parameters.(i + offset)
+      | _ -> ()
+    done;
+    global.constraints <- u :: global.constraints
 
   let record_block state scope ~catch params =
     let offset = if catch then 5 else 0 in
