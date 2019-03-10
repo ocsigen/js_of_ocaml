@@ -19,6 +19,10 @@
  *
  *)
 
+type ('a, 'b) result =
+  | Ok of 'a
+  | Error of 'b
+
 type alphabet =
   { emap : int array
   ; dmap : int array }

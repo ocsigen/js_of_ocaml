@@ -26,6 +26,10 @@
 
     {e Release %%VERSION%% - %%PKG_HOMEPAGE%%} *)
 
+type ('a, 'b) result =
+  | Ok of 'a
+  | Error of 'b
+
 (** Type of alphabet. *)
 type alphabet
 
