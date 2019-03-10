@@ -29,9 +29,7 @@ type alphabet =
 
 type sub = string * int * int
 
-let[@inline] ( // ) x y =
-  if y < 1 then raise Division_by_zero;
-  if x > 0 then 1 + ((x - 1) / y) else 0
+let ( // ) x y = if x > 0 then 1 + ((x - 1) / y) else 0
 
 let unsafe_get_uint8 t off = Char.code (String.unsafe_get t off)
 
