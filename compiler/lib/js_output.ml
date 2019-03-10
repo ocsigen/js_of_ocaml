@@ -1080,7 +1080,7 @@ let program f ?source_map p =
         match out_file with
         | None ->
             let data = Source_map_io.to_string sm in
-            "data:application/json;base64," ^ B64.encode data
+            "data:application/json;base64," ^ Base64.encode_exn data
         | Some out_file ->
             Source_map_io.to_file sm out_file;
             Filename.basename out_file

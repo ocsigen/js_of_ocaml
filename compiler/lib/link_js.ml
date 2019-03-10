@@ -46,7 +46,8 @@ let kind ~resolve_sourcemap_url file line =
   in
   match s with
   | `Other -> `Other
-  | `Json_base64 base64 -> `Source_map (Source_map_io.of_string (B64.decode base64))
+  | `Json_base64 base64 ->
+      `Source_map (Source_map_io.of_string (Base64.decode_exn base64))
   | `Url _ when not resolve_sourcemap_url -> `Drop
   | `Url url ->
       let base = Filename.dirname file in
@@ -90,7 +91,7 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
       match file with
       | None ->
           let data = Source_map_io.to_string sm in
-          let s = sourceMappingURL_base64 ^ B64.encode data in
+          let s = sourceMappingURL_base64 ^ Base64.encode_exn data in
           output_string output s
       | Some file ->
           Source_map_io.to_file sm file;
