@@ -27,7 +27,7 @@ let side_effect yes label =
   if yes
   then (
     Printf.printf "Side effect: %s\n%!" label;
-    incr i );
+    incr i);
   0
 
 let _ = side_effect false "this is only to avoid inlining"

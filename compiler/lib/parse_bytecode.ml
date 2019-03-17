@@ -62,7 +62,9 @@ module Tbl = struct
 
   let empty = Empty
 
-  let height = function Empty -> 0 | Node (_, _, _, _, h) -> h
+  let height = function
+    | Empty -> 0
+    | Node (_, _, _, _, h) -> h
 
   let create l x d r =
     let hl = height l and hr = height r in
@@ -196,8 +198,9 @@ end = struct
 
   let find_ml_in_paths paths name =
     let uname = String.uncapitalize_ascii name in
-    try Some (Fs.find_in_path paths (uname ^ ".ml")) with Not_found -> (
-      try Some (Fs.find_in_path paths (name ^ ".ml")) with Not_found -> None )
+    try Some (Fs.find_in_path paths (uname ^ ".ml"))
+    with Not_found -> (
+      try Some (Fs.find_in_path paths (name ^ ".ml")) with Not_found -> None)
 
   let read_event_list =
     let read_paths ic : string list = input_value ic in
@@ -211,23 +214,27 @@ end = struct
       let paths = read_paths ic @ includes in
       List.iter
         evl
-        ~f:(fun ( {ev_module; ev_loc = {Location.loc_start = {Lexing.pos_fname; _}; _}; _}
-                as ev )
+        ~f:(fun ({ev_module; ev_loc = {Location.loc_start = {Lexing.pos_fname; _}; _}; _}
+                as ev)
            ->
           let unit =
-            try Hashtbl.find units (ev_module, pos_fname) with Not_found ->
+            try Hashtbl.find units (ev_module, pos_fname)
+            with Not_found ->
               let crc = try Hashtbl.find crcs ev_module with Not_found -> None in
               let source =
-                try Some (Fs.find_in_path paths pos_fname) with Not_found -> (
+                try Some (Fs.find_in_path paths pos_fname)
+                with Not_found -> (
                   try Some (Fs.find_in_path paths (Filename.basename pos_fname))
-                  with Not_found -> find_ml_in_paths paths ev_module )
+                  with Not_found -> find_ml_in_paths paths ev_module)
               in
               if debug_sourcemap ()
               then
                 Format.eprintf
                   "module:%s - source:%s - name:%s\n%!"
                   ev_module
-                  (match source with None -> "NONE" | Some x -> x)
+                  (match source with
+                  | None -> "NONE"
+                  | Some x -> x)
                   pos_fname;
               let u = {module_name = ev_module; fname = pos_fname; crc; source; paths} in
               Hashtbl.add units (ev_module, pos_fname) u;
@@ -235,15 +242,18 @@ end = struct
           in
           relocate_event orig ev;
           Hashtbl.add events_by_pc ev.ev_pos (ev, unit);
-          () )
+          ())
 
   let find_source {units; _} pos_fname =
     let set =
       Hashtbl.fold
         (fun (_m, p) unit acc ->
           if p = pos_fname
-          then match unit.source with None -> acc | Some src -> StringSet.add src acc
-          else acc )
+          then
+            match unit.source with
+            | None -> acc
+            | Some src -> StringSet.add src acc
+          else acc)
         units
         StringSet.empty
     in
@@ -267,11 +277,13 @@ end = struct
   let find_loc {events_by_pc; _} ?(after = false) pc =
     try
       let before, (ev, unit) =
-        try false, Hashtbl.find events_by_pc pc with Not_found -> (
+        try false, Hashtbl.find events_by_pc pc
+        with Not_found -> (
           ( true
-          , try Hashtbl.find events_by_pc (pc + 1) with Not_found -> (
-              try Hashtbl.find events_by_pc (pc + 2) with Not_found ->
-                Hashtbl.find events_by_pc (pc + 3) ) ) )
+          , try Hashtbl.find events_by_pc (pc + 1)
+            with Not_found -> (
+              try Hashtbl.find events_by_pc (pc + 2)
+              with Not_found -> Hashtbl.find events_by_pc (pc + 3)) ))
       in
       let loc = ev.ev_loc in
       if loc.Location.loc_ghost
@@ -387,7 +399,7 @@ end = struct
       | K_will_not_happen -> assert false
     else (
       assert (pc = len);
-      blocks )
+      blocks)
 
   let finish_analysis blocks = Array.of_list (Addr.Set.elements blocks)
 
@@ -446,7 +458,7 @@ end = struct
         let i32 = Nativeint.to_int32 i in
         let i' = Nativeint.of_int32 i32 in
         if i' <> i then warn_overflow (Printf.sprintf "0x%nx (%nd)" i i) i32;
-        Int i32 )
+        Int i32)
       else if tag = Obj.custom_tag && same_custom x 0L
       then Int64 (Obj.magic x : int64)
       else if tag < Obj.no_scan_tag
@@ -504,7 +516,10 @@ module State = struct
     | Var of Var.t
     | Dummy
 
-  let elt_to_var e = match e with Var x -> x | _ -> assert false
+  let elt_to_var e =
+    match e with
+    | Var x -> x
+    | _ -> assert false
 
   let print_elt f v =
     match v with
@@ -538,10 +553,18 @@ module State = struct
   let rec list_start n l =
     if n = 0
     then []
-    else match l with [] -> assert false | v :: r -> v :: list_start (n - 1) r
+    else
+      match l with
+      | [] -> assert false
+      | v :: r -> v :: list_start (n - 1) r
 
   let rec st_pop n st =
-    if n = 0 then st else match st with [] -> assert false | _ :: r -> st_pop (n - 1) r
+    if n = 0
+    then st
+    else
+      match st with
+      | [] -> assert false
+      | _ :: r -> st_pop (n - 1) r
 
   let push st = {st with stack = st.accu :: st.stack}
 
@@ -555,7 +578,9 @@ module State = struct
 
   let stack_vars st =
     List.fold_left (st.accu :: st.stack) ~init:[] ~f:(fun l e ->
-        match e with Var x -> x :: l | Dummy -> l )
+        match e with
+        | Var x -> x :: l
+        | Dummy -> l)
 
   let set_accu st x = {st with accu = Var x}
 
@@ -582,7 +607,7 @@ module State = struct
           | Dummy -> Dummy :: stack
           | Var x ->
               let y = Var.fork x in
-              Var y :: stack )
+              Var y :: stack)
     in
     let state = {state with stack; current_pc} in
     match state.accu with
@@ -600,7 +625,9 @@ module State = struct
   let pop_handler state = {state with handlers = List.tl state.handlers}
 
   let addr_of_current_handler state =
-    match state.handlers with [] -> assert false | x :: _ -> x.block_pc
+    match state.handlers with
+    | [] -> assert false
+    | x :: _ -> x.block_pc
 
   let current_handler state =
     match state.handlers with
@@ -630,7 +657,7 @@ module State = struct
   let print_env f e =
     Array.iteri e ~f:(fun i v ->
         if i > 0 then Format.fprintf f " ";
-        Format.fprintf f "%a" print_elt v )
+        Format.fprintf f "%a" print_elt v)
 
   let print st =
     Format.eprintf
@@ -657,9 +684,9 @@ module State = struct
     match l, s with
     | [], _ -> ()
     | (j, nm, ident) :: lrem, Var v :: srem when i = j ->
-        ( match Ocaml_compiler.find_loc_in_summary ident summary with
+        (match Ocaml_compiler.find_loc_in_summary ident summary with
         | None -> ()
-        | Some loc -> Var.loc v (pi_of_loc debug loc) );
+        | Some loc -> Var.loc v (pi_of_loc debug loc));
         Var.name v nm;
         name_rec debug (i + 1) lrem srem summary
     | (j, _, _) :: _, _ :: srem when i < j -> name_rec debug (i + 1) l srem summary
@@ -730,7 +757,7 @@ let get_global state instrs i =
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = CONST(%d)@." Var.print x i;
         g.vars.(i) <- Some x;
-        x, state, instrs )
+        x, state, instrs)
 
 let tagged_blocks = ref Addr.Set.empty
 
@@ -761,7 +788,7 @@ let rec compile_block blocks debug code pc state =
               file
               loc.Parse_info.line
               loc.Parse_info.col
-              (addr + 2) )
+              (addr + 2))
     in
     if debug_parser ()
     then Format.eprintf "Compiling from %s to %d@." (string_of_addr pc) (limit - 1);
@@ -779,7 +806,7 @@ let rec compile_block blocks debug code pc state =
     | Switch (_, l1, l2) ->
         Array.iter l1 ~f:(fun (pc', _) -> compile_block blocks debug code pc' state');
         Array.iter l2 ~f:(fun (pc', _) -> compile_block blocks debug code pc' state')
-    | Pushtrap _ | Raise _ | Return _ | Stop -> () )
+    | Pushtrap _ | Raise _ | Return _ | Stop -> ())
 
 and compile infos pc state instrs =
   if debug_parser () then State.print state;
@@ -790,12 +817,12 @@ and compile infos pc state instrs =
        pc = String.length infos.code / 4
     then (
       if debug_parser () then Format.eprintf "Stop@.";
-      instrs, Stop, state )
+      instrs, Stop, state)
     else (
       State.name_vars state infos.debug pc;
       let stack = State.stack_vars state in
       if debug_parser () then Format.eprintf "Branch %d (%a) @." pc print_var_list stack;
-      instrs, Branch (pc, stack), state )
+      instrs, Branch (pc, stack), state)
   else (
     if debug_parser () then Format.eprintf "%4d " pc;
     State.name_vars state infos.debug pc;
@@ -872,7 +899,7 @@ and compile infos pc state instrs =
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
           done;
-          Format.printf ")@." );
+          Format.printf ")@.");
         compile
           infos
           (pc + 2)
@@ -947,7 +974,7 @@ and compile infos pc state instrs =
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth l i)
           done;
-          Format.printf ")@." );
+          Format.printf ")@.");
         let x, state = State.fresh_var state in
         Let (x, Apply (f, l, false)) :: instrs, Return x, state
     | APPTERM1 ->
@@ -1033,7 +1060,7 @@ and compile infos pc state instrs =
         let env = ref (List.map vals ~f:(fun x -> State.Var x)) in
         List.iter !vars ~f:(fun (i, x) ->
             env := State.Var x :: !env;
-            if i > 0 then env := State.Dummy :: !env );
+            if i > 0 then env := State.Dummy :: !env);
         let env = Array.of_list !env in
         let state = !state in
         let instrs =
@@ -1054,7 +1081,7 @@ and compile infos pc state instrs =
               let args = State.stack_vars state' in
               let state'', _, _ = Addr.Map.find addr !compiled_blocks in
               Debug.propagate (State.stack_vars state'') args;
-              Let (x, Closure (List.rev params, (addr, args))) :: instr )
+              Let (x, Closure (List.rev params, (addr, args))) :: instr)
         in
         compile infos (pc + 3 + nfuncs) (State.acc (nfuncs - 1) state) instrs
     | OFFSETCLOSUREM2 -> compile infos (pc + 1) (State.env_acc (-2) state) instrs
@@ -1150,7 +1177,7 @@ and compile infos pc state instrs =
           for i = 0 to size - 1 do
             Format.printf "%d = %a; " i Var.print (List.nth contents i)
           done;
-          Format.printf "}@." );
+          Format.printf "}@.");
         compile
           infos
           (pc + 3)
@@ -1210,7 +1237,7 @@ and compile infos pc state instrs =
           for i = 0 to size - 1 do
             Format.printf "%d = %a; " i Var.print (List.nth contents i)
           done;
-          Format.printf "}@." );
+          Format.printf "}@.");
         compile
           infos
           (pc + 2)
@@ -1537,7 +1564,7 @@ and compile infos pc state instrs =
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
           done;
-          Format.printf ")@." );
+          Format.printf ")@.");
         compile
           infos
           (pc + 2)
@@ -1556,7 +1583,7 @@ and compile infos pc state instrs =
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
           done;
-          Format.printf ")@." );
+          Format.printf ")@.");
         compile
           infos
           (pc + 2)
@@ -1575,7 +1602,7 @@ and compile infos pc state instrs =
             if i > 0 then Format.printf ", ";
             Format.printf "%a" Var.print (List.nth args i)
           done;
-          Format.printf ")@." );
+          Format.printf ")@.");
         compile
           infos
           (pc + 3)
@@ -1942,13 +1969,13 @@ and compile infos pc state instrs =
           infos
           (pc + 3)
           state
-          ( Let
-              ( m
-              , Prim
-                  ( Extern "caml_get_public_method"
-                  , [Pv obj; Pv tag; Pc (Int (Int32.of_int cache))] ) )
+          (Let
+             ( m
+             , Prim
+                 ( Extern "caml_get_public_method"
+                 , [Pv obj; Pv tag; Pc (Int (Int32.of_int cache))] ) )
           :: Let (tag, Const n)
-          :: instrs )
+          :: instrs)
     | GETDYNMET ->
         let tag = State.accu state in
         let obj = State.peek 0 state in
@@ -1967,8 +1994,8 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           state
-          ( Let (m, Prim (Extern "caml_get_public_method", [Pv obj; Pv tag; Pc (Int 0l)]))
-          :: instrs )
+          (Let (m, Prim (Extern "caml_get_public_method", [Pv obj; Pv tag; Pc (Int 0l)]))
+          :: instrs)
     | GETMETHOD ->
         let lab = State.accu state in
         let obj = State.peek 0 state in
@@ -1981,11 +2008,11 @@ and compile infos pc state instrs =
           infos
           (pc + 1)
           state
-          ( Let (m, Prim (Array_get, [Pv meths; Pv lab]))
+          (Let (m, Prim (Array_get, [Pv meths; Pv lab]))
           :: Let (meths, Field (obj, 0))
-          :: instrs )
+          :: instrs)
     | STOP -> instrs, Stop, state
-    | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false )
+    | EVENT | BREAK | FIRST_UNIMPLEMENTED_OP -> assert false)
 
 (****)
 
@@ -1996,11 +2023,11 @@ let match_exn_traps (blocks : 'a Addr.Map.t) =
         match block.branch with
         | Poptrap ((cont, _), addr_push) ->
             let set =
-              try Addr.Set.add cont (Addr.Map.find addr_push map) with Not_found ->
-                Addr.Set.singleton cont
+              try Addr.Set.add cont (Addr.Map.find addr_push map)
+              with Not_found -> Addr.Set.singleton cont
             in
             Addr.Map.add addr_push set map
-        | _ -> map )
+        | _ -> map)
       blocks
       Addr.Map.empty
   in
@@ -2011,7 +2038,7 @@ let match_exn_traps (blocks : 'a Addr.Map.t) =
           assert (conts = Addr.Set.empty);
           let branch = Pushtrap (cont1, x, cont2, conts') in
           Addr.Map.add pc {block with branch} blocks
-      | _ -> assert false )
+      | _ -> assert false)
     map
     blocks
 
@@ -2037,7 +2064,7 @@ let parse_bytecode ~debug code globals debug_data =
         { params = State.stack_vars state
         ; handler = State.current_handler state
         ; body = instr
-        ; branch = last } )
+        ; branch = last })
       !compiled_blocks
   in
   compiled_blocks := Addr.Map.empty;
@@ -2072,7 +2099,7 @@ let seek_section toc ic name =
         if n = name
         then (
           seek_in ic (curr_ofs - len);
-          len )
+          len)
         else seek_sec (curr_ofs - len) rem
   in
   seek_sec (in_channel_length ic - 16 - (8 * List.length toc)) toc
@@ -2117,12 +2144,15 @@ let exe_from_channel
     t
   in
   let keep s =
-    try Hashtbl.find keeps s; true with Not_found -> (
-      match expunge s with `Keep -> true | `Skip -> false )
+    try Hashtbl.find keeps s; true
+    with Not_found -> (
+      match expunge s with
+      | `Keep -> true
+      | `Skip -> false)
   in
   let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in
   let symbols = filter_global_map (fun id -> keep (Ident.name id)) orig_symbols in
-  ( if debug = `No
+  (if debug = `No
   then ()
   else
     try
@@ -2135,7 +2165,7 @@ let exe_from_channel
       | `Full ->
           warn
             "Warning: Program not linked with -g, original variable names and locations \
-             not availalbe.@." ) );
+             not availalbe.@."));
   let globals = make_globals (Array.length init_data) init_data primitive_table in
   (* Initialize module override mechanism *)
   List.iter override_global ~f:(fun (name, v) ->
@@ -2149,14 +2179,14 @@ let exe_from_channel
         in
         globals.override.(i) <- Some v;
         if debug_parser () then Format.eprintf "overriding global %s@." name
-      with Not_found -> () );
+      with Not_found -> ());
   if toplevel || dynlink
   then
     (* export globals *)
     Tbl.iter
       (fun id n ->
         globals.named_value.(n) <- Some (Ident.name id);
-        globals.is_exported.(n) <- true )
+        globals.is_exported.(n) <- true)
       symbols.num_tbl
     (* @vouillon: *)
     (* we should then use the -linkall option to build the toplevel. *)
@@ -2173,7 +2203,7 @@ let exe_from_channel
         globals.named_value.(i) <- Some name;
         let body = register_global ~force:true globals i body in
         globals.is_exported.(i) <- false;
-        body )
+        body)
   in
   let body =
     Array.fold_right_i globals.constants ~init:body ~f:(fun i _ l ->
@@ -2181,7 +2211,7 @@ let exe_from_channel
         | Some x when globals.is_const.(i) ->
             let l = register_global globals i l in
             Let (x, Constant (Constants.parse globals.constants.(i))) :: l
-        | _ -> l )
+        | _ -> l)
   in
   let body =
     if toplevel
@@ -2202,7 +2232,7 @@ let exe_from_channel
             :: Let
                  ( Var.fresh ()
                  , Prim (Extern "caml_js_set", [Pv gdata; Pc (String name); Pv c]) )
-            :: rem )
+            :: rem)
       in
       Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body
     else body
@@ -2213,7 +2243,10 @@ let exe_from_channel
       | 'A' .. 'Z' | 'a' .. 'z' | '_' | '\'' | '0' .. '9' -> true
       | _ -> false
     in
-    let is_uppercase = function 'A' .. 'Z' -> true | _ -> false in
+    let is_uppercase = function
+      | 'A' .. 'Z' -> true
+      | _ -> false
+    in
     fun name ->
       try
         if String.length name = 0 then raise Exit;
@@ -2234,7 +2267,7 @@ let exe_from_channel
         (fun id num acc ->
           if num > exception_ids && Ident.global id && is_module (Ident.name id)
           then StringSet.add (Ident.name id) acc
-          else acc )
+          else acc)
         symbols.num_tbl
         StringSet.empty
     else StringSet.empty
@@ -2251,7 +2284,7 @@ let from_bytes primitives (code : code) =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
         match var with
         | Some x when globals.is_const.(i) -> Let (x, Field (gdata, i)) :: l
-        | _ -> l )
+        | _ -> l)
   in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   prepend p body, debug_data
@@ -2281,7 +2314,7 @@ module Reloc = struct
   let step1 t compunit code =
     let open Cmo_format in
     List.iter compunit.cu_primitives ~f:(fun name ->
-        Hashtbl.add t.primitives name (Hashtbl.length t.primitives) );
+        Hashtbl.add t.primitives name (Hashtbl.length t.primitives));
     let slot_for_literal sc =
       t.constants <- Ocaml_compiler.obj_of_const sc :: t.constants;
       let pos = t.pos in
@@ -2289,7 +2322,8 @@ module Reloc = struct
       pos
     in
     let num_of_prim name =
-      try Hashtbl.find t.primitives name with Not_found ->
+      try Hashtbl.find t.primitives name
+      with Not_found ->
         let i = Hashtbl.length t.primitives in
         Hashtbl.add t.primitives name i;
         i
@@ -2297,13 +2331,14 @@ module Reloc = struct
     List.iter compunit.cu_reloc ~f:(function
         | Reloc_literal sc, pos -> gen_patch_int code pos (slot_for_literal sc)
         | Reloc_primitive name, pos -> gen_patch_int code pos (num_of_prim name)
-        | _ -> () )
+        | _ -> ())
 
   let step2 t compunit code =
     let open Cmo_format in
     let next id =
       let name = Ident.name id in
-      try Hashtbl.find t.names name with Not_found ->
+      try Hashtbl.find t.names name
+      with Not_found ->
         let x = t.pos in
         t.pos <- succ t.pos;
         Hashtbl.add t.names name x;
@@ -2314,7 +2349,7 @@ module Reloc = struct
     List.iter compunit.cu_reloc ~f:(function
         | Reloc_getglobal id, pos -> gen_patch_int code pos (slot_for_getglobal id)
         | Reloc_setglobal id, pos -> gen_patch_int code pos (slot_for_setglobal id)
-        | _ -> () )
+        | _ -> ())
 
   let primitives t =
     let l = Hashtbl.length t.primitives in
@@ -2343,7 +2378,7 @@ module Reloc = struct
           let i = Hashtbl.find t.names name in
           globals.override.(i) <- Some v;
           if debug_parser () then Format.eprintf "overriding global %s@." name
-        with Not_found -> () );
+        with Not_found -> ());
     globals
 end
 
@@ -2366,28 +2401,33 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
           | None ->
               let l = register_global globals i l in
               let cst = Constants.parse globals.constants.(i) in
-              ( match cst, Code.Var.get_name x with
+              (match cst, Code.Var.get_name x with
               | (String str | IString str), None ->
                   Code.Var.name x (Printf.sprintf "cst_%s" str)
-              | _ -> () );
+              | _ -> ());
               Let (x, Constant cst) :: l
           | Some name ->
               Var.name x name;
-              Let (x, Prim (Extern "caml_js_get", [Pv gdata; Pc (IString name)])) :: l )
-        | _ -> l )
+              Let (x, Prim (Extern "caml_js_get", [Pv gdata; Pc (IString name)])) :: l)
+        | _ -> l)
   in
   let body = Let (gdata, Prim (Extern "caml_get_global_data", [])) :: body in
   let cmis =
     if toplevel && Config.Flag.include_cmis ()
     then
       List.fold_left l ~init:StringSet.empty ~f:(fun acc (compunit, _) ->
-          StringSet.add compunit.Cmo_format.cu_name acc )
+          StringSet.add compunit.Cmo_format.cu_name acc)
     else StringSet.empty
   in
   prepend prog body, cmis, debug_data
 
 let from_channel
-    ?(includes = []) ?(toplevel = false) ?expunge ?(dynlink = false) ?(debug = `No) ic =
+    ?(includes = [])
+    ?(toplevel = false)
+    ?expunge
+    ?(dynlink = false)
+    ?(debug = `No)
+    ic =
   let debug_data = Debug.create () in
   let format =
     try
@@ -2415,7 +2455,7 @@ let from_channel
         then ()
         else (
           seek_in ic compunit.Cmo_format.cu_debug;
-          Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic );
+          Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
         let a, b, c =
           from_compilation_units ~toplevel ~includes ~debug ~debug_data [compunit, code]
         in
@@ -2437,15 +2477,15 @@ let from_channel
               then ()
               else (
                 seek_in ic compunit.Cmo_format.cu_debug;
-                Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic );
+                Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
               orig := !orig + compunit.Cmo_format.cu_codesize;
-              compunit, code )
+              compunit, code)
         in
         let a, b, c =
           from_compilation_units ~toplevel ~includes ~debug ~debug_data units
         in
         a, b, c, false
-    | _ -> raise Magic_number.(Bad_magic_number (to_string magic)) )
+    | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
   | `Post magic -> (
     match Magic_number.kind magic with
     | `Exe ->
@@ -2455,7 +2495,7 @@ let from_channel
           exe_from_channel ~includes ~toplevel ?expunge ~dynlink ~debug ~debug_data ic
         in
         Code.invariant a; a, b, c, true
-    | _ -> raise Magic_number.(Bad_magic_number (to_string magic)) )
+    | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
 
 let predefined_exceptions () =
   let body =
@@ -2473,7 +2513,7 @@ let predefined_exceptions () =
             ( Var.fresh ()
             , Prim
                 ( Extern "caml_register_global"
-                , [Pc (Int (Int32.of_int index)); Pv exn; Pv v_name_js] ) ) ] )
+                , [Pc (Int (Int32.of_int index)); Pv exn; Pv v_name_js] ) ) ])
     |> List.concat
   in
   let block = {params = []; handler = None; body; branch = Stop} in

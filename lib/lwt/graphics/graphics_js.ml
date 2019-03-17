@@ -88,7 +88,7 @@ let loop elist f : unit =
           let mouse_x, mouse_y = get_pos_mouse () in
           button := true;
           let s = {mouse_x; mouse_y; button = true; keypressed = false; key = null} in
-          f s; Js._true );
+          f s; Js._true);
   if List.mem Button_up elist
   then
     elt##.onmouseup :=
@@ -96,18 +96,18 @@ let loop elist f : unit =
           let mouse_x, mouse_y = get_pos_mouse () in
           button := false;
           let s = {mouse_x; mouse_y; button = false; keypressed = false; key = null} in
-          f s; Js._true );
+          f s; Js._true);
   elt##.onmousemove :=
     Dom_html.handler (fun ev ->
         let cy, cx = compute_real_pos elt in
         mouse_x := Js.Optdef.get ev##.pageX (fun _ -> 0) - cx;
         mouse_y := elt##.height - (Js.Optdef.get ev##.pageY (fun _ -> 0) - cy);
-        ( if List.mem Mouse_motion elist
+        (if List.mem Mouse_motion elist
         then
           let mouse_x, mouse_y = get_pos_mouse () in
           let s = {mouse_x; mouse_y; button = !button; keypressed = false; key = null} in
-          f s );
-        Js._true );
+          f s);
+        Js._true);
   (* EventListener sur le doc car pas de moyen simple de le faire
      sur un canvasElement *)
   if List.mem Key_pressed elist
@@ -121,6 +121,6 @@ let loop elist f : unit =
           in
           let mouse_x, mouse_y = get_pos_mouse () in
           let s = {mouse_x; mouse_y; button = !button; keypressed = true; key} in
-          f s; Js._true )
+          f s; Js._true)
 
 let loop_at_exit events handler : unit = at_exit (fun _ -> loop events handler)

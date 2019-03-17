@@ -2320,7 +2320,10 @@ class type iFrameElement =
 
 (*XXX Should provide creation functions a la lablgtk... *)
 
-let opt_iter x f = match x with None -> () | Some v -> f v
+let opt_iter x f =
+  match x with
+  | None -> ()
+  | Some v -> f v
 
 let createElement (doc : document t) name = doc##createElement (Js.string name)
 
@@ -2342,9 +2345,9 @@ let rec unsafeCreateElementEx ?_type ?name doc elt =
         let a = new%js Js.array_empty in
         ignore (a##push_2 (Js.string "<") (Js.string elt));
         opt_iter _type (fun t ->
-            ignore (a##push_3 (Js.string " type=\"") (html_escape t) (Js.string "\"")) );
+            ignore (a##push_3 (Js.string " type=\"") (html_escape t) (Js.string "\"")));
         opt_iter name (fun n ->
-            ignore (a##push_3 (Js.string " name=\"") (html_escape n) (Js.string "\"")) );
+            ignore (a##push_3 (Js.string " name=\"") (html_escape n) (Js.string "\"")));
         ignore (a##push (Js.string ">"));
         Js.Unsafe.coerce (doc##createElement (a##join (Js.string "")))
     | `Unknown ->
@@ -2702,7 +2705,7 @@ let eventRelatedTarget (e : #mouseEvent t) =
       match Js.to_string e##._type with
       | "mouseover" -> Optdef.get e##.fromElement (fun () -> assert false)
       | "mouseout" -> Optdef.get e##.toElement (fun () -> assert false)
-      | _ -> Js.null )
+      | _ -> Js.null)
 
 let eventAbsolutePosition' (e : #mouseEvent t) =
   let body = document##.body in
@@ -2736,7 +2739,7 @@ let buttonPressed (ev : #mouseEvent Js.t) =
       | 1 -> Left_button
       | 2 -> Right_button
       | 4 -> Middle_button
-      | _ -> No_button )
+      | _ -> No_button)
     (fun x -> x)
 
 let hasMousewheelEvents () =
@@ -2753,7 +2756,7 @@ let addMousewheelEventListener e h capt =
       (handler (fun (e : mousewheelEvent t) ->
            let dx = -Optdef.get e##.wheelDeltaX (fun () -> 0) / 40 in
            let dy = -Optdef.get e##.wheelDeltaY (fun () -> e##.wheelDelta) / 40 in
-           h (e :> mouseEvent t) ~dx ~dy ))
+           h (e :> mouseEvent t) ~dx ~dy))
       capt
   else
     addEventListener
@@ -2763,7 +2766,7 @@ let addMousewheelEventListener e h capt =
            let d = e##.detail in
            if e##.axis == e##._HORIZONTAL_AXIS
            then h (e :> mouseEvent t) ~dx:d ~dy:0
-           else h (e :> mouseEvent t) ~dx:0 ~dy:d ))
+           else h (e :> mouseEvent t) ~dx:0 ~dy:d))
       capt
 
 (*****)
@@ -3182,7 +3185,9 @@ module Keyboard_code = struct
     | Unidentified -> Optdef.case value make_unidentified f
     | v -> v
 
-  let run_next value f = function Unidentified -> f value | v -> v
+  let run_next value f = function
+    | Unidentified -> f value
+    | v -> v
 
   let get_key_code evt = evt##.keyCode
 
@@ -3303,7 +3308,7 @@ let tagged (e : #element t) =
       | "a" -> A (Js.Unsafe.coerce e)
       | "area" -> Area (Js.Unsafe.coerce e)
       | "audio" -> Audio (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 'b' -> (
       match tag with
       | "base" -> Base (Js.Unsafe.coerce e)
@@ -3311,28 +3316,31 @@ let tagged (e : #element t) =
       | "body" -> Body (Js.Unsafe.coerce e)
       | "br" -> Br (Js.Unsafe.coerce e)
       | "button" -> Button (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 'c' -> (
       match tag with
       | "canvas" -> Canvas (Js.Unsafe.coerce e)
       | "caption" -> Caption (Js.Unsafe.coerce e)
       | "col" -> Col (Js.Unsafe.coerce e)
       | "colgroup" -> Colgroup (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 'd' -> (
       match tag with
       | "del" -> Del (Js.Unsafe.coerce e)
       | "div" -> Div (Js.Unsafe.coerce e)
       | "dl" -> Dl (Js.Unsafe.coerce e)
-      | _ -> other e )
-    | 'e' -> ( match tag with "embed" -> Embed (Js.Unsafe.coerce e) | _ -> other e )
+      | _ -> other e)
+    | 'e' -> (
+      match tag with
+      | "embed" -> Embed (Js.Unsafe.coerce e)
+      | _ -> other e)
     | 'f' -> (
       match tag with
       | "fieldset" -> Fieldset (Js.Unsafe.coerce e)
       | "form" -> Form (Js.Unsafe.coerce e)
       | "frameset" -> Frameset (Js.Unsafe.coerce e)
       | "frame" -> Frame (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 'h' -> (
       match tag with
       | "h1" -> H1 (Js.Unsafe.coerce e)
@@ -3344,46 +3352,49 @@ let tagged (e : #element t) =
       | "head" -> Head (Js.Unsafe.coerce e)
       | "hr" -> Hr (Js.Unsafe.coerce e)
       | "html" -> Html (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 'i' -> (
       match tag with
       | "iframe" -> Iframe (Js.Unsafe.coerce e)
       | "img" -> Img (Js.Unsafe.coerce e)
       | "input" -> Input (Js.Unsafe.coerce e)
       | "ins" -> Ins (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 'l' -> (
       match tag with
       | "label" -> Label (Js.Unsafe.coerce e)
       | "legend" -> Legend (Js.Unsafe.coerce e)
       | "li" -> Li (Js.Unsafe.coerce e)
       | "link" -> Link (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 'm' -> (
       match tag with
       | "map" -> Map (Js.Unsafe.coerce e)
       | "meta" -> Meta (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 'o' -> (
       match tag with
       | "object" -> Object (Js.Unsafe.coerce e)
       | "ol" -> Ol (Js.Unsafe.coerce e)
       | "optgroup" -> Optgroup (Js.Unsafe.coerce e)
       | "option" -> Option (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 'p' -> (
       match tag with
       | "p" -> P (Js.Unsafe.coerce e)
       | "param" -> Param (Js.Unsafe.coerce e)
       | "pre" -> Pre (Js.Unsafe.coerce e)
-      | _ -> other e )
-    | 'q' -> ( match tag with "q" -> Q (Js.Unsafe.coerce e) | _ -> other e )
+      | _ -> other e)
+    | 'q' -> (
+      match tag with
+      | "q" -> Q (Js.Unsafe.coerce e)
+      | _ -> other e)
     | 's' -> (
       match tag with
       | "script" -> Script (Js.Unsafe.coerce e)
       | "select" -> Select (Js.Unsafe.coerce e)
       | "style" -> Style (Js.Unsafe.coerce e)
-      | _ -> other e )
+      | _ -> other e)
     | 't' -> (
       match tag with
       | "table" -> Table (Js.Unsafe.coerce e)
@@ -3395,9 +3406,15 @@ let tagged (e : #element t) =
       | "thead" -> Thead (Js.Unsafe.coerce e)
       | "title" -> Title (Js.Unsafe.coerce e)
       | "tr" -> Tr (Js.Unsafe.coerce e)
-      | _ -> other e )
-    | 'u' -> ( match tag with "ul" -> Ul (Js.Unsafe.coerce e) | _ -> other e )
-    | 'v' -> ( match tag with "video" -> Video (Js.Unsafe.coerce e) | _ -> other e )
+      | _ -> other e)
+    | 'u' -> (
+      match tag with
+      | "ul" -> Ul (Js.Unsafe.coerce e)
+      | _ -> other e)
+    | 'v' -> (
+      match tag with
+      | "video" -> Video (Js.Unsafe.coerce e)
+      | _ -> other e)
     | _ -> other e
 
 let opt_tagged e = Opt.case e (fun () -> None) (fun e -> Some (tagged e))
@@ -3426,10 +3443,10 @@ let taggedEvent (ev : #event Js.t) =
                   Js.Opt.case
                     (CoerceTo.popStateEvent ev)
                     (fun () -> OtherEvent (ev :> event t))
-                    (fun ev -> PopStateEvent ev) )
-                (fun ev -> MouseScrollEvent ev) )
-            (fun ev -> MousewheelEvent ev) )
-        (fun ev -> KeyboardEvent ev) )
+                    (fun ev -> PopStateEvent ev))
+                (fun ev -> MouseScrollEvent ev))
+            (fun ev -> MousewheelEvent ev))
+        (fun ev -> KeyboardEvent ev))
     (fun ev -> MouseEvent ev)
 
 let opt_taggedEvent ev = Opt.case ev (fun () -> None) (fun ev -> Some (taggedEvent ev))
@@ -3462,7 +3479,7 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
           let dt = !last +. (1000. /. 60.) -. t in
           let dt = if dt < 0. then 0. else dt in
           last := t;
-          ignore (window##setTimeout callback dt) )
+          ignore (window##setTimeout callback dt))
 
 (****)
 

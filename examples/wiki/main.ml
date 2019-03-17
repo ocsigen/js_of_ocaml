@@ -47,11 +47,11 @@ let onload _ =
     let n =
       if text <> old_text
       then (
-        ( try
-            let rendered = Wiki_syntax.xml_of_wiki text in
-            replace_child preview rendered
-          with _ -> () );
-        20 )
+        (try
+           let rendered = Wiki_syntax.xml_of_wiki text in
+           replace_child preview rendered
+         with _ -> ());
+        20)
       else max 0 (n - 1)
     in
     Lwt_js.sleep (if n = 0 then 0.5 else 0.1) >>= fun () -> dyn_preview text n

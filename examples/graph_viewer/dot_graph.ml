@@ -50,7 +50,7 @@ let sequence_add s id v =
     let n = s.count in
     s.count <- n + 1;
     s.seq <- IntMap.add n v s.seq;
-    Hashtbl.add s.id id v )
+    Hashtbl.add s.id id v)
 
 module StringMap = Map.Make (String)
 
@@ -103,7 +103,7 @@ let insert_graph parent g =
   if not (IntMap.mem g.graph_id (all_parents IntMap.empty parent))
   then (
     Hashtbl.add g.parents parent.graph_id parent;
-    sequence_add parent.subgraphs g.graph_id g )
+    sequence_add parent.subgraphs g.graph_id g)
 
 let make_graph parent name def_attrs =
   let g =
@@ -115,7 +115,9 @@ let make_graph parent name def_attrs =
     ; edges = make_sequence ()
     ; parents = Hashtbl.create 17 }
   in
-  (match parent with Some parent -> insert_graph parent g | None -> ());
+  (match parent with
+  | Some parent -> insert_graph parent g
+  | None -> ());
   g
 
 let insert_node g n =
@@ -140,11 +142,15 @@ let find_graph st parent name def_attrs =
   match name with
   | Some nm when Hashtbl.mem st.st_graphs nm ->
       let g = Hashtbl.find st.st_graphs nm in
-      (match parent with Some parent -> insert_graph parent g | None -> ());
+      (match parent with
+      | Some parent -> insert_graph parent g
+      | None -> ());
       g
   | _ ->
       let g = make_graph parent name def_attrs in
-      (match name with Some nm -> Hashtbl.add st.st_graphs nm g | None -> ());
+      (match name with
+      | Some nm -> Hashtbl.add st.st_graphs nm g
+      | None -> ());
       g
 
 let find_node st g name def_attrs =
@@ -164,14 +170,18 @@ let lookup_edge st n1 n2 key =
 let find_edge st g n1 n2 key attrs =
   let key = if st.st_info.strict then Some "" else key in
   try
-    let key = match key with Some k -> k | None -> raise Not_found in
+    let key =
+      match key with
+      | Some k -> k
+      | None -> raise Not_found
+    in
     let e = lookup_edge st n1 n2 key in
     insert_edge g e; e
   with Not_found ->
     let e = make_edge g n1 n2 attrs in
-    ( match key with
+    (match key with
     | Some key -> Hashtbl.add st.st_edges (n1.name, n2.name, key) e
-    | None -> () );
+    | None -> ());
     e
 
 (****)
@@ -183,7 +193,10 @@ let get_edges x =
   | `Node (n, p) -> IntMap.add 0 n IntMap.empty, p
   | `Graph gr -> gr.nodes.seq, None
 
-let opt_add nm v m = match v with Some v -> StringMap.add nm v m | None -> m
+let opt_add nm v m =
+  match v with
+  | Some v -> StringMap.add nm v m
+  | None -> m
 
 let add_edge st g n1 p1 n2 p2 key attrs =
   let attrs = opt_add "tailport" p1 (opt_add "headport" p2 attrs) in
@@ -207,7 +220,7 @@ let rec compound_to_graph st g def_attr (c, attr) =
         match s with
         | `Node node ->
             `Node (find_node st g node.Dot_file.name def_attr, node.Dot_file.port)
-        | `Graph gr -> `Graph (graph_def_to_graph st (Some g) def_attr gr) )
+        | `Graph gr -> `Graph (graph_def_to_graph st (Some g) def_attr gr))
       c
   in
   match c with
@@ -228,7 +241,7 @@ and body_to_graph st g def_attr body =
         match typ with
         | `Graph -> def_attr.g_attr <- add_attributes def_attr.g_attr l
         | `Node -> def_attr.n_attr <- add_attributes def_attr.n_attr l
-        | `Edge -> def_attr.e_attr <- add_attributes def_attr.e_attr l ) )
+        | `Edge -> def_attr.e_attr <- add_attributes def_attr.e_attr l))
     body
 
 and graph_def_to_graph st g def_attr gr =

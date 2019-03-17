@@ -6647,10 +6647,10 @@ let p_o3' nucls i j partial_inst =
     | [] -> domains
     | n :: ns ->
         generate
-          ( mk_var i (tfo_combine (nuc_p_o3'_60_tfo n) align) n
+          (mk_var i (tfo_combine (nuc_p_o3'_60_tfo n) align) n
           :: mk_var i (tfo_combine (nuc_p_o3'_180_tfo n) align) n
           :: mk_var i (tfo_combine (nuc_p_o3'_275_tfo n) align) n
-          :: domains )
+          :: domains)
           ns
   in
   generate [] nucls
@@ -6679,7 +6679,7 @@ let anticodon_domains =
     p_o3' rCs 32 31
   ; (*   | Constraint    *)
     p_o3' rUs 33 32
-  (* <-' 3.0 Angstroms *)
+    (* <-' 3.0 Angstroms *)
    ]
 
 (* Anticodon constraint *)
@@ -6740,7 +6740,7 @@ let pseudoknot_domains =
     stacked5' rU 5 4
   ; (*   | 4.5 Angstroms *)
     stacked5' rC 6 5
-  (* <-'               *)
+    (* <-'               *)
    ]
 
 (* Pseudoknot constraint *)
@@ -7013,7 +7013,10 @@ let list_of_atoms = function
 
 let maximum = function
   | x :: xs ->
-      let rec iter m = function [] -> m | a :: b -> iter (if a > m then a else m) b in
+      let rec iter m = function
+        | [] -> m
+        | a :: b -> iter (if a > m then a else m) b
+      in
       iter x xs
   | _ -> assert false
 

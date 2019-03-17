@@ -95,7 +95,10 @@ module Version = struct
     | [], [] -> 0
     | [], y :: _ -> compint 0 y
     | x :: _, [] -> compint x 0
-    | x :: xs, y :: ys -> ( match compint x y with 0 -> compare xs ys | n -> n )
+    | x :: xs, y :: ys -> (
+      match compint x y with
+      | 0 -> compare xs ys
+      | n -> n)
 end
 
 let setup_toplevel () =
@@ -145,20 +148,22 @@ let setup_printers () =
 let setup_examples ~container ~textbox =
   let r = Regexp.regexp "^\\(\\*+(.*)\\*+\\)$" in
   let all = ref [] in
-  ( try
-      let ic = open_in "/static/examples.ml" in
-      while true do
-        let line = input_line ic in
-        match Regexp.string_match r line 0 with
-        | Some res ->
-            let name =
-              match Regexp.matched_group res 1 with Some s -> s | None -> assert false
-            in
-            all := `Title name :: !all
-        | None -> all := `Content line :: !all
-      done;
-      assert false
-    with _ -> () );
+  (try
+     let ic = open_in "/static/examples.ml" in
+     while true do
+       let line = input_line ic in
+       match Regexp.string_match r line 0 with
+       | Some res ->
+           let name =
+             match Regexp.matched_group res 1 with
+             | Some s -> s
+             | None -> assert false
+           in
+           all := `Title name :: !all
+       | None -> all := `Content line :: !all
+     done;
+     assert false
+   with _ -> ());
   let example_container = by_id "toplevel-examples" in
   let _ =
     List.fold_left
@@ -175,12 +180,12 @@ let setup_examples ~container ~textbox =
                           textbox##.value := (Js.string acc)##trim;
                           Lwt.async (fun () ->
                               resize ~container ~textbox ()
-                              >>= fun () -> textbox##focus; Lwt.return_unit );
-                          true ) ]
+                              >>= fun () -> textbox##focus; Lwt.return_unit);
+                          true) ]
                   [txt name])
             in
             Dom.appendChild example_container (Tyxml_js.To_dom.of_a a);
-            "" )
+            "")
       ""
       !all
   in
@@ -194,8 +199,10 @@ let parse_hash () =
 
 let rec iter_on_sharp ~f x =
   Js.Opt.iter (Dom_html.CoerceTo.element x) (fun e ->
-      if Js.to_bool (e##.classList##contains (Js.string "sharp")) then f e );
-  match Js.Opt.to_option x##.nextSibling with None -> () | Some n -> iter_on_sharp ~f n
+      if Js.to_bool (e##.classList##contains (Js.string "sharp")) then f e);
+  match Js.Opt.to_option x##.nextSibling with
+  | None -> ()
+  | Some n -> iter_on_sharp ~f n
 
 let setup_share_button ~output =
   do_by_id "btn-share" (fun e ->
@@ -208,7 +215,7 @@ let setup_share_button ~output =
               output##.firstChild
               (iter_on_sharp ~f:(fun e ->
                    code :=
-                     Js.Opt.case e##.textContent (fun () -> "") Js.to_string :: !code ));
+                     Js.Opt.case e##.textContent (fun () -> "") Js.to_string :: !code));
             let code_encoded = B64.encode (String.concat "" (List.rev !code)) in
             let url, is_file =
               match Url.Current.get () with
@@ -242,14 +249,14 @@ let setup_share_button ~output =
                       in
                       Lwt.bind (Js_of_ocaml_lwt.Jsonp.call uri) (fun o ->
                           let str = Js.to_string o##.shorturl in
-                          append_url str; Lwt.return_unit ) )
+                          append_url str; Lwt.return_unit))
                   (fun exn ->
                     Format.eprintf
                       "Could not generate short url. reason: %s@."
                       (Printexc.to_string exn);
                     append_url uri;
-                    Lwt.return_unit ) );
-            Js._false ) )
+                    Lwt.return_unit));
+            Js._false))
 
 let setup_js_preview () =
   let ph = by_id "last-js" in
@@ -275,7 +282,7 @@ let highlight_location loc =
       then
         let from_ = if !x = line1 then `Pos col1 else `Pos 0 in
         let to_ = if !x = line2 then `Pos col2 else `Last in
-        Colorize.highlight from_ to_ e )
+        Colorize.highlight from_ to_ e)
 
 let append colorize output cl s =
   Dom.appendChild output (Tyxml_js.To_dom.of_element (colorize ~a_class:cl s))
@@ -321,13 +328,13 @@ module History = struct
     if !idx > 0
     then (
       decr idx;
-      textbox##.value := Js.string !data.(!idx) )
+      textbox##.value := Js.string !data.(!idx))
 
   let next textbox =
     if !idx < Array.length !data - 1
     then (
       incr idx;
-      textbox##.value := Js.string !data.(!idx) )
+      textbox##.value := Js.string !data.(!idx))
 end
 
 let run _ =
@@ -384,11 +391,11 @@ let run _ =
   textbox##.onkeyup :=
     Dom_html.handler (fun _ ->
         Lwt.async (resize ~container ~textbox);
-        Js._true );
+        Js._true);
   textbox##.onchange :=
     Dom_html.handler (fun _ ->
         Lwt.async (resize ~container ~textbox);
-        Js._true );
+        Js._true);
   textbox##.onkeydown :=
     Dom_html.handler (fun e ->
         match e##.keyCode with
@@ -403,13 +410,15 @@ let run _ =
         | 75 when meta e -> setup_toplevel (); Js._false
         | 38 -> history_up e
         | 40 -> history_down e
-        | _ -> Js._true );
+        | _ -> Js._true);
   (Lwt.async_exception_hook :=
      fun exc ->
        Format.eprintf "exc during Lwt.async: %s@." (Printexc.to_string exc);
-       match exc with Js.Error e -> Firebug.console##log e##.stack | _ -> ());
+       match exc with
+       | Js.Error e -> Firebug.console##log e##.stack
+       | _ -> ());
   Lwt.async (fun () ->
-      resize ~container ~textbox () >>= fun () -> textbox##focus; Lwt.return_unit );
+      resize ~container ~textbox () >>= fun () -> textbox##focus; Lwt.return_unit);
   Graphics_support.init (by_id_coerce "test-canvas" Dom_html.CoerceTo.canvas);
   Sys_js.set_channel_flusher caml_chan (append Colorize.ocaml output "caml");
   Sys_js.set_channel_flusher sharp_chan (append Colorize.ocaml output "sharp");

@@ -51,7 +51,7 @@ let () =
                (CSS.Color.string_of_t ml))
       with
       | Invalid_argument s -> log_failure s
-      | Failure s -> log_failure s )
+      | Failure s -> log_failure s)
     cols
 
 let () = log_stop ()

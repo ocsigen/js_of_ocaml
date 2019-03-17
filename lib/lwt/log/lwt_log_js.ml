@@ -30,7 +30,7 @@ let console =
         Js.string
           (Printf.sprintf "[%s] %s" (Section.name section) (String.concat "\n" logs))
       in
-      ( match level, Lwt.get js_val with
+      (match level, Lwt.get js_val with
       | Debug, None -> Firebug.console##debug str
       | Debug, Some v -> Firebug.console##debug_2 str v
       | Info, None | Notice, None -> Firebug.console##info str
@@ -38,13 +38,17 @@ let console =
       | Warning, None -> Firebug.console##warn str
       | Warning, Some v -> Firebug.console##warn_2 str v
       | Error, None | Fatal, None -> Firebug.console##error str
-      | Error, Some v | Fatal, Some v -> Firebug.console##error_2 str v );
-      Lwt.return_unit )
+      | Error, Some v | Fatal, Some v -> Firebug.console##error_2 str v);
+      Lwt.return_unit)
 
 let log ?inspect ?exn ?section ?location ?logger ~level message =
-  let inspect = match inspect with None -> None | Some v -> Some (Obj.repr v) in
+  let inspect =
+    match inspect with
+    | None -> None
+    | Some v -> Some (Obj.repr v)
+  in
   Lwt.with_value js_val inspect (fun () ->
-      log ?exn ?section ?location ?logger ~level message )
+      log ?exn ?section ?location ?logger ~level message)
 
 let log_f ?inspect ?exn ?section ?location ?logger ~level format =
   Printf.ksprintf (log ?inspect ?exn ?section ?location ?logger ~level) format

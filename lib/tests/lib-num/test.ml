@@ -26,7 +26,7 @@ let error () =
   else (
     error_occurred := true;
     flush_all ();
-    false )
+    false)
 
 let success () = flush_all (); true
 
@@ -43,8 +43,8 @@ let test test_number eq_fun (answer, correct_answer) =
   if not (eq_fun answer correct_answer)
   then (
     fprintf stderr ">>> Bad result (%s, test %d)\n" !function_tested test_number;
-    error () )
-  else ( printf " %d..." test_number; success () )
+    error ())
+  else (printf " %d..." test_number; success ())
 
 let failure_test test_number fun_to_test arg =
   flush_all ();
@@ -62,10 +62,10 @@ let failwith_test test_number fun_to_test arg correct_failure =
     error ()
   with x ->
     if x = correct_failure
-    then ( printf " %d..." test_number; success () )
+    then (printf " %d..." test_number; success ())
     else (
       fprintf stderr ">>> Bad failure (%s, test %d)\n" !function_tested test_number;
-      error () )
+      error ())
 
 let end_tests () =
   flush_all ();
@@ -73,10 +73,10 @@ let end_tests () =
   if !error_occurred
   then (
     print_endline "************* TESTS FAILED ****************";
-    exit 2 )
+    exit 2)
   else (
     print_endline "************* TESTS COMPLETED SUCCESSFULLY ****************";
-    exit 0 )
+    exit 0)
 
 let eq = ( == )
 

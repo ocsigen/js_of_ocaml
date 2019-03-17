@@ -28,7 +28,7 @@ let rec function_cardinality info x acc =
       match info.info_defs.(Var.idx x) with
       | Expr (Closure (l, _)) -> Some (List.length l)
       | Expr (Prim (Extern "%closure", [Pc (IString prim)])) -> (
-        try Some (Primitive.arity prim) with Not_found -> None )
+        try Some (Primitive.arity prim) with Not_found -> None)
       | Expr (Apply (f, l, _)) -> (
           if List.mem f ~set:acc
           then None
@@ -37,10 +37,13 @@ let rec function_cardinality info x acc =
             | Some n ->
                 let diff = n - List.length l in
                 if diff > 0 then Some diff else None
-            | None -> None )
-      | _ -> None )
+            | None -> None)
+      | _ -> None)
     None
-    (fun u v -> match u, v with Some n, Some m when n = m -> u | _ -> None)
+    (fun u v ->
+      match u, v with
+      | Some n, Some m when n = m -> u
+      | _ -> None)
     x
 
 let specialize_instr info (acc, free_pc, extra) i =
@@ -71,7 +74,7 @@ let specialize_instr info (acc, free_pc, extra) i =
           ( Let (x, Closure (missing, (free_pc, missing))) :: acc
           , free_pc + 1
           , (free_pc, block) :: extra )
-      | _ -> i :: acc, free_pc, extra )
+      | _ -> i :: acc, free_pc, extra)
   | _ -> i :: acc, free_pc, extra
 
 let specialize_instrs info (pc, blocks, free_pc) =
@@ -80,13 +83,13 @@ let specialize_instrs info (pc, blocks, free_pc) =
       (fun pc block (blocks, free_pc) ->
         let body, free_pc, extra =
           List.fold_right block.body ~init:([], free_pc, []) ~f:(fun i acc ->
-              specialize_instr info acc i )
+              specialize_instr info acc i)
         in
         let blocks =
           List.fold_left extra ~init:blocks ~f:(fun blocks (pc, b) ->
-              Addr.Map.add pc b blocks )
+              Addr.Map.add pc b blocks)
         in
-        Addr.Map.add pc {block with Code.body} blocks, free_pc )
+        Addr.Map.add pc {block with Code.body} blocks, free_pc)
       blocks
       (Addr.Map.empty, free_pc)
   in

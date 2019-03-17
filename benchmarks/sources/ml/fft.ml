@@ -111,7 +111,7 @@ let fft px py np =
       px.(i) <- xt;
       let xt = py.(!j) in
       py.(!j) <- py.(i);
-      py.(i) <- xt );
+      py.(i) <- xt);
     let k = ref (n / 2) in
     while !k < !j do
       j := !j - !k;
@@ -158,12 +158,12 @@ let test np =
     if !zr < a
     then (
       zr := a;
-      kr := i );
+      kr := i);
     let a = abs_float pxi.(i + 1) in
     if !zi < a
     then (
       zi := a;
-      ki := i )
+      ki := i)
   done;
   (*print !zr; print !zi;*)
   if abs_float !zr <= 1e-8 && abs_float !zi <= 1e-8

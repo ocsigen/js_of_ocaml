@@ -70,13 +70,15 @@ let f
   let dynlink = dynlink || toplevel || runtime_only in
   let custom_header = common.CommonArg.custom_header in
   let global =
-    match wrap_with_fun with Some fun_name -> `Bind_to fun_name | None -> `Auto
+    match wrap_with_fun with
+    | Some fun_name -> `Bind_to fun_name
+    | None -> `Auto
   in
   CommonArg.eval common;
-  ( match output_file with
+  (match output_file with
   | None | Some "" | Some "-" -> ()
   | Some name when debug_mem () -> Debug.start_profiling name
-  | Some _ -> () );
+  | Some _ -> ());
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   List.iter static_env ~f:(fun (s, v) -> Eval.set_static_env s v);
   let t = Timer.make () in
@@ -91,7 +93,7 @@ let f
               | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
             in
             Filename.concat (Findlib.find_pkg_dir pkg) d'
-        | None -> d )
+        | None -> d)
   in
   let expunge =
     match export_file with
@@ -101,19 +103,19 @@ let f
         then failwith (Printf.sprintf "export file %S does not exists" file);
         let ic = open_in file in
         let t = Hashtbl.create 17 in
-        ( try
-            while true do
-              Hashtbl.add t (input_line ic) ()
-            done;
-            assert false
-          with End_of_file -> () );
+        (try
+           while true do
+             Hashtbl.add t (input_line ic) ()
+           done;
+           assert false
+         with End_of_file -> ());
         close_in ic;
         Some (fun s -> try Hashtbl.find t s; `Keep with Not_found -> `Skip)
   in
   Linker.load_files runtime_files;
   let paths =
-    try List.append include_dir [Findlib.find_pkg_dir "stdlib"] with Not_found ->
-      include_dir
+    try List.append include_dir [Findlib.find_pkg_dir "stdlib"]
+    with Not_found -> include_dir
   in
   let t1 = Timer.make () in
   if times () then Format.eprintf "Start parsing...@.";
@@ -169,7 +171,7 @@ let f
       List.map static_env ~f:(fun (k, v) ->
           Primitive.add_external "caml_set_static_env";
           let args = [Code.Pc (IString k); Code.Pc (IString v)] in
-          Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))) )
+          Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
     in
     Code.prepend p l
   in
@@ -182,7 +184,7 @@ let f
   in
   if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
   let paths = paths @ StringSet.elements (Parse_bytecode.Debug.paths d ~units:cmis) in
-  ( match output_file with
+  (match output_file with
   | None ->
       let p = PseudoFs.f p cmis fs_files paths in
       let fmt = Pretty_print.to_out_channel stdout in
@@ -211,12 +213,12 @@ let f
             ?custom_header
             fmt
             d
-            p );
+            p);
       Option.iter fs_output ~f:(fun file ->
           gen_file file (fun chan ->
               let pfs = PseudoFs.f_empty cmis fs_files paths in
               let pfs_fmt = Pretty_print.to_out_channel chan in
-              Driver.f ~standalone ?profile ?custom_header ~global pfs_fmt d pfs ) ) );
+              Driver.f ~standalone ?profile ?custom_header ~global pfs_fmt d pfs)));
   if times () then Format.eprintf "compilation: %a@." Timer.print t;
   Debug.stop_profiling ()
 

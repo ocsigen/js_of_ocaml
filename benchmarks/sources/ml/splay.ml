@@ -89,7 +89,7 @@ let rec splay_ ((left, key, value, right) as a) k =
           | Node n ->
               (* zig-zag *)
               let lrleft, lrk, lrv, lrright = splay_ n k in
-              Node (lleft, lk, lv, lrleft), lrk, lrv, Node (lrright, key, value, right) )
+              Node (lleft, lk, lv, lrleft), lrk, lrv, Node (lrright, key, value, right))
   else
     match right with
     | Empty -> a
@@ -110,9 +110,12 @@ let rec splay_ ((left, key, value, right) as a) k =
           | Node n ->
               (* zag-zig *)
               let rlleft, rlk, rlv, rlright = splay_ n k in
-              Node (left, key, value, rlleft), rlk, rlv, Node (rlright, rk, rv, rright) )
+              Node (left, key, value, rlleft), rlk, rlv, Node (rlright, rk, rv, rright))
 
-let splay t key = match t with Empty -> t | Node n -> Node (splay_ n key)
+let splay t key =
+  match t with
+  | Empty -> t
+  | Node n -> Node (splay_ n key)
 
 let insert key value t =
   (*  Splay on the key to move the last node on the search path for
@@ -136,11 +139,13 @@ let remove key t =
   | Node (left, _, _, right) -> (
     match splay left key with
     | Node (lleft, lk, lv, Empty) -> Node (lleft, lk, lv, right)
-    | _ -> failwith "remove" )
+    | _ -> failwith "remove")
 
 let find key t =
   let t = splay t key in
-  match t with Node (_, k, v, _) when k = key -> Some v, t | _ -> None, t
+  match t with
+  | Node (_, k, v, _) when k = key -> Some v, t
+  | _ -> None, t
 
 let rec findMax = function
   (* here we do not splay (but that's what the original program does) *)
@@ -197,7 +202,9 @@ let insertNewNode t =
   let rec aux t =
     let key = generateKey () in
     let vo, t = find key t in
-    match vo with None -> key, t | _ -> aux t
+    match vo with
+    | None -> key, t
+    | _ -> aux t
   in
   let key, t = aux t in
   let payload = generatePayloadTree kSplayTreePayloadDepth (string_of_float key) in
@@ -231,9 +238,9 @@ let splayRun t =
       let key, t = insertNewNode t in
       aux
         (i + 1)
-        ( match findGreatestLessThan key t with
+        (match findGreatestLessThan key t with
         | None, t -> remove key t
-        | Some k, t -> remove k t )
+        | Some k, t -> remove k t)
     else t
   in
   aux 0 t

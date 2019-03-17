@@ -307,11 +307,11 @@ let handler f =
            let e = window_event () in
            let res = f e in
            if not (Js.to_bool res) then e##.returnValue := res;
-           res )
+           res)
          else
            let res = f e in
            if not (Js.to_bool res) then (Js.Unsafe.coerce e)##preventDefault;
-           res ))
+           res))
 
 let full_handler f =
   Js.some
@@ -322,11 +322,11 @@ let full_handler f =
            let e = window_event () in
            let res = f this e in
            if not (Js.to_bool res) then e##.returnValue := res;
-           res )
+           res)
          else
            let res = f this e in
            if not (Js.to_bool res) then (Js.Unsafe.coerce e)##preventDefault;
-           res ))
+           res))
 
 let invoke_handler (f : ('a, 'b) event_listener) (this : 'a) (event : 'b) : bool t =
   Js.Unsafe.call f this [|Js.Unsafe.inject event|]

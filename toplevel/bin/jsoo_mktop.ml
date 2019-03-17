@@ -94,8 +94,8 @@ let _ =
     execute (["jsoo_listunits"; "-o"; export_output] @ !pkgs @ !export);
     clean export_output;
     execute
-      ( ["js_of_ocaml"; "--toplevel"; "--no-cmis"; "--export"; export_output]
+      (["js_of_ocaml"; "--toplevel"; "--no-cmis"; "--export"; export_output]
       @ !js_opt
-      @ [!output] );
+      @ [!output]);
     do_clean ()
   with exn -> do_clean (); raise exn

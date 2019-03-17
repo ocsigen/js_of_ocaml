@@ -50,15 +50,15 @@ type t =
 let spaces = String.make 80 ' '
 
 let output st (s : string) l =
-  ( try
-      let last = String.rindex_from s (l - 1) '\n' + 1 in
-      let line = ref 0 in
-      for i = 0 to l - 1 do
-        if s.[i] = '\n' then incr line
-      done;
-      st.line <- st.line + !line;
-      st.col <- l - last
-    with Not_found -> st.col <- l + st.col );
+  (try
+     let last = String.rindex_from s (l - 1) '\n' + 1 in
+     let line = ref 0 in
+     for i = 0 to l - 1 do
+       if s.[i] = '\n' then incr line
+     done;
+     st.line <- st.line + !line;
+     st.col <- l - last
+   with Not_found -> st.col <- l + st.col);
   st.total <- st.total + String.length s;
   st.output s 0 l
 
@@ -107,7 +107,7 @@ let rec push st e =
     | End_group ->
         st.box_indent <- fst (List.hd st.prev_indents);
         st.indent <- snd (List.hd st.prev_indents);
-        st.prev_indents <- List.tl st.prev_indents )
+        st.prev_indents <- List.tl st.prev_indents)
   else (
     (* Fits? *)
     st.l <- e :: st.l;
@@ -120,7 +120,7 @@ let rec push st e =
           let l = List.rev st.l in
           st.l <- [];
           st.n <- 0;
-          List.iter (fun e -> push st e) l )
+          List.iter (fun e -> push st e) l)
     | Set_pos _ -> ()
     | Start_group _ -> st.n <- st.n + 1
     | End_group ->
@@ -132,7 +132,7 @@ let rec push st e =
           st.indent <- snd (List.hd st.prev_indents);
           st.prev_indents <- List.tl st.prev_indents;
           st.cur <- st.cur + st.w;
-          st.l <- [] ) )
+          st.l <- []))
 
 (****)
 
@@ -142,16 +142,16 @@ let string st (s : string) =
     let len = String.length s in
     if len <> 0
     then (
-      ( match st.pending_space with
+      (match st.pending_space with
       | None -> ()
       | Some sp -> (
           st.pending_space <- None;
           match st.last_char, st.needed_space with
           | Some last, Some f -> if f last s.[0] then output st sp 1
           | _, None -> output st sp 1
-          | _ -> () ) );
+          | _ -> ()));
       output st s len;
-      st.last_char <- Some s.[len - 1] ) )
+      st.last_char <- Some s.[len - 1]))
   else push st (Text s)
 
 let genbreak st s n = if not st.compact then push st (Break (s, n))

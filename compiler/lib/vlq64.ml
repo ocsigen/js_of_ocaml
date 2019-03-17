@@ -63,7 +63,7 @@ let rec encode' buf x =
   then add_char buf digit
   else (
     add_char buf (digit lor vlq_continuation_bit);
-    encode' buf rest )
+    encode' buf rest)
 
 let encode b x =
   let vql = toVLQSigned x in

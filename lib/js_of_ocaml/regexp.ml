@@ -43,7 +43,7 @@ let search r s i =
        (r##exec (Js.bytestring s))
        (fun res_pre ->
          let res = Js.match_result res_pre in
-         res##.index, res ))
+         res##.index, res))
 
 let search_forward = search
 

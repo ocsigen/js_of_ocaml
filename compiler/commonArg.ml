@@ -92,7 +92,7 @@ let t =
         { debug = {enable = debug; disable = []}
         ; optim = {enable; disable}
         ; quiet
-        ; custom_header = c_header } )
+        ; custom_header = c_header })
     $ debug
     $ enable
     $ disable

@@ -24,7 +24,7 @@ let expand_path exts real virt =
     if try Sys.is_directory realfile with _ -> false
     then
       Array.fold_left (Sys.readdir realfile) ~init:acc ~f:(fun acc s ->
-          loop (Filename.concat realfile s) (Filename.concat virtfile s) acc )
+          loop (Filename.concat realfile s) (Filename.concat virtfile s) acc)
     else
       try
         let exmatch =
@@ -65,8 +65,8 @@ let list_files name paths =
     | None -> name, []
   in
   let file =
-    try Findlib.find_in_findlib_paths paths name with Not_found ->
-      failwith (Printf.sprintf "file '%s' not found" name)
+    try Findlib.find_in_findlib_paths paths name
+    with Not_found -> failwith (Printf.sprintf "file '%s' not found" name)
   in
   expand_path exts file virtname
 
@@ -90,7 +90,7 @@ let program_of_files l =
   let fs = List.map l ~f:(fun (name, filename) -> read name filename) in
   let body =
     List.map fs ~f:(fun (n, c) ->
-        Let (Var.fresh (), Prim (Extern "caml_create_file_extern", [n; c])) )
+        Let (Var.fresh (), Prim (Extern "caml_create_file_extern", [n; c])))
   in
   let pc = 0 in
   let blocks =
@@ -109,7 +109,7 @@ let make_body prim cmis files paths =
         try
           let name, filename = find_cmi paths s in
           read name filename :: acc, missing
-        with Not_found -> acc, s :: missing )
+        with Not_found -> acc, s :: missing)
       cmis
       ([], [])
   in
@@ -118,11 +118,11 @@ let make_body prim cmis files paths =
     warn "Some OCaml interface files were not found.@.";
     warn "Use [-I dir_of_cmis] option to bring them into scope@.";
     (* [`ocamlc -where`/expunge in.byte out.byte moduleA moduleB ... moduleN] *)
-    List.iter missing ~f:(fun nm -> warn "  %s@." nm) );
+    List.iter missing ~f:(fun nm -> warn "  %s@." nm));
   let fs =
     List.fold_left files ~init:fs ~f:(fun acc f ->
         let l = list_files f paths in
-        List.fold_left l ~init:acc ~f:(fun acc (n, fn) -> read n fn :: acc) )
+        List.fold_left l ~init:acc ~f:(fun acc (n, fn) -> read n fn :: acc))
   in
   let body =
     List.map fs ~f:(fun (n, c) -> Let (Var.fresh (), Prim (Extern prim, [n; c])))

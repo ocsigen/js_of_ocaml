@@ -638,9 +638,15 @@ module Color = struct
     | HSLA of (int * int * int * float)
         (**Same as HSL with an opacity argument between [0.] and [1.].*)
 
-  let rgb ?a r g b = match a with None -> RGB (r, g, b) | Some a -> RGBA (r, g, b, a)
+  let rgb ?a r g b =
+    match a with
+    | None -> RGB (r, g, b)
+    | Some a -> RGBA (r, g, b, a)
 
-  let hsl ?a h s l = match a with None -> HSL (h, s, l) | Some a -> HSLA (h, s, l, a)
+  let hsl ?a h s l =
+    match a with
+    | None -> HSL (h, s, l)
+    | Some a -> HSLA (h, s, l, a)
 
   let string_of_t = function
     | Name n -> string_of_name n
@@ -856,7 +862,8 @@ module Color = struct
 
   let ml c =
     let s = Js.to_string c in
-    try Name (name_of_string s) with Invalid_argument _ -> (
+    try Name (name_of_string s)
+    with Invalid_argument _ -> (
       let fail () = raise (Invalid_argument (s ^ " is not a valid color")) in
       let re_rgb =
         Regexp.regexp "(rgba?)\\((?:(\\d*),(\\d*),(\\d*)(?:,(\\d*(?:\\.\\d*)?))?)\\)"
@@ -870,14 +877,14 @@ module Color = struct
       let i_of_s_o = function
         | None -> fail ()
         | Some i -> (
-          try int_of_string i with
-          | Invalid_argument s | Failure s ->
-              raise (Invalid_argument ("color conversion error (" ^ i ^ "): " ^ s)) )
+          try int_of_string i
+          with Invalid_argument s | Failure s ->
+            raise (Invalid_argument ("color conversion error (" ^ i ^ "): " ^ s)))
       in
       let f_of_s f =
-        try float_of_string f with
-        | Invalid_argument s | Failure s ->
-            raise (Invalid_argument ("color conversion error (" ^ f ^ "): " ^ s))
+        try float_of_string f
+        with Invalid_argument s | Failure s ->
+          raise (Invalid_argument ("color conversion error (" ^ f ^ "): " ^ s))
       in
       match Regexp.string_match re_rgb s 0 with
       | Some r -> (
@@ -889,12 +896,12 @@ module Color = struct
           | Some "rgb" -> (
             match alpha with
             | Some _ -> fail ()
-            | None -> RGB (i_of_s_o red, i_of_s_o green, i_of_s_o blue) )
+            | None -> RGB (i_of_s_o red, i_of_s_o green, i_of_s_o blue))
           | Some "rgba" -> (
             match alpha with
             | None -> fail ()
-            | Some a -> RGBA (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a) )
-          | Some _ | None -> fail () )
+            | Some a -> RGBA (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a))
+          | Some _ | None -> fail ())
       | None -> (
         match Regexp.string_match re_rgb_pct s 0 with
         | Some r -> (
@@ -906,13 +913,13 @@ module Color = struct
             | Some "rgb" -> (
               match alpha with
               | Some _ -> fail ()
-              | None -> RGB_percent (i_of_s_o red, i_of_s_o green, i_of_s_o blue) )
+              | None -> RGB_percent (i_of_s_o red, i_of_s_o green, i_of_s_o blue))
             | Some "rgba" -> (
               match alpha with
               | None -> fail ()
               | Some a ->
-                  RGBA_percent (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a) )
-            | Some _ | None -> fail () )
+                  RGBA_percent (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a))
+            | Some _ | None -> fail ())
         | None -> (
           match Regexp.string_match re_hsl s 0 with
           | Some r -> (
@@ -924,19 +931,18 @@ module Color = struct
               | Some "hsl" -> (
                 match alpha with
                 | Some _ -> fail ()
-                | None -> HSL (i_of_s_o red, i_of_s_o green, i_of_s_o blue) )
+                | None -> HSL (i_of_s_o red, i_of_s_o green, i_of_s_o blue))
               | Some "hsla" -> (
                 match alpha with
                 | None -> fail ()
-                | Some a -> HSLA (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a)
-                )
-              | Some _ | None -> fail () )
-          | None -> fail () ) ) )
+                | Some a -> HSLA (i_of_s_o red, i_of_s_o green, i_of_s_o blue, f_of_s a))
+              | Some _ | None -> fail ())
+          | None -> fail ())))
 end
 
 module Length = struct
   (* http://www.w3.org/TR/css3-values/#lengths *)
-  
+
   (*TODO:
   type js_t = private Js.string Js.t
   val js_t_of_t
@@ -998,8 +1004,9 @@ module Length = struct
             match Regexp.matched_group r 1 with
             | None -> fail ()
             | Some f -> (
-              try float_of_string f with Invalid_argument s ->
-                raise (Invalid_argument ("length conversion error: " ^ s)) )
+              try float_of_string f
+              with Invalid_argument s ->
+                raise (Invalid_argument ("length conversion error: " ^ s)))
           in
           match Regexp.matched_group r 2 with
           | None -> fail ()
@@ -1017,7 +1024,7 @@ module Length = struct
           | Some "in" -> In f
           | Some "pt" -> Pt f
           | Some "pc" -> Pc f
-          | Some _ -> fail () )
+          | Some _ -> fail ())
 end
 
 module Angle = struct
@@ -1048,13 +1055,14 @@ module Angle = struct
           match Regexp.matched_group r 1 with
           | None -> fail ()
           | Some f -> (
-            try float_of_string f with Invalid_argument s ->
-              raise (Invalid_argument ("length conversion error: " ^ s)) )
+            try float_of_string f
+            with Invalid_argument s ->
+              raise (Invalid_argument ("length conversion error: " ^ s)))
         in
         match Regexp.matched_group r 2 with
         | Some "deg" -> Deg f
         | Some "grad" -> Grad f
         | Some "rad" -> Rad f
         | Some "turns" -> Turns f
-        | Some _ | None -> fail () )
+        | Some _ | None -> fail ())
 end

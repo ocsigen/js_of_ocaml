@@ -35,7 +35,7 @@ let make_event event_kind ?(use_capture = false) target =
          target
          event_kind
          (Dom_html.handler (fun (ev : #Dom_html.event Js.t) ->
-              cancel (); Lwt.wakeup w ev; Js.bool true ))
+              cancel (); Lwt.wakeup w ev; Js.bool true))
          (* true because we do not want to prevent default ->
                               the user can use the preventDefault function
                               above. *)
@@ -43,14 +43,18 @@ let make_event event_kind ?(use_capture = false) target =
   t
 
 let catch_cancel f x =
-  Lwt.catch (fun () -> f x) (function Lwt.Canceled -> Lwt.return () | e -> Lwt.fail e)
+  Lwt.catch
+    (fun () -> f x)
+    (function
+      | Lwt.Canceled -> Lwt.return ()
+      | e -> Lwt.fail e)
 
 let with_error_log f x =
   Lwt.catch
     (fun () -> f x)
     (fun e ->
       Firebug.console##log (Js.string (Printexc.to_string e));
-      Lwt.return () )
+      Lwt.return ())
 
 let seq_loop evh ?(cancel_handler = false) ?use_capture target handler =
   let cancelled = ref false in
@@ -61,7 +65,7 @@ let seq_loop evh ?(cancel_handler = false) ?use_capture target handler =
   Lwt.on_cancel lt (fun () ->
       Lwt.cancel !cur;
       if cancel_handler then Lwt.cancel !cur_handler;
-      cancelled := true );
+      cancelled := true);
   let rec aux () =
     if not !cancelled
        (* In the case it has been cancelled
@@ -73,7 +77,7 @@ let seq_loop evh ?(cancel_handler = false) ?use_capture target handler =
       t
       >>= fun e ->
       cur_handler := with_error_log (handler e) lt;
-      !cur_handler >>= aux )
+      !cur_handler >>= aux)
     else Lwt.return ()
   in
   Lwt.async (catch_cancel aux);
@@ -85,7 +89,7 @@ let async_loop evh ?use_capture target handler =
   let lt, _lw = Lwt.task () in
   Lwt.on_cancel lt (fun () ->
       Lwt.cancel !cur;
-      cancelled := true );
+      cancelled := true);
   let rec aux () =
     if not !cancelled
     then (
@@ -94,14 +98,19 @@ let async_loop evh ?use_capture target handler =
       t
       >>= fun e ->
       Lwt.async (fun () -> with_error_log (handler e) lt);
-      aux () )
+      aux ())
     else Lwt.return ()
   in
   Lwt.async (catch_cancel aux);
   lt
 
 let buffered_loop
-    evh ?(cancel_handler = false) ?(cancel_queue = true) ?use_capture target handler =
+    evh
+    ?(cancel_handler = false)
+    ?(cancel_queue = true)
+    ?use_capture
+    target
+    handler =
   let cancelled = ref false in
   let queue = ref [] in
   let cur = ref (Lwt.fail (Failure "Lwt_js_event")) in
@@ -112,7 +121,7 @@ let buffered_loop
       Lwt.cancel !cur;
       if cancel_handler then Lwt.cancel !cur_handler;
       if cancel_queue then queue := [];
-      cancelled := true );
+      cancelled := true);
   let rec spawner () =
     if not !cancelled
     then (
@@ -122,7 +131,7 @@ let buffered_loop
       >>= fun e ->
       queue := e :: !queue;
       Lwt_condition.signal spawn ();
-      spawner () )
+      spawner ())
     else Lwt.return ()
   in
   let rec runner () =
@@ -134,7 +143,7 @@ let buffered_loop
       | e :: tl ->
           queue := tl;
           cur_handler := with_error_log (handler e) lt;
-          !cur_handler >>= runner )
+          !cur_handler >>= runner)
     else Lwt.return ()
   in
   Lwt.async (catch_cancel spawner);
@@ -146,8 +155,7 @@ let func_limited_loop event limited_func ?use_capture target handler =
   async_loop event ?use_capture target (fun ev lt ->
       incr count;
       let nb = !count in
-      limited_func () >>= fun _ -> if !count = nb then handler ev lt else Lwt.return ()
-  )
+      limited_func () >>= fun _ -> if !count = nb then handler ev lt else Lwt.return ())
 
 let limited_loop event ?(elapsed_time = 0.1) =
   func_limited_loop event (fun () -> Lwt_js.sleep elapsed_time)
@@ -272,7 +280,7 @@ let mousewheel ?(use_capture = false) target =
            Firebug.console##log ev;
            cancel ();
            Lwt.wakeup w (ev, (dx, dy));
-           Js.bool true )
+           Js.bool true)
          (* true because we do not want to prevent default ->
                            the user can use the preventDefault function
                            above. *)
@@ -488,7 +496,7 @@ let domContentLoaded =
           doc
           (fun e _ ->
             if doc##.readyState = complete then wakeup w e;
-            Lwt.return_unit )
+            Lwt.return_unit)
       in
       (* fallback, just in case *)
       let init = make_event Dom_html.Event.load Dom_html.window in
@@ -498,7 +506,7 @@ let domContentLoaded =
           Lwt.cancel regular;
           Lwt.cancel readystatechange;
           Lwt.cancel init;
-          Lwt.return_unit )
+          Lwt.return_unit)
 
 let onunload () = make_event Dom_html.Event.unload Dom_html.window
 

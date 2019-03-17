@@ -40,7 +40,7 @@ let inline p =
   then (
     let p, live_vars = deadcode' p in
     if debug () then Format.eprintf "Inlining...@.";
-    Inline.f p live_vars )
+    Inline.f p live_vars)
   else p
 
 let specialize_1 (p, info) =
@@ -84,7 +84,7 @@ let rec loop max name round i (p : 'a) : 'a =
   then p'
   else (
     if times () then Format.eprintf "Start Iteration (%s) %d...@." name i;
-    loop max name round (i + 1) p' )
+    loop max name round (i + 1) p')
 
 let identity x = x
 
@@ -146,9 +146,9 @@ let generate d ~exported_runtime (p, live_vars) =
   Generate.f p ~exported_runtime live_vars d
 
 let header formatter ~custom_header =
-  ( match custom_header with
+  (match custom_header with
   | None -> ()
-  | Some c -> Pretty_print.string formatter (c ^ "\n") );
+  | Some c -> Pretty_print.string formatter (c ^ "\n"));
   let version =
     match Compiler_version.git_version with
     | "" -> Compiler_version.s
@@ -171,10 +171,10 @@ let extra_js_files =
                ~f:(fun ss {Linker.provides; _} ->
                  match provides with
                  | Some (_, name, _, _) -> StringSet.add name ss
-                 | _ -> ss )
+                 | _ -> ss)
            in
            (file, ss) :: acc
-         with _ -> acc ))
+         with _ -> acc))
 
 let report_missing_primitives missing =
   let missing =
@@ -187,13 +187,13 @@ let report_missing_primitives missing =
         then (
           warn "Missing primitives provided by %s:@." file;
           StringSet.iter (fun nm -> warn "  %s@." nm) d;
-          StringSet.diff missing pro )
-        else missing )
+          StringSet.diff missing pro)
+        else missing)
   in
   if not (StringSet.is_empty missing)
   then (
     warn "Missing primitives:@.";
-    StringSet.iter (fun nm -> warn "  %s@." nm) missing )
+    StringSet.iter (fun nm -> warn "  %s@." nm) missing)
 
 let gen_missing js missing =
   let open Javascript in
@@ -224,7 +224,7 @@ let gen_missing js missing =
                         , N ) ]
                     , N ) )
             , N ) )
-        :: acc )
+        :: acc)
       missing
       []
   in
@@ -235,7 +235,7 @@ let gen_missing js missing =
     warn "will be used if they are not available at runtime.@.";
     warn "You can prevent the generation of dummy implementations with ";
     warn "the commandline option '--disable genprim'@.";
-    report_missing_primitives missing );
+    report_missing_primitives missing);
   (Statement (Variable_statement miss), N) :: js
 
 let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) :
@@ -304,11 +304,11 @@ let check_js js =
   if (not (StringSet.is_empty other)) && debug_linker ()
   then (
     warn "Missing variables:@.";
-    StringSet.iter (fun nm -> warn "  %s@." nm) other );
+    StringSet.iter (fun nm -> warn "  %s@." nm) other);
   if (not (StringSet.is_empty probably_prov)) && debug_linker ()
   then (
     warn "Variables provided by the browser:@.";
-    StringSet.iter (fun nm -> warn "  %s@." nm) probably_prov );
+    StringSet.iter (fun nm -> warn "  %s@." nm) probably_prov);
   if times () then Format.eprintf "  checks: %a@." Timer.print t;
   js
 
@@ -341,7 +341,7 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
       let t1 = Timer.make () in
       let js = (new Js_traverse.share_constant)#program js in
       if times () then Format.eprintf "    share constant: %a@." Timer.print t1;
-      js )
+      js)
     else js
   in
   let js =
@@ -350,7 +350,7 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
       let t2 = Timer.make () in
       let js = (new Js_traverse.compact_vardecl)#program js in
       if times () then Format.eprintf "    compact var decl: %a@." Timer.print t2;
-      js )
+      js)
     else js
   in
   (* pack *)
@@ -403,7 +403,7 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
        v}
     *)
     List.map always_required_codes ~f:(fun {Linker.program; filename = _} ->
-        wrap_in_iifa ~can_use_strict:false program )
+        wrap_in_iifa ~can_use_strict:false program)
   in
   let runtime_js = wrap_in_iifa ~can_use_strict:true js in
   let js = List.flatten always_required_js @ runtime_js in
@@ -421,7 +421,7 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
       let keep = StringSet.empty in
       let js = (new Js_traverse.rename_variable keep)#program js in
       if times () then Format.eprintf "    shortten vars: %a@." Timer.print t5;
-      js )
+      js)
     else js
   in
   if times () then Format.eprintf "  optimizing: %a@." Timer.print t;

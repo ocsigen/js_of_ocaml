@@ -62,7 +62,10 @@ let get_binding v list =
 
 let apply_subst alist term =
   let rec as_rec = function
-    | Var v -> ( match get_binding v alist with Some t -> t | None -> term )
+    | Var v -> (
+      match get_binding v alist with
+      | Some t -> t
+      | None -> term)
     | Prop (head, argl) -> Prop (head, List.map as_rec argl)
   in
   as_rec term
@@ -77,12 +80,12 @@ and unify1 term1 term2 unify_subst =
     match get_binding v unify_subst with
     | Some t when t = term1 -> Some unify_subst
     | Some _ -> None
-    | None -> Some (Bind (v, term1) :: unify_subst) )
+    | None -> Some (Bind (v, term1) :: unify_subst))
   | Prop (head2, argl2) -> (
     match term1 with
     | Var _ -> None
     | Prop (head1, argl1) ->
-        if head1 == head2 then unify1_lst argl1 argl2 unify_subst else None )
+        if head1 == head2 then unify1_lst argl1 argl2 unify_subst else None)
 
 and unify1_lst l1 l2 unify_subst =
   match l1, l2 with
@@ -90,7 +93,7 @@ and unify1_lst l1 l2 unify_subst =
   | h1 :: r1, h2 :: r2 -> (
     match unify1 h1 h2 unify_subst with
     | Some unify_subst -> unify1_lst r1 r2 unify_subst
-    | None -> None )
+    | None -> None)
   | _ -> None
 
 let rec rewrite = function
@@ -104,7 +107,7 @@ and rewrite_with_lemmas term lemmas =
   | (t1, t2) :: rest -> (
     match unify term t1 with
     | Some unify_subst -> rewrite (apply_subst unify_subst t2)
-    | None -> rewrite_with_lemmas term rest )
+    | None -> rewrite_with_lemmas term rest)
 
 type cterm =
   | CVar of int

@@ -194,7 +194,7 @@ while compiling the OCaml toplevel:
       if n < 54
       then (
         incr n1;
-        n2 := !n2 + weight i );
+        n2 := !n2 + weight i);
       n3 := !n3 + weight i
     in
     let nm ~origin n =
@@ -210,8 +210,8 @@ while compiling the OCaml toplevel:
           let idx = Var.idx x in
           let l = constr.(idx) in
           if is_available l i
-          then ( nm ~origin:idx i; mark_allocated l i; stats idx i )
-          else incr bad )
+          then (nm ~origin:idx i; mark_allocated l i; stats idx i)
+          else incr bad)
     done;
     if debug ()
     then
@@ -225,13 +225,13 @@ while compiling the OCaml toplevel:
       then (
         let n = first_available l in
         let idx = idx.(i) in
-        nm ~origin:idx n; mark_allocated l n; stats idx n );
+        nm ~origin:idx n; mark_allocated l n; stats idx n);
       if l = [] then assert (weight idx.(i) = 0)
     done;
     if debug ()
     then (
       Format.eprintf "short variable count: %d/%d@." !n1 !n0;
-      Format.eprintf "short variable occurrences: %d/%d@." !n2 !n3 );
+      Format.eprintf "short variable occurrences: %d/%d@." !n2 !n3);
     name
 
   let add_constraints global u ?(offset = 0) params =
@@ -240,7 +240,7 @@ while compiling the OCaml toplevel:
     S.iter
       (fun v ->
         let i = Var.idx v in
-        constr.(i) <- c :: constr.(i) )
+        constr.(i) <- c :: constr.(i))
       u;
     let params = Array.of_list params in
     let len = Array.length params in
@@ -254,7 +254,7 @@ while compiling the OCaml toplevel:
         ~dst:a
         ~dst_pos:0
         ~len:(Array.length global.parameters);
-      global.parameters <- a );
+      global.parameters <- a);
     for i = 0 to len - 1 do
       match params.(i) with
       | V x -> global.parameters.(i + offset) <- x :: global.parameters.(i + offset)
@@ -306,7 +306,7 @@ module Preserve : Strategy = struct
           S.fold
             (fun var acc ->
               let name = names.(Var.idx var) in
-              if name <> "" then StringSet.add name acc else acc )
+              if name <> "" then StringSet.add name acc else acc)
             (S.union state.Js_traverse.use state.Js_traverse.def)
             assigned
         in
@@ -331,11 +331,11 @@ module Preserve : Strategy = struct
                 | None -> Var.to_string var
               in
               names.(Var.idx var) <- name;
-              StringSet.add name assigned )
+              StringSet.add name assigned)
             defs
             assigned
         in
-        () );
+        ());
     names
 end
 

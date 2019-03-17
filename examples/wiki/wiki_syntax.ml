@@ -43,7 +43,11 @@ let list_builder d tag c =
   <| List.map
        (fun (c, l) ->
          d##createElement (Js.string "li")
-         <| c @ match l with Some v -> [v] | None -> [] )
+         <| c
+            @
+            match l with
+            | Some v -> [v]
+            | None -> [])
        c
 
 let builder =
@@ -55,7 +59,7 @@ let builder =
       (fun addr s ->
         let a = Html.createA d in
         a##.href := Js.string addr;
-        a <| s )
+        a <| s)
   ; W.youtube_elem =
       (fun addr _s ->
         let i = Html.createIframe d in
@@ -66,21 +70,21 @@ let builder =
         in
         i##.src := Js.string video_link;
         i##.frameBorder := Js.string "0";
-        node i )
+        node i)
   ; W.br_elem = (fun () -> node (d##createElement (Js.string "br")))
   ; W.img_elem =
       (fun addr alt ->
         let i = Html.createImg d in
         i##.src := Js.string addr;
         i##.alt := Js.string alt;
-        node i )
+        node i)
   ; W.tt_elem = (fun s -> d##createElement (Js.string "tt") <| s)
   ; W.p_elem = (fun s -> d##createElement (Js.string "p") <| s)
   ; W.pre_elem =
       (fun s ->
         let p = d##createElement (Js.string "pre") in
         Dom.appendChild p (d##createTextNode (Js.string (String.concat "" s)));
-        node p )
+        node p)
   ; W.h1_elem = (fun s -> d##createElement (Js.string "h1") <| s)
   ; W.h2_elem = (fun s -> d##createElement (Js.string "h2") <| s)
   ; W.h3_elem = (fun s -> d##createElement (Js.string "h3") <| s)
@@ -99,12 +103,12 @@ let builder =
               <| List.map
                    (fun (h, c) ->
                      let kind = if h then "th" else "td" in
-                     d##createElement (Js.string kind) <| c )
-                   entries )
+                     d##createElement (Js.string kind) <| c)
+                   entries)
             rows
         in
         d##createElement (Js.string "table")
-        <| [d##createElement (Js.string "tbody") <| rows] )
+        <| [d##createElement (Js.string "tbody") <| rows])
   ; W.inline = (fun x -> x) }
 
 let xml_of_wiki s = Html.createDiv Html.document <| W.from_string builder s

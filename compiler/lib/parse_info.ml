@@ -58,11 +58,11 @@ module Line_info = struct
   let from_file file =
     let ic = open_in file in
     let lines = ref [] in
-    ( try
-        while true do
-          lines := String.length (input_line ic) :: !lines
-        done
-      with End_of_file -> () );
+    (try
+       while true do
+         lines := String.length (input_line ic) :: !lines
+       done
+     with End_of_file -> ());
     let lines = Array.of_list (List.rev !lines) in
     let t =
       {acc_pos = 0; acc_line = 0; offset = None; lines; name = Some file; src = Some file}
@@ -71,27 +71,27 @@ module Line_info = struct
 
   let from_string ?offset str =
     let pos = ref 0 and lines = ref [] in
-    ( try
-        while true do
-          let idx = String.index_from str !pos '\n' in
-          lines := (idx - !pos) :: !lines;
-          pos := idx + 1
-        done
-      with Not_found -> lines := (String.length str - !pos) :: !lines );
+    (try
+       while true do
+         let idx = String.index_from str !pos '\n' in
+         lines := (idx - !pos) :: !lines;
+         pos := idx + 1
+       done
+     with Not_found -> lines := (String.length str - !pos) :: !lines);
     let lines = Array.of_list (List.rev !lines) in
     {acc_pos = 0; acc_line = 0; offset; lines; name = None; src = None}
 
   let from_channel ic =
     let buf = Buffer.create 1024 in
     let lines = ref [] in
-    ( try
-        while true do
-          let l = input_line ic in
-          Buffer.add_string buf l;
-          Buffer.add_char buf '\n';
-          lines := String.length l :: !lines
-        done
-      with End_of_file -> () );
+    (try
+       while true do
+         let l = input_line ic in
+         Buffer.add_string buf l;
+         Buffer.add_char buf '\n';
+         lines := String.length l :: !lines
+       done
+     with End_of_file -> ());
     let lines = Array.of_list (List.rev !lines) in
     let t = {acc_pos = 0; acc_line = 0; offset = None; lines; name = None; src = None} in
     t, Buffer.contents buf
@@ -100,7 +100,9 @@ end
 type lineinfo = Line_info.t
 
 let relative_path {Line_info.src; _} file =
-  match src with None -> None | Some src -> Some Filename.(concat (dirname src) file)
+  match src with
+  | None -> None
+  | Some src -> Some Filename.(concat (dirname src) file)
 
 let make_lineinfo_from_file file = Line_info.from_file file
 

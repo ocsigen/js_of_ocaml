@@ -56,7 +56,7 @@ let () =
           configure script stderr "stderr" default_stderr;
           configure script toploop_ "toploop" default_toploop;
           let _ret = JsooTop.use toploop_ppf txt in
-          () )
+          ())
         else ()
     | _ -> ()
   done

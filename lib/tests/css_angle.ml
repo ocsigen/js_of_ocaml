@@ -48,7 +48,7 @@ let () =
                (CSS.Angle.string_of_t ml))
       with
       | Invalid_argument s -> log_failure s
-      | Failure s -> log_failure s )
+      | Failure s -> log_failure s)
     a
 
 let () = log_stop ()

@@ -27,7 +27,7 @@ let split_on_char ~sep s =
     if String.unsafe_get s i = sep
     then (
       r := String.sub s ~pos:(i + 1) ~len:(!j - i - 1) :: !r;
-      j := i )
+      j := i)
   done;
   String.sub s ~pos:0 ~len:!j :: !r
 
@@ -182,14 +182,14 @@ end = struct
            let open Unix in
            match stat (dir ^ "/" ^ nm) with
            | {st_kind = S_REG | S_LNK; _} -> true
-           | _ -> false )
-    |> ( if spec.ext = ""
+           | _ -> false)
+    |> (if spec.ext = ""
        then fun x -> x
        else
          fun x ->
          x
          |> List.filter ~f:(fun nm -> Filename.check_suffix nm spec.ext)
-         |> List.map ~f:Filename.chop_extension )
+         |> List.map ~f:Filename.chop_extension)
     |> List.sort ~cmp:compare
 
   let ml = create "ml" ".ml"
@@ -225,7 +225,7 @@ let rec mkdir d =
   if not (Sys.file_exists d)
   then (
     mkdir (Filename.dirname d);
-    Unix.mkdir d 0o777 )
+    Unix.mkdir d 0o777)
 
 let need_update src dst =
   try
@@ -247,12 +247,12 @@ let read_measures meas spec nm =
   if Sys.file_exists m
   then (
     let ch = open_in m in
-    ( try
-        while true do
-          l := float_of_string (input_line ch) :: !l
-        done
-      with End_of_file -> () );
-    close_in ch; !l )
+    (try
+       while true do
+         l := float_of_string (input_line ch) :: !l
+       done
+     with End_of_file -> ());
+    close_in ch; !l)
   else []
 
 let write_measures meas spec nm l =

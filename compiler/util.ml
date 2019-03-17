@@ -30,8 +30,8 @@ let normalize_argv ?(warn_ = false) a =
         then (
           bad := s :: !bad;
           (* long option with one dash lets double the dash *)
-          "-" ^ s )
-        else s )
+          "-" ^ s)
+        else s)
       a
   in
   if warn_ && !bad <> []

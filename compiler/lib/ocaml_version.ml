@@ -35,7 +35,10 @@ let rec compare v v' =
   | [], [] -> 0
   | [], y :: _ -> compint 0 y
   | x :: _, [] -> compint x 0
-  | x :: xs, y :: ys -> ( match compint x y with 0 -> compare xs ys | n -> n )
+  | x :: xs, y :: ys -> (
+    match compint x y with
+    | 0 -> compare xs ys
+    | n -> n)
 
 let v =
   if compare current [4; 3] < 0

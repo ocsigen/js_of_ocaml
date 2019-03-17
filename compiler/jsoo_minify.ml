@@ -57,7 +57,7 @@ let f {MinifyArg.common; output_file; use_stdin; files} =
     List.flatten
       (List.map files ~f:(fun file ->
            let lex = Parse_js.lexer_from_file file in
-           try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi ))
+           try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi))
   in
   let p =
     if use_stdin
@@ -80,7 +80,7 @@ let f {MinifyArg.common; output_file; use_stdin; files} =
   in
   let p =
     List.fold_left passes ~init:p ~f:(fun p (t, m) ->
-        if t () then (m ())#program p else p )
+        if t () then (m ())#program p else p)
   in
   let p = Js_assign.program p in
   Js_output.program pp p; finalize ()

@@ -27,7 +27,10 @@ open Code
    handlers, but we have to adapt the code generator for that *)
 
 let rec remove_last l =
-  match l with [] -> assert false | [_] -> [] | x :: r -> x :: remove_last r
+  match l with
+  | [] -> assert false
+  | [_] -> []
+  | x :: r -> x :: remove_last r
 
 let rec tail_call x f l =
   match l with
@@ -52,7 +55,7 @@ let rewrite_block (f, f_params, f_pc, args) pc blocks =
           ; body = remove_last block.body
           ; branch = Branch (f_pc, List.map args ~f:(fun x -> Var.Map.find x m)) }
           blocks
-    | _ -> blocks )
+    | _ -> blocks)
   | _ -> blocks
 
 let ( >> ) x f = f x
@@ -81,7 +84,7 @@ let rec traverse f pc visited blocks =
         pc
         (fun pc (visited, blocks) ->
           let visited, blocks = traverse f pc visited blocks in
-          visited, blocks )
+          visited, blocks)
         (visited, blocks)
     in
     visited, blocks
@@ -97,7 +100,7 @@ let f ((pc, blocks, free_pc) as p) =
         | Some f when List.length params = List.length args ->
             let _, blocks = traverse (f, params, pc, args) pc Addr.Set.empty blocks in
             blocks
-        | _ -> blocks )
+        | _ -> blocks)
       blocks
   in
   if times () then Format.eprintf "  tail calls: %a@." Timer.print t;

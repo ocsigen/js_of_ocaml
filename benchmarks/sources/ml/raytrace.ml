@@ -175,7 +175,7 @@ module Material = struct
     ; get_color =
         (fun u v ->
           let t = wrap_up (u *. density) *. wrap_up (v *. density) in
-          if t < 0. then color_even else color_odd ) }
+          if t < 0. then color_even else color_odd) }
 end
 
 module Shape = struct
@@ -194,7 +194,10 @@ module Shape = struct
       (Sphere (Vector.make 0. 0. 0., 0.))
       (Material.solid (Color.make 0. 0. 0.) 0. 0. 0.)
 
-  let position s = match s.shape with Sphere (p, _) -> p | Plane (p, _) -> p
+  let position s =
+    match s.shape with
+    | Sphere (p, _) -> p
+    | Plane (p, _) -> p
 
   let intersect s ray =
     match s.shape with
@@ -234,7 +237,7 @@ module Shape = struct
               ; position = pos
               ; normal = position
               ; color =
-                  ( if s.material.Material.has_texture
+                  (if s.material.Material.has_texture
                   then
                     let vu =
                       Vector.make
@@ -246,7 +249,7 @@ module Shape = struct
                     let u = Vector.dot pos vu in
                     let v = Vector.dot pos vv in
                     s.material.Material.get_color u v
-                  else s.material.Material.get_color 0. 0. ) }
+                  else s.material.Material.get_color 0. 0.) }
 end
 
 module Scene = struct
@@ -295,7 +298,7 @@ module Engine = struct
         Vector.normalize
           (Vector.subtract light.Light.position info.Intersection_info.position)
       in
-      ( if options.render_diffuse
+      (if options.render_diffuse
       then
         let l = Vector.dot v info.Intersection_info.normal in
         if l > 0.
@@ -305,8 +308,8 @@ module Engine = struct
               !color
               (Color.multiply
                  info.Intersection_info.color
-                 (Color.multiply_scalar light.Light.color l)) );
-      ( if depth <= options.ray_depth
+                 (Color.multiply_scalar light.Light.color l)));
+      (if depth <= options.ray_depth
       then
         if options.render_reflections
            && info.Intersection_info.shape.Shape.material.Material.reflection > 0.
@@ -329,7 +332,7 @@ module Engine = struct
             Color.blend
               !color
               col
-              info.Intersection_info.shape.Shape.material.Material.reflection );
+              info.Intersection_info.shape.Shape.material.Material.reflection);
       let shadow_info = ref None in
       if options.render_shadows
       then (
@@ -341,11 +344,11 @@ module Engine = struct
             let va = Color.multiply_scalar !color 0.5 in
             let db =
               0.5
-              *. ( info.Intersection_info.shape.Shape.material.Material.transparency
-                 ** 0.5 )
+              *. (info.Intersection_info.shape.Shape.material.Material.transparency
+                 ** 0.5)
             in
             color := Color.add_scalar va db
-        | None -> () );
+        | None -> ());
       if options.render_highlights
          && !shadow_info <> None
          && info.Intersection_info.shape.Shape.material.Material.gloss > 0.

@@ -59,7 +59,13 @@ let time ~verbose cmd =
   t2 -. t1
 
 let compile_gen
-    (param : Param.t) ~comptime prog src_dir (src_spec : Spec.t) dst_dir dst_spec =
+    (param : Param.t)
+    ~comptime
+    prog
+    src_dir
+    (src_spec : Spec.t)
+    dst_dir
+    dst_spec =
   mkdir (Spec.dir ~root:dst_dir dst_spec);
   List.iter (Spec.find_names ~root:src_dir src_spec) ~f:(fun nm ->
       let src = Spec.file ~root:src_dir src_spec nm in
@@ -71,7 +77,7 @@ let compile_gen
           if comptime
           then write_measures compiletimes dst_spec nm [time ~verbose:param.verbose cmd]
           else run_command ~verbose:param.verbose cmd
-        with Failure s -> Format.eprintf "Failure: %s@." s )
+        with Failure s -> Format.eprintf "Failure: %s@." s)
 
 let compile param ~comptime prog =
   compile_gen param ~comptime (fun ~src ~dst -> Printf.sprintf "%s %s -o %s" prog src dst)
@@ -111,7 +117,7 @@ let measure_one param code meas spec nm cmd =
     Format.eprintf "warming up ...\r%!";
     warm_up param cmd;
     let l = measure_rec ~print:true param cmd l in
-    write_measures meas spec nm l; Format.eprintf "\n%!"; l )
+    write_measures meas spec nm l; Format.eprintf "\n%!"; l)
   else l
 
 let measure param code meas spec cmd =
@@ -119,8 +125,8 @@ let measure param code meas spec cmd =
       let cmd = if cmd = "" then cmd else cmd ^ " " in
       let cmd = Format.sprintf "%s%s" cmd (Spec.file ~root:code spec nm) in
       Format.eprintf "Measure %s@." cmd;
-      try ignore (measure_one param code meas spec nm cmd) with Failure s ->
-        Format.eprintf "Failure: %s@." s )
+      try ignore (measure_one param code meas spec nm cmd)
+      with Failure s -> Format.eprintf "Failure: %s@." s)
 
 (****)
 
@@ -132,22 +138,22 @@ let ml_size param =
       Format.sprintf
         "perl ./utils/remove_comments.pl %s | sed 's/^ *//g' | wc -c > %s"
         src
-        dst )
+        dst)
 
 let file_size param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
-      Format.sprintf "wc -c < %s > %s" src dst )
+      Format.sprintf "wc -c < %s > %s" src dst)
 
 let compr_file_size param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
-      Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s" src dst )
+      Format.sprintf "sed 's/^ *//g' %s | gzip -c | wc -c > %s" src dst)
 
 (* let runtime_size = *)
 (*   compile_no_ext ~comptime:false (Format.sprintf "head -n -1 %s | wc -c > %s") *)
 
 let gen_size param =
   compile_no_ext param ~comptime:false (fun ~src ~dst ->
-      Format.sprintf "tail -1 %s | wc -c > %s" src dst )
+      Format.sprintf "tail -1 %s | wc -c > %s" src dst)
 
 (****)
 
@@ -155,31 +161,33 @@ let read_config file =
   if not (Sys.file_exists file)
   then (
     Format.eprintf "Configuration file '%s' not found!@." file;
-    exit 1 );
+    exit 1);
   let i = ref [] in
   let ch = open_in file in
-  ( try
-      while true do
-        let line = String.trim (input_line ch) in
-        if line.[0] <> '#'
-        then
-          match
-            List.filter
-              ~f:(function "" -> false | _ -> true)
-              (split_on_char line ~sep:' ')
-          with
-          | "interpreter" :: nm :: rem -> i := (String.concat ~sep:" " rem, nm) :: !i
-          | ["interpreter"] ->
-              Format.eprintf "Malformed config option '%s'@." line;
-              exit 1
-          | kind :: _ ->
-              Format.eprintf "Unknown config option '%s'@." kind;
-              exit 1
-          | [] ->
-              Format.eprintf "Bad config line '%s'@." line;
-              exit 1
-      done
-    with End_of_file -> () );
+  (try
+     while true do
+       let line = String.trim (input_line ch) in
+       if line.[0] <> '#'
+       then
+         match
+           List.filter
+             ~f:(function
+               | "" -> false
+               | _ -> true)
+             (split_on_char line ~sep:' ')
+         with
+         | "interpreter" :: nm :: rem -> i := (String.concat ~sep:" " rem, nm) :: !i
+         | ["interpreter"] ->
+             Format.eprintf "Malformed config option '%s'@." line;
+             exit 1
+         | kind :: _ ->
+             Format.eprintf "Unknown config option '%s'@." kind;
+             exit 1
+         | [] ->
+             Format.eprintf "Bad config line '%s'@." line;
+             exit 1
+     done
+   with End_of_file -> ());
   close_in ch; List.rev !i
 
 let _ =
@@ -252,7 +260,7 @@ let _ =
   if not nobyteopt
   then (
     measure param code times Spec.opt "";
-    measure param code times Spec.byte "" );
+    measure param code times Spec.byte "");
   let compilers, suites =
     if full
     then
@@ -265,10 +273,14 @@ let _ =
         ; Some Spec.js_of_ocaml_call
         ; (if run_ocamljs then Some Spec.ocamljs else None)
         ; (if run_ocamljs then Some Spec.ocamljs_unsafe else None) ] )
-    else (match interpreters with i :: _ -> [i] | [] -> []), [Some Spec.js_of_ocaml]
+    else
+      ( (match interpreters with
+        | i :: _ -> [i]
+        | [] -> [])
+      , [Some Spec.js_of_ocaml] )
   in
   List.iter compilers ~f:(fun (comp, dir) ->
       measure param src (Filename.concat times dir) Spec.js comp;
       List.iter suites ~f:(function
           | None -> ()
-          | Some suite -> measure param code (Filename.concat times dir) suite comp ) )
+          | Some suite -> measure param code (Filename.concat times dir) suite comp))

@@ -57,7 +57,7 @@ let decode_prefix str =
             | '#' -> push '%'
             | '+' -> push '='
             | '.' -> push ':'
-            | c -> errorf "invalid %%-escaped character '%c'" c )
+            | c -> errorf "invalid %%-escaped character '%c'" c)
       | c ->
           Buffer.add_char buf c;
           loop (i + 1)
@@ -77,12 +77,15 @@ let decode_pair str =
   | Some (encoded_target, encoded_source) -> (
     match decode_prefix encoded_target, decode_prefix encoded_source with
     | Ok target, Ok source -> Ok {target; source}
-    | (Error _ as err), _ | _, (Error _ as err) -> err )
+    | (Error _ as err), _ | _, (Error _ as err) -> err)
 
 type map = pair option list
 
 let encode_map map =
-  let encode_elem = function None -> "" | Some pair -> encode_pair pair in
+  let encode_elem = function
+    | None -> ""
+    | Some pair -> encode_pair pair
+  in
   List.map ~f:encode_elem map |> String.concat ~sep:":"
 
 exception Shortcut of error_message
@@ -93,7 +96,7 @@ let decode_map str =
     | pair -> (
       match decode_pair pair with
       | Ok str -> Some str
-      | Error err -> raise (Shortcut err) )
+      | Error err -> raise (Shortcut err))
   in
   let pairs = Stdlib.String.split_char ~sep:':' str in
   match List.map ~f:decode_or_empty pairs with
@@ -119,11 +122,13 @@ let rewrite_opt prefix_map path =
   | None -> None
   | Some {source; target} ->
       Some
-        ( target
+        (target
         ^ String.sub
             path
             ~pos:(String.length source)
-            ~len:(String.length path - String.length source) )
+            ~len:(String.length path - String.length source))
 
 let rewrite prefix_map path =
-  match rewrite_opt prefix_map path with None -> path | Some path -> path
+  match rewrite_opt prefix_map path with
+  | None -> path
+  | Some path -> path

@@ -23,11 +23,11 @@ module Pack = Ocamlbuild_pack
 
 let fold f =
   let l = ref [] in
-  ( try
-      while true do
-        l @:= [f ()]
-      done
-    with _ -> () );
+  (try
+     while true do
+       l @:= [f ()]
+     done
+   with _ -> ());
   !l
 
 let split_comma = Str.split_delim (Str.regexp " *[, ] *")

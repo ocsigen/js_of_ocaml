@@ -71,7 +71,7 @@ struct
       if not (NSet.mem x st.set)
       then (
         Stack.push x st.stack;
-        st.set <- NSet.add x st.set )
+        st.set <- NSet.add x st.set)
 
     let rec iterate g f v w =
       if is_empty w
@@ -85,7 +85,7 @@ struct
         if not (D.equal a b)
         then (
           g.fold_children (fun y () -> push y w) x ();
-          iterate g f v w )
+          iterate g f v w)
         else iterate g f v w
 
     let rec traverse g visited stack x =
@@ -95,7 +95,7 @@ struct
         let visited =
           g.fold_children (fun y visited -> traverse g visited stack y) x visited
         in
-        Stack.push x stack; visited )
+        Stack.push x stack; visited)
       else visited
 
     let traverse_all g =
@@ -205,7 +205,7 @@ struct
       NSet.add st.set x; x
 
     let push x st =
-      if NSet.mem st.set x then ( Stack.push x st.stack; NSet.remove st.set x )
+      if NSet.mem st.set x then (Stack.push x st.stack; NSet.remove st.set x)
 
     let rec iterate g f v w =
       if is_empty w
@@ -219,7 +219,7 @@ struct
         if not (D.equal a b)
         then (
           g.iter_children (fun y -> push y w) x;
-          iterate g f v w )
+          iterate g f v w)
         else iterate g f v w
 
     let rec traverse g to_visit stack x =
@@ -228,7 +228,7 @@ struct
         NSet.remove to_visit x;
         incr n;
         g.iter_children (fun y -> traverse g to_visit stack y) x;
-        Stack.push x stack )
+        Stack.push x stack)
 
     let traverse_all g =
       let stack = Stack.create () in

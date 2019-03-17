@@ -32,18 +32,18 @@ let read_with_filereader (fileReader : fileReader t constr) kind file =
         then
           Lwt.wakeup
             w
-            ( match Opt.to_option (CoerceTo.string reader##.result) with
+            (match Opt.to_option (CoerceTo.string reader##.result) with
             | None -> assert false (* can't happen: called with good readAs_ *)
-            | Some s -> s )
+            | Some s -> s)
         else ();
         (* CCC TODO: handle errors *)
-        Js._false );
+        Js._false);
   Lwt.on_cancel res (fun () -> reader##abort);
-  ( match kind with
+  (match kind with
   | `BinaryString -> reader##readAsBinaryString file
   | `Text -> reader##readAsText file
   | `Text_withEncoding e -> reader##readAsText_withEncoding file e
-  | `DataURL -> reader##readAsDataURL file );
+  | `DataURL -> reader##readAsDataURL file);
   res
 
 let reader kind file = read_with_filereader fileReader kind file

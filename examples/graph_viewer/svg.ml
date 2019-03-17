@@ -45,11 +45,11 @@ let perform_draw ctx fill stroke =
   (*
   print_extent ctx fill stroke;
 *)
-  ( match fill with
+  (match fill with
   | Some (r, g, b) ->
       Cairo.set_source_rgb ctx r g b;
       if stroke <> None then Cairo.fill_preserve ctx else Cairo.fill ctx
-  | None -> () );
+  | None -> ());
   match stroke with
   | Some (r, g, b) ->
       Cairo.set_source_rgb ctx r g b;
@@ -65,7 +65,7 @@ let draw_element ctx e =
         (fun c ->
           match c with
           | Move_to (x, y) -> Cairo.move_to ctx x y
-          | Curve_to (x1, y1, x2, y2, x3, y3) -> Cairo.curve_to ctx x1 y1 x2 y2 x3 y3 )
+          | Curve_to (x1, y1, x2, y2, x3, y3) -> Cairo.curve_to ctx x1 y1 x2 y2 x3 y3)
         cmd;
       perform_draw ctx fill stroke
   | Ellipse (cx, cy, rx, ry, fill, stroke) ->
@@ -82,7 +82,7 @@ let draw_element ctx e =
         List.iter (fun (x, y) -> Cairo.line_to ctx x y) rem;
         Cairo.close_path ctx;
         perform_draw ctx fill stroke
-    | [] -> () )
+    | [] -> ())
   | Text (x, y, txt, font, font_size, fill, stroke) ->
       let ext = Cairo.text_extents ctx txt in
       Cairo.move_to ctx (x -. ext.Cairo.x_bearing -. (ext.Cairo.text_width /. 2.)) y;
@@ -102,7 +102,7 @@ let compute_extent ctx e =
         (fun c ->
           match c with
           | Move_to (x, y) -> Cairo.move_to ctx x y
-          | Curve_to (x1, y1, x2, y2, x3, y3) -> Cairo.curve_to ctx x1 y1 x2 y2 x3 y3 )
+          | Curve_to (x1, y1, x2, y2, x3, y3) -> Cairo.curve_to ctx x1 y1 x2 y2 x3 y3)
         cmd;
       path_extent ctx fill stroke
   | Ellipse (cx, cy, rx, ry, fill, stroke) ->
@@ -119,7 +119,7 @@ let compute_extent ctx e =
         List.iter (fun (x, y) -> Cairo.line_to ctx x y) rem;
         Cairo.close_path ctx;
         path_extent ctx fill stroke
-    | [] -> assert false )
+    | [] -> assert false)
   | Text (x, y, txt, font, font_size, fill, stroke) ->
       let ext = Cairo.text_extents ctx txt in
       ( x -. (ext.Cairo.text_width /. 2.)
@@ -328,7 +328,9 @@ let push e = stack := e :: !stack
 
 let skip_whitespace i =
   (* XXX Check white-space only *)
-  match Xmlm.peek i with `Data s -> ignore (Xmlm.input i) | _ -> ()
+  match Xmlm.peek i with
+  | `Data s -> ignore (Xmlm.input i)
+  | _ -> ()
 
 let end_tag i =
   let e = Xmlm.input i in
@@ -341,7 +343,10 @@ let rec empty_tag i =
   | _ -> assert false
 
 let rec text_tag i =
-  match Xmlm.input i with `Data s -> empty_tag i; s | `El_end -> "" | _ -> assert false
+  match Xmlm.input i with
+  | `Data s -> empty_tag i; s
+  | `El_end -> ""
+  | _ -> assert false
 
 let comma_wsp = Str.regexp "[\x20\x09\x0D\x0A,]+"
 
@@ -362,7 +367,7 @@ let rec parse_cmds l =
       match cmd, args with
       | "M", [x; y] -> Move_to (x, y) :: rem
       | "C", (_ :: _ as args) -> parse_curve_to args rem
-      | _ -> assert false )
+      | _ -> assert false)
   | [] -> []
   | _ -> assert false
 
@@ -380,9 +385,10 @@ let parse_color c =
     Some (convert c)
   else
     Some
-      ( try Hashtbl.find named_colors c with Not_found ->
-          Format.eprintf "%s@." c;
-          assert false )
+      (try Hashtbl.find named_colors c
+       with Not_found ->
+         Format.eprintf "%s@." c;
+         assert false)
 
 let read_path attrs i =
   let d = List.assoc d_attr attrs in
@@ -404,7 +410,10 @@ let read_ellipse attrs i =
   push e; empty_tag i
 
 let rec group l =
-  match l with x :: y :: r -> (x, y) :: group r | [] -> [] | _ -> assert false
+  match l with
+  | x :: y :: r -> (x, y) :: group r
+  | [] -> []
+  | _ -> assert false
 
 let read_polygon attrs i =
   let points = List.assoc points_attr attrs in
@@ -431,26 +440,31 @@ let rec read_element nm attrs i =
   skip_whitespace i;
   match Xmlm.input i with
   | `El_end -> ()
-  | `Data d -> ( match Xmlm.input i with `El_end -> () | _ -> assert false )
+  | `Data d -> (
+    match Xmlm.input i with
+    | `El_end -> ()
+    | _ -> assert false)
   | `El_start ((_, nm'), attrs') ->
       (*
       Format.eprintf "%s" nm';
 List.iter (fun ((_, nm), _) -> Format.eprintf " %s" nm) attrs';
 Format.eprintf "@.";
 *)
-      ( match nm' with
+      (match nm' with
       | "path" -> ignore (read_path attrs' i)
       | "ellipse" -> ignore (read_ellipse attrs' i)
       | "polygon" -> ignore (read_polygon attrs' i)
       | "text" -> ignore (read_text attrs' i)
-      | _ -> read_element nm' attrs' i );
+      | _ -> read_element nm' attrs' i);
       read_element nm attrs i
   | _ -> assert false
 
 let _ =
   let ch = open_in "/tmp/foo.svg" in
   let i = Xmlm.make_input (`Channel ch) in
-  (match Xmlm.input i with `Dtd (Some nm) -> () | _ -> assert false);
+  (match Xmlm.input i with
+  | `Dtd (Some nm) -> ()
+  | _ -> assert false);
   match Xmlm.input i with
   | `El_start ((_, nm), attrs) ->
       assert (nm = "svg");

@@ -32,7 +32,7 @@ let compute_extent ctx e =
         (fun c ->
           match c with
           | Move_to (x, y) -> Cairo.move_to ctx x y
-          | Curve_to (x1, y1, x2, y2, x3, y3) -> Cairo.curve_to ctx x1 y1 x2 y2 x3 y3 )
+          | Curve_to (x1, y1, x2, y2, x3, y3) -> Cairo.curve_to ctx x1 y1 x2 y2 x3 y3)
         cmd;
       path_extent ctx fill stroke
   | Ellipse (cx, cy, rx, ry, fill, stroke) ->

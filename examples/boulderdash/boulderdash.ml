@@ -49,7 +49,7 @@ let clock_div () =
   let stopped = ref true in
   let rec update_cb () =
     let dt = Sys.time () -. !t0 in
-    ( if not !stopped
+    (if not !stopped
     then
       let str =
         let secs = int_of_float dt in
@@ -57,14 +57,14 @@ let clock_div () =
           (Printf.sprintf "%02d:%02d:%02d" (secs / 3600) (secs / 60 mod 60) (secs mod 60))
       in
       let txt = document##createTextNode str in
-      replace_child div txt );
+      replace_child div txt);
     Lwt_js.sleep 1. >>= fun () -> update_cb ()
   in
   ignore (update_cb ());
   ( div
   , (fun () ->
       t0 := Sys.time ();
-      stopped := false )
+      stopped := false)
   , fun () -> stopped := true )
 
 type cell =
@@ -107,7 +107,9 @@ let set_cell state x y v =
   state.map.(y).(x) <- v;
   (state.imgs.(y).(x))##.src := img_assoc v
 
-let walkable = function Empty | Grass | Diamond | End -> true | _ -> false
+let walkable = function
+  | Empty | Grass | Diamond | End -> true
+  | _ -> false
 
 let rec fall state =
   (* assumes wall borders *)
@@ -119,7 +121,7 @@ let rec fall state =
       then (
         set_cell state x (y - 1) Empty;
         set_cell state x y Boulder;
-        changed := true );
+        changed := true);
       if state.map.(y).(x) = Empty
          && state.map.(y - 1).(x) = Empty
          && state.map.(y).(x - 1) = Boulder
@@ -127,7 +129,7 @@ let rec fall state =
       then (
         set_cell state (x - 1) (y - 1) Empty;
         set_cell state x y Boulder;
-        changed := true );
+        changed := true);
       if state.map.(y).(x) = Empty
          && state.map.(y - 1).(x) = Empty
          && state.map.(y).(x + 1) = Boulder
@@ -135,11 +137,11 @@ let rec fall state =
       then (
         set_cell state (x + 1) (y - 1) Empty;
         set_cell state x y Boulder;
-        changed := true );
+        changed := true);
       if (not sustaining) && state.map.(y + 1).(x) = Guy && state.map.(y).(x) = Boulder
       then (
         set_cell state x (y + 1) Bam;
-        raise Death )
+        raise Death)
     done
   done;
   if !changed then Lwt_js.sleep 0.05 >>= fun () -> fall state else Lwt.return ()
@@ -158,11 +160,11 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
     if not state.events_mutex
     then
       ignore
-        ( state.events_mutex <- true;
+        (state.events_mutex <- true;
           f ()
           >>= fun () ->
           state.events_mutex <- false;
-          Lwt.return () );
+          Lwt.return ());
     Js._false
   in
   let set_pending_out f out () =
@@ -207,13 +209,13 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
             if state.map.(y).(x) = Diamond then state.rem <- state.rem - 1;
             set_cell state x y Guy;
             state.pos <- x, y;
-            fall state )
+            fall state)
           (fun e ->
             match e with
             | Death ->
                 state.dead <- true;
                 Lwt.return ()
-            | _ -> Lwt.fail e )
+            | _ -> Lwt.fail e)
         >>= fun () -> build_interaction state show_rem clock
       in
       (state.imgs.(y).(x))##.onmouseover
@@ -221,7 +223,7 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
       (state.imgs.(y).(x))##.onmouseout
       := Html.handler (inhibit (with_pending_out (fun () -> Lwt.return ())));
       (state.imgs.(y).(x))##.onclick := Html.handler (inhibit (with_pending_out click));
-      if state.map.(y).(x) <> End then update (next (x, y)) next img over out click' )
+      if state.map.(y).(x) <> End then update (next (x, y)) next img over out click')
   in
   let update_push ((x, y) as pos) next img img_guy =
     let ((x', y') as pos') = next pos in
@@ -250,29 +252,29 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
             | Death ->
                 state.dead <- true;
                 Lwt.return ()
-            | e -> Lwt.fail e )
+            | e -> Lwt.fail e)
         >>= fun () -> build_interaction state show_rem clock
       in
       (state.imgs.(y').(x'))##.onmouseover
       := Html.handler (inhibit (set_pending_out (with_pending_out over) out));
       (state.imgs.(y').(x'))##.onmouseout
       := Html.handler (inhibit (with_pending_out (fun () -> Lwt.return ())));
-      (state.imgs.(y').(x'))##.onclick := Html.handler (inhibit (with_pending_out click)) )
+      (state.imgs.(y').(x'))##.onclick := Html.handler (inhibit (with_pending_out click)))
   in
   if state.pos = state.endpos
   then (
     clock_stop ();
-    Html.window##alert (js "YOU WIN !") )
+    Html.window##alert (js "YOU WIN !"))
   else if state.dead
   then (
     clock_stop ();
-    Html.window##alert (js "YOU LOSE !") )
+    Html.window##alert (js "YOU LOSE !"))
   else (
     if state.rem = 0
     then (
       let x, y = state.endpos in
       (state.imgs.(y).(x))##.src := js "sprites/end.png";
-      state.map.(y).(x) <- End );
+      state.map.(y).(x) <- End);
     let r (x, y) = succ x, y and l (x, y) = pred x, y in
     let u (x, y) = x, pred y and d (x, y) = x, succ y in
     let nil_cont () = () in
@@ -283,12 +285,14 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
     update (d state.pos) d (js "sprites/D.png") nil_cont_async nil_cont nil_cont_async;
     update_push state.pos r (js "sprites/bR.png") (js "sprites/push_r.png");
     update_push state.pos l (js "sprites/bL.png") (js "sprites/push_l.png");
-    show_rem state.rem );
+    show_rem state.rem);
   Lwt_mutex.unlock state.map_mutex;
   Lwt.return ()
 
 let opt_style e style =
-  match style with Some s -> e##.style##.cssText := s | None -> ()
+  match style with
+  | Some s -> e##.style##.cssText := s
+  | None -> ()
 
 let build_table ?style ?tr_style ?td_style f t =
   let m = Html.createTable document in
@@ -365,7 +369,7 @@ let start _ =
         | Some (elt, st) -> scan_pairs st (elt :: acc)
         | None -> acc
       in
-      Lwt.return (List.rev (scan_pairs 0 [])) )
+      Lwt.return (List.rev (scan_pairs 0 [])))
   >>= fun levels ->
   let load_level file =
     load_data file (fun data ->
@@ -392,7 +396,7 @@ let start _ =
               (Array.map (fun c ->
                    let img = Html.createImg document in
                    img##.src := img_assoc c;
-                   img ))
+                   img))
               map )
         in
         let gx = ref 0 and gy = ref 0 and ex = ref 0 and ey = ref 0 and rem = ref 0 in
@@ -407,7 +411,7 @@ let start _ =
             ~style
             ~td_style
             (fun y x cell ->
-              ( match map.(y).(x) with
+              (match map.(y).(x) with
               | Guy ->
                   gx := x;
                   gy := y
@@ -415,8 +419,8 @@ let start _ =
               | Door ->
                   ex := x;
                   ey := y
-              | _ -> () );
-              cell )
+              | _ -> ());
+              cell)
             cells
         in
         replace_child board_div table;
@@ -439,14 +443,14 @@ let start _ =
           if t -. t0 >= 1.
           then (
             table##.style##.opacity := Js.def (js "1");
-            Lwt.return () )
+            Lwt.return ())
           else
             Lwt_js.sleep 0.05
             >>= fun () ->
             table##.style##.opacity := Js.def (js (Printf.sprintf "%g" (t -. t0)));
             fade ()
         in
-        fade () >>= fun () -> clock_start (); Lwt.return () )
+        fade () >>= fun () -> clock_start (); Lwt.return ())
   in
   body##.style##.cssText
   := js "font-family: sans-serif; text-align: center; background-color: #e8e8e8;";
@@ -471,14 +475,14 @@ let start _ =
          option##onclick <-
            some (fun _ -> ignore (load_level f); Js._false);
 *)
-      Dom.appendChild select option )
+      Dom.appendChild select option)
     levels;
   select##.onchange :=
     Html.handler (fun _ ->
         let i = select##.selectedIndex - 1 in
         if i >= 0 && i < List.length levels
         then ignore (load_level (fst (List.nth levels i)));
-        Js._false );
+        Js._false);
   Dom.appendChild div select;
   Dom.appendChild div (Html.createBr document);
   Dom.appendChild div (Html.createBr document);
@@ -490,4 +494,4 @@ let _ =
   Html.window##.onload :=
     Html.handler (fun _ ->
         ignore (start ());
-        Js._false )
+        Js._false)
