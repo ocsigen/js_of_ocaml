@@ -67,7 +67,7 @@ let program_deps (_, blocks, _) =
           | Let (x, e) ->
               add_var vars x;
               expr_deps blocks vars deps defs x e
-          | Set_field _ | Array_set _ | Offset_ref _ -> () );
+          | Set_field _ | Array_set _ | Offset_ref _ -> ());
       Option.iter block.handler ~f:(fun (_, cont) -> cont_deps blocks vars deps defs cont);
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
@@ -79,13 +79,15 @@ let program_deps (_, blocks, _) =
           Array.iter a1 ~f:(fun cont -> cont_deps blocks vars deps defs cont);
           Array.iter a2 ~f:(fun cont -> cont_deps blocks vars deps defs cont)
       | Pushtrap (cont, _, _, _) -> cont_deps blocks vars deps defs cont
-      | Poptrap (cont, _) -> cont_deps blocks vars deps defs cont )
+      | Poptrap (cont, _) -> cont_deps blocks vars deps defs cont)
     blocks;
   vars, deps, defs
 
 let rec repr' reprs x acc =
   let idx = Var.idx x in
-  match reprs.(idx) with None -> x, acc | Some y -> repr' reprs y (x :: acc)
+  match reprs.(idx) with
+  | None -> x, acc
+  | Some y -> repr' reprs y (x :: acc)
 
 let repr reprs x =
   let last, l = repr' reprs x [] in
@@ -115,7 +117,7 @@ let propagate1 deps defs reprs st x =
       match Var.Set.elements s with
       | [y; z] when Var.compare x y = 0 -> replace deps reprs x z
       | [z; y] when Var.compare x y = 0 -> replace deps reprs x z
-      | _ -> false )
+      | _ -> false)
     | _ -> false
 
 module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
@@ -142,7 +144,7 @@ let solver1 vars deps defs =
       | Some y ->
           let y = repr reprs y in
           if Var.idx y = idx then None else Some y
-      | None -> None )
+      | None -> None)
 
 let f p =
   let t = Timer.make () in

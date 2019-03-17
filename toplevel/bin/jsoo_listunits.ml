@@ -42,7 +42,9 @@ let args =
   let args = scan_args [] args in
   let all = Jsoo_common.cmis args in
   let oc =
-    match !output with Some x -> open_out x | None -> failwith "-o <name> needed"
+    match !output with
+    | Some x -> open_out x
+    | None -> failwith "-o <name> needed"
   in
   let to_unit s =
     Js_of_ocaml_compiler.Stdlib.String.capitalize_ascii
@@ -51,6 +53,6 @@ let args =
   List.iter
     (fun c ->
       output_string oc (to_unit c);
-      output_string oc "\n" )
+      output_string oc "\n")
     all;
   close_out oc

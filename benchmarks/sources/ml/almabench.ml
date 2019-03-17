@@ -253,8 +253,8 @@ let planetpv epoch np pv =
     ((3600.0 *. dinc.(np).(0)) +. ((dinc.(np).(1) +. (dinc.(np).(2) *. t)) *. t)) *. a2r
   and doh =
     anpm
-      ( ((3600.0 *. omega.(np).(0)) +. ((omega.(np).(1) +. (omega.(np).(2) *. t)) *. t))
-      *. a2r )
+      (((3600.0 *. omega.(np).(0)) +. ((omega.(np).(1) +. (omega.(np).(2) *. t)) *. t))
+      *. a2r)
   (* apply the trigonometric terms. *)
   and dmu = 0.35953620 *. t in
   (* loop invariant *)
@@ -325,9 +325,9 @@ let radecdist state rdd =
   (* Distance *)
   rdd.(2)
   <- sqrt
-       ( (state.(0).(0) *. state.(0).(0))
+       ((state.(0).(0) *. state.(0).(0))
        +. (state.(0).(1) *. state.(0).(1))
-       +. (state.(0).(2) *. state.(0).(2)) );
+       +. (state.(0).(2) *. state.(0).(2)));
   (* RA *)
   rdd.(0) <- atan2 state.(0).(1) state.(0).(0) *. r2h;
   if rdd.(0) < 0.0 then rdd.(0) <- rdd.(0) +. 24.0;

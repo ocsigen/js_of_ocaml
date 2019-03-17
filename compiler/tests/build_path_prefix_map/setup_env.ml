@@ -17,4 +17,6 @@ let () =
       Unix.stderr
   in
   let _pid, status = Unix.waitpid [] pid in
-  match status with WEXITED 0 -> exit 0 | _ -> failwith "Unexpected"
+  match status with
+  | WEXITED 0 -> exit 0
+  | _ -> failwith "Unexpected"

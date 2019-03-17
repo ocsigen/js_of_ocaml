@@ -88,7 +88,11 @@ let observe
     ?(character_data_old_value : bool option)
     ?(attribute_filter : Js.js_string Js.t list option)
     () : mutationObserver Js.t =
-  let opt_iter x f = match x with None -> () | Some x -> f x in
+  let opt_iter x f =
+    match x with
+    | None -> ()
+    | Some x -> f x
+  in
   let obs = new%js mutationObserver (Js.wrap_callback f) in
   let cfg = empty_mutation_observer_init () in
   let () = opt_iter child_list (fun v -> cfg##.childList := v) in
@@ -101,7 +105,7 @@ let observe
   in
   let () =
     opt_iter attribute_filter (fun l ->
-        cfg##.attributeFilter := Js.array (Array.of_list l) )
+        cfg##.attributeFilter := Js.array (Array.of_list l))
   in
   let () = obs##observe node cfg in
   obs

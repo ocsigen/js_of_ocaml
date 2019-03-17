@@ -264,7 +264,7 @@ let load_image src =
   let img = Html.createImg Html.document in
   lwt_wrap (fun c ->
       img##.onload := Html.handler (fun _ -> c (); Js._false);
-      img##.src := src )
+      img##.src := src)
   >>= fun () -> Lwt.return img
 
 let create_canvas w h =
@@ -314,10 +314,10 @@ debug_msg (Format.sprintf "Mouse move %d %d %d %d" x0 y0 x y);
                  if (not !started) && (abs (x - x0) > fuzz || abs (y - y0) > fuzz)
                  then (
                    started := true;
-                   element##.style##.cursor := Js.string "move" );
+                   element##.style##.cursor := Js.string "move");
                  if !started then move x0 y0 x y;
                  Html.stopPropagation ev;
-                 Js._true ))
+                 Js._true))
             Js._true
         in
         let c2 = ref Js.null in
@@ -335,11 +335,11 @@ debug_msg (Format.sprintf "Mouse up %d %d %d %d" x0 y0 ev##clientX ev##clientY);
                     if !started
                     then (
                       element##.style##.cursor := Js.string "";
-                      stop ev##.clientX ev##.clientY )
+                      stop ev##.clientX ev##.clientY)
                     else click ev##.clientX ev##.clientY;
-                    Js._true ))
+                    Js._true))
                Js._true);
-        Js._true )
+        Js._true)
 
 let handle_touch_events element move stop cancel click =
   let fuzz = 4 in
@@ -376,11 +376,11 @@ debug_msg (Format.sprintf "Touch start %d %d" x0 y0);
                                     && (abs (x - x0) > fuzz || abs (y - y0) > fuzz)
                                  then (
                                    started := true;
-                                   element##.style##.cursor := Js.string "move" );
-                                 if !started then move x0 y0 x y ) )
+                                   element##.style##.cursor := Js.string "move");
+                                 if !started then move x0 y0 x y))
                          done;
                          Html.stopPropagation ev;
-                         Js._false ))
+                         Js._false))
                     Js._true
                 in
                 let c2 = ref Js.null in
@@ -407,10 +407,10 @@ debug_msg (Format.sprintf "Touch end %d %d %d %d" x0 y0 x y);
                                     if !started
                                     then (
                                       element##.style##.cursor := Js.string "";
-                                      stop x y )
-                                    else click x y ) )
+                                      stop x y)
+                                    else click x y))
                             done;
-                            Js._true ))
+                            Js._true))
                        Js._true);
                 c3 :=
                   Js.some
@@ -433,11 +433,11 @@ debug_msg (Format.sprintf "Touch cancel %d %d %d %d" x0 y0 x y);
                                     Js.Opt.iter !c3 Html.removeEventListener;
                                     if !started
                                     then element##.style##.cursor := Js.string "";
-                                    cancel x y ) )
+                                    cancel x y))
                             done;
-                            Js._false ))
-                       Js._true) );
-            Js._false ))
+                            Js._false))
+                       Js._true));
+            Js._false))
        Js._true)
 
 (*
@@ -518,13 +518,13 @@ let default_language () =
 let language =
   ref
     (Js.Optdef.case Html.window##.localStorage default_language (fun st ->
-         Js.Opt.get (st##getItem (Js.string "hyp_lang")) default_language ))
+         Js.Opt.get (st##getItem (Js.string "hyp_lang")) default_language))
 
 let _ = Firebug.console##log !language
 
 let set_language lang =
   Js.Optdef.iter Html.window##.localStorage (fun st ->
-      st##setItem (Js.string "hyp_lang") lang );
+      st##setItem (Js.string "hyp_lang") lang);
   language := lang
 
 let load_messages () =
@@ -642,11 +642,11 @@ let draw canvas vertices edges nodes boxes =
   ellipse_arc c dx dy (rx +. padding) (ry +. padding) 0. 7. Js._false;
   Js.Optdef.iter style##.backgroundColor (fun color ->
       c##.fillStyle := color;
-      c##fill );
+      c##fill);
   Js.Optdef.iter style##.boundaryColor (fun color ->
       c##.lineWidth := 1.;
       c##.strokeStyle := color;
-      c##stroke );
+      c##stroke);
   c##.lineWidth := 2.;
   c##.lineCap := Js.string "round";
   c##.strokeStyle := opt_style style##.treeColor tree_color;
@@ -658,7 +658,7 @@ let draw canvas vertices edges nodes boxes =
     if rx *. ry *. sq_norm_sub z z' > 4.
     then (
       c##.lineWidth := w;
-      segment c transf z z' )
+      segment c transf z z')
   done;
   let image_count = ref 0 in
   let large_image_count = ref 0 in
@@ -684,7 +684,7 @@ let draw canvas vertices edges nodes boxes =
         if not (Lazy.is_val img)
         then (
           let s = min_scale l 1. 1. 1. in
-          if s *. max rx ry > 1. then ignore (Lazy.force img) )
+          if s *. max rx ry > 1. then ignore (Lazy.force img))
         else
           match Lwt.poll (Lazy.force img) with
           | Some img ->
@@ -720,7 +720,7 @@ let draw canvas vertices edges nodes boxes =
                   c##.shadowBlur := if blur < 1. then 0. else blur;
                   c##.shadowOffsetX := if blur < 1. then 0. else offset;
                   c##.shadowOffsetY := if blur < 1. then 0. else offset;
-                  c##.shadowColor := Js.string "black" );
+                  c##.shadowColor := Js.string "black");
                 let x = (z.x *. rx) +. dx in
                 let y = (z.y *. ry) +. dy in
                 c##drawImage_withSize img (x -. w) (y -. h) (2. *. w) (2. *. h);
@@ -734,8 +734,8 @@ let draw canvas vertices edges nodes boxes =
                 boxes.bw.(i) <- w;
                 boxes.bh.(i) <- h;
                 incr image_count;
-                if w >= 2. && h >= 2. then incr large_image_count )
-          | None -> () )
+                if w >= 2. && h >= 2. then incr large_image_count)
+          | None -> ())
     | `Txt (circle, Some txt, _) ->
         let z = vertices.(i) in
         let r2 =
@@ -759,7 +759,7 @@ let draw canvas vertices edges nodes boxes =
             0.
             7.
             Js._false;
-          c##fill );
+          c##fill);
         c##drawImage_fromCanvasWithSize
           txt
           ((z.x *. rx) +. dx -. w)
@@ -810,7 +810,7 @@ let schedule_redraw () =
   then (
     need_redraw := true;
     Html._requestAnimationFrame
-      (Js.wrap_callback (fun () -> if !need_redraw then perform_redraw ())) )
+      (Js.wrap_callback (fun () -> if !need_redraw then perform_redraw ())))
 
 (*
 let load_image src =
@@ -830,10 +830,10 @@ let load_image src =
 let image_node img =
   `Img
     ( lazy
-        ( Lwt_js.yield ()
+        (Lwt_js.yield ()
         >>= fun () ->
         load_image (Js.string ("thumbnails/" ^ img ^ ".jpg"))
-        >>= fun img -> schedule_redraw (); Lwt.return img )
+        >>= fun img -> schedule_redraw (); Lwt.return img)
     , img )
 
 let nl_re = Regexp.regexp "\n"
@@ -861,8 +861,10 @@ let compute_text_node info =
 
 let compute_text_nodes node_names nodes =
   let names =
-    try fst (List.assq !language node_names) with Not_found -> (
-      try fst (List.assq (Js.string "en") node_names) with Not_found -> Hashtbl.create 11 )
+    try fst (List.assq !language node_names)
+    with Not_found -> (
+      try fst (List.assq (Js.string "en") node_names)
+      with Not_found -> Hashtbl.create 11)
   in
   Html.document##.title :=
     Js.string (try Hashtbl.find names "<TITLE>" with Not_found -> "");
@@ -893,8 +895,14 @@ let compute_nodes node =
   compute true node
 
 let list_tl l =
-  let rec tl x l = match l with [] -> x | x :: r -> tl x r in
-  match l with [] -> assert false | x :: r -> tl x r
+  let rec tl x l =
+    match l with
+    | [] -> x
+    | x :: r -> tl x r
+  in
+  match l with
+  | [] -> assert false
+  | x :: r -> tl x r
 
 let compute_neighbors nodes tree =
   let frontiers = Array.make (Array.length nodes) ([||], [||]) in
@@ -907,11 +915,11 @@ let compute_neighbors nodes tree =
     let (Node (i, l)) = node in
     Array.iter compute_frontiers l;
     frontiers.(i)
-    <- ( if Array.length l = 0
+    <- (if Array.length l = 0
        then [|status i|], [|status i|]
        else
          ( fst frontiers.(node_info l.(0))
-         , snd frontiers.(node_info l.(Array.length l - 1)) ) )
+         , snd frontiers.(node_info l.(Array.length l - 1)) ))
     (*
       (i :: fst frontiers.(node_info (List.hd l)),
        i :: snd frontiers.(node_info (list_tl l)))
@@ -953,7 +961,7 @@ let weight_sum l =
   Array.fold_left
     (fun s n ->
       let (Node (w, _)) = n in
-      s +. w )
+      s +. w)
     0.
     l
 
@@ -1001,11 +1009,11 @@ let tree_layout node_names root =
         let total_weight = weight_sum ch_weights in
         let w0 =
           ref
-            ( if is_root
+            (if is_root
             then
               let (Node (w, _)) = ch_weights.(0) in
               (total_weight -. w) /. 2.
-            else 0. )
+            else 0.)
         in
         array_map2
           (fun node weights ->
@@ -1034,7 +1042,7 @@ let tree_layout node_names root =
             let k = !ei in
             incr ei;
             edges.(k) <- (i, i', lineWidth);
-            ch )
+            ch)
           ch
           ch_weights
     in
@@ -1057,9 +1065,9 @@ let load_tree () =
   >>= fun s ->
   let info :
       Js.js_string Js.t tree
-      * ( Js.js_string Js.t
+      * (Js.js_string Js.t
         * (Js.js_string Js.t * Js.js_string Js.t) array
-        * Js.js_string Js.t )
+        * Js.js_string Js.t)
         array =
     json##parse (Js.string s)
   in
@@ -1070,7 +1078,7 @@ let load_tree () =
     >> Array.map (fun (lang, tbl, about) ->
            let h = Hashtbl.create 101 in
            Array.iter (fun (k, v) -> Hashtbl.add h (Js.to_string k) (Js.to_string v)) tbl;
-           lang, (h, about) )
+           lang, (h, about))
     >> Array.to_list
   in
   Lwt.return (tree_layout node_names tree, node_names)
@@ -1104,7 +1112,7 @@ let close_button over =
   if over
   then (
     c##.shadowBlur := offset;
-    c##.shadowColor := color );
+    c##.shadowColor := color);
   c##beginPath;
   let a = offset +. (lw /. sqrt 2.) in
   let b = float size -. offset -. (lw /. sqrt 2.) in
@@ -1137,10 +1145,10 @@ let img_button ?href h src =
          (*
       (Format.sprintf "%dpx 3px %dpx 3px" (extra / 2) (extra - extra / 2));
 *)
-         ( string_of_int (extra / 2)
+         (string_of_int (extra / 2)
          ^ "px 3px "
          ^ string_of_int (extra - (extra / 2))
-         ^ "px 3px" );
+         ^ "px 3px");
     div##.className := Js.string ("filled_button " ^ if over then "on" else "off");
     Dom.appendChild div img;
     div
@@ -1185,17 +1193,17 @@ let show_on_click button txt =
                  Html.Event.click
                  (Html.handler (fun _ev ->
                       ignore
-                        ( Lwt_js.yield ()
+                        (Lwt_js.yield ()
                         >>= fun () ->
                         Js.Opt.iter !c Html.removeEventListener;
                         txt##.className := Js.string "text on";
                         activated := false;
-                        Lwt.return () );
-                      Js._true ))
+                        Lwt.return ());
+                      Js._true))
                  Js._true);
-          txt##.className := Js.string "text" );
+          txt##.className := Js.string "text");
         Html.stopPropagation ev;
-        Js._false )
+        Js._false)
 
 let show_image all_messages image_info name small_image =
   image_info
@@ -1246,7 +1254,7 @@ let show_image all_messages image_info name small_image =
       w
     in
     let img = Html.createImg d in
-    ( match Lwt.poll (Lazy.force small_image) with
+    (match Lwt.poll (Lazy.force small_image) with
     | Some small_image ->
         let canvas = create_canvas info.width info.height in
         let c = canvas##getContext Html._2d_ in
@@ -1263,8 +1271,8 @@ let show_image all_messages image_info name small_image =
         img##.onload :=
           Html.handler (fun _ ->
               Dom.removeChild img_container w;
-              Js._false )
-    | None -> () );
+              Js._false)
+    | None -> ());
     (img##.src :=
        match info.img_url with
        | None -> Js.string ("images/" ^ name ^ ".jpg")
@@ -1375,7 +1383,7 @@ let show_image all_messages image_info name small_image =
             in
             a##.href := Js.string url;
             let li = Html.createLi d in
-            Dom.appendChild li a; Dom.appendChild ul li ) )
+            Dom.appendChild li a; Dom.appendChild ul li))
         info.links;
       if not !empty
       then (
@@ -1384,7 +1392,7 @@ let show_image all_messages image_info name small_image =
         Dom.appendChild dd (d##createTextNode title);
         Dom.appendChild dl dd;
         let dt = Html.createDt d in
-        Dom.appendChild dt ul; Dom.appendChild dl dt )
+        Dom.appendChild dt ul; Dom.appendChild dl dt)
     in
     list (opt_style messages##.language (Js.string "In English")) !language;
     if !language != Js.string "en" then list (Js.string "In English") (Js.string "en");
@@ -1409,7 +1417,7 @@ let show_image all_messages image_info name small_image =
     background##.onclick :=
       Html.handler (fun _ ->
           Dom.removeChild d##.body background;
-          Js._true ) );
+          Js._true));
   Lwt.return 0
 
 let information_en =
@@ -1426,8 +1434,9 @@ let information_en =
 
 let show_information_page messages tree_i18n =
   let info =
-    try snd (List.assq !language tree_i18n) with Not_found -> (
-      try snd (List.assq (Js.string "en") tree_i18n) with Not_found -> information_en )
+    try snd (List.assq !language tree_i18n)
+    with Not_found -> (
+      try snd (List.assq (Js.string "en") tree_i18n) with Not_found -> information_en)
   in
   let doc = Html.document in
   let txt = Html.createDiv doc in
@@ -1460,7 +1469,7 @@ let show_information_page messages tree_i18n =
          (Html.handler (fun e ->
               match e##.keyCode with
               | 27 | 13 -> close_info (); Js._false
-              | _ -> Js._true ))
+              | _ -> Js._true))
          Js._true);
   let button = Html.createButton doc in
   Dom.appendChild button (doc##createTextNode (opt_style messages##.ok (Js.string "OK")));
@@ -1513,7 +1522,7 @@ let image_info = load_image_info ()
 
 let start _ =
   Lwt.ignore_result
-    ( tree_info
+    (tree_info
     >>= fun ((vertices, edges, nodes, boxes), tree_i18n) ->
     all_messages
     >>= fun all_messages ->
@@ -1546,7 +1555,7 @@ let start _ =
          if w <> canvas##.width || h <> canvas##.height
          then (
            canvas##.width := w;
-           canvas##.height := h );
+           canvas##.height := h);
          hyp_transf_vect !tr' vertices vertices';
          Firebug.console##timeEnd (Js.string "transform");
          draw canvas vertices' edges nodes boxes);
@@ -1567,7 +1576,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
             perform_redraw ()
 *)
             schedule_redraw ();
-          Js._true );
+          Js._true);
     (*
      let eventually t f =
        let scheduled = ref false in
@@ -1602,16 +1611,16 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
         if not !on_image
         then (
           canvas##.style##.cursor := Js.string "pointer";
-          on_image := true ) )
+          on_image := true))
       else if !on_image
       then (
         canvas##.style##.cursor := Js.string "";
-        on_image := false )
+        on_image := false)
     in
     canvas##.onmousemove :=
       Html.handler (fun ev ->
           update_cursor ev##.clientX ev##.clientY;
-          Js._false );
+          Js._false);
     handle_drag
       canvas
       (fun x0 y0 x1 y1 ->
@@ -1631,18 +1640,18 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
         let p' = compute_translation z0' z1 in
         tr' := p', one;
         schedule_redraw ()
-        (*perform_redraw ()*) )
+        (*perform_redraw ()*))
       (fun x y ->
         tr := !tr';
         on_image := false;
-        update_cursor x y )
+        update_cursor x y)
       (fun x y ->
         let i = find_box boxes x y in
         if i > 0
         then
           match nodes.(i) with
           | _, `Img (img, name) -> ignore (show_image all_messages image_info name img)
-          | _ -> () );
+          | _ -> ());
     handle_touch_events
       canvas
       (fun x0 y0 x1 y1 ->
@@ -1662,7 +1671,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
         let z0' = transl (neg p) z0 in
         let p' = compute_translation z0' z1 in
         tr' := p', one;
-        schedule_redraw () )
+        schedule_redraw ())
       (fun _ _ -> tr := !tr')
       (fun _ _ -> tr := !tr')
       (fun x y ->
@@ -1671,7 +1680,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
         then
           match nodes.(i) with
           | _, `Img (img, name) -> ignore (show_image all_messages image_info name img)
-          | _ -> () );
+          | _ -> ());
     let handle_key_event ev =
       match ev##.keyCode with
       | 37 ->
@@ -1728,9 +1737,9 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
          Js._true);
     let prev_buttons = ref None in
     let rec make_buttons () =
-      ( match !prev_buttons with
+      (match !prev_buttons with
       | None -> ()
-      | Some buttons -> Dom.removeChild doc##.body buttons );
+      | Some buttons -> Dom.removeChild doc##.body buttons);
       let buttons = Html.createDiv doc in
       buttons##.style##.position := Js.string "absolute";
       buttons##.style##.right := Js.string "0";
@@ -1744,7 +1753,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
       info##.onclick :=
         Html.handler (fun _ ->
             show_information_page messages tree_i18n;
-            Js._false );
+            Js._false);
       let tt = tooltip (opt_style messages##.info (Js.string "Information")) in
       tt##.style##.right := Js.string "36px";
       tt##.style##.bottom := Js.string "36px";
@@ -1770,9 +1779,9 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
                 make_buttons ();
                 compute_text_nodes tree_i18n nodes;
                 schedule_redraw ();
-                Js._false );
+                Js._false);
           let li = Html.createLi doc in
-          Dom.appendChild li a; Dom.appendChild ul li )
+          Dom.appendChild li a; Dom.appendChild ul li)
         languages;
       let dd = Html.createDd doc in
       Dom.appendChild
@@ -1801,7 +1810,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
             tr' := zero, one;
             tr := !tr';
             schedule_redraw ();
-            Js._false );
+            Js._false);
       let tt = tooltip (opt_style messages##.recenter (Js.string "Recenter")) in
       tt##.style##.right := Js.string "36px";
       tt##.style##.bottom := Js.string "36px";
@@ -1823,7 +1832,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
     logo##.style##.bottom := Js.string "0";
     Dom.appendChild logo a;
     Dom.appendChild doc##.body logo;
-    Lwt.return () );
+    Lwt.return ());
   Js._false
 
 let start _ =

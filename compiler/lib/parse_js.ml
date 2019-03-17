@@ -100,7 +100,7 @@ let lexer_aux ?(rm_comment = true) lines_info lexbuf =
                 | None -> Some (file, ii.Parse_info.line - (line - 2))
                 | Some (_, offset) ->
                     Some (file, ii.Parse_info.line - (line - 2) + offset)
-              with _ -> extra )
+              with _ -> extra)
           | _ -> extra
         in
         let prev = if Js_token.is_comment t then prev else Some t in
@@ -163,10 +163,10 @@ let parse_aux the_parser toks =
         x
   in
   let lexbuf = Lexing.from_string "" in
-  try the_parser lexer_fun lexbuf with
-  | Js_parser.Error | Parsing.Parse_error ->
-      let pi = Js_token.info_of_tok state.current in
-      raise (Parsing_error pi)
+  try the_parser lexer_fun lexbuf
+  with Js_parser.Error | Parsing.Parse_error ->
+    let pi = Js_token.info_of_tok state.current in
+    raise (Parsing_error pi)
 
 let parse lex = parse_aux Js_parser.program lex
 

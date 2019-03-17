@@ -34,10 +34,10 @@ let split_primitives p =
 
 let setup =
   lazy
-    ( Hashtbl.add
-        Toploop.directive_table
-        "enable"
-        (Toploop.Directive_string Config.Flag.enable);
+    (Hashtbl.add
+       Toploop.directive_table
+       "enable"
+       (Toploop.Directive_string Config.Flag.enable);
       Hashtbl.add
         Toploop.directive_table
         "disable"
@@ -72,7 +72,7 @@ let setup =
             then
               stubs :=
                 Format.sprintf "function %s(){caml_failwith(\"%s not implemented\")}" p p
-                :: !stubs );
+                :: !stubs);
         let output_program = Driver.from_string prims s in
         let b = Buffer.create 100 in
         output_program (Pretty_print.to_buffer b);
@@ -86,14 +86,14 @@ let setup =
         res
       in
       Js.Unsafe.global##.toplevelCompile := compile (*XXX HACK!*);
-      ( Js.Unsafe.global##.toplevelEval
+      (Js.Unsafe.global##.toplevelEval
       := fun x ->
       let f : < .. > Js.t -> < .. > Js.t = Js.Unsafe.eval_string x in
       fun () ->
         let res = f Js.Unsafe.global in
         Format.(pp_print_flush std_formatter ());
         Format.(pp_print_flush err_formatter ());
-        flush stdout; flush stderr; res );
+        flush stdout; flush stderr; res);
       Js.Unsafe.global##.toplevelReloc
       := Js.Unsafe.callback (fun name ->
              let name = Js.to_string name in
@@ -103,25 +103,25 @@ let setup =
                let get i = Char.code (Bytes.get buf i) in
                get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24)
              in
-             i );
-      () )
+             i);
+      ())
 
 let refill_lexbuf s p ppf buffer len =
   if !p = String.length s
   then 0
   else
     let len', nl =
-      try String.index_from s !p '\n' - !p + 1, false with _ ->
-        String.length s - !p, true
+      try String.index_from s !p '\n' - !p + 1, false
+      with _ -> String.length s - !p, true
     in
     let len'' = min len len' in
     String.blit ~src:s ~src_pos:!p ~dst:buffer ~dst_pos:0 ~len:len'';
-    ( match ppf with
+    (match ppf with
     | Some ppf ->
         Format.fprintf ppf "%s" (Bytes.sub_string buffer ~pos:0 ~len:len'');
         if nl then Format.pp_print_newline ppf ();
         Format.pp_print_flush ppf ()
-    | None -> () );
+    | None -> ());
     p := !p + len'';
     len''
 
@@ -133,22 +133,24 @@ let use ffp content =
 
 let execute printval ?pp_code ?highlight_location pp_answer s =
   let lb = Lexing.from_function (refill_lexbuf s (ref 0) pp_code) in
-  ( try
-      while true do
-        try
-          let phr = !Toploop.parse_toplevel_phrase lb in
-          let phr = JsooTopPpx.preprocess_phrase phr in
-          ignore (Toploop.execute_phrase printval pp_answer phr : bool)
-        with
-        | End_of_file -> raise End_of_file
-        | x ->
-            ( match highlight_location with
-            | None -> ()
-            | Some f -> (
-              match JsooTopError.loc x with None -> () | Some loc -> f loc ) );
-            Errors.report_error Format.err_formatter x
-      done
-    with End_of_file -> () );
+  (try
+     while true do
+       try
+         let phr = !Toploop.parse_toplevel_phrase lb in
+         let phr = JsooTopPpx.preprocess_phrase phr in
+         ignore (Toploop.execute_phrase printval pp_answer phr : bool)
+       with
+       | End_of_file -> raise End_of_file
+       | x ->
+           (match highlight_location with
+           | None -> ()
+           | Some f -> (
+             match JsooTopError.loc x with
+             | None -> ()
+             | Some loc -> f loc));
+           Errors.report_error Format.err_formatter x
+     done
+   with End_of_file -> ());
   flush_all ()
 
 let initialize () =

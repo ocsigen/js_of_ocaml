@@ -33,7 +33,7 @@ let equal_nat n1 n2 = eq_nat n1 0 (length_nat n1) n2 0 (length_nat n2)
 List.iter
   (fun (i, s) ->
     let n = nat_of_string s in
-    ignore (test i equal_nat (n, intern_extern n)) )
+    ignore (test i equal_nat (n, intern_extern n)))
   [ 1, "0"
   ; 2, "1234"
   ; 3, "8589934592"
@@ -49,7 +49,7 @@ testing_function "output_value/input_value on big ints"
 List.iter
   (fun (i, s) ->
     let b = big_int_of_string s in
-    ignore (test i eq_big_int (b, intern_extern b)) )
+    ignore (test i eq_big_int (b, intern_extern b)))
   [ 1, "0"
   ; 2, "1234"
   ; 3, "-1234"
@@ -63,7 +63,7 @@ testing_function "output_value/input_value on nums"
 List.iter
   (fun (i, s) ->
     let n = num_of_string s in
-    ignore (test i eq_num (n, intern_extern n)) )
+    ignore (test i eq_num (n, intern_extern n)))
   [ 1, "0"
   ; 2, "1234"
   ; 3, "-1234"

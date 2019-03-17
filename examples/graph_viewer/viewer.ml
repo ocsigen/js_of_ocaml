@@ -34,7 +34,7 @@ let compute_extent ctx e =
         (fun c ->
           match c with
           | Move_to (x, y) -> Cairo.move_to ctx x y
-          | Curve_to (x1, y1, x2, y2, x3, y3) -> Cairo.curve_to ctx x1 y1 x2 y2 x3 y3 )
+          | Curve_to (x1, y1, x2, y2, x3, y3) -> Cairo.curve_to ctx x1 y1 x2 y2 x3 y3)
         cmd;
       path_extent ctx fill stroke
   | Ellipse (cx, cy, rx, ry, fill, stroke) ->
@@ -105,8 +105,12 @@ module Common = Viewer_common.F (struct
   let clip = Cairo.clip
 
   let perform_draw ctx fill_color stroke_color =
-    (match fill_color with Some c -> fill ctx c | None -> ());
-    match stroke_color with Some c -> stroke ctx c | None -> ()
+    (match fill_color with
+    | Some c -> fill ctx c
+    | None -> ());
+    match stroke_color with
+    | Some c -> stroke ctx c
+    | None -> ()
 
   let draw_text ctx x y txt (font, font_size) fill stroke =
     Cairo.select_font_face ctx font Cairo.FONT_SLANT_NORMAL Cairo.FONT_WEIGHT_NORMAL;
@@ -150,7 +154,7 @@ open Common
 
 let set_visible w vis =
   if vis
-  then ( if not (w#misc)#visible then (w#misc)#show () )
+  then (if not (w#misc)#visible then (w#misc)#show ())
   else if (w#misc)#visible
   then (w#misc)#hide ()
 
@@ -222,7 +226,7 @@ let scroll_view ?width ?height ?packing st =
   in
   ignore
     (((display#event)#connect)#configure (fun ev ->
-         prerr_endline "CONFIGURE"; update_scrollbars (); false ));
+         prerr_endline "CONFIGURE"; update_scrollbars (); false));
   ignore
     (((display#event)#connect)#map (fun ev ->
          let a = (display#misc)#allocation in
@@ -230,7 +234,7 @@ let scroll_view ?width ?height ?packing st =
          let zoom_factor =
            max (st.st_width /. float a.Gtk.width) (st.st_height /. float a.Gtk.height)
          in
-         set_zoom_factor zoom_factor; refresh (); update_scrollbars (); false ));
+         set_zoom_factor zoom_factor; refresh (); update_scrollbars (); false));
   (display#event)#add [`STRUCTURE];
   ignore
     (((display#event)#connect)#expose (fun ev ->
@@ -250,7 +254,7 @@ let scroll_view ?width ?height ?packing st =
            y
            width
            height;
-         true ));
+         true));
   ignore
     ((hadj#connect)#value_changed (fun () -> GtkBase.Widget.queue_draw display#as_widget));
   ignore
@@ -266,7 +270,7 @@ let scroll_view ?width ?height ?packing st =
          vadj#set_value (vadj#value +. (vadj#page_size *. r *. snd !zoom_center));
          prev_scale := scale;
          refresh ();
-         update_scrollbars () ));
+         update_scrollbars ()));
   let bump_scale x y v =
     let a = (display#misc)#allocation in
     let x = x /. float a.Gtk.width in
@@ -286,7 +290,7 @@ let scroll_view ?width ?height ?packing st =
          match GdkEvent.Scroll.direction ev with
          | `UP -> bump_scale x y 1.
          | `DOWN -> bump_scale x y (-1.)
-         | _ -> false ));
+         | _ -> false));
   (display#event)#add [`SCROLL];
   let pos = ref None in
   ignore
@@ -294,14 +298,14 @@ let scroll_view ?width ?height ?packing st =
          (display#misc)#grab_focus ();
          if GdkEvent.get_type ev = `BUTTON_PRESS && GdkEvent.Button.button ev = 1
          then pos := Some (GdkEvent.Button.x ev, GdkEvent.Button.y ev);
-         false ));
+         false));
   ignore
     (((display#event)#connect)#button_release (fun ev ->
          if GdkEvent.Button.button ev = 1 then pos := None;
-         false ));
+         false));
   ignore
     (((display#event)#connect)#motion_notify (fun ev ->
-         ( match !pos with
+         (match !pos with
          | Some (x, y) ->
              let x', y' =
                if GdkEvent.Motion.is_hint ev
@@ -317,8 +321,8 @@ let scroll_view ?width ?height ?packing st =
              offset hadj ((x -. x') /. scale);
              offset vadj ((y -. y') /. scale);
              pos := Some (x', y')
-         | None -> () );
-         false ));
+         | None -> ());
+         false));
   (display#event)#add
     [`BUTTON_PRESS; `BUTTON_RELEASE; `BUTTON1_MOTION; `POINTER_MOTION_HINT];
   ignore
@@ -328,32 +332,32 @@ let scroll_view ?width ?height ?packing st =
          then (
            vadj#set_value (vadj#value -. vadj#step_increment);
            update_scrollbars ();
-           true )
+           true)
          else if keyval = GdkKeysyms._Down
          then (
            vadj#set_value (vadj#value +. vadj#step_increment);
            update_scrollbars ();
-           true )
+           true)
          else if keyval = GdkKeysyms._Left
          then (
            hadj#set_value (hadj#value -. hadj#step_increment);
            update_scrollbars ();
-           true )
+           true)
          else if keyval = GdkKeysyms._Right
          then (
            hadj#set_value (hadj#value +. hadj#step_increment);
            update_scrollbars ();
-           true )
+           true)
          else if keyval = GdkKeysyms._Page_Up
          then (
            vadj#set_value (vadj#value -. vadj#page_increment);
            update_scrollbars ();
-           true )
+           true)
          else if keyval = GdkKeysyms._Page_Down
          then (
            vadj#set_value (vadj#value +. vadj#page_increment);
            update_scrollbars ();
-           true )
+           true)
          else if keyval = GdkKeysyms._0 || keyval = GdkKeysyms._agrave
          then (
            let a = (table#misc)#allocation in
@@ -364,9 +368,9 @@ let scroll_view ?width ?height ?packing st =
            let v = ceil (log zf /. log 2. *. zoom_steps) in
            Format.eprintf "ZOOM: %f %f %f@." zf v sadj#upper;
            sadj#set_value (min sadj#upper (max 0. (sadj#upper -. v)));
-           true )
+           true)
          else if keyval = GdkKeysyms._1 || keyval = GdkKeysyms._ampersand
-         then ( sadj#set_value sadj#upper; true )
+         then (sadj#set_value sadj#upper; true)
          else if keyval = GdkKeysyms._plus
                  || keyval = GdkKeysyms._equal
                  || keyval = GdkKeysyms._KP_Add
@@ -377,7 +381,7 @@ let scroll_view ?width ?height ?packing st =
          then
            let x, y = (display#misc)#pointer in
            bump_scale (float x) (float y) (-1.)
-         else false ));
+         else false));
   (display#event)#add [`KEY_PRESS];
   object
     method scale_adjustment = sadj
@@ -418,7 +422,7 @@ area#misc#set_has_tooltip true;
 ignore (area#misc#connect#query_tooltip (fun ~x ~y ~kbd tooltip ->
 Format.eprintf "%d %d %b@." x y kbd; false));
 *)
-  
+
   (* Full screen mode *)
   let fullscreen = ref false in
   let toggle_fullscreen () =
@@ -438,5 +442,5 @@ Format.eprintf "%d %d %b@." x y kbd; false));
                  || keyval = GdkKeysyms._f
                  || keyval = GdkKeysyms._F
          then toggle_fullscreen ()
-         else false ));
+         else false));
   w#show ()

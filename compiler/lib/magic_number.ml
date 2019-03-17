@@ -90,4 +90,7 @@ let current_cma =
   in
   "Caml1999A", v
 
-let current = function `Exe -> current_exe | `Cmo -> current_cmo | `Cma -> current_cma
+let current = function
+  | `Exe -> current_exe
+  | `Cmo -> current_cmo
+  | `Cma -> current_cma

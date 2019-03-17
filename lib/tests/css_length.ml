@@ -57,7 +57,7 @@ let () =
                (CSS.Length.string_of_t ml))
       with
       | Invalid_argument s -> log_failure s
-      | Failure s -> log_failure s )
+      | Failure s -> log_failure s)
     ls
 
 let () = log_stop ()

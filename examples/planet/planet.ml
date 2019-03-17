@@ -84,7 +84,7 @@ let toggle_button txt1 txt2 action =
         state := not !state;
         b##.value := if !state then txt2 else txt1;
         action !state;
-        Js._true );
+        Js._true);
   b
 
 let checkbox txt checked action =
@@ -93,7 +93,7 @@ let checkbox txt checked action =
   b##.onclick :=
     Dom_html.handler (fun _ ->
         action (Js.to_bool b##.checked);
-        Js._true );
+        Js._true);
   let lab = Dom_html.createLabel doc in
   Dom.appendChild lab b;
   Dom.appendChild lab (doc##createTextNode (Js.string txt));
@@ -243,10 +243,10 @@ let tesselate_sphere p_div t_div =
       if j = 0
       then (
         faces.(2 * k) <- face north k ((k + t_div) mod n);
-        faces.((2 * k) + 1) <- face south ((k + (2 * t_div) - 1) mod n) (k + t_div - 1) )
+        faces.((2 * k) + 1) <- face south ((k + (2 * t_div) - 1) mod n) (k + t_div - 1))
       else (
         faces.(2 * k) <- face k ((k + t_div) mod n) (k - 1);
-        faces.((2 * k) + 1) <- face (k - 1) ((k + t_div) mod n) ((k + t_div - 1) mod n) )
+        faces.((2 * k) + 1) <- face (k - 1) ((k + t_div) mod n) ((k + t_div - 1) mod n))
     done
   done;
   {vertices; faces}
@@ -267,7 +267,8 @@ let divide all o =
   let midpoints = Hashtbl.create 17 in
   let midpoint v1 v2 =
     let p = if v1 < v2 then v1, v2 else v2, v1 in
-    try Hashtbl.find midpoints p with Not_found ->
+    try Hashtbl.find midpoints p
+    with Not_found ->
       let v1 = o.vertices.(v1) in
       let v2 = o.vertices.(v2) in
       let v =
@@ -298,10 +299,10 @@ let divide all o =
       faces.(!k + 1) <- {v1 = w1; v2; v3 = w2};
       faces.(!k + 2) <- {v1 = w3; v2 = w2; v3};
       faces.(!k + 3) <- {v1 = w1; v2 = w2; v3 = w3};
-      k := !k + 4 )
+      k := !k + 4)
     else (
       faces.(!k) <- o.faces.(i);
-      incr k )
+      incr k)
   done;
   assert (!j = Array.length vertices);
   assert (!k = Array.length faces);
@@ -332,7 +333,7 @@ let load_image src =
   let img = Html.createImg Html.document in
   lwt_wrap (fun c ->
       img##.onload := Html.handler (fun _ -> c (); Js._false);
-      img##.src := src )
+      img##.src := src)
   >>= fun () -> Lwt.return img
 
 (****)
@@ -394,11 +395,11 @@ let shadow texture =
         truncate (mod_float (((2. *. pi) -. phi) *. float w /. 2. /. pi) (float w))
       in
       ctx'##drawImage_fromCanvas canvas (float i) 0.;
-      ctx'##drawImage_fromCanvas canvas (float i -. float w) 0. )
+      ctx'##drawImage_fromCanvas canvas (float i -. float w) 0.)
     else if not !no_lighting
     then (
       ctx'##drawImage texture 0. 0.;
-      no_lighting := true )
+      no_lighting := true)
   in
   (*
   Dom.appendChild Html.document##body canvas';
@@ -535,7 +536,7 @@ let du = u' -. u in
 let dv = v' -. v in
 *)
         ctx##drawImage_fullFromCanvas shd u v du dv u v du dv;
-        ctx##restore ) )
+        ctx##restore))
     o.faces
 
 let ( >> ) x f = f x
@@ -559,7 +560,7 @@ let texture = Js.string "../planet/texture.jpg"
 
 let start _ =
   Lwt.ignore_result
-    ( load_image texture
+    (load_image texture
     >>= fun texture ->
     let shd, update_shadow, update_texture = shadow texture in
     let canvas = create_canvas width height in
@@ -577,7 +578,7 @@ let start _ =
           let v1 = o.vertices.(v1) in
           let v2 = o.vertices.(v2) in
           let v3 = o.vertices.(v3) in
-          cross_product (vect v1 v2) (vect v1 v3) )
+          cross_product (vect v1 v2) (vect v1 v3))
         o.faces
     in
     let face_info = Array.map (fun f -> precompute_mapping_info tw th uv f) o.faces in
@@ -598,7 +599,7 @@ let start _ =
     add ctrl d;
     let form = Html.createDiv doc in
     let br () = Html.createBr doc in
-    ( add form (toggle_button "Pause" "Resume" (fun p -> paused := p));
+    (add form (toggle_button "Pause" "Resume" (fun p -> paused := p));
       add form (br ());
       add form (toggle_button "Follow rotation" "Fixed position" (fun f -> follow := f));
       add form (br ());
@@ -607,7 +608,7 @@ let start _ =
         (button "Reset orientation" (fun () ->
              m := matrix_identity;
              phi_rot := 0.;
-             m_obliq := xy_rotation (-. !obl) ));
+             m_obliq := xy_rotation (-. !obl)));
       add form (br ());
       let lab = Html.createLabel doc in
       add lab (doc##createTextNode (Js.string "Date:"));
@@ -616,19 +617,22 @@ let start _ =
         (fun txt ->
           let o = Html.createOption doc in
           add o (doc##createTextNode (Js.string txt));
-          s##add o Js.null )
+          s##add o Js.null)
         ["December solstice"; "Equinox"; "June solstice"];
       s##.onchange :=
         Html.handler (fun _ ->
             let o =
-              match s##.selectedIndex with 0 -> obliquity | 1 -> 0. | _ -> -.obliquity
+              match s##.selectedIndex with
+              | 0 -> obliquity
+              | 1 -> 0.
+              | _ -> -.obliquity
             in
             update_shadow o;
             obl := o;
             (*m_obliq := xy_rotation (-. o);*)
-            Js._true );
+            Js._true);
       add lab s;
-      add form lab );
+      add form lab);
     Dom.appendChild ctrl form;
     let form = Html.createDiv doc in
     add form (checkbox "Lighting" true (fun l -> lighting := l));
@@ -662,7 +666,7 @@ let start _ =
                    then m := matrix_mul (xz_rotation (2. *. float dx /. float width)) !m;
                    mx := x;
                    my := y;
-                   Js._true ))
+                   Js._true))
               Js._true
           in
           let c2 = ref Js.null in
@@ -674,9 +678,9 @@ let start _ =
                  (Dom_html.handler (fun _ ->
                       Html.removeEventListener c1;
                       Js.Opt.iter !c2 Html.removeEventListener;
-                      Js._true ))
+                      Js._true))
                  Js._true);
-          Js._false );
+          Js._false);
     let ti = ref (new%js Js.date_now)##getTime in
     let fps = ref 0. in
     let rec loop t phi =
@@ -691,7 +695,7 @@ let start _ =
       then (
         ctx'##beginPath;
         ctx'##arc r r (r *. 0.95) 0. (-2. *. pi) Js._true;
-        ctx'##clip );
+        ctx'##clip);
       ctx'##setTransform (r -. 2.) 0. 0. (r -. 2.) r r;
       ctx'##.globalCompositeOperation := Js.string "lighter";
       draw ctx' texture shd o' uv normals face_info v';
@@ -717,7 +721,7 @@ if true then Lwt.return () else
       if (not !paused) && !follow then phi_rot := !phi_rot +. angle;
       loop t' (if !paused then phi else phi +. angle)
     in
-    loop (new%js Js.date_now)##getTime 0. );
+    loop (new%js Js.date_now)##getTime 0.);
   Js._false
 
 let _ = Html.window##.onload := Html.handler start

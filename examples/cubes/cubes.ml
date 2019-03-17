@@ -43,12 +43,12 @@ let update a =
     if not (get a (i + 1) j k || get a i (j + 1) k || get a i j (k + 1))
     then (
       a.(i).(j).(k) <- false;
-      true )
+      true)
     else false
   else if get a (i - 1) j k && get a i (j - 1) k && get a i j (k - 1)
   then (
     a.(i).(j).(k) <- true;
-    true )
+    true)
   else false
 
 (****)

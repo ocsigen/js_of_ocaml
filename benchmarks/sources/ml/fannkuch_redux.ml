@@ -45,7 +45,7 @@ let fannkuch n =
       if !r == n
       then (
         go := false;
-        r := 0 )
+        r := 0)
       else (
         t := perm1.(0);
         for i = 0 to !r - 1 do
@@ -53,7 +53,7 @@ let fannkuch n =
         done;
         perm1.(!r) <- !t;
         count.(!r) <- count.(!r) - 1;
-        if count.(!r) > 0 then go := false else r := !r + 1 )
+        if count.(!r) > 0 then go := false else r := !r + 1)
     done;
     incr nperm
   done;

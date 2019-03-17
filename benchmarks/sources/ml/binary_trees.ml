@@ -17,7 +17,9 @@ let rec make i d =
     let i2 = 2 * i and d = d - 1 in
     Node (make (i2 - 1) d, i, make i2 d)
 
-let rec check = function Empty -> 0 | Node (l, i, r) -> i + check l - check r
+let rec check = function
+  | Empty -> 0
+  | Node (l, i, r) -> i + check l - check r
 
 let min_depth = 4
 

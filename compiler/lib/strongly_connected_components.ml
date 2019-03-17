@@ -45,7 +45,7 @@ end = struct
       then (
         marked.(node) <- true;
         List.iter aux graph.(node);
-        push node )
+        push node)
     in
     for i = 0 to size - 1 do
       aux i
@@ -63,14 +63,14 @@ end = struct
       then (
         marked.(node) <- true;
         id.(node) <- !count;
-        List.iter aux graph.(node) )
+        List.iter aux graph.(node))
     in
     for i = size - 1 downto 0 do
       let node = order.(i) in
       if not marked.(node)
       then (
         aux order.(i);
-        incr count )
+        incr count)
     done;
     id, !count
 
@@ -159,9 +159,9 @@ struct
           Id.Set.fold
             (fun dest acc ->
               let v = try Id.Map.find dest back with Not_found -> assert false in
-              v :: acc )
+              v :: acc)
             dests
-            [] )
+            [])
     in
     {back; forth}, integer_graph
 
@@ -175,13 +175,13 @@ struct
         match nodes with
         | [] -> assert false
         | [node] ->
-            ( ( if List.mem node integer_graph.(node)
+            ( (if List.mem node integer_graph.(node)
               then Has_loop [numbering.forth.(node)]
-              else No_loop numbering.forth.(node) )
+              else No_loop numbering.forth.(node))
             , component_edges.(component) )
         | _ :: _ ->
             ( Has_loop (List.map (fun node -> numbering.forth.(node)) nodes)
-            , component_edges.(component) ) )
+            , component_edges.(component) ))
       sorted_connected_components
 
   let connected_components_sorted_from_roots_to_leaf graph =

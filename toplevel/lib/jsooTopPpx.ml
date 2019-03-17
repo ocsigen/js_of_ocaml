@@ -27,13 +27,13 @@ let preprocess_structure str =
   let open Ast_mapper in
   List.fold_right !ppx_rewriters ~init:str ~f:(fun ppx_rewriter str ->
       let mapper = ppx_rewriter [] in
-      mapper.structure mapper str )
+      mapper.structure mapper str)
 
 let preprocess_signature str =
   let open Ast_mapper in
   List.fold_right !ppx_rewriters ~init:str ~f:(fun ppx_rewriter str ->
       let mapper = ppx_rewriter [] in
-      mapper.signature mapper str )
+      mapper.signature mapper str)
 
 let preprocess_phrase phrase =
   let open Parsetree in

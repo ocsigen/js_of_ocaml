@@ -31,7 +31,12 @@ let expr s e =
   | Field (x, n) -> Field (s x, n)
   | Closure (l, pc) -> Closure (l, subst_cont s pc)
   | Prim (p, l) ->
-      Prim (p, List.map l ~f:(fun x -> match x with Pv x -> Pv (s x) | Pc _ -> x))
+      Prim
+        ( p
+        , List.map l ~f:(fun x ->
+              match x with
+              | Pv x -> Pv (s x)
+              | Pc _ -> x) )
 
 let instr s i =
   match i with
@@ -80,7 +85,7 @@ let rec cont' s pc blocks visited =
       List.fold_left b.body ~init:(blocks, visited) ~f:(fun (blocks, visited) instr ->
           match instr with
           | Let (_, Closure (_, (pc, _))) -> cont' s pc blocks visited
-          | _ -> blocks, visited )
+          | _ -> blocks, visited)
     in
     Code.fold_children
       blocks
@@ -94,7 +99,10 @@ let cont s addr (pc, blocks, free_pc) =
 
 (****)
 
-let from_array s x = match s.(Var.idx x) with Some y -> y | None -> x
+let from_array s x =
+  match s.(Var.idx x) with
+  | Some y -> y
+  | None -> x
 
 (****)
 

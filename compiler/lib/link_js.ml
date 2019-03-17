@@ -42,7 +42,7 @@ let kind ~resolve_sourcemap_url file line =
     | None -> (
       match drop_prefix ~prefix:sourceMappingURL line with
       | Some url -> `Url url
-      | None -> `Other )
+      | None -> `Other)
   in
   match s with
   | `Other -> `Other
@@ -65,22 +65,22 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
   List.iter
     (fun file ->
       let ic = open_in file in
-      ( try
-          output_string output (Printf.sprintf "//# 1 %S" file);
-          new_line ();
-          let start_line = !line_offset in
-          while true do
-            let line = input_line ic in
-            match kind ~resolve_sourcemap_url file line, source_map with
-            | `Other, _ -> output_string output line; new_line ()
-            | `Drop, _ -> ()
-            | `Source_map _, None -> ()
-            | `Source_map x, Some _ ->
-                source_offset := List.length x.Source_map.sources;
-                sm := (start_line, file, x) :: !sm
-          done
-        with End_of_file -> () );
-      close_in ic; new_line () )
+      (try
+         output_string output (Printf.sprintf "//# 1 %S" file);
+         new_line ();
+         let start_line = !line_offset in
+         while true do
+           let line = input_line ic in
+           match kind ~resolve_sourcemap_url file line, source_map with
+           | `Other, _ -> output_string output line; new_line ()
+           | `Drop, _ -> ()
+           | `Source_map _, None -> ()
+           | `Source_map x, Some _ ->
+               source_offset := List.length x.Source_map.sources;
+               sm := (start_line, file, x) :: !sm
+         done
+       with End_of_file -> ());
+      close_in ic; new_line ())
     files;
   match source_map with
   | None -> ()
@@ -96,4 +96,4 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
       | Some file ->
           Source_map_io.to_file sm file;
           let s = sourceMappingURL ^ Filename.basename file in
-          output_string output s ) )
+          output_string output s))

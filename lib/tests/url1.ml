@@ -32,7 +32,7 @@ let () =
   | Some u -> (
     match url_string_url u with
     | None -> log_failure "can't parse pretty-printed url"
-    | Some v -> if u = v then log_success () else log_failure "no fixpoint" )
+    | Some v -> if u = v then log_success () else log_failure "no fixpoint")
 
 let () =
   let t1 = Url.urlencode "/toto+ blah&tutu" in

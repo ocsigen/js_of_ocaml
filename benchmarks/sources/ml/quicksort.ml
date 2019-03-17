@@ -31,13 +31,13 @@ let rec qsort lo hi (a : int array) =
       then (
         let temp = a.(!i) in
         a.(!i) <- a.(!j);
-        a.(!j) <- temp )
+        a.(!j) <- temp)
     done;
     let temp = a.(!i) in
     a.(!i) <- a.(hi);
     a.(hi) <- temp;
     qsort lo (!i - 1) a;
-    qsort (!i + 1) hi a )
+    qsort (!i + 1) hi a)
 
 (* Same but abstract over the comparison to force spilling *)
 
@@ -60,13 +60,13 @@ let rec qsort2 lo hi (a : int array) =
       then (
         let temp = a.(!i) in
         a.(!i) <- a.(!j);
-        a.(!j) <- temp )
+        a.(!j) <- temp)
     done;
     let temp = a.(!i) in
     a.(!i) <- a.(hi);
     a.(hi) <- temp;
     qsort2 lo (!i - 1) a;
-    qsort2 (!i + 1) hi a )
+    qsort2 (!i + 1) hi a)
 
 (* Test *)
 

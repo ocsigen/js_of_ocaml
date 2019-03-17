@@ -26,7 +26,8 @@ module Flag = struct
 
   let o ~name ~default =
     let state =
-      try List.assoc name !optims with Not_found ->
+      try List.assoc name !optims
+      with Not_found ->
         let state = ref default in
         optims := (name, state) :: !optims;
         state
@@ -34,12 +35,12 @@ module Flag = struct
     fun () -> !state
 
   let disable s =
-    try List.assoc s !optims := false with Not_found ->
-      failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    try List.assoc s !optims := false
+    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let enable s =
-    try List.assoc s !optims := true with Not_found ->
-      failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    try List.assoc s !optims := true
+    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let pretty = o ~name:"pretty" ~default:false
 
@@ -99,15 +100,15 @@ module Param = struct
     let state = ref default in
     let set : string -> unit =
      fun v ->
-      try state := convert v with _ ->
-        warn "Warning: malformed option %s=%s. IGNORE@." name v
+      try state := convert v
+      with _ -> warn "Warning: malformed option %s=%s. IGNORE@." name v
     in
     params := (name, (set, desc)) :: !params;
     fun () -> !state
 
   let set s v =
-    try fst (List.assoc s !params) v with Not_found ->
-      failwith (Printf.sprintf "The option named %S doesn't exist" s)
+    try fst (List.assoc s !params) v
+    with Not_found -> failwith (Printf.sprintf "The option named %S doesn't exist" s)
 
   let all () = List.map !params ~f:(fun (n, (_, d)) -> n, d)
 

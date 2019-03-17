@@ -43,7 +43,10 @@ module List = struct
   let filter_map ~f l =
     let l =
       List.fold_left
-        (fun acc x -> match f x with Some x -> x :: acc | None -> acc)
+        (fun acc x ->
+          match f x with
+          | Some x -> x :: acc
+          | None -> acc)
         []
         l
     in
@@ -54,13 +57,19 @@ module List = struct
   let rec take' acc n l =
     if n = 0
     then acc, l
-    else match l with [] -> acc, [] | x :: xs -> take' (x :: acc) (pred n) xs
+    else
+      match l with
+      | [] -> acc, []
+      | x :: xs -> take' (x :: acc) (pred n) xs
 
   let take n l =
     let x, xs = take' [] n l in
     List.rev x, xs
 
-  let rec last = function [] -> None | [x] -> Some x | _ :: xs -> last xs
+  let rec last = function
+    | [] -> None
+    | [x] -> Some x
+    | _ :: xs -> last xs
 
   let sort_uniq ~compare l =
     let l = List.sort compare l in
@@ -76,11 +85,20 @@ module List = struct
 end
 
 module Option = struct
-  let map ~f x = match x with None -> None | Some v -> Some (f v)
+  let map ~f x =
+    match x with
+    | None -> None
+    | Some v -> Some (f v)
 
-  let iter ~f x = match x with None -> () | Some v -> f v
+  let iter ~f x =
+    match x with
+    | None -> ()
+    | Some v -> f v
 
-  let filter ~f x = match x with None -> None | Some v -> if f v then Some v else None
+  let filter ~f x =
+    match x with
+    | None -> None
+    | Some v -> if f v then Some v else None
 end
 
 module Char = struct
@@ -179,7 +197,7 @@ module String = struct
                 let sub_len = sub_end - !sub_start + 1 in
                 acc := String.sub s !sub_start sub_len :: !acc;
                 sub_start := new_sub_start;
-                i := new_sub_start )
+                i := new_sub_start)
           done;
           List.rev (String.sub s !sub_start (s_max - !sub_start + 1) :: !acc)
 
@@ -189,7 +207,7 @@ module String = struct
     then s
     else (
       Bytes.unsafe_set b 0 (f (Bytes.unsafe_get b 0));
-      Bytes.to_string b )
+      Bytes.to_string b)
 
   let lsplit2 line ~on:delim =
     try
@@ -257,7 +275,7 @@ end = struct
     then (
       let a = Array.make !size 0 in
       Array.blit t.arr 0 a 0 (Array.length t.arr);
-      t.arr <- a );
+      t.arr <- a);
     Array.unsafe_set t.arr idx (Array.unsafe_get t.arr idx lor (1 lsl off))
 
   let unset t i =

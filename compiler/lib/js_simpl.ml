@@ -52,7 +52,7 @@ let rec enot_rec e =
         | J.Le ->
             (J.EBin (J.Lt, e2, e1), 0)
 *)
-      | _ -> J.EUn (J.Not, e), 1 )
+      | _ -> J.EUn (J.Not, e), 1)
     | J.EUn (J.Not, e) -> e, 0
     | J.EUn ((J.Neg | J.Pl | J.Typeof | J.Void | J.Delete | J.Bnot), _) ->
         J.EUn (J.Not, e), 0
@@ -66,9 +66,15 @@ let rec enot_rec e =
 
 let enot e = fst (enot_rec e)
 
-let unblock st = match st with J.Block l, _ -> l | _ -> [st]
+let unblock st =
+  match st with
+  | J.Block l, _ -> l
+  | _ -> [st]
 
-let block l = match l with [x] -> x | l -> J.Block l, J.N
+let block l =
+  match l with
+  | [x] -> x
+  | l -> J.Block l, J.N
 
 exception Not_expression
 
@@ -134,9 +140,12 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
         then (J.If_statement (e, iftrue, None), loc) :: unblock iffalse
         else if falsestop
         then (J.If_statement (enot e, iffalse, None), loc) :: unblock iftrue
-        else [J.If_statement (e, iftrue, Some iffalse), loc] ) )
+        else [J.If_statement (e, iftrue, Some iffalse), loc]))
 
-let unopt b = match b with Some b -> b | None -> J.Block [], J.N
+let unopt b =
+  match b with
+  | Some b -> b
+  | None -> J.Block [], J.N
 
 let if_statement e loc iftrue truestop iffalse falsestop =
   (*FIX: should be done at an earlier stage*)
@@ -183,7 +192,10 @@ let rec get_variable acc = function
   | J.EFun _ | J.EStr _ | J.EBool _ | J.ENum _ | J.EQuote _ | J.ERegexp _ -> acc
   | J.EArr a ->
       List.fold_left
-        (fun acc i -> match i with None -> acc | Some e1 -> get_variable acc e1)
+        (fun acc i ->
+          match i with
+          | None -> acc
+          | Some e1 -> get_variable acc e1)
         acc
         a
   | J.EObj l -> List.fold_left (fun acc (_, e1) -> get_variable acc e1) acc l

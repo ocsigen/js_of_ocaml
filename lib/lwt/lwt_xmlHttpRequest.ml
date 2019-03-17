@@ -28,7 +28,8 @@ let encode_url l =
     (List.map
        (function
          | name, `String s -> Url.urlencode name ^ "=" ^ Url.urlencode (to_string s)
-         | name, `File s -> Url.urlencode name ^ "=" ^ Url.urlencode (to_string s##.name))
+         | name, `File s -> Url.urlencode name ^ "=" ^ Url.urlencode (to_string s##.name)
+         )
        l)
 
 (* Higher level interface: *)
@@ -115,7 +116,12 @@ let perform_raw
   let contents_normalization = function
     | `POST_form args ->
         let only_strings =
-          List.for_all (fun x -> match x with _, `String _ -> true | _ -> false) args
+          List.for_all
+            (fun x ->
+              match x with
+              | _, `String _ -> true
+              | _ -> false)
+            args
         in
         let form_contents =
           if only_strings then `Fields (ref []) else Form.empty_form_contents ()
@@ -126,7 +132,9 @@ let perform_raw
     | `Blob b -> `Blob (b : #File.blob Js.t :> File.blob Js.t)
   in
   let contents =
-    match contents with None -> None | Some c -> Some (contents_normalization c)
+    match contents with
+    | None -> None
+    | Some c -> Some (contents_normalization c)
   in
   let method_to_string m =
     match m with
@@ -140,10 +148,14 @@ let perform_raw
   in
   let method_, content_type =
     let override_method m =
-      match override_method with None -> m | Some v -> method_to_string v
+      match override_method with
+      | None -> m
+      | Some v -> method_to_string v
     in
     let override_content_type c =
-      match content_type with None -> Some c | Some _ -> content_type
+      match content_type with
+      | None -> Some c
+      | Some _ -> content_type
     in
     match contents with
     | None -> override_method "GET", content_type
@@ -152,7 +164,7 @@ let perform_raw
       | `Fields _strings ->
           ( override_method "POST"
           , override_content_type "application/x-www-form-urlencoded" )
-      | `FormData _ -> override_method "POST", content_type )
+      | `FormData _ -> override_method "POST", content_type)
     | Some (`String _ | `Blob _) -> override_method "POST", content_type
   in
   let url =
@@ -163,23 +175,23 @@ let perform_raw
   let (res : resptype generic_http_frame Lwt.t), w = Lwt.task () in
   let req = create () in
   req##_open (Js.string method_) (Js.string url) Js._true;
-  ( match override_mime_type with
+  (match override_mime_type with
   | None -> ()
-  | Some mime_type -> req##overrideMimeType (Js.string mime_type) );
-  ( match response_type with
+  | Some mime_type -> req##overrideMimeType (Js.string mime_type));
+  (match response_type with
   | ArrayBuffer -> req##.responseType := Js.string "arraybuffer"
   | Blob -> req##.responseType := Js.string "blob"
   | Document -> req##.responseType := Js.string "document"
   | JSON -> req##.responseType := Js.string "json"
   | Text -> req##.responseType := Js.string "text"
-  | Default -> req##.responseType := Js.string "" );
-  ( match with_credentials with
+  | Default -> req##.responseType := Js.string "");
+  (match with_credentials with
   | Some c -> req##.withCredentials := Js.bool c
-  | None -> () );
-  ( match content_type with
+  | None -> ());
+  (match content_type with
   | Some content_type ->
       req##setRequestHeader (Js.string "Content-type") (Js.string content_type)
-  | _ -> () );
+  | _ -> ());
   List.iter (fun (n, v) -> req##setRequestHeader (Js.string n) (Js.string v)) headers;
   let headers s =
     Opt.case
@@ -197,7 +209,7 @@ let perform_raw
         else (
           Lwt.wakeup_exn w (Wrong_headers (req##.status, headers));
           st := `Failed;
-          req##abort );
+          req##abort);
       !st <> `Failed
   in
   req##.onreadystatechange :=
@@ -222,28 +234,28 @@ let perform_raw
                 | Default -> default_response url req##.status headers req
               in
               Lwt.wakeup w response
-        | _ -> () );
-  ( match progress with
+        | _ -> ());
+  (match progress with
   | Some progress ->
       req##.onprogress :=
         Dom.handler (fun e ->
             progress e##.loaded e##.total;
-            Js._true )
-  | None -> () );
+            Js._true)
+  | None -> ());
   Optdef.iter req##.upload (fun upload ->
       match upload_progress with
       | Some upload_progress ->
           upload##.onprogress :=
             Dom.handler (fun e ->
                 upload_progress e##.loaded e##.total;
-                Js._true )
-      | None -> () );
-  ( match contents with
+                Js._true)
+      | None -> ());
+  (match contents with
   | None -> req##send Js.null
   | Some (`Form_contents (`Fields l)) -> req##send (Js.some (string (encode_url !l)))
   | Some (`Form_contents (`FormData f)) -> req##send_formData f
   | Some (`String s) -> req##send (Js.some (Js.string s))
-  | Some (`Blob b) -> req##send_blob b );
+  | Some (`Blob b) -> req##send_blob b);
   Lwt.on_cancel res (fun () -> req##abort);
   res
 

@@ -36,6 +36,10 @@ let b_exn () = raise (B 2)
  * match .. with exception is no compiled properly *)
 let () =
   assert (
-    try match a () with exception (A | B _) -> true | _n -> b_exn () with B _ -> true )
+    try
+      match a () with
+      | exception (A | B _) -> true
+      | _n -> b_exn ()
+    with B _ -> true)
 
 let _ = log_stop ()

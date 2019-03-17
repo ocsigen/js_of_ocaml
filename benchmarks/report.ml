@@ -73,10 +73,12 @@ let read_column ?title ?color meas spec refe =
         let l = read_measures meas spec nm in
         let a = Array.of_list l in
         let m, i = mean_with_confidence a in
-        nm, [m, i] )
+        nm, [m, i])
   in
   let nm =
-    match title with Some nm -> nm | None -> Spec.dir ~root:meas (Spec.no_ext spec)
+    match title with
+    | Some nm -> nm
+    | None -> Spec.dir ~root:meas (Spec.no_ext spec)
   in
   if refe then reference := Some l;
   Some ([Some (nm, color)], l)
@@ -136,8 +138,8 @@ let normalize (h, t) =
             if r <> r
             then (
               Format.eprintf "No reference available for '%s'@." nm;
-              exit 1 );
-            nm, List.map l ~f:(fun (v, i) -> v /. r, i /. r) ) )
+              exit 1);
+            nm, List.map l ~f:(fun (v, i) -> v /. r, i /. r)) )
 
 let stats (h, t) =
   for i = 0 to List.length h - 1 do
@@ -158,13 +160,17 @@ let stats (h, t) =
 let text_output _no_header (h, t) =
   Format.printf "-";
   List.iter h ~f:(fun v ->
-      let nm = match v with Some (nm, _) -> nm | None -> "" in
-      Format.printf " - \"%s\"" nm );
+      let nm =
+        match v with
+        | Some (nm, _) -> nm
+        | None -> ""
+      in
+      Format.printf " - \"%s\"" nm);
   Format.printf "@.";
   List.iter t ~f:(fun (nm, l) ->
       Format.printf "%s" nm;
       List.iter l ~f:(fun (m, i) -> Format.printf " %f %f" m i);
-      Format.printf "@." )
+      Format.printf "@.")
 
 let gnuplot_output ch no_header (h, t) =
   let n = List.length (snd (List.hd t)) in
@@ -191,7 +197,7 @@ let gnuplot_output ch no_header (h, t) =
     if !ylabel <> "" then Printf.fprintf ch "set ylabel \"%s\"\n" !ylabel;
     if !maximum > 0.
     then Printf.fprintf ch "set yrange [0:%f]\n" !maximum
-    else Printf.fprintf ch "set yrange [0:]\n" );
+    else Printf.fprintf ch "set yrange [0:]\n");
   (* labels *)
   for i = 0 to n - 1 do
     let nn = ref 0. in
@@ -205,7 +211,7 @@ let gnuplot_output ch no_header (h, t) =
             v
             (!nn +. (float i /. float n) -. 0.5 (* why? *))
             ((!maximum *. 1.04) +. 0.1);
-        nn := !nn +. 1. )
+        nn := !nn +. 1.)
   done;
   Printf.fprintf ch "plot";
   for i = 0 to n - 1 do
@@ -214,7 +220,9 @@ let gnuplot_output ch no_header (h, t) =
         if i > 0
         then Printf.fprintf ch ", \"-\" using 2:3 title columnhead lw 0"
         else Printf.fprintf ch " \"-\" using 2:3:xtic(1) title columnhead lw 0";
-        match col with Some c -> Printf.fprintf ch " lc rgb '%s'" c | None -> () )
+        match col with
+        | Some c -> Printf.fprintf ch " lc rgb '%s'" c
+        | None -> ())
     | None ->
         if i > 0
         then Printf.fprintf ch ", \"-\" using 2:3 title columnhead lw 0"
@@ -223,22 +231,26 @@ let gnuplot_output ch no_header (h, t) =
   done;
   Printf.fprintf ch "\n";
   for i = 0 to n - 1 do
-    let nm = match List.nth h i with Some (nm, _) -> nm | None -> "" in
+    let nm =
+      match List.nth h i with
+      | Some (nm, _) -> nm
+      | None -> ""
+    in
     Printf.fprintf ch "- - \"%s\"\n" nm;
     List.iter t ~f:(fun (nm, l) ->
         let v, ii = List.nth l i in
-        Printf.fprintf ch "\"%s\" %f %f\n" nm v (if ii <> ii then 0. else ii) );
+        Printf.fprintf ch "\"%s\" %f %f\n" nm v (if ii <> ii then 0. else ii));
     Printf.fprintf ch "e\n"
   done
 
 let filter (h, t) =
   let l1 =
     List.filter t ~f:(fun (nm, _) ->
-        not (List.mem nm ~set:!appended || List.mem nm ~set:!omitted) )
+        not (List.mem nm ~set:!appended || List.mem nm ~set:!omitted))
   in
   let app =
     List.fold_left !appended ~init:[] ~f:(fun beg nm ->
-        try (nm, List.assoc nm t) :: beg with Not_found -> beg )
+        try (nm, List.assoc nm t) :: beg with Not_found -> beg)
   in
   h, l1 @ app
 
@@ -268,9 +280,9 @@ let output_tables r conf =
         (List.map conf ~f:(function
             | None -> read_blank_column ()
             | Some (dir1, dir2, color, title, refe) ->
-                read_column ~title ~color dir1 (Spec.create dir2 "") refe ))
+                read_column ~title ~color dir1 (Spec.create dir2 "") refe))
         (output_function !no_header);
-      no_header := true );
+      no_header := true);
   close ()
 
 let read_config () =
@@ -278,7 +290,7 @@ let read_config () =
   if not (Sys.file_exists f)
   then (
     Format.eprintf "Configuration file '%s' not found!@." f;
-    exit 1 );
+    exit 1);
   let fullinfo = ref [] in
   let info = ref [] in
   let i = ref 0 in
@@ -297,38 +309,38 @@ let read_config () =
     let dir1 = if dir1 = "\"\"" then dir0 else dir0 ^ "/" ^ dir1 in
     info := Some (dir1, dir2, color, title, refe) :: !info
   in
-  ( try
-      while true do
-        let l = input_line ch in
-        if String.length l = 0
-        then (
-          if !info <> []
-          then (
-            fullinfo := List.rev !info :: !fullinfo;
-            info := [];
-            i := 0 ) )
-        else if l.[0] <> '#'
-        then (
-          incr i;
-          reference := !nreference = !i;
-          let kind, rem = split_at_space l in
-          let kind2, rem = split_at_space rem in
-          ( match kind with
-          | "histogram" -> ()
-          | "histogramref" -> if !nreference = -1 then reference := true
-          | _ ->
-              Format.eprintf "Unknown config options '%s'@." kind;
-              exit 1 );
-          match kind2 with
-          | "blank" -> info := None :: !info
-          | "times" -> get_info times rem !reference
-          | "compiletimes" -> get_info compiletimes rem !reference
-          | "sizes" -> get_info sizes rem !reference
-          | _ ->
-              Format.eprintf "Unknown config options '%s'@." kind2;
-              exit 1 )
-      done
-    with End_of_file -> () );
+  (try
+     while true do
+       let l = input_line ch in
+       if String.length l = 0
+       then (
+         if !info <> []
+         then (
+           fullinfo := List.rev !info :: !fullinfo;
+           info := [];
+           i := 0))
+       else if l.[0] <> '#'
+       then (
+         incr i;
+         reference := !nreference = !i;
+         let kind, rem = split_at_space l in
+         let kind2, rem = split_at_space rem in
+         (match kind with
+         | "histogram" -> ()
+         | "histogramref" -> if !nreference = -1 then reference := true
+         | _ ->
+             Format.eprintf "Unknown config options '%s'@." kind;
+             exit 1);
+         match kind2 with
+         | "blank" -> info := None :: !info
+         | "times" -> get_info times rem !reference
+         | "compiletimes" -> get_info compiletimes rem !reference
+         | "sizes" -> get_info sizes rem !reference
+         | _ ->
+             Format.eprintf "Unknown config options '%s'@." kind2;
+             exit 1)
+     done
+   with End_of_file -> ());
   close_in ch;
   if !info <> [] then fullinfo := List.rev !info :: !fullinfo;
   !reference, List.rev !fullinfo

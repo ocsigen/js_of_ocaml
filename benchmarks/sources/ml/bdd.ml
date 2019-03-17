@@ -26,7 +26,11 @@ let rec eval bdd vars =
   | One -> true
   | Node (l, v, _, h) -> if vars.(v) then eval h vars else eval l vars
 
-let getId bdd = match bdd with Node (_, _, id, _) -> id | Zero -> 0 | One -> 1
+let getId bdd =
+  match bdd with
+  | Node (_, _, id, _) -> id
+  | Zero -> 0
+  | One -> 1
 
 let initSize_1 = (8 * 1024) - 1
 
@@ -53,7 +57,7 @@ let resize newSize =
           let ind = hashVal (getId l) (getId h) v land newSz_1 in
           newArr.(ind) <- n :: newArr.(ind);
           copyBucket ns
-      | _ -> assert false )
+      | _ -> assert false)
   in
   for n = 0 to !sz_1 do
     copyBucket arr.(n)
@@ -65,11 +69,11 @@ let insert idl idh v ind bucket newNode =
   if !n_items <= !sz_1
   then (
     !htab.(ind) <- newNode :: bucket;
-    incr n_items )
+    incr n_items)
   else (
     resize (!sz_1 + !sz_1 + 2);
     let ind = hashVal idl idh v land !sz_1 in
-    !htab.(ind) <- newNode :: !htab.(ind) )
+    !htab.(ind) <- newNode :: !htab.(ind))
 
 let resetUnique () =
   sz_1 := initSize_1;
@@ -95,7 +99,7 @@ let mkNode low v high =
         match n with
         | Node (l, v', _id, h) ->
             if v = v' && idl = getId l && idh = getId h then n else lookup ns
-        | _ -> assert false )
+        | _ -> assert false)
     in
     lookup bucket
 
@@ -161,7 +165,7 @@ let rec and2 n1 n2 =
           in
           andslot1.(h) <- i1; andslot2.(h) <- i2; andslot3.(h) <- f; f
     | Zero -> Zero
-    | One -> n1 )
+    | One -> n1)
   | Zero -> Zero
   | One -> n2
 
@@ -182,7 +186,7 @@ let rec xor n1 n2 =
           in
           andslot1.(h) <- i1; andslot2.(h) <- i2; andslot3.(h) <- f; f
     | Zero -> n1
-    | One -> not n1 )
+    | One -> not n1)
   | Zero -> n2
   | One -> not n2
 

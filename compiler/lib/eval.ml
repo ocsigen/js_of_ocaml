@@ -31,7 +31,10 @@ let get_static_env s = try Some (Hashtbl.find static_env s) with Not_found -> No
 
 module Int = Int32
 
-let int_binop l f = match l with [Int i; Int j] -> Some (Int (f i j)) | _ -> None
+let int_binop l f =
+  match l with
+  | [Int i; Int j] -> Some (Int (f i j))
+  | _ -> None
 
 let shift l f =
   match l with
@@ -47,10 +50,14 @@ let float_binop_aux l f =
     | [Float i; Int j] -> Some (i, Int32.to_float j)
     | _ -> None
   in
-  match args with None -> None | Some (i, j) -> Some (f i j)
+  match args with
+  | None -> None
+  | Some (i, j) -> Some (f i j)
 
 let float_binop l f =
-  match float_binop_aux l f with Some x -> Some (Float x) | None -> None
+  match float_binop_aux l f with
+  | Some x -> Some (Float x)
+  | None -> None
 
 let float_unop l f =
   match l with
@@ -130,11 +137,13 @@ let eval_prim x =
       | "caml_string_equal", [String s1; String s2] -> bool (s1 = s2)
       | "caml_string_notequal", [String s1; String s2] -> bool (s1 <> s2)
       | "caml_sys_getenv", [String s] -> (
-        match get_static_env s with Some env -> Some (String env) | None -> None )
+        match get_static_env s with
+        | Some env -> Some (String env)
+        | None -> None)
       | "caml_sys_const_word_size", [_] -> Some (Int 32l)
       | "caml_sys_const_int_size", [_] -> Some (Int 32l)
       | "caml_sys_const_big_endian", [_] -> Some (Int 0l)
-      | _ -> None )
+      | _ -> None)
   | _ -> None
 
 let the_length_of info x =
@@ -147,9 +156,12 @@ let the_length_of info x =
       | Expr (Prim (Extern "caml_create_string", [arg]))
        |Expr (Prim (Extern "caml_create_bytes", [arg])) ->
           the_int info arg
-      | _ -> None )
+      | _ -> None)
     None
-    (fun u v -> match u, v with Some l, Some l' when l = l' -> Some l | _ -> None)
+    (fun u v ->
+      match u, v with
+      | Some l, Some l' when l = l' -> Some l
+      | _ -> None)
     x
 
 type is_int =
@@ -166,9 +178,13 @@ let is_int info x =
           match info.info_defs.(Var.idx x) with
           | Expr (Const _) | Expr (Constant (Int _)) -> Y
           | Expr (Block (_, _)) | Expr (Constant _) -> N
-          | _ -> Unknown )
+          | _ -> Unknown)
         Unknown
-        (fun u v -> match u, v with Y, Y -> Y | N, N -> N | _ -> Unknown)
+        (fun u v ->
+          match u, v with
+          | Y, Y -> Y
+          | N, N -> N
+          | _ -> Unknown)
         x
   | Pc (Int _) -> Y
   | Pc _ -> N
@@ -182,7 +198,7 @@ let eval_instr info i =
         let c = Constant (Int c) in
         Flow.update_def info x c;
         Let (x, c)
-    | _ -> i )
+    | _ -> i)
   | Let (x, Prim (Extern "caml_ml_string_length", [s])) -> (
       let c =
         match s with
@@ -195,7 +211,7 @@ let eval_instr info i =
       | Some c ->
           let c = Constant (Int c) in
           Flow.update_def info x c;
-          Let (x, c) )
+          Let (x, c))
   | Let (_, Prim (Extern ("caml_array_unsafe_get" | "caml_array_unsafe_set"), _)) ->
       (* Fresh parameters can be introduced for these primitives
            in Specialize_js, which would make the call to [the_const_of]
@@ -208,14 +224,19 @@ let eval_instr info i =
         let b = if b = N then 0l else 1l in
         let c = Constant (Int b) in
         Flow.update_def info x c;
-        Let (x, c) )
+        Let (x, c))
   | Let (x, Prim (prim, prim_args)) -> (
       let prim_args' = List.map prim_args ~f:(fun x -> the_const_of info x) in
       let res =
-        if List.for_all prim_args' ~f:(function Some _ -> true | _ -> false)
+        if List.for_all prim_args' ~f:(function
+               | Some _ -> true
+               | _ -> false)
         then
           eval_prim
-            (prim, List.map prim_args' ~f:(function Some c -> c | None -> assert false))
+            ( prim
+            , List.map prim_args' ~f:(function
+                  | Some c -> c
+                  | None -> assert false) )
         else None
       in
       match res with
@@ -235,7 +256,7 @@ let eval_instr info i =
                       (* do not be duplicated other constant as
                           they're not represented with constant in javascript. *)
                        |None ->
-                          arg ) ) ) )
+                          arg) ) ))
   | _ -> i
 
 type case_of =
@@ -254,13 +275,13 @@ let the_case_of info x =
           | Expr (Block (j, _)) ->
               if info.info_possibly_mutable.(Var.idx x) then Unknown else CTag j
           | Expr (Constant (Tuple (j, _))) -> CTag j
-          | _ -> Unknown )
+          | _ -> Unknown)
         Unknown
         (fun u v ->
           match u, v with
           | CTag i, CTag j when i = j -> u
           | CConst i, CConst j when i = j -> u
-          | _ -> Unknown )
+          | _ -> Unknown)
         x
   | Pc (Int i) -> CConst (Int32.to_int i)
   | Pc (Tuple (j, _)) -> CTag j
@@ -276,14 +297,16 @@ let eval_branch info = function
             match j with
             | 0l -> false
             (* https://github.com/ocaml/ocaml/blob/trunk/byterun/interp.c#L798 *)
-            | _ -> true )
+            | _ -> true)
           | CEq i -> i = j
           | CLt i -> i < j
           | CLe i -> i <= j
           | CUlt i -> j < 0l || i < j
         in
-        match res with true -> Branch ftrue | false -> Branch ffalse )
-    | _ -> b )
+        match res with
+        | true -> Branch ftrue
+        | false -> Branch ffalse)
+    | _ -> b)
   | Switch (x, const, tags) as b -> (
     (* [the_case_of info (Pv x)] might be meaningless when we're inside a dead code.
          The proper fix would be to remove the deadcode entirely.
@@ -292,7 +315,7 @@ let eval_branch info = function
     match the_case_of info (Pv x) with
     | CConst j when j < Array.length const -> Branch const.(j)
     | CTag j when j < Array.length tags -> Branch tags.(j)
-    | CConst _ | CTag _ | Unknown -> b )
+    | CConst _ | CTag _ | Unknown -> b)
   | _ as b -> b
 
 exception May_raise
@@ -311,7 +334,7 @@ let rec do_not_raise pc visited blocks =
           | Apply (_, _, _) -> raise May_raise
           | Prim (Extern name, _) when Primitive.is_pure name -> ()
           | Prim (Extern _, _) -> raise May_raise
-          | Prim (_, _) -> () ) );
+          | Prim (_, _) -> ()));
     match b.branch with
     | Raise _ -> raise May_raise
     | Stop | Return _ | Poptrap _ -> visited
@@ -323,11 +346,11 @@ let rec do_not_raise pc visited blocks =
     | Switch (_, a1, a2) ->
         let visited =
           Array.fold_left a1 ~init:visited ~f:(fun visited (pc, _) ->
-              do_not_raise pc visited blocks )
+              do_not_raise pc visited blocks)
         in
         let visited =
           Array.fold_left a2 ~init:visited ~f:(fun visited (pc, _) ->
-              do_not_raise pc visited blocks )
+              do_not_raise pc visited blocks)
         in
         visited
     | Pushtrap _ -> raise May_raise
@@ -337,7 +360,8 @@ let drop_exception_handler blocks =
     (fun pc _ blocks ->
       match Addr.Map.find pc blocks with
       | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2, _)
-        ; handler = parent_hander; _ } as b -> (
+        ; handler = parent_hander
+        ; _ } as b -> (
         try
           let visited = do_not_raise addr Addr.Set.empty blocks in
           let b = {b with branch = Branch cont1} in
@@ -355,13 +379,13 @@ let drop_exception_handler blocks =
                   | x -> x
                 in
                 let b = {b with branch; handler = parent_hander} in
-                Addr.Map.add pc2 b blocks )
+                Addr.Map.add pc2 b blocks)
               visited
               blocks
           in
           blocks
-        with May_raise -> blocks )
-      | _ -> blocks )
+        with May_raise -> blocks)
+      | _ -> blocks)
     blocks
     blocks
 
@@ -370,7 +394,7 @@ let eval info blocks =
     (fun block ->
       let body = List.map block.body ~f:(eval_instr info) in
       let branch = eval_branch info block.branch in
-      {block with Code.body; Code.branch} )
+      {block with Code.body; Code.branch})
     blocks
 
 let f info (pc, blocks, free_pc) =

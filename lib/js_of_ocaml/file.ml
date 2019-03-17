@@ -40,13 +40,17 @@ type 'a make_blob =
 let rec filter_map f = function
   | [] -> []
   | v :: q -> (
-    match f v with None -> filter_map f q | Some v' -> v' :: filter_map f q )
+    match f v with
+    | None -> filter_map f q
+    | Some v' -> v' :: filter_map f q)
 
 let make_blob_options contentType endings =
   let options =
     filter_map
       (fun (name, v) ->
-        match v with None -> None | Some v -> Some (name, Unsafe.inject (string v)) )
+        match v with
+        | None -> None
+        | Some v -> Some (name, Unsafe.inject (string v)))
       [ "type", contentType
       ; ( "endings"
         , match endings with
@@ -54,7 +58,9 @@ let make_blob_options contentType endings =
           | Some `Transparent -> Some "transparent"
           | Some `Native -> Some "native" ) ]
   in
-  match options with [] -> undefined | l -> Unsafe.obj (Array.of_list l)
+  match options with
+  | [] -> undefined
+  | l -> Unsafe.obj (Array.of_list l)
 
 let blob_raw ?contentType ?endings a =
   let options = make_blob_options contentType endings in
@@ -98,7 +104,7 @@ let filename file =
   | None -> (
     match Optdef.to_option file##.fileName with
     | None -> failwith "can't retrieve file name: not implemented"
-    | Some name -> name )
+    | Some name -> name)
   | Some name -> name
 
 type file_any = < > t

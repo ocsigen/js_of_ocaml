@@ -102,7 +102,8 @@ module Xml = struct
 
   let pcdata s = (Dom_html.document##createTextNode (Js.string s) :> Dom.node Js.t)
 
-  let encodedpcdata s = (Dom_html.document##createTextNode (Js.string s) :> Dom.node Js.t)
+  let encodedpcdata s =
+    (Dom_html.document##createTextNode (Js.string s) :> Dom.node Js.t)
 
   let entity e =
     let entity = Dom_html.decode_html_entities (Js.string ("&" ^ e ^ ";")) in
@@ -117,7 +118,9 @@ module Xml = struct
     if Js.Optdef.test (Js.Unsafe.get node name) then Some name else None
 
   let iter_prop_protected node name f =
-    match get_prop node name with Some n -> ( try f n with _ -> () ) | None -> ()
+    match get_prop node name with
+    | Some n -> ( try f n with _ -> ())
+    | None -> ()
 
   let attach_attribs node l =
     List.iter
@@ -126,7 +129,7 @@ module Xml = struct
         match att with
         | Attr a ->
             (* Note that once we have weak pointers working, we'll need to React.S.retain *)
-            let _ : unit React.S.t =
+            let (_ : unit React.S.t) =
               React.S.map
                 (function
                   | Some v -> (
@@ -135,21 +138,21 @@ module Xml = struct
                       | "style" -> node##.style##.cssText := v
                       | _ ->
                           iter_prop_protected node n (fun name ->
-                              Js.Unsafe.set node name v ) )
+                              Js.Unsafe.set node name v))
                   | None -> (
                       ignore (node##removeAttribute n);
                       match n' with
                       | "style" -> node##.style##.cssText := Js.string ""
                       | _ ->
                           iter_prop_protected node n (fun name ->
-                              Js.Unsafe.set node name Js.null ) ))
+                              Js.Unsafe.set node name Js.null)))
                 a
             in
             ()
         | Event h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
         | MouseEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
         | KeyboardEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev))
-        | TouchEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev)) )
+        | TouchEvent h -> Js.Unsafe.set node n (fun ev -> Js.bool (h ev)))
       l
 
   let leaf ?(a = []) name =
@@ -221,9 +224,9 @@ module Register = struct
   let head ?keep content = add_to ?keep Dom_html.document##.head content
 
   let html ?head body =
-    ( match head with
+    (match head with
     | Some h -> Dom_html.document##.head := To_dom.of_head h
-    | None -> () );
+    | None -> ());
     Dom_html.document##.body := To_dom.of_body body;
     ()
 end
@@ -275,7 +278,7 @@ module Util = struct
         let i = if i < 0 then dom##.childNodes##.length + i else i in
         match Js.Opt.to_option (dom##.childNodes##item i) with
         | Some old -> ignore (dom##replaceChild x old)
-        | _ -> assert false )
+        | _ -> assert false)
     | X (i, move) -> (
         let i = if i < 0 then dom##.childNodes##.length + i else i in
         if move = 0
@@ -283,7 +286,7 @@ module Util = struct
         else
           match Js.Opt.to_option (dom##.childNodes##item i) with
           | Some i' -> insertAt dom (i + if move > 0 then move + 1 else move) i'
-          | _ -> assert false )
+          | _ -> assert false)
 
   let rec removeChildren dom =
     match Js.Opt.to_option dom##.lastChild with
@@ -298,8 +301,9 @@ module Util = struct
         (* Format.eprintf "replace all@."; *)
         removeChildren dom;
         List.iter (fun l -> ignore (dom##appendChild l)) l
-    | Patch p -> (* Format.eprintf "patch@."; *)
-                 List.iter (merge_one_patch dom) p
+    | Patch p ->
+        (* Format.eprintf "patch@."; *)
+        List.iter (merge_one_patch dom) p
 
   let update_children (dom : Dom.node Js.t) (nodes : Dom.node Js.t t) =
     removeChildren dom;

@@ -93,17 +93,17 @@ let name t v nm_orig =
     if !idx >= len
     then (
       pending := true;
-      idx := 0 );
+      idx := 0);
     for i = !idx to len - 1 do
       if is_alpha nm_orig.[i] || is_num nm_orig.[i]
       then (
         if !pending then Buffer.add_char buf '_';
         Buffer.add_char buf nm_orig.[i];
-        pending := false )
+        pending := false)
       else pending := true
     done;
     let str = Buffer.contents buf in
-    if String.length str > 0 then name_raw t v str )
+    if String.length str > 0 then name_raw t v str)
 
 let get_name t v = try Some (Hashtbl.find t.names v) with Not_found -> None
 
@@ -130,14 +130,20 @@ let get_reserved () = !reserved
 let is_reserved s = StringSet.mem s !reserved
 
 let rec to_string t ?origin i =
-  let origin = match origin with Some i when t.pretty -> i | _ -> i in
-  try Hashtbl.find t.cache (i, origin) with Not_found ->
+  let origin =
+    match origin with
+    | Some i when t.pretty -> i
+    | _ -> i
+  in
+  try Hashtbl.find t.cache (i, origin)
+  with Not_found ->
     let name =
-      try Hashtbl.find t.known i with Not_found ->
+      try Hashtbl.find t.known i
+      with Not_found ->
         t.last <- t.last + 1;
         let j = t.last in
         let s = format_var t i j in
-        if is_reserved s then to_string t i else ( Hashtbl.add t.known i s; s )
+        if is_reserved s then to_string t i else (Hashtbl.add t.known i s; s)
     in
     let name =
       if t.pretty

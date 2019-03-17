@@ -84,14 +84,14 @@ let parse_file f =
         | Js_token.TComment (_info, str) when is_file_directive str -> (
           match status with
           | `Annot _ -> `Annot [], lexs
-          | `Code (an, co) -> `Annot [], (List.rev an, List.rev co) :: lexs )
+          | `Code (an, co) -> `Annot [], (List.rev an, List.rev co) :: lexs)
         | Js_token.TComment (info, str) -> (
           match parse_annot info str with
           | None -> status, lexs
           | Some a -> (
             match status with
             | `Annot annot -> `Annot (a :: annot), lexs
-            | `Code (an, co) -> `Annot [a], (List.rev an, List.rev co) :: lexs ) )
+            | `Code (an, co) -> `Annot [a], (List.rev an, List.rev co) :: lexs))
         | _ when Js_token.is_comment t -> status, lexs
         | Js_token.TUnknown (info, _) ->
             Format.eprintf
@@ -103,7 +103,7 @@ let parse_file f =
         | c -> (
           match status with
           | `Code (annot, code) -> `Code (annot, c :: code), lexs
-          | `Annot annot -> `Code (annot, [c]), lexs ) )
+          | `Annot annot -> `Code (annot, [c]), lexs))
       (`Annot [], [])
       lex
   in
@@ -131,7 +131,7 @@ let parse_file f =
               | `Requires (_, mn) -> {fragment with requires = mn @ fragment.requires}
               | `Version (_, l) ->
                   {fragment with version_constraint = l :: fragment.version_constraint}
-              | `Weakdef _ -> {fragment with weakdef = true} )
+              | `Weakdef _ -> {fragment with weakdef = true})
         with Parse_js.Parsing_error pi ->
           let name =
             match pi with
@@ -143,7 +143,7 @@ let parse_file f =
             f
             name
             pi.Parse_info.line
-            pi.Parse_info.col )
+            pi.Parse_info.col)
   in
   res
 
@@ -215,7 +215,7 @@ let check_primitive ~name pi ~code ~requires =
   let freename = free#get_free_name in
   let freename =
     List.fold_left requires ~init:freename ~f:(fun freename x ->
-        StringSet.remove x freename )
+        StringSet.remove x freename)
   in
   let freename = StringSet.diff freename Reserved.keyword in
   let freename = StringSet.diff freename Reserved.provided in
@@ -229,7 +229,7 @@ let check_primitive ~name pi ~code ~requires =
   if not (StringSet.is_empty freename)
   then (
     warn "warning: free variables in primitive code %S (%s)@." name (loc pi);
-    warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename)) )
+    warn "vars: %s@." (String.concat ~sep:", " (StringSet.elements freename)))
 
 (* ; *)
 (* return checks disabled *)
@@ -268,10 +268,10 @@ class traverse_and_find_named_values all =
 
     method expression x =
       let open Javascript in
-      ( match x with
+      (match x with
       | ECall (EVar (S {name = "caml_named_value"; _}), [EStr (v, _)], _) ->
           all := StringSet.add v !all
-      | _ -> () );
+      | _ -> ());
       self#expression x
   end
 
@@ -286,7 +286,9 @@ let add_file f =
     (parse_file f)
     ~f:(fun {provides; requires; version_constraint; weakdef; code} ->
       let vmatch =
-        match version_constraint with [] -> true | l -> List.exists l ~f:version_match
+        match version_constraint with
+        | [] -> true
+        | l -> List.exists l ~f:version_match
       in
       if vmatch
       then (
@@ -307,7 +309,7 @@ let add_file f =
             let named_values = find_named_value code in
             Primitive.register name kind ka arity;
             StringSet.iter Primitive.register_named_value named_values;
-            ( if Hashtbl.mem provided name
+            (if Hashtbl.mem provided name
             then
               let _, ploc, weakdef = Hashtbl.find provided name in
               if not weakdef
@@ -316,11 +318,11 @@ let add_file f =
                   "warning: overriding primitive %S\n  old: %s\n  new: %s@."
                   name
                   (loc ploc)
-                  (loc pi) );
+                  (loc pi));
             Hashtbl.add provided name (id, pi, weakdef);
             Hashtbl.add provided_rev id (name, pi);
             check_primitive ~name pi ~code ~requires;
-            Hashtbl.add code_pieces id (code, requires) ) )
+            Hashtbl.add code_pieces id (code, requires)))
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
@@ -347,7 +349,7 @@ let check_deps () =
         with Not_found ->
           (* there is no //Provides for this piece of code *)
           (* FIXME handle missing deps in this case *)
-          () )
+          ())
     code_pieces
 
 let load_files l = List.iter l ~f:add_file; check_deps ()
@@ -372,14 +374,14 @@ and resolve_dep_id_rev visited path id =
         (String.concat
            ~sep:", "
            (List.map path ~f:(fun id -> fst (Hashtbl.find provided_rev id))));
-    visited )
+    visited)
   else
     let path = id :: path in
     let code, req = Hashtbl.find code_pieces id in
     let visited = {visited with ids = IntSet.add id visited.ids} in
     let visited =
       List.fold_left req ~init:visited ~f:(fun visited nm ->
-          resolve_dep_name_rev visited path nm )
+          resolve_dep_name_rev visited path nm)
     in
     let visited = {visited with codes = code :: visited.codes} in
     visited
@@ -396,7 +398,7 @@ let resolve_deps ?(linkall = false) visited_rev used =
       let prog, set =
         Hashtbl.fold
           (fun nm (_id, _, _) (visited, set) ->
-            resolve_dep_name_rev visited [] nm, StringSet.add nm set )
+            resolve_dep_name_rev visited [] nm, StringSet.add nm set)
           provided
           (visited_rev, StringSet.empty)
       in
@@ -408,7 +410,7 @@ let resolve_deps ?(linkall = false) visited_rev used =
         (fun nm (missing, visited) ->
           if Hashtbl.mem provided nm
           then missing, resolve_dep_name_rev visited [] nm
-          else StringSet.add nm missing, visited )
+          else StringSet.add nm missing, visited)
         used
         (StringSet.empty, visited_rev)
   in
@@ -425,6 +427,6 @@ let all state =
       try
         let name, _ = Hashtbl.find provided_rev id in
         name :: acc
-      with Not_found -> acc )
+      with Not_found -> acc)
     state.ids
     []

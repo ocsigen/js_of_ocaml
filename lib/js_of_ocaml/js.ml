@@ -148,7 +148,10 @@ module Opt : OPT with type 'a t = 'a opt = struct
 
   let get x f = if Unsafe.equals x null then f () else x
 
-  let option x = match x with None -> empty | Some x -> return x
+  let option x =
+    match x with
+    | None -> empty
+    | Some x -> return x
 
   let to_option x = case x (fun () -> None) (fun x -> Some x)
 end
@@ -172,7 +175,10 @@ module Optdef : OPT with type 'a t = 'a optdef = struct
 
   let get x f = if x == undefined then f () else x
 
-  let option x = match x with None -> empty | Some x -> return x
+  let option x =
+    match x with
+    | None -> empty
+    | Some x -> return x
 
   let to_option x = case x (fun () -> None) (fun x -> Some x)
 end
@@ -727,12 +733,12 @@ let parseFloat (s : js_string t) : float =
 let _ =
   Printexc.register_printer (function
       | Error e -> Some (to_string e##toString)
-      | _ -> None )
+      | _ -> None)
 
 let _ =
   Printexc.register_printer (fun e ->
       let e : < .. > t = Obj.magic e in
-      if instanceof e array_constructor then None else Some (to_string e##toString) )
+      if instanceof e array_constructor then None else Some (to_string e##toString))
 
 let string_of_error e = to_string e##toString
 

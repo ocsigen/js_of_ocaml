@@ -20,10 +20,10 @@ let int_input name value =
   input##.value := js (string_of_int !value);
   input##.onchange :=
     Html.handler (fun _ ->
-        ( try value := int_of_string (Js.to_string input##.value)
-          with Invalid_argument _ -> () );
+        (try value := int_of_string (Js.to_string input##.value)
+         with Invalid_argument _ -> ());
         input##.value := js (string_of_int !value);
-        Js._false );
+        Js._false);
   Dom.appendChild res input;
   res
 
@@ -52,7 +52,7 @@ let onload _ =
          let div = Html.createDiv document in
          Dom.appendChild main div;
          Minesweeper.run div !nbc !nbr !nbm;
-         Js._false ));
+         Js._false));
   Js._false
 
 let _ = Html.window##.onload := Html.handler onload

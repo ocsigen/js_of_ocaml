@@ -14,9 +14,15 @@ let _ = Printf.printf "fact 20 = %f\n" (fact 20)
 let _ = "abc" < "def"
 
 (** Mutually recursive function *)
-let rec even n = match n with 0 -> true | x -> odd (x - 1)
+let rec even n =
+  match n with
+  | 0 -> true
+  | x -> odd (x - 1)
 
-and odd n = match n with 0 -> false | x -> even (x - 1)
+and odd n =
+  match n with
+  | 0 -> false
+  | x -> even (x - 1)
 
 (** Mutually recursive module *)
 module rec Odd : sig
@@ -94,7 +100,7 @@ open Graphics_js
 
 let () =
   loop [Mouse_motion; Key_pressed] (function {mouse_x = x; mouse_y = y; key} ->
-      moveto x y; draw_char key )
+      moveto x y; draw_char key)
 
 (** Graphics: PingPong *)
 open Js_of_ocaml_lwt

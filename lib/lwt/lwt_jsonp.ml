@@ -40,12 +40,12 @@ let raw_call name uri error_cb user_cb =
   Js.Unsafe.set Dom_html.window (Js.string name) (fun x ->
       executed := true;
       finalize ();
-      user_cb x );
+      user_cb x);
   script##.src := Js.string uri;
   script##._type := Js.string "text/javascript";
   script##.async := Js._true;
   ((Js.Unsafe.coerce script)##.onerror := fun x -> finalize (); error_cb x);
-  ( (Js.Unsafe.coerce script)##.onload
+  ((Js.Unsafe.coerce script)##.onload
   := fun x ->
   Lwt.async (fun () ->
       Lwt.bind (Lwt_js.sleep 1.) (fun () ->
@@ -56,7 +56,7 @@ let raw_call name uri error_cb user_cb =
               (Js.string "Jsonp: script loaded but callback not executed");
             finalize ();
             error_cb x;
-            Lwt.return_unit ) ) ) );
+            Lwt.return_unit))));
   let init () = ignore (Dom.appendChild Dom_html.document##.body script) in
   init, finalize
 

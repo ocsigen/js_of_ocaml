@@ -28,9 +28,13 @@ module Label = struct
 
   let zero = L 0
 
-  let succ = function L t -> L (succ t) | S _ -> assert false
+  let succ = function
+    | L t -> L (succ t)
+    | S _ -> assert false
 
-  let to_string = function L t -> VarPrinter.to_string printer t | S s -> s
+  let to_string = function
+    | L t -> VarPrinter.to_string printer t
+    | S s -> s
 
   let of_string s = S s
 end
@@ -205,8 +209,8 @@ let compare_ident t1 t2 =
       | None, None -> 0
       | None, _ -> -1
       | _, None -> 1
-      | Some v1, Some v2 -> Code.Var.compare v1 v2 )
-    | n -> n )
+      | Some v1, Some v2 -> Code.Var.compare v1 v2)
+    | n -> n)
   | S _, V _ -> -1
   | V _, S _ -> 1
 
@@ -250,7 +254,7 @@ let is_ident =
         then 1
         else if c >= '0' && c <= '9'
         then 2
-        else 0 )
+        else 0)
   in
   fun s ->
     (not (StringSet.mem s Reserved.keyword))
@@ -259,7 +263,7 @@ let is_ident =
       for i = 0 to String.length s - 1 do
         let code = l.(Char.code s.[i]) in
         if i = 0
-        then ( if code <> 1 then raise Not_an_ident )
+        then (if code <> 1 then raise Not_an_ident)
         else if code < 1
         then raise Not_an_ident
       done;

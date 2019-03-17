@@ -29,16 +29,16 @@ let () =
   let re3 = Regexp.regexp_string "(.)\\(.)" in
   let s1 = "totobtutua" in
   let s2 = "rr.ee.ab.a.b.bb.a.ee." in
-  ( match Regexp.string_match re1 s1 0 with
+  (match Regexp.string_match re1 s1 0 with
   | None -> log_failure "Can't match 1 1"
   | Some r ->
       let x = Regexp.matched_string r in
-      if x = "a" then log_success () else log_failure ("Wrong match 1 1: " ^ x) );
-  ( match Regexp.string_match re1 s2 0 with
+      if x = "a" then log_success () else log_failure ("Wrong match 1 1: " ^ x));
+  (match Regexp.string_match re1 s2 0 with
   | None -> log_failure "Can't match 1 2"
   | Some r ->
       let x = Regexp.matched_string r in
-      if x = "ab" then log_success () else log_failure ("Wrong match 1 2: " ^ x) );
+      if x = "ab" then log_success () else log_failure ("Wrong match 1 2: " ^ x));
   (let l = Regexp.split re2 s2 in
    if l = ["rr"; "ee"; "ab"; "a"; "b"; "bb"; "a"; "ee"; ""]
    then log_success ()

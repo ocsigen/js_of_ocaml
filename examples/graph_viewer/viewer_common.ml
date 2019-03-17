@@ -133,7 +133,7 @@ struct
       let old_p = pm.pixmap in
       let p = M.make_pixmap window width height in
       let r = pm.valid_rect in
-      ( match old_p with
+      (match old_p with
       | Some old_p ->
           put_pixmap
             ~dst:(drawable_of_pixmap p)
@@ -144,12 +144,15 @@ struct
             ~width:r.width
             ~height:r.height
             old_p
-      | None -> () );
+      | None -> ());
       pm.pixmap <- Some p;
       pm.p_width <- width;
-      pm.p_height <- height )
+      pm.p_height <- height)
 
-  let get_pixmap pm = match pm.pixmap with Some p -> p | None -> assert false
+  let get_pixmap pm =
+    match pm.pixmap with
+    | Some p -> p
+    | None -> assert false
 
   (****)
 
@@ -166,8 +169,12 @@ struct
   (****)
 
   let perform_draw ctx fill stroke =
-    (match fill with Some c -> M.fill ctx c | None -> ());
-    match stroke with Some c -> M.stroke ctx c | None -> ()
+    (match fill with
+    | Some c -> M.fill ctx c
+    | None -> ());
+    match stroke with
+    | Some c -> M.stroke ctx c
+    | None -> ()
 
   let draw_element ctx e =
     begin_path ctx;
@@ -177,8 +184,7 @@ struct
           (fun c ->
             match c with
             | Move_to (x, y) -> move_to ctx ~x ~y
-            | Curve_to (x1, y1, x2, y2, x3, y3) -> curve_to ctx ~x1 ~y1 ~x2 ~y2 ~x3 ~y3
-            )
+            | Curve_to (x1, y1, x2, y2, x3, y3) -> curve_to ctx ~x1 ~y1 ~x2 ~y2 ~x3 ~y3)
           cmd;
         perform_draw ctx fill stroke
     | Ellipse (cx, cy, rx, ry, fill, stroke) ->
@@ -288,24 +294,24 @@ Format.eprintf "Translation: %d %d@." dx dy;
         if x > 0
         then (
           assert (x + width >= a.width);
-          redraw st scale x0 y0 0 y x height )
+          redraw st scale x0 y0 0 y x height)
         else (
           assert (x = 0);
-          if a.width > width then redraw st scale x0 y0 width y (a.width - width) height );
+          if a.width > width then redraw st scale x0 y0 width y (a.width - width) height);
       if y > 0
       then (
         assert (y + height >= a.height);
-        redraw st scale x0 y0 0 0 a.width y )
+        redraw st scale x0 y0 0 0 a.width y)
       else (
         assert (y = 0);
         if a.height > height
-        then redraw st scale x0 y0 0 height a.width (a.height - height) );
-      pm.valid_rect <- {x = x0; y = y0; width = a.width; height = a.height} );
+        then redraw st scale x0 y0 0 height a.width (a.height - height));
+      pm.valid_rect <- {x = x0; y = y0; width = a.width; height = a.height});
     let r = pm.valid_rect in
     if x < 0 || y < 0 || x + width > r.width || y + height > r.height
     then (
       redraw st scale x0 y0 0 0 a.width a.height;
-      pm.valid_rect <- {x = x0; y = y0; width = a.width; height = a.height} );
+      pm.valid_rect <- {x = x0; y = y0; width = a.width; height = a.height});
     put_pixmap
       ~dst:(get_drawable window)
       ~x

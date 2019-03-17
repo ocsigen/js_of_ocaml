@@ -62,7 +62,10 @@ and mark_expr st e =
   | Field (x, _) -> mark_var st x
   | Closure (_, (pc, _)) -> mark_reachable st pc
   | Prim (_, l) ->
-      List.iter l ~f:(fun x -> match x with Pv x -> mark_var st x | _ -> ())
+      List.iter l ~f:(fun x ->
+          match x with
+          | Pv x -> mark_var st x
+          | _ -> ())
 
 and mark_cont_reachable st (pc, _param) = mark_reachable st pc
 
@@ -76,7 +79,7 @@ and mark_reachable st pc =
         | Let (_, e) -> if not (pure_expr st.pure_funs e) then mark_expr st e
         | Set_field (x, _, y) -> mark_var st x; mark_var st y
         | Array_set (x, y, z) -> mark_var st x; mark_var st y; mark_var st z
-        | Offset_ref (x, _) -> mark_var st x );
+        | Offset_ref (x, _) -> mark_var st x);
     match block.branch with
     | Return x | Raise (x, _) -> mark_var st x
     | Stop -> ()
@@ -88,7 +91,7 @@ and mark_reachable st pc =
         Array.iter a1 ~f:(fun cont -> mark_cont_reachable st cont);
         Array.iter a2 ~f:(fun cont -> mark_cont_reachable st cont)
     | Pushtrap (cont1, _, cont2, _) ->
-        mark_cont_reachable st cont1; mark_cont_reachable st cont2 )
+        mark_cont_reachable st cont1; mark_cont_reachable st cont2)
 
 (****)
 
@@ -134,7 +137,10 @@ let filter_live_last blocks st l =
 
 (****)
 
-let ref_count st i = match i with Let (x, _) -> st.live.(Var.idx x) | _ -> 0
+let ref_count st i =
+  match i with
+  | Let (x, _) -> st.live.(Var.idx x)
+  | _ -> 0
 
 let annot st pc xi =
   if not (Addr.Set.mem pc st.reachable_blocks)
@@ -175,7 +181,7 @@ let f ((pc, blocks, free_pc) as program) =
       List.iter block.body ~f:(fun i ->
           match i with
           | Let (x, e) -> add_def defs x (Expr e)
-          | Set_field (_, _, _) | Array_set (_, _, _) | Offset_ref (_, _) -> () );
+          | Set_field (_, _, _) | Array_set (_, _, _) | Offset_ref (_, _) -> ());
       Option.iter block.handler ~f:(fun (_, cont) -> add_cont_dep blocks defs cont);
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
@@ -187,7 +193,7 @@ let f ((pc, blocks, free_pc) as program) =
           Array.iter a1 ~f:(fun cont -> add_cont_dep blocks defs cont);
           Array.iter a2 ~f:(fun cont -> add_cont_dep blocks defs cont)
       | Pushtrap (cont, _, _, _) -> add_cont_dep blocks defs cont
-      | Poptrap (cont, _) -> add_cont_dep blocks defs cont )
+      | Poptrap (cont, _) -> add_cont_dep blocks defs cont)
     blocks;
   let st = {live; defs; blocks; reachable_blocks = Addr.Set.empty; pure_funs} in
   mark_reachable st pc;
@@ -204,13 +210,13 @@ let f ((pc, blocks, free_pc) as program) =
             { params = List.filter block.params ~f:(fun x -> st.live.(Var.idx x) > 0)
             ; handler =
                 Option.map block.handler ~f:(fun (x, cont) ->
-                    x, filter_cont all_blocks st cont )
+                    x, filter_cont all_blocks st cont)
             ; body =
                 List.map
                   (List.filter block.body ~f:(fun i -> live_instr st i))
                   ~f:(fun i -> filter_closure all_blocks st i)
             ; branch = filter_live_last all_blocks st block.branch }
-            blocks )
+            blocks)
       blocks
       Addr.Map.empty
   in

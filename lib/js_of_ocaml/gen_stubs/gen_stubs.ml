@@ -25,14 +25,14 @@ let () =
   List.iter
     (fun ml ->
       let in_ = open_in ml in
-      ( try
-          Location.input_name := ml;
-          let lex = Lexing.from_channel in_ in
-          let impl = Parse.implementation lex in
-          let _ : Parsetree.structure = mapper.structure mapper impl in
-          ()
-        with exn -> Location.report_exception Format.std_formatter exn );
-      close_in_noerr in_ )
+      (try
+         Location.input_name := ml;
+         let lex = Lexing.from_channel in_ in
+         let impl = Parse.implementation lex in
+         let (_ : Parsetree.structure) = mapper.structure mapper impl in
+         ()
+       with exn -> Location.report_exception Format.std_formatter exn);
+      close_in_noerr in_)
     !mls;
   print_endline "#include <stdlib.h>";
   print_endline "#include <stdio.h>";
