@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
+[@@@ocaml.alert "-deprecated"]
 
 open StdLabels
 
@@ -121,11 +122,16 @@ and write_body_of_tuple_type l ~arg ~poly ~tag =
   [%expr let [%p p] = [%e arg] in [%e e]]
 
 and write_poly_case r ~arg ~poly =
+#if OCAML_VERSION >= (4, 08, 0)
+  let { Parsetree.prf_desc = r; _ } = r in
+#endif
   match r with
 #if OCAML_VERSION < (4, 06, 0)
   | Parsetree.Rtag (label, _, _, l) ->
-#else
+#elif OCAML_VERSION < (4, 08, 0)
   | Parsetree.Rtag ({txt=label;_}, _, _, l) ->
+#else
+  | Parsetree.Rtag ({txt=label;_}, _, l) ->
 #endif
     let i = Ppx_deriving.hash_variant label
     and n = List.length l in
@@ -234,11 +240,17 @@ let recognize_case_of_constructor i l =
 
 let recognize_body_of_poly_variant l ~loc =
   let l =
-    let f = function
+    let f x =
+#if OCAML_VERSION >= (4, 08, 0)
+      let { Parsetree.prf_desc = x; _ } = x in
+#endif
+      match x with
 #if OCAML_VERSION < (4, 06, 0)
       | Parsetree.Rtag (label, _, _, l) ->
-#else
+#elif OCAML_VERSION < (4, 08, 0)
       | Parsetree.Rtag ({txt=label;_}, _, _, l) ->
+#else
+      | Parsetree.Rtag ({txt=label;_}, _, l) ->
 #endif
         let i = Ppx_deriving.hash_variant label in
         recognize_case_of_constructor i l
@@ -263,11 +275,17 @@ let maybe_tuple_type = function
   | [y] -> y
   | l -> Ast_helper.Typ.tuple l
 
-let rec read_poly_case ?decl y = function
+let rec read_poly_case ?decl y x =
+#if OCAML_VERSION >= (4, 08, 0)
+  let { Parsetree.prf_desc = x; _ } = x in
+#endif
+  match x with
 #if OCAML_VERSION < (4, 06, 0)
   | Parsetree.Rtag (label, _, _, l) ->
-#else
+#elif OCAML_VERSION < (4, 08, 0)
   | Parsetree.Rtag ({txt=label;_}, _, _, l) ->
+#else
+  | Parsetree.Rtag ({txt=label;_}, _, l) ->
 #endif
     let i = Ppx_deriving.hash_variant label |> Ast_convenience.pint in
     (match l with

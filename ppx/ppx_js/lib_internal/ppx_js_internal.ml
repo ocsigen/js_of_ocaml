@@ -23,6 +23,9 @@ open OCaml_406.Ast
 (* For implicit optional argument elimination. Annoying with Ast_helper. *)
 [@@@ocaml.warning "-48"]
 
+(* Pervasives is deprecated but metaquot refers to it. *)
+[@@@ocaml.alert "-deprecated"]
+
 open Ast_mapper
 open Ast_helper
 open Asttypes
@@ -458,7 +461,7 @@ let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Er
         if id.txt <> txt then Printf.sprintf " (normalized to %S)" txt else ""
       in
       let sub =
-        [ Location.errorf
+        [ Compat.Location.msg
             ~loc:id'.loc
             "Duplicated val or method %S%s."
             id'.txt
@@ -530,7 +533,7 @@ let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Er
           "This field is not valid inside a js literal object."
   in
   try `Fields (List.rev (snd (List.fold_left fields ~init:(S.empty, []) ~f)))
-  with Location.Error error -> `Error (extension_of_error error)
+  with Location.Error error -> `Error (Compat.Ast_mapper.extension_of_error error)
 
 (* {[ object%js (self)
      val readonlyprop = e1

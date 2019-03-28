@@ -140,6 +140,31 @@ function caml_int64_float_of_bits (x) {
   return res;
 }
 
+//Provides: caml_nextafter_float const
+//Requires: caml_int64_float_of_bits, caml_int64_bits_of_float, caml_int64_add, caml_int64_sub,caml_int64_of_int32
+function caml_nextafter_float (x,y) {
+  if(isNaN(x) || isNaN(y)) return NaN;
+  if(x==y) return y;
+  if(x==0){
+    if(y < 0)
+      return -Math.pow(2, -1074)
+    else
+      return Math.pow(2, -1074)
+  }
+  var bits = caml_int64_bits_of_float(x);
+  var one = caml_int64_of_int32(1);
+  if ((x<y) == (x>0))
+    bits = caml_int64_add(bits, one)
+  else
+    bits = caml_int64_sub(bits, one)
+  return caml_int64_float_of_bits(bits);
+}
+
+//Provides: caml_trunc_float
+function caml_trunc_float(x){
+  return Math.trunc(x);
+}
+
 //Provides: caml_int32_float_of_bits const
 function caml_int32_float_of_bits (x) {
   var int32a = new joo_global_object.Int32Array(1);
@@ -216,6 +241,12 @@ function caml_copysign_float (x, y) {
   if (y == 0) y = 1 / y;
   x = Math.abs(x);
   return (y < 0)?(-x):x;
+}
+
+//Provides: caml_signbit_float const
+function caml_signbit_float(x) {
+  if (x == 0) x = 1 / x;
+  return (x < 0)?1:0;
 }
 
 //Provides: caml_expm1_float const

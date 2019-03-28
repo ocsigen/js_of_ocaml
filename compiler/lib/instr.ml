@@ -196,7 +196,7 @@ let ops =
   let if_v407 =
     match Ocaml_version.v with
     | `V4_02 | `V4_03 | `V4_04 | `V4_06 -> fun _ -> K_will_not_happen
-    | `V4_07 -> fun k -> k
+    | `V4_07 | `V4_08 -> fun k -> k
   in
   let instrs =
     [| ACC0, KNullary, "ACC0"

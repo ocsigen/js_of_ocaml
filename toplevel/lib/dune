@@ -7,3 +7,9 @@
     js_of_ocaml-compiler js_of_ocaml bytes
     compiler-libs.bytecomp compiler-libs.toplevel)
   (preprocess (pps js_of_ocaml-ppx)))
+
+
+(rule
+  (targets js_of_ocaml_toplevel_compat.ml)
+  (action (with-stdout-to %{targets}
+           (run %{dep:gen/gen.exe}))))
