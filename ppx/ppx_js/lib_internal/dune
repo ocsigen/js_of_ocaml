@@ -4,4 +4,4 @@
              ocaml-migrate-parsetree
              ppx_tools_versioned)
   (kind ppx_rewriter)
-  (preprocess (pps ppx_tools_versioned.metaquot_406)))
+  (preprocess (pps ppx_tools_versioned.metaquot_407)))

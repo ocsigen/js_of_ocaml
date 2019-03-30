@@ -18,7 +18,7 @@
 
 open StdLabels
 open Migrate_parsetree
-open OCaml_406.Ast
+open OCaml_407.Ast
 
 (* For implicit optional argument elimination. Annoying with Ast_helper. *)
 [@@@ocaml.warning "-48"]
@@ -30,7 +30,7 @@ open Ast_mapper
 open Ast_helper
 open Asttypes
 open Parsetree
-open Ast_convenience_406
+open Ast_convenience_407
 
 (** Check if an expression is an identifier and returns it.
     Raise a Location.error if it's not.
@@ -741,5 +741,5 @@ let mapper =
 let () =
   Driver.register
     ~name:"ppx_js"
-    Migrate_parsetree.Versions.ocaml_406
+    Migrate_parsetree.Versions.ocaml_407
     (fun _config _cookies -> mapper)
