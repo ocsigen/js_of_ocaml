@@ -34,10 +34,11 @@ let split_primitives p =
 
 let setup =
   lazy
-    (Hashtbl.add
-       Toploop.directive_table
-       "enable"
-       (Toploop.Directive_string Config.Flag.enable);
+    (Topdirs.dir_directory "/static/cmis";
+      Hashtbl.add
+        Toploop.directive_table
+        "enable"
+        (Toploop.Directive_string Config.Flag.enable);
       Hashtbl.add
         Toploop.directive_table
         "disable"
@@ -54,11 +55,12 @@ let setup =
         Toploop.directive_table
         "tailcall"
         (Toploop.Directive_string (Config.Param.set "tc"));
-      Topdirs.dir_directory "/static/cmis";
       let initial_primitive_count =
         Array.length (split_primitives (Symtable.data_primitive_names ()))
       in
-      let compile s =
+      (* this needs to stay synchronized with toplevel.js *)
+      let compile (s : string array) =
+        let s = String.concat ~sep:"" (Array.to_list s) in
         let prims = split_primitives (Symtable.data_primitive_names ()) in
         let unbound_primitive p =
           try
@@ -97,13 +99,7 @@ let setup =
       Js.Unsafe.global##.toplevelReloc
       := Js.Unsafe.callback (fun name ->
              let name = Js.to_string name in
-             let buf = Bytes.create 4 in
-             Symtable.patch_object buf [Reloc_setglobal (Ident.create_persistent name), 0];
-             let i =
-               let get i = Char.code (Bytes.get buf i) in
-               get 0 + (get 1 lsl 8) + (get 2 lsl 16) + (get 3 lsl 24)
-             in
-             i);
+             Js_of_ocaml_toplevel_compat.reloc name);
       ())
 
 let refill_lexbuf s p ppf buffer len =

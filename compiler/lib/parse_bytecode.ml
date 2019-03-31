@@ -28,94 +28,6 @@ let debug_sourcemap = Debug.find "sourcemap"
 
 type code = string
 
-(* Copied from ocaml/typing/ident.ml *)
-module IdentTable = struct
-  type 'a tbl =
-    | Empty
-    | Node of 'a tbl * 'a data * 'a tbl * int
-
-  and 'a data =
-    { ident : Ident.t
-    ; data : 'a
-    ; previous : 'a data option }
-
-  let rec table_contents_rec sz t rem =
-    match t with
-    | Empty -> rem
-    | Node (l, v, r, _) ->
-        table_contents_rec
-          sz
-          l
-          ((sz - v.data, Ident.name v.ident, v.ident) :: table_contents_rec sz r rem)
-
-  let table_contents sz t =
-    List.sort
-      ~cmp:(fun (i, _, _) (j, _, _) -> compare i j)
-      (table_contents_rec sz (Obj.magic (t : 'a Ident.tbl) : 'a tbl) [])
-end
-
-(* Copied from ocaml/utils/tbl.ml *)
-module Tbl = struct
-  type ('a, 'b) t =
-    | Empty
-    | Node of ('a, 'b) t * 'a * 'b * ('a, 'b) t * int
-
-  let empty = Empty
-
-  let height = function
-    | Empty -> 0
-    | Node (_, _, _, _, h) -> h
-
-  let create l x d r =
-    let hl = height l and hr = height r in
-    Node (l, x, d, r, if hl >= hr then hl + 1 else hr + 1)
-
-  let bal l x d r =
-    let hl = height l and hr = height r in
-    if hl > hr + 1
-    then
-      match l with
-      | Node (ll, lv, ld, lr, _) when height ll >= height lr ->
-          create ll lv ld (create lr x d r)
-      | Node (ll, lv, ld, Node (lrl, lrv, lrd, lrr, _), _) ->
-          create (create ll lv ld lrl) lrv lrd (create lrr x d r)
-      | _ -> assert false
-    else if hr > hl + 1
-    then
-      match r with
-      | Node (rl, rv, rd, rr, _) when height rr >= height rl ->
-          create (create l x d rl) rv rd rr
-      | Node (Node (rll, rlv, rld, rlr, _), rv, rd, rr, _) ->
-          create (create l x d rll) rlv rld (create rlr rv rd rr)
-      | _ -> assert false
-    else create l x d r
-
-  let rec add x data = function
-    | Empty -> Node (Empty, x, data, Empty, 1)
-    | Node (l, v, d, r, h) ->
-        let c = compare x v in
-        if c = 0
-        then Node (l, x, data, r, h)
-        else if c < 0
-        then bal (add x data l) v d r
-        else bal l v d (add x data r)
-
-  let rec iter f = function
-    | Empty -> ()
-    | Node (l, v, d, r, _) -> iter f l; f v d; iter f r
-
-  let rec find compare x = function
-    | Empty -> raise Not_found
-    | Node (l, v, d, r, _) ->
-        let c = compare x v in
-        if c = 0 then d else find compare x (if c < 0 then l else r)
-
-  let rec fold f m accu =
-    match m with
-    | Empty -> accu
-    | Node (l, v, d, r, _) -> fold f r (f v d (fold f l accu))
-end
-
 let predefined_exceptions =
   [ 0, "Out_of_memory"
   ; 1, "Sys_error"
@@ -129,16 +41,6 @@ let predefined_exceptions =
   ; 9, "Sys_blocked_io"
   ; 10, "Assert_failure"
   ; 11, "Undefined_recursive_module" ]
-
-(* Copied from ocaml/bytecomp/symtable.ml *)
-type 'a numtable =
-  { num_cnt : int
-  ; num_tbl : ('a, int) Tbl.t }
-
-let filter_global_map p gmap =
-  let newtbl = ref Tbl.empty in
-  Tbl.iter (fun id num -> if p id then newtbl := Tbl.add id num !newtbl) gmap.num_tbl;
-  {num_cnt = gmap.num_cnt; num_tbl = !newtbl}
 
 (* Read and manipulate debug section *)
 module Debug : sig
@@ -269,7 +171,8 @@ end = struct
   let find {events_by_pc; _} pc =
     try
       let ev, _ = Hashtbl.find events_by_pc pc in
-      IdentTable.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack, ev.ev_typenv
+      ( Ocaml_compiler.Ident.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
+      , ev.ev_typenv )
     with Not_found -> [], Env.Env_empty
 
   let mem {events_by_pc; _} = Hashtbl.mem events_by_pc
@@ -2134,7 +2037,7 @@ let exe_from_channel
   ignore (seek_section toc ic "DATA");
   let init_data : Obj.t array = input_value ic in
   ignore (seek_section toc ic "SYMB");
-  let orig_symbols : Ident.t numtable = input_value ic in
+  let orig_symbols : Ocaml_compiler.Symtable.GlobalMap.t = input_value ic in
   ignore (seek_section toc ic "CRCS");
   let orig_crcs : (string * Digest.t option) list = input_value ic in
   let keeps =
@@ -2151,7 +2054,11 @@ let exe_from_channel
       | `Skip -> false)
   in
   let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in
-  let symbols = filter_global_map (fun id -> keep (Ident.name id)) orig_symbols in
+  let symbols =
+    Ocaml_compiler.Symtable.GlobalMap.filter_global_map
+      (fun id -> keep (Ident.name id))
+      orig_symbols
+  in
   (if debug = `No
   then ()
   else
@@ -2171,23 +2078,18 @@ let exe_from_channel
   List.iter override_global ~f:(fun (name, v) ->
       try
         let nn = Ident.create_persistent name in
-        let i =
-          Tbl.find
-            (fun x1 x2 -> String.compare (Ident.name x1) (Ident.name x2))
-            nn
-            orig_symbols.num_tbl
-        in
+        let i = Ocaml_compiler.Symtable.GlobalMap.find nn orig_symbols in
         globals.override.(i) <- Some v;
         if debug_parser () then Format.eprintf "overriding global %s@." name
       with Not_found -> ());
   if toplevel || dynlink
   then
     (* export globals *)
-    Tbl.iter
+    Ocaml_compiler.Symtable.GlobalMap.iter
       (fun id n ->
         globals.named_value.(n) <- Some (Ident.name id);
         globals.is_exported.(n) <- true)
-      symbols.num_tbl
+      symbols
     (* @vouillon: *)
     (* we should then use the -linkall option to build the toplevel. *)
     (* The OCaml compiler can generate code using this primitive but *)
@@ -2263,12 +2165,12 @@ let exe_from_channel
     in
     if toplevel && Config.Flag.include_cmis ()
     then
-      Tbl.fold
+      Ocaml_compiler.Symtable.GlobalMap.fold
         (fun id num acc ->
           if num > exception_ids && Ident.global id && is_module (Ident.name id)
           then StringSet.add (Ident.name id) acc
           else acc)
-        symbols.num_tbl
+        symbols
         StringSet.empty
     else StringSet.empty
   in
