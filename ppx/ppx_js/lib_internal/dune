@@ -9,5 +9,7 @@
 
 (rule
   (targets compat.ml)
-  (action (with-stdout-to %{targets}
-           (run %{dep:gen/gen.exe}))))
+  (deps ../../../tools/select/select.exe
+        compat.ml-4.08
+        compat.ml-default)
+  (action (with-stdout-to %{targets} (run %{deps}))))
