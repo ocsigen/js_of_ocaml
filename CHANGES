@@ -4,8 +4,9 @@
  ** Compiler: Remove support for ocaml < 4.02.3
  ** Compiler: use paths from debug info when looking to looking cmis to embed
  ** Compiler: refactoring, renaming
- ** Misc: format part of repo with ocamlformat
+ ** Misc: use ocamlformat
  ** Misc: dunify the build of the toplevel
+ ** Misc: support for OCaml 4.08
  ** Lib: wrap js_of_ocaml-lwt, js_of_ocaml-tyxml, js_of_ocaml-toplevel, js_of_ocaml-compiler
  ** Runtime: dont use deprecated [new Buffer] on nodejs (#726)
 
