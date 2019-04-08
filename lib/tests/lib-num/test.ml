@@ -12,9 +12,13 @@
 
 open Printf
 
-let flush_all () = flush stdout; flush stderr
+let flush_all () =
+  flush stdout;
+  flush stderr
 
-let message s = print_string s; print_newline ()
+let message s =
+  print_string s;
+  print_newline ()
 
 let error_occurred = ref false
 
@@ -28,7 +32,9 @@ let error () =
     flush_all ();
     false)
 
-let success () = flush_all (); true
+let success () =
+  flush_all ();
+  true
 
 let function_tested = ref ""
 
@@ -44,7 +50,9 @@ let test test_number eq_fun (answer, correct_answer) =
   then (
     fprintf stderr ">>> Bad result (%s, test %d)\n" !function_tested test_number;
     error ())
-  else (printf " %d..." test_number; success ())
+  else (
+    printf " %d..." test_number;
+    success ())
 
 let failure_test test_number fun_to_test arg =
   flush_all ();
@@ -52,7 +60,9 @@ let failure_test test_number fun_to_test arg =
     fun_to_test arg;
     fprintf stderr ">>> Failure expected (%s, test %d)\n" !function_tested test_number;
     error ()
-  with _ -> printf " %d..." test_number; success ()
+  with _ ->
+    printf " %d..." test_number;
+    success ()
 
 let failwith_test test_number fun_to_test arg correct_failure =
   flush_all ();
@@ -62,7 +72,9 @@ let failwith_test test_number fun_to_test arg correct_failure =
     error ()
   with x ->
     if x = correct_failure
-    then (printf " %d..." test_number; success ())
+    then (
+      printf " %d..." test_number;
+      success ())
     else (
       fprintf stderr ">>> Bad failure (%s, test %d)\n" !function_tested test_number;
       error ())

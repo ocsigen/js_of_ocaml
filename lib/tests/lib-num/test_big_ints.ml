@@ -587,7 +587,8 @@ test
   ( big_int_of_nat (power_base_int 2 (length_of_int + 2))
   , big_int_of_nat
       (let nat = make_nat 2 in
-       set_digit_nat nat 1 1; nat) )
+       set_digit_nat nat 1 1;
+       nat) )
 
 ;;
 testing_function "base_power_big_int"

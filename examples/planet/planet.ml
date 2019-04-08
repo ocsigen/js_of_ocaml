@@ -70,7 +70,10 @@ let button_type = Js.string "button"
 let button txt action =
   let b = Dom_html.createInput ~_type:button_type doc in
   b##.value := Js.string txt;
-  b##.onclick := Dom_html.handler (fun _ -> action (); Js._true);
+  b##.onclick :=
+    Dom_html.handler (fun _ ->
+        action ();
+        Js._true);
   b
 
 let toggle_button txt1 txt2 action =
@@ -102,7 +105,10 @@ let checkbox txt checked action =
 let radio txt name checked action =
   let b = Dom_html.createInput ~name:(Js.string name) ~_type:(Js.string "radio") doc in
   b##.checked := Js.bool checked;
-  b##.onclick := Dom_html.handler (fun _ -> action (); Js._true);
+  b##.onclick :=
+    Dom_html.handler (fun _ ->
+        action ();
+        Js._true);
   let lab = Dom_html.createLabel doc in
   Dom.appendChild lab b;
   Dom.appendChild lab (doc##createTextNode (Js.string txt));
@@ -325,14 +331,18 @@ let ( >>= ) = Lwt.bind
 let lwt_wrap f =
   let t, w = Lwt.task () in
   let cont x = Lwt.wakeup w x in
-  f cont; t
+  f cont;
+  t
 
 (****)
 
 let load_image src =
   let img = Html.createImg Html.document in
   lwt_wrap (fun c ->
-      img##.onload := Html.handler (fun _ -> c (); Js._false);
+      img##.onload :=
+        Html.handler (fun _ ->
+            c ();
+            Js._false);
       img##.src := src)
   >>= fun () -> Lwt.return img
 

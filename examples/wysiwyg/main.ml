@@ -39,7 +39,10 @@ let is_visible_text s =
       | '\n' -> loop (i + 1)
       | _ -> raise (Break true)
   in
-  try loop 0; false with Break b -> b
+  try
+    loop 0;
+    false
+  with Break b -> b
 
 open Dom
 

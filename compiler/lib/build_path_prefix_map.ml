@@ -35,7 +35,8 @@ let encode_prefix str =
     | ':' -> Buffer.add_string buf "%."
     | c -> Buffer.add_char buf c
   in
-  String.iter ~f:push_char str; Buffer.contents buf
+  String.iter ~f:push_char str;
+  Buffer.contents buf
 
 let decode_prefix str =
   let buf = Buffer.create (String.length str) in

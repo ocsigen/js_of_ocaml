@@ -28,7 +28,9 @@ let success_count = ref 0
 
 let test_count = ref 0
 
-let log_success () = incr success_count; incr test_count
+let log_success () =
+  incr success_count;
+  incr test_count
 
 let log_failure s =
   incr test_count;

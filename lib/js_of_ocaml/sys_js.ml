@@ -23,7 +23,8 @@ external read_file : name:string -> string = "caml_read_file_content"
 
 let update_file ~name ~content =
   let oc = open_out name in
-  output_string oc content; close_out oc
+  output_string oc content;
+  close_out oc
 
 external set_channel_output' :
   out_channel -> (Js.js_string Js.t -> unit) Js.callback -> unit

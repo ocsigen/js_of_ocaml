@@ -214,7 +214,9 @@ end = struct
 
   let rec propagate l1 l2 =
     match l1, l2 with
-    | v1 :: r1, v2 :: r2 -> Var.propagate_name v1 v2; propagate r1 r2
+    | v1 :: r1, v2 :: r2 ->
+        Var.propagate_name v1 v2;
+        propagate r1 r2
     | _ -> ()
 
   let fold t f acc = Hashtbl.fold (fun k (e, _u) acc -> f k e acc) t.events_by_pc acc
@@ -517,7 +519,8 @@ module State = struct
     | Dummy -> state
     | Var x ->
         let y, state = fresh_var state in
-        Var.propagate_name x y; state
+        Var.propagate_name x y;
+        state
 
   let push_handler state x addr =
     { state with
@@ -614,7 +617,8 @@ let primitive_name state i =
   let g = State.globals state in
   assert (i >= 0 && i <= Array.length g.primitives);
   let prim = g.primitives.(i) in
-  Primitive.add_external prim; prim
+  Primitive.add_external prim;
+  prim
 
 let access_global g i =
   match g.vars.(i) with
@@ -622,7 +626,8 @@ let access_global g i =
   | None ->
       g.is_const.(i) <- true;
       let x = Var.fresh () in
-      g.vars.(i) <- Some x; x
+      g.vars.(i) <- Some x;
+      x
 
 let register_global ?(force = false) g i rem =
   if force || g.is_exported.(i)
@@ -1041,8 +1046,11 @@ and compile infos pc state instrs =
           match g.override.(i) with
           | Some f ->
               let v, instrs = f y instrs in
-              g.vars.(i) <- Some v; instrs
-          | None -> g.vars.(i) <- Some y; instrs
+              g.vars.(i) <- Some v;
+              instrs
+          | None ->
+              g.vars.(i) <- Some y;
+              instrs
         in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = 0@." Var.print x;
@@ -2047,7 +2055,9 @@ let exe_from_channel
     t
   in
   let keep s =
-    try Hashtbl.find keeps s; true
+    try
+      Hashtbl.find keeps s;
+      true
     with Not_found -> (
       match expunge s with
       | `Keep -> true
@@ -2396,7 +2406,8 @@ let from_channel
         let a, b, c =
           exe_from_channel ~includes ~toplevel ?expunge ~dynlink ~debug ~debug_data ic
         in
-        Code.invariant a; a, b, c, true
+        Code.invariant a;
+        a, b, c, true
     | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
 
 let predefined_exceptions () =

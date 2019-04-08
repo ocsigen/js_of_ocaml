@@ -202,7 +202,8 @@ let pos t =
   then {p_line = t.line; p_col = t.col}
   else
     let p = {p_line = -1; p_col = -1} in
-    push t (Set_pos p); p
+    push t (Set_pos p);
+    p
 
 let newline st =
   output_newline st;

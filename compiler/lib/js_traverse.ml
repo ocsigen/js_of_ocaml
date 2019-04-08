@@ -377,7 +377,9 @@ class free =
 
     method expression x =
       match x with
-      | EVar v -> m#use_var v; x
+      | EVar v ->
+          m#use_var v;
+          x
       | EFun (ident, params, body, nid) ->
           let tbody = ({<state_ = empty; level = succ level>} :> 'test) in
           let () = List.iter params ~f:tbody#def_var in
@@ -387,7 +389,9 @@ class free =
             | Some (V v) when not (S.mem v tbody#state.use) -> None
             | Some (S {name; _}) when not (StringSet.mem name tbody#state.use_name) ->
                 None
-            | Some id -> tbody#def_var id; ident
+            | Some id ->
+                tbody#def_var id;
+                ident
             | None -> None
           in
           tbody#block params;
@@ -599,7 +603,9 @@ class compact_vardecl =
       | s -> s
 
     method block ?(catch = false) params =
-      ignore catch; List.iter params ~f:m#except; super#block params
+      ignore catch;
+      List.iter params ~f:m#except;
+      super#block params
 
     method merge_info from =
       super#merge_info from;

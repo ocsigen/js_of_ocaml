@@ -344,7 +344,9 @@ let rec empty_tag i =
 
 let rec text_tag i =
   match Xmlm.input i with
-  | `Data s -> empty_tag i; s
+  | `Data s ->
+      empty_tag i;
+      s
   | `El_end -> ""
   | _ -> assert false
 
@@ -397,7 +399,8 @@ let read_path attrs i =
   let fill = parse_color (List.assoc fill_attr attrs) in
   let stroke = parse_color (List.assoc stroke_attr attrs) in
   let e = Path (cmd, fill, stroke) in
-  push e; empty_tag i
+  push e;
+  empty_tag i
 
 let read_ellipse attrs i =
   let cx = float_of_string (List.assoc cx_attr attrs) in
@@ -407,7 +410,8 @@ let read_ellipse attrs i =
   let fill = parse_color (List.assoc fill_attr attrs) in
   let stroke = parse_color (List.assoc stroke_attr attrs) in
   let e = Ellipse (cx, cy, rx, ry, fill, stroke) in
-  push e; empty_tag i
+  push e;
+  empty_tag i
 
 let rec group l =
   match l with
@@ -421,7 +425,8 @@ let read_polygon attrs i =
   let fill = parse_color (List.assoc fill_attr attrs) in
   let stroke = parse_color (List.assoc stroke_attr attrs) in
   let e = Polygon (points, fill, stroke) in
-  push e; empty_tag i
+  push e;
+  empty_tag i
 
 let read_text attrs i =
   let fill = parse_color (try List.assoc fill_attr attrs with Not_found -> "black") in

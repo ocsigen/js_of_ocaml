@@ -35,7 +35,9 @@ module IdMap = IntMap
 
 let last_id = ref (-1)
 
-let fresh_id () = incr last_id; !last_id
+let fresh_id () =
+  incr last_id;
+  !last_id
 
 type 'a sequence =
   { mutable count : int
@@ -126,7 +128,8 @@ let insert_node g n =
 
 let make_node g name def_attrs =
   let node = {name; id = fresh_id (); node_attr = def_attrs.n_attr} in
-  insert_node g node; node
+  insert_node g node;
+  node
 
 let insert_edge g e =
   let p = all_parents IntMap.empty g in
@@ -134,7 +137,8 @@ let insert_edge g e =
 
 let make_edge g n1 n2 attrs =
   let edge = {tail = n1; head = n2; edge_id = fresh_id (); edge_attr = attrs} in
-  insert_edge g edge; edge
+  insert_edge g edge;
+  edge
 
 (****)
 
@@ -156,7 +160,8 @@ let find_graph st parent name def_attrs =
 let find_node st g name def_attrs =
   try
     let n = Hashtbl.find st.st_nodes name in
-    insert_node g n; n
+    insert_node g n;
+    n
   with Not_found ->
     let n = make_node g name def_attrs in
     Hashtbl.add st.st_nodes name n;
@@ -176,7 +181,8 @@ let find_edge st g n1 n2 key attrs =
       | None -> raise Not_found
     in
     let e = lookup_edge st n1 n2 key in
-    insert_edge g e; e
+    insert_edge g e;
+    e
   with Not_found ->
     let e = make_edge g n1 n2 attrs in
     (match key with

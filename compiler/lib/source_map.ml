@@ -104,7 +104,8 @@ let string_of_mapping mapping =
         Vlq64.encode_l buf l;
         loop i (i + 1))
   in
-  loop (-1) 0; Buffer.contents buf
+  loop (-1) 0;
+  Buffer.contents buf
 
 let mapping_of_string str =
   let total_len = String.length str in

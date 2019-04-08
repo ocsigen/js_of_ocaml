@@ -39,7 +39,10 @@ end = struct
     let marked = Array.make size false in
     let stack = Array.make size ~-1 in
     let pos = ref 0 in
-    let push i = stack.(!pos) <- i; incr pos in
+    let push i =
+      stack.(!pos) <- i;
+      incr pos
+    in
     let rec aux node =
       if not marked.(node)
       then (

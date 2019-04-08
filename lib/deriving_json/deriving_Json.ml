@@ -36,7 +36,8 @@ let convert t f1 f2 =
 
 let to_string t v =
   let buf = Buffer.create 50 in
-  t.write buf v; Buffer.contents buf
+  t.write buf v;
+  Buffer.contents buf
 
 (*let to_channel t oc v =
   let buf = Buffer.create 50 in
@@ -344,7 +345,8 @@ let read_ref f buf =
   | `NCst 0 ->
       Lexer.read_comma buf;
       let x = f buf in
-      Lexer.read_rbracket buf; ref x
+      Lexer.read_rbracket buf;
+      ref x
   | _ -> Lexer.tag_error ~typename:"ref" buf
 
 let write_ref f buffer r = Printf.bprintf buffer "[0,%a]" f !r
@@ -363,7 +365,8 @@ let read_option f buf =
   | `NCst 0 ->
       Lexer.read_comma buf;
       let x = f buf in
-      Lexer.read_rbracket buf; Some x
+      Lexer.read_rbracket buf;
+      Some x
   | _ -> Lexer.tag_error ~typename:"option" buf
 
 let write_option f buffer o =

@@ -197,7 +197,11 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
         if state.map.(y).(x) = Diamond then state.rem <- state.rem - 1;
         set_cell state x y Guy;
         Lwt_js.sleep 0.05
-        >>= fun () -> fall state >>= fun () -> set_cell state x y Empty; Lwt.return ()
+        >>= fun () ->
+        fall state
+        >>= fun () ->
+        set_cell state x y Empty;
+        Lwt.return ()
       in
       let click () =
         let gx, gy = state.pos in
@@ -330,7 +334,11 @@ let start _ =
   let load_data name process =
     let loading_end = loading body in
     getfile name
-    >>= fun data -> process data >>= fun res -> loading_end (); Lwt.return res
+    >>= fun data ->
+    process data
+    >>= fun res ->
+    loading_end ();
+    Lwt.return res
   in
   let rem_div, show_rem =
     let div = Html.createDiv document in
@@ -450,7 +458,10 @@ let start _ =
             table##.style##.opacity := Js.def (js (Printf.sprintf "%g" (t -. t0)));
             fade ()
         in
-        fade () >>= fun () -> clock_start (); Lwt.return ())
+        fade ()
+        >>= fun () ->
+        clock_start ();
+        Lwt.return ())
   in
   body##.style##.cssText
   := js "font-family: sans-serif; text-align: center; background-color: #e8e8e8;";

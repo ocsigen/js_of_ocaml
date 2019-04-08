@@ -352,7 +352,9 @@ let check_deps () =
           ())
     code_pieces
 
-let load_files l = List.iter l ~f:add_file; check_deps ()
+let load_files l =
+  List.iter l ~f:add_file;
+  check_deps ()
 
 (* resolve *)
 let rec resolve_dep_name_rev visited path nm =

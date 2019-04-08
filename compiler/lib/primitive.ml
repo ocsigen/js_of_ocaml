@@ -79,7 +79,10 @@ let register p k kargs arity =
   | _ -> ());
   Hashtbl.add kinds p k
 
-let alias nm nm' = add_external nm'; add_external nm; Hashtbl.add aliases nm nm'
+let alias nm nm' =
+  add_external nm';
+  add_external nm;
+  Hashtbl.add aliases nm nm'
 
 let named_values = ref StringSet.empty
 

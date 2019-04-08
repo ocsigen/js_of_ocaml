@@ -141,7 +141,8 @@ let propagate1 deps defs st x =
             match defs.(Var.idx z) with
             | Expr (Block (_, a)) when n < Array.length a ->
                 let t = a.(n) in
-                add_dep deps x t; Var.Tbl.get st t
+                add_dep deps x t;
+                Var.Tbl.get st t
             | Phi _ | Param | Expr _ -> Var.Set.empty)
           (Var.Tbl.get st y))
 
@@ -202,7 +203,9 @@ let expr_escape st _x e =
         match args, ka with
         | [], _ -> ()
         | Pc _ :: ax, [] -> loop ax []
-        | Pv a :: ax, [] -> block_escape st a; loop ax []
+        | Pv a :: ax, [] ->
+            block_escape st a;
+            loop ax []
         | a :: ax, k :: kx ->
             (match a, k with
             | _, `Const | Pc _, _ -> ()

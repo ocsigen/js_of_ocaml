@@ -35,7 +35,9 @@ let make_event event_kind ?(use_capture = false) target =
          target
          event_kind
          (Dom_html.handler (fun (ev : #Dom_html.event Js.t) ->
-              cancel (); Lwt.wakeup w ev; Js.bool true))
+              cancel ();
+              Lwt.wakeup w ev;
+              Js.bool true))
          (* true because we do not want to prevent default ->
                               the user can use the preventDefault function
                               above. *)

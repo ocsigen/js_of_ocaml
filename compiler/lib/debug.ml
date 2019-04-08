@@ -37,8 +37,10 @@ let start_profiling name =
 let take_snapshot () =
   match !series with
   | None -> ()
-  | Some _series -> Gc.minor (); (* Spacetime.Snapshot.take series; *)
-                                 ()
+  | Some _series ->
+      Gc.minor ();
+      (* Spacetime.Snapshot.take series; *)
+      ()
 
 let debugs : (string * bool ref) list ref = ref []
 

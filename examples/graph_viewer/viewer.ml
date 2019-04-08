@@ -226,7 +226,9 @@ let scroll_view ?width ?height ?packing st =
   in
   ignore
     (((display#event)#connect)#configure (fun ev ->
-         prerr_endline "CONFIGURE"; update_scrollbars (); false));
+         prerr_endline "CONFIGURE";
+         update_scrollbars ();
+         false));
   ignore
     (((display#event)#connect)#map (fun ev ->
          let a = (display#misc)#allocation in
@@ -234,7 +236,10 @@ let scroll_view ?width ?height ?packing st =
          let zoom_factor =
            max (st.st_width /. float a.Gtk.width) (st.st_height /. float a.Gtk.height)
          in
-         set_zoom_factor zoom_factor; refresh (); update_scrollbars (); false));
+         set_zoom_factor zoom_factor;
+         refresh ();
+         update_scrollbars ();
+         false));
   (display#event)#add [`STRUCTURE];
   ignore
     (((display#event)#connect)#expose (fun ev ->
@@ -370,7 +375,9 @@ let scroll_view ?width ?height ?packing st =
            sadj#set_value (min sadj#upper (max 0. (sadj#upper -. v)));
            true)
          else if keyval = GdkKeysyms._1 || keyval = GdkKeysyms._ampersand
-         then (sadj#set_value sadj#upper; true)
+         then (
+           sadj#set_value sadj#upper;
+           true)
          else if keyval = GdkKeysyms._plus
                  || keyval = GdkKeysyms._equal
                  || keyval = GdkKeysyms._KP_Add

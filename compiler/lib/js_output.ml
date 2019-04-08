@@ -84,7 +84,9 @@ struct
           PP.non_breaking_space f
       | N -> ()
       | U | Pi _ ->
-          PP.non_breaking_space f; PP.string f "/*<<?>>*/"; PP.non_breaking_space f);
+          PP.non_breaking_space f;
+          PP.string f "/*<<?>>*/";
+          PP.non_breaking_space f);
     if source_map_enabled
     then
       match loc with
@@ -134,13 +136,19 @@ struct
   let opt_identifier f i =
     match i with
     | None -> ()
-    | Some i -> PP.space f; ident f i
+    | Some i ->
+        PP.space f;
+        ident f i
 
   let rec formal_parameter_list f l =
     match l with
     | [] -> ()
     | [i] -> ident f i
-    | i :: r -> ident f i; PP.string f ","; PP.break f; formal_parameter_list f r
+    | i :: r ->
+        ident f i;
+        PP.string f ",";
+        PP.break f;
+        formal_parameter_list f r
 
   (*
   0 Expression
@@ -312,12 +320,18 @@ struct
     match e with
     | EVar v -> ident f v
     | ESeq (e1, e2) ->
-        if l > 0 then (PP.start_group f 1; PP.string f "(");
+        if l > 0
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         expression 0 f e1;
         PP.string f ",";
         PP.break f;
         expression 0 f e2;
-        if l > 0 then (PP.string f ")"; PP.end_group f)
+        if l > 0
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EFun (i, l, b, pc) ->
         PP.start_group f 1;
         PP.start_group f 0;
@@ -341,7 +355,10 @@ struct
         PP.end_group f;
         PP.end_group f
     | ECall (e, el, loc) ->
-        if l > 15 then (PP.start_group f 1; PP.string f "(");
+        if l > 15
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         output_debug_info f loc;
         PP.start_group f 1;
         expression 15 f e;
@@ -352,7 +369,10 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        if l > 15 then (PP.string f ")"; PP.end_group f)
+        if l > 15
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EStr (s, kind) ->
         let quote = best_string_quote s in
         pp_string f ~utf:(kind = `Utf8) ~quote s
@@ -374,44 +394,77 @@ struct
         PP.string f s;
         if need_parent then PP.string f ")"
     | EUn (Typeof, e) ->
-        if l > 13 then (PP.start_group f 1; PP.string f "(");
+        if l > 13
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 0;
         PP.string f "typeof";
         PP.space f;
         expression 13 f e;
         PP.end_group f;
-        if l > 13 then (PP.string f ")"; PP.end_group f)
+        if l > 13
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EUn (Void, e) ->
-        if l > 13 then (PP.start_group f 1; PP.string f "(");
+        if l > 13
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 0;
         PP.string f "void";
         PP.space f;
         expression 13 f e;
         PP.end_group f;
-        if l > 13 then (PP.string f ")"; PP.end_group f)
+        if l > 13
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EUn (Delete, e) ->
-        if l > 13 then (PP.start_group f 1; PP.string f "(");
+        if l > 13
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 0;
         PP.string f "delete";
         PP.space f;
         expression 13 f e;
         PP.end_group f;
-        if l > 13 then (PP.string f ")"; PP.end_group f)
+        if l > 13
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EUn (((IncrA | DecrA | IncrB | DecrB) as op), e) ->
-        if l > 13 then (PP.start_group f 1; PP.string f "(");
+        if l > 13
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         if op = IncrA || op = DecrA then expression 13 f e;
         if op = IncrA || op = IncrB then PP.string f "++" else PP.string f "--";
         if op = IncrB || op = DecrB then expression 13 f e;
-        if l > 13 then (PP.string f ")"; PP.end_group f)
+        if l > 13
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EUn (op, e) ->
-        if l > 13 then (PP.start_group f 1; PP.string f "(");
+        if l > 13
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.string f (unop_str op);
         PP.space f;
         expression 13 f e;
-        if l > 13 then (PP.string f ")"; PP.end_group f)
+        if l > 13
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EBin (InstanceOf, e1, e2) ->
         let out, lft, rght = op_prec InstanceOf in
-        if l > out then (PP.start_group f 1; PP.string f "(");
+        if l > out
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 0;
         expression lft f e1;
         PP.space f;
@@ -419,10 +472,16 @@ struct
         PP.space f;
         expression rght f e2;
         PP.end_group f;
-        if l > out then (PP.string f ")"; PP.end_group f)
+        if l > out
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EBin (In, e1, e2) ->
         let out, lft, rght = op_prec InstanceOf in
-        if l > out then (PP.start_group f 1; PP.string f "(");
+        if l > out
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 0;
         expression lft f e1;
         PP.space f;
@@ -430,16 +489,25 @@ struct
         PP.space f;
         expression rght f e2;
         PP.end_group f;
-        if l > out then (PP.string f ")"; PP.end_group f)
+        if l > out
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EBin (op, e1, e2) ->
         let out, lft, rght = op_prec op in
-        if l > out then (PP.start_group f 1; PP.string f "(");
+        if l > out
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         expression lft f e1;
         PP.space f;
         PP.string f (op_str op);
         PP.space f;
         expression rght f e2;
-        if l > out then (PP.string f ")"; PP.end_group f)
+        if l > out
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EArr el ->
         PP.start_group f 1;
         PP.string f "[";
@@ -447,7 +515,10 @@ struct
         PP.string f "]";
         PP.end_group f
     | EAccess (e, e') ->
-        if l > 15 then (PP.start_group f 1; PP.string f "(");
+        if l > 15
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 1;
         expression 15 f e;
         PP.break f;
@@ -457,16 +528,28 @@ struct
         PP.string f "]";
         PP.end_group f;
         PP.end_group f;
-        if l > 15 then (PP.string f ")"; PP.end_group f)
+        if l > 15
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EDot (e, nm) ->
-        if l > 15 then (PP.start_group f 1; PP.string f "(");
+        if l > 15
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         expression 15 f e;
         PP.string f ".";
         PP.string f nm;
-        if l > 15 then (PP.string f ")"; PP.end_group f)
+        if l > 15
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | ENew (e, None) ->
         (*FIX: should omit parentheses when possible*)
-        if l > 15 then (PP.start_group f 1; PP.string f "(");
+        if l > 15
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 1;
         PP.string f "new";
         PP.space f;
@@ -474,9 +557,15 @@ struct
         PP.break f;
         PP.string f "()";
         PP.end_group f;
-        if l > 15 then (PP.string f ")"; PP.end_group f)
+        if l > 15
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | ENew (e, Some el) ->
-        if l > 15 then (PP.start_group f 1; PP.string f "(");
+        if l > 15
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 1;
         PP.string f "new";
         PP.space f;
@@ -488,9 +577,15 @@ struct
         PP.string f ")";
         PP.end_group f;
         PP.end_group f;
-        if l > 15 then (PP.string f ")"; PP.end_group f)
+        if l > 15
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | ECond (e, e1, e2) ->
-        if l > 2 then (PP.start_group f 1; PP.string f "(");
+        if l > 2
+        then (
+          PP.start_group f 1;
+          PP.string f "(");
         PP.start_group f 1;
         PP.start_group f 0;
         expression 3 f e;
@@ -506,7 +601,10 @@ struct
         expression 1 f e2;
         PP.end_group f;
         PP.end_group f;
-        if l > 2 then (PP.string f ")"; PP.end_group f)
+        if l > 2
+        then (
+          PP.string f ")";
+          PP.end_group f)
     | EObj lst ->
         PP.start_group f 1;
         PP.string f "{";
@@ -520,7 +618,10 @@ struct
         match opt with
         | None -> ()
         | Some o -> PP.string f o)
-    | EQuote s -> PP.string f "("; PP.string f s; PP.string f ")"
+    | EQuote s ->
+        PP.string f "(";
+        PP.string f s;
+        PP.string f ")"
 
   and property_name f n =
     match n with
@@ -557,19 +658,30 @@ struct
     | [e] -> (
       match e with
       | None -> PP.string f ","
-      | Some e -> PP.start_group f 0; expression 1 f e; PP.end_group f)
+      | Some e ->
+          PP.start_group f 0;
+          expression 1 f e;
+          PP.end_group f)
     | e :: r ->
         (match e with
         | None -> ()
-        | Some e -> PP.start_group f 0; expression 1 f e; PP.end_group f);
-        PP.string f ","; PP.break f; element_list f r
+        | Some e ->
+            PP.start_group f 0;
+            expression 1 f e;
+            PP.end_group f);
+        PP.string f ",";
+        PP.break f;
+        element_list f r
 
   and function_body f b = source_elements f ~skip_last_semi:true b
 
   and arguments f l =
     match l with
     | [] -> ()
-    | [e] -> PP.start_group f 0; expression 1 f e; PP.end_group f
+    | [e] ->
+        PP.start_group f 0;
+        expression 1 f e;
+        PP.end_group f
     | e :: r ->
         PP.start_group f 0;
         expression 1 f e;
@@ -642,7 +754,9 @@ struct
     | Block b -> block f b
     | Variable_statement l -> variable_declaration_list (not last) f l
     | Empty_statement -> PP.string f ";"
-    | Debugger_statement -> PP.string f "debugger"; last_semi ()
+    | Debugger_statement ->
+        PP.string f "debugger";
+        last_semi ()
     | Expression_statement (EVar _) -> last_semi ()
     | Expression_statement e ->
         (* Parentheses are required when the expression
@@ -655,7 +769,11 @@ struct
           PP.string f ")";
           last_semi ();
           PP.end_group f)
-        else (PP.start_group f 0; expression 0 f e; last_semi (); PP.end_group f)
+        else (
+          PP.start_group f 0;
+          expression 0 f e;
+          last_semi ();
+          PP.end_group f)
     | If_statement (e, s1, (Some _ as s2)) when ends_with_if_without_else s1 ->
         (* Dangling else issue... *)
         statement ~last f (If_statement (e, (Block [s1], N), s2), N)
@@ -816,19 +934,25 @@ struct
         statement ~last f s;
         PP.end_group f;
         PP.end_group f
-    | Continue_statement None -> PP.string f "continue"; last_semi ()
+    | Continue_statement None ->
+        PP.string f "continue";
+        last_semi ()
     | Continue_statement (Some s) ->
         PP.string f "continue ";
         PP.string f (Javascript.Label.to_string s);
         last_semi ()
-    | Break_statement None -> PP.string f "break"; last_semi ()
+    | Break_statement None ->
+        PP.string f "break";
+        last_semi ()
     | Break_statement (Some s) ->
         PP.string f "break ";
         PP.string f (Javascript.Label.to_string s);
         last_semi ()
     | Return_statement e -> (
       match e with
-      | None -> PP.string f "return"; last_semi ()
+      | None ->
+          PP.string f "return";
+          last_semi ()
       | Some (EFun (i, l, b, pc)) ->
           PP.start_group f 1;
           PP.start_group f 0;
@@ -901,7 +1025,9 @@ struct
         let rec loop last = function
           | [] -> ()
           | [x] -> output_one last x
-          | x :: xs -> output_one false x; loop last xs
+          | x :: xs ->
+              output_one false x;
+              loop last xs
         in
         loop (def = None && cc' = []) cc;
         (match def with
@@ -914,7 +1040,10 @@ struct
             statement_list ~skip_last_semi:(cc' = []) f def;
             PP.end_group f;
             PP.end_group f);
-        loop true cc'; PP.string f "}"; PP.end_group f; PP.end_group f
+        loop true cc';
+        PP.string f "}";
+        PP.end_group f;
+        PP.end_group f
     | Throw_statement e ->
         PP.start_group f 6;
         PP.string f "throw";

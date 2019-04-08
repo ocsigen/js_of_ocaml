@@ -436,7 +436,9 @@ Firebug.console##log(Js.string "sleep");
       let offset a d =
         a#set_value (min (a#value -. (float d /. scale)) (a#upper -. a#page_size))
       in
-      offset hadj dx; offset vadj dy; update_view true);
+      offset hadj dx;
+      offset vadj dy;
+      update_view true);
   let bump_scale x y v =
     let a = allocation () in
     let x = x /. float a.width in

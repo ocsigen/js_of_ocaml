@@ -3,6 +3,7 @@ break-collection-expressions=fit-or-vertical
 break-fun-decl=fit-or-vertical
 break-infix=fit-or-vertical
 break-struct=force
+break-sequences=true
 field-space=loose
 if-then-else=keyword-first
 indicate-multiline-delimiters=false

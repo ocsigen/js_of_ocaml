@@ -102,7 +102,9 @@ let t =
     $ is_quiet
     $ custom_header)
 
-let on_off on off t = List.iter ~f:on t.enable; List.iter ~f:off t.disable
+let on_off on off t =
+  List.iter ~f:on t.enable;
+  List.iter ~f:off t.disable
 
 let eval t =
   Config.Flag.(on_off enable disable t.optim);

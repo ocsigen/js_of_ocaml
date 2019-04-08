@@ -95,7 +95,8 @@ struct
         let visited =
           g.fold_children (fun y visited -> traverse g visited stack y) x visited
         in
-        Stack.push x stack; visited)
+        Stack.push x stack;
+        visited)
       else visited
 
     let traverse_all g =
@@ -112,7 +113,14 @@ struct
       (*
 let t1 = Timer.make () in
 *)
-      let v = NSet.fold (fun x v -> incr n; NMap.add x D.bot v) g.domain NMap.empty in
+      let v =
+        NSet.fold
+          (fun x v ->
+            incr n;
+            NMap.add x D.bot v)
+          g.domain
+          NMap.empty
+      in
       (*
 let t1 = Timer.get t1 in
 let t2 = Timer.make () in
@@ -202,10 +210,14 @@ struct
 
     let pop st =
       let x = Stack.pop st.stack in
-      NSet.add st.set x; x
+      NSet.add st.set x;
+      x
 
     let push x st =
-      if NSet.mem st.set x then (Stack.push x st.stack; NSet.remove st.set x)
+      if NSet.mem st.set x
+      then (
+        Stack.push x st.stack;
+        NSet.remove st.set x)
 
     let rec iterate g f v w =
       if is_empty w

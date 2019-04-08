@@ -75,7 +75,8 @@ let time_signal =
     set (Sys.time ());
     Lwt.bind (Lwt_js.sleep 1.) loop
   in
-  Lwt.async loop; s
+  Lwt.async loop;
+  s
 
 let div_elt =
   Tyxml_js.(
@@ -100,7 +101,8 @@ open Graphics_js
 
 let () =
   loop [Mouse_motion; Key_pressed] (function {mouse_x = x; mouse_y = y; key} ->
-      moveto x y; draw_char key)
+      moveto x y;
+      draw_char key)
 
 (** Graphics: PingPong *)
 open Js_of_ocaml_lwt
@@ -117,7 +119,9 @@ and y0 = 0
 
 and y1 = size_y ()
 
-let draw_ball x y = set_color foreground; fill_circle x y c
+let draw_ball x y =
+  set_color foreground;
+  fill_circle x y c
 
 let state = ref (Lwt.task ())
 

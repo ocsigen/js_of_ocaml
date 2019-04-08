@@ -38,5 +38,6 @@ let textarea (textbox : Dom_html.textAreaElement Js.t) : unit =
       let n1 = max (c1 + up1'' - up1) lo1'' in
       let n2 = max (c2 + up2'' - up2) lo2'' in
       let () = (Obj.magic textbox)##setSelectionRange n1 n2 in
-      textbox##focus; ()
+      textbox##focus;
+      ()
   | None -> ()

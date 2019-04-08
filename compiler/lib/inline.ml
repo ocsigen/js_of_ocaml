@@ -281,4 +281,5 @@ let f ((pc, blocks, free_pc) as p) live_vars =
   in
   if times () then Format.eprintf "  inlining: %a@." Timer.print t;
   let p = pc, blocks, free_pc in
-  Code.invariant p; p
+  Code.invariant p;
+  p

@@ -44,7 +44,10 @@ let raw_call name uri error_cb user_cb =
   script##.src := Js.string uri;
   script##._type := Js.string "text/javascript";
   script##.async := Js._true;
-  ((Js.Unsafe.coerce script)##.onerror := fun x -> finalize (); error_cb x);
+  ((Js.Unsafe.coerce script)##.onerror
+  := fun x ->
+  finalize ();
+  error_cb x);
   ((Js.Unsafe.coerce script)##.onload
   := fun x ->
   Lwt.async (fun () ->
@@ -73,10 +76,15 @@ let call_custom_url ?timeout ?(prefix = "") make_uri =
     match timeout with
     | None -> t
     | Some delay ->
-        let wait = Lwt.bind (Lwt_js.sleep delay) (fun () -> Lwt.cancel t; t) in
+        let wait =
+          Lwt.bind (Lwt_js.sleep delay) (fun () ->
+              Lwt.cancel t;
+              t)
+        in
         Lwt.choose [wait; t]
   in
-  init (); new_t
+  init ();
+  new_t
 
 let add_param name value l =
   let l = List.filter (fun (x, _) -> x <> name) l in

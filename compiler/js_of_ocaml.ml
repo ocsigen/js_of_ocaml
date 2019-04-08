@@ -41,11 +41,16 @@ let gen_file file f =
   in
   try
     let ch = open_out_bin f_tmp in
-    (try f ch with e -> close_out ch; raise e);
+    (try f ch
+     with e ->
+       close_out ch;
+       raise e);
     close_out ch;
     (try Sys.remove file with Sys_error _ -> ());
     Sys.rename f_tmp file
-  with exc -> Sys.remove f_tmp; raise exc
+  with exc ->
+    Sys.remove f_tmp;
+    raise exc
 
 let f
     { CompileArg.common
@@ -110,7 +115,12 @@ let f
            assert false
          with End_of_file -> ());
         close_in ic;
-        Some (fun s -> try Hashtbl.find t s; `Keep with Not_found -> `Skip)
+        Some
+          (fun s ->
+            try
+              Hashtbl.find t s;
+              `Keep
+            with Not_found -> `Skip)
   in
   Linker.load_files runtime_files;
   let paths =
@@ -154,7 +164,8 @@ let f
               ~debug:need_debug
               ch
           in
-          close_in ch; res
+          close_in ch;
+          res
   in
   let () =
     if (not runtime_only) && source_map <> None && Parse_bytecode.Debug.is_empty d

@@ -210,7 +210,10 @@ while compiling the OCaml toplevel:
           let idx = Var.idx x in
           let l = constr.(idx) in
           if is_available l i
-          then (nm ~origin:idx i; mark_allocated l i; stats idx i)
+          then (
+            nm ~origin:idx i;
+            mark_allocated l i;
+            stats idx i)
           else incr bad)
     done;
     if debug ()
@@ -225,7 +228,9 @@ while compiling the OCaml toplevel:
       then (
         let n = first_available l in
         let idx = idx.(i) in
-        nm ~origin:idx n; mark_allocated l n; stats idx n);
+        nm ~origin:idx n;
+        mark_allocated l n;
+        stats idx n);
       if l = [] then assert (weight idx.(i) = 0)
     done;
     if debug ()

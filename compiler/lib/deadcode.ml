@@ -77,21 +77,29 @@ and mark_reachable st pc =
     List.iter block.body ~f:(fun i ->
         match i with
         | Let (_, e) -> if not (pure_expr st.pure_funs e) then mark_expr st e
-        | Set_field (x, _, y) -> mark_var st x; mark_var st y
-        | Array_set (x, y, z) -> mark_var st x; mark_var st y; mark_var st z
+        | Set_field (x, _, y) ->
+            mark_var st x;
+            mark_var st y
+        | Array_set (x, y, z) ->
+            mark_var st x;
+            mark_var st y;
+            mark_var st z
         | Offset_ref (x, _) -> mark_var st x);
     match block.branch with
     | Return x | Raise (x, _) -> mark_var st x
     | Stop -> ()
     | Branch cont | Poptrap (cont, _) -> mark_cont_reachable st cont
     | Cond (_, x, cont1, cont2) ->
-        mark_var st x; mark_cont_reachable st cont1; mark_cont_reachable st cont2
+        mark_var st x;
+        mark_cont_reachable st cont1;
+        mark_cont_reachable st cont2
     | Switch (x, a1, a2) ->
         mark_var st x;
         Array.iter a1 ~f:(fun cont -> mark_cont_reachable st cont);
         Array.iter a2 ~f:(fun cont -> mark_cont_reachable st cont)
     | Pushtrap (cont1, _, cont2, _) ->
-        mark_cont_reachable st cont1; mark_cont_reachable st cont2)
+        mark_cont_reachable st cont1;
+        mark_cont_reachable st cont2)
 
 (****)
 
@@ -160,7 +168,9 @@ let add_def defs x i =
 
 let rec add_arg_dep defs params args =
   match params, args with
-  | x :: params, y :: args -> add_def defs x (Var y); add_arg_dep defs params args
+  | x :: params, y :: args ->
+      add_def defs x (Var y);
+      add_arg_dep defs params args
   | _ -> ()
 
 let add_cont_dep blocks defs (pc, args) =

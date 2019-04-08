@@ -63,14 +63,18 @@ let rec scan_args acc = function
       Jsoo_common.verbose := true;
       scan_args ("-verbose" :: acc) xs
   | ("--help" | "-help" | "-h") :: _ -> usage ()
-  | "-jsopt" :: x :: xs -> add_js_opt x; scan_args acc xs
+  | "-jsopt" :: x :: xs ->
+      add_js_opt x;
+      scan_args acc xs
   | "-o" :: x :: xs ->
       output := x;
       scan_args acc xs
   | "-export-package" :: x :: xs ->
       add_pkgs x;
       scan_args (x :: "-package" :: acc) xs
-  | "-export-unit" :: x :: xs -> add_export x; scan_args acc xs
+  | "-export-unit" :: x :: xs ->
+      add_export x;
+      scan_args acc xs
   | x :: xs -> scan_args (x :: acc) xs
   | [] -> List.rev acc
 
@@ -98,4 +102,6 @@ let _ =
       @ !js_opt
       @ [!output]);
     do_clean ()
-  with exn -> do_clean (); raise exn
+  with exn ->
+    do_clean ();
+    raise exn

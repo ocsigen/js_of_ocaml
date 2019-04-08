@@ -22,7 +22,9 @@ let intern_extern obj =
   close_out oc;
   let ic = open_in_bin f in
   let res = input_value ic in
-  close_in ic; Sys.remove f; res
+  close_in ic;
+  Sys.remove f;
+  res
 
 ;;
 testing_function "output_value/input_value on nats"

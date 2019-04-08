@@ -180,7 +180,9 @@ let setup_examples ~container ~textbox =
                           textbox##.value := (Js.string acc)##trim;
                           Lwt.async (fun () ->
                               resize ~container ~textbox ()
-                              >>= fun () -> textbox##focus; Lwt.return_unit);
+                              >>= fun () ->
+                              textbox##focus;
+                              Lwt.return_unit);
                           true) ]
                   [txt name])
             in
@@ -249,7 +251,8 @@ let setup_share_button ~output =
                       in
                       Lwt.bind (Js_of_ocaml_lwt.Jsonp.call uri) (fun o ->
                           let str = Js.to_string o##.shorturl in
-                          append_url str; Lwt.return_unit))
+                          append_url str;
+                          Lwt.return_unit))
                   (fun exn ->
                     Format.eprintf
                       "Could not generate short url. reason: %s@."
@@ -371,7 +374,10 @@ let run _ =
       if String.length txt = pos then raise Not_found;
       let _ = String.index_from txt pos '\n' in
       Js._true
-    with Not_found -> History.current txt; History.next textbox; Js._false
+    with Not_found ->
+      History.current txt;
+      History.next textbox;
+      Js._false
   in
   let history_up _e =
     let txt = Js.to_string textbox##.value in
@@ -380,7 +386,10 @@ let run _ =
       if pos < 0 then raise Not_found;
       let _ = String.rindex_from txt pos '\n' in
       Js._true
-    with Not_found -> History.current txt; History.previous textbox; Js._false
+    with Not_found ->
+      History.current txt;
+      History.previous textbox;
+      Js._false
   in
   let meta e =
     let b = Js.to_bool in
@@ -399,15 +408,21 @@ let run _ =
   textbox##.onkeydown :=
     Dom_html.handler (fun e ->
         match e##.keyCode with
-        | 13 when not (meta e || shift e) -> Lwt.async execute; Js._false
+        | 13 when not (meta e || shift e) ->
+            Lwt.async execute;
+            Js._false
         | 13 ->
             Lwt.async (resize ~container ~textbox);
             Js._true
-        | 09 -> Indent.textarea textbox; Js._false
+        | 09 ->
+            Indent.textarea textbox;
+            Js._false
         | 76 when meta e ->
             output##.innerHTML := Js.string "";
             Js._true
-        | 75 when meta e -> setup_toplevel (); Js._false
+        | 75 when meta e ->
+            setup_toplevel ();
+            Js._false
         | 38 -> history_up e
         | 40 -> history_down e
         | _ -> Js._true);
@@ -418,7 +433,10 @@ let run _ =
        | Js.Error e -> Firebug.console##log e##.stack
        | _ -> ());
   Lwt.async (fun () ->
-      resize ~container ~textbox () >>= fun () -> textbox##focus; Lwt.return_unit);
+      resize ~container ~textbox ()
+      >>= fun () ->
+      textbox##focus;
+      Lwt.return_unit);
   Graphics_support.init (by_id_coerce "test-canvas" Dom_html.CoerceTo.canvas);
   Sys_js.set_channel_flusher caml_chan (append Colorize.ocaml output "caml");
   Sys_js.set_channel_flusher sharp_chan (append Colorize.ocaml output "sharp");
@@ -452,4 +470,8 @@ let run _ =
         (Js.string (Printexc.to_string exc))
         exc
 
-let _ = Dom_html.window##.onload := Dom_html.handler (fun _ -> run (); Js._false)
+let _ =
+  Dom_html.window##.onload :=
+    Dom_html.handler (fun _ ->
+        run ();
+        Js._false)

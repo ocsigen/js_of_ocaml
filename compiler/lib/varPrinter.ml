@@ -143,7 +143,11 @@ let rec to_string t ?origin i =
         t.last <- t.last + 1;
         let j = t.last in
         let s = format_var t i j in
-        if is_reserved s then to_string t i else (Hashtbl.add t.known i s; s)
+        if is_reserved s
+        then to_string t i
+        else (
+          Hashtbl.add t.known i s;
+          s)
     in
     let name =
       if t.pretty

@@ -393,4 +393,5 @@ let f ((pc, blocks, free_pc) as p) : Code.program =
       ~init:(pc, blocks, free_pc)
       ~f:(fun program (mapping, pc) -> Subst.cont mapping pc program)
   in
-  Code.invariant p; p
+  Code.invariant p;
+  p

@@ -243,7 +243,8 @@ let ( >>= ) = Lwt.bind
 let lwt_wrap f =
   let t, w = Lwt.task () in
   let cont x = Lwt.wakeup w x in
-  f cont; t
+  f cont;
+  t
 
 (******)
 
@@ -263,7 +264,10 @@ let getfile f = try Lwt.return (Sys_js.read_file ~name:f) with Not_found -> http
 let load_image src =
   let img = Html.createImg Html.document in
   lwt_wrap (fun c ->
-      img##.onload := Html.handler (fun _ -> c (); Js._false);
+      img##.onload :=
+        Html.handler (fun _ ->
+            c ();
+            Js._false);
       img##.src := src)
   >>= fun () -> Lwt.return img
 
@@ -502,7 +506,8 @@ let text_size font txt =
   let txt = doc##createTextNode (Js.string txt) in
   Dom.appendChild d txt;
   let res = d##.clientWidth, d##.clientHeight in
-  Dom.removeChild d txt; res
+  Dom.removeChild d txt;
+  res
 
 (******)
 
@@ -833,7 +838,9 @@ let image_node img =
         (Lwt_js.yield ()
         >>= fun () ->
         load_image (Js.string ("thumbnails/" ^ img ^ ".jpg"))
-        >>= fun img -> schedule_redraw (); Lwt.return img)
+        >>= fun img ->
+        schedule_redraw ();
+        Lwt.return img)
     , img )
 
 let nl_re = Regexp.regexp "\n"
@@ -1306,7 +1313,10 @@ let show_image all_messages image_info name small_image =
                   information.");
     Dom.appendChild legend p;
 *)
-    legend##.onclick := Html.handler (fun ev -> Html.stopPropagation ev; Js._true);
+    legend##.onclick :=
+      Html.handler (fun ev ->
+          Html.stopPropagation ev;
+          Js._true);
     legend##.className := Js.string "text";
     legend##.style##.position := Js.string "absolute";
     legend##.style##.bottom := Js.string "0";
@@ -1383,7 +1393,8 @@ let show_image all_messages image_info name small_image =
             in
             a##.href := Js.string url;
             let li = Html.createLi d in
-            Dom.appendChild li a; Dom.appendChild ul li))
+            Dom.appendChild li a;
+            Dom.appendChild ul li))
         info.links;
       if not !empty
       then (
@@ -1392,7 +1403,8 @@ let show_image all_messages image_info name small_image =
         Dom.appendChild dd (d##createTextNode title);
         Dom.appendChild dl dd;
         let dt = Html.createDt d in
-        Dom.appendChild dt ul; Dom.appendChild dl dt)
+        Dom.appendChild dt ul;
+        Dom.appendChild dl dt)
     in
     list (opt_style messages##.language (Js.string "In English")) !language;
     if !language != Js.string "en" then list (Js.string "In English") (Js.string "en");
@@ -1409,9 +1421,15 @@ let show_image all_messages image_info name small_image =
     txt##.style##.whiteSpace := Js.string "nowrap";
     Dom.appendChild wikipedia txt;
     Dom.appendChild buttons wikipedia;
-    txt##.onclick := Html.handler (fun ev -> Html.stopPropagation ev; Js._true);
+    txt##.onclick :=
+      Html.handler (fun ev ->
+          Html.stopPropagation ev;
+          Js._true);
     show_on_click wikipedia txt;
-    buttons##.onclick := Html.handler (fun ev -> Html.stopPropagation ev; Js._true);
+    buttons##.onclick :=
+      Html.handler (fun ev ->
+          Html.stopPropagation ev;
+          Js._true);
     Dom.appendChild background buttons;
     Dom.appendChild d##.body background;
     background##.onclick :=
@@ -1468,12 +1486,17 @@ let show_information_page messages tree_i18n =
          Html.Event.keydown
          (Html.handler (fun e ->
               match e##.keyCode with
-              | 27 | 13 -> close_info (); Js._false
+              | 27 | 13 ->
+                  close_info ();
+                  Js._false
               | _ -> Js._true))
          Js._true);
   let button = Html.createButton doc in
   Dom.appendChild button (doc##createTextNode (opt_style messages##.ok (Js.string "OK")));
-  button##.onclick := Html.handler (fun _ -> close_info (); Js._false);
+  button##.onclick :=
+    Html.handler (fun _ ->
+        close_info ();
+        Js._false);
   let button_div = Html.createDiv doc in
   button_div##.style##.textAlign := Js.string "center";
   button_div##.style##.margin := Js.string "2em auto";
@@ -1781,7 +1804,8 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
                 schedule_redraw ();
                 Js._false);
           let li = Html.createLi doc in
-          Dom.appendChild li a; Dom.appendChild ul li)
+          Dom.appendChild li a;
+          Dom.appendChild ul li)
         languages;
       let dd = Html.createDd doc in
       Dom.appendChild
@@ -1839,6 +1863,8 @@ let start _ =
   try
     ignore (Html.createCanvas Html.window##.document);
     start ()
-  with Html.Canvas_not_available -> unsupported_messages (); Js._false
+  with Html.Canvas_not_available ->
+    unsupported_messages ();
+    Js._false
 
 let _ = Html.window##.onload := Html.handler start

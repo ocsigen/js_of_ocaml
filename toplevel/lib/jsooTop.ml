@@ -95,7 +95,9 @@ let setup =
         let res = f Js.Unsafe.global in
         Format.(pp_print_flush std_formatter ());
         Format.(pp_print_flush err_formatter ());
-        flush stdout; flush stderr; res);
+        flush stdout;
+        flush stderr;
+        res);
       Js.Unsafe.global##.toplevelReloc
       := Js.Unsafe.callback (fun name ->
              let name = Js.to_string name in

@@ -3,7 +3,11 @@ let dump_file file =
   let ic = open_in file in
   let rec loop () =
     let len = input ic buf 0 (Bytes.length buf) in
-    if len = 0 then () else (output stdout buf 0 len; loop ())
+    if len = 0
+    then ()
+    else (
+      output stdout buf 0 len;
+      loop ())
   in
   loop ()
 

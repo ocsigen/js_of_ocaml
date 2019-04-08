@@ -3508,7 +3508,8 @@ let setTimeout callback d : timeout_id_safe =
     let cb = if remain = 0. then callback else loop remain in
     id := Some (window##setTimeout (Js.wrap_callback cb) step)
   in
-  loop d (); id
+  loop d ();
+  id
 
 let clearTimeout (id : timeout_id_safe) =
   match !id with

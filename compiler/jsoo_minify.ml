@@ -83,7 +83,8 @@ let f {MinifyArg.common; output_file; use_stdin; files} =
         if t () then (m ())#program p else p)
   in
   let p = Js_assign.program p in
-  Js_output.program pp p; finalize ()
+  Js_output.program pp p;
+  finalize ()
 
 let main = Cmdliner.Term.(pure f $ MinifyArg.options), MinifyArg.info
 

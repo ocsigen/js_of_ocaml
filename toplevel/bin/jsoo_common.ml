@@ -22,7 +22,8 @@ let verbose = ref false
 
 let input_s ic size =
   let b = Bytes.create size in
-  really_input ic b 0 size; Bytes.unsafe_to_string b
+  really_input ic b 0 size;
+  Bytes.unsafe_to_string b
 
 let unit_of_cma filename =
   let ic = open_in_bin filename in

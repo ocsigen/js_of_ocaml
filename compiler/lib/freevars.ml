@@ -30,7 +30,9 @@ let iter_cont_free_vars f (_, l) = List.iter ~f l
 let iter_expr_free_vars f e =
   match e with
   | Const _ | Constant _ -> ()
-  | Apply (x, l, _) -> f x; List.iter ~f l
+  | Apply (x, l, _) ->
+      f x;
+      List.iter ~f l
   | Block (_, a) -> Array.iter ~f a
   | Field (x, _) -> f x
   | Closure _ -> ()
@@ -43,9 +45,14 @@ let iter_expr_free_vars f e =
 let iter_instr_free_vars f i =
   match i with
   | Let (_, e) -> iter_expr_free_vars f e
-  | Set_field (x, _, y) -> f x; f y
+  | Set_field (x, _, y) ->
+      f x;
+      f y
   | Offset_ref (x, _) -> f x
-  | Array_set (x, y, z) -> f x; f y; f z
+  | Array_set (x, y, z) ->
+      f x;
+      f y;
+      f z
 
 let iter_last_free_var f l =
   match l with
@@ -53,13 +60,16 @@ let iter_last_free_var f l =
   | Stop -> ()
   | Branch cont | Poptrap (cont, _) -> iter_cont_free_vars f cont
   | Cond (_, x, cont1, cont2) ->
-      f x; iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
+      f x;
+      iter_cont_free_vars f cont1;
+      iter_cont_free_vars f cont2
   | Switch (x, a1, a2) ->
       f x;
       Array.iter a1 ~f:(fun c -> iter_cont_free_vars f c);
       Array.iter a2 ~f:(fun c -> iter_cont_free_vars f c)
   | Pushtrap (cont1, _, cont2, _) ->
-      iter_cont_free_vars f cont1; iter_cont_free_vars f cont2
+      iter_cont_free_vars f cont1;
+      iter_cont_free_vars f cont2
 
 let iter_block_free_vars f block =
   List.iter block.body ~f:(fun i -> iter_instr_free_vars f i);
@@ -150,7 +160,8 @@ Format.eprintf "!%a: %d@." Var.print x pc';
           | _ -> ());
       Code.fold_children blocks pc (fun pc' () -> traverse pc') ())
   in
-  traverse pc; vars
+  traverse pc;
+  vars
 
 let free_variables vars in_loop (pc, blocks, free_pc) =
   let all_freevars = ref Addr.Map.empty in

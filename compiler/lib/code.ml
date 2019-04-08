@@ -160,9 +160,14 @@ end = struct
                                *)
   let get_loc i = try Some (Hashtbl.find locations i) with Not_found -> None
 
-  let fresh () = incr last_var; !last_var
+  let fresh () =
+    incr last_var;
+    !last_var
 
-  let fresh_n nm = incr last_var; name !last_var nm; !last_var
+  let fresh_n nm =
+    incr last_var;
+    name !last_var nm;
+    !last_var
 
   let count () = !last_var + 1
 
@@ -184,7 +189,8 @@ end = struct
 
   let fork o =
     let n = fresh () in
-    propagate_name o n; n
+    propagate_name o n;
+    n
 
   let dummy = -1
 
@@ -583,12 +589,16 @@ let invariant (_, blocks, _) =
       | Apply (_, _, _) -> ()
       | Block (_, _) -> ()
       | Field (_, _) -> ()
-      | Closure (l, cont) -> List.iter l ~f:define; check_cont cont
+      | Closure (l, cont) ->
+          List.iter l ~f:define;
+          check_cont cont
       | Constant _ -> ()
       | Prim (_, _) -> ()
     in
     let check_instr = function
-      | Let (x, e) -> define x; check_expr e
+      | Let (x, e) ->
+          define x;
+          check_expr e
       | Set_field (_, _i, _) -> ()
       | Offset_ref (_x, _i) -> ()
       | Array_set (_x, _y, _z) -> ()
@@ -598,11 +608,15 @@ let invariant (_, blocks, _) =
       | Raise _ -> ()
       | Stop -> ()
       | Branch cont -> check_cont cont
-      | Cond (_cond, _x, cont1, cont2) -> check_cont cont1; check_cont cont2
+      | Cond (_cond, _x, cont1, cont2) ->
+          check_cont cont1;
+          check_cont cont2
       | Switch (_x, a1, a2) ->
           Array.iteri a1 ~f:(fun _ cont -> check_cont cont);
           Array.iteri a2 ~f:(fun _ cont -> check_cont cont)
-      | Pushtrap (cont1, _x, cont2, _pcs) -> check_cont cont1; check_cont cont2
+      | Pushtrap (cont1, _x, cont2, _pcs) ->
+          check_cont cont1;
+          check_cont cont2
       | Poptrap (cont, _) -> check_cont cont
     in
     Addr.Map.iter

@@ -88,7 +88,8 @@ let loop elist f : unit =
           let mouse_x, mouse_y = get_pos_mouse () in
           button := true;
           let s = {mouse_x; mouse_y; button = true; keypressed = false; key = null} in
-          f s; Js._true);
+          f s;
+          Js._true);
   if List.mem Button_up elist
   then
     elt##.onmouseup :=
@@ -96,7 +97,8 @@ let loop elist f : unit =
           let mouse_x, mouse_y = get_pos_mouse () in
           button := false;
           let s = {mouse_x; mouse_y; button = false; keypressed = false; key = null} in
-          f s; Js._true);
+          f s;
+          Js._true);
   elt##.onmousemove :=
     Dom_html.handler (fun ev ->
         let cy, cx = compute_real_pos elt in
@@ -121,6 +123,7 @@ let loop elist f : unit =
           in
           let mouse_x, mouse_y = get_pos_mouse () in
           let s = {mouse_x; mouse_y; button = !button; keypressed = true; key} in
-          f s; Js._true)
+          f s;
+          Js._true)
 
 let loop_at_exit events handler : unit = at_exit (fun _ -> loop events handler)

@@ -67,7 +67,8 @@ module Line_info = struct
     let t =
       {acc_pos = 0; acc_line = 0; offset = None; lines; name = Some file; src = Some file}
     in
-    close_in ic; t
+    close_in ic;
+    t
 
   let from_string ?offset str =
     let pos = ref 0 and lines = ref [] in
