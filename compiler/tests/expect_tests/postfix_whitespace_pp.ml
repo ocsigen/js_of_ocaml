@@ -9,14 +9,26 @@ let print_compacted source =
   Jsoo.Js_output.program pp parsed;
   print_endline (Buffer.contents buffer)
 
-let%expect_test "a + +b" =
+let%expect_test "no postfix addition coalesce" =
   print_compacted "a + +b";
   [%expect {|
     a+
     +b; |}]
 
-let%expect_test "a - -b" =
+let%expect_test "no postfix subtraction coalesce" =
   print_compacted "a - -b";
   [%expect {|
     a-
     -b; |}]
+
+let%expect_test "reserved words as fields" =
+  print_compacted {|
+    x.debugger;
+    x.catch;
+    var y = { debugger : 2 }
+    var y = { catch : 2 }
+  |};
+  [%expect {|
+    x.debugger;x.catch;var
+    y={debugger:2};var
+    y={catch:2}; |}]
