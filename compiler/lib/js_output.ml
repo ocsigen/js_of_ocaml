@@ -1158,6 +1158,7 @@ let need_space a b =
   || (a = '/' && b = '/')
   || (* https://github.com/ocsigen/js_of_ocaml/issues/507 *)
      (a = '-' && b = '-')
+  || (a = '+' && b = '+')
 
 let program f ?source_map p =
   let smo =
