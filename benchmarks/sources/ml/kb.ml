@@ -136,7 +136,13 @@ type rule =
 let mk_rule num m n =
   let all_vars = union (vars m) (vars n) in
   let counter = ref 0 in
-  let subst = List.map (fun v -> incr counter; v, Var !counter) (List.rev all_vars) in
+  let subst =
+    List.map
+      (fun v ->
+        incr counter;
+        v, Var !counter)
+      (List.rev all_vars)
+  in
   {number = num; numvars = !counter; lhs = substitute subst m; rhs = substitute subst n}
 
 (* checks that rules are numbered in sequence and returns their number *)
@@ -395,11 +401,17 @@ let rename n (t1, t2) =
 (************************ Completion ******************************)
 
 let deletion_message rule =
-  print_string "Rule "; print_int rule.number; print_string " deleted"; print_newline ()
+  print_string "Rule ";
+  print_int rule.number;
+  print_string " deleted";
+  print_newline ()
 
 (* Generate failure message *)
 let non_orientable (m, n) =
-  pretty_term m; print_string " = "; pretty_term n; print_newline ()
+  pretty_term m;
+  print_string " = ";
+  pretty_term n;
+  print_newline ()
 
 let rec partition p = function
   | [] -> [], []

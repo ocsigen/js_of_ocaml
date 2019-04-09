@@ -354,7 +354,8 @@ let _ =
     for _ = 0 to test_length - 1 do
       jd.(0) <- jd.(0) +. 1.0;
       for p = 0 to 7 do
-        planetpv jd p pv; radecdist pv position
+        planetpv jd p pv;
+        radecdist pv position
       done
     done
   done

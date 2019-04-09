@@ -23,11 +23,17 @@ and head =
   ; mutable props : (term * term) list }
 
 let rec print_term = function
-  | Var v -> print_string "v"; print_int v
+  | Var v ->
+      print_string "v";
+      print_int v
   | Prop (head, argl) ->
       print_string "(";
       print_string head.name;
-      List.iter (fun t -> print_string " "; print_term t) argl;
+      List.iter
+        (fun t ->
+          print_string " ";
+          print_term t)
+        argl;
       print_string ")"
 
 let lemmas = ref ([] : head list)

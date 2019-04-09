@@ -92,7 +92,14 @@ let mkNode low v high =
     let rec lookup b =
       match b with
       | [] ->
-          let n = Node (low, v, (incr nodeC; !nodeC), high) in
+          let n =
+            Node
+              ( low
+              , v
+              , (incr nodeC;
+                  !nodeC)
+              , high )
+          in
           insert (getId low) (getId high) v ind bucket n;
           n
       | n :: ns -> (
@@ -146,7 +153,9 @@ let rec not n =
       then notslot2.(h)
       else
         let f = mkNode (not l) v (not r) in
-        notslot1.(h) <- id; notslot2.(h) <- f; f
+        notslot1.(h) <- id;
+        notslot2.(h) <- f;
+        f
 
 let rec and2 n1 n2 =
   match n1 with
@@ -163,7 +172,10 @@ let rec and2 n1 n2 =
             | LESS -> mkNode (and2 l1 n2) v1 (and2 r1 n2)
             | GREATER -> mkNode (and2 n1 l2) v2 (and2 n1 r2)
           in
-          andslot1.(h) <- i1; andslot2.(h) <- i2; andslot3.(h) <- f; f
+          andslot1.(h) <- i1;
+          andslot2.(h) <- i2;
+          andslot3.(h) <- f;
+          f
     | Zero -> Zero
     | One -> n1)
   | Zero -> Zero
@@ -184,7 +196,10 @@ let rec xor n1 n2 =
             | LESS -> mkNode (xor l1 n2) v1 (xor r1 n2)
             | GREATER -> mkNode (xor n1 l2) v2 (xor n1 r2)
           in
-          andslot1.(h) <- i1; andslot2.(h) <- i2; andslot3.(h) <- f; f
+          andslot1.(h) <- i1;
+          andslot2.(h) <- i2;
+          andslot3.(h) <- f;
+          f
     | Zero -> n1
     | One -> not n1)
   | Zero -> n2

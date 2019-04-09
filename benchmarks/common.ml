@@ -252,7 +252,8 @@ let read_measures meas spec nm =
          l := float_of_string (input_line ch) :: !l
        done
      with End_of_file -> ());
-    close_in ch; !l)
+    close_in ch;
+    !l)
   else []
 
 let write_measures meas spec nm l =

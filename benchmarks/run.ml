@@ -117,7 +117,9 @@ let measure_one param code meas spec nm cmd =
     Format.eprintf "warming up ...\r%!";
     warm_up param cmd;
     let l = measure_rec ~print:true param cmd l in
-    write_measures meas spec nm l; Format.eprintf "\n%!"; l)
+    write_measures meas spec nm l;
+    Format.eprintf "\n%!";
+    l)
   else l
 
 let measure param code meas spec cmd =
@@ -188,7 +190,8 @@ let read_config file =
              exit 1
      done
    with End_of_file -> ());
-  close_in ch; List.rev !i
+  close_in ch;
+  List.rev !i
 
 let _ =
   let compile_only = ref false in

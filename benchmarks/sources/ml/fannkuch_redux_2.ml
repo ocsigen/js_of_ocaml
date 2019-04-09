@@ -12,7 +12,9 @@ let fannkuch n =
   let maxflips = ref 0 in
   let sum = ref 0 in
   for i = 0 to n - 1 do
-    p.(i) <- i; q.(i) <- i; s.(i) <- i
+    p.(i) <- i;
+    q.(i) <- i;
+    s.(i) <- i
   done;
   while true do
     let q0 = ref p.(0) in

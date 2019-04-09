@@ -261,7 +261,8 @@ let output_table =
     old_table := Some (snd t);
     let t = filter t in
     let t = normalize t in
-    stats t; f t
+    stats t;
+    f t
 
 let output_tables r conf =
   let output_function, close =

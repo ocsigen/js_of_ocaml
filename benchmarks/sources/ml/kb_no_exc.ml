@@ -112,12 +112,17 @@ let rec unify term1 term2 =
 let infixes = ["+"; "*"]
 
 let rec pretty_term = function
-  | Var n -> print_string "v"; print_int n
+  | Var n ->
+      print_string "v";
+      print_int n
   | Term (oper, sons) ->
       if List.mem oper infixes
       then
         match sons with
-        | [s1; s2] -> pretty_close s1; print_string oper; pretty_close s2
+        | [s1; s2] ->
+            pretty_close s1;
+            print_string oper;
+            pretty_close s2
         | _ -> failwith "pretty_term : infix arity <> 2"
       else (
         print_string oper;
@@ -126,13 +131,20 @@ let rec pretty_term = function
         | t :: lt ->
             print_string "(";
             pretty_term t;
-            List.iter (fun t -> print_string ","; pretty_term t) lt;
+            List.iter
+              (fun t ->
+                print_string ",";
+                pretty_term t)
+              lt;
             print_string ")")
 
 and pretty_close = function
   | Term (oper, _) as m ->
       if List.mem oper infixes
-      then (print_string "("; pretty_term m; print_string ")")
+      then (
+        print_string "(";
+        pretty_term m;
+        print_string ")")
       else pretty_term m
   | m -> pretty_term m
 
@@ -163,7 +175,13 @@ type rule =
 let mk_rule num m n =
   let all_vars = union (vars m) (vars n) in
   let counter = ref 0 in
-  let subst = List.map (fun v -> incr counter; v, Var !counter) (List.rev all_vars) in
+  let subst =
+    List.map
+      (fun v ->
+        incr counter;
+        v, Var !counter)
+      (List.rev all_vars)
+  in
   {number = num; numvars = !counter; lhs = substitute subst m; rhs = substitute subst n}
 
 (* checks that rules are numbered in sequence and returns their number *)
@@ -428,11 +446,17 @@ let rename n (t1, t2) =
 (************************ Completion ******************************)
 
 let deletion_message rule =
-  print_string "Rule "; print_int rule.number; print_string " deleted"; print_newline ()
+  print_string "Rule ";
+  print_int rule.number;
+  print_string " deleted";
+  print_newline ()
 
 (* Generate failure message *)
 let non_orientable (m, n) =
-  pretty_term m; print_string " = "; pretty_term n; print_newline ()
+  pretty_term m;
+  print_string " = ";
+  pretty_term n;
+  print_newline ()
 
 let rec partition p = function
   | [] -> [], []
