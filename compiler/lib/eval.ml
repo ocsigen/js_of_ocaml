@@ -176,9 +176,12 @@ let is_int info x =
         info
         (fun x ->
           match info.info_defs.(Var.idx x) with
-          | Expr (Const _) | Expr (Constant (Int _)) -> Y
-          | Expr (Block (_, _)) | Expr (Constant _) -> N
-          | _ -> Unknown)
+            | Expr (Const _)
+            | Expr (Constant (Int _)) -> Y
+            | Expr (Block (_, _))
+            | Expr (Array (_, _))
+            | Expr (Constant _) -> N
+            | _ -> Unknown)
         Unknown
         (fun u v ->
           match u, v with
@@ -272,7 +275,8 @@ let the_case_of info x =
         (fun x ->
           match info.info_defs.(Var.idx x) with
           | Expr (Const i) | Expr (Constant (Int i)) -> CConst (Int32.to_int i)
-          | Expr (Block (j, _)) ->
+          | Expr (Block (j, _))
+          | Expr (Array (j, _)) ->
               if info.info_possibly_mutable.(Var.idx x) then Unknown else CTag j
           | Expr (Constant (Tuple (j, _))) -> CTag j
           | _ -> Unknown)
@@ -330,7 +334,7 @@ let rec do_not_raise pc visited blocks =
         | Array_set (_, _, _) | Offset_ref (_, _) | Set_field (_, _, _) -> ()
         | Let (_, e) -> (
           match e with
-          | Const _ | Block (_, _) | Field (_, _) | Constant _ | Closure _ -> ()
+          | Const _ | Array (_, _) | Block (_, _) | Field (_, _) | Constant _ | Closure _ -> ()
           | Apply (_, _, _) -> raise May_raise
           | Prim (Extern name, _) when Primitive.is_pure name -> ()
           | Prim (Extern _, _) -> raise May_raise

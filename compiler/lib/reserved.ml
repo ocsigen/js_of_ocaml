@@ -95,7 +95,13 @@ let keyword =
     ; "transient"
     ; "volatile"
     ; (* also reserved in ECMAScript 6 *)
-      "await" ]
+    "await"
+    ; "BLOCK"
+    ; "ISBLOCK"
+    ; "LENGTH"
+    ; "TAG"
+    ; "FIELD"
+  ]
 
 let provided =
   List.fold_left

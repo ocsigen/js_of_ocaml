@@ -24,7 +24,7 @@ open Code
 
 let pure_expr pure_funs e =
   match e with
-  | Const _ | Block _ | Field _ | Closure _ | Constant _ -> true
+  | Const _ | Block _ | Field _ | Array _ | Closure _ | Constant _ -> true
   | Apply (f, _l, exact) -> exact && Var.Set.mem f pure_funs
   | Prim (p, _l) -> (
     match p with

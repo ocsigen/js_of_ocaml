@@ -260,10 +260,10 @@ let val_float f = f
 let float_val e = e
 
 let access_field x d = J.ECall (J.EVar (J.S {J.name="FIELD"; var=None}), [x; int d], J.N)
-let isblock x = J.ECall(J.EVar (J.S {J.name="ISBLOCK"; var=None}), [x], J.N)
+let _isblock x = J.ECall(J.EVar (J.S {J.name="ISBLOCK"; var=None}), [x], J.N)
 let blength x = J.ECall(J.EVar (J.S {J.name="LENGTH"; var=None}), [x], J.N)
 let btag x = J.ECall(J.EVar (J.S {J.name="TAG"; var=None}), [x], J.N)
-let makeblock tag l = J.ECall(J.EVar (J.S {J.name="BLOCK"; var=None}), (int tag)::l, J.N)
+let _makeblock tag l = J.ECall(J.EVar (J.S {J.name="BLOCK"; var=None}), (int tag)::l, J.N)
 
 (*J.EAccess (e, one)*)
 
@@ -327,7 +327,7 @@ let rec constant_rec ~ctx x level instrs =
   | IString s -> Share.get_string str_js s ctx.Ctx.share, instrs
   | Float f -> float_const f, instrs
   | Float_array a ->
-      ( J.EArr Array.to_list (Array.map a ~f:(fun f -> Some (float_const f))))
+      ( J.EArr (Array.to_list (Array.map a ~f:(fun f -> Some (float_const f))))
       , instrs )
   | Int64 i ->
       ( J.EArr
@@ -336,14 +336,14 @@ let rec constant_rec ~ctx x level instrs =
           ; Some (int (Int64.to_int (Int64.shift_right i 24) land 0xffffff))
           ; Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff)) ]
       , instrs )
-  | Tuple (tag, a) -> (
+  | Tuple (tag, a) ->
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
         | Tuple (0, [|x; l|]) -> detect_list (succ n) (x :: acc) l
         | Int 0l -> if n > constant_max_depth then Some acc else None
         | _ -> None
       in
-      match detect_list 0 [] x with
+      (match detect_list 0 [] x with
       | Some elts_rev ->
           let arr, instrs =
             List.fold_left elts_rev ~init:([], instrs) ~f:(fun (arr, instrs) elt ->
@@ -376,7 +376,7 @@ let rec constant_rec ~ctx x level instrs =
                   | _ -> js :: acc, instrs)
             else List.rev l, instrs
           in
-          J.ENew (J.EVar (Ctx.get_constr ctx tag l), Some l), instrs
+          J.ENew (J.EVar (Ctx.get_constr ctx tag l), Some l), instrs)
   | Int i -> int32 i, instrs
 
 let constant ~ctx x level =
@@ -986,12 +986,12 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
             let (prop', cx), queue = access_queue queue x in
-            Some cx :: args, or_p prop prop', queue)
+            cx :: args, or_p prop prop', queue)
           (Array.to_list a)
           ~init:([], const_p, queue)
       in
       (J.ENew (J.EVar (Ctx.get_constr ctx tag contents), Some contents), prop, queue), []
-  | Array (tag, a) ->
+  | Array (_tag, a) ->
       let contents, prop, queue =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
@@ -1825,16 +1825,16 @@ and compile_closure ctx at_toplevel (pc, args) =
 
 let generate_shared_value ctx =
   let constr = Hashtbl.fold (fun (tag, size) var acc ->
-    let params = Array.to_list (Array.init size (fun i -> i, Code.Var.fresh ())) in
+    let params = Array.to_list (Array.init size ~f:(fun i -> i, Code.Var.fresh ())) in
     let make (i, v) =
       J.Statement (
         J.Expression_statement (
           J.EBin (J.Eq, access_field (J.EVar (J.S {J.name = "this"; var = None})) i, J.EVar (J.V v))
         )
       ), J.N in
-    let body = List.map make params in
-    J.Function_declaration (J.V var, List.map (fun (_, v) -> J.V v) params, body, J.N), J.N)::
-    J.Statement (
+    let body = List.map params ~f:make in
+    (J.Function_declaration (J.V var, List.map params ~f:(fun (_, v) -> J.V v) , body, J.N), J.N)::
+    (J.Statement (
       J.Expression_statement (
         J.EBin (J.Eq, btag (J.EDot (J.EVar (J.V var), "prototype")), int tag)
       )

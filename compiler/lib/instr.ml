@@ -168,6 +168,8 @@ type t =
   | RERAISE
   | RAISE_NOTRACE
   | GETSTRINGCHAR
+  | MAKEARRAY
+  | MAKEFLOATARRAY
   | FIRST_UNIMPLEMENTED_OP
 
 type kind =
@@ -348,6 +350,8 @@ let ops =
      ; RERAISE, KStop 0, "RERAISE"
      ; RAISE_NOTRACE, KStop 0, "RAISE_NOTRACE"
      ; GETSTRINGCHAR, if_v407 KNullary, "GETSTRINGCHAR"
+     ; MAKEARRAY, if_v407 KUnary, "MAKEARRAY"
+     ; MAKEFLOATARRAY, if_v407 KUnary, "MAKEARRAY"
      ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP" |]
   in
   let ops =
