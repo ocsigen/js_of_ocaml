@@ -227,7 +227,7 @@ module Ctx = struct
     let l = List.length l in
     try J.V (Hashtbl.find ctx.constr (tag, l))
     with Not_found ->
-      let v = Code.Var.fresh() in
+      let v = Code.Var.fresh () in
       Code.Var.name v (Printf.sprintf "Block_%d_%d" tag l);
       Hashtbl.add ctx.constr (tag, l) v;
       J.V v
@@ -259,11 +259,17 @@ let val_float f = f
 (*J.EArr [Some (J.ENum 253.); Some f]*)
 let float_val e = e
 
-let access_field x d = J.ECall (J.EVar (J.S {J.name="FIELD"; var=None}), [x; int d], J.N)
-let _isblock x = J.ECall(J.EVar (J.S {J.name="ISBLOCK"; var=None}), [x], J.N)
-let blength x = J.ECall(J.EVar (J.S {J.name="LENGTH"; var=None}), [x], J.N)
-let btag x = J.ECall(J.EVar (J.S {J.name="TAG"; var=None}), [x], J.N)
-let _makeblock tag l = J.ECall(J.EVar (J.S {J.name="BLOCK"; var=None}), (int tag)::l, J.N)
+let access_field x d =
+  J.ECall (J.EVar (J.S {J.name = "FIELD"; var = None}), [x; int d], J.N)
+
+let _isblock x = J.ECall (J.EVar (J.S {J.name = "ISBLOCK"; var = None}), [x], J.N)
+
+let blength x = J.ECall (J.EVar (J.S {J.name = "LENGTH"; var = None}), [x], J.N)
+
+let btag x = J.ECall (J.EVar (J.S {J.name = "TAG"; var = None}), [x], J.N)
+
+let _makeblock tag l =
+  J.ECall (J.EVar (J.S {J.name = "BLOCK"; var = None}), int tag :: l, J.N)
 
 (*J.EAccess (e, one)*)
 
@@ -327,8 +333,7 @@ let rec constant_rec ~ctx x level instrs =
   | IString s -> Share.get_string str_js s ctx.Ctx.share, instrs
   | Float f -> float_const f, instrs
   | Float_array a ->
-      ( J.EArr (Array.to_list (Array.map a ~f:(fun f -> Some (float_const f))))
-      , instrs )
+      J.EArr (Array.to_list (Array.map a ~f:(fun f -> Some (float_const f)))), instrs
   | Int64 i ->
       ( J.EArr
           [ Some (int 255)
@@ -336,14 +341,14 @@ let rec constant_rec ~ctx x level instrs =
           ; Some (int (Int64.to_int (Int64.shift_right i 24) land 0xffffff))
           ; Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff)) ]
       , instrs )
-  | Tuple (tag, a) ->
+  | Tuple (tag, a) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
         | Tuple (0, [|x; l|]) -> detect_list (succ n) (x :: acc) l
         | Int 0l -> if n > constant_max_depth then Some acc else None
         | _ -> None
       in
-      (match detect_list 0 [] x with
+      match detect_list 0 [] x with
       | Some elts_rev ->
           let arr, instrs =
             List.fold_left elts_rev ~init:([], instrs) ~f:(fun (arr, instrs) elt ->
@@ -372,7 +377,7 @@ let rec constant_rec ~ctx x level instrs =
                       let instrs =
                         (J.Variable_statement [J.V v, Some (js, J.N)], J.N) :: instrs
                       in
-                      (J.EVar (J.V v)) :: acc, instrs
+                      J.EVar (J.V v) :: acc, instrs
                   | _ -> js :: acc, instrs)
             else List.rev l, instrs
           in
@@ -855,8 +860,7 @@ let _ =
   register_un_prim_ctx "%caml_format_int_special" `Pure (fun ctx cx loc ->
       let p = Share.get_prim (runtime_fun ctx) "caml_new_string" ctx.Ctx.share in
       J.ECall (p, [J.EBin (J.Plus, str_js "", cx)], loc));
-  register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ ->
-      J.EAccess (cx, cy));
+  register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ -> J.EAccess (cx, cy));
   register_bin_prim "%int_add" `Pure (fun cx cy _ -> to_int (plus_int cx cy));
   register_bin_prim "%int_sub" `Pure (fun cx cy _ -> to_int (J.EBin (J.Minus, cx, cy)));
   register_bin_prim "%direct_int_mul" `Pure (fun cx cy _ ->
@@ -1259,8 +1263,7 @@ and translate_instr ctx expr_queue loc instr =
       flush_queue
         expr_queue
         mutator_p
-        [ ( J.Expression_statement (J.EBin (J.PlusEq, access_field cx 0, int n))
-          , loc ) ]
+        [J.Expression_statement (J.EBin (J.PlusEq, access_field cx 0, int n)), loc]
   | Array_set (x, y, z) ->
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in
@@ -1824,29 +1827,38 @@ and compile_closure ctx at_toplevel (pc, args) =
   List.map res ~f:(fun (st, loc) -> J.Statement st, loc)
 
 let generate_shared_value ctx =
-  let constr = Hashtbl.fold (fun (tag, size) var acc ->
-    let params = Array.to_list (Array.init size ~f:(fun i -> i, Code.Var.fresh ())) in
-    let make (i, v) =
-      J.Statement (
-        J.Expression_statement (
-          J.EBin (J.Eq, access_field (J.EVar (J.S {J.name = "this"; var = None})) i, J.EVar (J.V v))
-        )
-      ), J.N in
-    let body = List.map params ~f:make in
-    (J.Function_declaration (J.V var, List.map params ~f:(fun (_, v) -> J.V v) , body, J.N), J.N)::
-    (J.Statement (
-      J.Expression_statement (
-        J.EBin (J.Eq, btag (J.EDot (J.EVar (J.V var), "prototype")), int tag)
-      )
-    ), J.N) ::
-    (J.Statement (
-       J.Expression_statement (
-         J.EBin (J.Eq, blength (J.EDot (J.EVar (J.V var), "prototype")), int size)
-       )
-     ), J.N) ::
-      acc
-  ) ctx.Ctx.constr [] in
-
+  let constr =
+    Hashtbl.fold
+      (fun (tag, size) var acc ->
+        let params =
+          Array.to_list (Array.init size ~f:(fun i -> i, Code.Var.fresh ()))
+        in
+        let make (i, v) =
+          ( J.Statement
+              (J.Expression_statement
+                 (J.EBin
+                    ( J.Eq
+                    , access_field (J.EVar (J.S {J.name = "this"; var = None})) i
+                    , J.EVar (J.V v) )))
+          , J.N )
+        in
+        let body = List.map params ~f:make in
+        ( J.Function_declaration
+            (J.V var, List.map params ~f:(fun (_, v) -> J.V v), body, J.N)
+        , J.N )
+        :: ( J.Statement
+               (J.Expression_statement
+                  (J.EBin (J.Eq, btag (J.EDot (J.EVar (J.V var), "prototype")), int tag)))
+           , J.N )
+        :: ( J.Statement
+               (J.Expression_statement
+                  (J.EBin
+                     (J.Eq, blength (J.EDot (J.EVar (J.V var), "prototype")), int size)))
+           , J.N )
+        :: acc)
+      ctx.Ctx.constr
+      []
+  in
   let strings =
     ( J.Statement
         (J.Variable_statement
@@ -1871,7 +1883,7 @@ let generate_shared_value ctx =
               J.Function_declaration (v, param, body, nid), J.U
           | _ -> assert false)
     in
-    strings :: applies @ constr
+    (strings :: applies) @ constr
   else strings :: constr
 
 let compile_program ctx pc =

@@ -1155,33 +1155,39 @@ and compile infos pc state instrs =
           state
           (Let (x, Block (254, Array.of_list contents)) :: instrs)
     | MAKEARRAY ->
-      let size = getu code (pc + 1) in
-      let state = State.push state in
-      let (x, state) = State.fresh_var state in
-      let (contents, state) = State.grab size state in
-      if debug_parser () then begin
-        Format.printf "%a = { " Var.print x;
-        for i = 0 to size - 1 do
-          Format.printf "%d = %a; " i Var.print (List.nth contents i);
-        done;
-        Format.printf "}@."
-      end;
-      compile infos (pc + 2) state
-        (Let (x, Array (0, Array.of_list contents)) :: instrs)
+        let size = getu code (pc + 1) in
+        let state = State.push state in
+        let x, state = State.fresh_var state in
+        let contents, state = State.grab size state in
+        if debug_parser ()
+        then (
+          Format.printf "%a = { " Var.print x;
+          for i = 0 to size - 1 do
+            Format.printf "%d = %a; " i Var.print (List.nth contents i)
+          done;
+          Format.printf "}@.");
+        compile
+          infos
+          (pc + 2)
+          state
+          (Let (x, Array (0, Array.of_list contents)) :: instrs)
     | MAKEFLOATARRAY ->
-      let size = getu code (pc + 1) in
-      let state = State.push state in
-      let (x, state) = State.fresh_var state in
-      let (contents, state) = State.grab size state in
-      if debug_parser () then begin
-        Format.printf "%a = { " Var.print x;
-        for i = 0 to size - 1 do
-          Format.printf "%d = %a; " i Var.print (List.nth contents i);
-        done;
-        Format.printf "}@."
-      end;
-      compile infos (pc + 2) state
-        (Let (x, Array (254, Array.of_list contents)) :: instrs)
+        let size = getu code (pc + 1) in
+        let state = State.push state in
+        let x, state = State.fresh_var state in
+        let contents, state = State.grab size state in
+        if debug_parser ()
+        then (
+          Format.printf "%a = { " Var.print x;
+          for i = 0 to size - 1 do
+            Format.printf "%d = %a; " i Var.print (List.nth contents i)
+          done;
+          Format.printf "}@.");
+        compile
+          infos
+          (pc + 2)
+          state
+          (Let (x, Array (254, Array.of_list contents)) :: instrs)
     | GETFIELD0 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in

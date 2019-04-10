@@ -1156,8 +1156,8 @@ let need_space a b =
   (* do not generate end_of_line_comment.
      handle the case of "num / /* comment */ b " *)
   || (a = '/' && b = '/')
-  || (* https://github.com/ocsigen/js_of_ocaml/issues/507 *)
-     (a = '-' && b = '-')
+  (* https://github.com/ocsigen/js_of_ocaml/issues/507 *)
+  || (a = '-' && b = '-')
   || (a = '+' && b = '+')
 
 let program f ?source_map p =

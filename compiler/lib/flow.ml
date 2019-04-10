@@ -182,7 +182,7 @@ let rec block_escape st x =
         st.possibly_mutable.(idx) <- true;
         match st.defs.(Var.idx y) with
         | Expr (Array (_, l) | Block (_, l)) ->
-          Array.iter l ~f:(fun z -> block_escape st z)
+            Array.iter l ~f:(fun z -> block_escape st z)
         | _ -> ()))
     (Var.Tbl.get st.known_origins x)
 
@@ -213,15 +213,15 @@ let expr_escape st _x e =
             | Pv v, `Shallow_const -> (
               match st.defs.(Var.idx v) with
               | Expr (Block (_, a) | Array (_, a)) ->
-                Array.iter a ~f:(fun x -> block_escape st x)
+                  Array.iter a ~f:(fun x -> block_escape st x)
               | _ -> block_escape st v)
             | Pv v, `Object_literal -> (
               match st.defs.(Var.idx v) with
               | Expr (Array (_, a) | Block (_, a)) ->
                   Array.iter a ~f:(fun x ->
                       match st.defs.(Var.idx x) with
-                    | Expr (Array (_, [|_k; v|])
-                          | Block (_, [|_k; v|])) -> block_escape st v
+                      | Expr (Array (_, [|_k; v|]) | Block (_, [|_k; v|])) ->
+                          block_escape st v
                       | _ -> block_escape st x)
               | _ -> block_escape st v)
             | Pv v, `Mutable -> block_escape st v);
