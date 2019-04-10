@@ -24,7 +24,7 @@ open OCaml_406.Ast
 [@@@ocaml.warning "-48"]
 
 (* Pervasives is deprecated but metaquot refers to it. *)
-[@@@ocaml.alert "-deprecated"]
+[@@@ocaml.warning "-3"]
 
 open Ast_mapper
 open Ast_helper
