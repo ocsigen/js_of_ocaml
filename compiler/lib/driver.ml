@@ -284,9 +284,14 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
     in
     Linker.link js linkinfos
 
+(*
 let field =
   let t = VarPrinter.(create Alphabet.javascript) in
   fun n -> VarPrinter.to_string t n
+             *)
+
+let field i =
+  Format.sprintf "f%d" i
 
 class macro =
   object (m)
@@ -296,12 +301,12 @@ class macro =
       let module J = Javascript in
       match x with
       | J.ECall (J.EVar (J.S {J.name = "BLOCK"; _}), tag :: args, _) ->
-          let len = List.length args in
+          let length = J.ENum (float_of_int (List.length args)) in
           let one str e = J.PNI str, m#expression e in
           let apply_one i e = one (field i) e in
           J.EObj
             (one "tag" tag
-            :: one "length" (J.ENum (float_of_int len))
+            :: one "length" length
             :: List.mapi args ~f:apply_one)
       | J.ECall (J.EVar (J.S {J.name = "TAG"; _}), [e], _) ->
           J.EDot (m#expression e, "tag")
@@ -316,7 +321,7 @@ class macro =
             ( J.EqEq
             , J.EUn (J.Typeof, J.EDot (m#expression e, "tag"))
             , J.EStr ("number", `Utf8) )
-      | J.ECall (J.EVar (J.S {J.name = "FIELD" | "TAG" | "LENGTH" | "IS_BLOCK"; _}), _, _)
+      | J.ECall (J.EVar (J.S {J.name = "BLOCK" | "FIELD" | "TAG" | "LENGTH" | "ISBLOCK"; _}), _, _)
         ->
           assert false
       | e -> super#expression e
@@ -509,3 +514,7 @@ let from_string prims s formatter =
 let profiles = [1, o1; 2, o2; 3, o3]
 
 let profile i = try Some (List.assoc i profiles) with Not_found -> None
+
+module For_testing = struct
+  let macro = macro
+end
