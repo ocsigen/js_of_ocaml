@@ -284,12 +284,6 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
     in
     Linker.link js linkinfos
 
-(*
-let field =
-  let t = VarPrinter.(create Alphabet.javascript) in
-  fun n -> VarPrinter.to_string t n
-             *)
-
 let field i =
   Format.sprintf "f%d" i
 

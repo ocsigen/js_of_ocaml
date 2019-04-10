@@ -38,6 +38,10 @@ let%expect_test "BLOCK(1)" =
   print_macro_transformed "BLOCK(1)";
   [%expect {| ({tag:1,length:0}); |}]
 
+let%expect_test "BLOCK(tag)" =
+  print_macro_transformed "BLOCK(tag)";
+  [%expect {| ({tag:tag,length:0}); |}]
+
 let%expect_test "BLOCK(1, a)" =
   print_macro_transformed "BLOCK(1, a)";
   [%expect {| ({tag:1,length:1,f0:a}); |}]
@@ -53,6 +57,10 @@ let%expect_test "TAG(a)" =
 let%expect_test "LENGTH(a)" =
   print_macro_transformed "LENGTH(a)";
   [%expect {| a.length; |}]
+
+let%expect_test "FIELD(a)" =
+  print_macro_transformed "FIELD(a)";
+  [%expect {| assertion failed in compiler/lib/driver.ml |}]
 
 let%expect_test "FIELD(a, 0)" =
   print_macro_transformed "FIELD(a, 0)";
