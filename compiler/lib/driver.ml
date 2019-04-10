@@ -284,6 +284,44 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
     in
     Linker.link js linkinfos
 
+let field =
+  let t = VarPrinter.(create Alphabet.javascript) in
+  fun n -> VarPrinter.to_string t n
+
+class macro = object (m)
+  inherit Js_traverse.map as super
+  method expression x =
+    let module J = Javascript in
+    match x with
+    | J.ECall (J.EVar (J.S {J.name="BLOCK"; _}), tag::args, _) ->
+      let len = List.length args in
+      let one str e = J.PNI str, m#expression e in
+      let apply_one i e = one (field i) e in
+      J.EObj(one "tag" tag
+             :: one "length" (J.ENum (float_of_int len))
+             :: List.mapi args ~f:apply_one)
+    | J.ECall (J.EVar (J.S {J.name="TAG"; _}), [e], _) ->
+      J.EDot(m#expression e, "tag")
+    | J.ECall (J.EVar (J.S {J.name="LENGTH"; _}), [e], _) ->
+      J.EDot(m#expression e, "length")
+    | J.ECall (J.EVar (J.S {J.name="FIELD"; _}), [e; J.ENum i], _) ->
+      J.EDot(m#expression e, field (int_of_float i))
+    | J.ECall (J.EVar (J.S {J.name="FIELD"; _}), [e; i], _) ->
+      J.EAccess(m#expression e, J.EBin (J.Plus, J.EStr("f", `Utf8), m#expression i))
+    | J.ECall (J.EVar (J.S {J.name="ISBLOCK"; _}), [e], _) ->
+      J.EBin (
+        J.EqEq,
+        J.EUn (J.Typeof, J.EDot(m#expression e, "tag")), J.EStr ("number", `Utf8))
+    | J.ECall
+        (J.EVar (J.S {J.name="FIELD" | "TAG" | "LENGTH" | "IS_BLOCK"; _}), _, _)
+        -> assert false
+    | e -> super#expression e
+end
+
+let macro js =
+  let trav = new macro in
+  trav#program js
+
 let check_js js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Checks...@.";
@@ -455,6 +493,7 @@ let f
   >> generate d ~exported_runtime
   >> link ~standalone ~linkall ~export_runtime:dynlink
   >> pack ~global
+  >> macro
   >> coloring
   >> check_js
   >> output formatter ~standalone ~custom_header ?source_map ()

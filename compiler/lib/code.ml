@@ -265,6 +265,7 @@ type expr =
   | Const of int32
   | Apply of Var.t * Var.t list * bool
   | Block of int * Var.t array
+  | Array of int * Var.t array
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant
@@ -396,6 +397,12 @@ let print_expr f e =
       if exact
       then Format.fprintf f "%a!(%a)" Var.print g print_var_list l
       else Format.fprintf f "%a(%a)" Var.print g print_var_list l
+  | Array (t, a) ->
+      Format.fprintf f "{array=%d" t;
+      for i = 0 to Array.length a - 1 do
+        Format.fprintf f "; %d = %a" i Var.print a.(i)
+      done;
+      Format.fprintf f "}"
   | Block (t, a) ->
       Format.fprintf f "{tag=%d" t;
       for i = 0 to Array.length a - 1 do
@@ -588,6 +595,7 @@ let invariant (_, blocks, _) =
       | Const _ -> ()
       | Apply (_, _, _) -> ()
       | Block (_, _) -> ()
+      | Array (_, _) -> ()
       | Field (_, _) -> ()
       | Closure (l, cont) ->
           List.iter l ~f:define;
