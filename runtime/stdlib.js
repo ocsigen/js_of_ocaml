@@ -226,7 +226,7 @@ function caml_obj_is_block (x) { return +(x instanceof Array) || ISBLOCK(x); }
 function caml_obj_tag (x) { 
   if(ISBLOCK(x)) return TAG(x);
   else if (x instanceof MlBytes) return 252
-  else if (x instanceof array) return 0 
+  else if (x instanceof Array) return 0 
   else return 1000
 }
 
@@ -244,6 +244,7 @@ function caml_obj_dup (x) {
   if (ISBLOCK(x)) {
     var l = LENGTH(x);
     var o = BLOCK(TAG(x));
+    LENGTH(o) = l;
     for (var i =0; i < l; i++) {
       FIELD(o, i) = FIELD(x, i);
     }
@@ -255,8 +256,8 @@ function caml_obj_dup (x) {
       a[i] = x[i];
     }
     return a;
-  } else if (x isntanceof MlBytes) {
-    throw "error"
+  } else if (x instanceof MlBytes) {
+    return x.slice();
   } else {
     throw "error"
   }
@@ -355,8 +356,10 @@ function caml_floatarray_create(len){
 //Requires: MlBytes, caml_int64_compare, caml_int_compare, caml_string_compare
 //Requires: caml_invalid_argument
 function caml_compare_val (a, b, total) {
+  var iteration = 0;
   var stack = [];
   for(;;) {
+    iteration += 1;
     if (!(total && a === b)) {
       if (a instanceof MlBytes) {
         if (b instanceof MlBytes) {
@@ -412,7 +415,7 @@ function caml_compare_val (a, b, total) {
         } else
           return 1;
       } else if (b instanceof MlBytes ||
-                 (b instanceof Array || ISBLOCK(b)) {
+                 (b instanceof Array || ISBLOCK(b))) {
         return -1;
       } else if (typeof a != "number" && a && a.compare) {
         var cmp = a.compare(b,total);
@@ -435,16 +438,18 @@ function caml_compare_val (a, b, total) {
     a = stack.pop();
     //if (i + 1 < a.length) stack.push(a, b, i + 1);
     if (ISBLOCK(a)) {
-      if (i < LENGTH(a)) {
+      if (i < LENGTH(a) - 1) {
         stack.push(a, b, i + 1);
       }
       a = FIELD(a, i);
       b = FIELD(b, i);
-    } else if (i < LENGTH(a) - 1) {
-      stack.push(a, b, i + 1);
+    } else {
+      if (i < a.length - 1) {
+        stack.push(a, b, i + 1);
+      }
+      a = a[i];
+      b = b[i];
     }
-    a = a[i];
-    b = b[i];
   }
 }
 //Provides: caml_compare (const, const)
@@ -738,10 +743,12 @@ function caml_hash_univ_param (count, limit, obj) {
         hash_accu = (hash_accu * 19 + TAG(obj)) | 0;
         for (var i = LENGTH(obj) - 1; i > 0; i--) hash_aux (FIELD(obj,i));
       }
-    } else if (obj instanceof array) {
+    } else if (obj instanceof Array) {
       count --;
-      hash_acu = (hash_accu * 19 + 0) | 0;
-      for (var i = obj.length - 1; i >= 0; hash_aux (obj[i]);
+      hash_accu = (hash_accu * 19 + 0) | 0;
+      for (var i = obj.length - 1; i >= 0; i--) {
+        hash_aux (obj[i]);
+      }
     } else if (obj instanceof MlBytes) {
       count --;
       switch (obj.t & 6) {

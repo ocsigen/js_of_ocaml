@@ -5,6 +5,7 @@
   (targets main.js)
   (action  (run %{bin:js_of_ocaml}
                   --enable with-js-error
+                  --pretty
                   --no-runtime %{lib:js_of_ocaml-compiler:runtime.js}
                   %{dep:main.bc} -o %{targets}))
  )

@@ -17,7 +17,7 @@
 // Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
 //Provides: current_libs
-var current_libs = [0, joo_global_object]
+var current_libs = BLOCK(0, joo_global_object)
 
 //Provides: caml_dynlink_open_lib
 //Requires: current_libs, caml_failwith
