@@ -31,6 +31,9 @@ let%expect_test _ =
     let bx = [|1.0;2.0;3.0;4.0|] ;;
     black_box bx ;;
 
+    (* combined with the black_box function above, this
+       will prevent the ocaml compiler from optimizing
+       away the constructions. *)
     print_int ((List.length !lr) + (List.length !lr))
   |}
   in
