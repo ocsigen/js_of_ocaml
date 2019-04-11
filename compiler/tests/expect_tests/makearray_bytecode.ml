@@ -41,6 +41,7 @@ let%expect_test _ =
   print_var_decl program "ex";
   print_var_decl program "ax";
   print_var_decl program "bx";
+
   [%expect
     {|
     var ex = new Block_0_2(5,caml_new_string("hello"));

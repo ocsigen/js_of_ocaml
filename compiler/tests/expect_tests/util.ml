@@ -61,15 +61,12 @@ let compile_ocaml_to_bytecode source =
   let out = open_out temp_file in
   Printf.fprintf out "%s" source;
   close_out out;
-  let proc =
-    Unix.open_process
-      (Format.sprintf "ocamlfind ocamlc -g %s -I Stdlib -o %s.cmo" temp_file temp_file)
-  in
-  (match Unix.close_process proc with
-  | WEXITED 0 -> ()
-  | WEXITED n -> failwith (Format.sprintf "exited %d" n)
-  | WSIGNALED n -> failwith (Format.sprintf "signaled %d" n)
-  | WSTOPPED n -> failwith (Format.sprintf "stopped %d" n));
+
+  let prev_debug = !Clflags.debug in
+  Clflags.debug := true;
+  Compile.implementation Format.std_formatter temp_file temp_file;
+  Clflags.debug := prev_debug;
+
   open_in (Format.sprintf "%s.cmo" temp_file)
 
 type find_result =
