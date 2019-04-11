@@ -29,25 +29,25 @@ function caml_lex_array(s) {
 //Provides: caml_lex_engine
 //Requires: caml_failwith, caml_lex_array, caml_array_of_string
 function caml_lex_engine(tbl, start_state, lexbuf) {
-  var lex_buffer = 2;
-  var lex_buffer_len = 3;
-  var lex_start_pos = 5;
-  var lex_curr_pos = 6;
-  var lex_last_pos = 7;
-  var lex_last_action = 8;
-  var lex_eof_reached = 9;
-  var lex_base = 1;
-  var lex_backtrk = 2;
-  var lex_default = 3;
-  var lex_trans = 4;
-  var lex_check = 5;
+  var lex_buffer = 1;
+  var lex_buffer_len = 2;
+  var lex_start_pos = 4;
+  var lex_curr_pos = 5;
+  var lex_last_pos = 6;
+  var lex_last_action = 7;
+  var lex_eof_reached = 8;
+  var lex_base = 0;
+  var lex_backtrk = 1;
+  var lex_default = 2;
+  var lex_trans = 3;
+  var lex_check = 4;
 
   if (!tbl.lex_default) {
-    tbl.lex_base =    caml_lex_array (tbl[lex_base]);
-    tbl.lex_backtrk = caml_lex_array (tbl[lex_backtrk]);
-    tbl.lex_check =   caml_lex_array (tbl[lex_check]);
-    tbl.lex_trans =   caml_lex_array (tbl[lex_trans]);
-    tbl.lex_default = caml_lex_array (tbl[lex_default]);
+    tbl.lex_base =    caml_lex_array (FIELD(tbl, lex_base));
+    tbl.lex_backtrk = caml_lex_array (FIELD(tbl, lex_backtrk));
+    tbl.lex_check =   caml_lex_array (FIELD(tbl, lex_check));
+    tbl.lex_trans =   caml_lex_array (FIELD(tbl, lex_trans));
+    tbl.lex_default = caml_lex_array (FIELD(tbl, lex_default));
   }
 
   var c, state = start_state;
@@ -136,41 +136,41 @@ function caml_lex_run_tag(s, i, mem) {
 }
 
 function caml_new_lex_engine(tbl, start_state, lexbuf) {
-  var lex_buffer = 2;
-  var lex_buffer_len = 3;
-  var lex_start_pos = 5;
-  var lex_curr_pos = 6;
-  var lex_last_pos = 7;
-  var lex_last_action = 8;
-  var lex_eof_reached = 9;
-  var lex_mem = 10;
-  var lex_base = 1;
-  var lex_backtrk = 2;
-  var lex_default = 3;
-  var lex_trans = 4;
-  var lex_check = 5;
-  var lex_base_code = 6;
-  var lex_backtrk_code = 7;
-  var lex_default_code = 8;
-  var lex_trans_code = 9;
-  var lex_check_code = 10;
-  var lex_code = 11;
+  var lex_buffer = 1;
+  var lex_buffer_len = 2;
+  var lex_start_pos = 4;
+  var lex_curr_pos = 5;
+  var lex_last_pos = 6;
+  var lex_last_action = 7;
+  var lex_eof_reached = 8;
+  var lex_mem = 9;
+  var lex_base = 0;
+  var lex_backtrk = 1;
+  var lex_default = 2;
+  var lex_trans = 3;
+  var lex_check = 4;
+  var lex_base_code = 5;
+  var lex_backtrk_code = 6;
+  var lex_default_code = 7;
+  var lex_trans_code = 8;
+  var lex_check_code = 9;
+  var lex_code = 10;
 
   if (!tbl.lex_default) {
-    tbl.lex_base =    caml_lex_array (tbl[lex_base]);
-    tbl.lex_backtrk = caml_lex_array (tbl[lex_backtrk]);
-    tbl.lex_check =   caml_lex_array (tbl[lex_check]);
-    tbl.lex_trans =   caml_lex_array (tbl[lex_trans]);
-    tbl.lex_default = caml_lex_array (tbl[lex_default]);
+    tbl.lex_base =    caml_lex_array (FIELD(tbl, lex_base));
+    tbl.lex_backtrk = caml_lex_array (FIELD(tbl, lex_backtrk));
+    tbl.lex_check =   caml_lex_array (FIELD(tbl, lex_check));
+    tbl.lex_trans =   caml_lex_array (FIELD(tbl, lex_trans));
+    tbl.lex_default = caml_lex_array (FIELD(tbl, lex_default));
   }
   if (!tbl.lex_default_code) {
-    tbl.lex_base_code =    caml_lex_array (tbl[lex_base_code]);
-    tbl.lex_backtrk_code = caml_lex_array (tbl[lex_backtrk_code]);
-    tbl.lex_check_code =   caml_lex_array (tbl[lex_check_code]);
-    tbl.lex_trans_code =   caml_lex_array (tbl[lex_trans_code]);
-    tbl.lex_default_code = caml_lex_array (tbl[lex_default_code]);
+    tbl.lex_base_code =    caml_lex_array (FIELD(tbl, lex_base_code));
+    tbl.lex_backtrk_code = caml_lex_array (FIELD(tbl, lex_backtrk_code));
+    tbl.lex_check_code =   caml_lex_array (FIELD(tbl, lex_check_code));
+    tbl.lex_trans_code =   caml_lex_array (FIELD(tbl, lex_trans_code));
+    tbl.lex_default_code = caml_lex_array (FIELD(tbl, lex_default_code));
   }
-  if (tbl.lex_code == null) tbl.lex_code = caml_jsbytes_of_string(tbl[lex_code]);
+  if (tbl.lex_code == null) tbl.lex_code = caml_jsbytes_of_string(FIELD(tbl, lex_code));
 
   var c, state = start_state;
 
@@ -196,20 +196,20 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
     var backtrk = tbl.lex_backtrk[state];
     if (backtrk >= 0) {
       var pc_off = tbl.lex_backtrk_code[state];
-      caml_lex_run_tag(tbl.lex_code, pc_off, lexbuf[lex_mem]);
-      lexbuf[lex_last_pos] = lexbuf[lex_curr_pos];
-      lexbuf[lex_last_action] = backtrk;
+      caml_lex_run_tag(tbl.lex_code, pc_off, FIELD(lexbuf, lex_mem));
+      FIELD(lexbuf, lex_last_pos) = FIELD(lexbuf, lex_curr_pos);
+      FIELD(lexbuf, lex_last_action) = backtrk;
     }
     /* See if we need a refill */
-    if (lexbuf[lex_curr_pos] >= lexbuf[lex_buffer_len]){
-      if (lexbuf[lex_eof_reached] == 0)
+    if (FIELD(lexbuf, lex_curr_pos) >= FIELD(lexbuf, lex_buffer_len)){
+      if (FIELD(lexbuf, lex_eof_reached) == 0)
         return -state - 1;
       else
         c = 256;
     }else{
       /* Read next input char */
-      c = buffer[lexbuf[lex_curr_pos]];
-      lexbuf[lex_curr_pos] ++;
+      c = buffer[FIELD(lexbuf, lex_curr_pos)];
+      FIELD(lexbuf, lex_curr_pos) ++;
     }
     /* Determine next state */
     var pstate = state ;
@@ -219,11 +219,11 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
       state = tbl.lex_default[state];
     /* If no transition on this char, return to last backtrack point */
     if (state < 0) {
-      lexbuf[lex_curr_pos] = lexbuf[lex_last_pos];
-      if (lexbuf[lex_last_action] == -1)
+      FIELD(lexbuf, lex_curr_pos) = FIELD(lexbuf, lex_last_pos);
+      if (FIELD(lexbuf, lex_last_action) == -1)
         caml_failwith("lexing: empty token");
       else
-        return lexbuf[lex_last_action];
+        return FIELD(lexbuf, lex_last_action);
     }else{
       /* If some transition, get and perform memory moves */
       var base_code = tbl.lex_base_code[pstate], pc_off;
@@ -233,11 +233,11 @@ function caml_new_lex_engine(tbl, start_state, lexbuf) {
         pc_off = tbl.lex_default_code[pstate];
       if (pc_off > 0)
         caml_lex_run_mem
-      (tbl.lex_code, pc_off, lexbuf[lex_mem], lexbuf[lex_curr_pos]);
+      (tbl.lex_code, pc_off, FIELD(lexbuf, lex_mem), FIELD(lexbuf, lex_curr_pos));
       /* Erase the EOF condition only if the EOF pseudo-character was
          consumed by the automaton (i.e. there was no backtrack above)
       */
-      if (c == 256) lexbuf[lex_eof_reached] = 0;
+      if (c == 256) FIELD(lexbuf, lex_eof_reached) = 0;
     }
   }
 }

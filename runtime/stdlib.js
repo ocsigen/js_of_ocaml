@@ -89,14 +89,14 @@ function caml_named_value(nm) {
 }
 
 //Provides: caml_global_data
-var caml_global_data = [0];
+var caml_global_data = [];
 
 //Provides: caml_register_global (const, shallow, const)
 //Requires: caml_global_data
 function caml_register_global (n, v, name_opt) {
   if(name_opt && joo_global_object.toplevelReloc)
     n = joo_global_object.toplevelReloc(name_opt);
-  caml_global_data[n + 1] = v;
+  FIELD(caml_global_data, n) = v;
   if(name_opt) caml_global_data[name_opt] = v;
 }
 
@@ -114,7 +114,7 @@ function caml_raise_constant (tag) { throw tag; }
 function caml_return_exn_constant (tag) { return tag; }
 
 //Provides: caml_raise_with_arg (const, const)
-function caml_raise_with_arg (tag, arg) { throw [0, tag, arg]; }
+function caml_raise_with_arg (tag, arg) { throw BLOCK(0, tag, arg); }
 
 //Provides: caml_raise_with_string (const, const)
 //Requires: caml_raise_with_arg,caml_new_string
@@ -138,6 +138,7 @@ function caml_failwith (msg) {
 //Requires: caml_global_data,caml_js_to_string,caml_named_value
 //Requires: caml_return_exn_constant
 function caml_wrap_exception(e) {
+  if(ISBLOCK(e)) return e;
   if(e instanceof Array) return e;
   //Stack_overflow: chrome, safari
   if(joo_global_object.RangeError
@@ -153,9 +154,9 @@ function caml_wrap_exception(e) {
     return caml_return_exn_constant(caml_global_data.Stack_overflow);
   //Wrap Error in Js.Error exception
   if(e instanceof joo_global_object.Error && caml_named_value("jsError"))
-    return [0,caml_named_value("jsError"),e];
+    return BLOCK(0,caml_named_value("jsError"),e);
   //fallback: wrapped in Failure
-  return [0,caml_global_data.Failure,caml_js_to_string (String(e))];
+  return BLOCK(0,caml_global_data.Failure,caml_js_to_string (String(e)));
 }
 
 // Experimental
@@ -206,41 +207,72 @@ function caml_array_bound_error () {
 function caml_update_dummy (x, y) {
   if( typeof y==="function" ) { x.fun = y; return 0; }
   if( y.fun ) { x.fun = y.fun; return 0; }
-  var i = y.length; while (i--) x[i] = y[i]; return 0;
+  //var i = y.length; while (i--) x[i] = y[i]; return 0;
+  if(ISBLOCK(x) && ISBLOCK(y)) {
+    TAG(x) = TAG(y);
+    LENGTH(x) = LENGTH(y);
+    for(var i=0; i < LENGTH(y); i++) {
+      FIELD(x, i) = FIELD(y, i);
+    }
+    return 0;
+  }
+  throw "error"
 }
 
 //Provides: caml_obj_is_block const (const)
-function caml_obj_is_block (x) { return +(x instanceof Array); }
+function caml_obj_is_block (x) { return +(x instanceof Array) || ISBLOCK(x); }
 //Provides: caml_obj_tag const (const)
 //Requires: MlBytes
-function caml_obj_tag (x) { return (x instanceof Array)?x[0]:(x instanceof MlBytes)?252:1000; }
+function caml_obj_tag (x) { 
+  if(ISBLOCK(x)) return TAG(x);
+  else if (x instanceof MlBytes) return 252
+  else if (x instanceof array) return 0 
+  else return 1000
+}
+
 //Provides: caml_obj_set_tag (mutable, const)
-function caml_obj_set_tag (x, tag) { x[0] = tag; return 0; }
+function caml_obj_set_tag (x, tag) { TAG(x) = tag; return 0; }
 //Provides: caml_obj_block const (const,const)
 function caml_obj_block (tag, size) {
-  var o = new Array(size+1);
-  o[0]=tag;
-  for (var i = 1; i <= size; i++) o[i] = 0;
+  var o = BLOCK(tag);
+  for (var i = 0; i <= size; i++) FIELD(o, i) = 0;
   return o;
 }
+//Requires: MlBytes
 //Provides: caml_obj_dup mutable (const)
 function caml_obj_dup (x) {
-  var l = x.length;
-  var a = new Array(l);
-  for(var i = 0; i < l; i++ ) a[i] = x[i];
-  return a;
+  if (ISBLOCK(x)) {
+    var l = LENGTH(x);
+    var o = BLOCK(TAG(x));
+    for (var i =0; i < l; i++) {
+      FIELD(o, i) = FIELD(x, i);
+    }
+    return o;
+  } else if (x instanceof Array) {
+    var l = x.length;
+    var a = new Array(l);
+    for (var i =0; i < l; i++) {
+      a[i] = x[i];
+    }
+    return a;
+  } else if (x isntanceof MlBytes) {
+    throw "error"
+  } else {
+    throw "error"
+  }
 }
+
 //Provides: caml_obj_truncate (mutable, const)
 //Requires: caml_invalid_argument
 function caml_obj_truncate (x, s) {
   if (s<=0 || s + 1 > x.length)
     caml_invalid_argument ("Obj.truncate");
-  if (x.length != s + 1) x.length = s + 1;
+  if (x.length != s) x.length = s
   return 0;
 }
 
 //Provides: caml_lazy_make_forward const (const)
-function caml_lazy_make_forward (v) { return [250, v]; }
+function caml_lazy_make_forward (v) { return BLOCK(250, v); }
 
 //Provides: caml_mul const
 if (!Math.imul)
@@ -276,47 +308,46 @@ function caml_mod(x,y) {
 //Provides: caml_array_set (mutable, const, const)
 //Requires: caml_array_bound_error
 function caml_array_set (array, index, newval) {
-  if ((index < 0) || (index >= array.length - 1)) caml_array_bound_error();
-  array[index+1]=newval; return 0;
+  if ((index < 0) || (index >= array.length)) caml_array_bound_error();
+  array[index]=newval; return 0;
 }
 
 //Provides: caml_array_get mutable (const, const)
 //Requires: caml_array_bound_error
 function caml_array_get (array, index) {
-  if ((index < 0) || (index >= array.length - 1)) caml_array_bound_error();
-  return array[index+1];
+  if ((index < 0) || (index >= array.length)) caml_array_bound_error();
+  return array[index];
 }
 
 //Provides: caml_check_bound (const, const)
 //Requires: caml_array_bound_error
 function caml_check_bound (array, index) {
-  if (index >>> 0 >= array.length - 1) caml_array_bound_error();
+  if (index >>> 0 >= array.length) caml_array_bound_error();
   return array;
 }
 
 //Provides: caml_make_vect const (const, const)
 function caml_make_vect (len, init) {
-  var len = len + 1 | 0;
+  var len = len | 0;
   var b = new Array(len);
-  b[0]=0;
-  for (var i = 1; i < len; i++) b[i] = init;
+  for (var i = 0; i < len; i++) {
+    b[i] = init;
+  }
   return b;
 }
 
 //Provides: caml_make_float_vect const (const)
 function caml_make_float_vect(len){
-  var len = len + 1 | 0;
+  var len = len | 0;
   var b = new Array(len);
-  b[0]=254;
-  for (var i = 1; i < len; i++) b[i] = 0;
+  for (var i = 0; i < len; i++) b[i] = 0.0;
   return b
 }
 //Provides: caml_floatarray_create const (const)
 function caml_floatarray_create(len){
-  var len = len + 1 | 0;
+  var len = len | 0;
   var b = new Array(len);
-  b[0]=254;
-  for (var i = 1; i < len; i++) b[i] = 0;
+  for (var i = 0; i < len; i++) b[i] = 0.0;
   return b
 }
 
@@ -336,21 +367,23 @@ function caml_compare_val (a, b, total) {
         } else
           // Should not happen
           return 1;
-      } else if (a instanceof Array && a[0] === (a[0]|0)) {
-        var ta = a[0];
-        // ignore double_array_tag
-        if (ta === 254) ta=0;
+      } else if (a instanceof Array) {
+        if (b instanceof Array) {
+          if (a.length != b.length) return (a.length < b.length)?-1:1;
+          if (a.length > 0) stack.push(a, b, 0);
+        } else return 1
+      }
+      else if (ISBLOCK(a)) {
+        var ta = TAG(a);
         // Forward object
         if (ta === 250) {
-          a = a[1];
+          a = FIELD(a, 0);
           continue;
-        } else if (b instanceof Array && b[0] === (b[0]|0)) {
-          var tb = b[0];
-          // ignore double_array_tag
-          if (tb === 254) tb=0;
+        } else if (ISBLOCK(b)) {
+          var tb = TAG(b);
           // Forward object
           if (tb === 250) {
-            b = b[1];
+            b = FIELD(b, 0);
             continue;
           } else if (ta != tb) {
             return (ta < tb)?-1:1;
@@ -358,7 +391,7 @@ function caml_compare_val (a, b, total) {
             switch (ta) {
             case 248: {
               // Object
-              var x = caml_int_compare(a[2], b[2]);
+              var x = caml_int_compare(FIELD(a, 1), FIELD(b, 1));
               if (x != 0) return x;
               break;
             }
@@ -372,14 +405,14 @@ function caml_compare_val (a, b, total) {
               break;
             }
             default:
-              if (a.length != b.length) return (a.length < b.length)?-1:1;
-              if (a.length > 1) stack.push(a, b, 1);
+              if (LENGTH(a) != LENGTH(b)) return (LENGTH(a) < LENGTH(b))?-1:1;
+              if (LENGTH(a) > 1) stack.push(a, b, 0);
             }
           }
         } else
           return 1;
       } else if (b instanceof MlBytes ||
-                 (b instanceof Array && b[0] === (b[0]|0))) {
+                 (b instanceof Array || ISBLOCK(b)) {
         return -1;
       } else if (typeof a != "number" && a && a.compare) {
         var cmp = a.compare(b,total);
@@ -400,7 +433,16 @@ function caml_compare_val (a, b, total) {
     var i = stack.pop();
     b = stack.pop();
     a = stack.pop();
-    if (i + 1 < a.length) stack.push(a, b, i + 1);
+    //if (i + 1 < a.length) stack.push(a, b, i + 1);
+    if (ISBLOCK(a)) {
+      if (i < LENGTH(a)) {
+        stack.push(a, b, i + 1);
+      }
+      a = FIELD(a, i);
+      b = FIELD(b, i);
+    } else if (i < LENGTH(a) - 1) {
+      stack.push(a, b, i + 1);
+    }
     a = a[i];
     b = b[i];
   }
@@ -676,12 +718,12 @@ function caml_hash_univ_param (count, limit, obj) {
   function hash_aux (obj) {
     limit --;
     if (count < 0 || limit < 0) return;
-    if (obj instanceof Array && obj[0] === (obj[0]|0)) {
-      switch (obj[0]) {
+    if (ISBLOCK(obj)) {
+      switch (TAG(obj)) {
       case 248:
         // Object
         count --;
-        hash_accu = (hash_accu * 65599 + obj[2]) | 0;
+        hash_accu = (hash_accu * 65599 + FIELD(obj, 1)) | 0;
         break;
       case 250:
         // Forward
@@ -689,13 +731,17 @@ function caml_hash_univ_param (count, limit, obj) {
       case 255:
         // Int64
         count --;
-        hash_accu = (hash_accu * 65599 + obj[1] + (obj[2] << 24)) | 0;
+        hash_accu = (hash_accu * 65599 + FIELD(obj,1) + (FIELD(obj,2) << 24)) | 0;
         break;
       default:
         count --;
-        hash_accu = (hash_accu * 19 + obj[0]) | 0;
-        for (var i = obj.length - 1; i > 0; i--) hash_aux (obj[i]);
+        hash_accu = (hash_accu * 19 + TAG(obj)) | 0;
+        for (var i = LENGTH(obj) - 1; i > 0; i--) hash_aux (FIELD(obj,i));
       }
+    } else if (obj instanceof array) {
+      count --;
+      hash_acu = (hash_accu * 19 + 0) | 0;
+      for (var i = obj.length - 1; i >= 0; hash_aux (obj[i]);
     } else if (obj instanceof MlBytes) {
       count --;
       switch (obj.t & 6) {
@@ -849,16 +895,16 @@ function caml_hash (count, limit, seed, obj) {
   queue = [obj]; rd = 0; wr = 1;
   while (rd < wr && num > 0) {
     v = queue[rd++];
-    if (v instanceof Array && v[0] === (v[0]|0)) {
-      switch (v[0]) {
+    if (ISBLOCK(v)) {
+      switch (TAG(v)) {
       case 248:
         // Object
-        h = caml_hash_mix_int(h, v[2]);
+        h = caml_hash_mix_int(h, FIELD(v,1));
         num--;
         break;
       case 250:
         // Forward
-        queue[--rd] = v[1];
+        queue[--rd] = FIELD(v, 0);
         break;
       case 255:
         // Int64
@@ -866,13 +912,22 @@ function caml_hash (count, limit, seed, obj) {
         num --;
         break;
       default:
-        var tag = ((v.length - 1) << 10) | v[0];
+        var tag = (LENGTH(v) << 10) | TAG(v)
         h = caml_hash_mix_int(h, tag);
-        for (i = 1, len = v.length; i < len; i++) {
+        for (i = 0, len = LENGTH(v); i < len; i++) {
           if (wr >= sz) break;
-          queue[wr++] = v[i];
+          queue[wr++] = FIELD(v,i);
         }
         break;
+      }
+    } else if (v instanceof Array) {
+      var tag = (v.length << 10) | 0;
+      h = caml_hash_mix_int(h, tag);
+      for (i = 0, len = v.length; i < len; i++) {
+        if (wr >= sz) {
+          break;
+        }
+        queue[wr++] = v[i];
       }
     } else if (v instanceof MlBytes) {
       h = caml_hash_mix_string(h,v)
@@ -905,7 +960,7 @@ function caml_sys_time () {
 //Provides: caml_sys_get_config const
 //Requires: caml_new_string
 function caml_sys_get_config () {
-  return [0, caml_new_string("Unix"), 32, 0];
+  return BLOCK(0, caml_new_string("Unix"), 32, 0);
 }
 
 //Provides: caml_sys_const_backend_type const
@@ -959,9 +1014,8 @@ function caml_sys_system_command(cmd){
 ///////////// Array
 //Provides: caml_array_sub mutable
 function caml_array_sub (a, i, len) {
-  var a2 = new Array(len+1);
-  a2[0]=0;
-  for(var i2 = 1, i1= i+1; i2 <= len; i2++,i1++ ){
+  var a2 = new Array(len);
+  for(var i2 = 0, i1= i; i2 <= len; i2++,i1++ ){
     a2[i2]=a[i1];
   }
   return a2;
@@ -970,10 +1024,9 @@ function caml_array_sub (a, i, len) {
 //Provides: caml_array_append mutable
 function caml_array_append(a1, a2) {
   var l1 = a1.length, l2 = a2.length;
-  var l = l1+l2-1
+  var l = l1+l2;
   var a = new Array(l);
-  a[0] = 0;
-  var i = 1,j = 1;
+  var i = 0,j = 0;
   for(;i<l1;i++) a[i]=a1[i];
   for(;i<l;i++,j++) a[i]=a2[j];
   return a;
@@ -981,11 +1034,11 @@ function caml_array_append(a1, a2) {
 
 //Provides: caml_array_concat mutable
 function caml_array_concat(l) {
-  var a = [0];
+  var a = [];
   while (l !== 0) {
-    var b = l[1];
-    for (var i = 1; i < b.length; i++) a.push(b[i]);
-    l = l[2];
+    var b = l[0];
+    for (var i = 0; i < b.length; i++) a.push(b[i]);
+    l = l[1];
   }
   return a;
 }
@@ -993,9 +1046,9 @@ function caml_array_concat(l) {
 //Provides: caml_array_blit
 function caml_array_blit(a1, i1, a2, i2, len) {
   if (i2 <= i1) {
-    for (var j = 1; j <= len; j++) a2[i2 + j] = a1[i1 + j];
+    for (var j = 0; j < len; j++) a2[i2 + j] = a1[i1 + j];
   } else {
-    for (var j = len; j >= 1; j--) a2[i2 + j] = a1[i1 + j];
+    for (var j = len - 1; j >= 0; j--) a2[i2 + j] = a1[i1 + j];
   };
   return 0;
 }
@@ -1004,7 +1057,7 @@ function caml_array_blit(a1, i1, a2, i2, len) {
 //Provides: caml_get_public_method const
 var caml_method_cache = [];
 function caml_get_public_method (obj, tag, cacheid) {
-  var meths = obj[1];
+  var meths = FIELD(obj, 1);
   var ofs = caml_method_cache[cacheid];
   if (ofs === null) {
     // Make sure the array is not sparse
@@ -1106,10 +1159,10 @@ function caml_sys_get_argv () {
   }
 
   var p = caml_js_to_string(main);
-  var args2 = [0, p];
+  var args2 = BLOCK(0, p);
   for(var i = 0; i < args.length; i++)
     args2.push(caml_js_to_string(args[i]));
-  return [0, p, args2];
+  return BLOCK(0, p, args2);
 }
 
 //Provides: unix_inet_addr_of_string
@@ -1121,7 +1174,7 @@ var caml_oo_last_id = 0;
 //Provides: caml_set_oo_id
 //Requires: caml_oo_last_id
 function caml_set_oo_id (b) {
-  b[2]=caml_oo_last_id++;
+  FIELD(b, 1)=caml_oo_last_id++;
   return b;
 }
 
@@ -1172,7 +1225,7 @@ function caml_list_of_js_array(a){
   var l = 0;
   for(var i=a.length - 1; i>=0; i--){
     var e = a[i];
-    l = [0,e,l];
+    l = BLOCK(0,e,l);
   }
   return l
 }
@@ -1225,7 +1278,6 @@ function caml_register_channel_for_spacetime(_channel) {
 function caml_spacetime_only_works_for_native_code() {
   caml_failwith("Spacetime profiling only works for native code");
 }
-
 
 //Provides: caml_is_js
 function caml_is_js() {

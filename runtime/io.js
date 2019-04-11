@@ -59,7 +59,7 @@ function caml_sys_open_internal(idx,output,file,flags) {
 function caml_sys_open (name, flags, _perms) {
   var f = {};
   while(flags){
-    switch(flags[1]){
+    switch(FIELD(flags, 0)){
     case 0: f.rdonly = 1;break;
     case 1: f.wronly = 1;break;
     case 2: f.append = 1;break;
@@ -70,7 +70,7 @@ function caml_sys_open (name, flags, _perms) {
     case 7: f.text = 1;break;
     case 8: f.nonblock = 1;break;
     }
-    flags=flags[2];
+    flags=FIELD(flags, 1);
   }
   if(f.rdonly && f.wronly)
     caml_raise_sys_error(name.toString() + " : flags Open_rdonly and Open_wronly are not compatible");
@@ -102,7 +102,7 @@ function caml_ml_out_channels_list () {
   var l = 0;
   for(var c = 0; c < caml_ml_channels.length; c++){
     if(caml_ml_channels[c] && caml_ml_channels[c].opened && caml_ml_channels[c].out)
-      l=[0,caml_ml_channels[c].fd,l];
+      l=BLOCK(0,caml_ml_channels[c].fd,l);
   }
   return l;
 }
