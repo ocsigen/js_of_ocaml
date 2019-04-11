@@ -39,6 +39,6 @@ val profiles : (int * profile) list
 
 val profile : int -> profile option
 
-module For_testing: sig
-  val macro: Javascript.source_elements -> Javascript.source_elements
+module For_testing : sig
+  val macro : Javascript.source_elements -> Javascript.source_elements
 end

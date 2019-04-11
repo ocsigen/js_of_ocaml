@@ -284,8 +284,7 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
     in
     Linker.link js linkinfos
 
-let field i =
-  Format.sprintf "f%d" i
+let field i = Format.sprintf "f%d" i
 
 class macro =
   object (m)
@@ -298,10 +297,7 @@ class macro =
           let length = J.ENum (float_of_int (List.length args)) in
           let one str e = J.PNI str, m#expression e in
           let apply_one i e = one (field i) e in
-          J.EObj
-            (one "tag" tag
-            :: one "length" length
-            :: List.mapi args ~f:apply_one)
+          J.EObj (one "tag" tag :: one "length" length :: List.mapi args ~f:apply_one)
       | J.ECall (J.EVar (J.S {J.name = "TAG"; _}), [e], _) ->
           J.EDot (m#expression e, "tag")
       | J.ECall (J.EVar (J.S {J.name = "LENGTH"; _}), [e], _) ->
@@ -315,8 +311,10 @@ class macro =
             ( J.EqEq
             , J.EUn (J.Typeof, J.EDot (m#expression e, "tag"))
             , J.EStr ("number", `Utf8) )
-      | J.ECall (J.EVar (J.S {J.name = "BLOCK" | "FIELD" | "TAG" | "LENGTH" | "ISBLOCK"; _}), _, _)
-        ->
+      | J.ECall
+          ( J.EVar (J.S {J.name = "BLOCK" | "FIELD" | "TAG" | "LENGTH" | "ISBLOCK"; _})
+          , _
+          , _ ) ->
           assert false
       | e -> super#expression e
   end
