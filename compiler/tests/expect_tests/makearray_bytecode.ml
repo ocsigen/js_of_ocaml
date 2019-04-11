@@ -2,24 +2,17 @@ open Util
 module Jsoo = Js_of_ocaml_compiler
 module J = Jsoo.Javascript
 
-let expression_to_string ?(compact = false) e =
-  let e = [J.Statement (J.Expression_statement e), J.N] in
-  let buffer = Buffer.create 17 in
-  let pp = Jsoo.Pretty_print.to_buffer buffer in
-  Jsoo.Pretty_print.set_compact pp compact;
-  Jsoo.Js_output.program pp e;
-  Buffer.contents buffer
-
 let print_var_decl program n =
   let {var_decls; _} =
     find_javascript
       ~var_decl:(function
-            | J.S {name; _}, _ when name = n -> true
-            | _ -> false)
-      program in
+        | J.S {name; _}, _ when name = n -> true
+        | _ -> false)
+      program
+  in
   print_string (Format.sprintf "var %s = " n);
   match var_decls with
-  |  [_, (Some (expression, _))] -> print_string (expression_to_string expression)
+  | [(_, Some (expression, _))] -> print_string (expression_to_string expression)
   | _ -> print_endline "not found"
 
 let%expect_test _ =
@@ -36,9 +29,7 @@ let%expect_test _ =
     let ax = [|1;2;3;4|] ;;
     black_box ax
     let bx = [|1.0;2.0;3.0;4.0|] ;;
-    black_box bx
-
-    ;;
+    black_box bx ;;
 
     print_int ((List.length !lr) + (List.length !lr))
   |}
@@ -47,7 +38,8 @@ let%expect_test _ =
   print_var_decl program "ex";
   print_var_decl program "ax";
   print_var_decl program "bx";
-  [%expect {|
+  [%expect
+    {|
     var ex = new Block_0_2(5,caml_new_string("hello"));
     var ax = new Block_0_4(1,2,3,4);
     var bx = new Block_254_4(1,2,3,4); |}]
