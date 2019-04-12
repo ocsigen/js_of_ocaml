@@ -186,7 +186,7 @@ rule initial tokinfo prev = parse
       T_INT (s, Int64.of_string ("0o"^s'), info)
     }
 
-  | ['0'-'9']*'.'['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
+  | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
       T_FLOAT(s, float_of_string s, info)

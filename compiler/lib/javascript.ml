@@ -230,14 +230,7 @@ let string_of_float v =
     (* compiler 1000 into 1e3 *)
     if float_of_int vint = v
     then
-      let rec div n i =
-        if n <> 0 && n mod 10 = 0
-        then div (n / 10) (succ i)
-        else if i > 2
-        then Printf.sprintf "%de%d" n i
-        else string_of_int vint
-      in
-      div vint 0
+      Printf.sprintf "%d.0" vint
     else
       let s1 = Printf.sprintf "%.12g" v in
       if v = float_of_string s1

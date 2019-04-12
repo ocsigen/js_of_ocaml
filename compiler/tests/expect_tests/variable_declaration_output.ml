@@ -63,4 +63,4 @@ let%expect_test _ =
     {|
     var ex = [0,5,caml_new_string("hello")];
     var ax = [0,1,2,3,4];
-    var bx = [254,1,2,3,4]; |}]
+    var bx = [254,1.0,2.0,3.0,4.0]; |}]
