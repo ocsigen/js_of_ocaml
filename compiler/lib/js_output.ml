@@ -261,7 +261,7 @@ struct
         let out, lft, _rght = op_prec op in
         l <= out && need_paren lft e
     | ECall (e, _, _) | EAccess (e, _) | EDot (e, _) -> l <= 15 && need_paren 15 e
-    | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | ERegexp _ | EUn _ | ENew _
+    | EVar _ | EStr _ | EArr _ | EBool _ | EFloat _ | EInt _ | EQuote _ | ERegexp _ | EUn _ | ENew _
       ->
         false
     | EFun _ | EObj _ -> true

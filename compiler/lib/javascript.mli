@@ -129,7 +129,8 @@ and expression =
          escape sequences. *)
   | EArr of array_litteral
   | EBool of bool
-  | ENum of float
+  | EInt of Int64.t
+  | EFloat of float
   | EObj of property_name_and_value_list
   | EQuote of string
   | ERegexp of string * string option
