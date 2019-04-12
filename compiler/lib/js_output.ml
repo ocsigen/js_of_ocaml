@@ -377,8 +377,14 @@ struct
         let quote = best_string_quote s in
         pp_string f ~utf:(kind = `Utf8) ~quote s
     | EBool b -> PP.string f (if b then "true" else "false")
-    | ENum v ->
-        let s = Javascript.string_of_number v in
+    | EInt v ->
+      let s = Int64.to_string v in
+      let need_parent = v < Int64.zero && l > 13 in
+      if need_parent then PP.string f "(";
+      PP.string f s;
+      if need_parent then PP.string f ")"
+    | EFloat v ->
+        let s = Javascript.string_of_float v in
         let need_parent =
           if s.[0] = '-'
           then l > 13 (* Negative numbers may need to be parenthesized. *)
@@ -629,7 +635,8 @@ struct
     | PNS s ->
         let quote = best_string_quote s in
         pp_string f ~utf:true ~quote s
-    | PNN v -> expression 0 f (ENum v)
+    | PNFloat v -> expression 0 f (EFloat v)
+    | PNInt v -> expression 0 f (EInt v)
 
   and property_name_and_value_list f l =
     match l with

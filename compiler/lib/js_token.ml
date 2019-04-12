@@ -118,7 +118,8 @@ let info_of_tok = function
   | TCommentML (ii, _) -> ii
   | EOF ii -> ii
   | T_DEBUGGER ii -> ii
-  | T_NUMBER (_, _, ii) -> ii
+  | T_INT (_, _, ii) -> ii
+  | T_FLOAT (_, _, ii) -> ii
   | T_IDENTIFIER (_, ii) -> ii
   | T_STRING (_, ii) -> ii
   | T_REGEX (_, ii) -> ii
@@ -210,7 +211,8 @@ let string_of_tok = function
   | TCommentML (_, _) -> "COMMENT"
   | EOF _ -> "EOF"
   | T_DEBUGGER _ -> "DEBUGGER"
-  | T_NUMBER (_, _, _) -> "T_NUMBER"
+  | T_INT (_, _, _) -> "T_INT"
+  | T_FLOAT (_, _, _) -> "T_FLOAT"
   | T_IDENTIFIER (_, _) -> "T_IDENTIFIER"
   | T_STRING (_, _) -> "T_STRING"
   | T_REGEX (_, _) -> "T_REGEX"

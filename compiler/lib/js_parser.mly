@@ -416,7 +416,8 @@ primary_expression_no_statement:
  | variable_with_loc { let (i, pi) = $1 in (pi, J.EVar (var i)) }
  | n=null_literal    { n }
  | b=boolean_literal { b }
- | numeric_literal   { let (start, n) = $1 in (start, J.ENum n) }
+ | float_literal     { let (start, n) = $1 in (start, J.EFloat n) }
+ | int_literal       { let (start, n) = $1 in (start, J.EInt n) }
  | T_STRING          { let (s, start) = $1 in (start, J.EStr (s, `Utf8)) }
    (* marcel: this isn't an expansion of literal in ECMA-262... mistake? *)
  | r=regex_literal                { r }
@@ -639,7 +640,8 @@ label:
 property_name:
  | i=identifier_or_kw { J.PNI i }
  | s=T_STRING         { J.PNS (fst s) }
- | n=numeric_literal  { J.PNN (snd n) }
+ | n=float_literal { J.PNFloat (snd n) }
+ | n=int_literal   { J.PNInt   (snd n) }
 
 (*************************************************************************)
 (* 1 xxx_opt, xxx_list                                                   *)

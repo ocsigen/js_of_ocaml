@@ -116,7 +116,8 @@ and property_name_and_value_list = (property_name * expression) list
 and property_name =
   | PNI of identifier
   | PNS of string
-  | PNN of float
+  | PNInt of Int64.t
+  | PNFloat of float
 
 and expression =
   | ESeq of expression * expression
@@ -215,7 +216,7 @@ let compare_ident t1 t2 =
   | S _, V _ -> -1
   | V _, S _ -> 1
 
-let string_of_number v =
+let string_of_float v =
   if v = infinity
   then "Infinity"
   else if v = neg_infinity
