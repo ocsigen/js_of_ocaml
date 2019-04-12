@@ -32,7 +32,7 @@ MlFakeDevice.prototype.nm = function(name) {
 MlFakeDevice.prototype.lookup = function(name) {
   if(!this.content[name] && this.lookupFun) {
     var res = this.lookupFun(caml_new_string(this.root), caml_new_string(name));
-    if(res != 0) this.content[name]=new MlFakeFile(res[1]);
+    if(res) this.content[name]=new MlFakeFile(res[1]);
   }
 }
 MlFakeDevice.prototype.exists = function(name) {
