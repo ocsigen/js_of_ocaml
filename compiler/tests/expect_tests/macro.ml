@@ -1,38 +1,37 @@
-module Jsoo = Js_of_ocaml_compiler
+open! Import
 
 let print_macro_transformed source =
   let buffer = Buffer.create (String.length source) in
   let pp = Jsoo.Pretty_print.to_buffer buffer in
   Jsoo.Pretty_print.set_compact pp false;
-  let lexed = Jsoo.Parse_js.lexer_from_string source in
-  let parsed = Jsoo.Parse_js.parse lexed in
+  let parsed = Util.parse_js source  in
   let transformed = Jsoo.Driver.For_testing.macro parsed in
   Jsoo.Js_output.program pp transformed;
   print_endline (Buffer.contents buffer)
 
 let print_macro_transformed source =
   try print_macro_transformed source
-  with Assert_failure (s, _, _) -> Format.printf "assertion failed in %s" s
+  with Assert_failure _ -> Format.printf "assertion failed"
 
 let%expect_test "BLOCK()" =
   print_macro_transformed "BLOCK()";
-  [%expect {| assertion failed in compiler/lib/driver.ml |}]
+  [%expect {| assertion failed |}]
 
 let%expect_test "TAG()" =
   print_macro_transformed "TAG()";
-  [%expect {| assertion failed in compiler/lib/driver.ml |}]
+  [%expect {| assertion failed |}]
 
 let%expect_test "LENGTH()" =
   print_macro_transformed "LENGTH()";
-  [%expect {| assertion failed in compiler/lib/driver.ml |}]
+  [%expect {| assertion failed |}]
 
 let%expect_test "FIELD()" =
   print_macro_transformed "FIELD()";
-  [%expect {| assertion failed in compiler/lib/driver.ml |}]
+  [%expect {| assertion failed |}]
 
 let%expect_test "ISBLOCK()" =
   print_macro_transformed "ISBLOCK()";
-  [%expect {| assertion failed in compiler/lib/driver.ml |}]
+  [%expect {| assertion failed |}]
 
 let%expect_test "BLOCK(1)" =
   print_macro_transformed "BLOCK(1)";
@@ -60,7 +59,7 @@ let%expect_test "LENGTH(a)" =
 
 let%expect_test "FIELD(a)" =
   print_macro_transformed "FIELD(a)";
-  [%expect {| assertion failed in compiler/lib/driver.ml |}]
+  [%expect {| assertion failed |}]
 
 let%expect_test "FIELD(a, 0)" =
   print_macro_transformed "FIELD(a, 0)";
