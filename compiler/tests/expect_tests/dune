@@ -1,6 +1,6 @@
 (library
  (name expect_tests)
- (libraries js_of_ocaml_compiler)
+ (libraries js_of_ocaml_compiler unix ocaml-compiler-libs.bytecomp)
  (inline_tests)
  (preprocess (pps ppx_expect)))
 
