@@ -90,3 +90,9 @@ let%expect_test "preserve number literals" =
     var t=1.0E+3;
     var t=1e-3;
     var t=1E+3; |}]
+
+let%expect_test "preserve number literals in property_name" =
+  print ~compact:false {|
+    var number_as_key = { 100000000000000000000 : 2 }; |};
+  [%expect {|
+    var number_as_key={100000000000000000000:2}; |}]
