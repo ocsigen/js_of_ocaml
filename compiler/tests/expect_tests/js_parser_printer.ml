@@ -41,7 +41,8 @@ let%expect_test "no postfix subtraction coalesce" =
     -b; |}]
 
 let%expect_test "reserved words as fields" =
-  print ~compact:false
+  print
+    ~compact:false
     {|
     x.debugger;
     x.catch;
@@ -52,7 +53,8 @@ let%expect_test "reserved words as fields" =
     var y = { for : 2 }
     var y = { continue : 2 }
   |};
-  [%expect {|
+  [%expect
+    {|
     x.debugger;
     x.catch;
     x.for;
@@ -63,7 +65,8 @@ let%expect_test "reserved words as fields" =
     var y={continue:2}; |}]
 
 let%expect_test "preserve number literals" =
-  print ~compact:false
+  print
+    ~compact:false
     {|
      var x = 0xffff;
      var x = 0Xffff;
@@ -75,7 +78,8 @@ let%expect_test "preserve number literals" =
      var t = 1.0E+3;
      var t = 1e-3;
      var t = 1E+3; |};
-  [%expect {|
+  [%expect
+    {|
     var x=0xffff;
     var x=0Xffff;
     var y=071923;

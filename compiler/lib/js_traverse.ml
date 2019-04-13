@@ -803,7 +803,9 @@ let translate_assign_op = function
   | Minus -> MinusEq
   | _ -> assert false
 
-let is_one = function ENum "1" -> true | _ -> false
+let is_one = function
+  | ENum "1" -> true
+  | _ -> false
 
 let assign_op = function
   | exp, EBin (Plus, exp', exp'') -> (
@@ -814,9 +816,7 @@ let assign_op = function
         then Some (EUn (IncrB, exp))
         else Some (EBin (PlusEq, exp, exp''))
     | false, true ->
-        if is_one exp'
-        then Some (EUn (IncrB, exp))
-        else Some (EBin (PlusEq, exp, exp'))
+        if is_one exp' then Some (EUn (IncrB, exp)) else Some (EBin (PlusEq, exp, exp'))
     | true, true -> Some (EBin (StarEq, exp, ENum "2")))
   | exp, EBin (Minus, exp', y) when exp = exp' ->
       if is_one y then Some (EUn (DecrB, exp)) else Some (EBin (MinusEq, exp, y))
@@ -835,23 +835,20 @@ class simpl =
     inherit map as super
 
     method expression e =
-      let drop1 s =
-        String.sub s ~pos:1 ~len:(String.length s - 1)
-      in
+      let drop1 s = String.sub s ~pos:1 ~len:(String.length s - 1) in
       let e = super#expression e in
       match e with
       | EBin (Plus, e1, e2) -> (
         match e2, e1 with
-        | ENum n, _ when n.[0] = '-' ->
-           EBin (Minus, e1, ENum (drop1 n))
+        | ENum n, _ when n.[0] = '-' -> EBin (Minus, e1, ENum (drop1 n))
         | _, ENum n when n.[0] = '-' -> EBin (Minus, e2, ENum (drop1 n))
-        | ENum ("0"|"0."), (ENum _ as x) -> x
-        | (ENum _ as x), ENum ("0"|"0.") -> x
+        | ENum ("0" | "0."), (ENum _ as x) -> x
+        | (ENum _ as x), ENum ("0" | "0.") -> x
         | _ -> e)
       | EBin (Minus, e1, e2) -> (
         match e2, e1 with
         | ENum n, _ when n.[0] = '-' -> EBin (Plus, e1, ENum (drop1 n))
-        | (ENum _ as x), ENum ("0"|"0.") -> x
+        | (ENum _ as x), ENum ("0" | "0.") -> x
         | _ -> e)
       | _ -> e
 

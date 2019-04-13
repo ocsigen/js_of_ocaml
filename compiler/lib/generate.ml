@@ -1241,8 +1241,7 @@ and translate_instr ctx expr_queue loc instr =
       flush_queue
         expr_queue
         mutator_p
-        [ ( J.Expression_statement (J.EBin (J.PlusEq, J.EAccess (cx, int 1), int n))
-          , loc ) ]
+        [J.Expression_statement (J.EBin (J.PlusEq, J.EAccess (cx, int 1), int n)), loc]
   | Array_set (x, y, z) ->
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in
@@ -1543,8 +1542,7 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
         let l =
           List.flatten
             (List.map l ~f:(fun (ints, br) ->
-                 map_last (fun last i -> int i, if last then br else []) ints
-             ))
+                 map_last (fun last i -> int i, if last then br else []) ints))
         in
         !all_never, [J.Switch_statement (cx, l, Some last, []), loc]
   in
