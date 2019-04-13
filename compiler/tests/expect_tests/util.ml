@@ -64,8 +64,9 @@ let print_compiled_js ?(pretty = true) cmo_channel =
   in
   (try Jsoo.Driver.f pp debug_data program
    with e ->
-     call_all props;
+     List.iter props ~f:(fun f -> f ());
      raise e);
+  List.iter props ~f:(fun f -> f ());
   Buffer.contents buffer
 
 let compile_ocaml_to_bytecode source =
