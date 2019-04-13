@@ -17,24 +17,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
-open Import
+open Js_of_ocaml_compiler
 
-val parse_js : string -> J.program
+val parse_js : string -> Javascript.program
 
 val compile_ocaml_to_bytecode : string -> in_channel
 
 val print_compiled_js : ?pretty:bool -> in_channel -> string
 
 type find_result =
-  { expressions : J.expression list
-  ; statements : J.statement list
-  ; var_decls : J.variable_declaration list }
+  { expressions : Javascript.expression list
+  ; statements : Javascript.statement list
+  ; var_decls : Javascript.variable_declaration list }
 
 val find_javascript :
-     ?expression:(J.expression -> bool)
-  -> ?statement:(J.statement -> bool)
-  -> ?var_decl:(J.variable_declaration -> bool)
-  -> J.program
+     ?expression:(Javascript.expression -> bool)
+  -> ?statement:(Javascript.statement -> bool)
+  -> ?var_decl:(Javascript.variable_declaration -> bool)
+  -> Javascript.program
   -> find_result
 
-val expression_to_string : ?compact:bool -> J.expression -> string
+val expression_to_string : ?compact:bool -> Javascript.expression -> string

@@ -16,9 +16,10 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
-open Import
+open Js_of_ocaml_compiler
+open Js_of_ocaml_compiler.Stdlib
 
-let parse_js source = Jsoo.Parse_js.(parse (lexer_from_string source))
+let parse_js source = Parse_js.(parse (lexer_from_string source))
 
 let rev_prop accessor name value =
   let past = accessor () in
@@ -26,43 +27,37 @@ let rev_prop accessor name value =
   then fun () -> ()
   else if value
   then (
-    Jsoo.Config.Flag.enable name;
-    fun () -> Jsoo.Config.Flag.disable name)
+    Config.Flag.enable name;
+    fun () -> Config.Flag.disable name)
   else (
-    Jsoo.Config.Flag.disable name;
-    fun () -> Jsoo.Config.Flag.enable name)
-
-let rec call_all = function
-  | [] -> ()
-  | f :: rest ->
-      f ();
-      call_all rest
+    Config.Flag.disable name;
+    fun () -> Config.Flag.enable name)
 
 let print_compiled_js ?(pretty = true) cmo_channel =
   let program, _, debug_data, _ =
-    Jsoo.Parse_bytecode.from_channel ~debug:`Names cmo_channel
+    Parse_bytecode.from_channel ~debug:`Names cmo_channel
   in
   let buffer = Buffer.create 100 in
-  let pp = Jsoo.Pretty_print.to_buffer buffer in
+  let pp = Pretty_print.to_buffer buffer in
   let silence_compiler () =
-    let prev = !Jsoo.Stdlib.quiet in
-    Jsoo.Stdlib.quiet := true;
-    fun () -> Jsoo.Stdlib.quiet := prev
+    let prev = !Stdlib.quiet in
+    Stdlib.quiet := true;
+    fun () -> Stdlib.quiet := prev
   in
   let props =
     if pretty
     then
-      Jsoo.Config.Flag.
+      Config.Flag.
         [ rev_prop shortvar "shortvar" false
         ; rev_prop pretty "pretty" true
         ; silence_compiler () ]
     else
-      Jsoo.Config.Flag.
+      Config.Flag.
         [ rev_prop shortvar "shortvar" true
         ; rev_prop pretty "pretty" false
         ; silence_compiler () ]
   in
-  (try Jsoo.Driver.f pp debug_data program
+  (try Driver.f pp debug_data program
    with e ->
      List.iter props ~f:(fun f -> f ());
      raise e);
@@ -81,18 +76,18 @@ let compile_ocaml_to_bytecode source =
   open_in (Format.sprintf "%s.cmo" temp_file)
 
 type find_result =
-  { expressions : J.expression list
-  ; statements : J.statement list
-  ; var_decls : J.variable_declaration list }
+  { expressions : Javascript.expression list
+  ; statements : Javascript.statement list
+  ; var_decls : Javascript.variable_declaration list }
 
 type finder_fun =
-  { expression : J.expression -> unit
-  ; statement : J.statement -> unit
-  ; variable_decl : J.variable_declaration -> unit }
+  { expression : Javascript.expression -> unit
+  ; statement : Javascript.statement -> unit
+  ; variable_decl : Javascript.variable_declaration -> unit }
 
 class finder ff =
   object
-    inherit Jsoo.Js_traverse.map as super
+    inherit Js_traverse.map as super
 
     method! variable_declaration v =
       ff.variable_decl v;
@@ -123,9 +118,9 @@ let find_javascript
   {statements = !statements; expressions = !expressions; var_decls = !var_decls}
 
 let expression_to_string ?(compact = false) e =
-  let e = [J.Statement (J.Expression_statement e), J.N] in
+  let e = [Javascript.Statement (Javascript.Expression_statement e), Javascript.N] in
   let buffer = Buffer.create 17 in
-  let pp = Jsoo.Pretty_print.to_buffer buffer in
-  Jsoo.Pretty_print.set_compact pp compact;
-  Jsoo.Js_output.program pp e;
+  let pp = Pretty_print.to_buffer buffer in
+  Pretty_print.set_compact pp compact;
+  Js_output.program pp e;
   Buffer.contents buffer
