@@ -224,9 +224,9 @@ end
 
 let var x = J.EVar (J.V x)
 
-let int n = J.EInt (Int64.of_int n)
+let int n = J.ENum (string_of_int n)
 
-let int32 n = J.EInt (Int64.of_int32 n)
+let int32 n = J.ENum (Int32.to_string n)
 
 let unsigned x = J.EBin (J.Lsr, x, int 0)
 
@@ -235,13 +235,9 @@ let one = int 1
 let zero = int 0
 
 let plus_int x y =
-  (* In general, adding Javascript numbers together in the compiler is not safe
-     as we don't have a way to emulate actual Javascript addition. *)
   match x, y with
-  | J.EInt i, x when Int64.equal i Int64.zero -> x
-  | x, J.EInt i when Int64.equal i Int64.zero -> x
-  | J.EFloat 0., x
-  | x, J.EFloat 0. -> x
+  | J.ENum "0", x | x, J.ENum "0" -> x
+  | J.ENum x, J.ENum y -> J.ENum Int32.(to_string (add (of_string x) (of_string y)))
   | x, y -> J.EBin (J.Plus, x, y)
 
 let bool e = J.ECond (e, one, zero)
@@ -263,7 +259,7 @@ let source_location ctx ?after pc =
 
 (****)
 
-let float_const f = val_float (J.EFloat f)
+let float_const f = val_float (J.ENum (Javascript.string_of_float f))
 
 let s_var name = J.EVar (J.S {J.name; J.var = None})
 
@@ -1118,7 +1114,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             let i, queue =
               let (_px, cx), queue = access_queue' ~ctx queue size in
               match cx with
-              | J.EInt i -> Int64.to_int32 i, queue
+              | J.ENum i -> Int32.of_string i, queue
               | _ -> assert false
             in
             let args =

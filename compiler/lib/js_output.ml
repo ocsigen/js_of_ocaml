@@ -261,7 +261,7 @@ struct
         let out, lft, _rght = op_prec op in
         l <= out && need_paren lft e
     | ECall (e, _, _) | EAccess (e, _) | EDot (e, _) -> l <= 15 && need_paren 15 e
-    | EVar _ | EStr _ | EArr _ | EBool _ | EFloat _ | EInt _ | EQuote _ | ERegexp _ | EUn _ | ENew _
+    | EVar _ | EStr _ | EArr _ | EBool _ | ENum _ | EQuote _ | ERegexp _ | EUn _ | ENew _
       ->
         false
     | EFun _ | EObj _ -> true
@@ -377,14 +377,7 @@ struct
         let quote = best_string_quote s in
         pp_string f ~utf:(kind = `Utf8) ~quote s
     | EBool b -> PP.string f (if b then "true" else "false")
-    | EInt v ->
-      let s = Int64.to_string v in
-      let need_parent = v < Int64.zero && l > 13 in
-      if need_parent then PP.string f "(";
-      PP.string f s;
-      if need_parent then PP.string f ")"
-    | EFloat v ->
-        let s = Javascript.string_of_float v in
+    | ENum s ->
         let need_parent =
           if s.[0] = '-'
           then l > 13 (* Negative numbers may need to be parenthesized. *)
@@ -635,8 +628,7 @@ struct
     | PNS s ->
         let quote = best_string_quote s in
         pp_string f ~utf:true ~quote s
-    | PNFloat v -> expression 0 f (EFloat v)
-    | PNInt v -> expression 0 f (EInt v)
+    | PNN v -> expression 0 f (ENum v)
 
   and property_name_and_value_list f l =
     match l with

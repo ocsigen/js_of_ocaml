@@ -110,8 +110,7 @@ and property_name_and_value_list = (property_name * expression) list
 and property_name =
   | PNI of identifier
   | PNS of string
-  | PNInt of Int64.t
-  | PNFloat of float
+  | PNN of string
 
 and expression =
   | ESeq of expression * expression
@@ -130,8 +129,7 @@ and expression =
          escape sequences. *)
   | EArr of array_litteral
   | EBool of bool
-  | EInt of Int64.t
-  | EFloat of float
+  | ENum of string
   | EObj of property_name_and_value_list
   | EQuote of string
   | ERegexp of string * string option

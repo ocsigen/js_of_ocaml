@@ -177,31 +177,25 @@ rule initial tokinfo prev = parse
   | "0" ['X''x'] hexa+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_INT (s, Int64.of_string s, info)
+      T_NUMBER (s, info)
     }
   | '0'['0'-'7']+ {
       let s = tok lexbuf in
-      let s' = String.sub s 1 (String.length s - 1 ) in
       let info = tokinfo lexbuf in
-      T_INT (s, Int64.of_string ("0o"^s'), info)
+      T_NUMBER (s, info)
     }
 
   | ['0'-'9']*'.'?['0'-'9']+['e''E']['-''+']?['0'-'9']+ (* {1,3} *) {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_FLOAT(s, float_of_string s, info)
+      T_NUMBER (s, info)
     }
 
-  | ['0'-'9']+'.' |
+  | ['0'-'9']+'.'? |
     ['0'-'9']*'.'['0'-'9']+ {
       let s = tok lexbuf in
       let info = tokinfo lexbuf in
-      T_FLOAT(s, float_of_string s, info)
-    }
-  | ['0'-'9']+ (* {1,3} *) {
-      let s = tok lexbuf in
-      let info = tokinfo lexbuf in
-      T_INT (s, Int64.of_string s, info)
+      T_NUMBER (s, info)
     }
 
   (* ----------------------------------------------------------------------- *)
@@ -239,7 +233,7 @@ rule initial tokinfo prev = parse
       match prev with
       | Some (
             T_IDENTIFIER _
-          | T_INT _ | T_FLOAT _ | T_STRING _ | T_REGEX _
+          | T_NUMBER _ | T_STRING _ | T_REGEX _
           | T_FALSE _ | T_TRUE _ | T_NULL _
           | T_THIS _
           | T_INCR _ | T_DECR _

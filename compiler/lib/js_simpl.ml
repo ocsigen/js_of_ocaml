@@ -58,7 +58,7 @@ let rec enot_rec e =
         J.EUn (J.Not, e), 0
     | J.EBool b -> J.EBool (not b), 0
     | J.ECall _ | J.EAccess _ | J.EDot _ | J.ENew _ | J.EVar _ | J.EFun _ | J.EStr _
-     |J.EArr _ | J.EInt _ | J.EFloat _ | J.EObj _ | J.EQuote _ | J.ERegexp _
+     |J.EArr _ | J.ENum _ | J.EObj _ | J.EQuote _ | J.ERegexp _
      |J.EUn ((J.IncrA | J.IncrB | J.DecrA | J.DecrB), _) ->
         J.EUn (J.Not, e), 1
   in
@@ -108,13 +108,11 @@ let assignment_of_statement st =
 
 let simplify_condition = function
   (* | J.ECond _  -> J.ENum 1. *)
-  | J.ECond (e, J.EInt o, J.EInt z)
-    when Int64.(equal o one) && Int64.(equal z zero) -> e
-  | J.ECond (e, J.EInt z, J.EInt o)
-    when Int64.(equal o one) && Int64.(equal z zero) -> J.EUn (J.Not, e)
-  | J.ECond (J.EBin ((J.NotEqEq | J.NotEq), (J.EFloat _ | J.EInt _ as n), y), e1, e2)
-  | J.ECond (J.EBin ((J.NotEqEq | J.NotEq), y, (J.EFloat _ | J.EInt _ as n)), e1, e2) ->
-      J.ECond (J.EBin (J.Band, y, n), e1, e2)
+  | J.ECond (e, J.ENum "1", J.ENum "0") -> e
+  | J.ECond (e, J.ENum "0", J.ENum "1") -> J.EUn (J.Not, e)
+  | J.ECond (J.EBin ((J.NotEqEq | J.NotEq), J.ENum n, y), e1, e2)
+   |J.ECond (J.EBin ((J.NotEqEq | J.NotEq), y, J.ENum n), e1, e2) ->
+      J.ECond (J.EBin (J.Band, y, J.ENum n), e1, e2)
   | cond -> cond
 
 let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
@@ -191,7 +189,7 @@ let rec get_variable acc = function
       List.fold_left get_variable acc (e1 :: el)
   | J.EVar (J.V v) -> Code.Var.Set.add v acc
   | J.EVar (J.S _) -> acc
-  | J.EFun _ | J.EStr _ | J.EBool _ | J.EFloat _ | J.EInt _ | J.EQuote _ | J.ERegexp _ -> acc
+  | J.EFun _ | J.EStr _ | J.EBool _ | J.ENum _ | J.EQuote _ | J.ERegexp _ -> acc
   | J.EArr a ->
       List.fold_left
         (fun acc i ->

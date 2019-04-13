@@ -19,36 +19,56 @@
 
 open Js_of_ocaml_compiler
 
-let print_compacted source =
+let print ~compact source =
   let buffer = Buffer.create (String.length source) in
   let pp = Pretty_print.to_buffer buffer in
-  Pretty_print.set_compact pp true;
+  Pretty_print.set_compact pp compact;
   let lexed = Parse_js.lexer_from_string source in
   let parsed = Parse_js.parse lexed in
   Js_output.program pp parsed;
   print_endline (Buffer.contents buffer)
 
 let%expect_test "no postfix addition coalesce" =
-  print_compacted "a + +b";
+  print ~compact:true "a + +b";
   [%expect {|
     a+
     +b; |}]
 
 let%expect_test "no postfix subtraction coalesce" =
-  print_compacted "a - -b";
+  print ~compact:true "a - -b";
   [%expect {|
     a-
     -b; |}]
 
 let%expect_test "reserved words as fields" =
-  print_compacted
+  print ~compact:false
     {|
     x.debugger;
     x.catch;
+    x.for;
+    x.continue;
     var y = { debugger : 2 }
     var y = { catch : 2 }
+    var y = { for : 2 }
+    var y = { continue : 2 }
   |};
   [%expect {|
-    x.debugger;x.catch;var
+    x.debugger;
+    x.catch;var
     y={debugger:2};var
     y={catch:2}; |}]
+
+let%expect_test "preserve number literals" =
+  print ~compact:false
+    {|
+     var x = 0xffff;
+     var x = 0Xffff;
+     var y = 071923;
+     var y = 07123;
+     var z = 0.0;
+     var z = 0.;
+     var t = 1.0e-3;
+     var t = 1.0E+3;
+     var t = 1e-3;
+     var t = 1E+3; |};
+  [%expect {||}]

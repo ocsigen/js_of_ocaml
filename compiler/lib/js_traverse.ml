@@ -147,8 +147,7 @@ class map : mapper =
       | EObj l -> EObj (List.map l ~f:(fun (i, e) -> i, m#expression e))
       | (EStr _ as x)
        |(EBool _ as x)
-       |(EFloat _ as x)
-       |(EInt _ as x)
+       |(ENum _ as x)
        |(EQuote _ as x)
        |(ERegexp _ as x) ->
           x
@@ -206,7 +205,7 @@ class map_for_share_constant =
     (* do not replace constant in switch case *)
     method switch_case e =
       match e with
-      | EFloat _ | EInt _ | EStr _ -> e
+      | ENum _ | EStr _ -> e
       | _ -> m#expression e
 
     method sources l =
@@ -239,7 +238,7 @@ class share_constant =
             let n = try Hashtbl.find count e with Not_found -> 0 in
             Hashtbl.replace count e (n + 1);
             e
-        | EStr (_, _) | EFloat _ | EInt _ ->
+        | EStr (_, _) | ENum _ ->
             let n = try Hashtbl.find count e with Not_found -> 0 in
             Hashtbl.replace count e (n + 1);
             e
@@ -258,12 +257,7 @@ class share_constant =
                 if String.length s < 20
                 then Some ("str_" ^ s)
                 else Some ("str_" ^ String.sub s ~pos:0 ~len:16 ^ "_abr")
-            | EInt i when n > 1 ->
-                let s = Int64.to_string i in
-                let l = String.length s in
-                if l > 2 then Some ("num_" ^ s) else None
-            | EFloat f when n > 1 ->
-                let s = Javascript.string_of_float f in
+            | ENum s when n > 1 ->
                 let l = String.length s in
                 if l > 2 then Some ("num_" ^ s) else None
             | _ -> None
@@ -809,13 +803,9 @@ let translate_assign_op = function
   | Minus -> MinusEq
   | _ -> assert false
 
-let assign_op =
-  let is_one = function
-    | EFloat 1.0 -> true
-    | EInt i when Int64.equal i Int64.one -> true
-    | _ -> false
-  in
-  function
+let is_one = function ENum "1" -> true | _ -> false
+
+let assign_op = function
   | exp, EBin (Plus, exp', exp'') -> (
     match exp = exp', exp = exp'' with
     | false, false -> None
@@ -827,7 +817,7 @@ let assign_op =
         if is_one exp'
         then Some (EUn (IncrB, exp))
         else Some (EBin (PlusEq, exp, exp'))
-    | true, true -> Some (EBin (StarEq, exp, EInt (Int64.of_int 2))))
+    | true, true -> Some (EBin (StarEq, exp, ENum "2")))
   | exp, EBin (Minus, exp', y) when exp = exp' ->
       if is_one y then Some (EUn (DecrB, exp)) else Some (EBin (MinusEq, exp, y))
   | exp, EBin (Mul, exp', exp'') -> (
@@ -845,28 +835,23 @@ class simpl =
     inherit map as super
 
     method expression e =
+      let drop1 s =
+        String.sub s ~pos:1 ~len:(String.length s - 1)
+      in
       let e = super#expression e in
       match e with
       | EBin (Plus, e1, e2) -> (
         match e2, e1 with
-        | EFloat n, _ when n < 0. -> EBin (Minus, e1, EFloat (-.n))
-        | _, EFloat n when n < 0. -> EBin (Minus, e2, EFloat (-.n))
-
-        | EInt n, _ when n < Int64.zero -> EBin (Minus, e1, EInt (Int64.neg n))
-        | _, EInt n when n < Int64.zero -> EBin (Minus, e2, EInt (Int64.neg n))
-
-        | (EFloat 0., ((EInt _ | EFloat _) as x)) -> x
-        | ((EInt _ | EFloat _ ) as x), EFloat 0. -> x
-
-        | (EInt i, ((EInt _ | EFloat _) as x)) when Int64.equal i Int64.zero -> x
-        | ((EInt _ | EFloat _ ) as x), EInt i when Int64.equal i Int64.zero -> x
+        | ENum n, _ when n.[0] = '-' ->
+           EBin (Minus, e1, ENum (drop1 n))
+        | _, ENum n when n.[0] = '-' -> EBin (Minus, e2, ENum (drop1 n))
+        | ENum ("0"|"0."), (ENum _ as x) -> x
+        | (ENum _ as x), ENum ("0"|"0.") -> x
         | _ -> e)
       | EBin (Minus, e1, e2) -> (
         match e2, e1 with
-        | EFloat n, _ when n < 0. -> EBin (Plus, e1, EFloat (-.n))
-        | EInt i, _ when i < Int64.zero -> EBin (Plus, e1, EInt (Int64.neg i))
-        | ((EFloat _ | EInt _) as x), EFloat 0. -> x
-        | ((EFloat _ | EInt _) as x), EInt i when Int64.equal i Int64.zero -> x
+        | ENum n, _ when n.[0] = '-' -> EBin (Plus, e1, ENum (drop1 n))
+        | (ENum _ as x), ENum ("0"|"0.") -> x
         | _ -> e)
       | _ -> e
 

@@ -48,8 +48,7 @@ let _tok = EOF Parse_info.zero
 (*-----------------------------------------*)
 
 (* Tokens with a value *)
-%token<string * float * Parse_info.t> T_FLOAT
-%token<string * Int64.t * Parse_info.t> T_INT
+%token<string * Parse_info.t> T_NUMBER
 %token<string * Parse_info.t> T_IDENTIFIER
 %token<string * Parse_info.t> T_STRING
 %token<string * Parse_info.t> T_REGEX
@@ -416,8 +415,7 @@ primary_expression_no_statement:
  | variable_with_loc { let (i, pi) = $1 in (pi, J.EVar (var i)) }
  | n=null_literal    { n }
  | b=boolean_literal { b }
- | float_literal     { let (start, n) = $1 in (start, J.EFloat n) }
- | int_literal       { let (start, n) = $1 in (start, J.EInt n) }
+ | numeric_literal   { let (start, n) = $1 in (start, J.ENum n) }
  | T_STRING          { let (s, start) = $1 in (start, J.EStr (s, `Utf8)) }
    (* marcel: this isn't an expansion of literal in ECMA-262... mistake? *)
  | r=regex_literal                { r }
@@ -522,11 +520,8 @@ boolean_literal:
  | pi=T_TRUE  { (pi, J.EBool true) }
  | pi=T_FALSE { (pi, J.EBool false) }
 
-float_literal:
- | T_FLOAT { let (_, f, pi) = $1 in (pi, f) }
-
-int_literal:
- | T_INT { let (_, i, pi) = $1 in (pi, i) }
+numeric_literal:
+ | T_NUMBER { let (f, pi) = $1 in (pi, f) }
 
 regex_literal:
  | T_REGEX {
@@ -640,8 +635,7 @@ label:
 property_name:
  | i=identifier_or_kw { J.PNI i }
  | s=T_STRING         { J.PNS (fst s) }
- | n=float_literal { J.PNFloat (snd n) }
- | n=int_literal   { J.PNInt   (snd n) }
+ | n=numeric_literal  { J.PNN (snd n) }
 
 (*************************************************************************)
 (* 1 xxx_opt, xxx_list                                                   *)

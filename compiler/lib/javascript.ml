@@ -116,8 +116,7 @@ and property_name_and_value_list = (property_name * expression) list
 and property_name =
   | PNI of identifier
   | PNS of string
-  | PNInt of Int64.t
-  | PNFloat of float
+  | PNN of string
 
 and expression =
   | ESeq of expression * expression
@@ -133,8 +132,7 @@ and expression =
   | EStr of string * [`Bytes | `Utf8]
   | EArr of array_litteral
   | EBool of bool
-  | EInt of Int64.t
-  | EFloat of float
+  | ENum of string
   | EObj of property_name_and_value_list
   | EQuote of string
   | ERegexp of string * string option
@@ -224,13 +222,12 @@ let string_of_float v =
   else if v <> v
   then "NaN" (* [1/-0] = -inf seems to be the only way to detect -0 in JavaScript *)
   else if v = 0. && 1. /. v = neg_infinity
-  then "-0"
+  then "-0."
   else
     let vint = int_of_float v in
     (* compiler 1000 into 1e3 *)
     if float_of_int vint = v
-    then
-      Printf.sprintf "%d.0" vint
+    then Printf.sprintf "%d." vint
     else
       let s1 = Printf.sprintf "%.12g" v in
       if v = float_of_string s1
