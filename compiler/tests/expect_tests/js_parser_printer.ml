@@ -54,9 +54,13 @@ let%expect_test "reserved words as fields" =
   |};
   [%expect {|
     x.debugger;
-    x.catch;var
-    y={debugger:2};var
-    y={catch:2}; |}]
+    x.catch;
+    x.for;
+    x.continue;
+    var y={debugger:2};
+    var y={catch:2};
+    var y={for:2};
+    var y={continue:2}; |}]
 
 let%expect_test "preserve number literals" =
   print ~compact:false
@@ -71,4 +75,14 @@ let%expect_test "preserve number literals" =
      var t = 1.0E+3;
      var t = 1e-3;
      var t = 1E+3; |};
-  [%expect {||}]
+  [%expect {|
+    var x=0xffff;
+    var x=0Xffff;
+    var y=071923;
+    var y=07123;
+    var z=0.0;
+    var z=0.;
+    var t=1.0e-3;
+    var t=1.0E+3;
+    var t=1e-3;
+    var t=1E+3; |}]
