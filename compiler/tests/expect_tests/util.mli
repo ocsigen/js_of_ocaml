@@ -19,36 +19,22 @@
 
 open Js_of_ocaml_compiler
 
-let print_compacted source =
-  let buffer = Buffer.create (String.length source) in
-  let pp = Pretty_print.to_buffer buffer in
-  Pretty_print.set_compact pp true;
-  let lexed = Parse_js.lexer_from_string source in
-  let parsed = Parse_js.parse lexed in
-  Js_output.program pp parsed;
-  print_endline (Buffer.contents buffer)
+val parse_js : string -> Javascript.program
 
-let%expect_test "no postfix addition coalesce" =
-  print_compacted "a + +b";
-  [%expect {|
-    a+
-    +b; |}]
+val compile_ocaml_to_bytecode : string -> in_channel
 
-let%expect_test "no postfix subtraction coalesce" =
-  print_compacted "a - -b";
-  [%expect {|
-    a-
-    -b; |}]
+val print_compiled_js : ?pretty:bool -> in_channel -> string
 
-let%expect_test "reserved words as fields" =
-  print_compacted
-    {|
-    x.debugger;
-    x.catch;
-    var y = { debugger : 2 }
-    var y = { catch : 2 }
-  |};
-  [%expect {|
-    x.debugger;x.catch;var
-    y={debugger:2};var
-    y={catch:2}; |}]
+type find_result =
+  { expressions : Javascript.expression list
+  ; statements : Javascript.statement list
+  ; var_decls : Javascript.variable_declaration list }
+
+val find_javascript :
+     ?expression:(Javascript.expression -> bool)
+  -> ?statement:(Javascript.statement -> bool)
+  -> ?var_decl:(Javascript.variable_declaration -> bool)
+  -> Javascript.program
+  -> find_result
+
+val expression_to_string : ?compact:bool -> Javascript.expression -> string

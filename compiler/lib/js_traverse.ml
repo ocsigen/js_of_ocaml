@@ -36,6 +36,9 @@ class type mapper =
          (Javascript.expression * Javascript.location) option
       -> (Javascript.expression * Javascript.location) option
 
+    method variable_declaration :
+      Javascript.variable_declaration -> Javascript.variable_declaration
+
     method statement : Javascript.statement -> Javascript.statement
 
     method statement_o :
@@ -60,12 +63,12 @@ class map : mapper =
 
     method statements l = List.map l ~f:(fun (s, pc) -> m#statement s, pc)
 
+    method variable_declaration (id, eo) = m#ident id, m#initialiser_o eo
+
     method statement s =
       match s with
       | Block b -> Block (m#statements b)
-      | Variable_statement l ->
-          Variable_statement
-            (List.map l ~f:(fun (id, eo) -> m#ident id, m#initialiser_o eo))
+      | Variable_statement l -> Variable_statement (List.map l ~f:m#variable_declaration)
       | Empty_statement -> Empty_statement
       | Debugger_statement -> Debugger_statement
       | Expression_statement e -> Expression_statement (m#expression e)

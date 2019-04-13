@@ -32,6 +32,9 @@ class type mapper =
     method initialiser_o :
       (expression * location) option -> (expression * location) option
 
+    method variable_declaration :
+      Javascript.variable_declaration -> Javascript.variable_declaration
+
     method statement : statement -> statement
 
     method statements : statement_list -> statement_list
