@@ -377,8 +377,7 @@ struct
         let quote = best_string_quote s in
         pp_string f ~utf:(kind = `Utf8) ~quote s
     | EBool b -> PP.string f (if b then "true" else "false")
-    | ENum v ->
-        let s = Javascript.string_of_number v in
+    | ENum s ->
         let need_parent =
           if s.[0] = '-'
           then l > 13 (* Negative numbers may need to be parenthesized. *)

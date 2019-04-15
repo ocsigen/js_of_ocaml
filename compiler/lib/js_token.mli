@@ -46,7 +46,7 @@ type token =
   | T_PLING of Parse_info.t
   | T_PERIOD of Parse_info.t
   | T_OR of Parse_info.t
-  | T_NUMBER of (string * float * Parse_info.t)
+  | T_NUMBER of (string * Parse_info.t)
   | T_NULL of Parse_info.t
   | T_NOT_EQUAL of Parse_info.t
   | T_NOT of Parse_info.t

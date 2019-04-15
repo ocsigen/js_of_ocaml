@@ -257,8 +257,7 @@ class share_constant =
                 if String.length s < 20
                 then Some ("str_" ^ s)
                 else Some ("str_" ^ String.sub s ~pos:0 ~len:16 ^ "_abr")
-            | ENum f when n > 1 ->
-                let s = Javascript.string_of_number f in
+            | ENum s when n > 1 ->
                 let l = String.length s in
                 if l > 2 then Some ("num_" ^ s) else None
             | _ -> None
@@ -804,21 +803,23 @@ let translate_assign_op = function
   | Minus -> MinusEq
   | _ -> assert false
 
+let is_one = function
+  | ENum "1" -> true
+  | _ -> false
+
 let assign_op = function
   | exp, EBin (Plus, exp', exp'') -> (
     match exp = exp', exp = exp'' with
     | false, false -> None
     | true, false ->
-        if exp'' = ENum 1.
+        if is_one exp''
         then Some (EUn (IncrB, exp))
         else Some (EBin (PlusEq, exp, exp''))
     | false, true ->
-        if exp' = ENum 1.
-        then Some (EUn (IncrB, exp))
-        else Some (EBin (PlusEq, exp, exp'))
-    | true, true -> Some (EBin (StarEq, exp, ENum 2.)))
+        if is_one exp' then Some (EUn (IncrB, exp)) else Some (EBin (PlusEq, exp, exp'))
+    | true, true -> Some (EBin (StarEq, exp, ENum "2")))
   | exp, EBin (Minus, exp', y) when exp = exp' ->
-      if y = ENum 1. then Some (EUn (DecrB, exp)) else Some (EBin (MinusEq, exp, y))
+      if is_one y then Some (EUn (DecrB, exp)) else Some (EBin (MinusEq, exp, y))
   | exp, EBin (Mul, exp', exp'') -> (
     match exp = exp', exp = exp'' with
     | false, false -> None
@@ -834,19 +835,20 @@ class simpl =
     inherit map as super
 
     method expression e =
+      let drop1 s = String.sub s ~pos:1 ~len:(String.length s - 1) in
       let e = super#expression e in
       match e with
       | EBin (Plus, e1, e2) -> (
         match e2, e1 with
-        | ENum n, _ when n < 0. -> EBin (Minus, e1, ENum (-.n))
-        | _, ENum n when n < 0. -> EBin (Minus, e2, ENum (-.n))
-        | ENum 0., (ENum _ as x) -> x
-        | (ENum _ as x), ENum 0. -> x
+        | ENum n, _ when n.[0] = '-' -> EBin (Minus, e1, ENum (drop1 n))
+        | _, ENum n when n.[0] = '-' -> EBin (Minus, e2, ENum (drop1 n))
+        | ENum ("0" | "0."), (ENum _ as x) -> x
+        | (ENum _ as x), ENum ("0" | "0.") -> x
         | _ -> e)
       | EBin (Minus, e1, e2) -> (
         match e2, e1 with
-        | ENum n, _ when n < 0. -> EBin (Plus, e1, ENum (-.n))
-        | (ENum _ as x), ENum 0. -> x
+        | ENum n, _ when n.[0] = '-' -> EBin (Plus, e1, ENum (drop1 n))
+        | (ENum _ as x), ENum ("0" | "0.") -> x
         | _ -> e)
       | _ -> e
 
