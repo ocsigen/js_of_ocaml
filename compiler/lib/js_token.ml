@@ -47,7 +47,7 @@ type token =
   | T_PLING of Parse_info.t
   | T_PERIOD of Parse_info.t
   | T_OR of Parse_info.t
-  | T_NUMBER of (string * float * Parse_info.t)
+  | T_NUMBER of (string * Parse_info.t)
   | T_NULL of Parse_info.t
   | T_NOT_EQUAL of Parse_info.t
   | T_NOT of Parse_info.t
@@ -117,7 +117,7 @@ let info_of_tok = function
   | TCommentML (ii, _) -> ii
   | EOF ii -> ii
   | T_DEBUGGER ii -> ii
-  | T_NUMBER (_, _, ii) -> ii
+  | T_NUMBER (_, ii) -> ii
   | T_IDENTIFIER (_, ii) -> ii
   | T_STRING (_, ii) -> ii
   | T_REGEX (_, ii) -> ii
@@ -209,7 +209,7 @@ let string_of_tok = function
   | TCommentML (_, _) -> "COMMENT"
   | EOF _ -> "EOF"
   | T_DEBUGGER _ -> "DEBUGGER"
-  | T_NUMBER (_, _, _) -> "T_NUMBER"
+  | T_NUMBER (_, _) -> "T_NUMBER"
   | T_IDENTIFIER (_, _) -> "T_IDENTIFIER"
   | T_STRING (_, _) -> "T_STRING"
   | T_REGEX (_, _) -> "T_REGEX"

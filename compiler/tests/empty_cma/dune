@@ -3,8 +3,7 @@
   (action (progn
             (run %{bin:ocamlc} -a -o empty.cma)
             (run %{bin:js_of_ocaml} --pretty -o empty.js --no-runtime
-                 %{lib:js_of_ocaml-compiler:runtime.js} empty.cma 
-            ))))
+                 %{lib:js_of_ocaml-compiler:runtime.js} empty.cma))))
 
 (alias
   (name runtest)

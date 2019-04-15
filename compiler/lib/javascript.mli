@@ -110,7 +110,7 @@ and property_name_and_value_list = (property_name * expression) list
 and property_name =
   | PNI of identifier
   | PNS of string
-  | PNN of float
+  | PNN of string
 
 and expression =
   | ESeq of expression * expression
@@ -129,7 +129,7 @@ and expression =
          escape sequences. *)
   | EArr of array_litteral
   | EBool of bool
-  | ENum of float
+  | ENum of string
   | EObj of property_name_and_value_list
   | EQuote of string
   | ERegexp of string * string option
@@ -200,7 +200,7 @@ and source_element =
 
 val compare_ident : ident -> ident -> int
 
-val string_of_number : float -> string
+val string_of_float : float -> string
 
 val is_ident : string -> bool
 

@@ -235,9 +235,9 @@ end
 
 let var x = J.EVar (J.V x)
 
-let int n = J.ENum (float n)
+let int n = J.ENum (string_of_int n)
 
-let int32 n = J.ENum (Int32.to_float n)
+let int32 n = J.ENum (Int32.to_string n)
 
 let unsigned x = J.EBin (J.Lsr, x, int 0)
 
@@ -247,8 +247,8 @@ let zero = int 0
 
 let plus_int x y =
   match x, y with
-  | J.ENum 0., x | x, J.ENum 0. -> x
-  | J.ENum x, J.ENum y -> J.ENum Int32.(to_float (add (of_float x) (of_float y)))
+  | J.ENum "0", x | x, J.ENum "0" -> x
+  | J.ENum x, J.ENum y -> J.ENum Int32.(to_string (add (of_string x) (of_string y)))
   | x, y -> J.EBin (J.Plus, x, y)
 
 let bool e = J.ECond (e, one, zero)
@@ -282,7 +282,7 @@ let source_location ctx ?after pc =
 
 (****)
 
-let float_const f = val_float (J.ENum f)
+let float_const f = val_float (J.ENum (Javascript.string_of_float f))
 
 let s_var name = J.EVar (J.S {J.name; J.var = None})
 
@@ -697,7 +697,7 @@ let parallel_renaming params args continuation queue =
 let apply_fun_raw ctx f params =
   let n = List.length params in
   J.ECond
-    ( J.EBin (J.EqEq, J.EDot (f, "length"), J.ENum (float n))
+    ( J.EBin (J.EqEq, J.EDot (f, "length"), int n)
     , J.ECall (f, params, J.N)
     , J.ECall
         ( runtime_fun ctx "caml_call_gen"
@@ -732,7 +732,7 @@ let apply_fun ctx f params loc =
 
 (****)
 
-let to_int cx = J.EBin (J.Bor, cx, J.ENum 0.)
+let to_int cx = J.EBin (J.Bor, cx, int 0)
 
 (* 32 bit ints *)
 
@@ -950,12 +950,12 @@ let throw_statement ctx cx k loc =
   | `Normal ->
       [ ( J.Throw_statement
             (J.ECall
-               (runtime_fun ctx "caml_exn_with_js_backtrace", [cx; bool (J.ENum 1.)], loc))
+               (runtime_fun ctx "caml_exn_with_js_backtrace", [cx; bool (int 1)], loc))
         , loc ) ]
   | `Reraise ->
       [ ( J.Throw_statement
             (J.ECall
-               (runtime_fun ctx "caml_exn_with_js_backtrace", [cx; bool (J.ENum 0.)], loc))
+               (runtime_fun ctx "caml_exn_with_js_backtrace", [cx; bool (int 0)], loc))
         , loc ) ]
 
 let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
@@ -1025,7 +1025,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
       let ins =
         if Config.Flag.debugger () then J.Debugger_statement else J.Empty_statement
       in
-      (J.ENum 0., const_p, queue), [ins, loc]
+      (int 0, const_p, queue), [ins, loc]
   | Prim (p, l) ->
       let res =
         match p, l with
@@ -1143,7 +1143,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             let i, queue =
               let (_px, cx), queue = access_queue' ~ctx queue size in
               match cx with
-              | J.ENum i -> Int32.of_float i, queue
+              | J.ENum i -> Int32.of_string i, queue
               | _ -> assert false
             in
             let args =
@@ -1564,8 +1564,7 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
         let l =
           List.flatten
             (List.map l ~f:(fun (ints, br) ->
-                 map_last (fun last i -> J.ENum (float i), if last then br else []) ints
-             ))
+                 map_last (fun last i -> int i, if last then br else []) ints))
         in
         !all_never, [J.Switch_statement (cx, l, Some last, []), loc]
   in

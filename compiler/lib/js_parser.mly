@@ -48,7 +48,7 @@ let _tok = EOF Parse_info.zero
 (*-----------------------------------------*)
 
 (* Tokens with a value *)
-%token<string * float * Parse_info.t> T_NUMBER
+%token<string * Parse_info.t> T_NUMBER
 %token<string * Parse_info.t> T_IDENTIFIER
 %token<string * Parse_info.t> T_STRING
 %token<string * Parse_info.t> T_REGEX
@@ -521,7 +521,7 @@ boolean_literal:
  | pi=T_FALSE { (pi, J.EBool false) }
 
 numeric_literal:
- | T_NUMBER { let (_, f, pi) = $1 in (pi, f) }
+ | T_NUMBER { let (f, pi) = $1 in (pi, f) }
 
 regex_literal:
  | T_REGEX {

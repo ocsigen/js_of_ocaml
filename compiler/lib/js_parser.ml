@@ -23923,7 +23923,7 @@ and _menhir_run9 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 
 and _menhir_run10 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 51 "js_parser.mly"
-      (string * float * Parse_info.t)
+      (string * Parse_info.t)
 # 23928 "js_parser.ml"
 ) -> 'ttv_return =
   fun _menhir_env _menhir_stack _menhir_s _v ->
@@ -23933,16 +23933,16 @@ and _menhir_run10 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
     let (_menhir_s : _menhir_state) = _menhir_s in
     let ((_1 : (
 # 51 "js_parser.mly"
-      (string * float * Parse_info.t)
+      (string * Parse_info.t)
 # 23938 "js_parser.ml"
     )) : (
 # 51 "js_parser.mly"
-      (string * float * Parse_info.t)
+      (string * Parse_info.t)
 # 23942 "js_parser.ml"
     )) = _v in
     ((let _v : 'tv_numeric_literal = 
 # 524 "js_parser.mly"
-            ( let (_, f, pi) = _1 in (pi, f) )
+            ( let (f, pi) = _1 in (pi, f) )
 # 23947 "js_parser.ml"
      in
     let (_menhir_env : _menhir_env) = _menhir_env in
