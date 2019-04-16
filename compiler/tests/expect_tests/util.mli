@@ -38,3 +38,5 @@ val find_javascript :
   -> find_result
 
 val expression_to_string : ?compact:bool -> Javascript.expression -> string
+
+val print_var_decl : Javascript.program -> string -> unit

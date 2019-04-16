@@ -124,3 +124,16 @@ let expression_to_string ?(compact = false) e =
   Pretty_print.set_compact pp compact;
   Js_output.program pp e;
   Buffer.contents buffer
+
+let print_var_decl program n =
+  let {var_decls; _} =
+    find_javascript
+      ~var_decl:(function
+        | Javascript.S {name; _}, _ when name = n -> true
+        | _ -> false)
+      program
+  in
+  print_string (Format.sprintf "var %s = " n);
+  match var_decls with
+  | [(_, Some (expression, _))] -> print_string (expression_to_string expression)
+  | _ -> print_endline "not found"
