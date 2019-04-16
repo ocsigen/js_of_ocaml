@@ -4,16 +4,19 @@ authors:      "Ocsigen team"
 bug-reports:  "https://github.com/ocsigen/js_of_ocaml/issues"
 homepage:     "http://ocsigen.org/js_of_ocaml"
 dev-repo:     "git+https://github.com/ocsigen/js_of_ocaml.git"
-
-name: "js_of_ocaml-compiler"
-version: "dev"
+synopsis:     "Compiler from OCaml bytecode to Javascript"
+description: """
+Js_of_ocaml is a compiler from OCaml bytecode to JavaScript.
+It makes it possible to run pure OCaml programs in JavaScript
+environment like browsers and Node.js
+"""
 
 build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
   "ocaml" {>= "4.02.0"}
   "dune" {build & >= "1.2"}
-  "ppx_expect" {test & >= "0.12.0"}
+  "ppx_expect" {with-test & >= "0.12.0"}
   "cmdliner"
   "cppo" {>= "1.1.0"}
   "yojson" # It's optional, but we want users to be able to use source-map without pain.
@@ -25,5 +28,3 @@ conflicts: [
   "ocamlfind"   {< "1.5.1"}
   "js_of_ocaml" {< "3.0"}
 ]
-
-synopsis: "Compiler from OCaml bytecode to Javascript"

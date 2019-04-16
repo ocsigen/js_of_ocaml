@@ -1,9 +1,10 @@
-===== 3.4.0 (??????????) - ????????? =====
+===== 3.4.0 (2019-04-15) - Hong Kong =====
  * Features/Changes
  ** Compiler: Support reproducible builds by using BUILD_PATH_PREFIX_MAP
  ** Compiler: Remove support for ocaml < 4.02.3
  ** Compiler: use paths from debug info when looking to looking cmis to embed
  ** Compiler: refactoring, renaming
+ ** Compiler: make float litterals look like float (#767)
  ** Misc: use ocamlformat
  ** Misc: dunify the build of the toplevel
  ** Misc: support for OCaml 4.08
@@ -16,8 +17,10 @@
  ** Compiler, Runtime: make --setenv work with Sys.getenv_opt
  ** Compiler: fix miscompilation of Obj.is_int with a match expression
  ** Compiler: fix quadratic behaviour in findlib.ml
+ ** Compiler: prevent addition with a positively-signed number from being coalesced… (#764)
  ** Runtime: make obj_dup work on string/bytes
  ** Runtime: fix bad hash function on int64
+ ** Runtime: avoid redundant conversion to string in fs_fake.js
 
 ===== 3.3.0 (2018-11-26) - Hong Kong =====
  * Features/Changes
