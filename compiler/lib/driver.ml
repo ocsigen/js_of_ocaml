@@ -287,38 +287,38 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
 let macro recurse fallthrough =
   let module J = Javascript in
   function
-  | "BLOCK", (tag: J.expression) :: args ->
-    let tag = Some tag in
-    let len = Some (J.ENum (string_of_int (List.length args))) in
-    let args = List.map ~f:(fun a -> Some (recurse a)) args in
-    J.EArr (tag :: len :: args)
-  | "TAG",  [e] -> J.EAccess (recurse e, J.ENum "0")
+  | "BLOCK", (tag : J.expression) :: args ->
+      let tag = Some tag in
+      let args = List.map ~f:(fun a -> Some (recurse a)) args in
+      J.EArr (tag :: args)
+  | "TAG", [e] -> J.EAccess (recurse e, J.ENum "0")
   | "LENGTH", [e] -> J.EDot (recurse e, "length")
   | "FIELD", [e; J.ENum n] ->
-    let idx = int_of_string n in
-    let adjusted = J.ENum (string_of_int (idx + 1)) in
-    J.EAccess (recurse e, adjusted)
+      let idx = int_of_string n in
+      let adjusted = J.ENum (string_of_int (idx + 1)) in
+      J.EAccess (recurse e, adjusted)
   | "FIELD", [e; idx] ->
-    let adjusted = J.EBin (J.Plus, J.ENum "1", recurse idx) in
-    J.EAccess (recurse e, adjusted)
+      let adjusted = J.EBin (J.Plus, J.ENum "1", recurse idx) in
+      J.EAccess (recurse e, adjusted)
   | "ISBLOCK", [_] -> failwith "what is this?"
-  | "BLOCK", _ |  "TAG", _ | "LENGTH", _ | "FIELD", _ | "ISBLOCK", _ ->
-    assert false;
+  | ("BLOCK", _ | "TAG", _ | "LENGTH", _ | "FIELD", _ | "ISBLOCK", _) as s ->
+      let s, _ = s in
+      failwith (Format.sprintf "macro %s called with inappropriate arguments" s)
   | _ -> fallthrough ()
 
+class macro_mapper =
+  object (m)
+    inherit Js_traverse.map as super
 
-class macro_mapper = object (m)
-  inherit Js_traverse.map as super
-
-  method expression x =
-    let module J = Javascript in
-    let fallthrough () = super#expression x in
-    let recurse = m#expression in
-    match x with
-    | J.ECall (J.EVar (J.S {name; _}), args, _) ->
-      macro recurse fallthrough (name, args)
-    | _ -> fallthrough ()
-end
+    method expression x =
+      let module J = Javascript in
+      let fallthrough () = super#expression x in
+      let recurse = m#expression in
+      match x with
+      | J.ECall (J.EVar (J.S {name; _}), args, _) ->
+          macro recurse fallthrough (name, args)
+      | _ -> fallthrough ()
+  end
 
 let run_macro js =
   let trav = new macro_mapper in
@@ -507,3 +507,7 @@ let from_string prims s formatter =
 let profiles = [1, o1; 2, o2; 3, o3]
 
 let profile i = try Some (List.assoc i profiles) with Not_found -> None
+
+module For_testing = struct
+  let macro = run_macro
+end
