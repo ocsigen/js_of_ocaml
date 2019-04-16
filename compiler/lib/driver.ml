@@ -284,6 +284,46 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
     in
     Linker.link js linkinfos
 
+let macro recurse fallthrough =
+  let module J = Javascript in
+  function
+  | "BLOCK", (tag: J.expression) :: args ->
+    let tag = Some tag in
+    let len = Some (J.ENum (string_of_int (List.length args))) in
+    let args = List.map ~f:(fun a -> Some (recurse a)) args in
+    J.EArr (tag :: len :: args)
+  | "TAG",  [e] -> J.EAccess (recurse e, J.ENum "0")
+  | "LENGTH", [e] -> J.EDot (recurse e, "length")
+  | "FIELD", [e; J.ENum n] ->
+    let idx = int_of_string n in
+    let adjusted = J.ENum (string_of_int (idx + 1)) in
+    J.EAccess (recurse e, adjusted)
+  | "FIELD", [e; idx] ->
+    let adjusted = J.EBin (J.Plus, J.ENum "1", recurse idx) in
+    J.EAccess (recurse e, adjusted)
+  | "ISBLOCK", [_] -> failwith "what is this?"
+  | "BLOCK", _ |  "TAG", _ | "LENGTH", _ | "FIELD", _ | "ISBLOCK", _ ->
+    assert false;
+  | _ -> fallthrough ()
+
+
+class macro_mapper = object (m)
+  inherit Js_traverse.map as super
+
+  method expression x =
+    let module J = Javascript in
+    let fallthrough () = super#expression x in
+    let recurse = m#expression in
+    match x with
+    | J.ECall (J.EVar (J.S {name; _}), args, _) ->
+      macro recurse fallthrough (name, args)
+    | _ -> fallthrough ()
+end
+
+let run_macro js =
+  let trav = new macro_mapper in
+  trav#program js
+
 let check_js js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Checks...@.";
@@ -453,6 +493,7 @@ let f
   >> Generate_closure.f
   >> deadcode'
   >> generate d ~exported_runtime
+  >> run_macro
   >> link ~standalone ~linkall ~export_runtime:dynlink
   >> pack ~global
   >> coloring
