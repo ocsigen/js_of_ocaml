@@ -1,6 +1,6 @@
 (* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2019 Ty Overby
+ * Copyright (C) 2019 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,26 +19,23 @@
 
 open Util
 
-let%expect_test _ =
+let%expect_test "static eval of string get" =
   let cmo =
     compile_ocaml_to_bytecode
       {|
-    let lr = ref (List.init 2 Obj.repr)
+    let lr = ref []
     let black_box v = lr := (Obj.repr v) :: !lr
 
-    type r = {x: int; y: string}
+    let constant = "abcdefghijklmnopqrstuvwxyz"
 
-    let ex = {x = 5; y = "hello"} ;;
+    let call_with_char c = black_box c
+
+    let ex = call_with_char constant.[-10] ;;
     black_box ex
-    let ax = [|1;2;3;4|] ;;
+    let ax = call_with_char constant.[6]  ;;
     black_box ax
-    let bx = [|1.0;2.0;3.0;4.0|] ;;
+    let bx = call_with_char constant.[30] ;;
     black_box bx ;;
-
-    (* combined with the black_box function above, this
-       will prevent the ocaml compiler from optimizing
-       away the constructions. *)
-    print_int ((List.length !lr) + (List.length !lr))
   |}
   in
   let program = parse_js (print_compiled_js ~pretty:true cmo) in
@@ -47,6 +44,6 @@ let%expect_test _ =
   print_var_decl program "bx";
   [%expect
     {|
-    var ex = [0,5,caml_new_string("hello")];
-    var ax = [0,1,2,3,4];
-    var bx = [254,1.,2.,3.,4.]; |}]
+    var ex = call_with_char(caml_string_get(constant,- 10));
+    var ax = call_with_char(103);
+    var bx = call_with_char(caml_string_get(constant,30)); |}]
