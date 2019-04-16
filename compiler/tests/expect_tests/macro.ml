@@ -34,11 +34,11 @@ let%expect_test "ISBLOCK()" =
 
 let%expect_test "BLOCK(1)" =
   print_macro_transformed "BLOCK(1)";
-  [%expect {| [1]; |}]
+  [%expect {| failure: macro BLOCK called with inappropriate arguments |}]
 
 let%expect_test "BLOCK(tag)" =
   print_macro_transformed "BLOCK(tag)";
-  [%expect {| [tag]; |}]
+  [%expect {| failure: macro BLOCK called with inappropriate arguments |}]
 
 let%expect_test "BLOCK(1, a)" =
   print_macro_transformed "BLOCK(1, a)";
@@ -54,7 +54,7 @@ let%expect_test "TAG(a)" =
 
 let%expect_test "LENGTH(a)" =
   print_macro_transformed "LENGTH(a)";
-  [%expect {| a.length; |}]
+  [%expect {| a.length - 1; |}]
 
 let%expect_test "FIELD(a)" =
   print_macro_transformed "FIELD(a)";

@@ -286,21 +286,29 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
 
 let macro recurse fallthrough =
   let module J = Javascript in
+  let zero, one = J.ENum "0", J.ENum "1" in
   function
+  | "BLOCK", [_] ->
+    failwith (Format.sprintf "macro BLOCK called with inappropriate arguments")
   | "BLOCK", tag :: args ->
       let tag = Some tag in
       let args = List.map ~f:(fun a -> Some (recurse a)) args in
       J.EArr (tag :: args)
-  | "TAG", [e] -> J.EAccess (recurse e, J.ENum "0")
-  | "LENGTH", [e] -> J.EDot (recurse e, "length")
+  | "TAG", [e] -> J.EAccess (recurse e, zero)
+  | "LENGTH", [e] ->
+    let underlying = J.EDot (recurse e, "length") in
+    J.EBin (J.Minus, underlying, one)
   | "FIELD", [e; J.ENum n] ->
       let idx = int_of_string n in
       let adjusted = J.ENum (string_of_int (idx + 1)) in
       J.EAccess (recurse e, adjusted)
   | "FIELD", [e; idx] ->
-      let adjusted = J.EBin (J.Plus, J.ENum "1", recurse idx) in
+      let adjusted = J.EBin (J.Plus, one, recurse idx) in
       J.EAccess (recurse e, adjusted)
-  | "ISBLOCK", [_] -> failwith "what is this?"
+  | "ISBLOCK", [e] -> J.EBin
+            ( J.EqEq
+            , J.EUn (J.Typeof, J.EAccess (recurse e, zero))
+            , J.EStr ("number", `Utf8) )
   | ("BLOCK", _ | "TAG", _ | "LENGTH", _ | "FIELD", _ | "ISBLOCK", _) as s ->
       let s, _ = s in
       failwith (Format.sprintf "macro %s called with inappropriate arguments" s)
