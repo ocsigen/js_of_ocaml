@@ -287,7 +287,7 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
 let macro recurse fallthrough =
   let module J = Javascript in
   function
-  | "BLOCK", (tag : J.expression) :: args ->
+  | "BLOCK", tag :: args ->
       let tag = Some tag in
       let args = List.map ~f:(fun a -> Some (recurse a)) args in
       J.EArr (tag :: args)
