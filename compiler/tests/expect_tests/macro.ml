@@ -72,6 +72,10 @@ let%expect_test "FIELD(a, 0)" =
   print_macro_transformed "FIELD(a, 0)";
   [%expect {| a[1]; |}]
 
+let%expect_test "FIELD(a, -1)" =
+  print_macro_transformed "FIELD(a, -1)";
+  [%expect {| failure: Negative field indexes are not allowed |}]
+
 let%expect_test "ISBLOCK(a)" =
   print_macro_transformed "ISBLOCK(a)";
-  [%expect {| failure: what is this? |}]
+  [%expect {| typeof a !== "number"; |}]
