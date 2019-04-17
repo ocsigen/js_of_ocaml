@@ -15,10 +15,10 @@ function unix_gmtime (t) {
   var d_num = d.getTime();
   var januaryfirst = (new Date(Date.UTC(d.getUTCFullYear(), 0, 1))).getTime();
   var doy = Math.floor((d_num - januaryfirst) / 86400000);
-  return [0, d.getUTCSeconds(), d.getUTCMinutes(), d.getUTCHours(),
+  return BLOCK(0, d.getUTCSeconds(), d.getUTCMinutes(), d.getUTCHours(),
           d.getUTCDate(), d.getUTCMonth(), d.getUTCFullYear() - 1900,
           d.getUTCDay(), doy,
-          false | 0 /* for UTC daylight savings time is false */]
+          false | 0 /* for UTC daylight savings time is false */)
 }
 
 //Provides: unix_localtime
@@ -30,10 +30,10 @@ function unix_localtime (t) {
   var jan = new Date(d.getFullYear(), 0, 1);
   var jul = new Date(d.getFullYear(), 6, 1);
   var stdTimezoneOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
-  return [0, d.getSeconds(), d.getMinutes(), d.getHours(),
+  return BLOCK(0, d.getSeconds(), d.getMinutes(), d.getHours(),
           d.getDate(), d.getMonth(), d.getFullYear() - 1900,
           d.getDay(), doy,
-          (d.getTimezoneOffset() < stdTimezoneOffset) | 0 /* daylight savings time  field. */]
+          (d.getTimezoneOffset() < stdTimezoneOffset) | 0 /* daylight savings time  field. */)
 }
 
 //Provides: unix_mktime
@@ -42,7 +42,7 @@ function unix_mktime(tm){
   var d = (new Date(tm[6]+1900,tm[5],tm[4],tm[3],tm[2],tm[1])).getTime();
   var t = Math.floor(d / 1000);
   var tm2 = unix_localtime(t);
-  return [0,t,tm2];
+  return BLOCK(0,t,tm2);
 }
 
 //Provides: win_startup const

@@ -281,7 +281,7 @@ let find_named_value code =
   ignore (p#program code);
   !all
 
-let add_file f =
+let add_file f ~runtime_transform =
   List.iter
     (parse_file f)
     ~f:(fun {provides; requires; version_constraint; weakdef; code} ->
@@ -297,6 +297,7 @@ let add_file f =
         match provides with
         | None -> always_included := {filename = f; program = code} :: !always_included
         | Some (pi, name, kind, ka) ->
+            let code = runtime_transform code in
             let module J = Javascript in
             let rec find = function
               | [] -> None
@@ -352,8 +353,8 @@ let check_deps () =
           ())
     code_pieces
 
-let load_files l =
-  List.iter l ~f:add_file;
+let load_files l ~runtime_transform =
+  List.iter l ~f:(add_file ~runtime_transform);
   check_deps ()
 
 (* resolve *)

@@ -284,53 +284,6 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
     in
     Linker.link js linkinfos
 
-let macro recurse fallthrough =
-  let module J = Javascript in
-  let zero, one = J.ENum "0", J.ENum "1" in
-  function
-  | "BLOCK", tag :: args when List.length args > 0 ->
-      let tag = Some tag in
-      let args = List.map ~f:(fun a -> Some (recurse a)) args in
-      J.EArr (tag :: args)
-  | "TAG", [e] -> J.EAccess (recurse e, zero)
-  | "LENGTH", [e] ->
-    let underlying = J.EDot (recurse e, "length") in
-    J.EBin (J.Minus, underlying, one)
-  | "FIELD", [e; J.ENum n] ->
-    let idx = int_of_string n in
-    let adjusted = J.ENum (string_of_int (idx + 1)) in
-    J.EAccess (recurse e, adjusted)
-  | "FIELD", [_; J.EUn(J.Neg, _)] -> failwith "Negative field indexes are not allowed" ;
-  | "FIELD", [e; idx] ->
-      let adjusted = J.EBin (J.Plus, one, recurse idx) in
-      J.EAccess (recurse e, adjusted)
-  | "ISBLOCK", [e] -> J.EBin
-            ( J.NotEqEq
-            , J.EUn (J.Typeof, recurse e )
-            , J.EStr ("number", `Utf8) )
-  | ("BLOCK", _ | "TAG", _ | "LENGTH", _ | "FIELD", _ | "ISBLOCK", _) as s ->
-      let s, _ = s in
-      failwith (Format.sprintf "macro %s called with inappropriate arguments" s)
-  | _ -> fallthrough ()
-
-class macro_mapper =
-  object (m)
-    inherit Js_traverse.map as super
-
-    method expression x =
-      let module J = Javascript in
-      let fallthrough () = super#expression x in
-      let recurse = m#expression in
-      match x with
-      | J.ECall (J.EVar (J.S {name; _}), args, _) ->
-          macro recurse fallthrough (name, args)
-      | _ -> fallthrough ()
-  end
-
-let run_macro js =
-  let trav = new macro_mapper in
-  trav#program js
-
 let check_js js =
   let t = Timer.make () in
   if times () then Format.eprintf "Start Checks...@.";
@@ -500,7 +453,6 @@ let f
   >> Generate_closure.f
   >> deadcode'
   >> generate d ~exported_runtime
-  >> run_macro
   >> link ~standalone ~linkall ~export_runtime:dynlink
   >> pack ~global
   >> coloring
@@ -514,7 +466,3 @@ let from_string prims s formatter =
 let profiles = [1, o1; 2, o2; 3, o3]
 
 let profile i = try Some (List.assoc i profiles) with Not_found -> None
-
-module For_testing = struct
-  let macro = run_macro
-end
