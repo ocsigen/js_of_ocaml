@@ -18,13 +18,17 @@
 *)
 module Jsoo = Js_of_ocaml_compiler
 
-module Format: Format_intf.S = struct
+module Format : Format_intf.S = struct
   type ocaml_source = string
+
   type js_source = string
 
   type ocaml_file = string
+
   type js_file = string
+
   type cmo_file = string
+
   type bc_file = string
 
   let read_file file =
@@ -51,36 +55,43 @@ module Format: Format_intf.S = struct
     temp_file
 
   let read_js = read_file
+
   let read_ocaml = read_file
 
   let write_js = write_file ~suffix:".js"
+
   let write_ocaml = write_file ~suffix:".ml"
 
   let id x = x
 
   let js_source_of_string = id
+
   let ocaml_source_of_string = id
+
   let string_of_js_source = id
+
   let string_of_ocaml_source = id
 
   let path_of_ocaml_file = id
+
   let path_of_js_file = id
+
   let path_of_cmo_file = id
+
   let path_of_bc_file = id
 
   let ocaml_file_of_path = id
+
   let js_file_of_path = id
+
   let cmo_file_of_path = id
+
   let bc_file_of_path = id
 end
 
 let parse_js file =
   let open Jsoo.Parse_js in
-  file
-  |> Format.read_js
-  |> Format.string_of_js_source
-  |> lexer_from_string
-  |> parse
+  file |> Format.read_js |> Format.string_of_js_source |> lexer_from_string |> parse
 
 let channel_to_string c_in =
   let good_round_number = 1024 in
@@ -97,9 +108,15 @@ let exec_to_string_exn ~cmd =
     let open Unix in
     function
     | WEXITED 0 -> ()
-    | WEXITED i -> print_endline std_out; failwith (Stdlib.Format.sprintf "process exited with error code %d" i)
-    | WSIGNALED i -> print_endline std_out; failwith (Stdlib.Format.sprintf "process signaled with signal number %d" i)
-    | WSTOPPED i -> print_endline std_out; failwith (Stdlib.Format.sprintf "process stopped with signal number %d" i)
+    | WEXITED i ->
+        print_endline std_out;
+        failwith (Stdlib.Format.sprintf "process exited with error code %d" i)
+    | WSIGNALED i ->
+        print_endline std_out;
+        failwith (Stdlib.Format.sprintf "process signaled with signal number %d" i)
+    | WSTOPPED i ->
+        print_endline std_out;
+        failwith (Stdlib.Format.sprintf "process stopped with signal number %d" i)
   in
   let proc_in = Unix.open_process_in cmd in
   let results = channel_to_string proc_in in
@@ -113,37 +130,45 @@ let compile_to_javascript ~pretty file =
   let out_file = Filename.temp_file "jsoo_test" ".js" in
   let extra_args = if pretty then "--pretty" else "" in
   let cmd =
-    (Stdlib.Format.sprintf "../js_of_ocaml.exe %s %s -o %s" extra_args file out_file) in
+    Stdlib.Format.sprintf "../js_of_ocaml.exe %s %s -o %s" extra_args file out_file
+  in
   let stdout = exec_to_string_exn ~cmd in
   print_string stdout;
   (* this print shouldn't do anything, so if something weird happens, we'll get the results
      here *)
   Format.js_file_of_path out_file
 
-let compile_bc_to_javascript ?(pretty=true) file =
-  Format.path_of_bc_file file
-  |> compile_to_javascript ~pretty
+let compile_bc_to_javascript ?(pretty = true) file =
+  Format.path_of_bc_file file |> compile_to_javascript ~pretty
 
-let compile_cmo_to_javascript ?(pretty=true) file =
-  Format.path_of_cmo_file file
-  |> compile_to_javascript ~pretty
+let compile_cmo_to_javascript ?(pretty = true) file =
+  Format.path_of_cmo_file file |> compile_to_javascript ~pretty
 
 let compile_ocaml_to_cmo file =
   let out_file = Filename.temp_file "jsoo_test" ".cmo" in
-  let _ = exec_to_string_exn ~cmd:(
-    Stdlib.Format.sprintf "ocamlfind ocamlc -c -g %s -o %s" (Format.path_of_ocaml_file file)
-      out_file) in
+  let _ =
+    exec_to_string_exn
+      ~cmd:
+        (Stdlib.Format.sprintf
+           "ocamlfind ocamlc -c -g %s -o %s"
+           (Format.path_of_ocaml_file file)
+           out_file)
+  in
   Format.cmo_file_of_path out_file
 
 let compile_ocaml_to_bc file =
   let out_file = Filename.temp_file "jsoo_test" ".bc" in
-  let _ = exec_to_string_exn ~cmd:(
-    Stdlib.Format.sprintf "ocamlfind ocamlc -g -linkpkg -package unix %s -o %s" (Format.path_of_ocaml_file file)
-      out_file) in
+  let _ =
+    exec_to_string_exn
+      ~cmd:
+        (Stdlib.Format.sprintf
+           "ocamlfind ocamlc -g -linkpkg -package unix %s -o %s"
+           (Format.path_of_ocaml_file file)
+           out_file)
+  in
   Format.bc_file_of_path out_file
 
 type find_result =
-
   { expressions : Jsoo.Javascript.expression list
   ; statements : Jsoo.Javascript.statement list
   ; var_decls : Jsoo.Javascript.variable_declaration list }

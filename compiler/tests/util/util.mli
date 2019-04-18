@@ -19,14 +19,19 @@
 
 open Js_of_ocaml_compiler
 
-module Format: Format_intf.S
+module Format : Format_intf.S
 
 val parse_js : Format.js_file -> Javascript.program
+
 val compile_ocaml_to_cmo : Format.ocaml_file -> Format.cmo_file
+
 val compile_ocaml_to_bc : Format.ocaml_file -> Format.bc_file
+
 val compile_cmo_to_javascript : ?pretty:bool -> Format.cmo_file -> Format.js_file
+
 val compile_bc_to_javascript : ?pretty:bool -> Format.bc_file -> Format.js_file
-val run_javascript: Format.js_file -> string
+
+val run_javascript : Format.js_file -> string
 
 type find_result =
   { expressions : Javascript.expression list

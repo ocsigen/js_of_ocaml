@@ -27,9 +27,9 @@ let%expect_test _ =
     |> Util.compile_ocaml_to_cmo
     |> Util.compile_cmo_to_javascript ~pretty:true
     |> Util.parse_js
-         in
-
-  let program = compile
+  in
+  let program =
+    compile
       {|
     let lr = ref (List.init 2 Obj.repr)
     let black_box v = lr := (Obj.repr v) :: !lr

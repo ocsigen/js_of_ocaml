@@ -28,7 +28,9 @@ let run_test s =
   |> parse_js
 
 let%expect_test "static eval of string get" =
-  let program = run_test {|
+  let program =
+    run_test
+      {|
     let lr = ref []
     let black_box v = lr := (Obj.repr v) :: !lr
 
