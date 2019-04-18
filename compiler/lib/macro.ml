@@ -10,20 +10,18 @@ let macro recurse fallthrough =
       J.EArr (tag :: args)
   | "TAG", [e] -> J.EAccess (recurse e, zero)
   | "LENGTH", [e] ->
-    let underlying = J.EDot (recurse e, "length") in
-    J.EBin (J.Minus, underlying, one)
+      let underlying = J.EDot (recurse e, "length") in
+      J.EBin (J.Minus, underlying, one)
   | "FIELD", [e; J.ENum n] ->
-    let idx = int_of_string n in
-    let adjusted = J.ENum (string_of_int (idx + 1)) in
-    J.EAccess (recurse e, adjusted)
-  | "FIELD", [_; J.EUn(J.Neg, _)] -> failwith "Negative field indexes are not allowed" ;
+      let idx = int_of_string n in
+      let adjusted = J.ENum (string_of_int (idx + 1)) in
+      J.EAccess (recurse e, adjusted)
+  | "FIELD", [_; J.EUn (J.Neg, _)] -> failwith "Negative field indexes are not allowed"
   | "FIELD", [e; idx] ->
       let adjusted = J.EBin (J.Plus, one, recurse idx) in
       J.EAccess (recurse e, adjusted)
-  | "ISBLOCK", [e] -> J.EBin
-            ( J.NotEqEq
-            , J.EUn (J.Typeof, recurse e )
-            , J.EStr ("number", `Utf8) )
+  | "ISBLOCK", [e] ->
+      J.EBin (J.NotEqEq, J.EUn (J.Typeof, recurse e), J.EStr ("number", `Utf8))
   | ("BLOCK", _ | "TAG", _ | "LENGTH", _ | "FIELD", _ | "ISBLOCK", _) as s ->
       let s, _ = s in
       failwith (Format.sprintf "macro %s called with inappropriate arguments" s)

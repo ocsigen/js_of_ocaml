@@ -31,7 +31,8 @@ type fragment =
 
 val parse_file : string -> fragment list
 
-val load_files : string list -> runtime_transform:(Javascript.program -> Javascript.program) -> unit
+val load_files :
+  string list -> runtime_transform:(Javascript.program -> Javascript.program) -> unit
 
 type state
 
