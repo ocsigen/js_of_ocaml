@@ -113,7 +113,7 @@ let compile_to_javascript ~pretty file =
   let out_file = Filename.temp_file "jsoo_test" ".js" in
   let extra_args = if pretty then "--pretty" else "" in
   let cmd =
-    (Stdlib.Format.sprintf "../../js_of_ocaml.exe %s %s -o %s" extra_args file out_file) in
+    (Stdlib.Format.sprintf "../js_of_ocaml.exe %s %s -o %s" extra_args file out_file) in
   let stdout = exec_to_string_exn ~cmd in
   print_string stdout;
   (* this print shouldn't do anything, so if something weird happens, we'll get the results

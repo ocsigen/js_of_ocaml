@@ -1,8 +1,0 @@
-(library
- (name expect_tests)
- (libraries js_of_ocaml_compiler unix ocaml-compiler-libs.bytecomp)
- (inline_tests 
-  (flags -allow-output-patterns)
-  (deps (file ../../js_of_ocaml.exe)))
- (preprocess (pps ppx_expect)))
-

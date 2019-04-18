@@ -7,6 +7,7 @@
   (names setup_env)
   (libraries unix))
 
+(include_subdirs no)
 
 (rule
   (targets generated.map generated.js)
