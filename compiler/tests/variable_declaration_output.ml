@@ -18,24 +18,18 @@
 *)
 
 open Util
-module J = Js_of_ocaml_compiler.Javascript
-
-let print_var_decl program n =
-  let {var_decls; _} =
-    find_javascript
-      ~var_decl:(function
-        | J.S {name; _}, _ when name = n -> true
-        | _ -> false)
-      program
-  in
-  print_string (Format.sprintf "var %s = " n);
-  match var_decls with
-  | [(_, Some (expression, _))] -> print_string (expression_to_string expression)
-  | _ -> print_endline "not found"
 
 let%expect_test _ =
-  let cmo =
-    compile_ocaml_to_bytecode
+  let compile s =
+    s
+    |> Format.ocaml_source_of_string
+    |> Format.write_ocaml
+    |> Util.compile_ocaml_to_cmo
+    |> Util.compile_cmo_to_javascript ~pretty:true
+    |> Util.parse_js
+  in
+  let program =
+    compile
       {|
     let lr = ref (List.init 2 Obj.repr)
     let black_box v = lr := (Obj.repr v) :: !lr
@@ -55,7 +49,6 @@ let%expect_test _ =
     print_int ((List.length !lr) + (List.length !lr))
   |}
   in
-  let program = parse_js (print_compiled_js ~pretty:true cmo) in
   print_var_decl program "ex";
   print_var_decl program "ax";
   print_var_decl program "bx";

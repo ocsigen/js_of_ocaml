@@ -1,6 +1,6 @@
 (library
   (name toplevel_expect_test)
-  (libraries compiler-libs.common compiler-libs.toplevel))
+  (libraries))
 
 (rule
   (targets toplevel_expect_test.ml)

@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2017 Hugo Heuzard
+ * Copyright (C) 2019 Ty Overby
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -15,20 +15,15 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
-(* https://github.com/ocsigen/js_of_ocaml/issues/507
- * Missing parentheses around "-1" in generated code #507 *)
+open Util
 
-open Common
-
-let log_stop = log_start "Missing parentheses around \"-1\" in generated code"
-
-let _ =
-  let r = ref 0.0 in
-  for _ = 1 to 100 do
-    r := !r -. (-1.0 *. !r)
-  done;
-  ()
-
-let _ = log_stop ()
+let compile_and_run s =
+  s
+  |> Format.ocaml_source_of_string
+  |> Format.write_ocaml
+  |> compile_ocaml_to_bc
+  |> compile_bc_to_javascript
+  |> run_javascript
+  |> print_endline

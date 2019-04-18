@@ -131,8 +131,9 @@ let eval_prim x =
       | "caml_tan_float", _ -> float_unop l tan
       | ("caml_string_get" | "caml_string_unsafe_get"), [(String s | IString s); Int pos]
         ->
-          if Config.Flag.safe_string () && String.length s > Int.to_int pos
-          then Some (Int (Int.of_int (Char.code s.[Int.to_int pos])))
+          let pos = Int.to_int pos in
+          if Config.Flag.safe_string () && pos >= 0 && pos < String.length s
+          then Some (Int (Int.of_int (Char.code s.[pos])))
           else None
       | "caml_string_equal", [String s1; String s2] -> bool (s1 = s2)
       | "caml_string_notequal", [String s1; String s2] -> bool (s1 <> s2)
