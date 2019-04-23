@@ -211,7 +211,8 @@ function caml_update_dummy (x, y) {
 
 //Provides: caml_obj_is_block const (const)
 function caml_obj_is_block (x) { return +(x instanceof Array); }
-//Provides: caml_obj_tag const (const)
+
+//Provides: caml_obj_tag
 //Requires: MlBytes
 function caml_obj_tag (x) { return (x instanceof Array)?x[0]:(x instanceof MlBytes)?252:1000; }
 //Provides: caml_obj_set_tag (mutable, const)
