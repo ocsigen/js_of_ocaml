@@ -208,41 +208,43 @@ let expression_to_string ?(compact = false) e =
   let p = [J.Statement (J.Expression_statement e), J.N] in
   program_to_string ~compact p
 
-class find_variable_declaration r n = object
-  inherit Jsoo.Js_traverse.map as super
-  method! variable_declaration v =
-    (match v with
-     | Jsoo.Javascript.S {name; _}, _ when name = n ->
-        r := v :: !r
-     | _ -> ());
-    super#variable_declaration v
-end
+class find_variable_declaration r n =
+  object
+    inherit Jsoo.Js_traverse.map as super
+
+    method! variable_declaration v =
+      (match v with
+      | Jsoo.Javascript.S {name; _}, _ when name = n -> r := v :: !r
+      | _ -> ());
+      super#variable_declaration v
+  end
 
 let print_var_decl program n =
   let r = ref [] in
   let o = new find_variable_declaration r n in
-  ignore(o#program program);
+  ignore (o#program program);
   print_string (Stdlib.Format.sprintf "var %s = " n);
   match !r with
   | [(_, Some (expression, _))] -> print_string (expression_to_string expression)
   | _ -> print_endline "not found"
 
+class find_function_declaration r n =
+  object
+    inherit Jsoo.Js_traverse.map as super
 
-class find_function_declaration r n = object
-  inherit Jsoo.Js_traverse.map as super
-  method! source s =
-    (match s with
-     | Function_declaration (Jsoo.Javascript.S {name; _}, _, _, _ as fd) when name = n ->
-        r:=fd::!r
-     | Function_declaration _
-     | Statement _ -> ());
-    super#source s
-end
+    method! source s =
+      (match s with
+      | Function_declaration ((Jsoo.Javascript.S {name; _}, _, _, _) as fd) when name = n
+        ->
+          r := fd :: !r
+      | Function_declaration _ | Statement _ -> ());
+      super#source s
+  end
 
 let print_fun_decl program n =
   let r = ref [] in
   let o = new find_function_declaration r n in
-  ignore(o#program program);
+  ignore (o#program program);
   let module J = Jsoo.Javascript in
   match !r with
   | [fd] -> print_string (program_to_string [J.Function_declaration fd, J.N])
