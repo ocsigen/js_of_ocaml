@@ -21,10 +21,11 @@ open Util
 
 let run_test s =
   s
-  |> Format.ocaml_source_of_string
+  |> Format.ocaml_text_of_string
   |> Format.write_ocaml
   |> compile_ocaml_to_cmo
   |> compile_cmo_to_javascript ~pretty:true
+  |> Stdlib.fst
   |> parse_js
 
 let%expect_test "static eval of string get" =

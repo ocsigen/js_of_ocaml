@@ -19,11 +19,15 @@
 module Jsoo = Js_of_ocaml_compiler
 
 module Format : Format_intf.S = struct
-  type ocaml_source = string
+  type ocaml_text = string
 
-  type js_source = string
+  type js_text = string
+
+  type sourcemap_text = string
 
   type ocaml_file = string
+
+  type sourcemap_file = string
 
   type js_file = string
 
@@ -56,6 +60,8 @@ module Format : Format_intf.S = struct
 
   let read_js = read_file
 
+  let read_map = read_file
+
   let read_ocaml = read_file
 
   let write_js = write_file ~suffix:".js"
@@ -64,17 +70,21 @@ module Format : Format_intf.S = struct
 
   let id x = x
 
-  let js_source_of_string = id
+  let js_text_of_string = id
 
-  let ocaml_source_of_string = id
+  let ocaml_text_of_string = id
 
-  let string_of_js_source = id
+  let string_of_js_text = id
 
-  let string_of_ocaml_source = id
+  let string_of_map_text = id
+
+  let string_of_ocaml_text = id
 
   let path_of_ocaml_file = id
 
   let path_of_js_file = id
+
+  let path_of_map_file = id
 
   let path_of_cmo_file = id
 
@@ -84,6 +94,8 @@ module Format : Format_intf.S = struct
 
   let js_file_of_path = id
 
+  let map_file_of_path = id
+
   let cmo_file_of_path = id
 
   let bc_file_of_path = id
@@ -91,7 +103,7 @@ end
 
 let parse_js file =
   let open Jsoo.Parse_js in
-  file |> Format.read_js |> Format.string_of_js_source |> lexer_from_string |> parse
+  file |> Format.read_js |> Format.string_of_js_text |> lexer_from_string |> parse
 
 let channel_to_string c_in =
   let good_round_number = 1024 in
@@ -103,24 +115,27 @@ let channel_to_string c_in =
   (try loop () with End_of_file -> ());
   Buffer.contents buffer
 
-let exec_to_string_exn ~cmd =
+let exec_to_string_exn ~env ~cmd =
+  let env = Array.concat [Unix.environment (); Array.of_list env] in
   let proc_result_ok std_out =
     let open Unix in
     function
     | WEXITED 0 -> ()
     | WEXITED i ->
         print_endline std_out;
-        failwith (Stdlib.Format.sprintf "process exited with error code %d" i)
+        failwith (Stdlib.Format.sprintf "process exited with error code %d\n %s" i cmd)
     | WSIGNALED i ->
         print_endline std_out;
-        failwith (Stdlib.Format.sprintf "process signaled with signal number %d" i)
+        failwith
+          (Stdlib.Format.sprintf "process signaled with signal number %d\n %s" i cmd)
     | WSTOPPED i ->
         print_endline std_out;
-        failwith (Stdlib.Format.sprintf "process stopped with signal number %d" i)
+        failwith
+          (Stdlib.Format.sprintf "process stopped with signal number %d\n %s" i cmd)
   in
-  let proc_in = Unix.open_process_in cmd in
+  let ((proc_in, _, _) as proc_full) = Unix.open_process_full cmd env in
   let results = channel_to_string proc_in in
-  proc_result_ok results (Unix.close_process_in proc_in);
+  proc_result_ok results (Unix.close_process_full proc_full);
   results
 
 let get_project_build_directory () =
@@ -130,52 +145,63 @@ let get_project_build_directory () =
   Filename.concat left regex_text
 
 let run_javascript file =
-  exec_to_string_exn ~cmd:(Stdlib.Format.sprintf "node %s" (Format.path_of_js_file file))
+  exec_to_string_exn
+    ~env:[]
+    ~cmd:(Stdlib.Format.sprintf "node %s" (Format.path_of_js_file file))
 
-let compile_to_javascript ~pretty file =
-  let out_file = Filename.temp_file "jsoo_test" ".js" in
-  let arg_buffer = Buffer.create 32 in
-  if pretty then Buffer.add_string arg_buffer "--pretty ";
-  Buffer.add_string arg_buffer "--no-runtime ";
-  Buffer.add_string
-    arg_buffer
-    (Filename.concat (get_project_build_directory ()) "runtime/runtime.js");
-  let extra_args = Buffer.contents arg_buffer in
+let swap_extention filename ~ext =
+  Stdlib.Format.sprintf "%s.%s" (Filename.remove_extension filename) ext
+
+let compile_to_javascript ~pretty ~sourcemap file =
+  let file_no_ext = Filename.chop_extension file in
+  let out_file = swap_extention file ~ext:"js" in
+  let extra_args =
+    List.flatten
+      [ (if pretty then ["--pretty"] else [])
+      ; (if sourcemap then ["--sourcemap"] else [])
+      ; ["--no-runtime"]
+      ; [Filename.concat (get_project_build_directory ()) "runtime/runtime.js"] ]
+  in
+  let extra_args = String.concat " " extra_args in
   let cmd =
     Stdlib.Format.sprintf "../js_of_ocaml.exe %s %s -o %s" extra_args file out_file
   in
-  let stdout = exec_to_string_exn ~cmd in
+  let env =
+    [Stdlib.Format.sprintf "BUILD_PATH_PREFIX_MAP=/root/jsoo_test=%s" file_no_ext]
+  in
+  let stdout = exec_to_string_exn ~env ~cmd in
   print_string stdout;
   (* this print shouldn't do anything, so if
      something weird happens, we'll get the results here *)
-  Format.js_file_of_path out_file
+  let sourcemap_file = swap_extention file ~ext:"map" |> Format.map_file_of_path in
+  Format.js_file_of_path out_file, if sourcemap then Some sourcemap_file else None
 
-let compile_bc_to_javascript ?(pretty = true) file =
-  Format.path_of_bc_file file |> compile_to_javascript ~pretty
+let compile_bc_to_javascript ?(pretty = true) ?(sourcemap = true) file =
+  Format.path_of_bc_file file |> compile_to_javascript ~pretty ~sourcemap
 
-let compile_cmo_to_javascript ?(pretty = true) file =
-  Format.path_of_cmo_file file |> compile_to_javascript ~pretty
+let compile_cmo_to_javascript ?(pretty = true) ?(sourcemap = true) file =
+  Format.path_of_cmo_file file |> compile_to_javascript ~pretty ~sourcemap
 
 let compile_ocaml_to_cmo file =
-  let out_file = Filename.temp_file "jsoo_test" ".cmo" in
+  let file = Format.path_of_ocaml_file file in
+  let out_file = swap_extention file ~ext:"cmo" in
   let _ =
     exec_to_string_exn
-      ~cmd:
-        (Stdlib.Format.sprintf
-           "ocamlfind ocamlc -c -g %s -o %s"
-           (Format.path_of_ocaml_file file)
-           out_file)
+      ~env:[]
+      ~cmd:(Stdlib.Format.sprintf "ocamlfind ocamlc -c -g %s -o %s" file out_file)
   in
   Format.cmo_file_of_path out_file
 
 let compile_ocaml_to_bc file =
-  let out_file = Filename.temp_file "jsoo_test" ".bc" in
+  let file = Format.path_of_ocaml_file file in
+  let out_file = swap_extention file ~ext:"bc" in
   let _ =
     exec_to_string_exn
+      ~env:[]
       ~cmd:
         (Stdlib.Format.sprintf
            "ocamlfind ocamlc -g -linkpkg -package unix %s -o %s"
-           (Format.path_of_ocaml_file file)
+           file
            out_file)
   in
   Format.bc_file_of_path out_file

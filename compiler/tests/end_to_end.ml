@@ -21,7 +21,7 @@ open Util
 
 let%expect_test _ =
   {| console.log("hello world") |}
-  |> Util.Format.js_source_of_string
+  |> Util.Format.js_text_of_string
   |> Util.Format.write_js
   |> Util.run_javascript
   |> print_endline;
@@ -29,10 +29,11 @@ let%expect_test _ =
 
 let compile_and_run s =
   s
-  |> Format.ocaml_source_of_string
+  |> Format.ocaml_text_of_string
   |> Format.write_ocaml
   |> compile_ocaml_to_bc
   |> compile_bc_to_javascript
+  |> Stdlib.fst
   |> run_javascript
   |> print_endline
 

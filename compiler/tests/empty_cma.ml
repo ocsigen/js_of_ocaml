@@ -20,29 +20,15 @@
 open Util
 
 let%expect_test _ =
-  let compile s =
-    s
-    |> Format.ocaml_text_of_string
-    |> Format.write_ocaml
-    |> Util.compile_ocaml_to_cmo
-    |> Util.compile_cmo_to_javascript ~pretty:true
-    |> Stdlib.fst
-    |> Util.parse_js
-  in
-  let program =
-    compile
-      {|
-    type r = {x: int; y: string}
-    let ex = {x = 5; y = "hello"} ;;
-    let ax = [|1;2;3;4|] ;;
-    let bx = [|1.0;2.0;3.0;4.0|] ;;
-    |}
-  in
-  print_var_decl program "ex";
-  print_var_decl program "ax";
-  print_var_decl program "bx";
+  Format.cmo_file_of_path "./empty.cma"
+  |> Util.compile_cmo_to_javascript ~sourcemap:false
+  |> Stdlib.fst
+  |> Util.Format.read_js
+  |> Util.Format.string_of_js_text
+  |> print_endline;
   [%expect
     {|
-    var ex = [0,5,runtime.caml_new_string("hello")];
-    var ax = [0,1,2,3,4];
-    var bx = [254,1.,2.,3.,4.]; |}]
+      (function(joo_global_object)
+         {"use strict";var runtime=joo_global_object.jsoo_runtime;return}
+        (function(){return this}()));
+    |}]

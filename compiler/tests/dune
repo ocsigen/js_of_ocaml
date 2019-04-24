@@ -4,8 +4,13 @@
  (inline_tests 
   (flags -allow-output-patterns)
   (deps
+    (file ./empty.cma)
     (file ../js_of_ocaml.exe)
     (file ../../runtime/runtime.js)))
  (preprocess (pps ppx_expect)))
+
+(rule
+  (targets empty.cma)
+  (action (run %{bin:ocamlc} -g -a -o empty.cma)))
 
 (include_subdirs unqualified)
