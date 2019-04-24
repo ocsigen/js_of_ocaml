@@ -196,62 +196,6 @@ let compile_ocaml_to_bc file =
   in
   Format.bc_file_of_path out_file
 
-type find_result =
-  { expressions : Jsoo.Javascript.expression list
-  ; statements : Jsoo.Javascript.statement list
-  ; var_decls : Jsoo.Javascript.variable_declaration list
-  ; fun_decls : Jsoo.Javascript.function_declaration list }
-
-type finder_fun =
-  { expression : Jsoo.Javascript.expression -> unit
-  ; statement : Jsoo.Javascript.statement -> unit
-  ; variable_decl : Jsoo.Javascript.variable_declaration -> unit
-  ; function_decl : Jsoo.Javascript.function_declaration -> unit }
-
-class finder ff =
-  object
-    inherit Jsoo.Js_traverse.map as super
-
-    method! variable_declaration v =
-      ff.variable_decl v;
-      super#variable_declaration v
-
-    method! expression x =
-      ff.expression x;
-      super#expression x
-
-    method! source s =
-      (match s with
-      | Function_declaration fd -> ff.function_decl fd
-      | Statement _ -> ());
-      super#source s
-
-    method! statement s =
-      ff.statement s;
-      super#statement s
-  end
-
-let find_javascript
-    ?(expression = fun _ -> false)
-    ?(statement = fun _ -> false)
-    ?(var_decl = fun _ -> false)
-    ?(fun_decl = fun _ -> false)
-    program =
-  let expressions, statements, var_decls, fun_decls = ref [], ref [], ref [], ref [] in
-  let append r v = r := v :: !r in
-  let build_finder p l a = if p a then append l a in
-  let expression = build_finder expression expressions in
-  let statement = build_finder statement statements in
-  let variable_decl = build_finder var_decl var_decls in
-  let function_decl = build_finder fun_decl fun_decls in
-  let t = {expression; statement; variable_decl; function_decl} in
-  let trav = new finder t in
-  ignore (trav#program program);
-  { statements = !statements
-  ; expressions = !expressions
-  ; var_decls = !var_decls
-  ; fun_decls = !fun_decls }
-
 let program_to_string ?(compact = false) p =
   let buffer = Buffer.create 17 in
   let pp = Jsoo.Pretty_print.to_buffer buffer in
@@ -264,29 +208,43 @@ let expression_to_string ?(compact = false) e =
   let p = [J.Statement (J.Expression_statement e), J.N] in
   program_to_string ~compact p
 
+class find_variable_declaration r n = object
+  inherit Jsoo.Js_traverse.map as super
+  method! variable_declaration v =
+    (match v with
+     | Jsoo.Javascript.S {name; _}, _ when name = n ->
+        r := v :: !r
+     | _ -> ());
+    super#variable_declaration v
+end
+
 let print_var_decl program n =
-  let {var_decls; _} =
-    find_javascript
-      ~var_decl:(function
-        | Jsoo.Javascript.S {name; _}, _ when name = n -> true
-        | _ -> false)
-      program
-  in
+  let r = ref [] in
+  let o = new find_variable_declaration r n in
+  ignore(o#program program);
   print_string (Stdlib.Format.sprintf "var %s = " n);
-  match var_decls with
+  match !r with
   | [(_, Some (expression, _))] -> print_string (expression_to_string expression)
   | _ -> print_endline "not found"
 
+
+class find_function_declaration r n = object
+  inherit Jsoo.Js_traverse.map as super
+  method! source s =
+    (match s with
+     | Function_declaration (Jsoo.Javascript.S {name; _}, _, _, _ as fd) when name = n ->
+        r:=fd::!r
+     | Function_declaration _
+     | Statement _ -> ());
+    super#source s
+end
+
 let print_fun_decl program n =
+  let r = ref [] in
+  let o = new find_function_declaration r n in
+  ignore(o#program program);
   let module J = Jsoo.Javascript in
-  let ({fun_decls; _} : find_result) =
-    find_javascript
-      ~fun_decl:(function
-        | J.S {name; _}, _, _, _ when name = n -> true
-        | _ -> false)
-      program
-  in
-  match fun_decls with
+  match !r with
   | [fd] -> print_string (program_to_string [J.Function_declaration fd, J.N])
   | _ -> print_endline "not found"
 
