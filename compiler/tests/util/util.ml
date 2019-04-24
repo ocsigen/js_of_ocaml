@@ -209,12 +209,14 @@ let compile_ocaml_to_bc file =
 type find_result =
   { expressions : Jsoo.Javascript.expression list
   ; statements : Jsoo.Javascript.statement list
-  ; var_decls : Jsoo.Javascript.variable_declaration list }
+  ; var_decls : Jsoo.Javascript.variable_declaration list
+  ; fun_decls: Jsoo.Javascript.function_declaration list}
 
 type finder_fun =
   { expression : Jsoo.Javascript.expression -> unit
   ; statement : Jsoo.Javascript.statement -> unit
-  ; variable_decl : Jsoo.Javascript.variable_declaration -> unit }
+  ; variable_decl : Jsoo.Javascript.variable_declaration -> unit
+  ; function_decl: Jsoo.Javascript.function_declaration -> unit}
 
 class finder ff =
   object
@@ -228,6 +230,12 @@ class finder ff =
       ff.expression x;
       super#expression x
 
+    method! source s =
+      (match s with
+       | Function_declaration fd -> ff.function_decl fd
+       | Statement _ -> ());
+      super#source s
+
     method! statement s =
       ff.statement s;
       super#statement s
@@ -237,25 +245,31 @@ let find_javascript
     ?(expression = fun _ -> false)
     ?(statement = fun _ -> false)
     ?(var_decl = fun _ -> false)
+    ?(fun_decl = fun _ -> false)
     program =
-  let expressions, statements, var_decls = ref [], ref [], ref [] in
+  let expressions, statements, var_decls, fun_decls = ref [], ref [], ref [], ref [] in
   let append r v = r := v :: !r in
-  let expression a = if expression a then append expressions a in
-  let statement a = if statement a then append statements a in
-  let variable_decl a = if var_decl a then append var_decls a in
-  let t = {expression; statement; variable_decl} in
+  let build_finder p l a = if p a then append l a in
+  let expression = build_finder expression expressions  in
+  let statement = build_finder statement statements in
+  let variable_decl = build_finder var_decl var_decls in
+  let function_decl = build_finder fun_decl fun_decls in
+  let t = {expression; statement; variable_decl; function_decl} in
   let trav = new finder t in
   ignore (trav#program program);
-  {statements = !statements; expressions = !expressions; var_decls = !var_decls}
+  {statements = !statements; expressions = !expressions; var_decls = !var_decls; fun_decls = !fun_decls}
 
-let expression_to_string ?(compact = false) e =
-  let module J = Jsoo.Javascript in
-  let e = [J.Statement (J.Expression_statement e), J.N] in
+let program_to_string ?(compact = false) p =
   let buffer = Buffer.create 17 in
   let pp = Jsoo.Pretty_print.to_buffer buffer in
   Jsoo.Pretty_print.set_compact pp compact;
-  Jsoo.Js_output.program pp e;
+  Jsoo.Js_output.program pp p;
   Buffer.contents buffer
+
+let expression_to_string ?(compact = false) e =
+  let module J = Jsoo.Javascript in
+  let p = [J.Statement (J.Expression_statement e), J.N] in
+  program_to_string ~compact p
 
 let print_var_decl program n =
   let {var_decls; _} =
@@ -269,3 +283,17 @@ let print_var_decl program n =
   match var_decls with
   | [(_, Some (expression, _))] -> print_string (expression_to_string expression)
   | _ -> print_endline "not found"
+
+let print_fun_decl program n =
+  let module J = Jsoo.Javascript in
+  let ({fun_decls; _} : find_result) =
+      find_javascript
+        ~fun_decl:(function
+          | J.S {name; _}, _, _, _ when name = n -> true
+          | _ -> false)
+        program
+    in
+    match fun_decls with
+    | [fd] ->
+        print_string (program_to_string [J.Function_declaration fd, J.N])
+    | _ -> print_endline "not found"
