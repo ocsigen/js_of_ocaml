@@ -28,15 +28,19 @@ val print_compiled_js : ?pretty:bool -> in_channel -> string
 type find_result =
   { expressions : Javascript.expression list
   ; statements : Javascript.statement list
-  ; var_decls : Javascript.variable_declaration list }
+  ; var_decls : Javascript.variable_declaration list
+  ; fun_decls : Javascript.function_declaration list }
 
 val find_javascript :
      ?expression:(Javascript.expression -> bool)
   -> ?statement:(Javascript.statement -> bool)
   -> ?var_decl:(Javascript.variable_declaration -> bool)
+  -> ?fun_decl:(Javascript.function_declaration -> bool)
   -> Javascript.program
   -> find_result
 
 val expression_to_string : ?compact:bool -> Javascript.expression -> string
 
 val print_var_decl : Javascript.program -> string -> unit
+
+val print_fun_decl : Javascript.program -> string -> unit

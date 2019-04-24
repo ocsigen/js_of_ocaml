@@ -78,12 +78,14 @@ let compile_ocaml_to_bytecode source =
 type find_result =
   { expressions : Javascript.expression list
   ; statements : Javascript.statement list
-  ; var_decls : Javascript.variable_declaration list }
+  ; var_decls : Javascript.variable_declaration list
+  ; fun_decls : Javascript.function_declaration list }
 
 type finder_fun =
   { expression : Javascript.expression -> unit
   ; statement : Javascript.statement -> unit
-  ; variable_decl : Javascript.variable_declaration -> unit }
+  ; variable_decl : Javascript.variable_declaration -> unit
+  ; fun_decls : Javascript.function_declaration -> unit }
 
 class finder ff =
   object
@@ -100,30 +102,46 @@ class finder ff =
     method! statement s =
       ff.statement s;
       super#statement s
+
+    method! source s =
+      (match s with
+      | Function_declaration fd -> ff.fun_decls fd
+      | Statement _ -> ());
+      super#source s
   end
 
 let find_javascript
     ?(expression = fun _ -> false)
     ?(statement = fun _ -> false)
     ?(var_decl = fun _ -> false)
+    ?(fun_decl = fun _ -> false)
     program =
-  let expressions, statements, var_decls = ref [], ref [], ref [] in
+  let expressions_r, statements_r, var_decls_r, fun_decls_r =
+    ref [], ref [], ref [], ref []
+  in
   let append r v = r := v :: !r in
-  let expression a = if expression a then append expressions a in
-  let statement a = if statement a then append statements a in
-  let variable_decl a = if var_decl a then append var_decls a in
-  let t = {expression; statement; variable_decl} in
+  let expression a = if expression a then append expressions_r a in
+  let statement a = if statement a then append statements_r a in
+  let variable_decl a = if var_decl a then append var_decls_r a in
+  let fun_decls a = if fun_decl a then append fun_decls_r a in
+  let t = {expression; statement; variable_decl; fun_decls} in
   let trav = new finder t in
   ignore (trav#program program);
-  {statements = !statements; expressions = !expressions; var_decls = !var_decls}
+  { statements = !statements_r
+  ; expressions = !expressions_r
+  ; var_decls = !var_decls_r
+  ; fun_decls = !fun_decls_r }
 
-let expression_to_string ?(compact = false) e =
-  let e = [Javascript.Statement (Javascript.Expression_statement e), Javascript.N] in
+let program_to_string ?(compact = false) p =
   let buffer = Buffer.create 17 in
   let pp = Pretty_print.to_buffer buffer in
   Pretty_print.set_compact pp compact;
-  Js_output.program pp e;
+  Js_output.program pp p;
   Buffer.contents buffer
+
+let expression_to_string ?compact e =
+  let p = [Javascript.Statement (Javascript.Expression_statement e), Javascript.N] in
+  program_to_string ?compact p
 
 let print_var_decl program n =
   let {var_decls; _} =
@@ -136,4 +154,17 @@ let print_var_decl program n =
   print_string (Format.sprintf "var %s = " n);
   match var_decls with
   | [(_, Some (expression, _))] -> print_string (expression_to_string expression)
+  | _ -> print_endline "not found"
+
+let print_fun_decl program n =
+  let ({fun_decls; _} : find_result) =
+    find_javascript
+      ~fun_decl:(function
+        | Javascript.S {name; _}, _, _, _ when name = n -> true
+        | _ -> false)
+      program
+  in
+  match fun_decls with
+  | [fd] ->
+      print_string (program_to_string [Javascript.Function_declaration fd, Javascript.N])
   | _ -> print_endline "not found"
