@@ -36,20 +36,12 @@ module Format : Format_intf.S = struct
   type bc_file = string
 
   let read_file file =
-    let channel_to_string c_in =
-      let good_round_number = 1024 in
-      let buffer = Buffer.create good_round_number in
-      let rec loop () =
-        Buffer.add_channel buffer c_in good_round_number;
-        loop ()
-      in
-      (try loop () with End_of_file -> ());
-      Buffer.contents buffer
-    in
-    let channel = open_in file in
-    let res = channel_to_string channel in
-    close_in channel;
-    res
+    let ic = open_in_bin file in
+    let n = in_channel_length ic in
+    let s = Bytes.create n in
+    really_input ic s 0 n;
+    close_in ic;
+    Bytes.unsafe_to_string s
 
   let write_file ~suffix contents =
     let temp_file = Filename.temp_file "jsoo_test" suffix in
@@ -102,8 +94,11 @@ module Format : Format_intf.S = struct
 end
 
 let parse_js file =
-  let open Jsoo.Parse_js in
-  file |> Format.read_js |> Format.string_of_js_text |> lexer_from_string |> parse
+  file
+  |> Format.read_js
+  |> Format.string_of_js_text
+  |> Jsoo.Parse_js.lexer_from_string
+  |> Jsoo.Parse_js.parse
 
 let channel_to_string c_in =
   let good_round_number = 1024 in
@@ -120,7 +115,7 @@ let exec_to_string_exn ~env ~cmd =
   let proc_result_ok std_out =
     let open Unix in
     function
-    | WEXITED 0 -> ()
+    | WEXITED 0 -> std_out
     | WEXITED i ->
         print_endline std_out;
         failwith (Stdlib.Format.sprintf "process exited with error code %d\n %s" i cmd)
@@ -135,8 +130,7 @@ let exec_to_string_exn ~env ~cmd =
   in
   let ((proc_in, _, _) as proc_full) = Unix.open_process_full cmd env in
   let results = channel_to_string proc_in in
-  proc_result_ok results (Unix.close_process_full proc_full);
-  results
+  proc_result_ok results (Unix.close_process_full proc_full)
 
 let get_project_build_directory () =
   let regex_text = "_build/default" in
@@ -188,7 +182,7 @@ let compile_ocaml_to_cmo file =
   let _ =
     exec_to_string_exn
       ~env:[]
-      ~cmd:(Stdlib.Format.sprintf "ocamlfind ocamlc -c -g %s -o %s" file out_file)
+      ~cmd:(Stdlib.Format.sprintf "ocamlc -c -g %s -o %s" file out_file)
   in
   Format.cmo_file_of_path out_file
 
@@ -198,11 +192,7 @@ let compile_ocaml_to_bc file =
   let _ =
     exec_to_string_exn
       ~env:[]
-      ~cmd:
-        (Stdlib.Format.sprintf
-           "ocamlfind ocamlc -g -linkpkg -package unix %s -o %s"
-           file
-           out_file)
+      ~cmd:(Stdlib.Format.sprintf "ocamlc -g unix.cma %s -o %s" file out_file)
   in
   Format.bc_file_of_path out_file
 
@@ -210,13 +200,13 @@ type find_result =
   { expressions : Jsoo.Javascript.expression list
   ; statements : Jsoo.Javascript.statement list
   ; var_decls : Jsoo.Javascript.variable_declaration list
-  ; fun_decls: Jsoo.Javascript.function_declaration list}
+  ; fun_decls : Jsoo.Javascript.function_declaration list }
 
 type finder_fun =
   { expression : Jsoo.Javascript.expression -> unit
   ; statement : Jsoo.Javascript.statement -> unit
   ; variable_decl : Jsoo.Javascript.variable_declaration -> unit
-  ; function_decl: Jsoo.Javascript.function_declaration -> unit}
+  ; function_decl : Jsoo.Javascript.function_declaration -> unit }
 
 class finder ff =
   object
@@ -232,8 +222,8 @@ class finder ff =
 
     method! source s =
       (match s with
-       | Function_declaration fd -> ff.function_decl fd
-       | Statement _ -> ());
+      | Function_declaration fd -> ff.function_decl fd
+      | Statement _ -> ());
       super#source s
 
     method! statement s =
@@ -250,14 +240,17 @@ let find_javascript
   let expressions, statements, var_decls, fun_decls = ref [], ref [], ref [], ref [] in
   let append r v = r := v :: !r in
   let build_finder p l a = if p a then append l a in
-  let expression = build_finder expression expressions  in
+  let expression = build_finder expression expressions in
   let statement = build_finder statement statements in
   let variable_decl = build_finder var_decl var_decls in
   let function_decl = build_finder fun_decl fun_decls in
   let t = {expression; statement; variable_decl; function_decl} in
   let trav = new finder t in
   ignore (trav#program program);
-  {statements = !statements; expressions = !expressions; var_decls = !var_decls; fun_decls = !fun_decls}
+  { statements = !statements
+  ; expressions = !expressions
+  ; var_decls = !var_decls
+  ; fun_decls = !fun_decls }
 
 let program_to_string ?(compact = false) p =
   let buffer = Buffer.create 17 in
@@ -287,13 +280,22 @@ let print_var_decl program n =
 let print_fun_decl program n =
   let module J = Jsoo.Javascript in
   let ({fun_decls; _} : find_result) =
-      find_javascript
-        ~fun_decl:(function
-          | J.S {name; _}, _, _, _ when name = n -> true
-          | _ -> false)
-        program
-    in
-    match fun_decls with
-    | [fd] ->
-        print_string (program_to_string [J.Function_declaration fd, J.N])
-    | _ -> print_endline "not found"
+    find_javascript
+      ~fun_decl:(function
+        | J.S {name; _}, _, _, _ when name = n -> true
+        | _ -> false)
+      program
+  in
+  match fun_decls with
+  | [fd] -> print_string (program_to_string [J.Function_declaration fd, J.N])
+  | _ -> print_endline "not found"
+
+let compile_and_run s =
+  s
+  |> Format.ocaml_text_of_string
+  |> Format.write_ocaml
+  |> compile_ocaml_to_bc
+  |> compile_bc_to_javascript
+  |> Stdlib.fst
+  |> run_javascript
+  |> print_endline

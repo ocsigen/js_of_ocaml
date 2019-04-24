@@ -18,11 +18,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
+open Util
+
 (* https://github.com/ocsigen/js_of_ocaml/issues/400 *)
 (* https://github.com/ocsigen/js_of_ocaml/pull/402 *)
 
 let%expect_test _ =
-  Integration_util.compile_and_run
+  compile_and_run
     {|
   exception A
   exception B of int

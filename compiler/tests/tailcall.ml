@@ -18,10 +18,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
+open Util
+
 (* https://github.com/ocsigen/js_of_ocaml/commit/a1a24b53e3e25af30b30e2e1779991db1055143e *)
 
 let%expect_test _ =
-  Integration_util.compile_and_run
+  compile_and_run
     {|
     let log_success () = print_endline "Success!"
     let log_failure = Printf.printf "Failure! %s"

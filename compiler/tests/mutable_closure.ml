@@ -18,8 +18,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
+open Util
+
 let%expect_test _ =
-  Integration_util.compile_and_run
+  compile_and_run
     {|
   let log_success () = print_endline "Success!"
   let log_failure = Printf.printf "Failure! %s"

@@ -60,3 +60,5 @@ val expression_to_string : ?compact:bool -> Javascript.expression -> string
 val print_var_decl : Javascript.program -> string -> unit
 
 val print_fun_decl : Javascript.program -> string -> unit
+
+val compile_and_run : string -> unit

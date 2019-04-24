@@ -18,11 +18,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
+open Util
+
 (* https://github.com/ocsigen/js_of_ocaml/issues/666 *)
 (* https://github.com/ocsigen/js_of_ocaml/pull/725 *)
 
 let%expect_test _ =
-  Integration_util.compile_and_run
+  compile_and_run
     {|
     let print_bool b = print_endline (string_of_bool b)
     let () =
@@ -48,7 +50,7 @@ let%expect_test _ =
   |}]
 
 let%expect_test _ =
-  Integration_util.compile_and_run
+  compile_and_run
     {|
     let r = ref false
     let f x = match Obj.is_int x with
