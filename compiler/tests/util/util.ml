@@ -123,19 +123,31 @@ let exec_to_string_exn ~cmd =
   proc_result_ok results (Unix.close_process_in proc_in);
   results
 
+let get_project_build_directory () =
+  let regex_text = "_build/default" in
+  let regex = Str.regexp regex_text in
+  let left = Sys.getcwd () |> Str.split regex |> List.hd in
+  Filename.concat left regex_text
+
 let run_javascript file =
   exec_to_string_exn ~cmd:(Stdlib.Format.sprintf "node %s" (Format.path_of_js_file file))
 
 let compile_to_javascript ~pretty file =
   let out_file = Filename.temp_file "jsoo_test" ".js" in
-  let extra_args = if pretty then "--pretty" else "" in
+  let arg_buffer = Buffer.create 32 in
+  if pretty then Buffer.add_string arg_buffer "--pretty ";
+  Buffer.add_string arg_buffer "--no-runtime ";
+  Buffer.add_string
+    arg_buffer
+    (Filename.concat (get_project_build_directory ()) "runtime/runtime.js");
+  let extra_args = Buffer.contents arg_buffer in
   let cmd =
     Stdlib.Format.sprintf "../js_of_ocaml.exe %s %s -o %s" extra_args file out_file
   in
   let stdout = exec_to_string_exn ~cmd in
   print_string stdout;
-  (* this print shouldn't do anything, so if something weird happens, we'll get the results
-     here *)
+  (* this print shouldn't do anything, so if
+     something weird happens, we'll get the results here *)
   Format.js_file_of_path out_file
 
 let compile_bc_to_javascript ?(pretty = true) file =
