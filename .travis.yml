@@ -1,4 +1,10 @@
 language: c
+sudo: false
+
+cache:
+    directories:
+    - $HOME/.opam.cached
+    - $HOME/local
 
 matrix:
   include:
