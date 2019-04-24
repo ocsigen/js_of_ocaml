@@ -3,8 +3,8 @@ sudo: false
 
 cache:
     directories:
-    - $HOME/.opam.cached
-    - $HOME/local
+      - $HOME/.opam
+      - $HOME/Library/Caches/Homebrew
 
 matrix:
   include:
