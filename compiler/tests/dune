@@ -4,7 +4,7 @@
  (inline_tests
   (flags -allow-output-patterns)
   (deps
-    (file %{bin:js_of_ocaml})
+    %{bin:js_of_ocaml}
     (file %{lib:js_of_ocaml-compiler:runtime.js})))
  (preprocess (pps ppx_expect)))
 
