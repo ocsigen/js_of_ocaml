@@ -4,8 +4,8 @@
  (inline_tests
   (flags -allow-output-patterns)
   (deps
-    %{bin:js_of_ocaml}
-    (file %{lib:js_of_ocaml-compiler:runtime.js})))
+    (file ../js_of_ocaml.exe)
+    (file ../../runtime/runtime.js)))
  (preprocess (pps ppx_expect)))
 
 (include_subdirs unqualified)
