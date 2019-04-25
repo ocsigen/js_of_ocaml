@@ -122,7 +122,7 @@ let f
               `Keep
             with Not_found -> `Skip)
   in
-  Linker.load_files runtime_files ~runtime_transform:Macro.f;
+  Linker.load_files runtime_files;
   let paths =
     try List.append include_dir [Findlib.find_pkg_dir "stdlib"]
     with Not_found -> include_dir

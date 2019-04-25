@@ -4,7 +4,7 @@ let print_macro_transformed source =
   let buffer = Buffer.create (String.length source) in
   let pp = Jsoo.Pretty_print.to_buffer buffer in
   Jsoo.Pretty_print.set_compact pp false;
-  let source = (source |> Util.Filetype.js_text_of_string|> Util.Filetype.write_js) in
+  let source = source |> Util.Filetype.js_text_of_string |> Util.Filetype.write_js in
   let parsed = Util.parse_js source in
   let transformed = Jsoo.Macro.f parsed in
   Jsoo.Js_output.program pp transformed;
