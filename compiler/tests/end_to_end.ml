@@ -21,8 +21,8 @@ open Util
 
 let%expect_test _ =
   {| console.log("hello world") |}
-  |> Format.js_text_of_string
-  |> Format.write_js
+  |> Filetype.js_text_of_string
+  |> Filetype.write_js
   |> run_javascript
   |> print_endline;
   [%expect {| hello world |}]

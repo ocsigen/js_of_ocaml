@@ -23,8 +23,8 @@ let%expect_test _ =
   compile_lib [] "empty"
   |> compile_cmo_to_javascript ~sourcemap:false
   |> Stdlib.fst
-  |> Format.read_js
-  |> Format.string_of_js_text
+  |> Filetype.read_js
+  |> Filetype.string_of_js_text
   |> print_endline;
   [%expect
     {|

@@ -19,29 +19,29 @@
 
 open Js_of_ocaml_compiler
 
-module Format : Format_intf.S
+module Filetype : Filetype_intf.S
 
-val parse_js : Format.js_file -> Javascript.program
+val parse_js : Filetype.js_file -> Javascript.program
 
-val compile_ocaml_to_cmo : Format.ocaml_file -> Format.cmo_file
+val compile_ocaml_to_cmo : Filetype.ocaml_file -> Filetype.cmo_file
 
-val compile_ocaml_to_bc : Format.ocaml_file -> Format.bc_file
+val compile_ocaml_to_bc : Filetype.ocaml_file -> Filetype.bc_file
 
-val compile_lib : Format.cmo_file list -> string -> Format.cmo_file
+val compile_lib : Filetype.cmo_file list -> string -> Filetype.cmo_file
 
 val compile_cmo_to_javascript :
      ?pretty:bool
   -> ?sourcemap:bool
-  -> Format.cmo_file
-  -> Format.js_file * Format.sourcemap_file option
+  -> Filetype.cmo_file
+  -> Filetype.js_file * Filetype.sourcemap_file option
 
 val compile_bc_to_javascript :
      ?pretty:bool
   -> ?sourcemap:bool
-  -> Format.bc_file
-  -> Format.js_file * Format.sourcemap_file option
+  -> Filetype.bc_file
+  -> Filetype.js_file * Filetype.sourcemap_file option
 
-val run_javascript : Format.js_file -> string
+val run_javascript : Filetype.js_file -> string
 
 val expression_to_string : ?compact:bool -> Javascript.expression -> string
 
