@@ -1,6 +1,6 @@
 (* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2019 Hugo Heuzard
+ * Copyright (C) 2019 Ty Overby
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,27 +19,20 @@
 
 open Util
 
-let%expect_test "static eval of string get" =
-  let cmo =
-    compile_ocaml_to_bytecode
-      {|
-        let lz = lazy ( List.map (fun x -> x * x) [8;9] )
-
-        let rec do_the_lazy_rec n =
-            if n = 0 then [] else (Lazy.force lz) :: do_the_lazy_rec (n-1)
-
-        let _ =
-            do_the_lazy_rec 8
-  |}
-  in
-  let program = parse_js (print_compiled_js ~pretty:true cmo) in
-  print_fun_decl program "do_the_lazy_rec";
+let%expect_test _ =
+  "let id x = x"
+  |> Filetype.ocaml_text_of_string
+  |> Filetype.write_ocaml
+  |> compile_ocaml_to_cmo
+  |> compile_cmo_to_javascript ~sourcemap:true ~pretty:false
+  |> snd
+  |> (function
+       | Some x -> x
+       | None -> failwith "no sourcemap generated!")
+  |> Filetype.read_map
+  |> Filetype.string_of_map_text
+  |> print_endline;
   [%expect
     {|
-    function do_the_lazy_rec(n)
-     {if(0 === n)return 0;
-      var
-       _b_=do_the_lazy_rec(n - 1 | 0),
-       _c_=caml_obj_tag(lz),
-       _d_=250 === _c_?lz[1]:num_246 === _c_?caml_call1(CamlinternalLazy[2],lz):lz;
-      return [0,_d_,_b_]} |}]
+      {"version":3.0,"file":"/root/jsoo_test.js","sourceRoot":"","names":["a"],"mappings":"0B;sDAAOA,GAAI,MAAJA,EAAK,4B","sources":["/root/jsoo_test.ml"],"sourcesContent":["let id x = x"]}
+    |}]

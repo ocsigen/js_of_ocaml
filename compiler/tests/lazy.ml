@@ -1,6 +1,6 @@
 (* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2019 Ty Overby
+ * Copyright (C) 2019 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,34 +19,33 @@
 
 open Util
 
-let%expect_test _ =
-  let cmo =
-    compile_ocaml_to_bytecode
+let%expect_test "static eval of string get" =
+  let compile s =
+    s
+    |> Filetype.ocaml_text_of_string
+    |> Filetype.write_ocaml
+    |> compile_ocaml_to_cmo
+    |> compile_cmo_to_javascript ~pretty:true
+    |> fst
+    |> parse_js
+  in
+  let program =
+    compile
       {|
-    let lr = ref (List.init 2 Obj.repr)
-    let black_box v = lr := (Obj.repr v) :: !lr
+      let lz = lazy ( List.map (fun x -> x * x) [8;9] )
 
-    type r = {x: int; y: string}
-
-    let ex = {x = 5; y = "hello"} ;;
-    black_box ex
-    let ax = [|1;2;3;4|] ;;
-    black_box ax
-    let bx = [|1.0;2.0;3.0;4.0|] ;;
-    black_box bx ;;
-
-    (* combined with the black_box function above, this
-       will prevent the ocaml compiler from optimizing
-       away the constructions. *)
-    print_int ((List.length !lr) + (List.length !lr))
+      let rec do_the_lazy_rec n =
+        if n = 0 then [] else (Lazy.force lz) :: do_the_lazy_rec (n-1)
+      let _ = do_the_lazy_rec 8
   |}
   in
-  let program = parse_js (print_compiled_js ~pretty:true cmo) in
-  print_var_decl program "ex";
-  print_var_decl program "ax";
-  print_var_decl program "bx";
+  print_fun_decl program "do_the_lazy_rec";
   [%expect
     {|
-    var ex = [0,5,caml_new_string("hello")];
-    var ax = [0,1,2,3,4];
-    var bx = [254,1.,2.,3.,4.]; |}]
+    function do_the_lazy_rec(n)
+     {if(0 === n)return 0;
+      var
+       _b_=do_the_lazy_rec(n - 1 | 0),
+       _c_=runtime.caml_obj_tag(lz),
+       _d_=250 === _c_?lz[1]:246 === _c_?caml_call1(CamlinternalLazy[2],lz):lz;
+      return [0,_d_,_b_]} |}]

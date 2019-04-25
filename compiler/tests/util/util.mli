@@ -19,28 +19,34 @@
 
 open Js_of_ocaml_compiler
 
-val parse_js : string -> Javascript.program
+module Filetype : Filetype_intf.S
 
-val compile_ocaml_to_bytecode : string -> in_channel
+val parse_js : Filetype.js_file -> Javascript.program
 
-val print_compiled_js : ?pretty:bool -> in_channel -> string
+val compile_ocaml_to_cmo : Filetype.ocaml_file -> Filetype.cmo_file
 
-type find_result =
-  { expressions : Javascript.expression list
-  ; statements : Javascript.statement list
-  ; var_decls : Javascript.variable_declaration list
-  ; fun_decls : Javascript.function_declaration list }
+val compile_ocaml_to_bc : Filetype.ocaml_file -> Filetype.bc_file
 
-val find_javascript :
-     ?expression:(Javascript.expression -> bool)
-  -> ?statement:(Javascript.statement -> bool)
-  -> ?var_decl:(Javascript.variable_declaration -> bool)
-  -> ?fun_decl:(Javascript.function_declaration -> bool)
-  -> Javascript.program
-  -> find_result
+val compile_lib : Filetype.cmo_file list -> string -> Filetype.cmo_file
+
+val compile_cmo_to_javascript :
+     ?pretty:bool
+  -> ?sourcemap:bool
+  -> Filetype.cmo_file
+  -> Filetype.js_file * Filetype.sourcemap_file option
+
+val compile_bc_to_javascript :
+     ?pretty:bool
+  -> ?sourcemap:bool
+  -> Filetype.bc_file
+  -> Filetype.js_file * Filetype.sourcemap_file option
+
+val run_javascript : Filetype.js_file -> string
 
 val expression_to_string : ?compact:bool -> Javascript.expression -> string
 
 val print_var_decl : Javascript.program -> string -> unit
 
 val print_fun_decl : Javascript.program -> string -> unit
+
+val compile_and_run : string -> unit
