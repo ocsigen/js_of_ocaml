@@ -22,7 +22,7 @@ open Util
 let%expect_test _ =
   compile_lib [] "empty"
   |> compile_cmo_to_javascript ~sourcemap:false
-  |> Stdlib.fst
+  |> fst
   |> Filetype.read_js
   |> Filetype.string_of_js_text
   |> print_endline;

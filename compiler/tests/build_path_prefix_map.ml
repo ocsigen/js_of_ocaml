@@ -25,7 +25,7 @@ let%expect_test _ =
   |> Filetype.write_ocaml
   |> compile_ocaml_to_cmo
   |> compile_cmo_to_javascript ~sourcemap:true ~pretty:false
-  |> Stdlib.snd
+  |> snd
   |> (function
        | Some x -> x
        | None -> failwith "no sourcemap generated!")

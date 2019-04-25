@@ -267,6 +267,6 @@ let compile_and_run s =
   |> Filetype.write_ocaml
   |> compile_ocaml_to_bc
   |> compile_bc_to_javascript
-  |> Stdlib.fst
+  |> fst
   |> run_javascript
   |> print_endline

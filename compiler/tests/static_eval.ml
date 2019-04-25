@@ -25,7 +25,7 @@ let run_test s =
   |> Filetype.write_ocaml
   |> compile_ocaml_to_cmo
   |> compile_cmo_to_javascript ~pretty:true
-  |> Stdlib.fst
+  |> fst
   |> parse_js
 
 let%expect_test "static eval of string get" =
