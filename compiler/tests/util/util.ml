@@ -179,7 +179,7 @@ let compile_cmo_to_javascript ?(pretty = true) ?(sourcemap = true) file =
 let compile_ocaml_to_cmo file =
   let file = Format.path_of_ocaml_file file in
   let out_file = swap_extention file ~ext:"cmo" in
-  let _ : string =
+  let (_ : string) =
     exec_to_string_exn
       ~env:[]
       ~cmd:(Stdlib.Format.sprintf "ocamlc -c -g %s -o %s" file out_file)
@@ -189,7 +189,7 @@ let compile_ocaml_to_cmo file =
 let compile_ocaml_to_bc file =
   let file = Format.path_of_ocaml_file file in
   let out_file = swap_extention file ~ext:"bc" in
-  let _ : string =
+  let (_ : string) =
     exec_to_string_exn
       ~env:[]
       ~cmd:(Stdlib.Format.sprintf "ocamlc -g unix.cma %s -o %s" file out_file)
@@ -198,12 +198,14 @@ let compile_ocaml_to_bc file =
 
 let compile_lib list name =
   let out_file = swap_extention name ~ext:"cma" in
-  let _ : string =
+  let (_ : string) =
     exec_to_string_exn
       ~env:[]
-      ~cmd:(Stdlib.Format.sprintf "ocamlc -g -a %s -o %s"
-              (String.concat " " (List.map Format.path_of_cmo_file list))
-              out_file)
+      ~cmd:
+        (Stdlib.Format.sprintf
+           "ocamlc -g -a %s -o %s"
+           (String.concat " " (List.map Format.path_of_cmo_file list))
+           out_file)
   in
   Format.cmo_file_of_path out_file
 
