@@ -5,6 +5,7 @@ cache:
     directories:
       - $HOME/.opam
       - $HOME/Library/Caches/Homebrew
+      - $HOME/non-existant
 
 matrix:
   include:
