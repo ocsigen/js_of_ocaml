@@ -258,7 +258,8 @@ let print_fun_decl program n =
   let module J = Jsoo.Javascript in
   match !r with
   | [fd] -> print_string (program_to_string [J.Function_declaration fd, J.N])
-  | _ -> print_endline "not found"
+  | [] -> print_endline "not found"
+  | l -> print_endline (Format.sprintf "%d functions found" (List.length l))
 
 let compile_and_run s =
   s
