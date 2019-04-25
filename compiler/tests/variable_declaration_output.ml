@@ -24,10 +24,10 @@ let%expect_test _ =
     s
     |> Format.ocaml_text_of_string
     |> Format.write_ocaml
-    |> Util.compile_ocaml_to_cmo
-    |> Util.compile_cmo_to_javascript ~pretty:true
+    |> compile_ocaml_to_cmo
+    |> compile_cmo_to_javascript ~pretty:true
     |> Stdlib.fst
-    |> Util.parse_js
+    |> parse_js
   in
   let program =
     compile

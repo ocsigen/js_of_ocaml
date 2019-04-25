@@ -23,14 +23,14 @@ let%expect_test _ =
   "let id x = x"
   |> Format.ocaml_text_of_string
   |> Format.write_ocaml
-  |> Util.compile_ocaml_to_cmo
-  |> Util.compile_cmo_to_javascript ~sourcemap:true ~pretty:false
+  |> compile_ocaml_to_cmo
+  |> compile_cmo_to_javascript ~sourcemap:true ~pretty:false
   |> Stdlib.snd
   |> (function
        | Some x -> x
        | None -> failwith "no sourcemap generated!")
-  |> Util.Format.read_map
-  |> Util.Format.string_of_map_text
+  |> Format.read_map
+  |> Format.string_of_map_text
   |> print_endline;
   [%expect
     {|
