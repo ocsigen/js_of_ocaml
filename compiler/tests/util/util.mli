@@ -27,6 +27,8 @@ val compile_ocaml_to_cmo : Format.ocaml_file -> Format.cmo_file
 
 val compile_ocaml_to_bc : Format.ocaml_file -> Format.bc_file
 
+val compile_lib : Format.cmo_file list -> string -> Format.cmo_file
+
 val compile_cmo_to_javascript :
      ?pretty:bool
   -> ?sourcemap:bool

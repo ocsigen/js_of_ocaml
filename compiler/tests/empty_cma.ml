@@ -20,11 +20,11 @@
 open Util
 
 let%expect_test _ =
-  Format.cmo_file_of_path "./empty.cma"
-  |> Util.compile_cmo_to_javascript ~sourcemap:false
+  compile_lib [] "empty"
+  |> compile_cmo_to_javascript ~sourcemap:false
   |> Stdlib.fst
-  |> Util.Format.read_js
-  |> Util.Format.string_of_js_text
+  |> Format.read_js
+  |> Format.string_of_js_text
   |> print_endline;
   [%expect
     {|
