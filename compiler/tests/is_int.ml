@@ -18,31 +18,25 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
-(* https://github.com/ocsigen/js_of_ocaml/issues/400 *)
-(* https://github.com/ocsigen/js_of_ocaml/pull/402 *)
+(* https://github.com/ocsigen/js_of_ocaml/issues/739 *)
 
 let%expect_test _ =
-  Integration_util.compile_and_run
+  Util.compile_and_run
     {|
-  exception A
-  exception B of int
+     let r = ref false
+     let f x =
+       match Obj.is_int x with
+       | true -> r := true; true
+       | false -> r := false; false
 
-  let a_exn () = raise A
-
-  (* Make sure that [a] doesn't look constant *)
-  let a () = if Random.int 1 + 1 = 0 then 2 else 4
-
-  let b_exn () = raise (B 2)
-
-  (* https://github.com/ocsigen/js_of_ocaml/issues/400
-   * match .. with exception is no compiled properly *)
-  let () =
-    assert (
-      try
-        match a () with
-        | exception (A | B _) -> true
-        | _n -> b_exn ()
-      with B _ -> true);
-  print_endline "Success!"
-|};
-  [%expect "Success!"]
+     let print_bool b = print_endline (string_of_bool b)
+     let () =
+       print_string "[not (is_int 1)]: ";
+       print_bool (not (f (Obj.repr 1)));
+       print_string "[is_int (1,2,3)]: ";
+       print_bool (f (Obj.repr (1, 2, 3)))
+  |};
+  [%expect {|
+    [not (is_int 1)]: false
+    [is_int (1,2,3)]: false
+  |}]

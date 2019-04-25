@@ -1,9 +1,9 @@
 (library
  (name expect_tests)
- (libraries js_of_ocaml_compiler unix)
- (inline_tests 
+ (libraries js_of_ocaml_compiler unix str)
+ (inline_tests
   (flags -allow-output-patterns)
-  (deps 
+  (deps
     (file ../js_of_ocaml.exe)
     (file ../../runtime/runtime.js)))
  (preprocess (pps ppx_expect)))

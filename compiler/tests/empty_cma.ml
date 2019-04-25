@@ -1,11 +1,11 @@
-(* Js_of_ocaml compiler
+(* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2019 Ty Overby
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, with linking exception;
- * either version 2.1 of the License, or (at your option) any later version.
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -20,22 +20,15 @@
 open Util
 
 let%expect_test _ =
-  {| console.log("hello world") |}
-  |> Util.Format.js_source_of_string
-  |> Util.Format.write_js
-  |> Util.run_javascript
+  compile_lib [] "empty"
+  |> compile_cmo_to_javascript ~sourcemap:false
+  |> fst
+  |> Filetype.read_js
+  |> Filetype.string_of_js_text
   |> print_endline;
-  [%expect {| hello world |}]
-
-let compile_and_run s =
-  s
-  |> Format.ocaml_source_of_string
-  |> Format.write_ocaml
-  |> compile_ocaml_to_bc
-  |> compile_bc_to_javascript
-  |> run_javascript
-  |> print_endline
-
-let%expect_test _ =
-  compile_and_run {| print_endline "hello world" |};
-  [%expect {| hello world |}]
+  [%expect
+    {|
+      (function(joo_global_object)
+         {"use strict";var runtime=joo_global_object.jsoo_runtime;return}
+        (function(){return this}()));
+    |}]

@@ -20,29 +20,19 @@
 open Util
 
 let%expect_test _ =
-  let compile s =
-    s
-    |> Filetype.ocaml_text_of_string
-    |> Filetype.write_ocaml
-    |> compile_ocaml_to_cmo
-    |> compile_cmo_to_javascript ~pretty:true
-    |> fst
-    |> parse_js
-  in
-  let program =
-    compile
-      {|
-    type r = {x: int; y: string}
-    let ex = {x = 5; y = "hello"} ;;
-    let ax = [|1;2;3;4|] ;;
-    let bx = [|1.0;2.0;3.0;4.0|] ;;
-    |}
-  in
-  print_var_decl program "ex";
-  print_var_decl program "ax";
-  print_var_decl program "bx";
+  "let id x = x"
+  |> Filetype.ocaml_text_of_string
+  |> Filetype.write_ocaml
+  |> compile_ocaml_to_cmo
+  |> compile_cmo_to_javascript ~sourcemap:true ~pretty:false
+  |> snd
+  |> (function
+       | Some x -> x
+       | None -> failwith "no sourcemap generated!")
+  |> Filetype.read_map
+  |> Filetype.string_of_map_text
+  |> print_endline;
   [%expect
     {|
-    var ex = [0,5,runtime.caml_new_string("hello")];
-    var ax = [0,1,2,3,4];
-    var bx = [254,1.,2.,3.,4.]; |}]
+      {"version":3.0,"file":"/root/jsoo_test.js","sourceRoot":"","names":["a"],"mappings":"0B;sDAAOA,GAAI,MAAJA,EAAK,4B","sources":["/root/jsoo_test.ml"],"sourcesContent":["let id x = x"]}
+    |}]

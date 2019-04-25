@@ -19,7 +19,7 @@
 *)
 
 let%expect_test _ =
-  Integration_util.compile_and_run
+  Util.compile_and_run
     {|
   let log_success () = print_endline "Success!"
   let log_failure = Printf.printf "Failure! %s"

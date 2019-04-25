@@ -36,12 +36,13 @@ case $MODE in
         opam install -y lwt reactiveData tyxml || true
         opam install -y ppx_tools ppx_deriving || true
 
-
         opam install -y --best-effort $PACKAGES
+        opam upgrade
         ;;
     build)
         opam install -y --deps-only $PACKAGES
         opam install -y cohttp-lwt-unix menhir ppx_expect
+        opam upgrade
         dune build @runtest @default @ocsigen-doc -j 8
         ;;
 esac

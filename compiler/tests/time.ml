@@ -15,9 +15,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
-
-open Integration_util
+ *)
+open Util
 
 let%expect_test _ =
   compile_and_run {| print_float (Unix.time ()) |};
@@ -33,31 +32,24 @@ let%expect_test _ =
     open Unix
     let {tm_sec; tm_min; tm_hour; tm_mday; tm_mon; tm_year; tm_wday; tm_yday; tm_isdst}
       = gmtime (time ()) ;;
+    let gap () = print_char '\n';;
 
     print_int tm_sec;
-    print_char '\n';
-
+    gap ();
     print_int tm_min;
-    print_char '\n';
-
+    gap ();
     print_int tm_hour;
-    print_char '\n';
-
+    gap ();
     print_int tm_mday;
-    print_char '\n';
-
+    gap ();
     print_int tm_mon;
-    print_char '\n';
-
+    gap ();
     print_int tm_year;
-    print_char '\n';
-
+    gap ();
     print_int tm_wday;
-    print_char '\n';
-
+    gap ();
     print_int tm_yday;
-    print_char '\n';
-
+    gap ();
     print_endline (if tm_isdst then "true" else "false");
   |};
   [%expect

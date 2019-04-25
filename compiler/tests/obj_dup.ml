@@ -22,7 +22,7 @@
 (* https://github.com/ocsigen/js_of_ocaml/pull/725 *)
 
 let%expect_test _ =
-  Integration_util.compile_and_run
+  Util.compile_and_run
     {|
     let print_bool b = print_endline (string_of_bool b)
     let () =
@@ -48,7 +48,7 @@ let%expect_test _ =
   |}]
 
 let%expect_test _ =
-  Integration_util.compile_and_run
+  Util.compile_and_run
     {|
     let r = ref false
     let f x = match Obj.is_int x with

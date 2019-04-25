@@ -1,5 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2017 Hugo Heuzard
  * Copyright (C) 2019 Ty Overby
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,13 +18,18 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
-open Util
+(* https://github.com/ocsigen/js_of_ocaml/issues/507 *)
+(* https://github.com/ocsigen/js_of_ocaml/commit/e2f465dd1ac03da706ae086da37794184db21d31 *)
 
-let compile_and_run s =
-  s
-  |> Format.ocaml_source_of_string
-  |> Format.write_ocaml
-  |> compile_ocaml_to_bc
-  |> compile_bc_to_javascript
-  |> run_javascript
-  |> print_endline
+let%expect_test _ =
+  Util.compile_and_run
+    {|
+    let _ =
+      let r = ref 0.0 in
+      for _ = 1 to 100 do
+        r := !r -. (-1.0 *. !r)
+      done;
+      ();
+    print_endline "Success!"
+  |};
+  [%expect {| Success! |}]

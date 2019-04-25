@@ -18,7 +18,7 @@ Js_of_ocaml is composed of multiple packages:
   * js_of_ocaml-ppx, the ppx syntax extension (recommended).
   * js_of_ocaml-camlp4, the camlp4 syntax extension (deprecated).
   * js_of_ocaml, the base library.
-  * js_of_ocaml-ocamlbuild, an ocamlbuild pluging to compile to
+  * js_of_ocaml-ocamlbuild, an ocamlbuild plugin to compile to
     javascript.
   * js_of_ocaml-lwt, lwt support.
   * js_of_ocaml-tyxml, tyxml support.
