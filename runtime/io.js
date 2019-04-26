@@ -394,15 +394,17 @@ function caml_output_value (chanid,v,_flags) {
 
 
 //Provides: caml_ml_seek_out
-//Requires: caml_ml_channels
+//Requires: caml_ml_channels, caml_ml_flush
 function caml_ml_seek_out(chanid,pos){
+  caml_ml_flush(chanid);
   caml_ml_channels[chanid].offset = pos;
   return 0;
 }
 
 //Provides: caml_ml_seek_out_64
-//Requires: caml_int64_to_float, caml_ml_channels
+//Requires: caml_int64_to_float, caml_ml_channels, caml_ml_flush
 function caml_ml_seek_out_64(chanid,pos){
+  caml_ml_flush(chanid);
   caml_ml_channels[chanid].offset = caml_int64_to_float(pos);
   return 0;
 }

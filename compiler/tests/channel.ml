@@ -33,7 +33,7 @@ let%expect_test _ =
     let () = seek_out oc 0
     let () = print_int (out_channel_length oc)
 |};
-  [%expect {| 00444 |}]
+  [%expect {| 00448 |}]
 
 let%expect_test _ =
   let oc = open_out "b.txt" in
