@@ -32,7 +32,7 @@ let%expect_test _ =
     let () = print_int (out_channel_length oc)
     let () = seek_out oc 0
     let () = print_int (out_channel_length oc)
-|};
+ |};
   [%expect {| 00448 |}]
 
 let%expect_test _ =
@@ -47,3 +47,61 @@ let%expect_test _ =
   let () = seek_out oc 0 in
   let () = print_int (out_channel_length oc) in
   [%expect {| 00448 |}]
+
+let%expect_test _ =
+  Util.compile_and_run
+    {|
+
+    let marshal_out ch v = Marshal.to_channel ch v []; flush ch
+
+    let marshal_out_segment f ch v =
+      let start = pos_out ch in
+      Format.printf "start=%d\n%!" start;
+      output_binary_int ch 0;  (* dummy value for stop *)
+      marshal_out ch v;
+      let stop = pos_out ch in
+      seek_out ch start;
+      output_binary_int ch stop;
+      seek_out ch stop;
+      Digest.output ch (Digest.file f)
+
+
+    let _ =
+        let filename = "out.txt" in
+        let chan = open_out filename in
+        output_binary_int chan 8900;
+        marshal_out_segment filename chan ["output";"data"];
+        marshal_out_segment filename chan ["more";"stuff"]
+|};
+  [%expect {|
+    start=0
+    start=43 |}]
+
+let%expect_test _ =
+  let module M = struct
+    let marshal_out ch v =
+      Marshal.to_channel ch v [];
+      flush ch
+
+    let marshal_out_segment f ch v =
+      let start = pos_out ch in
+      Format.printf "start=%d\n%!" start;
+      output_binary_int ch 0;
+      (* dummy value for stop *)
+      marshal_out ch v;
+      let stop = pos_out ch in
+      seek_out ch start;
+      output_binary_int ch stop;
+      seek_out ch stop;
+      Digest.output ch (Digest.file f)
+
+    let _ =
+      let filename = "out.txt" in
+      let chan = open_out filename in
+      output_binary_int chan 8900;
+      marshal_out_segment filename chan ["output"; "data"];
+      marshal_out_segment filename chan ["more"; "stuff"]
+  end in
+  [%expect {|
+    start=4
+    start=59 |}]
