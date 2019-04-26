@@ -74,8 +74,8 @@ let%expect_test _ =
         marshal_out_segment filename chan ["more";"stuff"]
 |};
   [%expect {|
-    start=0
-    start=43 |}]
+    start=4
+    start=59 |}]
 
 let%expect_test _ =
   let module M = struct

@@ -410,12 +410,16 @@ function caml_ml_seek_out_64(chanid,pos){
 }
 
 //Provides: caml_ml_pos_out
-//Requires: caml_ml_channels
-function caml_ml_pos_out(chanid) {return caml_ml_channels[chanid].offset}
+//Requires: caml_ml_channels, caml_ml_flush
+function caml_ml_pos_out(chanid) {
+  caml_ml_flush(chanid);
+  return caml_ml_channels[chanid].offset
+}
 
 //Provides: caml_ml_pos_out_64
-//Requires: caml_int64_of_float, caml_ml_channels
+//Requires: caml_int64_of_float, caml_ml_channels, caml_ml_flush
 function caml_ml_pos_out_64(chanid) {
+  caml_ml_flush(chanid);
   return caml_int64_of_float (caml_ml_channels[chanid].offset);
 }
 
