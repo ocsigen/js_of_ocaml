@@ -378,6 +378,7 @@ struct
         pp_string f ~utf:(kind = `Utf8) ~quote s
     | EBool b -> PP.string f (if b then "true" else "false")
     | ENum s ->
+        let s = Num.to_string s in
         let need_parent =
           if s.[0] = '-'
           then l > 13 (* Negative numbers may need to be parenthesized. *)

@@ -19,6 +19,87 @@
  *)
 open Stdlib
 
+module Num : sig
+  type t
+
+  (** Conversions *)
+
+  val of_string_unsafe : string -> t
+
+  val of_int32 : int32 -> t
+
+  val of_float : float -> t
+
+  val to_string : t -> string
+
+  val to_int32 : t -> int32
+
+  (** Predicates *)
+
+  val is_zero : t -> bool
+
+  val is_one : t -> bool
+
+  val is_neg : t -> bool
+
+  (** Arithmetic *)
+
+  val add : t -> t -> t
+
+  val neg : t -> t
+end = struct
+  type t = string
+
+  let of_string_unsafe s = s
+
+  let to_string s = s
+
+  let to_int32 s =
+    if String.is_prefix s ~prefix:"0"
+       && String.length s > 1
+       && String.for_all s ~f:(function
+              | '0' .. '7' -> true
+              | _ -> false)
+    then (* octal notation *)
+      Int32.of_string ("0o" ^ s)
+    else Int32.of_string s
+
+  let of_int32 = Int32.to_string
+
+  let of_float v =
+    if v = infinity
+    then "Infinity"
+    else if v = neg_infinity
+    then "-Infinity"
+    else if v <> v
+    then "NaN" (* [1/-0] = -inf seems to be the only way to detect -0 in JavaScript *)
+    else if v = 0. && 1. /. v = neg_infinity
+    then "-0."
+    else
+      let vint = int_of_float v in
+      if float_of_int vint = v
+      then Printf.sprintf "%d." vint
+      else
+        let s1 = Printf.sprintf "%.12g" v in
+        if v = float_of_string s1
+        then s1
+        else
+          let s2 = Printf.sprintf "%.15g" v in
+          if v = float_of_string s2 then s2 else Printf.sprintf "%.18g" v
+
+  let is_zero s = String.equal s "0"
+
+  let is_one s = String.equal s "1"
+
+  let is_neg s = s.[0] = '-'
+
+  let drop1 s = String.sub s ~pos:1 ~len:(String.length s - 1)
+
+  let neg s = if is_neg s then drop1 s else "-" ^ s
+
+  let add a b = of_int32 (Int32.add (to_int32 a) (to_int32 b))
+end
+
 module Label = struct
   type t =
     | L of int
@@ -116,7 +197,7 @@ and property_name_and_value_list = (property_name * expression) list
 and property_name =
   | PNI of identifier
   | PNS of string
-  | PNN of string
+  | PNN of Num.t
 
 and expression =
   | ESeq of expression * expression
@@ -132,7 +213,7 @@ and expression =
   | EStr of string * [`Bytes | `Utf8]
   | EArr of array_litteral
   | EBool of bool
-  | ENum of string
+  | ENum of Num.t
   | EObj of property_name_and_value_list
   | EQuote of string
   | ERegexp of string * string option
@@ -213,28 +294,6 @@ let compare_ident t1 t2 =
     | n -> n)
   | S _, V _ -> -1
   | V _, S _ -> 1
-
-let string_of_float v =
-  if v = infinity
-  then "Infinity"
-  else if v = neg_infinity
-  then "-Infinity"
-  else if v <> v
-  then "NaN" (* [1/-0] = -inf seems to be the only way to detect -0 in JavaScript *)
-  else if v = 0. && 1. /. v = neg_infinity
-  then "-0."
-  else
-    let vint = int_of_float v in
-    (* compiler 1000 into 1e3 *)
-    if float_of_int vint = v
-    then Printf.sprintf "%d." vint
-    else
-      let s1 = Printf.sprintf "%.12g" v in
-      if v = float_of_string s1
-      then s1
-      else
-        let s2 = Printf.sprintf "%.15g" v in
-        if v = float_of_string s2 then s2 else Printf.sprintf "%.18g" v
 
 exception Not_an_ident
 
