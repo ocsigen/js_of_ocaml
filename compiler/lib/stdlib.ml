@@ -124,6 +124,32 @@ module String = struct
 
   include StringLabels
 
+  let is_prefix ~prefix s =
+    let len_a = length prefix in
+    let len_s = length s in
+    if len_a > len_s
+    then false
+    else
+      let max_idx_a = len_a - 1 in
+      let rec loop i =
+        if i > max_idx_a
+        then true
+        else if unsafe_get prefix i <> unsafe_get s i
+        then false
+        else loop (i + 1)
+      in
+      loop 0
+
+  let for_all =
+    let rec loop s ~f ~last i =
+      if i > last
+      then true
+      else if f (String.unsafe_get s i)
+      then loop s ~f ~last (i + 1)
+      else false
+    in
+    fun s ~f -> loop s ~f ~last:(String.length s - 1) 0
+
   let is_ascii s =
     let res = ref true in
     for i = 0 to String.length s - 1 do
