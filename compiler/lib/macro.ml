@@ -1,6 +1,23 @@
-open Stdlib
+(* Js_of_ocaml compiler
+ * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2019 Ty Overby, Jane Street Group LLC
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+*)
 
-let zero, one = Javascript.ENum "0", Javascript.ENum "1"
+open Stdlib
 
 class macro_mapper =
   object (m)
@@ -11,25 +28,18 @@ class macro_mapper =
       match x with
       | J.ECall (J.EVar (J.S {name; _}), args, _) -> (
         match name, args with
-        | "BLOCK", tag :: (_ :: _ as args) ->
-            let tag = Some tag in
-            let args = List.map ~f:(fun a -> Some (m#expression a)) args in
-            J.EArr (tag :: args)
-        | "TAG", [e] -> J.EAccess (m#expression e, zero)
-        | "LENGTH", [e] ->
-            let underlying = J.EDot (m#expression e, "length") in
-            J.EBin (J.Minus, underlying, one)
+        | "BLOCK", J.ENum tag :: (_ :: _ as args) ->
+            let tag = Int32.to_int (J.Num.to_int32 tag) in
+            let args = List.map args ~f:m#expression in
+            Mlvalue.Block.make ~tag ~args
+        | "TAG", [e] -> Mlvalue.Block.tag (m#expression e)
+        | "LENGTH", [e] -> Mlvalue.Array.length (m#expression e)
         | "FIELD", [e; J.ENum n] ->
-            let idx = int_of_string n in
-            let adjusted = J.ENum (string_of_int (idx + 1)) in
-            J.EAccess (m#expression e, adjusted)
+            let idx = Int32.to_int (J.Num.to_int32 n) in
+            Mlvalue.Block.field (m#expression e) idx
         | "FIELD", [_; J.EUn (J.Neg, _)] ->
             failwith "Negative field indexes are not allowed"
-        | "FIELD", [e; idx] ->
-            let adjusted = J.EBin (J.Plus, one, m#expression idx) in
-            J.EAccess (m#expression e, adjusted)
-        | "ISBLOCK", [e] ->
-            J.EBin (J.NotEqEq, J.EUn (J.Typeof, m#expression e), J.EStr ("number", `Utf8))
+        | "ISBLOCK", [e] -> Mlvalue.is_block (m#expression e)
         | ("BLOCK" | "TAG" | "LENGTH" | "FIELD" | "ISBLOCK"), _ ->
             failwith (Format.sprintf "macro %s called with inappropriate arguments" name)
         | _ -> super#expression x)

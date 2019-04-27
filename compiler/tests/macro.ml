@@ -1,3 +1,22 @@
+(* Js_of_ocaml compiler
+ * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2019 Ty Overby
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+*)
+
 module Jsoo = Js_of_ocaml_compiler
 
 let print_macro_transformed source =
@@ -49,6 +68,14 @@ let%expect_test "BLOCK(1, a, b, c)" =
   print_macro_transformed "BLOCK(1, a, b, c)";
   [%expect {| [1,a,b,c]; |}]
 
+let%expect_test "BLOCK(077, a)" =
+  print_macro_transformed "BLOCK(077, a)";
+  [%expect {| [63,a]; |}]
+
+let%expect_test "BLOCK(0779, a)" =
+  print_macro_transformed "BLOCK(0779, a)";
+  [%expect {| [779,a]; |}]
+
 let%expect_test "TAG(a)" =
   print_macro_transformed "TAG(a)";
   [%expect {| a[0]; |}]
@@ -63,11 +90,11 @@ let%expect_test "FIELD(a)" =
 
 let%expect_test "FIELD(a, b)" =
   print_macro_transformed "FIELD(a, b)";
-  [%expect {| a[1 + b]; |}]
+  [%expect {| failure: macro FIELD called with inappropriate arguments |}]
 
 let%expect_test "FIELD(a, b << 5)" =
   print_macro_transformed "FIELD(a, b << 5)";
-  [%expect {| a[1 + (b << 5)]; |}]
+  [%expect {| failure: macro FIELD called with inappropriate arguments |}]
 
 let%expect_test "FIELD(a, 0)" =
   print_macro_transformed "FIELD(a, 0)";
