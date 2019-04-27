@@ -309,16 +309,17 @@ let rec constant_rec ~ctx x level instrs =
   | IString s -> Share.get_string str_js s ctx.Ctx.share, instrs
   | Float f -> float_const f, instrs
   | Float_array a ->
-      ( J.EArr
-          (Some (int Obj.double_array_tag)
-          :: Array.to_list (Array.map a ~f:(fun f -> Some (float_const f))))
+      ( Mlvalue.Array.make
+          ~tag:Obj.double_array_tag
+          ~args:(Array.to_list (Array.map a ~f:float_const))
       , instrs )
   | Int64 i ->
-      ( J.EArr
-          [ Some (int 255)
-          ; Some (int (Int64.to_int i land 0xffffff))
-          ; Some (int (Int64.to_int (Int64.shift_right i 24) land 0xffffff))
-          ; Some (int (Int64.to_int (Int64.shift_right i 48) land 0xffff)) ]
+      ( Mlvalue.Block.make
+          ~tag:255
+          ~args:
+            [ int (Int64.to_int i land 0xffffff)
+            ; int (Int64.to_int (Int64.shift_right i 24) land 0xffffff)
+            ; int (Int64.to_int (Int64.shift_right i 48) land 0xffff) ]
       , instrs )
   | Tuple (tag, a) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
@@ -356,11 +357,11 @@ let rec constant_rec ~ctx x level instrs =
                       let instrs =
                         (J.Variable_statement [J.V v, Some (js, J.N)], J.N) :: instrs
                       in
-                      Some (J.EVar (J.V v)) :: acc, instrs
-                  | _ -> Some js :: acc, instrs)
-            else List.rev_map l ~f:(fun x -> Some x), instrs
+                      J.EVar (J.V v) :: acc, instrs
+                  | _ -> js :: acc, instrs)
+            else List.rev l, instrs
           in
-          J.EArr (Some (int tag) :: l), instrs)
+          Mlvalue.Block.make ~tag ~args:l, instrs)
   | Int i -> int32 i, instrs
 
 let constant ~ctx x level =
@@ -840,7 +841,7 @@ let _ =
       let p = Share.get_prim (runtime_fun ctx) "caml_new_string" ctx.Ctx.share in
       J.ECall (p, [J.EBin (J.Plus, str_js "", cx)], loc));
   register_bin_prim "caml_array_unsafe_get" `Mutable (fun cx cy _ ->
-      J.EAccess (cx, plus_int cy one));
+      Mlvalue.Array.field cx cy);
   register_bin_prim "%int_add" `Pure (fun cx cy _ -> to_int (plus_int cx cy));
   register_bin_prim "%int_sub" `Pure (fun cx cy _ -> to_int (J.EBin (J.Minus, cx, cy)));
   register_bin_prim "%direct_int_mul" `Pure (fun cx cy _ ->
@@ -881,7 +882,7 @@ let _ =
   register_bin_prim "caml_fmod_float" `Pure (fun cx cy _ ->
       val_float (J.EBin (J.Mod, float_val cx, float_val cy)));
   register_tern_prim "caml_array_unsafe_set" (fun cx cy cz _ ->
-      J.EBin (J.Eq, J.EAccess (cx, plus_int cy one), cz));
+      J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz));
   register_un_prim "caml_alloc_dummy" `Pure (fun _ _ -> J.EArr []);
   register_un_prim "caml_obj_dup" `Mutable (fun cx loc ->
       J.ECall (J.EDot (cx, "slice"), [], loc));
@@ -970,14 +971,14 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
             let (prop', cx), queue = access_queue queue x in
-            Some cx :: args, or_p prop prop', queue)
+            cx :: args, or_p prop prop', queue)
           (Array.to_list a)
           ~init:([], const_p, queue)
       in
-      (J.EArr (Some (int tag) :: contents), prop, queue), []
+      (Mlvalue.Block.make ~tag ~args:contents, prop, queue), []
   | Field (x, n) ->
       let (px, cx), queue = access_queue queue x in
-      (J.EAccess (cx, int (n + 1)), or_p px mutable_p, queue), []
+      (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []
   | Closure (args, ((pc, _) as cont)) ->
       let loc = source_location ctx ~after:true pc in
       let clo = compile_closure ctx false cont in
@@ -1001,11 +1002,11 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
         match p, l with
         | Vectlength, [x] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
-            J.EBin (J.Minus, J.EDot (cx, "length"), one), px, queue
+            Mlvalue.Array.length cx, px, queue
         | Array_get, [x; y] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
-            J.EAccess (cx, plus_int cy one), or_p mutable_p (or_p px py), queue
+            Mlvalue.Array.field cx cy, or_p mutable_p (or_p px py), queue
         | Extern "caml_js_var", [Pc (String nm | IString nm)]
          |Extern ("caml_js_expr" | "caml_pure_js_expr"), [Pc (String nm | IString nm)]
           -> (
@@ -1166,11 +1167,8 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             let (py, cy), queue = access_queue' ~ctx queue y in
             bool (J.EBin (J.NotEqEq, cx, cy)), or_p px py, queue
         | IsInt, [x] ->
-            (* JavaScript engines recognize the pattern
-           'typeof x==="number"'; if the string is shared,
-           less efficient code is generated. *)
             let (px, cx), queue = access_queue' ~ctx queue x in
-            bool (J.EBin (J.EqEqEq, J.EUn (J.Typeof, cx), str_js "number")), px, queue
+            bool (Mlvalue.is_immediate cx), px, queue
         | Ult, [x; y] ->
             let (px, cx), queue = access_queue' ~ctx queue x in
             let (py, cy), queue = access_queue' ~ctx queue y in
@@ -1223,21 +1221,21 @@ and translate_instr ctx expr_queue loc instr =
       flush_queue
         expr_queue
         mutator_p
-        [J.Expression_statement (J.EBin (J.Eq, J.EAccess (cx, int (n + 1)), cy)), loc]
+        [J.Expression_statement (J.EBin (J.Eq, Mlvalue.Block.field cx n, cy)), loc]
   | Offset_ref (x, 1) ->
       (* FIX: may overflow.. *)
       let (_px, cx), expr_queue = access_queue expr_queue x in
       flush_queue
         expr_queue
         mutator_p
-        [J.Expression_statement (J.EUn (J.IncrA, J.EAccess (cx, int 1))), loc]
+        [J.Expression_statement (J.EUn (J.IncrA, Mlvalue.Block.field cx 0)), loc]
   | Offset_ref (x, n) ->
       (* FIX: may overflow.. *)
       let (_px, cx), expr_queue = access_queue expr_queue x in
       flush_queue
         expr_queue
         mutator_p
-        [J.Expression_statement (J.EBin (J.PlusEq, J.EAccess (cx, int 1), int n)), loc]
+        [J.Expression_statement (J.EBin (J.PlusEq, Mlvalue.Block.field cx 0, int n)), loc]
   | Array_set (x, y, z) ->
       let (_px, cx), expr_queue = access_queue expr_queue x in
       let (_py, cy), expr_queue = access_queue expr_queue y in
@@ -1245,7 +1243,7 @@ and translate_instr ctx expr_queue loc instr =
       flush_queue
         expr_queue
         mutator_p
-        [J.Expression_statement (J.EBin (J.Eq, J.EAccess (cx, plus_int cy one), cz)), loc]
+        [J.Expression_statement (J.EBin (J.Eq, Mlvalue.Array.field cx cy, cz)), loc]
 
 and translate_instrs ctx expr_queue loc instr =
   match instr with
@@ -1604,7 +1602,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
             interm
             succs
             loc
-            (J.EAccess (cx, int 0))
+            (Mlvalue.Block.tag cx)
             (DTree.build_switch a2)
         in
         flush_all queue code
@@ -1652,12 +1650,12 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
             interm
             succs
             loc
-            (J.EAccess (var x, int 0))
+            (Mlvalue.Block.tag (var x))
             (DTree.build_switch a2)
         in
         let code =
           Js_simpl.if_statement
-            (J.EBin (J.EqEqEq, J.EUn (J.Typeof, var x), str_js "number"))
+            (Mlvalue.is_immediate (var x))
             loc
             (Js_simpl.block b1)
             false
