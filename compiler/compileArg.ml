@@ -28,7 +28,7 @@ type t =
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
   ; runtime_only : bool
-  ; output_file : string option
+  ; output_file : [`Name of string | `Stdout] * bool
   ; input_file : string option
   ; params : (string * string) list
   ; static_env : (string * string) list
@@ -43,7 +43,8 @@ type t =
     include_dir : string list
   ; fs_files : string list
   ; fs_output : string option
-  ; fs_external : bool }
+  ; fs_external : bool
+  ; keep_unit_names : bool }
 
 let options =
   let toplevel_section = "OPTIONS (TOPLEVEL)" in
@@ -66,6 +67,10 @@ let options =
       ^ "Use '-' to read from the standard input instead."
     in
     Arg.(required & pos ~rev:true 0 (some string) None & info [] ~docv:"PROGRAM" ~doc)
+  in
+  let keep_unit_names =
+    let doc = "Keep unit name" in
+    Arg.(value & flag & info ["keep-unit-names"] ~doc)
   in
   let profile =
     let doc = "Set optimization profile : [$(docv)]." in
@@ -191,7 +196,8 @@ let options =
       sourcemap_root
       output_file
       input_file
-      js_files =
+      js_files
+      keep_unit_names =
     let chop_extension s =
       try Filename.chop_extension s with Invalid_argument _ -> s
     in
@@ -213,17 +219,21 @@ let options =
     in
     let output_file =
       match output_file with
-      | Some _ -> output_file
-      | None -> Option.map input_file ~f:(fun s -> chop_extension s ^ ".js")
+      | Some "-" -> `Stdout, true
+      | Some s -> `Name s, true
+      | None -> (
+        match input_file with
+        | Some s -> `Name (chop_extension s ^ ".js"), false
+        | None -> `Stdout, false)
     in
     let source_map =
       if ((not no_sourcemap) && sourcemap) || sourcemap_inline_in_js
       then
         let file, sm_output_file =
           match output_file with
-          | Some file when sourcemap_inline_in_js -> file, None
-          | Some file -> file, Some (chop_extension file ^ ".map")
-          | None -> "STDIN", None
+          | `Name file, _ when sourcemap_inline_in_js -> file, None
+          | `Name file, _ -> file, Some (chop_extension file ^ ".map")
+          | `Stdout, _ -> "STDIN", None
         in
         Some
           ( sm_output_file
@@ -268,7 +278,8 @@ let options =
       ; nocmis
       ; output_file
       ; input_file
-      ; source_map }
+      ; source_map
+      ; keep_unit_names }
   in
   let t =
     Term.(
@@ -296,7 +307,8 @@ let options =
       $ sourcemap_root
       $ output_file
       $ input_file
-      $ js_files)
+      $ js_files
+      $ keep_unit_names)
   in
   Term.ret t
 

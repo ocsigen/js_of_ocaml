@@ -52,6 +52,9 @@ let gen_file file f =
     Sys.remove f_tmp;
     raise exc
 
+let gen_unit_filename dir u =
+  Filename.concat dir (Printf.sprintf "%s.js" u.Cmo_format.cu_name)
+
 let f
     { CompileArg.common
     ; profile
@@ -71,7 +74,8 @@ let f
     ; fs_files
     ; fs_output
     ; fs_external
-    ; export_file } =
+    ; export_file
+    ; keep_unit_names } =
   let dynlink = dynlink || toplevel || runtime_only in
   let custom_header = common.CommonArg.custom_header in
   let global =
@@ -81,9 +85,9 @@ let f
   in
   CommonArg.eval common;
   (match output_file with
-  | None | Some "" | Some "-" -> ()
-  | Some name when debug_mem () -> Debug.start_profiling name
-  | Some _ -> ());
+  | `Stdout, _ -> ()
+  | `Name name, _ when debug_mem () -> Debug.start_profiling name
+  | `Name _, _ -> ());
   List.iter params ~f:(fun (s, v) -> Config.Param.set s v);
   List.iter static_env ~f:(fun (s, v) -> Eval.set_static_env s v);
   let t = Timer.make () in
@@ -127,7 +131,6 @@ let f
     try List.append include_dir [Findlib.find_pkg_dir "stdlib"]
     with Not_found -> include_dir
   in
-  let t1 = Timer.make () in
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug =
     if source_map <> None || Config.Flag.debuginfo () || toplevel
@@ -136,33 +139,6 @@ let f
     then `Names
     else `No
   in
-  let result =
-    if runtime_only
-    then
-      Parse_bytecode.Standalone
-        { code = Parse_bytecode.predefined_exceptions ()
-        ; cmis = StringSet.empty
-        ; debug = Parse_bytecode.Debug.create () }
-    else
-      let with_channel ~f =
-        match input_file with
-        | None -> f stdin
-        | Some fn ->
-            let ch = open_in_bin fn in
-            let res = f ch in
-            close_in ch;
-            res
-      in
-      with_channel ~f:(fun ch ->
-          Parse_bytecode.from_channel
-            ~includes:paths
-            ~toplevel
-            ?expunge
-            ~dynlink
-            ~debug:need_debug
-            ch)
-  in
-  if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
   let check_debug debug =
     if (not runtime_only) && source_map <> None && Parse_bytecode.Debug.is_empty debug
     then
@@ -179,7 +155,7 @@ let f
     in
     PseudoFs.f ~prim ~cmis ~files:fs_files ~paths
   in
-  let env_instr =
+  let env_instr () =
     List.map static_env ~f:(fun (k, v) ->
         Primitive.add_external "caml_set_static_env";
         let args = [Code.Pc (IString k); Code.Pc (IString v)] in
@@ -189,12 +165,12 @@ let f
   let output (one : Parse_bytecode.one) standalone output_file =
     check_debug one.debug;
     (match output_file with
-    | None ->
+    | `Stdout ->
         let instr =
           List.concat
             [ pseudo_fs_instr `caml_create_file one.debug one.cmis
             ; pseudo_fs_init_instr
-            ; env_instr ]
+            ; env_instr () ]
         in
         let code = Code.prepend one.code instr in
         let fmt = Pretty_print.to_out_channel stdout in
@@ -209,14 +185,14 @@ let f
           fmt
           one.debug
           code
-    | Some file ->
+    | `Name file ->
         let fs_instr1, fs_instr2 =
           match fs_output with
           | None -> pseudo_fs_instr `caml_create_file one.debug one.cmis, []
           | Some _ -> [], pseudo_fs_instr `caml_create_file_extern one.debug one.cmis
         in
         gen_file file (fun chan ->
-            let instr = List.concat [fs_instr1; pseudo_fs_init_instr; env_instr] in
+            let instr = List.concat [fs_instr1; pseudo_fs_init_instr; env_instr ()] in
             let code = Code.prepend one.code instr in
             let fmt = Pretty_print.to_out_channel chan in
             Driver.f
@@ -245,9 +221,83 @@ let f
                   code)));
     if times () then Format.eprintf "compilation: %a@." Timer.print t
   in
-  (match result with
-  | Standalone code -> output code true output_file
-  | Partial code -> output code false output_file);
+  (if runtime_only
+  then
+    let code : Parse_bytecode.one =
+      { code = Parse_bytecode.predefined_exceptions ()
+      ; cmis = StringSet.empty
+      ; debug = Parse_bytecode.Debug.create () }
+    in
+    output code true (fst output_file)
+  else
+    let kind, ic, close_ic =
+      match input_file with
+      | None -> Parse_bytecode.from_channel stdin, stdin, fun () -> ()
+      | Some fn ->
+          let ch = open_in_bin fn in
+          let res = Parse_bytecode.from_channel ch in
+          res, ch, fun () -> close_in ch
+    in
+    (match kind with
+    | `Exe ->
+        let t1 = Timer.make () in
+        let code =
+          Parse_bytecode.from_exe
+            ~includes:paths
+            ~toplevel
+            ?expunge
+            ~dynlink
+            ~debug:need_debug
+            ic
+        in
+        if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
+        output code true (fst output_file)
+    | `Cmo cmo ->
+        let output_file =
+          match output_file, keep_unit_names with
+          | (`Stdout, false), true -> `Name (gen_unit_filename "./" cmo)
+          | (`Name x, false), true -> `Name (gen_unit_filename (Filename.dirname x) cmo)
+          | (`Stdout, _), false -> `Stdout
+          | (`Name x, _), false -> `Name x
+          | (`Name x, true), true
+            when String.length x > 0 && x.[String.length x - 1] = '/' ->
+              `Name (gen_unit_filename x cmo)
+          | (`Name _, true), true | (`Stdout, true), true ->
+              failwith "use [-o dirname/] or remove [--keep-unit-names]"
+        in
+        let t1 = Timer.make () in
+        let code =
+          Parse_bytecode.from_cmo ~includes:paths ~toplevel ~debug:need_debug cmo ic
+        in
+        if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
+        output code false output_file
+    | `Cma cma when keep_unit_names ->
+        List.iter cma.lib_units ~f:(fun cmo ->
+            let output_file =
+              match output_file with
+              | `Stdout, false -> `Name (gen_unit_filename "./" cmo)
+              | `Name x, false -> `Name (gen_unit_filename (Filename.dirname x) cmo)
+              | `Name x, true when String.length x > 0 && x.[String.length x - 1] = '/'
+                ->
+                  `Name (gen_unit_filename x cmo)
+              | `Stdout, true | `Name _, true ->
+                  failwith "use [-o dirname/] or remove [--keep-unit-names]"
+            in
+            let t1 = Timer.make () in
+            let code =
+              Parse_bytecode.from_cmo ~includes:paths ~toplevel ~debug:need_debug cmo ic
+            in
+            if times ()
+            then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 cmo.cu_name;
+            output code false output_file)
+    | `Cma cma ->
+        let t1 = Timer.make () in
+        let code =
+          Parse_bytecode.from_cma ~includes:paths ~toplevel ~debug:need_debug cma ic
+        in
+        if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
+        output code false (fst output_file));
+    close_ic ());
   Debug.stop_profiling ()
 
 let main = Cmdliner.Term.(pure f $ CompileArg.options), CompileArg.info

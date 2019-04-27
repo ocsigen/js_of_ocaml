@@ -1960,10 +1960,6 @@ type one =
   ; cmis : StringSet.t
   ; debug : Debug.data }
 
-type result =
-  | Standalone of one
-  | Partial of one
-
 let parse_bytecode ~debug code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
@@ -2037,14 +2033,14 @@ let read_toc ic =
   done;
   !section_table
 
-let exe_from_channel
-    ~includes
+let from_exe
+    ?(includes = [])
     ?(toplevel = false)
     ?(expunge = fun _ -> `Keep)
     ?(dynlink = false)
-    ~debug
-    ~debug_data
+    ?(debug = `No)
     ic =
+  let debug_data = Debug.create () in
   let toc = read_toc ic in
   let prim_size = seek_section toc ic "PRIM" in
   let prim = really_input_string ic prim_size in
@@ -2193,12 +2189,14 @@ let exe_from_channel
         StringSet.empty
     else StringSet.empty
   in
-  {code = prepend p body; cmis; debug = debug_data}
+  let code = prepend p body in
+  Code.invariant code;
+  {code; cmis; debug = debug_data}
 
 (* As input: list of primitives + size of global table *)
 let from_bytes primitives (code : bytecode) =
-  let globals = make_globals 0 [||] primitives in
   let debug_data = Debug.create () in
+  let globals = make_globals 0 [||] primitives in
   let p = parse_bytecode ~debug:`No code globals debug_data in
   let gdata = Var.fresh () in
   let body =
@@ -2347,14 +2345,51 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
   in
   {code = prepend prog body; cmis; debug = debug_data}
 
-let from_channel
-    ?(includes = [])
-    ?(toplevel = false)
-    ?expunge
-    ?(dynlink = false)
-    ?(debug = `No)
-    ic =
+let from_cmo ?(includes = [])
+             ?(toplevel = false)
+             ?(debug = `No)
+             compunit
+             ic =
   let debug_data = Debug.create () in
+  seek_in ic compunit.Cmo_format.cu_pos;
+  let code = Bytes.create compunit.Cmo_format.cu_codesize in
+  really_input ic code 0 compunit.Cmo_format.cu_codesize;
+  if debug = `No || compunit.Cmo_format.cu_debug = 0
+  then ()
+  else (
+    seek_in ic compunit.Cmo_format.cu_debug;
+    Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
+  let p =
+    from_compilation_units ~toplevel ~includes ~debug ~debug_data [compunit, code]
+  in
+  Code.invariant p.code;
+  p
+
+let from_cma ?(includes = [])
+             ?(toplevel = false)
+             ?(debug = `No)
+             lib
+             ic =
+  let debug_data = Debug.create () in
+  let orig = ref 0 in
+  let units =
+    List.map lib.Cmo_format.lib_units ~f:(fun compunit ->
+        seek_in ic compunit.Cmo_format.cu_pos;
+        let code = Bytes.create compunit.Cmo_format.cu_codesize in
+        really_input ic code 0 compunit.Cmo_format.cu_codesize;
+        if debug = `No || compunit.Cmo_format.cu_debug = 0
+        then ()
+        else (
+          seek_in ic compunit.Cmo_format.cu_debug;
+          Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
+        orig := !orig + compunit.Cmo_format.cu_codesize;
+        compunit, code)
+  in
+  let p = from_compilation_units ~toplevel ~includes ~debug ~debug_data units in
+  Code.invariant p.code;
+  p
+
+let from_channel ic =
   let format =
     try
       let header = really_input_string ic Magic_number.size in
@@ -2374,18 +2409,7 @@ let from_channel
         let compunit_pos = input_binary_int ic in
         seek_in ic compunit_pos;
         let compunit : Cmo_format.compilation_unit = input_value ic in
-        seek_in ic compunit.Cmo_format.cu_pos;
-        let code = Bytes.create compunit.Cmo_format.cu_codesize in
-        really_input ic code 0 compunit.Cmo_format.cu_codesize;
-        if debug = `No || compunit.Cmo_format.cu_debug = 0
-        then ()
-        else (
-          seek_in ic compunit.Cmo_format.cu_debug;
-          Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
-        let x =
-          from_compilation_units ~toplevel ~includes ~debug ~debug_data [compunit, code]
-        in
-        Partial x
+        `Cmo compunit
     | `Cma ->
         if Config.Flag.check_magic () && magic <> Magic_number.current_cma
         then raise Magic_number.(Bad_magic_version magic);
@@ -2393,33 +2417,14 @@ let from_channel
         (* Go to table of contents *)
         seek_in ic pos_toc;
         let lib : Cmo_format.library = input_value ic in
-        let orig = ref 0 in
-        let units =
-          List.map lib.Cmo_format.lib_units ~f:(fun compunit ->
-              seek_in ic compunit.Cmo_format.cu_pos;
-              let code = Bytes.create compunit.Cmo_format.cu_codesize in
-              really_input ic code 0 compunit.Cmo_format.cu_codesize;
-              if debug = `No || compunit.Cmo_format.cu_debug = 0
-              then ()
-              else (
-                seek_in ic compunit.Cmo_format.cu_debug;
-                Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
-              orig := !orig + compunit.Cmo_format.cu_codesize;
-              compunit, code)
-        in
-        let x = from_compilation_units ~toplevel ~includes ~debug ~debug_data units in
-        Partial x
+        `Cma lib
     | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
   | `Post magic -> (
     match Magic_number.kind magic with
     | `Exe ->
         if Config.Flag.check_magic () && magic <> Magic_number.current_exe
         then raise Magic_number.(Bad_magic_version magic);
-        let x =
-          exe_from_channel ~includes ~toplevel ?expunge ~dynlink ~debug ~debug_data ic
-        in
-        Code.invariant x.code;
-        Standalone x
+        `Exe
     | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
 
 let predefined_exceptions () =

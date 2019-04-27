@@ -26,7 +26,7 @@ type t =
   ; source_map : (string option * Source_map.t) option
   ; runtime_files : string list
   ; runtime_only : bool
-  ; output_file : string option
+  ; output_file : [`Name of string | `Stdout] * bool
   ; input_file : string option
   ; params : (string * string) list
   ; static_env : (string * string) list
@@ -41,7 +41,8 @@ type t =
     include_dir : string list
   ; fs_files : string list
   ; fs_output : string option
-  ; fs_external : bool }
+  ; fs_external : bool
+  ; keep_unit_names : bool }
 
 val options : t Cmdliner.Term.t
 

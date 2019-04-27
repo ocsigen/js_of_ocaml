@@ -65,7 +65,7 @@ let args =
     List.map
       (fun filename ->
         let name = Filename.(concat !prefix (basename filename)) in
-        Js_of_ocaml_compiler.PseudoFs.embed_file ~name ~filename )
+        Js_of_ocaml_compiler.PseudoFs.embed_file ~name ~filename)
       all
   in
   let program =
