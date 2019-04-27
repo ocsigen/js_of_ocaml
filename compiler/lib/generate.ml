@@ -224,9 +224,9 @@ end
 
 let var x = J.EVar (J.V x)
 
-let int n = J.ENum (string_of_int n)
+let int n = J.ENum (J.Num.of_int32 (Int32.of_int n))
 
-let int32 n = J.ENum (Int32.to_string n)
+let int32 n = J.ENum (J.Num.of_int32 n)
 
 let unsigned x = J.EBin (J.Lsr, x, int 0)
 
@@ -236,8 +236,9 @@ let zero = int 0
 
 let plus_int x y =
   match x, y with
-  | J.ENum "0", x | x, J.ENum "0" -> x
-  | J.ENum x, J.ENum y -> J.ENum Int32.(to_string (add (of_string x) (of_string y)))
+  | J.ENum y, x when J.Num.is_zero y -> x
+  | x, J.ENum y when J.Num.is_zero y -> x
+  | J.ENum x, J.ENum y -> J.ENum (J.Num.add x y)
   | x, y -> J.EBin (J.Plus, x, y)
 
 let bool e = J.ECond (e, one, zero)
@@ -248,8 +249,6 @@ let val_float f = f
 (*J.EArr [Some (J.ENum 253.); Some f]*)
 let float_val e = e
 
-(*J.EAccess (e, one)*)
-
 (****)
 
 let source_location ctx ?after pc =
@@ -259,7 +258,7 @@ let source_location ctx ?after pc =
 
 (****)
 
-let float_const f = val_float (J.ENum (Javascript.string_of_float f))
+let float_const f = val_float (J.ENum (J.Num.of_float f))
 
 let s_var name = J.EVar (J.S {J.name; J.var = None})
 
@@ -1114,13 +1113,10 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             let i, queue =
               let (_px, cx), queue = access_queue' ~ctx queue size in
               match cx with
-              | J.ENum i -> Int32.of_string i, queue
+              | J.ENum i -> Int32.to_int (J.Num.to_int32 i), queue
               | _ -> assert false
             in
-            let args =
-              Array.to_list
-                (Array.init (Int32.to_int i) ~f:(fun _ -> J.V (Var.fresh ())))
-            in
+            let args = Array.to_list (Array.init i ~f:(fun _ -> J.V (Var.fresh ()))) in
             let f = J.V (Var.fresh ()) in
             let call =
               J.ECall
