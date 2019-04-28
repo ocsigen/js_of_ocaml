@@ -217,7 +217,7 @@ let options =
       | None -> Option.map input_file ~f:(fun s -> chop_extension s ^ ".js")
     in
     let source_map =
-      if ((not no_sourcemap) && sourcemap) || sourcemap_inline_in_js
+      if (not no_sourcemap) && (sourcemap || sourcemap_inline_in_js)
       then
         let file, sm_output_file =
           match output_file with
