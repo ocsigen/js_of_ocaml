@@ -161,7 +161,7 @@ let f
         let args = [Code.Pc (IString k); Code.Pc (IString v)] in
         Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
   in
-  let pseudo_fs_init_instr = if fs_external then [PseudoFs.init ()] else [] in
+  let pseudo_fs_init_instr () = if fs_external then [PseudoFs.init ()] else [] in
   let output (one : Parse_bytecode.one) standalone output_file =
     check_debug one.debug;
     (match output_file with
@@ -169,7 +169,7 @@ let f
         let instr =
           List.concat
             [ pseudo_fs_instr `caml_create_file one.debug one.cmis
-            ; pseudo_fs_init_instr
+            ; pseudo_fs_init_instr ()
             ; env_instr () ]
         in
         let code = Code.prepend one.code instr in
@@ -192,7 +192,7 @@ let f
           | Some _ -> [], pseudo_fs_instr `caml_create_file_extern one.debug one.cmis
         in
         gen_file file (fun chan ->
-            let instr = List.concat [fs_instr1; pseudo_fs_init_instr; env_instr ()] in
+            let instr = List.concat [fs_instr1; pseudo_fs_init_instr (); env_instr ()] in
             let code = Code.prepend one.code instr in
             let fmt = Pretty_print.to_out_channel chan in
             Driver.f
