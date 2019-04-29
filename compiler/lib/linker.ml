@@ -297,6 +297,7 @@ let add_file f =
         match provides with
         | None -> always_included := {filename = f; program = code} :: !always_included
         | Some (pi, name, kind, ka) ->
+            let code = Macro.f code in
             let module J = Javascript in
             let rec find = function
               | [] -> None
