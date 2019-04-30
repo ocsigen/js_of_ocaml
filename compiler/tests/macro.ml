@@ -60,25 +60,37 @@ let%expect_test "BLOCK(tag)" =
   print_macro_transformed "BLOCK(tag)";
   [%expect {| failure: macro BLOCK called with inappropriate arguments |}]
 
+let%expect_test "BLOCK(1)" =
+  print_macro_transformed "BLOCK(1)";
+  [%expect {| ({tag:1,length:0}); |}]
+
+let%expect_test "BLOCK(tag)" =
+  print_macro_transformed "BLOCK(tag)";
+  [%expect {| ({tag:tag,length:0}); |}]
+
 let%expect_test "BLOCK(1, a)" =
   print_macro_transformed "BLOCK(1, a)";
-  [%expect {| [1,a]; |}]
+  [%expect {| ({tag:1,length:1,f0:a}); |}]
 
 let%expect_test "BLOCK(1, a, b, c)" =
   print_macro_transformed "BLOCK(1, a, b, c)";
-  [%expect {| [1,a,b,c]; |}]
-
-let%expect_test "BLOCK(077, a)" =
-  print_macro_transformed "BLOCK(077, a)";
-  [%expect {| [63,a]; |}]
-
-let%expect_test "BLOCK(0779, a)" =
-  print_macro_transformed "BLOCK(0779, a)";
-  [%expect {| [779,a]; |}]
+  [%expect {| ({tag:1,length:3,f0:a,f1:b,f2:c}); |}]
 
 let%expect_test "TAG(a)" =
   print_macro_transformed "TAG(a)";
-  [%expect {| a[0]; |}]
+  [%expect {| a.tag; |}]
+
+let%expect_test "LENGTH(a)" =
+  print_macro_transformed "LENGTH(a)";
+  [%expect {| a.length; |}]
+
+let%expect_test "FIELD(a)" =
+  print_macro_transformed "FIELD(a)";
+  [%expect {| assertion failed |}]
+
+let%expect_test "FIELD(a, 0)" =
+  print_macro_transformed "FIELD(a, 0)";
+  [%expect {| a.f0; |}]
 
 let%expect_test "LENGTH(a)" =
   print_macro_transformed "LENGTH(a)";

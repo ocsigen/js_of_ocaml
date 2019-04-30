@@ -159,10 +159,10 @@ function caml_sys_file_exists (name) {
 function caml_sys_read_directory(name){
   var root = resolve_fs_device(name);
   var a = root.device.readdir(root.rest);
-  var l = new Array(a.length + 1);
-  l[0] = 0;
-  for(var i=0;i<a.length;i++)
-    l[i+1] = caml_new_string(a[i]);
+  var l = new Array(a.length);
+  for(var i = 0; i < a.length; i++) {
+    l[i] = caml_new_string(a[i]);
+  }
   return l;
 }
 

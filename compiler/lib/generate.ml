@@ -216,10 +216,23 @@ module Ctx = struct
     ; live : int array
     ; share : Share.t
     ; debug : Parse_bytecode.Debug.data
-    ; exported_runtime : Code.Var.t option }
+    ; exported_runtime : Code.Var.t option
+    ; constr : (int * int, Code.Var.t) Hashtbl.t }
 
   let initial ~exported_runtime blocks live share debug =
-    {blocks; live; share; debug; exported_runtime}
+    let constr = Hashtbl.create 17 in
+    {blocks; live; share; debug; exported_runtime; constr}
+
+  (*
+  let get_constr ctx tag l =
+    let l = List.length l in
+    try J.V (Hashtbl.find ctx.constr (tag, l))
+    with Not_found ->
+      let v = Code.Var.fresh () in
+      Code.Var.name v (Printf.sprintf "Block_%d_%d" tag l);
+      Hashtbl.add ctx.constr (tag, l) v;
+     J.V v
+  *)
 end
 
 let var x = J.EVar (J.V x)
@@ -966,6 +979,16 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
       let prop = or_p prop prop' in
       let e = apply_fun ctx f args loc in
       (e, prop, queue), []
+  | Array (tag, a) ->
+      let contents, prop, queue =
+        List.fold_right
+          ~f:(fun x (args, prop, queue) ->
+            let (prop', cx), queue = access_queue queue x in
+            cx :: args, or_p prop prop', queue)
+          (Array.to_list a)
+          ~init:([], const_p, queue)
+      in
+      (Mlvalue.Array.make ~tag ~args:contents, prop, queue), []
   | Block (tag, a) ->
       let contents, prop, queue =
         List.fold_right
@@ -1798,6 +1821,43 @@ and compile_closure ctx at_toplevel (pc, args) =
   List.map res ~f:(fun (st, loc) -> J.Statement st, loc)
 
 let generate_shared_value ctx =
+  let constr =
+    Hashtbl.fold
+      (fun (tag, size) var acc ->
+        let params =
+          Array.to_list (Array.init size ~f:(fun i -> i, Code.Var.fresh ()))
+        in
+        let make (i, v) =
+          ( J.Statement
+              (J.Expression_statement
+                 (J.EBin
+                    ( J.Eq
+                    , Mlvalue.Block.field (J.EVar (J.S {J.name = "this"; var = None})) i
+                    , J.EVar (J.V v) )))
+          , J.N )
+        in
+        let body = List.map params ~f:make in
+        ( J.Function_declaration
+            (J.V var, List.map params ~f:(fun (_, v) -> J.V v), body, J.N)
+        , J.N )
+        :: ( J.Statement
+               (J.Expression_statement
+                  (J.EBin
+                     ( J.Eq
+                     , Mlvalue.Block.tag (J.EDot (J.EVar (J.V var), "prototype"))
+                     , int tag )))
+           , J.N )
+        :: ( J.Statement
+               (J.Expression_statement
+                  (J.EBin
+                     ( J.Eq
+                     , Mlvalue.Array.length (J.EDot (J.EVar (J.V var), "prototype"))
+                     , int size )))
+           , J.N )
+        :: acc)
+      ctx.Ctx.constr
+      []
+  in
   let strings =
     ( J.Statement
         (J.Variable_statement
@@ -1822,8 +1882,8 @@ let generate_shared_value ctx =
               J.Function_declaration (v, param, body, nid), J.U
           | _ -> assert false)
     in
-    strings :: applies
-  else [strings]
+    (strings :: applies) @ constr
+  else strings :: constr
 
 let compile_program ctx pc =
   let res = compile_closure ctx true (pc, []) in

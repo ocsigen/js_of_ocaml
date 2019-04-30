@@ -28,6 +28,9 @@ class type mapper =
 
     method switch_case : Javascript.expression -> Javascript.expression
 
+    method variable_declaration :
+      Javascript.variable_declaration -> Javascript.variable_declaration
+
     method initialiser :
          Javascript.expression * Javascript.location
       -> Javascript.expression * Javascript.location

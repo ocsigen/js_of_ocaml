@@ -21,21 +21,21 @@
 
 //Provides: caml_ephe_key_offset
 //Version: < 4.03
-var caml_ephe_key_offset = 2
+var caml_ephe_key_offset = 1
 
 //Provides: caml_ephe_key_offset
 //Version: >= 4.03
-var caml_ephe_key_offset = 3
+var caml_ephe_key_offset = 2
 
 //Provides: caml_ephe_data_offset
 //Version: >= 4.03
-var caml_ephe_data_offset = 2
+var caml_ephe_data_offset = 3
 
 //Provides: caml_weak_create
 //Requires: caml_ephe_key_offset, caml_invalid_argument
 function caml_weak_create (n) {
   if (n < 0) caml_invalid_argument ("Weak.create");
-  var x = [251,"caml_ephe_list_head"];
+  var x = BLOCK(251,"caml_ephe_list_head");
   x.length = caml_ephe_key_offset + n;
   return x;
 }
@@ -63,8 +63,9 @@ function caml_weak_get_copy(x, i) {
     caml_invalid_argument ("Weak.get_copy");
   var y = caml_weak_get(x, i);
   if (y === 0) return y;
-  var z = y[1];
-  if (z instanceof Array) return [0, caml_obj_dup(z)];
+  var z = y[0];
+  if (z instanceof Array) return BLOCK(0, caml_obj_dup(z));
+  if (ISBLOCK(z)) return BLOCK(TAG(z), caml_obj_dup(z));
   return y;
 }
 
@@ -111,7 +112,7 @@ var caml_ephe_check_key = caml_weak_check
 //Provides: caml_ephe_set_key
 //Requires: caml_weak_set
 function caml_ephe_set_key(x, i, v) {
-  return caml_weak_set(x, i, [0, v])
+  return caml_weak_set(x, i, BLOCK(0, v))
 }
 
 //Provides: caml_ephe_unset_key
@@ -135,7 +136,7 @@ function caml_ephe_get_data(x){
   if(x[caml_ephe_data_offset] === undefined)
     return 0;
   else
-    return [0, x[caml_ephe_data_offset]];
+    return BLOCK(0, x[caml_ephe_data_offset]);
 }
 
 //Provides: caml_ephe_get_data_copy
@@ -146,7 +147,7 @@ function caml_ephe_get_data_copy(x){
   if(x[caml_ephe_data_offset] === undefined)
     return 0;
   else
-    return [0, caml_obj_dup(x[caml_ephe_data_offset])];
+    return BLOCK(0, caml_obj_dup(x[caml_ephe_data_offset]));
 }
 
 //Provides: caml_ephe_set_data

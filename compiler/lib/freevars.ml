@@ -33,7 +33,7 @@ let iter_expr_free_vars f e =
   | Apply (x, l, _) ->
       f x;
       List.iter ~f l
-  | Block (_, a) -> Array.iter ~f a
+  | Array (_, a) | Block (_, a) -> Array.iter ~f a
   | Field (x, _) -> f x
   | Closure _ -> ()
   | Prim (_, l) ->

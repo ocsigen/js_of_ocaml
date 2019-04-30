@@ -7,6 +7,7 @@
   (targets main.js)
   (action  (run %{bin:js_of_ocaml}
                   --no-runtime %{lib:js_of_ocaml-compiler:runtime.js}
+                  --pretty
                   %{dep:unix.js}
                   %{dep:main.bc} -o %{targets})))
 

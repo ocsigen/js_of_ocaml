@@ -28,6 +28,7 @@ let expr s e =
   | Const _ | Constant _ -> e
   | Apply (f, l, n) -> Apply (s f, List.map l ~f:(fun x -> s x), n)
   | Block (n, a) -> Block (n, Array.map a ~f:(fun x -> s x))
+  | Array (n, a) -> Array (n, Array.map a ~f:(fun x -> s x))
   | Field (x, n) -> Field (s x, n)
   | Closure (l, pc) -> Closure (l, subst_cont s pc)
   | Prim (p, l) ->

@@ -155,6 +155,7 @@ let simple blocks cont mapping =
           `Exp (Apply (map_var mapping f, List.map args ~f:(map_var mapping), true))
       | Prim (prim, args) -> `Exp (Prim (prim, List.map args ~f:(map_prim_arg mapping)))
       | Block (tag, args) -> `Exp (Block (tag, Array.map args ~f:(map_var mapping)))
+      | Array (tag, args) -> `Exp (Array (tag, Array.map args ~f:(map_var mapping)))
       | Field (x, i) -> `Exp (Field (map_var mapping x, i))
       | Closure _ -> `Fail
       | Constant _ -> `Fail
