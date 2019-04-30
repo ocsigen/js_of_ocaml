@@ -32,14 +32,38 @@ module Debug : sig
   val paths : data -> units:StringSet.t -> StringSet.t
 end
 
-val from_channel :
+type one =
+  { code : Code.program
+  ; cmis : StringSet.t
+  ; debug : Debug.data }
+
+val from_exe :
      ?includes:string list
   -> ?toplevel:bool
   -> ?expunge:(string -> [`Keep | `Skip])
   -> ?dynlink:bool
   -> ?debug:[`Full | `Names | `No]
   -> in_channel
-  -> Code.program * StringSet.t * Debug.data * bool
+  -> one
+
+val from_cmo :
+     ?includes:string list
+  -> ?toplevel:bool
+  -> ?debug:[`Full | `Names | `No]
+  -> Cmo_format.compilation_unit
+  -> in_channel
+  -> one
+
+val from_cma :
+     ?includes:string list
+  -> ?toplevel:bool
+  -> ?debug:[`Full | `Names | `No]
+  -> Cmo_format.library
+  -> in_channel
+  -> one
+
+val from_channel :
+  in_channel -> [`Cmo of Cmo_format.compilation_unit | `Cma of Cmo_format.library | `Exe]
 
 val from_string : string array -> string -> Code.program * Debug.data
 

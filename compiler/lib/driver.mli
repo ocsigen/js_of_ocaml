@@ -38,7 +38,3 @@ val from_string : string array -> string -> Pretty_print.t -> unit
 val profiles : (int * profile) list
 
 val profile : int -> profile option
-
-module For_testing : sig
-  val macro : Javascript.source_elements -> Javascript.source_elements
-end

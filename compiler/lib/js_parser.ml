@@ -23961,7 +23961,7 @@ and _menhir_run10 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let ((_1 : 'tv_numeric_literal) : 'tv_numeric_literal) = _v in
         ((let _v : 'tv_primary_expression_no_statement = 
 # 418 "js_parser.mly"
-                     ( let (start, n) = _1 in (start, J.ENum n) )
+                     ( let (start, n) = _1 in (start, J.ENum (J.Num.of_string_unsafe n)) )
 # 23966 "js_parser.ml"
          in
         _menhir_goto_primary_expression_no_statement _menhir_env _menhir_stack _menhir_s _v) : 'freshtv40)) : 'freshtv42)
@@ -23976,7 +23976,7 @@ and _menhir_run10 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
         let ((n : 'tv_numeric_literal) : 'tv_numeric_literal) = _v in
         ((let _v : 'tv_property_name = 
 # 638 "js_parser.mly"
-                      ( J.PNN (snd n) )
+                      ( J.PNN (J.Num.of_string_unsafe (snd n)) )
 # 23981 "js_parser.ml"
          in
         _menhir_goto_property_name _menhir_env _menhir_stack _menhir_s _v) : 'freshtv44)) : 'freshtv46)

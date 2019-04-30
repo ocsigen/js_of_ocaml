@@ -17,6 +17,37 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+
+module Num : sig
+  type t
+
+  (** Conversions *)
+
+  val of_string_unsafe : string -> t
+
+  val of_int32 : int32 -> t
+
+  val of_float : float -> t
+
+  val to_string : t -> string
+
+  val to_int32 : t -> int32
+
+  (** Predicates *)
+
+  val is_zero : t -> bool
+
+  val is_one : t -> bool
+
+  val is_neg : t -> bool
+
+  (** Arithmetic *)
+
+  val add : t -> t -> t
+
+  val neg : t -> t
+end
+
 module Label : sig
   type t
 
@@ -110,7 +141,7 @@ and property_name_and_value_list = (property_name * expression) list
 and property_name =
   | PNI of identifier
   | PNS of string
-  | PNN of string
+  | PNN of Num.t
 
 and expression =
   | ESeq of expression * expression
@@ -129,7 +160,7 @@ and expression =
          escape sequences. *)
   | EArr of array_litteral
   | EBool of bool
-  | ENum of string
+  | ENum of Num.t
   | EObj of property_name_and_value_list
   | EQuote of string
   | ERegexp of string * string option
@@ -199,8 +230,6 @@ and source_element =
   | Function_declaration of function_declaration
 
 val compare_ident : ident -> ident -> int
-
-val string_of_float : float -> string
 
 val is_ident : string -> bool
 

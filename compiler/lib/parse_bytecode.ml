@@ -26,7 +26,7 @@ let debug_parser = Debug.find "parser"
 
 let debug_sourcemap = Debug.find "sourcemap"
 
-type code = string
+type bytecode = string
 
 let predefined_exceptions =
   [ 0, "Out_of_memory"
@@ -236,7 +236,7 @@ end
 module Blocks : sig
   type t
 
-  val analyse : Debug.data -> code -> t
+  val analyse : Debug.data -> bytecode -> t
 
   val add : t -> int -> t
 
@@ -1989,6 +1989,11 @@ let match_exn_traps (blocks : 'a Addr.Map.t) =
 
 (****)
 
+type one =
+  { code : Code.program
+  ; cmis : StringSet.t
+  ; debug : Debug.data }
+
 let parse_bytecode ~debug code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
@@ -2062,14 +2067,14 @@ let read_toc ic =
   done;
   !section_table
 
-let exe_from_channel
-    ~includes
+let from_exe
+    ?(includes = [])
     ?(toplevel = false)
     ?(expunge = fun _ -> `Keep)
     ?(dynlink = false)
-    ~debug
-    ~debug_data
+    ?(debug = `No)
     ic =
+  let debug_data = Debug.create () in
   let toc = read_toc ic in
   let prim_size = seek_section toc ic "PRIM" in
   let prim = really_input_string ic prim_size in
@@ -2218,12 +2223,14 @@ let exe_from_channel
         StringSet.empty
     else StringSet.empty
   in
-  prepend p body, cmis, debug_data
+  let code = prepend p body in
+  Code.invariant code;
+  {code; cmis; debug = debug_data}
 
 (* As input: list of primitives + size of global table *)
-let from_bytes primitives (code : code) =
-  let globals = make_globals 0 [||] primitives in
+let from_bytes primitives (code : bytecode) =
   let debug_data = Debug.create () in
+  let globals = make_globals 0 [||] primitives in
   let p = parse_bytecode ~debug:`No code globals debug_data in
   let gdata = Var.fresh () in
   let body =
@@ -2247,6 +2254,7 @@ module Reloc = struct
   type t =
     { mutable pos : int
     ; mutable constants : Obj.t list
+    ; mutable step2_started : bool
     ; names : (string, int) Hashtbl.t
     ; primitives : (string, int) Hashtbl.t }
 
@@ -2254,10 +2262,13 @@ module Reloc = struct
     let constants = [] in
     { pos = List.length constants
     ; constants
+    ; step2_started = false
     ; names = Hashtbl.create 17
     ; primitives = Hashtbl.create 17 }
 
+  (* We currently rely on constants to be relocated before globals. *)
   let step1 t compunit code =
+    if t.step2_started then assert false;
     let open Cmo_format in
     List.iter compunit.cu_primitives ~f:(fun name ->
         Hashtbl.add t.primitives name (Hashtbl.length t.primitives));
@@ -2280,15 +2291,16 @@ module Reloc = struct
         | _ -> ())
 
   let step2 t compunit code =
+    t.step2_started <- true;
     let open Cmo_format in
     let next id =
       let name = Ident.name id in
       try Hashtbl.find t.names name
       with Not_found ->
-        let x = t.pos in
+        let pos = t.pos in
         t.pos <- succ t.pos;
-        Hashtbl.add t.names name x;
-        x
+        Hashtbl.add t.names name pos;
+        pos
     in
     let slot_for_getglobal id = next id in
     let slot_for_setglobal id = next id in
@@ -2365,16 +2377,53 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
           StringSet.add compunit.Cmo_format.cu_name acc)
     else StringSet.empty
   in
-  prepend prog body, cmis, debug_data
+  {code = prepend prog body; cmis; debug = debug_data}
 
-let from_channel
-    ?(includes = [])
-    ?(toplevel = false)
-    ?expunge
-    ?(dynlink = false)
-    ?(debug = `No)
-    ic =
+let from_cmo ?(includes = [])
+             ?(toplevel = false)
+             ?(debug = `No)
+             compunit
+             ic =
   let debug_data = Debug.create () in
+  seek_in ic compunit.Cmo_format.cu_pos;
+  let code = Bytes.create compunit.Cmo_format.cu_codesize in
+  really_input ic code 0 compunit.Cmo_format.cu_codesize;
+  if debug = `No || compunit.Cmo_format.cu_debug = 0
+  then ()
+  else (
+    seek_in ic compunit.Cmo_format.cu_debug;
+    Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
+  let p =
+    from_compilation_units ~toplevel ~includes ~debug ~debug_data [compunit, code]
+  in
+  Code.invariant p.code;
+  p
+
+let from_cma ?(includes = [])
+             ?(toplevel = false)
+             ?(debug = `No)
+             lib
+             ic =
+  let debug_data = Debug.create () in
+  let orig = ref 0 in
+  let units =
+    List.map lib.Cmo_format.lib_units ~f:(fun compunit ->
+        seek_in ic compunit.Cmo_format.cu_pos;
+        let code = Bytes.create compunit.Cmo_format.cu_codesize in
+        really_input ic code 0 compunit.Cmo_format.cu_codesize;
+        if debug = `No || compunit.Cmo_format.cu_debug = 0
+        then ()
+        else (
+          seek_in ic compunit.Cmo_format.cu_debug;
+          Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
+        orig := !orig + compunit.Cmo_format.cu_codesize;
+        compunit, code)
+  in
+  let p = from_compilation_units ~toplevel ~includes ~debug ~debug_data units in
+  Code.invariant p.code;
+  p
+
+let from_channel ic =
   let format =
     try
       let header = really_input_string ic Magic_number.size in
@@ -2394,18 +2443,7 @@ let from_channel
         let compunit_pos = input_binary_int ic in
         seek_in ic compunit_pos;
         let compunit : Cmo_format.compilation_unit = input_value ic in
-        seek_in ic compunit.Cmo_format.cu_pos;
-        let code = Bytes.create compunit.Cmo_format.cu_codesize in
-        really_input ic code 0 compunit.Cmo_format.cu_codesize;
-        if debug = `No || compunit.Cmo_format.cu_debug = 0
-        then ()
-        else (
-          seek_in ic compunit.Cmo_format.cu_debug;
-          Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
-        let a, b, c =
-          from_compilation_units ~toplevel ~includes ~debug ~debug_data [compunit, code]
-        in
-        a, b, c, false
+        `Cmo compunit
     | `Cma ->
         if Config.Flag.check_magic () && magic <> Magic_number.current_cma
         then raise Magic_number.(Bad_magic_version magic);
@@ -2413,35 +2451,14 @@ let from_channel
         (* Go to table of contents *)
         seek_in ic pos_toc;
         let lib : Cmo_format.library = input_value ic in
-        let orig = ref 0 in
-        let units =
-          List.map lib.Cmo_format.lib_units ~f:(fun compunit ->
-              seek_in ic compunit.Cmo_format.cu_pos;
-              let code = Bytes.create compunit.Cmo_format.cu_codesize in
-              really_input ic code 0 compunit.Cmo_format.cu_codesize;
-              if debug = `No || compunit.Cmo_format.cu_debug = 0
-              then ()
-              else (
-                seek_in ic compunit.Cmo_format.cu_debug;
-                Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:!orig ic);
-              orig := !orig + compunit.Cmo_format.cu_codesize;
-              compunit, code)
-        in
-        let a, b, c =
-          from_compilation_units ~toplevel ~includes ~debug ~debug_data units
-        in
-        a, b, c, false
+        `Cma lib
     | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
   | `Post magic -> (
     match Magic_number.kind magic with
     | `Exe ->
         if Config.Flag.check_magic () && magic <> Magic_number.current_exe
         then raise Magic_number.(Bad_magic_version magic);
-        let a, b, c =
-          exe_from_channel ~includes ~toplevel ?expunge ~dynlink ~debug ~debug_data ic
-        in
-        Code.invariant a;
-        a, b, c, true
+        `Exe
     | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))
 
 let predefined_exceptions () =

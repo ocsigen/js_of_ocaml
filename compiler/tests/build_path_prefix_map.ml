@@ -17,24 +17,22 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
-open Js_of_ocaml_compiler
+open Util
 
-val parse_js : string -> Javascript.program
-
-val compile_ocaml_to_bytecode : string -> in_channel
-
-val print_compiled_js : ?pretty:bool -> in_channel -> string
-
-type find_result =
-  { expressions : Javascript.expression list
-  ; statements : Javascript.statement list
-  ; var_decls : Javascript.variable_declaration list }
-
-val find_javascript :
-     ?expression:(Javascript.expression -> bool)
-  -> ?statement:(Javascript.statement -> bool)
-  -> ?var_decl:(Javascript.variable_declaration -> bool)
-  -> Javascript.program
-  -> find_result
-
-val expression_to_string : ?compact:bool -> Javascript.expression -> string
+let%expect_test _ =
+  "let id x = x"
+  |> Filetype.ocaml_text_of_string
+  |> Filetype.write_ocaml
+  |> compile_ocaml_to_cmo
+  |> compile_cmo_to_javascript ~sourcemap:true ~pretty:false
+  |> snd
+  |> (function
+       | Some x -> x
+       | None -> failwith "no sourcemap generated!")
+  |> Filetype.read_map
+  |> Filetype.string_of_map_text
+  |> print_endline;
+  [%expect
+    {|
+      {"version":3.0,"file":"/root/jsoo_test.js","sourceRoot":"","names":["a"],"mappings":"0B;sDAAOA,GAAI,MAAJA,EAAK,4B","sources":["/root/jsoo_test.ml"],"sourcesContent":["let id x = x"]}
+    |}]

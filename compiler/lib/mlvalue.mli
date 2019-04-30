@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2014 Hugo Heuzard
+ * Copyright (C) 2019 Hugo Heuzard
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -15,17 +15,24 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
-open Stdlib
+module Block : sig
+  val make : tag:int -> args:Javascript.expression list -> Javascript.expression
 
-val f :
-     prim:[`caml_create_file | `caml_create_file_extern]
-  -> cmis:StringSet.t
-  -> files:string list
-  -> paths:string list
-  -> Code.instr list
+  val tag : Javascript.expression -> Javascript.expression
 
-val embed_file : name:string -> filename:string -> Code.instr
+  val field : Javascript.expression -> int -> Javascript.expression
+end
 
-val init : unit -> Code.instr
+module Array : sig
+  val make : tag:int -> args:Javascript.expression list -> Javascript.expression
+
+  val length : Javascript.expression -> Javascript.expression
+
+  val field : Javascript.expression -> Javascript.expression -> Javascript.expression
+end
+
+val is_block : Javascript.expression -> Javascript.expression
+
+val is_immediate : Javascript.expression -> Javascript.expression

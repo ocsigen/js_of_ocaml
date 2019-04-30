@@ -1,15 +1,11 @@
-(executable
- (name main))
+(library
+ (name expect_tests)
+ (libraries js_of_ocaml_compiler unix str)
+ (inline_tests
+  (flags -allow-output-patterns)
+  (deps
+    (file ../js_of_ocaml.exe)
+    (file ../../runtime/runtime.js)))
+ (preprocess (pps ppx_expect)))
 
-(rule
-  (targets main.js)
-  (action  (run %{bin:js_of_ocaml}
-                  --enable with-js-error
-                  --pretty
-                  --no-runtime %{lib:js_of_ocaml-compiler:runtime.js}
-                  %{dep:main.bc} -o %{targets}))
- )
-
-(alias
-  (name runtest)
-  (action (run node %{dep:main.js})))
+(include_subdirs unqualified)

@@ -220,8 +220,14 @@ function caml_update_dummy (x, y) {
 }
 
 //Provides: caml_obj_is_block const (const)
+<<<<<<< HEAD
 function caml_obj_is_block (x) { return +(x instanceof Array) || ISBLOCK(x); }
 //Provides: caml_obj_tag const (const)
+=======
+function caml_obj_is_block (x) { return +(x instanceof Array); }
+
+//Provides: caml_obj_tag
+>>>>>>> master
 //Requires: MlBytes
 function caml_obj_tag (x) { 
   if(ISBLOCK(x)) return TAG(x);

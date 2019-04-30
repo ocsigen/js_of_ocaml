@@ -70,77 +70,53 @@ let list_files name paths =
   in
   expand_path exts file virtname
 
-let cmi_dir = "/static/cmis"
-
 let find_cmi paths base =
-  try
-    let name = String.uncapitalize_ascii base ^ ".cmi" in
-    Filename.concat cmi_dir name, Findlib.find_in_findlib_paths paths name
-  with Not_found ->
-    let name = String.capitalize_ascii base ^ ".cmi" in
-    Filename.concat cmi_dir name, Findlib.find_in_findlib_paths paths name
-
-open Code
-
-let read name filename =
-  let content = Fs.read_file filename in
-  Pc (IString name), Pc (IString content)
-
-let program_of_files l =
-  let fs = List.map l ~f:(fun (name, filename) -> read name filename) in
-  let body =
-    List.map fs ~f:(fun (n, c) ->
-        Let (Var.fresh (), Prim (Extern "caml_create_file_extern", [n; c])))
+  let name, filename =
+    try
+      let name = String.uncapitalize_ascii base ^ ".cmi" in
+      name, Findlib.find_in_findlib_paths paths name
+    with Not_found ->
+      let name = String.capitalize_ascii base ^ ".cmi" in
+      name, Findlib.find_in_findlib_paths paths name
   in
-  let pc = 0 in
-  let blocks =
-    Addr.Map.add
-      pc
-      {params = []; handler = None; body = []; branch = Stop}
-      Addr.Map.empty
-  in
-  let p = pc, blocks, pc + 1 in
-  Code.prepend p body
+  Filename.concat "/static/cmis" name, filename
 
-let make_body prim cmis files paths =
-  let fs, missing =
+let instr_of_name_content prim ~name ~content =
+  let open Code in
+  Let (Var.fresh (), Prim (Extern prim, [Pc (IString name); Pc (IString content)]))
+
+let embed_file ~name ~filename =
+  instr_of_name_content "caml_create_file_extern" ~name ~content:(Fs.read_file filename)
+
+let init () = Code.(Let (Var.fresh (), Prim (Extern "caml_fs_init", [])))
+
+let f ~prim ~cmis ~files ~paths =
+  let prim =
+    match prim with
+    | `caml_create_file -> "caml_create_file"
+    | `caml_create_file_extern -> "caml_create_file_extern"
+  in
+  let cmi_files, missing_cmis =
     StringSet.fold
       (fun s (acc, missing) ->
         try
           let name, filename = find_cmi paths s in
-          read name filename :: acc, missing
+          (name, Fs.read_file filename) :: acc, missing
         with Not_found -> acc, s :: missing)
       cmis
       ([], [])
   in
-  if missing <> []
+  if missing_cmis <> []
   then (
     warn "Some OCaml interface files were not found.@.";
     warn "Use [-I dir_of_cmis] option to bring them into scope@.";
     (* [`ocamlc -where`/expunge in.byte out.byte moduleA moduleB ... moduleN] *)
-    List.iter missing ~f:(fun nm -> warn "  %s@." nm));
-  let fs =
-    List.fold_left files ~init:fs ~f:(fun acc f ->
-        let l = list_files f paths in
-        List.fold_left l ~init:acc ~f:(fun acc (n, fn) -> read n fn :: acc))
+    List.iter missing_cmis ~f:(fun nm -> warn "  %s@." nm));
+  let other_files =
+    List.map files ~f:(fun f ->
+        List.map (list_files f paths) ~f:(fun (name, filename) ->
+            name, Fs.read_file filename))
+    |> List.concat
   in
-  let body =
-    List.map fs ~f:(fun (n, c) -> Let (Var.fresh (), Prim (Extern prim, [n; c])))
-  in
-  body
-
-let f p cmis files paths =
-  let body = make_body "caml_create_file" cmis files paths in
-  Code.prepend p body
-
-let f_empty cmis files paths =
-  let body = make_body "caml_create_file_extern" cmis files paths in
-  let pc = 0 in
-  let blocks =
-    Addr.Map.add
-      pc
-      {params = []; handler = None; body = []; branch = Stop}
-      Addr.Map.empty
-  in
-  let p = pc, blocks, pc + 1 in
-  Code.prepend p body
+  List.map (other_files @ cmi_files) ~f:(fun (name, content) ->
+      instr_of_name_content prim ~name ~content)

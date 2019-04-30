@@ -1,6 +1,6 @@
 (* Js_of_ocaml compiler
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2017 Hugo Heuzard
+ * Copyright (C) 2019 Ty Overby, Jane Street Group LLC
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -15,12 +15,6 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
-module Side_effect = Side_effect
-module Tailcall = Tailcall
-module GI507 = GI507
-module Match_with_exn = Match_with_exn
-module Mutable_closure = Mutable_closure
-module Obj_dup = Obj_dup
-module Is_int = Is_int
+val f : Javascript.program -> Javascript.program

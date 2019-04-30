@@ -61,8 +61,16 @@ let args =
   let js, args = List.partition (fun s -> Filename.check_suffix s ".js") args in
   let js = if !runtime then "+runtime.js" :: js else js in
   let all = Jsoo_common.cmis args in
-  let all = List.map (fun x -> Filename.(concat !prefix (basename x)), x) all in
-  let program = Js_of_ocaml_compiler.PseudoFs.program_of_files all in
+  let instr =
+    List.map
+      (fun filename ->
+        let name = Filename.(concat !prefix (basename filename)) in
+        Js_of_ocaml_compiler.PseudoFs.embed_file ~name ~filename)
+      all
+  in
+  let program =
+    Js_of_ocaml_compiler.Code.prepend Js_of_ocaml_compiler.Code.empty instr
+  in
   let oc =
     match !output, args with
     | Some x, _ -> open_out x

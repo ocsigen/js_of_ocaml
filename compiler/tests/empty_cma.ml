@@ -1,7 +1,6 @@
-(* Js_of_ocaml example
+(* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2010 Jérôme Vouillon
- * Laboratoire PPS - CNRS Université Paris Diderot
+ * Copyright (C) 2019 Ty Overby
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,33 +15,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
 
-let success_count_all = ref 0
+open Util
 
-let test_count_all = ref 0
-
-let success_count = ref 0
-
-let test_count = ref 0
-
-let log_success () =
-  incr success_count;
-  incr test_count
-
-let log_failure s =
-  incr test_count;
-  Format.printf "\tFAILURE: %s\n" s
-
-let log_start s =
-  Format.printf "START: %s\n" s;
-  let log_stop () : unit =
-    success_count_all := !success_count_all + !success_count;
-    test_count_all := !test_count_all + !test_count;
-    Format.printf "STOP: %s\n" s
-  in
-  log_stop
-
-let raw_log x = Format.printf "\t\t %s" x
-
-let log s = raw_log s
+let%expect_test _ =
+  compile_lib [] "empty"
+  |> compile_cmo_to_javascript ~sourcemap:false
+  |> fst
+  |> Filetype.read_js
+  |> Filetype.string_of_js_text
+  |> print_endline;
+  [%expect
+    {|
+      (function(joo_global_object)
+         {"use strict";var runtime=joo_global_object.jsoo_runtime;return}
+        (function(){return this}()));
+    |}]
