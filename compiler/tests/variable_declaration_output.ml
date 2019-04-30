@@ -43,12 +43,6 @@ let%expect_test _ =
   print_var_decl program "bx";
   [%expect
     {|
-<<<<<<< HEAD:compiler/tests/expect_tests/variable_declaration_output.ml
     var ex = new Block_0_2(5,caml_new_string("hello"));
     var ax = new Block_0_4(1,2,3,4);
     var bx = new Block_254_4(1.,2.,3.,4.); |}]
-=======
-    var ex = [0,5,runtime.caml_new_string("hello")];
-    var ax = [0,1,2,3,4];
-    var bx = [254,1.,2.,3.,4.]; |}]
->>>>>>> master:compiler/tests/variable_declaration_output.ml
