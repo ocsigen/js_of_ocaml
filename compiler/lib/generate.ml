@@ -1831,8 +1831,8 @@ let generate_shared_value ctx =
           ( J.Statement
               (J.Expression_statement
                  (J.EBin
-                    ( J.Eq,
-                        Mlvalue.Block.field  (J.EVar (J.S {J.name = "this"; var = None})) i
+                    ( J.Eq
+                    , Mlvalue.Block.field (J.EVar (J.S {J.name = "this"; var = None})) i
                     , J.EVar (J.V v) )))
           , J.N )
         in
@@ -1842,12 +1842,17 @@ let generate_shared_value ctx =
         , J.N )
         :: ( J.Statement
                (J.Expression_statement
-                  (J.EBin (J.Eq, Mlvalue.Block.tag (J.EDot (J.EVar (J.V var), "prototype")), int tag)))
+                  (J.EBin
+                     ( J.Eq
+                     , Mlvalue.Block.tag (J.EDot (J.EVar (J.V var), "prototype"))
+                     , int tag )))
            , J.N )
         :: ( J.Statement
                (J.Expression_statement
                   (J.EBin
-                     (J.Eq, Mlvalue.Array.length (J.EDot (J.EVar (J.V var), "prototype")), int size)))
+                     ( J.Eq
+                     , Mlvalue.Array.length (J.EDot (J.EVar (J.V var), "prototype"))
+                     , int size )))
            , J.N )
         :: acc)
       ctx.Ctx.constr
