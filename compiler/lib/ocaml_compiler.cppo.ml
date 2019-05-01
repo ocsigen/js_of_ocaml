@@ -18,39 +18,33 @@
 
 open Stdlib
 
-let rec obj_of_const =
+let rec constant_of_const : _ -> Code.constant =
   let open Lambda in
   let open Asttypes in
   function
-  | Const_base (Const_int i) -> Obj.repr i
-  | Const_base (Const_char c) -> Obj.repr c
-  | Const_base (Const_string (s,_)) -> Obj.repr s
-  | Const_base (Const_float s) -> Obj.repr (float_of_string s)
-  | Const_base (Const_int32 i) -> Obj.repr i
-  | Const_base (Const_int64 i) -> Obj.repr i
-  | Const_base (Const_nativeint i) -> Obj.repr i
-  | Const_immstring s -> Obj.repr s
+  | Const_base (Const_int i) -> Int (Int32.of_int i)
+  | Const_base (Const_char c) -> Int (Int32.of_int (Char.code c))
+  | Const_base (Const_string (s,_)) -> String s
+  | Const_base (Const_float s) -> Float (float_of_string s)
+  | Const_base (Const_int32 i) -> Int i
+  | Const_base (Const_int64 i) -> Int64 i
+  | Const_base (Const_nativeint i) -> Int (Nativeint.to_int32 i)
+  | Const_immstring s -> IString s
   | Const_float_array sl ->
-    let l = List.map ~f:float_of_string sl in
-    Obj.repr (Array.of_list l)
+    let l = List.map ~f:(fun f -> Code.Float (float_of_string f)) sl in
+    Tuple (Obj.double_array_tag, Array.of_list l)
 #ifdef BUCKLESCRIPT
   | Const_pointer (i,_) ->
-    Obj.repr i
+    Int (Int32.of_int i)
   | Const_block (tag,_,l) ->
-    let b = Obj.new_block tag (List.length l) in
-    List.iteri (fun i x ->
-      Obj.set_field b i (obj_of_const x)
-    ) l;
-    b
+    let l = Array.of_list (List.map l ~f:constant_of_const) in
+    Tuple (tag, l)
 #else
   | Const_pointer i ->
-    Obj.repr i
+    Int (Int32.of_int i)
   | Const_block (tag,l) ->
-    let b = Obj.new_block tag (List.length l) in
-    List.iteri ~f:(fun i x ->
-      Obj.set_field b i (obj_of_const x)
-    ) l;
-    b
+    let l = Array.of_list (List.map l ~f:constant_of_const) in
+    Tuple (tag, l)
 #endif
 
 let rec find_loc_in_summary ident' = function
