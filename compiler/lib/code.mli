@@ -133,13 +133,18 @@ type prim =
   | Le
   | Ult
 
+type array_or_not =
+  | Array
+  | NotArray
+  | Unknown
+
 type constant =
   | String of string
   | IString of string
   | Float of float
   | Float_array of float array
   | Int64 of int64
-  | Tuple of int * constant array
+  | Tuple of int * constant array * array_or_not
   | Int of int32
 
 type prim_arg =
@@ -150,7 +155,7 @@ type expr =
   | Const of int32
   | Apply of Var.t * Var.t list * bool
   (* if true, then # of arguments = # of parameters *)
-  | Block of int * Var.t array
+  | Block of int * Var.t array * array_or_not
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant

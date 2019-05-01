@@ -367,7 +367,8 @@ end = struct
       else if tag = Obj.custom_tag && same_custom x 0L
       then Int64 (Obj.magic x : int64)
       else if tag < Obj.no_scan_tag
-      then Tuple (tag, Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i)))
+      then
+        Tuple (tag, Array.init (Obj.size x) ~f:(fun i -> parse (Obj.field x i)), Unknown)
       else assert false
     else
       let i : int = Obj.magic x in
@@ -1060,23 +1061,23 @@ and compile infos pc state instrs =
     | ATOM0 ->
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile infos (pc + 1) state (Let (x, Block (0, [||])) :: instrs)
+        compile infos (pc + 1) state (Let (x, Block (0, [||], Unknown)) :: instrs)
     | ATOM ->
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile infos (pc + 2) state (Let (x, Block (i, [||])) :: instrs)
+        compile infos (pc + 2) state (Let (x, Block (i, [||], NotArray)) :: instrs)
     | PUSHATOM0 ->
         let state = State.push state in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = ATOM(0)@." Var.print x;
-        compile infos (pc + 1) state (Let (x, Block (0, [||])) :: instrs)
+        compile infos (pc + 1) state (Let (x, Block (0, [||], Unknown)) :: instrs)
     | PUSHATOM ->
         let state = State.push state in
         let i = getu code (pc + 1) in
         let x, state = State.fresh_var state in
         if debug_parser () then Format.printf "%a = ATOM(%d)@." Var.print x i;
-        compile infos (pc + 2) state (Let (x, Block (i, [||])) :: instrs)
+        compile infos (pc + 2) state (Let (x, Block (i, [||], NotArray)) :: instrs)
     | MAKEBLOCK ->
         let size = getu code (pc + 1) in
         let tag = getu code (pc + 2) in
@@ -1094,14 +1095,14 @@ and compile infos pc state instrs =
           infos
           (pc + 3)
           state
-          (Let (x, Block (tag, Array.of_list contents)) :: instrs)
+          (Let (x, Block (tag, Array.of_list contents, Unknown)) :: instrs)
     | MAKEBLOCK1 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
         let x, state = State.fresh_var state in
         if debug_parser ()
         then Format.printf "%a = { 0 = %a; }@." Var.print x Var.print y;
-        compile infos (pc + 2) state (Let (x, Block (tag, [|y|])) :: instrs)
+        compile infos (pc + 2) state (Let (x, Block (tag, [|y|], NotArray)) :: instrs)
     | MAKEBLOCK2 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1114,7 +1115,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 1 state)
-          (Let (x, Block (tag, [|y; z|])) :: instrs)
+          (Let (x, Block (tag, [|y; z|], NotArray)) :: instrs)
     | MAKEBLOCK3 ->
         let tag = getu code (pc + 1) in
         let y = State.accu state in
@@ -1137,7 +1138,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           (State.pop 2 state)
-          (Let (x, Block (tag, [|y; z; t|])) :: instrs)
+          (Let (x, Block (tag, [|y; z; t|], NotArray)) :: instrs)
     | MAKEFLOATBLOCK ->
         let size = getu code (pc + 1) in
         let state = State.push state in
@@ -1154,7 +1155,7 @@ and compile infos pc state instrs =
           infos
           (pc + 2)
           state
-          (Let (x, Block (254, Array.of_list contents)) :: instrs)
+          (Let (x, Block (254, Array.of_list contents, Unknown)) :: instrs)
     | GETFIELD0 ->
         let y = State.accu state in
         let x, state = State.fresh_var state in
@@ -2002,7 +2003,7 @@ let override_global =
         let init_mod = Var.fresh_n "init_mod" in
         let update_mod = Var.fresh_n "update_mod" in
         ( x
-        , Let (x, Block (0, [|init_mod; update_mod|]))
+        , Let (x, Block (0, [|init_mod; update_mod|], NotArray))
           :: Let (init_mod, jsmodule "CamlinternalMod" "init_mod")
           :: Let (update_mod, jsmodule "CamlinternalMod" "update_mod")
           :: instrs ) ) ]
@@ -2433,7 +2434,7 @@ let predefined_exceptions () =
         [ Let (v_name, Constant (String name))
         ; Let (v_name_js, Prim (Extern "caml_js_from_string", [Pc (IString name)]))
         ; Let (v_index, Constant (Int (Int32.of_int (-index))))
-        ; Let (exn, Block (248, [|v_name; v_index|]))
+        ; Let (exn, Block (248, [|v_name; v_index|], NotArray))
         ; Let
             ( Var.fresh ()
             , Prim

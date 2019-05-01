@@ -326,7 +326,10 @@ let rewrite_mutable
           in
           { params = []
           ; handler = None
-          ; body = closures_intern @ proj @ [Let (b, Block (0, Array.of_list new_xs))]
+          ; body =
+              closures_intern
+              @ proj
+              @ [Let (b, Block (0, Array.of_list new_xs, NotArray))]
           ; branch = Return b }
         in
         let blocks = Addr.Map.add new_pc new_block blocks in

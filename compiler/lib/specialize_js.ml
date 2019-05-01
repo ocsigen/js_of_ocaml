@@ -57,14 +57,14 @@ let specialize_instr info i rem =
       :: rem
   | Let (x, Prim (Extern "caml_js_call", [f; o; a])) ->
       (match the_def_of info a with
-      | Some (Block (_, a)) ->
+      | Some (Block (_, a, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_call", f :: o :: Array.to_list a))
       | _ -> i)
       :: rem
   | Let (x, Prim (Extern "caml_js_fun_call", [f; a])) ->
       (match the_def_of info a with
-      | Some (Block (_, a)) ->
+      | Some (Block (_, a, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_fun_call", f :: Array.to_list a))
       | _ -> i)
@@ -73,7 +73,7 @@ let specialize_instr info i rem =
       (match the_string_of info m with
       | Some m -> (
         match the_def_of info a with
-        | Some (Block (_, a)) ->
+        | Some (Block (_, a, _)) ->
             let a = Array.map a ~f:(fun x -> Pv x) in
             Let
               ( x
@@ -85,7 +85,7 @@ let specialize_instr info i rem =
       :: rem
   | Let (x, Prim (Extern "caml_js_new", [c; a])) ->
       (match the_def_of info a with
-      | Some (Block (_, a)) ->
+      | Some (Block (_, a, _)) ->
           let a = Array.map a ~f:(fun x -> Pv x) in
           Let (x, Prim (Extern "%caml_js_opt_new", c :: Array.to_list a))
       | _ -> i)
@@ -94,13 +94,13 @@ let specialize_instr info i rem =
       (try
          let a =
            match the_def_of info a with
-           | Some (Block (_, a)) -> a
+           | Some (Block (_, a, _)) -> a
            | _ -> raise Exit
          in
          let a =
            Array.map a ~f:(fun x ->
                match the_def_of info (Pv x) with
-               | Some (Block (_, [|k; v|])) ->
+               | Some (Block (_, [|k; v|], _)) ->
                    let k =
                      match the_string_of info (Pv k) with
                      | Some s -> Pc (String s)
