@@ -333,7 +333,7 @@ end
 module Constants : sig
   val parse : Obj.t -> Code.constant
 
-  val inlined : Obj.t -> bool
+  val inlined : Code.constant -> bool
 end = struct
   let same_custom x y = Obj.field x 0 == Obj.field (Obj.repr y) 0
 
@@ -376,12 +376,13 @@ end = struct
       if i' <> i then warn_overflow (Printf.sprintf "0x%x (%d)" i i) i32;
       Int i32
 
-  let inlined x =
-    (not (Obj.is_block x))
-    ||
-    let tag = Obj.tag x in
-    tag = Obj.double_tag
-    || (tag = Obj.custom_tag && (same_custom x 0l || same_custom x 0n))
+  let inlined = function
+    | String _ | IString _ -> false
+    | Float _ -> true
+    | Float_array _ -> false
+    | Int64 _ -> false
+    | Tuple _ -> false
+    | Int _ -> true
 end
 
 (* Globals *)
@@ -391,7 +392,7 @@ type globals =
   ; mutable is_exported : bool array
   ; mutable named_value : string option array
   ; mutable override : (Var.t -> Code.instr list -> Var.t * Code.instr list) option array
-  ; constants : Obj.t array
+  ; constants : Code.constant array
   ; primitives : string array }
 
 let make_globals size constants primitives =
@@ -658,7 +659,7 @@ let get_global state instrs i =
       if i < Array.length g.constants && Constants.inlined g.constants.(i)
       then
         let x, state = State.fresh_var state in
-        let cst = Constants.parse g.constants.(i) in
+        let cst = g.constants.(i) in
         x, state, Let (x, Constant cst) :: instrs
       else (
         g.is_const.(i) <- true;
@@ -2049,6 +2050,7 @@ let from_exe
   let code = really_input_string ic code_size in
   ignore (seek_section toc ic "DATA");
   let init_data : Obj.t array = input_value ic in
+  let init_data = Array.map ~f:Constants.parse init_data in
   ignore (seek_section toc ic "SYMB");
   let orig_symbols : Ocaml_compiler.Symtable.GlobalMap.t = input_value ic in
   ignore (seek_section toc ic "CRCS");
@@ -2127,7 +2129,7 @@ let from_exe
         match globals.vars.(i) with
         | Some x when globals.is_const.(i) ->
             let l = register_global globals i l in
-            Let (x, Constant (Constants.parse globals.constants.(i))) :: l
+            Let (x, Constant globals.constants.(i)) :: l
         | _ -> l)
   in
   let body =
@@ -2219,7 +2221,7 @@ module Reloc = struct
 
   type t =
     { mutable pos : int
-    ; mutable constants : Obj.t list
+    ; mutable constants : Code.constant list
     ; mutable step2_started : bool
     ; names : (string, int) Hashtbl.t
     ; primitives : (string, int) Hashtbl.t }
@@ -2239,7 +2241,7 @@ module Reloc = struct
     List.iter compunit.cu_primitives ~f:(fun name ->
         Hashtbl.add t.primitives name (Hashtbl.length t.primitives));
     let slot_for_literal sc =
-      t.constants <- Ocaml_compiler.obj_of_const sc :: t.constants;
+      t.constants <- Ocaml_compiler.constant_of_const sc :: t.constants;
       let pos = t.pos in
       t.pos <- succ t.pos;
       pos
@@ -2281,14 +2283,7 @@ module Reloc = struct
     Hashtbl.iter (fun name i -> a.(i) <- name) t.primitives;
     a
 
-  let constants t =
-    let len = List.length t.constants in
-    let a = Array.make len (Obj.repr 0) in
-    List.iteri t.constants ~f:(fun i o -> a.(len - 1 - i) <- o);
-    (* WARNING: [Obj.t array] is dangerous.
-       Make sure we don't end up with an unboxed float array. *)
-    assert (Obj.tag (Obj.repr a) = 0);
-    a
+  let constants t = Array.of_list (List.rev t.constants)
 
   let make_globals t =
     let primitives = primitives t in
@@ -2324,7 +2319,7 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
           match globals.named_value.(i) with
           | None ->
               let l = register_global globals i l in
-              let cst = Constants.parse globals.constants.(i) in
+              let cst = globals.constants.(i) in
               (match cst, Code.Var.get_name x with
               | (String str | IString str), None ->
                   Code.Var.name x (Printf.sprintf "cst_%s" str)
