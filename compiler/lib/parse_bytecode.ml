@@ -2050,7 +2050,17 @@ let from_exe
   let code = really_input_string ic code_size in
   ignore (seek_section toc ic "DATA");
   let init_data : Obj.t array = input_value ic in
-  let init_data = Array.map ~f:Constants.parse init_data in
+  let safe_array_map ~init ~f a =
+    let l = Array.length a in
+    let r = Array.make l init in
+    for i = 0 to l - 1 do
+      Array.unsafe_set r i (f (Array.unsafe_get a i))
+    done;
+    r
+  in
+  (* Use [safe_array_map] because Array.map would be incorrect if [init_data] starts with a
+     float *)
+  let init_data = safe_array_map ~init:(Int 0l) ~f:Constants.parse init_data in
   ignore (seek_section toc ic "SYMB");
   let orig_symbols : Ocaml_compiler.Symtable.GlobalMap.t = input_value ic in
   ignore (seek_section toc ic "CRCS");
