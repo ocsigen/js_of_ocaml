@@ -129,7 +129,10 @@ type identifier = string
 
 type ident_string =
   { name : identifier
-  ; var : Code.Var.t option }
+  ; var : Code.Var.t option
+  ; loc : location}
+
+let ident ?(loc=N) ?var name = { name ; var ; loc }
 
 type ident =
   | S of ident_string
@@ -283,7 +286,7 @@ and source_element =
 let compare_ident t1 t2 =
   match t1, t2 with
   | V v1, V v2 -> Code.Var.compare v1 v2
-  | S {name = s1; var = v1}, S {name = s2; var = v2} -> (
+  | S {name = s1; var = v1; _}, S {name = s2; var = v2 ; _} -> (
     match String.compare s1 s2 with
     | 0 -> (
       match v1, v2 with

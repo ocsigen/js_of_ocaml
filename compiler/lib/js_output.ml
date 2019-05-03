@@ -127,8 +127,8 @@ struct
       | Some _ -> ()
 
   let ident f = function
-    | S {name; var = None} -> PP.string f name
-    | S {name; var = Some v} ->
+    | S {name; var = None; _} -> PP.string f name
+    | S {name; var = Some v ; _} ->
         output_debug_info_ident f name v;
         PP.string f name
     | V _v -> assert false

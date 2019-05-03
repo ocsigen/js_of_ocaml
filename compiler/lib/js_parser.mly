@@ -32,7 +32,7 @@
 module J = Javascript
 open Js_token
 
-let var name = J.S {J.name;J.var=None}
+let var pi name = J.S (J.ident ~loc:(Pi pi) name)
 
 (* This is need to fake menhir while using `--infer`. *)
 let _tok = EOF Parse_info.zero
@@ -411,8 +411,8 @@ primary_expression:
  | e=function_expression { e }
 
 primary_expression_no_statement:
- | pi=T_THIS         { (pi, J.EVar (var "this")) }
- | variable_with_loc { let (i, pi) = $1 in (pi, J.EVar (var i)) }
+ | pi=T_THIS         { (pi, J.EVar (var pi "this")) }
+ | variable_with_loc { let (i, pi) = $1 in (pi, J.EVar i) }
  | n=null_literal    { n }
  | b=boolean_literal { b }
  | numeric_literal   { let (start, n) = $1 in (start, J.ENum (J.Num.of_string_unsafe n)) }
@@ -514,7 +514,7 @@ member_expression_no_statement:
 (*----------------------------*)
 
 null_literal:
- | pi=T_NULL { (pi, J.EVar (var "null")) }
+ | pi=T_NULL { (pi, J.EVar (var pi "null")) }
 
 boolean_literal:
  | pi=T_TRUE  { (pi, J.EBool true) }
@@ -587,9 +587,6 @@ arguments:
 (* 1 Entities, names                                                     *)
 (*************************************************************************)
 
-identifier:
- | T_IDENTIFIER { fst $1 }
-
 identifier_or_kw:
    | T_IDENTIFIER { fst $1 }
    | T_CATCH { "catch" }
@@ -624,13 +621,13 @@ identifier_or_kw:
    | T_DEBUGGER { "debugger" }
 
 variable:
- | i=identifier { var i }
+ | i=variable_with_loc { fst i }
 
 variable_with_loc:
- | T_IDENTIFIER { $1 }
+ | i=T_IDENTIFIER { let name, pi = i in var pi name, pi }
 
 label:
- | identifier { J.Label.of_string $1 }
+ | T_IDENTIFIER { J.Label.of_string (fst $1) }
 
 property_name:
  | i=identifier_or_kw { J.PNI i }

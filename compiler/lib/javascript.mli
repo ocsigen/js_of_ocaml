@@ -74,7 +74,10 @@ type identifier = string
 
 type ident_string =
   { name : identifier
-  ; var : Code.Var.t option }
+  ; var : Code.Var.t option
+  ; loc : location}
+
+val ident : ?loc:location -> ?var:Code.Var.t -> identifier -> ident_string
 
 type ident =
   | S of ident_string

@@ -369,7 +369,7 @@ let program' (module Strategy : Strategy) p =
     | V v ->
         let name = names.(Var.idx v) in
         assert (name <> "");
-        S {name; var = Some v}
+        S (ident ~var:v name)
     | x -> x
   in
   (new Js_traverse.subst color)#program p

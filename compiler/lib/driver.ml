@@ -204,22 +204,22 @@ let gen_missing js missing =
   let miss =
     StringSet.fold
       (fun prim acc ->
-        let p = S {name = prim; var = None} in
+        let p = S (ident prim) in
         ( p
         , Some
             ( ECond
                 ( EBin
                     ( NotEqEq
-                    , EDot (EVar (S {name = global_object; var = None}), prim)
-                    , EVar (S {name = "undefined"; var = None}) )
-                , EDot (EVar (S {name = global_object; var = None}), prim)
+                    , EDot (EVar (S (ident global_object)), prim)
+                    , EVar (S (ident "undefined")) )
+                , EDot (EVar (S (ident global_object)), prim)
                 , EFun
                     ( None
                     , []
                     , [ ( Statement
                             (Expression_statement
                                (ECall
-                                  ( EVar (S {name = "caml_failwith"; var = None})
+                                  ( EVar (S (ident "caml_failwith"))
                                   , [ EBin
                                         ( Plus
                                         , EStr (prim, `Utf8)
@@ -275,12 +275,14 @@ let link ~standalone ~linkall ~export_runtime (js : Javascript.source_elements) 
       then
         let open Javascript in
         let all = Linker.all linkinfos in
-        let all = List.map all ~f:(fun name -> PNI name, EVar (S {name; var = None})) in
+        let all = List.map all
+            ~f:(fun name -> PNI name, EVar (S (ident name)))
+        in
         ( Statement
             (Expression_statement
                (EBin
                   ( Eq
-                  , EDot (EVar (S {name = global_object; var = None}), "jsoo_runtime")
+                  , EDot (EVar (S (ident global_object)), "jsoo_runtime")
                   , EObj all )))
         , N )
         :: js
@@ -367,7 +369,7 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
     let f =
       J.EFun
         ( None
-        , [J.S {J.name = global_object; var = None}]
+        , [J.S (J.ident global_object)]
         , use_strict js ~can_use_strict
         , J.U )
     in
@@ -375,7 +377,7 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
       match global with
       | `Function -> f
       | `Bind_to _ -> f
-      | `Custom name -> J.ECall (f, [J.EVar (J.S {J.name; var = None})], J.N)
+      | `Custom name -> J.ECall (f, [J.EVar (J.S (J.ident name))], J.N)
       | `Auto ->
           let global =
             J.ECall
@@ -384,7 +386,7 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
                   , []
                   , [ ( J.Statement
                           (J.Return_statement
-                             (Some (J.EVar (J.S {J.name = "this"; var = None}))))
+                             (Some (J.EVar (J.S (J.ident "this")))))
                       , J.N ) ]
                   , J.N )
               , []
@@ -395,7 +397,7 @@ let pack ~global {Linker.runtime_code = js; always_required_codes} =
     match global with
     | `Bind_to name ->
         [ ( J.Statement
-              (J.Variable_statement [J.S {J.name; var = None}, Some (expr, J.N)])
+              (J.Variable_statement [J.S (J.ident name), Some (expr, J.N)])
           , J.N ) ]
     | _ -> [J.Statement (J.Expression_statement expr), J.N]
   in
