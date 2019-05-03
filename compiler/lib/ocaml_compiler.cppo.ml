@@ -29,7 +29,7 @@ let rec constant_of_const : _ -> Code.constant =
   | Const_base (Const_int32 i) -> Int i
   | Const_base (Const_int64 i) -> Int64 i
   | Const_base (Const_nativeint i) -> Int (Nativeint.to_int32 i)
-  | Const_immstring s -> IString s
+  | Const_immstring s -> String s
   | Const_float_array sl ->
     let l = List.map ~f:(fun f -> Code.Float (float_of_string f)) sl in
     Tuple (Obj.double_array_tag, Array.of_list l)
