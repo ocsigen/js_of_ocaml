@@ -447,6 +447,7 @@ function caml_parse_sign_and_base (s) {
     case 120: case 88: base = 16; i += 2; break;
     case 111: case 79: base =  8; i += 2; break;
     case  98: case 66: base =  2; i += 2; break;
+    case 117: case 85: sign =  0; i += 2; break;
     }
   return [i, sign, base];
 }
