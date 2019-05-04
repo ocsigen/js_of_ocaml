@@ -208,3 +208,26 @@ let specialize_all_instrs info (pc, blocks, free_pc) =
 (****)
 
 let f info p = specialize_all_instrs info p
+
+let f_once (pc, blocks, free_pc) =
+  let rec loop l =
+    match l with
+    | [] -> []
+    | i :: r -> (
+      match i with
+      | Let
+          ( x
+          , (Prim
+               ( Extern
+                   ( "caml_array_set" | "caml_array_unsafe_set" | "caml_array_set_float"
+                   | "caml_array_set_addr" | "caml_array_unsafe_set_float"
+                   | "caml_floatarray_unsafe_set" )
+               , [_; _; _] ) as p) ) ->
+          let x' = Code.Var.fork x in
+          Let (x, Constant (Int 0l)) :: Let (x', p) :: loop r
+      | _ -> i :: loop r)
+  in
+  let blocks =
+    Addr.Map.map (fun block -> {block with Code.body = loop block.body}) blocks
+  in
+  pc, blocks, free_pc

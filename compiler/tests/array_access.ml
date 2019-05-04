@@ -42,24 +42,8 @@ let%expect_test "array_set" =
   print_fun_decl program "some_name";
   [%expect
     {|
-    function some_name(a,n)
-     {var x=runtime.caml_check_bound(a,n)[1 + n] = n;return 0 === x?1:0} |}]
+    function some_name(a,n){runtime.caml_check_bound(a,n)[1 + n] = n;return 1} |}]
 
 let%expect_test "array_set" =
   compile_and_run array_set;
-  [%expect.unreachable]
-  [@@expect.uncaught_exn
-    {|
-  (* CR expect_test_collector: This test expectation appears to contain a backtrace.
-     This is strongly discouraged as backtraces are fragile.
-     Please change this test to not include a backtrace. *)
-
-  (Failure  "process exited with error code 1\
-           \n node /tmp/jsoo_testb07018.js")
-  Raised at file "stdlib.ml", line 33, characters 17-33
-  Called from file "compiler/tests/util/util.ml", line 265, characters 2-148
-  Called from file "compiler/tests/array_access.ml", line 56, characters 2-27
-  Called from file "collector/expect_test_collector.ml", line 225, characters 12-19
-
-  Trailing output
-  --------------- |}]
+  [%expect{||}]
