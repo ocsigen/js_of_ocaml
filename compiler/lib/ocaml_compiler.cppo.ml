@@ -32,19 +32,19 @@ let rec constant_of_const : _ -> Code.constant =
   | Const_immstring s -> String s
   | Const_float_array sl ->
     let l = List.map ~f:(fun f -> Code.Float (float_of_string f)) sl in
-    Tuple (Obj.double_array_tag, Array.of_list l)
+    Tuple (Obj.double_array_tag, Array.of_list l, Unknown)
 #ifdef BUCKLESCRIPT
   | Const_pointer (i,_) ->
     Int (Int32.of_int i)
   | Const_block (tag,_,l) ->
     let l = Array.of_list (List.map l ~f:constant_of_const) in
-    Tuple (tag, l)
+    Tuple (tag, l, Unknown)
 #else
   | Const_pointer i ->
     Int (Int32.of_int i)
   | Const_block (tag,l) ->
     let l = Array.of_list (List.map l ~f:constant_of_const) in
-    Tuple (tag, l)
+    Tuple (tag, l, Unknown)
 #endif
 
 let rec find_loc_in_summary ident' = function

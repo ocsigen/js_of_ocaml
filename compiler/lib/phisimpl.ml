@@ -52,7 +52,7 @@ let expr_deps blocks vars deps defs x e =
   match e with
   | Const _ | Constant _ | Apply _ | Prim _ -> ()
   | Closure (_, cont) -> cont_deps blocks vars deps defs cont
-  | Block (_, a) -> Array.iter a ~f:(fun y -> add_dep deps x y)
+  | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _) -> add_dep deps x y
 
 let program_deps (_, blocks, _) =

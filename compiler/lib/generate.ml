@@ -113,7 +113,7 @@ module Share = struct
     match c with
     | String s -> add_code_string s t
     | IString s -> add_code_istring s t
-    | Tuple (_, args) -> Array.fold_left args ~init:t ~f:(fun t c -> get_constant c t)
+    | Tuple (_, args, _) -> Array.fold_left args ~init:t ~f:(fun t c -> get_constant c t)
     | _ -> t
 
   let add_args args t =
@@ -321,10 +321,10 @@ let rec constant_rec ~ctx x level instrs =
             ; int (Int64.to_int (Int64.shift_right i 24) land 0xffffff)
             ; int (Int64.to_int (Int64.shift_right i 48) land 0xffff) ]
       , instrs )
-  | Tuple (tag, a) -> (
+  | Tuple (tag, a, _) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
-        | Tuple (0, [|x; l|]) -> detect_list (succ n) (x :: acc) l
+        | Tuple (0, [|x; l|], _) -> detect_list (succ n) (x :: acc) l
         | Int 0l -> if n > constant_max_depth then Some acc else None
         | _ -> None
       in
@@ -966,7 +966,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
       let prop = or_p prop prop' in
       let e = apply_fun ctx f args loc in
       (e, prop, queue), []
-  | Block (tag, a) ->
+  | Block (tag, a, array_or_not) ->
       let contents, prop, queue =
         List.fold_right
           ~f:(fun x (args, prop, queue) ->
@@ -975,7 +975,12 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
           (Array.to_list a)
           ~init:([], const_p, queue)
       in
-      (Mlvalue.Block.make ~tag ~args:contents, prop, queue), []
+      let x =
+        match array_or_not with
+        | Array -> Mlvalue.Array.make ~tag ~args:contents
+        | NotArray | Unknown -> Mlvalue.Block.make ~tag ~args:contents
+      in
+      (x, prop, queue), []
   | Field (x, n) ->
       let (px, cx), queue = access_queue queue x in
       (Mlvalue.Block.field cx n, or_p px mutable_p, queue), []

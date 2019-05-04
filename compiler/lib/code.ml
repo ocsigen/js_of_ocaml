@@ -248,13 +248,18 @@ type prim =
   | Le
   | Ult
 
+type array_or_not =
+  | Array
+  | NotArray
+  | Unknown
+
 type constant =
   | String of string
   | IString of string
   | Float of float
   | Float_array of float array
   | Int64 of int64
-  | Tuple of int * constant array
+  | Tuple of int * constant array * array_or_not
   | Int of int32
 
 type prim_arg =
@@ -264,7 +269,7 @@ type prim_arg =
 type expr =
   | Const of int32
   | Apply of Var.t * Var.t list * bool
-  | Block of int * Var.t array
+  | Block of int * Var.t array * array_or_not
   | Field of Var.t * int
   | Closure of Var.t list * cont
   | Constant of constant
@@ -326,7 +331,7 @@ let rec print_constant f x =
       done;
       Format.fprintf f "|]"
   | Int64 i -> Format.fprintf f "%LdL" i
-  | Tuple (tag, a) -> (
+  | Tuple (tag, a, _) -> (
       Format.fprintf f "<%d>" tag;
       match Array.length a with
       | 0 -> ()
@@ -396,7 +401,7 @@ let print_expr f e =
       if exact
       then Format.fprintf f "%a!(%a)" Var.print g print_var_list l
       else Format.fprintf f "%a(%a)" Var.print g print_var_list l
-  | Block (t, a) ->
+  | Block (t, a, _) ->
       Format.fprintf f "{tag=%d" t;
       for i = 0 to Array.length a - 1 do
         Format.fprintf f "; %d = %a" i Var.print a.(i)
@@ -587,7 +592,7 @@ let invariant (_, blocks, _) =
     let check_expr = function
       | Const _ -> ()
       | Apply (_, _, _) -> ()
-      | Block (_, _) -> ()
+      | Block (_, _, _) -> ()
       | Field (_, _) -> ()
       | Closure (l, cont) ->
           List.iter l ~f:define;

@@ -92,7 +92,7 @@ let expr_deps blocks vars deps defs x e =
   | Closure (l, cont) ->
       List.iter l ~f:(fun x -> add_param_def vars defs x);
       cont_deps blocks vars deps defs cont
-  | Block (_, a) -> Array.iter a ~f:(fun y -> add_dep deps x y)
+  | Block (_, a, _) -> Array.iter a ~f:(fun y -> add_dep deps x y)
   | Field (y, _) -> add_dep deps x y
 
 let program_deps (_, blocks, _) =
@@ -139,7 +139,7 @@ let propagate1 deps defs st x =
         var_set_lift
           (fun z ->
             match defs.(Var.idx z) with
-            | Expr (Block (_, a)) when n < Array.length a ->
+            | Expr (Block (_, a, _)) when n < Array.length a ->
                 let t = a.(n) in
                 add_dep deps x t;
                 Var.Tbl.get st t
@@ -181,7 +181,7 @@ let rec block_escape st x =
         st.may_escape.(idx) <- true;
         st.possibly_mutable.(idx) <- true;
         match st.defs.(Var.idx y) with
-        | Expr (Block (_, l)) -> Array.iter l ~f:(fun z -> block_escape st z)
+        | Expr (Block (_, l, _)) -> Array.iter l ~f:(fun z -> block_escape st z)
         | _ -> ()))
     (Var.Tbl.get st.known_origins x)
 
@@ -211,14 +211,14 @@ let expr_escape st _x e =
             | _, `Const | Pc _, _ -> ()
             | Pv v, `Shallow_const -> (
               match st.defs.(Var.idx v) with
-              | Expr (Block (_, a)) -> Array.iter a ~f:(fun x -> block_escape st x)
+              | Expr (Block (_, a, _)) -> Array.iter a ~f:(fun x -> block_escape st x)
               | _ -> block_escape st v)
             | Pv v, `Object_literal -> (
               match st.defs.(Var.idx v) with
-              | Expr (Block (_, a)) ->
+              | Expr (Block (_, a, _)) ->
                   Array.iter a ~f:(fun x ->
                       match st.defs.(Var.idx x) with
-                      | Expr (Block (_, [|_k; v|])) -> block_escape st v
+                      | Expr (Block (_, [|_k; v|], _)) -> block_escape st v
                       | _ -> block_escape st x)
               | _ -> block_escape st v)
             | Pv v, `Mutable -> block_escape st v);
@@ -265,7 +265,7 @@ let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
         || Var.Set.exists
              (fun z ->
                match defs.(Var.idx z) with
-               | Expr (Block (_, a)) ->
+               | Expr (Block (_, a, _)) ->
                    n >= Array.length a
                    || possibly_mutable.(Var.idx z)
                    || Var.Tbl.get st a.(n)
@@ -357,7 +357,7 @@ let direct_approx info x =
           then None
           else
             match info.info_defs.(Var.idx z) with
-            | Expr (Block (_, a)) when n < Array.length a -> Some a.(n)
+            | Expr (Block (_, a, _)) when n < Array.length a -> Some a.(n)
             | _ -> None)
         None
         (fun u v ->
