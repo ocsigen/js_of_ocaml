@@ -19,3 +19,5 @@
  *)
 
 val f : Flow.info -> Code.program -> Code.program
+
+val f_once : Code.program -> Code.program

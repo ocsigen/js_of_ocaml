@@ -61,7 +61,7 @@ let%expect_test "static eval of string get" =
     function my_tag(x){return runtime.caml_obj_tag([0,x,0])}
     function my_size(x){return x.length - 1}
     function my_field(x,i){return x[1 + i]}
-    function my_set_field(x,i,o){return x[1 + i] = o}
+    function my_set_field(x,i,o){x[1 + i] = o;return 0}
     function my_set_tag(x,t){return runtime.caml_obj_set_tag([0,x,0],t)}
     function my_new_block(x,l){return runtime.caml_obj_block(x + 1 | 0,3)}
     function my_dup(t){return [0,t,0].slice()}

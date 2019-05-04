@@ -51,6 +51,10 @@ let specialize_js (p, info) =
   if debug () then Format.eprintf "Specialize js...@.";
   Specialize_js.f info p
 
+let specialize_js_once p =
+  if debug () then Format.eprintf "Specialize js once...@.";
+  Specialize_js.f_once p
+
 let specialize' (p, info) =
   let p = specialize_1 (p, info) in
   let p = specialize_js (p, info) in
@@ -449,6 +453,7 @@ let f
   let exported_runtime = not standalone in
   let linkall = linkall || dynlink in
   configure formatter
+  >> specialize_js_once
   >> profile
   >> Generate_closure.f
   >> deadcode'
