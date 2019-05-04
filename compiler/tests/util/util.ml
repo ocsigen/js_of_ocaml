@@ -117,18 +117,27 @@ let exec_to_string_exn ~env ~cmd =
     function
     | WEXITED 0 -> std_out
     | WEXITED i ->
-        print_endline std_out;
-        failwith (Format.sprintf "process exited with error code %d\n %s" i cmd)
+        Format.printf "process exited with error code %d\n %s" i cmd;
+        std_out
     | WSIGNALED i ->
-        print_endline std_out;
-        failwith (Format.sprintf "process signaled with signal number %d\n %s" i cmd)
+        Format.printf "process signaled with signal number %d\n %s" i cmd;
+        std_out
     | WSTOPPED i ->
-        print_endline std_out;
-        failwith (Format.sprintf "process stopped with signal number %d\n %s" i cmd)
+        Format.printf "process stopped with signal number %d\n %s" i cmd;
+        std_out
   in
-  let ((proc_in, _, _) as proc_full) = Unix.open_process_full cmd env in
+  let ((proc_in, _, proc_err) as proc_full) = Unix.open_process_full cmd env in
   let results = channel_to_string proc_in in
-  proc_result_ok results (Unix.close_process_full proc_full)
+  let results' = channel_to_string proc_err in
+  proc_result_ok
+    (String.concat
+       "\n"
+       (List.filter
+          (function
+            | "" -> false
+            | _ -> true)
+          [results'; results]))
+    (Unix.close_process_full proc_full)
 
 let get_project_build_directory () =
   let regex_text = "_build/default" in
