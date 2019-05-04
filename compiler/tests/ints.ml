@@ -22,15 +22,7 @@ open Util
 let%expect_test _ =
   compile_and_run
     {| Scanf.sscanf "0.97.0" "%u.%u.%u" (fun major minor patch -> [major; minor; patch]) |};
-  [%expect
-    {|
-    /tmp/jsoo_test8e4b75.js:6122
-        function bad_input(s){throw [0,Scan_failure,s]}
-                              ^
-    0,248,Stdlib.Scanf.Scan_failure,5,scanf: bad input at char number 1: int_of_string
-
-    process exited with error code 1
-     node /tmp/jsoo_test8e4b75.js |}]
+  [%expect {| |}]
 
 let%expect_test _ =
   Printf.printf "%d\n" (int_of_string "0u123");
