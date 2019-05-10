@@ -13,7 +13,3 @@
 (rule
   (targets ppx_js_internal.ml)
   (action (copy %{dep:../lib_internal/ppx_js_internal.ml} %{targets})))
-
-(rule
-  (targets compat.ml)
-  (action (copy %{dep:../lib_internal/compat.ml} %{targets})))

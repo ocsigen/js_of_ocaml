@@ -461,18 +461,20 @@ let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Er
         if id.txt <> txt then Printf.sprintf " (normalized to %S)" txt else ""
       in
       let sub =
-        [ Compat.Location.msg
-            ~loc:id'.loc
+        [ id'.loc,
+          Printf.sprintf
             "Duplicated val or method %S%s."
             id'.txt
             (details id') ]
       in
-      Location.raise_errorf
+      Ast_mapper.make_error_of_message
         ~loc:id.loc
         ~sub
+        (Printf.sprintf
         "Duplicated val or method %S%s."
         id.txt
-        (details id)
+        (details id))
+      |> Ast_mapper.raise_error
     else S.add txt id names
   in
   let drop_prefix ~prefix s =
@@ -533,7 +535,7 @@ let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Er
           "This field is not valid inside a js literal object."
   in
   try `Fields (List.rev (snd (List.fold_left fields ~init:(S.empty, []) ~f)))
-  with Location.Error error -> `Error (Compat.Ast_mapper.extension_of_error error)
+  with Location.Error error -> `Error (Ast_mapper.extension_of_error error)
 
 (* {[ object%js (self)
      val readonlyprop = e1
