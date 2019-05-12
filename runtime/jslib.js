@@ -87,7 +87,9 @@ function caml_trampoline_return(f,args) {
 }
 
 //Provides: js_print_stdout (const)
+//Requires: caml_utf16_of_utf8
 function js_print_stdout(s) {
+  var s = caml_utf16_of_utf8(s);
   var g = joo_global_object;
   if (g.process && g.process.stdout && g.process.stdout.write) {
     g.process.stdout.write(s)
@@ -101,7 +103,9 @@ function js_print_stdout(s) {
   }
 }
 //Provides: js_print_stderr (const)
+//Requires: caml_utf16_of_utf8
 function js_print_stderr(s) {
+  var s = caml_utf16_of_utf8(s);
   var g = joo_global_object;
   if (g.process && g.process.stdout && g.process.stdout.write) {
     g.process.stderr.write(s)
