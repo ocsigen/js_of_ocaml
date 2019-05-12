@@ -1,4 +1,4 @@
-(* Js_of_ocaml compiler
+(* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2019 Hugo Heuzard
  *
@@ -33,7 +33,8 @@ let%expect_test _ =
     let () = seek_out oc 0
     let () = print_int (out_channel_length oc)
  |};
-  [%expect {| 00448 |}]
+  [%expect {|
+    00448 |}]
 
 let%expect_test _ =
   let oc = open_out "b.txt" in
