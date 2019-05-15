@@ -75,9 +75,7 @@ type identifier = string
 type ident_string =
   { name : identifier
   ; var : Code.Var.t option
-  ; loc : location}
-
-val ident : ?loc:location -> ?var:Code.Var.t -> identifier -> ident_string
+  ; loc : location }
 
 type ident =
   | S of ident_string
@@ -235,6 +233,8 @@ and source_element =
 val compare_ident : ident -> ident -> int
 
 val is_ident : string -> bool
+
+val ident : ?loc:location -> ?var:Code.Var.t -> identifier -> ident
 
 module IdentSet : Set.S with type elt = ident
 

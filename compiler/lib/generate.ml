@@ -260,7 +260,7 @@ let source_location ctx ?after pc =
 
 let float_const f = val_float (J.ENum (J.Num.of_float f))
 
-let s_var name = J.EVar (J.S (J.ident name))
+let s_var name = J.EVar (J.ident name)
 
 let runtime_fun ctx name =
   match ctx.Ctx.exported_runtime with

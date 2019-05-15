@@ -127,11 +127,11 @@ struct
       | Some _ -> ()
 
   let ident f = function
-    | S {name; var = Some v ; _} ->
+    | S {name; var = Some v; _} ->
         output_debug_info_ident f name (Code.Var.get_loc v);
         PP.string f name
     | S {name; var = None; loc = Pi pi} ->
-        output_debug_info_ident f name (Some pi) ;
+        output_debug_info_ident f name (Some pi);
         PP.string f name
     | S {name; var = None; loc = U | N} -> PP.string f name
     | V _v -> assert false

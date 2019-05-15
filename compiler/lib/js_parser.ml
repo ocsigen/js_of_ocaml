@@ -264,7 +264,7 @@ and _menhir_state =
 module J = Javascript
 open Js_token
 
-let var pi name = J.S (J.ident ~loc:(Pi pi) name)
+let var pi name = J.ident ~loc:(Pi pi) name
 
 (* This is need to fake menhir while using `--infer`. *)
 let _tok = EOF Parse_info.zero
