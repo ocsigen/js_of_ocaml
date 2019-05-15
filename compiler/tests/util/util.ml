@@ -18,18 +18,13 @@
 *)
 module Jsoo = Js_of_ocaml_compiler
 
-let ocamlc =
-  try Sys.getenv "OCAMLC" with
-  | Not_found -> "ocamlc"
+let ocamlc = try Sys.getenv "OCAMLC" with Not_found -> "ocamlc"
 
-
-let node =
-  try Sys.getenv "NODE" with
-  | Not_found -> "node"
+let node = try Sys.getenv "NODE" with Not_found -> "node"
 
 let js_of_ocaml_root =
-  try Sys.getenv "PROJECT_ROOT" with
-  | Not_found ->
+  try Sys.getenv "PROJECT_ROOT"
+  with Not_found ->
     let regex_text = "_build/default" in
     let regex = Str.regexp regex_text in
     let left = Sys.getcwd () |> Str.split regex |> List.hd in
@@ -172,12 +167,10 @@ let compile_to_javascript ~pretty ~sourcemap file =
       [ (if pretty then ["--pretty"] else [])
       ; (if sourcemap then ["--sourcemap"] else [])
       ; ["--no-runtime"]
-      ; [Filename.concat (js_of_ocaml_root) "runtime/runtime.js"] ]
+      ; [Filename.concat js_of_ocaml_root "runtime/runtime.js"] ]
   in
   let extra_args = String.concat " " extra_args in
-  let compiler_location =
-    Filename.concat (js_of_ocaml_root) "compiler/js_of_ocaml.exe"
-  in
+  let compiler_location = Filename.concat js_of_ocaml_root "compiler/js_of_ocaml.exe" in
   let cmd = Format.sprintf "%s %s %s -o %s" compiler_location extra_args file out_file in
   let env = [Format.sprintf "BUILD_PATH_PREFIX_MAP=/root/jsoo_test=%s" file_no_ext] in
   let stdout = exec_to_string_exn ~env ~cmd in

@@ -26,6 +26,8 @@ let%expect_test _ =
   |> Filetype.read_js
   |> Filetype.string_of_js_text
   |> print_endline;
+  Sys.remove "empty.cma";
+  Sys.remove "empty.js";
   [%expect
     {|
       (function(joo_global_object)

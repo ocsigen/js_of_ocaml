@@ -22,7 +22,8 @@
 let%expect_test _ =
   Util.compile_and_run
     {|
-    let oc = open_out "a.txt"
+    let tmp = Filename.temp_file "a" "txt"
+    let oc = open_out tmp
     let () = print_int (out_channel_length oc)
     let () = output_string oc "test"
     let () = print_int (out_channel_length oc)
@@ -37,7 +38,8 @@ let%expect_test _ =
     00448 |}]
 
 let%expect_test _ =
-  let oc = open_out "b.txt" in
+  let tmp = Filename.temp_file "b" "txt" in
+  let oc = open_out tmp in
   let () = print_int (out_channel_length oc) in
   let () = output_string oc "test" in
   let () = print_int (out_channel_length oc) in
@@ -68,7 +70,8 @@ let%expect_test _ =
 
 
     let _ =
-        let filename = "out.txt" in
+        let tmp = Filename.temp_file "out" "txt" in
+        let filename = tmp in
         let chan = open_out filename in
         output_binary_int chan 8900;
         marshal_out_segment filename chan ["output";"data"];
@@ -97,7 +100,8 @@ let%expect_test _ =
       Digest.output ch (Digest.file f)
 
     let _ =
-      let filename = "out.txt" in
+      let tmp = Filename.temp_file "out" "txt" in
+      let filename = tmp in
       let chan = open_out filename in
       output_binary_int chan 8900;
       marshal_out_segment filename chan ["output"; "data"];
