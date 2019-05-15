@@ -18,6 +18,23 @@
 *)
 module Jsoo = Js_of_ocaml_compiler
 
+let ocamlc =
+  try Sys.getenv "OCAMLC" with
+  | Not_found -> "ocamlc"
+
+
+let node =
+  try Sys.getenv "NODE" with
+  | Not_found -> "node"
+
+let js_of_ocaml_root =
+  try Sys.getenv "PROJECT_ROOT" with
+  | Not_found ->
+    let regex_text = "_build/default" in
+    let regex = Str.regexp regex_text in
+    let left = Sys.getcwd () |> Str.split regex |> List.hd in
+    Filename.concat left regex_text
+
 module Filetype : Filetype_intf.S = struct
   type ocaml_text = string
 
@@ -139,16 +156,10 @@ let exec_to_string_exn ~env ~cmd =
           [results'; results]))
     (Unix.close_process_full proc_full)
 
-let get_project_build_directory () =
-  let regex_text = "_build/default" in
-  let regex = Str.regexp regex_text in
-  let left = Sys.getcwd () |> Str.split regex |> List.hd in
-  Filename.concat left regex_text
-
 let run_javascript file =
   exec_to_string_exn
     ~env:[]
-    ~cmd:(Format.sprintf "node %s" (Filetype.path_of_js_file file))
+    ~cmd:(Format.sprintf "%s %s" node (Filetype.path_of_js_file file))
 
 let swap_extention filename ~ext =
   Format.sprintf "%s.%s" (Filename.remove_extension filename) ext
@@ -161,11 +172,11 @@ let compile_to_javascript ~pretty ~sourcemap file =
       [ (if pretty then ["--pretty"] else [])
       ; (if sourcemap then ["--sourcemap"] else [])
       ; ["--no-runtime"]
-      ; [Filename.concat (get_project_build_directory ()) "runtime/runtime.js"] ]
+      ; [Filename.concat (js_of_ocaml_root) "runtime/runtime.js"] ]
   in
   let extra_args = String.concat " " extra_args in
   let compiler_location =
-    Filename.concat (get_project_build_directory ()) "compiler/js_of_ocaml.exe"
+    Filename.concat (js_of_ocaml_root) "compiler/js_of_ocaml.exe"
   in
   let cmd = Format.sprintf "%s %s %s -o %s" compiler_location extra_args file out_file in
   let env = [Format.sprintf "BUILD_PATH_PREFIX_MAP=/root/jsoo_test=%s" file_no_ext] in
@@ -185,34 +196,38 @@ let compile_cmo_to_javascript ?(pretty = true) ?(sourcemap = true) file =
 let compile_ocaml_to_cmo file =
   let file = Filetype.path_of_ocaml_file file in
   let out_file = swap_extention file ~ext:"cmo" in
-  let (_ : string) =
+  let (stdout : string) =
     exec_to_string_exn
       ~env:[]
-      ~cmd:(Format.sprintf "ocamlc -c -g %s -o %s" file out_file)
+      ~cmd:(Format.sprintf "%s -c -g %s -o %s" ocamlc file out_file)
   in
+  print_string stdout;
   Filetype.cmo_file_of_path out_file
 
 let compile_ocaml_to_bc file =
   let file = Filetype.path_of_ocaml_file file in
   let out_file = swap_extention file ~ext:"bc" in
-  let (_ : string) =
+  let (stdout : string) =
     exec_to_string_exn
       ~env:[]
-      ~cmd:(Format.sprintf "ocamlc -g unix.cma %s -o %s" file out_file)
+      ~cmd:(Format.sprintf "%s -g unix.cma %s -o %s" ocamlc file out_file)
   in
+  print_string stdout;
   Filetype.bc_file_of_path out_file
 
 let compile_lib list name =
   let out_file = swap_extention name ~ext:"cma" in
-  let (_ : string) =
+  let (stdout : string) =
     exec_to_string_exn
       ~env:[]
       ~cmd:
         (Format.sprintf
-           "ocamlc -g -a %s -o %s"
+           "%s -g -a %s -o %s"
+           ocamlc
            (String.concat " " (List.map Filetype.path_of_cmo_file list))
            out_file)
   in
+  print_string stdout;
   Filetype.cmo_file_of_path out_file
 
 let program_to_string ?(compact = false) p =
