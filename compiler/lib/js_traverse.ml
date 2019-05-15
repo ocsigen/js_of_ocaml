@@ -199,7 +199,7 @@ class map_for_share_constant =
           EBin (op, EUn (Typeof, e1), super#expression e2)
       (* Some js bundler get confused when the argument
        of 'require' is not a litteral *)
-      | ECall (EVar (S {var = None; name = "require"}), [EStr _], _) -> e
+      | ECall (EVar (S {var = None; name = "require"; _}), [EStr _], _) -> e
       | _ -> super#expression e
 
     (* do not replace constant in switch case *)
@@ -616,10 +616,7 @@ class compact_vardecl =
         S.fold (fun e acc -> IdentSet.add (V e) acc) from#state.def IdentSet.empty
       in
       let all =
-        StringSet.fold
-          (fun e acc -> IdentSet.add (S {name = e; var = None}) acc)
-          from#state.def_name
-          all
+        StringSet.fold (fun e acc -> IdentSet.add (ident e) acc) from#state.def_name all
       in
       insert_ <- IdentSet.diff all from#exc
 

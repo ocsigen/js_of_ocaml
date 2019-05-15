@@ -99,6 +99,19 @@ module Option = struct
     match x with
     | None -> None
     | Some v -> if f v then Some v else None
+
+  let compare compare_elt a b =
+    match a, b with
+    | None, None -> 0
+    | None, Some _ -> -1
+    | Some _, None -> 1
+    | Some a, Some b -> compare_elt a b
+end
+
+module Poly = struct
+  let compare : 'a. 'a -> 'a -> int = compare
+
+  let equal : 'a. 'a -> 'a -> bool = ( = )
 end
 
 module Char = struct
