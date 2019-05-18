@@ -383,7 +383,7 @@ let access_queue queue x =
     else
       ( (elt.prop, elt.ce)
       , List.map queue ~f:(function
-            | x', elt when Poly.(x = x') -> x', {elt with cardinal = pred elt.cardinal}
+            | x', elt when Var.equal x x' -> x', {elt with cardinal = pred elt.cardinal}
             | x -> x) )
   with Not_found -> (const_p, var x), queue
 

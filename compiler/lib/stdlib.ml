@@ -233,6 +233,14 @@ module Char = struct
 
   external equal : char -> char -> bool = "%equal"
 
+  let is_alpha = function
+    | 'a' .. 'z' | 'A' .. 'Z' -> true
+    | _ -> false
+
+  let is_num = function
+    | '0' .. '9' -> true
+    | _ -> false
+
   let lowercase_ascii c =
     match c with
     | 'A' .. 'Z' as c -> Char.unsafe_chr (Char.code c + 32)
@@ -252,8 +260,6 @@ end
 
 module String = struct
   include StringLabels
-
-  let equal (a : string) (b : string) = String.equal a b
 
   let is_empty = function
     | "" -> true

@@ -125,7 +125,7 @@ module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Domain1 = struct
   type t = bool
 
-  let equal (x : t) (y : t) = Bool.(x = y)
+  let equal = Bool.equal
 
   let bot = false
 end

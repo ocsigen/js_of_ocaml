@@ -275,7 +275,7 @@ let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
 module Domain2 = struct
   type t = bool
 
-  let equal (u : bool) v = Poly.(u = v)
+  let equal = Bool.equal
 
   let bot = false
 end

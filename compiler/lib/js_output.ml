@@ -290,8 +290,7 @@ struct
     for i = 0 to l - 1 do
       let c = s.[i] in
       match c with
-      | '\000' when i = l - 1 || Char.(s.[i + 1] < '0') || Char.(s.[i + 1] > '9') ->
-          PP.string f "\\0"
+      | '\000' when i = l - 1 || not (Char.is_num s.[i + 1]) -> PP.string f "\\0"
       | '\b' -> PP.string f "\\b"
       | '\t' -> PP.string f "\\t"
       | '\n' -> PP.string f "\\n"
