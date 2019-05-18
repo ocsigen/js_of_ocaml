@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-
+open! Stdlib
 module J = Javascript
 
 let rec enot_rec e =
@@ -128,8 +128,8 @@ let rec if_statement_2 e loc iftrue truestop iffalse falsestop =
       (* Generates conditional *)
       let x1, (e1, _) = assignment_of_statement iftrue in
       let x2, (e2, _) = assignment_of_statement iffalse in
-      if x1 <> x2 then raise Not_assignment;
-      let exp = if e1 = e then J.EBin (J.Or, e, e2) else J.ECond (e, e1, e2) in
+      if Poly.(x1 <> x2) then raise Not_assignment;
+      let exp = if Poly.(e1 = e) then J.EBin (J.Or, e, e2) else J.ECond (e, e1, e2) in
       [J.Variable_statement [x1, Some (exp, loc)], loc]
     with Not_assignment -> (
       try
@@ -153,9 +153,10 @@ let if_statement e loc iftrue truestop iffalse falsestop =
   let e = simplify_condition e in
   match iftrue, iffalse with
   (* Shared statements *)
-  | (J.If_statement (e', iftrue', iffalse'), loc), _ when iffalse = unopt iffalse' ->
+  | (J.If_statement (e', iftrue', iffalse'), loc), _ when Poly.(iffalse = unopt iffalse')
+    ->
       if_statement_2 (J.EBin (J.And, e, e')) loc iftrue' truestop iffalse falsestop
-  | (J.If_statement (e', iftrue', iffalse'), loc), _ when iffalse = iftrue' ->
+  | (J.If_statement (e', iftrue', iffalse'), loc), _ when Poly.(iffalse = iftrue') ->
       if_statement_2
         (J.EBin (J.And, e, J.EUn (J.Not, e')))
         loc
@@ -163,7 +164,7 @@ let if_statement e loc iftrue truestop iffalse falsestop =
         truestop
         iffalse
         falsestop
-  | _, (J.If_statement (e', iftrue', iffalse'), loc) when iftrue = iftrue' ->
+  | _, (J.If_statement (e', iftrue', iffalse'), loc) when Poly.(iftrue = iftrue') ->
       if_statement_2
         (J.EBin (J.Or, e, e'))
         loc
@@ -171,7 +172,8 @@ let if_statement e loc iftrue truestop iffalse falsestop =
         truestop
         (unopt iffalse')
         falsestop
-  | _, (J.If_statement (e', iftrue', iffalse'), loc) when iftrue = unopt iffalse' ->
+  | _, (J.If_statement (e', iftrue', iffalse'), loc) when Poly.(iftrue = unopt iffalse')
+    ->
       if_statement_2
         (J.EBin (J.Or, e, J.EUn (J.Not, e')))
         loc
@@ -187,16 +189,16 @@ let rec get_variable acc = function
   | J.ECond (e1, e2, e3) -> get_variable (get_variable (get_variable acc e1) e2) e3
   | J.EUn (_, e1) | J.EDot (e1, _) | J.ENew (e1, None) -> get_variable acc e1
   | J.ECall (e1, el, _) | J.ENew (e1, Some el) ->
-      List.fold_left get_variable acc (e1 :: el)
+      List.fold_left ~f:get_variable ~init:acc (e1 :: el)
   | J.EVar (J.V v) -> Code.Var.Set.add v acc
   | J.EVar (J.S _) -> acc
   | J.EFun _ | J.EStr _ | J.EBool _ | J.ENum _ | J.EQuote _ | J.ERegexp _ -> acc
   | J.EArr a ->
       List.fold_left
-        (fun acc i ->
+        ~f:(fun acc i ->
           match i with
           | None -> acc
           | Some e1 -> get_variable acc e1)
-        acc
+        ~init:acc
         a
-  | J.EObj l -> List.fold_left (fun acc (_, e1) -> get_variable acc e1) acc l
+  | J.EObj l -> List.fold_left ~f:(fun acc (_, e1) -> get_variable acc e1) ~init:acc l

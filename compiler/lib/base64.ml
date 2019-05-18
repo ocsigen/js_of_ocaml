@@ -19,6 +19,8 @@
  *
  *)
 
+open! Stdlib
+
 type ('a, 'b) result =
   | Ok of 'a
   | Error of 'b
@@ -51,9 +53,9 @@ let make_alphabet alphabet =
   if String.length alphabet <> 64 then invalid_arg "Length of alphabet must be 64";
   if String.contains alphabet '='
   then invalid_arg "Alphabet can not contain padding character";
-  let emap = Array.init (String.length alphabet) (fun i -> Char.code alphabet.[i]) in
+  let emap = Array.init (String.length alphabet) ~f:(fun i -> Char.code alphabet.[i]) in
   let dmap = Array.make 256 none in
-  String.iteri (fun idx chr -> dmap.(Char.code chr) <- idx) alphabet;
+  String.iteri ~f:(fun idx chr -> dmap.(Char.code chr) <- idx) alphabet;
   {emap; dmap}
 
 let length_alphabet {emap; _} = Array.length emap
@@ -146,7 +148,7 @@ let encode_sub pad {emap; _} ?(off = 0) ?len input =
 
 let encode ?(pad = true) ?(alphabet = default_alphabet) ?off ?len input =
   match encode_sub pad alphabet ?off ?len input with
-  | Ok (res, off, len) -> Ok (String.sub res off len)
+  | Ok (res, off, len) -> Ok (String.sub res ~pos:off ~len)
   | Error _ as err -> err
 
 let encode_string ?pad ?alphabet input =
@@ -284,7 +286,7 @@ let decode_sub ?(pad = true) {dmap; _} ?(off = 0) ?len input =
 
 let decode ?pad ?(alphabet = default_alphabet) ?off ?len input =
   match decode_sub ?pad alphabet ?off ?len input with
-  | Ok (res, off, len) -> Ok (String.sub res off len)
+  | Ok (res, off, len) -> Ok (String.sub res ~pos:off ~len)
   | Error _ as err -> err
 
 let decode_sub ?pad ?(alphabet = default_alphabet) ?off ?len input =

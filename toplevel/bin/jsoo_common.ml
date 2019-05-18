@@ -29,7 +29,8 @@ let unit_of_cma filename =
   let ic = open_in_bin filename in
   let len_magic_number = String.length Config.cma_magic_number in
   let magic_number = input_s ic len_magic_number in
-  if magic_number <> Config.cma_magic_number then failwith "not a cma file";
+  if not (String.equal magic_number Config.cma_magic_number)
+  then failwith "not a cma file";
   let toc_pos = input_binary_int ic in
   seek_in ic toc_pos;
   let lib : Cmo_format.library = input_value ic in
@@ -73,7 +74,7 @@ let cmis_of_package pkg : string list =
     let add filename = fs := filename :: !fs in
     let archive =
       try Findlib.package_property ["byte"] pkg "archive"
-      with exc -> if pkg = "stdlib" then "stdlib.cma" else raise exc
+      with exc -> if String.equal pkg "stdlib" then "stdlib.cma" else raise exc
     in
     let l = String.split_char ~sep:' ' archive in
     List.iter l ~f:(fun x ->

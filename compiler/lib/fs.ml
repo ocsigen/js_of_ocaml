@@ -15,6 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open! Stdlib
 
 let rec find_in_path paths name =
   match paths with
@@ -24,7 +25,7 @@ let rec find_in_path paths name =
       if Sys.file_exists file then file else find_in_path rem name
 
 let find_in_path paths name =
-  if name = "" || name = "."
+  if String.is_empty name || String.equal name "."
   then raise Not_found
   else if Filename.is_relative name
   then find_in_path paths name

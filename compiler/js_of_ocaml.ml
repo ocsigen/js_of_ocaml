@@ -18,8 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
-open Js_of_ocaml_compiler.Stdlib
 
 let times = Debug.find "times"
 
@@ -133,14 +133,16 @@ let f
   in
   if times () then Format.eprintf "Start parsing...@.";
   let need_debug =
-    if source_map <> None || Config.Flag.debuginfo () || toplevel
+    if Option.is_some source_map || Config.Flag.debuginfo () || toplevel
     then `Full
     else if Config.Flag.pretty ()
     then `Names
     else `No
   in
   let check_debug debug =
-    if (not runtime_only) && source_map <> None && Parse_bytecode.Debug.is_empty debug
+    if (not runtime_only)
+       && Option.is_some source_map
+       && Parse_bytecode.Debug.is_empty debug
     then
       warn
         "Warning: '--source-map' is enabled but the bytecode program was compiled with \
@@ -260,7 +262,7 @@ let f
           | (`Stdout, _), false -> `Stdout
           | (`Name x, _), false -> `Name x
           | (`Name x, true), true
-            when String.length x > 0 && x.[String.length x - 1] = '/' ->
+            when String.length x > 0 && Char.equal x.[String.length x - 1] '/' ->
               `Name (gen_unit_filename x cmo)
           | (`Name _, true), true | (`Stdout, true), true ->
               failwith "use [-o dirname/] or remove [--keep-unit-names]"
@@ -277,8 +279,8 @@ let f
               match output_file with
               | `Stdout, false -> `Name (gen_unit_filename "./" cmo)
               | `Name x, false -> `Name (gen_unit_filename (Filename.dirname x) cmo)
-              | `Name x, true when String.length x > 0 && x.[String.length x - 1] = '/'
-                ->
+              | `Name x, true
+                when String.length x > 0 && Char.equal x.[String.length x - 1] '/' ->
                   `Name (gen_unit_filename x cmo)
               | `Stdout, true | `Name _, true ->
                   failwith "use [-o dirname/] or remove [--keep-unit-names]"

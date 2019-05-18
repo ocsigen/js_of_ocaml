@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 open Code
 
 let subst_cont s (pc, arg) = pc, List.map arg ~f:(fun x -> s x)

@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 
 module Alphabet = struct
   type t =
@@ -76,9 +76,13 @@ let propagate_name t v v' =
      *  with _ -> ()) *)
   with Not_found -> ()
 
-let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
+let is_alpha = function
+  | 'a' .. 'z' | 'A' .. 'Z' -> true
+  | _ -> false
 
-let is_num c = c >= '0' && c <= '9'
+let is_num = function
+  | '0' .. '9' -> true
+  | _ -> false
 
 let name t v nm_orig =
   let len = String.length nm_orig in

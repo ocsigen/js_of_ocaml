@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 
 type t = string * int
 
@@ -58,8 +58,10 @@ let kind (s, _) =
 let to_string (k, v) = Printf.sprintf "%s%03d" k v
 
 let compare (p1, n1) (p2, n2) =
-  if p1 <> p2 then raise Not_found;
+  if not (String.equal p1 p2) then raise Not_found;
   compare n1 n2
+
+let equal a b = compare a b = 0
 
 let current_exe =
   let v =

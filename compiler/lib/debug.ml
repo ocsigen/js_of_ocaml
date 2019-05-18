@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 
 let series = ref None
 
@@ -55,7 +55,7 @@ let find s =
       state
   in
   fun () ->
-    if s = "times" then take_snapshot ();
+    if String.equal s "times" then take_snapshot ();
     (not !quiet) && !state
 
 let enable s =

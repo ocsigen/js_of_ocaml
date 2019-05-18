@@ -17,8 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
-open Js_of_ocaml_compiler.Stdlib
 
 let error k = Format.ksprintf (fun s -> failwith s) k
 

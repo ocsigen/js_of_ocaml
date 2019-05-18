@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open! Stdlib
 
 type t =
   | ACC0
@@ -351,7 +352,7 @@ let ops =
      ; FIRST_UNIMPLEMENTED_OP, K_will_not_happen, "FIRST_UNIMPLEMENTED_OP" |]
   in
   let ops =
-    Array.mapi (fun i (c, k, n) -> {code = c; kind = k; name = n; opcode = i}) instrs
+    Array.mapi ~f:(fun i (c, k, n) -> {code = c; kind = k; name = n; opcode = i}) instrs
   in
   ops
 
@@ -384,5 +385,5 @@ let get_instr_exn code pc =
   let i = getu code pc in
   if i < 0 || i >= Array.length ops then raise (Bad_instruction i);
   let ins = ops.(i) in
-  if ins.kind = K_will_not_happen then raise (Bad_instruction i);
+  if Poly.(ins.kind = K_will_not_happen) then raise (Bad_instruction i);
   ins

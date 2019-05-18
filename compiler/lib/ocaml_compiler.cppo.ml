@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 
 let rec constant_of_const : _ -> Code.constant =
   let open Lambda in
@@ -50,7 +50,7 @@ let rec constant_of_const : _ -> Code.constant =
 let rec find_loc_in_summary ident' = function
   | Env.Env_empty -> None
   | Env.Env_value (_summary, ident, description)
-    when ident = ident' ->
+    when Poly.(ident = ident') ->
     Some description.Types.val_loc
   | Env.Env_value (summary,_,_)
   | Env.Env_type (summary, _, _)
@@ -85,6 +85,7 @@ let rec find_loc_in_summary ident' = function
 #if OCAML_VERSION < (4,8,0)
 (* Copied from ocaml/utils/tbl.ml *)
 module Tbl = struct
+  open Poly
   type ('a, 'b) t =
     | Empty
     | Node of ('a, 'b) t * 'a * 'b * ('a, 'b) t * int
@@ -154,7 +155,7 @@ module Symtable = struct
   module GlobalMap = struct
     type t = Ident.t numtable
 
-    let filter_global_map p gmap =
+    let filter_global_map (p : Ident.t -> bool) gmap =
       let newtbl = ref Tbl.empty in
       Tbl.iter (fun id num -> if p id then newtbl := Tbl.add id num !newtbl) gmap.num_tbl;
       {num_cnt = gmap.num_cnt; num_tbl = !newtbl}
@@ -208,7 +209,7 @@ module Symtable = struct
     module GlobalMap = Num_tbl(Ident.Map)
     include GlobalMap
 
-    let filter_global_map p (gmap : t) =
+    let filter_global_map (p : Ident.t -> bool) (gmap : t) =
       let newtbl = ref Ident.Map.empty in
       Ident.Map.iter
         (fun id num -> if p id then newtbl := Ident.Map.add id num !newtbl)

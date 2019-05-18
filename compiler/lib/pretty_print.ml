@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open! Stdlib
+
 type pos =
   { mutable p_line : int
   ; mutable p_col : int }
@@ -54,7 +56,7 @@ let output st (s : string) l =
      let last = String.rindex_from s (l - 1) '\n' + 1 in
      let line = ref 0 in
      for i = 0 to l - 1 do
-       if s.[i] = '\n' then incr line
+       if Char.equal s.[i] '\n' then incr line
      done;
      st.line <- st.line + !line;
      st.col <- l - last
@@ -120,7 +122,7 @@ let rec push st e =
           let l = List.rev st.l in
           st.l <- [];
           st.n <- 0;
-          List.iter (fun e -> push st e) l)
+          List.iter ~f:(fun e -> push st e) l)
     | Set_pos _ -> ()
     | Start_group _ -> st.n <- st.n + 1
     | End_group ->

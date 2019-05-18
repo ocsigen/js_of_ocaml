@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
-open Stdlib
+open! Stdlib
 open Code
 
 let debug_tc = Debug.find "gen_tc"
@@ -182,7 +182,7 @@ module Trampoline = struct
                     let free_pc = free_pc + 2 in
                     match List.rev block.body with
                     | Let (x, Apply (f, args, true)) :: rem_rev ->
-                        assert (f = ci.f_name);
+                        assert (Var.equal f ci.f_name);
                         let blocks =
                           Addr.Map.add
                             direct_call_pc
@@ -253,7 +253,7 @@ let rewrite_mutable
     rewrite_list
     {int = closures_intern; ext = closures_extern} =
   let internal_and_external = closures_intern @ closures_extern in
-  assert (closures_extern <> []);
+  assert (not (List.is_empty closures_extern));
   let all_mut, names =
     List.fold_left
       internal_and_external
@@ -270,7 +270,7 @@ let rewrite_mutable
         | _ -> assert false)
   in
   let vars = Var.Set.elements (Var.Set.diff all_mut names) in
-  if vars = []
+  if List.is_empty vars
   then free_pc, blocks, internal_and_external
   else
     match internal_and_external with

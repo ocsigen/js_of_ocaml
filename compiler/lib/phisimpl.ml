@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
+open! Stdlib
 
 let times = Debug.find "times"
 
@@ -125,7 +125,7 @@ module G = Dgraph.Make_Imperative (Var) (Var.ISet) (Var.Tbl)
 module Domain1 = struct
   type t = bool
 
-  let equal x y = x = y
+  let equal (x : t) (y : t) = Bool.(x = y)
 
   let bot = false
 end

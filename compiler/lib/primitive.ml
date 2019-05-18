@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
+open! Stdlib
 
 let aliases = Hashtbl.create 17
 
@@ -57,7 +57,7 @@ let arity nm = Hashtbl.find arities (resolve nm)
 
 let has_arity nm a = try Hashtbl.find arities (resolve nm) = a with Not_found -> false
 
-let is_pure nm = kind nm <> `Mutator
+let is_pure nm = Poly.(kind nm <> `Mutator)
 
 let exists p = Hashtbl.mem kinds p
 

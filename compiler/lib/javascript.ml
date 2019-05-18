@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
+open! Stdlib
 
 module Num : sig
   type t
@@ -67,35 +67,36 @@ end = struct
   let of_int32 = Int32.to_string
 
   let of_float v =
-    if v = infinity
+    if Float.equal v infinity
     then "Infinity"
-    else if v = neg_infinity
+    else if Float.equal v neg_infinity
     then "-Infinity"
-    else if v <> v
+    else if not (Float.equal v v)
     then "NaN" (* [1/-0] = -inf seems to be the only way to detect -0 in JavaScript *)
-    else if v = 0. && 1. /. v = neg_infinity
+    else if Float.equal v 0. && Float.equal (1. /. v) neg_infinity
     then "-0."
     else
       let vint = int_of_float v in
-      if float_of_int vint = v
+      if Float.equal (float_of_int vint) v
       then Printf.sprintf "%d." vint
       else
         let s1 = Printf.sprintf "%.12g" v in
-        if v = float_of_string s1
+        if Float.equal v (float_of_string s1)
         then s1
         else
           let s2 = Printf.sprintf "%.15g" v in
-          if v = float_of_string s2 then s2 else Printf.sprintf "%.18g" v
+          if Float.equal v (float_of_string s2) then s2 else Printf.sprintf "%.18g" v
 
   let is_zero s = String.equal s "0"
 
   let is_one s = String.equal s "1"
 
-  let is_neg s = s.[0] = '-'
+  let is_neg s = Char.equal s.[0] '-'
 
-  let drop1 s = String.sub s ~pos:1 ~len:(String.length s - 1)
-
-  let neg s = if is_neg s then drop1 s else "-" ^ s
+  let neg s =
+    match String.drop_prefix s ~prefix:"-" with
+    | None -> "-" ^ s
+    | Some s -> s
 
   let add a b = of_int32 (Int32.add (to_int32 a) (to_int32 b))
 end
@@ -300,11 +301,10 @@ let is_ident =
   let l =
     Array.init 256 ~f:(fun i ->
         let c = Char.chr i in
-        if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c = '_' || c = '$'
-        then 1
-        else if c >= '0' && c <= '9'
-        then 2
-        else 0)
+        match c with
+        | 'a' .. 'z' | 'A' .. 'Z' | '_' | '$' -> 1
+        | '0' .. '9' -> 2
+        | _ -> 0)
   in
   fun s ->
     (not (StringSet.mem s Reserved.keyword))

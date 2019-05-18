@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 open Code
 open Flow
 
@@ -75,12 +75,12 @@ let bool b = Some (Int (if b then 1l else 0l))
 
 let eval_prim x =
   match x with
-  | Not, [Int i] -> bool (i = 0l)
-  | Lt, [Int i; Int j] -> bool (i < j)
-  | Le, [Int i; Int j] -> bool (i <= j)
-  | Eq, [Int i; Int j] -> bool (i = j)
-  | Neq, [Int i; Int j] -> bool (i <> j)
-  | Ult, [Int i; Int j] -> bool (j < 0l || i < j)
+  | Not, [Int i] -> bool Int32.(i = 0l)
+  | Lt, [Int i; Int j] -> bool Int32.(i < j)
+  | Le, [Int i; Int j] -> bool Int32.(i <= j)
+  | Eq, [Int i; Int j] -> bool Int32.(i = j)
+  | Neq, [Int i; Int j] -> bool Int32.(i <> j)
+  | Ult, [Int i; Int j] -> bool (Int32.(j < 0l) || Int32.(i < j))
   | Extern name, l -> (
       let name = Primitive.resolve name in
       match name, l with
@@ -99,12 +99,12 @@ let eval_prim x =
       | "%int_asr", _ -> shift l Int.shift_right
       | "%int_neg", [Int i] -> Some (Int (Int.neg i))
       (* float *)
-      | "caml_eq_float", _ -> float_binop_bool l ( = )
-      | "caml_neq_float", _ -> float_binop_bool l ( <> )
-      | "caml_ge_float", _ -> float_binop_bool l ( >= )
-      | "caml_le_float", _ -> float_binop_bool l ( <= )
-      | "caml_gt_float", _ -> float_binop_bool l ( > )
-      | "caml_lt_float", _ -> float_binop_bool l ( < )
+      | "caml_eq_float", _ -> float_binop_bool l Float.( = )
+      | "caml_neq_float", _ -> float_binop_bool l Float.( <> )
+      | "caml_ge_float", _ -> float_binop_bool l Float.( >= )
+      | "caml_le_float", _ -> float_binop_bool l Float.( <= )
+      | "caml_gt_float", _ -> float_binop_bool l Float.( > )
+      | "caml_lt_float", _ -> float_binop_bool l Float.( < )
       | "caml_add_float", _ -> float_binop l ( +. )
       | "caml_sub_float", _ -> float_binop l ( -. )
       | "caml_mul_float", _ -> float_binop l ( *. )
@@ -135,8 +135,8 @@ let eval_prim x =
           if Config.Flag.safe_string () && pos >= 0 && pos < String.length s
           then Some (Int (Int.of_int (Char.code s.[pos])))
           else None
-      | "caml_string_equal", [String s1; String s2] -> bool (s1 = s2)
-      | "caml_string_notequal", [String s1; String s2] -> bool (s1 <> s2)
+      | "caml_string_equal", [String s1; String s2] -> bool (String.equal s1 s2)
+      | "caml_string_notequal", [String s1; String s2] -> bool (not (String.equal s1 s2))
       | "caml_sys_getenv", [String s] -> (
         match get_static_env s with
         | Some env -> Some (String env)
@@ -161,7 +161,7 @@ let the_length_of info x =
     None
     (fun u v ->
       match u, v with
-      | Some l, Some l' when l = l' -> Some l
+      | Some l, Some l' when Int32.(l = l') -> Some l
       | _ -> None)
     x
 
@@ -195,7 +195,7 @@ let eval_instr info i =
   | Let (x, Prim (Extern ("caml_js_equals" | "caml_equal"), [y; z])) -> (
     match the_const_of info y, the_const_of info z with
     | Some e1, Some e2 ->
-        let c = if e1 = e2 then 1l else 0l in
+        let c = if Poly.(e1 = e2) then 1l else 0l in
         let c = Constant (Int c) in
         Flow.update_def info x c;
         Let (x, c)
@@ -222,7 +222,7 @@ let eval_instr info i =
     match is_int info y with
     | Unknown -> i
     | (Y | N) as b ->
-        let b = if b = N then 0l else 1l in
+        let b = if Poly.(b = N) then 0l else 1l in
         let c = Constant (Int b) in
         Flow.update_def info x c;
         Let (x, c))
@@ -299,10 +299,10 @@ let eval_branch info = function
             | 0l -> false
             (* https://github.com/ocaml/ocaml/blob/trunk/byterun/interp.c#L798 *)
             | _ -> true)
-          | CEq i -> i = j
-          | CLt i -> i < j
-          | CLe i -> i <= j
-          | CUlt i -> j < 0l || i < j
+          | CEq i -> Int32.(i = j)
+          | CLt i -> Int32.(i < j)
+          | CLe i -> Int32.(i <= j)
+          | CUlt i -> Int32.(j < 0l) || Int32.(i < j)
         in
         match res with
         | true -> Branch ftrue
@@ -371,7 +371,7 @@ let drop_exception_handler blocks =
             Addr.Set.fold
               (fun pc2 blocks ->
                 let b = Addr.Map.find pc2 blocks in
-                assert (b.handler <> parent_hander);
+                assert (Poly.(b.handler <> parent_hander));
                 let branch =
                   match b.branch with
                   | Poptrap (cont, pushtrap) ->

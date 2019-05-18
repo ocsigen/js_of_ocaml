@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
+open! Stdlib
 
 module Addr = struct
   type t = int
@@ -56,6 +56,8 @@ module Var : sig
   type t
 
   val print : Format.formatter -> t -> unit
+
+  val equal : t -> t -> bool
 
   val idx : t -> int
 
@@ -128,7 +130,9 @@ end = struct
   module T = struct
     type t = int
 
-    let compare v1 v2 = v1 - v2
+    let compare : t -> t -> int = compare
+
+    let equal (a : t) (b : t) = a = b
   end
 
   include T
@@ -564,9 +568,9 @@ let eq (pc1, blocks1, _) (pc2, blocks2, _) =
          &&
          try
            let block2 = Addr.Map.find pc blocks2 in
-           block1.params = block2.params
-           && block1.branch = block2.branch
-           && block1.body = block2.body
+           Poly.(block1.params = block2.params)
+           && Poly.(block1.branch = block2.branch)
+           && Poly.(block1.body = block2.body)
          with Not_found -> false)
        blocks1
        true
@@ -586,7 +590,7 @@ let invariant (_, blocks, _) =
     let define x =
       if check_defs
       then (
-        assert (defs.(Var.idx x) = false);
+        assert (not defs.(Var.idx x));
         defs.(Var.idx x) <- true)
     in
     let check_expr = function

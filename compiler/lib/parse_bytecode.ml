@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
-open Stdlib
+open! Stdlib
 open Code
 open Instr
 
@@ -150,7 +150,7 @@ end = struct
     let set =
       Hashtbl.fold
         (fun (_m, p) unit acc ->
-          if p = pos_fname
+          if String.equal p pos_fname
           then
             match unit.source with
             | None -> acc
@@ -362,7 +362,7 @@ end = struct
         let i : nativeint = Obj.magic x in
         let i32 = Nativeint.to_int32 i in
         let i' = Nativeint.of_int32 i32 in
-        if i' <> i then warn_overflow (Printf.sprintf "0x%nx (%nd)" i i) i32;
+        if Poly.(i' <> i) then warn_overflow (Printf.sprintf "0x%nx (%nd)" i i) i32;
         Int i32)
       else if tag = Obj.custom_tag && same_custom x 0L
       then Int64 (Obj.magic x : int64)
@@ -1042,7 +1042,7 @@ and compile infos pc state instrs =
         State.size_globals state (i + 1);
         let y = State.accu state in
         let g = State.globals state in
-        assert (g.vars.(i) = None);
+        assert (Option.is_none g.vars.(i));
         if debug_parser () then Format.printf "(global %d) = %a@." i Var.print y;
         let instrs =
           match g.override.(i) with
@@ -1410,7 +1410,7 @@ and compile infos pc state instrs =
     | CHECK_SIGNALS -> compile infos (pc + 1) state instrs
     | C_CALL1 ->
         let prim = primitive_name state (getu code (pc + 1)) in
-        if Primitive.resolve prim = "%identity"
+        if String.equal (Primitive.resolve prim) "%identity"
         then (* This is a no-op *)
           compile infos (pc + 2) state instrs
         else
@@ -1948,7 +1948,7 @@ let match_exn_traps (blocks : 'a Addr.Map.t) =
     (fun pc conts' blocks ->
       match Addr.Map.find pc blocks with
       | {branch = Pushtrap (cont1, x, cont2, conts); _} as block ->
-          assert (conts = Addr.Set.empty);
+          assert (Addr.Set.is_empty conts);
           let branch = Pushtrap (cont1, x, cont2, conts') in
           Addr.Map.add pc {block with branch} blocks
       | _ -> assert false)
@@ -1966,11 +1966,11 @@ let parse_bytecode ~debug code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
   let blocks =
-    Blocks.analyse (if debug = `Full then debug_data else Debug.create ()) code
+    Blocks.analyse (if Poly.(debug = `Full) then debug_data else Debug.create ()) code
   in
   let blocks =
     (* Disabled. [pc] might not be an appropriate place to split blocks *)
-    if false && debug = `Full
+    if false && Poly.(debug = `Full)
     then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks
     else blocks
   in
@@ -2014,7 +2014,7 @@ let seek_section toc ic name =
   let rec seek_sec curr_ofs = function
     | [] -> raise Not_found
     | (n, len) :: rem ->
-        if n = name
+        if String.equal n name
         then (
           seek_in ic (curr_ofs - len);
           len)
@@ -2077,7 +2077,7 @@ let from_exe
       (fun id -> keep (Ident.name id))
       orig_symbols
   in
-  (if debug = `No
+  (if Poly.(debug = `No)
   then ()
   else
     try
@@ -2350,7 +2350,7 @@ let from_cmo ?(includes = [])
   seek_in ic compunit.Cmo_format.cu_pos;
   let code = Bytes.create compunit.Cmo_format.cu_codesize in
   really_input ic code 0 compunit.Cmo_format.cu_codesize;
-  if debug = `No || compunit.Cmo_format.cu_debug = 0
+  if Poly.(debug = `No) || compunit.Cmo_format.cu_debug = 0
   then ()
   else (
     seek_in ic compunit.Cmo_format.cu_debug;
@@ -2373,7 +2373,7 @@ let from_cma ?(includes = [])
         seek_in ic compunit.Cmo_format.cu_pos;
         let code = Bytes.create compunit.Cmo_format.cu_codesize in
         really_input ic code 0 compunit.Cmo_format.cu_codesize;
-        if debug = `No || compunit.Cmo_format.cu_debug = 0
+        if Poly.(debug = `No) || compunit.Cmo_format.cu_debug = 0
         then ()
         else (
           seek_in ic compunit.Cmo_format.cu_debug;
@@ -2400,14 +2400,16 @@ let from_channel ic =
   | `Pre magic -> (
     match Magic_number.kind magic with
     | `Cmo ->
-        if Config.Flag.check_magic () && magic <> Magic_number.current_cmo
+        if Config.Flag.check_magic ()
+           && not (Magic_number.equal magic Magic_number.current_cmo)
         then raise Magic_number.(Bad_magic_version magic);
         let compunit_pos = input_binary_int ic in
         seek_in ic compunit_pos;
         let compunit : Cmo_format.compilation_unit = input_value ic in
         `Cmo compunit
     | `Cma ->
-        if Config.Flag.check_magic () && magic <> Magic_number.current_cma
+        if Config.Flag.check_magic ()
+           && not (Magic_number.equal magic Magic_number.current_cma)
         then raise Magic_number.(Bad_magic_version magic);
         let pos_toc = input_binary_int ic in
         (* Go to table of contents *)
@@ -2418,7 +2420,8 @@ let from_channel ic =
   | `Post magic -> (
     match Magic_number.kind magic with
     | `Exe ->
-        if Config.Flag.check_magic () && magic <> Magic_number.current_exe
+        if Config.Flag.check_magic ()
+           && not (Magic_number.equal magic Magic_number.current_exe)
         then raise Magic_number.(Bad_magic_version magic);
         `Exe
     | _ -> raise Magic_number.(Bad_magic_number (to_string magic)))

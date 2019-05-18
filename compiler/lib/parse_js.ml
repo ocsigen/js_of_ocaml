@@ -16,7 +16,9 @@
  * license.txt for more details.
  *)
 
-let strip_comment l = List.filter (fun x -> not (Js_token.is_comment x)) l
+open! Stdlib
+
+let strip_comment l = List.filter ~f:(fun x -> not (Js_token.is_comment x)) l
 
 let rec until_non_comment acc = function
   | [] -> acc, None
@@ -92,7 +94,7 @@ let lexer_aux ?(rm_comment = true) lines_info lexbuf =
     | _ ->
         let extra =
           match t with
-          | Js_token.TComment (ii, cmt) when String.length cmt > 1 && cmt.[0] = '#' -> (
+          | Js_token.TComment (ii, cmt) when String.is_prefix cmt ~prefix:"#" -> (
               let lexbuf = Lexing.from_string cmt in
               try
                 let file, line = Js_lexer.pos lexbuf in
@@ -128,11 +130,11 @@ let lexer_from_string ?rm_comment ?offset str : lexer =
   let lexbuf = Lexing.from_string str in
   lexer_aux ?rm_comment lines_info lexbuf
 
-let lexer_map = List.map
+let lexer_map f = List.map ~f
 
-let lexer_fold f acc l = List.fold_left f acc l
+let lexer_fold f acc l = List.fold_left ~f ~init:acc l
 
-let lexer_filter f l = List.filter f l
+let lexer_filter f l = List.filter ~f l
 
 let lexer_from_list l = adjust_tokens l
 

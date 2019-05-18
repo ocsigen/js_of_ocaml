@@ -18,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
+open! Stdlib
 open Code
 open Flow
 
@@ -134,20 +134,20 @@ let specialize_instr info i rem =
       :: rem
   | Let (x, Prim (Extern "%int_mul", [y; z])) ->
       (match the_int info y, the_int info z with
-      | Some j, _ when Int32.abs j < 0x200000l ->
+      | Some j, _ when Int32.(abs j < 0x200000l) ->
           Let (x, Prim (Extern "%direct_int_mul", [y; z]))
-      | _, Some j when Int32.abs j < 0x200000l ->
+      | _, Some j when Int32.(abs j < 0x200000l) ->
           Let (x, Prim (Extern "%direct_int_mul", [y; z]))
       | _ -> i)
       :: rem
   | Let (x, Prim (Extern "%int_div", [y; z])) ->
       (match the_int info z with
-      | Some j when j <> 0l -> Let (x, Prim (Extern "%direct_int_div", [y; z]))
+      | Some j when Int32.(j <> 0l) -> Let (x, Prim (Extern "%direct_int_div", [y; z]))
       | _ -> i)
       :: rem
   | Let (x, Prim (Extern "%int_mod", [y; z])) ->
       (match the_int info z with
-      | Some j when j <> 0l -> Let (x, Prim (Extern "%direct_int_mod", [y; z]))
+      | Some j when Int32.(j <> 0l) -> Let (x, Prim (Extern "%direct_int_mod", [y; z]))
       | _ -> i)
       :: rem
   | _ -> i :: rem
