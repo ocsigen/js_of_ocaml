@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 open Code
 
 let optimizable blocks pc _ =
@@ -81,7 +81,7 @@ let get_closures (_, blocks, _) =
 
 let rewrite_block (pc', handler) pc blocks =
   let block = Addr.Map.find pc blocks in
-  assert (block.handler = None);
+  assert (Option.is_none block.handler);
   let block = {block with handler} in
   let block =
     match block.branch, pc' with
@@ -128,7 +128,7 @@ let rec find_mapping mapping x =
 let simple blocks cont mapping =
   let map_var mapping x =
     let x' = find_mapping mapping x in
-    if x = x' then raise Not_found else x'
+    if Var.equal x x' then raise Not_found else x'
   in
   let map_prim_arg mapping = function
     | Pc c -> Pc c
@@ -196,7 +196,8 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                   [], (Branch (free_pc, [arg]), blocks, free_pc + 1))
             | `Exp exp -> Let (x, exp) :: rem, state
             | `Fail ->
-                if live_vars.(Var.idx f) = 1 && outer_optimizable = f_optimizable
+                if live_vars.(Var.idx f) = 1
+                   && Bool.equal outer_optimizable f_optimizable
                    (* inlining the code of an optimizable function could make
                  this code unoptimized. (wrt to Jit compilers)
                  At the moment, V8 doesn't optimize function containing try..catch.

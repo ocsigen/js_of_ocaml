@@ -17,6 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open! Stdlib
+
 type token =
   | T_WITH of Parse_info.t
   | T_WHILE of Parse_info.t

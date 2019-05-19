@@ -16,7 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Js_of_ocaml_compiler.Stdlib
+open! Js_of_ocaml_compiler.Stdlib
 
 let normalize_argv ?(warn_ = false) a =
   let bad = ref [] in
@@ -26,7 +26,9 @@ let normalize_argv ?(warn_ = false) a =
         let size = String.length s in
         if size <= 2
         then s
-        else if s.[0] = '-' && s.[1] <> '-' && s.[2] <> '='
+        else if Char.equal s.[0] '-'
+                && (not (Char.equal s.[1] '-'))
+                && not (Char.equal s.[2] '=')
         then (
           bad := s :: !bad;
           (* long option with one dash lets double the dash *)
@@ -34,7 +36,7 @@ let normalize_argv ?(warn_ = false) a =
         else s)
       a
   in
-  if warn_ && !bad <> []
+  if warn_ && not (List.is_empty !bad)
   then
     warn
       "[Warning] long options with a single '-' are now deprecated. Please use '--' for \

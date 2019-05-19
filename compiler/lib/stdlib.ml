@@ -14,7 +14,49 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
+
+module Poly = struct
+  external ( < ) : 'a -> 'a -> bool = "%lessthan"
+
+  external ( <= ) : 'a -> 'a -> bool = "%lessequal"
+
+  external ( <> ) : 'a -> 'a -> bool = "%notequal"
+
+  external ( = ) : 'a -> 'a -> bool = "%equal"
+
+  external ( > ) : 'a -> 'a -> bool = "%greaterthan"
+
+  external ( >= ) : 'a -> 'a -> bool = "%greaterequal"
+
+  external compare : 'a -> 'a -> int = "%compare"
+
+  external equal : 'a -> 'a -> bool = "%equal"
+end
+
+module Int_replace_polymorphic_compare = struct
+  let ( < ) (x : int) y = x < y
+
+  let ( <= ) (x : int) y = x <= y
+
+  let ( <> ) (x : int) y = x <> y
+
+  let ( = ) (x : int) y = x = y
+
+  let ( > ) (x : int) y = x > y
+
+  let ( >= ) (x : int) y = x >= y
+
+  let compare (x : int) y = compare x y
+
+  let equal (x : int) y = x = y
+
+  let max (x : int) y = if x >= y then x else y
+
+  let min (x : int) y = if x <= y then x else y
+end
+
+include Int_replace_polymorphic_compare
 
 let quiet = ref false
 
@@ -82,6 +124,30 @@ module List = struct
           | x :: rest -> prev :: loop x rest
         in
         loop x xs
+
+  let is_empty = function
+    | [] -> true
+    | _ -> false
+end
+
+module Int32 = struct
+  include Int32
+
+  external ( < ) : int32 -> int32 -> bool = "%lessthan"
+
+  external ( <= ) : int32 -> int32 -> bool = "%lessequal"
+
+  external ( <> ) : int32 -> int32 -> bool = "%notequal"
+
+  external ( = ) : int32 -> int32 -> bool = "%equal"
+
+  external ( > ) : int32 -> int32 -> bool = "%greaterthan"
+
+  external ( >= ) : int32 -> int32 -> bool = "%greaterequal"
+
+  external compare : int32 -> int32 -> int = "%compare"
+
+  external equal : int32 -> int32 -> bool = "%equal"
 end
 
 module Option = struct
@@ -106,22 +172,84 @@ module Option = struct
     | None, Some _ -> -1
     | Some _, None -> 1
     | Some a, Some b -> compare_elt a b
+
+  let equal equal_elt a b =
+    match a, b with
+    | None, None -> true
+    | Some a, Some b -> equal_elt a b
+    | Some _, None | None, Some _ -> false
+
+  let is_none = function
+    | None -> true
+    | Some _ -> false
+
+  let is_some = function
+    | None -> false
+    | Some _ -> true
 end
 
-module Poly = struct
-  let compare : 'a. 'a -> 'a -> int = compare
+module Float = struct
+  include Float
 
-  let equal : 'a. 'a -> 'a -> bool = ( = )
+  external ( < ) : t -> t -> bool = "%lessthan"
+
+  external ( <= ) : t -> t -> bool = "%lessequal"
+
+  external ( <> ) : t -> t -> bool = "%notequal"
+
+  external ( = ) : t -> t -> bool = "%equal"
+
+  external ( > ) : t -> t -> bool = "%greaterthan"
+
+  external ( >= ) : t -> t -> bool = "%greaterequal"
+end
+
+module Bool = struct
+  external ( <> ) : bool -> bool -> bool = "%notequal"
+
+  external ( = ) : bool -> bool -> bool = "%equal"
+
+  external ( > ) : bool -> bool -> bool = "%greaterthan"
+
+  external equal : bool -> bool -> bool = "%equal"
 end
 
 module Char = struct
   include Char
 
+  external ( < ) : char -> char -> bool = "%lessthan"
+
+  external ( <= ) : char -> char -> bool = "%lessequal"
+
+  external ( <> ) : char -> char -> bool = "%notequal"
+
+  external ( = ) : char -> char -> bool = "%equal"
+
+  external ( > ) : char -> char -> bool = "%greaterthan"
+
+  external ( >= ) : char -> char -> bool = "%greaterequal"
+
+  external compare : char -> char -> int = "%compare"
+
+  external equal : char -> char -> bool = "%equal"
+
+  let is_alpha = function
+    | 'a' .. 'z' | 'A' .. 'Z' -> true
+    | _ -> false
+
+  let is_num = function
+    | '0' .. '9' -> true
+    | _ -> false
+
   let lowercase_ascii c =
-    if c >= 'A' && c <= 'Z' then Char.unsafe_chr (Char.code c + 32) else c
+    match c with
+    | 'A' .. 'Z' as c -> Char.unsafe_chr (Char.code c + 32)
+    | _ -> c
 
   let uppercase_ascii c =
-    if c >= 'a' && c <= 'z' then Char.unsafe_chr (Char.code c - 32) else c
+    match c with
+    | 'a' .. 'z' as c -> Char.unsafe_chr (Char.code c - 32)
+    | _ -> c
 end
 
 module Bytes = struct
@@ -131,11 +259,11 @@ module Bytes = struct
 end
 
 module String = struct
-  let equal (a : string) (b : string) = a = b
-
-  let _ = equal
-
   include StringLabels
+
+  let is_empty = function
+    | "" -> true
+    | _ -> false
 
   let is_prefix ~prefix s =
     let len_a = length prefix in
@@ -147,11 +275,23 @@ module String = struct
       let rec loop i =
         if i > max_idx_a
         then true
-        else if unsafe_get prefix i <> unsafe_get s i
+        else if not (Char.equal (unsafe_get prefix i) (unsafe_get s i))
         then false
         else loop (i + 1)
       in
       loop 0
+
+  let drop_prefix ~prefix s =
+    let plen = String.length prefix in
+    if plen > String.length s
+    then None
+    else
+      try
+        for i = 0 to String.length prefix - 1 do
+          if not (Char.equal s.[i] prefix.[i]) then raise Exit
+        done;
+        Some (String.sub s plen (String.length s - plen))
+      with Exit -> None
 
   let for_all =
     let rec loop s ~f ~last i =
@@ -166,14 +306,16 @@ module String = struct
   let is_ascii s =
     let res = ref true in
     for i = 0 to String.length s - 1 do
-      if s.[i] > '\127' then res := false
+      match s.[i] with
+      | '\000' .. '\127' -> ()
+      | '\128' .. '\255' -> res := false
     done;
     !res
 
   let has_backslash s =
     let res = ref false in
     for i = 0 to String.length s - 1 do
-      if s.[i] = '\\' then res := true
+      if Char.equal s.[i] '\\' then res := true
     done;
     !res
 
@@ -182,7 +324,7 @@ module String = struct
     let rec split beg cur =
       if cur >= len
       then if cur - beg > 0 then [String.sub p beg (cur - beg)] else []
-      else if p.[cur] = sep
+      else if Char.equal p.[cur] sep
       then String.sub p beg (cur - beg) :: split (cur + 1) (cur + 1)
       else split beg (cur + 1)
     in
@@ -217,14 +359,15 @@ module String = struct
              that no separator can be found we exit the loop and make a
              substring from [sub_start] until the end of the string. *)
           while !i + sep_max <= s_max do
-            if String.unsafe_get s !i <> String.unsafe_get sep 0
+            if not (Char.equal (String.unsafe_get s !i) (String.unsafe_get sep 0))
             then incr i
             else (
               (* Check remaining [sep] chars match, access to unsafe s (!i + !k) is
                    guaranteed by loop invariant. *)
               k := 1;
               while
-                !k <= sep_max && String.unsafe_get s (!i + !k) = String.unsafe_get sep !k
+                !k <= sep_max
+                && Char.equal (String.unsafe_get s (!i + !k)) (String.unsafe_get sep !k)
               do
                 incr k
               done;

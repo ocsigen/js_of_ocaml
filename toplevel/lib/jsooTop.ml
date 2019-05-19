@@ -26,7 +26,7 @@ let split_primitives p =
   let rec split beg cur =
     if cur >= len
     then []
-    else if p.[cur] = '\000'
+    else if Char.equal p.[cur] '\000'
     then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
     else split beg (cur + 1)
   in

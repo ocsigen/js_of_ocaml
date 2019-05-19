@@ -16,31 +16,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open! Stdlib
 
 let sourceMappingURL = "//# sourceMappingURL="
 
 let sourceMappingURL_base64 = "//# sourceMappingURL=data:application/json;base64,"
 
-let drop_prefix ~prefix s =
-  let plen = String.length prefix in
-  if plen > String.length s
-  then None
-  else
-    try
-      for i = 0 to String.length prefix - 1 do
-        if s.[i] <> prefix.[i] then raise Exit
-      done;
-      Some (String.sub s plen (String.length s - plen))
-    with Exit -> None
-
-let _ = drop_prefix ~prefix:"qwe:" "qwe"
-
 let kind ~resolve_sourcemap_url file line =
   let s =
-    match drop_prefix ~prefix:sourceMappingURL_base64 line with
+    match String.drop_prefix ~prefix:sourceMappingURL_base64 line with
     | Some base64 -> `Json_base64 base64
     | None -> (
-      match drop_prefix ~prefix:sourceMappingURL line with
+      match String.drop_prefix ~prefix:sourceMappingURL line with
       | Some url -> `Url url
       | None -> `Other)
   in
@@ -66,7 +53,7 @@ let link ~output ~files ~resolve_sourcemap_url ~source_map =
   in
   let source_offset = ref 0 in
   List.iter
-    (fun file ->
+    ~f:(fun file ->
       let ic = open_in file in
       (try
          output_string output (Printf.sprintf "//# 1 %S" file);

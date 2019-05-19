@@ -21,7 +21,7 @@
 (*
 FIX: is there a way to merge this with dead code elimination?
 *)
-
+open! Stdlib
 open Code
 
 (****)

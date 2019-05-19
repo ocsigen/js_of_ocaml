@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Stdlib
+open! Stdlib
 
 type path = string
 
@@ -107,11 +107,7 @@ let decode_map str =
 let rewrite_opt prefix_map path =
   let is_prefix = function
     | None -> false
-    | Some {target = _; source} ->
-        String.length source <= String.length path
-        && Stdlib.String.equal
-             source
-             (String.sub path ~pos:0 ~len:(String.length source))
+    | Some {target = _; source} -> String.is_prefix path ~prefix:source
   in
   match
     List.find

@@ -14,6 +14,8 @@
 (*                                                                        *)
 (**************************************************************************)
 
+open! Stdlib
+
 module IntSet = Set.Make (struct
   type t = int
 
@@ -31,7 +33,7 @@ end = struct
     let size = Array.length graph in
     let transposed = Array.make size [] in
     let add src dst = transposed.(src) <- dst :: transposed.(src) in
-    Array.iteri (fun src dsts -> List.iter (fun dst -> add dst src) dsts) graph;
+    Array.iteri ~f:(fun src dsts -> List.iter ~f:(fun dst -> add dst src) dsts) graph;
     transposed
 
   let depth_first_order (graph : int list array) : int array =
@@ -47,7 +49,7 @@ end = struct
       if not marked.(node)
       then (
         marked.(node) <- true;
-        List.iter aux graph.(node);
+        List.iter ~f:aux graph.(node);
         push node)
     in
     for i = 0 to size - 1 do
@@ -66,7 +68,7 @@ end = struct
       then (
         marked.(node) <- true;
         id.(node) <- !count;
-        List.iter aux graph.(node))
+        List.iter ~f:aux graph.(node))
     in
     for i = size - 1 downto 0 do
       let node = order.(i) in
@@ -92,16 +94,19 @@ end = struct
     let component_graph = Array.make ncomponents IntSet.empty in
     let add_component_dep node set =
       let node_deps = graph.(node) in
-      List.fold_left (fun set dep -> IntSet.add components.(dep) set) set node_deps
+      List.fold_left
+        ~f:(fun set dep -> IntSet.add components.(dep) set)
+        ~init:set
+        node_deps
     in
     Array.iteri
-      (fun node component ->
+      ~f:(fun node component ->
         id_scc.(component) <- node :: id_scc.(component);
         component_graph.(component) <- add_component_dep node component_graph.(component)
         )
       components;
     { sorted_connected_components = id_scc
-    ; component_edges = Array.map IntSet.elements component_graph }
+    ; component_edges = Array.map ~f:IntSet.elements component_graph }
 end
 
 module type S = sig
@@ -148,7 +153,7 @@ struct
     let size = Id.Map.cardinal graph in
     let bindings = Id.Map.bindings graph in
     let a = Array.of_list bindings in
-    let forth = Array.map fst a in
+    let forth = Array.map ~f:fst a in
     let back =
       let back = ref Id.Map.empty in
       for i = 0 to size - 1 do
@@ -157,7 +162,7 @@ struct
       !back
     in
     let integer_graph =
-      Array.init size (fun i ->
+      Array.init size ~f:(fun i ->
           let _, dests = a.(i) in
           Id.Set.fold
             (fun dest acc ->
@@ -174,19 +179,19 @@ struct
       Kosaraju.component_graph integer_graph
     in
     Array.mapi
-      (fun component nodes ->
+      ~f:(fun component nodes ->
         match nodes with
         | [] -> assert false
         | [node] ->
-            ( (if List.mem node integer_graph.(node)
+            ( (if List.mem node ~set:integer_graph.(node)
               then Has_loop [numbering.forth.(node)]
               else No_loop numbering.forth.(node))
             , component_edges.(component) )
         | _ :: _ ->
-            ( Has_loop (List.map (fun node -> numbering.forth.(node)) nodes)
+            ( Has_loop (List.map ~f:(fun node -> numbering.forth.(node)) nodes)
             , component_edges.(component) ))
       sorted_connected_components
 
   let connected_components_sorted_from_roots_to_leaf graph =
-    Array.map fst (component_graph graph)
+    Array.map ~f:fst (component_graph graph)
 end

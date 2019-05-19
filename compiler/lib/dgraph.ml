@@ -17,6 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open! Stdlib
 
 module Make (N : sig
   type t
@@ -187,7 +188,7 @@ struct
   let invert size g =
     let h = NTbl.make size [] in
     NSet.iter (fun x -> g.iter_children (fun y -> add_edge h y x) x) g.domain;
-    {domain = g.domain; iter_children = (fun f x -> List.iter f (successors h x))}
+    {domain = g.domain; iter_children = (fun f x -> List.iter ~f (successors h x))}
 
   module type DOMAIN = sig
     type t

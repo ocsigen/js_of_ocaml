@@ -18,7 +18,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 
 type fragment =
   { provides :
@@ -156,7 +156,7 @@ class check_and_warn name pi =
       let use = from#get_use_name in
       let diff = StringSet.diff def use in
       let diff = StringSet.remove name diff in
-      let diff = StringSet.filter (fun s -> String.length s <> 0 && s.[0] <> '_') diff in
+      let diff = StringSet.filter (fun s -> not (String.is_prefix s ~prefix:"_")) diff in
       if not (StringSet.is_empty diff)
       then
         warn
@@ -302,7 +302,7 @@ let add_file f =
             let rec find = function
               | [] -> None
               | (J.Function_declaration (J.S {J.name = n; _}, l, _, _), _) :: _
-                when name = n ->
+                when String.equal name n ->
                   Some (List.length l)
               | _ :: rem -> find rem
             in

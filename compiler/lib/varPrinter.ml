@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 
 module Alphabet = struct
   type t =
@@ -76,17 +76,13 @@ let propagate_name t v v' =
      *  with _ -> ()) *)
   with Not_found -> ()
 
-let is_alpha c = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
-
-let is_num c = c >= '0' && c <= '9'
-
 let name t v nm_orig =
   let len = String.length nm_orig in
   if len > 0
   then (
     let buf = Buffer.create (String.length nm_orig) in
     let idx = ref 0 in
-    while !idx < len && not (is_alpha nm_orig.[!idx]) do
+    while !idx < len && not (Char.is_alpha nm_orig.[!idx]) do
       incr idx
     done;
     let pending = ref false in
@@ -95,7 +91,7 @@ let name t v nm_orig =
       pending := true;
       idx := 0);
     for i = !idx to len - 1 do
-      if is_alpha nm_orig.[i] || is_num nm_orig.[i]
+      if Char.is_alpha nm_orig.[i] || Char.is_num nm_orig.[i]
       then (
         if !pending then Buffer.add_char buf '_';
         Buffer.add_char buf nm_orig.[i];

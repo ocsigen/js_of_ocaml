@@ -15,7 +15,9 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
+
+open! Stdlib
 
 type map =
   { gen_line : int
@@ -40,7 +42,7 @@ let string_of_mapping mapping =
   let a = Array.of_list mapping in
   let len = Array.length a in
   Array.stable_sort
-    (fun t1 t2 ->
+    ~cmp:(fun t1 t2 ->
       match compare t1.gen_line t2.gen_line with
       | 0 -> compare t1.gen_col t2.gen_col
       | n -> n)
@@ -173,7 +175,7 @@ let () =
   let map = mapping_of_string map_str in
   let map_str' = string_of_mapping map in
   (* let map' = mapping_of_string map_str' in *)
-  assert (map_str = map_str')
+  assert (String.equal map_str map_str')
 
 let merge_sources_content a b =
   match a, b with
@@ -206,7 +208,7 @@ let merge = function
               ; mappings =
                   acc.mappings
                   @ List.map
-                      (maps ~gen_line_offset ~sources_offset ~names_offset)
+                      ~f:(maps ~gen_line_offset ~sources_offset ~names_offset)
                       sm.mappings }
             in
             loop
@@ -218,8 +220,9 @@ let merge = function
       let acc =
         { x with
           mappings =
-            List.map (maps ~gen_line_offset ~sources_offset:0 ~names_offset:0) x.mappings
-        }
+            List.map
+              ~f:(maps ~gen_line_offset ~sources_offset:0 ~names_offset:0)
+              x.mappings }
       in
       Some
         (loop

@@ -17,8 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
-open Js_of_ocaml_compiler.Stdlib
 open Cmdliner
 
 type t =
@@ -248,7 +248,7 @@ let options =
       else None
     in
     let source_map =
-      if source_map <> None && not Source_map_io.enabled
+      if Option.is_some source_map && not Source_map_io.enabled
       then (
         warn
           "Warning: '--source-map' flag ignored because js_of_ocaml was compiled \

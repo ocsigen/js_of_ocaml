@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
 
-open Stdlib
+open! Stdlib
 
 module Flag = struct
   let optims = ref []
@@ -137,7 +137,8 @@ module Param = struct
 
   let tc_default = TcTrampoline
 
-  let _tc_all = tc_default :: List.filter [TcNone; TcTrampoline] ~f:(( <> ) tc_default)
+  let _tc_all =
+    tc_default :: List.filter [TcNone; TcTrampoline] ~f:(Poly.( <> ) tc_default)
 
   let tailcall_optim =
     p

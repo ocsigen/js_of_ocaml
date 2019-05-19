@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 open Javascript
 
 class type mapper =
@@ -538,7 +538,7 @@ class rename_variable keeps =
             | Some (S {name; _}, block) ->
                 let v = Code.Var.fresh_n name in
                 let sub = function
-                  | S {name = name'; _} when name' = name -> V v
+                  | S {name = name'; _} when String.equal name' name -> V v
                   | x -> x
                 in
                 let s = new subst sub in
@@ -629,7 +629,7 @@ class compact_vardecl =
 
     method private pack all sources =
       let may_flush rem vars s instr =
-        if vars = []
+        if List.is_empty vars
         then rem, [], s :: instr
         else rem, [], s :: (Statement (Variable_statement (List.rev vars)), N) :: instr
       in
@@ -727,7 +727,8 @@ class clean =
                 List.rev_append l vars_rev, vars_loc, instr_rev
             | Empty_statement | Expression_statement (EVar _) ->
                 vars_rev, vars_loc, instr_rev
-            | _ when vars_rev = [] -> [], vars_loc, rev_append_st (x, loc) instr_rev
+            | _ when List.is_empty vars_rev ->
+                [], vars_loc, rev_append_st (x, loc) instr_rev
             | _ ->
                 ( []
                 , vars_loc
@@ -774,7 +775,7 @@ class clean =
         List.fold_left l ~init:([], []) ~f:(fun (st_rev, sources_rev) (x, loc) ->
             match x with
             | Statement s -> (s, loc) :: st_rev, sources_rev
-            | Function_declaration _ as x when st_rev = [] ->
+            | Function_declaration _ as x when List.is_empty st_rev ->
                 [], (m#source x, loc) :: sources_rev
             | Function_declaration _ as x ->
                 [], (m#source x, loc) :: append_st st_rev sources_rev)
@@ -807,7 +808,7 @@ let is_one = function
 
 let assign_op = function
   | exp, EBin (Plus, exp', exp'') -> (
-    match exp = exp', exp = exp'' with
+    match Poly.(exp = exp'), Poly.(exp = exp'') with
     | false, false -> None
     | true, false ->
         if is_one exp''
@@ -816,15 +817,15 @@ let assign_op = function
     | false, true ->
         if is_one exp' then Some (EUn (IncrB, exp)) else Some (EBin (PlusEq, exp, exp'))
     | true, true -> Some (EBin (StarEq, exp, ENum (Num.of_int32 2l))))
-  | exp, EBin (Minus, exp', y) when exp = exp' ->
+  | exp, EBin (Minus, exp', y) when Poly.(exp = exp') ->
       if is_one y then Some (EUn (DecrB, exp)) else Some (EBin (MinusEq, exp, y))
   | exp, EBin (Mul, exp', exp'') -> (
-    match exp = exp', exp = exp'' with
+    match Poly.(exp = exp'), Poly.(exp = exp'') with
     | false, false -> None
     | true, _ -> Some (EBin (StarEq, exp, exp''))
     | _, true -> Some (EBin (StarEq, exp, exp')))
   | exp, EBin (((Div | Mod | Lsl | Asr | Lsr | Band | Bxor | Bor) as unop), exp', y)
-    when exp = exp' ->
+    when Poly.(exp = exp') ->
       Some (EBin (translate_assign_op unop, exp, y))
   | _ -> None
 
@@ -873,7 +874,7 @@ class simpl =
               ( cond
               , (Expression_statement (EBin (Eq, v1, e1)), _)
               , Some (Expression_statement (EBin (Eq, v2, e2)), _) )
-            when v1 = v2 ->
+            when Poly.(v1 = v2) ->
               (Expression_statement (EBin (Eq, v1, ECond (cond, e1, e2))), loc) :: rem
           | Variable_statement l1 ->
               let x =
@@ -903,7 +904,7 @@ class simpl =
         List.fold_left l ~init:([], []) ~f:(fun (st_rev, sources_rev) x ->
             match x with
             | Statement s, loc -> (s, loc) :: st_rev, sources_rev
-            | (Function_declaration _ as x), loc when st_rev = [] ->
+            | (Function_declaration _ as x), loc when List.is_empty st_rev ->
                 [], (m#source x, loc) :: sources_rev
             | (Function_declaration _ as x), loc ->
                 [], (m#source x, loc) :: append_st st_rev sources_rev)

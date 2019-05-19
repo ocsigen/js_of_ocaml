@@ -28,7 +28,7 @@ XXX Beware automatic semi-colon insertion...
      the space cannot be replaced by a newline in the following expressions:
        e ++, e --, continue e, break e, return e, throw e
 *)
-open Stdlib
+open! Stdlib
 
 let stats = Debug.find "output"
 
@@ -290,7 +290,7 @@ struct
     for i = 0 to l - 1 do
       let c = s.[i] in
       match c with
-      | '\000' when i = l - 1 || s.[i + 1] < '0' || s.[i + 1] > '9' -> PP.string f "\\0"
+      | '\000' when i = l - 1 || not (Char.is_num s.[i + 1]) -> PP.string f "\\0"
       | '\b' -> PP.string f "\\b"
       | '\t' -> PP.string f "\\t"
       | '\n' -> PP.string f "\\n"
@@ -311,7 +311,7 @@ struct
           PP.string f (Array.unsafe_get array_conv (c lsr 4));
           PP.string f (Array.unsafe_get array_conv (c land 0xf))
       | _ ->
-          if c = quote
+          if Char.equal c quote
           then (
             PP.string f "\\";
             PP.string f (Array.unsafe_get array_str1 (Char.code c)))
@@ -378,19 +378,19 @@ struct
           PP.end_group f)
     | EStr (s, kind) ->
         let quote = best_string_quote s in
-        pp_string f ~utf:(kind = `Utf8) ~quote s
+        pp_string f ~utf:Poly.(kind = `Utf8) ~quote s
     | EBool b -> PP.string f (if b then "true" else "false")
-    | ENum s ->
-        let s = Num.to_string s in
+    | ENum num ->
+        let s = Num.to_string num in
         let need_parent =
-          if s.[0] = '-'
+          if Num.is_neg num
           then l > 13 (* Negative numbers may need to be parenthesized. *)
           else
             l = 15
             (* Parenthesize as well when followed by a dot. *)
-            && s.[0] <> 'I'
+            && (not (Char.equal s.[0] 'I'))
             (* Infinity *)
-            && s.[0] <> 'N'
+            && not (Char.equal s.[0] 'N')
           (* NaN *)
         in
         if need_parent then PP.string f "(";
@@ -443,9 +443,11 @@ struct
         then (
           PP.start_group f 1;
           PP.string f "(");
-        if op = IncrA || op = DecrA then expression 13 f e;
-        if op = IncrA || op = IncrB then PP.string f "++" else PP.string f "--";
-        if op = IncrB || op = DecrB then expression 13 f e;
+        if Poly.(op = IncrA) || Poly.(op = DecrA) then expression 13 f e;
+        if Poly.(op = IncrA) || Poly.(op = IncrB)
+        then PP.string f "++"
+        else PP.string f "--";
+        if Poly.(op = IncrB) || Poly.(op = DecrB) then expression 13 f e;
         if l > 13
         then (
           PP.string f ")";
@@ -1032,7 +1034,7 @@ struct
               output_one false x;
               loop last xs
         in
-        loop (def = None && cc' = []) cc;
+        loop (Option.is_none def && List.is_empty cc') cc;
         (match def with
         | None -> ()
         | Some def ->
@@ -1040,7 +1042,7 @@ struct
             PP.string f "default:";
             PP.break f;
             PP.start_group f 0;
-            statement_list ~skip_last_semi:(cc' = []) f def;
+            statement_list ~skip_last_semi:(List.is_empty cc') f def;
             PP.end_group f;
             PP.end_group f);
         loop true cc';
@@ -1144,12 +1146,9 @@ end
 let part_of_ident =
   let a =
     Array.init 256 ~f:(fun i ->
-        let c = Char.chr i in
-        (c >= 'a' && c <= 'z')
-        || (c >= 'A' && c <= 'Z')
-        || (c >= '0' && c <= '9')
-        || c = '_'
-        || c = '$')
+        match Char.chr i with
+        | 'a' .. 'z' | 'A' .. 'Z' | '0' .. '9' | '_' | '$' -> true
+        | _ -> false)
   in
   fun c -> Array.unsafe_get a (Char.code c)
 
@@ -1158,10 +1157,14 @@ let need_space a b =
   (part_of_ident a && part_of_ident b)
   (* do not generate end_of_line_comment.
      handle the case of "num / /* comment */ b " *)
-  || (a = '/' && b = '/')
+  ||
+  match a, b with
+  | '/', '/'
   (* https://github.com/ocsigen/js_of_ocaml/issues/507 *)
-  || (a = '-' && b = '-')
-  || (a = '+' && b = '+')
+   |'-', '-'
+   |'+', '+' ->
+      true
+  | _, _ -> false
 
 let program f ?source_map p =
   let smo =

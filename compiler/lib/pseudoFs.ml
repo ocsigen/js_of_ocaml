@@ -17,7 +17,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Stdlib
+open! Stdlib
 
 let expand_path exts real virt =
   let rec loop realfile virtfile acc =
@@ -35,7 +35,7 @@ let expand_path exts real virt =
             List.mem e ~set:exts
           with Not_found -> List.mem "" ~set:exts
         in
-        if exts = [] || exmatch then (virtfile, realfile) :: acc else acc
+        if List.is_empty exts || exmatch then (virtfile, realfile) :: acc else acc
       with exc ->
         warn "ignoring %s: %s@." realfile (Printexc.to_string exc);
         acc
@@ -46,11 +46,11 @@ let list_files name paths =
   let name, virtname =
     match String.lsplit2 name ~on:':' with
     | Some (src, dest) ->
-        if String.length dest > 0 && dest.[0] <> '/'
+        if String.length dest > 0 && not (Char.equal dest.[0] '/')
         then
           failwith (Printf.sprintf "path '%s' for file '%s' must be absolute" dest src);
         let virtname =
-          if dest.[String.length dest - 1] = '/'
+          if Char.equal dest.[String.length dest - 1] '/'
           then dest ^ Filename.basename src
           else dest
         in
@@ -106,7 +106,7 @@ let f ~prim ~cmis ~files ~paths =
       cmis
       ([], [])
   in
-  if missing_cmis <> []
+  if not (List.is_empty missing_cmis)
   then (
     warn "Some OCaml interface files were not found.@.";
     warn "Use [-I dir_of_cmis] option to bring them into scope@.";

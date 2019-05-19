@@ -33,7 +33,7 @@
   - CLEAN UP!!!
 *)
 
-open Stdlib
+open! Stdlib
 
 let debug = Debug.find "gen"
 
@@ -52,7 +52,7 @@ let rec list_group_rec f g l b m n =
   | [] -> List.rev ((b, List.rev m) :: n)
   | a :: r ->
       let fa = f a in
-      if fa = b
+      if Poly.(fa = b)
       then list_group_rec f g r b (g a :: m) n
       else list_group_rec f g r fa [g a] ((b, List.rev m) :: n)
 
@@ -383,7 +383,7 @@ let access_queue queue x =
     else
       ( (elt.prop, elt.ce)
       , List.map queue ~f:(function
-            | x', elt when x = x' -> x', {elt with cardinal = pred elt.cardinal}
+            | x', elt when Var.equal x x' -> x', {elt with cardinal = pred elt.cardinal}
             | x -> x) )
   with Not_found -> (const_p, var x), queue
 
@@ -391,7 +391,7 @@ let access_queue' ~ctx queue x =
   match x with
   | Pc c ->
       let js, instrs = constant ~ctx c (Config.Param.constant_max_depth ()) in
-      assert (instrs = []);
+      assert (List.is_empty instrs);
       (* We only have simple constants here *)
       (const_p, js), queue
   | Pv x -> access_queue queue x
@@ -482,7 +482,7 @@ module DTree = struct
   let normalize a =
     a
     >> Array.to_list
-    >> List.stable_sort ~cmp:(fun (cont1, _) (cont2, _) -> compare cont1 cont2)
+    >> List.stable_sort ~cmp:(fun (cont1, _) (cont2, _) -> Poly.compare cont1 cont2)
     >> list_group fst snd
     >> List.map ~f:(fun (cont1, l1) -> cont1, List.flatten l1)
     >> List.stable_sort ~cmp:(fun (_, l1) (_, l2) ->
@@ -1088,7 +1088,9 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
                 l
                 ~init:([], mutator_p, queue)
             in
-            J.ENew (cc, if args = [] then None else Some args), or_p pc prop, queue
+            ( J.ENew (cc, if List.is_empty args then None else Some args)
+            , or_p pc prop
+            , queue )
         | Extern "caml_js_get", [Pv o; Pc (String f | IString f)] when J.is_ident f ->
             let (po, co), queue = access_queue queue o in
             J.EDot (co, f), or_p po mutable_p, queue
@@ -1139,7 +1141,7 @@ let rec translate_expr ctx queue loc _x e level : _ * J.statement_list =
             match internal_prim name with
             | Some f -> f l queue ctx loc
             | None ->
-                if name.[0] = '%'
+                if String.is_prefix name ~prefix:"%"
                 then failwith (Printf.sprintf "Unresolved internal primitive: %s" name);
                 let prim = Share.get_prim (runtime_fun ctx) name ctx.Ctx.share in
                 let prim_kind = kind (Primitive.kind name) in
@@ -1190,14 +1192,7 @@ and translate_instr ctx expr_queue loc instr =
       let keep_name x =
         match Code.Var.get_name x with
         | None -> false
-        | Some s ->
-            not
-              (String.length s >= 5
-              && s.[0] = 'j'
-              && s.[1] = 's'
-              && s.[2] = 'o'
-              && s.[3] = 'o'
-              && s.[4] = '_')
+        | Some s -> not (String.is_prefix s ~prefix:"jsoo_")
       in
       match ctx.Ctx.live.(Var.idx x), e with
       | 0, _ ->
@@ -1259,7 +1254,8 @@ and translate_instrs ctx expr_queue loc instr =
       st @ instrs, expr_queue
 
 and compile_block st queue (pc : Addr.t) frontier interm =
-  if queue <> [] && (Addr.Set.mem pc st.loops || not (Config.Flag.inline ()))
+  if (not (List.is_empty queue))
+     && (Addr.Set.mem pc st.loops || not (Config.Flag.inline ()))
   then flush_all queue (compile_block st [] pc frontier interm)
   else (
     if pc >= 0
@@ -1318,7 +1314,7 @@ and compile_block st queue (pc : Addr.t) frontier interm =
                     then false
                     else
                       let block = Addr.Map.find pc st.blocks in
-                      block.body <> []
+                      (not (List.is_empty block.body))
                       ||
                       match block.branch with
                       | Return _ -> false
@@ -1509,7 +1505,7 @@ and compile_decision_tree st _queue handler backs frontier interm succs loc cx d
           | CEq n -> J.EBin (J.EqEqEq, int32 n, cx)
           | CLt n -> J.EBin (J.Lt, int32 n, cx)
           | CUlt n ->
-              let n' = if n < 0l then unsigned (int32 n) else int32 n in
+              let n' = if Int32.(n < 0l) then unsigned (int32 n) else int32 n in
               J.EBin (J.Lt, n', unsigned cx)
           | CLe n -> J.EBin (J.Le, int32 n, cx)
         in
@@ -1677,7 +1673,7 @@ and compile_conditional st queue pc last handler backs frontier interm succs =
   res
 
 and compile_argument_passing ctx queue (pc, args) _backs continuation =
-  if args = []
+  if List.is_empty args
   then continuation queue
   else
     let block = Addr.Map.find pc ctx.Ctx.blocks in
@@ -1703,7 +1699,9 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
         in
         (* When an extra block is inserted during code generation,
          args is [] *)
-        let m = Subst.build_mapping (if args = [] then [] else block.params) args in
+        let m =
+          Subst.build_mapping (if List.is_empty args then [] else block.params) args
+        in
         let h_block = Addr.Map.find h_pc ctx.Ctx.blocks in
         let rec loop continuation old args params queue =
           match args, params with
@@ -1715,7 +1713,7 @@ and compile_exn_handling ctx queue (pc, args) handler continuation =
                 | z :: old -> Some z, old
               in
               let x' = try Some (Var.Map.find x m) with Not_found -> Some x in
-              if Var.compare x x0 = 0 || x' = z
+              if Var.compare x x0 = 0 || Option.equal Var.equal x' z
               then loop continuation old args params queue
               else
                 let (px, cx), queue = access_queue queue x in
@@ -1755,7 +1753,7 @@ and compile_branch st queue ((pc, _) as cont) handler backs frontier interm =
             in
             if debug ()
             then
-              if label = None
+              if Option.is_none label
               then Format.eprintf "continue;@ "
               else Format.eprintf "continue (%d);@ " pc;
             flush_all queue [J.Continue_statement label, J.N])

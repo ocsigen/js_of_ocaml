@@ -50,6 +50,8 @@ module Var : sig
 
   val print : Format.formatter -> t -> unit
 
+  val equal : t -> t -> bool
+
   val idx : t -> int
 
   val of_idx : int -> t

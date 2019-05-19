@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
+open! Stdlib
 open Javascript
 
 let debug = Debug.find "shortvar"
@@ -224,14 +224,14 @@ while compiling the OCaml toplevel:
         !total;
     for i = 0 to len - 1 do
       let l = constr.(idx.(i)) in
-      if l <> [] && String.length name.(idx.(i)) = 0
+      if (not (List.is_empty l)) && String.length name.(idx.(i)) = 0
       then (
         let n = first_available l in
         let idx = idx.(i) in
         nm ~origin:idx n;
         mark_allocated l n;
         stats idx n);
-      if l = [] then assert (weight idx.(i) = 0)
+      if List.is_empty l then assert (weight idx.(i) = 0)
     done;
     if debug ()
     then (
@@ -311,18 +311,18 @@ module Preserve : Strategy = struct
           S.fold
             (fun var acc ->
               let name = names.(Var.idx var) in
-              if name <> "" then StringSet.add name acc else acc)
+              if not (String.is_empty name) then StringSet.add name acc else acc)
             (S.union state.Js_traverse.use state.Js_traverse.def)
             assigned
         in
         let _assigned =
           S.fold
             (fun var assigned ->
-              assert (names.(Var.idx var) = "");
+              assert (String.is_empty names.(Var.idx var));
               let name =
                 match Var.get_name var with
                 | Some expected_name ->
-                    assert (expected_name <> "");
+                    assert (not (String.is_empty expected_name));
                     if not (StringSet.mem expected_name assigned)
                     then expected_name
                     else
@@ -368,7 +368,7 @@ let program' (module Strategy : Strategy) p =
   let color = function
     | V v ->
         let name = names.(Var.idx v) in
-        assert (name <> "");
+        assert (not (String.is_empty name));
         ident ~var:v name
     | x -> x
   in

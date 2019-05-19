@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
-open Stdlib
+open! Stdlib
 
 let debug = Debug.find "flow"
 
@@ -66,7 +66,7 @@ let add_assign_def vars defs x y =
 let add_param_def vars defs x =
   add_var vars x;
   let idx = Var.idx x in
-  assert (is_undefined defs.(idx) || defs.(idx) = Param);
+  assert (is_undefined defs.(idx) || Poly.(defs.(idx) = Param));
   defs.(idx) <- Param
 
 (* x depends on y *)
@@ -275,7 +275,7 @@ let propagate2 ?(skip_param = false) defs known_origins possibly_mutable st x =
 module Domain2 = struct
   type t = bool
 
-  let equal (u : bool) v = u = v
+  let equal = Bool.equal
 
   let bot = false
 end
@@ -331,7 +331,7 @@ let the_const_of info x =
         None
         (fun u v ->
           match u, v with
-          | Some i, Some j when i = j -> u
+          | Some i, Some j when Poly.(i = j) -> u
           | _ -> None)
         x
   | Pc c -> Some c
@@ -377,7 +377,7 @@ let build_subst info vars =
       then
         let s = Var.Tbl.get info.info_known_origins x in
         if Var.Set.cardinal s = 1 then subst.(Var.idx x) <- Some (Var.Set.choose s));
-      if subst.(Var.idx x) = None then subst.(Var.idx x) <- direct_approx info x;
+      if Option.is_none subst.(Var.idx x) then subst.(Var.idx x) <- direct_approx info x;
       match subst.(Var.idx x) with
       | None -> ()
       | Some y -> Var.propagate_name x y)

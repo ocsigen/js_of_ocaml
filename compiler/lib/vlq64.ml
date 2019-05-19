@@ -15,7 +15,9 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
- *)
+*)
+
+open! Stdlib
 
 let code = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
 
@@ -69,7 +71,7 @@ let encode b x =
   let vql = toVLQSigned x in
   encode' b vql
 
-let encode_l b l = List.iter (encode b) l
+let encode_l b l = List.iter ~f:(encode b) l
 
 let rec decode' acc s start pos =
   let digit = code_rev.(Char.code s.[pos]) in
