@@ -48,4 +48,4 @@ let%expect_test _ =
     var ex = [0,5,runtime.caml_new_string("hello")];
     var ax = [0,1,2,3,4];
     var bx = [254,1.,2.,3.,4.];
-    var cx = [254,- nan,- nan,Infinity,- Infinity,0.,- 0.]; |}]
+    var cx = [254,NaN,NaN,Infinity,- Infinity,0.,- 0.]; |}]
