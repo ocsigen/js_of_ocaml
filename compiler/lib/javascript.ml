@@ -67,25 +67,23 @@ end = struct
   let of_int32 = Int32.to_string
 
   let of_float v =
-    if Float.equal v infinity
-    then "Infinity"
-    else if Float.equal v neg_infinity
-    then "-Infinity"
-    else if not (Float.equal v v)
-    then "NaN" (* [1/-0] = -inf seems to be the only way to detect -0 in JavaScript *)
-    else if Float.equal v 0. && Float.equal (1. /. v) neg_infinity
-    then "-0."
-    else
-      let vint = int_of_float v in
-      if Float.equal (float_of_int vint) v
-      then Printf.sprintf "%d." vint
-      else
-        let s1 = Printf.sprintf "%.12g" v in
-        if Float.equal v (float_of_string s1)
-        then s1
+    match Float.classify_float v with
+    | FP_nan -> "NaN"
+    | FP_zero ->
+        (* [1/-0] < 0. seems to be the only way to detect -0 in JavaScript *)
+        if Float.(1. /. v < 0.) then "-0." else "0."
+    | FP_infinite -> if Float.(v < 0.) then "-Infinity" else "Infinity"
+    | FP_normal | FP_subnormal ->
+        let vint = int_of_float v in
+        if Float.equal (float_of_int vint) v
+        then Printf.sprintf "%d." vint
         else
-          let s2 = Printf.sprintf "%.15g" v in
-          if Float.equal v (float_of_string s2) then s2 else Printf.sprintf "%.18g" v
+          let s1 = Printf.sprintf "%.12g" v in
+          if Float.equal v (float_of_string s1)
+          then s1
+          else
+            let s2 = Printf.sprintf "%.15g" v in
+            if Float.equal v (float_of_string s2) then s2 else Printf.sprintf "%.18g" v
 
   let is_zero s = String.equal s "0"
 
