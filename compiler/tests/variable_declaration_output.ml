@@ -36,13 +36,16 @@ let%expect_test _ =
     let ex = {x = 5; y = "hello"} ;;
     let ax = [|1;2;3;4|] ;;
     let bx = [|1.0;2.0;3.0;4.0|] ;;
+    let cx = [|0./.0.;-0./.0.;1./.0.;-1./.0.;0.;-0.|] ;;
     |}
   in
   print_var_decl program "ex";
   print_var_decl program "ax";
   print_var_decl program "bx";
+  print_var_decl program "cx";
   [%expect
     {|
     var ex = [0,5,runtime.caml_new_string("hello")];
     var ax = [0,1,2,3,4];
-    var bx = [254,1.,2.,3.,4.]; |}]
+    var bx = [254,1.,2.,3.,4.];
+    var cx = [254,- nan,- nan,Infinity,- Infinity,0.,- 0.]; |}]
