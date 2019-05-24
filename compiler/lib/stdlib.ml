@@ -193,8 +193,6 @@ module Float = struct
 
   let equal (a : float) (b : float) = Poly.compare a b = 0
 
-
-
   (* Re-defined here to stay compatible with OCaml 4.02 *)
   external classify_float : float -> fpclass = "caml_classify_float"
 

@@ -461,19 +461,12 @@ let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Er
         if id.txt <> txt then Printf.sprintf " (normalized to %S)" txt else ""
       in
       let sub =
-        [ id'.loc,
-          Printf.sprintf
-            "Duplicated val or method %S%s."
-            id'.txt
-            (details id') ]
+        [id'.loc, Printf.sprintf "Duplicated val or method %S%s." id'.txt (details id')]
       in
       Ast_mapper.make_error_of_message
         ~loc:id.loc
         ~sub
-        (Printf.sprintf
-        "Duplicated val or method %S%s."
-        id.txt
-        (details id))
+        (Printf.sprintf "Duplicated val or method %S%s." id.txt (details id))
       |> Ast_mapper.raise_error
     else S.add txt id names
   in
