@@ -5,6 +5,7 @@ wget https://raw.githubusercontent.com/ocaml/ocaml-travisci-skeleton/master/.tra
 bash -ex .travis-ocaml.sh
 
 eval $(opam env)
+opam update
 
 ACTUAL_COMPILER=`ocamlc -version`
 if [ "$ACTUAL_COMPILER" != "$OCAML_VERSION" ]
