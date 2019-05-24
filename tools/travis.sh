@@ -6,7 +6,7 @@ bash -ex .travis-ocaml.sh
 
 eval $(opam env)
 opam update
-opam upgrade
+opam upgrade --yes
 
 ACTUAL_COMPILER=`ocamlc -version`
 if [ "$ACTUAL_COMPILER" != "$OCAML_VERSION" ]
