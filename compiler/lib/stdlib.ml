@@ -195,7 +195,8 @@ module Float = struct
 
 
 
-  external classify_float : (float [@unboxed]) -> fpclass = "caml_classify_float"
+  (* Re-defined here to stay compatible with OCaml 4.02 *)
+  external classify_float : float -> fpclass = "caml_classify_float"
 
   external ( < ) : t -> t -> bool = "%lessthan"
 
