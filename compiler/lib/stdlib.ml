@@ -189,7 +189,12 @@ module Option = struct
 end
 
 module Float = struct
-  include Float
+  type t = float
+
+  let equal (a : float) (b : float) = Poly.(a = b)
+
+  external classify_float : (float [@unboxed]) -> fpclass =
+  "caml_classify_float" "caml_classify_float_unboxed" [@@noalloc]
 
   external ( < ) : t -> t -> bool = "%lessthan"
 
@@ -260,6 +265,8 @@ end
 
 module String = struct
   include StringLabels
+
+  let equal (a : string) (b : string) = Poly.(a = b)
 
   let is_empty = function
     | "" -> true
