@@ -191,7 +191,7 @@ end
 module Float = struct
   type t = float
 
-  let equal (a : float) (b : float) = Poly.(a = b)
+  let equal (a : float) (b : float) = Poly.compare a b = 0
 
   external classify_float : (float [@unboxed]) -> fpclass =
   "caml_classify_float" "caml_classify_float_unboxed" [@@noalloc]
