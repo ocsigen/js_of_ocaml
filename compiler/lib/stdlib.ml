@@ -193,8 +193,9 @@ module Float = struct
 
   let equal (a : float) (b : float) = Poly.compare a b = 0
 
-  external classify_float : (float [@unboxed]) -> fpclass =
-  "caml_classify_float" "caml_classify_float_unboxed" [@@noalloc]
+
+
+  external classify_float : (float [@unboxed]) -> fpclass = "caml_classify_float"
 
   external ( < ) : t -> t -> bool = "%lessthan"
 
