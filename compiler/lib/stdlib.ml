@@ -189,7 +189,12 @@ module Option = struct
 end
 
 module Float = struct
-  include Float
+  type t = float
+
+  let equal (a : float) (b : float) = Poly.compare a b = 0
+
+  (* Re-defined here to stay compatible with OCaml 4.02 *)
+  external classify_float : float -> fpclass = "caml_classify_float"
 
   external ( < ) : t -> t -> bool = "%lessthan"
 
@@ -260,6 +265,8 @@ end
 
 module String = struct
   include StringLabels
+
+  let equal (a : string) (b : string) = Poly.(a = b)
 
   let is_empty = function
     | "" -> true

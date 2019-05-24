@@ -3,13 +3,5 @@
   (libraries compiler-libs.common
              ocaml-migrate-parsetree
              ppx_tools_versioned)
-  (modules ppx_js_internal compat)
   (kind ppx_rewriter)
   (preprocess (pps ppx_tools_versioned.metaquot_406)))
-
-(rule
-  (targets compat.ml)
-  (deps ../../../tools/select/select.exe
-        compat.ml-4.08
-        compat.ml-default)
-  (action (with-stdout-to %{targets} (run %{deps}))))

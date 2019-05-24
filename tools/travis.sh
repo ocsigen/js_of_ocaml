@@ -5,6 +5,8 @@ wget https://raw.githubusercontent.com/ocaml/ocaml-travisci-skeleton/master/.tra
 bash -ex .travis-ocaml.sh
 
 eval $(opam env)
+opam update
+opam upgrade --yes
 
 ACTUAL_COMPILER=`ocamlc -version`
 if [ "$ACTUAL_COMPILER" != "$OCAML_VERSION" ]
@@ -37,12 +39,12 @@ case $MODE in
         opam install -y ppx_tools ppx_deriving || true
 
         opam install -y --best-effort $PACKAGES
-        opam upgrade
+        opam upgrade --yes
         ;;
     build)
         opam install -y --deps-only $PACKAGES
         opam install -y cohttp-lwt-unix menhir ppx_expect
-        opam upgrade
+        opam upgrade --yes
         dune build @runtest @default @ocsigen-doc -j 8
         ;;
 esac
