@@ -39,10 +39,12 @@ case $MODE in
         opam install -y ppx_tools ppx_deriving || true
 
         opam install -y --best-effort $PACKAGES
+        opam upgrade --yes
         ;;
     build)
         opam install -y --deps-only $PACKAGES
         opam install -y cohttp-lwt-unix menhir ppx_expect
+        opam upgrade --yes
         dune build @runtest @default @ocsigen-doc -j 8
         ;;
 esac
