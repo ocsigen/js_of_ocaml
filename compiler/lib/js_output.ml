@@ -1153,7 +1153,7 @@ let part_of_ident =
   fun c -> Array.unsafe_get a (Char.code c)
 
 let need_space a b =
-  (* do not concat 2 differant identifier *)
+  (* do not concat 2 different identifier *)
   (part_of_ident a && part_of_ident b)
   (* do not generate end_of_line_comment.
      handle the case of "num / /* comment */ b " *)

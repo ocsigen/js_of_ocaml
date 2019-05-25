@@ -32,7 +32,7 @@ val formData : formData t constr
 
 val formData_form : (Dom_html.formElement t -> formData t) constr
 
-(* be carefull, this might not be implemented in all browser.
+(* be careful, this might not be implemented in all browser.
    To check availability, use [Js.Optdef.to_option (Js.def formData)] *)
 
 type form_elt =

@@ -687,7 +687,7 @@ val string_of_error : error t -> string
 
 val raise_js_error : error t -> 'a
 
-(** The [Error] exception wrap javascript exceptions when catched by ocaml code.
+(** The [Error] exception wrap javascript exceptions when caught by ocaml code.
       In case the javascript exception is not an instance of javascript [Error],
       it will be serialized and wrapped into a [Failure] exception.
   *)

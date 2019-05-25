@@ -272,7 +272,7 @@ and string_escape quote buf = parse
   | (_ as c)
     { if c <> '\'' && c <> '\"' then Buffer.add_char buf '\\';
       Buffer.add_char buf c }
-  | eof { Format.eprintf  "LEXER: WIERD end of file in string_escape@."; ()}
+  | eof { Format.eprintf  "LEXER: WEIRD end of file in string_escape@."; ()}
 
 and string_quote q buf = parse
   | ("'"|'"') as q' {
@@ -285,7 +285,7 @@ and string_quote q buf = parse
       string_quote q buf lexbuf
     }
   | (_ as x)       { Buffer.add_char buf x; string_quote q buf lexbuf }
-  | eof { Format.eprintf  "LEXER: WIERD end of file in quoted string@."; ()}
+  | eof { Format.eprintf  "LEXER: WEIRD end of file in quoted string@."; ()}
 
 (*****************************************************************************)
 and regexp buf = parse
@@ -295,7 +295,7 @@ and regexp buf = parse
   | '/' { Buffer.add_char buf '/'; regexp_maybe_ident buf lexbuf }
   | '[' { Buffer.add_char buf '['; regexp_class buf lexbuf }
   | (_ as x)       { Buffer.add_char buf x; regexp buf lexbuf }
-  | eof { Format.eprintf "LEXER: WIERD end of file in regexp@."; ()}
+  | eof { Format.eprintf "LEXER: WEIRD end of file in regexp@."; ()}
 
 and regexp_class buf = parse
   | ']' { Buffer.add_char buf ']';
@@ -304,7 +304,7 @@ and regexp_class buf = parse
                     Buffer.add_char buf x;
                     regexp_class buf lexbuf }
   | (_ as x) { Buffer.add_char buf x; regexp_class buf lexbuf }
-  | eof { Format.eprintf "LEXER: WIERD end of file in regexp_class@."; ()}
+  | eof { Format.eprintf "LEXER: WEIRD end of file in regexp_class@."; ()}
 
 and regexp_maybe_ident buf = parse
   | ['A'-'Z''a'-'z']* { Buffer.add_string buf (tok lexbuf) }

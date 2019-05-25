@@ -122,9 +122,9 @@ val buffered_loop :
   -> unit Lwt.t
 (** [buffered_loop] is similar to [seq_loop], but any event that
     occurs during an execution of the handler is queued instead of
-    being ingnored.
+    being ignored.
 
-    No event is thus missed, but there can be a non predictible delay
+    No event is thus missed, but there can be a non predictable delay
     between its trigger and its treatment. It is thus a good idea to
     use this loop with handlers whose running time is short, so the
     memorized event still makes sense when the handler is eventually
@@ -142,7 +142,7 @@ val async : (unit -> 'a Lwt.t) -> unit
     It is implemented by calling yield, then Lwt.async.
     This is useful if you want to create a new event listener
     when you are inside an event handler.
-    This avoids the current event to be catched by the new event handler
+    This avoids the current event to be caught by the new event handler
     (if it propagates).
 *)
 
@@ -155,10 +155,10 @@ val func_limited_loop :
   -> unit Lwt.t
 (** [func_limited_loop event delay_fun target handler] will behave like
     [Lwt_js_events.async_loop event target handler] but it will run [delay_fun]
-    first, and execut [handler] only when [delay_fun] is finished and
+    first, and execute [handler] only when [delay_fun] is finished and
     no other event occurred in the meantime.
 
-    This allows to limit the number of events catched.
+    This allows to limit the number of events caught.
 
     Be careful, it is an asynchrone loop, so if you give too little time,
     several instances of your handler could be run in same time **)

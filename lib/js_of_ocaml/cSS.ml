@@ -625,7 +625,7 @@ module Color = struct
     | RGB_percent of (int * int * int)
         (**RGB channels are specified as a percentage of their maximal value.*)
     | RGBA of (int * int * int * float)
-        (**Same as RGB with additionnal transparency argument. Opacity should be in
+        (**Same as RGB with additional transparency argument. Opacity should be in
        [0.] (completely transparent) and [1.] (completely opaque).*)
     | RGBA_percent of (int * int * int * float)
         (**RGB channels specified as percentage of their maximal value. Alpha

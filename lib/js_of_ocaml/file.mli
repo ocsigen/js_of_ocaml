@@ -169,7 +169,7 @@ val filename : file t -> js_string t
 
 val fileReader : fileReader t constr
 
-(* be carefull, this might not be implemented in all browser.
+(* be careful, this might not be implemented in all browser.
    To check availability, use [Js.Optdef.to_option (Js.def fileReader)] *)
 
 val addEventListener :

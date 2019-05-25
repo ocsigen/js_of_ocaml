@@ -898,7 +898,7 @@ let
 
   | 3 ->
 # 275 "compiler/lib/js_lexer.mll"
-        ( Format.eprintf  "LEXER: WIERD end of file in string_escape@."; ())
+        ( Format.eprintf  "LEXER: WEIRD end of file in string_escape@."; ())
 # 903 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
@@ -946,7 +946,7 @@ let
 
   | 4 ->
 # 288 "compiler/lib/js_lexer.mll"
-        ( Format.eprintf  "LEXER: WIERD end of file in quoted string@."; ())
+        ( Format.eprintf  "LEXER: WEIRD end of file in quoted string@."; ())
 # 951 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
@@ -990,7 +990,7 @@ let
 
   | 4 ->
 # 298 "compiler/lib/js_lexer.mll"
-        ( Format.eprintf "LEXER: WIERD end of file in regexp@."; ())
+        ( Format.eprintf "LEXER: WEIRD end of file in regexp@."; ())
 # 995 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;
@@ -1030,7 +1030,7 @@ let
 
   | 3 ->
 # 307 "compiler/lib/js_lexer.mll"
-        ( Format.eprintf "LEXER: WIERD end of file in regexp_class@."; ())
+        ( Format.eprintf "LEXER: WEIRD end of file in regexp_class@."; ())
 # 1035 "compiler/lib/js_lexer.ml"
 
   | __ocaml_lex_state -> lexbuf.Lexing.refill_buff lexbuf;

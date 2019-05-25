@@ -63,7 +63,7 @@ open Js_of_ocaml_lwt
 - find point closest to center; start drawing from it; stop below a
   given threshold
 - speed-up rendering by traversing the tree and stopping when the
-  edge length becomes below some thresold
+  edge length becomes below some threshold
 
 ===============
 

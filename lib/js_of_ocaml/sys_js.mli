@@ -39,7 +39,7 @@ val mount_point : unit -> string list
 val unmount : path:string -> unit
 
 val mount : path:string -> (prefix:string -> path:string -> string option) -> unit
-(** Register a callback to the [path] to dynamicly load missing files.
+(** Register a callback to the [path] to dynamically load missing files.
       Whenever a file is missing in [path], the callback is used to optionally
       get the content of the file.
       [mount ~path f] register the callback [f] to the path [path].
