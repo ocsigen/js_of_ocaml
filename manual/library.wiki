@@ -58,24 +58,24 @@ This trick can also be used to refer to Javascript fields {{{type}}} or
 
 <<code language="ocaml"|
 class type .. = object
-  (* Referer to [meth] *)
+  (* Refer to [meth] *)
   method meth : ..
   method meth_int : ..
   method _meth_ : ..
   method _meth_aa : ..
 
-  (* Referer to  [meth_a] *)
+  (* Refer to  [meth_a] *)
   method meth_a_int : ..
   method _meth_a_ : ..
   method _meth_a_b : ..
 
-  (* Referer to [Meth] *)
+  (* Refer to [Meth] *)
   method _Meth : ..
 
-  (* Referer to [_meth] *)
+  (* Refer to [_meth] *)
   method __meth : ..
 
-  (* Referer to [_] *)
+  (* Refer to [_] *)
   method __ : ..
 end
 >>

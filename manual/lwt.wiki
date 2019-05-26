@@ -7,7 +7,7 @@ program event handlers very easily and concisely, in the module
 <<a_api | module Lwt_js_events >>.
 
 This module defines functions you can call on a DOM element to create
-an Lwt thread that will return when the event occures.
+an Lwt thread that will return when the event occurs.
 
 Example:
 

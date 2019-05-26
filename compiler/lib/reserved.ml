@@ -23,7 +23,7 @@ let keyword =
   List.fold_left
     ~f:(fun acc x -> StringSet.add x acc)
     ~init:StringSet.empty
-    [ (* keywork *)
+    [ (* keyword *)
       "break"
     ; "case"
     ; "catch"

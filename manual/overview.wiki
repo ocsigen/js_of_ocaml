@@ -84,7 +84,7 @@ opam-installer js_of_ocaml-lwt
   It support both standard and separate compilation of javascript
   files. See https://dune.readthedocs.io/en/latest/jsoo.html
 
-You can find an OCaml toplevel runing in the browser <<a_file src="toplevel/index.html" |here>>. See also <<a_manual chapter="quickstart" |Quickstart>>.
+You can find an OCaml toplevel running in the browser <<a_file src="toplevel/index.html" |here>>. See also <<a_manual chapter="quickstart" |Quickstart>>.
 
 == Supported features ==
 

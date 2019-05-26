@@ -23,12 +23,12 @@
  ** Compiler: Remove support for ocaml < 4.02.3
  ** Compiler: use paths from debug info when looking to looking cmis to embed
  ** Compiler: refactoring, renaming
- ** Compiler: make float litterals look like float (#767)
+ ** Compiler: make float literals look like float (#767)
  ** Misc: use ocamlformat
  ** Misc: dunify the build of the toplevel
  ** Misc: support for OCaml 4.08
  ** Lib: wrap js_of_ocaml-lwt, js_of_ocaml-tyxml, js_of_ocaml-toplevel, js_of_ocaml-compiler
- ** Runtime: dont use deprecated [new Buffer] on nodejs (#726)
+ ** Runtime: don't use deprecated [new Buffer] on nodejs (#726)
 
  * Bug fixes:
  ** Compiler: fix compilation of empty cma
@@ -87,7 +87,7 @@
  ** Misc: move ppx_deriving_json in its own opam package (Rudi Grinberg)
  ** Compiler: static eval of float negation
  ** Compiler: improve constant sharing.
- ** Ppx: add support for writeonly_prop and optdef_prop in object litteral.
+ ** Ppx: add support for writeonly_prop and optdef_prop in object literal.
 
  * Bug fixes:
  ** Compiler: fix code generation of unary ops (missing space).
@@ -148,7 +148,7 @@
  * Features/Changes
  ** Compiler: new jsoo_link binary to link multiple javascript files
     together and merging sourcemaps.
- ** Toplevel: improve genaration of toplevels, one can now pass a
+ ** Toplevel: improve generation of toplevels, one can now pass a
     an export file containing units to export. (see jsoo_listunits)
  ** Lib: Provide a Js_of_ocaml (namespace) module to ease transition
     with future version of js_of_ocaml
@@ -251,7 +251,7 @@
  ** Syntax: new ppx syntax
  ** Syntax: js object literal (camlp4 + ppx)
  ** Runtime: support for Dynlink
- ** Runtime: Support for upcomming release of Bin_prot, Core_kernel, Async_kernel
+ ** Runtime: Support for upcoming release of Bin_prot, Core_kernel, Async_kernel
  ** Lib: add requestAnimationFrame
  ** Lib: complete Js.Math
  ** Lib: complete xmlHttpRequest
@@ -271,7 +271,7 @@
  ** Compiler: remove registration of unused named value (wrt runtime)
  ** Compiler: Smarter inlining, Constant sharing, Switch generation
  ** Lib: Dom binding: *AttributeNS, *AttributeNode*, borderRadius
- ** Runtime: improve performence of string, array allocation
+ ** Runtime: improve performance of string, array allocation
 
  * Misc: enable safestring for OCaml 4.02
  * Commandline: switch to Cmdliner. Better -help + manpage
@@ -351,7 +351,7 @@
  * Features/Changes
  ** Runtime: bigarray comparison
  ** Compiler: allow to embed directory with -file dir_name=ext1,ext2:dest_path
- ** Compiler: can now output embedded files in a differant js file
+ ** Compiler: can now output embedded files in a different js file
  ** Lib: js_of_ocaml.graphics
  ** Lib: Js.Unsafe.expr to embed JavasScript expression
     to be used instead of Js.Unsafe.variable (or eval_string)
@@ -390,7 +390,7 @@
     (by Hugo Heuzard)
  ** Compiler: share constants (by Hugo Heuzard)
  ** Compiler: alias primitives (by Hugo Heuzard)
- ** Compiler: complete javacript ast (by Hugo Heuzard)
+ ** Compiler: complete javascript ast (by Hugo Heuzard)
  ** Compiler: 'caml_format_int %d x' compiles to ""+x (by Hugo Heuzard)
  ** Add JavaScript file in META (to be used with ocamlfind)
     (by Hugo Heuzard)

@@ -1,4 +1,4 @@
-(* This is demo input for wiki. It wil be loaded automatically into window on startup *)
+(* This is demo input for wiki. It will be loaded automatically into window on startup *)
 
 let test1 =
   "\n\n\

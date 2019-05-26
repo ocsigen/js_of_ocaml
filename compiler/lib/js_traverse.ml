@@ -198,7 +198,7 @@ class map_for_share_constant =
       | EBin (op, (EStr _ as e1), EUn (Typeof, e2)) ->
           EBin (op, EUn (Typeof, e1), super#expression e2)
       (* Some js bundler get confused when the argument
-       of 'require' is not a litteral *)
+       of 'require' is not a literal *)
       | ECall (EVar (S {var = None; name = "require"; _}), [EStr _], _) -> e
       | _ -> super#expression e
 
@@ -464,7 +464,7 @@ class free =
                 tbody#block ~catch:true [id];
                 (* special merge here *)
                 (* we need to propagate both def and use .. *)
-                (* .. except 'id' because its scope is limitied to 'block' *)
+                (* .. except 'id' because its scope is limited to 'block' *)
                 let clean set sets =
                   match id with
                   | S {name; _} -> set, StringSet.remove name sets

@@ -39,7 +39,7 @@ val urlencode : ?with_plus:bool -> string -> string
 type http_url =
   { hu_host : string  (** The host part of the url. *)
   ; hu_port : int  (** The port for the connection if any. *)
-  ; hu_path : string list  (** The path splitted on ['/'] characters. *)
+  ; hu_path : string list  (** The path split on ['/'] characters. *)
   ; hu_path_string : string  (** The original entire path. *)
   ; hu_arguments : (string * string) list
         (** Arguments as a field-value

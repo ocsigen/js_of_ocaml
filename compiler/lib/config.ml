@@ -126,7 +126,7 @@ module Param = struct
   let constant_max_depth =
     p
       ~name:"cst_depth"
-      ~desc:"set the maximum depth of generated litteral JavaScript values"
+      ~desc:"set the maximum depth of generated literal JavaScript values"
       (int 10)
 
   type tc =

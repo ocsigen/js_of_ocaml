@@ -90,7 +90,7 @@ class type my_js_type = object
      with an underscore. *)
   method _Array : ... (* to access the JavasScript property or method Array *)
 
-  (* Define two methods with differant types, that translate to
+  (* Define two methods with different types, that translate to
      the same JavaScript method. *)
   method my_fun_int : int -> unit meth
   method my_fun_string : js_string t -> unit meth

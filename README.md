@@ -72,7 +72,7 @@ Most of the OCaml standard library is supported. However,
     A dummy implementation is provided.
   * Most of the Sys module is not supported.
 
-Extra libraries distributed with Ocaml (such as Thread or Str) are not
+Extra libraries distributed with OCaml (such as Thread or Str) are not
 supported in general. However,
   * Bigarray: bigarrays are supported using Typed Arrays
   * Num: supported using `+nat.js` option
@@ -97,12 +97,12 @@ functions can yield results different from usual:
   * these functions may be more prone to stack overflow.
 
 ## Toplevel
-  * [Ocaml 4.02.3](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.02.3)
-  * [Ocaml 4.03.0](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.03.0)
-  * [Ocaml 4.04.2](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.04.2) includes Base, Core_kernel, Async_kernel, Async_js
-  * [Ocaml 4.04.0+BER](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.04.0+BER) see http://okmij.org/ftp/ML/MetaOCaml.html
-  * [Ocaml 4.05.0](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.05.0) includes Base, Core_kernel, Async_kernel, Async_js
-  * [Ocaml 4.06.0](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.06.0) includes Base, Core_kernel, Async_kernel, Async_js
+  * [OCaml 4.02.3](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.02.3)
+  * [OCaml 4.03.0](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.03.0)
+  * [OCaml 4.04.2](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.04.2) includes Base, Core_kernel, Async_kernel, Async_js
+  * [OCaml 4.04.0+BER](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.04.0+BER) see http://okmij.org/ftp/ML/MetaOCaml.html
+  * [OCaml 4.05.0](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.05.0) includes Base, Core_kernel, Async_kernel, Async_js
+  * [OCaml 4.06.0](http://ocsigen.github.io/js_of_ocaml/toplevel.html#version=4.06.0) includes Base, Core_kernel, Async_kernel, Async_js
 
 ## Contents of the distribution
 | Filename    | Description                                  |

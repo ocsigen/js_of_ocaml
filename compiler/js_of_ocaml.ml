@@ -323,7 +323,7 @@ let _ =
       Format.eprintf "%s: Error: Invalid magic number %S@." Sys.argv.(0) s;
       exit 1
   | Magic_number.Bad_magic_version h ->
-      Format.eprintf "%s: Error: Bytecode version missmatch.@." Sys.argv.(0);
+      Format.eprintf "%s: Error: Bytecode version mismatch.@." Sys.argv.(0);
       let k =
         match Magic_number.kind h with
         | (`Cmo | `Cma | `Exe) as x -> x

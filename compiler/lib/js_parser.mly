@@ -204,7 +204,7 @@ statement:
     (* @@@@@@@@@ HACK @@@@@@@@@@ *)
     (* menhir internal's         *)
     (* look the current token:   *)
-    (* - if it is on another line (linebreak inbetween), accept the statement *)
+    (* - if it is on another line (linebreak in between), accept the statement *)
     (* - fail otherwise *)
     (* @@@@@@@@@ HACK @@@@@@@@@@ *)
 

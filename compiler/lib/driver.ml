@@ -98,7 +98,7 @@ let o1 : 'a -> 'a =
   print
   >> tailcall
   >> flow_simple
-  >> (* flow simple to keep information for furture tailcall opt *)
+  >> (* flow simple to keep information for future tailcall opt *)
      specialize'
   >> eval
   >> inline
@@ -136,7 +136,7 @@ let round1 : 'a -> 'a =
      deadcode
   >> (* deadcode required before flow simple -> provided by constant *)
      flow_simple
-  >> (* flow simple to keep information for furture tailcall opt *)
+  >> (* flow simple to keep information for future tailcall opt *)
      specialize'
   >> eval
   >> identity

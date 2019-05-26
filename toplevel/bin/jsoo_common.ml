@@ -86,7 +86,7 @@ let cmis_of_package pkg : string list =
         then List.iter (cmis_of_cma ~dir x) ~f:add
         else if Filename.check_suffix x ".cmi"
         then add (read_cmi ~dir (Filename.chop_suffix x ".cmi"))
-        else Format.eprintf "Wrong extention for archive %s@." x);
+        else Format.eprintf "Wrong extension for archive %s@." x);
     !fs
   with exn ->
     Format.eprintf "Error for package %s@." pkg;

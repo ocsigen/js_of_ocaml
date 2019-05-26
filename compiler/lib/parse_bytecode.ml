@@ -2090,7 +2090,7 @@ let from_exe
       | `Full ->
           warn
             "Warning: Program not linked with -g, original variable names and locations \
-             not availalbe.@."));
+             not available.@."));
   let globals = make_globals (Array.length init_data) init_data primitive_table in
   (* Initialize module override mechanism *)
   List.iter override_global ~f:(fun (name, v) ->

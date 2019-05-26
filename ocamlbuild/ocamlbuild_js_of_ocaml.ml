@@ -51,7 +51,7 @@ let link_opts prod =
     "js_of_ocaml" :: pkgs, predicates
   in
   (* Findlib usually set pkg_* predicate for all selected packages *)
-  (* It doesn't do it with 'query' command, we have to it manualy. *)
+  (* It doesn't do it with 'query' command, we have to it manually. *)
   let cmd = "-format" :: "pkg_%p" :: "-r" :: all_pkgs in
   let predicates_pkgs = ocamlfind cmd (fun ic -> input_line ic) in
   let all_predicates =
