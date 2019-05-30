@@ -8,7 +8,6 @@
     (       -> source_map_unsupported.ml.in))
   )
   (flags (:standard -w -7-37 -safe-string))
-  (modules (:standard \ control))
   )
 
 (rule

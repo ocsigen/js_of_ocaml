@@ -41,8 +41,6 @@ Compiler optimizations
 - per module options: we could apply "unsafe" and "inline" options
   selectively
 
-- fix control.ml
-
 - syntactic sugar for Javascript literal strings
   + optimization to avoid going through Caml strings
 
@@ -151,8 +149,6 @@ IMPROVEMENTS
 
 NEW FEATURES
 ============
-
-- dynamic linking? (code generation from cmo files)
 
 - Can we use the debugger information to generate specialized code?
   (Use objects rather than arrays for tuples, ...)
