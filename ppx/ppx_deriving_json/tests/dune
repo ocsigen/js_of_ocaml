@@ -1,10 +1,11 @@
 (executables
   (names main)
   (libraries
+    ppxlib
+    ocaml-migrate-parsetree
     toplevel_expect_test
     js_of_ocaml.deriving
     js_of_ocaml-ppx_deriving_json
-    ppx_deriving.runtime
   )
   (link_flags (-linkall))
   )
