@@ -352,7 +352,14 @@ end
 
 type event_listener_id = unit -> unit
 
-let addEventListener (e : (< .. > as 'a) t) typ h capt =
+class type event_listener_options =
+  object
+    method capture : bool t readonly_prop
+    method once : bool t readonly_prop
+    method passive : bool t readonly_prop
+  end
+
+let addEventListenerWithOptions (e : (< .. > as 'a) t) typ h opts =
   if (Js.Unsafe.coerce e)##.addEventListener == Js.undefined
   then
     let ev = (Js.string "on")##concat typ in
@@ -360,8 +367,17 @@ let addEventListener (e : (< .. > as 'a) t) typ h capt =
     let () = (Js.Unsafe.coerce e)##attachEvent ev callback in
     fun () -> (Js.Unsafe.coerce e)##detachEvent ev callback
   else
-    let () = (Js.Unsafe.coerce e)##addEventListener typ h capt in
-    fun () -> (Js.Unsafe.coerce e)##removeEventListener typ h capt
+    let () = (Js.Unsafe.coerce e)##addEventListener typ h opts in
+    fun () -> (Js.Unsafe.coerce e)##removeEventListener typ h opts
+
+let addEventListener (e : (< .. > as 'a) t) typ h capt =
+  let opts = object%js
+    val capture = capt
+    val once = Js.bool false
+    val passive = Js.bool false
+  end
+  in
+  addEventListenerWithOptions e typ h opts
 
 let removeEventListener id = id ()
 
