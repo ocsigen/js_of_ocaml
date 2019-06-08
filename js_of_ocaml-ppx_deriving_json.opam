@@ -19,4 +19,5 @@ depends: [
   "js_of_ocaml"
   "ppx_tools_versioned"
   "ocaml-migrate-parsetree"
+  "ppxlib"
 ]
