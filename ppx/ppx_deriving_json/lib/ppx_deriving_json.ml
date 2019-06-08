@@ -722,8 +722,6 @@ let sigs_of_decl ({Parsetree.ptype_loc; _} as d) =
       read_with_tag_sig_of_decl d :: recognize_sig_of_decl d :: l
   | _ -> l
 
-open Ppxlib
-
 let core_type_exp ({Parsetree.ptyp_loc; _} as y) =
   let f () = json_of_type y in
   Ast_helper.with_default_loc ptyp_loc f
@@ -755,23 +753,23 @@ let type_decl_sig ~loc:_ ~path:_ (_, l) = List.map ~f:sigs_of_decl l |> List.fla
 module Of_json = struct
   let name = "of_json"
 
-  let str_type_decl = Deriving.Generator.make_noarg type_decl_str
+  let str_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_str
 
-  let sig_type_decl = Deriving.Generator.make_noarg type_decl_sig
+  let sig_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_sig
 
   let extension ~loc:_ ~path:_ ctyp =
     [%expr
       fun s -> [%e read_of_type ctyp] ([%e lexer "init_lexer"] (Lexing.from_string s))]
 
-  let deriver = Deriving.add name ~str_type_decl ~sig_type_decl ~extension
+  let deriver = Ppxlib.Deriving.add name ~str_type_decl ~sig_type_decl ~extension
 end
 
 module Json_of = struct
   let name = "json_of"
 
-  let str_type_decl = Deriving.Generator.make_noarg type_decl_str
+  let str_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_str
 
-  let sig_type_decl = Deriving.Generator.make_noarg type_decl_sig
+  let sig_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_sig
 
   let extension ~loc:_ ~path:_ ctyp =
     [%expr
@@ -780,11 +778,11 @@ module Json_of = struct
         [%e write_of_type ctyp ~poly:false] buf x;
         Buffer.contents buf]
 
-  let deriver = Deriving.add name ~str_type_decl ~sig_type_decl ~extension
+  let deriver = Ppxlib.Deriving.add name ~str_type_decl ~sig_type_decl ~extension
 end
 
 let json_of = Json_of.deriver
 
 let of_json = Of_json.deriver
 
-let json = Deriving.add_alias "json" [json_of; of_json]
+let json = Ppxlib.Deriving.add_alias "json" [json_of; of_json]
