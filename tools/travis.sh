@@ -36,7 +36,6 @@ case $MODE in
         opam pin add --no-action -y js_of_ocaml-toplevel.dev .
 
         opam install -y lwt reactiveData tyxml || true
-        opam install -y ppx_tools ppx_deriving || true
 
         opam install -y --best-effort $PACKAGES
         opam upgrade --yes
