@@ -16,22 +16,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 *)
-[@@@ocaml.alert "-deprecated"]
 
 open StdLabels
 open Migrate_parsetree
 open OCaml_407.Ast
-
-(* For implicit optional argument elimination. Annoying with Ast_helper. *)
-[@@@ocaml.warning "-48"]
-
-(* Pervasives is deprecated but metaquot refers to it. *)
-[@@@ocaml.warning "-3"]
-
 open Ast_helper
 open Asttypes
 open Parsetree
 open Ast_convenience_407
+
+module Pervasives = struct
+  let ( ! ) = ( ! )
+end
 
 let mangle ?(fixpoint = "t") affix name =
   match name = fixpoint, affix with
@@ -62,10 +58,12 @@ let fresh_var bound =
   in
   loop 0
 
-let string_of_core_type _typ =
-  (* FIXME *)
-  let typ = assert false in
-  Format.asprintf "%a" Pprintast.core_type {typ with ptyp_attributes = []}
+module To_current = Migrate_parsetree.Convert (OCaml_407) (OCaml_current)
+
+let string_of_core_type typ : string =
+  let typ = {typ with ptyp_attributes = []} in
+  let typ = To_current.copy_core_type typ in
+  Format.asprintf "%a" Pprintast.core_type typ
 
 let core_type_of_type_decl {ptype_name = name; ptype_params; _} =
   let name = Location.mkloc (Longident.Lident name.txt) name.loc in
@@ -481,7 +479,7 @@ let json_of_type ?decl y =
   [%expr [%e rt "make"] [%e write] [%e read]]
 
 let fun_str_wrap d e y ~f ~suffix =
-  let e = poly_fun_of_type_decl d e |> sanitize
+  let e = poly_fun_of_type_decl d e
   and v = suffix_decl_p d ~suffix
   and y = poly_arrow_of_type_decl f d y in
   Ast_helper.(Vb.mk (Pat.constraint_ v y) e)
@@ -727,7 +725,7 @@ let sigs_of_decl ({Parsetree.ptype_loc; _} as d) =
 open Ppxlib
 
 let core_type_exp ({Parsetree.ptyp_loc; _} as y) =
-  let f () = json_of_type y |> sanitize in
+  let f () = json_of_type y in
   Ast_helper.with_default_loc ptyp_loc f
 
 let type_decl_str ~loc:_ ~path:_ (_, l) =
@@ -766,16 +764,6 @@ module Of_json = struct
       fun s -> [%e read_of_type ctyp] ([%e lexer "init_lexer"] (Lexing.from_string s))]
 
   let deriver = Deriving.add name ~str_type_decl ~sig_type_decl ~extension
-
-  let () =
-    Driver.register_transformation
-      name
-      ~rules:
-        [ (* Context_free.Rule.extension
-                 (Extension.declare name
-                    Core_type Ast_pattern.(ptyp __)
-                    (fun ~loc:_ ~path:_ ty -> core_type_exp ty))
-               *) ]
 end
 
 module Json_of = struct
@@ -793,16 +781,6 @@ module Json_of = struct
         Buffer.contents buf]
 
   let deriver = Deriving.add name ~str_type_decl ~sig_type_decl ~extension
-
-  let () =
-    Driver.register_transformation
-      name
-      ~rules:
-        [ (* Context_free.Rule.extension
-                 (Extension.declare name
-                    Core_type Ast_pattern.(ptyp __)
-                    (fun ~loc:_ ~path:_ ty -> E.type_extension ty))
-               *) ]
 end
 
 let json_of = Json_of.deriver

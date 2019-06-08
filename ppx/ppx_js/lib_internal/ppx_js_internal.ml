@@ -19,18 +19,14 @@
 open StdLabels
 open Migrate_parsetree
 open OCaml_407.Ast
-
-(* For implicit optional argument elimination. Annoying with Ast_helper. *)
-[@@@ocaml.warning "-48"]
-
-(* Pervasives is deprecated but metaquot refers to it. *)
-[@@@ocaml.warning "-3"]
-
-open Ast_mapper
 open Ast_helper
 open Asttypes
 open Parsetree
 open Ast_convenience_407
+
+module Pervasives = struct
+  let ( ! ) = ( ! )
+end
 
 (** Check if an expression is an identifier and returns it.
     Raise a Location.error if it's not.
@@ -666,7 +662,7 @@ let literal_object self_id (fields : field_desc list) =
                  fun_)) ])
 
 let mapper =
-  { default_mapper with
+  { Ast_mapper.default_mapper with
     expr =
       (fun mapper expr ->
         let prev_default_loc = !default_loc in
@@ -733,7 +729,7 @@ let mapper =
                 | `Error e -> Exp.extension e
               in
               mapper.expr mapper {new_expr with pexp_attributes}
-          | _ -> default_mapper.expr mapper expr
+          | _ -> Ast_mapper.default_mapper.expr mapper expr
         in
         default_loc := prev_default_loc;
         new_expr) }
