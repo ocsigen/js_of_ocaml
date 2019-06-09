@@ -240,6 +240,13 @@ function caml_obj_truncate (x, s) {
   return 0;
 }
 
+//Provides: caml_obj_make_forward
+function caml_obj_make_forward (b,v) {
+  b[0]=250;
+  b[1]=v;
+  return 0
+}
+
 //Provides: caml_lazy_make_forward const (const)
 function caml_lazy_make_forward (v) { return [250, v]; }
 
@@ -1090,10 +1097,10 @@ function caml_sys_exit (code) {
   caml_invalid_argument("Function 'exit' not implemented");
 }
 
-//Provides: caml_sys_get_argv const
+//Provides: caml_argv
 //Requires: caml_js_to_string
 //Requires: raw_array_sub
-function caml_sys_get_argv () {
+var caml_argv = ((function () {
   var g = joo_global_object;
   var main = "a.out";
   var args = []
@@ -1111,7 +1118,36 @@ function caml_sys_get_argv () {
   var args2 = [0, p];
   for(var i = 0; i < args.length; i++)
     args2.push(caml_js_to_string(args[i]));
-  return [0, p, args2];
+  return args2;
+})())
+
+//Provides: caml_executable_name
+//Requires: caml_argv
+var caml_executable_name = argv[1]
+
+//Provides: caml_sys_get_argv
+//Requires: caml_argv
+function caml_sys_get_argv (a) {
+  return [0, caml_argv[1], caml_argv];
+}
+
+//Provides: caml_sys_argv
+//Requires: caml_argv
+function caml_sys_argv (a) {
+  return caml_argv;
+}
+
+//Provides: caml_sys_modify_argv
+//Requires: caml_argv
+function caml_sys_modify_argv(arg){
+  caml_argv = arg;
+  return 0;
+}
+
+//Provides: caml_sys_executable_name const
+//Requires: caml_executable_name
+function caml_sys_executable_name(a){
+  return caml_executable_name
 }
 
 //Provides: unix_inet_addr_of_string
