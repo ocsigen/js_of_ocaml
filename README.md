@@ -20,8 +20,6 @@ like browsers and Node.js.
 
 ### optional
   * [lwt](https://github.com/ocsigen/lwt)
-  * [deriving](https://github.com/ocsigen/deriving)
-  * [ppx_deriving](https://github.com/whitequark/ppx_deriving)
   * [tyxml](https://github.com/ocsigen/tyxml)
   * [reactiveData](https://github.com/ocsigen/reactiveData)
   * [yojson](https://github.com/mjambon/yojson)

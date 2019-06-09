@@ -6,7 +6,7 @@ bash -ex .travis-ocaml.sh
 
 eval $(opam env)
 opam update
-opam upgrade --yes
+opam upgrade --yes || opam upgrade --yes --fixup
 
 ACTUAL_COMPILER=`ocamlc -version`
 if [ "$ACTUAL_COMPILER" != "$OCAML_VERSION" ]
@@ -36,7 +36,7 @@ case $MODE in
         opam pin add --no-action -y js_of_ocaml-toplevel.dev .
 
         opam install -y lwt reactiveData tyxml || true
-        opam install -y ppx_tools ppx_deriving || true
+        opam install -y ppxlib || true
 
         opam install -y --best-effort $PACKAGES
         opam upgrade --yes

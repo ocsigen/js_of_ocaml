@@ -2,11 +2,11 @@
   (name ppx_deriving_json)
   (public_name js_of_ocaml-ppx_deriving_json)
   (synopsis "[@@deriving json]")
+  (libraries compiler-libs.common
+             ocaml-migrate-parsetree
+             ppx_tools_versioned
+             ppxlib
+  )
   (ppx_runtime_libraries js_of_ocaml.deriving)
   (kind ppx_deriver)
-  (libraries ppx_deriving.api compiler-libs ppx_tools)
-  (preprocess (action (run %{lib:ppx_tools:rewriter} %{lib:ppx_tools:ppx_metaquot} %{input-file}))))
-
-(rule
-  (targets ppx_deriving_json.ml)
-  (action (run %{bin:cppo} -V OCAML:%{ocaml_version} %{dep:ppx_deriving_json.cppo.ml} -o %{targets})))
+  (preprocess (pps ppx_tools_versioned.metaquot_407)))
