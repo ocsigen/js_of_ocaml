@@ -1123,7 +1123,7 @@ var caml_argv = ((function () {
 
 //Provides: caml_executable_name
 //Requires: caml_argv
-var caml_executable_name = argv[1]
+var caml_executable_name = caml_argv[1]
 
 //Provides: caml_sys_get_argv
 //Requires: caml_argv
