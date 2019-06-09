@@ -6,8 +6,7 @@ bash -ex .travis-ocaml.sh
 
 eval $(opam env)
 opam update
-opam upgrade --yes || true
-opam upgrade --yes --fixup || true
+opam upgrade --yes || opam upgrade --yes --fixup
 
 ACTUAL_COMPILER=`ocamlc -version`
 if [ "$ACTUAL_COMPILER" != "$OCAML_VERSION" ]
@@ -40,8 +39,7 @@ case $MODE in
         opam install -y ppxlib || true
 
         opam install -y --best-effort $PACKAGES
-        opam upgrade --yes || tue
-        opam upgrade --fixup || true
+        opam upgrade --yes
         ;;
     build)
         opam install -y --deps-only $PACKAGES
