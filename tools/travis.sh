@@ -39,8 +39,8 @@ case $MODE in
         opam install -y ppxlib || true
 
         opam install -y --best-effort $PACKAGES
-        opam upgrade --yes
-        opam upgrade --fixup
+        opam upgrade --yes || tue
+        opam upgrade --fixup || true
         ;;
     build)
         opam install -y --deps-only $PACKAGES
