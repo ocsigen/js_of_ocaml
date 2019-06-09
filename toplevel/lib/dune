@@ -11,6 +11,7 @@
 (rule
   (targets js_of_ocaml_toplevel_compat.ml)
   (deps ../../tools/select/select.exe
+        compat.ml-4.09
         compat.ml-4.08
         compat.ml-default)
   (action (with-stdout-to %{targets} (run %{deps}))))
