@@ -15,7 +15,6 @@ like browsers and Node.js.
     API.
 
 ## Requirements
-  Findlib, cppo
   See [opam](https://github.com/ocsigen/js_of_ocaml/blob/master/js_of_ocaml-compiler.opam) file for version constraints.
 
 ### optional
