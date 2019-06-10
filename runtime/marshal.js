@@ -354,6 +354,11 @@ var caml_output_val = function (){
       for (var i = size - 8;i >= 0;i -= 8)
         this.chunk[this.chunk_idx++] = (value >> i) & 0xFF;
     },
+    write_shared:function (offset) {
+      if (offset < (1 << 8)) this.write_code(8, 0x04 /*cst.CODE_SHARED8*/, offset);
+      else if (offset < (1 << 16)) this.write_code(16, 0x05 /*cst.CODE_SHARED16*/, offset);
+      else this.write_code(32, 0x06 /*cst.CODE_SHARED32*/, offset);
+    },
     finalize:function () {
       this.block_len = this.chunk_idx - 20;
       this.chunk_idx = 0;
@@ -368,10 +373,26 @@ var caml_output_val = function (){
   return function (v) {
     var writer = new Writer ();
     var stack = [];
+    var intern_obj_table = [];
+ 
+    function store(v) { intern_obj_table.push(v); writer.obj_counter = intern_obj_table.length; }
+    function recall(v) {
+        for (var i = 0; i < intern_obj_table.length; i++) {
+            if (intern_obj_table[i] === v) return intern_obj_table.length - i;
+        }
+    }
+
+    function memo(v) {
+        var existing_offset = recall(v);
+        if (existing_offset) { writer.write_shared(existing_offset); return existing_offset; }
+        else store(v);
+    }
+
     function extern_rec (v) {
       if (v instanceof Array && v[0] === (v[0]|0)) {
         if (v[0] == 255) {
           // Int64
+          if (memo(v)) return;
           writer.write (8, 0x12 /*cst.CODE_CUSTOM*/);
           for (var i = 0; i < 3; i++) writer.write (8, "_j\0".charCodeAt(i));
           var b = caml_int64_to_bytes (v);
@@ -383,6 +404,7 @@ var caml_output_val = function (){
         if (v[0] == 251) {
           caml_failwith("output_value: abstract value (Abstract)");
         }
+        if (v.length > 1 && memo(v)) return;
         if (v[0] < 16 && v.length - 1 < 8)
           writer.write (8, 0x80 /*cst.PREFIX_SMALL_BLOCK*/ + v[0] + ((v.length - 1)<<4));
         else
@@ -391,6 +413,7 @@ var caml_output_val = function (){
         writer.size_64 += v.length;
         if (v.length > 1) stack.push (v, 1);
       } else if (v instanceof MlBytes) {
+        if (memo(v)) return;
         var len = caml_ml_string_length(v);
         if (len < 0x20)
           writer.write (8, 0x20 /*cst.PREFIX_SMALL_STRING*/ + len);
