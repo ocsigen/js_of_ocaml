@@ -20,11 +20,8 @@
 
 (* CSS.Length testing *)
 open Js_of_ocaml
-open Common
 
-let log_stop = log_start "CSS.Length test suite"
-
-let () =
+let%expect_test _ =
   let ls =
     [ CSS.Length.Em 0.1
     ; CSS.Length.Ex 0.12
@@ -48,16 +45,12 @@ let () =
         let js = CSS.Length.js c in
         let ml = CSS.Length.ml js in
         if c = ml
-        then log_success ()
+        then ()
         else
-          log_failure
-            (Printf.sprintf
-               "%s   %s"
-               (CSS.Length.string_of_t c)
-               (CSS.Length.string_of_t ml))
-      with
-      | Invalid_argument s -> log_failure s
-      | Failure s -> log_failure s)
-    ls
-
-let () = log_stop ()
+          Printf.printf
+            "%s   %s\n%!"
+            (CSS.Length.string_of_t c)
+            (CSS.Length.string_of_t ml)
+      with exn -> print_endline (Printexc.to_string exn))
+    ls;
+  [%expect {||}]

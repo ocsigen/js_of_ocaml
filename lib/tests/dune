@@ -1,16 +1,5 @@
-(executables
-  (names main)
+(library
+  (name jsoo_lib_expect_tests)
   (libraries js_of_ocaml unix)
-  (preprocess (pps ppx_js_internal)))
-
-(rule
-  (targets main.js)
-  (action  (run %{bin:js_of_ocaml}
-                  --no-runtime %{lib:js_of_ocaml-compiler:runtime.js}
-                  %{dep:unix.js}
-                  %{dep:main.bc} -o %{targets})))
-
-(alias
-  (name runtest)
-  (package js_of_ocaml)
-  (action (run node --pending-deprecation %{dep:main.js})))
+  (inline_tests)
+  (preprocess (pps ppx_js_internal ppx_expect)))

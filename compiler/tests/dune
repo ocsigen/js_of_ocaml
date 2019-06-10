@@ -1,10 +1,10 @@
 (library
- (name expect_tests)
+ (name jsoo_compiler_expect_tests)
  (libraries js_of_ocaml_compiler unix str)
  (inline_tests
   (flags -allow-output-patterns)
   (deps
-    (file ../js_of_ocaml.exe)
+    (file ../../compiler/js_of_ocaml.exe)
     (file ../../runtime/runtime.js)))
  (preprocess (pps ppx_expect)))
 

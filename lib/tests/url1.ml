@@ -18,27 +18,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 open Js_of_ocaml
-open Common
-
-let log_stop = log_start "Url test suite"
 
 let url_string_url u = Url.url_of_string (Url.string_of_url u)
 
 let url = "http://ocsigen.org/js_of_ocaml/"
 
-let () =
-  match Url.url_of_string url with
-  | None -> log_failure "can't parse current url2"
+let%expect_test _ =
+  (match Url.url_of_string url with
+  | None -> print_endline "can't parse current url2"
   | Some u -> (
     match url_string_url u with
-    | None -> log_failure "can't parse pretty-printed url"
-    | Some v -> if u = v then log_success () else log_failure "no fixpoint")
+    | None -> print_endline "can't parse pretty-printed url"
+    | Some v -> if u = v then () else print_endline "no fixpoint"));
+  [%expect {||}]
 
-let () =
+let%expect_test _ =
   let t1 = Url.urlencode "/toto+ blah&tutu" in
   let t2 = Url.urlencode ~with_plus:false "/toto+ blah&tutu" in
   if t1 = "/toto%2B%20blah%26tutu" && t2 = "/toto+%20blah%26tutu"
-  then log_success ()
-  else log_failure "escaping error"
-
-let () = log_stop ()
+  then ()
+  else print_endline "escaping error";
+  [%expect {||}]
