@@ -30,7 +30,7 @@ let print_macro_transformed source =
   print_endline (Buffer.contents buffer)
 
 let print_macro_transformed source =
-  try print_macro_transformed source with Failure s -> Format.printf "failure: %s" s
+  try print_macro_transformed source with Failure s -> Format.printf "failure: %s%!" s
 
 let%expect_test "BLOCK()" =
   print_macro_transformed "BLOCK()";

@@ -48,7 +48,7 @@ end = struct
     let rec split beg cur =
       if cur >= len
       then if cur - beg > 0 then [String.sub p ~pos:beg ~len:(cur - beg)] else []
-      else if Char.equal p.[cur] sep
+      else if p.[cur] = sep
       then String.sub p ~pos:beg ~len:(cur - beg) :: split (cur + 1) (cur + 1)
       else split beg (cur + 1)
     in
