@@ -1,0 +1,6 @@
+(library
+  (name ppx_optcomp_light)
+  (libraries compiler-libs.common
+             ocaml-migrate-parsetree)
+  (kind ppx_rewriter)
+  )

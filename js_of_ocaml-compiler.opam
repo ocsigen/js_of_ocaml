@@ -18,7 +18,7 @@ depends: [
   "dune" {build & >= "1.2"}
   "ppx_expect" {with-test & >= "0.12.0"}
   "cmdliner"
-  "cppo" {>= "1.1.0"}
+  "ocaml-migrate-parsetree"
   "yojson" # It's optional, but we want users to be able to use source-map without pain.
 ]
 

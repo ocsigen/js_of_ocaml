@@ -8,6 +8,7 @@
     (       -> source_map_unsupported.ml.in))
   )
   (flags (:standard -w -7-37 -safe-string))
+  (preprocess (pps ppx_optcomp_light))
   )
 
 (rule
@@ -36,14 +37,6 @@
  (deps standard.mly)
  (mode promote)
  (action (ignore-stderr (run menhir --stdlib . --explain %{dep:annot_parser.mly}))))
-
-(rule
- (targets ocaml_compiler.ml)
- (action (run %{bin:cppo} -V OCAML:%{ocaml_version}
-          ;; Uncomment for bucklescript support
-          ;; -D BUCKLESCRIPT
-          %{dep:ocaml_compiler.cppo.ml} -o %{targets}))
- )
 
 (rule
  (targets compiler_version.ml)

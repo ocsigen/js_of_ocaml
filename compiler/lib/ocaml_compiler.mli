@@ -32,6 +32,8 @@ module Symtable : sig
 
     val fold : (Ident.t -> int -> 'a -> 'a) -> t -> 'a -> 'a
   end
+
+  val reloc_ident : string -> int
 end
 
 module Ident : sig

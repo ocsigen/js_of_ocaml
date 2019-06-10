@@ -101,7 +101,7 @@ let setup =
       Js.Unsafe.global##.toplevelReloc
       := Js.Unsafe.callback (fun name ->
              let name = Js.to_string name in
-             Js_of_ocaml_toplevel_compat.reloc name);
+             Js_of_ocaml_compiler.Ocaml_compiler.Symtable.reloc_ident name);
       ())
 
 let refill_lexbuf s p ppf buffer len =
