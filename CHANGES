@@ -3,9 +3,12 @@
  ** Compiler: Improve testing of the compiler (Ty Overby)
  ** Compiler: Add several macros for making the runtime easier to maintain (#771) (Ty Overby)
  ** Compiler: Allow to emit one javascript per compilation unit (#783)
- ** Compiler: refactoring (#781, #782, #787, #795)
+ ** Compiler: refactoring (#781, #782, #787, #795, #802)
  ** Compiler: more source map location for the javascript runtime (#795)
  ** Misc: Improve CI speed
+ ** Misc: remove ppx_deriving dependency
+ ** Misc: remove cppo dependency
+ ** Misc: support for ocaml 4.09
 
  * Bug fixes:
  ** Compiler: don't generate source if no-source-map passed (#780)
