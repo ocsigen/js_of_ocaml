@@ -159,7 +159,7 @@ let run_javascript file =
 let swap_extention filename ~ext =
   Format.sprintf "%s.%s" (Filename.remove_extension filename) ext
 
-let compile_to_javascript ~pretty ~sourcemap file =
+let compile_to_javascript ?(flags = []) ~pretty ~sourcemap file =
   let file_no_ext = Filename.chop_extension file in
   let out_file = swap_extention file ~ext:"js" in
   let extra_args =
@@ -167,7 +167,8 @@ let compile_to_javascript ~pretty ~sourcemap file =
       [ (if pretty then ["--pretty"] else [])
       ; (if sourcemap then ["--sourcemap"] else [])
       ; ["--no-runtime"]
-      ; [Filename.concat js_of_ocaml_root "runtime/runtime.js"] ]
+      ; [Filename.concat js_of_ocaml_root "runtime/runtime.js"]
+      ; flags ]
   in
   let extra_args = String.concat " " extra_args in
   let compiler_location = Filename.concat js_of_ocaml_root "compiler/js_of_ocaml.exe" in
@@ -180,8 +181,8 @@ let compile_to_javascript ~pretty ~sourcemap file =
   let sourcemap_file = swap_extention file ~ext:"map" |> Filetype.map_file_of_path in
   Filetype.js_file_of_path out_file, if sourcemap then Some sourcemap_file else None
 
-let compile_bc_to_javascript ?(pretty = true) ?(sourcemap = true) file =
-  Filetype.path_of_bc_file file |> compile_to_javascript ~pretty ~sourcemap
+let compile_bc_to_javascript ?flags ?(pretty = true) ?(sourcemap = true) file =
+  Filetype.path_of_bc_file file |> compile_to_javascript ?flags ~pretty ~sourcemap
 
 let compile_cmo_to_javascript ?(pretty = true) ?(sourcemap = true) file =
   Filetype.path_of_cmo_file file |> compile_to_javascript ~pretty ~sourcemap
@@ -278,12 +279,12 @@ let print_fun_decl program n =
   | [] -> print_endline "not found"
   | l -> print_endline (Format.sprintf "%d functions found" (List.length l))
 
-let compile_and_run s =
+let compile_and_run ?flags s =
   s
   |> Filetype.ocaml_text_of_string
   |> Filetype.write_ocaml
   |> compile_ocaml_to_bc
-  |> compile_bc_to_javascript
+  |> compile_bc_to_javascript ?flags
   |> fst
   |> run_javascript
   |> print_endline

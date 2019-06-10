@@ -36,7 +36,8 @@ val compile_cmo_to_javascript :
   -> Filetype.js_file * Filetype.sourcemap_file option
 
 val compile_bc_to_javascript :
-     ?pretty:bool
+     ?flags:string list
+  -> ?pretty:bool
   -> ?sourcemap:bool
   -> Filetype.bc_file
   -> Filetype.js_file * Filetype.sourcemap_file option
@@ -49,4 +50,4 @@ val print_var_decl : Javascript.program -> string -> unit
 
 val print_fun_decl : Javascript.program -> string -> unit
 
-val compile_and_run : string -> unit
+val compile_and_run : ?flags:string list -> string -> unit
