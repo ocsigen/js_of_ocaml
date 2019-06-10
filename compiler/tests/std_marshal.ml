@@ -1,0 +1,76 @@
+(* Js_of_ocaml tests
+ * http://www.ocsigen.org/js_of_ocaml/
+ * Copyright (C) 2019 Hugo Heuzard
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, with linking exception;
+ * either version 2.1 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ *)
+
+(* https://github.com/ocsigen/js_of_ocaml/pull/814 *)
+
+let%expect_test _ =
+  Util.compile_and_run
+    {|
+    type sign = SPlus | SMinus
+    type raw_numeral = int
+
+    type prim_token =
+      | Numeral of sign * raw_numeral
+      | String of string
+
+    type operator_token = Add | Sub | Times | PlusPlus
+
+    type expr =
+      | Literal of prim_token
+      | Op of operator_token * expr list
+
+    let write_out chan v =
+        let start = pos_out chan in
+        Marshal.to_channel chan v [];
+        pos_out chan - start
+
+    let _ =
+      let tmp_filename = Filename.temp_file "out" "txt" in
+      let chan = open_out tmp_filename in
+      let v1 = Op (Add, [Literal (Numeral (SPlus, 5)); Literal (Numeral (SMinus, 7))]) in
+      let v2 = Op (Times, [v1; v1]) (* shared *) in
+      let v1_sz = write_out chan v1 in
+      let v2_sz = write_out chan v2 in
+      flush chan;
+      Format.printf "sizes = %d %d (|v2| %s 2|v1|)\n%!" v1_sz v2_sz
+        (if v2_sz < 2 * v1_sz then "<" else ">=");
+
+      let chan = open_in tmp_filename in
+      let v1' = Marshal.from_channel chan in
+      let v2' = Marshal.from_channel chan in
+      Format.printf "readback = %B %B\n%!" (v1 = v1') (v2 = v2')
+|};
+ [%expect {|
+   sizes = 33 40 (|v2| < 2|v1|)
+   readback = true true |}]
+
+(* https://github.com/ocsigen/js_of_ocaml/issues/359 *)
+
+let%expect_test _ =
+  Util.compile_and_run
+    {|
+    type loop = { mutable pointer : loop option }
+    let l = { pointer = None }
+    let () = l.pointer <- Some l
+
+    let _ =
+      let s = Marshal.to_string l [] in
+      Format.printf "not stuck! %d\n%!" (String.length s)
+|};
+  [%expect {| not stuck! 24 |}]
