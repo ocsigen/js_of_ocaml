@@ -337,10 +337,46 @@ function caml_marshal_data_size (s, ofs) {
   return (get32(s, ofs + 4));
 }
 
+//Provides: MlObjectTable
+var MlObjectTable;
+if (typeof joo_global_object.WeakMap === 'undefined') {
+  MlObjectTable = function() {
+    /* polyfill */
+    function NaiveLookup(objs) { this.objs = objs; }
+    NaiveLookup.prototype.get = function(v) {
+      for (var i = 0; i < this.objs.length; i++) {
+        if (this.objs[i] === v) return i;
+      }
+    };
+    NaiveLookup.prototype.set = function() { };
+
+    return function MlObjectTable() {
+      this.objs = []; this.lookup = new NaiveLookup(this.objs);
+    };
+  }();
+}
+else {
+  MlObjectTable = function MlObjectTable() {
+    this.objs = []; this.lookup = new joo_global_object.WeakMap();
+  };
+}
+
+MlObjectTable.prototype.store = function(v) {
+  this.lookup.set(v, this.objs.length);
+  this.objs.push(v);
+}
+
+MlObjectTable.prototype.recall = function(v) {
+  var i = this.lookup.get(v);
+  return (i === undefined)
+    ? undefined : this.objs.length - i;   /* index is relative */
+}
+
 //Provides: caml_output_val
 //Requires: caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
 //Requires: MlBytes, caml_ml_string_length, caml_string_unsafe_get
+//Requires: MlObjectTable
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -373,19 +409,12 @@ var caml_output_val = function (){
   return function (v) {
     var writer = new Writer ();
     var stack = [];
-    var intern_obj_table = [];
+    var intern_obj_table = new MlObjectTable();
  
-    function store(v) { intern_obj_table.push(v); writer.obj_counter = intern_obj_table.length; }
-    function recall(v) {
-        for (var i = 0; i < intern_obj_table.length; i++) {
-            if (intern_obj_table[i] === v) return intern_obj_table.length - i;
-        }
-    }
-
     function memo(v) {
-        var existing_offset = recall(v);
-        if (existing_offset) { writer.write_shared(existing_offset); return existing_offset; }
-        else store(v);
+      var existing_offset = intern_obj_table.recall(v);
+      if (existing_offset) { writer.write_shared(existing_offset); return existing_offset; }
+      else intern_obj_table.store(v);
     }
 
     function extern_rec (v) {
@@ -460,7 +489,8 @@ var caml_output_val = function (){
       if (i + 1 < v.length) stack.push (v, i + 1);
       extern_rec (v[i]);
     }
-    writer.finalize ();
+    writer.obj_counter = intern_obj_table.objs.length;
+    writer.finalize();
     return writer.chunk;
   }
 } ();
