@@ -40,6 +40,11 @@ let%expect_test _ =
         Marshal.to_channel chan v [];
         pos_out chan - start
 
+    let write_out_noshare chan v =
+        let start = pos_out chan in
+        Marshal.to_channel chan v [Marshal.No_sharing];
+        pos_out chan - start
+
     let _ =
       let tmp_filename = Filename.temp_file "out" "txt" in
       let chan = open_out tmp_filename in
@@ -47,9 +52,10 @@ let%expect_test _ =
       let v2 = Op (Times, [v1; v1]) (* shared *) in
       let v1_sz = write_out chan v1 in
       let v2_sz = write_out chan v2 in
+      let v2_ns_sz = write_out_noshare chan v2 in
       flush chan;
-      Format.printf "sizes = %d %d (|v2| %s 2|v1|)\n%!" v1_sz v2_sz
-        (if v2_sz < 2 * v1_sz then "<" else ">=");
+      Format.printf "sizes = %d %d %d (|v2| %s |v2_ns|)\n%!" v1_sz v2_sz v2_ns_sz
+        (if v2_sz < v2_ns_sz then "<" else ">=");
 
       let chan = open_in tmp_filename in
       let v1' = Marshal.from_channel chan in
@@ -57,7 +63,7 @@ let%expect_test _ =
       Format.printf "readback = %B %B\n%!" (v1 = v1') (v2 = v2')
 |};
  [%expect {|
-   sizes = 33 40 (|v2| < 2|v1|)
+   sizes = 33 40 51 (|v2| < |v2_ns|)
    readback = true true |}]
 
 (* https://github.com/ocsigen/js_of_ocaml/issues/359 *)

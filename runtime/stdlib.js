@@ -1215,6 +1215,15 @@ function caml_list_of_js_array(a){
   return l
 }
 
+//Provides: caml_list_to_js_array const (const)
+function caml_list_to_js_array(l){
+  var a = [];
+  for(; l !== 0; l = l[2]) {
+    a.push(l[1]);
+  }
+  return a;
+}
+
 //Provides: caml_runtime_warnings
 var caml_runtime_warnings = 0;
 

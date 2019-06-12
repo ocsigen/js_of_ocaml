@@ -376,7 +376,7 @@ MlObjectTable.prototype.recall = function(v) {
 //Requires: caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
 //Requires: MlBytes, caml_ml_string_length, caml_string_unsafe_get
-//Requires: MlObjectTable
+//Requires: MlObjectTable, caml_list_to_js_array
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -406,13 +406,22 @@ var caml_output_val = function (){
       return this.chunk;
     }
   }
-  return function (v) {
+  return function (v, flags) {
+    flags = caml_list_to_js_array(flags);
+
+    var no_sharing = (flags.indexOf(0 /*Marshal.No_sharing*/) !== -1),
+        closures =  (flags.indexOf(1 /*Marshal.Closures*/) !== -1);
+        /* Marshal.Compat_32 is redundant since integers are 32-bit anyway */
+
+    if (closures)
+      joo_global_object.console.warn("in caml_output_val: flag Marshal.Closures is not supported.");
+
     var writer = new Writer ();
     var stack = [];
     var intern_obj_table = new MlObjectTable();
- 
+
     function memo(v) {
-      var existing_offset = intern_obj_table.recall(v);
+      var existing_offset = no_sharing ? undefined : intern_obj_table.recall(v);
       if (existing_offset) { writer.write_shared(existing_offset); return existing_offset; }
       else intern_obj_table.store(v);
     }
@@ -497,23 +506,20 @@ var caml_output_val = function (){
 
 //Provides: caml_output_value_to_string mutable
 //Requires: caml_output_val, caml_string_of_array
-function caml_output_value_to_string (v, _fl) {
-  /* ignores flags... */
-  return caml_string_of_array (caml_output_val (v));
+function caml_output_value_to_string (v, flags) {
+  return caml_string_of_array (caml_output_val (v, flags));
 }
 
 //Provides: caml_output_value_to_bytes mutable
 //Requires: caml_output_val, caml_string_of_array
-function caml_output_value_to_bytes (v, _fl) {
-  /* ignores flags... */
-  return caml_string_of_array (caml_output_val (v));
+function caml_output_value_to_bytes (v, flags) {
+  return caml_string_of_array (caml_output_val (v, flags));
 }
 
 //Provides: caml_output_value_to_buffer
 //Requires: caml_output_val, caml_failwith, caml_blit_bytes
-function caml_output_value_to_buffer (s, ofs, len, v, _fl) {
-  /* ignores flags... */
-  var t = caml_output_val (v);
+function caml_output_value_to_buffer (s, ofs, len, v, flags) {
+  var t = caml_output_val (v, flags);
   if (t.length > len) caml_failwith ("Marshal.to_buffer: buffer overflow");
   caml_blit_bytes(t, 0, s, ofs, t.length);
   return 0;
