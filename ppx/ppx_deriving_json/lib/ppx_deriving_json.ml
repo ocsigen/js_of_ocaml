@@ -23,7 +23,26 @@ open OCaml_407.Ast
 open Ast_helper
 open Asttypes
 open Parsetree
-open Ast_convenience_407
+
+let nolabel = Nolabel
+
+let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
+
+let int ?loc ?attrs x = Exp.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
+
+let pint ?loc ?attrs x =
+  Pat.constant ?loc ?attrs (Pconst_integer (string_of_int x, None))
+
+let lid ?(loc = !default_loc) s = Location.mkloc (Longident.parse s) loc
+
+let pvar ?(loc = !default_loc) ?attrs s = Pat.var ~loc ?attrs (Location.mkloc s loc)
+
+let evar ?loc ?attrs s = Exp.ident ?loc ?attrs (lid ?loc s)
+
+let tconstr ?loc ?attrs c l = Typ.constr ?loc ?attrs (lid ?loc c) l
+
+let app ?loc ?attrs f l =
+  if l = [] then f else Exp.apply ?loc ?attrs f (List.map ~f:(fun a -> nolabel, a) l)
 
 module Pervasives = struct
   let ( ! ) = ( ! )
@@ -103,7 +122,7 @@ let poly_arrow_of_type_decl fn type_decl typ =
   fold_right_type_decl
     (fun name typ ->
       let name = name.txt in
-      Typ.arrow Label.nolabel (fn (Typ.var name)) typ)
+      Typ.arrow nolabel (fn (Typ.var name)) typ)
     type_decl
     typ
 
@@ -111,7 +130,7 @@ let poly_fun_of_type_decl type_decl expr =
   fold_right_type_decl
     (fun name expr ->
       let name = name.txt in
-      Exp.fun_ Label.nolabel None (pvar ("poly_" ^ name)) expr)
+      Exp.fun_ nolabel None (pvar ("poly_" ^ name)) expr)
     type_decl
     expr
 

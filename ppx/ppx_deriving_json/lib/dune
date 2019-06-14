@@ -4,7 +4,6 @@
   (synopsis "[@@deriving json]")
   (libraries compiler-libs.common
              ocaml-migrate-parsetree
-             ppx_tools_versioned
              ppxlib
   )
   (ppx_runtime_libraries js_of_ocaml.deriving)
