@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
+ *)
 
 open StdLabels
 open Migrate_parsetree
@@ -44,9 +44,7 @@ let tconstr ?loc ?attrs c l = Typ.constr ?loc ?attrs (lid ?loc c) l
 let app ?loc ?attrs f l =
   if l = [] then f else Exp.apply ?loc ?attrs f (List.map ~f:(fun a -> nolabel, a) l)
 
-module Pervasives = struct
-  let ( ! ) = ( ! )
-end
+let loc = Location.none
 
 let mangle ?(fixpoint = "t") affix name =
   match name = fixpoint, affix with
@@ -608,9 +606,7 @@ let write_decl_of_variant d l =
   |> buf_expand
   |> write_str_wrap d
 
-let read_case ?decl
-              (i, i', l)
-              {Parsetree.pcd_name; pcd_args; _} =
+let read_case ?decl (i, i', l) {Parsetree.pcd_name; pcd_args; _} =
   let f l =
     Ast_helper.Exp.construct
       (label_of_constructor pcd_name)
@@ -772,7 +768,7 @@ let type_decl_sig ~loc:_ ~path:_ (_, l) = List.map ~f:sigs_of_decl l |> List.fla
 module Of_json = struct
   let name = "of_json"
 
-  let extension ~loc:_ ~path:_ ctyp =
+  let extension ~loc ~path:_ ctyp =
     [%expr
       fun s -> [%e read_of_type ctyp] ([%e lexer "init_lexer"] (Lexing.from_string s))]
 
@@ -782,7 +778,7 @@ end
 module Json_of = struct
   let name = "json_of"
 
-  let extension ~loc:_ ~path:_ ctyp =
+  let extension ~loc ~path:_ ctyp =
     [%expr
       fun x ->
         let buf = Buffer.create 50 in

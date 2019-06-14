@@ -621,7 +621,8 @@ let literal_object self_id (fields : field_desc list) =
               match f with
               | Val (_, constr, _, _) -> label, Prop_kind.wrap_arg_type constr ret_ty
               | Meth (_, _, _, _, args) ->
-                  label, arrows ((nolabel, Js.type_ "t" [tres]) :: Arg.args args) ret_ty)
+                  label, arrows ((nolabel, Js.type_ "t" [tres]) :: Arg.args args) ret_ty
+          )
         in
         args, Js.type_ "t" [tres])
       (fun args ->
