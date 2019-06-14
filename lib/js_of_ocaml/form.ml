@@ -73,7 +73,9 @@ let get_select_val (elt : selectElement t) =
     if to_bool elt##.multiple
     then
       let options =
-        Array.init elt##.options##.length (fun i -> Opt.to_option (elt##.options##item i))
+        Array.init
+          elt##.options##.length
+          (fun i -> Opt.to_option (elt##.options##item i))
       in
       filter_map
         (function

@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
+ *)
 
 open StdLabels
 open Migrate_parsetree
@@ -589,9 +589,7 @@ let write_decl_of_variant d l =
   |> buf_expand
   |> write_str_wrap d
 
-let read_case ?decl
-              (i, i', l)
-              {Parsetree.pcd_name; pcd_args; _} =
+let read_case ?decl (i, i', l) {Parsetree.pcd_name; pcd_args; _} =
   let f l =
     Ast_helper.Exp.construct
       (label_of_constructor pcd_name)

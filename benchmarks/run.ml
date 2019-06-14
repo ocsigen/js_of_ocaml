@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
+ *)
 
 open StdLabels
 open Common
@@ -80,7 +80,8 @@ let compile_gen
         with Failure s -> Format.eprintf "Failure: %s@." s)
 
 let compile param ~comptime prog =
-  compile_gen param ~comptime (fun ~src ~dst -> Printf.sprintf "%s %s -o %s" prog src dst)
+  compile_gen param ~comptime (fun ~src ~dst ->
+      Printf.sprintf "%s %s -o %s" prog src dst)
 
 (****)
 

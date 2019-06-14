@@ -35,7 +35,6 @@ val urlencode : ?with_plus:bool -> string -> string
     [with_plus] is [true] (default) then ['+']'s are escaped as ["%2B"]. If not,
     ['+']'s are left as is. *)
 
-(** The type for HTTP(s) url. *)
 type http_url =
   { hu_host : string  (** The host part of the url. *)
   ; hu_port : int  (** The port for the connection if any. *)
@@ -45,13 +44,14 @@ type http_url =
         (** Arguments as a field-value
                                              association list.*)
   ; hu_fragment : string  (** The fragment part (after the ['#'] character). *) }
+(** The type for HTTP(s) url. *)
 
-(** The type for local file urls. *)
 type file_url =
   { fu_path : string list
   ; fu_path_string : string
   ; fu_arguments : (string * string) list
   ; fu_fragment : string }
+(** The type for local file urls. *)
 
 (** The type for urls. *)
 type url =

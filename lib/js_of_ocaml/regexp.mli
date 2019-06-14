@@ -28,11 +28,11 @@
 
  *)
 
-(** The type for regexps. *)
 type regexp
+(** The type for regexps. *)
 
-(** The type for match result. *)
 type result
+(** The type for match result. *)
 
 (** Constructors *)
 

@@ -202,7 +202,8 @@ let invoker ?(extra_types = []) uplift downlift body arguments =
      {[ fun (type res t0 t1 ..) arg1 arg2 -> e ]}
   *)
   let local_types =
-    make_str res :: List.map (extra_types @ arguments) ~f:(fun x -> make_str (Arg.name x))
+    make_str res
+    :: List.map (extra_types @ arguments) ~f:(fun x -> make_str (Arg.name x))
   in
   let result = List.fold_right local_types ~init:invoker ~f:Exp.newtype in
   default_loc := default_loc';
@@ -276,8 +277,7 @@ let prop_get ~loc:_ ~prop_loc obj prop =
   let invoker =
     invoker
       (fun args tres ->
-        arrows (Arg.args args) (Js.type_ "gen_prop" [[%type: < get : [%t tres] ; .. > ]])
-        )
+        arrows (Arg.args args) (Js.type_ "gen_prop" [[%type: < get : [%t tres] ; .. > ]]))
       (fun args tres -> js_dot_t_the_first_arg args, tres)
       (fun eargs ->
         match eargs with

@@ -18,8 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** This module provides functions to manipulate forms. *)
 open Js
+(** This module provides functions to manipulate forms. *)
 
 class type formData =
   object

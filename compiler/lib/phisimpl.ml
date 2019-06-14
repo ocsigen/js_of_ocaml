@@ -68,7 +68,8 @@ let program_deps (_, blocks, _) =
               add_var vars x;
               expr_deps blocks vars deps defs x e
           | Set_field _ | Array_set _ | Offset_ref _ -> ());
-      Option.iter block.handler ~f:(fun (_, cont) -> cont_deps blocks vars deps defs cont);
+      Option.iter block.handler ~f:(fun (_, cont) ->
+          cont_deps blocks vars deps defs cont);
       match block.branch with
       | Return _ | Raise _ | Stop -> ()
       | Branch cont -> cont_deps blocks vars deps defs cont

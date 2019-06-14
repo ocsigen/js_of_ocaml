@@ -22,8 +22,8 @@
     @see <http://code.google.com/p/deriving/> the documentation of the original {i deriving} library by Jeremy Yallop.
 *)
 
-(** The type of JSON parser/printer for value of type ['a]. *)
 type 'a t
+(** The type of JSON parser/printer for value of type ['a]. *)
 
 val make : (Buffer.t -> 'a -> unit) -> (Deriving_Json_lexer.lexbuf -> 'a) -> 'a t
 
@@ -82,8 +82,8 @@ module type Json_converter = sig
   val to_ : b -> a
 end
 
-(** Generate a JSON class from a Converter *)
 module Convert (J : Json_converter) : Json with type a = J.b
+(** Generate a JSON class from a Converter *)
 
 (** {3 Examples } *)
 

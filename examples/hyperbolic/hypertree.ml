@@ -515,8 +515,9 @@ let default_language () =
   (Js.Optdef.get
      Dom_html.window##.navigator##.language
      (fun () ->
-       Js.Optdef.get Dom_html.window##.navigator##.userLanguage (fun () -> Js.string "en")
-       ))##substring
+       Js.Optdef.get
+         Dom_html.window##.navigator##.userLanguage
+         (fun () -> Js.string "en")))##substring
     0
     2
 
@@ -921,12 +922,11 @@ let compute_neighbors nodes tree =
   let rec compute_frontiers node =
     let (Node (i, l)) = node in
     Array.iter compute_frontiers l;
-    frontiers.(i)
-    <- (if Array.length l = 0
-       then [|status i|], [|status i|]
-       else
-         ( fst frontiers.(node_info l.(0))
-         , snd frontiers.(node_info l.(Array.length l - 1)) ))
+    frontiers.(i) <-
+      (if Array.length l = 0
+      then [|status i|], [|status i|]
+      else
+        fst frontiers.(node_info l.(0)), snd frontiers.(node_info l.(Array.length l - 1)))
     (*
       (i :: fst frontiers.(node_info (List.hd l)),
        i :: snd frontiers.(node_info (list_tl l)))

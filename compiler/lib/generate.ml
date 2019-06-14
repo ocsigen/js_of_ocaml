@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
+ *)
 
 (*XXX
   Patterns:
@@ -901,8 +901,8 @@ let _ =
   register_un_math_prim "caml_sin_float" "sin";
   register_un_math_prim "caml_sqrt_float" "sqrt";
   register_un_math_prim "caml_tan_float" "tan";
-  register_un_prim "caml_js_from_bool" `Pure (fun cx _ -> J.EUn (J.Not, J.EUn (J.Not, cx))
-  );
+  register_un_prim "caml_js_from_bool" `Pure (fun cx _ ->
+      J.EUn (J.Not, J.EUn (J.Not, cx)));
   register_un_prim "caml_js_to_bool" `Pure (fun cx _ -> to_int cx);
   register_un_prim "caml_js_from_string" `Mutable (fun cx loc ->
       J.ECall (J.EDot (cx, "toString"), [], loc));
@@ -1459,11 +1459,11 @@ and colapse_frontier st new_frontier interm =
       then Code.Switch (x, cases, [||])
       else Code.Cond (IsTrue, x, cases.(1), cases.(0))
     in
-    st.blocks
-    <- Addr.Map.add
-         idx
-         {params = []; handler = None; body = []; branch = switch}
-         st.blocks;
+    st.blocks <-
+      Addr.Map.add
+        idx
+        {params = []; handler = None; body = []; branch = switch}
+        st.blocks;
     (* There is a branch from this switch to the members
        of the frontier. *)
     Addr.Set.iter (fun pc -> incr_preds st pc) new_frontier;

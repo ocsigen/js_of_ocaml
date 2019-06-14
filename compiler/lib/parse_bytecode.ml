@@ -16,7 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-*)
+ *)
 
 open! Stdlib
 open Code
@@ -118,7 +118,7 @@ end = struct
         evl
         ~f:(fun ({ev_module; ev_loc = {Location.loc_start = {Lexing.pos_fname; _}; _}; _}
                 as ev)
-           ->
+                ->
           let unit =
             try Hashtbl.find units (ev_module, pos_fname)
             with Not_found ->
@@ -224,7 +224,8 @@ end = struct
   let paths t ~units =
     let paths =
       Hashtbl.fold
-        (fun _ u acc -> if StringSet.mem u.module_name units then u.paths :: acc else acc)
+        (fun _ u acc ->
+          if StringSet.mem u.module_name units then u.paths :: acc else acc)
         t.units
         []
     in
@@ -2341,11 +2342,7 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
   in
   {code = prepend prog body; cmis; debug = debug_data}
 
-let from_cmo ?(includes = [])
-             ?(toplevel = false)
-             ?(debug = `No)
-             compunit
-             ic =
+let from_cmo ?(includes = []) ?(toplevel = false) ?(debug = `No) compunit ic =
   let debug_data = Debug.create () in
   seek_in ic compunit.Cmo_format.cu_pos;
   let code = Bytes.create compunit.Cmo_format.cu_codesize in
@@ -2361,11 +2358,7 @@ let from_cmo ?(includes = [])
   Code.invariant p.code;
   p
 
-let from_cma ?(includes = [])
-             ?(toplevel = false)
-             ?(debug = `No)
-             lib
-             ic =
+let from_cma ?(includes = []) ?(toplevel = false) ?(debug = `No) lib ic =
   let debug_data = Debug.create () in
   let orig = ref 0 in
   let units =
