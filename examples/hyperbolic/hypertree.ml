@@ -1662,8 +1662,7 @@ debug_msg (Format.sprintf "Resize %d %d" w h);
         let z0' = transl (neg p) z0 in
         let p' = compute_translation z0' z1 in
         tr' := p', one;
-        schedule_redraw ()
-        (*perform_redraw ()*))
+        schedule_redraw ()) (*perform_redraw ()*)
       (fun x y ->
         tr := !tr';
         on_image := false;
