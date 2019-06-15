@@ -36,9 +36,8 @@ type 'response generic_http_frame =
 
 type http_frame = string generic_http_frame
 
-exception
-  Wrong_headers of (int * (string -> string option))
-      (** The exception raise by perform functions when the check_headers
+exception Wrong_headers of (int * (string -> string option))
+(** The exception raise by perform functions when the check_headers
     parameter returned false. The parameter of the exception is a
     function is like the [headers] function of [http_frame] *)
 
