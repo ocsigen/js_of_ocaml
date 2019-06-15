@@ -753,23 +753,15 @@ let type_decl_sig ~loc:_ ~path:_ (_, l) = List.map ~f:sigs_of_decl l |> List.fla
 module Of_json = struct
   let name = "of_json"
 
-  let str_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_str
-
-  let sig_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_sig
-
   let extension ~loc:_ ~path:_ ctyp =
     [%expr
       fun s -> [%e read_of_type ctyp] ([%e lexer "init_lexer"] (Lexing.from_string s))]
 
-  let deriver = Ppxlib.Deriving.add name ~str_type_decl ~sig_type_decl ~extension
+  let deriver = Ppxlib.Deriving.add name ~extension
 end
 
 module Json_of = struct
   let name = "json_of"
-
-  let str_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_str
-
-  let sig_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_sig
 
   let extension ~loc:_ ~path:_ ctyp =
     [%expr
@@ -778,11 +770,21 @@ module Json_of = struct
         [%e write_of_type ctyp ~poly:false] buf x;
         Buffer.contents buf]
 
-  let deriver = Ppxlib.Deriving.add name ~str_type_decl ~sig_type_decl ~extension
+  let deriver = Ppxlib.Deriving.add name ~extension
+end
+
+module Json = struct
+  let name = "json"
+
+  let str_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_str
+
+  let sig_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_sig
+
+  let deriver = Ppxlib.Deriving.add name ~str_type_decl ~sig_type_decl
 end
 
 let json_of = Json_of.deriver
 
 let of_json = Of_json.deriver
 
-let json = Ppxlib.Deriving.add_alias "json" [json_of; of_json]
+let json = Json.deriver
