@@ -341,7 +341,7 @@ function caml_marshal_data_size (s, ofs) {
 var MlObjectTable;
 if (typeof joo_global_object.WeakMap === 'undefined') {
   MlObjectTable = function() {
-    /* polyfill */
+    /* polyfill (using linear search) */
     function NaiveLookup(objs) { this.objs = objs; }
     NaiveLookup.prototype.get = function(v) {
       for (var i = 0; i < this.objs.length; i++) {
@@ -420,13 +420,13 @@ var caml_output_val = function (){
 
     var writer = new Writer ();
     var stack = [];
-    var intern_obj_table = new MlObjectTable();
+    var intern_obj_table = no_sharing ? null : new MlObjectTable();
 
     function memo(v) {
-      if(no_sharing) return undefined;
-      var existing_offset = no_sharing ? undefined : intern_obj_table.recall(v);
-      if (existing_offset) { writer.write_shared(existing_offset); return existing_offset; }
-      else intern_obj_table.store(v);
+      if (no_sharing) return false;
+      var existing_offset = intern_obj_table.recall(v);
+      if (existing_offset) { writer.write_shared(existing_offset); return true; }
+      else { intern_obj_table.store(v); return false; }
     }
 
     function extern_rec (v) {
@@ -501,7 +501,7 @@ var caml_output_val = function (){
       if (i + 1 < v.length) stack.push (v, i + 1);
       extern_rec (v[i]);
     }
-    writer.obj_counter = intern_obj_table.objs.length;
+    if (intern_obj_table) writer.obj_counter = intern_obj_table.objs.length;
     writer.finalize();
     return writer.chunk;
   }
