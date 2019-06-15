@@ -421,6 +421,7 @@ var caml_output_val = function (){
     var intern_obj_table = new MlObjectTable();
 
     function memo(v) {
+      if(no_sharing) return undefined;
       var existing_offset = no_sharing ? undefined : intern_obj_table.recall(v);
       if (existing_offset) { writer.write_shared(existing_offset); return existing_offset; }
       else intern_obj_table.store(v);

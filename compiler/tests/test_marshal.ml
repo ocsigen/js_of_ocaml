@@ -1,6 +1,6 @@
 (* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
- * Copyright (C) 2019 Hugo Heuzard
+ * Copyright (C) 2019 Shachar Itzhaky
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -62,11 +62,28 @@ let%expect_test _ =
       let v2' = Marshal.from_channel chan in
       Format.printf "readback = %B %B\n%!" (v1 = v1') (v2 = v2')
 |};
- [%expect {|
+  [%expect {|
    sizes = 33 40 51 (|v2| < |v2_ns|)
    readback = true true |}]
 
 (* https://github.com/ocsigen/js_of_ocaml/issues/359 *)
+
+let%expect_test _ =
+  let module M = struct
+    type loop = {mutable pointer : loop option}
+
+    let l = {pointer = None}
+
+    let () = l.pointer <- Some l
+
+    let _ =
+      let s = Marshal.to_string l [] in
+      Format.printf "%d\n%S\n%!" (String.length s) s
+  end in
+  [%expect
+    {|
+    24
+    "\132\149\166\190\000\000\000\004\000\000\000\002\000\000\000\004\000\000\000\004\144\144\004\002" |}]
 
 let%expect_test _ =
   Util.compile_and_run
@@ -77,6 +94,9 @@ let%expect_test _ =
 
     let _ =
       let s = Marshal.to_string l [] in
-      Format.printf "not stuck! %d\n%!" (String.length s)
+      Format.printf "%d\n%S\n%!" (String.length s) s
 |};
-  [%expect {| not stuck! 24 |}]
+  [%expect
+    {|
+    24
+    "\132\149\166\190\000\000\000\004\000\000\000\002\000\000\000\004\000\000\000\004\144\144\004\002" |}]
