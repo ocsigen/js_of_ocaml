@@ -386,8 +386,8 @@ function caml_ml_output_char (chanid,c) {
 
 //Provides: caml_output_value
 //Requires: caml_output_value_to_string, caml_ml_output,caml_ml_string_length
-function caml_output_value (chanid,v,_flags) {
-  var s = caml_output_value_to_string(v);
+function caml_output_value (chanid,v,flags) {
+  var s = caml_output_value_to_string(v, flags);
   caml_ml_output(chanid,s,0,caml_ml_string_length(s));
   return 0;
 }

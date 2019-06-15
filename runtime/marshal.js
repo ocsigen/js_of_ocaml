@@ -337,10 +337,48 @@ function caml_marshal_data_size (s, ofs) {
   return (get32(s, ofs + 4));
 }
 
+//Provides: MlObjectTable
+var MlObjectTable;
+if (typeof joo_global_object.WeakMap === 'undefined') {
+  MlObjectTable = function() {
+    /* polyfill (using linear search) */
+    function NaiveLookup(objs) { this.objs = objs; }
+    NaiveLookup.prototype.get = function(v) {
+      for (var i = 0; i < this.objs.length; i++) {
+        if (this.objs[i] === v) return i;
+      }
+    };
+    NaiveLookup.prototype.set = function() {
+      // Do nothing here. [MlObjectTable.store] will push to [this.objs] directly.
+    };
+
+    return function MlObjectTable() {
+      this.objs = []; this.lookup = new NaiveLookup(this.objs);
+    };
+  }();
+}
+else {
+  MlObjectTable = function MlObjectTable() {
+    this.objs = []; this.lookup = new joo_global_object.WeakMap();
+  };
+}
+
+MlObjectTable.prototype.store = function(v) {
+  this.lookup.set(v, this.objs.length);
+  this.objs.push(v);
+}
+
+MlObjectTable.prototype.recall = function(v) {
+  var i = this.lookup.get(v);
+  return (i === undefined)
+    ? undefined : this.objs.length - i;   /* index is relative */
+}
+
 //Provides: caml_output_val
 //Requires: caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
 //Requires: MlBytes, caml_ml_string_length, caml_string_unsafe_get
+//Requires: MlObjectTable, caml_list_to_js_array
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -354,6 +392,11 @@ var caml_output_val = function (){
       for (var i = size - 8;i >= 0;i -= 8)
         this.chunk[this.chunk_idx++] = (value >> i) & 0xFF;
     },
+    write_shared:function (offset) {
+      if (offset < (1 << 8)) this.write_code(8, 0x04 /*cst.CODE_SHARED8*/, offset);
+      else if (offset < (1 << 16)) this.write_code(16, 0x05 /*cst.CODE_SHARED16*/, offset);
+      else this.write_code(32, 0x06 /*cst.CODE_SHARED32*/, offset);
+    },
     finalize:function () {
       this.block_len = this.chunk_idx - 20;
       this.chunk_idx = 0;
@@ -365,13 +408,32 @@ var caml_output_val = function (){
       return this.chunk;
     }
   }
-  return function (v) {
+  return function (v, flags) {
+    flags = caml_list_to_js_array(flags);
+
+    var no_sharing = (flags.indexOf(0 /*Marshal.No_sharing*/) !== -1),
+        closures =  (flags.indexOf(1 /*Marshal.Closures*/) !== -1);
+        /* Marshal.Compat_32 is redundant since integers are 32-bit anyway */
+
+    if (closures)
+      joo_global_object.console.warn("in caml_output_val: flag Marshal.Closures is not supported.");
+
     var writer = new Writer ();
     var stack = [];
+    var intern_obj_table = no_sharing ? null : new MlObjectTable();
+
+    function memo(v) {
+      if (no_sharing) return false;
+      var existing_offset = intern_obj_table.recall(v);
+      if (existing_offset) { writer.write_shared(existing_offset); return true; }
+      else { intern_obj_table.store(v); return false; }
+    }
+
     function extern_rec (v) {
       if (v instanceof Array && v[0] === (v[0]|0)) {
         if (v[0] == 255) {
           // Int64
+          if (memo(v)) return;
           writer.write (8, 0x12 /*cst.CODE_CUSTOM*/);
           for (var i = 0; i < 3; i++) writer.write (8, "_j\0".charCodeAt(i));
           var b = caml_int64_to_bytes (v);
@@ -383,6 +445,7 @@ var caml_output_val = function (){
         if (v[0] == 251) {
           caml_failwith("output_value: abstract value (Abstract)");
         }
+        if (v.length > 1 && memo(v)) return;
         if (v[0] < 16 && v.length - 1 < 8)
           writer.write (8, 0x80 /*cst.PREFIX_SMALL_BLOCK*/ + v[0] + ((v.length - 1)<<4));
         else
@@ -391,6 +454,7 @@ var caml_output_val = function (){
         writer.size_64 += v.length;
         if (v.length > 1) stack.push (v, 1);
       } else if (v instanceof MlBytes) {
+        if (memo(v)) return;
         var len = caml_ml_string_length(v);
         if (len < 0x20)
           writer.write (8, 0x20 /*cst.PREFIX_SMALL_STRING*/ + len);
@@ -437,30 +501,28 @@ var caml_output_val = function (){
       if (i + 1 < v.length) stack.push (v, i + 1);
       extern_rec (v[i]);
     }
-    writer.finalize ();
+    if (intern_obj_table) writer.obj_counter = intern_obj_table.objs.length;
+    writer.finalize();
     return writer.chunk;
   }
 } ();
 
 //Provides: caml_output_value_to_string mutable
 //Requires: caml_output_val, caml_string_of_array
-function caml_output_value_to_string (v, _fl) {
-  /* ignores flags... */
-  return caml_string_of_array (caml_output_val (v));
+function caml_output_value_to_string (v, flags) {
+  return caml_string_of_array (caml_output_val (v, flags));
 }
 
 //Provides: caml_output_value_to_bytes mutable
 //Requires: caml_output_val, caml_string_of_array
-function caml_output_value_to_bytes (v, _fl) {
-  /* ignores flags... */
-  return caml_string_of_array (caml_output_val (v));
+function caml_output_value_to_bytes (v, flags) {
+  return caml_string_of_array (caml_output_val (v, flags));
 }
 
 //Provides: caml_output_value_to_buffer
 //Requires: caml_output_val, caml_failwith, caml_blit_bytes
-function caml_output_value_to_buffer (s, ofs, len, v, _fl) {
-  /* ignores flags... */
-  var t = caml_output_val (v);
+function caml_output_value_to_buffer (s, ofs, len, v, flags) {
+  var t = caml_output_val (v, flags);
   if (t.length > len) caml_failwith ("Marshal.to_buffer: buffer overflow");
   caml_blit_bytes(t, 0, s, ofs, t.length);
   return 0;
