@@ -5,9 +5,11 @@
  ** Compiler: Allow to emit one javascript per compilation unit (#783)
  ** Compiler: refactoring (#781, #782, #787, #795, #802)
  ** Compiler: more source map location for the javascript runtime (#795)
+ ** Runtime: support sharing when marshaling (#814)
  ** Misc: Improve CI speed
  ** Misc: remove ppx_deriving dependency
  ** Misc: remove cppo dependency
+ ** Misc: remove ppx_tools_versioned dependency in ppx_deriving_json
  ** Misc: support for ocaml 4.09
 
  * Bug fixes:
