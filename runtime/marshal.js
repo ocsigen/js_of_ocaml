@@ -348,7 +348,9 @@ if (typeof joo_global_object.WeakMap === 'undefined') {
         if (this.objs[i] === v) return i;
       }
     };
-    NaiveLookup.prototype.set = function() { };
+    NaiveLookup.prototype.set = function() {
+      // Do nothing here. [MlObjectTable.store] will push to [this.objs] directly.
+    };
 
     return function MlObjectTable() {
       this.objs = []; this.lookup = new NaiveLookup(this.objs);
