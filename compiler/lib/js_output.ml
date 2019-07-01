@@ -990,7 +990,7 @@ struct
           last_semi ();
           PP.end_group f;
           PP.end_group f
-      (* There MUST be a space between the return and its
+          (* There MUST be a space between the return and its
              argument. A line return will not work *)
       )
     | Labelled_statement (i, s) ->
