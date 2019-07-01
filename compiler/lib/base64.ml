@@ -178,8 +178,7 @@ let decode_sub ?(pad = true) {dmap; _} ?(off = 0) ?len input =
     let res = Bytes.create n' in
     let get_uint8_or_padding =
       if pad
-      then (
-        fun t i ->
+      then (fun t i ->
         if i >= len then raise Out_of_bounds;
         get_uint8 t (off + i))
       else

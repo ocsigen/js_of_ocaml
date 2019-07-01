@@ -45,8 +45,7 @@ let load_resource_aux filename url =
       frame.Js_of_ocaml_lwt.XmlHttpRequest.content
       (fun () -> Printf.eprintf "Could not load %s\n" filename)
       (fun b ->
-        Sys_js.update_file ~name:filename ~content:(Typed_array.String.of_arrayBuffer b)
-        )
+        Sys_js.update_file ~name:filename ~content:(Typed_array.String.of_arrayBuffer b))
   else ()
 
 let load_resource scheme ~prefix ~path:suffix =

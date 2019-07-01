@@ -17,8 +17,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(** Helper for Js_of_ocaml Toplevel. *)
 open Format
+(** Helper for Js_of_ocaml Toplevel. *)
 
 val use : formatter -> string -> bool
 (** [use fmt content] Execute commands [content]. It does not print types nor values. *)

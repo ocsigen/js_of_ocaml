@@ -30,11 +30,11 @@ type ('a, 'b) result =
   | Ok of 'a
   | Error of 'b
 
-(** Type of alphabet. *)
 type alphabet
+(** Type of alphabet. *)
 
-(** Type of sub-string: [str, off, len]. *)
 type sub = string * int * int
+(** Type of sub-string: [str, off, len]. *)
 
 val default_alphabet : alphabet
 (** A 64-character alphabet specifying the regular Base64 alphabet. *)

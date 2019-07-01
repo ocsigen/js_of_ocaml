@@ -231,8 +231,8 @@ module Color : sig
   (**build a color from the values of hue, saturation, and lightness channels.
    optional [a] argument can be used to specify alpha channel (aka opacity).*)
 
-  (**A [js_t] is a valid string representation of a CSS color*)
   type js_t = private Js.js_string Js.t
+  (**A [js_t] is a valid string representation of a CSS color*)
 
   (**A few conversion functions*)
 
@@ -272,8 +272,8 @@ module Length : sig
     | Pt of float  (** in Points (72pt = 1in)*)
     | Pc of float  (** in Picas (1pc = 12pt)*)
 
-  (** Js representation of lengths. *)
   type js_t = private Js.js_string Js.t
+  (** Js representation of lengths. *)
 
   (**Conversion functions*)
 

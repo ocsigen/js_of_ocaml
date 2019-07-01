@@ -356,11 +356,11 @@ class free =
           from#state.count
           m#state.count
       in
-      state_
-      <- { state_ with
-           use_name = StringSet.union state_.use_name free_name
-         ; use = S.union state_.use free
-         ; count }
+      state_ <-
+        { state_ with
+          use_name = StringSet.union state_.use_name free_name
+        ; use = S.union state_.use free
+        ; count }
 
     method use_var x =
       let n = try IdentMap.find x state_.count with Not_found -> 0 in
@@ -480,12 +480,12 @@ class free =
                     tbody#state.count
                     m#state.count
                 in
-                state_
-                <- { use = S.union state_.use use
-                   ; use_name = StringSet.union state_.use_name use_name
-                   ; def = S.union state_.def def
-                   ; def_name = StringSet.union state_.def_name def_name
-                   ; count };
+                state_ <-
+                  { use = S.union state_.use use
+                  ; use_name = StringSet.union state_.use_name use_name
+                  ; def = S.union state_.def def
+                  ; def_name = StringSet.union state_.def_name def_name
+                  ; count };
                 Some (id, block)
           in
           let f =
@@ -643,8 +643,7 @@ class compact_vardecl =
                     | EBin (Eq, EVar id, exp) when IdentSet.mem id rem ->
                         IdentSet.remove id rem, (id, Some (exp, N)) :: vars, instr
                     | x ->
-                        may_flush rem vars (Statement (Expression_statement x), N) instr
-                )
+                        may_flush rem vars (Statement (Expression_statement x), N) instr)
             | Statement _ as s -> may_flush rem vars (s, loc) instr
             | Function_declaration _ as x -> rem, vars, (x, loc) :: instr)
       in

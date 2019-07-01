@@ -209,7 +209,7 @@ let gnuplot_output ch no_header (h, t) =
             ch
             "set label font \",5\" \"%.2f\" at %f,%f center\n"
             v
-            (!nn +. (float i /. float n) -. 0.5 (* why? *))
+            (!nn +. (float i /. float n) -. 0.5) (* why? *)
             ((!maximum *. 1.04) +. 0.1);
         nn := !nn +. 1.)
   done;

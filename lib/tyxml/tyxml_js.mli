@@ -41,11 +41,11 @@ open Js_of_ocaml
 
 module type XML =
   Xml_sigs.T
-  with type uri = string
-   and type event_handler = Dom_html.event Js.t -> bool
-   and type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
-   and type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
-   and type elt = Dom.node Js.t
+    with type uri = string
+     and type event_handler = Dom_html.event Js.t -> bool
+     and type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
+     and type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
+     and type elt = Dom.node Js.t
 
 module Xml : XML with module W = Xml_wrap.NoWrap
 
@@ -56,9 +56,9 @@ module Html : Html_sigs.Make(Xml)(Svg).T with module Xml.W = Xml_wrap.NoWrap
 (** @deprecated Use {!Tyxml_js.Html}. *)
 module Html5 :
   Html_sigs.Make(Xml)(Svg).T
-  with module Xml.W = Xml_wrap.NoWrap
-   and type 'a elt = 'a Html.elt
-   and type +'a attrib = 'a Html.attrib
+    with module Xml.W = Xml_wrap.NoWrap
+     and type 'a elt = 'a Html.elt
+     and type +'a attrib = 'a Html.attrib
 
 module Register : sig
   val html : ?head:Html_types.head Html.elt -> Html_types.body Html.elt -> unit
@@ -92,9 +92,9 @@ end
 
 module Wrap :
   Xml_wrap.T
-  with type 'a t = 'a React.signal
-   and type 'a tlist = 'a ReactiveData.RList.t
-   and type ('a, 'b) ft = 'a -> 'b
+    with type 'a t = 'a React.signal
+     and type 'a tlist = 'a ReactiveData.RList.t
+     and type ('a, 'b) ft = 'a -> 'b
 
 module Util : sig
   val update_children : Dom.node Js.t -> Dom.node Js.t ReactiveData.RList.t -> unit
@@ -105,21 +105,21 @@ module R : sig
 
   module Svg :
     Svg_sigs.Make(Xml).T
-    with type +'a elt = 'a Svg.elt
-     and type +'a attrib = 'a Svg.attrib
+      with type +'a elt = 'a Svg.elt
+       and type +'a attrib = 'a Svg.attrib
 
   module Html :
     Html_sigs.Make(Xml)(Svg).T
-    with type +'a elt = 'a Html.elt
-     and type +'a attrib = 'a Html.attrib
+      with type +'a elt = 'a Html.elt
+       and type +'a attrib = 'a Html.attrib
 
   val filter_attrib : 'a Html.attrib -> bool React.signal -> 'a Html.attrib
 
   (** @deprecated Use {!Tyxml_js.R.Html}. *)
   module Html5 :
     Html_sigs.Make(Xml)(Svg).T
-    with type +'a elt = 'a Html.elt
-     and type +'a attrib = 'a Html.attrib
+      with type +'a elt = 'a Html.elt
+       and type +'a attrib = 'a Html.attrib
 end
 
 module To_dom : Tyxml_cast_sigs.TO with type 'a elt = 'a Html.elt

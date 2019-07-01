@@ -80,7 +80,8 @@ let compile_gen
         with Failure s -> Format.eprintf "Failure: %s@." s)
 
 let compile param ~comptime prog =
-  compile_gen param ~comptime (fun ~src ~dst -> Printf.sprintf "%s %s -o %s" prog src dst)
+  compile_gen param ~comptime (fun ~src ~dst ->
+      Printf.sprintf "%s %s -o %s" prog src dst)
 
 (****)
 

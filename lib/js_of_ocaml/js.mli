@@ -27,11 +27,11 @@
 
 (** {2 Dealing with [null] and [undefined] values.} *)
 
-(** Type of possibly null values. *)
 type +'a opt
+(** Type of possibly null values. *)
 
-(** Type of possibly undefined values. *)
 type +'a optdef
+(** Type of possibly undefined values. *)
 
 val null : 'a opt
 (** The [null] value. *)
@@ -83,65 +83,66 @@ module type OPT = sig
   (** Convert to option type. *)
 end
 
-(** Standard functions for manipulating possibly null values. *)
 module Opt : OPT with type 'a t = 'a opt
+(** Standard functions for manipulating possibly null values. *)
 
-(** Standard functions for manipulating possibly undefined values. *)
 module Optdef : OPT with type 'a t = 'a optdef
+(** Standard functions for manipulating possibly undefined values. *)
 
 (** {2 Types for specifying method and properties of Javascript objects} *)
 
+type +'a t
 (** Type of Javascript objects.  The type parameter is used to
       specify more precisely an object.  *)
-type +'a t
 
+type +'a meth
 (** Type used to specify method types:
       a Javascript object
         [<m : t1 -> t2 -> ... -> tn -> t Js.meth> Js.t]
       has a Javascript method [m] expecting {i n} arguments
       of types [t1] to [tn] and returns a value of type [t]. *)
-type +'a meth
 
+type +'a gen_prop
 (** Type used to specify the properties of Javascript
       objects.  In practice you should rarely need this type directly,
       but should rather use the type abbreviations below instead. *)
-type +'a gen_prop
 
+type 'a readonly_prop = < get : 'a > gen_prop
 (** Type of read-only properties:
       a Javascript object
         [<p : t Js.readonly_prop> Js.t]
       has a read-only property [p] of type [t]. *)
-type 'a readonly_prop = < get : 'a > gen_prop
 
+type 'a writeonly_prop = < set : 'a -> unit > gen_prop
 (** Type of write-only properties:
       a Javascript object
         [<p : t Js.writeonly_prop> Js.t]
       has a write-only property [p] of type [t]. *)
-type 'a writeonly_prop = < set : 'a -> unit > gen_prop
 
+type 'a prop = < get : 'a ; set : 'a -> unit > gen_prop
 (** Type of read/write properties:
       a Javascript object
         [<p : t Js.writeonly_prop> Js.t]
       has a read/write property [p] of type [t]. *)
-type 'a prop = < get : 'a ; set : 'a -> unit > gen_prop
 
+type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
 (** Type of read/write properties that may be undefined:
       you can set them to a value of some type [t], but if you read
       them, you will get a value of type [t optdef] (that may be
       [undefined]). *)
-type 'a optdef_prop = < get : 'a optdef ; set : 'a -> unit > gen_prop
 
 (** {2 Object constructors} *)
 
+type +'a constr
 (** A value of type [(t1 -> ... -> tn -> t Js.t) Js.constr] is a
       Javascript constructor expecting {i n} arguments of types [t1]
       to [tn] and returning a Javascript object of type [t Js.t].  Use
       the syntax extension [jsnew c (e1, ..., en)] to build an object
       using constructor [c] and arguments [e1] to [en]. *)
-type +'a constr
 
 (** {2 Callbacks to OCaml} *)
 
+type (-'a, +'b) meth_callback
 (** Type of callback functions.  A function of type
        [(u, t1 -> ... -> tn -> t) meth_callback] can be called
        from Javascript with [this] bound to a value of type [u]
@@ -151,20 +152,17 @@ type +'a constr
        [(t, unit -> t) meth_callback] can be called from Javascript
        with no argument.  It will behave as if it was called with a
        single argument of type [unit]. *)
-type (-'a, +'b) meth_callback
 
+type 'a callback = (unit, 'a) meth_callback
 (** Type of callback functions intended to be called without a
       meaningful [this] implicit parameter. *)
-type 'a callback = (unit, 'a) meth_callback
 
-external wrap_callback :
-  ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
   = "caml_js_wrap_callback"
 (** Wrap an OCaml function so that it can be invoked from
       Javascript. *)
 
-external wrap_meth_callback :
-  ('b -> 'a) -> ('b, 'a) meth_callback
+external wrap_meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback
   = "caml_js_wrap_meth_callback"
 (** Wrap an OCaml function so that it can be invoked from
       Javascript.  The first parameter of the function will be bound
@@ -178,17 +176,17 @@ val _true : bool t
 val _false : bool t
 (** Javascript [false] boolean. *)
 
+type match_result_handle
 (** A handle to a match result.  Use function [Js.match_result]
       to get the corresponding [MatchResult] object.
       (This type is used to resolved the mutual dependency between
        string and array type definitions.) *)
-type match_result_handle
 
+type string_array
 (** Opaque type for string arrays.  You can get the actual [Array]
       object using function [Js.str_array].
       (This type is used to resolved the mutual dependency between
        string and array type definitions.) *)
-type string_array
 
 (** Specification of Javascript string objects. *)
 class type js_string =
@@ -687,11 +685,11 @@ val string_of_error : error t -> string
 
 val raise_js_error : error t -> 'a
 
+exception Error of error t
 (** The [Error] exception wrap javascript exceptions when caught by OCaml code.
       In case the javascript exception is not an instance of javascript [Error],
       it will be serialized and wrapped into a [Failure] exception.
   *)
-exception Error of error t
 
 (** Specification of Javascript JSON object. *)
 class type json =
@@ -825,9 +823,9 @@ export_all
 module Unsafe : sig
   type top
 
+  type any = top t
   (** Top type.  Used for putting values of different types
         in a same array. *)
-  type any = top t
 
   type any_js_array = any
 
@@ -911,12 +909,10 @@ module Unsafe : sig
         Javascript. The first parameter of the function will be bound
         to the [arguments] JavaScript *)
 
-  external callback_with_arity :
-    int -> ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+  external callback_with_arity : int -> ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
     = "caml_js_wrap_callback_strict"
 
-  external meth_callback :
-    ('b -> 'a) -> ('b, 'a) meth_callback
+  external meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback
     = "caml_js_wrap_meth_callback_unsafe"
   (** Wrap an OCaml function so that it can be invoked from
         Javascript. The first parameter of the function will be bound
@@ -932,8 +928,7 @@ module Unsafe : sig
       The first parameter of the function will be bound to the value of the [this] implicit parameter.
       The second parameter of the function with be bound to the value of the [arguments]. *)
 
-  external meth_callback_with_arity :
-    int -> ('b -> 'a) -> ('b, 'a) meth_callback
+  external meth_callback_with_arity : int -> ('b -> 'a) -> ('b, 'a) meth_callback
     = "caml_js_wrap_meth_callback_strict"
 
   (** {3 Deprecated functions.} *)
@@ -951,5 +946,5 @@ external float : float -> float = "%identity"
 external to_float : float -> float = "%identity"
 (** Conversion of Javascript numbers to OCaml floats. *)
 
-(** Type of float properties. *)
 type float_prop = float prop
+(** Type of float properties. *)

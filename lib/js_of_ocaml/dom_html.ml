@@ -2027,8 +2027,7 @@ let location_origin (loc : location t) =
       then Js.string ""
       else
         let origin = protocol##concat_2 (Js.string "//") hostname in
-        if port##.length > 0 then origin##concat_2 (Js.string ":") loc##.port else origin
-      )
+        if port##.length > 0 then origin##concat_2 (Js.string ":") loc##.port else origin)
     (fun o -> o)
 
 class type history =
