@@ -255,10 +255,10 @@ class type cssStyleDeclaration =
 
 (** {2 Events} *)
 
+type (-'a, -'b) event_listener = ('a, 'b) Dom.event_listener
 (** The type of event listener functions.  The first type parameter
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
-type (-'a, -'b) event_listener = ('a, 'b) Dom.event_listener
 
 type mouse_button =
   | No_button
@@ -1936,8 +1936,8 @@ class type history =
     method replaceState : 'a. 'a -> js_string t -> js_string t opt -> unit meth
   end
 
-(** Undo manager *)
 class type undoManager = object end
+(** Undo manager *)
 
 (** Navigator information *)
 class type navigator =

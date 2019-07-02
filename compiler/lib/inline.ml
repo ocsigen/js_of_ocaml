@@ -233,9 +233,8 @@ let inline closures live_vars outer_optimizable pc (blocks, free_pc) =
                   in
                   [], (Branch (free_pc + 1, args), blocks, free_pc + 2)
                 else
-                  ( (* Format.eprintf "Do not inline because inner:%b outer:%b@." f_has_handler outer_has_handler; *)
-                    i :: rem
-                  , state ))
+                  (* Format.eprintf "Do not inline because inner:%b outer:%b@." f_has_handler outer_has_handler; *)
+                  i :: rem, state)
         | Let (x, Closure (l, (pc, []))) -> (
             let block = Addr.Map.find pc blocks in
             match block with

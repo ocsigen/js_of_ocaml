@@ -69,16 +69,13 @@ module Unsafe = struct
     (any_js_array -> 'b) -> ('c, any_js_array -> 'b) meth_callback
     = "caml_js_wrap_callback_arguments"
 
-  external callback_with_arity :
-    int -> ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+  external callback_with_arity : int -> ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
     = "caml_js_wrap_callback_strict"
 
-  external meth_callback :
-    ('b -> 'a) -> ('b, 'a) meth_callback
+  external meth_callback : ('b -> 'a) -> ('b, 'a) meth_callback
     = "caml_js_wrap_meth_callback_unsafe"
 
-  external meth_callback_with_arity :
-    int -> ('b -> 'a) -> ('b, 'a) meth_callback
+  external meth_callback_with_arity : int -> ('b -> 'a) -> ('b, 'a) meth_callback
     = "caml_js_wrap_meth_callback_strict"
 
   external meth_callback_with_arguments :
@@ -209,12 +206,10 @@ type +'a constr
 
 type 'a callback = (unit, 'a) meth_callback
 
-external wrap_callback :
-  ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
+external wrap_callback : ('a -> 'b) -> ('c, 'a -> 'b) meth_callback
   = "caml_js_wrap_callback"
 
-external wrap_meth_callback :
-  ('a -> 'b) -> ('a, 'b) meth_callback
+external wrap_meth_callback : ('a -> 'b) -> ('a, 'b) meth_callback
   = "caml_js_wrap_meth_callback"
 
 (****)

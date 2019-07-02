@@ -102,8 +102,7 @@ end = struct
     Array.iteri
       ~f:(fun node component ->
         id_scc.(component) <- node :: id_scc.(component);
-        component_graph.(component) <- add_component_dep node component_graph.(component)
-        )
+        component_graph.(component) <- add_component_dep node component_graph.(component))
       components;
     { sorted_connected_components = id_scc
     ; component_edges = Array.map ~f:IntSet.elements component_graph }

@@ -28,19 +28,18 @@ let encode_url l =
     (List.map
        (function
          | name, `String s -> Url.urlencode name ^ "=" ^ Url.urlencode (to_string s)
-         | name, `File s -> Url.urlencode name ^ "=" ^ Url.urlencode (to_string s##.name)
-         )
+         | name, `File s -> Url.urlencode name ^ "=" ^ Url.urlencode (to_string s##.name))
        l)
 
 (* Higher level interface: *)
 
-(** type of the http headers *)
 type 'response generic_http_frame =
   { url : string
   ; code : int
   ; headers : string -> string option
   ; content : 'response
   ; content_xml : unit -> Dom.element Dom.document t option }
+(** type of the http headers *)
 
 type http_frame = string generic_http_frame
 
@@ -54,8 +53,7 @@ let default_response url code headers req =
       (fun () ->
         match Js.Opt.to_option req##.responseXML with
         | None -> None
-        | Some doc -> if Js.some doc##.documentElement == Js.null then None else Some doc
-        )
+        | Some doc -> if Js.some doc##.documentElement == Js.null then None else Some doc)
   ; headers }
 
 let text_response url code headers req =

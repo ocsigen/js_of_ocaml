@@ -83,7 +83,9 @@ let rec html2wiki body =
               (fun () -> Buffer.add_string ans "^error_in_anchor^")
               (fun s ->
                 let url =
-                  Js.Opt.get (el##getAttribute (Js.string "href")) (fun _ -> assert false)
+                  Js.Opt.get
+                    (el##getAttribute (Js.string "href"))
+                    (fun _ -> assert false)
                   |> Js.to_string
                 in
                 match Js.to_string s with

@@ -203,14 +203,14 @@ class type characterData =
     method replaceData : int -> int -> js_string t -> unit meth
   end
 
-(** Specification of [Comment] objects *)
 class type comment = characterData
+(** Specification of [Comment] objects *)
 
-(** Specification of [Text] objects. *)
 class type text = characterData
+(** Specification of [Text] objects. *)
 
-(** Specification of [DocumentFragment] objects. *)
 class type documentFragment = node
+(** Specification of [DocumentFragment] objects. *)
 
 (** Specification of [Document] objects. *)
 class type ['element] document =
@@ -287,10 +287,10 @@ end
 
 (** {2 Events} *)
 
+type (-'a, -'b) event_listener
 (** The type of event listener functions.  The first type parameter
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
-type (-'a, -'b) event_listener
 
 class type ['a] event =
   object

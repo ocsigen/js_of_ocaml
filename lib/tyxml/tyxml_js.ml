@@ -25,11 +25,11 @@ let js_string_of_int i = (Js.number_of_float (float_of_int i))##toString
 
 module type XML =
   Xml_sigs.T
-  with type uri = string
-   and type event_handler = Dom_html.event Js.t -> bool
-   and type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
-   and type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
-   and type elt = Dom.node Js.t
+    with type uri = string
+     and type event_handler = Dom_html.event Js.t -> bool
+     and type mouse_event_handler = Dom_html.mouseEvent Js.t -> bool
+     and type keyboard_event_handler = Dom_html.keyboardEvent Js.t -> bool
+     and type elt = Dom.node Js.t
 
 module Xml = struct
   module W = Xml_wrap.NoWrap

@@ -22,8 +22,8 @@
 
 open Js
 
-(** 5.1 Types *)
 type sizei = int
+(** 5.1 Types *)
 
 type sizeiptr = int
 

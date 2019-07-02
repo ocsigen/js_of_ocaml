@@ -323,11 +323,11 @@ let planetpv epoch np pv =
  * planetpv. *)
 let radecdist state rdd =
   (* Distance *)
-  rdd.(2)
-  <- sqrt
-       ((state.(0).(0) *. state.(0).(0))
-       +. (state.(0).(1) *. state.(0).(1))
-       +. (state.(0).(2) *. state.(0).(2)));
+  rdd.(2) <-
+    sqrt
+      ((state.(0).(0) *. state.(0).(0))
+      +. (state.(0).(1) *. state.(0).(1))
+      +. (state.(0).(2) *. state.(0).(2)));
   (* RA *)
   rdd.(0) <- atan2 state.(0).(1) state.(0).(0) *. r2h;
   if rdd.(0) < 0.0 then rdd.(0) <- rdd.(0) +. 24.0;

@@ -57,7 +57,6 @@ let urlencode ?(with_plus = true) s =
   then escape_plus (Js.to_bytestring (Js.escape (Js.bytestring s)))
   else Js.to_bytestring (Js.escape (Js.bytestring s))
 
-(** The type for HTTP url. *)
 type http_url =
   { hu_host : string  (** The host part of the url. *)
   ; hu_port : int  (** The port for the connection if any. *)
@@ -67,13 +66,14 @@ type http_url =
         (** Arguments as a field-value
                                              association list.*)
   ; hu_fragment : string  (** The fragment part (after the ['#'] character). *) }
+(** The type for HTTP url. *)
 
-(** The type for local file urls. *)
 type file_url =
   { fu_path : string list
   ; fu_path_string : string
   ; fu_arguments : (string * string) list
   ; fu_fragment : string }
+(** The type for local file urls. *)
 
 type url =
   | Http of http_url
@@ -164,8 +164,7 @@ let url_of_js_string s =
                      (Js.Optdef.get (Js.array_get res 4) (fun () -> Js.bytestring ""))
                ; fu_fragment =
                    Js.to_bytestring
-                     (Js.Optdef.get (Js.array_get res 6) (fun () -> Js.bytestring "")) })
-          ))
+                     (Js.Optdef.get (Js.array_get res 6) (fun () -> Js.bytestring "")) })))
     (fun handle ->
       let res = Js.match_result handle in
       let ssl = is_secure (Js.Optdef.get (Js.array_get res 1) interrupt) in

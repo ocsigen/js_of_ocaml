@@ -275,10 +275,10 @@ module CoerceTo = struct
   let attr e : attr Js.t Js.opt = cast e ATTRIBUTE
 end
 
+type ('a, 'b) event_listener = ('a, 'b -> bool t) meth_callback opt
 (** The type of event listener functions.  The first type parameter
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
-type ('a, 'b) event_listener = ('a, 'b -> bool t) meth_callback opt
 
 class type ['a] event =
   object
