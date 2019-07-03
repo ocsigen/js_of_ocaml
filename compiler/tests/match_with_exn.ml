@@ -46,3 +46,62 @@ let%expect_test _ =
   print_endline "Success!"
 |};
   [%expect "Success!"]
+
+open Util
+
+let run_test s =
+  s
+  |> Filetype.ocaml_text_of_string
+  |> Filetype.write_ocaml
+  |> compile_ocaml_to_cmo
+  |> compile_cmo_to_javascript ~pretty:true
+  |> fst
+  |> parse_js
+
+let%expect_test "static eval of string get" =
+  let program =
+    run_test
+      {|
+exception A of int
+
+let fun1 () =
+  match Random.int 2 with
+  | 0 as i | exception A (2 as i) -> i
+  | i -> i+1
+  | exception A i -> i+2
+
+let fun2 () =
+  match Random.int 2 with
+  | 0 as i | exception A (2 as i) -> i
+  | i -> i+1
+
+  |}
+  in
+  print_fun_decl program "fun1";
+  print_fun_decl program "fun2";
+  [%expect
+    {|
+    function fun1(param)
+     {try
+       {var i$0=caml_call1(Stdlib_random[5],2),switch$0=0}
+      catch(_d_)
+       {_d_ = caml_wrap_exception(_d_);
+        if(_d_[1] !== A)throw _d_;
+        var _c_=_d_[2];
+        if(2 !== _c_)return _c_ + 2 | 0;
+        var i=_c_,switch$0=1}
+      if(! switch$0){if(0 !== i$0)return i$0 + 1 | 0;var i=i$0}
+      return i}
+    function fun2(param)
+     {try
+       {var i$0=caml_call1(Stdlib_random[5],2),switch$0=0}
+      catch(_b_)
+       {_b_ = caml_wrap_exception(_b_);
+        if(_b_[1] === A)
+         {var _a_=_b_[2];
+          if(2 === _a_)var i=_a_,switch$0=1,switch$1=0;else var switch$1=1}
+        else
+         var switch$1=1;
+        if(switch$1)throw _b_}
+      if(! switch$0){if(0 !== i$0)return i$0 + 1 | 0;var i=i$0}
+      return i} |}]
