@@ -18,7 +18,7 @@
 
 open StdLabels
 open Migrate_parsetree
-open OCaml_407.Ast
+open OCaml_408.Ast
 open Ast_helper
 open Asttypes
 open Parsetree
@@ -87,7 +87,10 @@ let inside_Js =
    It turns out not to be working properly, just hiding location instead of the all
    ast node.
 *)
-let merlin_noloc = {txt = "merlin.loc"; loc = Location.none}, PStr []
+let merlin_noloc =
+  { attr_name = {txt = "merlin.loc"; loc = Location.none}
+  ; attr_payload = PStr []
+  ; attr_loc = Location.none }
 
 module Js : sig
   val type_ :
@@ -501,7 +504,10 @@ let preprocess_literal_object mappper fields : [`Fields of field_desc list | `Er
     | false, _ -> None
     | true, _ -> Some (`Unkown x)
   in
-  let jsoo_attributes = filter_map (fun ({txt; _}, _) -> parse_attribute txt) in
+  let jsoo_attributes =
+    filter_map (fun {attr_name = {txt; _}; attr_payload = _; attr_loc = _} ->
+        parse_attribute txt)
+  in
   let f (names, fields) exp =
     match exp.pcf_desc with
     | Pcf_val (id, mut, Cfk_concrete (bang, body)) ->
@@ -754,5 +760,5 @@ let mapper =
 let () =
   Driver.register
     ~name:"ppx_js"
-    Migrate_parsetree.Versions.ocaml_407
+    Migrate_parsetree.Versions.ocaml_408
     (fun _config _cookies -> mapper)
