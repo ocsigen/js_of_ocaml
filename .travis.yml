@@ -21,8 +21,10 @@ matrix:
     - os: linux
       env: OCAML_VERSION=4.07 MODE=opam
     - os: linux
-      env: OCAML_VERSION=4.07 MODE=build
-      name: "4.07 all targets"
+      env: OCAML_VERSION=4.08 MODE=opam
+    - os: linux
+      env: OCAML_VERSION=4.08 MODE=build
+      name: "4.08 all targets"
     - os: osx
       env: OCAML_VERSION=4.07 MODE=opam
 
