@@ -42,8 +42,18 @@ case $MODE in
         opam upgrade --yes
         ;;
     build)
-        opam install -y --deps-only $PACKAGES || true
-        opam install -y cohttp-lwt-unix menhir ppx_expect yojson
+        # Pin Js_of_ocaml, install dependencies.
+        opam pin add --no-action -y js_of_ocaml.dev -k path .
+        opam pin add --no-action -y js_of_ocaml-compiler.dev -k path .
+        opam pin add --no-action -y js_of_ocaml-ocamlbuild.dev -k path .
+        opam pin add --no-action -y js_of_ocaml-ppx.dev -k path .
+        opam pin add --no-action -y js_of_ocaml-ppx_deriving_json.dev -k path .
+        opam pin add --no-action -y js_of_ocaml-lwt.dev -k path .
+        opam pin add --no-action -y js_of_ocaml-tyxml.dev -k path .
+        opam pin add --no-action -y js_of_ocaml-toplevel.dev -k path .
+
+        opam install -y --best-effort --deps-only $PACKAGES || true
+        opam install -y cohttp-lwt-unix menhir ppx_expect yojson sexplib
         opam upgrade --yes
         dune build @runtest @default @ocsigen-doc -j 8
         ;;

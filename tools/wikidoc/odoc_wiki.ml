@@ -144,7 +144,7 @@ struct
 
 end
 
-module StringSet = Odoc_html.StringSet
+module StringSet = Set.Make(String)
 
 let new_buf () = Buffer.create 1024
 let bp = Printf.bprintf
