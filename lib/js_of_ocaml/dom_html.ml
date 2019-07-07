@@ -814,11 +814,6 @@ end
 
 type event_listener_id = Dom.event_listener_id
 
-class type event_listener_options =
-  object
-    inherit Dom.event_listener_options
-  end
-
 let addEventListener = Dom.addEventListener
 
 let addEventListenerWithOptions = Dom.addEventListenerWithOptions

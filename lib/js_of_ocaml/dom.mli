@@ -334,18 +334,13 @@ module Event : sig
   val make : string -> 'a typ
 end
 
-class type event_listener_options =
-  object
-    method capture : bool t readonly_prop
-    method once : bool t readonly_prop
-    method passive : bool t readonly_prop
-  end
-
 val addEventListenerWithOptions :
      (< .. > t as 'a)
   -> 'b Event.typ
+  -> ?capture:bool t
+  -> ?once:bool t
+  -> ?passive:bool t
   -> ('a, 'b) event_listener
-  -> #event_listener_options t
   -> event_listener_id
 (** Add an event listener.  This function matches the
       option-object variant of the [addEventListener] DOM method,

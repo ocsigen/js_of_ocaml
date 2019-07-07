@@ -2365,16 +2365,13 @@ end
 
 type event_listener_id = Dom.event_listener_id
 
-class type event_listener_options =
-  object
-    inherit Dom.event_listener_options
-  end
-
 val addEventListenerWithOptions :
      (#eventTarget t as 'a)
   -> 'b Event.typ
+  -> ?capture:bool t
+  -> ?once:bool t
+  -> ?passive:bool t
   -> ('a, 'b) event_listener
-  -> #event_listener_options t
   -> event_listener_id
 (** Add an event listener.  This function matches the
       option-object variant of the [addEventListener] DOM method,
