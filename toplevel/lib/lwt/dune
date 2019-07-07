@@ -1,12 +1,14 @@
 (library
- (name js_of_ocaml_toplevel)
- (public_name js_of_ocaml-toplevel)
+ (name js_of_ocaml_toplevel_lwt)
+ (public_name js_of_ocaml-toplevel.lwt)
  (synopsis "Js_of_ocaml toplevel library")
  (libraries
-  js_of_ocaml
+  lwt
   js_of_ocaml-compiler
-  js_of_ocaml-compiler.dynlink
+  js_of_ocaml
+  bytes
+  js_of_ocaml-toplevel
   compiler-libs.bytecomp
   compiler-libs.toplevel)
  (preprocess
-  (pps ppx_optcomp_light)))
+  (pps js_of_ocaml-ppx)))
