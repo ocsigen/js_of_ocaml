@@ -105,5 +105,11 @@ let cmis files =
   List.fold_left files ~init:[] ~f:(fun fs file ->
       match kind file with
       | `Pkg pkg -> cmis_of_package pkg @ fs
-      | `Cmi s -> read_cmi ~dir:"." s :: fs
+      | `Cmi s -> (
+        match String.split_char ~sep:':' s with
+        | [s] -> read_cmi ~dir:"." s :: fs
+        | [pkg; s] ->
+            let dir = Findlib.package_directory pkg in
+            read_cmi ~dir s :: fs
+        | [] | _ :: _ :: _ :: _ -> assert false)
       | `Cma s -> cmis_of_cma ~dir:"." s @ fs)

@@ -40,7 +40,7 @@ type one =
 val from_exe :
      ?includes:string list
   -> ?toplevel:bool
-  -> ?expunge:(string -> [`Keep | `Skip])
+  -> ?exported_unit:string list
   -> ?dynlink:bool
   -> ?debug:[`Full | `Names | `No]
   -> in_channel

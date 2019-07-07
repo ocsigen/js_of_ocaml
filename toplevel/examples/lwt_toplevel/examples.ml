@@ -1,4 +1,5 @@
 (** Overview *)
+
 let x = 10 + 10
 
 let y = x * 3
@@ -14,6 +15,7 @@ let _ = Printf.printf "fact 20 = %f\n" (fact 20)
 let _ = "abc" < "def"
 
 (** Mutually recursive function *)
+
 let rec even n =
   match n with
   | 0 -> true
@@ -25,6 +27,7 @@ and odd n =
   | x -> even (x - 1)
 
 (** Mutually recursive module *)
+
 module rec Odd : sig
   val odd : int -> bool
 end = struct
@@ -91,22 +94,24 @@ let div_elt =
 
 let _ = display div_elt
 
-open Graphics_js
 (** Graphics: Draw *)
+
+open Graphics_js
 
 let () = loop [Mouse_motion] (function {mouse_x = x; mouse_y = y} -> fill_circle x y 5)
 
-open Graphics_js
 (** Graphics: Draw chars*)
+
+open Graphics_js
 
 let () =
   loop [Mouse_motion; Key_pressed] (function {mouse_x = x; mouse_y = y; key} ->
       moveto x y;
       draw_char key)
 
-open Js_of_ocaml_lwt
 (** Graphics: PingPong *)
 
+open Js_of_ocaml_lwt
 open Graphics_js
 
 let c = 3

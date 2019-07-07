@@ -104,7 +104,7 @@ let f
             Filename.concat (Findlib.find_pkg_dir pkg) d'
         | None -> d)
   in
-  let expunge =
+  let exported_unit =
     match export_file with
     | None -> None
     | Some file ->
@@ -119,12 +119,7 @@ let f
            assert false
          with End_of_file -> ());
         close_in ic;
-        Some
-          (fun s ->
-            try
-              Hashtbl.find t s;
-              `Keep
-            with Not_found -> `Skip)
+        Some (Hashtbl.fold (fun cmi () acc -> cmi :: acc) t [])
   in
   Linker.load_files runtime_files;
   let paths =
@@ -247,7 +242,7 @@ let f
           Parse_bytecode.from_exe
             ~includes:paths
             ~toplevel
-            ?expunge
+            ?exported_unit
             ~dynlink
             ~debug:need_debug
             ic

@@ -2039,7 +2039,7 @@ let read_toc ic =
 let from_exe
     ?(includes = [])
     ?(toplevel = false)
-    ?(expunge = fun _ -> `Keep)
+    ?exported_unit
     ?(dynlink = false)
     ?(debug = `No)
     ic =
@@ -2068,9 +2068,9 @@ let from_exe
       Hashtbl.find keeps s;
       true
     with Not_found -> (
-      match expunge s with
-      | `Keep -> true
-      | `Skip -> false)
+      match exported_unit with
+      | Some l -> List.mem s ~set:l
+      | None -> false)
   in
   let crcs = List.filter ~f:(fun (unit, _crc) -> keep unit) orig_crcs in
   let symbols =
@@ -2192,6 +2192,14 @@ let from_exe
         symbols
         StringSet.empty
     else StringSet.empty
+  in
+  let cmis =
+    match exported_unit with
+    | None -> cmis
+    | Some l ->
+        if toplevel && Config.Flag.include_cmis ()
+        then List.fold_left l ~init:cmis ~f:(fun acc s -> StringSet.add s acc)
+        else cmis
   in
   let code = prepend p body in
   Code.invariant code;
