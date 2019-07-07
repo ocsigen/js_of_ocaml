@@ -370,14 +370,14 @@ let addEventListenerWithOptions (e : (< .. > as 'a) t) typ ?capture ?once ?passi
     fun () -> (Js.Unsafe.coerce e)##detachEvent ev callback
   else
     let opts : event_listener_options t = Js.Unsafe.obj [||] in
-    let set t f =
+    let iter t f =
       match t with
       | None -> ()
       | Some b -> f b
     in
-    set capture (fun b -> opts##.capture := b);
-    set once (fun b -> opts##.once := b);
-    set passive (fun b -> opts##.passive := b);
+    iter capture (fun b -> opts##.capture := b);
+    iter once (fun b -> opts##.once := b);
+    iter passive (fun b -> opts##.passive := b);
     let () = (Js.Unsafe.coerce e)##addEventListener typ h opts in
     fun () -> (Js.Unsafe.coerce e)##removeEventListener typ h opts
 
