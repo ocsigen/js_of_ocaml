@@ -990,8 +990,8 @@ struct
           last_semi ();
           PP.end_group f;
           PP.end_group f
-          (* There MUST be a space between the return and its
-             argument. A line return will not work *)
+      (* There MUST be a space between the return and its
+       argument. A line return will not work *)
       )
     | Labelled_statement (i, s) ->
         PP.string f (Javascript.Label.to_string i);
