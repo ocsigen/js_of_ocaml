@@ -816,6 +816,8 @@ type event_listener_id = Dom.event_listener_id
 
 let addEventListener = Dom.addEventListener
 
+let addEventListenerWithOptions = Dom.addEventListenerWithOptions
+
 let removeEventListener = Dom.removeEventListener
 
 class type ['node] collection =
