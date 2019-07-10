@@ -44,10 +44,6 @@ let tuple ?loc ?attrs = function
 
 let str ?loc ?attrs s = Exp.constant ?loc ?attrs (Pconst_string (s, None))
 
-module Pervasives = struct
-  let ( ! ) = ( ! )
-end
-
 (** Check if an expression is an identifier and returns it.
     Raise a Location.error if it's not.
 *)
