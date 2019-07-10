@@ -6,7 +6,7 @@
              ocaml-migrate-parsetree)
   (ppx_runtime_libraries js_of_ocaml)
   (kind ppx_rewriter)
-  (preprocess (pps ppx_tools_versioned.metaquot_407)))
+  (preprocess (pps ppx_tools_versioned.metaquot_408)))
 
 
 (rule
