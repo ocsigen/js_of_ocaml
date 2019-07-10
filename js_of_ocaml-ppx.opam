@@ -17,6 +17,6 @@ depends: [
   "ocaml" {>= "4.02.0"}
   "dune" {build & >= "1.2"}
   "ocaml-migrate-parsetree" {>= "1.4"}
-  "ppx_tools_versioned" {>= "5.2.2"}
+  "ppx_tools_versioned" {>= "5.2.3"}
   "js_of_ocaml" {>= "3.0"}
 ]
