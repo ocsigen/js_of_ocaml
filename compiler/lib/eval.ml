@@ -360,7 +360,7 @@ let drop_exception_handler blocks =
   Addr.Map.fold
     (fun pc _ blocks ->
       match Addr.Map.find pc blocks with
-      | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2, _)
+      | { branch = Pushtrap (((addr, _) as cont1), _x, _cont2, addrset)
         ; handler = parent_hander
         ; _ } as b -> (
         try
@@ -374,8 +374,8 @@ let drop_exception_handler blocks =
                 assert (Poly.(b.handler <> parent_hander));
                 let branch =
                   match b.branch with
-                  | Poptrap (cont, pushtrap) ->
-                      assert (pc = pushtrap);
+                  | Poptrap (((addr, _) as cont), _) ->
+                      assert (Addr.Set.mem addr addrset);
                       Branch cont
                   | x -> x
                 in
