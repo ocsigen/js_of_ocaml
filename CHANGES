@@ -6,16 +6,19 @@
  ** Compiler: refactoring (#781, #782, #787, #795, #802)
  ** Compiler: more source map location for the javascript runtime (#795)
  ** Runtime: support sharing when marshaling (#814)
+ ** Ppx: switch ppx rewriter to the OCaml 4.08 ast
  ** Misc: Improve CI speed
  ** Misc: remove ppx_deriving dependency
  ** Misc: remove cppo dependency
  ** Misc: remove ppx_tools_versioned dependency in ppx_deriving_json
  ** Misc: support for ocaml 4.09
- ** Lib: Add support for 'addEventListener' with options
+ ** Misc: switch to ocamlformat.0.10
+ ** Lib: Add support for 'addEventListener' with options (#807)
 
  * Bug fixes:
  ** Compiler: don't generate source if no-source-map passed (#780)
  ** Compiler: Fix compilation of [Array.set] to return [unit]/0 (#792)
+ ** Compiler: Fix assertion failure (#828)
  ** Misc: Fix install on windows (#794)
  ** Lib: Fix Dom_svg.createForeignObject (#756)
  ** Runtime: Fix caml_obj_tag, causing miscompilation with lazy value (#772)
