@@ -44,16 +44,16 @@ let%expect_test "static eval of string get" =
     let my_truncate t i = Obj.truncate (Obj.repr [t]) i
   |}
   in
-  print_fun_decl program "my_is_block";
-  print_fun_decl program "my_is_int";
-  print_fun_decl program "my_tag";
-  print_fun_decl program "my_size";
-  print_fun_decl program "my_field";
-  print_fun_decl program "my_set_field";
-  print_fun_decl program "my_set_tag";
-  print_fun_decl program "my_new_block";
-  print_fun_decl program "my_dup";
-  print_fun_decl program "my_truncate";
+  print_fun_decl program (Some "my_is_block");
+  print_fun_decl program (Some "my_is_int");
+  print_fun_decl program (Some "my_tag");
+  print_fun_decl program (Some "my_size");
+  print_fun_decl program (Some "my_field");
+  print_fun_decl program (Some "my_set_field");
+  print_fun_decl program (Some "my_set_tag");
+  print_fun_decl program (Some "my_new_block");
+  print_fun_decl program (Some "my_dup");
+  print_fun_decl program (Some "my_truncate");
   [%expect
     {|
     function my_is_block(x){return caml_call1(Stdlib_obj[1],x)}

@@ -39,7 +39,7 @@ let%expect_test "static eval of string get" =
       let _ = do_the_lazy_rec 8
   |}
   in
-  print_fun_decl program "do_the_lazy_rec";
+  print_fun_decl program (Some "do_the_lazy_rec");
   [%expect
     {|
     function do_the_lazy_rec(n)

@@ -187,13 +187,19 @@ let compile_bc_to_javascript ?flags ?(pretty = true) ?(sourcemap = true) file =
 let compile_cmo_to_javascript ?(pretty = true) ?(sourcemap = true) file =
   Filetype.path_of_cmo_file file |> compile_to_javascript ~pretty ~sourcemap
 
-let compile_ocaml_to_cmo file =
+let compile_ocaml_to_cmo ?(debug = true) file =
   let file = Filetype.path_of_ocaml_file file in
   let out_file = swap_extention file ~ext:"cmo" in
   let (stdout : string) =
     exec_to_string_exn
       ~env:[]
-      ~cmd:(Format.sprintf "%s -c -g %s -o %s" ocamlc file out_file)
+      ~cmd:
+        (Format.sprintf
+           "%s -c %s %s -o %s"
+           ocamlc
+           (if debug then "-g" else "")
+           file
+           out_file)
   in
   print_string stdout;
   Filetype.cmo_file_of_path out_file
@@ -262,10 +268,15 @@ class find_function_declaration r n =
 
     method! source s =
       (match s with
-      | Function_declaration ((Jsoo.Javascript.S {name; _}, _, _, _) as fd) when name = n
-        ->
-          r := fd :: !r
-      | Function_declaration _ | Statement _ -> ());
+      | Function_declaration fd ->
+          let record =
+            match fd, n with
+            | _, None -> true
+            | (Jsoo.Javascript.S {name; _}, _, _, _), Some n -> name = n
+            | _ -> false
+          in
+          if record then r := fd :: !r
+      | Statement _ -> ());
       super#source s
   end
 

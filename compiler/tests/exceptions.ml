@@ -18,44 +18,40 @@
  *)
 open Util
 
-(* https://github.com/ocsigen/js_of_ocaml/issues/827 *)
+(* https://github.com/ocsigen/js_of_ocaml/issues/829 *)
 
 let%expect_test _ =
-  let compile s =
+  let compile ~debug s =
     s
     |> Filetype.ocaml_text_of_string
     |> Filetype.write_ocaml
-    |> compile_ocaml_to_cmo
-    |> compile_cmo_to_javascript ~pretty:true
+    |> compile_ocaml_to_cmo ~debug
+    |> compile_cmo_to_javascript ~pretty:true ~sourcemap:debug
     |> fst
     |> parse_js
   in
-  let program =
+  let program ~debug =
     compile
+      ~debug
       {|
-[@@@ocaml.warning "-26-27"]
-let some_name () =
-try raise Not_found with
-| f ->
-      (try fun g -> 0 with h -> fun h -> raise Not_found)
-        (let o =
-           ( try
-               fun a ->
-                 try try fun c -> 0 with q -> raise (Not_found) with
-                 | f ->
-                     raise Not_found
-             with
-           | h ->
-             (raise Not_found) )
-             ()
-         in
-         try
-           let m = try [] with j -> [] in
-           true
-         with
-         | s ->
-             true)
-                   |}
+let some_name () = raise (try try raise Not_found with x -> x with i -> i)
+let prevent_inline = some_name
+      |}
   in
-  print_fun_decl program (Some "some_name");
-  [%expect {| function some_name(param){try {throw Stdlib[8]}catch(_a_){return 0}} |}]
+  print_fun_decl (program ~debug:true) None;
+  [%expect
+    {|
+    function some_name(param)
+     {try
+       {try {throw Stdlib[8]}catch(x){x = caml_wrap_exception(x);var i=x}}
+      catch(i$0){i$0 = caml_wrap_exception(i$0);var i=i$0}
+      throw i} |}];
+  print_fun_decl (program ~debug:false) None;
+  [%expect
+    {|
+    Some variables escaped (#1)_a_
+    function _b_(_c_)
+     {try
+       {try {throw Stdlib[8]}catch(_a_){_a_ = caml_wrap_exception(_a_)}}
+      catch(_d_){_d_ = caml_wrap_exception(_d_);throw _d_}
+      throw _a_} |}]

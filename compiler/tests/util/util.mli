@@ -23,7 +23,7 @@ module Filetype : Filetype_intf.S
 
 val parse_js : Filetype.js_file -> Javascript.program
 
-val compile_ocaml_to_cmo : Filetype.ocaml_file -> Filetype.cmo_file
+val compile_ocaml_to_cmo : ?debug:bool -> Filetype.ocaml_file -> Filetype.cmo_file
 
 val compile_ocaml_to_bc : Filetype.ocaml_file -> Filetype.bc_file
 
@@ -48,6 +48,6 @@ val expression_to_string : ?compact:bool -> Javascript.expression -> string
 
 val print_var_decl : Javascript.program -> string -> unit
 
-val print_fun_decl : Javascript.program -> string -> unit
+val print_fun_decl : Javascript.program -> string option -> unit
 
 val compile_and_run : ?flags:string list -> string -> unit
