@@ -1348,7 +1348,6 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             let m = Subst.build_mapping args2 block2.params in
             try Var.Map.find x m with Not_found -> x
           in
-          let x' = Var.fork x in
           let handler = compile_block st [] pc2 inner_frontier new_interm in
           if debug () then Format.eprintf "}@]@ ";
           Addr.Set.iter (decr_preds st) grey;
@@ -1357,6 +1356,7 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             then
               let pc = Addr.Set.choose grey' in
               let exn_escape =
+                let x' = Var.fork x in
                 let found = ref false in
                 let map_var y =
                   if Code.Var.equal x y
@@ -1372,12 +1372,12 @@ and compile_block st queue (pc : Addr.t) frontier interm =
                   Code.traverse Code.fold_children subst_block pc st.blocks st.blocks
                 in
                 if !found then st.blocks <- blocks;
-                !found
+                if !found then Some x' else None
               in
               if Addr.Set.mem pc frontier
               then [], exn_escape
               else compile_block st [] pc frontier interm, exn_escape
-            else [], false
+            else [], None
           in
           let handler =
             if st.ctx.Ctx.live.(Var.idx x) > 0 && Config.Flag.excwrap ()
@@ -1398,9 +1398,10 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             else handler
           in
           let handler =
-            if exn_escape
-            then handler @ [J.Variable_statement [J.V x', Some (EVar (J.V x), J.N)], J.N]
-            else handler
+            match exn_escape with
+            | Some x' ->
+                handler @ [J.Variable_statement [J.V x', Some (EVar (J.V x), J.N)], J.N]
+            | None -> handler
           in
           flush_all
             queue
