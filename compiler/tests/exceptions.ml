@@ -49,9 +49,10 @@ let prevent_inline = some_name
   print_fun_decl (program ~debug:false) None;
   [%expect
     {|
-    Some variables escaped (#1)_a_
-    function _b_(_c_)
+    function _a_(_b_)
      {try
-       {try {throw Stdlib[8]}catch(_a_){_a_ = caml_wrap_exception(_a_)}}
+       {try
+         {throw Stdlib[8]}
+        catch(_e_){_e_ = caml_wrap_exception(_e_);var _c_=_e_}}
       catch(_d_){_d_ = caml_wrap_exception(_d_);throw _d_}
-      throw _a_} |}]
+      throw _c_} |}]

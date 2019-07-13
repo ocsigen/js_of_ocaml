@@ -46,4 +46,4 @@ let%expect_test "array_set" =
 
 let%expect_test "array_set" =
   compile_and_run array_set;
-  [%expect {||}]
+  [%expect {| |}]
