@@ -1358,25 +1358,18 @@ and compile_block st queue (pc : Addr.t) frontier interm =
               let pc = Addr.Set.choose grey' in
               let exn_escape =
                 let found = ref false in
+                let map_var y =
+                  if Code.Var.equal x y
+                  then (
+                    found := true;
+                    x')
+                  else y
+                in
+                let subst_block pc blocks =
+                  Addr.Map.add pc (Subst.block map_var (Addr.Map.find pc blocks)) blocks
+                in
                 let blocks =
-                  Code.traverse
-                    Code.fold_children
-                    (fun pc blocks ->
-                      let b = Addr.Map.find pc blocks in
-                      let b =
-                        Subst.block
-                          (fun y ->
-                            if Code.Var.equal x y
-                            then (
-                              found := true;
-                              x')
-                            else y)
-                          b
-                      in
-                      Addr.Map.add pc b blocks)
-                    pc
-                    st.blocks
-                    st.blocks
+                  Code.traverse Code.fold_children subst_block pc st.blocks st.blocks
                 in
                 if !found then st.blocks <- blocks;
                 !found
