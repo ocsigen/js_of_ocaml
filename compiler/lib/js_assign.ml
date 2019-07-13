@@ -361,7 +361,7 @@ let program' (module Strategy : Strategy) p =
   mapper#block [];
   if S.cardinal mapper#get_free <> 0
   then
-    if false
+    if true
     then failwith_ "Some variables escaped (#%d)" (S.cardinal mapper#get_free)
     else (
       Format.eprintf "Some variables escaped (#%d)" (S.cardinal mapper#get_free);
