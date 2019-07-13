@@ -22,7 +22,8 @@ function fs_node_supported () {
   return (
     typeof joo_global_object.process !== 'undefined'
       && typeof joo_global_object.process.versions !== 'undefined'
-      && typeof joo_global_object.process.versions.node !== 'undefined')
+      && typeof joo_global_object.process.versions.node !== 'undefined'
+      && joo_global_object.process.platform !== "browser")
 }
 
 //Provides: MlNodeDevice
