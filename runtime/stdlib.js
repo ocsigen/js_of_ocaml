@@ -214,7 +214,7 @@ function caml_obj_is_block (x) { return +(x instanceof Array); }
 
 //Provides: caml_obj_tag
 //Requires: MlBytes
-function caml_obj_tag (x) { return (x instanceof Array)?x[0]:(x instanceof MlBytes)?252:1000; }
+function caml_obj_tag (x) { return (x instanceof Array)?x[0]:(x instanceof MlBytes)?252:(x instanceof joo_global_object.Function)?247:1000; }
 //Provides: caml_obj_set_tag (mutable, const)
 function caml_obj_set_tag (x, tag) { x[0] = tag; return 0; }
 //Provides: caml_obj_block const (const,const)
