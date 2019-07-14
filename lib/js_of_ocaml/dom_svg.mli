@@ -196,10 +196,10 @@ class type ['a] list =
 
 (* interface SVGElement *)
 class type element =
-  object
+  object ('self)
     inherit Dom.element
 
-    inherit Dom_html.eventTarget
+    inherit ['self] DomEvent.eventTarget
 
     method id : js_string t prop
 
@@ -568,7 +568,6 @@ and defsElement =
     inherit stylable
 
     inherit transformable
-    (* XXXXXXX ? inherit Dom_html.eventTarget *)
   end
 
 (* interface SVGDescElement *)
@@ -579,7 +578,6 @@ and descElement =
     inherit langSpace
 
     inherit stylable
-    (* XXXXXXX ? inherit Dom_html.eventTarget *)
   end
 
 (* interface SVGTitleElement *)
@@ -1188,8 +1186,6 @@ and textContentElement =
     inherit externalResourcesRequired
 
     inherit stylable
-
-    inherit Dom_html.eventTarget
 
     method textLength : animatedLength t readonly_prop
 

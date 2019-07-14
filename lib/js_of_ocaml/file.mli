@@ -174,7 +174,7 @@ val fileReader : fileReader t constr
 
 val addEventListener :
      (#progressEventTarget t as 'a)
-  -> 'b Event.typ
+  -> 'b Dom.Event.typ
   -> ('a, 'b) event_listener
   -> bool t
   -> event_listener_id
