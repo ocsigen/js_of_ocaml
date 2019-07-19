@@ -795,7 +795,9 @@ module Json = struct
 
   let sig_type_decl = Ppxlib.Deriving.Generator.make_noarg type_decl_sig
 
-  let deriver = Ppxlib.Deriving.add name ~str_type_decl ~sig_type_decl
+  let extension ~loc:_ ~path:_ ctyp = core_type_exp ctyp
+
+  let deriver = Ppxlib.Deriving.add name ~str_type_decl ~sig_type_decl ~extension
 end
 
 let json_of = Json_of.deriver
