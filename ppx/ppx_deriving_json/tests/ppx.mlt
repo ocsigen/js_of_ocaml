@@ -264,7 +264,21 @@ val poly2_to_json : Buffer.t -> poly2 -> unit = <fun>
 val poly2_json : poly2 Deriving_Json.t = <abstr>
 |}]
 
+type poly3 =
+  [ poly1
+  | `C of [`p1 of poly1 | `p2 of poly2 | `p3 of poly3] ]
+[@@deriving json]
+
+[%%expect
+{|
+Line _:
+Error: This expression has type poly3 but an expression was expected of type
+         [ `p1 of poly1 | `p2 of poly2 | `p3 of poly3 ]
+       These two variant types have no intersection
+|}]
+
 let () = test' tuple1_json "tuple1" (42, "42")
+
 
 [%%expect {|
 tuple1 = [0,42,"42"]
@@ -341,6 +355,21 @@ let () = test' poly2_json "poly2 `C 42" (`C 42)
 
 [%%expect {|
 poly2 `C 42 = [0,67,42]
+|}]
+
+let () = test' poly3_json "poly3" (`C (`p3 (`C (`p1 `A))))
+
+[%%expect {|
+Line _, characters 15-25:
+Error: Unbound value poly3_json
+Hint: Did you mean poly1_json or poly2_json?
+|}]
+
+let () = test' poly3_json "poly3" (`A)
+[%%expect {|
+Line _, characters 15-25:
+Error: Unbound value poly3_json
+Hint: Did you mean poly1_json or poly2_json?
 |}]
 
 type inline_record =
