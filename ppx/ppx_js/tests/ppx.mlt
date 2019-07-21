@@ -169,7 +169,7 @@ fun (obj : < m : 'a. 'a -> unit Js.meth > Js.t) ->
 
 [%%expect
 {|
-Line _, characters 79-82:
+Line _, characters 2-5:
 Error: This expression has type < m : 'a. 'a -> unit Js_of_ocaml.Js.meth >
        It has no method w
 |}]
@@ -291,7 +291,7 @@ fun (obj : < > Js.t) ->
 
 [%%expect
 {|
-Line _, characters 30-54:
+Line _, characters 4-38:
 Error: This expression has type
          < m : unit Js_of_ocaml.Js.readonly_prop > Js_of_ocaml.Js.t
        but an expression was expected of type <  > Js_of_ocaml.Js.t
@@ -307,7 +307,7 @@ fun (obj : < m : float Js.prop > Js.t) ->
 
 [%%expect
 {|
-Line _, characters 48-79:
+Line _, characters 4-45:
 Error: This expression has type
          < m : int Js_of_ocaml.Js.prop > Js_of_ocaml.Js.t
        but an expression was expected of type
@@ -334,7 +334,7 @@ fun () ->
 
 [%%expect
 {|
-Line _, characters 3-73:
+Line _, characters 3-79:
 Error: This expression has type
          < m : string Js_of_ocaml.Js.meth;
            r : int Js_of_ocaml.Js.readonly_prop;
@@ -372,9 +372,9 @@ fun () ->
 
 [%%expect
 {|
-Line _, characters 8-12:
+Line _, characters 9-13:
 Error: Duplicated val or method "_r_b" (normalized to "r").
-Line _, characters 8-12:
+Line _, characters 9-13:
   Duplicated val or method "_r_a" (normalized to "r").
 |}]
 
@@ -405,9 +405,9 @@ fun () ->
 
 [%%expect
 {|
-Line _, characters 16-20:
+Line _, characters 17-21:
 Error: Duplicated val or method "_w_b" (normalized to "w").
-Line _, characters 16-20:
+Line _, characters 17-21:
   Duplicated val or method "_w_a" (normalized to "w").
 |}]
 
@@ -438,9 +438,9 @@ fun () ->
 
 [%%expect
 {|
-Line _, characters 11-16:
+Line _, characters 12-17:
 Error: Duplicated val or method "_m_bc" (normalized to "m").
-Line _, characters 11-15:
+Line _, characters 12-16:
   Duplicated val or method "_m_a" (normalized to "m").
 |}]
 
@@ -457,7 +457,7 @@ fun () ->
 
 [%%expect
 {|
-Line _, characters 3-96:
+Line _, characters 3-102:
 Error: This expression has type
          < m : string Js_of_ocaml.Js.meth;
            r : int Js_of_ocaml.Js.optdef_prop;
@@ -488,7 +488,7 @@ fun () ->
 
 [%%expect
 {|
-Line _, characters 3-92:
+Line _, characters 3-98:
 Error: This expression has type
          < m : string Js_of_ocaml.Js.meth;
            r : int Js_of_ocaml.Js.writeonly_prop;
@@ -517,7 +517,7 @@ fun () ->
     : < r : int Js.prop ; .. > Js.t)
 
 [%%expect {|
-Line _, characters 4-39:
+Line _, characters 5-40:
 Error: A mutable field cannot be readonly.
 |}]
 
@@ -534,7 +534,7 @@ fun () ->
 
 [%%expect
 {|
-Line _, characters 3-91:
+Line _, characters 3-97:
 Error: This expression has type
          < m : string Js_of_ocaml.Js.meth;
            r : int Js_of_ocaml.Js.readonly_prop;
@@ -563,7 +563,7 @@ fun () ->
     : < r : int Js.prop ; .. > Js.t)
 
 [%%expect {|
-Line _, characters 4-52:
+Line _, characters 5-54:
 Error: Too many attributes.
 |}]
 
@@ -579,7 +579,7 @@ fun () ->
     : < r : int Js.prop ; .. > Js.t)
 
 [%%expect {|
-Line _, characters 4-36:
+Line _, characters 5-37:
 Error: Unkown jsoo attribute ([@@jsoo.wrong]).
 |}]
 
