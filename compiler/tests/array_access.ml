@@ -39,11 +39,11 @@ let%expect_test "array_set" =
     |> parse_js
   in
   let program = compile array_set in
-  print_fun_decl program "some_name";
+  print_fun_decl program (Some "some_name");
   [%expect
     {|
     function some_name(a,n){runtime.caml_check_bound(a,n)[1 + n] = n;return 1} |}]
 
 let%expect_test "array_set" =
   compile_and_run array_set;
-  [%expect {||}]
+  [%expect {| |}]

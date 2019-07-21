@@ -1349,6 +1349,36 @@ and compile_block st queue (pc : Addr.t) frontier interm =
             try Var.Map.find x m with Not_found -> x
           in
           let handler = compile_block st [] pc2 inner_frontier new_interm in
+          if debug () then Format.eprintf "}@]@ ";
+          Addr.Set.iter (decr_preds st) grey;
+          let after, exn_escape =
+            if not (Addr.Set.is_empty grey')
+            then
+              let pc = Addr.Set.choose grey' in
+              let exn_escape =
+                let x' = Var.fork x in
+                let found = ref false in
+                let map_var y =
+                  if Code.Var.equal x y
+                  then (
+                    found := true;
+                    x')
+                  else y
+                in
+                let subst_block pc blocks =
+                  Addr.Map.add pc (Subst.block map_var (Addr.Map.find pc blocks)) blocks
+                in
+                let blocks =
+                  Code.traverse Code.fold_children subst_block pc st.blocks st.blocks
+                in
+                if !found then st.blocks <- blocks;
+                if !found then Some x' else None
+              in
+              if Addr.Set.mem pc frontier
+              then [], exn_escape
+              else compile_block st [] pc frontier interm, exn_escape
+            else [], None
+          in
           let handler =
             if st.ctx.Ctx.live.(Var.idx x) > 0 && Config.Flag.excwrap ()
             then
@@ -1367,20 +1397,17 @@ and compile_block st queue (pc : Addr.t) frontier interm =
               :: handler
             else handler
           in
-          if debug () then Format.eprintf "}@]@ ";
-          Addr.Set.iter (decr_preds st) grey;
+          let handler =
+            match exn_escape with
+            | Some x' ->
+                handler @ [J.Variable_statement [J.V x', Some (EVar (J.V x), J.N)], J.N]
+            | None -> handler
+          in
           flush_all
             queue
             (( J.Try_statement (body, Some (J.V x, handler), None)
              , source_location st.ctx pc )
-            ::
-            (if not (Addr.Set.is_empty grey')
-            then
-              let pc = Addr.Set.choose grey' in
-              if Addr.Set.mem pc frontier
-              then []
-              else compile_block st [] pc frontier interm
-            else []))
+            :: after)
       | _ ->
           let new_frontier, new_interm = colapse_frontier st new_frontier interm in
           assert (Addr.Set.cardinal new_frontier <= 1);

@@ -77,8 +77,8 @@ let fun2 () =
 
   |}
   in
-  print_fun_decl program "fun1";
-  print_fun_decl program "fun2";
+  print_fun_decl program (Some "fun1");
+  print_fun_decl program (Some "fun2");
   [%expect
     {|
     function fun1(param)

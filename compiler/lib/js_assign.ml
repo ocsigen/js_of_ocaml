@@ -361,8 +361,11 @@ let program' (module Strategy : Strategy) p =
   mapper#block [];
   if S.cardinal mapper#get_free <> 0
   then
-    failwith_ "Some variables escaped (#%d)" (S.cardinal mapper#get_free)
-    (* S.iter(fun s -> (Format.eprintf "%s@." (Var.to_string s))) coloring#get_free *);
+    if true
+    then failwith_ "Some variables escaped (#%d)" (S.cardinal mapper#get_free)
+    else (
+      Format.eprintf "Some variables escaped (#%d)" (S.cardinal mapper#get_free);
+      S.iter (fun s -> Format.eprintf "%s@." (Var.to_string s)) mapper#get_free);
   let names = Strategy.allocate_variables state ~count:mapper#state.Js_traverse.count in
   (* if debug () then output_debug_information state coloring#state.Js_traverse.count; *)
   let color = function

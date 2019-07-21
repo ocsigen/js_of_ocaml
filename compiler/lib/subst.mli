@@ -28,6 +28,8 @@ val instr : (Var.t -> Var.t) -> instr -> instr
 
 val instrs : (Var.t -> Var.t) -> instr list -> instr list
 
+val block : (Var.t -> Var.t) -> block -> block
+
 val last : (Var.t -> Var.t) -> last -> last
 
 val cont : (Var.t -> Var.t) -> int -> program -> program
