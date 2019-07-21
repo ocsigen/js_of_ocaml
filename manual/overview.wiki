@@ -113,3 +113,8 @@ functions can yield results different from usual:
   * the polymorphic hash function will not give the same results on
     datastructures containing floats;
   * these functions may be more prone to stack overflow.
+
+Note that float rounding is slightly different between native and
+JavaScript.  Both round to nearest but resolve the tie
+differently. Javascript resolves the tie away from zero while libc
+resolves the tee to even.
