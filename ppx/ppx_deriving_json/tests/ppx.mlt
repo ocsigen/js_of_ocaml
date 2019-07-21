@@ -1,80 +1,98 @@
+;;
 #directory "../../../lib/deriving_json/"
+
+;;
 #directory "../../../lib/deriving_json/.js_of_ocaml_deriving.objs"
+
+;;
 #directory "../../../lib/deriving_json/.js_of_ocaml_deriving.objs/byte/"
+
 [@@@warning "-39"]
 
-let test name v =
-  Format.printf "%s = %s\n%!" name v
+let test name v = Format.printf "%s = %s\n%!" name v
 
-let test' _to _from name  v =
+let test' _to _from name v =
   let b = Buffer.create 17 in
   let () = _to b v in
   let str = Buffer.contents b in
   Format.printf "%s = %s\n%!" name str
 
 open Deriving_Json
-[%%expect {|
+
+[%%expect
+{|
 val test : string -> string -> unit = <fun>
 val test' : (Buffer.t -> 'a -> unit) -> 'b -> string -> 'a -> unit = <fun>
-|}];;
+|}]
 
 let () = test "char" (Json_char.to_string '4')
+
 [%%expect {|
 char = 52
-|}];;
+|}]
 
 let () = test "bool" (Json_bool.to_string true)
+
 [%%expect {|
 bool = 1
 |}]
 
 let () = test "bool" (Json_bool.to_string false)
+
 [%%expect {|
 bool = 0
 |}]
 
 let () = test "unit" (Json_unit.to_string ())
+
 [%%expect {|
 unit = 0
 |}]
 
 let () = test "int" (Json_int.to_string 42)
+
 [%%expect {|
 int = 42
 |}]
 
 let () = test "int32" (Json_int32.to_string 42l)
+
 [%%expect {|
 int32 = 42
 |}]
 
 let () = test "int64" (Json_int64.to_string 42L)
+
 [%%expect {|
 int64 = [255,42,0,0]
 |}]
 
 (* let () = test "nativeint" (Json_nativeint.to_string 42n);; *)
 
-let () = test "float" (Json_float.to_string  42.42)
+let () = test "float" (Json_float.to_string 42.42)
+
 [%%expect {|
 float = 42.42
 |}]
 
-let () = test "string" (Json_string.to_string  "42")
+let () = test "string" (Json_string.to_string "42")
+
 [%%expect {|
 string = "42"
 |}]
 
-module Int_list   = Json_list(Json_int)
+module Int_list = Json_list (Json_int)
 
-module Int_ref    = Json_ref(Json_int)
+module Int_ref = Json_ref (Json_int)
 
-module Int_option = Json_option(Json_int)
+module Int_option = Json_option (Json_int)
 
-module Int_array  = Json_array(Json_int)
+module Int_array = Json_array (Json_int)
 
-let () = test "int_list" (Int_list.to_string  [4;2;42])
-[%%expect {|
+let () = test "int_list" (Int_list.to_string [4; 2; 42])
+
+[%%expect
+{|
 module Int_list :
   sig
     type a = Deriving_Json.Json_int.a list
@@ -127,59 +145,88 @@ int_list = [0,4,[0,2,[0,42,0]]]
 |}]
 
 let () = test "int_ref" (Int_ref.to_string (ref 42))
+
 [%%expect {|
 int_ref = [0,42]
 |}]
 
 let () = test "int_option" (Int_option.to_string (Some 42))
+
 [%%expect {|
 int_option = [0,42]
 |}]
 
 let () = test "int_option" (Int_option.to_string None)
+
 [%%expect {|
 int_option = 0
 |}]
 
-let () = test "int_array" (Int_array.to_string [|4;2;42;24|])
+let () = test "int_array" (Int_array.to_string [|4; 2; 42; 24|])
+
 [%%expect {|
 int_array = [0,4,2,42,24]
 |}]
 
-type tuple1 = (int * string) [@@deriving json]
-[%%expect {|
+type tuple1 = int * string [@@deriving json]
+
+[%%expect
+{|
 type tuple1 = int * string
 val tuple1_of_json : Deriving_Json_lexer.lexbuf -> tuple1 = <fun>
 val tuple1_to_json : Buffer.t -> tuple1 -> unit = <fun>
 val tuple1_json : tuple1 Deriving_Json.t = <abstr>
 |}]
 
-type variant1 = A | B | C | D of variant1 [@@deriving json]
-[%%expect {|
+type variant1 =
+  | A
+  | B
+  | C
+  | D of variant1
+[@@deriving json]
+
+[%%expect
+{|
 type variant1 = A | B | C | D of variant1
 val variant1_of_json : Deriving_Json_lexer.lexbuf -> variant1 = <fun>
 val variant1_to_json : Buffer.t -> variant1 -> unit = <fun>
 val variant1_json : variant1 Deriving_Json.t = <abstr>
 |}]
 
-type variant2 = D of string | E of variant1 [@@deriving json]
-[%%expect {|
+type variant2 =
+  | D of string
+  | E of variant1
+[@@deriving json]
+
+[%%expect
+{|
 type variant2 = D of string | E of variant1
 val variant2_of_json : Deriving_Json_lexer.lexbuf -> variant2 = <fun>
 val variant2_to_json : Buffer.t -> variant2 -> unit = <fun>
 val variant2_json : variant2 Deriving_Json.t = <abstr>
 |}]
 
-type record1 = { f : variant1; g : variant2; h : record1 option } [@@deriving json]
-[%%expect {|
+type record1 =
+  { f : variant1
+  ; g : variant2
+  ; h : record1 option }
+[@@deriving json]
+
+[%%expect
+{|
 type record1 = { f : variant1; g : variant2; h : record1 option; }
 val record1_of_json : Deriving_Json_lexer.lexbuf -> record1 = <fun>
 val record1_to_json : Buffer.t -> record1 -> unit = <fun>
 val record1_json : record1 Deriving_Json.t = <abstr>
 |}]
 
-type poly1 = [`A | `B of string] [@@deriving json]
-[%%expect {|
+type poly1 =
+  [ `A
+  | `B of string ]
+[@@deriving json]
+
+[%%expect
+{|
 type poly1 = [ `A | `B of string ]
 val poly1_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
 val poly1_of_json_with_tag :
@@ -190,8 +237,13 @@ val poly1_to_json : Buffer.t -> poly1 -> unit = <fun>
 val poly1_json : poly1 Deriving_Json.t = <abstr>
 |}]
 
-type poly2 = [poly1 | `C of int] [@@deriving json];;
-[%%expect {|
+type poly2 =
+  [ poly1
+  | `C of int ]
+[@@deriving json]
+
+[%%expect
+{|
 type poly2 = [ `A | `B of string | `C of int ]
 val poly2_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
 val poly2_of_json_with_tag :
@@ -202,83 +254,105 @@ val poly2_to_json : Buffer.t -> poly2 -> unit = <fun>
 val poly2_json : poly2 Deriving_Json.t = <abstr>
 |}]
 
-let () = test' tuple1_to_json tuple1_of_json "tuple1" ((42,"42"))
+let () = test' tuple1_to_json tuple1_of_json "tuple1" (42, "42")
+
 [%%expect {|
 tuple1 = [0,42,"42"]
 |}]
 
-let () = test' variant1_to_json variant1_of_json "variant1 A" (A)
+let () = test' variant1_to_json variant1_of_json "variant1 A" A
+
 [%%expect {|
 variant1 A = 0
 |}]
 
-let () = test' variant1_to_json variant1_of_json "variant1 B" (B)
+let () = test' variant1_to_json variant1_of_json "variant1 B" B
+
 [%%expect {|
 variant1 B = 1
 |}]
 
-let () = test' variant1_to_json variant1_of_json "variant1 C" (C)
+let () = test' variant1_to_json variant1_of_json "variant1 C" C
+
 [%%expect {|
 variant1 C = 2
 |}]
 
-let () = test' variant2_to_json variant2_of_json "variant2 D 'hello'" ((D "hello"))
+let () = test' variant2_to_json variant2_of_json "variant2 D 'hello'" (D "hello")
+
 [%%expect {|
 variant2 D 'hello' = [0,"hello"]
 |}]
 
-let () = test' variant2_to_json variant2_of_json "variant2 E A" ((E A))
+let () = test' variant2_to_json variant2_of_json "variant2 E A" (E A)
+
 [%%expect {|
 variant2 E A = [1,0]
 |}]
 
-let () = test' record1_to_json record1_of_json "record1" ({f = A; g = D "d"; h = None })
+let () = test' record1_to_json record1_of_json "record1" {f = A; g = D "d"; h = None}
+
 [%%expect {|
 record1 = [0,0,[0,"d"],0]
 |}]
 
-let () = test' record1_to_json record1_of_json "record1"
-           ({f = A;
-             g = D "d";
-             h = Some {f = B;
-                       g = E (D B);
-                       h = None }
-            })
+let () =
+  test'
+    record1_to_json
+    record1_of_json
+    "record1"
+    {f = A; g = D "d"; h = Some {f = B; g = E (D B); h = None}}
+
 [%%expect {|
 record1 = [0,0,[0,"d"],[0,[0,1,[1,[0,1]],0]]]
 |}]
 
-let () = test' poly1_to_json poly1_of_json "poly1 `A" (`A)
+let () = test' poly1_to_json poly1_of_json "poly1 `A" `A
+
 [%%expect {|
 poly1 `A = 65
 |}]
 
-let () = test' poly1_to_json poly1_of_json "poly1 `B str" ((`B "str"))
+let () = test' poly1_to_json poly1_of_json "poly1 `B str" (`B "str")
+
 [%%expect {|
 poly1 `B str = [0,66,"str"]
 |}]
 
-let () = test' poly2_to_json poly2_of_json "poly2 `A" (`A)
+let () = test' poly2_to_json poly2_of_json "poly2 `A" `A
+
 [%%expect {|
 poly2 `A = 65
 |}]
 
-let () = test' poly2_to_json poly2_of_json "poly2 `B str" ((`B "str"))
+let () = test' poly2_to_json poly2_of_json "poly2 `B str" (`B "str")
+
 [%%expect {|
 poly2 `B str = [0,66,"str"]
 |}]
 
-let () = test' poly2_to_json poly2_of_json "poly2 `C 42" ((`C 42))
+let () = test' poly2_to_json poly2_of_json "poly2 `C 42" (`C 42)
+
 [%%expect {|
 poly2 `C 42 = [0,67,42]
 |}]
 
+type inline_record =
+  | I of
+      { name : string
+      ; age : int }
+  | J of {empty : unit}
+[@@deriving json]
 
-type inline_record = | I of {name: string; age : int} | J of {empty : unit} [@@deriving json]
+let () =
+  test'
+    inline_record_to_json
+    inline_record_of_json
+    "inline_record 1"
+    (I {name = "bob"; age = 0})
 
-let () = test' inline_record_to_json inline_record_of_json "inline_record 1"
-           (I {name="bob"; age = 0})
-[%%expect {|
+[%%expect
+{|
 type inline_record =
     I of { name : string; age : int; }
   | J of { empty : unit; }
@@ -289,9 +363,9 @@ val inline_record_json : inline_record Deriving_Json.t = <abstr>
 inline_record 1 = [0,"bob",0]
 |}]
 
-let () = test' inline_record_to_json inline_record_of_json "inline_record 2"
-    (J {empty = ()})
+let () =
+  test' inline_record_to_json inline_record_of_json "inline_record 2" (J {empty = ()})
+
 [%%expect {|
 inline_record 2 = [1,0]
 |}]
-;;
