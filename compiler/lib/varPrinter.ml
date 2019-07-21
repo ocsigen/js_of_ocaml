@@ -99,7 +99,14 @@ let name t v nm_orig =
       else pending := true
     done;
     let str = Buffer.contents buf in
-    if String.length str > 0 then name_raw t v str)
+    let str =
+      match str, nm_orig with
+      | "", ">>=" -> "symbol_bind"
+      | "", ">>|" -> "symbol_map"
+      | "", _ -> "symbol"
+      | str, _ -> str
+    in
+    name_raw t v str)
 
 let get_name t v = try Some (Hashtbl.find t.names v) with Not_found -> None
 
