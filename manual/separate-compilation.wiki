@@ -18,8 +18,8 @@ elimination almost useless.
 
 == Compilation scheme
 
-Js_of_ocaml separate compilation is somewhat similar to the OCaml separate
-compilation with some differences.
+Js_of_ocaml separate compilation is somewhat similar to the OCaml
+separate compilation with some differences.
 
 The general idea is generate one JavaScript file containing the
 JavaScript runtime and JavaScript files for every compilation unit (or
@@ -29,13 +29,32 @@ the order induced by dependencies, into a single JavaScript file.
 
 === 1. Build the runtime
 
+To build a standalone runtime:
 {{{
-js_of_ocaml --runtime-only ${ALL_RUNTIME_FILES} -o my-runtime.js
+js_of_ocaml --runtime-only -o my-runtime.js dummy
+}}}
+
+Additional runtime files are sometime needed and can be passed on the
+command line.  In particular, some packages/libraries come with their
+own runtime file.
+
+As an example, compiling a program that has a dependency on {{{base}}}
+will require the {{{runtime.js}}}} file provided by base.
+
+{{{
+js_of_ocaml --runtime-only -o my-runtime.js PATH_TO_BASE_LIB/runtime.js dummy
+}}}
+
+If js_of_ocaml is compiled with findlib support, one can also use the
+following syntax {{{ +{findlib-package}/{javascript-file} }}}.
+
+{{{
+js_of_ocaml --runtime-only -o my-runtime.js +base/runtime.js dummy
 }}}
 
 === 2. Build compilation units
 
-In addtion to bytecode executables, the js_of_ocaml compiler can
+In addition to bytecode executables, the js_of_ocaml compiler can
 process compilation units (.cmo) and libraries (.cma).
 
 One can specify the name of the generated file with {{{-o}}}. By
@@ -63,7 +82,7 @@ js_of_ocaml libname.cma --keep-unit-names -o libname/
 #generates libname/Unit1.js libname/Unit2.js
 }}}
 
-=== Link
+=== 3. Link
 
 The final step is to link all individual JavaScript files into a
 single one.  The js_of_ocaml-compiler provides a separate tool called
@@ -72,8 +91,12 @@ JavaScript filename as input and concatenates them all (merging
 source-maps together if needed).
 
 {{{
-jsoo_link my-runtime.js stdlib.js libname.js -o myexe.js
+jsoo_link my-runtime.js stdlib.js libname.js modname.js -o myexe.js
 }}}
+
+Note that, unlike the ocaml compiler, the ocaml stdlib need to be
+passed explicitly (here, {stdlib.js} is the result of compiling
+{stdlib.cma}).
 
 == Support in dune
 
@@ -83,3 +106,18 @@ the build profile is dev, which is the default.  There is currently no
 other way to control this behaviour.
 
 See [[https://dune.readthedocs.io/en/latest/jsoo.html|dune documentation]]
+
+== Source-maps support
+
+Separate compilation can be used together with source-map.  The
+recommended way is to build all individual javascript files with
+inlined source-map by passing {{{--source-map-inline}}} to both
+{{{js_of_ocaml}}} and {{{jsoo_link}}}.
+
+Note that other configurations have not been well tested and might
+require additional tuning.
+
+== Building Toplevel
+
+Building a toplevel using separate compilation is not supported / has
+not been tested yet.
