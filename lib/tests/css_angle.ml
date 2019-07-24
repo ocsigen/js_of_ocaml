@@ -18,13 +18,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(*CSS.Angle test suite*)
 open Js_of_ocaml
-open Common
 
-let log_stop = log_start "CSS.Angle test suite"
-
-let () =
+let%expect_test _ =
   let a =
     [ CSS.Angle.Rad 0.1
     ; CSS.Angle.Turns 0.12
@@ -39,16 +35,12 @@ let () =
         let js = CSS.Angle.js c in
         let ml = CSS.Angle.ml js in
         if c = ml
-        then log_success ()
+        then ()
         else
-          log_failure
-            (Printf.sprintf
-               "%s   %s"
-               (CSS.Angle.string_of_t c)
-               (CSS.Angle.string_of_t ml))
-      with
-      | Invalid_argument s -> log_failure s
-      | Failure s -> log_failure s)
-    a
-
-let () = log_stop ()
+          Printf.printf
+            "%s <>  %s\n%!"
+            (CSS.Angle.string_of_t c)
+            (CSS.Angle.string_of_t ml)
+      with exn -> print_endline (Printexc.to_string exn))
+    a;
+  [%expect {||}]

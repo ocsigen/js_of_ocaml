@@ -19,11 +19,8 @@
  *)
 
 open Js_of_ocaml
-open Common
 
-let log_stop = log_start "CSS.Colors test suite"
-
-let () =
+let%expect_test _ =
   let cols =
     [ CSS.Color.RGB (120, 3, 56)
     ; CSS.Color.RGBA (120, 3, 56, 1.)
@@ -42,16 +39,8 @@ let () =
         let js = CSS.Color.js c in
         let ml = CSS.Color.ml js in
         if c = ml
-        then log_success ()
-        else
-          log_failure
-            (Printf.sprintf
-               "%s   %s"
-               (CSS.Color.string_of_t c)
-               (CSS.Color.string_of_t ml))
-      with
-      | Invalid_argument s -> log_failure s
-      | Failure s -> log_failure s)
-    cols
-
-let () = log_stop ()
+        then ()
+        else Printf.printf "%s   %s" (CSS.Color.string_of_t c) (CSS.Color.string_of_t ml)
+      with exn -> print_endline (Printexc.to_string exn))
+    cols;
+  [%expect {||}]

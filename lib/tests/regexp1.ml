@@ -19,36 +19,34 @@
  *)
 
 open Js_of_ocaml
-open Common
 
-let log_stop = log_start "Regexp test suite"
-
-let () =
+let%expect_test _ =
   let re1 = Regexp.regexp "ab?" in
   let re2 = Regexp.regexp "\\." in
   let re3 = Regexp.regexp_string "(.)\\(.)" in
   let s1 = "totobtutua" in
   let s2 = "rr.ee.ab.a.b.bb.a.ee." in
   (match Regexp.string_match re1 s1 0 with
-  | None -> log_failure "Can't match 1 1"
+  | None -> print_endline "Can't match 1 1"
   | Some r ->
       let x = Regexp.matched_string r in
-      if x = "a" then log_success () else log_failure ("Wrong match 1 1: " ^ x));
+      if x = "a" then () else print_endline ("Wrong match 1 1: " ^ x));
+  [%expect {||}];
   (match Regexp.string_match re1 s2 0 with
-  | None -> log_failure "Can't match 1 2"
+  | None -> print_endline "Can't match 1 2"
   | Some r ->
       let x = Regexp.matched_string r in
-      if x = "ab" then log_success () else log_failure ("Wrong match 1 2: " ^ x));
+      if x = "ab" then () else print_endline ("Wrong match 1 2: " ^ x));
+  [%expect {||}];
   (let l = Regexp.split re2 s2 in
    if l = ["rr"; "ee"; "ab"; "a"; "b"; "bb"; "a"; "ee"; ""]
-   then log_success ()
-   else log_failure "Wrong split 2 2");
+   then ()
+   else print_endline "Wrong split 2 2");
+  [%expect {||}];
   (let x = Regexp.global_replace re2 s2 "" in
-   if x = "rreeababbbaee"
-   then log_success ()
-   else log_failure ("Wrong replacement 2 2: " ^ x));
-  match Regexp.string_match re3 "(.)\\(.)" 0 with
-  | None -> log_failure "Quote 3 3"
-  | Some _ -> log_success ()
-
-let () = log_stop ()
+   if x = "rreeababbbaee" then () else print_endline ("Wrong replacement 2 2: " ^ x));
+  [%expect {||}];
+  (match Regexp.string_match re3 "(.)\\(.)" 0 with
+  | None -> print_endline "Quote 3 3"
+  | Some _ -> ());
+  [%expect {||}]

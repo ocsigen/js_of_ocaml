@@ -19,10 +19,8 @@
  *)
 
 (* Json conversion *)
-open! Common
 
-(*
-let log_stop = log_start "Json"
+open Js_of_ocaml
 
 let str =
   let b = Buffer.create 256 in
@@ -31,56 +29,42 @@ let str =
   done;
   Buffer.contents b
 
+[@@@ocaml.warning "-39"]
+
 type t = int list * float option * string [@@deriving json]
 
 let test t v =
-  if v = Json.unsafe_input (Json.output v)
-  then log_success ()
-  else log_failure "Not equal";
+  if v = Json.unsafe_input (Json.output v) then () else print_endline "Not equal";
   if v = Deriving_Json.from_string t (Js.to_string (Json.output v))
-  then log_success ()
-  else log_failure "Not equal";
+  then ()
+  else print_endline "Not equal";
   if v = Json.unsafe_input (Js.string (Deriving_Json.to_string t v))
-  then log_success ()
-  else log_failure "Not equal";
+  then ()
+  else print_endline "Not equal";
   if v = Deriving_Json.from_string t (Deriving_Json.to_string t v)
-  then log_success ()
-  else log_failure "Not equal"
+  then ()
+  else print_endline "Not equal"
 
-let _ = test Json.t<t> ([1;2;3], Some 1., str)
+let%expect_test _ =
+  test json ([1; 2; 3], Some 1., str);
+  [%expect {||}]
 
-type intseq = Z | S of int * intseq [@@deriving json]
+type intseq =
+  | Z
+  | S of int * intseq
+[@@deriving json]
 
-let _ = test Json.t<intseq> (S (1, S (2, S (3, Z))))
+let%expect_test _ =
+  test intseq_json (S (1, S (2, S (3, Z))));
+  [%expect {||}]
 
-type 'a seq = ZZ | SS of 'a * 'a seq [@@deriving json]
+type 'a seq =
+  | ZZ
+  | SS of 'a * 'a seq
+[@@deriving json]
 
-let _ = test Json.t<int seq> (SS (1, SS (2, SS (3, ZZ))))
+type w = int seq [@@deriving json]
 
-
-module T = struct
-
-  type 'a t = (string * 'a) array [@@deriving json]
-
-  module StringMap = Map.Make(String)
-  module Json_string_map_t(A : Deriving_Json.Json) : Deriving_Json.Json = struct
-    module S = Json_t(A)
-    include Deriving_Json.Convert(struct
-        type a = A.a t
-        type b = A.a StringMap.t
-        let t = S.t
-        let to_ : b -> A.a t = fun a -> Array.of_list (StringMap.bindings a)
-        let from_ : A.a t -> b = fun l ->
-          Array.fold_left
-            (fun map (x,v) -> StringMap.add x v map)
-            StringMap.empty
-            l
-      end)
-  end
-end
-
-(* module T2 = T.Json_string_map_t(Json_t);; *)
-(* type u = int StringMap.t deriving (Json) *)
-
-let () = log_stop()
-*)
+let%expect_test _ =
+  test w_json (SS (1, SS (2, SS (3, ZZ))));
+  [%expect {||}]

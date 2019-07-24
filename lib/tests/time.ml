@@ -17,25 +17,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-open Common
-
-let log_stop = log_start "Time test suite"
-
 let log_failure_tm name tmg =
   let open Unix in
-  log_failure
-    (Printf.sprintf
-       "%s: s:%d; m:%d; h:%d; D:%d; M:%d; Y:%d; WD:%d; YD:%d; dst:%b"
-       name
-       tmg.tm_sec
-       tmg.tm_min
-       tmg.tm_hour
-       tmg.tm_mday
-       tmg.tm_mon
-       tmg.tm_year
-       tmg.tm_wday
-       tmg.tm_yday
-       tmg.tm_isdst)
+  Printf.printf
+    "%s: s:%d; m:%d; h:%d; D:%d; M:%d; Y:%d; WD:%d; YD:%d; dst:%b"
+    name
+    tmg.tm_sec
+    tmg.tm_min
+    tmg.tm_hour
+    tmg.tm_mday
+    tmg.tm_mon
+    tmg.tm_year
+    tmg.tm_wday
+    tmg.tm_yday
+    tmg.tm_isdst
 
 let now = 1377134255.469
 
@@ -44,8 +39,8 @@ let now = 1377134255.469
 (* check gmtime *)
 let tmg = Unix.gmtime now
 
-let () =
-  match tmg with
+let%expect_test _ =
+  (match tmg with
   | { Unix.tm_sec = 35
     ; Unix.tm_min = 17
     ; Unix.tm_hour = 1
@@ -55,8 +50,9 @@ let () =
     ; Unix.tm_wday = 4
     ; Unix.tm_yday = 233
     ; Unix.tm_isdst = false } ->
-      log_success ()
-  | _ -> log_failure_tm "Unix.gmtime" tmg
+      ()
+  | _ -> log_failure_tm "Unix.gmtime" tmg);
+  [%expect {||}]
 
 (* check localetime *)
 (*
@@ -78,4 +74,3 @@ let _ = match norm with
   | (wrong,tm) -> log_failure_tm "Unix.mktime" tm;
     log_failure (Printf.sprintf "Unix.mktime: %.0f <> 1384049855" wrong)
 *)
-let () = log_stop ()
