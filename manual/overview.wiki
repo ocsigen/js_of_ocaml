@@ -30,7 +30,7 @@ Js_of_ocaml is composed of multiple packages:
 The easiest way to install js_of_ocaml is to use opam.
 {{{opam install js_of_ocaml js_of_ocaml-ppx js_of_ocaml-lwt}}}
 
-For alternatives, see <<a_manual chapter="install" |Install>>.xs
+For alternatives, see <<a_manual chapter="install" |Install>>.
 
 == Usage ==
 

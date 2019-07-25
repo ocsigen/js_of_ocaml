@@ -1,6 +1,6 @@
 =Js_of_ocaml - Reference Manual
 ==[[overview|Overview]]
-==[[quickstart|quick start]]
+==[[install|Install]]
 ==[[library|Library overview]]
 ==[[bindings|Binding a JS library]]
 ==[[rev-bindings|Export OCaml code to JavaScript]]
