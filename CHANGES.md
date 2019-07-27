@@ -17,7 +17,7 @@
 * Lib: Use expect tests
 * Lib: Add support for 'addEventListener' with options (#807)
 
-## Bug fixes:
+## Bug fixes
 * Compiler: don't generate source if no-source-map passed (#780)
 * Compiler: Fix compilation of [Array.set] to return [unit]/0 (#792)
 * Compiler: Fix assertion failure (#828)
@@ -44,7 +44,7 @@
 * Lib: wrap js_of_ocaml-lwt, js_of_ocaml-tyxml, js_of_ocaml-toplevel, js_of_ocaml-compiler
 * Runtime: don't use deprecated [new Buffer] on nodejs (#726)
 
-## Bug fixes:
+## Bug fixes
 * Compiler: fix compilation of empty cma
 * Compiler: fix js parser with keyword as ident
 * Compiler, Runtime: make --setenv work with Sys.getenv_opt
@@ -66,19 +66,19 @@
 * Misc: switch to dune
 * Misc: remove camlp4 support
 
-## Bug fixes:
+## Bug fixes
 * Toplevel: Fix dynlink of precompiled javascript files.
 * Lib: Fix encoding in Sys.set_channel_flusher (fix #686)
 * Runtime: fix the type of dataTransfer##.types
 * Runtime: add dummy implementation for caml_restore_raw_backtrace
 
 # 3.2.1 (2018-07-26) - Bari
-## Bug fixes:
+## Bug fixes
 * Misc: Fix the dependencies of the Lwt logger
 * Runtime: fix semantic of bigstring_destroy_stub
 
 # 3.2.0 (2018-06-10) - Bergen
-## Features/Changes:
+## Features/Changes
 * Runime: improve stacktraces.
 * Ppx: ppx uses the OCaml 4.06 ast.
 * Misc: support for OCaml 4.07
@@ -86,14 +86,14 @@
 * Lib: add support for Internationalization API.
 * Lib: Added media events support.
 
-## Bug fixes:
+## Bug fixes
 * Runtime: int_of_string accepts leading '+'
 * Runtime: fix polymorphic & hash compare on custom non-ocaml values.
 * Runtime: fix string encoding when writing to channels.
 * Runtime: improve mode js detection wrt filesystem.
 
 # 3.1.0 (2018-02-15) - Hong Kong
-## Features/Changes:
+## Features/Changes
 * Lib: add missing File.blob constructor (fix #630)
 * Runtime: hash support for custom blocks
 * Runtime: weak.js loaded by default
@@ -103,27 +103,27 @@
 * Compiler: improve constant sharing.
 * Ppx: add support for writeonly_prop and optdef_prop in object literal.
 
-## Bug fixes:
+## Bug fixes
 * Compiler: fix code generation of unary ops (missing space).
 * Compiler: fix static eval of conditions (fix #616)
 * Compiler: fix code generation for OCaml GPR#1568
 * Runtime: fix bug found using the closure compiler (#644)
 
 # 3.0.2 (2017-12-01) - Strasbourg
-## Features/Changes:
+## Features/Changes
 * Runtime: support for latest core_kernel
 
-## Bug fixes:
+## Bug fixes
 * Runtime: fix sys_chdir
 * Runtime: fix fs support on windows
 * Ppx: fix ppx_deriving_json for ocaml 4.05
 
 # 3.0.1 (2017-11-04) - London
-## Features/Changes:
+## Features/Changes
 * Lib: add Jstable.remove (Cedric Cellier)
 * Build: use recent version of jbuilder (># 1.0+beta12)
 
-## Bug fixes:
+## Bug fixes
 * Runtime: fix Sys.file_exists for the in-memory filesystem.
 * Runtime: implement missing primitives: caml_nativeint_bswap, caml_floatarray_*,
   caml_ba_change_layout
@@ -150,7 +150,7 @@
 * Lib: remove keycode module, replaced by Dom_html.Keyboard_code
 * Lib: XmlHttpRequest, API change for perform functions.
 
-## Bug fixes:
+## Bug fixes
 * Runtime: fix many stubs
 * Lib: fix many signatures
 * Compiler: fix performance of compilation passes (simpl,clean)
@@ -493,7 +493,7 @@
 ## Misc
 * add webgl example
 
-## Bugfixes:
+## Bugfixes
 * Url parsing.
 * webgl binding types
 
@@ -537,7 +537,7 @@
 * Allow to test the button associated to a Dom_html.mouseEvent
 * Add localStorage and sessionStorage api
 
-## Bugfixes:
+## Bugfixes
 * Deriving_json: fix string (un)marshaling (was broken for byte > 127)
 * Do not emit string escape sequence \\v (not supported by IE8)
 * Removed incorrect optimization of !(x < y) into (x ># y)
@@ -551,7 +551,7 @@
 * add Dom_html.window##scroll
 * add Dom.document##importNode
 
-## Bugfixes:
+## Bugfixes
 * browser compatility for Regexp.search and check_headers (XmlHttpRequest.send).
 
 # 1.0.5 (2011-09-21)
@@ -559,7 +559,7 @@
 ## Libraries:
 * XmlHttpRequest: allow to cancel ta XHR after receiving the HTTP headers
 * Added the [CSS.Angle] module to handle angles in CSS
-## Bugfixes:
+## Bugfixes
 * array_get/set bound check
 
 # 1.0.4 (2011-09-07)
@@ -569,7 +569,7 @@
 * improvements of CSS module
 * Add coercion and attribute manipulation functions in Dom module
 
-## Bugfixes:
+## Bugfixes
 * fix typo in 'greater than or equal to'
 * marshaling, unmarshaling and comparison
   are not recursive anymore: avoid stack overflow
@@ -581,23 +581,23 @@
 
 # 1.0.3 (2011-07-13)
 
-## Libraries:
+## Libraries
 * Add a CSS module
 * export Form.form_elements
 * add onsubmit method to Dom_html.formElement
 * add classList property to dom elements
 
-## Bugfixes:
+## Bugfixes
 * 'caml_int_of_string' was incorrect for negative number
 * Fixed misparenthesized Javascript 'new' expressions
 
 # 1.0.2 (2011-04-13)
 
-## Compiler:
+## Compiler
 * Switch licence to LGPL
 * API to generate a function instead of a standalone program
 * option to compile an OCaml toplevel
-## Libraries:
+## Libraries
 * Add an optional JSON deriving class
 * Add Math.random binding
 * Add scrollWidth/scrollHeight element methods to the DOM
@@ -605,7 +605,7 @@
 * Renaming functions in XmlHttpRequest:
   * send -> perform
   * send_string -> perform_raw_url
-## Bugfixes:
+## Bugfixes
 * fix compilation of Int32/Nativeint
 * fix compilation of self-recursive functions in loops
 * fix to File module for when there is no FileReader class in the host browser
@@ -615,7 +615,7 @@
 
 * Allow use of Lwt.pause.
 * Split ocamlfind packages in two: syntax and library.
-## Bugfixes:
+## Bugfixes
 * conversion of Int64 to string.
 * typos.
 
