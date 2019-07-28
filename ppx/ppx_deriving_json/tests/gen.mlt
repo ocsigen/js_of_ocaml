@@ -1,0 +1,437 @@
+;;
+#directory "+compiler-libs"
+
+;;
+#directory "../../../lib/deriving_json/"
+
+;;
+#directory "../../../lib/deriving_json/.js_of_ocaml_deriving.objs/byte/"
+
+let () = Clflags.dump_source := true
+
+[%%expect {|
+|}]
+
+type int_list = int list [@@deriving json]
+
+[%%expect
+{|
+
+type int_list = int list[@@deriving json] let _ = fun (_ : int_list) -> ()
+let rec (int_list_of_json : Deriving_Json_lexer.lexbuf -> int_list) =
+  fun buf ->
+    Deriving_Json.read_list (fun buf -> Deriving_Json.Json_int.read buf) buf
+let _ = int_list_of_json
+let rec (int_list_to_json : Buffer.t -> int_list -> unit) =
+  fun buf ->
+    fun a ->
+      Deriving_Json.write_list
+        (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
+let _ = int_list_to_json
+let (int_list_json : int_list Deriving_Json.t) =
+  Deriving_Json.make int_list_to_json int_list_of_json let _ = int_list_json;;
+type int_list = int list
+val int_list_of_json : Deriving_Json_lexer.lexbuf -> int_list = <fun>
+val int_list_to_json : Buffer.t -> int_list -> unit = <fun>
+val int_list_json : int_list Deriving_Json.t = <abstr>
+|}]
+
+type int_ref = int ref [@@deriving json]
+
+[%%expect
+{|
+
+type int_ref = int ref[@@deriving json] let _ = fun (_ : int_ref) -> ()
+let rec (int_ref_of_json : Deriving_Json_lexer.lexbuf -> int_ref) =
+  fun buf ->
+    Deriving_Json.read_ref (fun buf -> Deriving_Json.Json_int.read buf) buf
+let _ = int_ref_of_json
+let rec (int_ref_to_json : Buffer.t -> int_ref -> unit) =
+  fun buf ->
+    fun a ->
+      Deriving_Json.write_ref
+        (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
+let _ = int_ref_to_json
+let (int_ref_json : int_ref Deriving_Json.t) =
+  Deriving_Json.make int_ref_to_json int_ref_of_json let _ = int_ref_json;;
+type int_ref = int ref
+val int_ref_of_json : Deriving_Json_lexer.lexbuf -> int_ref = <fun>
+val int_ref_to_json : Buffer.t -> int_ref -> unit = <fun>
+val int_ref_json : int_ref Deriving_Json.t = <abstr>
+|}]
+
+type int_option = int option [@@deriving json]
+
+[%%expect
+{|
+
+type int_option = int option[@@deriving json]
+let _ = fun (_ : int_option) -> ()
+let rec (int_option_of_json : Deriving_Json_lexer.lexbuf -> int_option) =
+  fun buf ->
+    Deriving_Json.read_option (fun buf -> Deriving_Json.Json_int.read buf)
+      buf let _ = int_option_of_json
+let rec (int_option_to_json : Buffer.t -> int_option -> unit) =
+  fun buf ->
+    fun a ->
+      Deriving_Json.write_option
+        (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
+let _ = int_option_to_json
+let (int_option_json : int_option Deriving_Json.t) =
+  Deriving_Json.make int_option_to_json int_option_of_json
+let _ = int_option_json;;
+type int_option = int option
+val int_option_of_json : Deriving_Json_lexer.lexbuf -> int_option = <fun>
+val int_option_to_json : Buffer.t -> int_option -> unit = <fun>
+val int_option_json : int_option Deriving_Json.t = <abstr>
+|}]
+
+type int_array = int array [@@deriving json]
+
+[%%expect
+{|
+
+type int_array = int array[@@deriving json] let _ = fun (_ : int_array) -> ()
+let rec (int_array_of_json : Deriving_Json_lexer.lexbuf -> int_array) =
+  fun buf ->
+    Deriving_Json.read_array (fun buf -> Deriving_Json.Json_int.read buf) buf
+let _ = int_array_of_json
+let rec (int_array_to_json : Buffer.t -> int_array -> unit) =
+  fun buf ->
+    fun a ->
+      Deriving_Json.write_array
+        (fun buf -> fun a -> Deriving_Json.Json_int.write buf a) buf a
+let _ = int_array_to_json
+let (int_array_json : int_array Deriving_Json.t) =
+  Deriving_Json.make int_array_to_json int_array_of_json
+let _ = int_array_json;;
+type int_array = int array
+val int_array_of_json : Deriving_Json_lexer.lexbuf -> int_array = <fun>
+val int_array_to_json : Buffer.t -> int_array -> unit = <fun>
+val int_array_json : int_array Deriving_Json.t = <abstr>
+|}]
+
+type tuple1 = int * string [@@deriving json]
+
+[%%expect
+{|
+
+type tuple1 = (int * string)[@@deriving json] let _ = fun (_ : tuple1) -> ()
+let rec (tuple1_of_json : Deriving_Json_lexer.lexbuf -> tuple1) =
+  fun buf ->
+    Deriving_Json_lexer.read_lbracket buf;
+    ignore (Deriving_Json_lexer.read_tag_1 0 buf);
+    Deriving_Json_lexer.read_comma buf;
+    (let a = Deriving_Json.Json_int.read buf in
+     Deriving_Json_lexer.read_comma buf;
+     (let b = Deriving_Json.Json_string.read buf in
+      Deriving_Json_lexer.read_rbracket buf; (a, b))) let _ = tuple1_of_json
+let rec (tuple1_to_json : Buffer.t -> tuple1 -> unit) =
+  fun buf ->
+    fun a ->
+      let (a, b) = a in
+      Buffer.add_string buf "[0";
+      ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
+       Buffer.add_string buf ",";
+       Deriving_Json.Json_string.write buf b);
+      Buffer.add_string buf "]" let _ = tuple1_to_json
+let (tuple1_json : tuple1 Deriving_Json.t) =
+  Deriving_Json.make tuple1_to_json tuple1_of_json let _ = tuple1_json;;
+type tuple1 = int * string
+val tuple1_of_json : Deriving_Json_lexer.lexbuf -> tuple1 = <fun>
+val tuple1_to_json : Buffer.t -> tuple1 -> unit = <fun>
+val tuple1_json : tuple1 Deriving_Json.t = <abstr>
+|}]
+
+type variant1 =
+  | A
+  | B
+  | C
+  | D of variant1
+[@@deriving json]
+
+[%%expect
+{|
+
+type variant1 =
+  | A
+  | B
+  | C
+  | D of variant1 [@@deriving json] let _ = fun (_ : variant1) -> ()
+let rec (variant1_of_json : Deriving_Json_lexer.lexbuf -> variant1) =
+  fun buf ->
+    match Deriving_Json_lexer.read_case buf with
+    | `NCst 0 ->
+        (Deriving_Json_lexer.read_comma buf;
+         (let a = variant1_of_json buf in
+          Deriving_Json_lexer.read_rbracket buf; D a))
+    | `Cst 2 -> C
+    | `Cst 1 -> B
+    | `Cst 0 -> A
+    | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
+let _ = variant1_of_json
+let rec (variant1_to_json : Buffer.t -> variant1 -> unit) =
+  fun buf ->
+    function
+    | D a ->
+        (Buffer.add_string buf "[0";
+         (Buffer.add_string buf ","; variant1_to_json buf a);
+         Buffer.add_string buf "]")
+    | C -> Deriving_Json.Json_int.write buf 2
+    | B -> Deriving_Json.Json_int.write buf 1
+    | A -> Deriving_Json.Json_int.write buf 0 let _ = variant1_to_json
+let (variant1_json : variant1 Deriving_Json.t) =
+  Deriving_Json.make variant1_to_json variant1_of_json let _ = variant1_json;;
+type variant1 = A | B | C | D of variant1
+val variant1_of_json : Deriving_Json_lexer.lexbuf -> variant1 = <fun>
+val variant1_to_json : Buffer.t -> variant1 -> unit = <fun>
+val variant1_json : variant1 Deriving_Json.t = <abstr>
+|}]
+
+type variant2 =
+  | D of string
+  | E of variant1
+[@@deriving json]
+
+[%%expect
+{|
+
+type variant2 =
+  | D of string
+  | E of variant1 [@@deriving json] let _ = fun (_ : variant2) -> ()
+let rec (variant2_of_json : Deriving_Json_lexer.lexbuf -> variant2) =
+  fun buf ->
+    match Deriving_Json_lexer.read_case buf with
+    | `NCst 1 ->
+        (Deriving_Json_lexer.read_comma buf;
+         (let a = variant1_of_json buf in
+          Deriving_Json_lexer.read_rbracket buf; E a))
+    | `NCst 0 ->
+        (Deriving_Json_lexer.read_comma buf;
+         (let a = Deriving_Json.Json_string.read buf in
+          Deriving_Json_lexer.read_rbracket buf; D a))
+    | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
+let _ = variant2_of_json
+let rec (variant2_to_json : Buffer.t -> variant2 -> unit) =
+  fun buf ->
+    function
+    | E a ->
+        (Buffer.add_string buf "[1";
+         (Buffer.add_string buf ","; variant1_to_json buf a);
+         Buffer.add_string buf "]")
+    | D a ->
+        (Buffer.add_string buf "[0";
+         (Buffer.add_string buf ","; Deriving_Json.Json_string.write buf a);
+         Buffer.add_string buf "]") let _ = variant2_to_json
+let (variant2_json : variant2 Deriving_Json.t) =
+  Deriving_Json.make variant2_to_json variant2_of_json let _ = variant2_json;;
+type variant2 = D of string | E of variant1
+val variant2_of_json : Deriving_Json_lexer.lexbuf -> variant2 = <fun>
+val variant2_to_json : Buffer.t -> variant2 -> unit = <fun>
+val variant2_json : variant2 Deriving_Json.t = <abstr>
+|}]
+
+type record1 =
+  { f : variant1
+  ; g : variant2
+  ; h : record1 option }
+[@@deriving json]
+
+[%%expect
+{|
+
+type record1 = {
+  f: variant1 ;
+  g: variant2 ;
+  h: record1 option }[@@deriving json] let _ = fun (_ : record1) -> ()
+let rec (record1_of_json : Deriving_Json_lexer.lexbuf -> record1) =
+  fun buf ->
+    Deriving_Json_lexer.read_lbracket buf;
+    ignore (Deriving_Json_lexer.read_tag_2 0 254 buf);
+    Deriving_Json_lexer.read_comma buf;
+    (let a = variant1_of_json buf in
+     Deriving_Json_lexer.read_comma buf;
+     (let b = variant2_of_json buf in
+      Deriving_Json_lexer.read_comma buf;
+      (let c = Deriving_Json.read_option (fun buf -> record1_of_json buf) buf in
+       Deriving_Json_lexer.read_rbracket buf; { f = a; g = b; h = c })))
+let _ = record1_of_json
+let rec (record1_to_json : Buffer.t -> record1 -> unit) =
+  fun buf ->
+    fun { f; g; h } ->
+      Buffer.add_string buf "[0";
+      (((Buffer.add_string buf ","; variant1_to_json buf f);
+        Buffer.add_string buf ",";
+        variant2_to_json buf g);
+       Buffer.add_string buf ",";
+       Deriving_Json.write_option (fun buf -> fun a -> record1_to_json buf a)
+         buf h);
+      Buffer.add_string buf "]" let _ = record1_to_json
+let (record1_json : record1 Deriving_Json.t) =
+  Deriving_Json.make record1_to_json record1_of_json let _ = record1_json;;
+type record1 = { f : variant1; g : variant2; h : record1 option; }
+val record1_of_json : Deriving_Json_lexer.lexbuf -> record1 = <fun>
+val record1_to_json : Buffer.t -> record1 -> unit = <fun>
+val record1_json : record1 Deriving_Json.t = <abstr>
+|}]
+
+type poly1 =
+  [ `A
+  | `B of string ]
+[@@deriving json]
+
+[%%expect
+{|
+
+type poly1 = [ `A  | `B of string ][@@deriving json]
+let _ = fun (_ : poly1) -> ()
+let rec (poly1_recognize : [ `NCst of int  | `Cst of int ] -> bool) =
+  function | `Cst 65 -> true | `NCst 66 -> true | _ -> false
+let _ = poly1_recognize
+let rec (poly1_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `NCst of int  | `Cst of int ] -> poly1) =
+  fun buf ->
+    function
+    | `Cst 65 -> `A
+    | `NCst 66 ->
+        (Deriving_Json_lexer.read_comma buf;
+         (let v = Deriving_Json.Json_string.read buf in
+          Deriving_Json_lexer.read_rbracket buf; `B v))
+    | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
+and (poly1_of_json : Deriving_Json_lexer.lexbuf -> poly1) =
+  fun buf -> poly1_of_json_with_tag buf (Deriving_Json_lexer.read_vcase buf)
+let _ = poly1_of_json_with_tag
+and _ = poly1_of_json
+let rec (poly1_to_json : Buffer.t -> [> poly1] -> unit) =
+  fun buf ->
+    fun a ->
+      match a with
+      | `A -> Deriving_Json.Json_int.write buf 65
+      | `B a ->
+          let (a, b) = (66, a) in
+          (Buffer.add_string buf "[0";
+           ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
+            Buffer.add_string buf ",";
+            Deriving_Json.Json_string.write buf b);
+           Buffer.add_string buf "]") let _ = poly1_to_json
+let (poly1_json : poly1 Deriving_Json.t) =
+  Deriving_Json.make poly1_to_json poly1_of_json let _ = poly1_json;;
+type poly1 = [ `A | `B of string ]
+val poly1_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly1_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly1 =
+  <fun>
+val poly1_of_json : Deriving_Json_lexer.lexbuf -> poly1 = <fun>
+val poly1_to_json : Buffer.t -> poly1 -> unit = <fun>
+val poly1_json : poly1 Deriving_Json.t = <abstr>
+|}]
+
+type poly2 =
+  [ poly1
+  | `C of int ]
+[@@deriving json]
+
+[%%expect
+{|
+
+type poly2 = [ poly1 | `C of int ][@@deriving json]
+let _ = fun (_ : poly2) -> ()
+let rec (poly2_recognize : [ `NCst of int  | `Cst of int ] -> bool) =
+  function | x when poly1_recognize x -> true | `NCst 67 -> true | _ -> false
+let _ = poly2_recognize
+let rec (poly2_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `NCst of int  | `Cst of int ] -> poly2) =
+  fun buf ->
+    function
+    | x when poly1_recognize x ->
+        (poly1_of_json_with_tag buf x :> [ poly1 | `C of int ])
+    | `NCst 67 ->
+        (Deriving_Json_lexer.read_comma buf;
+         (let v = Deriving_Json.Json_int.read buf in
+          Deriving_Json_lexer.read_rbracket buf; `C v))
+    | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
+and (poly2_of_json : Deriving_Json_lexer.lexbuf -> poly2) =
+  fun buf -> poly2_of_json_with_tag buf (Deriving_Json_lexer.read_vcase buf)
+let _ = poly2_of_json_with_tag
+and _ = poly2_of_json
+let rec (poly2_to_json : Buffer.t -> [> poly2] -> unit) =
+  fun buf ->
+    fun a ->
+      match a with
+      | #poly1 as a -> poly1_to_json buf a
+      | `C a ->
+          let (a, b) = (67, a) in
+          (Buffer.add_string buf "[0";
+           ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
+            Buffer.add_string buf ",";
+            Deriving_Json.Json_int.write buf b);
+           Buffer.add_string buf "]") let _ = poly2_to_json
+let (poly2_json : poly2 Deriving_Json.t) =
+  Deriving_Json.make poly2_to_json poly2_of_json let _ = poly2_json;;
+type poly2 = [ `A | `B of string | `C of int ]
+val poly2_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly2_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly2 =
+  <fun>
+val poly2_of_json : Deriving_Json_lexer.lexbuf -> poly2 = <fun>
+val poly2_to_json : Buffer.t -> poly2 -> unit = <fun>
+val poly2_json : poly2 Deriving_Json.t = <abstr>
+|}]
+
+type inline_record =
+  | I of
+      { name : string
+      ; age : int }
+  | J of {empty : unit}
+[@@deriving json]
+
+[%%expect
+{|
+
+type inline_record =
+  | I of {
+  name: string ;
+  age: int }
+  | J of {
+  empty: unit } [@@deriving json] let _ = fun (_ : inline_record) -> ()
+let rec (inline_record_of_json : Deriving_Json_lexer.lexbuf -> inline_record)
+  =
+  fun buf ->
+    match Deriving_Json_lexer.read_case buf with
+    | `NCst 1 ->
+        (Deriving_Json_lexer.read_comma buf;
+         (let a = Deriving_Json.Json_unit.read buf in
+          Deriving_Json_lexer.read_rbracket buf; J { empty = a }))
+    | `NCst 0 ->
+        (Deriving_Json_lexer.read_comma buf;
+         (let a = Deriving_Json.Json_string.read buf in
+          Deriving_Json_lexer.read_comma buf;
+          (let b = Deriving_Json.Json_int.read buf in
+           Deriving_Json_lexer.read_rbracket buf; I { name = a; age = b })))
+    | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
+let _ = inline_record_of_json
+let rec (inline_record_to_json : Buffer.t -> inline_record -> unit) =
+  fun buf ->
+    function
+    | J { empty } ->
+        (Buffer.add_string buf "[1";
+         (Buffer.add_string buf ","; Deriving_Json.Json_unit.write buf empty);
+         Buffer.add_string buf "]")
+    | I { name; age } ->
+        (Buffer.add_string buf "[0";
+         ((Buffer.add_string buf ",";
+           Deriving_Json.Json_string.write buf name);
+          Buffer.add_string buf ",";
+          Deriving_Json.Json_int.write buf age);
+         Buffer.add_string buf "]") let _ = inline_record_to_json
+let (inline_record_json : inline_record Deriving_Json.t) =
+  Deriving_Json.make inline_record_to_json inline_record_of_json
+let _ = inline_record_json;;
+type inline_record =
+    I of { name : string; age : int; }
+  | J of { empty : unit; }
+val inline_record_of_json : Deriving_Json_lexer.lexbuf -> inline_record =
+  <fun>
+val inline_record_to_json : Buffer.t -> inline_record -> unit = <fun>
+val inline_record_json : inline_record Deriving_Json.t = <abstr>
+|}]

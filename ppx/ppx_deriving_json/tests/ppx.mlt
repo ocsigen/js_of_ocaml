@@ -4,8 +4,6 @@
 ;;
 #directory "../../../lib/deriving_json/.js_of_ocaml_deriving.objs/byte/"
 
-[@@@warning "-39"]
-
 let test name v = Format.printf "%s = %s\n%!" name v
 
 let test' json name v =
@@ -92,19 +90,11 @@ string = "\\\n\f"
 
 module Int_list = Json_list (Json_int)
 
-type int_list = int list [@@deriving json]
-
 module Int_ref = Json_ref (Json_int)
-
-type int_ref = int ref [@@deriving json]
 
 module Int_option = Json_option (Json_int)
 
-type int_option = int option [@@deriving json]
-
 module Int_array = Json_array (Json_int)
-
-type int_array = int array [@@deriving json]
 
 [%%expect
 {|
@@ -120,10 +110,6 @@ module Int_list :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type int_list = int list
-val int_list_of_json : Deriving_Json_lexer.lexbuf -> int_list = <fun>
-val int_list_to_json : Buffer.t -> int_list -> unit = <fun>
-val int_list_json : int_list Deriving_Json.t = <abstr>
 module Int_ref :
   sig
     type a = Deriving_Json.Json_int.a ref
@@ -136,10 +122,6 @@ module Int_ref :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type int_ref = int ref
-val int_ref_of_json : Deriving_Json_lexer.lexbuf -> int_ref = <fun>
-val int_ref_to_json : Buffer.t -> int_ref -> unit = <fun>
-val int_ref_json : int_ref Deriving_Json.t = <abstr>
 module Int_option :
   sig
     type a = Deriving_Json.Json_int.a option
@@ -152,10 +134,6 @@ module Int_option :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type int_option = int option
-val int_option_of_json : Deriving_Json_lexer.lexbuf -> int_option = <fun>
-val int_option_to_json : Buffer.t -> int_option -> unit = <fun>
-val int_option_json : int_option Deriving_Json.t = <abstr>
 module Int_array :
   sig
     type a = Deriving_Json.Json_int.a array
@@ -168,10 +146,6 @@ module Int_array :
     val read_variant :
       Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> a
   end
-type int_array = int array
-val int_array_of_json : Deriving_Json_lexer.lexbuf -> int_array = <fun>
-val int_array_to_json : Buffer.t -> int_array -> unit = <fun>
-val int_array_json : int_array Deriving_Json.t = <abstr>
 |}]
 
 let () = test "int_list" (Int_list.to_string [4; 2; 42])
