@@ -64,7 +64,7 @@ function caml_js_html_entities(s) {
     return str;
   }
   else {
-    caml_failwith("invalid entity " + s);
+    caml_failwith("Invalid entity " + s);
   }
 }
 

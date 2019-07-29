@@ -106,7 +106,7 @@ module Xml = struct
     (Dom_html.document##createTextNode (Js.string s) :> Dom.node Js.t)
 
   let entity =
-    let string_fold ~pos s ~init ~f =
+    let string_fold s ~pos ~init ~f =
       let r = ref init in
       for i = pos to String.length s - 1 do
         let c = s.[i] in
@@ -114,7 +114,8 @@ module Xml = struct
       done;
       !r
     in
-    let i_of_char = function
+    let invalid_entity e = failwith (Printf.sprintf "Invalid entity %S" e) in
+    let int_of_char = function
       | '0' .. '9' as x -> Some (Char.code x - Char.code '0')
       | 'a' .. 'f' as x -> Some (Char.code x - Char.code 'a' + 10)
       | 'A' .. 'F' as x -> Some (Char.code x - Char.code 'A' + 10)
@@ -122,9 +123,9 @@ module Xml = struct
     in
     let parse_int ~pos ~base e =
       string_fold e ~pos ~init:0 ~f:(fun acc x ->
-          match i_of_char x with
+          match int_of_char x with
           | Some d when d < base -> (acc * base) + d
-          | Some _ | None -> failwith (Printf.sprintf "Invalid entity %S" e))
+          | Some _ | None -> invalid_entity e)
     in
     let is_alpha_num = function
       | '0' .. '9' | 'a' .. 'z' | 'A' .. 'Z' -> true
@@ -141,7 +142,12 @@ module Xml = struct
             else parse_int ~pos:1 ~base:10 e
           in
           Js.string_constr##fromCharCode i
-        else if string_fold e ~pos:0 ~init:true ~f:(fun acc x -> acc && is_alpha_num x)
+        else if string_fold e ~pos:0 ~init:true ~f:(fun acc x ->
+                    (* This is not quite right according to
+             https://www.xml.com/axml/target.html#NT-Name.
+             but it seems to cover all html5 entities
+             https://dev.w3.org/html5/html-author/charref *)
+                    acc && is_alpha_num x)
         then
           match e with
           | "quot" -> Js.string "\""
@@ -149,8 +155,9 @@ module Xml = struct
           | "apos" -> Js.string "'"
           | "lt" -> Js.string "<"
           | "gt" -> Js.string ">"
+          | "" -> invalid_entity e
           | _ -> Dom_html.decode_html_entities (Js.string ("&" ^ e ^ ";"))
-        else failwith (Printf.sprintf "Invalid entity %S" e)
+        else invalid_entity e
       in
       (Dom_html.document##createTextNode str :> Dom.node Js.t)
 
