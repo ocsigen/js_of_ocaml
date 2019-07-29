@@ -435,3 +435,88 @@ val inline_record_of_json : Deriving_Json_lexer.lexbuf -> inline_record =
 val inline_record_to_json : Buffer.t -> inline_record -> unit = <fun>
 val inline_record_json : inline_record Deriving_Json.t = <abstr>
 |}]
+
+type 'a t = 'a array [@@deriving json]
+[%%expect {|
+
+type 'a t = 'a array[@@deriving json] let _ = fun (_ : 'a t) -> ()
+let rec (of_json :
+  (Deriving_Json_lexer.lexbuf -> 'a) -> Deriving_Json_lexer.lexbuf -> 'a t) =
+  fun poly_a ->
+    fun buf -> Deriving_Json.read_array (fun buf -> poly_a buf) buf
+let _ = of_json
+let rec (to_json : (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a t -> unit) =
+  fun poly_a ->
+    fun buf ->
+      fun a ->
+        Deriving_Json.write_array (fun buf -> fun a -> poly_a buf a) buf a
+let _ = to_json
+let (json : 'a Deriving_Json.t -> 'a t Deriving_Json.t) =
+  fun poly_a ->
+    Deriving_Json.make (to_json (Deriving_Json.write poly_a))
+      (of_json (Deriving_Json.read poly_a)) let _ = json;;
+type 'a t = 'a array
+val of_json :
+  (Deriving_Json_lexer.lexbuf -> 'a) -> Deriving_Json_lexer.lexbuf -> 'a t =
+  <fun>
+val to_json : (Buffer.t -> 'a -> unit) -> Buffer.t -> 'a t -> unit = <fun>
+val json : 'a Deriving_Json.t -> 'a t Deriving_Json.t = <fun>
+|}]
+
+
+type ('a,'b) t = ('a array * 'b) [@@deriving json]
+[%%expect {|
+
+type ('a, 'b) t = ('a array * 'b)[@@deriving json]
+let _ = fun (_ : ('a, 'b) t) -> ()
+let rec (of_json :
+  (Deriving_Json_lexer.lexbuf -> 'a) ->
+    (Deriving_Json_lexer.lexbuf -> 'b) ->
+      Deriving_Json_lexer.lexbuf -> ('a, 'b) t)
+  =
+  fun poly_a ->
+    fun poly_b ->
+      fun buf ->
+        Deriving_Json_lexer.read_lbracket buf;
+        ignore (Deriving_Json_lexer.read_tag_1 0 buf);
+        Deriving_Json_lexer.read_comma buf;
+        (let a = Deriving_Json.read_array (fun buf -> poly_a buf) buf in
+         Deriving_Json_lexer.read_comma buf;
+         (let b = poly_b buf in Deriving_Json_lexer.read_rbracket buf; (a, b)))
+let _ = of_json
+let rec (to_json :
+  (Buffer.t -> 'a -> unit) ->
+    (Buffer.t -> 'b -> unit) -> Buffer.t -> ('a, 'b) t -> unit)
+  =
+  fun poly_a ->
+    fun poly_b ->
+      fun buf ->
+        fun a ->
+          let (a, b) = a in
+          Buffer.add_string buf "[0";
+          ((Buffer.add_string buf ",";
+            Deriving_Json.write_array (fun buf -> fun a -> poly_a buf a) buf
+              a);
+           Buffer.add_string buf ",";
+           poly_b buf b);
+          Buffer.add_string buf "]" let _ = to_json
+let (json :
+  'a Deriving_Json.t -> 'b Deriving_Json.t -> ('a, 'b) t Deriving_Json.t) =
+  fun poly_a ->
+    fun poly_b ->
+      Deriving_Json.make
+        ((to_json (Deriving_Json.write poly_a)) (Deriving_Json.write poly_b))
+        ((of_json (Deriving_Json.read poly_a)) (Deriving_Json.read poly_b))
+let _ = json;;
+type ('a, 'b) t = 'a array * 'b
+val of_json :
+  (Deriving_Json_lexer.lexbuf -> 'a) ->
+  (Deriving_Json_lexer.lexbuf -> 'b) ->
+  Deriving_Json_lexer.lexbuf -> ('a, 'b) t = <fun>
+val to_json :
+  (Buffer.t -> 'a -> unit) ->
+  (Buffer.t -> 'b -> unit) -> Buffer.t -> ('a, 'b) t -> unit = <fun>
+val json :
+  'a Deriving_Json.t -> 'b Deriving_Json.t -> ('a, 'b) t Deriving_Json.t =
+  <fun>
+|}]
