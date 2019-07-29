@@ -105,9 +105,54 @@ module Xml = struct
   let encodedpcdata s =
     (Dom_html.document##createTextNode (Js.string s) :> Dom.node Js.t)
 
-  let entity e =
-    let entity = Dom_html.decode_html_entities (Js.string ("&" ^ e ^ ";")) in
-    (Dom_html.document##createTextNode entity :> Dom.node Js.t)
+  let entity =
+    let string_fold ~pos s ~init ~f =
+      let r = ref init in
+      for i = pos to String.length s - 1 do
+        let c = s.[i] in
+        r := f !r c
+      done;
+      !r
+    in
+    let i_of_char = function
+      | '0' .. '9' as x -> Some (Char.code x - Char.code '0')
+      | 'a' .. 'f' as x -> Some (Char.code x - Char.code 'a' + 10)
+      | 'A' .. 'F' as x -> Some (Char.code x - Char.code 'A' + 10)
+      | _ -> None
+    in
+    let parse_int ~pos ~base e =
+      string_fold e ~pos ~init:0 ~f:(fun acc x ->
+          match i_of_char x with
+          | Some d when d < base -> (acc * base) + d
+          | Some _ | None -> failwith (Printf.sprintf "Invalid entity %S" e))
+    in
+    let is_alpha_num = function
+      | '0' .. '9' | 'a' .. 'z' | 'A' .. 'Z' -> true
+      | _ -> false
+    in
+    fun e ->
+      let len = String.length e in
+      let str =
+        if len >= 1 && e.[0] = '#'
+        then
+          let i =
+            if len >= 2 && (e.[1] = 'x' || e.[1] = 'X')
+            then parse_int ~pos:2 ~base:16 e
+            else parse_int ~pos:1 ~base:10 e
+          in
+          Js.string_constr##fromCharCode i
+        else if string_fold e ~pos:0 ~init:true ~f:(fun acc x -> acc && is_alpha_num x)
+        then
+          match e with
+          | "quot" -> Js.string "\""
+          | "amp" -> Js.string "&"
+          | "apos" -> Js.string "'"
+          | "lt" -> Js.string "<"
+          | "gt" -> Js.string ">"
+          | _ -> Dom_html.decode_html_entities (Js.string ("&" ^ e ^ ";"))
+        else failwith (Printf.sprintf "Invalid entity %S" e)
+      in
+      (Dom_html.document##createTextNode str :> Dom.node Js.t)
 
   (* TODO: fix get_prop
      it only work when html attribute and dom property names correspond.
