@@ -51,13 +51,21 @@ function caml_js_html_escape (s) {
     .replace(caml_js_regexps.quot, "&quot;");
 }
 
-//Provides: caml_js_html_entities const (const)
+//Provides: caml_js_html_entities
+//Requires: caml_failwith
 function caml_js_html_entities(s) {
-  var str, temp = document.createElement('p');
-  temp.innerHTML= s;
-  str= temp.textContent || temp.innerText;
-  temp=null;
-  return str;
+  var entity = /^&#?[0-9a-zA-Z]+;$/
+  if(s.match(entity))
+  {
+    var str, temp = document.createElement('p');
+    temp.innerHTML= s;
+    str= temp.textContent || temp.innerText;
+    temp=null;
+    return str;
+  }
+  else {
+    caml_failwith("Invalid entity " + s);
+  }
 }
 
 /////////// Debugging console
