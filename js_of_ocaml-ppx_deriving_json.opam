@@ -18,5 +18,5 @@ depends: [
   "dune" {>= "1.11.1"}
   "js_of_ocaml"
   "ocaml-migrate-parsetree"
-  "ppxlib" {< "0.9.0"}
+  "ppxlib" {>= "0.9.0"}
 ]
