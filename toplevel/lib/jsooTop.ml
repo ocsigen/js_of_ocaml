@@ -35,74 +35,74 @@ let split_primitives p =
 let setup =
   lazy
     (Topdirs.dir_directory "/static/cmis";
-      Hashtbl.add
-        Toploop.directive_table
-        "enable"
-        (Toploop.Directive_string Config.Flag.enable);
-      Hashtbl.add
-        Toploop.directive_table
-        "disable"
-        (Toploop.Directive_string Config.Flag.disable);
-      Hashtbl.add
-        Toploop.directive_table
-        "debug_on"
-        (Toploop.Directive_string Debug.enable);
-      Hashtbl.add
-        Toploop.directive_table
-        "debug_off"
-        (Toploop.Directive_string Debug.disable);
-      Hashtbl.add
-        Toploop.directive_table
-        "tailcall"
-        (Toploop.Directive_string (Config.Param.set "tc"));
-      let initial_primitive_count =
-        Array.length (split_primitives (Symtable.data_primitive_names ()))
-      in
-      (* this needs to stay synchronized with toplevel.js *)
-      let compile (s : string array) =
-        let s = String.concat ~sep:"" (Array.to_list s) in
-        let prims = split_primitives (Symtable.data_primitive_names ()) in
-        let unbound_primitive p =
-          try
-            ignore (Js.Unsafe.eval_string p);
-            false
-          with _ -> true
-        in
-        let stubs = ref [] in
-        Array.iteri prims ~f:(fun i p ->
-            if i >= initial_primitive_count && unbound_primitive p
-            then
-              stubs :=
-                Format.sprintf "function %s(){caml_failwith(\"%s not implemented\")}" p p
-                :: !stubs);
-        let output_program = Driver.from_string prims s in
-        let b = Buffer.create 100 in
-        output_program (Pretty_print.to_buffer b);
-        Format.(pp_print_flush std_formatter ());
-        Format.(pp_print_flush err_formatter ());
-        flush stdout;
-        flush stderr;
-        let res = Buffer.contents b in
-        let res = String.concat ~sep:"" !stubs ^ res in
-        let res : unit -> _ = Js.Unsafe.global##toplevelEval res in
-        res
-      in
-      Js.Unsafe.global##.toplevelCompile := compile (*XXX HACK!*);
-      (Js.Unsafe.global##.toplevelEval
-      := fun x ->
-      let f : < .. > Js.t -> < .. > Js.t = Js.Unsafe.eval_string x in
-      fun () ->
-        let res = f Js.Unsafe.global in
-        Format.(pp_print_flush std_formatter ());
-        Format.(pp_print_flush err_formatter ());
-        flush stdout;
-        flush stderr;
-        res);
-      Js.Unsafe.global##.toplevelReloc
-      := Js.Unsafe.callback (fun name ->
-             let name = Js.to_string name in
-             Js_of_ocaml_compiler.Ocaml_compiler.Symtable.reloc_ident name);
-      ())
+     Hashtbl.add
+       Toploop.directive_table
+       "enable"
+       (Toploop.Directive_string Config.Flag.enable);
+     Hashtbl.add
+       Toploop.directive_table
+       "disable"
+       (Toploop.Directive_string Config.Flag.disable);
+     Hashtbl.add
+       Toploop.directive_table
+       "debug_on"
+       (Toploop.Directive_string Debug.enable);
+     Hashtbl.add
+       Toploop.directive_table
+       "debug_off"
+       (Toploop.Directive_string Debug.disable);
+     Hashtbl.add
+       Toploop.directive_table
+       "tailcall"
+       (Toploop.Directive_string (Config.Param.set "tc"));
+     let initial_primitive_count =
+       Array.length (split_primitives (Symtable.data_primitive_names ()))
+     in
+     (* this needs to stay synchronized with toplevel.js *)
+     let compile (s : string array) =
+       let s = String.concat ~sep:"" (Array.to_list s) in
+       let prims = split_primitives (Symtable.data_primitive_names ()) in
+       let unbound_primitive p =
+         try
+           ignore (Js.Unsafe.eval_string p);
+           false
+         with _ -> true
+       in
+       let stubs = ref [] in
+       Array.iteri prims ~f:(fun i p ->
+           if i >= initial_primitive_count && unbound_primitive p
+           then
+             stubs :=
+               Format.sprintf "function %s(){caml_failwith(\"%s not implemented\")}" p p
+               :: !stubs);
+       let output_program = Driver.from_string prims s in
+       let b = Buffer.create 100 in
+       output_program (Pretty_print.to_buffer b);
+       Format.(pp_print_flush std_formatter ());
+       Format.(pp_print_flush err_formatter ());
+       flush stdout;
+       flush stderr;
+       let res = Buffer.contents b in
+       let res = String.concat ~sep:"" !stubs ^ res in
+       let res : unit -> _ = Js.Unsafe.global##toplevelEval res in
+       res
+     in
+     Js.Unsafe.global##.toplevelCompile := compile (*XXX HACK!*);
+     (Js.Unsafe.global##.toplevelEval
+     := fun x ->
+     let f : < .. > Js.t -> < .. > Js.t = Js.Unsafe.eval_string x in
+     fun () ->
+       let res = f Js.Unsafe.global in
+       Format.(pp_print_flush std_formatter ());
+       Format.(pp_print_flush err_formatter ());
+       flush stdout;
+       flush stderr;
+       res);
+     Js.Unsafe.global##.toplevelReloc
+     := Js.Unsafe.callback (fun name ->
+            let name = Js.to_string name in
+            Js_of_ocaml_compiler.Ocaml_compiler.Symtable.reloc_ident name);
+     ())
 
 let refill_lexbuf s p ppf buffer len =
   if !p = String.length s

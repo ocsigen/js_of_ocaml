@@ -610,39 +610,39 @@ let start _ =
     let form = Html.createDiv doc in
     let br () = Html.createBr doc in
     (add form (toggle_button "Pause" "Resume" (fun p -> paused := p));
-      add form (br ());
-      add form (toggle_button "Follow rotation" "Fixed position" (fun f -> follow := f));
-      add form (br ());
-      add
-        form
-        (button "Reset orientation" (fun () ->
-             m := matrix_identity;
-             phi_rot := 0.;
-             m_obliq := xy_rotation (-. !obl)));
-      add form (br ());
-      let lab = Html.createLabel doc in
-      add lab (doc##createTextNode (Js.string "Date:"));
-      let s = Html.createSelect doc in
-      List.iter
-        (fun txt ->
-          let o = Html.createOption doc in
-          add o (doc##createTextNode (Js.string txt));
-          s##add o Js.null)
-        ["December solstice"; "Equinox"; "June solstice"];
-      s##.onchange :=
-        Html.handler (fun _ ->
-            let o =
-              match s##.selectedIndex with
-              | 0 -> obliquity
-              | 1 -> 0.
-              | _ -> -.obliquity
-            in
-            update_shadow o;
-            obl := o;
-            (*m_obliq := xy_rotation (-. o);*)
-            Js._true);
-      add lab s;
-      add form lab);
+     add form (br ());
+     add form (toggle_button "Follow rotation" "Fixed position" (fun f -> follow := f));
+     add form (br ());
+     add
+       form
+       (button "Reset orientation" (fun () ->
+            m := matrix_identity;
+            phi_rot := 0.;
+            m_obliq := xy_rotation (-. !obl)));
+     add form (br ());
+     let lab = Html.createLabel doc in
+     add lab (doc##createTextNode (Js.string "Date:"));
+     let s = Html.createSelect doc in
+     List.iter
+       (fun txt ->
+         let o = Html.createOption doc in
+         add o (doc##createTextNode (Js.string txt));
+         s##add o Js.null)
+       ["December solstice"; "Equinox"; "June solstice"];
+     s##.onchange :=
+       Html.handler (fun _ ->
+           let o =
+             match s##.selectedIndex with
+             | 0 -> obliquity
+             | 1 -> 0.
+             | _ -> -.obliquity
+           in
+           update_shadow o;
+           obl := o;
+           (*m_obliq := xy_rotation (-. o);*)
+           Js._true);
+     add lab s;
+     add form lab);
     Dom.appendChild ctrl form;
     let form = Html.createDiv doc in
     add form (checkbox "Lighting" true (fun l -> lighting := l));

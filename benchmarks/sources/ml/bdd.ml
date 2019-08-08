@@ -97,7 +97,7 @@ let mkNode low v high =
               ( low
               , v
               , (incr nodeC;
-                  !nodeC)
+                 !nodeC)
               , high )
           in
           insert (getId low) (getId high) v ind bucket n;

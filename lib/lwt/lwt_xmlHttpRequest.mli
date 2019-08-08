@@ -49,10 +49,11 @@ val perform_raw :
                      int -> (string -> string option) -> bool)
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
-  -> ?contents:[< `POST_form of (string * Form.form_elt) list
-               | `Form_contents of Form.form_contents
-               | `String of string
-               | `Blob of #File.blob Js.t ]
+  -> ?contents:
+       [< `POST_form of (string * Form.form_elt) list
+       | `Form_contents of Form.form_contents
+       | `String of string
+       | `Blob of #File.blob Js.t ]
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH]
   -> ?with_credentials:bool
@@ -72,10 +73,11 @@ val perform_raw_url :
                      int -> (string -> string option) -> bool)
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
-  -> ?contents:[< `POST_form of (string * Form.form_elt) list
-               | `Form_contents of Form.form_contents
-               | `String of string
-               | `Blob of #File.blob Js.t ]
+  -> ?contents:
+       [< `POST_form of (string * Form.form_elt) list
+       | `Form_contents of Form.form_contents
+       | `String of string
+       | `Blob of #File.blob Js.t ]
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH]
   -> ?with_credentials:bool
@@ -100,10 +102,11 @@ val perform :
                      int -> (string -> string option) -> bool)
   -> ?progress:(int -> int -> unit)
   -> ?upload_progress:(int -> int -> unit)
-  -> ?contents:[< `POST_form of (string * Form.form_elt) list
-               | `Form_contents of Form.form_contents
-               | `String of string
-               | `Blob of #File.blob Js.t ]
+  -> ?contents:
+       [< `POST_form of (string * Form.form_elt) list
+       | `Form_contents of Form.form_contents
+       | `String of string
+       | `Blob of #File.blob Js.t ]
   -> ?override_mime_type:string
   -> ?override_method:[< `GET | `POST | `HEAD | `PUT | `DELETE | `OPTIONS | `PATCH]
   -> ?with_credentials:bool
