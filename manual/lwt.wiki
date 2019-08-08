@@ -1,10 +1,10 @@
 == Events ==
 
 Besides the functions provided by {{{Dom_html}}} to register event handlers
-(mainly <<a_api | val Dom_html.addEventListener >>)
+(mainly [[../api/js_of_ocaml/Js_of_ocaml/Dom_html/index.html#val-addEventListener|Dom_html.addEventListener]])
 using the usual Javascript way, js_of_ocaml provides another module to
 program event handlers very easily and concisely, in the module
-<<a_api | module Lwt_js_events >>.
+[[../api/js_of_ocaml-lwt/Js_of_ocaml_lwt/Lwt_js_events/index.html|Lwt_js_events]].
 
 This module defines functions you can call on a DOM element to create
 an Lwt thread that will return when the event occurs.
@@ -40,5 +40,5 @@ before the handler has terminated. It is probably a better idea
 to return immediately after having launched the long handlers.
 
 
-Look at the <<a_api text="API documentation" | module Lwt_js_events>>
+Look at the [[../api/js_of_ocaml-lwt/Js_of_ocaml_lwt/Lwt_js_events/index.html|Lwt_js_events]]
 for more information.

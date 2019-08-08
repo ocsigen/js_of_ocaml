@@ -17,8 +17,8 @@ and in .mli:
 val v : ... Js.t
 >>
 
-Be careful the function <<a_api | val Js.Unsafe.js_expr >>
-and the value <<a_api | val Js.Unsafe.global >> are not typed.
+Be careful the function [[../api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/index.html#val-js_expr|Js.Unsafe.js_expr]]
+and the value [[../api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/index.html#val-global|Js.Unsafe.global]] are not typed.
 Verify the library documentation before writing the type.
 
 ==Binding a JS function
@@ -29,7 +29,7 @@ let decodeURI (s : js_string t) : js_string t =
   Js.Unsafe.fun_call (Js.Unsafe.js_expr "decodeURI") [|Js.Unsafe.inject s|]
 >>
 
-Have a look at the <<a_api | module Js.Unsafe >> module API.
+Have a look at the [[../api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/index.html|Js.Unsafe]] module API.
 
 ==Using a JS constructor, ex: {{{F}}}:
 Write in .ml:
@@ -150,7 +150,7 @@ let options = object%js
 end
 >>
 
-You can also use the unsafe <<a_api |val Js.Unsafe.obj>>.
+You can also use the unsafe [[../api/js_of_ocaml/Js_of_ocaml/Js/Unsafe/index.html#val-obj|Js.Unsafe.obj]].
 
 == Set/get variables
 
