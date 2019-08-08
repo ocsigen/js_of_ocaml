@@ -48,7 +48,8 @@ let%expect_test _ =
   print_var_decl program "bx";
   print_var_decl program "cx";
   print_var_decl program "symbol_op";
-  [%expect{|
+  [%expect
+    {|
     var ex = [0,5,runtime.caml_new_string("hello")];
     var ax = [0,1,2,3,4];
     var bx = [254,1.,2.,3.,4.];

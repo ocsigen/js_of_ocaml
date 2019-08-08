@@ -12,6 +12,6 @@ margin=90
 parens-tuple=multi-line-only
 sequence-style=terminator
 type-decl=sparse
-version=0.10
+version=0.11.0
 wrap-comments=false
 wrap-fun-args=false

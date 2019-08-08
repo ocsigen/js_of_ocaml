@@ -161,10 +161,10 @@ let rec build_interaction state show_rem ((_, _, clock_stop) as clock) =
     then
       ignore
         (state.events_mutex <- true;
-          f ()
-          >>= fun () ->
-          state.events_mutex <- false;
-          Lwt.return ());
+         f ()
+         >>= fun () ->
+         state.events_mutex <- false;
+         Lwt.return ());
     Js._false
   in
   let set_pending_out f out () =

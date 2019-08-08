@@ -305,9 +305,9 @@ let start (pos, norm) =
 let go _ =
   ignore
     (debug "fetching model";
-      catch
-        (fun () -> fetch_model "monkey.model" >>= start)
-        (fun exn -> error "uncaught exception: %s" (Printexc.to_string exn)));
+     catch
+       (fun () -> fetch_model "monkey.model" >>= start)
+       (fun exn -> error "uncaught exception: %s" (Printexc.to_string exn)));
   _true
 
 let _ = Dom_html.window##.onload := Dom_html.handler go
