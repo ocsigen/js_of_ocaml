@@ -13,7 +13,7 @@
 * Misc: remove cppo dependency
 * Misc: remove ppx_tools_versioned dependency in ppx_deriving_json
 * Misc: support for ocaml 4.09
-* Misc: switch to ocamlformat.0.10
+* Misc: switch to ocamlformat.0.11
 * Lib: Use expect tests
 * Lib: Add support for 'addEventListener' with options (#807)
 
