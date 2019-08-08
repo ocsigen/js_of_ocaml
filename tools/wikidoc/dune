@@ -1,5 +1,0 @@
-(library
-  (name odoc_wiki)
-  (flags (:standard -w -6-7-8-9-27-33-35-39))
-  (libraries compiler-libs.common ocamldoc)
-  )
