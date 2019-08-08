@@ -1,22 +1,3 @@
 (alias
   (name ocsigen-doc)
-  (deps
-    (universe)
-    (source_tree ../)
-    (package js_of_ocaml)
-    (package js_of_ocaml-lwt)
-    (package js_of_ocaml-tyxml)
-    (package js_of_ocaml-toplevel)
-    (package js_of_ocaml-ocamlbuild))
-  (action (run
-    %{dep:../tools/docgen/docgen.exe}
-      -wikidoc %{dep:../tools/wikidoc/odoc_wiki.cmxs}
-      -intro %{dep:index}
-      %{dep:../lib/js_of_ocaml/dune}
-      %{dep:../lib/deriving_json/dune}
-      %{dep:../lib/lwt/dune}
-      %{dep:../lib/lwt/graphics/dune}
-      %{dep:../lib/tyxml/dune}
-      %{dep:../toplevel/lib/dune}
-      %{dep:../ocamlbuild/dune}
-      )))
+  (deps (alias ../doc)))
