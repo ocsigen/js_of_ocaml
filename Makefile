@@ -13,7 +13,7 @@ promote:
 	dune promote
 
 fmt:
-	dune build @fmt --auto-promote || true
+	dune build @fmt --auto-promote > /dev/null || true
 	# work around a bug in dune
 	git checkout tools/wikidoc
 	git checkout compiler/lib/annot_lexer.ml
