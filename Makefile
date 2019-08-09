@@ -14,13 +14,6 @@ promote:
 
 fmt:
 	dune build @fmt --auto-promote 2> /dev/null || true
-	# work around a bug in dune
-	git checkout compiler/lib/annot_lexer.ml
-	git checkout compiler/lib/annot_parser.ml
-	git checkout compiler/lib/annot_parser.mli
-	git checkout compiler/lib/js_lexer.ml
-	git checkout compiler/lib/js_parser.ml
-	git checkout compiler/lib/js_parser.mli
 	git diff --exit-code
 
 clean:

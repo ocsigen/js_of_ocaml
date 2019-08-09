@@ -14,6 +14,6 @@ environment like browsers and Node.js
 build: [["dune" "build" "-p" name "-j" jobs]]
 
 depends: [
-  "dune" {build}
+  "dune" {build & >= "1.11.1"}
   "ocamlbuild"
 ]
