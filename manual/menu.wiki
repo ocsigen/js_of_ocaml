@@ -4,6 +4,7 @@
 ==[[library|Library overview]]
 ==[[bindings|Binding a JS library]]
 ==[[rev-bindings|Export OCaml code to JavaScript]]
+==[[../api/index.html|API]]
 
 =Js_of_ocaml_lwt - Reference Manual
 ==[[lwt|Lwt support]]

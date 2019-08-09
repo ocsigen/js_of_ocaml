@@ -123,7 +123,7 @@ to link your program with javascript stubs.
 
 == IO ==
 
-The <<a_api | module Json >> module allows to marshal and unmarshal the
+The [[../api/js_of_ocaml/Js_of_ocaml/Json/index.html|Json]] module allows to marshal and unmarshal the
 javascript representation of OCaml values into the corresponding JSON
 string. The unmarshaling is unsafe in the same way the OCaml
 {{{Marshal.from_string}}} function is.
@@ -134,6 +134,6 @@ class or the {{{Pickle}}} class.
 
 * The {{{Json}}} class use a Json as external representation and do
   not preserve potential sharings in the data representation. See
-  <<a_api | module Deriving_Json >> for more information.
+  [[../api/js_of_ocaml/Deriving_Json/index.html|Deriving_Json]] for more information.
 * The {{{Pickle}}} class use a binary format as external
   representation and preserve sharings in the data representation.

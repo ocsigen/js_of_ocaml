@@ -49,7 +49,7 @@ For alternatives, see <<a_manual chapter="install" |Install>>.
 
 === with ocamlbuild and oasis ===
   Js_of_ocaml also provide an ocamlbuild plugin.
-  See <<a_api | module Ocamlbuild_js_of_ocaml >>.
+  See [[../api/js_of_ocaml-ocamlbuild/index.html|Ocamlbuild_js_of_ocaml]].
 
 === with dune ===
   Dune has native support for js_of_ocaml.

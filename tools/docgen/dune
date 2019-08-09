@@ -1,4 +1,0 @@
-(executables
-  (names docgen)
-  (libraries str sexplib findlib)
-)
