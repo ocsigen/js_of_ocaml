@@ -280,3 +280,6 @@ function caml_tanh_float (x) {
   var y = Math.exp(x), z = Math.exp(-x);
   return (y - z) / (y + z);
 }
+
+//Provides: caml_round_float
+function caml_round_float (x) { return Math.round(x); }
