@@ -20,12 +20,14 @@ clean:
 	dune clean
 
 installdoc:
+	dune build api/gen/post_process_api.exe
 	rm -rf _wikidoc
 	git clone ./ _wikidoc
 	(cd _wikidoc && git checkout wikidoc)
 	rm -rf _wikidoc/doc/dev/*
 	cp -r _build/default/_doc/_html _wikidoc/doc/dev/api
 	cp -r _build/default/manual _wikidoc/doc/dev/manual
+	find _wikidoc/doc/dev/api -name "*.html" -exec _build/default/api/gen/post_process_api.exe --template site/template.html -o {} {} \;
 	find _wikidoc/doc/dev/ -name dune -delete
 
 .PHONY: all tests test runtest runtests doc clean installdoc

@@ -1,0 +1,4 @@
+(executables
+  (names post_process_api)
+  (libraries lambdasoup cmdliner)
+  (preprocess no_preprocessing))
