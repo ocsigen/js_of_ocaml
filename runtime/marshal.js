@@ -41,7 +41,9 @@ var caml_marshal_constants = {
   CODE_DOUBLE_ARRAY32_LITTLE: 0x07,
   CODE_CODEPOINTER:           0x10,
   CODE_INFIXPOINTER:          0x11,
-  CODE_CUSTOM:                0x12
+  CODE_CUSTOM:                0x12,
+  CODE_CUSTOM_LEN:            0x18,
+  CODE_CUSTOM_FIXED:          0x19
 }
 
 
@@ -275,6 +277,8 @@ function caml_input_value_from_reader(reader, ofs) {
           caml_failwith ("input_value: code pointer");
           break;
         case 0x12: //cst.CODE_CUSTOM:
+        case 0x18: //cst.CODE_CUSTOM_LEN:
+        case 0x19: //cst.CODE_CUSTOM_FIXED:
           var c, s = "";
           while ((c = reader.read8u ()) != 0) s += String.fromCharCode (c);
           switch(s) {
@@ -434,7 +438,7 @@ var caml_output_val = function (){
         if (v[0] == 255) {
           // Int64
           if (memo(v)) return;
-          writer.write (8, 0x12 /*cst.CODE_CUSTOM*/);
+          writer.write (8, 0x19 /*cst.CODE_CUSTOM_FIXED*/);
           for (var i = 0; i < 3; i++) writer.write (8, "_j\0".charCodeAt(i));
           var b = caml_int64_to_bytes (v);
           for (var i = 0; i < 8; i++) writer.write (8, b[i]);
