@@ -370,14 +370,14 @@ let rec read_poly_case ?decl y x =
             [%pat? `NCst [%p i]]
             [%expr
               [%e lexer "read_comma"] buf;
-              let v = [%e read_body_of_type ?decl (maybe_tuple_type l)] in
+              let v = [%e read_body_of_type ~nested:true (maybe_tuple_type l)] in
               [%e lexer "read_rbracket"] buf;
               [%e Ast_helper.Exp.variant label (Some [%expr v])]])
   | Rinherit {ptyp_desc = Ptyp_constr (lid, l); _} ->
       let guard = [%expr [%e suffix_lid lid ~suffix:"recognize"] x]
       and e =
         let e = suffix_lid lid ~suffix:"of_json_with_tag"
-        and l = List.map ~f:(read_of_type ?decl) l in
+        and l = List.map ~f:(read_of_type ?decl ~nested:false) l in
         [%expr ([%e app e l] buf x :> [%t y])]
       in
       Ast_helper.Exp.case ~guard [%pat? x] e
@@ -389,11 +389,11 @@ and read_of_poly_variant ?decl l y ~loc:_ =
   |> Ast_helper.Exp.function_
   |> buf_expand
 
-and read_tuple_contents ?decl l ~f =
+and read_tuple_contents l ~f =
   let n = List.length l in
   let lv = fresh_vars n in
   let f v y acc =
-    let e = read_body_of_type ?decl y in
+    let e = read_body_of_type ~nested:true y in
     [%expr
       [%e lexer "read_comma"] buf;
       let [%p pvar v] = [%e e] in
@@ -406,13 +406,13 @@ and read_tuple_contents ?decl l ~f =
   in
   List.fold_right2 ~f lv l ~init:acc
 
-and read_body_of_tuple_type ?decl l =
+and read_body_of_tuple_type l =
   [%expr
     [%e lexer "read_lbracket"] buf;
     ignore ([%e lexer "read_tag_1"] 0 buf);
-    [%e read_tuple_contents ?decl l ~f:Ast_helper.Exp.tuple]]
+    [%e read_tuple_contents l ~f:Ast_helper.Exp.tuple]]
 
-and read_of_record_raw ?decl ?(return = fun x -> x) l =
+and read_of_record_raw ?(return = fun x -> x) l =
   let f =
     let f {Parsetree.pld_name; _} e = label_of_constructor pld_name, e in
     fun l' -> return (Ast_helper.Exp.record (List.map2 ~f l l') None)
@@ -420,18 +420,20 @@ and read_of_record_raw ?decl ?(return = fun x -> x) l =
     let f {Parsetree.pld_type; _} = pld_type in
     List.map ~f l
   in
-  read_tuple_contents l ?decl ~f
+  read_tuple_contents l ~f
 
-and read_of_record decl l =
-  let e = read_of_record_raw ~decl l in
+and read_of_record l =
+  let e = read_of_record_raw l in
   [%expr
     [%e lexer "read_lbracket"] buf;
     ignore ([%e lexer "read_tag_2"] 0 254 buf);
     [%e e]]
   |> buf_expand
 
-and read_body_of_type ?decl y =
+and read_body_of_type ?decl ~nested y =
   let poly =
+    nested
+    ||
     match decl with
     | Some _ -> true
     | _ -> false
@@ -448,12 +450,13 @@ and read_body_of_type ?decl y =
   | [%type: char] -> [%expr [%e rt "Json_char.read"] buf]
   | [%type: string] -> [%expr [%e rt "Json_string.read"] buf]
   | [%type: bytes] -> [%expr [%e rt "Json_bytes.read"] buf]
-  | [%type: [%t? y] list] -> [%expr [%e rt "read_list"] [%e read_of_type ?decl y] buf]
-  | [%type: [%t? y] ref] -> [%expr [%e rt "read_ref"] [%e read_of_type ?decl y] buf]
+  | [%type: [%t? y] list] -> [%expr [%e rt "read_list"] [%e read_of_type ~nested y] buf]
+  | [%type: [%t? y] ref] -> [%expr [%e rt "read_ref"] [%e read_of_type ~nested y] buf]
   | [%type: [%t? y] option] ->
-      [%expr [%e rt "read_option"] [%e read_of_type ?decl y] buf]
-  | [%type: [%t? y] array] -> [%expr [%e rt "read_array"] [%e read_of_type ?decl y] buf]
-  | {Parsetree.ptyp_desc = Ptyp_tuple l; _} -> read_body_of_tuple_type l ?decl
+      [%expr [%e rt "read_option"] [%e read_of_type ~nested y] buf]
+  | [%type: [%t? y] array] ->
+      [%expr [%e rt "read_array"] [%e read_of_type ~nested y] buf]
+  | {Parsetree.ptyp_desc = Ptyp_tuple l; _} -> read_body_of_tuple_type l
   | {Parsetree.ptyp_desc = Ptyp_variant (l, _, _); ptyp_loc = loc; _} ->
       let e =
         match decl with
@@ -461,7 +464,7 @@ and read_body_of_type ?decl y =
             let e = suffix_decl decl ~suffix:"of_json_with_tag"
             and l =
               let {Parsetree.ptype_params = l; _} = decl
-              and f (y, _) = read_of_type y ~decl in
+              and f (y, _) = read_of_type y ~nested in
               List.map ~f l
             in
             app e l
@@ -472,7 +475,7 @@ and read_body_of_type ?decl y =
       [%expr [%e evar ("poly_" ^ v)] buf]
   | {Parsetree.ptyp_desc = Ptyp_constr (lid, l); _} ->
       let e = suffix_lid lid ~suffix:"of_json"
-      and l = List.map ~f:(read_of_type ?decl) l in
+      and l = List.map ~f:(read_of_type ~nested) l in
       [%expr [%e app e l] buf]
   | {Parsetree.ptyp_loc; _} ->
       Location.raise_errorf
@@ -481,10 +484,10 @@ and read_body_of_type ?decl y =
         deriver
         (string_of_core_type y)
 
-and read_of_type ?decl y = read_body_of_type ?decl y |> buf_expand
+and read_of_type ?decl ~nested y = buf_expand (read_body_of_type ?decl ~nested y)
 
 let json_of_type ?decl y =
-  let read = read_of_type ?decl y
+  let read = read_of_type ?decl ~nested:false y
   and write =
     let poly =
       match decl with
@@ -567,7 +570,7 @@ let write_decl_of_type d y =
   |> write_str_wrap d
 
 let read_decl_of_type decl y =
-  read_body_of_type y ~decl |> buf_expand |> read_str_wrap decl
+  read_body_of_type y ~decl ~nested:false |> buf_expand |> read_str_wrap decl
 
 let json_decls_of_type decl y =
   let recognize, read_tag =
@@ -606,7 +609,7 @@ let write_decl_of_variant d l =
   |> buf_expand
   |> write_str_wrap d
 
-let read_case ?decl (i, i', l) {Parsetree.pcd_name; pcd_args; _} =
+let read_case (i, i', l) {Parsetree.pcd_name; pcd_args; _} =
   let f l =
     Ast_helper.Exp.construct
       (label_of_constructor pcd_name)
@@ -624,7 +627,7 @@ let read_case ?decl (i, i', l) {Parsetree.pcd_name; pcd_args; _} =
           (Ast_helper.Exp.construct (label_of_constructor pcd_name) None)
         :: l )
   | Pcstr_tuple pcd_args ->
-      let expr = read_tuple_contents ?decl pcd_args ~f in
+      let expr = read_tuple_contents pcd_args ~f in
       let case = Ast_helper.Exp.case [%pat? `NCst [%p pint i']] expr in
       i, i' + 1, case :: l
   | Pcstr_record pcd_args ->
@@ -633,12 +636,12 @@ let read_case ?decl (i, i', l) {Parsetree.pcd_name; pcd_args; _} =
         let return e =
           Ast_helper.Exp.construct (label_of_constructor pcd_name) (Some e)
         in
-        read_of_record_raw ?decl pcd_args ~return
+        read_of_record_raw pcd_args ~return
       in
       i, i' + 1, Ast_helper.Exp.case patt expr :: l
 
 let read_decl_of_variant decl l =
-  (let _, _, l = List.fold_left ~f:(read_case ~decl) ~init:(0, 0, []) l
+  (let _, _, l = List.fold_left ~f:read_case ~init:(0, 0, []) l
    and e = [%expr [%e lexer "read_case"] buf] in
    Ast_helper.Exp.match_ e (l @ [tag_error_case ()]))
   |> buf_expand
@@ -649,7 +652,7 @@ let json_decls_of_variant d l =
 
 let write_decl_of_record d l = write_of_record d l |> write_str_wrap d
 
-let read_decl_of_record d l = read_of_record d l |> read_str_wrap d
+let read_decl_of_record d l = read_of_record l |> read_str_wrap d
 
 let json_decls_of_record d l =
   check_record_fields l;
@@ -770,7 +773,9 @@ module Of_json = struct
 
   let extension ~loc ~path:_ ctyp =
     [%expr
-      fun s -> [%e read_of_type ctyp] ([%e lexer "init_lexer"] (Lexing.from_string s))]
+      fun s ->
+        [%e read_of_type ctyp ~nested:false]
+          ([%e lexer "init_lexer"] (Lexing.from_string s))]
 
   let deriver = Ppxlib.Deriving.add name ~extension
 end

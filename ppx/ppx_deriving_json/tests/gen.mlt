@@ -378,6 +378,105 @@ val poly2_to_json : Buffer.t -> poly2 -> unit = <fun>
 val poly2_json : poly2 Deriving_Json.t = <abstr>
 |}]
 
+type poly3 =
+  [ poly1
+  | `C of [`p1 of poly1 | `p2 of poly2 | `p3 of poly3] ]
+[@@deriving json]
+
+[%%expect {|
+
+type poly3 =
+  [ poly1 | `C of [ `p1 of poly1  | `p2 of poly2  | `p3 of poly3 ] ][@@deriving
+                                                                    json]
+let _ = fun (_ : poly3) -> ()
+let rec (poly3_recognize : [ `NCst of int  | `Cst of int ] -> bool) =
+  function | x when poly1_recognize x -> true | `NCst 67 -> true | _ -> false
+let _ = poly3_recognize
+let rec (poly3_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `NCst of int  | `Cst of int ] -> poly3) =
+  fun buf ->
+    function
+    | x when poly1_recognize x ->
+        (poly1_of_json_with_tag buf x :> [ poly1
+                                         | `C of
+                                             [ `p1 of poly1  | `p2 of poly2
+                                             | `p3 of poly3 ] ])
+    | `NCst 67 ->
+        (Deriving_Json_lexer.read_comma buf;
+         (let v =
+            (fun buf ->
+               function
+               | `NCst 25025 ->
+                   (Deriving_Json_lexer.read_comma buf;
+                    (let v = poly1_of_json buf in
+                     Deriving_Json_lexer.read_rbracket buf; `p1 v))
+               | `NCst 25026 ->
+                   (Deriving_Json_lexer.read_comma buf;
+                    (let v = poly2_of_json buf in
+                     Deriving_Json_lexer.read_rbracket buf; `p2 v))
+               | `NCst 25027 ->
+                   (Deriving_Json_lexer.read_comma buf;
+                    (let v = poly3_of_json buf in
+                     Deriving_Json_lexer.read_rbracket buf; `p3 v))
+               | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf) buf
+              (Deriving_Json_lexer.read_vcase buf) in
+          Deriving_Json_lexer.read_rbracket buf; `C v))
+    | _ -> Deriving_Json_lexer.tag_error ~typename:"" buf
+and (poly3_of_json : Deriving_Json_lexer.lexbuf -> poly3) =
+  fun buf -> poly3_of_json_with_tag buf (Deriving_Json_lexer.read_vcase buf)
+let _ = poly3_of_json_with_tag
+and _ = poly3_of_json
+let rec (poly3_to_json : Buffer.t -> [> poly3] -> unit) =
+  fun buf ->
+    fun a ->
+      match a with
+      | #poly1 as a -> poly1_to_json buf a
+      | `C a ->
+          let (a, b) = (67, a) in
+          (Buffer.add_string buf "[0";
+           ((Buffer.add_string buf ","; Deriving_Json.Json_int.write buf a);
+            Buffer.add_string buf ",";
+            (match b with
+             | `p1 a ->
+                 let (a, b) = (25025, a) in
+                 (Buffer.add_string buf "[0";
+                  ((Buffer.add_string buf ",";
+                    Deriving_Json.Json_int.write buf a);
+                   Buffer.add_string buf ",";
+                   poly1_to_json buf b);
+                  Buffer.add_string buf "]")
+             | `p2 a ->
+                 let (a, b) = (25026, a) in
+                 (Buffer.add_string buf "[0";
+                  ((Buffer.add_string buf ",";
+                    Deriving_Json.Json_int.write buf a);
+                   Buffer.add_string buf ",";
+                   poly2_to_json buf b);
+                  Buffer.add_string buf "]")
+             | `p3 a ->
+                 let (a, b) = (25027, a) in
+                 (Buffer.add_string buf "[0";
+                  ((Buffer.add_string buf ",";
+                    Deriving_Json.Json_int.write buf a);
+                   Buffer.add_string buf ",";
+                   poly3_to_json buf b);
+                  Buffer.add_string buf "]")));
+           Buffer.add_string buf "]") let _ = poly3_to_json
+let (poly3_json : poly3 Deriving_Json.t) =
+  Deriving_Json.make poly3_to_json poly3_of_json let _ = poly3_json;;
+type poly3 =
+    [ `A
+    | `B of string
+    | `C of [ `p1 of poly1 | `p2 of poly2 | `p3 of poly3 ] ]
+val poly3_recognize : [ `Cst of int | `NCst of int ] -> bool = <fun>
+val poly3_of_json_with_tag :
+  Deriving_Json_lexer.lexbuf -> [ `Cst of int | `NCst of int ] -> poly3 =
+  <fun>
+val poly3_of_json : Deriving_Json_lexer.lexbuf -> poly3 = <fun>
+val poly3_to_json : Buffer.t -> poly3 -> unit = <fun>
+val poly3_json : poly3 Deriving_Json.t = <abstr>
+|}]
+
 type inline_record =
   | I of
       { name : string
