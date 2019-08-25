@@ -74,7 +74,7 @@ let remove pos = RList.remove pos rhandle
 
 let time_signal =
   let s, set = React.S.create (Sys.time ()) in
-  let rec loop () =
+  let rec loop () : unit Lwt.t =
     set (Sys.time ());
     Lwt.bind (Lwt_js.sleep 1.) loop
   in

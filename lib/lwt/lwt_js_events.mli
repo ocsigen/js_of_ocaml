@@ -137,7 +137,7 @@ val buffered_loop :
     parameters [cancel_handler] and [cancel_queue].
 *)
 
-val async : (unit -> 'a Lwt.t) -> unit
+val async : (unit -> unit Lwt.t) -> unit
 (** [async t] records a thread to be executed later.
     It is implemented by calling yield, then Lwt.async.
     This is useful if you want to create a new event listener
