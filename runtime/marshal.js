@@ -41,7 +41,9 @@ var caml_marshal_constants = {
   CODE_DOUBLE_ARRAY32_LITTLE: 0x07,
   CODE_CODEPOINTER:           0x10,
   CODE_INFIXPOINTER:          0x11,
-  CODE_CUSTOM:                0x12
+  CODE_CUSTOM:                0x12,
+  CODE_CUSTOM_LEN:            0x18,
+  CODE_CUSTOM_FIXED:          0x19
 }
 
 
@@ -274,7 +276,11 @@ function caml_input_value_from_reader(reader, ofs) {
         case 0x11: //cst.CODE_INFIXPOINTER:
           caml_failwith ("input_value: code pointer");
           break;
+        case 0x18: //cst.CODE_CUSTOM_LEN:
+          caml_failwith("input_value: unknown custom block identifier");
+          break;
         case 0x12: //cst.CODE_CUSTOM:
+        case 0x19: //cst.CODE_CUSTOM_FIXED:
           var c, s = "";
           while ((c = reader.read8u ()) != 0) s += String.fromCharCode (c);
           switch(s) {
@@ -374,11 +380,19 @@ MlObjectTable.prototype.recall = function(v) {
     ? undefined : this.objs.length - i;   /* index is relative */
 }
 
+//Provides: int64_custom_fixed
+//Version: >= 4.08
+var int64_custom_fixed = true
+
+//Provides: int64_custom_fixed
+//Version: < 4.08
+var int64_custom_fixed = false
+
 //Provides: caml_output_val
 //Requires: caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
 //Requires: MlBytes, caml_ml_string_length, caml_string_unsafe_get
-//Requires: MlObjectTable, caml_list_to_js_array
+//Requires: MlObjectTable, caml_list_to_js_array, int64_custom_fixed
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -434,7 +448,7 @@ var caml_output_val = function (){
         if (v[0] == 255) {
           // Int64
           if (memo(v)) return;
-          writer.write (8, 0x12 /*cst.CODE_CUSTOM*/);
+          writer.write (8, int64_custom_fixed? 0x19 /*cst.CODE_CUSTOM_FIXED*/ : 0x12 /*cst.CODE_CUSTOM*/);
           for (var i = 0; i < 3; i++) writer.write (8, "_j\0".charCodeAt(i));
           var b = caml_int64_to_bytes (v);
           for (var i = 0; i < 8; i++) writer.write (8, b[i]);
