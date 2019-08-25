@@ -16,6 +16,7 @@
 * Misc: switch to ocamlformat.0.11
 * Lib: Use expect tests
 * Lib: Add support for 'addEventListener' with options (#807)
+* Lib: Change api of [Lwt_js_events.async] (#862)
 
 ## Bug fixes
 * Compiler: don't generate source if no-source-map passed (#780)
