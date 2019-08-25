@@ -276,8 +276,10 @@ function caml_input_value_from_reader(reader, ofs) {
         case 0x11: //cst.CODE_INFIXPOINTER:
           caml_failwith ("input_value: code pointer");
           break;
-        case 0x12: //cst.CODE_CUSTOM:
         case 0x18: //cst.CODE_CUSTOM_LEN:
+          caml_failwith("input_value: unknown custom block identifier");
+          break;
+        case 0x12: //cst.CODE_CUSTOM:
         case 0x19: //cst.CODE_CUSTOM_FIXED:
           var c, s = "";
           while ((c = reader.read8u ()) != 0) s += String.fromCharCode (c);
