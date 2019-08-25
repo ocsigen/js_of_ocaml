@@ -30,6 +30,7 @@
 * Runtime: fix encoding when printing to stdout (#800)
 * Runtime: Handle browserfs in fs_node detection logic (#831)
 * Runtime: fix Obj.tag (#832)
+* Runtime: fix marshalling of custom blocks (#861)
 
 # 3.4.0 (2019-04-17) - Hong Kong
 ## Features/Changes
