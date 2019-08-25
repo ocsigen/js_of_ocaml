@@ -380,11 +380,19 @@ MlObjectTable.prototype.recall = function(v) {
     ? undefined : this.objs.length - i;   /* index is relative */
 }
 
+//Provides: int64_custom_fixed
+//Version: >= 4.08
+var int64_custom_fixed = true
+
+//Provides: int64_custom_fixed
+//Version: < 4.08
+var int64_custom_fixed = false
+
 //Provides: caml_output_val
 //Requires: caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
 //Requires: MlBytes, caml_ml_string_length, caml_string_unsafe_get
-//Requires: MlObjectTable, caml_list_to_js_array
+//Requires: MlObjectTable, caml_list_to_js_array, int64_custom_fixed
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -440,7 +448,7 @@ var caml_output_val = function (){
         if (v[0] == 255) {
           // Int64
           if (memo(v)) return;
-          writer.write (8, 0x19 /*cst.CODE_CUSTOM_FIXED*/);
+          writer.write (8, int64_custom_fixed? 0x19 /*cst.CODE_CUSTOM_FIXED*/ : 0x12 /*cst.CODE_CUSTOM*/);
           for (var i = 0; i < 3; i++) writer.write (8, "_j\0".charCodeAt(i));
           var b = caml_int64_to_bytes (v);
           for (var i = 0; i < 8; i++) writer.write (8, b[i]);
