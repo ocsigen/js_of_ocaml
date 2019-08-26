@@ -48,7 +48,7 @@ exception Wrong_headers of (int * (string -> string option))
 let default_response url code headers req =
   { url
   ; code
-  ; content = Js.to_string req##.responseText
+  ; content = Js.Opt.case req##.responseText (fun () -> "") (fun x -> Js.to_string x)
   ; content_xml =
       (fun () ->
         match Js.Opt.to_option req##.responseXML with
@@ -59,7 +59,7 @@ let default_response url code headers req =
 let text_response url code headers req =
   { url
   ; code
-  ; content = req##.responseText
+  ; content = Js.Opt.case req##.responseText (fun () -> Js.string "") (fun x -> x)
   ; content_xml = (fun () -> assert false)
   ; headers }
 
