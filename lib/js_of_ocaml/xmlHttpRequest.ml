@@ -75,7 +75,7 @@ class type xmlHttpRequest =
 
     method response : File.file_any readonly_prop
 
-    method responseText : js_string t readonly_prop
+    method responseText : js_string t opt readonly_prop
 
     method responseXML : Dom.element Dom.document t opt readonly_prop
 
