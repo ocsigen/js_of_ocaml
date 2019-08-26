@@ -1,4 +1,4 @@
 (executables
-  (names post_process_api)
+  (names post_process_api gen_htmlt)
   (libraries lambdasoup cmdliner)
   (preprocess no_preprocessing))
