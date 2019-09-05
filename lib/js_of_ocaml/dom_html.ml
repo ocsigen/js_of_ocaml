@@ -266,6 +266,11 @@ class type event =
     inherit [element] Dom.event
   end
 
+and ['a] customEvent =
+  object
+    inherit [element, 'a] Dom.customEvent
+  end
+
 and mouseEvent =
   object
     inherit event
@@ -497,6 +502,8 @@ and eventTarget =
     method onpointerover : ('self t, pointerEvent t) event_listener writeonly_prop
 
     method onpointerup : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method dispatchEvent : event t -> bool t meth
   end
 
 and popStateEvent =
@@ -884,6 +891,8 @@ let addEventListener = Dom.addEventListener
 let addEventListenerWithOptions = Dom.addEventListenerWithOptions
 
 let removeEventListener = Dom.removeEventListener
+
+let createCustomEvent = Dom.createCustomEvent
 
 class type ['node] collection =
   object

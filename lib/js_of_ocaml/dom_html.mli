@@ -271,6 +271,11 @@ class type event =
     inherit [element] Dom.event
   end
 
+and ['a] customEvent =
+  object
+    inherit [element, 'a] Dom.customEvent
+  end
+
 and mouseEvent =
   object
     inherit event
@@ -509,6 +514,8 @@ and eventTarget =
     method onpointerover : ('self t, pointerEvent t) event_listener writeonly_prop
 
     method onpointerup : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method dispatchEvent : event t -> bool t meth
   end
 
 and popStateEvent =
@@ -2477,6 +2484,14 @@ val addMousewheelEventListener :
       of the [addEventListener] DOM method.  The callback is provided the
       event and the numbers of ticks the mouse wheel moved.  Positive
       means down / right. *)
+
+val createCustomEvent :
+     ?bubbles:bool
+  -> ?cancelable:bool
+  -> ?detail:'a
+  -> 'a #customEvent Js.t Event.typ
+  -> 'a customEvent Js.t
+(** See [Dom.createCustomEvent] *)
 
 (****)
 
