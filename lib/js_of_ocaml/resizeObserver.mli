@@ -69,9 +69,7 @@ class type resizeObserver =
     method observe : #Dom.node Js.t -> unit Js.meth
 
     method observe_withOptions :
-         #Dom.node Js.t
-      -> resizeObserverOptions Js.t
-      -> unit Js.meth
+      #Dom.node Js.t -> resizeObserverOptions Js.t -> unit Js.meth
 
     method unobserve : #Dom.node Js.t -> unit Js.meth
 
@@ -81,9 +79,8 @@ class type resizeObserver =
 val empty_resize_observer_options : unit -> resizeObserverOptions Js.t
 
 val resizeObserver :
-  (   (resizeObserverEntry Js.t Js.js_array Js.t
-       -> resizeObserver Js.t
-       -> unit) Js.callback
+  (   (resizeObserverEntry Js.t Js.js_array Js.t -> resizeObserver Js.t -> unit)
+      Js.callback
    -> resizeObserver Js.t)
   Js.constr
 
