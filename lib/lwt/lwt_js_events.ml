@@ -24,7 +24,7 @@ let ( >>= ) = Lwt.bind
 
 let async f = Lwt.async (fun () -> Lwt_js.yield () >>= f)
 
-let map f = function
+let opt_map f = function
   | None -> None
   | Some x -> Some (f x)
 
@@ -36,8 +36,8 @@ let make_event event_kind ?use_capture ?passive target =
   el :=
     Js.some
       (Dom.addEventListenerWithOptions
-         ?capture:(map Js.bool use_capture)
-         ?passive:(map Js.bool passive)
+         ?capture:(opt_map Js.bool use_capture)
+         ?passive:(opt_map Js.bool passive)
          target
          event_kind
          (Dom_html.handler (fun (ev : #Dom_html.event Js.t) ->
@@ -315,8 +315,8 @@ let mousewheel ?use_capture ?passive target =
   el :=
     Js.some
       (Dom_html.addMousewheelEventListenerWithOptions
-         ?capture:(map Js.bool use_capture)
-         ?passive:(map Js.bool passive)
+         ?capture:(opt_map Js.bool use_capture)
+         ?passive:(opt_map Js.bool passive)
          target
          (fun (ev : #Dom_html.event Js.t) ~dx ~dy ->
            Firebug.console##log ev;
