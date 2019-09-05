@@ -304,11 +304,12 @@ class type ['a] event =
     method srcElement : 'a t opt readonly_prop
   end
 
-class type ['a, 'b] customEvent = object
-  inherit ['a] event
+class type ['a, 'b] customEvent =
+  object
+    inherit ['a] event
 
-  method detail : 'b Js.opt Js.readonly_prop
-end
+    method detail : 'b Js.opt Js.readonly_prop
+  end
 
 (** {2 Event handlers} *)
 

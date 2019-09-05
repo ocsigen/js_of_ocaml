@@ -24,7 +24,9 @@ let ( >>= ) = Lwt.bind
 
 let async f = Lwt.async (fun () -> Lwt_js.yield () >>= f)
 
-let map f = function None -> None | Some x -> Some (f x)
+let map f = function
+  | None -> None
+  | Some x -> Some (f x)
 
 let make_event event_kind ?use_capture ?passive target =
   let el = ref Js.null in
@@ -44,8 +46,7 @@ let make_event event_kind ?use_capture ?passive target =
               Js.bool true))
          (* true because we do not want to prevent default ->
                               the user can use the preventDefault function
-                              above. *)
-      );
+                              above. *));
   t
 
 let catch_cancel f x =
@@ -324,8 +325,7 @@ let mousewheel ?use_capture ?passive target =
            Js.bool true)
          (* true because we do not want to prevent default ->
                            the user can use the preventDefault function
-                           above. *)
-      );
+                           above. *));
   t
 
 (* let _DOMMouseScroll ?use_capture ?passive target =
@@ -652,7 +652,8 @@ let limited_onresizes ?elapsed_time t =
   limited_loop (fun ?use_capture:_ ?passive:_ () -> onresize ()) ?elapsed_time () t
 
 let limited_onorientationchanges ?elapsed_time t =
-  limited_loop (fun ?use_capture:_ ?passive:_ () -> onorientationchange ())
+  limited_loop
+    (fun ?use_capture:_ ?passive:_ () -> onorientationchange ())
     ?elapsed_time
     ()
     t

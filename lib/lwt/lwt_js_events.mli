@@ -613,7 +613,8 @@ val mousemoves :
 
 val mouseouts :
      ?cancel_handler:bool
-  -> ?use_capture:bool -> ?passive:bool
+  -> ?use_capture:bool
+  -> ?passive:bool
   -> #Dom_html.eventTarget Js.t
   -> (Dom_html.mouseEvent Js.t -> unit Lwt.t -> unit Lwt.t)
   -> unit Lwt.t

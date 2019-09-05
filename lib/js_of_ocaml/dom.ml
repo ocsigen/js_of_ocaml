@@ -292,11 +292,12 @@ class type ['a] event =
     method srcElement : 'a t opt readonly_prop
   end
 
-class type ['a, 'b] customEvent = object
-  inherit ['a] event
+class type ['a, 'b] customEvent =
+  object
+    inherit ['a] event
 
-  method detail : 'b Js.opt Js.readonly_prop
-end
+    method detail : 'b Js.opt Js.readonly_prop
+  end
 
 let no_handler : ('a, 'b) event_listener = Js.null
 
@@ -398,15 +399,21 @@ let preventDefault ev =
   else (Js.Unsafe.coerce ev)##.returnValue := Js.bool false
 
 let createCustomEvent ?bubbles ?cancelable ?detail typ =
-  let opt_iter f = function None -> () | Some x -> f x in
+  let opt_iter f = function
+    | None -> ()
+    | Some x -> f x
+  in
   let opts = Unsafe.obj [||] in
   opt_iter (fun x -> opts##.bubbles := bool x) bubbles;
   opt_iter (fun x -> opts##.cancelable := bool x) cancelable;
   opt_iter (fun x -> opts##.detail := some x) detail;
-  let constr : (   ('a, 'b) #customEvent Js.t Event.typ
-                -> < detail : 'b opt prop > t
-                -> ('a, 'b) customEvent t) constr =
-    Unsafe.global##._CustomEvent in
+  let constr :
+      (   ('a, 'b) #customEvent Js.t Event.typ
+       -> < detail : 'b opt prop > t
+       -> ('a, 'b) customEvent t)
+      constr =
+    Unsafe.global##._CustomEvent
+  in
   new%js constr typ opts
 
 (* IE < 9 *)
