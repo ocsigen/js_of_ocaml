@@ -224,6 +224,16 @@ function caml_obj_block (tag, size) {
   for (var i = 1; i <= size; i++) o[i] = 0;
   return o;
 }
+
+//Provides: caml_obj_with_tag
+function caml_obj_with_tag(tag,x) {
+  var l = x.length;
+  var a = new Array(l);
+  a[0] = tag;
+  for(var i = 1; i < l; i++ ) a[i] = x[i];
+  return a;
+}
+
 //Provides: caml_obj_dup mutable (const)
 function caml_obj_dup (x) {
   var l = x.length;
@@ -231,6 +241,7 @@ function caml_obj_dup (x) {
   for(var i = 0; i < l; i++ ) a[i] = x[i];
   return a;
 }
+
 //Provides: caml_obj_truncate (mutable, const)
 //Requires: caml_invalid_argument
 function caml_obj_truncate (x, s) {
