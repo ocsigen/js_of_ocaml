@@ -117,3 +117,11 @@ let%expect_test _ =
      let v = Marshal.from_string data 0
      let () = assert (1L = v) |};
   [%expect {||}]
+
+let%expect_test _ =
+  Util.compile_and_run {|Printf.printf "%S" (Marshal.to_string 1L [])|};
+  [%expect
+    {| "\132\149\166\190\000\000\000\012\000\000\000\001\000\000\000\004\000\000\000\003\025_j\000\000\000\000\000\000\000\000\001" |}];
+  Printf.printf "%S" (Marshal.to_string 1L []);
+  [%expect
+    {| "\132\149\166\190\000\000\000\012\000\000\000\001\000\000\000\004\000\000\000\003\025_j\000\000\000\000\000\000\000\000\001" |}]
