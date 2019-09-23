@@ -219,9 +219,16 @@ function caml_frexp_float (x) {
   if ((x == 0) || !isFinite(x)) return [0, x, 0];
   var neg = x < 0;
   if (neg) x = - x;
-  var exp = jsoo_floor_log2(x) + 1;
+  var exp = Math.max(-1023, jsoo_floor_log2(x) + 1);
   x *= Math.pow(2,-exp);
-  if (x < 0.5) { x *= 2; exp -= 1; }
+  while (x < 0.5) {
+    x *= 2;
+    exp--;
+  }
+  while (x >= 1) {
+    x *= 0.5;
+    exp++;
+  }
   if (neg) x = - x;
   return [0, x, exp];
 }
