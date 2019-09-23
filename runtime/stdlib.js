@@ -641,6 +641,23 @@ function caml_format_int(fmt, i) {
 //Provides: caml_format_float const
 //Requires: caml_parse_format, caml_finish_formatting
 function caml_format_float (fmt, x) {
+  function toFixed(x,dp) {
+    if (Math.abs(x) < 1.0) {
+      return x.toFixed(dp);
+    } else {
+      var e = parseInt(x.toString().split('+')[1]);
+      if (e > 20) {
+        e -= 20;
+        x /= Math.pow(10,e);
+        x += (new Array(e+1)).join('0');
+        if(dp > 0) {
+          x = x + '.' + (new Array(dp+1)).join('0');
+        }
+        return x;
+      }
+      else return x.toFixed(dp)
+    }
+  }
   var s, f = caml_parse_format(fmt);
   var prec = (f.prec < 0)?6:f.prec;
   if (x < 0 || (x == 0 && 1/x == -Infinity)) { f.sign = -1; x = -x; }
@@ -656,7 +673,7 @@ function caml_format_float (fmt, x) {
         s = s.slice (0, i - 1) + '0' + s.slice (i - 1);
       break;
     case 'f':
-      s = x.toFixed(prec); break;
+      s = toFixed(x, prec); break;
     case 'g':
       prec = prec?prec:1;
       s = x.toExponential(prec - 1);
