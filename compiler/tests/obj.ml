@@ -32,6 +32,7 @@ let%expect_test "static eval of string get" =
   let program =
     run_test
       {|
+    [@@@ocaml.warning "-3"]
     let my_is_block x = Obj.is_block (Obj.repr x)
     let my_is_int x = Obj.is_int (Obj.repr x)
     let my_tag x = Obj.tag (Obj.repr [x])

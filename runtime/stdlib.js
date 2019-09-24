@@ -224,6 +224,16 @@ function caml_obj_block (tag, size) {
   for (var i = 1; i <= size; i++) o[i] = 0;
   return o;
 }
+
+//Provides: caml_obj_with_tag
+function caml_obj_with_tag(tag,x) {
+  var l = x.length;
+  var a = new Array(l);
+  a[0] = tag;
+  for(var i = 1; i < l; i++ ) a[i] = x[i];
+  return a;
+}
+
 //Provides: caml_obj_dup mutable (const)
 function caml_obj_dup (x) {
   var l = x.length;
@@ -231,6 +241,7 @@ function caml_obj_dup (x) {
   for(var i = 0; i < l; i++ ) a[i] = x[i];
   return a;
 }
+
 //Provides: caml_obj_truncate (mutable, const)
 //Requires: caml_invalid_argument
 function caml_obj_truncate (x, s) {
@@ -630,6 +641,23 @@ function caml_format_int(fmt, i) {
 //Provides: caml_format_float const
 //Requires: caml_parse_format, caml_finish_formatting
 function caml_format_float (fmt, x) {
+  function toFixed(x,dp) {
+    if (Math.abs(x) < 1.0) {
+      return x.toFixed(dp);
+    } else {
+      var e = parseInt(x.toString().split('+')[1]);
+      if (e > 20) {
+        e -= 20;
+        x /= Math.pow(10,e);
+        x += (new Array(e+1)).join('0');
+        if(dp > 0) {
+          x = x + '.' + (new Array(dp+1)).join('0');
+        }
+        return x;
+      }
+      else return x.toFixed(dp)
+    }
+  }
   var s, f = caml_parse_format(fmt);
   var prec = (f.prec < 0)?6:f.prec;
   if (x < 0 || (x == 0 && 1/x == -Infinity)) { f.sign = -1; x = -x; }
@@ -645,7 +673,7 @@ function caml_format_float (fmt, x) {
         s = s.slice (0, i - 1) + '0' + s.slice (i - 1);
       break;
     case 'f':
-      s = x.toFixed(prec); break;
+      s = toFixed(x, prec); break;
     case 'g':
       prec = prec?prec:1;
       s = x.toExponential(prec - 1);
@@ -847,7 +875,7 @@ function caml_hash_mix_string(h, v) {
 //Provides: caml_hash mutable
 //Requires: MlBytes
 //Requires: caml_int64_bits_of_float, caml_hash_mix_int, caml_hash_mix_final
-//Requires: caml_hash_mix_int64, caml_hash_mix_float, caml_hash_mix_string
+//Requires: caml_hash_mix_int64, caml_hash_mix_float, caml_hash_mix_string, caml_custom_ops
 var HASH_QUEUE_SIZE = 256;
 function caml_hash (count, limit, seed, obj) {
   var queue, rd, wr, sz, num, h, v, i, len;
@@ -858,6 +886,11 @@ function caml_hash (count, limit, seed, obj) {
   queue = [obj]; rd = 0; wr = 1;
   while (rd < wr && num > 0) {
     v = queue[rd++];
+    if (obj.caml_custom && caml_custom_ops[obj.caml_custom] && caml_custom_ops[obj.caml_custom].hash){
+      var hh = caml_custom_ops[obj.caml_custom].hash(obj);
+      h = caml_hash_mix_int (h, hh);
+      num --;
+    }
     if (v instanceof Array && v[0] === (v[0]|0)) {
       switch (v[0]) {
       case 248:
