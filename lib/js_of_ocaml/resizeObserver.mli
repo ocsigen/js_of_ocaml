@@ -61,7 +61,7 @@ class type resizeObserverEntry =
 
 class type resizeObserverOptions =
   object
-    method box : Js.js_string Js.t Js.prop
+    method box : Js.js_string Js.t Js.writeonly_prop
   end
 
 class type resizeObserver =
