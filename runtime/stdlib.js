@@ -875,7 +875,7 @@ function caml_hash_mix_string(h, v) {
 //Provides: caml_hash mutable
 //Requires: MlBytes
 //Requires: caml_int64_bits_of_float, caml_hash_mix_int, caml_hash_mix_final
-//Requires: caml_hash_mix_int64, caml_hash_mix_float, caml_hash_mix_string
+//Requires: caml_hash_mix_int64, caml_hash_mix_float, caml_hash_mix_string, caml_custom_ops
 var HASH_QUEUE_SIZE = 256;
 function caml_hash (count, limit, seed, obj) {
   var queue, rd, wr, sz, num, h, v, i, len;
@@ -886,6 +886,11 @@ function caml_hash (count, limit, seed, obj) {
   queue = [obj]; rd = 0; wr = 1;
   while (rd < wr && num > 0) {
     v = queue[rd++];
+    if (obj.caml_custom && caml_custom_ops[obj.caml_custom] && caml_custom_ops[obj.caml_custom].hash){
+      var hh = caml_custom_ops[obj.caml_custom].hash(obj);
+      h = caml_hash_mix_int (h, hh);
+      num --;
+    }
     if (v instanceof Array && v[0] === (v[0]|0)) {
       switch (v[0]) {
       case 248:
