@@ -304,6 +304,13 @@ class type ['a] event =
     method srcElement : 'a t opt readonly_prop
   end
 
+class type ['a, 'b] customEvent =
+  object
+    inherit ['a] event
+
+    method detail : 'b Js.opt Js.readonly_prop
+  end
+
 (** {2 Event handlers} *)
 
 val no_handler : ('a, 'b) event_listener
@@ -362,6 +369,14 @@ val removeEventListener : event_listener_id -> unit
 val preventDefault : 'a #event Js.t -> unit
 (** Call this to prevent the default handler for the event.
     To stop propagation of the event, call {!Dom_html.stopPropagation}. *)
+
+val createCustomEvent :
+     ?bubbles:bool
+  -> ?cancelable:bool
+  -> ?detail:'b
+  -> ('a, 'b) #customEvent Js.t Event.typ
+  -> ('a, 'b) customEvent Js.t
+(** Create a custom event of given type. *)
 
 (** {2 Other DOM objects} *)
 
