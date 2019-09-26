@@ -2390,12 +2390,25 @@ val addEventListener :
 val removeEventListener : event_listener_id -> unit
 (** Remove the given event listener. *)
 
+val addMousewheelEventListenerWithOptions :
+     (#eventTarget t as 'a)
+  -> ?capture:bool t
+  -> ?once:bool t
+  -> ?passive:bool t
+  -> (mouseEvent t -> dx:int -> dy:int -> bool t)
+  -> event_listener_id
+(** Add a mousewheel event listener with option-object variant of the
+      [addEventListener] DOM method.  The callback is provided the
+      event and the numbers of ticks the mouse wheel moved.  Positive
+      means down / right. *)
+
 val addMousewheelEventListener :
      (#eventTarget t as 'a)
   -> (mouseEvent t -> dx:int -> dy:int -> bool t)
   -> bool t
   -> event_listener_id
-(** Add a mousewheel event listener.  The callback is provided the
+(** Add a mousewheel event listener with the useCapture boolean variant
+      of the [addEventListener] DOM method.  The callback is provided the
       event and the numbers of ticks the mouse wheel moved.  Positive
       means down / right. *)
 

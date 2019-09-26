@@ -2748,19 +2748,24 @@ let hasMousewheelEvents () =
   d##setAttribute (Js.string "onmousewheel") (Js.string "return;");
   Js.typeof (Js.Unsafe.get d (Js.string "onmousewheel")) == Js.string "function"
 
-let addMousewheelEventListener e h capt =
+let addMousewheelEventListenerWithOptions e ?capture ?once ?passive h =
   if hasMousewheelEvents ()
   then
-    addEventListener
+    addEventListenerWithOptions
+      ?capture
+      ?once
+      ?passive
       e
       Event.mousewheel
       (handler (fun (e : mousewheelEvent t) ->
            let dx = -Optdef.get e##.wheelDeltaX (fun () -> 0) / 40 in
            let dy = -Optdef.get e##.wheelDeltaY (fun () -> e##.wheelDelta) / 40 in
            h (e :> mouseEvent t) ~dx ~dy))
-      capt
   else
-    addEventListener
+    addEventListenerWithOptions
+      ?capture
+      ?once
+      ?passive
       e
       Event._DOMMouseScroll
       (handler (fun (e : mouseScrollEvent t) ->
@@ -2768,7 +2773,9 @@ let addMousewheelEventListener e h capt =
            if e##.axis == e##._HORIZONTAL_AXIS
            then h (e :> mouseEvent t) ~dx:d ~dy:0
            else h (e :> mouseEvent t) ~dx:0 ~dy:d))
-      capt
+
+let addMousewheelEventListener e h capt =
+  addMousewheelEventListenerWithOptions ~capture:capt e h
 
 (*****)
 
