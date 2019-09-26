@@ -82,7 +82,7 @@ end
 
 == Syntax extension ==
 
-Two syntax extensions are provided: the <<a_manual chapter="Ppx"|Ppx_js>>
+Two syntax extensions are provided: the <<a_manual chapter="ppx"|Ppx_js>>
 one and the <<a_manual chapter="camlp4"|Camlp4>> one. This manual is written
 using the ppx extension, which we advise.
 

@@ -32,6 +32,7 @@ module Js = Js
 module Json = Json
 module Jstable = Jstable
 module MutationObserver = MutationObserver
+module ResizeObserver = ResizeObserver
 module Regexp = Regexp
 module Sys_js = Sys_js
 module Typed_array = Typed_array

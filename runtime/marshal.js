@@ -143,9 +143,56 @@ function caml_input_value_from_bytes(s,ofs) {
   return caml_input_value_from_reader(reader, ofs)
 }
 
+//Provides: caml_int64_unmarshal
+//Requires: caml_int64_of_bytes
+function caml_int64_unmarshal(reader, size){
+  var t = new Array(8);;
+  for (var j = 0;j < 8;j++) t[j] = reader.read8u();
+  size[0] = 8;
+  return caml_int64_of_bytes (t);
+}
+
+//Provides: caml_int64_marshal
+//Requires: caml_int64_to_bytes
+function caml_int64_marshal(writer, v, sizes) {
+  var b = caml_int64_to_bytes (v);
+  for (var i = 0; i < 8; i++) writer.write (8, b[i]);
+  sizes[0] = 8; sizes[1] = 8;
+}
+
+//Provides: caml_int32_unmarshal
+function caml_int32_unmarshal(reader, size){
+  size[0] = 4;
+  return reader.read32s ();
+}
+
+//Provides: caml_nativeint_unmarshal
+//Requires: caml_failwith
+function caml_nativeint_unmarshal(reader, size){
+  switch (reader.read8u ()) {
+  case 1:
+    size[0] = 4;
+    return reader.read32s ();
+  case 2:
+    caml_failwith("input_value: native integer value too large");
+  default: caml_failwith("input_value: ill-formed native integer");
+  }
+}
+
+//Provides: caml_custom_ops
+//Requires: caml_int64_unmarshal, caml_int64_marshal
+//Requires: caml_int32_unmarshal, caml_nativeint_unmarshal
+var caml_custom_ops =
+    {"_j": { deserialize : caml_int64_unmarshal,
+             serialize  : caml_int64_marshal,
+             fixed_length : 8 },
+     "_i": { deserialize : caml_int32_unmarshal, fixed_length : 4 },
+     "_n": { deserialize : caml_nativeint_unmarshal, fixed_length : 4 }
+    }
+
 //Provides: caml_input_value_from_reader mutable
 //Requires: caml_failwith
-//Requires: caml_float_of_bytes, caml_int64_of_bytes
+//Requires: caml_float_of_bytes, caml_custom_ops
 
 function caml_input_value_from_reader(reader, ofs) {
   var _magic = reader.read32u ()
@@ -276,41 +323,38 @@ function caml_input_value_from_reader(reader, ofs) {
         case 0x11: //cst.CODE_INFIXPOINTER:
           caml_failwith ("input_value: code pointer");
           break;
-        case 0x18: //cst.CODE_CUSTOM_LEN:
-          caml_failwith("input_value: unknown custom block identifier");
-          break;
         case 0x12: //cst.CODE_CUSTOM:
+        case 0x18: //cst.CODE_CUSTOM_LEN:
         case 0x19: //cst.CODE_CUSTOM_FIXED:
           var c, s = "";
           while ((c = reader.read8u ()) != 0) s += String.fromCharCode (c);
-          switch(s) {
-          case "_j":
-            // Int64
-            var t = new Array(8);;
-            for (var j = 0;j < 8;j++) t[j] = reader.read8u();
-            var v = caml_int64_of_bytes (t);
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            return v;
-          case "_i":
-            // Int32
-            var v = reader.read32s ();
-            if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-            return v;
-          case "_n":
-            // Nativeint
-            switch (reader.read8u ()) {
-            case 1:
-              var v = reader.read32s ();
-              if (intern_obj_table) intern_obj_table[obj_counter++] = v;
-              return v;
-            case 2:
-              caml_failwith("input_value: native integer value too large");
-            default:
-              caml_failwith("input_value: ill-formed native integer");
-            }
-          default:
+          var ops = caml_custom_ops[s];
+          var expected_size;
+          if(!ops)
             caml_failwith("input_value: unknown custom block identifier");
+          switch(code){
+          case 0x12: // cst.CODE_CUSTOM (deprecated)
+            break;
+          case 0x19: // cst.CODE_CUSTOM_FIXED
+            if(!ops.fixed_length)
+              caml_failwith("input_value: expected a fixed-size custom block");
+            expected_size = ops.fixed_length;
+            break;
+          case 0x18: // cst.CODE_CUSTOM_LEN
+            expected_size = reader.read32u ();
+            // Skip size64
+            reader.read32s(); reader.read32s();
+            break;
           }
+          var old_pos = reader.i;
+          var size = [0];
+          var v = ops.deserialize(reader, size);
+          if(expected_size != undefined){
+            if(expected_size != size[0])
+              caml_failwith("input_value: incorrect length of serialized custom block");
+          }
+          if (intern_obj_table) intern_obj_table[obj_counter++] = v;
+          return v;
         default:
           caml_failwith ("input_value: ill-formed message");
         }
@@ -380,19 +424,20 @@ MlObjectTable.prototype.recall = function(v) {
     ? undefined : this.objs.length - i;   /* index is relative */
 }
 
-//Provides: int64_custom_fixed
+//Provides: caml_legacy_custom_code
 //Version: >= 4.08
-var int64_custom_fixed = true
+var caml_legacy_custom_code = false
 
-//Provides: int64_custom_fixed
+//Provides: caml_legacy_custom_code
 //Version: < 4.08
-var int64_custom_fixed = false
+var caml_legacy_custom_code = true
 
 //Provides: caml_output_val
 //Requires: caml_int64_to_bytes, caml_failwith
 //Requires: caml_int64_bits_of_float
 //Requires: MlBytes, caml_ml_string_length, caml_string_unsafe_get
-//Requires: MlObjectTable, caml_list_to_js_array, int64_custom_fixed
+//Requires: MlObjectTable, caml_list_to_js_array, caml_legacy_custom_code, caml_custom_ops
+//Requires: caml_invalid_argument
 var caml_output_val = function (){
   function Writer () { this.chunk = []; }
   Writer.prototype = {
@@ -400,6 +445,11 @@ var caml_output_val = function (){
     write:function (size, value) {
       for (var i = size - 8;i >= 0;i -= 8)
         this.chunk[this.chunk_idx++] = (value >> i) & 0xFF;
+    },
+    write_at:function (pos, size, value) {
+      var pos = pos;
+      for (var i = size - 8;i >= 0;i -= 8)
+        this.chunk[pos++] = (value >> i) & 0xFF;
     },
     write_code:function (size, code, value) {
       this.chunk[this.chunk_idx++] = code;
@@ -411,6 +461,7 @@ var caml_output_val = function (){
       else if (offset < (1 << 16)) this.write_code(16, 0x05 /*cst.CODE_SHARED16*/, offset);
       else this.write_code(32, 0x06 /*cst.CODE_SHARED32*/, offset);
     },
+    pos:function () { return this.chunk_idx },
     finalize:function () {
       this.block_len = this.chunk_idx - 20;
       this.chunk_idx = 0;
@@ -444,18 +495,46 @@ var caml_output_val = function (){
     }
 
     function extern_rec (v) {
-      if (v instanceof Array && v[0] === (v[0]|0)) {
-        if (v[0] == 255) {
-          // Int64
-          if (memo(v)) return;
-          writer.write (8, int64_custom_fixed? 0x19 /*cst.CODE_CUSTOM_FIXED*/ : 0x12 /*cst.CODE_CUSTOM*/);
-          for (var i = 0; i < 3; i++) writer.write (8, "_j\0".charCodeAt(i));
-          var b = caml_int64_to_bytes (v);
-          for (var i = 0; i < 8; i++) writer.write (8, b[i]);
-          writer.size_32 += 4;
-          writer.size_64 += 3;
-          return;
+      if (v.caml_custom || (v instanceof Array && v[0] === 255)) {
+        if (memo(v)) return;
+        var name = v.caml_custom || "_j";
+        var ops = caml_custom_ops[name];
+        var sz_32_64 = [0,0];
+        if(!ops.serialize)
+          caml_invalid_argument("output_value: abstract value (Custom)");
+        if(caml_legacy_custom_code) {
+          writer.write (8, 0x12 /*cst.CODE_CUSTOM*/);
+          for (var i = 0; i < name.length; i++)
+            writer.write (8, name.charCodeAt(i));
+          writer.write(8, 0);
+          ops.serialize(writer, v, sz_32_64);
+        } else if(ops.fixed_length == undefined){
+          writer.write (8, 0x18 /*cst.CODE_CUSTOM_LEN*/);
+          for (var i = 0; i < name.length; i++)
+            writer.write (8, name.charCodeAt(i));
+          writer.write(8, 0);
+          var header_pos = writer.pos ();
+          for(var i = 0; i < 12; i++) {
+            writer.write(8, 0);
+          }
+          ops.serialize(writer, v, sz_32_64);
+          writer.write_at(header_pos, 32, sz_32_64[0]);
+          writer.write_at(header_pos + 4, 32, 0); // zero
+          writer.write_at(header_pos + 8, 32, sz_32_64[1]);
+        } else {
+          writer.write (8, 0x19 /*cst.CODE_CUSTOM_FIXED*/);
+          for (var i = 0; i < name.length; i++)
+            writer.write (8, name.charCodeAt(i));
+          writer.write(8, 0);
+          var old_pos = writer.pos();
+          ops.serialize(writer, v, sz_32_64);
+          if (ops.fixed_length != writer.pos() - old_pos)
+            caml_failwith("output_value: incorrect fixed sizes specified by " + name);
         }
+        writer.size_32 += 2 + ((sz_32_64[0] + 3) >> 2);
+        writer.size_64 += 2 + ((sz_32_64[1] + 7) >> 3);
+      }
+      else if (v instanceof Array && v[0] === (v[0]|0)) {
         if (v[0] == 251) {
           caml_failwith("output_value: abstract value (Abstract)");
         }
