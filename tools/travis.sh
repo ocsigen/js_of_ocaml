@@ -35,7 +35,7 @@ case $MODE in
         opam pin add --no-action -y js_of_ocaml-tyxml.dev -k path .
         opam pin add --no-action -y js_of_ocaml-toplevel.dev -k path .
 
-        opam install -y lwt reactiveData tyxml || true
+        opam install -y lwt reactiveData tyxml graphics || true
         opam install -y ppxlib || true
 
         opam install -y --best-effort $PACKAGES
@@ -53,7 +53,7 @@ case $MODE in
         opam pin add --no-action -y js_of_ocaml-toplevel.dev -k path .
 
         opam install -y --best-effort --deps-only $PACKAGES || true
-        opam install -y cohttp-lwt-unix menhir ppx_expect yojson sexplib
+        opam install -y cohttp-lwt-unix menhir ppx_expect yojson sexplib graphics
         opam upgrade --yes
         dune build @runtest @default @ocsigen-doc -j 8
         opam install -y ocamlformat.0.11.0
