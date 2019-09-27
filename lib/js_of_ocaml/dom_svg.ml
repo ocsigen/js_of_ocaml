@@ -192,8 +192,10 @@ class type ['a] list =
 
 (* interface SVGElement *)
 class type element =
-  object
+  object ('self)
     inherit Dom.element
+
+    inherit ['self] DomEvent.eventTarget
 
     method id : js_string t prop
 
@@ -547,8 +549,6 @@ and gElement =
     inherit stylable
 
     inherit transformable
-
-    inherit Dom_html.eventTarget
   end
 
 (* interface SVGDefsElement *)
@@ -565,7 +565,6 @@ and defsElement =
     inherit stylable
 
     inherit transformable
-    (* XXXXXXX ? inherit Dom_html.eventTarget *)
   end
 
 (* interface SVGDescElement *)
@@ -576,7 +575,6 @@ and descElement =
     inherit langSpace
 
     inherit stylable
-    (* XXXXXXX ? inherit Dom_html.eventTarget *)
   end
 
 (* interface SVGTitleElement *)
@@ -601,8 +599,6 @@ and symbolElement =
     inherit stylable
 
     inherit fitToViewBox
-
-    inherit Dom_html.eventTarget
   end
 
 (* interface SVGUseElement *)
@@ -637,8 +633,6 @@ and useElement =
 
 and elementInstance =
   object
-    inherit Dom_html.eventTarget
-
     method correspondingElement : element t readonly_prop
 
     method correspondingUseElement : useElement t readonly_prop
@@ -1124,8 +1118,6 @@ class type lineElement =
 
     inherit transformable
 
-    inherit Dom_html.eventTarget
-
     method x1 : animatedLength t readonly_prop
 
     method y1 : animatedLength t readonly_prop
@@ -1191,8 +1183,6 @@ and textContentElement =
     inherit externalResourcesRequired
 
     inherit stylable
-
-    inherit Dom_html.eventTarget
 
     method textLength : animatedLength t readonly_prop
 

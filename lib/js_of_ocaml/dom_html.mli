@@ -260,226 +260,31 @@ type (-'a, -'b) event_listener = ('a, 'b) Dom.event_listener
       ['a] is the type of the target object; the second parameter
       ['b] is the type of the event object. *)
 
-type mouse_button =
+type mouse_button = DomEvent.mouse_button =
   | No_button
   | Left_button
   | Middle_button
   | Right_button
 
-class type event =
+class type event = [element] DomEvent.event
+
+and mouseEvent = [element] DomEvent.mouseEvent
+
+and keyboardEvent = [element] DomEvent.keyboardEvent
+
+and mousewheelEvent = [element] DomEvent.mousewheelEvent
+
+and mouseScrollEvent = [element] DomEvent.mouseScrollEvent
+
+and touchEvent = [element] DomEvent.touchEvent
+
+and dragEvent = [element] DomEvent.dragEvent
+
+and eventTarget = [element] DomEvent.eventTarget
+
+and htmlEventTarget =
   object
-    inherit [element] Dom.event
-  end
-
-and mouseEvent =
-  object
-    inherit event
-
-    method relatedTarget : element t opt optdef readonly_prop
-
-    method clientX : int readonly_prop
-
-    (* Relative to viewport *)
-    method clientY : int readonly_prop
-
-    method screenX : int readonly_prop
-
-    (* Relative to the edge of the screen *)
-    method screenY : int readonly_prop
-
-    method ctrlKey : bool t readonly_prop
-
-    method shiftKey : bool t readonly_prop
-
-    method altKey : bool t readonly_prop
-
-    method metaKey : bool t readonly_prop
-
-    method which : mouse_button optdef readonly_prop
-
-    (* Legacy methods *)
-    method button : int readonly_prop
-
-    method fromElement : element t opt optdef readonly_prop
-
-    method toElement : element t opt optdef readonly_prop
-
-    method pageX : int optdef readonly_prop
-
-    method pageY : int optdef readonly_prop
-  end
-
-and keyboardEvent =
-  object
-    inherit event
-
-    method altKey : bool t readonly_prop
-
-    method shiftKey : bool t readonly_prop
-
-    method ctrlKey : bool t readonly_prop
-
-    method metaKey : bool t readonly_prop
-
-    method location : int readonly_prop
-
-    (* Standardized but not fully supported properties *)
-    method key : js_string t optdef readonly_prop
-
-    method code : js_string t optdef readonly_prop
-
-    (* Deprecated properties *)
-    method which : int optdef readonly_prop
-
-    method charCode : int optdef readonly_prop
-
-    method keyCode : int readonly_prop
-
-    method keyIdentifier : js_string t optdef readonly_prop
-  end
-
-and mousewheelEvent =
-  object
-    (* All browsers but Firefox *)
-    inherit mouseEvent
-
-    method wheelDelta : int readonly_prop
-
-    method wheelDeltaX : int optdef readonly_prop
-
-    method wheelDeltaY : int optdef readonly_prop
-  end
-
-and mouseScrollEvent =
-  object
-    (* Firefox *)
-    inherit mouseEvent
-
-    method detail : int readonly_prop
-
-    method axis : int optdef readonly_prop
-
-    method _HORIZONTAL_AXIS : int optdef readonly_prop
-
-    method _VERTICAL_AXIS : int optdef readonly_prop
-  end
-
-and touchEvent =
-  object
-    inherit event
-
-    method touches : touchList t readonly_prop
-
-    method targetTouches : touchList t readonly_prop
-
-    method changedTouches : touchList t readonly_prop
-
-    method ctrlKey : bool t readonly_prop
-
-    method shiftKey : bool t readonly_prop
-
-    method altKey : bool t readonly_prop
-
-    method metaKey : bool t readonly_prop
-
-    method relatedTarget : element t opt optdef readonly_prop
-  end
-
-and touchList =
-  object
-    method length : int readonly_prop
-
-    method item : int -> touch t optdef meth
-  end
-
-and touch =
-  object
-    method identifier : int readonly_prop
-
-    method target : element t optdef readonly_prop
-
-    method screenX : int readonly_prop
-
-    method screenY : int readonly_prop
-
-    method clientX : int readonly_prop
-
-    method clientY : int readonly_prop
-
-    method pageX : int readonly_prop
-
-    method pageY : int readonly_prop
-  end
-
-and dragEvent =
-  object
-    inherit mouseEvent
-
-    method dataTransfer : dataTransfer t readonly_prop
-  end
-
-and dataTransfer =
-  object
-    method dropEffect : js_string t prop
-
-    method effectAllowed : js_string t prop
-
-    method files : File.fileList t readonly_prop
-
-    method types : js_string t js_array t readonly_prop
-
-    method addElement : element t -> unit meth
-
-    method clearData : js_string t -> unit meth
-
-    method clearData_all : unit meth
-
-    method getData : js_string t -> js_string t meth
-
-    method setData : js_string t -> js_string t -> unit meth
-
-    method setDragImage : element t -> int -> int -> unit meth
-  end
-
-(** Common properties of event target objects: [onclick],
-    [onkeypress], ... *)
-and eventTarget =
-  object ('self)
-    method onclick : ('self t, mouseEvent t) event_listener writeonly_prop
-
-    method ondblclick : ('self t, mouseEvent t) event_listener writeonly_prop
-
-    method onmousedown : ('self t, mouseEvent t) event_listener writeonly_prop
-
-    method onmouseup : ('self t, mouseEvent t) event_listener writeonly_prop
-
-    method onmouseover : ('self t, mouseEvent t) event_listener writeonly_prop
-
-    method onmousemove : ('self t, mouseEvent t) event_listener writeonly_prop
-
-    method onmouseout : ('self t, mouseEvent t) event_listener writeonly_prop
-
-    method onkeypress : ('self t, keyboardEvent t) event_listener writeonly_prop
-
-    method onkeydown : ('self t, keyboardEvent t) event_listener writeonly_prop
-
-    method onkeyup : ('self t, keyboardEvent t) event_listener writeonly_prop
-
-    method onscroll : ('self t, event t) event_listener writeonly_prop
-
-    method ondragstart : ('self t, dragEvent t) event_listener writeonly_prop
-
-    method ondragend : ('self t, dragEvent t) event_listener writeonly_prop
-
-    method ondragenter : ('self t, dragEvent t) event_listener writeonly_prop
-
-    method ondragover : ('self t, dragEvent t) event_listener writeonly_prop
-
-    method ondragleave : ('self t, dragEvent t) event_listener writeonly_prop
-
-    method ondrag : ('self t, dragEvent t) event_listener writeonly_prop
-
-    method ondrop : ('self t, dragEvent t) event_listener writeonly_prop
+    inherit eventTarget
 
     method onanimationstart : ('self t, animationEvent t) event_listener writeonly_prop
 
@@ -648,7 +453,7 @@ and element =
 
     method blur : unit meth
 
-    inherit eventTarget
+    inherit htmlEventTarget
   end
 
 (** Rectangular box (used for element bounding boxes) *)

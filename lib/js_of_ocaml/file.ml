@@ -200,17 +200,17 @@ class type fileReader =
 module ReaderEvent = struct
   type typ = fileReader progressEvent t Dom.Event.typ
 
-  let loadstart = Event.make "loadstart"
+  let loadstart = Dom.Event.make "loadstart"
 
-  let progress = Event.make "progress"
+  let progress = Dom.Event.make "progress"
 
-  let abort = Event.make "abort"
+  let abort = Dom.Event.make "abort"
 
-  let error = Event.make "error"
+  let error = Dom.Event.make "error"
 
-  let load = Event.make "load"
+  let load = Dom.Event.make "load"
 
-  let loadend = Event.make "loadend"
+  let loadend = Dom.Event.make "loadend"
 end
 
 let fileReader : fileReader t constr = Js.Unsafe.global##._FileReader
