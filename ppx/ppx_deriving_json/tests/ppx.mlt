@@ -68,7 +68,7 @@ int64 = [255,42,0,0]
 let () = test "nativeint" (Json_nativeint.to_string 42n)
 
 [%%expect {|
-Exception: Failure "Unimplemented".
+Exception: (Failure Unimplemented)
 |}]
 
 (* let () = test "nativeint" (Json_nativeint.to_string 42n);; *)
