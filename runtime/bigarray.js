@@ -23,10 +23,6 @@
 // - fortran + c layouts
 // - sub/slice/reshape
 // - retain fast path for 1d array access
-//
-// Note; int64+complex support if provided by allocating a second TypedArray
-// Note; accessor functions are selected when the bigarray is created.  It is assumed
-//       that this results in just a function pointer and will thus be fast.
 
 //Provides: caml_ba_init const
 function caml_ba_init() {
@@ -85,6 +81,7 @@ Ml_Bigarray.prototype.offset = function (arg) {
       }
     }
   }
+  else caml_invalid_argument("bigarray.js: invalid offset");
   switch(this.kind){  
   case 7:
     // Int64
