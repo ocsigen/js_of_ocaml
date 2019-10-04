@@ -370,13 +370,13 @@ function caml_ba_uint8_set32(ba, i0, v) {
 function caml_ba_uint8_set64(ba, i0, v) {
   var off = ba.offset(i0);
   ba.data[off+0] = ((v[1])       & 0xff);
-  ba.data[off+1] = ((v[1] >> 8)  & 0xff);
+  ba.data[off+1] = ((v[1] >>  8) & 0xff);
   ba.data[off+2] = ((v[1] >> 16) & 0xff);
   ba.data[off+3] = ((v[2])       & 0xff);
-  ba.data[off+4] = ((v[2] >> 8)  & 0xff);
+  ba.data[off+4] = ((v[2] >>  8) & 0xff);
   ba.data[off+5] = ((v[2] >> 16) & 0xff);
   ba.data[off+6] = ((v[3])       & 0xff);
-  ba.data[off+7] = ((v[3] >> 8)  & 0xff);
+  ba.data[off+7] = ((v[3] >>  8) & 0xff);
   return 0;
 }
 
@@ -448,39 +448,50 @@ function caml_ba_blit(src, dst) {
 }
 
 //Provides: caml_ba_sub
-//Requires: caml_invalid_argument, Ml_Bigarray
+//Requires: caml_invalid_argument, Ml_Bigarray, caml_ml_flush
 function caml_ba_sub(ba, ofs, len) {
-  var ofs = ba.offset(ofs);
+  var changed_dim;
+  var mul = 1;
+  var ofs_o = ofs;
+
+  if (ba.layout == 0) {
+    for (var i = 1; i < ba.dims.length; i++)
+      mul = mul * ba.dims[i];
+    changed_dim = 0;
+  } else {
+    for (var i = 0; i < (ba.dims.length - 1); i++)
+      mul = mul * ba.dims[i];
+    changed_dim = ba.dims.length - 1;
+    ofs = ofs - 1;
+  }
+  if (ofs < 0 || len < 0 || (ofs + len) > ba.dims[changed_dim]){
+    caml_ml_flush(1);
+    caml_ml_flush(0);
+    caml_ml_flush(2);
+    joo_global_object.console.log(ofs, len, changed_dim, ba.dims[changed_dim], ba);
+    caml_invalid_argument("Bigarray.sub: bad sub-array");
+  }
+  var ofs = ba.offset(ofs_o);
+ 
+  var end;
   switch(ba.kind){
   case 7:
     // Int64
-    len *= 2; break;
+    end = (ofs + len * 2);
+    break;
   case 10: case 11:
     // Complex
-    len *= 2; break;
+    end = (ofs + len * 2);
+    break;
+  default:
+    end = (ofs + len);
+    break;
   }
-  var changed_dim;
-  var mul = 1;
-
-  if (ba.layout == 0) {
-    for (var i = 1; i < this.dims.length; i++)
-      mul = mul * this.dims[i];
-    changed_dim = 0;
-  } else {
-    for (var i = 0; i < (this.dims.length - 1); i++)
-      mul = mul * this.dims[i];
-    changed_dim = this.dims.length - 1;
-    ofs = ofs - 1;
-  }
-
-  if (ofs < 0 || len < 0 || (ofs + len) > this.dims[changed_dim])
-    caml_invalid_argument("Bigarray.sub: bad sub-array");
-
-  var new_data = this.data.subarray(ofs * mul, (ofs + len) * mul);
+  var new_data = ba.data.subarray(ofs * mul, end * mul);
 
   var new_dims = [];
-  for (var i = 0; i < this.dims.length; i++)
-    new_dims[i] = this.dims[i];
+  for (var i = 0; i < ba.dims.length; i++)
+    new_dims[i] = ba.dims[i];
   new_dims[changed_dim] = len;
 
   return (new Ml_Bigarray(ba.kind, ba.layout, new_dims, new_data));
@@ -495,24 +506,24 @@ function caml_ba_slice(ba, vind) {
   var sub_dims = [];
   var ofs;
 
-  if (num_inds >= this.dims.length)
+  if (num_inds >= ba.dims.length)
     caml_invalid_argument("Bigarray.slice: too many indices");
 
   // Compute offset and check bounds
-  if (this.layout == 0) {
+  if (ba.layout == 0) {
     for (var i = 0; i < num_inds; i++)
       index[i] = vind[i];
-    for (; i < this.dims.length; i++)
+    for (; i < ba.dims.length; i++)
       index[i] = 0;
-    sub_dims = this.dims.slice(num_inds);
+    sub_dims = ba.dims.slice(num_inds);
   } else {
     for (var i = 0; i < num_inds; i++)
-      index[this.dims.length - num_inds + i] = vind[i];
-    for (var i = 0; i < this.dims.length - num_inds; i++)
+      index[ba.dims.length - num_inds + i] = vind[i];
+    for (var i = 0; i < ba.dims.length - num_inds; i++)
       index[i] = 1;
-    sub_dims = this.dims.slice(0, num_inds);
+    sub_dims = ba.dims.slice(0, num_inds);
   }
-  ofs = this.offset(index);
+  ofs = ba.offset(index);
 
 
   var size = caml_ba_get_size(sub_dims);
@@ -524,7 +535,7 @@ function caml_ba_slice(ba, vind) {
     // Complex
     size *= 2; break;
   }
-  var new_data = this.data.subarray(ofs, ofs + size);
+  var new_data = ba.data.subarray(ofs, ofs + size);
   return (new Ml_Bigarray(ba.kind, ba.layout, sub_dims, new_data));
 }
 
@@ -533,22 +544,22 @@ function caml_ba_slice(ba, vind) {
 function caml_ba_reshape(ba, vind) {
   vind = caml_js_from_array(vind);
   var new_dim = [];
-  var num_dims = this.dims.length;
+  var num_dims = ba.dims.length;
 
   if (num_dims < 1)
     caml_invalid_argument("Bigarray.reshape: bad number of dimensions");
   var num_elts = 1;
   for (var i = 0; i < num_dims; i++) {
-    new_dim[i] = this.dim[i];
+    new_dim[i] = ba.dim[i];
     if (new_dim[i] < 0)
       caml_invalid_argument("Bigarray.reshape: negative dimension");
     num_elts = num_elts * new_dim[i];
   }
 
-  var size = caml_ba_get_size(this.dims);
+  var size = caml_ba_get_size(ba.dims);
   // Check that sizes agree
   if (num_elts != size)
     caml_invalid_argument("Bigarray.reshape: size mismatch");
 
-  return (new Ml_Bigarray(ba.kind, ba.layout, new_dim, this.data));
+  return (new Ml_Bigarray(ba.kind, ba.layout, new_dim, ba.data));
 }
