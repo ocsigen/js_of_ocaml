@@ -1,0 +1,56 @@
+(vendored_dirs vendor)
+(executables
+  (names bigarrays change_layout fftba pr5115 weak_bigarray)
+  (libraries)
+  (js_of_ocaml)
+)
+
+(rule
+  (target bigarrays.referencejs)
+  (deps bigarrays.bc.js)
+  (action (with-stdout-to %{target} (run node ./bigarrays.bc.js))))
+
+(alias
+  (name runtest)
+  (deps bigarrays.referencejs bigarrays.reference)
+  (action (diff bigarrays.referencejs bigarrays.reference)))
+
+(rule
+  (target change_layout.referencejs)
+  (deps change_layout.bc.js)
+  (action (with-stdout-to %{target} (run node ./change_layout.bc.js))))
+
+(alias
+  (name runtest)
+  (deps change_layout.referencejs change_layout.reference)
+  (action (diff change_layout.referencejs change_layout.reference)))
+
+(rule
+  (target fftba.referencejs)
+  (deps fftba.bc.js)
+  (action (with-stdout-to %{target} (run node ./fftba.bc.js))))
+
+(alias
+  (name runtest)
+  (deps fftba.referencejs fftba.reference)
+  (action (diff fftba.referencejs fftba.reference)))
+
+(rule
+  (target pr5115.referencejs)
+  (deps pr5115.bc.js)
+  (action (with-stdout-to %{target} (run node ./pr5115.bc.js))))
+
+(alias
+  (name runtest)
+  (deps pr5115.referencejs pr5115.reference)
+  (action (diff pr5115.referencejs pr5115.reference)))
+
+(rule
+  (target weak_bigarray.referencejs)
+  (deps weak_bigarray.bc.js)
+  (action (with-stdout-to %{target} (run node ./weak_bigarray.bc.js))))
+
+(alias
+  (name runtest)
+  (deps weak_bigarray.referencejs weak_bigarray.reference)
+  (action (diff weak_bigarray.referencejs weak_bigarray.reference)))
