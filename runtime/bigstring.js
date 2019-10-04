@@ -8,27 +8,17 @@ function bigstring_alloc(_,size){
 }
 
 //Provides: bigstring_destroy_stub
-//Requires: caml_invalid_argument, caml_ba_create_from
+//Requires: caml_invalid_argument, caml_ba_create_unsafe
 //Weakdef
 //Will be defined in Core_kernel
 function bigstring_destroy_stub(v_bstr) {
-  if (v_bstr.data2 != null) {
-    caml_invalid_argument("bigstring_destroy: unsupported kind");
-  }
-
   if (v_bstr.hasOwnProperty('__is_deallocated')) {
     caml_invalid_argument("bigstring_destroy: bigstring is already deallocated");
   }
-
-  var destroyed_data = new v_bstr.data.__proto__.constructor(0);
-  var destroyed_bigstring =
-      caml_ba_create_from(destroyed_data, null, v_bstr.data_type, v_bstr.kind,
-                          v_bstr.layout, [0]);
-  destroyed_bigstring.__is_deallocated = true;
-
   // Mutate the original bigstring in-place, to simulate what the C version does
-  Object.assign(v_bstr, destroyed_bigstring);
-
+  v_bstr.__is_deallocated = true;
+  v_bstr.data = new v_bstr.data.__proto__.constructor(0);
+  v_bstr.dims = [0];
   return 0;
 }
 
@@ -118,11 +108,11 @@ function bigstring_to_array_buffer(bs) {
 }
 
 //Provides: bigstring_of_array_buffer mutable
-//Requires: caml_ba_create_from
+//Requires: caml_ba_create_unsafe
 //js_of_ocaml lib
 function bigstring_of_array_buffer(ab) {
   var ta = new joo_global_object.Uint8Array(ab);
-  return caml_ba_create_from(ta, null, 0, 12, 0, [ta.length])
+  return caml_ba_create_unsafe(12, 0, [ta.length], ta);
 }
 
 //Provides: caml_hash_mix_bigstring
