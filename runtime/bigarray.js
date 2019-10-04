@@ -58,10 +58,15 @@ function Ml_Bigarray (kind, layout, dims, buffer) {
 Ml_Bigarray.prototype.offset = function (arg) {
   var ofs = 0;
   if(typeof arg === "number") {
-    if(this.layout == 0 /* c_layout */)
+    if(this.layout == 0 /* c_layout */) {
+      if (arg < 0 || arg >= this.dims[0])
+        caml_array_bound_error();
       ofs = arg;
-    else
+    } else {
+      if (arg < 1 || arg > this.dims[0])
+        caml_array_bound_error();
       ofs = arg - 1;
+    }
   }
   else if (arg instanceof Array) {
     if (this.dims.length != arg.length)
@@ -350,7 +355,7 @@ function caml_ba_set_generic(ba, i, v) {
 function caml_ba_uint8_set16(ba, i0, v) {
   var off = ba.offset(i0);
   ba.data[off+0] = (v & 0xff);
-  ba.set1[off+1] = ((v >>> 8) & 0xff);
+  ba.data[off+1] = ((v >>> 8) & 0xff);
   return 0;
 }
 
