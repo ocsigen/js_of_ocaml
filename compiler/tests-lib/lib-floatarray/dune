@@ -1,0 +1,14 @@
+(executables
+  (names floatarray)
+  (libraries)
+  (js_of_ocaml)
+)
+
+(rule
+  (target floatarray.referencejs)
+  (deps floatarray.bc.js)
+  (action (with-stdout-to %{target} (run node ./floatarray.bc.js))))
+
+(alias
+  (name runtest)
+  (deps floatarray.referencejs))
