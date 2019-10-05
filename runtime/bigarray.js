@@ -617,9 +617,40 @@ function caml_ba_serialize(writer, ba, sz) {
   writer.write(32, (ba.kind | (ba.layout << 8)));
   for(var i = 0; i < ba.dims.length; i++) writer.write(32,ba.dims[i]);
   // FIXME
-  var data = new joo_global_object.Uint8Array(ba.data.buffer);
-  for(var i = 0; i < data.length; i++){
-    writer.write(8, data[i]);
+  switch(ba.kind){
+  case 2:  //Int8Array
+  case 3:  //Uint8Array
+  case 12: //Uint8Array
+    for(var i = 0; i < ba.data.length; i++){
+      writer.write(8, ba.data[i]);
+    }
+    break;
+  case 4:  // Int16Array
+  case 5:  // Uint16Array
+    for(var i = 0; i < ba.data.length; i++){
+      writer.write(16, ba.data[i]);
+    }
+    break;
+  case 6:  // Int32Array (int32)
+    for(var i = 0; i < ba.data.length; i++){
+      writer.write(32, ba.data[i]);
+    }
+    break;
+  case 8:  // Int32Array (int)
+  case 9:  // Int32Array (nativeint)
+    writer.write(8,0);
+    for(var i = 0; i < ba.data.length; i++){
+      writer.write(32, ba.data[i]);
+    }
+    break;
+  case 7:  // Int32Array (int64)
+
+    break;
+  case 0:  // Float32Array
+  case 1:  // Float64Array
+  case 10: // Float32Array (complex32)
+  case 11: // Float64Array (complex32)
+    break
   }
   sz[0] = (4 + ba.dims.length) * 4;
   sz[1] = (4 + ba.dims.length) * 8;
@@ -657,9 +688,49 @@ function caml_ba_deserialize(reader, sz){
   }
   if (!view) caml_invalid_argument("Bigarray.create: unsupported kind");
   var data = new view(size);
-  var buffer = new g.Uint8Array(data.buffer);
-  for(var i = 0; i < buffer.length; i++){
-    buffer[i] = reader.read8u();
+
+  // FIXME
+  switch(kind){
+  case 2:  //Int8Array
+    for(var i = 0; i < size; i++){
+      data[i] = reader.read8s();
+    }
+    break;
+  case 3:  //Uint8Array
+  case 12: //Uint8Array
+    for(var i = 0; i < size; i++){
+      data[i] = reader.read8u();
+    }
+    break;
+  case 4:  // Int16Array
+    for(var i = 0; i < size; i++){
+      data[i] = reader.read16s();
+    }
+    break;
+  case 5:  // Uint16Array
+    for(var i = 0; i < size; i++){
+      data[i] = reader.read16u();
+    }
+    break;
+  case 6:  // Int32Array (int32)
+    for(var i = 0; i < size; i++){
+      data[i] = reader.read32s();
+    }
+    break;
+  case 8:  // Int32Array (int)
+  case 9:  // Int32Array (nativeint)
+    var w = reader.read8u();
+    if(w != 0) caml_failwith("input_value: cannot read this");
+    for(var i = 0; i < size; i++){
+      data[i] = reader.read32s();
+    }
+    break;
+  case 7:  // Int32Array (int64)
+  case 0:  // Float32Array
+  case 1:  // Float64Array
+  case 10: // Float32Array (complex32)
+  case 11: // Float64Array (complex32)
+    break
   }
   sz[0] = (4 + num_dims) * 4;
   return caml_ba_create_unsafe(kind, layout, dims, data);
