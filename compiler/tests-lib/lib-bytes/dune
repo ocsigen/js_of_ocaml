@@ -1,0 +1,24 @@
+(executables
+  (names test_bytes binary)
+  (libraries)
+  (js_of_ocaml)
+)
+
+(rule
+  (target test_bytes.referencejs)
+  (deps test_bytes.bc.js)
+  (action (with-stdout-to %{target} (run node ./test_bytes.bc.js))))
+
+(alias
+  (name runtest)
+  (deps test_bytes.referencejs test_bytes.reference)
+  (action (diff test_bytes.referencejs test_bytes.reference)))
+
+(rule
+  (target binary.referencejs)
+  (deps binary.bc.js)
+  (action (with-stdout-to %{target} (run node ./binary.bc.js))))
+
+(alias
+  (name runtest)
+  (deps binary.referencejs))
