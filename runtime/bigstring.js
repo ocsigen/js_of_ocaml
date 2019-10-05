@@ -8,7 +8,7 @@ function bigstring_alloc(_,size){
 }
 
 //Provides: bigstring_destroy_stub
-//Requires: caml_invalid_argument, Ml_Bigarray
+//Requires: caml_invalid_argument, caml_ba_create_unsafe
 //Weakdef
 //Will be defined in Core_kernel
 function bigstring_destroy_stub(v_bstr) {
@@ -22,7 +22,7 @@ function bigstring_destroy_stub(v_bstr) {
 
   var destroyed_data = new v_bstr.data.__proto__.constructor(0);
   var destroyed_bigstring =
-      (new Ml_Bigarray(v_bstr.kind, v_bstr.layout, [0], destroyed_data));
+      caml_ba_create_unsafe(v_bstr.kind, v_bstr.layout, [0], destroyed_data);
   destroyed_bigstring.__is_deallocated = true;
 
   // Mutate the original bigstring in-place, to simulate what the C version does
@@ -117,11 +117,11 @@ function bigstring_to_array_buffer(bs) {
 }
 
 //Provides: bigstring_of_array_buffer mutable
-//Requires: Ml_Bigarray
+//Requires: caml_ba_create_unsafe
 //js_of_ocaml lib
 function bigstring_of_array_buffer(ab) {
   var ta = new joo_global_object.Uint8Array(ab);
-  return (new Ml_Bigarray(12, 0, [ta.length], ta));
+  return caml_ba_create_unsafe(12, 0, [ta.length], ta);
 }
 
 //Provides: caml_hash_mix_bigstring
