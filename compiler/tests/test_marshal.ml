@@ -138,7 +138,7 @@ let%expect_test _ =
   Util.compile_and_run
     {|
 let ba = Bigarray.Array1.create Int16_unsigned C_layout 3 in
-ba.{0} <- 0;
+ba.{0} <- 3;
 ba.{1} <- 1;
 ba.{2} <- 2;
 Printf.printf "%S" (Marshal.to_string ba [])
@@ -146,7 +146,7 @@ Printf.printf "%S" (Marshal.to_string ba [])
   [%expect
     {| "\132\149\166\190\000\000\000)\000\000\000\001\000\000\000\007\000\000\000\007\024_bigarray\000\000\000\000\020\000\000\000\000\000\000\000(\000\000\000\001\005\000\000\000\000\000\000\003\000\000\001\000\002\000" |}];
   let ba = Bigarray.Array1.create Int16_unsigned C_layout 3 in
-  ba.{0} <- 0;
+  ba.{0} <- 3;
   ba.{1} <- 1;
   ba.{2} <- 2;
   Printf.printf "%S" (Marshal.to_string ba []);
