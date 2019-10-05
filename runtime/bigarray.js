@@ -61,6 +61,8 @@ function Ml_Bigarray (kind, layout, dims, buffer) {
   this.word = caml_ba_get_width(kind);
 }
 
+Ml_Bigarray.prototype.caml_custom = "_bigarray";
+
 Ml_Bigarray.prototype.offset = function (arg) {
   var ofs = 0;
   if(typeof arg === "number") {
@@ -605,4 +607,62 @@ function caml_ba_create_from(data1, data2, jstyp, kind, layout, dims){
     caml_invalid_argument("caml_ba_create_from: use return caml_ba_create_unsafe");
   }
   return caml_ba_create_unsafe(kind, layout, dims, data1);
+}
+
+
+//Provides: caml_ba_serialize
+//Requires: caml_failwith
+function caml_ba_serialize(writer, ba, sz) {
+  writer.write(32, ba.dims.length);
+  writer.write(8, ba.kind);
+  writer.write(8, ba.layout);
+  writer.write(16, 0);
+  for(var i = 0; i < ba.dims.length; i++) writer.write(32,ba.dims[i]);
+  var data = new joo_global_object.Uint8Array(ba.data.buffer);
+  for(var i = 0; i < data.length; i++){
+    writer.write(8, data[i]);
+  }
+  sz[0] = (4 + ba.dims.length) * 4;
+  sz[1] = (4 + ba.dims.length) * 8;
+}
+
+//Provides: caml_ba_deserialize
+//Requires: caml_ba_create_unsafe, caml_failwith, caml_invalid_argument, caml_ba_get_size, caml_ba_get_width
+function caml_ba_deserialize(reader, sz){
+  var num_dims = reader.read32s();
+  if (num_dims < 0 || num_dims > 16)
+    caml_failwith("input_value: wrong number of bigarray dimensions");
+  var kind = reader.read8u();
+  var layout = reader.read8u();
+  reader.read8u();
+  reader.read8u();
+  var dims = []
+  for (var i = 0; i < num_dims; i++) dims.push(reader.read32u());
+  var size = caml_ba_get_size(dims) * caml_ba_get_width(kind);
+  // Allocate TypedArray
+  var g = joo_global_object;
+  var view;
+  switch(kind){
+  case 0:  view = g.Float32Array; break;
+  case 1:  view = g.Float64Array; break;
+  case 2:  view = g.Int8Array; break;
+  case 3:  view = g.Uint8Array; break;
+  case 4:  view = g.Int16Array; break;
+  case 5:  view = g.Uint16Array; break;
+  case 6:  view = g.Int32Array; break;
+  case 7:  view = g.Int32Array; break;
+  case 8:  view = g.Int32Array; break;
+  case 9:  view = g.Int32Array; break;
+  case 10: view = g.Float32Array; break;
+  case 11: view = g.Float64Array; break;
+  case 12: view = g.Uint8Array; break;
+  }
+  if (!view) caml_invalid_argument("Bigarray.create: unsupported kind");
+  var data = new view(size);
+  var buffer = new g.Uint8Array(data.buffer);
+  for(var i = 0; i < buffer.length; i++){
+    buffer[i] = reader.read8u();
+  }
+  sz[0] = (4 + num_dims) * 4;
+  return caml_ba_create_unsafe(kind, layout, dims, data);
 }
