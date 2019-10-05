@@ -577,3 +577,13 @@ function caml_ba_reshape(ba, vind) {
     caml_invalid_argument("Bigarray.reshape: size mismatch");
   return caml_ba_create_unsafe(ba.kind, ba.layout, new_dim, ba.data);
 }
+
+//Deprecated
+//Provides: caml_ba_create_from
+//Requires: caml_ba_create_unsafe, caml_invalid_argument, caml_ba_get_width
+function caml_ba_create_from(data1, data2, jstyp, kind, layout, dims){
+  if(data2 || caml_ba_get_width(kind) == 2){
+    caml_invalid_argument("caml_ba_create_from: use return caml_ba_create_unsafe");
+  }
+  return caml_ba_create_unsafe(kind, layout, dims, data1);
+}
