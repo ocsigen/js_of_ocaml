@@ -1,0 +1,15 @@
+(executables
+  (names md5)
+  (libraries)
+  (js_of_ocaml)
+)
+
+(rule
+  (target md5.referencejs)
+  (deps md5.bc.js)
+  (action (with-stdout-to %{target} (run node ./md5.bc.js))))
+
+(alias
+  (name runtest)
+  (deps md5.referencejs md5.reference)
+  (action (diff md5.referencejs md5.reference)))
