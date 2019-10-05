@@ -42,25 +42,23 @@ function caml_ba_get_size(dims) {
   return size;
 }
 
+//Provides: caml_ba_get_width
+function caml_ba_get_width(kind){
+  switch(kind){
+  case 7: case 10: case 11: return 2;
+  default: return 1;
+  }
+}
+
+
 //Provides: Ml_Bigarray
-//Requires: caml_array_bound_error, caml_invalid_argument
+//Requires: caml_array_bound_error, caml_invalid_argument, caml_ba_get_width
 function Ml_Bigarray (kind, layout, dims, buffer) {
   this.kind   = kind ;
   this.layout = layout;
   this.dims   = dims;
   this.data = buffer;
-  switch(this.kind){
-  case 7:
-    // Int64
-    this.word = 2;
-    break;
-  case 10: case 11:
-    // Complex
-    this.word = 2;
-    break;
-  default:
-    this.word = 1;
-  }
+  this.word = caml_ba_get_width(kind);
 }
 
 Ml_Bigarray.prototype.offset = function (arg) {
@@ -263,8 +261,12 @@ Ml_Bigarray_c_1_1.prototype.fill = function (v) {
 }
 
 //Provides: caml_ba_create_unsafe
-//Requires: Ml_Bigarray, Ml_Bigarray_c_1_1
+//Requires: Ml_Bigarray, Ml_Bigarray_c_1_1, caml_ba_get_size, caml_ba_get_width, caml_invalid_argument
 function caml_ba_create_unsafe(kind, layout, dims, data){
+  var word = caml_ba_get_width(kind);
+  if(caml_ba_get_size(dims) * word != data.length) {
+    caml_invalid_argument("length doesn't match dims");
+  }
   if(layout == 0 &&
      dims.length == 1 &&
      kind != 7 &&
@@ -279,14 +281,14 @@ function caml_ba_create_unsafe(kind, layout, dims, data){
 //Provides: caml_ba_create
 //Requires: caml_js_from_array
 //Requires: caml_invalid_argument
-//Requires: caml_ba_get_size, caml_ba_create_unsafe
+//Requires: caml_ba_get_size, caml_ba_get_width, caml_ba_create_unsafe
 function caml_ba_create(kind, layout, dims_ml) {
 
   // set up dimensions and calculate size
   var dims = caml_js_from_array(dims_ml);
 
   //var n_dims = dims.length;
-  var size = caml_ba_get_size(dims);
+  var size = caml_ba_get_size(dims) * caml_ba_get_width(kind);
 
   // Allocate TypedArray
   var g = joo_global_object;
@@ -298,7 +300,7 @@ function caml_ba_create(kind, layout, dims_ml) {
   var view = caml_ba_views[kind];
   if (!view)
     caml_invalid_argument("Bigarray.create: unsupported kind");
-  var data = new view(size);
+  var data = new view(size );
 
   return caml_ba_create_unsafe(kind, layout, dims, data);
 }
@@ -492,7 +494,7 @@ function caml_ba_blit(src, dst) {
 }
 
 //Provides: caml_ba_sub
-//Requires: caml_invalid_argument, caml_ba_create_unsafe, caml_ml_flush
+//Requires: caml_invalid_argument, caml_ba_create_unsafe, caml_ba_get_size
 function caml_ba_sub(ba, ofs, len) {
   var changed_dim;
   var mul = 1;
@@ -516,7 +518,7 @@ function caml_ba_sub(ba, ofs, len) {
   for (var i = 0; i < ba.dims.length; i++)
     new_dims[i] = ba.dims[i];
   new_dims[changed_dim] = len;
-  var new_data = ba.data.subarray(ofs * mul * ba.word, len * mul * ba.word);
+  var new_data = ba.data.subarray(ofs * mul * ba.word, (ofs + len) * mul * ba.word);
   return caml_ba_create_unsafe(ba.kind, ba.layout, new_dims, new_data);
 }
 
