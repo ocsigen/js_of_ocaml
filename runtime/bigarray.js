@@ -292,12 +292,22 @@ function caml_ba_create(kind, layout, dims_ml) {
 
   // Allocate TypedArray
   var g = joo_global_object;
-  var caml_ba_views = [
-    g.Float32Array, g.Float64Array, g.Int8Array, g.Uint8Array,
-    g.Int16Array, g.Uint16Array, g.Int32Array, g.Int32Array,
-    g.Int32Array, g.Int32Array, g.Float32Array, g.Float64Array, g.Uint8Array];
-
-  var view = caml_ba_views[kind];
+  var view;
+  switch(kind){
+  case 0:  view = g.Float32Array; break;
+  case 1:  view = g.Float64Array; break;
+  case 2:  view = g.Int8Array; break;
+  case 3:  view = g.Uint8Array; break;
+  case 4:  view = g.Int16Array; break;
+  case 5:  view = g.Uint16Array; break;
+  case 6:  view = g.Int32Array; break;
+  case 7:  view = g.Int32Array; break;
+  case 8:  view = g.Int32Array; break;
+  case 9:  view = g.Int32Array; break;
+  case 10: view = g.Float32Array; break;
+  case 11: view = g.Float64Array; break;
+  case 12: view = g.Uint8Array; break;
+  }
   if (!view)
     caml_invalid_argument("Bigarray.create: unsupported kind");
   var data = new view(size );
