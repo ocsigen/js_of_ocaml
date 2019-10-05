@@ -277,7 +277,7 @@ function caml_ba_create_unsafe(kind, layout, dims, data){
      dims.length == 1 &&
      kind != 7 &&
      kind != 10 &&
-     kind != 11 && false)
+     kind != 11)
     return new Ml_Bigarray_c_1_1(kind, layout, dims, data);
   return new Ml_Bigarray(kind, layout, dims, data);
 
