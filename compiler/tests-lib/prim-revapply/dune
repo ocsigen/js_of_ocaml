@@ -1,0 +1,25 @@
+(executables
+  (names apply revapply)
+  (libraries)
+  (js_of_ocaml)
+)
+
+(rule
+  (target apply.referencejs)
+  (deps apply.bc.js)
+  (action (with-stdout-to %{target} (run node ./apply.bc.js))))
+
+(alias
+  (name runtest)
+  (deps apply.referencejs apply.reference)
+  (action (diff apply.referencejs apply.reference)))
+
+(rule
+  (target revapply.referencejs)
+  (deps revapply.bc.js)
+  (action (with-stdout-to %{target} (run node ./revapply.bc.js))))
+
+(alias
+  (name runtest)
+  (deps revapply.referencejs revapply.reference)
+  (action (diff revapply.referencejs revapply.reference)))
