@@ -27,6 +27,8 @@
 *.tmpjs
 *.map
 
+ocamltests
+
 gh-pages
 
 _opam
