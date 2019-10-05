@@ -48,7 +48,8 @@
 
 //Provides: caml_str_repeat
 function caml_str_repeat(n, s) {
-  if (s.repeat) return s.repeat(n); // ECMAscript 6 and Firefox 24+
+  if(n == 0) return "";
+  if (s.repeat) {return s.repeat(n);} // ECMAscript 6 and Firefox 24+
   var r = "", l = 0;
   if (n == 0) return r;
   for(;;) {
