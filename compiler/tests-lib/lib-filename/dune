@@ -1,0 +1,25 @@
+(executables
+  (names suffix extension)
+  (libraries)
+  (js_of_ocaml)
+)
+
+(rule
+  (target suffix.referencejs)
+  (deps suffix.bc.js)
+  (action (with-stdout-to %{target} (run node ./suffix.bc.js))))
+
+(alias
+  (name runtest)
+  (deps suffix.referencejs suffix.reference)
+  (action (diff suffix.referencejs suffix.reference)))
+
+(rule
+  (target extension.referencejs)
+  (deps extension.bc.js)
+  (action (with-stdout-to %{target} (run node ./extension.bc.js))))
+
+(alias
+  (name runtest)
+  (deps extension.referencejs extension.reference)
+  (action (diff extension.referencejs extension.reference)))
