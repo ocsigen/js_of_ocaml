@@ -61,6 +61,8 @@ function Ml_Bigarray (kind, layout, dims, buffer) {
   this.word = caml_ba_get_width(kind);
 }
 
+Ml_Bigarray.prototype.caml_custom = "_bigarray";
+
 Ml_Bigarray.prototype.offset = function (arg) {
   var ofs = 0;
   if(typeof arg === "number") {
@@ -605,4 +607,65 @@ function caml_ba_create_from(data1, data2, jstyp, kind, layout, dims){
     caml_invalid_argument("caml_ba_create_from: use return caml_ba_create_unsafe");
   }
   return caml_ba_create_unsafe(kind, layout, dims, data1);
+}
+
+
+//Provides: caml_ba_serialize
+//Requires: caml_failwith
+function caml_ba_serialize(writer, ba, sz) {
+  writer.write(32, ba.num_dims);
+  writer.write(8, ba.kind);
+  writer.write(8, ba.layout);
+  writer.write(16, 0);
+  for(var i = 0; i < ba.num_dims; i++) writer.write(32,ba.nth_dim(i));
+  var size = ba.size;
+  var data1 = new joo_global_object.Uint8Array(ba.data.buffer);
+  if(ba.data2) { var data2 = new joo_global_object.Uint8Array(ba.data2.buffer); }
+  switch(ba.kind){
+  case 0:  //Float32
+  case 1:  //Float64
+  case 2:  //SINT8
+  case 3:  //UINT8
+  case 4:  //SINT16
+  case 5:  //UINT16
+  case 6:  //Int32
+  case 12: //CHAR
+    for(var i = 0; i < data1.length; i++){
+      writer.write(8, data1[i]);
+    }
+    break;
+  case 8:  //Int
+  case 9:  //NativeInt
+    writer.write(8,0);
+    for(var i = 0; i < data1.length; i++){
+      writer.write(8, data1[i]);
+    }
+    break;
+  case 10: //Complex32
+  case 7:  //Int64
+  case 11: //Complex64
+    caml_failwith("ba marshal unsupported for complex types")
+    break;
+  }
+  sz[0] = (4 + ba.num_dims) * 4;
+  sz[1] = (4 + ba.num_dims) * 8;
+}
+
+//Provides: caml_ba_deserialize
+//Requires: caml_failwith
+function caml_ba_deserialize(reader){
+  var num_dims = reader.read32s();
+  if (num_dims < 0 || num_dims > 16)
+    caml_failwith("input_value: wrong number of bigarray dimensions");
+  var kind = reader.read8u();
+  var layout = reader.read8u();
+  var dims = []
+  for (var i = 0; i < num_dims; i++) dims.push(reader.read32s());
+  var num_elts = 1;
+  for (var i = 0; i < num_dims; i++) {
+    num_elts *= dims[i];
+  }
+  if(kind > 12)
+    caml_failwith("input_value: bad bigarray kind");
+  caml_failwith("ba unmarshal unsupported");
 }
