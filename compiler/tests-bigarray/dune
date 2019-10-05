@@ -1,0 +1,7 @@
+(library
+  (name jsoo_bigarray_tests)
+  (libraries)
+  (inline_tests
+    (modes js))
+  (js_of_ocaml)
+  (preprocess (pps ppx_expect)))
