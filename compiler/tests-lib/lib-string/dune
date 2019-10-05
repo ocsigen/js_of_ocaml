@@ -1,0 +1,15 @@
+(executables
+  (names test_string)
+  (libraries)
+  (js_of_ocaml)
+)
+
+(rule
+  (target test_string.referencejs)
+  (deps test_string.bc.js)
+  (action (with-stdout-to %{target} (run node ./test_string.bc.js))))
+
+(alias
+  (name runtest)
+  (deps test_string.referencejs test_string.reference)
+  (action (diff test_string.referencejs test_string.reference)))
