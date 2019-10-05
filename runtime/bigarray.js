@@ -230,17 +230,22 @@ Ml_Bigarray.prototype.compare = function (b, total) {
 }
 
 //Provides: Ml_Bigarray_c_1_1
-//Requires: Ml_Bigarray, caml_array_bound_error
+//Requires: Ml_Bigarray, caml_array_bound_error, caml_invalid_argument
 function Ml_Bigarray_c_1_1(kind, layout, dims, buffer) {
   this.kind   = kind ;
   this.layout = layout;
   this.dims   = dims;
-  this.data = buffer;
-  this.word = 1
+  this.data   = buffer;
+  this.word   = 1
 }
 
 Ml_Bigarray_c_1_1.prototype = new Ml_Bigarray()
 Ml_Bigarray_c_1_1.prototype.offset = function (arg) {
+  if(typeof arg !== "number"){
+    if((arg instanceof Array) && arg.length == 1)
+      arg = arg[0];
+    else caml_invalid_argument("Ml_Bigarray_c_1_1.offset");
+  }
   if (arg < 0 || arg >= this.dims[0])
     caml_array_bound_error();
   return arg;
@@ -541,7 +546,7 @@ function caml_ba_slice(ba, vind) {
   var sub_dims = [];
   var ofs;
 
-  if (num_inds >= ba.dims.length)
+  if (num_inds > ba.dims.length)
     caml_invalid_argument("Bigarray.slice: too many indices");
 
   // Compute offset and check bounds
@@ -556,7 +561,7 @@ function caml_ba_slice(ba, vind) {
       index[ba.dims.length - num_inds + i] = vind[i];
     for (var i = 0; i < ba.dims.length - num_inds; i++)
       index[i] = 1;
-    sub_dims = ba.dims.slice(0, num_inds);
+    sub_dims = ba.dims.slice(0, ba.dims.length - num_inds);
   }
   ofs = ba.offset(index);
   var size = caml_ba_get_size(sub_dims);
@@ -569,13 +574,14 @@ function caml_ba_slice(ba, vind) {
 function caml_ba_reshape(ba, vind) {
   vind = caml_js_from_array(vind);
   var new_dim = [];
-  var num_dims = ba.dims.length;
+  var num_dims = vind.length;
 
-  if (num_dims < 1)
+  if (num_dims < 0 || num_dims > 16){
     caml_invalid_argument("Bigarray.reshape: bad number of dimensions");
+  }
   var num_elts = 1;
   for (var i = 0; i < num_dims; i++) {
-    new_dim[i] = ba.dim[i];
+    new_dim[i] = vind[i];
     if (new_dim[i] < 0)
       caml_invalid_argument("Bigarray.reshape: negative dimension");
     num_elts = num_elts * new_dim[i];
