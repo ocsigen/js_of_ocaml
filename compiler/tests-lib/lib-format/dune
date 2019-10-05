@@ -1,0 +1,35 @@
+(executables
+  (names pr6824 print_if_newline pp_print_custom_break)
+  (libraries)
+  (js_of_ocaml)
+)
+
+(rule
+  (target pr6824.referencejs)
+  (deps pr6824.bc.js)
+  (action (with-stdout-to %{target} (run node ./pr6824.bc.js))))
+
+(alias
+  (name runtest)
+  (deps pr6824.referencejs pr6824.reference)
+  (action (diff pr6824.referencejs pr6824.reference)))
+
+(rule
+  (target print_if_newline.referencejs)
+  (deps print_if_newline.bc.js)
+  (action (with-stdout-to %{target} (run node ./print_if_newline.bc.js))))
+
+(alias
+  (name runtest)
+  (deps print_if_newline.referencejs print_if_newline.reference)
+  (action (diff print_if_newline.referencejs print_if_newline.reference)))
+
+(rule
+  (target pp_print_custom_break.referencejs)
+  (deps pp_print_custom_break.bc.js)
+  (action (with-stdout-to %{target} (run node ./pp_print_custom_break.bc.js))))
+
+(alias
+  (name runtest)
+  (deps pp_print_custom_break.referencejs pp_print_custom_break.reference)
+  (action (diff pp_print_custom_break.referencejs pp_print_custom_break.reference)))
