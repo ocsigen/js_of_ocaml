@@ -1,0 +1,25 @@
+(executables
+  (names testmap testset)
+  (libraries)
+  (js_of_ocaml)
+)
+
+(rule
+  (target testmap.referencejs)
+  (deps testmap.bc.js)
+  (action (with-stdout-to %{target} (run node ./testmap.bc.js))))
+
+(alias
+  (name runtest)
+  (deps testmap.referencejs testmap.reference)
+  (action (diff testmap.referencejs testmap.reference)))
+
+(rule
+  (target testset.referencejs)
+  (deps testset.bc.js)
+  (action (with-stdout-to %{target} (run node ./testset.bc.js))))
+
+(alias
+  (name runtest)
+  (deps testset.referencejs testset.reference)
+  (action (diff testset.referencejs testset.reference)))
