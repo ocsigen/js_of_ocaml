@@ -85,8 +85,9 @@ Ml_Bigarray.prototype.offset = function (arg) {
       }
     } else {
       for (var i = this.dims.length - 1; i >= 0; i--) {
-        if (arg[i] < 1 || arg[i] > this.dims[i])
+        if (arg[i] < 1 || arg[i] > this.dims[i]){
           caml_array_bound_error();
+        }
         ofs = (ofs * this.dims[i]) + (arg[i] - 1);
       }
     }
@@ -276,7 +277,7 @@ function caml_ba_create_unsafe(kind, layout, dims, data){
      dims.length == 1 &&
      kind != 7 &&
      kind != 10 &&
-     kind != 11)
+     kind != 11 && false)
     return new Ml_Bigarray_c_1_1(kind, layout, dims, data);
   return new Ml_Bigarray(kind, layout, dims, data);
 
@@ -324,7 +325,9 @@ function caml_ba_create(kind, layout, dims_ml) {
 //Requires: caml_ba_create_unsafe
 function caml_ba_change_layout(ba, layout) {
   if(ba.layout == layout) return ba;
-  return caml_ba_create_unsafe(ba.kind, layout, ba.dims, ba.data);
+  var new_dims = []
+  for(var i = 0; i < ba.dims.length; i++) new_dims[i] = ba.dims[ba.dims.length - i - 1];
+  return caml_ba_create_unsafe(ba.kind, layout, new_dims, ba.data);
 }
 
 //Provides: caml_ba_kind
