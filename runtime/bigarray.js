@@ -599,24 +599,13 @@ function caml_ba_reshape(ba, vind) {
   return caml_ba_create_unsafe(ba.kind, ba.layout, new_dim, ba.data);
 }
 
-//Deprecated
-//Provides: caml_ba_create_from
-//Requires: caml_ba_create_unsafe, caml_invalid_argument, caml_ba_get_width
-function caml_ba_create_from(data1, data2, jstyp, kind, layout, dims){
-  if(data2 || caml_ba_get_width(kind) == 2){
-    caml_invalid_argument("caml_ba_create_from: use return caml_ba_create_unsafe");
-  }
-  return caml_ba_create_unsafe(kind, layout, dims, data1);
-}
-
-
 //Provides: caml_ba_serialize
-//Requires: caml_failwith
+//Requires: caml_int64_bits_of_float, caml_int64_to_bytes
+//Requires: caml_int32_bits_of_float
 function caml_ba_serialize(writer, ba, sz) {
   writer.write(32, ba.dims.length);
   writer.write(32, (ba.kind | (ba.layout << 8)));
   for(var i = 0; i < ba.dims.length; i++) writer.write(32,ba.dims[i]);
-  // FIXME
   switch(ba.kind){
   case 2:  //Int8Array
   case 3:  //Uint8Array
@@ -644,20 +633,49 @@ function caml_ba_serialize(writer, ba, sz) {
     }
     break;
   case 7:  // Int32Array (int64)
-
+    for(var i = 0; i < ba.data.length / 2; i++){
+      var b = caml_int64_to_bytes(ba.get(i));
+      for (var j = 0; j < 8; j++) writer.write (8, b[j]);
+    }
+    break;
+  case 1:  // Float64Array
+    for(var i = 0; i < ba.data.length; i++){
+      var b = caml_int64_to_bytes(caml_int64_bits_of_float(ba.get(i)));
+      for (var j = 0; j < 8; j++) writer.write (8, b[j]);
+    }
     break;
   case 0:  // Float32Array
-  case 1:  // Float64Array
+    for(var i = 0; i < ba.data.length; i++){
+      var b = caml_int32_bits_of_float(ba.get(i));
+      writer.write(32, b);
+    }
+    break;
   case 10: // Float32Array (complex32)
-  case 11: // Float64Array (complex32)
-    break
+    for(var i = 0; i < ba.data.length / 2; i++){
+      var j = ba.get(i);
+      writer.write(32, caml_int32_bits_of_float(j[1]));
+      writer.write(32, caml_int32_bits_of_float(j[2]));
+    }
+    break;
+  case 11: // Float64Array (complex64)
+    for(var i = 0; i < ba.data.length / 2; i++){
+      var complex = ba.get(i);
+      var b = caml_int64_to_bytes(caml_int64_bits_of_float(complex[1]));
+      for (var j = 0; j < 8; j++) writer.write (8, b[j]);
+      var b = caml_int64_to_bytes(caml_int64_bits_of_float(complex[2]));
+      for (var j = 0; j < 8; j++) writer.write (8, b[j]);
+    }
+    break;
   }
   sz[0] = (4 + ba.dims.length) * 4;
   sz[1] = (4 + ba.dims.length) * 8;
 }
 
 //Provides: caml_ba_deserialize
-//Requires: caml_ba_create_unsafe, caml_failwith, caml_invalid_argument, caml_ba_get_size, caml_ba_get_width
+//Requires: caml_ba_create_unsafe, caml_failwith, caml_invalid_argument
+//Requires: caml_ba_get_size, caml_ba_get_width
+//Requires: caml_int64_of_bytes, caml_int64_float_of_bits
+//Requires: caml_int32_float_of_bits
 function caml_ba_deserialize(reader, sz){
   var num_dims = reader.read32s();
   if (num_dims < 0 || num_dims > 16)
@@ -667,7 +685,8 @@ function caml_ba_deserialize(reader, sz){
   var layout = (tag >> 8) & 1;
   var dims = []
   for (var i = 0; i < num_dims; i++) dims.push(reader.read32u());
-  var size = caml_ba_get_size(dims) * caml_ba_get_width(kind);
+  var size = caml_ba_get_size(dims);
+  var word = caml_ba_get_width(kind);
   // Allocate TypedArray
   var g = joo_global_object;
   var view;
@@ -687,7 +706,8 @@ function caml_ba_deserialize(reader, sz){
   case 12: view = g.Uint8Array; break;
   }
   if (!view) caml_invalid_argument("Bigarray.create: unsupported kind");
-  var data = new view(size);
+  var data = new view(size * word);
+  var ba = caml_ba_create_unsafe(kind, layout, dims, data);
 
   // FIXME
   switch(kind){
@@ -719,19 +739,62 @@ function caml_ba_deserialize(reader, sz){
     break;
   case 8:  // Int32Array (int)
   case 9:  // Int32Array (nativeint)
-    var w = reader.read8u();
-    if(w != 0) caml_failwith("input_value: cannot read this");
+    var sixty = reader.read8u();
+    if(sixty) caml_failwith("input_value: cannot read bigarray with 64-bit OCaml ints");
     for(var i = 0; i < size; i++){
       data[i] = reader.read32s();
     }
     break;
-  case 7:  // Int32Array (int64)
-  case 0:  // Float32Array
+  case 7: // (int64)
+    var t = new Array(8);;
+    for(var i = 0; i < size; i++){
+      for (var j = 0;j < 8;j++) t[j] = reader.read8u();
+      var int64 = caml_int64_of_bytes(t);
+      ba.set(i,int64);
+    }
+    break;
   case 1:  // Float64Array
+    var t = new Array(8);;
+    for(var i = 0; i < size; i++){
+      for (var j = 0;j < 8;j++) t[j] = reader.read8u();
+      var f = caml_int64_float_of_bits(caml_int64_of_bytes(t));
+      ba.set(i,f);
+    }
+    break;
+  case 0:  // Float32Array
+    for(var i = 0; i < size; i++){
+      var f = caml_int32_float_of_bits(reader.read32s());
+      ba.set(i,f);
+    }
+    break;
   case 10: // Float32Array (complex32)
-  case 11: // Float64Array (complex32)
+    for(var i = 0; i < size; i++){
+      var re = caml_int32_float_of_bits(reader.read32s());
+      var im = caml_int32_float_of_bits(reader.read32s());
+      ba.set(i,[254,re,im]);
+    }
+    break;
+  case 11: // Float64Array (complex64)
+    var t = new Array(8);;
+    for(var i = 0; i < size; i++){
+      for (var j = 0;j < 8;j++) t[j] = reader.read8u();
+      var re = caml_int64_float_of_bits(caml_int64_of_bytes(t));
+      for (var j = 0;j < 8;j++) t[j] = reader.read8u();
+      var im = caml_int64_float_of_bits(caml_int64_of_bytes(t));
+      ba.set(i,[254,re,im]);
+    }
     break
   }
   sz[0] = (4 + num_dims) * 4;
   return caml_ba_create_unsafe(kind, layout, dims, data);
+}
+
+//Deprecated
+//Provides: caml_ba_create_from
+//Requires: caml_ba_create_unsafe, caml_invalid_argument, caml_ba_get_width
+function caml_ba_create_from(data1, data2, jstyp, kind, layout, dims){
+  if(data2 || caml_ba_get_width(kind) == 2){
+    caml_invalid_argument("caml_ba_create_from: use return caml_ba_create_unsafe");
+  }
+  return caml_ba_create_unsafe(kind, layout, dims, data1);
 }

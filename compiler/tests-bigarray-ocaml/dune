@@ -12,8 +12,8 @@
 
 (alias
   (name runtest)
-  (deps bigarrays.referencejs bigarrays.reference)
-  (action (diff bigarrays.referencejs bigarrays.reference)))
+  (deps bigarrays.reference bigarrays.referencejs)
+  (action (diff bigarrays.reference bigarrays.referencejs)))
 
 (rule
   (target change_layout.referencejs)
@@ -22,8 +22,8 @@
 
 (alias
   (name runtest)
-  (deps change_layout.referencejs change_layout.reference)
-  (action (diff change_layout.referencejs change_layout.reference)))
+  (deps change_layout.reference change_layout.referencejs)
+  (action (diff change_layout.reference change_layout.referencejs)))
 
 (rule
   (target fftba.referencejs)
@@ -32,8 +32,8 @@
 
 (alias
   (name runtest)
-  (deps fftba.referencejs fftba.reference)
-  (action (diff fftba.referencejs fftba.reference)))
+  (deps fftba.reference fftba.referencejs)
+  (action (diff fftba.reference fftba.referencejs)))
 
 (rule
   (target pr5115.referencejs)
@@ -42,8 +42,8 @@
 
 (alias
   (name runtest)
-  (deps pr5115.referencejs pr5115.reference)
-  (action (diff pr5115.referencejs pr5115.reference)))
+  (deps pr5115.reference pr5115.referencejs)
+  (action (diff pr5115.reference pr5115.referencejs)))
 
 (rule
   (target weak_bigarray.referencejs)
@@ -52,5 +52,5 @@
 
 (alias
   (name runtest)
-  (deps weak_bigarray.referencejs weak_bigarray.reference)
-  (action (diff weak_bigarray.referencejs weak_bigarray.reference)))
+  (deps weak_bigarray.reference weak_bigarray.referencejs)
+  (action (diff weak_bigarray.reference weak_bigarray.referencejs)))

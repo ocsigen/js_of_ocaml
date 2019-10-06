@@ -949,6 +949,21 @@ let tests () =
 
 (* I/O *)
 
+  let dump_content_hex file =
+    let ic = open_in_bin file in
+    let len = in_channel_length ic in
+    let len' = min len 1024 in
+    Printf.printf "\nDump hexa: (full size is %d)" len;
+    for i = 0 to len' - 1 do
+      if i mod 32 = 0
+      then Printf.printf "\n";
+      let code = Char.code (input_char ic) in
+      Printf.printf " %02x" code;
+    done;
+    close_in ic;
+    Printf.printf "\n"
+  in
+
   print_newline();
   testing_function "------ I/O --------";
   testing_function "output_value/input_value";
@@ -960,6 +975,7 @@ let tests () =
     let ic = open_in_bin tmp in
     let value' = input_value ic in
     close_in ic;
+    dump_content_hex tmp;
     Sys.remove tmp;
     test testno value value' in
   test_structured_io 1 (from_list int8_signed [1;2;3;-4;127;-128]);
