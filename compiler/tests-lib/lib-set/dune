@@ -11,8 +11,8 @@
 
 (alias
   (name runtest)
-  (deps testmap.referencejs testmap.reference)
-  (action (diff testmap.referencejs testmap.reference)))
+  (deps testmap.reference testmap.referencejs)
+  (action (diff testmap.reference testmap.referencejs)))
 
 (rule
   (target testset.referencejs)
@@ -21,5 +21,5 @@
 
 (alias
   (name runtest)
-  (deps testset.referencejs testset.reference)
-  (action (diff testset.referencejs testset.reference)))
+  (deps testset.reference testset.referencejs)
+  (action (diff testset.reference testset.referencejs)))

@@ -11,8 +11,8 @@
 
 (alias
   (name runtest)
-  (deps pr6824.referencejs pr6824.reference)
-  (action (diff pr6824.referencejs pr6824.reference)))
+  (deps pr6824.reference pr6824.referencejs)
+  (action (diff pr6824.reference pr6824.referencejs)))
 
 (rule
   (target print_if_newline.referencejs)
@@ -21,8 +21,8 @@
 
 (alias
   (name runtest)
-  (deps print_if_newline.referencejs print_if_newline.reference)
-  (action (diff print_if_newline.referencejs print_if_newline.reference)))
+  (deps print_if_newline.reference print_if_newline.referencejs)
+  (action (diff print_if_newline.reference print_if_newline.referencejs)))
 
 (rule
   (target pp_print_custom_break.referencejs)
@@ -31,5 +31,5 @@
 
 (alias
   (name runtest)
-  (deps pp_print_custom_break.referencejs pp_print_custom_break.reference)
-  (action (diff pp_print_custom_break.referencejs pp_print_custom_break.reference)))
+  (deps pp_print_custom_break.reference pp_print_custom_break.referencejs)
+  (action (diff pp_print_custom_break.reference pp_print_custom_break.referencejs)))

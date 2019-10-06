@@ -11,8 +11,8 @@
 
 (alias
   (name runtest)
-  (deps test_bytes.referencejs test_bytes.reference)
-  (action (diff test_bytes.referencejs test_bytes.reference)))
+  (deps test_bytes.reference test_bytes.referencejs)
+  (action (diff test_bytes.reference test_bytes.referencejs)))
 
 (rule
   (target binary.referencejs)

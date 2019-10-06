@@ -11,8 +11,8 @@
 
 (alias
   (name runtest)
-  (deps bigstring_access.referencejs bigstring_access.reference)
-  (action (diff bigstring_access.referencejs bigstring_access.reference)))
+  (deps bigstring_access.reference bigstring_access.referencejs)
+  (action (diff bigstring_access.reference bigstring_access.referencejs)))
 
 (rule
   (target string_access.referencejs)
@@ -21,5 +21,5 @@
 
 (alias
   (name runtest)
-  (deps string_access.referencejs string_access.reference)
-  (action (diff string_access.referencejs string_access.reference)))
+  (deps string_access.reference string_access.referencejs)
+  (action (diff string_access.reference string_access.referencejs)))

@@ -11,5 +11,5 @@
 
 (alias
   (name runtest)
-  (deps rand.referencejs rand.reference)
-  (action (diff rand.referencejs rand.reference)))
+  (deps rand.reference rand.referencejs)
+  (action (diff rand.reference rand.referencejs)))

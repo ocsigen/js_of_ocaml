@@ -11,5 +11,5 @@
 
 (alias
   (name runtest)
-  (deps test.referencejs test.reference)
-  (action (diff test.referencejs test.reference)))
+  (deps test.reference test.referencejs)
+  (action (diff test.reference test.referencejs)))
