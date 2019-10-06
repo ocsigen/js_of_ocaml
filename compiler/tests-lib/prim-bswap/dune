@@ -11,5 +11,5 @@
 
 (alias
   (name runtest)
-  (deps bswap.referencejs bswap.reference)
-  (action (diff bswap.referencejs bswap.reference)))
+  (deps bswap.reference bswap.referencejs)
+  (action (diff bswap.reference bswap.referencejs)))

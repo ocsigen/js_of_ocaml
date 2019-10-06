@@ -11,8 +11,8 @@
 
 (alias
   (name runtest)
-  (deps apply.referencejs apply.reference)
-  (action (diff apply.referencejs apply.reference)))
+  (deps apply.reference apply.referencejs)
+  (action (diff apply.reference apply.referencejs)))
 
 (rule
   (target revapply.referencejs)
@@ -21,5 +21,5 @@
 
 (alias
   (name runtest)
-  (deps revapply.referencejs revapply.reference)
-  (action (diff revapply.referencejs revapply.reference)))
+  (deps revapply.reference revapply.referencejs)
+  (action (diff revapply.reference revapply.referencejs)))

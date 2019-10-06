@@ -11,5 +11,5 @@
 
 (alias
   (name runtest)
-  (deps test_string.referencejs test_string.reference)
-  (action (diff test_string.referencejs test_string.reference)))
+  (deps test_string.reference test_string.referencejs)
+  (action (diff test_string.reference test_string.referencejs)))
