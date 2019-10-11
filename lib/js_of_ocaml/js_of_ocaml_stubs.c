@@ -4,8 +4,16 @@ void bigstring_of_array_buffer () {
   fprintf(stderr, "Unimplemented Javascript primitive bigstring_of_array_buffer!\n");
   exit(1);
 }
+void bigstring_of_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive bigstring_of_typed_array!\n");
+  exit(1);
+}
 void bigstring_to_array_buffer () {
   fprintf(stderr, "Unimplemented Javascript primitive bigstring_to_array_buffer!\n");
+  exit(1);
+}
+void bigstring_to_typed_array () {
+  fprintf(stderr, "Unimplemented Javascript primitive bigstring_to_typed_array!\n");
   exit(1);
 }
 void caml_create_file () {
