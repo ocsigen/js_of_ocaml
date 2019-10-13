@@ -18,6 +18,9 @@
   (files
     bigarray.js
     bigstring.js
+    bigstring-base_bigstring.js
+    bigstring-cstruct.js
+    bigstring-core_kernel.js
     dynlink.js
     fs.js
     fs_fake.js
