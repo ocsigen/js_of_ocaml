@@ -1,0 +1,7 @@
+(library
+ (name jsoo_testsuite)
+ (libraries)
+ (inline_tests
+  (flags -allow-output-patterns)
+  (modes js))
+ (preprocess (pps ppx_expect)))
