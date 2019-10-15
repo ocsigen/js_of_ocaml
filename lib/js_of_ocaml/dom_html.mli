@@ -276,6 +276,13 @@ and ['a] customEvent =
     inherit [element, 'a] Dom.customEvent
   end
 
+and focusEvent =
+  object
+    inherit event
+
+    method relatedTarget : element t opt optdef readonly_prop
+  end
+
 and mouseEvent =
   object
     inherit event
@@ -922,9 +929,9 @@ class type inputElement =
 
     method oninput : ('self t, event t) event_listener prop
 
-    method onblur : ('self t, event t) event_listener prop
+    method onblur : ('self t, focusEvent t) event_listener prop
 
-    method onfocus : ('self t, event t) event_listener prop
+    method onfocus : ('self t, focusEvent t) event_listener prop
   end
 
 class type textAreaElement =
@@ -975,9 +982,9 @@ class type textAreaElement =
 
     method oninput : ('self t, event t) event_listener prop
 
-    method onblur : ('self t, event t) event_listener prop
+    method onblur : ('self t, focusEvent t) event_listener prop
 
-    method onfocus : ('self t, event t) event_listener prop
+    method onfocus : ('self t, focusEvent t) event_listener prop
   end
 
 class type buttonElement =
@@ -2114,9 +2121,9 @@ class type window =
 
     method onbeforeunload : (window t, event t) event_listener prop
 
-    method onblur : (window t, event t) event_listener prop
+    method onblur : (window t, focusEvent t) event_listener prop
 
-    method onfocus : (window t, event t) event_listener prop
+    method onfocus : (window t, focusEvent t) event_listener prop
 
     method onresize : (window t, event t) event_listener prop
 
