@@ -31,7 +31,11 @@ type fragment =
 
 val parse_file : string -> fragment list
 
+val parse_string : string -> fragment list
+
 val load_files : string list -> unit
+
+val load_fragment : filename:string -> fragment -> unit
 
 type state
 

@@ -1,6 +1,6 @@
 (executables
-  (names        js_of_ocaml jsoo_minify jsoo_link)
-  (public_names js_of_ocaml jsoo_minify jsoo_link)
+  (names        js_of_ocaml jsoo_minify jsoo_link jsoo_fs)
+  (public_names js_of_ocaml jsoo_minify jsoo_link jsoo_fs)
   (package js_of_ocaml-compiler)
   (libraries
     js_of_ocaml-compiler
@@ -23,6 +23,10 @@
  (action (with-stdout-to %{targets} (run %{bin:jsoo_link} --help=groff))))
 
 (rule
+ (targets jsoo_fs.1)
+ (action (with-stdout-to %{targets} (run %{bin:jsoo_fs} --help=groff))))
+
+(rule
  (targets jsoo_minify.1)
  (action (with-stdout-to %{targets} (run %{bin:jsoo_minify} --help=groff))))
 
@@ -32,4 +36,5 @@
   (files js_of_ocaml.1
          jsoo_link.1
          jsoo_minify.1
+         jsoo_fs.1
          ))
