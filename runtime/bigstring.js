@@ -107,6 +107,12 @@ function bigstring_to_array_buffer(bs) {
   return bs.data.buffer
 }
 
+//Provides: bigstring_to_typed_array mutable
+//js_of_ocaml lib
+function bigstring_to_typed_array(bs) {
+  return bs.data
+}
+
 //Provides: bigstring_of_array_buffer mutable
 //Requires: caml_ba_create_unsafe
 //js_of_ocaml lib
@@ -114,6 +120,15 @@ function bigstring_of_array_buffer(ab) {
   var ta = new joo_global_object.Uint8Array(ab);
   return caml_ba_create_unsafe(12, 0, [ta.length], ta);
 }
+
+//Provides: bigstring_of_typed_array mutable
+//Requires: caml_ba_create_unsafe
+//js_of_ocaml lib
+function bigstring_of_typed_array(ba) {
+  var ta = new joo_global_object.Uint8Array(ba.buffer, ba.byteOffset, ba.length * ba.BYTES_PER_ELEMENT);
+  return caml_ba_create_unsafe(12, 0, [ta.length], ta);
+}
+
 
 //Provides: caml_hash_mix_bigstring
 //Requires: caml_hash_mix_string_arr

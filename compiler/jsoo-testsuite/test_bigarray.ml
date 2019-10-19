@@ -25,6 +25,10 @@ end
 
 module Char = struct
   let to_string = Printf.sprintf "'%C'"
+
+  let code = Char.code
+
+  let chr = Char.chr
 end
 
 let from_list kind vals =
@@ -154,3 +158,59 @@ let%expect_test "change_layout, reshape" =
   let c' = genarray_of_array2 c in
   let c2' = genarray_of_array2 c2 in
   assert (compare (reshape_1 c' 6) (reshape_1 c2' 6) = 0)
+
+external blit_ba_to_ba :
+  (_, _, _) Array1.t -> int -> (_, _, _) Array1.t -> int -> int -> unit
+  = "caml_ba_blit_ba_to_ba"
+
+external blit_ba_to_bytes : (_, _, _) Array1.t -> int -> Bytes.t -> int -> int -> unit
+  = "caml_ba_blit_ba_to_bytes"
+
+external blit_bytes_to_ba : Bytes.t -> int -> (_, _, _) Array1.t -> int -> int -> unit
+  = "caml_ba_blit_string_to_ba"
+
+let print_ba a =
+  for i = 0 to Array1.dim a - 1 do
+    Printf.printf "\\%03d" (Char.code a.{i})
+  done;
+  Printf.printf "\n"
+
+let print_bytes a =
+  for i = 0 to Bytes.length a - 1 do
+    Printf.printf "\\%03d" (Char.code (Bytes.get a i))
+  done;
+  Printf.printf "\n"
+
+let%expect_test "blit ba-ba" =
+  let a = Array1.create char c_layout 10 in
+  let a' = Array1.sub a 2 6 in
+  let b = Array1.create char c_layout 10 in
+  let b' = Array1.sub b 4 6 in
+  for i = 0 to 10 - 1 do
+    a.{i} <- Char.chr i
+  done;
+  blit_ba_to_ba a' 1 b' 2 3;
+  print_ba a;
+  print_ba b
+
+let%expect_test "blit ba-bytes" =
+  let a = Array1.create char c_layout 10 in
+  let a' = Array1.sub a 2 6 in
+  let b = Bytes.create 10 in
+  for i = 0 to 10 - 1 do
+    a.{i} <- Char.chr i
+  done;
+  blit_ba_to_bytes a' 1 b 6 3;
+  print_ba a;
+  print_bytes b
+
+let%expect_test "blit bytes-ba" =
+  let a = Bytes.create 10 in
+  let b = Array1.create char c_layout 10 in
+  let b' = Array1.sub b 4 6 in
+  for i = 0 to 10 - 1 do
+    Bytes.set a i (Char.chr i)
+  done;
+  blit_bytes_to_ba a 3 b' 2 3;
+  print_bytes a;
+  print_ba b
