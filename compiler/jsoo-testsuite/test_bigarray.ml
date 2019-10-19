@@ -191,7 +191,10 @@ let%expect_test "blit ba-ba" =
   done;
   blit_ba_to_ba a' 1 b' 2 3;
   print_ba a;
-  print_ba b
+  print_ba b;
+  [%expect {|
+    \000\001\002\003\004\005\006\007\008\009
+    \000\000\000\000\000\000\003\004\005\000 |}]
 
 let%expect_test "blit ba-bytes" =
   let a = Array1.create char c_layout 10 in
@@ -202,7 +205,10 @@ let%expect_test "blit ba-bytes" =
   done;
   blit_ba_to_bytes a' 1 b 6 3;
   print_ba a;
-  print_bytes b
+  print_bytes b;
+  [%expect {|
+    \000\001\002\003\004\005\006\007\008\009
+    \000\000\000\000\000\000\003\004\005\000 |}]
 
 let%expect_test "blit bytes-ba" =
   let a = Bytes.create 10 in
@@ -213,4 +219,7 @@ let%expect_test "blit bytes-ba" =
   done;
   blit_bytes_to_ba a 3 b' 2 3;
   print_bytes a;
-  print_ba b
+  print_ba b;
+  [%expect {|
+    \000\001\002\003\004\005\006\007\008\009
+    \000\000\000\000\000\000\003\004\005\000 |}]
