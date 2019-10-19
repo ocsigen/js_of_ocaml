@@ -161,13 +161,13 @@ let%expect_test "change_layout, reshape" =
 
 external blit_ba_to_ba :
   (_, _, _) Array1.t -> int -> (_, _, _) Array1.t -> int -> int -> unit
-  = "caml_ba_blit_ba_to_ba"
+  = "caml_bigstring_blit_ba_to_ba"
 
 external blit_ba_to_bytes : (_, _, _) Array1.t -> int -> Bytes.t -> int -> int -> unit
-  = "caml_ba_blit_ba_to_bytes"
+  = "caml_bigstring_blit_ba_to_bytes"
 
 external blit_bytes_to_ba : Bytes.t -> int -> (_, _, _) Array1.t -> int -> int -> unit
-  = "caml_ba_blit_string_to_ba"
+  = "caml_bigstring_blit_string_to_ba"
 
 let print_ba a =
   for i = 0 to Array1.dim a - 1 do

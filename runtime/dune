@@ -6,17 +6,38 @@
   (targets runtime.js)
   (action
    (run %{bin:jsoo_link} -o %{targets}
-    %{dep:mlString.js} %{dep:ieee_754.js} %{dep:int64.js} %{dep:md5.js} %{dep:marshal.js}
-    %{dep:lexing.js} %{dep:parsing.js} %{dep:bigarray.js} %{dep:unix.js}
-    %{dep:stdlib.js} %{dep:io.js} %{dep:fs.js} %{dep:fs_fake.js} %{dep:fs_node.js} %{dep:jslib.js}
+    %{dep:bigarray.js}
+    %{dep:bigstring-cstruct.js}
+    %{dep:bigstring.js}
+    %{dep:fs.js}
+    %{dep:fs_fake.js}
+    %{dep:fs_node.js}
+    %{dep:gc.js}
+    %{dep:ieee_754.js}
+    %{dep:int64.js}
+    %{dep:internalMod.js}
+    %{dep:io.js}
+    %{dep:jslib.js}
     %{dep:jslib_js_of_ocaml.js}
-    %{dep:internalMod.js} %{dep:gc.js} %{dep:polyfill/json2.js} %{dep:bigstring.js} %{dep:weak.js})))
+    %{dep:lexing.js}
+    %{dep:marshal.js}
+    %{dep:md5.js}
+    %{dep:mlString.js}
+    %{dep:parsing.js}
+    %{dep:polyfill/json2.js}
+    %{dep:stdlib.js}
+    %{dep:unix.js}
+    %{dep:weak.js}
+)))
 
 (install
   (section lib)
   (package js_of_ocaml-compiler)
   (files
     bigarray.js
+    bigstring-base_bigstring.js
+    bigstring-core_kernel.js
+    bigstring-cstruct.js
     bigstring.js
     dynlink.js
     fs.js
