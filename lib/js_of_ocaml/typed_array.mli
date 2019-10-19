@@ -226,13 +226,16 @@ module Bigstring : sig
   type t = (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
   val to_arrayBuffer : t -> arrayBuffer Js.t
+
   val to_uint8Array : t -> uint8Array Js.t
 
   val of_arrayBuffer : arrayBuffer Js.t -> t
+
   val of_uint8Array : uint8Array Js.t -> t
 end
 
 module String : sig
   val of_arrayBuffer : arrayBuffer Js.t -> string
-  val of_uint8Array  : uint8Array Js.t -> string
+
+  val of_uint8Array : uint8Array Js.t -> string
 end

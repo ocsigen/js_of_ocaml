@@ -225,9 +225,11 @@ module Bigstring = struct
   type t = (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
   external to_arrayBuffer : t -> arrayBuffer Js.t = "bigstring_to_array_buffer"
+
   external to_uint8Array : t -> uint8Array Js.t = "bigstring_to_typed_array"
 
   external of_arrayBuffer : arrayBuffer Js.t -> t = "bigstring_of_array_buffer"
+
   external of_uint8Array : uint8Array Js.t -> t = "bigstring_of_typed_array"
 end
 
