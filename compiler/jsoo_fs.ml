@@ -21,7 +21,8 @@ let options =
     Arg.(value & opt_all string [] & info ["I"] ~docv:"DIR" ~doc)
   in
   Term.(
-    pure (fun files output_file include_dirs -> {files; output_file; include_dirs}) files
+    pure (fun files output_file include_dirs -> {files; output_file; include_dirs})
+    $ files
     $ output_file
     $ include_dirs)
 
