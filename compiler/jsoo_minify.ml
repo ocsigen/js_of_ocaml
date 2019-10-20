@@ -86,7 +86,7 @@ let f {MinifyArg.common; output_file; use_stdin; files} =
     let p = Js_assign.program p in
     Js_output.program pp p
   in
-  with_output (fun chan ->
+  with_output (fun out_channel ->
       let pp = Pretty_print.to_out_channel out_channel in
       gen pp)
 
