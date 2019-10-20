@@ -1,0 +1,22 @@
+(executable
+  (name main)
+  (libraries nums)
+  (modes native js)
+  (js_of_ocaml (javascript_files ../../../runtime/nat.js))
+  (flags (:standard -linkall -w -3-7-33-35-37 -safe-string -open Nums))
+)
+
+(rule
+  (target main.referencejs)
+  (deps main.bc.js)
+  (action (with-stdout-to %{target} (run node ./main.bc.js))))
+
+(rule
+  (target main.reference)
+  (deps main.exe)
+  (action (with-stdout-to %{target} (run ./main.exe))))
+
+(alias
+  (name runtest)
+  (deps main.reference main.referencejs)
+  (action (diff main.reference main.referencejs)))
