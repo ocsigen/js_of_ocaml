@@ -9,7 +9,7 @@ type options =
 
 let options =
   let files =
-    let doc = "files [$(docv)]." in
+    let doc = "Embed [$(docv)] in the js_of_ocaml pseudo filesystem." in
     Arg.(value & pos_all string [] & info [] ~docv:"FILES" ~doc)
   in
   let output_file =
@@ -27,33 +27,30 @@ let options =
     $ include_dirs)
 
 let info =
-  let doc = "" in
-  Term.info "jsoo_fs" ~doc
-
-let temp_file_name =
-  (* Inlined unavailable Filename.temp_file_name. Filename.temp_file gives
-     us incorrect permissions. https://github.com/ocsigen/js_of_ocaml/issues/182 *)
-  let prng = lazy (Random.State.make_self_init ()) in
-  fun ~temp_dir prefix suffix ->
-    let rnd = Random.State.bits (Lazy.force prng) land 0xFFFFFF in
-    Filename.concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
-
-let gen_file file f =
-  let f_tmp =
-    temp_file_name ~temp_dir:(Filename.dirname file) (Filename.basename file) ".tmp"
+  let doc = "Js_of_ocaml pseudo filesystem utility" in
+  let man =
+    [ `S "DESCRIPTION"
+    ; `P "jsoo_fs is a tool for embeding files in a Js_of_ocaml pseudo filesystem."
+    ; `S "BUGS"
+    ; `P
+        "Bugs are tracked on github at \
+         $(i,https://github.com/ocsigen/js_of_ocaml/issues)."
+    ; `S "AUTHORS"
+    ; `P "Jerome Vouillon, Hugo Heuzard."
+    ; `S "LICENSE"
+    ; `P "Copyright (C) 2010-2019."
+    ; `P
+        "jsoo_fs is free software, you can redistribute it and/or modify it under the \
+         terms of the GNU Lesser General Public License as published by the Free \
+         Software Foundation, with linking exception; either version 2.1 of the \
+         License, or (at your option) any later version." ]
   in
-  try
-    let ch = open_out_bin f_tmp in
-    (try f ch
-     with e ->
-       close_out ch;
-       raise e);
-    close_out ch;
-    (try Sys.remove file with Sys_error _ -> ());
-    Sys.rename f_tmp file
-  with exc ->
-    Sys.remove f_tmp;
-    raise exc
+  let version =
+    match Compiler_version.git_version with
+    | "" -> Compiler_version.s
+    | v -> Printf.sprintf "%s+git-%s" Compiler_version.s v
+  in
+  Term.info "jsoo_fs" ~doc ~man ~version
 
 let f {files; output_file; include_dirs} =
   let code =
@@ -71,9 +68,7 @@ function caml_create_file_extern(name,content){
 |}
   in
   let fragments = Linker.parse_string code in
-  let () =
-    List.iter fragments ~f:(fun fr -> Linker.load_fragment ~filename:"<dummy>" fr)
-  in
+  List.iter fragments ~f:(fun fr -> Linker.load_fragment ~filename:"<dummy>" fr);
   let instr =
     PseudoFs.f
       ~prim:`caml_create_file_extern
@@ -82,7 +77,7 @@ function caml_create_file_extern(name,content){
       ~paths:include_dirs
   in
   let code = Code.prepend Code.empty instr in
-  gen_file output_file (fun chan ->
+  Util.gen_file output_file (fun chan ->
       let pfs_fmt = Pretty_print.to_out_channel chan in
       Driver.f
         ~standalone:true

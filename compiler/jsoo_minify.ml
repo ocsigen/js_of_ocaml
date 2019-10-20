@@ -27,64 +27,68 @@ let _ = Sys.catch_break true
 let f {MinifyArg.common; output_file; use_stdin; files} =
   CommonArg.eval common;
   let chop_extension s = try Filename.chop_extension s with Invalid_argument _ -> s in
-  let pp, finalize =
+  let with_output f =
     match output_file with
-    | Some "-" -> Pretty_print.to_out_channel stdout, fun _ -> ()
-    | Some file ->
-        let oc = open_out file in
-        Pretty_print.to_out_channel oc, fun _ -> close_out oc
-    | None when not use_stdin ->
+    | Some "-" -> f stdout
+    | None when use_stdin -> f stdout
+    | None | Some _ ->
         let file =
-          if List.length files = 1
-          then chop_extension (List.hd files) ^ ".min.js"
-          else "a.min.js"
+          match output_file with
+          | Some f -> f
+          | None ->
+              if List.length files = 1
+              then chop_extension (List.hd files) ^ ".min.js"
+              else "a.min.js"
         in
-        let oc = open_out file in
-        Pretty_print.to_out_channel oc, fun _ -> close_out oc
-    | None (* when stdin *) -> Pretty_print.to_out_channel stdout, fun _ -> ()
+        Util.gen_file file f
   in
-  let pretty = Config.Flag.pretty () in
-  Pretty_print.set_compact pp (not pretty);
-  Code.Var.set_pretty pretty;
-  let error_of_pi pi =
-    match pi with
-    | {Parse_info.name = Some src; line; col; _}
-     |{Parse_info.src = Some src; line; col; _} ->
-        error "error at file:%S l:%d col:%d" src line col
-    | {Parse_info.line; col; _} -> error "error at l:%d col:%d" line col
+  let gen pp =
+    let pretty = Config.Flag.pretty () in
+    Pretty_print.set_compact pp (not pretty);
+    Code.Var.set_pretty pretty;
+    let error_of_pi pi =
+      match pi with
+      | {Parse_info.name = Some src; line; col; _}
+       |{Parse_info.src = Some src; line; col; _} ->
+          error "error at file:%S l:%d col:%d" src line col
+      | {Parse_info.line; col; _} -> error "error at l:%d col:%d" line col
+    in
+    let p =
+      List.flatten
+        (List.map files ~f:(fun file ->
+             let lex = Parse_js.lexer_from_file file in
+             try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi))
+    in
+    let p =
+      if use_stdin
+      then
+        let lex = Parse_js.lexer_from_channel stdin in
+        try p @ Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi
+      else p
+    in
+    let free = new Js_traverse.free in
+    let _pfree = free#program p in
+    let toplevel_def = free#get_def_name in
+    let () = VarPrinter.add_reserved (StringSet.elements toplevel_def) in
+    let true_ () = true in
+    let open Config in
+    let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
+      [ ( Flag.shortvar
+        , fun () -> (new Js_traverse.rename_variable toplevel_def :> Js_traverse.mapper)
+        )
+      ; (true_, fun () -> new Js_traverse.simpl)
+      ; (true_, fun () -> new Js_traverse.clean) ]
+    in
+    let p =
+      List.fold_left passes ~init:p ~f:(fun p (t, m) ->
+          if t () then (m ())#program p else p)
+    in
+    let p = Js_assign.program p in
+    Js_output.program pp p
   in
-  let p =
-    List.flatten
-      (List.map files ~f:(fun file ->
-           let lex = Parse_js.lexer_from_file file in
-           try Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi))
-  in
-  let p =
-    if use_stdin
-    then
-      let lex = Parse_js.lexer_from_channel stdin in
-      try p @ Parse_js.parse lex with Parse_js.Parsing_error pi -> error_of_pi pi
-    else p
-  in
-  let free = new Js_traverse.free in
-  let _pfree = free#program p in
-  let toplevel_def = free#get_def_name in
-  let () = VarPrinter.add_reserved (StringSet.elements toplevel_def) in
-  let true_ () = true in
-  let open Config in
-  let passes : ((unit -> bool) * (unit -> Js_traverse.mapper)) list =
-    [ ( Flag.shortvar
-      , fun () -> (new Js_traverse.rename_variable toplevel_def :> Js_traverse.mapper) )
-    ; (true_, fun () -> new Js_traverse.simpl)
-    ; (true_, fun () -> new Js_traverse.clean) ]
-  in
-  let p =
-    List.fold_left passes ~init:p ~f:(fun p (t, m) ->
-        if t () then (m ())#program p else p)
-  in
-  let p = Js_assign.program p in
-  Js_output.program pp p;
-  finalize ()
+  with_output (fun chan ->
+      let pp = Pretty_print.to_out_channel out_channel in
+      gen pp)
 
 let main = Cmdliner.Term.(pure f $ MinifyArg.options), MinifyArg.info
 

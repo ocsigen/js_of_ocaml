@@ -21,15 +21,13 @@ open! Js_of_ocaml_compiler.Stdlib
 open Js_of_ocaml_compiler
 
 let f {LinkerArg.output_file; source_map; resolve_sourcemap_url; js_files} =
-  let output =
+  let with_output f =
     match output_file with
-    | None -> stdout
-    | Some file -> open_out_bin file
+    | None -> f stdout
+    | Some file -> Util.gen_file file f
   in
-  Link_js.link ~output ~files:js_files ~source_map ~resolve_sourcemap_url;
-  match output_file with
-  | None -> ()
-  | Some _ -> close_out output
+  with_output (fun output ->
+      Link_js.link ~output ~files:js_files ~source_map ~resolve_sourcemap_url)
 
 let main = Cmdliner.Term.(pure f $ LinkerArg.options), LinkerArg.info
 

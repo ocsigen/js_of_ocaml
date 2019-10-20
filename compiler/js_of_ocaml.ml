@@ -27,31 +27,6 @@ let debug_mem = Debug.find "mem"
 
 let _ = Sys.catch_break true
 
-let temp_file_name =
-  (* Inlined unavailable Filename.temp_file_name. Filename.temp_file gives
-     us incorrect permissions. https://github.com/ocsigen/js_of_ocaml/issues/182 *)
-  let prng = lazy (Random.State.make_self_init ()) in
-  fun ~temp_dir prefix suffix ->
-    let rnd = Random.State.bits (Lazy.force prng) land 0xFFFFFF in
-    Filename.concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
-
-let gen_file file f =
-  let f_tmp =
-    temp_file_name ~temp_dir:(Filename.dirname file) (Filename.basename file) ".tmp"
-  in
-  try
-    let ch = open_out_bin f_tmp in
-    (try f ch
-     with e ->
-       close_out ch;
-       raise e);
-    close_out ch;
-    (try Sys.remove file with Sys_error _ -> ());
-    Sys.rename f_tmp file
-  with exc ->
-    Sys.remove f_tmp;
-    raise exc
-
 let gen_unit_filename dir u =
   Filename.concat dir (Printf.sprintf "%s.js" u.Cmo_format.cu_name)
 
@@ -188,7 +163,7 @@ let f
           | None -> pseudo_fs_instr `caml_create_file one.debug one.cmis, []
           | Some _ -> [], pseudo_fs_instr `caml_create_file_extern one.debug one.cmis
         in
-        gen_file file (fun chan ->
+        Util.gen_file file (fun chan ->
             let instr = List.concat [fs_instr1; pseudo_fs_init_instr (); env_instr ()] in
             let code = Code.prepend one.code instr in
             let fmt = Pretty_print.to_out_channel chan in
@@ -204,7 +179,7 @@ let f
               one.debug
               code);
         Option.iter fs_output ~f:(fun file ->
-            gen_file file (fun chan ->
+            Util.gen_file file (fun chan ->
                 let instr = fs_instr2 in
                 let code = Code.prepend Code.empty instr in
                 let pfs_fmt = Pretty_print.to_out_channel chan in

@@ -329,7 +329,7 @@ let info =
     ; `S "AUTHORS"
     ; `P "Jerome Vouillon, Hugo Heuzard."
     ; `S "LICENSE"
-    ; `P "Copyright (C) 2010-2014."
+    ; `P "Copyright (C) 2010-2019."
     ; `P
         "js_of_ocaml is free software, you can redistribute it and/or modify it under \
          the terms of the GNU Lesser General Public License as published by the Free \
