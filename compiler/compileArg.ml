@@ -162,8 +162,24 @@ let options =
       & info ["file"] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
   let fs_external =
-    let doc = "Configure pseudo-filesystem to allow registering files from outside." in
-    Arg.(value & flag & info ["extern-fs"] ~docs:filesystem_section ~doc)
+    Arg.(
+      value
+      & vflag
+          true
+          [ ( true
+            , info
+                ["extern-fs"]
+                ~docs:filesystem_section
+                ~doc:
+                  "Configure pseudo-filesystem to allow registering files from outside. \
+                   (default)" )
+          ; ( false
+            , info
+                ["no-extern-fs"]
+                ~docs:filesystem_section
+                ~doc:
+                  "Configure pseudo-filesystem to NOT allow registering files from \
+                   outside." ) ])
   in
   let fs_output =
     let doc = "Output the filesystem to [$(docv)]." in

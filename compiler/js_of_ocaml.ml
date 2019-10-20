@@ -133,8 +133,9 @@ let f
         let args = [Code.Pc (IString k); Code.Pc (IString v)] in
         Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
   in
-  let output ~init_pseudo_fs (one : Parse_bytecode.one) standalone output_file =
+  let output (one : Parse_bytecode.one) ~standalone output_file =
     check_debug one.debug;
+    let init_pseudo_fs = fs_external && standalone in
     (match output_file with
     | `Stdout ->
         let instr =
@@ -204,7 +205,7 @@ let f
       ; cmis = StringSet.empty
       ; debug = Parse_bytecode.Debug.create () }
     in
-    output ~init_pseudo_fs:fs_external code true (fst output_file)
+    output code ~standalone:true (fst output_file)
   else
     let kind, ic, close_ic =
       match input_file with
@@ -227,7 +228,7 @@ let f
             ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-        output ~init_pseudo_fs:fs_external code true (fst output_file)
+        output code ~standalone:true (fst output_file)
     | `Cmo cmo ->
         let output_file =
           match output_file, keep_unit_names with
@@ -246,7 +247,7 @@ let f
           Parse_bytecode.from_cmo ~includes:paths ~toplevel ~debug:need_debug cmo ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-        output ~init_pseudo_fs:false code false output_file
+        output code ~standalone:false output_file
     | `Cma cma when keep_unit_names ->
         List.iter cma.lib_units ~f:(fun cmo ->
             let output_file =
@@ -265,14 +266,14 @@ let f
             in
             if times ()
             then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 cmo.cu_name;
-            output ~init_pseudo_fs:false code false output_file)
+            output code ~standalone:false output_file)
     | `Cma cma ->
         let t1 = Timer.make () in
         let code =
           Parse_bytecode.from_cma ~includes:paths ~toplevel ~debug:need_debug cma ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-        output ~init_pseudo_fs:false code false (fst output_file));
+        output code ~standalone:false (fst output_file));
     close_ic ());
   Debug.stop_profiling ()
 
