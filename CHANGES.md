@@ -1,4 +1,4 @@
-# dev (2019-??-??) - Somewhere
+# dev (2019-10-??) - Hong Kong
 ## Features/Changes
 * Compiler: Improve testing of the compiler (Ty Overby)
 * Compiler: Add several macros for making the runtime easier to maintain (#771) (Ty Overby)
@@ -7,6 +7,9 @@
 * Compiler: more source map location for the javascript runtime (#795)
 * Compiler: tune variable naming (#838)
 * Runtime: support sharing when marshaling (#814)
+* Runtime: add caml_obj_with_tag
+* Runtime: support marshaling custom block
+* Runtime: complete rewrite of bigarray
 * Ppx: switch ppx rewriter to the OCaml 4.08 ast
 * Misc: Improve CI speed
 * Misc: remove ppx_deriving dependency
@@ -14,9 +17,15 @@
 * Misc: remove ppx_tools_versioned dependency in ppx_deriving_json
 * Misc: support for ocaml 4.09
 * Misc: switch to ocamlformat.0.11
+* Misc: many more tests
+* Misc: new jsoo_fs tool to embed files in a jsoo pseudo fs.
 * Lib: Use expect tests
 * Lib: Add support for 'addEventListener' with options (#807)
 * Lib: Change api of [Lwt_js_events.async] (#862)
+* Lib: Change api of responseText in xmlhttprequest (#863)
+* Lib: add resizeObserver bindings
+* Lib: Added support for custom events (#877)
+* Lib: Added support for focus events (#885)
 
 ## Bug fixes
 * Compiler: don't generate source if no-source-map passed (#780)
@@ -32,6 +41,8 @@
 * Runtime: Handle browserfs in fs_node detection logic (#831)
 * Runtime: fix Obj.tag (#832)
 * Runtime: fix marshalling of custom blocks (#861)
+* Runtime: fix frexp
+* Runtime: fix float printing with "%f" and large floats
 
 # 3.4.0 (2019-04-17) - Hong Kong
 ## Features/Changes
