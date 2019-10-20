@@ -229,7 +229,8 @@ function caml_fs_init (){
       caml_create_file(tmp[i].name,tmp[i].content);
     }
   }
-  joo_global_object.caml_create_file = caml_create_file;
+  joo_global_object.caml_create_file_extern = caml_create_file;
+  joo_global_object.caml_fs_tmp = [];
   return 0;
 }
 

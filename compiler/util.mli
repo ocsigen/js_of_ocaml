@@ -16,5 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
-(* [normalize_argv argv] returns a new array of arguments where '-long-option' are replaced by '--long-option' *)
 val normalize_argv : ?warn_:bool -> string array -> string array
+(** [normalize_argv argv] returns a new array of arguments where
+   '-long-option' are replaced by '--long-option' *)
+
+val gen_file : string -> (out_channel -> unit) -> unit

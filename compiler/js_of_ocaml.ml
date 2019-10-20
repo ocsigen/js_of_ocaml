@@ -27,31 +27,6 @@ let debug_mem = Debug.find "mem"
 
 let _ = Sys.catch_break true
 
-let temp_file_name =
-  (* Inlined unavailable Filename.temp_file_name. Filename.temp_file gives
-     us incorrect permissions. https://github.com/ocsigen/js_of_ocaml/issues/182 *)
-  let prng = lazy (Random.State.make_self_init ()) in
-  fun ~temp_dir prefix suffix ->
-    let rnd = Random.State.bits (Lazy.force prng) land 0xFFFFFF in
-    Filename.concat temp_dir (Printf.sprintf "%s%06x%s" prefix rnd suffix)
-
-let gen_file file f =
-  let f_tmp =
-    temp_file_name ~temp_dir:(Filename.dirname file) (Filename.basename file) ".tmp"
-  in
-  try
-    let ch = open_out_bin f_tmp in
-    (try f ch
-     with e ->
-       close_out ch;
-       raise e);
-    close_out ch;
-    (try Sys.remove file with Sys_error _ -> ());
-    Sys.rename f_tmp file
-  with exc ->
-    Sys.remove f_tmp;
-    raise exc
-
 let gen_unit_filename dir u =
   Filename.concat dir (Printf.sprintf "%s.js" u.Cmo_format.cu_name)
 
@@ -158,15 +133,15 @@ let f
         let args = [Code.Pc (IString k); Code.Pc (IString v)] in
         Code.(Let (Var.fresh (), Prim (Extern "caml_set_static_env", args))))
   in
-  let pseudo_fs_init_instr () = if fs_external then [PseudoFs.init ()] else [] in
-  let output (one : Parse_bytecode.one) standalone output_file =
+  let output (one : Parse_bytecode.one) ~standalone output_file =
     check_debug one.debug;
+    let init_pseudo_fs = fs_external && standalone in
     (match output_file with
     | `Stdout ->
         let instr =
           List.concat
             [ pseudo_fs_instr `caml_create_file one.debug one.cmis
-            ; pseudo_fs_init_instr ()
+            ; (if init_pseudo_fs then [PseudoFs.init ()] else [])
             ; env_instr () ]
         in
         let code = Code.prepend one.code instr in
@@ -188,8 +163,13 @@ let f
           | None -> pseudo_fs_instr `caml_create_file one.debug one.cmis, []
           | Some _ -> [], pseudo_fs_instr `caml_create_file_extern one.debug one.cmis
         in
-        gen_file file (fun chan ->
-            let instr = List.concat [fs_instr1; pseudo_fs_init_instr (); env_instr ()] in
+        Util.gen_file file (fun chan ->
+            let instr =
+              List.concat
+                [ fs_instr1
+                ; (if init_pseudo_fs then [PseudoFs.init ()] else [])
+                ; env_instr () ]
+            in
             let code = Code.prepend one.code instr in
             let fmt = Pretty_print.to_out_channel chan in
             Driver.f
@@ -204,7 +184,7 @@ let f
               one.debug
               code);
         Option.iter fs_output ~f:(fun file ->
-            gen_file file (fun chan ->
+            Util.gen_file file (fun chan ->
                 let instr = fs_instr2 in
                 let code = Code.prepend Code.empty instr in
                 let pfs_fmt = Pretty_print.to_out_channel chan in
@@ -225,7 +205,7 @@ let f
       ; cmis = StringSet.empty
       ; debug = Parse_bytecode.Debug.create () }
     in
-    output code true (fst output_file)
+    output code ~standalone:true (fst output_file)
   else
     let kind, ic, close_ic =
       match input_file with
@@ -248,7 +228,7 @@ let f
             ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-        output code true (fst output_file)
+        output code ~standalone:true (fst output_file)
     | `Cmo cmo ->
         let output_file =
           match output_file, keep_unit_names with
@@ -267,7 +247,7 @@ let f
           Parse_bytecode.from_cmo ~includes:paths ~toplevel ~debug:need_debug cmo ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-        output code false output_file
+        output code ~standalone:false output_file
     | `Cma cma when keep_unit_names ->
         List.iter cma.lib_units ~f:(fun cmo ->
             let output_file =
@@ -286,14 +266,14 @@ let f
             in
             if times ()
             then Format.eprintf "  parsing: %a (%s)@." Timer.print t1 cmo.cu_name;
-            output code false output_file)
+            output code ~standalone:false output_file)
     | `Cma cma ->
         let t1 = Timer.make () in
         let code =
           Parse_bytecode.from_cma ~includes:paths ~toplevel ~debug:need_debug cma ic
         in
         if times () then Format.eprintf "  parsing: %a@." Timer.print t1;
-        output code false (fst output_file));
+        output code ~standalone:false (fst output_file));
     close_ic ());
   Debug.stop_profiling ()
 

@@ -162,8 +162,24 @@ let options =
       & info ["file"] ~docs:filesystem_section ~docv:"FILE" ~doc)
   in
   let fs_external =
-    let doc = "Configure pseudo-filesystem to allow registering files from outside." in
-    Arg.(value & flag & info ["extern-fs"] ~docs:filesystem_section ~doc)
+    Arg.(
+      value
+      & vflag
+          true
+          [ ( true
+            , info
+                ["extern-fs"]
+                ~docs:filesystem_section
+                ~doc:
+                  "Configure pseudo-filesystem to allow registering files from outside. \
+                   (default)" )
+          ; ( false
+            , info
+                ["no-extern-fs"]
+                ~docs:filesystem_section
+                ~doc:
+                  "Configure pseudo-filesystem to NOT allow registering files from \
+                   outside." ) ])
   in
   let fs_output =
     let doc = "Output the filesystem to [$(docv)]." in
@@ -329,7 +345,7 @@ let info =
     ; `S "AUTHORS"
     ; `P "Jerome Vouillon, Hugo Heuzard."
     ; `S "LICENSE"
-    ; `P "Copyright (C) 2010-2014."
+    ; `P "Copyright (C) 2010-2019."
     ; `P
         "js_of_ocaml is free software, you can redistribute it and/or modify it under \
          the terms of the GNU Lesser General Public License as published by the Free \

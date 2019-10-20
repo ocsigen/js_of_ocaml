@@ -65,8 +65,11 @@ let list_files name paths =
     | None -> name, []
   in
   let file =
-    try Findlib.find_in_findlib_paths paths name
-    with Not_found -> failwith (Printf.sprintf "file '%s' not found" name)
+    if Filename.is_relative name
+    then
+      try Findlib.find_in_findlib_paths paths name
+      with Not_found -> failwith (Printf.sprintf "file '%s' not found" name)
+    else name
   in
   expand_path exts file virtname
 

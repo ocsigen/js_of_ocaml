@@ -59,24 +59,7 @@ let is_file_directive cmt =
     true
   with _ -> false
 
-let parse_file f =
-  let file =
-    try
-      match Findlib.path_require_findlib f with
-      | Some f ->
-          let pkg, f' =
-            match String.split ~sep:Filename.dir_sep f with
-            | [] -> assert false
-            | [f] -> "js_of_ocaml-compiler", f
-            | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
-          in
-          Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg) f')
-      | None -> Fs.absolute_path f
-    with
-    | Not_found -> error "cannot find file '%s'. @." f
-    | Sys_error s -> error "%s@." s
-  in
-  let lex = Parse_js.lexer_from_file ~rm_comment:false file in
+let parse_from_lex ~filename lex =
   let status, lexs =
     Parse_js.lexer_fold
       (fun (status, lexs) t ->
@@ -97,8 +80,8 @@ let parse_file f =
             Format.eprintf
               "Unknown token while parsing JavaScript at %s@."
               (loc (Some info));
-            if not (Filename.check_suffix file ".js")
-            then Format.eprintf "%S doesn't look like a JavaScript file@." file;
+            if not (Filename.check_suffix filename ".js")
+            then Format.eprintf "%S doesn't look like a JavaScript file@." filename;
             failwith "Error while parsing JavaScript"
         | c -> (
           match status with
@@ -140,12 +123,36 @@ let parse_file f =
           in
           error
             "cannot parse file %S (orig:%S from l:%d, c:%d)@."
-            f
+            filename
             name
             pi.Parse_info.line
             pi.Parse_info.col)
   in
   res
+
+let parse_string string =
+  let lex = Parse_js.lexer_from_string ~rm_comment:false string in
+  parse_from_lex ~filename:"<dummy>" lex
+
+let parse_file f =
+  let file =
+    try
+      match Findlib.path_require_findlib f with
+      | Some f ->
+          let pkg, f' =
+            match String.split ~sep:Filename.dir_sep f with
+            | [] -> assert false
+            | [f] -> "js_of_ocaml-compiler", f
+            | pkg :: l -> pkg, List.fold_left l ~init:"" ~f:Filename.concat
+          in
+          Fs.absolute_path (Filename.concat (Findlib.find_pkg_dir pkg) f')
+      | None -> Fs.absolute_path f
+    with
+    | Not_found -> error "cannot find file '%s'. @." f
+    | Sys_error s -> error "%s@." s
+  in
+  let lex = Parse_js.lexer_from_file ~rm_comment:false file in
+  parse_from_lex ~filename:file lex
 
 class check_and_warn name pi =
   object
@@ -281,49 +288,48 @@ let find_named_value code =
   ignore (p#program code);
   !all
 
-let add_file f =
-  List.iter
-    (parse_file f)
-    ~f:(fun {provides; requires; version_constraint; weakdef; code} ->
-      let vmatch =
-        match version_constraint with
-        | [] -> true
-        | l -> List.exists l ~f:version_match
-      in
-      if vmatch
-      then (
-        incr last_code_id;
-        let id = !last_code_id in
-        match provides with
-        | None -> always_included := {filename = f; program = code} :: !always_included
-        | Some (pi, name, kind, ka) ->
-            let code = Macro.f code in
-            let module J = Javascript in
-            let rec find = function
-              | [] -> None
-              | (J.Function_declaration (J.S {J.name = n; _}, l, _, _), _) :: _
-                when String.equal name n ->
-                  Some (List.length l)
-              | _ :: rem -> find rem
-            in
-            let arity = find code in
-            let named_values = find_named_value code in
-            Primitive.register name kind ka arity;
-            StringSet.iter Primitive.register_named_value named_values;
-            (if Hashtbl.mem provided name
-            then
-              let _, ploc, weakdef = Hashtbl.find provided name in
-              if not weakdef
-              then
-                warn
-                  "warning: overriding primitive %S\n  old: %s\n  new: %s@."
-                  name
-                  (loc ploc)
-                  (loc pi));
-            Hashtbl.add provided name (id, pi, weakdef);
-            Hashtbl.add provided_rev id (name, pi);
-            check_primitive ~name pi ~code ~requires;
-            Hashtbl.add code_pieces id (code, requires)))
+let load_fragment ~filename {provides; requires; version_constraint; weakdef; code} =
+  let vmatch =
+    match version_constraint with
+    | [] -> true
+    | l -> List.exists l ~f:version_match
+  in
+  if vmatch
+  then (
+    incr last_code_id;
+    let id = !last_code_id in
+    match provides with
+    | None -> always_included := {filename; program = code} :: !always_included
+    | Some (pi, name, kind, ka) ->
+        let code = Macro.f code in
+        let module J = Javascript in
+        let rec find = function
+          | [] -> None
+          | (J.Function_declaration (J.S {J.name = n; _}, l, _, _), _) :: _
+            when String.equal name n ->
+              Some (List.length l)
+          | _ :: rem -> find rem
+        in
+        let arity = find code in
+        let named_values = find_named_value code in
+        Primitive.register name kind ka arity;
+        StringSet.iter Primitive.register_named_value named_values;
+        (if Hashtbl.mem provided name
+        then
+          let _, ploc, weakdef = Hashtbl.find provided name in
+          if not weakdef
+          then
+            warn
+              "warning: overriding primitive %S\n  old: %s\n  new: %s@."
+              name
+              (loc ploc)
+              (loc pi));
+        Hashtbl.add provided name (id, pi, weakdef);
+        Hashtbl.add provided_rev id (name, pi);
+        check_primitive ~name pi ~code ~requires;
+        Hashtbl.add code_pieces id (code, requires))
+
+let add_file filename = List.iter (parse_file filename) ~f:(load_fragment ~filename)
 
 let get_provided () =
   Hashtbl.fold (fun k _ acc -> StringSet.add k acc) provided StringSet.empty
