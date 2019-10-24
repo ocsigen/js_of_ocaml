@@ -2011,10 +2011,10 @@ let override_global =
   ; ( "Int_misc"
     , fun orig instrs ->
         let x = Var.fresh_n "int_misc" in
+        let a0 = Var.fresh () in
         let a1 = Var.fresh () in
         let a2 = Var.fresh () in
         let a3 = Var.fresh () in
-        let a4 = Var.fresh () in
         let a_length_of_int = Var.fresh () in
         let a_biggest_int = Var.fresh () in
         let a_least_int = Var.fresh () in
@@ -2029,23 +2029,23 @@ let override_global =
             ( x
             , Block
                 ( 0
-                , [| a1
+                , [| a0
+                   ; a1
                    ; a2
                    ; a3
-                   ; a4
                    ; a_length_of_int
                    ; a_biggest_int
                    ; a_least_int
                    ; a_monster_int |]
                 , NotArray ) )
-          :: Let (a_length_of_int, Const (Int32.of_int length_of_int))
-          :: Let (a_biggest_int, Const biggest_int)
-          :: Let (a_least_int, Const least_int)
           :: Let (a_monster_int, Const monster_int)
-          :: map a1 0
-          :: map a2 1
-          :: map a3 2
-          :: map a4 3
+          :: Let (a_least_int, Const least_int)
+          :: Let (a_biggest_int, Const biggest_int)
+          :: Let (a_length_of_int, Const (Int32.of_int length_of_int))
+          :: map a3 3
+          :: map a2 2
+          :: map a1 1
+          :: map a0 0
           :: instrs ) ) ]
 
 (* HACK END *)
