@@ -3,7 +3,9 @@
   (libraries num)
   (modes native js)
   (js_of_ocaml (javascript_files ../../runtime/nat.js))
-  (flags (:standard -linkall -w -3-7-33-35-37 -safe-string))
+  (flags (:standard -linkall -w -3-7-33-35-37
+                    -safe-string
+                    -no-strict-sequence))
 )
 
 (rule
