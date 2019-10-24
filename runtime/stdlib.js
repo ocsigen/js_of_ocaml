@@ -347,7 +347,7 @@ function caml_floatarray_create(len){
 
 //Provides: caml_compare_val (const, const, const)
 //Requires: MlBytes, caml_int64_compare, caml_int_compare, caml_string_compare
-//Requires: caml_invalid_argument
+//Requires: caml_invalid_argument, caml_custom_ops
 function caml_compare_val (a, b, total) {
   var stack = [];
   for(;;) {
@@ -406,11 +406,24 @@ function caml_compare_val (a, b, total) {
       } else if (b instanceof MlBytes ||
                  (b instanceof Array && b[0] === (b[0]|0))) {
         return -1;
-      } else if (typeof a != "number" && a && a.compare) {
-        var cmp = a.compare(b,total);
-        if (cmp != 0) return cmp;
-      } else if (typeof a == "function") {
-        caml_invalid_argument("compare: functional value");
+      } else if (typeof a != "number") {
+        if(a && a.compare) {
+          var cmp = a.compare(b,total);
+          if (cmp != 0) return cmp;
+        }
+        else if(a && a.caml_custom) {
+          if(caml_custom_ops[a.caml_custom].compare) {
+            var cmp = caml_custom_ops[a.caml_custom].compare(a,b,total)
+            if (cmp != 0) return cmp;
+          }
+          caml_invalid_argument("compare: abstract value");
+        }
+        else if (typeof a == "function") {
+          caml_invalid_argument("compare: functional value");
+        }
+        else {
+          caml_invalid_argument("compare: abstract value");
+        }
       } else {
         if (a < b) return -1;
         if (a > b) return 1;
