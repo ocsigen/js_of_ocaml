@@ -12,6 +12,8 @@ function initialize_nat() {
 //Requires: caml_hash_mix_int, num_digits_nat
 function MlNat(x){
   this.data = new joo_global_object.Int32Array(x);
+  // length_nat isn't external, so we have to make the Obj.size
+  // work out right. The +2 to array length seems to work.
   this.length = this.data.length + 2
 }
 
