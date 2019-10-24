@@ -2008,7 +2008,7 @@ let override_global =
           :: Let (init_mod, jsmodule "CamlinternalMod" "init_mod")
           :: Let (update_mod, jsmodule "CamlinternalMod" "update_mod")
           :: instrs ) )
-  ; ( "Int_misc"
+  ; ( "Int_misc" (* Until https://github.com/ocaml/num/pull/16 is merged and released *)
     , fun orig instrs ->
         let x = Var.fresh_n "int_misc" in
         let a0 = Var.fresh () in
