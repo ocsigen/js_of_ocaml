@@ -18,7 +18,7 @@ We actively welcome pull requests.
 3. Fork the repository and create your branch from `master`.
 4. If you have added code that should be tested, add tests.
 5. Ensure tests still pass (see [Running the tests](#running-the-tests)).
-
+6. Add an entry in the changelog `CHANGES.md`
 
 ### Install dependencies
 ```
