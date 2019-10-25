@@ -92,7 +92,7 @@ let%expect_test "compare elt" =
   [%expect {| -1 < 1: Bigarray compare differently |}];
   test int16_unsigned Int.to_string 2 3;
   [%expect {| 2 < 3: Bigarray compare the same |}];
-  test int Int.to_string 0xffff0000 0x0000ffff;
+  test int Int.to_string (-65536) 65535;
   [%expect {| -65536 < 65535: Bigarray compare the same |}];
   test int Int.to_string 0x00011000 0x00100100;
   [%expect {| 69632 < 1048832: Bigarray compare the same |}];
