@@ -13,6 +13,7 @@
     %{dep:fs_fake.js}
     %{dep:fs_node.js}
     %{dep:gc.js}
+    %{dep:graphics.js}
     %{dep:ieee_754.js}
     %{dep:int64.js}
     %{dep:internalMod.js}
