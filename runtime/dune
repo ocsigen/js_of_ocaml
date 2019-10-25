@@ -23,6 +23,7 @@
     %{dep:marshal.js}
     %{dep:md5.js}
     %{dep:mlString.js}
+    %{dep:nat.js}
     %{dep:parsing.js}
     %{dep:polyfill/json2.js}
     %{dep:stdlib.js}
