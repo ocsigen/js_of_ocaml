@@ -83,7 +83,6 @@
 	  %{lib:js_of_ocaml-compiler:runtime.js}
 	  %{lib:js_of_ocaml-compiler:toplevel.js}
           %{lib:js_of_ocaml-compiler:dynlink.js}
-          %{lib:js_of_ocaml-compiler:nat.js}
           %{lib:js_of_ocaml-compiler:graphics.js}
 	  %{dep:toplevel.bc}
 	  -o %{targets}
