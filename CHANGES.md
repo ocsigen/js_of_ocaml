@@ -6,10 +6,12 @@
 * Compiler: refactoring (#781, #782, #787, #795, #802)
 * Compiler: more source map location for the javascript runtime (#795)
 * Compiler: tune variable naming (#838)
+* Compiler: Work around num lib incompatibility
 * Runtime: support sharing when marshaling (#814)
 * Runtime: add caml_obj_with_tag
 * Runtime: support marshaling custom block
 * Runtime: complete rewrite of bigarray
+* Runtime: complete num implementation
 * Ppx: switch ppx rewriter to the OCaml 4.08 ast
 * Misc: Improve CI speed
 * Misc: remove ppx_deriving dependency
