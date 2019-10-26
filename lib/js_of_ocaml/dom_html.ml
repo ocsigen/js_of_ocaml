@@ -2244,6 +2244,8 @@ class type window =
     method onoffline : (window t, event t) event_listener writeonly_prop
 
     method _URL : _URL t readonly_prop
+
+    method devicePixelRatio : float readonly_prop
   end
 
 let window : window t = Js.Unsafe.global
