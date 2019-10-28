@@ -29,6 +29,7 @@
 * Lib: Added support for custom events (#877)
 * Lib: Added support for focus events (#885)
 * Lib: Added `passive` option support for `Lwt_js_events` module
+* Lib: Added bindings for pointer events (#894)
 
 ## Bug fixes
 * Compiler: don't generate source if no-source-map passed (#780)
