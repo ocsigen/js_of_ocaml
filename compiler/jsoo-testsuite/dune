@@ -1,6 +1,7 @@
 (library
  (name jsoo_testsuite)
  (libraries)
+ (c_names bigarray_stubs)
  (inline_tests
   (flags -allow-output-patterns)
   (modes js))
