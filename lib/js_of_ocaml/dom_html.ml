@@ -490,6 +490,26 @@ and eventTarget =
 
     method onanimationcancel : ('self t, animationEvent t) event_listener writeonly_prop
 
+    method ongotpointercapture : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onlostpointercapture : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerenter : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointercancel : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerdown : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerleave : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointermove : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerout : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerover : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerup : ('self t, pointerEvent t) event_listener writeonly_prop
+
     method dispatchEvent : event t -> bool t meth
   end
 
@@ -498,6 +518,31 @@ and popStateEvent =
     inherit event
 
     method state : Js.Unsafe.any readonly_prop
+  end
+
+and pointerEvent =
+  object
+    inherit mouseEvent
+
+    method pointerId : int Js.readonly_prop
+
+    method width : float Js.readonly_prop
+
+    method height : float Js.readonly_prop
+
+    method pressure : float Js.readonly_prop
+
+    method tangentialPressure : float Js.readonly_prop
+
+    method tiltX : int Js.readonly_prop
+
+    method tiltY : int Js.readonly_prop
+
+    method twist : int Js.readonly_prop
+
+    method pointerType : Js.js_string Js.t Js.readonly_prop
+
+    method isPrimary : bool Js.t Js.readonly_prop
   end
 
 and storageEvent =
@@ -797,17 +842,37 @@ module Event = struct
 
   let ended = Dom.Event.make "ended"
 
+  let gotpointercapture = Dom.Event.make "gotpointercapture"
+
   let loadeddata = Dom.Event.make "loadeddata"
 
   let loadedmetadata = Dom.Event.make "loadedmetadata"
 
   let loadstart = Dom.Event.make "loadstart"
 
+  let lostpointercapture = Dom.Event.make "lostpointercapture"
+
   let pause = Dom.Event.make "pause"
 
   let play = Dom.Event.make "play"
 
   let playing = Dom.Event.make "playing"
+
+  let pointerenter = Dom.Event.make "pointerenter"
+
+  let pointercancel = Dom.Event.make "pointercancel"
+
+  let pointerdown = Dom.Event.make "pointerdown"
+
+  let pointerleave = Dom.Event.make "pointerleave"
+
+  let pointermove = Dom.Event.make "pointermove"
+
+  let pointerout = Dom.Event.make "pointerout"
+
+  let pointerover = Dom.Event.make "pointerover"
+
+  let pointerup = Dom.Event.make "pointerup"
 
   let ratechange = Dom.Event.make "ratechange"
 

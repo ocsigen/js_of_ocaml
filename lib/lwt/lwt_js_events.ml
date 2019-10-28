@@ -344,6 +344,36 @@ let touchend ?use_capture ?passive target =
 let touchcancel ?use_capture ?passive target =
   make_event Dom_html.Event.touchcancel ?use_capture ?passive target
 
+let lostpointercapture ?use_capture ?passive target =
+  make_event Dom_html.Event.lostpointercapture ?use_capture ?passive target
+
+let gotpointercapture ?use_capture ?passive target =
+  make_event Dom_html.Event.gotpointercapture ?use_capture ?passive target
+
+let pointerenter ?use_capture ?passive target =
+  make_event Dom_html.Event.pointerenter ?use_capture ?passive target
+
+let pointercancel ?use_capture ?passive target =
+  make_event Dom_html.Event.pointercancel ?use_capture ?passive target
+
+let pointerdown ?use_capture ?passive target =
+  make_event Dom_html.Event.pointerdown ?use_capture ?passive target
+
+let pointerleave ?use_capture ?passive target =
+  make_event Dom_html.Event.pointerleave ?use_capture ?passive target
+
+let pointermove ?use_capture ?passive target =
+  make_event Dom_html.Event.pointermove ?use_capture ?passive target
+
+let pointerout ?use_capture ?passive target =
+  make_event Dom_html.Event.pointerout ?use_capture ?passive target
+
+let pointerover ?use_capture ?passive target =
+  make_event Dom_html.Event.pointerover ?use_capture ?passive target
+
+let pointerup ?use_capture ?passive target =
+  make_event Dom_html.Event.pointerup ?use_capture ?passive target
+
 let clicks ?cancel_handler ?use_capture ?passive t =
   seq_loop click ?cancel_handler ?use_capture ?passive t
 
@@ -496,6 +526,36 @@ let volumechanges ?cancel_handler ?use_capture ?passive t =
 
 let waitings ?cancel_handler ?use_capture ?passive t =
   seq_loop waiting ?cancel_handler ?use_capture ?passive t
+
+let lostpointercaptures ?cancel_handler ?use_capture ?passive t =
+  seq_loop lostpointercapture ?cancel_handler ?use_capture ?passive t
+
+let gotpointercaptures ?cancel_handler ?use_capture ?passive t =
+  seq_loop gotpointercapture ?cancel_handler ?use_capture ?passive t
+
+let pointerenters ?cancel_handler ?use_capture ?passive t =
+  seq_loop pointerenter ?cancel_handler ?use_capture ?passive t
+
+let pointercancels ?cancel_handler ?use_capture ?passive t =
+  seq_loop pointercancel ?cancel_handler ?use_capture ?passive t
+
+let pointerdowns ?cancel_handler ?use_capture ?passive t =
+  seq_loop pointerdown ?cancel_handler ?use_capture ?passive t
+
+let pointerleaves ?cancel_handler ?use_capture ?passive t =
+  seq_loop pointerleave ?cancel_handler ?use_capture ?passive t
+
+let pointermoves ?cancel_handler ?use_capture ?passive t =
+  seq_loop pointermove ?cancel_handler ?use_capture ?passive t
+
+let pointerouts ?cancel_handler ?use_capture ?passive t =
+  seq_loop pointerout ?cancel_handler ?use_capture ?passive t
+
+let pointerovers ?cancel_handler ?use_capture ?passive t =
+  seq_loop pointerover ?cancel_handler ?use_capture ?passive t
+
+let pointerups ?cancel_handler ?use_capture ?passive t =
+  seq_loop pointerup ?cancel_handler ?use_capture ?passive t
 
 let transition_evn =
   lazy
