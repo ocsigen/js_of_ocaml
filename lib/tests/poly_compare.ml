@@ -59,7 +59,10 @@ let%expect_test "number comparison" =
   assert (Pack (Js.Unsafe.js_expr "new Number(2)") = Pack 2.);
   assert (Pack 2 <> Pack 2.1);
   assert (Pack (Js.Unsafe.js_expr "Number(2.1)") <> Pack 2.);
-  assert (Pack (Js.Unsafe.js_expr "new Number(2.1)") <> Pack 2.)
+  assert (Pack (Js.Unsafe.js_expr "new Number(2.1)") <> Pack 2.);
+  assert (
+    Pack (Js.Unsafe.js_expr "new Number(2.1)")
+    = Pack (Js.Unsafe.js_expr "new Number(2.1)"))
 
 let%expect_test "string comparison" =
   assert (Pack (Js.Unsafe.js_expr "String(2)") = Pack (Js.string "2"));
@@ -68,11 +71,9 @@ let%expect_test "string comparison" =
   assert (Pack (Js.Unsafe.js_expr "String(1)") <> Pack (Js.string "2"));
   assert (Pack (Js.Unsafe.js_expr "String('abcd')") <> Pack (Js.string "abc"));
   assert (Pack (Js.Unsafe.js_expr "new String('abcd')") <> Pack (Js.string "abc"));
-  [%expect {||}];
   assert (
     Pack (Js.Unsafe.js_expr "new String('abcd')")
-    <> Pack (Js.Unsafe.js_expr "new String('abcd')"));
-  [%expect {||}]
+    = Pack (Js.Unsafe.js_expr "new String('abcd')"))
 
 let%expect_test "symbol comparison" =
   let s1 = Pack (Js.Unsafe.js_expr "Symbol('2')") in
@@ -81,9 +82,7 @@ let%expect_test "symbol comparison" =
   assert (s1 = s1);
   assert (compare s1 s1 = 0);
   assert (compare s1 s2 = 1);
-  assert (compare s2 s1 = 1);
-  [%expect.unreachable]
-  [@@expect.uncaught_exn {| ("TypeError: Cannot convert a Symbol value to a number") |}]
+  assert (compare s2 s1 = 1)
 
 let%expect_test "object comparison" =
   let s1 = Pack (Js.Unsafe.js_expr "{}") in
@@ -108,12 +107,12 @@ let%expect_test "poly compare" =
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l';
   print_endline "";
   [%expect {|
-    5
-    4
     1
     3
     2
-    0 |}];
+    0
+    5
+    4 |}];
   let l' = List.sort (fun (_, a) (_, b) -> compare a b) (List.rev l) in
   let l'' = List.sort (fun (_, a) (_, b) -> compare a b) (List.rev l') in
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l';
@@ -121,16 +120,16 @@ let%expect_test "poly compare" =
   [%expect {|
     3
     1
-    4
-    5
     2
-    0 |}];
+    0
+    4
+    5 |}];
   List.iter (fun (i, _) -> Printf.printf "%d\n" i) l'';
   print_endline "";
   [%expect {|
     1
     3
-    4
-    5
     2
-    0 |}]
+    0
+    4
+    5 |}]
