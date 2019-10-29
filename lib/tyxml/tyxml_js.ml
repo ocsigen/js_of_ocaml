@@ -18,6 +18,7 @@
  *)
 
 open Js_of_ocaml
+open! Import
 
 let js_string_of_float f = (Js.number_of_float f)##toString
 
@@ -134,10 +135,10 @@ module Xml = struct
     fun e ->
       let len = String.length e in
       let str =
-        if len >= 1 && e.[0] = '#'
+        if len >= 1 && Char.equal e.[0] '#'
         then
           let i =
-            if len >= 2 && (e.[1] = 'x' || e.[1] = 'X')
+            if len >= 2 && (Char.equal e.[1] 'x' || Char.equal e.[1] 'X')
             then parse_int ~pos:2 ~base:16 e
             else parse_int ~pos:1 ~base:10 e
           in

@@ -20,6 +20,7 @@
 
 (** Javascript events. *)
 
+open! Import
 module Typ = Dom_html.Event
 
 type listener = Dom_html.event_listener_id

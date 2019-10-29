@@ -19,6 +19,7 @@
  *)
 
 open Js
+open! Import
 
 type readyState =
   | UNSENT

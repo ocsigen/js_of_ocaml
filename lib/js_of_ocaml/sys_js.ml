@@ -16,6 +16,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
+open! Import
 
 external create_file : name:string -> content:string -> unit = "caml_create_file"
 
@@ -57,6 +58,6 @@ let mount ~path f =
 let unmount ~path = unmount path
 
 let js_of_ocaml_version =
-  if Lib_version.git_version = ""
+  if String.equal Lib_version.git_version ""
   then Lib_version.s
   else Lib_version.s ^ "+" ^ Lib_version.git_version

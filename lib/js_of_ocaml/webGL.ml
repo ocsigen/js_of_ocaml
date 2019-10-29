@@ -19,6 +19,7 @@
  *)
 
 open Js
+open! Import
 
 type sizei = int
 (** 5.1 Types *)

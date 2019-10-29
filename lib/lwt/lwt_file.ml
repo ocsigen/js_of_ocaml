@@ -22,13 +22,14 @@ open Js_of_ocaml
 open Js
 open Dom
 open File
+open! Import
 
 let read_with_filereader (fileReader : fileReader t constr) kind file =
   let reader = new%js fileReader in
   let res, w = Lwt.task () in
   reader##.onloadend :=
     handler (fun _ ->
-        if reader##.readyState = DONE
+        if reader##.readyState == DONE
         then
           Lwt.wakeup
             w

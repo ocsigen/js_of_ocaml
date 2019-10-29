@@ -19,6 +19,7 @@
  *)
 
 open Js_of_ocaml
+open! Import
 
 let sleep d =
   let t, w = Lwt.task () in

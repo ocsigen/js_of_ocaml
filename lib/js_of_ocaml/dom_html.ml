@@ -19,6 +19,7 @@
  *)
 
 open Js
+open! Import
 
 external caml_js_on_ie : unit -> bool t = "caml_js_on_ie"
 
@@ -2351,7 +2352,7 @@ let unsafeCreateElement doc name = Js.Unsafe.coerce (createElement doc name)
 let createElementSyntax = ref `Unknown
 
 let rec unsafeCreateElementEx ?_type ?name doc elt =
-  if _type = None && name = None
+  if Poly.(_type = None) && Poly.(name = None)
   then Js.Unsafe.coerce (createElement doc elt)
   else
     match !createElementSyntax with
@@ -3503,7 +3504,7 @@ let _requestAnimationFrame : (unit -> unit) Js.callback -> unit =
         fun callback ->
           let t = now () in
           let dt = !last +. (1000. /. 60.) -. t in
-          let dt = if dt < 0. then 0. else dt in
+          let dt = if Poly.(dt < 0.) then 0. else dt in
           last := t;
           ignore (window##setTimeout callback dt))
 
@@ -3529,9 +3530,9 @@ let setTimeout callback d : timeout_id_safe =
   let id = ref None in
   let rec loop d () =
     let step, remain =
-      if d > overflow_limit then overflow_limit, d -. overflow_limit else d, 0.
+      if Poly.(d > overflow_limit) then overflow_limit, d -. overflow_limit else d, 0.
     in
-    let cb = if remain = 0. then callback else loop remain in
+    let cb = if Poly.(remain = 0.) then callback else loop remain in
     id := Some (window##setTimeout (Js.wrap_callback cb) step)
   in
   loop d ();

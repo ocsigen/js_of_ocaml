@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *)
 
+open! Import
+
 module Color = struct
   (*The type of CSS colors. First by name and then by constructor.*)
   type name =
@@ -992,7 +994,7 @@ module Length = struct
 
   let ml t =
     let s = Js.to_string t in
-    if s = "0"
+    if String.equal s "0"
     then Zero
     else
       let fail () = raise (Invalid_argument (s ^ " is not a valid length")) in

@@ -20,6 +20,7 @@
 (* https://developer.mozilla.org/en-US/docs/Web/API/EventSource *)
 open Js
 open Dom
+open! Import
 
 type state =
   | CONNECTING

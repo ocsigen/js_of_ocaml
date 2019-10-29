@@ -19,6 +19,7 @@
  *)
 
 open Js
+open! Import
 
 let xmlns = Js.string "http://www.w3.org/2000/svg"
 

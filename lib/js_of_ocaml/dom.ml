@@ -19,6 +19,7 @@
  *)
 
 open Js
+open! Import
 
 class type ['node] nodeList =
   object
@@ -263,7 +264,7 @@ let nodeType e =
 
 module CoerceTo = struct
   let cast (e : #node Js.t) t =
-    if e##.nodeType = t then Js.some (Js.Unsafe.coerce e) else Js.null
+    if e##.nodeType == t then Js.some (Js.Unsafe.coerce e) else Js.null
 
   let element e : element Js.t Js.opt = cast e ELEMENT
 

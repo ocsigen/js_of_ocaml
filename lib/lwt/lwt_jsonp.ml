@@ -18,6 +18,7 @@
  *)
 
 open Js_of_ocaml
+open! Import
 
 let rec random_identifier size =
   let b = Buffer.create size in
@@ -87,7 +88,7 @@ let call_custom_url ?timeout ?(prefix = "") make_uri =
   new_t
 
 let add_param name value l =
-  let l = List.filter (fun (x, _) -> x <> name) l in
+  let l = List.filter (fun (x, _) -> not (String.equal x name)) l in
   (name, value) :: l
 
 let call ?timeout ?(param = "callback") ?(prefix = "") url =

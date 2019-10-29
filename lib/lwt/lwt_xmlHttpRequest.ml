@@ -21,6 +21,7 @@
 open Js_of_ocaml
 open Js
 open XmlHttpRequest
+open! Import
 
 let encode_url l =
   String.concat
@@ -166,7 +167,7 @@ let perform_raw
     | Some (`String _ | `Blob _) -> override_method "POST", content_type
   in
   let url =
-    if get_args = []
+    if Poly.(get_args = [])
     then url
     else url ^ (if has_get_args url then "&" else "?") ^ Url.encode_arguments get_args
   in
@@ -200,7 +201,7 @@ let perform_raw
   let do_check_headers =
     let st = ref `Not_yet in
     fun () ->
-      if !st = `Not_yet
+      if Poly.(!st = `Not_yet)
       then
         if check_headers req##.status headers
         then st := `Passed
@@ -208,7 +209,7 @@ let perform_raw
           Lwt.wakeup_exn w (Wrong_headers (req##.status, headers));
           st := `Failed;
           req##abort);
-      !st <> `Failed
+      Poly.(!st <> `Failed)
   in
   req##.onreadystatechange :=
     Js.wrap_callback (fun _ ->

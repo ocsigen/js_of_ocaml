@@ -19,6 +19,7 @@
  *)
 
 open Js
+open! Import
 
 class type console =
   object

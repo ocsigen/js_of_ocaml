@@ -19,6 +19,7 @@
  *)
 
 open Js_of_ocaml
+open! Import
 
 let ( >>= ) = Lwt.bind
 
@@ -534,7 +535,7 @@ let domContentLoaded =
   let complete = Js.string "complete" in
   let doc = Dom_html.window##.document in
   fun () ->
-    if doc##.readyState = complete
+    if doc##.readyState == complete
     then Lwt.return_unit
     else
       let t, w = Lwt.task () in
@@ -549,7 +550,7 @@ let domContentLoaded =
           (make_event (Dom.Event.make "readystatechange"))
           doc
           (fun e _ ->
-            if doc##.readyState = complete then wakeup w e;
+            if doc##.readyState == complete then wakeup w e;
             Lwt.return_unit)
       in
       (* fallback, just in case *)

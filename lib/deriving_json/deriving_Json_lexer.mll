@@ -27,6 +27,7 @@ THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 *)
 {
+open! Import
 module Lexing =
     (*
       We override Lexing.engine in order to avoid creating a new position
@@ -170,7 +171,7 @@ rule finish_string v = parse
     '"'    { Buffer.contents v.buf }
   | '\\'   { finish_escaped_char v lexbuf;
        finish_string v lexbuf }
-  | _ as c { if c < '\x80' then
+  | _ as c { if Poly.(c < '\x80') then
                Buffer.add_char v.buf c
              else
                finish_utf8_encoded_byte v c lexbuf;
@@ -179,7 +180,7 @@ rule finish_string v = parse
 
 and finish_utf8_encoded_byte v c1 = parse
   | _ as c2 { (* Even if encoded in UTF-8, a byte could not be greater than 255 ! *)
-              if '\xC2' <= c1 && c1 < '\xC4' && '\x80' <= c2 && c2 < '\xC0' then
+              if Poly.('\xC2' <= c1) && Poly.(c1 < '\xC4') && Poly.('\x80' <= c2) && Poly.(c2 < '\xC0') then
                 let c = ((Char.code c1 lsl 6) lor Char.code c2) land 0xFF in
                 Buffer.add_char v.buf (Char.chr c)
               else

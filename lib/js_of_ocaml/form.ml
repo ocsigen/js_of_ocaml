@@ -20,6 +20,7 @@
 
 open Js
 open Dom_html
+open! Import
 
 class type formData =
   object

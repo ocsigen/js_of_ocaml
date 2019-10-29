@@ -18,6 +18,7 @@
  *)
 
 open Js_of_ocaml
+open! Import
 
 module MakeTo (C : sig
   type 'a elt

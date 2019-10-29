@@ -18,6 +18,7 @@
  *)
 
 open Js
+open! Import
 
 class type json =
   object

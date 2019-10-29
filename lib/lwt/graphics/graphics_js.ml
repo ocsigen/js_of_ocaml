@@ -19,6 +19,7 @@
 
 open Js_of_ocaml
 open Js_of_ocaml_lwt
+open! Import
 include Graphics
 
 type context

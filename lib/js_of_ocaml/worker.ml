@@ -19,6 +19,7 @@
 
 open Js
 open Dom_html
+open! Import
 
 class type ['a, 'b] worker =
   object ('self)

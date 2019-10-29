@@ -20,6 +20,7 @@
 (** Signatures to cast to and from Tyxml types *)
 
 open Js_of_ocaml
+open! Import
 
 module type OF = sig
   type 'a elt

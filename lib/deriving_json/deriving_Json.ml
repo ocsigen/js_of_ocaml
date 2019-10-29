@@ -19,6 +19,7 @@
 
 (** Json **)
 
+open! Import
 module Lexer = Deriving_Json_lexer
 
 type 'a t =
@@ -261,7 +262,7 @@ module Json_float = Defaults (struct
   let write buffer f =
     (* "%.15g" can be (much) shorter; "%.17g" is round-trippable *)
     let s = Printf.sprintf "%.15g" f in
-    if float_of_string s = f
+    if Poly.(float_of_string s = f)
     then Buffer.add_string buffer s
     else Printf.bprintf buffer "%.17g" f
 
@@ -287,10 +288,10 @@ module Json_string = Defaults (struct
       | '\n' -> Buffer.add_string buffer "\\n"
       | '\r' -> Buffer.add_string buffer "\\r"
       | '\t' -> Buffer.add_string buffer "\\t"
-      | c when c <= '\x1F' ->
+      | c when Poly.(c <= '\x1F') ->
           (* Other control characters are escaped. *)
           Printf.bprintf buffer "\\u%04X" (int_of_char c)
-      | c when c < '\x80' -> Buffer.add_char buffer s.[i]
+      | c when Poly.(c < '\x80') -> Buffer.add_char buffer s.[i]
       | _c (* >= '\x80' *) ->
           (* Bytes greater than 127 are embedded in a UTF-8 sequence. *)
           Buffer.add_char buffer (Char.chr (0xC2 lor (Char.code s.[i] lsr 6)));

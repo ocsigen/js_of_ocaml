@@ -19,6 +19,7 @@
 
 include Lwt_log_core
 open Js_of_ocaml
+open! Import
 
 let js_val = Lwt.new_key ()
 
