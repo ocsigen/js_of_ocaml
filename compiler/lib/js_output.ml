@@ -298,6 +298,8 @@ struct
          | '\011' -> "\\v"
       *)
       | '\012' -> PP.string f "\\f"
+      (* https://github.com/ocsigen/js_of_ocaml/issues/898 *)
+      | '/' when i > 0 && Char.equal s.[i - 1] '<' -> PP.string f "\\/"
       | '\\' when not utf -> PP.string f "\\\\"
       | '\r' -> PP.string f "\\r"
       | '\000' .. '\031' | '\127' ->
