@@ -1,15 +1,15 @@
 //Provides: initialize_nat
 //Requires: caml_custom_ops
-//Requires: serialize_nat, deserialize_nat
+//Requires: serialize_nat, deserialize_nat, caml_hash_nat
 function initialize_nat() {
   caml_custom_ops["_nat"] =
     { deserialize : deserialize_nat,
-      serialize : serialize_nat
+      serialize : serialize_nat,
+      hash : caml_hash_nat
     }
 }
 
 //Provides: MlNat
-//Requires: caml_hash_mix_int, num_digits_nat
 function MlNat(x){
   this.data = new joo_global_object.Int32Array(x);
   // length_nat isn't external, so we have to make the Obj.size
@@ -17,16 +17,19 @@ function MlNat(x){
   this.length = this.data.length + 2
 }
 
-MlNat.prototype.hash = function () {
-  var len = num_digits_nat(this, 0, this.data.length);
+MlNat.prototype.caml_custom = "_nat";
+
+//Provides: caml_hash_nat
+//Requires: caml_hash_mix_int, num_digits_nat
+function caml_hash_nat(x) {
+  var len = num_digits_nat(x, 0, x.data.length);
   var h = 0;
   for (var i = 0; i < len; i++) {
-    h = caml_hash_mix_int(h, this.data[i]);
+    h = caml_hash_mix_int(h, x.data[i]);
   }
   return h;
 }
 
-MlNat.prototype.caml_custom = "_nat";
 
 //Provides: nat_of_array
 //Requires: MlNat
