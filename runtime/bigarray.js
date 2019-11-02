@@ -289,7 +289,7 @@ Ml_Bigarray_c_1_1.prototype.fill = function (v) {
 
 //Provides: caml_ba_compare
 function caml_ba_compare(a,b,total){
-  a.compare(b,total)
+  return a.compare(b,total)
 }
 
 //Provides: caml_ba_create_unsafe
