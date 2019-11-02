@@ -411,7 +411,9 @@ function caml_compare_val (a, b, total) {
           var cmp = caml_custom_ops[a.caml_custom].compare(a,b,total)
           if (cmp != 0) return cmp;
         }
-        caml_invalid_argument("compare: abstract value");
+        else {
+          caml_invalid_argument("compare: abstract value");
+        }
       }
       else if(a && a.compare) {
         var cmp = a.compare(b,total);
