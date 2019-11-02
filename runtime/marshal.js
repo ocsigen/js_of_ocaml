@@ -182,7 +182,7 @@ function caml_nativeint_unmarshal(reader, size){
 //Provides: caml_custom_ops
 //Requires: caml_int64_unmarshal, caml_int64_marshal, caml_int64_compare, caml_int64_hash
 //Requires: caml_int32_unmarshal, caml_nativeint_unmarshal
-//Requires: caml_ba_serialize, caml_ba_deserialize, caml_ba_compare
+//Requires: caml_ba_serialize, caml_ba_deserialize, caml_ba_compare, caml_ba_hash
 var caml_custom_ops =
     {"_j": {
       deserialize : caml_int64_unmarshal,
@@ -203,6 +203,7 @@ var caml_custom_ops =
        deserialize : caml_ba_deserialize,
        serialize : caml_ba_serialize,
        compare : caml_ba_compare,
+       hash: caml_ba_hash,
      }
     }
 

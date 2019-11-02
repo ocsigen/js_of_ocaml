@@ -778,3 +778,69 @@ function caml_ba_create_from(data1, data2, jstyp, kind, layout, dims){
   }
   return caml_ba_create_unsafe(kind, layout, dims, data1);
 }
+
+//Provides: caml_ba_hash const
+//Requires: caml_ba_get_size, caml_hash_mix_int, caml_hash_mix_float
+function caml_ba_hash(ba){
+  var num_elts = caml_ba_get_size(ba.dims);
+  var h = 0;
+  switch(ba.kind){
+  case 2:  //Int8Array
+  case 3:  //Uint8Array
+  case 12: //Uint8Array
+    if(num_elts > 256) num_elts = 256;
+    var w = 0, i =0;
+    for(i = 0; i + 4 <= ba.data.length; i+=4){
+      w = ba.data[i+0] | (ba.data[i+1] << 8) | (ba.data[i+2] << 16) | (ba.data[i+3] << 24);
+      h = caml_hash_mix_int(h,w);
+    }
+    w = 0;
+    switch (num_elts & 3) {
+    case 3: w  = ba.data[i+2] << 16;    /* fallthrough */
+    case 2: w |= ba.data[i+1] << 8;     /* fallthrough */
+    case 1: w |= ba.data[i+0];
+      h = caml_hash_mix_int(h, w);
+    }
+    break;
+  case 4:  // Int16Array
+  case 5:  // Uint16Array
+    if(num_elts > 128) num_elts = 128;
+    var w = 0, i =0;
+    for(i = 0; i + 2 <= ba.data.length; i+=2){
+      w = ba.data[i+0] | (ba.data[i+1] << 16);
+      h = caml_hash_mix_int(h,w);
+    }
+    if ((num_elts & 1) != 0)
+      h = caml_hash_mix_int(h, ba.data[i]);
+    break;
+  case 6:  // Int32Array (int32)
+    if (num_elts > 64) num_elts = 64;
+    for (var i = 0; i < num_elts; i++) h = caml_hash_mix_int(h, ba.data[i]);
+    break;
+  case 8:  // Int32Array (int)
+  case 9:  // Int32Array (nativeint)
+    if (num_elts > 64) num_elts = 64;
+    for (var i = 0; i < num_elts; i++) h = caml_hash_mix_int(h, ba.data[i]);
+    break;
+  case 7:  // Int32Array (int64)
+    if (num_elts > 32) num_elts = 32;
+    num_elts *= 2
+    for (var i = 0; i < num_elts; i++) {
+      h = caml_hash_mix_int(h, ba.data[i]);
+    }
+    break;
+  case 10: // Float32Array (complex32)
+    num_elts *=2; /* fallthrough */
+  case 0:  // Float32Array
+    if (num_elts > 64) num_elts = 64;
+    for (var i = 0; i < num_elts; i++) h = caml_hash_mix_float(h, ba.data[i]);
+    break;
+  case 11: // Float64Array (complex64)
+    num_elts *=2; /* fallthrough */
+  case 1:  // Float64Array
+    if (num_elts > 32) num_elts = 32;
+    for (var i = 0; i < num_elts; i++) h = caml_hash_mix_float(h, ba.data[i]);
+    break;
+  }
+  return h;
+}
