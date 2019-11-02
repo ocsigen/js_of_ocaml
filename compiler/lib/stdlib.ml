@@ -268,6 +268,8 @@ module String = struct
 
   let equal (a : string) (b : string) = Poly.(a = b)
 
+  let hash (a : string) = Hashtbl.hash a
+
   let is_empty = function
     | "" -> true
     | _ -> false
@@ -414,6 +416,10 @@ module Int = struct
   type t = int
 
   let compare (x : int) y = compare x y
+
+  let equal (x : t) y = x = y
+
+  let hash (x : t) = Hashtbl.hash x
 end
 
 module IntSet = Set.Make (Int)

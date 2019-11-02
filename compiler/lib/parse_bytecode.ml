@@ -88,19 +88,22 @@ end = struct
     ; paths : string list
     ; source : string option }
 
+  module String_table = Hashtbl.Make (String)
+  module Int_table = Hashtbl.Make (Int)
+
   type data =
-    { events_by_pc : (int, debug_event * ml_unit) Hashtbl.t
+    { events_by_pc : (debug_event * ml_unit) Int_table.t
     ; units : (string * string, ml_unit) Hashtbl.t
-    ; pos_fname_to_source : (string, string) Hashtbl.t }
+    ; pos_fname_to_source : string String_table.t }
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
   let create () =
-    { events_by_pc = Hashtbl.create 17
+    { events_by_pc = Int_table.create 17
     ; units = Hashtbl.create 17
-    ; pos_fname_to_source = Hashtbl.create 17 }
+    ; pos_fname_to_source = String_table.create 17 }
 
-  let is_empty t = Hashtbl.length t.events_by_pc = 0
+  let is_empty t = Int_table.length t.events_by_pc = 0
 
   let find_ml_in_paths paths name =
     let uname = String.uncapitalize_ascii name in
@@ -146,16 +149,16 @@ end = struct
               (match pos_fname, source with
               | "_none_", _ | _, None -> ()
               | pos_fname, Some source ->
-                  Hashtbl.add pos_fname_to_source pos_fname source);
+                  String_table.add pos_fname_to_source pos_fname source);
               Hashtbl.add units (ev_module, pos_fname) u;
               u
           in
           relocate_event orig ev;
-          Hashtbl.add events_by_pc ev.ev_pos (ev, unit);
+          Int_table.add events_by_pc ev.ev_pos (ev, unit);
           ())
 
   let find_source {pos_fname_to_source; _} pos_fname =
-    match Hashtbl.find_all pos_fname_to_source pos_fname with
+    match String_table.find_all pos_fname_to_source pos_fname with
     | [x] -> Some x
     | [] | _ :: _ :: _ -> None
 
@@ -168,23 +171,23 @@ end = struct
 
   let find {events_by_pc; _} pc =
     try
-      let ev, _ = Hashtbl.find events_by_pc pc in
+      let ev, _ = Int_table.find events_by_pc pc in
       ( Ocaml_compiler.Ident.table_contents ev.ev_stacksize ev.ev_compenv.ce_stack
       , ev.ev_typenv )
     with Not_found -> [], Env.Env_empty
 
-  let mem {events_by_pc; _} = Hashtbl.mem events_by_pc
+  let mem {events_by_pc; _} = Int_table.mem events_by_pc
 
   let find_loc {events_by_pc; _} ?(after = false) pc =
     try
       let before, (ev, unit) =
-        try false, Hashtbl.find events_by_pc pc
+        try false, Int_table.find events_by_pc pc
         with Not_found -> (
           ( true
-          , try Hashtbl.find events_by_pc (pc + 1)
+          , try Int_table.find events_by_pc (pc + 1)
             with Not_found -> (
-              try Hashtbl.find events_by_pc (pc + 2)
-              with Not_found -> Hashtbl.find events_by_pc (pc + 3)) ))
+              try Int_table.find events_by_pc (pc + 2)
+              with Not_found -> Int_table.find events_by_pc (pc + 3)) ))
       in
       let loc = ev.ev_loc in
       if loc.Location.loc_ghost
@@ -217,7 +220,7 @@ end = struct
         propagate r1 r2
     | _ -> ()
 
-  let fold t f acc = Hashtbl.fold (fun k (e, _u) acc -> f k e acc) t.events_by_pc acc
+  let fold t f acc = Int_table.fold (fun k (e, _u) acc -> f k e acc) t.events_by_pc acc
 
   let paths t ~units =
     let paths =
