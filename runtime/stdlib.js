@@ -736,7 +736,7 @@ function caml_format_float (fmt, x) {
 ///////////// Hashtbl
 //Provides: caml_hash_univ_param mutable
 //Requires: MlBytes, caml_convert_string_to_bytes
-//Requires: caml_int64_to_bytes, caml_int64_bits_of_float
+//Requires: caml_int64_to_bytes, caml_int64_bits_of_float, caml_custom_ops
 function caml_hash_univ_param (count, limit, obj) {
   var hash_accu = 0;
   function hash_aux (obj) {
@@ -784,9 +784,11 @@ function caml_hash_univ_param (count, limit, obj) {
       count--;
       var p = caml_int64_to_bytes (caml_int64_bits_of_float (obj));
       for (var i = 7; i >= 0; i--) hash_accu = (hash_accu * 19 + p[i]) | 0;
-    } else if(obj && obj.hash && typeof obj.hash === "function") {
-      // Custom
-      hash_accu = (hash_accu * 65599 + obj.hash()) | 0;
+    } else if(obj && obj.caml_custom) {
+      if(caml_custom_ops[obj.caml_custom] && caml_custom_ops[obj.caml_custom].hash) {
+        var h = caml_custom_ops[obj.caml_custom].hash(obj) | 0;
+        hash_accu = (hash_accu * 65599 + h) | 0;
+      }
     }
   }
   hash_aux (obj);
@@ -905,22 +907,23 @@ function caml_hash_mix_string(h, v) {
 //Requires: MlBytes
 //Requires: caml_int64_bits_of_float, caml_hash_mix_int, caml_hash_mix_final
 //Requires: caml_hash_mix_int64, caml_hash_mix_float, caml_hash_mix_string, caml_custom_ops
-var HASH_QUEUE_SIZE = 256;
 function caml_hash (count, limit, seed, obj) {
   var queue, rd, wr, sz, num, h, v, i, len;
   sz = limit;
-  if (sz < 0 || sz > HASH_QUEUE_SIZE) sz = HASH_QUEUE_SIZE;
+  if (sz < 0 || sz > 256) sz = 256;
   num = count;
   h = seed;
   queue = [obj]; rd = 0; wr = 1;
   while (rd < wr && num > 0) {
     v = queue[rd++];
-    if (obj.caml_custom && caml_custom_ops[obj.caml_custom] && caml_custom_ops[obj.caml_custom].hash){
-      var hh = caml_custom_ops[obj.caml_custom].hash(obj);
-      h = caml_hash_mix_int (h, hh);
-      num --;
+    if (v && v.caml_custom){
+      if(caml_custom_ops[v.caml_custom] && caml_custom_ops[v.caml_custom].hash) {
+        var hh = caml_custom_ops[v.caml_custom].hash(v);
+        h = caml_hash_mix_int (h, hh);
+        num --;
+      }
     }
-    if (v instanceof Array && v[0] === (v[0]|0)) {
+    else if (v instanceof Array && v[0] === (v[0]|0)) {
       switch (v[0]) {
       case 248:
         // Object
@@ -956,9 +959,6 @@ function caml_hash (count, limit, seed, obj) {
       // Float
       h = caml_hash_mix_float(h,v);
       num--;
-    } else if(v && v.hash && typeof v.hash === "function") {
-      // Custom
-      h = caml_hash_mix_int(h, v.hash());
     }
   }
   h = caml_hash_mix_final(h);
