@@ -7,11 +7,14 @@
 * Compiler: more source map location for the javascript runtime (#795)
 * Compiler: tune variable naming (#838)
 * Compiler: Work around num lib incompatibility
+* Compiler: escape '</' in strings (#899)
+* Compiler: speedup toplevel creation
 * Runtime: support sharing when marshaling (#814)
 * Runtime: add caml_obj_with_tag
 * Runtime: support marshaling custom block
 * Runtime: complete rewrite of bigarray
 * Runtime: complete num implementation
+* Runtime: add caml_ba_hash
 * Ppx: switch ppx rewriter to the OCaml 4.08 ast
 * Misc: Improve CI speed
 * Misc: remove ppx_deriving dependency
@@ -35,6 +38,7 @@
 * Compiler: Fix compilation of [Array.set] to return [unit]/0 (#792)
 * Compiler: Fix assertion failure (#828)
 * Compiler: Fix compilation of exception handlers (#830)
+* Compiler: Fix static evaluation of caml_equal (#906)
 * Misc: Fix install on windows (#794)
 * Lib: Fix Dom_svg.createForeignObject (#756)
 * Runtime: Fix caml_obj_tag, causing miscompilation with lazy value (#772)
