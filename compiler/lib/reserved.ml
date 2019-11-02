@@ -109,6 +109,7 @@ let provided =
     ; "navigator"
     ; "self"
     ; "Array"
+    ; "Function"
     ; "Date"
     ; "Math"
     ; "JSON"
