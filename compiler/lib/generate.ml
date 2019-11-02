@@ -215,7 +215,7 @@ module Ctx = struct
     { mutable blocks : block Addr.Map.t
     ; live : int array
     ; share : Share.t
-    ; debug : Parse_bytecode.Debug.data
+    ; debug : Parse_bytecode.Debug.t
     ; exported_runtime : Code.Var.t option }
 
   let initial ~exported_runtime blocks live share debug =
