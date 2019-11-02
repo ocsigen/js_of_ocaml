@@ -212,9 +212,22 @@ function caml_update_dummy (x, y) {
 //Provides: caml_obj_is_block const (const)
 function caml_obj_is_block (x) { return +(x instanceof Array); }
 
+
 //Provides: caml_obj_tag
 //Requires: MlBytes
-function caml_obj_tag (x) { return (x instanceof Array)?x[0]:(x instanceof MlBytes)?252:(x instanceof joo_global_object.Function)?247:1000; }
+function caml_obj_tag (x) {
+  if ((x instanceof Array) && x[0] == (x[0] >>> 0))
+    return x[0]
+  else if (x instanceof MlBytes)
+    return 252
+  else if ((x instanceof Function) || typeof x == "function")
+    return 247
+  else if (x && x.caml_custom)
+    return 255
+  else
+    return 1000
+}
+
 //Provides: caml_obj_set_tag (mutable, const)
 function caml_obj_set_tag (x, tag) { x[0] = tag; return 0; }
 //Provides: caml_obj_block const (const,const)
