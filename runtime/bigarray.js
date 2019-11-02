@@ -287,6 +287,11 @@ Ml_Bigarray_c_1_1.prototype.fill = function (v) {
   return 0
 }
 
+//Provides: caml_ba_compare
+function caml_ba_compare(a,b,total){
+  a.compare(b,total)
+}
+
 //Provides: caml_ba_create_unsafe
 //Requires: Ml_Bigarray, Ml_Bigarray_c_1_1, caml_ba_get_size, caml_ba_get_size_per_element
 //Requires: caml_invalid_argument
