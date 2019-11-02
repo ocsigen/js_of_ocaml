@@ -163,7 +163,7 @@ and _menhir_goto_separated_nonempty_list_TComma_arg_annot_ : _menhir_env -> 'ttv
         let (_menhir_s : _menhir_state) = _menhir_s in
         let ((x : 'tv_separated_nonempty_list_TComma_arg_annot_) : 'tv_separated_nonempty_list_TComma_arg_annot_) = _v in
         ((let _v : 'tv_loption_separated_nonempty_list_TComma_arg_annot__ = 
-# 144 "<standard.mly>"
+# 144 "./standard.mly"
     ( x )
 # 169 "annot_parser.ml"
          in
@@ -180,7 +180,7 @@ and _menhir_goto_separated_nonempty_list_TComma_arg_annot_ : _menhir_env -> 'ttv
         ((let (_menhir_stack, _menhir_s, (x : 'tv_arg_annot)) = _menhir_stack in
         let _2 = () in
         let _v : 'tv_separated_nonempty_list_TComma_arg_annot_ = 
-# 243 "<standard.mly>"
+# 243 "./standard.mly"
     ( x :: xs )
 # 186 "annot_parser.ml"
          in
@@ -200,7 +200,7 @@ and _menhir_goto_separated_nonempty_list_TComma_version_ : _menhir_env -> 'ttv_t
         ((let ((_menhir_stack, _menhir_s, (x : 'tv_version)), _, (xs : 'tv_separated_nonempty_list_TComma_version_)) = _menhir_stack in
         let _2 = () in
         let _v : 'tv_separated_nonempty_list_TComma_version_ = 
-# 243 "<standard.mly>"
+# 243 "./standard.mly"
     ( x :: xs )
 # 206 "annot_parser.ml"
          in
@@ -311,7 +311,7 @@ and _menhir_goto_arg_annot : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_ar
         let (_menhir_stack : 'freshtv147 * _menhir_state * 'tv_arg_annot) = Obj.magic _menhir_stack in
         ((let (_menhir_stack, _menhir_s, (x : 'tv_arg_annot)) = _menhir_stack in
         let _v : 'tv_separated_nonempty_list_TComma_arg_annot_ = 
-# 241 "<standard.mly>"
+# 241 "./standard.mly"
     ( [ x ] )
 # 317 "annot_parser.ml"
          in
@@ -393,7 +393,7 @@ and _menhir_goto_op : _menhir_env -> 'ttv_tail -> _menhir_state -> 'tv_op -> 'tt
             let (_menhir_stack : 'freshtv129 * _menhir_state * 'tv_version) = Obj.magic _menhir_stack in
             ((let (_menhir_stack, _menhir_s, (x : 'tv_version)) = _menhir_stack in
             let _v : 'tv_separated_nonempty_list_TComma_version_ = 
-# 241 "<standard.mly>"
+# 241 "./standard.mly"
     ( [ x ] )
 # 399 "annot_parser.ml"
              in
@@ -437,7 +437,7 @@ and _menhir_goto_separated_nonempty_list_TComma_TIdent_ : _menhir_env -> 'ttv_ta
         ))), _, (xs : 'tv_separated_nonempty_list_TComma_TIdent_)) = _menhir_stack in
         let _2 = () in
         let _v : 'tv_separated_nonempty_list_TComma_TIdent_ = 
-# 243 "<standard.mly>"
+# 243 "./standard.mly"
     ( x :: xs )
 # 443 "annot_parser.ml"
          in
@@ -503,18 +503,18 @@ and _menhir_goto_loption_separated_nonempty_list_TComma_arg_annot__ : _menhir_en
         let _1 = () in
         let _v : 'tv_option_delimited_LPARENT_separated_list_TComma_arg_annot__RPARENT__ = let x =
           let x = 
-# 232 "<standard.mly>"
+# 232 "./standard.mly"
     ( xs )
 # 509 "annot_parser.ml"
            in
           
-# 200 "<standard.mly>"
+# 200 "./standard.mly"
     ( x )
 # 514 "annot_parser.ml"
           
         in
         
-# 116 "<standard.mly>"
+# 116 "./standard.mly"
     ( Some x )
 # 520 "annot_parser.ml"
          in
@@ -771,7 +771,7 @@ and _menhir_run21 : _menhir_env -> 'ttv_tail -> _menhir_state -> (
 # 772 "annot_parser.ml"
         ))) = _menhir_stack in
         let _v : 'tv_separated_nonempty_list_TComma_TIdent_ = 
-# 241 "<standard.mly>"
+# 241 "./standard.mly"
     ( [ x ] )
 # 777 "annot_parser.ml"
          in
@@ -819,7 +819,7 @@ and _menhir_goto_option_prim_annot_ : _menhir_env -> 'ttv_tail -> 'tv_option_pri
             let (_menhir_stack : 'freshtv55) = Obj.magic _menhir_stack in
             let (_menhir_s : _menhir_state) = MenhirState35 in
             ((let _v : 'tv_loption_separated_nonempty_list_TComma_arg_annot__ = 
-# 142 "<standard.mly>"
+# 142 "./standard.mly"
     ( [] )
 # 825 "annot_parser.ml"
              in
@@ -832,7 +832,7 @@ and _menhir_goto_option_prim_annot_ : _menhir_env -> 'ttv_tail -> 'tv_option_pri
         let (_menhir_env : _menhir_env) = _menhir_env in
         let (_menhir_stack : 'freshtv59) = Obj.magic _menhir_stack in
         ((let _v : 'tv_option_delimited_LPARENT_separated_list_TComma_arg_annot__RPARENT__ = 
-# 114 "<standard.mly>"
+# 114 "./standard.mly"
     ( None )
 # 838 "annot_parser.ml"
          in
@@ -857,7 +857,7 @@ and _menhir_goto_prim_annot : _menhir_env -> 'ttv_tail -> 'tv_prim_annot -> 'ttv
     let (_menhir_stack : 'freshtv51) = Obj.magic _menhir_stack in
     let ((x : 'tv_prim_annot) : 'tv_prim_annot) = _v in
     ((let _v : 'tv_option_prim_annot_ = 
-# 116 "<standard.mly>"
+# 116 "./standard.mly"
     ( Some x )
 # 863 "annot_parser.ml"
      in
@@ -977,7 +977,7 @@ and annot : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (
                     let (_menhir_env : _menhir_env) = _menhir_env in
                     let (_menhir_stack : 'freshtv17) = Obj.magic _menhir_stack in
                     ((let _v : 'tv_option_prim_annot_ = 
-# 114 "<standard.mly>"
+# 114 "./standard.mly"
     ( None )
 # 983 "annot_parser.ml"
                      in
@@ -1083,7 +1083,7 @@ and annot : (Lexing.lexbuf -> token) -> Lexing.lexbuf -> (
         let (_menhir_stack : 'freshtv47) = Obj.magic _menhir_stack in
         (raise _eRR : 'freshtv48)) : 'freshtv50))
 
-# 269 "<standard.mly>"
+# 269 "./standard.mly"
   
 
 # 1090 "annot_parser.ml"
