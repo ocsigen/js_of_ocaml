@@ -421,7 +421,7 @@ function caml_compare_val (a, b, total) {
         return -1;
       } else if(a && a.caml_custom) {
         if(caml_custom_ops[a.caml_custom].compare) {
-          var cmp = caml_custom_ops[a.caml_custom].compare(a,b,total)
+          var cmp = caml_custom_ops[a.caml_custom].compare(a,b,total);
           if (cmp != 0) return cmp;
         }
         else {
