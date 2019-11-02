@@ -29,11 +29,11 @@ function jsoo_floor_log2(x) {
 }
 
 //Provides: caml_int64_bits_of_float const
-//Requires: jsoo_floor_log2
+//Requires: jsoo_floor_log2, caml_int64_create
 function caml_int64_bits_of_float (x) {
   if (!isFinite(x)) {
-    if (isNaN(x)) return [255, 1, 0, 0x7ff0];
-    return (x > 0)?[255,0,0,0x7ff0]:[255,0,0,0xfff0];
+    if (isNaN(x)) return caml_int64_create(1, 0, 0x7ff0);
+    return (x > 0)?(caml_int64_create(0,0,0x7ff0)):(caml_int64_create(0,0,0xfff0));
   }
   var sign = (x==0 && 1/x == -Infinity)?0x8000:(x>=0)?0:0x8000;
   if (sign) x = -x;
@@ -57,7 +57,7 @@ function caml_int64_bits_of_float (x) {
   x = (x - r2) * k;
   var r1 = x|0;
   r3 = (r3 &0xf) | sign | exp << 4;
-  return [255, r1, r2, r3];
+  return caml_int64_create(r1, r2, r3);
 }
 
 //Provides: caml_int32_bits_of_float const

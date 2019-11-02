@@ -77,8 +77,9 @@ function caml_ba_create_buffer(kind, size){
 }
 
 //Provides: Ml_Bigarray
-//Requires: caml_array_bound_error, caml_invalid_argument
+//Requires: caml_array_bound_error, caml_invalid_argument, caml_int64_create
 function Ml_Bigarray (kind, layout, dims, buffer) {
+
   this.kind   = kind ;
   this.layout = layout;
   this.dims   = dims;
@@ -116,11 +117,10 @@ Ml_Bigarray.prototype.get = function (ofs) {
     // Int64
     var l = this.data[ofs * 2 + 0];
     var h = this.data[ofs * 2 + 1];
-    return [
-      255,
+    return caml_int64_create(
       l & 0xffffff,
       ((l >>> 24) & 0xff) | ((h & 0xffff) << 8),
-      (h >>> 16) & 0xffff];
+      (h >>> 16) & 0xffff);
   case 10: case 11:
     // Complex32, Complex64
     var r = this.data[ofs * 2 + 0];
@@ -402,7 +402,7 @@ function caml_ba_uint8_get32(ba, i0) {
 }
 
 //Provides: caml_ba_uint8_get64
-//Requires: caml_array_bound_error
+//Requires: caml_array_bound_error, caml_int64_of_bytes
 function caml_ba_uint8_get64(ba, i0) {
   var ofs = ba.offset(i0);
   if(ofs + 7 >= ba.data.length) caml_array_bound_error();
@@ -414,15 +414,7 @@ function caml_ba_uint8_get64(ba, i0) {
   var b6 = ba.get(ofs+5);
   var b7 = ba.get(ofs+6);
   var b8 = ba.get(ofs+7);
-  return [255,
-          ((b1 << 0)  |
-           (b2 << 8)  |
-           (b3 << 16)),
-          ((b4 << 0)  |
-           (b5 << 8)  |
-           (b6 << 16)),
-          ((b7 << 0)  |
-           (b8 << 8))];
+  return caml_int64_of_bytes([b8,b7,b6,b5,b4,b3,b2,b1]);
 }
 
 //Provides: caml_ba_get_1

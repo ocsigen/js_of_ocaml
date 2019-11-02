@@ -1254,17 +1254,10 @@ function caml_int32_bswap(x) {
           ((x & 0xFF000000) >>> 24));
 }
 //Provides: caml_int64_bswap
+//Requires: caml_int64_to_bytes, caml_int64_of_bytes
 function caml_int64_bswap(x) {
-  return [
-    255,
-    (((x[3] & 0x0000ff00) >> 8) |
-     ((x[3] & 0x000000ff) << 8) |
-     ((x[2] & 0x00ff0000))),
-    (((x[2] & 0x0000ff00) >> 8) |
-     ((x[2] & 0x000000ff) << 8) |
-     ((x[1] & 0x00ff0000))),
-    (((x[1] & 0x0000ff00) >> 8) |
-     ((x[1] & 0x000000ff) << 8))]
+  var y = caml_int64_to_bytes(x);
+  return caml_int64_of_bytes([y[7], y[6], y[5], y[4], y[3], y[2], y[1], y[0]]);
 }
 
 //Provides: caml_list_of_js_array const (const)
