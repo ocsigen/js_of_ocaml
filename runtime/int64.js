@@ -338,3 +338,10 @@ function caml_int64_to_bytes(x) {
   return [x[3] >> 8, x[3] & 0xff, x[2] >> 16, (x[2] >> 8) & 0xff, x[2] & 0xff,
           x[1] >> 16, (x[1] >> 8) & 0xff, x[1] & 0xff];
 }
+
+//Provides: caml_int64_hash
+function caml_int64_hash(x){
+  var lo = ((x[1]      )         ) | ((x[2] & 0xff) << 24);
+  var hi = ((x[2] >>> 8) & 0xffff) | ((x[3]       ) << 16);
+  return lo ^ hi;
+}
