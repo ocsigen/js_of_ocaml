@@ -22,5 +22,5 @@ val f :
      Code.program
   -> exported_runtime:bool
   -> int array
-  -> Parse_bytecode.Debug.data
+  -> Parse_bytecode.Debug.t
   -> Javascript.program

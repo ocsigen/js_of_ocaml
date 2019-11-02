@@ -102,7 +102,7 @@ function caml_create_file_extern(name,content){
         ~standalone:true
         ~global:`Auto
         pfs_fmt
-        (Parse_bytecode.Debug.create ())
+        (Parse_bytecode.Debug.create ~toplevel:false false)
         code)
 
 let main = Cmdliner.Term.(pure f $ options), info

@@ -102,13 +102,7 @@ let f
     with Not_found -> include_dir
   in
   if times () then Format.eprintf "Start parsing...@.";
-  let need_debug =
-    if Option.is_some source_map || Config.Flag.debuginfo () || toplevel
-    then `Full
-    else if Config.Flag.pretty ()
-    then `Names
-    else `No
-  in
+  let need_debug = Option.is_some source_map || Config.Flag.debuginfo () in
   let check_debug debug =
     if (not runtime_only)
        && Option.is_some source_map
@@ -203,7 +197,7 @@ let f
     let code : Parse_bytecode.one =
       { code = Parse_bytecode.predefined_exceptions ()
       ; cmis = StringSet.empty
-      ; debug = Parse_bytecode.Debug.create () }
+      ; debug = Parse_bytecode.Debug.create ~toplevel:false false }
     in
     output code ~standalone:true (fst output_file)
   else

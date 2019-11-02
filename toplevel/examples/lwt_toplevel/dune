@@ -78,7 +78,7 @@
           --file %{dep:test_dynlink.js}
 	  --export %{dep:export.txt}
           --toplevel
-	  --pretty
+	  --disable shortvar
           --noruntime
 	  %{lib:js_of_ocaml-compiler:runtime.js}
 	  %{lib:js_of_ocaml-compiler:toplevel.js}

@@ -29,7 +29,7 @@ val f :
   -> ?source_map:string option * Source_map.t
   -> ?custom_header:string
   -> Pretty_print.t
-  -> Parse_bytecode.Debug.data
+  -> Parse_bytecode.Debug.t
   -> Code.program
   -> unit
 

@@ -44,40 +44,44 @@ let predefined_exceptions =
 
 (* Read and manipulate debug section *)
 module Debug : sig
-  type data
+  type t
 
-  val is_empty : data -> bool
+  val names : t -> bool
+
+  val toplevel : t -> bool
+
+  val enabled : t -> bool
+
+  val is_empty : t -> bool
+
+  val dbg_section_needed : t -> bool
 
   val propagate : Code.Var.t list -> Code.Var.t list -> unit
 
-  val find : data -> Code.Addr.t -> (int * string * Ident.t) list * Env.summary
+  val find : t -> Code.Addr.t -> (int * string * Ident.t) list * Env.summary
 
-  val find_loc : data -> ?after:bool -> int -> Parse_info.t option
+  val find_loc : t -> ?after:bool -> int -> Parse_info.t option
 
-  val find_source : data -> string -> string option
+  val find_source : t -> string -> string option
 
-  val mem : data -> Code.Addr.t -> bool
+  val mem : t -> Code.Addr.t -> bool
 
   val read :
-       data
-    -> crcs:(string * string option) list
-    -> includes:string list
-    -> in_channel
-    -> unit
+    t -> crcs:(string * string option) list -> includes:string list -> in_channel -> unit
 
   val read_event_list :
-       data
+       t
     -> crcs:(string * string option) list
     -> includes:string list
     -> orig:int
     -> in_channel
     -> unit
 
-  val create : unit -> data
+  val create : toplevel:bool -> bool -> t
 
-  val fold : data -> (Code.Addr.t -> Instruct.debug_event -> 'a -> 'a) -> 'a -> 'a
+  val fold : t -> (Code.Addr.t -> Instruct.debug_event -> 'a -> 'a) -> 'a -> 'a
 
-  val paths : data -> units:StringSet.t -> StringSet.t
+  val paths : t -> units:StringSet.t -> StringSet.t
 end = struct
   open Instruct
 
@@ -91,17 +95,32 @@ end = struct
   module String_table = Hashtbl.Make (String)
   module Int_table = Hashtbl.Make (Int)
 
-  type data =
+  type t =
     { events_by_pc : (debug_event * ml_unit) Int_table.t
     ; units : (string * string, ml_unit) Hashtbl.t
-    ; pos_fname_to_source : string String_table.t }
+    ; pos_fname_to_source : string String_table.t
+    ; toplevel : bool
+    ; names : bool
+    ; enabled : bool }
+
+  let names t = t.names
+
+  let toplevel t = t.toplevel
+
+  let enabled t = t.enabled
+
+  let dbg_section_needed t = t.names || t.toplevel || t.enabled
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
-  let create () =
+  let create ~toplevel enabled =
+    let names = enabled || Config.Flag.pretty () in
     { events_by_pc = Int_table.create 17
     ; units = Hashtbl.create 17
-    ; pos_fname_to_source = String_table.create 17 }
+    ; pos_fname_to_source = String_table.create 17
+    ; names
+    ; toplevel
+    ; enabled }
 
   let is_empty t = Int_table.length t.events_by_pc = 0
 
@@ -113,7 +132,11 @@ end = struct
 
   let read_event_list =
     let read_paths ic : string list = input_value ic in
-    fun {events_by_pc; units; pos_fname_to_source} ~crcs ~includes ~orig ic ->
+    fun {events_by_pc; units; pos_fname_to_source; toplevel = _; names; enabled}
+        ~crcs
+        ~includes
+        ~orig
+        ic ->
       let crcs =
         let t = Hashtbl.create 17 in
         List.iter crcs ~f:(fun (m, crc) -> Hashtbl.add t m crc);
@@ -154,7 +177,7 @@ end = struct
               u
           in
           relocate_event orig ev;
-          Int_table.add events_by_pc ev.ev_pos (ev, unit);
+          if enabled || names then Int_table.add events_by_pc ev.ev_pos (ev, unit);
           ())
 
   let find_source {pos_fname_to_source; _} pos_fname =
@@ -238,7 +261,7 @@ end
 module Blocks : sig
   type t
 
-  val analyse : Debug.data -> bytecode -> t
+  val analyse : Debug.t -> bytecode -> t
 
   val add : t -> int -> t
 
@@ -324,6 +347,9 @@ end = struct
   let is_empty x = Array.length x <= 1
 
   let analyse debug_data code =
+    let debug_data =
+      if Debug.enabled debug_data then debug_data else Debug.create ~toplevel:false false
+    in
     let blocks = Addr.Set.empty in
     let len = String.length code / 4 in
     let blocks = add blocks 0 in
@@ -603,8 +629,10 @@ module State = struct
     | _ -> assert false
 
   let name_vars st debug pc =
-    let l, summary = Debug.find debug pc in
-    name_rec debug 0 l st.stack summary
+    if Debug.names debug
+    then
+      let l, summary = Debug.find debug pc in
+      name_rec debug 0 l st.stack summary
 
   let rec make_stack i state =
     if i = 0
@@ -681,15 +709,15 @@ type compile_info =
   { blocks : Blocks.u
   ; code : string
   ; limit : int
-  ; debug : Debug.data }
+  ; debug : Debug.t }
 
-let rec compile_block blocks debug code pc state =
+let rec compile_block blocks debug_data code pc state =
   if not (Addr.Set.mem pc !tagged_blocks)
   then (
     let limit = Blocks.next blocks pc in
     assert (limit > pc);
     let string_of_addr addr =
-      match Debug.find_loc debug addr with
+      match Debug.find_loc debug_data addr with
       | None -> string_of_int addr
       | Some loc -> (
         match loc.Parse_info.src with
@@ -706,18 +734,22 @@ let rec compile_block blocks debug code pc state =
     then Format.eprintf "Compiling from %s to %d@." (string_of_addr pc) (limit - 1);
     let state = State.start_block pc state in
     tagged_blocks := Addr.Set.add pc !tagged_blocks;
-    let instr, last, state' = compile {blocks; code; limit; debug} pc state [] in
+    let instr, last, state' =
+      compile {blocks; code; limit; debug = debug_data} pc state []
+    in
     assert (not (Addr.Map.mem pc !compiled_blocks));
     compiled_blocks := Addr.Map.add pc (state, List.rev instr, last) !compiled_blocks;
     match last with
     | Branch (pc', _) | Poptrap ((pc', _), _) ->
-        compile_block blocks debug code pc' state'
+        compile_block blocks debug_data code pc' state'
     | Cond (_, _, (pc1, _), (pc2, _)) ->
-        compile_block blocks debug code pc1 state';
-        compile_block blocks debug code pc2 state'
+        compile_block blocks debug_data code pc1 state';
+        compile_block blocks debug_data code pc2 state'
     | Switch (_, l1, l2) ->
-        Array.iter l1 ~f:(fun (pc', _) -> compile_block blocks debug code pc' state');
-        Array.iter l2 ~f:(fun (pc', _) -> compile_block blocks debug code pc' state')
+        Array.iter l1 ~f:(fun (pc', _) ->
+            compile_block blocks debug_data code pc' state');
+        Array.iter l2 ~f:(fun (pc', _) ->
+            compile_block blocks debug_data code pc' state')
     | Pushtrap _ | Raise _ | Return _ | Stop -> ())
 
 and compile infos pc state instrs =
@@ -1962,17 +1994,15 @@ let match_exn_traps (blocks : 'a Addr.Map.t) =
 type one =
   { code : Code.program
   ; cmis : StringSet.t
-  ; debug : Debug.data }
+  ; debug : Debug.t }
 
-let parse_bytecode ~debug code globals debug_data =
+let parse_bytecode code globals debug_data =
   let state = State.initial globals in
   Code.Var.reset ();
-  let blocks =
-    Blocks.analyse (if Poly.(debug = `Full) then debug_data else Debug.create ()) code
-  in
+  let blocks = Blocks.analyse debug_data code in
   let blocks =
     (* Disabled. [pc] might not be an appropriate place to split blocks *)
-    if false && Poly.(debug = `Full)
+    if false && Debug.enabled debug_data
     then Debug.fold debug_data (fun pc _ blocks -> Blocks.add blocks pc) blocks
     else blocks
   in
@@ -2081,9 +2111,9 @@ let from_exe
     ?(toplevel = false)
     ?exported_unit
     ?(dynlink = false)
-    ?(debug = `No)
+    ?(debug = false)
     ic =
-  let debug_data = Debug.create () in
+  let debug_data = Debug.create ~toplevel debug in
   let toc = read_toc ic in
   let prim_size = seek_section toc ic "PRIM" in
   let prim = really_input_string ic prim_size in
@@ -2118,20 +2148,18 @@ let from_exe
       (fun id -> keep (Ident.name id))
       orig_symbols
   in
-  (if Poly.(debug = `No)
+  (if not (Debug.dbg_section_needed debug_data)
   then ()
   else
     try
       ignore (seek_section toc ic "DBUG");
       Debug.read debug_data ~crcs ~includes ic
-    with Not_found -> (
-      match debug with
-      | `No -> assert false
-      | `Names -> ()
-      | `Full ->
-          warn
-            "Warning: Program not linked with -g, original variable names and locations \
-             not available.@."));
+    with Not_found ->
+      if Debug.enabled debug_data || Debug.toplevel debug_data
+      then
+        warn
+          "Warning: Program not linked with -g, original variable names and locations \
+           not available.@.");
   let globals = make_globals (Array.length init_data) init_data primitive_table in
   (* Initialize module override mechanism *)
   List.iter override_global ~f:(fun (name, v) ->
@@ -2157,7 +2185,7 @@ let from_exe
     (* well as marking this primitive as potentially used. But *)
     (* the -linkall option is probably good enough. *)
     (* Primitive.mark_used "caml_string_greaterthan" *);
-  let p = parse_bytecode ~debug code globals debug_data in
+  let p = parse_bytecode code globals debug_data in
   (* register predefined exception *)
   let body =
     List.fold_left predefined_exceptions ~init:[] ~f:(fun body (i, name) ->
@@ -2247,9 +2275,9 @@ let from_exe
 
 (* As input: list of primitives + size of global table *)
 let from_bytes primitives (code : bytecode) =
-  let debug_data = Debug.create () in
+  let debug_data = Debug.create ~toplevel:false false in
   let globals = make_globals 0 [||] primitives in
-  let p = parse_bytecode ~debug:`No code globals debug_data in
+  let p = parse_bytecode code globals debug_data in
   let gdata = Var.fresh () in
   let body =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
@@ -2351,7 +2379,7 @@ module Reloc = struct
     globals
 end
 
-let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
+let from_compilation_units ~includes:_ ~toplevel ~debug_data l =
   let reloc = Reloc.create () in
   List.iter l ~f:(fun (compunit, code) -> Reloc.step1 reloc compunit code);
   List.iter l ~f:(fun (compunit, code) -> Reloc.step2 reloc compunit code);
@@ -2360,7 +2388,7 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
     let l = List.map l ~f:(fun (_, c) -> Bytes.to_string c) in
     String.concat ~sep:"" l
   in
-  let prog = parse_bytecode ~debug code globals debug_data in
+  let prog = parse_bytecode code globals debug_data in
   let gdata = Var.fresh_n "global_data" in
   let body =
     Array.fold_right_i globals.vars ~init:[] ~f:(fun i var l ->
@@ -2390,31 +2418,30 @@ let from_compilation_units ~includes:_ ~toplevel ~debug ~debug_data l =
   in
   {code = prepend prog body; cmis; debug = debug_data}
 
-let from_cmo ?(includes = []) ?(toplevel = false) ?(debug = `No) compunit ic =
-  let debug_data = Debug.create () in
+let from_cmo ?(includes = []) ?(toplevel = false) ?(debug = false) compunit ic =
+  let debug_data = Debug.create ~toplevel debug in
   seek_in ic compunit.Cmo_format.cu_pos;
   let code = Bytes.create compunit.Cmo_format.cu_codesize in
   really_input ic code 0 compunit.Cmo_format.cu_codesize;
-  if Poly.(debug = `No) || compunit.Cmo_format.cu_debug = 0
+  if (not (Debug.dbg_section_needed debug_data)) || compunit.Cmo_format.cu_debug = 0
   then ()
   else (
     seek_in ic compunit.Cmo_format.cu_debug;
     Debug.read_event_list debug_data ~crcs:[] ~includes ~orig:0 ic);
-  let p =
-    from_compilation_units ~toplevel ~includes ~debug ~debug_data [compunit, code]
-  in
+  let p = from_compilation_units ~toplevel ~includes ~debug_data [compunit, code] in
   Code.invariant p.code;
   p
 
-let from_cma ?(includes = []) ?(toplevel = false) ?(debug = `No) lib ic =
-  let debug_data = Debug.create () in
+let from_cma ?(includes = []) ?(toplevel = false) ?(debug = false) lib ic =
+  let debug_data = Debug.create ~toplevel debug in
   let orig = ref 0 in
   let units =
     List.map lib.Cmo_format.lib_units ~f:(fun compunit ->
         seek_in ic compunit.Cmo_format.cu_pos;
         let code = Bytes.create compunit.Cmo_format.cu_codesize in
         really_input ic code 0 compunit.Cmo_format.cu_codesize;
-        if Poly.(debug = `No) || compunit.Cmo_format.cu_debug = 0
+        if (not (Debug.dbg_section_needed debug_data))
+           || compunit.Cmo_format.cu_debug = 0
         then ()
         else (
           seek_in ic compunit.Cmo_format.cu_debug;
@@ -2422,7 +2449,7 @@ let from_cma ?(includes = []) ?(toplevel = false) ?(debug = `No) lib ic =
         orig := !orig + compunit.Cmo_format.cu_codesize;
         compunit, code)
   in
-  let p = from_compilation_units ~toplevel ~includes ~debug ~debug_data units in
+  let p = from_compilation_units ~toplevel ~includes ~debug_data units in
   Code.invariant p.code;
   p
 
