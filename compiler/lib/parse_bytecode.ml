@@ -90,11 +90,15 @@ end = struct
 
   type data =
     { events_by_pc : (int, debug_event * ml_unit) Hashtbl.t
-    ; units : (string * string, ml_unit) Hashtbl.t }
+    ; units : (string * string, ml_unit) Hashtbl.t
+    ; pos_fname_to_source : (string, string) Hashtbl.t }
 
   let relocate_event orig ev = ev.ev_pos <- (orig + ev.ev_pos) / 4
 
-  let create () = {events_by_pc = Hashtbl.create 17; units = Hashtbl.create 17}
+  let create () =
+    { events_by_pc = Hashtbl.create 17
+    ; units = Hashtbl.create 17
+    ; pos_fname_to_source = Hashtbl.create 17 }
 
   let is_empty t = Hashtbl.length t.events_by_pc = 0
 
@@ -106,7 +110,7 @@ end = struct
 
   let read_event_list =
     let read_paths ic : string list = input_value ic in
-    fun {events_by_pc; units} ~crcs ~includes ~orig ic ->
+    fun {events_by_pc; units; pos_fname_to_source} ~crcs ~includes ~orig ic ->
       let crcs =
         let t = Hashtbl.create 17 in
         List.iter crcs ~f:(fun (m, crc) -> Hashtbl.add t m crc);
@@ -139,6 +143,10 @@ end = struct
                   | Some x -> x)
                   pos_fname;
               let u = {module_name = ev_module; fname = pos_fname; crc; source; paths} in
+              (match pos_fname, source with
+              | "_none_", _ | _, None -> ()
+              | pos_fname, Some source ->
+                  Hashtbl.add pos_fname_to_source pos_fname source);
               Hashtbl.add units (ev_module, pos_fname) u;
               u
           in
@@ -146,20 +154,10 @@ end = struct
           Hashtbl.add events_by_pc ev.ev_pos (ev, unit);
           ())
 
-  let find_source {units; _} pos_fname =
-    let set =
-      Hashtbl.fold
-        (fun (_m, p) unit acc ->
-          if String.equal p pos_fname
-          then
-            match unit.source with
-            | None -> acc
-            | Some src -> StringSet.add src acc
-          else acc)
-        units
-        StringSet.empty
-    in
-    if StringSet.cardinal set = 1 then Some (StringSet.choose set) else None
+  let find_source {pos_fname_to_source; _} pos_fname =
+    match Hashtbl.find_all pos_fname_to_source pos_fname with
+    | [x] -> Some x
+    | [] | _ :: _ :: _ -> None
 
   let read t ~crcs ~includes ic =
     let len = input_binary_int ic in
