@@ -83,7 +83,7 @@ let%expect_test "symbol comparison" =
   assert (compare s1 s2 = 1);
   assert (compare s2 s1 = 1);
   [%expect.unreachable]
-[@@expect.uncaught_exn {| ("TypeError: Cannot convert a Symbol value to a number") |}]
+  [@@expect.uncaught_exn {| ("TypeError: Cannot convert a Symbol value to a number") |}]
 
 let%expect_test "object comparison" =
   let s1 = Pack (Js.Unsafe.js_expr "{}") in
