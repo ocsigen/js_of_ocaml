@@ -1,4 +1,4 @@
-(* Js_of_ocaml example
+(* Js_of_ocaml tests
  * http://www.ocsigen.org/js_of_ocaml/
  * Copyright (C) 2013 Hugo Heuzard
  *
