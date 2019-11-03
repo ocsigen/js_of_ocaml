@@ -314,13 +314,13 @@ let rec constant_rec ~ctx x level instrs =
           ~args:(Array.to_list (Array.map a ~f:float_const))
       , instrs )
   | Int64 i ->
-      ( Mlvalue.Block.make
-          ~tag:255
-          ~args:
-            [ int (Int64.to_int i land 0xffffff)
-            ; int (Int64.to_int (Int64.shift_right i 24) land 0xffffff)
-            ; int (Int64.to_int (Int64.shift_right i 48) land 0xffff) ]
-      , instrs )
+      let p =
+        Share.get_prim (runtime_fun ctx) "caml_int64_create_lo_mi_hi" ctx.Ctx.share
+      in
+      let lo = int (Int64.to_int i land 0xffffff)
+      and mi = int (Int64.to_int (Int64.shift_right i 24) land 0xffffff)
+      and hi = int (Int64.to_int (Int64.shift_right i 48) land 0xffff) in
+      J.ECall (p, [lo; mi; hi], J.N), instrs
   | Tuple (tag, a, _) -> (
       let constant_max_depth = Config.Param.constant_max_depth () in
       let rec detect_list n acc = function
