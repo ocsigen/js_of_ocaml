@@ -502,6 +502,26 @@ and eventTarget =
 
     method onanimationcancel : ('self t, animationEvent t) event_listener writeonly_prop
 
+    method ongotpointercapture : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onlostpointercapture : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerenter : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointercancel : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerdown : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerleave : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointermove : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerout : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerover : ('self t, pointerEvent t) event_listener writeonly_prop
+
+    method onpointerup : ('self t, pointerEvent t) event_listener writeonly_prop
+
     method dispatchEvent : event t -> bool t meth
   end
 
@@ -510,6 +530,31 @@ and popStateEvent =
     inherit event
 
     method state : Js.Unsafe.any readonly_prop
+  end
+
+and pointerEvent =
+  object
+    inherit mouseEvent
+
+    method pointerId : int Js.readonly_prop
+
+    method width : float Js.readonly_prop
+
+    method height : float Js.readonly_prop
+
+    method pressure : float Js.readonly_prop
+
+    method tangentialPressure : float Js.readonly_prop
+
+    method tiltX : int Js.readonly_prop
+
+    method tiltY : int Js.readonly_prop
+
+    method twist : int Js.readonly_prop
+
+    method pointerType : Js.js_string Js.t Js.readonly_prop
+
+    method isPrimary : bool Js.t Js.readonly_prop
   end
 
 and storageEvent =
@@ -2350,17 +2395,37 @@ module Event : sig
 
   val ended : mediaEvent t typ
 
+  val gotpointercapture : pointerEvent t typ
+
   val loadeddata : mediaEvent t typ
 
   val loadedmetadata : mediaEvent t typ
 
   val loadstart : mediaEvent t typ
 
+  val lostpointercapture : pointerEvent t typ
+
   val pause : mediaEvent t typ
 
   val play : mediaEvent t typ
 
   val playing : mediaEvent t typ
+
+  val pointerenter : pointerEvent t typ
+
+  val pointercancel : pointerEvent t typ
+
+  val pointerdown : pointerEvent t typ
+
+  val pointerleave : pointerEvent t typ
+
+  val pointermove : pointerEvent t typ
+
+  val pointerout : pointerEvent t typ
+
+  val pointerover : pointerEvent t typ
+
+  val pointerup : pointerEvent t typ
 
   val ratechange : mediaEvent t typ
 
