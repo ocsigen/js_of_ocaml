@@ -44,20 +44,26 @@ let from_list kind vals =
 
 let%expect_test "compare elt" =
   let test kind to_string a b =
+    let op c =
+      if c = 0 then "=" else if c < 0 then "<" else if c > 0 then ">" else "??"
+    in
     let c = compare a b in
-    let op = if c = 0 then "=" else if c < 0 then "<" else if c > 0 then ">" else "??" in
-    if compare (from_list kind [a]) (from_list kind [b]) = c
+    let c' = compare (from_list kind [a]) (from_list kind [b]) in
+    if c' = c
     then
       Printf.printf
         "%s %s %s: Bigarray compare the same\n"
         (to_string a)
-        op
+        (op c)
         (to_string b)
     else
       Printf.printf
-        "%s %s %s: Bigarray compare differently\n"
+        "%s %s %s vs %s %s %s: Bigarray compare differently\n"
         (to_string a)
-        op
+        (op c)
+        (to_string b)
+        (to_string a)
+        (op c')
         (to_string b)
   in
   test int64 Int64.to_string 0x0000000110000000L 0x0000001001000000L;
@@ -83,13 +89,13 @@ let%expect_test "compare elt" =
   test int8_signed Int.to_string (-1) 1;
   [%expect {| -1 < 1: Bigarray compare the same |}];
   test int8_unsigned Int.to_string (-1) 1;
-  [%expect {| -1 < 1: Bigarray compare differently |}];
+  [%expect {| -1 < 1 vs -1 > 1: Bigarray compare differently |}];
   test int8_unsigned Int.to_string 2 3;
   [%expect {| 2 < 3: Bigarray compare the same |}];
   test int16_signed Int.to_string (-1) 1;
   [%expect {| -1 < 1: Bigarray compare the same |}];
   test int16_unsigned Int.to_string (-1) 1;
-  [%expect {| -1 < 1: Bigarray compare differently |}];
+  [%expect {| -1 < 1 vs -1 > 1: Bigarray compare differently |}];
   test int16_unsigned Int.to_string 2 3;
   [%expect {| 2 < 3: Bigarray compare the same |}];
   test int Int.to_string (-65536) 65535;
