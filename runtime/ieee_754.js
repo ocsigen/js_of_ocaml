@@ -29,11 +29,15 @@ function jsoo_floor_log2(x) {
 }
 
 //Provides: caml_int64_bits_of_float const
-//Requires: jsoo_floor_log2, caml_int64_create
+//Requires: jsoo_floor_log2, caml_int64_create_lo_mi_hi
 function caml_int64_bits_of_float (x) {
   if (!isFinite(x)) {
-    if (isNaN(x)) return caml_int64_create(1, 0, 0x7ff0);
-    return (x > 0)?(caml_int64_create(0,0,0x7ff0)):(caml_int64_create(0,0,0xfff0));
+    if (isNaN(x))
+      return caml_int64_create_lo_mi_hi(1, 0, 0x7ff0);
+    if (x > 0)
+      return caml_int64_create_lo_mi_hi(0, 0, 0x7ff0)
+    else
+      return caml_int64_create_lo_mi_hi(0, 0, 0xfff0)
   }
   var sign = (x==0 && 1/x == -Infinity)?0x8000:(x>=0)?0:0x8000;
   if (sign) x = -x;
@@ -57,7 +61,7 @@ function caml_int64_bits_of_float (x) {
   x = (x - r2) * k;
   var r1 = x|0;
   r3 = (r3 &0xf) | sign | exp << 4;
-  return caml_int64_create(r1, r2, r3);
+  return caml_int64_create_lo_mi_hi(r1, r2, r3);
 }
 
 //Provides: caml_int32_bits_of_float const
@@ -122,21 +126,24 @@ function caml_hexstring_of_float (x, prec, style) {
 
 //Provides: caml_int64_float_of_bits const
 function caml_int64_float_of_bits (x) {
-  var exp = (x[3] & 0x7fff) >> 4;
+  var lo = x[1];
+  var mi = x[2];
+  var hi = x[3];
+  var exp = (hi & 0x7fff) >> 4;
   if (exp == 2047) {
-    if ((x[1]|x[2]|(x[3]&0xf)) == 0)
-      return (x[3] & 0x8000)?(-Infinity):Infinity;
+    if ((lo|mi|hi&0xf) == 0)
+      return (hi & 0x8000)?(-Infinity):Infinity;
     else
       return NaN;
   }
   var k = Math.pow(2,-24);
-  var res = (x[1]*k+x[2])*k+(x[3]&0xf);
+  var res = (lo*k+mi)*k+(hi&0xf);
   if (exp > 0) {
     res += 16;
     res *= Math.pow(2,exp-1027);
   } else
     res *= Math.pow(2,-1026);
-  if (x[3] & 0x8000) res = - res;
+  if (hi & 0x8000) res = - res;
   return res;
 }
 

@@ -819,22 +819,16 @@ function caml_hash_mix_final(h) {
 }
 
 //Provides: caml_hash_mix_float
-//Requires: caml_hash_mix_int, caml_int64_bits_of_float
+//Requires: caml_int64_bits_of_float, caml_hash_mix_int64
 function caml_hash_mix_float (h, v0) {
-  var v = caml_int64_bits_of_float (v0);
-  var lo = v[1] | (v[2] << 24);
-  var hi = (v[2] >>> 8) | (v[3] << 16);
-  h = caml_hash_mix_int(h, lo);
-  h = caml_hash_mix_int(h, hi);
-  return h;
+  return caml_hash_mix_int64(h, caml_int64_bits_of_float (v0));
 }
 //Provides: caml_hash_mix_int64
 //Requires: caml_hash_mix_int
+//Requires: caml_int64_lo32, caml_int64_hi32
 function caml_hash_mix_int64 (h, v) {
-  var lo = v[1] | (v[2] << 24);
-  var hi = (v[2] >>> 8) | (v[3] << 16);
-  h = caml_hash_mix_int(h, lo);
-  h = caml_hash_mix_int(h, hi);
+  h = caml_hash_mix_int(h, caml_int64_lo32(v));
+  h = caml_hash_mix_int(h, caml_int64_hi32(v));
   return h;
 }
 

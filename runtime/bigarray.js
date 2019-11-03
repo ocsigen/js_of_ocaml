@@ -77,7 +77,8 @@ function caml_ba_create_buffer(kind, size){
 }
 
 //Provides: Ml_Bigarray
-//Requires: caml_array_bound_error, caml_invalid_argument, caml_int64_create
+//Requires: caml_array_bound_error, caml_invalid_argument
+//Requires: caml_int64_create_lo_hi, caml_int64_hi32, caml_int64_lo32
 function Ml_Bigarray (kind, layout, dims, buffer) {
 
   this.kind   = kind ;
@@ -117,10 +118,7 @@ Ml_Bigarray.prototype.get = function (ofs) {
     // Int64
     var l = this.data[ofs * 2 + 0];
     var h = this.data[ofs * 2 + 1];
-    return caml_int64_create(
-      l & 0xffffff,
-      ((l >>> 24) & 0xff) | ((h & 0xffff) << 8),
-      (h >>> 16) & 0xffff);
+    return caml_int64_create_lo_hi(l,h);
   case 10: case 11:
     // Complex32, Complex64
     var r = this.data[ofs * 2 + 0];
@@ -135,8 +133,8 @@ Ml_Bigarray.prototype.set = function (ofs,v) {
   switch(this.kind){
   case 7:
     // Int64
-    this.data[ofs * 2 + 0] = v[1] | ((v[2] & 0xff) << 24);
-    this.data[ofs * 2 + 1] = ((v[2] >>> 8) & 0xffff) | (v[3] << 16);
+    this.data[ofs * 2 + 0] = caml_int64_lo32(v);
+    this.data[ofs * 2 + 1] = caml_int64_hi32(v);
     break;
   case 10: case 11:
     // Complex32, Complex64
@@ -155,8 +153,8 @@ Ml_Bigarray.prototype.fill = function (v) {
   switch(this.kind){
   case 7:
     // Int64
-    var a = ((v[1]      )         ) | ((v[2] & 0xff) << 24);
-    var b = ((v[2] >>> 8) & 0xffff) | ((v[3]       ) << 16);
+    var a = caml_int64_lo32(v);
+    var b = caml_int64_hi32(v);
     if(a == b){
       this.data.fill(a);
     }
@@ -462,18 +460,12 @@ function caml_ba_uint8_set32(ba, i0, v) {
 }
 
 //Provides: caml_ba_uint8_set64
-//Requires: caml_array_bound_error
+//Requires: caml_array_bound_error, caml_int64_to_bytes
 function caml_ba_uint8_set64(ba, i0, v) {
   var ofs = ba.offset(i0);
   if(ofs + 7 >= ba.data.length) caml_array_bound_error();
-  ba.set(ofs+0, (v[1])       & 0xff);
-  ba.set(ofs+1, (v[1] >>  8) & 0xff);
-  ba.set(ofs+2, (v[1] >> 16) & 0xff);
-  ba.set(ofs+3, (v[2])       & 0xff);
-  ba.set(ofs+4, (v[2] >>  8) & 0xff);
-  ba.set(ofs+5, (v[2] >> 16) & 0xff);
-  ba.set(ofs+6, (v[3])       & 0xff);
-  ba.set(ofs+7, (v[3] >>  8) & 0xff);
+  var v = caml_int64_to_bytes(v);
+  for(var i = 0; i < 8; i++) ba.set(ofs+i, v[7-i])
   return 0;
 }
 

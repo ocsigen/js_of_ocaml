@@ -323,10 +323,26 @@ function caml_int64_of_string(s) {
   return res;
 }
 
-//Provides: caml_int64_create
-function caml_int64_create(lo, mi, hi){
+//Provides: caml_int64_create_lo_mi_hi
+function caml_int64_create_lo_mi_hi(lo, mi, hi){
   return [255, lo, mi, hi]
 }
+//Provides: caml_int64_create_lo_hi
+function caml_int64_create_lo_hi(lo, hi){
+  return [255,
+          lo & 0xffffff,
+          ((lo >>> 24) & 0xff) | ((hi & 0xffff) << 8),
+          (hi >>> 16) & 0xffff];
+}
+//Provides: caml_int64_lo32 const
+function caml_int64_lo32(v){
+  return v[1] | ((v[2] & 0xff) << 24);
+}
+//Provides: caml_int64_hi32 const
+function caml_int64_hi32(v){
+  return ((v[2] >>> 8) & 0xffff) | (v[3] << 16);
+}
+
 
 //Provides: caml_int64_of_bytes
 function caml_int64_of_bytes(a) {
