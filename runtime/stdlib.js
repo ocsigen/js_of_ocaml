@@ -895,11 +895,6 @@ function caml_hash_univ_param (count, limit, obj) {
       case 250:
         // Forward
         limit++; hash_aux(obj); break;
-      case 255:
-        // Int64
-        count --;
-        hash_accu = (hash_accu * 65599 + obj[1] + (obj[2] << 24)) | 0;
-        break;
       default:
         count --;
         hash_accu = (hash_accu * 19 + obj[0]) | 0;
@@ -1042,8 +1037,8 @@ function caml_hash_mix_string(h, v) {
 
 //Provides: caml_hash mutable
 //Requires: MlBytes
-//Requires: caml_int64_bits_of_float, caml_hash_mix_int, caml_hash_mix_final
-//Requires: caml_hash_mix_int64, caml_hash_mix_float, caml_hash_mix_string, caml_custom_ops
+//Requires: caml_hash_mix_int, caml_hash_mix_final
+//Requires: caml_hash_mix_float, caml_hash_mix_string, caml_custom_ops
 function caml_hash (count, limit, seed, obj) {
   var queue, rd, wr, sz, num, h, v, i, len;
   sz = limit;
@@ -1070,11 +1065,6 @@ function caml_hash (count, limit, seed, obj) {
       case 250:
         // Forward
         queue[--rd] = v[1];
-        break;
-      case 255:
-        // Int64
-        h = caml_hash_mix_int64 (h, v);
-        num --;
         break;
       default:
         var tag = ((v.length - 1) << 10) | v[0];
