@@ -131,7 +131,7 @@ function caml_int64_float_of_bits (x) {
   var hi = x[3];
   var exp = (hi & 0x7fff) >> 4;
   if (exp == 2047) {
-    if ((lo|mi|hi&0xf) == 0)
+    if ((lo|mi|(hi&0xf)) == 0)
       return (hi & 0x8000)?(-Infinity):Infinity;
     else
       return NaN;
