@@ -26,7 +26,6 @@
     %{dep:mlString.js}
     %{dep:nat.js}
     %{dep:parsing.js}
-    %{dep:polyfill/json2.js}
     %{dep:stdlib.js}
     %{dep:unix.js}
     %{dep:weak.js}
@@ -59,7 +58,6 @@
     mlString.js
     nat.js
     parsing.js
-    polyfill/json2.js
     runtime.js
     stdlib.js
     toplevel.js
