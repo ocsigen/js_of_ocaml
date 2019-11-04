@@ -70,6 +70,8 @@ let%expect_test "compare elt" =
   [%expect {| 4563402752 < 68736253952: Bigarray compare the same |}];
   test int64 Int64.to_string 8796093022210L 17592186044417L;
   [%expect {| 8796093022210 < 17592186044417: Bigarray compare the same |}];
+  test int64 Int64.to_string 0xffffffffL 0x0fffffffL;
+  [%expect {| 4294967295 > 268435455 vs 4294967295 < 268435455: Bigarray compare differently |}];
   test int32 Int32.to_string 0x00011000l 0x00100100l;
   [%expect {| 69632 < 1048832: Bigarray compare the same |}];
   test int32 Int32.to_string 0xffff0000l 0x0000ffffl;
