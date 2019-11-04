@@ -225,9 +225,9 @@ Ml_Bigarray.prototype.compare = function (b, total) {
         return -1;
       if (this.data[i+1] > b.data[i+1])
         return 1;
-      if (this.data[i] < b.data[i])
+      if ((this.data[i] >>> 0) < (b.data[i] >>> 0))
         return -1;
-      if (this.data[i] > b.data[i])
+      if ((this.data[i] >>> 0) > (b.data[i] >>> 0))
         return 1;
     }
     break;
