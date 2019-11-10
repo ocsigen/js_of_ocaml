@@ -95,7 +95,7 @@ val ign_log_f :
 (** The following functions are the same as {!log} except that their
     name determines which level is used.
 
-    For example {!info msg} is the same as {!log ~level:Info msg}.
+    For example [info msg] is the same as [log ~level:Info msg].
 *)
 
 val debug :
